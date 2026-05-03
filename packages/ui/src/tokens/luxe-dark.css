@@ -1,4 +1,61 @@
 :root, .dark {
-  --bg-base: #0a0a0c;
-  --text-primary: #f5f5f7;
+  /* Surfaces (4 layers) */
+  --bg-base:     #0a0a0c;
+  --bg-elevated: #131316;
+  --bg-overlay:  #1c1c20;
+  --bg-input:    #18181b;
+
+  /* Borders */
+  --border-subtle: #26262b;
+  --border-strong: #3a3a42;
+  --border-focus:  #c9a557;
+
+  /* Text */
+  --text-primary:   #f5f5f7;
+  --text-secondary: #a1a1a8;
+  --text-muted:     #6b6b73;
+  --text-disabled:  #4a4a52;
+
+  /* Accents */
+  --gold-base:    #c9a557;
+  --gold-hover:   #d4b06a;
+  --gold-pressed: #b8954a;
+  --gold-soft:    #c9a55720;
+
+  --green-base:   #10b981;
+  --green-hover:  #14d690;
+  --green-pressed:#0e9a6e;
+
+  --red-base:     #ef4444;
+  --red-soft:     #ef444420;
+
+  --blue-info:    #3b82f6;
+  --amber-warn:   #f59e0b;
+
+  /* Typography */
+  --font-sans:  'Inter', system-ui, sans-serif;
+  --font-serif: 'Fraunces', Georgia, serif;
+  --font-mono:  'JetBrains Mono', ui-monospace, monospace;
+
+  /* Radii */
+  --radius-sm:  4px;
+  --radius-md:  6px;
+  --radius-lg:  8px;
+  --radius-xl:  12px;
+  --radius-2xl: 16px;
+
+  /* Touch targets */
+  --touch-min:    44px;
+  --touch-comfy:  56px;
+  --touch-large:  80px;
+
+  /* Elevations */
+  --shadow-sm:    0 1px 2px rgba(0,0,0,0.4);
+  --shadow-md:    0 4px 12px rgba(0,0,0,0.5);
+  --shadow-lg:    0 12px 32px rgba(0,0,0,0.6);
+  --shadow-modal: 0 24px 64px rgba(0,0,0,0.7);
+
+  /* Backdrop */
+  --backdrop:      rgba(0,0,0,0.7);
+  --backdrop-blur: 8px;
 }

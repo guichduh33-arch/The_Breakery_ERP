@@ -2,7 +2,8 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "noEmit": true,
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "types": ["@testing-library/jest-dom"]
   },
-  "include": ["src/**/*", "tailwind-preset.ts"]
+  "include": ["src/**/*", "tailwind-preset.ts", "vitest.setup.ts"]
 }
