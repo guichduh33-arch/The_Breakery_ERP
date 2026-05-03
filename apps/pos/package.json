@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview --port 5173",
     "lint": "eslint src",
-    "typecheck": "tsc -b --noEmit",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run --coverage"
   },
   "dependencies": {
