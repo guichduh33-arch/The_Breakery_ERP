@@ -1,0 +1,7 @@
+@import '@breakery/ui/tokens.css';
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/fraunces';
+@import '@fontsource-variable/jetbrains-mono';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
