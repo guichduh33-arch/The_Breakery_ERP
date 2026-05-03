@@ -7,6 +7,6 @@ export type OrderStatus = 'draft' | 'paid' | 'voided';
 export interface OrderPayload {
   session_id: string;
   order_type: OrderType;
-  items: Array<{ product_id: string; quantity: number; unit_price: number }>;
+  items: { product_id: string; quantity: number; unit_price: number }[];
   payment: PaymentInput;
 }
