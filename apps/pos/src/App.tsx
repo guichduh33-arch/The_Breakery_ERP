@@ -1,7 +1,16 @@
+import { QueryClientProvider } from '@tanstack/react-query';
+import { BrowserRouter } from 'react-router-dom';
+import { Toaster } from 'sonner';
+import { queryClient } from './lib/queryClient';
+import { AppRoutes } from './routes';
+
 export default function App() {
   return (
-    <main className="min-h-screen grid place-items-center">
-      <h1 className="text-3xl">The Breakery POS — boot OK</h1>
-    </main>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <AppRoutes />
+        <Toaster theme="dark" position="top-right" />
+      </BrowserRouter>
+    </QueryClientProvider>
   );
 }
