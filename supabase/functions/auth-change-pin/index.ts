@@ -1,0 +1,88 @@
+// supabase/functions/auth-change-pin/index.ts
+import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
+import { handleCors, jsonResponse } from '../_shared/cors.ts';
+import { requireSession } from '../_shared/session-auth.ts';
+import { getAdminClient } from '../_shared/supabase-admin.ts';
+
+const PIN_REGEX = /^\d{4,6}$/;
+
+interface ChangePinPayload {
+  user_id: string;
+  current_pin?: string;
+  new_pin: string;
+}
+
+serve(async (req) => {
+  const cors = handleCors(req);
+  if (cors) return cors;
+
+  if (req.method !== 'POST') {
+    return jsonResponse({ error: 'method_not_allowed' }, 405);
+  }
+
+  const sessionResult = await requireSession(req);
+  if (sessionResult instanceof Response) return sessionResult;
+
+  let body: ChangePinPayload;
+  try {
+    body = await req.json();
+  } catch {
+    return jsonResponse({ error: 'invalid_json' }, 400);
+  }
+
+  const { user_id, current_pin, new_pin } = body;
+  if (!user_id || !new_pin) {
+    return jsonResponse({ error: 'missing_fields' }, 400);
+  }
+  if (!PIN_REGEX.test(new_pin)) {
+    return jsonResponse({ error: 'invalid_new_pin_format' }, 400);
+  }
+
+  const admin = getAdminClient();
+  const isSelf = user_id === sessionResult.userId;
+
+  if (isSelf) {
+    if (!current_pin) {
+      return jsonResponse({ error: 'current_pin_required' }, 400);
+    }
+    const { data: pinValid } = await admin.rpc('verify_user_pin', {
+      p_user_id: user_id,
+      p_pin: current_pin,
+    });
+    if (!pinValid) {
+      return jsonResponse({ error: 'invalid_current_pin' }, 401);
+    }
+  } else {
+    // Admin override : caller must have users.update
+    if (!['SUPER_ADMIN', 'ADMIN'].includes(sessionResult.roleCode)) {
+      return jsonResponse({ error: 'permission_denied' }, 403);
+    }
+  }
+
+  const { data: newHash, error: hashErr } = await admin.rpc('hash_pin', { p_pin: new_pin });
+  if (hashErr || !newHash) {
+    return jsonResponse({ error: 'hash_failed' }, 500);
+  }
+
+  const { error: updateErr } = await admin
+    .from('user_profiles')
+    .update({
+      pin_hash: newHash,
+      failed_login_attempts: 0,
+      locked_until: null,
+    })
+    .eq('id', user_id);
+
+  if (updateErr) {
+    return jsonResponse({ error: 'update_failed' }, 500);
+  }
+
+  await admin.from('audit_logs').insert({
+    actor_id: sessionResult.userId,
+    action: isSelf ? 'pin.change_self' : 'pin.change_admin',
+    entity_type: 'user_profiles',
+    entity_id: user_id,
+  });
+
+  return jsonResponse({ ok: true });
+});
