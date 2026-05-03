@@ -49,28 +49,52 @@ DECLARE
   v_cashier_uid  UUID := '00000000-0000-0000-0000-000000000002';
 BEGIN
   -- ADMIN
+  -- Note: confirmation_token, recovery_token, etc. must be '' not NULL so
+  -- GoTrue's Go scanner (sql.Scan) can read them without error.
   INSERT INTO auth.users (
     id, instance_id, aud, role, email, encrypted_password,
-    email_confirmed_at, raw_user_meta_data, created_at, updated_at
+    email_confirmed_at, raw_user_meta_data, raw_app_meta_data,
+    confirmation_token, recovery_token,
+    email_change_token_new, email_change,
+    created_at, updated_at
   ) VALUES (
     v_admin_uid, '00000000-0000-0000-0000-000000000000',
     'authenticated', 'authenticated',
     'cashier-EMP000@thebreakery.local',
     crypt('disabled-password-' || gen_random_uuid(), gen_salt('bf')),
-    now(), '{"provider":"pin"}'::jsonb, now(), now()
-  ) ON CONFLICT (id) DO NOTHING;
+    now(), '{"provider":"pin"}'::jsonb, '{"provider":"pin","providers":["pin"]}'::jsonb,
+    '', '',
+    '', '',
+    now(), now()
+  ) ON CONFLICT (id) DO UPDATE SET
+    raw_app_meta_data = EXCLUDED.raw_app_meta_data,
+    confirmation_token = EXCLUDED.confirmation_token,
+    recovery_token = EXCLUDED.recovery_token,
+    email_change_token_new = EXCLUDED.email_change_token_new,
+    email_change = EXCLUDED.email_change;
 
   -- CASHIER
   INSERT INTO auth.users (
     id, instance_id, aud, role, email, encrypted_password,
-    email_confirmed_at, raw_user_meta_data, created_at, updated_at
+    email_confirmed_at, raw_user_meta_data, raw_app_meta_data,
+    confirmation_token, recovery_token,
+    email_change_token_new, email_change,
+    created_at, updated_at
   ) VALUES (
     v_cashier_uid, '00000000-0000-0000-0000-000000000000',
     'authenticated', 'authenticated',
     'cashier-EMP001@thebreakery.local',
     crypt('disabled-password-' || gen_random_uuid(), gen_salt('bf')),
-    now(), '{"provider":"pin"}'::jsonb, now(), now()
-  ) ON CONFLICT (id) DO NOTHING;
+    now(), '{"provider":"pin"}'::jsonb, '{"provider":"pin","providers":["pin"]}'::jsonb,
+    '', '',
+    '', '',
+    now(), now()
+  ) ON CONFLICT (id) DO UPDATE SET
+    raw_app_meta_data = EXCLUDED.raw_app_meta_data,
+    confirmation_token = EXCLUDED.confirmation_token,
+    recovery_token = EXCLUDED.recovery_token,
+    email_change_token_new = EXCLUDED.email_change_token_new,
+    email_change = EXCLUDED.email_change;
 
   -- USER PROFILES (PIN hashés via hash_pin())
   INSERT INTO user_profiles (

@@ -148,10 +148,14 @@ serve(async (req) => {
   };
 
   const accessToken = await signJwt(jwtPayload, jwtSecret);
+  // Provide a non-null refresh_token so supabase.auth.setSession() does not throw
+  // AuthSessionMissingError. We never use the Supabase refresh flow (we have our own
+  // session token mechanism), so this is a safe placeholder.
+  const refreshToken = `pin-session:${sessionToken}`;
   const verifyData = {
     session: {
       access_token: accessToken,
-      refresh_token: null as string | null,
+      refresh_token: refreshToken,
       expires_at: expiresAt,
     },
   };

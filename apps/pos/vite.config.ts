@@ -7,5 +7,16 @@ export default defineConfig({
   resolve: {
     alias: { '@': path.resolve(__dirname, './src') }
   },
-  server: { port: 5173, host: true }
+  server: { port: 5173, host: true },
+  test: {
+    environment: 'jsdom',
+    // Use forks pool to avoid Windows VirtualAlloc OOM with multiple threads
+    pool: 'forks',
+    poolOptions: { forks: { singleFork: true } },
+    setupFiles: [],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+    },
+  },
 });
