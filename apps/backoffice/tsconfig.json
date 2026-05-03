@@ -5,7 +5,8 @@
     "rootDir": "src",
     "outDir": "dist",
     "baseUrl": ".",
-    "paths": { "@/*": ["src/*"] }
+    "paths": { "@/*": ["src/*"] },
+    "types": ["vite/client", "@testing-library/jest-dom", "vitest/globals"]
   },
   "include": ["src/**/*"],
   "references": [{ "path": "./tsconfig.node.json" }]

@@ -65,6 +65,9 @@ importers:
       '@tanstack/react-query':
         specifier: ^5.62.11
         version: 5.100.8(react@18.3.1)
+      lucide-react:
+        specifier: ^0.469.0
+        version: 0.469.0(react@18.3.1)
       react:
         specifier: ^18.2.0
         version: 18.3.1
@@ -144,6 +147,9 @@ importers:
       '@tanstack/react-query':
         specifier: ^5.62.11
         version: 5.100.8(react@18.3.1)
+      lucide-react:
+        specifier: ^0.469.0
+        version: 0.469.0(react@18.3.1)
       react:
         specifier: ^18.2.0
         version: 18.3.1
@@ -153,6 +159,9 @@ importers:
       react-router-dom:
         specifier: ^6.28.0
         version: 6.30.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      sonner:
+        specifier: ^2.0.7
+        version: 2.0.7(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       zustand:
         specifier: ^4.5.5
         version: 4.5.7(@types/react@18.3.28)(react@18.3.1)

@@ -1,0 +1,33 @@
+// apps/backoffice/src/routes/index.tsx
+import { Routes, Route, Navigate } from 'react-router-dom';
+import LoginPage from '@/pages/Login.js';
+import DashboardPage from '@/pages/Dashboard.js';
+import ProductsPage from '@/pages/Products.js';
+import ComingSoonPage from '@/pages/ComingSoon.js';
+import { BackofficeLayout } from '@/layouts/BackofficeLayout.js';
+import { useAuthStore } from '@/stores/authStore.js';
+
+function Protected({ children }: { children: React.ReactNode }) {
+  const isAuth = useAuthStore((s) => s.isAuthenticated);
+  return isAuth ? <>{children}</> : <Navigate to="/login" replace />;
+}
+
+export function AppRoutes() {
+  return (
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/backoffice" element={<Protected><BackofficeLayout /></Protected>}>
+        <Route index element={<DashboardPage />} />
+        <Route path="products" element={<ProductsPage />} />
+        <Route path="inventory" element={<ComingSoonPage module="Inventory" />} />
+        <Route path="purchasing" element={<ComingSoonPage module="Purchasing" />} />
+        <Route path="customers" element={<ComingSoonPage module="Customers" />} />
+        <Route path="b2b" element={<ComingSoonPage module="B2B" />} />
+        <Route path="accounting" element={<ComingSoonPage module="Accounting" />} />
+        <Route path="reports" element={<ComingSoonPage module="Reports" />} />
+        <Route path="settings" element={<ComingSoonPage module="Settings" />} />
+      </Route>
+      <Route path="*" element={<Navigate to="/backoffice" replace />} />
+    </Routes>
+  );
+}
