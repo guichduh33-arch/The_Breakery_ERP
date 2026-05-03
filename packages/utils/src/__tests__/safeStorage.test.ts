@@ -1,4 +1,5 @@
 // packages/utils/src/__tests__/safeStorage.test.ts
+/* eslint-disable @typescript-eslint/unbound-method */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { safeStorage } from '../safeStorage';
 

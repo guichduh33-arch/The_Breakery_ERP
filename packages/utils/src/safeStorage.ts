@@ -1,5 +1,6 @@
 // packages/utils/src/safeStorage.ts
 // Wrappage localStorage/sessionStorage Capacitor-ready.
+/* eslint-disable @typescript-eslint/require-await */
 // En web : sessionStorage (tab-scoped, cleared on close).
 // En Capacitor (futur) : @capacitor/preferences.
 // L'API est asynchrone partout pour préparer Capacitor.

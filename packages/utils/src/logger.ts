@@ -3,9 +3,7 @@
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
-interface BreadcrumbHook {
-  (level: LogLevel, message: string, data?: Record<string, unknown>): void;
-}
+type BreadcrumbHook = (level: LogLevel, message: string, data?: Record<string, unknown>) => void;
 
 let breadcrumbHook: BreadcrumbHook | null = null;
 

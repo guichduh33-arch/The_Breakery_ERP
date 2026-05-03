@@ -1,4 +1,5 @@
 // packages/utils/src/__tests__/logger.test.ts
+/* eslint-disable @typescript-eslint/no-empty-function */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { logger, setBreadcrumbHook } from '../logger';
 
