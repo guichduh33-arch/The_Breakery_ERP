@@ -110,4 +110,57 @@ describe('process-payment', () => {
     const body = await res.json();
     expect(body.error).toBe('insufficient_stock');
   });
+
+  it('returns existing order on duplicate idempotency_key (D8)', async () => {
+    const idempotencyKey = crypto.randomUUID();
+    const payload = {
+      session_id: sessionId,
+      order_type: 'dine_in' as const,
+      items: [
+        { product_id: productIds[0], quantity: 1, unit_price: 35000 },
+        { product_id: productIds[1], quantity: 1, unit_price: 45000 },
+      ],
+      payment: { method: 'cash' as const, amount: 80000, cash_received: 100000, change_given: 20000 },
+      idempotency_key: idempotencyKey,
+    };
+
+    const headers = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    };
+
+    // 1st POST — should create the order
+    const first = await fetch(FN_URL, { method: 'POST', headers, body: JSON.stringify(payload) });
+    expect(first.status).toBe(200);
+    const firstBody = await first.json();
+    expect(firstBody.order_id).toBeTruthy();
+
+    // 2nd POST — same key, same payload → must return the same order_id (replay)
+    const second = await fetch(FN_URL, { method: 'POST', headers, body: JSON.stringify(payload) });
+    expect(second.status).toBe(200);
+    const secondBody = await second.json();
+    expect(secondBody.order_id).toBe(firstBody.order_id);
+    // RPC should flag the replay so the client can act on it
+    expect(secondBody.idempotent_replay).toBe(true);
+  });
+
+  it('rejects when idempotency_key is not a UUID', async () => {
+    const res = await fetch(FN_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        session_id: sessionId,
+        order_type: 'dine_in',
+        items: [{ product_id: productIds[0], quantity: 1, unit_price: 35000 }],
+        payment: { method: 'cash', amount: 35000, cash_received: 35000 },
+        idempotency_key: 'not-a-uuid',
+      }),
+    });
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toBe('invalid_idempotency_key');
+  });
 });

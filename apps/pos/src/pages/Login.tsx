@@ -36,7 +36,7 @@ export default function LoginPage() {
           <FullScreenModal open onOpenChange={(open) => !open && setSelectedUserId(null)}>
             <div className="m-auto bg-bg-overlay rounded-xl p-8 max-w-sm shadow-modal">
               <h2 className="font-serif text-2xl text-center mb-2">Enter PIN</h2>
-              <p className="text-text-secondary text-sm text-center mb-6">4-6 digits</p>
+              <p className="text-text-secondary text-sm text-center mb-6">6 digits</p>
               <NumpadPin
                 onSubmit={handleSubmit}
                 isLoading={isLoading}
@@ -57,7 +57,7 @@ function friendlyError(err: string): string {
     case 'rate_limited':        return 'Too many attempts. Wait a moment.';
     case 'user_inactive':       return 'User inactive.';
     case 'user_not_found':      return 'User not found.';
-    case 'invalid_pin_format':  return 'PIN must be 4-6 digits.';
+    case 'invalid_pin_format':  return 'PIN must be 6 digits.';
     default:                    return 'Login failed.';
   }
 }

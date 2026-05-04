@@ -4,6 +4,7 @@ import type { Cart, PaymentInput, PaymentResult } from '@breakery/domain';
 import { buildOrderPayload } from '@breakery/domain';
 import { supabaseUrl } from '@/lib/supabase';
 import { useShiftStore } from '@/stores/shiftStore';
+import { usePaymentStore } from '@/stores/paymentStore';
 
 interface CheckoutInput {
   cart: Cart;
@@ -16,18 +17,20 @@ interface CheckoutResponse {
   total: number;
   tax_amount: number;
   change_given: number | null;
+  idempotent_replay?: boolean;
   error?: string;
 }
 
 export function useCheckout() {
   const sessionId = useShiftStore((s) => s.current?.id);
+  const idempotencyKey = usePaymentStore((s) => s.idempotencyKey);
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (input: CheckoutInput): Promise<PaymentResult> => {
       if (!sessionId) throw new Error('no_open_shift');
       const accessToken = await getAccessToken();
-      const payload = buildOrderPayload(sessionId, input.cart, input.payment);
+      const payload = buildOrderPayload(sessionId, input.cart, input.payment, idempotencyKey);
 
       const res = await fetch(`${supabaseUrl}/functions/v1/process-payment`, {
         method: 'POST',

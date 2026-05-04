@@ -5,6 +5,7 @@ export function buildOrderPayload(
   sessionId: string,
   cart: Cart,
   payment: PaymentInput,
+  idempotencyKey?: string,
 ): OrderPayload {
   return {
     session_id: sessionId,
@@ -15,5 +16,7 @@ export function buildOrderPayload(
       unit_price: i.unit_price,
     })),
     payment,
+    // exactOptionalPropertyTypes-safe: only include the field when defined
+    ...(idempotencyKey ? { idempotency_key: idempotencyKey } : {}),
   };
 }

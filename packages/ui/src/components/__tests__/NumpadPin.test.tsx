@@ -9,15 +9,30 @@ describe('NumpadPin', () => {
     expect(screen.getByRole('button', { name: '1' })).toBeInTheDocument();
   });
 
-  it('calls onSubmit when Verify clicked with pin >= 4 digits', () => {
+  it('calls onSubmit when Verify clicked with pin === 6 digits', () => {
     const onSubmit = vi.fn();
     render(<NumpadPin onSubmit={onSubmit} />);
     fireEvent.click(screen.getByRole('button', { name: '1' }));
     fireEvent.click(screen.getByRole('button', { name: '2' }));
     fireEvent.click(screen.getByRole('button', { name: '3' }));
     fireEvent.click(screen.getByRole('button', { name: '4' }));
+    fireEvent.click(screen.getByRole('button', { name: '5' }));
+    fireEvent.click(screen.getByRole('button', { name: '6' }));
     fireEvent.click(screen.getByRole('button', { name: 'Verify' }));
-    expect(onSubmit).toHaveBeenCalledWith('1234');
+    expect(onSubmit).toHaveBeenCalledWith('123456');
+  });
+
+  it('keeps Verify disabled when pin length < 6 digits', () => {
+    const onSubmit = vi.fn();
+    render(<NumpadPin onSubmit={onSubmit} />);
+    fireEvent.click(screen.getByRole('button', { name: '1' }));
+    fireEvent.click(screen.getByRole('button', { name: '2' }));
+    fireEvent.click(screen.getByRole('button', { name: '3' }));
+    fireEvent.click(screen.getByRole('button', { name: '4' }));
+    const verify = screen.getByRole('button', { name: 'Verify' });
+    expect(verify).toBeDisabled();
+    fireEvent.click(verify);
+    expect(onSubmit).not.toHaveBeenCalled();
   });
 
   it('shows error message when error prop passed', () => {

@@ -4,7 +4,7 @@ import { handleCors, jsonResponse } from '../_shared/cors.ts';
 import { requireSession } from '../_shared/session-auth.ts';
 import { getAdminClient } from '../_shared/supabase-admin.ts';
 
-const PIN_REGEX = /^\d{4,6}$/;
+const PIN_REGEX = /^\d{6}$/;
 
 interface ChangePinPayload {
   user_id: string;
