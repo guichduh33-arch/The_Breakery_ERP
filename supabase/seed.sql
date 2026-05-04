@@ -100,13 +100,13 @@ BEGIN
   INSERT INTO user_profiles (
     auth_user_id, employee_code, full_name, pin_hash, role_code, is_active
   ) VALUES (
-    v_admin_uid, 'EMP000', 'Mamat (Owner)', hash_pin('1234'), 'SUPER_ADMIN', true
+    v_admin_uid, 'EMP000', 'Mamat (Owner)', hash_pin('123456'), 'SUPER_ADMIN', true
   ) ON CONFLICT (employee_code) DO NOTHING;
 
   INSERT INTO user_profiles (
     auth_user_id, employee_code, full_name, pin_hash, role_code, is_active
   ) VALUES (
-    v_cashier_uid, 'EMP001', 'Test Cashier', hash_pin('5678'), 'CASHIER', true
+    v_cashier_uid, 'EMP001', 'Test Cashier', hash_pin('567890'), 'CASHIER', true
   ) ON CONFLICT (employee_code) DO NOTHING;
 END $$;
 
