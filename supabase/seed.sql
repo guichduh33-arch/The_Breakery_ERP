@@ -97,16 +97,20 @@ BEGIN
     email_change = EXCLUDED.email_change;
 
   -- USER PROFILES (PIN hashés via hash_pin())
+  -- IDs déterministes pour aligner avec apps/pos/src/features/auth/UserPicker.tsx (v1).
+  -- Session 2: remplacer par RPC list_login_users() qui retourne l'id+full_name.
   INSERT INTO user_profiles (
-    auth_user_id, employee_code, full_name, pin_hash, role_code, is_active
+    id, auth_user_id, employee_code, full_name, pin_hash, role_code, is_active
   ) VALUES (
-    v_admin_uid, 'EMP000', 'Mamat (Owner)', hash_pin('1234'), 'SUPER_ADMIN', true
+    '00000000-0000-0000-0000-000000000001'::uuid,
+    v_admin_uid, 'EMP000', 'Mamat (Owner)', hash_pin('123456'), 'SUPER_ADMIN', true
   ) ON CONFLICT (employee_code) DO NOTHING;
 
   INSERT INTO user_profiles (
-    auth_user_id, employee_code, full_name, pin_hash, role_code, is_active
+    id, auth_user_id, employee_code, full_name, pin_hash, role_code, is_active
   ) VALUES (
-    v_cashier_uid, 'EMP001', 'Test Cashier', hash_pin('5678'), 'CASHIER', true
+    '00000000-0000-0000-0000-000000000002'::uuid,
+    v_cashier_uid, 'EMP001', 'Test Cashier', hash_pin('567890'), 'CASHIER', true
   ) ON CONFLICT (employee_code) DO NOTHING;
 END $$;
 

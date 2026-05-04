@@ -5,6 +5,10 @@ import { Numpad } from './Numpad.js';
 
 export interface NumpadPinProps {
   onSubmit: (pin: string) => void;
+  /**
+   * Exact PIN length. Session 1 expects 6 digits exact (see addendum, decision PIN).
+   * The submit button stays disabled until `pin.length === maxLength`.
+   */
   maxLength?: number;
   isLoading?: boolean;
   error?: string | null;
@@ -31,7 +35,7 @@ export function NumpadPin({ onSubmit, maxLength = 6, isLoading, error }: NumpadP
         <Button variant="secondary" onClick={() => setPin('')}>Cancel</Button>
         <Button
           variant="gold"
-          disabled={pin.length < 4 || isLoading}
+          disabled={pin.length !== maxLength || isLoading}
           onClick={() => onSubmit(pin)}
         >
           {isLoading ? 'Verifying...' : 'Verify'}

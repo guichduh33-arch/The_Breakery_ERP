@@ -6,6 +6,8 @@ import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.47.10';
 import { handleCors, jsonResponse } from '../_shared/cors.ts';
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 interface ProcessPaymentPayload {
   session_id: string;
   order_type: 'dine_in' | 'take_out' | 'delivery';
@@ -16,6 +18,12 @@ interface ProcessPaymentPayload {
     cash_received?: number;
     change_given?: number;
   };
+  /**
+   * Optional UUID v4 idempotency key (decision D8 of the session-1 addendum).
+   * When the same key is replayed against this function, the underlying RPC
+   * returns the existing order instead of creating a new one.
+   */
+  idempotency_key?: string;
 }
 
 serve(async (req) => {
@@ -48,6 +56,11 @@ serve(async (req) => {
     }
   }
 
+  // Optional idempotency key — must be a UUID when provided.
+  if (body.idempotency_key !== undefined && !UUID_REGEX.test(body.idempotency_key)) {
+    return jsonResponse({ error: 'invalid_idempotency_key' }, 400);
+  }
+
   // Use a per-request client carrying the user JWT so the RPC sees auth.uid()
   const url = Deno.env.get('SUPABASE_URL');
   const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
@@ -65,6 +78,8 @@ serve(async (req) => {
     p_order_type: body.order_type,
     p_items: body.items,
     p_payment: body.payment,
+    // Forward optional idempotency key — RPC stores/returns existing order on replay (D8)
+    ...(body.idempotency_key ? { p_idempotency_key: body.idempotency_key } : {}),
   });
 
   if (error) {

@@ -31,6 +31,7 @@ CREATE TABLE orders (
   subtotal        DECIMAL(12,2) NOT NULL,
   tax_amount      DECIMAL(12,2) NOT NULL,
   total           DECIMAL(12,2) NOT NULL,
+  idempotency_key UUID UNIQUE,
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
   paid_at         TIMESTAMPTZ

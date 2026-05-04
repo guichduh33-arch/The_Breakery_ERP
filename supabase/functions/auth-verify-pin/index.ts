@@ -4,7 +4,7 @@ import { handleCors, jsonResponse } from '../_shared/cors.ts';
 import { getAdminClient } from '../_shared/supabase-admin.ts';
 import { checkRateLimit, getClientIp } from '../_shared/rate-limit.ts';
 
-const PIN_REGEX = /^\d{4,6}$/;
+const PIN_REGEX = /^\d{6}$/;
 const MAX_FAILED = 5;
 const LOCKOUT_MIN = 15;
 

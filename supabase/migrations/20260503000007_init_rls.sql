@@ -20,7 +20,7 @@ CREATE POLICY "super_admin_write" ON permissions FOR ALL USING (
 -- USER PROFILES — lecture auth, écriture self ou users.update
 -- ============================================================
 ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "auth_read" ON user_profiles FOR SELECT USING (is_authenticated());
+CREATE POLICY "auth_read" ON user_profiles FOR SELECT USING (is_authenticated() AND deleted_at IS NULL);
 CREATE POLICY "perm_create" ON user_profiles FOR INSERT
   WITH CHECK (has_permission(auth.uid(), 'users.create'));
 CREATE POLICY "perm_update" ON user_profiles FOR UPDATE USING (
@@ -41,7 +41,7 @@ CREATE POLICY "own_sessions_read" ON user_sessions FOR SELECT USING (
 -- CATEGORIES — lecture auth, écriture products.create/update
 -- ============================================================
 ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "auth_read" ON categories FOR SELECT USING (is_authenticated());
+CREATE POLICY "auth_read" ON categories FOR SELECT USING (is_authenticated() AND deleted_at IS NULL);
 CREATE POLICY "perm_create" ON categories FOR INSERT
   WITH CHECK (has_permission(auth.uid(), 'products.create'));
 CREATE POLICY "perm_update" ON categories FOR UPDATE
@@ -51,7 +51,7 @@ CREATE POLICY "perm_update" ON categories FOR UPDATE
 -- PRODUCTS — lecture auth, écriture products.create/update
 -- ============================================================
 ALTER TABLE products ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "auth_read" ON products FOR SELECT USING (is_authenticated());
+CREATE POLICY "auth_read" ON products FOR SELECT USING (is_authenticated() AND deleted_at IS NULL);
 CREATE POLICY "perm_create" ON products FOR INSERT
   WITH CHECK (has_permission(auth.uid(), 'products.create'));
 CREATE POLICY "perm_update" ON products FOR UPDATE

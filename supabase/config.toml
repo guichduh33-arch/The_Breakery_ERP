@@ -364,6 +364,24 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
+# Auth PIN flow Edge Functions: public (no Supabase JWT required).
+# Authentication is handled internally via custom session token (x-session-token header).
+[functions.auth-verify-pin]
+verify_jwt = false
+
+[functions.auth-get-session]
+verify_jwt = false
+
+[functions.auth-logout]
+verify_jwt = false
+
+[functions.auth-change-pin]
+verify_jwt = false
+
+# process-payment requires a valid Supabase JWT (RLS context for the calling user).
+[functions.process-payment]
+verify_jwt = true
+
 [analytics]
 # Disabled on Windows: analytics container requires Docker TCP on localhost:2375
 # which is not available with Docker Desktop named-pipe context.

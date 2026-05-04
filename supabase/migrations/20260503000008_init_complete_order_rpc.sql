@@ -2,10 +2,11 @@
 -- Phase 2 / migration 9 : RPC central transactionnel
 
 CREATE OR REPLACE FUNCTION complete_order_with_payment(
-  p_session_id UUID,
-  p_order_type order_type,
-  p_items      JSONB,        -- [{product_id: uuid, quantity: number, unit_price: number}]
-  p_payment    JSONB         -- {method, amount, cash_received?, change_given?}
+  p_session_id      UUID,
+  p_order_type      order_type,
+  p_items           JSONB,        -- [{product_id: uuid, quantity: number, unit_price: number}]
+  p_payment         JSONB,        -- {method, amount, cash_received?, change_given?}
+  p_idempotency_key UUID DEFAULT NULL
 ) RETURNS JSONB
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
 AS $$
@@ -35,6 +36,24 @@ BEGIN
 
   IF NOT has_permission(v_user_id, 'pos.sale.create') THEN
     RAISE EXCEPTION 'Permission denied: pos.sale.create' USING ERRCODE = 'P0003';
+  END IF;
+
+  -- D8: Idempotency check
+  IF p_idempotency_key IS NOT NULL THEN
+    SELECT id INTO v_order_id FROM orders WHERE idempotency_key = p_idempotency_key;
+    IF v_order_id IS NOT NULL THEN
+      RETURN (
+        SELECT jsonb_build_object(
+          'order_id', id,
+          'order_number', order_number,
+          'subtotal', subtotal,
+          'tax_amount', tax_amount,
+          'total', total,
+          'change_given', NULL,
+          'idempotent_replay', true
+        ) FROM orders WHERE id = v_order_id
+      );
+    END IF;
   END IF;
 
   -- 1. Verify session ouverte appartient au caller
@@ -85,10 +104,10 @@ BEGIN
   -- 5. INSERT order
   INSERT INTO orders (
     order_number, session_id, served_by, order_type, status,
-    subtotal, tax_amount, total, paid_at
+    subtotal, tax_amount, total, idempotency_key, paid_at
   ) VALUES (
     v_order_number, p_session_id, v_profile_id, p_order_type, 'paid',
-    v_subtotal, v_tax_amount, v_subtotal, now()
+    v_subtotal, v_tax_amount, v_subtotal, p_idempotency_key, now()
   ) RETURNING id INTO v_order_id;
 
   -- 6. INSERT order_items + stock_movements + decrement
