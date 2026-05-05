@@ -105,10 +105,7 @@ export function ModifierModal({
       // single_select: tapping the already-selected option in a non-required
       // group toggles it OFF. In a required group, we keep at least the
       // previous selection (no-op).
-      if (
-        existing &&
-        existing.option_label === option.option_label
-      ) {
+      if (existing?.option_label === option.option_label) {
         if (group.group_required) return prev; // can't deselect required
         return prev.filter((s) => s.group_name !== group.group_name);
       }

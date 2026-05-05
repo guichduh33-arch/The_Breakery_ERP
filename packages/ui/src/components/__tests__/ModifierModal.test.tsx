@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
-import type { ModifierGroup } from '@breakery/domain';
+import type { ModifierGroup, SelectedModifiers } from '@breakery/domain';
 import { ModifierModal } from '../ModifierModal.js';
 
 const product = { id: 'p1', name: 'Americano', retail_price: 35000 };
@@ -142,7 +142,7 @@ describe('ModifierModal', () => {
     fireEvent.click(screen.getByRole('button', { name: /Oat milk/ }));
     fireEvent.click(screen.getByRole('button', { name: /Add to cart/i }));
     expect(onConfirm).toHaveBeenCalledTimes(1);
-    const arg = onConfirm.mock.calls[0]?.[0];
+    const arg = onConfirm.mock.calls[0]?.[0] as SelectedModifiers;
     expect(arg).toEqual(
       expect.arrayContaining([
         { group_name: 'Temperature', option_label: 'Hot', price_adjustment: 0 },
