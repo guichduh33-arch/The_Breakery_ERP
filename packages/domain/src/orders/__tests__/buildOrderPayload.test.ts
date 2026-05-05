@@ -113,4 +113,36 @@ describe('buildOrderPayload', () => {
     const payload = buildOrderPayload('session-1', cart, payment);
     expect('loyalty_points_redeemed' in payload).toBe(false);
   });
+
+  it('includes table_number when cart has tableNumber', () => {
+    const cart: Cart = {
+      order_type: 'dine_in',
+      items: [{ id: 'l1', product_id: 'p1', name: 'Latte', unit_price: 40000, quantity: 1, modifiers: [] }],
+      tableNumber: 'T-03',
+    };
+    const payment: PaymentInput = { method: 'cash', amount: 40000, cash_received: 40000, change_given: 0 };
+    const payload = buildOrderPayload('session-1', cart, payment);
+    expect(payload.table_number).toBe('T-03');
+  });
+
+  it('omits table_number when cart has no tableNumber', () => {
+    const cart: Cart = {
+      order_type: 'dine_in',
+      items: [{ id: 'l1', product_id: 'p1', name: 'Latte', unit_price: 40000, quantity: 1, modifiers: [] }],
+    };
+    const payment: PaymentInput = { method: 'cash', amount: 40000, cash_received: 40000, change_given: 0 };
+    const payload = buildOrderPayload('session-1', cart, payment);
+    expect('table_number' in payload).toBe(false);
+  });
+
+  it('omits table_number when cart tableNumber is null', () => {
+    const cart: Cart = {
+      order_type: 'dine_in',
+      items: [{ id: 'l1', product_id: 'p1', name: 'Latte', unit_price: 40000, quantity: 1, modifiers: [] }],
+      tableNumber: null,
+    };
+    const payment: PaymentInput = { method: 'cash', amount: 40000, cash_received: 40000, change_given: 0 };
+    const payload = buildOrderPayload('session-1', cart, payment);
+    expect('table_number' in payload).toBe(false);
+  });
 });

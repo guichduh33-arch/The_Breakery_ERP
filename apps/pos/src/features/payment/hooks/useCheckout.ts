@@ -31,11 +31,12 @@ export function useCheckout() {
       if (!sessionId) throw new Error('no_open_shift');
       const accessToken = await getAccessToken();
       const { useCartStore } = await import('@/stores/cartStore');
-      const { customerId, loyaltyPointsToRedeem } = useCartStore.getState().cart;
+      const { customerId, loyaltyPointsToRedeem, tableNumber } = useCartStore.getState().cart;
       const cartWithLoyalty: typeof input.cart = {
         ...input.cart,
         ...(customerId ? { customerId } : {}),
         ...(loyaltyPointsToRedeem ? { loyaltyPointsToRedeem } : {}),
+        ...(tableNumber ? { tableNumber } : {}),
       };
       const payload = buildOrderPayload(sessionId, cartWithLoyalty, input.payment, idempotencyKey);
 

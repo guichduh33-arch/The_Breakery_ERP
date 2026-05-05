@@ -21,5 +21,6 @@ export function buildOrderPayload(
     ...(idempotencyKey ? { idempotency_key: idempotencyKey } : {}),
     ...(cart.customerId ? { customer_id: cart.customerId } : {}),
     ...(cart.loyaltyPointsToRedeem ? { loyalty_points_redeemed: cart.loyaltyPointsToRedeem } : {}),
+    ...(cart.tableNumber ? { table_number: cart.tableNumber } : {}),
   };
 }

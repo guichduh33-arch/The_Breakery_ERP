@@ -2,19 +2,13 @@ import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 import { toast } from 'sonner';
 import type { JSX } from 'react';
+import type { RestaurantTable } from '@breakery/domain';
 import { cn } from '../lib/cn.js';
 import { Button } from '../primitives/Button.js';
 import { ScrollArea } from '../primitives/ScrollArea.js';
 import { FullScreenModal } from './FullScreenModal.js';
 
-// TODO: switch to @breakery/domain types once packages/domain/src/tables/types.ts lands
-export interface RestaurantTable {
-  id: string;
-  name: string;
-  seats: number;
-  sort_order: number;
-  is_active: boolean;
-}
+export type { RestaurantTable };
 
 export interface TableSelectorModalProps {
   open: boolean;

@@ -1,8 +1,3 @@
-// NOTE: Cart.tableNumber is not yet on the Cart type (added by integration agent in session 4).
-// HeldOrder.cart.tableNumber is a separate snapshot field. When building from a Cart, callers
-// must pass tableNumber explicitly via opts. fromHeldOrder returns a Cart without tableNumber
-// (the integration agent will reconcile once Cart is extended).
-
 import type { Cart } from '../types/cart.js';
 import type { HeldOrder } from './types.js';
 
@@ -22,7 +17,7 @@ export function toHeldOrder(cart: Cart, opts: ToHeldOrderOpts = {}): HeldOrder {
       customerId: cart.customerId ?? null,
       loyaltyPointsToRedeem: cart.loyaltyPointsToRedeem ?? 0,
       orderType: opts.orderType ?? (cart.order_type === 'dine_in' ? 'dine_in' : 'take_out'),
-      tableNumber: opts.tableNumber ?? null,
+      tableNumber: opts.tableNumber !== undefined ? opts.tableNumber : (cart.tableNumber ?? null),
     },
   };
   if (opts.notes !== undefined) {
@@ -39,6 +34,9 @@ export function fromHeldOrder(held: HeldOrder): Cart {
   };
   if (held.cart.customerId !== null) {
     cart.customerId = held.cart.customerId;
+  }
+  if (held.cart.tableNumber !== null) {
+    cart.tableNumber = held.cart.tableNumber;
   }
   return cart;
 }

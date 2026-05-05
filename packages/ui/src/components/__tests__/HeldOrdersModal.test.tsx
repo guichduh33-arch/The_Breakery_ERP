@@ -7,8 +7,8 @@ const makeEntry = (overrides: Partial<HeldOrder> = {}): HeldOrder => ({
   heldAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
   cart: {
     items: [
-      { id: 'i1', name: 'Americano', quantity: 2, unit_price: 35000, modifiers: [] },
-      { id: 'i2', name: 'Croissant', quantity: 1, unit_price: 25000, modifiers: [] },
+      { id: 'i1', product_id: 'p1', name: 'Americano', quantity: 2, unit_price: 35000, modifiers: [] },
+      { id: 'i2', product_id: 'p2', name: 'Croissant', quantity: 1, unit_price: 25000, modifiers: [] },
     ],
     customerId: null,
     loyaltyPointsToRedeem: 0,

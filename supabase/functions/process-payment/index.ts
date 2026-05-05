@@ -26,6 +26,8 @@ interface ProcessPaymentPayload {
   idempotency_key?: string;
   customer_id?: string;
   loyalty_points_redeemed?: number;
+  /** Session 4: dine-in table name (e.g. "T-03"). Forwarded to RPC v4 as p_table_number. */
+  table_number?: string;
 }
 
 serve(async (req) => {
@@ -85,6 +87,8 @@ serve(async (req) => {
     // Forward optional customer + loyalty redemption (session 3)
     ...(body.customer_id ? { p_customer_id: body.customer_id } : {}),
     ...(body.loyalty_points_redeemed ? { p_loyalty_points_redeemed: body.loyalty_points_redeemed } : {}),
+    // Forward optional table_number (session 4 — RPC v4)
+    ...(body.table_number ? { p_table_number: body.table_number } : {}),
   });
 
   if (error) {

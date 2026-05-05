@@ -1,6 +1,7 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 import { useState, type JSX } from 'react';
+import type { HeldOrder } from '@breakery/domain';
 import { cn } from '../lib/cn.js';
 import { Button } from '../primitives/Button.js';
 import { ScrollArea } from '../primitives/ScrollArea.js';
@@ -14,20 +15,14 @@ import {
   DialogTitle,
 } from '../primitives/Dialog.js';
 
-// TODO: switch to @breakery/domain types once packages/domain/src/heldOrders/types.ts lands
+export type { HeldOrder };
+
 export interface HeldOrderCart {
   items: { id: string; name: string; quantity: number; unit_price: number; modifiers: unknown[] }[];
   customerId: string | null;
   loyaltyPointsToRedeem: number;
   orderType: 'dine_in' | 'take_out';
   tableNumber: string | null;
-}
-
-export interface HeldOrder {
-  id: string;
-  heldAt: string;
-  cart: HeldOrderCart;
-  notes?: string;
 }
 
 export interface HeldOrdersModalProps {
