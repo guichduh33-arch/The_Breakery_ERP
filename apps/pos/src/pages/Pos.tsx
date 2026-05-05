@@ -4,17 +4,15 @@ import { useNavigate } from 'react-router-dom';
 import { LogOut, Settings } from 'lucide-react';
 import { Button } from '@breakery/ui';
 import { CategorySidebar } from '@/features/products/CategorySidebar';
-import { ProductGrid } from '@/features/products/ProductGrid';
+import { ProductTapHandler } from '@/features/products/ProductTapHandler';
 import { ActiveOrderPanel } from '@/features/cart/ActiveOrderPanel';
 import { OpenShiftModal } from '@/features/shift/OpenShiftModal';
 import { PaymentTerminal } from '@/features/payment/PaymentTerminal';
-import { useCartStore } from '@/stores/cartStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useCurrentShift } from '@/features/shift/hooks/useShift';
 
 export default function PosPage() {
   const navigate = useNavigate();
-  const add = useCartStore((s) => s.add);
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const [selectedSlug, setSelectedSlug] = useState<string | null>('favorites');
@@ -49,7 +47,7 @@ export default function PosPage() {
               {selectedSlug === 'favorites' ? 'Favorites' : selectedSlug ?? 'All'}
             </h1>
           </div>
-          <ProductGrid selectedSlug={selectedSlug} onSelect={add} />
+          <ProductTapHandler selectedSlug={selectedSlug} />
         </main>
         <ActiveOrderPanel />
       </div>

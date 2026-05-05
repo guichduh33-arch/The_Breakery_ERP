@@ -1,22 +1,114 @@
 // apps/pos/src/stores/cartStore.ts
+//
+// Session 2 extension: lockedItemIds + canEdit guard + sendCurrentBatch helper.
+// Persisted in sessionStorage so a tab reload doesn't drop the lock state.
 import { create } from 'zustand';
-import { addItem, removeItem, updateQuantity, clearCart, setOrderType } from '@breakery/domain';
-import type { Cart, OrderType, Product } from '@breakery/domain';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import {
+  addItem,
+  removeItem,
+  updateQuantity,
+  clearCart,
+  setOrderType,
+} from '@breakery/domain';
+import type {
+  Cart,
+  CartItem,
+  OrderType,
+  Product,
+  SelectedModifiers,
+} from '@breakery/domain';
 
 interface CartState {
   cart: Cart;
-  add: (product: Product) => void;
-  update: (productId: string, quantity: number) => void;
-  remove: (productId: string) => void;
+  /** Line ids that have been "sent to kitchen" — read-only afterwards. */
+  lockedItemIds: string[];
+
+  // Actions
+  add: (product: Product, modifiers?: SelectedModifiers) => void;
+  update: (lineId: string, quantity: number) => void;
+  remove: (lineId: string) => void;
   clear: () => void;
   setOrderType: (type: OrderType) => void;
+
+  // Locking
+  canEdit: (lineId: string) => boolean;
+  markLocked: (lineIds: string[]) => void;
+  unlockedItems: () => CartItem[];
+  unlockedItemIds: () => string[];
 }
 
-export const useCartStore = create<CartState>((set) => ({
-  cart: { items: [], order_type: 'dine_in' },
-  add: (product) => set((s) => ({ cart: addItem(s.cart, product) })),
-  update: (id, qty) => set((s) => ({ cart: updateQuantity(s.cart, id, qty) })),
-  remove: (id) => set((s) => ({ cart: removeItem(s.cart, id) })),
-  clear: () => set((s) => ({ cart: clearCart(s.cart) })),
-  setOrderType: (type) => set((s) => ({ cart: setOrderType(s.cart, type) })),
-}));
+export const useCartStore = create<CartState>()(
+  persist(
+    (set, get) => ({
+      cart: { items: [], order_type: 'dine_in' },
+      lockedItemIds: [],
+
+      add: (product, modifiers = []) =>
+        set((s) => ({ cart: addItem(s.cart, product, modifiers) })),
+
+      update: (id, qty) =>
+        set((s) => {
+          if (!get().canEdit(id)) return s; // no-op if locked
+          return { cart: updateQuantity(s.cart, id, qty) };
+        }),
+
+      remove: (id) =>
+        set((s) => {
+          if (!get().canEdit(id)) return s; // no-op if locked
+          return { cart: removeItem(s.cart, id) };
+        }),
+
+      clear: () =>
+        set((s) => ({
+          // `Clear` only wipes unlocked items; locked items survive until
+          // checkout completes. This matches K3 (incremental send) so that the
+          // cashier can't accidentally drop already-sent items.
+          cart: {
+            ...s.cart,
+            items: s.cart.items.filter((i) => s.lockedItemIds.includes(i.id)),
+          },
+        })),
+
+      setOrderType: (type) => set((s) => ({ cart: setOrderType(s.cart, type) })),
+
+      canEdit: (lineId) => !get().lockedItemIds.includes(lineId),
+
+      markLocked: (lineIds) =>
+        set((s) => ({
+          lockedItemIds: Array.from(
+            new Set([...s.lockedItemIds, ...lineIds]),
+          ),
+        })),
+
+      unlockedItems: () => {
+        const { cart, lockedItemIds } = get();
+        return cart.items.filter((i) => !lockedItemIds.includes(i.id));
+      },
+
+      unlockedItemIds: () =>
+        get()
+          .cart.items.filter((i) => !get().lockedItemIds.includes(i.id))
+          .map((i) => i.id),
+    }),
+    {
+      name: 'breakery.cart.v2',
+      storage: createJSONStorage(() => sessionStorage),
+      partialize: (state) => ({
+        cart: state.cart,
+        lockedItemIds: state.lockedItemIds,
+      }),
+    },
+  ),
+);
+
+/**
+ * Reset the entire cart and lock state. Called by the payment flow once an
+ * order has been completed successfully.
+ */
+export function resetCartAfterCheckout(): void {
+  useCartStore.setState((s) => ({
+    cart: clearCart(s.cart),
+    lockedItemIds: [],
+  }));
+}

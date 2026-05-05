@@ -138,3 +138,18 @@ INSERT INTO products (sku, name, category_id, retail_price, image_url, current_s
   ('SND-AMER',  'American Bagel',  '44444444-4444-4444-4444-444444444444', 70000,  'https://via.placeholder.com/400x400.png?text=Bagel',      50, false),
   ('SND-CHEE',  'Cheesy Brie',     '44444444-4444-4444-4444-444444444444', 70000,  'https://via.placeholder.com/400x400.png?text=Cheesy',     50, false)
 ON CONFLICT (sku) DO NOTHING;
+
+-- ============================================================
+-- PRODUCT MODIFIERS (session 2)
+-- Catégorie Beverage : Temperature (Hot/Ice obligatoire) + Milk (optionnel +5000 IDR)
+-- ============================================================
+INSERT INTO product_modifiers (
+  category_id, group_name, group_sort_order, group_required, group_type,
+  option_label, option_icon, option_sort_order, price_adjustment, is_default, is_active
+) VALUES
+  ('11111111-1111-1111-1111-111111111111', 'Temperature', 1, true,  'single_select', 'Hot',         E'☕',     1,    0, true,  true),
+  ('11111111-1111-1111-1111-111111111111', 'Temperature', 1, true,  'single_select', 'Ice',         E'\U0001F9CA', 2,    0, false, true),
+  ('11111111-1111-1111-1111-111111111111', 'Milk',        2, false, 'single_select', 'Whole milk',  E'\U0001F95B', 1,    0, true,  true),
+  ('11111111-1111-1111-1111-111111111111', 'Milk',        2, false, 'single_select', 'Oat milk',    E'\U0001F33E', 2, 5000, false, true),
+  ('11111111-1111-1111-1111-111111111111', 'Milk',        2, false, 'single_select', 'Almond milk', E'\U0001F330', 3, 5000, false, true)
+ON CONFLICT DO NOTHING;
