@@ -411,3 +411,59 @@ describe('Session 4 golden path — table selection before checkout', () => {
     expect(state.lockedItemIds).toHaveLength(0);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Session 5 — tablet pickup-and-pay golden path
+// ---------------------------------------------------------------------------
+
+describe('Session 5 golden path — tablet pickup-and-pay', () => {
+  const TABLET_ITEMS = [
+    { id: 'ti1', product_id: 'p1', name: 'Americano', unit_price: 35000, quantity: 1, modifiers: [] as never[] },
+    { id: 'ti2', product_id: 'p2', name: 'Croissant', unit_price: 25000, quantity: 1, modifiers: [] as never[] },
+  ];
+
+  beforeEach(() => {
+    useCartStore.setState({
+      cart: { items: [], order_type: 'dine_in' },
+      lockedItemIds: [],
+      attachedCustomer: null,
+      pickedUpOrderId: null,
+    });
+  });
+
+  it('setPickedUpOrderId stores the order id', () => {
+    useCartStore.getState().setPickedUpOrderId('tablet-order-99');
+    expect(useCartStore.getState().pickedUpOrderId).toBe('tablet-order-99');
+  });
+
+  it('restoreCart after pickup does NOT touch pickedUpOrderId', () => {
+    useCartStore.getState().setPickedUpOrderId('tablet-order-99');
+    useCartStore.getState().restoreCart({
+      items: TABLET_ITEMS,
+      order_type: 'dine_in',
+      tableNumber: 'T-03',
+    });
+    expect(useCartStore.getState().pickedUpOrderId).toBe('tablet-order-99');
+    expect(useCartStore.getState().cart.items).toHaveLength(2);
+  });
+
+  it('markLocked after restoreCart locks all tablet items', () => {
+    useCartStore.getState().restoreCart({ items: TABLET_ITEMS, order_type: 'dine_in' });
+    useCartStore.getState().markLocked(TABLET_ITEMS.map((i) => i.id));
+    expect(useCartStore.getState().lockedItemIds).toEqual(['ti1', 'ti2']);
+    expect(useCartStore.getState().canEdit('ti1')).toBe(false);
+  });
+
+  it('resetCartAfterCheckout clears pickedUpOrderId (session 5 acceptance)', () => {
+    useCartStore.setState({
+      cart: { items: TABLET_ITEMS, order_type: 'dine_in', tableNumber: 'T-03' },
+      lockedItemIds: ['ti1', 'ti2'],
+      attachedCustomer: null,
+      pickedUpOrderId: 'tablet-order-99',
+    });
+    resetCartAfterCheckout();
+    expect(useCartStore.getState().pickedUpOrderId).toBeNull();
+    expect(useCartStore.getState().lockedItemIds).toHaveLength(0);
+    expect(useCartStore.getState().cart.tableNumber).toBeUndefined();
+  });
+});

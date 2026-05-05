@@ -5,6 +5,9 @@ import PosPage from '@/pages/Pos';
 import { useAuthStore } from '@/stores/authStore';
 
 const KdsPage = lazy(() => import('@/pages/Kds'));
+const TabletLayout = lazy(() => import('@/pages/tablet/TabletLayout'));
+const TabletOrderPage = lazy(() => import('@/pages/tablet/TabletOrderPage'));
+const TabletOrdersPage = lazy(() => import('@/pages/tablet/TabletOrdersPage'));
 
 function Protected({ children }: { children: ReactNode }) {
   const isAuth = useAuthStore((s) => s.isAuthenticated);
@@ -34,6 +37,32 @@ export function AppRoutes() {
           </Protected>
         }
       />
+      <Route
+        path="/tablet"
+        element={
+          <Suspense fallback={<RouteFallback />}>
+            <TabletLayout />
+          </Suspense>
+        }
+      >
+        <Route index element={<Navigate to="order" replace />} />
+        <Route
+          path="order"
+          element={
+            <Suspense fallback={<RouteFallback />}>
+              <TabletOrderPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="orders"
+          element={
+            <Suspense fallback={<RouteFallback />}>
+              <TabletOrdersPage />
+            </Suspense>
+          }
+        />
+      </Route>
       <Route path="*" element={<Navigate to="/pos" replace />} />
     </Routes>
   );

@@ -66,3 +66,16 @@ export {
   type HeldOrder,
   type HeldOrderCart,
 } from './components/HeldOrdersModal.js';
+export {
+  TabletInboxRow,
+  type TabletInboxRowProps,
+  type TabletOrderEntry,
+} from './components/TabletInboxRow.js';
+export {
+  TabletOrderCard,
+  type TabletOrderCardProps,
+  type TabletOrderCardOrder,
+  type TabletOrderItem,
+  type OrderStatus,
+  type KitchenStatus,
+} from './components/TabletOrderCard.js';

@@ -11,6 +11,7 @@ import { LoyaltyPointsLine } from '@/features/loyalty/components/LoyaltyPointsLi
 import { RedeemButton } from '@/features/loyalty/components/RedeemButton';
 import { HeldOrdersInboxButton } from '@/features/heldOrders/components/HeldOrdersInboxButton';
 import { HoldOrderButton } from '@/features/heldOrders/components/HoldOrderButton';
+import { TabletInboxButton } from '@/features/inbox/components/TabletInboxButton';
 import { TableSelectorButton } from '@/features/tables/components/TableSelectorButton';
 import { CartItemRow } from './CartItemRow';
 import { SendToKitchenButton } from './SendToKitchenButton';
@@ -49,6 +50,7 @@ export function ActiveOrderPanel({ onOpenCustomerSearch }: ActiveOrderPanelProps
         <OrderTypeTabs value={cart.order_type} onChange={setOrderType} />
         <div className="mt-3 flex gap-2">
           <HeldOrdersInboxButton />
+          <TabletInboxButton />
           <Button
             variant="ghostDestructive"
             size="sm"

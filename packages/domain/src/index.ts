@@ -10,3 +10,4 @@ export * from './customers/index.js';
 export * from './loyalty/index.js';
 export * from './heldOrders/index.js';
 export * from './tables/index.js';
+export * from './tablet/index.js';

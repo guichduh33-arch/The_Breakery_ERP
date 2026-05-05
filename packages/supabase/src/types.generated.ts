@@ -531,6 +531,7 @@ export type Database = {
       orders: {
         Row: {
           created_at:                  string
+          created_via:                 string
           customer_id:                 string | null
           id:                          string
           idempotency_key:             string | null
@@ -540,17 +541,20 @@ export type Database = {
           order_number:                string
           order_type:                  Database["public"]["Enums"]["order_type"]
           paid_at:                     string | null
-          served_by:                   string
-          session_id:                  string
+          sent_to_kitchen_at:          string | null
+          served_by:                   string | null
+          session_id:                  string | null
           status:                      Database["public"]["Enums"]["order_status"]
           subtotal:                    number
           table_number:                string | null
           tax_amount:                  number
           total:                       number
           updated_at:                  string
+          waiter_id:                   string | null
         }
         Insert: {
           created_at?:                  string
+          created_via?:                 string
           customer_id?:                 string | null
           id?:                          string
           idempotency_key?:             string | null
@@ -560,17 +564,20 @@ export type Database = {
           order_number:                 string
           order_type?:                  Database["public"]["Enums"]["order_type"]
           paid_at?:                     string | null
-          served_by:                    string
-          session_id:                   string
+          sent_to_kitchen_at?:          string | null
+          served_by?:                   string | null
+          session_id?:                  string | null
           status?:                      Database["public"]["Enums"]["order_status"]
           subtotal:                     number
           table_number?:                string | null
           tax_amount:                   number
           total:                        number
           updated_at?:                  string
+          waiter_id?:                   string | null
         }
         Update: {
           created_at?:                  string
+          created_via?:                 string
           customer_id?:                 string | null
           id?:                          string
           idempotency_key?:             string | null
@@ -580,14 +587,16 @@ export type Database = {
           order_number?:                string
           order_type?:                  Database["public"]["Enums"]["order_type"]
           paid_at?:                     string | null
-          served_by?:                   string
-          session_id?:                  string
+          sent_to_kitchen_at?:          string | null
+          served_by?:                   string | null
+          session_id?:                  string | null
           status?:                      Database["public"]["Enums"]["order_status"]
           subtotal?:                    number
           table_number?:                string | null
           tax_amount?:                  number
           total?:                       number
           updated_at?:                  string
+          waiter_id?:                   string | null
         }
         Relationships: [
           {
@@ -609,6 +618,13 @@ export type Database = {
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "pos_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_waiter_id_fkey"
+            columns: ["waiter_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1019,6 +1035,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cancel_tablet_order: {
+        Args: { p_order_id: string }
+        Returns: Database["public"]["Tables"]["orders"]["Row"]
+      }
       complete_order_with_payment: {
         Args: {
           p_session_id:              string
@@ -1031,6 +1051,15 @@ export type Database = {
         }
         Returns: Json
       }
+      create_tablet_order: {
+        Args: {
+          p_waiter_id:    string
+          p_table_number: string
+          p_order_type:   Database["public"]["Enums"]["order_type"]
+          p_items:        Json
+        }
+        Returns: string
+      }
       has_permission: {
         Args: { p_perm: string; p_uid: string }
         Returns: boolean
@@ -1040,6 +1069,20 @@ export type Database = {
       mark_item_served: {
         Args: { p_item_id: string }
         Returns: Database["public"]["Tables"]["order_items"]["Row"]
+      }
+      pay_existing_order: {
+        Args: {
+          p_order_id:                string
+          p_payment:                 Json
+          p_customer_id?:            string | null
+          p_loyalty_points_redeemed?: number
+          p_idempotency_key?:        string | null
+        }
+        Returns: string
+      }
+      pickup_tablet_order: {
+        Args: { p_order_id: string; p_session_id: string }
+        Returns: Database["public"]["Tables"]["orders"]["Row"]
       }
       round_idr: { Args: { amount: number }; Returns: number }
       send_items_to_kitchen: {
@@ -1061,7 +1104,7 @@ export type Database = {
         | "purchase"
         | "waste"
         | "adjustment"
-      order_status: "draft" | "paid" | "voided"
+      order_status: "draft" | "pending_payment" | "paid" | "voided" | "completed"
       order_type: "dine_in" | "take_out" | "delivery"
       payment_method:
         | "cash"
