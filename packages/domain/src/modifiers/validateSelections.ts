@@ -1,8 +1,9 @@
 // packages/domain/src/modifiers/validateSelections.ts
 //
-// Guard: every `group_required` group must contain at least one selected option
-// before the user can confirm in the ModifierModal.
-// Spec §1 (M3): v1 = at most 1 selection per group, required boolean toggle.
+// Guard: every `group_required` group must have at least one selected option.
+// single_select: exactly-1 (ensured by UI radio — validated here as >= 1)
+// multi_select:  >= 1 selection required when group_required (no upper bound v1)
+// Spec §1 (M2): session 6 activates multi_select branch.
 
 import type { ModifierGroup, SelectedModifiers } from './types.js';
 
@@ -13,7 +14,8 @@ export interface ValidationError {
 
 /**
  * Returns an array of errors (one per offending group). Empty array means OK.
- * Optional groups are never flagged.
+ * Optional groups are never flagged regardless of group_type.
+ * Multi-select required groups need at least 1 selection (no max enforced v1).
  */
 export function validateSelections(
   groups: ModifierGroup[],
