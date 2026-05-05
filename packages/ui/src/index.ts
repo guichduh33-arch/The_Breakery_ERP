@@ -79,3 +79,12 @@ export {
   type OrderStatus,
   type KitchenStatus,
 } from './components/TabletOrderCard.js';
+export {
+  DiscountModal,
+  type DiscountModalProps,
+} from './components/DiscountModal.js';
+export {
+  PinVerificationModal,
+  type PinVerificationModalProps,
+  type VerifyResult,
+} from './components/PinVerificationModal.js';

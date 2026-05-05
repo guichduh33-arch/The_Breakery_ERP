@@ -8,7 +8,12 @@
 // same group. Required groups must have a selection before "Add to cart" is
 // enabled. Default options pre-selected at open.
 //
+// v2 (session 6): multi_select group_type supported via checkbox-style buttons.
+// Tapping toggles the option (add/remove); multiple options per group are
+// allowed simultaneously. group_required still requires ≥ 1 selection.
+//
 // Spec ref: 2026-05-05-session-2-modifiers-kds-spec.md §4.1
+// Spec ref: 2026-05-06-session-6-discounts-multi-modifiers-loyalty-mult-spec.md §4.6, M1-M3
 
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
@@ -100,11 +105,32 @@ export function ModifierModal({
       option_label: option.option_label,
       price_adjustment: option.price_adjustment,
     };
+
+    if (group.group_type === 'multi_select') {
+      setSelections((prev) => {
+        const alreadySelected = prev.some(
+          (s) => s.group_name === group.group_name && s.option_label === option.option_label,
+        );
+        if (alreadySelected) {
+          // Prevent deselecting the last option in a required group.
+          if (group.group_required) {
+            const groupSelections = prev.filter((s) => s.group_name === group.group_name);
+            if (groupSelections.length <= 1) return prev;
+          }
+          return prev.filter(
+            (s) => !(s.group_name === group.group_name && s.option_label === option.option_label),
+          );
+        }
+        return [...prev, next];
+      });
+      return;
+    }
+
+    // single_select: tapping the already-selected option in a non-required
+    // group toggles it OFF. In a required group, we keep at least the
+    // previous selection (no-op).
     setSelections((prev) => {
       const existing = prev.find((s) => s.group_name === group.group_name);
-      // single_select: tapping the already-selected option in a non-required
-      // group toggles it OFF. In a required group, we keep at least the
-      // previous selection (no-op).
       if (existing?.option_label === option.option_label) {
         if (group.group_required) return prev; // can't deselect required
         return prev.filter((s) => s.group_name !== group.group_name);
@@ -175,6 +201,7 @@ export function ModifierModal({
                         group.group_name,
                         option.option_label,
                       );
+                      const isMulti = group.group_type === 'multi_select';
                       return (
                         <Button
                           key={option.option_label}
@@ -187,6 +214,19 @@ export function ModifierModal({
                           aria-pressed={selected}
                         >
                           <span className="flex items-center gap-2">
+                            {isMulti ? (
+                              <span
+                                aria-hidden
+                                className={cn(
+                                  'h-4 w-4 rounded-sm border-2 flex items-center justify-center flex-shrink-0',
+                                  selected
+                                    ? 'bg-gold border-gold text-bg-base'
+                                    : 'border-border-strong bg-transparent',
+                                )}
+                              >
+                                {selected ? <span className="text-[10px] font-bold leading-none">✓</span> : null}
+                              </span>
+                            ) : null}
                             {option.option_icon ? (
                               <span aria-hidden className="text-lg">
                                 {option.option_icon}
