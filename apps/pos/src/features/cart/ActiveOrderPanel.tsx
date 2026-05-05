@@ -1,7 +1,7 @@
 // apps/pos/src/features/cart/ActiveOrderPanel.tsx
 import { useState } from 'react';
 import { ShoppingBag, CreditCard } from 'lucide-react';
-import { Button, Currency, OrderTypeTabs, RedeemPointsModal } from '@breakery/ui';
+import { Button, Currency, OrderTypeTabs, RedeemPointsModal, DiscountModal, PinVerificationModal } from '@breakery/ui';
 import { calculateTotals } from '@breakery/domain';
 import { useCartStore } from '@/stores/cartStore';
 import { usePaymentStore } from '@/stores/paymentStore';
@@ -13,6 +13,9 @@ import { HeldOrdersInboxButton } from '@/features/heldOrders/components/HeldOrde
 import { HoldOrderButton } from '@/features/heldOrders/components/HoldOrderButton';
 import { TabletInboxButton } from '@/features/inbox/components/TabletInboxButton';
 import { TableSelectorButton } from '@/features/tables/components/TableSelectorButton';
+import { DiscountButton } from '@/features/discounts/components/DiscountButton';
+import { useApplyCartDiscount } from '@/features/discounts/hooks/useApplyCartDiscount';
+import { useApplyLineDiscount, lineDiscountBase } from '@/features/discounts/hooks/useApplyLineDiscount';
 import { CartItemRow } from './CartItemRow';
 import { SendToKitchenButton } from './SendToKitchenButton';
 
@@ -35,6 +38,9 @@ export function ActiveOrderPanel({ onOpenCustomerSearch }: ActiveOrderPanelProps
   const openPayment = usePaymentStore((s) => s.open);
 
   const [redeemOpen, setRedeemOpen] = useState(false);
+
+  const cartDiscount = useApplyCartDiscount();
+  const lineDiscount = useApplyLineDiscount();
 
   const totals = calculateTotals(cart, TAX_RATE);
   const isEmpty = cart.items.length === 0;
@@ -92,6 +98,7 @@ export function ActiveOrderPanel({ onOpenCustomerSearch }: ActiveOrderPanelProps
               locked={lockedIds.includes(item.id)}
               onChangeQty={(q) => update(item.id, q)}
               onRemove={() => remove(item.id)}
+              onApplyLineDiscount={lineDiscount.openForItem}
             />
           ))
         )}
@@ -108,6 +115,14 @@ export function ActiveOrderPanel({ onOpenCustomerSearch }: ActiveOrderPanelProps
               <div className="flex justify-between text-text-secondary">
                 <span>Loyalty discount ({cart.loyaltyPointsToRedeem} pts)</span>
                 <span className="font-mono text-red-400">-<Currency amount={totals.redemption_amount} /></span>
+              </div>
+            )}
+            {cart.cartDiscount && (
+              <div className="flex justify-between text-text-secondary">
+                <span>
+                  Discount ({cart.cartDiscount.type === 'percentage' ? `${cart.cartDiscount.value}%` : 'fixed'})
+                </span>
+                <span className="font-mono text-red-400">-<Currency amount={cart.cartDiscount.amount} /></span>
               </div>
             )}
             <div className="flex justify-between text-text-secondary">
@@ -127,6 +142,10 @@ export function ActiveOrderPanel({ onOpenCustomerSearch }: ActiveOrderPanelProps
               disabled={totals.redemption_amount > 0}
             />
           )}
+          <DiscountButton
+            onClick={cartDiscount.openDiscountModal}
+            hasDiscount={Boolean(cart.cartDiscount)}
+          />
           <HoldOrderButton disabled={isEmpty} />
           <SendToKitchenButton />
           <Button variant="primary" size="lg" className="w-full" onClick={openPayment}>
@@ -143,6 +162,34 @@ export function ActiveOrderPanel({ onOpenCustomerSearch }: ActiveOrderPanelProps
           itemsTotal={totals.subtotal}
         />
       )}
+      <DiscountModal
+        open={cartDiscount.discountModalOpen}
+        onClose={cartDiscount.closeDiscountModal}
+        onConfirm={cartDiscount.onConfirm}
+        base={cartDiscount.base}
+        onRequireAuthorization={cartDiscount.onRequireAuthorization}
+      />
+      <PinVerificationModal
+        open={cartDiscount.pinModalOpen}
+        onClose={cartDiscount.onPinClose}
+        onVerified={cartDiscount.onPinVerified}
+        verifyFn={cartDiscount.verifyFn}
+      />
+      {lineDiscount.targetItem && (
+        <DiscountModal
+          open={Boolean(lineDiscount.targetItem)}
+          onClose={lineDiscount.closeDiscountModal}
+          onConfirm={lineDiscount.onConfirm}
+          base={lineDiscountBase(lineDiscount.targetItem)}
+          onRequireAuthorization={lineDiscount.onRequireAuthorization}
+        />
+      )}
+      <PinVerificationModal
+        open={lineDiscount.pinModalOpen}
+        onClose={lineDiscount.onPinClose}
+        onVerified={lineDiscount.onPinVerified}
+        verifyFn={lineDiscount.verifyFn}
+      />
     </aside>
   );
 }

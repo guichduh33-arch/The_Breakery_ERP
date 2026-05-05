@@ -3,15 +3,17 @@ import { Lock, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { CartItem } from '@breakery/domain';
 import { Button, Currency, QuantityStepper, cn } from '@breakery/ui';
+import { LineDiscountButton } from '@/features/discounts/components/LineDiscountButton';
 
 export interface CartItemRowProps {
   item: CartItem;
   locked: boolean;
   onChangeQty: (qty: number) => void;
   onRemove: () => void;
+  onApplyLineDiscount?: (item: CartItem) => void;
 }
 
-export function CartItemRow({ item, locked, onChangeQty, onRemove }: CartItemRowProps) {
+export function CartItemRow({ item, locked, onChangeQty, onRemove, onApplyLineDiscount }: CartItemRowProps) {
   const adj = item.modifiers.reduce((s, m) => s + m.price_adjustment, 0);
   const lineTotal = (item.unit_price + adj) * item.quantity;
 
@@ -51,7 +53,18 @@ export function CartItemRow({ item, locked, onChangeQty, onRemove }: CartItemRow
       </div>
       <div className="w-24 text-right shrink-0">
         <Currency amount={lineTotal} emphasis="gold" className="text-sm" />
+        {item.discount && (
+          <div className="text-xs text-red-400 font-mono">
+            -{item.discount.type === 'percentage' ? `${item.discount.value}%` : <Currency amount={item.discount.amount} />}
+          </div>
+        )}
       </div>
+      {onApplyLineDiscount && !locked && (
+        <LineDiscountButton
+          onClick={() => onApplyLineDiscount(item)}
+          hasDiscount={Boolean(item.discount)}
+        />
+      )}
       <Button
         variant="ghostDestructive"
         size="icon"

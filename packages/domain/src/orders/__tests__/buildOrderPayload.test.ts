@@ -145,4 +145,101 @@ describe('buildOrderPayload', () => {
     const payload = buildOrderPayload('session-1', cart, payment);
     expect('table_number' in payload).toBe(false);
   });
+
+  // Session 6: cart discount
+  it('includes discount_* when cart has cartDiscount', () => {
+    const cart: Cart = {
+      order_type: 'dine_in',
+      items: [{ id: 'l1', product_id: 'p1', name: 'Latte', unit_price: 40000, quantity: 1, modifiers: [] }],
+      cartDiscount: { type: 'percentage', value: 10, amount: 4000, reason: 'Staff meal' },
+    };
+    const payment: PaymentInput = { method: 'cash', amount: 36000, cash_received: 36000, change_given: 0 };
+    const payload = buildOrderPayload('session-1', cart, payment);
+    expect(payload.discount_amount).toBe(4000);
+    expect(payload.discount_type).toBe('percentage');
+    expect(payload.discount_value).toBe(10);
+    expect(payload.discount_reason).toBe('Staff meal');
+    expect('discount_authorized_by' in payload).toBe(false);
+  });
+
+  it('includes discount_authorized_by when cart discount has authorized_by', () => {
+    const cart: Cart = {
+      order_type: 'dine_in',
+      items: [{ id: 'l1', product_id: 'p1', name: 'Latte', unit_price: 40000, quantity: 1, modifiers: [] }],
+      cartDiscount: { type: 'percentage', value: 15, amount: 6000, reason: 'Manager comp', authorized_by: 'mgr-uuid' },
+    };
+    const payment: PaymentInput = { method: 'cash', amount: 34000, cash_received: 34000, change_given: 0 };
+    const payload = buildOrderPayload('session-1', cart, payment);
+    expect(payload.discount_authorized_by).toBe('mgr-uuid');
+  });
+
+  it('omits discount_* when cart has no cartDiscount', () => {
+    const cart: Cart = {
+      order_type: 'dine_in',
+      items: [{ id: 'l1', product_id: 'p1', name: 'Latte', unit_price: 40000, quantity: 1, modifiers: [] }],
+    };
+    const payment: PaymentInput = { method: 'cash', amount: 40000, cash_received: 40000, change_given: 0 };
+    const payload = buildOrderPayload('session-1', cart, payment);
+    expect('discount_amount' in payload).toBe(false);
+    expect('discount_type' in payload).toBe(false);
+  });
+
+  // Session 6: line discount
+  it('includes discount_* on item when item has discount', () => {
+    const cart: Cart = {
+      order_type: 'dine_in',
+      items: [{
+        id: 'l1', product_id: 'p1', name: 'Latte', unit_price: 40000, quantity: 1, modifiers: [],
+        discount: { type: 'fixed_amount', value: 5000, amount: 5000, reason: 'Damage' },
+      }],
+    };
+    const payment: PaymentInput = { method: 'cash', amount: 35000, cash_received: 35000, change_given: 0 };
+    const payload = buildOrderPayload('session-1', cart, payment);
+    expect(payload.items[0]?.discount_amount).toBe(5000);
+    expect(payload.items[0]?.discount_type).toBe('fixed_amount');
+    expect(payload.items[0]?.discount_reason).toBe('Damage');
+  });
+
+  it('omits discount_* on item when item has no discount', () => {
+    const cart: Cart = {
+      order_type: 'dine_in',
+      items: [{ id: 'l1', product_id: 'p1', name: 'Latte', unit_price: 40000, quantity: 1, modifiers: [] }],
+    };
+    const payment: PaymentInput = { method: 'cash', amount: 40000, cash_received: 40000, change_given: 0 };
+    const payload = buildOrderPayload('session-1', cart, payment);
+    expect('discount_amount' in (payload.items[0] ?? {})).toBe(false);
+  });
+
+  // Session 6: loyalty_multiplier
+  it('includes loyalty_multiplier=1.1 for Gold customer (lifetime >= 2000)', () => {
+    const cart: Cart = {
+      order_type: 'dine_in',
+      items: [{ id: 'l1', product_id: 'p1', name: 'Latte', unit_price: 35000, quantity: 1, modifiers: [] }],
+      customerId: 'cust-gold',
+    };
+    const payment: PaymentInput = { method: 'cash', amount: 35000, cash_received: 35000, change_given: 0 };
+    const payload = buildOrderPayload('session-1', cart, payment, undefined, 2500);
+    expect(payload.loyalty_multiplier).toBe(1.1);
+  });
+
+  it('omits loyalty_multiplier when Bronze (multiplier=1.0)', () => {
+    const cart: Cart = {
+      order_type: 'dine_in',
+      items: [{ id: 'l1', product_id: 'p1', name: 'Latte', unit_price: 35000, quantity: 1, modifiers: [] }],
+      customerId: 'cust-bronze',
+    };
+    const payment: PaymentInput = { method: 'cash', amount: 35000, cash_received: 35000, change_given: 0 };
+    const payload = buildOrderPayload('session-1', cart, payment, undefined, 100);
+    expect('loyalty_multiplier' in payload).toBe(false);
+  });
+
+  it('omits loyalty_multiplier when no customer', () => {
+    const cart: Cart = {
+      order_type: 'dine_in',
+      items: [{ id: 'l1', product_id: 'p1', name: 'Latte', unit_price: 35000, quantity: 1, modifiers: [] }],
+    };
+    const payment: PaymentInput = { method: 'cash', amount: 35000, cash_received: 35000, change_given: 0 };
+    const payload = buildOrderPayload('session-1', cart, payment);
+    expect('loyalty_multiplier' in payload).toBe(false);
+  });
 });

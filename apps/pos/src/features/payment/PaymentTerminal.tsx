@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { X, ArrowLeft, Banknote, CreditCard, QrCode, Smartphone, ArrowRightLeft, Wallet } from 'lucide-react';
 import { Button, Currency, FullScreenModal, LoyaltyBadge, Numpad, cn } from '@breakery/ui';
-import { calculateTotals, calculateChange, earnPointsFor, tierFromLifetime, type PaymentMethod } from '@breakery/domain';
+import { calculateTotals, calculateChange, earnPointsForCustomer, tierFromLifetime, TIERS, type PaymentMethod } from '@breakery/domain';
 import { resetCartAfterCheckout, useCartStore } from '@/stores/cartStore';
 import { usePaymentStore } from '@/stores/paymentStore';
 import { useAuthStore } from '@/stores/authStore';
@@ -76,7 +76,9 @@ export function PaymentTerminal() {
         orderNumber: result.order_number,
         total: result.total,
         changeGiven: result.change_given,
-        pointsEarned: earnPointsFor(result.total),
+        pointsEarned: attachedCustomer
+          ? earnPointsForCustomer(result.total, attachedCustomer.lifetime_points)
+          : 0,
         customerName: attachedCustomer?.name ?? undefined,
       });
     } catch (err: unknown) {
@@ -161,25 +163,38 @@ export function PaymentTerminal() {
             </tbody>
           </table>
           <div className="mt-6 space-y-1 text-sm">
-            {attachedCustomer && (
-              <div className="flex items-center justify-between mb-3 pb-3 border-b border-border-subtle">
-                <LoyaltyBadge tier={tierFromLifetime(attachedCustomer.lifetime_points)} points={attachedCustomer.loyalty_points} />
-                <span className="text-xs text-text-secondary">
-                  +{earnPointsFor(totals.total)} pts to earn
-                </span>
-              </div>
-            )}
+            {attachedCustomer && (() => {
+              const tier = tierFromLifetime(attachedCustomer.lifetime_points);
+              const multiplier = TIERS.find((t) => t.tier === tier)?.points_multiplier ?? 1.0;
+              const ptsToEarn = earnPointsForCustomer(totals.total, attachedCustomer.lifetime_points);
+              return (
+                <div className="flex items-center justify-between mb-3 pb-3 border-b border-border-subtle">
+                  <LoyaltyBadge tier={tier} points={attachedCustomer.loyalty_points} />
+                  <span className="text-xs text-text-secondary">
+                    +{ptsToEarn} pts to earn ({multiplier}x)
+                  </span>
+                </div>
+              );
+            })()}
             <div className="flex justify-between text-text-secondary">
               <span>Subtotal</span><Currency amount={totals.subtotal} />
             </div>
             {totals.redemption_amount > 0 && (
               <div className="flex justify-between text-text-secondary">
-                <span>Loyalty discount ({cart.loyaltyPointsToRedeem} pts)</span>
+                <span>Loyalty redeem ({cart.loyaltyPointsToRedeem} pts)</span>
                 <span className="font-mono text-red-400">-<Currency amount={totals.redemption_amount} /></span>
               </div>
             )}
+            {cart.cartDiscount && (
+              <div className="flex justify-between text-text-secondary">
+                <span>
+                  Manual discount ({cart.cartDiscount.type === 'percentage' ? `${cart.cartDiscount.value}%` : 'fixed'})
+                </span>
+                <span className="font-mono text-red-400">-<Currency amount={cart.cartDiscount.amount} /></span>
+              </div>
+            )}
             <div className="flex justify-between text-text-secondary">
-              <span>Tax (incl.)</span><Currency amount={totals.tax_amount} />
+              <span>Tax (PB1 incl.)</span><Currency amount={totals.tax_amount} />
             </div>
             <div className="flex justify-between pt-3 border-t border-border-subtle">
               <span className="uppercase tracking-wide font-semibold">Total Amount</span>
