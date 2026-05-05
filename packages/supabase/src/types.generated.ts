@@ -396,6 +396,10 @@ export type Database = {
       order_items: {
         Row: {
           created_at:          string
+          discount_amount:     number
+          discount_reason:     string | null
+          discount_type:       string | null
+          discount_value:      number | null
           dispatch_station:    string | null
           id:                  string
           is_locked:           boolean
@@ -415,6 +419,10 @@ export type Database = {
         }
         Insert: {
           created_at?:         string
+          discount_amount?:    number
+          discount_reason?:    string | null
+          discount_type?:      string | null
+          discount_value?:     number | null
           dispatch_station?:   string | null
           id?:                 string
           is_locked?:          boolean
@@ -434,6 +442,10 @@ export type Database = {
         }
         Update: {
           created_at?:         string
+          discount_amount?:    number
+          discount_reason?:    string | null
+          discount_type?:      string | null
+          discount_value?:     number | null
           dispatch_station?:   string | null
           id?:                 string
           is_locked?:          boolean
@@ -533,6 +545,11 @@ export type Database = {
           created_at:                  string
           created_via:                 string
           customer_id:                 string | null
+          discount_amount:             number
+          discount_authorized_by:      string | null
+          discount_reason:             string | null
+          discount_type:               string | null
+          discount_value:              number | null
           id:                          string
           idempotency_key:             string | null
           loyalty_points_earned:       number
@@ -556,6 +573,11 @@ export type Database = {
           created_at?:                  string
           created_via?:                 string
           customer_id?:                 string | null
+          discount_amount?:             number
+          discount_authorized_by?:      string | null
+          discount_reason?:             string | null
+          discount_type?:               string | null
+          discount_value?:              number | null
           id?:                          string
           idempotency_key?:             string | null
           loyalty_points_earned?:       number
@@ -579,6 +601,11 @@ export type Database = {
           created_at?:                  string
           created_via?:                 string
           customer_id?:                 string | null
+          discount_amount?:             number
+          discount_authorized_by?:      string | null
+          discount_reason?:             string | null
+          discount_type?:               string | null
+          discount_value?:              number | null
           id?:                          string
           idempotency_key?:             string | null
           loyalty_points_earned?:       number
@@ -604,6 +631,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_discount_authorized_by_fkey"
+            columns: ["discount_authorized_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -1041,13 +1075,20 @@ export type Database = {
       }
       complete_order_with_payment: {
         Args: {
-          p_session_id:              string
-          p_order_type:              Database["public"]["Enums"]["order_type"]
-          p_items:                   Json
-          p_payment:                 Json
-          p_idempotency_key?:        string
-          p_customer_id?:            string | null
+          p_session_id:               string
+          p_order_type:               Database["public"]["Enums"]["order_type"]
+          p_items:                    Json
+          p_payment:                  Json
+          p_idempotency_key?:         string | null
+          p_customer_id?:             string | null
           p_loyalty_points_redeemed?: number
+          p_table_number?:            string | null
+          p_discount_amount?:         number
+          p_discount_type?:           string | null
+          p_discount_value?:          number | null
+          p_discount_reason?:         string | null
+          p_discount_authorized_by?:  string | null
+          p_loyalty_multiplier?:      number
         }
         Returns: Json
       }
@@ -1077,6 +1118,12 @@ export type Database = {
           p_customer_id?:            string | null
           p_loyalty_points_redeemed?: number
           p_idempotency_key?:        string | null
+          p_discount_amount?:        number
+          p_discount_type?:          string | null
+          p_discount_value?:         number | null
+          p_discount_reason?:        string | null
+          p_discount_authorized_by?: string | null
+          p_loyalty_multiplier?:     number
         }
         Returns: string
       }
