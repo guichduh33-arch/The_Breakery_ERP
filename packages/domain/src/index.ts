@@ -6,3 +6,5 @@ export { validatePayment, type ValidationResult } from './payment/validatePaymen
 export { buildOrderPayload } from './orders/buildOrderPayload.js';
 export * from './modifiers/index.js';
 export * from './kitchen/index.js';
+export * from './customers/index.js';
+export * from './loyalty/index.js';
