@@ -41,3 +41,8 @@ export {
   FullScreenModalClose,
   type FullScreenModalProps,
 } from './components/FullScreenModal.js';
+export {
+  ModifierModal,
+  type ModifierModalProps,
+  type ModifierModalProduct,
+} from './components/ModifierModal.js';

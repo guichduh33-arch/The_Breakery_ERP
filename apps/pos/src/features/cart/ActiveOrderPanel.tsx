@@ -1,15 +1,17 @@
 // apps/pos/src/features/cart/ActiveOrderPanel.tsx
-import { ShoppingBag, Send, CreditCard } from 'lucide-react';
+import { ShoppingBag, CreditCard } from 'lucide-react';
 import { Button, Currency, OrderTypeTabs } from '@breakery/ui';
 import { calculateTotals } from '@breakery/domain';
 import { useCartStore } from '@/stores/cartStore';
 import { usePaymentStore } from '@/stores/paymentStore';
 import { CartItemRow } from './CartItemRow';
+import { SendToKitchenButton } from './SendToKitchenButton';
 
 const TAX_RATE = 0.10;
 
 export function ActiveOrderPanel() {
   const cart = useCartStore((s) => s.cart);
+  const lockedIds = useCartStore((s) => s.lockedItemIds);
   const update = useCartStore((s) => s.update);
   const remove = useCartStore((s) => s.remove);
   const setOrderType = useCartStore((s) => s.setOrderType);
@@ -18,6 +20,7 @@ export function ActiveOrderPanel() {
 
   const totals = calculateTotals(cart, TAX_RATE);
   const isEmpty = cart.items.length === 0;
+  const hasUnlocked = cart.items.some((i) => !lockedIds.includes(i.id));
 
   return (
     <aside className="w-[340px] bg-bg-elevated border-l border-border-subtle flex flex-col">
@@ -29,7 +32,15 @@ export function ActiveOrderPanel() {
         <OrderTypeTabs value={cart.order_type} onChange={setOrderType} />
         <div className="mt-3 flex gap-2">
           <Button variant="outlineGold" size="sm" className="flex-1" disabled>Held Orders</Button>
-          <Button variant="ghostDestructive" size="sm" onClick={clear} disabled={isEmpty}>Clear</Button>
+          <Button
+            variant="ghostDestructive"
+            size="sm"
+            onClick={clear}
+            disabled={!hasUnlocked}
+            title={!hasUnlocked ? 'No unlocked items to clear' : undefined}
+          >
+            Clear
+          </Button>
         </div>
       </header>
 
@@ -45,10 +56,11 @@ export function ActiveOrderPanel() {
         ) : (
           cart.items.map((item) => (
             <CartItemRow
-              key={item.product_id}
+              key={item.id}
               item={item}
-              onChangeQty={(q) => update(item.product_id, q)}
-              onRemove={() => remove(item.product_id)}
+              locked={lockedIds.includes(item.id)}
+              onChangeQty={(q) => update(item.id, q)}
+              onRemove={() => remove(item.id)}
             />
           ))
         )}
@@ -70,9 +82,7 @@ export function ActiveOrderPanel() {
               <Currency amount={totals.total} emphasis="gold" className="text-lg" />
             </div>
           </div>
-          <Button variant="secondary" size="lg" className="w-full" disabled>
-            <Send className="h-4 w-4 mr-2" aria-hidden /> Send to Kitchen
-          </Button>
+          <SendToKitchenButton />
           <Button variant="primary" size="lg" className="w-full" onClick={openPayment}>
             <CreditCard className="h-4 w-4 mr-2" aria-hidden /> Checkout · <Currency amount={totals.total} className="ml-1" />
           </Button>

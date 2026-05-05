@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { X, ArrowLeft, Banknote, CreditCard, QrCode, Smartphone, ArrowRightLeft, Wallet } from 'lucide-react';
 import { Button, Currency, FullScreenModal, Numpad, cn } from '@breakery/ui';
 import { calculateTotals, calculateChange, type PaymentMethod } from '@breakery/domain';
-import { useCartStore } from '@/stores/cartStore';
+import { resetCartAfterCheckout, useCartStore } from '@/stores/cartStore';
 import { usePaymentStore } from '@/stores/paymentStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useCheckout } from './hooks/useCheckout';
@@ -43,7 +43,6 @@ export function PaymentTerminal() {
   const setCashReceivedStr = usePaymentStore((s) => s.setCashReceivedStr);
 
   const cart = useCartStore((s) => s.cart);
-  const clearCartAction = useCartStore((s) => s.clear);
   const user = useAuthStore((s) => s.user);
   const checkout = useCheckout();
 
@@ -79,7 +78,7 @@ export function PaymentTerminal() {
 
   function handleNewOrder() {
     setSuccess(null);
-    clearCartAction();
+    resetCartAfterCheckout();
     reset();
   }
 
@@ -126,13 +125,24 @@ export function PaymentTerminal() {
               </tr>
             </thead>
             <tbody>
-              {cart.items.map((it) => (
-                <tr key={it.product_id} className="border-b border-border-subtle">
-                  <td className="py-3">{it.name}</td>
-                  <td className="text-right py-3">{it.quantity}</td>
-                  <td className="text-right py-3"><Currency amount={it.unit_price * it.quantity} /></td>
-                </tr>
-              ))}
+              {cart.items.map((it) => {
+                const adj = it.modifiers.reduce((s, m) => s + m.price_adjustment, 0);
+                const lineTotal = (it.unit_price + adj) * it.quantity;
+                return (
+                  <tr key={it.id} className="border-b border-border-subtle align-top">
+                    <td className="py-3">
+                      <div>{it.name}</div>
+                      {it.modifiers.length > 0 && (
+                        <div className="text-xs text-text-secondary mt-0.5">
+                          {it.modifiers.map((m) => m.option_label).join(' · ')}
+                        </div>
+                      )}
+                    </td>
+                    <td className="text-right py-3">{it.quantity}</td>
+                    <td className="text-right py-3"><Currency amount={lineTotal} /></td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
           <div className="mt-6 space-y-1 text-sm">
