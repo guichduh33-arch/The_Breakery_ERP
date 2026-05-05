@@ -34,6 +34,115 @@ export type Database = {
   }
   public: {
     Tables: {
+      customers: {
+        Row: {
+          id:              string
+          name:            string
+          phone:           string | null
+          email:           string | null
+          customer_type:   Database["public"]["Enums"]["customer_type"]
+          loyalty_points:  number
+          lifetime_points: number
+          total_spent:     number
+          total_visits:    number
+          last_visit_at:   string | null
+          created_at:      string
+          updated_at:      string
+          deleted_at:      string | null
+        }
+        Insert: {
+          id?:              string
+          name:             string
+          phone?:           string | null
+          email?:           string | null
+          customer_type?:   Database["public"]["Enums"]["customer_type"]
+          loyalty_points?:  number
+          lifetime_points?: number
+          total_spent?:     number
+          total_visits?:    number
+          last_visit_at?:   string | null
+          created_at?:      string
+          updated_at?:      string
+          deleted_at?:      string | null
+        }
+        Update: {
+          id?:              string
+          name?:            string
+          phone?:           string | null
+          email?:           string | null
+          customer_type?:   Database["public"]["Enums"]["customer_type"]
+          loyalty_points?:  number
+          lifetime_points?: number
+          total_spent?:     number
+          total_visits?:    number
+          last_visit_at?:   string | null
+          created_at?:      string
+          updated_at?:      string
+          deleted_at?:      string | null
+        }
+        Relationships: []
+      }
+      loyalty_transactions: {
+        Row: {
+          id:                   string
+          customer_id:          string
+          order_id:             string | null
+          transaction_type:     Database["public"]["Enums"]["loyalty_txn_type"]
+          points:               number
+          points_balance_after: number
+          order_amount:         number | null
+          description:          string
+          created_at:           string
+          created_by:           string | null
+        }
+        Insert: {
+          id?:                   string
+          customer_id:           string
+          order_id?:             string | null
+          transaction_type:      Database["public"]["Enums"]["loyalty_txn_type"]
+          points:                number
+          points_balance_after:  number
+          order_amount?:         number | null
+          description:           string
+          created_at?:           string
+          created_by?:           string | null
+        }
+        Update: {
+          id?:                   string
+          customer_id?:          string
+          order_id?:             string | null
+          transaction_type?:     Database["public"]["Enums"]["loyalty_txn_type"]
+          points?:               number
+          points_balance_after?: number
+          order_amount?:         number | null
+          description?:          string
+          created_at?:           string
+          created_by?:           string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_transactions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_transactions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       accounts: {
         Row: {
           account_class: number
@@ -387,51 +496,70 @@ export type Database = {
       }
       orders: {
         Row: {
-          created_at: string
-          id: string
-          idempotency_key: string | null
-          order_number: string
-          order_type: Database["public"]["Enums"]["order_type"]
-          paid_at: string | null
-          served_by: string
-          session_id: string
-          status: Database["public"]["Enums"]["order_status"]
-          subtotal: number
-          tax_amount: number
-          total: number
-          updated_at: string
+          created_at:                  string
+          customer_id:                 string | null
+          id:                          string
+          idempotency_key:             string | null
+          loyalty_points_earned:       number
+          loyalty_points_redeemed:     number
+          loyalty_redemption_amount:   number
+          order_number:                string
+          order_type:                  Database["public"]["Enums"]["order_type"]
+          paid_at:                     string | null
+          served_by:                   string
+          session_id:                  string
+          status:                      Database["public"]["Enums"]["order_status"]
+          subtotal:                    number
+          tax_amount:                  number
+          total:                       number
+          updated_at:                  string
         }
         Insert: {
-          created_at?: string
-          id?: string
-          idempotency_key?: string | null
-          order_number: string
-          order_type?: Database["public"]["Enums"]["order_type"]
-          paid_at?: string | null
-          served_by: string
-          session_id: string
-          status?: Database["public"]["Enums"]["order_status"]
-          subtotal: number
-          tax_amount: number
-          total: number
-          updated_at?: string
+          created_at?:                  string
+          customer_id?:                 string | null
+          id?:                          string
+          idempotency_key?:             string | null
+          loyalty_points_earned?:       number
+          loyalty_points_redeemed?:     number
+          loyalty_redemption_amount?:   number
+          order_number:                 string
+          order_type?:                  Database["public"]["Enums"]["order_type"]
+          paid_at?:                     string | null
+          served_by:                    string
+          session_id:                   string
+          status?:                      Database["public"]["Enums"]["order_status"]
+          subtotal:                     number
+          tax_amount:                   number
+          total:                        number
+          updated_at?:                  string
         }
         Update: {
-          created_at?: string
-          id?: string
-          idempotency_key?: string | null
-          order_number?: string
-          order_type?: Database["public"]["Enums"]["order_type"]
-          paid_at?: string | null
-          served_by?: string
-          session_id?: string
-          status?: Database["public"]["Enums"]["order_status"]
-          subtotal?: number
-          tax_amount?: number
-          total?: number
-          updated_at?: string
+          created_at?:                  string
+          customer_id?:                 string | null
+          id?:                          string
+          idempotency_key?:             string | null
+          loyalty_points_earned?:       number
+          loyalty_points_redeemed?:     number
+          loyalty_redemption_amount?:   number
+          order_number?:                string
+          order_type?:                  Database["public"]["Enums"]["order_type"]
+          paid_at?:                     string | null
+          served_by?:                   string
+          session_id?:                  string
+          status?:                      Database["public"]["Enums"]["order_status"]
+          subtotal?:                    number
+          tax_amount?:                  number
+          total?:                       number
+          updated_at?:                  string
         }
         Relationships: [
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "orders_served_by_fkey"
             columns: ["served_by"]
@@ -764,11 +892,13 @@ export type Database = {
     Functions: {
       complete_order_with_payment: {
         Args: {
-          p_idempotency_key?: string
-          p_items: Json
-          p_order_type: Database["public"]["Enums"]["order_type"]
-          p_payment: Json
-          p_session_id: string
+          p_session_id:              string
+          p_order_type:              Database["public"]["Enums"]["order_type"]
+          p_items:                   Json
+          p_payment:                 Json
+          p_idempotency_key?:        string
+          p_customer_id?:            string | null
+          p_loyalty_points_redeemed?: number
         }
         Returns: Json
       }
@@ -785,6 +915,8 @@ export type Database = {
       }
     }
     Enums: {
+      customer_type: "retail" | "b2b"
+      loyalty_txn_type: "earn" | "redeem" | "adjust"
       movement_type:
         | "sale"
         | "sale_void"

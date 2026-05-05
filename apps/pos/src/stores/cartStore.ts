@@ -1,6 +1,7 @@
 // apps/pos/src/stores/cartStore.ts
 //
 // Session 2 extension: lockedItemIds + canEdit guard + sendCurrentBatch helper.
+// Session 3 extension: customerId + loyaltyPointsToRedeem + redemptionAmount.
 // Persisted in sessionStorage so a tab reload doesn't drop the lock state.
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
@@ -10,10 +11,15 @@ import {
   updateQuantity,
   clearCart,
   setOrderType,
+  attachCustomer as domainAttachCustomer,
+  detachCustomer as domainDetachCustomer,
+  setRedeemPoints as domainSetRedeemPoints,
+  pointsToValue,
 } from '@breakery/domain';
 import type {
   Cart,
   CartItem,
+  Customer,
   OrderType,
   Product,
   SelectedModifiers,
@@ -23,6 +29,8 @@ interface CartState {
   cart: Cart;
   /** Line ids that have been "sent to kitchen" — read-only afterwards. */
   lockedItemIds: string[];
+  /** Full customer object for display — mirrors cart.customerId. */
+  attachedCustomer: Customer | null;
 
   // Actions
   add: (product: Product, modifiers?: SelectedModifiers) => void;
@@ -30,6 +38,12 @@ interface CartState {
   remove: (lineId: string) => void;
   clear: () => void;
   setOrderType: (type: OrderType) => void;
+
+  // Customer + loyalty
+  attachCustomer: (customer: Customer) => void;
+  detachCustomer: () => void;
+  setRedeemPoints: (points: number) => void;
+  redemptionAmount: () => number;
 
   // Locking
   canEdit: (lineId: string) => boolean;
@@ -43,6 +57,7 @@ export const useCartStore = create<CartState>()(
     (set, get) => ({
       cart: { items: [], order_type: 'dine_in' },
       lockedItemIds: [],
+      attachedCustomer: null,
 
       add: (product, modifiers = []) =>
         set((s) => ({ cart: addItem(s.cart, product, modifiers) })),
@@ -72,6 +87,17 @@ export const useCartStore = create<CartState>()(
 
       setOrderType: (type) => set((s) => ({ cart: setOrderType(s.cart, type) })),
 
+      attachCustomer: (customer) =>
+        set((s) => ({ cart: domainAttachCustomer(s.cart, customer.id), attachedCustomer: customer })),
+
+      detachCustomer: () =>
+        set((s) => ({ cart: domainDetachCustomer(s.cart), attachedCustomer: null })),
+
+      setRedeemPoints: (points) =>
+        set((s) => ({ cart: domainSetRedeemPoints(s.cart, points) })),
+
+      redemptionAmount: () => pointsToValue(get().cart.loyaltyPointsToRedeem ?? 0),
+
       canEdit: (lineId) => !get().lockedItemIds.includes(lineId),
 
       markLocked: (lineIds) =>
@@ -97,6 +123,7 @@ export const useCartStore = create<CartState>()(
       partialize: (state) => ({
         cart: state.cart,
         lockedItemIds: state.lockedItemIds,
+        attachedCustomer: state.attachedCustomer,
       }),
     },
   ),
@@ -107,8 +134,9 @@ export const useCartStore = create<CartState>()(
  * order has been completed successfully.
  */
 export function resetCartAfterCheckout(): void {
-  useCartStore.setState((s) => ({
-    cart: clearCart(s.cart),
-    lockedItemIds: [],
-  }));
+  useCartStore.setState((s) => {
+    const cleared = clearCart(s.cart);
+    const { customerId: _c, loyaltyPointsToRedeem: _l, ...rest } = cleared;
+    return { cart: rest, lockedItemIds: [], attachedCustomer: null };
+  });
 }

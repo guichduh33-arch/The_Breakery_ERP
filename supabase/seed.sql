@@ -153,3 +153,12 @@ INSERT INTO product_modifiers (
   ('11111111-1111-1111-1111-111111111111', 'Milk',        2, false, 'single_select', 'Oat milk',    E'\U0001F33E', 2, 5000, false, true),
   ('11111111-1111-1111-1111-111111111111', 'Milk',        2, false, 'single_select', 'Almond milk', E'\U0001F330', 3, 5000, false, true)
 ON CONFLICT DO NOTHING;
+
+-- ============================================================
+-- DEMO CUSTOMERS (session 3)
+-- ============================================================
+INSERT INTO customers (name, phone, loyalty_points, lifetime_points) VALUES
+  ('Walk-in Demo',          '+62811111111',    0,    0),
+  ('Loyal Bronze Customer', '+62822222222',  120,  120),
+  ('Loyal Gold Customer',   '+62833333333', 2500, 2500)
+ON CONFLICT DO NOTHING;

@@ -30,7 +30,14 @@ export function useCheckout() {
     mutationFn: async (input: CheckoutInput): Promise<PaymentResult> => {
       if (!sessionId) throw new Error('no_open_shift');
       const accessToken = await getAccessToken();
-      const payload = buildOrderPayload(sessionId, input.cart, input.payment, idempotencyKey);
+      const { useCartStore } = await import('@/stores/cartStore');
+      const { customerId, loyaltyPointsToRedeem } = useCartStore.getState().cart;
+      const cartWithLoyalty: typeof input.cart = {
+        ...input.cart,
+        ...(customerId ? { customerId } : {}),
+        ...(loyaltyPointsToRedeem ? { loyaltyPointsToRedeem } : {}),
+      };
+      const payload = buildOrderPayload(sessionId, cartWithLoyalty, input.payment, idempotencyKey);
 
       const res = await fetch(`${supabaseUrl}/functions/v1/process-payment`, {
         method: 'POST',

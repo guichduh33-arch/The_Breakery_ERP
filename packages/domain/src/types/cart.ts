@@ -21,6 +21,8 @@ export interface CartItem {
 export interface Cart {
   items: CartItem[];
   order_type: OrderType;
+  customerId?: string;
+  loyaltyPointsToRedeem?: number;
 }
 
 export interface CartTotals {
@@ -28,4 +30,5 @@ export interface CartTotals {
   tax_amount: number;
   total: number;
   item_count: number;
+  redemption_amount: number;
 }

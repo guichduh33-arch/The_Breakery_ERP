@@ -1,8 +1,8 @@
 // apps/pos/src/features/payment/PaymentTerminal.tsx
 import { useState } from 'react';
 import { X, ArrowLeft, Banknote, CreditCard, QrCode, Smartphone, ArrowRightLeft, Wallet } from 'lucide-react';
-import { Button, Currency, FullScreenModal, Numpad, cn } from '@breakery/ui';
-import { calculateTotals, calculateChange, type PaymentMethod } from '@breakery/domain';
+import { Button, Currency, FullScreenModal, LoyaltyBadge, Numpad, cn } from '@breakery/ui';
+import { calculateTotals, calculateChange, earnPointsFor, tierFromLifetime, type PaymentMethod } from '@breakery/domain';
 import { resetCartAfterCheckout, useCartStore } from '@/stores/cartStore';
 import { usePaymentStore } from '@/stores/paymentStore';
 import { useAuthStore } from '@/stores/authStore';
@@ -31,6 +31,8 @@ interface SuccessState {
   orderNumber: string;
   total: number;
   changeGiven: number | null;
+  pointsEarned: number;
+  customerName: string | undefined;
 }
 
 export function PaymentTerminal() {
@@ -43,6 +45,7 @@ export function PaymentTerminal() {
   const setCashReceivedStr = usePaymentStore((s) => s.setCashReceivedStr);
 
   const cart = useCartStore((s) => s.cart);
+  const attachedCustomer = useCartStore((s) => s.attachedCustomer);
   const user = useAuthStore((s) => s.user);
   const checkout = useCheckout();
 
@@ -69,7 +72,13 @@ export function PaymentTerminal() {
           ...(selectedMethod === 'cash' ? { cash_received: cashReceived, change_given: changeGiven } : {}),
         },
       });
-      setSuccess({ orderNumber: result.order_number, total: result.total, changeGiven: result.change_given });
+      setSuccess({
+        orderNumber: result.order_number,
+        total: result.total,
+        changeGiven: result.change_given,
+        pointsEarned: earnPointsFor(result.total),
+        customerName: attachedCustomer?.name ?? undefined,
+      });
     } catch (err: unknown) {
       const e = err as { details?: { error?: string } };
       toast.error(`Payment failed: ${e.details?.error ?? 'unknown'}`);
@@ -89,7 +98,13 @@ export function PaymentTerminal() {
         orderNumber={success.orderNumber}
         total={success.total}
         changeGiven={success.changeGiven}
+        pointsEarned={success.pointsEarned}
+        cart={cart}
+        paymentMethod={selectedMethod ?? 'cash'}
+        cashReceived={Number(cashReceivedStr || '0')}
+        cashierName={user?.full_name ?? 'Cashier'}
         onNewOrder={handleNewOrder}
+        {...(success.customerName ? { customerName: success.customerName } : {})}
       />
     );
   }
@@ -146,9 +161,23 @@ export function PaymentTerminal() {
             </tbody>
           </table>
           <div className="mt-6 space-y-1 text-sm">
+            {attachedCustomer && (
+              <div className="flex items-center justify-between mb-3 pb-3 border-b border-border-subtle">
+                <LoyaltyBadge tier={tierFromLifetime(attachedCustomer.lifetime_points)} points={attachedCustomer.loyalty_points} />
+                <span className="text-xs text-text-secondary">
+                  +{earnPointsFor(totals.total)} pts to earn
+                </span>
+              </div>
+            )}
             <div className="flex justify-between text-text-secondary">
               <span>Subtotal</span><Currency amount={totals.subtotal} />
             </div>
+            {totals.redemption_amount > 0 && (
+              <div className="flex justify-between text-text-secondary">
+                <span>Loyalty discount ({cart.loyaltyPointsToRedeem} pts)</span>
+                <span className="font-mono text-red-400">-<Currency amount={totals.redemption_amount} /></span>
+              </div>
+            )}
             <div className="flex justify-between text-text-secondary">
               <span>Tax (incl.)</span><Currency amount={totals.tax_amount} />
             </div>

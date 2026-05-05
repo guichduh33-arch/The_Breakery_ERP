@@ -163,4 +163,33 @@ describe('process-payment', () => {
     const body = await res.json();
     expect(body.error).toBe('invalid_idempotency_key');
   });
+
+  it('accepts customer_id and loyalty_points_redeemed in payload and forwards to RPC', async () => {
+    const admin = createClient(SUPABASE_URL, SERVICE);
+    const { data: customer } = await admin
+      .from('customers')
+      .select('id, loyalty_points')
+      .eq('name', 'Loyal Gold Customer')
+      .single();
+    if (!customer) return;
+
+    const res = await fetch(FN_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        session_id: sessionId,
+        order_type: 'dine_in',
+        items: [{ product_id: productIds[0], quantity: 1, unit_price: 35000 }],
+        payment: { method: 'cash', amount: 30000, cash_received: 30000 },
+        customer_id: customer.id,
+        loyalty_points_redeemed: 500,
+      }),
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.order_id).toBeTruthy();
+  });
 });

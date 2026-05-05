@@ -82,3 +82,16 @@ export function clearCart(cart: Cart): Cart {
 export function setOrderType(cart: Cart, orderType: Cart['order_type']): Cart {
   return { ...cart, order_type: orderType };
 }
+
+export function attachCustomer(cart: Cart, customerId: string): Cart {
+  return { ...cart, customerId };
+}
+
+export function detachCustomer(cart: Cart): Cart {
+  const { customerId: _c, loyaltyPointsToRedeem: _l, ...rest } = cart;
+  return rest;
+}
+
+export function setRedeemPoints(cart: Cart, points: number): Cart {
+  return { ...cart, loyaltyPointsToRedeem: points };
+}

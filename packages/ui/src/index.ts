@@ -46,3 +46,12 @@ export {
   type ModifierModalProps,
   type ModifierModalProduct,
 } from './components/ModifierModal.js';
+export {
+  CustomerSearchModal,
+  type CustomerSearchModalProps,
+} from './components/CustomerSearchModal.js';
+export { LoyaltyBadge, type LoyaltyBadgeProps } from './components/LoyaltyBadge.js';
+export {
+  RedeemPointsModal,
+  type RedeemPointsModalProps,
+} from './components/RedeemPointsModal.js';
