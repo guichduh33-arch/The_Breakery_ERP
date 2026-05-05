@@ -15,7 +15,23 @@ vi.mock('sonner', () => ({
 }));
 
 vi.mock('@/lib/supabase', () => ({
-  supabase: { auth: { setSession: vi.fn(), signOut: vi.fn().mockResolvedValue({}) } },
+  supabase: {
+    auth: { setSession: vi.fn(), signOut: vi.fn().mockResolvedValue({}), getSession: vi.fn().mockResolvedValue({ data: { session: null } }) },
+    from: vi.fn(() => ({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          order: vi.fn().mockResolvedValue({ data: [], error: null }),
+          not: vi.fn(() => ({ not: vi.fn().mockResolvedValue({ data: [], error: null }) })),
+        })),
+        not: vi.fn(() => ({ not: vi.fn().mockResolvedValue({ data: [], error: null }) })),
+      })),
+    })),
+    channel: vi.fn(() => ({
+      on: vi.fn().mockReturnThis(),
+      subscribe: vi.fn().mockReturnThis(),
+    })),
+    removeChannel: vi.fn(),
+  },
   supabaseUrl: 'http://localhost:54321',
 }));
 

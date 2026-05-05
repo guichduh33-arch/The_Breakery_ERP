@@ -30,4 +30,5 @@ export interface OrderPayload {
   idempotency_key?: string;
   customer_id?: string;
   loyalty_points_redeemed?: number;
+  table_number?: string;
 }

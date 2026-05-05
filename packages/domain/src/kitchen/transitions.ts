@@ -1,19 +1,20 @@
 // packages/domain/src/kitchen/transitions.ts
 //
-// Kitchen status state machine. v1 is forward-only; once `ready` an item is
-// terminal until session 4 introduces "served".
+// Kitchen status state machine — session 4 extends with `served`.
 //
 // Allowed transitions:
 //   pending   → preparing
 //   preparing → ready
-//   ready     → (none — terminal in v1)
+//   ready     → served
+//   served    → (terminal)
 
 import type { KitchenStatus } from './types.js';
 
 const ALLOWED: Record<KitchenStatus, readonly KitchenStatus[]> = {
   pending: ['preparing'],
   preparing: ['ready'],
-  ready: [],
+  ready: ['served'],
+  served: [],
 };
 
 /**

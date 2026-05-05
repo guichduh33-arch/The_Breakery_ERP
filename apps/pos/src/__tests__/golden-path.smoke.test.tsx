@@ -6,6 +6,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { useCartStore, resetCartAfterCheckout } from '@/stores/cartStore';
+import { useHeldOrdersStore } from '@/stores/heldOrdersStore';
+import { useHoldOrder } from '@/features/heldOrders/hooks/useHoldOrder';
+import { useRestoreHeldOrder } from '@/features/heldOrders/hooks/useRestoreHeldOrder';
 import { ActiveOrderPanel } from '@/features/cart/ActiveOrderPanel';
 import { CartItemRow } from '@/features/cart/CartItemRow';
 import type { Customer } from '@breakery/domain';
@@ -36,7 +39,26 @@ vi.mock('@/lib/supabase', () => ({
     auth: {
       setSession: vi.fn(),
       signOut: vi.fn().mockResolvedValue({}),
+      getSession: vi.fn().mockResolvedValue({ data: { session: null } }),
     },
+    from: vi.fn(() => ({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          order: vi.fn().mockResolvedValue({ data: [], error: null }),
+          not: vi.fn(() => ({
+            not: vi.fn().mockResolvedValue({ data: [], error: null }),
+          })),
+        })),
+        not: vi.fn(() => ({
+          not: vi.fn().mockResolvedValue({ data: [], error: null }),
+        })),
+      })),
+    })),
+    channel: vi.fn(() => ({
+      on: vi.fn().mockReturnThis(),
+      subscribe: vi.fn().mockReturnThis(),
+    })),
+    removeChannel: vi.fn(),
   },
   supabaseUrl: 'http://localhost:54321',
 }));
@@ -322,5 +344,70 @@ describe('Session 3 golden path — customer attach + loyalty earn', () => {
     expect(useCartStore.getState().attachedCustomer).toBeNull();
     expect(useCartStore.getState().cart.customerId).toBeUndefined();
     expect(useCartStore.getState().cart.loyaltyPointsToRedeem).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Session 4 — hold + restore golden path
+// ---------------------------------------------------------------------------
+
+describe('Session 4 golden path — hold + restore before send-to-kitchen', () => {
+  const ITEM = { id: 'l1', product_id: 'p1', name: 'Americano', unit_price: 35000, quantity: 1, modifiers: [] as never[] };
+
+  beforeEach(() => {
+    useCartStore.setState({ cart: { items: [ITEM], order_type: 'dine_in', tableNumber: 'T-02' }, lockedItemIds: [], attachedCustomer: null });
+    useHeldOrdersStore.setState({ entries: [] });
+  });
+
+  it('hold puts cart into held store and clears cart', () => {
+    useHoldOrder()('for Mr. Lee');
+    expect(useCartStore.getState().cart.items).toHaveLength(0);
+    expect(useHeldOrdersStore.getState().entries).toHaveLength(1);
+    expect(useHeldOrdersStore.getState().entries[0]?.notes).toBe('for Mr. Lee');
+  });
+
+  it('restore from held store restores items + tableNumber + removes entry', () => {
+    const holdOrder = useHoldOrder();
+    holdOrder('note');
+    const heldId = useHeldOrdersStore.getState().entries[0]!.id;
+
+    useRestoreHeldOrder()(heldId);
+
+    expect(useCartStore.getState().cart.items).toHaveLength(1);
+    expect(useCartStore.getState().cart.tableNumber).toBe('T-02');
+    expect(useHeldOrdersStore.getState().entries).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Session 4 — table selection before checkout
+// ---------------------------------------------------------------------------
+
+describe('Session 4 golden path — table selection before checkout', () => {
+  beforeEach(() => {
+    useCartStore.setState({ cart: { items: [], order_type: 'dine_in' }, lockedItemIds: [], attachedCustomer: null });
+  });
+
+  it('setTableNumber stores table on cart', () => {
+    useCartStore.getState().setTableNumber('T-03');
+    expect(useCartStore.getState().cart.tableNumber).toBe('T-03');
+  });
+
+  it('resetCartAfterCheckout clears tableNumber (session 4 acceptance)', () => {
+    useCartStore.setState((s) => ({ ...s, cart: { ...s.cart, tableNumber: 'T-03' } }));
+    resetCartAfterCheckout();
+    expect(useCartStore.getState().cart.tableNumber).toBeUndefined();
+  });
+
+  it('restoreCart bulk-replaces cart including tableNumber', () => {
+    useCartStore.getState().restoreCart({
+      items: [{ id: 'l99', product_id: 'p99', name: 'Cold Brew', unit_price: 50000, quantity: 2, modifiers: [] as never[] }],
+      order_type: 'dine_in',
+      tableNumber: 'VIP',
+    });
+    const state = useCartStore.getState();
+    expect(state.cart.items).toHaveLength(1);
+    expect(state.cart.tableNumber).toBe('VIP');
+    expect(state.lockedItemIds).toHaveLength(0);
   });
 });

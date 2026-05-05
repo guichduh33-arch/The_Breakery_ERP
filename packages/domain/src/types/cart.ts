@@ -23,6 +23,7 @@ export interface Cart {
   order_type: OrderType;
   customerId?: string;
   loyaltyPointsToRedeem?: number;
+  tableNumber?: string | null;
 }
 
 export interface CartTotals {

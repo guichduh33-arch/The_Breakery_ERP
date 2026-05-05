@@ -6,10 +6,10 @@
 
 /**
  * Lifecycle of a sent order_item on the KDS:
- *   pending  → preparing → ready
- * "served" is reserved for session 4 (tablet ordering).
+ *   pending  → preparing → ready → served
+ * `served` is terminal (session 4).
  */
-export type KitchenStatus = 'pending' | 'preparing' | 'ready';
+export type KitchenStatus = 'pending' | 'preparing' | 'ready' | 'served';
 
 /**
  * Where an order_item is routed once "Send to Kitchen" is hit.
@@ -23,6 +23,7 @@ export const KITCHEN_STATUSES: readonly KitchenStatus[] = [
   'pending',
   'preparing',
   'ready',
+  'served',
 ] as const;
 
 export const DISPATCH_STATIONS: readonly DispatchStation[] = [

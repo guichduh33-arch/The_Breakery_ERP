@@ -8,3 +8,5 @@ export * from './modifiers/index.js';
 export * from './kitchen/index.js';
 export * from './customers/index.js';
 export * from './loyalty/index.js';
+export * from './heldOrders/index.js';
+export * from './tables/index.js';

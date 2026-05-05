@@ -9,6 +9,9 @@ import { CustomerAttachButton } from '@/features/customers/components/CustomerAt
 import { CustomerAttachedBadge } from '@/features/customers/components/CustomerAttachedBadge';
 import { LoyaltyPointsLine } from '@/features/loyalty/components/LoyaltyPointsLine';
 import { RedeemButton } from '@/features/loyalty/components/RedeemButton';
+import { HeldOrdersInboxButton } from '@/features/heldOrders/components/HeldOrdersInboxButton';
+import { HoldOrderButton } from '@/features/heldOrders/components/HoldOrderButton';
+import { TableSelectorButton } from '@/features/tables/components/TableSelectorButton';
 import { CartItemRow } from './CartItemRow';
 import { SendToKitchenButton } from './SendToKitchenButton';
 
@@ -45,7 +48,7 @@ export function ActiveOrderPanel({ onOpenCustomerSearch }: ActiveOrderPanelProps
         </div>
         <OrderTypeTabs value={cart.order_type} onChange={setOrderType} />
         <div className="mt-3 flex gap-2">
-          <Button variant="outlineGold" size="sm" className="flex-1" disabled>Held Orders</Button>
+          <HeldOrdersInboxButton />
           <Button
             variant="ghostDestructive"
             size="sm"
@@ -56,6 +59,11 @@ export function ActiveOrderPanel({ onOpenCustomerSearch }: ActiveOrderPanelProps
             Clear
           </Button>
         </div>
+        {cart.order_type === 'dine_in' && (
+          <div className="mt-2">
+            <TableSelectorButton />
+          </div>
+        )}
         <div className="mt-2">
           {attachedCustomer ? (
             <CustomerAttachedBadge customer={attachedCustomer} onDetach={detachCustomer} />
@@ -117,6 +125,7 @@ export function ActiveOrderPanel({ onOpenCustomerSearch }: ActiveOrderPanelProps
               disabled={totals.redemption_amount > 0}
             />
           )}
+          <HoldOrderButton disabled={isEmpty} />
           <SendToKitchenButton />
           <Button variant="primary" size="lg" className="w-full" onClick={openPayment}>
             <CreditCard className="h-4 w-4 mr-2" aria-hidden /> Checkout · <Currency amount={totals.total} className="ml-1" />

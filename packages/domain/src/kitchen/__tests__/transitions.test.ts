@@ -10,7 +10,10 @@ describe('canTransition', () => {
   it('allows preparing → ready', () => {
     expect(canTransition('preparing', 'ready')).toBe(true);
   });
-  it('forbids ready → preparing (terminal in v1)', () => {
+  it('allows ready → served', () => {
+    expect(canTransition('ready', 'served')).toBe(true);
+  });
+  it('forbids ready → preparing', () => {
     expect(canTransition('ready', 'preparing')).toBe(false);
   });
   it('forbids ready → pending', () => {
@@ -18,6 +21,18 @@ describe('canTransition', () => {
   });
   it('forbids pending → ready (must go through preparing)', () => {
     expect(canTransition('pending', 'ready')).toBe(false);
+  });
+  it('forbids pending → served (must go through intermediate statuses)', () => {
+    expect(canTransition('pending', 'served')).toBe(false);
+  });
+  it('forbids served → ready (terminal)', () => {
+    expect(canTransition('served', 'ready')).toBe(false);
+  });
+  it('forbids served → preparing (terminal)', () => {
+    expect(canTransition('served', 'preparing')).toBe(false);
+  });
+  it('forbids served → pending (terminal)', () => {
+    expect(canTransition('served', 'pending')).toBe(false);
   });
   it('forbids identity transitions', () => {
     for (const s of KITCHEN_STATUSES) {
@@ -33,8 +48,11 @@ describe('nextStatus', () => {
   it('advances preparing → ready', () => {
     expect(nextStatus('preparing')).toBe('ready');
   });
-  it('returns null when terminal', () => {
-    expect(nextStatus('ready')).toBeNull();
+  it('advances ready → served', () => {
+    expect(nextStatus('ready')).toBe('served');
+  });
+  it('returns null when served (terminal)', () => {
+    expect(nextStatus('served')).toBeNull();
   });
 });
 

@@ -15,6 +15,7 @@ import { Button, Badge } from '@breakery/ui';
 
 import { useBumpItem } from '../hooks/useBumpItem';
 import { useAgeTimer } from '../hooks/useAgeTimer';
+import { useMarkItemServed } from '../hooks/useMarkItemServed';
 import type { KdsItemRow } from '../hooks/useKdsOrders';
 
 interface KdsOrderCardProps {
@@ -39,6 +40,7 @@ function ageClassName(ageMs: number): string {
 
 function ItemCta({ item }: { item: KdsItemRow }) {
   const bump = useBumpItem();
+  const serve = useMarkItemServed();
 
   if (item.kitchen_status === 'pending') {
     return (
@@ -66,6 +68,20 @@ function ItemCta({ item }: { item: KdsItemRow }) {
         disabled={bump.isPending}
       >
         Bump Ready
+      </Button>
+    );
+  }
+
+  if (item.kitchen_status === 'ready') {
+    return (
+      <Button
+        variant="secondary"
+        size="sm"
+        className="border-green text-green hover:bg-green-soft"
+        onClick={() => serve.mutate(item.id)}
+        disabled={serve.isPending}
+      >
+        Mark Served
       </Button>
     );
   }
