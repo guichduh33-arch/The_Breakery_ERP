@@ -68,4 +68,49 @@ describe('buildOrderPayload', () => {
     const payload = buildOrderPayload('session-1', cart, payment, undefined);
     expect('idempotency_key' in payload).toBe(false);
   });
+
+  it('includes customer_id when cart has customerId', () => {
+    const cart: Cart = {
+      order_type: 'dine_in',
+      items: [{ id: 'l1', product_id: 'p1', name: 'Latte', unit_price: 40000, quantity: 1, modifiers: [] }],
+      customerId: 'cust-uuid-1',
+    };
+    const payment: PaymentInput = { method: 'cash', amount: 40000, cash_received: 40000, change_given: 0 };
+    const payload = buildOrderPayload('session-1', cart, payment);
+    expect(payload.customer_id).toBe('cust-uuid-1');
+  });
+
+  it('omits customer_id when cart has no customerId', () => {
+    const cart: Cart = {
+      order_type: 'dine_in',
+      items: [{ id: 'l1', product_id: 'p1', name: 'Latte', unit_price: 40000, quantity: 1, modifiers: [] }],
+    };
+    const payment: PaymentInput = { method: 'cash', amount: 40000, cash_received: 40000, change_given: 0 };
+    const payload = buildOrderPayload('session-1', cart, payment);
+    expect('customer_id' in payload).toBe(false);
+  });
+
+  it('includes loyalty_points_redeemed when cart has redemption', () => {
+    const cart: Cart = {
+      order_type: 'dine_in',
+      items: [{ id: 'l1', product_id: 'p1', name: 'Latte', unit_price: 40000, quantity: 1, modifiers: [] }],
+      customerId: 'cust-uuid-1',
+      loyaltyPointsToRedeem: 500,
+    };
+    const payment: PaymentInput = { method: 'cash', amount: 35000, cash_received: 35000, change_given: 0 };
+    const payload = buildOrderPayload('session-1', cart, payment);
+    expect(payload.loyalty_points_redeemed).toBe(500);
+  });
+
+  it('omits loyalty_points_redeemed when zero', () => {
+    const cart: Cart = {
+      order_type: 'dine_in',
+      items: [{ id: 'l1', product_id: 'p1', name: 'Latte', unit_price: 40000, quantity: 1, modifiers: [] }],
+      customerId: 'cust-uuid-1',
+      loyaltyPointsToRedeem: 0,
+    };
+    const payment: PaymentInput = { method: 'cash', amount: 40000, cash_received: 40000, change_given: 0 };
+    const payload = buildOrderPayload('session-1', cart, payment);
+    expect('loyalty_points_redeemed' in payload).toBe(false);
+  });
 });

@@ -1,22 +1,36 @@
 // apps/pos/src/features/cart/ActiveOrderPanel.tsx
+import { useState } from 'react';
 import { ShoppingBag, CreditCard } from 'lucide-react';
-import { Button, Currency, OrderTypeTabs } from '@breakery/ui';
+import { Button, Currency, OrderTypeTabs, RedeemPointsModal } from '@breakery/ui';
 import { calculateTotals } from '@breakery/domain';
 import { useCartStore } from '@/stores/cartStore';
 import { usePaymentStore } from '@/stores/paymentStore';
+import { CustomerAttachButton } from '@/features/customers/components/CustomerAttachButton';
+import { CustomerAttachedBadge } from '@/features/customers/components/CustomerAttachedBadge';
+import { LoyaltyPointsLine } from '@/features/loyalty/components/LoyaltyPointsLine';
+import { RedeemButton } from '@/features/loyalty/components/RedeemButton';
 import { CartItemRow } from './CartItemRow';
 import { SendToKitchenButton } from './SendToKitchenButton';
 
 const TAX_RATE = 0.10;
 
-export function ActiveOrderPanel() {
+interface ActiveOrderPanelProps {
+  onOpenCustomerSearch?: () => void;
+}
+
+export function ActiveOrderPanel({ onOpenCustomerSearch }: ActiveOrderPanelProps) {
   const cart = useCartStore((s) => s.cart);
   const lockedIds = useCartStore((s) => s.lockedItemIds);
+  const attachedCustomer = useCartStore((s) => s.attachedCustomer);
+  const detachCustomer = useCartStore((s) => s.detachCustomer);
+  const setRedeemPoints = useCartStore((s) => s.setRedeemPoints);
   const update = useCartStore((s) => s.update);
   const remove = useCartStore((s) => s.remove);
   const setOrderType = useCartStore((s) => s.setOrderType);
   const clear = useCartStore((s) => s.clear);
   const openPayment = usePaymentStore((s) => s.open);
+
+  const [redeemOpen, setRedeemOpen] = useState(false);
 
   const totals = calculateTotals(cart, TAX_RATE);
   const isEmpty = cart.items.length === 0;
@@ -41,6 +55,13 @@ export function ActiveOrderPanel() {
           >
             Clear
           </Button>
+        </div>
+        <div className="mt-2">
+          {attachedCustomer ? (
+            <CustomerAttachedBadge customer={attachedCustomer} onDetach={detachCustomer} />
+          ) : (
+            <CustomerAttachButton onClick={() => onOpenCustomerSearch?.()} />
+          )}
         </div>
       </header>
 
@@ -73,6 +94,12 @@ export function ActiveOrderPanel() {
               <span className="text-text-secondary">Subtotal</span>
               <Currency amount={totals.subtotal} />
             </div>
+            {totals.redemption_amount > 0 && (
+              <div className="flex justify-between text-text-secondary">
+                <span>Loyalty discount ({cart.loyaltyPointsToRedeem} pts)</span>
+                <span className="font-mono text-red-400">-<Currency amount={totals.redemption_amount} /></span>
+              </div>
+            )}
             <div className="flex justify-between text-text-secondary">
               <span>Tax included (10%)</span>
               <Currency amount={totals.tax_amount} />
@@ -81,12 +108,29 @@ export function ActiveOrderPanel() {
               <span className="uppercase tracking-wide font-semibold">Total</span>
               <Currency amount={totals.total} emphasis="gold" className="text-lg" />
             </div>
+            {attachedCustomer && <LoyaltyPointsLine total={totals.total} />}
           </div>
+          {attachedCustomer && (
+            <RedeemButton
+              balance={attachedCustomer.loyalty_points}
+              onClick={() => setRedeemOpen(true)}
+              disabled={totals.redemption_amount > 0}
+            />
+          )}
           <SendToKitchenButton />
           <Button variant="primary" size="lg" className="w-full" onClick={openPayment}>
             <CreditCard className="h-4 w-4 mr-2" aria-hidden /> Checkout · <Currency amount={totals.total} className="ml-1" />
           </Button>
         </footer>
+      )}
+      {attachedCustomer && (
+        <RedeemPointsModal
+          open={redeemOpen}
+          onClose={() => setRedeemOpen(false)}
+          onConfirm={(points) => { setRedeemPoints(points); setRedeemOpen(false); }}
+          customerBalance={attachedCustomer.loyalty_points}
+          itemsTotal={totals.subtotal}
+        />
       )}
     </aside>
   );

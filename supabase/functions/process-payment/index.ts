@@ -24,6 +24,8 @@ interface ProcessPaymentPayload {
    * returns the existing order instead of creating a new one.
    */
   idempotency_key?: string;
+  customer_id?: string;
+  loyalty_points_redeemed?: number;
 }
 
 serve(async (req) => {
@@ -80,6 +82,9 @@ serve(async (req) => {
     p_payment: body.payment,
     // Forward optional idempotency key — RPC stores/returns existing order on replay (D8)
     ...(body.idempotency_key ? { p_idempotency_key: body.idempotency_key } : {}),
+    // Forward optional customer + loyalty redemption (session 3)
+    ...(body.customer_id ? { p_customer_id: body.customer_id } : {}),
+    ...(body.loyalty_points_redeemed ? { p_loyalty_points_redeemed: body.loyalty_points_redeemed } : {}),
   });
 
   if (error) {
@@ -88,6 +93,7 @@ serve(async (req) => {
     if (error.code === 'P0001') return jsonResponse({ error: 'no_open_session', message: error.message }, 409);
     if (error.code === 'P0002') return jsonResponse({ error: 'insufficient_stock', message: error.message }, 409);
     if (error.code === 'P0003') return jsonResponse({ error: 'permission_denied', message: error.message }, 403);
+    if (error.code === 'P0010') return jsonResponse({ error: 'insufficient_loyalty_points', message: error.message }, 409);
     return jsonResponse({ error: 'internal', message: error.message }, 500);
   }
 

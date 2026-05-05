@@ -19,5 +19,7 @@ export function buildOrderPayload(
     payment,
     // exactOptionalPropertyTypes-safe: only include the field when defined
     ...(idempotencyKey ? { idempotency_key: idempotencyKey } : {}),
+    ...(cart.customerId ? { customer_id: cart.customerId } : {}),
+    ...(cart.loyaltyPointsToRedeem ? { loyalty_points_redeemed: cart.loyaltyPointsToRedeem } : {}),
   };
 }

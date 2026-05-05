@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, Settings } from 'lucide-react';
-import { Button } from '@breakery/ui';
+import { Button, CustomerSearchModal } from '@breakery/ui';
 import { CategorySidebar } from '@/features/products/CategorySidebar';
 import { ProductTapHandler } from '@/features/products/ProductTapHandler';
 import { ActiveOrderPanel } from '@/features/cart/ActiveOrderPanel';
@@ -10,19 +10,46 @@ import { OpenShiftModal } from '@/features/shift/OpenShiftModal';
 import { PaymentTerminal } from '@/features/payment/PaymentTerminal';
 import { useAuthStore } from '@/stores/authStore';
 import { useCurrentShift } from '@/features/shift/hooks/useShift';
+import { useCartStore } from '@/stores/cartStore';
+import { supabase } from '@/lib/supabase';
+import type { Customer } from '@breakery/domain';
 
 export default function PosPage() {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const [selectedSlug, setSelectedSlug] = useState<string | null>('favorites');
+  const [customerSearchOpen, setCustomerSearchOpen] = useState(false);
 
   const { data: currentShift, isLoading: shiftLoading } = useCurrentShift();
   const needsShift = !shiftLoading && !currentShift;
 
+  const attachCustomer = useCartStore((s) => s.attachCustomer);
+
   async function handleLogout() {
     await logout();
     navigate('/login', { replace: true });
+  }
+
+  async function searchCustomers(query: string): Promise<Customer[]> {
+    if (query.trim().length < 2) return [];
+    const { data } = await supabase
+      .from('customers')
+      .select('id, name, phone, email, customer_type, loyalty_points, lifetime_points, total_spent, total_visits, last_visit_at')
+      .or(`phone.ilike.%${query}%,name.ilike.%${query}%`)
+      .is('deleted_at', null)
+      .limit(10);
+    return (data ?? []) as Customer[];
+  }
+
+  async function createCustomer(input: { name: string; phone: string; email?: string }): Promise<Customer> {
+    const { data, error } = await supabase
+      .from('customers')
+      .insert({ name: input.name, phone: input.phone, email: input.email ?? null, customer_type: 'retail' })
+      .select('id, name, phone, email, customer_type, loyalty_points, lifetime_points, total_spent, total_visits, last_visit_at')
+      .single();
+    if (error) throw error;
+    return data as Customer;
   }
 
   return (
@@ -49,11 +76,18 @@ export default function PosPage() {
           </div>
           <ProductTapHandler selectedSlug={selectedSlug} />
         </main>
-        <ActiveOrderPanel />
+        <ActiveOrderPanel onOpenCustomerSearch={() => setCustomerSearchOpen(true)} />
       </div>
 
       <OpenShiftModal open={needsShift} />
       <PaymentTerminal />
+      <CustomerSearchModal
+        open={customerSearchOpen}
+        onClose={() => setCustomerSearchOpen(false)}
+        onSelect={(customer) => { attachCustomer(customer); setCustomerSearchOpen(false); }}
+        searchFn={searchCustomers}
+        createFn={createCustomer}
+      />
     </div>
   );
 }

@@ -5,9 +5,23 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import type { ReactNode } from 'react';
-import { useCartStore } from '@/stores/cartStore';
+import { useCartStore, resetCartAfterCheckout } from '@/stores/cartStore';
 import { ActiveOrderPanel } from '@/features/cart/ActiveOrderPanel';
 import { CartItemRow } from '@/features/cart/CartItemRow';
+import type { Customer } from '@breakery/domain';
+
+const BRONZE_CUSTOMER: Customer = {
+  id: 'cust-bronze-uuid',
+  name: 'Loyal Bronze Customer',
+  phone: '+62822222222',
+  email: null,
+  customer_type: 'retail',
+  loyalty_points: 120,
+  lifetime_points: 120,
+  total_spent: 0,
+  total_visits: 0,
+  last_visit_at: null,
+};
 
 vi.mock('sonner', () => ({
   toast: {
@@ -38,7 +52,7 @@ function wrapper(children: ReactNode) {
 
 describe('ActiveOrderPanel smoke', () => {
   beforeEach(() => {
-    useCartStore.setState({ cart: { items: [], order_type: 'dine_in' }, lockedItemIds: [] });
+    useCartStore.setState({ cart: { items: [], order_type: 'dine_in' }, lockedItemIds: [], attachedCustomer: null });
   });
 
   it('shows EMPTY BAG when cart empty', () => {
@@ -262,5 +276,51 @@ describe('CartItemRow — locked item toast (acceptance criterion #14)', () => {
     const removeBtn = screen.getByRole('button', { name: /remove item/i });
     fireEvent.click(removeBtn);
     expect(onRemove).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Session 3 — customer attach + earn (no redeem)
+// ---------------------------------------------------------------------------
+
+describe('Session 3 golden path — customer attach + loyalty earn', () => {
+  beforeEach(() => {
+    useCartStore.setState({
+      cart: {
+        items: [{ id: 'l1', product_id: 'p1', name: 'Americano', unit_price: 35000, quantity: 1, modifiers: [] }],
+        order_type: 'dine_in',
+      },
+      lockedItemIds: [],
+      attachedCustomer: null,
+    });
+  });
+
+  it('attachCustomer stores full customer object in store', () => {
+    useCartStore.getState().attachCustomer(BRONZE_CUSTOMER);
+    expect(useCartStore.getState().attachedCustomer?.id).toBe('cust-bronze-uuid');
+    expect(useCartStore.getState().cart.customerId).toBe('cust-bronze-uuid');
+  });
+
+  it('shows customer name + loyalty badge after attach', () => {
+    useCartStore.getState().attachCustomer(BRONZE_CUSTOMER);
+    render(wrapper(<ActiveOrderPanel onOpenCustomerSearch={vi.fn()} />));
+    expect(screen.getByText('Loyal Bronze Customer')).toBeInTheDocument();
+    expect(screen.getByText('Bronze')).toBeInTheDocument();
+  });
+
+  it('shows points to earn for 35000 cart (= 35 pts)', () => {
+    useCartStore.getState().attachCustomer(BRONZE_CUSTOMER);
+    render(wrapper(<ActiveOrderPanel onOpenCustomerSearch={vi.fn()} />));
+    expect(screen.getByText(/points to earn/i)).toBeInTheDocument();
+    expect(screen.getByText('35 pts')).toBeInTheDocument();
+  });
+
+  it('resetCartAfterCheckout clears customer and loyalty state', () => {
+    useCartStore.getState().attachCustomer(BRONZE_CUSTOMER);
+    useCartStore.getState().setRedeemPoints(100);
+    resetCartAfterCheckout();
+    expect(useCartStore.getState().attachedCustomer).toBeNull();
+    expect(useCartStore.getState().cart.customerId).toBeUndefined();
+    expect(useCartStore.getState().cart.loyaltyPointsToRedeem).toBeUndefined();
   });
 });

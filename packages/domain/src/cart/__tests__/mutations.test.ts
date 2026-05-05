@@ -1,6 +1,6 @@
 // packages/domain/src/cart/__tests__/mutations.test.ts
 import { describe, it, expect } from 'vitest';
-import { addItem, updateQuantity, removeItem, clearCart, setOrderType } from '../mutations';
+import { addItem, updateQuantity, removeItem, clearCart, setOrderType, attachCustomer, detachCustomer, setRedeemPoints } from '../mutations';
 import type { Cart, Product } from '../../types/index.js';
 
 const product: Product = {
@@ -100,5 +100,46 @@ describe('setOrderType', () => {
     const c = setOrderType(empty, 'delivery');
     expect(c.order_type).toBe('delivery');
     expect(c.items).toHaveLength(0);
+  });
+});
+
+describe('attachCustomer', () => {
+  it('sets customerId on cart', () => {
+    const c = attachCustomer(empty, 'cust-1');
+    expect(c.customerId).toBe('cust-1');
+  });
+
+  it('preserves existing items and order_type', () => {
+    const cart: Cart = { ...empty, items: [{ id: 'l1', product_id: 'p1', name: 'X', unit_price: 1000, quantity: 1, modifiers: [] }] };
+    const c = attachCustomer(cart, 'cust-2');
+    expect(c.items).toHaveLength(1);
+    expect(c.customerId).toBe('cust-2');
+  });
+});
+
+describe('detachCustomer', () => {
+  it('removes customerId and loyaltyPointsToRedeem', () => {
+    const cart: Cart = { ...empty, customerId: 'cust-1', loyaltyPointsToRedeem: 200 };
+    const c = detachCustomer(cart);
+    expect(c.customerId).toBeUndefined();
+    expect(c.loyaltyPointsToRedeem).toBeUndefined();
+  });
+
+  it('is a no-op when no customer attached', () => {
+    const c = detachCustomer(empty);
+    expect(c.customerId).toBeUndefined();
+  });
+});
+
+describe('setRedeemPoints', () => {
+  it('sets loyaltyPointsToRedeem', () => {
+    const c = setRedeemPoints(empty, 500);
+    expect(c.loyaltyPointsToRedeem).toBe(500);
+  });
+
+  it('resets to 0 when called with 0', () => {
+    const cart: Cart = { ...empty, loyaltyPointsToRedeem: 500 };
+    const c = setRedeemPoints(cart, 0);
+    expect(c.loyaltyPointsToRedeem).toBe(0);
   });
 });

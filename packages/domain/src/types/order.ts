@@ -28,4 +28,6 @@ export interface OrderPayload {
    * a duplicate (decision D8 of the session-1 addendum).
    */
   idempotency_key?: string;
+  customer_id?: string;
+  loyalty_points_redeemed?: number;
 }
