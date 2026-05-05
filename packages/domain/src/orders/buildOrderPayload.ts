@@ -14,6 +14,7 @@ export function buildOrderPayload(
       product_id: i.product_id,
       quantity: i.quantity,
       unit_price: i.unit_price,
+      modifiers: i.modifiers,
     })),
     payment,
     // exactOptionalPropertyTypes-safe: only include the field when defined

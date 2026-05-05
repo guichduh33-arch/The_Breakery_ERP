@@ -11,13 +11,43 @@ const product: Product = {
 const empty: Cart = { items: [], order_type: 'dine_in' };
 
 describe('addItem', () => {
-  it('adds new item with qty=1', () => {
+  it('adds new item with qty=1 and a stable id', () => {
     const c = addItem(empty, product);
     expect(c.items).toHaveLength(1);
-    expect(c.items[0]).toMatchObject({ product_id: 'p1', name: 'Americano', unit_price: 35000, quantity: 1 });
+    expect(c.items[0]).toMatchObject({
+      product_id: 'p1',
+      name: 'Americano',
+      unit_price: 35000,
+      quantity: 1,
+      modifiers: [],
+    });
+    expect(c.items[0]?.id).toBeTypeOf('string');
+    expect(c.items[0]?.id.length).toBeGreaterThan(0);
   });
-  it('increments existing item quantity', () => {
+  it('increments existing item quantity when modifiers match', () => {
     const c = addItem(addItem(empty, product), product);
+    expect(c.items).toHaveLength(1);
+    expect(c.items[0]?.quantity).toBe(2);
+  });
+  it('creates a separate line when modifiers differ', () => {
+    const hot = [{ group_name: 'Temperature', option_label: 'Hot', price_adjustment: 0 }];
+    const ice = [{ group_name: 'Temperature', option_label: 'Ice', price_adjustment: 0 }];
+    const c1 = addItem(empty, product, hot);
+    const c2 = addItem(c1, product, ice);
+    expect(c2.items).toHaveLength(2);
+    expect(c2.items[0]?.modifiers[0]?.option_label).toBe('Hot');
+    expect(c2.items[1]?.modifiers[0]?.option_label).toBe('Ice');
+  });
+  it('merges identical modifier sets regardless of order', () => {
+    const a = [
+      { group_name: 'Temperature', option_label: 'Hot', price_adjustment: 0 },
+      { group_name: 'Milk', option_label: 'Oat milk', price_adjustment: 5000 },
+    ];
+    const b = [
+      { group_name: 'Milk', option_label: 'Oat milk', price_adjustment: 5000 },
+      { group_name: 'Temperature', option_label: 'Hot', price_adjustment: 0 },
+    ];
+    const c = addItem(addItem(empty, product, a), product, b);
     expect(c.items).toHaveLength(1);
     expect(c.items[0]?.quantity).toBe(2);
   });
@@ -28,14 +58,16 @@ describe('addItem', () => {
 });
 
 describe('updateQuantity', () => {
-  it('updates qty', () => {
+  it('updates qty by line id', () => {
     const c1 = addItem(empty, product);
-    const c2 = updateQuantity(c1, 'p1', 5);
+    const id = c1.items[0]!.id;
+    const c2 = updateQuantity(c1, id, 5);
     expect(c2.items[0]?.quantity).toBe(5);
   });
   it('removes item if qty <= 0', () => {
     const c1 = addItem(empty, product);
-    const c2 = updateQuantity(c1, 'p1', 0);
+    const id = c1.items[0]!.id;
+    const c2 = updateQuantity(c1, id, 0);
     expect(c2.items).toHaveLength(0);
   });
   it('returns same cart if id not found', () => {
@@ -46,9 +78,10 @@ describe('updateQuantity', () => {
 });
 
 describe('removeItem', () => {
-  it('removes by id', () => {
+  it('removes by line id', () => {
     const c1 = addItem(empty, product);
-    const c2 = removeItem(c1, 'p1');
+    const id = c1.items[0]!.id;
+    const c2 = removeItem(c1, id);
     expect(c2.items).toHaveLength(0);
   });
 });
