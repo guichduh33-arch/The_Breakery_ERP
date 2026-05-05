@@ -3,3 +3,5 @@ export const PAYMENT_METHODS = ['cash', 'card', 'qris', 'edc', 'transfer', 'stor
 export const SHIFT_STATUSES = ['open', 'closed'] as const;
 export const ORDER_STATUSES = ['draft', 'paid', 'voided'] as const;
 export const MOVEMENT_TYPES = ['sale', 'sale_void', 'production', 'purchase', 'waste', 'adjustment'] as const;
+export const CUSTOMER_TYPES = ['retail', 'b2b'] as const;
+export const LOYALTY_TXN_TYPES = ['earn', 'redeem', 'adjust'] as const;
