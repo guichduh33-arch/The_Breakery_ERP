@@ -162,3 +162,19 @@ INSERT INTO customers (name, phone, loyalty_points, lifetime_points) VALUES
   ('Loyal Bronze Customer', '+62822222222',  120,  120),
   ('Loyal Gold Customer',   '+62833333333', 2500, 2500)
 ON CONFLICT DO NOTHING;
+
+-- ============================================================
+-- RESTAURANT TABLES (session 4)
+-- ============================================================
+INSERT INTO restaurant_tables (name, seats, sort_order) VALUES
+  ('T-01',   2,  1),
+  ('T-02',   2,  2),
+  ('T-03',   4,  3),
+  ('T-04',   4,  4),
+  ('T-05',   6,  5),
+  ('Patio-1',4,  6),
+  ('Patio-2',4,  7),
+  ('Bar-1',  2,  8),
+  ('Bar-2',  2,  9),
+  ('VIP',    8, 10)
+ON CONFLICT DO NOTHING;

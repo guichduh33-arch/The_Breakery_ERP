@@ -395,34 +395,61 @@ export type Database = {
       }
       order_items: {
         Row: {
-          created_at: string
-          id: string
-          line_total: number
-          name_snapshot: string
-          order_id: string
-          product_id: string
-          quantity: number
-          unit_price: number
+          created_at:          string
+          dispatch_station:    string | null
+          id:                  string
+          is_locked:           boolean
+          kitchen_status:      string
+          line_total:          number
+          modifiers:           Json
+          modifiers_total:     number
+          name_snapshot:       string
+          order_id:            string
+          product_id:          string
+          quantity:            number
+          ready_at:            string | null
+          sent_to_kitchen_at:  string | null
+          served_at:           string | null
+          served_by:           string | null
+          unit_price:          number
         }
         Insert: {
-          created_at?: string
-          id?: string
-          line_total: number
-          name_snapshot: string
-          order_id: string
-          product_id: string
-          quantity: number
-          unit_price: number
+          created_at?:         string
+          dispatch_station?:   string | null
+          id?:                 string
+          is_locked?:          boolean
+          kitchen_status?:     string
+          line_total:          number
+          modifiers?:          Json
+          modifiers_total?:    number
+          name_snapshot:       string
+          order_id:            string
+          product_id:          string
+          quantity:            number
+          ready_at?:           string | null
+          sent_to_kitchen_at?: string | null
+          served_at?:          string | null
+          served_by?:          string | null
+          unit_price:          number
         }
         Update: {
-          created_at?: string
-          id?: string
-          line_total?: number
-          name_snapshot?: string
-          order_id?: string
-          product_id?: string
-          quantity?: number
-          unit_price?: number
+          created_at?:         string
+          dispatch_station?:   string | null
+          id?:                 string
+          is_locked?:          boolean
+          kitchen_status?:     string
+          line_total?:         number
+          modifiers?:          Json
+          modifiers_total?:    number
+          name_snapshot?:      string
+          order_id?:           string
+          product_id?:         string
+          quantity?:           number
+          ready_at?:           string | null
+          sent_to_kitchen_at?: string | null
+          served_at?:          string | null
+          served_by?:          string | null
+          unit_price?:         number
         }
         Relationships: [
           {
@@ -437,6 +464,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_served_by_fkey"
+            columns: ["served_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -510,6 +544,7 @@ export type Database = {
           session_id:                  string
           status:                      Database["public"]["Enums"]["order_status"]
           subtotal:                    number
+          table_number:                string | null
           tax_amount:                  number
           total:                       number
           updated_at:                  string
@@ -529,6 +564,7 @@ export type Database = {
           session_id:                   string
           status?:                      Database["public"]["Enums"]["order_status"]
           subtotal:                     number
+          table_number?:                string | null
           tax_amount:                   number
           total:                        number
           updated_at?:                  string
@@ -548,6 +584,7 @@ export type Database = {
           session_id?:                  string
           status?:                      Database["public"]["Enums"]["order_status"]
           subtotal?:                    number
+          table_number?:                string | null
           tax_amount?:                  number
           total?:                       number
           updated_at?:                  string
@@ -575,6 +612,98 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      product_modifiers: {
+        Row: {
+          category_id:       string
+          created_at:        string
+          group_name:        string
+          group_required:    boolean
+          group_sort_order:  number
+          group_type:        string
+          id:                string
+          is_active:         boolean
+          is_default:        boolean
+          option_icon:       string | null
+          option_label:      string
+          option_sort_order: number
+          price_adjustment:  number
+          updated_at:        string
+        }
+        Insert: {
+          category_id:       string
+          created_at?:       string
+          group_name:        string
+          group_required?:   boolean
+          group_sort_order?: number
+          group_type:        string
+          id?:               string
+          is_active?:        boolean
+          is_default?:       boolean
+          option_icon?:      string | null
+          option_label:      string
+          option_sort_order?: number
+          price_adjustment?: number
+          updated_at?:       string
+        }
+        Update: {
+          category_id?:      string
+          created_at?:       string
+          group_name?:       string
+          group_required?:   boolean
+          group_sort_order?: number
+          group_type?:       string
+          id?:               string
+          is_active?:        boolean
+          is_default?:       boolean
+          option_icon?:      string | null
+          option_label?:     string
+          option_sort_order?: number
+          price_adjustment?: number
+          updated_at?:       string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_modifiers_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      restaurant_tables: {
+        Row: {
+          id:         string
+          name:       string
+          seats:      number
+          sort_order: number
+          is_active:  boolean
+          created_at: string
+          updated_at: string
+          deleted_at: string | null
+        }
+        Insert: {
+          id?:         string
+          name:        string
+          seats?:      number
+          sort_order?: number
+          is_active?:  boolean
+          created_at?: string
+          updated_at?: string
+          deleted_at?: string | null
+        }
+        Update: {
+          id?:         string
+          name?:       string
+          seats?:      number
+          sort_order?: number
+          is_active?:  boolean
+          created_at?: string
+          updated_at?: string
+          deleted_at?: string | null
+        }
+        Relationships: []
       }
       permissions: {
         Row: {
@@ -908,7 +1037,15 @@ export type Database = {
       }
       hash_pin: { Args: { p_pin: string }; Returns: string }
       is_authenticated: { Args: never; Returns: boolean }
+      mark_item_served: {
+        Args: { p_item_id: string }
+        Returns: Database["public"]["Tables"]["order_items"]["Row"]
+      }
       round_idr: { Args: { amount: number }; Returns: number }
+      send_items_to_kitchen: {
+        Args: { p_item_ids: string[] }
+        Returns: Database["public"]["Tables"]["order_items"]["Row"][]
+      }
       verify_user_pin: {
         Args: { p_pin: string; p_user_id: string }
         Returns: boolean
