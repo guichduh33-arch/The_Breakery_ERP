@@ -55,3 +55,14 @@ export {
   RedeemPointsModal,
   type RedeemPointsModalProps,
 } from './components/RedeemPointsModal.js';
+export {
+  TableSelectorModal,
+  type TableSelectorModalProps,
+  type RestaurantTable,
+} from './components/TableSelectorModal.js';
+export {
+  HeldOrdersModal,
+  type HeldOrdersModalProps,
+  type HeldOrder,
+  type HeldOrderCart,
+} from './components/HeldOrdersModal.js';
