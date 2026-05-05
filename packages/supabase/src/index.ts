@@ -1,5 +1,5 @@
 export { getSupabaseClient, resetSupabaseClient, type BreakerySupabaseConfig } from './client.js';
-export type { Database } from './types.generated.js';
+export type { Database, Json } from './types.generated.js';
 export * from './enums.js';
 export { hasPermission, hasAnyPermission, type PermissionCode } from './rls/permissions.js';
 export { loginWithPin, getSession, logoutSession, changePin } from './auth/pinAuth.js';

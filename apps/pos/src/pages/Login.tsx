@@ -18,7 +18,11 @@ export default function LoginPage() {
     if (!selectedUserId) return;
     setError(null);
     void login(selectedUserId, pin)
-      .then(() => { navigate('/pos', { replace: true }); })
+      .then(() => {
+        const { user } = useAuthStore.getState();
+        const dest = user?.role_code === 'waiter' ? '/tablet/order' : '/pos';
+        navigate(dest, { replace: true });
+      })
       .catch(() => { /* error in store */ });
   }
 

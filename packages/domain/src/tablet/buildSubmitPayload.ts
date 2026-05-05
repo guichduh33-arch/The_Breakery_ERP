@@ -5,12 +5,12 @@ export interface TabletSubmitPayload {
   p_waiter_id: string;
   p_table_number: string | null;
   p_order_type: 'dine_in' | 'take_out';
-  p_items: Array<{
+  p_items: {
     product_id: string;
     quantity: number;
     unit_price: number;
     modifiers: SelectedModifiers;
-  }>;
+  }[];
 }
 
 export function buildSubmitPayload(

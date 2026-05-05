@@ -3,6 +3,7 @@
 // Session 2 extension: lockedItemIds + canEdit guard + sendCurrentBatch helper.
 // Session 3 extension: customerId + loyaltyPointsToRedeem + redemptionAmount.
 // Session 4 extension: tableNumber + setTableNumber + restoreCart.
+// Session 5 extension: pickedUpOrderId + setPickedUpOrderId (tablet pickup flow).
 // Persisted in sessionStorage so a tab reload doesn't drop the lock state.
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
@@ -32,6 +33,8 @@ interface CartState {
   lockedItemIds: string[];
   /** Full customer object for display — mirrors cart.customerId. */
   attachedCustomer: Customer | null;
+  /** Set when a tablet order is picked up; directs checkout to pay_existing_order RPC. */
+  pickedUpOrderId: string | null;
 
   // Actions
   add: (product: Product, modifiers?: SelectedModifiers) => void;
@@ -57,6 +60,9 @@ interface CartState {
 
   // Held orders restore (session 4)
   restoreCart: (cart: Cart) => void;
+
+  // Tablet pickup (session 5)
+  setPickedUpOrderId: (id: string | null) => void;
 }
 
 export const useCartStore = create<CartState>()(
@@ -65,6 +71,7 @@ export const useCartStore = create<CartState>()(
       cart: { items: [], order_type: 'dine_in' },
       lockedItemIds: [],
       attachedCustomer: null,
+      pickedUpOrderId: null,
 
       add: (product, modifiers = []) =>
         set((s) => ({ cart: addItem(s.cart, product, modifiers) })),
@@ -137,6 +144,8 @@ export const useCartStore = create<CartState>()(
           lockedItemIds: [],
           attachedCustomer: null,
         }),
+
+      setPickedUpOrderId: (id) => set({ pickedUpOrderId: id }),
     }),
     {
       name: 'breakery.cart.v2',
@@ -145,6 +154,7 @@ export const useCartStore = create<CartState>()(
         cart: state.cart,
         lockedItemIds: state.lockedItemIds,
         attachedCustomer: state.attachedCustomer,
+        pickedUpOrderId: state.pickedUpOrderId,
       }),
     },
   ),
@@ -158,6 +168,6 @@ export function resetCartAfterCheckout(): void {
   useCartStore.setState((s) => {
     const cleared = clearCart(s.cart);
     const { customerId: _c, loyaltyPointsToRedeem: _l, tableNumber: _t, ...rest } = cleared;
-    return { cart: rest, lockedItemIds: [], attachedCustomer: null };
+    return { cart: rest, lockedItemIds: [], attachedCustomer: null, pickedUpOrderId: null };
   });
 }

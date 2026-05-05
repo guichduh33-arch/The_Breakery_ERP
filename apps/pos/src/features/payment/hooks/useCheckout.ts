@@ -2,7 +2,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Cart, PaymentInput, PaymentResult } from '@breakery/domain';
 import { buildOrderPayload } from '@breakery/domain';
-import { supabaseUrl } from '@/lib/supabase';
+import type { Json } from '@breakery/supabase';
+import { supabase, supabaseUrl } from '@/lib/supabase';
 import { useShiftStore } from '@/stores/shiftStore';
 import { usePaymentStore } from '@/stores/paymentStore';
 
@@ -29,9 +30,31 @@ export function useCheckout() {
   return useMutation({
     mutationFn: async (input: CheckoutInput): Promise<PaymentResult> => {
       if (!sessionId) throw new Error('no_open_shift');
-      const accessToken = await getAccessToken();
       const { useCartStore } = await import('@/stores/cartStore');
-      const { customerId, loyaltyPointsToRedeem, tableNumber } = useCartStore.getState().cart;
+      const cartState = useCartStore.getState();
+      const { customerId, loyaltyPointsToRedeem, tableNumber } = cartState.cart;
+      const pickedUpOrderId = cartState.pickedUpOrderId;
+
+      if (pickedUpOrderId) {
+        const { error, data } = await supabase.rpc('pay_existing_order', {
+          p_order_id: pickedUpOrderId,
+          p_payment: input.payment as unknown as Json,
+          p_customer_id: customerId ?? null,
+          p_loyalty_points_redeemed: loyaltyPointsToRedeem ?? 0,
+          p_idempotency_key: idempotencyKey ?? null,
+        });
+        if (error) throw Object.assign(new Error(error.message), { details: error });
+        return {
+          ok: true,
+          order_id: pickedUpOrderId,
+          order_number: (data as { order_number?: string })?.order_number ?? '',
+          total: 0,
+          tax_amount: 0,
+          change_given: null,
+        };
+      }
+
+      const accessToken = await getAccessToken();
       const cartWithLoyalty: typeof input.cart = {
         ...input.cart,
         ...(customerId ? { customerId } : {}),

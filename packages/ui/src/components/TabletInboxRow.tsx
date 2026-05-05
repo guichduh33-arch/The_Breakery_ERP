@@ -1,20 +1,10 @@
 import { useEffect, useRef, useState, type JSX } from 'react';
+import type { TabletOrderEntry } from '@breakery/domain';
 import { cn } from '../lib/cn.js';
 import { Button } from '../primitives/Button.js';
 import { Currency } from './Currency.js';
 
-// TODO: switch to @breakery/domain types once domain agent commits TabletOrderEntry to domain index
-export interface TabletOrderEntry {
-  id: string;
-  order_number: string;
-  table_number: string | null;
-  order_type: 'dine_in' | 'take_out';
-  waiter_id: string;
-  waiter_name: string;
-  sent_to_kitchen_at: string;
-  items_count: number;
-  items_total: number;
-}
+export type { TabletOrderEntry };
 
 export interface TabletInboxRowProps {
   entry: TabletOrderEntry;
