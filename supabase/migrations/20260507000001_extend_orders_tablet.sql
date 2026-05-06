@@ -2,31 +2,30 @@
 -- Session 5 / migration 1 : extend orders for tablet ordering
 -- Adds created_via, waiter_id, sent_to_kitchen_at on orders row.
 -- Makes session_id + served_by nullable (tablet orders have no POS session at creation).
--- Extends order_status enum with 'pending_payment'.
 -- Updates has_permission() to recognise 'waiter' role_code.
+--
+-- NOTE: order_status enum extension ('pending_payment', 'completed') lives in
+-- 20260507000000_add_order_status_values.sql — Postgres requires new enum values
+-- to be committed in a separate transaction before they can be used (SQLSTATE 55P04).
 
--- 1. Extend order_status ENUM
-ALTER TYPE order_status ADD VALUE IF NOT EXISTS 'pending_payment';
-ALTER TYPE order_status ADD VALUE IF NOT EXISTS 'completed';
-
--- 2. Make orders.session_id + served_by nullable (tablet orders created before POS pickup)
+-- 1. Make orders.session_id + served_by nullable (tablet orders created before POS pickup)
 ALTER TABLE orders
   ALTER COLUMN session_id DROP NOT NULL,
   ALTER COLUMN served_by DROP NOT NULL;
 
--- 3. Add tablet columns
+-- 2. Add tablet columns
 ALTER TABLE orders
   ADD COLUMN created_via TEXT NOT NULL DEFAULT 'pos'
     CHECK (created_via IN ('pos', 'tablet')),
   ADD COLUMN waiter_id UUID REFERENCES user_profiles(id) ON DELETE SET NULL,
   ADD COLUMN sent_to_kitchen_at TIMESTAMPTZ;
 
--- 4. Sparse index for POS hub inbox query (tablet pending_payment, ordered newest first)
+-- 3. Sparse index for POS hub inbox query (tablet pending_payment, ordered newest first)
 CREATE INDEX idx_orders_pending_tablet
   ON orders(sent_to_kitchen_at DESC)
   WHERE status = 'pending_payment' AND created_via = 'tablet';
 
--- 5. Update has_permission() to add 'waiter' role_code mapping
+-- 4. Update has_permission() to add 'waiter' role_code mapping
 CREATE OR REPLACE FUNCTION has_permission(p_uid UUID, p_perm TEXT)
 RETURNS BOOLEAN
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public
