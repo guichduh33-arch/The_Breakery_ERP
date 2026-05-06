@@ -88,3 +88,13 @@ export {
   type PinVerificationModalProps,
   type VerifyResult,
 } from './components/PinVerificationModal.js';
+export {
+  CustomerCategoryBadge,
+  type CustomerCategoryBadgeProps,
+  type CustomerCategory,
+} from './components/CustomerCategoryBadge.js';
+export {
+  ComboLineRow,
+  type ComboLineRowProps,
+  type ComboComponent,
+} from './components/ComboLineRow.js';
