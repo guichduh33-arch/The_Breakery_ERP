@@ -6,8 +6,12 @@ import type { EvaluationResult } from '@breakery/domain';
 import { supabase } from '@/lib/supabase';
 import { useCartStore } from '@/stores/cartStore';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const supabaseAny = supabase as unknown as any;
+interface RpcSupabase {
+  rpc: (
+    fn: string,
+    params: Record<string, unknown>,
+  ) => Promise<{ data: unknown; error: unknown }>;
+}
 
 export function useEvaluatePromotionsLive(): EvaluationResult | null {
   const [result, setResult] = useState<EvaluationResult | null>(null);
@@ -31,15 +35,16 @@ export function useEvaluatePromotionsLive(): EvaluationResult | null {
         modifier_total: i.modifiers?.reduce((s, m) => s + (m.price_adjustment ?? 0), 0) ?? 0,
         manual_discount_amount: i.discount?.amount ?? 0,
       }));
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-      void supabaseAny
+      const client = supabase as unknown as RpcSupabase;
+      if (typeof client.rpc !== 'function') return;
+      void client
         .rpc('evaluate_promotions', {
           p_items,
           p_customer_id: customerId ?? null,
           p_evaluation_ts: new Date().toISOString(),
         })
-        .then(({ data, error }: { data: unknown; error: unknown }) => {
-          if (!error && data) setResult(data as unknown as EvaluationResult);
+        .then(({ data, error }) => {
+          if (!error && data) setResult(data as EvaluationResult);
         });
     }, 300);
 
