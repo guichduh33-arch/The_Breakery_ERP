@@ -165,13 +165,15 @@ export function PaymentTerminal() {
           <div className="mt-6 space-y-1 text-sm">
             {attachedCustomer && (() => {
               const tier = tierFromLifetime(attachedCustomer.lifetime_points);
-              const multiplier = TIERS.find((t) => t.tier === tier)?.points_multiplier ?? 1.0;
-              const ptsToEarn = earnPointsForCustomer(totals.total, attachedCustomer.lifetime_points);
+              const tierMultiplier = TIERS.find((t) => t.tier === tier)?.points_multiplier ?? 1.0;
+              const categoryMultiplier = attachedCustomer.category?.points_multiplier ?? 1.0;
+              const cumulMultiplier = tierMultiplier * categoryMultiplier;
+              const ptsToEarn = Math.floor((totals.total * cumulMultiplier) / 1000);
               return (
                 <div className="flex items-center justify-between mb-3 pb-3 border-b border-border-subtle">
                   <LoyaltyBadge tier={tier} points={attachedCustomer.loyalty_points} />
                   <span className="text-xs text-text-secondary">
-                    +{ptsToEarn} pts to earn ({multiplier}x)
+                    +{ptsToEarn} pts to earn ({cumulMultiplier.toFixed(2)}x)
                   </span>
                 </div>
               );

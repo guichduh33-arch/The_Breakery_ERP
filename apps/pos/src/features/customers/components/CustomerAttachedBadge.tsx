@@ -1,11 +1,15 @@
 // apps/pos/src/features/customers/components/CustomerAttachedBadge.tsx
 import { X } from 'lucide-react';
-import { LoyaltyBadge } from '@breakery/ui';
+import { LoyaltyBadge, CustomerCategoryBadge } from '@breakery/ui';
 import { tierFromLifetime } from '@breakery/domain';
-import type { Customer } from '@breakery/domain';
+import type { Customer, CustomerCategory } from '@breakery/domain';
+
+export interface CustomerWithCategory extends Customer {
+  category?: CustomerCategory | null;
+}
 
 interface CustomerAttachedBadgeProps {
-  customer: Customer;
+  customer: CustomerWithCategory;
   onDetach: () => void;
 }
 
@@ -16,6 +20,9 @@ export function CustomerAttachedBadge({ customer, onDetach }: CustomerAttachedBa
       <div className="flex items-center gap-2 min-w-0">
         <LoyaltyBadge tier={tier} points={customer.loyalty_points} />
         <span className="text-sm font-medium truncate">{customer.name}</span>
+        {customer.category !== undefined && (
+          <CustomerCategoryBadge category={customer.category ?? null} />
+        )}
       </div>
       <button
         onClick={onDetach}

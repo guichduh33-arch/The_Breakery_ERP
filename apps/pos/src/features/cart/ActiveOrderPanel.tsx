@@ -23,9 +23,10 @@ const TAX_RATE = 0.10;
 
 interface ActiveOrderPanelProps {
   onOpenCustomerSearch?: () => void;
+  onDetachCustomer?: () => void;
 }
 
-export function ActiveOrderPanel({ onOpenCustomerSearch }: ActiveOrderPanelProps) {
+export function ActiveOrderPanel({ onOpenCustomerSearch, onDetachCustomer }: ActiveOrderPanelProps) {
   const cart = useCartStore((s) => s.cart);
   const lockedIds = useCartStore((s) => s.lockedItemIds);
   const attachedCustomer = useCartStore((s) => s.attachedCustomer);
@@ -74,7 +75,7 @@ export function ActiveOrderPanel({ onOpenCustomerSearch }: ActiveOrderPanelProps
         )}
         <div className="mt-2">
           {attachedCustomer ? (
-            <CustomerAttachedBadge customer={attachedCustomer} onDetach={detachCustomer} />
+            <CustomerAttachedBadge customer={attachedCustomer} onDetach={onDetachCustomer ?? detachCustomer} />
           ) : (
             <CustomerAttachButton onClick={() => onOpenCustomerSearch?.()} />
           )}

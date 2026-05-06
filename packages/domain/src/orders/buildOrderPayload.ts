@@ -31,10 +31,13 @@ export function buildOrderPayload(
   payment: PaymentInput,
   idempotencyKey?: string,
   lifetimePoints?: number,
+  cumulLoyaltyMultiplier?: number,
 ): OrderPayload {
-  const multiplier = lifetimePoints != null
-    ? (TIERS.find((t) => t.tier === tierFromLifetime(lifetimePoints))?.points_multiplier ?? 1.0)
-    : resolveLoyaltyMultiplier(cart);
+  const multiplier =
+    cumulLoyaltyMultiplier ??
+    (lifetimePoints != null
+      ? (TIERS.find((t) => t.tier === tierFromLifetime(lifetimePoints))?.points_multiplier ?? 1.0)
+      : resolveLoyaltyMultiplier(cart));
 
   return {
     session_id: sessionId,

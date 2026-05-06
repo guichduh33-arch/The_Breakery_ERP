@@ -2,8 +2,9 @@
 import { Lock, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { CartItem } from '@breakery/domain';
-import { Button, Currency, QuantityStepper, cn } from '@breakery/ui';
+import { Button, Currency, QuantityStepper, cn, ComboLineRow } from '@breakery/ui';
 import { LineDiscountButton } from '@/features/discounts/components/LineDiscountButton';
+import { useComboItems } from '@/features/combos/hooks/useComboItems';
 
 export interface CartItemRowProps {
   item: CartItem;
@@ -13,7 +14,27 @@ export interface CartItemRowProps {
   onApplyLineDiscount?: (item: CartItem) => void;
 }
 
+function ComboCartItemRow({ item, locked, onChangeQty, onRemove }: Omit<CartItemRowProps, 'onApplyLineDiscount'>) {
+  const { data: comboItems = [] } = useComboItems(item.product_id);
+  const components = comboItems.map((ci) => ({ name: ci.product.name, quantity: ci.quantity }));
+  const lineTotal = item.unit_price * item.quantity;
+
+  return (
+    <ComboLineRow
+      comboItem={{ id: item.id, product_id: item.product_id, name: item.name, quantity: item.quantity, unit_price: item.unit_price, line_total: lineTotal }}
+      components={components}
+      isLocked={locked}
+      onRemove={() => onRemove()}
+      onQuantityChange={(_id, qty) => onChangeQty(qty)}
+    />
+  );
+}
+
 export function CartItemRow({ item, locked, onChangeQty, onRemove, onApplyLineDiscount }: CartItemRowProps) {
+  if (item.product_type === 'combo') {
+    return <ComboCartItemRow item={item} locked={locked} onChangeQty={onChangeQty} onRemove={onRemove} />;
+  }
+
   const adj = item.modifiers.reduce((s, m) => s + m.price_adjustment, 0);
   const lineTotal = (item.unit_price + adj) * item.quantity;
 

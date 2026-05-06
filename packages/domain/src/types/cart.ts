@@ -1,6 +1,7 @@
 // packages/domain/src/types/cart.ts
 import type { SelectedModifiers } from '../modifiers/types.js';
 import type { Discount } from '../discounts/types.js';
+import type { ProductType } from './product.js';
 
 export type OrderType = 'dine_in' | 'take_out' | 'delivery';
 
@@ -17,6 +18,8 @@ export interface CartItem {
   quantity: number;
   /** Selected options snapshot — empty array if the product has no modifiers. */
   modifiers: SelectedModifiers;
+  /** Product type — used by CartItemRow to branch on combo rendering. */
+  product_type?: ProductType;
   /** Optional line-level discount applied to this item. */
   discount?: Discount;
 }

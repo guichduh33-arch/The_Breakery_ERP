@@ -36,7 +36,9 @@ export function useCheckout() {
       const { attachedCustomer, pickedUpOrderId } = cartState;
 
       const tier = attachedCustomer ? tierFromLifetime(attachedCustomer.lifetime_points) : null;
-      const multiplier = tier ? (TIERS.find((t) => t.tier === tier)?.points_multiplier ?? 1.0) : 1.0;
+      const tierMultiplier = tier ? (TIERS.find((t) => t.tier === tier)?.points_multiplier ?? 1.0) : 1.0;
+      const categoryMultiplier = attachedCustomer?.category?.points_multiplier ?? 1.0;
+      const multiplier = tierMultiplier * categoryMultiplier;
 
       if (pickedUpOrderId) {
         const { error, data } = await supabase.rpc('pay_existing_order', {
@@ -72,7 +74,7 @@ export function useCheckout() {
         ...(cartDiscount ? { cartDiscount } : {}),
       };
       const lifetimePoints = attachedCustomer?.lifetime_points;
-      const payload = buildOrderPayload(sessionId, cartWithLoyalty, input.payment, idempotencyKey, lifetimePoints);
+      const payload = buildOrderPayload(sessionId, cartWithLoyalty, input.payment, idempotencyKey, lifetimePoints, multiplier);
 
       const res = await fetch(`${supabaseUrl}/functions/v1/process-payment`, {
         method: 'POST',

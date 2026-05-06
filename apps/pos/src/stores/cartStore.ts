@@ -5,6 +5,7 @@
 // Session 4 extension: tableNumber + setTableNumber + restoreCart.
 // Session 5 extension: pickedUpOrderId + setPickedUpOrderId (tablet pickup flow).
 // Session 6 extension: cartDiscount + setCartDiscount + setLineDiscount.
+// Session 7 extension: attachedCustomer includes optional category for pricing tier display.
 // Persisted in sessionStorage so a tab reload doesn't drop the lock state.
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
@@ -23,23 +24,26 @@ import type {
   Cart,
   CartItem,
   Customer,
+  CustomerCategory,
   Discount,
   OrderType,
   Product,
   SelectedModifiers,
 } from '@breakery/domain';
 
+export type CustomerWithCategory = Customer & { category?: CustomerCategory | null };
+
 interface CartState {
   cart: Cart;
   /** Line ids that have been "sent to kitchen" — read-only afterwards. */
   lockedItemIds: string[];
   /** Full customer object for display — mirrors cart.customerId. */
-  attachedCustomer: Customer | null;
+  attachedCustomer: CustomerWithCategory | null;
   /** Set when a tablet order is picked up; directs checkout to pay_existing_order RPC. */
   pickedUpOrderId: string | null;
 
   // Actions
-  add: (product: Product, modifiers?: SelectedModifiers) => void;
+  add: (product: Product, modifiers?: SelectedModifiers, unitPriceOverride?: number) => void;
   update: (lineId: string, quantity: number) => void;
   remove: (lineId: string) => void;
   clear: () => void;
@@ -49,7 +53,7 @@ interface CartState {
   setTableNumber: (name: string | null) => void;
 
   // Customer + loyalty
-  attachCustomer: (customer: Customer) => void;
+  attachCustomer: (customer: Customer | CustomerWithCategory) => void;
   detachCustomer: () => void;
   setRedeemPoints: (points: number) => void;
   redemptionAmount: () => number;
@@ -79,8 +83,8 @@ export const useCartStore = create<CartState>()(
       attachedCustomer: null,
       pickedUpOrderId: null,
 
-      add: (product, modifiers = []) =>
-        set((s) => ({ cart: addItem(s.cart, product, modifiers) })),
+      add: (product, modifiers = [], unitPriceOverride) =>
+        set((s) => ({ cart: addItem(s.cart, product, modifiers, 1, unitPriceOverride) })),
 
       update: (id, qty) =>
         set((s) => {

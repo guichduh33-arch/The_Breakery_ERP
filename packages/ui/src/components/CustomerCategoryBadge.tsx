@@ -1,20 +1,9 @@
-// TODO: switch to @breakery/domain once customerCategories is exported from domain index
 // Spec ref: docs/superpowers/specs/2026-05-06-session-7-customer-categories-combos-spec.md §4.2
 import type { JSX } from 'react';
+import type { CustomerCategory } from '@breakery/domain';
 import { cn } from '../lib/cn.js';
 
-export interface CustomerCategory {
-  id: string;
-  name: string;
-  slug: string;
-  color: string | null;
-  icon: string | null;
-  price_modifier_type: 'retail' | 'wholesale' | 'discount_percentage' | 'custom';
-  discount_percentage: number;
-  loyalty_enabled: boolean;
-  points_multiplier: number;
-  is_default: boolean;
-}
+export type { CustomerCategory };
 
 export interface CustomerCategoryBadgeProps {
   category: CustomerCategory | null;

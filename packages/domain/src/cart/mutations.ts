@@ -35,6 +35,7 @@ export function addItem(
   product: Product,
   modifiers: SelectedModifiers = [],
   quantity = 1,
+  unitPriceOverride?: number,
 ): Cart {
   const sig = lineSignature(product.id, modifiers);
   const existing = cart.items.find(
@@ -52,9 +53,10 @@ export function addItem(
     id: newLineId(),
     product_id: product.id,
     name: product.name,
-    unit_price: product.retail_price,
+    unit_price: unitPriceOverride ?? product.retail_price,
     quantity,
     modifiers,
+    ...(product.product_type !== 'finished' ? { product_type: product.product_type } : {}),
   };
   return { ...cart, items: [...cart.items, newItem] };
 }

@@ -2,17 +2,19 @@
 //
 // Glue between `<ProductGrid>` and `cartStore.add`. When the cashier taps a
 // product:
-//   1. Fetch the product's merged modifier groups (product-level + category
-//      fallback, via `useProductModifiers`).
-//   2. If there are no groups → add directly to the cart.
-//   3. Otherwise → open the `ModifierModal`. On confirm, add the product to
-//      the cart with the chosen selections.
+//   1. Fetch the product's merged modifier groups.
+//   2. Combo products: skip ModifierModal entirely (spec CB5). If combo has
+//      modifier groups → toast error and abort. Otherwise → addItem direct.
+//   3. Finished products: existing flow (open ModifierModal if groups, else direct).
 //
-// Spec ref §4.3.
+// Customer pricing: if a customer is attached, unit_price is resolved via
+// get_customer_product_price RPC before addItem. Spec §4.4.
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { ModifierModal, type ModifierModalProduct } from '@breakery/ui';
 import type { Product, SelectedModifiers } from '@breakery/domain';
 import { useCartStore } from '@/stores/cartStore';
+import { useCustomerProductPrice } from '@/features/customerCategories/hooks/useCustomerProductPrice';
 import { ProductGrid } from './ProductGrid';
 import { useProductModifiers } from './hooks/useProductModifiers';
 
@@ -22,21 +24,31 @@ export interface ProductTapHandlerProps {
 
 export function ProductTapHandler({ selectedSlug }: ProductTapHandlerProps) {
   const add = useCartStore((s) => s.add);
+  const attachedCustomer = useCartStore((s) => s.attachedCustomer);
   const [pending, setPending] = useState<Product | null>(null);
+  const fetchPrice = useCustomerProductPrice();
 
-  // Always call hooks unconditionally — `enabled` toggles fetch.
   const modifiersQuery = useProductModifiers({
     productId: pending?.id ?? '',
     categoryId: pending?.category_id ?? null,
     enabled: pending !== null,
   });
 
+  async function addWithPrice(product: Product, modifiers: SelectedModifiers) {
+    try {
+      const price = await fetchPrice(product.id, attachedCustomer?.id ?? null);
+      add(product, modifiers, price);
+    } catch {
+      add(product, modifiers);
+    }
+  }
+
   function handleSelect(product: Product) {
     setPending(product);
   }
 
   function handleConfirm(selections: SelectedModifiers) {
-    if (pending) add(pending, selections);
+    if (pending) void addWithPrice(pending, selections);
     setPending(null);
   }
 
@@ -44,28 +56,29 @@ export function ProductTapHandler({ selectedSlug }: ProductTapHandlerProps) {
     setPending(null);
   }
 
-  // While the query is loading we keep `pending` set but DON'T render the
-  // modal yet — instead we show a transient toast-less "pending" state by
-  // simply waiting. When data lands:
-  //   - empty groups → auto-add and close
-  //   - has groups → open modal
-  // We resolve this in render via early-return below.
   if (pending && modifiersQuery.isSuccess) {
     const groups = modifiersQuery.data;
-    if (groups.length === 0) {
-      // No modifiers → add directly, no modal
-      add(pending, []);
-      // Defer state update to next tick to avoid setting state during render.
+    if (pending.product_type === 'combo') {
+      if (groups.length > 0) {
+        toast.error('Modifiers not supported on combos');
+      } else {
+        void addWithPrice(pending, []);
+      }
+      queueMicrotask(() => setPending(null));
+    } else if (groups.length === 0) {
+      void addWithPrice(pending, []);
       queueMicrotask(() => setPending(null));
     }
   }
 
-  const product: ModifierModalProduct | null = pending
-    ? { id: pending.id, name: pending.name, retail_price: pending.retail_price }
-    : null;
-
+  const isCombo = pending?.product_type === 'combo';
   const groups = modifiersQuery.data ?? [];
-  const modalOpen = Boolean(product) && modifiersQuery.isSuccess && groups.length > 0;
+  const modalOpen = Boolean(pending) && modifiersQuery.isSuccess && groups.length > 0 && !isCombo;
+
+  const product: ModifierModalProduct | null =
+    pending && !isCombo
+      ? { id: pending.id, name: pending.name, retail_price: pending.retail_price }
+      : null;
 
   return (
     <>

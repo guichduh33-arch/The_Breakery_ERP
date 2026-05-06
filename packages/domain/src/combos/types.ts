@@ -16,9 +16,9 @@ export interface ComboItem {
 /** Assembled view of a combo product together with its resolved components. */
 export interface ComboWithComponents {
   combo: Product;
-  components: Array<{
+  components: {
     product: Product;
     quantity: number;
     sort_order: number;
-  }>;
+  }[];
 }
