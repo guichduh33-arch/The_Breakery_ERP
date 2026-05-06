@@ -74,7 +74,9 @@ export function useCheckout() {
         ...(cartDiscount ? { cartDiscount } : {}),
       };
       const lifetimePoints = attachedCustomer?.lifetime_points;
-      const payload = buildOrderPayload(sessionId, cartWithLoyalty, input.payment, idempotencyKey, lifetimePoints, multiplier);
+      // Session 8: pass evaluation_ts so EF can re-evaluate promotions server-side (freeze semantics)
+      const evaluationTs = new Date().toISOString();
+      const payload = buildOrderPayload(sessionId, cartWithLoyalty, input.payment, idempotencyKey, lifetimePoints, multiplier, evaluationTs);
 
       const res = await fetch(`${supabaseUrl}/functions/v1/process-payment`, {
         method: 'POST',

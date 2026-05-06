@@ -28,6 +28,12 @@ interface ProcessPaymentPayload {
   loyalty_points_redeemed?: number;
   /** Session 4: dine-in table name (e.g. "T-03"). Forwarded to RPC v4 as p_table_number. */
   table_number?: string;
+  /**
+   * Session 8: ISO timestamp at which promotions were evaluated client-side.
+   * Forwarded to complete_order_with_payment as p_evaluation_ts so the server
+   * can re-evaluate and freeze the correct promotion snapshot.
+   */
+  evaluation_ts?: string;
 }
 
 serve(async (req) => {
@@ -89,6 +95,8 @@ serve(async (req) => {
     ...(body.loyalty_points_redeemed ? { p_loyalty_points_redeemed: body.loyalty_points_redeemed } : {}),
     // Forward optional table_number (session 4 — RPC v4)
     ...(body.table_number ? { p_table_number: body.table_number } : {}),
+    // Forward evaluation_ts (session 8 — re-evaluate promotions server-side)
+    p_evaluation_ts: body.evaluation_ts ?? new Date().toISOString(),
   });
 
   if (error) {

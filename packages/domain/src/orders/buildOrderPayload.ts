@@ -32,6 +32,7 @@ export function buildOrderPayload(
   idempotencyKey?: string,
   lifetimePoints?: number,
   cumulLoyaltyMultiplier?: number,
+  evaluationTs?: string,
 ): OrderPayload {
   const multiplier =
     cumulLoyaltyMultiplier ??
@@ -57,5 +58,7 @@ export function buildOrderPayload(
       ...(cart.cartDiscount.authorized_by ? { discount_authorized_by: cart.cartDiscount.authorized_by } : {}),
     } : {}),
     ...(multiplier !== 1.0 ? { loyalty_multiplier: multiplier } : {}),
+    // Session 8: forward evaluation_ts for server-side promotion re-evaluation
+    ...(evaluationTs ? { evaluation_ts: evaluationTs } : {}),
   };
 }
