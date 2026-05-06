@@ -98,3 +98,16 @@ export {
   type ComboLineRowProps,
   type ComboComponent,
 } from './components/ComboLineRow.js';
+// Session 8 — promotions engine UI components
+export {
+  FreeItemRow,
+  type FreeItemRowProps,
+} from './components/FreeItemRow.js';
+export {
+  PromotionBadge,
+  type PromotionBadgeProps,
+} from './components/PromotionBadge.js';
+export {
+  PromotionLineRow,
+  type PromotionLineRowProps,
+} from './components/PromotionLineRow.js';
