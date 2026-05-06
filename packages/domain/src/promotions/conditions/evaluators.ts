@@ -51,10 +51,11 @@ function localTimeFields(ts: Date, tz: string): { time: string; dow: number; dat
   });
   const parts = Object.fromEntries(fmt.formatToParts(ts).map((p) => [p.type, p.value]));
   const dowMap: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+  const weekday = parts['weekday'] ?? '';
   return {
-    time: `${parts.hour}:${parts.minute}`,
-    dow: dowMap[parts.weekday] ?? 0,
-    date: `${parts.year}-${parts.month}-${parts.day}`,
+    time: `${parts['hour']}:${parts['minute']}`,
+    dow: dowMap[weekday] ?? 0,
+    date: `${parts['year']}-${parts['month']}-${parts['day']}`,
   };
 }
 
