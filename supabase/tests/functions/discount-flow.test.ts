@@ -223,7 +223,7 @@ describe('session 6 — discount flow + loyalty multiplier', () => {
     let waiterId: string;
 
     beforeAll(async () => {
-      const waiter = await login('EMP002', '5678');
+      const waiter = await login('EMP002', '567800');
       waiterId = waiter.profileId;
       waiterClient = createClient(SUPABASE_URL, SERVICE, {
         global: { headers: { Authorization: `Bearer ${waiter.accessToken}` } },

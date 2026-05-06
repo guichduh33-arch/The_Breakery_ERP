@@ -37,7 +37,7 @@ describe('tablet flow — create / pickup / pay / cancel', () => {
   beforeAll(async () => {
     admin = createClient(SUPABASE_URL, SERVICE);
 
-    const waiter  = await login('EMP002', '5678');
+    const waiter  = await login('EMP002', '567800');
     const cashier = await login('EMP000', '1234');
 
     waiterId  = waiter.profileId;

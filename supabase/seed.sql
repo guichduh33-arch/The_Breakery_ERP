@@ -221,7 +221,7 @@ BEGIN
     id, auth_user_id, employee_code, full_name, pin_hash, role_code, is_active
   ) VALUES (
     '00000000-0000-0000-0000-000000000003'::uuid,
-    v_waiter_uid, 'EMP002', 'Waiter Demo', hash_pin('5678'), 'waiter', true
+    v_waiter_uid, 'EMP002', 'Waiter Demo', hash_pin('567800'), 'waiter', true
   ) ON CONFLICT (employee_code) DO NOTHING;
 END $$;
 
