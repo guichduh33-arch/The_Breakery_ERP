@@ -1,8 +1,13 @@
 // apps/pos/src/features/promotions/hooks/useEvaluatePromotionsLive.ts
+// Note: supabase generated types are from session 7; evaluate_promotions RPC not yet typed.
+// We cast through `unknown` until types are regenerated after session-8 migrations.
 import { useEffect, useRef, useState } from 'react';
 import type { EvaluationResult } from '@breakery/domain';
 import { supabase } from '@/lib/supabase';
 import { useCartStore } from '@/stores/cartStore';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const supabaseAny = supabase as unknown as any;
 
 export function useEvaluatePromotionsLive(): EvaluationResult | null {
   const [result, setResult] = useState<EvaluationResult | null>(null);
@@ -26,13 +31,14 @@ export function useEvaluatePromotionsLive(): EvaluationResult | null {
         modifier_total: i.modifiers?.reduce((s, m) => s + (m.price_adjustment ?? 0), 0) ?? 0,
         manual_discount_amount: i.discount?.amount ?? 0,
       }));
-      void supabase
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+      void supabaseAny
         .rpc('evaluate_promotions', {
           p_items,
           p_customer_id: customerId ?? null,
           p_evaluation_ts: new Date().toISOString(),
         })
-        .then(({ data, error }) => {
+        .then(({ data, error }: { data: unknown; error: unknown }) => {
           if (!error && data) setResult(data as unknown as EvaluationResult);
         });
     }, 300);
