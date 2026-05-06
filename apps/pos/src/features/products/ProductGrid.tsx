@@ -2,6 +2,7 @@
 import { Currency, cn } from '@breakery/ui';
 import { Star } from 'lucide-react';
 import type { Product } from '@breakery/domain';
+import { ComboBadge } from '@/features/combos/components/ComboBadge';
 import { useProducts } from './hooks/useProducts';
 import { useCategories } from './hooks/useCategories';
 
@@ -43,6 +44,9 @@ export function ProductGrid({ selectedSlug, onSelect }: ProductGridProps) {
                 ) : null}
                 {p.is_favorite && (
                   <Star className="absolute top-2 right-2 h-4 w-4 fill-gold text-gold" aria-hidden />
+                )}
+                {p.product_type === 'combo' && (
+                  <ComboBadge className="absolute top-2 left-2" />
                 )}
                 {soldOut && (
                   <div className="absolute inset-0 grid place-items-center bg-bg-base/70 text-text-muted uppercase tracking-widest text-sm">

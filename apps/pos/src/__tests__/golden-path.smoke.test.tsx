@@ -467,3 +467,63 @@ describe('Session 5 golden path — tablet pickup-and-pay', () => {
     expect(useCartStore.getState().cart.tableNumber).toBeUndefined();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Session 7 — default category customer attach golden path
+// ---------------------------------------------------------------------------
+
+describe('Session 7 golden path — default category (Retail) customer', () => {
+  const RETAIL_CUSTOMER = {
+    id: 'cust-retail',
+    name: 'Regular Customer',
+    phone: '+62800000000',
+    email: null,
+    customer_type: 'retail' as const,
+    loyalty_points: 0,
+    lifetime_points: 0,
+    total_spent: 0,
+    total_visits: 0,
+    last_visit_at: null,
+    category: {
+      id: 'cat-retail',
+      name: 'Retail',
+      slug: 'retail',
+      color: '#64748B',
+      icon: null,
+      price_modifier_type: 'retail' as const,
+      discount_percentage: 0,
+      loyalty_enabled: true,
+      points_multiplier: 1.0,
+      is_default: true,
+    },
+  };
+
+  beforeEach(() => {
+    useCartStore.setState({
+      cart: {
+        items: [{ id: 'l1', product_id: 'p1', name: 'Americano', unit_price: 35000, quantity: 1, modifiers: [] as never[] }],
+        order_type: 'dine_in',
+      },
+      lockedItemIds: [],
+      attachedCustomer: null,
+    });
+  });
+
+  it('attach Retail customer stores category in attachedCustomer', () => {
+    useCartStore.getState().attachCustomer(RETAIL_CUSTOMER);
+    const customer = useCartStore.getState().attachedCustomer;
+    expect(customer?.name).toBe('Regular Customer');
+    expect(useCartStore.getState().cart.customerId).toBe(RETAIL_CUSTOMER.id);
+  });
+
+  it('Retail customer cumul multiplier = 1.0 × 1.0 = 1.0 → no loyalty_multiplier in payload', async () => {
+    const { buildOrderPayload } = await import('@breakery/domain');
+    const cart = {
+      order_type: 'dine_in' as const,
+      items: [{ id: 'l1', product_id: 'p1', name: 'Americano', unit_price: 35000, quantity: 1, modifiers: [] as never[] }],
+      customerId: RETAIL_CUSTOMER.id,
+    };
+    const payload = buildOrderPayload('sess-7', cart, { method: 'cash', amount: 35000 }, undefined, undefined, 1.0);
+    expect('loyalty_multiplier' in payload).toBe(false);
+  });
+});

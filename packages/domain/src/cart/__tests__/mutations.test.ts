@@ -5,6 +5,7 @@ import type { Cart, Product } from '../../types/index.js';
 
 const product: Product = {
   id: 'p1', sku: 'SKU', name: 'Americano', category_id: 'c1', retail_price: 35000,
+  wholesale_price: null, product_type: 'finished',
   tax_inclusive: true, image_url: null, current_stock: 50, is_active: true, is_favorite: false,
 };
 

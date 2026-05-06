@@ -1,6 +1,7 @@
 // apps/pos/src/pages/Pos.tsx
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { LogOut, Settings } from 'lucide-react';
 import { Button, CustomerSearchModal } from '@breakery/ui';
 import { CategorySidebar } from '@/features/products/CategorySidebar';
@@ -25,6 +26,7 @@ export default function PosPage() {
   const needsShift = !shiftLoading && !currentShift;
 
   const attachCustomer = useCartStore((s) => s.attachCustomer);
+  const detachCustomer = useCartStore((s) => s.detachCustomer);
 
   async function handleLogout() {
     await logout();
@@ -35,21 +37,42 @@ export default function PosPage() {
     if (query.trim().length < 2) return [];
     const { data } = await supabase
       .from('customers')
-      .select('id, name, phone, email, customer_type, loyalty_points, lifetime_points, total_spent, total_visits, last_visit_at')
+      .select('id, name, phone, email, customer_type, loyalty_points, lifetime_points, total_spent, total_visits, last_visit_at, category_id, category:customer_categories(id, name, slug, color, icon, price_modifier_type, discount_percentage, loyalty_enabled, points_multiplier, is_default)')
       .or(`phone.ilike.%${query}%,name.ilike.%${query}%`)
       .is('deleted_at', null)
       .limit(10);
-    return (data ?? []) as Customer[];
+    return (data ?? []).map((row) => ({
+      ...row,
+      category: row.category ?? null,
+    })) as unknown as Customer[];
   }
 
   async function createCustomer(input: { name: string; phone: string; email?: string }): Promise<Customer> {
+    const defaultCat = await supabase
+      .from('customer_categories')
+      .select('id')
+      .eq('is_default', true)
+      .is('deleted_at', null)
+      .limit(1)
+      .single();
     const { data, error } = await supabase
       .from('customers')
-      .insert({ name: input.name, phone: input.phone, email: input.email ?? null, customer_type: 'retail' })
+      .insert({
+        name: input.name,
+        phone: input.phone,
+        email: input.email ?? null,
+        customer_type: 'retail',
+        ...(defaultCat.data?.id ? { category_id: defaultCat.data.id } : {}),
+      })
       .select('id, name, phone, email, customer_type, loyalty_points, lifetime_points, total_spent, total_visits, last_visit_at')
       .single();
     if (error) throw error;
     return data as Customer;
+  }
+
+  function handleDetachCustomer() {
+    detachCustomer();
+    toast.info('Pricing not auto-recomputed. Re-add items to apply new pricing.');
   }
 
   return (
@@ -76,7 +99,10 @@ export default function PosPage() {
           </div>
           <ProductTapHandler selectedSlug={selectedSlug} />
         </main>
-        <ActiveOrderPanel onOpenCustomerSearch={() => setCustomerSearchOpen(true)} />
+        <ActiveOrderPanel
+          onOpenCustomerSearch={() => setCustomerSearchOpen(true)}
+          onDetachCustomer={handleDetachCustomer}
+        />
       </div>
 
       <OpenShiftModal open={needsShift} />

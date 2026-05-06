@@ -269,6 +269,62 @@ describe('calculateTotals — cumulative: all three', () => {
   });
 });
 
+describe('calculateTotals — combo items (session 7 CB3/CB5)', () => {
+  /**
+   * V1 combos have no modifiers (CB5). The combo unit_price is resolved by the
+   * RPC get_customer_product_price at cart-add time. calculateTotals treats the
+   * combo line exactly like a finished-product line: unit_price × qty.
+   * Empty modifiers[] means adjustment=0, so no special-casing is needed.
+   */
+  it('computes combo line as unit_price × qty with empty modifiers', () => {
+    const cart: Cart = {
+      items: [
+        {
+          id: 'combo-l1',
+          product_id: 'combo-001',
+          name: 'Breakfast Set',
+          unit_price: 75000,
+          quantity: 1,
+          modifiers: [],
+        },
+      ],
+      order_type: 'dine_in',
+    };
+    const t = calculateTotals(cart, TAX_RATE);
+    expect(t.subtotal).toBe(75000);
+    expect(t.total).toBe(75000);
+    expect(t.item_count).toBe(1);
+  });
+
+  it('handles mixed cart with combo + finished products', () => {
+    const cart: Cart = {
+      items: [
+        {
+          id: 'combo-l1',
+          product_id: 'combo-001',
+          name: 'Breakfast Set',
+          unit_price: 75000,
+          quantity: 1,
+          modifiers: [],
+        },
+        {
+          id: 'l2',
+          product_id: 'prod-001',
+          name: 'Americano',
+          unit_price: 35000,
+          quantity: 2,
+          modifiers: [{ group_name: 'Temp', option_label: 'Hot', price_adjustment: 0 }],
+        },
+      ],
+      order_type: 'dine_in',
+    };
+    const t = calculateTotals(cart, TAX_RATE);
+    // combo: 75000×1 = 75000; Americano: (35000+0)×2 = 70000
+    expect(t.subtotal).toBe(145000);
+    expect(t.item_count).toBe(3);
+  });
+});
+
 describe('calculateTotals — spec example §6 JE balance', () => {
   it('40000 items + 500pts redemption + 3000 cart discount = 32000 total', () => {
     // items_total=40000, redemption=5000, post=35000, cart fixed 3000 → total=32000

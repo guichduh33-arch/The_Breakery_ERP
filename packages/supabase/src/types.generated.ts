@@ -34,6 +34,96 @@ export type Database = {
   }
   public: {
     Tables: {
+      combo_items: {
+        Row: {
+          parent_product_id:    string
+          component_product_id: string
+          quantity:             number
+          sort_order:           number
+          created_at:           string
+        }
+        Insert: {
+          parent_product_id:    string
+          component_product_id: string
+          quantity?:            number
+          sort_order?:          number
+          created_at?:          string
+        }
+        Update: {
+          parent_product_id?:    string
+          component_product_id?: string
+          quantity?:             number
+          sort_order?:           number
+          created_at?:           string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "combo_items_parent_product_id_fkey"
+            columns: ["parent_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "combo_items_component_product_id_fkey"
+            columns: ["component_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_categories: {
+        Row: {
+          id:                  string
+          name:                string
+          slug:                string
+          color:               string | null
+          icon:                string | null
+          price_modifier_type: Database["public"]["Enums"]["price_modifier_type"]
+          discount_percentage: number
+          loyalty_enabled:     boolean
+          points_multiplier:   number
+          is_default:          boolean
+          is_active:           boolean
+          created_at:          string
+          updated_at:          string
+          deleted_at:          string | null
+        }
+        Insert: {
+          id?:                  string
+          name:                 string
+          slug:                 string
+          color?:               string | null
+          icon?:                string | null
+          price_modifier_type?: Database["public"]["Enums"]["price_modifier_type"]
+          discount_percentage?: number
+          loyalty_enabled?:     boolean
+          points_multiplier?:   number
+          is_default?:          boolean
+          is_active?:           boolean
+          created_at?:          string
+          updated_at?:          string
+          deleted_at?:          string | null
+        }
+        Update: {
+          id?:                  string
+          name?:                string
+          slug?:                string
+          color?:               string | null
+          icon?:                string | null
+          price_modifier_type?: Database["public"]["Enums"]["price_modifier_type"]
+          discount_percentage?: number
+          loyalty_enabled?:     boolean
+          points_multiplier?:   number
+          is_default?:          boolean
+          is_active?:           boolean
+          created_at?:          string
+          updated_at?:          string
+          deleted_at?:          string | null
+        }
+        Relationships: []
+      }
       customers: {
         Row: {
           id:              string
@@ -49,6 +139,7 @@ export type Database = {
           created_at:      string
           updated_at:      string
           deleted_at:      string | null
+          category_id:     string | null
         }
         Insert: {
           id?:              string
@@ -64,6 +155,7 @@ export type Database = {
           created_at?:      string
           updated_at?:      string
           deleted_at?:      string | null
+          category_id?:     string | null
         }
         Update: {
           id?:              string
@@ -79,8 +171,17 @@ export type Database = {
           created_at?:      string
           updated_at?:      string
           deleted_at?:      string | null
+          category_id?:     string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "customers_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "customer_categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       loyalty_transactions: {
         Row: {
@@ -663,6 +764,45 @@ export type Database = {
           },
         ]
       }
+      product_category_prices: {
+        Row: {
+          product_id:           string
+          customer_category_id: string
+          price:                number
+          created_at:           string
+          updated_at:           string
+        }
+        Insert: {
+          product_id:           string
+          customer_category_id: string
+          price:                number
+          created_at?:          string
+          updated_at?:          string
+        }
+        Update: {
+          product_id?:           string
+          customer_category_id?: string
+          price?:                number
+          created_at?:           string
+          updated_at?:           string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_category_prices_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_category_prices_customer_category_id_fkey"
+            columns: ["customer_category_id"]
+            isOneToOne: false
+            referencedRelation: "customer_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_modifiers: {
         Row: {
           category_id:       string
@@ -835,49 +975,55 @@ export type Database = {
       }
       products: {
         Row: {
-          category_id: string
-          created_at: string
-          current_stock: number
-          deleted_at: string | null
-          id: string
-          image_url: string | null
-          is_active: boolean
-          is_favorite: boolean
-          name: string
-          retail_price: number
-          sku: string
-          tax_inclusive: boolean
-          updated_at: string
+          category_id:     string
+          created_at:      string
+          current_stock:   number
+          deleted_at:      string | null
+          id:              string
+          image_url:       string | null
+          is_active:       boolean
+          is_favorite:     boolean
+          name:            string
+          product_type:    string
+          retail_price:    number
+          sku:             string
+          tax_inclusive:   boolean
+          updated_at:      string
+          wholesale_price: number | null
         }
         Insert: {
-          category_id: string
-          created_at?: string
-          current_stock?: number
-          deleted_at?: string | null
-          id?: string
-          image_url?: string | null
-          is_active?: boolean
-          is_favorite?: boolean
-          name: string
-          retail_price: number
-          sku: string
-          tax_inclusive?: boolean
-          updated_at?: string
+          category_id:      string
+          created_at?:      string
+          current_stock?:   number
+          deleted_at?:      string | null
+          id?:              string
+          image_url?:       string | null
+          is_active?:       boolean
+          is_favorite?:     boolean
+          name:             string
+          product_type?:    string
+          retail_price:     number
+          sku:              string
+          tax_inclusive?:   boolean
+          updated_at?:      string
+          wholesale_price?: number | null
         }
         Update: {
-          category_id?: string
-          created_at?: string
-          current_stock?: number
-          deleted_at?: string | null
-          id?: string
-          image_url?: string | null
-          is_active?: boolean
-          is_favorite?: boolean
-          name?: string
-          retail_price?: number
-          sku?: string
-          tax_inclusive?: boolean
-          updated_at?: string
+          category_id?:     string
+          created_at?:      string
+          current_stock?:   number
+          deleted_at?:      string | null
+          id?:              string
+          image_url?:       string | null
+          is_active?:       boolean
+          is_favorite?:     boolean
+          name?:            string
+          product_type?:    string
+          retail_price?:    number
+          sku?:             string
+          tax_inclusive?:   boolean
+          updated_at?:      string
+          wholesale_price?: number | null
         }
         Relationships: [
           {
@@ -1073,6 +1219,13 @@ export type Database = {
         Args: { p_order_id: string }
         Returns: Database["public"]["Tables"]["orders"]["Row"]
       }
+      get_customer_product_price: {
+        Args: {
+          p_product_id:  string
+          p_customer_id?: string | null
+        }
+        Returns: number
+      }
       complete_order_with_payment: {
         Args: {
           p_session_id:               string
@@ -1144,6 +1297,7 @@ export type Database = {
     Enums: {
       customer_type: "retail" | "b2b"
       loyalty_txn_type: "earn" | "redeem" | "adjust"
+      price_modifier_type: "retail" | "wholesale" | "discount_percentage" | "custom"
       movement_type:
         | "sale"
         | "sale_void"
@@ -1291,6 +1445,12 @@ export const Constants = {
   },
   public: {
     Enums: {
+      price_modifier_type: [
+        "retail",
+        "wholesale",
+        "discount_percentage",
+        "custom",
+      ],
       movement_type: [
         "sale",
         "sale_void",
