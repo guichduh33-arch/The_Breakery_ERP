@@ -12,3 +12,5 @@ export * from './heldOrders/index.js';
 export * from './tables/index.js';
 export * from './tablet/index.js';
 export * from './discounts/index.js';
+export * from './customerCategories/index.js';
+export * from './combos/index.js';
