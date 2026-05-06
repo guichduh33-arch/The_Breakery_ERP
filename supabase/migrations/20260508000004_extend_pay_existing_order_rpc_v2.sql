@@ -5,6 +5,16 @@
 -- JE: UPDATE orders SET status='paid' triggers create_sale_journal_entry(); total = post-discount.
 -- NOTE: ~80% duplicated from complete_order_with_payment v5. Helper deferred to session 9+.
 
+DO $drop$
+DECLARE _r RECORD;
+BEGIN
+  FOR _r IN SELECT oid::regprocedure AS sig FROM pg_proc
+    WHERE proname = 'pay_existing_order' AND pronamespace = 'public'::regnamespace
+  LOOP
+    EXECUTE 'DROP FUNCTION ' || _r.sig::text || ' CASCADE';
+  END LOOP;
+END $drop$;
+
 CREATE OR REPLACE FUNCTION pay_existing_order(
   p_order_id                UUID,
   p_payment                 JSONB,

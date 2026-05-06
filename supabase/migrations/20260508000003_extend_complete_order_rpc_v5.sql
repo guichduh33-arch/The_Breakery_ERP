@@ -6,6 +6,16 @@
 -- Earn: v_points_earned = FLOOR(v_total * p_loyalty_multiplier / 1000).
 -- NOTE: ~80% duplicated from pay_existing_order v2. Helper extraction deferred to session 9+.
 
+DO $drop$
+DECLARE _r RECORD;
+BEGIN
+  FOR _r IN SELECT oid::regprocedure AS sig FROM pg_proc
+    WHERE proname = 'complete_order_with_payment' AND pronamespace = 'public'::regnamespace
+  LOOP
+    EXECUTE 'DROP FUNCTION ' || _r.sig::text || ' CASCADE';
+  END LOOP;
+END $drop$;
+
 CREATE OR REPLACE FUNCTION complete_order_with_payment(
   p_session_id              UUID,
   p_order_type              order_type,

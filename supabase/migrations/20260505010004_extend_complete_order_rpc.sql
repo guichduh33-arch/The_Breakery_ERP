@@ -14,6 +14,17 @@
 --   - earns points on v_total, increments customer stats, inserts loyalty_transactions earn row
 --   - return payload gains customer_id, loyalty_points_earned, loyalty_points_redeemed
 
+-- Drop any prior overloads so signature change does not accumulate ambiguous functions.
+DO $drop$
+DECLARE _r RECORD;
+BEGIN
+  FOR _r IN SELECT oid::regprocedure AS sig FROM pg_proc
+    WHERE proname = 'complete_order_with_payment' AND pronamespace = 'public'::regnamespace
+  LOOP
+    EXECUTE 'DROP FUNCTION ' || _r.sig::text || ' CASCADE';
+  END LOOP;
+END $drop$;
+
 CREATE OR REPLACE FUNCTION complete_order_with_payment(
   p_session_id              UUID,
   p_order_type              order_type,
