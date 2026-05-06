@@ -42,8 +42,9 @@ function computePercentageOff(
   subtotal: number,
 ): PotentialDiscount {
   const pct = Number(promo.action_params.percentage ?? 0);
-  const target = String(promo.action_params.target ?? 'cart');
-  const targetId = (promo.action_params.target_id as string) ?? null;
+  const rawTarget = promo.action_params.target;
+  const target = typeof rawTarget === 'string' ? rawTarget : 'cart';
+  const targetId = typeof promo.action_params.target_id === 'string' ? promo.action_params.target_id : null;
   if (target === 'cart') {
     return { discount: roundIdr((subtotal * pct) / 100), items_to_add: [], target: 'cart', target_product_id: null };
   }

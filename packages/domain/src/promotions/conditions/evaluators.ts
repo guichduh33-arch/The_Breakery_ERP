@@ -49,13 +49,14 @@ function localTimeFields(ts: Date, tz: string): { time: string; dow: number; dat
     hour: '2-digit', minute: '2-digit', hour12: false,
     weekday: 'short',
   });
-  const parts = Object.fromEntries(fmt.formatToParts(ts).map((p) => [p.type, p.value]));
+  const partsRaw = Object.fromEntries(fmt.formatToParts(ts).map((p) => [p.type, p.value]));
+  const parts: Record<string, string> = partsRaw;
   const dowMap: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
-  const weekday = parts['weekday'] ?? '';
+  const weekday = parts.weekday ?? '';
   return {
-    time: `${parts['hour']}:${parts['minute']}`,
+    time: `${parts.hour}:${parts.minute}`,
     dow: dowMap[weekday] ?? 0,
-    date: `${parts['year']}-${parts['month']}-${parts['day']}`,
+    date: `${parts.year}-${parts.month}-${parts.day}`,
   };
 }
 

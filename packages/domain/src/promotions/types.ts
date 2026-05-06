@@ -27,7 +27,7 @@ export type PromotionCondition =
   | { type: 'valid_dates'; from: string; until: string }
   | {
       type: 'customer_in_loyalty_tier';
-      tiers: Array<'Bronze' | 'Silver' | 'Gold' | 'Platinum'>;
+      tiers: ('Bronze' | 'Silver' | 'Gold' | 'Platinum')[];
     }
   | { type: 'first_order_only' };
 
@@ -61,14 +61,14 @@ export interface EvaluationResult {
 }
 
 export interface EvaluationContext {
-  items: Array<{
+  items: {
     product_id: string;
     category_id: string;
     qty: number;
     unit_price: number;
     modifier_total: number;
     manual_discount_amount: number;
-  }>;
+  }[];
   customer_category_id: string | null;
   customer_tier: 'Bronze' | 'Silver' | 'Gold' | 'Platinum';
   customer_first_order: boolean;
