@@ -2,9 +2,10 @@
 import { Lock, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { CartItem } from '@breakery/domain';
-import { Button, Currency, QuantityStepper, cn, ComboLineRow } from '@breakery/ui';
+import { Button, Currency, PromotionBadge, QuantityStepper, cn, ComboLineRow } from '@breakery/ui';
 import { LineDiscountButton } from '@/features/discounts/components/LineDiscountButton';
 import { useComboItems } from '@/features/combos/hooks/useComboItems';
+import { useCartStore } from '@/stores/cartStore';
 
 export interface CartItemRowProps {
   item: CartItem;
@@ -31,6 +32,12 @@ function ComboCartItemRow({ item, locked, onChangeQty, onRemove }: Omit<CartItem
 }
 
 export function CartItemRow({ item, locked, onChangeQty, onRemove, onApplyLineDiscount }: CartItemRowProps) {
+  const applied = useCartStore((s) => s.appliedPromotion);
+  const isPromoTarget =
+    applied !== null &&
+    (applied.target_product_id === item.product_id ||
+      (applied.action_type === 'percentage_off' && applied.target === 'cart'));
+
   if (item.product_type === 'combo') {
     return <ComboCartItemRow item={item} locked={locked} onChangeQty={onChangeQty} onRemove={onRemove} />;
   }
@@ -63,6 +70,13 @@ export function CartItemRow({ item, locked, onChangeQty, onRemove, onApplyLineDi
           )}
           <div className="text-sm truncate">{item.name}</div>
         </div>
+        {isPromoTarget && applied && (
+          <PromotionBadge
+            promotionName={applied.name}
+            discountAmount={applied.discount_amount}
+            isFree={false}
+          />
+        )}
         {item.modifiers.length > 0 && (
           <div className="text-xs text-text-secondary mt-0.5 truncate">
             {item.modifiers.map((m) => m.option_label).join(' · ')}
