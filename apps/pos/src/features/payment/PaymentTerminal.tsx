@@ -1,7 +1,7 @@
 // apps/pos/src/features/payment/PaymentTerminal.tsx
 import { useState } from 'react';
 import { X, ArrowLeft, Banknote, CreditCard, QrCode, Smartphone, ArrowRightLeft, Wallet } from 'lucide-react';
-import { Button, Currency, FullScreenModal, LoyaltyBadge, Numpad, cn } from '@breakery/ui';
+import { Button, Currency, FullScreenModal, LoyaltyBadge, Numpad, PromotionLineRow, cn } from '@breakery/ui';
 import { calculateTotals, calculateChange, earnPointsForCustomer, tierFromLifetime, TIERS, type PaymentMethod } from '@breakery/domain';
 import { resetCartAfterCheckout, useCartStore } from '@/stores/cartStore';
 import { usePaymentStore } from '@/stores/paymentStore';
@@ -46,6 +46,7 @@ export function PaymentTerminal() {
 
   const cart = useCartStore((s) => s.cart);
   const attachedCustomer = useCartStore((s) => s.attachedCustomer);
+  const appliedPromotion = useCartStore((s) => s.appliedPromotion);
   const user = useAuthStore((s) => s.user);
   const checkout = useCheckout();
 
@@ -181,6 +182,12 @@ export function PaymentTerminal() {
             <div className="flex justify-between text-text-secondary">
               <span>Subtotal</span><Currency amount={totals.subtotal} />
             </div>
+            {appliedPromotion && (
+              <PromotionLineRow
+                name={appliedPromotion.name}
+                discount_amount={appliedPromotion.discount_amount}
+              />
+            )}
             {totals.redemption_amount > 0 && (
               <div className="flex justify-between text-text-secondary">
                 <span>Loyalty redeem ({cart.loyaltyPointsToRedeem} pts)</span>
