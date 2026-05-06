@@ -1,7 +1,7 @@
 // packages/domain/src/promotions/index.ts
 export * from './types.js';
 export { isPromotionEligible } from './conditions/isPromotionEligible.js';
-// export { computePotentialDiscount } from './actions/computePotentialDiscount.js';
+export { computePotentialDiscount } from './actions/computePotentialDiscount.js';
 // export { selectBestPromotion } from './selectBestPromotion.js';
 // export { validateActionParams } from './validateActionParams.js';
 export {
