@@ -22,4 +22,31 @@ describe('validateActionParams', () => {
   it('free_product valid', () => {
     expect(validateActionParams('free_product', { product_id: 'P', qty: 1 }).ok).toBe(true);
   });
+  it('percentage_off category with target_id valid', () => {
+    expect(validateActionParams('percentage_off', { percentage: 15, target: 'category', target_id: 'BEV' }).ok).toBe(true);
+  });
+  it('percentage_off invalid target string', () => {
+    expect(validateActionParams('percentage_off', { percentage: 15, target: 'line' }).ok).toBe(false);
+  });
+  it('fixed_off valid cart', () => {
+    expect(validateActionParams('fixed_off', { amount: 5000, target: 'cart' }).ok).toBe(true);
+  });
+  it('fixed_off amount missing → invalid', () => {
+    expect(validateActionParams('fixed_off', { target: 'cart' }).ok).toBe(false);
+  });
+  it('bogo invalid buy_qty → invalid', () => {
+    expect(validateActionParams('bogo', { buy_product_id: 'P', buy_qty: 0, get_qty: 1, get_discount_pct: 100 }).ok).toBe(false);
+  });
+  it('bogo invalid get_qty → invalid', () => {
+    expect(validateActionParams('bogo', { buy_product_id: 'P', buy_qty: 1, get_qty: 0, get_discount_pct: 100 }).ok).toBe(false);
+  });
+  it('bogo invalid get_discount_pct → invalid', () => {
+    expect(validateActionParams('bogo', { buy_product_id: 'P', buy_qty: 1, get_qty: 1, get_discount_pct: 0 }).ok).toBe(false);
+  });
+  it('free_product missing product_id → invalid', () => {
+    expect(validateActionParams('free_product', { qty: 1 }).ok).toBe(false);
+  });
+  it('free_product invalid qty → invalid', () => {
+    expect(validateActionParams('free_product', { product_id: 'P', qty: 0 }).ok).toBe(false);
+  });
 });

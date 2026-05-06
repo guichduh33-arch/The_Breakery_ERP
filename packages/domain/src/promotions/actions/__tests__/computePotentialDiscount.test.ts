@@ -54,4 +54,26 @@ describe('computePotentialDiscount', () => {
     expect(r.discount).toBe(35000);
     expect(r.items_to_add[0]?.split_from_existing).toBe(false);
   });
+  it('bogo with no qualifying pairs → 0 discount, no items_to_add', () => {
+    // CROI qty=2, buy_qty=3 → floor(2/4)=0 pairs
+    const r = computePotentialDiscount(
+      promo('bogo', { buy_product_id: 'CROI', buy_qty: 3, get_qty: 1, get_discount_pct: 100 }),
+      ctx, { CROI: 35000 });
+    expect(r.discount).toBe(0);
+    expect(r.items_to_add).toHaveLength(0);
+  });
+  it('percentage_off product 10% → uses product target', () => {
+    const r = computePotentialDiscount(
+      promo('percentage_off', { percentage: 10, target: 'product', target_id: 'AMER' }),
+      ctx, {});
+    expect(r.discount).toBe(3500);
+    expect(r.target_product_id).toBe('AMER');
+  });
+  it('bogo partial discount (50%) → not free', () => {
+    const r = computePotentialDiscount(
+      promo('bogo', { buy_product_id: 'CROI', buy_qty: 1, get_qty: 1, get_discount_pct: 50 }),
+      ctx, { CROI: 35000 });
+    expect(r.discount).toBe(17500);
+    expect(r.items_to_add[0]?.is_free_from_promo).toBe(false);
+  });
 });

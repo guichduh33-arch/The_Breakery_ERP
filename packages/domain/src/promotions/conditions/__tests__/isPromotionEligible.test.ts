@@ -32,4 +32,44 @@ describe('isPromotionEligible', () => {
       { type: 'cart_total_min', value: 99999 },
     ]}), ctx)).toBe(false);
   });
+  it('passes category_in_cart condition', () => {
+    expect(isPromotionEligible(baseP({ all: [
+      { type: 'category_in_cart', category_id: 'CAT1', min_qty: 1 },
+    ]}), ctx)).toBe(true);
+  });
+  it('passes customer_category_in condition', () => {
+    const vipCtx: EvaluationContext = { ...ctx, customer_category_id: 'VIP' };
+    expect(isPromotionEligible(baseP({ all: [
+      { type: 'customer_category_in', category_ids: ['VIP'] },
+    ]}), vipCtx)).toBe(true);
+  });
+  it('passes time_window condition', () => {
+    // 15:00+08:00 = 14:00 Jakarta, within 14:00-17:00
+    expect(isPromotionEligible(baseP({ all: [
+      { type: 'time_window', start: '14:00', end: '17:00', tz: 'Asia/Jakarta' },
+    ]}), ctx)).toBe(true);
+  });
+  it('passes weekday_in condition for Tuesday', () => {
+    // 2026-05-12 is Tuesday (dow=2)
+    expect(isPromotionEligible(baseP({ all: [
+      { type: 'weekday_in', days: [2] },
+    ]}), ctx)).toBe(true);
+  });
+  it('passes valid_dates condition', () => {
+    expect(isPromotionEligible(baseP({ all: [
+      { type: 'valid_dates', from: '2026-01-01', until: '2027-01-01' },
+    ]}), ctx)).toBe(true);
+  });
+  it('passes customer_in_loyalty_tier condition', () => {
+    const goldCtx: EvaluationContext = { ...ctx, customer_tier: 'Gold' };
+    expect(isPromotionEligible(baseP({ all: [
+      { type: 'customer_in_loyalty_tier', tiers: ['Gold', 'Platinum'] },
+    ]}), goldCtx)).toBe(true);
+  });
+  it('passes first_order_only condition', () => {
+    const firstCtx: EvaluationContext = { ...ctx, customer_first_order: true };
+    expect(isPromotionEligible(baseP({ all: [
+      { type: 'first_order_only' },
+    ]}), firstCtx)).toBe(true);
+  });
 });
