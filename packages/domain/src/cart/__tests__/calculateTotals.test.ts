@@ -342,3 +342,38 @@ describe('calculateTotals — spec example §6 JE balance', () => {
     expect(t.tax_amount).toBe(2900);
   });
 });
+
+describe('calculateTotals — promo (session 8)', () => {
+  it('subtracts promotionTotal between subtotal and redemption', () => {
+    const cart: Cart = {
+      items: [{ id: '1', product_id: 'P', name: 'X', unit_price: 50000, quantity: 1, modifiers: [] }],
+      order_type: 'dine_in',
+      promotionTotal: 5000,
+    };
+    const totals = calculateTotals(cart, 0.1);
+    // 50000 - 5000 = 45000 (promo) ; pas de redemption ni manual ; total=45000
+    expect(totals.total).toBe(45000);
+  });
+  it('stack: subtotal − promo − redemption − manual', () => {
+    const cart: Cart = {
+      items: [{ id: '1', product_id: 'P', name: 'X', unit_price: 50000, quantity: 1, modifiers: [] }],
+      order_type: 'dine_in',
+      promotionTotal: 5000,
+      loyaltyPointsToRedeem: 100,
+      cartDiscount: { type: 'percentage', value: 5, amount: 0, reason: 'test' },
+    };
+    const totals = calculateTotals(cart, 0.1);
+    // 50000 − 5000 = 45000 → −1000 redemption = 44000 → 5% manual = 2200 → 41800
+    expect(totals.total).toBe(41800);
+  });
+  it('throws when promo+redemption > items_total', () => {
+    const cart: Cart = {
+      items: [{ id: '1', product_id: 'P', name: 'X', unit_price: 1000, quantity: 1, modifiers: [] }],
+      order_type: 'dine_in',
+      promotionTotal: 500,
+      loyaltyPointsToRedeem: 100,  // 1000 IDR
+    };
+    // post_promotion = 500, redemption = 1000 > 500 → RedemptionExceedsTotalError
+    expect(() => calculateTotals(cart, 0.1)).toThrow(/Redemption|Discounts exceed/);
+  });
+});
