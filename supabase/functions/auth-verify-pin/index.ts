@@ -12,6 +12,7 @@ interface VerifyPinPayload {
   user_id: string;
   pin: string;
   device_type: 'pos' | 'backoffice';
+  required_permission?: string;
 }
 
 serve(async (req) => {
@@ -35,7 +36,7 @@ serve(async (req) => {
     return jsonResponse({ error: 'invalid_json' }, 400);
   }
 
-  const { user_id, pin, device_type } = body;
+  const { user_id, pin, device_type, required_permission } = body;
   if (!user_id || !pin || !device_type) {
     return jsonResponse({ error: 'missing_fields' }, 400);
   }
@@ -102,6 +103,14 @@ serve(async (req) => {
     .from('user_profiles')
     .update({ failed_login_attempts: 0, locked_until: null, last_login_at: new Date().toISOString() })
     .eq('id', user_id);
+
+  // 3b. Optional permission gate — check before issuing session
+  if (required_permission) {
+    const hasPermission = await checkPermissionForRole(profile.role_code, required_permission);
+    if (!hasPermission) {
+      return jsonResponse({ error: 'permission_denied', code: 'PERMISSION_MISSING' }, 403);
+    }
+  }
 
   // 4. Generate session token (UUID v4) — sera hashé par trigger DB
   const sessionToken = crypto.randomUUID();
@@ -174,6 +183,7 @@ serve(async (req) => {
 
   // 9. Response
   return jsonResponse({
+    verified_user_id: profile.id,
     user: {
       id: profile.id,
       full_name: profile.full_name,
@@ -212,6 +222,10 @@ async function signJwt(payload: Record<string, unknown>, secret: string): Promis
   return `${data}.${sigB64}`;
 }
 
+function checkPermissionForRole(role: string, permission: string): boolean {
+  return computePermissionsForRole(role).includes(permission);
+}
+
 function computePermissionsForRole(role: string): string[] {
   switch (role) {
     case 'SUPER_ADMIN':
@@ -227,6 +241,7 @@ function computePermissionsForRole(role: string): string[] {
         'pos.session.open', 'pos.session.close_own', 'pos.session.close_other',
         'pos.session.view_all', 'pos.sale.create', 'pos.sale.void', 'pos.sale.update',
         'products.read', 'products.create', 'products.update',
+        'payments.process', 'sales.discount',
       ];
     case 'CASHIER':
       return ['pos.session.open', 'pos.session.close_own', 'pos.sale.create', 'products.read'];

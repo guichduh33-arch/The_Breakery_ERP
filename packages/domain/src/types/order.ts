@@ -15,6 +15,11 @@ export interface OrderPayloadItem {
    * `order_items.modifiers` (JSONB).
    */
   modifiers: ModifierOption[];
+  discount_amount?: number;
+  discount_type?: 'percentage' | 'fixed_amount';
+  discount_value?: number;
+  discount_reason?: string;
+  discount_authorized_by?: string;
 }
 
 export interface OrderPayload {
@@ -31,4 +36,10 @@ export interface OrderPayload {
   customer_id?: string;
   loyalty_points_redeemed?: number;
   table_number?: string;
+  discount_amount?: number;
+  discount_type?: 'percentage' | 'fixed_amount';
+  discount_value?: number;
+  discount_reason?: string;
+  discount_authorized_by?: string;
+  loyalty_multiplier?: number;
 }

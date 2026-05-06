@@ -1,7 +1,7 @@
 // apps/pos/src/features/payment/hooks/useCheckout.ts
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Cart, PaymentInput, PaymentResult } from '@breakery/domain';
-import { buildOrderPayload } from '@breakery/domain';
+import { buildOrderPayload, TIERS, tierFromLifetime } from '@breakery/domain';
 import type { Json } from '@breakery/supabase';
 import { supabase, supabaseUrl } from '@/lib/supabase';
 import { useShiftStore } from '@/stores/shiftStore';
@@ -32,8 +32,11 @@ export function useCheckout() {
       if (!sessionId) throw new Error('no_open_shift');
       const { useCartStore } = await import('@/stores/cartStore');
       const cartState = useCartStore.getState();
-      const { customerId, loyaltyPointsToRedeem, tableNumber } = cartState.cart;
-      const pickedUpOrderId = cartState.pickedUpOrderId;
+      const { customerId, loyaltyPointsToRedeem, tableNumber, cartDiscount } = cartState.cart;
+      const { attachedCustomer, pickedUpOrderId } = cartState;
+
+      const tier = attachedCustomer ? tierFromLifetime(attachedCustomer.lifetime_points) : null;
+      const multiplier = tier ? (TIERS.find((t) => t.tier === tier)?.points_multiplier ?? 1.0) : 1.0;
 
       if (pickedUpOrderId) {
         const { error, data } = await supabase.rpc('pay_existing_order', {
@@ -42,6 +45,12 @@ export function useCheckout() {
           p_customer_id: customerId ?? null,
           p_loyalty_points_redeemed: loyaltyPointsToRedeem ?? 0,
           p_idempotency_key: idempotencyKey ?? null,
+          p_discount_amount: cartDiscount?.amount ?? 0,
+          p_discount_type: cartDiscount?.type ?? null,
+          p_discount_value: cartDiscount?.value ?? null,
+          p_discount_reason: cartDiscount?.reason ?? null,
+          p_discount_authorized_by: cartDiscount?.authorized_by ?? null,
+          p_loyalty_multiplier: multiplier,
         });
         if (error) throw Object.assign(new Error(error.message), { details: error });
         return {
@@ -60,8 +69,10 @@ export function useCheckout() {
         ...(customerId ? { customerId } : {}),
         ...(loyaltyPointsToRedeem ? { loyaltyPointsToRedeem } : {}),
         ...(tableNumber ? { tableNumber } : {}),
+        ...(cartDiscount ? { cartDiscount } : {}),
       };
-      const payload = buildOrderPayload(sessionId, cartWithLoyalty, input.payment, idempotencyKey);
+      const lifetimePoints = attachedCustomer?.lifetime_points;
+      const payload = buildOrderPayload(sessionId, cartWithLoyalty, input.payment, idempotencyKey, lifetimePoints);
 
       const res = await fetch(`${supabaseUrl}/functions/v1/process-payment`, {
         method: 'POST',

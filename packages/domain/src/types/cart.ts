@@ -1,5 +1,6 @@
 // packages/domain/src/types/cart.ts
 import type { SelectedModifiers } from '../modifiers/types.js';
+import type { Discount } from '../discounts/types.js';
 
 export type OrderType = 'dine_in' | 'take_out' | 'delivery';
 
@@ -16,6 +17,8 @@ export interface CartItem {
   quantity: number;
   /** Selected options snapshot — empty array if the product has no modifiers. */
   modifiers: SelectedModifiers;
+  /** Optional line-level discount applied to this item. */
+  discount?: Discount;
 }
 
 export interface Cart {
@@ -24,6 +27,8 @@ export interface Cart {
   customerId?: string;
   loyaltyPointsToRedeem?: number;
   tableNumber?: string | null;
+  /** Optional cart-level discount applied to the post-redemption subtotal. */
+  cartDiscount?: Discount;
 }
 
 export interface CartTotals {

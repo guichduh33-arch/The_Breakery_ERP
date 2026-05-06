@@ -4,6 +4,7 @@
 // Session 3 extension: customerId + loyaltyPointsToRedeem + redemptionAmount.
 // Session 4 extension: tableNumber + setTableNumber + restoreCart.
 // Session 5 extension: pickedUpOrderId + setPickedUpOrderId (tablet pickup flow).
+// Session 6 extension: cartDiscount + setCartDiscount + setLineDiscount.
 // Persisted in sessionStorage so a tab reload doesn't drop the lock state.
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
@@ -22,6 +23,7 @@ import type {
   Cart,
   CartItem,
   Customer,
+  Discount,
   OrderType,
   Product,
   SelectedModifiers,
@@ -63,6 +65,10 @@ interface CartState {
 
   // Tablet pickup (session 5)
   setPickedUpOrderId: (id: string | null) => void;
+
+  // Discounts (session 6)
+  setCartDiscount: (d: Discount | null) => void;
+  setLineDiscount: (itemId: string, d: Discount | null) => void;
 }
 
 export const useCartStore = create<CartState>()(
@@ -139,13 +145,36 @@ export const useCartStore = create<CartState>()(
           .map((i) => i.id),
 
       restoreCart: (restoredCart) =>
-        set({
+        set((s) => ({
           cart: restoredCart,
           lockedItemIds: [],
           attachedCustomer: null,
-        }),
+          pickedUpOrderId: s.pickedUpOrderId,
+        })),
 
       setPickedUpOrderId: (id) => set({ pickedUpOrderId: id }),
+
+      setCartDiscount: (d) =>
+        set((s) => ({
+          cart: d
+            ? { ...s.cart, cartDiscount: d }
+            : (() => { const { cartDiscount: _cd, ...rest } = s.cart; return rest; })(),
+        })),
+
+      setLineDiscount: (itemId, d) =>
+        set((s) => ({
+          cart: {
+            ...s.cart,
+            items: s.cart.items.map((item) => {
+              if (item.id !== itemId) return item;
+              if (d === null) {
+                const { discount: _disc, ...rest } = item;
+                return rest;
+              }
+              return { ...item, discount: d };
+            }),
+          },
+        })),
     }),
     {
       name: 'breakery.cart.v2',
@@ -167,7 +196,12 @@ export const useCartStore = create<CartState>()(
 export function resetCartAfterCheckout(): void {
   useCartStore.setState((s) => {
     const cleared = clearCart(s.cart);
-    const { customerId: _c, loyaltyPointsToRedeem: _l, tableNumber: _t, ...rest } = cleared;
-    return { cart: rest, lockedItemIds: [], attachedCustomer: null, pickedUpOrderId: null };
+    const { customerId: _c, loyaltyPointsToRedeem: _l, tableNumber: _t, cartDiscount: _cd, ...rest } = cleared;
+    return {
+      cart: { ...rest, items: rest.items.map(({ discount: _d, ...i }) => i) },
+      lockedItemIds: [],
+      attachedCustomer: null,
+      pickedUpOrderId: null,
+    };
   });
 }

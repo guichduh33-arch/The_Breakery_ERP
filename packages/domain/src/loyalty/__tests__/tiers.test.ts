@@ -66,4 +66,20 @@ describe('TIERS constant', () => {
     expect(TIERS[2].discount).toBe(8);
     expect(TIERS[3].discount).toBe(10);
   });
+
+  it('has correct points_multiplier for Bronze (1.0)', () => {
+    expect(TIERS[0].points_multiplier).toBe(1.0);
+  });
+
+  it('has correct points_multiplier for Silver (1.05)', () => {
+    expect(TIERS[1].points_multiplier).toBe(1.05);
+  });
+
+  it('has correct points_multiplier for Gold (1.1)', () => {
+    expect(TIERS[2].points_multiplier).toBe(1.1);
+  });
+
+  it('has correct points_multiplier for Platinum (1.2)', () => {
+    expect(TIERS[3].points_multiplier).toBe(1.2);
+  });
 });

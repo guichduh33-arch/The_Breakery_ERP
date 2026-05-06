@@ -224,3 +224,47 @@ BEGIN
     v_waiter_uid, 'EMP002', 'Waiter Demo', hash_pin('5678'), 'waiter', true
   ) ON CONFLICT (employee_code) DO NOTHING;
 END $$;
+
+-- ============================================================
+-- SESSION 6 — MANAGER DEMO USER (PIN 1111, for sales.discount tests)
+-- ============================================================
+DO $$
+DECLARE
+  v_manager_uid UUID := '00000000-0000-0000-0000-000000000004';
+BEGIN
+  INSERT INTO auth.users (
+    id, instance_id, aud, role, email, encrypted_password,
+    email_confirmed_at, raw_user_meta_data, raw_app_meta_data,
+    confirmation_token, recovery_token,
+    email_change_token_new, email_change,
+    created_at, updated_at
+  ) VALUES (
+    v_manager_uid, '00000000-0000-0000-0000-000000000000',
+    'authenticated', 'authenticated',
+    'manager-EMP003@thebreakery.local',
+    crypt('disabled-password-' || gen_random_uuid(), gen_salt('bf')),
+    now(), '{"provider":"pin"}'::jsonb, '{"provider":"pin","providers":["pin"]}'::jsonb,
+    '', '', '', '',
+    now(), now()
+  ) ON CONFLICT (id) DO UPDATE SET
+    raw_app_meta_data     = EXCLUDED.raw_app_meta_data,
+    confirmation_token    = EXCLUDED.confirmation_token,
+    recovery_token        = EXCLUDED.recovery_token,
+    email_change_token_new = EXCLUDED.email_change_token_new,
+    email_change          = EXCLUDED.email_change;
+
+  INSERT INTO user_profiles (
+    id, auth_user_id, employee_code, full_name, pin_hash, role_code, is_active
+  ) VALUES (
+    '00000000-0000-0000-0000-000000000004'::uuid,
+    v_manager_uid, 'EMP003', 'Manager Demo', hash_pin('111111'), 'MANAGER', true
+  ) ON CONFLICT (employee_code) DO NOTHING;
+END $$;
+
+-- ============================================================
+-- SESSION 6 — sales.discount permission seed
+-- Also seeded by 20260508000002; ON CONFLICT guard prevents duplication.
+-- ============================================================
+INSERT INTO permissions (code, module, action, description) VALUES
+  ('sales.discount', 'sales', 'discount', 'Manager can verify discounts beyond threshold')
+ON CONFLICT (code) DO NOTHING;

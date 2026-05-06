@@ -222,3 +222,193 @@ describe('ModifierModal', () => {
     expect(badge.className).toMatch(/bg-red/);
   });
 });
+
+// ---------------------------------------------------------------------------
+// multi_select extension — session 6
+// ---------------------------------------------------------------------------
+
+const multiGroups: ModifierGroup[] = [
+  {
+    group_name: 'Toppings',
+    group_sort_order: 1,
+    group_required: true,
+    group_type: 'multi_select',
+    options: [
+      { option_label: 'Extra cheese', option_sort_order: 1, price_adjustment: 5000, is_default: false },
+      { option_label: 'Bacon', option_sort_order: 2, price_adjustment: 8000, is_default: false },
+      { option_label: 'Mushroom', option_sort_order: 3, price_adjustment: 3000, is_default: false },
+    ],
+  },
+  {
+    group_name: 'Temperature',
+    group_sort_order: 2,
+    group_required: true,
+    group_type: 'single_select',
+    options: [
+      { option_label: 'Hot', option_icon: '☕', option_sort_order: 1, price_adjustment: 0, is_default: true },
+      { option_label: 'Ice', option_icon: '🧊', option_sort_order: 2, price_adjustment: 0, is_default: false },
+    ],
+  },
+];
+
+describe('ModifierModal — multi_select', () => {
+  it('tap on multi_select option selects it', () => {
+    render(
+      <ModifierModal
+        open
+        product={product}
+        groups={multiGroups}
+        onClose={vi.fn()}
+        onConfirm={vi.fn()}
+      />,
+    );
+    const cheeseBtn = screen.getByRole('button', { name: /Extra cheese/i });
+    expect(cheeseBtn).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.click(cheeseBtn);
+    expect(cheeseBtn).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('tap selected multi_select option deselects it (when not last required)', () => {
+    render(
+      <ModifierModal
+        open
+        product={product}
+        groups={multiGroups}
+        onClose={vi.fn()}
+        onConfirm={vi.fn()}
+      />,
+    );
+    // Select two options first
+    fireEvent.click(screen.getByRole('button', { name: /Extra cheese/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Bacon/i }));
+    // Deselect cheese (still has Bacon selected)
+    fireEvent.click(screen.getByRole('button', { name: /Extra cheese/i }));
+    expect(screen.getByRole('button', { name: /Extra cheese/i })).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByRole('button', { name: /Bacon/i })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('multi_select allows multiple options selected simultaneously', () => {
+    render(
+      <ModifierModal
+        open
+        product={product}
+        groups={multiGroups}
+        onClose={vi.fn()}
+        onConfirm={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Extra cheese/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Bacon/i }));
+    expect(screen.getByRole('button', { name: /Extra cheese/i })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: /Bacon/i })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: /Mushroom/i })).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('live total sums all selected multi_select adjustments', () => {
+    render(
+      <ModifierModal
+        open
+        product={product}
+        groups={multiGroups}
+        onClose={vi.fn()}
+        onConfirm={vi.fn()}
+      />,
+    );
+    // Select cheese (5000) + bacon (8000) — base 35000 + 13000 = 48000
+    fireEvent.click(screen.getByRole('button', { name: /Extra cheese/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Bacon/i }));
+    expect(screen.getByText(/Rp\s*48[.,]000/)).toBeInTheDocument();
+  });
+
+  it('multi_select group_required + 0 selected → Add to cart disabled', () => {
+    render(
+      <ModifierModal
+        open
+        product={product}
+        groups={multiGroups}
+        onClose={vi.fn()}
+        onConfirm={vi.fn()}
+      />,
+    );
+    // Toppings required, nothing selected
+    const addBtn = screen.getByRole('button', { name: /Add to cart/i });
+    expect(addBtn).toBeDisabled();
+  });
+
+  it('multi_select group_required + 1+ selected → Add to cart enabled', () => {
+    render(
+      <ModifierModal
+        open
+        product={product}
+        groups={multiGroups}
+        onClose={vi.fn()}
+        onConfirm={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Extra cheese/i }));
+    const addBtn = screen.getByRole('button', { name: /Add to cart/i });
+    expect(addBtn).not.toBeDisabled();
+  });
+
+  it('multi_select required prevents deselecting the last option', () => {
+    render(
+      <ModifierModal
+        open
+        product={product}
+        groups={multiGroups}
+        onClose={vi.fn()}
+        onConfirm={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Extra cheese/i }));
+    // Try to deselect the only selected option
+    fireEvent.click(screen.getByRole('button', { name: /Extra cheese/i }));
+    // Should still be selected (can't deselect last in required group)
+    expect(screen.getByRole('button', { name: /Extra cheese/i })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('onConfirm receives all selected multi_select options', () => {
+    const onConfirm = vi.fn();
+    render(
+      <ModifierModal
+        open
+        product={product}
+        groups={multiGroups}
+        onClose={vi.fn()}
+        onConfirm={onConfirm}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Extra cheese/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Bacon/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Add to cart/i }));
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    const arg = onConfirm.mock.calls[0]?.[0] as SelectedModifiers;
+    expect(arg).toEqual(
+      expect.arrayContaining([
+        { group_name: 'Toppings', option_label: 'Extra cheese', price_adjustment: 5000 },
+        { group_name: 'Toppings', option_label: 'Bacon', price_adjustment: 8000 },
+        { group_name: 'Temperature', option_label: 'Hot', price_adjustment: 0 },
+      ]),
+    );
+  });
+
+  // --- regression: single_select groups still work as before ---
+  it('single_select group still replaces prior selection (regression)', () => {
+    render(
+      <ModifierModal
+        open
+        product={product}
+        groups={multiGroups}
+        onClose={vi.fn()}
+        onConfirm={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Extra cheese/i })); // satisfy required Toppings
+    const hotBtn = screen.getByRole('button', { name: /Hot/ });
+    const iceBtn = screen.getByRole('button', { name: /Ice/ });
+    expect(hotBtn).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(iceBtn);
+    expect(iceBtn).toHaveAttribute('aria-pressed', 'true');
+    expect(hotBtn).toHaveAttribute('aria-pressed', 'false');
+  });
+});
