@@ -74,7 +74,7 @@ BEGIN
         WHEN COALESCE(c.lifetime_points, 0) >= 500  THEN 'Silver'
         ELSE 'Bronze'
       END,
-      COALESCE(c.lifetime_orders, 0) = 0
+      COALESCE(c.total_visits, 0) = 0
       INTO v_customer_tier, v_customer_first_order
       FROM customers c WHERE c.id = p_customer_id;
   ELSE
