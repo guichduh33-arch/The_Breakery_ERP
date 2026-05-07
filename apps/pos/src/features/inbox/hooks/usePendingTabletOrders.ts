@@ -17,8 +17,9 @@ export function usePendingTabletOrders() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
+    const channelName = `pending-tablet-orders-${crypto.randomUUID()}`;
     const channel = supabase
-      .channel('pending-tablet-orders')
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
