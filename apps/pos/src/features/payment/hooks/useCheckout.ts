@@ -108,8 +108,8 @@ export function useCheckout() {
 }
 
 async function getAccessToken(): Promise<string> {
-  const { supabase } = await import('@/lib/supabase');
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.access_token) throw new Error('no_auth_session');
-  return session.access_token;
+  const { getSupabaseAccessToken } = await import('@breakery/supabase');
+  const token = getSupabaseAccessToken();
+  if (!token) throw new Error('no_auth_session');
+  return token;
 }
