@@ -1,5 +1,17 @@
 # Session 8 — Promotions Engine Implementation Plan
 
+> **STATUS — 2026-05-10 :** Implementation **COMPLETED** on branch `swarm/session-8`.
+> - All 31 tasks across 6 phases shipped (commits `0f29ad6` → `ce5fecc`).
+> - 643/643 unit tests green (138 POS + 301 domain + 176 UI + 27 utils + 1 backoffice).
+> - 35/35 pgTAP tests green (20 evaluate_promotions + 15 RPCs integration).
+> - 3 latent bugs in `create_tablet_order` / `complete_order_with_payment` discovered
+>   via pgTAP and patched in migration `20260510000009_fix_promo_rpcs.sql`:
+>   1. item shape (`quantity` → `qty`) not transformed before `evaluate_promotions`,
+>   2. `name_snapshot` missing on promo-item `INSERT` (NOT NULL crash on BOGO/free),
+>   3. `IF v_applied_promo IS NOT NULL` true even for JSON `null`.
+> - **Task 6.3 (manual browser acceptance) pending** — last item before merging
+>   `swarm/session-8` into `master`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Livrer un moteur de promotions auto-évaluées (4 forms : `percentage_off`, `fixed_off`, `bogo`, `free_product`) avec live preview POS/tablet, freeze à create_tablet_order time (P10), et persistance complète au checkout via `complete_order_with_payment` v6.

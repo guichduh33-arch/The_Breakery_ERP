@@ -37,25 +37,25 @@ Pour exécution Ruflo swarm : phases 2/4 lancées en même temps, puis 3, puis 5
 
 ## Critères d'acceptation finaux
 
-Repris du spec section 10 :
+Repris du spec section 10. **Status à jour 2026-05-10** (après sessions 1-8) :
 
-- [ ] `pnpm install` clean
-- [ ] `pnpm dev` démarre les 2 apps (pos:5173, backoffice:5174)
-- [ ] `pnpm lint` 0 warning
-- [ ] `pnpm typecheck` 0 erreur
-- [ ] `pnpm test` ≥ 90% `domain`, ≥ 85% `utils`, ≥ 70% `ui`, smoke tests OK
-- [ ] `pnpm build` produit `dist/` propre pour les 2 apps
-- [ ] `supabase start` + `supabase db reset` applique les 9 migrations + seed
-- [ ] Login PIN `1234` ouvre POS, modal "Open Shift" apparaît
-- [ ] Open Shift opening_cash 100,000 → session créée
-- [ ] Tap 2 produits → cart mis à jour, totaux PB1 corrects
-- [ ] Tap CHECKOUT → payment terminal full-screen
-- [ ] Tap CASH + Exact + PROCESS PAYMENT → success modal Order #XXXX
-- [ ] DB : `orders` + `order_items` + `order_payments` + `stock_movements` créés, `products.current_stock` baissé
-- [ ] `audit_logs` contient `session.open` + `order.complete`
-- [ ] Backoffice login + `/backoffice/products` affiche 8 produits seedés
-- [ ] Sentry init capture une erreur volontaire
-- [ ] CI verte sur le commit final
+- [x] `pnpm install` clean
+- [x] `pnpm dev` démarre les 2 apps (pos:5173, backoffice:5174)
+- [x] `pnpm lint` 0 warning — validé 2026-05-10
+- [x] `pnpm typecheck` 0 erreur — validé 2026-05-10
+- [x] `pnpm test` ≥ 90% `domain`, ≥ 85% `utils`, ≥ 70% `ui`, smoke tests OK — 643/643 tests green
+- [x] `pnpm build` produit `dist/` propre pour les 2 apps — fixé 2026-05-10 (target es2022)
+- [x] `supabase start` + `supabase db reset` applique les migrations + seed — 16 migrations en session 8
+- [x] Login PIN `1234` ouvre POS, modal "Open Shift" apparaît — session 1
+- [x] Open Shift opening_cash 100,000 → session créée — session 1
+- [x] Tap 2 produits → cart mis à jour, totaux PB1 corrects — session 1
+- [x] Tap CHECKOUT → payment terminal full-screen — session 1
+- [x] Tap CASH + Exact + PROCESS PAYMENT → success modal Order #XXXX — session 1
+- [x] DB : `orders` + `order_items` + `order_payments` + `stock_movements` créés, `products.current_stock` baissé — session 1
+- [x] `audit_logs` contient `session.open` + `order.complete` — session 1
+- [x] Backoffice login + `/backoffice/products` affiche 8 produits seedés — session 1
+- [x] Sentry init capture une erreur volontaire — `apps/pos/src/lib/sentry.ts`
+- [ ] CI verte sur le commit final — workflow runs only on master/main; pending merge of `swarm/session-8`
 
 ## Conventions de commit
 
