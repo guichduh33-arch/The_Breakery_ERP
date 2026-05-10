@@ -27,32 +27,35 @@ All dated `20260512xxxxxx` (after session 9 promotion migrations at `20260511*`)
 |---|---|
 | `20260512000001_init_loyalty_tier_helper.sql` | `get_loyalty_tier(p_lifetime_points INT) RETURNS TEXT` — pure SQL function returning `'bronze'` / `'silver'` / `'gold'`. IMMUTABLE. Used in tests and any future RPC. |
 | `20260512000002_init_adjust_loyalty_points_rpc.sql` | `adjust_loyalty_points(p_customer_id UUID, p_delta INT, p_reason TEXT)` SECURITY DEFINER (see §3.2). Plus the `auth_update_retail` policy on `customers` and column-level GRANT revocation on `loyalty_points` / `lifetime_points` / `total_spent` / `total_visits` / `last_visit_at` from role `authenticated`. |
-| `20260512000003_seed_loyalty_adjust_permission.sql` | Insert `loyalty.adjust` permission row; extend `has_permission()` so `ADMIN` and `SUPER_ADMIN` (only) match it. |
+| `20260512000003_seed_loyalty_adjust_permission.sql` | Insert `loyalty.read` (granted to MANAGER/ADMIN/SUPER_ADMIN) and `loyalty.adjust` (ADMIN/SUPER_ADMIN only) permission rows; extend `has_permission()` accordingly. `loyalty.read` gates the page in the routes/sidebar; `loyalty.adjust` gates the write action. |
 
 ### 2.2 Tier thresholds (hardcoded)
+
+The TypeScript table already exists in `packages/domain/src/loyalty/tiers.ts` and is the source of truth:
 
 | Tier | Lifetime points |
 |---|---|
 | `bronze` | 0 – 499 |
 | `silver` | 500 – 1999 |
-| `gold` | ≥ 2000 |
+| `gold` | 2000 – 4999 |
+| `platinum` | ≥ 5000 |
 
-Defined twice (deliberately):
-- SQL: `get_loyalty_tier()` — used in tests and any RPC that needs to return a tier.
-- TypeScript: `packages/domain/src/loyalty/tiers.ts` exports `LOYALTY_TIERS` and `getTierFromLifetimePoints(n)`. UI imports from there. A unit test asserts the two tables agree.
+Existing exports we reuse: `tierFromLifetime(points)` and `TIERS` constant (with `discount` and `points_multiplier` fields). Existing tests in `packages/domain/src/loyalty/__tests__/tiers.test.ts` already cover all four tiers — no new domain code or tests needed for tier logic.
+
+The new SQL helper `get_loyalty_tier(p_lifetime_points INT)` mirrors this 4-tier table; a test asserts the two agree.
 
 ### 2.3 Package layout
 
 ```
 packages/domain/src/loyalty/
-  tiers.ts                # LOYALTY_TIERS, getTierFromLifetimePoints, LoyaltyTier type
-  tiers.test.ts           # boundary cases incl. negative throws
+  (no new files — reuse existing tiers.ts / tierFromLifetime / TIERS / LoyaltyTier)
 
-packages/ui/src/loyalty/
-  LoyaltyTierBadge.tsx    # bronze/silver/gold pill
-  CustomerForm.tsx        # name/phone/email — used by create+edit modals
-  LoyaltyAdjustForm.tsx   # sign toggle + amount + reason (>=5 chars)
-  index.ts                # re-exports
+packages/ui/src/components/
+  CustomerForm.tsx              # NEW: name/phone/email — used by create+edit modals
+  LoyaltyAdjustForm.tsx         # NEW: sign toggle + amount + reason (>=5 chars)
+  __tests__/CustomerForm.test.tsx
+  __tests__/LoyaltyAdjustForm.test.tsx
+  (reuse existing LoyaltyBadge.tsx for tier+points display)
 
 apps/backoffice/src/features/loyalty/
   hooks/
@@ -145,7 +148,7 @@ Column-level GRANT: revoke `UPDATE` on `loyalty_points`, `lifetime_points`, `tot
 
 | Component | Props | Behavior |
 |---|---|---|
-| `LoyaltyTierBadge` (UI) | `tier: LoyaltyTier` | Color-coded pill: bronze (warm tan), silver (gray), gold (amber). |
+| `LoyaltyBadge` (UI, existing) | `tier: LoyaltyTier, points: number` | Existing component; reused. Renders 4-tier color pill + points count. |
 | `CustomerForm` (UI) | `defaultValues, onSubmit, submitting` | Controlled form with name (required, ≥2 chars), phone (optional, E.164 hint), email (optional, RFC-lite check). |
 | `LoyaltyAdjustForm` (UI) | `currentBalance, onSubmit, submitting` | Sign toggle [+/−], amount (positive int), reason textarea (≥5 chars). Disables submit if negative result. |
 | `CustomerListRow` (BO) | `row, onView, onAdjust, onEdit, onDelete, canAdjust` | Row + ⋯ menu. Tier badge computed from `lifetime_points`. |
@@ -169,15 +172,10 @@ No optimistic UI; React Query `invalidateQueries` after every mutation.
 
 ## 4. Testing
 
-### 4.1 Domain unit tests — `packages/domain/src/loyalty/tiers.test.ts`
-- `getTierFromLifetimePoints(0) === 'bronze'`
-- `getTierFromLifetimePoints(499) === 'bronze'`
-- `getTierFromLifetimePoints(500) === 'silver'`
-- `getTierFromLifetimePoints(1999) === 'silver'`
-- `getTierFromLifetimePoints(2000) === 'gold'`
-- `getTierFromLifetimePoints(-1)` throws.
+### 4.1 Domain unit tests — `packages/domain/src/loyalty/__tests__/tiers.test.ts`
+Already exists; covers all four tier boundaries (0/499/500/1999/2000/4999/5000/+) and the `TIERS` constant. **No new test work** for tier logic.
 
-### 4.2 SQL tests — `supabase/tests/loyalty_adjust_rpc.sql`
+### 4.2 RPC tests — `supabase/tests/functions/loyalty-adjust.test.ts` (vitest, mirrors `complete-order-v3.test.ts` pattern: TS test calling the RPC via `@supabase/supabase-js` admin client + a JWT'd client for auth-context tests)
 - ADMIN, positive delta → balance + lifetime increase, ledger row exists with correct `points`, `points_balance_after`, `description`, `created_by`.
 - ADMIN, negative delta within balance → balance decreases, lifetime unchanged.
 - ADMIN, negative delta exceeding balance → `insufficient_balance` raised, no ledger row created (transaction rolled back).
@@ -185,9 +183,9 @@ No optimistic UI; React Query `invalidateQueries` after every mutation.
 - `p_reason = 'hi'` → `invalid_input`.
 - `p_delta = 0` → `invalid_input`.
 - Soft-deleted customer → `customer_deleted`.
-- `get_loyalty_tier(0/500/2000)` returns `'bronze'/'silver'/'gold'`.
+- `get_loyalty_tier(0/500/2000/5000)` returns `'bronze'/'silver'/'gold'/'platinum'`.
 
-### 4.3 RLS tests — `supabase/tests/loyalty_rls.sql`
+### 4.3 RLS tests — `supabase/tests/functions/loyalty-rls.test.ts`
 - Authenticated user can `SELECT` from `customers` and `loyalty_transactions`.
 - Authenticated user CANNOT `UPDATE customers SET loyalty_points = ...` directly (column GRANT denies).
 - Authenticated user CAN `UPDATE customers SET name = ..., phone = ..., email = ...`.
@@ -195,8 +193,8 @@ No optimistic UI; React Query `invalidateQueries` after every mutation.
 - `auth_update_retail` rejects b2b row updates (still gated by CHECK + policy).
 
 ### 4.4 Frontend smoke test — `apps/backoffice/src/__tests__/loyalty-list.smoke.test.tsx`
-- Render `Loyalty.tsx` with mocked supabase returning two customers (bronze + silver).
-- Verify rows render with correct tier badges.
+- Render `Loyalty.tsx` with mocked supabase returning two customers (bronze + silver, plus one gold for variety).
+- Verify rows render with correct `LoyaltyBadge` tiers + points.
 - With `loyalty.adjust = true` permission → ⋯ menu shows Adjust points.
 - With permission off → ⋯ menu hides only Adjust points; View history + Edit + Delete still visible.
 
@@ -206,7 +204,7 @@ No optimistic UI; React Query `invalidateQueries` after every mutation.
 - [ ] All four test suites (domain unit, SQL RPC, SQL RLS, frontend smoke) pass.
 - [ ] Existing tests remain green (`pnpm test`, `pnpm --filter db test` or equivalent).
 - [ ] Sidebar shows "Loyalty" link in BO; route `/loyalty` renders the page.
-- [ ] Manual QA flow: create customer → adjust +500 → tier upgrades to silver in list view → adjust −100 → balance now 400, lifetime still 500 → soft-delete → row disappears from list.
+- [ ] Manual QA flow: create customer → adjust +500 → `LoyaltyBadge` shows silver in list view → adjust −100 → balance now 400, lifetime still 500 → soft-delete → row disappears from list.
 
 ## 6. Rollout
 
