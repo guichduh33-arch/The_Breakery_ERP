@@ -52,6 +52,7 @@ export function CartItemRow({ item, locked, onChangeQty, onRemove, onApplyLineDi
         'flex items-start justify-between px-4 py-2 border-b border-border-subtle gap-2',
         locked && 'bg-bg-overlay/40',
       )}
+      data-promo-gift={item.is_promo_gift ? 'true' : undefined}
     >
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
@@ -62,6 +63,14 @@ export function CartItemRow({ item, locked, onChangeQty, onRemove, onApplyLineDi
             />
           )}
           <div className="text-sm truncate">{item.name}</div>
+          {item.is_promo_gift && (
+            <span
+              className="inline-flex items-center rounded-full border border-rose-500/30 bg-rose-500/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-rose-300"
+              aria-label="Free gift from promotion"
+            >
+              Promo
+            </span>
+          )}
         </div>
         {item.modifiers.length > 0 && (
           <div className="text-xs text-text-secondary mt-0.5 truncate">

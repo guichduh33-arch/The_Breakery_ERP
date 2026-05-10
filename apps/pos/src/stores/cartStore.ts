@@ -6,7 +6,11 @@
 // Session 5 extension: pickedUpOrderId + setPickedUpOrderId (tablet pickup flow).
 // Session 6 extension: cartDiscount + setCartDiscount + setLineDiscount.
 // Session 7 extension: attachedCustomer includes optional category for pricing tier display.
+// Session 9 extension: appliedPromotions + dismissedPromotionIds + auto gift sync.
 // Persisted in sessionStorage so a tab reload doesn't drop the lock state.
+// (`appliedPromotions` and `dismissedPromotionIds` are intentionally in-memory
+//  only — they are recomputed at every cart change and a fresh tab should
+//  start from a clean slate.)
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import {
@@ -21,6 +25,7 @@ import {
   pointsToValue,
 } from '@breakery/domain';
 import type {
+  AppliedPromotion,
   Cart,
   CartItem,
   Customer,
@@ -33,6 +38,15 @@ import type {
 
 export type CustomerWithCategory = Customer & { category?: CustomerCategory | null };
 
+/**
+ * Stable id for a promotion-driven gift line. Deterministic per promotion id
+ * so duplicate `setAppliedPromotions` calls (e.g. from React strict-mode
+ * double-invoke) cannot insert two gift rows for the same promo.
+ */
+function makeGiftLineId(promotionId: string): string {
+  return `gift-${promotionId}`;
+}
+
 interface CartState {
   cart: Cart;
   /** Line ids that have been "sent to kitchen" — read-only afterwards. */
@@ -41,6 +55,19 @@ interface CartState {
   attachedCustomer: CustomerWithCategory | null;
   /** Set when a tablet order is picked up; directs checkout to pay_existing_order RPC. */
   pickedUpOrderId: string | null;
+  /**
+   * Session 9 — currently applied promotions (latest evaluator output).
+   * In-memory only ; the auto-eval orchestrator recomputes this on every
+   * cart/customer/dismissal change.
+   */
+  appliedPromotions: AppliedPromotion[];
+  /**
+   * Session 9 — promotion ids the user has manually dismissed during this
+   * cart session (typically free-gift lines they removed). Skipped by the
+   * evaluator until the cart is cleared. Anti-loop guard for spec §7 risk
+   * "Gift product retiré accidentellement".
+   */
+  dismissedPromotionIds: Set<string>;
 
   // Actions
   add: (product: Product, modifiers?: SelectedModifiers, unitPriceOverride?: number) => void;
@@ -73,6 +100,24 @@ interface CartState {
   // Discounts (session 6)
   setCartDiscount: (d: Discount | null) => void;
   setLineDiscount: (itemId: string, d: Discount | null) => void;
+
+  // Promotions (session 9)
+  /**
+   * Replace the current applied promotions and reconcile gift lines:
+   * for each AppliedPromotion with `gift_to_add`, add a unit_price=0 cart
+   * line if not already present ; for each existing gift line whose
+   * promotion_id is not in `next`, remove it. Returns the diff so callers
+   * can surface toasts ("Free X added" / "Free X removed").
+   */
+  setAppliedPromotions: (
+    next: AppliedPromotion[],
+    productLookup?: Record<string, { name: string }>,
+  ) => { addedGifts: { name: string; promotion_id: string }[]; removedGifts: { name: string; promotion_id: string }[] };
+  /**
+   * Mark a promotion id as dismissed so the evaluator skips it. Called
+   * automatically when the user removes a gift line via `remove()`.
+   */
+  dismissPromotion: (promotionId: string) => void;
 }
 
 export const useCartStore = create<CartState>()(
@@ -82,6 +127,8 @@ export const useCartStore = create<CartState>()(
       lockedItemIds: [],
       attachedCustomer: null,
       pickedUpOrderId: null,
+      appliedPromotions: [],
+      dismissedPromotionIds: new Set<string>(),
 
       add: (product, modifiers = [], unitPriceOverride) =>
         set((s) => ({ cart: addItem(s.cart, product, modifiers, 1, unitPriceOverride) })),
@@ -95,6 +142,22 @@ export const useCartStore = create<CartState>()(
       remove: (id) =>
         set((s) => {
           if (!get().canEdit(id)) return s; // no-op if locked
+          // Session 9 — manual gift removal: dismiss the corresponding promo so
+          // the next eval doesn't immediately re-add it (anti-loop). Also drop
+          // the promo from `appliedPromotions` to keep the cart panel in sync
+          // until the orchestrator's next debounced run.
+          const removed = s.cart.items.find((i) => i.id === id);
+          if (removed?.is_promo_gift && removed.promotion_id) {
+            const next = new Set(s.dismissedPromotionIds);
+            next.add(removed.promotion_id);
+            return {
+              cart: removeItem(s.cart, id),
+              dismissedPromotionIds: next,
+              appliedPromotions: s.appliedPromotions.filter(
+                (ap) => ap.promotion_id !== removed.promotion_id,
+              ),
+            };
+          }
           return { cart: removeItem(s.cart, id) };
         }),
 
@@ -107,6 +170,10 @@ export const useCartStore = create<CartState>()(
             ...s.cart,
             items: s.cart.items.filter((i) => s.lockedItemIds.includes(i.id)),
           },
+          // Session 9 — wipe promotion state too so a fresh ring-up starts
+          // clean (dismissals from a previous session shouldn't leak).
+          appliedPromotions: [],
+          dismissedPromotionIds: new Set<string>(),
         })),
 
       setOrderType: (type) => set((s) => ({ cart: setOrderType(s.cart, type) })),
@@ -154,6 +221,10 @@ export const useCartStore = create<CartState>()(
           lockedItemIds: [],
           attachedCustomer: null,
           pickedUpOrderId: s.pickedUpOrderId,
+          // Session 9 — restoring a held / picked-up order resets the
+          // promotions slate ; the orchestrator will recompute on next mount.
+          appliedPromotions: [],
+          dismissedPromotionIds: new Set<string>(),
         })),
 
       setPickedUpOrderId: (id) => set({ pickedUpOrderId: id }),
@@ -179,6 +250,65 @@ export const useCartStore = create<CartState>()(
             }),
           },
         })),
+
+      // Session 9 — promotions
+      setAppliedPromotions: (next, productLookup = {}) => {
+        const addedGifts: { name: string; promotion_id: string }[] = [];
+        const removedGifts: { name: string; promotion_id: string }[] = [];
+
+        const state = get();
+        const nextById = new Map(next.map((ap) => [ap.promotion_id, ap]));
+
+        // Index existing gift lines by promotion_id for fast lookup.
+        const existingGiftPromoIds = new Set<string>();
+        for (const it of state.cart.items) {
+          if (it.is_promo_gift && it.promotion_id) {
+            existingGiftPromoIds.add(it.promotion_id);
+          }
+        }
+
+        // 1. Drop gift lines whose promotion is no longer applied.
+        let nextItems: CartItem[] = state.cart.items.filter((it) => {
+          if (!it.is_promo_gift || !it.promotion_id) return true;
+          const stillApplied = nextById.has(it.promotion_id);
+          if (!stillApplied) {
+            removedGifts.push({ name: it.name, promotion_id: it.promotion_id });
+          }
+          return stillApplied;
+        });
+
+        // 2. Add gift lines for newly-applied free_product promos.
+        for (const ap of next) {
+          if (!ap.gift_to_add) continue;
+          if (existingGiftPromoIds.has(ap.promotion_id)) continue;
+          const giftName = productLookup[ap.gift_to_add.product_id]?.name ?? ap.name;
+          const giftLine: CartItem = {
+            id: makeGiftLineId(ap.promotion_id),
+            product_id: ap.gift_to_add.product_id,
+            name: giftName,
+            unit_price: 0,
+            quantity: ap.gift_to_add.qty,
+            modifiers: [],
+            is_promo_gift: true,
+            promotion_id: ap.promotion_id,
+          };
+          nextItems = [...nextItems, giftLine];
+          addedGifts.push({ name: giftName, promotion_id: ap.promotion_id });
+        }
+
+        set({
+          cart: { ...state.cart, items: nextItems },
+          appliedPromotions: next,
+        });
+        return { addedGifts, removedGifts };
+      },
+
+      dismissPromotion: (promotionId) =>
+        set((s) => {
+          const next = new Set(s.dismissedPromotionIds);
+          next.add(promotionId);
+          return { dismissedPromotionIds: next };
+        }),
     }),
     {
       name: 'breakery.cart.v2',
@@ -206,6 +336,9 @@ export function resetCartAfterCheckout(): void {
       lockedItemIds: [],
       attachedCustomer: null,
       pickedUpOrderId: null,
+      // Session 9 — wipe promotion state on checkout completion.
+      appliedPromotions: [],
+      dismissedPromotionIds: new Set<string>(),
     };
   });
 }

@@ -1,7 +1,7 @@
 // apps/pos/src/features/payment/PaymentTerminal.tsx
 import { useState } from 'react';
 import { X, ArrowLeft, Banknote, CreditCard, QrCode, Smartphone, ArrowRightLeft, Wallet } from 'lucide-react';
-import { Button, Currency, FullScreenModal, LoyaltyBadge, Numpad, cn } from '@breakery/ui';
+import { Button, Currency, FullScreenModal, LoyaltyBadge, Numpad, PromotionLineRow, cn } from '@breakery/ui';
 import { calculateTotals, calculateChange, earnPointsForCustomer, tierFromLifetime, TIERS, type PaymentMethod } from '@breakery/domain';
 import { resetCartAfterCheckout, useCartStore } from '@/stores/cartStore';
 import { usePaymentStore } from '@/stores/paymentStore';
@@ -46,10 +46,15 @@ export function PaymentTerminal() {
 
   const cart = useCartStore((s) => s.cart);
   const attachedCustomer = useCartStore((s) => s.attachedCustomer);
+  const appliedPromotions = useCartStore((s) => s.appliedPromotions);
   const user = useAuthStore((s) => s.user);
   const checkout = useCheckout();
 
-  const totals = calculateTotals(cart, TAX_RATE);
+  const baseTotals = calculateTotals(cart, TAX_RATE);
+  const promotionTotal = appliedPromotions.reduce((s, ap) => s + ap.amount, 0);
+  const total = Math.max(0, baseTotals.total - promotionTotal);
+  const tax_amount = Math.round((total * TAX_RATE) / (1 + TAX_RATE));
+  const totals = { ...baseTotals, total, tax_amount };
   const cashReceived = Number(cashReceivedStr || '0');
   const changeGiven = calculateChange(totals.total, cashReceived);
 
@@ -187,6 +192,10 @@ export function PaymentTerminal() {
                 <span className="font-mono text-red-400">-<Currency amount={totals.redemption_amount} /></span>
               </div>
             )}
+            {/* Session 9 — applied promotions in the payment summary. */}
+            {appliedPromotions.map((ap) => (
+              <PromotionLineRow key={ap.promotion_id} applied={ap} />
+            ))}
             {cart.cartDiscount && (
               <div className="flex justify-between text-text-secondary">
                 <span>

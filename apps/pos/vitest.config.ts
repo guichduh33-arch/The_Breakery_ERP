@@ -12,6 +12,12 @@ export default defineConfig({
     globals: true,
     passWithNoTests: true,
     setupFiles: ['./vitest.setup.ts'],
+    // Session 9 — module graph grew (promotions feature + auto-eval orchestrator
+    // pulled into ActiveOrderPanel, PaymentTerminal, useCheckout). Under heavy
+    // parallel load the larger collect/setup cost pushes some smoke tests past
+    // the 5s default. Bump globally; assertion-level timeouts are unaffected.
+    testTimeout: 15000,
+    hookTimeout: 15000,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],

@@ -16,6 +16,9 @@ import { TableSelectorButton } from '@/features/tables/components/TableSelectorB
 import { DiscountButton } from '@/features/discounts/components/DiscountButton';
 import { useApplyCartDiscount } from '@/features/discounts/hooks/useApplyCartDiscount';
 import { useApplyLineDiscount, lineDiscountBase } from '@/features/discounts/hooks/useApplyLineDiscount';
+import { PromotionsList } from '@/features/promotions/components/PromotionsList';
+import { usePromotionsAutoEval } from '@/features/promotions/hooks/usePromotionsAutoEval';
+import { usePromotionsRealtime } from '@/features/promotions/hooks/usePromotionsRealtime';
 import { CartItemRow } from './CartItemRow';
 import { SendToKitchenButton } from './SendToKitchenButton';
 
@@ -36,14 +39,26 @@ export function ActiveOrderPanel({ onOpenCustomerSearch, onDetachCustomer }: Act
   const remove = useCartStore((s) => s.remove);
   const setOrderType = useCartStore((s) => s.setOrderType);
   const clear = useCartStore((s) => s.clear);
+  const appliedPromotions = useCartStore((s) => s.appliedPromotions);
   const openPayment = usePaymentStore((s) => s.open);
+
+  // Session 9 — keep the cart panel as the single mount point for the
+  // promotions orchestrator + realtime subscription.
+  usePromotionsAutoEval();
+  usePromotionsRealtime();
 
   const [redeemOpen, setRedeemOpen] = useState(false);
 
   const cartDiscount = useApplyCartDiscount();
   const lineDiscount = useApplyLineDiscount();
 
-  const totals = calculateTotals(cart, TAX_RATE);
+  const baseTotals = calculateTotals(cart, TAX_RATE);
+  const promotionTotal = appliedPromotions.reduce((s, ap) => s + ap.amount, 0);
+  // Spec §4.4 step 5: total = items - redemption - manual_discount - Σ promo.
+  // Tax is recomputed on the post-promo total to mirror RPC v7.
+  const total = Math.max(0, baseTotals.total - promotionTotal);
+  const tax_amount = Math.round((total * TAX_RATE) / (1 + TAX_RATE));
+  const totals = { ...baseTotals, total, tax_amount };
   const isEmpty = cart.items.length === 0;
   const hasUnlocked = cart.items.some((i) => !lockedIds.includes(i.id));
 
@@ -118,6 +133,8 @@ export function ActiveOrderPanel({ onOpenCustomerSearch, onDetachCustomer }: Act
                 <span className="font-mono text-red-400">-<Currency amount={totals.redemption_amount} /></span>
               </div>
             )}
+            {/* Session 9 — auto-applied promotions live between modifiers/redeem and discount. */}
+            <PromotionsList applied={appliedPromotions} />
             {cart.cartDiscount && (
               <div className="flex justify-between text-text-secondary">
                 <span>
