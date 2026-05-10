@@ -52,6 +52,11 @@ export {
   type CustomerFormProps,
 } from './components/CustomerForm.js';
 export {
+  LoyaltyAdjustForm,
+  type LoyaltyAdjustFormValues,
+  type LoyaltyAdjustFormProps,
+} from './components/LoyaltyAdjustForm.js';
+export {
   CustomerSearchModal,
   type CustomerSearchModalProps,
 } from './components/CustomerSearchModal.js';
