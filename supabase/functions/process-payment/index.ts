@@ -28,6 +28,18 @@ interface ProcessPaymentPayload {
   loyalty_points_redeemed?: number;
   /** Session 4: dine-in table name (e.g. "T-03"). Forwarded to RPC v4 as p_table_number. */
   table_number?: string;
+  /**
+   * Session 9: applied promotions (already evaluated client-side). Each entry
+   * is `{promotion_id, amount, description, scope_line_id?}`. Forwarded to
+   * RPC v7 as `p_promotions` ; the RPC re-validates eligibility server-side
+   * and inserts `promotion_applications` rows.
+   */
+  promotions?: Array<{
+    promotion_id: string;
+    amount: number;
+    description: string;
+    scope_line_id?: string;
+  }>;
 }
 
 serve(async (req) => {
@@ -89,6 +101,9 @@ serve(async (req) => {
     ...(body.loyalty_points_redeemed ? { p_loyalty_points_redeemed: body.loyalty_points_redeemed } : {}),
     // Forward optional table_number (session 4 — RPC v4)
     ...(body.table_number ? { p_table_number: body.table_number } : {}),
+    // Session 9 — forward applied promotions for server-side re-validation +
+    // promotion_applications inserts. Empty/undefined → RPC stays iso-v6.
+    ...(body.promotions && body.promotions.length > 0 ? { p_promotions: body.promotions } : {}),
   });
 
   if (error) {

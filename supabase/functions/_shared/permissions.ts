@@ -3,7 +3,7 @@
 // Imported by auth-verify-pin and auth-get-session (D10 — session 8 perf-debt).
 //
 // IMPORTANT: this list must stay in sync with the DB-side `has_permission()`
-// function (last reseted in 20260508000002_seed_sales_discount_permission.sql).
+// function (last reseted in 20260511000006_seed_promotions_perms_and_demo.sql).
 // Any role/permission referenced by an EF or RLS policy MUST appear here,
 // otherwise the EF response and DB authorisation will diverge.
 //
@@ -24,6 +24,8 @@ export function computePermissionsForRole(role: string): string[] {
         'products.read', 'products.create', 'products.update',
         'users.create', 'users.update', 'users.view_audit',
         'payments.process', 'sales.discount',
+        // Session 9 — promotions backoffice (BO2): admin tier gets all 4.
+        'promotions.read', 'promotions.create', 'promotions.update', 'promotions.delete',
       ];
     case 'MANAGER':
       return [
@@ -31,6 +33,8 @@ export function computePermissionsForRole(role: string): string[] {
         'pos.session.view_all', 'pos.sale.create', 'pos.sale.void', 'pos.sale.update',
         'products.read', 'products.create', 'products.update',
         'payments.process', 'sales.discount',
+        // Session 9 — promotions backoffice (BO2): MANAGER gets read+create+update (NO delete).
+        'promotions.read', 'promotions.create', 'promotions.update',
       ];
     case 'CASHIER':
       return [
