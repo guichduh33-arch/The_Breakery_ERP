@@ -22,9 +22,9 @@
 
 | Action | Path |
 |---|---|
-| CREATE | `supabase/migrations/20260512000001_init_loyalty_tier_helper.sql` |
-| CREATE | `supabase/migrations/20260512000002_init_adjust_loyalty_points_rpc.sql` |
-| CREATE | `supabase/migrations/20260512000003_seed_loyalty_perms.sql` |
+| CREATE | `supabase/migrations/20260514000001_init_loyalty_tier_helper.sql` |
+| CREATE | `supabase/migrations/20260514000002_init_adjust_loyalty_points_rpc.sql` |
+| CREATE | `supabase/migrations/20260514000003_seed_loyalty_perms.sql` |
 | CREATE | `supabase/tests/functions/loyalty-adjust.test.ts` |
 | CREATE | `supabase/tests/functions/loyalty-rls.test.ts` |
 | MODIFY | `packages/supabase/src/rls/permissions.ts` (add 2 codes to `PermissionCode`) |
@@ -55,14 +55,14 @@
 ## Task 1: DB — `get_loyalty_tier()` helper
 
 **Files:**
-- Create: `supabase/migrations/20260512000001_init_loyalty_tier_helper.sql`
+- Create: `supabase/migrations/20260514000001_init_loyalty_tier_helper.sql`
 
 Single-step task — pure SQL function with no client dependencies. Tested transitively via Task 4.
 
 - [ ] **Step 1: Write the migration**
 
 ```sql
--- 20260512000001_init_loyalty_tier_helper.sql
+-- 20260514000001_init_loyalty_tier_helper.sql
 -- Session 10 / migration 1 : pure SQL helper that mirrors
 -- packages/domain/src/loyalty/tiers.ts (4-tier table).
 -- IMMUTABLE so the planner can fold calls in views/expressions.
@@ -101,7 +101,7 @@ Expected output: `bronze | silver | gold | platinum`.
 - [ ] **Step 4: Commit**
 
 ```bash
-git add supabase/migrations/20260512000001_init_loyalty_tier_helper.sql
+git add supabase/migrations/20260514000001_init_loyalty_tier_helper.sql
 git commit -m "feat(db): session 10 — loyalty tier SQL helper (mirrors domain TIERS)"
 ```
 
@@ -110,7 +110,7 @@ git commit -m "feat(db): session 10 — loyalty tier SQL helper (mirrors domain 
 ## Task 2: DB — `adjust_loyalty_points` RPC + RLS additions
 
 **Files:**
-- Create: `supabase/migrations/20260512000002_init_adjust_loyalty_points_rpc.sql`
+- Create: `supabase/migrations/20260514000002_init_adjust_loyalty_points_rpc.sql`
 
 This migration covers three things at once because they form a single atomic capability ("adjust path"):
 1. The RPC.
@@ -120,29 +120,21 @@ This migration covers three things at once because they form a single atomic cap
 - [ ] **Step 1: Write the migration**
 
 ```sql
--- 20260512000002_init_adjust_loyalty_points_rpc.sql
--- Session 10 / migration 2 :
---   1. UPDATE policy on customers (retail only, soft-delete excluded)
---   2. Column-level revoke on loyalty_points/lifetime_points/total_spent/
+-- 20260514000002_init_adjust_loyalty_points_rpc.sql
+-- Session 12 (BO loyalty) / migration 2 :
+--   1. Column-level revoke on loyalty_points/lifetime_points/total_spent/
 --      total_visits/last_visit_at — these are mutated only by SECURITY
 --      DEFINER functions (complete_order_with_payment, adjust_loyalty_points).
---   3. adjust_loyalty_points RPC (signed delta, 5-char min reason, balance
+--   2. adjust_loyalty_points RPC (signed delta, 5-char min reason, balance
 --      lock, ledger insert).
+--
+-- NOTE: customers UPDATE policy already exists from session 11
+-- (20260513000005_extend_rls_for_module_perms: `perm_update` using
+-- has_permission(auth.uid(), 'customers.update')). The customer_type CHECK
+-- constraint enforces 'retail' at the schema level. We therefore do NOT add
+-- another UPDATE policy here.
 
--- 1) UPDATE policy ---------------------------------------------------------
-
-CREATE POLICY "auth_update_retail" ON customers FOR UPDATE
-  USING (
-    is_authenticated()
-    AND deleted_at IS NULL
-    AND customer_type = 'retail'
-  )
-  WITH CHECK (
-    is_authenticated()
-    AND customer_type = 'retail'
-  );
-
--- 2) Column-level GRANT revocation -----------------------------------------
+-- 1) Column-level GRANT revocation -----------------------------------------
 -- The role 'authenticated' is the canonical Supabase JWT role. Revoking
 -- column UPDATE prevents PostgREST clients from setting balance/lifetime/
 -- aggregates directly. SECURITY DEFINER funcs run as their owner (postgres)
@@ -151,7 +143,7 @@ CREATE POLICY "auth_update_retail" ON customers FOR UPDATE
 REVOKE UPDATE (loyalty_points, lifetime_points, total_spent, total_visits, last_visit_at)
   ON customers FROM authenticated;
 
--- 3) The RPC ---------------------------------------------------------------
+-- 2) The RPC ---------------------------------------------------------------
 
 CREATE OR REPLACE FUNCTION adjust_loyalty_points(
   p_customer_id UUID,
@@ -262,50 +254,55 @@ Expected: one row showing the function signature.
 - [ ] **Step 4: Commit**
 
 ```bash
-git add supabase/migrations/20260512000002_init_adjust_loyalty_points_rpc.sql
+git add supabase/migrations/20260514000002_init_adjust_loyalty_points_rpc.sql
 git commit -m "feat(db): session 10 — adjust_loyalty_points RPC + RLS update + col GRANTs"
 ```
 
 ---
 
-## Task 3: DB — `loyalty.read` + `loyalty.adjust` permissions seed
+## Task 3: DB — `loyalty.read` + `loyalty.adjust` permissions seed (extend `has_permission` v6 + `has_permission_for_profile`)
 
 **Files:**
-- Create: `supabase/migrations/20260512000003_seed_loyalty_perms.sql`
+- Create: `supabase/migrations/20260514000003_seed_loyalty_perms.sql`
 
-Mirrors `20260508000002_seed_sales_discount_permission.sql` exactly. Adds two perms and rebuilds `has_permission()`.
+The current state on this branch is v5 (session 11's `20260513000004_seed_backoffice_crud_perms.sql`). v5 includes the 28 BO CRUD perms plus session 10's `pos.sale.refund/cancel_item`. Both `has_permission()` and `has_permission_for_profile()` exist and must be kept in sync.
+
+This migration extends both to v6 by adding `loyalty.read` to MANAGER's allowlist and relying on the unconditional ADMIN/SUPER_ADMIN branch for `loyalty.adjust`. The MANAGER list below is copied verbatim from v5 to keep the diff tight and avoid skew.
 
 - [ ] **Step 1: Write the migration**
 
 ```sql
--- 20260512000003_seed_loyalty_perms.sql
--- Session 10 / migration 3 : seed loyalty.read + loyalty.adjust and
--- extend has_permission() so the BO page is gated and the adjust action
--- is admin-only.
+-- 20260514000003_seed_loyalty_perms.sql
+-- Session 12 (BO loyalty) / migration 3 :
+-- Seed loyalty.read + loyalty.adjust ; rebuild has_permission v6 +
+-- has_permission_for_profile to match.
 
 INSERT INTO permissions (code, module, action, description) VALUES
   ('loyalty.read',   'loyalty', 'read',   'View loyalty customers and transactions in BO'),
   ('loyalty.adjust', 'loyalty', 'adjust', 'Manually credit or debit a customer loyalty balance')
 ON CONFLICT (code) DO NOTHING;
 
--- Optional role_permissions seed (kept as a guarded block to match
--- 20260508000002's style — table may or may not exist yet).
+-- Future-proof : seed role_permissions if the table exists (matches session 11 style).
 DO $$
 BEGIN
   IF EXISTS (
     SELECT 1 FROM information_schema.tables
-    WHERE table_schema = 'public' AND table_name = 'role_permissions'
+     WHERE table_schema = 'public' AND table_name = 'role_permissions'
   ) THEN
     EXECUTE $q$
       INSERT INTO role_permissions (role_code, permission_code) VALUES
-        ('MANAGER', 'loyalty.read'),
-        ('ADMIN',   'loyalty.read'),
-        ('ADMIN',   'loyalty.adjust')
+        ('MANAGER',     'loyalty.read'),
+        ('ADMIN',       'loyalty.read'),
+        ('ADMIN',       'loyalty.adjust'),
+        ('SUPER_ADMIN', 'loyalty.read'),
+        ('SUPER_ADMIN', 'loyalty.adjust')
       ON CONFLICT DO NOTHING
     $q$;
   END IF;
 END $$;
 
+-- Refresh has_permission to v6 — adds loyalty.read for MANAGER.
+-- ADMIN/SUPER_ADMIN auto-allow via the unconditional-true branch (covers loyalty.adjust).
 CREATE OR REPLACE FUNCTION has_permission(p_uid UUID, p_perm TEXT)
 RETURNS BOOLEAN
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public
@@ -313,8 +310,7 @@ AS $$
 DECLARE
   v_role TEXT;
 BEGIN
-  SELECT role_code INTO v_role FROM user_profiles
-    WHERE auth_user_id = p_uid AND deleted_at IS NULL;
+  SELECT role_code INTO v_role FROM user_profiles WHERE auth_user_id = p_uid AND deleted_at IS NULL;
   IF v_role IS NULL THEN
     RETURN false;
   END IF;
@@ -324,9 +320,16 @@ BEGIN
     WHEN v_role = 'MANAGER' THEN p_perm IN (
       'pos.session.open','pos.session.close_own','pos.session.close_other',
       'pos.session.view_all','pos.sale.create','pos.sale.void','pos.sale.update',
+      'pos.sale.refund','pos.sale.cancel_item',
       'products.read','products.create','products.update',
       'payments.process',
       'sales.discount',
+      'promotions.read','promotions.create','promotions.update',
+      'categories.read','categories.create','categories.update',
+      'customers.read','customers.create','customers.update',
+      'tables.read','tables.create','tables.update',
+      'combos.read','combos.create','combos.update',
+      'suppliers.read','suppliers.create','suppliers.update',
       'loyalty.read'
     )
     WHEN v_role = 'CASHIER' THEN p_perm IN (
@@ -341,8 +344,49 @@ BEGIN
 END $$;
 
 COMMENT ON FUNCTION has_permission IS
-  'v3 (session 10): adds loyalty.read (MANAGER+) and loyalty.adjust '
-  '(ADMIN+ via the catch-all branch). Replace with role_permissions join-table later.';
+  'v6 (session 12): adds loyalty.read (MANAGER+). loyalty.adjust granted to ADMIN+ via the unconditional-true branch.';
+
+-- Mirror has_permission_for_profile (session 10) with the same matrix.
+CREATE OR REPLACE FUNCTION has_permission_for_profile(p_profile_id UUID, p_perm TEXT)
+RETURNS BOOLEAN
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public
+AS $$
+DECLARE
+  v_role TEXT;
+BEGIN
+  SELECT role_code INTO v_role FROM user_profiles
+    WHERE id = p_profile_id AND deleted_at IS NULL;
+  IF v_role IS NULL THEN
+    RETURN false;
+  END IF;
+
+  RETURN CASE
+    WHEN v_role IN ('SUPER_ADMIN', 'ADMIN') THEN true
+    WHEN v_role = 'MANAGER' THEN p_perm IN (
+      'pos.session.open','pos.session.close_own','pos.session.close_other',
+      'pos.session.view_all','pos.sale.create','pos.sale.void','pos.sale.update',
+      'pos.sale.refund','pos.sale.cancel_item',
+      'products.read','products.create','products.update',
+      'payments.process',
+      'sales.discount',
+      'promotions.read','promotions.create','promotions.update',
+      'categories.read','categories.create','categories.update',
+      'customers.read','customers.create','customers.update',
+      'tables.read','tables.create','tables.update',
+      'combos.read','combos.create','combos.update',
+      'suppliers.read','suppliers.create','suppliers.update',
+      'loyalty.read'
+    )
+    WHEN v_role = 'CASHIER' THEN p_perm IN (
+      'pos.session.open','pos.session.close_own','pos.sale.create','products.read',
+      'payments.process'
+    )
+    WHEN v_role = 'waiter' THEN p_perm IN (
+      'sales.create','products.read'
+    )
+    ELSE false
+  END;
+END $$;
 ```
 
 - [ ] **Step 2: Apply and verify**
@@ -363,7 +407,7 @@ Expected: `packages/supabase/src/types.generated.ts` is rewritten and includes `
 - [ ] **Step 4: Commit**
 
 ```bash
-git add supabase/migrations/20260512000003_seed_loyalty_perms.sql packages/supabase/src/types.generated.ts
+git add supabase/migrations/20260514000003_seed_loyalty_perms.sql packages/supabase/src/types.generated.ts
 git commit -m "feat(db): session 10 — seed loyalty.read + loyalty.adjust perms; regen types"
 ```
 
@@ -1187,7 +1231,7 @@ export interface LoyaltyTxnRow {
   id:                   string;
   customer_id:          string;
   order_id:             string | null;
-  transaction_type:     'earn' | 'redeem' | 'adjust';
+  transaction_type:     'earn' | 'redeem' | 'adjust' | 'refund';
   points:               number;
   points_balance_after: number;
   order_amount:         number | null;
@@ -1458,6 +1502,8 @@ import type { CustomerListRow as Row } from '../hooks/useLoyaltyCustomersList.js
 export interface CustomerListRowProps {
   row: Row;
   canAdjust: boolean;
+  canEdit:   boolean;
+  canDelete: boolean;
   onView:    (r: Row) => void;
   onAdjust:  (r: Row) => void;
   onEdit:    (r: Row) => void;
@@ -1472,7 +1518,7 @@ function formatLastVisit(iso: string | null): string {
   return `${days} days ago`;
 }
 
-export function CustomerListRow({ row, canAdjust, onView, onAdjust, onEdit, onDelete }: CustomerListRowProps): JSX.Element {
+export function CustomerListRow({ row, canAdjust, canEdit, canDelete, onView, onAdjust, onEdit, onDelete }: CustomerListRowProps): JSX.Element {
   const tier = tierFromLifetime(row.lifetime_points);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -1494,8 +1540,12 @@ export function CustomerListRow({ row, canAdjust, onView, onAdjust, onEdit, onDe
             {canAdjust && (
               <button className="block w-full text-left px-3 py-2 text-sm hover:bg-bg-overlay" onClick={() => { setMenuOpen(false); onAdjust(row); }}>Adjust points</button>
             )}
-            <button className="block w-full text-left px-3 py-2 text-sm hover:bg-bg-overlay" onClick={() => { setMenuOpen(false); onEdit(row); }}>Edit</button>
-            <button className="block w-full text-left px-3 py-2 text-sm text-red hover:bg-bg-overlay" onClick={() => { setMenuOpen(false); onDelete(row); }}>Delete</button>
+            {canEdit && (
+              <button className="block w-full text-left px-3 py-2 text-sm hover:bg-bg-overlay" onClick={() => { setMenuOpen(false); onEdit(row); }}>Edit</button>
+            )}
+            {canDelete && (
+              <button className="block w-full text-left px-3 py-2 text-sm text-red hover:bg-bg-overlay" onClick={() => { setMenuOpen(false); onDelete(row); }}>Delete</button>
+            )}
           </div>
         )}
       </td>
@@ -1645,6 +1695,7 @@ const TYPE_LABEL: Record<LoyaltyTxnRow['transaction_type'], string> = {
   earn:   'Earn',
   redeem: 'Redeem',
   adjust: 'Adjust',
+  refund: 'Refund',
 };
 
 export function LoyaltyHistoryDrawer({ customer, onClose }: LoyaltyHistoryDrawerProps) {
@@ -1814,7 +1865,10 @@ vi.mock('@/lib/supabase.js', () => {
 
 vi.mock('@/stores/authStore.js', () => ({
   useAuthStore: (sel: (s: { hasPermission: (p: string) => boolean }) => unknown) =>
-    sel({ hasPermission: (p) => p === 'loyalty.read' || p === 'loyalty.adjust' }),
+    sel({ hasPermission: (p) => [
+      'loyalty.read', 'loyalty.adjust',
+      'customers.create', 'customers.update', 'customers.delete',
+    ].includes(p) }),
 }));
 
 function renderPage() {
@@ -1879,6 +1933,9 @@ export default function LoyaltyPage() {
   const hasPermission = useAuthStore((s) => s.hasPermission);
   const canRead   = hasPermission('loyalty.read');
   const canAdjust = hasPermission('loyalty.adjust');
+  const canCreate = hasPermission('customers.create');
+  const canUpdate = hasPermission('customers.update');
+  const canDelete = hasPermission('customers.delete');
 
   const [search, setSearch] = useState<string>('');
   const [tier,   setTier  ] = useState<TierFilter>('all');
@@ -1907,9 +1964,11 @@ export default function LoyaltyPage() {
           <h1 className="font-serif text-3xl">Loyalty</h1>
           <p className="text-text-secondary text-sm mt-1">Retail customers, balances, and ledger.</p>
         </div>
-        <Button type="button" variant="primary" onClick={() => setCreating(true)}>
-          <Plus className="h-4 w-4" aria-hidden /> New customer
-        </Button>
+        {canCreate && (
+          <Button type="button" variant="primary" onClick={() => setCreating(true)}>
+            <Plus className="h-4 w-4" aria-hidden /> New customer
+          </Button>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-3 items-end bg-bg-elevated border border-border-subtle rounded-lg p-4">
@@ -1962,6 +2021,8 @@ export default function LoyaltyPage() {
                 key={row.id}
                 row={row}
                 canAdjust={canAdjust}
+                canEdit={canUpdate}
+                canDelete={canDelete}
                 onView={setViewing}
                 onAdjust={setAdjusting}
                 onEdit={setEditing}
