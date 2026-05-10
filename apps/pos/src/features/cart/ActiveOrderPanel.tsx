@@ -21,6 +21,10 @@ import { usePromotionsAutoEval } from '@/features/promotions/hooks/usePromotions
 import { usePromotionsRealtime } from '@/features/promotions/hooks/usePromotionsRealtime';
 import { CartItemRow } from './CartItemRow';
 import { SendToKitchenButton } from './SendToKitchenButton';
+import { CancelItemModal } from './CancelItemModal';
+import { useCancelOrderItem } from './hooks/useCancelOrderItem';
+import type { CartItem } from '@breakery/domain';
+import { toast } from 'sonner';
 
 const TAX_RATE = 0.10;
 
@@ -33,6 +37,7 @@ export function ActiveOrderPanel({ onOpenCustomerSearch, onDetachCustomer }: Act
   const cart = useCartStore((s) => s.cart);
   const lockedIds = useCartStore((s) => s.lockedItemIds);
   const attachedCustomer = useCartStore((s) => s.attachedCustomer);
+  const pickedUpOrderId = useCartStore((s) => s.pickedUpOrderId);
   const detachCustomer = useCartStore((s) => s.detachCustomer);
   const setRedeemPoints = useCartStore((s) => s.setRedeemPoints);
   const update = useCartStore((s) => s.update);
@@ -48,6 +53,10 @@ export function ActiveOrderPanel({ onOpenCustomerSearch, onDetachCustomer }: Act
   usePromotionsRealtime();
 
   const [redeemOpen, setRedeemOpen] = useState(false);
+  // Session 10 — manager-PIN cancel-after-send. Only available when the cart
+  // came from a tablet pickup (item.id is a real DB UUID).
+  const [cancelTarget, setCancelTarget] = useState<CartItem | null>(null);
+  const cancelMutation = useCancelOrderItem();
 
   const cartDiscount = useApplyCartDiscount();
   const lineDiscount = useApplyLineDiscount();
@@ -115,6 +124,9 @@ export function ActiveOrderPanel({ onOpenCustomerSearch, onDetachCustomer }: Act
               onChangeQty={(q) => update(item.id, q)}
               onRemove={() => remove(item.id)}
               onApplyLineDiscount={lineDiscount.openForItem}
+              {...(pickedUpOrderId
+                ? { onRequestCancel: (it) => setCancelTarget(it) }
+                : {})}
             />
           ))
         )}
@@ -208,6 +220,31 @@ export function ActiveOrderPanel({ onOpenCustomerSearch, onDetachCustomer }: Act
         onVerified={lineDiscount.onPinVerified}
         verifyFn={lineDiscount.verifyFn}
       />
+      {cancelTarget && (
+        <CancelItemModal
+          open={Boolean(cancelTarget)}
+          itemName={cancelTarget.name}
+          onClose={() => setCancelTarget(null)}
+          isPending={cancelMutation.isPending}
+          onSubmit={async ({ reason, managerPin }) => {
+            try {
+              await cancelMutation.mutateAsync({
+                orderItemId: cancelTarget.id,
+                reason,
+                managerPin,
+              });
+              toast.success(`${cancelTarget.name} cancelled`);
+            } catch (err: unknown) {
+              const e = err as { details?: { error?: string }; status?: number };
+              const msg = e.details?.error ?? 'cancel_failed';
+              if (e.status === 401) toast.error('Wrong manager PIN');
+              else if (e.status === 422) toast.error(`Cannot cancel: ${msg}`);
+              else toast.error(`Cancel failed: ${msg}`);
+              throw err;  // Re-throw so CancelItemModal clears PIN for retry
+            }
+          }}
+        />
+      )}
     </aside>
   );
 }

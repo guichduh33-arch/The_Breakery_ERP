@@ -91,6 +91,14 @@ interface CartState {
   unlockedItems: () => CartItem[];
   unlockedItemIds: () => string[];
 
+  /**
+   * Session 10 — flip a locked item to cancelled state. Called after a
+   * successful cancel-item EF round-trip; mirrors the server's is_cancelled flag
+   * on the local CartItem so the cart panel renders strikethrough + CANCELLED
+   * badge and excludes the line from totals (calculateTotals ignores cancelled).
+   */
+  markCancelled: (lineId: string) => void;
+
   // Held orders restore (session 4)
   restoreCart: (cart: Cart) => void;
 
@@ -214,6 +222,20 @@ export const useCartStore = create<CartState>()(
         get()
           .cart.items.filter((i) => !get().lockedItemIds.includes(i.id))
           .map((i) => i.id),
+
+      // Session 10 — mark a previously-locked item as cancelled (server side has
+      // is_cancelled=true after cancel_order_item_rpc). The line stays in the
+      // cart so it can render with a strikethrough + badge ; calculateTotals and
+      // the checkout payload exclude is_cancelled lines.
+      markCancelled: (lineId) =>
+        set((s) => ({
+          cart: {
+            ...s.cart,
+            items: s.cart.items.map((it) =>
+              it.id === lineId ? { ...it, is_cancelled: true } : it,
+            ),
+          },
+        })),
 
       restoreCart: (restoredCart) =>
         set((s) => ({

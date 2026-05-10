@@ -59,6 +59,10 @@ export interface KdsItemRow {
   sent_to_kitchen_at: string;
   ready_at: string | null;
   order_number: string;
+  /** Session 10 — true if cashier cancelled the line via cancel_order_item_rpc. */
+  is_cancelled: boolean;
+  cancelled_at: string | null;
+  cancelled_reason: string | null;
 }
 
 interface RawRow {
@@ -73,6 +77,9 @@ interface RawRow {
   dispatch_station: DispatchStation;
   sent_to_kitchen_at: string;
   ready_at: string | null;
+  is_cancelled: boolean | null;
+  cancelled_at: string | null;
+  cancelled_reason: string | null;
   // Supabase nested selects can return either a single row or an array
   // depending on the FK cardinality — normalise both shapes below.
   products: { name: string } | { name: string }[] | null;
@@ -95,6 +102,7 @@ export function useKdsOrders(station: KdsStation) {
           id, order_id, product_id, quantity, unit_price,
           modifiers, modifiers_total, kitchen_status, dispatch_station,
           sent_to_kitchen_at, ready_at,
+          is_cancelled, cancelled_at, cancelled_reason,
           products(name),
           orders(order_number)
         `,
@@ -124,6 +132,9 @@ export function useKdsOrders(station: KdsStation) {
           sent_to_kitchen_at: row.sent_to_kitchen_at,
           ready_at: row.ready_at,
           order_number: order?.order_number ?? '?',
+          is_cancelled: row.is_cancelled === true,
+          cancelled_at: row.cancelled_at,
+          cancelled_reason: row.cancelled_reason,
         };
       });
     },

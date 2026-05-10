@@ -76,7 +76,8 @@ export function buildOrderPayload(
   return {
     session_id: sessionId,
     order_type: cart.order_type,
-    items: cart.items.map(buildItemPayload),
+    // Session 10: cancelled items are excluded from the checkout payload.
+    items: cart.items.filter((i) => !i.is_cancelled).map(buildItemPayload),
     // Session 10 — exactly one of payment / payments. Server raises if both supplied.
     ...(isArray ? { payments: paymentOrTenders } : { payment: paymentOrTenders }),
     // exactOptionalPropertyTypes-safe: only include the field when defined

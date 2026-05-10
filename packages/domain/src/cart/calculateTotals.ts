@@ -36,6 +36,8 @@ export function calculateTotals(cart: Cart, taxRate: number): CartTotals {
   let item_count = 0;
 
   for (const item of cart.items) {
+    // Session 10: cancelled items are excluded from totals.
+    if (item.is_cancelled) continue;
     const adjustment = calculatePriceAdjustment(item.modifiers);
     const line_pre_discount = roundIdr((item.unit_price + adjustment) * item.quantity);
     const line_discount = item.discount
