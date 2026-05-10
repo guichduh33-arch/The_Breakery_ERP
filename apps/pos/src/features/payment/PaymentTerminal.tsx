@@ -1,8 +1,23 @@
 // apps/pos/src/features/payment/PaymentTerminal.tsx
+// Session 10 — sequential multi-tender flow. Cashier picks method, types amount,
+// clicks "Add Tender" to push it to the running list. When remaining = 0, "Process
+// Payment" finalizes all tenders atomically via RPC v8.
+//
+// Single-tender fast-path: if no tenders accumulated AND a cash draft covers the
+// total, the cashier can hit "Process Payment" directly — equivalent to v7 behaviour
+// (the store will ship a single-element tenders array).
+
 import { useState } from 'react';
-import { X, ArrowLeft, Banknote, CreditCard, QrCode, Smartphone, ArrowRightLeft, Wallet } from 'lucide-react';
-import { Button, Currency, FullScreenModal, LoyaltyBadge, Numpad, PromotionLineRow, cn } from '@breakery/ui';
-import { calculateTotals, calculateChange, earnPointsForCustomer, tierFromLifetime, TIERS, type PaymentMethod } from '@breakery/domain';
+import { X, ArrowLeft, Banknote, CreditCard, QrCode, Smartphone, ArrowRightLeft, Wallet, Plus } from 'lucide-react';
+import {
+  Button, Currency, FullScreenModal, LoyaltyBadge, Numpad,
+  PromotionLineRow, TenderListBuilder, cn,
+} from '@breakery/ui';
+import {
+  calculateTotals, calculateChange, earnPointsForCustomer, tierFromLifetime, TIERS,
+  validateTenders, sumTenders, computeRemaining,
+  type PaymentMethod, type Tender,
+} from '@breakery/domain';
 import { resetCartAfterCheckout, useCartStore } from '@/stores/cartStore';
 import { usePaymentStore } from '@/stores/paymentStore';
 import { useAuthStore } from '@/stores/authStore';
@@ -33,6 +48,7 @@ interface SuccessState {
   changeGiven: number | null;
   pointsEarned: number;
   customerName: string | undefined;
+  paymentMethod: PaymentMethod;
 }
 
 export function PaymentTerminal() {
@@ -43,6 +59,9 @@ export function PaymentTerminal() {
   const selectMethod = usePaymentStore((s) => s.selectMethod);
   const cashReceivedStr = usePaymentStore((s) => s.cashReceivedStr);
   const setCashReceivedStr = usePaymentStore((s) => s.setCashReceivedStr);
+  const tenders = usePaymentStore((s) => s.tenders);
+  const addTender = usePaymentStore((s) => s.addTender);
+  const removeTender = usePaymentStore((s) => s.removeTender);
 
   const cart = useCartStore((s) => s.cart);
   const attachedCustomer = useCartStore((s) => s.attachedCustomer);
@@ -55,28 +74,88 @@ export function PaymentTerminal() {
   const total = Math.max(0, baseTotals.total - promotionTotal);
   const tax_amount = Math.round((total * TAX_RATE) / (1 + TAX_RATE));
   const totals = { ...baseTotals, total, tax_amount };
-  const cashReceived = Number(cashReceivedStr || '0');
-  const changeGiven = calculateChange(totals.total, cashReceived);
+
+  const tenderedSum = sumTenders(tenders);
+  const remaining = computeRemaining(total, tenders);
+
+  // Draft state derived from selectedMethod + cashReceivedStr
+  const draftAmount = Number(cashReceivedStr || '0');
+  // For cash: the amount on the tender = min(received, remaining); change = received - amount (last tender only).
+  // For non-cash: amount = parsed.
+  const isCashDraft = selectedMethod === 'cash';
+  const draftTenderAmount = isCashDraft
+    ? Math.min(draftAmount, remaining)
+    : draftAmount;
+  const cashChange = isCashDraft && draftAmount > remaining
+    ? draftAmount - remaining
+    : 0;
+
+  const draftValid =
+    selectedMethod !== null
+    && draftTenderAmount > 0
+    && remaining > 0
+    && draftTenderAmount <= remaining
+    // When non-cash, must equal exactly what they typed (no overpay)
+    && (isCashDraft || draftAmount === draftTenderAmount);
+
+  // Single-tender fast-path: no accumulated tenders, draft covers total
+  const fastPathReady =
+    tenders.length === 0
+    && selectedMethod !== null
+    && (
+      // cash: cashReceived >= total
+      (isCashDraft && draftAmount >= total)
+      // non-cash: amount === total
+      || (!isCashDraft && draftAmount === total)
+    );
+
+  const canProcess = remaining === 0 || fastPathReady;
 
   const [success, setSuccess] = useState<SuccessState | null>(null);
 
-  const canProcess = (() => {
-    if (selectedMethod === 'cash') return cashReceived >= totals.total;
-    if (selectedMethod === null) return false;
-    return true;
-  })();
+  function handleAddTender(): void {
+    if (!selectedMethod || !draftValid) return;
+    const isLast = draftTenderAmount === remaining;
+    const tender: Tender = {
+      method: selectedMethod,
+      amount: draftTenderAmount,
+      ...(isCashDraft ? { cash_received: draftAmount } : {}),
+      ...(isCashDraft && cashChange > 0 && isLast ? { change_given: cashChange } : {}),
+    };
+    if (isCashDraft && cashChange > 0 && !isLast) {
+      toast.error('Cash overpay only allowed on the last tender');
+      return;
+    }
+    addTender(tender);
+  }
 
-  async function handleProcess() {
-    if (!selectedMethod || !canProcess) return;
+  async function handleProcess(): Promise<void> {
+    let tendersToShip: Tender[];
+    if (tenders.length > 0 && remaining === 0) {
+      tendersToShip = tenders;
+    } else if (fastPathReady && selectedMethod) {
+      // Build a 1-tender from draft state
+      const lastChange = isCashDraft ? Math.max(0, draftAmount - total) : 0;
+      const tender: Tender = {
+        method: selectedMethod,
+        amount: total,
+        ...(isCashDraft ? { cash_received: draftAmount } : {}),
+        ...(isCashDraft && lastChange > 0 ? { change_given: lastChange } : {}),
+      };
+      tendersToShip = [tender];
+    } else {
+      return;
+    }
+
+    // Final client-side validation (server re-validates)
+    const v = validateTenders(total, tendersToShip);
+    if (!v.ok) {
+      toast.error(`Validation: ${v.error}${v.detail ? ` — ${v.detail}` : ''}`);
+      return;
+    }
+
     try {
-      const result = await checkout.mutateAsync({
-        cart,
-        payment: {
-          method: selectedMethod,
-          amount: totals.total,
-          ...(selectedMethod === 'cash' ? { cash_received: cashReceived, change_given: changeGiven } : {}),
-        },
-      });
+      const result = await checkout.mutateAsync({ cart, payment: tendersToShip });
       setSuccess({
         orderNumber: result.order_number,
         total: result.total,
@@ -85,6 +164,7 @@ export function PaymentTerminal() {
           ? earnPointsForCustomer(result.total, attachedCustomer.lifetime_points)
           : 0,
         customerName: attachedCustomer?.name ?? undefined,
+        paymentMethod: tendersToShip[0]!.method,
       });
     } catch (err: unknown) {
       const e = err as { details?: { error?: string } };
@@ -92,7 +172,7 @@ export function PaymentTerminal() {
     }
   }
 
-  function handleNewOrder() {
+  function handleNewOrder(): void {
     setSuccess(null);
     resetCartAfterCheckout();
     reset();
@@ -107,7 +187,7 @@ export function PaymentTerminal() {
         changeGiven={success.changeGiven}
         pointsEarned={success.pointsEarned}
         cart={cart}
-        paymentMethod={selectedMethod ?? 'cash'}
+        paymentMethod={success.paymentMethod}
         cashReceived={Number(cashReceivedStr || '0')}
         cashierName={user?.full_name ?? 'Cashier'}
         onNewOrder={handleNewOrder}
@@ -192,7 +272,6 @@ export function PaymentTerminal() {
                 <span className="font-mono text-red-400">-<Currency amount={totals.redemption_amount} /></span>
               </div>
             )}
-            {/* Session 9 — applied promotions in the payment summary. */}
             {appliedPromotions.map((ap) => (
               <PromotionLineRow key={ap.promotion_id} applied={ap} />
             ))}
@@ -220,83 +299,112 @@ export function PaymentTerminal() {
             <div className="text-xs uppercase tracking-widest text-text-secondary">Total Amount</div>
             <Currency amount={totals.total} emphasis="gold" className="text-4xl block" />
             <div className="text-xs text-text-secondary">
-              Remaining: <Currency amount={Math.max(0, totals.total - cashReceived)} className="text-text-primary" />
+              Tendered: <Currency amount={tenderedSum} className="text-text-primary" /> · Remaining: <Currency amount={remaining} className="text-text-primary" />
             </div>
           </div>
 
-          {selectedMethod === 'cash' && cashReceived >= totals.total && (
+          {/* Accumulated tenders list (session 10) */}
+          {tenders.length > 0 && (
+            <div className="mb-4">
+              <TenderListBuilder
+                tenders={tenders.map((t) => ({
+                  method: t.method,
+                  amount: t.amount,
+                  ...(t.cash_received !== undefined ? { cash_received: t.cash_received } : {}),
+                  ...(t.change_given !== undefined ? { change_given: t.change_given } : {}),
+                }))}
+                remaining={remaining}
+                onRemoveTender={removeTender}
+              />
+            </div>
+          )}
+
+          {fastPathReady && remaining > 0 && (
             <Button variant="primary" size="lg" className="w-full mb-4" onClick={() => { void handleProcess(); }} disabled={checkout.isPending}>
-              {checkout.isPending ? 'Processing…' : `Cash Exact — ${formatLabel(totals.total)}`}
+              {checkout.isPending ? 'Processing…' : `${isCashDraft ? 'Cash' : selectedMethod?.toUpperCase()} Exact — ${formatLabel(total)}`}
             </Button>
           )}
 
-          <div className="text-xs uppercase tracking-widest text-text-secondary mb-2">Select Payment Method</div>
-          <div className="grid grid-cols-3 gap-3 mb-6">
-            {METHODS.map((m) => {
-              const Icon = m.icon;
-              const active = selectedMethod === m.value;
-              return (
-                <button
-                  key={m.value}
-                  onClick={() => selectMethod(m.value)}
-                  className={cn(
-                    'h-24 rounded-md border flex flex-col items-center justify-center gap-1 transition-colors',
-                    active ? 'border-gold bg-gold-soft text-gold' : 'border-border-subtle bg-bg-input text-text-secondary hover:text-text-primary',
-                  )}
-                >
-                  <Icon className="h-5 w-5" aria-hidden />
-                  <span className="text-xs uppercase tracking-wide font-semibold">{m.label}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          {selectedMethod === 'cash' && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <div className="text-xs uppercase tracking-widest text-text-secondary mb-2">Enter Amount</div>
-                  <div className="bg-bg-input border-2 border-gold rounded-md p-4 text-center">
-                    <span className="text-2xl font-mono">Rp {cashReceivedStr || '0'}</span>
-                  </div>
-                </div>
-                <div>
-                  <div className="text-xs uppercase tracking-widest text-text-secondary mb-2">Cash Received</div>
-                  <div className="bg-bg-input border border-border-subtle rounded-md p-4 text-right">
-                    <Currency amount={cashReceived} emphasis="gold" />
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <div className="text-xs uppercase tracking-widest text-text-secondary mb-2">Amount Received</div>
-                  <div className="grid grid-cols-3 gap-2">
+          {remaining > 0 && (
+            <>
+              <div className="text-xs uppercase tracking-widest text-text-secondary mb-2">Select Payment Method</div>
+              <div className="grid grid-cols-3 gap-3 mb-6">
+                {METHODS.map((m) => {
+                  const Icon = m.icon;
+                  const active = selectedMethod === m.value;
+                  return (
                     <button
-                      onClick={() => setCashReceivedStr(String(totals.total))}
+                      key={m.value}
+                      onClick={() => selectMethod(m.value)}
                       className={cn(
-                        'rounded-md py-3 text-sm border',
-                        cashReceived === totals.total
-                          ? 'bg-gold text-bg-base border-gold'
-                          : 'bg-bg-input border-border-subtle hover:bg-bg-overlay',
+                        'h-24 rounded-md border flex flex-col items-center justify-center gap-1 transition-colors',
+                        active ? 'border-gold bg-gold-soft text-gold' : 'border-border-subtle bg-bg-input text-text-secondary hover:text-text-primary',
                       )}
                     >
-                      Exact ({formatLabel(totals.total)})
+                      <Icon className="h-5 w-5" aria-hidden />
+                      <span className="text-xs uppercase tracking-wide font-semibold">{m.label}</span>
                     </button>
-                    {QUICK_AMOUNTS.filter((q) => q >= totals.total).slice(0, 5).map((q) => (
-                      <button
-                        key={q}
-                        onClick={() => setCashReceivedStr(String(q))}
-                        className="rounded-md py-3 text-sm bg-bg-input border border-border-subtle hover:bg-bg-overlay"
-                      >
-                        {formatLabel(q)}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <Numpad value={cashReceivedStr} onChange={setCashReceivedStr} />
+                  );
+                })}
               </div>
-            </div>
+
+              {selectedMethod && (
+                <div className="space-y-4 mb-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <div className="text-xs uppercase tracking-widest text-text-secondary mb-2">
+                        {isCashDraft ? 'Cash Received' : 'Amount'}
+                      </div>
+                      <div className="bg-bg-input border-2 border-gold rounded-md p-4 text-center">
+                        <span className="text-2xl font-mono">Rp {cashReceivedStr || '0'}</span>
+                      </div>
+                      {isCashDraft && cashChange > 0 && draftTenderAmount === remaining && (
+                        <div className="mt-2 text-xs text-text-secondary text-right">
+                          Change: <Currency amount={cashChange} className="text-gold" />
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <div className="text-xs uppercase tracking-widest text-text-secondary mb-2">Quick</div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <button
+                          onClick={() => setCashReceivedStr(String(remaining))}
+                          className={cn(
+                            'rounded-md py-3 text-sm border',
+                            draftAmount === remaining
+                              ? 'bg-gold text-bg-base border-gold'
+                              : 'bg-bg-input border-border-subtle hover:bg-bg-overlay',
+                          )}
+                        >
+                          Exact ({formatLabel(remaining)})
+                        </button>
+                        {isCashDraft && QUICK_AMOUNTS.filter((q) => q >= remaining).slice(0, 5).map((q) => (
+                          <button
+                            key={q}
+                            onClick={() => setCashReceivedStr(String(q))}
+                            className="rounded-md py-3 text-sm bg-bg-input border border-border-subtle hover:bg-bg-overlay"
+                          >
+                            {formatLabel(q)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <Numpad value={cashReceivedStr} onChange={setCashReceivedStr} />
+
+                  <Button
+                    variant="secondary"
+                    size="lg"
+                    className="w-full"
+                    onClick={handleAddTender}
+                    disabled={!draftValid}
+                  >
+                    <Plus className="h-4 w-4 mr-2" aria-hidden /> Add Tender
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </section>
       </div>
@@ -319,3 +427,6 @@ export function PaymentTerminal() {
 function formatLabel(amount: number): string {
   return `Rp ${amount.toLocaleString('en-US')}`;
 }
+
+// calculateChange import retained for potential SuccessModal interplay; helpers kept in domain.
+void calculateChange;

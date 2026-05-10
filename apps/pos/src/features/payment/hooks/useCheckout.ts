@@ -19,7 +19,11 @@ import { usePaymentStore } from '@/stores/paymentStore';
 
 interface CheckoutInput {
   cart: Cart;
-  payment: PaymentInput;
+  /**
+   * Single PaymentInput (legacy v7) OR an array of Tenders (session 10 split-pay).
+   * Forwarded to buildOrderPayload which wires it as `payment` or `payments`.
+   */
+  payment: PaymentInput | PaymentInput[];
 }
 
 interface CheckoutResponse {
@@ -60,11 +64,23 @@ export function useCheckout() {
       }));
 
       if (pickedUpOrderId) {
+        // Tablet pay_existing_order is still single-tender in v4 (split-pay deferred to session 11).
+        // If the caller passed an array with > 1 entries, fail loudly rather than silently
+        // dropping tenders. Length 1 is unwrapped.
+        if (Array.isArray(input.payment)) {
+          if (input.payment.length > 1) {
+            throw Object.assign(new Error('split_pay_not_supported_on_tablet_pickup_v1'), {
+              details: { error: 'split_pay_not_supported' },
+            });
+          }
+        }
+        const singlePayment = Array.isArray(input.payment) ? input.payment[0]! : input.payment;
+
         // exactOptionalPropertyTypes is on — optional RPC args must be omitted,
         // not passed as `undefined`. Build the args object conditionally.
         const args: Record<string, unknown> = {
           p_order_id: pickedUpOrderId,
-          p_payment: input.payment,
+          p_payment: singlePayment,
           p_loyalty_points_redeemed: loyaltyPointsToRedeem ?? 0,
           p_discount_amount: cartDiscount?.amount ?? 0,
           p_loyalty_multiplier: multiplier,

@@ -51,7 +51,11 @@ function mapPromotions(applied: AppliedPromotion[]): OrderPayloadPromotion[] {
 export function buildOrderPayload(
   sessionId: string,
   cart: Cart,
-  payment: PaymentInput,
+  /**
+   * Single PaymentInput → wired as `payment` (legacy v7 path).
+   * Array → wired as `payments` (session 10 split-pay, RPC v8).
+   */
+  paymentOrTenders: PaymentInput | PaymentInput[],
   idempotencyKey?: string,
   lifetimePoints?: number,
   cumulLoyaltyMultiplier?: number,
@@ -67,11 +71,14 @@ export function buildOrderPayload(
     ? mapPromotions(appliedPromotions)
     : null;
 
+  const isArray = Array.isArray(paymentOrTenders);
+
   return {
     session_id: sessionId,
     order_type: cart.order_type,
     items: cart.items.map(buildItemPayload),
-    payment,
+    // Session 10 — exactly one of payment / payments. Server raises if both supplied.
+    ...(isArray ? { payments: paymentOrTenders } : { payment: paymentOrTenders }),
     // exactOptionalPropertyTypes-safe: only include the field when defined
     ...(idempotencyKey ? { idempotency_key: idempotencyKey } : {}),
     ...(cart.customerId ? { customer_id: cart.customerId } : {}),

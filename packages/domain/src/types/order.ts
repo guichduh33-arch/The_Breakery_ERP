@@ -38,7 +38,16 @@ export interface OrderPayload {
   session_id: string;
   order_type: OrderType;
   items: OrderPayloadItem[];
-  payment: PaymentInput;
+  /**
+   * Single-tender (legacy v7 path). Mutually exclusive with `payments`.
+   * Exactly one of `payment` / `payments` MUST be supplied.
+   */
+  payment?: PaymentInput;
+  /**
+   * Session 10 — multi-tender array (RPC v8). Length 1..5. Sum(amounts) MUST equal final total.
+   * Only the LAST entry may have cash_received > amount (intermediate cash overpay rejected).
+   */
+  payments?: PaymentInput[];
   /**
    * Optional idempotency key (UUID v4). When the same key is replayed against
    * `process-payment`, the server returns the existing order instead of creating
