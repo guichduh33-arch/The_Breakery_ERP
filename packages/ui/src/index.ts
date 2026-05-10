@@ -47,6 +47,11 @@ export {
   type ModifierModalProduct,
 } from './components/ModifierModal.js';
 export {
+  CustomerForm,
+  type CustomerFormValues,
+  type CustomerFormProps,
+} from './components/CustomerForm.js';
+export {
   CustomerSearchModal,
   type CustomerSearchModalProps,
 } from './components/CustomerSearchModal.js';
