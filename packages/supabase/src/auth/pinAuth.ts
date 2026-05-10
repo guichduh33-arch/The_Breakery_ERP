@@ -17,10 +17,36 @@ export type LoginError =
   | { error: 'invalid_pin'; attempts_remaining: number }
   | { error: 'account_locked'; minutes_left: number }
   | { error: 'rate_limited'; retry_after_sec: number }
-  | { error: 'user_inactive' | 'user_not_found' | 'invalid_pin_format' | 'missing_fields' | 'internal' };
+  | { error: 'user_inactive' | 'user_not_found' | 'invalid_pin_format' | 'missing_fields' | 'internal' | 'network_timeout' };
+
+// D6 (session 8 perf-debt): all auth fetches are wrapped in an AbortController
+// with a hard 15s timeout. Without this, a hung Supabase Edge Function or a
+// flaky uplink would freeze the POS login screen indefinitely. On timeout we
+// throw a typed `network_timeout` error so callers can surface a transient
+// "réseau lent — réessaye" toast without locking the UI.
+const FETCH_TIMEOUT_MS = 15_000;
+
+async function fetchWithTimeout(input: RequestInfo, init?: RequestInit): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      // Shape mirrors the `loginWithPin` error contract: callers `catch`
+      // can read `e.details?.error === 'network_timeout'` (which extends the
+      // LoginError union) and surface a friendly "réseau lent" message.
+      const details: LoginError = { error: 'network_timeout' };
+      throw Object.assign(new Error('network_timeout'), { isTimeout: true as const, details });
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 export async function loginWithPin(supabaseUrl: string, body: LoginRequest): Promise<LoginResponse> {
-  const res = await fetch(`${supabaseUrl}/functions/v1/auth-verify-pin`, {
+  const res = await fetchWithTimeout(`${supabaseUrl}/functions/v1/auth-verify-pin`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -36,7 +62,7 @@ export async function getSession(
   supabaseUrl: string,
   sessionToken: string,
 ): Promise<LoginResponse['user'] & { permissions: string[] }> {
-  const res = await fetch(`${supabaseUrl}/functions/v1/auth-get-session`, {
+  const res = await fetchWithTimeout(`${supabaseUrl}/functions/v1/auth-get-session`, {
     headers: { 'x-session-token': sessionToken },
   });
   if (!res.ok) throw Object.assign(new Error('session_invalid'), { status: res.status });
@@ -45,7 +71,7 @@ export async function getSession(
 }
 
 export async function logoutSession(supabaseUrl: string, sessionToken: string): Promise<void> {
-  await fetch(`${supabaseUrl}/functions/v1/auth-logout`, {
+  await fetchWithTimeout(`${supabaseUrl}/functions/v1/auth-logout`, {
     method: 'POST',
     headers: { 'x-session-token': sessionToken },
   });
@@ -62,7 +88,7 @@ export async function changePin(
   sessionToken: string,
   body: ChangePinRequest,
 ): Promise<void> {
-  const res = await fetch(`${supabaseUrl}/functions/v1/auth-change-pin`, {
+  const res = await fetchWithTimeout(`${supabaseUrl}/functions/v1/auth-change-pin`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-session-token': sessionToken },
     body: JSON.stringify(body),

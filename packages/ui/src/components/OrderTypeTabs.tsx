@@ -1,5 +1,5 @@
 import type { OrderType } from '@breakery/domain';
-import type { JSX } from 'react';
+import { memo, useCallback, type JSX } from 'react';
 import { cn } from '../lib/cn.js';
 
 const TYPES: { value: OrderType; label: string }[] = [
@@ -13,7 +13,15 @@ export interface OrderTypeTabsProps {
   onChange: (next: OrderType) => void;
 }
 
-export function OrderTypeTabs({ value, onChange }: OrderTypeTabsProps): JSX.Element {
+// D7 (session 8 perf-debt): React.memo + useCallback. The tab-click handler
+// closes over `onChange`; it stays referentially stable as long as the parent
+// passes a stable onChange (zustand selectors satisfy this).
+function OrderTypeTabsInner({ value, onChange }: OrderTypeTabsProps): JSX.Element {
+  const handleSelect = useCallback(
+    (next: OrderType) => onChange(next),
+    [onChange],
+  );
+
   return (
     <div role="tablist" className="grid grid-cols-3 gap-1 p-1 bg-bg-input rounded-md">
       {TYPES.map((t) => (
@@ -21,7 +29,7 @@ export function OrderTypeTabs({ value, onChange }: OrderTypeTabsProps): JSX.Elem
           key={t.value}
           role="tab"
           aria-selected={value === t.value}
-          onClick={() => onChange(t.value)}
+          onClick={() => handleSelect(t.value)}
           className={cn(
             'h-10 rounded-sm uppercase text-xs tracking-wide font-semibold transition-colors',
             value === t.value
@@ -35,3 +43,5 @@ export function OrderTypeTabs({ value, onChange }: OrderTypeTabsProps): JSX.Elem
     </div>
   );
 }
+
+export const OrderTypeTabs = memo(OrderTypeTabsInner);
