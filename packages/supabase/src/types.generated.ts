@@ -338,6 +338,45 @@ export type Database = {
           },
         ]
       }
+      discount_templates: {
+        Row: {
+          cashier_max_percentage: number | null
+          created_at: string
+          deleted_at: string | null
+          id: string
+          is_active: boolean
+          name: string
+          requires_pin: boolean
+          type: Database["public"]["Enums"]["discount_template_type"]
+          updated_at: string
+          value: number
+        }
+        Insert: {
+          cashier_max_percentage?: number | null
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          requires_pin?: boolean
+          type: Database["public"]["Enums"]["discount_template_type"]
+          updated_at?: string
+          value: number
+        }
+        Update: {
+          cashier_max_percentage?: number | null
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          requires_pin?: boolean
+          type?: Database["public"]["Enums"]["discount_template_type"]
+          updated_at?: string
+          value?: number
+        }
+        Relationships: []
+      }
       journal_entries: {
         Row: {
           created_at: string
@@ -499,6 +538,9 @@ export type Database = {
       }
       order_items: {
         Row: {
+          cancelled_at: string | null
+          cancelled_by: string | null
+          cancelled_reason: string | null
           created_at: string
           discount_amount: number
           discount_reason: string | null
@@ -506,6 +548,7 @@ export type Database = {
           discount_value: number | null
           dispatch_station: string | null
           id: string
+          is_cancelled: boolean
           is_locked: boolean
           is_promo_gift: boolean
           kitchen_status: string
@@ -524,6 +567,9 @@ export type Database = {
           unit_price: number
         }
         Insert: {
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          cancelled_reason?: string | null
           created_at?: string
           discount_amount?: number
           discount_reason?: string | null
@@ -531,6 +577,7 @@ export type Database = {
           discount_value?: number | null
           dispatch_station?: string | null
           id?: string
+          is_cancelled?: boolean
           is_locked?: boolean
           is_promo_gift?: boolean
           kitchen_status?: string
@@ -549,6 +596,9 @@ export type Database = {
           unit_price: number
         }
         Update: {
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          cancelled_reason?: string | null
           created_at?: string
           discount_amount?: number
           discount_reason?: string | null
@@ -556,6 +606,7 @@ export type Database = {
           discount_value?: number | null
           dispatch_station?: string | null
           id?: string
+          is_cancelled?: boolean
           is_locked?: boolean
           is_promo_gift?: boolean
           kitchen_status?: string
@@ -574,6 +625,13 @@ export type Database = {
           unit_price?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "order_items_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "order_items_order_id_fkey"
             columns: ["order_id"]
@@ -613,6 +671,7 @@ export type Database = {
           method: Database["public"]["Enums"]["payment_method"]
           order_id: string
           paid_at: string
+          reference: string | null
         }
         Insert: {
           amount: number
@@ -622,6 +681,7 @@ export type Database = {
           method: Database["public"]["Enums"]["payment_method"]
           order_id: string
           paid_at?: string
+          reference?: string | null
         }
         Update: {
           amount?: number
@@ -631,6 +691,7 @@ export type Database = {
           method?: Database["public"]["Enums"]["payment_method"]
           order_id?: string
           paid_at?: string
+          reference?: string | null
         }
         Relationships: [
           {
@@ -685,6 +746,9 @@ export type Database = {
           tax_amount: number
           total: number
           updated_at: string
+          void_reason: string | null
+          voided_at: string | null
+          voided_by: string | null
           waiter_id: string | null
         }
         Insert: {
@@ -714,6 +778,9 @@ export type Database = {
           tax_amount: number
           total: number
           updated_at?: string
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
           waiter_id?: string | null
         }
         Update: {
@@ -743,6 +810,9 @@ export type Database = {
           tax_amount?: number
           total?: number
           updated_at?: string
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
           waiter_id?: string | null
         }
         Relationships: [
@@ -772,6 +842,13 @@ export type Database = {
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "pos_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_voided_by_fkey"
+            columns: ["voided_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -1189,6 +1266,166 @@ export type Database = {
           },
         ]
       }
+      refund_lines: {
+        Row: {
+          amount: number
+          id: string
+          order_item_id: string
+          qty: number
+          refund_id: string
+        }
+        Insert: {
+          amount: number
+          id?: string
+          order_item_id: string
+          qty: number
+          refund_id: string
+        }
+        Update: {
+          amount?: number
+          id?: string
+          order_item_id?: string
+          qty?: number
+          refund_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "refund_lines_order_item_id_fkey"
+            columns: ["order_item_id"]
+            isOneToOne: false
+            referencedRelation: "order_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "refund_lines_refund_id_fkey"
+            columns: ["refund_id"]
+            isOneToOne: false
+            referencedRelation: "refunds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      refund_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          method: Database["public"]["Enums"]["payment_method"]
+          reference: string | null
+          refund_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          method: Database["public"]["Enums"]["payment_method"]
+          reference?: string | null
+          refund_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          method?: Database["public"]["Enums"]["payment_method"]
+          reference?: string | null
+          refund_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "refund_payments_refund_id_fkey"
+            columns: ["refund_id"]
+            isOneToOne: false
+            referencedRelation: "refunds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      refund_sequences: {
+        Row: {
+          date: string
+          last_number: number
+        }
+        Insert: {
+          date: string
+          last_number?: number
+        }
+        Update: {
+          date?: string
+          last_number?: number
+        }
+        Relationships: []
+      }
+      refunds: {
+        Row: {
+          authorized_by: string
+          created_at: string
+          id: string
+          is_full_void: boolean
+          order_id: string
+          reason: string
+          refund_number: string
+          refunded_by: string
+          session_id: string
+          tax_refunded: number
+          total: number
+        }
+        Insert: {
+          authorized_by: string
+          created_at?: string
+          id?: string
+          is_full_void?: boolean
+          order_id: string
+          reason: string
+          refund_number: string
+          refunded_by: string
+          session_id: string
+          tax_refunded?: number
+          total: number
+        }
+        Update: {
+          authorized_by?: string
+          created_at?: string
+          id?: string
+          is_full_void?: boolean
+          order_id?: string
+          reason?: string
+          refund_number?: string
+          refunded_by?: string
+          session_id?: string
+          tax_refunded?: number
+          total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "refunds_authorized_by_fkey"
+            columns: ["authorized_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "refunds_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "refunds_refunded_by_fkey"
+            columns: ["refunded_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "refunds_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "pos_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       restaurant_tables: {
         Row: {
           created_at: string
@@ -1293,6 +1530,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      suppliers: {
+        Row: {
+          address: string | null
+          code: string
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          deleted_at: string | null
+          id: string
+          is_active: boolean
+          name: string
+          notes: string | null
+          payment_terms_days: number
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          code: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          payment_terms_days?: number
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          code?: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          payment_terms_days?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       user_profiles: {
         Row: {
@@ -1402,6 +1684,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cancel_order_item_rpc: {
+        Args: {
+          p_authorized_by: string
+          p_order_item_id: string
+          p_reason: string
+        }
+        Returns: Json
+      }
       cancel_tablet_order: {
         Args: { p_order_id: string }
         Returns: {
@@ -1431,6 +1721,9 @@ export type Database = {
           tax_amount: number
           total: number
           updated_at: string
+          void_reason: string | null
+          voided_at: string | null
+          voided_by: string | null
           waiter_id: string | null
         }
         SetofOptions: {
@@ -1453,7 +1746,8 @@ export type Database = {
           p_loyalty_multiplier?: number
           p_loyalty_points_redeemed?: number
           p_order_type: Database["public"]["Enums"]["order_type"]
-          p_payment: Json
+          p_payment?: Json
+          p_payments?: Json
           p_promotions?: Json
           p_session_id: string
           p_table_number?: string
@@ -1479,11 +1773,18 @@ export type Database = {
         Args: { p_perm: string; p_uid: string }
         Returns: boolean
       }
+      has_permission_for_profile: {
+        Args: { p_perm: string; p_profile_id: string }
+        Returns: boolean
+      }
       hash_pin: { Args: { p_pin: string }; Returns: string }
       is_authenticated: { Args: never; Returns: boolean }
       mark_item_served: {
         Args: { p_item_id: string }
         Returns: {
+          cancelled_at: string | null
+          cancelled_by: string | null
+          cancelled_reason: string | null
           created_at: string
           discount_amount: number
           discount_reason: string | null
@@ -1491,6 +1792,7 @@ export type Database = {
           discount_value: number | null
           dispatch_station: string | null
           id: string
+          is_cancelled: boolean
           is_locked: boolean
           is_promo_gift: boolean
           kitchen_status: string
@@ -1527,7 +1829,8 @@ export type Database = {
           p_loyalty_multiplier?: number
           p_loyalty_points_redeemed?: number
           p_order_id: string
-          p_payment: Json
+          p_payment?: Json
+          p_payments?: Json
           p_promotions?: Json
         }
         Returns: string
@@ -1561,6 +1864,9 @@ export type Database = {
           tax_amount: number
           total: number
           updated_at: string
+          void_reason: string | null
+          voided_at: string | null
+          voided_by: string | null
           waiter_id: string | null
         }
         SetofOptions: {
@@ -1570,10 +1876,23 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      refund_order_rpc: {
+        Args: {
+          p_authorized_by: string
+          p_lines: Json
+          p_order_id: string
+          p_reason: string
+          p_tenders: Json
+        }
+        Returns: Json
+      }
       round_idr: { Args: { amount: number }; Returns: number }
       send_items_to_kitchen: {
         Args: { p_item_ids: string[] }
         Returns: {
+          cancelled_at: string | null
+          cancelled_by: string | null
+          cancelled_reason: string | null
           created_at: string
           discount_amount: number
           discount_reason: string | null
@@ -1581,6 +1900,7 @@ export type Database = {
           discount_value: number | null
           dispatch_station: string | null
           id: string
+          is_cancelled: boolean
           is_locked: boolean
           is_promo_gift: boolean
           kitchen_status: string
@@ -1611,10 +1931,15 @@ export type Database = {
         Args: { p_pin: string; p_user_id: string }
         Returns: boolean
       }
+      void_order_rpc: {
+        Args: { p_authorized_by: string; p_order_id: string; p_reason: string }
+        Returns: Json
+      }
     }
     Enums: {
       customer_type: "retail" | "b2b"
-      loyalty_txn_type: "earn" | "redeem" | "adjust"
+      discount_template_type: "percentage" | "fixed_amount"
+      loyalty_txn_type: "earn" | "redeem" | "adjust" | "refund"
       modifier_group_type: "single_select" | "multi_select"
       movement_type:
         | "sale"
@@ -1776,7 +2101,8 @@ export const Constants = {
   public: {
     Enums: {
       customer_type: ["retail", "b2b"],
-      loyalty_txn_type: ["earn", "redeem", "adjust"],
+      discount_template_type: ["percentage", "fixed_amount"],
+      loyalty_txn_type: ["earn", "redeem", "adjust", "refund"],
       modifier_group_type: ["single_select", "multi_select"],
       movement_type: [
         "sale",

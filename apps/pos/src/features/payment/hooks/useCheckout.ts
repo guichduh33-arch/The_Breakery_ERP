@@ -64,27 +64,23 @@ export function useCheckout() {
       }));
 
       if (pickedUpOrderId) {
-        // Tablet pay_existing_order is still single-tender in v4 (split-pay deferred to session 11).
-        // If the caller passed an array with > 1 entries, fail loudly rather than silently
-        // dropping tenders. Length 1 is unwrapped.
-        if (Array.isArray(input.payment)) {
-          if (input.payment.length > 1) {
-            throw Object.assign(new Error('split_pay_not_supported_on_tablet_pickup_v1'), {
-              details: { error: 'split_pay_not_supported' },
-            });
-          }
-        }
-        const singlePayment = Array.isArray(input.payment) ? input.payment[0]! : input.payment;
+        // Session 11 — tablet pay_existing_order v5 supports multi-tender. We forward
+        // either p_payment (single) or p_payments (array). Server raises if both are
+        // supplied, so we choose exactly one based on the input shape.
+        const isArray = Array.isArray(input.payment);
+        const singlePayment = isArray ? null : (input.payment as PaymentInput);
+        const arrayPayments = isArray ? (input.payment as PaymentInput[]) : null;
 
         // exactOptionalPropertyTypes is on — optional RPC args must be omitted,
         // not passed as `undefined`. Build the args object conditionally.
         const args: Record<string, unknown> = {
           p_order_id: pickedUpOrderId,
-          p_payment: singlePayment,
           p_loyalty_points_redeemed: loyaltyPointsToRedeem ?? 0,
           p_discount_amount: cartDiscount?.amount ?? 0,
           p_loyalty_multiplier: multiplier,
         };
+        if (singlePayment) args.p_payment = singlePayment;
+        if (arrayPayments) args.p_payments = arrayPayments;
         if (customerId) args.p_customer_id = customerId;
         if (idempotencyKey) args.p_idempotency_key = idempotencyKey;
         if (cartDiscount?.type) args.p_discount_type = cartDiscount.type;
