@@ -21,6 +21,7 @@ const NAV: NavItem[] = [
   { to: '/backoffice',            label: 'Dashboard',  icon: LayoutDashboard, end: true },
   { to: '/backoffice/products',   label: 'Products',   icon: Package },
   { to: '/backoffice/promotions', label: 'Promotions', icon: Tag, permission: 'promotions.read' },
+  { to: '/backoffice/loyalty',    label: 'Loyalty',    icon: Tag, permission: 'loyalty.read' },
   { to: '/backoffice/inventory',  label: 'Inventory',  icon: Boxes },
   { to: '/backoffice/purchasing', label: 'Purchasing', icon: ShoppingCart },
   { to: '/backoffice/customers',  label: 'Customers',  icon: Users },

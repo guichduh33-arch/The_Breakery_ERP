@@ -5,6 +5,7 @@ import LoginPage from '@/pages/Login.js';
 import DashboardPage from '@/pages/Dashboard.js';
 import ProductsPage from '@/pages/Products.js';
 import PromotionsPage from '@/pages/Promotions.js';
+import LoyaltyPage from '@/pages/Loyalty.js';
 import ComingSoonPage from '@/pages/ComingSoon.js';
 import { BackofficeLayout } from '@/layouts/BackofficeLayout.js';
 import { useAuthStore } from '@/stores/authStore.js';
@@ -37,6 +38,14 @@ export function AppRoutes() {
           element={
             <PermissionGate required="promotions.read">
               <PromotionsPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="loyalty"
+          element={
+            <PermissionGate required="loyalty.read">
+              <LoyaltyPage />
             </PermissionGate>
           }
         />
