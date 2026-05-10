@@ -70,25 +70,25 @@ interface RawDetail {
   paid_at: string | null;
   voided_at: string | null;
   void_reason: string | null;
-  order_items: Array<{
+  order_items: {
     id: string;
     product_id: string;
     name_snapshot: string;
     quantity: number;
     line_total: number;
     is_cancelled: boolean;
-  }>;
-  order_payments: Array<{
+  }[];
+  order_payments: {
     id: string;
     method: PaymentMethod;
     amount: number;
     reference: string | null;
-  }>;
-  refunds: Array<{
+  }[];
+  refunds: {
     total: number;
-    refund_lines: Array<{ order_item_id: string; qty: number }>;
-    refund_payments: Array<{ method: PaymentMethod; amount: number }>;
-  }>;
+    refund_lines: { order_item_id: string; qty: number }[];
+    refund_payments: { method: PaymentMethod; amount: number }[];
+  }[];
 }
 
 export function useOrderDetail(orderId: string | null) {

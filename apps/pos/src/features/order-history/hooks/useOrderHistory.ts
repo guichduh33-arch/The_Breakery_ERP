@@ -29,7 +29,7 @@ interface RawOrderRow {
   voided_at: string | null;
   customer_id: string | null;
   table_number: string | null;
-  refunds: Array<{ total: number }> | null;
+  refunds: { total: number }[] | null;
 }
 
 interface QueryResult<T> {

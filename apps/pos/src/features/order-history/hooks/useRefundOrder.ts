@@ -8,8 +8,8 @@ import { supabase, supabaseUrl } from '@/lib/supabase';
 
 interface RefundArgs {
   orderId: string;
-  lines: Array<{ order_item_id: string; qty: number }>;
-  tenders: Array<{ method: PaymentMethod; amount: number; reference?: string }>;
+  lines: { order_item_id: string; qty: number }[];
+  tenders: { method: PaymentMethod; amount: number; reference?: string }[];
   reason: string;
   managerPin: string;
 }
@@ -21,7 +21,7 @@ export interface RefundResponse {
   order_number: string;
   total_refunded: number;
   tax_refunded: number;
-  tenders: Array<{ method: PaymentMethod; amount: number }>;
+  tenders: { method: PaymentMethod; amount: number }[];
   pts_deducted: number;
   manager: { id: string; full_name: string; role_code: string };
   error?: string;

@@ -65,7 +65,7 @@ export function TenderRow({
           <Currency amount={amount} className="text-text-primary" />
           {hasOverpay && (
             <div className="text-[10px] uppercase tracking-wide text-text-secondary">
-              recv <Currency amount={cashReceived!} className="text-text-secondary" />
+              recv <Currency amount={cashReceived} className="text-text-secondary" />
               {changeGiven !== undefined && changeGiven > 0 && (
                 <> · chg <Currency amount={changeGiven} className="text-text-secondary" /></>
               )}

@@ -33,7 +33,7 @@ export function OrderHistoryPanel({ open, onClose }: OrderHistoryPanelProps): JS
     refundNumber: string;
     orderNumber: string;
     totalRefunded: number;
-    tenders: Array<{ method: TenderRowMethod; amount: number }>;
+    tenders: { method: TenderRowMethod; amount: number }[];
     isFullVoid: boolean;
   } | null>(null);
 
@@ -45,7 +45,7 @@ export function OrderHistoryPanel({ open, onClose }: OrderHistoryPanelProps): JS
       refundNumber: res.refund_number,
       orderNumber: res.order_number,
       totalRefunded: res.total_refunded,
-      tenders: res.tenders.map((t) => ({ method: t.method as TenderRowMethod, amount: t.amount })),
+      tenders: res.tenders.map((t) => ({ method: t.method, amount: t.amount })),
       isFullVoid,
     });
   }
@@ -76,7 +76,7 @@ export function OrderHistoryPanel({ open, onClose }: OrderHistoryPanelProps): JS
             <section className="overflow-y-auto p-4">
               {history.isLoading && <div className="text-text-secondary text-sm">Loading…</div>}
               {history.isError && <div className="text-red-400 text-sm">Failed to load order history</div>}
-              {history.data && history.data.length === 0 && (
+              {history.data?.length === 0 && (
                 <div className="text-text-secondary text-sm py-12 text-center">
                   No orders in this shift yet.
                 </div>

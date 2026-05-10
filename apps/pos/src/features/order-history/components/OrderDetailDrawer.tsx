@@ -4,7 +4,7 @@
 // + prior refunds. Exposes [VOID ORDER] / [REFUND LINES] CTAs (manager-PIN).
 
 import type { JSX } from 'react';
-import { Button, Currency, TenderRow, type TenderRowMethod, cn } from '@breakery/ui';
+import { Button, Currency, TenderRow, cn } from '@breakery/ui';
 import type { OrderDetail } from '../hooks/useOrderDetail';
 
 export interface OrderDetailDrawerProps {
@@ -78,7 +78,7 @@ export function OrderDetailDrawer({
             {order.payments.map((p) => (
               <TenderRow
                 key={p.id}
-                method={p.method as TenderRowMethod}
+                method={p.method}
                 amount={p.amount}
               />
             ))}

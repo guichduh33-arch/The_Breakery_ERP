@@ -44,7 +44,7 @@ describe('RefundLineRow', () => {
         item={item({ is_cancelled: true })}
         selectedQty={0}
         refundAmount={0}
-        onChange={() => {}}
+        onChange={() => undefined}
       />,
     );
     expect(screen.getByText(/cancelled/i)).toBeInTheDocument();
@@ -52,7 +52,7 @@ describe('RefundLineRow', () => {
   });
 
   it('shows the qty stepper when remaining > 1 and selected', () => {
-    render(<RefundLineRow item={item()} selectedQty={2} refundAmount={60_000} onChange={() => {}} />);
+    render(<RefundLineRow item={item()} selectedQty={2} refundAmount={60_000} onChange={() => undefined} />);
     expect(screen.getByLabelText(/decrease/i)).toBeInTheDocument();
   });
 });
@@ -67,7 +67,7 @@ describe('RefundTenderSplitter', () => {
           { method: 'card', paid: 40_000, already_refunded: 0 },
         ]}
         values={[]}
-        onChange={() => {}}
+        onChange={() => undefined}
       />,
     );
     expect(screen.getByTestId('refund-tender-method-cash')).toBeInTheDocument();

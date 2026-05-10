@@ -20,7 +20,7 @@ export interface VoidResponse {
   refund_number: string;
   total_refunded: number;
   tax_refunded: number;
-  tenders: Array<{ method: PaymentMethod; amount: number }>;
+  tenders: { method: PaymentMethod; amount: number }[];
   manager: { id: string; full_name: string; role_code: string };
   error?: string;
   message?: string;

@@ -12,7 +12,6 @@ import {
   Button, NumpadPin, FullScreenModal, cn, Input, Currency,
   RefundLineRow, RefundTenderSplitter,
   type RefundTenderSplitterEntry,
-  type TenderRowMethod,
 } from '@breakery/ui';
 import {
   computeRefundLineAmount,
@@ -30,8 +29,8 @@ export interface RefundOrderModalProps {
   onClose: () => void;
   order: OrderDetail;
   onSubmit: (args: {
-    lines: Array<{ order_item_id: string; qty: number }>;
-    tenders: Array<{ method: PaymentMethod; amount: number }>;
+    lines: { order_item_id: string; qty: number }[];
+    tenders: { method: PaymentMethod; amount: number }[];
     reason: string;
     managerPin: string;
   }) => Promise<void> | void;
@@ -91,7 +90,7 @@ export function RefundOrderModal({
   );
 
   const draftTenders: RefundTender[] = useMemo(
-    () => tenderValues.map((v) => ({ method: v.method as PaymentMethod, amount: v.amount })),
+    () => tenderValues.map((v) => ({ method: v.method, amount: v.amount })),
     [tenderValues],
   );
 
@@ -205,7 +204,7 @@ export function RefundOrderModal({
             <RefundTenderSplitter
               refundTotal={refundTotal}
               methods={methodLedger.map((m) => ({
-                method: m.method as TenderRowMethod,
+                method: m.method,
                 paid: m.paid,
                 already_refunded: m.refunded,
               }))}
