@@ -2,13 +2,14 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { LogOut, Settings } from 'lucide-react';
+import { LogOut, Settings, History } from 'lucide-react';
 import { Button, CustomerSearchModal } from '@breakery/ui';
 import { CategorySidebar } from '@/features/products/CategorySidebar';
 import { ProductTapHandler } from '@/features/products/ProductTapHandler';
 import { ActiveOrderPanel } from '@/features/cart/ActiveOrderPanel';
 import { OpenShiftModal } from '@/features/shift/OpenShiftModal';
 import { PaymentTerminal } from '@/features/payment/PaymentTerminal';
+import { OrderHistoryPanel } from '@/features/order-history/OrderHistoryPanel';
 import { useAuthStore } from '@/stores/authStore';
 import { useCurrentShift } from '@/features/shift/hooks/useShift';
 import { useCartStore } from '@/stores/cartStore';
@@ -21,6 +22,7 @@ export default function PosPage() {
   const logout = useAuthStore((s) => s.logout);
   const [selectedSlug, setSelectedSlug] = useState<string | null>('favorites');
   const [customerSearchOpen, setCustomerSearchOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   const { data: currentShift, isLoading: shiftLoading } = useCurrentShift();
   const needsShift = !shiftLoading && !currentShift;
@@ -84,6 +86,14 @@ export default function PosPage() {
         </div>
         <div className="flex items-center gap-2">
           <span className="text-text-secondary text-sm">Server: <span className="text-text-primary font-semibold">{user?.full_name}</span></span>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Order history"
+            onClick={() => setHistoryOpen(true)}
+          >
+            <History className="h-5 w-5" />
+          </Button>
           <Button variant="ghost" size="icon" aria-label="Settings"><Settings className="h-5 w-5" /></Button>
           <Button variant="ghost" size="icon" aria-label="Logout" onClick={() => { void handleLogout(); }}><LogOut className="h-5 w-5" /></Button>
         </div>
@@ -107,6 +117,7 @@ export default function PosPage() {
 
       <OpenShiftModal open={needsShift} />
       <PaymentTerminal />
+      <OrderHistoryPanel open={historyOpen} onClose={() => setHistoryOpen(false)} />
       <CustomerSearchModal
         open={customerSearchOpen}
         onClose={() => setCustomerSearchOpen(false)}

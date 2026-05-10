@@ -1,0 +1,69 @@
+// apps/pos/src/features/order-history/hooks/useRefundOrder.ts
+//
+// Session 10 — POST /refund-order EF for partial line refund + per-tender split.
+
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { PaymentMethod } from '@breakery/domain';
+import { supabase, supabaseUrl } from '@/lib/supabase';
+
+interface RefundArgs {
+  orderId: string;
+  lines: Array<{ order_item_id: string; qty: number }>;
+  tenders: Array<{ method: PaymentMethod; amount: number; reference?: string }>;
+  reason: string;
+  managerPin: string;
+}
+
+export interface RefundResponse {
+  refund_id: string;
+  refund_number: string;
+  order_id: string;
+  order_number: string;
+  total_refunded: number;
+  tax_refunded: number;
+  tenders: Array<{ method: PaymentMethod; amount: number }>;
+  pts_deducted: number;
+  manager: { id: string; full_name: string; role_code: string };
+  error?: string;
+  message?: string;
+}
+
+async function getAccessToken(): Promise<string> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) throw new Error('no_auth_session');
+  return session.access_token;
+}
+
+export function useRefundOrder() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ orderId, lines, tenders, reason, managerPin }: RefundArgs): Promise<RefundResponse> => {
+      const accessToken = await getAccessToken();
+      const res = await fetch(`${supabaseUrl}/functions/v1/refund-order`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          order_id: orderId,
+          lines,
+          tenders,
+          reason,
+          manager_pin: managerPin,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({})) as RefundResponse;
+        throw Object.assign(new Error(err.error ?? 'refund_failed'), { details: err, status: res.status });
+      }
+      return await res.json() as RefundResponse;
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['order-history'] });
+      void qc.invalidateQueries({ queryKey: ['order-detail'] });
+      void qc.invalidateQueries({ queryKey: ['products'] });
+      void qc.invalidateQueries({ queryKey: ['orders'] });
+    },
+  });
+}
