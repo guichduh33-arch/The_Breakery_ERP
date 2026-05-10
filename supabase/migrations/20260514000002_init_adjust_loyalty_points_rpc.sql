@@ -43,7 +43,7 @@ BEGIN
     RAISE EXCEPTION 'forbidden';
   END IF;
 
-  IF p_delta = 0 OR p_reason IS NULL OR length(trim(p_reason)) < 5 THEN
+  IF p_customer_id IS NULL OR p_delta = 0 OR p_reason IS NULL OR length(trim(p_reason)) < 5 THEN
     RAISE EXCEPTION 'invalid_input';
   END IF;
 
