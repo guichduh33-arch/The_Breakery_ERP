@@ -2,10 +2,11 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Package, Boxes, ShoppingCart, Users, Building2,
-  Calculator, BarChart3, Settings, LogOut,
+  Calculator, BarChart3, Settings, LogOut, Tag,
   type LucideIcon,
 } from 'lucide-react';
 import { Button, cn } from '@breakery/ui';
+import type { PermissionCode } from '@breakery/supabase';
 import { useAuthStore } from '@/stores/authStore.js';
 
 interface NavItem {
@@ -13,11 +14,13 @@ interface NavItem {
   label: string;
   icon: LucideIcon;
   end?: boolean;
+  permission?: PermissionCode;
 }
 
 const NAV: NavItem[] = [
   { to: '/backoffice',            label: 'Dashboard',  icon: LayoutDashboard, end: true },
   { to: '/backoffice/products',   label: 'Products',   icon: Package },
+  { to: '/backoffice/promotions', label: 'Promotions', icon: Tag, permission: 'promotions.read' },
   { to: '/backoffice/inventory',  label: 'Inventory',  icon: Boxes },
   { to: '/backoffice/purchasing', label: 'Purchasing', icon: ShoppingCart },
   { to: '/backoffice/customers',  label: 'Customers',  icon: Users },
@@ -31,6 +34,11 @@ export function BackofficeLayout() {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
+  const hasPermission = useAuthStore((s) => s.hasPermission);
+
+  const visibleNav = NAV.filter(
+    (n) => n.permission === undefined || hasPermission(n.permission),
+  );
 
   async function handleLogout() {
     await logout();
@@ -45,7 +53,7 @@ export function BackofficeLayout() {
           <div className="text-xs text-text-secondary uppercase tracking-widest">Backoffice</div>
         </div>
         <nav className="flex-1 py-3 space-y-0.5 overflow-y-auto">
-          {NAV.map((n) => {
+          {visibleNav.map((n) => {
             const Icon = n.icon;
             return (
               <NavLink

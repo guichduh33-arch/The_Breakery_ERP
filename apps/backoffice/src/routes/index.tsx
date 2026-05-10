@@ -1,8 +1,10 @@
 // apps/backoffice/src/routes/index.tsx
 import { Routes, Route, Navigate } from 'react-router-dom';
+import type { PermissionCode } from '@breakery/supabase';
 import LoginPage from '@/pages/Login.js';
 import DashboardPage from '@/pages/Dashboard.js';
 import ProductsPage from '@/pages/Products.js';
+import PromotionsPage from '@/pages/Promotions.js';
 import ComingSoonPage from '@/pages/ComingSoon.js';
 import { BackofficeLayout } from '@/layouts/BackofficeLayout.js';
 import { useAuthStore } from '@/stores/authStore.js';
@@ -12,6 +14,17 @@ function Protected({ children }: { children: React.ReactNode }) {
   return isAuth ? <>{children}</> : <Navigate to="/login" replace />;
 }
 
+function PermissionGate({
+  required,
+  children,
+}: {
+  required: PermissionCode;
+  children: React.ReactNode;
+}) {
+  const has = useAuthStore((s) => s.hasPermission(required));
+  return has ? <>{children}</> : <Navigate to="/backoffice" replace />;
+}
+
 export function AppRoutes() {
   return (
     <Routes>
@@ -19,6 +32,14 @@ export function AppRoutes() {
       <Route path="/backoffice" element={<Protected><BackofficeLayout /></Protected>}>
         <Route index element={<DashboardPage />} />
         <Route path="products" element={<ProductsPage />} />
+        <Route
+          path="promotions"
+          element={
+            <PermissionGate required="promotions.read">
+              <PromotionsPage />
+            </PermissionGate>
+          }
+        />
         <Route path="inventory" element={<ComingSoonPage module="Inventory" />} />
         <Route path="purchasing" element={<ComingSoonPage module="Purchasing" />} />
         <Route path="customers" element={<ComingSoonPage module="Customers" />} />
