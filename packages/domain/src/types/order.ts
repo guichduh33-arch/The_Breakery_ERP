@@ -20,6 +20,18 @@ export interface OrderPayloadItem {
   discount_value?: number;
   discount_reason?: string;
   discount_authorized_by?: string;
+  /** Session 9 — true when the line was auto-added by the promotions engine. */
+  is_promo_gift?: boolean;
+  /** Session 9 — id of the promotion that produced this gift line. */
+  promotion_id?: string;
+}
+
+/** Session 9 — promotion entry in the OrderPayload promotions array. */
+export interface OrderPayloadPromotion {
+  promotion_id: string;
+  amount: number;
+  description: string;
+  scope_line_id?: string;
 }
 
 export interface OrderPayload {
@@ -42,4 +54,10 @@ export interface OrderPayload {
   discount_reason?: string;
   discount_authorized_by?: string;
   loyalty_multiplier?: number;
+  /**
+   * Session 9 — applied promotions to forward to RPC v7 / v4 as
+   * `p_promotions`. Server re-validates eligibility and inserts
+   * `promotion_applications` rows.
+   */
+  promotions?: OrderPayloadPromotion[];
 }

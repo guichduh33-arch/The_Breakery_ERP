@@ -1,5 +1,12 @@
 // packages/domain/src/orders/buildOrderPayload.ts
-import type { Cart, OrderPayload, OrderPayloadItem, PaymentInput } from '../types/index.js';
+import type {
+  Cart,
+  OrderPayload,
+  OrderPayloadItem,
+  OrderPayloadPromotion,
+  PaymentInput,
+} from '../types/index.js';
+import type { AppliedPromotion } from '../promotions/types.js';
 import { TIERS, tierFromLifetime } from '../loyalty/tiers.js';
 
 function buildItemPayload(item: Cart['items'][number]): OrderPayloadItem {
@@ -8,6 +15,9 @@ function buildItemPayload(item: Cart['items'][number]): OrderPayloadItem {
     quantity: item.quantity,
     unit_price: item.unit_price,
     modifiers: item.modifiers,
+    // Session 9 — pass through gift flags so RPC v7 can tag order_items.
+    ...(item.is_promo_gift ? { is_promo_gift: true } : {}),
+    ...(item.promotion_id ? { promotion_id: item.promotion_id } : {}),
   };
   if (!item.discount) return base;
   return {
@@ -25,6 +35,19 @@ function resolveLoyaltyMultiplier(cart: Cart): number {
   return 1.0;
 }
 
+/**
+ * Map AppliedPromotion[] to the wire-format expected by RPC v7 (`p_promotions`).
+ * Spec ref §3.6 — array of `{promotion_id, amount, description, scope_line_id?}`.
+ */
+function mapPromotions(applied: AppliedPromotion[]): OrderPayloadPromotion[] {
+  return applied.map((ap) => ({
+    promotion_id: ap.promotion_id,
+    amount: ap.amount,
+    description: ap.description,
+    ...(ap.scope_line_id ? { scope_line_id: ap.scope_line_id } : {}),
+  }));
+}
+
 export function buildOrderPayload(
   sessionId: string,
   cart: Cart,
@@ -32,12 +55,17 @@ export function buildOrderPayload(
   idempotencyKey?: string,
   lifetimePoints?: number,
   cumulLoyaltyMultiplier?: number,
+  appliedPromotions?: AppliedPromotion[],
 ): OrderPayload {
   const multiplier =
     cumulLoyaltyMultiplier ??
     (lifetimePoints != null
       ? (TIERS.find((t) => t.tier === tierFromLifetime(lifetimePoints))?.points_multiplier ?? 1.0)
       : resolveLoyaltyMultiplier(cart));
+
+  const promotions = appliedPromotions && appliedPromotions.length > 0
+    ? mapPromotions(appliedPromotions)
+    : null;
 
   return {
     session_id: sessionId,
@@ -57,5 +85,6 @@ export function buildOrderPayload(
       ...(cart.cartDiscount.authorized_by ? { discount_authorized_by: cart.cartDiscount.authorized_by } : {}),
     } : {}),
     ...(multiplier !== 1.0 ? { loyalty_multiplier: multiplier } : {}),
+    ...(promotions ? { promotions } : {}),
   };
 }

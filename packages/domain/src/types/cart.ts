@@ -22,6 +22,13 @@ export interface CartItem {
   product_type?: ProductType;
   /** Optional line-level discount applied to this item. */
   discount?: Discount;
+  /**
+   * Session 9: line was auto-added by promotions engine as a free gift.
+   * `unit_price` is forced to 0; UI renders a "PROMO" badge.
+   */
+  is_promo_gift?: boolean;
+  /** Session 9: id of the promotion that produced this gift line. */
+  promotion_id?: string;
 }
 
 export interface Cart {
