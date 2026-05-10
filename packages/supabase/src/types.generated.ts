@@ -1684,6 +1684,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      adjust_loyalty_points: {
+        Args: { p_customer_id: string; p_delta: number; p_reason: string }
+        Returns: {
+          new_balance: number
+          new_lifetime: number
+          txn_id: string
+        }[]
+      }
       cancel_order_item_rpc: {
         Args: {
           p_authorized_by: string
@@ -1769,6 +1777,7 @@ export type Database = {
         Args: { p_customer_id?: string; p_product_id: string }
         Returns: number
       }
+      get_loyalty_tier: { Args: { p_lifetime_points: number }; Returns: string }
       has_permission: {
         Args: { p_perm: string; p_uid: string }
         Returns: boolean
