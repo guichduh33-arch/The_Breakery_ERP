@@ -304,3 +304,48 @@ FROM products combo,
 JOIN products comp ON comp.sku = comp_skus.sku
 WHERE combo.sku = 'COMBO-001'
 ON CONFLICT (parent_product_id, component_product_id) DO NOTHING;
+
+-- ============================================================
+-- SESSION 9 — Demo promotions
+-- These reference categories/products seeded above, so they must live in seed.sql
+-- (the matching migration 20260511000006 also tries to insert them with WHERE EXISTS
+-- guards, but those are no-ops at migration time since seed.sql runs after).
+-- ============================================================
+INSERT INTO promotions (
+  name, slug, description,
+  type, scope, discount_value, scope_category_ids,
+  start_hour, end_hour,
+  priority, stackable_with_promo, stackable_with_manual,
+  is_active
+)
+SELECT
+  'Happy Hour Beverage', 'happy-hour-bev',
+  'Happy Hour 18h-20h — 10% off all beverages',
+  'percentage'::promotion_type, 'category'::promotion_scope, 10,
+  ARRAY[(SELECT id FROM categories WHERE slug = 'beverage')]::UUID[],
+  18, 20,
+  100, false, true,
+  true
+WHERE EXISTS (SELECT 1 FROM categories WHERE slug = 'beverage')
+ON CONFLICT (slug) DO NOTHING;
+
+INSERT INTO promotions (
+  name, slug, description,
+  type, gift_product_id, gift_qty,
+  min_items_total, customer_category_ids,
+  priority, stackable_with_promo, stackable_with_manual,
+  is_active
+)
+SELECT
+  'VIP Free Croissant', 'vip-free-croissant',
+  'VIP customers — free croissant on orders >= 100,000 IDR',
+  'free_product'::promotion_type,
+  (SELECT id FROM products WHERE sku = 'PAS-CROI'),
+  1,
+  100000,
+  ARRAY[(SELECT id FROM customer_categories WHERE slug = 'vip')]::UUID[],
+  50, true, true,
+  true
+WHERE EXISTS (SELECT 1 FROM products WHERE sku = 'PAS-CROI')
+  AND EXISTS (SELECT 1 FROM customer_categories WHERE slug = 'vip')
+ON CONFLICT (slug) DO NOTHING;

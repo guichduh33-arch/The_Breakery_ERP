@@ -14,7 +14,11 @@ export type PermissionCode =
   | 'products.update'
   | 'users.create'
   | 'users.update'
-  | 'users.view_audit';
+  | 'users.view_audit'
+  | 'promotions.read'
+  | 'promotions.create'
+  | 'promotions.update'
+  | 'promotions.delete';
 
 export function hasPermission(userPermissions: readonly string[], required: PermissionCode): boolean {
   return userPermissions.includes(required);
