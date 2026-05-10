@@ -1936,6 +1936,10 @@ export type Database = {
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      soft_delete_customer: {
+        Args: { p_customer_id: string }
+        Returns: undefined
+      }
       verify_user_pin: {
         Args: { p_pin: string; p_user_id: string }
         Returns: boolean

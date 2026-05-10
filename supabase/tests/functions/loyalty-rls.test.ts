@@ -92,39 +92,17 @@ describe('customers RLS — column GRANTs', () => {
     expect(error).not.toBeNull(); // RLS denies (no INSERT policy)
   });
 
-  it('authenticated soft-delete of customer is blocked by auth_read SELECT policy (design gap)', async () => {
-    // ASSERTION ADJUSTED — soft-delete via direct authenticated UPDATE is BLOCKED
-    // (documented 2026-05-11):
-    //
-    // The perm_update policy (USING has_permission('customers.update')) evaluates
-    // to TRUE for SUPER_ADMIN/ADMIN. However, PostgreSQL also applies the SELECT
-    // policy (auth_read: deleted_at IS NULL) as a WITH CHECK on the *new row* after
-    // the UPDATE. Since setting deleted_at = now() makes the row invisible under
-    // auth_read, PostgreSQL raises error 42501 and rolls the UPDATE back.
-    //
-    // This means soft-deletion through direct authenticated UPDATE is NOT possible
-    // without either:
-    //   (a) A SECURITY DEFINER RPC for soft-delete (recommended), or
-    //   (b) An explicit WITH CHECK on perm_update that allows deleted_at to be set.
-    //
-    // The test confirms that: (1) the error is present and is a RLS policy violation,
-    // and (2) the row is unchanged (deleted_at remains null).
+  it('authenticated CAN soft-delete a retail customer via soft_delete_customer RPC', async () => {
     const admin = createClient(SUPABASE_URL, SERVICE);
     const { data } = await admin.from('customers')
       .insert({ name: 'To Delete', phone: '+62810000096', customer_type: 'retail' })
       .select('id').single();
 
     const sb = createClient(SUPABASE_URL, ANON, { global: { headers: { Authorization: `Bearer ${token}` } } });
-    const { error } = await sb.from('customers')
-      .update({ deleted_at: new Date().toISOString() })
-      .eq('id', data!.id);
+    const { error } = await sb.rpc('soft_delete_customer', { p_customer_id: data!.id });
+    expect(error).toBeNull();
 
-    // The UPDATE is rejected by PostgreSQL's SELECT-policy WITH CHECK enforcement.
-    expect(error).not.toBeNull();
-    expect(error?.code).toBe('42501');
-
-    // Row is unchanged — deleted_at remains null.
     const { data: row } = await admin.from('customers').select('deleted_at').eq('id', data!.id).single();
-    expect(row?.deleted_at).toBeNull();
+    expect(row?.deleted_at).not.toBeNull();
   });
 });
