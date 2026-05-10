@@ -31,7 +31,7 @@ export default function LoyaltyPage() {
   const [tier,   setTier  ] = useState<TierFilter>('all');
 
   const filters = useMemo<LoyaltyCustomersFilters>(
-    () => ({ search: search === '' ? undefined : search, tier }),
+    () => ({ ...(search !== '' ? { search } : {}), tier }),
     [search, tier],
   );
 
@@ -129,7 +129,7 @@ export default function LoyaltyPage() {
 
       {/* Modals */}
       <CustomerFormModal open={creating} mode="create" onClose={() => setCreating(false)} />
-      <CustomerFormModal open={editing !== undefined} mode="edit" initial={editing} onClose={() => setEditing(undefined)} />
+      <CustomerFormModal open={editing !== undefined} mode="edit" {...(editing !== undefined ? { initial: editing } : {})} onClose={() => setEditing(undefined)} />
       <LoyaltyHistoryDrawer customer={viewing} onClose={() => setViewing(undefined)} />
       <LoyaltyAdjustModal customer={adjusting} onClose={() => setAdjusting(undefined)} />
       <CustomerDeleteConfirm customer={deleting} onClose={() => setDeleting(undefined)} />
