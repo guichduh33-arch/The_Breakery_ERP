@@ -5,12 +5,13 @@ import {
   loginWithPin,
   getSession,
   logoutSession,
+  setSupabaseAccessToken,
   type LoginResponse,
   type PermissionCode,
   hasPermission as has,
 } from '@breakery/supabase';
 import { safeStorage, logger } from '@breakery/utils';
-import { supabase, supabaseUrl } from '../lib/supabase.js';
+import { supabaseUrl } from '../lib/supabase.js';
 
 interface AuthUser {
   id: string;
@@ -60,10 +61,9 @@ export const useAuthStore = create<AuthState>()(
             pin,
             device_type: 'pos',
           });
-          await supabase.auth.setSession({
-            access_token: res.auth.access_token,
-            refresh_token: res.auth.refresh_token,
-          });
+          // Inject the PIN-minted JWT into the supabase client's fetch wrapper
+          // (bypasses GoTrue's HS256/ES256 mismatch). See packages/supabase/src/client.ts.
+          setSupabaseAccessToken(res.auth.access_token);
           set({
             user: res.user,
             sessionToken: res.session.token,
@@ -85,7 +85,7 @@ export const useAuthStore = create<AuthState>()(
         if (token) {
           try { await logoutSession(supabaseUrl, token); } catch { /* ignore */ }
         }
-        await supabase.auth.signOut().catch((_err: unknown) => { /* ignore sign out error */ });
+        setSupabaseAccessToken(null);
         set({ user: null, sessionToken: null, permissions: [], isAuthenticated: false, error: null });
       },
 

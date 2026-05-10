@@ -20,6 +20,12 @@ export interface OrderPayloadItem {
   discount_value?: number;
   discount_reason?: string;
   discount_authorized_by?: string;
+  /** Promotion applied to this line item (frozen at create_tablet_order time, P10). */
+  promotion_id?: string;
+  /** Absolute IDR discount from the promotion on this line. */
+  promotion_discount?: number;
+  /** True when this item was added as a free item by the promotions engine. */
+  is_free_from_promo?: boolean;
 }
 
 export interface OrderPayload {
@@ -42,4 +48,6 @@ export interface OrderPayload {
   discount_reason?: string;
   discount_authorized_by?: string;
   loyalty_multiplier?: number;
+  /** ISO timestamp passed to evaluate_promotions RPC on the server at checkout. */
+  evaluation_ts?: string;
 }

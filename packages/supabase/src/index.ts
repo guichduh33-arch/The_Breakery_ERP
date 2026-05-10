@@ -1,4 +1,10 @@
-export { getSupabaseClient, resetSupabaseClient, type BreakerySupabaseConfig } from './client.js';
+export {
+  getSupabaseClient,
+  resetSupabaseClient,
+  setSupabaseAccessToken,
+  getSupabaseAccessToken,
+  type BreakerySupabaseConfig,
+} from './client.js';
 export type { Database, Json } from './types.generated.js';
 export * from './enums.js';
 export { hasPermission, hasAnyPermission, type PermissionCode } from './rls/permissions.js';

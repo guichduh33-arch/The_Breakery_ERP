@@ -1,7 +1,7 @@
 // apps/pos/src/features/cart/ActiveOrderPanel.tsx
 import { useState } from 'react';
 import { ShoppingBag, CreditCard } from 'lucide-react';
-import { Button, Currency, OrderTypeTabs, RedeemPointsModal, DiscountModal, PinVerificationModal } from '@breakery/ui';
+import { Button, Currency, FreeItemRow, OrderTypeTabs, RedeemPointsModal, DiscountModal, PinVerificationModal } from '@breakery/ui';
 import { calculateTotals } from '@breakery/domain';
 import { useCartStore } from '@/stores/cartStore';
 import { usePaymentStore } from '@/stores/paymentStore';
@@ -16,6 +16,9 @@ import { TableSelectorButton } from '@/features/tables/components/TableSelectorB
 import { DiscountButton } from '@/features/discounts/components/DiscountButton';
 import { useApplyCartDiscount } from '@/features/discounts/hooks/useApplyCartDiscount';
 import { useApplyLineDiscount, lineDiscountBase } from '@/features/discounts/hooks/useApplyLineDiscount';
+import { useProducts } from '@/features/products/hooks/useProducts';
+import { PromotionsSummary } from '@/features/promotions/components/PromotionsSummary';
+import { usePromotionsPreview } from '@/features/promotions/hooks/usePromotionsPreview';
 import { CartItemRow } from './CartItemRow';
 import { SendToKitchenButton } from './SendToKitchenButton';
 
@@ -27,6 +30,8 @@ interface ActiveOrderPanelProps {
 }
 
 export function ActiveOrderPanel({ onOpenCustomerSearch, onDetachCustomer }: ActiveOrderPanelProps) {
+  usePromotionsPreview();
+
   const cart = useCartStore((s) => s.cart);
   const lockedIds = useCartStore((s) => s.lockedItemIds);
   const attachedCustomer = useCartStore((s) => s.attachedCustomer);
@@ -37,6 +42,9 @@ export function ActiveOrderPanel({ onOpenCustomerSearch, onDetachCustomer }: Act
   const setOrderType = useCartStore((s) => s.setOrderType);
   const clear = useCartStore((s) => s.clear);
   const openPayment = usePaymentStore((s) => s.open);
+  const previewItems = useCartStore((s) => s.previewItems);
+  const appliedPromotion = useCartStore((s) => s.appliedPromotion);
+  const { data: products = [] } = useProducts();
 
   const [redeemOpen, setRedeemOpen] = useState(false);
 
@@ -92,16 +100,29 @@ export function ActiveOrderPanel({ onOpenCustomerSearch, onDetachCustomer }: Act
             </div>
           </div>
         ) : (
-          cart.items.map((item) => (
-            <CartItemRow
-              key={item.id}
-              item={item}
-              locked={lockedIds.includes(item.id)}
-              onChangeQty={(q) => update(item.id, q)}
-              onRemove={() => remove(item.id)}
-              onApplyLineDiscount={lineDiscount.openForItem}
-            />
-          ))
+          <>
+            {cart.items.map((item) => (
+              <CartItemRow
+                key={item.id}
+                item={item}
+                locked={lockedIds.includes(item.id)}
+                onChangeQty={(q) => update(item.id, q)}
+                onRemove={() => remove(item.id)}
+                onApplyLineDiscount={lineDiscount.openForItem}
+              />
+            ))}
+            {previewItems.filter((i) => !i.split_from_existing).map((i) => {
+              const productName = products.find((p) => p.id === i.product_id)?.name ?? i.product_id;
+              return (
+                <div key={i.product_id} className="px-4 py-2">
+                  <FreeItemRow
+                    productName={productName}
+                    promotionName={appliedPromotion?.name ?? ''}
+                  />
+                </div>
+              );
+            })}
+          </>
         )}
       </div>
 
@@ -112,6 +133,7 @@ export function ActiveOrderPanel({ onOpenCustomerSearch, onDetachCustomer }: Act
               <span className="text-text-secondary">Subtotal</span>
               <Currency amount={totals.subtotal} />
             </div>
+            <PromotionsSummary />
             {totals.redemption_amount > 0 && (
               <div className="flex justify-between text-text-secondary">
                 <span>Loyalty discount ({cart.loyaltyPointsToRedeem} pts)</span>
