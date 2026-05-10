@@ -98,3 +98,22 @@ export {
   type ComboLineRowProps,
   type ComboComponent,
 } from './components/ComboLineRow.js';
+export {
+  PromotionTypeBadge,
+  type PromotionTypeBadgeProps,
+  type PromotionType,
+} from './components/PromotionTypeBadge.js';
+export {
+  PromotionForm,
+  emptyPromotionValues,
+  validatePromotion,
+  type PromotionFormProps,
+  type PromotionFormValues,
+  type PromotionFormOption,
+  type PromotionFormErrors,
+  type PromotionScope,
+} from './components/PromotionForm.js';
+export {
+  PromotionLineRow,
+  type PromotionLineRowProps,
+} from './components/PromotionLineRow.js';
