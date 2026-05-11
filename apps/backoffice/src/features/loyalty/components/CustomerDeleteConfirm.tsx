@@ -17,7 +17,7 @@ export function CustomerDeleteConfirm({ customer, onClose }: CustomerDeleteConfi
   const deleteMut = useDeleteCustomer();
   const [typed, setTyped] = useState('');
   const open = customer !== undefined;
-  const canConfirm = customer !== undefined && typed === customer.name && !deleteMut.isPending;
+  const canConfirm = customer?.name !== undefined && typed === customer.name && !deleteMut.isPending;
 
   async function handleConfirm(): Promise<void> {
     if (customer === undefined) return;

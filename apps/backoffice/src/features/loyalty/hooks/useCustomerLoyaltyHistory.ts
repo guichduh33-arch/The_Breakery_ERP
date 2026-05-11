@@ -40,7 +40,7 @@ export function useCustomerLoyaltyHistory(customerId: string | null) {
         .order('created_at', { ascending: false })
         .limit(50);
       if (error) throw error;
-      return (data ?? []) as unknown as LoyaltyTxnRow[];
+      return data ?? [];
     },
   });
 }

@@ -30,7 +30,7 @@ export function LoyaltyHistoryDrawer({ customer, onClose }: LoyaltyHistoryDrawer
 
         {q.isLoading && <div className="text-text-secondary py-12 text-center">Loading…</div>}
         {q.error && <div className="text-red py-12 text-center">{q.error.message}</div>}
-        {q.data && q.data.length === 0 && <div className="text-text-secondary py-12 text-center">No transactions yet.</div>}
+        {q.data?.length === 0 && <div className="text-text-secondary py-12 text-center">No transactions yet.</div>}
         {q.data && q.data.length > 0 && (
           <table className="w-full text-sm">
             <thead className="text-xs uppercase tracking-widest text-text-secondary">
