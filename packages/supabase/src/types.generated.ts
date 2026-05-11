@@ -79,6 +79,44 @@ export type Database = {
         }
         Relationships: []
       }
+      audit_log: {
+        Row: {
+          action: string
+          actor_profile_id: string | null
+          id: number
+          occurred_at: string
+          payload: Json | null
+          subject_id: string | null
+          subject_table: string
+        }
+        Insert: {
+          action: string
+          actor_profile_id?: string | null
+          id?: number
+          occurred_at?: string
+          payload?: Json | null
+          subject_id?: string | null
+          subject_table: string
+        }
+        Update: {
+          action?: string
+          actor_profile_id?: string | null
+          id?: number
+          occurred_at?: string
+          payload?: Json | null
+          subject_id?: string | null
+          subject_table?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_log_actor_profile_id_fkey"
+            columns: ["actor_profile_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: string
@@ -1059,6 +1097,7 @@ export type Database = {
           image_url: string | null
           is_active: boolean
           is_favorite: boolean
+          min_stock_threshold: number
           name: string
           product_type: string
           retail_price: number
@@ -1076,6 +1115,7 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean
           is_favorite?: boolean
+          min_stock_threshold?: number
           name: string
           product_type?: string
           retail_price: number
@@ -1093,6 +1133,7 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean
           is_favorite?: boolean
+          min_stock_threshold?: number
           name?: string
           product_type?: string
           retail_price?: number
@@ -1488,31 +1529,43 @@ export type Database = {
           created_at: string
           created_by: string
           id: string
+          idempotency_key: string | null
           movement_type: Database["public"]["Enums"]["movement_type"]
           product_id: string
           quantity: number
-          reference_id: string
+          reason: string | null
+          reference_id: string | null
           reference_type: string
+          supplier_id: string | null
+          unit_cost: number | null
         }
         Insert: {
           created_at?: string
           created_by: string
           id?: string
+          idempotency_key?: string | null
           movement_type: Database["public"]["Enums"]["movement_type"]
           product_id: string
           quantity: number
-          reference_id: string
+          reason?: string | null
+          reference_id?: string | null
           reference_type: string
+          supplier_id?: string | null
+          unit_cost?: number | null
         }
         Update: {
           created_at?: string
           created_by?: string
           id?: string
+          idempotency_key?: string | null
           movement_type?: Database["public"]["Enums"]["movement_type"]
           product_id?: string
           quantity?: number
-          reference_id?: string
+          reason?: string | null
+          reference_id?: string | null
           reference_type?: string
+          supplier_id?: string | null
+          unit_cost?: number | null
         }
         Relationships: [
           {
@@ -1527,6 +1580,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
         ]
@@ -1692,6 +1752,15 @@ export type Database = {
           txn_id: string
         }[]
       }
+      adjust_stock_v1: {
+        Args: {
+          p_idempotency_key?: string
+          p_new_qty: number
+          p_product_id: string
+          p_reason: string
+        }
+        Returns: Json
+      }
       cancel_order_item_rpc: {
         Args: {
           p_authorized_by: string
@@ -1778,6 +1847,26 @@ export type Database = {
         Returns: number
       }
       get_loyalty_tier: { Args: { p_lifetime_points: number }; Returns: string }
+      get_stock_levels_v1: {
+        Args: {
+          p_category_id?: string
+          p_limit?: number
+          p_low_stock_only?: boolean
+          p_offset?: number
+          p_search?: string
+        }
+        Returns: {
+          category_id: string
+          category_name: string
+          current_stock: number
+          last_movement_at: string
+          min_stock_threshold: number
+          name: string
+          product_id: string
+          sku: string
+          total_count: number
+        }[]
+      }
       has_permission: {
         Args: { p_perm: string; p_uid: string }
         Returns: boolean
@@ -1885,6 +1974,29 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      receive_stock_v1: {
+        Args: {
+          p_idempotency_key?: string
+          p_product_id: string
+          p_quantity: number
+          p_reason?: string
+          p_supplier_id: string
+          p_unit_cost?: number
+        }
+        Returns: Json
+      }
+      record_stock_movement_v1: {
+        Args: {
+          p_idempotency_key?: string
+          p_movement_type: Database["public"]["Enums"]["movement_type"]
+          p_product_id: string
+          p_quantity: number
+          p_reason: string
+          p_supplier_id?: string
+          p_unit_cost?: number
+        }
+        Returns: Json
+      }
       refund_order_rpc: {
         Args: {
           p_authorized_by: string
@@ -1937,7 +2049,7 @@ export type Database = {
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
       soft_delete_customer: {
-        Args: { p_customer_id: string }
+        Args: { p_customer_id: string; p_reason?: string }
         Returns: undefined
       }
       verify_user_pin: {
@@ -1946,6 +2058,15 @@ export type Database = {
       }
       void_order_rpc: {
         Args: { p_authorized_by: string; p_order_id: string; p_reason: string }
+        Returns: Json
+      }
+      waste_stock_v1: {
+        Args: {
+          p_idempotency_key?: string
+          p_product_id: string
+          p_quantity: number
+          p_reason: string
+        }
         Returns: Json
       }
     }
