@@ -8,6 +8,7 @@ export default defineConfig({
     alias: { '@': path.resolve(__dirname, './src') }
   },
   server: { port: 5173, host: true },
+  build: { target: 'es2022' },
   test: {
     environment: 'jsdom',
     // Use forks pool to avoid Windows VirtualAlloc OOM with multiple threads
