@@ -149,7 +149,7 @@ export function ReceiveModal({ open, initialProduct, onClose }: ReceiveModalProp
           Record an incoming shipment from a supplier. Quantity is added to current stock.
         </DialogDescription>
 
-        <form onSubmit={handleSubmit} noValidate className="space-y-4">
+        <form onSubmit={(e) => { void handleSubmit(e); }} noValidate className="space-y-4">
           {formError !== null && (
             <div role="alert" className="rounded-md border border-red bg-red/5 p-2 text-xs text-red">
               {formError}

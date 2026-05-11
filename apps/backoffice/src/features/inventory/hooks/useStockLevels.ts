@@ -62,7 +62,7 @@ export function useStockLevels(filters: StockLevelsFilters = {}) {
 
       const { data, error } = await supabase.rpc('get_stock_levels_v1', args);
       if (error) throw error;
-      return (data ?? []) as StockLevelRow[];
+      return data ?? [];
     },
   });
 }

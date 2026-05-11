@@ -141,7 +141,7 @@ export default function InventoryPage() {
       {/* Table */}
       {list.isLoading && <div className="text-text-secondary py-12 text-center">Loading…</div>}
       {list.error && <div className="text-red py-12 text-center">Failed to load: {list.error.message}</div>}
-      {list.data !== undefined && list.data.length === 0 && (
+      {list.data?.length === 0 && (
         <div className="text-text-secondary py-12 text-center">
           {search !== '' || categoryId !== '' || lowStockOnly
             ? 'No products match the current filters.'

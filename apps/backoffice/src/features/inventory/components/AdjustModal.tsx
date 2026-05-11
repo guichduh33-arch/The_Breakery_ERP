@@ -137,7 +137,7 @@ export function AdjustModal({ open, initialProduct, onClose }: AdjustModalProps)
           Set the absolute on-hand quantity for this product. The delta is computed automatically.
         </DialogDescription>
 
-        <form onSubmit={handleSubmit} noValidate className="space-y-4">
+        <form onSubmit={(e) => { void handleSubmit(e); }} noValidate className="space-y-4">
           {formError !== null && (
             <div role="alert" className="rounded-md border border-red bg-red/5 p-2 text-xs text-red">
               {formError}

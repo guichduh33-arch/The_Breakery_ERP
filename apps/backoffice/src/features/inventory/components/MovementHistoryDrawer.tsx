@@ -83,7 +83,7 @@ export function MovementHistoryDrawer({ product, onClose }: MovementHistoryDrawe
     onClose();
   }
 
-  const hasMore = q.data !== undefined && q.data.length === PAGE_SIZE;
+  const hasMore = q.data?.length === PAGE_SIZE;
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) handleClose(); }}>

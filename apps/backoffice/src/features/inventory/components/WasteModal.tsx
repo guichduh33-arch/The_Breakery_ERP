@@ -23,7 +23,7 @@ export interface WasteModalProps {
 
 type ReasonPreset = 'Expired' | 'Damaged' | 'Spoiled' | 'Other';
 
-const PRESETS: ReadonlyArray<ReasonPreset> = ['Expired', 'Damaged', 'Spoiled', 'Other'];
+const PRESETS: readonly ReasonPreset[] = ['Expired', 'Damaged', 'Spoiled', 'Other'];
 const MAX_REASON = 500;
 
 function stockLevelToTypeaheadRow(row: StockLevelRow): ProductTypeaheadRow {
@@ -139,7 +139,7 @@ export function WasteModal({ open, initialProduct, onClose }: WasteModalProps): 
           Decrement stock for shrinkage, expiry, or damage. The quantity is removed from on-hand.
         </DialogDescription>
 
-        <form onSubmit={handleSubmit} noValidate className="space-y-4">
+        <form onSubmit={(e) => { void handleSubmit(e); }} noValidate className="space-y-4">
           {formError !== null && (
             <div role="alert" className="rounded-md border border-red bg-red/5 p-2 text-xs text-red">
               {formError}

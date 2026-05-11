@@ -56,7 +56,7 @@ export function useStockMovements(productId: string | null, page: number) {
         .order('created_at', { ascending: false })
         .range(from, to);
       if (error) throw error;
-      return (data ?? []) as unknown as StockMovementRow[];
+      return data ?? [];
     },
   });
 }

@@ -37,7 +37,7 @@ export function useProductsForInventory(search: string) {
         .order('name')
         .limit(20);
       if (error) throw error;
-      return (data ?? []) as ProductTypeaheadRow[];
+      return data ?? [];
     },
   });
 }
