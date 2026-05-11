@@ -37,6 +37,11 @@ jobs:
           VITE_SUPABASE_ANON_KEY: stub
           VITE_SENTRY_DSN_POS: ''
           VITE_SENTRY_DSN_BACKOFFICE: ''
+          # The Breakery runs in Asia/Jakarta. Session-9 promotion matchers
+          # use `Date#getHours()` / `getDay()` (local time). CI runners default
+          # to UTC, which shifts Mon 18:30 +07 into Mon 11:30 UTC and breaks
+          # Happy Hour window tests. Pin the runner TZ to match prod.
+          TZ: Asia/Jakarta
 
       - name: Build
         run: pnpm build
