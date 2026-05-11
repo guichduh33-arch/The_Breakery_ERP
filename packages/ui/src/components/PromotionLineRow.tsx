@@ -1,35 +1,43 @@
 // packages/ui/src/components/PromotionLineRow.tsx
-// Spec ref: docs/superpowers/specs/2026-05-07-session-8-promotions-engine-spec.md
+//
+// Session 9 — render an applied promotion as an italic-muted cart-summary row.
+// Spec ref: 2026-05-10-session-9-promotions-spec.md §4.2
+
 import type { JSX } from 'react';
-import { Tag } from 'lucide-react';
-import { cn } from '../lib/cn.js';
+import type { AppliedPromotion } from '@breakery/domain';
 import { Currency } from './Currency.js';
+import { cn } from '../lib/cn.js';
 
 export interface PromotionLineRowProps {
-  name: string;
-  discount_amount: number;
-  subtitle?: string;
+  applied: AppliedPromotion;
   className?: string;
 }
 
-export function PromotionLineRow({
-  name,
-  discount_amount,
-  subtitle,
-  className = '',
-}: PromotionLineRowProps): JSX.Element {
+/**
+ * Compact row showing `name … −Rp amount` in muted-italic style. For
+ * `free_product` promos the amount is 0 (the discount manifests as a
+ * unit_price=0 cart line instead) — we render "free gift" in that case
+ * to make the intent visible.
+ */
+export function PromotionLineRow({ applied, className }: PromotionLineRowProps): JSX.Element {
+  const isGift = applied.type === 'free_product';
   return (
-    <div className={cn('flex items-center justify-between text-green', className)}>
-      <div className="flex items-center gap-2">
-        <Tag className="h-4 w-4" />
-        <div>
-          <div className="text-sm">Promo: {name}</div>
-          {subtitle && <div className="text-xs text-text-secondary">{subtitle}</div>}
-        </div>
-      </div>
-      <span className="text-sm font-mono">
-        −<Currency amount={discount_amount} />
-      </span>
+    <div
+      className={cn(
+        'flex items-center justify-between text-xs italic text-text-secondary',
+        className,
+      )}
+      data-promotion-id={applied.promotion_id}
+      data-promotion-type={applied.type}
+    >
+      <span className="truncate pr-2">{applied.name}</span>
+      {isGift ? (
+        <span className="font-mono text-rose-300">free gift</span>
+      ) : (
+        <span className="font-mono text-red-400">
+          -<Currency amount={applied.amount} />
+        </span>
+      )}
     </div>
   );
 }

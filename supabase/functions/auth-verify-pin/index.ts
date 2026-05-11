@@ -3,6 +3,7 @@ import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { handleCors, jsonResponse } from '../_shared/cors.ts';
 import { getAdminClient } from '../_shared/supabase-admin.ts';
 import { checkRateLimit, getClientIp } from '../_shared/rate-limit.ts';
+import { computePermissionsForRole, checkPermissionForRole } from '../_shared/permissions.ts';
 
 const PIN_REGEX = /^\d{6}$/;
 const MAX_FAILED = 5;
@@ -106,7 +107,7 @@ serve(async (req) => {
 
   // 3b. Optional permission gate — check before issuing session
   if (required_permission) {
-    const hasPermission = await checkPermissionForRole(profile.role_code, required_permission);
+    const hasPermission = checkPermissionForRole(profile.role_code, required_permission);
     if (!hasPermission) {
       return jsonResponse({ error: 'permission_denied', code: 'PERMISSION_MISSING' }, 403);
     }
@@ -204,48 +205,31 @@ serve(async (req) => {
   });
 });
 
-// Sign a JWT using HS256 via Web Crypto API (Deno native)
-async function signJwt(payload: Record<string, unknown>, secret: string): Promise<string> {
-  const header = { alg: 'HS256', typ: 'JWT' };
-  const enc = (obj: unknown) => btoa(JSON.stringify(obj)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-  const data = `${enc(header)}.${enc(payload)}`;
-  const key = await crypto.subtle.importKey(
+// HMAC CryptoKey cache (D4 — session 8 perf-debt).
+// Module-scope, lazy-init on first signJwt() call. Edge Function instances
+// are reused across invocations; importKey() is ~1-3ms per call. Caching
+// removes that cost from every login after the first.
+let _hmacKey: CryptoKey | null = null;
+async function getHmacKey(secret: string): Promise<CryptoKey> {
+  if (_hmacKey) return _hmacKey;
+  _hmacKey = await crypto.subtle.importKey(
     'raw',
     new TextEncoder().encode(secret),
     { name: 'HMAC', hash: 'SHA-256' },
     false,
     ['sign'],
   );
+  return _hmacKey;
+}
+
+// Sign a JWT using HS256 via Web Crypto API (Deno native)
+async function signJwt(payload: Record<string, unknown>, secret: string): Promise<string> {
+  const header = { alg: 'HS256', typ: 'JWT' };
+  const enc = (obj: unknown) => btoa(JSON.stringify(obj)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+  const data = `${enc(header)}.${enc(payload)}`;
+  const key = await getHmacKey(secret);
   const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(data));
   const sigB64 = btoa(String.fromCharCode(...new Uint8Array(sig)))
     .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
   return `${data}.${sigB64}`;
-}
-
-function checkPermissionForRole(role: string, permission: string): boolean {
-  return computePermissionsForRole(role).includes(permission);
-}
-
-function computePermissionsForRole(role: string): string[] {
-  switch (role) {
-    case 'SUPER_ADMIN':
-    case 'ADMIN':
-      return [
-        'pos.session.open', 'pos.session.close_own', 'pos.session.close_other',
-        'pos.session.view_all', 'pos.sale.create', 'pos.sale.void', 'pos.sale.update',
-        'products.read', 'products.create', 'products.update',
-        'users.create', 'users.update', 'users.view_audit',
-      ];
-    case 'MANAGER':
-      return [
-        'pos.session.open', 'pos.session.close_own', 'pos.session.close_other',
-        'pos.session.view_all', 'pos.sale.create', 'pos.sale.void', 'pos.sale.update',
-        'products.read', 'products.create', 'products.update',
-        'payments.process', 'sales.discount',
-      ];
-    case 'CASHIER':
-      return ['pos.session.open', 'pos.session.close_own', 'pos.sale.create', 'products.read'];
-    default:
-      return [];
-  }
 }

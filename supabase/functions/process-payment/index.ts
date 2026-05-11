@@ -2,22 +2,36 @@
 // Wrapper sur RPC complete_order_with_payment.
 // Capture les exceptions Postgres et les remappe en réponses HTTP propres.
 // Logs Sentry server-side optionnel.
+//
+// Session 10: support multi-tender via `payments` field (array). Forwarded as
+// p_payments to RPC v8. Legacy `payment` (single object) still accepted and
+// forwarded as p_payment (RPC v8 wraps it into a single-element array → iso v7).
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.47.10';
 import { handleCors, jsonResponse } from '../_shared/cors.ts';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const VALID_METHODS = new Set(['cash', 'card', 'qris', 'edc', 'transfer', 'store_credit']);
+const MAX_TENDERS = 5;
+
+type PaymentMethod = 'cash' | 'card' | 'qris' | 'edc' | 'transfer' | 'store_credit';
+
+interface PaymentEntry {
+  method: PaymentMethod;
+  amount: number;
+  cash_received?: number;
+  change_given?: number;
+  reference?: string;
+}
 
 interface ProcessPaymentPayload {
   session_id: string;
   order_type: 'dine_in' | 'take_out' | 'delivery';
   items: Array<{ product_id: string; quantity: number; unit_price: number }>;
-  payment: {
-    method: 'cash' | 'card' | 'qris' | 'edc' | 'transfer' | 'store_credit';
-    amount: number;
-    cash_received?: number;
-    change_given?: number;
-  };
+  /** Single-tender (legacy v7). Either `payment` or `payments` MUST be supplied (not both). */
+  payment?: PaymentEntry;
+  /** Multi-tender array (session 10 / RPC v8). Length 1..5. Sum(amounts) = final total. */
+  payments?: PaymentEntry[];
   /**
    * Optional UUID v4 idempotency key (decision D8 of the session-1 addendum).
    * When the same key is replayed against this function, the underlying RPC
@@ -29,11 +43,24 @@ interface ProcessPaymentPayload {
   /** Session 4: dine-in table name (e.g. "T-03"). Forwarded to RPC v4 as p_table_number. */
   table_number?: string;
   /**
-   * Session 8: ISO timestamp at which promotions were evaluated client-side.
-   * Forwarded to complete_order_with_payment as p_evaluation_ts so the server
-   * can re-evaluate and freeze the correct promotion snapshot.
+   * Session 9: applied promotions (already evaluated client-side). Each entry
+   * is `{promotion_id, amount, description, scope_line_id?}`. Forwarded to
+   * RPC v7 as `p_promotions` ; the RPC re-validates eligibility server-side
+   * and inserts `promotion_applications` rows.
    */
-  evaluation_ts?: string;
+  promotions?: Array<{
+    promotion_id: string;
+    amount: number;
+    description: string;
+    scope_line_id?: string;
+  }>;
+}
+
+function isValidPaymentEntry(p: PaymentEntry | undefined): p is PaymentEntry {
+  if (!p) return false;
+  if (!VALID_METHODS.has(p.method)) return false;
+  if (typeof p.amount !== 'number' || p.amount <= 0) return false;
+  return true;
 }
 
 serve(async (req) => {
@@ -56,13 +83,49 @@ serve(async (req) => {
     return jsonResponse({ error: 'invalid_json' }, 400);
   }
 
-  if (!body.session_id || !body.order_type || !Array.isArray(body.items) || body.items.length === 0 || !body.payment) {
+  if (!body.session_id || !body.order_type || !Array.isArray(body.items) || body.items.length === 0) {
     return jsonResponse({ error: 'missing_or_invalid_fields' }, 400);
   }
 
-  if (body.payment.method === 'cash') {
-    if (typeof body.payment.cash_received !== 'number' || body.payment.cash_received < body.payment.amount) {
-      return jsonResponse({ error: 'cash_received_insufficient' }, 400);
+  // Session 10 — exactly one of payment/payments. Validate per branch.
+  const hasSingle = body.payment !== undefined;
+  const hasArray  = Array.isArray(body.payments) && body.payments.length > 0;
+
+  if (hasSingle && hasArray) {
+    return jsonResponse({ error: 'cannot_supply_both_payment_and_payments' }, 400);
+  }
+  if (!hasSingle && !hasArray) {
+    return jsonResponse({ error: 'missing_payment' }, 400);
+  }
+
+  if (hasSingle) {
+    if (!isValidPaymentEntry(body.payment)) {
+      return jsonResponse({ error: 'invalid_payment' }, 400);
+    }
+    if (body.payment!.method === 'cash') {
+      if (typeof body.payment!.cash_received !== 'number' || body.payment!.cash_received < body.payment!.amount) {
+        return jsonResponse({ error: 'cash_received_insufficient' }, 400);
+      }
+    }
+  } else {
+    const arr = body.payments!;
+    if (arr.length > MAX_TENDERS) {
+      return jsonResponse({ error: 'too_many_tenders', max: MAX_TENDERS }, 400);
+    }
+    for (let i = 0; i < arr.length; i++) {
+      const p = arr[i]!;
+      if (!isValidPaymentEntry(p)) {
+        return jsonResponse({ error: 'invalid_tender', index: i }, 400);
+      }
+      // Cash overpay rule (SP2): only the LAST entry may overpay.
+      if (
+        p.method === 'cash'
+        && typeof p.cash_received === 'number'
+        && p.cash_received > p.amount
+        && i < arr.length - 1
+      ) {
+        return jsonResponse({ error: 'intermediate_cash_overpay', index: i }, 400);
+      }
     }
   }
 
@@ -87,16 +150,14 @@ serve(async (req) => {
     p_session_id: body.session_id,
     p_order_type: body.order_type,
     p_items: body.items,
-    p_payment: body.payment,
-    // Forward optional idempotency key — RPC stores/returns existing order on replay (D8)
+    // v8: forward exactly one of p_payment / p_payments. RPC raises if both supplied.
+    ...(hasSingle ? { p_payment: body.payment } : {}),
+    ...(hasArray  ? { p_payments: body.payments } : {}),
     ...(body.idempotency_key ? { p_idempotency_key: body.idempotency_key } : {}),
-    // Forward optional customer + loyalty redemption (session 3)
     ...(body.customer_id ? { p_customer_id: body.customer_id } : {}),
     ...(body.loyalty_points_redeemed ? { p_loyalty_points_redeemed: body.loyalty_points_redeemed } : {}),
-    // Forward optional table_number (session 4 — RPC v4)
     ...(body.table_number ? { p_table_number: body.table_number } : {}),
-    // Forward evaluation_ts (session 8 — re-evaluate promotions server-side)
-    p_evaluation_ts: body.evaluation_ts ?? new Date().toISOString(),
+    ...(body.promotions && body.promotions.length > 0 ? { p_promotions: body.promotions } : {}),
   });
 
   if (error) {
@@ -106,6 +167,7 @@ serve(async (req) => {
     if (error.code === 'P0002') return jsonResponse({ error: 'insufficient_stock', message: error.message }, 409);
     if (error.code === 'P0003') return jsonResponse({ error: 'permission_denied', message: error.message }, 403);
     if (error.code === 'P0010') return jsonResponse({ error: 'insufficient_loyalty_points', message: error.message }, 409);
+    if (error.code === '23514') return jsonResponse({ error: 'check_violation', message: error.message }, 422);
     return jsonResponse({ error: 'internal', message: error.message }, 500);
   }
 

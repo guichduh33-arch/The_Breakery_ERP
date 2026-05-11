@@ -22,6 +22,18 @@ export interface CartItem {
   product_type?: ProductType;
   /** Optional line-level discount applied to this item. */
   discount?: Discount;
+  /**
+   * Session 9: line was auto-added by promotions engine as a free gift.
+   * `unit_price` is forced to 0; UI renders a "PROMO" badge.
+   */
+  is_promo_gift?: boolean;
+  /** Session 9: id of the promotion that produced this gift line. */
+  promotion_id?: string;
+  /**
+   * Session 10: item was cancelled post-send-to-kitchen via cancel_order_item_rpc.
+   * Excluded from cart totals; rendered struck-through with "CANCELLED" badge.
+   */
+  is_cancelled?: boolean;
 }
 
 export interface Cart {

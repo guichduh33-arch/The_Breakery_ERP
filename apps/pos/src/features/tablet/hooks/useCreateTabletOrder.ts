@@ -15,7 +15,6 @@ export function useCreateTabletOrder() {
         p_table_number: payload.p_table_number ?? '',
         p_order_type: payload.p_order_type,
         p_items: payload.p_items as unknown as Json,
-        p_evaluation_ts: new Date().toISOString(),
       });
       if (error) throw Object.assign(new Error(error.message), { details: error });
       return data;

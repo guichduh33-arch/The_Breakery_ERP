@@ -4,6 +4,7 @@ import { jsonResponse } from './cors.ts';
 
 const TIMEOUT_MS = 30 * 60 * 1000;          // 30 min inactivity
 const MAX_AGE_MS = 24 * 60 * 60 * 1000;     // 24h hard cap
+const ACTIVITY_THROTTLE_MS = 60_000;        // D5 — skip last_activity_at UPDATE if last refresh < 60s ago
 
 export interface SessionContext {
   userId: string;          // user_profiles.id
@@ -60,11 +61,24 @@ export async function requireSession(req: Request): Promise<SessionContext | Res
     return jsonResponse({ error: 'session_expired' }, 401);
   }
 
-  // Refresh activity
-  await admin
-    .from('user_sessions')
-    .update({ last_activity_at: new Date().toISOString() })
-    .eq('id', session.id);
+  // D5 — Refresh activity, throttled to once per ACTIVITY_THROTTLE_MS, fire-and-forget.
+  // Order matters : the TIMEOUT_MS / MAX_AGE_MS guards above MUST run first,
+  // so an expired session is still terminated even when the UPDATE is skipped.
+  // Fire-and-forget : the UPDATE outcome doesn't gate the request — losing one
+  // refresh is harmless because the next call will see a still-fresh timestamp
+  // (we just passed the TIMEOUT_MS check), and a future call will re-attempt.
+  if (now - lastActivity >= ACTIVITY_THROTTLE_MS) {
+    void admin
+      .from('user_sessions')
+      .update({ last_activity_at: new Date().toISOString() })
+      .eq('id', session.id)
+      .then(
+        () => undefined,
+        (err) => {
+          console.error('[session-auth] activity refresh failed:', err);
+        },
+      );
+  }
 
   // Note: user_profiles vient via Supabase relational select. Type check.
   const profile = Array.isArray(session.user_profiles) ? session.user_profiles[0] : session.user_profiles;

@@ -19,7 +19,6 @@ import { useCartStore } from '@/stores/cartStore';
 import { useShiftStore } from '@/stores/shiftStore';
 import { usePaymentStore } from '@/stores/paymentStore';
 import type { Customer } from '@breakery/domain';
-import { setSupabaseAccessToken } from '@breakery/supabase';
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -134,7 +133,6 @@ describe('Loyalty multiplier smoke — buildOrderPayload', () => {
 describe('Loyalty multiplier smoke — useCheckout sends correct multiplier', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    setSupabaseAccessToken('tok');
     useShiftStore.setState({
       current: { id: 'session-1', opened_at: new Date().toISOString(), opening_cash: 0 },
     });

@@ -20,19 +20,34 @@ export interface OrderPayloadItem {
   discount_value?: number;
   discount_reason?: string;
   discount_authorized_by?: string;
-  /** Promotion applied to this line item (frozen at create_tablet_order time, P10). */
+  /** Session 9 — true when the line was auto-added by the promotions engine. */
+  is_promo_gift?: boolean;
+  /** Session 9 — id of the promotion that produced this gift line. */
   promotion_id?: string;
-  /** Absolute IDR discount from the promotion on this line. */
-  promotion_discount?: number;
-  /** True when this item was added as a free item by the promotions engine. */
-  is_free_from_promo?: boolean;
+}
+
+/** Session 9 — promotion entry in the OrderPayload promotions array. */
+export interface OrderPayloadPromotion {
+  promotion_id: string;
+  amount: number;
+  description: string;
+  scope_line_id?: string;
 }
 
 export interface OrderPayload {
   session_id: string;
   order_type: OrderType;
   items: OrderPayloadItem[];
-  payment: PaymentInput;
+  /**
+   * Single-tender (legacy v7 path). Mutually exclusive with `payments`.
+   * Exactly one of `payment` / `payments` MUST be supplied.
+   */
+  payment?: PaymentInput;
+  /**
+   * Session 10 — multi-tender array (RPC v8). Length 1..5. Sum(amounts) MUST equal final total.
+   * Only the LAST entry may have cash_received > amount (intermediate cash overpay rejected).
+   */
+  payments?: PaymentInput[];
   /**
    * Optional idempotency key (UUID v4). When the same key is replayed against
    * `process-payment`, the server returns the existing order instead of creating
@@ -48,6 +63,10 @@ export interface OrderPayload {
   discount_reason?: string;
   discount_authorized_by?: string;
   loyalty_multiplier?: number;
-  /** ISO timestamp passed to evaluate_promotions RPC on the server at checkout. */
-  evaluation_ts?: string;
+  /**
+   * Session 9 — applied promotions to forward to RPC v7 / v4 as
+   * `p_promotions`. Server re-validates eligibility and inserts
+   * `promotion_applications` rows.
+   */
+  promotions?: OrderPayloadPromotion[];
 }

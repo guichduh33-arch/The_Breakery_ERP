@@ -6,7 +6,15 @@ export interface PaymentInput {
   amount: number;
   cash_received?: number;
   change_given?: number;
+  reference?: string;
 }
+
+/**
+ * Session 10 — alias of PaymentInput used to disambiguate single-tender payment
+ * (legacy v7 single PaymentInput) from the multi-tender array (v8 Tender[]).
+ * Identical shape — same DB column mapping.
+ */
+export type Tender = PaymentInput;
 
 export interface PaymentResult {
   ok: true;

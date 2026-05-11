@@ -7,7 +7,6 @@ import { useCartStore, resetCartAfterCheckout } from '@/stores/cartStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useShiftStore } from '@/stores/shiftStore';
 import { usePaymentStore } from '@/stores/paymentStore';
-import { setSupabaseAccessToken } from '@breakery/supabase';
 
 vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn() },
@@ -41,7 +40,6 @@ function wrapper(children: ReactNode) {
 describe('pay-existing smoke', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    setSupabaseAccessToken('tok');
     mocks.rpc.mockResolvedValue({ data: { order_number: '#T001' }, error: null });
     useCartStore.setState({
       cart: {

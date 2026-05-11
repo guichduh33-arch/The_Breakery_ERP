@@ -1,5 +1,5 @@
 // apps/pos/src/pages/Login.tsx
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { NumpadPin, FullScreenModal } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore';
@@ -14,17 +14,23 @@ export default function LoginPage() {
 
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
-  function handleSubmit(pin: string) {
-    if (!selectedUserId) return;
-    setError(null);
-    void login(selectedUserId, pin)
-      .then(() => {
-        const { user } = useAuthStore.getState();
-        const dest = user?.role_code === 'waiter' ? '/tablet/order' : '/pos';
-        navigate(dest, { replace: true });
-      })
-      .catch(() => { /* error in store */ });
-  }
+  // D7 (session 8 perf-debt): useCallback so the memoised NumpadPin doesn't
+  // re-render on every parent render. Stable as long as login/setError/navigate
+  // refs are stable (zustand selectors + react-router useNavigate are).
+  const handleSubmit = useCallback(
+    (pin: string) => {
+      if (!selectedUserId) return;
+      setError(null);
+      void login(selectedUserId, pin)
+        .then(() => {
+          const { user } = useAuthStore.getState();
+          const dest = user?.role_code === 'waiter' ? '/tablet/order' : '/pos';
+          navigate(dest, { replace: true });
+        })
+        .catch(() => { /* error in store */ });
+    },
+    [selectedUserId, setError, login, navigate],
+  );
 
   return (
     <div className="min-h-screen grid place-items-center bg-bg-base p-8">
@@ -62,6 +68,8 @@ function friendlyError(err: string): string {
     case 'user_inactive':       return 'User inactive.';
     case 'user_not_found':      return 'User not found.';
     case 'invalid_pin_format':  return 'PIN must be 6 digits.';
+    // D6 (session 8): surfaced when fetchWithTimeout aborts after 15s.
+    case 'network_timeout':     return 'Réseau lent — réessaye.';
     default:                    return 'Login failed.';
   }
 }

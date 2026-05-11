@@ -3,6 +3,7 @@ import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { handleCors, jsonResponse } from '../_shared/cors.ts';
 import { requireSession } from '../_shared/session-auth.ts';
 import { getAdminClient } from '../_shared/supabase-admin.ts';
+import { computePermissionsForRole } from '../_shared/permissions.ts';
 
 serve(async (req) => {
   const cors = handleCors(req);
@@ -32,28 +33,3 @@ serve(async (req) => {
   });
 });
 
-function computePermissionsForRole(role: string): string[] {
-  // Identique à auth-verify-pin. Dans une vraie codebase on extrait dans _shared,
-  // mais Deno Edge Functions imports cross-folder marchent moyennement,
-  // on accepte la duplication temporaire.
-  switch (role) {
-    case 'SUPER_ADMIN':
-    case 'ADMIN':
-      return [
-        'pos.session.open', 'pos.session.close_own', 'pos.session.close_other',
-        'pos.session.view_all', 'pos.sale.create', 'pos.sale.void', 'pos.sale.update',
-        'products.read', 'products.create', 'products.update',
-        'users.create', 'users.update', 'users.view_audit',
-      ];
-    case 'MANAGER':
-      return [
-        'pos.session.open', 'pos.session.close_own', 'pos.session.close_other',
-        'pos.session.view_all', 'pos.sale.create', 'pos.sale.void', 'pos.sale.update',
-        'products.read', 'products.create', 'products.update',
-      ];
-    case 'CASHIER':
-      return ['pos.session.open', 'pos.session.close_own', 'pos.sale.create', 'products.read'];
-    default:
-      return [];
-  }
-}

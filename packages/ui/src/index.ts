@@ -47,6 +47,16 @@ export {
   type ModifierModalProduct,
 } from './components/ModifierModal.js';
 export {
+  CustomerForm,
+  type CustomerFormValues,
+  type CustomerFormProps,
+} from './components/CustomerForm.js';
+export {
+  LoyaltyAdjustForm,
+  type LoyaltyAdjustFormValues,
+  type LoyaltyAdjustFormProps,
+} from './components/LoyaltyAdjustForm.js';
+export {
   CustomerSearchModal,
   type CustomerSearchModalProps,
 } from './components/CustomerSearchModal.js';
@@ -98,16 +108,48 @@ export {
   type ComboLineRowProps,
   type ComboComponent,
 } from './components/ComboLineRow.js';
-// Session 8 — promotions engine UI components
 export {
-  FreeItemRow,
-  type FreeItemRowProps,
-} from './components/FreeItemRow.js';
+  PromotionTypeBadge,
+  type PromotionTypeBadgeProps,
+  type PromotionType,
+} from './components/PromotionTypeBadge.js';
 export {
-  PromotionBadge,
-  type PromotionBadgeProps,
-} from './components/PromotionBadge.js';
+  PromotionForm,
+  emptyPromotionValues,
+  validatePromotion,
+  type PromotionFormProps,
+  type PromotionFormValues,
+  type PromotionFormOption,
+  type PromotionFormErrors,
+  type PromotionScope,
+} from './components/PromotionForm.js';
 export {
   PromotionLineRow,
   type PromotionLineRowProps,
 } from './components/PromotionLineRow.js';
+export {
+  TenderRow,
+  type TenderRowProps,
+  type TenderRowMethod,
+} from './components/TenderRow.js';
+export {
+  TenderListBuilder,
+  type TenderListBuilderProps,
+  type TenderEntry,
+} from './components/TenderListBuilder.js';
+export {
+  RefundLineRow,
+  type RefundLineRowProps,
+  type RefundLineRowItem,
+} from './components/RefundLineRow.js';
+export {
+  RefundTenderSplitter,
+  type RefundTenderSplitterProps,
+  type RefundTenderSplitterEntry,
+  type RefundTenderMethodEntry,
+} from './components/RefundTenderSplitter.js';
+export {
+  RefundReceiptModal,
+  type RefundReceiptModalProps,
+  type RefundReceiptTender,
+} from './components/RefundReceiptModal.js';

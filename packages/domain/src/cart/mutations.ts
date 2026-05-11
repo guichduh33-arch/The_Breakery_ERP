@@ -37,18 +37,21 @@ export function addItem(
   quantity = 1,
   unitPriceOverride?: number,
 ): Cart {
+  // D11 (session 8 perf-debt): single-pass map with `merged` flag instead of
+  // `find()` then `map()` (two passes). The flag preserves first-match
+  // semantics — only the first item whose signature matches receives the
+  // increment, even if multiple items share the same signature.
   const sig = lineSignature(product.id, modifiers);
-  const existing = cart.items.find(
-    (i) => lineSignature(i.product_id, i.modifiers) === sig,
-  );
-  if (existing) {
-    return {
-      ...cart,
-      items: cart.items.map((i) =>
-        i.id === existing.id ? { ...i, quantity: i.quantity + quantity } : i,
-      ),
-    };
-  }
+  let merged = false;
+  const nextItems = cart.items.map((i) => {
+    if (!merged && lineSignature(i.product_id, i.modifiers) === sig) {
+      merged = true;
+      return { ...i, quantity: i.quantity + quantity };
+    }
+    return i;
+  });
+  if (merged) return { ...cart, items: nextItems };
+
   const newItem: CartItem = {
     id: newLineId(),
     product_id: product.id,
@@ -63,14 +66,20 @@ export function addItem(
 
 export function updateQuantity(cart: Cart, lineId: string, quantity: number): Cart {
   if (quantity <= 0) return removeItem(cart, lineId);
-  const found = cart.items.some((i) => i.id === lineId);
-  if (!found) return cart;
-  return {
-    ...cart,
-    items: cart.items.map((i) =>
-      i.id === lineId ? { ...i, quantity } : i,
-    ),
-  };
+  // D11 (session 8 perf-debt): merge the existence check (`some`) and the
+  // mutation (`map`) into a single pass via a `touched` flag. If no item
+  // matches we return the original cart unchanged (same reference) — keeps
+  // the existing "no-op when id not found" contract.
+  let touched = false;
+  const nextItems = cart.items.map((i) => {
+    if (i.id === lineId) {
+      touched = true;
+      return { ...i, quantity };
+    }
+    return i;
+  });
+  if (!touched) return cart;
+  return { ...cart, items: nextItems };
 }
 
 export function removeItem(cart: Cart, lineId: string): Cart {

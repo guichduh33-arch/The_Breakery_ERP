@@ -1,5 +1,5 @@
 import { Delete } from 'lucide-react';
-import type { JSX } from 'react';
+import { memo, useCallback, type JSX } from 'react';
 import { cn } from '../lib/cn.js';
 
 export interface NumpadProps {
@@ -21,13 +21,20 @@ const KEYS: NumpadKey[] = [
   { label: 'C', type: 'clear' }, { label: '0', type: 'digit' }, { label: 'Back', type: 'back' },
 ];
 
-export function Numpad({ value, onChange, maxLength, className }: NumpadProps): JSX.Element {
-  function handle(key: NumpadKey) {
-    if (key.type === 'clear') return onChange('');
-    if (key.type === 'back') return onChange(value.slice(0, -1));
-    if (maxLength !== undefined && value.length >= maxLength) return;
-    onChange(value + key.label);
-  }
+// D7 (session 8 perf-debt): React.memo skips re-renders when value/onChange/
+// maxLength/className are reference-stable. The internal `handle` callback is
+// memoised via useCallback so we don't re-create the per-button onClick on
+// every render — important because the buttons array is rebuilt regardless.
+function NumpadInner({ value, onChange, maxLength, className }: NumpadProps): JSX.Element {
+  const handle = useCallback(
+    (key: NumpadKey) => {
+      if (key.type === 'clear') return onChange('');
+      if (key.type === 'back') return onChange(value.slice(0, -1));
+      if (maxLength !== undefined && value.length >= maxLength) return;
+      onChange(value + key.label);
+    },
+    [value, maxLength, onChange],
+  );
 
   return (
     <div className={cn('grid grid-cols-3 gap-3', className)} role="group" aria-label="Numpad">
@@ -54,3 +61,5 @@ export function Numpad({ value, onChange, maxLength, className }: NumpadProps): 
     </div>
   );
 }
+
+export const Numpad = memo(NumpadInner);

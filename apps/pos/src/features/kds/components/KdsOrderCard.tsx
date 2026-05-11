@@ -42,6 +42,15 @@ function ItemCta({ item }: { item: KdsItemRow }) {
   const bump = useBumpItem();
   const serve = useMarkItemServed();
 
+  // Session 10: cancelled items have no actionable CTA — only the badge.
+  if (item.is_cancelled) {
+    return (
+      <Badge variant="default" className="bg-red-500 text-white border-transparent">
+        Cancelled
+      </Badge>
+    );
+  }
+
   if (item.kitchen_status === 'pending') {
     return (
       <Button
@@ -122,36 +131,45 @@ export function KdsOrderCard({ items }: KdsOrderCardProps) {
       </header>
 
       <ul className="flex flex-col gap-3">
-        {items.map((item) => (
-          <li
-            key={item.id}
-            className="flex items-start justify-between gap-3 border-t border-border-subtle pt-3 first:border-t-0 first:pt-0"
-          >
-            <div className="flex-1 min-w-0">
-              <div className="flex items-baseline gap-2">
-                <span className="font-mono text-base font-bold text-text-primary">
-                  {item.quantity}×
-                </span>
-                <span className="text-base text-text-primary truncate">
-                  {item.product_name}
-                </span>
+        {items.map((item) => {
+          const cancelled = item.is_cancelled;
+          return (
+            <li
+              key={item.id}
+              data-cancelled={cancelled ? 'true' : undefined}
+              className={`flex items-start justify-between gap-3 border-t border-border-subtle pt-3 first:border-t-0 first:pt-0 ${cancelled ? 'opacity-60' : ''}`}
+            >
+              <div className="flex-1 min-w-0">
+                <div className="flex items-baseline gap-2">
+                  <span className={`font-mono text-base font-bold ${cancelled ? 'text-text-muted line-through' : 'text-text-primary'}`}>
+                    {item.quantity}×
+                  </span>
+                  <span className={`text-base truncate ${cancelled ? 'text-text-muted line-through' : 'text-text-primary'}`}>
+                    {item.product_name}
+                  </span>
+                </div>
+                {item.modifiers.length > 0 ? (
+                  <ul className="mt-1 space-y-0.5">
+                    {item.modifiers.map((mod, idx) => (
+                      <li
+                        key={`${item.id}-mod-${idx}`}
+                        className={`text-xs ${cancelled ? 'text-text-muted line-through' : 'text-text-secondary'}`}
+                      >
+                        {mod.group_name}: {mod.option_label}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+                {cancelled && item.cancelled_reason && (
+                  <div className="mt-1 text-xs uppercase tracking-wide text-red-400">
+                    Reason: {item.cancelled_reason}
+                  </div>
+                )}
               </div>
-              {item.modifiers.length > 0 ? (
-                <ul className="mt-1 space-y-0.5">
-                  {item.modifiers.map((mod, idx) => (
-                    <li
-                      key={`${item.id}-mod-${idx}`}
-                      className="text-text-secondary text-xs"
-                    >
-                      {mod.group_name}: {mod.option_label}
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-            </div>
-            <ItemCta item={item} />
-          </li>
-        ))}
+              <ItemCta item={item} />
+            </li>
+          );
+        })}
       </ul>
     </article>
   );

@@ -131,9 +131,11 @@ describe('Customer pricing smoke — RPC get_customer_product_price', () => {
     const { result } = renderHook(() => useCustomerProductPrice(), { wrapper: ({ children }) => wrapper(children) });
     const price = await result.current(AMERICANO_PRODUCT.id, null);
 
+    // The hook omits p_customer_id when null (exactOptionalPropertyTypes-safe;
+    // generated Args type is `{ p_customer_id?: string }` so passing `null`
+    // would be rejected). RPC defaults p_customer_id → NULL server-side.
     expect(mockRpc).toHaveBeenCalledWith('get_customer_product_price', {
       p_product_id: AMERICANO_PRODUCT.id,
-      p_customer_id: null,
     });
     expect(price).toBe(35000);
   });

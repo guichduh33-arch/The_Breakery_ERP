@@ -3,6 +3,15 @@ export { calculateTotals } from './cart/calculateTotals.js';
 export * from './cart/mutations.js';
 export { calculateChange } from './payment/calculateChange.js';
 export { validatePayment, type ValidationResult } from './payment/validatePayment.js';
+export {
+  sumTenders,
+  computeRemaining,
+  isLastTenderCashOverpayAllowed,
+  validateTenders,
+  MAX_TENDERS,
+  type SplitValidation,
+} from './payment/splitTender.js';
+export * from './refunds/index.js';
 export { buildOrderPayload } from './orders/buildOrderPayload.js';
 export * from './modifiers/index.js';
 export * from './kitchen/index.js';
