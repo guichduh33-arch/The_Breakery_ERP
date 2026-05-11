@@ -17,8 +17,12 @@ export function useKdsRealtime(station: KdsStation): void {
   const qc = useQueryClient();
 
   useEffect(() => {
+    // StrictMode double-invokes effects in dev; with a static channel name the
+    // second mount's .on() runs against the still-subscribed channel from the
+    // first mount (removeChannel is async). Suffix with a per-mount UUID.
+    const channelName = `kds-${station}-${crypto.randomUUID()}`;
     const channel = supabase
-      .channel(`kds-${station}`)
+      .channel(channelName)
       .on(
         // The Supabase JS typings are strict about the literal 'postgres_changes'
         // generic; cast through a typed helper instead of `any`.
