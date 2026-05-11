@@ -46,41 +46,41 @@ describe('customers RLS — column GRANTs', () => {
   });
 
   it('authenticated CANNOT update loyalty_points directly (column GRANT)', async () => {
+    // Hardening migration 20260515000001 replaced the table-level GRANT with
+    // explicit per-column GRANTs that omit loyalty_points. Postgres should now
+    // refuse the UPDATE with `permission denied for table customers`.
     const sb = createClient(SUPABASE_URL, ANON, { global: { headers: { Authorization: `Bearer ${token}` } } });
     const { error } = await sb.from('customers')
       .update({ loyalty_points: 9999 })
       .eq('id', customerId);
 
-    // ASSERTION ADJUSTED — column-GRANT REVOKE does not work against a table-level grant
-    // (documented 2026-05-11):
-    //
-    // Migration 20260514000002 runs:
-    //   REVOKE UPDATE (loyalty_points, ...) ON customers FROM authenticated;
-    //
-    // However, the customers table carries a Supabase-auto table-level grant:
-    //   authenticated=arwdDxtm/postgres  (full UPDATE at table level)
-    //
-    // PostgreSQL's column-level REVOKE only removes an explicit column-level grant;
-    // it cannot restrict access that was originally granted at the table level.
-    // Therefore has_column_privilege('authenticated','customers','loyalty_points','UPDATE')
-    // still returns true, and the UPDATE goes through with no error.
-    //
-    // The security-correct fix requires replacing the table-level grant with
-    // explicit per-column GRANTs (REVOKE ALL ON customers FROM authenticated, then
-    // GRANT SELECT, INSERT, UPDATE (safe_cols) TO authenticated). That migration
-    // is deferred to a later session.
-    //
-    // Primary assertion: no server-side crash (error is null OR is a meaningful
-    // permission-denied message — not a generic 500).
-    if (error !== null) {
-      expect((error?.message ?? '').toLowerCase()).toMatch(/permission denied|insufficient|access/);
-    }
-    // Authoritative value check: confirms actual current DB state.
-    // With table-level grant in place, the value IS changed to 9999 on this DB.
-    // When the correct column REVOKE migration is applied, this should read 100.
+    expect(error).not.toBeNull();
+    expect((error?.message ?? '').toLowerCase()).toMatch(/permission denied|insufficient|access/);
+
     const admin = createClient(SUPABASE_URL, SERVICE);
     const { data: row } = await admin.from('customers').select('loyalty_points').eq('id', customerId).single();
-    expect(typeof row?.loyalty_points).toBe('number'); // passes regardless of enforcement state
+    expect(row?.loyalty_points).toBe(100);
+  });
+
+  it('authenticated CANNOT update lifetime_points / total_spent / last_visit_at / deleted_at', async () => {
+    const sb = createClient(SUPABASE_URL, ANON, { global: { headers: { Authorization: `Bearer ${token}` } } });
+    const admin = createClient(SUPABASE_URL, SERVICE);
+
+    for (const patch of [
+      { lifetime_points: 9999 },
+      { total_spent: 9999 },
+      { last_visit_at: new Date().toISOString() },
+      { deleted_at: new Date().toISOString() },
+    ]) {
+      const { error } = await sb.from('customers').update(patch).eq('id', customerId);
+      expect(error, `expected REVOKE on ${Object.keys(patch)[0]}`).not.toBeNull();
+    }
+    // Sanity: row is intact.
+    const { data: row } = await admin.from('customers')
+      .select('lifetime_points, total_spent, deleted_at').eq('id', customerId).single();
+    expect(row?.lifetime_points).toBe(100);
+    expect(Number(row?.total_spent)).toBe(0);
+    expect(row?.deleted_at).toBeNull();
   });
 
   it('authenticated CANNOT INSERT into loyalty_transactions directly', async () => {
@@ -99,10 +99,121 @@ describe('customers RLS — column GRANTs', () => {
       .select('id').single();
 
     const sb = createClient(SUPABASE_URL, ANON, { global: { headers: { Authorization: `Bearer ${token}` } } });
-    const { error } = await sb.rpc('soft_delete_customer', { p_customer_id: data!.id });
+    const { error } = await sb.rpc('soft_delete_customer', {
+      p_customer_id: data!.id, p_reason: 'duplicate record from CSV import',
+    });
     expect(error).toBeNull();
 
     const { data: row } = await admin.from('customers').select('deleted_at').eq('id', data!.id).single();
     expect(row?.deleted_at).not.toBeNull();
+
+    // Audit row is present with actor + payload (session 12 hardening).
+    const { data: profile } = await admin.from('user_profiles')
+      .select('id').eq('employee_code', 'EMP000').single();
+    const { data: audit } = await admin.from('audit_log')
+      .select('actor_profile_id, action, subject_table, subject_id, payload')
+      .eq('subject_id', data!.id)
+      .eq('action', 'customer.soft_delete')
+      .order('occurred_at', { ascending: false })
+      .limit(1)
+      .single();
+    expect(audit?.actor_profile_id).toBe(profile?.id);
+    expect(audit?.subject_table).toBe('customers');
+    expect((audit?.payload as { reason: string | null }).reason).toBe('duplicate record from CSV import');
+  });
+});
+
+describe('soft_delete_customer RPC — failure paths', () => {
+  let adminToken:   string;
+  let managerToken: string;
+  let customerId:   string;
+
+  beforeAll(async () => {
+    adminToken = await loginAs('EMP000', '123456');
+    // MANAGER lacks customers.delete (ADMIN-only via has_permission unconditional branch).
+    managerToken = await loginAs('EMP003', '111111');
+
+    const admin = createClient(SUPABASE_URL, SERVICE);
+    const { data: c } = await admin.from('customers')
+      .insert({ name: 'Delete Failure Subject', phone: '+62810000087', customer_type: 'retail' })
+      .select('id').single();
+    customerId = c!.id;
+  });
+
+  it('NULL p_customer_id -> invalid_input', async () => {
+    const sb = createClient(SUPABASE_URL, ANON, { global: { headers: { Authorization: `Bearer ${adminToken}` } } });
+    const { error } = await sb.rpc('soft_delete_customer', {
+      // Runtime-NULL handling.
+      p_customer_id: null as unknown as string,
+    });
+    expect(error?.message).toMatch(/invalid_input/);
+  });
+
+  it('manager (no customers.delete) -> forbidden', async () => {
+    const sb = createClient(SUPABASE_URL, ANON, { global: { headers: { Authorization: `Bearer ${managerToken}` } } });
+    const { error } = await sb.rpc('soft_delete_customer', { p_customer_id: customerId });
+    expect(error?.message).toMatch(/forbidden/);
+  });
+
+  it('nonexistent customer UUID -> customer_deleted', async () => {
+    const sb = createClient(SUPABASE_URL, ANON, { global: { headers: { Authorization: `Bearer ${adminToken}` } } });
+    const { error } = await sb.rpc('soft_delete_customer', {
+      p_customer_id: '00000000-0000-0000-0000-000000000000',
+    });
+    expect(error?.message).toMatch(/customer_deleted/);
+  });
+
+  it('already-deleted customer -> customer_deleted (idempotent)', async () => {
+    const admin = createClient(SUPABASE_URL, SERVICE);
+    const { data: c } = await admin.from('customers')
+      .insert({ name: 'Already Tombstoned', phone: '+62810000086', customer_type: 'retail' })
+      .select('id').single();
+    await admin.from('customers').update({ deleted_at: new Date().toISOString() }).eq('id', c!.id);
+
+    const sb = createClient(SUPABASE_URL, ANON, { global: { headers: { Authorization: `Bearer ${adminToken}` } } });
+    const { error } = await sb.rpc('soft_delete_customer', { p_customer_id: c!.id });
+    expect(error?.message).toMatch(/customer_deleted/);
+  });
+});
+
+describe('anon role — PII lockout', () => {
+  it('anon CANNOT read customers PII columns', async () => {
+    const sb = createClient(SUPABASE_URL, ANON); // no JWT — anon role
+    const { data, error } = await sb.from('customers')
+      .select('id, name, phone, email')
+      .limit(1);
+    // Either Postgres rejects the role with permission denied, or RLS yields
+    // zero rows. Both outcomes mean PII is not leaked.
+    if (error === null) {
+      expect(data ?? []).toHaveLength(0);
+    } else {
+      expect((error?.message ?? '').toLowerCase()).toMatch(/permission denied|insufficient|access/);
+    }
+  });
+
+  it('anon CANNOT read loyalty_transactions', async () => {
+    const sb = createClient(SUPABASE_URL, ANON);
+    const { data, error } = await sb.from('loyalty_transactions')
+      .select('id, customer_id, points')
+      .limit(1);
+    if (error === null) {
+      expect(data ?? []).toHaveLength(0);
+    } else {
+      expect((error?.message ?? '').toLowerCase()).toMatch(/permission denied|insufficient|access/);
+    }
+  });
+
+  it('anon CANNOT call soft_delete_customer or adjust_loyalty_points', async () => {
+    const sb = createClient(SUPABASE_URL, ANON);
+    const r1 = await sb.rpc('soft_delete_customer', {
+      p_customer_id: '00000000-0000-0000-0000-000000000000',
+    });
+    expect(r1.error).not.toBeNull();
+    const r2 = await sb.rpc('adjust_loyalty_points', {
+      p_customer_id: '00000000-0000-0000-0000-000000000000',
+      p_delta: 10,
+      p_reason: 'anon attempt should be denied',
+    });
+    expect(r2.error).not.toBeNull();
   });
 });

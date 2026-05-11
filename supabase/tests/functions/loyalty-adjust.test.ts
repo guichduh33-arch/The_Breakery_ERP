@@ -32,19 +32,16 @@ function jwtClient(token: string) {
 
 describe('adjust_loyalty_points RPC', () => {
   let adminToken:   string;
-  let managerToken: string | null = null;
+  let managerToken: string;
   let customerId:   string;
 
   beforeAll(async () => {
     adminToken = await loginAs('EMP000', '123456');
     // MANAGER seed: EMP003 / PIN 111111 (seeded in seed.sql session-6 block).
     // MANAGER has loyalty.read but NOT loyalty.adjust — used to test the
-    // forbidden guard in adjust_loyalty_points.
-    try {
-      managerToken = await loginAs('EMP003', '111111');
-    } catch {
-      managerToken = null;
-    }
+    // forbidden guard in adjust_loyalty_points. Fail loudly if the seed is
+    // missing so CI cannot silently skip the security assertion.
+    managerToken = await loginAs('EMP003', '111111');
 
     const admin = createClient(SUPABASE_URL, SERVICE);
     const { data: c } = await admin.from('customers')
@@ -95,12 +92,6 @@ describe('adjust_loyalty_points RPC', () => {
   });
 
   it('manager: forbidden (no loyalty.adjust)', async () => {
-    // managerToken is set in beforeAll; if login failed (no MANAGER seed with
-    // known PIN), skip gracefully at runtime instead of failing.
-    if (managerToken === null) {
-      console.log('SKIP: manager seed not available — skipping forbidden guard test');
-      return;
-    }
     const sb = jwtClient(managerToken);
     const { error } = await sb.rpc('adjust_loyalty_points', {
       p_customer_id: customerId, p_delta: 50, p_reason: 'manager attempt',
@@ -126,9 +117,9 @@ describe('adjust_loyalty_points RPC', () => {
 
   it('admin: NULL p_customer_id -> invalid_input', async () => {
     const sb = jwtClient(adminToken);
-    // @ts-expect-error testing runtime NULL handling
     const { error } = await sb.rpc('adjust_loyalty_points', {
-      p_customer_id: null, p_delta: 10, p_reason: 'null customer should be rejected',
+      // Runtime-NULL handling — generated types accept null on this param.
+      p_customer_id: null as unknown as string, p_delta: 10, p_reason: 'null customer should be rejected',
     });
     expect(error?.message).toMatch(/invalid_input/);
   });
@@ -146,21 +137,93 @@ describe('adjust_loyalty_points RPC', () => {
     });
     expect(error?.message).toMatch(/customer_deleted/);
   });
+
+  it('admin: nonexistent UUID -> customer_deleted', async () => {
+    const sb = jwtClient(adminToken);
+    const { error } = await sb.rpc('adjust_loyalty_points', {
+      p_customer_id: '00000000-0000-0000-0000-000000000000', p_delta: 10,
+      p_reason: 'should fail on missing row',
+    });
+    expect(error?.message).toMatch(/customer_deleted/);
+  });
+
+  it('admin: |delta| > 1_000_000 -> invalid_input (overflow guard)', async () => {
+    const sb = jwtClient(adminToken);
+    for (const delta of [1_000_001, -1_000_001, 2_000_000_000]) {
+      const { error } = await sb.rpc('adjust_loyalty_points', {
+        p_customer_id: customerId, p_delta: delta, p_reason: 'overflow attempt',
+      });
+      expect(error?.message, `delta=${delta}`).toMatch(/invalid_input/);
+    }
+  });
+
+  it('admin: reason > 500 chars -> invalid_input', async () => {
+    const sb = jwtClient(adminToken);
+    const { error } = await sb.rpc('adjust_loyalty_points', {
+      p_customer_id: customerId, p_delta: 10, p_reason: 'x'.repeat(501),
+    });
+    expect(error?.message).toMatch(/invalid_input/);
+  });
+
+  it('admin: whitespace-only reason -> invalid_input', async () => {
+    const sb = jwtClient(adminToken);
+    const { error } = await sb.rpc('adjust_loyalty_points', {
+      p_customer_id: customerId, p_delta: 10, p_reason: '          ',
+    });
+    expect(error?.message).toMatch(/invalid_input/);
+  });
+
+  it('admin: customer row + ledger row stay consistent after RPC', async () => {
+    // Use a fresh customer so we control the seed values.
+    const admin = createClient(SUPABASE_URL, SERVICE);
+    const { data: c } = await admin.from('customers')
+      .insert({ name: 'Consistency Check', phone: '+62810000077', customer_type: 'retail' })
+      .select('id').single();
+    await admin.from('customers').update({ loyalty_points: 500, lifetime_points: 500 }).eq('id', c!.id);
+
+    const sb = jwtClient(adminToken);
+    const { data, error } = await sb.rpc('adjust_loyalty_points', {
+      p_customer_id: c!.id, p_delta: -200, p_reason: 'redeem-like correction',
+    });
+    expect(error).toBeNull();
+
+    // Customer row reflects new balance, lifetime is preserved on negative delta.
+    const { data: row } = await admin.from('customers')
+      .select('loyalty_points, lifetime_points').eq('id', c!.id).single();
+    expect(row?.loyalty_points).toBe(300);
+    expect(row?.lifetime_points).toBe(500);
+
+    // Ledger row carries the actor's user_profiles.id.
+    const { data: profile } = await admin.from('user_profiles')
+      .select('id').eq('employee_code', 'EMP000').single();
+    const { data: tx } = await admin.from('loyalty_transactions')
+      .select('created_by, points, points_balance_after').eq('id', data![0].txn_id).single();
+    expect(tx?.created_by).toBe(profile?.id);
+    expect(tx?.points).toBe(-200);
+    expect(tx?.points_balance_after).toBe(300);
+  });
 });
 
-describe('get_loyalty_tier helper', () => {
-  it('returns the four tiers for boundary values via direct SELECT', async () => {
+describe('get_loyalty_tier helper — boundary table', () => {
+  // Mirrors packages/domain/src/loyalty/tiers.ts. A drift here means the
+  // SQL helper and the TS helper disagree on a tier boundary, which would
+  // cause server projections and client rendering to diverge.
+  const CASES: Array<[number, 'bronze' | 'silver' | 'gold' | 'platinum']> = [
+    [-1,    'bronze'],
+    [0,     'bronze'],
+    [499,   'bronze'],
+    [500,   'silver'],
+    [1999,  'silver'],
+    [2000,  'gold'],
+    [4999,  'gold'],
+    [5000,  'platinum'],
+    [50000, 'platinum'],
+  ];
+
+  it.each(CASES)('lifetime=%i -> %s', async (lifetime, expected) => {
     const admin = createClient(SUPABASE_URL, SERVICE);
-    // Use rpc on an exec_sql function if it exists; otherwise rely on transitive
-    // coverage from the RPC tests above and assert one tier on a real customer.
-    const { data: c } = await admin.from('customers')
-      .insert({ name: 'Tier Helper Test', phone: '+62810000088', customer_type: 'retail' })
-      .select('id').single();
-    await admin.from('customers').update({ lifetime_points: 2500 }).eq('id', c!.id);
-    // No client-side projection of get_loyalty_tier exists yet; this test just
-    // asserts the customer was set up. Real boundary coverage is in the
-    // domain unit test for tierFromLifetime (already exists in
-    // packages/domain/src/loyalty/__tests__/tiers.test.ts).
-    expect(c?.id).toBeTruthy();
+    const { data, error } = await admin.rpc('get_loyalty_tier', { p_lifetime_points: lifetime });
+    expect(error).toBeNull();
+    expect(data).toBe(expected);
   });
 });

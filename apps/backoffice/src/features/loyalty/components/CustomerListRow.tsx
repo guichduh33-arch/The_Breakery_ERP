@@ -3,7 +3,7 @@
 // One row in the BO loyalty list. Tier computed via shared
 // tierFromLifetime; LoyaltyBadge renders the pill.
 
-import { useState, type JSX } from 'react';
+import { useEffect, useRef, useState, type JSX, type KeyboardEvent } from 'react';
 import { MoreHorizontal } from 'lucide-react';
 import { LoyaltyBadge, Button } from '@breakery/ui';
 import { tierFromLifetime } from '@breakery/domain';
@@ -40,10 +40,51 @@ export function CustomerListRow({
 }: CustomerListRowProps): JSX.Element {
   const tier = tierFromLifetime(row.lifetime_points);
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+
+  // Close on outside-click + Escape, and restore focus to the trigger.
+  useEffect(() => {
+    if (!menuOpen) return;
+    function onPointerDown(e: PointerEvent): void {
+      const target = e.target as Node | null;
+      if (target === null) return;
+      if (menuRef.current?.contains(target)) return;
+      if (triggerRef.current?.contains(target)) return;
+      setMenuOpen(false);
+    }
+    function onKey(e: globalThis.KeyboardEvent): void {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        setMenuOpen(false);
+        triggerRef.current?.focus();
+      }
+    }
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [menuOpen]);
+
+  function handleNameKey(e: KeyboardEvent<HTMLTableCellElement>): void {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onView(row);
+    }
+  }
 
   return (
     <tr className="border-b border-border-subtle hover:bg-bg-overlay">
-      <td className="px-3 py-2 cursor-pointer" onClick={() => onView(row)}>
+      <td
+        className="px-3 py-2 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary"
+        role="button"
+        tabIndex={0}
+        onClick={() => onView(row)}
+        onKeyDown={handleNameKey}
+        aria-label={`View loyalty history for ${row.name}`}
+      >
         {row.name}
       </td>
       <td className="px-3 py-2 text-text-secondary">{row.phone ?? '—'}</td>
@@ -57,24 +98,36 @@ export function CustomerListRow({
       <td className="px-3 py-2 text-text-secondary">{formatLastVisit(row.last_visit_at)}</td>
       <td className="px-3 py-2 relative text-right">
         <Button
+          ref={triggerRef}
           variant="ghost"
           size="sm"
           onClick={() => setMenuOpen((o) => !o)}
-          aria-label="Row actions"
+          aria-label={`Actions for ${row.name}`}
+          aria-haspopup="menu"
+          aria-expanded={menuOpen}
         >
           <MoreHorizontal className="h-4 w-4" />
         </Button>
         {menuOpen && (
-          <div className="absolute right-0 mt-1 w-44 bg-bg-elevated border border-border-subtle rounded-md shadow-lg z-10">
+          <div
+            ref={menuRef}
+            role="menu"
+            aria-label={`Actions for ${row.name}`}
+            className="absolute right-0 mt-1 w-44 bg-bg-elevated border border-border-subtle rounded-md shadow-lg z-10"
+          >
             <button
-              className="block w-full text-left px-3 py-2 text-sm hover:bg-bg-overlay"
+              type="button"
+              role="menuitem"
+              className="block w-full text-left px-3 py-2 text-sm hover:bg-bg-overlay focus:bg-bg-overlay focus:outline-none"
               onClick={() => { setMenuOpen(false); onView(row); }}
             >
               View history
             </button>
             {canAdjust && (
               <button
-                className="block w-full text-left px-3 py-2 text-sm hover:bg-bg-overlay"
+                type="button"
+                role="menuitem"
+                className="block w-full text-left px-3 py-2 text-sm hover:bg-bg-overlay focus:bg-bg-overlay focus:outline-none"
                 onClick={() => { setMenuOpen(false); onAdjust(row); }}
               >
                 Adjust points
@@ -82,7 +135,9 @@ export function CustomerListRow({
             )}
             {canEdit && (
               <button
-                className="block w-full text-left px-3 py-2 text-sm hover:bg-bg-overlay"
+                type="button"
+                role="menuitem"
+                className="block w-full text-left px-3 py-2 text-sm hover:bg-bg-overlay focus:bg-bg-overlay focus:outline-none"
                 onClick={() => { setMenuOpen(false); onEdit(row); }}
               >
                 Edit
@@ -90,7 +145,9 @@ export function CustomerListRow({
             )}
             {canDelete && (
               <button
-                className="block w-full text-left px-3 py-2 text-sm text-red hover:bg-bg-overlay"
+                type="button"
+                role="menuitem"
+                className="block w-full text-left px-3 py-2 text-sm text-red hover:bg-bg-overlay focus:bg-bg-overlay focus:outline-none"
                 onClick={() => { setMenuOpen(false); onDelete(row); }}
               >
                 Delete

@@ -42,9 +42,20 @@ const SELECT_COLS = [
   'created_at',
 ].join(', ');
 
+// PostgREST `.or()` syntax uses `,()` as filter separators and group delimiters,
+// `*` as wildcard, `%` and `_` as ilike metacharacters. A user-typed `(` or `,`
+// in the search box breaks the filter and surfaces as a 400. Strip the
+// metacharacters before interpolation. Names/phones don't legitimately contain
+// any of `(),*%_\` so removing them is safe.
+const OR_FILTER_UNSAFE = /[,()*%_\\]/g;
+function sanitizeSearchTerm(term: string): string {
+  return term.replace(OR_FILTER_UNSAFE, '').slice(0, 64);
+}
+
 export function useLoyaltyCustomersList(filters: LoyaltyCustomersFilters = {}) {
   return useQuery<CustomerListRow[]>({
     queryKey: [...LOYALTY_CUSTOMERS_QUERY_KEY, filters] as const,
+    staleTime: 60_000,
     queryFn: async () => {
       let q = supabase
         .from('customers')
@@ -55,8 +66,10 @@ export function useLoyaltyCustomersList(filters: LoyaltyCustomersFilters = {}) {
         .order('name', { ascending: true });
 
       if (filters.search !== undefined && filters.search.trim() !== '') {
-        const term = filters.search.trim();
-        q = q.or(`name.ilike.%${term}%,phone.ilike.${term}%`);
+        const term = sanitizeSearchTerm(filters.search.trim());
+        if (term !== '') {
+          q = q.or(`name.ilike.%${term}%,phone.ilike.${term}%`);
+        }
       }
       if (filters.tier !== undefined && filters.tier !== 'all') {
         const range = TIER_RANGES[filters.tier];

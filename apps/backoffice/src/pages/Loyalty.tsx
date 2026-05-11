@@ -70,6 +70,7 @@ export default function LoyaltyPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Name or phone prefix"
+            maxLength={64}
             className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
           />
         </div>

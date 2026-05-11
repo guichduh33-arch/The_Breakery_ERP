@@ -26,6 +26,7 @@ export function useCustomerLoyaltyHistory(customerId: string | null) {
   return useQuery<LoyaltyTxnRow[]>({
     queryKey: customerId ? loyaltyHistoryKey(customerId) : ['loyalty-history', 'noop'] as const,
     enabled: customerId !== null,
+    staleTime: 60_000,
     queryFn: async () => {
       if (customerId === null) return [];
       const { data, error } = await supabase

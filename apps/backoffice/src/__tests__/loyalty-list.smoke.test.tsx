@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import LoyaltyPage from '@/pages/Loyalty.js';
 
@@ -48,10 +48,25 @@ describe('Loyalty BO page', () => {
   it('renders three rows with the right tier badges', async () => {
     renderPage();
     await waitFor(() => expect(screen.getByText('Bronze Bob')).toBeInTheDocument());
-    expect(screen.getByText('Silver Sara')).toBeInTheDocument();
-    expect(screen.getByText('Gold Greta')).toBeInTheDocument();
-    expect(screen.getAllByText(/Bronze/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Silver/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Gold/).length).toBeGreaterThan(0);
+
+    // Tier mapping is asserted per-row so a regression in tierFromLifetime
+    // (e.g. wrong boundary) fails the smoke test instead of slipping through.
+    // The badge wraps its label in its own <span>, so an exact-string match
+    // resolves to the badge (not the row's name cell that contains "Bronze Bob").
+    const bob   = screen.getByText('Bronze Bob').closest('tr')!;
+    const sara  = screen.getByText('Silver Sara').closest('tr')!;
+    const greta = screen.getByText('Gold Greta').closest('tr')!;
+    expect(within(bob).getByText('Bronze')).toBeInTheDocument();
+    expect(within(sara).getByText('Silver')).toBeInTheDocument();
+    expect(within(greta).getByText('Gold')).toBeInTheDocument();
+  });
+
+  it('shows action buttons gated by permission', async () => {
+    renderPage();
+    await waitFor(() => expect(screen.getByText('Bronze Bob')).toBeInTheDocument());
+    // The mocked authStore grants all required perms (see vi.mock above), so the
+    // "New customer" entry must be visible. Regressions in the permission wiring
+    // remove the trigger entirely → this test catches them.
+    expect(screen.getByRole('button', { name: /new customer/i })).toBeInTheDocument();
   });
 });

@@ -4,6 +4,7 @@
 // Maps known RPC errors to inline form errors per spec §3.6.
 
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Dialog,
   DialogContent,
@@ -13,7 +14,8 @@ import {
   type LoyaltyAdjustFormValues,
 } from '@breakery/ui';
 import { useAdjustLoyaltyPoints, AdjustError } from '../hooks/useAdjustLoyaltyPoints.js';
-import type { CustomerListRow } from '../hooks/useLoyaltyCustomersList.js';
+import { LOYALTY_CUSTOMERS_QUERY_KEY, type CustomerListRow } from '../hooks/useLoyaltyCustomersList.js';
+import { loyaltyHistoryKey } from '../hooks/useCustomerLoyaltyHistory.js';
 
 export interface LoyaltyAdjustModalProps {
   customer: CustomerListRow | undefined;
@@ -22,6 +24,7 @@ export interface LoyaltyAdjustModalProps {
 
 export function LoyaltyAdjustModal({ customer, onClose }: LoyaltyAdjustModalProps) {
   const adjustMut = useAdjustLoyaltyPoints();
+  const qc = useQueryClient();
   const open = customer !== undefined;
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -36,7 +39,12 @@ export function LoyaltyAdjustModal({ customer, onClose }: LoyaltyAdjustModalProp
         switch (err.code) {
           case 'forbidden':            setFormError('You no longer have permission to adjust points. Please refresh.'); break;
           case 'insufficient_balance': setFormError(`Customer only has ${customer.loyalty_points.toLocaleString()} points.`); break;
-          case 'customer_deleted':     setFormError('This customer was deleted in another session. Refreshing the list.'); break;
+          case 'customer_deleted':
+            setFormError('This customer was deleted in another session. The list is being refreshed.');
+            // Invalidate so the stale row disappears from the table.
+            void qc.invalidateQueries({ queryKey: LOYALTY_CUSTOMERS_QUERY_KEY });
+            void qc.invalidateQueries({ queryKey: loyaltyHistoryKey(customer.id) });
+            break;
           case 'invalid_input':        setFormError('Invalid input.'); break;
           default:                     setFormError('Something went wrong. Please retry.');
         }
