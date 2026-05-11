@@ -1,11 +1,29 @@
 // Appels typés des Edge Functions auth-*.
 
+/**
+ * Body POSTed to the `auth-verify-pin` Edge Function.
+ *
+ * @property user_id     - UUID of the user_profile row.
+ * @property pin         - 6-digit PIN entered on the numpad.
+ * @property device_type - Device origin; controls allowed roles and rate limits.
+ */
 export interface LoginRequest {
   user_id: string;
   pin: string;
   device_type: 'pos' | 'backoffice';
 }
 
+/**
+ * Successful response from `auth-verify-pin`.
+ *
+ * @property user        - Public user fields safe to mirror in client state.
+ * @property session     - Server-side session record (the `token` is opaque and
+ *                          used as `x-session-token` for {@link getSession},
+ *                          {@link logoutSession}, {@link changePin}).
+ * @property auth        - Supabase-style JWT bundle. `access_token` is HS256 and
+ *                          must be wired via {@link setSupabaseAccessToken}.
+ * @property permissions - Flat list of {@link PermissionCode} strings granted by the user's role.
+ */
 export interface LoginResponse {
   user: { id: string; full_name: string; role_code: string; employee_code: string };
   session: { token: string; session_id: string; created_at: string };
@@ -13,6 +31,18 @@ export interface LoginResponse {
   permissions: string[];
 }
 
+/**
+ * Discriminated union of failure responses from `auth-verify-pin`.
+ *
+ * - `invalid_pin`      - Wrong PIN. `attempts_remaining` decrements before lockout.
+ * - `account_locked`   - Too many failed attempts. Retry after `minutes_left`.
+ * - `rate_limited`     - Per-IP throttle. Retry after `retry_after_sec` seconds.
+ * - `user_inactive`    - User row exists but is_active = false.
+ * - `user_not_found`   - Unknown `user_id`.
+ * - `invalid_pin_format` - PIN is not 6 digits.
+ * - `missing_fields`   - Body is missing required keys.
+ * - `internal`         - Unexpected server error.
+ */
 export type LoginError =
   | { error: 'invalid_pin'; attempts_remaining: number }
   | { error: 'account_locked'; minutes_left: number }
@@ -45,6 +75,20 @@ async function fetchWithTimeout(input: RequestInfo, init?: RequestInit): Promise
   }
 }
 
+/**
+ * Verify a PIN and mint a session.
+ *
+ * Calls `POST {supabaseUrl}/functions/v1/auth-verify-pin`. On success the
+ * caller should: (1) call {@link setSupabaseAccessToken} with `auth.access_token`,
+ * (2) persist `session.token` in {@link safeStorage} for future {@link getSession}
+ * probes, (3) cache `permissions` for client-side {@link hasPermission} checks.
+ *
+ * @param supabaseUrl - Project URL (no trailing slash).
+ * @param body        - {@link LoginRequest} payload.
+ * @returns {@link LoginResponse} on HTTP 200.
+ * @throws {Error & { details: LoginError; status: number }} on any non-2xx response;
+ *         inspect `err.details.error` to discriminate the failure mode.
+ */
 export async function loginWithPin(supabaseUrl: string, body: LoginRequest): Promise<LoginResponse> {
   const res = await fetchWithTimeout(`${supabaseUrl}/functions/v1/auth-verify-pin`, {
     method: 'POST',
@@ -58,6 +102,19 @@ export async function loginWithPin(supabaseUrl: string, body: LoginRequest): Pro
   return (await res.json()) as LoginResponse;
 }
 
+/**
+ * Probe an existing session and refresh its `last_activity_at`.
+ *
+ * Calls `GET {supabaseUrl}/functions/v1/auth-get-session` with
+ * `x-session-token`. Used on app boot to rehydrate auth state without forcing
+ * a new PIN login.
+ *
+ * @param supabaseUrl  - Project URL.
+ * @param sessionToken - Opaque token from {@link LoginResponse}.session.token.
+ * @returns The user's public profile flattened with their permission list.
+ * @throws {Error & { status: number }} `session_invalid` on any non-2xx response
+ *         (expired, revoked, or unknown token).
+ */
 export async function getSession(
   supabaseUrl: string,
   sessionToken: string,
@@ -70,6 +127,16 @@ export async function getSession(
   return { ...body.user, permissions: body.permissions };
 }
 
+/**
+ * Revoke a session server-side. Best-effort: failures are not surfaced.
+ *
+ * Calls `POST {supabaseUrl}/functions/v1/auth-logout`. The caller is still
+ * responsible for clearing local state and calling
+ * `setSupabaseAccessToken(null)`.
+ *
+ * @param supabaseUrl  - Project URL.
+ * @param sessionToken - Token to revoke.
+ */
 export async function logoutSession(supabaseUrl: string, sessionToken: string): Promise<void> {
   await fetchWithTimeout(`${supabaseUrl}/functions/v1/auth-logout`, {
     method: 'POST',
@@ -77,12 +144,34 @@ export async function logoutSession(supabaseUrl: string, sessionToken: string): 
   });
 }
 
+/**
+ * Body POSTed to `auth-change-pin`.
+ *
+ * @property user_id     - Target user. May be self or another user (admin override
+ *                          requires the `users.update` permission server-side).
+ * @property current_pin - Required for self-service rotation; omitted on admin override.
+ * @property new_pin     - New 6-digit PIN.
+ */
 export interface ChangePinRequest {
   user_id: string;
   current_pin?: string;
   new_pin: string;
 }
 
+/**
+ * Rotate a user's PIN.
+ *
+ * Calls `POST {supabaseUrl}/functions/v1/auth-change-pin`. Authentication is
+ * by `x-session-token` (Authorization is unused — the EF re-derives identity
+ * from the session row).
+ *
+ * @param supabaseUrl  - Project URL.
+ * @param sessionToken - Session token of the *acting* user (self or admin).
+ * @param body         - {@link ChangePinRequest} payload.
+ * @throws {Error & { details: { error?: string }; status: number }} on any
+ *         non-2xx response. Common errors: `invalid_pin`, `permission_denied`,
+ *         `pin_reused`, `invalid_pin_format`.
+ */
 export async function changePin(
   supabaseUrl: string,
   sessionToken: string,

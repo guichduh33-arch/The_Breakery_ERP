@@ -25,11 +25,12 @@ export class DiscountExceedsTotalError extends Error {
  *
  * Tax is included in the unit price (PB1: extracted from total, not added).
  *
- * Order of operations (spec D6, D7):
- *   items_total = Σ(line_unit_total * qty - line_discount_amount)
- *   total       = items_total - redemption - cart_discount
- *   throw DiscountExceedsTotalError if total < 0
- *   tax_amount  = round(total * taxRate / (1 + taxRate))
+ * Order of operations (spec D6, D7, session-8):
+ *   items_total   = Σ(line_unit_total * qty - line_discount_amount)
+ *   post_promo    = items_total - promotionTotal   (throw DiscountExceedsTotalError if < 0)
+ *   post_redemp   = post_promo - redemption_amount (throw RedemptionExceedsTotalError if < 0)
+ *   total         = post_redemp - cart_discount    (throw DiscountExceedsTotalError if < 0)
+ *   tax_amount    = round(total * taxRate / (1 + taxRate))
  */
 export function calculateTotals(cart: Cart, taxRate: number): CartTotals {
   let items_total = 0;
@@ -47,12 +48,18 @@ export function calculateTotals(cart: Cart, taxRate: number): CartTotals {
     item_count += item.quantity;
   }
 
+  const promotion_total = cart.promotionTotal ?? 0;
+  const post_promotion = items_total - promotion_total;
+  if (post_promotion < 0) {
+    throw new DiscountExceedsTotalError();
+  }
+
   const redemption_amount = pointsToValue(cart.loyaltyPointsToRedeem ?? 0);
-  if (redemption_amount > items_total) {
+  if (redemption_amount > post_promotion) {
     throw new RedemptionExceedsTotalError();
   }
 
-  const post_redemption = items_total - redemption_amount;
+  const post_redemption = post_promotion - redemption_amount;
   const cart_discount = cart.cartDiscount
     ? calculateDiscountAmount(cart.cartDiscount, post_redemption)
     : 0;

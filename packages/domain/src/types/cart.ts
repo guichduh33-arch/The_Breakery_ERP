@@ -44,6 +44,8 @@ export interface Cart {
   tableNumber?: string | null;
   /** Optional cart-level discount applied to the post-redemption subtotal. */
   cartDiscount?: Discount;
+  /** Sum of all promotion discounts applied (cart-level + item-level). Subtracted before redemption. */
+  promotionTotal?: number;
 }
 
 export interface CartTotals {
