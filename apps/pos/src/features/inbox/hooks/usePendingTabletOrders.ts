@@ -17,8 +17,12 @@ export function usePendingTabletOrders() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
+    // StrictMode double-invokes effects in dev; with a static channel name the
+    // second mount's .on() runs against the still-subscribed channel from the
+    // first mount (removeChannel is async). Suffix with a per-mount UUID.
+    const channelName = `pending-tablet-orders-${crypto.randomUUID()}`;
     const channel = supabase
-      .channel('pending-tablet-orders')
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
