@@ -6,6 +6,7 @@ import DashboardPage from '@/pages/Dashboard.js';
 import ProductsPage from '@/pages/Products.js';
 import PromotionsPage from '@/pages/Promotions.js';
 import LoyaltyPage from '@/pages/Loyalty.js';
+import InventoryPage from '@/pages/Inventory.js';
 import ComingSoonPage from '@/pages/ComingSoon.js';
 import { BackofficeLayout } from '@/layouts/BackofficeLayout.js';
 import { useAuthStore } from '@/stores/authStore.js';
@@ -49,7 +50,14 @@ export function AppRoutes() {
             </PermissionGate>
           }
         />
-        <Route path="inventory" element={<ComingSoonPage module="Inventory" />} />
+        <Route
+          path="inventory"
+          element={
+            <PermissionGate required="inventory.read">
+              <InventoryPage />
+            </PermissionGate>
+          }
+        />
         <Route path="purchasing" element={<ComingSoonPage module="Purchasing" />} />
         <Route path="customers" element={<ComingSoonPage module="Customers" />} />
         <Route path="b2b" element={<ComingSoonPage module="B2B" />} />
