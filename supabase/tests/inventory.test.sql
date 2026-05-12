@@ -469,29 +469,26 @@ SELECT ok(current_setting('breakery.t14_pass')::boolean,
   'T14: legacy sale + sale_void writes still pass CHECK constraints (no regression)');
 
 -- =========================================================================
--- T15 — record_stock_movement_v1 invoked as `authenticated` role -> denied.
+-- T15 — record_stock_movement_v1 EXECUTE is REVOKED from authenticated.
 -- =========================================================================
-DO $t15$
-DECLARE
-  v_blocked BOOLEAN := false;
-  v_admin_uid UUID := current_setting('breakery.admin_uid')::uuid;
-BEGIN
-  SET LOCAL ROLE authenticated;
-  PERFORM pg_temp.set_jwt_uid(v_admin_uid);
-  BEGIN
-    PERFORM record_stock_movement_v1(
-      '99999999-aaaa-bbbb-cccc-111111111111'::uuid,
-      'adjustment'::movement_type, 1.000, 'T15 bypass attempt'
-    );
-  EXCEPTION WHEN insufficient_privilege OR others THEN
-    v_blocked := true;
-  END;
-  RESET ROLE;
-
-  PERFORM set_config('breakery.t15_pass', v_blocked::text, false);
-END $t15$;
-SELECT ok(current_setting('breakery.t15_pass')::boolean,
-  'T15: record_stock_movement_v1 EXECUTE is REVOKED from authenticated role');
+-- An earlier draft of this test wrapped a real `PERFORM record_stock_movement_v1(...)`
+-- call in `SET LOCAL ROLE authenticated` + a nested `BEGIN…EXCEPTION` inside a
+-- DO block. That pattern passed under `docker exec ... psql` but terminated
+-- the Postgres backend under `supabase test db` (pg_prove) in CI — the failure
+-- was sensitive to the PG minor version bundled by the supabase CLI used in
+-- CI vs. local. `has_function_privilege` consults the same ACL Postgres
+-- evaluates at call time, so this catalog check asserts the identical
+-- invariant without the subtransaction/role-switch gymnastics.
+SELECT ok(
+  NOT has_function_privilege(
+    'authenticated',
+    (SELECT oid FROM pg_proc
+       WHERE proname = 'record_stock_movement_v1'
+         AND pronamespace = 'public'::regnamespace),
+    'EXECUTE'
+  ),
+  'T15: record_stock_movement_v1 EXECUTE is REVOKED from authenticated role'
+);
 
 -- ---------------------------------------------------------------------------
 SELECT * FROM finish();
