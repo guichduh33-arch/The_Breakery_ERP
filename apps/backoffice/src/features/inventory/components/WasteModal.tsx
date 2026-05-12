@@ -59,6 +59,9 @@ export function WasteModal({ open, initialProduct, onClose }: WasteModalProps): 
       setFormError(null);
       setIdempotencyKey(crypto.randomUUID());
     }
+    // initialProduct object identity changes on every parent render; depending on the primitive product_id
+    // is the real signal — adding initialProduct itself would reset the modal on unrelated parent updates.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, initialProduct?.product_id]);
 
   const numericQty = Number.parseFloat(qty);
