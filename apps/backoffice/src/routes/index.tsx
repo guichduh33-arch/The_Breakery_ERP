@@ -7,6 +7,7 @@ import ProductsPage from '@/pages/Products.js';
 import PromotionsPage from '@/pages/Promotions.js';
 import LoyaltyPage from '@/pages/Loyalty.js';
 import InventoryPage from '@/pages/Inventory.js';
+import SuppliersPage from '@/pages/Suppliers.js';
 import ComingSoonPage from '@/pages/ComingSoon.js';
 import { BackofficeLayout } from '@/layouts/BackofficeLayout.js';
 import { useAuthStore } from '@/stores/authStore.js';
@@ -55,6 +56,14 @@ export function AppRoutes() {
           element={
             <PermissionGate required="inventory.read">
               <InventoryPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="suppliers"
+          element={
+            <PermissionGate required="suppliers.read">
+              <SuppliersPage />
             </PermissionGate>
           }
         />
