@@ -1,8 +1,18 @@
+# The Breakery — Session 12 Spec : Inventory MVP (admin write path) — **SUPERSEDED**
+
+> ⚠️ **STATUT : SUPERSEDED (2026-05-12)** — ce spec MVP couvrait ~15% du périmètre métier décrit dans `docs/objectif travail/INVENTORY.md`. Il est remplacé par :
+> - **Spec complete** : `docs/superpowers/specs/2026-05-12-session-12-inventory-complete-spec.md`
+> - **Plan-INDEX complete** : `docs/superpowers/plans/2026-05-12-session-12-inventory-complete-INDEX.md`
+>
+> Le contenu ci-dessous est conservé à titre **historique** (sert de référence pour la Phase 1 + Phase 2 de l'INDEX complete, qui implémentent le même périmètre minimal en première étape avant d'élargir aux 7 onglets).
+
+---
+
 # The Breakery — Session 12 Spec : Inventory MVP (admin write path)
 
 > **Date** : 2026-05-11
 > **Auteur** : guichduh33@gmail.com (suite session 11)
-> **Statut** : Approuvé pour implémentation autonome
+> **Statut** : ⚠️ Superseded — voir `2026-05-12-session-12-inventory-complete-spec.md`
 > **Cible** : Compléter la couche admin du module Inventory — 4 RPCs (`record_stock_movement_v1` interne + `adjust_stock_v1` + `receive_stock_v1` + `waste_stock_v1`) + 1 RPC read (`get_stock_levels_v1`) + page backoffice (list + 3 modals + history drawer) + domain package pur + 30+ tests. Auto-decrement on sale est **déjà** câblé depuis session 1 ; cette session ferme le gap "admin sans accès DB".
 
 ---
