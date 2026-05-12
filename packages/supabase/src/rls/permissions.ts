@@ -61,7 +61,11 @@ export type PermissionCode =
   | 'promotions.update'
   | 'promotions.delete'
   | 'loyalty.read'
-  | 'loyalty.adjust';
+  | 'loyalty.adjust'
+  | 'inventory.read'
+  | 'inventory.adjust'
+  | 'inventory.receive'
+  | 'inventory.waste';
 
 /**
  * Check whether a user has a single permission. Pure client-side lookup —

@@ -22,7 +22,7 @@ const NAV: NavItem[] = [
   { to: '/backoffice/products',   label: 'Products',   icon: Package },
   { to: '/backoffice/promotions', label: 'Promotions', icon: Tag, permission: 'promotions.read' },
   { to: '/backoffice/loyalty',    label: 'Loyalty',    icon: Heart, permission: 'loyalty.read' },
-  { to: '/backoffice/inventory',  label: 'Inventory',  icon: Boxes },
+  { to: '/backoffice/inventory',  label: 'Inventory',  icon: Boxes, permission: 'inventory.read' },
   { to: '/backoffice/purchasing', label: 'Purchasing', icon: ShoppingCart },
   { to: '/backoffice/customers',  label: 'Customers',  icon: Users },
   { to: '/backoffice/b2b',        label: 'B2B',        icon: Building2 },
