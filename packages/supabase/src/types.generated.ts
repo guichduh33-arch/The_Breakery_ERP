@@ -2224,6 +2224,27 @@ export type Database = {
         }
         Returns: Json
       }
+      complete_order_with_payment_v9: {
+        Args: {
+          p_customer_id?: string
+          p_discount_amount?: number
+          p_discount_authorized_by?: string
+          p_discount_reason?: string
+          p_discount_type?: string
+          p_discount_value?: number
+          p_idempotency_key?: string
+          p_items: Json
+          p_loyalty_multiplier?: number
+          p_loyalty_points_redeemed?: number
+          p_order_type: Database["public"]["Enums"]["order_type"]
+          p_payment?: Json
+          p_payments?: Json
+          p_promotions?: Json
+          p_session_id: string
+          p_table_number?: string
+        }
+        Returns: Json
+      }
       convert_quantity: {
         Args: { p_from_unit: string; p_qty: number; p_to_unit: string }
         Returns: number
@@ -2376,6 +2397,24 @@ export type Database = {
         }
         Returns: string
       }
+      pay_existing_order_v6: {
+        Args: {
+          p_customer_id?: string
+          p_discount_amount?: number
+          p_discount_authorized_by?: string
+          p_discount_reason?: string
+          p_discount_type?: string
+          p_discount_value?: number
+          p_idempotency_key?: string
+          p_loyalty_multiplier?: number
+          p_loyalty_points_redeemed?: number
+          p_order_id: string
+          p_payment?: Json
+          p_payments?: Json
+          p_promotions?: Json
+        }
+        Returns: string
+      }
       pg_version: { Args: never; Returns: string }
       pg_version_num: { Args: never; Returns: number }
       pgtap_version: { Args: never; Returns: number }
@@ -2469,6 +2508,17 @@ export type Database = {
       refund_order_rpc: {
         Args: {
           p_authorized_by: string
+          p_lines: Json
+          p_order_id: string
+          p_reason: string
+          p_tenders: Json
+        }
+        Returns: Json
+      }
+      refund_order_rpc_v2: {
+        Args: {
+          p_authorized_by: string
+          p_idempotency_key?: string
           p_lines: Json
           p_order_id: string
           p_reason: string
