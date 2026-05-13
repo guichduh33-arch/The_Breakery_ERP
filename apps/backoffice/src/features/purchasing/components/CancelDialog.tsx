@@ -1,9 +1,13 @@
 // apps/backoffice/src/features/purchasing/components/CancelDialog.tsx
 //
 // Session 13 — Phase 3.A — Confirm cancellation of a PO with required reason.
+// Phase 4.D — migrated from ad-hoc <div> overlay to @breakery/ui Radix Dialog.
 
 import { useId, useState, type JSX } from 'react';
-import { Button } from '@breakery/ui';
+import {
+  Button,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from '@breakery/ui';
 
 export interface CancelDialogProps {
   poNumber:  string;
@@ -26,17 +30,17 @@ export function CancelDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" role="dialog" aria-modal="true">
-      <div className="w-full max-w-md bg-bg-elevated border border-border-subtle rounded-lg shadow-xl">
-        <header className="px-4 py-3 border-b border-border-subtle">
-          <h2 className="font-serif text-xl text-text-primary">Cancel purchase order</h2>
-          <p className="text-xs text-text-secondary mt-0.5">PO {poNumber}</p>
-        </header>
-        <div className="px-4 py-4 space-y-3">
-          <p className="text-sm text-text-secondary">
-            Cancellation is final and only allowed before any goods have been received.
-            Provide a reason for the audit log.
-          </p>
+    <Dialog open onOpenChange={(o) => { if (!o && !submitting) onCancel(); }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Cancel purchase order</DialogTitle>
+          <DialogDescription>
+            PO {poNumber} — cancellation is final and only allowed before any goods
+            have been received.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-3">
           <div className="space-y-1">
             <label htmlFor={`${reactId}-reason`} className="text-xs uppercase tracking-widest text-text-secondary">
               Reason
@@ -59,7 +63,8 @@ export function CancelDialog({
             </div>
           )}
         </div>
-        <footer className="px-4 py-3 border-t border-border-subtle flex justify-end gap-2">
+
+        <DialogFooter>
           <Button type="button" variant="ghost" onClick={onCancel} disabled={submitting}>Keep PO</Button>
           <Button
             type="button"
@@ -69,8 +74,8 @@ export function CancelDialog({
           >
             {submitting ? 'Cancelling…' : 'Cancel PO'}
           </Button>
-        </footer>
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

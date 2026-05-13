@@ -3,9 +3,14 @@
 // Session 13 — Phase 3.A — Modal for entering received qty per line + a
 // section selector. Submits to receive_purchase_order_v1 via the parent's
 // onConfirm callback.
+//
+// Phase 4.D — migrated from ad-hoc <div> overlay to @breakery/ui Radix Dialog.
 
 import { useId, useMemo, useState, type JSX } from 'react';
-import { Button } from '@breakery/ui';
+import {
+  Button,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from '@breakery/ui';
 import type { PurchaseOrderDetail } from '../hooks/usePurchaseOrderDetail.js';
 
 export interface Section {
@@ -61,13 +66,14 @@ export function ReceiveDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" role="dialog" aria-modal="true">
-      <div className="w-full max-w-2xl bg-bg-elevated border border-border-subtle rounded-lg shadow-xl">
-        <header className="px-4 py-3 border-b border-border-subtle">
-          <h2 className="font-serif text-xl text-text-primary">Receive goods</h2>
-          <p className="text-xs text-text-secondary mt-0.5">PO {po.po_number}</p>
-        </header>
-        <div className="px-4 py-4 space-y-3 max-h-[60vh] overflow-y-auto">
+    <Dialog open onOpenChange={(o) => { if (!o && !submitting) onCancel(); }}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Receive goods</DialogTitle>
+          <DialogDescription>PO {po.po_number}</DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-3 max-h-[60vh] overflow-y-auto">
           <div className="space-y-1">
             <label htmlFor={`${reactId}-section`} className="text-xs uppercase tracking-widest text-text-secondary">
               Receive into section
@@ -133,7 +139,8 @@ export function ReceiveDialog({
             </div>
           )}
         </div>
-        <footer className="px-4 py-3 border-t border-border-subtle flex justify-end gap-2">
+
+        <DialogFooter>
           <Button type="button" variant="ghost" onClick={onCancel} disabled={submitting}>Cancel</Button>
           <Button
             type="button"
@@ -143,8 +150,8 @@ export function ReceiveDialog({
           >
             {submitting ? 'Receiving…' : 'Confirm receipt'}
           </Button>
-        </footer>
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
