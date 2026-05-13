@@ -444,18 +444,24 @@ BEGIN
   UPDATE products SET current_stock = 30
     WHERE id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid;
 
+  -- unit is mandatory on stock_movements (UNIT-FIX). For these legacy
+  -- writes that bypass the RPC layer, copy the product's unit explicitly.
   INSERT INTO stock_movements (
-    product_id, movement_type, quantity, reference_type, reference_id, created_by
+    product_id, movement_type, quantity, unit, reference_type, reference_id, created_by
   ) VALUES (
     '99999999-aaaa-bbbb-cccc-111111111111'::uuid,
-    'sale', -2.000, 'orders', gen_random_uuid(), v_admin_profile
+    'sale', -2.000,
+    (SELECT unit FROM products WHERE id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid),
+    'orders', gen_random_uuid(), v_admin_profile
   ) RETURNING id INTO v_sale_id;
 
   INSERT INTO stock_movements (
-    product_id, movement_type, quantity, reference_type, reference_id, created_by
+    product_id, movement_type, quantity, unit, reference_type, reference_id, created_by
   ) VALUES (
     '99999999-aaaa-bbbb-cccc-111111111111'::uuid,
-    'sale_void', 2.000, 'orders', gen_random_uuid(), v_admin_profile
+    'sale_void', 2.000,
+    (SELECT unit FROM products WHERE id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid),
+    'orders', gen_random_uuid(), v_admin_profile
   ) RETURNING id INTO v_void_id;
 
   SELECT (movement_type = 'sale' AND quantity = -2.000) INTO v_ok_sale
