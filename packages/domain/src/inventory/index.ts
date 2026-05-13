@@ -10,6 +10,13 @@ export type {
   ReceiveInput,
   WasteInput,
   StockMovementRpcResult,
+  // Phase 3 — stock transfers
+  TransferStatus,
+  TransferItemInput,
+  TransferInput,
+  TransferReceiveItemInput,
+  TransferReceiveInput,
+  TransferRpcResult,
 } from './types.js';
 
 // `ValidationResult` is re-exported from `payment` at the top-level barrel;
@@ -23,3 +30,9 @@ export { validateReceive } from './validateReceive.js';
 export { validateWaste } from './validateWaste.js';
 export { computeStockDelta } from './computeStockDelta.js';
 export { lowStockFilter, type LowStockCandidate } from './lowStockFilter.js';
+export {
+  validateTransferInput,
+  validateTransferReceive,
+  type ValidateTransferCode,
+  type ValidateTransferReceiveCode,
+} from './validateTransfer.js';
