@@ -22,6 +22,26 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # W1-C4 — Session 13 D10/Audit R14 guard:
+      # has_permission() was locked as a pure-lookup function at migration
+      # 20260514015204_refactor_has_permission (signature p_uid UUID, p_perm TEXT).
+      # No subsequent migration may CREATE OR REPLACE / CREATE / DROP it — new perms
+      # are added via INSERT INTO permissions + role_permissions. This grep gate
+      # blocks the regression that historically broke RLS (11 prior re-CREATEs).
+      - name: Guard has_permission lock (D10 / Audit R14)
+        run: |
+          set -e
+          violations=$(grep -rEn "(CREATE OR REPLACE|CREATE) +FUNCTION +(public\.)?has_permission\b" \
+              supabase/migrations/2026051[5-9]*.sql \
+              supabase/migrations/202605[2-9]*.sql \
+              supabase/migrations/20260[6-9]*.sql \
+              supabase/migrations/2027*.sql 2>/dev/null || true)
+          if [ -n "$violations" ]; then
+            echo "::error::has_permission re-CREATE detected after 20260514015204 lock (D10/R14):"
+            echo "$violations"
+            exit 1
+          fi
+
       - name: Lint
         run: pnpm lint
 
