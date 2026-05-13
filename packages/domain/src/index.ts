@@ -27,3 +27,4 @@ export * from './promotions/index.js';
 export * from './inventory/index.js';
 export * from './accounting/index.js';
 export * from './reports/index.js';
+export * from './production/index.js';
