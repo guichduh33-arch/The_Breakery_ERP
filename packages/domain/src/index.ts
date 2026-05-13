@@ -11,6 +11,11 @@ export {
   MAX_TENDERS,
   type SplitValidation,
 } from './payment/splitTender.js';
+export {
+  classifyCheckoutError,
+  type CheckoutErrorShape,
+  type RetryClassification,
+} from './payment/retryClassifier.js';
 export * from './refunds/index.js';
 export { buildOrderPayload } from './orders/buildOrderPayload.js';
 export * from './modifiers/index.js';

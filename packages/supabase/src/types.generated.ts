@@ -4635,6 +4635,10 @@ export type Database = {
         Args: { p_mapping_key: string }
         Returns: string
       }
+      retry_sale_journal_entry_v1: {
+        Args: { p_order_id: string }
+        Returns: Json
+      }
       revert_production_v1: {
         Args: { p_production_id: string; p_reason: string }
         Returns: Json
