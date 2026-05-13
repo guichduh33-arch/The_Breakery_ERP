@@ -5284,6 +5284,15 @@ export type Database = {
       todo_start:
         | { Args: never; Returns: boolean[] }
         | { Args: { "": string }; Returns: boolean[] }
+      update_accounting_mapping_v1: {
+        Args: {
+          p_account_code: string
+          p_is_active: boolean
+          p_mapping_key: string
+          p_reason: string
+        }
+        Returns: undefined
+      }
       update_lan_heartbeat_v1: {
         Args: { p_device_code: string }
         Returns: {
