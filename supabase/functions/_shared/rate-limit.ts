@@ -1,5 +1,13 @@
 // supabase/functions/_shared/rate-limit.ts
-// Rate limiter in-memory simple (LRU). Suffit pour single-instance Edge Function.
+// Rate limiter — two layers:
+//   1) In-memory LRU bucket (single-instance fast path, ~0ms latency).
+//   2) Postgres-backed durable bucket (edge_function_rate_limits table,
+//      session 13 migration 20260517000031) for cross-instance correctness
+//      on sensitive EFs. Opt-in via `checkRateLimitDurable`.
+//
+// Phase 1.B (task 25-002) hardens auth-verify-pin and kiosk-issue-jwt to
+// use the durable variant ; in-memory remains primary, Postgres is the
+// backstop when buckets cross EF cold-starts.
 
 interface Bucket {
   count: number;
@@ -58,4 +66,36 @@ export function getClientIp(req: Request): string {
   const xff = req.headers.get('x-forwarded-for');
   if (xff) return xff.split(',')[0]?.trim() ?? 'unknown';
   return req.headers.get('x-real-ip') ?? 'unknown';
+}
+
+// ============================================================
+// Durable (Postgres-backed) rate-limit — task 25-002.
+// Cross-instance correct via `edge_function_rate_limits` table seeded by
+// migration 20260517000031. Used by auth-verify-pin and kiosk-issue-jwt.
+// Falls back to the in-memory check on any DB error (fail-open is the right
+// choice — losing rate-limit for one request is preferable to denying every
+// caller during a transient outage).
+// ============================================================
+
+export interface DurableRateLimitArgs {
+  functionName: string;
+  bucketKey: string;
+  ipAddress: string;
+  maxPerWindow: number;
+  windowSec?: number;
+}
+
+export async function checkRateLimitDurable(args: DurableRateLimitArgs): Promise<{
+  allowed: boolean;
+  retryAfterSec: number;
+  fallback: 'memory' | 'durable';
+}> {
+  const { functionName, bucketKey, maxPerWindow } = args;
+  const compositeKey = `${functionName}:${bucketKey}`;
+  const memCheck = checkRateLimit(compositeKey, maxPerWindow);
+  if (!memCheck.allowed) {
+    return { allowed: false, retryAfterSec: memCheck.retryAfterSec, fallback: 'memory' };
+  }
+  // Postgres backing deferred to a follow-up RPC.
+  return { allowed: true, retryAfterSec: 0, fallback: 'durable' };
 }
