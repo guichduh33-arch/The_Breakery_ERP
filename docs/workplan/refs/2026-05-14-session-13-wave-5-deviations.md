@@ -483,3 +483,186 @@ matrix view IS the function's truth.
   permissions ; against `EMP001` (CASHIER) show ≈ 7 ✓.
 - The footnote on `PermissionsMatrixPage` references the locked
   function.
+
+---
+
+## Phase 5.C — Settings UI + holidays/templates
+
+### D-W5-5C-01 — Setting key stored in `metadata.key`, NOT `entity_id`
+
+**INDEX spec says (Wave 5.C bullet 6 in cumulative learnings):**
+"INSERT into `audit_logs` with `entity_type='setting'`,
+`entity_id=<key>`, `metadata={old, new}`, `actor_id=auth.uid()`."
+
+**Real shape:** `audit_logs.entity_id` is **UUID** (not TEXT). Setting
+keys are symbolic strings (`name`, `tax_rate`, …) and cannot be coerced
+into a UUID. `set_setting_v1` therefore inserts with
+`entity_id = NULL`, with `metadata.key` carrying the symbolic key and
+`metadata.category` carrying the symbolic category. Full payload :
+`{ key, category, old, new }`.
+
+#### Cause
+
+`audit_logs.entity_id` was introduced in Session 1 as a UUID-typed
+column to match every existing entity (orders, products, customers…).
+Settings are the first entity type whose primary identifier is text.
+Coercing the key into a deterministic UUID (e.g. `uuid_generate_v5`)
+would have hidden the human-readable key in the table, making audit
+queries painful. Storing the key in `metadata.key` matches the existing
+KDS pattern (D-W4-4B-03 stores idempotency keys in `metadata`).
+
+#### Resolution
+
+`set_setting_v1` audit row :
+```
+entity_type = 'setting'
+entity_id   = NULL
+action      = 'setting.update'
+actor_id    = <user_profiles.id resolved from auth.uid()>
+metadata    = { "key": "tax_rate", "category": "tax", "old": 0.1, "new": 0.11 }
+```
+
+#### Verification
+
+- `\d audit_logs` shows `entity_id uuid` (unchanged).
+- After calling `set_setting_v1('name', '"Test"', 'business')`, the row
+  in `audit_logs` shows the expected metadata shape.
+- pgTAP T18 / T20 verify the RPC signature.
+
+---
+
+### D-W5-5C-02 — `business_config` IS the settings store ; no `app_settings` table introduced
+
+**INDEX spec says:** Phase 5.C "phantom RPC D2" implies a generic
+`app_settings` key-value store.
+
+**Real shape:** Per Wave 3.C deviation D-W3-3C-04, `business_config` is
+the singleton settings store. `get_settings_by_category_v1` projects
+the singleton columns into four symbolic categories
+(`business / localization / tax / pos`) and `set_setting_v1` whitelists
+8 keys against the singleton's columns.
+
+#### Cause
+
+Introducing `app_settings(key TEXT PK, value JSONB)` would have created
+two sources of truth for already-typed columns
+(`shift_variance_threshold_pct` is `NUMERIC`, not "a json value"), and
+would have required a sync mechanism to keep `business_config` aligned.
+Projecting the singleton into categories is strictly additive — no DB
+shape change, just a read/write API on top.
+
+#### Resolution
+
+- `get_settings_by_category_v1(p_category)` reads
+  `business_config` row id=1 and returns a partitioned JSONB payload.
+- `set_setting_v1(p_key, p_value, p_category)` validates and updates
+  the singleton column matching `p_key`.
+
+Future "non-singleton" settings (per-tenant, per-user) can still be
+added later as their own typed tables ; this RPC stays as the gateway
+for the singleton's columns.
+
+#### Verification
+
+- `SELECT * FROM business_config` returns 1 row.
+- `SELECT get_settings_by_category_v1('business')` returns
+  `{ "category": "business", "settings": { "name": "...", "fiscal_address": "..." } }`.
+- No `app_settings` table exists in `list_tables`.
+
+---
+
+### D-W5-5C-03 — `SettingsPermissionsPage` is a read-only matrix that LINKS to the editing UI
+
+**INDEX spec says:** "Pages `/backoffice/settings/{general,holidays,templates,permissions}`."
+
+**Real shape:** When Phase 5.C opened, Phase 5.D had **already shipped**
+the full RBAC editing UI under `/backoffice/users/permissions` with
+the `PermissionsMatrixPage` (commits in the same wave). To avoid
+duplicating the matrix component, the Settings nav entry exposes a
+**read-only** matrix with a banner linking to the canonical editor.
+
+#### Cause
+
+Phase 5.D was scheduled in parallel with 5.C and reached the route
+register first. Re-implementing the same matrix under
+`/backoffice/settings/permissions` with editing would have
+double-maintained two copies of the same component family.
+
+#### Resolution
+
+`SettingsPermissionsPage` :
+- Renders the same `roles × permissions × role_permissions` matrix as a
+  table with green dots for granted cells.
+- Includes a paragraph link "Use Users → Permissions for editing, user
+  overrides, and last-admin protection."
+- Gated on `settings.read` only (no `rbac.update`).
+- Module-filter dropdown to narrow large matrices.
+
+#### Verification
+
+- `apps/backoffice/src/features/settings/__tests__/SettingsPermissionsPage.smoke.test.tsx`
+  asserts the heading, the link href, the granted-dot count, and the
+  permission-denied gate.
+
+---
+
+### D-W5-5C-04 — `email_templates` here is customer-facing, distinct from any `notification_templates`
+
+**INDEX spec says:** Phase 5.C "Coordination note: Phase 5.B may also
+create `notification_templates`. Don't collide".
+
+**Real shape:** `email_templates` ships with 4 seeded codes
+(`welcome`, `order_complete`, `payment_received`, `password_reset`).
+These cover customer-facing transactional email. Phase 5.B's
+`notification_templates` (if/when it ships) covers system events
+(low stock, fiscal close, payroll anomaly…). The two tables coexist
+by design ; no foreign keys, no enum collisions.
+
+#### Cause
+
+The two concerns differ in audience (customer vs operator), delivery
+channel (email primarily vs in-app + push + email), and ownership
+(marketing-style copy vs system runbook copy).
+
+#### Resolution
+
+- `email_templates(code UNIQUE, subject, body_html, body_text, variables JSONB)`.
+- Variables stored as a JSONB array of token strings
+  (`["{{customer_name}}", "{{order_number}}"]`).
+- `SettingsEmailTemplatesPage` substitutes each token with a bracketed
+  placeholder in the live preview (e.g. `[customer_name]`).
+
+#### Verification
+
+- pgTAP T8-T12 verify the table + the 4 seeded codes.
+- `SettingsEmailTemplatesPage` smoke test asserts the preview
+  substitution.
+
+---
+
+### D-W5-5C-05 — `receipt_templates.is_default` partial unique index
+
+**INDEX spec says:** "`is_default BOOLEAN`".
+
+**Real shape:** Plus a `CREATE UNIQUE INDEX ... ON receipt_templates((is_default)) WHERE is_default = true` enforcing at-most-one default at the DB level. The `useUpdateReceiptTemplate` /
+`useCreateReceiptTemplate` hooks pre-demote any existing default before
+the write so the index never collides on a UPDATE path.
+
+#### Cause
+
+POS rendering relies on "the" default template — without the unique
+index a misconfigured tenant could end up with two `is_default = true`
+rows and ambiguous receipt formatting at print time.
+
+#### Resolution
+
+- DB index :
+  `CREATE UNIQUE INDEX idx_receipt_templates_one_default ON receipt_templates((is_default)) WHERE is_default = true;`.
+- Client hook pre-demotes the current default before flipping a new row.
+
+#### Verification
+
+- pgTAP T16 asserts "exactly one default exists".
+- Manual test : flipping is_default on a second row demotes the first
+  via the client hook ; without the hook, the index would raise a unique
+  violation.
