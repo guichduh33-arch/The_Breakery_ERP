@@ -17,7 +17,9 @@ BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-SELECT plan(15);
+-- Plan counts EVERY pgTAP assertion (some T-blocks emit multiple assertions
+-- e.g. T9 has 2, T10 has 4). Total = 19.
+SELECT plan(19);
 
 -- ---------------------------------------------------------------------------
 -- T1 — 5 sections seedées avec les bons codes
@@ -203,13 +205,16 @@ SELECT ok(
 );
 
 -- ---------------------------------------------------------------------------
--- T14 — has_permission v8 : ADMIN a tout (branche unconditional-true)
+-- T14 — has_permission v8 : ADMIN/SUPER_ADMIN a tout (branche unconditional-true)
+-- Note: seed.sql only seeds a SUPER_ADMIN user; ADMIN role exists but no
+-- demo user has it. Both roles share the same `unconditional-true` branch in
+-- has_permission v8, so we accept either for this test.
 -- ---------------------------------------------------------------------------
 DO $$
 DECLARE v_uid UUID;
 BEGIN
   SELECT auth_user_id INTO v_uid FROM user_profiles
-   WHERE role_code='ADMIN' AND deleted_at IS NULL LIMIT 1;
+   WHERE role_code IN ('ADMIN', 'SUPER_ADMIN') AND deleted_at IS NULL LIMIT 1;
   PERFORM set_config('breakery.t14_pass',
     (
       has_permission(v_uid, 'inventory.transfer.create')  AND
@@ -222,7 +227,7 @@ END $$;
 
 SELECT ok(
   current_setting('breakery.t14_pass', true)::BOOLEAN,
-  'T14: ADMIN a toutes les 8 perms inventory Phase 1 (via unconditional-true branch)'
+  'T14: ADMIN/SUPER_ADMIN a les 5 perms ADMIN+ inventory Phase 1 (via unconditional-true branch)'
 );
 
 -- ---------------------------------------------------------------------------
