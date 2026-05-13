@@ -7,30 +7,10 @@ export type Json =
   | Json[]
 
 export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -1090,6 +1070,7 @@ export type Database = {
       products: {
         Row: {
           category_id: string
+          cost_price: number
           created_at: string
           current_stock: number
           deleted_at: string | null
@@ -1103,11 +1084,13 @@ export type Database = {
           retail_price: number
           sku: string
           tax_inclusive: boolean
+          unit: string
           updated_at: string
           wholesale_price: number | null
         }
         Insert: {
           category_id: string
+          cost_price?: number
           created_at?: string
           current_stock?: number
           deleted_at?: string | null
@@ -1121,11 +1104,13 @@ export type Database = {
           retail_price: number
           sku: string
           tax_inclusive?: boolean
+          unit?: string
           updated_at?: string
           wholesale_price?: number | null
         }
         Update: {
           category_id?: string
+          cost_price?: number
           created_at?: string
           current_stock?: number
           deleted_at?: string | null
@@ -1139,6 +1124,7 @@ export type Database = {
           retail_price?: number
           sku?: string
           tax_inclusive?: boolean
+          unit?: string
           updated_at?: string
           wholesale_price?: number | null
         }
@@ -1524,12 +1510,143 @@ export type Database = {
         }
         Relationships: []
       }
+      section_stock: {
+        Row: {
+          product_id: string
+          quantity: number
+          section_id: string
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          product_id: string
+          quantity?: number
+          section_id: string
+          unit: string
+          updated_at?: string
+        }
+        Update: {
+          product_id?: string
+          quantity?: number
+          section_id?: string
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "section_stock_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "section_stock_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "sections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sections: {
+        Row: {
+          code: string
+          created_at: string
+          deleted_at: string | null
+          display_order: number
+          id: string
+          is_active: boolean
+          kind: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          deleted_at?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          kind: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          deleted_at?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          kind?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      stock_locations: {
+        Row: {
+          code: string
+          created_at: string
+          deleted_at: string | null
+          id: string
+          is_active: boolean
+          name: string
+          notes: string | null
+          parent_location_id: string | null
+          section_id: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          parent_location_id?: string | null
+          section_id: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          parent_location_id?: string | null
+          section_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_locations_parent_location_id_fkey"
+            columns: ["parent_location_id"]
+            isOneToOne: false
+            referencedRelation: "stock_locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_locations_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "sections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stock_movements: {
         Row: {
           created_at: string
           created_by: string
+          from_section_id: string | null
           id: string
           idempotency_key: string | null
+          metadata: Json
           movement_type: Database["public"]["Enums"]["movement_type"]
           product_id: string
           quantity: number
@@ -1537,13 +1654,17 @@ export type Database = {
           reference_id: string | null
           reference_type: string
           supplier_id: string | null
+          to_section_id: string | null
+          unit: string
           unit_cost: number | null
         }
         Insert: {
           created_at?: string
           created_by: string
+          from_section_id?: string | null
           id?: string
           idempotency_key?: string | null
+          metadata?: Json
           movement_type: Database["public"]["Enums"]["movement_type"]
           product_id: string
           quantity: number
@@ -1551,13 +1672,17 @@ export type Database = {
           reference_id?: string | null
           reference_type: string
           supplier_id?: string | null
+          to_section_id?: string | null
+          unit: string
           unit_cost?: number | null
         }
         Update: {
           created_at?: string
           created_by?: string
+          from_section_id?: string | null
           id?: string
           idempotency_key?: string | null
+          metadata?: Json
           movement_type?: Database["public"]["Enums"]["movement_type"]
           product_id?: string
           quantity?: number
@@ -1565,6 +1690,8 @@ export type Database = {
           reference_id?: string | null
           reference_type?: string
           supplier_id?: string | null
+          to_section_id?: string | null
+          unit?: string
           unit_cost?: number | null
         }
         Relationships: [
@@ -1573,6 +1700,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_from_section_id_fkey"
+            columns: ["from_section_id"]
+            isOneToOne: false
+            referencedRelation: "sections"
             referencedColumns: ["id"]
           },
           {
@@ -1587,6 +1721,13 @@ export type Database = {
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_to_section_id_fkey"
+            columns: ["to_section_id"]
+            isOneToOne: false
+            referencedRelation: "sections"
             referencedColumns: ["id"]
           },
         ]
@@ -1633,6 +1774,30 @@ export type Database = {
           notes?: string | null
           payment_terms_days?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      unit_conversions: {
+        Row: {
+          created_at: string
+          factor: number
+          from_unit: string
+          notes: string | null
+          to_unit: string
+        }
+        Insert: {
+          created_at?: string
+          factor: number
+          from_unit: string
+          notes?: string | null
+          to_unit: string
+        }
+        Update: {
+          created_at?: string
+          factor?: number
+          from_unit?: string
+          notes?: string | null
+          to_unit?: string
         }
         Relationships: []
       }
@@ -1741,9 +1906,63 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      pg_all_foreign_keys: {
+        Row: {
+          fk_columns: unknown[] | null
+          fk_constraint_name: unknown
+          fk_schema_name: unknown
+          fk_table_name: unknown
+          fk_table_oid: unknown
+          is_deferrable: boolean | null
+          is_deferred: boolean | null
+          match_type: string | null
+          on_delete: string | null
+          on_update: string | null
+          pk_columns: unknown[] | null
+          pk_constraint_name: unknown
+          pk_index_name: unknown
+          pk_schema_name: unknown
+          pk_table_name: unknown
+          pk_table_oid: unknown
+        }
+        Relationships: []
+      }
+      tap_funky: {
+        Row: {
+          args: string | null
+          is_definer: boolean | null
+          is_strict: boolean | null
+          is_visible: boolean | null
+          kind: unknown
+          langoid: unknown
+          name: unknown
+          oid: unknown
+          owner: unknown
+          returns: string | null
+          returns_set: boolean | null
+          schema: unknown
+          volatility: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      _cleanup: { Args: never; Returns: boolean }
+      _contract_on: { Args: { "": string }; Returns: unknown }
+      _currtest: { Args: never; Returns: number }
+      _db_privs: { Args: never; Returns: unknown[] }
+      _extensions: { Args: never; Returns: unknown[] }
+      _get: { Args: { "": string }; Returns: number }
+      _get_latest: { Args: { "": string }; Returns: number[] }
+      _get_note: { Args: { "": string }; Returns: string }
+      _is_verbose: { Args: never; Returns: boolean }
+      _prokind: { Args: { p_oid: unknown }; Returns: unknown }
+      _query: { Args: { "": string }; Returns: string }
+      _refine_vol: { Args: { "": string }; Returns: string }
+      _retval: { Args: { "": string }; Returns: string }
+      _table_privs: { Args: never; Returns: unknown[] }
+      _temptypes: { Args: { "": string }; Returns: string }
+      _todo: { Args: never; Returns: string }
       adjust_loyalty_points: {
         Args: { p_customer_id: string; p_delta: number; p_reason: string }
         Returns: {
@@ -1810,6 +2029,42 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      col_is_null:
+        | {
+            Args: {
+              column_name: unknown
+              description?: string
+              schema_name: unknown
+              table_name: unknown
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              column_name: unknown
+              description?: string
+              table_name: unknown
+            }
+            Returns: string
+          }
+      col_not_null:
+        | {
+            Args: {
+              column_name: unknown
+              description?: string
+              schema_name: unknown
+              table_name: unknown
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              column_name: unknown
+              description?: string
+              table_name: unknown
+            }
+            Returns: string
+          }
       complete_order_with_payment: {
         Args: {
           p_customer_id?: string
@@ -1831,6 +2086,10 @@ export type Database = {
         }
         Returns: Json
       }
+      convert_quantity: {
+        Args: { p_from_unit: string; p_qty: number; p_to_unit: string }
+        Returns: number
+      }
       create_tablet_order: {
         Args: {
           p_items: Json
@@ -1840,6 +2099,29 @@ export type Database = {
         }
         Returns: string
       }
+      diag:
+        | {
+            Args: { msg: unknown }
+            Returns: {
+              error: true
+            } & "Could not choose the best candidate function between: public.diag(msg => text), public.diag(msg => anyelement). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
+          }
+        | {
+            Args: { msg: string }
+            Returns: {
+              error: true
+            } & "Could not choose the best candidate function between: public.diag(msg => text), public.diag(msg => anyelement). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
+          }
+      diag_test_name: { Args: { "": string }; Returns: string }
+      do_tap:
+        | { Args: never; Returns: string[] }
+        | { Args: { "": string }; Returns: string[] }
+      fail:
+        | { Args: never; Returns: string }
+        | { Args: { "": string }; Returns: string }
+      findfuncs: { Args: { "": string }; Returns: string[] }
+      finish: { Args: { exception_on_failure?: boolean }; Returns: string[] }
+      format_type_string: { Args: { "": string }; Returns: string }
       get_current_profile_id: { Args: never; Returns: string }
       get_current_role: { Args: never; Returns: string }
       get_customer_product_price: {
@@ -1875,8 +2157,13 @@ export type Database = {
         Args: { p_perm: string; p_profile_id: string }
         Returns: boolean
       }
+      has_unique: { Args: { "": string }; Returns: string }
       hash_pin: { Args: { p_pin: string }; Returns: string }
+      in_todo: { Args: never; Returns: boolean }
       is_authenticated: { Args: never; Returns: boolean }
+      is_empty: { Args: { "": string }; Returns: string }
+      isnt_empty: { Args: { "": string }; Returns: string }
+      lives_ok: { Args: { "": string }; Returns: string }
       mark_item_served: {
         Args: { p_item_id: string }
         Returns: {
@@ -1915,6 +2202,12 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      no_plan: { Args: never; Returns: boolean[] }
+      num_failed: { Args: never; Returns: number }
+      os_name: { Args: never; Returns: string }
+      pass:
+        | { Args: never; Returns: string }
+        | { Args: { "": string }; Returns: string }
       pay_existing_order: {
         Args: {
           p_customer_id?: string
@@ -1933,6 +2226,9 @@ export type Database = {
         }
         Returns: string
       }
+      pg_version: { Args: never; Returns: string }
+      pg_version_num: { Args: never; Returns: number }
+      pgtap_version: { Args: never; Returns: number }
       pickup_tablet_order: {
         Args: { p_order_id: string; p_session_id: string }
         Returns: {
@@ -1985,6 +2281,17 @@ export type Database = {
         }
         Returns: Json
       }
+      record_incoming_stock_v1: {
+        Args: {
+          p_idempotency_key?: string
+          p_product_id: string
+          p_quantity: number
+          p_reason?: string
+          p_supplier_id?: string
+          p_unit_cost?: number
+        }
+        Returns: Json
+      }
       record_stock_movement_v1: {
         Args: {
           p_idempotency_key?: string
@@ -1993,6 +2300,7 @@ export type Database = {
           p_quantity: number
           p_reason: string
           p_supplier_id?: string
+          p_unit?: string
           p_unit_cost?: number
         }
         Returns: Json
@@ -2008,6 +2316,9 @@ export type Database = {
         Returns: Json
       }
       round_idr: { Args: { amount: number }; Returns: number }
+      runtests:
+        | { Args: never; Returns: string[] }
+        | { Args: { "": string }; Returns: string[] }
       send_items_to_kitchen: {
         Args: { p_item_ids: string[] }
         Returns: {
@@ -2048,10 +2359,23 @@ export type Database = {
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      skip:
+        | { Args: { "": string }; Returns: string }
+        | { Args: { how_many: number; why: string }; Returns: string }
       soft_delete_customer: {
         Args: { p_customer_id: string; p_reason?: string }
         Returns: undefined
       }
+      throws_ok: { Args: { "": string }; Returns: string }
+      todo:
+        | { Args: { how_many: number }; Returns: boolean[] }
+        | { Args: { how_many: number; why: string }; Returns: boolean[] }
+        | { Args: { why: string }; Returns: boolean[] }
+        | { Args: { how_many: number; why: string }; Returns: boolean[] }
+      todo_end: { Args: never; Returns: boolean[] }
+      todo_start:
+        | { Args: never; Returns: boolean[] }
+        | { Args: { "": string }; Returns: boolean[] }
       verify_user_pin: {
         Args: { p_pin: string; p_user_id: string }
         Returns: boolean
@@ -2082,6 +2406,18 @@ export type Database = {
         | "purchase"
         | "waste"
         | "adjustment"
+        | "transfer_in"
+        | "transfer_out"
+        | "production_in"
+        | "production_out"
+        | "adjustment_in"
+        | "adjustment_out"
+        | "opname_in"
+        | "opname_out"
+        | "incoming"
+        | "purchase_return"
+        | "reservation_hold"
+        | "reservation_release"
       order_status:
         | "draft"
         | "paid"
@@ -2106,7 +2442,9 @@ export type Database = {
       shift_status: "open" | "closed"
     }
     CompositeTypes: {
-      [_ in never]: never
+      _time_trial_type: {
+        a_time: number | null
+      }
     }
   }
 }
@@ -2229,9 +2567,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       customer_type: ["retail", "b2b"],
@@ -2245,6 +2580,18 @@ export const Constants = {
         "purchase",
         "waste",
         "adjustment",
+        "transfer_in",
+        "transfer_out",
+        "production_in",
+        "production_out",
+        "adjustment_in",
+        "adjustment_out",
+        "opname_in",
+        "opname_out",
+        "incoming",
+        "purchase_return",
+        "reservation_hold",
+        "reservation_release",
       ],
       order_status: ["draft", "paid", "voided", "pending_payment", "completed"],
       order_type: ["dine_in", "take_out", "delivery"],
@@ -2268,4 +2615,3 @@ export const Constants = {
     },
   },
 } as const
-

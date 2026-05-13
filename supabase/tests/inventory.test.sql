@@ -27,12 +27,18 @@
 --   T13 Row-lock serialization: two adjusts on same row sum correctly (no lost update)
 --   T14 void_order_rpc + complete_order regression (sale_void restores stock)
 --   T15 record_stock_movement_v1: REVOKE EXECUTE enforced on `authenticated` role
+--   T16 record_incoming_stock_v1: CASHIER -> forbidden (P0003)
+--   T17 record_incoming_stock_v1: MANAGER + qty 0 -> quantity_must_be_positive
+--   T18 record_incoming_stock_v1: MANAGER happy path (no supplier) — movement row +
+--       current_stock bump + audit row
+--   T19 record_incoming_stock_v1: MANAGER + soft-deleted supplier -> P0002
+--   T20 record_incoming_stock_v1: idempotent replay (same key, identical args)
 
 BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-SELECT plan(15);
+SELECT plan(20);
 
 -- ---------------------------------------------------------------------------
 -- Test fixtures.
@@ -44,6 +50,16 @@ ON CONFLICT (id) DO NOTHING;
 INSERT INTO suppliers (id, code, name, is_active)
 VALUES ('11111111-2222-3333-4444-666666666666'::uuid, 'PGTAP-INACT', 'pgTAP Inactive', false)
 ON CONFLICT (id) DO NOTHING;
+
+-- Soft-deleted supplier fixture for T19 (record_incoming_stock_v1).
+INSERT INTO suppliers (id, code, name, is_active, deleted_at)
+VALUES (
+  '11111111-2222-3333-4444-777777777777'::uuid,
+  'PGTAP-DEL', 'pgTAP Soft-Deleted', true, now()
+) ON CONFLICT (id) DO NOTHING;
+-- Re-assert deleted_at in case the row was created by a prior run as active.
+UPDATE suppliers SET deleted_at = now(), is_active = true
+ WHERE id = '11111111-2222-3333-4444-777777777777'::uuid;
 
 INSERT INTO products (id, sku, name, category_id, retail_price, current_stock, min_stock_threshold)
 VALUES (
@@ -495,6 +511,184 @@ SELECT ok(
   ),
   'T15: record_stock_movement_v1 EXECUTE is REVOKED from authenticated role'
 );
+
+-- =========================================================================
+-- T16 — record_incoming_stock_v1 from CASHIER (no inventory.receive) -> P0003
+-- =========================================================================
+DO $$
+DECLARE v_cashier UUID;
+BEGIN
+  SELECT auth_user_id INTO v_cashier FROM user_profiles WHERE employee_code = 'EMP001';
+  IF v_cashier IS NULL THEN
+    RAISE EXCEPTION 'Seed user EMP001 (CASHIER) not found — run pnpm db:reset first';
+  END IF;
+  PERFORM pg_temp.set_jwt_uid(v_cashier);
+END $$;
+
+SELECT throws_ok(
+  $$ SELECT record_incoming_stock_v1(
+       '99999999-aaaa-bbbb-cccc-111111111111'::uuid,
+       1.000,
+       NULL, NULL, 'T16 cashier should fail'
+     ) $$,
+  'P0003',
+  'forbidden',
+  'T16: CASHIER without inventory.receive receives forbidden (P0003)'
+);
+
+-- Restore MANAGER context for T17 (MANAGER has inventory.receive per
+-- has_permission v7 / migration 20260516000004).
+DO $$
+DECLARE v_manager UUID;
+BEGIN
+  SELECT auth_user_id INTO v_manager FROM user_profiles WHERE employee_code = 'EMP003';
+  IF v_manager IS NULL THEN
+    RAISE EXCEPTION 'Seed user EMP003 (MANAGER) not found — run pnpm db:reset first';
+  END IF;
+  PERFORM pg_temp.set_jwt_uid(v_manager);
+END $$;
+
+-- =========================================================================
+-- T17 — record_incoming_stock_v1 with quantity = 0 -> quantity_must_be_positive
+-- =========================================================================
+SELECT throws_ok(
+  $$ SELECT record_incoming_stock_v1(
+       '99999999-aaaa-bbbb-cccc-111111111111'::uuid,
+       0,
+       NULL, NULL, 'T17 zero qty'
+     ) $$,
+  NULL,
+  'quantity_must_be_positive',
+  'T17: MANAGER + qty=0 rejected with quantity_must_be_positive'
+);
+
+-- =========================================================================
+-- T18 — record_incoming_stock_v1 MANAGER happy path (no supplier, qty 5):
+--       stock_movements row with movement_type='incoming' and supplier_id IS NULL,
+--       products.current_stock increased by 5, one new audit_log row.
+-- =========================================================================
+DO $t18$
+DECLARE
+  v_manager UUID;
+  v_result JSONB;
+  v_mvt_id UUID;
+  v_mvt RECORD;
+  v_audit_count INT;
+  v_before NUMERIC;
+  v_after NUMERIC;
+BEGIN
+  SELECT auth_user_id INTO v_manager FROM user_profiles WHERE employee_code = 'EMP003';
+  PERFORM pg_temp.set_jwt_uid(v_manager);
+  UPDATE products SET current_stock = 10
+    WHERE id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid;
+  SELECT current_stock INTO v_before FROM products
+    WHERE id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid;
+
+  SELECT record_incoming_stock_v1(
+    '99999999-aaaa-bbbb-cccc-111111111111'::uuid,
+    5.000,
+    NULL, NULL, 'T18 free-form receipt'
+  ) INTO v_result;
+  v_mvt_id := (v_result->>'movement_id')::uuid;
+
+  SELECT movement_type, quantity, supplier_id
+    INTO v_mvt FROM stock_movements WHERE id = v_mvt_id;
+  SELECT COUNT(*) INTO v_audit_count
+    FROM audit_log
+   WHERE subject_table = 'stock_movements' AND subject_id = v_mvt_id;
+  SELECT current_stock INTO v_after FROM products
+    WHERE id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid;
+
+  PERFORM set_config('breakery.t18_pass',
+    CASE WHEN
+      v_mvt.movement_type = 'incoming'::movement_type
+      AND v_mvt.supplier_id IS NULL
+      AND v_mvt.quantity = 5.000
+      AND v_after = v_before + 5.000
+      AND v_audit_count = 1
+    THEN 'true' ELSE 'false' END, false);
+END $t18$;
+SELECT ok(current_setting('breakery.t18_pass')::boolean,
+  'T18: MANAGER + no supplier + qty 5.000 yields incoming movement, +5 stock, 1 audit row');
+
+-- =========================================================================
+-- T19 — record_incoming_stock_v1 with soft-deleted supplier -> P0002
+-- =========================================================================
+SELECT throws_ok(
+  $$ SELECT record_incoming_stock_v1(
+       '99999999-aaaa-bbbb-cccc-111111111111'::uuid,
+       3.000,
+       '11111111-2222-3333-4444-777777777777'::uuid,
+       NULL, 'T19 soft-deleted supplier'
+     ) $$,
+  'P0002',
+  'supplier_not_found_or_inactive',
+  'T19: MANAGER + soft-deleted supplier rejected with supplier_not_found_or_inactive (P0002)'
+);
+
+-- =========================================================================
+-- T20 — record_incoming_stock_v1 idempotent replay (same idempotency_key):
+--       second call returns idempotent_replay=true, only ONE stock_movements
+--       row exists for that key, current_stock only bumped once.
+-- =========================================================================
+DO $t20$
+DECLARE
+  v_manager UUID;
+  v_key UUID := '00000000-0000-0000-0000-000000000def'::uuid;
+  v_r1 JSONB;
+  v_r2 JSONB;
+  v_row_count INT;
+  v_before NUMERIC;
+  v_after_first NUMERIC;
+  v_after_second NUMERIC;
+BEGIN
+  SELECT auth_user_id INTO v_manager FROM user_profiles WHERE employee_code = 'EMP003';
+  PERFORM pg_temp.set_jwt_uid(v_manager);
+  UPDATE products SET current_stock = 10
+    WHERE id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid;
+  -- Clean any prior T20 idempotency row so we measure this run only.
+  DELETE FROM stock_movements WHERE idempotency_key = v_key;
+  SELECT current_stock INTO v_before FROM products
+    WHERE id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid;
+
+  SELECT record_incoming_stock_v1(
+    '99999999-aaaa-bbbb-cccc-111111111111'::uuid,
+    7.000,
+    NULL, NULL, 'T20 first', v_key
+  ) INTO v_r1;
+  SELECT current_stock INTO v_after_first FROM products
+    WHERE id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid;
+
+  SELECT record_incoming_stock_v1(
+    '99999999-aaaa-bbbb-cccc-111111111111'::uuid,
+    7.000,
+    NULL, NULL, 'T20 second (replay)', v_key
+  ) INTO v_r2;
+  SELECT current_stock INTO v_after_second FROM products
+    WHERE id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid;
+
+  SELECT COUNT(*) INTO v_row_count
+    FROM stock_movements
+   WHERE idempotency_key = v_key
+     AND product_id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid;
+
+  PERFORM set_config('breakery.t20_pass',
+    CASE WHEN
+      (v_r1->>'movement_id') = (v_r2->>'movement_id')
+      AND (v_r2->>'idempotent_replay')::boolean = true
+      AND v_row_count = 1
+      AND v_after_first = v_before + 7.000
+      AND v_after_second = v_after_first
+    THEN 'true' ELSE 'false' END, false);
+END $t20$;
+SELECT ok(current_setting('breakery.t20_pass')::boolean,
+  'T20: record_incoming_stock_v1 idempotency replay yields one row + idempotent_replay=true + stock bumped once');
+
+-- Restore admin context for any future tests appended below.
+DO $$
+BEGIN
+  PERFORM pg_temp.set_jwt_uid(current_setting('breakery.admin_uid')::uuid);
+END $$;
 
 -- ---------------------------------------------------------------------------
 SELECT * FROM finish();

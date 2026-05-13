@@ -188,8 +188,8 @@ Targeted iteration (much faster than full suite during phase work):
 pnpm --filter @breakery/supabase test inventory     # Vitest live RPC tests
 pnpm --filter @breakery/backoffice test inventory   # BO smoke + unit
 pnpm --filter @breakery/domain test inventory       # pure-TS unit
-pnpm test:pgtap                                      # pgTAP suite (supabase/tests/*.test.sql)
-bash supabase/tests/run_pgtap.sh inventory_phase1_complete   # one pgTAP file
+bash supabase/tests/run_pgtap.sh                     # full pgTAP suite (no pnpm script — direct runner)
+bash supabase/tests/run_pgtap.sh inventory_phase1_complete   # one pgTAP file by stem
 ```
 
 After Supabase schema changes (new migration), **always** run `pnpm db:reset && pnpm db:types` and commit the regenerated `packages/supabase/src/types.generated.ts`. A missing regen is the #1 cause of broken CI on this repo.
