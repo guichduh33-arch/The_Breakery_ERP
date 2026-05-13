@@ -101,7 +101,7 @@ export default function PosPage() {
 
       <div className="flex-1 flex overflow-hidden">
         <CategorySidebar selectedSlug={selectedSlug} onSelect={setSelectedSlug} />
-        <main className="flex-1 flex flex-col">
+        <main id="main-content" tabIndex={-1} className="flex-1 flex flex-col">
           <div className="h-12 px-6 flex items-center border-b border-border-subtle">
             <h1 className="text-text-secondary text-sm uppercase tracking-widest">
               {selectedSlug === 'favorites' ? 'Favorites' : selectedSlug ?? 'All'}

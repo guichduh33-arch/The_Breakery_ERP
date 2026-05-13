@@ -10,13 +10,15 @@ export interface TransferStatusBadgeProps {
   status: TransferStatus;
 }
 
-// Tailwind utility classes — colour mapping per spec C-21 / Phase 3 design notes.
+// Token-driven colour mapping per spec C-21 / Phase 3 design notes.
+// Session 13 (ui-steward batch 1): migrated from raw Tailwind palette literals
+// (gray/amber/blue/emerald/red 500) to semantic + accent design tokens.
 const STYLES: Record<TransferStatus, string> = {
-  draft:      'bg-gray-500/15 text-gray-300 border-gray-500/30',
-  pending:    'bg-amber-500/15 text-amber-400 border-amber-500/30',
-  in_transit: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
-  received:   'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
-  cancelled:  'bg-red-500/15 text-red-400 border-red-500/30',
+  draft:      'bg-bg-overlay text-text-secondary border-border-subtle',
+  pending:    'bg-warning-soft text-warning border-warning/30',
+  in_transit: 'bg-info-soft text-info border-info/30',
+  received:   'bg-success-soft text-success border-success/30',
+  cancelled:  'bg-danger-soft text-danger border-danger/30',
 };
 
 const LABELS: Record<TransferStatus, string> = {

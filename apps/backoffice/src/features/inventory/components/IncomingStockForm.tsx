@@ -165,7 +165,7 @@ export default function IncomingStockForm({ onSuccess }: IncomingStockFormProps)
         </div>
       )}
       {successMsg !== null && (
-        <div role="status" className="rounded-md border border-emerald-500/40 bg-emerald-500/5 p-2 text-xs text-emerald-500">
+        <div role="status" className="rounded-md border border-success/40 bg-success-soft p-2 text-xs text-success">
           {successMsg}
         </div>
       )}

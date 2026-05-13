@@ -88,7 +88,7 @@ export function BackofficeLayout() {
             <LogOut className="h-4 w-4 mr-2" aria-hidden /> Logout
           </Button>
         </header>
-        <main className="flex-1 overflow-y-auto p-6">
+        <main id="main-content" tabIndex={-1} className="flex-1 overflow-y-auto p-6">
           <Outlet />
         </main>
       </div>
