@@ -119,6 +119,37 @@ CREATE) to require the right field combination per type:
 
 ---
 
+## D-W2-2C-06 — Migration 000080 split into 000080 (enum) + 000081 (columns + CHECK)
+
+**INDEX line 549-550 implies:** Three migrations `000080..000082`.
+**Actual deployment:** Four migrations `000080..000083`.
+
+### Cause
+Postgres requires `ALTER TYPE … ADD VALUE` to be committed before the new
+enum value can be referenced inside any expression (e.g. a CHECK
+constraint that mentions `type = 'threshold'`). MCP `apply_migration`
+wraps each call in a transaction ⇒ enum + CHECK referencing the new value
+cannot land in the same migration.
+
+### Resolution
+- `20260517000080_extend_promotions_schema_bogo_threshold.sql` — Part 1/2,
+  enum-only (`ALTER TYPE … ADD VALUE IF NOT EXISTS 'threshold'`, `'bundle'`).
+- `20260517000081_extend_promotions_columns_phase_2c.sql` — Part 2/2,
+  column additions + index + replacement `chk_promotion_type_fields`.
+- `20260517000082_create_evaluate_promotions_v1.sql` — function (was 000081).
+- `20260517000083_seed_demo_bogo_promotion.sql` — seed (was 000082).
+
+Staging migration log shows both halves committed (`extend_promotions_schema_bogo_threshold`
++ `extend_promotions_columns_phase_2c`) as separate rows.
+
+### Verification
+- `SELECT unnest(enum_range(NULL::promotion_type))` returns 6 values.
+- `\d promotions` shows the 7 new columns + index.
+- `pg_get_constraintdef('chk_promotion_type_fields')` includes the new
+  branches for `threshold` and `bundle` and both BOGO shapes.
+
+---
+
 ## D-W2-2C-05 — Added `bundle_price DECIMAL(14,2)` column not in INDEX
 
 **INDEX line 550 lists:** `bundle_product_ids UUID[] NULL` only.
