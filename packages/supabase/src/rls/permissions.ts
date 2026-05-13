@@ -76,7 +76,21 @@ export type PermissionCode =
   | 'reports.sales.read'
   | 'reports.inventory.read'
   | 'reports.audit.read'
-  | 'reports.financial.read';
+  | 'reports.financial.read'
+  | 'expenses.read'
+  | 'expenses.create'
+  | 'expenses.update'
+  | 'expenses.delete'
+  | 'expenses.approve'
+  | 'expenses.pay'
+  | 'expenses.manage'
+  // Session 13 / Phase 3.C
+  | 'shift.open'
+  | 'shift.close'
+  | 'shift.cash_movement'
+  | 'customers.b2b.update'
+  | 'inventory.reservation.create'
+  | 'inventory.reservation.release';
 
 /**
  * Check whether a user has a single permission. Pure client-side lookup —

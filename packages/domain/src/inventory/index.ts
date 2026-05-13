@@ -45,3 +45,11 @@ export {
   type StockLotForFifo,
   type FifoSelectionResult,
 } from './expiry/fifo.js';
+
+// Session 13 — Phase 3.C reservation accounting helpers.
+export {
+  activeHeldQuantity,
+  availableQuantity,
+  canHoldQuantity,
+  type ActiveReservation,
+} from './reservations/index.js';
