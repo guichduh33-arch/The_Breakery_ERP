@@ -14,6 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      accounting_mappings: {
+        Row: {
+          account_code: string
+          created_at: string
+          description: string | null
+          is_active: boolean
+          mapping_key: string
+          updated_at: string
+        }
+        Insert: {
+          account_code: string
+          created_at?: string
+          description?: string | null
+          is_active?: boolean
+          mapping_key: string
+          updated_at?: string
+        }
+        Update: {
+          account_code?: string
+          created_at?: string
+          description?: string | null
+          is_active?: boolean
+          mapping_key?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounting_mappings_account_code_fkey"
+            columns: ["account_code"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
       accounts: {
         Row: {
           account_class: number
@@ -58,44 +93,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
-      }
-      audit_log: {
-        Row: {
-          action: string
-          actor_profile_id: string | null
-          id: number
-          occurred_at: string
-          payload: Json | null
-          subject_id: string | null
-          subject_table: string
-        }
-        Insert: {
-          action: string
-          actor_profile_id?: string | null
-          id?: number
-          occurred_at?: string
-          payload?: Json | null
-          subject_id?: string | null
-          subject_table: string
-        }
-        Update: {
-          action?: string
-          actor_profile_id?: string | null
-          id?: number
-          occurred_at?: string
-          payload?: Json | null
-          subject_id?: string | null
-          subject_table?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "audit_log_actor_profile_id_fkey"
-            columns: ["actor_profile_id"]
-            isOneToOne: false
-            referencedRelation: "user_profiles"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       audit_logs: {
         Row: {
@@ -395,6 +392,93 @@ export type Database = {
         }
         Relationships: []
       }
+      edge_function_rate_limits: {
+        Row: {
+          bucket_key: string
+          function_name: string
+          id: number
+          ip_address: string
+          request_count: number
+          window_end: string
+          window_start: string
+        }
+        Insert: {
+          bucket_key: string
+          function_name: string
+          id?: number
+          ip_address: string
+          request_count?: number
+          window_end: string
+          window_start?: string
+        }
+        Update: {
+          bucket_key?: string
+          function_name?: string
+          id?: number
+          ip_address?: string
+          request_count?: number
+          window_end?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
+      fiscal_periods: {
+        Row: {
+          closed_at: string | null
+          closed_by: string | null
+          created_at: string
+          id: string
+          locked_at: string | null
+          locked_by: string | null
+          notes: string | null
+          period_end: string
+          period_start: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          closed_at?: string | null
+          closed_by?: string | null
+          created_at?: string
+          id?: string
+          locked_at?: string | null
+          locked_by?: string | null
+          notes?: string | null
+          period_end: string
+          period_start: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          closed_at?: string | null
+          closed_by?: string | null
+          created_at?: string
+          id?: string
+          locked_at?: string | null
+          locked_by?: string | null
+          notes?: string | null
+          period_end?: string
+          period_start?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fiscal_periods_closed_by_fkey"
+            columns: ["closed_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fiscal_periods_locked_by_fkey"
+            columns: ["locked_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       internal_transfers: {
         Row: {
           approved_by: string | null
@@ -486,6 +570,7 @@ export type Database = {
           entry_date: string
           entry_number: string
           id: string
+          metadata: Json
           reference_id: string | null
           reference_type: string | null
           status: string
@@ -500,6 +585,7 @@ export type Database = {
           entry_date: string
           entry_number: string
           id?: string
+          metadata?: Json
           reference_id?: string | null
           reference_type?: string | null
           status?: string
@@ -514,6 +600,7 @@ export type Database = {
           entry_date?: string
           entry_number?: string
           id?: string
+          metadata?: Json
           reference_id?: string | null
           reference_type?: string | null
           status?: string
@@ -572,6 +659,68 @@ export type Database = {
             columns: ["journal_entry_id"]
             isOneToOne: false
             referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journal_entry_sequences: {
+        Row: {
+          created_at: string
+          date: string
+          last_number: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          last_number?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          last_number?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      kiosk_jwt_signing_keys: {
+        Row: {
+          created_by: string | null
+          id: string
+          is_active: boolean
+          key_id: string
+          notes: string | null
+          rotated_in_at: string
+          rotated_out_at: string | null
+          scope: string
+        }
+        Insert: {
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          key_id: string
+          notes?: string | null
+          rotated_in_at?: string
+          rotated_out_at?: string | null
+          scope: string
+        }
+        Update: {
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          key_id?: string
+          notes?: string | null
+          rotated_in_at?: string
+          rotated_out_at?: string | null
+          scope?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kiosk_jwt_signing_keys_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1156,6 +1305,7 @@ export type Database = {
           cost_price: number
           created_at: string
           current_stock: number
+          default_shelf_life_hours: number | null
           deleted_at: string | null
           id: string
           image_url: string | null
@@ -1176,6 +1326,7 @@ export type Database = {
           cost_price?: number
           created_at?: string
           current_stock?: number
+          default_shelf_life_hours?: number | null
           deleted_at?: string | null
           id?: string
           image_url?: string | null
@@ -1196,6 +1347,7 @@ export type Database = {
           cost_price?: number
           created_at?: string
           current_stock?: number
+          default_shelf_life_hours?: number | null
           deleted_at?: string | null
           id?: string
           image_url?: string | null
@@ -1470,6 +1622,7 @@ export type Database = {
           authorized_by: string
           created_at: string
           id: string
+          idempotency_key: string | null
           is_full_void: boolean
           order_id: string
           reason: string
@@ -1483,6 +1636,7 @@ export type Database = {
           authorized_by: string
           created_at?: string
           id?: string
+          idempotency_key?: string | null
           is_full_void?: boolean
           order_id: string
           reason: string
@@ -1496,6 +1650,7 @@ export type Database = {
           authorized_by?: string
           created_at?: string
           id?: string
+          idempotency_key?: string | null
           is_full_void?: boolean
           order_id?: string
           reason?: string
@@ -1568,6 +1723,52 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      role_permissions: {
+        Row: {
+          granted_at: string
+          granted_by: string | null
+          is_granted: boolean
+          permission_code: string
+          role_code: string
+        }
+        Insert: {
+          granted_at?: string
+          granted_by?: string | null
+          is_granted?: boolean
+          permission_code: string
+          role_code: string
+        }
+        Update: {
+          granted_at?: string
+          granted_by?: string | null
+          is_granted?: boolean
+          permission_code?: string
+          role_code?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "role_permissions_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "role_permissions_permission_code_fkey"
+            columns: ["permission_code"]
+            isOneToOne: false
+            referencedRelation: "permissions"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "role_permissions_role_code_fkey"
+            columns: ["role_code"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["code"]
+          },
+        ]
       }
       roles: {
         Row: {
@@ -1722,6 +1923,69 @@ export type Database = {
           },
         ]
       }
+      stock_lots: {
+        Row: {
+          batch_number: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          idempotency_key: string | null
+          location_id: string | null
+          metadata: Json
+          product_id: string
+          quantity: number
+          received_at: string
+          status: string
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          batch_number?: string | null
+          created_at?: string
+          expires_at: string
+          id?: string
+          idempotency_key?: string | null
+          location_id?: string | null
+          metadata?: Json
+          product_id: string
+          quantity: number
+          received_at?: string
+          status?: string
+          unit: string
+          updated_at?: string
+        }
+        Update: {
+          batch_number?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          idempotency_key?: string | null
+          location_id?: string | null
+          metadata?: Json
+          product_id?: string
+          quantity?: number
+          received_at?: string
+          status?: string
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_lots_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "stock_locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_lots_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stock_movements: {
         Row: {
           created_at: string
@@ -1729,6 +1993,7 @@ export type Database = {
           from_section_id: string | null
           id: string
           idempotency_key: string | null
+          lot_id: string | null
           metadata: Json
           movement_type: Database["public"]["Enums"]["movement_type"]
           product_id: string
@@ -1747,6 +2012,7 @@ export type Database = {
           from_section_id?: string | null
           id?: string
           idempotency_key?: string | null
+          lot_id?: string | null
           metadata?: Json
           movement_type: Database["public"]["Enums"]["movement_type"]
           product_id: string
@@ -1765,6 +2031,7 @@ export type Database = {
           from_section_id?: string | null
           id?: string
           idempotency_key?: string | null
+          lot_id?: string | null
           metadata?: Json
           movement_type?: Database["public"]["Enums"]["movement_type"]
           product_id?: string
@@ -1790,6 +2057,13 @@ export type Database = {
             columns: ["from_section_id"]
             isOneToOne: false
             referencedRelation: "sections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_lot_id_fkey"
+            columns: ["lot_id"]
+            isOneToOne: false
+            referencedRelation: "stock_lots"
             referencedColumns: ["id"]
           },
           {
@@ -1935,6 +2209,58 @@ export type Database = {
         }
         Relationships: []
       }
+      user_permission_overrides: {
+        Row: {
+          expires_at: string | null
+          granted_at: string
+          granted_by: string | null
+          is_granted: boolean
+          permission_code: string
+          reason: string
+          user_profile_id: string
+        }
+        Insert: {
+          expires_at?: string | null
+          granted_at?: string
+          granted_by?: string | null
+          is_granted: boolean
+          permission_code: string
+          reason: string
+          user_profile_id: string
+        }
+        Update: {
+          expires_at?: string | null
+          granted_at?: string
+          granted_by?: string | null
+          is_granted?: boolean
+          permission_code?: string
+          reason?: string
+          user_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_permission_overrides_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_permission_overrides_permission_code_fkey"
+            columns: ["permission_code"]
+            isOneToOne: false
+            referencedRelation: "permissions"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "user_permission_overrides_user_profile_id_fkey"
+            columns: ["user_profile_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_profiles: {
         Row: {
           auth_user_id: string | null
@@ -2040,6 +2366,44 @@ export type Database = {
       }
     }
     Views: {
+      audit_log: {
+        Row: {
+          action: string | null
+          actor_profile_id: string | null
+          id: number | null
+          occurred_at: string | null
+          payload: Json | null
+          subject_id: string | null
+          subject_table: string | null
+        }
+        Insert: {
+          action?: string | null
+          actor_profile_id?: string | null
+          id?: number | null
+          occurred_at?: string | null
+          payload?: Json | null
+          subject_id?: string | null
+          subject_table?: string | null
+        }
+        Update: {
+          action?: string | null
+          actor_profile_id?: string | null
+          id?: number | null
+          occurred_at?: string | null
+          payload?: Json | null
+          subject_id?: string | null
+          subject_table?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_actor_id_fkey"
+            columns: ["actor_profile_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pg_all_foreign_keys: {
         Row: {
           fk_columns: unknown[] | null
@@ -2093,6 +2457,10 @@ export type Database = {
       _prokind: { Args: { p_oid: unknown }; Returns: unknown }
       _query: { Args: { "": string }; Returns: string }
       _refine_vol: { Args: { "": string }; Returns: string }
+      _resolve_fifo_lot: {
+        Args: { p_product_id: string; p_quantity_needed: number }
+        Returns: string
+      }
       _retval: { Args: { "": string }; Returns: string }
       _table_privs: { Args: never; Returns: unknown[] }
       _temptypes: { Args: { "": string }; Returns: string }
@@ -2112,6 +2480,10 @@ export type Database = {
           p_product_id: string
           p_reason: string
         }
+        Returns: Json
+      }
+      calculate_vat_payable: {
+        Args: { p_period_end: string; p_period_start: string }
         Returns: Json
       }
       cancel_internal_transfer_v1: {
@@ -2167,6 +2539,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      check_fiscal_period_open: { Args: { p_date: string }; Returns: undefined }
       col_is_null:
         | {
             Args: {
@@ -2203,27 +2576,6 @@ export type Database = {
             }
             Returns: string
           }
-      complete_order_with_payment: {
-        Args: {
-          p_customer_id?: string
-          p_discount_amount?: number
-          p_discount_authorized_by?: string
-          p_discount_reason?: string
-          p_discount_type?: string
-          p_discount_value?: number
-          p_idempotency_key?: string
-          p_items: Json
-          p_loyalty_multiplier?: number
-          p_loyalty_points_redeemed?: number
-          p_order_type: Database["public"]["Enums"]["order_type"]
-          p_payment?: Json
-          p_payments?: Json
-          p_promotions?: Json
-          p_session_id: string
-          p_table_number?: string
-        }
-        Returns: Json
-      }
       complete_order_with_payment_v9: {
         Args: {
           p_customer_id?: string
@@ -2260,6 +2612,19 @@ export type Database = {
         }
         Returns: Json
       }
+      create_stock_lot_v1: {
+        Args: {
+          p_batch_number?: string
+          p_expires_at?: string
+          p_idempotency_key?: string
+          p_location_id?: string
+          p_metadata?: Json
+          p_product_id: string
+          p_quantity: number
+          p_unit?: string
+        }
+        Returns: Json
+      }
       create_tablet_order: {
         Args: {
           p_items: Json
@@ -2292,11 +2657,36 @@ export type Database = {
       findfuncs: { Args: { "": string }; Returns: string[] }
       finish: { Args: { exception_on_failure?: boolean }; Returns: string[] }
       format_type_string: { Args: { "": string }; Returns: string }
+      get_balance_sheet_data: { Args: { p_as_of?: string }; Returns: Json }
       get_current_profile_id: { Args: never; Returns: string }
       get_current_role: { Args: never; Returns: string }
       get_customer_product_price: {
         Args: { p_customer_id?: string; p_product_id: string }
         Returns: number
+      }
+      get_expiring_lots_v1: {
+        Args: {
+          p_hours_ahead?: number
+          p_limit?: number
+          p_offset?: number
+          p_product_id?: string
+        }
+        Returns: {
+          batch_number: string
+          expires_at: string
+          hours_remaining: number
+          id: string
+          location_id: string
+          location_name: string
+          product_id: string
+          product_name: string
+          product_sku: string
+          quantity: number
+          received_at: string
+          status: string
+          total_count: number
+          unit: string
+        }[]
       }
       get_loyalty_tier: { Args: { p_lifetime_points: number }; Returns: string }
       get_stock_levels_v1: {
@@ -2319,6 +2709,7 @@ export type Database = {
           total_count: number
         }[]
       }
+      has_kiosk_jwt: { Args: { p_required_scope?: string }; Returns: boolean }
       has_permission: {
         Args: { p_perm: string; p_uid: string }
         Returns: boolean
@@ -2334,6 +2725,7 @@ export type Database = {
       is_empty: { Args: { "": string }; Returns: string }
       isnt_empty: { Args: { "": string }; Returns: string }
       lives_ok: { Args: { "": string }; Returns: string }
+      mark_expired_lots_hourly: { Args: never; Returns: Json }
       mark_item_served: {
         Args: { p_item_id: string }
         Returns: {
@@ -2372,6 +2764,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      next_journal_entry_number: { Args: { p_date: string }; Returns: string }
       next_transfer_number: { Args: never; Returns: string }
       no_plan: { Args: never; Returns: boolean[] }
       num_failed: { Args: never; Returns: number }
@@ -2379,24 +2772,6 @@ export type Database = {
       pass:
         | { Args: never; Returns: string }
         | { Args: { "": string }; Returns: string }
-      pay_existing_order: {
-        Args: {
-          p_customer_id?: string
-          p_discount_amount?: number
-          p_discount_authorized_by?: string
-          p_discount_reason?: string
-          p_discount_type?: string
-          p_discount_value?: number
-          p_idempotency_key?: string
-          p_loyalty_multiplier?: number
-          p_loyalty_points_redeemed?: number
-          p_order_id: string
-          p_payment?: Json
-          p_payments?: Json
-          p_promotions?: Json
-        }
-        Returns: string
-      }
       pay_existing_order_v6: {
         Args: {
           p_customer_id?: string
@@ -2493,6 +2868,7 @@ export type Database = {
         Args: {
           p_from_section_id?: string
           p_idempotency_key?: string
+          p_lot_id?: string
           p_metadata?: Json
           p_movement_type: Database["public"]["Enums"]["movement_type"]
           p_product_id: string
@@ -2502,16 +2878,6 @@ export type Database = {
           p_to_section_id?: string
           p_unit?: string
           p_unit_cost?: number
-        }
-        Returns: Json
-      }
-      refund_order_rpc: {
-        Args: {
-          p_authorized_by: string
-          p_lines: Json
-          p_order_id: string
-          p_reason: string
-          p_tenders: Json
         }
         Returns: Json
       }
@@ -2525,6 +2891,10 @@ export type Database = {
           p_tenders: Json
         }
         Returns: Json
+      }
+      resolve_mapping_account: {
+        Args: { p_mapping_key: string }
+        Returns: string
       }
       round_idr: { Args: { amount: number }; Returns: number }
       runtests:
