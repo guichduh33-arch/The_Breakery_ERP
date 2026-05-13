@@ -8,7 +8,7 @@ import IncomingStockPage from '@/pages/IncomingStock.js';
 
 // Mutable permission set per test — vi.mock is hoisted, but the closure
 // inside reads `currentPerms` at call time so each test can swap it.
-let currentPerms: Set<string> = new Set();
+let currentPerms = new Set<string>();
 
 vi.mock('@/stores/authStore.js', () => ({
   useAuthStore: (sel: (s: { hasPermission: (p: string) => boolean }) => unknown) =>
