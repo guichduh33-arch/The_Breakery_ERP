@@ -65,7 +65,9 @@ export type PermissionCode =
   | 'inventory.read'
   | 'inventory.adjust'
   | 'inventory.receive'
-  | 'inventory.waste';
+  | 'inventory.waste'
+  | 'inventory.transfer.create'
+  | 'inventory.transfer.receive';
 
 /**
  * Check whether a user has a single permission. Pure client-side lookup —

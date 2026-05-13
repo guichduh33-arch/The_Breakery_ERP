@@ -8,6 +8,9 @@ import PromotionsPage from '@/pages/Promotions.js';
 import LoyaltyPage from '@/pages/Loyalty.js';
 import InventoryPage from '@/pages/Inventory.js';
 import IncomingStockPage from '@/pages/IncomingStock.js';
+import TransfersListPage from '@/pages/TransfersList.js';
+import TransferFormPage from '@/pages/TransferForm.js';
+import TransferDetailPage from '@/pages/TransferDetail.js';
 import SuppliersPage from '@/pages/Suppliers.js';
 import ComingSoonPage from '@/pages/ComingSoon.js';
 import { BackofficeLayout } from '@/layouts/BackofficeLayout.js';
@@ -65,6 +68,30 @@ export function AppRoutes() {
           element={
             <PermissionGate required="inventory.receive">
               <IncomingStockPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="inventory/transfers"
+          element={
+            <PermissionGate required="inventory.read">
+              <TransfersListPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="inventory/transfers/new"
+          element={
+            <PermissionGate required="inventory.transfer.create">
+              <TransferFormPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="inventory/transfers/:id"
+          element={
+            <PermissionGate required="inventory.read">
+              <TransferDetailPage />
             </PermissionGate>
           }
         />
