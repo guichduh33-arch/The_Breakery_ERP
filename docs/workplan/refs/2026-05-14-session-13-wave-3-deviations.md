@@ -275,3 +275,94 @@ should query `roles.code` before seeding role grants.
 - Migration `000136` applied successfully on second try.
 
 ---
+
+## D-W3-3B-01 — `expenses.{create,read,update,delete,approve}` already seeded by Phase 1.A
+
+**INDEX spec says:** "Seed perms `expenses.create` (staff+), `expenses.approve` (manager+), `expenses.pay` (manager+) via INSERT."
+**Reality on staging:** 5 of those perms already exist in `permissions` and `role_permissions`, granted to SUPER_ADMIN/ADMIN/MANAGER (some also to other roles).
+
+### Resolution
+Migration `20260517000120` only **adds** the missing two perms (`expenses.pay`, `expenses.manage`) and grants them to SUPER_ADMIN/ADMIN/MANAGER. All inserts are idempotent (`ON CONFLICT DO NOTHING`).
+
+### Verification
+- `SELECT count(*) FROM permissions WHERE code LIKE 'expenses.%'` returns 7.
+- `SELECT count(*) FROM role_permissions WHERE permission_code LIKE 'expenses.%'` returns 20.
+
+---
+
+## D-W3-3B-02 — V3 CoA uses 6xxx OpEx codes (not 5xxx as INDEX spec hinted)
+
+**INDEX spec says:** "Rent → 5210, Utilities → 5220 etc."
+**Reality:** Phase 1.A `000005` puts operational expenses at class 6: `6111 Salary`, `6112 Rent`, `6113 Utilities`, `6114 Supplies`, `6115 Marketing`, `6116 Maintenance`, `6190 Other`. Class 5 holds COGS (5110), Waste (5210), Cash Variance Loss (5910).
+
+### Resolution
+The 12 seeded `expense_categories` in `20260517000120` reference the 6xxx codes. Categories without a dedicated code (Transport, Insurance, Tax, Bank Fees, Office) fall back to `6190`. Finer CoA codes deferred to module #10 follow-ups.
+
+### Verification
+- `SELECT count(*) FROM expense_categories WHERE is_active=true` returns 12.
+- Each row's `account_id` FK resolves to an active 6xxx account (`is_postable=true`).
+
+---
+
+## D-W3-3B-03 — Three new `accounting_mappings` keys added by 120 (not 1.A)
+
+**INDEX spec says:** "If absent → seed via INSERT INTO accounting_mappings (do NOT modify Phase 1.A migrations)."
+
+### Resolution
+Migration `20260517000120` adds:
+- `EXPENSE_AP=2141` (Accounts Payable)
+- `EXPENSE_CASH_OUT=1110` (Cash on Hand)
+- `EXPENSE_VAT_INPUT=1151` (VAT Input — PPN Masukan)
+
+These complement the pre-existing `EXPENSE_DEFAULT=6190`. Purchase mappings (`PURCHASE_PAYABLE`, `PURCHASE_VAT_INPUT`) are deliberately NOT reused — expense and purchase flows remain decoupled at the mapping layer.
+
+### Verification
+- `SELECT count(*) FROM accounting_mappings WHERE mapping_key LIKE 'EXPENSE_%'` returns 4.
+
+---
+
+## D-W3-3B-04 — `expenses.payment_method` set is `{cash|transfer|card|credit}` (no qris/edc)
+
+**Reference module doc lists:** `cash | transfer | card | qris | edc`.
+**Phase 3.B spec narrows to:** `cash | transfer | card | credit`.
+
+### Resolution
+Migration `000120` enforces `CHECK IN ('cash','transfer','card','credit')`. `credit` triggers the AP path (DR cat / CR AP at approve ; DR AP / CR Cash at pay). `qris` and `edc` are POS sale-payment concepts (no separate `EXPENSE_*_QRIS` mapping was defined) and were dropped.
+
+### Verification
+- CHECK constraint visible via `pg_constraint`.
+- `create_expense_v1` raises ERRCODE `22023` if an invalid method is provided.
+
+---
+
+## D-W3-3B-05 — Receipt path is `expenses/{expense_id}/receipt.<ext>`, draft UUID generated client-side
+
+**INDEX spec says:** "use path convention `expenses/{expense_id}/receipt.{ext}`".
+
+### Resolution
+- Migration `000121` creates the private bucket `expense-receipts` (5 MB max, MIME-allowlisted to jpeg/png/webp/pdf).
+- Storage RLS gates writes via helper `storage_path_to_expense_id(text)` extracting the UUID from the path's 2nd segment.
+- INSERT/UPDATE: `expenses.manage` permission OR creator of a still-draft expense.
+- DELETE: `expenses.manage` only (audit safety).
+
+The BO `ExpenseForm` generates a client-side `crypto.randomUUID()` (the "draftId") to namespace the receipt path before the expense row exists. The path is persisted in `expenses.receipt_url` when `create_expense_v1` runs. If the form is abandoned, orphan receipts stay in the bucket — cleanup is out of scope for Phase 3.B.
+
+### Verification
+- `SELECT id FROM storage.buckets WHERE id='expense-receipts'` returns a private bucket with the documented constraints.
+- Storage policy names appear in `pg_policies WHERE schemaname='storage'`.
+
+---
+
+## D-W3-3B-06 — pgTAP tests JE shape directly (no auth.uid spoof) ; RPC perm gate covered by Vitest live
+
+**Constraint:** pgTAP runs as service_role superuser ; `auth.uid()` returns NULL. The expense RPCs guard with ERRCODE `28000` ("caller not authenticated"). Forging a JWT inside pgTAP is non-trivial.
+
+### Resolution
+- **pgTAP (`supabase/tests/expenses.test.sql`, 15 tests):** validate schema, seeded categories, `next_expense_number` formatting + monotonicity, RLS-enabled flag, JE balance for both cash and credit+VAT paths, idempotency_key UNIQUE constraint. Uses direct INSERTs to `expenses` + `journal_entries` exercising the same helpers (`resolve_mapping_account`, `next_journal_entry_number`) the RPC uses.
+- **Vitest live (`supabase/tests/functions/expenses.test.ts`):** logs in cashier + manager + admin via `auth-verify-pin` to exercise full perm-gate + RPC cycle (create→submit→approve→pay) end-to-end.
+
+### Verification
+- pgTAP: 15/15 OK against staging via MCP `execute_sql` with BEGIN/ROLLBACK envelope.
+- Vitest: ready to run via `pnpm --filter @breakery/supabase test expenses` (requires env vars: VITE_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, EMP000/EMP001/EMP003 PIN-auth profiles).
+
+---
