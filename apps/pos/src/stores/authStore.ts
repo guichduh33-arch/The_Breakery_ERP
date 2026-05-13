@@ -5,12 +5,13 @@ import {
   loginWithPin,
   getSession,
   logoutSession,
+  setSupabaseAccessToken,
   type LoginResponse,
   type PermissionCode,
   hasPermission as has,
 } from '@breakery/supabase';
 import { safeStorage, logger } from '@breakery/utils';
-import { supabase, supabaseUrl } from '../lib/supabase.js';
+import { supabaseUrl } from '../lib/supabase.js';
 
 interface AuthUser {
   id: string;
@@ -60,10 +61,12 @@ export const useAuthStore = create<AuthState>()(
             pin,
             device_type: 'pos',
           });
-          await supabase.auth.setSession({
-            access_token: res.auth.access_token,
-            refresh_token: res.auth.refresh_token,
-          });
+          // Session 13 (task 25-003) — drop client PIN fallback.
+          // The PIN flow mints an HS256 JWT that GoTrue (ES256-only on modern
+          // Supabase CLI) refuses to validate via `auth.setSession`. We inject
+          // the bearer token directly via the custom-fetch wrapper. NO
+          // `supabase.auth.setSession()` here, NO `signOut()` in logout.
+          setSupabaseAccessToken(res.auth.access_token);
           set({
             user: res.user,
             sessionToken: res.session.token,
@@ -73,9 +76,17 @@ export const useAuthStore = create<AuthState>()(
           });
           logger.info('login.success', { user_id: res.user.id });
         } catch (err: unknown) {
+          // Session 13 (task 25-004) — error redaction. The EF already
+          // collapses identity-mode failures to `invalid_credentials`. Show
+          // that generically ; never echo internal error codes to the user.
           const e = err as { details?: { error?: string }; message?: string };
-          set({ error: e.details?.error ?? e.message ?? 'login_failed', isLoading: false });
-          logger.warn('login.failed', { reason: e.details?.error ?? e.message });
+          const rawError = e.details?.error ?? e.message ?? 'login_failed';
+          const userFacing =
+            rawError === 'rate_limited' || rawError === 'account_locked'
+              ? rawError
+              : 'invalid_credentials';
+          set({ error: userFacing, isLoading: false });
+          logger.warn('login.failed', { reason: rawError });
           throw err;
         }
       },
@@ -85,7 +96,8 @@ export const useAuthStore = create<AuthState>()(
         if (token) {
           try { await logoutSession(supabaseUrl, token); } catch { /* ignore */ }
         }
-        await supabase.auth.signOut().catch((_err: unknown) => { /* ignore sign out error */ });
+        // Drop the client-side bearer (counterpart to setSupabaseAccessToken on login).
+        setSupabaseAccessToken(null);
         set({ user: null, sessionToken: null, permissions: [], isAuthenticated: false, error: null });
       },
 
