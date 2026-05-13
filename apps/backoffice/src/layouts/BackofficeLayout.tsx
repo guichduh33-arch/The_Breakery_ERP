@@ -5,6 +5,7 @@ import {
   Calculator, BarChart3, Settings, LogOut, Tag, Heart, PieChart, Shield,
   ChefHat, BookOpen, ClipboardList, GitCommitHorizontal, BellRing, MapPin,
   Receipt, ShieldCheck, UserPlus, CalendarDays, Mail, FileText,
+  Printer, Network,
   type LucideIcon,
 } from 'lucide-react';
 import { Button, cn } from '@breakery/ui';
@@ -57,6 +58,8 @@ const NAV: NavItem[] = [
   { to: '/backoffice/settings/templates/email',  label: 'Email templates',  icon: Mail,         permission: 'settings.read', indent: 1 },
   { to: '/backoffice/settings/templates/receipt', label: 'Receipt templates', icon: FileText,   permission: 'settings.read', indent: 1 },
   { to: '/backoffice/settings/permissions',      label: 'Permissions',      icon: ShieldCheck,  permission: 'settings.read', indent: 1 },
+  { to: '/backoffice/print-queue',  label: 'Print Queue',  icon: Printer, permission: 'print_queue.read' },
+  { to: '/backoffice/lan-devices',  label: 'LAN Devices',  icon: Network, permission: 'lan.devices.read' },
 ];
 
 export function BackofficeLayout() {

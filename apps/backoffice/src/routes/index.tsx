@@ -39,6 +39,8 @@ import SettingsHolidaysPage         from '@/pages/settings/SettingsHolidaysPage.
 import SettingsEmailTemplatesPage   from '@/pages/settings/SettingsEmailTemplatesPage.js';
 import SettingsReceiptTemplatesPage from '@/pages/settings/SettingsReceiptTemplatesPage.js';
 import SettingsPermissionsPage      from '@/pages/settings/SettingsPermissionsPage.js';
+import PrintQueuePage from '@/pages/print-queue/PrintQueuePage.js';
+import LanDevicesPage from '@/pages/lan-devices/LanDevicesPage.js';
 import { BackofficeLayout } from '@/layouts/BackofficeLayout.js';
 import { useAuthStore } from '@/stores/authStore.js';
 
@@ -353,6 +355,22 @@ export function AppRoutes() {
           element={
             <PermissionGate required="settings.read">
               <SettingsPermissionsPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="print-queue"
+          element={
+            <PermissionGate required="print_queue.read">
+              <PrintQueuePage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="lan-devices"
+          element={
+            <PermissionGate required="lan.devices.read">
+              <LanDevicesPage />
             </PermissionGate>
           }
         />
