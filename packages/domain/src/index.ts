@@ -25,3 +25,4 @@ export * from './customerCategories/index.js';
 export * from './combos/index.js';
 export * from './promotions/index.js';
 export * from './inventory/index.js';
+export * from './accounting/index.js';
