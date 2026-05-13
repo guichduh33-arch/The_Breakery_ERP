@@ -219,3 +219,113 @@ the count.
   `movement_type=opname_out`.
 - pgTAP `T_OPN_11` (`inventory_opname.test.sql`) asserts both enum values
   are present.
+
+
+---
+
+## D-W2-2A-01 — Perm name reuse: `inventory.recipes.update` and `inventory.production.delete` (not the spec's `.manage` / `.revert`)
+
+**Spec line 452 / 456 says:** "manager+ INSERT/UPDATE via `has_permission('inventory.recipes.manage')`" and `revert_production_v1` ADMIN+ gated by `inventory.production.revert`.
+**Actual perms used:** `inventory.recipes.update` (already seeded, granted SUPER_ADMIN/ADMIN; Phase 2.A migration 000060 adds MANAGER) and `inventory.production.delete` (already seeded SUPER_ADMIN/ADMIN — no change).
+
+### Cause
+Permissions table already had `inventory.recipes.update` (MANAGER+) and `inventory.production.delete` (ADMIN+) seeded in earlier phases. Introducing `.manage` / `.revert` would have required either (a) re-seeding + role grants (extra migrations, drift risk) or (b) violating the CLAUDE.md rule that `has_permission()` must not be re-CREATED.
+
+### Resolution
+Reuse the existing perms. Semantics unchanged: `recipes.update` covers upsert + deactivate (MANAGER+); `production.delete` covers revert (ADMIN+). Migration 000060 INSERTs into `role_permissions` to grant `inventory.recipes.update` to MANAGER with `ON CONFLICT DO NOTHING`. No `has_permission` re-CREATE.
+
+### Verification
+- `SELECT role_code FROM role_permissions WHERE permission_code='inventory.recipes.update'` returns SUPER_ADMIN, ADMIN, MANAGER.
+- `SELECT role_code FROM role_permissions WHERE permission_code='inventory.production.delete'` returns SUPER_ADMIN, ADMIN (unchanged).
+- pgTAP T_PROD_06 (cashier upsert recipe → forbidden) and T_PROD_13 (manager revert → forbidden) pass.
+
+---
+
+## D-W2-2A-02 — Reverse-of-production discriminant on `tr_stock_movement_je()` (migration 000064 patches the trigger)
+
+**Spec line 456 says:** "INSERT reverse stock_movements (negate quantities, movement_type='production_in_reversal' / 'production_out_reversal')".
+
+### Cause
+Adding `production_in_reversal` / `production_out_reversal` to the `movement_type` enum is invasive (cross-phase risk) and the trigger's CASE statement would need a new pair of mappings. Worse, the trigger emits JEs based on movement_type + uses ABS(quantity) for value — even with the negated quantity, the trigger would emit a JE in the SAME DR/CR direction as the original (wrong).
+
+### Resolution
+Migration 000064:
+1. Patches `tr_stock_movement_je()` (CREATE OR REPLACE — not has_permission) with an early-return guard `IF NEW.metadata->>'reverse_of_production' = 'true' THEN RETURN NEW; END IF;`.
+2. `revert_production_v1` directly INSERTs reverse stock_movements with the SAME movement_type, negated quantity, and `metadata.reverse_of_production=true` flag. The trigger then skips JE emission.
+3. The RPC INSERTs explicit counter-JEs with debit/credit columns swapped from the original journal_entry_lines. JE.metadata.movement_type uses a discriminant `'reversal:' || original_movement_type || ':' || original_je_id` to satisfy the journal_entries_je_idempotency_uniq UNIQUE index.
+
+The append-only `stock_movements` invariant is respected (counter-rows INSERTed; no UPDATEs).
+
+### Verification
+- Staging dry-run: production 50 baguettes + revert → original DR=200k, CR=200k, reversal DR=200k, CR=200k → net=0 across all accounts.
+- pgTAP T_PROD_13 (manager → forbidden) and T_PROD_14 (admin revert restores stock + balanced ledger) pass.
+
+---
+
+## D-W2-2A-03 — `journal_entries.reference_type` uses `'production'` for reversal JEs (not `'production_reversal'`)
+
+**Sub-plan §2 D-2A-9 originally said:** Counter-JEs use `reference_type='production_reversal'`.
+
+### Cause
+The `journal_entries_reference_type_check` constraint enumerates allowed values: sale, sale_void, sale_refund, purchase, purchase_return, purchase_payment, expense, expense_payment, shift_close, adjustment, waste, opname, production, transfer, manual, pos_outstanding, pos_outstanding_payment, stock_movement, void, refund. `production_reversal` is not in the list. Extending the CHECK would require dropping and recreating it; we keep the constraint stable in Phase 2.A.
+
+### Resolution
+Counter-JEs use `reference_type='production'` + `reference_id=<production_id>` + `metadata.reverse_of_production=true`. Both original-side and reversal-side JEs reference the production_id, but originals have `reference_type='stock_movement'` (set by the trigger), while reversals have `reference_type='production'` (set by revert_production_v1). The two are easily distinguishable in queries.
+
+### Verification
+- Querying `journal_entries WHERE reference_id=<production_id>` returns the reversal JEs only; querying joined via stock_movements returns the originals.
+
+---
+
+## D-W2-2A-04 — `production_records.quantity_waste` does NOT emit a separate `production_waste` movement
+
+**Module 15 ref §6 / §13 implies:** waste is a separate movement type alongside production_in / production_out.
+
+### Cause
+V3's `movement_type` enum doesn't have `production_waste`. Adding it would require a cross-phase enum extension. More importantly, the simpler model used here is correct: the matter consumed for waste-bound bread DID exit raw material stock, so `production_out` already covers it; the only thing waste does NOT do is credit finished-goods stock.
+
+### Resolution
+- `record_production_v1` includes `quantity_waste` in the recipe multiplier when computing material consumption (`p_quantity_produced + p_quantity_waste`). The N production_out movements consume the full amount including waste.
+- The `production_in` movement adds ONLY `p_quantity_produced` (waste is NOT vendable, NOT added to finished-goods stock).
+- `production_records.quantity_waste` is kept as-is for reporting (waste rate per product per day).
+
+### Verification
+- A production of 50 + 2 waste (52 total) with 250g flour/unit consumes 52 × 250g = 13kg flour, but only adds 50 baguettes to finished stock. Verified via direct SQL on staging.
+
+---
+
+## D-W2-2A-05 — F1 lot reverse: produced lot voided (status=consumed, quantity=0); material lots not per-lot re-credited
+
+**Sub-plan §2 D-2A-9 says:** "For lots: if the production created a stock_lots row, set stock_lots.status='consumed' and stock_lots.quantity=0."
+
+### Cause
+On revert, the reversal stock_movements increment material stock via `products.current_stock` directly — they do NOT re-credit a specific lot the FIFO resolver had decremented. Restoring per-lot quantities on revert would require us to track which lot(s) each `production_out` consumed (the FIFO resolver locks a single lot — see migration 000020), then re-credit that lot row.
+
+### Resolution
+For Phase 2.A MVP, the **produced** lot (the `stock_lots` row created by the production_in side via `create_stock_lot_v1`) is voided on revert: `quantity=0, status='consumed'`. The **consumed** material lots are NOT touched — the reversal lands as a non-lot positive stock_movement on the material side. Material stock totals are restored at the `products.current_stock` level (verified via T_PROD_14), but per-lot reconciliation is deferred.
+
+### Acceptance
+Acceptable for MVP because:
+- Production-output lots are voided correctly (the typical case for F1-tracked products).
+- Material-side lots are usually less time-sensitive (kg of flour rarely under F1 in V3 seed).
+- A Phase X follow-up can add per-lot revert when the lot consumption mapping is recorded in stock_movements.metadata.
+
+### Verification
+- T_PROD_14 (admin revert) asserts `products.current_stock` is fully restored on both finished and material sides.
+- For F1-tracked finished products, `stock_lots WHERE id=<produced_lot_id>` shows `status='consumed', quantity=0` after revert.
+
+---
+
+## D-W2-2A-06 — `products.product_type` CHECK only allows {finished, combo}; no separate `raw_material` type
+
+**Module 15 ref §17 says:** Recipes have a `material_id` that points to a `products.id` which can be `raw_material` or `semi_finished`.
+
+### Cause
+The V3 `products_product_type_check` constraint enumerates only `'finished'` and `'combo'` (verified via `pg_get_constraintdef`). Raw materials live in the `products` table but are typed as `'finished'`. The distinction is conveyed via category, not via product_type.
+
+### Resolution
+Recipes (and tests / fixtures) reference materials as `product_type='finished'` — the FK is simply `products(id)` with no type filter. This works correctly with `record_production_v1` and `convert_quantity` because both operate on `products.unit` / `products.cost_price` regardless of the conceptual product class. The semantic distinction (raw_material vs finished goods) is left to category-based reporting.
+
+### Verification
+- pgTAP fixtures use SKU prefix `T_PROD_*` for all materials with `product_type='finished'`.
+- 50-baguette live test on staging completed successfully with all 5 products typed `'finished'`.
