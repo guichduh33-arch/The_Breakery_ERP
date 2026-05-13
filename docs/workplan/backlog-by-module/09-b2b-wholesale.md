@@ -1,7 +1,7 @@
 # Travail — B2B / Wholesale
 
 > Last updated: 2026-05-03
-> Référence : [docs/v2-reference/04-modules/09-b2b-wholesale.md](../04-modules/09-b2b-wholesale.md)
+> Référence : [docs/reference/04-modules/09-b2b-wholesale.md](../04-modules/09-b2b-wholesale.md)
 > Sources d'audit : `docs/audit/07-product-backlog-audit.md` (module 88%, gaps B2B), `docs/audit/02-accounting-business-audit.md` (couverture JE B2B), `docs/audit/05-uiux-design-audit.md` (PaymentModal)
 
 ## Objectifs du module
@@ -150,7 +150,7 @@ TASK-09-006 (dashboard KPI) ← indépendant — quick win product
 
 ### Pitfalls connus impactant ces tâches
 
-Reprendre les pitfalls de [docs/v2-reference/04-modules/09-b2b-wholesale.md](../04-modules/09-b2b-wholesale.md) avant tout dev :
+Reprendre les pitfalls de [docs/reference/04-modules/09-b2b-wholesale.md](../04-modules/09-b2b-wholesale.md) avant tout dev :
 - `posOrderId` lien POS↔B2B → pas double-compter dans rapports.
 - FIFO allocation côté client → race condition sur paiements simultanés.
 - `amount_due` calculé par trigger → ne JAMAIS le set manuellement.

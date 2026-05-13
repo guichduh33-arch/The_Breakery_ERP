@@ -1,10 +1,13 @@
 # Phase 4 — Shared Packages (utils, domain, ui, supabase)
 
+> **Trace historique** : ce fichier documente une session de travail datée. Le contenu de fond reste l'enregistrement de cette date. Seules les références de chemin ont été alignées sur la nouvelle structure documentaire (voir [`docs/README.md`](../../README.md)).
+> **Last refreshed** : 2026-05-13
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development or superpowers:executing-plans.
 
 **Goal:** Remplir les 4 packages internes avec leur logique réelle (vs squelettes Phase 1) — TDD strict pour `domain` et `utils`, composants + tests RTL pour `ui`, client + types générés pour `supabase`.
 
-**Spec source:** `docs/superpowers/specs/2026-05-03-breakery-split-2apps-design.md` sections 5, 6, 7.
+**Spec source:** `docs/workplan/specs/2026-05-03-breakery-split-2apps-design.md` sections 5, 6, 7.
 
 **Dépend de :** Phase 1 (squelettes), Phase 2 (DB pour types). Peut commencer en parallèle de Phase 3 sauf le `supabase` qui veut les tables.
 

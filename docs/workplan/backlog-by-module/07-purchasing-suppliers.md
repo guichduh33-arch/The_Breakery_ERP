@@ -31,7 +31,7 @@
 ### TASK-07-002 — PO state machine UI clarification [P2] [TODO]
 **Contexte** : `purchase_orders` a un `status` enum (`PoStatus`) mais l'UI ne montre pas clairement les transitions possibles. Manager peut tenter une action invalide → erreur cryptique. Inferred from code review (hook `usePurchaseOrders` 583L).
 **Critère d'acceptation** :
-- [ ] Diagramme état dans `docs/v2-reference/04-modules/07-purchasing-suppliers.md`.
+- [ ] Diagramme état dans `docs/reference/04-modules/07-purchasing-suppliers.md`.
 - [ ] UI fiche PO : badge status + boutons d'action correspondants (Send / Cancel / Receive / Close).
 - [ ] Boutons invalides cachés ou disabled avec tooltip « Not allowed in current state ».
 - [ ] DB CHECK constraint : transitions valides seulement (ou trigger `BEFORE UPDATE`).

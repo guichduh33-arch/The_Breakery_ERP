@@ -1,10 +1,13 @@
 # Phase 5 — App POS (Auth + Shift + Cart + Payment)
 
+> **Trace historique** : ce fichier documente une session de travail datée. Le contenu de fond reste l'enregistrement de cette date. Seules les références de chemin ont été alignées sur la nouvelle structure documentaire (voir [`docs/README.md`](../../README.md)).
+> **Last refreshed** : 2026-05-13
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development or superpowers:executing-plans.
 
 **Goal:** Câbler l'app `@breakery/app-pos` end-to-end : login PIN, open shift, écran POS (sidebar + grid + cart), payment terminal full-screen avec cash, success modal, persistance Supabase. Critères d'acceptation Section 10 du spec.
 
-**Spec source:** `docs/superpowers/specs/2026-05-03-breakery-split-2apps-design.md` sections 4, 5, 7.
+**Spec source:** `docs/workplan/specs/2026-05-03-breakery-split-2apps-design.md` sections 4, 5, 7.
 
 **Dépend de :** Phases 2, 3, 4.
 

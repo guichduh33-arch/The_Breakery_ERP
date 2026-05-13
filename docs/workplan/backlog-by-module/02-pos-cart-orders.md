@@ -34,7 +34,7 @@
 - [ ] Au mount POS, refetch les `order_items` actifs et reconstruire le set `lockedItems` depuis la DB plutôt que la session.
 - [ ] Si conflit (item local non-locked mais DB le considère envoyé), appliquer la version DB et logger un warning.
 - [ ] Tests d'intégration : simulation perte réseau → POS reconnect → état restauré.
-- [ ] Documenter le pattern dans `docs/v2-reference/04-modules/02-pos-cart-orders.md`.
+- [ ] Documenter le pattern dans `docs/reference/04-modules/02-pos-cart-orders.md`.
 **Fichiers concernés** : `src/stores/cartStore.ts`, `src/hooks/pos/useCartHydration.ts` (à créer), `src/services/pos/orderService.ts`.
 **Dépend de** : `TASK-02-001` (slices propres avant cette logique)
 **Estimation** : `M`
@@ -98,7 +98,7 @@
 - [ ] POS page chunk principal < 250 KB gzipped.
 - [ ] Recharts, jsPDF, XLSX exclus du POS chunk (chargés à la demande backoffice).
 - [ ] Lighthouse mobile POS Performance ≥ 85.
-- [ ] Documenter dans `docs/v2-reference/10-deployment-ops/` les chunks attendus.
+- [ ] Documenter dans `docs/reference/10-deployment-ops/` les chunks attendus.
 **Fichiers concernés** : `vite.config.ts`, `src/routes/posRoutes.tsx`, audit dynamiques imports dans `src/components/pos/`.
 **Dépend de** : aucune
 **Estimation** : `M`
@@ -109,7 +109,7 @@
 **Critère d'acceptation** :
 - [ ] Confirmer via grep + git history que `POSCheckoutWrapper.tsx` n'est plus utilisé en runtime.
 - [ ] Supprimer le composant + ses imports.
-- [ ] Mettre à jour `docs/v2-reference/04-modules/02-pos-cart-orders.md` (référence obsolète).
+- [ ] Mettre à jour `docs/reference/04-modules/02-pos-cart-orders.md` (référence obsolète).
 - [ ] Tests visuels : le checkout actif (`PaymentModal`) couvre tous les cas.
 **Fichiers concernés** : `src/components/pos/POSCheckoutWrapper.tsx` (suppression), `src/components/pos/POSTerminalWrapper.tsx`, `src/pages/pos/POSPage.tsx`.
 **Dépend de** : aucune
@@ -123,7 +123,7 @@
 - [ ] Raccourci Cmd+K (Mac) / Ctrl+K (Windows / Linux) sur POSTerminalWrapper.
 - [ ] Filtrage par fuzzy search (cmdk lib, déjà dépendance).
 - [ ] `shouldFilter={false}` si on alimente côté Supabase (cf. Pitfall epic-016b).
-- [ ] Documenter les raccourcis dans `docs/v2-reference/02-design-system/`.
+- [ ] Documenter les raccourcis dans `docs/reference/02-design-system/`.
 **Fichiers concernés** : `src/components/pos/POSCommandPalette.tsx` (à créer), `src/components/pos/POSTerminalWrapper.tsx`.
 **Dépend de** : aucune
 **Estimation** : `M`

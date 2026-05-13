@@ -1,5 +1,10 @@
 # Session 11 — Phase 02 — Restaurant Tables CRUD Implementation Plan
 
+> **Trace historique** : ce fichier documente une session de travail datée. Le fond reste l'enregistrement de cette date. Seules les références de chemin ont été alignées sur la nouvelle structure (voir [`../../README.md`](../../README.md)).
+> **Last refreshed** : 2026-05-13
+>
+> **Modules concernés** : [`02-pos-cart-orders`](../../reference/04-modules/02-pos-cart-orders.md) (tables) · [`19-settings-configuration`](../../reference/04-modules/19-settings-configuration.md) (Layout)
+
 > **For agentic workers:** REQUIRED SUB-SKILL: superpowers:subagent-driven-development (recommended) or superpowers:executing-plans. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Ship the Backoffice CRUD UI for `restaurant_tables`. Mirrors the Suppliers phase pattern with table-specific fields (`name`, `seats`, `sort_order`, `is_active`).
@@ -8,8 +13,8 @@
 
 **Tech Stack:** Same as INDEX.
 
-**Parent spec:** `docs/superpowers/specs/2026-05-11-session-11-backoffice-crud-spec.md` §0 (Restaurant tables CRUD bullet)
-**Parent plan:** `docs/superpowers/plans/2026-05-12-session-11-INDEX.md`
+**Parent spec:** `docs/workplan/specs/2026-05-11-session-11-backoffice-crud-spec.md` §0 (Restaurant tables CRUD bullet)
+**Parent plan:** `docs/workplan/plans/2026-05-12-session-11-INDEX.md`
 
 **Pre-requisites:**
 - `restaurant_tables` table exists (`supabase/migrations/20260506000001_init_restaurant_tables.sql`)

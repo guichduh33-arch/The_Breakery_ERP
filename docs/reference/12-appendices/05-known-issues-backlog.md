@@ -12,7 +12,7 @@ Cette page **n'est pas la source de vérité** du backlog vivant. Elle pointe ve
 |---|---|---|
 | [`CURRENT_STATE.md`](../../../CURRENT_STATE.md) | **Source vivante** : sprint progress + backlog roulant | À chaque sprint |
 | [`docs/audit/`](../../audit/) | **Snapshot 2026-04-09** : 8 rapports d'audit + executive summary + IMPLEMENTATION_PLAN | Figé (audit ponctuel) |
-| [`docs/v2-reference/travail/`](../travail/) | **Backlog opérationnel** détaillé par module (objectifs + critères + estimation) | À chaque story |
+| [`docs/reference/travail/`](../travail/) | **Backlog opérationnel** détaillé par module (objectifs + critères + estimation) | À chaque story |
 
 > **Règle** : ne **pas dupliquer** ici les éléments listés ailleurs. Cette page est un index + résumé prioritisé.
 
@@ -125,12 +125,12 @@ Vérifier que les ancres référencées dans les sections § 11 des epics V3 poi
 
 ---
 
-## 7. Backlog opérationnel par module — `docs/v2-reference/travail/`
+## 7. Backlog opérationnel par module — `docs/reference/travail/`
 
 Pour les besoins d'implémentation par module, consulter :
 
 ```
-docs/v2-reference/travail/
+docs/reference/travail/
 ├── 00-README.md                    # Format des fiches travail
 ├── pos/                            # Backlog POS
 ├── kds/                            # Backlog KDS
@@ -151,7 +151,7 @@ docs/v2-reference/travail/
 1. **Story rapide** ou **fix isolé** → ajouter dans la section appropriée de `CURRENT_STATE.md` avec préfixe (F / I / T / U / S / C selon catégorie)
 2. **Story BMAD complète** (V3) → suivre pipeline `bmad-create-story` → `bmad-dev-story` → `architect-guard` → `bmad-code-review`
 3. **Fix audit P0** → créer entrée dans `docs/audit/IMPLEMENTATION_PLAN.md` + référencer dans `CURRENT_STATE.md`
-4. **Item travail opérationnel** → fiche dans `docs/v2-reference/travail/{module}/`
+4. **Item travail opérationnel** → fiche dans `docs/reference/travail/{module}/`
 
 ---
 
@@ -159,7 +159,7 @@ docs/v2-reference/travail/
 
 - [`CURRENT_STATE.md`](../../../CURRENT_STATE.md) — **source vivante** sprint + backlog
 - [`docs/audit/`](../../audit/) — 8 rapports + plan d'implémentation
-- [`docs/v2-reference/travail/`](../travail/) — backlog opérationnel par module
-- [`docs/v2-reference/12-appendices/06-cross-reference-with-v3.md`](./06-cross-reference-with-v3.md) — mapping V2 → V3
-- [`docs/v2-reference/09-testing/04-known-failures.md`](../09-testing/04-known-failures.md) — tests cassés connus
+- [`docs/reference/travail/`](../travail/) — backlog opérationnel par module
+- [`docs/reference/12-appendices/06-cross-reference-with-v3.md`](./06-cross-reference-with-v3.md) — mapping V2 → V3
+- [`docs/reference/09-testing/04-known-failures.md`](../09-testing/04-known-failures.md) — tests cassés connus
 - `CLAUDE.md` racine — section "Current Backlog"

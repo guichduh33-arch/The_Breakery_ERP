@@ -1,5 +1,10 @@
 # Session 11 — Phase 08 — Customers Page Implementation Plan
 
+> **Trace historique** : ce fichier documente une session de travail datée. Le fond reste l'enregistrement de cette date. Seules les références de chemin ont été alignées sur la nouvelle structure (voir [`../../README.md`](../../README.md)).
+> **Last refreshed** : 2026-05-13
+>
+> **Module concerné** : [`08-customers-loyalty`](../../reference/04-modules/08-customers-loyalty.md)
+
 > **For agentic workers:** REQUIRED SUB-SKILL: superpowers:subagent-driven-development (recommended) or superpowers:executing-plans. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Replace the `<ComingSoonPage module="Customers" />` placeholder at `/backoffice/customers` with a dedicated Customers CRUD page that reuses the existing components from `apps/backoffice/src/features/loyalty/` (CustomerFormModal, CustomerListRow, CustomerDeleteConfirm, hooks). No new business logic — this phase is purely a route + page wiring exercise. The existing `/backoffice/loyalty` page stays as-is (it's the loyalty management surface; the new `/backoffice/customers` is the plain CRUD surface).
@@ -8,8 +13,8 @@
 
 **Tech Stack:** Same as INDEX.
 
-**Parent spec:** `docs/superpowers/specs/2026-05-11-session-11-backoffice-crud-spec.md` §0 (Customers CRUD bullet — separate route from Loyalty)
-**Parent plan:** `docs/superpowers/plans/2026-05-12-session-11-INDEX.md`
+**Parent spec:** `docs/workplan/specs/2026-05-11-session-11-backoffice-crud-spec.md` §0 (Customers CRUD bullet — separate route from Loyalty)
+**Parent plan:** `docs/workplan/plans/2026-05-12-session-11-INDEX.md`
 
 **Pre-requisites:**
 - `apps/backoffice/src/features/loyalty/` is fully implemented (it is — see commits 721c33a, 63a3891, 344ba4f, etc.)

@@ -60,7 +60,7 @@
 - [ ] Bouton "Export config" dans `/settings/sync` qui télécharge un JSON contenant : `settings.*`, `pos_config.*`, `printer_configurations`, `kds_stations` (sans secrets)
 - [ ] Bouton "Import config" qui upload un JSON et applique via RPC atomique avec dry-run (preview des changements)
 - [ ] Audit log déclenché sur import (avec hash du fichier)
-- [ ] Doc utilisateur : `docs/v2-reference/10-deployment-ops/config-backup-restore.md`
+- [ ] Doc utilisateur : `docs/reference/10-deployment-ops/config-backup-restore.md`
 **Fichiers concernés** : `src/pages/settings/SyncSettingsPage.tsx`, nouveau `src/services/settings/exportImport.ts`, RPC `import_settings_atomic`, doc
 **Dépend de** : TASK-19-005 (audit log)
 **Estimation** : `L`
@@ -84,7 +84,7 @@
 **Contexte** : `pos_config` est la table racine de la config terminal. Aujourd'hui aucun CHECK constraint sur les valeurs (audit §B3 montre `as any` côté form). Une valeur `session_timeout_minutes = -1` ou `tax_rate = 200` passerait.
 **Critère d'acceptation** :
 - [ ] Migration ajoute `CHECK` constraints : `session_timeout_minutes BETWEEN 1 AND 720`, `tax_rate BETWEEN 0 AND 50`, `loyalty_points_per_idr >= 0`, etc.
-- [ ] Plages documentées dans `docs/v2-reference/04-modules/` (créer `19-settings.md` si absent)
+- [ ] Plages documentées dans `docs/reference/04-modules/` (créer `19-settings.md` si absent)
 - [ ] Hook `usePosConfig` retourne erreur claire si DB rejette (pas juste 400)
 **Fichiers concernés** : `supabase/migrations/<date>_pos_config_check_constraints.sql`, `src/hooks/settings/usePosConfig.ts`
 **Dépend de** : aucune
@@ -111,7 +111,7 @@
 - [ ] Investigation : ajouter colonne `store_id NULL` à `settings`, `pos_config`, `accounting_mappings`, `tax_rates` ; NULL = global
 - [ ] RLS policies adaptées : utilisateur lit settings de son `store_id` ou globaux
 - [ ] Pas d'implémentation UI dans cette tâche — juste foundation DB + ADR
-- [ ] ADR rédigé : `docs/v2-reference/architecture/adr-001-multi-store-settings.md`
+- [ ] ADR rédigé : `docs/reference/architecture/adr-001-multi-store-settings.md`
 **Fichiers concernés** : migrations DB, ADR
 **Dépend de** : aucune (mais bloque toute initiative multi-store future)
 **Estimation** : `L`

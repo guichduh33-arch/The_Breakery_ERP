@@ -1,7 +1,7 @@
 # Travail — Promotions & Discounts
 
 > Last updated: 2026-05-03
-> Référence : [docs/v2-reference/04-modules/13-promotions-discounts.md](../04-modules/13-promotions-discounts.md)
+> Référence : [docs/reference/04-modules/13-promotions-discounts.md](../04-modules/13-promotions-discounts.md)
 > Sources d'audit : `docs/audit/00-executive-summary.md` ("Promotion engine est connecté — useCartPromotions auto-evaluates"), `docs/audit/07-product-backlog-audit.md` (Customer segmentation/marketing manquant — Gap Important #14), `docs/audit/05-uiux-design-audit.md` (clarté UI)
 
 ## Objectifs du module

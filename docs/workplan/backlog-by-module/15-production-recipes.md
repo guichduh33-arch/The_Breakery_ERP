@@ -1,7 +1,7 @@
 # Travail — Production & Recipes
 
 > Last updated: 2026-05-03
-> Référence : `docs/v2-reference/04-modules/15-production-recipes.md` (à créer)
+> Référence : `docs/reference/04-modules/15-production-recipes.md` (à créer)
 > Sources d'audit : `docs/audit/07-product-backlog-audit.md` (Production 75% : F5 yield + F6 sub-recipes manquants — gaps CRITIQUES bakery), `docs/audit/02-accounting-business-audit.md` (P1-1 PRODUCTION_COGS broken), `CURRENT_STATE.md` Backlog F5/F6
 
 ## Objectifs du module

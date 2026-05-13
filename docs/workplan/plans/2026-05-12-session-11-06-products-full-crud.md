@@ -1,5 +1,10 @@
 # Session 11 — Phase 06 — Products full CRUD Implementation Plan
 
+> **Trace historique** : ce fichier documente une session de travail datée. Le fond reste l'enregistrement de cette date. Seules les références de chemin ont été alignées sur la nouvelle structure (voir [`../../README.md`](../../README.md)).
+> **Last refreshed** : 2026-05-13
+>
+> **Module concerné** : [`05-products-categories`](../../reference/04-modules/05-products-categories.md)
+
 > **For agentic workers:** REQUIRED SUB-SKILL: superpowers:subagent-driven-development (recommended) or superpowers:executing-plans. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Extend the existing read-only `apps/backoffice/src/pages/Products.tsx` into a full CRUD page (create + edit + soft-delete + inline `is_active` / `is_favorite` toggles). Reuse the existing `useProducts` hook for the list query. The product form references categories — Phase 04 (Categories CRUD) MUST be done first.
@@ -8,8 +13,8 @@
 
 **Tech Stack:** Same as INDEX.
 
-**Parent spec:** `docs/superpowers/specs/2026-05-11-session-11-backoffice-crud-spec.md` §0 (Products full CRUD)
-**Parent plan:** `docs/superpowers/plans/2026-05-12-session-11-INDEX.md`
+**Parent spec:** `docs/workplan/specs/2026-05-11-session-11-backoffice-crud-spec.md` §0 (Products full CRUD)
+**Parent plan:** `docs/workplan/plans/2026-05-12-session-11-INDEX.md`
 
 **Pre-requisites:**
 - Phase 04 (Categories CRUD) complete — `useCategoriesList` exists

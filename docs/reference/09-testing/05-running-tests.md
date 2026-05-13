@@ -177,7 +177,7 @@ There is **no Husky / lefthook**. Tests are not run pre-commit — devs are expe
 | `test:claude` | `scripts/test-claude.ts` | Smoke test for the Claude API proxy (`claude-proxy` Edge Function); requires `ANTHROPIC_API_KEY` |
 | `test:smoke` | (see above) | Vitest run scoped to POS critical paths |
 
-`scripts/` also contains many one-off diagnostic scripts (`check-kds.ts`, `verify_db.js`, ...) — these are not part of the test suite, see `docs/v2-reference/12-appendices/` for an inventory.
+`scripts/` also contains many one-off diagnostic scripts (`check-kds.ts`, `verify_db.js`, ...) — these are not part of the test suite, see `docs/reference/12-appendices/` for an inventory.
 
 ## Common errors
 

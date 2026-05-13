@@ -1,7 +1,7 @@
 # Travail — Reports & Analytics
 
 > Last updated: 2026-05-03
-> Référence : `docs/v2-reference/04-modules/14-reports-analytics.md` (à créer)
+> Référence : `docs/reference/04-modules/14-reports-analytics.md` (à créer)
 > Sources d'audit : `docs/audit/04-reports-testing-audit.md` (Quinn — 0 P0, 3 P1, 6 P2, 5 P3 ; 53 reports actifs ; 87 components 0 tests), `docs/audit/00-executive-summary.md` (Reports P0-1 à P0-4 perf : O(n^2), .limit() manquant), `docs/audit/IMPLEMENTATION_PLAN.md` Phase 4
 
 ## Objectifs du module

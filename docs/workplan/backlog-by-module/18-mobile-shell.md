@@ -47,7 +47,7 @@
 - [ ] Workflow GitHub Actions `mobile-android.yml` qui : `npm ci` → `npm run build` → `npx cap sync android` → `gradle assembleRelease` → upload artefact APK signé
 - [ ] Secrets de signature (`ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`) configurés dans GitHub repo secrets
 - [ ] Trigger : tag `mobile-v*` OU manuel via `workflow_dispatch`
-- [ ] Doc `docs/v2-reference/10-deployment-ops/mobile-release.md` créée
+- [ ] Doc `docs/reference/10-deployment-ops/mobile-release.md` créée
 **Fichiers concernés** : `.github/workflows/mobile-android.yml`, `android/app/build.gradle` (signing config), nouveau doc release
 **Dépend de** : aucune
 **Estimation** : `L`
@@ -60,7 +60,7 @@
 - [ ] `npx cap add ios` exécuté, projet Xcode généré et committé
 - [ ] Splash + StatusBar configurés (couleurs alignées Luxe Dark)
 - [ ] Build manuel sur Xcode validé sur simulateur iPhone 15
-- [ ] Doc `docs/v2-reference/10-deployment-ops/mobile-ios-build.md` (étapes Xcode, certificats Apple Developer)
+- [ ] Doc `docs/reference/10-deployment-ops/mobile-ios-build.md` (étapes Xcode, certificats Apple Developer)
 - [ ] Pas d'engagement sur soumission App Store dans cette tâche
 **Fichiers concernés** : `ios/` (généré), `capacitor.config.ts`, doc déploiement
 **Dépend de** : TASK-18-002 (haptique/network doivent fonctionner)

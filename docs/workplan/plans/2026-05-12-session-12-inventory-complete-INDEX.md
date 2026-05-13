@@ -1,16 +1,21 @@
 # Session 12 — Inventory **Complete** — Implementation Plan INDEX
 
+> **Trace historique** : ce fichier documente une session de travail datée. Le fond reste l'enregistrement de cette date. Seules les références de chemin ont été alignées sur la nouvelle structure (voir [`../../README.md`](../../README.md)).
+> **Last refreshed** : 2026-05-13
+
+> **Module concerné** : ce plan-INDEX correspond au module [Inventory & Stock](../../reference/04-modules/06-inventory-stock.md). Pour la spec consolidée actuelle (Partie I fonctionnel + Partie II technique + Partie III backlog + Partie IV design), aller à la référence canonique.
+
 > **Date** : 2026-05-12
 > **Statut** : INDEX multi-phases — chaque phase a son propre fichier `2026-05-12-session-12-inv-XX-<phase>.md` à créer en exécution
-> **Spec source** : `docs/superpowers/specs/2026-05-12-session-12-inventory-complete-spec.md`
-> **Remplace** : `docs/superpowers/plans/2026-05-11-session-12-inventory-mvp.md` (MVP — couverture ~15%)
+> **Spec source** : [`../specs/2026-05-12-session-12-inventory-complete-spec.md`](../specs/2026-05-12-session-12-inventory-complete-spec.md)
+> **Remplace** : [`./2026-05-11-session-12-inventory-mvp.md`](./2026-05-11-session-12-inventory-mvp.md) (MVP — couverture ~15%)
 > **For agentic workers:** REQUIRED SUB-SKILL: `superpowers:subagent-driven-development` (recommended) ou `superpowers:executing-plans`. Chaque phase est isolée et peut être déléguée à un subagent dédié.
 
 ---
 
 ## Goal global
 
-Livrer le module **Inventory complete** tel que décrit dans `docs/objectif travail/INVENTORY.md` :
+Livrer le module **Inventory complete** tel que décrit dans la [référence Inventory](../../reference/04-modules/06-inventory-stock.md) (Partie I §1-20 vue fonctionnelle) :
 
 - 7 onglets fonctionnels (Stock, Incoming, Transfers, Wastage, Production, Opname, Movements)
 - Dashboard analytique par produit
@@ -49,7 +54,7 @@ PostgreSQL + Supabase RLS, React + Vite + Vitest, TanStack Query, Tailwind, reac
 ## Conventions
 
 - Migrations : datées `20260516xxxxxx` (après session 11 `20260515000004`)
-- Sous-plans nommés : `docs/superpowers/plans/2026-05-12-session-12-inv-{NN}-{slug}.md`
+- Sous-plans nommés : `docs/workplan/plans/2026-05-12-session-12-inv-{NN}-{slug}.md`
 - Tests SQL : `supabase/tests/inventory.test.sql` (pgTAP) + `supabase/tests/functions/inventory-*.test.ts` (Vitest live)
 - Tests domain/UI co-localisés `__tests__/`
 - Commits conventional : `feat(db|domain|ui|backoffice): session 12 — phase X — <topic>`. Co-author Claude.

@@ -1,5 +1,12 @@
 # The Breakery — Session 5 Spec : Tablet Ordering
 
+> **Trace historique** : ce fichier documente une session de travail datée. Le fond reste l'enregistrement de cette date. Seules les références de chemin ont été alignées sur la nouvelle structure documentaire (voir [`../../README.md`](../../README.md)).
+> **Last refreshed** : 2026-05-13
+>
+> **Voir aussi** pour la spec complète (4 parties) :
+> - Tablet ordering → [`../../reference/04-modules/17-tablet-ordering.md`](../../reference/04-modules/17-tablet-ordering.md)
+> - POS pickup / pay_existing_order → [`../../reference/04-modules/02-pos-cart-orders.md`](../../reference/04-modules/02-pos-cart-orders.md)
+
 > **Date** : 2026-05-06
 > **Auteur** : guichduh33@gmail.com (via session brainstorming)
 > **Statut** : Approuvé pour implémentation

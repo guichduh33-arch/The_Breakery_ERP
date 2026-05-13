@@ -1,5 +1,10 @@
 # Session 11 — Phase 03 — Customer Categories CRUD Implementation Plan
 
+> **Trace historique** : ce fichier documente une session de travail datée. Le fond reste l'enregistrement de cette date. Seules les références de chemin ont été alignées sur la nouvelle structure (voir [`../../README.md`](../../README.md)).
+> **Last refreshed** : 2026-05-13
+>
+> **Module concerné** : [`08-customers-loyalty`](../../reference/04-modules/08-customers-loyalty.md)
+
 > **For agentic workers:** REQUIRED SUB-SKILL: superpowers:subagent-driven-development (recommended) or superpowers:executing-plans. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Ship the Backoffice CRUD UI for `customer_categories`. This entity drives pricing tiers (retail / wholesale / discount %) and the loyalty `points_multiplier`. Write actions are ADMIN-only per spec C4 (sensitive — affects pricing).
@@ -8,8 +13,8 @@
 
 **Tech Stack:** Same as INDEX.
 
-**Parent spec:** `docs/superpowers/specs/2026-05-11-session-11-backoffice-crud-spec.md` §0 (Customer categories CRUD bullet)
-**Parent plan:** `docs/superpowers/plans/2026-05-12-session-11-INDEX.md`
+**Parent spec:** `docs/workplan/specs/2026-05-11-session-11-backoffice-crud-spec.md` §0 (Customer categories CRUD bullet)
+**Parent plan:** `docs/workplan/plans/2026-05-12-session-11-INDEX.md`
 
 **Pre-requisites:**
 - `customer_categories` table exists (`supabase/migrations/20260509000001_init_customer_categories.sql`)

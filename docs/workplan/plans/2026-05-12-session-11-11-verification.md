@@ -1,5 +1,10 @@
 # Session 11 — Phase 11 — Final Verification Implementation Plan
 
+> **Trace historique** : ce fichier documente une session de travail datée. Le fond reste l'enregistrement de cette date. Seules les références de chemin ont été alignées sur la nouvelle structure (voir [`../../README.md`](../../README.md)).
+> **Last refreshed** : 2026-05-13
+>
+> **Modules concernés** : toute la session 11 — [`07-purchasing-suppliers`](../../reference/04-modules/07-purchasing-suppliers.md) · [`02-pos-cart-orders`](../../reference/04-modules/02-pos-cart-orders.md) · [`08-customers-loyalty`](../../reference/04-modules/08-customers-loyalty.md) · [`05-products-categories`](../../reference/04-modules/05-products-categories.md) · [`13-promotions-discounts`](../../reference/04-modules/13-promotions-discounts.md) · [`17-tablet-ordering`](../../reference/04-modules/17-tablet-ordering.md) · [`03-payments-split`](../../reference/04-modules/03-payments-split.md) · [`19-settings-configuration`](../../reference/04-modules/19-settings-configuration.md)
+
 > **For agentic workers:** REQUIRED SUB-SKILL: superpowers:subagent-driven-development (recommended) or superpowers:executing-plans. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Close out the session with the mandatory verification commands, a permissions-consistency smoke test (DB vs TS drift catcher, spec §7 risk), and a final commit + PR draft. No new feature code.
@@ -12,8 +17,8 @@
 
 **Tech Stack:** Same as INDEX.
 
-**Parent spec:** `docs/superpowers/specs/2026-05-11-session-11-backoffice-crud-spec.md` §6 (acceptance), §7 (risk mitigation)
-**Parent plan:** `docs/superpowers/plans/2026-05-12-session-11-INDEX.md`
+**Parent spec:** `docs/workplan/specs/2026-05-11-session-11-backoffice-crud-spec.md` §6 (acceptance), §7 (risk mitigation)
+**Parent plan:** `docs/workplan/plans/2026-05-12-session-11-INDEX.md`
 
 **Pre-requisites:**
 - Phases 01-10 complete
@@ -282,7 +287,7 @@ Create the PR with the `gh` CLI. Use this template:
 ```markdown
 ## Summary
 
-Session 11 completes the Backoffice CRUD layer promised by `docs/superpowers/specs/2026-05-11-session-11-backoffice-crud-spec.md`. Adds 7 fully-featured admin CRUD pages (Suppliers, Restaurant Tables, Customer Categories, Categories, Discount Templates, Products full CRUD, Combos) plus a dedicated Customers page that reuses the existing loyalty feature components. Sidebar regrouped into Catalog / Customers / Operations. New `create_combo_with_items` RPC for atomic combo writes. Permissions consistency smoke catches future DB/TS drift.
+Session 11 completes the Backoffice CRUD layer promised by `docs/workplan/specs/2026-05-11-session-11-backoffice-crud-spec.md`. Adds 7 fully-featured admin CRUD pages (Suppliers, Restaurant Tables, Customer Categories, Categories, Discount Templates, Products full CRUD, Combos) plus a dedicated Customers page that reuses the existing loyalty feature components. Sidebar regrouped into Catalog / Customers / Operations. New `create_combo_with_items` RPC for atomic combo writes. Permissions consistency smoke catches future DB/TS drift.
 
 ## Phases
 

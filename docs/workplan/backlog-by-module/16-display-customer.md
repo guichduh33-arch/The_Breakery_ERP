@@ -1,7 +1,7 @@
 # Travail — Customer Display
 
 > Last updated: 2026-05-03
-> Référence : [docs/v2-reference/04-modules/16-display-customer.md](../04-modules/16-display-customer.md)
+> Référence : [docs/reference/04-modules/16-display-customer.md](../04-modules/16-display-customer.md)
 > Sources d'audit : `docs/audit/05-uiux-design-audit.md` (CDIdleView / CDActiveCartView P1-5 hardcoded colors), `docs/audit/08-operations-lan-audit.md` (DISPLAY_CART message handling), `docs/audit/ux-gap-analysis-2026-05-01.md` ("Customer Display App MANQUANT en V3 epic-046")
 
 ## Objectifs du module

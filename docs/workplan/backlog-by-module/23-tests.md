@@ -90,7 +90,7 @@
 - [ ] Dossier `src/test/fixtures/` avec : `products.ts`, `orders.ts`, `customers.ts`, `users.ts`, `accounting.ts`
 - [ ] Factory functions : `createMockProduct(overrides?)`, `createMockOrder(overrides?)`
 - [ ] Migration de 10 fichiers tests existants vers fixtures
-- [ ] Doc test conventions : `docs/v2-reference/09-testing/03-fixtures-and-mocks.md`
+- [ ] Doc test conventions : `docs/reference/09-testing/03-fixtures-and-mocks.md`
 **Fichiers concernés** : `src/test/fixtures/*.ts`, doc
 **Dépend de** : aucune
 **Estimation** : `M`

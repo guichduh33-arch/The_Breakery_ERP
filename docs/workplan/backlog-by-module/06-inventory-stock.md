@@ -50,7 +50,7 @@
 - [ ] **Si OUI** : migration table `stock_reservations` + RLS + tests.
 - [ ] **Si NON** : suppression du fichier `stockReservation.ts` + références.
 - [ ] `/db-schema-audit` ne retourne plus la phantom.
-- [ ] Décision documentée dans `docs/v2-reference/04-modules/06-inventory-stock.md`.
+- [ ] Décision documentée dans `docs/reference/04-modules/06-inventory-stock.md`.
 **Fichiers concernés** : `src/services/inventory/stockReservation.ts`, nouvelle migration ou suppression.
 **Dépend de** : aucune
 **Estimation** : `M` (S si suppression, L si création)

@@ -1,10 +1,13 @@
 # Phase 1 — Foundation (Monorepo Bootstrap)
 
+> **Trace historique** : ce fichier documente une session de travail datée. Le contenu de fond reste l'enregistrement de cette date. Seules les références de chemin ont été alignées sur la nouvelle structure documentaire (voir [`docs/README.md`](../../README.md)).
+> **Last refreshed** : 2026-05-13
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development or superpowers:executing-plans.
 
 **Goal:** Initialiser le monorepo Turborepo + pnpm avec les 2 apps Vite (vides mais qui boot) et les 4 packages internes (vides mais publiables/importables). Pas de logique métier, juste la plomberie.
 
-**Spec source:** `docs/superpowers/specs/2026-05-03-breakery-split-2apps-design.md` sections 2, 3.
+**Spec source:** `docs/workplan/specs/2026-05-03-breakery-split-2apps-design.md` sections 2, 3.
 
 **À la fin de cette phase :**
 - Repo git initialisé
@@ -18,7 +21,7 @@
 
 **Files:**
 - Create: `.gitignore`
-- Modify: (commit existing) `docs/superpowers/specs/2026-05-03-breakery-split-2apps-design.md`
+- Modify: (commit existing) `docs/workplan/specs/2026-05-03-breakery-split-2apps-design.md`
 
 - [ ] **Step 1: Init git**
 
@@ -1135,7 +1138,7 @@ Backoffice : http://localhost:5174
 
 ## Spec
 
-Voir [\`docs/superpowers/specs/2026-05-03-breakery-split-2apps-design.md\`](docs/superpowers/specs/2026-05-03-breakery-split-2apps-design.md).
+Voir [\`docs/workplan/specs/2026-05-03-breakery-split-2apps-design.md\`](docs/workplan/specs/2026-05-03-breakery-split-2apps-design.md).
 ```
 
 - [ ] **Step 3: Commit**

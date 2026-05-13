@@ -401,8 +401,8 @@ Three major performance migrations:
 ## 9. References
 
 - 2026-02-22 RLS audit narrative — consolidated into this document (sections "Doctrine", "Migrations", "Recap")
-- `docs/v2-reference/03-database/05-views-and-matviews.md` §9 — view security model interactions
-- `docs/v2-reference/03-database/07-migrations-history.md` §Milestones — RLS hardening sprints
-- `docs/v2-reference/03-database/08-seed-data.md` §Permissions — exhaustive permission code list
+- `docs/reference/03-database/05-views-and-matviews.md` §9 — view security model interactions
+- `docs/reference/03-database/07-migrations-history.md` §Milestones — RLS hardening sprints
+- `docs/reference/03-database/08-seed-data.md` §Permissions — exhaustive permission code list
 - CLAUDE.md §RLS Pattern — quick reference for new tables
 - `.claude/skills/create-migration` — scaffolding skill

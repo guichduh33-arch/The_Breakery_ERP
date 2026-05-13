@@ -1,5 +1,13 @@
 # The Breakery — Session 7 Spec : Customer Categories + Combos
 
+> **Trace historique** : ce fichier documente une session de travail datée. Le fond reste l'enregistrement de cette date. Seules les références de chemin ont été alignées sur la nouvelle structure documentaire (voir [`../../README.md`](../../README.md)).
+> **Last refreshed** : 2026-05-13
+>
+> **Voir aussi** pour la spec complète (4 parties) :
+> - Customer categories & loyalty → [`../../reference/04-modules/08-customers-loyalty.md`](../../reference/04-modules/08-customers-loyalty.md)
+> - Combos & promotions engine → [`../../reference/04-modules/13-promotions-discounts.md`](../../reference/04-modules/13-promotions-discounts.md)
+> - Products catalogue & catégories produits → [`../../reference/04-modules/05-products-categories.md`](../../reference/04-modules/05-products-categories.md)
+
 > **Date** : 2026-05-06
 > **Auteur** : guichduh33@gmail.com (via session brainstorming)
 > **Statut** : Approuvé pour implémentation

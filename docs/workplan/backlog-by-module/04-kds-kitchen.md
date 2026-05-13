@@ -1,7 +1,7 @@
 # Travail — KDS / Kitchen
 
 > Last updated: 2026-05-03
-> Référence : `docs/v2-reference/04-modules/04-kds-kitchen.md` (à créer)
+> Référence : `docs/reference/04-modules/04-kds-kitchen.md` (à créer)
 > Audits sources : `04-reports-testing-audit.md`, `05-uiux-design-audit.md`, `08-operations-lan-audit.md`
 
 ## Objectifs du module
@@ -125,4 +125,4 @@
 - **Combo KDS dispatch** : déjà OK depuis Sprint 0 C4 (cf. `CURRENT_STATE.md`). Toute nouvelle logique routing doit préserver le combo handling.
 - **Real-time channels** : KDS dépend de Supabase Realtime (`'lan-hub'`) ET BroadcastChannel (`'appgrav-lan'`). Toute modif doit gérer les deux.
 - **Dedup orders** : `useKdsOrderQueue.addOrder` dedup par `order.id`. Pitfall : le dedup global LAN (TASK-11-XXX si module LAN créé) compléterait ce safety net.
-- **Pages docs** : créer `docs/v2-reference/04-modules/04-kds-kitchen.md` après les premières tâches DONE.
+- **Pages docs** : créer `docs/reference/04-modules/04-kds-kitchen.md` après les premières tâches DONE.

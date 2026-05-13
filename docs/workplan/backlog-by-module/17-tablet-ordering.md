@@ -1,7 +1,7 @@
 # Travail — Tablet Ordering
 
 > Last updated: 2026-05-03
-> Référence : [docs/v2-reference/04-modules/17-tablet-ordering.md](../04-modules/17-tablet-ordering.md)
+> Référence : [docs/reference/04-modules/17-tablet-ordering.md](../04-modules/17-tablet-ordering.md)
 > Sources d'audit : `docs/audit/08-operations-lan-audit.md` (TABLET_ORDER_SUBMIT processed by hub, dual-channel risks), `docs/audit/07-product-backlog-audit.md` ("Online-only architecture, no offline fallback Lombok"), `docs/audit/05-uiux-design-audit.md` (touch targets — tablet ordering)
 
 ## Objectifs du module

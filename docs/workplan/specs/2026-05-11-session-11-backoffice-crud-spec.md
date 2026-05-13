@@ -1,5 +1,10 @@
 # The Breakery — Session 11 Spec : Backoffice CRUD étendu + tablet split-pay v5
 
+> **Trace historique** : ce fichier documente une session de travail datée. Le fond reste l'enregistrement de cette date. Seules les références de chemin ont été alignées sur la nouvelle structure (voir [`../../README.md`](../../README.md)).
+> **Last refreshed** : 2026-05-13
+>
+> **Modules concernés (références)** : [`07-purchasing-suppliers`](../../reference/04-modules/07-purchasing-suppliers.md) · [`02-pos-cart-orders`](../../reference/04-modules/02-pos-cart-orders.md) · [`08-customers-loyalty`](../../reference/04-modules/08-customers-loyalty.md) · [`05-products-categories`](../../reference/04-modules/05-products-categories.md) · [`13-promotions-discounts`](../../reference/04-modules/13-promotions-discounts.md) · [`17-tablet-ordering`](../../reference/04-modules/17-tablet-ordering.md) · [`03-payments-split`](../../reference/04-modules/03-payments-split.md) · [`19-settings-configuration`](../../reference/04-modules/19-settings-configuration.md)
+
 > **Date** : 2026-05-11
 > **Auteur** : guichduh33@gmail.com (suite session 10)
 > **Statut** : Approuvé pour implémentation autonome

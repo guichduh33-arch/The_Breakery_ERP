@@ -1,7 +1,7 @@
 # Travail — Payments & Split
 
 > Last updated: 2026-05-03
-> Référence : `docs/v2-reference/04-modules/03-payments-split.md` (à créer)
+> Référence : `docs/reference/04-modules/03-payments-split.md` (à créer)
 > Audits sources : `02-accounting-business-audit.md`, `04-reports-testing-audit.md`, `05-uiux-design-audit.md`, `08-operations-lan-audit.md`
 
 ## Objectifs du module

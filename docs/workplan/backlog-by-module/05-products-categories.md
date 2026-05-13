@@ -1,7 +1,7 @@
 # Travail — Products & Categories
 
 > Last updated: 2026-05-03
-> Référence : `docs/v2-reference/04-modules/05-products-categories.md` (à créer)
+> Référence : `docs/reference/04-modules/05-products-categories.md` (à créer)
 > Audits sources : `03-code-quality-schema-audit.md`, `05-uiux-design-audit.md`, `07-product-backlog-audit.md`
 
 ## Objectifs du module

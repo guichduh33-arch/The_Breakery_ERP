@@ -482,9 +482,9 @@ If any count is below the baseline, the seed migration likely failed silently (c
 
 ## 17. Cross-references
 
-- `docs/v2-reference/03-database/05-views-and-matviews.md` — view-level data shape
-- `docs/v2-reference/03-database/06-rls-policies.md` — permission codes used by RLS USING/WITH CHECK clauses
-- `docs/v2-reference/03-database/07-migrations-history.md` — chronological context for additive seeds
+- `docs/reference/03-database/05-views-and-matviews.md` — view-level data shape
+- `docs/reference/03-database/06-rls-policies.md` — permission codes used by RLS USING/WITH CHECK clauses
+- `docs/reference/03-database/07-migrations-history.md` — chronological context for additive seeds
 - `src/types/database.enums.ts` — TypeScript mirror of all enums
 - `src/types/database.generated.ts` — auto-generated full schema (do NOT edit manually; use `/gen-types`)
 - CLAUDE.md §Business Rules — production semantics (PB1 vs PPN, loyalty discounts, currency rounding)

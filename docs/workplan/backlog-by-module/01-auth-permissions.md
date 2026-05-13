@@ -35,7 +35,7 @@
 - [ ] Stockage du compteur : Supabase table `rate_limits` (ip, endpoint, window_start, count) ou Upstash Redis si dispo.
 - [ ] HTTP 429 avec `Retry-After` quand dépassé.
 - [ ] Audit log d'un événement `RATE_LIMIT_TRIGGERED` à chaque blocage.
-- [ ] Documenter le mécanisme dans `docs/v2-reference/07-security/`.
+- [ ] Documenter le mécanisme dans `docs/reference/07-security/`.
 **Fichiers concernés** : `supabase/functions/auth-verify-pin/index.ts`, `supabase/functions/_shared/rate-limit.ts` (à créer), nouvelle migration pour `rate_limits` table.
 **Dépend de** : aucune
 **Estimation** : `M`

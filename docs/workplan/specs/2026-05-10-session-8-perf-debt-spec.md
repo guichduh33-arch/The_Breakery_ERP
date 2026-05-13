@@ -1,5 +1,9 @@
 # The Breakery — Session 8 Spec : Perf-Debt (DB N+1, RLS subqueries, EF caching, React memo, utils caching)
 
+> **Trace historique** : ce fichier documente une session de travail datée. Le fond reste l'enregistrement de cette date. Seules les références de chemin ont été alignées sur la nouvelle structure (voir [`../../README.md`](../../README.md)).
+> **Last refreshed** : 2026-05-13
+> **Module de référence associé** : [`../../reference/04-modules/13-promotions-discounts.md`](../../reference/04-modules/13-promotions-discounts.md) (contexte session 8 promotions / perf-debt).
+
 > **Date** : 2026-05-10
 > **Auteur** : guichduh33@gmail.com (suite à audit perf 2026-05-06)
 > **Statut** : Approuvé pour implémentation

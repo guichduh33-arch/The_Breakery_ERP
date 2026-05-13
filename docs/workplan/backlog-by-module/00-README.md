@@ -4,7 +4,7 @@
 > Source : audits 2026-04-09 (`docs/audit/`) + `CURRENT_STATE.md` + revue de code
 > Scope : V2 monolith (`src/`, `supabase/`). V3 = `breakery-platform/` (hors scope, voir BMAD).
 
-Ce dossier rassemble le **travail restant** sur AppGrav V2, traduit en tâches actionnables et priorisées. Il complète les références descriptives de `docs/v2-reference/04-modules/` (état du système) en se concentrant sur **ce qu'il faut faire**.
+Ce dossier rassemble le **travail restant** sur AppGrav V2, traduit en tâches actionnables et priorisées. Il complète les références descriptives de `docs/reference/04-modules/` (état du système) en se concentrant sur **ce qu'il faut faire**.
 
 ---
 

@@ -130,7 +130,7 @@ For every P0 (and discretionary P1), write a short post-mortem within 48h. Templ
 - [ ] ...
 ```
 
-Store in `docs/v2-reference/12-appendices/post-mortems/YYYY-MM-DD-<slug>.md` (folder may need creating).
+Store in `docs/reference/12-appendices/post-mortems/YYYY-MM-DD-<slug>.md` (folder may need creating).
 
 ## P1 / P2 / P3 response
 

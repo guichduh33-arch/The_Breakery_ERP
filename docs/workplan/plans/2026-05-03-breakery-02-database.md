@@ -1,10 +1,13 @@
 # Phase 2 — Database (Supabase migrations + RPC + seed)
 
+> **Trace historique** : ce fichier documente une session de travail datée. Le contenu de fond reste l'enregistrement de cette date. Seules les références de chemin ont été alignées sur la nouvelle structure documentaire (voir [`docs/README.md`](../../README.md)).
+> **Last refreshed** : 2026-05-13
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development or superpowers:executing-plans.
 
 **Goal:** Initialiser Supabase en local, créer les 9 migrations SQL, le RPC central `complete_order_with_payment`, et le seed démo. À la fin, `supabase db reset` doit appliquer tout sans erreur et créer un état utilisable par les apps.
 
-**Spec source:** `docs/superpowers/specs/2026-05-03-breakery-split-2apps-design.md` sections 6, 7.
+**Spec source:** `docs/workplan/specs/2026-05-03-breakery-split-2apps-design.md` sections 6, 7.
 
 **Dépend de :** Phase 1.
 
@@ -81,7 +84,7 @@ git commit -m "chore(db): init supabase CLI"
 ```sql
 -- 20260503000000_init_extensions_enums.sql
 -- Phase 2 / migration 1 : extensions + types enum
--- Spec: docs/superpowers/specs/2026-05-03-breakery-split-2apps-design.md#6-schéma-db
+-- Spec: docs/workplan/specs/2026-05-03-breakery-split-2apps-design.md#6-schéma-db
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS pgcrypto;

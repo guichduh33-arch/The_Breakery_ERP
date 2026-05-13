@@ -1,7 +1,7 @@
 # Travail — Accounting (Double-Entry)
 
 > Last updated: 2026-05-03
-> Référence : `docs/v2-reference/04-modules/10-accounting-double-entry.md` (à créer — module non encore documenté en référence)
+> Référence : `docs/reference/04-modules/10-accounting-double-entry.md` (à créer — module non encore documenté en référence)
 > Sources d'audit : `docs/audit/02-accounting-business-audit.md` (Mary, B-/72%, 5 P0), `docs/audit/00-executive-summary.md`, `docs/audit/IMPLEMENTATION_PLAN.md` Phase 1
 > Contexte : module avec le plus gros backlog de l'audit global (5 P0 + 6 P1 + 5 P2 + 5 P3).
 
@@ -32,10 +32,10 @@
 ### TASK-10-002 — Corriger ou supprimer le stock_movement trigger mort [P0] [TODO]
 **Contexte** : Mary P0-2 — `create_stock_movement_journal_entry()` (migration `20260402110000`) référence colonnes `mapping_code` + `mapping_type` qui N'EXISTENT PAS dans `accounting_mappings`. Le trigger échoue silencieusement à chaque mouvement de stock. Risque : si un dev "fixe" le schéma sans virer le trigger, doublons JE avec le moteur TS (`postStockWasteJournalEntry` etc).
 **Critère d'acceptation** :
-- [ ] Décision documentée dans `docs/v2-reference/04-modules/10-accounting-double-entry.md` : « la SOURCE est le moteur TS, pas le trigger DB ».
+- [ ] Décision documentée dans `docs/reference/04-modules/10-accounting-double-entry.md` : « la SOURCE est le moteur TS, pas le trigger DB ».
 - [ ] Migration `YYYYMMDD_drop_stock_movement_trigger.sql` qui DROP TRIGGER + DROP FUNCTION.
 - [ ] Test régression : insert stock_movement → vérifier qu'AUCUN JE n'est créé par le DB ; le moteur TS reste responsable.
-**Fichiers concernés** : `supabase/migrations/YYYYMMDD_drop_stock_movement_trigger.sql`, `docs/v2-reference/04-modules/10-accounting-double-entry.md` (à créer).
+**Fichiers concernés** : `supabase/migrations/YYYYMMDD_drop_stock_movement_trigger.sql`, `docs/reference/04-modules/10-accounting-double-entry.md` (à créer).
 **Dépend de** : aucune
 **Estimation** : S
 **Risques** : faible — le trigger ne fait rien aujourd'hui.

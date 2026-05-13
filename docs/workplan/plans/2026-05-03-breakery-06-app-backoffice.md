@@ -1,10 +1,13 @@
 # Phase 6 — App Backoffice (Login + Layout + Products List)
 
+> **Trace historique** : ce fichier documente une session de travail datée. Le contenu de fond reste l'enregistrement de cette date. Seules les références de chemin ont été alignées sur la nouvelle structure documentaire (voir [`docs/README.md`](../../README.md)).
+> **Last refreshed** : 2026-05-13
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development or superpowers:executing-plans.
 
 **Goal:** Câbler l'app `@breakery/app-backoffice` minimale pour valider que les packages partagés (`@breakery/ui`, `@breakery/supabase`, `@breakery/utils`, `@breakery/domain`) fonctionnent cross-app. Login PIN, layout sidebar+topbar, page `/products` read-only listant les 8 produits seedés. Le reste est `<ComingSoon />`.
 
-**Spec source:** `docs/superpowers/specs/2026-05-03-breakery-split-2apps-design.md` section 4 (backoffice scope minimal).
+**Spec source:** `docs/workplan/specs/2026-05-03-breakery-split-2apps-design.md` section 4 (backoffice scope minimal).
 
 **Dépend de :** Phases 2, 3, 4. Peut être réalisée en parallèle de Phase 5.
 

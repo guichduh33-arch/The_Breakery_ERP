@@ -1,5 +1,10 @@
 # Session 11 — Phase 01 — Suppliers CRUD Implementation Plan
 
+> **Trace historique** : ce fichier documente une session de travail datée. Le fond reste l'enregistrement de cette date. Seules les références de chemin ont été alignées sur la nouvelle structure (voir [`../../README.md`](../../README.md)).
+> **Last refreshed** : 2026-05-13
+>
+> **Module concerné** : [`07-purchasing-suppliers`](../../reference/04-modules/07-purchasing-suppliers.md)
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Ship the full Backoffice CRUD UI for `suppliers` — the simplest of the 7 entities this session (NEW table, no FK dependants yet, plain fields) — as the template-bearing implementation that subsequent phases mirror.
@@ -8,8 +13,8 @@
 
 **Tech Stack:** Same as INDEX.
 
-**Parent spec:** `docs/superpowers/specs/2026-05-11-session-11-backoffice-crud-spec.md` §3.2, §4.3
-**Parent plan:** `docs/superpowers/plans/2026-05-12-session-11-INDEX.md`
+**Parent spec:** `docs/workplan/specs/2026-05-11-session-11-backoffice-crud-spec.md` §3.2, §4.3
+**Parent plan:** `docs/workplan/plans/2026-05-12-session-11-INDEX.md`
 
 **Pre-requisites (verify before starting):**
 - `suppliers` table exists (`supabase/migrations/20260513000001_init_suppliers.sql`)

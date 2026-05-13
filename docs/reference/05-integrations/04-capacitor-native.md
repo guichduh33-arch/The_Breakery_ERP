@@ -55,7 +55,7 @@ plugins: {
 }
 ```
 
-The dark backgrounds match the Luxe Dark design system (`docs/v2-reference/02-design-system/`).
+The dark backgrounds match the Luxe Dark design system (`docs/reference/02-design-system/`).
 
 ## `useCapacitorInit` hook
 

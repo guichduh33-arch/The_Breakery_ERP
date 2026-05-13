@@ -1,5 +1,10 @@
 # Session 11 — Phase 10 — Sidebar Grouping Implementation Plan
 
+> **Trace historique** : ce fichier documente une session de travail datée. Le fond reste l'enregistrement de cette date. Seules les références de chemin ont été alignées sur la nouvelle structure (voir [`../../README.md`](../../README.md)).
+> **Last refreshed** : 2026-05-13
+>
+> **Module concerné** : [`19-settings-configuration`](../../reference/04-modules/19-settings-configuration.md) (navigation Backoffice)
+
 > **For agentic workers:** REQUIRED SUB-SKILL: superpowers:subagent-driven-development (recommended) or superpowers:executing-plans. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Reorganise the `BackofficeLayout` sidebar into three labelled groups — **Catalog**, **Customers**, **Operations** — and re-order entries within each group. Add the new entries from Phases 01-08 so all 11 backoffice destinations are surfaced and discoverable. Per-entry permission gating is preserved.
@@ -8,8 +13,8 @@
 
 **Tech Stack:** Same as INDEX.
 
-**Parent spec:** `docs/superpowers/specs/2026-05-11-session-11-backoffice-crud-spec.md` §4.2 (Sidebar grouping)
-**Parent plan:** `docs/superpowers/plans/2026-05-12-session-11-INDEX.md`
+**Parent spec:** `docs/workplan/specs/2026-05-11-session-11-backoffice-crud-spec.md` §4.2 (Sidebar grouping)
+**Parent plan:** `docs/workplan/plans/2026-05-12-session-11-INDEX.md`
 
 **Pre-requisites:**
 - All 8 new routes from Phases 01-08 are live (suppliers, restaurant-tables, customer-categories, categories, discount-templates, products full CRUD, combos, customers)

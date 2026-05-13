@@ -1,5 +1,10 @@
 # Session 11 — Phase 04 — Categories CRUD Implementation Plan
 
+> **Trace historique** : ce fichier documente une session de travail datée. Le fond reste l'enregistrement de cette date. Seules les références de chemin ont été alignées sur la nouvelle structure (voir [`../../README.md`](../../README.md)).
+> **Last refreshed** : 2026-05-13
+>
+> **Module concerné** : [`05-products-categories`](../../reference/04-modules/05-products-categories.md)
+
 > **For agentic workers:** REQUIRED SUB-SKILL: superpowers:subagent-driven-development (recommended) or superpowers:executing-plans. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Ship the Backoffice CRUD UI for `categories` — product categories that drive the POS sort + KDS routing. Add the `color` column called out in the spec (currently missing from schema). Form exposes: `name`, `slug`, `sort_order`, `dispatch_station`, `color`, `is_active`.
@@ -8,8 +13,8 @@
 
 **Tech Stack:** Same as INDEX.
 
-**Parent spec:** `docs/superpowers/specs/2026-05-11-session-11-backoffice-crud-spec.md` §0 (Categories CRUD bullet)
-**Parent plan:** `docs/superpowers/plans/2026-05-12-session-11-INDEX.md`
+**Parent spec:** `docs/workplan/specs/2026-05-11-session-11-backoffice-crud-spec.md` §0 (Categories CRUD bullet)
+**Parent plan:** `docs/workplan/plans/2026-05-12-session-11-INDEX.md`
 
 **Pre-requisites:**
 - Phase 01 complete (scaffold pattern proven)

@@ -88,7 +88,7 @@
 - [ ] Audit : lister les 72+ modales custom identifiées
 - [ ] Migration prioritaire (10 modales critiques) vers shadcn `<Dialog>` ou `<Sheet>` qui gèrent focus trap, Escape, aria-* automatiquement
 - [ ] Tests : Tab dans modal reste dans modal, Esc ferme, focus revient au trigger
-- [ ] Backlog des 60+ restantes documenté (`docs/v2-reference/travail/22-design-system-modal-migration.md`)
+- [ ] Backlog des 60+ restantes documenté (`docs/reference/travail/22-design-system-modal-migration.md`)
 **Fichiers concernés** : modales `PaymentModal`, `PinVerificationModal`, `TableSelectionModal`, `DiscountModal`, `SplitByItemModal`, `ModifierModal`, `CategoryFormModal`, etc.
 **Dépend de** : aucune
 **Estimation** : `XL` (XL pour 10, le total 72+ ferait plusieurs sprints)

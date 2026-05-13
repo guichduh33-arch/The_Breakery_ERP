@@ -1,5 +1,10 @@
 # Session 11 — Backoffice CRUD étendu + Tablet split-pay smoke — INDEX
 
+> **Trace historique** : ce fichier documente une session de travail datée. Le fond reste l'enregistrement de cette date. Seules les références de chemin ont été alignées sur la nouvelle structure (voir [`../../README.md`](../../README.md)).
+> **Last refreshed** : 2026-05-13
+>
+> **Modules concernés (références)** : [`07-purchasing-suppliers`](../../reference/04-modules/07-purchasing-suppliers.md) · [`02-pos-cart-orders`](../../reference/04-modules/02-pos-cart-orders.md) · [`08-customers-loyalty`](../../reference/04-modules/08-customers-loyalty.md) · [`05-products-categories`](../../reference/04-modules/05-products-categories.md) · [`13-promotions-discounts`](../../reference/04-modules/13-promotions-discounts.md) · [`17-tablet-ordering`](../../reference/04-modules/17-tablet-ordering.md) · [`03-payments-split`](../../reference/04-modules/03-payments-split.md) · [`19-settings-configuration`](../../reference/04-modules/19-settings-configuration.md)
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement the sub-plans referenced below. Steps use checkbox (`- [ ]`) syntax for tracking. **Read this INDEX first**, then dispatch a fresh subagent per sub-plan in execution order.
 
 **Goal:** Ship the 7 backoffice CRUD UIs promised by the session 11 spec (DB layer already shipped via migrations 20260513*), add a `create_combo_with_items` RPC for nested combo writes, extract the existing customer CRUD into a dedicated Customers page, regroup the sidebar, and prove the tablet split-pay v5 path with an end-to-end smoke test.
@@ -14,7 +19,7 @@
 
 **Tech Stack:** PostgreSQL + Supabase RLS, React + Vite + Vitest, React Query (TanStack v5), Tailwind (Luxe dark tokens), `react-router-dom`, `supabase-js`, `lucide-react`, Zod.
 
-**Spec:** `docs/superpowers/specs/2026-05-11-session-11-backoffice-crud-spec.md`
+**Spec:** `docs/workplan/specs/2026-05-11-session-11-backoffice-crud-spec.md`
 
 ---
 
@@ -212,8 +217,8 @@ For each sub-plan, the recommended dispatch pattern when using `subagent-driven-
 
 ```text
 Lead (you) → spawns 1 fresh subagent for the sub-plan with prompt:
-  "Read docs/superpowers/plans/2026-05-12-session-11-<NN>-<phase>.md and
-   docs/superpowers/plans/2026-05-12-session-11-INDEX.md. Execute every task
+  "Read docs/workplan/plans/2026-05-12-session-11-<NN>-<phase>.md and
+   docs/workplan/plans/2026-05-12-session-11-INDEX.md. Execute every task
    in order. Commit after each task. When done, run pnpm typecheck + pnpm test
    (filtered to the affected packages) and report results."
 ```

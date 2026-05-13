@@ -1,5 +1,10 @@
 # Session 11 — Phase 09 — Tablet Split-Pay v5 Smoke Test Implementation Plan
 
+> **Trace historique** : ce fichier documente une session de travail datée. Le fond reste l'enregistrement de cette date. Seules les références de chemin ont été alignées sur la nouvelle structure (voir [`../../README.md`](../../README.md)).
+> **Last refreshed** : 2026-05-13
+>
+> **Modules concernés** : [`17-tablet-ordering`](../../reference/04-modules/17-tablet-ordering.md) · [`03-payments-split`](../../reference/04-modules/03-payments-split.md)
+
 > **For agentic workers:** REQUIRED SUB-SKILL: superpowers:subagent-driven-development (recommended) or superpowers:executing-plans. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Prove end-to-end that the tablet pickup → multi-tender split-pay path works against the `pay_existing_order` v5 RPC, by writing the smoke test promised in the spec §5 (`tablet-split-pay.smoke.test.tsx`). No production code changes — the RPC (`20260513000003_extend_pay_existing_order_rpc_v5.sql`) and the client wiring (`apps/pos/src/features/payment/hooks/useCheckout.ts` lines 65-94) are already in place.
@@ -11,8 +16,8 @@
 
 **Tech Stack:** Same as INDEX.
 
-**Parent spec:** `docs/superpowers/specs/2026-05-11-session-11-backoffice-crud-spec.md` §5 (tablet-split-pay.smoke.test.tsx)
-**Parent plan:** `docs/superpowers/plans/2026-05-12-session-11-INDEX.md`
+**Parent spec:** `docs/workplan/specs/2026-05-11-session-11-backoffice-crud-spec.md` §5 (tablet-split-pay.smoke.test.tsx)
+**Parent plan:** `docs/workplan/plans/2026-05-12-session-11-INDEX.md`
 
 **Pre-requisites:**
 - Migration `20260513000003_extend_pay_existing_order_rpc_v5.sql` applied

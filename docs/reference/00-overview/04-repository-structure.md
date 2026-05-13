@@ -44,7 +44,7 @@ appGrav-v2/
 |---|---|---|
 | Le POS production actuel | `src/` + `supabase/` | Cette doc + `CLAUDE.md` racine |
 | La reconstruction Turborepo | `breakery-platform/` | `breakery-platform/CLAUDE.md` |
-| Documentation V2 | `docs/v2-reference/` (cette doc) | Conventions de cette doc |
+| Documentation V2 | `docs/reference/` (cette doc) | Conventions de cette doc |
 | Stories BMAD V3 | `breakery-platform/_bmad/` | Pipeline BMAD |
 
 **Ne mélange jamais V2 et V3 dans le même fichier.** Si une story V3 importe du V2, elle doit être conçue pour ne pas modifier `src/` directement (cf. pitfall « V2↔V3 stories +3pts » dans `CLAUDE.md`).

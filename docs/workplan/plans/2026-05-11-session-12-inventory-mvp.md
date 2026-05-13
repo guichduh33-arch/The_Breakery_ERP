@@ -1,10 +1,15 @@
 # Session 12 — Inventory MVP Implementation Plan — **SUPERSEDED**
 
+> **Trace historique** : ce fichier documente une session de travail datée. Le fond reste l'enregistrement de cette date. Seules les références de chemin ont été alignées sur la nouvelle structure (voir [`../../README.md`](../../README.md)).
+> **Last refreshed** : 2026-05-13
+
+> **Module concerné** : ce plan correspond au module [Inventory & Stock](../../reference/04-modules/06-inventory-stock.md). Pour la spec consolidée actuelle (Partie I fonctionnel + Partie II technique + Partie III backlog + Partie IV design), aller à la référence canonique.
+
 > ⚠️ **STATUT : SUPERSEDED (2026-05-12)** — ce plan MVP est remplacé par le plan-INDEX multi-phases :
-> - **Plan-INDEX complete** : `docs/superpowers/plans/2026-05-12-session-12-inventory-complete-INDEX.md`
-> - **Spec source complete** : `docs/superpowers/specs/2026-05-12-session-12-inventory-complete-spec.md`
+> - **Plan-INDEX complete** : [`./2026-05-12-session-12-inventory-complete-INDEX.md`](./2026-05-12-session-12-inventory-complete-INDEX.md)
+> - **Spec source complete** : [`../specs/2026-05-12-session-12-inventory-complete-spec.md`](../specs/2026-05-12-session-12-inventory-complete-spec.md)
 >
-> Les Phase 1 + Phase 2 du plan-INDEX implémentent le périmètre décrit ici (foundations + RPCs admin core), puis les phases 3-8 ajoutent Transfers, Production, Opname, Movements, Alertes, Dashboard, et le couplage comptable automatique pour livrer le module **Inventory complete** conforme à `docs/objectif travail/INVENTORY.md`.
+> Les Phase 1 + Phase 2 du plan-INDEX implémentent le périmètre décrit ici (foundations + RPCs admin core), puis les phases 3-8 ajoutent Transfers, Production, Opname, Movements, Alertes, Dashboard, et le couplage comptable automatique pour livrer le module **Inventory complete** conforme à la [référence Inventory](../../reference/04-modules/06-inventory-stock.md) (Partie I §1-20).
 >
 > Le contenu ci-dessous est conservé à titre **historique**.
 
@@ -13,12 +18,14 @@
 # Session 12 — Inventory MVP Implementation Plan
 
 > **Date** : 2026-05-11
-> **Statut** : ⚠️ Superseded — voir `2026-05-12-session-12-inventory-complete-INDEX.md`
+> **Statut** : ⚠️ Superseded — voir [`./2026-05-12-session-12-inventory-complete-INDEX.md`](./2026-05-12-session-12-inventory-complete-INDEX.md)
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:subagent-driven-development` (recommended) or `superpowers:executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Livrer le module Inventory MVP — couche admin (4 RPCs : `record_stock_movement_v1` interne + `adjust_stock_v1` ADMIN+ + `receive_stock_v1` MANAGER+ + `waste_stock_v1` MANAGER+) + 1 RPC read paginé (`get_stock_levels_v1`) + page backoffice `/inventory` (list + 3 modals + history drawer) + domain package pur + 30+ tests. Auto-decrement on sale **déjà câblé** depuis session 1 — aucune modification des RPCs existants.
 
-**Spec source:** `docs/superpowers/specs/2026-05-11-session-12-inventory-mvp-spec.md`
+**Spec source:** [`../specs/2026-05-11-session-12-inventory-mvp-spec.md`](../specs/2026-05-11-session-12-inventory-mvp-spec.md)
+
+**Référence canonique** : [`../../reference/04-modules/06-inventory-stock.md`](../../reference/04-modules/06-inventory-stock.md) — Partie I §1-20 (vue fonctionnelle), Partie II §21-34 (référence technique), Partie III (backlog → [`../backlog-by-module/06-inventory-stock.md`](../backlog-by-module/06-inventory-stock.md)), Partie IV §35-43 (design & UX).
 
 **Architecture:** 10 migrations additives → domain pur (`packages/domain/src/inventory/`) → feature folder backoffice → wiring routes/sidebar/perms → tests pgTAP + Vitest → docs. Aucun edge function. Aucune modification de `complete_order` / `void_order_rpc` / `refund_order_rpc`. Pattern UI repris de `apps/backoffice/src/features/loyalty/` (adjust-with-reason).
 
@@ -100,7 +107,7 @@
 -- 20260516000001_extend_stock_movements_reason.sql
 -- Session 12 / migration 1 : étendre stock_movements pour les admin movements
 -- (reason + unit_cost + idempotency) ET autoriser reference_id NULL sur admin types.
--- Spec: docs/superpowers/specs/2026-05-11-session-12-inventory-mvp-spec.md §3.2
+-- Spec: docs/workplan/specs/2026-05-11-session-12-inventory-mvp-spec.md §3.2
 
 ALTER TABLE stock_movements
   ADD COLUMN reason          TEXT,

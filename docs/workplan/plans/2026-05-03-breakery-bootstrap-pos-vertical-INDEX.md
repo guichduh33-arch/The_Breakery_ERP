@@ -1,10 +1,13 @@
 # Breakery Bootstrap + POS Vertical — Master Plan (Index)
 
+> **Trace historique** : ce fichier documente une session de travail datée. Le contenu de fond reste l'enregistrement de cette date. Seules les références de chemin ont été alignées sur la nouvelle structure documentaire (voir [`docs/README.md`](../../README.md)).
+> **Last refreshed** : 2026-05-13
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement these plans task-by-task.
 
 **Goal:** Bootstrap monorepo Turborepo + pnpm avec 2 apps (`pos`, `backoffice`) et 4 packages partagés (`ui`, `supabase`, `domain`, `utils`), puis livrer un module POS vertical end-to-end (auth PIN → open shift → cart → cash payment → order persisté).
 
-**Spec source:** `docs/superpowers/specs/2026-05-03-breakery-split-2apps-design.md`
+**Spec source:** `docs/workplan/specs/2026-05-03-breakery-split-2apps-design.md`
 
 **Architecture:** Turborepo monorepo. 2 apps Vite SPA. 4 packages internes. Backend Supabase (Postgres + Edge Functions Deno) en local CLI. Auth PIN custom + Supabase JWT. Tests Vitest + pgTAP. CI GitHub Actions.
 

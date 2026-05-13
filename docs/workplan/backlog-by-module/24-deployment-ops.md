@@ -23,7 +23,7 @@
 - [ ] `.github/workflows/deploy-preview.yml` : à chaque PR, deploy preview Vercel commenté en PR avec lien
 - [ ] `.github/workflows/deploy-production.yml` : trigger sur push tag `v*`, deploy prod après tests verts
 - [ ] Vérification migrations : Supabase migration check via `supabase db lint` dans CI
-- [ ] Documentation `docs/v2-reference/10-deployment-ops/01-cicd-pipeline.md`
+- [ ] Documentation `docs/reference/10-deployment-ops/01-cicd-pipeline.md`
 **Fichiers concernés** : `.github/workflows/*.yml`, doc
 **Dépend de** : TASK-23-001 (tests propres)
 **Estimation** : `L`
@@ -33,7 +33,7 @@
 ### TASK-24-002 — DR runbook complet (5 scénarios) [P1] [TODO]
 **Contexte** : `docs/audit/08-operations-lan-audit.md` §5.3 P2 FINDING — *"No documented disaster recovery runbook. For a production system handling ~200 tx/day, there should be Supabase backup verification schedule, RTO/RPO definitions, step-by-step recovery procedures, contact info for Supabase support escalation."*
 **Critère d'acceptation** :
-- [ ] `docs/v2-reference/10-deployment-ops/02-disaster-recovery.md` créé
+- [ ] `docs/reference/10-deployment-ops/02-disaster-recovery.md` créé
 - [ ] 5 scénarios documentés : Supabase down, Hub crash, Print server crash, Vercel down, Data corruption
 - [ ] RTO/RPO définis : RTO 1h pour Supabase down, RPO 5 min (PITR Supabase Pro)
 - [ ] Procédure restore PITR testée 1× et chronométrée
@@ -51,7 +51,7 @@
 - [ ] Alert rules Sentry : nouveau type d'erreur en prod → notification Slack #ops dans 5 min
 - [ ] Spike detection : > 10 errors/min même type → alert P1
 - [ ] Issue assignment auto par module (path-based)
-- [ ] Documentation : `docs/v2-reference/10-deployment-ops/03-monitoring-alerts.md` avec liste alerts actives
+- [ ] Documentation : `docs/reference/10-deployment-ops/03-monitoring-alerts.md` avec liste alerts actives
 - [ ] Suppression bruit : ResizeObserver, JWT expiry déjà filtrés (vérifier)
 **Fichiers concernés** : Sentry dashboard config (manuel), doc
 **Dépend de** : aucune
@@ -91,7 +91,7 @@
 **Critère d'acceptation** :
 - [ ] Bench : mesurer cold start des 16 Edge Functions (script `scripts/bench-edge-functions.sh`)
 - [ ] Top 5 plus lentes optimisées : import minimal, lazy supabase client init, réduire taille bundle
-- [ ] Rapport baseline + après dans `docs/v2-reference/10-deployment-ops/04-edge-functions-perf.md`
+- [ ] Rapport baseline + après dans `docs/reference/10-deployment-ops/04-edge-functions-perf.md`
 - [ ] Cible : cold start < 300 ms pour `auth-verify-pin`, `auth-get-session`
 **Fichiers concernés** : `supabase/functions/*/index.ts` (refacto imports), bench script
 **Dépend de** : aucune
@@ -117,7 +117,7 @@
 - [ ] Projet Supabase staging créé (ou branch `staging` activée)
 - [ ] Variable Vercel `VITE_SUPABASE_URL_STAGING` + branche Vercel `staging` qui pointe dessus
 - [ ] Workflow : merge `develop` → `staging` → tests manuels → promotion `main`
-- [ ] Documentation `docs/v2-reference/10-deployment-ops/06-environments.md`
+- [ ] Documentation `docs/reference/10-deployment-ops/06-environments.md`
 - [ ] Migrations testées en staging avant prod
 **Fichiers concernés** : config Vercel, Supabase project, doc
 **Dépend de** : aucune
@@ -154,7 +154,7 @@
 ### TASK-24-011 — Disaster recovery plan complet (formalisation) [P2] [TODO]
 **Contexte** : Liée à TASK-24-002 mais étendue à plan d'urgence multi-volet : qui contacter, comment communiquer aux clients (downtime banner), quels comptes ont accès admin Supabase/Vercel.
 **Critère d'acceptation** :
-- [ ] Doc `docs/v2-reference/10-deployment-ops/07-incident-response.md`
+- [ ] Doc `docs/reference/10-deployment-ops/07-incident-response.md`
 - [ ] Liste comptes admins (sans mot de passe) avec backup
 - [ ] Communication template : downtime banner → afficher sur splash mobile / login
 - [ ] Test annuel : simuler incident (ex : Supabase coupé) et chronométrer reprise complète

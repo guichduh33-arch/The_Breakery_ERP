@@ -91,7 +91,7 @@
 ### TASK-25-006 — Audit Edge Functions permission checks [P1] [TODO]
 **Contexte** : `CLAUDE.md` Pitfalls — *"Edge Functions: Must use verify_jwt: true + call user_has_permission(auth.uid(), 'module.action')"* + `docs/audit/08-operations-lan-audit.md` §2.3 — matrice par fonction. Toutes ne loggent pas les permission denials proprement.
 **Critère d'acceptation** :
-- [ ] Matrice par Edge Function : permission requise documentée dans `docs/v2-reference/07-security/03-edge-functions-permissions.md`
+- [ ] Matrice par Edge Function : permission requise documentée dans `docs/reference/07-security/03-edge-functions-permissions.md`
 - [ ] Pour chaque fonction : vérifier que `user_has_permission(uid, code)` est appelé avant action sensitive
 - [ ] Permission denials → audit log + 403 response (pas 500)
 - [ ] Tests par fonction avec user sans permission → 403
@@ -117,11 +117,11 @@
 ### TASK-25-008 — Secrets rotation policy [P2] [TODO]
 **Contexte** : Pas mentionné explicitement audit mais best practice. `SUPABASE_SERVICE_ROLE`, `ANTHROPIC_API_KEY`, `SENTRY_AUTH_TOKEN` sont long-lived sans rotation.
 **Critère d'acceptation** :
-- [ ] Doc `docs/v2-reference/07-security/04-secrets-rotation.md` :
+- [ ] Doc `docs/reference/07-security/04-secrets-rotation.md` :
   - Service role : rotation tous les 6 mois (ou sur départ employé admin)
   - API keys third-party : rotation sur compromise alert
   - Procédure step-by-step par secret
-- [ ] Calendrier rotation dans `docs/v2-reference/10-deployment-ops/` (rappel ops)
+- [ ] Calendrier rotation dans `docs/reference/10-deployment-ops/` (rappel ops)
 - [ ] Edge Functions : test après rotation
 **Fichiers concernés** : doc
 **Dépend de** : aucune
@@ -176,7 +176,7 @@
 **Critère d'acceptation** :
 - [ ] Audit : Supabase client config → cookies `SameSite=Strict` ou `Lax` ; `Secure` flag
 - [ ] localStorage tokens : envisager déplacer vers `sessionStorage` pour sessions courtes (déjà fait selon audit §1)
-- [ ] Doc `docs/v2-reference/07-security/05-session-security.md`
+- [ ] Doc `docs/reference/07-security/05-session-security.md`
 **Fichiers concernés** : `src/lib/supabase.ts`, doc
 **Dépend de** : aucune
 **Estimation** : `S`

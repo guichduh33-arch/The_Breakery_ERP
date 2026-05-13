@@ -1,5 +1,9 @@
 # BO Loyalty Management Implementation Plan
 
+> **Trace historique** : ce fichier documente une session de travail datée. Le fond reste l'enregistrement de cette date. Seules les références de chemin ont été alignées sur la nouvelle structure (voir [`../../README.md`](../../README.md)).
+> **Last refreshed** : 2026-05-13
+> **Module de référence associé** : [`../../reference/04-modules/08-customers-loyalty.md`](../../reference/04-modules/08-customers-loyalty.md).
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Ship a backoffice page to list/search retail customers, view per-customer loyalty transaction history, manually adjust points (gated by `loyalty.adjust`), and CRUD customers — mirroring the session 9 promotions BO module.
@@ -8,7 +12,7 @@
 
 **Tech Stack:** PostgreSQL + Supabase RLS, React + Vite + Vitest, React Query, Tailwind, react-router-dom, supabase-js, lucide-react.
 
-**Spec:** `docs/superpowers/specs/2026-05-10-bo-loyalty-design.md`.
+**Spec:** `docs/workplan/specs/2026-05-10-bo-loyalty-design.md`.
 
 **Conventions used in this plan:**
 - All new migrations dated `20260512xxxxxx` (after session 9's `20260511*`).
@@ -1911,7 +1915,7 @@ Expected: FAIL — `Cannot find module '@/pages/Loyalty.js'`.
 // BO loyalty management page. List + filters + modals for create/edit/
 // delete/adjust + history drawer.
 //
-// Spec ref: docs/superpowers/specs/2026-05-10-bo-loyalty-design.md §1, §3
+// Spec ref: docs/workplan/specs/2026-05-10-bo-loyalty-design.md §1, §3
 
 import { Plus } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -2142,7 +2146,7 @@ Then in the BO browser session:
 
 - [ ] **Step 3: Note any deviations and capture them as follow-up tasks**
 
-If anything deviated from the spec, append a note section to `docs/superpowers/specs/2026-05-10-bo-loyalty-design.md` and commit, OR open a follow-up issue. Don't silently fix scope creep.
+If anything deviated from the spec, append a note section to `docs/workplan/specs/2026-05-10-bo-loyalty-design.md` and commit, OR open a follow-up issue. Don't silently fix scope creep.
 
 - [ ] **Step 4: Final tag commit**
 
