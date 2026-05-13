@@ -4,14 +4,29 @@
 // Mirrors the `stock_movement_type` enum and `record_stock_movement` RPC contract.
 // All types are IO-free and serialisable.
 
-/** Matches the `stock_movement_type` enum in the DB (session 12 migration). */
+/** Matches the `stock_movement_type` enum in the DB. Phase 1 (session 12 complete)
+ *  extended the enum with directional + sectioned movement types — keep this list
+ *  in lockstep with `supabase/migrations/20260516000014_extend_movement_type_enum.sql`. */
 export type MovementType =
   | 'sale'
   | 'sale_void'
   | 'production'
   | 'purchase'
   | 'waste'
-  | 'adjustment';
+  | 'adjustment'
+  // Phase 1 extensions:
+  | 'transfer_in'
+  | 'transfer_out'
+  | 'production_in'
+  | 'production_out'
+  | 'adjustment_in'
+  | 'adjustment_out'
+  | 'opname_in'
+  | 'opname_out'
+  | 'incoming'
+  | 'purchase_return'
+  | 'reservation_hold'
+  | 'reservation_release';
 
 /** Reference table for tracing the source of a movement. */
 export type StockMovementReferenceType =
