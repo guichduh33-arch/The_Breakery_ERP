@@ -34,6 +34,10 @@ import SalesByCategoryPage from '@/pages/reports/SalesByCategoryPage.js';
 import SalesByStaffPage from '@/pages/reports/SalesByStaffPage.js';
 import StockVariancePage from '@/pages/reports/StockVariancePage.js';
 import AuditPage from '@/pages/reports/AuditPage.js';
+import ProfitLossPage     from '@/pages/reports/ProfitLossPage.js';
+import BalanceSheetPage   from '@/pages/reports/BalanceSheetPage.js';
+import CashFlowPage       from '@/pages/reports/CashFlowPage.js';
+import BasketAnalysisPage from '@/pages/reports/BasketAnalysisPage.js';
 import SettingsGeneralPage          from '@/pages/settings/SettingsGeneralPage.js';
 import SettingsHolidaysPage         from '@/pages/settings/SettingsHolidaysPage.js';
 import SettingsEmailTemplatesPage   from '@/pages/settings/SettingsEmailTemplatesPage.js';
@@ -41,6 +45,10 @@ import SettingsReceiptTemplatesPage from '@/pages/settings/SettingsReceiptTempla
 import SettingsPermissionsPage      from '@/pages/settings/SettingsPermissionsPage.js';
 import PrintQueuePage from '@/pages/print-queue/PrintQueuePage.js';
 import LanDevicesPage from '@/pages/lan-devices/LanDevicesPage.js';
+import CohortReportPage from '@/pages/marketing/CohortReportPage.js';
+import SegmentsPage     from '@/pages/marketing/SegmentsPage.js';
+import PromoRoiPage     from '@/pages/marketing/PromoRoiPage.js';
+import BirthdayPage     from '@/pages/marketing/BirthdayPage.js';
 import { BackofficeLayout } from '@/layouts/BackofficeLayout.js';
 import { useAuthStore } from '@/stores/authStore.js';
 
@@ -231,6 +239,38 @@ export function AppRoutes() {
         <Route path="b2b" element={<ComingSoonPage module="B2B" />} />
         <Route path="accounting" element={<ComingSoonPage module="Accounting" />} />
         <Route
+          path="marketing/cohort"
+          element={
+            <PermissionGate required="reports.read">
+              <CohortReportPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="marketing/segments"
+          element={
+            <PermissionGate required="reports.read">
+              <SegmentsPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="marketing/promo-roi"
+          element={
+            <PermissionGate required="reports.read">
+              <PromoRoiPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="marketing/birthday"
+          element={
+            <PermissionGate required="reports.read">
+              <BirthdayPage />
+            </PermissionGate>
+          }
+        />
+        <Route
           path="users"
           element={
             <PermissionGate required="users.read">
@@ -307,6 +347,38 @@ export function AppRoutes() {
           element={
             <PermissionGate required="reports.audit.read">
               <AuditPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="reports/profit-loss"
+          element={
+            <PermissionGate required="reports.financial.read">
+              <ProfitLossPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="reports/balance-sheet"
+          element={
+            <PermissionGate required="reports.financial.read">
+              <BalanceSheetPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="reports/cash-flow"
+          element={
+            <PermissionGate required="reports.financial.read">
+              <CashFlowPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="reports/basket-analysis"
+          element={
+            <PermissionGate required="reports.sales.read">
+              <BasketAnalysisPage />
             </PermissionGate>
           }
         />

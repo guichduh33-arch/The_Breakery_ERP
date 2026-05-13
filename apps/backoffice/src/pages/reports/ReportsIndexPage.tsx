@@ -5,7 +5,10 @@
 // reports the user cannot access — clicking redirects via PermissionGate).
 
 import { Link } from 'react-router-dom';
-import { BarChart3, PieChart, Users, Boxes, Shield } from 'lucide-react';
+import {
+  BarChart3, PieChart, Users, Boxes, Shield,
+  Coins, Scale, Banknote, Layers3,
+} from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@breakery/ui';
 
 interface ReportCard {
@@ -16,11 +19,15 @@ interface ReportCard {
 }
 
 const REPORTS: ReportCard[] = [
-  { to: 'sales-by-hour',     title: 'Sales by Hour',     blurb: 'Hourly revenue distribution.',       icon: BarChart3 },
-  { to: 'sales-by-category', title: 'Sales by Category', blurb: 'Revenue + qty per product category.', icon: PieChart },
-  { to: 'sales-by-staff',    title: 'Sales by Staff',    blurb: 'Total / order count / avg basket.',  icon: Users },
-  { to: 'stock-variance',    title: 'Stock Variance',    blurb: 'Expected vs current per product.',    icon: Boxes },
-  { to: 'audit',             title: 'Audit Log',         blurb: 'System-wide audit trail.',            icon: Shield },
+  { to: 'sales-by-hour',     title: 'Sales by Hour',     blurb: 'Hourly revenue distribution.',          icon: BarChart3 },
+  { to: 'sales-by-category', title: 'Sales by Category', blurb: 'Revenue + qty per product category.',   icon: PieChart },
+  { to: 'sales-by-staff',    title: 'Sales by Staff',    blurb: 'Total / order count / avg basket.',     icon: Users },
+  { to: 'stock-variance',    title: 'Stock Variance',    blurb: 'Expected vs current per product.',      icon: Boxes },
+  { to: 'profit-loss',       title: 'Profit & Loss',     blurb: 'Revenue, COGS and OpEx for a period.',  icon: Coins },
+  { to: 'balance-sheet',     title: 'Balance Sheet',     blurb: 'Assets vs liabilities + equity snapshot.', icon: Scale },
+  { to: 'cash-flow',         title: 'Cash Flow',         blurb: 'Indirect-method cash movement statement.', icon: Banknote },
+  { to: 'basket-analysis',   title: 'Basket Analysis',   blurb: 'Top cross-sell product pairs by lift.',  icon: Layers3 },
+  { to: 'audit',             title: 'Audit Log',         blurb: 'System-wide audit trail.',              icon: Shield },
 ];
 
 export default function ReportsIndexPage() {
