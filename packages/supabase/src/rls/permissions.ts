@@ -54,8 +54,11 @@ export type PermissionCode =
   | 'pos.sale.refund'
   | 'pos.sale.cancel_item'
   | 'users.create'
+  | 'users.read'
   | 'users.update'
   | 'users.view_audit'
+  | 'rbac.read'
+  | 'rbac.update'
   | 'promotions.read'
   | 'promotions.create'
   | 'promotions.update'
@@ -97,7 +100,12 @@ export type PermissionCode =
   | 'lan.devices.read'
   | 'lan.devices.manage'
   // Session 13 / Phase 5.B — Notifications pipeline
-  | 'notifications.send';
+  | 'notifications.send'
+  // Session 13 / Phase 5.C — Settings UI + holidays/templates
+  | 'settings.read'
+  | 'settings.update'
+  | 'settings.holidays.manage'
+  | 'settings.kiosk.manage';
 
 /**
  * Check whether a user has a single permission. Pure client-side lookup —
