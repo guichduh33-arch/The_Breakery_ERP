@@ -222,6 +222,7 @@ export type Database = {
           dispatch_station: string
           id: string
           is_active: boolean
+          kds_station: string
           name: string
           slug: string
           sort_order: number
@@ -233,6 +234,7 @@ export type Database = {
           dispatch_station?: string
           id?: string
           is_active?: boolean
+          kds_station?: string
           name: string
           slug: string
           sort_order?: number
@@ -244,6 +246,7 @@ export type Database = {
           dispatch_station?: string
           id?: string
           is_active?: boolean
+          kds_station?: string
           name?: string
           slug?: string
           sort_order?: number
@@ -479,6 +482,42 @@ export type Database = {
           type?: Database["public"]["Enums"]["discount_template_type"]
           updated_at?: string
           value?: number
+        }
+        Relationships: []
+      }
+      display_screens: {
+        Row: {
+          code: string
+          created_at: string
+          deleted_at: string | null
+          id: string
+          is_active: boolean
+          last_seen_at: string | null
+          location: string | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          is_active?: boolean
+          last_seen_at?: string | null
+          location?: string | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          is_active?: boolean
+          last_seen_at?: string | null
+          location?: string | null
+          name?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1276,6 +1315,7 @@ export type Database = {
       }
       order_items: {
         Row: {
+          bumped_at: string | null
           cancelled_at: string | null
           cancelled_by: string | null
           cancelled_reason: string | null
@@ -1295,6 +1335,7 @@ export type Database = {
           modifiers_total: number
           name_snapshot: string
           order_id: string
+          prep_started_at: string | null
           product_id: string
           promotion_id: string | null
           quantity: number
@@ -1305,6 +1346,7 @@ export type Database = {
           unit_price: number
         }
         Insert: {
+          bumped_at?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
           cancelled_reason?: string | null
@@ -1324,6 +1366,7 @@ export type Database = {
           modifiers_total?: number
           name_snapshot: string
           order_id: string
+          prep_started_at?: string | null
           product_id: string
           promotion_id?: string | null
           quantity: number
@@ -1334,6 +1377,7 @@ export type Database = {
           unit_price: number
         }
         Update: {
+          bumped_at?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
           cancelled_reason?: string | null
@@ -1353,6 +1397,7 @@ export type Database = {
           modifiers_total?: number
           name_snapshot?: string
           order_id?: string
+          prep_started_at?: string | null
           product_id?: string
           promotion_id?: string | null
           quantity?: number
@@ -4225,12 +4270,10 @@ export type Database = {
       is_authenticated: { Args: never; Returns: boolean }
       is_empty: { Args: { "": string }; Returns: string }
       isnt_empty: { Args: { "": string }; Returns: string }
-      list_recipes_v1: { Args: { p_product_id: string }; Returns: Json[] }
-      lives_ok: { Args: { "": string }; Returns: string }
-      mark_expired_lots_hourly: { Args: never; Returns: Json }
-      mark_item_served: {
-        Args: { p_item_id: string }
+      kds_bump_item_v1: {
+        Args: { p_idempotency_key?: string; p_order_item_id: string }
         Returns: {
+          bumped_at: string | null
           cancelled_at: string | null
           cancelled_by: string | null
           cancelled_reason: string | null
@@ -4250,6 +4293,134 @@ export type Database = {
           modifiers_total: number
           name_snapshot: string
           order_id: string
+          prep_started_at: string | null
+          product_id: string
+          promotion_id: string | null
+          quantity: number
+          ready_at: string | null
+          sent_to_kitchen_at: string | null
+          served_at: string | null
+          served_by: string | null
+          unit_price: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "order_items"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      kds_recall_order_v1: {
+        Args: { p_order_id: string; p_reason?: string }
+        Returns: number
+      }
+      kds_start_prep_timer_v1: {
+        Args: { p_order_item_id: string }
+        Returns: {
+          bumped_at: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          cancelled_reason: string | null
+          created_at: string
+          discount_amount: number
+          discount_reason: string | null
+          discount_type: string | null
+          discount_value: number | null
+          dispatch_station: string | null
+          id: string
+          is_cancelled: boolean
+          is_locked: boolean
+          is_promo_gift: boolean
+          kitchen_status: string
+          line_total: number
+          modifiers: Json
+          modifiers_total: number
+          name_snapshot: string
+          order_id: string
+          prep_started_at: string | null
+          product_id: string
+          promotion_id: string | null
+          quantity: number
+          ready_at: string | null
+          sent_to_kitchen_at: string | null
+          served_at: string | null
+          served_by: string | null
+          unit_price: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "order_items"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      kds_undo_bump_v1: {
+        Args: { p_order_item_id: string }
+        Returns: {
+          bumped_at: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          cancelled_reason: string | null
+          created_at: string
+          discount_amount: number
+          discount_reason: string | null
+          discount_type: string | null
+          discount_value: number | null
+          dispatch_station: string | null
+          id: string
+          is_cancelled: boolean
+          is_locked: boolean
+          is_promo_gift: boolean
+          kitchen_status: string
+          line_total: number
+          modifiers: Json
+          modifiers_total: number
+          name_snapshot: string
+          order_id: string
+          prep_started_at: string | null
+          product_id: string
+          promotion_id: string | null
+          quantity: number
+          ready_at: string | null
+          sent_to_kitchen_at: string | null
+          served_at: string | null
+          served_by: string | null
+          unit_price: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "order_items"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      list_recipes_v1: { Args: { p_product_id: string }; Returns: Json[] }
+      lives_ok: { Args: { "": string }; Returns: string }
+      mark_expired_lots_hourly: { Args: never; Returns: Json }
+      mark_item_served: {
+        Args: { p_item_id: string }
+        Returns: {
+          bumped_at: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          cancelled_reason: string | null
+          created_at: string
+          discount_amount: number
+          discount_reason: string | null
+          discount_type: string | null
+          discount_value: number | null
+          dispatch_station: string | null
+          id: string
+          is_cancelled: boolean
+          is_locked: boolean
+          is_promo_gift: boolean
+          kitchen_status: string
+          line_total: number
+          modifiers: Json
+          modifiers_total: number
+          name_snapshot: string
+          order_id: string
+          prep_started_at: string | null
           product_id: string
           promotion_id: string | null
           quantity: number
@@ -4475,6 +4646,7 @@ export type Database = {
       send_items_to_kitchen: {
         Args: { p_item_ids: string[] }
         Returns: {
+          bumped_at: string | null
           cancelled_at: string | null
           cancelled_by: string | null
           cancelled_reason: string | null
@@ -4494,6 +4666,7 @@ export type Database = {
           modifiers_total: number
           name_snapshot: string
           order_id: string
+          prep_started_at: string | null
           product_id: string
           promotion_id: string | null
           quantity: number
