@@ -2900,6 +2900,46 @@ export type Database = {
         }
         Relationships: []
       }
+      view_section_stock_details: {
+        Row: {
+          cost_price: number | null
+          last_updated_at: string | null
+          min_stock_threshold: number | null
+          product_id: string | null
+          product_name: string | null
+          product_sku: string | null
+          quantity: number | null
+          section_code: string | null
+          section_id: string | null
+          section_kind: string | null
+          section_name: string | null
+          stock_value: number | null
+          unit: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "section_stock_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "mv_stock_variance"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "section_stock_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "section_stock_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "sections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       _cleanup: { Args: never; Returns: boolean }
@@ -3220,6 +3260,10 @@ export type Database = {
           p_product_id?: string
           p_section_id?: string
         }
+        Returns: Json
+      }
+      get_product_dashboard_v1: {
+        Args: { p_days?: number; p_product_id: string }
         Returns: Json
       }
       get_reorder_suggestions_v1: {
