@@ -2,7 +2,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Package, Boxes, ShoppingCart, Users, Building2,
-  Calculator, BarChart3, Settings, LogOut, Tag, Heart,
+  Calculator, BarChart3, Settings, LogOut, Tag, Heart, PieChart, Shield,
   type LucideIcon,
 } from 'lucide-react';
 import { Button, cn } from '@breakery/ui';
@@ -15,6 +15,11 @@ interface NavItem {
   icon: LucideIcon;
   end?: boolean;
   permission?: PermissionCode;
+  /**
+   * Indent level. 0 = top-level, 1 = nested under the previous group.
+   * Used only for visual hierarchy in the sidebar.
+   */
+  indent?: 0 | 1;
 }
 
 const NAV: NavItem[] = [
@@ -27,7 +32,12 @@ const NAV: NavItem[] = [
   { to: '/backoffice/customers',  label: 'Customers',  icon: Users },
   { to: '/backoffice/b2b',        label: 'B2B',        icon: Building2 },
   { to: '/backoffice/accounting', label: 'Accounting', icon: Calculator },
-  { to: '/backoffice/reports',    label: 'Reports',    icon: BarChart3 },
+  { to: '/backoffice/reports',    label: 'Reports',    icon: BarChart3, permission: 'reports.read', end: true },
+  { to: '/backoffice/reports/sales-by-hour',     label: 'Sales by Hour',     icon: BarChart3, permission: 'reports.sales.read',     indent: 1 },
+  { to: '/backoffice/reports/sales-by-category', label: 'Sales by Category', icon: PieChart,  permission: 'reports.sales.read',     indent: 1 },
+  { to: '/backoffice/reports/sales-by-staff',    label: 'Sales by Staff',    icon: Users,     permission: 'reports.sales.read',     indent: 1 },
+  { to: '/backoffice/reports/stock-variance',    label: 'Stock Variance',    icon: Boxes,     permission: 'reports.inventory.read', indent: 1 },
+  { to: '/backoffice/reports/audit',             label: 'Audit Log',         icon: Shield,    permission: 'reports.audit.read',     indent: 1 },
   { to: '/backoffice/settings',   label: 'Settings',   icon: Settings },
 ];
 
@@ -56,6 +66,7 @@ export function BackofficeLayout() {
         <nav className="flex-1 py-3 space-y-0.5 overflow-y-auto">
           {visibleNav.map((n) => {
             const Icon = n.icon;
+            const indented = n.indent === 1;
             return (
               <NavLink
                 key={n.to}
@@ -63,14 +74,15 @@ export function BackofficeLayout() {
                 {...(n.end === true ? { end: true } : {})}
                 className={({ isActive }) =>
                   cn(
-                    'flex items-center gap-3 px-4 py-2 text-sm transition-colors',
+                    'flex items-center gap-3 py-2 text-sm transition-colors',
+                    indented ? 'pl-9 pr-4 text-xs' : 'px-4',
                     isActive
                       ? 'bg-gold-soft text-gold border-r-2 border-gold'
                       : 'text-text-secondary hover:text-text-primary hover:bg-bg-overlay',
                   )
                 }
               >
-                <Icon className="h-4 w-4" aria-hidden />
+                <Icon className={indented ? 'h-3.5 w-3.5' : 'h-4 w-4'} aria-hidden />
                 {n.label}
               </NavLink>
             );

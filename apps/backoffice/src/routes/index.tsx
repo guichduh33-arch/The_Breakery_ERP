@@ -13,6 +13,12 @@ import TransferFormPage from '@/pages/TransferForm.js';
 import TransferDetailPage from '@/pages/TransferDetail.js';
 import SuppliersPage from '@/pages/Suppliers.js';
 import ComingSoonPage from '@/pages/ComingSoon.js';
+import ReportsIndexPage from '@/pages/reports/ReportsIndexPage.js';
+import SalesByHourPage from '@/pages/reports/SalesByHourPage.js';
+import SalesByCategoryPage from '@/pages/reports/SalesByCategoryPage.js';
+import SalesByStaffPage from '@/pages/reports/SalesByStaffPage.js';
+import StockVariancePage from '@/pages/reports/StockVariancePage.js';
+import AuditPage from '@/pages/reports/AuditPage.js';
 import { BackofficeLayout } from '@/layouts/BackofficeLayout.js';
 import { useAuthStore } from '@/stores/authStore.js';
 
@@ -107,7 +113,54 @@ export function AppRoutes() {
         <Route path="customers" element={<ComingSoonPage module="Customers" />} />
         <Route path="b2b" element={<ComingSoonPage module="B2B" />} />
         <Route path="accounting" element={<ComingSoonPage module="Accounting" />} />
-        <Route path="reports" element={<ComingSoonPage module="Reports" />} />
+        <Route
+          path="reports"
+          element={
+            <PermissionGate required="reports.read">
+              <ReportsIndexPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="reports/sales-by-hour"
+          element={
+            <PermissionGate required="reports.sales.read">
+              <SalesByHourPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="reports/sales-by-category"
+          element={
+            <PermissionGate required="reports.sales.read">
+              <SalesByCategoryPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="reports/sales-by-staff"
+          element={
+            <PermissionGate required="reports.sales.read">
+              <SalesByStaffPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="reports/stock-variance"
+          element={
+            <PermissionGate required="reports.inventory.read">
+              <StockVariancePage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="reports/audit"
+          element={
+            <PermissionGate required="reports.audit.read">
+              <AuditPage />
+            </PermissionGate>
+          }
+        />
         <Route path="settings" element={<ComingSoonPage module="Settings" />} />
       </Route>
       <Route path="*" element={<Navigate to="/backoffice" replace />} />
