@@ -507,7 +507,47 @@ BEGIN
 END $$;
 SELECT ok(current_setting('breakery.t_prod_14_pass') IN ('yes','skip'),
   'T_PROD_14: ADMIN reverts → stock restored + balanced ledger');
-SELECT pass('T_PROD_15: PLACEHOLDER — get_production_suggestions_v1 returns rows');
+-- ---------------------------------------------------------------------------
+-- T_PROD_15 — get_production_suggestions_v1 returns row for product with
+-- recent sales + active recipe + low stock
+-- ---------------------------------------------------------------------------
+DO $$
+DECLARE
+  v_mgr UUID;
+  v_bag UUID := current_setting('breakery.t_prod_baguette')::uuid;
+  v_flo UUID := current_setting('breakery.t_prod_flour')::uuid;
+  v_count INT;
+  v_test_order UUID;
+BEGIN
+  SELECT auth_user_id INTO v_mgr FROM user_profiles WHERE employee_code='EMP003';
+  IF v_mgr IS NULL THEN
+    PERFORM set_config('breakery.t_prod_15_pass','skip',true); RETURN;
+  END IF;
+
+  -- Ensure: low stock + active recipe + recent sales injected via direct INSERT.
+  UPDATE products SET current_stock=2 WHERE id=v_bag;
+  UPDATE products SET current_stock=100 WHERE id=v_flo;
+  PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
+  PERFORM set_config('role','authenticated',true);
+  PERFORM upsert_recipe_v1(v_bag, v_flo, 250, 'g', NULL);
+  PERFORM set_config('role','postgres',true);
+
+  INSERT INTO orders (order_number, order_type, status, subtotal, tax_amount, total, created_at, created_via)
+  VALUES ('T_PROD_15_O1', 'dine_in', 'completed', 50000, 0, 50000, now() - INTERVAL '1 day', 'pos')
+  RETURNING id INTO v_test_order;
+  INSERT INTO order_items (order_id, product_id, name_snapshot, unit_price, quantity, line_total, created_at)
+  VALUES (v_test_order, v_bag, 'Baguette', 5000, 10, 50000, now() - INTERVAL '1 day');
+
+  PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
+  PERFORM set_config('role','authenticated',true);
+  SELECT COUNT(*) INTO v_count FROM get_production_suggestions_v1(7, 3, 7) WHERE product_id = v_bag;
+  PERFORM set_config('role','postgres',true);
+
+  PERFORM set_config('breakery.t_prod_15_pass',
+    CASE WHEN v_count = 1 THEN 'yes' ELSE 'no' END, true);
+END $$;
+SELECT ok(current_setting('breakery.t_prod_15_pass') IN ('yes','skip'),
+  'T_PROD_15: get_production_suggestions_v1 returns row for low-stock product');
 
 SELECT * FROM finish();
 
