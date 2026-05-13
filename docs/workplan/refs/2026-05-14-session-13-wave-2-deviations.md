@@ -168,3 +168,54 @@ bundle_price >= 0)` in migration `20260517000080`. SQL function computes
 - `\d promotions` shows `bundle_price` column.
 - T_BOGO_06 asserts `discount = 20k` for a cart of 70k worth of 3 bundle
   items + `bundle_price = 50k`.
+
+---
+
+## D-W2-2D-01 — Opname finalize uses `opname_in` / `opname_out` (not `opname_adjust_up` / `opname_adjust_down`)
+
+**Phase 2.D spec says:** `finalize_opname_v1` emits movements with
+`movement_type='opname_adjust_up'` (variance > 0) or
+`movement_type='opname_adjust_down'` (variance < 0).
+
+### Cause
+
+`tr_20_je_emit` (Phase 1.A migration `20260517000022`) is already wired to
+post journal entries for the existing enum values `opname_in` and
+`opname_out` (seeded by `20260516000014_extend_movement_type_enum.sql`).
+Adding `opname_adjust_up` / `opname_adjust_down` would have required :
+
+1. extending `movement_type` enum in a separate Phase-2.D migration (enum
+   `ALTER TYPE … ADD VALUE` cannot be used in the same transaction as
+   references — see D-W2-2C-04 for the same pattern),
+2. extending the JE trigger's CASE statement with two new branches,
+3. extending the section-stock-direction CHECK constraint
+   (`chk_stock_movements_section_required`) since the new names aren't
+   in the exemption list.
+
+The semantics are identical and the JE mappings already match :
+`OPNAME_INCOME` (CR on positive variance) and `OPNAME_EXPENSE` (DR on
+negative variance) → no behavioural diff between the two naming schemes.
+
+### Resolution
+
+`finalize_opname_v1` (migration `20260517000091`) emits :
+- `opname_in` for positive variance (`v_item.variance > 0`), `p_quantity = ABS(variance)`,
+  `p_to_section_id = count.section_id` → DR INVENTORY_GENERAL / CR OPNAME_INCOME.
+- `opname_out` for negative variance, `p_quantity = -ABS(variance)`,
+  `p_from_section_id = count.section_id` → DR OPNAME_EXPENSE / CR INVENTORY_GENERAL.
+
+After insert, the movement row is patched with `reference_type='opname'` +
+`reference_id=count_id` so the audit trail and the JE both link back to
+the count.
+
+### Verification
+
+- Manual workflow validation in `BEGIN ... ROLLBACK` envelope on staging
+  (`ikcyvlovptebroadgtvd`) : inserted a synthetic `opname_out` movement
+  with `quantity=-5`, `unit_cost=NULL`, `cost_price=5000` → JE row created
+  by `tr_20_je_emit` with `total_debit = total_credit = 25000`.
+- Vitest live `T_OPN_LIVE_03` (`inventory-opname.test.ts`) asserts the
+  full cycle end-to-end : 1 movement emitted, JE balanced at 25k, metadata
+  `movement_type=opname_out`.
+- pgTAP `T_OPN_11` (`inventory_opname.test.sql`) asserts both enum values
+  are present.
