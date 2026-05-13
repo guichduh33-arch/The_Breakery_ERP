@@ -551,6 +551,42 @@ export type Database = {
         }
         Relationships: []
       }
+      email_templates: {
+        Row: {
+          body_html: string
+          body_text: string
+          code: string
+          created_at: string
+          id: string
+          is_active: boolean
+          subject: string
+          updated_at: string
+          variables: Json
+        }
+        Insert: {
+          body_html: string
+          body_text: string
+          code: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          subject: string
+          updated_at?: string
+          variables?: Json
+        }
+        Update: {
+          body_html?: string
+          body_text?: string
+          code?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          subject?: string
+          updated_at?: string
+          variables?: Json
+        }
+        Relationships: []
+      }
       expense_categories: {
         Row: {
           account_id: string
@@ -848,6 +884,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      holidays: {
+        Row: {
+          created_at: string
+          date: string
+          deleted_at: string | null
+          id: string
+          is_recurring: boolean
+          name: string
+          notes: string | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          deleted_at?: string | null
+          id?: string
+          is_recurring?: boolean
+          name: string
+          notes?: string | null
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          deleted_at?: string | null
+          id?: string
+          is_recurring?: boolean
+          name?: string
+          notes?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       internal_transfers: {
         Row: {
@@ -1252,6 +1324,54 @@ export type Database = {
           },
         ]
       }
+      lan_devices: {
+        Row: {
+          capabilities: Json
+          code: string
+          created_at: string
+          deleted_at: string | null
+          device_type: string
+          id: string
+          ip_address: unknown
+          is_active: boolean
+          last_heartbeat_at: string | null
+          location: string | null
+          name: string
+          port: number | null
+          updated_at: string
+        }
+        Insert: {
+          capabilities?: Json
+          code: string
+          created_at?: string
+          deleted_at?: string | null
+          device_type: string
+          id?: string
+          ip_address?: unknown
+          is_active?: boolean
+          last_heartbeat_at?: string | null
+          location?: string | null
+          name: string
+          port?: number | null
+          updated_at?: string
+        }
+        Update: {
+          capabilities?: Json
+          code?: string
+          created_at?: string
+          deleted_at?: string | null
+          device_type?: string
+          id?: string
+          ip_address?: unknown
+          is_active?: boolean
+          last_heartbeat_at?: string | null
+          location?: string | null
+          name?: string
+          port?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       loyalty_transactions: {
         Row: {
           created_at: string
@@ -1312,6 +1432,101 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      notification_outbox: {
+        Row: {
+          body: string
+          channel: string
+          created_at: string
+          error_message: string | null
+          id: string
+          idempotency_key: string | null
+          provider_message_id: string | null
+          recipient: string
+          retries: number
+          scheduled_for: string
+          sent_at: string | null
+          status: string
+          subject: string | null
+          template_code: string
+        }
+        Insert: {
+          body: string
+          channel: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          idempotency_key?: string | null
+          provider_message_id?: string | null
+          recipient: string
+          retries?: number
+          scheduled_for?: string
+          sent_at?: string | null
+          status?: string
+          subject?: string | null
+          template_code: string
+        }
+        Update: {
+          body?: string
+          channel?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          idempotency_key?: string | null
+          provider_message_id?: string | null
+          recipient?: string
+          retries?: number
+          scheduled_for?: string
+          sent_at?: string | null
+          status?: string
+          subject?: string | null
+          template_code?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_outbox_template_code_fkey"
+            columns: ["template_code"]
+            isOneToOne: false
+            referencedRelation: "notification_templates"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      notification_templates: {
+        Row: {
+          body_template: string
+          channel: string
+          code: string
+          created_at: string
+          id: string
+          is_active: boolean
+          subject_template: string | null
+          updated_at: string
+          variables: Json
+        }
+        Insert: {
+          body_template: string
+          channel: string
+          code: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          subject_template?: string | null
+          updated_at?: string
+          variables?: Json
+        }
+        Update: {
+          body_template?: string
+          channel?: string
+          code?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          subject_template?: string | null
+          updated_at?: string
+          variables?: Json
+        }
+        Relationships: []
       }
       order_items: {
         Row: {
@@ -1743,6 +1958,65 @@ export type Database = {
             columns: ["opened_by"]
             isOneToOne: false
             referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      print_queue: {
+        Row: {
+          created_at: string
+          device_id: string | null
+          error_message: string | null
+          id: string
+          payload: Json
+          printed_at: string | null
+          priority: number
+          queued_at: string
+          reference_id: string | null
+          reference_type: string | null
+          retries: number
+          source: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          device_id?: string | null
+          error_message?: string | null
+          id?: string
+          payload: Json
+          printed_at?: string | null
+          priority?: number
+          queued_at?: string
+          reference_id?: string | null
+          reference_type?: string | null
+          retries?: number
+          source?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          device_id?: string | null
+          error_message?: string | null
+          id?: string
+          payload?: Json
+          printed_at?: string | null
+          priority?: number
+          queued_at?: string
+          reference_id?: string | null
+          reference_type?: string | null
+          retries?: number
+          source?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "print_queue_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "lan_devices"
             referencedColumns: ["id"]
           },
         ]
@@ -2454,6 +2728,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      receipt_templates: {
+        Row: {
+          created_at: string
+          custom_css: string | null
+          footer: string | null
+          header: string | null
+          id: string
+          is_default: boolean
+          name: string
+          paper_size: string
+          show_logo: boolean
+          show_qr: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          custom_css?: string | null
+          footer?: string | null
+          header?: string | null
+          id?: string
+          is_default?: boolean
+          name: string
+          paper_size: string
+          show_logo?: boolean
+          show_qr?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          custom_css?: string | null
+          footer?: string | null
+          header?: string | null
+          id?: string
+          is_default?: boolean
+          name?: string
+          paper_size?: string
+          show_logo?: boolean
+          show_qr?: boolean
+          updated_at?: string
+        }
+        Relationships: []
       }
       recipes: {
         Row: {
@@ -3760,6 +4076,10 @@ export type Database = {
       _get_latest: { Args: { "": string }; Returns: number[] }
       _get_note: { Args: { "": string }; Returns: string }
       _is_verbose: { Args: never; Returns: boolean }
+      _notif_substitute: {
+        Args: { p_source: string; p_vars: Json }
+        Returns: string
+      }
       _prokind: { Args: { p_oid: unknown }; Returns: unknown }
       _query: { Args: { "": string }; Returns: string }
       _refine_vol: { Args: { "": string }; Returns: string }
@@ -3821,6 +4141,31 @@ export type Database = {
         }
         Returns: Json
       }
+      cancel_print_job_v1: {
+        Args: { p_id: string }
+        Returns: {
+          created_at: string
+          device_id: string | null
+          error_message: string | null
+          id: string
+          payload: Json
+          printed_at: string | null
+          priority: number
+          queued_at: string
+          reference_id: string | null
+          reference_type: string | null
+          retries: number
+          source: string | null
+          status: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "print_queue"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       cancel_purchase_order_v1: {
         Args: { p_po_id: string; p_reason: string }
         Returns: Json
@@ -3867,6 +4212,31 @@ export type Database = {
         }
       }
       check_fiscal_period_open: { Args: { p_date: string }; Returns: undefined }
+      claim_print_job_v1: {
+        Args: { p_device_id: string }
+        Returns: {
+          created_at: string
+          device_id: string | null
+          error_message: string | null
+          id: string
+          payload: Json
+          printed_at: string | null
+          priority: number
+          queued_at: string
+          reference_id: string | null
+          reference_type: string | null
+          retries: number
+          source: string | null
+          status: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "print_queue"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       close_shift_v1: {
         Args: {
           p_counted_cash: number
@@ -4023,6 +4393,49 @@ export type Database = {
       do_tap:
         | { Args: never; Returns: string[] }
         | { Args: { "": string }; Returns: string[] }
+      enqueue_notification_v1: {
+        Args: {
+          p_channel?: string
+          p_idempotency_key?: string
+          p_recipient: string
+          p_scheduled_for?: string
+          p_template_code: string
+          p_variables?: Json
+        }
+        Returns: string
+      }
+      enqueue_print_job_v1: {
+        Args: {
+          p_device_id: string
+          p_payload: Json
+          p_priority?: number
+          p_reference_id?: string
+          p_reference_type?: string
+          p_source?: string
+        }
+        Returns: {
+          created_at: string
+          device_id: string | null
+          error_message: string | null
+          id: string
+          payload: Json
+          printed_at: string | null
+          priority: number
+          queued_at: string
+          reference_id: string | null
+          reference_type: string | null
+          retries: number
+          source: string | null
+          status: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "print_queue"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       evaluate_promotions_v1: {
         Args: {
           p_cart_items: Json
@@ -4179,6 +4592,10 @@ export type Database = {
           staff_name: string
           total: number
         }[]
+      }
+      get_settings_by_category_v1: {
+        Args: { p_category: string }
+        Returns: Json
       }
       get_stock_levels_v1: {
         Args: {
@@ -4433,6 +4850,56 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "order_items"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      mark_print_done_v1: {
+        Args: { p_id: string }
+        Returns: {
+          created_at: string
+          device_id: string | null
+          error_message: string | null
+          id: string
+          payload: Json
+          printed_at: string | null
+          priority: number
+          queued_at: string
+          reference_id: string | null
+          reference_type: string | null
+          retries: number
+          source: string | null
+          status: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "print_queue"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      mark_print_failed_v1: {
+        Args: { p_error: string; p_id: string }
+        Returns: {
+          created_at: string
+          device_id: string | null
+          error_message: string | null
+          id: string
+          payload: Json
+          printed_at: string | null
+          priority: number
+          queued_at: string
+          reference_id: string | null
+          reference_type: string | null
+          retries: number
+          source: string | null
+          status: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "print_queue"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -4695,6 +5162,10 @@ export type Database = {
         }
         Returns: Json
       }
+      set_setting_v1: {
+        Args: { p_category: string; p_key: string; p_value: Json }
+        Returns: undefined
+      }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
       skip:
@@ -4716,6 +5187,30 @@ export type Database = {
       todo_start:
         | { Args: never; Returns: boolean[] }
         | { Args: { "": string }; Returns: boolean[] }
+      update_lan_heartbeat_v1: {
+        Args: { p_device_code: string }
+        Returns: {
+          capabilities: Json
+          code: string
+          created_at: string
+          deleted_at: string | null
+          device_type: string
+          id: string
+          ip_address: unknown
+          is_active: boolean
+          last_heartbeat_at: string | null
+          location: string | null
+          name: string
+          port: number | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "lan_devices"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       upsert_recipe_v1: {
         Args: {
           p_material_id: string
