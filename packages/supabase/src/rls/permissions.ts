@@ -95,7 +95,9 @@ export type PermissionCode =
   | 'print_queue.read'
   | 'print_queue.manage'
   | 'lan.devices.read'
-  | 'lan.devices.manage';
+  | 'lan.devices.manage'
+  // Session 13 / Phase 5.B — Notifications pipeline
+  | 'notifications.send';
 
 /**
  * Check whether a user has a single permission. Pure client-side lookup —

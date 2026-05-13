@@ -30,8 +30,11 @@ describe('decideChannels', () => {
     expect(decideChannels('email', { optOutEmail: false })).toEqual(['email']);
   });
 
-  it('treats opt-out=undefined as opted-in (default)', () => {
-    expect(decideChannels('email', { optOutEmail: undefined })).toEqual(['email']);
+  it('treats missing opt-out flag as opted-in (default)', () => {
+    // With exactOptionalPropertyTypes the only way to express "no flag"
+    // is to omit the key entirely.
+    const prefs: { optOutEmail?: boolean } = {};
+    expect(decideChannels('email', prefs)).toEqual(['email']);
   });
 
   it('filters out push when optOutPush is true', () => {
