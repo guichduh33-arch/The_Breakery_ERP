@@ -6,6 +6,7 @@
 import type { JSX } from 'react';
 import { Button, Currency, TenderRow, cn } from '@breakery/ui';
 import type { OrderDetail } from '../hooks/useOrderDetail';
+import { OrderRetryBanner } from './OrderRetryBanner';
 
 export interface OrderDetailDrawerProps {
   order: OrderDetail;
@@ -50,6 +51,9 @@ export function OrderDetailDrawer({
       </header>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {order.status === 'paid' && (
+          <OrderRetryBanner orderId={order.id} status={order.status} />
+        )}
         <section>
           <div className="text-xs uppercase tracking-widest text-text-secondary mb-2">Items</div>
           <ul className="space-y-1 text-sm">
