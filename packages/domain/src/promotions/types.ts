@@ -3,8 +3,18 @@
 // Promotion domain types — session 9.
 // Spec ref: docs/superpowers/specs/2026-05-10-session-9-promotions-spec.md §1 P1–P13, §4.1
 
-export type PromotionType  = 'percentage' | 'fixed_amount' | 'bogo' | 'free_product';
+export type PromotionType  =
+  | 'percentage'
+  | 'fixed_amount'
+  | 'bogo'
+  | 'free_product'
+  /** Session 13 / Phase 2.C — cart-subtotal or cart-quantity threshold ⇒ discount. */
+  | 'threshold'
+  /** Session 13 / Phase 2.C — buy a fixed set of N products at a bundled price. */
+  | 'bundle';
 export type PromotionScope = 'cart' | 'product' | 'category';
+/** Session 13 / Phase 2.C — discriminates threshold matchers. */
+export type ThresholdType = 'subtotal' | 'quantity';
 
 /**
  * Promotion row fetched from `promotions` table. Mirrors columns 1:1.
@@ -25,12 +35,31 @@ export interface Promotion {
   scope_product_ids: string[];
   scope_category_ids: string[];
 
-  // BOGO config
+  // BOGO config — legacy multi-product shape (Session 9)
   bogo_trigger_product_ids: string[];
   bogo_reward_product_ids: string[];
   bogo_trigger_qty: number | null;
   bogo_reward_qty: number | null;
   bogo_reward_discount_pct: number | null;
+
+  // BOGO config — Session 13 / Phase 2.C new "buy N get M of product P" shape
+  /** Trigger quantity (e.g. buy 2). When set together with bogo_get_*, takes precedence. */
+  bogo_buy_quantity?: number | null;
+  /** Reward quantity (e.g. get 1 free). */
+  bogo_get_quantity?: number | null;
+  /** Reward product id — single SKU only in the new shape. */
+  bogo_get_product_id?: string | null;
+
+  // Threshold config — Session 13 / Phase 2.C
+  /** Threshold amount: rupiah subtotal (`threshold_type='subtotal'`) or unit count (`'quantity'`). */
+  threshold_amount?: number | null;
+  threshold_type?: ThresholdType | null;
+
+  // Bundle config — Session 13 / Phase 2.C
+  /** Products that must all be present (qty ≥ 1) to trigger the bundle. */
+  bundle_product_ids?: string[] | null;
+  /** Fixed bundle price ; discount = matched_subtotal − bundle_price. */
+  bundle_price?: number | null;
 
   // Free product config
   gift_product_id: string | null;
@@ -86,6 +115,12 @@ export interface AppliedPromotion {
   scope_line_id?: string;
   /** Free-gift payload for cart auto-add (only for type=free_product). */
   gift_to_add?: AppliedFreeProduct;
+  /**
+   * Session 13 / Phase 2.C — free-items list emitted by the BOGO "new shape"
+   * (buy N get M of product P) and surfaced by `evaluate_promotions_v1`.
+   * Cart store mirrors each into a `is_promo_gift=true` line.
+   */
+  free_items?: AppliedFreeProduct[];
 }
 
 /**

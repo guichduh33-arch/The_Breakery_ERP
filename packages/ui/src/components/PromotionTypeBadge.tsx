@@ -21,15 +21,21 @@ const TYPE_LABEL: Record<PromotionType, string> = {
   fixed_amount: 'IDR off',
   bogo: 'BOGO',
   free_product: 'Free gift',
+  // Session 13 / Phase 2.C
+  threshold: 'Threshold',
+  bundle: 'Bundle',
 };
 
-// Tailwind palette per spec §4.2:
-// percentage=indigo, fixed=amber, bogo=emerald, free_product=rose
+// Tailwind palette per spec §4.2 (+ Phase 2.C cyan/violet for new shapes):
+// percentage=indigo, fixed=amber, bogo=emerald, free_product=rose,
+// threshold=cyan, bundle=violet.
 const TYPE_CLASSES: Record<PromotionType, string> = {
   percentage: 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30',
   fixed_amount: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
   bogo: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
   free_product: 'bg-rose-500/15 text-rose-300 border-rose-500/30',
+  threshold: 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30',
+  bundle: 'bg-violet-500/15 text-violet-300 border-violet-500/30',
 };
 
 export function PromotionTypeBadge({
