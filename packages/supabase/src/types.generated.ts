@@ -395,6 +395,89 @@ export type Database = {
         }
         Relationships: []
       }
+      internal_transfers: {
+        Row: {
+          approved_by: string | null
+          created_at: string
+          created_by: string
+          created_idempotency_key: string | null
+          from_section_id: string
+          id: string
+          metadata: Json
+          notes: string | null
+          received_at: string | null
+          received_idempotency_key: string | null
+          status: string
+          to_section_id: string
+          transfer_number: string
+          transferred_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          approved_by?: string | null
+          created_at?: string
+          created_by: string
+          created_idempotency_key?: string | null
+          from_section_id: string
+          id?: string
+          metadata?: Json
+          notes?: string | null
+          received_at?: string | null
+          received_idempotency_key?: string | null
+          status?: string
+          to_section_id: string
+          transfer_number: string
+          transferred_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string
+          created_idempotency_key?: string | null
+          from_section_id?: string
+          id?: string
+          metadata?: Json
+          notes?: string | null
+          received_at?: string | null
+          received_idempotency_key?: string | null
+          status?: string
+          to_section_id?: string
+          transfer_number?: string
+          transferred_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "internal_transfers_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internal_transfers_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internal_transfers_from_section_id_fkey"
+            columns: ["from_section_id"]
+            isOneToOne: false
+            referencedRelation: "sections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internal_transfers_to_section_id_fkey"
+            columns: ["to_section_id"]
+            isOneToOne: false
+            referencedRelation: "sections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       journal_entries: {
         Row: {
           created_at: string
@@ -1777,6 +1860,57 @@ export type Database = {
         }
         Relationships: []
       }
+      transfer_items: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          product_id: string
+          quantity_received: number | null
+          quantity_requested: number
+          transfer_id: string
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          product_id: string
+          quantity_received?: number | null
+          quantity_requested: number
+          transfer_id: string
+          unit: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          product_id?: string
+          quantity_received?: number | null
+          quantity_requested?: number
+          transfer_id?: string
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transfer_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transfer_items_transfer_id_fkey"
+            columns: ["transfer_id"]
+            isOneToOne: false
+            referencedRelation: "internal_transfers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       unit_conversions: {
         Row: {
           created_at: string
@@ -1980,6 +2114,10 @@ export type Database = {
         }
         Returns: Json
       }
+      cancel_internal_transfer_v1: {
+        Args: { p_reason: string; p_transfer_id: string }
+        Returns: Json
+      }
       cancel_order_item_rpc: {
         Args: {
           p_authorized_by: string
@@ -2089,6 +2227,17 @@ export type Database = {
       convert_quantity: {
         Args: { p_from_unit: string; p_qty: number; p_to_unit: string }
         Returns: number
+      }
+      create_internal_transfer_v1: {
+        Args: {
+          p_from_section_id: string
+          p_idempotency_key?: string
+          p_items: Json
+          p_notes?: string
+          p_send_directly?: boolean
+          p_to_section_id: string
+        }
+        Returns: Json
       }
       create_tablet_order: {
         Args: {
@@ -2202,6 +2351,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      next_transfer_number: { Args: never; Returns: string }
       no_plan: { Args: never; Returns: boolean[] }
       num_failed: { Args: never; Returns: number }
       os_name: { Args: never; Returns: string }
@@ -2270,6 +2420,14 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      receive_internal_transfer_v1: {
+        Args: {
+          p_idempotency_key?: string
+          p_received_items: Json
+          p_transfer_id: string
+        }
+        Returns: Json
+      }
       receive_stock_v1: {
         Args: {
           p_idempotency_key?: string
@@ -2294,12 +2452,15 @@ export type Database = {
       }
       record_stock_movement_v1: {
         Args: {
+          p_from_section_id?: string
           p_idempotency_key?: string
+          p_metadata?: Json
           p_movement_type: Database["public"]["Enums"]["movement_type"]
           p_product_id: string
           p_quantity: number
           p_reason: string
           p_supplier_id?: string
+          p_to_section_id?: string
           p_unit?: string
           p_unit_cost?: number
         }
