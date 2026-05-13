@@ -1,0 +1,182 @@
+name: Deploy to Staging
+
+# Triggers:
+#   - push to any swarm/session-13* branch → request approval, then deploy
+#   - manual workflow_dispatch with branch input
+#
+# Targets the V3 dev Supabase project: ikcyvlovptebroadgtvd (see MEMORY.md).
+#
+# Required GitHub repository secrets (env: staging):
+#   - SUPABASE_ACCESS_TOKEN          (personal access token for `supabase` CLI)
+#   - SUPABASE_PROJECT_REF_STAGING   (must equal: ikcyvlovptebroadgtvd)
+#   - SUPABASE_DB_PASSWORD_STAGING   (db password for `supabase db push --linked`)
+#   - SUPABASE_URL_STAGING           (https://ikcyvlovptebroadgtvd.supabase.co)
+#   - SUPABASE_ANON_KEY_STAGING      (publishable anon key — baked into Vite build)
+#   - SUPABASE_SERVICE_ROLE_STAGING  (used only by Edge Functions runtime — never in client bundles)
+#   - VERCEL_TOKEN                   (optional — only if Vercel preview step enabled)
+#   - VERCEL_ORG_ID                  (optional)
+#   - VERCEL_PROJECT_ID_POS          (optional)
+#   - VERCEL_PROJECT_ID_BACKOFFICE   (optional)
+
+on:
+  push:
+    branches:
+      - 'swarm/session-13**'
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Git ref (branch or commit SHA) to deploy'
+        required: true
+        default: 'swarm/session-13'
+
+concurrency:
+  # Only one staging deploy in flight at a time.
+  group: staging-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  deployments: write
+
+jobs:
+  deploy-staging:
+    name: Apply migrations + deploy Edge Functions + build apps
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # `environment: staging` triggers GitHub's required-reviewer approval gate.
+    # Configure reviewers under: Settings → Environments → staging.
+    environment:
+      name: staging
+      url: https://${{ secrets.SUPABASE_PROJECT_REF_STAGING }}.supabase.co
+
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      STAGING_REF: ${{ secrets.SUPABASE_PROJECT_REF_STAGING }}
+      STAGING_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD_STAGING }}
+
+    steps:
+      - name: Checkout (ref = ${{ github.event.inputs.ref || github.ref }})
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref || github.ref }}
+
+      - name: Setup pnpm 9.15
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+          run_install: false
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Install dependencies (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Sanity-check staging project ref
+        run: |
+          if [ -z "${STAGING_REF}" ]; then
+            echo "::error::SUPABASE_PROJECT_REF_STAGING secret is not set."
+            exit 1
+          fi
+          if [ "${STAGING_REF}" != "ikcyvlovptebroadgtvd" ]; then
+            echo "::warning::Project ref '${STAGING_REF}' does not match expected V3 dev project 'ikcyvlovptebroadgtvd'."
+          fi
+
+      - name: Link to staging Supabase project
+        run: |
+          supabase link \
+            --project-ref "${STAGING_REF}" \
+            --password "${STAGING_DB_PASSWORD}"
+
+      - name: Apply migrations to staging DB
+        # `--linked` uses the project linked above; `--password` is read from env.
+        # `--include-all` ensures all migrations in supabase/migrations/ are pushed.
+        run: |
+          supabase db push \
+            --linked \
+            --password "${STAGING_DB_PASSWORD}" \
+            --include-all
+
+      - name: Deploy Edge Functions to staging
+        # Deploys every directory under supabase/functions/ (skips _shared automatically).
+        # `--no-verify-jwt` is NOT used — our EFs validate JWTs in code via custom logic.
+        run: |
+          supabase functions deploy \
+            --project-ref "${STAGING_REF}"
+
+      - name: Build apps (production bundles wired to staging Supabase)
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL_STAGING }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY_STAGING }}
+          VITE_SENTRY_DSN_POS: ${{ secrets.SENTRY_DSN_POS_STAGING }}
+          VITE_SENTRY_DSN_BACKOFFICE: ${{ secrets.SENTRY_DSN_BACKOFFICE_STAGING }}
+        run: |
+          pnpm build \
+            --filter @breakery/app-pos \
+            --filter @breakery/app-backoffice
+
+      - name: Upload POS build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pos-staging-dist
+          path: apps/pos/dist/**
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Upload Backoffice build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backoffice-staging-dist
+          path: apps/backoffice/dist/**
+          retention-days: 14
+          if-no-files-found: error
+
+      # ----------------------------------------------------------------------
+      # Optional: Vercel preview deploy. Disabled by default until Vercel
+      # secrets are wired. Remove `if: false` to enable.
+      # ----------------------------------------------------------------------
+      - name: Install Vercel CLI
+        if: false
+        run: pnpm add -g vercel@latest
+
+      - name: Deploy POS to Vercel (preview)
+        if: false
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_POS }}
+        run: |
+          cd apps/pos
+          vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
+          vercel deploy --prebuilt --token="$VERCEL_TOKEN"
+
+      - name: Deploy Backoffice to Vercel (preview)
+        if: false
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_BACKOFFICE }}
+        run: |
+          cd apps/backoffice
+          vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
+          vercel deploy --prebuilt --token="$VERCEL_TOKEN"
+
+      - name: Summarize deployment
+        if: always()
+        run: |
+          {
+            echo "## Staging deploy summary"
+            echo ""
+            echo "- Project ref: \`${STAGING_REF}\`"
+            echo "- Ref deployed: \`${{ github.event.inputs.ref || github.ref }}\`"
+            echo "- Commit: \`${{ github.sha }}\`"
+            echo "- Triggered by: \`${{ github.actor }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
