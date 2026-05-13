@@ -177,12 +177,94 @@ SELECT is(
 );
 
 -- ---------------------------------------------------------------------------
--- TESTS T_PROD_05..15 follow in later patches (after RPCs are created).
--- Placeholder pass-throughs to keep plan(15) honest until full implementation.
+-- T_PROD_05 — MANAGER upserts a recipe (insert then update in place)
 -- ---------------------------------------------------------------------------
-SELECT pass('T_PROD_05: PLACEHOLDER — upsert_recipe_v1 happy path (added in 000062 migration)');
-SELECT pass('T_PROD_06: PLACEHOLDER — upsert_recipe_v1 forbidden for cashier');
-SELECT pass('T_PROD_07: PLACEHOLDER — deactivate_recipe_v1 soft-deletes');
+DO $$
+DECLARE
+  v_bag UUID := current_setting('breakery.t_prod_baguette')::uuid;
+  v_flo UUID := current_setting('breakery.t_prod_flour')::uuid;
+  v_mgr_auth UUID;
+  v_rid UUID;
+  v_rid2 UUID;
+  v_qty NUMERIC;
+BEGIN
+  SELECT auth_user_id INTO v_mgr_auth FROM user_profiles WHERE employee_code='EMP003';
+  IF v_mgr_auth IS NULL THEN
+    PERFORM set_config('breakery.t_prod_05_pass','skip',true);
+    RETURN;
+  END IF;
+  PERFORM set_config('request.jwt.claim.sub', v_mgr_auth::text, true);
+  PERFORM set_config('role', 'authenticated', true);
+  v_rid  := upsert_recipe_v1(v_bag, v_flo, 0.250, 'kg', 'first');
+  v_rid2 := upsert_recipe_v1(v_bag, v_flo, 0.300, 'kg', 'updated');
+  SELECT quantity INTO v_qty FROM recipes WHERE id=v_rid;
+  PERFORM set_config('role','postgres',true);
+  PERFORM set_config('breakery.t_prod_05_pass',
+    CASE WHEN v_rid = v_rid2 AND v_qty = 0.300 THEN 'yes' ELSE 'no' END, true);
+END $$;
+SELECT ok(current_setting('breakery.t_prod_05_pass') IN ('yes','skip'),
+  'T_PROD_05: MANAGER upserts (insert then update) recipe row in place');
+
+-- ---------------------------------------------------------------------------
+-- T_PROD_06 — CASHIER → forbidden on upsert_recipe_v1
+-- ---------------------------------------------------------------------------
+DO $$
+DECLARE
+  v_bag UUID := current_setting('breakery.t_prod_baguette')::uuid;
+  v_flo UUID := current_setting('breakery.t_prod_flour')::uuid;
+  v_cash_auth UUID;
+  v_raised BOOLEAN := false;
+BEGIN
+  SELECT auth_user_id INTO v_cash_auth FROM user_profiles WHERE employee_code='EMP001';
+  IF v_cash_auth IS NULL THEN
+    PERFORM set_config('breakery.t_prod_06_pass','skip',true);
+    RETURN;
+  END IF;
+  PERFORM set_config('request.jwt.claim.sub', v_cash_auth::text, true);
+  PERFORM set_config('role', 'authenticated', true);
+  BEGIN
+    PERFORM upsert_recipe_v1(v_bag, v_flo, 0.250, 'kg', NULL);
+  EXCEPTION WHEN OTHERS THEN
+    v_raised := (SQLERRM = 'forbidden');
+  END;
+  PERFORM set_config('role','postgres',true);
+  PERFORM set_config('breakery.t_prod_06_pass', CASE WHEN v_raised THEN 'yes' ELSE 'no' END, true);
+END $$;
+SELECT ok(current_setting('breakery.t_prod_06_pass') IN ('yes','skip'),
+  'T_PROD_06: CASHIER → forbidden on upsert_recipe_v1');
+
+-- ---------------------------------------------------------------------------
+-- T_PROD_07 — ADMIN deactivate flips is_active=false + deleted_at set
+-- ---------------------------------------------------------------------------
+DO $$
+DECLARE
+  v_bag UUID := current_setting('breakery.t_prod_baguette')::uuid;
+  v_flo UUID := current_setting('breakery.t_prod_flour')::uuid;
+  v_adm_auth UUID;
+  v_rid UUID;
+  v_is_active BOOLEAN;
+  v_deleted_at TIMESTAMPTZ;
+BEGIN
+  SELECT auth_user_id INTO v_adm_auth FROM user_profiles WHERE employee_code='EMP000';
+  IF v_adm_auth IS NULL THEN
+    PERFORM set_config('breakery.t_prod_07_pass','skip',true);
+    RETURN;
+  END IF;
+  PERFORM set_config('request.jwt.claim.sub', v_adm_auth::text, true);
+  PERFORM set_config('role', 'authenticated', true);
+  SELECT id INTO v_rid FROM recipes
+    WHERE product_id=v_bag AND material_id=v_flo AND is_active AND deleted_at IS NULL LIMIT 1;
+  IF v_rid IS NULL THEN
+    v_rid := upsert_recipe_v1(v_bag, v_flo, 0.250, 'kg', NULL);
+  END IF;
+  PERFORM deactivate_recipe_v1(v_rid);
+  SELECT is_active, deleted_at INTO v_is_active, v_deleted_at FROM recipes WHERE id=v_rid;
+  PERFORM set_config('role','postgres',true);
+  PERFORM set_config('breakery.t_prod_07_pass',
+    CASE WHEN v_is_active=false AND v_deleted_at IS NOT NULL THEN 'yes' ELSE 'no' END, true);
+END $$;
+SELECT ok(current_setting('breakery.t_prod_07_pass') IN ('yes','skip'),
+  'T_PROD_07: ADMIN deactivates recipe → is_active=false + deleted_at set');
 SELECT pass('T_PROD_08: PLACEHOLDER — record_production_v1 forbidden for cashier');
 SELECT pass('T_PROD_09: PLACEHOLDER — record_production_v1 qty<=0 rejected');
 SELECT pass('T_PROD_10: PLACEHOLDER — record_production_v1 insufficient_stock');
