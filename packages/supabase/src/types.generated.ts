@@ -1,4 +1,4 @@
-export type Json =
+﻿export type Json =
   | string
   | number
   | boolean
@@ -2900,6 +2900,57 @@ export type Database = {
         }
         Relationships: []
       }
+      view_product_recipes: {
+        Row: {
+          created_at: string | null
+          is_active: boolean | null
+          material_cost_price: number | null
+          material_current_stock: number | null
+          material_id: string | null
+          material_name: string | null
+          material_sku: string | null
+          material_unit: string | null
+          notes: string | null
+          product_id: string | null
+          product_name: string | null
+          product_sku: string | null
+          product_unit: string | null
+          quantity: number | null
+          recipe_id: string | null
+          unit: string | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recipes_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "mv_stock_variance"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "recipes_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recipes_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "mv_stock_variance"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "recipes_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       view_section_stock_details: {
         Row: {
           cost_price: number | null
@@ -3266,6 +3317,23 @@ export type Database = {
         Args: { p_days?: number; p_product_id: string }
         Returns: Json
       }
+      get_production_suggestions_v1: {
+        Args: {
+          p_lookback_days?: number
+          p_priority_high?: number
+          p_priority_medium?: number
+        }
+        Returns: {
+          avg_daily_sales: number
+          current_stock: number
+          days_of_stock: number
+          priority: string
+          product_id: string
+          product_name: string
+          product_sku: string
+          suggested_quantity: number
+        }[]
+      }
       get_reorder_suggestions_v1: {
         Args: { p_buffer_days?: number; p_lookback_days?: number }
         Returns: {
@@ -3588,6 +3656,10 @@ export type Database = {
       resolve_mapping_account: {
         Args: { p_mapping_key: string }
         Returns: string
+      }
+      revert_production_v1: {
+        Args: { p_production_id: string; p_reason: string }
+        Returns: Json
       }
       round_idr: { Args: { amount: number }; Returns: number }
       runtests:

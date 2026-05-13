@@ -3,11 +3,13 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Package, Boxes, ShoppingCart, Users, Building2,
   Calculator, BarChart3, Settings, LogOut, Tag, Heart, PieChart, Shield,
+  ChefHat, BookOpen, ClipboardList, GitCommitHorizontal, BellRing, MapPin,
   type LucideIcon,
 } from 'lucide-react';
 import { Button, cn } from '@breakery/ui';
 import type { PermissionCode } from '@breakery/supabase';
 import { useAuthStore } from '@/stores/authStore.js';
+import { AlertsBadge } from '@/features/inventory-alerts/components/AlertsBadge.js';
 
 interface NavItem {
   to: string;
@@ -27,7 +29,13 @@ const NAV: NavItem[] = [
   { to: '/backoffice/products',   label: 'Products',   icon: Package },
   { to: '/backoffice/promotions', label: 'Promotions', icon: Tag, permission: 'promotions.read' },
   { to: '/backoffice/loyalty',    label: 'Loyalty',    icon: Heart, permission: 'loyalty.read' },
-  { to: '/backoffice/inventory',  label: 'Inventory',  icon: Boxes, permission: 'inventory.read' },
+  { to: '/backoffice/inventory',  label: 'Inventory',  icon: Boxes, permission: 'inventory.read', end: true },
+  { to: '/backoffice/inventory/production', label: 'Production', icon: ChefHat,        permission: 'inventory.read', indent: 1 },
+  { to: '/backoffice/inventory/recipes',    label: 'Recipes',    icon: BookOpen,       permission: 'inventory.read', indent: 1 },
+  { to: '/backoffice/inventory/opname',     label: 'Opname',     icon: ClipboardList,  permission: 'inventory.read', indent: 1 },
+  { to: '/backoffice/inventory/movements',  label: 'Movements',  icon: GitCommitHorizontal, permission: 'inventory.read', indent: 1 },
+  { to: '/backoffice/inventory/alerts',     label: 'Alerts',     icon: BellRing,       permission: 'inventory.read', indent: 1 },
+  { to: '/backoffice/inventory/sections',   label: 'Sections',   icon: MapPin,         permission: 'inventory.read', indent: 1 },
   { to: '/backoffice/purchasing', label: 'Purchasing', icon: ShoppingCart },
   { to: '/backoffice/customers',  label: 'Customers',  icon: Users },
   { to: '/backoffice/b2b',        label: 'B2B',        icon: Building2 },
@@ -95,7 +103,8 @@ export function BackofficeLayout() {
       </aside>
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-12 px-6 flex items-center justify-end border-b border-border-subtle bg-bg-elevated">
+        <header className="h-12 px-6 flex items-center justify-end gap-2 border-b border-border-subtle bg-bg-elevated">
+          {hasPermission('inventory.read') && <AlertsBadge />}
           <Button variant="ghost" size="sm" onClick={() => { void handleLogout(); }}>
             <LogOut className="h-4 w-4 mr-2" aria-hidden /> Logout
           </Button>
