@@ -4088,6 +4088,10 @@ export type Database = {
         Returns: string
       }
       _retval: { Args: { "": string }; Returns: string }
+      _revoke_user_sessions_v1: {
+        Args: { p_profile_id: string }
+        Returns: number
+      }
       _table_privs: { Args: never; Returns: unknown[] }
       _temptypes: { Args: { "": string }; Returns: string }
       _todo: { Args: never; Returns: string }
@@ -4375,7 +4379,20 @@ export type Database = {
         }
         Returns: string
       }
+      create_user_v1: {
+        Args: {
+          p_employee_code: string
+          p_full_name: string
+          p_pin: string
+          p_role_code: string
+        }
+        Returns: string
+      }
       deactivate_recipe_v1: { Args: { p_recipe_id: string }; Returns: string }
+      delete_user_v1: {
+        Args: { p_reason: string; p_user_id: string }
+        Returns: Json
+      }
       diag:
         | {
             Args: { msg: unknown }
@@ -4939,6 +4956,20 @@ export type Database = {
       pg_version: { Args: never; Returns: string }
       pg_version_num: { Args: never; Returns: number }
       pgtap_version: { Args: never; Returns: number }
+      pick_notifications_batch_v1: {
+        Args: { p_limit?: number }
+        Returns: {
+          body: string
+          channel: string
+          id: string
+          recipient: string
+          retries: number
+          scheduled_for: string
+          status: string
+          subject: string
+          template_code: string
+        }[]
+      }
       pickup_tablet_order: {
         Args: { p_order_id: string; p_session_id: string }
         Returns: {
@@ -5098,6 +5129,10 @@ export type Database = {
         Args: { p_reason?: string; p_reservation_id: string }
         Returns: Json
       }
+      reset_user_pin_v1: {
+        Args: { p_new_pin: string; p_user_id: string }
+        Returns: undefined
+      }
       resolve_mapping_account: {
         Args: { p_mapping_key: string }
         Returns: string
@@ -5210,6 +5245,18 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      update_user_profile_v1: {
+        Args: {
+          p_employee_code: string
+          p_full_name: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
+      update_user_role_v1: {
+        Args: { p_new_role_code: string; p_reason: string; p_user_id: string }
+        Returns: Json
       }
       upsert_recipe_v1: {
         Args: {

@@ -90,7 +90,12 @@ export type PermissionCode =
   | 'shift.cash_movement'
   | 'customers.b2b.update'
   | 'inventory.reservation.create'
-  | 'inventory.reservation.release';
+  | 'inventory.reservation.release'
+  // Session 13 / Phase 5.A — LAN port
+  | 'print_queue.read'
+  | 'print_queue.manage'
+  | 'lan.devices.read'
+  | 'lan.devices.manage';
 
 /**
  * Check whether a user has a single permission. Pure client-side lookup —
