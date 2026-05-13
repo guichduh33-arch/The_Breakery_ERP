@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Package, Boxes, ShoppingCart, Users, Building2,
   Calculator, BarChart3, Settings, LogOut, Tag, Heart, PieChart, Shield,
   ChefHat, BookOpen, ClipboardList, GitCommitHorizontal, BellRing, MapPin,
-  Receipt,
+  Receipt, ShieldCheck, UserPlus, CalendarDays, Mail, FileText,
   type LucideIcon,
 } from 'lucide-react';
 import { Button, cn } from '@breakery/ui';
@@ -49,7 +49,14 @@ const NAV: NavItem[] = [
   { to: '/backoffice/reports/sales-by-staff',    label: 'Sales by Staff',    icon: Users,     permission: 'reports.sales.read',     indent: 1 },
   { to: '/backoffice/reports/stock-variance',    label: 'Stock Variance',    icon: Boxes,     permission: 'reports.inventory.read', indent: 1 },
   { to: '/backoffice/reports/audit',             label: 'Audit Log',         icon: Shield,    permission: 'reports.audit.read',     indent: 1 },
-  { to: '/backoffice/settings',   label: 'Settings',   icon: Settings },
+  { to: '/backoffice/users',         label: 'Users',         icon: Users,        permission: 'users.read', end: true },
+  { to: '/backoffice/users/new',     label: 'New user',      icon: UserPlus,     permission: 'users.create', indent: 1 },
+  { to: '/backoffice/users/permissions', label: 'Permissions',   icon: ShieldCheck,  permission: 'rbac.read', indent: 1 },
+  { to: '/backoffice/settings',                  label: 'Settings',         icon: Settings,    permission: 'settings.read', end: true },
+  { to: '/backoffice/settings/holidays',         label: 'Holidays',         icon: CalendarDays, permission: 'settings.read', indent: 1 },
+  { to: '/backoffice/settings/templates/email',  label: 'Email templates',  icon: Mail,         permission: 'settings.read', indent: 1 },
+  { to: '/backoffice/settings/templates/receipt', label: 'Receipt templates', icon: FileText,   permission: 'settings.read', indent: 1 },
+  { to: '/backoffice/settings/permissions',      label: 'Permissions',      icon: ShieldCheck,  permission: 'settings.read', indent: 1 },
 ];
 
 export function BackofficeLayout() {
