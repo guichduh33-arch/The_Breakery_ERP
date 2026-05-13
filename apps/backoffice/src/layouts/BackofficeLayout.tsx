@@ -4,6 +4,7 @@ import {
   LayoutDashboard, Package, Boxes, ShoppingCart, Users, Building2,
   Calculator, BarChart3, Settings, LogOut, Tag, Heart, PieChart, Shield,
   ChefHat, BookOpen, ClipboardList, GitCommitHorizontal, BellRing, MapPin,
+  Receipt,
   type LucideIcon,
 } from 'lucide-react';
 import { Button, cn } from '@breakery/ui';
@@ -36,10 +37,12 @@ const NAV: NavItem[] = [
   { to: '/backoffice/inventory/movements',  label: 'Movements',  icon: GitCommitHorizontal, permission: 'inventory.read', indent: 1 },
   { to: '/backoffice/inventory/alerts',     label: 'Alerts',     icon: BellRing,       permission: 'inventory.read', indent: 1 },
   { to: '/backoffice/inventory/sections',   label: 'Sections',   icon: MapPin,         permission: 'inventory.read', indent: 1 },
-  { to: '/backoffice/purchasing', label: 'Purchasing', icon: ShoppingCart },
+  { to: '/backoffice/purchasing', label: 'Purchasing', icon: ShoppingCart, permission: 'purchasing.po.read' as never, end: true },
+  { to: '/backoffice/purchasing/purchase-orders', label: 'Purchase Orders', icon: ShoppingCart, permission: 'purchasing.po.read' as never, indent: 1 },
   { to: '/backoffice/customers',  label: 'Customers',  icon: Users },
   { to: '/backoffice/b2b',        label: 'B2B',        icon: Building2 },
   { to: '/backoffice/accounting', label: 'Accounting', icon: Calculator },
+  { to: '/backoffice/expenses',   label: 'Expenses',   icon: Receipt, permission: 'expenses.read' },
   { to: '/backoffice/reports',    label: 'Reports',    icon: BarChart3, permission: 'reports.read', end: true },
   { to: '/backoffice/reports/sales-by-hour',     label: 'Sales by Hour',     icon: BarChart3, permission: 'reports.sales.read',     indent: 1 },
   { to: '/backoffice/reports/sales-by-category', label: 'Sales by Category', icon: PieChart,  permission: 'reports.sales.read',     indent: 1 },

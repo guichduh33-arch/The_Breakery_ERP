@@ -21,6 +21,9 @@ import StockMovementsPage from '@/pages/inventory/StockMovementsPage.js';
 import AlertsPage from '@/pages/inventory/AlertsPage.js';
 import ProductDashboardPage from '@/pages/inventory/ProductDashboardPage.js';
 import SectionsPage from '@/pages/inventory/SectionsPage.js';
+import PurchaseOrdersListPage from '@/pages/purchasing/PurchaseOrdersListPage.js';
+import NewPurchaseOrderPage from '@/pages/purchasing/NewPurchaseOrderPage.js';
+import PurchaseOrderDetailPage from '@/pages/purchasing/PurchaseOrderDetailPage.js';
 import ReportsIndexPage from '@/pages/reports/ReportsIndexPage.js';
 import SalesByHourPage from '@/pages/reports/SalesByHourPage.js';
 import SalesByCategoryPage from '@/pages/reports/SalesByCategoryPage.js';
@@ -181,7 +184,38 @@ export function AppRoutes() {
             </PermissionGate>
           }
         />
-        <Route path="purchasing" element={<ComingSoonPage module="Purchasing" />} />
+        <Route
+          path="purchasing"
+          element={
+            <PermissionGate required={'purchasing.po.read' as never}>
+              <PurchaseOrdersListPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="purchasing/purchase-orders"
+          element={
+            <PermissionGate required={'purchasing.po.read' as never}>
+              <PurchaseOrdersListPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="purchasing/purchase-orders/new"
+          element={
+            <PermissionGate required={'purchasing.po.create' as never}>
+              <NewPurchaseOrderPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="purchasing/purchase-orders/:id"
+          element={
+            <PermissionGate required={'purchasing.po.read' as never}>
+              <PurchaseOrderDetailPage />
+            </PermissionGate>
+          }
+        />
         <Route path="customers" element={<ComingSoonPage module="Customers" />} />
         <Route path="b2b" element={<ComingSoonPage module="B2B" />} />
         <Route path="accounting" element={<ComingSoonPage module="Accounting" />} />
