@@ -107,6 +107,92 @@
 **Risques** : suggestions naïves si peu d'historique — fallback manuel toujours possible.
 **Notes** : pose les bases pour ML demand forecasting plus tard.
 
+---
+
+## Backlog métier (objectif fonctionnel)
+
+> Items issus de `docs/objectif travail/PRODUCTION.md` §16 — vision produit du module.
+> Ajoutés 2026-05-13 lors de la cascade docs (session 13). Sous-recettes, versioning, scheduling sont déjà couverts par TASK-15-001/005/006.
+
+### TASK-15-007 — Boulanger's percentages [P3] [TODO]
+**Contexte** : les boulangers traditionnels raisonnent en pourcentages de farine (farine = 100 %, eau = 65 %, sel = 2 %…) plutôt qu'en quantités absolues. Le module n'accepte que les quantités absolues.
+**Bénéfice attendu** : saisir une recette en % de farine, le système convertit automatiquement vers quantité absolue selon la quantité de farine cible.
+**Critère d'acceptation** :
+- [ ] Toggle "Boulanger's mode" sur `RecipeForm` du produit.
+- [ ] Si activé : saisie en % (farine = 100, eau = 65, etc.) + champ "Quantité farine cible (g)".
+- [ ] Conversion auto à la sauvegarde : `quantity = (percentage/100) × target_flour_qty`.
+- [ ] Affichage des deux vues (absolu et %) sur la recette stockée.
+**Dépend de** : aucune.
+**Estimation** : M
+**Risques** : confusion entre les deux modes — bien indiquer lequel est actif.
+**Notes** : standard professionnel boulangerie ; valoriser l'expertise artisan.
+
+### TASK-15-008 — Allergènes structurés [P3] [TODO]
+**Contexte** : aujourd'hui les allergènes sont en notes libres sur le produit. Pas de propagation auto via les recettes.
+**Bénéfice attendu** : tracer gluten, lactose, fruits à coque, œuf, soja, etc. sur chaque ingrédient → affichage automatique sur fiche produit fini + ticket caisse + display.
+**Critère d'acceptation** :
+- [ ] Table `allergens` (enum standard EU : gluten, crustacés, œufs, poissons, arachides, soja, lait, fruits à coque, céleri, moutarde, sésame, sulfites, lupin, mollusques).
+- [ ] Champ `products.allergens` (array) sur les matières premières.
+- [ ] Calcul auto sur produit fini : union des allergènes de tous les ingrédients de la recette.
+- [ ] Affichage badge allergène sur fiche produit, ticket, customer display.
+**Dépend de** : aucune.
+**Estimation** : M
+**Risques** : conformité réglementaire — valider la liste standard avec la réglementation indonésienne (BPOM).
+**Notes** : différenciant fort pour clientèle internationale Bali.
+
+### TASK-15-009 — Mode mobile de saisie [P3] [TODO]
+**Contexte** : le boulanger est en cuisine, pas devant le PC. Saisir une production l'oblige à se déplacer.
+**Bénéfice attendu** : interface mobile-first sur tablette / téléphone pour la saisie au four.
+**Critère d'acceptation** :
+- [ ] Page `/production/mobile` responsive (large touch targets).
+- [ ] Sélection produit + quantité produite + waste en 3 taps.
+- [ ] Voice input optionnel (TASK-04-016 vocabulary réutilisable).
+- [ ] Synchro temps réel avec `StockProductionPage` desktop.
+- [ ] Mode kiosque (un seul appareil dédié station four).
+**Dépend de** : aucune.
+**Estimation** : M
+**Risques** : variance d'écran tablette — testing sur les 3 tailles principales.
+**Notes** : sortir d'un PWA pour install facile sur tablette dédiée.
+
+### TASK-15-010 — Intégration IoT four [P3] [TODO]
+**Contexte** : aujourd'hui le boulanger saisit manuellement la production à la sortie du four. Une sonde IoT pourrait automatiser.
+**Bénéfice attendu** : sonde connectée au four déclenche automatiquement la création d'une production_record à la fin du cycle de cuisson.
+**Critère d'acceptation** :
+- [ ] Spec hardware : sonde compatible MQTT / HTTP webhook.
+- [ ] Edge Function `iot-oven-callback` qui reçoit l'événement et crée une production en `draft`.
+- [ ] Le boulanger confirme (quantité réelle + waste) avant validation finale.
+- [ ] Page `/settings/iot` : pairing four → recipe par défaut.
+**Dépend de** : matériel IoT compatible + budget.
+**Estimation** : XL
+**Risques** : coût matériel + maintenance — viser le coût/bénéfice avant build.
+**Notes** : V1 expérimental sur 1 four, généralisable si succès.
+
+### TASK-15-011 — Coût-marge en temps réel par recette (alertes) [P3] [TODO]
+**Contexte** : aujourd'hui le calcul de marge théorique est statique. Pas d'alerte quand le prix matière monte et dégrade la marge.
+**Bénéfice attendu** : alerte automatique quand un changement de prix matière fait passer une recette sous le seuil de marge cible.
+**Critère d'acceptation** :
+- [ ] Setting `target_gross_margin_pct` par produit (par défaut 60%).
+- [ ] Job quotidien recalcule la marge théorique de chaque produit avec recette active.
+- [ ] Si marge < seuil : notification manager + dashboard alerte.
+- [ ] Page `/production/margin-watch` : liste des produits sous seuil + delta vs précédent.
+**Dépend de** : aucune.
+**Estimation** : M
+**Risques** : alertes trop fréquentes en cas de fluctuation marché — moyenne mobile 7 jours.
+**Notes** : déclencheur d'arbitrage pricing automatique.
+
+### TASK-15-012 — Yield calculator (forecast production) [P3] [TODO]
+**Contexte** : aujourd'hui pas d'aide pour estimer "combien je produis pour servir N couverts demain ?". TASK-15-002 (yield tracking) mesure le réalisé, pas le prévisionnel.
+**Bénéfice attendu** : recommandation prévisionnelle basée sur historique de consommation.
+**Critère d'acceptation** :
+- [ ] RPC `forecast_production_for_target(p_date, p_expected_covers)` : retourne pour chaque produit fini, qty à produire selon ratio historique.
+- [ ] Page `/production/forecast` : saisir "80 couverts attendus demain" → tableau quantités recommandées par produit.
+- [ ] Couplage avec TASK-15-006 (scheduling) pour pré-remplir le planning.
+- [ ] Ajustement par jour de semaine (lundi ≠ samedi).
+**Dépend de** : `TASK-15-002` (yield tracking pour ratios fiables).
+**Estimation** : L
+**Risques** : prévisions imprécises sur boutique récente — fallback "moyenne mobile 4 semaines" + override manuel.
+**Notes** : socle pour ML demand forecast plus tard.
+
 ## Vue transversale
 
 ### Dépendances inter-tâches

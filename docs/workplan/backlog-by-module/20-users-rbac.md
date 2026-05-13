@@ -142,6 +142,109 @@
 
 ---
 
+## Backlog métier (objectif fonctionnel)
+
+> Items issus de `docs/objectif travail/USERS_AND_PERMISSIONS.md` §11 — vision produit du module.
+> Ajoutés 2026-05-13 lors de la cascade docs (session 13). 2FA est couvert par TASK-20-008 (et TASK-01-010). Bulk import est couvert par TASK-20-003.
+
+### TASK-20-010 — Détection auto d'escalade de privilèges [P2] [TODO]
+**Contexte** : aujourd'hui TASK-20-002 trace les modifications de rôle / permissions en audit. Mais pas d'alerte temps réel si un utilisateur modifie ses propres permissions ou celles d'un complice.
+**Bénéfice attendu** : alerte instantanée (notification manager + email owner) à chaque tentative d'escalade.
+**Critère d'acceptation** :
+- [ ] Trigger sur `user_roles` (update/insert) qui détecte : self-modification, ajout `users.roles` à un compte non-Owner, retrait massif de permissions.
+- [ ] Webhook → push notification + email owner.
+- [ ] Page `/users/security-alerts` : timeline des alertes.
+- [ ] Threshold configurable (Settings → Security).
+**Dépend de** : `TASK-20-002` (audit log) pour la source.
+**Estimation** : M
+**Risques** : faux positifs si modif légitime — option "Acknowledge as legit".
+**Notes** : couplable avec TASK-14-013 (Unusual transaction patterns) — même framework alerte.
+
+### TASK-20-011 — Approval workflow pour permissions sensibles [P2] [TODO]
+**Contexte** : aujourd'hui donner `accounting.manage` ou `users.roles` à un utilisateur se fait d'un coup. Pas de double validation.
+**Bénéfice attendu** : pour les permissions à haut risque (accounting.manage, users.roles, settings.update), exiger une double validation (deux managers ou Owner + Manager).
+**Critère d'acceptation** :
+- [ ] Table `permission_change_requests` (target_user, requested_by, requested_permissions, approver_required, status, approved_by, approved_at).
+- [ ] Settings → Security → "Critical permissions" : liste des permissions à workflow.
+- [ ] Quand un admin coche une permission critique : statut `pending_approval` ; le second admin reçoit notification.
+- [ ] Audit log enrichi : qui a demandé, qui a approuvé.
+**Dépend de** : aucune.
+**Estimation** : L
+**Risques** : friction si pas de second admin disponible — fallback Owner override.
+**Notes** : pattern "four-eyes" pour les actions critiques.
+
+### TASK-20-012 — Permissions à seuil (granular thresholds) [P3] [TODO]
+**Contexte** : aujourd'hui les permissions sont binaires (a / a pas). `sales.discount` est tout ou rien — pas de "jusqu'à 5% seul, jusqu'à 10% avec validation manager".
+**Bénéfice attendu** : associer un seuil à certaines permissions (`sales.discount.max_pct = 5`, `sales.refund.max_amount = 100000`).
+**Critère d'acceptation** :
+- [ ] Schéma `role_permissions` enrichi avec `threshold_config` JSONB par permission.
+- [ ] UI matrice : pour les permissions à seuil, input numérique au lieu d'une checkbox.
+- [ ] Côté code : `usePermission(perm, value)` vérifie aussi le seuil.
+- [ ] Au-delà du seuil : escalade automatique (PIN manager) ou refus.
+- [ ] Documentation : liste des permissions seuil-aware.
+**Dépend de** : aucune.
+**Estimation** : XL
+**Risques** : refonte significative du système permissions — phasage par module.
+**Notes** : commencer par sales.discount, sales.refund, expenses.approve.
+
+### TASK-20-013 — Vue & gestion des sessions multiples [P3] [TODO]
+**Contexte** : aujourd'hui aucune vue des sessions actives par utilisateur. En cas de départ d'employé, pas de moyen de force-logout à distance.
+**Bénéfice attendu** : page admin qui liste les sessions actives par utilisateur + bouton "Force logout".
+**Critère d'acceptation** :
+- [ ] Table `user_sessions` enrichie : device_type, ip, last_activity_at, status.
+- [ ] Page `/users/:id/sessions` (permission `users.roles`) : liste des sessions actives + dernière activité.
+- [ ] Bouton "Force logout" : invalide la session (token blacklist).
+- [ ] Notification utilisateur : "Votre session a été révoquée par {admin}".
+- [ ] Audit log de chaque révocation.
+**Dépend de** : `TASK-20-007` (revoke sessions on role change) — partage la mécanique.
+**Estimation** : M
+**Risques** : session blacklist non immédiat → délai max 30s tolérable.
+**Notes** : critique pour départs d'employés sensibles.
+
+### TASK-20-014 — Délégation temporaire de rôle [P3] [TODO]
+**Contexte** : si l'Owner part en réunion / vacances, pas de moyen propre de donner ses droits Manager à un Cashier pour 2 heures avec trace.
+**Bénéfice attendu** : délégation temporaire programmée d'un rôle à un autre utilisateur avec expiration auto.
+**Critère d'acceptation** :
+- [ ] Table `role_delegations` (from_user, to_user, role_id, valid_from, valid_until, reason, status).
+- [ ] Page `/users/delegate` : créer une délégation (durée max configurable, ex 24h).
+- [ ] Job toutes les 5 min qui auto-révoque les délégations expirées.
+- [ ] Audit log + notification dans la timeline utilisateur cible.
+- [ ] Pas de délégation possible du rôle Owner (toujours actif).
+**Dépend de** : aucune.
+**Estimation** : M
+**Risques** : abus si durée trop longue — limit max 24h par défaut.
+**Notes** : pattern utile pour les gardes / remplacements.
+
+### TASK-20-015 — Groupes d'utilisateurs (au-dessus des rôles) [P3] [TODO]
+**Contexte** : aujourd'hui, regroupement uniquement par rôle. Pas de concept "équipe matin" / "équipe soir" pour filtres et reporting RH.
+**Bénéfice attendu** : groupes additionnels pour piloter par équipe (planning, reports, communications).
+**Critère d'acceptation** :
+- [ ] Table `user_groups` + `user_group_members`.
+- [ ] Page `/users/groups` : CRUD groupes.
+- [ ] Affectation : un user peut être dans N groupes.
+- [ ] Filtres dans la liste users + dans les reports (Staff Performance par groupe).
+- [ ] Notifications ciblées par groupe (TASK-19-011 scheduler).
+**Dépend de** : aucune.
+**Estimation** : M
+**Risques** : confusion rôles vs groupes — UX claire.
+**Notes** : V1 simple ; V2 hiérarchie groupes parent/enfant.
+
+### TASK-20-016 — Export annuaire équipe (PDF / Excel) [P3] [TODO]
+**Contexte** : aucun moyen propre de sortir la liste équipe à jour (pour affichage back-office, audit RH, transmission externe).
+**Bénéfice attendu** : génération d'un annuaire formaté.
+**Critère d'acceptation** :
+- [ ] Bouton "Export" sur la page `/users`.
+- [ ] PDF formaté : photo (si dispo), nom, code, rôle principal, téléphone, e-mail.
+- [ ] Excel : colonnes étendues (tous rôles, statut, last login, etc.).
+- [ ] Filtres respectés à l'export (only active, par rôle).
+- [ ] Audit log de l'export (RGPD).
+**Dépend de** : aucune.
+**Estimation** : S
+**Risques** : RGPD si export envoyé à un tiers — disclaimer + audit log.
+**Notes** : pattern HR classique.
+
+---
+
 ## Synthèse priorité
 
 | Priorité | Tâches |

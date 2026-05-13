@@ -148,6 +148,68 @@
 
 ---
 
+## Backlog métier (objectif fonctionnel)
+
+> Items issus de `docs/objectif travail/SETTINGS.md` §12 — vision produit du module.
+> Ajoutés 2026-05-13 lors de la cascade docs (session 13). Approval workflows sont couverts par TASK-09-009 (B2B), TASK-07-014 (Purchasing), TASK-11-001 (Expense). Pricing horaire par TASK-13-004. Multi-tenancy par TASK-19-008. Export/Import par TASK-19-004.
+
+### TASK-19-011 — Notification scheduler (alertes programmées) [P3] [TODO]
+**Contexte** : aujourd'hui les notifications sont temps réel (stock bas à l'instant T). Pour les alertes récurrentes (récap matinal, hebdomadaire), pas de scheduling.
+**Bénéfice attendu** : programmer une notification (ex: "stock bas envoyé chaque matin à 7h" ou "récap hebdo lundi 8h") plutôt qu'instantanément.
+**Critère d'acceptation** :
+- [ ] Table `scheduled_notifications` (type, cron_expression, recipients, last_sent_at, active).
+- [ ] Edge Function `dispatch-scheduled-notifications` (cron Supabase) qui scanne et envoie.
+- [ ] Page `/settings/notifications/schedule` : CRUD scheduled notifications.
+- [ ] Templates par type avec placeholders ({{stock_low_count}}, {{daily_revenue}}, etc.).
+**Dépend de** : `TASK-08-006` (notifications pipeline) pour le canal.
+**Estimation** : M
+**Risques** : timing perçu mal calibré → cron Supabase + retry.
+**Notes** : utile pour les routines manager du matin.
+
+### TASK-19-012 — Templates de tickets éditables [P3] [TODO]
+**Contexte** : aujourd'hui les tickets (reçu client, ticket cuisine, étiquette prix) ont un format figé en code. Personnalisation impossible sans dev.
+**Bénéfice attendu** : personnaliser l'en-tête, le pied, les mentions du reçu (slogan, QR Instagram, conditions de retour) sans intervention dev.
+**Critère d'acceptation** :
+- [ ] Table `receipt_templates` (template_type, header_html, body_template, footer_html, active).
+- [ ] Page `/settings/printing/templates` : éditeur WYSIWYG simple + preview imprimable.
+- [ ] Placeholders supportés : {{company_name}}, {{order_number}}, {{items}}, {{total}}, {{customer_name}}, etc.
+- [ ] Toggle "Template par défaut" pour cas où no override.
+- [ ] Validation : template invalide rejeté avant save.
+**Dépend de** : aucune.
+**Estimation** : L
+**Risques** : sécurité XSS sur templates → sanitization stricte server-side.
+**Notes** : V1 limité aux zones header/footer ; V2 layout complet libre.
+
+### TASK-19-013 — Wizard d'installation guidé [P3] [TODO]
+**Contexte** : chaque page Settings est autonome. Un nouveau gérant qui ouvre une boutique doit deviner l'ordre. Pas de checklist guidée.
+**Bénéfice attendu** : onboarding pas-à-pas qui guide à travers les 23 pages dans l'ordre logique (company → tax → COA → categories → users → printers…).
+**Critère d'acceptation** :
+- [ ] Page `/settings/onboarding` : wizard 10-12 étapes avec progress bar.
+- [ ] Chaque étape : présentation + lien vers la page settings concernée + checkbox "complété".
+- [ ] Détection auto du complétage (si valeur cohérente saisie).
+- [ ] Bouton "Skip for now" pour avancer même incomplet (avec warning).
+- [ ] Bouton "Re-lancer le wizard" depuis Settings hub.
+**Dépend de** : aucune.
+**Estimation** : L
+**Risques** : maintenance — chaque nouvelle page settings doit potentiellement entrer dans le wizard.
+**Notes** : valeur surtout pour les déploiements multi-sites futurs.
+
+### TASK-19-014 — Multi-devise toggle (foundation) [P3] [TODO]
+**Contexte** : tout en IDR. Pour les expatriés / touristes, prévoir le toggle multi-devise est utile (couplage avec TASK-10-019 Accounting et TASK-02-027 POS).
+**Bénéfice attendu** : interrupteur global "Activer multi-devise" qui débloque les fonctionnalités correspondantes dans les autres modules.
+**Critère d'acceptation** :
+- [ ] Setting `general.multi_currency_enabled` (booléen, défaut false).
+- [ ] Setting `general.supported_currencies` (array : ['IDR', 'USD', 'EUR']).
+- [ ] Setting `general.default_currency` (défaut 'IDR').
+- [ ] Validation cohérence avec settings Accounting et POS.
+- [ ] UI Settings → General → Currency.
+**Dépend de** : `TASK-10-019` (Accounting multi-devise), `TASK-02-027` (POS multi-devise), `TASK-07-011` (Purchasing multi-devise), `TASK-11-009` (Expenses multi-devise).
+**Estimation** : S
+**Risques** : aucune (juste le toggle).
+**Notes** : ne pas activer sans avoir les autres modules prêts.
+
+---
+
 ## Synthèse priorité
 
 | Priorité | Tâches |

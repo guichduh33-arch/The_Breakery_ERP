@@ -143,6 +143,251 @@
 
 ---
 
+## Backlog métier (objectif fonctionnel — page /orders)
+
+> Items issus de `docs/objectif travail/ORDERS.md` §14 — vision produit de la page Orders (consultation/inspection des commandes, distincte du POS de saisie).
+> Ajoutés 2026-05-13 lors de la cascade docs (session 13).
+
+### TASK-02-011 — Filtre par cashier / serveur [P2] [TODO]
+**Contexte** : aujourd'hui, impossible de filtrer la liste Orders par staff qui a créé la commande. Audit performance individuelle limité.
+**Bénéfice attendu** : voir d'un coup toutes les commandes d'un staff donné — utile pour audit, performance, calcul commission.
+**Critère d'acceptation** :
+- [ ] Filtre `created_by` (user picker autocomplete) dans `OrdersPage`.
+- [ ] Filtre persistant en query string (`/orders?cashier=xxx`).
+- [ ] Visible uniquement si user a permission `sales.view_all` (sinon filtre auto sur soi-même).
+- [ ] Stats du panel filtré (somme orders, total).
+**Dépend de** : aucune.
+**Estimation** : S
+**Risques** : confidentialité — staff junior ne doit pas voir les commandes des autres.
+**Notes** : pose le socle pour le filtre "Mes commandes" (TASK-02-014).
+
+### TASK-02-012 — Bulk actions (marquer payées en masse) [P2] [TODO]
+**Contexte** : pour solder des ardoises de groupe (ex: une entreprise paie en bloc 15 tickets de ses employés), aujourd'hui il faut traiter chaque commande individuellement.
+**Bénéfice attendu** : sélection multiple de commandes unpaid → marquer payées en un coup avec un seul moyen de paiement et un seul PIN manager.
+**Critère d'acceptation** :
+- [ ] Checkbox par ligne + checkbox "select all visible" dans la table Orders.
+- [ ] Barre d'actions flottante quand sélection > 0 : "Mark all as paid (X commandes — total Y IDR)".
+- [ ] Modal de confirmation : méthode de paiement unique + PIN manager.
+- [ ] Génération d'un JE compta agrégé OU N JE individuels (choix config).
+- [ ] Audit log de l'action bulk avec liste des order IDs.
+**Dépend de** : aucune.
+**Estimation** : M
+**Risques** : faux clic → bulk → catastrophe — confirmation explicite + undo dans 30s.
+**Notes** : V1 mark as paid ; V2 bulk void/refund (plus risqué).
+
+### TASK-02-013 — Heatmap visuelle des commandes en cours [P3] [TODO]
+**Contexte** : la liste tabulaire est efficace pour la consultation mais ne donne pas une "image" instantanée de l'état du service en cours.
+**Bénéfice attendu** : vue compacte (carrés colorés) montrant l'âge de chaque commande en cours (vert / orange / rouge selon le temps d'attente).
+**Critère d'acceptation** :
+- [ ] Toggle "Vue heatmap" en haut de page (alternative à la table).
+- [ ] Une case par commande active (preparing/ready non encore servie).
+- [ ] Code couleur progressif identique à KDS (vert/orange/rouge/clignotant).
+- [ ] Clic → ouvre la modale détail.
+- [ ] Auto-refresh toutes les 30s.
+**Dépend de** : aucune.
+**Estimation** : M
+**Risques** : si volume très élevé (>100 commandes simultanées) la heatmap devient illisible — limiter à un quadrillage 10×10 avec scroll.
+**Notes** : utile pour les services denses (samedi midi).
+
+### TASK-02-014 — Filtre rapide "Mes commandes" [P3] [TODO]
+**Contexte** : un serveur veut souvent ne voir que les commandes qu'il a saisies, pas celles des autres.
+**Bénéfice attendu** : raccourci 1-clic "Mes commandes" qui filtre sur `created_by = current_user`.
+**Critère d'acceptation** :
+- [ ] Toggle "Mes commandes" visible en haut.
+- [ ] Active automatiquement le filtre `cashier=current_user`.
+- [ ] Persistant entre navigation.
+**Dépend de** : `TASK-02-011`.
+**Estimation** : S
+**Risques** : aucun.
+**Notes** : configuration par défaut "ON" pour les serveurs/cashiers (selon rôle).
+
+### TASK-02-015 — Notification toast riche [P3] [TODO]
+**Contexte** : le son `playOrderReadySound` est joué quand un order passe en `ready`, mais aucun toast visuel cliquable n'apparaît.
+**Bénéfice attendu** : toast riche avec numéro de commande + bouton "Voir détail" qui ouvre la modale.
+**Critère d'acceptation** :
+- [ ] À chaque `KDS_ORDER_READY` reçu, afficher un toast (sonner + visuel).
+- [ ] Toast : "Commande #124 prête — Table 5" + bouton.
+- [ ] Auto-dismiss 10s.
+- [ ] Click → ouvre la modale détail de la commande.
+- [ ] Toggle Settings.
+**Dépend de** : aucune (déjà du KDS listener).
+**Estimation** : S
+**Risques** : surcharge si beaucoup de ready simultanés — empiler max 5 puis "X autres".
+**Notes** : utiliser le toast pattern déjà en place (`sonner` ou équivalent).
+
+### TASK-02-016 — Édition de la commande après coup [P3] [TODO]
+**Contexte** : aujourd'hui, pour modifier une commande déjà envoyée en cuisine (ajouter un item, retirer), il faut voider + recréer. Lourd et bruyant en audit.
+**Bénéfice attendu** : édition contrôlée avec PIN manager + raison + audit complet.
+**Critère d'acceptation** :
+- [ ] Bouton "Modifier" dans la modale détail (visible seulement si statut ≤ ready).
+- [ ] Modal d'édition : ajout/retrait d'items, modif quantités.
+- [ ] PIN manager obligatoire + champ raison.
+- [ ] Audit log de la modif (avant/après JSON).
+- [ ] Recalcul automatique tax PB1 + JE auto compensatoire si différence montant.
+- [ ] Re-envoi KDS des nouveaux items (les anciens restent).
+**Dépend de** : aucune.
+**Estimation** : L
+**Risques** : casse de l'intégrité order-payment-JE — testing exhaustif.
+**Notes** : ne pas confondre avec void+recreate ; ici on garde l'order_id et son numéro.
+
+### TASK-02-017 — Vue calendrier des commandes différées [P3] [TODO]
+**Contexte** : pour les commandes pré-réservées (B2B livré dans 3 jours, événement client à venir), pas de vue planning visuelle.
+**Bénéfice attendu** : calendrier (jour/semaine/mois) montrant les commandes par date de livraison/échéance.
+**Critère d'acceptation** :
+- [ ] Nouvelle page `/orders/calendar` ou onglet sur `OrdersPage`.
+- [ ] Vue jour : timeline horaire avec slots de commandes.
+- [ ] Vue semaine : grille 7 colonnes.
+- [ ] Vue mois : calendrier classique avec badges.
+- [ ] Filtre par type (B2B, takeaway prévu, delivery).
+- [ ] Click → modale détail.
+**Dépend de** : aucune.
+**Estimation** : L
+**Risques** : duplication avec module B2B calendar (si existe) — réutiliser composant.
+**Notes** : librarie `react-big-calendar` ou équivalent.
+
+### TASK-02-018 — Export PDF par commande [P3] [TODO]
+**Contexte** : aujourd'hui l'export Orders est CSV uniquement. Pour envoyer un ticket en e-mail à un client après coup, il faut un PDF.
+**Bénéfice attendu** : re-générer le ticket en PDF (mise en forme reçu thermique ou A4 facture).
+**Critère d'acceptation** :
+- [ ] Bouton "PDF" dans modale détail Orders.
+- [ ] Génération via Edge Function `generate-receipt-pdf` (réutilise le template existant).
+- [ ] Download direct + option "Envoyer par email" (champ destinataire).
+- [ ] Format imprimable A5 + version thermique 80mm.
+**Dépend de** : Edge Function `generate-receipt-pdf` (doit exister ou être créée).
+**Estimation** : M
+**Risques** : timeout Edge Function si bcp d'items — paginer le PDF si > 30 lignes.
+**Notes** : aligne sur le template de la facture B2B pour cohérence visuelle.
+
+### TASK-02-019 — Lien direct vers le KDS [P3] [TODO]
+**Contexte** : depuis la modale détail Orders, pas de raccourci pour aller voir un item au KDS.
+**Bénéfice attendu** : bouton "Voir au KDS" qui ouvre la station correspondante avec l'item surligné.
+**Critère d'acceptation** :
+- [ ] Bouton par item dans la modale détail.
+- [ ] Action : nav vers `/kds/<station>?highlight=<order_item_id>`.
+- [ ] Côté KDS : surlignage visuel 5s + scroll auto vers l'item.
+**Dépend de** : aucune.
+**Estimation** : S
+**Risques** : aucun.
+**Notes** : utile pour le manager qui veut accélérer un cas.
+
+---
+
+## Backlog métier (objectif fonctionnel — app POS)
+
+> Items issus de `docs/objectif travail/POS.md` §18 — vision produit de l'app POS (caisse).
+> Ajoutés 2026-05-13 lors de la cascade docs (session 13). Customer-facing payment QR est déjà couvert par TASK-16-006 (cascade Customer Display).
+
+### TASK-02-020 — Mode dégradé offline (POS resilience) [P2] [TODO]
+**Contexte** : aujourd'hui une coupure réseau bloque toute transaction POS. Pour une boutique en zone à connexion fragile, c'est rédhibitoire.
+**Bénéfice attendu** : continuer à encaisser pendant une coupure courte (<10 min), queue local sync au retour réseau.
+**Critère d'acceptation** :
+- [ ] Cache IndexedDB des produits + clients + sessions actives.
+- [ ] Queue locale `pending_transactions` lors de coupure (chiffrée).
+- [ ] Bandeau "Mode dégradé — N transactions en attente de sync".
+- [ ] Sync auto au retour réseau (RPC `sync_offline_transactions`).
+- [ ] Réconciliation : conflit numérotation séquentielle → re-numérotation à la sync.
+- [ ] Limite stricte : refuser nouvelles transactions au-delà de 15 min offline (intégrité comptable).
+**Dépend de** : refonte significative du flow POS.
+**Estimation** : XL
+**Risques** : intégrité comptable — chaque transaction offline doit produire un JE rétroactif cohérent ; testing exhaustif obligatoire.
+**Notes** : pattern Square / Shopify POS — étudier leurs solutions.
+
+### TASK-02-021 — Pre-authorization cartes [P2] [TODO]
+**Contexte** : pour dine-in, le client paie en fin de repas. Si la carte est refusée au paiement final, conflit. Pré-autoriser le montant estimé à l'arrivée résout le risque.
+**Bénéfice attendu** : "tap card on entry" → montant estimé pré-autorisé → finalisation au départ (capture exacte).
+**Critère d'acceptation** :
+- [ ] Intégration provider paiement (Stripe Terminal ou équivalent local) qui supporte auth+capture.
+- [ ] UI : à l'ouverture d'une table, option "Pré-autoriser carte".
+- [ ] Montant pré-auth = montant estimé (ex: panier moyen × N couverts).
+- [ ] À la clôture commande : capture exacte du montant final.
+- [ ] Si capture > pre-auth : capture du delta en seconde transaction.
+- [ ] Si client part sans payer : capture forcée après timeout.
+**Dépend de** : provider de paiement compatible (à valider avec partenaire indonésien).
+**Estimation** : XL
+**Risques** : friction client (sortir la carte 2 fois) — UX et formation staff cruciales.
+**Notes** : pattern restaurants haut de gamme US/Europe ; rare en Indonésie.
+
+### TASK-02-022 — Réservation / pré-commande client (avec acompte) [P3] [TODO]
+**Contexte** : pour les commandes spéciales (gâteau anniversaire, événement), pas de workflow réservation avec acompte. Tout se gère par téléphone + Excel.
+**Bénéfice attendu** : prendre une commande à retirer plus tard, encaisser un acompte, finaliser à la livraison.
+**Critère d'acceptation** :
+- [ ] Statut `reserved` ajouté à `orders.status` (avant `pending`).
+- [ ] UI POS : nouveau mode "Réservation" avec date/heure de retrait + acompte.
+- [ ] Acompte = paiement partiel marqué.
+- [ ] Page `/pos/reservations` : liste des réservations à venir + relances J-1.
+- [ ] À la conversion en commande active : reprendre les items + solder le reste.
+**Dépend de** : `TASK-02-017` (vue calendrier) pour visualisation.
+**Estimation** : L
+**Risques** : annulation par client → politique d'acompte (remboursable ou non).
+**Notes** : critique pour la pâtisserie d'événement.
+
+### TASK-02-023 — Tableau "Tables ouvertes" en vue principale [P3] [TODO]
+**Contexte** : le `TableSelectionModal` montre le floor plan mais ce n'est pas la vue principale du POS dine-in. Le manager doit naviguer pour savoir l'état des tables.
+**Bénéfice attendu** : vue principale dédiée dine-in qui affiche en permanence le statut de chaque table (vide / commandée / servie / à encaisser).
+**Critère d'acceptation** :
+- [ ] Toggle "Vue Tables" en haut du POS (alternative à grille produits).
+- [ ] Grille tactile des tables avec : numéro, couverts, durée occupée, total commande en cours, statut (couleur).
+- [ ] Click table → ouvre directement le cart en cours.
+- [ ] Timer "table assise depuis Xmin" pour anticipation rotations.
+**Dépend de** : aucune.
+**Estimation** : M
+**Risques** : encombrement écran si beaucoup de tables — limite à 30 visibles + scroll.
+**Notes** : pattern POS restaurant haut volume.
+
+### TASK-02-024 — Quick reorder (refaire la même commande) [P3] [TODO]
+**Contexte** : pour les habitués, refaire la même commande qu'hier ou la semaine dernière nécessite de tout retaper.
+**Bénéfice attendu** : depuis l'historique client, bouton "Refaire" qui pré-remplit le cart avec les items de la commande précédente.
+**Critère d'acceptation** :
+- [ ] Bouton "Reorder" dans la modale détail commande + dans la fiche client.
+- [ ] Clone des items + modifiers dans le cart courant.
+- [ ] Si produits indisponibles (stock zéro, retirés du catalogue), affichage alerte.
+- [ ] Recalcul prix au tarif actuel (pas le tarif d'origine).
+**Dépend de** : aucune.
+**Estimation** : M
+**Risques** : confusion sur les modifications produit/prix depuis la commande source — bien indiquer "prix recalculés".
+**Notes** : UX critique pour les habitués matin/café.
+
+### TASK-02-025 — Voice search produit/client [P3] [TODO]
+**Contexte** : en rush, taper sur le clavier virtuel pour rechercher un client ou un produit est lent.
+**Bénéfice attendu** : "Cappuccino" ou "Maya" prononcés à voix → recherche instantanée.
+**Critère d'acceptation** :
+- [ ] Web Speech API (Chromium).
+- [ ] Bouton micro dans la barre de recherche.
+- [ ] Confidence threshold haute (>80%) pour éviter faux positifs en cuisine bruyante.
+- [ ] Toggle Settings (off par défaut).
+**Dépend de** : navigateur compatible.
+**Estimation** : M
+**Risques** : faux positifs en bruit — confirmation visuelle pré-action.
+**Notes** : pattern Apple Store Genius — validé en environnement bruyant.
+
+### TASK-02-026 — Suggested upsell (basket analysis) [P3] [TODO]
+**Contexte** : aucune suggestion de complément aujourd'hui. Manque d'opportunité commerciale.
+**Bénéfice attendu** : "Voulez-vous un café avec ?" basé sur l'analyse des paniers historiques.
+**Critère d'acceptation** :
+- [ ] RPC `get_upsell_suggestions(p_cart_items)` qui retourne les top 3 produits fréquemment co-achetés.
+- [ ] UI : badge discret "Suggestion" sur certains produits quand on en ajoute un déclencheur.
+- [ ] Toggle Settings.
+- [ ] Tracking : combien de suggestions acceptées (conversion).
+**Dépend de** : volume historique 3 mois minimum.
+**Estimation** : M
+**Risques** : trop intrusif → cashier rejette la suggestion → frustration. Discret, jamais bloquant.
+**Notes** : pattern recommendation engine classique.
+
+### TASK-02-027 — Multi-currency POS [P3] [TODO]
+**Contexte** : touriste paie en USD ou EUR — aujourd'hui conversion manuelle.
+**Bénéfice attendu** : encaisser une commande en devise étrangère avec conversion auto au taux du jour.
+**Critère d'acceptation** :
+- [ ] `PaymentMethodSelector` ajoute "Cash USD/EUR" si toggle Settings actif.
+- [ ] Taux du jour récupéré via `exchangeRateService` (TASK-10-019).
+- [ ] Conversion auto vers IDR pour l'enregistrement comptable.
+- [ ] Écriture compta double : encaissement IDR + écart de change.
+**Dépend de** : `TASK-10-019` (multi-devise Accounting).
+**Estimation** : L
+**Risques** : taux mal ajusté → perte ou conflit client — afficher clairement le taux appliqué.
+**Notes** : niche mais valorisant en zone touristique Bali.
+
+---
+
 ## Notes transverses
 
 - **Pitfall locked items** : tests obligatoires sur la modification d'un item « kitchen-sent » sans PIN — c'est le rempart UX principal.

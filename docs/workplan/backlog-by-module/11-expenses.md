@@ -110,6 +110,65 @@
 **Risques** : doublons si re-import → idempotence stricte indispensable.
 **Notes** : valider colonnes attendues avec comptable.
 
+---
+
+## Backlog métier (objectif fonctionnel)
+
+> Items issus de `docs/objectif travail/EXPENSES.md` §15 — vision produit du module au-delà du tech-debt existant.
+> Ajoutés 2026-05-13 lors de la cascade docs (session 13). Récurrence, workflow approval, OCR, note de frais sont déjà couverts par TASK-11-003/001/004/006. Export comptable est couvert par TASK-10-018 (cascade Accounting).
+
+### TASK-11-008 — Budget par catégorie [P3] [TODO]
+**Contexte** : aucun mécanisme de budget aujourd'hui. Le gérant ne sait pas s'il dépasse son budget mensuel marketing, maintenance, etc.
+**Bénéfice attendu** : saisir un budget mensuel par catégorie + alerte au dépassement (déclencheur à 80%, 100%, 120%).
+**Critère d'acceptation** :
+- [ ] Table `expense_budgets` (year, month, category_id, amount).
+- [ ] Page `/expenses/budget` : grille de saisie par catégorie × mois.
+- [ ] Widget Dashboard : top 3 catégories en dépassement budget.
+- [ ] Notification push manager quand une catégorie atteint 80% / 100% / 120% du budget.
+- [ ] Couplage avec TASK-10-017 (budget Accounting) — partager la table OU mapper.
+**Dépend de** : `TASK-10-017` (budget vs réel global) pour cohérence.
+**Estimation** : M
+**Risques** : double saisie si non couplé avec budget Accounting — choisir UN seul système.
+**Notes** : V1 par catégorie expense ; V2 sous-budgets par projet / événement.
+
+### TASK-11-009 — Multi-devise sur expenses [P3] [TODO]
+**Contexte** : aujourd'hui tout en IDR. Pour les achats équipement français, abonnements SaaS USD, etc., conversion manuelle perdue.
+**Bénéfice attendu** : saisir une dépense en EUR / USD, le système enregistre montant devise + taux + équivalent IDR avec traçabilité.
+**Critère d'acceptation** :
+- [ ] Colonnes `currency_code`, `exchange_rate`, `amount_local` sur `expenses`.
+- [ ] UI form : champ "Devise" + récupération auto du taux du jour (BI ou source officielle).
+- [ ] Écriture compta libellée en IDR au taux du jour.
+- [ ] Écart de change post-paiement si taux différent — JE auto.
+**Dépend de** : `TASK-10-019` (multi-devise Accounting global).
+**Estimation** : M
+**Risques** : taux divergents entre sources — référence officielle Bank Indonesia.
+**Notes** : extension du module Accounting multi-devise.
+
+### TASK-11-010 — Lien commande fournisseur ↔ dépense [P3] [TODO]
+**Contexte** : aujourd'hui Purchasing gère les achats de marchandises (PO produits) et Expenses gère les dépenses opérationnelles, mais pas de pont quand un PO est de SERVICE (ex: maintenance, conseil) — saisie double.
+**Bénéfice attendu** : quand un PO de service est réceptionné, créer automatiquement une expense pré-remplie.
+**Critère d'acceptation** :
+- [ ] Flag `purchase_orders.po_type` = `goods | service`.
+- [ ] Pour `service` PO : à la réception, RPC `create_expense_from_po(po_id)` crée une `expenses` en draft avec catégorie mappée.
+- [ ] Lien `expenses.source_po_id` (FK).
+- [ ] UI : depuis PO service, bouton "Convertir en dépense".
+**Dépend de** : aucune.
+**Estimation** : M
+**Risques** : confusion entre PO goods et service — bien valider à la création du PO.
+**Notes** : utile pour le conseil comptable, juridique, maintenance four.
+
+### TASK-11-011 — Catégorisation auto par IA [P3] [TODO]
+**Contexte** : pour une dépense ambiguë ("Facture Tokopedia 350k"), le saisisseur choisit manuellement la catégorie. Coût cognitif.
+**Bénéfice attendu** : suggestion automatique de la catégorie sur la base de l'historique (description fournisseur + montant + saison).
+**Critère d'acceptation** :
+- [ ] Service `expenseCategorySuggestion(p_description, p_amount, p_supplier)` scanne l'historique et retourne top 3 catégories + confidence.
+- [ ] UI `ExpenseForm` propose les suggestions ; saisisseur confirme en 1 clic.
+- [ ] Feedback loop : chaque correction manuelle alimente le modèle.
+**Dépend de** : volume historique 6 mois minimum.
+**Estimation** : M
+**Risques** : modèle simple suffit V1 (regex + similarité fournisseur) — pas besoin de LLM.
+**Notes** : couplable avec TASK-10-021 (IA classification compta) — utiliser le même service.
+
 ## Vue transversale
 
 ### Dépendances inter-tâches

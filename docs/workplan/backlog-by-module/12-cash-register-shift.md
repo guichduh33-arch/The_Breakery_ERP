@@ -109,6 +109,80 @@
 **Risques** : manipuler les comptes bank/cash sans contrôle = risque erreur — option par défaut désactivée + permission `accounting.create`.
 **Notes** : `TASK-10-001` doit être faite avant pour cohérence accounting globale.
 
+---
+
+## Backlog métier (objectif fonctionnel)
+
+> Items issus de `docs/objectif travail/CASH_REGISTER.md` §15 — vision produit du module.
+> Ajoutés 2026-05-13 lors de la cascade docs (session 13). Cash-in/out, alerte écart, pause/reprise, auto-close sont déjà couverts par TASK-12-001/004/005/006.
+
+### TASK-12-008 — Validation à deux mains pour gros écarts [P2] [TODO]
+**Contexte** : aujourd'hui, le manager seul valide la clôture même si l'écart dépasse le seuil critique. Pour les cas extrêmes (>X IDR), on veut une double authentification cashier+manager pour responsabiliser les deux signataires.
+**Bénéfice attendu** : protection mutuelle anti-fraude — ni le cashier ni le manager seul ne peut acter un écart critique.
+**Critère d'acceptation** :
+- [ ] Setting `pos_config.dual_auth_variance_threshold` (par défaut 100k IDR).
+- [ ] `CloseShiftModal` détecte `|cash_difference| > threshold` → demande PIN cashier ET PIN manager (séquence imposée).
+- [ ] Audit log distinct : `dual_auth_validated = true` avec deux signatures et timestamps.
+- [ ] Report Cash Variance Trend marque les sessions à dual-auth d'une icône spécifique.
+**Dépend de** : aucune.
+**Estimation** : S
+**Risques** : friction UX si seuil mal calibré — paramétrable globalement.
+**Notes** : pattern bancaire "four-eyes principle".
+
+### TASK-12-009 — Dépôt bancaire intégré (étend TASK-12-007) [P3] [TODO]
+**Contexte** : TASK-12-007 crée le JE automatique à la close. L'objectif va plus loin : saisie d'un bordereau de dépôt avec photo, lien direct vers la compta, traçabilité de la remise.
+**Bénéfice attendu** : workflow complet "fin de journée → dépôt banque → réconciliation" sans Excel parallèle.
+**Critère d'acceptation** :
+- [ ] Table `bank_deposits` (session_id, amount, bank_account_id, slip_photo_url, deposit_date, deposited_by, reconciled).
+- [ ] UI `BankDepositModal` post-clôture : champs montant, banque, photo bordereau (upload Supabase Storage).
+- [ ] JE auto via TASK-12-007 enrichi avec lien `bank_deposit_id`.
+- [ ] Page `/accounting/bank-deposits` : liste, photo viewer, statut réconciliation.
+- [ ] Réconciliation auto avec relevé bancaire (matching montant + date ±2j).
+**Dépend de** : `TASK-12-007`, `TASK-10-009` (auto-matching bank reco).
+**Estimation** : L
+**Risques** : stockage photos volumineux — compression + retention 7 ans (obligation fiscale).
+**Notes** : V1 photo locale ; V2 OCR du bordereau pour pré-remplir.
+
+### TASK-12-010 — Compte des coupures obligatoire [P3] [TODO]
+**Contexte** : aujourd'hui `opening_cash_details` et `closing_cash_details` sont facultatifs (JSONB nullable). Pour audit fin et détection de vol partiel (ex: "il manque exactement 5 billets de 50k"), il faut le détail obligatoire.
+**Bénéfice attendu** : audit fin de la composition du tiroir + détection des écarts par coupure.
+**Critère d'acceptation** :
+- [ ] Setting `pos_config.require_denomination_breakdown` (booléen, par défaut OFF, ON pour managers paranos).
+- [ ] Si ON : `OpenShiftModal` et `ShiftReconciliationModal` exigent saisie par coupure (1k, 2k, 5k, 10k, 20k, 50k, 100k) avant validation.
+- [ ] Calcul auto du total à partir des coupures (anti-saisie incohérente).
+- [ ] Report "Cash Composition Trend" : voir si une coupure spécifique dérape (vol ciblé).
+**Dépend de** : aucune.
+**Estimation** : M
+**Risques** : friction temps comptage — proposer le mode "rapide" (juste le total) en fallback.
+**Notes** : UX critique — clavier numérique large pour saisie rapide tablette.
+
+### TASK-12-011 — KSeF / certification fiscale [P3] [TODO]
+**Contexte** : si l'Indonésie impose à terme une certification fiscale des sessions de caisse (analogue au KSeF polonais ou au e-Faktur étendu), il faudra signer électroniquement chaque clôture de session.
+**Bénéfice attendu** : conformité fiscale anticipée — éviter le rush si la réglementation tombe.
+**Critère d'acceptation** :
+- [ ] Étude de l'évolution réglementaire DJP (veille).
+- [ ] Champ `pos_sessions.fiscal_signature` (TEXT) pré-prévu mais inactif tant que pas requis.
+- [ ] Service `fiscalSignatureService.signSession(session_id)` qui appelle l'API DJP (quand dispo).
+- [ ] Toggle Settings → Compliance → "Fiscal certification enabled".
+**Dépend de** : décision réglementaire externe.
+**Estimation** : XL
+**Risques** : changement spec DJP — viser couche d'abstraction.
+**Notes** : ne pas développer V1 — préparer le terrain seulement.
+
+### TASK-12-012 — Coffre-fort intégré (module Cash Management) [P3] [TODO]
+**Contexte** : aujourd'hui aucune gestion du coffre-fort interne (où va le cash entre la clôture du tiroir et le dépôt banque ?). Pas de visibilité sur les mouvements inter-coffres ni les retraits pour la petite caisse.
+**Bénéfice attendu** : module Cash Management complet — coffre, dépôts banque, retraits, mouvements inter-coffres, audit complet.
+**Critère d'acceptation** :
+- [ ] Tables `cash_safes` (multi-coffres possible) + `cash_movements` (transfer entre tiroir, coffre, banque, petty cash).
+- [ ] UI `/accounting/cash-management` : vue d'ensemble des soldes par coffre + journal des mouvements.
+- [ ] Workflow : clôture session → cash va dans coffre → coffre → dépôt banque (TASK-12-009).
+- [ ] Permissions strictes : seul le manager peut bouger entre coffres.
+- [ ] Audit log + double signature pour gros transferts.
+**Dépend de** : `TASK-12-009`.
+**Estimation** : XL
+**Risques** : surdimensionné pour un seul point de vente — pertinent quand The Breakery aura 2+ adresses.
+**Notes** : V1 mono-coffre suffit ; V2 multi-coffres pour scale.
+
 ## Vue transversale
 
 ### Dépendances inter-tâches

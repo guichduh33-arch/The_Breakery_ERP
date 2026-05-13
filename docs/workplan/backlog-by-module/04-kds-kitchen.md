@@ -120,6 +120,132 @@
 
 ---
 
+## Backlog métier (objectif fonctionnel)
+
+> Items issus de `docs/objectif travail/KDS.md` §16 — vision produit du module.
+> Ajoutés 2026-05-13 lors de la cascade docs (session 13).
+
+### TASK-04-009 — Service Speed report [P2] [TODO]
+**Contexte** : aujourd'hui aucune mesure du temps de préparation. Les goulots cuisine restent invisibles.
+**Bénéfice attendu** : mesurer le temps moyen de préparation par item / station / cuisinier — identifier les goulots et calibrer les seuils urgence.
+**Critère d'acceptation** :
+- [ ] Trigger sur `order_items.item_status` qui timestamp chaque transition (`pending→preparing`, `preparing→ready`).
+- [ ] Vue `view_service_speed_per_item` : pour chaque order item, durée totale + durée par phase.
+- [ ] RPC `get_service_speed_stats(p_start, p_end, p_station, p_product_id)` : moyennes, médianes, P95.
+- [ ] Page `/reports/kds-service-speed` : tableau + graphique par station + par cuisinier (si user_id tracé).
+- [ ] Export CSV / PDF.
+**Dépend de** : tracer `prepared_by` user_id sur item (à ajouter si non présent).
+**Estimation** : M
+**Risques** : surveillance cuisinier perçue comme flicage — communiquer en transparence + KPI collectif d'abord.
+**Notes** : pose le socle pour les futurs reports productivité.
+
+### TASK-04-010 — Throttling intelligent (file d'attente saturée) [P2] [TODO]
+**Contexte** : quand 20 cafés arrivent en 30 secondes au barista, l'écran sature mais aucun signal au caissier qui continue à envoyer.
+**Bénéfice attendu** : KDS détecte la saturation → notifie le caissier ("Barista saturé — attendre 2 min") pour mieux calibrer le rythme.
+**Critère d'acceptation** :
+- [ ] Calcul backlog par station : nb d'items `pending` + `preparing` non encore `ready`.
+- [ ] Seuils configurables Settings → KDS Configuration (`throttle_warning_threshold`, `throttle_critical_threshold`).
+- [ ] Message LAN `KDS_THROTTLE_STATUS` envoyé au POS hub avec niveau (ok / warning / critical) par station.
+- [ ] POS affiche un badge "Barista saturé" sur le bouton "Envoyer" + son optionnel.
+- [ ] Pas de blocage hard — c'est un signal, pas un verrou.
+**Dépend de** : aucune.
+**Estimation** : M
+**Risques** : seuils mal calibrés → spam d'alertes ou silence trompeur — itérer avec l'équipe.
+**Notes** : `TASK-04-001` (KDS_ORDER_ACK) est un prérequis logique pour le canal de retour.
+
+### TASK-04-011 — Chat inter-stations [P3] [TODO]
+**Contexte** : aujourd'hui, une station qui veut alerter une autre doit aller crier. Pour les cas borderline ("le sandwich n°124 doit attendre la frite"), c'est inefficace et stressant.
+**Bénéfice attendu** : messagerie courte entre stations avec messages prédéfinis + notification sonore.
+**Critère d'acceptation** :
+- [ ] Table `kds_messages` (from_station, to_station, order_id, message_template, custom_text, created_at, read_at).
+- [ ] UI overlay messagerie sur `KDSOrderCard` : bouton "Message à barista" avec templates ("Attendre", "Doubler", "Annulé").
+- [ ] Réception : badge sur la carte concernée + son distinct.
+- [ ] Auto-archive après ack.
+**Dépend de** : aucune.
+**Estimation** : M
+**Risques** : usage détourné en chat libre → templates verrouillés V1, libre V2.
+**Notes** : KISS — 6-8 templates suffisent.
+
+### TASK-04-012 — Mode urgences (URGENT button) [P3] [TODO]
+**Contexte** : pas de moyen de forcer un item en haut de la pile pour une commande VIP ou une réclamation client en cours.
+**Bénéfice attendu** : bouton "URGENT" qui passe immédiatement l'item en rouge + en tête de file + son d'alerte cuisine.
+**Critère d'acceptation** :
+- [ ] Bouton "URGENT" sur `KDSOrderCard` (permission `kds.escalate` — manager only).
+- [ ] Marquage `order_items.is_urgent = true` + reordering automatique.
+- [ ] Son d'alerte spécifique à l'urgence.
+- [ ] Audit log de toutes les escalades + raison obligatoire.
+**Dépend de** : aucune.
+**Estimation** : S
+**Risques** : abus → exiger raison + audit visible.
+**Notes** : par défaut désactivé en config, activable par cuisine.
+
+### TASK-04-013 — Reroute manuel [P3] [TODO]
+**Contexte** : si un produit est mal catégorisé (`dispatch_station` erroné), l'item arrive sur la mauvaise station. Aujourd'hui personne ne peut le corriger en runtime — il faut modifier la catégorie et re-envoyer.
+**Bénéfice attendu** : le manager peut transférer un item d'une station à une autre depuis le KDS (correction ponctuelle).
+**Critère d'acceptation** :
+- [ ] Bouton "Move to..." sur `KDSOrderCard` (long press item, permission manager).
+- [ ] Selector station cible.
+- [ ] Update `order_items.station_override`.
+- [ ] Audit log de chaque reroute.
+**Dépend de** : aucune.
+**Estimation** : S
+**Risques** : confusion si reroute fréquent → indicateur "Corrigez la catégorie produit" si > 3 reroutes/jour.
+**Notes** : aussi utile pour les cas exceptionnels (panne d'équipement station).
+
+### TASK-04-014 — Persistance offline (cache local + sync) [P3] [TODO]
+**Contexte** : `TASK-04-006` (Real-time gracieux LAN perdu) couvre le fallback Realtime. Mais une double panne (LAN + internet) bloque la réception. Pour les courtes coupures, un cache local serait robuste.
+**Bénéfice attendu** : le KDS continue à afficher les dernières commandes connues, et synchronise au retour réseau.
+**Critère d'acceptation** :
+- [ ] Cache IndexedDB des commandes actives (et leur statut).
+- [ ] Au boot KDS : charger depuis cache puis sync.
+- [ ] Bandeau "Mode dégradé (cache local)" si pas de connexion.
+- [ ] Réconciliation au retour réseau : merge des status changes locaux.
+**Dépend de** : `TASK-04-006`.
+**Estimation** : L
+**Risques** : conflit de status (réseau dit `served`, local dit `preparing`) — règle "le dernier timestamp gagne".
+**Notes** : V1 mode lecture seule en cache ; V2 actions queueables.
+
+### TASK-04-015 — Mode présentation public (cuisine ouverte) [P3] [TODO]
+**Contexte** : pour les boutiques à cuisine ouverte, montrer l'activité cuisine via un écran client est valorisant.
+**Bénéfice attendu** : un mode adapté qui montre les commandes en cours sans détails sensibles (pas les noms clients, juste les numéros).
+**Critère d'acceptation** :
+- [ ] Nouveau mode `kds.display_mode = public_view` (sélectionnable depuis le sélecteur de station).
+- [ ] Affichage : grille esthétique, noms produits seuls, timer visible, pas d'actions.
+- [ ] Animation à chaque "ready" pour effet "vivant".
+- [ ] Pas de sons (silencieux par design).
+**Dépend de** : aucune.
+**Estimation** : M
+**Risques** : exposition des erreurs cuisine au client — désactivable par PIN.
+**Notes** : utile pour ouvertures festives ou démonstration.
+
+### TASK-04-016 — Reconnaissance vocale "Ready" [P3] [TODO]
+**Contexte** : un cuisinier les mains pleines ne peut pas taper sur l'écran. La voix est plus naturelle.
+**Bénéfice attendu** : le cuisinier dit "Ready 124" à voix haute, le KDS marque l'item.
+**Critère d'acceptation** :
+- [ ] Web Speech API ou intégration Whisper local.
+- [ ] Vocabulaire restreint : "Ready X", "Cancel X", "Pause".
+- [ ] Confirmation visuelle + bip (pour éviter les faux positifs).
+- [ ] Toggle Settings (off par défaut).
+**Dépend de** : navigateur supportant Web Speech (Chromium).
+**Estimation** : L
+**Risques** : faux positifs en cuisine bruyante — confidence threshold haute + confirmation visuelle.
+**Notes** : V1 mode expérimental ; valider taux d'erreur avant généralisation.
+
+### TASK-04-017 — Caméra timer cuisson (QC photo) [P3] [TODO]
+**Contexte** : pour la qualité (QC), photographier chaque préparation à la sortie pour traçabilité visuelle.
+**Bénéfice attendu** : preuve photo de chaque item livré, utile pour les litiges client et l'audit interne qualité.
+**Critère d'acceptation** :
+- [ ] Webcam ou caméra physique branchée au poste KDS.
+- [ ] Au tap "Ready" sur un item, capture auto une photo, upload Storage `kds-qc/{order_id}/{item_id}.jpg`.
+- [ ] Lien photo visible sur le détail commande côté POS / BO.
+- [ ] Rétention 30 jours par défaut (puis purge auto).
+**Dépend de** : matériel caméra + stockage.
+**Estimation** : L
+**Risques** : RGPD si photos contiennent staff — angle de prise restreint au plat.
+**Notes** : valeur QC à mesurer avant scale.
+
+---
+
 ## Notes transverses
 
 - **Combo KDS dispatch** : déjà OK depuis Sprint 0 C4 (cf. `CURRENT_STATE.md`). Toute nouvelle logique routing doit préserver le combo handling.

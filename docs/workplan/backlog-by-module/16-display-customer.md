@@ -83,6 +83,116 @@
 **Risques** : bande passante si vidéo lourde + fréquente — privilégier upload optimisé.
 **Notes** : alternative simple = lien YouTube embed, mais dépend du réseau.
 
+---
+
+## Backlog métier (objectif fonctionnel)
+
+> Items issus de `docs/objectif travail/CUSTOMER_DISPLAY.md` §13 — vision produit du module.
+> Ajoutés 2026-05-13 lors de la cascade docs (session 13). La vidéo en idle est déjà couverte par TASK-16-005.
+
+### TASK-16-006 — QR de paiement digital affiché [P2] [TODO]
+**Contexte** : pour QRIS / e-wallets, le client doit scanner un QR depuis sa propre application — aujourd'hui le caissier doit lui passer un imprimé ou un QR sur son téléphone à lui. Pas pratique, pas hygiénique.
+**Bénéfice attendu** : afficher directement sur le Customer Display le QR de paiement généré au moment de la finalisation → le client scanne sans contact avec le staff.
+**Critère d'acceptation** :
+- [ ] Message LAN `PAYMENT_QR_DISPLAY` envoyé par le POS au display avec payload {qr_data, amount, expires_at}.
+- [ ] `CDActiveCartView` affiche le QR en grand pendant la phase paiement.
+- [ ] Auto-refresh quand le QR expire (typique QRIS = 60s).
+- [ ] Bascule "Order Confirmed" dès que le paiement est validé côté POS.
+**Dépend de** : intégration QRIS provider (BCA, Mandiri, OVO…) côté POS.
+**Estimation** : M
+**Risques** : sécurité — vérifier que le QR affiché correspond bien à la commande en cours (anti-substitution).
+**Notes** : V1 QRIS dynamique ; V2 NFC + tap-to-pay.
+
+### TASK-16-007 — Affichage "commande prête" enrichi (style aéroport) [P2] [TODO]
+**Contexte** : aujourd'hui `ORDER_READY` affiche juste un numéro. Pour les clients en salle ou take-away avec attente, un affichage type "tableau d'aéroport" (multi-commandes simultanées) serait plus lisible.
+**Bénéfice attendu** : un panneau "Commandes prêtes" en grand qui scale au volume sans crieur staff.
+**Critère d'acceptation** :
+- [ ] Nouvelle vue `CDReadyBoardView` (alternative à `CDIdleView` activable par config).
+- [ ] Liste des commandes `ready` non encore retirées avec : numéro, nom client (si lié), table (si dine-in), heure prêt.
+- [ ] Animation : nouvelle commande slide-in + son optionnel.
+- [ ] Auto-retrait après N minutes (configurable, défaut 5min).
+**Dépend de** : `TASK-16-001` (layout customisable).
+**Estimation** : M
+**Risques** : si beaucoup de commandes simultanées, lisibilité dégradée — limiter à 8 visibles + scroll.
+**Notes** : option d'affichage : seulement dernier numéro vs board complet.
+
+### TASK-16-008 — Animations programme fidélité [P3] [TODO]
+**Contexte** : aujourd'hui le gain de points est affiché en texte simple. Pour valoriser le programme et inciter, animation visuelle marquante au moment du gain.
+**Bénéfice attendu** : "Vous gagnez 45 points pour atteindre Silver dans 200 points !" en animation joyeuse → client réalise la valeur, programme paraît plus attractif.
+**Critère d'acceptation** :
+- [ ] Animation déclenchée au `CART_UPDATE` quand `points_earned > 0`.
+- [ ] Affichage des points gagnés + jauge palier (progression vers tier suivant).
+- [ ] Animation de bonus si palier atteint à cette commande.
+- [ ] Toggleable dans Settings (`show_loyalty_animation`).
+**Dépend de** : aucune.
+**Estimation** : M
+**Risques** : trop "casino" → ton sobre, palette signature The Breakery.
+**Notes** : se référer aux principes du design system (luxe-dark + or `#C9A55C`).
+
+### TASK-16-009 — Multilingue affichage [P3] [TODO]
+**Contexte** : aujourd'hui français uniquement. Pour une clientèle touristique (Bali), passer en EN / ID dynamiquement améliore l'expérience.
+**Bénéfice attendu** : bascule auto FR / EN / ID selon préférence shop ou horaires (touristes au déjeuner = EN, locaux au matin = ID).
+**Critère d'acceptation** :
+- [ ] Setting `display.languages` + `display.default_language`.
+- [ ] Toutes les chaînes affichées passent par un dictionnaire i18n (`fr.json`, `en.json`, `id.json`).
+- [ ] Toggle config "Auto-language by time slot" (matin = ID, midi = EN, soir = FR par ex.).
+- [ ] Promos `display_promotions` ont des champs `title_en`, `title_id`, etc.
+**Dépend de** : refactor i18n côté display (utiliser `react-i18next` déjà en dep si existant).
+**Estimation** : L
+**Risques** : maintenance des traductions — outil de traduction collaborative.
+**Notes** : commencer par 2 langues (FR+EN) ; ID en V2.
+
+### TASK-16-010 — Météo et heure [P3] [TODO]
+**Contexte** : ajouter un détail discret en idle pour rendre l'écran "vivant" sans être distrayant.
+**Bénéfice attendu** : indication heure + météo locale → l'écran paraît actif même quand promos en rotation.
+**Critère d'acceptation** :
+- [ ] Widget discret coin idle screen avec heure (HH:mm) + météo (icône + température).
+- [ ] Source météo : API publique (OpenWeather ou équivalent free tier).
+- [ ] Cache 15 min côté display pour pas spammer l'API.
+- [ ] Toggle Settings.
+**Dépend de** : connexion internet du display (LAN seulement = fallback heure seule).
+**Estimation** : S
+**Risques** : météo offline si pas internet — fallback gracieux.
+**Notes** : pour Bali, mettre la météo de la ville la plus proche du shop.
+
+### TASK-16-011 — Compteur de visiteurs [P3] [TODO]
+**Contexte** : gamification douce — "Notre 10 000ᵉ client cette année !" en idle.
+**Bénéfice attendu** : engagement client + valorisation business "ça tourne".
+**Critère d'acceptation** :
+- [ ] Compteur `total_orders_ytd` depuis Reports, affiché en idle.
+- [ ] Animation quand un palier rond est atteint (10k, 50k, 100k).
+- [ ] Toggle Settings.
+**Dépend de** : aucune.
+**Estimation** : S
+**Risques** : si compteur bas (boutique récente), effet inverse → ne pas afficher si < seuil.
+**Notes** : palettes : 10000, 25000, 50000, 100000.
+
+### TASK-16-012 — A/B testing visuel des promos [P3] [TODO]
+**Contexte** : aucun moyen de mesurer quelle variante visuelle d'une promo génère plus de ventes.
+**Bénéfice attendu** : tester deux variantes d'affichage d'une promo et mesurer l'impact ventes correspondantes.
+**Critère d'acceptation** :
+- [ ] Table `display_promotion_variants` (parent_promo_id, variant_label, image_url, title).
+- [ ] Rotation alternée des variantes (50/50 ou pondérée).
+- [ ] Lien promo affichée → ventes : track via cookie / session timestamp pour corrélation.
+- [ ] Report "Promo variant performance" : conversion par variante.
+**Dépend de** : `TASK-14-XXX` (Reports analytics).
+**Estimation** : L
+**Risques** : attribution causale fragile (pas tout est lié au display) — méthodo claire.
+**Notes** : V1 expérimental sur 1-2 promos premium ; généraliser ensuite.
+
+### TASK-16-013 — Mode "vitrine externe" [P3] [TODO]
+**Contexte** : un écran placé en vitrine (visible depuis la rue) ne devrait jamais montrer le cart d'un client en cours d'encaissement (vie privée + sécurité).
+**Bénéfice attendu** : mode dédié vitrine qui ignore les `CART_UPDATE` et affiche en permanence les promos en grand.
+**Critère d'acceptation** :
+- [ ] Setting `display.mode` = `customer | window` par display.
+- [ ] Mode `window` : skip tous les `CART_UPDATE` + `ORDER_READY`, plein écran promos.
+- [ ] Layout plus large + texte plus grand (visible depuis la rue).
+- [ ] Tournoyance plus lente (15-30s).
+**Dépend de** : `TASK-16-001` (layouts customisables).
+**Estimation** : S
+**Risques** : confusion config si un staff change le mode par erreur — verrou par PIN.
+**Notes** : utile pour les boutiques à grande façade vitrée.
+
 ## Vue transversale
 
 ### Dépendances inter-tâches

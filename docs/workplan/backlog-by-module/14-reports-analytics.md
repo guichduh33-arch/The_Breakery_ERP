@@ -174,3 +174,112 @@
 **Estimation** : M
 **Risques** : si types générés incluent les vues, attention casts existants ailleurs.
 **Notes** : audit Amelia signale plus largement le pattern bypass — ce report n'est qu'un sous-ensemble.
+
+---
+
+## Backlog métier (objectif fonctionnel)
+
+> Items issus de `docs/objectif travail/REPORTS.md` §15 — vision produit du module.
+> Ajoutés 2026-05-13 lors de la cascade docs (session 13). KDS Service Speed est couvert par TASK-04-009 (cascade KDS), B2B Self-Approval Risk par TASK-09-010, Customer Cohort par TASK-08-009 (cascade Customers), Promotion Effectiveness par TASK-13-006.
+
+### TASK-14-013 — Report "Unusual Transaction Patterns" [P2] [TODO]
+**Contexte** : aucun mécanisme automatique de détection de patterns suspects (transactions hors horaires, montants aberrants, splits cash juste sous un seuil).
+**Bénéfice attendu** : repérer automatiquement les transactions anormales — anti-fraude proactif.
+**Critère d'acceptation** :
+- [ ] RPC `get_unusual_transactions(p_start, p_end)` détecte : transactions hors horaires d'ouverture, montants > 3σ moyenne staff, splits cash < 100k juste sous un seuil 1M (anti-blanchiment).
+- [ ] Page `/reports/audit/unusual-transactions` avec liste + scoring sévérité.
+- [ ] Drill-down → modale détail order + audit log.
+- [ ] Export CSV / PDF.
+**Dépend de** : volume historique 3 mois minimum pour calibrer les seuils.
+**Estimation** : L
+**Risques** : faux positifs élevés au début — itérer les règles avec retour terrain.
+**Notes** : couplable avec TASK-09-010 (self-approval B2B) et TASK-12-008 (dual auth variance).
+
+### TASK-14-014 — Report "Basket Analysis" (associations produits) [P3] [TODO]
+**Contexte** : aucun moyen d'identifier les produits souvent achetés ensemble.
+**Bénéfice attendu** : créer des combos pertinents + recommendations upsell (TASK-02-026) basées sur les vraies associations historiques.
+**Critère d'acceptation** :
+- [ ] RPC `compute_product_associations(p_start, p_end, p_min_support)` retourne paires (A, B) avec support (% commandes contenant les deux), confidence (P(B|A)), lift.
+- [ ] Page `/reports/sales/basket-analysis` : matrice des top associations + filtres catégorie.
+- [ ] Drill-down → liste des commandes contenant l'association.
+- [ ] Export CSV / PDF.
+**Dépend de** : aucune.
+**Estimation** : M
+**Risques** : performance sur grand volume — précalcul matview rafraîchie quotidiennement.
+**Notes** : source pour TASK-02-026 (Smart upsell POS).
+
+### TASK-14-015 — Report "Peak Hour Staffing" (recommandations planning) [P3] [TODO]
+**Contexte** : pas de recommandation staff basée sur la charge horaire historique. Sur-staffing ou sous-staffing au feeling.
+**Bénéfice attendu** : recommander le nombre de cashiers / serveurs nécessaires par tranche horaire selon historique.
+**Critère d'acceptation** :
+- [ ] RPC `compute_peak_hour_staffing(p_lookback_weeks)` : retourne pour chaque (day_of_week, hour) le volume moyen + recommandation staff selon ratio commandes/staff cible.
+- [ ] Page `/reports/operations/peak-hour-staffing` : heatmap + table recommandations.
+- [ ] Export PDF formaté pour affichage planning équipe.
+**Dépend de** : volume 4+ semaines.
+**Estimation** : M
+**Risques** : recommandations naïves si peu de données — fallback "moyenne mobile" + warning si confidence basse.
+**Notes** : utile pour le manager de salle hebdomadaire.
+
+### TASK-14-016 — Report "Perishable Turnover" (rotation périssables) [P3] [TODO]
+**Contexte** : aucun suivi de la rotation des produits périssables (jours moyens en stock avant vente ou casse).
+**Bénéfice attendu** : identifier les produits dont la rotation est trop lente → réduire le waste.
+**Critère d'acceptation** :
+- [ ] RPC `compute_perishable_turnover(p_start, p_end)` : pour chaque produit flaggé périssable, retourne avg_days_in_stock + % vendu vs casse.
+- [ ] Page `/reports/inventory/perishable-turnover` avec table sortable + couleurs (vert/orange/rouge selon ratio).
+- [ ] Drill-down → liste des batches concernés.
+- [ ] Export CSV / PDF.
+**Dépend de** : flag `products.is_perishable` + tracking dates production/réception (couplé TASK-06-001 expiry tracking).
+**Estimation** : M
+**Risques** : sans tracking expiry, calcul approximatif — bien afficher la confiance.
+**Notes** : KPI critique boulangerie.
+
+### TASK-14-017 — Report "Table Turnover" (rotation tables dine-in) [P3] [TODO]
+**Contexte** : pas de mesure de la durée moyenne d'occupation table ni du taux de rotation.
+**Bénéfice attendu** : optimiser la capacité dîner — comprendre les tables lentes, les heures de saturation.
+**Critère d'acceptation** :
+- [ ] Tracking `tables.assigned_at` + `tables.cleared_at` sur chaque cycle de service.
+- [ ] RPC `compute_table_turnover(p_start, p_end)` : durée moyenne par table + ticket moyen + nombre rotations/jour.
+- [ ] Page `/reports/operations/table-turnover` avec breakdown par section / capacité.
+- [ ] Export CSV / PDF.
+**Dépend de** : tracking heures occupation table (existe ou à instrumenter).
+**Estimation** : M
+**Risques** : si tracking incomplet, périodes manquantes biaisent les moyennes — exclure.
+**Notes** : utile pour le maitre d'hôtel et l'optimisation capacité.
+
+### TASK-14-018 — Report "Sales By Brand" [P3] [TODO]
+**Contexte** : placeholder déjà câblé. Aucun découpage CA par marque pour les rayons multi-marques (ex: café Synesso vs Stumptown).
+**Bénéfice attendu** : suivre la performance par marque chez les fournisseurs multi-marques.
+**Critère d'acceptation** :
+- [ ] Champ `products.brand_id` (FK table `brands` à créer si absent).
+- [ ] Page `/reports/sales/by-brand` : classement CA par marque + part de marché interne.
+- [ ] Export CSV / PDF.
+**Dépend de** : modèle `brands` à valider.
+**Estimation** : S
+**Risques** : taxonomie marques non maintenue — UI CRUD légère dans Settings.
+**Notes** : placeholder existant à compléter.
+
+### TASK-14-019 — Report "Purchase Returns" (suivi retours fournisseurs) [P3] [TODO]
+**Contexte** : placeholder déjà câblé. Aucun suivi consolidé des retours fournisseurs (volume, motifs, fournisseur).
+**Bénéfice attendu** : identifier les fournisseurs problématiques et chiffrer la valeur des retours.
+**Critère d'acceptation** :
+- [ ] RPC `get_purchase_returns(p_start, p_end, p_supplier_id)` : retours, motifs, montants.
+- [ ] Page `/reports/purchases/returns` avec breakdown supplier × motif.
+- [ ] Drill-down → détail retour + lien PO source.
+- [ ] Export CSV / PDF.
+**Dépend de** : `TASK-07-013` (avoir comptable sur retour) pour cohérence.
+**Estimation** : S
+**Risques** : aucune.
+**Notes** : placeholder existant à compléter.
+
+### TASK-14-020 — Report "Outgoing Stocks" (vue agrégée sorties) [P3] [TODO]
+**Contexte** : placeholder déjà câblé. Aucune vue agrégée des sorties de stock (ventes + casse + transferts) sur une période.
+**Bénéfice attendu** : vision consolidée "où part mon stock" pour audit + comprehension flux.
+**Critère d'acceptation** :
+- [ ] RPC `get_outgoing_stocks(p_start, p_end, p_product_id)` : sorties par type (sale, waste, transfer_out, production_consumption).
+- [ ] Page `/reports/inventory/outgoing-stocks` avec donut par type + table détaillée.
+- [ ] Drill-down → liste des mouvements concernés.
+- [ ] Export CSV / PDF.
+**Dépend de** : aucune.
+**Estimation** : S
+**Risques** : aucune.
+**Notes** : placeholder existant à compléter.
