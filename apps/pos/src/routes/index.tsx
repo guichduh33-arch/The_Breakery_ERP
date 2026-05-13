@@ -8,6 +8,12 @@ const KdsPage = lazy(() => import('@/pages/Kds'));
 const TabletLayout = lazy(() => import('@/pages/tablet/TabletLayout'));
 const TabletOrderPage = lazy(() => import('@/pages/tablet/TabletOrderPage'));
 const TabletOrdersPage = lazy(() => import('@/pages/tablet/TabletOrdersPage'));
+// Session 13 / Phase 4.C — D-4C-4 : `/display` route is publicly navigable.
+// No <Protected> guard — kiosk JWT (issued via kiosk-issue-jwt EF) replaces
+// the staff PIN session. Unpaired devices land on the pair-prompt UI.
+const CustomerDisplayPage = lazy(
+  () => import('@/features/display/CustomerDisplayPage'),
+);
 
 function Protected({ children }: { children: ReactNode }) {
   const isAuth = useAuthStore((s) => s.isAuthenticated);
@@ -35,6 +41,14 @@ export function AppRoutes() {
               <KdsPage />
             </Suspense>
           </Protected>
+        }
+      />
+      <Route
+        path="/display"
+        element={
+          <Suspense fallback={<RouteFallback />}>
+            <CustomerDisplayPage />
+          </Suspense>
         }
       />
       <Route
