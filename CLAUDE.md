@@ -11,6 +11,17 @@
 - Keep files under 500 lines
 - Validate input at system boundaries
 
+## Active Workplan
+
+> Read this **before** opening code on inventory work.
+
+- **Current session:** Session 12 — Inventory Complete (8 phases). INDEX: [`docs/workplan/plans/2026-05-12-session-12-inventory-complete-INDEX.md`](docs/workplan/plans/2026-05-12-session-12-inventory-complete-INDEX.md). Spec: [`docs/workplan/specs/2026-05-12-session-12-inventory-complete-spec.md`](docs/workplan/specs/2026-05-12-session-12-inventory-complete-spec.md).
+- **Module reference (canonical):** [`docs/reference/04-modules/06-inventory-stock.md`](docs/reference/04-modules/06-inventory-stock.md) — Parts I/II/III/IV (fonctionnel, technique, backlog, design).
+- **Backlog opérationnel:** [`docs/workplan/backlog-by-module/06-inventory-stock.md`](docs/workplan/backlog-by-module/06-inventory-stock.md).
+- **Execution skill:** invoke `superpowers:subagent-driven-development` (or `superpowers:executing-plans`) before running a phase. Each phase is isolated → one subagent per phase, parallelizable post-Phase 1.
+- **Workplan layout:** `docs/workplan/{plans,specs,backlog-by-module}/`. Plans/specs are **dated, append-only history** — never rewrite past plans; create a new dated file. Backlog files are living docs (update in place).
+- **Migration sequence active:** `20260516xxxxxx_*.sql` (Phase 1 = 01-11 MVP foundations + idempotency fixes ; Phase 2 = 12-20 sections / units / movement_type enum / section_stock). Keep numbering monotonic — check `supabase/migrations/` before picking the next number.
+
 ## Project Conventions (The Breakery ERP)
 
 ### Critical patterns — don't break these
@@ -18,10 +29,15 @@
 - **Realtime channel names must be unique per mount** — StrictMode double-mounts components and shared channel names collide silently. See `apps/pos/src/features/kds/hooks/useKdsRealtime.ts`.
 - **`packages/domain` is IO-free** — no `fetch`, no Supabase, no React. Pure TS, unit-testable.
 - **Order writes go through RPCs** — never raw inserts. RPCs: `complete_order` (v6), `pay_existing_order` (v3), `create_tablet_order`, `pickup_tablet_order`, `evaluate_promotions`, `mark_item_served`. They handle JE triggers, loyalty, promotions, table state atomically.
+- **`stock_movements` is an append-only ledger** — RLS revokes UPDATE/DELETE for `authenticated`. All writes go through SECURITY DEFINER RPCs (`record_stock_movement_v1` primitive ; `adjust_stock_v1`, `receive_stock_v1`, `record_incoming_stock_v1`, `waste_stock_v1`, future `*_transfer_v1` / `record_production_v1` / `finalize_opname_v1`). Never `INSERT INTO stock_movements` directly from app code or tests.
+- **`stock_movements.unit` is NOT NULL** — any direct insert (tests, fixtures, RPCs) must populate `unit`. The `record_stock_movement_v1` primitive auto-resolves from `products.unit` if NULL is passed — don't bypass it. See migration `20260516000019_fix_record_stock_movement_v1_unit.sql`.
+- **`stock_movements` section constraint is movement-type-aware** — `transfer_in/out` require both `from_section_id` AND `to_section_id` ; `adjustment*`, `waste`, `incoming`, `purchase`, `sale*`, `production*`, `opname*` require at least one (relaxed in migration `20260516000020`). Don't tighten without re-checking all RPCs.
+- **Inventory RPCs accept `p_idempotency_key UUID`** — replay returns the existing movement row instead of doubling it. Always pass one from the client on retry-able mutations.
+- **RPC versioning is monotonic** — never edit a published `_vN` signature. Create `_vN+1` and `DROP FUNCTION ... vN(<old args>)` in the same migration if replacing. See `20260516000019` (drop original `record_stock_movement_v1` then recreate with `unit`).
 
 ### Git
-- Branches: `swarm/session-N` for ongoing work, `feat/<scope>` or `fix/<scope>` for focused PRs.
-- Commits: conventional commits (`feat(scope): …`, `fix(scope): …`, `test(scope): …`, `docs(scope): …`, `refactor(scope): …`). Co-author Claude when AI-assisted.
+- Branches: `swarm/session-N` for ongoing session work, `feat/<scope>` or `fix/<scope>` for focused PRs. For phased plans, prefer `swarm/session-N` and squash-merge per phase.
+- Commits: conventional commits (`feat(scope): …`, `fix(scope): …`, `test(scope): …`, `docs(scope): …`, `refactor(scope): …`). For session 12 phases: `feat(db|domain|ui|backoffice): session 12 — phase X — <topic>`. Co-author Claude when AI-assisted.
 
 ## Agent Comms (SendMessage-First Coordination)
 
@@ -166,7 +182,23 @@ pnpm db:reset                # supabase db reset (re-applies migrations + seed)
 pnpm db:types                # regenerate packages/supabase/src/types.generated.ts
 ```
 
-After Supabase schema changes (new migration), always run `pnpm db:types` and commit the regenerated file.
+Targeted iteration (much faster than full suite during phase work):
+
+```bash
+pnpm --filter @breakery/supabase test inventory     # Vitest live RPC tests
+pnpm --filter @breakery/backoffice test inventory   # BO smoke + unit
+pnpm --filter @breakery/domain test inventory       # pure-TS unit
+pnpm test:pgtap                                      # pgTAP suite (supabase/tests/*.test.sql)
+bash supabase/tests/run_pgtap.sh inventory_phase1_complete   # one pgTAP file
+```
+
+After Supabase schema changes (new migration), **always** run `pnpm db:reset && pnpm db:types` and commit the regenerated `packages/supabase/src/types.generated.ts`. A missing regen is the #1 cause of broken CI on this repo.
+
+### Inventory phase test layout
+- pgTAP (DB): `supabase/tests/inventory.test.sql` (steady-state suite) + `supabase/tests/inventory_phase1_complete.test.sql` (phase 1 acceptance — T1-T15+).
+- Vitest live RPC: `supabase/tests/functions/inventory-*.test.ts` (per-phase, one file per RPC family).
+- Domain unit: co-located `__tests__/` in `packages/domain/src/inventory/`.
+- BO smoke/unit: co-located `__tests__/` in `apps/backoffice/src/features/inventory*/`.
 
 ## CLI Quick Reference
 
