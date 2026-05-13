@@ -666,3 +666,238 @@ rows and ambiguous receipt formatting at print time.
 - Manual test : flipping is_default on a second row demotes the first
   via the client hook ; without the hook, the index would raise a unique
   violation.
+
+---
+
+## Phase 5.A — LAN architecture port (hybrid Realtime + BroadcastChannel)
+
+### D-W5-5A-01 — `print_queue.device_id` FK deferred to migration `000171`
+
+**INDEX spec says:** Migration `000170_init_print_queue.sql` ships
+`print_queue` with `device_id UUID REFERENCES lan_devices(id) ON DELETE SET NULL`.
+
+**What landed:** Migration `000170` ships `device_id UUID` (no FK).
+Migration `000171_init_lan_devices.sql` then ALTERs the table to add
+`print_queue_device_id_fkey` after `lan_devices` exists.
+
+#### Cause
+
+`apply_migration` runs each migration as an isolated transaction —
+forward references across migrations would fail under "cold-apply"
+(applying 000170 against a database missing `lan_devices` would
+crash). Splitting the FK creation into the next migration keeps each
+file independently applyable, which is required by the cloud staging
+workflow (`mcp__plugin_supabase_supabase__apply_migration` calls are
+discrete).
+
+#### Resolution
+
+- 000170 declares the column without a FK.
+- 000171 issues `ALTER TABLE print_queue ADD CONSTRAINT
+  print_queue_device_id_fkey FOREIGN KEY (device_id) REFERENCES
+  lan_devices(id) ON DELETE SET NULL;`.
+
+#### Verification
+
+- pgTAP `T_LD_07` asserts the FK exists by name after both migrations.
+- Migration order verified : `list_migrations` returns 000170 then 000171
+  on staging `ikcyvlovptebroadgtvd`.
+
+---
+
+### D-W5-5A-02 — `mark_print_failed_v1` requeues up to 3 retries (4 total attempts)
+
+**INDEX spec says:** "Worker retries `pending` (3 attempts max, backoff
+5s / 15s / 60s) ; after 3 failures → status `failed`".
+
+**What landed:** RPC contract :
+- 1st fail (`retries=0 -> 1`) -> `queued`
+- 2nd fail (`retries=1 -> 2`) -> `queued`
+- 3rd fail (`retries=2 -> 3`) -> `queued`
+- 4th fail (`retries=3 -> 4`) -> `failed` (terminal)
+
+That is **3 retries + 1 initial attempt = 4 total**, matching the
+INDEX intent ("3 attempts max" = 3 retries past the initial print).
+Backoff scheduling is NOT in the SQL — it's left to the print-server
+worker process, which polls `claim_print_job_v1` at its own cadence.
+
+#### Cause
+
+DB-side cron/backoff would require `pg_cron` + a separate dispatcher
+function ; the print-server worker process (separate Node service)
+already polls in a loop, so the schedule belongs there. Keeping the
+DB primitive simple (immediate requeue on fail, no `scheduled_for`
+column) lets the worker layer evolve independently.
+
+#### Resolution
+
+- RPC requeues until `retries >= 3` ; on the 4th failure, status flips
+  to terminal `failed` and the worker stops polling that row.
+- The print-server worker (not part of this phase) is expected to honor
+  a 5s/15s/60s backoff between claims targeted at the failed device.
+
+#### Verification
+
+- pgTAP `T_PQ_07` exercises the 4-fail sequence and asserts
+  `(queued, queued, queued, failed)` transitions.
+- Vitest live test `T_PQ_LIVE_05` repeats the cycle against the real
+  RPC.
+
+---
+
+### D-W5-5A-03 — D19 channel uniqueness applied to LAN hooks (UUID inside useEffect)
+
+**INDEX spec lines 897 reference:** ``useMemo(() => `lan-${deviceId}-${Math.random().toString(36).slice(2, 9)}`, [deviceId])``.
+
+**What landed:** all 3 new hooks (`useLanHub`, `useLanClient`,
+`useLanHeartbeat`) generate `crypto.randomUUID()` **inside**
+`useEffect`, NOT via component-body `useMemo`. Mirrors the
+Wave 4 hotfixes D-W4-4B-05 (`useKdsRealtime`) and D-W4-4C-03
+(`useDisplayRealtime`).
+
+#### Cause
+
+`useMemo(() => crypto.randomUUID(), [])` looks correct but is broken in
+StrictMode dev mode :
+- React invokes `useMemo` during *render*.
+- StrictMode discards the first render's result and runs the body for
+  the second render.
+- The second render's UUID survives, but **both effect mounts then run
+  with that same UUID** — channel-name collision.
+
+Generating the UUID inside the effect (which runs once per effect
+cycle, not per render) sidesteps this.
+
+#### Resolution
+
+Each hook follows the pattern :
+
+```ts
+useEffect(() => {
+  const channelKeySuffix = crypto.randomUUID();
+  const hub = new LanHub({ ..., channelKeySuffix });
+  hub.start();
+  return () => hub.stop();
+}, [...]);
+```
+
+#### Verification
+
+- `useLanHub.uniqueChannel.test.tsx` asserts StrictMode double-mount
+  produces 2 distinct channel names ; non-Strict produces 1.
+- Grep audit : `grep -RE "supabase\.channel\(['\"][^'\"]*['\"]\)" apps/pos/src/features/lan/` returns 0 hits.
+
+---
+
+### D-W5-5A-04 — LanHub / LanClient use loose `any` types for the Supabase client
+
+**INDEX spec says (implicitly):** typed integration with
+`@supabase/supabase-js` types.
+
+**What landed:** `lanHub.ts` / `lanClient.ts` / `lanHubMessageHandler.ts`
+declare local `type SupabaseClient = any` and `type RealtimeChannel = any`
+instead of importing from `@supabase/supabase-js`.
+
+#### Cause
+
+`@supabase/supabase-js` is NOT a direct dependency of `@breakery/app-pos`
+(it's a transitive dep via `@breakery/supabase`). Importing types from
+it would require adding the dep + a peer-dep declaration. The
+runtime client is obtained via `@/lib/supabase` (which itself imports
+from `@breakery/supabase`), so the types are erased at runtime anyway.
+The other LAN-adjacent files (`useKdsOrders.ts`, `useBumpItem.ts`)
+follow the same pattern.
+
+#### Resolution
+
+- Use local `any` types for `SupabaseClient` and `RealtimeChannel`.
+- Each `any` is justified by an eslint-disable comment.
+- Future improvement : expose typed wrappers from `@breakery/supabase`
+  (out-of-scope for Phase 5.A).
+
+#### Verification
+
+- POS typecheck passes (`pnpm --filter @breakery/app-pos typecheck` -> 0 errors).
+- The few `(supabase as any)` casts are confined to LAN files.
+
+---
+
+### D-W5-5A-05 — Hub handler dispatches `kds.bump` to print queue, NOT to KDS RPCs
+
+**INDEX spec says (Task 21-002):** "Hub handles KDS_ORDER_ACK, KDS_ORDER_READY,
+KDS_ORDER_BUMP, KDS_ITEM_PREPARING, KDS_ITEM_READY ... Hub updates
+order_items.kds_status or broadcasts to display/POS for synchro UI".
+
+**What landed:** `lanHubMessageHandler.ts` handles a *minimal* KDS
+contract :
+- `kds.bump` -> invalidate `kds` + `orders` caches + enqueue kitchen-chit
+  print job (when `new_status === 'preparing'`).
+- `kds.recall` / `kds.undo` -> invalidate `kds` cache only.
+
+Status mutations themselves happen in the originating device's RPC
+call (`kds_bump_item_v1`, `kds_recall_order_v1`, `kds_undo_bump_v1` —
+all from Phase 4.B). The hub is the **fanout layer**, not the
+state owner.
+
+#### Cause
+
+V2's monolithic hub had to mutate state directly because there were no
+RPCs — RLS was less strict and the hub had service-role privileges.
+V3 routes every state change through SECURITY DEFINER RPCs (Phase 4.B
+KDS work). Re-implementing the state machine in the hub would
+duplicate the RPC contract and risk RLS bypass on misconfigured
+clients. The hub's job is now (a) dedup, (b) fanout, (c) side-effects
+that depend on cross-device visibility (kitchen-chit print, heartbeat
+table write).
+
+#### Resolution
+
+- 21-001 (dedup) : `MessageDedup` ring per hub/client.
+- 21-002 (KDS handlers) : subset — `kds.bump/recall/undo` invalidate
+  downstream caches.
+- 21-003 (print target) : `print.result` envelopes carry `to=msg.from`
+  (targeted reply, not broadcast).
+- 21-004 (print queue) : `enqueue_print_job_v1` called from
+  `handleKdsBump` + `handlePrintRequest`.
+- 21-005..011 (failover, persistence, diagnostics, etc.) : OUT OF
+  SCOPE for Phase 5.A — deferred to Wave 6+.
+
+#### Verification
+
+- `lanHub.dedup.test.ts` covers (1) + envelope guard + self-echo.
+- `useLanHub.uniqueChannel.test.tsx` covers D19 channel-name uniqueness.
+- pgTAP `print_queue.test.sql` + `lan_devices.test.sql` cover the
+  RPC contracts.
+
+---
+
+### D-W5-5A-06 — `useKdsRealtime` extended with optional `onEvent` callback (non-breaking)
+
+**INDEX spec says:** "useKdsRealtime adds LAN broadcast on bump".
+
+**What landed:** `useKdsRealtime(station, opts?: { onEvent?: (payload) => void })`.
+Existing call site (`apps/pos/src/pages/Kds.tsx`) passes a single
+argument — `opts` defaults to `{}` so no caller breaks. New callers
+(e.g., a future `useKdsLanBridge`) can wire `useLanClient.send()` to
+`opts.onEvent`.
+
+#### Cause
+
+Tightly coupling `useKdsRealtime` to LAN transport would force the KDS
+hook to depend on the LAN feature graph (LanClient, MessageDedup,
+broadcast lifecycle). That couples two independent concerns (DB
+subscription + LAN mesh) and breaks the existing
+`useKdsRealtime.uniqueChannel.test.tsx` mock surface. The optional
+callback keeps both responsibilities orthogonal — the KDS hook stays
+DB-only ; bridging to LAN is opt-in at the call site.
+
+#### Resolution
+
+- Hook signature : `useKdsRealtime(station, opts?: { onEvent?: ... })`.
+- Hook fires `opts.onEvent(payload)` on every order_items change.
+- Existing call site at `apps/pos/src/pages/Kds.tsx:37` unchanged.
+
+#### Verification
+
+- `useKdsRealtime.uniqueChannel.test.tsx` still green (2 tests).
+- Compatibility : `useKdsRealtime('kitchen')` still compiles + works.
