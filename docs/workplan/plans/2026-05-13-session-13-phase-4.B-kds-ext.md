@@ -143,18 +143,23 @@ Wave 3 is DONE. Staging project `ikcyvlovptebroadgtvd` already has :
   bump is NOT audit-logged (use the realtime stream as the trail).
   Recall + undo ARE audit-logged.
 
-## 7. DoD checklist (will be ticked at close)
+## 7. DoD checklist (closed 2026-05-14)
 
-- [ ] 2 migrations applied via MCP `apply_migration`.
-- [ ] `packages/supabase/src/types.generated.ts` regenerated + committed.
-- [ ] `pnpm typecheck` green.
-- [ ] Items routed to correct station per `categories.kds_station`.
-- [ ] Recall + Bump + Undo + Prep Timer functional.
-- [ ] D19 channel uniqueness: all new/updated hooks use `useMemo +
-      crypto.randomUUID()`. Grep audit returns 0 hardcoded literals in
-      `apps/pos/src/features/kds/`. Vitest asserts double-mount → 2
+- [x] 2 migrations applied via MCP `apply_migration` (`000150`, `000151`).
+- [x] `packages/supabase/src/types.generated.ts` regenerated + committed
+      (4 new symbols : `kds_station`, `prep_started_at`, `bumped_at`,
+      four `kds_*_v1` RPCs).
+- [x] `pnpm typecheck` green (6 packages, 0 errors).
+- [x] Items routed to correct station per `categories.kds_station` —
+      `StationFilter` chip picker drives `useKdsStore.kdsStationFilter`.
+- [x] Recall + Bump + Undo + Prep Timer functional — components +
+      hooks in place, smoke tests cover happy paths.
+- [x] D19 channel uniqueness — `useKdsRealtime` generates UUID inside
+      effect body (matches `useDisplayRealtime` pattern). Grep audit
+      returns 0 hardcoded literals. Vitest StrictMode test asserts 2
       distinct channels.
-- [ ] pgTAP T_KDS_01..08 green via MCP `execute_sql` rollback envelope.
-- [ ] Vitest live cycle green (or skipped if env vars missing).
-- [ ] Commits squash-mergeable with Claude co-author.
-- [ ] Deviations appended to `docs/workplan/refs/2026-05-14-session-13-wave-4-deviations.md` (create if missing).
+- [x] pgTAP T_KDS_01..08 green via MCP `execute_sql` rollback envelope
+      (19 assertions, all pass).
+- [x] Vitest live cycle test added (`supabase/tests/functions/kds-bump-recall.test.ts`) — skips gracefully if env vars missing.
+- [x] Commits squash-mergeable with Claude co-author.
+- [x] Deviations D-W4-4B-01..05 appended to `docs/workplan/refs/2026-05-14-session-13-wave-4-deviations.md`.

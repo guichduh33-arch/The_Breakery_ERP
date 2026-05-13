@@ -6,6 +6,25 @@
 //
 // Cleanup is mandatory: removing the channel on unmount/station change
 // prevents the V2-era leak documented in session 1.
+//
+// Session 13 / Phase 4.B — extended to also surface `bumped_at` and
+// `prep_started_at` column updates. The `event: '*'` filter already
+// captures every UPDATE on order_items so no payload-level changes are
+// needed ; we just refresh the kds query as before. Preserves D19
+// per-effect-mount unique-channel pattern.
+//
+// D19 — Channel-name uniqueness pattern (Wave 1 hotfix). Under StrictMode,
+// React double-invokes effects in dev ; with a static channel name the
+// second mount's `.on()` runs against the still-subscribed channel from
+// the first mount (`removeChannel` is async). Each effect mount generates
+// its own `crypto.randomUUID()` suffix → 2 distinct channel names under
+// StrictMode (verified by `useKdsRealtime.uniqueChannel.test.tsx`).
+//
+// IMPORTANT : we generate the UUID INSIDE the effect, NOT via a
+// component-body `useMemo`. In StrictMode the useMemo from the first
+// render is discarded and the second-render UUID is reused across both
+// effect mounts → channel-name collision. The effect body, by contrast,
+// runs once per effect cycle, so each mount produces its own UUID.
 
 import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -17,9 +36,6 @@ export function useKdsRealtime(station: KdsStation): void {
   const qc = useQueryClient();
 
   useEffect(() => {
-    // StrictMode double-invokes effects in dev; with a static channel name the
-    // second mount's .on() runs against the still-subscribed channel from the
-    // first mount (removeChannel is async). Suffix with a per-mount UUID.
     const channelName = `kds-${station}-${crypto.randomUUID()}`;
     const channel = supabase
       .channel(channelName)
