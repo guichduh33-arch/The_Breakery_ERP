@@ -56,6 +56,12 @@ interface CartState {
   /** Set when a tablet order is picked up; directs checkout to pay_existing_order RPC. */
   pickedUpOrderId: string | null;
   /**
+   * Session 13 / Phase 4.A — true when the device has lost network. Drives
+   * read-only graceful degradation in the UI (browse cached products,
+   * disable order completion). Updated via {@link initNetworkListener}.
+   */
+  isOffline: boolean;
+  /**
    * Session 9 — currently applied promotions (latest evaluator output).
    * In-memory only ; the auto-eval orchestrator recomputes this on every
    * cart/customer/dismissal change.
@@ -126,6 +132,13 @@ interface CartState {
    * automatically when the user removes a gift line via `remove()`.
    */
   dismissPromotion: (promotionId: string) => void;
+
+  /**
+   * Session 13 / Phase 4.A — toggle the offline flag explicitly. Used by
+   * {@link initNetworkListener} when `online`/`offline` events fire, and by
+   * tests that simulate split-network conditions.
+   */
+  setOffline: (offline: boolean) => void;
 }
 
 export const useCartStore = create<CartState>()(
@@ -137,9 +150,25 @@ export const useCartStore = create<CartState>()(
       pickedUpOrderId: null,
       appliedPromotions: [],
       dismissedPromotionIds: new Set<string>(),
+      // Initialise pessimistically from navigator.onLine when available so
+      // the first render reflects the real state even if the listener hasn't
+      // been wired up yet. Default to `false` in non-browser test envs.
+      isOffline:
+        typeof navigator !== 'undefined' && typeof navigator.onLine === 'boolean'
+          ? !navigator.onLine
+          : false,
 
       add: (product, modifiers = [], unitPriceOverride) =>
-        set((s) => ({ cart: addItem(s.cart, product, modifiers, 1, unitPriceOverride) })),
+        set((s) => {
+          // Offline guard — pre-checkout edits are allowed (the cart is local
+          // state and we want the cashier to keep ringing items up) but the
+          // payment flow will block. This keeps the UX consistent with the
+          // CLAUDE.md "read-only graceful degradation" rule : you can BROWSE
+          // and BUILD a cart offline, but you cannot complete an order until
+          // connectivity is back. We do NOT short-circuit add() here ; the
+          // ProcessPayment button reads `isOffline` and disables itself.
+          return { cart: addItem(s.cart, product, modifiers, 1, unitPriceOverride) };
+        }),
 
       update: (id, qty) =>
         set((s) => {
@@ -331,10 +360,16 @@ export const useCartStore = create<CartState>()(
           next.add(promotionId);
           return { dismissedPromotionIds: next };
         }),
+
+      setOffline: (offline) => set({ isOffline: offline }),
     }),
     {
       name: 'breakery.cart.v2',
       storage: createJSONStorage(() => sessionStorage),
+      // We persist `cart` + lock state + customer + pickup so a StrictMode
+      // double-mount / tab reload / realtime reconnect doesn't drop pending
+      // edits. `isOffline` is intentionally NOT persisted — it is recomputed
+      // from `navigator.onLine` on rehydrate (and live-updated by the listener).
       partialize: (state) => ({
         cart: state.cart,
         lockedItemIds: state.lockedItemIds,
@@ -344,6 +379,30 @@ export const useCartStore = create<CartState>()(
     },
   ),
 );
+
+/**
+ * Wire `window.online` / `window.offline` listeners onto the cart store so the
+ * `isOffline` flag tracks connectivity. Returns a cleanup function — callers
+ * should invoke it on unmount (typically wired once at the app root).
+ *
+ * Safe to call in non-browser envs (no-op) ; safe to call multiple times — the
+ * cleanup returned by the latest call should be used to detach.
+ */
+export function initNetworkListener(): () => void {
+  if (typeof window === 'undefined') return () => {};
+  const onOnline = (): void => useCartStore.getState().setOffline(false);
+  const onOffline = (): void => useCartStore.getState().setOffline(true);
+  // Sync immediately in case the page loaded while offline.
+  if (typeof navigator !== 'undefined' && typeof navigator.onLine === 'boolean') {
+    useCartStore.getState().setOffline(!navigator.onLine);
+  }
+  window.addEventListener('online', onOnline);
+  window.addEventListener('offline', onOffline);
+  return () => {
+    window.removeEventListener('online', onOnline);
+    window.removeEventListener('offline', onOffline);
+  };
+}
 
 /**
  * Reset the entire cart and lock state. Called by the payment flow once an
