@@ -434,8 +434,79 @@ BEGIN
 END $$;
 SELECT ok(current_setting('breakery.t_prod_12_pass') IN ('yes','skip'),
   'T_PROD_12: idempotency replay same production_id, no duplicate');
-SELECT pass('T_PROD_13: PLACEHOLDER — revert_production_v1 forbidden for manager');
-SELECT pass('T_PROD_14: PLACEHOLDER — revert_production_v1 happy path reverses stock');
+-- ---------------------------------------------------------------------------
+-- T_PROD_13 — MANAGER → forbidden on revert_production_v1
+-- ---------------------------------------------------------------------------
+DO $$
+DECLARE v_mgr UUID; v_caught TEXT; v_dummy UUID := gen_random_uuid();
+BEGIN
+  SELECT auth_user_id INTO v_mgr FROM user_profiles WHERE employee_code='EMP003';
+  IF v_mgr IS NULL THEN
+    PERFORM set_config('breakery.t_prod_13_pass','skip',true); RETURN;
+  END IF;
+  PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
+  PERFORM set_config('role','authenticated',true);
+  BEGIN
+    PERFORM revert_production_v1(v_dummy, 'test reason');
+    v_caught := 'no_raise';
+  EXCEPTION WHEN OTHERS THEN v_caught := SQLERRM;
+  END;
+  PERFORM set_config('role','postgres',true);
+  PERFORM set_config('breakery.t_prod_13_pass',
+    CASE WHEN v_caught='forbidden' THEN 'yes' ELSE 'no' END, true);
+END $$;
+SELECT ok(current_setting('breakery.t_prod_13_pass') IN ('yes','skip'),
+  'T_PROD_13: MANAGER → forbidden on revert_production_v1');
+
+-- ---------------------------------------------------------------------------
+-- T_PROD_14 — ADMIN reverts → stock restored + balanced ledger
+-- ---------------------------------------------------------------------------
+DO $$
+DECLARE
+  v_mgr UUID; v_adm UUID;
+  v_bag UUID := current_setting('breakery.t_prod_baguette')::uuid;
+  v_flo UUID := current_setting('breakery.t_prod_flour')::uuid;
+  v_section UUID;
+  v_pid UUID; v_result JSONB; v_revert JSONB;
+  v_bag_before NUMERIC; v_flo_before NUMERIC;
+  v_bag_after NUMERIC;  v_flo_after NUMERIC;
+  v_reverted_at TIMESTAMPTZ;
+BEGIN
+  SELECT auth_user_id INTO v_mgr FROM user_profiles WHERE employee_code='EMP003';
+  SELECT auth_user_id INTO v_adm FROM user_profiles WHERE employee_code='EMP000';
+  IF v_mgr IS NULL OR v_adm IS NULL THEN
+    PERFORM set_config('breakery.t_prod_14_pass','skip',true); RETURN;
+  END IF;
+  UPDATE products SET current_stock=100 WHERE id=v_flo;
+  UPDATE products SET current_stock=0   WHERE id=v_bag;
+  SELECT current_stock INTO v_bag_before FROM products WHERE id=v_bag;
+  SELECT current_stock INTO v_flo_before FROM products WHERE id=v_flo;
+  SELECT id INTO v_section FROM sections WHERE deleted_at IS NULL ORDER BY display_order LIMIT 1;
+
+  PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
+  PERFORM set_config('role','authenticated',true);
+  PERFORM upsert_recipe_v1(v_bag, v_flo, 250, 'g', NULL);
+  v_result := record_production_v1(v_bag, 50, v_section, NULL, 0, NULL, NULL);
+  v_pid := (v_result->>'production_id')::uuid;
+
+  PERFORM set_config('request.jwt.claim.sub', v_adm::text, true);
+  v_revert := revert_production_v1(v_pid, 'pgTAP test reversal');
+  PERFORM set_config('role','postgres',true);
+
+  SELECT current_stock INTO v_bag_after FROM products WHERE id=v_bag;
+  SELECT current_stock INTO v_flo_after FROM products WHERE id=v_flo;
+  SELECT reverted_at INTO v_reverted_at FROM production_records WHERE id=v_pid;
+
+  PERFORM set_config('breakery.t_prod_14_pass',
+    CASE WHEN v_bag_after = v_bag_before
+              AND v_flo_after = v_flo_before
+              AND v_reverted_at IS NOT NULL
+              AND (v_revert->>'reverse_movements_count')::int = 2
+              AND (v_revert->>'reverse_je_count')::int = 2
+         THEN 'yes' ELSE 'no' END, true);
+END $$;
+SELECT ok(current_setting('breakery.t_prod_14_pass') IN ('yes','skip'),
+  'T_PROD_14: ADMIN reverts → stock restored + balanced ledger');
 SELECT pass('T_PROD_15: PLACEHOLDER — get_production_suggestions_v1 returns rows');
 
 SELECT * FROM finish();
