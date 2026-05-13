@@ -265,11 +265,175 @@ BEGIN
 END $$;
 SELECT ok(current_setting('breakery.t_prod_07_pass') IN ('yes','skip'),
   'T_PROD_07: ADMIN deactivates recipe → is_active=false + deleted_at set');
-SELECT pass('T_PROD_08: PLACEHOLDER — record_production_v1 forbidden for cashier');
-SELECT pass('T_PROD_09: PLACEHOLDER — record_production_v1 qty<=0 rejected');
-SELECT pass('T_PROD_10: PLACEHOLDER — record_production_v1 insufficient_stock');
-SELECT pass('T_PROD_11: PLACEHOLDER — record_production_v1 happy path (5 movements + JEs)');
-SELECT pass('T_PROD_12: PLACEHOLDER — record_production_v1 idempotent replay');
+-- ---------------------------------------------------------------------------
+-- T_PROD_08 — CASHIER → forbidden on record_production_v1
+-- ---------------------------------------------------------------------------
+DO $$
+DECLARE v_cash_auth UUID; v_caught TEXT; v_dummy UUID := gen_random_uuid();
+BEGIN
+  SELECT auth_user_id INTO v_cash_auth FROM user_profiles WHERE employee_code='EMP001';
+  IF v_cash_auth IS NULL THEN
+    PERFORM set_config('breakery.t_prod_08_pass','skip',true); RETURN;
+  END IF;
+  PERFORM set_config('request.jwt.claim.sub', v_cash_auth::text, true);
+  PERFORM set_config('role', 'authenticated', true);
+  BEGIN
+    PERFORM record_production_v1(v_dummy, 10, NULL, NULL, 0, NULL, NULL);
+    v_caught := 'no_raise';
+  EXCEPTION WHEN OTHERS THEN v_caught := SQLERRM;
+  END;
+  PERFORM set_config('role','postgres',true);
+  PERFORM set_config('breakery.t_prod_08_pass', CASE WHEN v_caught='forbidden' THEN 'yes' ELSE 'no' END, true);
+END $$;
+SELECT ok(current_setting('breakery.t_prod_08_pass') IN ('yes','skip'),
+  'T_PROD_08: CASHIER → forbidden on record_production_v1');
+
+-- ---------------------------------------------------------------------------
+-- T_PROD_09 — qty <= 0 rejected with quantity_must_be_positive
+-- ---------------------------------------------------------------------------
+DO $$
+DECLARE v_mgr UUID; v_bag UUID := current_setting('breakery.t_prod_baguette')::uuid; v_caught TEXT;
+BEGIN
+  SELECT auth_user_id INTO v_mgr FROM user_profiles WHERE employee_code='EMP003';
+  IF v_mgr IS NULL THEN
+    PERFORM set_config('breakery.t_prod_09_pass','skip',true); RETURN;
+  END IF;
+  PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
+  PERFORM set_config('role','authenticated',true);
+  BEGIN
+    PERFORM record_production_v1(v_bag, 0, NULL, NULL, 0, NULL, NULL);
+    v_caught := 'no_raise';
+  EXCEPTION WHEN OTHERS THEN v_caught := SQLERRM;
+  END;
+  PERFORM set_config('role','postgres',true);
+  PERFORM set_config('breakery.t_prod_09_pass',
+    CASE WHEN v_caught='quantity_must_be_positive' THEN 'yes' ELSE 'no' END, true);
+END $$;
+SELECT ok(current_setting('breakery.t_prod_09_pass') IN ('yes','skip'),
+  'T_PROD_09: qty <= 0 → quantity_must_be_positive');
+
+-- ---------------------------------------------------------------------------
+-- T_PROD_10 — insufficient_stock raised with missing items in DETAIL
+-- ---------------------------------------------------------------------------
+DO $$
+DECLARE
+  v_mgr UUID;
+  v_bag UUID := current_setting('breakery.t_prod_baguette')::uuid;
+  v_flo UUID := current_setting('breakery.t_prod_flour')::uuid;
+  v_caught TEXT; v_detail TEXT;
+BEGIN
+  SELECT auth_user_id INTO v_mgr FROM user_profiles WHERE employee_code='EMP003';
+  IF v_mgr IS NULL THEN
+    PERFORM set_config('breakery.t_prod_10_pass','skip',true); RETURN;
+  END IF;
+  -- Bring flour stock down to 0.5kg so 50 baguettes need 12.5kg → insufficient.
+  UPDATE products SET current_stock = 0.5 WHERE id = v_flo;
+  PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
+  PERFORM set_config('role','authenticated',true);
+  -- Ensure single recipe for clarity (deactivate any others on this product first)
+  -- Skipped to keep the test isolated.
+  PERFORM upsert_recipe_v1(v_bag, v_flo, 250, 'g', NULL);
+  BEGIN
+    PERFORM record_production_v1(v_bag, 50, NULL, NULL, 0, NULL, NULL);
+    v_caught := 'no_raise';
+  EXCEPTION WHEN OTHERS THEN
+    GET STACKED DIAGNOSTICS v_detail = PG_EXCEPTION_DETAIL;
+    v_caught := SQLERRM;
+  END;
+  PERFORM set_config('role','postgres',true);
+  PERFORM set_config('breakery.t_prod_10_pass',
+    CASE WHEN v_caught='insufficient_stock' AND v_detail LIKE '%Test Flour%' THEN 'yes' ELSE 'no' END, true);
+END $$;
+SELECT ok(current_setting('breakery.t_prod_10_pass') IN ('yes','skip'),
+  'T_PROD_10: insufficient_stock raised with missing material in DETAIL');
+
+-- ---------------------------------------------------------------------------
+-- T_PROD_11 — happy path : 50 baguettes → 1 in + 4 out + balanced JEs
+-- ---------------------------------------------------------------------------
+DO $$
+DECLARE
+  v_mgr UUID;
+  v_bag   UUID := current_setting('breakery.t_prod_baguette')::uuid;
+  v_flo   UUID := current_setting('breakery.t_prod_flour')::uuid;
+  v_salt  UUID := current_setting('breakery.t_prod_salt')::uuid;
+  v_yeast UUID := current_setting('breakery.t_prod_yeast')::uuid;
+  v_water UUID := current_setting('breakery.t_prod_water')::uuid;
+  v_section UUID;
+  v_result JSONB;
+  v_pid    UUID;
+  v_movements_count INT;
+  v_je_balanced INT;
+BEGIN
+  SELECT auth_user_id INTO v_mgr FROM user_profiles WHERE employee_code='EMP003';
+  IF v_mgr IS NULL THEN
+    PERFORM set_config('breakery.t_prod_11_pass','skip',true); RETURN;
+  END IF;
+  -- Refresh stocks
+  UPDATE products SET current_stock=100 WHERE id=v_flo;
+  UPDATE products SET current_stock=50  WHERE id=v_salt;
+  UPDATE products SET current_stock=10  WHERE id=v_yeast;
+  UPDATE products SET current_stock=200 WHERE id=v_water;
+  UPDATE products SET current_stock=0   WHERE id=v_bag;
+  SELECT id INTO v_section FROM sections WHERE deleted_at IS NULL ORDER BY display_order LIMIT 1;
+
+  PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
+  PERFORM set_config('role','authenticated',true);
+  PERFORM upsert_recipe_v1(v_bag, v_flo,   250, 'g',  NULL);
+  PERFORM upsert_recipe_v1(v_bag, v_salt,    5, 'g',  NULL);
+  PERFORM upsert_recipe_v1(v_bag, v_yeast,   5, 'g',  NULL);
+  PERFORM upsert_recipe_v1(v_bag, v_water, 150, 'mL', NULL);
+
+  v_result := record_production_v1(v_bag, 50, v_section, 'BATCH-T11', 0, NULL, NULL);
+  v_pid := (v_result->>'production_id')::uuid;
+  v_movements_count := (v_result->>'movements_count')::int;
+
+  SELECT COUNT(*) INTO v_je_balanced
+    FROM journal_entries je
+    JOIN stock_movements sm ON sm.id = je.reference_id
+    WHERE sm.metadata->>'production_id' = v_pid::text
+      AND je.total_debit = je.total_credit
+      AND je.total_debit > 0;
+
+  PERFORM set_config('role','postgres',true);
+  PERFORM set_config('breakery.t_prod_11_pass',
+    CASE WHEN v_movements_count=5 AND v_je_balanced=5 THEN 'yes' ELSE 'no' END, true);
+END $$;
+SELECT ok(current_setting('breakery.t_prod_11_pass') IN ('yes','skip'),
+  'T_PROD_11: 50-baguette happy path → 5 movements + 5 balanced JEs');
+
+-- ---------------------------------------------------------------------------
+-- T_PROD_12 — idempotency replay returns same production_id, no duplicate movements
+-- ---------------------------------------------------------------------------
+DO $$
+DECLARE
+  v_mgr UUID;
+  v_bag   UUID := current_setting('breakery.t_prod_baguette')::uuid;
+  v_flo   UUID := current_setting('breakery.t_prod_flour')::uuid;
+  v_section UUID;
+  v_key UUID := 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'::uuid;
+  v_r1 JSONB; v_r2 JSONB; v_dup INT;
+BEGIN
+  SELECT auth_user_id INTO v_mgr FROM user_profiles WHERE employee_code='EMP003';
+  IF v_mgr IS NULL THEN
+    PERFORM set_config('breakery.t_prod_12_pass','skip',true); RETURN;
+  END IF;
+  UPDATE products SET current_stock=100 WHERE id=v_flo;
+  UPDATE products SET current_stock=0   WHERE id=v_bag;
+  SELECT id INTO v_section FROM sections WHERE deleted_at IS NULL ORDER BY display_order LIMIT 1;
+  PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
+  PERFORM set_config('role','authenticated',true);
+  PERFORM upsert_recipe_v1(v_bag, v_flo, 250, 'g', NULL);
+  v_r1 := record_production_v1(v_bag, 50, v_section, 'B12', 0, NULL, v_key);
+  v_r2 := record_production_v1(v_bag, 50, v_section, 'B12', 0, NULL, v_key);
+  SELECT COUNT(*) INTO v_dup FROM production_records WHERE idempotency_key = v_key;
+  PERFORM set_config('role','postgres',true);
+  PERFORM set_config('breakery.t_prod_12_pass',
+    CASE WHEN (v_r1->>'production_id') = (v_r2->>'production_id')
+              AND (v_r2->>'idempotent_replay') = 'true'
+              AND v_dup = 1 THEN 'yes' ELSE 'no' END, true);
+END $$;
+SELECT ok(current_setting('breakery.t_prod_12_pass') IN ('yes','skip'),
+  'T_PROD_12: idempotency replay same production_id, no duplicate');
 SELECT pass('T_PROD_13: PLACEHOLDER — revert_production_v1 forbidden for manager');
 SELECT pass('T_PROD_14: PLACEHOLDER — revert_production_v1 happy path reverses stock');
 SELECT pass('T_PROD_15: PLACEHOLDER — get_production_suggestions_v1 returns rows');
