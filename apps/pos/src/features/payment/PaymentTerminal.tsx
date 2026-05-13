@@ -8,7 +8,7 @@
 // (the store will ship a single-element tenders array).
 
 import { useState } from 'react';
-import { X, ArrowLeft, Banknote, CreditCard, QrCode, Smartphone, ArrowRightLeft, Wallet, Plus } from 'lucide-react';
+import { AlertCircle, ArrowLeft, ArrowRightLeft, Banknote, CheckCircle2, CreditCard, Plus, QrCode, RefreshCw, Smartphone, Wallet, X } from 'lucide-react';
 import {
   Button, Currency, FullScreenModal, LoyaltyBadge, Numpad,
   PromotionLineRow, TenderListBuilder, cn,
@@ -16,6 +16,7 @@ import {
 import {
   calculateTotals, calculateChange, earnPointsForCustomer, tierFromLifetime, TIERS,
   validateTenders, sumTenders, computeRemaining,
+  classifyCheckoutError, type RetryClassification,
   type PaymentMethod, type Tender,
 } from '@breakery/domain';
 import { resetCartAfterCheckout, useCartStore } from '@/stores/cartStore';
@@ -112,6 +113,14 @@ export function PaymentTerminal() {
   const canProcess = remaining === 0 || fastPathReady;
 
   const [success, setSuccess] = useState<SuccessState | null>(null);
+  /**
+   * Phase 4.A — idempotency-aware retry state. When the RPC throws we keep
+   * the last shipped tenders array around (so the Retry button can resend
+   * the exact same payload — and crucially the same `idempotencyKey` from
+   * the store, which is regenerated only on close/reset).
+   */
+  const [lastError, setLastError] = useState<RetryClassification | null>(null);
+  const [lastTendersShipped, setLastTendersShipped] = useState<Tender[] | null>(null);
 
   function handleAddTender(): void {
     if (!selectedMethod || !draftValid) return;
@@ -154,6 +163,18 @@ export function PaymentTerminal() {
       return;
     }
 
+    await dispatchCheckout(tendersToShip);
+  }
+
+  /**
+   * Phase 4.A — extracted so the inline Retry button can re-run the same
+   * payload (including the same idempotencyKey from the paymentStore) without
+   * the user retouching the numpad. The store's idempotency key is regenerated
+   * only on close/reset ; this Retry preserves it.
+   */
+  async function dispatchCheckout(tendersToShip: Tender[]): Promise<void> {
+    setLastError(null);
+    setLastTendersShipped(tendersToShip);
     try {
       const result = await checkout.mutateAsync({ cart, payment: tendersToShip });
       setSuccess({
@@ -167,9 +188,28 @@ export function PaymentTerminal() {
         paymentMethod: tendersToShip[0]!.method,
       });
     } catch (err: unknown) {
-      const e = err as { details?: { error?: string } };
-      toast.error(`Payment failed: ${e.details?.error ?? 'unknown'}`);
+      const classified = classifyCheckoutError(err);
+      setLastError(classified);
+      // Toast for fatal-only ; retryable + already_paid use the inline banner
+      // (more actionable than a transient toast).
+      if (classified.kind === 'fatal') {
+        toast.error(classified.userMessage);
+      }
     }
+  }
+
+  function handleRetry(): void {
+    if (!lastTendersShipped) return;
+    void dispatchCheckout(lastTendersShipped);
+  }
+
+  function handleDismissAlreadyPaid(): void {
+    // Order already finalized — close the modal and reset state. The
+    // resetCartAfterCheckout / reset() pair regenerates the idempotency key.
+    resetCartAfterCheckout();
+    reset();
+    setLastError(null);
+    setLastTendersShipped(null);
   }
 
   function handleNewOrder(): void {
@@ -316,6 +356,62 @@ export function PaymentTerminal() {
                 remaining={remaining}
                 onRemoveTender={removeTender}
               />
+            </div>
+          )}
+
+          {/* Phase 4.A — idempotency-aware retry banner. Surfaces transient
+              failures with a one-click Retry that reuses the same idempotency
+              key (regenerated only on close/reset) so the server returns the
+              same row instead of double-charging. */}
+          {lastError?.kind === 'retryable' && (
+            <div
+              role="alert"
+              data-testid="payment-retry-banner"
+              className="mb-4 rounded-md border border-warning bg-warning-soft p-3 text-sm"
+            >
+              <div className="flex items-start gap-2">
+                <AlertCircle className="h-4 w-4 mt-0.5 text-warning shrink-0" aria-hidden />
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-text-primary">Payment did not reach the server</div>
+                  <p className="text-text-secondary mt-1">{lastError.userMessage}</p>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="mt-2"
+                    onClick={handleRetry}
+                    disabled={checkout.isPending}
+                    data-testid="payment-retry-button"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5 mr-1.5" aria-hidden />
+                    {checkout.isPending ? 'Retrying…' : 'Retry payment'}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {lastError?.kind === 'already_paid' && (
+            <div
+              role="alert"
+              data-testid="payment-already-paid-banner"
+              className="mb-4 rounded-md border border-success bg-success-soft p-3 text-sm"
+            >
+              <div className="flex items-start gap-2">
+                <CheckCircle2 className="h-4 w-4 mt-0.5 text-success shrink-0" aria-hidden />
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-text-primary">Order already finalized</div>
+                  <p className="text-text-secondary mt-1">{lastError.userMessage}</p>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="mt-2"
+                    onClick={handleDismissAlreadyPaid}
+                    data-testid="payment-already-paid-dismiss"
+                  >
+                    Continue
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
 
