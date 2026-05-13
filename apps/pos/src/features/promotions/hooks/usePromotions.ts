@@ -16,6 +16,9 @@ const PROMOTIONS_SELECT =
   'id, name, slug, description, type, scope, ' +
   'discount_value, max_discount_amount, scope_product_ids, scope_category_ids, ' +
   'bogo_trigger_product_ids, bogo_reward_product_ids, bogo_trigger_qty, bogo_reward_qty, bogo_reward_discount_pct, ' +
+  // Session 13 / Phase 2.C — new BOGO single-product + threshold + bundle columns
+  'bogo_buy_quantity, bogo_get_quantity, bogo_get_product_id, ' +
+  'threshold_amount, threshold_type, bundle_product_ids, bundle_price, ' +
   'gift_product_id, gift_qty, ' +
   'min_items_total, customer_category_ids, customer_tier_ids, start_at, end_at, day_of_week_mask, start_hour, end_hour, ' +
   'priority, stackable_with_promo, stackable_with_manual, ' +

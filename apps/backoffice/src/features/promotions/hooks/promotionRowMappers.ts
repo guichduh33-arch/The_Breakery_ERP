@@ -53,6 +53,29 @@ export function toRow(values: Partial<PromotionFormValues>): PromotionRow {
     row.bogo_reward_discount_pct = values.bogo_reward_discount_pct;
   }
 
+  // Session 13 / Phase 2.C — new shapes
+  if (values.bogo_buy_quantity !== undefined) {
+    row.bogo_buy_quantity = values.bogo_buy_quantity;
+  }
+  if (values.bogo_get_quantity !== undefined) {
+    row.bogo_get_quantity = values.bogo_get_quantity;
+  }
+  if (values.bogo_get_product_id !== undefined) {
+    row.bogo_get_product_id = values.bogo_get_product_id;
+  }
+  if (values.threshold_amount !== undefined) {
+    row.threshold_amount = values.threshold_amount;
+  }
+  if (values.threshold_type !== undefined) {
+    row.threshold_type = values.threshold_type;
+  }
+  if (values.bundle_product_ids !== undefined) {
+    row.bundle_product_ids = values.bundle_product_ids.length === 0 ? null : values.bundle_product_ids;
+  }
+  if (values.bundle_price !== undefined) {
+    row.bundle_price = values.bundle_price;
+  }
+
   if (values.gift_product_id !== undefined) row.gift_product_id = values.gift_product_id;
   if (values.gift_qty !== undefined) row.gift_qty = values.gift_qty;
 

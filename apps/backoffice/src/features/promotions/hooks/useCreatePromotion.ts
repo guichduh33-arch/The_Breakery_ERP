@@ -21,7 +21,10 @@ export function useCreatePromotion() {
         .select()
         .single();
       if (error) throw error;
-      return data;
+      // supabase types `threshold_type` as `string|null` from the TEXT column;
+      // the DB CHECK constraint pins it to 'subtotal'|'quantity'|null so the
+      // unknown-cast is safe.
+      return data as unknown as PromotionListRow;
     },
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: PROMOTIONS_QUERY_KEY });
