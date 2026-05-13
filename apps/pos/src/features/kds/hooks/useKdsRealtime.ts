@@ -13,6 +13,11 @@
 // needed ; we just refresh the kds query as before. Preserves D19
 // per-effect-mount unique-channel pattern.
 //
+// Session 13 / Phase 5.A — optionally broadcasts each bump event on the
+// LAN mesh so peer devices (POS, customer display, tablet) can react
+// without waiting on their own DB subscription. Accepts an `onBump`
+// callback ; production callers wire it to `useLanClient.send`.
+//
 // D19 — Channel-name uniqueness pattern (Wave 1 hotfix). Under StrictMode,
 // React double-invokes effects in dev ; with a static channel name the
 // second mount's `.on()` runs against the still-subscribed channel from
@@ -32,8 +37,19 @@ import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import type { KdsStation } from '@/stores/kdsStore';
 
-export function useKdsRealtime(station: KdsStation): void {
+interface UseKdsRealtimeOptions {
+  /** Optional callback invoked on every order_items event. The KDS
+   *  hooks the LAN client here so peer devices (Phase 5.A) can react
+   *  to bumps in real time without their own DB subscription. */
+  onEvent?: (payload: unknown) => void;
+}
+
+export function useKdsRealtime(
+  station: KdsStation,
+  opts: UseKdsRealtimeOptions = {},
+): void {
   const qc = useQueryClient();
+  const { onEvent } = opts;
 
   useEffect(() => {
     const channelName = `kds-${station}-${crypto.randomUUID()}`;
@@ -49,8 +65,9 @@ export function useKdsRealtime(station: KdsStation): void {
           table: 'order_items',
           filter: `dispatch_station=eq.${station}`,
         } as never,
-        () => {
+        (payload: unknown) => {
           void qc.invalidateQueries({ queryKey: ['kds', station] });
+          if (onEvent !== undefined) onEvent(payload);
         },
       )
       .subscribe();
@@ -58,5 +75,5 @@ export function useKdsRealtime(station: KdsStation): void {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [station, qc]);
+  }, [station, qc, onEvent]);
 }
