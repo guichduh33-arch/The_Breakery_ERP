@@ -3,9 +3,14 @@
 // Minimal modal asking for a reason then calling revert_production_v1.
 // ADMIN+ only — server enforces ; this UI shows the button regardless and
 // surfaces the `forbidden` error inline.
+//
+// Phase 4.D — migrated from ad-hoc <div> overlay to @breakery/ui Radix Dialog.
 
 import { useState, type FormEvent, type JSX } from 'react';
-import { Button, Input } from '@breakery/ui';
+import {
+  Button, Input,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from '@breakery/ui';
 import { useRevertProduction, RevertProductionError } from '../hooks/useRevertProduction.js';
 
 export interface RevertProductionDialogProps {
@@ -46,33 +51,39 @@ export function RevertProductionDialog({
   }
 
   return (
-    <div
-      role="dialog" aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-      onClick={onClose}
-    >
-      <form
-        onClick={(e) => e.stopPropagation()}
-        onSubmit={(e) => { void handleSubmit(e); }}
-        className="w-full max-w-md bg-bg-elevated rounded-lg border border-border-subtle p-6 space-y-4"
-      >
-        <h2 className="font-serif text-lg">Revert production {productionNumber}</h2>
-        <p className="text-text-secondary text-sm">
-          Stock will be restored and a counter-JE posted. Requires admin permission and
-          production date within 24 hours.
-        </p>
-        <div className="space-y-1">
-          <label className="text-xs uppercase tracking-widest text-text-secondary">Reason</label>
-          <Input value={reason} onChange={(e) => setReason(e.target.value)} maxLength={200} autoFocus />
-        </div>
-        {error !== null && <div role="alert" className="text-red text-xs">{error}</div>}
-        <div className="flex justify-end gap-2">
-          <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="primary" disabled={mut.isPending}>
-            {mut.isPending ? 'Reverting…' : 'Revert'}
-          </Button>
-        </div>
-      </form>
-    </div>
+    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Revert production {productionNumber}</DialogTitle>
+          <DialogDescription>
+            Stock will be restored and a counter-JE posted. Requires admin permission
+            and a production date within the last 24 hours.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={(e) => { void handleSubmit(e); }} className="space-y-3">
+          <div className="space-y-1">
+            <label htmlFor="revert-reason" className="text-xs uppercase tracking-widest text-text-secondary">
+              Reason
+            </label>
+            <Input
+              id="revert-reason"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              maxLength={200}
+              autoFocus
+            />
+          </div>
+          {error !== null && <div role="alert" className="text-red text-xs">{error}</div>}
+
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
+            <Button type="submit" variant="primary" disabled={mut.isPending}>
+              {mut.isPending ? 'Reverting…' : 'Revert'}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
