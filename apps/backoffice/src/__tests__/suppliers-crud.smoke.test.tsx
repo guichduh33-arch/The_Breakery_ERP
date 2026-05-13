@@ -101,8 +101,8 @@ function makeBuilder(): Builder {
     insert(row) {
       const next: SupplierRecord = {
         id: `sup-${store.length + 1}`,
-        code: String(row.code ?? ''),
-        name: String(row.name ?? ''),
+        code: (row.code as string | undefined) ?? '',
+        name: (row.name as string | undefined) ?? '',
         contact_phone: (row.contact_phone ?? null) as string | null,
         contact_email: (row.contact_email ?? null) as string | null,
         address: (row.address ?? null) as string | null,
@@ -127,15 +127,15 @@ function makeBuilder(): Builder {
       }
       return b;
     },
-    async single() {
+    single() {
       if (b._pending?.kind === 'insert') {
-        return { data: b._pending.row as unknown as SupplierRecord, error: null };
+        return Promise.resolve({ data: b._pending.row as unknown as SupplierRecord, error: null });
       }
       if (b._pending?.kind === 'update') {
-        return { data: b._pending.values as unknown as SupplierRecord, error: null };
+        return Promise.resolve({ data: b._pending.values as unknown as SupplierRecord, error: null });
       }
       const rows = applyFilters(b);
-      return { data: rows[0] ?? null, error: null };
+      return Promise.resolve({ data: rows[0] ?? null, error: null });
     },
     then(resolve) {
       // List read path: list hooks await the chain itself (not .single()).
