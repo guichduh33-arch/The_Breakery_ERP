@@ -36,3 +36,12 @@ export {
   type ValidateTransferCode,
   type ValidateTransferReceiveCode,
 } from './validateTransfer.js';
+
+// Session 13 — F1 expiry tracking primitives (consumed by POS ProductGrid + BO).
+export {
+  selectLotForConsumption,
+  allLotsExpiredOrConsumed,
+  filterExpiringLots,
+  type StockLotForFifo,
+  type FifoSelectionResult,
+} from './expiry/fifo.js';
