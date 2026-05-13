@@ -14,6 +14,17 @@
 --  2. Resolve unit from products.unit when p_unit is NULL.
 --  3. Final fallback to 'pcs' when the product itself has a NULL unit.
 --  4. Pass v_unit to the INSERT statement.
+--
+-- Implementation note: adding a parameter to a SECURITY DEFINER function via
+-- CREATE OR REPLACE creates a NEW overload in Postgres (signatures differ),
+-- which then makes the unqualified REVOKE EXECUTE ambiguous. We DROP the
+-- original 7-parameter signature first so only the new 8-parameter version
+-- survives. The three wrappers (adjust/receive/waste_stock_v1) use named-
+-- parameter calls and remain forward-compatible with the new optional param.
+
+DROP FUNCTION IF EXISTS record_stock_movement_v1(
+  UUID, movement_type, DECIMAL(10,3), TEXT, DECIMAL(14,2), UUID, UUID
+);
 
 CREATE OR REPLACE FUNCTION record_stock_movement_v1(
   p_product_id      UUID,
