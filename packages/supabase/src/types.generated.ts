@@ -379,6 +379,7 @@ export type Database = {
           b2b_current_balance: number
           b2b_payment_terms_days: number | null
           b2b_tax_id: string | null
+          birth_date: string | null
           category_id: string | null
           created_at: string
           customer_type: Database["public"]["Enums"]["customer_type"]
@@ -388,6 +389,7 @@ export type Database = {
           last_visit_at: string | null
           lifetime_points: number
           loyalty_points: number
+          marketing_consent: boolean
           name: string
           phone: string | null
           total_spent: number
@@ -400,6 +402,7 @@ export type Database = {
           b2b_current_balance?: number
           b2b_payment_terms_days?: number | null
           b2b_tax_id?: string | null
+          birth_date?: string | null
           category_id?: string | null
           created_at?: string
           customer_type?: Database["public"]["Enums"]["customer_type"]
@@ -409,6 +412,7 @@ export type Database = {
           last_visit_at?: string | null
           lifetime_points?: number
           loyalty_points?: number
+          marketing_consent?: boolean
           name: string
           phone?: string | null
           total_spent?: number
@@ -421,6 +425,7 @@ export type Database = {
           b2b_current_balance?: number
           b2b_payment_terms_days?: number | null
           b2b_tax_id?: string | null
+          birth_date?: string | null
           category_id?: string | null
           created_at?: string
           customer_type?: Database["public"]["Enums"]["customer_type"]
@@ -430,6 +435,7 @@ export type Database = {
           last_visit_at?: string | null
           lifetime_points?: number
           loyalty_points?: number
+          marketing_consent?: boolean
           name?: string
           phone?: string | null
           total_spent?: number
@@ -4490,11 +4496,50 @@ export type Database = {
         }[]
       }
       get_balance_sheet_data: { Args: { p_as_of?: string }; Returns: Json }
+      get_balance_sheet_v1: { Args: { p_as_of_date: string }; Returns: Json }
+      get_basket_analysis_v1: {
+        Args: { p_date_end: string; p_date_start: string; p_top_n?: number }
+        Returns: {
+          co_occurrence_count: number
+          confidence: number
+          lift: number
+          product_a_name: string
+          product_b_name: string
+          product_id_a: string
+          product_id_b: string
+          support_a: number
+          support_b: number
+          support_pair: number
+        }[]
+      }
+      get_cash_flow_v1: {
+        Args: { p_date_end: string; p_date_start: string }
+        Returns: Json
+      }
       get_current_profile_id: { Args: never; Returns: string }
       get_current_role: { Args: never; Returns: string }
+      get_customer_cohort_v1: {
+        Args: { p_cohort_month: string; p_lookback_months?: number }
+        Returns: {
+          cohort_month: string
+          months_since_signup: number
+          retained_customers: number
+          retention_pct: number
+          total_revenue: number
+        }[]
+      }
       get_customer_product_price: {
         Args: { p_customer_id?: string; p_product_id: string }
         Returns: number
+      }
+      get_customer_segments_v1: {
+        Args: { p_segment_type?: string }
+        Returns: {
+          avg_orders: number
+          customer_count: number
+          segment: string
+          total_spent: number
+        }[]
       }
       get_expiring_lots_v1: {
         Args: {
@@ -4565,6 +4610,22 @@ export type Database = {
           product_sku: string
           suggested_quantity: number
         }[]
+      }
+      get_profit_loss_v1: {
+        Args: {
+          p_date_end: string
+          p_date_start: string
+          p_section_id?: string
+        }
+        Returns: Json
+      }
+      get_promo_roi_v1: {
+        Args: {
+          p_date_end: string
+          p_date_start: string
+          p_promotion_id: string
+        }
+        Returns: Json
       }
       get_reorder_suggestions_v1: {
         Args: { p_buffer_days?: number; p_lookback_days?: number }
@@ -4926,6 +4987,7 @@ export type Database = {
       next_journal_entry_number: { Args: { p_date: string }; Returns: string }
       next_transfer_number: { Args: never; Returns: string }
       no_plan: { Args: never; Returns: boolean[] }
+      notify_birthday_customers_v1: { Args: never; Returns: number }
       num_failed: { Args: never; Returns: number }
       os_name: { Args: never; Returns: string }
       pass:
