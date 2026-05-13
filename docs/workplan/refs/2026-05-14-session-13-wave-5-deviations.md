@@ -286,3 +286,200 @@ which was reserved free in the Wave 5 / Phase 5.B allotment.
   the staging seed row → status flipped to `sending` atomically with
   the SELECT.
 - `REVOKE ALL ... FROM PUBLIC` confirmed by `pg_proc.proacl`.
+
+---
+
+## Phase 5.D — RBAC UI + audit pairing + last-admin protection
+
+### D-W5-5D-01 — `user_profiles` has `full_name` only, no first/last/phone
+
+**INDEX spec says:** `create_user_v1(p_email TEXT, p_role_code TEXT,
+p_first_name, p_last_name, p_pin_hash TEXT, p_phone TEXT DEFAULT NULL)`.
+
+**Real signature landed:** `create_user_v1(p_employee_code TEXT,
+p_full_name TEXT, p_role_code TEXT, p_pin TEXT) RETURNS UUID`.
+
+#### Cause
+
+The V3 `user_profiles` table (migration `20260503000001_init_auth.sql`)
+ships with `id, auth_user_id, employee_code, full_name, pin_hash,
+role_code, is_active, failed_login_attempts, locked_until,
+last_login_at, created_at, updated_at, deleted_at`. **There is no
+first_name / last_name / phone / email column.** Splitting the name
+or adding contact info would require a separate migration that is
+out-of-scope for Phase 5.D and would cascade through the existing
+`auth-verify-pin` EF, `useAuthStore`, BO sidebar bottom widget, and
+~6 audit-emitting RPCs that read `full_name`.
+
+The synthetic email for `auth.users` is generated server-side from
+`employee_code` (`staff-<emp_code>@thebreakery.local`) so PIN auth
+keeps working unchanged. Plaintext PIN is taken as input then
+bcrypt-hashed inside the RPC via the existing `hash_pin()` helper.
+
+#### Resolution
+
+- `create_user_v1(p_employee_code, p_full_name, p_role_code, p_pin)`.
+- The UI dialog (`UserFormDialog.tsx`) collects exactly these 4 fields.
+- Migration `20260517000200` adds 5 RPCs total: `create_user_v1`,
+  `update_user_role_v1`, `delete_user_v1`, `update_user_profile_v1`,
+  `reset_user_pin_v1`, plus an internal helper
+  `_revoke_user_sessions_v1`.
+
+#### Verification
+
+- `pg_get_function_identity_arguments` for `create_user_v1` returns
+  `p_employee_code text, p_full_name text, p_role_code text, p_pin text`.
+- pgTAP T_USR_01a..e assert all 5 RPC signatures.
+
+---
+
+### D-W5-5D-02 — RPCs INSERT into `auth.users` directly (no gotrue admin API)
+
+**INDEX spec says:** "Insert into `auth.users` (via admin API call OR via
+the same flow used by existing user creation)".
+
+**Real impl:** `create_user_v1` is `SECURITY DEFINER` running as the
+function-owner role (postgres on staging). It INSERTs into `auth.users`
+directly, mirroring the seed migration pattern in `supabase/seed.sql`.
+
+#### Cause
+
+A gotrue admin API call requires a service-role JWT, which a backoffice
+client doesn't have (RPCs are authenticated with the PIN-derived JWT
+that is HS256-signed). Going through a separate "user-create" Edge
+Function would (a) require duplicating the permission gate
+(`has_permission(auth.uid(), 'users.create')`), (b) introduce another
+service-role secret in EF env, (c) split the audit trail across two
+systems. The direct INSERT — already used by the seed migration —
+keeps the create+audit transaction atomic with no extra moving parts.
+
+The synthetic email + disabled bcrypt password (`crypt('disabled-...'
+|| gen_random_uuid(), gen_salt('bf'))`) prevent email-password sign-in
+without explicitly disabling that flow at the gotrue level.
+
+#### Resolution
+
+- `create_user_v1` issues a single `INSERT INTO auth.users (...) VALUES
+  (...)` then a second `INSERT INTO user_profiles (...) VALUES (...)`.
+  Both rows commit together with the audit row.
+- The audit row's `actor_id` is the **caller's profile id**, not the
+  caller's `auth.uid()` — see D-W5-5D-04.
+
+#### Verification
+
+- pgTAP T_USR_03b : the `auth.users` row exists after `create_user_v1`.
+- pgTAP T_USR_03c : audit row inserted on create.
+
+---
+
+### D-W5-5D-03 — Session revocation = DELETE auth.sessions + UPDATE user_sessions
+
+**INDEX spec says:** "Revoke active sessions for that user via
+`auth.sessions` table OR Supabase admin API (gotrue admin endpoint)".
+
+**Real impl:** Helper `_revoke_user_sessions_v1(p_profile_id)` runs
+both deletions atomically:
+
+1. `DELETE FROM auth.sessions WHERE user_id = (auth_user_id of target)` —
+   revokes GoTrue access tokens (refresh tokens chain breaks too).
+2. `UPDATE user_sessions SET ended_at = now(), end_reason = 'role_changed'
+   WHERE user_id = p_profile_id AND ended_at IS NULL` — closes the custom
+   PIN-auth session ledger rows.
+
+Helper returns the integer sum, which `update_user_role_v1` and
+`delete_user_v1` include in their JSON response *and* in the audit
+metadata (`revoked_session_count`).
+
+#### Cause
+
+V3 has two session ledgers running in parallel : (a) GoTrue's own
+`auth.sessions` table (managed by Supabase's auth service, refresh
+tokens etc.) and (b) the V3-internal `user_sessions` table (custom
+SHA-256 hashed PIN-derived tokens, the PIN auth wrapper consults this
+ledger). Revoking only one would leave the other side believing the
+user is still authenticated. The helper deletes both atomically in a
+single SECURITY DEFINER transaction.
+
+#### Verification
+
+- pgTAP T_USR_05a : `revoked_session_count = 1` (one fake row planted
+  pre-role-change).
+- pgTAP T_USR_05b : `0` remaining active `user_sessions` post-call.
+- Vitest live `users.test.ts` confirms `revoked_session_count >= 1`
+  after planting one row pre-RPC and reading the count post-RPC.
+
+---
+
+### D-W5-5D-04 — `audit_logs.actor_id` FK → `user_profiles.id`, not `auth.users.id`
+
+**INDEX wording:** "Issue audit_log row".
+
+**Bug found during pgTAP first run:** First migration body inserted
+`v_caller_uid := auth.uid()` (a `auth.users.id`) into
+`audit_logs.actor_id`. The FK `audit_logs_actor_id_fkey REFERENCES
+user_profiles(id)` rejected the row → `23503` foreign key violation.
+
+#### Cause
+
+The audit_logs table was modelled after `user_profiles.id` (Phase 1.B
+[m5] migration `20260517000034`) — actor is the profile, not the
+underlying auth user. The same shape is used by the four legacy SECURITY
+DEFINER RPCs (soft_delete_customer, record_stock_movement_v1, transfer
+RPCs).
+
+#### Resolution
+
+Each user-mgmt RPC now resolves `v_caller_prof` via
+`SELECT id FROM user_profiles WHERE auth_user_id = v_caller_uid AND
+deleted_at IS NULL LIMIT 1` and inserts that into `audit_logs.actor_id`.
+
+#### Verification
+
+- pgTAP T_USR_03c / T_USR_04b / T_USR_06b / T_USR_08c all assert the
+  audit row exists with the correct entity_type/action/metadata.
+- Re-running the suite after the fix produces 26/26 green (was failing
+  at T_USR_09 on the FK violation before).
+
+---
+
+### D-W5-5D-05 — PermissionMatrix reads `role_permissions`, not 545 has_permission() calls
+
+**INDEX spec says:** "PermissionMatrix component consumes
+`has_permission()` lookup (Wave 1) [for each (role, permission) pair
+from `permissions` and `role_permissions` tables]".
+
+**Real impl:** `usePermissionMatrix` hook fetches `roles`, `permissions`,
+`role_permissions` in **3 parallel queries** (≈100 rows total) and
+builds a `Set<string>` keyed by `${role_code}\x00${permission_code}`.
+The matrix cell renders ✓ iff the set contains the key.
+
+#### Cause
+
+V3 has 5 roles × 109 permissions = 545 cells. Calling
+`has_permission(role_uuid, perm_code)` per cell would be 545 RPC
+round-trips per matrix render — slow, chatty, and unnecessarily
+expensive. **The function body itself (Phase 1.B locked) is a pure
+data lookup against the same three tables we read directly.** So
+reading the tables is semantically equivalent (`is_granted` flag
+handled), faster, and cacheable for 5 minutes.
+
+`user_permission_overrides` is intentionally NOT joined in : the
+matrix shows **role defaults**, not per-user overrides. Per-user
+overrides will be a future Phase 5.D+ feature with its own UI surface.
+
+#### Resolution
+
+`PermissionMatrix.tsx` consumes the role_permissions table directly,
+groups by `module` for visual separation, and offers a filter box
+over code/module/description. A footnote on the page explicitly cites
+the design : Phase 1.B made `has_permission()` a pure lookup → the
+matrix view IS the function's truth.
+
+#### Verification
+
+- Network panel shows 3 SELECTs (roles, permissions, role_permissions)
+  on first render; cached thereafter.
+- Matrix cells against `EMP000` (SUPER_ADMIN) show ✓ for all 109
+  permissions ; against `EMP001` (CASHIER) show ≈ 7 ✓.
+- The footnote on `PermissionsMatrixPage` references the locked
+  function.
