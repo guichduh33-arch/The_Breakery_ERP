@@ -65,8 +65,8 @@ describe('Loyalty BO page', () => {
     renderPage();
     await waitFor(() => expect(screen.getByText('Bronze Bob')).toBeInTheDocument());
     // The mocked authStore grants all required perms (see vi.mock above), so the
-    // "New customer" entry must be visible. Regressions in the permission wiring
+    // "New member" entry must be visible. Regressions in the permission wiring
     // remove the trigger entirely → this test catches them.
-    expect(screen.getByRole('button', { name: /new customer/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /new member/i })).toBeInTheDocument();
   });
 });
