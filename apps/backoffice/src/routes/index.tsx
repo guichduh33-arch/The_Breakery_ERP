@@ -4,6 +4,8 @@ import type { PermissionCode } from '@breakery/supabase';
 import LoginPage from '@/pages/Login.js';
 import DashboardPage from '@/pages/Dashboard.js';
 import ProductsPage from '@/pages/Products.js';
+import ProductDetailPage from '@/pages/products/ProductDetailPage.js';
+import CombosPage from '@/pages/products/CombosPage.js';
 import PromotionsPage from '@/pages/Promotions.js';
 import LoyaltyPage from '@/pages/Loyalty.js';
 import InventoryPage from '@/pages/Inventory.js';
@@ -76,6 +78,8 @@ export function AppRoutes() {
       <Route path="/backoffice" element={<Protected><BackofficeLayout /></Protected>}>
         <Route index element={<DashboardPage />} />
         <Route path="products" element={<ProductsPage />} />
+        <Route path="products/combos" element={<CombosPage />} />
+        <Route path="products/:productId" element={<ProductDetailPage />} />
         <Route
           path="promotions"
           element={
