@@ -36,8 +36,7 @@ import {
 import { todayIsoDate, formatTimeWita } from '@breakery/utils';
 import { toast } from 'sonner';
 import { useOpenShift } from './hooks/useShift';
-
-const QUICK_AMOUNTS = [100_000, 200_000, 300_000, 500_000, 1_000_000];
+import { usePOSPresets } from '@/features/settings/hooks/usePOSPresets';
 
 type Step = 'pin' | 'cash';
 
@@ -72,6 +71,8 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
   const [pinLoading, setPinLoading] = useState(false);
 
   const openShift = useOpenShift();
+  const { presets } = usePOSPresets();
+  const quickAmounts = presets.openingCashPresets;
 
   const amount = Number(amountStr || '0');
   const headerDate = useMemo(() => formatHeaderDate(new Date()), []);
@@ -235,7 +236,7 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
             <section className="space-y-2">
               <SectionLabel as="div">Quick Amounts</SectionLabel>
               <div className="grid grid-cols-3 gap-2">
-                {QUICK_AMOUNTS.map((q) => {
+                {quickAmounts.map((q) => {
                   const selected = amount === q;
                   return (
                     <button

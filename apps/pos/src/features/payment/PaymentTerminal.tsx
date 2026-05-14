@@ -25,6 +25,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useCheckout } from './hooks/useCheckout';
 import { SuccessModal } from './SuccessModal';
 import { SplitPaymentFlow } from './split/SplitPaymentFlow';
+import { usePOSPresets } from '@/features/settings/hooks/usePOSPresets';
 import { toast } from 'sonner';
 import type { LucideProps } from 'lucide-react';
 import type { ForwardRefExoticComponent, RefAttributes } from 'react';
@@ -41,8 +42,6 @@ const METHODS: { value: PaymentMethod; label: string; icon: IconComponent }[] = 
   { value: 'transfer',     label: 'Transfer',     icon: ArrowRightLeft },
   { value: 'store_credit', label: 'Store Credit', icon: Wallet },
 ];
-
-const QUICK_AMOUNTS = [50000, 100000, 150000, 200000, 500000];
 
 interface SuccessState {
   orderNumber: string;
@@ -70,6 +69,8 @@ export function PaymentTerminal() {
   const appliedPromotions = useCartStore((s) => s.appliedPromotions);
   const user = useAuthStore((s) => s.user);
   const checkout = useCheckout();
+  const { presets } = usePOSPresets();
+  const quickAmounts = presets.quickPayments;
 
   const baseTotals = calculateTotals(cart, TAX_RATE);
   const promotionTotal = appliedPromotions.reduce((s, ap) => s + ap.amount, 0);
@@ -547,7 +548,7 @@ export function PaymentTerminal() {
                         >
                           Exact ({formatLabel(remaining)})
                         </button>
-                        {isCashDraft && QUICK_AMOUNTS.filter((q) => q >= remaining).slice(0, 4).map((q) => (
+                        {isCashDraft && quickAmounts.filter((q) => q >= remaining).slice(0, 4).map((q) => (
                           <button
                             key={q}
                             onClick={() => setCashReceivedStr(String(q))}
