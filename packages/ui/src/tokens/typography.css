@@ -19,7 +19,7 @@
 :root, .dark {
   /* Canonical 4-font stack (D3). Variable-font fallbacks first, system last. */
   --font-display: 'Playfair Display', 'Times New Roman', Georgia, serif;
-  --font-body:    'Inter Variable', 'Inter', system-ui, -apple-system, sans-serif;
+  --font-body:    'Inter Variable', 'Inter', 'Inter Fallback', system-ui, -apple-system, sans-serif;
   --font-data:    'Fraunces Variable', 'Fraunces', Georgia, serif;
   --font-mono:    'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, monospace;
 
