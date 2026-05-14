@@ -44,7 +44,12 @@ export {
   SheetTrigger,
   type SheetContentProps,
 } from './primitives/Sheet.js';
-export { EmptyState, type EmptyStateProps } from './primitives/EmptyState.js';
+export {
+  EmptyState,
+  type EmptyStateProps,
+  type EmptyStateAction,
+  type EmptyStateSize,
+} from './primitives/EmptyState.js';
 
 // app shell components
 export { SkipToContent, type SkipToContentProps } from './components/SkipToContent.js';
