@@ -120,6 +120,133 @@
 **Risques** : running balance peut diverger si une transaction historique est modifiée → snapshot le statement (table `b2b_statements_archive`).
 **Notes** : combiner UI : un seul switch client "Reçoit aging + statement" pour simplifier l'admin.
 
+---
+
+## Backlog métier (objectif fonctionnel)
+
+> Items issus de `docs/objectif travail/B2B.md` §16 — vision produit du module au-delà du tech-debt existant.
+> Ajoutés 2026-05-13 lors de la cascade docs (session 13). Le portal client B2B est déjà couvert par TASK-09-007.
+
+### TASK-09-009 — Auto-approval workflow [P2] [TODO]
+**Contexte** : aujourd'hui les seuils d'approbation (montant > X, hors plafond crédit) sont contrôlés en code (hardcode). Pas de configuration métier, pas de visualisation, pas d'historique des approbations.
+**Bénéfice attendu** : workflow visuel où le gérant définit les seuils, et chaque commande passe par les étapes d'approbation appropriées.
+**Critère d'acceptation** :
+- [ ] Table `b2b_approval_rules` (trigger, threshold_amount, requires_role, requires_pin).
+- [ ] Page `/settings/b2b/approval-rules` : CRUD règles + simulation "cette commande déclencherait quoi ?".
+- [ ] Workflow : commande `draft` → si trigger → état `awaiting_approval` → approver agit → `confirmed` ou `rejected`.
+- [ ] Trace audit complète : qui a approuvé, quand, sur quel critère.
+**Dépend de** : `TASK-09-010` (couplage anti-self-approval).
+**Estimation** : L
+**Risques** : règles incompréhensibles si trop souples — V1 limiter aux 3 triggers principaux (montant, plafond crédit, marge négative).
+**Notes** : aujourd'hui implicite dans `B2BOrderForm` validation — refactor nécessaire.
+
+### TASK-09-010 — Détection self-approval (anti-fraude) [P2] [TODO]
+**Contexte** : un commercial peut créer ET approuver sa propre commande (signal de fraude classique). Le report `b2b_self_approval_risk` existe mais c'est curatif, pas préventif.
+**Bénéfice attendu** : empêcher la création + approbation par le même utilisateur, avec exception manager (PIN forçant explicitement le scénario).
+**Critère d'acceptation** :
+- [ ] Contrainte logique : `b2b_orders.created_by != b2b_orders.approved_by` (RLS + service).
+- [ ] Si même utilisateur tente : modal "Self-approval bloqué — demander à un manager" avec champ PIN manager.
+- [ ] Audit log de chaque override PIN.
+- [ ] Report `b2b_self_approval_risk` ne montre que les overrides (les bloqués n'arrivent jamais en BD).
+**Dépend de** : `TASK-09-009` (workflow approval doit exister pour qu'on puisse en bloquer un acteur).
+**Estimation** : M
+**Risques** : équipe trop petite — un seul commercial peut TOUT bloquer en cas d'absence manager → procédure de délégation.
+**Notes** : pattern inspiré des contrôles SAP / Oracle séparation des tâches.
+
+### TASK-09-011 — Commandes récurrentes / abonnements [P3] [TODO]
+**Contexte** : un hôtel commande 200 baguettes chaque lundi. Aujourd'hui, le commercial doit ressaisir ou cloner manuellement chaque semaine. Risque d'oubli.
+**Bénéfice attendu** : définir une commande type qui se duplique automatiquement selon une cadence définie.
+**Critère d'acceptation** :
+- [ ] Table `b2b_recurring_orders` (template_order_id, frequency, day_of_week, next_due_date, active).
+- [ ] Job quotidien (cron Edge Function) qui détecte les dues du jour et crée les commandes en `draft`.
+- [ ] Page `/b2b/recurring` : CRUD + activation / pause / historique.
+- [ ] Notification au commercial à la création auto pour valider avant `confirmed`.
+**Dépend de** : aucune.
+**Estimation** : M
+**Risques** : changement de prix entre deux récurrences → V1 prend le prix client actuel, pas le prix figé.
+**Notes** : viser pattern Shopify "Subscriptions" V1 simple.
+
+### TASK-09-012 — Relances automatiques [P3] [TODO]
+**Contexte** : la page Outstanding montre les retards mais l'envoi de relance reste manuel. Le gérant oublie ; le client paie tard.
+**Bénéfice attendu** : envoi automatique d'un rappel à J-3 de l'échéance, J+0, J+7, J+15 — paramétrable par client ou globalement.
+**Critère d'acceptation** :
+- [ ] Table `b2b_reminder_rules` (trigger_offset_days, template_id, channel email/whatsapp, active).
+- [ ] Job quotidien qui scanne les factures dues et envoie les relances dues.
+- [ ] Templates email / SMS / WhatsApp avec personnalisation client + montant + lien paiement.
+- [ ] Désactivation au cas par cas (client en négociation, pas de relance).
+- [ ] Audit : chaque relance envoyée est tracée (table `b2b_reminders_sent`).
+**Dépend de** : intégration WhatsApp Business API (hors scope V1, fallback email seulement).
+**Estimation** : L
+**Risques** : spam / dégradation relation client → cap max 4 relances par facture, désactivation auto si paiement reçu.
+**Notes** : V1 email seul ; V2 WhatsApp.
+
+### TASK-09-013 — Devis (quote) avant commande [P3] [TODO]
+**Contexte** : aujourd'hui la commande passe directement de `draft` à `confirmed`. Pas d'étape devis officiel envoyé au client pour acceptation.
+**Bénéfice attendu** : étape `quote` en amont de `draft` — envoyer un PDF de devis numéroté, le client confirme par retour (mail / portail).
+**Critère d'acceptation** :
+- [ ] Statut `quote` ajouté à `b2b_orders.status` enum (entre `draft` et `confirmed`).
+- [ ] Numérotation séquentielle propre pour les devis (préfixe `QUO-`).
+- [ ] Génération PDF "Devis" via Edge Function `generate-quote-pdf` (template distinct de la facture).
+- [ ] Action "Convert quote to confirmed order" (mémo source `quote_id` sur la commande).
+- [ ] Page `/b2b/quotes` similaire à liste des commandes mais filtrée.
+**Dépend de** : aucune.
+**Estimation** : M
+**Risques** : explosion du nombre de statuts → bien documenter la state machine.
+**Notes** : statut `quote` peut expirer après N jours → action manuelle "Refresh quote".
+
+### TASK-09-014 — Avoirs / credit notes [P3] [TODO]
+**Contexte** : si un client retourne 10 baguettes invendables ou si la livraison comportait une casse, aujourd'hui aucun document officiel pour matérialiser l'avoir. Le commercial bricole un paiement négatif.
+**Bénéfice attendu** : générer une note de crédit officielle pour un retour ou une remise client après facture.
+**Critère d'acceptation** :
+- [ ] Table `b2b_credit_notes` (number, customer_id, original_order_id, lines, total, reason).
+- [ ] Numérotation séquentielle propre (préfixe `CN-`).
+- [ ] PDF "Note de crédit" via Edge Function dédiée.
+- [ ] Imputation : l'avoir réduit le `amount_due` de la commande d'origine OU se reporte sur la prochaine commande.
+- [ ] Écriture compta automatique : DR Revenue / CR AR (contre-passation partielle).
+**Dépend de** : `TASK-10-001` (sale trigger fiable) pour la contre-passation.
+**Estimation** : M
+**Risques** : différence entre avoir commercial et avoir comptable — bien aligner avec le comptable externe.
+**Notes** : V1 manuel (commercial crée l'avoir) ; V2 auto sur retour livraison.
+
+### TASK-09-015 — Multi-livraisons planifiées d'avance [P3] [TODO]
+**Contexte** : aujourd'hui les livraisons partielles sont enregistrées au fil de l'eau. Pour un événement (500 baguettes en 5 livraisons sur la semaine), aucun moyen de planifier d'avance.
+**Bénéfice attendu** : planifier les livraisons dès la confirmation de commande avec dates / quantités prévues, et tracker le réel vs prévu.
+**Critère d'acceptation** :
+- [ ] Table `b2b_planned_deliveries` (order_id, planned_date, planned_items, status).
+- [ ] UI dans `BO`order detail → onglet Deliveries : sous-section "Plan" éditable.
+- [ ] À l'enregistrement d'une livraison réelle, on peut "fulfill a planned delivery" pour matcher.
+- [ ] Alerte si une livraison planifiée est dépassée sans réalisation.
+**Dépend de** : aucune.
+**Estimation** : M
+**Risques** : complexité UX — ne pas surcharger l'écran si commande "single shot".
+**Notes** : V1 cas spécifique événements ; étendre si retour terrain positif.
+
+### TASK-09-016 — Tarification par volume [P3] [TODO]
+**Contexte** : un client commande baguettes <50 = prix A, ≥50 = prix B. Aujourd'hui le commercial doit le savoir et modifier manuellement.
+**Bénéfice attendu** : prix dégressif automatique selon quantité commandée — défini sur la fiche produit ou la liste de prix dédiée.
+**Critère d'acceptation** :
+- [ ] Table `b2b_volume_pricing_tiers` (price_list_id ou product_id, qty_min, qty_max, unit_price).
+- [ ] Algorithme de pricing : lors de la saisie d'une ligne, le système choisit automatiquement le tier matchant.
+- [ ] UI configuration : sur la fiche produit OU sur la liste de prix dédiée, table tiers éditable.
+- [ ] Affichage transparent à la saisie : "200 unités × 4500 IDR (tier ≥100)".
+**Dépend de** : aucune.
+**Estimation** : M
+**Risques** : ambiguïté avec les remises ad-hoc — choisir l'un OU l'autre (pas cumul).
+**Notes** : préférer tier sur liste de prix dédiée (plus de contrôle commercial).
+
+### TASK-09-017 — Intégration comptable export (Accurate / MYOB) [P3] [TODO]
+**Contexte** : export direct des factures B2B dans le format attendu par le comptable externe (Accurate, MYOB). Aujourd'hui CSV générique uniquement.
+**Bénéfice attendu** : le comptable externe importe les factures B2B sans ressaisie.
+**Critère d'acceptation** :
+- [ ] Service `b2bAccountingExportService.exportInvoicesToAccurate(p_start, p_end)`.
+- [ ] Idem MYOB.
+- [ ] Page `/b2b/export` : sélection période + format + download.
+- [ ] Test : import du fichier dans sandbox Accurate sans erreur.
+**Dépend de** : `TASK-10-018` (export Accounting général — partager le framework export).
+**Estimation** : M
+**Risques** : formats propriétaires versionnés.
+**Notes** : extension naturelle du module Accounting export.
+
 ## Vue transversale
 
 ### Dépendances inter-tâches

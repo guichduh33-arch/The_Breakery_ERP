@@ -1,0 +1,24 @@
+/*
+ * semantic.css — semantic aliases over the luxe-dark base palette.
+ *
+ * Session 13 (Phase 1.D / ui-steward batch 1).
+ *
+ * Intent: components express *intent* (success/warning/danger/info), not raw
+ * palette colors. Same palette under the hood, clearer call sites.
+ *
+ * Consumers reference these via the Tailwind preset:
+ *   bg-success, text-success, border-success, etc.
+ */
+:root, .dark {
+  --success:      var(--green-base);
+  --success-soft: rgba(16, 185, 129, 0.12);
+
+  --warning:      var(--amber-warn);
+  --warning-soft: rgba(245, 158, 11, 0.12);
+
+  --danger:       var(--red-base);
+  --danger-soft:  var(--red-soft);
+
+  --info:         var(--blue-info);
+  --info-soft:    rgba(59, 130, 246, 0.12);
+}

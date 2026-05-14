@@ -121,6 +121,94 @@
 
 ---
 
+## Backlog métier (objectif fonctionnel)
+
+> Items issus de `docs/objectif travail/PURCHASING_AND_SUPPLIERS.md` §7 (limites assumées V2) — vision produit du module pour V3.
+> Ajoutés 2026-05-13 lors de la cascade docs (session 13, version révisée de l'objectif).
+
+### TASK-07-009 — Envoi automatique d'email PO au fournisseur [P3] [TODO]
+**Contexte** : aujourd'hui le bouton "Send" change juste le statut. L'envoi réel se fait hors-outil (WhatsApp, email manuel). Source d'oubli + pas de trace.
+**Bénéfice attendu** : à l'action "Send", envoi automatique d'un email au fournisseur avec PDF du PO + texte personnalisable.
+**Critère d'acceptation** :
+- [ ] Settings → Purchasing → "Email automatique PO" (toggle + template).
+- [ ] Champ `supplier.email_primary` + `supplier.email_cc[]`.
+- [ ] Edge Function `send-purchase-order-email` qui envoie via Resend / SES.
+- [ ] Audit : email envoyé tracé dans `purchase_order_activity_log` avec timestamp + destinataires.
+- [ ] Cas erreur : si email rejeté (bounce), alerter le créateur du PO.
+**Dépend de** : `TASK-07-010` (PDF) — nécessaire pour la pièce jointe.
+**Estimation** : M
+**Risques** : adresses fournisseurs obsolètes → tester avant rollout.
+**Notes** : intégration WhatsApp Business API en V2 (les fournisseurs locaux préfèrent souvent WA).
+
+### TASK-07-010 — Génération PDF du PO [P3] [TODO]
+**Contexte** : aucun PDF officiel du bon de commande aujourd'hui. Le fournisseur reçoit la commande en texte WhatsApp ou téléphone — pas de trace formelle.
+**Bénéfice attendu** : générer un PDF propre du PO (mentions légales The Breakery, NPWP, conditions, lignes, total) à imprimer ou envoyer.
+**Critère d'acceptation** :
+- [ ] Edge Function `generate-purchase-order-pdf` qui produit un PDF aligné sur le design facture B2B.
+- [ ] Bouton "Download PDF" sur `PurchaseOrderDetail`.
+- [ ] Stockage Supabase `purchase-orders/PO-YYYYMM-XXXX.pdf` (signed URL).
+- [ ] Re-génération possible si PO modifié avant envoi.
+**Dépend de** : aucune.
+**Estimation** : M
+**Risques** : timeout Edge Function si bcp d'items — paginer le PDF si > 30 lignes.
+**Notes** : socle pour TASK-07-009 (envoi email).
+
+### TASK-07-011 — Multi-devise sur PO [P3] [TODO]
+**Contexte** : tout en IDR aujourd'hui. Pour un fournisseur étranger (équipement français, conseil tech US), conversion manuelle dans les notes.
+**Bénéfice attendu** : saisir un PO en EUR / USD avec conversion auto vers IDR pour la compta.
+**Critère d'acceptation** :
+- [ ] Colonnes `currency_code`, `exchange_rate`, `amount_local` sur `purchase_orders`.
+- [ ] UI form : "Devise" selector + récupération auto du taux du jour (BI).
+- [ ] Écriture compta libellée en IDR au taux du jour réception.
+- [ ] Écart de change post-paiement si taux différent (JE auto compensatoire).
+**Dépend de** : `TASK-10-019` (multi-devise Accounting global).
+**Estimation** : M
+**Risques** : taux divergents → référence officielle Bank Indonesia.
+**Notes** : extension du module Accounting multi-devise.
+
+### TASK-07-012 — Landed cost (répartition frais de port pro-rata) [P3] [TODO]
+**Contexte** : aujourd'hui les frais de port (`shipping_cost`) gonflent le total PO mais ne sont pas répartis sur le coût de revient produit. Marges sous-évaluées.
+**Bénéfice attendu** : répartition automatique des frais de port (et autres frais : douane, assurance) au pro-rata du montant ou du poids des lignes — coût de revient juste.
+**Critère d'acceptation** :
+- [ ] Champ `purchase_orders.allocation_method` : `by_value` | `by_weight` | `by_quantity`.
+- [ ] À la réception, recalcul automatique du `landed_unit_cost` pour chaque ligne = `base_price + (shipping × allocation_share)`.
+- [ ] Update du `cost_price` du produit avec le `landed_unit_cost` (pas le base_price).
+- [ ] Toggle "Inclure frais douane / assurance" si applicable.
+**Dépend de** : aucune.
+**Estimation** : M
+**Risques** : conflit avec coûts historiques — option "appliquer rétroactivement" désactivable.
+**Notes** : critique pour fournisseurs internationaux à frais élevés.
+
+### TASK-07-013 — Avoir comptable automatique sur retour post-paiement [P3] [TODO]
+**Contexte** : aujourd'hui un retour fournisseur génère une écriture qui réduit la dette, mais si le PO est déjà intégralement payé, le retour reste à régler manuellement avec le fournisseur (avoir, crédit prochaine facture).
+**Bénéfice attendu** : générer automatiquement un avoir comptable (credit note) tracé, réutilisable sur le prochain PO du même fournisseur.
+**Critère d'acceptation** :
+- [ ] Table `supplier_credit_notes` (supplier_id, source_return_id, amount, used_on_po_id, status).
+- [ ] À chaque retour sur PO payé → crédit note auto créé en `available`.
+- [ ] Au prochain PO du même fournisseur : proposition "Utiliser X IDR de crédit" cochable.
+- [ ] Imputation JE : DR Supplier Credit / CR AP au moment de la création du PO suivant.
+- [ ] Page `/purchasing/credits` : liste des avoirs en stock + drill-down.
+**Dépend de** : `TASK-07-001` (purchase trigger refactor).
+**Estimation** : M
+**Risques** : différence avoir comptable vs avoir commercial — bien aligner avec le comptable.
+**Notes** : pattern symétrique à TASK-09-014 (credit notes B2B côté client).
+
+### TASK-07-014 — Workflow d'approbation multi-niveaux PO [P3] [TODO]
+**Contexte** : un seul utilisateur crée et envoie. Pour un site de 20+ utilisateurs, il faudrait une chaîne d'approbation (PO > 5M → manager, PO > 20M → owner).
+**Bénéfice attendu** : workflow d'approbation paramétrable par seuils + chaîne de validateurs.
+**Critère d'acceptation** :
+- [ ] Table `po_approval_rules` (threshold_min, threshold_max, requires_role, requires_pin).
+- [ ] Settings → Purchasing → "Approval rules" : CRUD + simulation.
+- [ ] État `pending_approval` ajouté à `purchase_orders.status` (entre `draft` et `sent`).
+- [ ] Modal approbation : approver agit → `approved`, puis bouton "Send" actif.
+- [ ] Audit complet : qui a approuvé, quand, sur quel critère.
+**Dépend de** : aucune.
+**Estimation** : L
+**Risques** : friction si chaîne trop longue — limiter V1 à 2 niveaux max.
+**Notes** : pattern symétrique à TASK-09-009 (B2B approval workflow).
+
+---
+
 ## Notes transverses
 
 - **Comptabilité** : PO received → JE auto via trigger (cf. TASK-07-001). PO payment → JE via `postPurchasePaymentJournalEntry`. Toujours passer par `accountingEngine`.

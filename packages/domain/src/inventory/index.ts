@@ -10,6 +10,13 @@ export type {
   ReceiveInput,
   WasteInput,
   StockMovementRpcResult,
+  // Phase 3 — stock transfers
+  TransferStatus,
+  TransferItemInput,
+  TransferInput,
+  TransferReceiveItemInput,
+  TransferReceiveInput,
+  TransferRpcResult,
 } from './types.js';
 
 // `ValidationResult` is re-exported from `payment` at the top-level barrel;
@@ -23,3 +30,26 @@ export { validateReceive } from './validateReceive.js';
 export { validateWaste } from './validateWaste.js';
 export { computeStockDelta } from './computeStockDelta.js';
 export { lowStockFilter, type LowStockCandidate } from './lowStockFilter.js';
+export {
+  validateTransferInput,
+  validateTransferReceive,
+  type ValidateTransferCode,
+  type ValidateTransferReceiveCode,
+} from './validateTransfer.js';
+
+// Session 13 — F1 expiry tracking primitives (consumed by POS ProductGrid + BO).
+export {
+  selectLotForConsumption,
+  allLotsExpiredOrConsumed,
+  filterExpiringLots,
+  type StockLotForFifo,
+  type FifoSelectionResult,
+} from './expiry/fifo.js';
+
+// Session 13 — Phase 3.C reservation accounting helpers.
+export {
+  activeHeldQuantity,
+  availableQuantity,
+  canHoldQuantity,
+  type ActiveReservation,
+} from './reservations/index.js';

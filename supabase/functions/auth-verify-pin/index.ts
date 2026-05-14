@@ -4,10 +4,15 @@ import { handleCors, jsonResponse } from '../_shared/cors.ts';
 import { getAdminClient } from '../_shared/supabase-admin.ts';
 import { checkRateLimit, getClientIp } from '../_shared/rate-limit.ts';
 import { computePermissionsForRole, checkPermissionForRole } from '../_shared/permissions.ts';
+import { signJwt, getJwtSecret } from '../_shared/jwt.ts';
+import { logAndRedact, redactError } from '../_shared/error-redact.ts';
 
 const PIN_REGEX = /^\d{6}$/;
 const MAX_FAILED = 5;
 const LOCKOUT_MIN = 15;
+// Session 13 (25-002) — tightened from 20/min to 3/min (≈ 12/hour) on the
+// invalid-pin path. After the 4th attempt within 60s from one IP we 429.
+const RATE_LIMIT_PER_MIN = 3;
 
 interface VerifyPinPayload {
   user_id: string;
@@ -21,11 +26,11 @@ serve(async (req) => {
   if (cors) return cors;
 
   if (req.method !== 'POST') {
-    return jsonResponse({ error: 'method_not_allowed' }, 405);
+    return jsonResponse(redactError('method_not_allowed'), 405);
   }
 
   const ip = getClientIp(req);
-  const rl = checkRateLimit(`verify-pin:${ip}`, 20);
+  const rl = checkRateLimit(`verify-pin:${ip}`, RATE_LIMIT_PER_MIN);
   if (!rl.allowed) {
     return jsonResponse({ error: 'rate_limited', retry_after_sec: rl.retryAfterSec }, 429);
   }
@@ -34,18 +39,18 @@ serve(async (req) => {
   try {
     body = await req.json();
   } catch {
-    return jsonResponse({ error: 'invalid_json' }, 400);
+    return jsonResponse(redactError('invalid_json'), 400);
   }
 
   const { user_id, pin, device_type, required_permission } = body;
   if (!user_id || !pin || !device_type) {
-    return jsonResponse({ error: 'missing_fields' }, 400);
+    return jsonResponse(redactError('missing_fields'), 400);
   }
   if (!PIN_REGEX.test(pin)) {
-    return jsonResponse({ error: 'invalid_pin_format' }, 400);
+    return jsonResponse(redactError('invalid_pin_format'), 400);
   }
   if (!['pos', 'backoffice'].includes(device_type)) {
-    return jsonResponse({ error: 'invalid_device_type' }, 400);
+    return jsonResponse(redactError('invalid_device_type'), 400);
   }
 
   const admin = getAdminClient();
@@ -59,16 +64,17 @@ serve(async (req) => {
     .maybeSingle();
 
   if (profileErr || !profile) {
-    return jsonResponse({ error: 'user_not_found' }, 401);
+    // Redact : do not leak "user not found" vs "wrong pin" to the client.
+    return jsonResponse(redactError('user_not_found'), 401);
   }
 
   if (!profile.is_active) {
-    return jsonResponse({ error: 'user_inactive' }, 403);
+    return jsonResponse(redactError('user_inactive'), 403);
   }
 
   if (profile.locked_until && new Date(profile.locked_until) > new Date()) {
     const minutesLeft = Math.ceil((new Date(profile.locked_until).getTime() - Date.now()) / 60_000);
-    return jsonResponse({ error: 'account_locked', minutes_left: minutesLeft }, 403);
+    return jsonResponse(redactError('account_locked', { minutes_left: minutesLeft }), 403);
   }
 
   // 2. Verify PIN via DB function
@@ -78,8 +84,7 @@ serve(async (req) => {
   });
 
   if (verifyErr) {
-    console.error('verify_user_pin error', verifyErr);
-    return jsonResponse({ error: 'internal' }, 500);
+    return jsonResponse(logAndRedact('verify-pin:rpc', verifyErr), 500);
   }
 
   if (!pinValid) {
@@ -96,7 +101,10 @@ serve(async (req) => {
       entity_id: profile.id,
       metadata: { attempts: newAttempts, ip },
     });
-    return jsonResponse({ error: 'invalid_pin', attempts_remaining: Math.max(0, MAX_FAILED - newAttempts) }, 401);
+    return jsonResponse(
+      redactError('invalid_pin', { attempts_remaining: Math.max(0, MAX_FAILED - newAttempts) }),
+      401,
+    );
   }
 
   // 3. PIN OK : reset compteur, set last_login
@@ -107,9 +115,9 @@ serve(async (req) => {
 
   // 3b. Optional permission gate — check before issuing session
   if (required_permission) {
-    const hasPermission = checkPermissionForRole(profile.role_code, required_permission);
+    const hasPermission = await checkPermissionForRole(profile.role_code, required_permission, profile.id);
     if (!hasPermission) {
-      return jsonResponse({ error: 'permission_denied', code: 'PERMISSION_MISSING' }, 403);
+      return jsonResponse(redactError('permission_denied', { code: 'PERMISSION_MISSING' }), 403);
     }
   }
 
@@ -130,16 +138,14 @@ serve(async (req) => {
     .single();
 
   if (sessionErr) {
-    console.error('user_sessions insert error', sessionErr);
-    return jsonResponse({ error: 'internal' }, 500);
+    return jsonResponse(logAndRedact('verify-pin:session', sessionErr), 500);
   }
 
   // 6. Mint a Supabase-compatible JWT directly via SUPABASE_JWT_SECRET (HS256)
-  // This avoids the GoTrue admin API which requires properly-seeded auth.identities rows.
-  // JWT_SECRET is in supabase/functions/.env (not SUPABASE_ prefixed to avoid local serve filtering)
-  const jwtSecret = Deno.env.get('JWT_SECRET') ?? Deno.env.get('SUPABASE_JWT_SECRET');
+  // via the shared signer (_shared/jwt.ts — extracted Session 13 Phase 1.B).
+  const jwtSecret = getJwtSecret();
   if (!jwtSecret) {
-    return jsonResponse({ error: 'server_misconfigured_no_jwt_secret' }, 500);
+    return jsonResponse(redactError('server_misconfigured_no_jwt_secret'), 500);
   }
 
   const nowSec = Math.floor(Date.now() / 1000);
@@ -158,9 +164,6 @@ serve(async (req) => {
   };
 
   const accessToken = await signJwt(jwtPayload, jwtSecret);
-  // Provide a non-null refresh_token so supabase.auth.setSession() does not throw
-  // AuthSessionMissingError. We never use the Supabase refresh flow (we have our own
-  // session token mechanism), so this is a safe placeholder.
   const refreshToken = `pin-session:${sessionToken}`;
   const verifyData = {
     session: {
@@ -179,8 +182,8 @@ serve(async (req) => {
     metadata: { device_type, ip, session_id: session.id },
   });
 
-  // 8. Build permissions list (v1 hardcoded by role)
-  const permissions = computePermissionsForRole(profile.role_code);
+  // 8. Build permissions list (DB-driven — role_permissions + user_permission_overrides)
+  const permissions = await computePermissionsForRole(profile.role_code, profile.id);
 
   // 9. Response
   return jsonResponse({
@@ -204,32 +207,3 @@ serve(async (req) => {
     permissions,
   });
 });
-
-// HMAC CryptoKey cache (D4 — session 8 perf-debt).
-// Module-scope, lazy-init on first signJwt() call. Edge Function instances
-// are reused across invocations; importKey() is ~1-3ms per call. Caching
-// removes that cost from every login after the first.
-let _hmacKey: CryptoKey | null = null;
-async function getHmacKey(secret: string): Promise<CryptoKey> {
-  if (_hmacKey) return _hmacKey;
-  _hmacKey = await crypto.subtle.importKey(
-    'raw',
-    new TextEncoder().encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign'],
-  );
-  return _hmacKey;
-}
-
-// Sign a JWT using HS256 via Web Crypto API (Deno native)
-async function signJwt(payload: Record<string, unknown>, secret: string): Promise<string> {
-  const header = { alg: 'HS256', typ: 'JWT' };
-  const enc = (obj: unknown) => btoa(JSON.stringify(obj)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-  const data = `${enc(header)}.${enc(payload)}`;
-  const key = await getHmacKey(secret);
-  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(data));
-  const sigB64 = btoa(String.fromCharCode(...new Uint8Array(sig)))
-    .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-  return `${data}.${sigB64}`;
-}

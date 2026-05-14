@@ -54,8 +54,11 @@ export type PermissionCode =
   | 'pos.sale.refund'
   | 'pos.sale.cancel_item'
   | 'users.create'
+  | 'users.read'
   | 'users.update'
   | 'users.view_audit'
+  | 'rbac.read'
+  | 'rbac.update'
   | 'promotions.read'
   | 'promotions.create'
   | 'promotions.update'
@@ -65,7 +68,47 @@ export type PermissionCode =
   | 'inventory.read'
   | 'inventory.adjust'
   | 'inventory.receive'
-  | 'inventory.waste';
+  | 'inventory.waste'
+  | 'inventory.transfer.create'
+  | 'inventory.transfer.receive'
+  | 'inventory.opname.create'
+  | 'inventory.opname.finalize'
+  | 'inventory.sections.update'
+  | 'reports.read'
+  | 'reports.export'
+  | 'reports.sales.read'
+  | 'reports.inventory.read'
+  | 'reports.audit.read'
+  | 'reports.financial.read'
+  | 'expenses.read'
+  | 'expenses.create'
+  | 'expenses.update'
+  | 'expenses.delete'
+  | 'expenses.approve'
+  | 'expenses.pay'
+  | 'expenses.manage'
+  // Session 13 / Phase 3.C
+  | 'shift.open'
+  | 'shift.close'
+  | 'shift.cash_movement'
+  | 'customers.b2b.update'
+  | 'inventory.reservation.create'
+  | 'inventory.reservation.release'
+  // Session 13 / Phase 5.A — LAN port
+  | 'print_queue.read'
+  | 'print_queue.manage'
+  | 'lan.devices.read'
+  | 'lan.devices.manage'
+  // Session 13 / Phase 5.B — Notifications pipeline
+  | 'notifications.send'
+  // Session 13 / Phase 5.C — Settings UI + holidays/templates
+  | 'settings.read'
+  | 'settings.update'
+  | 'settings.holidays.manage'
+  | 'settings.kiosk.manage'
+  // Session 13 / Phase 6.C — Accounting mappings admin (module 10-012)
+  | 'accounting.read'
+  | 'accounting.mapping.update';
 
 /**
  * Check whether a user has a single permission. Pure client-side lookup —

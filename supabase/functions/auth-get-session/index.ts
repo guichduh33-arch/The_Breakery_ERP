@@ -24,7 +24,7 @@ serve(async (req) => {
     return jsonResponse({ error: 'profile_not_found' }, 404);
   }
 
-  const permissions = computePermissionsForRole(profile.role_code);
+  const permissions = await computePermissionsForRole(profile.role_code, profile.id);
 
   return jsonResponse({
     user: profile,

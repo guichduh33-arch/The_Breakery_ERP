@@ -29,6 +29,23 @@ export {
   CardTitle,
 } from './primitives/Card.js';
 export { Toaster } from './primitives/Toast.js';
+export {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetOverlay,
+  SheetPortal,
+  SheetTitle,
+  SheetTrigger,
+  type SheetContentProps,
+} from './primitives/Sheet.js';
+export { EmptyState, type EmptyStateProps } from './primitives/EmptyState.js';
+
+// app shell components
+export { SkipToContent, type SkipToContentProps } from './components/SkipToContent.js';
 
 // domain components
 export { Numpad, type NumpadProps } from './components/Numpad.js';

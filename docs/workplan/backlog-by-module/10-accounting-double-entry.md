@@ -183,3 +183,127 @@
 **Estimation** : M
 **Risques** : volume audit log → partition mensuelle ou rétention 7 ans (obligation Indonésie).
 **Notes** : reuse pattern `audit_logs` existant.
+
+---
+
+## Backlog métier (objectif fonctionnel)
+
+> Items issus de `docs/objectif travail/ACCOUNTING.md` §18 — vision produit du module au-delà du tech-debt P0/P1.
+> Ajoutés 2026-05-13 lors de la cascade docs (session 13).
+
+### TASK-10-014 — E-Faktur / e-Bupot integration [P2] [TODO]
+**Contexte** : si The Breakery passe un jour sous régime PPN national (au-delà du seuil omzet réglementaire), l'intégration directe avec le système fiscal national (DJP : e-Faktur, e-Bupot) devient nécessaire pour générer les factures électroniques et les bulletins de retenue à la source.
+**Bénéfice attendu** : conformité PPN sans ressaisie ; e-Faktur émis automatiquement sur chaque vente B2B éligible.
+**Critère d'acceptation** :
+- [ ] Étude de faisabilité API DJP (sandbox, prérequis NPWP, certificat numérique).
+- [ ] Mapping `accounting_mappings` enrichi pour PPN_OUTPUT / PPN_INPUT (préparer mais ne pas activer).
+- [ ] Toggle Settings → Financial → "Régime PPN" qui active la collecte e-Faktur sur les ventes éligibles.
+- [ ] Génération e-Faktur XML conforme + workflow d'envoi / accusé.
+**Dépend de** : passage effectif au régime PPN (décision externe).
+**Estimation** : XL
+**Risques** : changement réglementaire DJP fréquent — viser une couche d'abstraction `taxFilingProvider`.
+**Notes** : impact transverse VAT Management page + CALK Tax section.
+
+### TASK-10-015 — Amortissement automatique des immobilisations [P2] [TODO]
+**Contexte** : aujourd'hui aucune gestion des immobilisations — saisie manuelle d'OD mensuelle. Pour une vraie boulangerie avec four, frigos, mobilier, vitrines, c'est faux et fastidieux.
+**Bénéfice attendu** : saisir un équipement, paramétrer la durée d'amortissement, le système génère l'écriture d'amortissement chaque mois.
+**Critère d'acceptation** :
+- [ ] Table `fixed_assets` (code, libellé, date acquisition, montant HT, durée, méthode linéaire/dégressif, compte amortissement, compte dotation).
+- [ ] Job mensuel (cron Edge Function) qui calcule et poste l'écriture d'amortissement de chaque immobilisation active.
+- [ ] Page `/accounting/fixed-assets` (permission `accounting.manage`) : CRUD immobilisations + visualisation des amortissements cumulés.
+- [ ] Intégration au Balance Sheet : "Immobilisations nettes" = brutes − amortissements cumulés.
+**Dépend de** : `TASK-10-011` (périodes fiscales) pour ne pas poster sur période fermée.
+**Estimation** : L
+**Risques** : changement de méthode en cours d'exercice non géré V1.
+**Notes** : SAK EMKM autorise les deux méthodes (linéaire, dégressif). Par défaut linéaire.
+
+### TASK-10-016 — Closing checklist mensuelle [P3] [TODO]
+**Contexte** : la clôture d'un mois est aujourd'hui implicite (le comptable suit son propre process Excel). Pas de garde-fou.
+**Bénéfice attendu** : workflow guidé qui demande "as-tu réconcilié la banque ? validé les dépenses en attente ? déclaré la PB1 ? vérifié les opnames du mois ?" avant d'autoriser la clôture de la période.
+**Critère d'acceptation** :
+- [ ] Page `/accounting/month-close` qui liste les checks préalables avec leur statut (✅ / ❌ / ⚠️).
+- [ ] Chaque check est une RPC : `check_bank_reconciled(p_period)`, `check_expenses_validated(p_period)`, `check_pb1_filed(p_period)`, `check_opnames_complete(p_period)`.
+- [ ] Bouton "Close month" actif seulement si tous les checks bloquants sont verts.
+- [ ] Trace audit : qui a fermé, à quelle date, avec quel statut de chaque check.
+**Dépend de** : `TASK-10-011`.
+**Estimation** : M
+**Risques** : checks trop stricts → comptable bloqué → procédure d'override (manager PIN).
+**Notes** : workflow inspiré des "month-end close" Xero / QuickBooks.
+
+### TASK-10-017 — Comparatif budget vs réel [P3] [TODO]
+**Contexte** : aucun module budget aujourd'hui. Le gérant ne sait pas s'il dépense plus que prévu en marketing, en achats matières premières, etc.
+**Bénéfice attendu** : saisir un budget annuel par compte (ou par classe), voir en direct les écarts mensuels et cumulés.
+**Critère d'acceptation** :
+- [ ] Table `budgets` (year, account_id, period (year/month), amount).
+- [ ] Page `/accounting/budget` : grille de saisie par compte × mois.
+- [ ] Vue `view_budget_vs_actual` qui joint `budgets` + soldes mensuels des comptes.
+- [ ] Widget Dashboard "Top 5 écarts budget vs réel" sur le mois courant.
+**Dépend de** : aucune.
+**Estimation** : L
+**Risques** : import budget depuis Excel → format CSV strict.
+**Notes** : V1 budget annuel par compte ; V2 sous-budgets par section / canal.
+
+### TASK-10-018 — Export Accurate / MYOB [P3] [TODO]
+**Contexte** : aujourd'hui export CSV générique uniquement. Les comptables externes utilisent souvent Accurate (Indonésie) ou MYOB et doivent reformater manuellement.
+**Bénéfice attendu** : génération d'un fichier d'import au format attendu par les logiciels comptables locaux.
+**Critère d'acceptation** :
+- [ ] Service `accountingExportService.exportToAccurate(p_start, p_end)` produit le fichier XML/CSV Accurate.
+- [ ] Service `accountingExportService.exportToMYOB(p_start, p_end)` idem MYOB.
+- [ ] Page `/accounting/export` (permission `accounting.manage`) : sélection période + format + download.
+- [ ] Test : import du fichier généré dans un sandbox Accurate / MYOB sans erreur.
+**Dépend de** : aucune.
+**Estimation** : M (par format).
+**Risques** : formats propriétaires versionnés — figer le mapping à une version donnée.
+**Notes** : commencer par Accurate (marché Indonésie dominant).
+
+### TASK-10-019 — Multi-devise [P3] [TODO]
+**Contexte** : tout est en IDR aujourd'hui. Pour les fournisseurs internationaux (équipement français, ingrédients italiens, abonnements SaaS USD), une dépense doit être convertie manuellement à la saisie — perte du taux historique.
+**Bénéfice attendu** : saisir une dépense en EUR / USD, le système enregistre montant devise + taux + équivalent IDR, et révise les écarts de change en fin de période.
+**Critère d'acceptation** :
+- [ ] Colonnes `currency_code` (ISO 4217) + `exchange_rate` + `amount_local` sur `expenses`, `purchase_orders`, `purchase_order_items`.
+- [ ] Service `exchangeRateService` qui charge le taux du jour (BI / open-source feed).
+- [ ] Écriture compta libellée en IDR au taux du jour de l'opération.
+- [ ] Écart de change post-paiement : différence taux jour-opération vs taux jour-paiement → écriture `exchange_gain_loss`.
+- [ ] Plan comptable étendu : `7301 Exchange Gain` / `6301 Exchange Loss`.
+**Dépend de** : aucune.
+**Estimation** : L
+**Risques** : sources de taux divergentes — choisir une référence officielle (Bank Indonesia).
+**Notes** : V1 lecture taux quotidienne ; V2 historique stocké.
+
+### TASK-10-020 — Consolidation multi-entité [P3] [TODO]
+**Contexte** : un seul jeu de livres aujourd'hui. Si The Breakery ouvre une seconde adresse en tant qu'entité juridique distincte, pas de consolidation possible.
+**Bénéfice attendu** : maintenir des livres séparés par entité et produire des états consolidés.
+**Critère d'acceptation** :
+- [ ] Concept `entity_id` propagé sur `accounts`, `journal_entries`, `fiscal_periods`.
+- [ ] Settings → Multi-entity : CRUD entités + paramètres comptables propres.
+- [ ] RPC `get_consolidated_balance_sheet(p_entity_ids[], p_date)` agrège les soldes après élimination des opérations intra-groupe.
+- [ ] Page `/accounting/consolidation` : sélection entités + période + visualisation états consolidés.
+**Dépend de** : décision juridique d'ouvrir une seconde entité.
+**Estimation** : XL
+**Risques** : impact transverse énorme (Inventory, Orders, B2B). À planifier comme une refonte modulaire et non un patch.
+**Notes** : V1 simple addition ; V2 vraies éliminations intra-groupe SAK EMKM.
+
+### TASK-10-021 — IA d'aide à la classification [P3] [TODO]
+**Contexte** : pour les dépenses ambiguës (ex: "Facture Tokopedia 350k"), le comptable choisit manuellement le compte d'imputation. Coût cognitif, risque d'erreur.
+**Bénéfice attendu** : suggestion automatique du compte sur la base de l'historique de classifications (libellé fournisseur + montant + saison).
+**Critère d'acceptation** :
+- [ ] Service `expenseClassificationSuggestion(p_description, p_amount, p_supplier)` qui scanne l'historique et retourne top 3 comptes probables + confidence.
+- [ ] UI `ExpenseForm` propose les suggestions, comptable confirme en 1 clic.
+- [ ] Feedback loop : chaque correction manuelle alimente le modèle.
+**Dépend de** : volume d'historique suffisant (~6 mois de dépenses classées).
+**Estimation** : M
+**Risques** : modèle simple (regex + similarité) souvent suffit en V1 — pas besoin de LLM.
+**Notes** : commencer par embedding sentence-transformers léger, pas d'API externe.
+
+### TASK-10-022 — Tax planning [P3] [TODO]
+**Contexte** : le gérant ne sait pas anticiper sa charge fiscale annuelle (impôt sur les sociétés indonésien — PPh Badan 22 % pour PME). Surprise en fin d'année.
+**Bénéfice attendu** : simulation des taxes à payer selon différents scénarios de fin d'année (provisionner amortissement supplémentaire, optimiser timing des achats, etc.).
+**Critère d'acceptation** :
+- [ ] Page `/accounting/tax-planning` : projection résultat fiscal annuel à partir du YTD + extrapolation.
+- [ ] Scénarios "what-if" : ajouter X IDR de dépenses, accélérer Y amortissement, retarder Z facturation B2B.
+- [ ] Calcul PPh Badan estimé + recommandations.
+- [ ] Export PDF "Prévisionnel fiscal" pour le comptable externe.
+**Dépend de** : `TASK-10-015` (amortissement) + `TASK-10-017` (budget) pour précision des projections.
+**Estimation** : L
+**Risques** : règles fiscales indonésiennes évoluent — externaliser le moteur de calcul dans une config versionnée.
+**Notes** : ne remplace pas le conseil fiscal — outil d'aide à la décision.

@@ -6,6 +6,7 @@
 import type { JSX } from 'react';
 import { Button, Currency, TenderRow, cn } from '@breakery/ui';
 import type { OrderDetail } from '../hooks/useOrderDetail';
+import { OrderRetryBanner } from './OrderRetryBanner';
 
 export interface OrderDetailDrawerProps {
   order: OrderDetail;
@@ -20,13 +21,16 @@ export function OrderDetailDrawer({
   const remainingRefundable = order.total - order.total_refunded;
 
   return (
-    <div className="flex flex-col h-full bg-bg-elevated border-l border-border-subtle">
+    <div
+      className="flex flex-col h-full bg-bg-elevated border-l border-border-subtle"
+      data-testid="order-detail-drawer"
+    >
       <header className="p-4 border-b border-border-subtle">
         <div className="flex items-baseline justify-between">
           <span className="font-serif text-2xl">{order.order_number}</span>
           <span className={cn(
             'text-xs uppercase tracking-widest font-semibold',
-            isVoided ? 'text-red-400' : 'text-green',
+            isVoided ? 'text-danger' : 'text-success',
           )}>
             {order.status}
           </span>
@@ -40,13 +44,16 @@ export function OrderDetailDrawer({
           </div>
         )}
         {isVoided && order.void_reason && (
-          <div className="mt-2 rounded-md border border-red-400/30 bg-red-500/10 px-2 py-1 text-xs text-red-300">
+          <div className="mt-2 rounded-md border border-danger/30 bg-danger-soft px-2 py-1 text-xs text-danger">
             Void reason: {order.void_reason}
           </div>
         )}
       </header>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {order.status === 'paid' && (
+          <OrderRetryBanner orderId={order.id} status={order.status} />
+        )}
         <section>
           <div className="text-xs uppercase tracking-widest text-text-secondary mb-2">Items</div>
           <ul className="space-y-1 text-sm">
@@ -93,8 +100,8 @@ export function OrderDetailDrawer({
           {order.total_refunded > 0 && (
             <div className="flex justify-between text-text-secondary">
               <span>Refunded</span>
-              <span className="font-mono text-red-400">
-                -<Currency amount={order.total_refunded} className="text-red-400" />
+              <span className="font-mono text-danger">
+                -<Currency amount={order.total_refunded} className="text-danger" />
               </span>
             </div>
           )}

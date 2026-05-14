@@ -16,7 +16,8 @@ export interface PromotionListRow extends PromotionFormValues {
 }
 
 export interface PromotionsListFilters {
-  type?: 'percentage' | 'fixed_amount' | 'bogo' | 'free_product' | 'all';
+  // Session 13 / Phase 2.C — added 'threshold' + 'bundle'.
+  type?: 'percentage' | 'fixed_amount' | 'bogo' | 'free_product' | 'threshold' | 'bundle' | 'all';
   active?: 'all' | 'active' | 'inactive';
   startDate?: string | null;
   endDate?: string | null;
@@ -40,6 +41,14 @@ const SELECT_COLS = [
   'bogo_trigger_qty',
   'bogo_reward_qty',
   'bogo_reward_discount_pct',
+  // Session 13 / Phase 2.C new columns
+  'bogo_buy_quantity',
+  'bogo_get_quantity',
+  'bogo_get_product_id',
+  'threshold_amount',
+  'threshold_type',
+  'bundle_product_ids',
+  'bundle_price',
   'gift_product_id',
   'gift_qty',
   'min_items_total',

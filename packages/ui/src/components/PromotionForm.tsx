@@ -36,12 +36,25 @@ export interface PromotionFormValues {
   scope_product_ids: string[];
   scope_category_ids: string[];
 
-  // BOGO
+  // BOGO (legacy multi-product shape — Session 9)
   bogo_trigger_product_ids: string[];
   bogo_reward_product_ids: string[];
   bogo_trigger_qty: number | null;
   bogo_reward_qty: number | null;
   bogo_reward_discount_pct: number | null;
+
+  // BOGO (new single-product shape — Session 13 / Phase 2.C)
+  bogo_buy_quantity: number | null;
+  bogo_get_quantity: number | null;
+  bogo_get_product_id: string | null;
+
+  // Threshold (Session 13 / Phase 2.C)
+  threshold_amount: number | null;
+  threshold_type: 'subtotal' | 'quantity' | null;
+
+  // Bundle (Session 13 / Phase 2.C)
+  bundle_product_ids: string[];
+  bundle_price: number | null;
 
   // Free product
   gift_product_id: string | null;
@@ -111,6 +124,13 @@ export function emptyPromotionValues(): PromotionFormValues {
     bogo_trigger_qty: 1,
     bogo_reward_qty: 1,
     bogo_reward_discount_pct: 100,
+    bogo_buy_quantity: null,
+    bogo_get_quantity: null,
+    bogo_get_product_id: null,
+    threshold_amount: null,
+    threshold_type: null,
+    bundle_product_ids: [],
+    bundle_price: null,
     gift_product_id: null,
     gift_qty: 1,
     min_items_total: 0,

@@ -125,33 +125,38 @@ describe('Inventory smoke E2E', () => {
     cleanup();
   });
 
-  it('MANAGER flow: list + low-stock badge visible, Adjust hidden, Receive + Waste shown', async () => {
-    await renderAs(['inventory.read', 'inventory.receive', 'inventory.waste']);
-    await waitFor(() => expect(screen.getByText('Americano')).toBeInTheDocument());
+  it('MANAGER flow: list + low-stock badge visible, Adjust hidden, Receive + Waste shown', { timeout: 40_000 }, async () => {
+    const r = await renderAs(['inventory.read', 'inventory.receive', 'inventory.waste']);
+    const w = within(r.container);
+    // First test in the file pays the vite transformer cold-start (~15-20s under
+    // full-suite load on Windows + jsdom), so the waitFor timeout is intentionally large.
+    await waitFor(() => expect(w.getByText('Americano')).toBeInTheDocument(), { timeout: 35_000 });
 
     // Low-stock row stamps the badge (current=25 < threshold=30, threshold > 0).
-    const americanoRow = screen.getByText('Americano').closest('tr')!;
+    const americanoRow = w.getByText('Americano').closest('tr')!;
     expect(within(americanoRow).getByText(/low/i)).toBeInTheDocument();
 
     // Non-low row does not show the badge.
-    const croissantRow = screen.getByText('Croissant').closest('tr')!;
+    const croissantRow = w.getByText('Croissant').closest('tr')!;
     expect(within(croissantRow).queryByText(/low/i)).not.toBeInTheDocument();
 
     // Toolbar perms: Adjust hidden, Receive + Waste shown.
-    expect(screen.queryByRole('button', { name: /^Adjust$/i })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Receive/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Waste/i  })).toBeInTheDocument();
+    expect(w.queryByRole('button', { name: /^Adjust$/i })).not.toBeInTheDocument();
+    expect(w.getByRole('button', { name: /Receive/i })).toBeInTheDocument();
+    expect(w.getByRole('button', { name: /Waste/i  })).toBeInTheDocument();
   });
 
-  it('MANAGER flow: open Receive from row → submit → receive_stock_v1 RPC fired with correct args', async () => {
-    await renderAs(['inventory.read', 'inventory.receive', 'inventory.waste']);
-    await waitFor(() => screen.getByText('Americano'));
+  it('MANAGER flow: open Receive from row → submit → receive_stock_v1 RPC fired with correct args', { timeout: 20_000 }, async () => {
+    const r = await renderAs(['inventory.read', 'inventory.receive', 'inventory.waste']);
+    const w = within(r.container);
+    await waitFor(() => w.getByText('Americano'), { timeout: 15_000 });
 
     // Open via the row's action menu (locked-product path — bypasses the typeahead).
-    const americanoRow = screen.getByText('Americano').closest('tr')!;
+    const americanoRow = w.getByText('Americano').closest('tr')!;
     fireEvent.click(within(americanoRow).getByRole('button', { name: /Actions for Americano/i }));
-    fireEvent.click(screen.getByRole('menuitem', { name: /Receive stock/i }));
+    fireEvent.click(w.getByRole('menuitem', { name: /Receive stock/i }));
 
+    // Modal content is rendered via Radix Portal — query the global screen.
     await waitFor(() => screen.getByText(/^Receive stock$/i));
     fireEvent.change(screen.getByLabelText(/Supplier/i), { target: { value: 's-1' } });
     fireEvent.change(screen.getByLabelText(/Quantity received/i), { target: { value: '20' } });
@@ -170,14 +175,16 @@ describe('Inventory smoke E2E', () => {
     });
   });
 
-  it('MANAGER flow: open Waste from row → submit → waste_stock_v1 RPC fired', async () => {
-    await renderAs(['inventory.read', 'inventory.receive', 'inventory.waste']);
-    await waitFor(() => screen.getByText('Croissant'));
+  it('MANAGER flow: open Waste from row → submit → waste_stock_v1 RPC fired', { timeout: 20_000 }, async () => {
+    const r = await renderAs(['inventory.read', 'inventory.receive', 'inventory.waste']);
+    const w = within(r.container);
+    await waitFor(() => w.getByText('Croissant'), { timeout: 15_000 });
 
-    const croissantRow = screen.getByText('Croissant').closest('tr')!;
+    const croissantRow = w.getByText('Croissant').closest('tr')!;
     fireEvent.click(within(croissantRow).getByRole('button', { name: /Actions for Croissant/i }));
-    fireEvent.click(screen.getByRole('menuitem', { name: /Record waste/i }));
+    fireEvent.click(w.getByRole('menuitem', { name: /Record waste/i }));
 
+    // Modal content is rendered via Radix Portal — query the global screen.
     await waitFor(() => screen.getByText(/Record waste — Croissant/i));
     fireEvent.change(screen.getByLabelText(/Quantity wasted/i), { target: { value: '3' } });
 
@@ -195,16 +202,18 @@ describe('Inventory smoke E2E', () => {
     });
   });
 
-  it('ADMIN flow: Adjust button visible → submit → adjust_stock_v1 RPC fired', async () => {
-    await renderAs(['inventory.read', 'inventory.adjust', 'inventory.receive', 'inventory.waste']);
-    await waitFor(() => screen.getByText('Americano'));
+  it('ADMIN flow: Adjust button visible → submit → adjust_stock_v1 RPC fired', { timeout: 20_000 }, async () => {
+    const r = await renderAs(['inventory.read', 'inventory.adjust', 'inventory.receive', 'inventory.waste']);
+    const w = within(r.container);
+    await waitFor(() => w.getByText('Americano'), { timeout: 15_000 });
 
-    expect(screen.getByRole('button', { name: /^Adjust$/i })).toBeInTheDocument();
+    expect(w.getByRole('button', { name: /^Adjust$/i })).toBeInTheDocument();
 
-    const americanoRow = screen.getByText('Americano').closest('tr')!;
+    const americanoRow = w.getByText('Americano').closest('tr')!;
     fireEvent.click(within(americanoRow).getByRole('button', { name: /Actions for Americano/i }));
-    fireEvent.click(screen.getByRole('menuitem', { name: /Adjust stock/i }));
+    fireEvent.click(w.getByRole('menuitem', { name: /Adjust stock/i }));
 
+    // Modal content is rendered via Radix Portal — query the global screen.
     await waitFor(() => screen.getByText(/Adjust stock — Americano/i));
     fireEvent.change(screen.getByLabelText(/New on-hand quantity/i), { target: { value: '40' } });
     fireEvent.change(screen.getByPlaceholderText(/At least 3 characters/i),

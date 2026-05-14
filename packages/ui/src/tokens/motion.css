@@ -1,0 +1,27 @@
+/*
+ * motion.css — motion duration + easing tokens.
+ *
+ * Session 13 (Phase 1.D / ui-steward batch 1) — TASK-22-009 P2.
+ *
+ * The `prefers-reduced-motion` media query collapses durations to 0ms at the
+ * CSS variable level so any component consuming `transition-duration:
+ * var(--motion-base)` automatically respects user OS-level preferences. We
+ * also expose a `motion-safe:` Tailwind utility usage pattern (see component
+ * className conventions).
+ */
+:root, .dark {
+  --motion-fast:    120ms;
+  --motion-base:    200ms;
+  --motion-slow:    320ms;
+
+  --motion-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-ease-in:  cubic-bezier(0.7, 0, 0.84, 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root, .dark {
+    --motion-fast: 0ms;
+    --motion-base: 0ms;
+    --motion-slow: 0ms;
+  }
+}

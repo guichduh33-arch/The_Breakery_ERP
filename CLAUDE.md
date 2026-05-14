@@ -13,18 +13,20 @@
 
 ## Active Workplan
 
-> Read this **before** opening code on inventory work.
+> Read this **before** opening code on session 13 work.
 
-- **Current session:** Session 12 — Inventory Complete (8 phases). INDEX: [`docs/workplan/plans/2026-05-12-session-12-inventory-complete-INDEX.md`](docs/workplan/plans/2026-05-12-session-12-inventory-complete-INDEX.md). Spec: [`docs/workplan/specs/2026-05-12-session-12-inventory-complete-spec.md`](docs/workplan/specs/2026-05-12-session-12-inventory-complete-spec.md).
-- **Module reference (canonical):** [`docs/reference/04-modules/06-inventory-stock.md`](docs/reference/04-modules/06-inventory-stock.md) — Parts I/II/III/IV (fonctionnel, technique, backlog, design).
-- **Backlog opérationnel:** [`docs/workplan/backlog-by-module/06-inventory-stock.md`](docs/workplan/backlog-by-module/06-inventory-stock.md).
-- **Execution skill:** invoke `superpowers:subagent-driven-development` (or `superpowers:executing-plans`) before running a phase. Each phase is isolated → one subagent per phase, parallelizable post-Phase 1.
-- **Workplan layout:** `docs/workplan/{plans,specs,backlog-by-module}/`. Plans/specs are **dated, append-only history** — never rewrite past plans; create a new dated file. Backlog files are living docs (update in place).
-- **Migration sequence active:** `20260516xxxxxx_*.sql` (Phase 1 = 01-11 MVP foundations + idempotency fixes ; Phase 2 = 12-20 sections / units / movement_type enum / section_stock). Keep numbering monotonic — check `supabase/migrations/` before picking the next number.
+- **Current session:** Session 13 — 25-module burndown (8 waves). INDEX: [`docs/workplan/plans/2026-05-13-session-13-INDEX.md`](docs/workplan/plans/2026-05-13-session-13-INDEX.md). Spec: [`docs/workplan/specs/2026-05-13-session-13-spec.md`](docs/workplan/specs/2026-05-13-session-13-spec.md). Audit: [`docs/workplan/specs/2026-05-13-session-13-architecture-audit.md`](docs/workplan/specs/2026-05-13-session-13-architecture-audit.md). Reviews: [`session-13-review.md`](docs/workplan/specs/2026-05-13-session-13-review.md) + [`wave-0-review.md`](docs/workplan/specs/2026-05-13-session-13-wave-0-review.md). Refs (decisions D1-D20, V2→V3 translation, kiosk auth, ui charter, has_permission design, staging config): `docs/workplan/refs/2026-05-13-*.md`.
+- **Status:** Session 13 COMPLETE (2026-05-14) — Waves 0, 1, 2, 3, 4, 5, 6 all ✓. Phase 6.C wrapped with `2bbf514` (inventory.smoke flake fix). Final verification: `pnpm typecheck` ✓, `pnpm build` ✓ (POS + BO + 4 packages), `pnpm exec turbo run test --concurrency=1` ✓ (6/6 packages). Branch `swarm/session-13` ready for merge to `master`. Deviation packs per wave under `docs/workplan/refs/2026-05-14-session-13-wave-{2..6}-deviations.md` — open follow-ups (Session 14+): Playwright CI job, `pg_net`-based birthday cron, Cash Flow Investing/Financing sections, `mv_pl_monthly` branched reuse.
+- **Module reference (canonical):** [`docs/reference/04-modules/`](docs/reference/04-modules/) per module (e.g., `06-inventory-stock.md` for inventory).
+- **Backlogs:** `docs/workplan/backlog-by-module/01-…25-….md` — 25 modules, ~280 tasks total (~108 cascaded in commit `1f88e33`).
+- **Execution skill:** invoke `superpowers:subagent-driven-development` (or `superpowers:executing-plans`) before running a phase. Each phase is isolated → one subagent per phase, parallelizable per Wave.
+- **Workplan layout:** `docs/workplan/{plans,specs,refs,backlog-by-module}/`. Plans/specs are **dated, append-only history** — never rewrite past plans; create a new dated file. Backlog files are living docs (update in place).
+- **Migration sequence active:** `20260517xxxxxx_*.sql` (block `000001..210` reserved for session 13). Wave 1 used `000001-016, 000020-023, 000030-034, 000040-045`. Keep numbering monotonic — check `supabase/migrations/` before picking the next number.
 
 ## Project Conventions (The Breakery ERP)
 
 ### Critical patterns — don't break these
+- **DB target is Supabase cloud, NOT local Docker** — As of 2026-05-14, Docker / local supabase stack is **retired** on this machine. All migrations, RPCs, pgTAP tests, and types regen run against the V3 dev project on the cloud: **`ikcyvlovptebroadgtvd`** (`the-breakery-v3-dev`, region `ap-southeast-1`, Pro plan $10/mo) — dashboard: <https://supabase.com/dashboard/project/ikcyvlovptebroadgtvd>. Apply migrations via `mcp__plugin_supabase_supabase__apply_migration`, run SQL via `execute_sql`, regen types via `generate_typescript_types`. **DO NOT run** `pnpm db:reset`, `supabase start`, `supabase db reset`, or `bash supabase/tests/run_pgtap.sh` — they require Docker and will fail. Prod (ref `abjabuniwkqpfsenxljp`) is V2 monolith and incompatible with V3 migration lineage.
 - **PIN auth fetch wrapper** — the `auth-verify-pin` EF issues HS256 JWTs that GoTrue (ES256) can't validate via the default header. The Supabase client uses a custom fetch wrapper that injects the PIN JWT on every request via `setSupabaseAccessToken` (in `packages/supabase`). Never bypass with raw `Authorization` headers or `auth.setSession`.
 - **Realtime channel names must be unique per mount** — StrictMode double-mounts components and shared channel names collide silently. See `apps/pos/src/features/kds/hooks/useKdsRealtime.ts`.
 - **`packages/domain` is IO-free** — no `fetch`, no Supabase, no React. Pure TS, unit-testable.
@@ -37,7 +39,7 @@
 
 ### Git
 - Branches: `swarm/session-N` for ongoing session work, `feat/<scope>` or `fix/<scope>` for focused PRs. For phased plans, prefer `swarm/session-N` and squash-merge per phase.
-- Commits: conventional commits (`feat(scope): …`, `fix(scope): …`, `test(scope): …`, `docs(scope): …`, `refactor(scope): …`). For session 12 phases: `feat(db|domain|ui|backoffice): session 12 — phase X — <topic>`. Co-author Claude when AI-assisted.
+- Commits: conventional commits (`feat(scope): …`, `fix(scope): …`, `test(scope): …`, `docs(scope): …`, `refactor(scope): …`). For session 13 phases: `feat(db|domain|ui|backoffice|pos|edge|inventory): session 13 — phase X.Y — <topic>`. Co-author Claude when AI-assisted.
 
 ## Agent Comms (SendMessage-First Coordination)
 
@@ -175,24 +177,33 @@ Any string works as a custom agent type.
 - ALWAYS verify build succeeds before committing
 - This project uses **pnpm 9.15** + **turbo** — never `npm`
 
+### Local commands (no Docker required)
 ```bash
 pnpm build && pnpm test     # turbo run build / turbo run test --concurrency=1
 pnpm typecheck               # turbo run typecheck
-pnpm db:reset                # supabase db reset (re-applies migrations + seed)
-pnpm db:types                # regenerate packages/supabase/src/types.generated.ts
 ```
 
-Targeted iteration (much faster than full suite during phase work):
+### DB workflow — Supabase cloud staging (Docker retired 2026-05-14)
+All DB operations target the cloud V3 dev project `ikcyvlovptebroadgtvd`. **Do NOT run** `pnpm db:reset`, `supabase start`, or `bash supabase/tests/run_pgtap.sh` — Docker is gone.
 
+| Operation | MCP tool | Notes |
+|---|---|---|
+| Apply migration | `mcp__plugin_supabase_supabase__apply_migration` | `project_id='ikcyvlovptebroadgtvd'`, `name` in snake_case, body = SQL. Wrapped in transaction. |
+| Run SQL (incl. pgTAP) | `mcp__plugin_supabase_supabase__execute_sql` | Use `BEGIN ... ROLLBACK` envelope for pgTAP. Extension `pgtap` already enabled. |
+| Regen types | `mcp__plugin_supabase_supabase__generate_typescript_types` | Returns `{ types: "..." }` — write to `packages/supabase/src/types.generated.ts` and commit. |
+| Check drift | `mcp__plugin_supabase_supabase__list_migrations` | Compares `supabase_migrations.schema_migrations` to local. |
+| Direct psql (rare) | `postgresql://postgres.ikcyvlovptebroadgtvd:<URL_ENCODED_PWD>@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres` | Always go through the pooler — `db.<ref>.supabase.co` has no DNS A record. |
+
+Dashboard: <https://supabase.com/dashboard/project/ikcyvlovptebroadgtvd>
+
+### Targeted iteration (much faster than full suite during phase work)
 ```bash
 pnpm --filter @breakery/supabase test inventory     # Vitest live RPC tests
 pnpm --filter @breakery/backoffice test inventory   # BO smoke + unit
 pnpm --filter @breakery/domain test inventory       # pure-TS unit
-bash supabase/tests/run_pgtap.sh                     # full pgTAP suite (no pnpm script — direct runner)
-bash supabase/tests/run_pgtap.sh inventory_phase1_complete   # one pgTAP file by stem
 ```
 
-After Supabase schema changes (new migration), **always** run `pnpm db:reset && pnpm db:types` and commit the regenerated `packages/supabase/src/types.generated.ts`. A missing regen is the #1 cause of broken CI on this repo.
+After Supabase schema changes (new migration via MCP `apply_migration`), **always** regen types via `mcp__plugin_supabase_supabase__generate_typescript_types`, write to `packages/supabase/src/types.generated.ts`, and commit. A missing regen is the #1 cause of broken CI on this repo.
 
 ### Inventory phase test layout
 - pgTAP (DB): `supabase/tests/inventory.test.sql` (steady-state suite) + `supabase/tests/inventory_phase1_complete.test.sql` (phase 1 acceptance — T1-T15+).

@@ -27,7 +27,9 @@ export function useUpdatePromotion() {
         .select()
         .single();
       if (error) throw error;
-      return data;
+      // Cast for the same reason as useCreatePromotion — `threshold_type`
+      // is `string|null` in the generated types but our domain narrows it.
+      return data as unknown as PromotionListRow;
     },
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: PROMOTIONS_QUERY_KEY });

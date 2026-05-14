@@ -90,7 +90,7 @@ serve(async (req) => {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  const { data, error } = await userClient.rpc('refund_order_rpc', {
+  const { data, error } = await userClient.rpc('refund_order_rpc_v2', {
     p_order_id: body.order_id,
     p_lines: body.lines,
     p_tenders: body.tenders,

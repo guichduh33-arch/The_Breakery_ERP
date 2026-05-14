@@ -125,6 +125,67 @@
 **Risques** : storage marginal supplémentaire ; tests régressions sur reports.
 **Notes** : pattern usuel POS — figer le prix/promo au moment commande.
 
+---
+
+## Backlog métier (objectif fonctionnel)
+
+> Items issus de `docs/objectif travail/PROMOTIONS_AND_COMBOS.md` §15 — vision produit du module.
+> Ajoutés 2026-05-13 lors de la cascade docs (session 13). Stacking, effectiveness report, segment client, A/B testing sont déjà couverts par TASK-13-002/006/005/007. Parrainage est couvert par TASK-08-010 (cascade Customers).
+
+### TASK-13-009 — Coupons QR sérialisés (1 code unique par client) [P3] [TODO]
+**Contexte** : TASK-13-003 (coupon codes) gère des codes partagés réutilisables. Pour les campagnes marketing avec QR unique par client (envoyé par e-mail), il faut une sérialisation stricte.
+**Bénéfice attendu** : un QR code unique par client à scanner au comptoir, traçable individuellement (qui a utilisé quoi quand).
+**Critère d'acceptation** :
+- [ ] Table `promo_coupons` (code, promo_id, assigned_to_customer_id, used_at, used_in_order_id, expires_at).
+- [ ] Génération en lot : "Générer 500 QR pour la promo XYZ" → CSV exportable + impression.
+- [ ] UI POS : scan QR → identification du coupon + validation conditions promo associée.
+- [ ] Marquage `used` à la validation de l'order → invalidation immédiate.
+- [ ] Audit log de chaque scan + lien order_id.
+**Dépend de** : `TASK-13-003` (logique base coupon code).
+**Estimation** : M
+**Risques** : QR copié et réutilisé → flag `used` immédiat empêche.
+**Notes** : utile pour les campagnes mailing / influence.
+
+### TASK-13-010 — Combos dynamiques (règles conditionnelles) [P3] [TODO]
+**Contexte** : les combos actuels sont des assemblages fixes. Pour un combo dynamique du type "si vous prenez 3 viennoiseries, la 4ᵉ à −50%", aucun moyen aujourd'hui.
+**Bénéfice attendu** : combos avec règles conditionnelles dépendantes du panier (escalier de remise, quantité dégressive).
+**Critère d'acceptation** :
+- [ ] Extension `combo_groups` avec règles avancées : "Nᵉ produit à X% off".
+- [ ] Engine `comboCalculator` étendu pour gérer les règles conditionnelles.
+- [ ] UI combo form : éditeur de règles visuel (drag-drop conditions).
+- [ ] Affichage cart : décomposition du combo dynamique en lignes claires.
+**Dépend de** : aucune.
+**Estimation** : L
+**Risques** : complexité d'engine — bien borner les types de règles V1.
+**Notes** : V1 limiter aux 3 patterns les plus courants (escalier qty, % progressif, BOGO).
+
+### TASK-13-011 — Smart suggest au POS (close the deal) [P3] [TODO]
+**Contexte** : le système ne suggère pas au caissier d'ajouter un item pour activer une promo. Opportunité perdue d'upsell.
+**Bénéfice attendu** : "Ajoutez 1 baguette pour activer la promo BOGO !" — affiché en bottom du cart quand une promo est à un item près de se déclencher.
+**Critère d'acceptation** :
+- [ ] Le `promotionEngine` calcule pour chaque promo non encore matchée le "delta to activate" (1 item de plus, 5k de plus).
+- [ ] UI cart : banner discret en bas "💡 Ajoutez X pour activer la promo Y (−Z IDR)".
+- [ ] Click banner → ajoute l'item suggéré au cart (si single SKU déterminé).
+- [ ] Désactivable Settings.
+**Dépend de** : `useCartPromotions` extension.
+**Estimation** : M
+**Risques** : suggestions trop fréquentes / spam → seulement les promos significatives (>5k IDR de gain).
+**Notes** : pattern e-commerce "complete the bundle".
+
+### TASK-13-012 — Calendrier visuel des promos [P3] [TODO]
+**Contexte** : aujourd'hui les promos sont en liste. Pas de vue calendrier pour anticiper les conflits ou les périodes sans promo.
+**Bénéfice attendu** : vue mensuelle des promos planifiées (timeline) pour piloter l'offre commerciale dans le temps.
+**Critère d'acceptation** :
+- [ ] Page `/products/promotions/calendar` : vue calendrier mensuelle.
+- [ ] Chaque promo représentée par une barre horizontale couvrant sa période.
+- [ ] Filtres par type / catégorie cible / statut.
+- [ ] Click promo → édit direct.
+- [ ] Détection visuelle des chevauchements potentiels (warning sur les jours avec 3+ promos).
+**Dépend de** : aucune.
+**Estimation** : M
+**Risques** : encombrement visuel si beaucoup de promos — limit display 10 simultanées.
+**Notes** : librarie `react-big-calendar` ou Gantt-style alternative.
+
 ## Vue transversale
 
 ### Dépendances inter-tâches

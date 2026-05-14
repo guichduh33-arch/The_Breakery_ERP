@@ -126,6 +126,67 @@
 
 ---
 
+## Backlog métier (objectif fonctionnel)
+
+> Items issus de `docs/objectif travail/CUSTOMERS.md` §13 (limites assumées V2) — vision produit du module au-delà du tech-debt existant.
+> Ajoutés 2026-05-13 lors de la cascade docs (session 13). Expiration points, merge doublons, birthday rewards, notifications sont déjà couverts par TASK-08-002/004/005/006.
+
+### TASK-08-009 — Segmentation marketing RFM / scoring / cohortes [P3] [TODO]
+**Contexte** : aujourd'hui les analytics customer sont descriptives (combien de clients par tier, points en circulation). Pas de segmentation actionnable : qui est en train de partir, qui sont les nouveaux fidèles, etc.
+**Bénéfice attendu** : segmentation RFM (Recency, Frequency, Monetary) + cohortes mensuelles pour identifier qui relancer en priorité.
+**Critère d'acceptation** :
+- [ ] RPC `compute_customer_rfm_scores(p_lookback_days)` qui retourne pour chaque client : recency rank 1-5, frequency rank 1-5, monetary rank 1-5.
+- [ ] Page `/customers/segments` : grille 5×5 RFM avec drill-down par cellule.
+- [ ] Cohorte mensuelle : courbe de rétention par mois d'inscription.
+- [ ] Tags auto : "Champions" (R5F5M5), "Dormants" (R1F4M4), "Nouveaux" (R5F1M1).
+**Dépend de** : volume historique 6 mois minimum.
+**Estimation** : L
+**Risques** : sur-segmentation paralysante — V1 limiter à 6-9 segments actionnables.
+**Notes** : pattern e-commerce classique adapté retail.
+
+### TASK-08-010 — Programme de parrainage automatisé [P3] [TODO]
+**Contexte** : aujourd'hui le parrainage est manuel (ajustement de points par le manager). Pas de tracking automatique.
+**Bénéfice attendu** : un client parraine un proche, les deux gagnent automatiquement des points à la première commande du filleul.
+**Critère d'acceptation** :
+- [ ] Champ `customers.referred_by` (FK customers.id).
+- [ ] À la création d'un nouveau client : champ "Parrainé par" (recherche par nom/téléphone).
+- [ ] Trigger à la première commande payée du filleul : crédit X points parrain + Y points filleul.
+- [ ] Page client `/customers/:id` montre les filleuls (children) + total points parrainage cumulés.
+- [ ] Settings → Loyalty : configurer X et Y (par défaut 100 et 50).
+**Dépend de** : aucune.
+**Estimation** : M
+**Risques** : abus si on crée des faux comptes — limite "1 parrainage par téléphone unique".
+**Notes** : V1 simple ; V2 codes parrainage uniques scannables.
+
+### TASK-08-011 — Multi-établissement (préparer V3) [P3] [TODO]
+**Contexte** : une seule base client aujourd'hui. Si The Breakery ouvre un 2e site (autre Ubud par ex), pas de partage / cloisonnement.
+**Bénéfice attendu** : un client peut être actif sur plusieurs sites avec son historique partagé OU cloisonné selon la politique commerciale.
+**Critère d'acceptation** :
+- [ ] Concept `establishment_id` propagé sur orders, loyalty_transactions, et settings.
+- [ ] Mode "shared loyalty" : le client porte son tier et ses points sur tous les sites.
+- [ ] Mode "split loyalty" : chaque site gère son propre programme.
+- [ ] Settings → Multi-site : sélectionner le mode global.
+**Dépend de** : `TASK-10-020` (consolidation multi-entité côté Accounting).
+**Estimation** : XL
+**Risques** : refonte structurante — à coupler avec consolidation Accounting.
+**Notes** : ne pas développer V2 — préparer le schéma seulement.
+
+### TASK-08-012 — App mobile dédiée client (loyalty) [P3] [TODO]
+**Contexte** : aujourd'hui le QR code est imprimé / affiché sur écran. Pas d'app de fidélité côté consommateur.
+**Bénéfice attendu** : app PWA simple où le client voit ses points, son tier, ses promos disponibles, son historique → engagement renforcé.
+**Critère d'acceptation** :
+- [ ] PWA `m.thebreakery.id` (PWA mobile-first).
+- [ ] Login par numéro de membre + OTP SMS / WhatsApp.
+- [ ] Vue : QR code (pour scan caisse), tier + jauge progression, historique commandes simplifié.
+- [ ] Push notifications (promo, anniversaire) avec opt-in.
+- [ ] Pas de paiement V1 (lecture seule).
+**Dépend de** : `TASK-08-006` (notifications pipeline pour push).
+**Estimation** : XL
+**Risques** : scope énorme pour valeur incertaine — valider par mockups + interviews 10 clients avant build.
+**Notes** : pattern "Starbucks Rewards" sans la complexité commande.
+
+---
+
 ## Notes transverses
 
 - **Loyalty rules** : 1pt / 1k IDR. Tiers Bronze 0%, Silver 500pts 5%, Gold 2000pts 8%, Platinum 5000pts 10% (cf. `CLAUDE.md` Business Rules).

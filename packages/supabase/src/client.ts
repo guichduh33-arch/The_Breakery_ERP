@@ -46,6 +46,20 @@ export function getSupabaseAccessToken(): string | null {
 }
 
 /**
+ * Inject a kiosk JWT (from `kiosk-issue-jwt` EF) into the bearer header.
+ *
+ * Mechanically identical to {@link setSupabaseAccessToken} — both PIN and
+ * kiosk tokens are HS256 signed with `SUPABASE_JWT_SECRET` and ride the same
+ * custom-fetch wrapper. The wrapper exists to make intent explicit at call
+ * sites (KDS/Display/Tablet boot vs. PIN login).
+ *
+ * @param token - Kiosk JWT (HS256), or `null` to clear.
+ */
+export function setSupabaseKioskAccessToken(token: string | null): void {
+  _accessToken = token;
+}
+
+/**
  * Lazily create (or reuse) the singleton Supabase client.
  *
  * The client is configured with `autoRefreshToken: false` and

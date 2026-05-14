@@ -4,7 +4,7 @@ import type { Cart, PaymentInput, PaymentResult } from '@breakery/domain';
 import { buildOrderPayload, TIERS, tierFromLifetime } from '@breakery/domain';
 import type { Database } from '@breakery/supabase';
 
-type PayExistingOrderArgs = Database['public']['Functions']['pay_existing_order']['Args'];
+type PayExistingOrderArgs = Database['public']['Functions']['pay_existing_order_v6']['Args'];
 
 /** Wire-format row sent as `p_promotions` to RPC v7 / v4 (§3.6). */
 interface PromotionWirePayload {
@@ -90,7 +90,7 @@ export function useCheckout() {
         if (promotionPayload.length > 0) {
           args.p_promotions = promotionPayload;
         }
-        const { error, data } = await supabase.rpc('pay_existing_order', args as PayExistingOrderArgs);
+        const { error, data } = await supabase.rpc('pay_existing_order_v6', args as PayExistingOrderArgs);
         if (error) throw Object.assign(new Error(error.message), { details: error });
         return {
           ok: true,

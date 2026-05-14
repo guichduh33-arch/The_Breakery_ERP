@@ -120,3 +120,62 @@ export interface StockMovementRpcResult {
   idempotent_replay?: boolean;
   noop?: boolean;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Phase 3 — Stock transfers (section ↔ section)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Lifecycle status of a stock transfer document. */
+export type TransferStatus = 'draft' | 'pending' | 'in_transit' | 'received' | 'cancelled';
+
+/** Single line on a transfer document (one product → one quantity). */
+export interface TransferItemInput {
+  product_id: string;
+  quantity: number;
+  unit?: string;
+  notes?: string;
+}
+
+/** Input for creating a stock transfer between two sections. */
+export interface TransferInput {
+  from_section_id: string;
+  to_section_id: string;
+  items: TransferItemInput[];
+  notes?: string;
+  /** When true, server emits transfer_out movements immediately (no draft/pending step). */
+  send_directly?: boolean;
+  idempotency_key?: string;
+}
+
+/** Per-line received quantity when finalising a transfer. */
+export interface TransferReceiveItemInput {
+  item_id: string;
+  quantity_received: number;
+}
+
+/** Input for the receive-side of a transfer (closes the loop, emits transfer_in). */
+export interface TransferReceiveInput {
+  transfer_id: string;
+  items: TransferReceiveItemInput[];
+  idempotency_key?: string;
+}
+
+/**
+ * Shape of the JSONB returned by the transfer RPC wrappers
+ * (`create_transfer_v1`, `receive_transfer_v1`).
+ *
+ * - `idempotent_replay` is true when the call hit an existing key and no new
+ *   side-effects were emitted.
+ * - `movements` is populated by the receive RPC (one pair per item).
+ */
+export interface TransferRpcResult {
+  transfer_id: string;
+  transfer_number: string;
+  status: TransferStatus;
+  idempotent_replay: boolean;
+  movements?: Array<{
+    item_id: string;
+    transfer_out_movement_id: string;
+    transfer_in_movement_id: string;
+  }>;
+}

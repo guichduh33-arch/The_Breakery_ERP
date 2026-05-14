@@ -5,7 +5,16 @@
 // reason / supplier reference. 50 entries per page.
 
 import { useState, type JSX } from 'react';
-import { Badge, Button, Dialog, DialogContent, DialogTitle, DialogDescription } from '@breakery/ui';
+import {
+  Badge,
+  Button,
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from '@breakery/ui';
 import { classifyMovement } from '@breakery/domain';
 import type { StockMovement } from '@breakery/domain';
 import {
@@ -110,90 +119,94 @@ export function MovementHistoryDrawer({ product, onClose }: MovementHistoryDrawe
   const hasMore = q.data?.length === PAGE_SIZE;
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) handleClose(); }}>
-      <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-        <DialogTitle>
-          {product?.name} <span className="text-text-secondary font-mono text-sm">({product?.sku})</span>
-        </DialogTitle>
-        <DialogDescription>Stock movements, most recent first.</DialogDescription>
+    <Sheet open={open} onOpenChange={(o) => { if (!o) handleClose(); }}>
+      <SheetContent side="right" className="w-full max-w-2xl sm:max-w-3xl" data-testid="movement-history-drawer">
+        <SheetHeader>
+          <SheetTitle>
+            {product?.name} <span className="text-text-secondary font-mono text-sm">({product?.sku})</span>
+          </SheetTitle>
+          <SheetDescription>Stock movements, most recent first.</SheetDescription>
+        </SheetHeader>
 
-        {q.isLoading && <div className="text-text-secondary py-12 text-center">Loading…</div>}
-        {q.error && <div className="text-red py-12 text-center">{q.error.message}</div>}
-        {q.data?.length === 0 && page === 0 && (
-          <div className="text-text-secondary py-12 text-center">No movements recorded yet.</div>
-        )}
-        {q.data !== undefined && q.data.length > 0 && (
-          <>
-            <table className="w-full text-sm">
-              <thead className="text-xs uppercase tracking-widest text-text-secondary">
-                <tr>
-                  <th className="px-2 py-1 text-left">When</th>
-                  <th className="px-2 py-1 text-left">Type</th>
-                  <th className="px-2 py-1 text-right">Qty</th>
-                  <th className="px-2 py-1 text-left">Reason / reference</th>
-                  <th className="px-2 py-1 text-left">By</th>
-                </tr>
-              </thead>
-              <tbody>
-                {q.data.map((row) => {
-                  const cls = classifyMovement(toDomainMovement(row));
-                  const qtyClass =
-                    cls.direction === 'IN' ? 'text-green' :
-                    row.quantity === 0    ? 'text-text-muted' :
-                                            'text-red';
-                  return (
-                    <tr key={row.id} className="border-t border-border-subtle">
-                      <td className="px-2 py-1 text-text-secondary">
-                        {new Date(row.created_at).toLocaleString()}
-                      </td>
-                      <td className="px-2 py-1">
-                        <Badge variant={TYPE_VARIANT[row.movement_type]} className="text-[10px]">
-                          {TYPE_LABEL[row.movement_type]}
-                        </Badge>
-                      </td>
-                      <td className={`px-2 py-1 text-right font-mono ${qtyClass}`}>
-                        {row.quantity > 0 ? '+' : ''}{row.quantity}
-                      </td>
-                      <td className="px-2 py-1">{describeReference(row)}</td>
-                      <td className="px-2 py-1 text-text-secondary">{row.author?.full_name ?? '—'}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+        <div className="flex-1 overflow-y-auto px-6 pb-6">
+          {q.isLoading && <div className="text-text-secondary py-12 text-center">Loading…</div>}
+          {q.error && <div className="text-red py-12 text-center">{q.error.message}</div>}
+          {q.data?.length === 0 && page === 0 && (
+            <div className="text-text-secondary py-12 text-center">No movements recorded yet.</div>
+          )}
+          {q.data !== undefined && q.data.length > 0 && (
+            <>
+              <table className="w-full text-sm">
+                <thead className="text-xs uppercase tracking-widest text-text-secondary">
+                  <tr>
+                    <th className="px-2 py-1 text-left">When</th>
+                    <th className="px-2 py-1 text-left">Type</th>
+                    <th className="px-2 py-1 text-right">Qty</th>
+                    <th className="px-2 py-1 text-left">Reason / reference</th>
+                    <th className="px-2 py-1 text-left">By</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {q.data.map((row) => {
+                    const cls = classifyMovement(toDomainMovement(row));
+                    const qtyClass =
+                      cls.direction === 'IN' ? 'text-green' :
+                      row.quantity === 0    ? 'text-text-muted' :
+                                              'text-red';
+                    return (
+                      <tr key={row.id} className="border-t border-border-subtle">
+                        <td className="px-2 py-1 text-text-secondary">
+                          {new Date(row.created_at).toLocaleString()}
+                        </td>
+                        <td className="px-2 py-1">
+                          <Badge variant={TYPE_VARIANT[row.movement_type]} className="text-[10px]">
+                            {TYPE_LABEL[row.movement_type]}
+                          </Badge>
+                        </td>
+                        <td className={`px-2 py-1 text-right font-mono ${qtyClass}`}>
+                          {row.quantity > 0 ? '+' : ''}{row.quantity}
+                        </td>
+                        <td className="px-2 py-1">{describeReference(row)}</td>
+                        <td className="px-2 py-1 text-text-secondary">{row.author?.full_name ?? '—'}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
 
-            <div className="flex items-center justify-between pt-3 text-xs">
-              <span className="text-text-secondary">
-                Page {page + 1} · showing {q.data.length} {q.data.length === 1 ? 'entry' : 'entries'}
-              </span>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setPage((p) => Math.max(0, p - 1))}
-                  disabled={page === 0}
-                >
-                  Previous
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={!hasMore}
-                >
-                  Next
-                </Button>
+              <div className="flex items-center justify-between pt-3 text-xs">
+                <span className="text-text-secondary">
+                  Page {page + 1} · showing {q.data.length} {q.data.length === 1 ? 'entry' : 'entries'}
+                </span>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setPage((p) => Math.max(0, p - 1))}
+                    disabled={page === 0}
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setPage((p) => p + 1)}
+                    disabled={!hasMore}
+                  >
+                    Next
+                  </Button>
+                </div>
               </div>
-            </div>
-          </>
-        )}
-
-        <div className="flex justify-end pt-2">
-          <Button type="button" variant="secondary" onClick={handleClose}>Close</Button>
+            </>
+          )}
         </div>
-      </DialogContent>
-    </Dialog>
+
+        <SheetFooter>
+          <Button type="button" variant="secondary" onClick={handleClose}>Close</Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

@@ -1,0 +1,15 @@
+/*
+ * index.css — single import for the design-system token cascade.
+ *
+ * Apps consume `@breakery/ui/tokens.css` (the pre-existing barrel referenced
+ * by package.json `exports`) which already points at `luxe-dark.css`. To keep
+ * backwards compatibility we re-export each layer here and update the package
+ * export map to point at this index. Apps gain semantic + motion + payment
+ * tokens without any per-app diff (one import, four cascades).
+ *
+ * Cascade order matters: base palette first, then aliases that reference it.
+ */
+@import './luxe-dark.css';
+@import './semantic.css';
+@import './motion.css';
+@import './payment.css';

@@ -107,6 +107,117 @@
 **Risques** : conflict resolution UX critique sinon double edit perd des items.
 **Notes** : reuse pattern shift handover (TASK-12-005) — concept similaire (passer la main).
 
+---
+
+## Backlog métier (objectif fonctionnel)
+
+> Items issus de `docs/objectif travail/TABLET_ORDERING.md` §13 — vision produit du module.
+> Ajoutés 2026-05-13 lors de la cascade docs (session 13). Queue offline est déjà couverte par TASK-17-001/002.
+
+### TASK-17-007 — Auto-send à la cuisine optionnel [P2] [TODO]
+**Contexte** : aujourd'hui une commande tablette ne va en cuisine qu'après acceptation du caissier au POS. Pour le service rapide (drink only, take-away), cette étape ajoute du retard.
+**Bénéfice attendu** : toggle "Envoyer directement en cuisine" qui bypass l'acceptation caissier pour certains cas (drink-only, take-away).
+**Critère d'acceptation** :
+- [ ] Toggle dans Settings → POS → "Tablet auto-send to kitchen".
+- [ ] Sur la tablette : option "Send to kitchen" en plus de "Send to POS".
+- [ ] Si auto-send actif et commande matche les critères (cf settings) → bypass POS accept, va directement KDS.
+- [ ] Audit log : marquer `auto_sent_to_kitchen = true` pour traçabilité.
+- [ ] Le caissier voit toujours la commande au POS pour encaissement, mais elle est déjà en cuisine.
+**Dépend de** : aucune.
+**Estimation** : M
+**Risques** : commande non payée déjà préparée → désactivable par cas (allow_unpaid_kitchen_send_categories).
+**Notes** : utile pour les bars / cafés à fort débit.
+
+### TASK-17-008 — Modifier engine complet [P3] [TODO]
+**Contexte** : la tablette supporte des modifiers basiques (sucre, lait, sans X). Certains modifiers POS complexes ne sont pas accessibles.
+**Bénéfice attendu** : supporter tous les modifiers du POS pour ne refuser aucune configuration en salle.
+**Critère d'acceptation** :
+- [ ] Composant `ModifierModal` réutilisé entre POS et Tablet (factoring partagé).
+- [ ] Support des modifier groups multi-sélection, modifier requis vs optionnel.
+- [ ] Validation : modifiers obligatoires doivent être sélectionnés.
+**Dépend de** : factoring du composant `ModifierModal` côté `packages/ui`.
+**Estimation** : M
+**Risques** : UX tactile plus complexe — adapter les tailles touch.
+**Notes** : objectif feature parity tablet ↔ POS.
+
+### TASK-17-009 — Combos sélectionnables sur tablette [P3] [TODO]
+**Contexte** : la tablette renvoie au comptoir pour la sélection de combo (sélection multi-groupes). Friction service.
+**Bénéfice attendu** : composer un combo directement depuis la tablette.
+**Critère d'acceptation** :
+- [ ] Réutiliser le composant `ComboSelectorModal` du POS.
+- [ ] Validation des règles "1 parmi", "exactement N parmi" identique au POS.
+- [ ] Affichage cart : combo en ligne unique avec décomposition pliable.
+**Dépend de** : factoring `ComboSelectorModal` côté `packages/ui`.
+**Estimation** : M
+**Risques** : UX tactile dense — bien tester sur tablette 10".
+**Notes** : feature parity.
+
+### TASK-17-010 — Création de client à la table [P3] [TODO]
+**Contexte** : pour ajouter un nouveau client (pour la fidélité), le serveur doit passer par le caissier. Friction.
+**Bénéfice attendu** : saisir un client minimal (nom + téléphone) directement depuis la tablette.
+**Critère d'acceptation** :
+- [ ] Réutiliser le composant `CreateCustomerForm` simplifié.
+- [ ] Champs : nom, téléphone, e-mail optionnel, type (retail par défaut).
+- [ ] PIN serveur suffit (pas PIN manager pour création simple retail).
+- [ ] Lien automatique à la commande en cours.
+**Dépend de** : factoring du formulaire client côté `packages/ui`.
+**Estimation** : S
+**Risques** : doublons clients — déduplication par téléphone à la création.
+**Notes** : feature parity.
+
+### TASK-17-011 — Pre-bill à la table (note imprimable) [P3] [TODO]
+**Contexte** : aucun moyen d'imprimer une note de table sans encaisser. Le client veut souvent voir son addition avant de demander le ticket.
+**Bénéfice attendu** : générer une "note" PDF de table imprimable sur tablette ou portable, sans encaissement.
+**Critère d'acceptation** :
+- [ ] Bouton "Pre-bill" sur l'écran tablette commande.
+- [ ] Génération PDF "Note de table" via Edge Function (réutilise template ticket).
+- [ ] Mention "Note non officielle — facture finale à la caisse".
+- [ ] Possibilité d'envoyer par e-mail au client (si lié).
+- [ ] Pre-bill ne change pas le statut de la commande.
+**Dépend de** : aucune.
+**Estimation** : M
+**Risques** : confusion client si note ≠ facture finale (promo non encore appliquée) — bien mentionner.
+**Notes** : standard restaurant ; demande fréquente.
+
+### TASK-17-012 — Notifications push KDS → tablet [P3] [TODO]
+**Contexte** : le serveur doit régulièrement aller voir le KDS pour savoir si sa table est prête. Cassage de tempo.
+**Bénéfice attendu** : push notification sur la tablette du serveur quand sa table passe en "ready".
+**Critère d'acceptation** :
+- [ ] Message LAN `KDS_TABLE_READY` envoyé du hub vers la tablette du serveur concerné.
+- [ ] Toast push + son discret sur la tablette : "Table 7 prête — 3 items".
+- [ ] Click → ouvre la commande détail.
+- [ ] Filtrage par `assigned_server_id` (TASK-17-006) si attribué.
+**Dépend de** : `TASK-17-006` (assignation serveur).
+**Estimation** : M
+**Risques** : sons multiples si plusieurs tables ready en même temps — empiler.
+**Notes** : pattern serveur Apple Restaurant.
+
+### TASK-17-013 — Photos de plats [P3] [TODO]
+**Contexte** : aucune photo sur la tablette. Le serveur ne peut pas aider à la suggestion visuelle.
+**Bénéfice attendu** : affichage photos haute qualité des produits pour aide à la suggestion client.
+**Critère d'acceptation** :
+- [ ] Champ `products.image_url_hires` (en plus du thumbnail) optionnel.
+- [ ] Grille tablette : si image existe, tap long → preview full screen.
+- [ ] Lazy load + cache local.
+- [ ] Toggle Settings (off par défaut, bande passante).
+**Dépend de** : photos disponibles dans Supabase Storage.
+**Estimation** : S
+**Risques** : volume données — cache + compression.
+**Notes** : valorisation des plats signature.
+
+### TASK-17-014 — Mode "menu client" (kiosk self-service) [P3] [TODO]
+**Contexte** : donner la tablette au client pour qu'il sélectionne lui-même (style fast-casual / pre-order).
+**Bénéfice attendu** : mode kiosk dédié — client tape sa commande, serveur valide.
+**Critère d'acceptation** :
+- [ ] Toggle "Mode client" sur la tablette (PIN manager pour activer/désactiver).
+- [ ] UI épurée sans PIN serveur (la commande sera attribuée au serveur "actif" du moment).
+- [ ] Validation "Send" déclenche notification serveur qui doit confirmer avant POS.
+- [ ] Auto-retour mode serveur après validation ou timeout.
+**Dépend de** : aucune.
+**Estimation** : L
+**Risques** : abus / commandes fausses — limite "Send" pour montants <X IDR sans validation manager.
+**Notes** : disruptif comme modèle service — valider commercialement avant build.
+
 ## Vue transversale
 
 ### Dépendances inter-tâches

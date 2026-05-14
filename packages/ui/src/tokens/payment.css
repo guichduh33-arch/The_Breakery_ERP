@@ -1,0 +1,13 @@
+/*
+ * payment.css — payment-method colors (cash / card / QRIS / voucher).
+ *
+ * Session 13 (Phase 1.D / ui-steward batch 1) — replaces ad-hoc
+ * `bg-emerald-600 / bg-violet-500 / bg-amber-500` literals scattered across
+ * payment flows. Exposed as Tailwind aliases `bg-payment-cash` etc.
+ */
+:root, .dark {
+  --payment-cash:    #10b981;   /* echoes --green-base; explicit alias for intent */
+  --payment-card:    #8b5cf6;   /* violet — distinct from gold (accent) */
+  --payment-qris:    #f59e0b;   /* amber — distinct from warning by context */
+  --payment-voucher: #c9a557;   /* echoes --gold-base */
+}

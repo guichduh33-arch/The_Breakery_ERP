@@ -62,7 +62,7 @@ export default function KdsPage() {
         <KdsStationSelector />
       </header>
 
-      <main className="flex-1 overflow-auto p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 auto-rows-min">
+      <main id="main-content" tabIndex={-1} className="flex-1 overflow-auto p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 auto-rows-min">
         {isLoading ? (
           <div className="col-span-full text-text-secondary text-sm">
             Loading…

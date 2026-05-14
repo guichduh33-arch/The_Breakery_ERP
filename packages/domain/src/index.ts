@@ -11,6 +11,11 @@ export {
   MAX_TENDERS,
   type SplitValidation,
 } from './payment/splitTender.js';
+export {
+  classifyCheckoutError,
+  type CheckoutErrorShape,
+  type RetryClassification,
+} from './payment/retryClassifier.js';
 export * from './refunds/index.js';
 export { buildOrderPayload } from './orders/buildOrderPayload.js';
 export * from './modifiers/index.js';
@@ -25,3 +30,8 @@ export * from './customerCategories/index.js';
 export * from './combos/index.js';
 export * from './promotions/index.js';
 export * from './inventory/index.js';
+export * from './accounting/index.js';
+export * from './reports/index.js';
+export * from './production/index.js';
+export * from './lan/index.js';
+export * from './notifications/index.js';

@@ -33,12 +33,32 @@
 --       current_stock bump + audit row
 --   T19 record_incoming_stock_v1: MANAGER + soft-deleted supplier -> P0002
 --   T20 record_incoming_stock_v1: idempotent replay (same key, identical args)
+--   T21 get_stock_levels_v1: pagination — total_count matches non-deleted product count
+--   T22 get_stock_levels_v1: search is case-insensitive (ILIKE) — upper/lower both match
+--   T23 get_stock_levels_v1: p_category_id filter returns only matching products
+--   T24 get_stock_levels_v1: low_stock_only excludes products with current_stock >= threshold (threshold>0)
+--   T25 adjust_stock_v1: p_new_qty=0 sets stock to 0 and emits negative delta movement
+--   T26 adjust_stock_v1: idempotent replay with different reason still returns original movement_id
+--   T27 waste_stock_v1: reason shorter than 3 chars rejected with reason_required
+--   T28 waste_stock_v1: qty > current_stock rejected with insufficient_stock (P0002) — distinct product
+--   T29 create_internal_transfer_v1: happy path pending mode — TRF-YYYYMMDD-XXXX format + 2 items inserted
+--   T30 create_internal_transfer_v1: from_section_id = to_section_id -> from_to_same_section
+--   T31 create_internal_transfer_v1: empty items array -> items_required
+--   T32 create_internal_transfer_v1: duplicate product_id in items -> duplicate_product_in_items
+--   T33 create_internal_transfer_v1: send_directly=true -> status received + 2 movements + section_stock updated
+--   T34 receive_internal_transfer_v1: happy path — status=received + 2 movements + section_stock updated
+--   T35 receive_internal_transfer_v1: on cancelled transfer -> receive_not_allowed_in_status
+--   T36 receive_internal_transfer_v1: idempotent replay — same key returns idempotent_replay=true, no double mvts
+--   T37 cancel_internal_transfer_v1: pending -> cancelled + metadata.cancel_reason persisted
+--   T38 cancel_internal_transfer_v1: from received -> cancel_not_allowed_in_status
+--   T39 RLS: direct INSERT into internal_transfers blocked for `authenticated` role
+--   T40 Permission gate: CASHIER -> forbidden P0003; MANAGER -> happy path succeeds
 
 BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-SELECT plan(20);
+SELECT plan(40);
 
 -- ---------------------------------------------------------------------------
 -- Test fixtures.
@@ -683,6 +703,803 @@ BEGIN
 END $t20$;
 SELECT ok(current_setting('breakery.t20_pass')::boolean,
   'T20: record_incoming_stock_v1 idempotency replay yields one row + idempotent_replay=true + stock bumped once');
+
+-- ===========================================================================
+-- Phase 3 — section fixtures (resolve seeded section ids once for T29-T40).
+-- ===========================================================================
+DO $phase3_bootstrap$
+DECLARE
+  v_main UUID;
+  v_kitchen UUID;
+  v_pastry UUID;
+BEGIN
+  SELECT id INTO v_main    FROM sections WHERE code = 'MAIN_WAREHOUSE';
+  SELECT id INTO v_kitchen FROM sections WHERE code = 'PRODUCTION_KITCHEN';
+  SELECT id INTO v_pastry  FROM sections WHERE code = 'PASTRY';
+  IF v_main IS NULL OR v_kitchen IS NULL OR v_pastry IS NULL THEN
+    RAISE EXCEPTION 'Seeded sections MAIN_WAREHOUSE / PRODUCTION_KITCHEN / PASTRY not found — run pnpm db:reset first';
+  END IF;
+  PERFORM set_config('breakery.section_warehouse_id', v_main::text,    false);
+  PERFORM set_config('breakery.section_kitchen_id',   v_kitchen::text, false);
+  PERFORM set_config('breakery.section_pastry_id',    v_pastry::text,  false);
+  -- Restore admin spoofed uid before the Phase 3 / Phase 2-gap tests start.
+  PERFORM pg_temp.set_jwt_uid(current_setting('breakery.admin_uid')::uuid);
+END $phase3_bootstrap$;
+
+-- =========================================================================
+-- T21 — get_stock_levels_v1 pagination: total_count matches the unfiltered
+-- count of non-deleted products (the RPC filters only on deleted_at IS NULL).
+-- =========================================================================
+DO $t21$
+DECLARE
+  v_admin       UUID := current_setting('breakery.admin_uid')::uuid;
+  v_total_seen  BIGINT;
+  v_expected    BIGINT;
+  v_row_count   INT;
+BEGIN
+  PERFORM pg_temp.set_jwt_uid(v_admin);
+  SELECT COUNT(*) INTO v_expected FROM products WHERE deleted_at IS NULL;
+
+  SELECT total_count, COUNT(*) OVER ()
+    INTO v_total_seen, v_row_count
+    FROM get_stock_levels_v1(NULL, NULL, false, 5, 0)
+    LIMIT 1;
+
+  PERFORM set_config('breakery.t21_pass',
+    CASE WHEN
+      v_total_seen = v_expected
+      AND v_expected >= 5  -- guard: we requested a window of 5
+    THEN 'true' ELSE 'false' END, false);
+END $t21$;
+SELECT ok(current_setting('breakery.t21_pass')::boolean,
+  'T21: get_stock_levels_v1(limit=5) returns total_count matching SELECT COUNT(*) FROM products WHERE deleted_at IS NULL');
+
+-- =========================================================================
+-- T22 — get_stock_levels_v1 search is case-insensitive (ILIKE in the RPC).
+-- =========================================================================
+DO $t22$
+DECLARE
+  v_admin UUID := current_setting('breakery.admin_uid')::uuid;
+  v_has_upper BOOLEAN;
+  v_has_lower BOOLEAN;
+BEGIN
+  PERFORM pg_temp.set_jwt_uid(v_admin);
+
+  SELECT EXISTS (
+    SELECT 1 FROM get_stock_levels_v1(NULL, 'PGTAP-PROD-1', false, 100, 0)
+     WHERE sku = 'PGTAP-PROD-1'
+  ) INTO v_has_upper;
+
+  SELECT EXISTS (
+    SELECT 1 FROM get_stock_levels_v1(NULL, 'pgtap-prod-1', false, 100, 0)
+     WHERE sku = 'PGTAP-PROD-1'
+  ) INTO v_has_lower;
+
+  PERFORM set_config('breakery.t22_pass',
+    (v_has_upper AND v_has_lower)::text, false);
+END $t22$;
+SELECT ok(current_setting('breakery.t22_pass')::boolean,
+  'T22: get_stock_levels_v1 p_search is case-insensitive (ILIKE) — upper/lower both match');
+
+-- =========================================================================
+-- T23 — get_stock_levels_v1 p_category_id filter returns only matching rows.
+-- We retarget the three PGTAP fixture products onto category "Sandwiches"
+-- (UUID 44444444-...) so the filter narrows to a known disjoint set.
+-- =========================================================================
+DO $t23$
+DECLARE
+  v_admin    UUID := current_setting('breakery.admin_uid')::uuid;
+  v_cat      UUID := '44444444-4444-4444-4444-444444444444'::uuid;
+  v_other_cnt INT;
+  v_match_cnt INT;
+BEGIN
+  PERFORM pg_temp.set_jwt_uid(v_admin);
+
+  -- Retarget the three PGTAP fixtures onto v_cat.
+  UPDATE products SET category_id = v_cat
+    WHERE id IN (
+      '99999999-aaaa-bbbb-cccc-111111111111'::uuid,
+      '99999999-aaaa-bbbb-cccc-222222222222'::uuid,
+      '99999999-aaaa-bbbb-cccc-333333333333'::uuid
+    );
+
+  -- Every row returned must have category_id = v_cat (no leakage).
+  SELECT COUNT(*) INTO v_other_cnt
+    FROM get_stock_levels_v1(v_cat, NULL, false, 100, 0)
+   WHERE category_id <> v_cat OR category_id IS NULL;
+
+  -- The three fixtures must be present in the filtered result.
+  SELECT COUNT(*) INTO v_match_cnt
+    FROM get_stock_levels_v1(v_cat, 'PGTAP-PROD', false, 100, 0)
+   WHERE sku LIKE 'PGTAP-PROD%';
+
+  PERFORM set_config('breakery.t23_pass',
+    CASE WHEN v_other_cnt = 0 AND v_match_cnt = 3
+    THEN 'true' ELSE 'false' END, false);
+END $t23$;
+SELECT ok(current_setting('breakery.t23_pass')::boolean,
+  'T23: get_stock_levels_v1 p_category_id filter returns only matching products (no leakage)');
+
+-- =========================================================================
+-- T24 — get_stock_levels_v1 low_stock_only excludes rows where
+-- current_stock >= threshold (here threshold>0 but stock above threshold).
+-- We bump PGTAP-PROD-2 to 100 (threshold=20) → must NOT appear.
+-- =========================================================================
+DO $t24$
+DECLARE
+  v_admin UUID := current_setting('breakery.admin_uid')::uuid;
+  v_prod2_in_low BOOLEAN;
+  v_prod_low_in_low BOOLEAN;
+BEGIN
+  PERFORM pg_temp.set_jwt_uid(v_admin);
+  UPDATE products SET current_stock = 100 WHERE id = '99999999-aaaa-bbbb-cccc-222222222222'::uuid;
+  UPDATE products SET current_stock = 5   WHERE id = '99999999-aaaa-bbbb-cccc-333333333333'::uuid;
+
+  SELECT EXISTS (
+    SELECT 1 FROM get_stock_levels_v1(NULL, 'PGTAP-PROD-2', true, 100, 0)
+     WHERE sku = 'PGTAP-PROD-2'
+  ) INTO v_prod2_in_low;
+
+  SELECT EXISTS (
+    SELECT 1 FROM get_stock_levels_v1(NULL, 'PGTAP-PROD-LOW', true, 100, 0)
+     WHERE sku = 'PGTAP-PROD-LOW'
+  ) INTO v_prod_low_in_low;
+
+  -- PGTAP-PROD-2 (100 stock >= 20 threshold) must NOT appear.
+  -- PGTAP-PROD-LOW (5 stock < 10 threshold) MUST appear.
+  PERFORM set_config('breakery.t24_pass',
+    (NOT v_prod2_in_low AND v_prod_low_in_low)::text, false);
+END $t24$;
+SELECT ok(current_setting('breakery.t24_pass')::boolean,
+  'T24: get_stock_levels_v1 low_stock_only excludes rows where current_stock >= threshold (threshold>0)');
+
+-- =========================================================================
+-- T25 — adjust_stock_v1 p_new_qty=0 is allowed (sets stock exactly to 0).
+-- Setup: PGTAP-PROD-1 to 5; adjust to 0; expect movement quantity = -5.
+-- =========================================================================
+DO $t25$
+DECLARE
+  v_admin UUID := current_setting('breakery.admin_uid')::uuid;
+  v_result JSONB;
+  v_mvt_id UUID;
+  v_mvt_qty NUMERIC;
+  v_new_stock NUMERIC;
+BEGIN
+  PERFORM pg_temp.set_jwt_uid(v_admin);
+  UPDATE products SET current_stock = 5
+    WHERE id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid;
+
+  SELECT adjust_stock_v1(
+    '99999999-aaaa-bbbb-cccc-111111111111'::uuid, 0.000, 'T25 set to zero'
+  ) INTO v_result;
+
+  v_mvt_id := (v_result->>'movement_id')::uuid;
+  SELECT quantity INTO v_mvt_qty FROM stock_movements WHERE id = v_mvt_id;
+  SELECT current_stock INTO v_new_stock FROM products
+    WHERE id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid;
+
+  PERFORM set_config('breakery.t25_pass',
+    CASE WHEN
+      v_mvt_qty = -5.000
+      AND v_new_stock = 0.000
+      AND (v_result->>'new_current_stock')::numeric = 0.000
+    THEN 'true' ELSE 'false' END, false);
+END $t25$;
+SELECT ok(current_setting('breakery.t25_pass')::boolean,
+  'T25: adjust_stock_v1(p_new_qty=0) accepted — stock becomes 0, movement quantity = -5');
+
+-- =========================================================================
+-- T26 — adjust_stock_v1 idempotency replay with a DIFFERENT reason but the
+-- SAME idempotency_key still returns the original movement_id and does NOT
+-- mutate the stored reason (replay short-circuits before re-inserting).
+-- =========================================================================
+DO $t26$
+DECLARE
+  v_admin UUID := current_setting('breakery.admin_uid')::uuid;
+  v_key   UUID := '00000000-0000-0000-0000-000000000a26'::uuid;
+  v_r1    JSONB;
+  v_r2    JSONB;
+  v_row_count INT;
+  v_stored_reason TEXT;
+BEGIN
+  PERFORM pg_temp.set_jwt_uid(v_admin);
+  UPDATE products SET current_stock = 10
+    WHERE id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid;
+  DELETE FROM stock_movements WHERE idempotency_key = v_key;
+
+  SELECT adjust_stock_v1(
+    '99999999-aaaa-bbbb-cccc-111111111111'::uuid, 13, 'T26 original reason', v_key
+  ) INTO v_r1;
+  SELECT adjust_stock_v1(
+    '99999999-aaaa-bbbb-cccc-111111111111'::uuid, 13, 'T26 DIFFERENT reason on replay', v_key
+  ) INTO v_r2;
+  SELECT COUNT(*) INTO v_row_count FROM stock_movements WHERE idempotency_key = v_key;
+  SELECT reason INTO v_stored_reason FROM stock_movements WHERE idempotency_key = v_key;
+
+  PERFORM set_config('breakery.t26_pass',
+    CASE WHEN
+      (v_r1->>'movement_id') = (v_r2->>'movement_id')
+      AND (v_r2->>'idempotent_replay')::boolean = true
+      AND v_row_count = 1
+      AND v_stored_reason = 'T26 original reason'
+    THEN 'true' ELSE 'false' END, false);
+END $t26$;
+SELECT ok(current_setting('breakery.t26_pass')::boolean,
+  'T26: adjust_stock_v1 idempotency replay with different reason returns original movement_id (reason unchanged)');
+
+-- =========================================================================
+-- T27 — waste_stock_v1 with short reason (< 3 chars) -> reason_required
+-- =========================================================================
+DO $$
+BEGIN
+  PERFORM pg_temp.set_jwt_uid(current_setting('breakery.admin_uid')::uuid);
+  UPDATE products SET current_stock = 20
+    WHERE id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid;
+END $$;
+
+SELECT throws_ok(
+  $$ SELECT waste_stock_v1(
+       '99999999-aaaa-bbbb-cccc-111111111111'::uuid, 1.000, 'ab'
+     ) $$,
+  NULL,
+  'reason_required',
+  'T27: waste_stock_v1 rejects reason shorter than 3 chars with reason_required'
+);
+
+-- =========================================================================
+-- T28 — waste_stock_v1 qty > current_stock -> insufficient_stock P0002
+-- Uses PGTAP-PROD-LOW (stock=5) to keep PGTAP-PROD-1 state independent.
+-- =========================================================================
+DO $$
+BEGIN
+  PERFORM pg_temp.set_jwt_uid(current_setting('breakery.admin_uid')::uuid);
+  UPDATE products SET current_stock = 5
+    WHERE id = '99999999-aaaa-bbbb-cccc-333333333333'::uuid;
+END $$;
+
+SELECT throws_ok(
+  $$ SELECT waste_stock_v1(
+       '99999999-aaaa-bbbb-cccc-333333333333'::uuid, 100.000, 'T28 over-waste'
+     ) $$,
+  'P0002',
+  'insufficient_stock',
+  'T28: waste_stock_v1 rejects qty > current_stock with insufficient_stock (distinct product)'
+);
+
+-- =========================================================================
+-- T29 — create_internal_transfer_v1 happy path (pending) with 2 items.
+-- =========================================================================
+DO $t29$
+DECLARE
+  v_admin UUID := current_setting('breakery.admin_uid')::uuid;
+  v_from  UUID := current_setting('breakery.section_warehouse_id')::uuid;
+  v_to    UUID := current_setting('breakery.section_kitchen_id')::uuid;
+  v_result JSONB;
+  v_transfer_id UUID;
+  v_transfer_number TEXT;
+  v_item_count INT;
+  v_format_ok BOOLEAN;
+BEGIN
+  PERFORM pg_temp.set_jwt_uid(v_admin);
+  UPDATE products SET current_stock = 50
+    WHERE id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid;
+  UPDATE products SET current_stock = 100
+    WHERE id = '99999999-aaaa-bbbb-cccc-222222222222'::uuid;
+
+  SELECT create_internal_transfer_v1(
+    v_from, v_to,
+    jsonb_build_array(
+      jsonb_build_object('product_id', '99999999-aaaa-bbbb-cccc-111111111111', 'quantity', 3),
+      jsonb_build_object('product_id', '99999999-aaaa-bbbb-cccc-222222222222', 'quantity', 7)
+    ),
+    'T29 notes'
+  ) INTO v_result;
+
+  v_transfer_id     := (v_result->>'transfer_id')::uuid;
+  v_transfer_number := v_result->>'transfer_number';
+
+  SELECT COUNT(*) INTO v_item_count FROM transfer_items WHERE transfer_id = v_transfer_id;
+  v_format_ok := v_transfer_number ~ '^TRF-\d{8}-\d{4}$';
+
+  PERFORM set_config('breakery.t29_pass',
+    CASE WHEN
+      v_result->>'status' = 'pending'
+      AND v_format_ok
+      AND v_item_count = 2
+      AND (v_result->>'idempotent_replay')::boolean = false
+    THEN 'true' ELSE 'false' END, false);
+END $t29$;
+SELECT ok(current_setting('breakery.t29_pass')::boolean,
+  'T29: create_internal_transfer_v1 pending mode returns TRF-YYYYMMDD-XXXX + 2 transfer_items rows');
+
+-- =========================================================================
+-- T30 — create_internal_transfer_v1 from = to -> from_to_same_section
+-- =========================================================================
+DO $$
+BEGIN
+  PERFORM pg_temp.set_jwt_uid(current_setting('breakery.admin_uid')::uuid);
+END $$;
+
+SELECT throws_ok(
+  format($$ SELECT create_internal_transfer_v1(
+              %L::uuid, %L::uuid,
+              jsonb_build_array(jsonb_build_object(
+                'product_id', '99999999-aaaa-bbbb-cccc-111111111111', 'quantity', 1
+              )),
+              'T30'
+            ) $$,
+    current_setting('breakery.section_warehouse_id'),
+    current_setting('breakery.section_warehouse_id')),
+  NULL,
+  'from_to_same_section',
+  'T30: create_internal_transfer_v1 from = to raises from_to_same_section'
+);
+
+-- =========================================================================
+-- T31 — create_internal_transfer_v1 empty items array -> items_required
+-- =========================================================================
+SELECT throws_ok(
+  format($$ SELECT create_internal_transfer_v1(
+              %L::uuid, %L::uuid,
+              '[]'::jsonb,
+              'T31'
+            ) $$,
+    current_setting('breakery.section_warehouse_id'),
+    current_setting('breakery.section_kitchen_id')),
+  NULL,
+  'items_required',
+  'T31: create_internal_transfer_v1 with empty items array raises items_required'
+);
+
+-- =========================================================================
+-- T32 — create_internal_transfer_v1 duplicate product_id -> duplicate_product_in_items
+-- =========================================================================
+SELECT throws_ok(
+  format($$ SELECT create_internal_transfer_v1(
+              %L::uuid, %L::uuid,
+              jsonb_build_array(
+                jsonb_build_object('product_id', '99999999-aaaa-bbbb-cccc-111111111111', 'quantity', 1),
+                jsonb_build_object('product_id', '99999999-aaaa-bbbb-cccc-111111111111', 'quantity', 2)
+              ),
+              'T32'
+            ) $$,
+    current_setting('breakery.section_warehouse_id'),
+    current_setting('breakery.section_kitchen_id')),
+  NULL,
+  'duplicate_product_in_items',
+  'T32: create_internal_transfer_v1 with duplicate product_id raises duplicate_product_in_items'
+);
+
+-- =========================================================================
+-- T33 — create_internal_transfer_v1 send_directly=true emits 2 movements
+-- (transfer_out -5 + transfer_in +5) and updates section_stock for both.
+-- =========================================================================
+DO $t33$
+DECLARE
+  v_admin UUID := current_setting('breakery.admin_uid')::uuid;
+  v_from  UUID := current_setting('breakery.section_warehouse_id')::uuid;
+  v_to    UUID := current_setting('breakery.section_pastry_id')::uuid;
+  v_result JSONB;
+  v_transfer_id UUID;
+  v_out_qty NUMERIC;
+  v_in_qty  NUMERIC;
+  v_mvt_count INT;
+  v_from_delta NUMERIC;
+  v_to_delta   NUMERIC;
+BEGIN
+  PERFORM pg_temp.set_jwt_uid(v_admin);
+  UPDATE products SET current_stock = 50
+    WHERE id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid;
+  -- Snapshot pre-existing section_stock so the assertion isolates this run.
+  DELETE FROM section_stock
+   WHERE product_id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid
+     AND section_id IN (v_from, v_to);
+
+  SELECT create_internal_transfer_v1(
+    v_from, v_to,
+    jsonb_build_array(jsonb_build_object(
+      'product_id', '99999999-aaaa-bbbb-cccc-111111111111', 'quantity', 5
+    )),
+    'T33 direct',
+    true
+  ) INTO v_result;
+
+  v_transfer_id := (v_result->>'transfer_id')::uuid;
+
+  SELECT COUNT(*) INTO v_mvt_count
+    FROM stock_movements
+   WHERE metadata->>'transfer_id' = v_transfer_id::text;
+
+  SELECT quantity INTO v_out_qty
+    FROM stock_movements
+   WHERE metadata->>'transfer_id' = v_transfer_id::text
+     AND movement_type = 'transfer_out';
+
+  SELECT quantity INTO v_in_qty
+    FROM stock_movements
+   WHERE metadata->>'transfer_id' = v_transfer_id::text
+     AND movement_type = 'transfer_in';
+
+  SELECT quantity INTO v_from_delta FROM section_stock
+   WHERE section_id = v_from AND product_id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid;
+  SELECT quantity INTO v_to_delta FROM section_stock
+   WHERE section_id = v_to   AND product_id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid;
+
+  PERFORM set_config('breakery.t33_pass',
+    CASE WHEN
+      v_result->>'status' = 'received'
+      AND v_mvt_count = 2
+      AND v_out_qty = -5.000
+      AND v_in_qty  =  5.000
+      AND v_from_delta = -5.000
+      AND v_to_delta   =  5.000
+    THEN 'true' ELSE 'false' END, false);
+END $t33$;
+SELECT ok(current_setting('breakery.t33_pass')::boolean,
+  'T33: create_internal_transfer_v1(send_directly=true) emits transfer_out -5 + transfer_in +5 + section_stock deltas');
+
+-- =========================================================================
+-- T34 — receive_internal_transfer_v1 happy path:
+-- create pending transfer, receive with qty_received = qty_requested, assert
+-- 2 movements emitted + section_stock updated.
+-- =========================================================================
+DO $t34$
+DECLARE
+  v_admin UUID := current_setting('breakery.admin_uid')::uuid;
+  v_from  UUID := current_setting('breakery.section_warehouse_id')::uuid;
+  v_to    UUID := current_setting('breakery.section_kitchen_id')::uuid;
+  v_create JSONB;
+  v_receive JSONB;
+  v_transfer_id UUID;
+  v_item_id UUID;
+  v_mvt_count INT;
+  v_out_qty NUMERIC;
+  v_in_qty  NUMERIC;
+  v_from_delta NUMERIC;
+  v_to_delta   NUMERIC;
+  v_status TEXT;
+BEGIN
+  PERFORM pg_temp.set_jwt_uid(v_admin);
+  UPDATE products SET current_stock = 50
+    WHERE id = '99999999-aaaa-bbbb-cccc-222222222222'::uuid;
+  DELETE FROM section_stock
+   WHERE product_id = '99999999-aaaa-bbbb-cccc-222222222222'::uuid
+     AND section_id IN (v_from, v_to);
+
+  SELECT create_internal_transfer_v1(
+    v_from, v_to,
+    jsonb_build_array(jsonb_build_object(
+      'product_id', '99999999-aaaa-bbbb-cccc-222222222222', 'quantity', 10
+    )),
+    'T34 pending'
+  ) INTO v_create;
+  v_transfer_id := (v_create->>'transfer_id')::uuid;
+  SELECT id INTO v_item_id FROM transfer_items WHERE transfer_id = v_transfer_id LIMIT 1;
+
+  SELECT receive_internal_transfer_v1(
+    v_transfer_id,
+    jsonb_build_array(jsonb_build_object(
+      'item_id', v_item_id, 'quantity_received', 10
+    ))
+  ) INTO v_receive;
+
+  SELECT status INTO v_status FROM internal_transfers WHERE id = v_transfer_id;
+
+  SELECT COUNT(*) INTO v_mvt_count
+    FROM stock_movements WHERE metadata->>'transfer_id' = v_transfer_id::text;
+  SELECT quantity INTO v_out_qty FROM stock_movements
+   WHERE metadata->>'transfer_id' = v_transfer_id::text AND movement_type = 'transfer_out';
+  SELECT quantity INTO v_in_qty FROM stock_movements
+   WHERE metadata->>'transfer_id' = v_transfer_id::text AND movement_type = 'transfer_in';
+  SELECT quantity INTO v_from_delta FROM section_stock
+   WHERE section_id = v_from AND product_id = '99999999-aaaa-bbbb-cccc-222222222222'::uuid;
+  SELECT quantity INTO v_to_delta FROM section_stock
+   WHERE section_id = v_to   AND product_id = '99999999-aaaa-bbbb-cccc-222222222222'::uuid;
+
+  PERFORM set_config('breakery.t34_pass',
+    CASE WHEN
+      v_status = 'received'
+      AND v_receive->>'status' = 'received'
+      AND v_mvt_count = 2
+      AND v_out_qty = -10.000
+      AND v_in_qty  =  10.000
+      AND v_from_delta = -10.000
+      AND v_to_delta   =  10.000
+    THEN 'true' ELSE 'false' END, false);
+END $t34$;
+SELECT ok(current_setting('breakery.t34_pass')::boolean,
+  'T34: receive_internal_transfer_v1 happy path sets status=received + emits 2 movements + updates section_stock');
+
+-- =========================================================================
+-- T35 — receive_internal_transfer_v1 on cancelled transfer ->
+-- receive_not_allowed_in_status. Setup: create + cancel a pending transfer.
+-- =========================================================================
+DO $t35$
+DECLARE
+  v_admin UUID := current_setting('breakery.admin_uid')::uuid;
+  v_from  UUID := current_setting('breakery.section_warehouse_id')::uuid;
+  v_to    UUID := current_setting('breakery.section_kitchen_id')::uuid;
+  v_create JSONB;
+  v_transfer_id UUID;
+  v_item_id UUID;
+BEGIN
+  PERFORM pg_temp.set_jwt_uid(v_admin);
+  UPDATE products SET current_stock = 30
+    WHERE id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid;
+
+  SELECT create_internal_transfer_v1(
+    v_from, v_to,
+    jsonb_build_array(jsonb_build_object(
+      'product_id', '99999999-aaaa-bbbb-cccc-111111111111', 'quantity', 1
+    )),
+    'T35 to-cancel'
+  ) INTO v_create;
+  v_transfer_id := (v_create->>'transfer_id')::uuid;
+  SELECT id INTO v_item_id FROM transfer_items WHERE transfer_id = v_transfer_id LIMIT 1;
+
+  PERFORM cancel_internal_transfer_v1(v_transfer_id, 'T35 cancel before receive');
+
+  PERFORM set_config('breakery.t35_transfer_id', v_transfer_id::text, false);
+  PERFORM set_config('breakery.t35_item_id',     v_item_id::text,     false);
+END $t35$;
+
+SELECT throws_ok(
+  format($$ SELECT receive_internal_transfer_v1(
+              %L::uuid,
+              jsonb_build_array(jsonb_build_object(
+                'item_id', %L::uuid,
+                'quantity_received', 1
+              ))
+            ) $$,
+    current_setting('breakery.t35_transfer_id'),
+    current_setting('breakery.t35_item_id')),
+  NULL,
+  'receive_not_allowed_in_status',
+  'T35: receive_internal_transfer_v1 on cancelled transfer raises receive_not_allowed_in_status'
+);
+
+-- =========================================================================
+-- T36 — receive_internal_transfer_v1 idempotent replay: same key on already-
+-- received transfer returns idempotent_replay=true; movement count stays at 2.
+-- =========================================================================
+DO $t36$
+DECLARE
+  v_admin UUID := current_setting('breakery.admin_uid')::uuid;
+  v_from  UUID := current_setting('breakery.section_warehouse_id')::uuid;
+  v_to    UUID := current_setting('breakery.section_pastry_id')::uuid;
+  v_key   UUID := '00000000-0000-0000-0000-000000000d36'::uuid;
+  v_create JSONB;
+  v_r1 JSONB;
+  v_r2 JSONB;
+  v_transfer_id UUID;
+  v_item_id UUID;
+  v_mvt_count_after_first INT;
+  v_mvt_count_after_second INT;
+BEGIN
+  PERFORM pg_temp.set_jwt_uid(v_admin);
+  UPDATE products SET current_stock = 40
+    WHERE id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid;
+  DELETE FROM section_stock
+   WHERE product_id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid
+     AND section_id IN (v_from, v_to);
+
+  SELECT create_internal_transfer_v1(
+    v_from, v_to,
+    jsonb_build_array(jsonb_build_object(
+      'product_id', '99999999-aaaa-bbbb-cccc-111111111111', 'quantity', 4
+    )),
+    'T36 pending'
+  ) INTO v_create;
+  v_transfer_id := (v_create->>'transfer_id')::uuid;
+  SELECT id INTO v_item_id FROM transfer_items WHERE transfer_id = v_transfer_id LIMIT 1;
+
+  SELECT receive_internal_transfer_v1(
+    v_transfer_id,
+    jsonb_build_array(jsonb_build_object(
+      'item_id', v_item_id, 'quantity_received', 4
+    )),
+    v_key
+  ) INTO v_r1;
+
+  SELECT COUNT(*) INTO v_mvt_count_after_first
+    FROM stock_movements WHERE metadata->>'transfer_id' = v_transfer_id::text;
+
+  SELECT receive_internal_transfer_v1(
+    v_transfer_id,
+    jsonb_build_array(jsonb_build_object(
+      'item_id', v_item_id, 'quantity_received', 4
+    )),
+    v_key
+  ) INTO v_r2;
+
+  SELECT COUNT(*) INTO v_mvt_count_after_second
+    FROM stock_movements WHERE metadata->>'transfer_id' = v_transfer_id::text;
+
+  PERFORM set_config('breakery.t36_pass',
+    CASE WHEN
+      (v_r1->>'idempotent_replay')::boolean = false
+      AND (v_r2->>'idempotent_replay')::boolean = true
+      AND v_mvt_count_after_first = 2
+      AND v_mvt_count_after_second = 2
+    THEN 'true' ELSE 'false' END, false);
+END $t36$;
+SELECT ok(current_setting('breakery.t36_pass')::boolean,
+  'T36: receive_internal_transfer_v1 idempotency replay returns idempotent_replay=true, no duplicate movements');
+
+-- =========================================================================
+-- T37 — cancel_internal_transfer_v1 pending -> cancelled + metadata persisted.
+-- =========================================================================
+DO $t37$
+DECLARE
+  v_admin UUID := current_setting('breakery.admin_uid')::uuid;
+  v_from  UUID := current_setting('breakery.section_warehouse_id')::uuid;
+  v_to    UUID := current_setting('breakery.section_kitchen_id')::uuid;
+  v_reason TEXT := 'T37 wrong destination — cancelling';
+  v_create JSONB;
+  v_cancel JSONB;
+  v_transfer_id UUID;
+  v_status TEXT;
+  v_meta_reason TEXT;
+BEGIN
+  PERFORM pg_temp.set_jwt_uid(v_admin);
+  UPDATE products SET current_stock = 30
+    WHERE id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid;
+
+  SELECT create_internal_transfer_v1(
+    v_from, v_to,
+    jsonb_build_array(jsonb_build_object(
+      'product_id', '99999999-aaaa-bbbb-cccc-111111111111', 'quantity', 2
+    )),
+    'T37 will be cancelled'
+  ) INTO v_create;
+  v_transfer_id := (v_create->>'transfer_id')::uuid;
+
+  SELECT cancel_internal_transfer_v1(v_transfer_id, v_reason) INTO v_cancel;
+
+  SELECT status, metadata->>'cancel_reason'
+    INTO v_status, v_meta_reason
+    FROM internal_transfers WHERE id = v_transfer_id;
+
+  PERFORM set_config('breakery.t37_pass',
+    CASE WHEN
+      v_status = 'cancelled'
+      AND v_cancel->>'status' = 'cancelled'
+      AND v_meta_reason = v_reason
+    THEN 'true' ELSE 'false' END, false);
+END $t37$;
+SELECT ok(current_setting('breakery.t37_pass')::boolean,
+  'T37: cancel_internal_transfer_v1 pending -> cancelled and metadata.cancel_reason persisted');
+
+-- =========================================================================
+-- T38 — cancel_internal_transfer_v1 on a received transfer is rejected.
+-- Reuses the receive flow to land in status=received then attempts cancel.
+-- =========================================================================
+DO $t38$
+DECLARE
+  v_admin UUID := current_setting('breakery.admin_uid')::uuid;
+  v_from  UUID := current_setting('breakery.section_warehouse_id')::uuid;
+  v_to    UUID := current_setting('breakery.section_kitchen_id')::uuid;
+  v_create JSONB;
+  v_transfer_id UUID;
+  v_item_id UUID;
+BEGIN
+  PERFORM pg_temp.set_jwt_uid(v_admin);
+  UPDATE products SET current_stock = 30
+    WHERE id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid;
+
+  SELECT create_internal_transfer_v1(
+    v_from, v_to,
+    jsonb_build_array(jsonb_build_object(
+      'product_id', '99999999-aaaa-bbbb-cccc-111111111111', 'quantity', 2
+    )),
+    'T38 to-receive-then-cancel'
+  ) INTO v_create;
+  v_transfer_id := (v_create->>'transfer_id')::uuid;
+  SELECT id INTO v_item_id FROM transfer_items WHERE transfer_id = v_transfer_id LIMIT 1;
+
+  PERFORM receive_internal_transfer_v1(
+    v_transfer_id,
+    jsonb_build_array(jsonb_build_object(
+      'item_id', v_item_id, 'quantity_received', 2
+    ))
+  );
+
+  PERFORM set_config('breakery.t38_transfer_id', v_transfer_id::text, false);
+END $t38$;
+
+SELECT throws_ok(
+  format($$ SELECT cancel_internal_transfer_v1(%L::uuid, 'T38 too late') $$,
+    current_setting('breakery.t38_transfer_id')),
+  NULL,
+  'cancel_not_allowed_in_status',
+  'T38: cancel_internal_transfer_v1 on received transfer raises cancel_not_allowed_in_status'
+);
+
+-- =========================================================================
+-- T39 — RLS lockdown : direct INSERT INTO internal_transfers under role
+-- `authenticated` is blocked.
+-- =========================================================================
+DO $t39$
+DECLARE
+  v_admin_uid     UUID := current_setting('breakery.admin_uid')::uuid;
+  v_admin_profile UUID;
+  v_from UUID := current_setting('breakery.section_warehouse_id')::uuid;
+  v_to   UUID := current_setting('breakery.section_kitchen_id')::uuid;
+  v_blocked BOOLEAN := false;
+BEGIN
+  SELECT id INTO v_admin_profile FROM user_profiles WHERE auth_user_id = v_admin_uid;
+  SET LOCAL ROLE authenticated;
+  PERFORM pg_temp.set_jwt_uid(v_admin_uid);
+  BEGIN
+    INSERT INTO internal_transfers (
+      transfer_number, from_section_id, to_section_id, status, created_by
+    ) VALUES (
+      'TRF-DIRECT-9999', v_from, v_to, 'pending', v_admin_profile
+    );
+  EXCEPTION WHEN insufficient_privilege OR others THEN
+    v_blocked := true;
+  END;
+  RESET ROLE;
+
+  PERFORM set_config('breakery.t39_pass', v_blocked::text, false);
+END $t39$;
+SELECT ok(current_setting('breakery.t39_pass')::boolean,
+  'T39: direct INSERT into internal_transfers is blocked for `authenticated` role');
+
+-- =========================================================================
+-- T40 — Permission gate: CASHIER -> forbidden P0003 (caught in nested
+-- subtransaction) AND MANAGER -> happy path succeeds. Both halves rolled
+-- into a single ok() so the test count stays at 20 new tests.
+-- =========================================================================
+DO $t40$
+DECLARE
+  v_cashier UUID;
+  v_manager UUID;
+  v_from UUID := current_setting('breakery.section_warehouse_id')::uuid;
+  v_to   UUID := current_setting('breakery.section_kitchen_id')::uuid;
+  v_cashier_blocked BOOLEAN := false;
+  v_cashier_sqlstate TEXT;
+  v_cashier_msg TEXT;
+  v_result JSONB;
+  v_manager_ok BOOLEAN := false;
+BEGIN
+  -- Half 1 : CASHIER must be denied with forbidden / P0003.
+  SELECT auth_user_id INTO v_cashier FROM user_profiles WHERE employee_code = 'EMP001';
+  PERFORM pg_temp.set_jwt_uid(v_cashier);
+  BEGIN
+    PERFORM create_internal_transfer_v1(
+      v_from, v_to,
+      jsonb_build_array(jsonb_build_object(
+        'product_id', '99999999-aaaa-bbbb-cccc-111111111111', 'quantity', 1
+      )),
+      'T40 cashier should fail'
+    );
+  EXCEPTION WHEN OTHERS THEN
+    v_cashier_sqlstate := SQLSTATE;
+    v_cashier_msg      := SQLERRM;
+    v_cashier_blocked  := (v_cashier_sqlstate = 'P0003' AND v_cashier_msg = 'forbidden');
+  END;
+
+  -- Half 2 : MANAGER must succeed (pending status returned).
+  SELECT auth_user_id INTO v_manager FROM user_profiles WHERE employee_code = 'EMP003';
+  PERFORM pg_temp.set_jwt_uid(v_manager);
+  UPDATE products SET current_stock = 30
+    WHERE id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid;
+  SELECT create_internal_transfer_v1(
+    v_from, v_to,
+    jsonb_build_array(jsonb_build_object(
+      'product_id', '99999999-aaaa-bbbb-cccc-111111111111', 'quantity', 1
+    )),
+    'T40 manager happy'
+  ) INTO v_result;
+  v_manager_ok := (v_result->>'transfer_id') IS NOT NULL
+              AND v_result->>'status' = 'pending';
+
+  PERFORM set_config('breakery.t40_pass',
+    (v_cashier_blocked AND v_manager_ok)::text, false);
+END $t40$;
+SELECT ok(current_setting('breakery.t40_pass')::boolean,
+  'T40: CASHIER -> forbidden P0003 AND MANAGER -> happy path (pending) on create_internal_transfer_v1');
 
 -- Restore admin context for any future tests appended below.
 DO $$

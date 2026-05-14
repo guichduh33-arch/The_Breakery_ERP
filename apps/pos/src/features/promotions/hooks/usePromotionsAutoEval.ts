@@ -35,9 +35,11 @@ export function usePromotionsAutoEval(): void {
 
     timerRef.current = setTimeout(() => {
       // No promotions loaded yet (initial query) → nothing to apply.
+      // Note: Session 13 / Phase 2.C — even with zero TS-cached
+      // promotions, the RPC may still apply server-side promos. We keep
+      // this short-circuit for safety, but the RPC path inside
+      // `runEvaluation` is the source of truth in steady state.
       if (promotions.length === 0) {
-        // Still call setAppliedPromotions([]) to clear any stale state from a
-        // previous mount. No-op if already empty.
         setAppliedPromotions([]);
         return;
       }
@@ -51,18 +53,20 @@ export function usePromotionsAutoEval(): void {
           }
         : null;
 
-      const next = runEvaluation(cart, customer, dismissedPromotionIds);
-
-      const productLookup: Record<string, { name: string }> = {};
-      for (const p of productsQuery.data ?? []) {
-        productLookup[p.id] = { name: p.name };
-      }
-
-      const { addedGifts, removedGifts } = setAppliedPromotions(next, productLookup);
-      for (const g of addedGifts) toast.success(`Free ${g.name} added`);
-      for (const g of removedGifts) {
-        toast.info(`Free ${g.name} removed (condition no longer met)`);
-      }
+      // `runEvaluation` is now async (RPC-first, TS fallback).
+      // We fire-and-await inside the setTimeout callback; any RPC
+      // error is already logged inside the hook.
+      void runEvaluation(cart, customer, dismissedPromotionIds).then((next) => {
+        const productLookup: Record<string, { name: string }> = {};
+        for (const p of productsQuery.data ?? []) {
+          productLookup[p.id] = { name: p.name };
+        }
+        const { addedGifts, removedGifts } = setAppliedPromotions(next, productLookup);
+        for (const g of addedGifts) toast.success(`Free ${g.name} added`);
+        for (const g of removedGifts) {
+          toast.info(`Free ${g.name} removed (condition no longer met)`);
+        }
+      });
     }, DEBOUNCE_MS);
 
     return () => {
