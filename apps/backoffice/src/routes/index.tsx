@@ -27,6 +27,9 @@ import SectionsPage from '@/pages/inventory/SectionsPage.js';
 import PurchaseOrdersListPage from '@/pages/purchasing/PurchaseOrdersListPage.js';
 import NewPurchaseOrderPage from '@/pages/purchasing/NewPurchaseOrderPage.js';
 import PurchaseOrderDetailPage from '@/pages/purchasing/PurchaseOrderDetailPage.js';
+import ExpensesListPage from '@/pages/expenses/ExpensesListPage.js';
+import NewExpensePage from '@/pages/expenses/NewExpensePage.js';
+import ExpenseDetailPage from '@/pages/expenses/ExpenseDetailPage.js';
 import UsersListPage from '@/pages/users/UsersListPage.js';
 import NewUserPage from '@/pages/users/NewUserPage.js';
 import UserDetailPage from '@/pages/users/UserDetailPage.js';
@@ -251,6 +254,30 @@ export function AppRoutes() {
           element={
             <PermissionGate required={'purchasing.po.read' as never}>
               <PurchaseOrderDetailPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="expenses"
+          element={
+            <PermissionGate required="expenses.read">
+              <ExpensesListPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="expenses/new"
+          element={
+            <PermissionGate required="expenses.create">
+              <NewExpensePage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="expenses/:id"
+          element={
+            <PermissionGate required="expenses.read">
+              <ExpenseDetailPage />
             </PermissionGate>
           }
         />
