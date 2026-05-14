@@ -52,6 +52,8 @@ import SegmentsPage     from '@/pages/marketing/SegmentsPage.js';
 import PromoRoiPage     from '@/pages/marketing/PromoRoiPage.js';
 import BirthdayPage     from '@/pages/marketing/BirthdayPage.js';
 import MappingsPage     from '@/pages/accounting/MappingsPage.js';
+import CustomersListPage      from '@/pages/customers/CustomersListPage.js';
+import CustomerCategoriesPage from '@/pages/customers/CustomerCategoriesPage.js';
 import { BackofficeLayout } from '@/layouts/BackofficeLayout.js';
 import { useAuthStore } from '@/stores/authStore.js';
 
@@ -240,7 +242,22 @@ export function AppRoutes() {
             </PermissionGate>
           }
         />
-        <Route path="customers" element={<ComingSoonPage module="Customers" />} />
+        <Route
+          path="customers"
+          element={
+            <PermissionGate required="customers.read">
+              <CustomersListPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="customers/categories"
+          element={
+            <PermissionGate required="customer_categories.read">
+              <CustomerCategoriesPage />
+            </PermissionGate>
+          }
+        />
         <Route path="b2b" element={<ComingSoonPage module="B2B" />} />
         <Route path="accounting" element={<ComingSoonPage module="Accounting" />} />
         <Route
