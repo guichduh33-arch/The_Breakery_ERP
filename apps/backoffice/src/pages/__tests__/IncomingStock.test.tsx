@@ -4,6 +4,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter } from 'react-router-dom';
 import IncomingStockPage from '@/pages/IncomingStock.js';
 
 // Mutable permission set per test — vi.mock is hoisted, but the closure
@@ -59,7 +60,9 @@ function renderPage() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <IncomingStockPage />
+      <MemoryRouter>
+        <IncomingStockPage />
+      </MemoryRouter>
     </QueryClientProvider>,
   );
 }
