@@ -1,59 +1,100 @@
 // apps/backoffice/src/pages/Products.tsx
-import { Check, Star } from 'lucide-react';
-import { Currency } from '@breakery/ui';
+//
+// Session 14 / Phase 4.B — Catalog list view.
+// Composition mirrors `product page.jpg` (header card -> KPI tiles ->
+// search/filter strip -> dense table or card grid). Read-only — write paths
+// arrive when the product CRUD RPCs land in a future session.
+
+import { useMemo, useState, type JSX } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ProductsHeader } from '@/features/products/components/ProductsHeader.js';
+import { ProductsKpiGrid } from '@/features/products/components/ProductsKpiGrid.js';
+import { ProductsFilters } from '@/features/products/components/ProductsFilters.js';
+import { ProductsTable } from '@/features/products/components/ProductsTable.js';
+import { ProductsGrid } from '@/features/products/components/ProductsGrid.js';
 import { useProducts } from '@/features/products/hooks/useProducts.js';
+import { useCategories } from '@/features/products/hooks/useCategories.js';
+import {
+  classifyProduct,
+  type ProductView,
+  type ProductsKpis,
+  type ProductRow,
+} from '@/features/products/types.js';
 
-export default function ProductsPage() {
-  const { data: products = [], isLoading, error } = useProducts();
+export default function ProductsPage(): JSX.Element {
+  const navigate = useNavigate();
+  const products = useProducts();
+  const categories = useCategories();
 
-  if (isLoading) return <div className="text-text-secondary">Loading…</div>;
-  if (error) return <div className="text-red">Failed to load products: {error.message}</div>;
+  const [search, setSearch] = useState('');
+  const [categoryId, setCategoryId] = useState<string | 'all'>('all');
+  const [view, setView] = useState<ProductView>('list');
+
+  const rows: ProductRow[] = products.data ?? [];
+
+  const kpis: ProductsKpis = useMemo(() => {
+    const k: ProductsKpis = { total: 0, finished: 0, semi_finished: 0, raw_material: 0, combo: 0 };
+    for (const r of rows) {
+      k.total += 1;
+      const t = classifyProduct(r);
+      if (t === 'finished') k.finished += 1;
+      else if (t === 'semi-finished') k.semi_finished += 1;
+      else if (t === 'raw') k.raw_material += 1;
+      else if (t === 'combo') k.combo += 1;
+    }
+    return k;
+  }, [rows]);
+
+  const filtered = useMemo(() => {
+    const needle = search.trim().toLowerCase();
+    return rows.filter((r) => {
+      if (categoryId !== 'all' && r.category_id !== categoryId) return false;
+      if (needle === '') return true;
+      return (
+        r.name.toLowerCase().includes(needle) ||
+        r.sku.toLowerCase().includes(needle)
+      );
+    });
+  }, [rows, search, categoryId]);
+
+  function openProduct(row: ProductRow): void {
+    navigate(`/backoffice/products/${row.id}`);
+  }
+
+  if (products.error !== null && products.error !== undefined) {
+    return (
+      <div className="rounded-lg border border-red bg-red-soft p-4 text-sm text-red" role="alert">
+        Failed to load products: {(products.error as Error).message}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-serif text-3xl">Products</h1>
-        <p className="text-text-secondary text-sm mt-1">Read-only view (CRUD arrives in a future session).</p>
-      </div>
+      <ProductsHeader />
 
-      <div className="bg-bg-elevated rounded-lg border border-border-subtle overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-bg-overlay text-xs uppercase tracking-wide text-text-secondary">
-            <tr>
-              <th className="text-left px-4 py-3 w-32">SKU</th>
-              <th className="text-left px-4 py-3">Name</th>
-              <th className="text-right px-4 py-3 w-32">Price</th>
-              <th className="text-right px-4 py-3 w-32">Stock</th>
-              <th className="text-right px-4 py-3 w-24">Active</th>
-              <th className="text-right px-4 py-3 w-24">Favorite</th>
-            </tr>
-          </thead>
-          <tbody>
-            {products.map((p) => (
-              <tr key={p.id} className="border-t border-border-subtle hover:bg-bg-overlay">
-                <td className="px-4 py-3 font-mono text-text-secondary">{p.sku}</td>
-                <td className="px-4 py-3">{p.name}</td>
-                <td className="px-4 py-3 text-right"><Currency amount={p.retail_price} emphasis="gold" /></td>
-                <td className="px-4 py-3 text-right font-mono">{p.current_stock}</td>
-                <td className="px-4 py-3 text-right">
-                  {p.is_active ? (
-                    <Check className="inline h-4 w-4 text-text-primary" aria-label="active" />
-                  ) : (
-                    <span aria-hidden>—</span>
-                  )}
-                </td>
-                <td className="px-4 py-3 text-right">
-                  {p.is_favorite ? (
-                    <Star className="inline h-4 w-4 fill-gold text-gold" aria-label="favorite" />
-                  ) : (
-                    <span aria-hidden>—</span>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <ProductsKpiGrid kpis={kpis} isLoading={products.isLoading} />
+
+      <ProductsFilters
+        search={search}
+        onSearch={setSearch}
+        categoryId={categoryId}
+        onCategory={setCategoryId}
+        categories={categories.data ?? []}
+        view={view}
+        onViewChange={setView}
+      />
+
+      {view === 'list' ? (
+        <ProductsTable
+          rows={filtered}
+          isLoading={products.isLoading}
+          onRowClick={openProduct}
+          onView={openProduct}
+        />
+      ) : (
+        <ProductsGrid rows={filtered} onCardClick={openProduct} />
+      )}
     </div>
   );
 }
