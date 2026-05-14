@@ -17,6 +17,7 @@
 ## Tâches
 
 ### TASK-22-001 — Purger hex hardcodés + classes Tailwind hors tokens [P1] [TODO]
+**Status note (2026-05-14)** : Partial / still applicable, scheduled Session 14+. V3 evidence: tokens exist in `packages/ui/src/tokens/{colors,semantic,luxe-dark,payment}.css` and Phase 1.D commit `a9bb4ac` purged 5 hardcoded literals (TransferStatusBadge, IncomingStockForm, OrderDetailDrawer). Session 14 Phase 1.A continues this work (`docs/Design/` is now source of truth, "zero hardcoded color" is D1 decision). Codemod sweep across all 30+ files not yet complete.
 **Contexte** : `docs/audit/05-uiux-design-audit.md` §C1/C2 — *"354 hardcoded Tailwind color classes (`text-slate-*`, `bg-gray-*`, `text-zinc-*`) across 30+ files bypass the token system. 69 hardcoded hex values in component files."* Top offenders : `KDSHeader.tsx`, `DashboardPage.tsx` (`PAYMENT_COLORS`), `CashierAnalyticsModal.tsx`, `CategoryFormModal.tsx`, `PaymentModal.tsx` (emerald/violet/amber).
 **Critère d'acceptation** :
 - [ ] Codemod ou recherche/remplace : `text-slate-X` / `bg-gray-X` → tokens (`text-content-secondary`, `bg-surface-2`)
@@ -30,7 +31,8 @@
 **Risques** : régression visuelle sur surface critique — diff visuel avec Percy ou screenshots avant/après
 **Notes** : faire par batch (5-10 fichiers/PR) pour faciliter review
 
-### TASK-22-002 — Composant `EmptyState` réutilisable [P1] [TODO]
+### TASK-22-002 — Composant `EmptyState` réutilisable [P1] [DONE]
+**Status note (2026-05-14)** : Delivered in Session 13 Phase 1.D. V3 evidence: `packages/ui/src/primitives/EmptyState.tsx` exists with `__tests__/EmptyState.test.tsx`; Session 14 Phase 1.A shipped EmptyState v2 (commit `1b46559`). 10-page migration is ongoing under Session 14 design polish, but the primitive itself is done. Commit `bdf21aa`.
 **Contexte** : `docs/audit/05-uiux-design-audit.md` §L2 + Recommandations §13 — *"Empty state pattern is inconsistent. Cart has icon + label + helper. ProductGrid has icon + text + CTA. But many back-office pages simply show 'No data found' text without illustration or CTA."*
 **Critère d'acceptation** :
 - [ ] `src/components/ui/EmptyState.tsx` avec props : `icon` (Lucide), `title`, `description`, `actionLabel?`, `onAction?`, `illustration?`
@@ -45,6 +47,7 @@
 **Notes** : pattern aligné avec celui de POS Cart empty state qui est correct
 
 ### TASK-22-003 — Harmoniser loading states (Skeleton partout) [P2] [TODO]
+**Status note (2026-05-14)** : Still applicable, scheduled Session 14+. V3 evidence: no `Skeleton*` primitive in `packages/ui/src/primitives/` (only Dialog/EmptyState/Sheet/Button/Input/Toast/Card/Badge/ScrollArea/Separator/Tabs); no `<ScreenSkeleton />` exists. Session 13 did not scope this; Session 14 Wave 1 may add it.
 **Contexte** : `docs/audit/05-uiux-design-audit.md` §L1 — *"Inconsistent loading patterns. Some pages use Skeleton components (dashboard, accounting), others use animate-pulse on plain divs (ProductGrid, CategoryNav), and a few use simple text ('Loading...' in PaymentModal Suspense fallback). Should standardize on Skeleton everywhere."*
 **Critère d'acceptation** :
 - [ ] `animate-pulse` brut remplacé par `<Skeleton variant="..." />` sur tous les fichiers identifiés
@@ -58,6 +61,7 @@
 **Notes** : —
 
 ### TASK-22-004 — A11y : remplacer `<div onClick>` par `<button>` [P1] [TODO]
+**Status note (2026-05-14)** : Partial / still applicable, scheduled Session 14+. V3 evidence: Phase 1.D commit `a9bb4ac` made a motion-reduce + a11y sweep on Dialog/Button/FullScreenModal and migrated drawer components, but no broad `<div onClick>` → `<button>` codemod ran across `apps/{pos,backoffice}/src`; `CartItemRow.tsx` (the V2 example) does not exist with that name in V3.
 **Contexte** : `docs/audit/05-uiux-design-audit.md` §A0-1 — *"43 div/span with onClick handlers across 28 files without role='button', tabIndex, or keyboard event handlers. Examples: CartItemRow wraps items in a clickable div without keyboard support."*
 **Critère d'acceptation** :
 - [ ] 43 occurrences identifiées migrées vers `<button>` natif OU `<div role="button" tabIndex={0} onKeyDown={enterOrSpace}>`
@@ -70,7 +74,8 @@
 **Risques** : changement structure DOM peut casser styling — vérifier focus rings
 **Notes** : codemod possible pour 80 % des cas, manuel pour complexes
 
-### TASK-22-005 — Skip-to-content sur POS [P1] [TODO]
+### TASK-22-005 — Skip-to-content sur POS [P1] [DONE]
+**Status note (2026-05-14)** : Delivered in Session 13 Phase 1.D. V3 evidence: `packages/ui/src/components/SkipToContent.tsx` + `__tests__/SkipToContent.test.tsx` exist; rendered as first child in both `apps/pos/src/App.tsx` and `apps/backoffice/src/App.tsx`; `id="main-content"` anchors live in `Pos.tsx`, `Kds.tsx`, `BackofficeLayout.tsx`. Commit `bdf21aa`.
 **Contexte** : `docs/audit/05-uiux-design-audit.md` §A0-2 — *"No skip-to-content link on POS. Only the BackOfficeLayout has one. POS is the primary surface used ~200 tx/day."*
 **Critère d'acceptation** :
 - [ ] `<a href="#pos-main" className="sr-only focus:not-sr-only ...">Skip to products</a>` ajouté dans `POSTerminalWrapper.tsx`
@@ -82,7 +87,8 @@
 **Risques** : aucun
 **Notes** : 5 min de travail, gain a11y immédiat
 
-### TASK-22-006 — Modal focus trap + Escape (Radix Dialog migration) [P1] [TODO]
+### TASK-22-006 — Modal focus trap + Escape (Radix Dialog migration) [P1] [DONE]
+**Status note (2026-05-14)** : Delivered in Session 13 Phases 1.D + 4.D. V3 evidence: `packages/ui/src/primitives/Dialog.tsx` (Radix wrapper with focus-trap/Escape) + `Sheet.tsx` exist; per Phase 1.D commit message "V3 found 34 modal sites, 33/34 already Radix Dialog" so batch 1 was re-sized 24→10; Phase 4.D commits `33d310d`, `1f524a6`, `75d6c37` migrated 7 BO ad-hoc modals (opname/production/sections/purchasing) to the primitive. V2's 72-modal backlog is V3-obsolete (V3 was built on Radix from inception). Commit `bdf21aa`.
 **Contexte** : `docs/audit/05-uiux-design-audit.md` §A1-3 + §U1 — *"PaymentModal listens for Escape (good) but does not trap focus. PinVerificationModal, TableSelectionModal, DiscountModal lack Escape entirely. Use Radix Dialog (already a dependency via shadcn)."* + audit exec summary mentionne *"Dialog shadcn inutilisé (72+ modals custom)"*.
 **Critère d'acceptation** :
 - [ ] Audit : lister les 72+ modales custom identifiées
@@ -96,6 +102,7 @@
 **Notes** : décomposer en sous-tâches `M` par batch de 3-4 modales
 
 ### TASK-22-007 — Améliorer contrast `--text-muted` [P1] [TODO]
+**Status note (2026-05-14)** : Uncertain — manual review needed. V3 evidence: `packages/ui/src/tokens/luxe-dark.css` line 16 sets `--text-muted: #6b6b73`, which is close to the V2 `#6E6E78` value flagged in audit — contrast against `--surface-0` should be re-tested (axe DevTools) before deciding. No Session 13 phase touched this token; Session 14 Phase 1.A is the right venue.
 **Contexte** : `docs/audit/05-uiux-design-audit.md` §A1-4 — *"text-content-muted maps to #6E6E78 on --surface-0 (#0C0C0E) = ~3.8:1 contrast ratio, below 4.5:1 AA minimum for normal text. Used extensively for labels and metadata."*
 **Critère d'acceptation** :
 - [ ] `--text-muted` dans `theme-pos` passé de `#6E6E78` à `#8A8A94` (ou valeur testée à 4.5:1+)
@@ -109,6 +116,7 @@
 **Notes** : —
 
 ### TASK-22-008 — Composants UI manquants : KPI card + Progress bar [P2] [TODO]
+**Status note (2026-05-14)** : Partial / still applicable. V3 evidence: `packages/ui/src/components/KpiTile.tsx` + `__tests__/KpiTile.test.tsx` exist (satisfies KPI card half). `ProgressBar` primitive is NOT present (grep returns 0 matches in `packages/ui`). Migration of Dashboard/reports to consume KpiTile is also incomplete. Keep TODO until ProgressBar lands.
 **Contexte** : `docs/audit/ux-gap-analysis-2026-05-01.md` §Composants UI à inclure dans tokens/UI package — *"KPI cards (icon + label + value + indicator), Progress bars, Modifier groups, Combo cards, Floor plan tables, Split bill multi-step wizard"* listés comme manquants.
 **Critère d'acceptation** :
 - [ ] `src/components/ui/KPICard.tsx` : props `icon`, `label`, `value`, `trend?`, `trendLabel?`, `variant`
@@ -123,6 +131,7 @@
 **Notes** : —
 
 ### TASK-22-009 — Animations + `motion-reduce` partout [P2] [TODO]
+**Status note (2026-05-14)** : Partial / still applicable, scheduled Session 14+. V3 evidence: `packages/ui/src/tokens/motion.css` defines `fast/base/slow` durations with `prefers-reduced-motion` overrides; Phase 1.D commit `a9bb4ac` did a motion-reduce sweep on Dialog/Button/FullScreenModal/Sheet (7 packages/ui files). Broader sweep across `apps/{pos,backoffice}/src` animated components not yet complete.
 **Contexte** : `docs/audit/05-uiux-design-audit.md` §A1-2 — *"Only 7 files respect prefers-reduced-motion via motion-reduce:. KDS has good coverage but many animations (sidebar fade-in, pulse, shimmer skeletons) run regardless of user preference."*
 **Critère d'acceptation** :
 - [ ] Audit : grep `transition-` `animate-` `transform` → ajouter `motion-reduce:transition-none` ou `motion-reduce:animate-none` partout
@@ -136,6 +145,7 @@
 **Notes** : —
 
 ### TASK-22-010 — Aria-live regions pour feedback temps réel [P2] [TODO]
+**Status note (2026-05-14)** : Partial / still applicable, scheduled Session 14+. V3 evidence: `EmptyState.tsx`, `NumpadVirtual.tsx`, `PromotionForm.tsx`, `RedeemPointsModal.tsx`, `DiscountModal.tsx` use `role="status"`/`aria-live`, but `CartTotals`/`PaymentModal`/`KDSOrderCard` (the audit targets) don't yet announce changes. No dedicated NVDA/VoiceOver test pass logged Session 13.
 **Contexte** : `docs/audit/05-uiux-design-audit.md` §A2-2 — *"No aria-live regions for dynamic content. Cart total updates, payment progress, KDS order state changes have no aria-live announcements. Empty cart state correctly uses role='status' aria-live='polite' but pattern not repeated elsewhere."*
 **Critère d'acceptation** :
 - [ ] CartTotals annonce changement total ("Total: Rp 125,000")
@@ -148,7 +158,8 @@
 **Risques** : sur-annoncer = bruit screen reader → polite + dédup sur valeurs identiques
 **Notes** : —
 
-### TASK-22-011 — Dark mode toggle (exposition utilisateur) [P3] [TODO]
+### TASK-22-011 — Dark mode toggle (exposition utilisateur) [P3] [OBSOLETE]
+**Status note (2026-05-14)** : V3 architecture supersedes this. POS is single-theme dark by D-Spec (kiosk bakery), and BO is single-theme light. Session 14 spec D2-D4 reaffirm POS dark / BO light split as fixed. `coreSettingsStore` from V2 doesn't exist in V3 split. No user-facing toggle is a product decision.
 **Contexte** : `docs/audit/ux-gap-analysis-2026-05-01.md` §Découvertes transversales — *"Dark theme toggle — pas de toggle, dark = unique mode CaissApp"*. Architecture dual-theme déjà présente (`.theme-pos` dark / `.theme-backoffice` light) mais pas exposée à l'utilisateur en BO.
 **Critère d'acceptation** :
 - [ ] Toggle dans `/profile` : "Theme: System / Light / Dark"
@@ -162,6 +173,7 @@
 **Notes** : POS reste dark forcé (kiosk bakery sombre)
 
 ### TASK-22-012 — Hover guard `@media (hover: hover)` [P3] [TODO]
+**Status note (2026-05-14)** : Still applicable, scheduled Session 14+. V3 evidence: no `@media (hover: hover)` utility wrapper in `packages/ui/src/tokens/` or `apps/*/src/index.css`. Session 13 did not address this; relevant when Session 14 polishes tablet POS UI per `docs/Design/`.
 **Contexte** : `docs/audit/05-uiux-design-audit.md` §POS-3 P3 — *"Product card hover animation (hover:-translate-y-1 hover:shadow-2xl) is elegant on desktop but may cause layout jitter on touch devices where :hover sticks after tap."*
 **Critère d'acceptation** :
 - [ ] Helper Tailwind ou CSS custom property pour wrapper hover : `@media (hover: hover) { .hover-lift:hover { ... } }`
@@ -174,6 +186,7 @@
 **Notes** : —
 
 ### TASK-22-013 — Iconographie / illustrations cohérentes [P3] [TODO]
+**Status note (2026-05-14)** : Still applicable, scheduled Session 14+. V3 evidence: no `public/illustrations/` directory in `apps/{pos,backoffice}` and `EmptyState.tsx` does not yet support an `illustration` prop. Session 14 spec scopes branded photography (D-Spec 90% fidelity), but illustration set is not part of Session 13 burndown.
 **Contexte** : `docs/audit/05-uiux-design-audit.md` §Icon Consistency 9/10 *"All icons are from Lucide — excellent consistency."* Pas de problème icônes. Mais illustrations manquantes pour empty states, onboarding, error pages → opportunité branding.
 **Critère d'acceptation** :
 - [ ] 5 illustrations SVG branded (vide cart, no orders, no customers, error 500, no internet) hébergées dans `public/illustrations/`

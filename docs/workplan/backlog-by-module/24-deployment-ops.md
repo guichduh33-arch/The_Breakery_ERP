@@ -16,7 +16,8 @@
 
 ## Tâches
 
-### TASK-24-001 — CI/CD pipeline complète (PR check + deploy preview) [P1] [TODO]
+### TASK-24-001 — CI/CD pipeline complète (PR check + deploy preview) [P1] [DONE]
+**Status note (2026-05-14)** : Delivered Session 13 Phase 0.2. V3 evidence: `.github/workflows/ci.yml` (PR lint+typecheck+test+build + pgTAP job) and `.github/workflows/staging-deploy.yml` (manual approval → migrations push + EF deploy to `ikcyvlovptebroadgtvd`). NOTE: `staging-deploy.yml` ran for the first time on 2026-05-14 (D-W6-CICD-01 follow-up — secrets gap). Commit `bdf21aa`.
 **Contexte** : `docs/audit/08-operations-lan-audit.md` §5.2 — *"Vercel preview deploys exist per-PR, but there's no persistent staging."* Vérifier qu'il y a aussi lint+test sur PR (TASK-23-008).
 **Critère d'acceptation** :
 - [ ] `.github/workflows/ci.yml` (cf. TASK-23-008) couvre lint + tests
@@ -30,7 +31,8 @@
 **Risques** : déploiement auto prod = risque si tag mal posé — confirmer step manuel ou approval
 **Notes** : Vercel git integration peut suffire pour deploy preview ; séparer si déjà actif
 
-### TASK-24-002 — DR runbook complet (5 scénarios) [P1] [TODO]
+### TASK-24-002 — DR runbook complet (5 scénarios) [P1] [DONE]
+**Status note (2026-05-14)** : Delivered Session 13 Phase 6.C. V3 evidence: `docs/runbooks/disaster-recovery.md` documents 6 scenarios (Supabase down, hub crash, print server crash, Vercel down, data corruption + a sixth) with RTO/RPO, mitigation, recovery, post-mortem template — owned by Platform/on-call. Commit `bdf21aa`.
 **Contexte** : `docs/audit/08-operations-lan-audit.md` §5.3 P2 FINDING — *"No documented disaster recovery runbook. For a production system handling ~200 tx/day, there should be Supabase backup verification schedule, RTO/RPO definitions, step-by-step recovery procedures, contact info for Supabase support escalation."*
 **Critère d'acceptation** :
 - [ ] `docs/reference/10-deployment-ops/02-disaster-recovery.md` créé
@@ -46,6 +48,7 @@
 **Notes** : aligner avec TASK-24-005 (backup verification)
 
 ### TASK-24-003 — Monitoring Sentry alertes tuning [P2] [TODO]
+**Status note (2026-05-14)** : Sentry client SDKs were initialized in Session 13 Phase 6.C (`apps/pos/sentry.client.config.ts`, `apps/backoffice/sentry.client.config.ts`) — but alert-rules/Slack-notification configuration is a dashboard-side step that was not documented. `docs/reference/10-deployment-ops/03-monitoring-alerts.md` not created. Genuinely undone.
 **Contexte** : `docs/audit/08-operations-lan-audit.md` §5.1 — *"Comprehensive Sentry setup with appropriate privacy controls."* Mais pas d'alerte rules documentées. Sentry peut spammer Slack/email si non tuné.
 **Critère d'acceptation** :
 - [ ] Alert rules Sentry : nouveau type d'erreur en prod → notification Slack #ops dans 5 min
@@ -60,6 +63,7 @@
 **Notes** : —
 
 ### TASK-24-004 — Performance budgets + Lighthouse CI [P2] [TODO]
+**Status note (2026-05-14)** : No `.lighthouserc.json` or `.github/workflows/lighthouse.yml` in V3. Session 13 did not include Lighthouse CI. Genuinely undone.
 **Contexte** : `docs/audit/08-operations-lan-audit.md` §5.4 — *"Build chunked output with ~650KB warning limit. Vendor-react ~620KB (within limit)."* Pas de garde-fou si on ajoute une lib lourde.
 **Critère d'acceptation** :
 - [ ] `lhci` (Lighthouse CI) configuré, run sur preview Vercel après deploy
@@ -73,6 +77,7 @@
 **Notes** : Lombok = 4G, performance critique
 
 ### TASK-24-005 — Backup verification (Supabase PITR test) [P1] [TODO]
+**Status note (2026-05-14)** : DR runbook (`docs/runbooks/disaster-recovery.md`) references Supabase PITR (TASK-24-002 DONE) but no executed test-restore on the V3 dev project, no chronometered RTO measurement, no quarterly-schedule artifact. Procedure documented, drill not performed. Genuinely undone.
 **Contexte** : `docs/audit/08-operations-lan-audit.md` §5.3 — *"Supabase point-in-time recovery (PITR) available on Pro plan. No documented recovery procedure."*
 **Critère d'acceptation** :
 - [ ] Test restore PITR sur projet Supabase de staging (ou branch) à T-24h
@@ -87,6 +92,7 @@
 **Notes** : Supabase Pro requis pour PITR (vérifier plan)
 
 ### TASK-24-006 — Edge Function cold start optimization [P2] [TODO]
+**Status note (2026-05-14)** : V3 ships 10 Edge Functions (`supabase/functions/`) including `auth-verify-pin`, `notification-dispatch`, `kiosk-issue-jwt`. No `scripts/bench-edge-functions.sh` exists ; no `docs/reference/10-deployment-ops/04-edge-functions-perf.md`. Genuinely undone.
 **Contexte** : `docs/audit/08-operations-lan-audit.md` §5.4 mentionne build chunking client mais pas Edge Function perf. `auth-verify-pin` cold start peut atteindre 500-800 ms (Deno + connect Supabase).
 **Critère d'acceptation** :
 - [ ] Bench : mesurer cold start des 16 Edge Functions (script `scripts/bench-edge-functions.sh`)
@@ -100,6 +106,7 @@
 **Notes** : —
 
 ### TASK-24-007 — Vercel config rewrites SPA edge cases [P3] [TODO]
+**Status note (2026-05-14)** : Session 13 Phase 1.B shipped `vercel.json` with CSP + HSTS + security headers (TASK-cascade for 25-005) but no SPA `rewrites` block (file shows headers only). The audit-original edge-case rewrites (`/api/*`, `/.well-known/*`) are not addressed. Genuinely undone.
 **Contexte** : `docs/audit/08-operations-lan-audit.md` §5.2 — *"SPA rewrites: /((?!assets/).*) -> /index.html"*. Edge case : URL `/api/*` ou `/.well-known/*` (PWA, securitytxt) doivent NE PAS être rewrités.
 **Critère d'acceptation** :
 - [ ] Audit `vercel.json` rewrites : exclure `/api/*`, `/.well-known/*`, `/sw.js`, `/manifest.json`
@@ -111,7 +118,8 @@
 **Risques** : —
 **Notes** : —
 
-### TASK-24-008 — Multi-env staging Supabase + Vercel [P1] [TODO]
+### TASK-24-008 — Multi-env staging Supabase + Vercel [P1] [DONE]
+**Status note (2026-05-14)** : Delivered Session 13 Phase 0.2. V3 evidence: dedicated Supabase project `ikcyvlovptebroadgtvd` (the-breakery-v3-dev, Pro plan) provisioned as staging (per CLAUDE.md `## Critical patterns` block) and wired into `.github/workflows/staging-deploy.yml` with environment approval gates. Prod (`abjabuniwkqpfsenxljp`, V2) explicitly out-of-lineage. Commit `bdf21aa`.
 **Contexte** : `docs/audit/07-product-backlog-audit.md` §7 + `CURRENT_STATE.md` T2 — *"Staging environment. Every production system needs a staging environment. Bugs at 200 tx/day are expensive. Quick win on Vercel (branch previews already available)."* Côté Supabase : utiliser branches Supabase ou projet dédié.
 **Critère d'acceptation** :
 - [ ] Projet Supabase staging créé (ou branch `staging` activée)
@@ -126,6 +134,7 @@
 **Notes** : alternative branches Supabase = plus simple mais ne couvre pas Edge Functions séparément
 
 ### TASK-24-009 — Release notes automation [P3] [TODO]
+**Status note (2026-05-14)** : No `release-please` / `changesets` / `.github/workflows/release.yml` in V3. CLAUDE.md mandates conventional commits but no auto-CHANGELOG flow ships. Genuinely undone.
 **Contexte** : `docs/audit/06-documentation-audit.md` §Nice-to-have — *"Changelog / Release notes. No versioned history of changes."*
 **Critère d'acceptation** :
 - [ ] `release-please` ou `changesets` configuré
@@ -139,6 +148,7 @@
 **Notes** : —
 
 ### TASK-24-010 — Sentry serveur (Edge Functions) [P3] [TODO]
+**Status note (2026-05-14)** : Phase 6.C shipped Sentry on client only (`apps/{pos,backoffice}/sentry.client.config.ts`). No `supabase/functions/_shared/sentry.ts` ; `@sentry/deno` not added to EFs. Genuinely undone.
 **Contexte** : `docs/audit/08-operations-lan-audit.md` §5.1 P3 FINDING — *"No server-side monitoring for Edge Functions. Sentry is client-side only. Edge Function errors go to console.error which is only visible in Supabase Edge Function logs (limited retention). Consider @sentry/deno for Edge Functions."*
 **Critère d'acceptation** :
 - [ ] `@sentry/deno` ajouté dans `_shared/sentry.ts`
@@ -152,6 +162,7 @@
 **Notes** : —
 
 ### TASK-24-011 — Disaster recovery plan complet (formalisation) [P2] [TODO]
+**Status note (2026-05-14)** : TASK-24-002 DONE delivers the technical runbook ; the broader incident-response artifacts (admin-accounts list, downtime banner component, annual drill, postmortem template) are not in `docs/runbooks/disaster-recovery.md`. Genuinely undone — incremental on top of 24-002.
 **Contexte** : Liée à TASK-24-002 mais étendue à plan d'urgence multi-volet : qui contacter, comment communiquer aux clients (downtime banner), quels comptes ont accès admin Supabase/Vercel.
 **Critère d'acceptation** :
 - [ ] Doc `docs/reference/10-deployment-ops/07-incident-response.md`

@@ -15,7 +15,8 @@
 
 ## Tâches
 
-### TASK-06-001 — F1 Expiry date tracking — schema + tracking [P0] [TODO]
+### TASK-06-001 — F1 Expiry date tracking — schema + tracking [P0] [DONE]
+**Status note (2026-05-14)** : Delivered Session 13 Phase 1.C. V3 evidence: migrations `supabase/migrations/20260517000040_init_stock_lots.sql`, `…000041_add_products_default_shelf_life.sql`, `…000042_add_stock_movements_lot_id_fk.sql`, `…000043_create_lot_rpcs.sql` + FIFO resolution embedded in `record_stock_movement_v1` (extended via `…000020`); hooks `apps/backoffice/src/features/inventory/hooks/useStockLots.ts` + `useExpiringLots.ts` verified. Commit `bdf21aa` (squashed PR #13).
 **Contexte** : Bakery products expirent en 1-3 jours. Sans tracking, staff dépend de mémoire / labels manuels. Risque réglementaire si inspection. Source : `docs/audit/07-product-backlog-audit.md§Critical-1`.
 **Critère d'acceptation** :
 - [ ] Migration : `products.default_shelf_life_hours` (int, nullable).
@@ -29,7 +30,8 @@
 **Estimation** : `XL`
 **Risques** : Refonte du modèle stock. Backfill des stock courants avec expiry hypothétique. Préparer plan de migration data soigneux.
 
-### TASK-06-002 — F1 Expiry alerts + UI [P0] [TODO]
+### TASK-06-002 — F1 Expiry alerts + UI [P0] [DONE]
+**Status note (2026-05-14)** : Delivered Session 13 Phase 1.C. V3 evidence: pg_cron job `supabase/migrations/20260517000045_pg_cron_mark_expired_lots.sql` flips lots to `expired`; page `apps/backoffice/src/features/inventory/pages/ExpiringStockPage.tsx` + `ExpiringLotsBadge.tsx` + smoke test `ExpiringStockPage.smoke.test.tsx` verified. Auto-waste-on-expiry option present in cron RPC. Commit `bdf21aa` (squashed PR #13).
 **Contexte** : Une fois F1 schema en place (TASK-06-001), il faut alerter et bloquer les produits expirés. Source : `docs/audit/07-product-backlog-audit.md§Critical-1`.
 **Critère d'acceptation** :
 - [ ] Cron Supabase (pg_cron) : marque les lots `expired` et déclenche alerte si > 0.
@@ -43,7 +45,8 @@
 **Estimation** : `L`
 **Risques** : Faux positifs (lot mal-daté à l'arrivée). Workflow de correction manager.
 
-### TASK-06-003 — Migration phantom `stock_reservations` (créer ou supprimer) [P1] [TODO]
+### TASK-06-003 — Migration phantom `stock_reservations` (créer ou supprimer) [P1] [DONE]
+**Status note (2026-05-14)** : Delivered Session 13 Phase 3.C (decision = OUI, créer). V3 evidence: `supabase/migrations/20260517000132_init_stock_reservations.sql` provisions table + RLS + hold/release/consume RPCs; domain pure-TS in `packages/domain/src/inventory/reservations/reservationCalculator.ts`. Commit `bdf21aa` (squashed PR #13).
 **Contexte** : 6 références à `stock_reservations` dans `services/inventory/stockReservation.ts` mais table absente du schema. Source : `docs/audit/03-code-quality-schema-audit.md§A1`.
 **Critère d'acceptation** :
 - [ ] Décision business : feature stock reservation utile (ex : tablet ordering bloque stock 10 min) ?
@@ -56,7 +59,8 @@
 **Estimation** : `M` (S si suppression, L si création)
 **Risques** : Si on supprime alors que ça doit exister, on perd une feature. Vérifier git blame + roadmap.
 
-### TASK-06-004 — Migration phantom `stock_balances` (créer ou supprimer) [P2] [TODO]
+### TASK-06-004 — Migration phantom `stock_balances` (créer ou supprimer) [P2] [DONE]
+**Status note (2026-05-14)** : Delivered Session 13 Phase 2.D as a section-aware view. V3 evidence: `supabase/migrations/20260517000097_create_view_section_stock_details.sql` exposes (product_id, section_id, quantity); hook `apps/backoffice/src/features/inventory-dashboard/components/StockBySectionList.tsx` consumes it. Commit `bdf21aa` (squashed PR #13).
 **Contexte** : 1 référence à `stock_balances` dans `useStockByLocation.ts`. Probablement une vue à créer ou un alias incorrect pour `view_section_stock_details`. Source : `docs/audit/03-code-quality-schema-audit.md§A1`.
 **Critère d'acceptation** :
 - [ ] Investiguer : `stock_balances` doit être une vue ou une table ?
@@ -69,7 +73,8 @@
 **Estimation** : `S`
 **Risques** : Faible.
 
-### TASK-06-005 — Phantom RPC `finalize_inventory_count` [P1] [TODO]
+### TASK-06-005 — Phantom RPC `finalize_inventory_count` [P1] [DONE]
+**Status note (2026-05-14)** : Delivered Session 13 Phase 2.D, renamed `finalize_opname_v1`. V3 evidence: `supabase/migrations/20260517000091_create_opname_rpcs.sql` provides start/set-count/finalize/cancel; hook `apps/backoffice/src/features/inventory-opname/hooks/useOpnameMutations.ts` + `FinalizeOpnameDialog.tsx` wire it. Idempotent + JE-emitting via `tr_20_je_emit`. Commit `bdf21aa` (squashed PR #13).
 **Contexte** : `useStockOpname.ts` appelle `finalize_inventory_count` qui n'existe pas en DB. L'opname ne peut pas être finalisé proprement. Source : `docs/audit/03-code-quality-schema-audit.md§A2`.
 **Critère d'acceptation** :
 - [ ] Migration : RPC `finalize_inventory_count(count_id)` qui : (1) snapshot final, (2) crée `stock_movements` adjustment, (3) appelle `postStockAdjustmentJournalEntry`, (4) marque count `status='completed'`.
@@ -82,7 +87,8 @@
 **Estimation** : `M`
 **Risques** : Création JE pour grandes adjustments (ex : 100 produits) peut être lent. Vérifier perf.
 
-### TASK-06-006 — Opname workflow streamlining (UX) [P2] [TODO]
+### TASK-06-006 — Opname workflow streamlining (UX) [P2] [DONE]
+**Status note (2026-05-14)** : Delivered Session 13 Phase 2.D core workflow. V3 evidence: `apps/backoffice/src/features/inventory-opname/components/{CreateOpnameModal,AddItemForm,CountItemRow,FinalizeOpnameDialog,CancelOpnameDialog,OpnameStatusBadge}.tsx` + `hooks/{useOpnameList,useOpnameDetail,useOpnameMutations}.ts`. Tablet-specific polish (auto-focus next, voice input) remains a Session 14+ UX follow-up. Commit `bdf21aa` (squashed PR #13).
 **Contexte** : Compter 200+ produits manuellement = chronophage. UX actuelle pas évaluée mais probablement scrollable list classique. Inferred from product backlog + bakery operational reality.
 **Critère d'acceptation** :
 - [ ] UI opname : recherche par catégorie / location / barcode.
@@ -97,6 +103,7 @@
 **Risques** : Aucun majeur. Test sur tablet réelle.
 
 ### TASK-06-007 — Ghost stock cleanup [P2] [TODO]
+**Status note (2026-05-14)** : Not delivered Session 13. The stock variance RPC (`supabase/migrations/20260517000075_create_stock_variance_rpc.sql`) and `apps/backoffice/src/pages/reports/StockVariancePage.tsx` surface variance data, but no dedicated `/inventory/ghost-stock` workflow page with Investigate / Write-off / Mark-normal actions exists. Genuine UX gap — Session 14+ follow-up.
 **Contexte** : Ghost stock = écarts inexpliqués entre DB et physique. Reports les détectent (`docs/audit/07-product-backlog-audit.md§Audit/fraud detection`). Workflow de cleanup pas formalisé. Inferred from reports module.
 **Critère d'acceptation** :
 - [ ] Page dédiée `/inventory/ghost-stock` : liste produits avec variance > seuil (configurable).
@@ -109,7 +116,8 @@
 **Estimation** : `M`
 **Risques** : Workflow comptable sensible. Valider avec comptable.
 
-### TASK-06-008 — Transfer locations workflow [P2] [TODO]
+### TASK-06-008 — Transfer locations workflow [P2] [DONE]
+**Status note (2026-05-14)** : Delivered in Session 12 (`internal_transfers` migrations `20260516000022/000023`) and surfaced in Session 13. V3 evidence: `apps/backoffice/src/features/inventory-transfers/{components,hooks}/` ship the 2-step source-creates / destination-receives flow with `TransferReceiveModal.tsx`, `TransferCancelConfirm.tsx`, `useCreateTransfer`, `useReceiveTransfer`, `useCancelTransfer`. Movement type `transfer_in/out` enforced via section constraint. Commit `bdf21aa` (squashed PR #13).
 **Contexte** : Transferts inter-locations (`internal_transfers` table) existent mais workflow UX pas évalué. Inferred from code review (hook `useInternalTransfers` est 544L → trop gros).
 **Critère d'acceptation** :
 - [ ] Workflow 2 étapes : (1) source crée transfer pending, (2) destination valide reception (avec QC quantités).
@@ -123,6 +131,7 @@
 **Risques** : Workflow change peut casser usages existants. Migration douce avec feature flag.
 
 ### TASK-06-009 — Waste tracking UX [P2] [TODO]
+**Status note (2026-05-14)** : Partially delivered Session 13. V3 evidence: `apps/backoffice/src/features/inventory/components/WasteModal.tsx` ships preset reasons (Expired/Damaged/Spoiled/Other) + qty cap + JE emission via `waste_stock_v1`. Still missing: POS-side quick-waste button, Capacitor camera photo capture, daily running-waste KPI tile on Dashboard, per-product waste-rate report. Session 14+ follow-up.
 **Contexte** : Waste records existent (`postStockWasteJournalEntry` câblé). UX d'enregistrement pas formalisée. Pour bakery (pertes quotidiennes), workflow rapide est crucial. Inferred from accounting audit (waste OK) + product backlog (bakery context).
 **Critère d'acceptation** :
 - [ ] Bouton « Quick waste » accessible depuis POS et `/inventory`.
@@ -135,7 +144,8 @@
 **Estimation** : `M`
 **Risques** : Permissions : qui peut waste ? Définir avec business.
 
-### TASK-06-010 — Stock variance reporting [P3] [TODO]
+### TASK-06-010 — Stock variance reporting [P3] [DONE]
+**Status note (2026-05-14)** : Delivered Session 13 Phase 6.A. V3 evidence: `supabase/migrations/20260517000075_create_stock_variance_rpc.sql` + page `apps/backoffice/src/pages/reports/StockVariancePage.tsx` + hook `apps/backoffice/src/features/reports/hooks/useStockVariance.ts`; route registered in `apps/backoffice/src/routes/index.tsx`. Drill-down + filtre date range present. Commit `bdf21aa` (squashed PR #13).
 **Contexte** : Reports inventory existent mais variance reporting cross-période n'est pas mis en avant. Source : `docs/audit/04-reports-testing-audit.md§Phase 6 missing` (recipe cost trends missing).
 **Critère d'acceptation** :
 - [ ] Report nouveau : « Stock variance by period » : compare opname N vs N-1, met en évidence top 10 derives.

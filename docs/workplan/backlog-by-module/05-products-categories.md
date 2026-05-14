@@ -15,7 +15,8 @@
 
 ## Tâches
 
-### TASK-05-001 — F6 Sub-recipes (recettes composées) [P0] [TODO]
+### TASK-05-001 — F6 Sub-recipes (recettes composées) [P0] [BLOCKED]
+**Status note (2026-05-14)** : Deferred to Wave 7 / Session 14+ per decision pack D3 (recipes ownership = module 15) and INDEX line 1213 "Sub-recipes récursifs (F6 complet) | 14+". Session 13 Phase 2.A delivered FLAT recipes only (`supabase/migrations/20260517000060_init_recipes.sql`, `apps/backoffice/src/pages/inventory/RecipeEditorPage.tsx`); no self-FK / cycle guard / cost cascade was built. Commit `bdf21aa` (squashed PR #13).
 **Contexte** : Un bakery a des recettes composées (croissant dough → 5 produits finis). Sans support, recipe costing inexact et production planning manuel. Source : `docs/audit/07-product-backlog-audit.md§Critical-3`.
 **Critère d'acceptation** :
 - [ ] Schema : `recipes` peut référencer une autre `recipe` comme « ingredient » (auto-FK self).
@@ -30,6 +31,7 @@
 **Risques** : Cycle infini si validation insuffisante. Performance recompute si beaucoup de niveaux. Atomicité des updates.
 
 ### TASK-05-002 — Pricing tiers UI clarification [P2] [TODO]
+**Status note (2026-05-14)** : Not delivered in Session 13. V3 `apps/backoffice/src/pages/Products.tsx` is read-only (banner "Read-only view (CRUD arrives in a future session)") and no `ProductForm.tsx` / `ProductPricingMatrix.tsx` exists under `apps/backoffice/src/features/products/`. Product CRUD + pricing matrix UI are scoped for Session 14 UX completion wave.
 **Contexte** : 4 sources de prix : `retail` (standard), `wholesale` (wholesale_price), `discount_percentage`, `custom` (product_category_prices). UX confuse pour saisir/comprendre. Source : `CLAUDE.md` Business Rules + revue UX.
 **Critère d'acceptation** :
 - [ ] Section dédiée « Pricing » dans product form avec tabs : Retail / Wholesale / Custom by Category.
@@ -43,6 +45,7 @@
 **Risques** : Trop d'options visibles peut effrayer. Cacher derrière un toggle « Advanced pricing ».
 
 ### TASK-05-003 — Modifiers groupés (set radio vs multi-select clair) [P2] [TODO]
+**Status note (2026-05-14)** : Not delivered in Session 13. Domain modifier types exist (`packages/domain/src/modifiers/`) and POS consumes them (`apps/pos/src/features/products/hooks/useProductModifiers.ts`), but no admin `ModifierGroupForm.tsx` was built under `apps/backoffice/src/features/products/components/` — that directory contains only a `hooks/` folder. Backoffice modifier CRUD UI deferred.
 **Contexte** : `product_modifier_groups` a un `group_type` (radio / multi). UI actuelle semble peu indiquer la distinction au manager qui crée les groupes. Inferred from code review + `database.enums.ts` `ModifierGroupType`.
 **Critère d'acceptation** :
 - [ ] UI création modifier group : radio explicite « Single choice » vs « Multiple choice ».
@@ -56,6 +59,7 @@
 **Risques** : Modifier les groupes existants peut casser commandes en cours. Modale informative.
 
 ### TASK-05-004 — Combo builder UX [P2] [TODO]
+**Status note (2026-05-14)** : Not delivered in Session 13. Combo runtime exists (`packages/domain/src/combos/`, `apps/pos/src/features/combos/`) but no admin `ComboWizard.tsx` was built — `apps/backoffice/src/features/products/` only has `hooks/`. Combo builder UI scoped for Session 14+.
 **Contexte** : Combos existent (`product_combos`, `product_combo_groups`, `product_combo_group_items`) mais l'UI de construction n'est pas évaluée dans les audits. Vraisemblablement complexe pour un bakery owner. Inferred from schema complexity.
 **Critère d'acceptation** :
 - [ ] Wizard 3 étapes : (1) info combo + prix, (2) groupes (ex : « Boisson », « Viennoiserie »), (3) items par groupe + quantités.
@@ -69,6 +73,7 @@
 **Risques** : Refactor d'une UI existante peut perdre données si mal géré. Backup combos avant migration.
 
 ### TASK-05-005 — Image management (uploads, optimisation) [P2] [TODO]
+**Status note (2026-05-14)** : Not delivered in Session 13. No `product-images` Storage bucket migration in `supabase/migrations/20260517*.sql`, no `process-product-image` EF (`supabase/functions/` lists only 11 EFs, none for image processing), and no `ProductImageUploader.tsx` component. Session 14 seed plan will exercise photos but bucket + uploader UI remain undone.
 **Contexte** : Images produits servent dans POS grid, mobile, customer display. Pas d'upload UI documenté, pas d'optimisation WebP/srcset. T6 backlog. Source : `docs/audit/07-product-backlog-audit.md§Nice-to-have-11`.
 **Critère d'acceptation** :
 - [ ] Bucket Supabase Storage `product-images` avec RLS write authenticated.
@@ -83,6 +88,7 @@
 **Risques** : Coût storage si pas de cleanup. Quota Supabase. Définir politique max-size (ex : 2 MB).
 
 ### TASK-05-006 — Category drag & drop reorder [P3] [TODO]
+**Status note (2026-05-14)** : Not delivered in Session 13. No `CategoriesPage.tsx` in `apps/backoffice/src/pages/` — categories CRUD UI not built. Session 14 has category management on its UX completion roadmap.
 **Contexte** : Catégories ont un `display_order` (probable). Pas de UI DnD. Manager doit éditer les ordres manuellement. Inferred from code review.
 **Critère d'acceptation** :
 - [ ] Page `/categories` : liste DnD via @dnd-kit.
@@ -95,6 +101,7 @@
 **Risques** : Aucun.
 
 ### TASK-05-007 — Bulk operations (price update, archive) [P2] [TODO]
+**Status note (2026-05-14)** : Not delivered in Session 13. INDEX line 1215 "Bulk imports (users, products) | 14+" defers bulk tooling to Session 14+. No `BulkActionsModal.tsx` or `products.bulk_edit` permission in `apps/backoffice/src/features/products/`.
 **Contexte** : Pour un catalogue de centaines de produits, éditer 1 par 1 est inefficace. Pas de bulk UI. Inferred from product backlog.
 **Critère d'acceptation** :
 - [ ] Listes products : checkbox multi-select + bouton « Bulk actions ».
@@ -107,7 +114,8 @@
 **Estimation** : `L`
 **Risques** : Erreur catastrophique si mauvaise sélection (ex : %, archive 200 produits). Confirmation modale obligatoire avec preview.
 
-### TASK-05-008 — Migration `database.enums.ts` `TItemStatus` ajout `cancelled` [P2] [TODO]
+### TASK-05-008 — Migration `database.enums.ts` `TItemStatus` ajout `cancelled` [P2] [OBSOLETE]
+**Status note (2026-05-14)** : Superseded by V3 monorepo architecture. V3 has no `src/types/database.enums.ts` — types are auto-generated to `packages/supabase/src/types.generated.ts` via `mcp__plugin_supabase_supabase__generate_typescript_types` after every migration (CLAUDE.md DB workflow). Manual enum drift is no longer possible.
 **Contexte** : Manual enum dans `src/types/database.enums.ts` manque `'cancelled'` que le DB enum a. Code peut mal typer. Source : `docs/audit/03-code-quality-schema-audit.md§A3`.
 **Critère d'acceptation** :
 - [ ] Lancer `/gen-types` pour rafraîchir `database.generated.ts`.

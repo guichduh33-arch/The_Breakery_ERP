@@ -16,7 +16,8 @@
 
 ## Tâches
 
-### TASK-23-001 — Réparer les 9 tests Edge Functions cassés [P1] [TODO]
+### TASK-23-001 — Réparer les 9 tests Edge Functions cassés [P1] [OBSOLETE]
+**Status note (2026-05-14)** : V2-only task — V3 has no `authService.test.ts` (V3 PIN auth lives in `apps/pos/src/features/auth/` + EF `auth-verify-pin`). V3 inventory/auth EF tests now run against the cloud staging project per CLAUDE.md "Targeted iteration" guidance. The specific 9-failure ticket does not survive translation.
 **Contexte** : `CLAUDE.md` Pitfalls — *"9 pre-existing test failures (1 file: authService.test.ts) — Edge Function tests requiring live Supabase, known, not regressions"* + `CURRENT_STATE.md` Known Issues *"5 pre-existing test failures in 3 files"*. Discrepancy entre les 2 sources documentée dans audit `06-documentation-audit.md` §Inaccuracies.
 **Critère d'acceptation** :
 - [ ] Audit complet : recenser exactement les fichiers en échec aujourd'hui (`npx vitest run` + capture log)
@@ -30,6 +31,7 @@
 **Notes** : prioritaire pour libérer la CI (TASK-23-008)
 
 ### TASK-23-002 — Smoke tests pour les 87 composants reports [P1] [TODO]
+**Status note (2026-05-14)** : Phase 6.A reports cascade shipped 4 V3 report pages (`ProfitLossPage`, `BalanceSheetPage`, `CashFlowPage`, `BasketAnalysisPage`) but the V2 "87 untested report components" assumption doesn't transfer — V3 reports surface is much smaller. Uncertain — manual review needed to redefine the smoke-test sweep against V3 `apps/backoffice/src/pages/reports/`.
 **Contexte** : `docs/audit/04-reports-testing-audit.md` §Recommendations — *"Priority: Add smoke tests for report tabs. At minimum, render each tab with mocked data and verify it doesn't crash. This covers the 87 untested components with ~87 simple tests."*
 **Critère d'acceptation** :
 - [ ] Helper `renderReportTab(Component, mockData)` qui fournit context (QueryClient, theme, router) + mocks Supabase
@@ -42,7 +44,8 @@
 **Risques** : 87 tests = lourd à écrire one-by-one — générer via script template puis ajustement manuel
 **Notes** : décomposer en 6 sous-tâches L (une par catégorie de rapport)
 
-### TASK-23-003 — Tests E2E flows critiques (Playwright) [P1] [TODO]
+### TASK-23-003 — Tests E2E flows critiques (Playwright) [P1] [DONE]
+**Status note (2026-05-14)** : Delivered Session 13 Phase 6.C. V3 evidence: `playwright.config.ts` at repo root + 3 specs `tests/e2e/{complete-order,opname-finalize,po-receive}.spec.ts` + `@playwright/test ^1.49.1` dev dep (D-W6-6C-06). NOTE: CI runner job deferred (D-W6-6C-05) — see TASK-23-008. Commit `bdf21aa`.
 **Contexte** : `docs/audit/04-reports-testing-audit.md` §Quality Assessment Weaknesses — *"No integration tests (component + service together)."* Pas de Playwright dans le repo aujourd'hui.
 **Critère d'acceptation** :
 - [ ] Setup Playwright (`@playwright/test`) + config base URL dev + supabase test instance
@@ -57,6 +60,7 @@
 **Notes** : décomposer : (a) setup + Flow A, (b) Flow B, (c) Flow C
 
 ### TASK-23-004 — Tests composants critiques POS [P1] [TODO]
+**Status note (2026-05-14)** : V3 has co-located `__tests__/` directories under `apps/pos/src/features/{cart,payment,kds,...}/` but no formal coverage threshold has been hit on these (the spec asked > 70% on `src/components/pos/` which is the V2 path). Genuinely undone — reframe against V3 feature folder layout.
 **Contexte** : `docs/audit/04-reports-testing-audit.md` §Test Coverage by Module — *"Components: 6 files tested (Low). 87 report files untested."* En dehors des reports, modales POS critiques aussi peu testées (Cart, PaymentModal, KDS cards).
 **Critère d'acceptation** :
 - [ ] `Cart.tsx` : tests rendering avec items, locked items, totaux, modifications quantité
@@ -71,6 +75,7 @@
 **Notes** : utiliser `@testing-library/react` + `userEvent`
 
 ### TASK-23-005 — Tests route guards + layouts [P2] [TODO]
+**Status note (2026-05-14)** : V3 has `BackOfficeLayout` but the V2 `POSAccessGuard`/`BackOfficeAccessGuard`/`PermissionGuard`/`MobileLayout` components don't map 1:1 (kiosk-JWT shape from Phase 1.B is a different gate model). Uncertain — manual review needed to redefine target guards against V3 routing.
 **Contexte** : `docs/audit/04-reports-testing-audit.md` §Zero Coverage Modules — *"Route guards (no tests for POSAccessGuard, BackOfficeAccessGuard). Layouts (no tests)."*
 **Critère d'acceptation** :
 - [ ] Tests `POSAccessGuard` : redirect si pas de permission, render si ok
@@ -85,6 +90,7 @@
 **Notes** : —
 
 ### TASK-23-006 — Test data fixtures organization [P2] [TODO]
+**Status note (2026-05-14)** : No `src/test/fixtures/` directory established in V3 ; Session 13 tests inline their mocks per-file. Doc `docs/reference/09-testing/03-fixtures-and-mocks.md` not created. Genuinely undone.
 **Contexte** : Pas de pattern unifié vu dans les tests audités. Mocks répétés dans chaque fichier (objets `IProduct`, `IOrder` reconstruits manuellement).
 **Critère d'acceptation** :
 - [ ] Dossier `src/test/fixtures/` avec : `products.ts`, `orders.ts`, `customers.ts`, `users.ts`, `accounting.ts`
@@ -98,6 +104,7 @@
 **Notes** : pattern aligné avec `MSW` (si introduit plus tard)
 
 ### TASK-23-007 — Coverage cible par module [P2] [TODO]
+**Status note (2026-05-14)** : No per-module coverage thresholds wired into `vitest.config.ts` or CI in Session 13. The CI workflow (`.github/workflows/ci.yml`) uploads coverage artifacts but doesn't enforce gates. Genuinely undone.
 **Contexte** : `CURRENT_STATE.md` T7 — *"Test coverage 60% → 70%"*. Cible globale floue, manque déclinaison par module.
 **Critère d'acceptation** :
 - [ ] Définir cibles par module dans `vitest.config.ts` ou doc :
@@ -112,7 +119,8 @@
 **Risques** : seuil trop strict bloque dev — phase intro tolérante (warn only) avant enforce
 **Notes** : —
 
-### TASK-23-008 — CI : tests sur chaque PR [P1] [TODO]
+### TASK-23-008 — CI : tests sur chaque PR [P1] [DONE]
+**Status note (2026-05-14)** : Delivered Session 13 Phase 0.2. V3 evidence: `.github/workflows/ci.yml` runs `pnpm install --frozen-lockfile` → has_permission lock guard → lint → typecheck → `pnpm test` → `pnpm build` on every PR to `master/main`, plus a separate `supabase-tests` job for pgTAP/integration. NOTE: Playwright E2E is NOT yet wired into CI (D-W6-6C-05 open follow-up). Commit `bdf21aa`.
 **Contexte** : Pas de `.github/workflows/` mentionné dans audit Operations §5.2. Tests pas en CI = régressions passent en review humaine.
 **Critère d'acceptation** :
 - [ ] `.github/workflows/ci.yml` qui : `npm ci` → `npm run lint` → `npx vitest run` sur chaque PR
@@ -126,6 +134,7 @@
 **Notes** : prioritaire avant TASK-23-002 / 23-003 sinon coverage non vérifié
 
 ### TASK-23-009 — Test parallelization [P3] [TODO]
+**Status note (2026-05-14)** : Session 13 CI (`.github/workflows/ci.yml`) runs single-shard `pnpm test`. No `--shard` matrix configured. Genuinely undone — low priority while suite runtime remains acceptable.
 **Contexte** : `npx vitest run` actuellement sur ~1770 tests (CLAUDE.md). Si CI séquentiel = > 2 min. Vitest supporte `--shard` pour parallélisation.
 **Critère d'acceptation** :
 - [ ] Workflow CI utilise matrix `shard: [1/4, 2/4, 3/4, 4/4]` pour splitter
@@ -138,6 +147,7 @@
 **Notes** : —
 
 ### TASK-23-010 — Visual regression tests [P3] [TODO]
+**Status note (2026-05-14)** : No `tests/e2e/visual/` snapshots configured ; Phase 6.C Playwright work covered functional E2E only (3 specs). Genuinely undone — would build on top of the now-present Playwright setup.
 **Contexte** : `docs/audit/04-reports-testing-audit.md` §Quality Assessment Weaknesses — *"No visual regression tests for charts."* TASK-22-001 (purge couleurs) a aussi besoin de visual diff pour valider absence de régression.
 **Critère d'acceptation** :
 - [ ] Outil choisi : Playwright screenshots + Percy / Chromatic OU Percy seul
@@ -150,6 +160,7 @@
 **Notes** : reporter si budget serré
 
 ### TASK-23-011 — Performance benchmarks [P3] [TODO]
+**Status note (2026-05-14)** : No `vitest bench` files (`__bench__/*.bench.ts`) in Session 13. Genuinely undone.
 **Contexte** : `docs/audit/04-reports-testing-audit.md` §Performance — *"Some reports (e.g., getProductPerformance) fetch all order_items in range and aggregate client-side — could be slow for large date ranges."* Pas de bench aujourd'hui.
 **Critère d'acceptation** :
 - [ ] Vitest bench (`vitest bench`) sur fonctions critiques : `cartCalculations`, `accountingEngine.postSaleJE`, `getProductPerformance`

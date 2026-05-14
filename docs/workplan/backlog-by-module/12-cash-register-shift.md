@@ -15,7 +15,8 @@
 
 ## Tâches
 
-### TASK-12-001 — Variance threshold alert temps réel [P1] [TODO]
+### TASK-12-001 — Variance threshold alert temps réel [P1] [DONE]
+**Status note (2026-05-14)** : Delivered Session 13 Phase 3.C. V3 evidence: `supabase/migrations/20260517000136_seed_business_config_shift_variance.sql` adds `shift_variance_threshold_pct` + `shift_variance_threshold_abs` columns on `business_config` (per `D-W3-3C-04`); `apps/pos/src/features/shift/components/VarianceWarningBadge.tsx` consumes them; `useShift.ts` recomputes expected_cash from opening + cash sales + cash_in - cash_out. Commit `bdf21aa`.
 **Contexte** : Module ref pitfall — `close_shift` ne crée PAS de JE auto et la variance n'est connue qu'à la close. Si écart 100k IDR mid-shift (vol, oubli enregistrement), aucune alerte. Audit Mary recommande visibilité.
 **Critère d'acceptation** :
 - [ ] `pos_config.variance_alert_threshold` (default 50000 IDR) éditable.
@@ -29,6 +30,7 @@
 **Notes** : pas de fix accounting requis (cash check ne génère pas de JE — info only).
 
 ### TASK-12-002 — Z-Report PDF complet signable [P1] [TODO]
+**Status note (2026-05-14)** : Not delivered Session 13 — no `zReportPdfService` in V3, no `pos_sessions.z_report_url` column, no manager-validation columns. Close shift via `close_shift_v1` returns JSON only. Still applicable, scheduled Session 14+.
 **Contexte** : F3+F4 (CURRENT_STATE.md) ont livré la génération Z-Report en console. PDF imprimable signable manager n'existe PAS. Comptable demande archive papier.
 **Critère d'acceptation** :
 - [ ] Service `zReportPdfService.generate(session_id)` produit PDF (jsPDF) avec : entête (date, terminal, caissier), opening cash, transactions count + total par méthode, expected vs actual + variance, Top 10 produits, signature manager (zone vide).
@@ -42,6 +44,7 @@
 **Notes** : `shiftZReportExport.ts` existe déjà (710 lignes — flagged audit Amelia comme >300 lignes) → décomposer en passant.
 
 ### TASK-12-003 — Multi-cash-drawer support [P2] [TODO]
+**Status note (2026-05-14)** : Not delivered Session 13 — no `cash_drawers` table or `pos_sessions.drawer_id` FK in V3. Notes flag YAGNI for single-terminal The Breakery setup. Still applicable, scheduled Session 14+ if multi-drawer becomes a real requirement.
 **Contexte** : Module ref permet déjà multi-caissier sur un terminal (chaque caissier ouvre sa propre session). Mais 1 terminal = 1 tiroir physique. Pour 2 tiroirs (rush midi), il faut conceptuellement séparer.
 **Critère d'acceptation** :
 - [ ] Table `cash_drawers(id, terminal_id, name, is_active)` ; un terminal peut avoir N drawers.
@@ -55,7 +58,8 @@
 **Risques** : besoin réel à valider — peut être P3 selon config The Breakery (1 terminal probablement = 1 tiroir).
 **Notes** : si flag YAGNI, dégrader en P3.
 
-### TASK-12-004 — Mid-shift cash in/out tracking (pay-outs / deposits) [P1] [TODO]
+### TASK-12-004 — Mid-shift cash in/out tracking (pay-outs / deposits) [P1] [DONE]
+**Status note (2026-05-14)** : Delivered Session 13 Phase 3.C. V3 evidence: `supabase/migrations/20260517000133_extend_pos_sessions_cash_in_out.sql` adds `cash_in_total` / `cash_out_total` / `variance_total` / `closing_notes` columns; `20260517000134_create_record_cash_movement_rpc.sql` creates `record_cash_movement_v1`; UI in `apps/pos/src/features/shift/components/CashInOutModal.tsx` + `useCashMovement.ts` hook. Expected_cash recalc consumed by VarianceWarningBadge. Commit `bdf21aa`.
 **Contexte** : Module ref pitfall : "sorties cash hors-ventes (paiement fournisseur en espèces) → module Expenses avec `payment_method='cash'`". Bon pour le JE, mais le caissier ne voit RIEN dans son shift → variance fantôme à la close.
 **Critère d'acceptation** :
 - [ ] Action POS "Cash payout" / "Cash deposit" dans le toolbar shift (permission `pos.cash_movement`).
@@ -70,6 +74,7 @@
 **Notes** : couvre aussi le cas "le boss prend 200k pour aller à la banque".
 
 ### TASK-12-005 — Shift handover (passer la main sans clôturer) [P2] [TODO]
+**Status note (2026-05-14)** : Not delivered Session 13 — no `session_assignments` table or handover modal in V3. Still applicable, scheduled Session 14+.
 **Contexte** : Pic 12h-14h : caissier A part en pause, caissier B prend la suite. Aujourd'hui : A close (variance bizarre car milieu de service) puis B open. Process lourd.
 **Critère d'acceptation** :
 - [ ] Action "Handover" dans toolbar : modal "Pass to caissier B" (selector user PIN-gated).
@@ -84,6 +89,7 @@
 **Notes** : décharge psychologique du caissier A important (il "passe officiellement").
 
 ### TASK-12-006 — Auto-close des sessions zombies (>24h ouvertes) [P2] [TODO]
+**Status note (2026-05-14)** : Not delivered Session 13 — no `auto-close-stale-shifts` Edge Function or cron job in V3. Still applicable, scheduled Session 14+.
 **Contexte** : Sessions ouvertes oubliées (caissier ferme l'app sans fermer le shift) polluent les listings et le `view_session_cash_balance`. Aujourd'hui : nettoyage manuel SQL.
 **Critère d'acceptation** :
 - [ ] Edge Function `auto-close-stale-shifts` (CRON daily 3am) cherche `pos_sessions WHERE status='open' AND opened_at < now()-interval '24h'`.
@@ -96,7 +102,8 @@
 **Risques** : faux positifs si une session vraiment longue (festival) — seuil configurable.
 **Notes** : pattern reuse Edge Function CRON Supabase (cf. `recurring-expenses-generate` TASK-11-003).
 
-### TASK-12-007 — JE automatique à la close (cash deposit en banque) [P2] [TODO]
+### TASK-12-007 — JE automatique à la close (cash deposit en banque) [P2] [DONE]
+**Status note (2026-05-14)** : Delivered Session 13 Phase 3.C (variance JE) — partial vs spec. V3 evidence: `supabase/migrations/20260517000135_create_close_shift_rpc.sql` emits balanced JE via mappings `SHIFT_CASH_VARIANCE_INCOME` (4910) and `SHIFT_CASH_VARIANCE_EXPENSE` (5910) (mapping keys deviation `D-W3-3C-05`, semantic over/short still satisfied), `reference_type='shift_close'` (deviation `D-W3-3C-03`). Bank-deposit JE toggle (DR Bank / CR Cash) is NOT implemented — covered by TASK-12-009 (still TODO).
 **Contexte** : Module ref pitfall — `close_shift` ne crée PAS de JE. Le dépôt cash en banque doit être saisi manuellement dans `/accounting/journals`. Source d'oubli, divergence cash/banque.
 **Critère d'acceptation** :
 - [ ] Option dans CloseShiftModal : "Deposit cash to bank ?" (toggle + montant) : si activé, crée un JE automatique `Dr 1112 Bank / Cr 1110 Petty Cash` pour le montant déposé.
@@ -117,6 +124,7 @@
 > Ajoutés 2026-05-13 lors de la cascade docs (session 13). Cash-in/out, alerte écart, pause/reprise, auto-close sont déjà couverts par TASK-12-001/004/005/006.
 
 ### TASK-12-008 — Validation à deux mains pour gros écarts [P2] [TODO]
+**Status note (2026-05-14)** : Not delivered Session 13 — no `dual_auth_variance_threshold` config or dual-PIN sequence in `CloseShiftModal.tsx`. Still applicable, scheduled Session 14+.
 **Contexte** : aujourd'hui, le manager seul valide la clôture même si l'écart dépasse le seuil critique. Pour les cas extrêmes (>X IDR), on veut une double authentification cashier+manager pour responsabiliser les deux signataires.
 **Bénéfice attendu** : protection mutuelle anti-fraude — ni le cashier ni le manager seul ne peut acter un écart critique.
 **Critère d'acceptation** :
@@ -130,6 +138,7 @@
 **Notes** : pattern bancaire "four-eyes principle".
 
 ### TASK-12-009 — Dépôt bancaire intégré (étend TASK-12-007) [P3] [TODO]
+**Status note (2026-05-14)** : Not delivered Session 13 — no `bank_deposits` table or `BankDepositModal` in V3. Depends on TASK-12-007 (DONE) and TASK-10-009 (TODO). Still applicable, scheduled Session 14+.
 **Contexte** : TASK-12-007 crée le JE automatique à la close. L'objectif va plus loin : saisie d'un bordereau de dépôt avec photo, lien direct vers la compta, traçabilité de la remise.
 **Bénéfice attendu** : workflow complet "fin de journée → dépôt banque → réconciliation" sans Excel parallèle.
 **Critère d'acceptation** :
@@ -144,6 +153,7 @@
 **Notes** : V1 photo locale ; V2 OCR du bordereau pour pré-remplir.
 
 ### TASK-12-010 — Compte des coupures obligatoire [P3] [TODO]
+**Status note (2026-05-14)** : Not delivered Session 13 — no `require_denomination_breakdown` config or denomination grid in OpenShiftModal/CloseShiftModal. Still applicable, scheduled Session 14+.
 **Contexte** : aujourd'hui `opening_cash_details` et `closing_cash_details` sont facultatifs (JSONB nullable). Pour audit fin et détection de vol partiel (ex: "il manque exactement 5 billets de 50k"), il faut le détail obligatoire.
 **Bénéfice attendu** : audit fin de la composition du tiroir + détection des écarts par coupure.
 **Critère d'acceptation** :
@@ -156,7 +166,8 @@
 **Risques** : friction temps comptage — proposer le mode "rapide" (juste le total) en fallback.
 **Notes** : UX critique — clavier numérique large pour saisie rapide tablette.
 
-### TASK-12-011 — KSeF / certification fiscale [P3] [TODO]
+### TASK-12-011 — KSeF / certification fiscale [P3] [BLOCKED]
+**Status note (2026-05-14)** : Hard-blocked on external Indonesian regulatory decision (DJP). Aligned with INDEX Wave 7 e-Faktur deferral (Session 18 — line 1087). No V3 work expected until regulation lands.
 **Contexte** : si l'Indonésie impose à terme une certification fiscale des sessions de caisse (analogue au KSeF polonais ou au e-Faktur étendu), il faudra signer électroniquement chaque clôture de session.
 **Bénéfice attendu** : conformité fiscale anticipée — éviter le rush si la réglementation tombe.
 **Critère d'acceptation** :
@@ -170,6 +181,7 @@
 **Notes** : ne pas développer V1 — préparer le terrain seulement.
 
 ### TASK-12-012 — Coffre-fort intégré (module Cash Management) [P3] [TODO]
+**Status note (2026-05-14)** : Not delivered Session 13 — no `cash_safes` / multi-safe `cash_movements` tables in V3. Depends on TASK-12-009 (also TODO). Pertinent only when The Breakery scales to multi-site. Still applicable, scheduled Session 15+.
 **Contexte** : aujourd'hui aucune gestion du coffre-fort interne (où va le cash entre la clôture du tiroir et le dépôt banque ?). Pas de visibilité sur les mouvements inter-coffres ni les retraits pour la petite caisse.
 **Bénéfice attendu** : module Cash Management complet — coffre, dépôts banque, retraits, mouvements inter-coffres, audit complet.
 **Critère d'acceptation** :

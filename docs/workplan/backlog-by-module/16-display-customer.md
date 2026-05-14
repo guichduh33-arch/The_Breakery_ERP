@@ -15,6 +15,7 @@
 ## Tâches
 
 ### TASK-16-001 — Layouts customisables (config admin) [P2] [TODO]
+**Status note (2026-05-14)** : Partial — Phase 4.C delivered `display_screens` registry (migration `…000160`), token-only `BrandedLayout.tsx` (no hardcoded hex per D-W4-4C-04 verification), pair-device flow, kiosk JWT auth gate, queue ticker. The admin Settings CRUD page for theme/logo/layout-variant and `display_configurations` table are NOT built. The token foundation is in place so the polish belongs in Session 14 Wave 2/3. Visual fidelity work tracked: docs/workplan/plans/2026-05-14-session-14-INDEX.md.
 **Contexte** : Audit Sally P1-5 — couleurs hardcodées dans `CDIdleView.tsx` et `CDActiveCartView.tsx`. Pas d'admin pour personnaliser. Logo The Breakery et palette stables aujourd'hui mais avant un éventuel multi-établissement, doit être config-driven.
 **Critère d'acceptation** :
 - [ ] Table `display_configurations(id, terminal_id NULLABLE, theme_jsonb, logo_url, layout_variant: 'classic' | 'minimal' | 'video', is_active)`.
@@ -28,7 +29,8 @@
 **Risques** : régression visuelle si refactor mal fait — screenshots avant/après obligatoires.
 **Notes** : C2 audit Sally "69 hardcoded hex" — partie de ce gros nettoyage.
 
-### TASK-16-002 — Animations & transitions entre états [P2] [TODO]
+### TASK-16-002 — Animations & transitions entre états [P2] [BLOCKED]
+**Status note (2026-05-14)** : Visual fidelity scope reassigned to Session 14 Waves 2-3 (UX completion). Phase 4.C MVP intentionally excluded transitions (D-W4-4C-04); the `BrandedLayout` shell is ready to accept `<DisplayTransition>` wrappers. Tracking: docs/workplan/plans/2026-05-14-session-14-INDEX.md.
 **Contexte** : Aujourd'hui changement de vue (idle → cart) = swap brutal. Manque de raffinement pour un customer-facing surface. Audit Sally Loading patterns 8/10 mais transitions absentes.
 **Critère d'acceptation** :
 - [ ] Composant `<DisplayTransition mode="fade-slide" duration={400}>` wrapper autour de `CDIdleView` / `CDActiveCartView` / `CDPaymentSuccessView` / `CDThankYouView`.
@@ -43,6 +45,7 @@
 **Notes** : Framer Motion ajoute du bundle ; préférer CSS si possible.
 
 ### TASK-16-003 — Multi-display sync via hub LAN [P2] [TODO]
+**Status note (2026-05-14)** : Partial — Phase 5.A LAN hub port shipped (`apps/pos/src/features/lan/lanHub.ts`, dedup test in place). Display-side LAN cart mirror (`DISPLAY_CART` handler + multi-screen sync overlay) explicitly deferred per D-W4-4C-04 ("CDActiveCartView lands in Phase 5.A with the LAN port"). The 5.A port itself is partial — no `displaySyncService.ts` re-broadcast layer to display devices. Carry-over.
 **Contexte** : Audit Bob `08-operations-lan-audit.md` — hub gère 5/35 message types only. `DISPLAY_CART` n'est pas activement processé par le hub. Si 2 displays connectés, pas garanti qu'ils restent en sync.
 **Critère d'acceptation** :
 - [ ] Hub écoute `DISPLAY_CART`, `DISPLAY_TOTAL`, `DISPLAY_WELCOME` et re-broadcast à TOUS les `device_type='display'` connectés.
@@ -56,6 +59,7 @@
 **Notes** : critique si The Breakery installe écran mur + écran comptoir.
 
 ### TASK-16-004 — Promotion banner rotation (idle screen) [P3] [TODO]
+**Status note (2026-05-14)** : Genuinely undone. Per D-W4-4C-04, idle promo rotation explicitly excluded ("display_promotions table doesn't exist in V3 yet"). Carry-over.
 **Contexte** : Display idle = brand video uniquement. Manque possibilité d'afficher promos en cours (cohérent avec engine promo TASK-13-*).
 **Critère d'acceptation** :
 - [ ] Composant `<PromoBanner>` lit les `promotions WHERE is_active AND start_date <= now() AND (end_date IS NULL OR end_date >= now())`.
@@ -70,6 +74,7 @@
 **Notes** : promo time-based (TASK-13-004) doit être respecté (ne pas afficher Happy Hour à 10h).
 
 ### TASK-16-005 — Branding video loop [P3] [TODO]
+**Status note (2026-05-14)** : Genuinely undone. No `display-assets` Storage bucket and no `<video>` element in `apps/pos/src/features/display/components/BrandedLayout.tsx`. Carry-over.
 **Contexte** : Owner souhaite afficher vidéo marque (production bakery, équipe, plats) en idle. Pas implémenté.
 **Critère d'acceptation** :
 - [ ] Upload vidéo (.mp4) via settings, stocké Storage `display-assets/branding-{terminal_id}.mp4`.
@@ -90,7 +95,8 @@
 > Items issus de `docs/objectif travail/CUSTOMER_DISPLAY.md` §13 — vision produit du module.
 > Ajoutés 2026-05-13 lors de la cascade docs (session 13). La vidéo en idle est déjà couverte par TASK-16-005.
 
-### TASK-16-006 — QR de paiement digital affiché [P2] [TODO]
+### TASK-16-006 — QR de paiement digital affiché [P2] [BLOCKED]
+**Status note (2026-05-14)** : Depends on TASK-03-005 (QRIS provider integration) which is BLOCKED. No PAYMENT_QR_DISPLAY LAN message type or QR component. Carry-over to whenever Xendit/Midtrans adapter lands.
 **Contexte** : pour QRIS / e-wallets, le client doit scanner un QR depuis sa propre application — aujourd'hui le caissier doit lui passer un imprimé ou un QR sur son téléphone à lui. Pas pratique, pas hygiénique.
 **Bénéfice attendu** : afficher directement sur le Customer Display le QR de paiement généré au moment de la finalisation → le client scanne sans contact avec le staff.
 **Critère d'acceptation** :
@@ -104,6 +110,7 @@
 **Notes** : V1 QRIS dynamique ; V2 NFC + tap-to-pay.
 
 ### TASK-16-007 — Affichage "commande prête" enrichi (style aéroport) [P2] [TODO]
+**Status note (2026-05-14)** : Partial — Phase 4.C ships `OrderQueueTicker.tsx` (5 most recent orders with status pills) + `CurrentOrderCard.tsx` (top-of-queue hero). The full `CDReadyBoardView` alternative idle layout with slide-in animation + auto-retrait timer is undone. Carry-over for the "airport board" polish.
 **Contexte** : aujourd'hui `ORDER_READY` affiche juste un numéro. Pour les clients en salle ou take-away avec attente, un affichage type "tableau d'aéroport" (multi-commandes simultanées) serait plus lisible.
 **Bénéfice attendu** : un panneau "Commandes prêtes" en grand qui scale au volume sans crieur staff.
 **Critère d'acceptation** :
@@ -117,6 +124,7 @@
 **Notes** : option d'affichage : seulement dernier numéro vs board complet.
 
 ### TASK-16-008 — Animations programme fidélité [P3] [TODO]
+**Status note (2026-05-14)** : Genuinely undone — depends on TASK-16-003 (LAN cart mirror w/ `points_earned` propagation) which is partial. Carry-over.
 **Contexte** : aujourd'hui le gain de points est affiché en texte simple. Pour valoriser le programme et inciter, animation visuelle marquante au moment du gain.
 **Bénéfice attendu** : "Vous gagnez 45 points pour atteindre Silver dans 200 points !" en animation joyeuse → client réalise la valeur, programme paraît plus attractif.
 **Critère d'acceptation** :
@@ -130,6 +138,7 @@
 **Notes** : se référer aux principes du design system (luxe-dark + or `#C9A55C`).
 
 ### TASK-16-009 — Multilingue affichage [P3] [TODO]
+**Status note (2026-05-14)** : Genuinely undone. No i18n integration on display surface; CLAUDE.md confirms "i18n suspended" repo-wide. Carry-over.
 **Contexte** : aujourd'hui français uniquement. Pour une clientèle touristique (Bali), passer en EN / ID dynamiquement améliore l'expérience.
 **Bénéfice attendu** : bascule auto FR / EN / ID selon préférence shop ou horaires (touristes au déjeuner = EN, locaux au matin = ID).
 **Critère d'acceptation** :
@@ -143,6 +152,7 @@
 **Notes** : commencer par 2 langues (FR+EN) ; ID en V2.
 
 ### TASK-16-010 — Météo et heure [P3] [TODO]
+**Status note (2026-05-14)** : Genuinely undone. Not in Session 13 scope; low-priority polish item.
 **Contexte** : ajouter un détail discret en idle pour rendre l'écran "vivant" sans être distrayant.
 **Bénéfice attendu** : indication heure + météo locale → l'écran paraît actif même quand promos en rotation.
 **Critère d'acceptation** :
@@ -156,6 +166,7 @@
 **Notes** : pour Bali, mettre la météo de la ville la plus proche du shop.
 
 ### TASK-16-011 — Compteur de visiteurs [P3] [TODO]
+**Status note (2026-05-14)** : Genuinely undone. Not in Session 13 scope.
 **Contexte** : gamification douce — "Notre 10 000ᵉ client cette année !" en idle.
 **Bénéfice attendu** : engagement client + valorisation business "ça tourne".
 **Critère d'acceptation** :
@@ -168,6 +179,7 @@
 **Notes** : palettes : 10000, 25000, 50000, 100000.
 
 ### TASK-16-012 — A/B testing visuel des promos [P3] [TODO]
+**Status note (2026-05-14)** : Genuinely undone — depends on TASK-16-004 (promo banners) which is itself undone. Carry-over.
 **Contexte** : aucun moyen de mesurer quelle variante visuelle d'une promo génère plus de ventes.
 **Bénéfice attendu** : tester deux variantes d'affichage d'une promo et mesurer l'impact ventes correspondantes.
 **Critère d'acceptation** :
@@ -181,6 +193,7 @@
 **Notes** : V1 expérimental sur 1-2 promos premium ; généraliser ensuite.
 
 ### TASK-16-013 — Mode "vitrine externe" [P3] [TODO]
+**Status note (2026-05-14)** : Genuinely undone — depends on TASK-16-001 (config admin) which is partial. Carry-over.
 **Contexte** : un écran placé en vitrine (visible depuis la rue) ne devrait jamais montrer le cart d'un client en cours d'encaissement (vie privée + sécurité).
 **Bénéfice attendu** : mode dédié vitrine qui ignore les `CART_UPDATE` et affiche en permanence les promos en grand.
 **Critère d'acceptation** :
