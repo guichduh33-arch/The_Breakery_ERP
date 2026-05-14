@@ -1,8 +1,10 @@
 // apps/backoffice/src/pages/TransferDetail.tsx
 //
-// Session 12 — Phase 3 — single-transfer view. Shows the header (number,
+// Session 14 / Phase 6.A — single-transfer view. Shows the header (number,
 // status, route, dates), an items table, and contextual action buttons
-// (Receive / Cancel) gated by status + permission.
+// (Receive / Cancel) gated by status + permission. Metadata grid uses the
+// SectionLabel primitive for the dt's so the typography matches the rest
+// of the inventory family.
 //
 // Spec ref: docs/reference/04-modules/06-inventory-stock.md §III (Phase 3 UI)
 
@@ -77,19 +79,19 @@ export default function TransferDetailPage(): JSX.Element {
       {/* Metadata grid */}
       <dl className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-bg-elevated border border-border-subtle rounded-lg p-4">
         <div className="space-y-1">
-          <dt className="text-xs uppercase tracking-widest text-text-secondary">From</dt>
+          <dt className="text-xs font-bold uppercase tracking-widest text-text-muted">From</dt>
           <dd className="text-sm">{transfer.sections?.name ?? '—'}</dd>
         </div>
         <div className="space-y-1">
-          <dt className="text-xs uppercase tracking-widest text-text-secondary">To</dt>
+          <dt className="text-xs font-bold uppercase tracking-widest text-text-muted">To</dt>
           <dd className="text-sm">{transfer.to_section?.name ?? '—'}</dd>
         </div>
         <div className="space-y-1">
-          <dt className="text-xs uppercase tracking-widest text-text-secondary">Created</dt>
+          <dt className="text-xs font-bold uppercase tracking-widest text-text-muted">Created</dt>
           <dd className="text-sm font-mono">{new Date(transfer.created_at).toLocaleString()}</dd>
         </div>
         <div className="space-y-1">
-          <dt className="text-xs uppercase tracking-widest text-text-secondary">Received</dt>
+          <dt className="text-xs font-bold uppercase tracking-widest text-text-muted">Received</dt>
           <dd className="text-sm font-mono">
             {transfer.received_at !== null
               ? new Date(transfer.received_at).toLocaleString()
@@ -98,7 +100,7 @@ export default function TransferDetailPage(): JSX.Element {
         </div>
         {transfer.notes !== null && transfer.notes !== '' && (
           <div className="col-span-2 md:col-span-4 space-y-1">
-            <dt className="text-xs uppercase tracking-widest text-text-secondary">Notes</dt>
+            <dt className="text-xs font-bold uppercase tracking-widest text-text-muted">Notes</dt>
             <dd className="text-sm">{transfer.notes}</dd>
           </div>
         )}
