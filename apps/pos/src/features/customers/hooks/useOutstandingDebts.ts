@@ -2,19 +2,23 @@
 //
 // Session 14 — Phase 2.D — Fetches customers with unpaid orders (ardoise).
 //
-// Server-side strategy: pull orders with status='paid'/'pending_payment' that
-// have remaining balance (subtotal - sum(payments) > 0). For Session 14 we
-// keep it simple and use the existing schema:
+// Server-side strategy: pull non-voided orders with an attached customer
+// in the recent window (DEBT_LOOKBACK_DAYS), then aggregate client-side
+// to keep orders whose `due = total - sum(payments)` is positive. The
+// date floor caps the unbounded growth as the bakery ages (the previous
+// version pulled the entire orders history with a customer_id every render).
 //
-//   1. List orders with status = 'pending_payment' (B2B credit / ardoise)
-//   2. Aggregate by customer_id with sum(total)
-//   3. Find oldest order date
+// Why client-side aggregation: B2B/ardoise orders can sit at status='paid'
+// with a positive `b2b_current_balance`, so a strict `.eq('status', 'pending_payment')`
+// would miss partial-payment cases. Client aggregation handles both
+// pending_payment AND partial-paid in one pass.
 //
-// Idea: a future RPC `pos_outstanding_debts_v1` will collapse this. For
-// now we do the client-side aggregation to avoid a schema/RPC change.
+// Future: a `pos_outstanding_debts_v1` RPC could collapse this server-side.
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
+
+const DEBT_LOOKBACK_DAYS = 180;
 
 export interface OutstandingOrder {
   id: string;
@@ -60,8 +64,10 @@ export function useOutstandingDebts() {
   return useQuery<OutstandingDebt[]>({
     queryKey: ['pos-outstanding-debts'],
     queryFn: async () => {
-      // Orders that are not voided and have an attached customer. We then
-      // filter client-side to orders with positive remaining balance.
+      // Bounded window: orders within DEBT_LOOKBACK_DAYS that are not voided
+      // and have an attached customer. Client-side filter then narrows to
+      // those with `total - sum(payments) > 0`.
+      const cutoff = new Date(Date.now() - DEBT_LOOKBACK_DAYS * 86_400_000).toISOString();
       const { data, error } = await supabase
         .from('orders')
         .select(
@@ -69,6 +75,7 @@ export function useOutstandingDebts() {
         )
         .not('customer_id', 'is', null)
         .neq('status', 'voided')
+        .gte('created_at', cutoff)
         .order('created_at', { ascending: true });
 
       if (error) throw new Error(error.message);
