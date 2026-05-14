@@ -55,7 +55,7 @@ describe('CartTotals', () => {
           tax_amount: 9091,
           total: 90000,
           appliedPromotions: [],
-          cartDiscount: { type: 'percentage', value: 10, amount: 10000 },
+          cartDiscount: { type: 'percentage', value: 10, amount: 10000, reason: 'manager-approved' },
         }}
       />,
     );
