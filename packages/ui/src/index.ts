@@ -90,6 +90,7 @@ export {
   FullScreenModalClose,
   type FullScreenModalProps,
 } from './components/FullScreenModal.js';
+export { CenterModal, type CenterModalProps } from './components/CenterModal.js';
 export {
   ModifierModal,
   type ModifierModalProps,
