@@ -14,6 +14,7 @@ import TransfersListPage from '@/pages/TransfersList.js';
 import TransferFormPage from '@/pages/TransferForm.js';
 import TransferDetailPage from '@/pages/TransferDetail.js';
 import SuppliersPage from '@/pages/Suppliers.js';
+import SupplierDetailPage from '@/pages/suppliers/SupplierDetailPage.js';
 import ComingSoonPage from '@/pages/ComingSoon.js';
 import ProductionPage from '@/pages/inventory/ProductionPage.js';
 import RecipeEditorPage from '@/pages/inventory/RecipeEditorPage.js';
@@ -207,6 +208,14 @@ export function AppRoutes() {
           element={
             <PermissionGate required="suppliers.read">
               <SuppliersPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="suppliers/:id"
+          element={
+            <PermissionGate required="suppliers.read">
+              <SupplierDetailPage />
             </PermissionGate>
           }
         />
