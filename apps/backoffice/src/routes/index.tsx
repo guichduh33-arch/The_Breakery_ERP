@@ -44,6 +44,7 @@ import ProfitLossPage     from '@/pages/reports/ProfitLossPage.js';
 import BalanceSheetPage   from '@/pages/reports/BalanceSheetPage.js';
 import CashFlowPage       from '@/pages/reports/CashFlowPage.js';
 import BasketAnalysisPage from '@/pages/reports/BasketAnalysisPage.js';
+import SettingsHubPage              from '@/pages/settings/SettingsHubPage.js';
 import SettingsGeneralPage          from '@/pages/settings/SettingsGeneralPage.js';
 import SettingsHolidaysPage         from '@/pages/settings/SettingsHolidaysPage.js';
 import SettingsEmailTemplatesPage   from '@/pages/settings/SettingsEmailTemplatesPage.js';
@@ -478,7 +479,7 @@ export function AppRoutes() {
           path="settings"
           element={
             <PermissionGate required="settings.read">
-              <SettingsGeneralPage />
+              <SettingsHubPage />
             </PermissionGate>
           }
         />
