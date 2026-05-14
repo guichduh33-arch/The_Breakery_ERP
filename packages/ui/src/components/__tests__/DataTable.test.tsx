@@ -137,7 +137,9 @@ describe('DataTable', () => {
   it('applies right alignment for align=right columns', () => {
     render(<DataTable columns={COLUMNS} rows={ROWS} getRowKey={(r) => r.id} />);
     // The Amount column has align=right — its td should have text-right class.
-    const amountCell = screen.getAllByText(/25000|18000|35000/)[0].closest('td');
+    const matches = screen.getAllByText(/25000|18000|35000/);
+    expect(matches.length).toBeGreaterThan(0);
+    const amountCell = matches[0]!.closest('td');
     expect(amountCell?.className).toMatch(/text-right/);
   });
 });

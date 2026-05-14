@@ -81,7 +81,7 @@ function HeaderSortIcon({
   direction,
 }: {
   isSorted: boolean;
-  direction?: SortDirection;
+  direction: SortDirection | undefined;
 }): JSX.Element {
   if (!isSorted) return <ChevronsUpDown className="h-3 w-3 text-text-subtle" aria-hidden />;
   return direction === 'asc' ? (
@@ -217,12 +217,20 @@ export function DataTable<TRow>({
       {showEmpty && (
         <div className="border-t border-border-subtle">
           {emptyState ?? (
-            <EmptyState
-              icon={Inbox}
-              title={emptyTitle}
-              description={emptyDescription}
-              size="md"
-            />
+            emptyDescription !== undefined ? (
+              <EmptyState
+                icon={Inbox}
+                title={emptyTitle}
+                description={emptyDescription}
+                size="md"
+              />
+            ) : (
+              <EmptyState
+                icon={Inbox}
+                title={emptyTitle}
+                size="md"
+              />
+            )
           )}
         </div>
       )}

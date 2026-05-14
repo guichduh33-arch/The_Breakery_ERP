@@ -28,16 +28,21 @@
 import {
   createElement,
   isValidElement,
-  type ComponentType,
   type JSX,
   type ReactNode,
-  type SVGProps,
 } from 'react';
 import { cn } from '../lib/cn.js';
 import { Button } from './Button.js';
 import { BrandMark } from '../components/BrandMark.js';
 
-type LucideLike = ComponentType<SVGProps<SVGSVGElement> & { size?: number }>;
+/**
+ * Loosely-typed icon-component shape — accepts both plain function components
+ * and forwardRef exotic components (Lucide icons, which are
+ * ForwardRefExoticComponent). We invoke via createElement so the runtime
+ * call is safe regardless of the exact React component type.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type IconComponent = ((props: any) => ReactNode) | { render: (...args: any[]) => ReactNode };
 
 export type EmptyStateAction =
   | ReactNode
@@ -47,7 +52,7 @@ export type EmptyStateSize = 'sm' | 'md' | 'lg';
 
 export interface EmptyStateProps {
   /** Lucide icon component OR any ReactNode. If omitted and tone='branded', shows BrandMark. */
-  icon?: ReactNode | LucideLike;
+  icon?: ReactNode | IconComponent;
   /** Short headline, rendered in Playfair italic. */
   title: string;
   /** Optional explanatory paragraph, rendered in Inter body. */
@@ -105,7 +110,8 @@ function renderIcon(
     typeof (icon as { render: unknown }).render === 'function';
   if (isFunction || isForwardRef) {
     const px = ICON_PX[size];
-    return createElement(icon as LucideLike, { size: px, 'aria-hidden': 'true' });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return createElement(icon as any, { size: px, 'aria-hidden': 'true' });
   }
   // Otherwise it's any other ReactNode (string, fragment, etc.).
   return icon as ReactNode;
