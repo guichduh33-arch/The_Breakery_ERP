@@ -70,6 +70,13 @@ export {
   type NumpadVirtualProps,
   type NumpadMode,
 } from './components/NumpadVirtual.js';
+export {
+  DataTable,
+  type DataTableProps,
+  type DataTableColumn,
+  type DataTableSort,
+  type SortDirection,
+} from './components/DataTable.js';
 
 // domain components
 export { Numpad, type NumpadProps } from './components/Numpad.js';
