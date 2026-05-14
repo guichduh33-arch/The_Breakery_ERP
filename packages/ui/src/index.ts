@@ -65,6 +65,11 @@ export {
   type KpiValueFormat,
 } from './components/KpiTile.js';
 export { Stat, type StatProps, type StatDirection } from './components/Stat.js';
+export {
+  NumpadVirtual,
+  type NumpadVirtualProps,
+  type NumpadMode,
+} from './components/NumpadVirtual.js';
 
 // domain components
 export { Numpad, type NumpadProps } from './components/Numpad.js';
