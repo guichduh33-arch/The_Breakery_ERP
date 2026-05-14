@@ -49,6 +49,10 @@ export { EmptyState, type EmptyStateProps } from './primitives/EmptyState.js';
 // app shell components
 export { SkipToContent, type SkipToContentProps } from './components/SkipToContent.js';
 
+// design-system signature components (Session 14 / Phase 1.A)
+export { SectionLabel, type SectionLabelProps } from './components/SectionLabel.js';
+export { BrandMark, type BrandMarkProps, type BrandMarkSize } from './components/BrandMark.js';
+
 // domain components
 export { Numpad, type NumpadProps } from './components/Numpad.js';
 export { NumpadPin, type NumpadPinProps } from './components/NumpadPin.js';
