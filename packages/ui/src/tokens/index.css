@@ -2,14 +2,28 @@
  * index.css — single import for the design-system token cascade.
  *
  * Apps consume `@breakery/ui/tokens.css` (the pre-existing barrel referenced
- * by package.json `exports`) which already points at `luxe-dark.css`. To keep
- * backwards compatibility we re-export each layer here and update the package
- * export map to point at this index. Apps gain semantic + motion + payment
- * tokens without any per-app diff (one import, four cascades).
+ * by package.json `exports`). One import = full cascade, no per-app diff.
  *
- * Cascade order matters: base palette first, then aliases that reference it.
+ * Cascade order matters: base palette first, then aliases that reference it,
+ * then per-theme overrides. The order is:
+ *   1. luxe-dark      — base palette (POS dark theme — also serves as :root default)
+ *   2. typography     — 4 canonical font tokens + type scale + tracking + leading
+ *   3. spacing        — 4-px scale + semantic gutters
+ *   4. elevation      — shadow scale (both themes)
+ *   5. semantic       — success/warning/danger/info aliases
+ *   6. motion         — durations + easing (respects prefers-reduced-motion)
+ *   7. payment        — payment-method colors (cash/card/qris/voucher)
+ *   8. colors         — surface-0..4, gold soft/strong, .theme-backoffice overrides
+ *                       (loaded LAST so it can extend earlier layers)
+ *
+ * Session 14 (Phase 1.A): typography / spacing / elevation / colors added;
+ * payment / semantic / motion preserved from session 13.
  */
 @import './luxe-dark.css';
+@import './typography.css';
+@import './spacing.css';
+@import './elevation.css';
 @import './semantic.css';
 @import './motion.css';
 @import './payment.css';
+@import './colors.css';

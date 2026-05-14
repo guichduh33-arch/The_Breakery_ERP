@@ -1,0 +1,109 @@
+/*
+ * colors.css — extended color tokens (Session 14 / Phase 1.A).
+ *
+ * Session 14 D4 — Theme strict. Two coexisting themes:
+ *   .theme-pos          — dark, theatrical (POS, KDS, Customer Display, Tablet)
+ *   .theme-backoffice   — light, structured (Backoffice)
+ *
+ * The base palette in luxe-dark.css covers the POS surfaces (it's loaded by
+ * :root, .dark — which all surfaces inherit unless overridden). This file:
+ *
+ *   1. Adds surface-0..surface-4 aliases (luxe-dark exposes them as bg-base/
+ *      elevated/overlay/input — we keep those AND add the numeric scale that
+ *      matches the screenshots' visual hierarchy).
+ *
+ *   2. Adds the cream / ivoire backoffice palette under `.theme-backoffice`,
+ *      overriding the dark tokens with light equivalents so every component
+ *      that already references --bg-base / --text-primary / --border-subtle
+ *      Just Works under .theme-backoffice without per-component branching.
+ *
+ *   3. Reinforces gold soft/base/strong, accent contrast pairs, and semantic
+ *      muted variants discovered missing during the screenshot audit.
+ *
+ * Loaded AFTER luxe-dark.css in the cascade so it can extend (NOT replace)
+ * the base palette.
+ */
+
+/* ---------- POS theme — extends luxe-dark.css ---------- */
+:root,
+.dark,
+.theme-pos {
+  /* Surfaces — numeric scale (0 = deepest, 4 = highest elevation). */
+  --surface-0: #0c0c0e;          /* page bg */
+  --surface-1: var(--bg-base);   /* alias #0a0a0c — primary panels */
+  --surface-2: var(--bg-elevated); /* alias #131316 — cards */
+  --surface-3: var(--bg-overlay);  /* alias #1c1c20 — popovers */
+  --surface-4: #25252a;            /* hover / pressed state */
+
+  /* Gold extended scale. */
+  --gold-soft:    rgba(201, 165, 87, 0.12);
+  --gold-base:    #c9a557;
+  --gold-strong:  #b8954a;     /* alias of --gold-pressed but explicit name */
+  --gold-fg:      #1a1408;     /* foreground when gold is bg (dark brown) */
+
+  /* Text extended (subdued for footnotes). */
+  --text-subtle:  #5a5a62;     /* between muted and disabled */
+
+  /* Border extended. */
+  --border-muted: #1c1c20;
+  --border-gold:  var(--gold-base);
+}
+
+/* ---------- Backoffice theme — light cream ---------- */
+.theme-backoffice {
+  /* Surfaces — cream/ivoire layered (D4 — "ivoire mat"). */
+  --surface-0: #f7f3ec;        /* page bg — warm cream */
+  --surface-1: #fbf8f2;        /* primary panels */
+  --surface-2: #ffffff;        /* cards */
+  --surface-3: #ffffff;        /* popovers */
+  --surface-4: #f1ebe0;        /* hover */
+  --cream:     #f7f3ec;        /* explicit alias for components that want it */
+
+  --bg-base:     var(--surface-0);
+  --bg-elevated: var(--surface-2);
+  --bg-overlay:  var(--surface-3);
+  --bg-input:    #ffffff;
+
+  /* Borders — warm beige tinted. */
+  --border-subtle: #ece4d4;
+  --border-strong: #d9ccb3;
+  --border-muted:  #f3ecdd;
+  --border-focus:  var(--gold-base);
+
+  /* Text — warm near-black on cream. */
+  --text-primary:   #1a1408;
+  --text-secondary: #5a4a35;
+  --text-muted:     #8a7660;
+  --text-subtle:    #a89a82;
+  --text-disabled:  #c8baa0;
+
+  /* Gold — same hue, soft tint shifted for light bg. */
+  --gold-soft:   rgba(201, 165, 87, 0.18);
+  --gold-base:   #c9a557;
+  --gold-hover:  #b8954a;
+  --gold-pressed:#a08245;
+  --gold-strong: #a08245;
+  --gold-fg:     #ffffff;       /* on gold buttons text becomes white */
+
+  /* Semantic — same hues, adjusted softs for light bg. */
+  --green-base:    #0f9a6e;
+  --green-hover:   #14b481;
+  --green-pressed: #0a7a57;
+  --red-base:      #d63b3b;
+  --red-soft:      rgba(214, 59, 59, 0.10);
+  --blue-info:     #2563eb;
+  --amber-warn:    #d97706;
+
+  --success:      var(--green-base);
+  --success-soft: rgba(15, 154, 110, 0.10);
+  --warning:      var(--amber-warn);
+  --warning-soft: rgba(217, 119, 6, 0.10);
+  --danger:       var(--red-base);
+  --danger-soft:  var(--red-soft);
+  --info:         var(--blue-info);
+  --info-soft:    rgba(37, 99, 235, 0.10);
+
+  /* Backdrop — softer on light. */
+  --backdrop:      rgba(20, 14, 8, 0.45);
+  --backdrop-blur: 6px;
+}

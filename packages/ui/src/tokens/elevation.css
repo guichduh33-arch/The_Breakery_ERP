@@ -1,0 +1,41 @@
+/*
+ * elevation.css — shadow / blur tokens (Session 14 / Phase 1.A).
+ *
+ * Session 14 extracts elevation tokens out of luxe-dark.css so the same scale
+ * can be re-mapped for the light backoffice theme without duplicating the
+ * shadow values per-surface. The pos surface keeps strong dark shadows; the
+ * backoffice surface gets shallower, softer shadows (light theme convention).
+ *
+ * Apps consume these via Tailwind `boxShadow` extensions in tailwind-preset.ts.
+ */
+:root, .dark {
+  /* POS theme (dark) — punchy shadows for elevated cards on near-black bg. */
+  --shadow-xs:    0 1px 1px rgba(0,0,0,0.35);
+  --shadow-sm:    0 1px 2px rgba(0,0,0,0.4);
+  --shadow-md:    0 4px 12px rgba(0,0,0,0.5);
+  --shadow-lg:    0 12px 32px rgba(0,0,0,0.6);
+  --shadow-xl:    0 24px 64px rgba(0,0,0,0.65);
+  --shadow-modal: 0 24px 64px rgba(0,0,0,0.7);
+
+  /* Inset (recessed card / inputs). */
+  --shadow-inset-sm: inset 0 1px 2px rgba(0,0,0,0.35);
+  --shadow-inset-md: inset 0 2px 6px rgba(0,0,0,0.45);
+
+  /* Focus ring — gold-soft glow for keyboard focus on dark surfaces. */
+  --shadow-focus:  0 0 0 3px rgba(201, 165, 87, 0.35);
+}
+
+.theme-backoffice {
+  /* BO theme (light) — subtle shadows for cream/ivory cards. */
+  --shadow-xs:    0 1px 1px rgba(20, 14, 8, 0.04);
+  --shadow-sm:    0 1px 2px rgba(20, 14, 8, 0.06);
+  --shadow-md:    0 2px 8px rgba(20, 14, 8, 0.08);
+  --shadow-lg:    0 8px 24px rgba(20, 14, 8, 0.12);
+  --shadow-xl:    0 16px 48px rgba(20, 14, 8, 0.16);
+  --shadow-modal: 0 20px 56px rgba(20, 14, 8, 0.22);
+
+  --shadow-inset-sm: inset 0 1px 2px rgba(20, 14, 8, 0.06);
+  --shadow-inset-md: inset 0 2px 6px rgba(20, 14, 8, 0.10);
+
+  --shadow-focus:  0 0 0 3px rgba(201, 165, 87, 0.45);
+}
