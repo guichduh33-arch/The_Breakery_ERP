@@ -105,7 +105,10 @@ export type PermissionCode =
   | 'settings.read'
   | 'settings.update'
   | 'settings.holidays.manage'
-  | 'settings.kiosk.manage';
+  | 'settings.kiosk.manage'
+  // Session 13 / Phase 6.C — Accounting mappings admin (module 10-012)
+  | 'accounting.read'
+  | 'accounting.mapping.update';
 
 /**
  * Check whether a user has a single permission. Pure client-side lookup —

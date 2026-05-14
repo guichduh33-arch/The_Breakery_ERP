@@ -49,6 +49,7 @@ import CohortReportPage from '@/pages/marketing/CohortReportPage.js';
 import SegmentsPage     from '@/pages/marketing/SegmentsPage.js';
 import PromoRoiPage     from '@/pages/marketing/PromoRoiPage.js';
 import BirthdayPage     from '@/pages/marketing/BirthdayPage.js';
+import MappingsPage     from '@/pages/accounting/MappingsPage.js';
 import { BackofficeLayout } from '@/layouts/BackofficeLayout.js';
 import { useAuthStore } from '@/stores/authStore.js';
 
@@ -238,6 +239,14 @@ export function AppRoutes() {
         <Route path="customers" element={<ComingSoonPage module="Customers" />} />
         <Route path="b2b" element={<ComingSoonPage module="B2B" />} />
         <Route path="accounting" element={<ComingSoonPage module="Accounting" />} />
+        <Route
+          path="accounting/mappings"
+          element={
+            <PermissionGate required="accounting.read">
+              <MappingsPage />
+            </PermissionGate>
+          }
+        />
         <Route
           path="marketing/cohort"
           element={
