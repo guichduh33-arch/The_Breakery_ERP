@@ -8,10 +8,10 @@
 // (the store will ship a single-element tenders array).
 
 import { useState } from 'react';
-import { AlertCircle, ArrowLeft, ArrowRightLeft, Banknote, CheckCircle2, CreditCard, Plus, QrCode, RefreshCw, Smartphone, Wallet, X } from 'lucide-react';
+import { AlertCircle, ArrowLeft, ArrowRightLeft, Banknote, CheckCircle2, CreditCard, Plus, QrCode, RefreshCw, Smartphone, Users, Wallet, X } from 'lucide-react';
 import {
   Button, Currency, FullScreenModal, LoyaltyBadge, Numpad,
-  PromotionLineRow, TenderListBuilder, cn,
+  PromotionLineRow, SectionLabel, TenderListBuilder, cn,
 } from '@breakery/ui';
 import {
   calculateTotals, calculateChange, earnPointsForCustomer, tierFromLifetime, TIERS,
@@ -24,6 +24,7 @@ import { usePaymentStore } from '@/stores/paymentStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useCheckout } from './hooks/useCheckout';
 import { SuccessModal } from './SuccessModal';
+import { SplitPaymentFlow } from './split/SplitPaymentFlow';
 import { toast } from 'sonner';
 import type { LucideProps } from 'lucide-react';
 import type { ForwardRefExoticComponent, RefAttributes } from 'react';
@@ -121,6 +122,10 @@ export function PaymentTerminal() {
    */
   const [lastError, setLastError] = useState<RetryClassification | null>(null);
   const [lastTendersShipped, setLastTendersShipped] = useState<Tender[] | null>(null);
+  /** Session 14 / Phase 2.C — split-by-item flow toggle. When true, the
+   *  split sub-flow takes over the modal body until the cashier completes
+   *  the assignment + per-payer payment steps. */
+  const [splitOpen, setSplitOpen] = useState(false);
 
   function handleAddTender(): void {
     if (!selectedMethod || !draftValid) return;
@@ -218,6 +223,16 @@ export function PaymentTerminal() {
     reset();
   }
 
+  async function handleSplitComplete(splitTenders: Tender[]): Promise<void> {
+    const v = validateTenders(total, splitTenders);
+    if (!v.ok) {
+      toast.error(`Validation: ${v.error}${v.detail ? ` — ${v.detail}` : ''}`);
+      return;
+    }
+    await dispatchCheckout(splitTenders);
+    setSplitOpen(false);
+  }
+
   if (success) {
     return (
       <SuccessModal
@@ -233,6 +248,19 @@ export function PaymentTerminal() {
         onNewOrder={handleNewOrder}
         {...(success.customerName ? { customerName: success.customerName } : {})}
       />
+    );
+  }
+
+  if (splitOpen) {
+    return (
+      <FullScreenModal open={isOpen} onOpenChange={close}>
+        <SplitPaymentFlow
+          cartItems={cart.items}
+          grandTotal={total}
+          onCancel={() => setSplitOpen(false)}
+          onComplete={(t) => { void handleSplitComplete(t); }}
+        />
+      </FullScreenModal>
     );
   }
 
@@ -335,11 +363,20 @@ export function PaymentTerminal() {
 
         {/* RIGHT — payment controls */}
         <section className="bg-bg-base p-6 overflow-y-auto">
-          <div className="space-y-1 mb-6">
-            <div className="text-xs uppercase tracking-widest text-text-secondary">Total Amount</div>
+          <div className="space-y-1 mb-4">
+            <SectionLabel as="div">Total Amount</SectionLabel>
             <Currency amount={totals.total} emphasis="gold" className="text-4xl block" />
-            <div className="text-xs text-text-secondary">
-              Tendered: <Currency amount={tenderedSum} className="text-text-primary" /> · Remaining: <Currency amount={remaining} className="text-text-primary" />
+            <div
+              aria-hidden
+              className="h-0.5 w-full rounded-full bg-border-subtle overflow-hidden mt-2"
+            >
+              <div
+                className="h-full bg-gold transition-all duration-300"
+                style={{ width: `${total > 0 ? Math.min(100, (tenderedSum / total) * 100) : 0}%` }}
+              />
+            </div>
+            <div className="text-xs text-text-secondary text-right pt-1">
+              Remaining: <span className="text-text-primary font-mono"><Currency amount={remaining} /></span>
             </div>
           </div>
 
@@ -415,15 +452,42 @@ export function PaymentTerminal() {
             </div>
           )}
 
-          {fastPathReady && remaining > 0 && (
-            <Button variant="primary" size="lg" className="w-full mb-4" onClick={() => { void handleProcess(); }} disabled={checkout.isPending}>
-              {checkout.isPending ? 'Processing…' : `${isCashDraft ? 'Cash' : selectedMethod?.toUpperCase()} Exact — ${formatLabel(total)}`}
-            </Button>
+          {/* Quick-pay row : prominent CASH EXACT (when fast-path-ready) + SPLIT BY ITEM */}
+          {remaining > 0 && (
+            <div className="flex items-stretch gap-3 mb-5">
+              {fastPathReady ? (
+                <button
+                  type="button"
+                  onClick={() => { void handleProcess(); }}
+                  disabled={checkout.isPending}
+                  data-testid="pay-cash-exact"
+                  className="flex-1 h-12 rounded-md bg-green hover:bg-green/90 text-white font-bold uppercase tracking-widest text-sm transition-colors disabled:opacity-60"
+                >
+                  {checkout.isPending
+                    ? 'Processing…'
+                    : `${isCashDraft ? 'Cash' : selectedMethod?.toUpperCase()} Exact — ${formatLabel(total)}`}
+                </button>
+              ) : (
+                <div className="flex-1 h-12 rounded-md border border-dashed border-border-subtle grid place-items-center text-text-muted text-xs uppercase tracking-widest">
+                  Select a method to proceed
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => setSplitOpen(true)}
+                disabled={cart.items.length === 0 || checkout.isPending}
+                data-testid="pay-split-entry"
+                className="h-12 px-4 rounded-md border border-purple-400/60 bg-purple-400/10 text-purple-400 font-bold uppercase tracking-widest text-xs hover:bg-purple-400/20 transition-colors disabled:opacity-40 inline-flex items-center gap-2"
+              >
+                <Users className="h-3.5 w-3.5" aria-hidden />
+                Split by Item
+              </button>
+            </div>
           )}
 
           {remaining > 0 && (
             <>
-              <div className="text-xs uppercase tracking-widest text-text-secondary mb-2">Select Payment Method</div>
+              <SectionLabel as="div" className="mb-2">Select Payment Method</SectionLabel>
               <div className="grid grid-cols-3 gap-3 mb-6">
                 {METHODS.map((m) => {
                   const Icon = m.icon;
@@ -433,12 +497,16 @@ export function PaymentTerminal() {
                       key={m.value}
                       onClick={() => selectMethod(m.value)}
                       className={cn(
-                        'h-24 rounded-md border flex flex-col items-center justify-center gap-1 transition-colors',
-                        active ? 'border-gold bg-gold-soft text-gold' : 'border-border-subtle bg-bg-input text-text-secondary hover:text-text-primary',
+                        'h-24 rounded-md border flex flex-col items-center justify-center gap-1.5 transition-colors',
+                        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold',
+                        active
+                          ? 'border-gold bg-gold-soft text-gold'
+                          : 'border-border-subtle bg-bg-elevated text-text-secondary hover:text-text-primary hover:border-gold/60',
                       )}
+                      data-testid={`pay-method-${m.value}`}
                     >
                       <Icon className="h-5 w-5" aria-hidden />
-                      <span className="text-xs uppercase tracking-wide font-semibold">{m.label}</span>
+                      <span className="text-xs uppercase tracking-widest font-semibold">{m.label}</span>
                     </button>
                   );
                 })}
@@ -446,55 +514,65 @@ export function PaymentTerminal() {
 
               {selectedMethod && (
                 <div className="space-y-4 mb-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <div className="text-xs uppercase tracking-widest text-text-secondary mb-2">
-                        {isCashDraft ? 'Cash Received' : 'Amount'}
-                      </div>
-                      <div className="bg-bg-input border-2 border-gold rounded-md p-4 text-center">
-                        <span className="text-2xl font-mono">Rp {cashReceivedStr || '0'}</span>
-                      </div>
-                      {isCashDraft && cashChange > 0 && draftTenderAmount === remaining && (
-                        <div className="mt-2 text-xs text-text-secondary text-right">
-                          Change: <Currency amount={cashChange} className="text-gold" />
-                        </div>
-                      )}
+                  {/* ENTER AMOUNT — big centered display */}
+                  <div>
+                    <SectionLabel as="div" className="text-gold mb-2 text-center">
+                      Enter Amount
+                    </SectionLabel>
+                    <div className="bg-bg-input border-2 border-gold rounded-md py-5 text-center">
+                      <span className="font-mono tabular-nums text-3xl text-text-primary">
+                        Rp {cashReceivedStr || '0'}
+                      </span>
                     </div>
+                    {isCashDraft && cashChange > 0 && draftTenderAmount === remaining && (
+                      <div className="mt-2 text-xs text-text-secondary text-right">
+                        Change: <Currency amount={cashChange} className="text-gold" />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* AMOUNT RECEIVED preset grid */}
                     <div>
-                      <div className="text-xs uppercase tracking-widest text-text-secondary mb-2">Quick</div>
-                      <div className="grid grid-cols-3 gap-2">
+                      <SectionLabel as="div" className="text-gold mb-2">Amount Received</SectionLabel>
+                      <div className="grid grid-cols-2 gap-2">
                         <button
                           onClick={() => setCashReceivedStr(String(remaining))}
                           className={cn(
-                            'rounded-md py-3 text-sm border',
+                            'col-span-2 rounded-md py-2.5 text-xs font-bold uppercase tracking-widest border',
                             draftAmount === remaining
                               ? 'bg-gold text-bg-base border-gold'
-                              : 'bg-bg-input border-border-subtle hover:bg-bg-overlay',
+                              : 'bg-bg-input border-border-subtle hover:bg-bg-overlay text-text-primary',
                           )}
                         >
                           Exact ({formatLabel(remaining)})
                         </button>
-                        {isCashDraft && QUICK_AMOUNTS.filter((q) => q >= remaining).slice(0, 5).map((q) => (
+                        {isCashDraft && QUICK_AMOUNTS.filter((q) => q >= remaining).slice(0, 4).map((q) => (
                           <button
                             key={q}
                             onClick={() => setCashReceivedStr(String(q))}
-                            className="rounded-md py-3 text-sm bg-bg-input border border-border-subtle hover:bg-bg-overlay"
+                            className="rounded-md py-2.5 text-xs font-mono tabular-nums bg-bg-input border border-border-subtle hover:bg-bg-overlay text-text-primary"
                           >
                             {formatLabel(q)}
                           </button>
                         ))}
                       </div>
                     </div>
-                  </div>
 
-                  <Numpad value={cashReceivedStr} onChange={setCashReceivedStr} />
+                    {/* Numpad */}
+                    <div>
+                      <SectionLabel as="div" className="text-gold mb-2">Cash Received</SectionLabel>
+                      <Numpad value={cashReceivedStr} onChange={setCashReceivedStr} />
+                    </div>
+                  </div>
 
                   <Button
                     variant="secondary"
                     size="lg"
-                    className="w-full"
+                    className="w-full uppercase tracking-widest"
                     onClick={handleAddTender}
                     disabled={!draftValid}
+                    data-testid="pay-add-tender"
                   >
                     <Plus className="h-4 w-4 mr-2" aria-hidden /> Add Tender
                   </Button>
