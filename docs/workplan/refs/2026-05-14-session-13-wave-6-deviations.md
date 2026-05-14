@@ -515,3 +515,46 @@ documented here.
 
 - Final cron + wrapper queryable on staging.
 - pgTAP T_MKT_02d / T_MKT_03 green.
+
+---
+
+## Cross-cutting — Session-13 close-out smoke (discovered 2026-05-14 post-Wave 6)
+
+### D-W6-CICD-01 — `staging-deploy.yml` never executed ; 9 Edge Functions manually deployed via MCP
+
+**Discovered during:** Session-13 close-out smoke test (post Phase 6.C). POS login `auth-verify-pin` POST returned `net::ERR_FAILED` with CORS preflight failure ; root cause = Edge Function not deployed on V3 dev `ikcyvlovptebroadgtvd`.
+
+**Spec context:** Phase 0.2 deliverable — `.github/workflows/staging-deploy.yml` runs `supabase db push --linked` + `supabase functions deploy --project-ref` on every push to `swarm/session-13**`. Intended to keep staging in lock-step with the repo across all 22 phases.
+
+**What landed:** The workflow YAML exists and is well-formed (line 108-113 deploys EFs ; line 99-106 pushes migrations). It is wired to trigger on push to `swarm/session-13**`. **However**, the workflow has run 3 times since 2026-05-13 and all 3 attempts terminated in **0 seconds with `conclusion=failure`** and `total_count=0` for jobs (no job ever queued).
+
+#### Cause
+
+Two preconditions for `environment: staging` (line 49 of the YAML) are missing on the GitHub repo :
+
+1. **No GitHub environments configured** — `GET /repos/.../environments` returns `total_count: 0`. The `environment: staging` block in the YAML references a target that doesn't exist ; GitHub Actions refuses to queue the run.
+2. **No GitHub secrets configured** — `GET /repos/.../actions/secrets` returns `total_count: 0`. All 7 required secrets listed in the workflow header comment (`SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_REF_STAGING`, `SUPABASE_DB_PASSWORD_STAGING`, `SUPABASE_URL_STAGING`, `SUPABASE_ANON_KEY_STAGING`, `SUPABASE_SERVICE_ROLE_STAGING`, optional `VERCEL_*`) are absent.
+
+Consequence : the **27 Wave-1 migrations**, **the ~93 total migrations Session 13**, and **`notification-dispatch` EF** that ARE on staging were each applied **manually via the Supabase MCP** during phase work — not via CI. Only `notification-dispatch` had been deployed before this incident (during Phase 5.B), all other EFs were never deployed.
+
+#### Resolution
+
+Manual recovery during close-out smoke (2026-05-14 ~16:45 +0800) :
+- Deployed **9 missing Edge Functions** via `mcp__plugin_supabase_supabase__deploy_edge_function` :
+  - Pre-auth (`verify_jwt=false`) : `auth-verify-pin`, `auth-get-session`, `auth-logout`, `auth-change-pin`, `kiosk-issue-jwt`
+  - Authenticated (`verify_jwt=true`) : `process-payment`, `refund-order`, `void-order`, `cancel-item`
+- Each EF bundled with its transitive `_shared/*.ts` deps preserving the natural folder layout (`<ef-slug>/index.ts` + `_shared/X.ts`), so the existing `../_shared/X.ts` imports resolve unchanged.
+- CORS preflight verified : `curl OPTIONS https://ikcyvlovptebroadgtvd.supabase.co/functions/v1/auth-verify-pin` returns `200 OK` with `Access-Control-Allow-Origin: *` + correct allow-headers.
+
+#### Required follow-up (Session 14+, not in scope of this deviation entry)
+
+1. **Create GitHub environment `staging`** — `gh api -X PUT repos/.../environments/staging` (or via Settings UI). Configure required reviewers if the approval gate is desired.
+2. **Add the 7 required secrets** to that environment (NOT to repo-wide secrets — environment scoping is the security boundary the YAML assumes).
+3. **Re-run `staging-deploy.yml`** via `gh workflow run staging-deploy.yml --ref swarm/session-13` once secrets are wired. Expected outcome : idempotent — migrations already on staging, EFs already deployed → workflow should report "no-op" for both `supabase db push` and `supabase functions deploy`.
+4. **Tighten the YAML** to fail fast and visibly when an environment/secret is missing (e.g., add an upfront `Sanity-check secrets` step that `exit 1`s on empty values, so future "0s failures" surface a clear error in the run summary instead of vanishing).
+
+#### Verification
+
+- `mcp__plugin_supabase_supabase__list_edge_functions(ikcyvlovptebroadgtvd)` shows all 10 EFs `status: ACTIVE` with timestamps 2026-05-14 ~16:45.
+- POS login no longer hits `ERR_CONNECTION_REFUSED` or CORS preflight failure (smoke verified post-deploy).
+- `verify_jwt` flags match the EF's auth posture (off for pre-auth + custom-session-token EFs ; on for Bearer-JWT EFs).
