@@ -210,7 +210,7 @@ describe('SuppliersPage smoke', () => {
     // Open the create modal. Phase 5.A rewrite renders two "New supplier"
     // buttons (toolbar + EmptyState CTA) — either opens the modal, click
     // the first one.
-    fireEvent.click(screen.getAllByRole('button', { name: /New supplier/i })[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: /New supplier/i })[0]!);
     await waitFor(() => expect(screen.getByLabelText(/Code/i)).toBeInTheDocument());
 
     fireEvent.change(screen.getByLabelText(/Code/i),  { target: { value: 'SUP-001' } });
