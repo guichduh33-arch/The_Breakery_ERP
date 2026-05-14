@@ -1,19 +1,29 @@
 // packages/ui/src/components/ModifierModal.tsx
 //
-// Full-screen modal that lets the cashier customise a product before adding it
-// to the cart. Shows one Card per group, big touch buttons for each option,
-// and a real-time price total in the footer.
+// Session 14 / Phase 2.C — restyled per refs 20-22.
 //
-// v1: single_select only — tapping an option replaces the previous one in the
-// same group. Required groups must have a selection before "Add to cart" is
-// enabled. Default options pre-selected at open.
+// The cashier customises a product before adding it to the cart. The modal
+// is now a centered card on the dark backdrop (NOT full-screen) — matches
+// the screenshots which keep the underlying product grid faintly visible.
 //
-// v2 (session 6): multi_select group_type supported via checkbox-style buttons.
-// Tapping toggles the option (add/remove); multiple options per group are
-// allowed simultaneously. group_required still requires ≥ 1 selection.
+// Layout (refs 20/21/22) :
+//   Header row : small rounded product thumbnail (image_url with fallback)
+//                + product name (Playfair) + "Choose your options" sub-copy
+//                + X close icon (top-right).
+//   Body       : per-group sections stacked vertically. Each group :
+//                  - small uppercase label with red asterisk if required
+//                  - 2-column grid of pill-style buttons. Selected = gold
+//                    border + inner fill ; modifier with +Rp shows the
+//                    delta below the label.
+//   Footer     : "Total price:  Rp 35,000" row + gold gradient "ADD TO
+//                CART · Rp 35,000" CTA.
+//
+// v2 (session 6) multi-select groups remain supported — selected options
+// get the gold border treatment identical to single-select selected state.
 //
 // Spec ref: 2026-05-05-session-2-modifiers-kds-spec.md §4.1
-// Spec ref: 2026-05-06-session-6-discounts-multi-modifiers-loyalty-mult-spec.md §4.6, M1-M3
+//           2026-05-06-session-6-discounts-multi-modifiers-loyalty-mult-spec.md §4.6
+//           2026-05-14-session-14-screenshot-audit.md rows 20-22
 
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { Check, X } from 'lucide-react';
@@ -27,10 +37,7 @@ import {
   type SelectedModifiers,
 } from '@breakery/domain';
 import { cn } from '../lib/cn.js';
-import { Badge } from '../primitives/Badge.js';
 import { Button } from '../primitives/Button.js';
-import { Card, CardContent, CardHeader, CardTitle } from '../primitives/Card.js';
-import { ScrollArea } from '../primitives/ScrollArea.js';
 import { Currency } from './Currency.js';
 import { FullScreenModal } from './FullScreenModal.js';
 
@@ -40,6 +47,8 @@ export interface ModifierModalProduct {
   id: string;
   name: string;
   retail_price: number;
+  /** Optional product photo for the small thumbnail in the header. */
+  image_url?: string | null;
 }
 
 export interface ModifierModalProps {
@@ -126,16 +135,14 @@ export function ModifierModal({
       return;
     }
 
-    // single_select: tapping the already-selected option in a non-required
-    // group toggles it OFF. In a required group, we keep at least the
-    // previous selection (no-op).
+    // single_select : tapping the already-selected option in a non-required
+    // group toggles it OFF. In a required group, we keep the prior selection.
     setSelections((prev) => {
       const existing = prev.find((s) => s.group_name === group.group_name);
       if (existing?.option_label === option.option_label) {
-        if (group.group_required) return prev; // can't deselect required
+        if (group.group_required) return prev;
         return prev.filter((s) => s.group_name !== group.group_name);
       }
-      // Replace any prior selection of this group, then add the new one.
       const without = prev.filter((s) => s.group_name !== group.group_name);
       return [...without, next];
     });
@@ -156,126 +163,163 @@ export function ModifierModal({
           Choose options for this product before adding it to the cart.
         </span>
       </DialogPrimitive.Description>
-      <header className="h-14 px-6 flex items-center justify-between border-b border-border-subtle bg-bg-elevated">
-        <div className="min-w-0">
-          <div className="text-xs uppercase tracking-widest text-text-secondary">
-            Customize
-          </div>
-          <h2 className="font-serif text-xl truncate">{product.name}</h2>
-        </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onClose}
-          aria-label="Close"
-        >
-          <X className="h-5 w-5" aria-hidden />
-        </Button>
-      </header>
 
-      <ScrollArea className="flex-1">
-        <div className="p-6 space-y-4">
+      <div
+        className="m-auto bg-bg-overlay rounded-2xl border border-border-subtle shadow-modal w-full max-w-md flex flex-col max-h-[90vh] overflow-hidden"
+        data-testid="modifier-modal"
+      >
+        {/* Header */}
+        <header className="flex items-center gap-3 px-5 pt-5 pb-4 border-b border-border-subtle">
+          <ProductThumb name={product.name} imageUrl={product.image_url ?? null} />
+          <div className="flex-1 min-w-0">
+            <h2 className="font-display text-lg leading-tight text-text-primary truncate">
+              {product.name}
+            </h2>
+            <p className="text-text-secondary text-xs">Choose your options</p>
+          </div>
+          <button
+            type="button"
+            aria-label="Close"
+            onClick={onClose}
+            className="h-8 w-8 grid place-items-center rounded-md text-text-secondary hover:text-text-primary hover:bg-bg-input focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold"
+          >
+            <X className="h-5 w-5" aria-hidden />
+          </button>
+        </header>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5">
           {groups.length === 0 ? (
-            <p className="text-text-secondary text-sm">No modifiers available.</p>
+            <p className="text-text-secondary text-sm text-center py-2">
+              No additional modifiers for this product.
+            </p>
           ) : null}
+
           {groups.map((group) => {
             const showRequiredError = errorGroups.has(group.group_name);
             return (
-              <Card key={group.group_name}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                  <CardTitle className="text-base">{group.group_name}</CardTitle>
-                  {group.group_required ? (
-                    <Badge
-                      variant={showRequiredError ? 'destructive' : 'secondary'}
+              <section key={group.group_name} className="space-y-2">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-bold uppercase tracking-widest text-text-primary">
+                    {group.group_name}
+                  </span>
+                  {group.group_required && (
+                    <span
+                      aria-label="required"
+                      className={cn(
+                        'text-base leading-none',
+                        showRequiredError ? 'text-danger' : 'text-danger/80',
+                      )}
                     >
-                      Required
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline">Optional</Badge>
+                      *
+                    </span>
                   )}
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-3">
-                    {group.options.map((option) => {
-                      const selected = isSelected(
-                        group.group_name,
-                        option.option_label,
-                      );
-                      const isMulti = group.group_type === 'multi_select';
-                      return (
-                        <Button
-                          key={option.option_label}
-                          variant={selected ? 'gold' : 'secondary'}
-                          size="lg"
-                          className={cn(
-                            'justify-between text-left normal-case tracking-normal',
-                          )}
-                          onClick={() => toggleOption(group, option)}
-                          aria-pressed={selected}
-                        >
-                          <span className="flex items-center gap-2">
-                            {isMulti ? (
-                              <span
-                                aria-hidden
-                                className={cn(
-                                  'h-4 w-4 rounded-sm border-2 flex items-center justify-center flex-shrink-0',
-                                  selected
-                                    ? 'bg-gold border-gold text-bg-base'
-                                    : 'border-border-strong bg-transparent',
-                                )}
-                              >
-                                {selected ? <Check className="h-3 w-3" strokeWidth={3} aria-hidden /> : null}
-                              </span>
-                            ) : null}
-                            {option.option_icon ? (
-                              <span aria-hidden className="text-lg">
-                                {option.option_icon}
-                              </span>
-                            ) : null}
-                            <span>{option.option_label}</span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  {group.options.map((option) => {
+                    const selected = isSelected(group.group_name, option.option_label);
+                    return (
+                      <button
+                        key={option.option_label}
+                        type="button"
+                        onClick={() => toggleOption(group, option)}
+                        aria-pressed={selected}
+                        className={cn(
+                          'relative rounded-md border-2 px-3 py-3 text-center text-sm font-bold uppercase tracking-wide transition-colors',
+                          'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
+                          selected
+                            ? 'border-gold bg-bg-input text-text-primary'
+                            : 'border-border-subtle bg-bg-input/80 text-text-secondary hover:text-text-primary hover:border-border-strong',
+                        )}
+                      >
+                        {group.group_type === 'multi_select' && (
+                          <span
+                            aria-hidden
+                            className={cn(
+                              'absolute top-1.5 right-1.5 h-3.5 w-3.5 rounded-sm border-2 grid place-items-center',
+                              selected ? 'border-gold bg-gold text-bg-base' : 'border-border-strong bg-transparent',
+                            )}
+                          >
+                            {selected ? <Check className="h-2.5 w-2.5" strokeWidth={3} aria-hidden /> : null}
                           </span>
-                          {option.price_adjustment > 0 ? (
-                            <span className="text-xs">
+                        )}
+                        <div className="flex flex-col items-center gap-0.5">
+                          <span className="leading-tight">
+                            {option.option_icon ? (
+                              <span aria-hidden className="mr-1.5">{option.option_icon}</span>
+                            ) : null}
+                            {option.option_label}
+                          </span>
+                          {option.price_adjustment > 0 && (
+                            <span className="text-[10px] font-medium normal-case tracking-normal text-gold">
                               +<Currency amount={option.price_adjustment} />
                             </span>
-                          ) : null}
-                        </Button>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
             );
           })}
-        </div>
-      </ScrollArea>
 
-      <footer className="px-6 py-4 border-t border-border-subtle bg-bg-elevated flex items-center justify-between gap-4">
-        <div>
-          <div className="text-xs uppercase tracking-widest text-text-secondary">
-            Total
+          {/* Total price card */}
+          <div className="bg-bg-input border border-border-subtle rounded-md px-4 py-3 flex items-center justify-between mt-2">
+            <span className="text-sm text-text-secondary">Total price:</span>
+            <Currency amount={total} emphasis="gold" className="text-base font-semibold" />
           </div>
-          <Currency
-            amount={total}
-            emphasis="gold"
-            className="text-2xl font-semibold"
-          />
         </div>
-        <div className="flex gap-2">
-          <Button variant="secondary" size="lg" onClick={onClose}>
-            Cancel
-          </Button>
+
+        {/* Footer CTA */}
+        <footer className="px-5 pb-5">
           <Button
-            variant="primary"
+            variant="gold"
             size="lg"
+            className="w-full uppercase tracking-widest font-semibold"
             onClick={handleConfirm}
             disabled={hasError}
             aria-disabled={hasError}
+            data-testid="modifier-add-to-cart"
           >
-            Add to cart
+            <span className="inline-flex items-center gap-2">
+              <Check className="h-4 w-4" aria-hidden />
+              Add to Cart · <Currency amount={total} className="text-bg-base" />
+            </span>
           </Button>
-        </div>
-      </footer>
+        </footer>
+      </div>
     </FullScreenModal>
+  );
+}
+
+/** Square thumbnail with image fallback (silhouette gradient). */
+function ProductThumb({
+  name,
+  imageUrl,
+}: {
+  name: string;
+  imageUrl: string | null;
+}): JSX.Element {
+  return (
+    <div
+      aria-hidden
+      className="h-12 w-12 rounded-md overflow-hidden flex-shrink-0 bg-gradient-to-br from-bg-input to-bg-base border border-border-subtle grid place-items-center"
+    >
+      {imageUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={imageUrl}
+          alt=""
+          className="h-full w-full object-cover"
+          loading="lazy"
+        />
+      ) : (
+        <span className="text-text-muted text-xs font-display uppercase">
+          {name.charAt(0)}
+        </span>
+      )}
+    </div>
   );
 }

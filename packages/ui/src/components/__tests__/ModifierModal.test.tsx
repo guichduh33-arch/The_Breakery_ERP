@@ -42,8 +42,8 @@ describe('ModifierModal', () => {
     expect(screen.getByText('Americano')).toBeInTheDocument();
     expect(screen.getByText('Temperature')).toBeInTheDocument();
     expect(screen.getByText('Milk')).toBeInTheDocument();
-    // Required badge present on Temperature
-    expect(screen.getAllByText('Required').length).toBeGreaterThan(0);
+    // Session 14 redesign : required indicator = red asterisk (no "Required" badge).
+    expect(screen.getAllByLabelText('required').length).toBeGreaterThan(0);
   });
 
   it('renders nothing when closed', () => {
@@ -71,8 +71,9 @@ describe('ModifierModal', () => {
     );
     const hotBtn = screen.getByRole('button', { name: /Hot/ });
     expect(hotBtn).toHaveAttribute('aria-pressed', 'true');
-    // Total = 35000 (no oat selected, both defaults are 0 adj)
-    expect(screen.getByText(/Rp\s*35[.,]000/)).toBeInTheDocument();
+    // Total = 35000 (no oat selected, both defaults are 0 adj). Appears twice :
+    // once in the Total row, once in the gold CTA button.
+    expect(screen.getAllByText(/Rp\s*35[.,]000/).length).toBeGreaterThan(0);
   });
 
   it('updates total when an option with price adjustment is selected', () => {
@@ -86,8 +87,8 @@ describe('ModifierModal', () => {
       />,
     );
     fireEvent.click(screen.getByRole('button', { name: /Oat milk/ }));
-    // 35000 + 5000 = 40000
-    expect(screen.getByText(/Rp\s*40[.,]000/)).toBeInTheDocument();
+    // 35000 + 5000 = 40000. Total appears in the row + CTA button.
+    expect(screen.getAllByText(/Rp\s*40[.,]000/).length).toBeGreaterThan(0);
   });
 
   it('replaces selection in single_select group (radio behavior)', () => {
@@ -151,7 +152,7 @@ describe('ModifierModal', () => {
     );
   });
 
-  it('calls onClose when Cancel pressed', () => {
+  it('calls onClose when the X close icon is pressed', () => {
     const onClose = vi.fn();
     render(
       <ModifierModal
@@ -162,7 +163,7 @@ describe('ModifierModal', () => {
         onConfirm={vi.fn()}
       />,
     );
-    fireEvent.click(screen.getByRole('button', { name: /Cancel/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Close/i }));
     expect(onClose).toHaveBeenCalled();
   });
 
@@ -200,7 +201,7 @@ describe('ModifierModal', () => {
     expect(hot).toHaveAttribute('aria-pressed', 'true');
   });
 
-  it('shows destructive Required badge when required group is missing', () => {
+  it('shows a danger-coloured required asterisk when a required group has no selection', () => {
     const noDefaultRequired: ModifierGroup[] = [
       {
         ...groups[0]!,
@@ -216,10 +217,10 @@ describe('ModifierModal', () => {
         onConfirm={vi.fn()}
       />,
     );
-    // Find the required badge — Radix Dialog renders to a portal so the badge
-    // lives in document.body, not in the test container.
-    const badge = screen.getByText('Required');
-    expect(badge.className).toMatch(/bg-red/);
+    // Session 14 redesign : the "Required" badge is replaced by a red asterisk
+    // next to the group label ; the error variant gets the full danger color.
+    const asterisk = screen.getByLabelText('required');
+    expect(asterisk.className).toMatch(/text-danger/);
   });
 });
 
@@ -314,10 +315,11 @@ describe('ModifierModal — multi_select', () => {
         onConfirm={vi.fn()}
       />,
     );
-    // Select cheese (5000) + bacon (8000) — base 35000 + 13000 = 48000
+    // Select cheese (5000) + bacon (8000) — base 35000 + 13000 = 48000.
+    // Total appears in the Total row + CTA button → use getAllByText.
     fireEvent.click(screen.getByRole('button', { name: /Extra cheese/i }));
     fireEvent.click(screen.getByRole('button', { name: /Bacon/i }));
-    expect(screen.getByText(/Rp\s*48[.,]000/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Rp\s*48[.,]000/).length).toBeGreaterThan(0);
   });
 
   it('multi_select group_required + 0 selected → Add to cart disabled', () => {
