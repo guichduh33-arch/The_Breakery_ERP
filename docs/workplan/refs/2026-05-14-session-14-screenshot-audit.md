@@ -206,7 +206,87 @@
 
 ---
 
-## D. How to use this audit
+---
+
+## D. Wave 1 close-out addendum (2026-05-14 post-commit)
+
+After Wave 1 (12 commits, branch `swarm/session-14`), we re-inventoried `docs/Design/` (commit `f6d48fc` added 122 screenshots). The original audit (sections A-C) covered ~93 screens. This addendum maps the **30 additional screens** discovered and surfaces 2 design findings that revise the spec D7.
+
+### D1 — Additional POS / caissapp screens (16 new)
+
+| Ref | Description | React file | Phase | Gap |
+|---|---|---|---|---|
+| `81-transaction-history-expanded-refund.jpg` | Expanded order row + refund action | `apps/pos/src/features/order-history/OrderDetailPanel.tsx` | 2.D | L2 |
+| `82-pos-reports-overview-today.jpg` | POS-side mini-reports : today overview | `apps/pos/src/features/reports/POSReportsOverviewPage.tsx` (CREATE) | 2.D | L3 |
+| `83-pos-reports-products-month.jpg` | POS-side reports : products this month | `apps/pos/src/features/reports/POSProductsReportPage.tsx` (CREATE) | 2.D | L3 |
+| `84-pos-reports-activity-month.jpg` | POS-side reports : activity (sessions/cash) | `apps/pos/src/features/reports/POSActivityReportPage.tsx` (CREATE) | 2.D | L3 |
+| `85-pos-settings-general.jpg` | POS-side settings tab : general | `apps/pos/src/features/settings/POSSettingsPage.tsx` (CREATE) | 2.D | L3 |
+| `86-pos-outstanding-customer-debts.jpg` | Tableau dettes clients outstanding (B2B view inside POS) | `apps/pos/src/features/customers/CustomerDebtsPanel.tsx` (CREATE) | 2.D | L3 |
+| `87-side-menu-drawer.jpg` | Drawer hamburger menu side du POS (nav vers history/reports/settings/debts/customers/sessions modals) | `apps/pos/src/features/nav/SideMenuDrawer.tsx` (CREATE) | 2.A | L3 |
+| `88-live-sessions-modal.jpg` | Modal showing live POS sessions (cashier connections) | `apps/pos/src/features/shift/LiveSessionsModal.tsx` (CREATE) | 2.C | L3 |
+| `90-split-how-many-payers-entry.jpg` | Split flow step 1 : "HOW MANY PAYERS?" 2/3/4/5 guests grid (centered, dark theatrical) | `apps/pos/src/features/payment/split/PayerCountStep.tsx` (CREATE) | 2.C | L3 |
+| `91-split-assign-items-empty.jpg` | Split flow step 2 : item assignment grid (empty initial state) | `apps/pos/src/features/payment/split/ItemAssignStep.tsx` (CREATE) | 2.C | L3 |
+| `92-split-how-many-payers-revisit.jpg` | Revisit du step 1 (changing payer count mid-flow) | idem | 2.C | L2 |
+| `93-split-assign-items-client1-bagel.jpg` | Step 2 with 1 item assigned to Client 1 | idem | 2.C | L1 |
+| `94-split-payment-per-payer-method.jpg` | Split flow step 3 : per-payer method picker | `apps/pos/src/features/payment/split/PerPayerMethodStep.tsx` (CREATE) | 2.C | L3 |
+| `95-split-payment-per-payer-cash-entry.jpg` | Per-payer cash numpad entry | `apps/pos/src/features/payment/split/PerPayerCashStep.tsx` (CREATE) | 2.C | L3 |
+| `Capture d'écran 2026-05-01 215219.jpg` | **POS Login page** — "STAFF PIN ACCESS", **croissant illustration logo** (not "B"), user picker with switch, dot indicators for PIN, full numpad, "SIGN IN" gold CTA, "Switch to Email Login" link | `apps/pos/src/pages/Login.tsx` | 2.C | L3 |
+| `Capture d'écran 2026-05-01 222912.jpg` | **KDS station view** — "HOT KITCHEN" header, "1 ORDER" + "1 Urgent" badges, order card with order#, dine-in indicator, age timer JetBrains Mono, items list, "START" gold CTA, "WAITING (0)" sub-section. **Sound icon + refresh** in top-right. **MAY 1, 2026** date display. | `apps/pos/src/features/kds/KdsStationPage.tsx` | 3.A | L2 |
+
+### D2 — Additional Backoffice screens (8 new "Capture d'écran" captures)
+
+| Ref | Description | React file | Phase | Gap |
+|---|---|---|---|---|
+| `Capture d'écran 2026-05-01 220247.jpg` | **Product Detail — Purchase tab** : "Almond Slice" SKU SEE-004, tabs OVERVIEW/GENERAL/UNITS/RECIPE/VARIANTS/COSTING/PURCHASE/HISTORY, Purchase History table empty, "Last purchase price IDR 0/kg", "SAVE CHANGES" gold CTA. Sidebar sections **OPERATIONS / MANAGEMENT / ADMIN** with notification bell badge (20). | `apps/backoffice/src/pages/products/ProductDetailPage.tsx` (PURCHASE tab) | 4.B | L3 |
+| `Capture d'écran 2026-05-01 220806.jpg` | **Live Orders / Order History page** : KPI strip (Total Orders 100, Total Amount Rp 9 879 000, Completion 51%, Paid 49 Rp 5.268M, Unpaid 51 Rp 4.619M), filter chips (All / New / Preparing / Ready / Completed / Cancelled), date range, type+payment dropdowns, table with status badges + payment icons + Details actions, "Refresh" + "Export" top-right. | `apps/backoffice/src/pages/orders/LiveOrdersPage.tsx` (CREATE — different from Order History) | 4.A | L3 |
+| `Capture d'écran 2026-05-01 222321.jpg` | **Settings — Product Types tab** : sub-nav with sections **GENERAL / SALES & POS / OPERATIONS / COMMERCE / SYSTEM / LAYOUT**. Table of product types (finished/raw_material/semi_finished). "Add Type" gold CTA. Search bar at top. | `apps/backoffice/src/pages/settings/ProductTypesPage.tsx` (CREATE) | 6.A | L3 |
+| `Capture d'écran 2026-05-01 222718.jpg` | **Settings — Audit Trail page** : Date range filter (Today / Last 7 days / Last 30 days dropdown), "All Team Members" filter, filter chips (All/Auth/POS/Sales/Inventory/Products/Users/Settings), "Export CSV" gold CTA. Same Settings sub-nav. | `apps/backoffice/src/pages/settings/AuditLogPage.tsx` (replaces/extends current AuditPage) | 6.A | L2 |
+| `Capture d'écran 2026-05-01 222733.jpg` | Likely Settings continuation — TO INVENTORY at start of Phase 6.A | TBD | 6.A | TBD |
+| `Capture d'écran 2026-05-01 222749.jpg` | Likely Settings continuation — TO INVENTORY at start of Phase 6.A | TBD | 6.A | TBD |
+| `Capture d'écran 2026-05-01 222833.jpg` | Likely Settings continuation — TO INVENTORY at start of Phase 6.A | TBD | 6.A | TBD |
+| `Capture d'écran 2026-05-01 222849.jpg` | Likely Settings continuation — TO INVENTORY at start of Phase 6.A | TBD | 6.A | TBD |
+
+### D3 — Critical design findings revising spec D7
+
+**Finding 1 — Brand asset is dual:**
+- **Brand Illustration** (illustrated croissant + "THE BREAKERY" wordmark + "French Bakery & Pastry" tagline) — used for **POS Login** (centered, large) and **BO sidebar header** (compact above section nav).
+- **BrandMark "B"** (the round gold circle with Playfair italic B that we built in 1.A) — used for **smaller surfaces** : POS top-left header (40px), KDS top-left, tablet top-left, Customer Display empty states.
+
+The illustrated croissant needs a separate SVG asset — `packages/ui/src/assets/brand-illustration.svg` or `brand-logo.svg` — distinct from `brand-mark.svg` (the B mark).
+
+**Finding 2 — BO sidebar uses section labels:**
+The actual canonical BO sidebar is **3-section grouped** :
+- **OPERATIONS** (Dashboard, POS Terminal, Kitchen Display, Products, Stock & Inventory, Order History, B2B Wholesale, Purchases, Suppliers, Expenses, Customers)
+- **MANAGEMENT** (Reports, Accounting)
+- **ADMIN** (Users)
+
+Section headers are `SectionLabel size="xs"` (already built in 1.A). The current `BackofficeLayout.tsx` flat list must be re-grouped in **Phase 4.A** with this structure.
+
+**Finding 3 — Settings page sub-nav is multi-section** :
+The Settings page has its own sidebar with 6 sections (GENERAL / SALES & POS / OPERATIONS / COMMERCE / SYSTEM / LAYOUT) covering ~25 settings sub-pages. This is bigger than initially scoped in Phase 6.A. Phase 6.A may need to be split into 6.A1 (settings infrastructure + sub-nav) and 6.A2 (remaining audit/reports/users) — re-evaluate at start of Wave 6.
+
+**Finding 4 — POS side-menu drawer is a master nav:**
+The POS isn't just product grid + cart — there's a hamburger drawer at top-left that opens to nav links: Order History, Live Sessions, Live Reports, Outstanding Debts, Customer List, Settings, etc. This drawer (`87-side-menu-drawer.jpg`) needs to be built in Phase 2.A (currently scoped as just "main grid"). It's a substantial component (~L3).
+
+### D4 — Revised effort estimate
+
+Original Wave 0 audit estimated ~70-100h total. With 30 additional screens (mostly L3) and 2 new components (croissant illustration + side-menu drawer), revised estimate :
+
+| Wave | Original h | Revised h | Notes |
+|---|---|---|---|
+| 1 | 21 | 21 | DONE |
+| 2 | 7 (parallel) | 10-12 (parallel) | +split flow (5 screens), +side menu drawer, +POS reports/settings/debts (4 screens) |
+| 3 | 4 | 4-5 | KDS station view confirmed L2 (not L3) — files already exist |
+| 4 | 10 | 12-14 | +Live Orders page (Order History split), +BO sidebar re-grouping with sections |
+| 5 | 10 | 10 | Unchanged |
+| 6 | 15 | 18-22 | +Settings sub-nav scaffolding (6 sections, 25 sub-pages) |
+| **TOTAL** | **~70** | **~85** | **+15h** for finer-grained UX coverage |
+
+Still within initial 60-100h envelope.
+
+---
+
+## E. How to use this audit
 
 When picking up a phase :
 1. Open the audit table filter to your phase (e.g. all rows tagged Phase 2.A).

@@ -63,15 +63,35 @@ Tous les labels de section (`ACTIVE ORDER`, `OPERATIONS`, `TOP PRODUCTS TODAY`, 
 ### D6 — Photos produits requises
 Chaque produit affichable au POS DOIT avoir une `image_url`. Le seed Session 14 fournit les URLs (Unsplash/Pexels CC0 ou bake-related stock photos). Côté UI : fallback à une silhouette neutre (pas un icône emoji).
 
-### D7 — Logo "B" = brand mark
-Le logo "B" rond (Playfair italique sur fond gold) apparaît :
-- POS : coin haut-gauche (40x40px)
-- BO : sidebar header (32x32px)
-- Customer Display : centré dans empty states
-- Tablet : coin haut-gauche
-- Login pages : centré au-dessus du title
+### D7 — Brand assets (revised 2026-05-14 post-Wave-1 audit)
 
-Composant `<BrandMark size="sm|md|lg">` à ajouter à `packages/ui`.
+**Two brand assets**, used selectively per surface :
+
+#### D7.1 — BrandMark "B" (compact mark)
+Round gold circle with Playfair italique "B" centered. **Already built** in Phase 1.A (`packages/ui/src/components/BrandMark.tsx` + `assets/brand-mark.svg`).
+
+Used for **compact / repeated** surfaces :
+- POS top-left header (size `md` = 40px)
+- KDS top-left (size `md`)
+- Tablet top-left (size `md`)
+- Customer Display empty states (size `xl` = 96px)
+
+#### D7.2 — BrandLogo (full illustration)
+Illustrated croissant + "THE BREAKERY" Playfair wordmark + "French Bakery & Pastry" tagline. **Discovered post-Wave-1** in `Capture d'écran 2026-05-01 215219.jpg` (POS Login) and `220247.jpg` (BO sidebar header). NOT YET BUILT.
+
+To be created in early Wave 2 (probably 2.A or 2.C) or appended to 1.C as a hotfix :
+- `packages/ui/src/assets/brand-logo.svg` (illustrated croissant + wordmark)
+- `packages/ui/src/components/BrandLogo.tsx` (renders the SVG with optional tagline)
+
+Used for **anchored / branded** surfaces :
+- POS Login (centered, large — above PIN entry)
+- BO Login (centered, large)
+- BO sidebar header (compact horizontal with badge counter for notifications)
+- Customer Display branded header (large, hero-style)
+
+Choice between BrandMark vs BrandLogo per surface :
+- **Single-icon need (small inline)** → BrandMark
+- **Full brand statement (centered hero)** → BrandLogo
 
 ### D8 — Empty states sont des écrans à part entière
 Pas de "No data" en gris clair. Chaque empty state :
