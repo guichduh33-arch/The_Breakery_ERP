@@ -66,8 +66,10 @@ describe('Multi-modifier smoke — multi_select group behaviour', () => {
     expect(screen.getByRole('button', { name: /Extra cheese/i })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: /Bacon/i })).toHaveAttribute('aria-pressed', 'true');
 
-    // Live total: 60000 + 5000 + 8000 = 73000
-    expect(screen.getByText(/Rp\s*73[.,]000/)).toBeInTheDocument();
+    // Live total: 60000 + 5000 + 8000 = 73000.
+    // Use getAllByText: ModifierModal redesign (Phase 2.C, 3599d8f) added a
+    // Radix sr-only DialogDescription that mirrors the visible price.
+    expect(screen.getAllByText(/Rp\s*73[.,]000/).length).toBeGreaterThan(0);
 
     // Confirm
     fireEvent.click(screen.getByRole('button', { name: /Add to cart/i }));
