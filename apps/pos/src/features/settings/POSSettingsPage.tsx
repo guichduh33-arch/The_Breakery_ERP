@@ -2,32 +2,17 @@
 //
 // Session 14 — Phase 2.D — POS-side settings page.
 //
+// Reviewer follow-up #18 — preset groups now persist via the
+// pos_presets symbolic category on get_settings_by_category_v1 /
+// set_setting_v1 (see usePOSPresets hook + migrations
+// 20260518000002 / 20260518000003).
+//
 // Visual ref: 88-…-modal.jpg (note: the screenshot is mis-named — it is
-// actually the POS Settings full page, not a modal). Layout per ref:
-//
-//   ┌──────────────────────────────────────────────────────────┐
-//   │ [icon] POS Settings                              ←Back   │
-//   ├──────────────────────────────────────────────────────────┤
-//   │ [ POS ] [ Printing ] [ KDS & Display ] [ Devices ]       │  ← sub-tabs
-//   ├──────────────────────────────────────────────────────────┤
-//   │ [icon] POS Configuration                                 │
-//   │ Configure POS behavior, payment presets, role …          │
-//   │                                                          │
-//   │ [ General ] [ Automation ] [ Advanced ] [ Behavior ]     │
-//   │ ── Quick Payment Amounts                                 │
-//   │   [ IDR 50,000 ▲▼ 🗑 ] [ IDR 100,000 ▲▼ 🗑 ] …            │
-//   │ ── Shift Opening Cash Presets                            │
-//   │   [ IDR 100,000 ▲▼ 🗑 ] [ IDR 200,000 ▲▼ 🗑 ] …           │
-//   │ ── Quick Discount Presets                                │
-//   │   ◉ 5%  ◉ 10%  ◉ 15% …                                   │
-//   └──────────────────────────────────────────────────────────┘
-//
-// Per Session 14 scope: this is the UX shell ONLY. Settings persistence is
-// owned by the BO settings module (Phase 6.A). Here we render the canonical
-// form so admins can review it on the POS terminal.
+// actually the POS Settings full page, not a modal). Layout per ref.
 
 import { useState, type JSX } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import {
   ArrowLeft,
   Settings,
@@ -47,20 +32,10 @@ import {
 import { formatIdr } from '@breakery/utils';
 import { Button, SectionLabel, Card, cn } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore';
+import { usePOSPresets, type DiscountPreset } from './hooks/usePOSPresets';
 
 type TopTab = 'pos' | 'printing' | 'kds' | 'devices';
 type ConfigTab = 'general' | 'automation' | 'advanced' | 'behavior';
-
-const DEFAULT_QUICK_PAYMENTS = [50_000, 100_000, 150_000, 200_000, 500_000];
-const DEFAULT_OPENING_CASH = [100_000, 200_000, 300_000, 500_000, 1_000_000];
-const DEFAULT_DISCOUNTS = [
-  { value: 5, name: '5%' },
-  { value: 10, name: '10%' },
-  { value: 15, name: '15%' },
-  { value: 20, name: '20%' },
-  { value: 25, name: '25%' },
-  { value: 50, name: 'Staff Meal' },
-];
 
 export default function POSSettingsPage(): JSX.Element {
   const navigate = useNavigate();
@@ -197,36 +172,144 @@ function SubTabButton({
 }
 
 function GeneralTab({ readOnly }: { readOnly: boolean }): JSX.Element {
+  const {
+    presets,
+    isLoading,
+    error,
+    mutateQuickPayments,
+    mutateOpeningCash,
+    mutateDiscountPresets,
+  } = usePOSPresets();
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6" data-testid="pos-presets-loading">
+        <PresetSkeleton />
+        <PresetSkeleton />
+        <PresetSkeleton />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card variant="default" padding="md" data-testid="pos-presets-error">
+        <p className="text-red text-sm">
+          Could not load POS presets — using fallback defaults. Check your connection and try again.
+        </p>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <PresetGroup
+      <NumericPresetGroup
         title="Quick Payment Amounts"
         description="Buttons displayed in the payment terminal cash entry step."
-        presets={DEFAULT_QUICK_PAYMENTS}
+        presets={presets.quickPayments}
         readOnly={readOnly}
+        isPending={mutateQuickPayments.isPending}
+        onChange={(next) => {
+          mutateQuickPayments.mutate(next, {
+            onSuccess: () => toast.success('Quick payment amounts saved'),
+            onError: (e) => toast.error(`Save failed: ${(e as Error).message}`),
+          });
+        }}
       />
-      <PresetGroup
+      <NumericPresetGroup
         title="Shift Opening Cash Presets"
         description="Tap-to-fill amounts shown when opening a new shift."
-        presets={DEFAULT_OPENING_CASH}
+        presets={presets.openingCashPresets}
         readOnly={readOnly}
+        isPending={mutateOpeningCash.isPending}
+        onChange={(next) => {
+          mutateOpeningCash.mutate(next, {
+            onSuccess: () => toast.success('Opening cash presets saved'),
+            onError: (e) => toast.error(`Save failed: ${(e as Error).message}`),
+          });
+        }}
       />
-      <DiscountPresets readOnly={readOnly} />
+      <DiscountPresetsGroup
+        presets={presets.discountPresets}
+        readOnly={readOnly}
+        isPending={mutateDiscountPresets.isPending}
+        onChange={(next) => {
+          mutateDiscountPresets.mutate(next, {
+            onSuccess: () => toast.success('Discount presets saved'),
+            onError: (e) => toast.error(`Save failed: ${(e as Error).message}`),
+          });
+        }}
+      />
     </div>
   );
 }
 
-function PresetGroup({
+function PresetSkeleton(): JSX.Element {
+  return (
+    <Card variant="default" padding="md" className="space-y-3">
+      <div className="h-4 w-48 bg-bg-input rounded animate-pulse" />
+      <div className="h-3 w-72 bg-bg-input rounded animate-pulse" />
+      <div className="flex gap-2 pt-2">
+        <div className="h-9 w-32 bg-bg-input rounded animate-pulse" />
+        <div className="h-9 w-32 bg-bg-input rounded animate-pulse" />
+        <div className="h-9 w-32 bg-bg-input rounded animate-pulse" />
+      </div>
+    </Card>
+  );
+}
+
+function NumericPresetGroup({
   title,
   description,
   presets,
   readOnly,
+  isPending,
+  onChange,
 }: {
   title: string;
   description?: string;
   presets: number[];
   readOnly: boolean;
+  isPending: boolean;
+  onChange: (next: number[]) => void;
 }): JSX.Element {
+  const [draft, setDraft] = useState('');
+
+  function moveUp(idx: number): void {
+    if (idx <= 0) return;
+    const next = presets.slice();
+    [next[idx - 1], next[idx]] = [next[idx]!, next[idx - 1]!];
+    onChange(next);
+  }
+  function moveDown(idx: number): void {
+    if (idx >= presets.length - 1) return;
+    const next = presets.slice();
+    [next[idx + 1], next[idx]] = [next[idx]!, next[idx + 1]!];
+    onChange(next);
+  }
+  function remove(idx: number): void {
+    const next = presets.slice();
+    next.splice(idx, 1);
+    if (next.length === 0) {
+      toast.error('At least one preset is required');
+      return;
+    }
+    onChange(next);
+  }
+  function add(): void {
+    const value = Number(draft);
+    if (!Number.isFinite(value) || value <= 0) {
+      toast.error('Enter a positive amount');
+      return;
+    }
+    if (presets.includes(value)) {
+      toast.error('Preset already exists');
+      return;
+    }
+    onChange([...presets, value]);
+    setDraft('');
+  }
+
   return (
     <Card variant="default" padding="md" className="space-y-4">
       <div>
@@ -236,8 +319,17 @@ function PresetGroup({
         {description && <p className="text-text-secondary text-xs mt-0.5">{description}</p>}
       </div>
       <div className="flex flex-wrap gap-2">
-        {presets.map((p) => (
-          <PresetChip key={p} amount={p} readOnly={readOnly} />
+        {presets.map((p, idx) => (
+          <PresetChip
+            key={`${p}-${idx}`}
+            amount={p}
+            readOnly={readOnly || isPending}
+            canMoveUp={idx > 0}
+            canMoveDown={idx < presets.length - 1}
+            onMoveUp={() => moveUp(idx)}
+            onMoveDown={() => moveDown(idx)}
+            onRemove={() => remove(idx)}
+          />
         ))}
       </div>
       {!readOnly && (
@@ -247,10 +339,12 @@ function PresetGroup({
             type="number"
             inputMode="numeric"
             placeholder="e.g. 50000"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
             className="h-9 flex-1 max-w-xs rounded-md border border-border-subtle bg-bg-base px-3 text-sm focus:outline focus:outline-2 focus:outline-gold"
             aria-label={`New ${title} preset`}
           />
-          <Button variant="secondary" size="sm">
+          <Button variant="secondary" size="sm" onClick={add} disabled={isPending || draft.trim() === ''}>
             <Plus className="h-4 w-4" aria-hidden /> Add
           </Button>
         </div>
@@ -259,7 +353,23 @@ function PresetGroup({
   );
 }
 
-function PresetChip({ amount, readOnly }: { amount: number; readOnly: boolean }): JSX.Element {
+function PresetChip({
+  amount,
+  readOnly,
+  canMoveUp,
+  canMoveDown,
+  onMoveUp,
+  onMoveDown,
+  onRemove,
+}: {
+  amount: number;
+  readOnly: boolean;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+  onRemove: () => void;
+}): JSX.Element {
   return (
     <div className="inline-flex items-center gap-1 rounded-md border border-border-subtle bg-bg-base h-9 px-3 text-sm font-semibold">
       <span className="font-mono tabular-nums">{formatIdr(amount)}</span>
@@ -268,20 +378,25 @@ function PresetChip({ amount, readOnly }: { amount: number; readOnly: boolean })
           <button
             type="button"
             aria-label="Move up"
-            className="text-text-muted hover:text-text-primary p-1"
+            disabled={!canMoveUp}
+            onClick={onMoveUp}
+            className="text-text-muted hover:text-text-primary disabled:opacity-30 disabled:hover:text-text-muted p-1"
           >
             <ArrowUp className="h-3 w-3" aria-hidden />
           </button>
           <button
             type="button"
             aria-label="Move down"
-            className="text-text-muted hover:text-text-primary p-1"
+            disabled={!canMoveDown}
+            onClick={onMoveDown}
+            className="text-text-muted hover:text-text-primary disabled:opacity-30 disabled:hover:text-text-muted p-1"
           >
             <ArrowDown className="h-3 w-3" aria-hidden />
           </button>
           <button
             type="button"
             aria-label="Remove"
+            onClick={onRemove}
             className="text-red/80 hover:text-red p-1"
           >
             <Trash2 className="h-3 w-3" aria-hidden />
@@ -292,7 +407,45 @@ function PresetChip({ amount, readOnly }: { amount: number; readOnly: boolean })
   );
 }
 
-function DiscountPresets({ readOnly }: { readOnly: boolean }): JSX.Element {
+function DiscountPresetsGroup({
+  presets,
+  readOnly,
+  isPending,
+  onChange,
+}: {
+  presets: DiscountPreset[];
+  readOnly: boolean;
+  isPending: boolean;
+  onChange: (next: DiscountPreset[]) => void;
+}): JSX.Element {
+  const [draftName, setDraftName] = useState('');
+  const [draftPct, setDraftPct] = useState('');
+
+  function remove(idx: number): void {
+    const next = presets.slice();
+    next.splice(idx, 1);
+    if (next.length === 0) {
+      toast.error('At least one preset is required');
+      return;
+    }
+    onChange(next);
+  }
+  function add(): void {
+    const value = Number(draftPct);
+    if (!Number.isFinite(value) || value < 0 || value > 100) {
+      toast.error('Percentage must be between 0 and 100');
+      return;
+    }
+    const name = draftName.trim() === '' ? `${value}%` : draftName.trim();
+    if (presets.some((p) => p.name === name)) {
+      toast.error('Preset name already exists');
+      return;
+    }
+    onChange([...presets, { value, name }]);
+    setDraftName('');
+    setDraftPct('');
+  }
+
   return (
     <Card variant="default" padding="md" className="space-y-3">
       <div>
@@ -302,11 +455,14 @@ function DiscountPresets({ readOnly }: { readOnly: boolean }): JSX.Element {
         <p className="text-text-secondary text-xs mt-0.5">
           Named discount buttons shown in the POS discount modal.
         </p>
+        <p className="text-text-muted text-xs mt-1 italic">
+          Currently displayed in this Settings page only — discount modal consumers wiring lands in a follow-up.
+        </p>
       </div>
       <ul className="space-y-1">
-        {DEFAULT_DISCOUNTS.map((d) => (
+        {presets.map((d, idx) => (
           <li
-            key={d.name}
+            key={`${d.name}-${idx}`}
             className="flex items-center gap-3 rounded-md border border-border-subtle bg-bg-base/40 px-3 py-2"
           >
             <Tag className="h-4 w-4 text-gold" aria-hidden />
@@ -316,8 +472,10 @@ function DiscountPresets({ readOnly }: { readOnly: boolean }): JSX.Element {
             {!readOnly && (
               <button
                 type="button"
-                aria-label="Remove"
-                className="text-red/80 hover:text-red p-1"
+                aria-label={`Remove ${d.name}`}
+                onClick={() => remove(idx)}
+                disabled={isPending}
+                className="text-red/80 hover:text-red disabled:opacity-30 p-1"
               >
                 <Trash2 className="h-3 w-3" aria-hidden />
               </button>
@@ -330,6 +488,8 @@ function DiscountPresets({ readOnly }: { readOnly: boolean }): JSX.Element {
           <input
             type="text"
             placeholder="Name (e.g. Staff Meal)"
+            value={draftName}
+            onChange={(e) => setDraftName(e.target.value)}
             className="h-9 flex-1 max-w-xs rounded-md border border-border-subtle bg-bg-base px-3 text-sm focus:outline focus:outline-2 focus:outline-gold"
             aria-label="New discount preset name"
           />
@@ -337,10 +497,12 @@ function DiscountPresets({ readOnly }: { readOnly: boolean }): JSX.Element {
             type="number"
             inputMode="numeric"
             placeholder="%"
+            value={draftPct}
+            onChange={(e) => setDraftPct(e.target.value)}
             className="h-9 w-24 rounded-md border border-border-subtle bg-bg-base px-3 text-sm focus:outline focus:outline-2 focus:outline-gold"
             aria-label="New discount preset percent"
           />
-          <Button variant="secondary" size="sm">
+          <Button variant="secondary" size="sm" onClick={add} disabled={isPending || draftPct.trim() === ''}>
             <Plus className="h-4 w-4" aria-hidden /> Add
           </Button>
         </div>
