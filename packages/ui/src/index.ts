@@ -27,6 +27,8 @@ export {
   CardFooter,
   CardHeader,
   CardTitle,
+  cardVariants,
+  type CardProps,
 } from './primitives/Card.js';
 export { Toaster } from './primitives/Toast.js';
 export {
