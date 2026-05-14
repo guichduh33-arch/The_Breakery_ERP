@@ -35,6 +35,7 @@ import { OpenShiftModal } from '@/features/shift/OpenShiftModal';
 import { ShiftClosedState } from '@/features/shift/ShiftClosedState';
 import { PaymentTerminal } from '@/features/payment/PaymentTerminal';
 import { OrderHistoryPanel } from '@/features/order-history/OrderHistoryPanel';
+import { LiveSessionsModal } from '@/features/shift/LiveSessionsModal';
 import { useAuthStore } from '@/stores/authStore';
 import { useCurrentShift } from '@/features/shift/hooks/useShift';
 import { useCartStore } from '@/stores/cartStore';
@@ -50,6 +51,7 @@ export default function PosPage() {
   const [customerSearchOpen, setCustomerSearchOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [liveSessionsOpen, setLiveSessionsOpen] = useState(false);
 
   const { data: currentShift, isLoading: shiftLoading } = useCurrentShift();
   const needsShift = !shiftLoading && !currentShift;
@@ -168,7 +170,12 @@ export default function PosPage() {
         userRole={user?.role_code?.toUpperCase() ?? null}
         userInitial={user?.full_name?.charAt(0) ?? null}
         onOpenHistory={() => setHistoryOpen(true)}
+        onOpenLiveSessions={() => setLiveSessionsOpen(true)}
         onLogout={() => { void handleLogout(); }}
+      />
+      <LiveSessionsModal
+        open={liveSessionsOpen}
+        onClose={() => setLiveSessionsOpen(false)}
       />
 
       <ShiftClosedState
