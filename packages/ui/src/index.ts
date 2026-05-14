@@ -57,6 +57,7 @@ export { SkipToContent, type SkipToContentProps } from './components/SkipToConte
 // design-system signature components (Session 14 / Phase 1.A)
 export { SectionLabel, type SectionLabelProps } from './components/SectionLabel.js';
 export { BrandMark, type BrandMarkProps, type BrandMarkSize } from './components/BrandMark.js';
+export { BrandLogo, type BrandLogoProps, type BrandLogoSize } from './components/BrandLogo.js';
 export {
   KpiTile,
   type KpiTileProps,
