@@ -1,4 +1,5 @@
 // apps/backoffice/src/pages/Products.tsx
+import { Check, Star } from 'lucide-react';
 import { Currency } from '@breakery/ui';
 import { useProducts } from '@/features/products/hooks/useProducts.js';
 
@@ -34,8 +35,20 @@ export default function ProductsPage() {
                 <td className="px-4 py-3">{p.name}</td>
                 <td className="px-4 py-3 text-right"><Currency amount={p.retail_price} emphasis="gold" /></td>
                 <td className="px-4 py-3 text-right font-mono">{p.current_stock}</td>
-                <td className="px-4 py-3 text-right">{p.is_active ? '✓' : '—'}</td>
-                <td className="px-4 py-3 text-right">{p.is_favorite ? '★' : '—'}</td>
+                <td className="px-4 py-3 text-right">
+                  {p.is_active ? (
+                    <Check className="inline h-4 w-4 text-text-primary" aria-label="active" />
+                  ) : (
+                    <span aria-hidden>—</span>
+                  )}
+                </td>
+                <td className="px-4 py-3 text-right">
+                  {p.is_favorite ? (
+                    <Star className="inline h-4 w-4 fill-gold text-gold" aria-label="favorite" />
+                  ) : (
+                    <span aria-hidden>—</span>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>

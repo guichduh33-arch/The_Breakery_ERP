@@ -8,6 +8,7 @@
 // permission_denied — to avoid leaking which factor the attacker got wrong.
 
 import { useCallback, useEffect, useState } from 'react';
+import { Delete } from 'lucide-react';
 
 import { Button } from '@breakery/ui';
 
@@ -114,8 +115,15 @@ export function PinPad({ userId, onSuccess, onCancel }: PinPadProps) {
         >
           0
         </Button>
-        <Button variant="ghost" size="lg" onClick={backspace} disabled={isBusy} className="aspect-square">
-          ⌫
+        <Button
+          variant="ghost"
+          size="lg"
+          onClick={backspace}
+          disabled={isBusy}
+          className="aspect-square"
+          aria-label="Backspace"
+        >
+          <Delete className="h-6 w-6" aria-hidden />
         </Button>
       </div>
 

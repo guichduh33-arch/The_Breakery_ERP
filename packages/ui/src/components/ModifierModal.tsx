@@ -16,7 +16,7 @@
 // Spec ref: 2026-05-06-session-6-discounts-multi-modifiers-loyalty-mult-spec.md §4.6, M1-M3
 
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { X } from 'lucide-react';
+import { Check, X } from 'lucide-react';
 import { useEffect, useMemo, useState, type JSX } from 'react';
 import {
   calculatePriceAdjustment,
@@ -224,7 +224,7 @@ export function ModifierModal({
                                     : 'border-border-strong bg-transparent',
                                 )}
                               >
-                                {selected ? <span className="text-[10px] font-bold leading-none">✓</span> : null}
+                                {selected ? <Check className="h-3 w-3" strokeWidth={3} aria-hidden /> : null}
                               </span>
                             ) : null}
                             {option.option_icon ? (

@@ -513,7 +513,14 @@ export function PaymentTerminal() {
           disabled={!canProcess || checkout.isPending}
           onClick={() => { void handleProcess(); }}
         >
-          {checkout.isPending ? 'Processing…' : '✓ Process Payment'}
+          {checkout.isPending ? (
+            'Processing…'
+          ) : (
+            <span className="inline-flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4" aria-hidden />
+              Process Payment
+            </span>
+          )}
         </Button>
       </footer>
     </FullScreenModal>

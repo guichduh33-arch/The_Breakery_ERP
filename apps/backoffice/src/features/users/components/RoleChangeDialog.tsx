@@ -2,6 +2,7 @@
 // Session 13 / Phase 5.D — Role change dialog with session-revoke warning.
 
 import { useState, type JSX } from 'react';
+import { AlertTriangle } from 'lucide-react';
 import {
   Button,
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
@@ -96,8 +97,9 @@ export function RoleChangeDialog(
             </p>
           </div>
 
-          <div className="text-xs text-amber-700 bg-amber-50 px-2 py-1.5 rounded border border-amber-200">
-            ⚠ Saving will sign this user out of every device immediately.
+          <div className="flex items-start gap-2 text-xs text-amber-700 bg-amber-50 px-2 py-1.5 rounded border border-amber-200">
+            <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" aria-hidden />
+            <span>Saving will sign this user out of every device immediately.</span>
           </div>
 
           {error !== null && (
