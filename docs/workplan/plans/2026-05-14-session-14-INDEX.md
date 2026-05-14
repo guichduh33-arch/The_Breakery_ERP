@@ -299,6 +299,8 @@ Cf. audit screenshots pour mapping détaillé.
 
 **Parallelization tag** : parallel with 2.A / 2.B / 2.C.
 
+> **2026-05-14 closeout note (Phase 2.D scope expansion).** During Wave 2 dogfooding, Phase 2.D absorbed four extra POS-side surfaces beyond the original scope above. They ship as commits `dc62fee` (live sessions modal — new), `53cba34` (POS reports surfaces — pulled forward from Wave 6.A), `3a0322e` (POS settings page — pulled forward from Wave 6.A), `874f1e6` (customer debts panel + auxiliary routes — closest plan home was Wave 5.B). Each was added because it shares the SideMenu-aux-surface pattern and was reachable from the new POS shell. **See §9 Wave 6.A for the corresponding scope decrement.** The BO-side equivalents (canonical settings persistence, full reports module) remain Wave 6.A work; this expansion delivers POS-shell views only.
+
 ---
 
 ## 6. Wave 3 — KDS + Display + Tablet
@@ -438,6 +440,8 @@ Cf. audit screenshots pour mapping détaillé.
 **Complexity** : **XL** (~15h — beaucoup d'écrans + final cleanup audit pour rattraper les écarts résiduels).
 
 **Parallelization tag** : sequential (Wave 6, dernière).
+
+> **2026-05-14 scope decrement (Phase 2.D pulled forward POS-side surfaces).** The POS-shell views for Reports (`pos setting.jpg` adjacent — POSReportsOverview/Products/Activity) and Settings (`pos setting.jpg`) shipped early in Phase 2.D commits `53cba34` and `3a0322e`. Wave 6.A still owns: canonical BO Settings persistence + the BO-side full Reports module (`report.jpg`, `report finance.jpg`, `inventory report.jpg`, `log report.jpg`, `operations report.jpg`, `purshase report.jpg`, `setting.jpg`, `setting page.jpg`, `payment setting.jpg`, `printer setting.jpg`, `kds configue.jpg`) + Users/RBAC + Print queue + LAN. Revised estimate: **~12h** (was 15h). See §5 Phase 2.D closeout note for the inventory of pulled-forward work.
 
 **Final closeout** :
 - [ ] Update `DESIGN_POS_AND_BACKOFFICE.md` pour matcher le code livré.
