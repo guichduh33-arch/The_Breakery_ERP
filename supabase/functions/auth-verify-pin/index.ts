@@ -115,7 +115,7 @@ serve(async (req) => {
 
   // 3b. Optional permission gate — check before issuing session
   if (required_permission) {
-    const hasPermission = checkPermissionForRole(profile.role_code, required_permission);
+    const hasPermission = await checkPermissionForRole(profile.role_code, required_permission, profile.id);
     if (!hasPermission) {
       return jsonResponse(redactError('permission_denied', { code: 'PERMISSION_MISSING' }), 403);
     }
@@ -182,8 +182,8 @@ serve(async (req) => {
     metadata: { device_type, ip, session_id: session.id },
   });
 
-  // 8. Build permissions list (v1 hardcoded by role)
-  const permissions = computePermissionsForRole(profile.role_code);
+  // 8. Build permissions list (DB-driven — role_permissions + user_permission_overrides)
+  const permissions = await computePermissionsForRole(profile.role_code, profile.id);
 
   // 9. Response
   return jsonResponse({

@@ -558,3 +558,46 @@ Manual recovery during close-out smoke (2026-05-14 ~16:45 +0800) :
 - `mcp__plugin_supabase_supabase__list_edge_functions(ikcyvlovptebroadgtvd)` shows all 10 EFs `status: ACTIVE` with timestamps 2026-05-14 ~16:45.
 - POS login no longer hits `ERR_CONNECTION_REFUSED` or CORS preflight failure (smoke verified post-deploy).
 - `verify_jwt` flags match the EF's auth posture (off for pre-auth + custom-session-token EFs ; on for Bearer-JWT EFs).
+
+---
+
+### D-W6-PERMS-01 — `_shared/permissions.ts` drift : hardcoded list missed ~65 Session-13 permissions
+
+**Discovered during:** Session-13 close-out smoke (post `auth-verify-pin` deploy). Login succeeded but BO sidebar showed only Products / Promotions / Loyalty / Customers / B2B — every group added in Session 13 (Accounting, Reports, Expenses, Marketing, Settings, Users, Inventory subgroups, Purchasing, Print Queue, LAN Devices) was filtered out for SUPER_ADMIN. `useAuthStore.hasPermission('accounting.read')` returned `false` for `Mamat (Owner)`.
+
+**Spec context:** `_shared/permissions.ts` `computePermissionsForRole()` is the source the EF returns to clients post-login. Sidebar entries (`apps/backoffice/src/layouts/BackofficeLayout.tsx`) are gated by client-side `hasPermission()` which reads from `useAuthStore.permissions` (= the EF response).
+
+**What landed (before fix):** `_shared/permissions.ts` was a hardcoded switch returning a static MANAGER_PERMS + ADMIN_DELTA list (~47 codes). The list dates to Sessions 1-11 and was never updated for the new permissions seeded in Session 13 migrations (Wave 1.B `…000033/000040/000041`, Wave 5.D `…000180/000181`, etc.).
+
+#### Cause
+
+DB-side `role_permissions` for `SUPER_ADMIN` contains **112 codes** after Session 13 (verified by `SELECT COUNT(*) FROM role_permissions WHERE role_code='SUPER_ADMIN'`). The EF was returning **47** — a 65-code gap. Drift was inevitable since the file header comment ("must stay in sync with the DB-side `has_permission()` function") put the burden on humans to remember to update both places ; nobody did across 22 phases.
+
+The drift was masked until 2026-05-14 because EFs had never been deployed to staging before D-W6-CICD-01 was resolved.
+
+#### Resolution (applied 2026-05-14 ~17:00 +0800)
+
+Rewrote `supabase/functions/_shared/permissions.ts` to be DB-driven : queries `role_permissions` (role-level grants) then applies `user_permission_overrides` (DENY beats GRANT, mirroring `has_permission()` SQL).
+
+```ts
+export async function computePermissionsForRole(
+  roleCode: string,
+  userId?: string,
+): Promise<string[]>
+```
+
+Updated `auth-verify-pin/index.ts` and `auth-get-session/index.ts` to `await` the now-async function and pass `profile.id` so user-level overrides are honoured. Redeployed both EFs via MCP (`auth-verify-pin` v3, `auth-get-session` v3).
+
+#### Verification
+
+- `curl POST .../auth-verify-pin {user_id:'…001', pin:'123456', device_type:'backoffice'}` returns `permissions.length === 112` (matches DB).
+- First 20 codes : `accounting.mapping.update`, `accounting.period.close`, `accounting.post`, `accounting.read`, `accounting.reverse`, `audit_log.read`, `cash_register.*` (4), `categories.*` (4), `combos.*` (4), `customer_categories.*` (2 of 4).
+- After fresh login on BO, sidebar exposes all Session 13 groups for SUPER_ADMIN.
+
+#### Permanence
+
+The fix removes the drift class entirely : permissions are computed from DB at login time, so any future `role_permissions` seed migration is automatically reflected without code changes.
+
+Cost : one extra DB query per login (negligible — login is rare ; query is indexed PK).
+
+Trade-off accepted vs. the alternative "extend the hardcoded list with 65 entries" : that approach trades one drift for another and reintroduces the human-coordination tax that just bit us.

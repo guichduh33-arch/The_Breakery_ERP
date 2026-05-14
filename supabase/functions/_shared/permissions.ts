@@ -1,77 +1,88 @@
 // supabase/functions/_shared/permissions.ts
-// Single source of truth for role → permissions mapping in Edge Functions.
-// Imported by auth-verify-pin and auth-get-session (D10 — session 8 perf-debt).
+// Permissions resolver for Edge Functions — reads from DB tables
+// `role_permissions` + `user_permission_overrides`, mirroring the DB-side
+// `has_permission()` function (session 13 Phase 1.B D10 lock).
 //
-// IMPORTANT: this list must stay in sync with the DB-side `has_permission()`
-// function (last reset in 20260513000004_seed_backoffice_crud_perms.sql v5).
-// Any role/permission referenced by an EF or RLS policy MUST appear here,
-// otherwise the EF response and DB authorisation will diverge.
+// Replaced the previous hardcoded switch (sessions 1-11) that drifted from
+// the actual seeded permissions on staging — Session 13 added ~65 new
+// permission codes (accounting, reports, expenses, inventory, purchasing.po,
+// settings, users.read, rbac, lan.devices, print_queue, etc.) which the
+// static list never picked up. The drift surfaced during Session-13 close-out
+// smoke test (D-W6-CICD-01 + D-W6-PERMS-01) when the sidebar filtered out
+// every new BO page even for SUPER_ADMIN.
 //
-// Role-code casing is intentional :
-//   - 'SUPER_ADMIN' / 'ADMIN' / 'MANAGER' / 'CASHIER' : uppercase (legacy seed)
-//   - 'waiter'                                        : lowercase (session 5 seed,
-//                                                       see 20260507000002_seed_waiter_role.sql)
+// Source of truth is now the DB. The `auth-verify-pin` and `auth-get-session`
+// EFs await this function once per login / session-restore — acceptable
+// latency cost because login is a rare event.
+//
+// Plan ref : docs/workplan/refs/2026-05-14-session-13-wave-6-deviations.md
+//            D-W6-PERMS-01
 
-const MANAGER_PERMS: readonly string[] = [
-  // Sessions 1-2 — POS core
-  'pos.session.open', 'pos.session.close_own', 'pos.session.close_other',
-  'pos.session.view_all', 'pos.sale.create', 'pos.sale.void', 'pos.sale.update',
-  // Session 1 — products read/create/update (delete is admin-only)
-  'products.read', 'products.create', 'products.update',
-  // Session 5 — payments
-  'payments.process',
-  // Session 6 — discounts
-  'sales.discount',
-  // Session 9 — promotions (BO2): MANAGER gets read+create+update (NO delete)
-  'promotions.read', 'promotions.create', 'promotions.update',
-  // Session 10 — refund + cancel-after-send
-  'pos.sale.refund', 'pos.sale.cancel_item',
-  // Session 11 — backoffice CRUDs (read+create+update for MANAGER ; delete is admin-only ;
-  // customer_categories + discount_templates are admin-only entirely)
-  'categories.read', 'categories.create', 'categories.update',
-  'customers.read', 'customers.create', 'customers.update',
-  'tables.read', 'tables.create', 'tables.update',
-  'combos.read', 'combos.create', 'combos.update',
-  'suppliers.read', 'suppliers.create', 'suppliers.update',
-];
+import { getAdminClient } from './supabase-admin.ts';
 
-const ADMIN_DELTA: readonly string[] = [
-  // Admins also see the deletes + admin-tier-only modules
-  'users.create', 'users.update', 'users.view_audit',
-  'promotions.delete',
-  'products.delete',
-  'categories.delete',
-  'customers.delete',
-  'customer_categories.read', 'customer_categories.create',
-  'customer_categories.update', 'customer_categories.delete',
-  'tables.delete',
-  'combos.delete',
-  'discount_templates.read', 'discount_templates.create',
-  'discount_templates.update', 'discount_templates.delete',
-  'suppliers.delete',
-];
+/**
+ * Compute the effective permission list for a (role, user) pair by querying
+ * `role_permissions` and applying `user_permission_overrides`.
+ *
+ * - Role grants seed the set.
+ * - `user_permission_overrides.override_type='GRANT'` adds entries.
+ * - `user_permission_overrides.override_type='DENY'` removes entries
+ *   (DENY beats GRANT, mirroring `has_permission()` SQL logic).
+ *
+ * @param roleCode - `roles.code` for the user (e.g. 'SUPER_ADMIN', 'CASHIER').
+ * @param userId   - Optional `user_profiles.id`. If supplied, overrides are
+ *                   applied on top of the role grants.
+ */
+export async function computePermissionsForRole(
+  roleCode: string,
+  userId?: string,
+): Promise<string[]> {
+  const admin = getAdminClient();
 
-export function computePermissionsForRole(role: string): string[] {
-  switch (role) {
-    case 'SUPER_ADMIN':
-    case 'ADMIN':
-      return [...MANAGER_PERMS, ...ADMIN_DELTA];
-    case 'MANAGER':
-      return [...MANAGER_PERMS];
-    case 'CASHIER':
-      return [
-        'pos.session.open', 'pos.session.close_own',
-        'pos.sale.create', 'products.read',
-        'payments.process',
-      ];
-    case 'waiter':
-      // Session 5 — tablet/floor staff. Spec A3 : sales.create only, NO payments.
-      return ['sales.create', 'products.read'];
-    default:
-      return [];
+  // 1. Role-level grants
+  const { data: roleGrants, error: roleErr } = await admin
+    .from('role_permissions')
+    .select('permission_code')
+    .eq('role_code', roleCode);
+
+  if (roleErr) {
+    console.error('[permissions] role_permissions fetch error', roleErr);
+    return [];
   }
+
+  const perms = new Set<string>((roleGrants ?? []).map((r) => r.permission_code as string));
+
+  // 2. User-level overrides (DENY beats GRANT, last-wins on duplicate keys)
+  if (userId) {
+    const { data: overrides, error: overrideErr } = await admin
+      .from('user_permission_overrides')
+      .select('permission_code, override_type')
+      .eq('user_id', userId);
+
+    if (overrideErr) {
+      console.error('[permissions] overrides fetch error', overrideErr);
+    } else {
+      for (const o of overrides ?? []) {
+        const code = o.permission_code as string;
+        const type = o.override_type as string;
+        if (type === 'GRANT') perms.add(code);
+        else if (type === 'DENY') perms.delete(code);
+      }
+    }
+  }
+
+  return Array.from(perms).sort();
 }
 
-export function checkPermissionForRole(role: string, permission: string): boolean {
-  return computePermissionsForRole(role).includes(permission);
+/**
+ * Convenience wrapper around {@link computePermissionsForRole} for
+ * single-permission gates (e.g. `required_permission` in `auth-verify-pin`).
+ */
+export async function checkPermissionForRole(
+  roleCode: string,
+  permission: string,
+  userId?: string,
+): Promise<boolean> {
+  const perms = await computePermissionsForRole(roleCode, userId);
+  return perms.includes(permission);
 }
