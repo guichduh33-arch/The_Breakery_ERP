@@ -15,6 +15,14 @@ const CustomerDisplayPage = lazy(
   () => import('@/features/display/CustomerDisplayPage'),
 );
 
+// Session 14 / Phase 2.D — POS auxiliary surfaces.
+const POSStockView = lazy(() => import('@/features/stock/POSStockView'));
+const POSReportsOverviewPage = lazy(() => import('@/features/reports/POSReportsOverviewPage'));
+const POSProductsReportPage = lazy(() => import('@/features/reports/POSProductsReportPage'));
+const POSActivityReportPage = lazy(() => import('@/features/reports/POSActivityReportPage'));
+const POSSettingsPage = lazy(() => import('@/features/settings/POSSettingsPage'));
+const CustomerDebtsPanel = lazy(() => import('@/features/customers/CustomerDebtsPanel'));
+
 function Protected({ children }: { children: ReactNode }) {
   const isAuth = useAuthStore((s) => s.isAuthenticated);
   return isAuth ? <>{children}</> : <Navigate to="/login" replace />;
@@ -28,11 +36,28 @@ function RouteFallback() {
   );
 }
 
+function ProtectedLazy({ children }: { children: ReactNode }) {
+  return (
+    <Protected>
+      <Suspense fallback={<RouteFallback />}>{children}</Suspense>
+    </Protected>
+  );
+}
+
 export function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/pos" element={<Protected><PosPage /></Protected>} />
+
+      {/* Session 14 / Phase 2.D — auxiliary POS surfaces. */}
+      <Route path="/pos/stock" element={<ProtectedLazy><POSStockView /></ProtectedLazy>} />
+      <Route path="/pos/reports" element={<ProtectedLazy><POSReportsOverviewPage /></ProtectedLazy>} />
+      <Route path="/pos/reports/products" element={<ProtectedLazy><POSProductsReportPage /></ProtectedLazy>} />
+      <Route path="/pos/reports/activity" element={<ProtectedLazy><POSActivityReportPage /></ProtectedLazy>} />
+      <Route path="/pos/settings" element={<ProtectedLazy><POSSettingsPage /></ProtectedLazy>} />
+      <Route path="/pos/debts" element={<ProtectedLazy><CustomerDebtsPanel /></ProtectedLazy>} />
+
       <Route
         path="/kds"
         element={
