@@ -8,3 +8,16 @@ export {
   UnknownUnitConversionError,
 } from './recipeExpansion.js';
 export { bomCost, checkFeasibility } from './bomResolver.js';
+export {
+  calculateRecipeCost,
+  tryCalculateRecipeCost,
+  RecipeCycleError,
+  RecipeDepthExceededError,
+  type RecipeGraph,
+  type RecipeGraphProduct,
+  type RecipeGraphRow,
+  type RecipeCostBreakdown,
+  type RecipeCostBreakdownItem,
+  type CalculateRecipeCostOptions,
+  type TryCalculateRecipeCostResult,
+} from './recipeCostCalculator.js';
