@@ -21,13 +21,16 @@ name: Deploy to Staging
 on:
   push:
     branches:
-      - 'swarm/session-13**'
+      # Match every session branch (session-13, session-14, session-15, ...).
+      # Explicitly excludes master/main so post-merge pushes don't surface
+      # spurious 0-job "failure" runs in the Actions list.
+      - 'swarm/session-**'
   workflow_dispatch:
     inputs:
       ref:
         description: 'Git ref (branch or commit SHA) to deploy'
         required: true
-        default: 'swarm/session-13'
+        default: 'swarm/session-14'
 
 concurrency:
   # Only one staging deploy in flight at a time.
