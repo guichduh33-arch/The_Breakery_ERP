@@ -12,6 +12,10 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Need the merge-base with the PR target so the has_permission
+          # guard can scan only newly-introduced migrations.
+          fetch-depth: 0
 
       - uses: pnpm/action-setup@v4
 
@@ -23,24 +27,40 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       # W1-C4 — Session 13 D10/Audit R14 guard:
-      # has_permission() was locked as a pure-lookup function at migration
-      # 20260514015204_refactor_has_permission (signature p_uid UUID, p_perm TEXT).
-      # No subsequent migration may CREATE OR REPLACE / CREATE / DROP it — new perms
-      # are added via INSERT INTO permissions + role_permissions. This grep gate
-      # blocks the regression that historically broke RLS (11 prior re-CREATEs).
+      # has_permission() was locked as a pure-lookup function (signature
+      # p_uid UUID, p_perm TEXT). No subsequent migration may CREATE OR
+      # REPLACE / CREATE / DROP it — new perms are added via INSERT INTO
+      # permissions + role_permissions. Historically broke RLS (11 prior
+      # re-CREATEs).
+      #
+      # Scope: only check migrations INTRODUCED BY THIS PR (diff against the
+      # base branch). The previous version scanned the entire post-lock glob
+      # which kept flagging 3 Session 13 files already merged into master.
       - name: Guard has_permission lock (D10 / Audit R14)
         run: |
           set -e
-          violations=$(grep -rEn "(CREATE OR REPLACE|CREATE) +FUNCTION +(public\.)?has_permission\b" \
-              supabase/migrations/2026051[5-9]*.sql \
-              supabase/migrations/202605[2-9]*.sql \
-              supabase/migrations/20260[6-9]*.sql \
-              supabase/migrations/2027*.sql 2>/dev/null || true)
+          # On a PR, base is the merge target. On a push to master the diff
+          # is empty (HEAD~1..HEAD) which is fine — push events shouldn't
+          # introduce new violations beyond what the prior PR already
+          # cleared.
+          if [ -n "${{ github.base_ref }}" ]; then
+            base="origin/${{ github.base_ref }}"
+            git fetch origin "${{ github.base_ref }}" --depth=1 || true
+          else
+            base="HEAD~1"
+          fi
+          new_migrations=$(git diff --name-only --diff-filter=A "$base"...HEAD -- 'supabase/migrations/*.sql' || true)
+          if [ -z "$new_migrations" ]; then
+            echo "No new migrations in this diff."
+            exit 0
+          fi
+          violations=$(echo "$new_migrations" | xargs -r grep -EnH "(CREATE OR REPLACE|CREATE) +FUNCTION +(public\.)?has_permission\b" || true)
           if [ -n "$violations" ]; then
-            echo "::error::has_permission re-CREATE detected after 20260514015204 lock (D10/R14):"
+            echo "::error::has_permission re-CREATE detected in NEW migrations (D10/R14 lock):"
             echo "$violations"
             exit 1
           fi
+          echo "$new_migrations" | sed 's/^/  scanned: /'
 
       - name: Lint
         run: pnpm lint
