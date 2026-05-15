@@ -77,7 +77,12 @@ export function ProductTapHandler({ selectedSlug }: ProductTapHandlerProps) {
 
   const product: ModifierModalProduct | null =
     pending && !isCombo
-      ? { id: pending.id, name: pending.name, retail_price: pending.retail_price }
+      ? {
+          id: pending.id,
+          name: pending.name,
+          retail_price: pending.retail_price,
+          image_url: pending.image_url ?? null,
+        }
       : null;
 
   return (

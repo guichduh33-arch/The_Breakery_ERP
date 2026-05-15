@@ -1,9 +1,12 @@
 // apps/backoffice/src/pages/purchasing/NewPurchaseOrderPage.tsx
 //
-// Session 13 — Phase 3.A — Page wrapping POFormDraft + Create RPC call.
+// Session 14 / Phase 5.A — header chrome aligned with the rest of the
+// purchasing surfaces (breadcrumb + Fraunces heading). Form behaviour
+// unchanged — POFormDraft still owns line items + validation.
 
 import { useState, type JSX } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore.js';
 import {
   POFormDraft,
@@ -54,12 +57,27 @@ export default function NewPurchaseOrderPage(): JSX.Element {
 
   return (
     <div className="space-y-6 max-w-5xl">
-      <div>
-        <h1 className="font-serif text-3xl">New Purchase Order</h1>
-        <p className="text-text-secondary text-sm mt-1">
+      <nav className="flex items-center gap-2 text-xs text-text-secondary" aria-label="Breadcrumb">
+        <Link to="/backoffice/purchasing" className="hover:text-text-primary">Purchasing</Link>
+        <span aria-hidden>›</span>
+        <Link to="/backoffice/purchasing/purchase-orders" className="hover:text-text-primary">Purchase Orders</Link>
+        <span aria-hidden>›</span>
+        <span className="text-text-primary">New</span>
+      </nav>
+
+      <Link
+        to="/backoffice/purchasing/purchase-orders"
+        className="inline-flex items-center gap-1 text-sm text-text-secondary hover:text-text-primary"
+      >
+        <ArrowLeft className="h-4 w-4" aria-hidden /> Back to purchase orders
+      </Link>
+
+      <header>
+        <h1 className="font-display text-3xl text-text-primary">New Purchase Order</h1>
+        <p className="mt-1 text-sm text-text-secondary">
           Draft a PO. Receipt (goods + JE posting) happens later from the detail page.
         </p>
-      </div>
+      </header>
       <POFormDraft
         value={value}
         onChange={setValue}

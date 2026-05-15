@@ -139,6 +139,9 @@ export type Database = {
           fiscal_address: string | null
           id: number
           name: string
+          pos_discount_presets: Json
+          pos_opening_cash_presets: Json
+          pos_quick_payment_amounts: Json
           shift_variance_threshold_abs: number
           shift_variance_threshold_pct: number
           tax_inclusive: boolean
@@ -152,6 +155,9 @@ export type Database = {
           fiscal_address?: string | null
           id?: number
           name?: string
+          pos_discount_presets?: Json
+          pos_opening_cash_presets?: Json
+          pos_quick_payment_amounts?: Json
           shift_variance_threshold_abs?: number
           shift_variance_threshold_pct?: number
           tax_inclusive?: boolean
@@ -165,6 +171,9 @@ export type Database = {
           fiscal_address?: string | null
           id?: number
           name?: string
+          pos_discount_presets?: Json
+          pos_opening_cash_presets?: Json
+          pos_quick_payment_amounts?: Json
           shift_variance_threshold_abs?: number
           shift_variance_threshold_pct?: number
           tax_inclusive?: boolean

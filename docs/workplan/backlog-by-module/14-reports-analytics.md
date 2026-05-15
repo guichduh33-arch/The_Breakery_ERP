@@ -15,7 +15,8 @@
 
 ## Tâches
 
-### TASK-14-001 — Déplacer DuplicateTransactionsTab O(n²) vers RPC DB [P0] [TODO]
+### TASK-14-001 — Déplacer DuplicateTransactionsTab O(n²) vers RPC DB [P0] [OBSOLETE]
+**Status note (2026-05-14)** : V2 `DuplicateTransactionsTab` does not exist in V3 — superseded by build-from-scratch Reports module (Phase 2.B + 6.A) where every tab is backed by a server-side RPC by design (no client-side O(n²)). If duplicate-detection is desired in V3, a new RPC must be designed (not a port). Reclassify as new feature TASK-14-xxx if needed.
 **Contexte** : Quinn P0-1 (cf. `00-executive-summary.md`) — `DuplicateTransactionsTab` exécute un algorithme O(n²) côté client pour détecter les doublons. Sur > 1000 orders, freeze browser. Optimisation `04-09` audit l'a partiellement amélioré mais c'est encore client-side.
 **Critère d'acceptation** :
 - [ ] RPC `detect_duplicate_transactions(p_start_date, p_end_date, p_threshold_minutes INT default 5)` retourne les paires d'orders suspectes (même customer + même montant + écart < N min).
@@ -29,7 +30,8 @@
 **Risques** : RPC mal indexée → timeout. Bench obligatoire.
 **Notes** : `IMPLEMENTATION_PLAN.md` Phase 4.1.
 
-### TASK-14-002 — Ajouter `.limit(5000)` sur AuditTab + ProductPerformance + DiscountsVoids [P0] [TODO]
+### TASK-14-002 — Ajouter `.limit(5000)` sur AuditTab + ProductPerformance + DiscountsVoids [P0] [OBSOLETE]
+**Status note (2026-05-14)** : V2 unbounded queries do not exist in V3 — Phase 2.B Audit RPC (`20260517000076_paginate_audit_log_rpc.sql`) uses cursor-based pagination with server-side clamp `LIMIT LEAST(GREATEST(p_limit,1), 200)`. Other report RPCs (`get_sales_by_*_v1`) are aggregated server-side so unbounded reads are impossible by construction. No centralised `MAX_REPORT_ROWS = 5000` exists but the architectural intent is satisfied differently.
 **Contexte** : Quinn P0-2/P0-3/P0-4 — plusieurs queries sont unbounded : `AuditTab` lit tout `audit_logs` (potentiellement 100k+ lignes), `ProductPerformanceTab` tire 30k+ rows avec joins, `DiscountsVoidsTab` idem. Risque OOM browser.
 **Critère d'acceptation** :
 - [ ] Toutes les queries reports passent par `.limit(5000)` par défaut + `Notice` UI si la limite est atteinte ("Affinez la période, > 5000 résultats").
@@ -42,7 +44,8 @@
 **Risques** : si seuil trop bas, certains reports légitimes coupés — calibrer.
 **Notes** : `IMPLEMENTATION_PLAN.md` Phase 4.2/4.3.
 
-### TASK-14-003 — Standardiser `toLocalDateStr()` (timezone fix) [P1] [TODO]
+### TASK-14-003 — Standardiser `toLocalDateStr()` (timezone fix) [P1] [DONE]
+**Status note (2026-05-14)** : Delivered Session 13 Phase 2.B. V3 evidence: `packages/domain/src/reports/toLocalDateStr.ts` + co-located test, consumed by all BO report pages (`CashFlowPage.tsx`, `ProfitLossPage.tsx`, etc.). Matviews bucket via `business_config.timezone` (`Asia/Makassar` default) so date boundaries are timezone-correct (cf. `20260517000070_init_materialised_views.sql`). Commit `bdf21aa`.
 **Contexte** : Quinn P1-1 — mix `toISOString()` (UTC) et `toLocalDateStr()` (local). En Indonésie (UTC+8), une commande à 23h locale a une date UTC du lendemain → omise/mal-incluse selon le report. Touche `getProductPerformance`, `getSalesByCategory`, `getSalesByCustomer`, `getCancellations`.
 **Critère d'acceptation** :
 - [ ] Helper `toLocalDateBoundary(date, 'start' | 'end')` qui retourne `YYYY-MM-DDTHH:mm:ss+08:00` (start = 00:00:00, end = 23:59:59).
@@ -55,7 +58,8 @@
 **Risques** : drift temporaire si déployé sans la mise à jour des tests.
 **Notes** : `IMPLEMENTATION_PLAN.md` Phase 4.4.
 
-### TASK-14-004 — Granulariser permissions reports [P1] [TODO]
+### TASK-14-004 — Granulariser permissions reports [P1] [DONE]
+**Status note (2026-05-14)** : Delivered Session 13 Phase 2.B (4 perms) + Phase 6.A (financial gate). V3 evidence: Wave 2 deviation log seeds `reports.sales.read`, `reports.inventory.read`, `reports.audit.read`, `reports.financial.read` (granted to ADMIN+MANAGER); Phase 6.A guards P&L / BS / Cash Flow routes via `reports.financial.read` PermissionGate per `D-W6-6A-3`. Audit-only Reports default to admin-only.
 **Contexte** : Quinn P1-2 — TOUTE la page Reports gardée par `reports.sales`. Caissier ayant accès aux ventes peut voir VAT, P&L, audit logs (void abuse, ghost stock, permission changes). Permissions `reports.inventory` / `reports.financial` définies mais non enforced.
 **Critère d'acceptation** :
 - [ ] Component `ReportPermissionGuard category="financial"` qui check la permission appropriée selon la catégorie du report.
@@ -70,6 +74,7 @@
 **Notes** : `IMPLEMENTATION_PLAN.md` Phase 4.5.
 
 ### TASK-14-005 — Filtres globaux unifiés (DateRangePicker partout) [P2] [TODO]
+**Status note (2026-05-14)** : Partially delivered — `apps/backoffice/src/features/reports/components/DateRangePicker.tsx` is shared across all date-ranged pages. MISSING: comparison toggle ("vs previous period"), `<UnifiedReportFilters>` wrapper with extra dimensions (category/terminal/customer), localStorage persistence. Still applicable, scheduled Session 14+.
 **Contexte** : `useDateRange` utilisé dans 48 reports, mais 1 utilise month/year (VAT), 4 sont snapshots sans date. Pas de comparaison période précédente partout. UX incohérente.
 **Critère d'acceptation** :
 - [ ] Composant `<UnifiedReportFilters>` : DateRange + ComparisonToggle ("vs previous period") + Filtres optionnels (catégorie produit, terminal, customer type).
@@ -82,7 +87,8 @@
 **Risques** : énorme refactor cross-cut — déployer par catégorie (Sales d'abord).
 **Notes** : Quinn P3-1 résolu indirectement (queryKey).
 
-### TASK-14-006 — Smoke tests pour 87 report tabs [P1] [TODO]
+### TASK-14-006 — Smoke tests pour 87 report tabs [P1] [OBSOLETE]
+**Status note (2026-05-14)** : The "87 V2 report tabs" universe does not exist in V3 — V3 Reports is built from scratch with ~10 pages so far (`SalesByHour/Category/Staff`, `StockVariance`, `Audit`, `ProfitLoss`, `BalanceSheet`, `CashFlow`, `BasketAnalysis`, `ReportsIndex`). Each delivered page already has a smoke test (cf. `apps/backoffice/src/features/reports/__tests__/*.smoke.test.tsx`). The V2 87-test target is no longer meaningful; future report additions should follow the same pattern.
 **Contexte** : Quinn — coverage 0 sur 87 component reports. Le plus gros gap testing. Recommandation : "render each tab with mocked data and verify it doesn't crash".
 **Critère d'acceptation** :
 - [ ] Pattern de test partagé `renderReportTabSmoke(component, mockData)` qui mount + check `toMatchSnapshot()` simplifié + erreurs console.
@@ -97,6 +103,7 @@
 **Notes** : reuse `vi.hoisted` pattern + `mock chains` déjà en place.
 
 ### TASK-14-007 — Custom report builder (drag&drop fields) [P3] [TODO]
+**Status note (2026-05-14)** : Not delivered Session 13 — no custom-report builder or `custom_reports` table in V3. Still applicable, scheduled Session 14+.
 **Contexte** : Audit produit Gap "ability to build ad-hoc reports". Aujourd'hui, ajouter un report = code TS + ReportsConfig. Utilisateur métier ne peut pas explorer librement.
 **Critère d'acceptation** :
 - [ ] Page `/reports/custom-builder` (permission `reports.audit` ou nouvelle `reports.custom`).
@@ -111,6 +118,7 @@
 **Notes** : commencer par read-only sur 5 tables max, étendre après.
 
 ### TASK-14-008 — Scheduled reports email (envoi auto hebdo/mensuel) [P3] [TODO]
+**Status note (2026-05-14)** : Not delivered Session 13 — no `report_schedules` table or `send-scheduled-reports` Edge Function in V3. Still applicable, scheduled Session 14+.
 **Contexte** : Owner veut recevoir P&L mensuel + sales weekly directement par email sans cliquer. Pas d'automation today.
 **Critère d'acceptation** :
 - [ ] Table `report_schedules(report_id, frequency: daily/weekly/monthly, recipients[], format: pdf/csv, last_run_at, is_active)`.
@@ -124,6 +132,7 @@
 **Notes** : reuse `send-test-email` Edge Function pour delivery.
 
 ### TASK-14-009 — Drilldown navigation cohérente [P2] [TODO]
+**Status note (2026-05-14)** : Not delivered Session 13 — no shared `<DrilldownLink>` component in V3. Still applicable, scheduled Session 14+.
 **Contexte** : Quelques reports ont drill-down (ProductionReportTab) mais inconsistant. Cliquer sur un montant agrégé doit ouvrir le détail (orders qui composent).
 **Critère d'acceptation** :
 - [ ] Pattern partagé `<DrilldownLink target="/orders" filter={{ ... }} />` pour les chiffres cliquables.
@@ -138,6 +147,7 @@
 **Notes** : tester avec utilisateur réel pour calibrer.
 
 ### TASK-14-010 — Mobile-friendly reports layout [P2] [TODO]
+**Status note (2026-05-14)** : Not delivered Session 13 — V3 BO report pages are desktop-first per Session 14 spec D5. Still applicable; aligned with Session 14 UX completion target (desktop polish first, mobile later).
 **Contexte** : Audit Sally Responsive 7.5/10 — reports surtout pensés desktop. Owner consulte parfois en mobile/tablet (Lombok → terrain).
 **Critère d'acceptation** :
 - [ ] Reports critiques (`OverviewTab`, `SalesTab`, `B2BReceivablesTab`) responsive : tableaux deviennent cards en < md.
@@ -150,7 +160,8 @@
 **Risques** : effort important — prioriser les 5 reports les plus consultés.
 **Notes** : audit Sally signale l'écart desktop/mobile sur back-office.
 
-### TASK-14-011 — Performance large queries via matviews [P2] [TODO]
+### TASK-14-011 — Performance large queries via matviews [P2] [DONE]
+**Status note (2026-05-14)** : Delivered Session 13 Phase 2.B. V3 evidence: `supabase/migrations/20260517000070_init_materialised_views.sql` creates `mv_sales_daily`, `mv_stock_variance`, `mv_pl_monthly` with UNIQUE indexes; `20260517000071_pg_cron_refresh_mv.sql` schedules `REFRESH MATERIALIZED VIEW CONCURRENTLY` via pg_cron. Note: P&L RPC live-queries instead of consuming `mv_pl_monthly` (deviation `D-W6-6A-1`); MV is retained for future BO dashboards. Commit `bdf21aa`.
 **Contexte** : Quinn P3 — certains reports (`getProductPerformance`) chargent tous les order_items en plage et agrègent client-side. Pour analyses sur 1 an = lent.
 **Critère d'acceptation** :
 - [ ] Matviews `mv_product_sales_daily`, `mv_sales_by_category_daily`, `mv_customer_orders_summary`.
@@ -163,7 +174,8 @@
 **Risques** : staleness 6h acceptable pour analytics, pas pour live monitoring.
 **Notes** : pitfall CLAUDE.md sur trigger functions ne s'applique pas ici (matviews ≠ triggers).
 
-### TASK-14-012 — Service barrel cleanup (extraire les bypass dans des hooks) [P2] [TODO]
+### TASK-14-012 — Service barrel cleanup (extraire les bypass dans des hooks) [P2] [OBSOLETE]
+**Status note (2026-05-14)** : V2 reporting service bypass patterns (`RevenueForecastTab`, `ProfitLossTab`, `VATReportTab`, `ProductionReportTab` direct Supabase calls + `as never` cast) do not exist in V3 — built from scratch with `useXxx` hooks per page (e.g. `useProfitLoss.ts`, `useBalanceSheet.ts`, `useCashFlow.ts`). Generated types include the new RPCs (regen'd at end of Wave 6).
 **Contexte** : Quinn P2-1/P2-2 — `RevenueForecastTab`, `ProfitLossTab`, `VATReportTab`, `ProductionReportTab` font des appels Supabase directs (bypass `ReportingService`). Inconsistance + tests difficiles. Plus le `as never` cast sur `view_daily_kpis`.
 **Critère d'acceptation** :
 - [ ] Toutes les queries Supabase report-related passent par un service ou un hook (`useDailyKpis`, `useProfitLoss`, etc.).
@@ -183,6 +195,7 @@
 > Ajoutés 2026-05-13 lors de la cascade docs (session 13). KDS Service Speed est couvert par TASK-04-009 (cascade KDS), B2B Self-Approval Risk par TASK-09-010, Customer Cohort par TASK-08-009 (cascade Customers), Promotion Effectiveness par TASK-13-006.
 
 ### TASK-14-013 — Report "Unusual Transaction Patterns" [P2] [TODO]
+**Status note (2026-05-14)** : Not delivered Session 13 — no `get_unusual_transactions` RPC or audit page in V3. Still applicable, scheduled Session 14+ once history volume permits calibration.
 **Contexte** : aucun mécanisme automatique de détection de patterns suspects (transactions hors horaires, montants aberrants, splits cash juste sous un seuil).
 **Bénéfice attendu** : repérer automatiquement les transactions anormales — anti-fraude proactif.
 **Critère d'acceptation** :
@@ -195,7 +208,8 @@
 **Risques** : faux positifs élevés au début — itérer les règles avec retour terrain.
 **Notes** : couplable avec TASK-09-010 (self-approval B2B) et TASK-12-008 (dual auth variance).
 
-### TASK-14-014 — Report "Basket Analysis" (associations produits) [P3] [TODO]
+### TASK-14-014 — Report "Basket Analysis" (associations produits) [P3] [DONE]
+**Status note (2026-05-14)** : Delivered Session 13 Phase 6.A. V3 evidence: `supabase/migrations/20260517000213_create_basket_analysis_rpc.sql` provides associations RPC; UI in `apps/backoffice/src/pages/reports/BasketAnalysisPage.tsx` + hook `useBasketAnalysis.ts` + smoke test `BasketAnalysisPage.smoke.test.tsx`. Gated via `reports.sales.read` per `D-W6-6A-3`. Commit `bdf21aa`.
 **Contexte** : aucun moyen d'identifier les produits souvent achetés ensemble.
 **Bénéfice attendu** : créer des combos pertinents + recommendations upsell (TASK-02-026) basées sur les vraies associations historiques.
 **Critère d'acceptation** :
@@ -209,6 +223,7 @@
 **Notes** : source pour TASK-02-026 (Smart upsell POS).
 
 ### TASK-14-015 — Report "Peak Hour Staffing" (recommandations planning) [P3] [TODO]
+**Status note (2026-05-14)** : Not delivered Session 13 — no `compute_peak_hour_staffing` RPC or page in V3. Still applicable, scheduled Session 14+.
 **Contexte** : pas de recommandation staff basée sur la charge horaire historique. Sur-staffing ou sous-staffing au feeling.
 **Bénéfice attendu** : recommander le nombre de cashiers / serveurs nécessaires par tranche horaire selon historique.
 **Critère d'acceptation** :
@@ -221,6 +236,7 @@
 **Notes** : utile pour le manager de salle hebdomadaire.
 
 ### TASK-14-016 — Report "Perishable Turnover" (rotation périssables) [P3] [TODO]
+**Status note (2026-05-14)** : Not delivered Session 13 — no `compute_perishable_turnover` RPC in V3. Phase 1.C delivered `stock_lots` + expiring-lots RPC (`get_expiring_lots`) which provides the data foundation, but the turnover-rate report itself remains TODO. Still applicable, scheduled Session 14+.
 **Contexte** : aucun suivi de la rotation des produits périssables (jours moyens en stock avant vente ou casse).
 **Bénéfice attendu** : identifier les produits dont la rotation est trop lente → réduire le waste.
 **Critère d'acceptation** :
@@ -234,6 +250,7 @@
 **Notes** : KPI critique boulangerie.
 
 ### TASK-14-017 — Report "Table Turnover" (rotation tables dine-in) [P3] [TODO]
+**Status note (2026-05-14)** : Not delivered Session 13 — no `compute_table_turnover` RPC or `tables.assigned_at/cleared_at` tracking in V3. Still applicable, scheduled Session 14+.
 **Contexte** : pas de mesure de la durée moyenne d'occupation table ni du taux de rotation.
 **Bénéfice attendu** : optimiser la capacité dîner — comprendre les tables lentes, les heures de saturation.
 **Critère d'acceptation** :
@@ -247,6 +264,7 @@
 **Notes** : utile pour le maitre d'hôtel et l'optimisation capacité.
 
 ### TASK-14-018 — Report "Sales By Brand" [P3] [TODO]
+**Status note (2026-05-14)** : Not delivered Session 13 — no `brands` table or `products.brand_id` in V3. V2 placeholder did not carry over. Still applicable, scheduled Session 14+ if brand-level reporting is required.
 **Contexte** : placeholder déjà câblé. Aucun découpage CA par marque pour les rayons multi-marques (ex: café Synesso vs Stumptown).
 **Bénéfice attendu** : suivre la performance par marque chez les fournisseurs multi-marques.
 **Critère d'acceptation** :
@@ -259,6 +277,7 @@
 **Notes** : placeholder existant à compléter.
 
 ### TASK-14-019 — Report "Purchase Returns" (suivi retours fournisseurs) [P3] [TODO]
+**Status note (2026-05-14)** : Not delivered Session 13 — no `get_purchase_returns` RPC or returns page in V3. Phase 3.A delivered PO core (create/receive/cancel) but not returns flow. Still applicable, scheduled Session 14+.
 **Contexte** : placeholder déjà câblé. Aucun suivi consolidé des retours fournisseurs (volume, motifs, fournisseur).
 **Bénéfice attendu** : identifier les fournisseurs problématiques et chiffrer la valeur des retours.
 **Critère d'acceptation** :

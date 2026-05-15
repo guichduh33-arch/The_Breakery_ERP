@@ -1,14 +1,14 @@
 // apps/backoffice/src/pages/Inventory.tsx
 //
-// Backoffice inventory page. Filterable stock-level list + 3 modals
-// (Adjust / Receive / Waste) + movement history drawer. RLS handles real
-// auth at the DB layer; the toolbar buttons are gated UX-only.
-//
-// Spec ref: docs/superpowers/specs/2026-05-11-session-12-inventory-mvp-spec.md §3 (Phase 4)
+// Backoffice inventory page — Stock & Inventory hub matching screenshot
+// `09-stock-list.jpg`. KPI strip (Total / Raw / Finished / Critical alerts)
+// plus the filterable stock-level list + 3 modals (Adjust / Receive / Waste)
+// + movement history drawer. RLS handles auth at the DB layer; toolbar
+// buttons are gated UX-only. Session 14 / Phase 6.A — closeout rebuild.
 
-import { Plus, Truck, Trash2 } from 'lucide-react';
+import { Plus, Truck, Trash2, Boxes, Package, Coffee, AlertTriangle } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { Button } from '@breakery/ui';
+import { Button, KpiTile, SectionLabel } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
 import { AdjustModal } from '@/features/inventory/components/AdjustModal.js';
 import { ReceiveModal } from '@/features/inventory/components/ReceiveModal.js';
@@ -58,11 +58,17 @@ export default function InventoryPage() {
   const list    = useStockLevels(filters);
   const refData = useInventoryReferenceData();
 
+  const totalCount = list.data?.[0]?.total_count ?? 0;
+  const pageRows = list.data ?? [];
+  const lowStockInPage = useMemo(
+    () => pageRows.filter((r) => r.min_stock_threshold > 0 && r.current_stock < r.min_stock_threshold).length,
+    [pageRows],
+  );
+
   if (!canRead) {
     return <div className="text-text-secondary">You do not have permission to view inventory.</div>;
   }
 
-  const totalCount = list.data?.[0]?.total_count ?? 0;
   const hasMore   = (page + 1) * PAGE_SIZE < totalCount;
   const hasPrev   = page > 0;
 
@@ -73,9 +79,9 @@ export default function InventoryPage() {
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="font-serif text-3xl">Inventory</h1>
+          <h1 className="font-serif text-3xl">Stock &amp; Inventory</h1>
           <p className="text-text-secondary text-sm mt-1">
-            Stock levels, movements, and corrections.
+            Manage stock, track movements, and monitor inventory.
           </p>
         </div>
         <div className="flex gap-2">
@@ -97,44 +103,59 @@ export default function InventoryPage() {
         </div>
       </div>
 
+      {/* KPI strip — matches `09-stock-list.jpg` */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <KpiTile label="Total products"   value={totalCount}      icon={Boxes}   footer="In stock catalog" />
+        <KpiTile label="In current page"  value={pageRows.length} icon={Package} footer="Filtered rows on this page" />
+        <KpiTile label="Active filters"   value={
+          (search !== '' ? 1 : 0) +
+          (categoryId !== '' ? 1 : 0) +
+          (lowStockOnly ? 1 : 0)
+        } icon={Coffee} footer="Search · category · low-stock toggle" />
+        <KpiTile label="Critical alerts"  value={lowStockInPage}  icon={AlertTriangle} footer="Below min threshold (page)" />
+      </div>
+
       {/* Filters */}
-      <div className="flex flex-wrap gap-3 items-end bg-bg-elevated border border-border-subtle rounded-lg p-4">
-        <div className="space-y-1 flex-1 min-w-[12rem]">
-          <label htmlFor="inv-search" className="text-xs uppercase tracking-widest text-text-secondary">Search</label>
-          <input
-            id="inv-search"
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); resetPage(); }}
-            placeholder="SKU or product name"
-            maxLength={64}
-            className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
-          />
-        </div>
-        <div className="space-y-1">
-          <label htmlFor="inv-category" className="text-xs uppercase tracking-widest text-text-secondary">Category</label>
-          <select
-            id="inv-category"
-            value={categoryId}
-            onChange={(e) => { setCategoryId(e.target.value); resetPage(); }}
-            className="h-9 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary min-w-[10rem]"
-            disabled={refData.isLoading}
-          >
-            <option value="">All categories</option>
-            {refData.data?.categories.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-        </div>
-        <div className="space-y-1">
-          <span className="text-xs uppercase tracking-widest text-text-secondary block">Status</span>
-          <label className="flex items-center gap-2 h-9 text-sm text-text-primary">
+      <div className="space-y-2">
+        <SectionLabel as="h2">Filters</SectionLabel>
+        <div className="flex flex-wrap gap-3 items-end bg-bg-elevated border border-border-subtle rounded-lg p-4">
+          <div className="space-y-1 flex-1 min-w-[12rem]">
+            <label htmlFor="inv-search" className="text-xs uppercase tracking-widest text-text-secondary">Search</label>
             <input
-              type="checkbox"
-              checked={lowStockOnly}
-              onChange={(e) => { setLowStockOnly(e.target.checked); resetPage(); }}
+              id="inv-search"
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); resetPage(); }}
+              placeholder="SKU or product name"
+              maxLength={64}
+              className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
             />
-            Low stock only
-          </label>
+          </div>
+          <div className="space-y-1">
+            <label htmlFor="inv-category" className="text-xs uppercase tracking-widest text-text-secondary">Category</label>
+            <select
+              id="inv-category"
+              value={categoryId}
+              onChange={(e) => { setCategoryId(e.target.value); resetPage(); }}
+              className="h-9 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary min-w-[10rem]"
+              disabled={refData.isLoading}
+            >
+              <option value="">All categories</option>
+              {refData.data?.categories.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-1">
+            <span className="text-xs uppercase tracking-widest text-text-secondary block">Status</span>
+            <label className="flex items-center gap-2 h-9 text-sm text-text-primary">
+              <input
+                type="checkbox"
+                checked={lowStockOnly}
+                onChange={(e) => { setLowStockOnly(e.target.checked); resetPage(); }}
+              />
+              Low stock only
+            </label>
+          </div>
         </div>
       </div>
 

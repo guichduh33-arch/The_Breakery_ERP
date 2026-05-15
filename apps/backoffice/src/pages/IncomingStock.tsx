@@ -4,10 +4,12 @@
 // free-form stock receipt that isn't tied to a purchase order — supplier is
 // optional. Permission-gated on `inventory.receive`.
 //
-// Spec ref: docs/superpowers/specs/2026-05-11-session-12-inventory-mvp-spec.md
-//           Phase 2 — Incoming Stock UI
+// Session 14 / Phase 5.A — header polish: Fraunces title + branded breadcrumb,
+// matching the rebuilt purchasing surfaces. Form behaviour unchanged.
 
 import type { JSX } from 'react';
+import { Link } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore.js';
 import IncomingStockForm from '@/features/inventory/components/IncomingStockForm.js';
 
@@ -18,12 +20,18 @@ export default function IncomingStockPage(): JSX.Element {
   }
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-serif text-3xl">Incoming Stock</h1>
-        <p className="text-text-secondary text-sm mt-1">
+      <Link
+        to="/backoffice/inventory"
+        className="inline-flex items-center gap-1 text-sm text-text-secondary hover:text-text-primary"
+      >
+        <ArrowLeft className="h-4 w-4" aria-hidden /> Back to Stock &amp; Inventory
+      </Link>
+      <header>
+        <h1 className="font-display text-3xl text-text-primary">Incoming Stock</h1>
+        <p className="mt-1 text-sm text-text-secondary">
           Record stock receipts that aren&apos;t tied to a purchase order. Supplier optional.
         </p>
-      </div>
+      </header>
       <IncomingStockForm />
     </div>
   );

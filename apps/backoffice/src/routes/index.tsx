@@ -4,6 +4,8 @@ import type { PermissionCode } from '@breakery/supabase';
 import LoginPage from '@/pages/Login.js';
 import DashboardPage from '@/pages/Dashboard.js';
 import ProductsPage from '@/pages/Products.js';
+import ProductDetailPage from '@/pages/products/ProductDetailPage.js';
+import CombosPage from '@/pages/products/CombosPage.js';
 import PromotionsPage from '@/pages/Promotions.js';
 import LoyaltyPage from '@/pages/Loyalty.js';
 import InventoryPage from '@/pages/Inventory.js';
@@ -12,6 +14,7 @@ import TransfersListPage from '@/pages/TransfersList.js';
 import TransferFormPage from '@/pages/TransferForm.js';
 import TransferDetailPage from '@/pages/TransferDetail.js';
 import SuppliersPage from '@/pages/Suppliers.js';
+import SupplierDetailPage from '@/pages/suppliers/SupplierDetailPage.js';
 import ComingSoonPage from '@/pages/ComingSoon.js';
 import ProductionPage from '@/pages/inventory/ProductionPage.js';
 import RecipeEditorPage from '@/pages/inventory/RecipeEditorPage.js';
@@ -24,6 +27,9 @@ import SectionsPage from '@/pages/inventory/SectionsPage.js';
 import PurchaseOrdersListPage from '@/pages/purchasing/PurchaseOrdersListPage.js';
 import NewPurchaseOrderPage from '@/pages/purchasing/NewPurchaseOrderPage.js';
 import PurchaseOrderDetailPage from '@/pages/purchasing/PurchaseOrderDetailPage.js';
+import ExpensesListPage from '@/pages/expenses/ExpensesListPage.js';
+import NewExpensePage from '@/pages/expenses/NewExpensePage.js';
+import ExpenseDetailPage from '@/pages/expenses/ExpenseDetailPage.js';
 import UsersListPage from '@/pages/users/UsersListPage.js';
 import NewUserPage from '@/pages/users/NewUserPage.js';
 import UserDetailPage from '@/pages/users/UserDetailPage.js';
@@ -38,6 +44,7 @@ import ProfitLossPage     from '@/pages/reports/ProfitLossPage.js';
 import BalanceSheetPage   from '@/pages/reports/BalanceSheetPage.js';
 import CashFlowPage       from '@/pages/reports/CashFlowPage.js';
 import BasketAnalysisPage from '@/pages/reports/BasketAnalysisPage.js';
+import SettingsHubPage              from '@/pages/settings/SettingsHubPage.js';
 import SettingsGeneralPage          from '@/pages/settings/SettingsGeneralPage.js';
 import SettingsHolidaysPage         from '@/pages/settings/SettingsHolidaysPage.js';
 import SettingsEmailTemplatesPage   from '@/pages/settings/SettingsEmailTemplatesPage.js';
@@ -50,6 +57,11 @@ import SegmentsPage     from '@/pages/marketing/SegmentsPage.js';
 import PromoRoiPage     from '@/pages/marketing/PromoRoiPage.js';
 import BirthdayPage     from '@/pages/marketing/BirthdayPage.js';
 import MappingsPage     from '@/pages/accounting/MappingsPage.js';
+import CustomersListPage      from '@/pages/customers/CustomersListPage.js';
+import CustomerCategoriesPage from '@/pages/customers/CustomerCategoriesPage.js';
+import B2BDashboardPage      from '@/pages/btob/B2BDashboardPage.js';
+import B2BPaymentsPage       from '@/pages/btob/B2BPaymentsPage.js';
+import B2BSettingsPage       from '@/pages/btob/B2BSettingsPage.js';
 import { BackofficeLayout } from '@/layouts/BackofficeLayout.js';
 import { useAuthStore } from '@/stores/authStore.js';
 
@@ -76,6 +88,8 @@ export function AppRoutes() {
       <Route path="/backoffice" element={<Protected><BackofficeLayout /></Protected>}>
         <Route index element={<DashboardPage />} />
         <Route path="products" element={<ProductsPage />} />
+        <Route path="products/combos" element={<CombosPage />} />
+        <Route path="products/:productId" element={<ProductDetailPage />} />
         <Route
           path="promotions"
           element={
@@ -205,6 +219,14 @@ export function AppRoutes() {
           }
         />
         <Route
+          path="suppliers/:id"
+          element={
+            <PermissionGate required="suppliers.read">
+              <SupplierDetailPage />
+            </PermissionGate>
+          }
+        />
+        <Route
           path="purchasing"
           element={
             <PermissionGate required={'purchasing.po.read' as never}>
@@ -236,8 +258,70 @@ export function AppRoutes() {
             </PermissionGate>
           }
         />
-        <Route path="customers" element={<ComingSoonPage module="Customers" />} />
-        <Route path="b2b" element={<ComingSoonPage module="B2B" />} />
+        <Route
+          path="expenses"
+          element={
+            <PermissionGate required="expenses.read">
+              <ExpensesListPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="expenses/new"
+          element={
+            <PermissionGate required="expenses.create">
+              <NewExpensePage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="expenses/:id"
+          element={
+            <PermissionGate required="expenses.read">
+              <ExpenseDetailPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="customers"
+          element={
+            <PermissionGate required="customers.read">
+              <CustomersListPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="customers/categories"
+          element={
+            <PermissionGate required="customer_categories.read">
+              <CustomerCategoriesPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="b2b"
+          element={
+            <PermissionGate required="customers.read">
+              <B2BDashboardPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="b2b/payments"
+          element={
+            <PermissionGate required="customers.read">
+              <B2BPaymentsPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="b2b/settings"
+          element={
+            <PermissionGate required="settings.read">
+              <B2BSettingsPage />
+            </PermissionGate>
+          }
+        />
         <Route path="accounting" element={<ComingSoonPage module="Accounting" />} />
         <Route
           path="accounting/mappings"
@@ -395,7 +479,7 @@ export function AppRoutes() {
           path="settings"
           element={
             <PermissionGate required="settings.read">
-              <SettingsGeneralPage />
+              <SettingsHubPage />
             </PermissionGate>
           }
         />

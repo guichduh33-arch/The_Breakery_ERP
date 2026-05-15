@@ -15,6 +15,7 @@
 ## Tâches
 
 ### TASK-11-001 — Workflow approbation multi-niveau (seuils + chaîne) [P1] [TODO]
+**Status note (2026-05-14)** : Partially delivered — Phase 3.B shipped a flat workflow (draft → submitted → approved → paid via `create/submit/approve/pay/reject_expense_v1` RPCs in `20260517000122`) with permission-gated approve (`expenses.approve`) + audit_logs writes + PIN-gated dialogs (`ApproveDialog.tsx`). MISSING: configurable `expense_approval_thresholds` table, multi-level chain (manager → owner), separation-of-duties block (approver ≠ creator). Still applicable, scheduled Session 14+.
 **Contexte** : Aujourd'hui `approve_expense_with_journal` (Mary P0-4) corrige les casts UUID mais n'implémente PAS de chaîne d'approbation. Toute personne avec `accounting.manage` peut approuver n'importe quel montant. Risque fraude.
 **Critère d'acceptation** :
 - [ ] Table `expense_approval_thresholds` (level, max_amount, required_role_id) configurable en `/settings/expenses`.
@@ -29,7 +30,8 @@
 **Risques** : workflow trop rigide bloque opérations urgentes — prévoir override admin (avec audit).
 **Notes** : pattern PIN identique TASK-09-002 (B2B credit override).
 
-### TASK-11-002 — Catégories d'expense étendues + mapping COA [P2] [TODO]
+### TASK-11-002 — Catégories d'expense étendues + mapping COA [P2] [DONE]
+**Status note (2026-05-14)** : Delivered Session 13 Phase 3.B. V3 evidence: `supabase/migrations/20260517000120_init_expenses.sql` creates `expense_categories` table with 12 seeded categories (Rent, Electricity, Water, Internet, Marketing, Cleaning, Maintenance, Transport, Insurance, Tax, Bank Fees, Office) each FK to `accounts.id` (6111-6190 OpEx codes per `D-W3-3B-02`); `approve_expense_v1` uses `category.account_id` for the DR leg. Commit `bdf21aa`.
 **Contexte** : `expenses.category` est un enum limité (utilities, supplies, marketing, other). Pas de lien direct avec un compte COA précis → JE auto va sur compte générique. Comptable doit re-coder à la main.
 **Critère d'acceptation** :
 - [ ] Table `expense_categories` (id, code, label_en, default_account_id, is_active) seedée avec ~20 catégories courantes bakery (Rent, Electricity, Water, Internet, Marketing, Cleaning Supplies, Equipment Maintenance, etc.).
@@ -43,6 +45,7 @@
 **Notes** : valider avec comptable la liste seed.
 
 ### TASK-11-003 — Recurring expenses (loyer, abonnements) [P2] [TODO]
+**Status note (2026-05-14)** : Not delivered Session 13 — no `recurring_expenses` table or `recurring-expenses-generate` Edge Function in V3. Still applicable, scheduled Session 14+.
 **Contexte** : Loyer mensuel, internet, abonnements logiciels = re-saisie manuelle chaque mois. Source d'oubli et d'écarts.
 **Critère d'acceptation** :
 - [ ] Table `recurring_expenses` (template_id, name, amount, category_id, frequency: monthly/quarterly/yearly, next_due_date, payment_method, is_active).
@@ -56,7 +59,8 @@
 **Risques** : si l'EF échoue silencieusement → dépense manquée. Monitoring Sentry obligatoire.
 **Notes** : Bot peut envoyer un récap mensuel "10 recurring expenses generated for May 2026".
 
-### TASK-11-004 — Receipt OCR via Claude Proxy [P3] [TODO]
+### TASK-11-004 — Receipt OCR via Claude Proxy [P3] [BLOCKED]
+**Status note (2026-05-14)** : Explicitly deferred per INDEX Wave 7 (`docs/workplan/plans/2026-05-13-session-13-INDEX.md` line 1088 "OCR / 2FA — Session 19+") and Out-of-scope table line 1217 "OCR receipts — Session 16+". Receipt UPLOAD is delivered (`ReceiptUploader.tsx` + storage bucket `expense-receipts` in `20260517000121`) but OCR extraction itself remains deferred.
 **Contexte** : Saisie manuelle d'expenses depuis ticket papier = lente et erreur. `claude-proxy` Edge Function existe (CLAUDE.md liste 16 EF) — peut servir vision API pour extraire amount, date, vendor.
 **Critère d'acceptation** :
 - [ ] Bouton "Scan receipt" dans `ExpenseFormPage` ouvre upload (mobile camera ready).
@@ -71,6 +75,7 @@
 **Notes** : test avec receipts thermiques effacés pour valider robustesse.
 
 ### TASK-11-005 — Allocation par département/centre de coût [P2] [TODO]
+**Status note (2026-05-14)** : Not delivered Session 13 — no `cost_centers` table or `expenses.cost_center` column in V3. Still applicable, scheduled Session 14+.
 **Contexte** : Bakery a 3 zones de coûts naturelles : Production (cuisine), Service (salle/POS), Admin. Pas de ventilation aujourd'hui → marges par zone impossibles à calculer.
 **Critère d'acceptation** :
 - [ ] Enum `expense_department` ou table `cost_centers` (production, service, admin, other).
@@ -85,6 +90,7 @@
 **Notes** : pattern simple ; pas besoin d'allocation pondérée (1 dépense = 1 cost center).
 
 ### TASK-11-006 — Per diem / advances pattern [P3] [TODO]
+**Status note (2026-05-14)** : Not delivered Session 13 — no `expense_type` enum extension (`advance | per_diem | reimbursement`) or `1140 Advances to staff` account in V3 (Phase 1.A COA seed does not include 1140). Still applicable, scheduled Session 14+.
 **Contexte** : Cas réel : avance de 500k IDR au cuisinier pour course marché → puis justificatif. Aujourd'hui géré en JE manuel.
 **Critère d'acceptation** :
 - [ ] Type `expense_type` enum : `expense | advance | per_diem | reimbursement`.
@@ -97,7 +103,8 @@
 **Risques** : si pas réclamé, advances dorment → alert > 30j ouvert.
 **Notes** : compte `1140` fait partie des manques signalés par Mary (audit Phase 1 — COA cleanup).
 
-### TASK-11-007 — Bulk expense import (CSV) pour migration historique [P3] [TODO]
+### TASK-11-007 — Bulk expense import (CSV) pour migration historique [P3] [BLOCKED]
+**Status note (2026-05-14)** : Explicitly deferred per INDEX Out-of-scope table line 1215 "Bulk imports (users, products) — Session 14+". Same deferral applies to bulk expense imports.
 **Contexte** : Pour rattraper l'historique 2024-2025 ou onboarder une nouvelle entité, besoin d'import CSV. Aujourd'hui : saisie manuelle un-par-un.
 **Critère d'acceptation** :
 - [ ] Page `/expenses/import` accepte CSV avec colonnes : date, amount, category_code, payment_method, description, vendor.
@@ -118,6 +125,7 @@
 > Ajoutés 2026-05-13 lors de la cascade docs (session 13). Récurrence, workflow approval, OCR, note de frais sont déjà couverts par TASK-11-003/001/004/006. Export comptable est couvert par TASK-10-018 (cascade Accounting).
 
 ### TASK-11-008 — Budget par catégorie [P3] [TODO]
+**Status note (2026-05-14)** : Not delivered Session 13 — depends on TASK-10-017 (budget vs réel global), also TODO. Still applicable, scheduled Session 14+.
 **Contexte** : aucun mécanisme de budget aujourd'hui. Le gérant ne sait pas s'il dépasse son budget mensuel marketing, maintenance, etc.
 **Bénéfice attendu** : saisir un budget mensuel par catégorie + alerte au dépassement (déclencheur à 80%, 100%, 120%).
 **Critère d'acceptation** :
@@ -131,7 +139,8 @@
 **Risques** : double saisie si non couplé avec budget Accounting — choisir UN seul système.
 **Notes** : V1 par catégorie expense ; V2 sous-budgets par projet / événement.
 
-### TASK-11-009 — Multi-devise sur expenses [P3] [TODO]
+### TASK-11-009 — Multi-devise sur expenses [P3] [BLOCKED]
+**Status note (2026-05-14)** : Explicitly deferred per INDEX Wave 7 (`docs/workplan/plans/2026-05-13-session-13-INDEX.md` line 1082 "10-019 multi-currency end-to-end (Session 14)") and Out-of-scope table line 1206. Hard-coupled to TASK-10-019.
 **Contexte** : aujourd'hui tout en IDR. Pour les achats équipement français, abonnements SaaS USD, etc., conversion manuelle perdue.
 **Bénéfice attendu** : saisir une dépense en EUR / USD, le système enregistre montant devise + taux + équivalent IDR avec traçabilité.
 **Critère d'acceptation** :
@@ -145,6 +154,7 @@
 **Notes** : extension du module Accounting multi-devise.
 
 ### TASK-11-010 — Lien commande fournisseur ↔ dépense [P3] [TODO]
+**Status note (2026-05-14)** : Not delivered Session 13 — no `purchase_orders.po_type` flag or `create_expense_from_po` RPC in V3; `expenses` has no `source_po_id` FK. Still applicable, scheduled Session 14+.
 **Contexte** : aujourd'hui Purchasing gère les achats de marchandises (PO produits) et Expenses gère les dépenses opérationnelles, mais pas de pont quand un PO est de SERVICE (ex: maintenance, conseil) — saisie double.
 **Bénéfice attendu** : quand un PO de service est réceptionné, créer automatiquement une expense pré-remplie.
 **Critère d'acceptation** :
@@ -158,6 +168,7 @@
 **Notes** : utile pour le conseil comptable, juridique, maintenance four.
 
 ### TASK-11-011 — Catégorisation auto par IA [P3] [TODO]
+**Status note (2026-05-14)** : Not delivered Session 13 — no `expenseCategorySuggestion` service in V3. Aligned with INDEX Wave 7 "advanced ML" deferral. Couplable to TASK-10-021 (also TODO). Still applicable, scheduled Session 14+ once expense history accumulates.
 **Contexte** : pour une dépense ambiguë ("Facture Tokopedia 350k"), le saisisseur choisit manuellement la catégorie. Coût cognitif.
 **Bénéfice attendu** : suggestion automatique de la catégorie sur la base de l'historique (description fournisseur + montant + saison).
 **Critère d'acceptation** :

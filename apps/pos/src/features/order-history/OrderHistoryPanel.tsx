@@ -1,17 +1,22 @@
 // apps/pos/src/features/order-history/OrderHistoryPanel.tsx
 //
-// Session 10 — full-screen panel listing the current shift's paid orders.
-// Tap an order → drawer with details + Void / Refund buttons.
+// Session 14 — Phase 2.D — Full-screen panel listing the current shift's
+// paid orders. The list now includes the KPI strip from ref 80 (Total /
+// Cash / Card / Other) and each row surfaces the payment method icon.
+//
+// Tap an order → drawer (right pane) with details + Void / Refund buttons,
+// preserving the Session 10/13 flows underneath.
 
-import { useState, type JSX } from 'react';
-import { X } from 'lucide-react';
-import { Button, Currency, FullScreenModal, cn } from '@breakery/ui';
+import { useMemo, useState, type JSX } from 'react';
+import { X, Receipt, CreditCard, Coins, QrCode } from 'lucide-react';
+import { Button, Currency, FullScreenModal, SectionLabel, cn } from '@breakery/ui';
 import { RefundReceiptModal } from '@breakery/ui';
-import { useOrderHistory } from './hooks/useOrderHistory';
+import { useOrderHistory, type OrderHistoryRow } from './hooks/useOrderHistory';
 import { useOrderDetail } from './hooks/useOrderDetail';
 import { useVoidOrder, type VoidResponse } from './hooks/useVoidOrder';
 import { useRefundOrder, type RefundResponse } from './hooks/useRefundOrder';
 import { OrderDetailDrawer } from './components/OrderDetailDrawer';
+import { OrderHistoryStats } from './components/OrderHistoryStats';
 import { VoidOrderModal } from './components/VoidOrderModal';
 import { RefundOrderModal } from './components/RefundOrderModal';
 import { toast } from 'sonner';
@@ -20,6 +25,47 @@ import type { TenderRowMethod } from '@breakery/ui';
 interface OrderHistoryPanelProps {
   open: boolean;
   onClose: () => void;
+}
+
+function paymentMethodTone(method: string | null): {
+  icon: typeof Receipt;
+  color: string;
+  label: string;
+} {
+  switch (method) {
+    case 'cash':
+      return { icon: Coins, color: 'text-green', label: 'Cash' };
+    case 'qris':
+    case 'ewallet':
+      return { icon: QrCode, color: 'text-blue-info', label: 'QRIS' };
+    case 'card':
+    case 'debit_card':
+    case 'credit_card':
+      return { icon: CreditCard, color: 'text-purple-400', label: 'Card' };
+    default:
+      return { icon: Receipt, color: 'text-text-muted', label: method ?? '—' };
+  }
+}
+
+function bucketStats(rows: OrderHistoryRow[]): {
+  total: number;
+  cash: number;
+  card: number;
+  other: number;
+  count: number;
+} {
+  const out = { total: 0, cash: 0, card: 0, other: 0, count: rows.length };
+  for (const r of rows) {
+    if (r.status === 'voided') continue;
+    out.total += Number(r.total);
+    for (const p of r.paid_by_method) {
+      const amt = Number(p.amount);
+      if (p.method === 'cash') out.cash += amt;
+      else if (p.method === 'card' || p.method === 'debit_card' || p.method === 'credit_card') out.card += amt;
+      else out.other += amt;
+    }
+  }
+  return out;
 }
 
 export function OrderHistoryPanel({ open, onClose }: OrderHistoryPanelProps): JSX.Element {
@@ -39,6 +85,8 @@ export function OrderHistoryPanel({ open, onClose }: OrderHistoryPanelProps): JS
 
   const voidMutation = useVoidOrder();
   const refundMutation = useRefundOrder();
+
+  const stats = useMemo(() => bucketStats(history.data ?? []), [history.data]);
 
   function presentReceipt(res: VoidResponse | RefundResponse, isFullVoid: boolean): void {
     setReceipt({
@@ -62,10 +110,20 @@ export function OrderHistoryPanel({ open, onClose }: OrderHistoryPanelProps): JS
     <>
       <FullScreenModal open={open && !receipt} onOpenChange={(o) => { if (!o) handleClose(); }}>
         <div className="flex flex-col h-screen bg-bg-base" role="dialog" aria-label="Order history">
-          <header className="h-14 flex items-center justify-between px-6 border-b border-border-subtle bg-bg-elevated">
-            <div className="flex items-baseline gap-3">
-              <span className="font-serif text-lg">Order History</span>
-              <span className="text-text-secondary text-xs uppercase tracking-widest">Current Shift</span>
+          <header className="h-16 flex items-center justify-between px-6 border-b border-border-subtle bg-bg-elevated">
+            <div className="flex items-center gap-3">
+              <div
+                aria-hidden
+                className="h-10 w-10 inline-flex items-center justify-center rounded-md bg-gold-soft text-gold"
+              >
+                <Receipt className="h-5 w-5" />
+              </div>
+              <div>
+                <h2 className="font-display text-xl">Transaction History</h2>
+                <p className="text-text-secondary text-xs">
+                  {stats.count} transaction{stats.count !== 1 ? 's' : ''} this shift
+                </p>
+              </div>
             </div>
             <Button variant="ghost" size="icon" aria-label="Close" onClick={handleClose}>
               <X className="h-5 w-5" aria-hidden />
@@ -73,9 +131,13 @@ export function OrderHistoryPanel({ open, onClose }: OrderHistoryPanelProps): JS
           </header>
 
           <div className="flex-1 grid grid-cols-[1fr_400px] overflow-hidden">
-            <section className="overflow-y-auto p-4">
+            <section className="overflow-y-auto p-4 space-y-4">
+              <OrderHistoryStats stats={stats} />
+
+              <SectionLabel size="xs" as="h3">Transactions</SectionLabel>
+
               {history.isLoading && <div className="text-text-secondary text-sm">Loading…</div>}
-              {history.isError && <div className="text-red-400 text-sm">Failed to load order history</div>}
+              {history.isError && <div className="text-red text-sm">Failed to load order history</div>}
               {history.data?.length === 0 && (
                 <div className="text-text-secondary text-sm py-12 text-center">
                   No orders in this shift yet.
@@ -86,11 +148,14 @@ export function OrderHistoryPanel({ open, onClose }: OrderHistoryPanelProps): JS
                   const isSelected = selectedId === row.id;
                   const isVoided = row.status === 'voided';
                   const partial = row.total_refunded > 0 && !isVoided;
+                  const tone = paymentMethodTone(row.primary_payment_method);
+                  const Icon = tone.icon;
                   return (
                     <li key={row.id}>
                       <button
                         type="button"
                         onClick={() => setSelectedId(row.id)}
+                        data-testid={`history-row-${row.id}`}
                         className={cn(
                           'w-full text-left rounded-md border px-4 py-3 flex items-center justify-between transition-colors',
                           isSelected
@@ -98,24 +163,47 @@ export function OrderHistoryPanel({ open, onClose }: OrderHistoryPanelProps): JS
                             : 'border-border-subtle bg-bg-elevated hover:bg-bg-overlay',
                         )}
                       >
-                        <div>
-                          <div className="font-mono text-base font-bold text-text-primary">
-                            {row.order_number}
-                            {isVoided && <span className="ml-2 text-xs text-red-400 uppercase">VOIDED</span>}
-                            {partial && <span className="ml-2 text-xs text-amber-warn uppercase">PARTIAL REFUND</span>}
+                        <div className="flex-1 min-w-0">
+                          <div className="inline-flex items-center gap-2">
+                            <span className="font-mono text-base font-bold text-text-primary"># {row.order_number}</span>
+                            {isVoided && <span className="text-xs text-red uppercase font-semibold">VOIDED</span>}
+                            {partial && <span className="text-xs text-amber-warn uppercase font-semibold">PARTIAL REFUND</span>}
                           </div>
-                          <div className="text-xs text-text-secondary">
-                            {row.paid_at ? new Date(row.paid_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '—'}
-                            {row.table_number && ` · Table ${row.table_number}`}
+                          <div className="text-xs text-text-secondary mt-1 inline-flex items-center gap-2">
+                            <span>
+                              {row.paid_at
+                                ? new Date(row.paid_at).toLocaleString(undefined, {
+                                    month: '2-digit',
+                                    day: '2-digit',
+                                    year: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })
+                                : '—'}
+                            </span>
+                            {row.paid_at && (
+                              <span className="text-green">Paid</span>
+                            )}
+                            {row.order_type && (
+                              <span className="px-1.5 h-5 inline-flex items-center rounded-md bg-bg-overlay text-text-secondary text-[10px] uppercase tracking-widest">
+                                {row.order_type === 'takeaway' ? 'Takeaway' : row.order_type === 'dine_in' ? 'Dine-in' : row.order_type}
+                              </span>
+                            )}
                           </div>
                         </div>
-                        <div className="text-right">
-                          <Currency amount={row.total} emphasis="gold" />
-                          {row.total_refunded > 0 && (
-                            <div className="text-xs text-red-400 font-mono">
-                              -<Currency amount={row.total_refunded} className="text-red-400" />
-                            </div>
-                          )}
+                        <div className="flex items-center gap-3 shrink-0">
+                          <span className={cn('inline-flex items-center gap-1 text-xs', tone.color)}>
+                            <Icon className="h-3.5 w-3.5" aria-hidden />
+                            <span>{tone.label}</span>
+                          </span>
+                          <div className="text-right">
+                            <Currency amount={row.total} emphasis="gold" />
+                            {row.total_refunded > 0 && (
+                              <div className="text-xs text-red font-mono">
+                                -<Currency amount={row.total_refunded} className="text-red" />
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </button>
                     </li>
@@ -132,7 +220,7 @@ export function OrderHistoryPanel({ open, onClose }: OrderHistoryPanelProps): JS
                   onRefundClick={() => setRefundOpen(true)}
                 />
               ) : (
-                <div className="h-full grid place-items-center text-text-muted text-sm">
+                <div className="h-full grid place-items-center text-text-muted text-sm border-l border-border-subtle bg-bg-elevated/40">
                   Select an order
                 </div>
               )}

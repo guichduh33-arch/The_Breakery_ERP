@@ -16,7 +16,8 @@
 
 ## Tâches
 
-### TASK-21-001 — Déduplication messages dual-channel [P1] [TODO]
+### TASK-21-001 — Déduplication messages dual-channel [P1] [DONE]
+**Status note (2026-05-14)** : Delivered Session 13 Phase 5.A. V3 evidence: `packages/domain/src/lan/messageDedup.ts` (UUID + TTL ring buffer) with unit tests `messageDedup.test.ts` and integration test `apps/pos/src/features/lan/__tests__/lanHub.dedup.test.ts`. Commit `bdf21aa`.
 **Contexte** : `docs/audit/08-operations-lan-audit.md` §1.1 P1 FINDING — *"Both channels receive the same message simultaneously. No deduplication between channels. Same-origin tabs will receive it on both channels. The hub also broadcasts on both, so same-origin hub + client will get 2x delivery."*
 **Critère d'acceptation** :
 - [ ] `processMessage()` (hub + client) maintient un `Set<string>` des derniers 200 message IDs reçus, TTL 5 s
@@ -29,7 +30,8 @@
 **Risques** : si `message.id` est non unique (bug producteur), faux positif drop → vérifier que tous les `LANMessage` ont `id: crypto.randomUUID()`
 **Notes** : aligner avec `addOrder` dedup KDS qui fait déjà partial defense
 
-### TASK-21-002 — Hub handlers KDS_ORDER_ACK + KDS_ITEM_READY [P2] [TODO]
+### TASK-21-002 — Hub handlers KDS_ORDER_ACK + KDS_ITEM_READY [P2] [DONE]
+**Status note (2026-05-14)** : Delivered Session 13 Phase 5.A (minimal V3 contract). V3 evidence: `apps/pos/src/features/lan/lanHubMessageHandler.ts` handles `kds.bump`, `kds.recall`, `kds.undo` (D-W5-5A-05) — state mutations remain in the Phase 4.B KDS RPCs ; the hub is the fanout + print-queue trigger layer. Commit `bdf21aa`.
 **Contexte** : `docs/audit/08-operations-lan-audit.md` §1.1 P2 FINDING + §4.4 P2 + Appendix B — *"Hub handles only 5 of 35 message types. KDS_ORDER_ACK, KDS_ORDER_READY, KDS_ITEM_PREPARING/READY are unhandled — limits operational visibility for the POS operator."*
 **Critère d'acceptation** :
 - [ ] `lanHubMessageHandler.processMessage()` ajoute case pour : `KDS_ORDER_ACK`, `KDS_ORDER_READY`, `KDS_ORDER_BUMP`, `KDS_ITEM_PREPARING`, `KDS_ITEM_READY`
@@ -42,7 +44,8 @@
 **Risques** : volume messages augmente (chaque item changement) — vérifier perf hub
 **Notes** : commencer par ACK (le plus simple), valider, étendre
 
-### TASK-21-003 — Print result targeted (pas broadcast) [P2] [TODO]
+### TASK-21-003 — Print result targeted (pas broadcast) [P2] [DONE]
+**Status note (2026-05-14)** : Delivered Session 13 Phase 5.A. V3 evidence: `print.result` envelopes in `apps/pos/src/features/lan/lanHubMessageHandler.ts` carry `to=msg.from` for targeted reply (D-W5-5A-05). Commit `bdf21aa`.
 **Contexte** : `docs/audit/08-operations-lan-audit.md` §1.2 P2 FINDING — *"Print result is broadcast, not targeted. handlePrintRequest broadcasts the PRINT_RESULT to ALL devices, not just the requesting device. Should use sendToFn when available."*
 **Critère d'acceptation** :
 - [ ] `handlePrintRequest` utilise `sendToFn(message.from, ...)` au lieu de broadcast
@@ -54,7 +57,8 @@
 **Risques** : minime ; cas edge si requesting device s'est déconnecté entre demande et réponse
 **Notes** : pattern déjà utilisé pour `handleTabletOrderSubmit`
 
-### TASK-21-004 — Print queue retry persistence [P2] [TODO]
+### TASK-21-004 — Print queue retry persistence [P2] [DONE]
+**Status note (2026-05-14)** : Delivered Session 13 Phase 5.A. V3 evidence: migration `20260517000170_init_print_queue.sql` ships `print_queue` table + `enqueue_print_job_v1`, `claim_print_job_v1`, `mark_print_failed_v1` with 3-retry-then-fail semantics (D-W5-5A-02). UI: `apps/backoffice/src/features/print-queue/components/PrintQueueTable.tsx`. Commit `bdf21aa`.
 **Contexte** : `docs/audit/08-operations-lan-audit.md` §1.2 P3 FINDING — *"No print queue. If the print server is down, printLocally returns failure and the result is broadcast. There is no retry queue or persistence. In a busy bakery, a temporary printer outage means lost tickets."*
 **Critère d'acceptation** :
 - [ ] Table `print_queue (id, ticket_type, payload jsonb, status [pending|sent|failed], attempts, created_at, last_attempt_at)` + RLS
@@ -68,7 +72,8 @@
 **Risques** : queue grandit si printer reste down longtemps — TTL 24h pour cleanup auto
 **Notes** : prioritaire pour fiabilité en heures de pointe
 
-### TASK-21-005 — Hub failover et zombie state cleanup [P2] [TODO]
+### TASK-21-005 — Hub failover et zombie state cleanup [P2] [BLOCKED]
+**Status note (2026-05-14)** : Deferred per D-W5-5A-05 explicit statement : "21-005..011 (failover, persistence, diagnostics, etc.) : OUT OF SCOPE for Phase 5.A — deferred to Wave 6+". To be picked up in a follow-up wave.
 **Contexte** : `docs/audit/08-operations-lan-audit.md` §1.1 P3 FINDING — *"After max reconnect attempts, the hub sets connectionStatus disconnected but does NOT call stop(). The hub remains in isRunning = true state with stale timers still running."*
 **Critère d'acceptation** :
 - [ ] Après max attempts (10) : appel `stop()` complet (clear timers, isRunning=false, channels closed)
@@ -81,7 +86,8 @@
 **Risques** : failover automatique = complexité grosse, garder out-of-scope (juste cleanup zombie pour cette tâche)
 **Notes** : —
 
-### TASK-21-006 — Persistance connectedDevices côté hub [P3] [TODO]
+### TASK-21-006 — Persistance connectedDevices côté hub [P3] [DONE]
+**Status note (2026-05-14)** : Delivered Session 13 Phase 5.A. V3 evidence: migration `20260517000171_init_lan_devices.sql` creates the `lan_devices` table used as the source of truth for device registration (D-W5-5A-01). Heartbeat-driven persistence supersedes the V2 in-memory list. Commit `bdf21aa`.
 **Contexte** : `docs/audit/08-operations-lan-audit.md` §1.1 P3 FINDING — *"connectedDevices array is NOT persisted. On hub restart, all device registrations are lost. Tablet has auto-recovery, KDS / display have no such recovery."*
 **Critère d'acceptation** :
 - [ ] Persistance via `lan_nodes` table (existe déjà selon `CLAUDE.md`) au lieu de in-memory uniquement
@@ -94,7 +100,8 @@
 **Risques** : conflit entre source DB et BroadcastChannel — privilégier DB comme source of truth
 **Notes** : `lan_nodes` peut nécessiter colonnes supplémentaires (vérifier)
 
-### TASK-21-007 — Discovery : marquer browser probe comme "unverified" [P3] [TODO]
+### TASK-21-007 — Discovery : marquer browser probe comme "unverified" [P3] [BLOCKED]
+**Status note (2026-05-14)** : Deferred per D-W5-5A-05 — "21-005..011 ... OUT OF SCOPE for Phase 5.A — deferred to Wave 6+". V3 `apps/pos/src/features/lan/` does not ship a `networkDiscovery.ts`. To be picked up alongside hub failover work.
 **Contexte** : `docs/audit/08-operations-lan-audit.md` §1.3 P3 FINDING — *"Browser probes use mode no-cors, cannot read response. 'Success' = no exception thrown (could be a 404, redirect, or anything). False positives for any HTTP server on the scanned port."*
 **Critère d'acceptation** :
 - [ ] `networkDiscovery.ts` ajoute champ `verified: boolean` (true si TCP probe via print server, false si browser fallback)
@@ -106,7 +113,8 @@
 **Risques** : aucun
 **Notes** : cohérent avec audit recommandation
 
-### TASK-21-008 — Heartbeat optimisation (latence + back-pressure) [P3] [TODO]
+### TASK-21-008 — Heartbeat optimisation (latence + back-pressure) [P3] [BLOCKED]
+**Status note (2026-05-14)** : Deferred per D-W5-5A-05 — "21-005..011 ... OUT OF SCOPE for Phase 5.A — deferred to Wave 6+". V3 ships a basic `useLanHeartbeat` hook ; batching/back-pressure tuning is downstream work.
 **Contexte** : `docs/audit/08-operations-lan-audit.md` §1.1 — heartbeat 30 s broadcast-only sans validation. Si 10 devices → 10 messages toutes les 30 s. Pas critique aujourd'hui mais à monitorer.
 **Critère d'acceptation** :
 - [ ] Heartbeat batchés : un seul `HUB_HEARTBEAT` toutes les 30 s avec liste connected devices
@@ -119,7 +127,8 @@
 **Risques** : stale detection plus lente — vérifier impact UX KDS (commande non routée si KDS apparu offline 3 min)
 **Notes** : prioriser uniquement si > 8 devices LAN actifs
 
-### TASK-21-009 — LAN diagnostics UI dashboard [P2] [TODO]
+### TASK-21-009 — LAN diagnostics UI dashboard [P2] [BLOCKED]
+**Status note (2026-05-14)** : Deferred per D-W5-5A-05 — "21-005..011 ... OUT OF SCOPE for Phase 5.A — deferred to Wave 6+". No `LANDiagnosticsPage` or `useLANDiagnostics` hook exists in V3 ; print queue table view (`PrintQueueTable.tsx`) is the only operator-facing LAN surface today.
 **Contexte** : Pas mentionné explicitement audit mais implicite §5.3 DR matrix : "Hub fails / clients lose LAN messages". Manager n'a pas de cockpit pour voir l'état LAN en un coup d'œil.
 **Critère d'acceptation** :
 - [ ] Page `/settings/network-devices/diagnostics` (ou tab existante)
@@ -132,7 +141,8 @@
 **Risques** : log streaming → conserver max 50 messages côté client (pas DB)
 **Notes** : critique pour onboarder un manager terrain au LAN
 
-### TASK-21-010 — Cross-network LAN (Realtime fallback robustness) [P3] [TODO]
+### TASK-21-010 — Cross-network LAN (Realtime fallback robustness) [P3] [BLOCKED]
+**Status note (2026-05-14)** : Deferred per D-W5-5A-05 — "21-005..011 ... OUT OF SCOPE for Phase 5.A — deferred to Wave 6+". No ADR `adr-003-lan-fallback-strategy.md` shipped.
 **Contexte** : Architecture hybride BroadcastChannel (intra-tab) + Realtime (cross-network) actuelle suppose Supabase Realtime fiable. Si la connexion internet de Lombok casse mais le LAN fonctionne, le Realtime est down → fallback uniquement BroadcastChannel (limité même origin).
 **Critère d'acceptation** :
 - [ ] Investigation : tester WebRTC ou WebSocket peer-to-peer LAN-only via print server (port 3001) comme 3e canal
@@ -144,7 +154,8 @@
 **Risques** : sur-ingénierie ; à ne déclencher que si 1 incident réel reporté
 **Notes** : Lombok = connexion 4G parfois instable, situation possible
 
-### TASK-21-011 — Multi-LAN segmentation (P3 multi-store future) [P3] [TODO]
+### TASK-21-011 — Multi-LAN segmentation (P3 multi-store future) [P3] [BLOCKED]
+**Status note (2026-05-14)** : Deferred to Wave 7 per INDEX line 1089 : "LAN multi-site (Session 17)" + D-W5-5A-05 "21-005..011 OUT OF SCOPE". Gated on TASK-19-008 multi-tenancy foundation.
 **Contexte** : Lié à TASK-19-008 (multi-tenancy). Si 2 boutiques → 2 LANs distincts → channel `appgrav-lan` partagé causera collision.
 **Critère d'acceptation** :
 - [ ] Channel name dynamique : `appgrav-lan-${storeId}` au lieu de `appgrav-lan`

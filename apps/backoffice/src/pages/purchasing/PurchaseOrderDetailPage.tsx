@@ -1,12 +1,39 @@
 // apps/backoffice/src/pages/purchasing/PurchaseOrderDetailPage.tsx
 //
-// Session 13 — Phase 3.A — Detail view: header, lines, GRN history,
-// Receive + Cancel actions, Print button.
+// Session 14 / Phase 5.A — rewrite of the PO detail page to match the
+// `PO page.jpg` + `13b-incoming-po-detail.jpg` reference family.
+//
+// Composition:
+//   - Breadcrumbs (Purchasing › Purchase Orders › PO-####).
+//   - Header row: Back, PO number + status pill, action buttons
+//     (Confirm/Receive, Cancel, Edit, Print).
+//   - Two-column layout:
+//       Left  — Order Information card (supplier, dates) + Ordered Items table
+//               + Goods Receipt Notes table + Notes.
+//       Right — Financial Summary card + Payment Status card.
+//
+// Receive + Cancel + Print are unchanged behaviourally — the existing dialogs
+// and POPrintView component still drive those flows. The rewrite is
+// presentation-only.
 
 import { useState, type JSX } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Printer, Truck, XCircle } from 'lucide-react';
-import { Button } from '@breakery/ui';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import {
+  ArrowLeft,
+  CheckCircle2,
+  Pencil,
+  Printer,
+  Truck,
+  XCircle,
+} from 'lucide-react';
+import {
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  SectionLabel,
+} from '@breakery/ui';
+import { formatIdr } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import { usePurchaseOrderDetail } from '@/features/purchasing/hooks/usePurchaseOrderDetail.js';
 import { useReceivePurchaseOrder } from '@/features/purchasing/hooks/useReceivePurchaseOrder.js';
@@ -18,7 +45,11 @@ import { POPrintView } from '@/features/purchasing/components/POPrintView.js';
 import { useSections } from '@/features/inventory-transfers/hooks/useSections.js';
 import type { POStatus } from '@/features/purchasing/hooks/usePurchaseOrdersList.js';
 
-function fmt(amount: number | string | null): string {
+function fmtIdr(amount: number | string | null): string {
+  return `Rp ${formatIdr(Number(amount ?? 0))}`;
+}
+
+function fmtNum(amount: number | string | null): string {
   return Number(amount ?? 0).toLocaleString('id-ID', { maximumFractionDigits: 2 });
 }
 
@@ -30,10 +61,10 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
   const canReceive    = hasPermission('purchasing.po.receive' as never);
   const canCancel     = hasPermission('purchasing.po.cancel' as never);
 
-  const detail        = usePurchaseOrderDetail(id);
-  const sections      = useSections();
-  const receive       = useReceivePurchaseOrder();
-  const cancel        = useCancelPurchaseOrder();
+  const detail   = usePurchaseOrderDetail(id);
+  const sections = useSections();
+  const receive  = useReceivePurchaseOrder();
+  const cancel   = useCancelPurchaseOrder();
 
   const [showReceive, setShowReceive] = useState(false);
   const [showCancel,  setShowCancel]  = useState(false);
@@ -47,7 +78,20 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
   if (detail.isLoading) return <div className="text-text-secondary">Loading…</div>;
   if (detail.isError)    return <div className="text-danger">Failed to load purchase order.</div>;
   const po = detail.data;
-  if (po === null || po === undefined) return <div className="text-text-secondary">Purchase order not found.</div>;
+  if (po === null || po === undefined) {
+    return (
+      <div className="space-y-4">
+        <Link to="/backoffice/purchasing/purchase-orders" className="inline-flex items-center gap-1 text-sm text-text-secondary hover:text-text-primary">
+          <ArrowLeft className="h-4 w-4" aria-hidden /> Back to purchase orders
+        </Link>
+        <EmptyState
+          title="Purchase order not found"
+          description="It may have been deleted, or you do not have access."
+          size="md"
+        />
+      </div>
+    );
+  }
 
   const status   = po.status as POStatus;
   const canRcv   = canReceive && (status === 'pending' || status === 'partial');
@@ -88,7 +132,7 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
           <Button type="button" variant="ghost" onClick={() => setShowPrint(false)}>
             <ArrowLeft className="h-4 w-4" aria-hidden /> Back
           </Button>
-          <Button type="button" variant="primary" onClick={() => window.print()}>
+          <Button type="button" variant="gold" onClick={() => window.print()}>
             <Printer className="h-4 w-4" aria-hidden /> Print
           </Button>
         </div>
@@ -97,25 +141,37 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
     );
   }
 
+  const isUnpaid =
+    po.payment_terms === 'credit' &&
+    (po.received_date === null || status === 'pending' || status === 'partial');
+
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
+      <nav className="flex items-center gap-2 text-xs text-text-secondary" aria-label="Breadcrumb">
+        <Link to="/backoffice/purchasing" className="hover:text-text-primary">Purchasing</Link>
+        <span aria-hidden>›</span>
+        <Link to="/backoffice/purchasing/purchase-orders" className="hover:text-text-primary">Purchase Orders</Link>
+        <span aria-hidden>›</span>
+        <span className="text-text-primary font-mono">{po.po_number}</span>
+      </nav>
+
+      <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <Button type="button" variant="ghost" size="sm" onClick={() => navigate('/backoffice/purchasing/purchase-orders')}>
             <ArrowLeft className="h-4 w-4" aria-hidden /> Back
           </Button>
-          <h1 className="font-serif text-3xl mt-2">{po.po_number}</h1>
-          <div className="flex items-center gap-3 mt-1">
+          <div className="mt-2 flex items-center gap-3">
+            <h1 className="font-display text-3xl text-text-primary tabular-nums">{po.po_number}</h1>
             <POStatusBadge status={status} />
-            <span className="text-text-secondary text-sm">{po.suppliers?.name ?? '—'}</span>
           </div>
+          <p className="mt-1 text-sm text-text-secondary">{po.suppliers?.name ?? '—'}</p>
         </div>
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex flex-wrap gap-2">
           <Button type="button" variant="ghost" onClick={() => setShowPrint(true)}>
             <Printer className="h-4 w-4" aria-hidden /> Print
           </Button>
           {canRcv && (
-            <Button type="button" variant="primary" onClick={() => setShowReceive(true)}>
+            <Button type="button" variant="gold" onClick={() => setShowReceive(true)}>
               <Truck className="h-4 w-4" aria-hidden /> Receive
             </Button>
           )}
@@ -124,93 +180,171 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
               <XCircle className="h-4 w-4" aria-hidden /> Cancel
             </Button>
           )}
+          {/* Edit is intentionally inert today — no update_purchase_order_v* RPC exists. */}
+          <Button type="button" variant="ghost" disabled aria-label="Edit (not yet implemented)">
+            <Pencil className="h-4 w-4" aria-hidden /> Edit
+          </Button>
         </div>
-      </div>
+      </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-3 text-sm">
-        <Stat label="Subtotal"     value={fmt(po.subtotal)} />
-        <Stat label="VAT"          value={fmt(po.vat_amount)} />
-        <Stat label="Total"        value={fmt(po.total_amount)} emphasis />
-        <Stat label="Order date"   value={po.order_date ?? '—'} />
-        <Stat label="Expected"     value={po.expected_date ?? '—'} />
-        <Stat label="Received"     value={po.received_date ?? '—'} />
-        <Stat label="Payment terms" value={po.payment_terms === 'cash' ? 'Cash' : 'Credit'} />
-        {po.cancel_reason !== null && (
-          <Stat label="Cancel reason" value={po.cancel_reason} />
-        )}
-      </div>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_1fr]">
+        <div className="space-y-6">
+          <Card variant="default" padding="md" className="space-y-4">
+            <SectionLabel as="h2" size="sm" className="text-gold">Order Information</SectionLabel>
+            <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field label="Supplier"          value={po.suppliers?.name ?? '—'} mono />
+              <Field label="Order date"        value={po.order_date ?? '—'} />
+              <Field label="Expected delivery" value={po.expected_date ?? '—'} />
+              <Field label="Actual delivery"   value={po.received_date ?? '—'} />
+              <Field label="Payment terms"     value={po.payment_terms === 'cash' ? 'Cash on delivery' : 'Credit'} />
+              {po.cancel_reason !== null && po.cancel_reason !== '' && (
+                <Field label="Cancel reason"   value={po.cancel_reason} />
+              )}
+            </dl>
+          </Card>
 
-      <section className="space-y-2">
-        <h2 className="font-serif text-xl">Line items</h2>
-        <div className="overflow-x-auto border border-border-subtle rounded-md">
-          <table className="w-full text-sm">
-            <thead className="bg-bg-overlay text-text-secondary text-xs uppercase tracking-widest">
-              <tr>
-                <th className="text-left px-3 py-2">Product</th>
-                <th className="text-right px-3 py-2 w-24">Ordered</th>
-                <th className="text-right px-3 py-2 w-24">Received</th>
-                <th className="text-left px-3 py-2 w-20">Unit</th>
-                <th className="text-right px-3 py-2 w-24">Unit cost</th>
-                <th className="text-right px-3 py-2 w-32">Subtotal</th>
-              </tr>
-            </thead>
-            <tbody>
-              {po.purchase_order_items.map((it) => (
-                <tr key={it.id} className="border-t border-border-subtle">
-                  <td className="px-3 py-2">
-                    {it.products?.name ?? '?'}{' '}
-                    <span className="text-text-secondary text-xs">({it.products?.sku ?? '—'})</span>
-                  </td>
-                  <td className="px-3 py-2 text-right tabular-nums">{fmt(it.quantity)}</td>
-                  <td className="px-3 py-2 text-right tabular-nums">{fmt(it.received_quantity)}</td>
-                  <td className="px-3 py-2">{it.unit}</td>
-                  <td className="px-3 py-2 text-right tabular-nums">{fmt(it.unit_cost)}</td>
-                  <td className="px-3 py-2 text-right tabular-nums">{fmt(it.subtotal)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section className="space-y-2">
-        <h2 className="font-serif text-xl">Goods receipt notes</h2>
-        {po.goods_receipt_notes.length === 0 ? (
-          <p className="text-text-secondary text-sm">No receipts recorded yet.</p>
-        ) : (
-          <div className="overflow-x-auto border border-border-subtle rounded-md">
-            <table className="w-full text-sm">
-              <thead className="bg-bg-overlay text-text-secondary text-xs uppercase tracking-widest">
-                <tr>
-                  <th className="text-left px-3 py-2">GRN</th>
-                  <th className="text-left px-3 py-2 w-32">Date</th>
-                  <th className="text-right px-3 py-2 w-32">Subtotal</th>
-                  <th className="text-right px-3 py-2 w-32">VAT</th>
-                  <th className="text-right px-3 py-2 w-32">Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {po.goods_receipt_notes.map((g) => (
-                  <tr key={g.id} className="border-t border-border-subtle">
-                    <td className="px-3 py-2 font-mono text-xs">{g.grn_number}</td>
-                    <td className="px-3 py-2">{g.received_date}</td>
-                    <td className="px-3 py-2 text-right tabular-nums">{fmt(g.subtotal)}</td>
-                    <td className="px-3 py-2 text-right tabular-nums">{fmt(g.vat_amount)}</td>
-                    <td className="px-3 py-2 text-right tabular-nums">{fmt(g.total)}</td>
+          <Card variant="default" padding="md" className="space-y-3">
+            <SectionLabel as="h2" size="sm" className="text-gold">Ordered Items</SectionLabel>
+            <div className="overflow-x-auto rounded-md border border-border-subtle">
+              <table className="w-full text-sm">
+                <thead className="bg-bg-base/40">
+                  <tr>
+                    <th className="px-3 py-2 text-left">
+                      <SectionLabel as="span" size="xs">Product</SectionLabel>
+                    </th>
+                    <th className="px-3 py-2 text-right w-24">
+                      <SectionLabel as="span" size="xs">Quantity</SectionLabel>
+                    </th>
+                    <th className="px-3 py-2 text-right w-24">
+                      <SectionLabel as="span" size="xs">Received</SectionLabel>
+                    </th>
+                    <th className="px-3 py-2 text-left w-20">
+                      <SectionLabel as="span" size="xs">Unit</SectionLabel>
+                    </th>
+                    <th className="px-3 py-2 text-right w-28">
+                      <SectionLabel as="span" size="xs">Unit price</SectionLabel>
+                    </th>
+                    <th className="px-3 py-2 text-right w-32">
+                      <SectionLabel as="span" size="xs">Subtotal</SectionLabel>
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+                </thead>
+                <tbody>
+                  {po.purchase_order_items.map((it) => (
+                    <tr key={it.id} className="border-t border-border-subtle">
+                      <td className="px-3 py-2">
+                        <span className="text-text-primary">{it.products?.name ?? '?'}</span>{' '}
+                        <span className="text-text-secondary text-xs">({it.products?.sku ?? '—'})</span>
+                      </td>
+                      <td className="px-3 py-2 text-right tabular-nums">{fmtNum(it.quantity)}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{fmtNum(it.received_quantity)}</td>
+                      <td className="px-3 py-2 text-text-secondary">{it.unit}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{fmtIdr(it.unit_cost)}</td>
+                      <td className="px-3 py-2 text-right tabular-nums font-medium">{fmtIdr(it.subtotal)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
 
-      {po.notes !== null && po.notes !== '' && (
-        <section className="space-y-1">
-          <h2 className="font-serif text-xl">Notes</h2>
-          <p className="text-sm text-text-secondary">{po.notes}</p>
-        </section>
-      )}
+          <Card variant="default" padding="md" className="space-y-3">
+            <SectionLabel as="h2" size="sm" className="text-gold">Goods Receipt Notes</SectionLabel>
+            {po.goods_receipt_notes.length === 0 ? (
+              <EmptyState
+                title="No receipts recorded yet"
+                description="The first GRN will appear here once goods have been received."
+                size="sm"
+              />
+            ) : (
+              <div className="overflow-x-auto rounded-md border border-border-subtle">
+                <table className="w-full text-sm">
+                  <thead className="bg-bg-base/40">
+                    <tr>
+                      <th className="px-3 py-2 text-left">
+                        <SectionLabel as="span" size="xs">GRN</SectionLabel>
+                      </th>
+                      <th className="px-3 py-2 text-left w-32">
+                        <SectionLabel as="span" size="xs">Date</SectionLabel>
+                      </th>
+                      <th className="px-3 py-2 text-right w-32">
+                        <SectionLabel as="span" size="xs">Subtotal</SectionLabel>
+                      </th>
+                      <th className="px-3 py-2 text-right w-32">
+                        <SectionLabel as="span" size="xs">VAT</SectionLabel>
+                      </th>
+                      <th className="px-3 py-2 text-right w-32">
+                        <SectionLabel as="span" size="xs">Total</SectionLabel>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {po.goods_receipt_notes.map((g) => (
+                      <tr key={g.id} className="border-t border-border-subtle">
+                        <td className="px-3 py-2 font-mono text-xs">{g.grn_number}</td>
+                        <td className="px-3 py-2 text-text-secondary tabular-nums">{g.received_date}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{fmtIdr(g.subtotal)}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{fmtIdr(g.vat_amount)}</td>
+                        <td className="px-3 py-2 text-right tabular-nums font-medium">{fmtIdr(g.total)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Card>
+
+          {po.notes !== null && po.notes !== '' && (
+            <Card variant="default" padding="md" className="space-y-2">
+              <SectionLabel as="h2" size="sm" className="text-gold">Notes</SectionLabel>
+              <p className="text-sm text-text-secondary whitespace-pre-wrap">{po.notes}</p>
+            </Card>
+          )}
+        </div>
+
+        <div className="space-y-6">
+          <Card variant="default" padding="md" className="space-y-4">
+            <SectionLabel as="h2" size="sm" className="text-gold">Financial Summary</SectionLabel>
+            <dl className="space-y-2 text-sm">
+              <SummaryRow label="Subtotal" value={fmtIdr(po.subtotal)} />
+              <SummaryRow label="Tax"      value={fmtIdr(po.vat_amount)} />
+            </dl>
+            <div className="flex items-baseline justify-between border-t border-border-subtle pt-3">
+              <SectionLabel as="span" size="sm">Total</SectionLabel>
+              <span className="font-mono text-xl tabular-nums text-gold">{fmtIdr(po.total_amount)}</span>
+            </div>
+          </Card>
+
+          <Card variant="default" padding="md" className="space-y-3">
+            <SectionLabel as="h2" size="sm" className="text-gold">Payment Status</SectionLabel>
+            {isUnpaid ? (
+              <Badge variant="outline" className="border-danger/40 text-danger">UNPAID</Badge>
+            ) : (
+              <Badge variant="outline" className="border-success/40 text-success">PAID</Badge>
+            )}
+            <p className="text-xs text-text-muted">
+              {isUnpaid
+                ? 'Confirm the order is received before recording supplier payment.'
+                : po.payment_terms === 'cash'
+                  ? 'Cash on delivery — settled at receipt.'
+                  : 'Credit terms — payment recorded against goods receipt.'}
+            </p>
+          </Card>
+
+          <Card variant="default" padding="md" className="space-y-2">
+            <SectionLabel as="h2" size="sm" className="text-gold">Status Timeline</SectionLabel>
+            <ul className="space-y-1.5 text-xs">
+              <TimelineItem reached={true} label="Drafted" date={po.created_at?.slice(0, 10) ?? '—'} />
+              <TimelineItem reached={status !== 'draft'} label="Confirmed / Sent" date={po.order_date ?? '—'} />
+              <TimelineItem reached={status === 'partial' || status === 'received'} label="Receiving" date={po.received_date ?? po.expected_date ?? '—'} />
+              <TimelineItem reached={status === 'received'} label="Received" date={po.received_date ?? '—'} />
+              {status === 'cancelled' && (
+                <TimelineItem reached={true} cancelled label="Cancelled" date={po.cancelled_at?.slice(0, 10) ?? '—'} />
+              )}
+            </ul>
+          </Card>
+        </div>
+      </div>
 
       {showReceive && (
         <ReceiveDialog
@@ -235,13 +369,47 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
   );
 }
 
-function Stat({ label, value, emphasis = false }: { label: string; value: string; emphasis?: boolean }): JSX.Element {
+function Field({ label, value, mono = false }: { label: string; value: string; mono?: boolean }): JSX.Element {
   return (
-    <div className="rounded-md border border-border-subtle bg-bg-elevated px-3 py-2">
-      <div className="text-xs uppercase tracking-widest text-text-secondary">{label}</div>
-      <div className={`mt-0.5 ${emphasis ? 'text-lg font-semibold' : 'text-sm'} tabular-nums text-text-primary`}>
-        {value}
-      </div>
+    <div className="rounded-md bg-bg-base/40 px-3 py-2">
+      <SectionLabel as="div" size="xs">{label}</SectionLabel>
+      <div className={`mt-0.5 text-sm text-text-primary ${mono ? 'font-mono' : ''}`}>{value}</div>
     </div>
+  );
+}
+
+function SummaryRow({ label, value }: { label: string; value: string }): JSX.Element {
+  return (
+    <div className="flex items-center justify-between text-text-secondary">
+      <span>{label}</span>
+      <span className="tabular-nums text-text-primary">{value}</span>
+    </div>
+  );
+}
+
+function TimelineItem({
+  reached,
+  cancelled = false,
+  label,
+  date,
+}: {
+  reached: boolean;
+  cancelled?: boolean;
+  label: string;
+  date: string;
+}): JSX.Element {
+  return (
+    <li className="flex items-center gap-2">
+      {cancelled ? (
+        <XCircle className="h-3.5 w-3.5 text-danger" aria-hidden />
+      ) : (
+        <CheckCircle2
+          className={`h-3.5 w-3.5 ${reached ? 'text-success' : 'text-text-muted'}`}
+          aria-hidden
+        />
+      )}
+      <span className={reached ? 'text-text-primary' : 'text-text-muted'}>{label}</span>
+      <span className="ml-auto text-text-muted tabular-nums">{date}</span>
+    </li>
   );
 }

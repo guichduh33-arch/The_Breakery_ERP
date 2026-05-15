@@ -1,14 +1,15 @@
 // apps/backoffice/src/pages/TransfersList.tsx
 //
-// Session 12 — Phase 3 — list page for internal stock transfers between
-// sections. Permission-gated upstream on `inventory.read`.
+// Session 14 / Phase 6.A — list page for internal stock transfers between
+// sections. Permission-gated upstream on `inventory.read`. KPI strip
+// (Total / Drafts / Completed / In transit) matches `14-transfers-list.jpg`.
 //
 // Spec ref: docs/reference/04-modules/06-inventory-stock.md §III (Phase 3 UI)
 
 import { useMemo, useState, type JSX } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, ArrowLeftRight, FileEdit, CheckCircle2, Truck } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { Button } from '@breakery/ui';
+import { Button, KpiTile, SectionLabel } from '@breakery/ui';
 import type { TransferStatus } from '@breakery/domain';
 import { useAuthStore } from '@/stores/authStore.js';
 import {
@@ -52,6 +53,20 @@ export default function TransfersListPage(): JSX.Element {
   const list     = useInternalTransfers(filters);
   const sections = useSections();
 
+  // KPIs derived from current page rows (cheap; no extra round-trip).
+  const rows = list.data ?? [];
+  const kpis = useMemo(() => {
+    let drafts = 0;
+    let completed = 0;
+    let inTransit = 0;
+    for (const r of rows) {
+      if (r.status === 'draft')     drafts++;
+      if (r.status === 'received')  completed++;
+      if (r.status === 'in_transit' || r.status === 'pending') inTransit++;
+    }
+    return { drafts, completed, inTransit };
+  }, [rows]);
+
   function resetPage(): void { setPage(0); }
 
   return (
@@ -73,50 +88,61 @@ export default function TransfersListPage(): JSX.Element {
         )}
       </div>
 
+      {/* KPI strip — matches `14-transfers-list.jpg` */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <KpiTile label="Total"     value={rows.length}     icon={ArrowLeftRight} footer="Rows on this page" />
+        <KpiTile label="Drafts"    value={kpis.drafts}     icon={FileEdit}       footer="Awaiting dispatch" />
+        <KpiTile label="In transit" value={kpis.inTransit} icon={Truck}          footer="Pending or moving" />
+        <KpiTile label="Completed" value={kpis.completed}  icon={CheckCircle2}   footer="Received transfers" />
+      </div>
+
       {/* Filters */}
-      <div className="flex flex-wrap gap-3 items-end bg-bg-elevated border border-border-subtle rounded-lg p-4">
-        <div className="space-y-1">
-          <label htmlFor="tr-status" className="text-xs uppercase tracking-widest text-text-secondary">Status</label>
-          <select
-            id="tr-status"
-            value={status}
-            onChange={(e) => { setStatus(e.target.value as '' | TransferStatus); resetPage(); }}
-            className="h-9 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary min-w-[10rem]"
-          >
-            {STATUS_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
-        </div>
-        <div className="space-y-1">
-          <label htmlFor="tr-from" className="text-xs uppercase tracking-widest text-text-secondary">From</label>
-          <select
-            id="tr-from"
-            value={fromSectionId}
-            onChange={(e) => { setFromSectionId(e.target.value); resetPage(); }}
-            className="h-9 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary min-w-[12rem]"
-            disabled={sections.isLoading}
-          >
-            <option value="">All sections</option>
-            {sections.data?.map((s) => (
-              <option key={s.id} value={s.id}>{s.name} ({s.code})</option>
-            ))}
-          </select>
-        </div>
-        <div className="space-y-1">
-          <label htmlFor="tr-to" className="text-xs uppercase tracking-widest text-text-secondary">To</label>
-          <select
-            id="tr-to"
-            value={toSectionId}
-            onChange={(e) => { setToSectionId(e.target.value); resetPage(); }}
-            className="h-9 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary min-w-[12rem]"
-            disabled={sections.isLoading}
-          >
-            <option value="">All sections</option>
-            {sections.data?.map((s) => (
-              <option key={s.id} value={s.id}>{s.name} ({s.code})</option>
-            ))}
-          </select>
+      <div className="space-y-2">
+        <SectionLabel as="h2">Filters</SectionLabel>
+        <div className="flex flex-wrap gap-3 items-end bg-bg-elevated border border-border-subtle rounded-lg p-4">
+          <div className="space-y-1">
+            <label htmlFor="tr-status" className="text-xs uppercase tracking-widest text-text-secondary">Status</label>
+            <select
+              id="tr-status"
+              value={status}
+              onChange={(e) => { setStatus(e.target.value as '' | TransferStatus); resetPage(); }}
+              className="h-9 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary min-w-[10rem]"
+            >
+              {STATUS_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-1">
+            <label htmlFor="tr-from" className="text-xs uppercase tracking-widest text-text-secondary">From</label>
+            <select
+              id="tr-from"
+              value={fromSectionId}
+              onChange={(e) => { setFromSectionId(e.target.value); resetPage(); }}
+              className="h-9 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary min-w-[12rem]"
+              disabled={sections.isLoading}
+            >
+              <option value="">All sections</option>
+              {sections.data?.map((s) => (
+                <option key={s.id} value={s.id}>{s.name} ({s.code})</option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-1">
+            <label htmlFor="tr-to" className="text-xs uppercase tracking-widest text-text-secondary">To</label>
+            <select
+              id="tr-to"
+              value={toSectionId}
+              onChange={(e) => { setToSectionId(e.target.value); resetPage(); }}
+              className="h-9 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary min-w-[12rem]"
+              disabled={sections.isLoading}
+            >
+              <option value="">All sections</option>
+              {sections.data?.map((s) => (
+                <option key={s.id} value={s.id}>{s.name} ({s.code})</option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 

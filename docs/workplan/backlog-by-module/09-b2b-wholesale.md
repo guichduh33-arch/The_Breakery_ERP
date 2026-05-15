@@ -15,6 +15,7 @@
 ## Tâches
 
 ### TASK-09-001 — AR aging report PDF + planification email mensuelle [P1] [TODO]
+**Status note (2026-05-14)** : Not delivered in Session 13. No `view_ar_aging`, no `B2BAgingSummary.tsx` / `B2BPaymentsAgingTab.tsx` in `apps/backoffice/src/features/`, no `b2b-aging-monthly` EF in `supabase/functions/`, and no `aging_email_log` migration in `20260517*.sql`. Phase 3.C delivered B2B field plumbing only (TASK-09-002 credit-limit RPC); aging report deferred.
 **Contexte** : `view_ar_aging` existe et `B2BAgingSummary` l'affiche en UI, mais aucune PDF/CSV propre, ni envoi mensuel auto. Audit `07-product-backlog-audit.md` Gap 6 ("Cash flow statement") et Sally `05-uiux-design-audit.md` mentionnent l'absence d'export PDF cohérent. Le contrôle de gestion réclame un PDF mensuel envoyé en début de mois.
 **Critère d'acceptation** :
 - [ ] Bouton "Export PDF" dans `B2BPaymentsAgingTab` produit un PDF avec en-tête + colonnes buckets + total par client.
@@ -27,7 +28,8 @@
 **Risques** : signed URLs PDF expirent 1h (cf. pitfall module 09) → stocker dans Storage `aging-reports/` avec re-signature au moment du clic dans l'email.
 **Notes** : `send-test-email` existe déjà côté Edge Functions (cf. CLAUDE.md liste 16 EF) — l'utiliser plutôt qu'en créer une nouvelle dédiée mail.
 
-### TASK-09-002 — Credit limit enforcement + override manager [P1] [TODO]
+### TASK-09-002 — Credit limit enforcement + override manager [P1] [DONE]
+**Status note (2026-05-14)** : Credit-limit RPC delivered Session 13 Phase 3.C; manager-PIN override not built. V3 evidence: `supabase/migrations/20260517000130_extend_customers_b2b_fields.sql` adds `b2b_credit_limit` + `b2b_current_balance`; `supabase/migrations/20260517000131_create_validate_b2b_credit_limit_rpc.sql` exposes `validate_b2b_credit_limit_v1(p_customer_id, p_order_amount) RETURNS jsonb` (returns `{allowed, current_balance, credit_limit, available, would_exceed_by}`); UI surface `apps/backoffice/src/features/customers/components/B2BFieldsSection.tsx`. The manager-PIN override branch + `credit_status='suspended'` block are residual follow-ups (still TODO) but the core enforcement is in place. Commit `bdf21aa` (squashed PR #13).
 **Contexte** : `customers.credit_limit` + `credit_status='suspended'` existent côté schéma (cf. module 08 + pitfall 09) mais le hook `useB2BOrderForm` ne bloque PAS la création quand `credit_balance + new_order_total > credit_limit`. Audit `07-product-backlog-audit.md` flag "B2B credit module needs hardening".
 **Critère d'acceptation** :
 - [ ] `useB2BOrderForm.validateCreditLimit()` calcule `projected_balance = current + total - prepayment` et bloque submit si > `credit_limit` (sauf override).
@@ -41,6 +43,7 @@
 **Notes** : reuse pattern PIN du module 12 (cash variance > 50k IDR validation).
 
 ### TASK-09-003 — Bulk invoice generation (≥ 30 invoices en une commande) [P2] [TODO]
+**Status note (2026-05-14)** : Not delivered in Session 13. No `generate-invoice` or `b2b-bulk-invoice` EF in `supabase/functions/` (only 11 EFs total, none invoice-related), no `bulk_invoice_jobs` migration, no `B2BBulkInvoicePage.tsx` in `apps/backoffice/src/pages/`. Pre-requisite single-invoice generator must land first. Per D2, B2B invoicing pivots from `customer_invoices` table to `orders.invoice_number` + `view_b2b_invoices`.
 **Contexte** : `generate-invoice` Edge Function génère 1 invoice à la fois (audit module 09 Edge Functions). En fin de mois, comptable doit cliquer 30 fois. Pas de bulk action.
 **Critère d'acceptation** :
 - [ ] Page `/b2b/invoices/bulk` : liste filtrée des `b2b_orders` non-invoiced + multi-select.
@@ -55,6 +58,7 @@
 **Notes** : référence `claude-proxy` pour pattern long-running Edge Functions (CLAUDE.md liste).
 
 ### TASK-09-004 — Invoice template multi-langue (EN par défaut + ID future) [P2] [TODO]
+**Status note (2026-05-14)** : Not delivered in Session 13. No `invoice_template_config` table, no `customers.invoice_language` column in `20260517*.sql`, no `generate-invoice` EF. Phase 5.C delivered `email_receipt_templates` (migration `20260517000192`) but not B2B invoice templating. Faktur Pajak (I1 backlog) remains a Wave 7 item.
 **Contexte** : CLAUDE.md indique "i18n suspended, English only" mais le module B2B vend à des hôtels indonésiens. Audit produit (07) note "I1 Faktur Pajak" arrivera → besoin invoice ID. Préparer le template SANS activer i18next.
 **Critère d'acceptation** :
 - [ ] `invoice_template_config` table (JSONB par lang_code : `en`, `id`) avec sections `header`, `footer`, `terms`, `tax_label`.
@@ -69,6 +73,7 @@
 **Notes** : ne PAS importer i18next ; juste un système de strings paramétrables. Faktur Pajak (I1 backlog) plus tard utilisera ce socle.
 
 ### TASK-09-005 — Historique des prix négociés (b2b_price_lists versioning) [P2] [TODO]
+**Status note (2026-05-14)** : Not delivered in Session 13. No `b2b_price_lists` / `b2b_price_list_items` table in V3 (the V2 tables referenced never migrated — see `05-products-categories.md` notes line 130 "tables existent mais pas utilisées en UI") and no history trigger / `B2BPriceHistoryDrawer`. B2B pricing versioning deferred until the underlying price-list tables are introduced.
 **Contexte** : `b2b_price_lists` + `b2b_price_list_items` existent (cf. module 09 tables) mais sans versioning. Modifier un prix change rétroactivement le tarif appliqué aux nouvelles commandes — pas d'audit trail. Sales rep ne peut pas dire "quel était le prix il y a 3 mois ?".
 **Critère d'acceptation** :
 - [ ] Trigger `audit_b2b_price_list_items_changes` insère un snapshot dans `b2b_price_list_items_history` (id, price_list_id, product_id, old_price, new_price, changed_at, changed_by) à tout UPDATE/DELETE.
@@ -82,6 +87,7 @@
 **Notes** : reuse pattern audit_logs existant pour la structure.
 
 ### TASK-09-006 — B2B dashboard KPI overview [P2] [TODO]
+**Status note (2026-05-14)** : Not delivered in Session 13. No `B2BPage.tsx` / `B2BStats.tsx` / `view_b2b_dso` in V3 (`apps/backoffice/src/pages/` and `apps/backoffice/src/features/` contain no `b2b` directory). Phase 3.C scope was DB plumbing + B2BFieldsSection only; full B2B feature surface deferred.
 **Contexte** : Audit `ux-gap-analysis-2026-05-01.md` (B2B Wholesale section) signale **"V2 B2B dashboard KPI overview MANQUANT"** vs V3 epic-043/044/045. V2 a `B2BStats.tsx` (KPI cards) mais incomplet : pas d'overdue split, pas de top clients chart, pas de DSO.
 **Critère d'acceptation** :
 - [ ] `B2BStats` ajoute KPI cards : DSO (days sales outstanding), Outstanding < 30j vs > 30j, Top 5 clients par CA 30j, Conversion rate (orders confirmed / drafts).
@@ -94,7 +100,8 @@
 **Risques** : KPI calc côté client lent sur gros volumes — privilégier RPCs.
 **Notes** : `view_b2b_performance` existe déjà (cf. module 09) — réutiliser.
 
-### TASK-09-007 — B2B self-service portal (clients) [P3] [TODO]
+### TASK-09-007 — B2B self-service portal (clients) [P3] [BLOCKED]
+**Status note (2026-05-14)** : Explicitly deferred to Session 17 per INDEX line 1085 "09-007..017 B2B portal (Session 17)" and line 1209 "B2B customer portal (self-service) | 17". No `b2b-portal/` route or `b2b_customer_users` table in V3.
 **Contexte** : Backlog produit (audit 07) note "Customer notifications via WhatsApp" mais aussi besoin futur d'un portail client B2B (consulter solde, télécharger invoices, voir historique). Pas urgent mais pose des fondations.
 **Critère d'acceptation** :
 - [ ] Auth séparée pour clients B2B (table `b2b_customer_users` liée à `customers`, magic link Supabase).
@@ -107,7 +114,8 @@
 **Risques** : surface d'attaque publique → audit `/security-review` obligatoire avant déploiement.
 **Notes** : à confirmer avec le métier si le besoin existe vraiment (Lombok, ~20 hôtels clients seulement). Peut rester P3 longtemps.
 
-### TASK-09-008 — Statement of account automatique (mensuel) [P2] [TODO]
+### TASK-09-008 — Statement of account automatique (mensuel) [P2] [BLOCKED]
+**Status note (2026-05-14)** : Deferred per INDEX line 1085 ("09-007..017 B2B portal (Session 17)") — the entire B2B feature surface beyond Phase 3.C plumbing is Session 17 scope. No `get_customer_statement` RPC, no `b2b-statement-monthly` EF, no `B2BStatementModal` in V3. Blocked on TASK-09-001 (aging email pattern) per spec.
 **Contexte** : Différent de l'aging (TASK-09-001) — un *statement* listant TOUTES les transactions du mois (commandes, paiements, ajustements) par client. Demande comptable récurrente. Aujourd'hui : extraction manuelle Excel.
 **Critère d'acceptation** :
 - [ ] RPC `get_customer_statement(customer_id, start_date, end_date)` retourne timeline (orders, payments, refunds, credit notes) avec running balance.
@@ -127,7 +135,8 @@
 > Items issus de `docs/objectif travail/B2B.md` §16 — vision produit du module au-delà du tech-debt existant.
 > Ajoutés 2026-05-13 lors de la cascade docs (session 13). Le portal client B2B est déjà couvert par TASK-09-007.
 
-### TASK-09-009 — Auto-approval workflow [P2] [TODO]
+### TASK-09-009 — Auto-approval workflow [P2] [BLOCKED]
+**Status note (2026-05-14)** : Deferred per INDEX line 1085 "09-007..017 B2B portal (Session 17)". No `b2b_approval_rules` table, no approval workflow state in V3 — Phase 3.C only delivered field plumbing + credit-limit RPC.
 **Contexte** : aujourd'hui les seuils d'approbation (montant > X, hors plafond crédit) sont contrôlés en code (hardcode). Pas de configuration métier, pas de visualisation, pas d'historique des approbations.
 **Bénéfice attendu** : workflow visuel où le gérant définit les seuils, et chaque commande passe par les étapes d'approbation appropriées.
 **Critère d'acceptation** :
@@ -140,7 +149,8 @@
 **Risques** : règles incompréhensibles si trop souples — V1 limiter aux 3 triggers principaux (montant, plafond crédit, marge négative).
 **Notes** : aujourd'hui implicite dans `B2BOrderForm` validation — refactor nécessaire.
 
-### TASK-09-010 — Détection self-approval (anti-fraude) [P2] [TODO]
+### TASK-09-010 — Détection self-approval (anti-fraude) [P2] [BLOCKED]
+**Status note (2026-05-14)** : Deferred per INDEX line 1085 "09-007..017 B2B portal (Session 17)". Depends on TASK-09-009 (approval workflow); blocked transitively. No constraint or report in V3.
 **Contexte** : un commercial peut créer ET approuver sa propre commande (signal de fraude classique). Le report `b2b_self_approval_risk` existe mais c'est curatif, pas préventif.
 **Bénéfice attendu** : empêcher la création + approbation par le même utilisateur, avec exception manager (PIN forçant explicitement le scénario).
 **Critère d'acceptation** :
@@ -153,7 +163,8 @@
 **Risques** : équipe trop petite — un seul commercial peut TOUT bloquer en cas d'absence manager → procédure de délégation.
 **Notes** : pattern inspiré des contrôles SAP / Oracle séparation des tâches.
 
-### TASK-09-011 — Commandes récurrentes / abonnements [P3] [TODO]
+### TASK-09-011 — Commandes récurrentes / abonnements [P3] [BLOCKED]
+**Status note (2026-05-14)** : Deferred per INDEX line 1085 "09-007..017 B2B portal (Session 17)". No `b2b_recurring_orders` table or cron in V3.
 **Contexte** : un hôtel commande 200 baguettes chaque lundi. Aujourd'hui, le commercial doit ressaisir ou cloner manuellement chaque semaine. Risque d'oubli.
 **Bénéfice attendu** : définir une commande type qui se duplique automatiquement selon une cadence définie.
 **Critère d'acceptation** :
@@ -166,7 +177,8 @@
 **Risques** : changement de prix entre deux récurrences → V1 prend le prix client actuel, pas le prix figé.
 **Notes** : viser pattern Shopify "Subscriptions" V1 simple.
 
-### TASK-09-012 — Relances automatiques [P3] [TODO]
+### TASK-09-012 — Relances automatiques [P3] [BLOCKED]
+**Status note (2026-05-14)** : Deferred per INDEX line 1085 "09-007..017 B2B portal (Session 17)". Phase 5.B notification pipeline (`notification-dispatch` EF, `notification_outbox`) provides the email channel substrate when this lands, but no B2B reminder rules / cron in V3 today.
 **Contexte** : la page Outstanding montre les retards mais l'envoi de relance reste manuel. Le gérant oublie ; le client paie tard.
 **Bénéfice attendu** : envoi automatique d'un rappel à J-3 de l'échéance, J+0, J+7, J+15 — paramétrable par client ou globalement.
 **Critère d'acceptation** :
@@ -180,7 +192,8 @@
 **Risques** : spam / dégradation relation client → cap max 4 relances par facture, désactivation auto si paiement reçu.
 **Notes** : V1 email seul ; V2 WhatsApp.
 
-### TASK-09-013 — Devis (quote) avant commande [P3] [TODO]
+### TASK-09-013 — Devis (quote) avant commande [P3] [BLOCKED]
+**Status note (2026-05-14)** : Deferred per INDEX line 1085 "09-007..017 B2B portal (Session 17)". No `quote` status enum value, no `generate-quote-pdf` EF in V3.
 **Contexte** : aujourd'hui la commande passe directement de `draft` à `confirmed`. Pas d'étape devis officiel envoyé au client pour acceptation.
 **Bénéfice attendu** : étape `quote` en amont de `draft` — envoyer un PDF de devis numéroté, le client confirme par retour (mail / portail).
 **Critère d'acceptation** :
@@ -194,7 +207,8 @@
 **Risques** : explosion du nombre de statuts → bien documenter la state machine.
 **Notes** : statut `quote` peut expirer après N jours → action manuelle "Refresh quote".
 
-### TASK-09-014 — Avoirs / credit notes [P3] [TODO]
+### TASK-09-014 — Avoirs / credit notes [P3] [BLOCKED]
+**Status note (2026-05-14)** : Deferred per INDEX line 1085 "09-007..017 B2B portal (Session 17)". No `b2b_credit_notes` table or PDF generator in V3.
 **Contexte** : si un client retourne 10 baguettes invendables ou si la livraison comportait une casse, aujourd'hui aucun document officiel pour matérialiser l'avoir. Le commercial bricole un paiement négatif.
 **Bénéfice attendu** : générer une note de crédit officielle pour un retour ou une remise client après facture.
 **Critère d'acceptation** :
@@ -208,7 +222,8 @@
 **Risques** : différence entre avoir commercial et avoir comptable — bien aligner avec le comptable externe.
 **Notes** : V1 manuel (commercial crée l'avoir) ; V2 auto sur retour livraison.
 
-### TASK-09-015 — Multi-livraisons planifiées d'avance [P3] [TODO]
+### TASK-09-015 — Multi-livraisons planifiées d'avance [P3] [BLOCKED]
+**Status note (2026-05-14)** : Deferred per INDEX line 1085 "09-007..017 B2B portal (Session 17)". No `b2b_planned_deliveries` table in V3.
 **Contexte** : aujourd'hui les livraisons partielles sont enregistrées au fil de l'eau. Pour un événement (500 baguettes en 5 livraisons sur la semaine), aucun moyen de planifier d'avance.
 **Bénéfice attendu** : planifier les livraisons dès la confirmation de commande avec dates / quantités prévues, et tracker le réel vs prévu.
 **Critère d'acceptation** :
@@ -221,7 +236,8 @@
 **Risques** : complexité UX — ne pas surcharger l'écran si commande "single shot".
 **Notes** : V1 cas spécifique événements ; étendre si retour terrain positif.
 
-### TASK-09-016 — Tarification par volume [P3] [TODO]
+### TASK-09-016 — Tarification par volume [P3] [BLOCKED]
+**Status note (2026-05-14)** : Deferred per INDEX line 1085 "09-007..017 B2B portal (Session 17)". No `b2b_volume_pricing_tiers` table in V3 and price-list infrastructure (TASK-09-005 prerequisite) is itself absent.
 **Contexte** : un client commande baguettes <50 = prix A, ≥50 = prix B. Aujourd'hui le commercial doit le savoir et modifier manuellement.
 **Bénéfice attendu** : prix dégressif automatique selon quantité commandée — défini sur la fiche produit ou la liste de prix dédiée.
 **Critère d'acceptation** :
@@ -234,7 +250,8 @@
 **Risques** : ambiguïté avec les remises ad-hoc — choisir l'un OU l'autre (pas cumul).
 **Notes** : préférer tier sur liste de prix dédiée (plus de contrôle commercial).
 
-### TASK-09-017 — Intégration comptable export (Accurate / MYOB) [P3] [TODO]
+### TASK-09-017 — Intégration comptable export (Accurate / MYOB) [P3] [BLOCKED]
+**Status note (2026-05-14)** : Deferred per INDEX line 1085 "09-007..017 B2B portal (Session 17)". Depends on TASK-10-018 (Accounting general export framework) per spec. No Accurate/MYOB export service in V3.
 **Contexte** : export direct des factures B2B dans le format attendu par le comptable externe (Accurate, MYOB). Aujourd'hui CSV générique uniquement.
 **Bénéfice attendu** : le comptable externe importe les factures B2B sans ressaisie.
 **Critère d'acceptation** :

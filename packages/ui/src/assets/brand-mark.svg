@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The Breakery — BrandMark static SVG (Session 14 / Phase 1.C).
+
+  This is the static, non-React counterpart to
+  `packages/ui/src/components/BrandMark.tsx`. Use it in contexts where
+  the React component is not available:
+    - favicon (apps/{pos,backoffice}/index.html  <link rel="icon">)
+    - OG / social preview image (Open Graph meta)
+    - printed receipts / kitchen tickets (rendered via thermal printer)
+    - email templates (transactional / marketing)
+    - PDF exports (invoices, reports)
+
+  Visuals match the React render at all sizes:
+    - gold-filled circle (r=48) with a 0.4-opacity gold-strong inner stroke
+    - serif italic "B" glyph (Playfair Display preferred, Times New Roman
+      fallback), gold foreground, sized ~60% of the circle (font-size 60
+      on the 100x100 viewBox)
+
+  Note: This file is for STATIC contexts. Hardcoded hex colors are used
+  intentionally — token CSS variables can't resolve inside a standalone
+  SVG file embedded as a favicon or in an email. The values mirror the
+  current `--gold-base / --gold-strong / --gold-fg` token defaults
+  (kept in sync with `packages/ui/src/tokens/colors.css`).
+-->
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 100 100"
+  width="100"
+  height="100"
+  role="img"
+  aria-label="The Breakery"
+>
+  <title>The Breakery</title>
+  <circle cx="50" cy="50" r="48" fill="#c9a557" />
+  <circle
+    cx="50"
+    cy="50"
+    r="46"
+    fill="none"
+    stroke="#b8954a"
+    stroke-width="1"
+    opacity="0.4"
+  />
+  <text
+    x="50"
+    y="50"
+    text-anchor="middle"
+    dominant-baseline="central"
+    font-family="'Playfair Display', 'Times New Roman', serif"
+    font-style="italic"
+    font-weight="400"
+    font-size="60"
+    fill="#1a1408"
+  >B</text>
+</svg>

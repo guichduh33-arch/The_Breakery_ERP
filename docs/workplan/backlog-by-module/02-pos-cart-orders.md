@@ -15,7 +15,8 @@
 
 ## Tâches
 
-### TASK-02-001 — Décomposer `cartStore.ts` (625 lignes) en slices [P2] [TODO]
+### TASK-02-001 — Décomposer `cartStore.ts` (625 lignes) en slices [P2] [OBSOLETE]
+**Status note (2026-05-14)** : V3 rewrite already collapsed the V2 monolith — `apps/pos/src/stores/cartStore.ts` is 425 lines (vs V2's 625) and domain logic (`addItem`, `removeItem`, `attachCustomer`, `setRedeemPoints`, `pointsToValue`) is fully extracted to `@breakery/domain`. The "slice it 4 ways" V2 prescription no longer maps. Any further trim is cosmetic and tracked via session 14 polish, not as a logic refactor.
 **Contexte** : `cartStore.ts` excède la convention 300 lignes et mélange items, pricing, promotions, locked items, customer category, order context. Difficile à tester unitairement et à maintenir. Source : `docs/audit/01-architecture-security-audit.md§Weakness-1` + `docs/audit/03-code-quality-schema-audit.md§B1`.
 **Critère d'acceptation** :
 - [ ] Créer slices : `cartItemsSlice`, `cartPromotionSlice`, `cartLockedSlice`, `cartCustomerSlice`.
@@ -28,7 +29,8 @@
 **Estimation** : `L`
 **Risques** : Casser la persistence sessionStorage, briser display broadcast, régresser locked-items. Faire en plusieurs PRs petites.
 
-### TASK-02-002 — Edge cases lockedItems sur network split / re-mount POS [P1] [TODO]
+### TASK-02-002 — Edge cases lockedItems sur network split / re-mount POS [P1] [DONE]
+**Status note (2026-05-14)** : Delivered Session 13 Phase 4.A. V3 evidence: `apps/pos/src/stores/cartStore.ts` exposes `isOffline` state + `initNetworkListener` helper + persisted `lockedItemIds`; covered by `apps/pos/src/stores/__tests__/cartStore.networkSplit.test.ts` (StrictMode double-mount, online/offline event, locked-items preservation across reload). Commit `bdf21aa` (squashed PR #13).
 **Contexte** : Quand le POS perd la connexion après envoi en cuisine puis se remonte, l'état locked peut diverger entre cartStore (sessionStorage) et l'état réel des order_items côté DB. Risque : un item cuisiné devient modifiable côté POS. Inferred from code review + LAN audit (message dedup absent).
 **Critère d'acceptation** :
 - [ ] Au mount POS, refetch les `order_items` actifs et reconstruire le set `lockedItems` depuis la DB plutôt que la session.
@@ -41,6 +43,7 @@
 **Risques** : Refetch trop fréquent → coût Supabase. Limiter au mount POS et après visibilitychange.
 
 ### TASK-02-003 — Optimisations cart re-render [P2] [TODO]
+**Status note (2026-05-14)** : Uncertain — manual review needed. V3 cart components (`apps/pos/src/features/cart/CartItemRow.tsx`, `ActiveOrderPanel.tsx`) exist but no Phase 4.A profiling task touched re-render granularity. Defer to Session 14 polish or measure after Session 13 surface lands.
 **Contexte** : `CartItemRow`, `CartTotals`, `CartActions` sont déjà décomposés (cf. UX audit), mais le sélecteur Zustand n'est pas toujours granulaire. Modifier la quantité d'un item peut re-render toute la liste. Inferred from code review.
 **Critère d'acceptation** :
 - [ ] Profiling React DevTools : identifier les composants qui re-render à chaque mutation.
@@ -53,7 +56,8 @@
 **Estimation** : `M`
 **Risques** : Sur-mémoization peut briser des refresh légitimes (promotions auto-évaluées). Tester avec promo engine.
 
-### TASK-02-004 — VirtualKeypad UX improvements [P2] [TODO]
+### TASK-02-004 — VirtualKeypad UX improvements [P2] [OBSOLETE]
+**Status note (2026-05-14)** : V2 `VirtualKeypadProvider` was not ported to V3. POS payment UI uses the `@breakery/ui` `Numpad` primitive directly inside `PaymentTerminal.tsx` (no global provider, no context-switch focus management gap). The original V2 scope no longer exists.
 **Contexte** : `VirtualKeypadProvider` enveloppe le POS mais l'UX du clavier numérique (saisie quantité, paiement) souffre de placement variable et focus management incertain. Inferred from `docs/audit/05-uiux-design-audit.md§A1-3` (focus management) + revue UX.
 **Critère d'acceptation** :
 - [ ] Audit UX : lister les 5 contextes où le clavier apparaît (qty, prix manual, paiement, recherche, code promo).
@@ -68,6 +72,7 @@
 
 ### TASK-02-005 — Order context switching mid-cart [P2] [TODO]
 **Contexte** : Si un cashier change le type de commande (dine_in → takeaway) ou le client (B2B → retail) après avoir ajouté des items, les prix peuvent rester ceux de la catégorie initiale. Inferred from code review (`get_customer_product_price` est appelé à l'add, pas au switch).
+**Status note (2026-05-14)** : Genuinely undone. Phase 4.A scope (POS UX hardening) did not address mid-cart context switching reprice. Carry-over to Session 14 polish or later.
 **Critère d'acceptation** :
 - [ ] Au switch order_type ou customer, recalculer les prix de tous les items (sauf locked items qui gardent leur prix initial).
 - [ ] Toast de confirmation : « Prices updated for X items ».
@@ -79,6 +84,7 @@
 **Risques** : Comportement client inattendu (« pourquoi le prix a changé ? »). Toast obligatoire.
 
 ### TASK-02-006 — Save draft order (POS crash recovery) [P2] [TODO]
+**Status note (2026-05-14)** : Genuinely undone. Phase 4.A delivered cart-store `isOffline` flag + read-only graceful degrade, but no `cart_drafts` table or DB-persisted draft restore was built. Carry-over.
 **Contexte** : Cart en sessionStorage seulement → fermeture onglet ou crash = perte. Pour ~200 tx/jour à Lombok (réseau parfois capricieux), un mécanisme de brouillon DB est utile. Inferred from `docs/audit/07-product-backlog-audit.md§Critical-online-only-risk`.
 **Critère d'acceptation** :
 - [ ] Migration : table `cart_drafts` (id, terminal_id, user_id, payload jsonb, updated_at).
@@ -91,7 +97,8 @@
 **Estimation** : `L`
 **Risques** : Restore d'un draft pollué (items invalides après suppression produit). Valider chaque item au restore.
 
-### TASK-02-007 — Performance bundle size POS page [P2] [TODO]
+### TASK-02-007 — Performance bundle size POS page [P2] [OBSOLETE]
+**Status note (2026-05-14)** : V2-only concern. V3 splits POS and BO into separate Vite apps (`apps/pos` vs `apps/backoffice`) — Recharts/jsPDF/XLSX are not part of `apps/pos` dependency graph by construction. The original "exclude Recharts from POS chunk" prescription no longer applies; a fresh bundle audit belongs in Session 14+ if perf signals require it.
 **Contexte** : Vite split déjà actif, mais POS page bundle pourrait être réduit (Recharts inutile sur POS, jsPDF lazy à confirmer). Source : `docs/audit/08-operations-lan-audit.md§5.4` (vendor-react ~620KB).
 **Critère d'acceptation** :
 - [ ] `npm run build -- --mode=analyze` (ou `vite-bundle-visualizer`).
@@ -104,7 +111,8 @@
 **Estimation** : `M`
 **Risques** : Casser un import dynamique mal configuré → erreur runtime. Tester chaque page POS après split.
 
-### TASK-02-008 — Supprimer le double checkout (`POSCheckoutWrapper` legacy) [P2] [TODO]
+### TASK-02-008 — Supprimer le double checkout (`POSCheckoutWrapper` legacy) [P2] [OBSOLETE]
+**Status note (2026-05-14)** : V2-only cleanup. Neither `POSCheckoutWrapper.tsx` nor `PaymentModal.tsx` exists in V3 — checkout uses `apps/pos/src/features/payment/PaymentTerminal.tsx` (single full-screen modal, multi-tender via session-10 design). No legacy to remove.
 **Contexte** : Deux UIs de checkout coexistent : `POSCheckoutWrapper.tsx` (simpler, station hardcoded) et `PaymentModal.tsx` (full split-payment). Le wrapper semble dead code mais reste dans le bundle. Source : `docs/audit/05-uiux-design-audit.md§U1` + `§POS-P2`.
 **Critère d'acceptation** :
 - [ ] Confirmer via grep + git history que `POSCheckoutWrapper.tsx` n'est plus utilisé en runtime.
@@ -117,6 +125,7 @@
 **Risques** : Supprimer un usage caché (lazy route). Grep + tests E2E avant merge.
 
 ### TASK-02-009 — Cmd+K (CommandPalette) sur POS [P3] [TODO]
+**Status note (2026-05-14)** : Genuinely undone. No POSCommandPalette / cmdk integration in `apps/pos/src/` (grep returns 0 hits). Not part of Phase 4.A / 6.C scope. Carry-over.
 **Contexte** : CommandPalette existe en BackOffice mais pas en POS. Un cashier rapide peut bénéficier de raccourcis (Hold order, Discount, Customer search). Source : `docs/audit/05-uiux-design-audit.md§N1`.
 **Critère d'acceptation** :
 - [ ] CommandPalette POS avec actions : Hold order, New order, Customer search, Discount, Cash drawer, Z-report.
@@ -129,7 +138,8 @@
 **Estimation** : `M`
 **Risques** : Conflit raccourcis avec navigateur ou Capacitor. Tester cross-platform.
 
-### TASK-02-010 — Wire up Account button (CategoryNav bottom) [P3] [TODO]
+### TASK-02-010 — Wire up Account button (CategoryNav bottom) [P3] [OBSOLETE]
+**Status note (2026-05-14)** : V2-only artefact. V3 POS does not ship a `CategoryNav` sidebar component (`apps/pos/src/` grep for `CategoryNav` / `UserMenu` returns 0 hits). Account/logout flow is owned by the PIN auth surface (`apps/pos/src/features/auth/`), with no bottom-of-sidebar button to wire.
 **Contexte** : Le bouton User en bas de la sidebar POS n'a pas d'`onClick`. Source : `docs/audit/05-uiux-design-audit.md§N2`.
 **Critère d'acceptation** :
 - [ ] Click → ouvre un menu contextuel (avatar, name, role, change PIN, logout).
@@ -149,6 +159,7 @@
 > Ajoutés 2026-05-13 lors de la cascade docs (session 13).
 
 ### TASK-02-011 — Filtre par cashier / serveur [P2] [TODO]
+**Status note (2026-05-14)** : Genuinely undone. No `/orders` BO page or POS OrderHistoryPanel cashier filter delivered in Session 13. Phase 6.C `D-W6-6C-04` confirms POS/KDS polish targets were retargeted to existing files only — the Orders-page cascade (02-011..019) was not built. Carry-over.
 **Contexte** : aujourd'hui, impossible de filtrer la liste Orders par staff qui a créé la commande. Audit performance individuelle limité.
 **Bénéfice attendu** : voir d'un coup toutes les commandes d'un staff donné — utile pour audit, performance, calcul commission.
 **Critère d'acceptation** :
@@ -162,6 +173,7 @@
 **Notes** : pose le socle pour le filtre "Mes commandes" (TASK-02-014).
 
 ### TASK-02-012 — Bulk actions (marquer payées en masse) [P2] [TODO]
+**Status note (2026-05-14)** : Genuinely undone. No bulk-mark-paid action in V3 (`apps/pos/src/features/order-history/` is single-row only). Per Phase 6.C deviation `D-W6-6C-04`, the Orders-page cascade was descoped. Carry-over.
 **Contexte** : pour solder des ardoises de groupe (ex: une entreprise paie en bloc 15 tickets de ses employés), aujourd'hui il faut traiter chaque commande individuellement.
 **Bénéfice attendu** : sélection multiple de commandes unpaid → marquer payées en un coup avec un seul moyen de paiement et un seul PIN manager.
 **Critère d'acceptation** :
@@ -176,6 +188,7 @@
 **Notes** : V1 mark as paid ; V2 bulk void/refund (plus risqué).
 
 ### TASK-02-013 — Heatmap visuelle des commandes en cours [P3] [TODO]
+**Status note (2026-05-14)** : Genuinely undone. Heatmap view not present in V3 OrderHistoryPanel or any BO page. Out of scope for Session 13 ; not slated for Session 14 either.
 **Contexte** : la liste tabulaire est efficace pour la consultation mais ne donne pas une "image" instantanée de l'état du service en cours.
 **Bénéfice attendu** : vue compacte (carrés colorés) montrant l'âge de chaque commande en cours (vert / orange / rouge selon le temps d'attente).
 **Critère d'acceptation** :
@@ -190,6 +203,7 @@
 **Notes** : utile pour les services denses (samedi midi).
 
 ### TASK-02-014 — Filtre rapide "Mes commandes" [P3] [TODO]
+**Status note (2026-05-14)** : Genuinely undone. Depends on TASK-02-011 (cashier filter) which is itself undone. Carry-over.
 **Contexte** : un serveur veut souvent ne voir que les commandes qu'il a saisies, pas celles des autres.
 **Bénéfice attendu** : raccourci 1-clic "Mes commandes" qui filtre sur `created_by = current_user`.
 **Critère d'acceptation** :
@@ -202,6 +216,7 @@
 **Notes** : configuration par défaut "ON" pour les serveurs/cashiers (selon rôle).
 
 ### TASK-02-015 — Notification toast riche [P3] [TODO]
+**Status note (2026-05-14)** : Uncertain — manual review needed. `sonner` toast wired in `PaymentTerminal.tsx` and tablet `useTabletOrderStatusListener` for "Item ready" events (Phase 4.D, D-W4-4D-02), but a POS-side rich toast with "Voir détail" CTA tied to KDS_ORDER_READY is not explicitly delivered. Verify in Session 14 polish.
 **Contexte** : le son `playOrderReadySound` est joué quand un order passe en `ready`, mais aucun toast visuel cliquable n'apparaît.
 **Bénéfice attendu** : toast riche avec numéro de commande + bouton "Voir détail" qui ouvre la modale.
 **Critère d'acceptation** :
@@ -216,6 +231,7 @@
 **Notes** : utiliser le toast pattern déjà en place (`sonner` ou équivalent).
 
 ### TASK-02-016 — Édition de la commande après coup [P3] [TODO]
+**Status note (2026-05-14)** : Genuinely undone. V3 ships Cancel item (`useCancelOrderItem.ts`) but no post-kitchen edit flow with PIN gate + JE compensation. Not in Session 13 scope.
 **Contexte** : aujourd'hui, pour modifier une commande déjà envoyée en cuisine (ajouter un item, retirer), il faut voider + recréer. Lourd et bruyant en audit.
 **Bénéfice attendu** : édition contrôlée avec PIN manager + raison + audit complet.
 **Critère d'acceptation** :
@@ -231,6 +247,7 @@
 **Notes** : ne pas confondre avec void+recreate ; ici on garde l'order_id et son numéro.
 
 ### TASK-02-017 — Vue calendrier des commandes différées [P3] [TODO]
+**Status note (2026-05-14)** : Genuinely undone. No `/orders/calendar` page or calendar component. Not in Session 13 scope.
 **Contexte** : pour les commandes pré-réservées (B2B livré dans 3 jours, événement client à venir), pas de vue planning visuelle.
 **Bénéfice attendu** : calendrier (jour/semaine/mois) montrant les commandes par date de livraison/échéance.
 **Critère d'acceptation** :
@@ -246,6 +263,7 @@
 **Notes** : librarie `react-big-calendar` ou équivalent.
 
 ### TASK-02-018 — Export PDF par commande [P3] [TODO]
+**Status note (2026-05-14)** : Genuinely undone. No `generate-receipt-pdf` Edge Function in `supabase/functions/` (only `process-payment`, `refund-order`, etc.). Carry-over.
 **Contexte** : aujourd'hui l'export Orders est CSV uniquement. Pour envoyer un ticket en e-mail à un client après coup, il faut un PDF.
 **Bénéfice attendu** : re-générer le ticket en PDF (mise en forme reçu thermique ou A4 facture).
 **Critère d'acceptation** :
@@ -259,6 +277,7 @@
 **Notes** : aligne sur le template de la facture B2B pour cohérence visuelle.
 
 ### TASK-02-019 — Lien direct vers le KDS [P3] [TODO]
+**Status note (2026-05-14)** : Genuinely undone. No `?highlight=` query-param wired in V3 KDS (`apps/pos/src/features/kds/`). Carry-over.
 **Contexte** : depuis la modale détail Orders, pas de raccourci pour aller voir un item au KDS.
 **Bénéfice attendu** : bouton "Voir au KDS" qui ouvre la station correspondante avec l'item surligné.
 **Critère d'acceptation** :
@@ -278,6 +297,7 @@
 > Ajoutés 2026-05-13 lors de la cascade docs (session 13). Customer-facing payment QR est déjà couvert par TASK-16-006 (cascade Customer Display).
 
 ### TASK-02-020 — Mode dégradé offline (POS resilience) [P2] [TODO]
+**Status note (2026-05-14)** : Partial — read-only offline shipped. Phase 4.A delivered `isOffline` flag + `initNetworkListener` + browse-cached-products graceful degrade (`apps/pos/src/stores/cartStore.ts:63-156`). Full IndexedDB queue + `sync_offline_transactions` RPC NOT built — that's a Wave 7+ XL effort. Keep TODO for the queue-write half.
 **Contexte** : aujourd'hui une coupure réseau bloque toute transaction POS. Pour une boutique en zone à connexion fragile, c'est rédhibitoire.
 **Bénéfice attendu** : continuer à encaisser pendant une coupure courte (<10 min), queue local sync au retour réseau.
 **Critère d'acceptation** :
@@ -292,7 +312,8 @@
 **Risques** : intégrité comptable — chaque transaction offline doit produire un JE rétroactif cohérent ; testing exhaustif obligatoire.
 **Notes** : pattern Square / Shopify POS — étudier leurs solutions.
 
-### TASK-02-021 — Pre-authorization cartes [P2] [TODO]
+### TASK-02-021 — Pre-authorization cartes [P2] [BLOCKED]
+**Status note (2026-05-14)** : Deferred to Session 18+ (payment-provider integration). Requires Stripe Terminal or local Indonesian equivalent + capture/auth flow — not on Session 13/14 roadmap. INDEX Wave 7 lists payment-provider work as out-of-scope.
 **Contexte** : pour dine-in, le client paie en fin de repas. Si la carte est refusée au paiement final, conflit. Pré-autoriser le montant estimé à l'arrivée résout le risque.
 **Bénéfice attendu** : "tap card on entry" → montant estimé pré-autorisé → finalisation au départ (capture exacte).
 **Critère d'acceptation** :
@@ -308,6 +329,7 @@
 **Notes** : pattern restaurants haut de gamme US/Europe ; rare en Indonésie.
 
 ### TASK-02-022 — Réservation / pré-commande client (avec acompte) [P3] [TODO]
+**Status note (2026-05-14)** : Genuinely undone. No `reserved` status on `orders.status` (V3 schema). Not in Session 13 scope.
 **Contexte** : pour les commandes spéciales (gâteau anniversaire, événement), pas de workflow réservation avec acompte. Tout se gère par téléphone + Excel.
 **Bénéfice attendu** : prendre une commande à retirer plus tard, encaisser un acompte, finaliser à la livraison.
 **Critère d'acceptation** :
@@ -323,6 +345,7 @@
 
 ### TASK-02-023 — Tableau "Tables ouvertes" en vue principale [P3] [TODO]
 **Contexte** : le `TableSelectionModal` montre le floor plan mais ce n'est pas la vue principale du POS dine-in. Le manager doit naviguer pour savoir l'état des tables.
+**Status note (2026-05-14)** : Genuinely undone. V3 has `apps/pos/src/features/tables/components/TableSelectorButton.tsx` (modal-based) but no "main view toggle" with permanent floor occupancy. Carry-over.
 **Bénéfice attendu** : vue principale dédiée dine-in qui affiche en permanence le statut de chaque table (vide / commandée / servie / à encaisser).
 **Critère d'acceptation** :
 - [ ] Toggle "Vue Tables" en haut du POS (alternative à grille produits).
@@ -335,6 +358,7 @@
 **Notes** : pattern POS restaurant haut volume.
 
 ### TASK-02-024 — Quick reorder (refaire la même commande) [P3] [TODO]
+**Status note (2026-05-14)** : Genuinely undone. No "Reorder" button in V3 OrderHistoryPanel or customer fiche. Carry-over.
 **Contexte** : pour les habitués, refaire la même commande qu'hier ou la semaine dernière nécessite de tout retaper.
 **Bénéfice attendu** : depuis l'historique client, bouton "Refaire" qui pré-remplit le cart avec les items de la commande précédente.
 **Critère d'acceptation** :
@@ -347,7 +371,8 @@
 **Risques** : confusion sur les modifications produit/prix depuis la commande source — bien indiquer "prix recalculés".
 **Notes** : UX critique pour les habitués matin/café.
 
-### TASK-02-025 — Voice search produit/client [P3] [TODO]
+### TASK-02-025 — Voice search produit/client [P3] [BLOCKED]
+**Status note (2026-05-14)** : Deferred to Session 19+ per INDEX Wave 7 deferral list ("Voice ordering / advanced ML / OCR / 2FA (Session 19+)").
 **Contexte** : en rush, taper sur le clavier virtuel pour rechercher un client ou un produit est lent.
 **Bénéfice attendu** : "Cappuccino" ou "Maya" prononcés à voix → recherche instantanée.
 **Critère d'acceptation** :
@@ -361,6 +386,7 @@
 **Notes** : pattern Apple Store Genius — validé en environnement bruyant.
 
 ### TASK-02-026 — Suggested upsell (basket analysis) [P3] [TODO]
+**Status note (2026-05-14)** : Partial — basket-analysis RPC shipped (`supabase/migrations/20260517000213_create_basket_analysis_rpc.sql`, Phase 6.A) but no POS-side upsell badge UI consumes it. Suggestion engine half-built; UI half is undone.
 **Contexte** : aucune suggestion de complément aujourd'hui. Manque d'opportunité commerciale.
 **Bénéfice attendu** : "Voulez-vous un café avec ?" basé sur l'analyse des paniers historiques.
 **Critère d'acceptation** :
@@ -373,7 +399,8 @@
 **Risques** : trop intrusif → cashier rejette la suggestion → frustration. Discret, jamais bloquant.
 **Notes** : pattern recommendation engine classique.
 
-### TASK-02-027 — Multi-currency POS [P3] [TODO]
+### TASK-02-027 — Multi-currency POS [P3] [BLOCKED]
+**Status note (2026-05-14)** : Deferred to Session 14 per INDEX Wave 7 deferred list ("Multi-currency end-to-end | 14"). Depends on TASK-10-019.
 **Contexte** : touriste paie en USD ou EUR — aujourd'hui conversion manuelle.
 **Bénéfice attendu** : encaisser une commande en devise étrangère avec conversion auto au taux du jour.
 **Critère d'acceptation** :

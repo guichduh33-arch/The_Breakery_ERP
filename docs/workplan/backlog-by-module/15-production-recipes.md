@@ -15,7 +15,8 @@
 
 ## Tâches
 
-### TASK-15-001 — Sub-recipes (F6) — composition récursive + cost cascade [P0] [TODO]
+### TASK-15-001 — Sub-recipes (F6) — composition récursive + cost cascade [P0] [BLOCKED]
+**Status note (2026-05-14)** : Deferred per INDEX Wave 7 "Out of scope" line 1213 — "Sub-recipes récursifs (F6 complet) | 14+". V3 `recipes` schema (migration `…000060`) is intentionally flat BoM (`product_id` + `material_id`, no `child_recipe_id` column, no anti-cycle trigger). Critical for composed-product COGS but parked until Session 14+ when sub-recipe RPC + UI selector can be co-delivered.
 **Contexte** : Audit John P0 — "core bakery requirement, without it every composed product BOM is flat and recipe costing is wrong". Backlog `CURRENT_STATE.md` F6.
 **Critère d'acceptation** :
 - [ ] Schema : `recipe_ingredients` accepte `child_recipe_id` (FK to `recipes`) en plus de `product_id` ; check XOR (l'un ou l'autre).
@@ -35,6 +36,7 @@
 **Notes** : gros impact comptable — coordonner avec comptable pour validation cost calc.
 
 ### TASK-15-002 — Yield tracking (F5) — expected vs actual production [P1] [TODO]
+**Status note (2026-05-14)** : Partially delivered Session 13 Phase 2.A. V3 `production_records` (migration `…000061`) ships `quantity_produced` + `quantity_waste` columns but NOT the spec's `expected_yield_qty` / `actual_yield_qty` / `yield_variance_pct` triplet; ProductionForm.tsx has no "variance > 15% → confirm modal" flow; no `/reports/production-yield` page. F5 yield-tracking remains a genuine gap — Session 14+ follow-up.
 **Contexte** : Audit John P1 — "10-20% variance untracked, pricing may be wrong". Backlog F5.
 **Critère d'acceptation** :
 - [ ] `production_records.expected_yield_qty` (calculé recipe.output_qty × batch_size).
@@ -51,6 +53,7 @@
 **Notes** : seuil 15% modifiable selon recipe (pâte à pizza vs croissant ont des yields différents).
 
 ### TASK-15-003 — Recipes UI CRUD ergonomique [P2] [TODO]
+**Status note (2026-05-14)** : Partially delivered Session 13 Phase 2.A. V3 evidence: `apps/backoffice/src/features/inventory-production/components/RecipeEditor.tsx` + smoke test `RecipeEditor.smoke.test.tsx` provide basic CRUD; live `checkFeasibility()` preview from `@breakery/domain`. Still missing: dedicated `IngredientPicker` autocomplete component, @dnd-kit drag-reorder, sum-vs-cost validation badge, "Duplicate recipe" button, Playwright spec. Session 14+ follow-up.
 **Contexte** : Audit Sally `05-uiux-design-audit.md` souligne UX inégale en back-office. RecipeForm aujourd'hui = formulaire basique, saisie ingrédients pénible (pas d'autocomplete, pas de drag-reorder).
 **Critère d'acceptation** :
 - [ ] Composant `IngredientPicker` avec autocomplete sur `products` + `recipes` (sub-recipes), preview cost en live.
@@ -66,6 +69,7 @@
 **Notes** : screenshot avant/après pour décrire l'écart UX.
 
 ### TASK-15-004 — Batch production (multi-recipe en 1 opération) [P2] [TODO]
+**Status note (2026-05-14)** : Not delivered Session 13. No `production_batches` table in `supabase/migrations/20260517*.sql`, no `/production/batch` page. V3 `record_production_v1` handles single-recipe atomic insertion with idempotency key. Genuine gap — Session 14+ follow-up.
 **Contexte** : Boulanger fait une fournée = 5 recettes en parallèle. Aujourd'hui : 5 productions séparées à saisir = 5 fois plus de clics.
 **Critère d'acceptation** :
 - [ ] Page `/production/batch` : sélection multi-recipe + qty par recipe + date/time prévue.
@@ -80,6 +84,7 @@
 **Notes** : workflow type 5h-7h matin pour préparation ouverture 8h.
 
 ### TASK-15-005 — Recipe versioning (historique modifs) [P2] [TODO]
+**Status note (2026-05-14)** : Not delivered Session 13. No `recipe_versions` table, no snapshot trigger, no `recipe_version_id` FK on `production_records`. V3 `recipes` table uses soft-delete (`deleted_at`) to preserve version history at the row level — partial substitute but not a structured version snapshot. Genuine gap — Session 14+ follow-up.
 **Contexte** : Modifier une recette change rétroactivement le cost calculé pour les productions passées. Audit produit Gap "Recipe Cost Trends MISSING — cost_price is static, no history tracked".
 **Critère d'acceptation** :
 - [ ] `recipe_versions(recipe_id, version_number, definition_jsonb, created_at, created_by, change_note)`.
@@ -94,6 +99,7 @@
 **Notes** : le snapshot doit copier les noms produits (pas les FK) pour résister à la suppression d'un product.
 
 ### TASK-15-006 — Production scheduling (planning fournées) [P2] [TODO]
+**Status note (2026-05-14)** : Partially delivered Session 13 Phase 2.A. V3 evidence: `supabase/migrations/20260517000065_create_production_suggestions_rpc.sql` + `apps/backoffice/src/features/inventory-production/{hooks/useProductionSuggestions.ts,components/ProductionSuggestions.tsx}` surface sales-based suggestions. Still missing: `/production/schedule` calendar UI, slot-based scheduling table, push notifications 30 min before slot. Session 14+ follow-up.
 **Contexte** : Audit produit Gap missing #13 "Production scheduling not on backlog — no forward planning". Boulanger arrive à 5h, doit savoir QUOI préparer (basé sur historique vente).
 **Critère d'acceptation** :
 - [ ] Page `/production/schedule` : calendrier hebdo avec slots (5am, 7am, 11am, 4pm) et recipes prévues par slot.
@@ -115,6 +121,7 @@
 > Ajoutés 2026-05-13 lors de la cascade docs (session 13). Sous-recettes, versioning, scheduling sont déjà couverts par TASK-15-001/005/006.
 
 ### TASK-15-007 — Boulanger's percentages [P3] [TODO]
+**Status note (2026-05-14)** : Not delivered Session 13. No "Boulanger's mode" toggle in `RecipeEditor.tsx`; recipes stored as flat absolute `quantity` only (migration `…000060`). Niche pro-baker feature — genuine gap, Session 14+ follow-up (low priority).
 **Contexte** : les boulangers traditionnels raisonnent en pourcentages de farine (farine = 100 %, eau = 65 %, sel = 2 %…) plutôt qu'en quantités absolues. Le module n'accepte que les quantités absolues.
 **Bénéfice attendu** : saisir une recette en % de farine, le système convertit automatiquement vers quantité absolue selon la quantité de farine cible.
 **Critère d'acceptation** :
@@ -128,6 +135,7 @@
 **Notes** : standard professionnel boulangerie ; valoriser l'expertise artisan.
 
 ### TASK-15-008 — Allergènes structurés [P3] [TODO]
+**Status note (2026-05-14)** : Not delivered Session 13. No `allergens` enum table, no `products.allergens[]` column, no automatic allergen propagation on finished products. Regulatory/EU-compliance feature — genuine gap, Session 14+ follow-up.
 **Contexte** : aujourd'hui les allergènes sont en notes libres sur le produit. Pas de propagation auto via les recettes.
 **Bénéfice attendu** : tracer gluten, lactose, fruits à coque, œuf, soja, etc. sur chaque ingrédient → affichage automatique sur fiche produit fini + ticket caisse + display.
 **Critère d'acceptation** :
@@ -140,7 +148,8 @@
 **Risques** : conformité réglementaire — valider la liste standard avec la réglementation indonésienne (BPOM).
 **Notes** : différenciant fort pour clientèle internationale Bali.
 
-### TASK-15-009 — Mode mobile de saisie [P3] [TODO]
+### TASK-15-009 — Mode mobile de saisie [P3] [BLOCKED]
+**Status note (2026-05-14)** : Deferred per INDEX Wave 7 "Out of scope" line 1208 — "Mobile shell Capacitor + push native | Session 16". Mobile-first production page depends on broader Capacitor shell; revisit Session 16.
 **Contexte** : le boulanger est en cuisine, pas devant le PC. Saisir une production l'oblige à se déplacer.
 **Bénéfice attendu** : interface mobile-first sur tablette / téléphone pour la saisie au four.
 **Critère d'acceptation** :
@@ -154,7 +163,8 @@
 **Risques** : variance d'écran tablette — testing sur les 3 tailles principales.
 **Notes** : sortir d'un PWA pour install facile sur tablette dédiée.
 
-### TASK-15-010 — Intégration IoT four [P3] [TODO]
+### TASK-15-010 — Intégration IoT four [P3] [BLOCKED]
+**Status note (2026-05-14)** : Deferred — gated on hardware procurement + budget per the task's own "Dépend de : matériel IoT compatible + budget". No `iot-oven-callback` Edge Function exists. Experimental scope, revisit when oven sensor SKU is selected.
 **Contexte** : aujourd'hui le boulanger saisit manuellement la production à la sortie du four. Une sonde IoT pourrait automatiser.
 **Bénéfice attendu** : sonde connectée au four déclenche automatiquement la création d'une production_record à la fin du cycle de cuisson.
 **Critère d'acceptation** :
@@ -168,6 +178,7 @@
 **Notes** : V1 expérimental sur 1 four, généralisable si succès.
 
 ### TASK-15-011 — Coût-marge en temps réel par recette (alertes) [P3] [TODO]
+**Status note (2026-05-14)** : Not delivered Session 13. V3 `calculate_recipe_cost` RPC (migration `…000062`) computes recipe cost on demand, but no per-product `target_gross_margin_pct` setting, no nightly recompute job, no `/production/margin-watch` page or alert workflow. Genuine gap — Session 14+ follow-up.
 **Contexte** : aujourd'hui le calcul de marge théorique est statique. Pas d'alerte quand le prix matière monte et dégrade la marge.
 **Bénéfice attendu** : alerte automatique quand un changement de prix matière fait passer une recette sous le seuil de marge cible.
 **Critère d'acceptation** :
@@ -180,7 +191,8 @@
 **Risques** : alertes trop fréquentes en cas de fluctuation marché — moyenne mobile 7 jours.
 **Notes** : déclencheur d'arbitrage pricing automatique.
 
-### TASK-15-012 — Yield calculator (forecast production) [P3] [TODO]
+### TASK-15-012 — Yield calculator (forecast production) [P3] [BLOCKED]
+**Status note (2026-05-14)** : Deferred per INDEX Wave 7 "Out of scope" line 1212 — "Forecasting ML | Session 20". Depends on TASK-15-002 (yield tracking, still TODO) to build reliable per-recipe ratios first. Session 20+ scope.
 **Contexte** : aujourd'hui pas d'aide pour estimer "combien je produis pour servir N couverts demain ?". TASK-15-002 (yield tracking) mesure le réalisé, pas le prévisionnel.
 **Bénéfice attendu** : recommandation prévisionnelle basée sur historique de consommation.
 **Critère d'acceptation** :

@@ -1,7 +1,13 @@
 @import '@breakery/ui/tokens.css';
+
+/* Session 14 D3 — 4 canonical fonts. Inter / Fraunces / JetBrains Mono are
+ * variable-axis (single file). Playfair Display loads italic 400 only
+ * (the only weight + style we use for branding + dashboard titles). */
 @import '@fontsource-variable/inter';
 @import '@fontsource-variable/fraunces';
 @import '@fontsource-variable/jetbrains-mono';
+@import '@fontsource/playfair-display/400-italic.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

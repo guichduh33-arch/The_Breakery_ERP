@@ -1,0 +1,54 @@
+/*
+ * typography.css — canonical type stack tokens (Session 14 / Phase 1.A).
+ *
+ * Session 14 D3 — "4 polices canoniques" :
+ *   --font-display  Playfair Display (serif italic, branding + dashboard titles)
+ *   --font-body     Inter            (sans body, ALL chrome + body copy)
+ *   --font-data     Fraunces         (serif optical, KPI / data viz)
+ *   --font-mono     JetBrains Mono   (monospace tabulaire, montants / timers KDS)
+ *
+ * Aliases preserved for backward-compat with batch-1 (luxe-dark.css declares
+ * --font-sans / --font-serif / --font-mono). The new --font-display token
+ * surfaces Playfair, which session 13 did not load.
+ *
+ * Type-scale also declared here so callers stop hardcoding `text-xl` /
+ * `text-3xl` for KPI values — they reference `--type-display-*` instead.
+ *
+ * Loaded AFTER luxe-dark.css so it can override --font-* if needed.
+ */
+:root, .dark {
+  /* Canonical 4-font stack (D3). Variable-font fallbacks first, system last. */
+  --font-display: 'Playfair Display', 'Times New Roman', Georgia, serif;
+  --font-body:    'Inter Variable', 'Inter', 'Inter Fallback', system-ui, -apple-system, sans-serif;
+  --font-data:    'Fraunces Variable', 'Fraunces', Georgia, serif;
+  --font-mono:    'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, monospace;
+
+  /* Back-compat aliases — keep code that references the session-13 names working. */
+  --font-sans:  var(--font-body);
+  --font-serif: var(--font-data);
+
+  /* Type scale (D5 — SectionLabel signature MAJUSCULES tracking-large)
+   * Sizes match Tailwind defaults rounded to nearest 0.0625rem (1px @ 16px root). */
+  --type-xs:       0.6875rem;   /* 11px — section labels minor */
+  --type-sm:       0.8125rem;   /* 13px — section labels major */
+  --type-base:     0.9375rem;   /* 15px — body */
+  --type-lg:       1.0625rem;   /* 17px — emphasised body */
+  --type-xl:       1.375rem;    /* 22px — card title */
+  --type-2xl:      1.75rem;     /* 28px — page title */
+  --type-3xl:      2.25rem;     /* 36px — KPI value */
+  --type-display:  3rem;        /* 48px — hero / login mark */
+
+  /* Letter-spacing — tracking-widest required for SectionLabel (D5). */
+  --tracking-tight:    -0.01em;
+  --tracking-normal:   0;
+  --tracking-wide:     0.025em;
+  --tracking-wider:    0.05em;
+  --tracking-widest:   0.12em;   /* signature value — matches screenshots */
+  --tracking-ultra:    0.2em;    /* used sparingly for emphasised page headers */
+
+  /* Line-heights — denser for headings/data, looser for body. */
+  --leading-tight:  1.15;
+  --leading-snug:   1.3;
+  --leading-base:   1.5;
+  --leading-loose:  1.7;
+}

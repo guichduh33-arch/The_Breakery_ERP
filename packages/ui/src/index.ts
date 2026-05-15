@@ -27,6 +27,8 @@ export {
   CardFooter,
   CardHeader,
   CardTitle,
+  cardVariants,
+  type CardProps,
 } from './primitives/Card.js';
 export { Toaster } from './primitives/Toast.js';
 export {
@@ -42,10 +44,40 @@ export {
   SheetTrigger,
   type SheetContentProps,
 } from './primitives/Sheet.js';
-export { EmptyState, type EmptyStateProps } from './primitives/EmptyState.js';
+export {
+  EmptyState,
+  type EmptyStateProps,
+  type EmptyStateAction,
+  type EmptyStateSize,
+} from './primitives/EmptyState.js';
 
 // app shell components
 export { SkipToContent, type SkipToContentProps } from './components/SkipToContent.js';
+
+// design-system signature components (Session 14 / Phase 1.A)
+export { SectionLabel, type SectionLabelProps } from './components/SectionLabel.js';
+export { BrandMark, type BrandMarkProps, type BrandMarkSize } from './components/BrandMark.js';
+export { BrandLogo, type BrandLogoProps, type BrandLogoSize } from './components/BrandLogo.js';
+export {
+  KpiTile,
+  type KpiTileProps,
+  type KpiDelta,
+  type KpiDeltaDirection,
+  type KpiValueFormat,
+} from './components/KpiTile.js';
+export { Stat, type StatProps, type StatDirection } from './components/Stat.js';
+export {
+  NumpadVirtual,
+  type NumpadVirtualProps,
+  type NumpadMode,
+} from './components/NumpadVirtual.js';
+export {
+  DataTable,
+  type DataTableProps,
+  type DataTableColumn,
+  type DataTableSort,
+  type SortDirection,
+} from './components/DataTable.js';
 
 // domain components
 export { Numpad, type NumpadProps } from './components/Numpad.js';
@@ -58,6 +90,7 @@ export {
   FullScreenModalClose,
   type FullScreenModalProps,
 } from './components/FullScreenModal.js';
+export { CenterModal, type CenterModalProps } from './components/CenterModal.js';
 export {
   ModifierModal,
   type ModifierModalProps,

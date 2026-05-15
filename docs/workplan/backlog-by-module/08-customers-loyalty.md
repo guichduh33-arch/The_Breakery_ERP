@@ -16,6 +16,7 @@
 ## Tâches
 
 ### TASK-08-001 — Tier upgrade notifications [P2] [TODO]
+**Status note (2026-05-14)** : Not delivered in Session 13. No `tier_upgrades` table migration in `supabase/migrations/20260517*.sql`, no `TierUpgradeModal.tsx` in `apps/pos/src/features/loyalty/components/` (only `LoyaltyPointsLine.tsx` + `RedeemButton.tsx`). Tier rules live in `packages/domain/src/loyalty/tiers.ts` but no upgrade-detection trigger or UI exists.
 **Contexte** : Tiers loyalty (Bronze/Silver/Gold/Platinum) existent (`CLAUDE.md` Business Rules). Quand un customer franchit un seuil, rien ne se passe visuellement → engagement raté. Inferred from code review + UX audit.
 **Critère d'acceptation** :
 - [ ] Trigger DB sur `loyalty_transactions` : si nouveau total points franchit un seuil tier → INSERT dans `tier_upgrades` (id, customer_id, old_tier, new_tier, occurred_at).
@@ -29,6 +30,7 @@
 **Risques** : Trop intrusif. Settings « show tier upgrade modal » optionnel.
 
 ### TASK-08-002 — Points expiration policy [P2] [TODO]
+**Status note (2026-05-14)** : Not delivered in Session 13. No `cron-expire-loyalty-points` EF in `supabase/functions/`, no expiration settings page, and no expiration logic in `packages/domain/src/loyalty/`. Birthday cron pattern from Phase 6.B (D-W6-6B-02, writes to `notification_outbox`) is the recommended reference architecture when this lands in Session 14+.
 **Contexte** : Pas de politique d'expiration points actuellement. Risque accumulation infinie + dette latente comptable (Store Credit Liability augmente sans limite). Inferred from accounting audit + product backlog.
 **Critère d'acceptation** :
 - [ ] Settings `loyalty.expiration_months` (default 12).
@@ -42,6 +44,7 @@
 **Risques** : Backlash customer si expirations rétroactives. Communiquer changement avant rollout.
 
 ### TASK-08-003 — B2B link with retail customer (unified profile) [P2] [TODO]
+**Status note (2026-05-14)** : Not delivered in Session 13. Phase 3.C added B2B fields to `customers` (`b2b_company_name`, `b2b_tax_id`, `b2b_payment_terms_days`, `b2b_credit_limit`, `b2b_current_balance` — see migration `20260517000130_extend_customers_b2b_fields.sql`) but no `parent_customer_id` self-FK was introduced. Customer linking UX deferred (depends on TASK-08-004 dedup landing first).
 **Contexte** : Un customer B2B (restaurant qui achète gros) peut aussi venir acheter en retail. Actuellement, 2 records distincts → loyalty ne cumule pas. Inferred from product backlog + B2B module.
 **Critère d'acceptation** :
 - [ ] Schema : `customers.parent_customer_id` nullable self-FK pour lier B2B → retail (ou inversement).
@@ -55,6 +58,7 @@
 **Risques** : Confusion UX si non clair quel record est « principal ». Documenter.
 
 ### TASK-08-004 — Customer merge / dedup [P2] [TODO]
+**Status note (2026-05-14)** : Not delivered in Session 13. No `phone_normalized` column migration, no `customers/duplicates` page, no `customerMerge.ts` in `packages/domain/src/customers/` (only `index.ts` + `types.ts`). Dedup tooling deferred to Session 14+.
 **Contexte** : Pas de dedup actuellement. Téléphones non-normalisés peuvent créer doublons (ex : `+62812345`, `081 234 5`, `0812345`). Inferred from operational reality.
 **Critère d'acceptation** :
 - [ ] Migration : ajouter colonne `phone_normalized` (générée ou trigger) format E.164.
@@ -68,7 +72,8 @@
 **Estimation** : `L`
 **Risques** : Merge irréversible. Confirmation modale + audit log obligatoire. Soft-delete plutôt que hard.
 
-### TASK-08-005 — Birthday rewards [P3] [TODO]
+### TASK-08-005 — Birthday rewards [P3] [DONE]
+**Status note (2026-05-14)** : Delivered Session 13 Phase 6.B. V3 evidence: migration `supabase/migrations/20260517000220_extend_customers_birthday.sql` (adds `birth_date` + `marketing_consent` opt-in gate per D-W6-6B-01), `20260517000222_init_birthday_cron.sql` (PL/pgSQL `notify_birthday_customers_v1` + `pg_cron` schedule `birthday-notify-daily 0 9 * * *`), and UI `apps/backoffice/src/features/marketing/components/BirthdayList.tsx` + `apps/backoffice/src/pages/marketing/BirthdayPage.tsx`. Per deviation D-W6-6B-02, the cron writes directly to `notification_outbox` (no separate EF — `pg_net` unavailable on staging). Commit `bdf21aa` (squashed PR #13).
 **Contexte** : Marketing basique : si customer a date de naissance enregistrée, lui offrir reward le jour J. Inferred from product backlog (customer segmentation/marketing missing).
 **Critère d'acceptation** :
 - [ ] Schema : `customers.birthday` (date, nullable, mois+jour suffisent).
@@ -82,7 +87,8 @@
 **Estimation** : `M`
 **Risques** : RGPD / data sensible (birthday = PII). Opt-in obligatoire.
 
-### TASK-08-006 — Customer notifications pipeline (WhatsApp / SMS) [P2] [TODO]
+### TASK-08-006 — Customer notifications pipeline (WhatsApp / SMS) [P2] [DONE]
+**Status note (2026-05-14)** : Email-only MVP delivered Session 13 Phase 5.B per decision D5. V3 evidence: `supabase/functions/notification-dispatch/index.ts`, `packages/domain/src/notifications/{composeMessage.ts,decideChannels.ts}`, migration `20260517000180_init_notification_templates.sql` + `20260517000181_pick_notifications_batch_rpc.sql`. WhatsApp / SMS channels remain deferred to Session 17+ (D5 deferral). Commit `bdf21aa` (squashed PR #13).
 **Contexte** : Indonésie = WhatsApp first. Pour B2B order ready, loyalty tier upgrade, birthday, payment reminder, on doit pouvoir notifier. Aucune intégration actuellement. Source : `docs/audit/07-product-backlog-audit.md§Strategic-9`.
 **Critère d'acceptation** :
 - [ ] Choix provider : WhatsApp Business API (Meta Cloud API) ou intermediary (Twilio, Wati, Fonnte).
@@ -97,6 +103,7 @@
 **Risques** : Provider externe = coût + KYC. Compliance opt-in (RGPD-like). Tester avec compte sandbox.
 
 ### TASK-08-007 — Loyalty redemption analytics [P3] [TODO]
+**Status note (2026-05-14)** : Not delivered in Session 13. No `LoyaltyAnalyticsTab.tsx` in `apps/backoffice/src/features/reports/` (Phase 2.B reports infra delivered sales-by-hour/category/staff/stock-variance/audit — no loyalty analytics page). Loyalty analytics scoped for Session 14+.
 **Contexte** : Pas de visibilité sur l'efficacité du programme loyalty. Combien de points créés vs redeemed ? Quel est le coût ? Inferred from reports module + accounting (Store Credit Liability).
 **Critère d'acceptation** :
 - [ ] Report dédié : KPIs (points issued, points redeemed, redemption rate, avg basket loyalty vs non-loyalty).
@@ -110,7 +117,8 @@
 **Estimation** : `M`
 **Risques** : Aucun.
 
-### TASK-08-008 — Migration phantom `customer_invoices` [P1] [TODO]
+### TASK-08-008 — Migration phantom `customer_invoices` [P1] [OBSOLETE]
+**Status note (2026-05-14)** : Resolved by decision pack D2 (`customer_invoices` = DROP usage). V3 plan: B2B 09 will use `orders.invoice_number` + `view_b2b_invoices` (Phase 3.C / future). `grep -R customer_invoices supabase/` returns 0 hit in V3 (confirmed in decision-pack §9), so there is no phantom to migrate — the V2 reference was dropped clean.
 **Contexte** : 3 références à `customer_invoices` dans `services/b2b/creditService.ts` mais table absente. RPC `generate_next_customer_invoice_number` aussi phantom. B2B invoicing pourrait être broken. Source : `docs/audit/03-code-quality-schema-audit.md§A1` + `§A2`.
 **Critère d'acceptation** :
 - [ ] Décision : feature B2B invoicing utile (probablement OUI vu module B2B existant) ?
@@ -131,7 +139,8 @@
 > Items issus de `docs/objectif travail/CUSTOMERS.md` §13 (limites assumées V2) — vision produit du module au-delà du tech-debt existant.
 > Ajoutés 2026-05-13 lors de la cascade docs (session 13). Expiration points, merge doublons, birthday rewards, notifications sont déjà couverts par TASK-08-002/004/005/006.
 
-### TASK-08-009 — Segmentation marketing RFM / scoring / cohortes [P3] [TODO]
+### TASK-08-009 — Segmentation marketing RFM / scoring / cohortes [P3] [DONE]
+**Status note (2026-05-14)** : Delivered Session 13 Phase 6.B. V3 evidence: RPCs `get_customer_segments_v1` + `get_customer_cohort_v1` in migration `supabase/migrations/20260517000221_create_marketing_rpcs.sql`; UI `apps/backoffice/src/features/marketing/components/{SegmentList,CohortHeatmap}.tsx` + pages `SegmentsPage.tsx` / `CohortReportPage.tsx`. Per deviation D-W6-6B-04 segments use 6 heuristic buckets (champions / loyal / at_risk / new / dormant / lost) rather than 5×5×5 quintile cube (low-N rationale). Commit `bdf21aa` (squashed PR #13).
 **Contexte** : aujourd'hui les analytics customer sont descriptives (combien de clients par tier, points en circulation). Pas de segmentation actionnable : qui est en train de partir, qui sont les nouveaux fidèles, etc.
 **Bénéfice attendu** : segmentation RFM (Recency, Frequency, Monetary) + cohortes mensuelles pour identifier qui relancer en priorité.
 **Critère d'acceptation** :
@@ -145,6 +154,7 @@
 **Notes** : pattern e-commerce classique adapté retail.
 
 ### TASK-08-010 — Programme de parrainage automatisé [P3] [TODO]
+**Status note (2026-05-14)** : Not delivered in Session 13. No `customers.referred_by` self-FK in migration `20260517000130_extend_customers_b2b_fields.sql` or `20260517000220_extend_customers_birthday.sql`, no referral trigger, no UI affordance. Referral program deferred.
 **Contexte** : aujourd'hui le parrainage est manuel (ajustement de points par le manager). Pas de tracking automatique.
 **Bénéfice attendu** : un client parraine un proche, les deux gagnent automatiquement des points à la première commande du filleul.
 **Critère d'acceptation** :
@@ -158,7 +168,8 @@
 **Risques** : abus si on crée des faux comptes — limite "1 parrainage par téléphone unique".
 **Notes** : V1 simple ; V2 codes parrainage uniques scannables.
 
-### TASK-08-011 — Multi-établissement (préparer V3) [P3] [TODO]
+### TASK-08-011 — Multi-établissement (préparer V3) [P3] [BLOCKED]
+**Status note (2026-05-14)** : Deferred to Wave 7 per INDEX line 69 "Phase 7.X Multi-currency, multi-tenancy, mobile shell, B2B portal — sessions 14+" and dependency on TASK-10-020 (Accounting consolidation). No `establishment_id` propagation in V3 schema. Multi-tenancy is an explicit Session 14+ scope item.
 **Contexte** : une seule base client aujourd'hui. Si The Breakery ouvre un 2e site (autre Ubud par ex), pas de partage / cloisonnement.
 **Bénéfice attendu** : un client peut être actif sur plusieurs sites avec son historique partagé OU cloisonné selon la politique commerciale.
 **Critère d'acceptation** :
@@ -171,7 +182,8 @@
 **Risques** : refonte structurante — à coupler avec consolidation Accounting.
 **Notes** : ne pas développer V2 — préparer le schéma seulement.
 
-### TASK-08-012 — App mobile dédiée client (loyalty) [P3] [TODO]
+### TASK-08-012 — App mobile dédiée client (loyalty) [P3] [BLOCKED]
+**Status note (2026-05-14)** : Deferred to Wave 7 per INDEX line 69 ("mobile shell — sessions 14+"). No `m.thebreakery.id` PWA scaffold, no consumer-facing loyalty app. Marked P3 long-term in spec; depends on TASK-08-006 (now DONE for email but WhatsApp/push still deferred).
 **Contexte** : aujourd'hui le QR code est imprimé / affiché sur écran. Pas d'app de fidélité côté consommateur.
 **Bénéfice attendu** : app PWA simple où le client voit ses points, son tier, ses promos disponibles, son historique → engagement renforcé.
 **Critère d'acceptation** :

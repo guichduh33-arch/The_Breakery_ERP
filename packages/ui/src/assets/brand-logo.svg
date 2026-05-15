@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The Breakery — BrandLogo static SVG (Session 14 / brand-logo-hotfix).
+
+  Full illustrated brand asset : stylized croissant + "THE BREAKERY"
+  Playfair wordmark + "French Bakery & Pastry" tagline.
+
+  Layout (matches POS Login + BO sidebar mockups
+  `docs/Design/caissapp/Capture d’écran 2026-05-01 215219.jpg` +
+  `docs/Design/backoffice/Capture d’écran 2026-05-01 220247.jpg`) :
+
+    [— THE BREAKERY —]      ← wordmark (Playfair, uppercase, tracked)
+        🥐                  ← croissant illustration (warm gold/brown)
+       French Bakery
+            &              ← tagline (stacked, small italic serif)
+          Pastry
+
+  This is the static, non-React counterpart to
+  `packages/ui/src/components/BrandLogo.tsx`. Use this file in contexts
+  where the React component is not available :
+    - email templates (transactional, marketing)
+    - PDF exports (invoices, reports)
+    - printed receipts / thermal tickets
+    - OG / social preview images
+
+  Visuals : the React component renders the same shapes with CSS-variable
+  fills so theme tokens can override. This static file uses hardcoded hex
+  values matching the current --gold-base / --gold-strong / brown accents.
+
+  ViewBox 280 × 140 chosen so the asset scales cleanly to :
+    - sm  120 × 60   (BO sidebar header)
+    - md  200 × 100  (standard)
+    - lg  280 × 140  (POS Login centered)
+    - xl  400 × 200  (Customer Display hero)
+-->
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 280 140"
+  width="280"
+  height="140"
+  role="img"
+  aria-label="The Breakery — French Bakery & Pastry"
+>
+  <title>The Breakery</title>
+  <desc>The Breakery brand logo : illustrated croissant with wordmark and tagline.</desc>
+
+  <defs>
+    <!-- warm croissant gradient : light gold on top → deeper brown on bottom -->
+    <linearGradient id="bl-croissant-fill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#d9b56b" />
+      <stop offset="55%" stop-color="#b8854a" />
+      <stop offset="100%" stop-color="#7a5230" />
+    </linearGradient>
+    <!-- darker accent for the croissant folds / striations -->
+    <linearGradient id="bl-croissant-fold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#8a5a30" />
+      <stop offset="100%" stop-color="#4d3018" />
+    </linearGradient>
+  </defs>
+
+  <!-- ────────────────────────── Wordmark ────────────────────────── -->
+  <!-- short accent line, left of wordmark -->
+  <line
+    x1="60" y1="20" x2="92" y2="20"
+    stroke="#c9a557" stroke-width="0.8" opacity="0.7"
+  />
+  <!-- THE BREAKERY — Playfair, uppercase, letter-spaced -->
+  <text
+    x="140" y="24"
+    text-anchor="middle"
+    font-family="'Playfair Display', 'Times New Roman', Georgia, serif"
+    font-weight="500"
+    font-size="14"
+    letter-spacing="2.4"
+    fill="#c9a557"
+  >THE BREAKERY</text>
+  <!-- short accent line, right of wordmark -->
+  <line
+    x1="188" y1="20" x2="220" y2="20"
+    stroke="#c9a557" stroke-width="0.8" opacity="0.7"
+  />
+
+  <!-- ────────────────────── Croissant illustration ────────────────────── -->
+  <!--
+    Stylized crescent croissant. Built from three layered paths :
+      1. base crescent body (gradient gold → brown)
+      2. inner shadow band (slightly darker, half-moon)
+      3. five vertical fold striations (lighter highlights)
+    Centered on x=140, sits between y=32 and y=80.
+  -->
+  <g transform="translate(140 60)">
+    <!-- Main crescent body -->
+    <path
+      d="M -38 8
+         C -38 -18, -18 -30, 0 -30
+         C 18 -30, 38 -18, 38 8
+         C 38 14, 35 18, 30 18
+         C 28 12, 22 6, 14 6
+         C 6 6, 0 12, -2 18
+         C -6 14, -14 14, -18 18
+         C -22 14, -30 14, -34 18
+         C -36 16, -38 12, -38 8 Z"
+      fill="url(#bl-croissant-fill)"
+      stroke="#5a3a1c"
+      stroke-width="0.6"
+      stroke-linejoin="round"
+    />
+    <!-- Inner shadow band (the underside curve of the croissant) -->
+    <path
+      d="M -34 6
+         C -28 -8, -14 -16, 0 -16
+         C 14 -16, 28 -8, 34 6
+         C 28 -4, 14 -10, 0 -10
+         C -14 -10, -28 -4, -34 6 Z"
+      fill="url(#bl-croissant-fold)"
+      opacity="0.55"
+    />
+    <!-- Highlight ridges (5 vertical curved strokes — croissant fold lines) -->
+    <path d="M -24 -8 Q -22 0 -18 8"   stroke="#e6c98a" stroke-width="1.2" fill="none" opacity="0.7" stroke-linecap="round" />
+    <path d="M -12 -16 Q -10 -4 -6 6"  stroke="#f0d59a" stroke-width="1.3" fill="none" opacity="0.75" stroke-linecap="round" />
+    <path d="M 0 -20 Q 0 -6 0 8"       stroke="#f5dca8" stroke-width="1.4" fill="none" opacity="0.8" stroke-linecap="round" />
+    <path d="M 12 -16 Q 10 -4 6 6"     stroke="#f0d59a" stroke-width="1.3" fill="none" opacity="0.75" stroke-linecap="round" />
+    <path d="M 24 -8 Q 22 0 18 8"      stroke="#e6c98a" stroke-width="1.2" fill="none" opacity="0.7" stroke-linecap="round" />
+
+    <!-- Tiny dark dots on the tips (croissant ends) -->
+    <circle cx="-36" cy="6"  r="1.2" fill="#3a2410" opacity="0.6" />
+    <circle cx="36"  cy="6"  r="1.2" fill="#3a2410" opacity="0.6" />
+  </g>
+
+  <!-- ────────────────────────── Tagline ────────────────────────── -->
+  <!--
+    "French Bakery / & / Pastry" stacked in 3 lines, small italic serif,
+    centered under the croissant. Mirrors the screenshot layout.
+  -->
+  <g
+    font-family="'Playfair Display', 'Times New Roman', Georgia, serif"
+    font-style="italic"
+    font-weight="400"
+    fill="#c9a557"
+    text-anchor="middle"
+  >
+    <text x="140" y="100" font-size="10">French Bakery</text>
+    <text x="140" y="114" font-size="11">&amp;</text>
+    <text x="140" y="128" font-size="10">Pastry</text>
+  </g>
+</svg>

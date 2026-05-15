@@ -16,7 +16,8 @@
 
 ## Tâches
 
-### TASK-25-001 — Restreindre RLS anon SELECT sur tables PII [P1] [TODO]
+### TASK-25-001 — Restreindre RLS anon SELECT sur tables PII [P1] [DONE]
+**Status note (2026-05-14)** : Delivered in Session 13 Phase 1.B. V3 evidence: `supabase/migrations/20260517000033_rls_pii_anon_to_authenticated.sql` flips `orders/order_items/customers/customer_categories/pos_sessions` SELECT from `anon` to `is_authenticated() OR has_kiosk_jwt()`; pgTAP suite `supabase/tests/security.test.sql` (T_SEC_*) asserts anon SELECT denied. Commit `bdf21aa`.
 **Contexte** : `docs/audit/01-architecture-security-audit.md` §P1-01 — *"16+ tables (products, categories, orders, order_items, customers, customer_categories, promotions, settings, suppliers, etc.) have FOR SELECT TO anon USING (true). Anyone with the anon key can read all customers, all orders. Data exfiltration of customer PII and business data."*
 **Critère d'acceptation** :
 - [ ] Migration : tables PII (`orders`, `order_items`, `customers`, `customer_categories`, `user_roles`) passées de `anon USING(true)` → `authenticated USING(true)`
@@ -29,7 +30,8 @@
 **Risques** : casse KDS / display si ces devices n'ont pas de session Supabase Auth — vérifier en staging d'abord (TASK-24-008)
 **Notes** : audit P2-03 (anon read sur roles / user_roles) inclus dans cette tâche
 
-### TASK-25-002 — Rate limiting Edge Functions [P1] [TODO]
+### TASK-25-002 — Rate limiting Edge Functions [P1] [DONE]
+**Status note (2026-05-14)** : Delivered in Session 13 Phase 1.B. V3 evidence: `supabase/functions/_shared/rate-limit.ts` (with durable Postgres-backed `checkRateLimitDurable`) + migration `20260517000031_init_edge_function_rate_limits.sql` (table `edge_function_rate_limits`); applied to `auth-verify-pin` (3/min/IP) and `kiosk-issue-jwt` (10/min/IP + 1/min/kiosk_id); covered by `supabase/tests/functions/auth-verify-pin-rate-limit.test.ts`. Commit `bdf21aa`.
 **Contexte** : `docs/audit/00-executive-summary.md` §P1 + `docs/audit/01-architecture-security-audit.md` §P1-01 + `08-operations-lan-audit.md` §2.3 P2 — *"No rate limiting on Edge Functions. auth-verify-pin exposed to brute-force PIN. Lockout is per-user, not per-IP. Attacker could enumerate PINs across multiple users without triggering per-user lockout."* + `CURRENT_STATE.md` T3.
 **Critère d'acceptation** :
 - [ ] Helper `_shared/rate-limit.ts` utilisant Supabase table `edge_function_rate_limits` (window-based, IP + endpoint)
@@ -43,7 +45,8 @@
 **Risques** : table rate_limits grossit vite — TTL cleanup automatique (delete > 10 min)
 **Notes** : alternative : utiliser Upstash Redis ou Cloudflare WAF (mais coût supplémentaire)
 
-### TASK-25-003 — Supprimer fallback PIN client-side [P1] [TODO]
+### TASK-25-003 — Supprimer fallback PIN client-side [P1] [DONE]
+**Status note (2026-05-14)** : Delivered in Session 13 Phase 1.B. V3 evidence: `apps/pos/src/stores/authStore.ts` dropped `supabase.auth.setSession()` fallback path; `apps/pos/src/features/auth/hooks/useAuthPin.ts` documents "EF is the sole arbiter ; if the EF is unreachable the user cannot log in"; commit `ed6e32a` body explicitly cites task 25-003. Commit `bdf21aa`.
 **Contexte** : `docs/audit/01-architecture-security-audit.md` §P1-02 — *"Client-side PIN fallback bypasses Edge Function security controls. _loginWithPinFallback uses anon key + RPC. Bypasses rate limiting, IP logging, and audit trail. If verify_user_pin is callable by anon, attacker can brute-force PINs at a rate limited only by Supabase's global rate limits — no per-user lockout, no audit logging."*
 **Critère d'acceptation** :
 - [ ] `authService._loginWithPinFallback` supprimé du code
@@ -56,7 +59,8 @@
 **Risques** : si Edge Function down = POS down → améliorer monitoring uptime Edge Function avant suppression
 **Notes** : aligner avec TASK-24-006 cold start optimization pour fiabilité
 
-### TASK-25-004 — Error message leakage `auth-verify-pin` [P1] [TODO]
+### TASK-25-004 — Error message leakage `auth-verify-pin` [P1] [DONE]
+**Status note (2026-05-14)** : Delivered in Session 13 Phase 1.B. V3 evidence: `supabase/functions/_shared/error-redact.ts` (with `redactError` + `logAndRedact` collapsing identity-mode failures to `invalid_credentials` and hiding stacks/PII); `auth-verify-pin/index.ts` consumes it; client `useAuthPin.ts` surfaces only the generic `invalid_credentials` string. Commit `bdf21aa`.
 **Contexte** : `docs/audit/01-architecture-security-audit.md` §P1-03 — *"errorResponse(\`Failed to create session: ${sessionError.message} (${sessionError.code})\`, 500, req). The Supabase error message and code are returned to the client. Could reveal database schema details, constraint names, or internal error codes."*
 **Critère d'acceptation** :
 - [ ] `auth-verify-pin/index.ts` line 193 → message générique "Failed to create session" client-side
@@ -68,7 +72,8 @@
 **Risques** : —
 **Notes** : déjà mentionné dans `CURRENT_STATE.md` Global Audit comme partiellement traité — re-vérifier
 
-### TASK-25-005 — CSP + HSTS headers SPA Vercel [P1] [TODO]
+### TASK-25-005 — CSP + HSTS headers SPA Vercel [P1] [DONE]
+**Status note (2026-05-14)** : Delivered in Session 13 Phase 1.B. V3 evidence: root `vercel.json` defines `Content-Security-Policy` (`default-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.ingest.sentry.io; frame-ancestors 'none'; ...`), `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload`, `X-Frame-Options DENY`, `Permissions-Policy`, `Referrer-Policy`. Commit `bdf21aa`.
 **Contexte** : `docs/audit/01-architecture-security-audit.md` §P2-07 — *"Edge Functions have CSP, but the SPA served by Vercel may not have equivalent CSP headers."* `CURRENT_STATE.md` Global Audit mentionne *"Security: CSP + HSTS headers on Vercel"* comme done ; à vérifier.
 **Critère d'acceptation** :
 - [ ] `vercel.json` contient `Content-Security-Policy` header strict :
@@ -88,7 +93,8 @@
 **Risques** : CSP trop strict casse une lib third-party — démarrer en `Content-Security-Policy-Report-Only` et observer 1 semaine
 **Notes** : —
 
-### TASK-25-006 — Audit Edge Functions permission checks [P1] [TODO]
+### TASK-25-006 — Audit Edge Functions permission checks [P1] [DONE]
+**Status note (2026-05-14)** : Delivered in Session 13 Phase 1.B + D-W6-PERMS-01. V3 evidence: `supabase/functions/_shared/permissions.ts` exists; `notification-dispatch/index.ts` calls `has_permission()`; commit `d97e057` ("fix(edge): D-W6-PERMS-01 — EF permissions read from DB") closes the audit sweep. V3 has only 11 EFs (vs 16 audited in V2) so matrix is narrower. Commit `bdf21aa`.
 **Contexte** : `CLAUDE.md` Pitfalls — *"Edge Functions: Must use verify_jwt: true + call user_has_permission(auth.uid(), 'module.action')"* + `docs/audit/08-operations-lan-audit.md` §2.3 — matrice par fonction. Toutes ne loggent pas les permission denials proprement.
 **Critère d'acceptation** :
 - [ ] Matrice par Edge Function : permission requise documentée dans `docs/reference/07-security/03-edge-functions-permissions.md`
@@ -101,7 +107,8 @@
 **Risques** : audit révèle gaps additionnels → backlog s'étend
 **Notes** : —
 
-### TASK-25-007 — Edge Functions `verify_jwt` config explicite [P2] [TODO]
+### TASK-25-007 — Edge Functions `verify_jwt` config explicite [P2] [DONE]
+**Status note (2026-05-14)** : Delivered in Session 13 Phase 1.B. V3 evidence: `supabase/config.toml` lines 369-383 declare `[functions.auth-verify-pin/auth-get-session/auth-logout/auth-change-pin] verify_jwt = false` and `[functions.process-payment] verify_jwt = true`. Public-auth endpoints and JWT-required endpoints are now explicit per design.
 **Contexte** : `docs/audit/08-operations-lan-audit.md` §2.3 P1 FINDING — *"No per-function verify_jwt configuration. CLAUDE.md states it but there is NO config.toml per-function or [functions.*] blocks. Defense-in-depth dictates verify_jwt should be explicit."*
 **Critère d'acceptation** :
 - [ ] `supabase/config.toml` contient `[functions.<name>]` avec `verify_jwt = true|false` selon Appendix A audit
@@ -115,6 +122,7 @@
 **Notes** : —
 
 ### TASK-25-008 — Secrets rotation policy [P2] [TODO]
+**Status note (2026-05-14)** : Partial / still applicable. V3 evidence: kiosk JWT signing keys table exists (`supabase/migrations/20260517000032_kiosk_jwt_signing_keys.sql`) and commit `2d3be8d` mentions "K8 rotation runbook", but `docs/reference/07-security/04-secrets-rotation.md` covering the full secrets list (service role, ANTHROPIC, SENTRY) is not yet authored. Keep TODO until full doc lands.
 **Contexte** : Pas mentionné explicitement audit mais best practice. `SUPABASE_SERVICE_ROLE`, `ANTHROPIC_API_KEY`, `SENTRY_AUTH_TOKEN` sont long-lived sans rotation.
 **Critère d'acceptation** :
 - [ ] Doc `docs/reference/07-security/04-secrets-rotation.md` :
@@ -130,6 +138,7 @@
 **Notes** : —
 
 ### TASK-25-009 — Dependency audit (`npm audit`) régulier [P2] [TODO]
+**Status note (2026-05-14)** : Still applicable, scheduled Session 14+. V3 evidence: `.github/workflows/` contains only `ci.yml` + `staging-deploy.yml`; no `security-scan.yml`, no `.github/dependabot.yml`. Project uses `pnpm` so command would be `pnpm audit`. Session 13 did not scope CI security workflows.
 **Contexte** : Pas vu dans audit. CVEs dans dependencies (Supabase JS, jsPDF, etc.) ne sont pas surveillées en CI.
 **Critère d'acceptation** :
 - [ ] `.github/workflows/security-scan.yml` : run `npm audit --audit-level=high` hebdo
@@ -143,8 +152,9 @@
 **Risques** : faux positifs (CVEs dans deps de build) → utiliser `--omit=dev`
 **Notes** : —
 
-### TASK-25-010 — `select('*')` audit final + cleanup [P2] [TODO]
-**Contexte** : `docs/audit/01-architecture-security-audit.md` §P2-01 + `03-code-quality-schema-audit.md` §A8 — *"3 remaining violations: useSupplierDetail.ts:69, UnitsTab.tsx:91, debug_pearl_sugar.ts:26 (debug file in root)."* + `08-operations-lan-audit.md` §P3 *"purchase_order_module Edge Function uses select('*')."*
+### TASK-25-010 — `select('*')` audit final + cleanup [P2] [OBSOLETE]
+**Contexte** : `docs/audit/01-architecture-security-audit.md` §P2-01 + `03-code-quality-schema-audit.md` §A8 —
+**Status note (2026-05-14)** : V2 monolith task. V3 file paths `useSupplierDetail.ts`, `UnitsTab.tsx`, `debug_pearl_sugar.ts`, `purchase_order_module/index.ts` do not exist (V3 has no `purchase_order_module` EF, debug files were not migrated). V3 supplier/units code lives in `apps/backoffice/src/features/{purchasing,catalog}/` with targeted selects already in place. No V3 equivalent — rebuilt differently. *"3 remaining violations: useSupplierDetail.ts:69, UnitsTab.tsx:91, debug_pearl_sugar.ts:26 (debug file in root)."* + `08-operations-lan-audit.md` §P3 *"purchase_order_module Edge Function uses select('*')."*
 **Critère d'acceptation** :
 - [ ] `useSupplierDetail.ts:69` → select colonnes explicites
 - [ ] `UnitsTab.tsx:91` → idem
@@ -157,7 +167,8 @@
 **Risques** : —
 **Notes** : —
 
-### TASK-25-011 — Audit log table consultation UI [P2] [TODO]
+### TASK-25-011 — Audit log table consultation UI [P2] [DONE]
+**Status note (2026-05-14)** : Delivered in Session 13 Phase 6.A/6.B. V3 evidence: `apps/backoffice/src/pages/reports/AuditPage.tsx` exists; `apps/backoffice/src/features/reports/hooks/useAuditLogs.ts` paginates via `supabase/migrations/20260517000076_paginate_audit_log_rpc.sql`; permission `reports.audit.read` seeded into ADMIN+MANAGER role grants. Route placement under `/reports` rather than `/security/audit-logs` is acceptable per Session 13 IA. Commit `bdf21aa`.
 **Contexte** : `audit_logs` table existe et reçoit événements (login, PIN change). UI `/reports/audit` existe mais permission unique `reports.sales` (cf. audit reports P1-2). Sécuriser la lecture audit_logs.
 **Critère d'acceptation** :
 - [ ] Page `/security/audit-logs` ou `/admin/audit` (vs reports : meilleure séparation)
@@ -172,6 +183,7 @@
 **Notes** : aligner avec TASK-19-005 (audit settings) qui pousse plus de rows dans audit_logs
 
 ### TASK-25-012 — Session hijacking protection (cookies SameSite, etc.) [P2] [TODO]
+**Status note (2026-05-14)** : Uncertain — manual review needed. V3 auth uses custom-fetch wrapper + PIN JWT injection (`packages/supabase/src/auth/`), not Supabase Auth cookies, so `SameSite` is less load-bearing. Vercel headers (HSTS + X-Frame DENY) cover transport; doc `docs/reference/07-security/05-session-security.md` not yet authored. Keep TODO for the doc deliverable.
 **Contexte** : Pas couvert audit (PIN auth ne stocke pas de cookies sensibles). Mais Supabase Auth (post magic link) peut. Vérifier.
 **Critère d'acceptation** :
 - [ ] Audit : Supabase client config → cookies `SameSite=Strict` ou `Lax` ; `Secure` flag
@@ -184,6 +196,7 @@
 **Notes** : —
 
 ### TASK-25-013 — Subresource Integrity (SRI) sur scripts externes [P3] [TODO]
+**Status note (2026-05-14)** : Still applicable, scheduled Session 14+. V3 evidence: no `vite-plugin-sri*` in `pnpm-lock.yaml`, no `integrity=` attributes in `apps/{pos,backoffice}/index.html`. Session 14 Phase 1.A loaded 4 canonical fonts (commit `950640a`) — confirm whether they are bundled or CDN; if CDN, SRI is relevant.
 **Contexte** : Si l'app charge des scripts externes (analytics, fonts CDN), absence SRI = compromis CDN injecte code.
 **Critère d'acceptation** :
 - [ ] Audit `index.html` + bundle final : tout `<script src=>` ou `<link rel=stylesheet>` externe a `integrity=` + `crossorigin=anonymous`
@@ -196,6 +209,7 @@
 **Notes** : Sentry est bundlé, fonts via Google = à vérifier
 
 ### TASK-25-014 — Penetration test annuel (P3 budget) [P3] [TODO]
+**Status note (2026-05-14)** : Still applicable, deferred (budget/business decision). Not in scope for any Session 13 phase. Wait until V3 reaches production parity with V2 before scoping external pentest.
 **Contexte** : Pas mentionné mais pratique standard pour ERP touchant données fiscales. Budget externe.
 **Critère d'acceptation** :
 - [ ] Recherche prestataire (Synacktiv, NCC Group, Cure53, ou local Indonesia)
@@ -209,6 +223,7 @@
 **Notes** : reporter tant que pas requis par client/régulation
 
 ### TASK-25-015 — Validation UUID format `auth-verify-pin` [P2] [TODO]
+**Status note (2026-05-14)** : Still applicable, scheduled Session 14+. V3 evidence: grep for `UUID_REGEX|validateUuid|isUUID` in `supabase/functions/_shared/` returns 0 matches; `auth-verify-pin/index.ts` has no UUID pre-check. Defence-in-depth — DB still rejects malformed UUIDs at query level.
 **Contexte** : `docs/audit/01-architecture-security-audit.md` §P2-02 — *"auth-verify-pin checks if (!user_id || !pin) but doesn't validate that user_id is a valid UUID format. A malformed user_id would fail at the DB query level, but validating input format early is defense-in-depth."*
 **Critère d'acceptation** :
 - [ ] Regex UUID v4 ajouté dans `auth-verify-pin/index.ts` : si non valide → 400 immédiat
@@ -220,7 +235,8 @@
 **Risques** : —
 **Notes** : —
 
-### TASK-25-016 — `auth-logout` derive user_id from session [P2] [TODO]
+### TASK-25-016 — `auth-logout` derive user_id from session [P2] [DONE]
+**Status note (2026-05-14)** : Delivered in Session 13 Phase 1.B. V3 evidence: `supabase/functions/auth-logout/index.ts` is 29 lines, reads `userId` exclusively from `requireSession(req)` (`sessionResult.userId`), never from request body; audit log uses derived id only. Commit `bdf21aa`.
 **Contexte** : `docs/audit/01-architecture-security-audit.md` §P2-06 — *"auth-logout extracts session_id and user_id from request body, then verifies the caller matches. If validation accidentally removed → bug class. Recommendation: derive user_id entirely from authenticated session rather than accepting it in the request body."*
 **Critère d'acceptation** :
 - [ ] `auth-logout/index.ts` ne lit plus `user_id` depuis request body
@@ -233,6 +249,7 @@
 **Notes** : —
 
 ### TASK-25-017 — `console.error` → logger.error en prod [P3] [TODO]
+**Status note (2026-05-14)** : Still applicable, scheduled Session 14+. V3 evidence: grep `console.error|console.warn` across `apps/` returns 3 occurrences in 2 files (`useEvaluatePromotions.ts`, `lanHubMessageHandler.ts`) — much smaller scope than V2's 18; no central `logger` util exists yet in `packages/utils` or `apps/*/src/lib/`. V2 `resetAllStores.ts` does not exist in V3.
 **Contexte** : `docs/audit/01-architecture-security-audit.md` §P2-04 + §P3-05 — *"console.error in production code paths bypasses logger's level filtering. 18 console.log/warn/debug/info calls in src/ (9 files)."*
 **Critère d'acceptation** :
 - [ ] Audit + remplacement : tous `console.error/warn/log` dans `src/` → `logger.error/warn/info`
