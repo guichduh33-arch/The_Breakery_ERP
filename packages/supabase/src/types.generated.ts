@@ -142,6 +142,7 @@ export type Database = {
           pos_discount_presets: Json
           pos_opening_cash_presets: Json
           pos_quick_payment_amounts: Json
+          production_yield_variance_threshold_pct: number
           shift_variance_threshold_abs: number
           shift_variance_threshold_pct: number
           tax_inclusive: boolean
@@ -158,6 +159,7 @@ export type Database = {
           pos_discount_presets?: Json
           pos_opening_cash_presets?: Json
           pos_quick_payment_amounts?: Json
+          production_yield_variance_threshold_pct?: number
           shift_variance_threshold_abs?: number
           shift_variance_threshold_pct?: number
           tax_inclusive?: boolean
@@ -174,6 +176,7 @@ export type Database = {
           pos_discount_presets?: Json
           pos_opening_cash_presets?: Json
           pos_quick_payment_amounts?: Json
+          production_yield_variance_threshold_pct?: number
           shift_variance_threshold_abs?: number
           shift_variance_threshold_pct?: number
           tax_inclusive?: boolean
@@ -2177,8 +2180,10 @@ export type Database = {
       }
       production_records: {
         Row: {
+          actual_yield_qty: number | null
           batch_number: string | null
           created_at: string
+          expected_yield_qty: number | null
           id: string
           idempotency_key: string | null
           je_posted: boolean
@@ -2198,10 +2203,14 @@ export type Database = {
           staff_id: string | null
           stock_updated: boolean
           updated_at: string
+          yield_variance_pct: number | null
+          yield_variance_reason: string | null
         }
         Insert: {
+          actual_yield_qty?: number | null
           batch_number?: string | null
           created_at?: string
+          expected_yield_qty?: number | null
           id?: string
           idempotency_key?: string | null
           je_posted?: boolean
@@ -2221,10 +2230,14 @@ export type Database = {
           staff_id?: string | null
           stock_updated?: boolean
           updated_at?: string
+          yield_variance_pct?: number | null
+          yield_variance_reason?: string | null
         }
         Update: {
+          actual_yield_qty?: number | null
           batch_number?: string | null
           created_at?: string
+          expected_yield_qty?: number | null
           id?: string
           idempotency_key?: string | null
           je_posted?: boolean
@@ -2244,6 +2257,8 @@ export type Database = {
           staff_id?: string | null
           stock_updated?: boolean
           updated_at?: string
+          yield_variance_pct?: number | null
+          yield_variance_reason?: string | null
         }
         Relationships: [
           {
@@ -5218,7 +5233,9 @@ export type Database = {
       }
       record_production_v1: {
         Args: {
+          p_actual_yield_qty?: number
           p_batch_number?: string
+          p_expected_yield_qty?: number
           p_idempotency_key?: string
           p_notes?: string
           p_product_id: string
@@ -5226,6 +5243,7 @@ export type Database = {
           p_quantity_waste?: number
           p_recurse_subrecipes?: boolean
           p_section_id: string
+          p_yield_variance_reason?: string
         }
         Returns: Json
       }
