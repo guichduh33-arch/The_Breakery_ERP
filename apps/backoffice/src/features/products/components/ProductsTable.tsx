@@ -9,8 +9,10 @@
 import { Box, DollarSign, Eye, Trash2 } from 'lucide-react';
 import type { JSX } from 'react';
 import {
+  AllergenBadge,
   Currency,
   DataTable,
+  type AllergenType,
   type DataTableColumn,
 } from '@breakery/ui';
 import { CategoryChip } from './CategoryChip.js';
@@ -20,6 +22,8 @@ import { classifyProduct, type ProductRow } from '../types.js';
 interface Props {
   rows: ReadonlyArray<ProductRow>;
   isLoading?: boolean;
+  /** Map<product_id, resolved-allergens> from `view_product_allergens_resolved`. */
+  resolvedAllergens?: ReadonlyMap<string, ReadonlyArray<AllergenType>>;
   onRowClick?: (row: ProductRow) => void;
   onView?:     (row: ProductRow) => void;
   onPricing?:  (row: ProductRow) => void;
@@ -29,6 +33,7 @@ interface Props {
 export function ProductsTable({
   rows,
   isLoading = false,
+  resolvedAllergens,
   onRowClick,
   onView,
   onPricing,
@@ -101,6 +106,24 @@ export function ProductsTable({
           {r.is_active ? 'Active' : 'Inactive'}
         </span>
       ),
+    },
+    {
+      id: 'allergens',
+      header: 'Allergens',
+      align: 'left',
+      render: (r) => {
+        const resolved = resolvedAllergens?.get(r.id) ?? [];
+        if (resolved.length === 0) {
+          return <span className="text-text-muted">—</span>;
+        }
+        return (
+          <div className="flex flex-wrap gap-0.5" data-testid={`products-table-allergens-${r.id}`}>
+            {resolved.map((a) => (
+              <AllergenBadge key={a} allergen={a} size="sm" />
+            ))}
+          </div>
+        );
+      },
     },
     {
       id: 'actions',

@@ -3,6 +3,7 @@
 // Session 14 / Phase 4.B — Single product fetch for the detail page.
 
 import { useQuery } from '@tanstack/react-query';
+import type { AllergenType } from '@breakery/ui';
 import { supabase } from '@/lib/supabase.js';
 import type { ProductRow } from '../types.js';
 
@@ -22,6 +23,7 @@ interface ProductRowDb {
   unit:             string;
   is_active:        boolean;
   is_favorite:      boolean;
+  allergens:        AllergenType[] | null;
   categories:       { name: string } | { name: string }[] | null;
 }
 
@@ -39,7 +41,7 @@ export function useProductDetail(productId: string | null) {
           retail_price, wholesale_price, cost_price,
           product_type, tax_inclusive, image_url,
           current_stock, min_stock_threshold, unit,
-          is_active, is_favorite,
+          is_active, is_favorite, allergens,
           categories:categories ( name )
         `)
         .eq('id', productId)
@@ -67,6 +69,7 @@ export function useProductDetail(productId: string | null) {
         unit:                r.unit,
         is_active:           r.is_active,
         is_favorite:         r.is_favorite,
+        allergens:           r.allergens ?? [],
         category_name:       categoryName,
       } satisfies ProductRow;
     },
