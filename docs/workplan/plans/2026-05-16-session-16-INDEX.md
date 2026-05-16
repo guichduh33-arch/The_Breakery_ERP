@@ -289,12 +289,21 @@ Pattern : chaque subagent SendMessage `lead` à completion ; lead route à `revi
 
 ## 10. Deviation packs (Session 16 → Session 17+)
 
-*To be filled during Phase 4.A closeout. Pre-identified limitations are in spec §6 :*
+Recorded during Wave 1-3 execution. All deviations are functionally non-blocking and are filed as follow-ups for Session 17+ triage.
 
-- `DEV-S16-2.B-01` — Per-version cost is depth-1 only (sub-recipe cascade in snapshot deferred S17+).
-- `DEV-S16-2.B-02` — Legacy `recipe_versions` rows stay in bare-array shape with no cost data.
-- `DEV-S16-2.C-01` — Graph builder uses iterative `useQueries` BFS ; future `recipe_bom_full_v1` RPC could shrink network footprint.
-- `DEV-S16-1.A-01` — Nightly pgTAP is the only automated check ; no PR-time gate.
+| ID | Phase | Description | Severity |
+|---|---|---|---|
+| **DEV-S16-1.A-01** | 1.A | Nightly pgTAP cron (`pgtap-nightly.yml`) is the only automated check ; no PR-time gate. Per-PR gating via Supabase branches or manual MCP run is not enforced by tooling. Documented as the canonical PR-time check in CLAUDE.md. | informational |
+| **DEV-S16-2.A-01** | 2.A | `pg_trgm` GIN indexes are created on `products.name`/`sku` (migration `20260520000013`) but the `search_ingredients_v1` RPC filter uses `similarity(col, q) >= 0.3` on a CTE-projected expression, which the planner cannot match against the GIN indexes (only the `%` operator + `set_limit()` does). At <5k products the seq-scan is invisible. Future fix : rewrite predicate to use `col % v_query` operator AND `SET LOCAL pg_trgm.similarity_threshold = 0.3` inside the RPC. | low |
+| **DEV-S16-2.B-01** | 2.B | `product_cost_at_version` in `recipe_versions.snapshot` is **depth-1 only**. Sub-recipe material costs resolve to `products.cost_price` at trigger time (depth-0 lookup), not a recursive cascade. If a sub-recipe is later edited, the historical `product_cost_at_version` won't reflect the recomputed cascade. Full-cascade snapshot deferred to Session 17+. | low |
+| **DEV-S16-2.B-02** | 2.B | Legacy `recipe_versions` rows (pre-Session-16) stay in bare-array shape with no cost data. UI shows "cost —" placeholder. A bulk-rewrite migration would be lossy (no historical `products.cost_price` available) ; gap is accepted. | low |
+| **DEV-S16-2.B-03** | 2.B | `WHEN OTHERS` exception block in `tr_snapshot_recipe_version` (Session 15 carryover ; re-touched in `20260520000020` without cleanup) swallows all error classes when resolving `auth.uid()` → `user_profiles.id`. Should be removed (SELECT INTO doesn't raise NO_DATA_FOUND in PL/pgSQL — block is unnecessary) or narrowed to `WHEN insufficient_privilege`. | low |
+| **DEV-S16-2.B-04** | 2.B | NULL `material_cost_price` is silently dropped via `SUM((qty)::NUMERIC * (cost)::NUMERIC)` in the trigger body and the refresh CTE — a NUMERIC × NULL produces NULL, which SUM ignores. Result : audit log silently under-reports cost when a material has NULL `products.cost_price`. Fix : `COALESCE((cost)::NUMERIC, 0)` in both SUM expressions. Currently invisible on V3 dev (all materials have non-NULL cost_price). | low |
+| **DEV-S16-2.B-05** | 2.B | Refresh migration `20260520000021` writes rows with `change_note = 'cost_snapshot_refresh'` — recognizable to maintainers but opaque to operators viewing the timeline. Could be expanded to `'system refresh: cost data added 2026-05-16'`. | informational |
+| **DEV-S16-2.C-01** | 2.C | UI graph builder uses iterative `useQueries` BFS ; one RPC per discovered product. Future `recipe_bom_full_v1` RPC could compute the full leaf-only BoM in one call and shrink the network footprint. | informational |
+| **DEV-S16-2.C-02** | 2.C | `useGraphBuilder` does only TWO static `useQueries` rounds (roots + their direct children). With `MAX_BFS_DEPTH = 5` configured on `expandRecipeCascade`, recipes deeper than 2 levels would be partial — the cascade walker would see sub-recipe products as leaves because they weren't fetched. For The Breakery's typical 2-level bakery recipes this is exact ; for deeper nesting the preview is approximate and `record_batch_production_v1` server cascade remains the source of truth. File header documents the limitation (commit `3fecfa8`). Future fix : iterative round-loop or server-side cascade RPC. | medium |
+
+**Resolution targets:** each item is filed as a follow-up backlog candidate for Session 17+ triage. The medium-severity item (DEV-S16-2.C-02) is the strongest candidate for early Session 17 work since it materially affects preview accuracy as bakery recipes grow deeper.
 
 ---
 
