@@ -4,9 +4,9 @@
 //
 // Previously did 2 static useQueries rounds capped at depth-2 (DEV-S16-2.C-02).
 // Now does one round (one RPC call per root), full depth-5 cascade server-side.
-// expandRecipeCascade is no longer used here ; it remains exported from
-// @breakery/domain for RecipeEditor live preview (which needs to project
-// unsaved client-side recipe changes).
+// expandRecipeCascade (in @breakery/domain) is no longer used here. It remains
+// exported as a public API for future client-side cascade needs that can't
+// round-trip to the server (e.g. unsaved-recipe live previews).
 
 import { useMemo, type JSX } from 'react';
 import { useQueries } from '@tanstack/react-query';
