@@ -1,11 +1,18 @@
 // apps/backoffice/src/features/inventory-production/components/IngredientAggregatePreview.tsx
 //
-// Session 16 / Phase 2.C — full sub-recipe cascade preview.
+// Session 16 / Phase 2.C — sub-recipe cascade preview (depth-2 BFS).
 //
 // For each (productId, qty_produced + qty_waste) :
-//   1. Build a RecipeGraph by BFS-fetching list_recipes_v1 for every reachable
-//      product (cached per-id by TanStack Query).
-//   2. Call expandRecipeCascade(graph, productId, multiplier) — leaves only.
+//   1. Build a RecipeGraph via two static `useQueries` rounds
+//      (roots + direct children). Products discovered at level-2 that are
+//      themselves recipes will appear as leaves in the preview because the
+//      builder does NOT iterate to level-3+. For The Breakery's current
+//      bakery recipes (typically ≤ 2 levels) this is exact ; for deeper
+//      nesting the preview is an approximation and `record_batch_production_v1`
+//      server cascade remains the source of truth (DEV-S16-2.C-02 tracks the
+//      future `recipe_bom_full_v1` RPC to remove this limitation).
+//   2. Call expandRecipeCascade(graph, productId, multiplier) — leaves only,
+//      where "leaves" is relative to the level-2-capped graph built above.
 //   3. Sum requirements by material_id.
 //   4. Compare to a fresh products.current_stock snapshot.
 
