@@ -16,7 +16,7 @@
 -- All products use unit='pcs' so convert_quantity is identity (no conversion needed).
 
 BEGIN;
-SELECT plan(14);
+SELECT plan(20);
 
 -- ============================================================================
 -- FIXTURES
@@ -302,6 +302,157 @@ SELECT ok(
       AND version_number <= prev_version
   ),
   'recipe_versions version_number is strictly monotonically increasing per product (append-only)'
+);
+
+-- ============================================================================
+-- Phase 1.B — tr_snapshot_on_product_cost_change tests (T15–T20)
+-- Fixture reuses the same products inserted above (p_leaf, p_sub, p_top,
+-- p_top2) which are all still present at this point in the transaction.
+-- After Phase 1.A tests, p_sub's recipe row was hard-deleted (TEST 13).
+-- We re-insert p_sub → p_leaf and p_top → p_sub, p_top2 → p_sub so the
+-- ancestor graph is intact for cost_price trigger tests.
+-- ============================================================================
+
+-- Restore fixture graph (p_sub recipe was deleted in TEST 13)
+INSERT INTO recipes (product_id, material_id, quantity, unit, is_active)
+VALUES
+  ('10000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000001', 2, 'pcs', true),
+  ('10000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000002', 3, 'pcs', true),
+  ('10000000-0000-0000-0000-000000000004', '10000000-0000-0000-0000-000000000002', 1, 'pcs', true)
+ON CONFLICT DO NOTHING;
+
+-- ============================================================================
+-- TEST 15: tr_snapshot_on_product_cost_change function exists
+-- ============================================================================
+SELECT ok(
+  (SELECT COUNT(*) FROM pg_proc
+   WHERE proname = 'tr_snapshot_on_product_cost_change'
+     AND pronamespace = 'public'::regnamespace) = 1,
+  'tr_snapshot_on_product_cost_change() function exists'
+);
+
+-- ============================================================================
+-- TEST 16: trigger tr_snapshot_on_product_cost_change is attached to products
+-- ============================================================================
+SELECT ok(
+  (SELECT COUNT(*) FROM pg_trigger t
+   JOIN pg_class c ON c.oid = t.tgrelid
+   WHERE c.relname = 'products'
+     AND t.tgname = 'tr_snapshot_on_product_cost_change') = 1,
+  'trigger tr_snapshot_on_product_cost_change is attached to products table'
+);
+
+-- ============================================================================
+-- TEST 17: UPDATE cost_price on leaf → snapshots for ancestors (p_sub, p_top,
+--          p_top2) but NOT for the leaf itself.
+-- ============================================================================
+DO $$
+DECLARE
+  v_leaf_before INT := (SELECT COUNT(*)::int FROM recipe_versions WHERE product_id = '10000000-0000-0000-0000-000000000001');
+  v_sub_before  INT := (SELECT COUNT(*)::int FROM recipe_versions WHERE product_id = '10000000-0000-0000-0000-000000000002');
+  v_top_before  INT := (SELECT COUNT(*)::int FROM recipe_versions WHERE product_id = '10000000-0000-0000-0000-000000000003');
+  v_top2_before INT := (SELECT COUNT(*)::int FROM recipe_versions WHERE product_id = '10000000-0000-0000-0000-000000000004');
+BEGIN
+  -- Change leaf cost_price from 100 → 150
+  UPDATE products SET cost_price = 150
+  WHERE id = '10000000-0000-0000-0000-000000000001';
+
+  -- Leaf itself: no new snapshot (it has no ancestors — it IS the leaf)
+  ASSERT (SELECT COUNT(*)::int FROM recipe_versions WHERE product_id = '10000000-0000-0000-0000-000000000001') = v_leaf_before,
+    format('leaf must NOT gain a snapshot: before=%s after=%s', v_leaf_before,
+           (SELECT COUNT(*)::int FROM recipe_versions WHERE product_id = '10000000-0000-0000-0000-000000000001'));
+  -- p_sub gained 1 snapshot (it uses p_leaf)
+  ASSERT (SELECT COUNT(*)::int FROM recipe_versions WHERE product_id = '10000000-0000-0000-0000-000000000002') = v_sub_before + 1,
+    format('p_sub must gain 1 snapshot: before=%s after=%s', v_sub_before,
+           (SELECT COUNT(*)::int FROM recipe_versions WHERE product_id = '10000000-0000-0000-0000-000000000002'));
+  -- p_top gained 1 snapshot (it uses p_sub which uses p_leaf)
+  ASSERT (SELECT COUNT(*)::int FROM recipe_versions WHERE product_id = '10000000-0000-0000-0000-000000000003') = v_top_before + 1,
+    format('p_top must gain 1 snapshot: before=%s after=%s', v_top_before,
+           (SELECT COUNT(*)::int FROM recipe_versions WHERE product_id = '10000000-0000-0000-0000-000000000003'));
+  -- p_top2 gained 1 snapshot (it uses p_sub which uses p_leaf)
+  ASSERT (SELECT COUNT(*)::int FROM recipe_versions WHERE product_id = '10000000-0000-0000-0000-000000000004') = v_top2_before + 1,
+    format('p_top2 must gain 1 snapshot: before=%s after=%s', v_top2_before,
+           (SELECT COUNT(*)::int FROM recipe_versions WHERE product_id = '10000000-0000-0000-0000-000000000004'));
+END $$;
+
+SELECT pass('TEST 17: UPDATE leaf cost_price → ancestors snapshotted (p_sub, p_top, p_top2), leaf NOT snapshotted (verified in DO block)');
+
+-- ============================================================================
+-- TEST 18: Noop UPDATE (same value) → zero new snapshots, no error
+-- ============================================================================
+DO $$
+DECLARE
+  v_total_before INT := (SELECT COUNT(*)::int FROM recipe_versions
+    WHERE product_id IN (
+      '10000000-0000-0000-0000-000000000001',
+      '10000000-0000-0000-0000-000000000002',
+      '10000000-0000-0000-0000-000000000003',
+      '10000000-0000-0000-0000-000000000004'
+    ));
+  v_total_after  INT;
+BEGIN
+  -- UPDATE to same value — IS DISTINCT FROM guard must suppress snapshot
+  UPDATE products SET cost_price = 150
+  WHERE id = '10000000-0000-0000-0000-000000000001';
+
+  v_total_after := (SELECT COUNT(*)::int FROM recipe_versions
+    WHERE product_id IN (
+      '10000000-0000-0000-0000-000000000001',
+      '10000000-0000-0000-0000-000000000002',
+      '10000000-0000-0000-0000-000000000003',
+      '10000000-0000-0000-0000-000000000004'
+    ));
+
+  ASSERT v_total_after = v_total_before,
+    format('noop UPDATE must produce zero new snapshots: before=%s after=%s', v_total_before, v_total_after);
+END $$;
+
+SELECT pass('TEST 18: noop UPDATE on cost_price (same value) → zero new snapshots (verified in DO block)');
+
+-- ============================================================================
+-- TEST 19: UPDATE cost_price on product with NO recipe ancestors → zero
+--          snapshots, no error. Use p_top (no recipe uses p_top as material).
+-- ============================================================================
+DO $$
+DECLARE
+  v_total_before INT := (SELECT COUNT(*)::int FROM recipe_versions
+    WHERE product_id IN (
+      '10000000-0000-0000-0000-000000000001',
+      '10000000-0000-0000-0000-000000000002',
+      '10000000-0000-0000-0000-000000000003',
+      '10000000-0000-0000-0000-000000000004'
+    ));
+  v_total_after  INT;
+BEGIN
+  -- p_top has no ancestors (nothing uses p_top as a material)
+  UPDATE products SET cost_price = 999
+  WHERE id = '10000000-0000-0000-0000-000000000003';
+
+  v_total_after := (SELECT COUNT(*)::int FROM recipe_versions
+    WHERE product_id IN (
+      '10000000-0000-0000-0000-000000000001',
+      '10000000-0000-0000-0000-000000000002',
+      '10000000-0000-0000-0000-000000000003',
+      '10000000-0000-0000-0000-000000000004'
+    ));
+
+  ASSERT v_total_after = v_total_before,
+    format('UPDATE on product with no recipe ancestors must produce zero snapshots: before=%s after=%s', v_total_before, v_total_after);
+END $$;
+
+SELECT pass('TEST 19: UPDATE cost_price on product with no recipe ancestors → zero snapshots, no error (verified in DO block)');
+
+-- ============================================================================
+-- TEST 20: change_note matches 'material price update: <name> <old>→<new>'
+-- We updated p_leaf 100→150 in TEST 17. The latest snapshot for p_sub should
+-- carry that change_note.
+-- ============================================================================
+SELECT matches(
+  (SELECT change_note FROM recipe_versions
+   WHERE product_id = '10000000-0000-0000-0000-000000000002'
+   ORDER BY version_number DESC LIMIT 1),
+  '^material price update: .+ \S+→\S+$',
+  'cascade snapshot change_note matches pattern ''material price update: <name> <old>→<new>'''
 );
 
 SELECT * FROM finish();
