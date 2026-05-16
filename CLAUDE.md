@@ -13,17 +13,18 @@
 
 ## Active Workplan
 
-> Read this **before** opening code on Session 15 work.
+> Read this **before** opening code on Session 16 work.
 
-- **Current session:** Session 15 — Bakery Production (F6 sub-recipes + F5 yield + recipe pro features). INDEX: [`docs/workplan/plans/2026-05-15-session-15-INDEX.md`](docs/workplan/plans/2026-05-15-session-15-INDEX.md). Spec: [`docs/workplan/specs/2026-05-15-session-15-spec.md`](docs/workplan/specs/2026-05-15-session-15-spec.md). Branch: `swarm/session-15` from master (Session 14 merged `d7d60d5`, CI fix `9d98f61`).
-- **Status:** Session 15 Wave 0 (planning) — Spec + INDEX écrits, branch `swarm/session-15` créée. 14 phases / 6 waves estimées ~55h. Migration block reserved `20260519000001..210`. Decisions D1-D18 in spec (anti-cycle trigger D1, recursive cost RPC D2, atomic leaf deduction D3, JE = actual_yield D5, threshold 15% D6, EU allergens enum D14). Next: Wave 1 (F6 sub-recipes — DB anti-cycle + cost RPC + recipe_versions + record_production cascade).
-- **Previous session:** Session 14 — UX completion ✓ merged `d7d60d5` on 2026-05-14 (68 commits, 6 waves). INDEX: [`docs/workplan/plans/2026-05-14-session-14-INDEX.md`](docs/workplan/plans/2026-05-14-session-14-INDEX.md).
+- **Current session:** Session 16 — TBD (next session opens with backlog selection from `docs/workplan/backlog-by-module/`).
+- **Previous session:** Session 15 — Bakery Production ✓ merged 2026-05-16 on `swarm/session-15` (53 commits, 6 waves, 32 migrations, INDEX: [`docs/workplan/plans/2026-05-15-session-15-INDEX.md`](docs/workplan/plans/2026-05-15-session-15-INDEX.md)). Spec: [`docs/workplan/specs/2026-05-15-session-15-spec.md`](docs/workplan/specs/2026-05-15-session-15-spec.md). Delivered F6 sub-recipes (anti-cycle + cost cascade + recipe_versions + record_production cascade), F5 yield tracking (expected/actual + variance modal + JE actual), recipe pro features (IngredientPicker + DnD + Duplicate + Batch + Schedule + Margin alerts + Boulanger % + EU allergens). Deviations tracked in INDEX §13.
+- **Session 14 reference:** UX completion ✓ merged `d7d60d5` on 2026-05-14 (68 commits, 6 waves). INDEX: [`docs/workplan/plans/2026-05-14-session-14-INDEX.md`](docs/workplan/plans/2026-05-14-session-14-INDEX.md).
 - **Session 13 follow-ups (deferred Session 16+):** Playwright CI job (D-W6-6C-05), `pg_net`-based birthday cron (D-W6-6B-02), Cash Flow Investing/Financing sections (D-W6-6A-2), `mv_pl_monthly` branched reuse (D-W6-6A-1), staging-deploy.yml secrets (D-W6-CICD-01).
+- **Session 15 follow-ups (deferred Session 16+):** Receipt template + customer display allergen integration (DEV-S15-5.C-01), per-version recipe cost reconstruction in history view (DEV-S15-2.B-01), `is_semi_finished` product flag (DEV-S15-3.A-01), `pg_trgm` indexes for product search ranking (DEV-S15-3.A-02), multi-level ingredient aggregate preview (DEV-S15-4.A-02). Full list in INDEX §13.
 - **Module reference (canonical):** [`docs/reference/04-modules/`](docs/reference/04-modules/) per module (e.g., `15-production-recipes.md` for production).
-- **Backlogs:** `docs/workplan/backlog-by-module/01-…25-….md` — 25 modules, ~280 tasks total. Session 15 source : `15-production-recipes.md` (TASK-15-001..012) + `05-products-categories.md` (TASK-05-001 F6).
+- **Backlogs:** `docs/workplan/backlog-by-module/01-…25-….md` — 25 modules, ~280 tasks total. Session 16 source : TBD (open with backlog triage).
 - **Execution skill:** invoke `superpowers:subagent-driven-development` (or `superpowers:executing-plans`) before running a phase. Each phase is isolated → one subagent per phase, parallelizable per Wave.
 - **Workplan layout:** `docs/workplan/{plans,specs,refs,backlog-by-module}/`. Plans/specs are **dated, append-only history** — never rewrite past plans; create a new dated file. Backlog files are living docs (update in place).
-- **Migration sequence active:** Session 15 uses `20260519xxxxxx_*.sql` block (`000001..210` reserved). Session 14 used `20260518000001..003`. Session 13 used `20260517xxxxxx`. Keep numbering monotonic — check `supabase/migrations/` before picking the next number.
+- **Migration sequence active:** Session 16 will start a new block `20260520xxxxxx...` ; Session 15 used `20260519000001..162` (32 migrations). Session 14 used `20260518000001..003`. Session 13 used `20260517xxxxxx`. Keep numbering monotonic — check `supabase/migrations/` before picking the next number.
 
 ## Project Conventions (The Breakery ERP)
 

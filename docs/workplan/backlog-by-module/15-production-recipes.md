@@ -252,3 +252,21 @@ TASK-15-006 (scheduling) → dépend TASK-15-002
 | TASK-15-004 | besoin métier matin fournée | — |
 | TASK-15-005 | 04-reports-testing-audit.md | "Recipe Cost Trends MISSING" |
 | TASK-15-006 | 07-product-backlog-audit.md | "Production scheduling not on backlog" |
+
+## Session 15 → Session 16+ follow-ups
+
+Deviations recorded during Session 15 execution (see `docs/workplan/plans/2026-05-15-session-15-INDEX.md` §13 for full context). Each line is a candidate Session 16+ backlog item, pending triage.
+
+- **DEV-S15-2.A-01** — `business_config` flat columned vs key-value ; threshold stored as ratio in `production_yield_variance_threshold_pct`. UI auto-converts. (informational)
+- **DEV-S15-2.B-01** — `RecipeVersionHistory` lacks per-version cost reconstruction (`recipe_versions.snapshot` has no `cost_price`). (low)
+- **DEV-S15-3.A-01** — `search_ingredients_v1` `semi_finished` kind falls back to nesting depth ≥ 2 ; no `is_semi_finished` product flag exists. (low)
+- **DEV-S15-3.A-02** — `pg_trgm` installed but no trigram indexes on `products.name` / `products.sku` ; picker ranking deferred. (low)
+- **DEV-S15-3.B-01** — `audit_log` canonical schema uses `subject_table` / `subject_id` / `payload` ; `duplicate_recipe_v1` aligned. (informational)
+- **DEV-S15-4.A-01** — `record_batch_production_v1` same-tx temp-table collision fixed via migration `20260519000103`. (informational)
+- **DEV-S15-4.A-02** — `IngredientAggregatePreview` walks depth-1 only (multi-level preview deferred ; server-side cascade still full). (low)
+- **DEV-S15-4.B-01** — `view_product_sales` not present on V3 ; `suggest_production_schedule_v1` aggregates directly from `order_items` join `orders`. (informational)
+- **DEV-S15-4.B-02** — `production_schedules.recipe_id → products(id)` FK ambiguity resolved by client-side product-name post-fetch. (informational)
+- **DEV-S15-5.A-01** — `recompute_recipe_margins_v1` calls `_calculate_recipe_cost_walk` internal helper directly (pg_cron has no `auth.uid()`). (informational)
+- **DEV-S15-5.B-01** — `upsert_recipe_v1` body bumped (signature stable via trailing DEFAULTs) to accept baker percentage. (informational)
+- **DEV-S15-5.B-02** — `BakerPreviewPanel.tsx` extracted from `RecipeEditor.tsx` to keep editor under 500 lines. (informational)
+- **DEV-S15-5.C-01** — Receipt template + customer display allergen badge integration deferred to Session 16. (low)

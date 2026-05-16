@@ -394,4 +394,29 @@ Session 15 = **production bakery uniquement**. Tout autre item attend Session 16
 
 ---
 
+## 13. Deviation packs (Session 15 → Session 16+)
+
+Recorded across phases during execution. All deviations are functionally non-blocking and are filed as follow-ups for Session 16+ triage.
+
+| ID | Phase | Description | Severity |
+|---|---|---|---|
+| **DEV-S15-2.A-01** | 2.A | `business_config` is a flat columned table (not key-value) ; threshold stored as ratio (0.15) in `production_yield_variance_threshold_pct` column. UI auto-converts to/from percentage. | informational |
+| **DEV-S15-2.B-01** | 2.B | `recipe_versions.snapshot` has no `cost_price` in payload ; `RecipeVersionHistory` does not display per-version cost reconstruction (would require cross-join to current `products.cost_price`). | low |
+| **DEV-S15-3.A-01** | 3.A | `semi_finished` kind in `search_ingredients_v1` falls back to "recipe nesting depth ≥ 2" instead of a dedicated `is_semi_finished` flag (no such flag exists on `products`). | low |
+| **DEV-S15-3.A-02** | 3.A | `pg_trgm` extension is installed but no trigram indexes on `products.name` / `products.sku`. Picker ranking deferred. | low |
+| **DEV-S15-3.B-01** | 3.B | `audit_log` schema uses `subject_table` / `subject_id` / `payload`, not `target_id` / `metadata` as the original spec template referenced — `duplicate_recipe_v1` writes to the canonical schema. | informational |
+| **DEV-S15-4.A-01** | 4.A | Migration `20260519000103_fix_record_batch_production_temptbl.sql` shipped to fix same-transaction temp-table collision in `record_batch_production_v1` (matches the known `record_production_v1` quirk). | informational |
+| **DEV-S15-4.A-02** | 4.A | `IngredientAggregatePreview` UI walks only depth-1 of each recipe (uses domain `expandRecipe`). Server-side validation in RPC still cascades fully. Multi-level preview deferred. | low |
+| **DEV-S15-4.B-01** | 4.B | `view_product_sales` does not exist on V3 ; `suggest_production_schedule_v1` aggregates directly from `order_items` joined to `orders`. Documented in the migration header. | informational |
+| **DEV-S15-4.B-02** | 4.B | Resolved `production_schedules.recipe_id → products(id)` FK ambiguity (4 referenced relations) by post-fetching product names client-side in `useProductionSchedules`. | informational |
+| **DEV-S15-5.A-01** | 5.A | `recompute_recipe_margins_v1` calls `_calculate_recipe_cost_walk` internal helper directly (bypassing public RPC `inventory.read` gate) — required because pg_cron has no `auth.uid()`. | informational |
+| **DEV-S15-5.B-01** | 5.B | `upsert_recipe_v1` body bumped (signature kept stable via trailing DEFAULT params) to accept baker percentage. | informational |
+| **DEV-S15-5.B-02** | 5.B | `BakerPreviewPanel.tsx` extracted from `RecipeEditor.tsx` to keep the editor under 500 lines (497). | informational |
+| **DEV-S15-5.C-01** | 5.C | Receipt template integration + customer display integration for allergen badges deferred to Session 16. Touches print queue / template renderer. | low |
+
+**Resolution targets:** each item has a follow-up backlog item filed in `docs/workplan/backlog-by-module/15-production-recipes.md` for Session 16+ triage.
+
+---
+
 *INDEX écrit 2026-05-15 sur `swarm/session-15` par lead session 15 (autonomous mode).*
+*§13 ajouté 2026-05-16 lors du closeout Phase 6.A.*
