@@ -15,6 +15,9 @@ export type RecordProductionErrorCode =
   | 'recipe_not_found'
   | 'insufficient_stock'
   | 'unit_conversion_failed'
+  | 'expected_yield_must_be_positive'
+  | 'actual_yield_must_be_non_negative'
+  | 'variance_reason_too_short'
   | 'unknown';
 
 export class RecordProductionError extends Error {
@@ -39,6 +42,12 @@ export interface RecordProductionArgs {
   quantityWaste?:    number;
   notes?:            string;
   idempotencyKey:    string;
+  /** F5 yield variance: expected qty planned for this batch. */
+  expectedYieldQty?: number;
+  /** F5 yield variance: realized qty — defaults server-side to quantity_produced. */
+  actualYieldQty?:   number;
+  /** Required when |variance| > threshold (server-enforced ≥5 chars). */
+  yieldVarianceReason?: string;
 }
 
 export interface RecordProductionResult {
@@ -51,14 +60,17 @@ export interface RecordProductionResult {
 }
 
 function classify(message: string): RecordProductionErrorCode {
-  if (message.includes('forbidden'))                  return 'forbidden';
-  if (message.includes('quantity_must_be_positive')) return 'quantity_must_be_positive';
-  if (message.includes('waste_must_be_non_negative')) return 'waste_must_be_non_negative';
-  if (message.includes('product_not_found'))         return 'product_not_found';
-  if (message.includes('section_not_found'))         return 'section_not_found';
-  if (message.includes('recipe_not_found'))          return 'recipe_not_found';
-  if (message.includes('insufficient_stock'))        return 'insufficient_stock';
-  if (message.includes('unit_conversion_failed'))    return 'unit_conversion_failed';
+  if (message.includes('forbidden'))                       return 'forbidden';
+  if (message.includes('quantity_must_be_positive'))       return 'quantity_must_be_positive';
+  if (message.includes('waste_must_be_non_negative'))      return 'waste_must_be_non_negative';
+  if (message.includes('product_not_found'))               return 'product_not_found';
+  if (message.includes('section_not_found'))               return 'section_not_found';
+  if (message.includes('recipe_not_found'))                return 'recipe_not_found';
+  if (message.includes('insufficient_stock'))              return 'insufficient_stock';
+  if (message.includes('unit_conversion_failed'))          return 'unit_conversion_failed';
+  if (message.includes('expected_yield_must_be_positive')) return 'expected_yield_must_be_positive';
+  if (message.includes('actual_yield_must_be_non_negative')) return 'actual_yield_must_be_non_negative';
+  if (message.includes('variance_reason_too_short'))       return 'variance_reason_too_short';
   return 'unknown';
 }
 
@@ -67,13 +79,16 @@ export function useRecordProduction() {
   return useMutation<RecordProductionResult, RecordProductionError, RecordProductionArgs>({
     mutationFn: async (args) => {
       const rpcArgs: {
-        p_product_id:         string;
-        p_quantity_produced:  number;
-        p_section_id:         string;
-        p_quantity_waste:     number;
-        p_idempotency_key:    string;
-        p_batch_number?:      string;
-        p_notes?:             string;
+        p_product_id:             string;
+        p_quantity_produced:      number;
+        p_section_id:             string;
+        p_quantity_waste:         number;
+        p_idempotency_key:        string;
+        p_batch_number?:          string;
+        p_notes?:                 string;
+        p_expected_yield_qty?:    number;
+        p_actual_yield_qty?:      number;
+        p_yield_variance_reason?: string;
       } = {
         p_product_id:        args.productId,
         p_quantity_produced: args.quantityProduced,
@@ -81,8 +96,11 @@ export function useRecordProduction() {
         p_quantity_waste:    args.quantityWaste ?? 0,
         p_idempotency_key:   args.idempotencyKey,
       };
-      if (args.batchNumber !== undefined) rpcArgs.p_batch_number = args.batchNumber;
-      if (args.notes       !== undefined) rpcArgs.p_notes        = args.notes;
+      if (args.batchNumber          !== undefined) rpcArgs.p_batch_number          = args.batchNumber;
+      if (args.notes                !== undefined) rpcArgs.p_notes                 = args.notes;
+      if (args.expectedYieldQty     !== undefined) rpcArgs.p_expected_yield_qty    = args.expectedYieldQty;
+      if (args.actualYieldQty       !== undefined) rpcArgs.p_actual_yield_qty      = args.actualYieldQty;
+      if (args.yieldVarianceReason  !== undefined) rpcArgs.p_yield_variance_reason = args.yieldVarianceReason;
       const { data, error } = await supabase.rpc('record_production_v1', rpcArgs);
       if (error) {
         const detail = (error as unknown as { details?: string }).details;
