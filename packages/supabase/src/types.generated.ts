@@ -2954,6 +2954,7 @@ export type Database = {
         Row: {
           created_at: string
           deleted_at: string | null
+          display_order: number | null
           id: string
           is_active: boolean
           material_id: string
@@ -2966,6 +2967,7 @@ export type Database = {
         Insert: {
           created_at?: string
           deleted_at?: string | null
+          display_order?: number | null
           id?: string
           is_active?: boolean
           material_id: string
@@ -2978,6 +2980,7 @@ export type Database = {
         Update: {
           created_at?: string
           deleted_at?: string | null
+          display_order?: number | null
           id?: string
           is_active?: boolean
           material_id?: string
@@ -4685,6 +4688,14 @@ export type Database = {
       do_tap:
         | { Args: never; Returns: string[] }
         | { Args: { "": string }; Returns: string[] }
+      duplicate_recipe_v1: {
+        Args: {
+          p_idempotency_key?: string
+          p_source_product_id: string
+          p_target_product_id: string
+        }
+        Returns: Json
+      }
       enqueue_notification_v1: {
         Args: {
           p_channel?: string
@@ -5443,6 +5454,10 @@ export type Database = {
         Returns: undefined
       }
       release_expired_reservations: { Args: never; Returns: number }
+      reorder_recipe_rows_v1: {
+        Args: { p_product_id: string; p_recipe_ids: string[] }
+        Returns: number
+      }
       reservation_consume_v1: {
         Args: { p_reservation_id: string }
         Returns: Json
