@@ -71,7 +71,62 @@ INSERT INTO roles (code, name, description, is_system) VALUES
   ('SUPER_ADMIN', 'Super Admin', 'Accès complet système',                          true),
   ('ADMIN',       'Admin',       'Administration métier',                          true),
   ('MANAGER',     'Manager',     'Gestion opérationnelle (POS + produits)',        true),
-  ('CASHIER',     'Cashier',     'Caissier — POS sale + open shift',               true)
+  ('CASHIER',     'Cashier',     'Caissier — POS sale + open shift',               true),
+  ('waiter',      'Waiter',      'Floor staff — capture orders on tablet',         false)
+ON CONFLICT (code) DO NOTHING;
+
+-- ============================================================
+-- 1.6. Defensive base permissions seed — same rationale as 1.5 (seed.sql
+--      runs AFTER migrations). Section 3 below has MANAGER/CASHIER/waiter
+--      role_permissions inserts that reference permission codes which are
+--      seeded only in seed.sql on cloud. Idempotent — no-op on cloud.
+-- ============================================================
+INSERT INTO permissions (code, module, action, description) VALUES
+  -- POS session + sale (canonical seed.sql)
+  ('pos.session.open',         'pos',       'session.open',  'Ouvrir une session de caisse'),
+  ('pos.session.close_own',    'pos',       'session.close', 'Clôturer sa propre session'),
+  ('pos.session.close_other',  'pos',       'session.close', 'Clôturer la session d''un autre'),
+  ('pos.session.view_all',     'pos',       'session.view',  'Voir toutes les sessions'),
+  ('pos.sale.create',          'pos',       'sale.create',   'Encaisser une vente'),
+  ('pos.sale.void',            'pos',       'sale.void',     'Annuler une vente'),
+  ('pos.sale.update',          'pos',       'sale.update',   'Modifier une vente'),
+  ('pos.sale.refund',          'pos',       'sale.refund',   'Refund une vente'),
+  ('pos.sale.cancel_item',     'pos',       'sale.cancel',   'Annuler un item'),
+  -- Catalog + customers + tables + combos
+  ('products.read',            'products',  'read',          'Voir le catalogue'),
+  ('products.create',          'products',  'create',        'Créer un produit'),
+  ('products.update',          'products',  'update',        'Modifier un produit'),
+  ('categories.read',          'categories','read',          'Voir les catégories'),
+  ('categories.create',        'categories','create',        'Créer une catégorie'),
+  ('categories.update',        'categories','update',        'Modifier une catégorie'),
+  ('customers.read',           'customers', 'read',          'Voir les clients'),
+  ('customers.create',         'customers', 'create',        'Créer un client'),
+  ('customers.update',         'customers', 'update',        'Modifier un client'),
+  ('tables.read',              'tables',    'read',          'Voir les tables'),
+  ('tables.create',            'tables',    'create',        'Créer une table'),
+  ('tables.update',            'tables',    'update',        'Modifier une table'),
+  ('combos.read',              'combos',    'read',          'Voir les combos'),
+  ('combos.create',            'combos',    'create',        'Créer un combo'),
+  ('combos.update',            'combos',    'update',        'Modifier un combo'),
+  -- Payments + sales + promotions + suppliers + loyalty
+  ('payments.process',         'payments',  'process',       'Process payment at POS'),
+  ('sales.create',             'sales',     'create',        'Create a tablet/floor order'),
+  ('sales.discount',           'sales',     'discount',      'Manager discount verification'),
+  ('promotions.read',          'promotions','read',          'Voir les promotions'),
+  ('promotions.create',        'promotions','create',        'Créer une promotion'),
+  ('promotions.update',        'promotions','update',        'Modifier une promotion'),
+  ('suppliers.read',           'suppliers', 'read',          'Voir les fournisseurs'),
+  ('suppliers.create',         'suppliers', 'create',        'Créer un fournisseur'),
+  ('suppliers.update',         'suppliers', 'update',        'Modifier un fournisseur'),
+  ('loyalty.read',             'loyalty',   'read',          'Voir loyalty data'),
+  -- Inventory
+  ('inventory.read',           'inventory', 'read',          'Voir le stock'),
+  ('inventory.receive',        'inventory', 'receive',       'Receive stock'),
+  ('inventory.waste',          'inventory', 'waste',         'Record waste'),
+  ('inventory.transfer.create','inventory', 'transfer.create','Create stock transfer'),
+  ('inventory.transfer.receive','inventory','transfer.receive','Receive stock transfer'),
+  ('inventory.opname.create',  'inventory', 'opname.create', 'Create stock opname'),
+  ('inventory.production.create','inventory','production.create','Record production batch')
 ON CONFLICT (code) DO NOTHING;
 
 -- ============================================================
