@@ -5,12 +5,13 @@
 // unit). Permission-gated by inventory.recipes.update.
 
 import { useMemo, useState, type FormEvent, type JSX } from 'react';
-import { Button, Input } from '@breakery/ui';
+import { Button, Input, Tabs, TabsContent, TabsList, TabsTrigger } from '@breakery/ui';
 import { bomCost, type RecipeRow } from '@breakery/domain';
 import { useRecipes } from '../hooks/useRecipes.js';
 import { useUpsertRecipe, UpsertRecipeError } from '../hooks/useUpsertRecipe.js';
 import { useDeactivateRecipe } from '../hooks/useDeactivateRecipe.js';
 import { useFinishedProducts } from '../hooks/useFinishedProducts.js';
+import { RecipeVersionHistory } from './RecipeVersionHistory.js';
 
 export interface RecipeEditorProps {
   productId: string | null;
@@ -97,98 +98,109 @@ export default function RecipeEditor({ productId, onProductChange }: RecipeEdito
       </div>
 
       {productId !== null && (
-        <>
-          <div className="border border-border-subtle rounded-lg overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-bg-elevated text-xs uppercase tracking-widest text-text-secondary">
-                <tr>
-                  <th className="px-3 py-2 text-left">Material</th>
-                  <th className="px-3 py-2 text-right">Qty / unit</th>
-                  <th className="px-3 py-2 text-left">Unit</th>
-                  <th className="px-3 py-2 text-right">Cost</th>
-                  <th className="px-3 py-2"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {recipe.length === 0 && (
-                  <tr><td colSpan={5} className="text-center py-6 text-text-muted">
-                    No active recipe rows yet — add ingredients below.
-                  </td></tr>
-                )}
-                {recipe.map((r: RecipeRow) => (
-                  <tr key={r.recipe_id} className="border-t border-border-subtle">
-                    <td className="px-3 py-2">{r.material_name}</td>
-                    <td className="px-3 py-2 text-right font-mono">{Number(r.quantity).toLocaleString()}</td>
-                    <td className="px-3 py-2">{r.unit}</td>
-                    <td className="px-3 py-2 text-right font-mono">
-                      {Number(r.material_cost_price).toLocaleString()} /{r.material_unit}
-                    </td>
-                    <td className="px-3 py-2 text-right">
-                      <Button
-                        variant="ghost" size="sm"
-                        onClick={() => void deactivateMut.mutate({ recipeId: r.recipe_id, productId })}
-                        disabled={deactivateMut.isPending}
-                      >Remove</Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-              {cost !== null && (
-                <tfoot className="bg-bg-elevated text-xs">
-                  <tr>
-                    <td colSpan={3} className="px-3 py-2 uppercase tracking-widest text-text-secondary">
-                      Material cost per produced unit
-                    </td>
-                    <td className="px-3 py-2 text-right font-mono text-gold">
-                      {Math.round(cost.unit_cost).toLocaleString()}
-                    </td>
-                    <td></td>
-                  </tr>
-                </tfoot>
-              )}
-            </table>
-          </div>
+        <Tabs defaultValue="edit" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="edit">Edit</TabsTrigger>
+            <TabsTrigger value="history">History</TabsTrigger>
+          </TabsList>
 
-          <form onSubmit={(e) => { void handleAdd(e); }} className="grid grid-cols-12 gap-2 items-end">
-            <div className="col-span-5">
-              <label className="text-xs uppercase tracking-widest text-text-secondary">Material</label>
-              <select
-                className="mt-1 h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm"
-                value={materialId}
-                onChange={(e) => setMaterialId(e.target.value)}
-              >
-                <option value="">— select material —</option>
-                {materialOptions.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name} ({p.unit})</option>
-                ))}
-              </select>
+          <TabsContent value="edit" className="space-y-4">
+            <div className="border border-border-subtle rounded-lg overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-bg-elevated text-xs uppercase tracking-widest text-text-secondary">
+                  <tr>
+                    <th className="px-3 py-2 text-left">Material</th>
+                    <th className="px-3 py-2 text-right">Qty / unit</th>
+                    <th className="px-3 py-2 text-left">Unit</th>
+                    <th className="px-3 py-2 text-right">Cost</th>
+                    <th className="px-3 py-2"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recipe.length === 0 && (
+                    <tr><td colSpan={5} className="text-center py-6 text-text-muted">
+                      No active recipe rows yet — add ingredients below.
+                    </td></tr>
+                  )}
+                  {recipe.map((r: RecipeRow) => (
+                    <tr key={r.recipe_id} className="border-t border-border-subtle">
+                      <td className="px-3 py-2">{r.material_name}</td>
+                      <td className="px-3 py-2 text-right font-mono">{Number(r.quantity).toLocaleString()}</td>
+                      <td className="px-3 py-2">{r.unit}</td>
+                      <td className="px-3 py-2 text-right font-mono">
+                        {Number(r.material_cost_price).toLocaleString()} /{r.material_unit}
+                      </td>
+                      <td className="px-3 py-2 text-right">
+                        <Button
+                          variant="ghost" size="sm"
+                          onClick={() => void deactivateMut.mutate({ recipeId: r.recipe_id, productId })}
+                          disabled={deactivateMut.isPending}
+                        >Remove</Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                {cost !== null && (
+                  <tfoot className="bg-bg-elevated text-xs">
+                    <tr>
+                      <td colSpan={3} className="px-3 py-2 uppercase tracking-widest text-text-secondary">
+                        Material cost per produced unit
+                      </td>
+                      <td className="px-3 py-2 text-right font-mono text-gold">
+                        {Math.round(cost.unit_cost).toLocaleString()}
+                      </td>
+                      <td></td>
+                    </tr>
+                  </tfoot>
+                )}
+              </table>
             </div>
-            <div className="col-span-2">
-              <label className="text-xs uppercase tracking-widest text-text-secondary">Quantity</label>
-              <Input
-                type="number" inputMode="decimal" min={0.001} step="0.001"
-                value={qtyStr} onChange={(e) => setQtyStr(e.target.value)}
-              />
-            </div>
-            <div className="col-span-2">
-              <label className="text-xs uppercase tracking-widest text-text-secondary">Unit</label>
-              <select
-                className="mt-1 h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm"
-                value={unit} onChange={(e) => setUnit(e.target.value)}
-              >
-                {UNIT_OPTIONS.map((u) => <option key={u} value={u}>{u}</option>)}
-              </select>
-            </div>
-            <div className="col-span-3">
-              <Button type="submit" variant="primary" disabled={!canAdd}>
-                {upsertMut.isPending ? 'Saving…' : 'Add ingredient'}
-              </Button>
-            </div>
-            {formError !== null && (
-              <div className="col-span-12 text-red text-xs" role="alert">{formError}</div>
-            )}
-          </form>
-        </>
+
+            <form onSubmit={(e) => { void handleAdd(e); }} className="grid grid-cols-12 gap-2 items-end">
+              <div className="col-span-5">
+                <label className="text-xs uppercase tracking-widest text-text-secondary">Material</label>
+                <select
+                  className="mt-1 h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm"
+                  value={materialId}
+                  onChange={(e) => setMaterialId(e.target.value)}
+                >
+                  <option value="">— select material —</option>
+                  {materialOptions.map((p) => (
+                    <option key={p.id} value={p.id}>{p.name} ({p.unit})</option>
+                  ))}
+                </select>
+              </div>
+              <div className="col-span-2">
+                <label className="text-xs uppercase tracking-widest text-text-secondary">Quantity</label>
+                <Input
+                  type="number" inputMode="decimal" min={0.001} step="0.001"
+                  value={qtyStr} onChange={(e) => setQtyStr(e.target.value)}
+                />
+              </div>
+              <div className="col-span-2">
+                <label className="text-xs uppercase tracking-widest text-text-secondary">Unit</label>
+                <select
+                  className="mt-1 h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm"
+                  value={unit} onChange={(e) => setUnit(e.target.value)}
+                >
+                  {UNIT_OPTIONS.map((u) => <option key={u} value={u}>{u}</option>)}
+                </select>
+              </div>
+              <div className="col-span-3">
+                <Button type="submit" variant="primary" disabled={!canAdd}>
+                  {upsertMut.isPending ? 'Saving…' : 'Add ingredient'}
+                </Button>
+              </div>
+              {formError !== null && (
+                <div className="col-span-12 text-red text-xs" role="alert">{formError}</div>
+              )}
+            </form>
+          </TabsContent>
+
+          <TabsContent value="history">
+            <RecipeVersionHistory productId={productId} />
+          </TabsContent>
+        </Tabs>
       )}
     </div>
   );
