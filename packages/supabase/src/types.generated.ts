@@ -2603,6 +2603,7 @@ export type Database = {
           image_url: string | null
           is_active: boolean
           is_favorite: boolean
+          is_semi_finished: boolean
           min_stock_threshold: number
           name: string
           product_type: string
@@ -2626,6 +2627,7 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean
           is_favorite?: boolean
+          is_semi_finished?: boolean
           min_stock_threshold?: number
           name: string
           product_type?: string
@@ -2649,6 +2651,7 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean
           is_favorite?: boolean
+          is_semi_finished?: boolean
           min_stock_threshold?: number
           name?: string
           product_type?: string
