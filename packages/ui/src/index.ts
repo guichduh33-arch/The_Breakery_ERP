@@ -203,3 +203,10 @@ export {
   type RefundReceiptModalProps,
   type RefundReceiptTender,
 } from './components/RefundReceiptModal.js';
+export {
+  IngredientPicker,
+  type IngredientPickerProps,
+  type IngredientSearchResult,
+  type IngredientSearchFn,
+  type IngredientKind,
+} from './components/IngredientPicker.js';
