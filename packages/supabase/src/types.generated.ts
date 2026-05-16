@@ -3184,11 +3184,13 @@ export type Database = {
       }
       recipes: {
         Row: {
+          baker_percentage: number | null
           created_at: string
           deleted_at: string | null
           display_order: number | null
           id: string
           is_active: boolean
+          is_baker_percentage: boolean
           material_id: string
           notes: string | null
           product_id: string
@@ -3197,11 +3199,13 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          baker_percentage?: number | null
           created_at?: string
           deleted_at?: string | null
           display_order?: number | null
           id?: string
           is_active?: boolean
+          is_baker_percentage?: boolean
           material_id: string
           notes?: string | null
           product_id: string
@@ -3210,11 +3214,13 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          baker_percentage?: number | null
           created_at?: string
           deleted_at?: string | null
           display_order?: number | null
           id?: string
           is_active?: boolean
+          is_baker_percentage?: boolean
           material_id?: string
           notes?: string | null
           product_id?: string
@@ -4817,6 +4823,10 @@ export type Database = {
         }
         Returns: Json
       }
+      convert_baker_recipe_to_absolute_v1: {
+        Args: { p_product_id: string; p_target_flour_qty: number }
+        Returns: Json
+      }
       convert_quantity: {
         Args: { p_from_unit: string; p_qty: number; p_to_unit: string }
         Returns: number
@@ -5873,6 +5883,8 @@ export type Database = {
       }
       upsert_recipe_v1: {
         Args: {
+          p_baker_percentage?: number
+          p_is_baker_percentage?: boolean
           p_material_id: string
           p_notes?: string
           p_product_id: string
