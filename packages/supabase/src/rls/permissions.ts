@@ -74,6 +74,9 @@ export type PermissionCode =
   | 'inventory.opname.create'
   | 'inventory.opname.finalize'
   | 'inventory.sections.update'
+  // Session 15 / Phase 4.A — Batch production
+  | 'inventory.production.create'
+  | 'inventory.production.delete'
   | 'reports.read'
   | 'reports.export'
   | 'reports.sales.read'

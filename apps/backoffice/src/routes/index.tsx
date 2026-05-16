@@ -17,6 +17,7 @@ import SuppliersPage from '@/pages/Suppliers.js';
 import SupplierDetailPage from '@/pages/suppliers/SupplierDetailPage.js';
 import ComingSoonPage from '@/pages/ComingSoon.js';
 import ProductionPage from '@/pages/inventory/ProductionPage.js';
+import BatchProductionPage from '@/pages/inventory/BatchProductionPage.js';
 import RecipeEditorPage from '@/pages/inventory/RecipeEditorPage.js';
 import OpnameListPage from '@/pages/inventory/OpnameListPage.js';
 import OpnameDetailPage from '@/pages/inventory/OpnameDetailPage.js';
@@ -152,6 +153,14 @@ export function AppRoutes() {
           element={
             <PermissionGate required="inventory.read">
               <ProductionPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="inventory/production/batch"
+          element={
+            <PermissionGate required="inventory.production.create">
+              <BatchProductionPage />
             </PermissionGate>
           }
         />
