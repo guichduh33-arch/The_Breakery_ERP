@@ -143,11 +143,31 @@ function VersionEntry({ row, previous }: { row: RecipeVersionRow; previous: Reci
             )}
           </p>
         </div>
-        {previous === null && (
-          <span className="text-[10px] uppercase tracking-widest text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 rounded px-2 py-0.5">
-            Initial
-          </span>
-        )}
+        <div className="flex flex-col items-end gap-1">
+          {row.productCostAtVersion !== undefined ? (
+            <span
+              className="text-xs font-mono text-text-secondary"
+              data-testid={`version-cost-${row.version_number}`}
+            >
+              cost {row.productCostAtVersion.toLocaleString('en-US', {
+                minimumFractionDigits: 2, maximumFractionDigits: 2,
+              })}
+            </span>
+          ) : (
+            <span
+              className="text-xs text-text-muted"
+              title="Cost data added 2026-05-16"
+              data-testid={`version-cost-${row.version_number}-legacy`}
+            >
+              cost —
+            </span>
+          )}
+          {previous === null && (
+            <span className="text-[10px] uppercase tracking-widest text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 rounded px-2 py-0.5">
+              Initial
+            </span>
+          )}
+        </div>
       </header>
 
       {row.change_note !== null && row.change_note !== '' && (
@@ -160,29 +180,43 @@ function VersionEntry({ row, previous }: { row: RecipeVersionRow; previous: Reci
         <p className="text-xs text-text-muted">No ingredients in this version.</p>
       ) : (
         <ul className="space-y-1 text-sm">
-          {diffs.map((d) => (
-            <li
-              key={`${row.id}-${d.material_id}`}
-              className={`flex items-center justify-between gap-2 rounded px-2 py-1 ${kindTone(d.kind)}`}
-            >
-              <span className="truncate">
-                {d.material_name}
-                {kindLabel(d.kind) !== '' && (
-                  <span className="ml-2 text-[10px] uppercase tracking-widest opacity-70">
-                    {kindLabel(d.kind)}
+          {diffs.map((d) => {
+            const matSubtotal = (() => {
+              const r = row.snapshot.find((s) => s.material_id === d.material_id);
+              if (r?.material_cost_price === undefined) return null;
+              return Number(r.quantity) * Number(r.material_cost_price);
+            })();
+            return (
+              <li
+                key={`${row.id}-${d.material_id}`}
+                className={`flex items-center justify-between gap-2 rounded px-2 py-1 ${kindTone(d.kind)}`}
+              >
+                <span className="truncate">
+                  {d.material_name}
+                  {kindLabel(d.kind) !== '' && (
+                    <span className="ml-2 text-[10px] uppercase tracking-widest opacity-70">
+                      {kindLabel(d.kind)}
+                    </span>
+                  )}
+                </span>
+                <span className="font-mono text-xs whitespace-nowrap flex items-center gap-2">
+                  {d.kind === 'changed' && d.prev_quantity !== undefined && (
+                    <span className="text-text-secondary line-through">
+                      {d.prev_quantity.toLocaleString()} {d.prev_unit}
+                    </span>
+                  )}
+                  <span>
+                    {d.quantity.toLocaleString()} {d.unit}
                   </span>
-                )}
-              </span>
-              <span className="font-mono text-xs whitespace-nowrap">
-                {d.kind === 'changed' && d.prev_quantity !== undefined && (
-                  <span className="text-text-secondary line-through mr-2">
-                    {d.prev_quantity.toLocaleString()} {d.prev_unit}
-                  </span>
-                )}
-                {d.quantity.toLocaleString()} {d.unit}
-              </span>
-            </li>
-          ))}
+                  {matSubtotal !== null && (
+                    <span className="text-text-muted">
+                      = {matSubtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  )}
+                </span>
+              </li>
+            );
+          })}
         </ul>
       )}
     </article>

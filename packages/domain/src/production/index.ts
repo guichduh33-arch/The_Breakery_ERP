@@ -21,3 +21,8 @@ export {
   type CalculateRecipeCostOptions,
   type TryCalculateRecipeCostResult,
 } from './recipeCostCalculator.js';
+export {
+  expandRecipeCascade,
+  type CascadeLeaf,
+  type ExpandRecipeCascadeOptions,
+} from './expandRecipeCascade.js';
