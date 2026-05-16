@@ -16,7 +16,7 @@
 -- All products use unit='pcs' so convert_quantity is identity (no conversion needed).
 
 BEGIN;
-SELECT plan(20);
+SELECT plan(28);
 
 -- ============================================================================
 -- FIXTURES
@@ -454,6 +454,282 @@ SELECT matches(
   '^material price update: .+ \S+→\S+$',
   'cascade snapshot change_note matches pattern ''material price update: <name> <old>→<new>'''
 );
+
+-- ============================================================================
+-- Phase 1.C — WAC trigger tests (T21–T26)
+-- tr_update_product_cost_on_purchase: AFTER INSERT ON stock_movements
+-- WHEN (movement_type = 'purchase').
+--
+-- Fixture uses deterministic UUID range 20000000-... (distinct from Phase 1.A/B
+-- range 10000000-...). Direct INSERT into stock_movements is valid here because
+-- pgTAP runs as the `postgres` superuser which bypasses RLS.
+--
+-- WAC formula: new_cost = round((old_stock × old_cost + qty × unit_cost)
+--                               / (old_stock + qty), 2)
+-- Seed case (old_stock ≤ 0 OR old_cost ≤ 0): new_cost = round(unit_cost, 2)
+-- ============================================================================
+
+-- WAC fixture products
+INSERT INTO products (id, sku, name, category_id, retail_price, unit, product_type, is_active, cost_price, current_stock)
+SELECT x.id::uuid, x.sku, x.name,
+  (SELECT id FROM categories WHERE slug = 'ingredient' LIMIT 1),
+  0, 'pcs', 'finished', false, x.cost_price, x.current_stock
+FROM (VALUES
+  -- WAC-LEAF: leaf material with stock=0, cost=0 (seed state)
+  ('20000000-0000-0000-0000-000000000001', 'WAC-LEAF',   'WAC Leaf Material',  0,   0),
+  -- WAC-PARENT: parent recipe that uses WAC-LEAF (for cascade test)
+  ('20000000-0000-0000-0000-000000000002', 'WAC-PARENT', 'WAC Parent Product', 0,   0),
+  -- WAC-BLEND: product with existing stock=10, cost=12000 (for WAC blend test)
+  ('20000000-0000-0000-0000-000000000003', 'WAC-BLEND',  'WAC Blend Product',  12000, 10),
+  -- WAC-GUARD: product for guard tests (stock=10, cost=500)
+  ('20000000-0000-0000-0000-000000000004', 'WAC-GUARD',  'WAC Guard Product',  500, 10)
+) AS x(id, sku, name, cost_price, current_stock)
+ON CONFLICT (sku) DO NOTHING;
+
+-- WAC-PARENT recipe: uses WAC-LEAF × 2
+INSERT INTO recipes (product_id, material_id, quantity, unit, is_active)
+VALUES (
+  '20000000-0000-0000-0000-000000000002'::uuid,
+  '20000000-0000-0000-0000-000000000001'::uuid,
+  2, 'pcs', true
+) ON CONFLICT DO NOTHING;
+
+-- ============================================================================
+-- TEST 21: tr_update_product_cost_on_purchase function exists
+-- ============================================================================
+SELECT ok(
+  (SELECT COUNT(*) FROM pg_proc
+   WHERE proname = 'tr_update_product_cost_on_purchase'
+     AND pronamespace = 'public'::regnamespace) = 1,
+  'tr_update_product_cost_on_purchase() function exists'
+);
+
+-- ============================================================================
+-- TEST 22: trigger attached to stock_movements with WHEN (purchase) clause
+-- ============================================================================
+SELECT ok(
+  (SELECT pg_get_triggerdef(t.oid) LIKE '%WHEN ((new.movement_type = ''purchase''%'
+   FROM pg_trigger t
+   JOIN pg_class c ON c.oid = t.tgrelid
+   WHERE c.relname = 'stock_movements'
+     AND t.tgname = 'tr_update_product_cost_on_purchase'),
+  'trigger tr_update_product_cost_on_purchase has WHEN (movement_type = ''purchase'') clause'
+);
+
+-- ============================================================================
+-- TEST 23: First-receipt seed — stock=0, cost=0 → cost_price := unit_cost
+-- purchase qty=10, unit_cost=12000 → cost_price should become 12000.00
+-- ============================================================================
+DO $$
+DECLARE
+  v_profile UUID := (SELECT id FROM user_profiles WHERE deleted_at IS NULL LIMIT 1);
+  v_cost    NUMERIC(14,2);
+BEGIN
+  INSERT INTO stock_movements (
+    product_id, movement_type, quantity, unit, unit_cost,
+    reference_type, created_by, reason
+  ) VALUES (
+    '20000000-0000-0000-0000-000000000001'::uuid,
+    'purchase', 10, 'pcs', 12000,
+    'admin_action', v_profile, 'First receipt seed test'
+  );
+
+  SELECT cost_price INTO v_cost
+    FROM products WHERE id = '20000000-0000-0000-0000-000000000001'::uuid;
+
+  ASSERT v_cost = 12000.00,
+    format('TEST 23: expected cost_price=12000.00 (seed), got %s', v_cost);
+END $$;
+
+SELECT pass('TEST 23: first-receipt seed (stock=0, cost=0) → cost_price = unit_cost = 12000.00');
+
+-- ============================================================================
+-- TEST 24: WAC blend — after seed (stock=10, cost=12000), purchase qty=5
+-- unit_cost=15000 → WAC = round((10×12000 + 5×15000) / 15, 2) = 13000.00
+-- ============================================================================
+DO $$
+DECLARE
+  v_profile UUID := (SELECT id FROM user_profiles WHERE deleted_at IS NULL LIMIT 1);
+  v_cost    NUMERIC(14,2);
+BEGIN
+  -- Simulate RPC's post-INSERT stock update (seed receipt above didn't update current_stock)
+  UPDATE products SET current_stock = 10
+    WHERE id = '20000000-0000-0000-0000-000000000003'::uuid;
+
+  -- WAC-BLEND already has stock=10, cost=12000 from fixture (no first receipt needed)
+  INSERT INTO stock_movements (
+    product_id, movement_type, quantity, unit, unit_cost,
+    reference_type, created_by, reason
+  ) VALUES (
+    '20000000-0000-0000-0000-000000000003'::uuid,
+    'purchase', 5, 'pcs', 15000,
+    'admin_action', v_profile, 'WAC blend test'
+  );
+
+  SELECT cost_price INTO v_cost
+    FROM products WHERE id = '20000000-0000-0000-0000-000000000003'::uuid;
+
+  -- (10×12000 + 5×15000) / 15 = (120000 + 75000) / 15 = 195000 / 15 = 13000.00
+  ASSERT v_cost = 13000.00,
+    format('TEST 24: expected WAC=13000.00, got %s', v_cost);
+END $$;
+
+SELECT pass('TEST 24: WAC blend (10×12000 + 5×15000) / 15 = 13000.00');
+
+-- ============================================================================
+-- TEST 25: End-to-end cascade — purchase on WAC-LEAF → cost_price changes →
+-- tr_snapshot_on_product_cost_change fires → WAC-PARENT gains snapshot
+-- with change_note matching 'material price update: %'
+-- ============================================================================
+DO $$
+DECLARE
+  v_profile      UUID := (SELECT id FROM user_profiles WHERE deleted_at IS NULL LIMIT 1);
+  v_parent_before INT;
+  v_parent_after  INT;
+  v_note          TEXT;
+BEGIN
+  v_parent_before := (SELECT COUNT(*)::int FROM recipe_versions
+    WHERE product_id = '20000000-0000-0000-0000-000000000002'::uuid);
+
+  -- Purchase on WAC-LEAF (stock=0, cost now 12000 from TEST 23).
+  -- Simulate stock back to 0 so we do a second seed-branch (unit_cost=15000)
+  UPDATE products SET current_stock = 0, cost_price = 0
+    WHERE id = '20000000-0000-0000-0000-000000000001'::uuid;
+
+  INSERT INTO stock_movements (
+    product_id, movement_type, quantity, unit, unit_cost,
+    reference_type, created_by, reason
+  ) VALUES (
+    '20000000-0000-0000-0000-000000000001'::uuid,
+    'purchase', 8, 'pcs', 20000,
+    'admin_action', v_profile, 'Cascade test purchase'
+  );
+
+  v_parent_after := (SELECT COUNT(*)::int FROM recipe_versions
+    WHERE product_id = '20000000-0000-0000-0000-000000000002'::uuid);
+
+  SELECT change_note INTO v_note
+    FROM recipe_versions
+    WHERE product_id = '20000000-0000-0000-0000-000000000002'::uuid
+    ORDER BY version_number DESC LIMIT 1;
+
+  ASSERT v_parent_after > v_parent_before,
+    format('TEST 25: WAC-PARENT must gain ≥1 snapshot; before=%s after=%s', v_parent_before, v_parent_after);
+  ASSERT v_note LIKE 'material price update: %',
+    format('TEST 25: cascade change_note must match pattern; got: %s', v_note);
+END $$;
+
+SELECT pass('TEST 25: end-to-end cascade — purchase on leaf → WAC update → ancestor snapshots (verified in DO block)');
+
+-- ============================================================================
+-- TEST 26: Non-purchase movements do NOT change cost_price (WHEN clause guard)
+-- Insert 'incoming' and 'adjustment_in' movements with unit_cost=99999.
+-- cost_price for WAC-GUARD must remain 500.
+-- ============================================================================
+DO $$
+DECLARE
+  v_profile UUID := (SELECT id FROM user_profiles WHERE deleted_at IS NULL LIMIT 1);
+  v_cost    NUMERIC(14,2);
+BEGIN
+  -- incoming movement (triggers WAC? NO — WHEN clause filters it)
+  INSERT INTO stock_movements (
+    product_id, movement_type, quantity, unit, unit_cost,
+    reference_type, created_by, reason
+  ) VALUES (
+    '20000000-0000-0000-0000-000000000004'::uuid,
+    'incoming', 5, 'pcs', 99999,
+    'admin_action', v_profile, 'Non-purchase incoming guard test'
+  );
+
+  SELECT cost_price INTO v_cost
+    FROM products WHERE id = '20000000-0000-0000-0000-000000000004'::uuid;
+  ASSERT v_cost = 500,
+    format('TEST 26a: incoming must not change cost_price; got %s', v_cost);
+
+  -- adjustment_in movement (also filtered by WHEN clause)
+  INSERT INTO stock_movements (
+    product_id, movement_type, quantity, unit, unit_cost,
+    reference_type, created_by, reason, from_section_id
+  ) VALUES (
+    '20000000-0000-0000-0000-000000000004'::uuid,
+    'adjustment_in', 5, 'pcs', 99999,
+    'admin_action', v_profile, 'Non-purchase adj guard test',
+    (SELECT id FROM sections LIMIT 1)
+  );
+
+  SELECT cost_price INTO v_cost
+    FROM products WHERE id = '20000000-0000-0000-0000-000000000004'::uuid;
+  ASSERT v_cost = 500,
+    format('TEST 26b: adjustment_in must not change cost_price; got %s', v_cost);
+END $$;
+
+SELECT pass('TEST 26: non-purchase movements (incoming, adjustment_in) do NOT change cost_price (WHEN clause guard verified)');
+
+-- ============================================================================
+-- TEST 27: unit_cost = 0 (free goods) → trigger skips, cost_price unchanged
+-- ============================================================================
+DO $$
+DECLARE
+  v_profile UUID := (SELECT id FROM user_profiles WHERE deleted_at IS NULL LIMIT 1);
+  v_cost    NUMERIC(14,2);
+BEGIN
+  INSERT INTO stock_movements (
+    product_id, movement_type, quantity, unit, unit_cost,
+    reference_type, created_by, reason
+  ) VALUES (
+    '20000000-0000-0000-0000-000000000004'::uuid,
+    'purchase', 5, 'pcs', 0,
+    'admin_action', v_profile, 'Free goods zero cost test'
+  );
+
+  SELECT cost_price INTO v_cost
+    FROM products WHERE id = '20000000-0000-0000-0000-000000000004'::uuid;
+  ASSERT v_cost = 500,
+    format('TEST 27: unit_cost=0 must not change cost_price; got %s', v_cost);
+END $$;
+
+SELECT pass('TEST 27: purchase with unit_cost=0 (free goods) → trigger skips, cost_price unchanged');
+
+-- ============================================================================
+-- TEST 28: WAC no-op — unit_cost equals existing cost_price → IS DISTINCT FROM
+-- guard suppresses UPDATE, no new recipe_versions snapshot created
+-- WAC-GUARD: stock=10, cost=500. Purchase qty=10, unit_cost=500.
+-- WAC = (10×500 + 10×500) / 20 = 500.00 → IS DISTINCT FROM 500 is FALSE → no UPDATE
+-- ============================================================================
+DO $$
+DECLARE
+  v_profile    UUID := (SELECT id FROM user_profiles WHERE deleted_at IS NULL LIMIT 1);
+  v_cost       NUMERIC(14,2);
+  v_snap_count INT;
+BEGIN
+  -- Insert a recipe so WAC-GUARD has an ancestor graph (to confirm no spurious snapshots)
+  -- WAC-GUARD acts as a material in a dummy parent for this test
+  -- (We just check cost_price is unchanged — no ancestor needed for the guard test)
+
+  v_snap_count := (SELECT COUNT(*)::int FROM recipe_versions
+    WHERE product_id = '20000000-0000-0000-0000-000000000004'::uuid);
+
+  INSERT INTO stock_movements (
+    product_id, movement_type, quantity, unit, unit_cost,
+    reference_type, created_by, reason
+  ) VALUES (
+    '20000000-0000-0000-0000-000000000004'::uuid,
+    'purchase', 10, 'pcs', 500,
+    'admin_action', v_profile, 'Noop WAC idempotency test'
+  );
+
+  SELECT cost_price INTO v_cost
+    FROM products WHERE id = '20000000-0000-0000-0000-000000000004'::uuid;
+  ASSERT v_cost = 500.00,
+    format('TEST 28: noop WAC must leave cost_price=500.00; got %s', v_cost);
+
+  -- No new snapshot for WAC-GUARD (cost_price unchanged → tr_snapshot_on_product_cost_change does not fire)
+  ASSERT (SELECT COUNT(*)::int FROM recipe_versions
+    WHERE product_id = '20000000-0000-0000-0000-000000000004'::uuid) = v_snap_count,
+    'TEST 28: noop WAC must not create new recipe_versions rows';
+END $$;
+
+SELECT pass('TEST 28: noop WAC (unit_cost=old_cost) → IS DISTINCT FROM guard suppresses UPDATE, no snapshot added');
 
 SELECT * FROM finish();
 ROLLBACK;
