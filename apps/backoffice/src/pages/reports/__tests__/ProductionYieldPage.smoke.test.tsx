@@ -2,9 +2,13 @@
 // Session 15 — Phase 2.B — ProductionYieldPage render smoke. Mocks supabase to
 // return a small set of production_records with varied variance, asserts the
 // outliers table appears and the worst row is at the top.
+//
+// CRITICAL : `production_records.yield_variance_pct` is NUMERIC(7,4) ; the DB
+// stores FRACTIONS (e.g. -0.5 = -50.00%). The page multiplies by 100 for
+// display. The fixtures here mirror that contract.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ProductionYieldPage from '@/pages/reports/ProductionYieldPage.js';
 
@@ -13,21 +17,22 @@ const PROD_ROWS = [
     id: 'pr-1', production_number: 'PROD-001', product_id: 'p1',
     production_date: '2026-05-10T08:00:00Z',
     expected_yield_qty: 100, actual_yield_qty: 50,
-    yield_variance_pct: -50, yield_variance_reason: 'oven failure',
+    // DB-shape : fraction → -0.5 displays as -50.00%
+    yield_variance_pct: -0.5, yield_variance_reason: 'oven failure',
     reverted_at: null,
   },
   {
     id: 'pr-2', production_number: 'PROD-002', product_id: 'p2',
     production_date: '2026-05-11T08:00:00Z',
     expected_yield_qty: 100, actual_yield_qty: 90,
-    yield_variance_pct: -10, yield_variance_reason: null,
+    yield_variance_pct: -0.1, yield_variance_reason: null,
     reverted_at: null,
   },
   {
     id: 'pr-3', production_number: 'PROD-003', product_id: 'p1',
     production_date: '2026-05-12T08:00:00Z',
     expected_yield_qty: 100, actual_yield_qty: 102,
-    yield_variance_pct: 2, yield_variance_reason: null,
+    yield_variance_pct: 0.02, yield_variance_reason: null,
     reverted_at: null,
   },
 ];
@@ -112,6 +117,28 @@ describe('ProductionYieldPage smoke', () => {
     const rows = within(section).getAllByRole('row');
     // First row is <thead> ; second row is the worst outlier (PROD-001 / -50%).
     expect(rows[1]?.textContent ?? '').toMatch(/PROD-001/);
-    expect(rows[1]?.textContent ?? '').toMatch(/-50\.0%/);
+    expect(rows[1]?.textContent ?? '').toMatch(/-50\.00%/);
+  });
+
+  it('reveals the drill-down panel when an outlier row is clicked', async () => {
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText('PROD-001')).toBeInTheDocument();
+    });
+    // No drill-down section initially.
+    expect(screen.queryByTestId('yield-drilldown-section')).toBeNull();
+    // Click the first outlier (PROD-001, product p1).
+    fireEvent.click(screen.getAllByTestId('yield-outlier-row')[0]!);
+    expect(screen.getByTestId('yield-drilldown-section')).toBeInTheDocument();
+    // Drill-down shows both p1 rows (PROD-001 and PROD-003).
+    const drillRows = screen.getAllByTestId('yield-drilldown-row');
+    expect(drillRows.length).toBe(2);
+  });
+
+  it('exposes an Export CSV trigger once data is available', async () => {
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByTestId('yield-export-csv')).not.toBeDisabled();
+    });
   });
 });

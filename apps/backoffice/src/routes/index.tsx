@@ -466,7 +466,7 @@ export function AppRoutes() {
         <Route
           path="reports/production-yield"
           element={
-            <PermissionGate required="reports.inventory.read">
+            <PermissionGate required="inventory.read">
               <ProductionYieldPage />
             </PermissionGate>
           }

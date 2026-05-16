@@ -21,7 +21,11 @@ import { useRecordProduction, RecordProductionError } from '../hooks/useRecordPr
 import { FeasibilityBadge } from './FeasibilityBadge.js';
 import { YieldVarianceModal } from './YieldVarianceModal.js';
 
-/** Falls back to 15% if business_config row is missing or value invalid. */
+/** Falls back to 15% if business_config row is missing or value invalid.
+ *
+ *  CRITICAL : `business_config.production_yield_variance_threshold_pct` is
+ *  NUMERIC(6,4) stored as a FRACTION (`0.1500` = 15%). UI multiplies by 100
+ *  for display. */
 const DEFAULT_THRESHOLD_PCT = 15;
 
 function useYieldVarianceThresholdPct(): number {
@@ -40,8 +44,9 @@ function useYieldVarianceThresholdPct(): number {
       if (raw === null || raw === undefined) return DEFAULT_THRESHOLD_PCT;
       const num = Number(raw);
       if (!Number.isFinite(num) || num <= 0) return DEFAULT_THRESHOLD_PCT;
-      // DB stores ratio (e.g. 0.15) ; convert to percentage if so.
-      return num < 1 ? num * 100 : num;
+      // DB stores a fraction (0..1). Convert to percentage for UI consumers.
+      // Defensive fallback : if value already > 1, assume legacy %-encoded.
+      return num <= 1 ? num * 100 : num;
     },
   });
   return q.data ?? DEFAULT_THRESHOLD_PCT;
