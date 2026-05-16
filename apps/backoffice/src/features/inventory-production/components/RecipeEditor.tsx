@@ -12,8 +12,17 @@
 //   RecipeDuplicateModal.
 // - Drag-to-reorder rows via @dnd-kit/sortable ; persisted with
 //   reorder_recipe_rows_v1 via useReorderRecipeRows.
+//
+// Session 15 / Phase 5.B (spec §D13) :
+// - BoulangerModeToggle next to the product/Duplicate row to flip the whole
+//   recipe between flat-mode (kg/g/pcs absolute qtys) and baker mode (% of
+//   flour pivot).
+// - When ON : the "Qty / unit" column becomes "% flour", the quantity input
+//   in the add-row form is bound to baker_percentage, a target-flour input
+//   appears above the table, and a preview panel below shows the absolute
+//   qtys produced by convert_baker_recipe_to_absolute_v1.
 
-import { useMemo, useState, type FormEvent, type JSX } from 'react';
+import { useEffect, useMemo, useState, type FormEvent, type JSX } from 'react';
 import {
   DndContext,
   KeyboardSensor,
@@ -47,6 +56,13 @@ import { RecipeVersionHistory } from './RecipeVersionHistory.js';
 import { RecipeCostPreviewCard } from './RecipeCostPreviewCard.js';
 import { RecipeDuplicateModal } from './RecipeDuplicateModal.js';
 import { RecipeRowSortable } from './RecipeRowSortable.js';
+import { BoulangerModeToggle } from './BoulangerModeToggle.js';
+import { BakerPreviewPanel } from './BakerPreviewPanel.js';
+import {
+  useBakerRecipeMode,
+  useToggleBakerMode,
+  useConvertBakerToAbsolute,
+} from '../hooks/useBakerRecipeMode.js';
 
 export interface RecipeEditorProps {
   productId: string | null;
@@ -100,6 +116,30 @@ export default function RecipeEditor({ productId, onProductChange }: RecipeEdito
   const [notes, setNotes] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
   const [duplicateOpen, setDuplicateOpen] = useState(false);
+  const [targetFlourStr, setTargetFlourStr] = useState('1000');
+
+  // Baker's-percentage mode (spec §D13). The flag is read from the DB per
+  // product ; toggling flips ALL active rows. The preview is debounced so
+  // typing in the target-flour input doesn't hammer the RPC.
+  const bakerMode = useBakerRecipeMode(productId);
+  const toggleBakerMut = useToggleBakerMode();
+  const isBakerMode = bakerMode.data === true;
+
+  const targetFlour = Number.parseFloat(targetFlourStr);
+  const [debouncedTarget, setDebouncedTarget] = useState<number>(
+    Number.isFinite(targetFlour) ? targetFlour : 1000,
+  );
+  useEffect(() => {
+    if (!Number.isFinite(targetFlour) || targetFlour <= 0) return;
+    const t = setTimeout(() => setDebouncedTarget(targetFlour), 250);
+    return () => clearTimeout(t);
+  }, [targetFlour]);
+
+  const convertQry = useConvertBakerToAbsolute(
+    productId,
+    debouncedTarget,
+    isBakerMode,
+  );
 
   // Local copy of the row order so DnD feels instant ; sync to server-truth
   // on every recipes refetch.
@@ -148,6 +188,13 @@ export default function RecipeEditor({ productId, onProductChange }: RecipeEdito
   }, [productId, recipes.data, recipe]);
 
   const numericQty = Number.parseFloat(qtyStr);
+  // In baker mode `qtyStr` carries the percentage (0..1000) and the row's
+  // absolute quantity is computed from the target flour mass so the DB row
+  // still satisfies `recipes.quantity > 0`.
+  const bakerPctValid = isBakerMode
+    ? Number.isFinite(numericQty) && numericQty > 0 && numericQty <= 1000
+    : true;
+  const targetFlourValid = !isBakerMode || (Number.isFinite(targetFlour) && targetFlour > 0);
   const canAdd =
     productId !== null &&
     materialId !== null &&
@@ -155,6 +202,8 @@ export default function RecipeEditor({ productId, onProductChange }: RecipeEdito
     materialId !== productId &&
     Number.isFinite(numericQty) && numericQty > 0 &&
     unit !== '' &&
+    bakerPctValid &&
+    targetFlourValid &&
     !upsertMut.isPending;
 
   async function handleAdd(e: FormEvent): Promise<void> {
@@ -162,13 +211,21 @@ export default function RecipeEditor({ productId, onProductChange }: RecipeEdito
     if (!canAdd || productId === null || materialId === null) return;
     setFormError(null);
     try {
-      await upsertMut.mutateAsync({
+      const absoluteQty = isBakerMode
+        ? Math.round((numericQty / 100) * targetFlour * 10000) / 10000
+        : numericQty;
+      const args: Parameters<typeof upsertMut.mutateAsync>[0] = {
         productId,
         materialId,
-        quantity: numericQty,
+        quantity: absoluteQty,
         unit,
         notes: notes.trim() === '' ? null : notes.trim(),
-      });
+      };
+      if (isBakerMode) {
+        args.isBakerPercentage = true;
+        args.bakerPercentage   = numericQty;
+      }
+      await upsertMut.mutateAsync(args);
       setMaterialId(null);
       setQtyStr('');
       setNotes('');
@@ -180,6 +237,16 @@ export default function RecipeEditor({ productId, onProductChange }: RecipeEdito
       } else {
         setFormError('Failed to save row.');
       }
+    }
+  }
+
+  async function handleToggleBaker(next: boolean): Promise<void> {
+    if (productId === null) return;
+    setFormError(null);
+    try {
+      await toggleBakerMut.mutateAsync({ productId, next });
+    } catch {
+      setFormError('Failed to switch baker mode.');
     }
   }
 
@@ -205,7 +272,7 @@ export default function RecipeEditor({ productId, onProductChange }: RecipeEdito
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <label className="text-xs uppercase tracking-widest text-text-secondary">
           Finished product
         </label>
@@ -228,6 +295,13 @@ export default function RecipeEditor({ productId, onProductChange }: RecipeEdito
         >
           Duplicate recipe
         </Button>
+        {productId !== null && (
+          <BoulangerModeToggle
+            value={isBakerMode}
+            onChange={(next) => { void handleToggleBaker(next); }}
+            disabled={toggleBakerMut.isPending}
+          />
+        )}
       </div>
 
       {productId !== null && (
@@ -240,13 +314,50 @@ export default function RecipeEditor({ productId, onProductChange }: RecipeEdito
           <TabsContent value="edit" className="space-y-4">
             <RecipeCostPreviewCard productId={productId} rows={recipe} />
 
+            {isBakerMode && (
+              <div
+                className="flex flex-wrap items-end gap-3 rounded-md border border-border-subtle bg-bg-elevated px-3 py-2"
+                data-testid="baker-target-flour-block"
+              >
+                <div className="flex flex-col gap-1">
+                  <label
+                    htmlFor="baker-target-flour"
+                    className="text-xs uppercase tracking-widest text-text-secondary"
+                  >
+                    Target flour qty (g)
+                  </label>
+                  <Input
+                    id="baker-target-flour"
+                    data-testid="baker-target-flour-input"
+                    type="number"
+                    inputMode="decimal"
+                    min={1}
+                    step="1"
+                    value={targetFlourStr}
+                    onChange={(e) => setTargetFlourStr(e.target.value)}
+                    className="w-32"
+                  />
+                </div>
+                <p className="text-xs text-text-secondary max-w-md">
+                  Quantities below are expressed as a percentage of this flour mass.
+                  Use 1000 g (1 kg) for an easy mental reference.
+                </p>
+              </div>
+            )}
+
             <div className="border border-border-subtle rounded-lg overflow-hidden">
               <table className="w-full text-sm">
                 <thead className="bg-bg-elevated text-xs uppercase tracking-widest text-text-secondary">
                   <tr>
                     <th className="px-2 py-2 w-8"></th>
                     <th className="px-3 py-2 text-left">Material</th>
-                    <th className="px-3 py-2 text-right">Qty / unit</th>
+                    <th
+                      className="px-3 py-2 text-right"
+                      data-testid="recipe-qty-header"
+                      title={isBakerMode ? 'Percentage of the flour pivot row' : 'Quantity per produced unit'}
+                    >
+                      {isBakerMode ? '% flour' : 'Qty / unit'}
+                    </th>
                     <th className="px-3 py-2 text-left">Unit</th>
                     <th className="px-3 py-2 text-right">Cost</th>
                     <th className="px-3 py-2"></th>
@@ -281,6 +392,14 @@ export default function RecipeEditor({ productId, onProductChange }: RecipeEdito
               </table>
             </div>
 
+            {isBakerMode && (
+              <BakerPreviewPanel
+                data={convertQry.data}
+                targetFlourQty={debouncedTarget}
+                isLoading={convertQry.isFetching && convertQry.data === undefined}
+              />
+            )}
+
             <form onSubmit={(e) => { void handleAdd(e); }} className="grid grid-cols-12 gap-2 items-end">
               <div className="col-span-5">
                 <label className="text-xs uppercase tracking-widest text-text-secondary">
@@ -310,10 +429,20 @@ export default function RecipeEditor({ productId, onProductChange }: RecipeEdito
                 )}
               </div>
               <div className="col-span-2">
-                <label className="text-xs uppercase tracking-widest text-text-secondary">Quantity</label>
+                <label
+                  className="text-xs uppercase tracking-widest text-text-secondary"
+                  data-testid="add-row-qty-label"
+                >
+                  {isBakerMode ? '% flour' : 'Quantity'}
+                </label>
                 <Input
-                  type="number" inputMode="decimal" min={0.001} step="0.001"
-                  value={qtyStr} onChange={(e) => setQtyStr(e.target.value)}
+                  type="number"
+                  inputMode="decimal"
+                  min={0.001}
+                  step="0.001"
+                  max={isBakerMode ? 1000 : undefined}
+                  value={qtyStr}
+                  onChange={(e) => setQtyStr(e.target.value)}
                 />
               </div>
               <div className="col-span-2">
