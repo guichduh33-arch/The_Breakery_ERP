@@ -20,7 +20,8 @@ import {
 
 export interface RecipeDuplicateModalProps {
   sourceProductId: string;
-  sourceProductName?: string;
+  /** Display name shown in the description. May be `undefined` when not loaded yet. */
+  sourceProductName?: string | undefined;
   sourceRowsCount: number;
   open: boolean;
   onClose: () => void;
