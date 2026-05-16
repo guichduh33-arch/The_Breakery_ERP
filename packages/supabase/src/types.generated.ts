@@ -1472,6 +1472,90 @@ export type Database = {
           },
         ]
       }
+      margin_alerts: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          computed_at: string
+          cost_per_unit: number
+          created_at: string
+          delta_pct: number
+          expected_margin_pct: number
+          id: string
+          notes: string | null
+          product_id: string
+          selling_price: number
+          target_margin_pct: number
+          updated_at: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          computed_at?: string
+          cost_per_unit: number
+          created_at?: string
+          delta_pct: number
+          expected_margin_pct: number
+          id?: string
+          notes?: string | null
+          product_id: string
+          selling_price: number
+          target_margin_pct: number
+          updated_at?: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          computed_at?: string
+          cost_per_unit?: number
+          created_at?: string
+          delta_pct?: number
+          expected_margin_pct?: number
+          id?: string
+          notes?: string | null
+          product_id?: string
+          selling_price?: number
+          target_margin_pct?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "margin_alerts_acknowledged_by_fkey"
+            columns: ["acknowledged_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "margin_alerts_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "mv_stock_variance"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "margin_alerts_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "margin_alerts_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_product_available_stock"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "margin_alerts_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "view_recipe_products"
+            referencedColumns: ["product_id"]
+          },
+        ]
+      }
       notification_outbox: {
         Row: {
           body: string
@@ -2523,6 +2607,7 @@ export type Database = {
           product_type: string
           retail_price: number
           sku: string
+          target_gross_margin_pct: number | null
           tax_inclusive: boolean
           unit: string
           updated_at: string
@@ -2544,6 +2629,7 @@ export type Database = {
           product_type?: string
           retail_price: number
           sku: string
+          target_gross_margin_pct?: number | null
           tax_inclusive?: boolean
           unit?: string
           updated_at?: string
@@ -2565,6 +2651,7 @@ export type Database = {
           product_type?: string
           retail_price?: number
           sku?: string
+          target_gross_margin_pct?: number | null
           tax_inclusive?: boolean
           unit?: string
           updated_at?: string
@@ -5526,6 +5613,7 @@ export type Database = {
         }
         Returns: Json
       }
+      recompute_recipe_margins_v1: { Args: never; Returns: Json }
       record_batch_production_v1: {
         Args: { p_batch: Json; p_items: Json }
         Returns: Json
