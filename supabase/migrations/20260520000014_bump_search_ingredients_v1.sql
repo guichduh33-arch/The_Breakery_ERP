@@ -4,6 +4,7 @@
 --
 -- Signature stable (TEXT, TEXT, INT). RPC behavior changes :
 --   - `semi_finished` classification now reads `p.is_semi_finished` (D4).
+--   - Rank tier 2 now also accepts SKU substring matches (was name-only in S15).
 --   - Rank tier 2 (substring ILIKE) now also accepts trigram matches
 --     `similarity(name, q) >= 0.3` OR `similarity(sku, q) >= 0.3`, ordered
 --     by max(similarity_name, similarity_sku) DESC within the tier.
