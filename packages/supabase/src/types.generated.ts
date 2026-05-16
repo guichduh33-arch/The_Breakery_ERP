@@ -2220,9 +2220,60 @@ export type Database = {
           },
         ]
       }
+      production_batches: {
+        Row: {
+          batch_number: string
+          completed_at: string | null
+          created_at: string
+          id: string
+          idempotency_key: string | null
+          notes: string | null
+          scheduled_at: string | null
+          staff_id: string | null
+          started_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          batch_number: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          idempotency_key?: string | null
+          notes?: string | null
+          scheduled_at?: string | null
+          staff_id?: string | null
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          batch_number?: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          idempotency_key?: string | null
+          notes?: string | null
+          scheduled_at?: string | null
+          staff_id?: string | null
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_batches_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       production_records: {
         Row: {
           actual_yield_qty: number | null
+          batch_id: string | null
           batch_number: string | null
           created_at: string
           expected_yield_qty: number | null
@@ -2250,6 +2301,7 @@ export type Database = {
         }
         Insert: {
           actual_yield_qty?: number | null
+          batch_id?: string | null
           batch_number?: string | null
           created_at?: string
           expected_yield_qty?: number | null
@@ -2277,6 +2329,7 @@ export type Database = {
         }
         Update: {
           actual_yield_qty?: number | null
+          batch_id?: string | null
           batch_number?: string | null
           created_at?: string
           expected_yield_qty?: number | null
@@ -2303,6 +2356,13 @@ export type Database = {
           yield_variance_reason?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "production_records_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "production_batches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "production_records_product_id_fkey"
             columns: ["product_id"]
@@ -5379,6 +5439,10 @@ export type Database = {
           p_supplier_id: string
           p_unit_cost?: number
         }
+        Returns: Json
+      }
+      record_batch_production_v1: {
+        Args: { p_batch: Json; p_items: Json }
         Returns: Json
       }
       record_cash_movement_v1: {
