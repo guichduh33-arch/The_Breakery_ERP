@@ -2421,6 +2421,91 @@ export type Database = {
           },
         ]
       }
+      production_schedules: {
+        Row: {
+          completed_record_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          planned_qty: number
+          recipe_id: string | null
+          scheduled_date: string
+          slot: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          completed_record_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          planned_qty: number
+          recipe_id?: string | null
+          scheduled_date: string
+          slot: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          completed_record_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          planned_qty?: number
+          recipe_id?: string | null
+          scheduled_date?: string
+          slot?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_schedules_completed_record_id_fkey"
+            columns: ["completed_record_id"]
+            isOneToOne: false
+            referencedRelation: "production_records"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_schedules_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_schedules_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "mv_stock_variance"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "production_schedules_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_schedules_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "v_product_available_stock"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "production_schedules_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "view_recipe_products"
+            referencedColumns: ["product_id"]
+          },
+        ]
+      }
       products: {
         Row: {
           category_id: string
@@ -5639,6 +5724,10 @@ export type Database = {
       }
       storage_path_to_expense_id: { Args: { p_name: string }; Returns: string }
       submit_expense_v1: { Args: { p_expense_id: string }; Returns: undefined }
+      suggest_production_schedule_v1: {
+        Args: { p_target_date: string }
+        Returns: Json
+      }
       throws_ok: { Args: { "": string }; Returns: string }
       todo:
         | { Args: { how_many: number }; Returns: boolean[] }
