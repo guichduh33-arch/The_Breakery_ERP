@@ -285,25 +285,28 @@ ON CONFLICT (role_code, permission_code) DO NOTHING;
 --    positional callers (auth.uid()-based RPCs) unaffected.
 -- ============================================================
 
--- Drop legacy variants (signatures must match exactly across the 11 prior migrations)
-DROP FUNCTION IF EXISTS has_permission(UUID, TEXT);
-DROP FUNCTION IF EXISTS has_permission_for_profile(UUID, TEXT);
+-- DROP FUNCTION removed 2026-05-16 (Session 15 CI gate fix) :
+-- Fresh CI Docker has RLS policies on tables that depend on has_permission(uuid,text)
+-- by the time this migration runs, so DROP errors with 2BP01. CREATE OR REPLACE
+-- works only when param names stay the same — so we keep the canonical Session 12
+-- names (p_uid, p_perm) here. Cloud V3 dev `ikcyvlovptebroadgtvd` already uses these
+-- names (restored via execute_sql on 2026-05-16). No drift.
 
-CREATE OR REPLACE FUNCTION has_permission(p_user_id UUID, p_permission TEXT)
+CREATE OR REPLACE FUNCTION has_permission(p_uid UUID, p_perm TEXT)
 RETURNS BOOLEAN
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public AS $$
 DECLARE
   v_profile_id UUID;
   v_role_code  TEXT;
 BEGIN
-  IF p_user_id IS NULL OR p_permission IS NULL THEN
+  IF p_uid IS NULL OR p_perm IS NULL THEN
     RETURN FALSE;
   END IF;
 
   SELECT id, role_code
     INTO v_profile_id, v_role_code
     FROM user_profiles
-   WHERE auth_user_id = p_user_id
+   WHERE auth_user_id = p_uid
      AND deleted_at IS NULL
    LIMIT 1;
 
@@ -316,7 +319,7 @@ BEGIN
     SELECT 1
       FROM user_permission_overrides
      WHERE user_profile_id = v_profile_id
-       AND permission_code = p_permission
+       AND permission_code = p_perm
        AND is_granted = FALSE
        AND (expires_at IS NULL OR expires_at > now())
   ) THEN
@@ -328,7 +331,7 @@ BEGIN
     SELECT 1
       FROM role_permissions
      WHERE role_code = v_role_code
-       AND permission_code = p_permission
+       AND permission_code = p_perm
        AND is_granted = TRUE
   ) THEN
     RETURN TRUE;
@@ -339,7 +342,7 @@ BEGIN
     SELECT 1
       FROM user_permission_overrides
      WHERE user_profile_id = v_profile_id
-       AND permission_code = p_permission
+       AND permission_code = p_perm
        AND is_granted = TRUE
        AND (expires_at IS NULL OR expires_at > now())
   ) THEN
@@ -355,13 +358,13 @@ COMMENT ON FUNCTION has_permission(UUID, TEXT) IS
   'user_permission_overrides (DENY) > role_permissions > user_permission_overrides (GRANT) > FALSE. '
   'DO NOT CREATE OR REPLACE. New perms = INSERT INTO permissions + role_permissions.';
 
-CREATE OR REPLACE FUNCTION has_permission_for_profile(p_profile_id UUID, p_permission TEXT)
+CREATE OR REPLACE FUNCTION has_permission_for_profile(p_profile_id UUID, p_perm TEXT)
 RETURNS BOOLEAN
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public AS $$
 DECLARE
   v_role_code TEXT;
 BEGIN
-  IF p_profile_id IS NULL OR p_permission IS NULL THEN
+  IF p_profile_id IS NULL OR p_perm IS NULL THEN
     RETURN FALSE;
   END IF;
 
@@ -381,7 +384,7 @@ BEGIN
     SELECT 1
       FROM user_permission_overrides
      WHERE user_profile_id = p_profile_id
-       AND permission_code = p_permission
+       AND permission_code = p_perm
        AND is_granted = FALSE
        AND (expires_at IS NULL OR expires_at > now())
   ) THEN
@@ -393,7 +396,7 @@ BEGIN
     SELECT 1
       FROM role_permissions
      WHERE role_code = v_role_code
-       AND permission_code = p_permission
+       AND permission_code = p_perm
        AND is_granted = TRUE
   ) THEN
     RETURN TRUE;
@@ -404,7 +407,7 @@ BEGIN
     SELECT 1
       FROM user_permission_overrides
      WHERE user_profile_id = p_profile_id
-       AND permission_code = p_permission
+       AND permission_code = p_perm
        AND is_granted = TRUE
        AND (expires_at IS NULL OR expires_at > now())
   ) THEN
