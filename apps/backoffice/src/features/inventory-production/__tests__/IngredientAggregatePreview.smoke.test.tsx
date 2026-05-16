@@ -102,6 +102,7 @@ describe('IngredientAggregatePreview smoke', () => {
   it('shows OK status when stock covers requirements', async () => {
     mockRpc.mockImplementation((fn: string, args: { p_product_id?: string }) => {
       if (fn !== 'list_recipes_v1') return Promise.resolve({ data: [], error: null });
+      if (args.p_product_id === 'mat-x') return Promise.resolve({ data: [], error: null });
       return Promise.resolve({ data: [{
         recipe_id: 'r-a-1', product_id: args.p_product_id, product_name: 'A', product_unit: 'pcs',
         material_id: 'mat-x', material_name: 'Mat X', material_unit: 'g',
@@ -123,5 +124,51 @@ describe('IngredientAggregatePreview smoke', () => {
     await waitFor(() => {
       expect(screen.getByTestId('status-ok')).toBeInTheDocument();
     });
+  });
+
+  it('cascades through a 2-level recipe and aggregates leaf materials only', async () => {
+    mockRpc.mockImplementation((fn: string, args: { p_product_id?: string }) => {
+      if (fn !== 'list_recipes_v1') return Promise.resolve({ data: [], error: null });
+      if (args.p_product_id === 'prod-painchoco') {
+        return Promise.resolve({ data: [
+          { recipe_id: 'r1', product_id: 'prod-painchoco', product_name: 'PainChoco', product_unit: 'pcs',
+            material_id: 'prod-dough', material_name: 'Dough', material_unit: 'kg',
+            material_cost_price: 0, quantity: 0.05, unit: 'kg', is_active: true, notes: null },
+          { recipe_id: 'r2', product_id: 'prod-painchoco', product_name: 'PainChoco', product_unit: 'pcs',
+            material_id: 'mat-chocolate', material_name: 'Chocolate', material_unit: 'g',
+            material_cost_price: 0.1, quantity: 20, unit: 'g', is_active: true, notes: null },
+        ], error: null });
+      }
+      if (args.p_product_id === 'prod-dough') {
+        return Promise.resolve({ data: [
+          { recipe_id: 'r3', product_id: 'prod-dough', product_name: 'Dough', product_unit: 'kg',
+            material_id: 'mat-flour', material_name: 'Flour', material_unit: 'g',
+            material_cost_price: 0.01, quantity: 500, unit: 'g', is_active: true, notes: null },
+          { recipe_id: 'r4', product_id: 'prod-dough', product_name: 'Dough', product_unit: 'kg',
+            material_id: 'mat-butter', material_name: 'Butter', material_unit: 'g',
+            material_cost_price: 0.05, quantity: 500, unit: 'g', is_active: true, notes: null },
+        ], error: null });
+      }
+      return Promise.resolve({ data: [], error: null });
+    });
+    mockProductsSelectIn.mockReturnValue({
+      data: [
+        { id: 'mat-flour',     current_stock: 1000 },
+        { id: 'mat-butter',    current_stock: 1000 },
+        { id: 'mat-chocolate', current_stock: 1000 },
+      ],
+      error: null,
+    });
+
+    renderPreview([
+      row({ productId: 'prod-painchoco', productName: 'PainChoco', productUnit: 'pcs', quantityProduced: '1' }),
+    ]);
+
+    await waitFor(() => {
+      expect(screen.getByText('Flour')).toBeInTheDocument();
+    });
+    expect(screen.getByText('Butter')).toBeInTheDocument();
+    expect(screen.getByText('Chocolate')).toBeInTheDocument();
+    expect(screen.queryByText(/^Dough$/)).not.toBeInTheDocument();
   });
 });
