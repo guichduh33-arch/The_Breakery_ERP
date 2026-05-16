@@ -77,6 +77,8 @@ export type PermissionCode =
   // Session 15 / Phase 4.A — Batch production
   | 'inventory.production.create'
   | 'inventory.production.delete'
+  // Session 15 / Phase 4.B — Production scheduling
+  | 'inventory.production.schedule'
   | 'reports.read'
   | 'reports.export'
   | 'reports.sales.read'
