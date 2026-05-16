@@ -82,4 +82,28 @@ describe('ProductCard', () => {
     );
     expect(screen.getByText('Low stock · 2 left')).toBeInTheDocument();
   });
+
+  it('renders resolved allergen badges when allergens prop is non-empty', () => {
+    const p = makeProduct();
+    render(
+      <ProductCard
+        product={p}
+        allergens={['gluten', 'milk']}
+        onSelect={() => {}}
+      />,
+    );
+    expect(screen.getByTestId(`product-card-allergens-${p.id}`)).toBeInTheDocument();
+    expect(screen.getByTestId('allergen-badge-gluten')).toBeInTheDocument();
+    expect(screen.getByTestId('allergen-badge-milk')).toBeInTheDocument();
+  });
+
+  it('omits the allergen overlay when the allergens array is empty or missing', () => {
+    const p = makeProduct();
+    const { rerender } = render(
+      <ProductCard product={p} allergens={[]} onSelect={() => {}} />,
+    );
+    expect(screen.queryByTestId(`product-card-allergens-${p.id}`)).toBeNull();
+    rerender(<ProductCard product={p} onSelect={() => {}} />);
+    expect(screen.queryByTestId(`product-card-allergens-${p.id}`)).toBeNull();
+  });
 });
