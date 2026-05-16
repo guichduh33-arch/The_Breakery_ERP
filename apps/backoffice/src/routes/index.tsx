@@ -19,6 +19,7 @@ import ComingSoonPage from '@/pages/ComingSoon.js';
 import ProductionPage from '@/pages/inventory/ProductionPage.js';
 import BatchProductionPage from '@/pages/inventory/BatchProductionPage.js';
 import ProductionSchedulePage from '@/pages/inventory/ProductionSchedulePage.js';
+import MarginWatchPage from '@/pages/inventory/MarginWatchPage.js';
 import RecipeEditorPage from '@/pages/inventory/RecipeEditorPage.js';
 import OpnameListPage from '@/pages/inventory/OpnameListPage.js';
 import OpnameDetailPage from '@/pages/inventory/OpnameDetailPage.js';
@@ -170,6 +171,14 @@ export function AppRoutes() {
           element={
             <PermissionGate required="inventory.production.schedule">
               <ProductionSchedulePage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="inventory/production/margin-watch"
+          element={
+            <PermissionGate required="reports.inventory.read">
+              <MarginWatchPage />
             </PermissionGate>
           }
         />
