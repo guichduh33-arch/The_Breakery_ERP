@@ -39,6 +39,7 @@ import SalesByHourPage from '@/pages/reports/SalesByHourPage.js';
 import SalesByCategoryPage from '@/pages/reports/SalesByCategoryPage.js';
 import SalesByStaffPage from '@/pages/reports/SalesByStaffPage.js';
 import StockVariancePage from '@/pages/reports/StockVariancePage.js';
+import ProductionYieldPage from '@/pages/reports/ProductionYieldPage.js';
 import AuditPage from '@/pages/reports/AuditPage.js';
 import ProfitLossPage     from '@/pages/reports/ProfitLossPage.js';
 import BalanceSheetPage   from '@/pages/reports/BalanceSheetPage.js';
@@ -432,6 +433,14 @@ export function AppRoutes() {
           element={
             <PermissionGate required="reports.inventory.read">
               <StockVariancePage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="reports/production-yield"
+          element={
+            <PermissionGate required="reports.inventory.read">
+              <ProductionYieldPage />
             </PermissionGate>
           }
         />
