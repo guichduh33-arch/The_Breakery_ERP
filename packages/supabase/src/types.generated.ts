@@ -311,6 +311,13 @@ export type Database = {
             referencedColumns: ["product_id"]
           },
           {
+            foreignKeyName: "combo_items_component_product_id_fkey"
+            columns: ["component_product_id"]
+            isOneToOne: false
+            referencedRelation: "view_recipe_products"
+            referencedColumns: ["product_id"]
+          },
+          {
             foreignKeyName: "combo_items_parent_product_id_fkey"
             columns: ["parent_product_id"]
             isOneToOne: false
@@ -329,6 +336,13 @@ export type Database = {
             columns: ["parent_product_id"]
             isOneToOne: false
             referencedRelation: "v_product_available_stock"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "combo_items_parent_product_id_fkey"
+            columns: ["parent_product_id"]
+            isOneToOne: false
+            referencedRelation: "view_recipe_products"
             referencedColumns: ["product_id"]
           },
         ]
@@ -1091,6 +1105,13 @@ export type Database = {
             referencedRelation: "v_product_available_stock"
             referencedColumns: ["product_id"]
           },
+          {
+            foreignKeyName: "inventory_count_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "view_recipe_products"
+            referencedColumns: ["product_id"]
+          },
         ]
       }
       inventory_counts: {
@@ -1677,6 +1698,13 @@ export type Database = {
             referencedColumns: ["product_id"]
           },
           {
+            foreignKeyName: "order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "view_recipe_products"
+            referencedColumns: ["product_id"]
+          },
+          {
             foreignKeyName: "order_items_promotion_id_fkey"
             columns: ["promotion_id"]
             isOneToOne: false
@@ -2090,6 +2118,13 @@ export type Database = {
             referencedRelation: "v_product_available_stock"
             referencedColumns: ["product_id"]
           },
+          {
+            foreignKeyName: "product_category_prices_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "view_recipe_products"
+            referencedColumns: ["product_id"]
+          },
         ]
       }
       product_modifiers: {
@@ -2174,6 +2209,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "v_product_available_stock"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "product_modifiers_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "view_recipe_products"
             referencedColumns: ["product_id"]
           },
         ]
@@ -2280,6 +2322,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "v_product_available_stock"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "production_records_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "view_recipe_products"
             referencedColumns: ["product_id"]
           },
           {
@@ -2575,6 +2624,13 @@ export type Database = {
             referencedColumns: ["product_id"]
           },
           {
+            foreignKeyName: "promotions_bogo_get_product_id_fkey"
+            columns: ["bogo_get_product_id"]
+            isOneToOne: false
+            referencedRelation: "view_recipe_products"
+            referencedColumns: ["product_id"]
+          },
+          {
             foreignKeyName: "promotions_gift_product_id_fkey"
             columns: ["gift_product_id"]
             isOneToOne: false
@@ -2593,6 +2649,13 @@ export type Database = {
             columns: ["gift_product_id"]
             isOneToOne: false
             referencedRelation: "v_product_available_stock"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "promotions_gift_product_id_fkey"
+            columns: ["gift_product_id"]
+            isOneToOne: false
+            referencedRelation: "view_recipe_products"
             referencedColumns: ["product_id"]
           },
         ]
@@ -2664,6 +2727,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "v_product_available_stock"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "purchase_order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "view_recipe_products"
             referencedColumns: ["product_id"]
           },
         ]
@@ -2871,6 +2941,13 @@ export type Database = {
             referencedRelation: "v_product_available_stock"
             referencedColumns: ["product_id"]
           },
+          {
+            foreignKeyName: "recipe_versions_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "view_recipe_products"
+            referencedColumns: ["product_id"]
+          },
         ]
       }
       recipes: {
@@ -2933,6 +3010,13 @@ export type Database = {
             referencedColumns: ["product_id"]
           },
           {
+            foreignKeyName: "recipes_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "view_recipe_products"
+            referencedColumns: ["product_id"]
+          },
+          {
             foreignKeyName: "recipes_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
@@ -2951,6 +3035,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "v_product_available_stock"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "recipes_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "view_recipe_products"
             referencedColumns: ["product_id"]
           },
         ]
@@ -3266,6 +3357,13 @@ export type Database = {
             referencedColumns: ["product_id"]
           },
           {
+            foreignKeyName: "section_stock_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "view_recipe_products"
+            referencedColumns: ["product_id"]
+          },
+          {
             foreignKeyName: "section_stock_section_id_fkey"
             columns: ["section_id"]
             isOneToOne: false
@@ -3439,6 +3537,13 @@ export type Database = {
             referencedRelation: "v_product_available_stock"
             referencedColumns: ["product_id"]
           },
+          {
+            foreignKeyName: "stock_lots_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "view_recipe_products"
+            referencedColumns: ["product_id"]
+          },
         ]
       }
       stock_movements: {
@@ -3543,6 +3648,13 @@ export type Database = {
             referencedColumns: ["product_id"]
           },
           {
+            foreignKeyName: "stock_movements_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "view_recipe_products"
+            referencedColumns: ["product_id"]
+          },
+          {
             foreignKeyName: "stock_movements_supplier_id_fkey"
             columns: ["supplier_id"]
             isOneToOne: false
@@ -3633,6 +3745,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "v_product_available_stock"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "stock_reservations_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "view_recipe_products"
             referencedColumns: ["product_id"]
           },
           {
@@ -3743,6 +3862,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "v_product_available_stock"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "transfer_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "view_recipe_products"
             referencedColumns: ["product_id"]
           },
           {
@@ -4098,6 +4224,13 @@ export type Database = {
             referencedColumns: ["product_id"]
           },
           {
+            foreignKeyName: "recipes_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "view_recipe_products"
+            referencedColumns: ["product_id"]
+          },
+          {
             foreignKeyName: "recipes_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
@@ -4118,7 +4251,27 @@ export type Database = {
             referencedRelation: "v_product_available_stock"
             referencedColumns: ["product_id"]
           },
+          {
+            foreignKeyName: "recipes_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "view_recipe_products"
+            referencedColumns: ["product_id"]
+          },
         ]
+      }
+      view_recipe_products: {
+        Row: {
+          cost_price: number | null
+          current_stock: number | null
+          has_recipe: boolean | null
+          leaf_ingredient_count: number | null
+          name: string | null
+          product_id: string | null
+          sku: string | null
+          unit: string | null
+        }
+        Relationships: []
       }
       view_section_stock_details: {
         Row: {
@@ -4156,6 +4309,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "v_product_available_stock"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "section_stock_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "view_recipe_products"
             referencedColumns: ["product_id"]
           },
           {
@@ -5324,6 +5484,19 @@ export type Database = {
       runtests:
         | { Args: never; Returns: string[] }
         | { Args: { "": string }; Returns: string[] }
+      search_ingredients_v1: {
+        Args: { p_kind?: string; p_limit?: number; p_query?: string }
+        Returns: {
+          cost_price: number
+          current_stock: number
+          has_recipe: boolean
+          kind: string
+          name: string
+          product_id: string
+          sku: string
+          unit: string
+        }[]
+      }
       send_items_to_kitchen: {
         Args: { p_item_ids: string[] }
         Returns: {
