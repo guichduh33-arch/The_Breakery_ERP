@@ -1,8 +1,9 @@
 // apps/backoffice/src/features/inventory-production/__tests__/RecipeEditor.smoke.test.tsx
 // Session 13 — Phase 2.A — RecipeEditor render + add row smoke test.
+// Session 15 — Phase 3.B — extended for Duplicate button + IngredientPicker.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import RecipeEditor from '../components/RecipeEditor.js';
 
@@ -99,5 +100,18 @@ describe('RecipeEditor smoke', () => {
     await waitFor(() => screen.getByText(/Add ingredient/i));
     const addBtn = screen.getByRole('button', { name: /Add ingredient/i });
     expect(addBtn).toBeDisabled();
+  });
+
+  it('shows the Duplicate recipe button and opens the modal on click', async () => {
+    renderEditor('bag-1');
+    const dupBtn = await waitFor(() =>
+      screen.getByTestId('duplicate-recipe-button') as HTMLButtonElement
+    );
+    // Wait for recipe rows so the button becomes enabled.
+    await waitFor(() => expect(dupBtn).not.toBeDisabled());
+    fireEvent.click(dupBtn);
+    await waitFor(() => {
+      expect(screen.getByTestId('duplicate-target-select')).toBeInTheDocument();
+    });
   });
 });
