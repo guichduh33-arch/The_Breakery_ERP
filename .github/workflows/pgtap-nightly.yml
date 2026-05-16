@@ -35,7 +35,7 @@ jobs:
           shopt -s nullglob
           for f in supabase/tests/*.test.sql; do
             echo "=== Running $f ==="
-            if ! psql "$PGURL" -v ON_ERROR_STOP=1 --single-transaction -f "$f"; then
+            if ! psql "$PGURL" -v ON_ERROR_STOP=1 -f "$f"; then
               fail_count=$((fail_count+1))
               fail_list="${fail_list}\n - ${f}"
             fi
