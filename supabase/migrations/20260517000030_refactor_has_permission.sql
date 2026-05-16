@@ -61,6 +61,20 @@ CREATE INDEX IF NOT EXISTS idx_upo_expires
 ALTER TABLE user_permission_overrides ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================
+-- 1.5. Canonical roles seed (defensive — supabase/seed.sql runs AFTER
+--      migrations, so fresh CI Docker resets would FK-violate when the
+--      role_permissions seeds below reference SUPER_ADMIN/ADMIN/MANAGER/
+--      CASHIER. Idempotent ON CONFLICT — no-op on cloud where these rows
+--      already exist. Hotfix 2026-05-16 (Session 15 supabase-tests CI gate).
+-- ============================================================
+INSERT INTO roles (code, name, description, is_system) VALUES
+  ('SUPER_ADMIN', 'Super Admin', 'Accès complet système',                          true),
+  ('ADMIN',       'Admin',       'Administration métier',                          true),
+  ('MANAGER',     'Manager',     'Gestion opérationnelle (POS + produits)',        true),
+  ('CASHIER',     'Cashier',     'Caissier — POS sale + open shift',               true)
+ON CONFLICT (code) DO NOTHING;
+
+-- ============================================================
 -- 2. New permission rows (Session 13 module additions)
 --    Inserted BEFORE function body so role_permissions seeds below resolve.
 -- ============================================================
