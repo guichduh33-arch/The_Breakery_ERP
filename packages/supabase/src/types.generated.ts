@@ -2592,6 +2592,7 @@ export type Database = {
       }
       products: {
         Row: {
+          allergens: Database["public"]["Enums"]["allergen_type"][]
           category_id: string
           cost_price: number
           created_at: string
@@ -2614,6 +2615,7 @@ export type Database = {
           wholesale_price: number | null
         }
         Insert: {
+          allergens?: Database["public"]["Enums"]["allergen_type"][]
           category_id: string
           cost_price?: number
           created_at?: string
@@ -2636,6 +2638,7 @@ export type Database = {
           wholesale_price?: number | null
         }
         Update: {
+          allergens?: Database["public"]["Enums"]["allergen_type"][]
           category_id?: string
           cost_price?: number
           created_at?: string
@@ -4422,6 +4425,13 @@ export type Database = {
         }
         Relationships: []
       }
+      view_product_allergens_resolved: {
+        Row: {
+          allergens: Database["public"]["Enums"]["allergen_type"][] | null
+          product_id: string | null
+        }
+        Relationships: []
+      }
       view_product_recipes: {
         Row: {
           created_at: string | null
@@ -5917,6 +5927,21 @@ export type Database = {
       }
     }
     Enums: {
+      allergen_type:
+        | "gluten"
+        | "crustaceans"
+        | "eggs"
+        | "fish"
+        | "peanuts"
+        | "soy"
+        | "milk"
+        | "nuts"
+        | "celery"
+        | "mustard"
+        | "sesame"
+        | "sulphites"
+        | "lupin"
+        | "molluscs"
       customer_type: "retail" | "b2b"
       discount_template_type: "percentage" | "fixed_amount"
       loyalty_txn_type: "earn" | "redeem" | "adjust" | "refund"
@@ -6097,6 +6122,22 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      allergen_type: [
+        "gluten",
+        "crustaceans",
+        "eggs",
+        "fish",
+        "peanuts",
+        "soy",
+        "milk",
+        "nuts",
+        "celery",
+        "mustard",
+        "sesame",
+        "sulphites",
+        "lupin",
+        "molluscs",
+      ],
       customer_type: ["retail", "b2b"],
       discount_template_type: ["percentage", "fixed_amount"],
       loyalty_txn_type: ["earn", "redeem", "adjust", "refund"],
