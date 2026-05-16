@@ -1,6 +1,7 @@
 // apps/backoffice/src/features/inventory-production/__tests__/RecipeEditor.smoke.test.tsx
 // Session 13 — Phase 2.A — RecipeEditor render + add row smoke test.
 // Session 15 — Phase 3.B — extended for Duplicate button + IngredientPicker.
+// Session 15 — Phase 5.B — extended for BoulangerModeToggle (baker mode).
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
@@ -31,14 +32,23 @@ interface MockChain {
   limit:  () => Promise<RpcResult>;
 }
 
+// Tweakable by tests via `setBakerModeFlag` — controls the value returned
+// by useBakerRecipeMode's `from('recipes').select('is_baker_percentage')`
+// chain.
+let bakerModeFlag = false;
+function setBakerModeFlag(v: boolean) { bakerModeFlag = v; }
+
 vi.mock('@/lib/supabase.js', () => {
-  function buildChain(table: string): MockChain {
+  function buildChain(table: string, selectCols?: string): MockChain {
     const tableData: RpcResult =
       table === 'products' ? { data: PRODUCT_ROWS, error: null } :
-      table === 'recipes'  ? { data: [{ product_id: 'bag-1' }], error: null } :
-      { data: [], error: null };
+      table === 'recipes'  ?
+        (selectCols === 'is_baker_percentage'
+          ? { data: [{ is_baker_percentage: bakerModeFlag }], error: null }
+          : { data: [{ product_id: 'bag-1' }], error: null })
+        : { data: [], error: null };
     const chain: MockChain = {
-      select: () => chain,
+      select: (cols?: string) => buildChain(table, cols),
       eq:     () => chain,
       is:     () => chain,
       order:  () => chain,
@@ -57,6 +67,16 @@ vi.mock('@/lib/supabase.js', () => {
         }
         if (fn === 'upsert_recipe_v1') {
           return Promise.resolve({ data: 'r-2', error: null });
+        }
+        if (fn === 'convert_baker_recipe_to_absolute_v1') {
+          return Promise.resolve({
+            data: {
+              product_id: 'bag-1',
+              target_flour_qty: 1000,
+              rows: [],
+            },
+            error: null,
+          });
         }
         return Promise.resolve({ data: null, error: null });
       },
@@ -79,7 +99,10 @@ function renderEditor(productId: string | null = null) {
 }
 
 describe('RecipeEditor smoke', () => {
-  beforeEach(() => mockRpc.mockReset());
+  beforeEach(() => {
+    mockRpc.mockReset();
+    setBakerModeFlag(false);
+  });
 
   it('renders the product picker', async () => {
     renderEditor(null);
@@ -113,5 +136,28 @@ describe('RecipeEditor smoke', () => {
     await waitFor(() => {
       expect(screen.getByTestId('duplicate-target-select')).toBeInTheDocument();
     });
+  });
+
+  it('renders BoulangerModeToggle when a product is selected (Phase 5.B)', async () => {
+    renderEditor('bag-1');
+    await waitFor(() => {
+      expect(screen.getByTestId('baker-mode-toggle')).toBeInTheDocument();
+      expect(screen.getByTestId('baker-mode-switch')).toHaveAttribute('aria-checked', 'false');
+    });
+    // OFF state : column header is "Qty / unit" and the target flour block is absent.
+    expect(screen.getByTestId('recipe-qty-header')).toHaveTextContent(/Qty \/ unit/i);
+    expect(screen.queryByTestId('baker-target-flour-block')).not.toBeInTheDocument();
+  });
+
+  it('when baker mode is ON: column header switches to "% flour" and target flour input appears', async () => {
+    setBakerModeFlag(true);
+    renderEditor('bag-1');
+    await waitFor(() => {
+      expect(screen.getByTestId('baker-mode-switch')).toHaveAttribute('aria-checked', 'true');
+    });
+    expect(screen.getByTestId('recipe-qty-header')).toHaveTextContent(/% flour/i);
+    expect(screen.getByTestId('baker-target-flour-block')).toBeInTheDocument();
+    expect(screen.getByTestId('baker-target-flour-input')).toBeInTheDocument();
+    expect(screen.getByTestId('add-row-qty-label')).toHaveTextContent(/% flour/i);
   });
 });
