@@ -8,6 +8,7 @@
 // `useProducts` / `useProductDetail`.
 
 import type { Product } from '@breakery/domain';
+import type { AllergenType } from '@breakery/ui';
 
 export type ProductTypeFilter = 'all' | 'finished' | 'semi-finished' | 'raw' | 'combo';
 
@@ -16,6 +17,8 @@ export interface ProductRow extends Product {
   unit: string;
   min_stock_threshold: number;
   category_name: string | null;
+  /** Self-declared allergens (Session 15 Phase 5.C — `products.allergens`). */
+  allergens: ReadonlyArray<AllergenType>;
 }
 
 export interface CategoryOption {

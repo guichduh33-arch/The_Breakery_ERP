@@ -14,6 +14,7 @@ import { ProductsTable } from '@/features/products/components/ProductsTable.js';
 import { ProductsGrid } from '@/features/products/components/ProductsGrid.js';
 import { useProducts } from '@/features/products/hooks/useProducts.js';
 import { useCategories } from '@/features/products/hooks/useCategories.js';
+import { useResolvedAllergensMap } from '@/features/products/hooks/useResolvedAllergensMap.js';
 import {
   classifyProduct,
   type ProductView,
@@ -25,6 +26,7 @@ export default function ProductsPage(): JSX.Element {
   const navigate = useNavigate();
   const products = useProducts();
   const categories = useCategories();
+  const resolvedAllergens = useResolvedAllergensMap();
 
   const [search, setSearch] = useState('');
   const [categoryId, setCategoryId] = useState<string | 'all'>('all');
@@ -89,6 +91,7 @@ export default function ProductsPage(): JSX.Element {
         <ProductsTable
           rows={filtered}
           isLoading={products.isLoading}
+          resolvedAllergens={resolvedAllergens.data ?? new Map()}
           onRowClick={openProduct}
           onView={openProduct}
         />

@@ -47,9 +47,11 @@ const SECTIONS: ReportSection[] = [
     id: 'inventory',
     title: 'Inventory',
     cards: [
-      { to: 'stock-variance', title: 'Stock Variance',  blurb: 'Expected vs current per product.', icon: Boxes },
-      {                       title: 'Stock Movement',  blurb: 'History of all stock changes. (Soon)', icon: TrendingUp },
-      {                       title: 'Wastage & Spoilage', blurb: 'Track items discarded due to damage or expiry. (Soon)', icon: AlertTriangle },
+      { to: 'stock-variance',    title: 'Stock Variance',     blurb: 'Expected vs current per product.', icon: Boxes },
+      { to: 'production-yield',  title: 'Production Yield',   blurb: 'Top-10 batch variance outliers + per-recipe trend.', icon: BarChart3 },
+      { to: '../inventory/production/margin-watch', title: 'Margin Watch', blurb: 'Recipes whose expected gross margin has slipped below target.', icon: AlertTriangle },
+      {                          title: 'Stock Movement',     blurb: 'History of all stock changes. (Soon)', icon: TrendingUp },
+      {                          title: 'Wastage & Spoilage', blurb: 'Track items discarded due to damage or expiry. (Soon)', icon: AlertTriangle },
     ],
   },
   {

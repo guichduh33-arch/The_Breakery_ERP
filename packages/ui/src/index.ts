@@ -203,3 +203,18 @@ export {
   type RefundReceiptModalProps,
   type RefundReceiptTender,
 } from './components/RefundReceiptModal.js';
+export {
+  IngredientPicker,
+  type IngredientPickerProps,
+  type IngredientSearchResult,
+  type IngredientSearchFn,
+  type IngredientKind,
+} from './components/IngredientPicker.js';
+export {
+  AllergenBadge,
+  ALLERGEN_TYPES,
+  ALLERGEN_LABELS,
+  type AllergenBadgeProps,
+  type AllergenBadgeSize,
+  type AllergenType,
+} from './components/AllergenBadge.js';

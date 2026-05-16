@@ -28,6 +28,7 @@ vi.mock('@/lib/supabase.js', () => {
       table === 'products'      ? { data: PRODUCT_ROWS, error: null } :
       table === 'recipes'       ? { data: [{ product_id: 'bag-1' }], error: null } :
       table === 'sections'      ? { data: [{ id: 'sec-1', code: 'KIT', name: 'Kitchen', kind: 'kitchen', display_order: 1 }], error: null } :
+      table === 'business_config' ? { data: [{ production_yield_variance_threshold_pct: 0.15 }], error: null } :
       { data: [], error: null };
     const chain: MockChain = {
       select: () => chain,
@@ -73,7 +74,8 @@ describe('ProductionForm smoke', () => {
     await waitFor(() => {
       expect(screen.getByText(/Finished product/i)).toBeInTheDocument();
     });
-    expect(screen.getByText(/Quantity produced/i)).toBeInTheDocument();
+    expect(screen.getByText(/Expected yield/i)).toBeInTheDocument();
+    expect(screen.getByText(/Actual yield/i)).toBeInTheDocument();
     expect(screen.getByText(/Waste/i)).toBeInTheDocument();
     expect(screen.getByText(/Batch number/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Record production/i })).toBeInTheDocument();

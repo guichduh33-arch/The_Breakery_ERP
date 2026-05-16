@@ -17,6 +17,9 @@ import SuppliersPage from '@/pages/Suppliers.js';
 import SupplierDetailPage from '@/pages/suppliers/SupplierDetailPage.js';
 import ComingSoonPage from '@/pages/ComingSoon.js';
 import ProductionPage from '@/pages/inventory/ProductionPage.js';
+import BatchProductionPage from '@/pages/inventory/BatchProductionPage.js';
+import ProductionSchedulePage from '@/pages/inventory/ProductionSchedulePage.js';
+import MarginWatchPage from '@/pages/inventory/MarginWatchPage.js';
 import RecipeEditorPage from '@/pages/inventory/RecipeEditorPage.js';
 import OpnameListPage from '@/pages/inventory/OpnameListPage.js';
 import OpnameDetailPage from '@/pages/inventory/OpnameDetailPage.js';
@@ -39,6 +42,7 @@ import SalesByHourPage from '@/pages/reports/SalesByHourPage.js';
 import SalesByCategoryPage from '@/pages/reports/SalesByCategoryPage.js';
 import SalesByStaffPage from '@/pages/reports/SalesByStaffPage.js';
 import StockVariancePage from '@/pages/reports/StockVariancePage.js';
+import ProductionYieldPage from '@/pages/reports/ProductionYieldPage.js';
 import AuditPage from '@/pages/reports/AuditPage.js';
 import ProfitLossPage     from '@/pages/reports/ProfitLossPage.js';
 import BalanceSheetPage   from '@/pages/reports/BalanceSheetPage.js';
@@ -151,6 +155,30 @@ export function AppRoutes() {
           element={
             <PermissionGate required="inventory.read">
               <ProductionPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="inventory/production/batch"
+          element={
+            <PermissionGate required="inventory.production.create">
+              <BatchProductionPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="inventory/production/schedule"
+          element={
+            <PermissionGate required="inventory.production.schedule">
+              <ProductionSchedulePage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="inventory/production/margin-watch"
+          element={
+            <PermissionGate required="reports.inventory.read">
+              <MarginWatchPage />
             </PermissionGate>
           }
         />
@@ -432,6 +460,14 @@ export function AppRoutes() {
           element={
             <PermissionGate required="reports.inventory.read">
               <StockVariancePage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="reports/production-yield"
+          element={
+            <PermissionGate required="inventory.read">
+              <ProductionYieldPage />
             </PermissionGate>
           }
         />

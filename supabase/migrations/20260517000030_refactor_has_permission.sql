@@ -61,6 +61,75 @@ CREATE INDEX IF NOT EXISTS idx_upo_expires
 ALTER TABLE user_permission_overrides ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================
+-- 1.5. Canonical roles seed (defensive — supabase/seed.sql runs AFTER
+--      migrations, so fresh CI Docker resets would FK-violate when the
+--      role_permissions seeds below reference SUPER_ADMIN/ADMIN/MANAGER/
+--      CASHIER. Idempotent ON CONFLICT — no-op on cloud where these rows
+--      already exist. Hotfix 2026-05-16 (Session 15 supabase-tests CI gate).
+-- ============================================================
+INSERT INTO roles (code, name, description, is_system) VALUES
+  ('SUPER_ADMIN', 'Super Admin', 'Accès complet système',                          true),
+  ('ADMIN',       'Admin',       'Administration métier',                          true),
+  ('MANAGER',     'Manager',     'Gestion opérationnelle (POS + produits)',        true),
+  ('CASHIER',     'Cashier',     'Caissier — POS sale + open shift',               true),
+  ('waiter',      'Waiter',      'Floor staff — capture orders on tablet',         false)
+ON CONFLICT (code) DO NOTHING;
+
+-- ============================================================
+-- 1.6. Defensive base permissions seed — same rationale as 1.5 (seed.sql
+--      runs AFTER migrations). Section 3 below has MANAGER/CASHIER/waiter
+--      role_permissions inserts that reference permission codes which are
+--      seeded only in seed.sql on cloud. Idempotent — no-op on cloud.
+-- ============================================================
+INSERT INTO permissions (code, module, action, description) VALUES
+  -- POS session + sale (canonical seed.sql)
+  ('pos.session.open',         'pos',       'session.open',  'Ouvrir une session de caisse'),
+  ('pos.session.close_own',    'pos',       'session.close', 'Clôturer sa propre session'),
+  ('pos.session.close_other',  'pos',       'session.close', 'Clôturer la session d''un autre'),
+  ('pos.session.view_all',     'pos',       'session.view',  'Voir toutes les sessions'),
+  ('pos.sale.create',          'pos',       'sale.create',   'Encaisser une vente'),
+  ('pos.sale.void',            'pos',       'sale.void',     'Annuler une vente'),
+  ('pos.sale.update',          'pos',       'sale.update',   'Modifier une vente'),
+  ('pos.sale.refund',          'pos',       'sale.refund',   'Refund une vente'),
+  ('pos.sale.cancel_item',     'pos',       'sale.cancel',   'Annuler un item'),
+  -- Catalog + customers + tables + combos
+  ('products.read',            'products',  'read',          'Voir le catalogue'),
+  ('products.create',          'products',  'create',        'Créer un produit'),
+  ('products.update',          'products',  'update',        'Modifier un produit'),
+  ('categories.read',          'categories','read',          'Voir les catégories'),
+  ('categories.create',        'categories','create',        'Créer une catégorie'),
+  ('categories.update',        'categories','update',        'Modifier une catégorie'),
+  ('customers.read',           'customers', 'read',          'Voir les clients'),
+  ('customers.create',         'customers', 'create',        'Créer un client'),
+  ('customers.update',         'customers', 'update',        'Modifier un client'),
+  ('tables.read',              'tables',    'read',          'Voir les tables'),
+  ('tables.create',            'tables',    'create',        'Créer une table'),
+  ('tables.update',            'tables',    'update',        'Modifier une table'),
+  ('combos.read',              'combos',    'read',          'Voir les combos'),
+  ('combos.create',            'combos',    'create',        'Créer un combo'),
+  ('combos.update',            'combos',    'update',        'Modifier un combo'),
+  -- Payments + sales + promotions + suppliers + loyalty
+  ('payments.process',         'payments',  'process',       'Process payment at POS'),
+  ('sales.create',             'sales',     'create',        'Create a tablet/floor order'),
+  ('sales.discount',           'sales',     'discount',      'Manager discount verification'),
+  ('promotions.read',          'promotions','read',          'Voir les promotions'),
+  ('promotions.create',        'promotions','create',        'Créer une promotion'),
+  ('promotions.update',        'promotions','update',        'Modifier une promotion'),
+  ('suppliers.read',           'suppliers', 'read',          'Voir les fournisseurs'),
+  ('suppliers.create',         'suppliers', 'create',        'Créer un fournisseur'),
+  ('suppliers.update',         'suppliers', 'update',        'Modifier un fournisseur'),
+  ('loyalty.read',             'loyalty',   'read',          'Voir loyalty data'),
+  -- Inventory
+  ('inventory.read',           'inventory', 'read',          'Voir le stock'),
+  ('inventory.receive',        'inventory', 'receive',       'Receive stock'),
+  ('inventory.waste',          'inventory', 'waste',         'Record waste'),
+  ('inventory.transfer.create','inventory', 'transfer.create','Create stock transfer'),
+  ('inventory.transfer.receive','inventory','transfer.receive','Receive stock transfer'),
+  ('inventory.opname.create',  'inventory', 'opname.create', 'Create stock opname'),
+  ('inventory.production.create','inventory','production.create','Record production batch')
+ON CONFLICT (code) DO NOTHING;
+
+-- ============================================================
 -- 2. New permission rows (Session 13 module additions)
 --    Inserted BEFORE function body so role_permissions seeds below resolve.
 -- ============================================================
@@ -216,25 +285,28 @@ ON CONFLICT (role_code, permission_code) DO NOTHING;
 --    positional callers (auth.uid()-based RPCs) unaffected.
 -- ============================================================
 
--- Drop legacy variants (signatures must match exactly across the 11 prior migrations)
-DROP FUNCTION IF EXISTS has_permission(UUID, TEXT);
-DROP FUNCTION IF EXISTS has_permission_for_profile(UUID, TEXT);
+-- DROP FUNCTION removed 2026-05-16 (Session 15 CI gate fix) :
+-- Fresh CI Docker has RLS policies on tables that depend on has_permission(uuid,text)
+-- by the time this migration runs, so DROP errors with 2BP01. CREATE OR REPLACE
+-- works only when param names stay the same — so we keep the canonical Session 12
+-- names (p_uid, p_perm) here. Cloud V3 dev `ikcyvlovptebroadgtvd` already uses these
+-- names (restored via execute_sql on 2026-05-16). No drift.
 
-CREATE OR REPLACE FUNCTION has_permission(p_user_id UUID, p_permission TEXT)
+CREATE OR REPLACE FUNCTION has_permission(p_uid UUID, p_perm TEXT)
 RETURNS BOOLEAN
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public AS $$
 DECLARE
   v_profile_id UUID;
   v_role_code  TEXT;
 BEGIN
-  IF p_user_id IS NULL OR p_permission IS NULL THEN
+  IF p_uid IS NULL OR p_perm IS NULL THEN
     RETURN FALSE;
   END IF;
 
   SELECT id, role_code
     INTO v_profile_id, v_role_code
     FROM user_profiles
-   WHERE auth_user_id = p_user_id
+   WHERE auth_user_id = p_uid
      AND deleted_at IS NULL
    LIMIT 1;
 
@@ -247,7 +319,7 @@ BEGIN
     SELECT 1
       FROM user_permission_overrides
      WHERE user_profile_id = v_profile_id
-       AND permission_code = p_permission
+       AND permission_code = p_perm
        AND is_granted = FALSE
        AND (expires_at IS NULL OR expires_at > now())
   ) THEN
@@ -259,7 +331,7 @@ BEGIN
     SELECT 1
       FROM role_permissions
      WHERE role_code = v_role_code
-       AND permission_code = p_permission
+       AND permission_code = p_perm
        AND is_granted = TRUE
   ) THEN
     RETURN TRUE;
@@ -270,7 +342,7 @@ BEGIN
     SELECT 1
       FROM user_permission_overrides
      WHERE user_profile_id = v_profile_id
-       AND permission_code = p_permission
+       AND permission_code = p_perm
        AND is_granted = TRUE
        AND (expires_at IS NULL OR expires_at > now())
   ) THEN
@@ -286,13 +358,13 @@ COMMENT ON FUNCTION has_permission(UUID, TEXT) IS
   'user_permission_overrides (DENY) > role_permissions > user_permission_overrides (GRANT) > FALSE. '
   'DO NOT CREATE OR REPLACE. New perms = INSERT INTO permissions + role_permissions.';
 
-CREATE OR REPLACE FUNCTION has_permission_for_profile(p_profile_id UUID, p_permission TEXT)
+CREATE OR REPLACE FUNCTION has_permission_for_profile(p_profile_id UUID, p_perm TEXT)
 RETURNS BOOLEAN
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public AS $$
 DECLARE
   v_role_code TEXT;
 BEGIN
-  IF p_profile_id IS NULL OR p_permission IS NULL THEN
+  IF p_profile_id IS NULL OR p_perm IS NULL THEN
     RETURN FALSE;
   END IF;
 
@@ -312,7 +384,7 @@ BEGIN
     SELECT 1
       FROM user_permission_overrides
      WHERE user_profile_id = p_profile_id
-       AND permission_code = p_permission
+       AND permission_code = p_perm
        AND is_granted = FALSE
        AND (expires_at IS NULL OR expires_at > now())
   ) THEN
@@ -324,7 +396,7 @@ BEGIN
     SELECT 1
       FROM role_permissions
      WHERE role_code = v_role_code
-       AND permission_code = p_permission
+       AND permission_code = p_perm
        AND is_granted = TRUE
   ) THEN
     RETURN TRUE;
@@ -335,7 +407,7 @@ BEGIN
     SELECT 1
       FROM user_permission_overrides
      WHERE user_profile_id = p_profile_id
-       AND permission_code = p_permission
+       AND permission_code = p_perm
        AND is_granted = TRUE
        AND (expires_at IS NULL OR expires_at > now())
   ) THEN

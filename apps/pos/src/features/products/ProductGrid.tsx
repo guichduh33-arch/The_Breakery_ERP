@@ -30,6 +30,7 @@ import { ProductCard } from './ProductCard';
 import { useProducts } from './hooks/useProducts';
 import { useCategories } from './hooks/useCategories';
 import { useActiveLotsByProduct } from './hooks/useActiveLotsByProduct';
+import { useProductAllergensMap } from './hooks/useProductAllergens';
 
 export interface ProductGridProps {
   selectedSlug: string | null;
@@ -40,6 +41,7 @@ export function ProductGrid({ selectedSlug, onSelect }: ProductGridProps): JSX.E
   const { data: products = [], isLoading } = useProducts();
   const { data: categories = [] } = useCategories();
   const { data: lotsByProduct } = useActiveLotsByProduct();
+  const { data: allergensByProduct } = useProductAllergensMap();
   const [query, setQuery] = useState('');
 
   const selectedCat = categories.find((c) => c.slug === selectedSlug);
@@ -123,6 +125,8 @@ export function ProductGrid({ selectedSlug, onSelect }: ProductGridProps): JSX.E
                   ? `Low stock · ${p.current_stock} left`
                   : null;
 
+              const allergens = allergensByProduct?.get(p.id) ?? [];
+
               return (
                 <ProductCard
                   key={p.id}
@@ -130,6 +134,7 @@ export function ProductGrid({ selectedSlug, onSelect }: ProductGridProps): JSX.E
                   disabled={disabled}
                   overlayLabel={overlayLabel}
                   lowStockLabel={lowStockLabel}
+                  allergens={allergens}
                   onSelect={onSelect}
                   topLeftSlot={
                     p.product_type === 'combo' ? <ComboBadge /> : undefined
