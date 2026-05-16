@@ -29,7 +29,7 @@
 
 import { Star } from 'lucide-react';
 import type { JSX, ReactNode } from 'react';
-import { Currency, BrandMark, cn } from '@breakery/ui';
+import { Currency, BrandMark, AllergenBadge, cn, type AllergenType } from '@breakery/ui';
 import type { Product } from '@breakery/domain';
 
 export interface ProductCardProps {
@@ -42,6 +42,8 @@ export interface ProductCardProps {
   promoActive?: boolean;
   /** Low-stock indicator (ref 06 — "LOW STOCK · 2 LEFT"). */
   lowStockLabel?: string | null;
+  /** Resolved allergens (own + cascade) — Session 15 Phase 5.C. */
+  allergens?: ReadonlyArray<AllergenType>;
   /** Click handler (skipped when disabled). */
   onSelect: (product: Product) => void;
   /** Optional extra slot rendered top-left ABOVE the image (e.g. ComboBadge). */
@@ -54,9 +56,11 @@ export function ProductCard({
   overlayLabel = null,
   promoActive = false,
   lowStockLabel = null,
+  allergens,
   onSelect,
   topLeftSlot,
 }: ProductCardProps): JSX.Element {
+  const allergenList = allergens ?? [];
   return (
     <button
       type="button"
@@ -120,6 +124,18 @@ export function ProductCard({
             <span className="rotate-[-12deg] bg-bg-base/85 px-3 py-1 rounded-sm text-text-muted text-xs font-bold uppercase tracking-widest border border-border-strong">
               {overlayLabel}
             </span>
+          </div>
+        )}
+
+        {/* Allergen badges — bottom-right overlay (Session 15 Phase 5.C) */}
+        {allergenList.length > 0 && (
+          <div
+            className="absolute bottom-1 right-1 flex flex-wrap justify-end gap-0.5 max-w-[70%] z-10"
+            data-testid={`product-card-allergens-${product.id}`}
+          >
+            {allergenList.map((a) => (
+              <AllergenBadge key={a} allergen={a} size="sm" />
+            ))}
           </div>
         )}
 
