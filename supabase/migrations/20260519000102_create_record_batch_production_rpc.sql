@@ -1,0 +1,375 @@
+-- 20260519000102_create_record_batch_production_rpc.sql
+-- Session 15 / Phase 4.A — Atomic multi-recipe batch production RPC.
+--
+-- Decisions (Spec 2026-05-15 §D10) :
+--   - Single-transaction atomicity : the SECURITY DEFINER function runs inside
+--     one Postgres transaction. Any RAISE inside record_production_v1 rolls
+--     back the whole batch (no batch row, no production_records, no
+--     stock_movements).
+--   - Aggregate stock validation UPFRONT : we walk every item's recipe cascade
+--     once, sum leaf-material requirements across the batch, then compare to
+--     products.current_stock. If any leaf is short, RAISE 'insufficient_stock'
+--     with DETAIL = JSON shortage list — matches the single-item shape from
+--     record_production_v1 so the UI can reuse its error parser.
+--   - Idempotency on the batch key : same key replayed → return existing
+--     payload as { idempotent_replay: TRUE, ... }.
+--   - Per-item idempotency_key is NOT supported in v1 (the batch key is the
+--     atomicity boundary). Per-item replay would require partial-failure
+--     semantics that conflict with D10. Items pass the batch's key suffixed.
+--
+-- Known caveat — TEMP TABLE collisions :
+--   record_production_v1 creates ON COMMIT DROP temp tables (_bom_flatten,
+--   _leaf_consumption). Within one transaction these collide on the 2nd
+--   invocation. We DROP them between calls (mirrors the f6_sub_recipes pgTAP
+--   workaround D-S15-1A-TEMPTBL-01). The production cron / PostgREST runs each
+--   RPC in its own tx so this is invisible to real callers ; only relevant
+--   here because we chain calls server-side.
+
+CREATE OR REPLACE FUNCTION record_batch_production_v1(
+  p_batch jsonb,
+  p_items jsonb
+) RETURNS JSONB
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
+AS $$
+DECLARE
+  v_uid              UUID := auth.uid();
+  v_profile          UUID;
+  v_batch_id         UUID;
+  v_batch_number     TEXT;
+  v_batch_notes      TEXT;
+  v_batch_idem_key   UUID;
+  v_existing_batch   production_batches%ROWTYPE;
+  v_item             jsonb;
+  v_item_idx         INT;
+  v_product_id       UUID;
+  v_quantity         NUMERIC;
+  v_waste            NUMERIC;
+  v_expected_yield   NUMERIC;
+  v_actual_yield     NUMERIC;
+  v_variance_reason  TEXT;
+  v_item_idem_key    UUID;
+  v_section_id       UUID;
+  v_records          JSONB := '[]'::JSONB;
+  v_rec_result       JSONB;
+  v_production_id    UUID;
+  v_shortages        JSONB := '[]'::JSONB;
+  v_agg              RECORD;
+BEGIN
+  -- ──────────────────────────────────────────────────────────────────────────
+  -- 1. Permission gate (mirrors record_production_v1).
+  -- ──────────────────────────────────────────────────────────────────────────
+  IF NOT has_permission(v_uid, 'inventory.production.create') THEN
+    RAISE EXCEPTION 'forbidden' USING ERRCODE='P0003';
+  END IF;
+
+  -- ──────────────────────────────────────────────────────────────────────────
+  -- 2. Validate batch envelope shape.
+  -- ──────────────────────────────────────────────────────────────────────────
+  IF p_batch IS NULL OR jsonb_typeof(p_batch) <> 'object' THEN
+    RAISE EXCEPTION 'invalid_batch_envelope' USING ERRCODE='P0001';
+  END IF;
+  IF p_items IS NULL OR jsonb_typeof(p_items) <> 'array' OR jsonb_array_length(p_items) = 0 THEN
+    RAISE EXCEPTION 'items_must_be_non_empty_array' USING ERRCODE='P0001';
+  END IF;
+
+  v_batch_notes := p_batch->>'notes';
+  IF (p_batch->>'section_id') IS NOT NULL AND length(p_batch->>'section_id') > 0 THEN
+    v_section_id := (p_batch->>'section_id')::uuid;
+  END IF;
+  IF (p_batch->>'idempotency_key') IS NOT NULL AND length(p_batch->>'idempotency_key') > 0 THEN
+    v_batch_idem_key := (p_batch->>'idempotency_key')::uuid;
+  END IF;
+
+  -- ──────────────────────────────────────────────────────────────────────────
+  -- 3. Idempotency replay : same key → return existing payload as-is.
+  -- ──────────────────────────────────────────────────────────────────────────
+  IF v_batch_idem_key IS NOT NULL THEN
+    SELECT * INTO v_existing_batch FROM production_batches
+      WHERE idempotency_key = v_batch_idem_key LIMIT 1;
+    IF v_existing_batch.id IS NOT NULL THEN
+      SELECT COALESCE(jsonb_agg(
+        jsonb_build_object(
+          'production_id',     pr.id,
+          'production_number', pr.production_number,
+          'product_id',        pr.product_id,
+          'quantity_produced', pr.quantity_produced,
+          'quantity_waste',    pr.quantity_waste
+        )
+      ORDER BY pr.created_at), '[]'::JSONB)
+        INTO v_records
+        FROM production_records pr
+        WHERE pr.batch_id = v_existing_batch.id;
+      RETURN jsonb_build_object(
+        'batch_id',           v_existing_batch.id,
+        'batch_number',       v_existing_batch.batch_number,
+        'status',             v_existing_batch.status,
+        'production_records', v_records,
+        'idempotent_replay',  TRUE
+      );
+    END IF;
+  END IF;
+
+  -- Resolve actor profile.
+  SELECT id INTO v_profile FROM user_profiles
+    WHERE auth_user_id = v_uid AND deleted_at IS NULL;
+  IF v_profile IS NULL THEN
+    RAISE EXCEPTION 'forbidden' USING ERRCODE='P0003';
+  END IF;
+
+  -- ──────────────────────────────────────────────────────────────────────────
+  -- 4. Validate each item shape + positive quantity. Also build a normalized
+  --    array of items for the aggregate walk.
+  -- ──────────────────────────────────────────────────────────────────────────
+  CREATE TEMP TABLE _batch_items (
+    item_idx          INT     PRIMARY KEY,
+    product_id        UUID    NOT NULL,
+    quantity_produced NUMERIC NOT NULL,
+    quantity_waste    NUMERIC NOT NULL,
+    expected_yield    NUMERIC,
+    actual_yield      NUMERIC,
+    variance_reason   TEXT,
+    item_idem_key     UUID
+  ) ON COMMIT DROP;
+
+  v_item_idx := 0;
+  FOR v_item IN SELECT * FROM jsonb_array_elements(p_items) LOOP
+    v_item_idx := v_item_idx + 1;
+
+    IF jsonb_typeof(v_item) <> 'object' THEN
+      RAISE EXCEPTION 'invalid_item_shape' USING ERRCODE='P0001',
+        DETAIL = format('Item #%s is not a JSON object', v_item_idx);
+    END IF;
+
+    IF (v_item->>'product_id') IS NULL OR length(v_item->>'product_id') = 0 THEN
+      RAISE EXCEPTION 'item_missing_product_id' USING ERRCODE='P0001',
+        DETAIL = format('Item #%s', v_item_idx);
+    END IF;
+
+    v_product_id := (v_item->>'product_id')::uuid;
+    v_quantity   := COALESCE((v_item->>'quantity_produced')::numeric, 0);
+    v_waste      := COALESCE((v_item->>'quantity_waste')::numeric, 0);
+
+    IF v_quantity <= 0 THEN
+      RAISE EXCEPTION 'quantity_must_be_positive' USING ERRCODE='P0001',
+        DETAIL = format('Item #%s product=%s', v_item_idx, v_product_id);
+    END IF;
+    IF v_waste < 0 THEN
+      RAISE EXCEPTION 'waste_must_be_non_negative' USING ERRCODE='P0001',
+        DETAIL = format('Item #%s product=%s', v_item_idx, v_product_id);
+    END IF;
+
+    -- Verify each product actually has an active recipe (fail fast — would
+    -- fail later in record_production_v1 anyway, but better error).
+    IF NOT EXISTS (
+      SELECT 1 FROM recipes
+        WHERE product_id = v_product_id
+          AND is_active = TRUE
+          AND deleted_at IS NULL
+    ) THEN
+      RAISE EXCEPTION 'recipe_not_found' USING ERRCODE='P0002',
+        DETAIL = format('Item #%s product=%s has no active recipe', v_item_idx, v_product_id);
+    END IF;
+
+    v_expected_yield  := NULLIF(v_item->>'expected_yield_qty', '')::numeric;
+    v_actual_yield    := NULLIF(v_item->>'actual_yield_qty',   '')::numeric;
+    v_variance_reason := NULLIF(v_item->>'yield_variance_reason', '');
+    v_item_idem_key   := NULLIF(v_item->>'idempotency_key',     '')::uuid;
+
+    INSERT INTO _batch_items VALUES (
+      v_item_idx, v_product_id, v_quantity, v_waste,
+      v_expected_yield, v_actual_yield, v_variance_reason, v_item_idem_key
+    );
+  END LOOP;
+
+  -- ──────────────────────────────────────────────────────────────────────────
+  -- 5. Aggregate leaf-material requirements across ALL items in the batch.
+  --    Mirror the recursive walk from record_production_v1 — recurse=TRUE
+  --    semantic (sub-recipes cascade to their leaves). Materials consumption
+  --    factor per item = quantity_produced + quantity_waste (D5 rationale).
+  -- ──────────────────────────────────────────────────────────────────────────
+  WITH RECURSIVE
+    items AS (
+      SELECT bi.product_id, (bi.quantity_produced + bi.quantity_waste) AS factor
+        FROM _batch_items bi
+    ),
+    flatten AS (
+      SELECT
+        i.product_id AS root_product_id,
+        r.material_id,
+        m.name AS material_name,
+        m.unit AS material_unit,
+        m.current_stock AS material_stock,
+        r.unit AS recipe_unit,
+        (r.quantity * i.factor)::DECIMAL(20,6) AS qty_in_recipe_unit,
+        1 AS depth,
+        ARRAY[i.product_id]::UUID[] AS sub_path,
+        EXISTS (
+          SELECT 1 FROM recipes r2
+            WHERE r2.product_id = r.material_id
+              AND r2.is_active = TRUE AND r2.deleted_at IS NULL
+        ) AS is_intermediate
+      FROM items i
+      JOIN recipes r ON r.product_id = i.product_id
+      JOIN products m ON m.id = r.material_id
+      WHERE r.is_active = TRUE AND r.deleted_at IS NULL
+      UNION ALL
+      SELECT
+        f.root_product_id,
+        r.material_id,
+        m.name,
+        m.unit,
+        m.current_stock,
+        r.unit,
+        (f.qty_in_recipe_unit * r.quantity)::DECIMAL(20,6),
+        f.depth + 1,
+        f.sub_path || f.material_id,
+        EXISTS (
+          SELECT 1 FROM recipes r2
+            WHERE r2.product_id = r.material_id
+              AND r2.is_active = TRUE AND r2.deleted_at IS NULL
+        )
+      FROM flatten f
+      JOIN recipes r ON r.product_id = f.material_id
+      JOIN products m ON m.id = r.material_id
+      WHERE f.is_intermediate = TRUE
+        AND r.is_active = TRUE AND r.deleted_at IS NULL
+        AND f.depth < 5
+        AND NOT (r.material_id = ANY(f.sub_path))
+    ),
+    leaves AS (
+      SELECT
+        material_id,
+        MAX(material_name)  AS material_name,
+        MAX(material_unit)  AS material_unit,
+        MAX(material_stock) AS material_stock,
+        SUM(
+          CASE WHEN recipe_unit = material_unit
+               THEN qty_in_recipe_unit
+               ELSE COALESCE(
+                 convert_quantity(qty_in_recipe_unit, recipe_unit, material_unit),
+                 qty_in_recipe_unit
+               )
+          END
+        )::DECIMAL(14,3) AS total_required
+      FROM flatten
+      WHERE is_intermediate = FALSE
+      GROUP BY material_id
+    )
+  SELECT COALESCE(jsonb_agg(
+    jsonb_build_object(
+      'material_id',   material_id,
+      'material_name', material_name,
+      'required',      total_required,
+      'available',     material_stock,
+      'shortfall',     total_required - material_stock,
+      'unit',          material_unit
+    ) ORDER BY material_name), '[]'::JSONB)
+    INTO v_shortages
+    FROM leaves
+    WHERE material_stock < total_required;
+
+  IF jsonb_array_length(v_shortages) > 0 THEN
+    RAISE EXCEPTION 'insufficient_stock' USING ERRCODE='P0002', DETAIL = v_shortages::text;
+  END IF;
+
+  -- ──────────────────────────────────────────────────────────────────────────
+  -- 6. Insert the batch header (status=open transient).
+  -- ──────────────────────────────────────────────────────────────────────────
+  v_batch_number := 'BATCH-'
+    || to_char(now() AT TIME ZONE 'Asia/Jakarta', 'YYYYMMDD')
+    || '-'
+    || lpad(nextval('production_batches_seq')::text, 4, '0');
+
+  INSERT INTO production_batches (
+    batch_number, started_at, staff_id, status, notes, idempotency_key
+  ) VALUES (
+    v_batch_number, now(), v_profile, 'open', v_batch_notes, v_batch_idem_key
+  ) RETURNING id INTO v_batch_id;
+
+  -- ──────────────────────────────────────────────────────────────────────────
+  -- 7. Loop : call record_production_v1 per item, link the result.
+  --    Note : record_production_v1 creates ON COMMIT DROP temp tables. We must
+  --    drop them between calls (see header doc).
+  -- ──────────────────────────────────────────────────────────────────────────
+  FOR v_agg IN SELECT * FROM _batch_items ORDER BY item_idx LOOP
+    -- Clear temp-table residue from any prior iteration (safe via IF EXISTS).
+    DROP TABLE IF EXISTS pg_temp._bom_flatten;
+    DROP TABLE IF EXISTS pg_temp._leaf_consumption;
+
+    v_rec_result := record_production_v1(
+      p_product_id            := v_agg.product_id,
+      p_quantity_produced     := v_agg.quantity_produced,
+      p_section_id            := v_section_id,
+      p_batch_number          := v_batch_number,
+      p_quantity_waste        := v_agg.quantity_waste,
+      p_notes                 := v_batch_notes,
+      p_idempotency_key       := v_agg.item_idem_key,
+      p_recurse_subrecipes    := TRUE,
+      p_expected_yield_qty    := v_agg.expected_yield,
+      p_actual_yield_qty      := v_agg.actual_yield,
+      p_yield_variance_reason := v_agg.variance_reason
+    );
+    v_production_id := (v_rec_result->>'production_id')::uuid;
+
+    UPDATE production_records
+       SET batch_id   = v_batch_id,
+           updated_at = now()
+     WHERE id = v_production_id;
+
+    v_records := v_records || jsonb_build_array(jsonb_build_object(
+      'production_id',     v_production_id,
+      'production_number', v_rec_result->>'production_number',
+      'product_id',        v_agg.product_id,
+      'quantity_produced', v_agg.quantity_produced,
+      'quantity_waste',    v_agg.quantity_waste,
+      'movements_count',   v_rec_result->'movements_count',
+      'lot_id',            v_rec_result->'lot_id'
+    ));
+  END LOOP;
+
+  -- ──────────────────────────────────────────────────────────────────────────
+  -- 8. Flip status to completed.
+  -- ──────────────────────────────────────────────────────────────────────────
+  UPDATE production_batches
+     SET status       = 'completed',
+         completed_at = now(),
+         updated_at   = now()
+   WHERE id = v_batch_id;
+
+  -- Audit log entry for the batch as a whole.
+  INSERT INTO audit_log (action, subject_table, subject_id, payload, actor_profile_id)
+  VALUES (
+    'production.batch.create', 'production_batches', v_batch_id,
+    jsonb_build_object(
+      'batch_number',      v_batch_number,
+      'items_count',       jsonb_array_length(p_items),
+      'section_id',        v_section_id,
+      'idempotency_key',   v_batch_idem_key,
+      'production_records', v_records
+    ),
+    v_profile
+  );
+
+  RETURN jsonb_build_object(
+    'batch_id',           v_batch_id,
+    'batch_number',       v_batch_number,
+    'status',             'completed',
+    'production_records', v_records,
+    'idempotent_replay',  FALSE
+  );
+END $$;
+
+REVOKE EXECUTE ON FUNCTION record_batch_production_v1(jsonb, jsonb) FROM public;
+REVOKE EXECUTE ON FUNCTION record_batch_production_v1(jsonb, jsonb) FROM anon;
+GRANT  EXECUTE ON FUNCTION record_batch_production_v1(jsonb, jsonb) TO authenticated;
+
+COMMENT ON FUNCTION record_batch_production_v1(jsonb, jsonb) IS
+  'Session 15 / Phase 4.A. Atomic multi-recipe batch production. p_batch = '
+  '{ notes?, section_id?, idempotency_key? }. p_items = [{product_id, '
+  'quantity_produced, quantity_waste?, expected_yield_qty?, actual_yield_qty?, '
+  'yield_variance_reason?, idempotency_key?}, ...]. Aggregate stock validation '
+  'is performed UPFRONT — if any leaf material is short across the batch, '
+  'RAISE insufficient_stock with shortage DETAIL. On success returns '
+  '{batch_id, batch_number, status, production_records[], idempotent_replay}. '
+  'Replay (same batch idempotency_key) is a no-op returning the original '
+  'payload. Gated by inventory.production.create.';
