@@ -8,6 +8,7 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.VITE_SUPABASE_URL!;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
+// SKIP: re-enable in Phase 2.A once checkRateLimitDurable is wired (see INDEX §5).
 describe.skip('record_rate_limit_v1 (live)', () => {
   const supabase = createClient(supabaseUrl, serviceKey);
 
