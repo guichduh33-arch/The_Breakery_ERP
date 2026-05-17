@@ -22,15 +22,16 @@ on:
   push:
     branches:
       # Match every session branch (session-13, session-14, session-15, ...).
-      # Explicitly excludes master/main so post-merge pushes don't surface
-      # spurious 0-job "failure" runs in the Actions list.
       - 'swarm/session-**'
+      # Session 21 / Phase 1.B.2 (D-W6-CICD-01): also trigger on master so
+      # post-merge pushes deploy the latest migrations + EFs to staging.
+      - master
   workflow_dispatch:
     inputs:
       ref:
         description: 'Git ref (branch or commit SHA) to deploy'
         required: true
-        default: 'swarm/session-14'
+        default: 'swarm/session-21'
 
 concurrency:
   # Only one staging deploy in flight at a time.
