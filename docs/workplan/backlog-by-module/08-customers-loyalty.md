@@ -132,6 +132,8 @@
 **Estimation** : `M`
 **Risques** : Si la feature n'est pas utilisée en production, la création est wasted work. Vérifier usage en runtime avant.
 
+**S20 update:** Verified absent on V3 dev (`information_schema.tables` query, 2026-05-17). Phantom table reference fully closed — D2 decision pack outcome (orders.invoice_number + view_b2b_invoices) is the canonical path. Marking [OBSOLETE] is correct.
+
 ---
 
 ## Backlog métier (objectif fonctionnel)

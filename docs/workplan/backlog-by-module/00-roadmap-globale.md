@@ -1,8 +1,8 @@
 # Roadmap globale — The Breakery ERP (V3 monorepo)
 
-> Last updated: 2026-05-17
+> Last updated: 2026-05-17 (S20 refresh)
 > Source initiale : agrégation des 8 audits 2026-04-09 + `CURRENT_STATE.md` + revue de code 2026-05-03
-> Refresh : intègre l'avancement S13-S19 (Sessions 13 à 19 toutes mergées ou prêtes à merger)
+> Refresh : intègre l'avancement S13-S20 (Sessions 13 à 19 mergées, S20 prête à merger)
 
 ---
 
@@ -12,14 +12,14 @@
 
 AppGrav V2 est en production depuis 2026-03-23 (~200 tx/jour, ~20 utilisateurs, The Breakery, Lombok). L'audit global 2026-04-09 (8 agents BMAD + 7 skills) a produit un état des lieux : **architecture 8/10**, **sécurité 7.5/10**, **complétude produit 88 %**, **53 rapports actifs**. La majorité des P0 d'audit ont été corrigés dans la passe « Global Audit & Fixes » du 2026-04-09 (triggers comptables restaurés, expense approval RPC, VAT RPC, CSP/HSTS, error leakage, Sonner, French strings, .limit() reports).
 
-### Transition V3 et avancement S13-S19
+### Transition V3 et avancement S13-S20
 
-Entre Session 13 (2026-05-13) et Session 19 (2026-05-17), The Breakery a effectué une transition complète vers le monorepo V3 (pnpm + turbo, apps/pos + apps/backoffice + packages/{domain,supabase,ui,utils}) et résolu la majorité des gaps fonctionnels bakery historiquement identifiés. La Session 19 (Hardening polish) a clôturé les 3 derniers items P1/P2 du module 01-auth-permissions (rate limiting durable, session timeout per role, PIN strength warn).
+Entre Session 13 (2026-05-13) et Session 20 (2026-05-17), The Breakery a effectué une transition complète vers le monorepo V3 (pnpm + turbo, apps/pos + apps/backoffice + packages/{domain,supabase,ui,utils}) et résolu la majorité des gaps fonctionnels bakery historiquement identifiés. La Session 19 (Hardening polish) a clôturé les 3 derniers items P1/P2 du module 01-auth-permissions (rate limiting durable, session timeout per role, PIN strength warn). La Session 20 (GRANT hardening) a clôturé le gap de sécurité anon GRANT au niveau tables, vues et fonctions — defense-in-depth complémentaire au RLS S13.
 
 ### Ce qui reste (état 2026-05-17)
 
 1. **Compliance fiscale Indonésie** — I1 Faktur Pajak, I2 e-Faktur, I3 DJP. **Bloqué tant que le statut PKP n'est pas confirmé** par le propriétaire. **Reste l'unique gap métier majeur.**
-2. **Hardening résiduel** — audit RLS `anon USING(true)` sur tables PII (anciens points historiques), message dedup LAN (TTL 5s), Playwright E2E en CI (D-W6-6C-05), `pg_net` birthday cron (D-W6-6B-02), Cash Flow Investing/Financing sections (D-W6-6A-2), staging-deploy.yml secrets (D-W6-CICD-01).
+2. **Hardening résiduel** — ~~audit RLS `anon USING(true)` sur tables PII~~ DONE S13+S20 ; message dedup LAN (TTL 5s), Playwright E2E en CI (D-W6-6C-05), `pg_net` birthday cron (D-W6-6B-02), Cash Flow Investing/Financing sections (D-W6-6A-2), staging-deploy.yml secrets (D-W6-CICD-01).
 3. **WAC polish** — landed cost shipping/douane pro-rata (TASK-07-012 partial S17), manual cost_price bypass de WAC (DEV-S17-1.B-01), opt-out sample/promo (DEV-S17-1.C-01).
 4. **Backlog métier secondaire** — modules 17 (tablet ordering polish), 18 (mobile shell Capacitor, gros chantier), 22 (design-system finitions), 16 (display polish).
 
@@ -39,9 +39,7 @@ Triées par impact business + risque. Le top 10 historique avait 5 items déjà 
 | # | Tâche | Module | Pri | Estim | Source / contexte |
 |---|-------|--------|-----|-------|-------------------|
 | 1 | Confirmer le statut PKP de The Breakery (débloque I1/I2/I3) | n/a (business) | P0 | S | `07-product-backlog-audit.md§Recommandations Immédiates` — **bloqueur business**, pas technique |
-| 2 | Auditer & remplacer 16 RLS `anon USING(true)` par auth-only (reliquat historique post-S13) | 01-auth | P1 | L | `01-architecture-security-audit.md§P1-01` — partiel S13 (PII tables), reste audit des 16 historiques |
 | 3 | Message dedup LAN (TTL 5s) hub + client | 21-lan | P1 | M | `08-operations-lan-audit.md§P1-1` |
-| 4 | Vérifier phantom tables résiduelles : `system_alerts`, `customer_invoices` | 06-inventory + 08-customers | P2 | M | reliquat de l'item top-10 #9 historique (`stock_reservations` DONE S13 TASK-06-003) |
 | 5 | Fix modal focus traps : migrer modales custom vers shadcn `Dialog` (Radix) | 02-pos + cross-modules | P1 | L | `05-uiux-design-audit.md§A1-3` |
 | 6 | Playwright E2E en CI (D-W6-6C-05) | 23-tests | P2 | M | Workflow CI pre-S13, déféré Session 14+ |
 | 7 | WAC landed cost shipping pro-rata (TASK-07-012 finir partial S17) | 07-purchasing | P3 | M | DEV-S17-1.B-01 + DEV-S17-1.C-01..02 |
@@ -56,6 +54,8 @@ Triées par impact business + risque. Le top 10 historique avait 5 items déjà 
 - ~~F6 Sub-recipes~~ → **DONE S15+S17** TASK-15-001 (anti-cycle 5-niveaux + cost cascade complète depth-5 + `recipe_versions` + `recipe_bom_full_v1`)
 - ~~Phantom table `stock_reservations`~~ → **DONE S13** TASK-06-003
 - ~~Rate limiting durable Postgres backstop~~ → **DONE S13+S19** TASK-01-002 (in-memory S13, Postgres-backed S19 — `record_rate_limit_v1` RPC + `pg_cron rl-purge` + 5 EFs wired)
+- ~~Auditer & remplacer 16 RLS `anon USING(true)` par auth-only (reliquat historique post-S13)~~ → **DONE S13 (RLS) + S20 (GRANT defense-in-depth — tables, views, functions)** TASK-01-001 (S13 PII tables RLS ; S20 REVOKE table+view GRANTs + REVOKE EXECUTE on functions + ALTER DEFAULT PRIVILEGES future-proofed)
+- ~~Vérifier phantom tables résiduelles : `system_alerts`, `customer_invoices`~~ → **DONE S14 (D2 decision pack) ; verified absent on V3 dev S20** (`information_schema.tables` query 2026-05-17 — `orders.invoice_number` + `view_b2b_invoices` is the canonical path)
 
 ---
 
@@ -110,12 +110,13 @@ graph TD
 | S17 | 2026-05-17 | PR #21 (commit `5e79509`) | Full price chain : PO receipt → WAC → cascade recipe ancestres → `recipe_bom_full_v1` RPC + `IngredientAggregatePreview` rewire (6 commits, 7 migrations) |
 | S18 | 2026-05-17 | `swarm/session-18` | Recipe Cost History Report : RPC dual-mode + 2 pages BO (Overview + Timeline recharts) (5 commits, 1 migration) |
 | S19 | 2026-05-17 | swarm/session-19 | Hardening polish : durable rate-limit + session timeout per role + PIN strength warn (12-14 commits, 7 migrations) |
+| S20 | 2026-05-17 | swarm/session-20 | Defense-in-depth GRANT hardening : refund_sequences RLS, anon table-GRANT sweep, anon function-EXECUTE sweep (+ PUBLIC inheritance corrective `_31`), 5 operational authenticated USING(true) policies tightened (5 migrations) |
 
 ### Cadence prévisionnelle
 
 Le rythme actuel est de **~1 session tous les 1-3 jours**, taille variable (5-68 commits, 1-32 migrations). Pas de sprint formel — chaque session a son **INDEX** (`docs/workplan/plans/2026-MM-DD-session-N-INDEX.md`) qui sert de plan et de récap après merge. Les sessions sont organisées en Waves (0=spec, 1=DB+domain, 2=UI+BO, 3=review+types regen, 4=closeout).
 
-**Session 20+ : TBD** — triage du backlog résiduel post-S19. Candidats prioritaires : compliance fiscale (si PKP confirmé) | polish hardening reliquat (RLS anon, message dedup LAN) | WAC landed cost | mobile shell Capacitor.
+**Session 21+ : TBD** — triage du backlog résiduel post-S20. Candidats prioritaires : compliance fiscale (si PKP confirmé) | polish hardening (LAN dedup, Playwright CI) | WAC landed cost | mobile shell Capacitor | modal focus-trap migration.
 
 ---
 
@@ -135,6 +136,7 @@ Le rythme actuel est de **~1 session tous les 1-3 jours**, taille variable (5-68
 | TypeScript types regen post-migration | toujours | Convention CLAUDE.md, à vérifier régulièrement |
 | Durable Postgres rate-limit sur EFs auth/order | enabled | DONE S19 (5 EFs wired : `auth-verify-pin`, `kiosk-issue-jwt` ×2, `refund-order`, `void-order`, `cancel-item`) |
 | Session timeout per role | configurable | DONE S19 (`roles.session_timeout_minutes` + `/settings/security` BO page) |
+| anon GRANTs / EXECUTE on `public.*` | 0 | DONE S20 (tables + views + functions, ALTER DEFAULT PRIVILEGES future-proofed) |
 
 ---
 

@@ -67,7 +67,7 @@ Wave 4 — Phase 4.A : types regen + CLAUDE.md + roadmap + Status notes + INDEX 
 - [x] Spec dated 2026-05-17, 4 manifestations + 7 goals + 4 risks initial (R8/R9 added in self-review)
 - [x] Branch `swarm/session-20` created off `d9fb507` master
 - [x] INDEX dated, 5 waves, this doc
-- [ ] Commit this INDEX on branch
+- [x] Commit this INDEX on branch
 
 ```bash
 git add docs/workplan/plans/2026-05-17-session-20-INDEX.md
@@ -1044,11 +1044,18 @@ For serial execution (default), no subagent comms : lead runs phases in order 1.
 
 *Finalized post-execution Phase 4.A. All informational unless marked otherwise.*
 
-*(Filled in during Phase 4.A Step 6 — placeholder until then.)*
-
-| ID | Phase | Severity | Surface |
+| ID | Phase | Severity | Description |
 |---|---|---|---|
-| `DEV-S20-X.X-XX` | — | — | *(placeholder — fill post-execution)* |
+| `DEV-S20-1.A-01` | 1.A | informational | Spec named `next_refund_number_v1` as the write RPC. No such function exists. Actual writers are `refund_order_rpc_v2` and `void_order_rpc` (both `prosecdef=true`). Security posture identical (SECURITY DEFINER bypasses RLS). No corrective. |
+| `DEV-S20-2.A-01` | 2.A | informational | 14 anon grants remain on `pg_all_foreign_keys` and `tap_funky` — both `supabase_admin`-owned pgtap extension views in `public`. The `postgres` role cannot revoke them. pgTAP A1 excludes `supabase_admin`-owned objects. |
+| `DEV-S20-2.A-02` | 2.A | informational | `ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin` fails `permission denied` (platform-managed). Only `FOR ROLE postgres` lines shipped. |
+| `DEV-S20-2.5.A-01` | 2.5.A | medium (RESOLVED) | Single `REVOKE FROM anon` insufficient — `anon` inherits EXECUTE through `PUBLIC` membership (via the `=X/postgres` ACL entry). Corrective migration `20260524000031_fix_revoke_public_execute_from_public_functions.sql` adds `REVOKE EXECUTE ... FROM PUBLIC` + matching ALTER DEFAULT PRIVILEGES. **This is a new project-wide critical pattern**: future REVOKE migrations on `public.*` functions must include BOTH `FROM anon` AND `FROM PUBLIC`. |
+| `DEV-S20-2.5.A-02` | 2.5.A | informational (carryover) | 1298 `supabase_admin`-owned pgtap functions remain anon-executable. Same root cause as DEV-S20-2.A-01 — platform-managed, not user-revocable. |
+| `DEV-S20-3.A-01` | 3.A | informational | Permission code substitution: spec used `cashier.view` → actual code on V3 dev is `cash_register.read`. Migration uses `cash_register.read`. |
+| `DEV-S20-3.A-02` | 3.A | informational | Permission code substitution: spec used `settings.view` for `notification_outbox` → actual code is `settings.read`. Migration uses `settings.read`. |
+| `DEV-S20-3.A-03` | 3.A | informational | Permission code substitution: spec used `settings.view` for `lan_devices` → actual code is `lan.devices.read`. Migration uses `lan.devices.read`. |
+| `DEV-S20-3.A-04` | 3.A | informational | Permission code substitution: spec used `orders.view` for `print_queue` → actual code is `print_queue.read`. Migration uses `print_queue.read`. |
+| `DEV-S20-3.A-05` | 3.A | informational | Permission code `pos.access` absent — not needed. `cash_register.read` covers the cashier path for `cash_movements`. |
 
 ---
 

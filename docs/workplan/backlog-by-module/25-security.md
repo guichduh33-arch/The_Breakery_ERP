@@ -30,6 +30,8 @@
 **Risques** : casse KDS / display si ces devices n'ont pas de session Supabase Auth — vérifier en staging d'abord (TASK-24-008)
 **Notes** : audit P2-03 (anon read sur roles / user_roles) inclus dans cette tâche
 
+**S20 update:** GRANT-level defense-in-depth complement. S13 closed the RLS layer; S20 closes the table/view GRANT layer (Wave 2, migration `20260524000020`) and the function EXECUTE layer (Wave 2.5, migrations `20260524000030` + corrective `_31`). `pg_default_acl` re-targeted to prevent future auto-grants on new postgres-owned objects. Critical pattern recorded in CLAUDE.md, including the PUBLIC-inheritance gotcha discovered during execution.
+
 ### TASK-25-002 — Rate limiting Edge Functions [P1] [DONE]
 **Status note (2026-05-14)** : Delivered in Session 13 Phase 1.B. V3 evidence: `supabase/functions/_shared/rate-limit.ts` (with durable Postgres-backed `checkRateLimitDurable`) + migration `20260517000031_init_edge_function_rate_limits.sql` (table `edge_function_rate_limits`); applied to `auth-verify-pin` (3/min/IP) and `kiosk-issue-jwt` (10/min/IP + 1/min/kiosk_id); covered by `supabase/tests/functions/auth-verify-pin-rate-limit.test.ts`. Commit `bdf21aa`.
 **Contexte** : `docs/audit/00-executive-summary.md` §P1 + `docs/audit/01-architecture-security-audit.md` §P1-01 + `08-operations-lan-audit.md` §2.3 P2 — *"No rate limiting on Edge Functions. auth-verify-pin exposed to brute-force PIN. Lockout is per-user, not per-IP. Attacker could enumerate PINs across multiple users without triggering per-user lockout."* + `CURRENT_STATE.md` T3.
