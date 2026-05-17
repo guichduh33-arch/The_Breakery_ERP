@@ -1,5 +1,10 @@
 // packages/domain/src/lan/__tests__/messageDedup.test.ts
 // Session 13 / Phase 5.A — unit tests for MessageDedup.
+// Session 21 / Phase 1.C.1 — S21 audit verified: dedup wired in lanHub +
+// lanClient (apps/pos/src/features/lan/). Added GC boundary + post-TTL
+// re-accept tests to match S21 spec requirements.
+// DEV-S21-1.C.1-01: spec referenced packages/lan-bus/ which does not exist;
+// implementation lives in packages/domain/src/lan/ + apps/pos/src/features/lan/.
 
 import { describe, it, expect } from 'vitest';
 import { MessageDedup } from '../messageDedup.js';
@@ -86,5 +91,29 @@ describe('MessageDedup', () => {
     dedup.seen('b');
     dedup.clear();
     expect(dedup.size()).toBe(0);
+  });
+
+  // S21 / 1.C.1 — GC boundary: 100 messages + advance TTL → only 1 survives.
+  it('GC: 100 messages inserted, all expire, 1 new message leaves size === 1', () => {
+    const clock = fixedClock(0);
+    const dedup = new MessageDedup({ ttlMs: 5_000, now: clock.now });
+    for (let i = 0; i < 100; i++) {
+      dedup.seen(`msg-${i}`);
+    }
+    expect(dedup.size()).toBe(100);
+    clock.advance(5_001); // advance past TTL
+    dedup.seen('after-gc');
+    expect(dedup.size()).toBe(1);
+  });
+
+  // S21 / 1.C.1 — Post-TTL re-accept: duplicate dropped within TTL, accepted after.
+  it('after TTL elapses, a duplicate message is re-accepted', () => {
+    const clock = fixedClock(0);
+    const dedup = new MessageDedup({ ttlMs: 5_000, now: clock.now });
+    expect(dedup.seen('dup-msg')).toBe(false); // first: recorded
+    clock.advance(2_000);
+    expect(dedup.seen('dup-msg')).toBe(true);  // within TTL: dropped
+    clock.advance(3_001); // now 5001ms total — expired
+    expect(dedup.seen('dup-msg')).toBe(false); // post-TTL: re-accepted
   });
 });
