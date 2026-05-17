@@ -56,6 +56,7 @@ import SettingsHolidaysPage         from '@/pages/settings/SettingsHolidaysPage.
 import SettingsEmailTemplatesPage   from '@/pages/settings/SettingsEmailTemplatesPage.js';
 import SettingsReceiptTemplatesPage from '@/pages/settings/SettingsReceiptTemplatesPage.js';
 import SettingsPermissionsPage      from '@/pages/settings/SettingsPermissionsPage.js';
+import SecuritySettingsPage         from '@/pages/settings/security/SecuritySettingsPage.js';
 import PrintQueuePage from '@/pages/print-queue/PrintQueuePage.js';
 import LanDevicesPage from '@/pages/lan-devices/LanDevicesPage.js';
 import CohortReportPage from '@/pages/marketing/CohortReportPage.js';
@@ -574,6 +575,14 @@ export function AppRoutes() {
           element={
             <PermissionGate required="settings.read">
               <SettingsPermissionsPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="settings/security"
+          element={
+            <PermissionGate required="settings.read">
+              <SecuritySettingsPage />
             </PermissionGate>
           }
         />

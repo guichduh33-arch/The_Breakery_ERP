@@ -218,3 +218,6 @@ export {
   type AllergenBadgeSize,
   type AllergenType,
 } from './components/AllergenBadge.js';
+
+// hooks
+export { useIdleTimeout, type UseIdleTimeoutArgs } from './hooks/useIdleTimeout.js';

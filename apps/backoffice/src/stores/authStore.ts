@@ -26,6 +26,10 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
+  // Session 19 / Phase 3.A — populated by validateSession() from the role row.
+  // null until the first auth-get-session round-trip lands. Treat null/0 as
+  // "no idle logout".
+  sessionTimeoutMinutes: number | null;
   login: (userId: string, pin: string) => Promise<void>;
   logout: () => Promise<void>;
   validateSession: () => Promise<void>;
@@ -50,6 +54,7 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       isLoading: false,
       error: null,
+      sessionTimeoutMinutes: null,
 
       async login(userId, pin) {
         set({ isLoading: true, error: null });
@@ -84,7 +89,14 @@ export const useAuthStore = create<AuthState>()(
           try { await logoutSession(supabaseUrl, token); } catch { /* ignore */ }
         }
         await supabase.auth.signOut().catch((_err: unknown) => { /* ignore signOut error */ });
-        set({ user: null, sessionToken: null, permissions: [], isAuthenticated: false, error: null });
+        set({
+          user: null,
+          sessionToken: null,
+          permissions: [],
+          isAuthenticated: false,
+          error: null,
+          sessionTimeoutMinutes: null,
+        });
       },
 
       async validateSession() {
@@ -96,6 +108,8 @@ export const useAuthStore = create<AuthState>()(
             user: { id: session.id, full_name: session.full_name, role_code: session.role_code, employee_code: session.employee_code },
             permissions: session.permissions,
             isAuthenticated: true,
+            // Session 19 / Phase 3.A — refreshed per `auth-get-session` round-trip.
+            sessionTimeoutMinutes: session.session_timeout_minutes,
           });
         } catch (err: unknown) {
           const e = err as { status?: number };
