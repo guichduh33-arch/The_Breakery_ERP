@@ -24,7 +24,7 @@ export default function CashFlowPage() {
   return (
     <ReportPage
       title="Cash Flow Statement"
-      subtitle="Indirect method. Investing / Financing sections will fill in when those modules ship."
+      subtitle="Indirect method (operating) + account-classified investing / financing totals via accounts.cash_flow_section."
       filters={
         <DateRangePicker
           start={start}
@@ -58,13 +58,13 @@ export default function CashFlowPage() {
                 <td className="py-2 font-medium uppercase tracking-wider">Investing activities</td>
                 <td className="py-2 text-right tabular-nums">{fmt(data.investing.total)}</td>
               </tr>
-              <tr><td className="pl-6 py-1 text-text-secondary text-xs">No fixed-assets module yet</td><td className="py-1 text-right text-xs tabular-nums">0</td></tr>
+              <tr><td className="pl-6 py-1 text-text-secondary text-xs">Fixed assets &amp; capex (accounts classified investing)</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.investing.total)}</td></tr>
 
               <tr className="border-b border-border-subtle bg-bg-overlay">
                 <td className="py-2 font-medium uppercase tracking-wider">Financing activities</td>
                 <td className="py-2 text-right tabular-nums">{fmt(data.financing.total)}</td>
               </tr>
-              <tr><td className="pl-6 py-1 text-text-secondary text-xs">No loans/financing module yet</td><td className="py-1 text-right text-xs tabular-nums">0</td></tr>
+              <tr><td className="pl-6 py-1 text-text-secondary text-xs">Loans &amp; equity (accounts classified financing)</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.financing.total)}</td></tr>
 
               <tr className="border-t-2 border-border-subtle bg-gold-soft">
                 <td className="py-3 font-semibold uppercase tracking-wider">Net change in cash</td>
