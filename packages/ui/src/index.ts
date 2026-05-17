@@ -220,4 +220,7 @@ export {
 } from './components/AllergenBadge.js';
 
 // hooks
-export { useIdleTimeout, type UseIdleTimeoutArgs } from './hooks/useIdleTimeout.js';
+export { useIdleTimeout, type UseIdleTimeoutArgs, IDLE_WARNING_LEAD_MS } from './hooks/useIdleTimeout.js';
+
+// global UI overlays (S21)
+export { IdleWarningToast, type IdleWarningToastProps } from './components/IdleWarningToast.js';
