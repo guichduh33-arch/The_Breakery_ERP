@@ -2362,18 +2362,25 @@ After spawning a wave's parallel phases, lead WAITs (no polling — subagents `S
 
 ## 10. Deviation packs (Session 19 → Session 20+)
 
-*Filled during execution. Anticipated buckets (from spec §6) :*
+*Finalized post-execution Phase 4.A. All informational unless marked otherwise.*
 
-| ID (anticipated) | Phase | Severity | Surface |
+| ID | Phase | Severity | Surface |
 |---|---|---|---|
 | `DEV-S19-1.A-01` | 1.A | informational | RPC holds a row-lock during upsert ; under sustained attack volume (≥100 req/sec on the same bucket) attacker + defender requests serialize on the same bucket. Inconsequential at Breakery's traffic. |
 | `DEV-S19-1.A-02` | 1.A | informational | Fail-open on DB error is a deliberate trade-off (D2). Investigate pool sizing before reconsidering fail-closed. |
-| `DEV-S19-1.B-01` | 1.B | informational | `roles.session_timeout_minutes` is read once at session start ; changing it doesn't kick already-logged-in users until next login. |
-| `DEV-S19-2.B-01` | 2.B | informational | `pin-strength.ts` duplicated in `packages/utils` and `supabase/functions/_shared`. Sync test catches drift but doesn't prevent it ; consider build-time copy in S20+. |
-| `DEV-S19-2.B-02` | 2.B | informational | Top-100 leaked PIN list inlined as a literal array. Manual refresh cadence. |
-| `DEV-S19-3.A-01` | 3.A | informational | `useIdleTimeout` fires `signOut()` immediately ; no "you are about to be signed out" warning toast. |
-| `DEV-S19-3.B-01` | 3.B | informational | Pre-existing : `UserDetailPage` validates 4-8 digits, EF requires exactly 6. One-line regex fix for S20+. |
-| `DEV-S19-3.C-01` | 3.C | informational | POS `ChangePinModal` mounts in `Pos.tsx` only ; tablet ordering shell + KDS don't expose self-change. |
+| `DEV-S19-1.B-01` | 1.B | informational | `audit_logs.entity_id` is NULL for `role.session_timeout_changed` rows ; `role_code` lives in the `payload` JSON column instead. Required adding a new `payload JSONB` column via prereq migration `20260523000019_audit_logs_add_payload` before the RPC could write. Surfaced during 1.B execution, not anticipated in spec. |
+| `DEV-S19-1.B-02` | 1.B | **medium** | `REVOKE FROM anon` is NOT implied by `REVOKE ALL FROM PUBLIC` on public-schema functions — Supabase auto-grants EXECUTE to `anon` for any function in `public`. Corrective migration `20260523000022_fix_update_role_session_timeout_v1_revoke_anon` adds explicit `REVOKE EXECUTE ON FUNCTION update_role_session_timeout_v1 FROM anon`. **Now a project-wide critical pattern** (see CLAUDE.md §Critical patterns) — drove a new entry for all future admin-only RPCs. |
+| `DEV-S19-2.A-01` | 2.A | informational | Vitest env vars unset in `supabase/tests/functions/*` mean the cross-instance RL simulation (`rate-limit-durable.test.ts`) requires `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` exported manually. Documented at the top of the test file. |
+| `DEV-S19-2.A-02` | 2.A | informational | 429 responses lack `Retry-After` header — project-wide gap (not S19-specific). All EFs emit `429` JSON body only ; HTTP `Retry-After` should be added when next touching `_shared/rate-limit.ts`. |
+| `DEV-S19-2.B-01` | 2.B | informational | `pin-strength.ts` duplicated in `packages/utils` and `supabase/functions/_shared`. Sync test (`packages/utils/src/pin-strength/__tests__/sync.test.ts`) catches drift but doesn't prevent it ; consider build-time copy in S20+. |
+| `DEV-S19-2.B-02` | 2.B | informational | Top-100 leaked PIN list inlined as a literal array in both copies. Manual refresh cadence (any time SkyHigh.org or HaveIBeenPwned publishes a new dump). |
+| `DEV-S19-2.B-03` | 2.B | informational | `COMMON_PINS` has 101 entries — discovered during review that `'232425'` is dead (6 digits while every other entry is 4). Harmless (lookup still works) but worth deduplicating at next refresh. |
+| `DEV-S19-3.A-01` | 3.A | informational | `useIdleTimeout` fires `signOut()` immediately ; no "you are about to be signed out" warning toast. Spec D7 deferred toast UX to a future session. |
+| `DEV-S19-3.B-01` | 3.B | informational | Pre-existing : `UserDetailPage` validates 4-8 digits, EF requires exactly 6. One-line regex fix for S20+. Not introduced by S19. |
+| `DEV-S19-3.B-02` | 3.B | informational | BO admin-reset uses `reset_user_pin_v1` RPC, NOT `auth-change-pin` EF (the EF requires the *current* PIN, which an admin doesn't know). Shared `evaluatePinStrength` util in `packages/utils` preserves single source of truth — BO computes weakness client-side and surfaces banner without round-tripping through the EF. |
+| `DEV-S19-3.C-01` | 3.C | informational | POS `ChangePinModal` reuses `NumpadPin` (collection primitive) instead of `PinPad` (verification-only with auto-submit). Spec said `PinPad` ; actual choice is more appropriate because step 1 (current PIN entry) needs a Confirm button rather than auto-submit. Minor wording deviation, not a defect. |
+| `DEV-S19-3.C-02` | 3.C | informational | Weakness hint surfaces at step 3 (confirm new PIN) instead of step 2 (enter new PIN) ; in step 2 the user is still typing, so the hint shows during step 3's review. UX polish for follow-up. |
+| `DEV-S19-3.C-03` | 3.C | informational | On step-3 mismatch (new PIN ≠ confirm), modal resets to step 1 ; conventional UX would reset to step 2 (re-enter new PIN). Spec didn't specify ; deferred as UX polish for follow-up. |
 
 ---
 

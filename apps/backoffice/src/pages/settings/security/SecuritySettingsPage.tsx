@@ -35,20 +35,18 @@ export default function SecuritySettingsPage(): JSX.Element {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('roles')
-        // TODO(Phase 4.A) drop this cast once types.generated.ts has session_timeout_minutes.
-        .select('code, name, session_timeout_minutes' as 'code, name')
-        .order('session_timeout_minutes' as 'name', { ascending: true });
+        .select('code, name, session_timeout_minutes')
+        .order('session_timeout_minutes', { ascending: true });
       if (error) throw new Error(error.message);
-      return (data ?? []) as unknown as RoleRow[];
+      return (data ?? []) as RoleRow[];
     },
   });
 
   const mutate = useMutation<boolean, Error, { code: string; minutes: number }>({
     mutationFn: async ({ code, minutes }) => {
       const { data, error } = await supabase.rpc(
-        // RPC name not yet in generated types — cast.
-        'update_role_session_timeout_v1' as never,
-        { p_role_code: code, p_minutes: minutes } as never,
+        'update_role_session_timeout_v1',
+        { p_role_code: code, p_minutes: minutes },
       );
       if (error) throw new Error(error.message);
       return Boolean(data);
