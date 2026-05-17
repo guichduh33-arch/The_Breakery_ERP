@@ -4617,6 +4617,10 @@ export type Database = {
         Args: { p_profile_id: string }
         Returns: number
       }
+      _snapshot_recipe_version: {
+        Args: { p_change_note: string; p_product_id: string; p_profile: string }
+        Returns: string
+      }
       _table_privs: { Args: never; Returns: unknown[] }
       _temptypes: { Args: { "": string }; Returns: string }
       _todo: { Args: never; Returns: string }
@@ -5635,6 +5639,17 @@ export type Database = {
           p_unit_cost?: number
         }
         Returns: Json
+      }
+      recipe_bom_full_v1: {
+        Args: { p_max_depth?: number; p_product_id: string }
+        Returns: {
+          cost_price: number
+          current_stock: number
+          material_id: string
+          material_name: string
+          material_unit: string
+          qty_per_unit: number
+        }[]
       }
       recompute_recipe_margins_v1: { Args: never; Returns: Json }
       record_batch_production_v1: {
