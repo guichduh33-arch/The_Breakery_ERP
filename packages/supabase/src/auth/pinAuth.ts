@@ -109,22 +109,36 @@ export async function loginWithPin(supabaseUrl: string, body: LoginRequest): Pro
  * `x-session-token`. Used on app boot to rehydrate auth state without forcing
  * a new PIN login.
  *
+ * Session 19 / Phase 3.A — the EF now also returns the user's role-derived
+ * `session_timeout_minutes` so the POS + BO shells can wire the idle-logout
+ * hook (`useIdleTimeout`) without an extra round-trip.
+ *
  * @param supabaseUrl  - Project URL.
  * @param sessionToken - Opaque token from {@link LoginResponse}.session.token.
- * @returns The user's public profile flattened with their permission list.
+ * @returns The user's public profile flattened with their permission list and
+ *          `session_timeout_minutes` (may be `null` for legacy users without a
+ *          role row — callers should treat that as "no idle logout").
  * @throws {Error & { status: number }} `session_invalid` on any non-2xx response
  *         (expired, revoked, or unknown token).
  */
 export async function getSession(
   supabaseUrl: string,
   sessionToken: string,
-): Promise<LoginResponse['user'] & { permissions: string[] }> {
+): Promise<LoginResponse['user'] & { permissions: string[]; session_timeout_minutes: number | null }> {
   const res = await fetchWithTimeout(`${supabaseUrl}/functions/v1/auth-get-session`, {
     headers: { 'x-session-token': sessionToken },
   });
   if (!res.ok) throw Object.assign(new Error('session_invalid'), { status: res.status });
-  const body = (await res.json()) as { user: LoginResponse['user']; permissions: string[] };
-  return { ...body.user, permissions: body.permissions };
+  const body = (await res.json()) as {
+    user: LoginResponse['user'];
+    permissions: string[];
+    session_timeout_minutes?: number | null;
+  };
+  return {
+    ...body.user,
+    permissions: body.permissions,
+    session_timeout_minutes: body.session_timeout_minutes ?? null,
+  };
 }
 
 /**

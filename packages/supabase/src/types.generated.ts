@@ -103,6 +103,7 @@ export type Database = {
           entity_type: string
           id: number
           metadata: Json | null
+          payload: Json | null
         }
         Insert: {
           action: string
@@ -112,6 +113,7 @@ export type Database = {
           entity_type: string
           id?: number
           metadata?: Json | null
+          payload?: Json | null
         }
         Update: {
           action?: string
@@ -121,6 +123,7 @@ export type Database = {
           entity_type?: string
           id?: number
           metadata?: Json | null
+          payload?: Json | null
         }
         Relationships: [
           {
@@ -3542,6 +3545,7 @@ export type Database = {
           description: string | null
           is_system: boolean
           name: string
+          session_timeout_minutes: number
         }
         Insert: {
           code: string
@@ -3549,6 +3553,7 @@ export type Database = {
           description?: string | null
           is_system?: boolean
           name: string
+          session_timeout_minutes?: number
         }
         Update: {
           code?: string
@@ -3556,6 +3561,7 @@ export type Database = {
           description?: string | null
           is_system?: boolean
           name?: string
+          session_timeout_minutes?: number
         }
         Relationships: []
       }
@@ -5707,6 +5713,20 @@ export type Database = {
         }
         Returns: Json
       }
+      record_rate_limit_v1: {
+        Args: {
+          p_bucket_key: string
+          p_function_name: string
+          p_ip_address: string
+          p_max_per_window: number
+          p_window_sec?: number
+        }
+        Returns: {
+          allowed: boolean
+          current_count: number
+          retry_after_sec: number
+        }[]
+      }
       record_stock_movement_v1: {
         Args: {
           p_from_section_id?: string
@@ -5910,6 +5930,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      update_role_session_timeout_v1: {
+        Args: { p_minutes: number; p_role_code: string }
+        Returns: boolean
       }
       update_user_profile_v1: {
         Args: {

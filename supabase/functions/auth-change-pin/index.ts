@@ -3,6 +3,7 @@ import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { handleCors, jsonResponse } from '../_shared/cors.ts';
 import { requireSession } from '../_shared/session-auth.ts';
 import { getAdminClient } from '../_shared/supabase-admin.ts';
+import { evaluatePinStrength } from '../_shared/pin-strength.ts';
 
 const PIN_REGEX = /^\d{6}$/;
 
@@ -84,5 +85,10 @@ serve(async (req) => {
     entity_id: user_id,
   });
 
-  return jsonResponse({ ok: true });
+  const strength = evaluatePinStrength(new_pin);
+  const responseBody: Record<string, unknown> = { ok: true, weak: strength.weak };
+  if (strength.weak && strength.reason) {
+    responseBody.weak_reason = strength.reason;
+  }
+  return jsonResponse(responseBody);
 });

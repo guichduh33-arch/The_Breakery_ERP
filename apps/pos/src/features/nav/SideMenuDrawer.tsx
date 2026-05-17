@@ -47,6 +47,7 @@ import {
   Settings,
   Lock,
   Users,
+  KeyRound,
 } from 'lucide-react';
 import type { JSX, ReactNode } from 'react';
 import {
@@ -78,6 +79,8 @@ export interface SideMenuDrawerProps {
   onOpenLiveSessions?: () => void;
   /** Lock the terminal (force re-auth). */
   onLockTerminal?: () => void;
+  /** Open the self-change PIN modal (Session 19 / Phase 3.C). */
+  onChangePin?: () => void;
   /** Sign the cashier out completely. */
   onLogout?: () => void;
 }
@@ -93,6 +96,7 @@ export function SideMenuDrawer({
   onOpenCustomers,
   onOpenLiveSessions,
   onLockTerminal,
+  onChangePin,
   onLogout,
 }: SideMenuDrawerProps): JSX.Element {
   const navigate = useNavigate();
@@ -225,6 +229,12 @@ export function SideMenuDrawer({
               label="Lock Terminal"
               onClick={() => dispatch(onLockTerminal)}
               disabled={!onLockTerminal}
+            />
+            <NavLink
+              icon={<KeyRound className="h-5 w-5" aria-hidden />}
+              label="Change PIN"
+              onClick={() => dispatch(onChangePin)}
+              disabled={!onChangePin}
             />
           </NavGroup>
 

@@ -2,12 +2,15 @@
 // Rate limiter — two layers:
 //   1) In-memory LRU bucket (single-instance fast path, ~0ms latency).
 //   2) Postgres-backed durable bucket (edge_function_rate_limits table,
-//      session 13 migration 20260517000031) for cross-instance correctness
-//      on sensitive EFs. Opt-in via `checkRateLimitDurable`.
+//      session 13 migration 20260517000031, RPC wired in session 19 Phase 1.A)
+//      for cross-instance correctness on sensitive EFs. Opt-in via
+//      `checkRateLimitDurable`.
 //
-// Phase 1.B (task 25-002) hardens auth-verify-pin and kiosk-issue-jwt to
-// use the durable variant ; in-memory remains primary, Postgres is the
-// backstop when buckets cross EF cold-starts.
+// Session 19 / Phase 2.A — `checkRateLimitDurable` is now wired to the
+// `record_rate_limit_v1` RPC. In-memory remains the primary fast-fail
+// pre-check ; Postgres is the cross-instance backstop.
+
+import { getAdminClient } from './supabase-admin.ts';
 
 interface Bucket {
   count: number;
@@ -69,12 +72,17 @@ export function getClientIp(req: Request): string {
 }
 
 // ============================================================
-// Durable (Postgres-backed) rate-limit — task 25-002.
-// Cross-instance correct via `edge_function_rate_limits` table seeded by
-// migration 20260517000031. Used by auth-verify-pin and kiosk-issue-jwt.
-// Falls back to the in-memory check on any DB error (fail-open is the right
-// choice — losing rate-limit for one request is preferable to denying every
-// caller during a transient outage).
+// Durable (Postgres-backed) rate-limit — Session 19 (Phase 2.A).
+// Wired to the record_rate_limit_v1 RPC (Phase 1.A migration).
+//
+// Layered model (D1) :
+//   1) In-memory fast-fail pre-check (≤1ms). If memory says blocked, return
+//      immediately without paying the DB round-trip.
+//   2) Durable RPC call : atomic upsert against edge_function_rate_limits.
+//      Cross-instance correct.
+//
+// Fail-open on DB error (D2) — losing rate-limit for one request is
+// preferable to denying every caller during a transient DB outage.
 // ============================================================
 
 export interface DurableRateLimitArgs {
@@ -90,12 +98,31 @@ export async function checkRateLimitDurable(args: DurableRateLimitArgs): Promise
   retryAfterSec: number;
   fallback: 'memory' | 'durable';
 }> {
-  const { functionName, bucketKey, maxPerWindow } = args;
+  const { functionName, bucketKey, ipAddress, maxPerWindow, windowSec = 60 } = args;
+
+  // Layer 1 : in-memory pre-check.
   const compositeKey = `${functionName}:${bucketKey}`;
   const memCheck = checkRateLimit(compositeKey, maxPerWindow);
   if (!memCheck.allowed) {
     return { allowed: false, retryAfterSec: memCheck.retryAfterSec, fallback: 'memory' };
   }
-  // Postgres backing deferred to a follow-up RPC.
-  return { allowed: true, retryAfterSec: 0, fallback: 'durable' };
+
+  // Layer 2 : durable RPC.
+  try {
+    const admin = getAdminClient();
+    const { data, error } = await admin.rpc('record_rate_limit_v1', {
+      p_function_name:  functionName,
+      p_bucket_key:     bucketKey,
+      p_ip_address:     ipAddress,
+      p_max_per_window: maxPerWindow,
+      p_window_sec:     windowSec,
+    });
+    if (error) throw error;
+    const row = (data as Array<{ allowed: boolean; retry_after_sec: number; current_count: number }>)?.[0];
+    if (!row) throw new Error('record_rate_limit_v1 returned no rows');
+    return { allowed: row.allowed, retryAfterSec: row.retry_after_sec, fallback: 'durable' };
+  } catch (e) {
+    console.error('[rate-limit] durable check failed, falling back to memory-only', e);
+    return { allowed: true, retryAfterSec: 0, fallback: 'memory' };
+  }
 }

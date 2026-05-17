@@ -31,6 +31,7 @@
 
 ### TASK-01-002 — Rate limiting IP-level sur `auth-verify-pin` [P1] [DONE]
 **Status note (2026-05-14)** : Delivered in Session 13 Phase 1.B. V3 evidence: `supabase/functions/_shared/rate-limit.ts` + `supabase/migrations/20260517000031_init_edge_function_rate_limits.sql` exist; `auth-verify-pin/index.ts` enforces 3/min/IP; `supabase/tests/functions/auth-verify-pin-rate-limit.test.ts` covers 429 path. Commit `bdf21aa`.
+**S19 update:** Durable Postgres-backed rate-limit completes the Phase 1.B follow-up. New RPC `record_rate_limit_v1` (migration `20260523000010` + race fix `20260523000012`) + pg_cron `rl-purge` (migration `20260523000011`) + `checkRateLimitDurable` now actually calls the RPC + 5 EFs migrated (`auth-verify-pin`, `kiosk-issue-jwt` ×2 buckets, `refund-order`, `void-order`, `cancel-item`). Cross-instance correctness verified live (4 attempts with same IP → 4th gets 429).
 **Contexte** : Le lockout actuel est par-user (5 essais / 15 min). Un attaquant peut énumérer des PINs à travers plusieurs comptes sans déclencher le lockout. T3 du backlog. Source : `docs/audit/01-architecture-security-audit.md§P1-02` + `docs/audit/08-operations-lan-audit.md§P2-4`.
 **Critère d'acceptation** :
 - [ ] Rate limit IP-level : max 10 essais PIN / IP / minute, glissant.
@@ -83,8 +84,9 @@
 **Estimation** : `M`
 **Risques** : Si un rôle existant (manager, supervisor) perdait l'accès à des reports critiques, casser le workflow opérationnel. Définir les 4 rôles types et leur matrice avant migration.
 
-### TASK-01-006 — Session timeout configurable par rôle [P2] [TODO]
+### TASK-01-006 — Session timeout configurable par rôle [P2] [DONE]
 **Status note (2026-05-14)** : Still applicable, scheduled Session 14+. V3 has no `session_timeout_minutes` column on `roles`; no `useSessionTimeout` hook in `apps/pos` or `apps/backoffice`. Session 13 deferred this to a post-RBAC UI iteration (Session 14+).
+**S19 update:** DONE. `roles.session_timeout_minutes INT NOT NULL DEFAULT 30 CHECK (5..480)` + per-role seed (CASHIER 30, waiter 30, MANAGER 60, ADMIN 120, SUPER_ADMIN 240). `update_role_session_timeout_v1` RPC gated `settings.update` + admin role + audit log. `useIdleTimeout` hook in `packages/ui` mounted in POS + BO. `/settings/security` page wires the existing `(Soon)` tile.
 **Contexte** : `useSessionTimeout` utilise actuellement une seule valeur (30 min) via `pos_config`. Un cashier devrait timeout vite (sécurité) tandis qu'un admin ou un comptable peut tolérer 2h. Inferred from code review + Pitfall « last admin protection ».
 **Critère d'acceptation** :
 - [ ] Ajouter colonne `session_timeout_minutes` sur `roles` (default = 30).
@@ -110,8 +112,9 @@
 **Estimation** : `S`
 **Risques** : Empêcher la migration légitime (renommer le seul admin). Prévoir bypass via super-admin ou variable env.
 
-### TASK-01-008 — PIN strength enforcement (warn weak PINs) [P3] [TODO]
+### TASK-01-008 — PIN strength enforcement (warn weak PINs) [P3] [DONE]
 **Status note (2026-05-14)** : Still applicable, scheduled Session 14+. V3 evidence: `supabase/functions/auth-change-pin/index.ts` exists but has no `pinStrength` util or `enforce_strong_pin` setting; no `PinChangeModal`/`pinStrength.ts` in V3 either. Session 13 scope was perms/RLS/rate-limit, not PIN strength.
+**S19 update:** DONE (warn-only mode per D13). `evaluatePinStrength` util in `packages/utils` + Deno mirror in `_shared/pin-strength.ts` (drift detected by sync test). `auth-change-pin` EF extends response with `{ weak: bool, weak_reason? }`. Surfaces : BO `UserDetailPage` Reset PIN section (banner + inline hint) and POS `ChangePinModal` (greenfield 3-step modal + SideMenuDrawer "Change PIN" item). `pos_config.enforce_strong_pin` deferred to a future session.
 **Contexte** : Aucun check de force PIN actuellement. Un user peut utiliser `1234`, `0000`, `1111`. Pour ~20 utilisateurs c'est tolérable, mais à durcir. Inferred from code review.
 **Critère d'acceptation** :
 - [ ] Liste des PINs « faibles » (séquences, répétitions, top-100 PINs leakés).

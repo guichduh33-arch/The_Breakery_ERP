@@ -71,4 +71,42 @@ describe('auth-verify-pin rate-limit', () => {
     const errBody = await res.json();
     expect(errBody.error).toBe('invalid_credentials');
   });
+
+  // Session 19 / Phase 2.A — Cross-instance simulation.
+  // Two separate supabase-js clients call auth-verify-pin with the same
+  // x-forwarded-for header. Even though each EF invocation may land on a
+  // distinct edge instance with its own in-memory bucket, the durable
+  // record_rate_limit_v1 RPC binds both clients to the same Postgres bucket,
+  // so the combined attempts above 3/min must 429.
+  it('enforces 3/min across two clients with the same IP header', async () => {
+    const ip = '203.0.113.42';
+    const client1 = createClient(SUPABASE_URL, SERVICE, {
+      global: { headers: { 'x-forwarded-for': ip } },
+    });
+    const client2 = createClient(SUPABASE_URL, SERVICE, {
+      global: { headers: { 'x-forwarded-for': ip } },
+    });
+
+    // Two attempts from each → 4 total, max=3.
+    const r1 = await client1.functions.invoke('auth-verify-pin', {
+      body: { user_id: adminUserId, pin: '999999', device_type: 'pos' },
+    });
+    const r2 = await client2.functions.invoke('auth-verify-pin', {
+      body: { user_id: adminUserId, pin: '999999', device_type: 'pos' },
+    });
+    const r3 = await client1.functions.invoke('auth-verify-pin', {
+      body: { user_id: adminUserId, pin: '999999', device_type: 'pos' },
+    });
+    const r4 = await client2.functions.invoke('auth-verify-pin', {
+      body: { user_id: adminUserId, pin: '999999', device_type: 'pos' },
+    });
+
+    // First 3 should NOT be 429 (they may be 401 invalid_credentials / 403
+    // account_locked — that's fine, the durable RL allowed them through).
+    expect(r1.error?.context?.status).not.toBe(429);
+    expect(r2.error?.context?.status).not.toBe(429);
+    expect(r3.error?.context?.status).not.toBe(429);
+    // 4th attempt MUST be 429.
+    expect(r4.error?.context?.status).toBe(429);
+  });
 });

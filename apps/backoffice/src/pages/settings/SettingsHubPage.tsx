@@ -72,7 +72,7 @@ const SECTIONS: SettingSection[] = [
     tiles: [
       { title: 'Printing',                 blurb: 'Receipt + KDS printer config. (Soon)',                   icon: Printer },
       { title: 'Notifications',            blurb: 'Email + push notification preferences. (Soon)',          icon: Bell },
-      { title: 'Security & PIN',           blurb: 'PIN policies, session timeout, 2FA. (Soon)',             icon: ShieldCheck },
+      { to: '/backoffice/settings/security', title: 'Security & PIN', blurb: 'PIN policies, session timeout, 2FA placeholder.', icon: ShieldCheck },
       { title: 'Financial / Accounting',   blurb: 'Account mappings, posting rules. (Soon)',                icon: FileText },
       { to: '/backoffice/settings/permissions', title: 'Roles & Permissions', blurb: 'View the role/permission matrix.', icon: ShieldCheck },
       { to: '/backoffice/settings/templates/email',   title: 'Email Templates',   blurb: 'Order confirmations, receipts, reset PIN.', icon: Mail },

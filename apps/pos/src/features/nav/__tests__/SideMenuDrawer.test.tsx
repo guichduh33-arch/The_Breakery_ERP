@@ -51,6 +51,7 @@ describe('SideMenuDrawer', () => {
       onOpenLiveSessions: () => {},
       onOpenCustomers: () => {},
       onLockTerminal: () => {},
+      onChangePin: () => {},
       onLogout: () => {},
     });
     expect(screen.getByTestId('side-menu-held-orders')).toBeInTheDocument();
@@ -63,7 +64,34 @@ describe('SideMenuDrawer', () => {
     expect(screen.getByTestId('side-menu-kds')).toBeInTheDocument();
     expect(screen.getByTestId('side-menu-pos-settings')).toBeInTheDocument();
     expect(screen.getByTestId('side-menu-lock-terminal')).toBeInTheDocument();
+    expect(screen.getByTestId('side-menu-change-pin')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /sign out/i })).toBeInTheDocument();
+  });
+
+  // Session 19 / Phase 3.C — Change PIN item.
+  it('renders Change PIN item when onChangePin prop is provided', () => {
+    renderDrawer({ onChangePin: () => {} });
+    const item = screen.getByTestId('side-menu-change-pin') as HTMLButtonElement;
+    expect(item).toBeInTheDocument();
+    expect(item.disabled).toBe(false);
+  });
+
+  it('disables Change PIN item when onChangePin is missing', () => {
+    renderDrawer({});
+    const item = screen.getByTestId('side-menu-change-pin') as HTMLButtonElement;
+    expect(item.disabled).toBe(true);
+  });
+
+  it('dispatches onChangePin on click and closes the drawer', () => {
+    const onChangePin = vi.fn();
+    const onClose = vi.fn();
+    renderDrawer({ onChangePin, onClose });
+    fireEvent.click(screen.getByTestId('side-menu-change-pin'));
+    expect(onClose).toHaveBeenCalled();
+    // Handler is dispatched via queueMicrotask — flush the microtask queue.
+    return Promise.resolve().then(() => {
+      expect(onChangePin).toHaveBeenCalled();
+    });
   });
 
   it('navigates to /pos/reports when "POS Reports" is clicked', () => {

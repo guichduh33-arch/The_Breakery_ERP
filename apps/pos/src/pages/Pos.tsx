@@ -36,6 +36,7 @@ import { ShiftClosedState } from '@/features/shift/ShiftClosedState';
 import { PaymentTerminal } from '@/features/payment/PaymentTerminal';
 import { OrderHistoryPanel } from '@/features/order-history/OrderHistoryPanel';
 import { LiveSessionsModal } from '@/features/shift/LiveSessionsModal';
+import { ChangePinModal } from '@/features/auth/ChangePinModal';
 import { useAuthStore } from '@/stores/authStore';
 import { useCurrentShift } from '@/features/shift/hooks/useShift';
 import { useCartStore } from '@/stores/cartStore';
@@ -52,6 +53,9 @@ export default function PosPage() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [liveSessionsOpen, setLiveSessionsOpen] = useState(false);
+  // Session 19 / Phase 3.C — self-change PIN modal (greenfield).
+  const [changePinOpen, setChangePinOpen] = useState(false);
+  const currentUserId = user?.id ?? null;
 
   const { data: currentShift, isLoading: shiftLoading } = useCurrentShift();
   const needsShift = !shiftLoading && !currentShift;
@@ -171,12 +175,20 @@ export default function PosPage() {
         userInitial={user?.full_name?.charAt(0) ?? null}
         onOpenHistory={() => setHistoryOpen(true)}
         onOpenLiveSessions={() => setLiveSessionsOpen(true)}
+        {...(currentUserId ? { onChangePin: () => setChangePinOpen(true) } : {})}
         onLogout={() => { void handleLogout(); }}
       />
       <LiveSessionsModal
         open={liveSessionsOpen}
         onClose={() => setLiveSessionsOpen(false)}
       />
+      {currentUserId && (
+        <ChangePinModal
+          open={changePinOpen}
+          onClose={() => setChangePinOpen(false)}
+          userId={currentUserId}
+        />
+      )}
 
       <ShiftClosedState
         open={shiftAlertOpen}

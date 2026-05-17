@@ -20,7 +20,7 @@
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { handleCors, jsonResponse } from '../_shared/cors.ts';
 import { getAdminClient } from '../_shared/supabase-admin.ts';
-import { checkRateLimit, getClientIp } from '../_shared/rate-limit.ts';
+import { checkRateLimitDurable, getClientIp } from '../_shared/rate-limit.ts';
 import { signJwt, getJwtSecret } from '../_shared/jwt.ts';
 import { logAndRedact } from '../_shared/error-redact.ts';
 
@@ -84,8 +84,14 @@ serve(async (req) => {
 
   const ip = getClientIp(req);
 
-  // (a) Per-IP rate-limit : 10/min
-  const ipRL = checkRateLimit(`kiosk-jwt:ip:${ip}`, 10);
+  // (a) Per-IP rate-limit : 10/min (durable, cross-instance — Phase 2.A).
+  const ipRL = await checkRateLimitDurable({
+    functionName: 'kiosk-issue-jwt',
+    bucketKey:    `ip:${ip}`,
+    ipAddress:    ip,
+    maxPerWindow: 10,
+    windowSec:    60,
+  });
   if (!ipRL.allowed) {
     return jsonResponse({ error: 'rate_limited', retry_after_sec: ipRL.retryAfterSec }, 429);
   }
@@ -111,8 +117,14 @@ serve(async (req) => {
     return jsonResponse({ error: 'invalid_scope' }, 400);
   }
 
-  // (d) Per-kiosk rate-limit : 1/min (catches brute-force)
-  const kRL = checkRateLimit(`kiosk-jwt:id:${kiosk_id}`, 1);
+  // (d) Per-kiosk rate-limit : 1/min (catches brute-force ; durable — Phase 2.A).
+  const kRL = await checkRateLimitDurable({
+    functionName: 'kiosk-issue-jwt',
+    bucketKey:    `id:${kiosk_id}`,
+    ipAddress:    ip,
+    maxPerWindow: 1,
+    windowSec:    60,
+  });
   if (!kRL.allowed) {
     return jsonResponse({ error: 'rate_limited', retry_after_sec: kRL.retryAfterSec }, 429);
   }
