@@ -5651,6 +5651,20 @@ export type Database = {
           qty_per_unit: number
         }[]
       }
+      recipe_cost_history_v1: {
+        Args: { p_from: string; p_product_id?: string; p_to: string }
+        Returns: {
+          baseline_cost: number
+          change_count: number
+          change_note: string
+          cost_per_unit: number
+          created_at: string
+          delta_pct: number
+          product_id: string
+          product_name: string
+          version_number: number
+        }[]
+      }
       recompute_recipe_margins_v1: { Args: never; Returns: Json }
       record_batch_production_v1: {
         Args: { p_batch: Json; p_items: Json }

@@ -1,0 +1,197 @@
+// apps/backoffice/src/pages/reports/RecipeCostOverviewPage.tsx
+// Session 18 — Phase 2.A — Cross-recipe cost overview.
+//
+// Consumes recipe_cost_history_v1(p_from, p_to, p_product_id: null) in overview
+// mode. Lists every product with cost history, sorted by |delta_pct| DESC.
+// Row click navigates to the timeline drill-down (Phase 2.B).
+//
+// Pattern source: ProductionYieldPage (S15) — same ReportPage + DateRangePicker
+// + CSV idioms.
+
+import { useMemo, useState, type JSX } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { toLocalDateStr } from '@breakery/domain';
+import { Button } from '@breakery/ui';
+import { supabase } from '@/lib/supabase.js';
+import { ReportPage } from '@/features/reports/components/ReportPage.js';
+import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
+
+interface OverviewRow {
+  product_id:    string;
+  product_name:  string;
+  cost_per_unit: number | null; // current cost (≤ p_to)
+  baseline_cost: number | null;
+  delta_pct:     number | null;
+  change_count:  number;
+  created_at:    string | null; // last_change_date in overview mode
+}
+
+function defaultStart(): string {
+  return toLocalDateStr(new Date(Date.now() - 29 * 86_400_000));
+}
+
+/** Delta tone — thresholds are percentage points (not fractions). */
+function deltaTone(d: number | null): string {
+  if (d === null) return 'text-text-secondary';
+  const abs = Math.abs(d);
+  if (abs > 20) return 'text-red-600 font-semibold';
+  if (abs > 5)  return 'text-amber-600';
+  return 'text-emerald-600';
+}
+
+function formatDelta(d: number | null): string {
+  if (d === null) return '—';
+  const sign = d > 0 ? '+' : '';
+  return `${sign}${d.toFixed(2)}%`;
+}
+
+/** Quote a CSV cell; double inner quotes per RFC 4180. */
+function csvCell(v: string | number | null): string {
+  if (v === null || v === undefined) return '';
+  const s = String(v);
+  return /[,"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+function rowsToCsv(rows: OverviewRow[]): string {
+  const header = [
+    'product_name', 'current_cost', 'baseline_cost',
+    'delta_pct', 'change_count', 'last_change_date',
+  ].join(',');
+  const body = rows.map((r) => [
+    csvCell(r.product_name),
+    csvCell(r.cost_per_unit),
+    csvCell(r.baseline_cost),
+    csvCell(r.delta_pct === null ? null : r.delta_pct.toFixed(2)),
+    csvCell(r.change_count),
+    csvCell(r.created_at ?? ''),
+  ].join(','));
+  return [header, ...body].join('\n');
+}
+
+export function RecipeCostOverviewPage(): JSX.Element {
+  const navigate = useNavigate();
+  const [start, setStart] = useState<string>(defaultStart);
+  const [end,   setEnd]   = useState<string>(() => toLocalDateStr(new Date()));
+
+  const q = useQuery<OverviewRow[]>({
+    queryKey: ['reports', 'recipe-cost', 'overview', start, end] as const,
+    staleTime: 60_000,
+    queryFn: async (): Promise<OverviewRow[]> => {
+      const { data, error } = await supabase.rpc('recipe_cost_history_v1', {
+        p_from: start,
+        p_to: end,
+        // omit p_product_id → PostgreSQL DEFAULT NULL → overview mode
+      });
+      if (error) throw new Error(error.message);
+      return (data ?? []) as unknown as OverviewRow[];
+    },
+  });
+
+  /** Sort by |delta_pct| DESC (D7). Non-null deltas first; NULLs last. */
+  const rows = useMemo<OverviewRow[]>(() => {
+    const list = q.data ?? [];
+    return [...list].sort((a, b) => {
+      const da = a.delta_pct === null ? -Infinity : Math.abs(a.delta_pct);
+      const db = b.delta_pct === null ? -Infinity : Math.abs(b.delta_pct);
+      return db - da;
+    });
+  }, [q.data]);
+
+  function handleExportCsv(): void {
+    if (typeof document === 'undefined' || typeof URL === 'undefined') return;
+    const csv = rowsToCsv(rows);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `recipe-cost-overview-${start}_${end}.csv`;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  return (
+    <ReportPage
+      title="Recipe Cost Overview"
+      subtitle="Delta in the selected window. Click a row for the full version timeline."
+      filters={
+        <>
+          <DateRangePicker
+            start={start}
+            end={end}
+            onStartChange={setStart}
+            onEndChange={setEnd}
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={handleExportCsv}
+            disabled={rows.length === 0}
+            data-testid="overview-export-csv"
+          >
+            Export CSV
+          </Button>
+        </>
+      }
+    >
+      {q.isLoading && (
+        <p className="text-sm text-text-secondary">Loading…</p>
+      )}
+      {q.error && (
+        <p role="alert" className="text-sm text-red-600">
+          {(q.error as Error).message}
+        </p>
+      )}
+      {!q.isLoading && !q.error && rows.length === 0 && (
+        <p className="text-sm text-text-secondary" data-testid="empty-overview">
+          No recipe cost movement in the selected window.
+        </p>
+      )}
+      {rows.length > 0 && (
+        <table className="w-full text-sm" data-testid="overview-table">
+          <thead>
+            <tr className="text-left text-xs uppercase tracking-widest text-text-secondary border-b border-border-subtle">
+              <th className="py-2">Product</th>
+              <th className="py-2 text-right">Current</th>
+              <th className="py-2 text-right">Baseline</th>
+              <th className="py-2 text-right">Δ %</th>
+              <th className="py-2 text-right">Changes</th>
+              <th className="py-2 text-right">Last change</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr
+                key={r.product_id}
+                className="border-t border-border-subtle cursor-pointer hover:bg-bg-elevated"
+                data-testid={`overview-row-${r.product_id}`}
+                onClick={() => navigate(`/backoffice/reports/recipe-cost/${r.product_id}`)}
+              >
+                <td className="py-1.5">{r.product_name}</td>
+                <td className="py-1.5 text-right tabular-nums">
+                  {r.cost_per_unit?.toLocaleString('en-US', { maximumFractionDigits: 2 }) ?? '—'}
+                </td>
+                <td className="py-1.5 text-right tabular-nums">
+                  {r.baseline_cost?.toLocaleString('en-US', { maximumFractionDigits: 2 }) ?? '—'}
+                </td>
+                <td className={`py-1.5 text-right tabular-nums ${deltaTone(r.delta_pct)}`}>
+                  {formatDelta(r.delta_pct)}
+                </td>
+                <td className="py-1.5 text-right tabular-nums">{r.change_count}</td>
+                <td className="py-1.5 text-right tabular-nums text-text-secondary">
+                  {r.created_at ? r.created_at.slice(0, 10) : '—'}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </ReportPage>
+  );
+}
+
+export default RecipeCostOverviewPage;

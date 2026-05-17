@@ -47,7 +47,9 @@ import AuditPage from '@/pages/reports/AuditPage.js';
 import ProfitLossPage     from '@/pages/reports/ProfitLossPage.js';
 import BalanceSheetPage   from '@/pages/reports/BalanceSheetPage.js';
 import CashFlowPage       from '@/pages/reports/CashFlowPage.js';
-import BasketAnalysisPage from '@/pages/reports/BasketAnalysisPage.js';
+import BasketAnalysisPage    from '@/pages/reports/BasketAnalysisPage.js';
+import RecipeCostOverviewPage from '@/pages/reports/RecipeCostOverviewPage.js';
+import RecipeCostTimelinePage from '@/pages/reports/RecipeCostTimelinePage.js';
 import SettingsHubPage              from '@/pages/settings/SettingsHubPage.js';
 import SettingsGeneralPage          from '@/pages/settings/SettingsGeneralPage.js';
 import SettingsHolidaysPage         from '@/pages/settings/SettingsHolidaysPage.js';
@@ -508,6 +510,22 @@ export function AppRoutes() {
           element={
             <PermissionGate required="reports.sales.read">
               <BasketAnalysisPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="reports/recipe-cost"
+          element={
+            <PermissionGate required="reports.financial.read">
+              <RecipeCostOverviewPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="reports/recipe-cost/:productId"
+          element={
+            <PermissionGate required="reports.financial.read">
+              <RecipeCostTimelinePage />
             </PermissionGate>
           }
         />
