@@ -257,6 +257,7 @@ export default function LoginPage(): JSX.Element {
           className="w-full uppercase tracking-widest font-semibold"
           disabled={!canSubmit}
           onClick={() => submitPin(pin)}
+          data-testid="login-sign-in-btn"
         >
           {isLoading ? 'Signing in…' : 'Sign In'}
         </Button>

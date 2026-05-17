@@ -21,6 +21,7 @@ export function UserPicker({ onSelect }: UserPickerProps) {
           size="lg"
           className="w-full"
           onClick={() => onSelect(u.id)}
+          data-testid={`user-picker-${u.id}`}
         >
           {u.name}
         </Button>
