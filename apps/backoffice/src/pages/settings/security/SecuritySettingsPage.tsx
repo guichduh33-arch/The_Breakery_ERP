@@ -11,6 +11,7 @@
 
 import { useState, type JSX } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { Button } from '@breakery/ui';
 import { supabase } from '@/lib/supabase.js';
 import { useAuthStore } from '@/stores/authStore.js';
@@ -34,7 +35,7 @@ export default function SecuritySettingsPage(): JSX.Element {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('roles')
-        // Untyped column cast — types are not regenerated until Phase 4.A.
+        // TODO(Phase 4.A) drop this cast once types.generated.ts has session_timeout_minutes.
         .select('code, name, session_timeout_minutes' as 'code, name')
         .order('session_timeout_minutes' as 'name', { ascending: true });
       if (error) throw new Error(error.message);
@@ -53,7 +54,11 @@ export default function SecuritySettingsPage(): JSX.Element {
       return Boolean(data);
     },
     onSuccess: async () => {
+      toast.success('Session timeout updated.');
       await qc.invalidateQueries({ queryKey: ROLES_QUERY_KEY });
+    },
+    onError: (e: Error) => {
+      toast.error(`Update failed: ${e.message}`);
     },
   });
 

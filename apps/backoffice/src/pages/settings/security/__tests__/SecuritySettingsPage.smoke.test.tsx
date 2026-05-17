@@ -6,6 +6,11 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import SecuritySettingsPage from '@/pages/settings/security/SecuritySettingsPage.js';
+import { supabase } from '@/lib/supabase.js';
+
+vi.mock('sonner', () => ({
+  toast: { success: vi.fn(), error: vi.fn() },
+}));
 
 const currentPerms = new Set<string>(['settings.read', 'settings.update']);
 
@@ -55,6 +60,7 @@ function renderPage() {
 
 describe('SecuritySettingsPage', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     currentPerms.clear();
     currentPerms.add('settings.read');
     currentPerms.add('settings.update');
@@ -101,5 +107,20 @@ describe('SecuritySettingsPage', () => {
     currentPerms.clear();
     renderPage();
     expect(screen.getByText(/do not have permission/i)).toBeInTheDocument();
+  });
+
+  it('calls update_role_session_timeout_v1 with correct args when save is clicked', async () => {
+    const rpcSpy = vi.mocked(supabase.rpc);
+    rpcSpy.mockResolvedValueOnce({ data: true, error: null } as never);
+    renderPage();
+    const input = await screen.findByTestId('timeout-input-CASHIER');
+    fireEvent.change(input, { target: { value: '45' } });
+    fireEvent.click(screen.getByTestId('timeout-save-CASHIER'));
+    await waitFor(() => {
+      expect(rpcSpy).toHaveBeenCalledWith('update_role_session_timeout_v1', {
+        p_role_code: 'CASHIER',
+        p_minutes: 45,
+      });
+    });
   });
 });
