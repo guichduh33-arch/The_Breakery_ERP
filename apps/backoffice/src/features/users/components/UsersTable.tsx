@@ -43,7 +43,7 @@ export function UsersTable({ rows, loading, error }: UsersTableProps): JSX.Eleme
       </thead>
       <tbody>
         {rows.map((u) => (
-          <tr key={u.id} className="border-b border-border-subtle">
+          <tr key={u.id} className="border-b border-border-subtle" data-testid={`user-row-${u.id}`}>
             <td className="py-2 px-3 font-mono text-xs">{u.employee_code}</td>
             <td className="py-2 px-3">{u.full_name}</td>
             <td className="py-2 px-3">
@@ -73,6 +73,7 @@ export function UsersTable({ rows, loading, error }: UsersTableProps): JSX.Eleme
               <Link
                 to={`/backoffice/users/${u.id}`}
                 className="text-xs text-gold hover:underline"
+                data-testid={`user-open-${u.id}`}
               >
                 Open
               </Link>

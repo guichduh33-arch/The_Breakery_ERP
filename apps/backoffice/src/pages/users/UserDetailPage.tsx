@@ -172,7 +172,7 @@ export default function UserDetailPage() {
               placeholder="4-8 digits"
               className="w-40 px-2 py-1.5 text-sm bg-bg-base border border-border-subtle rounded font-mono"
             />
-            <Button onClick={handleResetPin} disabled={pinReset.isPending || pinDraft === ''}>
+            <Button onClick={handleResetPin} disabled={pinReset.isPending || pinDraft === ''} data-testid="reset-pin-button">
               {pinReset.isPending ? 'Resetting…' : 'Reset PIN'}
             </Button>
           </div>
@@ -185,7 +185,7 @@ export default function UserDetailPage() {
             <div className="text-xs text-rose-600">{pinError}</div>
           )}
           {pinSuccess && (
-            <div className="text-xs text-emerald-600">PIN updated. The lockout (if any) is also cleared.</div>
+            <div className="text-xs text-emerald-600" data-testid="pin-reset-success">PIN updated. The lockout (if any) is also cleared.</div>
           )}
           {pinSuccess && pinWeak && (
             <div
