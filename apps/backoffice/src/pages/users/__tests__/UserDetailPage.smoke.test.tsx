@@ -114,6 +114,32 @@ describe('UserDetailPage — weak PIN warn UX (Session 19 Phase 3.B)', () => {
     mockMutateImpl = () => {};
   });
 
+  // S21 / 1.C.3 — PIN regex now requires exactly 6 digits (DEV-S19-3.B-01).
+  it('rejects PIN shorter than 6 digits with validation error', () => {
+    let mutateCalled = false;
+    mockMutateImpl = () => { mutateCalled = true; };
+    renderPage();
+    const input = screen.getByLabelText(/new pin/i);
+    fireEvent.change(input, { target: { value: '12345' } }); // 5 digits
+    fireEvent.click(screen.getByRole('button', { name: /reset pin/i }));
+    expect(screen.getByText(/exactly 6 digits/i)).toBeInTheDocument();
+    expect(mutateCalled).toBe(false);
+  });
+
+  it('accepts PIN of exactly 6 digits and calls mutation', () => {
+    let mutateCalled = false;
+    mockMutateImpl = (_args, cb) => {
+      mutateCalled = true;
+      cb.onSuccess?.({ ok: true, weak: false });
+    };
+    renderPage();
+    const input = screen.getByLabelText(/new pin/i);
+    fireEvent.change(input, { target: { value: '285741' } }); // 6 digits, strong
+    fireEvent.click(screen.getByRole('button', { name: /reset pin/i }));
+    expect(mutateCalled).toBe(true);
+    expect(screen.queryByText(/exactly 6 digits/i)).toBeNull();
+  });
+
   it('shows inline weak hint while typing a weak PIN (123456)', async () => {
     renderPage();
     const input = await screen.findByLabelText(/new pin/i);
