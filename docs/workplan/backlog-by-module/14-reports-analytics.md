@@ -1,6 +1,6 @@
 # Travail — Reports & Analytics
 
-> Last updated: 2026-05-03
+> Last updated: 2026-05-17
 > Référence : `docs/reference/04-modules/14-reports-analytics.md` (à créer)
 > Sources d'audit : `docs/audit/04-reports-testing-audit.md` (Quinn — 0 P0, 3 P1, 6 P2, 5 P3 ; 53 reports actifs ; 87 components 0 tests), `docs/audit/00-executive-summary.md` (Reports P0-1 à P0-4 perf : O(n^2), .limit() manquant), `docs/audit/IMPLEMENTATION_PLAN.md` Phase 4
 
@@ -302,3 +302,38 @@
 **Estimation** : S
 **Risques** : aucune.
 **Notes** : placeholder existant à compléter.
+
+### TASK-14-021 — Recipe Cost History Report [P2] [DONE]
+**Status note (2026-05-17)** : DONE — S18 livré. Ferme le gap audit "Recipe Cost Trends MISSING" (cf. TASK-15-005 versioning + ce report = lecture de l'historique). Closes le read-side gap sur l'append-only `recipe_versions` introduit en S15 + cost embarqué en S16.
+**Contexte** : S15 a livré `recipe_versions` (append-only snapshots), S16 a embarqué le coût per-version dans `snapshot.cost_price`, S17 a livré le cascade trigger (snapshot ancestres lors des changements de cost matière première). Manquait la couche lecture côté UI pour visualiser l'évolution.
+**Critère d'acceptation** :
+- [x] RPC `recipe_cost_history_v1` dual-mode (migration `20260522000010`) :
+  - Mode overview (cross-recipe) : `p_product_id IS NULL` → liste tous produits avec recipe + cost first/last + delta_pct sur la période
+  - Mode timeline (single-recipe) : `p_product_id IS NOT NULL` → snapshots dans l'ordre chrono pour 1 produit
+  - Gating : permission `reports.financial.read` (granular S13)
+  - Ignore legacy bare-array snapshots (rows pré-S16 sans cost reconstructible — `DEV-S16-2.B-02`)
+- [x] Page BO `RecipeCostOverviewPage` cross-recipe avec DateRangePicker + tri par delta_pct + export CSV
+- [x] Page BO `RecipeCostTimelinePage` single-recipe avec recharts `LineChart` + table + export CSV
+- [x] Wiring : 2 routes (`/reports/recipe-cost` + `/reports/recipe-cost/:productId`) + Sidebar entry + ReportsIndex tile
+- [x] Tests : pgTAP (`supabase/tests/recipe_cost_history_v1.test.sql` 10 assertions) + Vitest live RPC (`supabase/tests/functions/recipe-cost-history.test.ts`) + smoke tests 2 pages BO
+**Fichiers concernés** :
+- `supabase/migrations/20260522000010_create_recipe_cost_history_v1_rpc.sql`
+- `apps/backoffice/src/pages/reports/RecipeCostOverviewPage.tsx` + smoke
+- `apps/backoffice/src/pages/reports/RecipeCostTimelinePage.tsx` + smoke
+- `apps/backoffice/src/routes/index.tsx` (2 routes ajoutées)
+- `apps/backoffice/src/layouts/Sidebar.tsx` (entrée "Recipe Cost")
+- `apps/backoffice/src/pages/reports/ReportsIndexPage.tsx` (nouveau tile)
+**Dépend de** : `TASK-15-005` (recipe versioning livré S15-S16) ; permissions granulaires `reports.financial` (TASK-14-004 DONE S13).
+**Estimation** : M (livré)
+**Risques** : aucun, livré.
+**Notes** : INDEX S18 `docs/workplan/plans/2026-05-17-session-18-INDEX.md`. Follow-ups informational, voir section ci-dessous.
+
+## Session 18 → Session 19+ follow-ups
+
+Deviations recorded during Session 18 execution (see `docs/workplan/plans/2026-05-17-session-18-INDEX.md` §10 for full context). All informational — Recipe Cost History livré et fonctionnel, ces items sont des polish optionnels.
+
+- **DEV-S18-1.A-01** — RPC scanne tous `recipe_versions` par call ; pas d'index sur `(product_id, created_at DESC)`. À cardinality actuelle (~13 produits × ~3 versions) c'est négligeable. (informational)
+- **DEV-S18-2.A-01** — Overview baseline lookup utilise des correlated subqueries (~2× planner work) ; pourrait être réécrit avec une window function. Implem actuelle utilise correlated subquery, pas LATERAL comme initialement spec'é. (informational)
+- **DEV-S18-2.A-02** — CSV exports raw NUMERIC sans locale formatting (pas de séparateur milliers, point décimal). (informational)
+- **DEV-S18-2.B-01** — Timeline chart X-axis = raw ISO date strings, pas de locale formatting. (informational)
+- **DEV-S18-2.B-02** — Pas de zoom interaction sur le chart (recharts `LineChart` basique). (informational)

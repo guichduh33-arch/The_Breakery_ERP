@@ -1,6 +1,6 @@
 # Travail — Tests
 
-> Last updated: 2026-05-03
+> Last updated: 2026-05-17
 > Référence : [`../09-testing/`](../09-testing/) (`01-test-strategy.md`, `02-unit-tests.md`)
 > Sources audit : `docs/audit/04-reports-testing-audit.md` §Test Coverage Assessment + Recommendations, `docs/audit/03-code-quality-schema-audit.md` §B / §A8, `CURRENT_STATE.md` Known Issues, `CLAUDE.md` Pitfalls
 
@@ -121,6 +121,7 @@
 
 ### TASK-23-008 — CI : tests sur chaque PR [P1] [DONE]
 **Status note (2026-05-14)** : Delivered Session 13 Phase 0.2. V3 evidence: `.github/workflows/ci.yml` runs `pnpm install --frozen-lockfile` → has_permission lock guard → lint → typecheck → `pnpm test` → `pnpm build` on every PR to `master/main`, plus a separate `supabase-tests` job for pgTAP/integration. NOTE: Playwright E2E is NOT yet wired into CI (D-W6-6C-05 open follow-up). Commit `bdf21aa`.
+**Status note (2026-05-17)** : S16 update — Le `supabase-tests` Docker job a été **retiré** (Docker retraite locale 2026-05-14 + job cassé sur GH Actions runners) et remplacé par un cron nightly. Voir TASK-23-012 pour pgTAP nightly. Playwright E2E toujours pas en CI (D-W6-6C-05 reste ouvert).
 **Contexte** : Pas de `.github/workflows/` mentionné dans audit Operations §5.2. Tests pas en CI = régressions passent en review humaine.
 **Critère d'acceptation** :
 - [ ] `.github/workflows/ci.yml` qui : `npm ci` → `npm run lint` → `npx vitest run` sur chaque PR
@@ -172,12 +173,27 @@
 **Risques** : noise CI runners variables → seuil tolérant
 **Notes** : —
 
+### TASK-23-012 — pgTAP nightly cron CI [P1] [DONE]
+**Status note (2026-05-17)** : DONE — S16 livré. Résout DEV-S15-CI-01 (medium). Le job `supabase-tests` Docker dans `.github/workflows/ci.yml` était cassé depuis la retraite Docker locale 2026-05-14 (les runners GH Actions n'ont pas le stack Supabase local). S16 a (a) supprimé ce job du PR-time CI et (b) ajouté `.github/workflows/pgtap-nightly.yml` qui tourne quotidiennement contre le projet cloud V3 dev (`ikcyvlovptebroadgtvd`) via cron `0 19 * * *` UTC (3am Asia/Makassar).
+**Contexte** : Sans Docker local, le pgTAP ne peut plus tourner en pre-commit ou PR-time. La régression silencieuse sur les RPCs DB devient possible si on n'a pas de gate.
+**Critère d'acceptation** :
+- [x] Suppression du job `supabase-tests` cassé de `.github/workflows/ci.yml`
+- [x] Création `.github/workflows/pgtap-nightly.yml` avec cron quotidien
+- [x] Smoke test `supabase/tests/ci_smoke.test.sql` pour vérifier connectivité
+- [x] Exécute la suite pgTAP existante (`supabase/tests/*.test.sql`) contre `ikcyvlovptebroadgtvd`
+- [x] Notifie sur échec via GH Actions native (issue auto / email)
+**Fichiers concernés** : `.github/workflows/ci.yml` (drop job), `.github/workflows/pgtap-nightly.yml` (CREATE), `supabase/tests/ci_smoke.test.sql` (CREATE).
+**Dépend de** : aucune.
+**Estimation** : S (livré)
+**Risques** : pas de gate PR-time (DEV-S16-1.A-01 informational) — un PR cassant un RPC ne sera détecté que ~24h plus tard. À envisager un gate PR-time via supabase branching pour un sous-ensemble critique de pgTAP (future).
+**Notes** : INDEX S16 `docs/workplan/plans/2026-05-16-session-16-INDEX.md`.
+
 ---
 
 ## Synthèse priorité
 
 | Priorité | Tâches |
 |----------|--------|
-| P1 | 23-001, 23-002, 23-003, 23-004, 23-008 |
+| P1 | 23-001, 23-002, 23-003, 23-004, 23-008, 23-012 |
 | P2 | 23-005, 23-006, 23-007 |
 | P3 | 23-009, 23-010, 23-011 |

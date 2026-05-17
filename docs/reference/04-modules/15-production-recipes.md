@@ -1,6 +1,6 @@
 # 15 — Production & Recipes
 
-> **Last verified** : 2026-05-13
+> **Last verified** : 2026-05-17
 > **Structure** : ce fichier fusionne la **vue fonctionnelle** (le *pourquoi* et le *quoi* métier — recipes BoM + production records + conversion d'unités + couplage comptable) et la **référence technique** (le *comment* implémenté : tables, hook `useProduction`, mutations atomiques, triggers désactivés). Pour les tâches à faire, voir [`../../workplan/backlog-by-module/15-production-recipes.md`](../../workplan/backlog-by-module/15-production-recipes.md).
 > **Related E2E flows** : [12-production-stock-impact](../08-flows-end-to-end/12-production-stock-impact.md).
 > **Prérequis modules** : [05 — Products & Categories](./05-products-categories.md) (BoM `recipes`), [06 — Inventory & Stock](./06-inventory-stock.md) (ledger des mouvements), [10 — Accounting](./10-accounting-double-entry.md) (JE COGS).
@@ -313,12 +313,11 @@ Réciproquement, le module Inventory **utilise** Production :
 
 ## 15. Ce que le module ne fait pas (par design)
 
-- Le module **ne planifie pas la production** automatiquement. Il propose des suggestions, mais le plan de production est saisi à la main.
+- Le module **propose** la production (RPC `suggest_production_schedule_v1` S15 + UI calendar `ProductionSchedulePage`) mais ne **valide pas automatiquement** un plan — le boulanger arbitre toujours en début de service.
 - Le module **ne suit pas le temps de pétrissage / cuisson** au four. Pas de minuteur intégré, pas de capteur IoT.
-- Le module **ne supporte pas les sous-recettes** (recette qui produit un semi-fini consommé par une autre recette). Une recette = un produit fini directement.
-- Le module **ne fait pas de versioning explicite** des recettes (changelog des modifications). Modifier la recette modifie immédiatement le coût théorique futur. Les productions passées gardent leur coût snapshot.
-- Le module **n'intègre pas d'allergènes** structurés (gluten, lactose, fruits à coque). Les notes libres sur le produit s'en chargent en attendant.
-- Le module **ne supporte pas les recettes en pourcentage de boulanger** (farine = 100 %, eau = 65 %…). Tout est en quantité absolue par unité produite.
+- Le module **n'expose pas les allergènes** sur le ticket de caisse ni sur le customer display. L'infra existe (S15 : enum 14 allergènes EU, `products.allergens[]`, view récursive `view_product_allergens`, badges Backoffice) mais l'intégration receipt/display est **WONTFIX 2026-05-17 per user decision** (memory `project_allergens_wontfix`). L'admin/back-office peut consulter les allergènes propagés via la BoM.
+
+> **Note S15-S17** : les sous-recettes (F6), le versioning explicite (`recipe_versions` append-only), et les recettes en pourcentage de boulanger (`recipes.is_baker_percentage`) — historiquement listés ici comme non-supportés — sont **désormais livrés**. Voir [§25bis Architecture S15-S18 additions](#25bis-architecture-s15-s18-additions).
 
 ---
 
@@ -587,18 +586,79 @@ Voir le flow E2E lié : [08-flows-end-to-end/12-production-stock-impact.md](../0
 
 ---
 
+## 25bis. Architecture S15-S18 additions
+
+> **Pourquoi cette section** : §17 (tables) et §19 (triggers) décrivent l'architecture S13. Les sessions S15-S18 ont introduit beaucoup de nouveaux objets DB et UI. Cette synthèse récapitule l'état post-S18 sans réécrire les sections d'origine. Pour le détail : INDEX [S15](../../workplan/plans/2026-05-15-session-15-INDEX.md), [S16](../../workplan/plans/2026-05-16-session-16-INDEX.md), [S17](../../workplan/plans/2026-05-17-session-17-INDEX.md), [S18](../../workplan/plans/2026-05-17-session-18-INDEX.md).
+
+### Nouvelles tables (S15)
+
+| Table | Rôle | Migration |
+|---|---|---|
+| `recipe_versions` | Snapshot append-only de chaque modification de recette. `snapshot` JSONB embarque depuis S16 le `cost_price` per-version (CHECK constraint). FK `production_records.recipe_version_id` figé pour traçabilité COGS. | `20260519000003..005` + S16 `20260520000020..022` |
+| `production_batches` | Fournée multi-recettes en une opération atomique. FK `production_records.production_batch_id`. | `20260519000100..103` |
+| `production_schedules` | Calendrier hebdo de slots (5am, 7am, 11am, 4pm) avec recettes prévues. Suggestions auto basées sur historique de vente 4 dernières semaines. | `20260519000120..122` |
+| `margin_alerts` | Alertes quand un produit fini passe sous son `target_margin_pct`. Recalculée quotidiennement via pg_cron. | `20260519000140..142` |
+
+### Nouvelles colonnes
+
+- `recipes.is_baker_percentage` (boolean S15) — toggle mode pourcentage de boulanger (farine = 100%, eau = 65%, etc.). Conversion auto à la sauvegarde.
+- `recipes.target_margin_pct` (S15) — seuil au-dessous duquel `margin_alerts` se déclenche.
+- `production_records.expected_yield_qty` / `actual_yield_qty` / `yield_variance_pct` (S15) — F5 yield tracking. Variance > seuil (`business_config.production_yield_variance_threshold_pct`) déclenche modal de confirmation.
+- `production_records.recipe_version_id` (S15) — FK figée vers le snapshot utilisé au moment de la production.
+- `products.is_semi_finished` (boolean S16) — maintenu par trigger `tr_recipes_recompute_is_semi_finished` ; `true` ssi le produit a une recette de profondeur ≥ 2 (sous-recette). Distinct de l'enum legacy `product_type='semi_finished'`.
+- `products.allergens[]` (array S15) — 14 allergènes EU (gluten, lactose, etc.) ; vue récursive `view_product_allergens` agrège via la BoM.
+
+### Nouveaux RPCs (SECURITY DEFINER, gated)
+
+| RPC | Rôle | Migration |
+|---|---|---|
+| `calculate_recipe_cost(recipe_id)` | Coût recette en cascade jusqu'à 5 niveaux (S15). Helper interne `_calculate_recipe_cost_walk` pour appels pg_cron sans `auth.uid()`. | `20260519000002` |
+| `record_production_v1` | Insertion atomique d'une production avec déduction récursive matières feuilles, JE, idempotency key (bumped S15 pour cascade). | bump S15 `20260519000006` |
+| `record_batch_production_v1` | Production multi-recettes en 1 tx (fix temp-table same-tx via S15). | `20260519000103` |
+| `suggest_production_schedule_v1` | Calendrier hebdo basé sur `order_items × orders` (4 dernières semaines). | `20260519000121` |
+| `recompute_recipe_margins_v1` | pg_cron quotidien qui recalcule marges et insère dans `margin_alerts`. | `20260519000142` |
+| `duplicate_recipe_v1` | Clone d'une recette (utilisé par RecipeDuplicateModal). | `20260519000082` |
+| `search_ingredients_v1` | Autocomplete IngredientPicker — retourne `{product_id, name, sku, kind, score}` avec ranking trigramme (S16 bump). | `20260519000081` + S16 `20260520000014` |
+| `recipe_bom_full_v1` | Lecture **leaves-only** WITH RECURSIVE depth-5 — remplace BFS client-side, rewire `IngredientAggregatePreview` (S17). | `20260521000020..021` (fix numeric cast) |
+| `product_cost_at_version(p_product_id, p_version_id)` | Full-cascade cost depth-5 pour 1 version donnée. | S17 |
+| `upsert_recipe_v1` (bump S15) | Accepte baker percentage via trailing DEFAULTs (signature stable). | bump S15 `20260519000150` |
+| `recipe_cost_history_v1` | Dual-mode report (overview cross-recipe + timeline single-recipe) gated par `reports.financial.read`. Consommé par 2 pages BO Reports S18. | S18 `20260522000010` |
+
+### Nouveaux triggers
+
+| Trigger | Effet | Migration |
+|---|---|---|
+| `validate_recipe_no_cycle` | Anti-cycle DFS 5-niveaux avant INSERT/UPDATE sur `recipe_ingredients`. | S15 `20260519000001` |
+| `tr_snapshot_recipe_version_cascade` | Snapshot append-only dans `recipe_versions` à chaque UPDATE recette/ingredients, propagation WITH RECURSIVE aux ancestres (S17 refactor : cleanup WHEN OTHERS, COALESCE NULL cost, descriptive change_note). | S15 `20260519000003`, refactor S17 `20260521000011` |
+| `tr_snapshot_on_product_cost_change` | Déclenche cascade snapshot ancestres quand `products.cost_price` change (manuel ou via WAC). | S17 `20260521000012` |
+| `tr_update_product_cost_on_purchase` | WAC : à l'INSERT d'un `stock_movements.purchase/incoming`, recalcule `products.cost_price` via formule moyenne pondérée → cascade snapshots ancestres via trigger amont. | S17 `20260521000013` |
+| `tr_recipes_recompute_is_semi_finished` | Maintient `products.is_semi_finished` après INSERT/UPDATE/DELETE sur `recipes` ou `recipe_ingredients`. | S16 `20260520000012` |
+| pg_cron `recompute_recipe_margins_v1` | Recalcul quotidien des marges → insertions dans `margin_alerts`. | S15 `20260519000142` |
+
+### Nouveaux composants UI Backoffice
+
+`apps/backoffice/src/features/inventory-production/components/` : `ProductionForm` (étendu S15 expected/actual yield + waste), `YieldVarianceModal`, `RecipeVersionHistory` (S15 + S16 cost column), `RecipeEditor` (S15 IngredientPicker + DnD + Duplicate + cost preview), `RecipeDuplicateModal`, `RecipeCostPreviewCard`, `BatchSelector`, `IngredientAggregatePreview` (S15 BFS depth-1 → S17 rewire `recipe_bom_full_v1`), `ProductionCalendarGrid`, `ScheduleSlotCell`, `BoulangerModeToggle`, `BakerPreviewPanel` (extrait pour rester sous 500 lignes).
+
+Pages : `BatchProductionPage`, `ProductionSchedulePage`, `MarginWatchPage`, `ProductionYieldPage` (reports), `RecipeCostOverviewPage`, `RecipeCostTimelinePage` (reports S18, recharts `LineChart`).
+
+Helper domain : `packages/domain/src/production/recipeCostCalculator.ts` (S15) + `expandRecipeCascade.ts` (S17, public API `@breakery/domain` préservée — sans consumer actuel, DEV-S17-2.A-01 informational).
+
+Cross-app : POS `ProductCard.tsx` + BO `Products.tsx` enrichis avec `AllergenBadge` (badges only ; receipt/display WONTFIX 2026-05-17).
+
+---
+
 ## 26. Pitfalls
 
 - **Triggers stock désactivés** : `tr_update_product_stock` n'est plus actif sur `stock_movements`. Toute insertion via SQL direct (hors `useProduction`) **ne mettra pas à jour** `products.current_stock` ou `section_stock`. Toujours passer par les hooks ou par la RPC `create_production_record_rpc` (atomique).
 - **Conversion d'unité obligatoire** : la recette peut être en `g` et le matériau stocké en `kg`. Le hook applique `getUnitConversionFactor(recipeUnit, materialUnit)` — si la matrice ne couvre pas une paire, le factor par défaut est 1 (silencieux), ce qui causera une déduction massive ou nulle. Compléter `src/types/units.ts` avant d'utiliser de nouvelles unités.
 - **`section_stock` vs `products.current_stock`** : si le produit a une `section_id`, le hook met à jour `section_stock`, sinon il met à jour `products.current_stock`. La fallback existe en cas d'erreur upsert. Pour un dashboard cohérent, **toujours** lire le stock via la vue agrégée (`view_inventory_valuation`) qui combine les deux.
 - **JE non-bloquant** : si `postProductionJournalEntry` échoue (compte 5100 ou 1300 manquant), la production reste enregistrée et le stock est mis à jour, mais aucun JE n'est créé. Le `console.error('Production JE failed')` est silencieux côté UI. Surveiller le logger Sentry pour détecter ces cas.
-- **Récursion produits semi-finis** : si un `material` est lui-même un `semi_finished` avec sa propre recette, **la déduction n'est pas récursive** — le hook déduit uniquement le `semi_finished` de son stock (qui doit avoir été produit en amont). Pas de cascade automatique. Pour les pâtes-mères (levain, beurre tourné), produire d'abord le semi-fini puis le produit final.
+- **Récursion produits semi-finis** : depuis S15, la déduction **EST récursive** via `record_production_v1` (cascade jusqu'à 5 niveaux, anti-cycle via trigger `validate_recipe_no_cycle`). Le RPC déduit récursivement les matières feuilles (raw materials) en walking la BoM. Depuis S17, le coût matière utilise `recipe_bom_full_v1` (depth-5 WITH RECURSIVE) côté lecture. **Limite** : profondeur 5 — au-delà, le snapshot s'arrête (acceptable pour Breakery dont la BoM la plus profonde est ~3 niveaux). Voir [§25bis Architecture S15-S18 additions](#25bis-architecture-s15-s18-additions).
 - **Reverse delete partiel** : `useProduction.remove` réverse les `stock_movements` mais **ne réverse pas le JE comptable**. Pour annuler proprement, créer un JE manuel de contre-passation après la suppression.
 - **`materials_consumed` jamais flag** : le hook met `stock_updated = true` mais oublie souvent `materials_consumed = true` (champ historique non systématique). Ne pas s'appuyer dessus pour des invariants — préférer `stock_updated` ou la présence de `stock_movements` liés via `reference_id`.
 - **`production_id` collision** : le format `PROD-YYYYMMDD-XXXX` avec 4 chars base36 random a ~1.7M combinaisons par jour. Pour les volumes The Breakery (~50 productions/jour) c'est sans risque, mais valider l'unicité côté DB via UNIQUE constraint.
 - **`quantity_waste` ne déduit rien** : le champ existe sur `production_records` pour le reporting, mais `useProduction.create` **n'en tient pas compte** dans la quantité ajoutée au stock. Pour soustraire les pertes, soit saisir manuellement un `stock_movement type='waste'` après, soit étendre la mutation. Le rapport `production_efficiency` utilise `quantity_waste` pour calculer le taux de gâche.
-- **Recettes inactives invisibles** : `useProductRecipe` filtre `is_active = true`. Pour voir les anciennes versions (audit), passer un flag `includeInactive`. Le `RecipeImportModal` désactive l'ancienne et active la nouvelle automatiquement.
+- **Versioning des recettes** : depuis S15, toute modification d'une recette ou de ses ingrédients déclenche un snapshot append-only dans `recipe_versions` (trigger `tr_snapshot_recipe_version_cascade`). Le `snapshot` JSONB embarque depuis S16 le `cost_price` per-version (breaking shape change — rows legacy pré-S16 tolérées sans cost, voir DEV-S16-2.B-02). Depuis S17, un changement de `products.cost_price` (via WAC purchase trigger) propage automatiquement des snapshots aux **recettes ancestres** via WITH RECURSIVE walk (`tr_snapshot_on_product_cost_change`). Le modèle legacy "disable/replace via `RecipeImportModal` + `is_active` flag" n'est plus utilisé. Pour lire l'historique : page BO `RecipeVersionHistory` ou nouveau report S18 `RecipeCostHistory` (voir module 14, TASK-14-021).
 - **Coût ingrédient = `cost_price`** : si un produit ingrédient n'a pas de `cost_price` renseigné, son coût est traité comme 0 dans le JE. Le total COGS sera sous-évalué. Vérifier régulièrement via le rapport `product_materials` que tous les ingrédients ont un coût.
 
 ---

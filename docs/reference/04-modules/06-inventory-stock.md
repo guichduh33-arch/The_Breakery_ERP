@@ -1,6 +1,6 @@
 # 06 — Inventory & Stock
 
-> **Last verified** : 2026-05-13
+> **Last verified** : 2026-05-17
 > **Structure** : ce fichier fusionne la **vue fonctionnelle** (le *pourquoi* et le *quoi* métier) et la **référence technique** (le *comment* implémenté). Pour les tâches à faire, voir [`../../workplan/backlog-by-module/06-inventory-stock.md`](../../workplan/backlog-by-module/06-inventory-stock.md).
 > **Related E2E flows** : [05-stock-opname](../08-flows-end-to-end/05-stock-opname.md), [12-production-stock-impact](../08-flows-end-to-end/12-production-stock-impact.md), [04-purchase-order-cycle](../08-flows-end-to-end/04-purchase-order-cycle.md).
 > **App de rattachement** : Backoffice (avec extensions POS — Live Stock, Cafe Reception).
@@ -554,6 +554,54 @@ Pas de store dédié inventory : la state vit dans React Query (cache 30s pour l
 
 ---
 
+## 28bis. Architecture V3 (S13-S17) — RPCs SECURITY DEFINER & WAC
+
+> **Pourquoi cette section** : §24 (Hooks) liste des hooks legacy V2 (`useStockAdjustment`, `useReceiveTransfer`, `useStockOpname`, `useIncomingStock`, `useWasteRecords`) qui faisaient des INSERT directs sur `stock_movements`. Ce pattern est **interdit en V3** (cf. CLAUDE.md : "`stock_movements` est un append-only ledger — RLS revokes UPDATE/DELETE pour `authenticated`. Toutes les écritures passent par SECURITY DEFINER RPCs"). Cette section liste les RPCs canonical à utiliser.
+
+### RPCs primitives SECURITY DEFINER (V3 obligatoire)
+
+| RPC | Rôle | Accepte `p_idempotency_key UUID` ? |
+|---|---|---|
+| `record_stock_movement_v1` | Primitive de bas niveau — auto-résout `unit` depuis `products.unit` si NULL passé. NE PAS appeler directement depuis le code app. | Oui |
+| `adjust_stock_v1` | Ajustement manuel positif/négatif avec raison. Remplace les INSERT directs de `useStockAdjustment`. | Oui |
+| `receive_stock_v1` | Réception PO (purchase). **Déclenche le trigger WAC `tr_update_product_cost_on_purchase` (S17) qui auto-recalcule `products.cost_price` via moyenne pondérée**, qui à son tour cascade vers les snapshots `recipe_versions` ancestres (voir module 15 §25bis). | Oui |
+| `record_incoming_stock_v1` | Réception sans PO (transferts entrants, retours fournisseur hors workflow). | Oui |
+| `waste_stock_v1` | Casse/perte avec auto-JE `STOCK_WASTE_FOOD`. | Oui |
+
+**Futurs (planifiés Session 19+)** : `record_transfer_v1` (remplacera `useReceiveTransfer`), `record_production_v1` (déjà bumpé S15 pour cascade sub-recipes), `finalize_opname_v1`.
+
+### Convention `p_idempotency_key UUID`
+
+Toutes les RPCs ci-dessus acceptent un `UUID` côté client. Replay safe : si une row existe déjà pour cette clé, le RPC retourne la row existante au lieu de créer un doublon. **Toujours passer une clé pour les mutations retry-ables** (réseau flaky, navigation back/forward, double-click).
+
+### Contraintes append-only sur `stock_movements`
+
+- **RLS** : SELECT autorisé `authenticated` ; UPDATE/DELETE **revoked** pour `authenticated` — seules les SECURITY DEFINER RPCs ci-dessus peuvent écrire.
+- **`unit NOT NULL`** : la primitive auto-résout depuis `products.unit` si NULL passé (migration `20260516000019`). Ne jamais bypass avec un raw INSERT.
+- **Section constraint movement-type-aware** (migration `20260516000020`) : `transfer_in/out` requièrent `from_section_id` ET `to_section_id` ; `adjustment*`, `waste`, `incoming`, `purchase`, `sale*`, `production*`, `opname*` requièrent au moins l'un des deux. Ne pas tighten sans re-vérifier toutes les RPCs.
+
+### RPCs cost / lecture (S17+)
+
+| RPC | Rôle |
+|---|---|
+| `recipe_bom_full_v1(p_product_id)` | Leaves-only WITH RECURSIVE depth-5, retourne la BoM atomique d'un produit fini (S17, remplace BFS client-side). Utilisée par `IngredientAggregatePreview`. |
+| `product_cost_at_version(p_product_id, p_version_id)` | Full-cascade cost depth-5 pour une version donnée de la recette. |
+
+Migrations : `20260521000020..021` (avec corrective fix numeric cast) + `20260521000030` refresh.
+
+### Triggers automatiques (V3)
+
+- `tr_update_product_cost_on_purchase` (S17) — WAC sur `products.cost_price` à chaque `stock_movements.purchase/incoming` INSERT.
+- `tr_snapshot_on_product_cost_change` (S17) — cascade snapshot ancestres dans `recipe_versions` quand `products.cost_price` change (manuel ou via WAC).
+- Cf. module 15 §25bis pour les triggers liés à la production.
+
+**Follow-ups Session 19+** :
+- DEV-S17-1.B-01 : manual `UPDATE products.cost_price` (hors purchase) bypasse WAC et n'émet pas de `stock_movements` audit row.
+- DEV-S17-1.C-01 : WAC s'applique uniformément à tous les `purchase` movements, pas d'opt-out pour sample stock / promo (low).
+- DEV-S17-1.C-02 : WAC garbage-in si `current_stock` stale (informational).
+
+---
+
 ## 29. RLS & Permissions
 
 Toutes les tables (`stock_movements`, `inventory_counts`, `internal_transfers`, `transfer_items`, `sections`, `stock_locations`, `stock_reservations`, `waste_records`, `production_records`) ont RLS activé.
@@ -657,6 +705,7 @@ avant injection.
 - **`current_stock` n'est pas RLS-filtré** par section : un utilisateur voit le stock global même si physiquement il opère dans une seule section. Pour multi-tenant strict (futur V3), revoir.
 - **Settings dynamiques pour les seuils alertes** : `stock_percentage_critical` (défaut 25%) et `stock_percentage_warning` (défaut 50%) lus depuis `useCoreSettingsStore`. Un changement de settings par un admin n'invalide PAS automatiquement le cache react-query — l'utilisateur doit refresh ou la query stale-time (60s sur alerts) finit par re-fetch.
 - **Recettes : `is_active=true` requis** — `getProductionSuggestions` filtre `eq('is_active', true)`. Une recette désactivée ne propose plus de production. Pour archiver sans désactiver, utiliser un flag séparé.
+- **Hooks legacy V2 dans §24** : `useStockAdjustment`, `useIncomingStock`, `useWasteRecords`, `useReceiveTransfer`, `useStockOpname` sont documentés ci-dessus tels qu'historiquement implémentés (INSERT directs sur `stock_movements`). **Ce pattern est interdit en V3** depuis l'append-only ledger lock (RLS REVOKE UPDATE/DELETE pour `authenticated`). Les nouveaux appels doivent passer par les RPCs SECURITY DEFINER listées en §28bis (`adjust_stock_v1`, `receive_stock_v1`, `record_incoming_stock_v1`, `waste_stock_v1`). Migration progressive Session 19+.
 - **Stock par section non-géré nativement** : la query `useStockByLocation` agrège côté client en sommant les `stock_movements` filtrés par `to_section_id` − `from_section_id`. C'est lent pour un catalogue large ; envisager une view matérialisée `mv_stock_by_section` rafraîchie périodiquement.
 - **Production : `recipe.output_quantity` est central** — un changement de `output_quantity` après création de recettes peut casser le calcul `batches_needed = ceil(suggested_qty / output_quantity)`. Toujours review les recettes existantes avant migration.
 - **Pas de batch / lot tracking natif** : le module ne gère pas les batch numbers ou expirations FEFO (First Expired First Out). Pour produits à DLC courte (croissants, viennoiseries), c'est une limite — workaround : produire en petite qty et synchroniser KDS pour vendre en priorité les anciens. Voir [Partie III — Backlog](#partie-iii--backlog-opérationnel) TASK-06-001.

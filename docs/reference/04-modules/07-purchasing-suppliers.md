@@ -1,6 +1,6 @@
 # 07 — Purchasing & Suppliers
 
-> **Last verified** : 2026-05-13
+> **Last verified** : 2026-05-17
 > **Structure** : ce fichier fusionne la **vue fonctionnelle** (le *pourquoi* et le *quoi* métier) et la **référence technique** (le *comment* implémenté). Pour les tâches à faire, voir [`../../workplan/backlog-by-module/07-purchasing-suppliers.md`](../../workplan/backlog-by-module/07-purchasing-suppliers.md).
 > **Related E2E flows** : [04-purchase-order-cycle](../08-flows-end-to-end/04-purchase-order-cycle.md).
 > **App de rattachement** : Backoffice (le module est exclusivement back-office — pas d'extension POS).
@@ -357,6 +357,7 @@ Pas de store dédié purchasing — react-query gère tout (stale 30s sur la lis
 | `create_purchase_journal_entry()` | Sur `purchase_orders` UPDATE, quand `NEW.status = 'received'` (et `OLD.status != 'received'`) → crée JE balanced : Dr `INVENTORY_GENERAL` (subtotal) + Dr `PURCHASE_VAT_INPUT` (tax) / Cr `PURCHASE_PAYABLE` (total). Avec garde fiscal period via `check_fiscal_period_open`. Idempotency via clé `(reference_type='purchase', reference_id=PO.id)`. |
 | `update_po_payment_status` | Recalcule `purchase_orders.payment_status` quand un `purchase_payment` est inséré (unpaid → partially_paid → paid). |
 | `log_po_history_on_status_change` | Insère automatiquement une ligne `purchase_order_history` à chaque changement de status. |
+| `tr_update_product_cost_on_purchase` (S17) | À chaque INSERT dans `stock_movements` avec `movement_type IN ('purchase', 'incoming')`, recalcule `products.cost_price` via formule WAC (Weighted Average Cost) : `new_cost = (old_cost × old_stock + receive_cost × receive_qty) / (old_stock + receive_qty)`. **Effet cascade** : ce nouveau `cost_price` déclenche en chaîne `tr_snapshot_on_product_cost_change` qui propage des snapshots dans `recipe_versions` pour **toutes les recettes ancestres** via WITH RECURSIVE walk (depth-5). Concrètement : recevoir un PO de farine met automatiquement à jour le coût matière de la farine, puis le coût de la pâte à pain (recette qui contient farine), puis le coût du sandwich (recette qui contient pâte à pain), etc. Migrations `20260521000012..013`. |
 
 ### RPCs PostgreSQL
 
@@ -413,6 +414,14 @@ Toutes les routes sont gardées par `RouteGuard permission="inventory.view"` (ou
 Le composant `POItemsTable` permet la saisie batch (cocher tous, qc_pass tous, set qty
 all-to-ordered) et appelle `usePurchaseOrderReception.receivePO()` qui fait un single
 batch upsert + transition status (validée par state machine).
+
+> **Effet de bord cost depuis S17** : la réception qui déclenche `INSERT INTO stock_movements (movement_type='purchase')` (via `receive_stock_v1` RPC SECURITY DEFINER — voir module 06 §28bis) active automatiquement `tr_update_product_cost_on_purchase` qui recalcule `products.cost_price` via WAC, puis cascade des snapshots `recipe_versions` aux recettes ancestres. Conséquence métier : à chaque réception, les marges théoriques de tous les produits finis utilisant cet ingrédient (directement ou indirectement via sub-recipes) sont automatiquement à jour. Voir module 15 §25bis pour la cascade complète.
+>
+> Side-effects connus :
+> - DEV-S17-1.B-01 : un `UPDATE products.cost_price` manuel par un manager (hors purchase) **bypasse** la WAC et n'émet pas de `stock_movements` audit row — possibilité de drift silencieux.
+> - DEV-S17-1.C-01 : WAC s'applique uniformément à tous les `purchase` movements ; pas d'opt-out pour réception d'échantillon ou stock promo (low priority).
+> - DEV-S17-1.C-02 : WAC garbage-in si `current_stock` est stale au moment du calcul.
+> - TASK-07-012 landed cost (shipping/douane pro-rata) reste **TODO** — la WAC consomme le `base_price` de la ligne PO, pas un landed cost composé.
 
 ---
 

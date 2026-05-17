@@ -1,6 +1,6 @@
 # 14 — Reports & Analytics
 
-> **Last verified** : 2026-05-13
+> **Last verified** : 2026-05-17
 > **Structure** : ce fichier fusionne la **vue fonctionnelle** (le *pourquoi* et le *quoi* métier) et la **référence technique** (le *comment* implémenté). Pour les tâches à faire, voir [`../../workplan/backlog-by-module/14-reports-analytics.md`](../../workplan/backlog-by-module/14-reports-analytics.md).
 > **Related E2E flows** : [10-end-of-day](../08-flows-end-to-end/10-end-of-day.md).
 > **App de rattachement** : Backoffice (pure lecture seule — alimente les reports via vues SQL).
@@ -595,8 +595,11 @@ Export Excel non listé : utilise directement `xlsx-js-style` (style cellules) d
 | `calculate_vat_payable(year, month)` | TABLE PB1 collectée / déductible / nette à payer |
 | `get_vat_by_category(year, month)` | Décomposition PB1 par catégorie produit |
 | `get_production_report(start, end)` | TABLE production aggregated par produit (qty, cost, waste) |
+| `recipe_cost_history_v1(p_product_id, p_start, p_end)` | **S18** — Dual-mode : `p_product_id IS NULL` → overview cross-recipe (first/last cost + delta_pct sur la période) ; `p_product_id IS NOT NULL` → timeline single-recipe (snapshots chrono). Gated `reports.financial.read`. Ignore legacy bare-array snapshots pré-S16 (sans cost reconstructible). Consommée par 2 nouvelles pages BO : `RecipeCostOverviewPage` + `RecipeCostTimelinePage` (recharts `LineChart`). |
 
 Voir [03-rpc-functions.md](../03-database/03-rpc-functions.md) pour les signatures complètes.
+
+**Rapport S18 — Recipe Cost History** : tile sur `ReportsIndexPage` + entrée Sidebar "Recipe Cost" + 2 routes (`/reports/recipe-cost` overview + `/reports/recipe-cost/:productId` timeline). Migration `20260522000010`. Follow-ups Session 19+ (tous informational) : pas d'index `(product_id, created_at DESC)` (DEV-S18-1.A-01), correlated subqueries vs window function (DEV-S18-2.A-01), CSV raw NUMERIC sans locale (DEV-S18-2.A-02), chart X-axis raw ISO dates (DEV-S18-2.B-01), pas de zoom interaction (DEV-S18-2.B-02).
 
 ---
 

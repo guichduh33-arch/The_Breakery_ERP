@@ -1,6 +1,6 @@
 # Travail — Purchasing & Suppliers
 
-> Last updated: 2026-05-03
+> Last updated: 2026-05-17
 > Référence : [`../04-modules/07-purchasing-suppliers.md`](../04-modules/07-purchasing-suppliers.md)
 > Audits sources : `02-accounting-business-audit.md`, `03-code-quality-schema-audit.md`, `07-product-backlog-audit.md`, `08-operations-lan-audit.md`
 
@@ -179,6 +179,7 @@
 
 ### TASK-07-012 — Landed cost (répartition frais de port pro-rata) [P3] [TODO]
 **Status note (2026-05-14)** : Not delivered Session 13. No `purchase_orders.allocation_method` column, no `landed_unit_cost` recalc on receipt, no cost_price uplift. V3 `purchase_orders` carries `subtotal`, `vat_amount`, `total_amount` only. Genuine gap — Session 14+ follow-up.
+**Status note (2026-05-17)** : PARTIAL — S17 a adressé **uniquement le `cost_price` uplift** côté produits via WAC (Weighted Average Cost) — pas le pro-rata frais de port. Trigger `tr_update_product_cost_on_purchase` (migration `20260521000013`) recalcule automatiquement `products.cost_price` à la réception PO via formule WAC : `new_cost = (old_cost × old_stock + receive_cost × receive_qty) / (old_stock + receive_qty)`. La cascade S17 propage ensuite ce nouveau cost vers les recettes ancestres via `tr_snapshot_on_product_cost_change` (snapshots `recipe_versions`). **Reste à faire** : `purchase_orders.allocation_method` + répartition shipping/douane/assurance au pro-rata avant de feed le WAC (actuellement la WAC consomme le `base_price` du PO, pas un landed cost calculé). Voir DEV-S17-1.B-01 (manual cost_price UPDATE bypass WAC + pas de stock_movements audit row), DEV-S17-1.C-01 (WAC uniforme, pas d'opt-out sample/promo), DEV-S17-1.C-02 (WAC garbage-in si `current_stock` stale).
 **Contexte** : aujourd'hui les frais de port (`shipping_cost`) gonflent le total PO mais ne sont pas répartis sur le coût de revient produit. Marges sous-évaluées.
 **Bénéfice attendu** : répartition automatique des frais de port (et autres frais : douane, assurance) au pro-rata du montant ou du poids des lignes — coût de revient juste.
 **Critère d'acceptation** :

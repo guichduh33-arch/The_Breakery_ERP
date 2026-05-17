@@ -1,6 +1,6 @@
 # Travail — Products & Categories
 
-> Last updated: 2026-05-03
+> Last updated: 2026-05-17
 > Référence : `docs/reference/04-modules/05-products-categories.md` (à créer)
 > Audits sources : `03-code-quality-schema-audit.md`, `05-uiux-design-audit.md`, `07-product-backlog-audit.md`
 
@@ -15,8 +15,9 @@
 
 ## Tâches
 
-### TASK-05-001 — F6 Sub-recipes (recettes composées) [P0] [BLOCKED]
+### TASK-05-001 — F6 Sub-recipes (recettes composées) [P0] [DONE]
 **Status note (2026-05-14)** : Deferred to Wave 7 / Session 14+ per decision pack D3 (recipes ownership = module 15) and INDEX line 1213 "Sub-recipes récursifs (F6 complet) | 14+". Session 13 Phase 2.A delivered FLAT recipes only (`supabase/migrations/20260517000060_init_recipes.sql`, `apps/backoffice/src/pages/inventory/RecipeEditorPage.tsx`); no self-FK / cycle guard / cost cascade was built. Commit `bdf21aa` (squashed PR #13).
+**Status note (2026-05-17)** : DONE — résolu par S15 + S17 ; **ownership canonique côté module 15** (voir TASK-15-001 pour le détail complet). Récap : S15 a livré l'anti-cycle 5-niveaux (`validate_recipe_no_cycle` trigger) + `calculate_recipe_cost` RPC cascade + `recipe_versions` append-only snapshots + bump `record_production_v1` avec déduction récursive matières feuilles ; S17 a complété la cascade complète (`recipe_bom_full_v1` depth-5 WITH RECURSIVE + `product_cost_at_version` full-cascade + trigger snapshot ancestres lors d'UPDATE recettes ou cost_price). UI : IngredientPicker tabs Product/Sub-recipe (S15) + RecipeEditor avec preview cost live + IngredientAggregatePreview multi-niveaux (rewired S17 vers la nouvelle RPC).
 **Contexte** : Un bakery a des recettes composées (croissant dough → 5 produits finis). Sans support, recipe costing inexact et production planning manuel. Source : `docs/audit/07-product-backlog-audit.md§Critical-3`.
 **Critère d'acceptation** :
 - [ ] Schema : `recipes` peut référencer une autre `recipe` comme « ingredient » (auto-FK self).
@@ -136,3 +137,11 @@
 - **F1 Expiry** dépend de la table products (ajouter `default_shelf_life_hours`) — cf. tâches inventory `TASK-06-001`.
 - **F5 Yield** liée aux recipes (ratio expected vs actual) — cf. `TASK-06-XXX` à venir.
 - **B2B pricing** : tables `b2b_price_lists` et `b2b_price_list_items` existent mais pas utilisées en UI (cf. `docs/audit/03-code-quality-schema-audit.md§A6`). Décision : implémenter ou supprimer ?
+
+## Session 16 → Session 17+ follow-ups
+
+Enrichissements `products` livrés en S16 dans le cadre des polish ingrédient-picker (cross-référence avec module 15).
+
+- **`products.is_semi_finished`** (boolean, migration `20260520000010..013`) — flag maintenu automatiquement par trigger `tr_recipes_recompute_is_semi_finished` après tout INSERT/UPDATE/DELETE sur `recipes` ou `recipe_ingredients`. Exprime « ce produit a une recette de profondeur ≥ 2 » (sous-recette utilisée par une autre recette), distinct de l'enum legacy `product_type` (`finished`/`semi_finished`/`raw_material`). Backfill inclus dans la migration. Résout DEV-S15-3.A-01.
+- **pg_trgm GIN indexes** (migration `20260520000013`) sur `products.name` et `products.sku` pour ranking trigramme dans le picker. Note follow-up DEV-S16-2.A-01 : les indexes ne sont pas encore engagés par le RPC `search_ingredients_v1` car le predicate utilise `ILIKE` sans opérateur `%` ni `set_limit()` — à activer Session 19+.
+- **`search_ingredients_v1` bump** (migration `20260520000014`) — RPC d'autocomplete utilisée par `IngredientPicker`, retourne `{product_id, name, sku, kind, score}` avec tri trigramme.

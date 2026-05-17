@@ -1,6 +1,6 @@
 # Travail — Inventory & Stock
 
-> Last updated: 2026-05-03
+> Last updated: 2026-05-17
 > Référence : [`../04-modules/06-inventory-stock.md`](../04-modules/06-inventory-stock.md)
 > Audits sources : `02-accounting-business-audit.md`, `03-code-quality-schema-audit.md`, `04-reports-testing-audit.md`, `07-product-backlog-audit.md`
 
@@ -156,6 +156,28 @@
 **Dépend de** : `TASK-06-006` (opname workflow)
 **Estimation** : `M`
 **Risques** : Aucun.
+
+### TASK-06-011 — WAC (Weighted Average Cost) auto-update on PO receipt [P1] [DONE]
+**Status note (2026-05-17)** : DONE — S17 livré. Nouveau pipeline non-backloggé (pas d'item TASK pre-existant) — créé pour tracer cette livraison structurellement importante (changement de modèle de cost matière première).
+**Contexte** : Avant S17, `products.cost_price` n'était jamais mis à jour automatiquement par les flux purchasing — manual UPDATE manager only. Conséquence : marges théoriques se désynchronisent du prix réel d'achat. Cross-module impact : `recipe_versions.snapshot.cost_price` calculé sur le cost stale donne des marges fausses.
+**Critère d'acceptation** :
+- [x] Trigger `tr_update_product_cost_on_purchase` sur `stock_movements` (migration `20260521000013`) : pour tout INSERT avec `movement_type IN ('purchase', 'incoming')`, calcule `new_cost = (old_cost × old_stock + receive_cost × receive_qty) / (old_stock + receive_qty)` et UPDATE `products.cost_price`
+- [x] Idempotent : utilise les valeurs au moment du mouvement (la réplay ne double pas l'effet)
+- [x] Cascade : trigger amont `tr_snapshot_on_product_cost_change` (migration `20260521000012`) déclenché par le nouveau `cost_price` propage via WITH RECURSIVE ancestor walk → snapshot `recipe_versions` pour toutes recettes ancestres (depth-5 limite anti-cycle)
+- [x] Tests : pgTAP `recipe_cascade_snapshot.test.sql` + Vitest live RPC
+**Fichiers concernés** :
+- `supabase/migrations/20260521000010_create_snapshot_recipe_version_helper.sql`
+- `supabase/migrations/20260521000011_bump_tr_snapshot_recipe_version_cascade.sql`
+- `supabase/migrations/20260521000012_create_tr_snapshot_on_product_cost_change.sql`
+- `supabase/migrations/20260521000013_create_tr_update_product_cost_on_purchase.sql`
+- `supabase/migrations/20260521000030_refresh_latest_recipe_version_full_cascade.sql`
+**Dépend de** : aucune (autonomous infra).
+**Estimation** : L (livré)
+**Risques actifs (follow-ups Session 19+)** :
+- DEV-S17-1.B-01 : manual `UPDATE products.cost_price` (hors purchase) bypasse WAC et n'émet pas de `stock_movements` audit row — possible silent drift si manager édite cost à la main
+- DEV-S17-1.C-01 : WAC s'applique uniformément à tous les `purchase` movements, pas d'opt-out pour sample stock / promo fournisseur (low)
+- DEV-S17-1.C-02 : WAC garbage-in si `current_stock` stale (informational)
+**Notes** : INDEX S17 `docs/workplan/plans/2026-05-17-session-17-INDEX.md`. Lié à TASK-07-012 (landed cost) qui pourrait préfixer la WAC avec un cost incluant shipping/douane pro-rata.
 
 ---
 

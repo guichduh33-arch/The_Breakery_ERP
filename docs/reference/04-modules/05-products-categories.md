@@ -1,6 +1,6 @@
 # 05 — Products & Categories
 
-> **Last verified** : 2026-05-13
+> **Last verified** : 2026-05-17
 > **Structure** : ce fichier fusionne la **vue fonctionnelle** (le *pourquoi* et le *quoi* métier — 4 sous-modules + catégories) et la **référence technique** (le *comment* implémenté : tables, hooks, services, RPCs, RLS). Pour les tâches à faire, voir [`../../workplan/backlog-by-module/05-products-categories.md`](../../workplan/backlog-by-module/05-products-categories.md).
 > **Related E2E flows** : [13-product-create](../08-flows-end-to-end/13-product-create.md), [14-customer-pricing](../08-flows-end-to-end/14-customer-pricing.md), [15-combo-build](../08-flows-end-to-end/15-combo-build.md), [16-product-import-xlsx](../08-flows-end-to-end/16-product-import-xlsx.md).
 > **App de rattachement** : Backoffice principalement (configuration catalogue, prix, combos, promos). Consommé en lecture par POS, KDS, Inventory, Purchasing, Production, Accounting.
@@ -496,7 +496,7 @@ flowchart LR
 
 | Table | Rôle |
 |---|---|
-| `products` | Catalogue (`sku`, `name`, `retail_price`, `wholesale_price`, `cost_price`, `category_id`, `product_type` (finished/semi_finished/raw_material), `current_stock`, `pos_visible`, `available_for_sale`, `track_inventory`, `is_made_to_order`, `deduct_ingredients`, `section_id`, `deleted_at`) |
+| `products` | Catalogue (`sku`, `name`, `retail_price`, `wholesale_price`, `cost_price`, `category_id`, `product_type` (finished/semi_finished/raw_material), `current_stock`, `pos_visible`, `available_for_sale`, `track_inventory`, `is_made_to_order`, `deduct_ingredients`, `section_id`, `deleted_at`) + **S15** `allergens[]` (array enum 14 valeurs EU) + **S15** `is_baker_percentage` (boolean — toggle pourcentage de boulanger) + **S15** `target_margin_pct` (seuil margin_alerts) + **S16** `is_semi_finished` (boolean maintenu par trigger `tr_recipes_recompute_is_semi_finished` — `true` ssi recette de profondeur ≥ 2, distinct de l'enum `product_type='semi_finished'`). **S16** GIN trigram indexes sur `name` + `sku` (pg_trgm). |
 | `categories` | Catégorie (`name`, `slug`, `icon`, `color`, `dispatch_station`, `sort_order`, `is_raw_material`, `show_in_pos`, `deleted_at`) |
 | `product_modifiers` | Modifiers product-level OU category-level (`group_name`, `group_type`, `group_required`, `option_label`, `price_adjustment`, `is_default`, `materials` JSONB pour variants matières) |
 | `product_combos` | Combos / menus (header) |
@@ -590,9 +590,16 @@ Le module **n'a pas de store Zustand dédié** — toutes les données passent p
 |---|---|---|
 | RPC | `get_customer_product_price(product_id, category_slug)` → DECIMAL | Résout le prix selon le tier customer (retail / wholesale / discount % / custom override). Implémentation dans `database.generated.ts:12044`. |
 | RPC | (insertion via `useCombos.create`) | Pas de RPC dédié — combo create fait 3 inserts séquentiels (combo + groups + items) côté client (`useCombos.ts:85-115`) |
+| RPC | `search_ingredients_v1(p_query, p_kind, p_limit)` (S15 + bump S16) | Autocomplete pour `IngredientPicker` (RecipeEditor module 15). Retourne `{product_id, name, sku, kind, score}` avec ranking trigramme. Kind = `raw_material | semi_finished | any`. S16 enrichi : `is_semi_finished` boolean fallback (DEV-S15-3.A-01) + `pg_trgm` GIN indexes activables sur `name`/`sku` (note follow-up DEV-S16-2.A-01 : indexes pas encore engagés par RPC predicate). |
 | Direct upsert | `products`, `categories`, `product_modifiers`, `product_combos`, `product_combo_groups`, `product_combo_group_items`, `product_category_prices`, `recipes`, `product_uoms` | Via `catalogSyncService` ou hooks directs |
 
 Pas d'Edge Function métier products — module purement DB.
+
+### Triggers automatiques (S16)
+
+- `tr_recipes_recompute_is_semi_finished` — recalcule `products.is_semi_finished` après tout INSERT/UPDATE/DELETE sur `recipes` ou `recipe_ingredients`. Maintient le flag boolean cohérent avec la structure BoM live (un produit devient `is_semi_finished=true` dès qu'il est utilisé comme ingrédient dans la recette d'un autre produit). Backfill inclus dans la migration `20260520000010..013`.
+
+Voir module 15 §25bis pour les triggers cost cascade S17 qui touchent `products.cost_price`.
 
 ---
 
