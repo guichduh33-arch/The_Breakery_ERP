@@ -32,9 +32,18 @@ SELECT is_empty(
   'no anon table/view GRANTs remain on postgres-owned public.*'
 );
 
--- A2 (Wave 2.5) : zero anon EXECUTE remains on public functions
--- Placeholder pass until Phase 2.5.A migration applied; replaced inline post-2.5.
-SELECT pass('A2 placeholder — Phase 2.5.A will replace with assertion');
+-- A2 (Wave 2.5) : zero anon EXECUTE remains on postgres-owned public functions.
+-- Excludes supabase_admin-owned pgtap extension functions (DEV-S20-2.A-01 carryover).
+SELECT is_empty(
+  $$ SELECT p.proname
+       FROM pg_proc p
+       JOIN pg_namespace n ON p.pronamespace = n.oid
+       JOIN pg_roles ro ON ro.oid = p.proowner
+      WHERE n.nspname = 'public'
+        AND has_function_privilege('anon', p.oid, 'EXECUTE')
+        AND ro.rolname != 'supabase_admin' $$,
+  'no anon function EXECUTE remains on postgres-owned public.*'
+);
 
 SELECT * FROM finish();
 ROLLBACK;
