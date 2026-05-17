@@ -54,6 +54,7 @@ export type Database = {
           account_class: number
           account_type: string
           balance_type: string
+          cash_flow_section: Database["public"]["Enums"]["cash_flow_section"]
           code: string
           created_at: string
           deleted_at: string | null
@@ -68,6 +69,7 @@ export type Database = {
           account_class: number
           account_type: string
           balance_type: string
+          cash_flow_section?: Database["public"]["Enums"]["cash_flow_section"]
           code: string
           created_at?: string
           deleted_at?: string | null
@@ -82,6 +84,7 @@ export type Database = {
           account_class?: number
           account_type?: string
           balance_type?: string
+          cash_flow_section?: Database["public"]["Enums"]["cash_flow_section"]
           code?: string
           created_at?: string
           deleted_at?: string | null
@@ -4754,6 +4757,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      cash_flow_v1: { Args: { p_from: string; p_to: string }; Returns: Json }
       check_fiscal_period_open: { Args: { p_date: string }; Returns: undefined }
       claim_print_job_v1: {
         Args: { p_device_id: string }
@@ -5998,6 +6002,7 @@ export type Database = {
         | "sulphites"
         | "lupin"
         | "molluscs"
+      cash_flow_section: "operating" | "investing" | "financing" | "none"
       customer_type: "retail" | "b2b"
       discount_template_type: "percentage" | "fixed_amount"
       loyalty_txn_type: "earn" | "redeem" | "adjust" | "refund"
@@ -6194,6 +6199,7 @@ export const Constants = {
         "lupin",
         "molluscs",
       ],
+      cash_flow_section: ["operating", "investing", "financing", "none"],
       customer_type: ["retail", "b2b"],
       discount_template_type: ["percentage", "fixed_amount"],
       loyalty_txn_type: ["earn", "redeem", "adjust", "refund"],

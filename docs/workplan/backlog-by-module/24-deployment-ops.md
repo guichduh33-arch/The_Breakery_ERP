@@ -185,3 +185,6 @@
 | P1 | 24-001, 24-002, 24-005, 24-008 |
 | P2 | 24-003, 24-004, 24-006, 24-011 |
 | P3 | 24-007, 24-009, 24-010 |
+
+
+**S21 update (2026-05-18):** `staging-deploy.yml` already secretized in S14 — minor S21 updates : add `master` push trigger + dispatch default ref to `swarm/session-21`. New `STAGING_SETUP.md` documents the 10 required secrets (`gh secret list` shows only `V3_DEV_PG_POOLER_URL` provisioned ; others need creation). Closes D-W6-CICD-01.

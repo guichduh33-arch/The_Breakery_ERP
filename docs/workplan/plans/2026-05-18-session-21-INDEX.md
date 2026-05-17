@@ -73,7 +73,7 @@ Wave 2 — Phase 2.A : closeout
 - [x] Spec dated 2026-05-18, 8 items + 8 risks + 4 streams.
 - [x] Branche `swarm/session-21` créée off `bd1374e` master.
 - [x] INDEX dated, 3 streams + closeout.
-- [ ] Commit INDEX.
+- [x] Commit INDEX.
 
 **Complexity :** S (~30min, mostly done).
 **Suggested executor :** lead.
@@ -444,7 +444,22 @@ Each stream subagent runs autonomously, commits as it goes, returns a final repo
 
 | ID | Phase | Severity | Description |
 |----|-------|----------|-------------|
-| `DEV-S21-X.X-XX` | — | — | *(placeholder — fill post-execution)* |
+| DEV-S21-1.A.1-01 | 1.A.1 | informational | EF `customer-birthday-notify` uses shared `x-cron-secret` header instead of vault-stored service_role Bearer. Fail-closed when env unset. |
+| DEV-S21-1.A.1-02 | 1.A.1 | informational | Vitest test requires manual `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` env vars. `BIRTHDAY_CRON_SECRET=birthday-cron-daily` must be set on deployed EF secret store. |
+| DEV-S21-1.A.1-03 | 1.A.1 | informational | Migration `_011` uses positional `extensions.http_post` named args — corrective `_012` swapped to `net.http_post` (correct schema for pg_net). |
+| DEV-S21-1.A.1-04 | 1.A.1 | low | The `x-cron-secret` literal `birthday-cron-daily` is hardcoded in migration `_011` body (visible in git history). Rotate via vault.secrets in S22+ — track as follow-up. |
+| DEV-S21-1.A.2-01 | 1.A.2 | informational | New RPC `cash_flow_v1` is additive ; pre-existing indirect-method `get_cash_flow_v1` still wired in BO hook (unchanged). |
+| DEV-S21-1.A.2-02 | 1.A.2 | informational | pgTAP test 6 inner-branch has an early-return path that is exercised only when accounts have no movements — not a defect, noted for coverage awareness. |
+| DEV-S21-1.B.1-01 | 1.B.1 | informational | `pos-login-order.spec.ts` skips cart/payment when catalog empty. |
+| DEV-S21-1.B.1-02 | 1.B.1 | informational | BO PIN reset spec uses 6-digit PIN matching the fixed regex. |
+| DEV-S21-1.B.1-03 | 1.B.1 | informational | Realtime broadcast assertion soft in kiosk spec — deterministic multi-context fixture out of scope. |
+| DEV-S21-1.B.1-04 | 1.B.1 | informational | Kiosk test prompts for kiosk-JWT pair when `E2E_KIOSK_JWT` absent — expected behavior. |
+| DEV-S21-1.B.1-05 | 1.B.1 | informational | README example PIN `123456` looks like a real credential — documentation-only, no functional impact. |
+| DEV-S21-1.B.2-01 | 1.B.2 | informational | `staging-deploy.yml` was already secretized in S14 — only minor updates needed (push trigger + dispatch default ref). |
+| DEV-S21-1.C.1-01 | 1.C.1 | accepted | LAN dedup lives in `packages/domain/src/lan/` (pre-existing S13 implementation) not `packages/lan-bus/` (does not exist). Functional TTL 5s requirement met. Added 2 GC boundary tests. |
+| DEV-S21-1.C.2-01 | 1.C.2 | informational | For timeouts ≤ 30s, `useIdleTimeout` warning fires at t=0 alongside main timer. No practical impact at production values (30-480 min). |
+| DEV-S21-1.C.2-02 | 1.C.2 | informational | `IdleWarningToast.handleStay` duplicates `clearInterval` inline — minor code quality nit, no functional impact. |
+| DEV-S21-1.C.4-01 | 1.C.4 | accepted | Spec requested `NumpadPin` → `PinPad` swap (per DEV-S19-3.C-01 naming). `PinPad` is verification-only (wired to `auth-verify-pin` EF, auto-submits) — cannot collect a new PIN in a wizard. `NumpadPin` retained ; S19 deviation note mischaracterised the issue. Sub-fixes (b) hint-at-step-2 and (c) mismatch-reset-to-step-2 both shipped. |
 
 ---
 
