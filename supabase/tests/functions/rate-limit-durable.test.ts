@@ -1,6 +1,6 @@
 // supabase/tests/functions/rate-limit-durable.test.ts
 // Session 19 / Phase 1.A — Live RPC smoke for record_rate_limit_v1.
-// Note: this file is SKIPPED until Phase 2.A wires checkRateLimitDurable.
+// Unskipped in Phase 2.A now that checkRateLimitDurable is wired.
 
 import { describe, it, expect } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
@@ -8,8 +8,7 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.VITE_SUPABASE_URL!;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
-// SKIP: re-enable in Phase 2.A once checkRateLimitDurable is wired (see INDEX §5).
-describe.skip('record_rate_limit_v1 (live)', () => {
+describe('record_rate_limit_v1 (live)', () => {
   const supabase = createClient(supabaseUrl, serviceKey);
 
   it('enforces max_per_window across two clients', async () => {
