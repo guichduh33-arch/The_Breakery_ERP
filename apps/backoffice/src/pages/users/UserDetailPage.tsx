@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ChevronLeft, KeyRound, Trash2, UserCog } from 'lucide-react';
 import { Button } from '@breakery/ui';
+import { evaluatePinStrength, type PinWeakReason } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useUserDetail } from '@/features/users/hooks/useUsersList.js';
 import { useRolesList } from '@/features/users/hooks/useRolesList.js';
@@ -24,11 +25,13 @@ export default function UserDetailPage() {
   const roles = useRolesList();
   const pinReset = useResetUserPin();
 
-  const [showRole,   setShowRole]   = useState<boolean>(false);
-  const [showDelete, setShowDelete] = useState<boolean>(false);
-  const [pinDraft,   setPinDraft]   = useState<string>('');
-  const [pinError,   setPinError]   = useState<string | null>(null);
-  const [pinSuccess, setPinSuccess] = useState<boolean>(false);
+  const [showRole,      setShowRole]      = useState<boolean>(false);
+  const [showDelete,    setShowDelete]    = useState<boolean>(false);
+  const [pinDraft,      setPinDraft]      = useState<string>('');
+  const [pinError,      setPinError]      = useState<string | null>(null);
+  const [pinSuccess,    setPinSuccess]    = useState<boolean>(false);
+  const [pinWeak,       setPinWeak]       = useState<boolean>(false);
+  const [pinWeakReason, setPinWeakReason] = useState<PinWeakReason>(null);
 
   const isSelf = user.data?.id === currentUserId;
   const canResetPin = canUpdate || isSelf;
@@ -44,7 +47,17 @@ export default function UserDetailPage() {
     pinReset.mutate(
       { user_id: id, new_pin: pinDraft },
       {
-        onSuccess: () => { setPinDraft(''); setPinSuccess(true); },
+        onSuccess: (response: { ok: true; weak?: boolean; weak_reason?: PinWeakReason }) => {
+          setPinDraft('');
+          setPinSuccess(true);
+          if (response.weak === true) {
+            setPinWeak(true);
+            setPinWeakReason(response.weak_reason ?? null);
+          } else {
+            setPinWeak(false);
+            setPinWeakReason(null);
+          }
+        },
         onError:   (e) => { setPinError(e.message); setPinSuccess(false); },
       },
     );
@@ -144,7 +157,18 @@ export default function UserDetailPage() {
               inputMode="numeric"
               maxLength={8}
               value={pinDraft}
-              onChange={(e) => { setPinDraft(e.target.value.replace(/[^0-9]/g, '')); }}
+              onChange={(e) => {
+                const v = e.target.value.replace(/[^0-9]/g, '');
+                setPinDraft(v);
+                if (v.length >= 4) {
+                  const s = evaluatePinStrength(v);
+                  setPinWeak(s.weak);
+                  setPinWeakReason(s.reason);
+                } else {
+                  setPinWeak(false);
+                  setPinWeakReason(null);
+                }
+              }}
               placeholder="4-8 digits"
               className="w-40 px-2 py-1.5 text-sm bg-bg-base border border-border-subtle rounded font-mono"
             />
@@ -152,11 +176,25 @@ export default function UserDetailPage() {
               {pinReset.isPending ? 'Resetting…' : 'Reset PIN'}
             </Button>
           </div>
+          {pinWeak && !pinSuccess && (
+            <p className="text-xs italic text-amber-600" data-testid="pin-weak-hint">
+              ⚠ Weak PIN ({pinWeakReason})
+            </p>
+          )}
           {pinError !== null && (
             <div className="text-xs text-rose-600">{pinError}</div>
           )}
           {pinSuccess && (
             <div className="text-xs text-emerald-600">PIN updated. The lockout (if any) is also cleared.</div>
+          )}
+          {pinSuccess && pinWeak && (
+            <div
+              role="alert"
+              className="mt-2 rounded border border-amber-400 bg-amber-50 px-3 py-2 text-xs text-amber-900"
+              data-testid="pin-weak-banner"
+            >
+              ⚠ This PIN is weak ({pinWeakReason}). Consider a stronger PIN next time.
+            </div>
           )}
         </div>
       )}
