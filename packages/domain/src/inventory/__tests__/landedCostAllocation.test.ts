@@ -154,7 +154,10 @@ describe('calculateLandedCostAllocation', () => {
     for (const r of result) {
       expect(r.allocation_share).toBeCloseTo(1 / 2, 10);
       expect(r.fallback_reason).toBe('degenerate_zero_metric');
-      expect(r.method_used).toBe('by_quantity');
+      // Degenerate equal-split is mathematically equivalent to by_value with
+      // all-equal unit_costs, so method_used is reported as 'by_value'
+      // regardless of the originally requested method.
+      expect(r.method_used).toBe('by_value');
     }
     expect(result[0]!.shipping_share).toBeCloseTo(50, 10);
     expect(result[1]!.shipping_share).toBeCloseTo(50, 10);
@@ -177,5 +180,31 @@ describe('calculateLandedCostAllocation', () => {
       // landed = 50 + (10/3) / 0.333
       expect(r.landed_unit_cost).toBeCloseTo(50 + 10 / 3 / 0.333, 6);
     }
+  });
+
+  it('by_weight with all weights = 0 (not null) — degenerate equal split + method_used reports by_value', () => {
+    // All weights are actual 0 (registered), not null — so the by_weight→by_value
+    // null-weight fallback does NOT fire. Instead, the metric sum is 0
+    // (qty * 0 = 0 for each line), triggering the degenerate equal-distribution
+    // branch. Per the contract, method_used reports 'by_value' on degenerate
+    // since equal split is equivalent to by_value with all-equal unit_costs.
+    const lines: PoLineForAllocation[] = [
+      { po_item_id: 'a', quantity: 5, unit_cost: 100, product_weight_grams: 0 },
+      { po_item_id: 'b', quantity: 10, unit_cost: 200, product_weight_grams: 0 },
+      { po_item_id: 'c', quantity: 4, unit_cost: 50, product_weight_grams: 0 },
+    ];
+    const result = calculateLandedCostAllocation(lines, 300, 'by_weight');
+
+    expect(result).toHaveLength(3);
+    for (const r of result) {
+      expect(r.method_used).toBe('by_value');
+      expect(r.fallback_reason).toBe('degenerate_zero_metric');
+      expect(r.allocation_share).toBeCloseTo(1 / 3, 10);
+      expect(r.shipping_share).toBeCloseTo(100, 10);
+    }
+    // landed_unit_cost = unit_cost + shipping_share / quantity
+    expect(result[0]!.landed_unit_cost).toBeCloseTo(100 + 100 / 5, 10);
+    expect(result[1]!.landed_unit_cost).toBeCloseTo(200 + 100 / 10, 10);
+    expect(result[2]!.landed_unit_cost).toBeCloseTo(50 + 100 / 4, 10);
   });
 });

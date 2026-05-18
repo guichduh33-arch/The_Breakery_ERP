@@ -8,6 +8,8 @@
 
 export type AllocationMethod = 'by_value' | 'by_weight' | 'by_quantity';
 
+// Note: field names use snake_case to mirror the DB column names consumed by the SQL RPC
+// `receive_po_v1` — keep aligned to avoid a manual mapping layer at the call sites.
 export interface PoLineForAllocation {
   po_item_id: string;
   /** Expected > 0. Zero is tolerated for degenerate handling but yields no per-unit amortization. */
@@ -48,9 +50,12 @@ export interface AllocationResult {
  *      `'by_value'` and `fallback_reason` is `'no_weight_on_<N>_lines'` where `<N>`
  *      is the count of NULL-weight lines.
  *   2. If the total metric sum is 0 (e.g. every quantity is 0, or by_value with
- *      every unit_cost = 0), the shipping is distributed equally (1/N per line)
- *      and `fallback_reason` is set to `'degenerate_zero_metric'` (this takes
- *      priority over the by_weight reason if both would apply).
+ *      every unit_cost = 0), the shipping is distributed equally (1/N per line),
+ *      `fallback_reason` is set to `'degenerate_zero_metric'` (this takes
+ *      priority over the by_weight reason if both would apply), AND
+ *      `method_used` is reported as `'by_value'` regardless of the requested
+ *      method, since equal distribution is mathematically equivalent to
+ *      by_value with all-equal unit_costs.
  *
  * Per-unit guard:
  *   - When `quantity === 0`, `landed_unit_cost` is returned equal to `unit_cost`
@@ -65,7 +70,7 @@ export interface AllocationResult {
  * @returns             One `AllocationResult` per input line, in the same order.
  */
 export function calculateLandedCostAllocation(
-  lines: PoLineForAllocation[],
+  lines: readonly PoLineForAllocation[],
   shipping_cost: number,
   method: AllocationMethod,
 ): AllocationResult[] {
@@ -119,9 +124,16 @@ export function calculateLandedCostAllocation(
     ? 'degenerate_zero_metric'
     : weightFallbackReason;
 
+  // Reported method differs from the metric-computation method on degenerate:
+  // an equal 1/N split is mathematically equivalent to by_value with all-equal
+  // unit_costs, so we surface 'by_value' rather than the (now misleading)
+  // originally-requested method. The `fallback_reason` already conveys the
+  // "we couldn't use the requested method" signal.
+  const reportedMethod: AllocationMethod = degenerate ? 'by_value' : effectiveMethod;
+
   // --- Step 4 : build results ----------------------------------------------
   return lines.map((line, i) => {
-    const allocation_share = shares[i]!;
+    const allocation_share = shares[i] ?? 0;
     const shipping_share = shipping_cost * allocation_share;
     const landed_unit_cost =
       line.quantity === 0 ? line.unit_cost : line.unit_cost + shipping_share / line.quantity;
@@ -132,7 +144,7 @@ export function calculateLandedCostAllocation(
       landed_unit_cost,
       allocation_share,
       shipping_share,
-      method_used: effectiveMethod,
+      method_used: reportedMethod,
       fallback_reason: finalReason,
     };
   });
