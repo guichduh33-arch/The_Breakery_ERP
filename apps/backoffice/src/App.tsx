@@ -1,6 +1,6 @@
 import { QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
-import { SkipToContent, Toaster, useIdleTimeout } from '@breakery/ui';
+import { SkipToContent, Toaster, useIdleTimeout, IdleWarningToast } from '@breakery/ui';
 import { queryClient } from './lib/queryClient.js';
 import { AppRoutes } from './routes/index.js';
 import { useAuthStore } from './stores/authStore.js';
@@ -28,6 +28,8 @@ export default function App() {
         {/* a11y: keyboard users tab here first to jump past nav chrome. */}
         <SkipToContent />
         <IdleTimeoutMount />
+        {/* S21 / 1.C.2 — idle warning overlay (DEV-S19-3.A-01) */}
+        <IdleWarningToast />
         <AppRoutes />
         <Toaster />
       </BrowserRouter>

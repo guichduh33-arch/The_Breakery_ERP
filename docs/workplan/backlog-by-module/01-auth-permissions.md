@@ -162,3 +162,6 @@
 - **Permission codes existants** (cf. `CLAUDE.md`) : `users.view`, `users.create`, `users.roles`, `settings.view`, `settings.update`. Ne pas créer de doublons.
 - **Helper RLS canonique** : `is_authenticated()` STABLE (cf. `CLAUDE.md`). Réutiliser pour toutes les nouvelles policies.
 - **Audit logs** : table `audit_logs` existe déjà. Toute nouvelle action sensible (rate limit, 2FA enroll, last-admin block) doit y écrire.
+
+
+**S21 update (2026-05-18):** `useIdleTimeout` fires `idle:warning` CustomEvent 30s before main timeout. New `IdleWarningToast` component (in `packages/ui`) renders countdown + "Stay signed in" button dispatching `idle:reset`. Mounted in POS + BO root layouts. Closes DEV-S19-3.A-01. Also : BO `UserDetailPage` PIN regex tightened to `^\d{6}$` matching `auth-change-pin` EF requirement. Closes DEV-S19-3.B-01.

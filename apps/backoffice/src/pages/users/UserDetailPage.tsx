@@ -38,8 +38,8 @@ export default function UserDetailPage() {
 
   function handleResetPin() {
     if (id === undefined) return;
-    if (!/^[0-9]{4,8}$/.test(pinDraft)) {
-      setPinError('PIN must be 4 to 8 digits.');
+    if (!/^[0-9]{6}$/.test(pinDraft)) {
+      setPinError('PIN must be exactly 6 digits.');
       setPinSuccess(false);
       return;
     }
@@ -155,12 +155,12 @@ export default function UserDetailPage() {
               aria-label="New PIN"
               type="password"
               inputMode="numeric"
-              maxLength={8}
+              maxLength={6}
               value={pinDraft}
               onChange={(e) => {
                 const v = e.target.value.replace(/[^0-9]/g, '');
                 setPinDraft(v);
-                if (v.length >= 4) {
+                if (v.length >= 6) {
                   const s = evaluatePinStrength(v);
                   setPinWeak(s.weak);
                   setPinWeakReason(s.reason);
@@ -169,10 +169,10 @@ export default function UserDetailPage() {
                   setPinWeakReason(null);
                 }
               }}
-              placeholder="4-8 digits"
+              placeholder="6 digits"
               className="w-40 px-2 py-1.5 text-sm bg-bg-base border border-border-subtle rounded font-mono"
             />
-            <Button onClick={handleResetPin} disabled={pinReset.isPending || pinDraft === ''}>
+            <Button onClick={handleResetPin} disabled={pinReset.isPending || pinDraft === ''} data-testid="reset-pin-button">
               {pinReset.isPending ? 'Resetting…' : 'Reset PIN'}
             </Button>
           </div>
@@ -185,7 +185,7 @@ export default function UserDetailPage() {
             <div className="text-xs text-rose-600">{pinError}</div>
           )}
           {pinSuccess && (
-            <div className="text-xs text-emerald-600">PIN updated. The lockout (if any) is also cleared.</div>
+            <div className="text-xs text-emerald-600" data-testid="pin-reset-success">PIN updated. The lockout (if any) is also cleared.</div>
           )}
           {pinSuccess && pinWeak && (
             <div

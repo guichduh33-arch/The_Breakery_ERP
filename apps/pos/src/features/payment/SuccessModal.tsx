@@ -88,7 +88,7 @@ export function SuccessModal(props: SuccessModalProps) {
 
   return (
     <FullScreenModal open={open} onOpenChange={() => { /* must click action */ }}>
-      <div className="m-auto bg-bg-overlay rounded-xl p-8 max-w-md w-full shadow-modal text-center space-y-6">
+      <div className="m-auto bg-bg-overlay rounded-xl p-8 max-w-md w-full shadow-modal text-center space-y-6" data-testid="receipt-success">
         <div className="grid place-items-center">
           <div className="h-16 w-16 rounded-full bg-green-soft border-2 border-green grid place-items-center">
             <Check className="h-8 w-8 text-green" strokeWidth={3} aria-hidden />

@@ -177,3 +177,6 @@
 | P1 | 21-001 |
 | P2 | 21-002, 21-003, 21-004, 21-005, 21-009 |
 | P3 | 21-006, 21-007, 21-008, 21-010, 21-011 |
+
+
+**S21 update (2026-05-18):** LAN message dedup audit confirms S13 implementation in `packages/domain/src/lan/messageDedup.ts` (TTL 5s, Map-based, auto-purge). Wired into `apps/pos/src/features/lan/{lanHub,lanClient}.ts`. Added 2 GC boundary tests (100-msg purge + post-TTL re-accept). Closes `08-operations-lan-audit§P1-1`. DEV-S21-1.C.1-01 (location difference vs spec : domain not `packages/lan-bus/`) — accepted.

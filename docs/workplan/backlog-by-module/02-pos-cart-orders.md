@@ -421,3 +421,6 @@
 - **Subscription pattern** : `cartStore.subscribeWithSelector` alimente `useDisplayBroadcast`. Toute modif store doit préserver ce comportement.
 - **Promotions auto** : `useCartPromotions` se déclenche sur chaque mutation cart. Toute optimisation perf doit valider que les promos restent calculées.
 - **POSAccessGuard** : protège la route POS via permission. Le panier peut être chargé avant que le guard finisse → race condition potentielle, à investiguer.
+
+
+**S21 update (2026-05-18):** `ChangePinModal` UX polish — (b) PIN strength hint surfaces at step 2 (entry) not step 3 (confirm), (c) on new/confirm mismatch, wizard resets to step 2 (entry) preserving current PIN. (a) `NumpadPin` → `PinPad` swap NOT viable (`PinPad` is EF-wired verification-only ; DEV-S21-1.C.4-01 documented in-file). Closes DEV-S19-3.C-02/03 ; DEV-S19-3.C-01 superseded by accepted deviation.

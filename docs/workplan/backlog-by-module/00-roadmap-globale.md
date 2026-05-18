@@ -1,6 +1,6 @@
 # Roadmap globale — The Breakery ERP (V3 monorepo)
 
-> Last updated: 2026-05-17 (S20 refresh)
+> Last updated: 2026-05-18 (S21 refresh)
 > Source initiale : agrégation des 8 audits 2026-04-09 + `CURRENT_STATE.md` + revue de code 2026-05-03
 > Refresh : intègre l'avancement S13-S20 (Sessions 13 à 19 mergées, S20 prête à merger)
 
@@ -19,7 +19,7 @@ Entre Session 13 (2026-05-13) et Session 20 (2026-05-17), The Breakery a effectu
 ### Ce qui reste (état 2026-05-17)
 
 1. **Compliance fiscale Indonésie** — I1 Faktur Pajak, I2 e-Faktur, I3 DJP. **Bloqué tant que le statut PKP n'est pas confirmé** par le propriétaire. **Reste l'unique gap métier majeur.**
-2. **Hardening résiduel** — ~~audit RLS `anon USING(true)` sur tables PII~~ DONE S13+S20 ; message dedup LAN (TTL 5s), Playwright E2E en CI (D-W6-6C-05), `pg_net` birthday cron (D-W6-6B-02), Cash Flow Investing/Financing sections (D-W6-6A-2), staging-deploy.yml secrets (D-W6-CICD-01).
+2. **Hardening résiduel** — ~~audit RLS `anon USING(true)` sur tables PII~~ DONE S13+S20 ; ~~message dedup LAN (TTL 5s)~~ DONE S13+S21 (audit + GC tests) ; ~~Playwright E2E en CI~~ DONE S21 (3-flow smoke nightly cron) ; ~~`pg_net` birthday cron~~ DONE S21 ; ~~Cash Flow Investing/Financing sections~~ DONE S21 ; ~~staging-deploy.yml secrets~~ DONE S21.
 3. **WAC polish** — landed cost shipping/douane pro-rata (TASK-07-012 partial S17), manual cost_price bypass de WAC (DEV-S17-1.B-01), opt-out sample/promo (DEV-S17-1.C-01).
 4. **Backlog métier secondaire** — modules 17 (tablet ordering polish), 18 (mobile shell Capacitor, gros chantier), 22 (design-system finitions), 16 (display polish).
 
@@ -39,9 +39,9 @@ Triées par impact business + risque. Le top 10 historique avait 5 items déjà 
 | # | Tâche | Module | Pri | Estim | Source / contexte |
 |---|-------|--------|-----|-------|-------------------|
 | 1 | Confirmer le statut PKP de The Breakery (débloque I1/I2/I3) | n/a (business) | P0 | S | `07-product-backlog-audit.md§Recommandations Immédiates` — **bloqueur business**, pas technique |
-| 3 | Message dedup LAN (TTL 5s) hub + client | 21-lan | P1 | M | `08-operations-lan-audit.md§P1-1` |
+| ~~3~~ | ~~Message dedup LAN (TTL 5s) hub + client~~ → **DONE S13 (impl) + S21 (audit confirme TTL 5s + 2 GC tests)** (Module 21-lan) | 21-lan | — | — | Closed S21 |
 | 5 | Fix modal focus traps : migrer modales custom vers shadcn `Dialog` (Radix) | 02-pos + cross-modules | P1 | L | `05-uiux-design-audit.md§A1-3` |
-| 6 | Playwright E2E en CI (D-W6-6C-05) | 23-tests | P2 | M | Workflow CI pre-S13, déféré Session 14+ |
+| ~~6~~ | ~~Playwright E2E en CI (D-W6-6C-05)~~ → **DONE S21** (Module 23-tests) | 23-tests | — | — | Closed S21 |
 | 7 | WAC landed cost shipping pro-rata (TASK-07-012 finir partial S17) | 07-purchasing | P3 | M | DEV-S17-1.B-01 + DEV-S17-1.C-01..02 |
 | 8 | Mobile shell Capacitor + push native (TASK-15-009 + TASK-18-***) | 18-mobile | P3 | XL | Wave 7 deferred, Session 16+ scope |
 | 9 | Compliance fiscale I1/I2/I3 (si PKP confirmé) | n/a (cross) | P0* | XL | `07-product-backlog-audit.md§Compliance` |
@@ -111,12 +111,13 @@ graph TD
 | S18 | 2026-05-17 | `swarm/session-18` | Recipe Cost History Report : RPC dual-mode + 2 pages BO (Overview + Timeline recharts) (5 commits, 1 migration) |
 | S19 | 2026-05-17 | swarm/session-19 | Hardening polish : durable rate-limit + session timeout per role + PIN strength warn (12-14 commits, 7 migrations) |
 | S20 | 2026-05-17 | swarm/session-20 | Defense-in-depth GRANT hardening : refund_sequences RLS, anon table-GRANT sweep, anon function-EXECUTE sweep (+ PUBLIC inheritance corrective `_31`), 5 operational authenticated USING(true) policies tightened (5 migrations) |
+| S21 | 2026-05-18 | swarm/session-21 | Polish hardening reliquat : pg_net birthday cron + cash flow 3-sections + Playwright E2E 3-flow CI + staging-deploy secrets + LAN dedup tests + idle warning toast + PIN regex fix + ChangePinModal UX (5 migrations, 1 EF, 3 e2e specs, 4 UI fixes) |
 
 ### Cadence prévisionnelle
 
 Le rythme actuel est de **~1 session tous les 1-3 jours**, taille variable (5-68 commits, 1-32 migrations). Pas de sprint formel — chaque session a son **INDEX** (`docs/workplan/plans/2026-MM-DD-session-N-INDEX.md`) qui sert de plan et de récap après merge. Les sessions sont organisées en Waves (0=spec, 1=DB+domain, 2=UI+BO, 3=review+types regen, 4=closeout).
 
-**Session 21+ : TBD** — triage du backlog résiduel post-S20. Candidats prioritaires : compliance fiscale (si PKP confirmé) | polish hardening (LAN dedup, Playwright CI) | WAC landed cost | mobile shell Capacitor | modal focus-trap migration.
+- **Session 22+ : TBD** — triage post-S21 merge. Candidats : compliance fiscale (si PKP confirmé) | WAC landed cost (TASK-07-012 partial) | modal focus-trap migration cross-modules | mobile shell Capacitor | DEV-S21-1.A.1-04 (rotate cron secret to vault.secrets).
 
 ---
 
@@ -137,6 +138,7 @@ Le rythme actuel est de **~1 session tous les 1-3 jours**, taille variable (5-68
 | Durable Postgres rate-limit sur EFs auth/order | enabled | DONE S19 (5 EFs wired : `auth-verify-pin`, `kiosk-issue-jwt` ×2, `refund-order`, `void-order`, `cancel-item`) |
 | Session timeout per role | configurable | DONE S19 (`roles.session_timeout_minutes` + `/settings/security` BO page) |
 | anon GRANTs / EXECUTE on `public.*` | 0 | DONE S20 (tables + views + functions, ALTER DEFAULT PRIVILEGES future-proofed) |
+| Items hardening reliquat S13-S19 fermés | 8/8 | DONE S21 |
 
 ---
 

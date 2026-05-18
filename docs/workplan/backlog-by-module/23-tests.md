@@ -181,3 +181,6 @@
 | P1 | 23-001, 23-002, 23-003, 23-004, 23-008 |
 | P2 | 23-005, 23-006, 23-007 |
 | P3 | 23-009, 23-010, 23-011 |
+
+
+**S21 update (2026-05-18):** Playwright E2E in CI landed. `playwright.config.ts` root + 2 projects (pos, backoffice). 3 specs in `tests/e2e/` : POS login+complete_order, BO admin PIN reset, kiosk display load. Nightly cron `0 22 * * *` UTC + manual `workflow_dispatch` via `.github/workflows/playwright-e2e.yml`. `data-testid` selectors added across 7 components. Closes D-W6-6C-05. First-run may flake — nightly-only avoids blocking PRs.

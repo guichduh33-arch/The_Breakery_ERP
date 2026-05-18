@@ -329,3 +329,6 @@
 **Estimation** : L
 **Risques** : règles fiscales indonésiennes évoluent — externaliser le moteur de calcul dans une config versionnée.
 **Notes** : ne remplace pas le conseil fiscal — outil d'aide à la décision.
+
+
+**S21 update (2026-05-18):** Cash Flow report gains Investing + Financing sections. Migration block `20260525000020..021`. New `cash_flow_section` ENUM (`operating/investing/financing/none`) on `accounts` (NOT NULL DEFAULT `operating`). New `cash_flow_v1(date,date) RETURNS jsonb` with 3-section totals + net_change + lines. Granted to `authenticated`, revoked from `anon` AND `PUBLIC` (S20 defense-in-depth). pgTAP 10/10. BO `CashFlowPage.tsx` updated. Closes D-W6-6A-2.

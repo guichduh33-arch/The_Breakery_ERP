@@ -207,3 +207,6 @@
 - **Functions DB existantes** : `add_loyalty_points` / `redeem_loyalty_points` (cf. `CLAUDE.md`). Toujours passer par ces RPCs pour atomicité.
 - **Customer pricing** : `retail` (standard), `wholesale`, `discount_percentage`, `custom` — la résolution finale via `get_customer_product_price()`.
 - **PII** : nom, téléphone, birthday = PII. Toute nouvelle feature doit (a) opt-in customer, (b) audit log accès, (c) Sentry mask in replays (cf. `TASK-01-009`).
+
+
+**S21 update (2026-05-18):** `pg_net`-based birthday cron landed. Migration block `20260525000010..012` (incl. corrective `_012` for `net.http_post` schema). EF `customer-birthday-notify` deployed (ACTIVE on V3 dev), `x-cron-secret` shared-secret auth (fail-closed), pg_cron `birthday-daily-ef` schedule `0 2 * * *` (09:00 ICT). Closes D-W6-6B-02. Follow-up DEV-S21-1.A.1-04 : rotate hardcoded `birthday-cron-daily` secret to `vault.secrets` in S22+.

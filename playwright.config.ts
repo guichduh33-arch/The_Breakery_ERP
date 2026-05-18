@@ -1,47 +1,46 @@
 // playwright.config.ts
 //
-// Session 13 / Phase 6.C — Playwright config for cross-app E2E. Projects:
-//   - chromium-pos        : POS app at http://localhost:5173
-//   - chromium-backoffice : BO app at http://localhost:5174
+// Session 13 / Phase 6.C — Playwright config for cross-app E2E.
+// Session 21 / Phase 1.B.1 — extended with pos + backoffice named projects,
+//   E2E_POS_URL / E2E_BO_URL env vars (used by nightly GHA workflow), and
+//   3 new S21 spec files wired to correct projects.
 //
-// Local note (D-W6-6C-05): the dev servers (`pnpm dev`) + seeded staging DB
-// must be running for `pnpm e2e` to succeed end-to-end. `pnpm e2e --list`
-// works without any server. CI Linux runners will boot the dev servers via a
-// follow-up workflow.
+// Local note (D-W6-6C-05 / D-S21-1.B.1): the dev servers (`pnpm dev`) + seeded
+// staging DB must be running for `pnpm test:e2e` to succeed end-to-end.
+// `pnpm test:e2e -- --list` works without any server.
+// CI Linux runners install Chromium + run against staging URLs via secrets.
 
 import { defineConfig, devices } from '@playwright/test';
-
-const POS_BASE_URL = process.env.POS_BASE_URL ?? 'http://localhost:5173';
-const BO_BASE_URL  = process.env.BO_BASE_URL  ?? 'http://localhost:5174';
 
 export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: false, // E2E specs may share staging DB state — run serially.
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
+  retries: 2,
   workers: 1,
   reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : 'list',
   use: {
-    actionTimeout: 10_000,
-    trace: 'on-first-retry',
+    baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:5173',
     screenshot: 'only-on-failure',
+    trace: 'on-first-retry',
     video: 'retain-on-failure',
+    actionTimeout: 10_000,
   },
   projects: [
     {
-      name: 'chromium-pos',
-      testMatch: /complete-order\.spec\.ts$/,
+      name: 'pos',
+      testMatch: /(complete-order|pos-login-order)\.spec\.ts$/,
       use: {
         ...devices['Desktop Chrome'],
-        baseURL: POS_BASE_URL,
+        baseURL: process.env.E2E_POS_URL ?? process.env.E2E_BASE_URL ?? 'http://localhost:5173',
       },
     },
     {
-      name: 'chromium-backoffice',
-      testMatch: /(opname-finalize|po-receive)\.spec\.ts$/,
+      name: 'backoffice',
+      testMatch: /(opname-finalize|po-receive|bo-admin-pin-reset|kiosk-display-realtime)\.spec\.ts$/,
       use: {
         ...devices['Desktop Chrome'],
-        baseURL: BO_BASE_URL,
+        baseURL: process.env.E2E_BO_URL ?? process.env.E2E_BASE_URL ?? 'http://localhost:5174',
       },
     },
   ],

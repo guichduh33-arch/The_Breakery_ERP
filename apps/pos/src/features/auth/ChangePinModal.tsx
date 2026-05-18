@@ -1,12 +1,14 @@
 // apps/pos/src/features/auth/ChangePinModal.tsx
 // Session 19 / Phase 3.C — Self-change PIN modal (Thread C).
+// Session 21 / Phase 1.C.4 — UX polish (DEV-S19-3.C-01..03).
 //
 // 3 steps : 'current' → 'new' → 'confirm'.
 //   1. Current PIN  — collected, will be verified server-side by the EF
 //                     (wrong current PIN → toast + reset to step 1).
 //   2. New PIN      — live weak hint via `evaluatePinStrength` from
 //                     `@breakery/utils` (warn-only per D13).
-//   3. Confirm PIN  — must match step 2 ; mismatch → toast + reset to step 1.
+//   3. Confirm PIN  — must match step 2 ; mismatch → toast + reset to step 2
+//                     (S21: was step 1, now step 2 — DEV-S19-3.C-03).
 //
 // On submit success : toast "PIN updated." (+ weak warning if EF returns
 // `weak: true`). EF response is read as the extended shape from Phase 2.B
@@ -19,6 +21,9 @@
 // `auth-verify-pin` directly) and cannot be reused as a collection-only step.
 // `NumpadPin` is the canonical primitive for collect-then-confirm flows
 // (already used by `RefundOrderModal` for manager PIN).
+// DEV-S21-1.C.4-01 : spec requested swap NumpadPin→PinPad (DEV-S19-3.C-01)
+// but PinPad is wired to auth-verify-pin EF and cannot collect a new PIN —
+// NumpadPin remains the correct primitive. Deviation recorded in INDEX §10.
 
 import { useState, type JSX } from 'react';
 import { X } from 'lucide-react';
@@ -83,6 +88,17 @@ export function ChangePinModal({ open, onClose, userId }: ChangePinModalProps): 
     change.reset();
   }
 
+  /** S21 / 1.C.4-c : on mismatch, go back to step 2 (re-enter new PIN) rather
+   * than step 1 (re-verify old PIN). The old PIN is still valid — no need to
+   * ask again. We keep `newPin` so the weak-hint at step 2 can still render
+   * if the previous choice was weak. DEV-S19-3.C-03. */
+  function resetToNew(): void {
+    // Keep newPin so step-2 weak hint shows for previously committed weak PIN.
+    setStep('new');
+    setPadKey((k) => k + 1);
+    change.reset();
+  }
+
   function close(): void {
     reset();
     onClose();
@@ -111,8 +127,8 @@ export function ChangePinModal({ open, onClose, userId }: ChangePinModalProps): 
 
     // step === 'confirm'
     if (pin !== newPin) {
-      toast.error('PINs do not match. Start over.');
-      reset();
+      toast.error('PINs do not match. Please re-enter your new PIN.');
+      resetToNew(); // S21: was reset() (→ step 1), now resetToNew() (→ step 2)
       return;
     }
 
@@ -178,10 +194,12 @@ export function ChangePinModal({ open, onClose, userId }: ChangePinModalProps): 
           isLoading={change.isPending}
         />
 
-        {/* Show weak-hint after the new PIN has been committed (steps 'new'
-            re-entry after a mismatch, and 'confirm' before the user re-types).
-            The user can still cancel + start over with a stronger choice. */}
-        {(step === 'new' || step === 'confirm') && newPin.length === 6 && newStrength.weak && (
+        {/* S21 / 1.C.4-b: show weak-hint at step 2 (new PIN entry) only —
+            not at step 3 (confirm). This surfaces the feedback while the user
+            is choosing, not after confirmation. DEV-S19-3.C-02.
+            On first entry newPin is '' (hint hidden). On re-entry after mismatch
+            the hint shows if the previously committed PIN was weak. */}
+        {step === 'new' && newPin.length === 6 && newStrength.weak && (
           <p
             className="text-xs italic text-amber-600 text-center"
             data-testid="pin-weak-hint"

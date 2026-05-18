@@ -98,7 +98,8 @@ describe('ChangePinModal', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('advances current → new → confirm and shows weak hint when newPin is weak', () => {
+  // S21 / 1.C.4-b : hint surface moved to step 2 (entry) from step 3 (confirm).
+  it('advances current → new → confirm, hint NOT at step 3 (moved to step 2)', () => {
     render(wrap(<ChangePinModal open={true} onClose={vi.fn()} userId="u1" />));
 
     // Step 1 : fire the current PIN.
@@ -111,14 +112,36 @@ describe('ChangePinModal', () => {
     setNextPin('123456');
     fireEvent.click(screen.getByTestId('fire-pin'));
 
-    // We are now at step 3 with newPin='123456' — hint should be visible.
+    // S21: We are now at step 3 (confirm). Hint is NOT shown here.
     expect(screen.getByText(/confirm new pin/i)).toBeInTheDocument();
     expect(screen.getByText(/step 3 of 3/i)).toBeInTheDocument();
+    expect(screen.queryByTestId('pin-weak-hint')).toBeNull();
+  });
+
+  // S21 / 1.C.4-b : hint shows at step 2 when returning after mismatch.
+  it('shows weak hint at step 2 when returning after mismatch with a weak pin', () => {
+    render(wrap(<ChangePinModal open={true} onClose={vi.fn()} userId="u1" />));
+
+    setNextPin('999111');
+    fireEvent.click(screen.getByTestId('fire-pin')); // step 1 → 2
+
+    // Enter a weak new PIN.
+    setNextPin('123456');
+    fireEvent.click(screen.getByTestId('fire-pin')); // step 2 → 3 (newPin='123456')
+
+    // Mismatch at confirm → S21 resets to step 2 (not step 1).
+    setNextPin('111111');
+    fireEvent.click(screen.getByTestId('fire-pin')); // step 3 : mismatch → step 2
+
+    expect(screen.getByText(/enter new pin/i)).toBeInTheDocument();
+    expect(screen.getByText(/step 2 of 3/i)).toBeInTheDocument();
+    // At step 2 with newPin='123456' still set — hint should now be visible.
     expect(screen.getByTestId('pin-weak-hint')).toBeInTheDocument();
     expect(screen.getByTestId('pin-weak-hint').textContent).toMatch(/sequence/);
   });
 
-  it('mismatching confirm toasts error and resets to step 1', () => {
+  // S21 / 1.C.4-c : mismatch resets to step 2 (not step 1).
+  it('mismatching confirm toasts error and resets to step 2 (not step 1)', () => {
     render(wrap(<ChangePinModal open={true} onClose={vi.fn()} userId="u1" />));
 
     setNextPin('999111');
@@ -129,8 +152,9 @@ describe('ChangePinModal', () => {
     fireEvent.click(screen.getByTestId('fire-pin')); // step 3 : mismatch
 
     expect(toastMock.error).toHaveBeenCalledWith(expect.stringMatching(/do not match/i));
-    expect(screen.getByText(/enter current pin/i)).toBeInTheDocument();
-    expect(screen.getByText(/step 1 of 3/i)).toBeInTheDocument();
+    // S21: resets to step 2 (enter new PIN), not step 1 (enter current PIN).
+    expect(screen.getByText(/enter new pin/i)).toBeInTheDocument();
+    expect(screen.getByText(/step 2 of 3/i)).toBeInTheDocument();
   });
 
   it('submits on matching confirm and shows weak warning in success toast', async () => {
