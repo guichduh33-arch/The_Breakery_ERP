@@ -19,6 +19,7 @@
 
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { handleCors, jsonResponse } from '../_shared/cors.ts';
+import { rateLimitedResponse } from '../_shared/responses.ts';
 import { getAdminClient } from '../_shared/supabase-admin.ts';
 import { checkRateLimitDurable, getClientIp } from '../_shared/rate-limit.ts';
 import { signJwt, getJwtSecret } from '../_shared/jwt.ts';
@@ -93,7 +94,8 @@ serve(async (req) => {
     windowSec:    60,
   });
   if (!ipRL.allowed) {
-    return jsonResponse({ error: 'rate_limited', retry_after_sec: ipRL.retryAfterSec }, 429);
+    // S22 / 1.B.2 — DEV-S19-2.A-02 : surface Retry-After header (IP bucket).
+    return rateLimitedResponse(ipRL.retryAfterSec);
   }
 
   // (b) IP allowlist (env-gated)
@@ -126,7 +128,8 @@ serve(async (req) => {
     windowSec:    60,
   });
   if (!kRL.allowed) {
-    return jsonResponse({ error: 'rate_limited', retry_after_sec: kRL.retryAfterSec }, 429);
+    // S22 / 1.B.2 — DEV-S19-2.A-02 : surface Retry-After header (kiosk_id bucket).
+    return rateLimitedResponse(kRL.retryAfterSec);
   }
 
   // (e) JWT secret check (env)
