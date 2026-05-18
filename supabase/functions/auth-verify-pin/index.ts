@@ -1,6 +1,7 @@
 // supabase/functions/auth-verify-pin/index.ts
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { handleCors, jsonResponse } from '../_shared/cors.ts';
+import { rateLimitedResponse } from '../_shared/responses.ts';
 import { getAdminClient } from '../_shared/supabase-admin.ts';
 import { checkRateLimitDurable, getClientIp } from '../_shared/rate-limit.ts';
 import { computePermissionsForRole, checkPermissionForRole } from '../_shared/permissions.ts';
@@ -38,7 +39,8 @@ serve(async (req) => {
     windowSec:     60,
   });
   if (!rl.allowed) {
-    return jsonResponse({ error: 'rate_limited', retry_after_sec: rl.retryAfterSec }, 429);
+    // S22 / 1.B.2 — DEV-S19-2.A-02 : surface Retry-After header alongside body.
+    return rateLimitedResponse(rl.retryAfterSec);
   }
 
   let body: VerifyPinPayload;

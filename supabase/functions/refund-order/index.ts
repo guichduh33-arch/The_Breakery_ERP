@@ -12,6 +12,7 @@
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.47.10';
 import { handleCors, jsonResponse } from '../_shared/cors.ts';
+import { rateLimitedResponse } from '../_shared/responses.ts';
 import { checkRateLimitDurable, getClientIp } from '../_shared/rate-limit.ts';
 import { verifyManagerPin } from '../_shared/manager-pin.ts';
 
@@ -40,7 +41,8 @@ serve(async (req) => {
     maxPerWindow: 10,
     windowSec:    60,
   });
-  if (!rl.allowed) return jsonResponse({ error: 'rate_limited', retry_after_sec: rl.retryAfterSec }, 429);
+  // S22 / 1.B.2 — DEV-S19-2.A-02 : surface Retry-After header alongside body.
+  if (!rl.allowed) return rateLimitedResponse(rl.retryAfterSec);
 
   const authHeader = req.headers.get('authorization');
   if (!authHeader || !authHeader.startsWith('Bearer ')) {

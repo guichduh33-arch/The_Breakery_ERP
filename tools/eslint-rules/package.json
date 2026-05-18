@@ -1,0 +1,7 @@
+{
+  "name": "@breakery/eslint-rules",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Local ESLint rules for The Breakery monorepo. Loaded by `eslint.config.mjs` via a relative import, not via the pnpm workspace graph — keeping the rules dependency-free and easy to evolve in-tree."
+}

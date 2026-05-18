@@ -2,6 +2,7 @@ import tseslint from 'typescript-eslint';
 import reactPlugin from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
 import importPlugin from 'eslint-plugin-import';
+import breakeryLocal from './tools/eslint-rules/no-raw-modal-overlay.mjs';
 
 export default tseslint.config(
   {
@@ -19,7 +20,8 @@ export default tseslint.config(
     plugins: {
       react: reactPlugin,
       'react-hooks': reactHooks,
-      import: importPlugin
+      import: importPlugin,
+      'breakery-local': breakeryLocal
     },
     settings: {
       react: { version: 'detect' },
@@ -33,6 +35,11 @@ export default tseslint.config(
       'react/prop-types': 'off',
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'warn',
+      // Session 22 / Phase 1.A.2 — Forbids raw fullscreen overlay <div>s
+      // (`className="fixed inset-0"` or `style={{position:'fixed', inset: 0}}`)
+      // outside `packages/ui/**`. Forces consumers through Radix-backed modal
+      // primitives that handle focus-trap + Esc + a11y for free.
+      'breakery-local/no-raw-modal-overlay': 'error',
       'import/no-restricted-paths': ['error', {
         zones: [
           { target: './packages/domain', from: './packages/ui' },
