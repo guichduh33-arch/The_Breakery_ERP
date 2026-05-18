@@ -19,7 +19,7 @@ import {
 } from '../Sheet.js';
 
 function Harness({
-  onOpenChange,
+  onOpenChange = (): void => {},
 }: {
   onOpenChange?: (open: boolean) => void;
 }) {
