@@ -6,7 +6,8 @@
 
 /** Matches the `stock_movement_type` enum in the DB. Phase 1 (session 12 complete)
  *  extended the enum with directional + sectioned movement types — keep this list
- *  in lockstep with `supabase/migrations/20260516000014_extend_movement_type_enum.sql`. */
+ *  in lockstep with `supabase/migrations/20260516000014_extend_movement_type_enum.sql`
+ *  and `supabase/migrations/20260526000011_extend_movement_type_with_cost_price_correction.sql`. */
 export type MovementType =
   | 'sale'
   | 'sale_void'
@@ -26,7 +27,9 @@ export type MovementType =
   | 'incoming'
   | 'purchase_return'
   | 'reservation_hold'
-  | 'reservation_release';
+  | 'reservation_release'
+  // S22 extension (DEV-S17-1.B-01) :
+  | 'cost_price_correction';
 
 /** Reference table for tracing the source of a movement. */
 export type StockMovementReferenceType =

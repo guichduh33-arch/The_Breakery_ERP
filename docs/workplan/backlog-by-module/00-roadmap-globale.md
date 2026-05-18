@@ -40,7 +40,7 @@ Triées par impact business + risque. Le top 10 historique avait 5 items déjà 
 |---|-------|--------|-----|-------|-------------------|
 | 1 | Confirmer le statut PKP de The Breakery (débloque I1/I2/I3) | n/a (business) | P0 | S | `07-product-backlog-audit.md§Recommandations Immédiates` — **bloqueur business**, pas technique |
 | ~~3~~ | ~~Message dedup LAN (TTL 5s) hub + client~~ → **DONE S13 (impl) + S21 (audit confirme TTL 5s + 2 GC tests)** (Module 21-lan) | 21-lan | — | — | Closed S21 |
-| ~~5~~ | ~~Fix modal focus traps : migrer modales custom vers shadcn `Dialog` (Radix)~~ → **DONE S22 (lock-in via RTL+ESLint)** (Module 22-design-system) | 22-design-system | — | — | Closed S22 — empirical audit confirmed all 30+ modals in `apps/` route through Radix-backed primitives ; 16 RTL focus-trap regression tests in `packages/ui/src/{primitives,components}/__tests__/*.focus-trap.test.tsx` lock behavior in. ESLint custom rule deferred — see S22 INDEX §10 (DEV-S22-1.A-01) |
+| ~~5~~ | ~~Fix modal focus traps : migrer modales custom vers shadcn `Dialog` (Radix)~~ → **DONE S22 (lock-in via RTL+ESLint+a11y fix)** (Module 22-design-system) | 22-design-system | — | — | Closed S22 — empirical audit confirmed all 30+ modals in `apps/` route through Radix-backed primitives ; 16 RTL focus-trap regression tests in `packages/ui/src/{primitives,components}/__tests__/*.focus-trap.test.tsx` lock behavior in ; ESLint rule `no-raw-modal-overlay` shipped via inline `tools/eslint-rules/` flat-config plugin (`breakery-local` at level `error`) ; pre-existing raw overlay in `MarginWatchPage.tsx:195` discovered + migrated to `<Dialog>` in same commit |
 | ~~6~~ | ~~Playwright E2E en CI (D-W6-6C-05)~~ → **DONE S21** (Module 23-tests) | 23-tests | — | — | Closed S21 |
 | 7 | WAC landed cost shipping pro-rata (TASK-07-012 finir partial S17) | 07-purchasing | P3 | M | DEV-S17-1.B-01 + DEV-S17-1.C-01..02 |
 | 8 | Mobile shell Capacitor + push native (TASK-15-009 + TASK-18-***) | 18-mobile | P3 | XL | Wave 7 deferred, Session 16+ scope |
@@ -112,13 +112,13 @@ graph TD
 | S19 | 2026-05-17 | swarm/session-19 | Hardening polish : durable rate-limit + session timeout per role + PIN strength warn (12-14 commits, 7 migrations) |
 | S20 | 2026-05-17 | swarm/session-20 | Defense-in-depth GRANT hardening : refund_sequences RLS, anon table-GRANT sweep, anon function-EXECUTE sweep (+ PUBLIC inheritance corrective `_31`), 5 operational authenticated USING(true) policies tightened (5 migrations) |
 | S21 | 2026-05-18 | swarm/session-21 | Polish hardening reliquat : pg_net birthday cron + cash flow 3-sections + Playwright E2E 3-flow CI + staging-deploy secrets + LAN dedup tests + idle warning toast + PIN regex fix + ChangePinModal UX (5 migrations, 1 EF, 3 e2e specs, 4 UI fixes) |
-| S22 | 2026-05-18 | swarm/session-22 | Focus-trap lock-in + WAC bypass guard + Retry-After 429 (2 streams, 2 migrations) |
+| S22 | 2026-05-18 | swarm/session-22 | Focus-trap lock-in + WAC bypass guard + Retry-After 429 (2 streams parallèles + closeout, 8 commits, 5 migrations `20260526000010..014`, 4 RTL focus-trap test files + ESLint inline rule + RPC `update_cost_price_v1` + 5 EFs wired) |
 
 ### Cadence prévisionnelle
 
 Le rythme actuel est de **~1 session tous les 1-3 jours**, taille variable (5-68 commits, 1-32 migrations). Pas de sprint formel — chaque session a son **INDEX** (`docs/workplan/plans/2026-MM-DD-session-N-INDEX.md`) qui sert de plan et de récap après merge. Les sessions sont organisées en Waves (0=spec, 1=DB+domain, 2=UI+BO, 3=review+types regen, 4=closeout).
 
-- **Session 22+ : TBD** — triage post-S21 merge. Candidats : compliance fiscale (si PKP confirmé) | WAC landed cost (TASK-07-012 partial) | modal focus-trap migration cross-modules | mobile shell Capacitor | DEV-S21-1.A.1-04 (rotate cron secret to vault.secrets).
+- **Session 23+ : TBD** — triage post-S22 merge. Candidats : compliance fiscale (si PKP confirmé) | WAC landed cost shipping/douane pro-rata (TASK-07-012 finir — DEV-S17-1.B-01 closed S22) | mobile shell Capacitor | DEV-S21-1.A.1-04 (rotate cron secret to vault.secrets) | quality reviewer NICE-TO-HAVE polish (S22 INDEX §10 informational items).
 
 ---
 
@@ -140,7 +140,9 @@ Le rythme actuel est de **~1 session tous les 1-3 jours**, taille variable (5-68
 | Session timeout per role | configurable | DONE S19 (`roles.session_timeout_minutes` + `/settings/security` BO page) |
 | anon GRANTs / EXECUTE on `public.*` | 0 | DONE S20 (tables + views + functions, ALTER DEFAULT PRIVILEGES future-proofed) |
 | Items hardening reliquat S13-S19 fermés | 8/8 | DONE S21 |
-| Modal focus-trap audit | locked-in | DONE S22 (16 RTL tests on Dialog/Sheet/FullScreenModal/CenterModal ; ESLint `no-raw-modal-overlay` deferred — see S22 INDEX §10 DEV-S22-1.A-01) |
+| Modal focus-trap audit | locked-in | DONE S22 (16 RTL tests on Dialog/Sheet/FullScreenModal/CenterModal + ESLint `no-raw-modal-overlay` rule wired at `error` in root flat config + 1 pre-existing raw overlay remediated in MarginWatchPage) |
+| WAC bypass guard sur `products.cost_price` | enabled | DONE S22 (column-level REVOKE UPDATE + RPC `update_cost_price_v1` SECURITY DEFINER + audit row in `stock_movements` movement_type=`cost_price_correction`) |
+| HTTP 429 `Retry-After` header sur EFs rate-limited | enabled | DONE S22 (5 EFs : `auth-verify-pin`, `kiosk-issue-jwt` ×2 buckets, `refund-order`, `void-order`, `cancel-item` via `_shared/responses.ts` helper) |
 
 ---
 

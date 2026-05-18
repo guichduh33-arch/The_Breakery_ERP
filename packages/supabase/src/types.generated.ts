@@ -5911,6 +5911,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      update_cost_price_v1: {
+        Args: {
+          p_idempotency_key?: string
+          p_new_cost: number
+          p_product_id: string
+          p_reason: string
+        }
+        Returns: Json
+      }
       update_lan_heartbeat_v1: {
         Args: { p_device_code: string }
         Returns: {
@@ -6026,6 +6035,7 @@ export type Database = {
         | "purchase_return"
         | "reservation_hold"
         | "reservation_release"
+        | "cost_price_correction"
       order_status:
         | "draft"
         | "paid"
@@ -6223,6 +6233,7 @@ export const Constants = {
         "purchase_return",
         "reservation_hold",
         "reservation_release",
+        "cost_price_correction",
       ],
       order_status: ["draft", "paid", "voided", "pending_payment", "completed"],
       order_type: ["dine_in", "take_out", "delivery"],
