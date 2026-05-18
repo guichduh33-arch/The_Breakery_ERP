@@ -58,6 +58,7 @@
 
 ### TASK-02-004 — VirtualKeypad UX improvements [P2] [OBSOLETE]
 **Status note (2026-05-14)** : V2 `VirtualKeypadProvider` was not ported to V3. POS payment UI uses the `@breakery/ui` `Numpad` primitive directly inside `PaymentTerminal.tsx` (no global provider, no context-switch focus management gap). The original V2 scope no longer exists.
+**Status note (2026-05-18)** : S22 update — the `A1-3 focus management` audit reference cited below is fully addressed at the modal-primitive level via S22 lock-in (16 RTL focus-trap regression tests on `Dialog`/`Sheet`/`FullScreenModal`/`CenterModal`). The `Numpad` primitive itself is non-modal so it's out of scope, but any future modal-resident Numpad surface inherits Radix's focus-trap automatically through the parent `Dialog`/`Sheet`. See `22-design-system.md` TASK-22-006 + S22 INDEX §4.
 **Contexte** : `VirtualKeypadProvider` enveloppe le POS mais l'UX du clavier numérique (saisie quantité, paiement) souffre de placement variable et focus management incertain. Inferred from `docs/audit/05-uiux-design-audit.md§A1-3` (focus management) + revue UX.
 **Critère d'acceptation** :
 - [ ] Audit UX : lister les 5 contextes où le clavier apparaît (qty, prix manual, paiement, recherche, code promo).

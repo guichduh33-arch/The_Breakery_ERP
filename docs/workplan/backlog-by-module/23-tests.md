@@ -184,3 +184,5 @@
 
 
 **S21 update (2026-05-18):** Playwright E2E in CI landed. `playwright.config.ts` root + 2 projects (pos, backoffice). 3 specs in `tests/e2e/` : POS login+complete_order, BO admin PIN reset, kiosk display load. Nightly cron `0 22 * * *` UTC + manual `workflow_dispatch` via `.github/workflows/playwright-e2e.yml`. `data-testid` selectors added across 7 components. Closes D-W6-6C-05. First-run may flake — nightly-only avoids blocking PRs.
+
+**S22 update (2026-05-18):** New canonical test pattern for modal a11y regression: `*.focus-trap.test.tsx` colocated in `packages/ui/src/{primitives,components}/__tests__/`. Each file owns one primitive (`Dialog`, `Sheet`, `FullScreenModal`, `CenterModal`) and asserts 4 invariants : Tab forward stays within modal subtree, Shift+Tab backward stays within modal subtree, Escape fires `onOpenChange(false)`, focus is restored on close. The pattern uses `@testing-library/user-event` v14 (`user.tab()` / `user.keyboard()`) — new dev dep on `@breakery/ui`. 16/16 tests green. Any future modal primitive added to `packages/ui` should ship with a matching `*.focus-trap.test.tsx`. See S22 INDEX §4 + spec `2026-05-18-session-22-spec.md`.
