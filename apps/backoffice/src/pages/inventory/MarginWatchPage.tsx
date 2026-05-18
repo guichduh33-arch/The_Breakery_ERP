@@ -8,7 +8,15 @@
 // `reports.inventory.read` at the route level.
 
 import { useMemo, useState, type JSX } from 'react';
-import { Button } from '@breakery/ui';
+import {
+  Button,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
 import {
   useMarginAlerts,
@@ -185,45 +193,51 @@ export default function MarginWatchPage(): JSX.Element {
         </div>
       </section>
 
-      {/* Ack modal */}
-      {ackTarget !== null && (
-        <div
-          role="dialog"
-          aria-modal="true"
+      {/* Ack modal — Radix-backed Dialog from @breakery/ui (S22/1.A.2 :
+          replaced raw `fixed inset-0` overlay div with focus-trapped Dialog). */}
+      <Dialog
+        open={ackTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) closeAckModal();
+        }}
+      >
+        <DialogContent
           aria-label="Acknowledge margin alert"
           data-testid="ack-modal"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          className="max-w-md"
         >
-          <div className="w-full max-w-md rounded-md border border-border-subtle bg-bg-card p-4 shadow-lg">
-            <h2 className="font-serif text-xl">Acknowledge alert</h2>
-            <p className="mt-1 text-xs text-text-secondary">
-              {ackTarget.productName ?? ackTarget.productId} — expected {fmtPct(ackTarget.expectedMarginPct)} vs target {fmtPct(ackTarget.targetMarginPct)} ({fmtPct(ackTarget.deltaPct)}).
-            </p>
-            <label className="mt-3 block text-xs">
-              <span className="block text-text-secondary">Notes (optional)</span>
-              <textarea
-                value={ackNotes}
-                onChange={(e) => setAckNotes(e.target.value)}
-                rows={3}
-                className="mt-1 w-full rounded-md border border-border-subtle bg-bg-input p-2 text-sm"
-                placeholder="Reason / corrective action"
-                aria-label="Acknowledgement notes"
-              />
-            </label>
-            <div className="mt-4 flex items-center justify-end gap-2">
-              <Button type="button" variant="ghost" onClick={closeAckModal}>Cancel</Button>
-              <Button
-                type="button"
-                onClick={() => { void submitAck(); }}
-                disabled={ack.isPending}
-                aria-label="Confirm acknowledge"
-              >
-                {ack.isPending ? 'Saving…' : 'Acknowledge'}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+          <DialogHeader>
+            <DialogTitle>Acknowledge alert</DialogTitle>
+            {ackTarget !== null && (
+              <DialogDescription>
+                {ackTarget.productName ?? ackTarget.productId} — expected {fmtPct(ackTarget.expectedMarginPct)} vs target {fmtPct(ackTarget.targetMarginPct)} ({fmtPct(ackTarget.deltaPct)}).
+              </DialogDescription>
+            )}
+          </DialogHeader>
+          <label className="block text-xs">
+            <span className="block text-text-secondary">Notes (optional)</span>
+            <textarea
+              value={ackNotes}
+              onChange={(e) => setAckNotes(e.target.value)}
+              rows={3}
+              className="mt-1 w-full rounded-md border border-border-subtle bg-bg-input p-2 text-sm"
+              placeholder="Reason / corrective action"
+              aria-label="Acknowledgement notes"
+            />
+          </label>
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={closeAckModal}>Cancel</Button>
+            <Button
+              type="button"
+              onClick={() => { void submitAck(); }}
+              disabled={ack.isPending}
+              aria-label="Confirm acknowledge"
+            >
+              {ack.isPending ? 'Saving…' : 'Acknowledge'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
