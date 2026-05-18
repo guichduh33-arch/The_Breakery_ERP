@@ -53,3 +53,11 @@ export {
   canHoldQuantity,
   type ActiveReservation,
 } from './reservations/index.js';
+
+// Session 23 — landed cost allocation primitive (mirrors receive_po_v1 SQL).
+export {
+  calculateLandedCostAllocation,
+  type AllocationMethod,
+  type PoLineForAllocation,
+  type AllocationResult,
+} from './landedCostAllocation.js';
