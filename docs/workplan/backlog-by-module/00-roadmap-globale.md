@@ -1,8 +1,9 @@
 # Roadmap globale — The Breakery ERP (V3 monorepo)
 
-> Last updated: 2026-05-18 (S21 refresh)
+> Last updated: 2026-05-19 (audit S23 + WONTFIX mono-site)
 > Source initiale : agrégation des 8 audits 2026-04-09 + `CURRENT_STATE.md` + revue de code 2026-05-03
-> Refresh : intègre l'avancement S13-S20 (Sessions 13 à 19 mergées, S20 prête à merger)
+> Refresh : intègre l'avancement S13-S22 mergé + audit complet 21 modules métier 2026-05-19 + décision mono-site permanent (4 items WONTFIX)
+> Plan S24-S30 : [`../plans/2026-05-19-S24-to-S30-plan.md`](../plans/2026-05-19-S24-to-S30-plan.md)
 
 ---
 
@@ -25,7 +26,9 @@ Entre Session 13 (2026-05-13) et Session 20 (2026-05-17), The Breakery a effectu
 
 ### Prochains jalons
 
-- **Session 20+** : triage du backlog résiduel post-S19, probables thèmes : compliance fiscale (si PKP confirmé) ; ou polish hardening reliquat (RLS anon, message dedup LAN) ; ou mobile shell ; ou WAC landed cost.
+- **Session 23 (en cours)** : Landed cost shipping pro-rata + skip_wac sample/promo (TASK-07-012 + DEV-S17-1.C-01). Spec : [`../specs/2026-05-19-session-23-spec.md`](../specs/2026-05-19-session-23-spec.md).
+- **Sessions 24-30** : 7 sessions séquencées issues de l'audit 21-modules du 2026-05-19. Voir [`../plans/2026-05-19-S24-to-S30-plan.md`](../plans/2026-05-19-S24-to-S30-plan.md). Thèmes : B2B Foundation (S24), Idempotency Hardening (S25), Comptable Cockpit (S26), Product CRUD (S27), Expense Governance (S28), Reports Export + Z-Report PDF (S29), Decision Sprint + Cleanup (S30).
+- **Items WONTFIX 2026-05-19** (décision mono-site permanent) : TASK-08-011 (multi-établissement loyalty), TASK-10-020 (consolidation multi-entité), TASK-19-008 (multi-tenancy foundation), TASK-21-011 (multi-LAN segmentation). 4 items BLOCKED purgés du backlog actif.
 - **Cycle review** : tous les 3-5 sessions, refresh de cette roadmap + des Status notes (`docs/workplan/backlog-by-module/0N-*.md`).
 
 ---

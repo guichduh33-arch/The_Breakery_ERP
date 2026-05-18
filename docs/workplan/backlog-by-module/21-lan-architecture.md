@@ -154,8 +154,9 @@
 **Risques** : sur-ingénierie ; à ne déclencher que si 1 incident réel reporté
 **Notes** : Lombok = connexion 4G parfois instable, situation possible
 
-### TASK-21-011 — Multi-LAN segmentation (P3 multi-store future) [P3] [BLOCKED]
+### TASK-21-011 — Multi-LAN segmentation (P3 multi-store future) [P3] [WONTFIX]
 **Status note (2026-05-14)** : Deferred to Wave 7 per INDEX line 1089 : "LAN multi-site (Session 17)" + D-W5-5A-05 "21-005..011 OUT OF SCOPE". Gated on TASK-19-008 multi-tenancy foundation.
+**Status note (2026-05-19)** : **WONTFIX per user decision** — The Breakery confirme mono-site permanent. Le channel `breakery-lan` reste non-suffixé, aucune collision possible. La dette technique "channel non scopé par store_id" issue de l'audit S23 est également un non-problème. Voir audit S23 (`docs/workplan/plans/2026-05-19-S24-to-S30-plan.md`).
 **Contexte** : Lié à TASK-19-008 (multi-tenancy). Si 2 boutiques → 2 LANs distincts → channel `appgrav-lan` partagé causera collision.
 **Critère d'acceptation** :
 - [ ] Channel name dynamique : `appgrav-lan-${storeId}` au lieu de `appgrav-lan`
@@ -176,7 +177,8 @@
 |----------|--------|
 | P1 | 21-001 |
 | P2 | 21-002, 21-003, 21-004, 21-005, 21-009 |
-| P3 | 21-006, 21-007, 21-008, 21-010, 21-011 |
+| P3 | 21-006, 21-007, 21-008, 21-010 |
+| WONTFIX (mono-site) | 21-011 (per user decision 2026-05-19) |
 
 
 **S21 update (2026-05-18):** LAN message dedup audit confirms S13 implementation in `packages/domain/src/lan/messageDedup.ts` (TTL 5s, Map-based, auto-purge). Wired into `apps/pos/src/features/lan/{lanHub,lanClient}.ts`. Added 2 GC boundary tests (100-msg purge + post-TTL re-accept). Closes `08-operations-lan-audit§P1-1`. DEV-S21-1.C.1-01 (location difference vs spec : domain not `packages/lan-bus/`) — accepted.

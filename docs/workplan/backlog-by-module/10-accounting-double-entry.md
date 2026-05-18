@@ -289,8 +289,9 @@
 **Risques** : sources de taux divergentes — choisir une référence officielle (Bank Indonesia).
 **Notes** : V1 lecture taux quotidienne ; V2 historique stocké.
 
-### TASK-10-020 — Consolidation multi-entité [P3] [BLOCKED]
+### TASK-10-020 — Consolidation multi-entité [P3] [WONTFIX]
 **Status note (2026-05-14)** : Explicitly deferred per INDEX Wave 7 (`docs/workplan/plans/2026-05-13-session-13-INDEX.md` line 1084 "10-020 multi-entity consolidation (Session 15)") and Out-of-scope table line 1207. Scope-deferred at session-13 planning.
+**Status note (2026-05-19)** : **WONTFIX per user decision** — The Breakery confirme mono-site / mono-entité permanent. Aucune ouverture de seconde entité juridique prévue. La consolidation multi-entité sort du backlog indéfiniment. Voir audit S23 (`docs/workplan/plans/2026-05-19-S24-to-S30-plan.md`).
 **Contexte** : un seul jeu de livres aujourd'hui. Si The Breakery ouvre une seconde adresse en tant qu'entité juridique distincte, pas de consolidation possible.
 **Bénéfice attendu** : maintenir des livres séparés par entité et produire des états consolidés.
 **Critère d'acceptation** :
