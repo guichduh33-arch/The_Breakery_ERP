@@ -138,6 +138,76 @@ export type Database = {
           },
         ]
       }
+      b2b_payments: {
+        Row: {
+          allocation: Json
+          amount: number
+          created_at: string
+          created_by: string
+          customer_id: string
+          id: string
+          idempotency_key: string | null
+          journal_entry_id: string | null
+          method: Database["public"]["Enums"]["payment_method"]
+          notes: string | null
+          paid_at: string
+          payment_number: string
+          reference: string | null
+        }
+        Insert: {
+          allocation?: Json
+          amount: number
+          created_at?: string
+          created_by: string
+          customer_id: string
+          id?: string
+          idempotency_key?: string | null
+          journal_entry_id?: string | null
+          method: Database["public"]["Enums"]["payment_method"]
+          notes?: string | null
+          paid_at?: string
+          payment_number: string
+          reference?: string | null
+        }
+        Update: {
+          allocation?: Json
+          amount?: number
+          created_at?: string
+          created_by?: string
+          customer_id?: string
+          id?: string
+          idempotency_key?: string | null
+          journal_entry_id?: string | null
+          method?: Database["public"]["Enums"]["payment_method"]
+          notes?: string | null
+          paid_at?: string
+          payment_number?: string
+          reference?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "b2b_payments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "b2b_payments_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "b2b_payments_journal_entry_id_fkey"
+            columns: ["journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_config: {
         Row: {
           created_at: string
@@ -1476,6 +1546,13 @@ export type Database = {
             referencedRelation: "orders"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "loyalty_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "view_b2b_invoices"
+            referencedColumns: ["invoice_id"]
+          },
         ]
       }
       margin_alerts: {
@@ -1767,6 +1844,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "view_b2b_invoices"
+            referencedColumns: ["invoice_id"]
+          },
+          {
             foreignKeyName: "order_items_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
@@ -1848,6 +1932,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "orders"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_payments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "view_b2b_invoices"
+            referencedColumns: ["invoice_id"]
           },
         ]
       }
@@ -2713,6 +2804,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "promotion_applications_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "view_b2b_invoices"
+            referencedColumns: ["invoice_id"]
+          },
+          {
             foreignKeyName: "promotion_applications_promotion_id_fkey"
             columns: ["promotion_id"]
             isOneToOne: false
@@ -3445,6 +3543,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "orders"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "refunds_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "view_b2b_invoices"
+            referencedColumns: ["invoice_id"]
           },
           {
             foreignKeyName: "refunds_refunded_by_fkey"
@@ -4437,6 +4542,51 @@ export type Database = {
         }
         Relationships: []
       }
+      view_ar_aging: {
+        Row: {
+          b2b_company_name: string | null
+          bucket: string | null
+          customer_id: string | null
+          customer_name: string | null
+          invoice_count: number | null
+          max_age_days: number | null
+          min_age_days: number | null
+          total_outstanding: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      view_b2b_invoices: {
+        Row: {
+          age_days: number | null
+          b2b_company_name: string | null
+          customer_id: string | null
+          customer_name: string | null
+          invoice_date: string | null
+          invoice_id: string | null
+          invoice_total: number | null
+          is_unpaid: boolean | null
+          order_number: string | null
+          order_status: Database["public"]["Enums"]["order_status"] | null
+          paid_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       view_product_allergens_resolved: {
         Row: {
           allergens: Database["public"]["Enums"]["allergen_type"][] | null
@@ -4639,6 +4789,15 @@ export type Database = {
           p_expected_qty?: number
           p_notes?: string
           p_product_id: string
+        }
+        Returns: Json
+      }
+      adjust_b2b_balance_v1: {
+        Args: {
+          p_customer_id: string
+          p_delta: number
+          p_idempotency_key?: string
+          p_reason: string
         }
         Returns: Json
       }
@@ -4857,6 +5016,16 @@ export type Database = {
       convert_quantity: {
         Args: { p_from_unit: string; p_qty: number; p_to_unit: string }
         Returns: number
+      }
+      create_b2b_order_v1: {
+        Args: {
+          p_customer_id: string
+          p_delivery_date?: string
+          p_idempotency_key?: string
+          p_items: Json
+          p_notes?: string
+        }
+        Returns: Json
       }
       create_expense_v1: {
         Args: {
@@ -5676,6 +5845,18 @@ export type Database = {
         }[]
       }
       recompute_recipe_margins_v1: { Args: never; Returns: Json }
+      record_b2b_payment_v1: {
+        Args: {
+          p_amount: number
+          p_customer_id: string
+          p_idempotency_key?: string
+          p_method: Database["public"]["Enums"]["payment_method"]
+          p_notes?: string
+          p_paid_at?: string
+          p_reference?: string
+        }
+        Returns: Json
+      }
       record_batch_production_v1: {
         Args: { p_batch: Json; p_items: Json }
         Returns: Json
@@ -6042,7 +6223,8 @@ export type Database = {
         | "voided"
         | "pending_payment"
         | "completed"
-      order_type: "dine_in" | "take_out" | "delivery"
+        | "b2b_pending"
+      order_type: "dine_in" | "take_out" | "delivery" | "b2b"
       payment_method:
         | "cash"
         | "card"
@@ -6235,8 +6417,15 @@ export const Constants = {
         "reservation_release",
         "cost_price_correction",
       ],
-      order_status: ["draft", "paid", "voided", "pending_payment", "completed"],
-      order_type: ["dine_in", "take_out", "delivery"],
+      order_status: [
+        "draft",
+        "paid",
+        "voided",
+        "pending_payment",
+        "completed",
+        "b2b_pending",
+      ],
+      order_type: ["dine_in", "take_out", "delivery", "b2b"],
       payment_method: [
         "cash",
         "card",
