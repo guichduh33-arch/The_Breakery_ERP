@@ -106,8 +106,8 @@ describe('S25 useCreateTabletOrder — idempotency wiring', () => {
 
     expect(supaMocks.rpc).toHaveBeenCalledTimes(2);
 
-    const firstCallArgs = supaMocks.rpc.mock.calls[0];
-    const secondCallArgs = supaMocks.rpc.mock.calls[1];
+    const firstCallArgs = supaMocks.rpc.mock.calls[0]!;
+    const secondCallArgs = supaMocks.rpc.mock.calls[1]!;
 
     expect(firstCallArgs[0]).toBe('create_tablet_order_v2');
     expect(secondCallArgs[0]).toBe('create_tablet_order_v2');
