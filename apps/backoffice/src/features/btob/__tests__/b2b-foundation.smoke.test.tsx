@@ -9,7 +9,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { ReactElement } from 'react';
 import B2BDashboardPage from '@/pages/btob/B2BDashboardPage.js';
 import { RecordB2bPaymentModal } from '@/features/btob/components/RecordB2bPaymentModal.js';
 

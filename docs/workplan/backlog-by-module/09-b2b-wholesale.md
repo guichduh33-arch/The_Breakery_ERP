@@ -1,6 +1,22 @@
 # Travail — B2B / Wholesale
 
-> Last updated: 2026-05-03
+> Last updated: 2026-05-19 (Session 24 — B2B Foundation)
+
+## S24 deliverables (2026-05-19)
+
+Closes the 5 gaps the audit of module 09 flagged as P0 (surface UI shipped in S14 without backend) :
+
+- **DB** : 11 migrations applied on V3 dev cloud (`20260601000005..022`) — `b2b_payments` ledger (append-only, RLS, REVOKE INSERT/UPDATE/DELETE) ; `view_b2b_invoices` + `view_ar_aging` (real `created_at`-based aging) ; `REVOKE UPDATE customers.b2b_current_balance` (pattern S22 `update_cost_price_v1`) ; `B2B_PAYMENT_BANK` mapping (1112) ; 3 RPCs `record_b2b_payment_v1` / `adjust_b2b_balance_v1` / `create_b2b_order_v1`.
+- **RPC wiring** : `create_b2b_order_v1` now calls `validate_b2b_credit_limit_v1` pre-insert and raises `credit_limit_exceeded` (P0011) with `DETAIL=payload jsonb` (would_exceed_by) — closes the S14 gap where the RPC existed but had no caller.
+- **UI BO** : `useB2bDashboard` aging KPI now reads `view_ar_aging` (no more `last_visit_at` proxy). New `CreateB2bOrderModal` activates the dashboard "+ New B2B Order" button (closes deviation D-W6-B2B-01). New `RecordB2bPaymentModal` + B2BPaymentsPage "Received" tab consuming `b2b_payments` (closes deviation D-W6-B2BPAY-01).
+- **Tests** : pgTAP `b2b_foundation.test.sql` 15 cas ; Vitest live `record-b2b-payment.test.ts` 5 scénarios ; BO smoke `b2b-foundation.smoke.test.tsx` 3 cas (T1 aging KPI, T2 enabled button, T3 record payment mutation).
+
+Reference plan : [`../plans/2026-05-19-session-24-INDEX.md`](../plans/2026-05-19-session-24-INDEX.md).
+
+Closes : TASK-09-001 (PARTIAL — KPI aging done, PDF/email deferred S29), TASK-09-002 (DONE — gate wired), TASK-09-006 (DONE — dashboard KPI fixed) + deviations D-W6-B2B-01 (button activated), D-W6-B2BPAY-01 (Received tab consuming ledger).
+
+---
+
 > Référence : [docs/reference/04-modules/09-b2b-wholesale.md](../04-modules/09-b2b-wholesale.md)
 > Sources d'audit : `docs/audit/07-product-backlog-audit.md` (module 88%, gaps B2B), `docs/audit/02-accounting-business-audit.md` (couverture JE B2B), `docs/audit/05-uiux-design-audit.md` (PaymentModal)
 
@@ -14,7 +30,8 @@
 
 ## Tâches
 
-### TASK-09-001 — AR aging report PDF + planification email mensuelle [P1] [TODO]
+### TASK-09-001 — AR aging report PDF + planification email mensuelle [P1] [PARTIAL]
+**Status note (2026-05-19)** : S24 update — **aging KPI now real**. Migration `20260601000012_create_view_ar_aging.sql` creates the view (buckets `current` / `31-60` / `61-90` / `90+` over `CURRENT_DATE - orders.created_at`) ; the BO `useB2bDashboard` hook reads from `view_ar_aging` directly (commit `062fe35`) — no more `last_visit_at` proxy. The remaining work is the **PDF export + monthly email cron** (still TODO, deferred to S29 Reports Export + Z-Report PDF). Closes the dashboard bug ; the report side moves to S29.
 **Status note (2026-05-14)** : Not delivered in Session 13. No `view_ar_aging`, no `B2BAgingSummary.tsx` / `B2BPaymentsAgingTab.tsx` in `apps/backoffice/src/features/`, no `b2b-aging-monthly` EF in `supabase/functions/`, and no `aging_email_log` migration in `20260517*.sql`. Phase 3.C delivered B2B field plumbing only (TASK-09-002 credit-limit RPC); aging report deferred.
 **Contexte** : `view_ar_aging` existe et `B2BAgingSummary` l'affiche en UI, mais aucune PDF/CSV propre, ni envoi mensuel auto. Audit `07-product-backlog-audit.md` Gap 6 ("Cash flow statement") et Sally `05-uiux-design-audit.md` mentionnent l'absence d'export PDF cohérent. Le contrôle de gestion réclame un PDF mensuel envoyé en début de mois.
 **Critère d'acceptation** :
@@ -29,6 +46,7 @@
 **Notes** : `send-test-email` existe déjà côté Edge Functions (cf. CLAUDE.md liste 16 EF) — l'utiliser plutôt qu'en créer une nouvelle dédiée mail.
 
 ### TASK-09-002 — Credit limit enforcement + override manager [P1] [DONE]
+**Status note (2026-05-19)** : S24 update — **gate now wired into the order path**. The S13 `validate_b2b_credit_limit_v1` RPC was tested but never called. S24 migration `20260601000022_create_b2b_order_v1.sql` introduces `create_b2b_order_v1` which calls the validate RPC *pre-insert* ; on `allowed=false` it raises `credit_limit_exceeded` (P0011) with `DETAIL=payload jsonb` (commits `a337426` + `1ace80c`). BO `CreateB2bOrderModal` surfaces the payload (`would_exceed_by`) with a yellow alert (commit `564fdd6`). The manager-PIN override branch is still residual — backlog item, not blocking gate.
 **Status note (2026-05-14)** : Credit-limit RPC delivered Session 13 Phase 3.C; manager-PIN override not built. V3 evidence: `supabase/migrations/20260517000130_extend_customers_b2b_fields.sql` adds `b2b_credit_limit` + `b2b_current_balance`; `supabase/migrations/20260517000131_create_validate_b2b_credit_limit_rpc.sql` exposes `validate_b2b_credit_limit_v1(p_customer_id, p_order_amount) RETURNS jsonb` (returns `{allowed, current_balance, credit_limit, available, would_exceed_by}`); UI surface `apps/backoffice/src/features/customers/components/B2BFieldsSection.tsx`. The manager-PIN override branch + `credit_status='suspended'` block are residual follow-ups (still TODO) but the core enforcement is in place. Commit `bdf21aa` (squashed PR #13).
 **Contexte** : `customers.credit_limit` + `credit_status='suspended'` existent côté schéma (cf. module 08 + pitfall 09) mais le hook `useB2BOrderForm` ne bloque PAS la création quand `credit_balance + new_order_total > credit_limit`. Audit `07-product-backlog-audit.md` flag "B2B credit module needs hardening".
 **Critère d'acceptation** :
@@ -86,7 +104,8 @@
 **Risques** : explosion volumique de l'history si édité en boucle — purge automatique > 2 ans (rétention configurable).
 **Notes** : reuse pattern audit_logs existant pour la structure.
 
-### TASK-09-006 — B2B dashboard KPI overview [P2] [TODO]
+### TASK-09-006 — B2B dashboard KPI overview [P2] [DONE]
+**Status note (2026-05-19)** : S24 update — **DONE for the dashboard KPI side**. S14 shipped `B2BDashboardPage.tsx` with 5 KPI tiles + aging summary, but the aging KPI was computed off `last_visit_at` as a proxy → incorrect numbers in production. S24 fixes this by reading `view_ar_aging` directly in `useB2bDashboard` (commit `062fe35`). The "+ New B2B Order" button (was disabled, deviation D-W6-B2B-01) is now wired to `CreateB2bOrderModal` (commit `564fdd6`). DSO ratio is still not surfaced — separate small follow-up (P3, ~30min, deferred backlog post-S30).
 **Status note (2026-05-14)** : Not delivered in Session 13. No `B2BPage.tsx` / `B2BStats.tsx` / `view_b2b_dso` in V3 (`apps/backoffice/src/pages/` and `apps/backoffice/src/features/` contain no `b2b` directory). Phase 3.C scope was DB plumbing + B2BFieldsSection only; full B2B feature surface deferred.
 **Contexte** : Audit `ux-gap-analysis-2026-05-01.md` (B2B Wholesale section) signale **"V2 B2B dashboard KPI overview MANQUANT"** vs V3 epic-043/044/045. V2 a `B2BStats.tsx` (KPI cards) mais incomplet : pas d'overdue split, pas de top clients chart, pas de DSO.
 **Critère d'acceptation** :

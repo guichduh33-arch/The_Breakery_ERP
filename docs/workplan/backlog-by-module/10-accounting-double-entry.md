@@ -1,6 +1,21 @@
 # Travail — Accounting (Double-Entry)
 
-> Last updated: 2026-05-03
+> Last updated: 2026-05-19 (Session 24 — B2B JE wiring + mapping B2B_PAYMENT_BANK)
+
+## S24 update (2026-05-19) — B2B JE chain
+
+Session 24 wired the **B2B order/payment JE chain** to the existing COA mappings :
+
+- `create_b2b_order_v1` (S24 migration `20260601000022`) emits **DR B2B_AR (1132) / CR SALE_B2B_REVENUE (4131)** for each new B2B order. Both mappings already existed (seed S13 `20260517000005`).
+- `record_b2b_payment_v1` (migration `20260601000020`) emits **DR Cash/Bank / CR B2B_AR** at payment time. `p_method='cash'` resolves the debit via `SALE_PAYMENT_CASH` (1110) ; non-cash methods resolve via the new `B2B_PAYMENT_BANK` mapping (1112) — seeded in migration `20260601000014`.
+
+These extend the chain mapped in the file below (`SALE_REVENUE`/`SALE_PAYMENT_CASH`/etc.) — no schema change to `accounting_mappings`, only one INSERT.
+
+Reference plan : [`../plans/2026-05-19-session-24-INDEX.md`](../plans/2026-05-19-session-24-INDEX.md).
+
+---
+
+
 > Référence : `docs/reference/04-modules/10-accounting-double-entry.md` (à créer — module non encore documenté en référence)
 > Sources d'audit : `docs/audit/02-accounting-business-audit.md` (Mary, B-/72%, 5 P0), `docs/audit/00-executive-summary.md`, `docs/audit/IMPLEMENTATION_PLAN.md` Phase 1
 > Contexte : module avec le plus gros backlog de l'audit global (5 P0 + 6 P1 + 5 P2 + 5 P3).
