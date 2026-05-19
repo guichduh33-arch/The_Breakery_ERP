@@ -55,9 +55,14 @@ const TEST_SESSION_ID    = 'feedca50-0000-0000-0000-000000002502';
 const TEST_ORDER_ID      = 'feedca50-0000-0000-0000-000000002503';
 const TEST_ORDER_ITEM_ID = 'feedca50-0000-0000-0000-000000002504';
 
-// Cashier PIN (EMP001 / 567890 per seed.sql + pgTAP fixture pattern).
+// Cashier PIN (EMP001 / 567890) — used for refund EF tests (TS3/TS4/TS5).
+// Refund RPC checks manager perm via p_authorized_by ; cashier just needs to be authenticated.
 const CASHIER_EMPLOYEE = 'EMP001';
 const CASHIER_PIN      = '567890';
+// Waiter PIN (EMP002 / 567800) — used for create_tablet_order_v2 tests (TS1/TS2).
+// waiter role has `sales.create` perm ; CASHIER does NOT (seed 20260507000002).
+const WAITER_EMPLOYEE  = 'EMP002';
+const WAITER_PIN       = '567800';
 // Manager PIN passed in x-manager-pin header (EMP003 / 111111 per seed.sql).
 const MANAGER_PIN      = '111111';
 
@@ -108,6 +113,8 @@ function rpc(sb: SupabaseClient): (fn: string, args?: Record<string, unknown>) =
 describe('S25 idempotency hardening — Vitest live', () => {
   let cashierToken:   string;
   let cashierProfile: string;
+  let waiterToken:    string;
+  let waiterProfile:  string;
 
   beforeAll(async () => {
     if (!SERVICE) {
@@ -115,10 +122,15 @@ describe('S25 idempotency hardening — Vitest live', () => {
     }
     const admin = createClient(SUPABASE_URL, SERVICE);
 
-    // 1) Cashier login (cashier_token used for both RPC calls + Bearer of refund EF).
+    // 1a) Cashier login (refund EF tests TS3/TS4/TS5 — caller just needs to be authenticated).
     const cashier = await loginAs(CASHIER_EMPLOYEE, CASHIER_PIN);
     cashierToken   = cashier.accessToken;
     cashierProfile = cashier.profileId;
+
+    // 1b) Waiter login (tablet RPC tests TS1/TS2 — waiter has sales.create perm, CASHIER does not).
+    const waiter = await loginAs(WAITER_EMPLOYEE, WAITER_PIN);
+    waiterToken   = waiter.accessToken;
+    waiterProfile = waiter.profileId;
 
     // 2) Resolve a category id (FK on products.category_id).
     const { data: cat } = await admin.from('categories').select('id').limit(1).single();
@@ -202,13 +214,13 @@ describe('S25 idempotency hardening — Vitest live', () => {
   // TS1 — create_tablet_order_v2 happy path
   // ===========================================================================
   it('TS1: create_tablet_order_v2 happy path returns a valid UUID order_id', async () => {
-    const sb = jwtClient(cashierToken);
+    const sb = jwtClient(waiterToken);
     const clientUuid = crypto.randomUUID();
     createdClientUuids.push(clientUuid);
 
     const { data, error } = await rpc(sb)('create_tablet_order_v2', {
       p_client_uuid:  clientUuid,
-      p_waiter_id:    cashierProfile,
+      p_waiter_id:    waiterProfile,
       p_table_number: 'TS1',
       p_order_type:   'dine_in',
       p_items: [{
@@ -228,14 +240,14 @@ describe('S25 idempotency hardening — Vitest live', () => {
   // TS2 — retry SAME clientUuid returns same order_id, no double insert
   // ===========================================================================
   it('TS2: retry with same clientUuid returns same order_id, 1 row in idempotency table', async () => {
-    const sb = jwtClient(cashierToken);
+    const sb = jwtClient(waiterToken);
     const admin = createClient(SUPABASE_URL, SERVICE);
     const clientUuid = crypto.randomUUID();
     createdClientUuids.push(clientUuid);
 
     const args = {
       p_client_uuid:  clientUuid,
-      p_waiter_id:    cashierProfile,
+      p_waiter_id:    waiterProfile,
       p_table_number: 'TS2',
       p_order_type:   'dine_in' as const,
       p_items: [{
