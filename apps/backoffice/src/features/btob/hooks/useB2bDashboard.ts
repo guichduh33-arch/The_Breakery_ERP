@@ -1,13 +1,11 @@
 // apps/backoffice/src/features/btob/hooks/useB2bDashboard.ts
 //
-// Session 14 / Phase 5.B — aggregates for the B2B Dashboard page.
+// Session 24 / Phase 2.A.2 — aggregates for the B2B Dashboard page.
 //
-// SCOPE: B2B-specific tables (b2b_orders / b2b_payments / aging buckets) do
-// not exist in the V3 schema. We approximate the dashboard from the existing
-// `customers` table (b2b filter) + `orders` joined on `customer_id`. This is
-// READ-ONLY: + New B2B Order / + New Payment buttons are disabled with a
-// tooltip explaining the gap. Tracked as deviation D-W6-B2B-01 for Session
-// 15+ when proper B2B order RPCs are in scope.
+// Aging KPI now consumes the `view_ar_aging` view (S24 migration _012) which
+// buckets unpaid B2B invoices on real invoice_date (created_at) rather than
+// the previous `last_visit_at` proxy. Closes TASK-09-001 / TASK-09-006 and
+// removes deviation D-W6-B2B-aging-bug.
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
@@ -68,11 +66,14 @@ function startOfPrevMonth(): Date {
   return new Date(n.getFullYear(), n.getMonth() - 1, 1);
 }
 
-function ageBuckets(days: number): 'current' | '31-60' | '61-90' | '90+' {
-  if (days <= 30) return 'current';
-  if (days <= 60) return '31-60';
-  if (days <= 90) return '61-90';
-  return '90+';
+type AgingBucketKey = 'current' | '31-60' | '61-90' | '90+';
+
+interface ArAgingRow {
+  customer_id:       string | null;
+  bucket:            string | null;
+  invoice_count:     number | null;
+  total_outstanding: number | null;
+  max_age_days:      number | null;
 }
 
 export function useB2bDashboard() {
@@ -128,24 +129,27 @@ export function useB2bDashboard() {
         ? (monthly === 0 ? 0 : 100)
         : Math.round(((monthly - prevMonthly) / prevMonthly) * 100);
 
-      // Aging buckets — use last_visit_at as a proxy invoice date for unpaid balance.
-      const buckets: Record<'current' | '31-60' | '61-90' | '90+', { count: number; total: number }> = {
+      // Aging buckets — S24 : consume view_ar_aging (real invoice_date).
+      const { data: agingRows, error: aErr } = await supabase
+        .from('view_ar_aging')
+        .select('customer_id, bucket, invoice_count, total_outstanding, max_age_days');
+      if (aErr) throw aErr;
+
+      const buckets: Record<AgingBucketKey, { count: number; total: number }> = {
         'current': { count: 0, total: 0 },
         '31-60':   { count: 0, total: 0 },
         '61-90':   { count: 0, total: 0 },
         '90+':     { count: 0, total: 0 },
       };
       let outstandingAr = 0;
-      for (const c of clientRows) {
-        const bal = Number(c.b2b_current_balance ?? 0);
-        if (bal <= 0) continue;
-        outstandingAr += bal;
-        const ageDays = c.last_visit_at === null
-          ? 0
-          : Math.floor((Date.now() - new Date(c.last_visit_at).getTime()) / 86_400_000);
-        const k = ageBuckets(ageDays);
-        buckets[k].count += 1;
-        buckets[k].total += bal;
+      for (const row of (agingRows ?? []) as ArAgingRow[]) {
+        const key = row.bucket as AgingBucketKey | null;
+        if (key === null || !(key in buckets)) continue;
+        const count = Number(row.invoice_count ?? 0);
+        const total = Number(row.total_outstanding ?? 0);
+        buckets[key].count += count;
+        buckets[key].total += total;
+        outstandingAr      += total;
       }
 
       const aging: B2bAgingBucket[] = [
