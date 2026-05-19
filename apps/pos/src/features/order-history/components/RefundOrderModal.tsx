@@ -6,7 +6,7 @@
 //   3. Reason + manager PIN
 // Submit hits refund-order EF.
 
-import { useMemo, useState, type JSX } from 'react';
+import { useMemo, useRef, useState, type JSX } from 'react';
 import { X } from 'lucide-react';
 import {
   Button, NumpadPin, FullScreenModal, cn, Input, Currency,
@@ -33,6 +33,7 @@ export interface RefundOrderModalProps {
     tenders: { method: PaymentMethod; amount: number }[];
     reason: string;
     managerPin: string;
+    idempotencyKey: string;
   }) => Promise<void> | void;
   isPending?: boolean;
 }
@@ -45,6 +46,9 @@ export function RefundOrderModal({
   const [tenderValues, setTenderValues] = useState<RefundTenderSplitterEntry[]>([]);
   const [reason, setReason] = useState('');
   const [pinKey, setPinKey] = useState(0);
+  // One UUID per "modal open session" — sticky across re-renders and retries.
+  // Reset on close (dismiss or post-success) so the next open gets a fresh key.
+  const idempotencyKeyRef = useRef<string>(crypto.randomUUID());
 
   const refundableItems: RefundableItem[] = useMemo(() => order.items.map((it) => ({
     order_item_id: it.id,
@@ -118,6 +122,8 @@ export function RefundOrderModal({
     setTenderValues([]);
     setReason('');
     setPinKey((k) => k + 1);
+    // Fresh UUID for the next open session (covers both dismiss-without-success and post-success close).
+    idempotencyKeyRef.current = crypto.randomUUID();
     onClose();
   }
 
@@ -137,6 +143,7 @@ export function RefundOrderModal({
         tenders: draftTenders.map((t) => ({ method: t.method, amount: t.amount })),
         reason: reason.trim(),
         managerPin: pin,
+        idempotencyKey: idempotencyKeyRef.current,
       });
       handleClose();
     } catch {
