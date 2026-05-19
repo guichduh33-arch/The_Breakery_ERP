@@ -34,7 +34,7 @@
 //     `@breakery/domain` — never raw inserts. After success, the cart
 //     is cleared and the host typically navigates to `/tablet/orders`.
 
-import { useState, useCallback, type JSX, type ReactNode } from 'react';
+import { useState, useCallback, useRef, type JSX, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { ArrowLeft, MapPin } from 'lucide-react';
@@ -92,6 +92,7 @@ export function TabletOrderPage({
 
   const { isOnline, lastSync } = useTabletOffline();
   const mutation = useCreateTabletOrder();
+  const clientUuidRef = useRef<string>(crypto.randomUUID());
 
   const preview = calculatePreview({ items, tableNumber, orderType });
   const isEmpty = items.length === 0;
@@ -115,10 +116,12 @@ export function TabletOrderPage({
         await mutation.mutateAsync({
           cart: { items, tableNumber, orderType },
           waiterId: userId,
+          clientUuid: clientUuidRef.current,
         });
       }
       toast.success('Order sent to kitchen');
       clearCart();
+      clientUuidRef.current = crypto.randomUUID();
       void navigate(redirectAfterSend);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to send order';

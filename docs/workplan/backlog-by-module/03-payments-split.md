@@ -1,6 +1,19 @@
 # Travail — Payments & Split
 
-> Last updated: 2026-05-03
+> Last updated: 2026-05-20 (Session 25 — Hardening Idempotency Cross-EF)
+
+## S25 deliverables (2026-05-20)
+
+Closes the refund-order hardening gaps identified by the S23 audit §2 (refund PIN sent in body JSON + `p_idempotency_key` not propagated to `refund_order_rpc_v2`) :
+
+- **EF** : `refund-order` migré PIN body → header `x-manager-pin` (hard cutover, no dual-mode fallback). `p_idempotency_key` propagé au RPC `refund_order_rpc_v2` (existant depuis S13) via header `x-idempotency-key`. New `_shared/idempotency.ts` helper (`getIdempotencyKey()` + `MissingIdempotencyKeyError` + `InvalidIdempotencyKeyError`). EF v7 deployed to V3 dev cloud via MCP. Replay hit logs `audit_logs.action='refund.replay'` for traceability. Corrective migration `20260602000015` (`fix_refund_order_rpc_v2_replay_record`) fixed a dormant S13 bug : line 90 wrote to `v_order.order_number` on an unassigned RECORD — surfaced when S25 wired the header and `p_idempotency_key` was passed for the first time end-to-end.
+- **POS** : `useRefundOrder.ts` + `RefundOrderModal.tsx` send `x-manager-pin` + `x-idempotency-key` via headers (no longer in body). `useRef(crypto.randomUUID())` UUID lifecycle preserves the key across re-renders / network retries ; reset on modal dismiss for the next refund.
+- **Tests** : pgTAP `idempotency_hardening.test.sql` 8/8 PASS via cloud MCP (covers refund T4-T5) ; Vitest live `idempotency-hardening.test.ts` 5 scénarios authored (TS3-TS5 cover refund EF) ; POS smoke `refund-modal-pin-header.smoke.test.tsx` 2/2 PASS.
+
+Reference plan : [`../plans/2026-05-19-session-25-INDEX.md`](../plans/2026-05-19-session-25-INDEX.md). Closes gaps audit S23 03-1 + 03-2 ; TASK-03-006 (receipt split) remains TODO (out of S25 scope — distinct from refund hardening). Sweep of other manager-PIN EFs (`void-order`, `cancel-item`, `kiosk-issue-jwt`) deferred to backlog post-S30.
+
+---
+
 > Référence : `docs/reference/04-modules/03-payments-split.md` (à créer)
 > Audits sources : `02-accounting-business-audit.md`, `04-reports-testing-audit.md`, `05-uiux-design-audit.md`, `08-operations-lan-audit.md`
 
@@ -16,6 +29,7 @@
 ## Tâches
 
 ### TASK-03-001 — Idempotence split en cas de double-clic [P1] [DONE]
+**Status note (2026-05-20)** : S25 update — refund EF now also idempotent. The S13 work covered `complete_order_v9` (POS checkout). The refund EF was the missing piece : it already had `refund_order_rpc_v2(p_idempotency_key UUID)` server-side (S13 migration `20260517000014`) but the EF + POS hook were not propagating the key. S25 wires `x-idempotency-key` header → EF → RPC. POS `RefundOrderModal` uses `useRef(crypto.randomUUID())` lifecycle. Corrective migration `20260602000015` fixed a dormant S13 RECORD-not-assigned bug in the replay branch that only surfaced once the key was actually passed.
 **Status note (2026-05-14)** : Delivered Session 13 Phase 1.A + 4.A. V3 evidence: `supabase/migrations/20260517000015_bump_complete_order_v9.sql` adds `p_idempotency_key UUID` (returns existing order if key matches); `apps/pos/src/features/payment/hooks/useCheckout.ts:85` passes `p_idempotency_key`; `__tests__/PaymentTerminal.idempotency.test.tsx` covers retry semantics. Commit `bdf21aa` (squashed PR #13).
 **Contexte** : `complete_order_with_payments` RPC est atomique, mais le bouton « Confirm payment » côté UI n'est pas disabled le temps de la roundtrip. Double-clic possible → 2 RPCs envoyées avec les mêmes payloads. La RPC peut accepter le 2e en créant un nouvel order_id. Source : `CLAUDE.md` Pitfalls (split RPC) + revue code `PaymentModal`.
 **Critère d'acceptation** :
@@ -30,6 +44,7 @@
 **Risques** : Briser l'atomicité existante. Tester avec `pgbench` ou script Node concurrent.
 
 ### TASK-03-002 — Retry logic `complete_order_with_payments` (network glitch) [P1] [DONE]
+**Status note (2026-05-20)** : S25 update — equivalent retry-safety now on the refund path. Refund modal generates a `crypto.randomUUID()` at mount, sends it as `x-idempotency-key` on every retry (network failure, double-click, modal re-submit). EF propagates to `refund_order_rpc_v2.p_idempotency_key` ; replay returns the existing refund_id + `idempotent_replay: true` + audit_logs entry — no double stock movement, no double JE.
 **Status note (2026-05-14)** : Delivered Session 13 Phase 4.A. V3 evidence: `apps/pos/src/features/payment/PaymentTerminal.tsx:122-203` (`lastError`, `dispatchCheckout`, `handleRetry`, retry banner + `already_paid` banner); error classifier `classifyCheckoutError` in `@breakery/domain`; `OrderRetryBanner.tsx` for the order-history surface backed by RPC `retry_sale_journal_entry_v1` (migration `…000140`). Commit `bdf21aa`.
 **Contexte** : Si la requête RPC timeout (réseau Lombok parfois flaky), l'UI montre une erreur mais le serveur peut avoir effectivement créé l'order. Sans idempotency, retry crée un doublon ; avec idempotency (TASK-03-001), retry est sûr. Inferred from `CURRENT_STATE.md` C7 (Realtime retry exponential backoff existe déjà).
 **Critère d'acceptation** :

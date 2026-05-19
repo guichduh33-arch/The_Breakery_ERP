@@ -263,7 +263,7 @@ export function OrderHistoryPanel({ open, onClose }: OrderHistoryPanelProps): JS
           onClose={() => setRefundOpen(false)}
           order={detail.data}
           isPending={refundMutation.isPending}
-          onSubmit={async ({ lines, tenders, reason, managerPin }) => {
+          onSubmit={async ({ lines, tenders, reason, managerPin, idempotencyKey }) => {
             try {
               const res = await refundMutation.mutateAsync({
                 orderId: detail.data!.id,
@@ -271,6 +271,7 @@ export function OrderHistoryPanel({ open, onClose }: OrderHistoryPanelProps): JS
                 tenders,
                 reason,
                 managerPin,
+                idempotencyKey,
               });
               setRefundOpen(false);
               presentReceipt(res, false);

@@ -12,6 +12,7 @@ interface RefundArgs {
   tenders: { method: PaymentMethod; amount: number; reference?: string }[];
   reason: string;
   managerPin: string;
+  idempotencyKey?: string;
 }
 
 export interface RefundResponse {
@@ -37,20 +38,23 @@ async function getAccessToken(): Promise<string> {
 export function useRefundOrder() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ orderId, lines, tenders, reason, managerPin }: RefundArgs): Promise<RefundResponse> => {
+    mutationFn: async ({ orderId, lines, tenders, reason, managerPin, idempotencyKey }: RefundArgs): Promise<RefundResponse> => {
       const accessToken = await getAccessToken();
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+        'x-manager-pin': managerPin,
+      };
+      if (idempotencyKey) headers['x-idempotency-key'] = idempotencyKey;
+
       const res = await fetch(`${supabaseUrl}/functions/v1/refund-order`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
+        headers,
         body: JSON.stringify({
           order_id: orderId,
           lines,
           tenders,
           reason,
-          manager_pin: managerPin,
         }),
       });
       if (!res.ok) {

@@ -4169,6 +4169,39 @@ export type Database = {
         }
         Relationships: []
       }
+      tablet_order_idempotency_keys: {
+        Row: {
+          client_uuid: string
+          created_at: string
+          order_id: string
+        }
+        Insert: {
+          client_uuid: string
+          created_at?: string
+          order_id: string
+        }
+        Update: {
+          client_uuid?: string
+          created_at?: string
+          order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tablet_order_idempotency_keys_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tablet_order_idempotency_keys_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "view_b2b_invoices"
+            referencedColumns: ["invoice_id"]
+          },
+        ]
+      }
       transfer_items: {
         Row: {
           created_at: string
@@ -5086,8 +5119,9 @@ export type Database = {
         }
         Returns: Json
       }
-      create_tablet_order: {
+      create_tablet_order_v2: {
         Args: {
+          p_client_uuid: string
           p_items: Json
           p_order_type: Database["public"]["Enums"]["order_type"]
           p_table_number: string

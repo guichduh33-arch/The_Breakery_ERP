@@ -1,6 +1,19 @@
 # Travail — Tablet Ordering
 
-> Last updated: 2026-05-03
+> Last updated: 2026-05-20 (Session 25 — Hardening Idempotency Cross-EF)
+
+## S25 deliverables (2026-05-20)
+
+Closes the online-side idempotence gap (TASK-17-002) — prerequisite for any future offline queue work :
+
+- **DB** : `create_tablet_order` v1 dropped and bumped to `create_tablet_order_v2(p_client_uuid UUID, p_waiter_id UUID, p_table_number TEXT, p_order_type order_type, p_items JSONB)` in the same migration (CLAUDE.md RPC versioning rule). New dedicated table `tablet_order_idempotency_keys (client_uuid PK, order_id FK, created_at)` — isolation pattern from S24 b2b_payments, not a NULL column on `orders`. Replay path : SELECT on PK → return existing `order_id` ; concurrent race handled by `EXCEPTION WHEN unique_violation` re-read. Migrations applied : `20260602000010` (table) + `_011` (RPC v2 + drop v1) + `_012` (REVOKE EXECUTE FROM anon) + corrective `_013` (`ALTER DEFAULT PRIVILEGES ... REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC`, defense-in-depth template) + `_014` (relax `orders.session_id` NOT NULL to allow `created_via='tablet'` — caught by pgTAP T1 ; was a latent S24 bug).
+- **POS** : `useCreateTabletOrder.ts` signature now requires `clientUuid: string` ; calls `create_tablet_order_v2` with `p_client_uuid`. Both call sites (`TabletOrderPage.tsx` and `TabletCheckoutButton.tsx`) generate their own `clientUuidRef = useRef(crypto.randomUUID())` and reset on success — each component owns its own lifecycle.
+- **Tests** : pgTAP `idempotency_hardening.test.sql` 8/8 PASS via cloud MCP (T1-T3, T6-T8 cover tablet) ; Vitest live `idempotency-hardening.test.ts` TS1-TS2 cover happy path + retry semantics ; POS smoke `tablet-send-idempotent.smoke.test.tsx` 2/2 PASS.
+
+Reference plan : [`../plans/2026-05-19-session-25-INDEX.md`](../plans/2026-05-19-session-25-INDEX.md). Closes TASK-17-002 (DONE) + gap audit S23 17-1. Tablet PWA offline queue (TASK-17-001 — IndexedDB queue + sync) remains deferred ; S25 ships the online idempotence prerequisite that the offline retry path will rely on.
+
+---
+
 > Référence : [docs/reference/04-modules/17-tablet-ordering.md](../04-modules/17-tablet-ordering.md)
 > Sources d'audit : `docs/audit/08-operations-lan-audit.md` (TABLET_ORDER_SUBMIT processed by hub, dual-channel risks), `docs/audit/07-product-backlog-audit.md` ("Online-only architecture, no offline fallback Lombok"), `docs/audit/05-uiux-design-audit.md` (touch targets — tablet ordering)
 
@@ -35,7 +48,8 @@
 **Risques** : conflits si même table éditée online et offline (TASK-17-006) — résolution last-write-wins ou merge.
 **Notes** : Lombok ISP downtime documenté. Test réel obligatoire en condition dégradée.
 
-### TASK-17-002 — Sync resilience + idempotence après reconnect [P1] [TODO]
+### TASK-17-002 — Sync resilience + idempotence après reconnect [P1] [DONE]
+**Status note (2026-05-20)** : S25 update — **DONE for the online idempotence side**. `create_tablet_order` v1 bumped to `create_tablet_order_v2(p_client_uuid UUID, ...)` (migrations `20260602000010..015`) with replay via dedicated `tablet_order_idempotency_keys` table (PK = `client_uuid`). POS `useCreateTabletOrder` requires `clientUuid` ; both `TabletOrderPage.tsx` and `TabletCheckoutButton.tsx` own a `useRef(crypto.randomUUID())` reset on success. pgTAP T1-T3 + Vitest live TS1-TS2 + POS smoke 2/2 PASS. The LAN hub `handleTabletOrderSubmit` ack-with-same-UUID retry remains deferred (LAN-side ack flow is part of TASK-21-* hub work) but the core submit-side idempotent upsert is in place — duplicate submits via React-Query retries, double-tap, or browser refresh now return the same `order_id` without double-inserting `orders` or `order_items`.
 **Status note (2026-05-14)** : Genuinely undone. `create_tablet_order` RPC (`supabase/migrations/20260507000003_create_tablet_order_rpc.sql`) has NO `p_client_uuid` / `p_idempotency_key` arg and the V3 `useCreateTabletOrder.ts` hook does not pass one. Per Phase 4.D deviation `D-W4-4D-02`, the realtime listener dedups by `(order_item_id, kitchen_status)` keys client-side but the submit-side idempotent upsert remains. Carry-over.
 **Contexte** : Audit Bob — `handleTabletOrderSubmit` dans hub message handler. Si connexion WS coupe pendant submit, order peut être créée 2× (côté tablette retry + côté hub déjà reçu).
 **Critère d'acceptation** :

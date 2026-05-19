@@ -1,4 +1,4 @@
-import type { JSX } from 'react';
+import { useRef, type JSX } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button } from '@breakery/ui';
@@ -14,17 +14,23 @@ export function TabletCheckoutButton(): JSX.Element {
   const userId = useAuthStore((s) => s.user?.id);
   const navigate = useNavigate();
   const mutation = useCreateTabletOrder();
+  const clientUuidRef = useRef<string>(crypto.randomUUID());
 
   const isEmpty = items.length === 0;
 
   function handleSend() {
     if (!userId) return;
     mutation.mutate(
-      { cart: { items, tableNumber, orderType }, waiterId: userId },
+      {
+        cart: { items, tableNumber, orderType },
+        waiterId: userId,
+        clientUuid: clientUuidRef.current,
+      },
       {
         onSuccess: () => {
           toast.success('Order sent to kitchen');
           clearCart();
+          clientUuidRef.current = crypto.randomUUID();
           void navigate('/tablet/orders');
         },
         onError: (err) => {
