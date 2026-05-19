@@ -1,6 +1,6 @@
 # Roadmap globale — The Breakery ERP (V3 monorepo)
 
-> Last updated: 2026-05-19 (audit S23 + WONTFIX mono-site)
+> Last updated: 2026-05-20 (Session 25 — Hardening Idempotency Cross-EF merged)
 > Source initiale : agrégation des 8 audits 2026-04-09 + `CURRENT_STATE.md` + revue de code 2026-05-03
 > Refresh : intègre l'avancement S13-S22 mergé + audit complet 21 modules métier 2026-05-19 + décision mono-site permanent (4 items WONTFIX)
 > Plan S24-S30 : [`../plans/2026-05-19-S24-to-S30-plan.md`](../plans/2026-05-19-S24-to-S30-plan.md)
@@ -117,6 +117,7 @@ graph TD
 | S21 | 2026-05-18 | swarm/session-21 | Polish hardening reliquat : pg_net birthday cron + cash flow 3-sections + Playwright E2E 3-flow CI + staging-deploy secrets + LAN dedup tests + idle warning toast + PIN regex fix + ChangePinModal UX (5 migrations, 1 EF, 3 e2e specs, 4 UI fixes) |
 | S22 | 2026-05-18 | swarm/session-22 | Focus-trap lock-in + WAC bypass guard + Retry-After 429 (2 streams parallèles + closeout, 8 commits, 5 migrations `20260526000010..014`, 4 RTL focus-trap test files + ESLint inline rule + RPC `update_cost_price_v1` + 5 EFs wired) |
 | S24 | 2026-05-19 | swarm/session-24 | B2B Foundation : backend du dashboard shippé S14. 11 migrations `20260601000005..022` (b2b_payments ledger, view_b2b_invoices, view_ar_aging, REVOKE UPDATE customers.b2b_current_balance, B2B_PAYMENT_BANK mapping, 3 RPCs `record_b2b_payment_v1` / `adjust_b2b_balance_v1` / `create_b2b_order_v1` qui câble enfin `validate_b2b_credit_limit_v1`) + UI BO (useB2bDashboard aging from view, CreateB2bOrderModal, RecordB2bPaymentModal, B2BPaymentsPage Received tab) + tests (pgTAP 15, Vitest live 5, BO smoke 3). Closes TASK-09-001 (KPI side), 09-002, 09-006 + deviations D-W6-B2B-01 + D-W6-B2BPAY-01. (12 commits, 3 waves, 11 migrations) |
+| S25 | 2026-05-20 | swarm/session-25 | Hardening Idempotency Cross-EF : 2 flux mutateurs critiques sécurisés. **DB** 6 migrations `20260602000010..015` : `tablet_order_idempotency_keys` table dédiée (PK=client_uuid), `create_tablet_order_v2(p_client_uuid, ...)` avec replay + drop v1 même migration, REVOKE EXECUTE FROM anon + corrective `_013` `ALTER DEFAULT PRIVILEGES FROM PUBLIC`, corrective `_014` relax `orders.session_id` pour `created_via='tablet'` (latent S24 bug caught par pgTAP T1), corrective `_015` fix dormant S13 RECORD-not-assigned bug dans `refund_order_rpc_v2` replay branch. **EF** : `_shared/idempotency.ts` helper (1 export `getIdempotencyKey`), `refund-order` v7 deployed cloud — PIN body → header `x-manager-pin` (hard cutover) + `p_idempotency_key` propagé via header `x-idempotency-key` + log `audit_logs.action='refund.replay'`. **POS** : 6 fichiers modifiés (refund hook+modal, tablet hook+page+checkout button) avec `useRef(crypto.randomUUID())` lifecycle. **Tests** : pgTAP 8/8 PASS, Vitest live 5 scénarios authored (live run needs SUPABASE_SERVICE_ROLE_KEY), POS smoke 4/4 PASS, typecheck 6/6 PASS. **CLAUDE.md** : Critical patterns enrichi (PIN-en-header + Idempotency 2-flavors). Closes TASK-17-002 (DONE), TASK-03-001/002 (refund EF side), gaps audit S23 03-1 / 03-2 / 17-1. (18 commits, 3 waves, 6 migrations) |
 
 ### Cadence prévisionnelle
 
@@ -150,6 +151,9 @@ Le rythme actuel est de **~1 session tous les 1-3 jours**, taille variable (5-68
 | B2B AR aging réel (sur invoice_date, pas last_visit_at) | enabled | DONE S24 (`view_ar_aging` + `view_b2b_invoices` buckets current/31-60/61-90/90+ ; useB2bDashboard reads the view) |
 | B2B credit limit enforcement (RPC câblé dans le path order) | enabled | DONE S24 (`create_b2b_order_v1` calls `validate_b2b_credit_limit_v1` pre-insert + raise `credit_limit_exceeded` P0011 with payload would_exceed_by) |
 | B2B paiement ledger (audit append-only) | enabled | DONE S24 (`b2b_payments` table, REVOKE INSERT/UPDATE/DELETE + `record_b2b_payment_v1` SECURITY DEFINER + JE DR Cash/Bank / CR B2B_AR) |
+| refund-order idempotent | enabled | DONE S25 (`p_idempotency_key` wired via `x-idempotency-key` header → `refund_order_rpc_v2` ; POS `useRef(crypto.randomUUID())` lifecycle + replay envelope + `audit_logs.action='refund.replay'`) |
+| create_tablet_order idempotent | enabled | DONE S25 (`create_tablet_order_v2` avec `p_client_uuid` + table dédiée `tablet_order_idempotency_keys` ; v1 dropped same migration ; POS `useRef` lifecycle sur `TabletOrderPage` + `TabletCheckoutButton`) |
+| PIN-en-header pattern | enabled | DONE S25 (hard cutover `refund-order` PIN body → header `x-manager-pin` ; helper `_shared/idempotency.ts` ; pattern à étendre aux autres EF managériaux `void-order`, `cancel-item`, `kiosk-issue-jwt` S26+) |
 
 ---
 
