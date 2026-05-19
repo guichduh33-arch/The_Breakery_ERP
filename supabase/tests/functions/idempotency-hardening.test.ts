@@ -93,10 +93,12 @@ function jwtClient(token: string): SupabaseClient {
 }
 
 // Type-erased rpc helper (generated types may lag staging).
+// MUST .bind(sb) — supabase-js `rpc` is a method that reads `this.fetch.rest` ;
+// unbound returns 'Cannot read properties of undefined (reading "rest")'.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function rpc(sb: SupabaseClient): (fn: string, args?: Record<string, unknown>) => Promise<{ data: any; error: { message: string; code?: string } | null }> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return sb.rpc as any;
+  return sb.rpc.bind(sb) as any;
 }
 
 describe('S25 idempotency hardening — Vitest live', () => {
