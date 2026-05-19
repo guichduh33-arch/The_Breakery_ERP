@@ -38,9 +38,13 @@ const SUPABASE_URL = process.env.VITE_SUPABASE_URL
   ?? process.env.SUPABASE_URL
   ?? 'http://127.0.0.1:54321';
 const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
+// Fallback = V3 dev publishable key (project `ikcyvlovptebroadgtvd`).
+// Fetched via MCP `get_publishable_keys` — safe to inline because it's the
+// public anon-tier key, not a secret. Lead exports SUPABASE_ANON_KEY locally
+// only when targeting a different project.
 const ANON    = process.env.SUPABASE_ANON_KEY
   ?? process.env.VITE_SUPABASE_ANON_KEY
-  ?? 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH';
+  ?? 'sb_publishable_bJehhsPF6Hbg5nJKFCQWWw_Npz7gt1Z';
 
 const PIN_FN_URL    = `${SUPABASE_URL}/functions/v1/auth-verify-pin`;
 const REFUND_FN_URL = `${SUPABASE_URL}/functions/v1/refund-order`;
