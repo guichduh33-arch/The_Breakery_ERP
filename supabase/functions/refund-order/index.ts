@@ -21,6 +21,7 @@ import { rateLimitedResponse } from '../_shared/responses.ts';
 import { checkRateLimitDurable, getClientIp } from '../_shared/rate-limit.ts';
 import { verifyManagerPin } from '../_shared/manager-pin.ts';
 import { getIdempotencyKey, InvalidIdempotencyKeyError } from '../_shared/idempotency.ts';
+import { getAdminClient } from '../_shared/supabase-admin.ts';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const VALID_METHODS = ['cash', 'card', 'qris', 'edc', 'transfer', 'store_credit'];
@@ -38,6 +39,19 @@ serve(async (req) => {
 
   if (req.method !== 'POST') return jsonResponse({ error: 'method_not_allowed' }, 405);
 
+  // S25 CR fix — rate-limit MUST run before any header/body validation so that an
+  // attacker cannot flood the endpoint with malformed requests to bypass accounting.
+  const ip = getClientIp(req);
+  const rl = await checkRateLimitDurable({
+    functionName: 'refund-order',
+    bucketKey:    `ip:${ip}`,
+    ipAddress:    ip,
+    maxPerWindow: 10,
+    windowSec:    60,
+  });
+  // S22 / 1.B.2 — DEV-S19-2.A-02 : surface Retry-After header alongside body.
+  if (!rl.allowed) return rateLimitedResponse(rl.retryAfterSec);
+
   const managerPin = req.headers.get('x-manager-pin');
   if (!managerPin || managerPin.trim().length === 0) {
     return jsonResponse({ error: 'missing_manager_pin' }, 400);
@@ -52,17 +66,6 @@ serve(async (req) => {
     }
     throw err;
   }
-
-  const ip = getClientIp(req);
-  const rl = await checkRateLimitDurable({
-    functionName: 'refund-order',
-    bucketKey:    `ip:${ip}`,
-    ipAddress:    ip,
-    maxPerWindow: 10,
-    windowSec:    60,
-  });
-  // S22 / 1.B.2 — DEV-S19-2.A-02 : surface Retry-After header alongside body.
-  if (!rl.allowed) return rateLimitedResponse(rl.retryAfterSec);
 
   const authHeader = req.headers.get('authorization');
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -135,7 +138,11 @@ serve(async (req) => {
   }
 
   if (data?.idempotent_replay === true) {
-    await userClient.from('audit_logs').insert({
+    // S25 CR fix — audit_logs has RLS with no INSERT policy for `authenticated` ;
+    // use the service-role admin client so the row is actually written. Failure
+    // is logged but does not fail the user response (audit is best-effort here).
+    const admin = getAdminClient();
+    const { error: auditErr } = await admin.from('audit_logs').insert({
       actor_id:    mgr.manager_profile_id,
       action:      'refund.replay',
       entity_type: 'orders',
@@ -145,6 +152,9 @@ serve(async (req) => {
         refund_id:       data.refund_id,
       },
     });
+    if (auditErr) {
+      console.warn('[refund-order] audit_logs insert failed', auditErr);
+    }
   }
 
   return jsonResponse({
