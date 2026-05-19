@@ -21,6 +21,10 @@ vi.mock('@/lib/supabase.js', () => {
     { id: 'o2', order_number: 'B2B-0002', total: 500000, status: 'pending',
       created_at: '2026-05-12T08:00:00Z', customer_id: 'b1', paid_at: null },
   ];
+  // S24 — view_ar_aging now provides the real buckets.
+  const aging = [
+    { customer_id: 'b1', bucket: 'current', invoice_count: 1, total_outstanding: 250000, max_age_days: 7 },
+  ];
   type Resolver = (v: unknown) => void;
   const make = (rows: unknown[]) => {
     const builder: Record<string, unknown> = {
@@ -37,7 +41,8 @@ vi.mock('@/lib/supabase.js', () => {
   return {
     supabase: {
       from: (table: string) => {
-        if (table === 'orders') return make(orders);
+        if (table === 'orders')        return make(orders);
+        if (table === 'view_ar_aging') return make(aging);
         return make(clients);
       },
     },
@@ -46,7 +51,10 @@ vi.mock('@/lib/supabase.js', () => {
 
 vi.mock('@/stores/authStore.js', () => ({
   useAuthStore: (sel: (s: { hasPermission: (p: string) => boolean }) => unknown) =>
-    sel({ hasPermission: (p: string) => p === 'customers.read' }),
+    sel({
+      hasPermission: (p: string) =>
+        p === 'customers.read' || p === 'pos.sale.create' || p === 'customers.update',
+    }),
 }));
 
 function renderPage() {
@@ -81,9 +89,9 @@ describe('B2BDashboardPage', () => {
     expect(screen.getByText('CV Bali')).toBeInTheDocument();
   });
 
-  it('disables + New B2B Order with the deviation explanation', async () => {
+  it('S24 — + New B2B Order is now enabled (RPC landed)', async () => {
     renderPage();
     const btn = await screen.findByRole('button', { name: /new b2b order/i });
-    expect(btn).toBeDisabled();
+    expect(btn).toBeEnabled();
   });
 });
