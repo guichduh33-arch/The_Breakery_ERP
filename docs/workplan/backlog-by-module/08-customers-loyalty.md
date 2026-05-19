@@ -170,8 +170,9 @@
 **Risques** : abus si on crée des faux comptes — limite "1 parrainage par téléphone unique".
 **Notes** : V1 simple ; V2 codes parrainage uniques scannables.
 
-### TASK-08-011 — Multi-établissement (préparer V3) [P3] [BLOCKED]
+### TASK-08-011 — Multi-établissement (préparer V3) [P3] [WONTFIX]
 **Status note (2026-05-14)** : Deferred to Wave 7 per INDEX line 69 "Phase 7.X Multi-currency, multi-tenancy, mobile shell, B2B portal — sessions 14+" and dependency on TASK-10-020 (Accounting consolidation). No `establishment_id` propagation in V3 schema. Multi-tenancy is an explicit Session 14+ scope item.
+**Status note (2026-05-19)** : **WONTFIX per user decision** — The Breakery confirme mono-site permanent. Multi-establishment loyalty (split/share/group) hors scope indéfiniment. Cascade : TASK-10-020 et TASK-19-008 également WONTFIX. Voir audit S23 (`docs/workplan/plans/2026-05-19-S24-to-S30-plan.md`).
 **Contexte** : une seule base client aujourd'hui. Si The Breakery ouvre un 2e site (autre Ubud par ex), pas de partage / cloisonnement.
 **Bénéfice attendu** : un client peut être actif sur plusieurs sites avec son historique partagé OU cloisonné selon la politique commerciale.
 **Critère d'acceptation** :

@@ -16,7 +16,7 @@
 
 ### TASK-16-001 — Layouts customisables (config admin) [P2] [TODO]
 **Status note (2026-05-14)** : Partial — Phase 4.C delivered `display_screens` registry (migration `…000160`), token-only `BrandedLayout.tsx` (no hardcoded hex per D-W4-4C-04 verification), pair-device flow, kiosk JWT auth gate, queue ticker. The admin Settings CRUD page for theme/logo/layout-variant and `display_configurations` table are NOT built. The token foundation is in place so the polish belongs in Session 14 Wave 2/3. Visual fidelity work tracked: docs/workplan/plans/2026-05-14-session-14-INDEX.md.
-**Contexte** : Audit Sally P1-5 — couleurs hardcodées dans `CDIdleView.tsx` et `CDActiveCartView.tsx`. Pas d'admin pour personnaliser. Logo The Breakery et palette stables aujourd'hui mais avant un éventuel multi-établissement, doit être config-driven.
+**Contexte** : Audit Sally P1-5 — couleurs hardcodées dans `CDIdleView.tsx` et `CDActiveCartView.tsx`. Pas d'admin pour personnaliser. Justification : permettre au manager de changer logo/palette/layout pour campagnes saisonnières (Ramadan, Noël, événements) sans toucher au code.
 **Critère d'acceptation** :
 - [ ] Table `display_configurations(id, terminal_id NULLABLE, theme_jsonb, logo_url, layout_variant: 'classic' | 'minimal' | 'video', is_active)`.
 - [ ] Page Settings `/settings/customer-display` : preview live + selectors couleurs (BG, accent, text), upload logo, upload background image.

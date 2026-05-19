@@ -182,6 +182,7 @@
 
 ### TASK-12-012 — Coffre-fort intégré (module Cash Management) [P3] [TODO]
 **Status note (2026-05-14)** : Not delivered Session 13 — no `cash_safes` / multi-safe `cash_movements` tables in V3. Depends on TASK-12-009 (also TODO). Pertinent only when The Breakery scales to multi-site. Still applicable, scheduled Session 15+.
+**Status note (2026-05-19)** : Réévalué post-audit S23 — **pertinent même en mono-site** (cash entre clôture tiroir et dépôt banque, petite caisse, retraits manager). Retirer la mention "Pertinent only when multi-site" — un seul coffre est suffisant mais la traçabilité reste requise. Scope V1 réduit : mono-coffre + workflow tiroir→coffre→banque. Reste TODO P3.
 **Contexte** : aujourd'hui aucune gestion du coffre-fort interne (où va le cash entre la clôture du tiroir et le dépôt banque ?). Pas de visibilité sur les mouvements inter-coffres ni les retraits pour la petite caisse.
 **Bénéfice attendu** : module Cash Management complet — coffre, dépôts banque, retraits, mouvements inter-coffres, audit complet.
 **Critère d'acceptation** :
@@ -192,8 +193,8 @@
 - [ ] Audit log + double signature pour gros transferts.
 **Dépend de** : `TASK-12-009`.
 **Estimation** : XL
-**Risques** : surdimensionné pour un seul point de vente — pertinent quand The Breakery aura 2+ adresses.
-**Notes** : V1 mono-coffre suffit ; V2 multi-coffres pour scale.
+**Risques** : surdimensionné si on ship le multi-coffres d'office — viser **V1 mono-coffre** simple (1 table `cash_safe` singleton + `cash_movements` typés).
+**Notes** : V1 mono-coffre = bon usage immédiat (cash overnight + petite caisse + dépôts) ; pas de V2 multi-coffres prévu post-décision mono-site 2026-05-19.
 
 ## Vue transversale
 

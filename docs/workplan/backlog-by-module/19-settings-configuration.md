@@ -112,8 +112,9 @@
 **Risques** : index à maintenir manuellement si nouveau setting ajouté → dette ; envisager génération automatique depuis schemas zod (TASK-19-003)
 **Notes** : reuse pattern `CommandPalette` du BackOfficeLayout
 
-### TASK-19-008 — Multi-tenancy settings (foundation) [P3] [BLOCKED]
+### TASK-19-008 — Multi-tenancy settings (foundation) [P3] [WONTFIX]
 **Status note (2026-05-14)** : Deferred to Wave 7 (Session 15) per INDEX line 1083 : "19-008 multi-tenancy infra (Session 15)". Out of scope for Session 13.
+**Status note (2026-05-19)** : **WONTFIX per user decision** — The Breakery confirme mono-site permanent. Aucune propagation `store_id` requise. ADR-001-multi-store-settings non rédigée. Cascade : TASK-21-011, TASK-08-011, TASK-10-020 également WONTFIX. Voir audit S23 (`docs/workplan/plans/2026-05-19-S24-to-S30-plan.md`).
 **Contexte** : `CLAUDE.md` projet "single bakery". Si V3 multi-store envisagé (`docs/audit/07-product-backlog-audit.md` §15 multi-currency), les settings doivent être scopables par `store_id`.
 **Critère d'acceptation** :
 - [ ] Investigation : ajouter colonne `store_id NULL` à `settings`, `pos_config`, `accounting_mappings`, `tax_rates` ; NULL = global
@@ -205,7 +206,7 @@
 **Dépend de** : aucune.
 **Estimation** : L
 **Risques** : maintenance — chaque nouvelle page settings doit potentiellement entrer dans le wizard.
-**Notes** : valeur surtout pour les déploiements multi-sites futurs.
+**Notes** : valeur pour onboarding du 1er déploiement et refresh installs après upgrade majeur.
 
 ### TASK-19-014 — Multi-devise toggle (foundation) [P3] [BLOCKED]
 **Status note (2026-05-14)** : Deferred to Wave 7 (Session 14) per INDEX line 1082 : "10-019 multi-currency end-to-end (Session 14)". Setting toggle blocked until accounting/POS/purchasing multi-currency pieces land.

@@ -1,8 +1,9 @@
 # Roadmap globale — The Breakery ERP (V3 monorepo)
 
-> Last updated: 2026-05-18 (S21 refresh)
+> Last updated: 2026-05-19 (audit S23 + WONTFIX mono-site)
 > Source initiale : agrégation des 8 audits 2026-04-09 + `CURRENT_STATE.md` + revue de code 2026-05-03
-> Refresh : intègre l'avancement S13-S20 (Sessions 13 à 19 mergées, S20 prête à merger)
+> Refresh : intègre l'avancement S13-S22 mergé + audit complet 21 modules métier 2026-05-19 + décision mono-site permanent (4 items WONTFIX)
+> Plan S24-S30 : [`../plans/2026-05-19-S24-to-S30-plan.md`](../plans/2026-05-19-S24-to-S30-plan.md)
 
 ---
 
@@ -25,7 +26,9 @@ Entre Session 13 (2026-05-13) et Session 20 (2026-05-17), The Breakery a effectu
 
 ### Prochains jalons
 
-- **Session 20+** : triage du backlog résiduel post-S19, probables thèmes : compliance fiscale (si PKP confirmé) ; ou polish hardening reliquat (RLS anon, message dedup LAN) ; ou mobile shell ; ou WAC landed cost.
+- **Session 23 (en cours)** : Landed cost shipping pro-rata + skip_wac sample/promo (TASK-07-012 + DEV-S17-1.C-01). Spec : [`../specs/2026-05-19-session-23-spec.md`](../specs/2026-05-19-session-23-spec.md).
+- **Sessions 24-30** : 7 sessions séquencées issues de l'audit 21-modules du 2026-05-19. Voir [`../plans/2026-05-19-S24-to-S30-plan.md`](../plans/2026-05-19-S24-to-S30-plan.md). Thèmes : B2B Foundation (S24), Idempotency Hardening (S25), Comptable Cockpit (S26), Product CRUD (S27), Expense Governance (S28), Reports Export + Z-Report PDF (S29), Decision Sprint + Cleanup (S30).
+- **Items WONTFIX 2026-05-19** (décision mono-site permanent) : TASK-08-011 (multi-établissement loyalty), TASK-10-020 (consolidation multi-entité), TASK-19-008 (multi-tenancy foundation), TASK-21-011 (multi-LAN segmentation). 4 items BLOCKED purgés du backlog actif.
 - **Cycle review** : tous les 3-5 sessions, refresh de cette roadmap + des Status notes (`docs/workplan/backlog-by-module/0N-*.md`).
 
 ---
@@ -113,6 +116,7 @@ graph TD
 | S20 | 2026-05-17 | swarm/session-20 | Defense-in-depth GRANT hardening : refund_sequences RLS, anon table-GRANT sweep, anon function-EXECUTE sweep (+ PUBLIC inheritance corrective `_31`), 5 operational authenticated USING(true) policies tightened (5 migrations) |
 | S21 | 2026-05-18 | swarm/session-21 | Polish hardening reliquat : pg_net birthday cron + cash flow 3-sections + Playwright E2E 3-flow CI + staging-deploy secrets + LAN dedup tests + idle warning toast + PIN regex fix + ChangePinModal UX (5 migrations, 1 EF, 3 e2e specs, 4 UI fixes) |
 | S22 | 2026-05-18 | swarm/session-22 | Focus-trap lock-in + WAC bypass guard + Retry-After 429 (2 streams parallèles + closeout, 8 commits, 5 migrations `20260526000010..014`, 4 RTL focus-trap test files + ESLint inline rule + RPC `update_cost_price_v1` + 5 EFs wired) |
+| S24 | 2026-05-19 | swarm/session-24 | B2B Foundation : backend du dashboard shippé S14. 11 migrations `20260601000005..022` (b2b_payments ledger, view_b2b_invoices, view_ar_aging, REVOKE UPDATE customers.b2b_current_balance, B2B_PAYMENT_BANK mapping, 3 RPCs `record_b2b_payment_v1` / `adjust_b2b_balance_v1` / `create_b2b_order_v1` qui câble enfin `validate_b2b_credit_limit_v1`) + UI BO (useB2bDashboard aging from view, CreateB2bOrderModal, RecordB2bPaymentModal, B2BPaymentsPage Received tab) + tests (pgTAP 15, Vitest live 5, BO smoke 3). Closes TASK-09-001 (KPI side), 09-002, 09-006 + deviations D-W6-B2B-01 + D-W6-B2BPAY-01. (12 commits, 3 waves, 11 migrations) |
 
 ### Cadence prévisionnelle
 
@@ -143,6 +147,9 @@ Le rythme actuel est de **~1 session tous les 1-3 jours**, taille variable (5-68
 | Modal focus-trap audit | locked-in | DONE S22 (16 RTL tests on Dialog/Sheet/FullScreenModal/CenterModal + ESLint `no-raw-modal-overlay` rule wired at `error` in root flat config + 1 pre-existing raw overlay remediated in MarginWatchPage) |
 | WAC bypass guard sur `products.cost_price` | enabled | DONE S22 (column-level REVOKE UPDATE + RPC `update_cost_price_v1` SECURITY DEFINER + audit row in `stock_movements` movement_type=`cost_price_correction`) |
 | HTTP 429 `Retry-After` header sur EFs rate-limited | enabled | DONE S22 (5 EFs : `auth-verify-pin`, `kiosk-issue-jwt` ×2 buckets, `refund-order`, `void-order`, `cancel-item` via `_shared/responses.ts` helper) |
+| B2B AR aging réel (sur invoice_date, pas last_visit_at) | enabled | DONE S24 (`view_ar_aging` + `view_b2b_invoices` buckets current/31-60/61-90/90+ ; useB2bDashboard reads the view) |
+| B2B credit limit enforcement (RPC câblé dans le path order) | enabled | DONE S24 (`create_b2b_order_v1` calls `validate_b2b_credit_limit_v1` pre-insert + raise `credit_limit_exceeded` P0011 with payload would_exceed_by) |
+| B2B paiement ledger (audit append-only) | enabled | DONE S24 (`b2b_payments` table, REVOKE INSERT/UPDATE/DELETE + `record_b2b_payment_v1` SECURITY DEFINER + JE DR Cash/Bank / CR B2B_AR) |
 
 ---
 

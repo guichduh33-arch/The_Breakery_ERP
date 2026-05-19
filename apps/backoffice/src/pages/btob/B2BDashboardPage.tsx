@@ -1,17 +1,8 @@
 // apps/backoffice/src/pages/btob/B2BDashboardPage.tsx
 //
 // Session 14 / Phase 5.B — B2B Wholesale dashboard.
-//
-// Mirrors docs/Design/backoffice/btob dashboard.jpg :
-//   - Header: title + Payments / + New B2B Order
-//   - 5 KpiTiles: Active Clients / Monthly Revenue / Outstanding AR /
-//     Pending Orders / Total Orders
-//   - Two columns: Top Clients (left) + Recent Orders (right)
-//   - Aging summary card (0-30 / 31-60 / 61-90 / 90+)
-//   - Quick links row: B2B Orders / Payments / + New Order
-//
-// SCOPE NOTE: no `create_b2b_order_v*` RPC exists yet. + New B2B Order is
-// disabled and explained inline. Tracked as deviation D-W6-B2B-01.
+// Session 24 / Phase 2.A.3 — "+ New B2B Order" now opens CreateB2bOrderModal
+// which calls create_b2b_order_v1 (closes deviation D-W6-B2B-01).
 
 import { Link } from 'react-router-dom';
 import { useState, type JSX } from 'react';
@@ -42,6 +33,7 @@ import {
   type B2bClientRow,
   type B2bRecentOrder,
 } from '@/features/btob/hooks/useB2bDashboard.js';
+import { CreateB2bOrderModal } from '@/features/btob/components/CreateB2bOrderModal.js';
 
 const AGING_TONES: Record<string, string> = {
   Current:  'text-success',
@@ -53,7 +45,8 @@ const AGING_TONES: Record<string, string> = {
 export default function B2BDashboardPage(): JSX.Element {
   const hasPermission = useAuthStore((s) => s.hasPermission);
   const canRead   = hasPermission('customers.read');
-  const [info, setInfo] = useState<string | null>(null);
+  const canCreate = hasPermission('pos.sale.create');
+  const [createOpen, setCreateOpen] = useState<boolean>(false);
 
   const dash = useB2bDashboard();
 
@@ -79,19 +72,13 @@ export default function B2BDashboardPage(): JSX.Element {
           <Button
             variant="primary"
             size="md"
-            disabled
-            onClick={() => setInfo('B2B order creation requires a dedicated RPC. Tracked as deviation D-W6-B2B-01.')}
+            disabled={!canCreate}
+            onClick={() => setCreateOpen(true)}
           >
             <Plus className="h-4 w-4" aria-hidden /> New B2B Order
           </Button>
         </div>
       </header>
-
-      {info !== null && (
-        <div role="status" className="rounded-md border border-border-subtle bg-bg-overlay p-3 text-xs text-text-secondary">
-          {info}
-        </div>
-      )}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
         <KpiTile
@@ -150,6 +137,8 @@ export default function B2BDashboardPage(): JSX.Element {
         <QuickLink to="/backoffice/b2b/payments" icon={CreditCard} title="Payments" desc="Track collections and balances" />
         <QuickLink to="/backoffice/b2b/settings" icon={FileText} title="B2B Settings" desc="Payment terms & aging buckets" />
       </div>
+
+      <CreateB2bOrderModal open={createOpen} onClose={() => setCreateOpen(false)} />
     </div>
   );
 }
