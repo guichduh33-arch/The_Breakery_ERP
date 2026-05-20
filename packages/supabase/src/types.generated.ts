@@ -2318,6 +2318,7 @@ export type Database = {
           group_sort_order: number
           group_type: Database["public"]["Enums"]["modifier_group_type"]
           id: string
+          ingredients_to_deduct: Json
           is_active: boolean
           is_default: boolean
           option_icon: string | null
@@ -2336,6 +2337,7 @@ export type Database = {
           group_sort_order?: number
           group_type?: Database["public"]["Enums"]["modifier_group_type"]
           id?: string
+          ingredients_to_deduct?: Json
           is_active?: boolean
           is_default?: boolean
           option_icon?: string | null
@@ -2354,6 +2356,7 @@ export type Database = {
           group_sort_order?: number
           group_type?: Database["public"]["Enums"]["modifier_group_type"]
           id?: string
+          ingredients_to_deduct?: Json
           is_active?: boolean
           is_default?: boolean
           option_icon?: string | null
@@ -2396,6 +2399,187 @@ export type Database = {
             foreignKeyName: "product_modifiers_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "view_recipe_products"
+            referencedColumns: ["product_id"]
+          },
+        ]
+      }
+      product_sections: {
+        Row: {
+          created_at: string
+          is_primary: boolean
+          product_id: string
+          section_id: string
+        }
+        Insert: {
+          created_at?: string
+          is_primary?: boolean
+          product_id: string
+          section_id: string
+        }
+        Update: {
+          created_at?: string
+          is_primary?: boolean
+          product_id?: string
+          section_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_sections_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "mv_stock_variance"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "product_sections_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_sections_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_product_available_stock"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "product_sections_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "view_recipe_products"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "product_sections_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "sections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_unit_alternatives: {
+        Row: {
+          code: string
+          created_at: string
+          deleted_at: string | null
+          display_order: number
+          factor_to_base: number
+          id: string
+          product_id: string
+          tags: string[]
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          deleted_at?: string | null
+          display_order?: number
+          factor_to_base: number
+          id?: string
+          product_id: string
+          tags?: string[]
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          deleted_at?: string | null
+          display_order?: number
+          factor_to_base?: number
+          id?: string
+          product_id?: string
+          tags?: string[]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_unit_alternatives_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "mv_stock_variance"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "product_unit_alternatives_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_unit_alternatives_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_product_available_stock"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "product_unit_alternatives_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "view_recipe_products"
+            referencedColumns: ["product_id"]
+          },
+        ]
+      }
+      product_unit_contexts: {
+        Row: {
+          created_at: string
+          product_id: string
+          purchase_unit: string
+          recipe_unit: string
+          sales_unit: string
+          stock_opname_unit: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          product_id: string
+          purchase_unit: string
+          recipe_unit: string
+          sales_unit: string
+          stock_opname_unit: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          product_id?: string
+          purchase_unit?: string
+          recipe_unit?: string
+          sales_unit?: string
+          stock_opname_unit?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_unit_contexts_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "mv_stock_variance"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "product_unit_contexts_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_unit_contexts_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "v_product_available_stock"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "product_unit_contexts_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
             referencedRelation: "view_recipe_products"
             referencedColumns: ["product_id"]
           },
@@ -2690,12 +2874,15 @@ export type Database = {
       products: {
         Row: {
           allergens: Database["public"]["Enums"]["allergen_type"][]
+          available_for_sale: boolean
           category_id: string
           cost_price: number
           created_at: string
           current_stock: number
+          deduct_stock: boolean
           default_shelf_life_hours: number | null
           deleted_at: string | null
+          description: string | null
           id: string
           image_url: string | null
           is_active: boolean
@@ -2708,18 +2895,23 @@ export type Database = {
           sku: string
           target_gross_margin_pct: number | null
           tax_inclusive: boolean
+          track_inventory: boolean
           unit: string
           updated_at: string
+          visible_on_pos: boolean
           wholesale_price: number | null
         }
         Insert: {
           allergens?: Database["public"]["Enums"]["allergen_type"][]
+          available_for_sale?: boolean
           category_id: string
           cost_price?: number
           created_at?: string
           current_stock?: number
+          deduct_stock?: boolean
           default_shelf_life_hours?: number | null
           deleted_at?: string | null
+          description?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean
@@ -2732,18 +2924,23 @@ export type Database = {
           sku: string
           target_gross_margin_pct?: number | null
           tax_inclusive?: boolean
+          track_inventory?: boolean
           unit?: string
           updated_at?: string
+          visible_on_pos?: boolean
           wholesale_price?: number | null
         }
         Update: {
           allergens?: Database["public"]["Enums"]["allergen_type"][]
+          available_for_sale?: boolean
           category_id?: string
           cost_price?: number
           created_at?: string
           current_stock?: number
+          deduct_stock?: boolean
           default_shelf_life_hours?: number | null
           deleted_at?: string | null
+          description?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean
@@ -2756,8 +2953,10 @@ export type Database = {
           sku?: string
           target_gross_margin_pct?: number | null
           tax_inclusive?: boolean
+          track_inventory?: boolean
           unit?: string
           updated_at?: string
+          visible_on_pos?: boolean
           wholesale_price?: number | null
         }
         Relationships: [
@@ -6088,6 +6287,18 @@ export type Database = {
         }
         Returns: Json
       }
+      set_product_sections_v1: {
+        Args: {
+          p_primary_section_id: string
+          p_product_id: string
+          p_section_ids: string[]
+        }
+        Returns: Json
+      }
+      set_product_units_v1: {
+        Args: { p_alts: Json; p_contexts: Json; p_product_id: string }
+        Returns: Json
+      }
       set_setting_v1: {
         Args: { p_category: string; p_key: string; p_value: Json }
         Returns: undefined
@@ -6159,6 +6370,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      update_product_v1: {
+        Args: { p_patch: Json; p_product_id: string }
+        Returns: Json
+      }
       update_role_session_timeout_v1: {
         Args: { p_minutes: number; p_role_code: string }
         Returns: boolean
@@ -6173,6 +6388,10 @@ export type Database = {
       }
       update_user_role_v1: {
         Args: { p_new_role_code: string; p_reason: string; p_user_id: string }
+        Returns: Json
+      }
+      upsert_product_modifiers_v1: {
+        Args: { p_groups: Json; p_product_id: string }
         Returns: Json
       }
       upsert_recipe_v1: {
