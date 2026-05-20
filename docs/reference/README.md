@@ -1,9 +1,8 @@
 # The Breakery ERP — Documentation de référence
 
 > **Last verified**: 2026-05-13
-> **Version documentée**: V2 production (monolith Vite + React + Supabase déployé sur Vercel)
-> **URL prod**: https://the-breakery-pos.vercel.app/
-> **Périmètre**: V2 monolith. La reconstruction V3 (`breakery-platform/`) a sa propre documentation (`_bmad/output/planning-artifacts/`).
+> **Version documentée**: Vision business V2 (AppGrav monolithe Vite + React + Supabase) — **jamais déployée en production**. Conservée comme référence métier cible pour la construction V3.
+> **Implémentation réelle**: V3 monorepo pnpm + turbo (apps/pos + apps/backoffice + packages/{domain,supabase,ui,utils}). Voir [`../workplan/`](../workplan/) pour l'état d'avancement réel.
 > **Point d'entrée global** : voir [`../README.md`](../README.md) pour la carte complète de `docs/`.
 
 ---

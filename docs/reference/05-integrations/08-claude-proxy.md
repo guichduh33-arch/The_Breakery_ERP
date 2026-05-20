@@ -114,7 +114,7 @@ No code in `src/` invokes `claude-proxy` today. The active consumers are scripts
 | `scripts/run-audit.ts` | Audit helper |
 | `scripts/debug-error.ts` | Debug helper |
 
-> **Important**: There is no end-user feature wired to Claude in V2 production. The proxy is operational scaffolding kept ready for future LLM features (e.g. menu suggestions, customer FAQ bot). Any new UI use case must go through a permission gate (see "Hardening backlog" below).
+> **Important**: There is no end-user feature wired to Claude in V2 (which has never been deployed to production). The proxy is operational scaffolding kept ready for future LLM features (e.g. menu suggestions, customer FAQ bot). Any new UI use case must go through a permission gate (see "Hardening backlog" below).
 
 ## Security model
 

@@ -1,5 +1,7 @@
 # Module B2B — Objectif métier
 
+> **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée**. Implémentation V3 = **B2B Foundation livrée S24** (RPCs `validate_b2b_credit_limit_v1`, `record_b2b_payment_v1`, `adjust_b2b_balance_v1`, `b2b_order_v1` + B2BDashboardPage + modales). Reste à livrer : devis, abonnements, relances auto, portal client. Voir [`../V2_V3_GLOSSARY.md`](../V2_V3_GLOSSARY.md).
+>
 > **Périmètre fonctionnel** : ce document décrit **ce que le module B2B sert à faire au quotidien** pour The Breakery,
 
 ---

@@ -1,7 +1,9 @@
 # 📚 The Breakery ERP — Documentation
 
-> **Last updated** : 2026-05-13
-> **Périmètre** : doc unifiée du monolithe V2 (Vite + React + Supabase) déployé en production sur https://the-breakery-pos.vercel.app/. La reconstruction V3 (`breakery-platform/`) a sa propre doc (`_bmad/output/planning-artifacts/`).
+> **Last updated** : 2026-05-20
+> **Périmètre** : `docs/reference/` + `docs/objectif travail/` documentent la **vision business V2** (AppGrav monolithe) — **jamais déployée en production**, conservée comme référence métier cible. La construction réelle est le **monorepo V3** (apps/pos + apps/backoffice + packages/*) ; son état d'avancement vit dans `docs/workplan/`.
+>
+> **Pont V2 ↔ V3** : pour les renommages de symboles (`complete_order_with_payments` → `complete_order`, hooks renommés, pages déplacées, améliorations V3 sans équivalent V2), voir **[`V2_V3_GLOSSARY.md`](V2_V3_GLOSSARY.md)** — c'est le mapping de référence à consulter quand un nom V2 ne se retrouve pas dans le code V3.
 
 ---
 

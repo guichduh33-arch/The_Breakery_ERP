@@ -22,8 +22,8 @@ Cette page **n'est pas la source de vérité** du backlog vivant. Elle pointe ve
 
 | Item | État |
 |---|---|
-| Production-ready | ✅ depuis 2026-03-23 |
-| Hosting | Vercel — `https://the-breakery-pos.vercel.app/` |
+| Statut déploiement | ⛔ **Jamais déployée en production**. V2 reste un cahier des charges métier (référence cible pour V3) |
+| Hosting cible (si jamais déployé) | Vercel — `https://the-breakery-pos.vercel.app/` (URL réservée, non active) |
 | Sentry monitoring | ✅ actif (T1 backlog complet 2026-04-09) |
 | Tests | ~1770 tests, 71 fichiers, 9 pré-existants en échec (non régression) |
 | ESLint | `--max-warnings 80` (objectif T9 : abaisser) |

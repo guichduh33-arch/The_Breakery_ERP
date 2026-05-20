@@ -144,7 +144,7 @@ The trade-off: a bug in the Edge Function permission gate becomes a privilege-es
 
 All Edge Functions use the shared CORS helper at [_shared/cors.ts](../../../supabase/functions/_shared/cors.ts). Origin allowlist:
 
-- **Production**: `https://thebreakery.app`, `https://admin.thebreakery.app`, `https://pos.thebreakery.app`, `https://the-breakery-pos.vercel.app`.
+- **Production (cible, non active — V3 pas encore déployée)**: `https://thebreakery.app`, `https://admin.thebreakery.app`, `https://pos.thebreakery.app`, `https://the-breakery-pos.vercel.app`.
 - **Development**: `http://localhost:{3000,3001,5173}` and `http://127.0.0.1:{3000,3001,5173}`.
 - **Optional extras**: `EXTRA_ALLOWED_ORIGINS` env var, comma-separated.
 

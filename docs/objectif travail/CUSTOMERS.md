@@ -1,5 +1,7 @@
 # Module Customers — Objectif métier
 
+> **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée**. Implémentation V3 = DONE (`apps/backoffice/src/features/customers` + POS `apps/pos/src/features/customers` + customerCategories + loyalty). Hardening colonnes PII S15. Voir [`../V2_V3_GLOSSARY.md`](../V2_V3_GLOSSARY.md).
+>
 > **Périmètre fonctionnel** : ce document décrit **ce que le module Customers sert à faire au quotidien** pour The Breakery
 ---
 

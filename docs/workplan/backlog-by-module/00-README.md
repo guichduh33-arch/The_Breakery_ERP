@@ -16,7 +16,7 @@ Ce dossier rassemble le **travail restant** sur AppGrav V2, traduit en tâches a
 |--------|------|
 | `TODO` | Identifiée, pas commencée |
 | `DOING` | En cours (un seul `DOING` par développeur, idéalement) |
-| `DONE` | Mergée + déployée + vérifiée en production |
+| `DONE` | Mergée + vérifiée (V3 monorepo — pas de prod déployée à ce jour) |
 | `BLOCKED` | Bloquée — préciser la dépendance/raison dans `Notes` |
 
 ### Priorités

@@ -1,6 +1,7 @@
 # 08 — Incident Response
 
 > **Last verified**: 2026-05-03
+> **Statut applicabilité**: Playbook préparé pour la future mise en prod de **V3** (monorepo). V2 n'a jamais été déployée — les commandes `curl`, URLs et procédures ci-dessous sont une référence pré-prod à activer le jour du go-live V3.
 
 ## Purpose
 

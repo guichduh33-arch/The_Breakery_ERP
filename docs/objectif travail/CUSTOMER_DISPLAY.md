@@ -1,5 +1,7 @@
 # Module Customer Display — Objectif métier
 
+> **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée**. Implémentation V3 = PARTIELLE (feature `apps/pos/src/features/display` existe — à vérifier en détail : table `display_promotions`, animations fidélité, ORDER_READY notification KDS). Voir [`../V2_V3_GLOSSARY.md`](../V2_V3_GLOSSARY.md).
+>
 > **Périmètre fonctionnel** : ce document décrit **ce que le module Customer Display (`/display`) sert à faire au quotidien** pour The Breakery
 
 ---

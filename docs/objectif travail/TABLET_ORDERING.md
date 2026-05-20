@@ -1,5 +1,7 @@
 # Module Tablet Ordering — Objectif métier
 
+> **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée**. Implémentation V3 = DONE + amélioré (`create_tablet_order_v2` + table `idempotency_keys` S25, `useCreateTabletOrder` v2 + client_uuid lifecycle, `useTabletOffline`, PIN auth, ACK hub). Voir [`../V2_V3_GLOSSARY.md`](../V2_V3_GLOSSARY.md).
+>
 > **Périmètre fonctionnel** : ce document décrit **ce que le module Tablet Ordering (`/tablet`) sert à faire au quotidien** pour The Breakery,.
 
 ---

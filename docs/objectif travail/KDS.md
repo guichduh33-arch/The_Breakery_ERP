@@ -1,5 +1,7 @@
 # Module KDS (Kitchen Display System) — Objectif métier
 
+> **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée**. Implémentation réelle = V3 monorepo (`apps/pos/src/features/kds`). Voir [`../V2_V3_GLOSSARY.md`](../V2_V3_GLOSSARY.md).
+>
 > **Périmètre fonctionnel** : ce document décrit **ce que le module KDS (`/kds`, `/kds/:station`) sert à faire au quotidien** pour The Breakery,
 
 ---

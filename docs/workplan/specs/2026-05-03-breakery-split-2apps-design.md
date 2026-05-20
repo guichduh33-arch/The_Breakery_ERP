@@ -12,9 +12,9 @@
 
 ## 0. Contexte
 
-The Breakery est une boulangerie artisanale française à Lombok (Indonésie). L'ERP V2 actuel est un monolith React/Vite/Supabase de 248 composants, 364 pages, 166 hooks, 101 services, 14 stores et 223 migrations SQL, en production depuis 2026-03-23. Une reconstruction V3 est documentée dans `breakery-platform/` (Turborepo, 4 micro-apps).
+The Breakery est une boulangerie artisanale française à Lombok (Indonésie). L'ERP V2 (AppGrav) est un monolith React/Vite/Supabase de 248 composants, 364 pages, 166 hooks, 101 services, 14 stores et 223 migrations SQL — **jamais déployé en production**, conservé comme référence métier théorique. Une reconstruction V3 est documentée dans `breakery-platform/` (Turborepo, 4 micro-apps).
 
-Cette spec définit une **voie médiane** : split monolith en **2 apps** (`pos`, `backoffice`) plutôt que 4. Capture 80% du bénéfice de la séparation par persona pour 20% de la complexité, adapté au volume réel (200 tx/jour, 20 utilisateurs, 4-6 devices LAN).
+Cette spec définit une **voie médiane** : split monolith V2 en **2 apps** (`pos`, `backoffice`) plutôt que 4. Capture 80% du bénéfice de la séparation par persona pour 20% de la complexité, adapté au volume cible (~200 tx/jour, ~20 utilisateurs, 4-6 devices LAN — chiffres aspirationnels, V2 n'ayant pas atteint la production).
 
 Le projet est livré en sessions :
 - **Session 1 (cette spec)** : bootstrap monorepo + premier vertical POS end-to-end (cart → cash → order persisté).

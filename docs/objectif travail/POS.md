@@ -1,5 +1,7 @@
 # Module POS — Objectif métier
 
+> **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée en prod**. Implémentation réelle = V3 monorepo (`apps/pos`). Pour les renommages de symboles V2↔V3 (`complete_order_with_payments` → `complete_order`, etc.), voir [`../V2_V3_GLOSSARY.md`](../V2_V3_GLOSSARY.md).
+>
 > **Périmètre fonctionnel** : ce document décrit **ce que l'App POS sert à faire au quotidien** pour The Breakery,
 
 ---

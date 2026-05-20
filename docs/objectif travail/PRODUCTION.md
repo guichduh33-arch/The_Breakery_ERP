@@ -1,5 +1,7 @@
 # Module Production & Recipes — Objectif métier
 
+> **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée**. Implémentation réelle = V3 monorepo. **Le statut V3 dépasse cette fiche sur plusieurs points** (voir §15 corrigé : sub-recipes, versioning, baker's percentages, yield tracking, margin alerts — tous livrés en V3 S15→S22).
+>
 > **Périmètre fonctionnel** : ce document décrit **ce que le module Production & Recipes sert à faire au quotidien** pour The Breakery, sans rentrer dans la mécanique technique
 
 ---
@@ -259,14 +261,16 @@ Réciproquement, le module Inventory **utilise** Production :
 
 ---
 
-## 15. Ce que le module ne fait **pas** (par design)
+## 15. Ce que le module ne fait **pas** (par design) — **MISE À JOUR V3**
 
-- Le module **ne planifie pas la production** automatiquement. Il propose des suggestions, mais le plan de production est saisi à la main.
-- Le module **ne suit pas le temps de pétrissage / cuisson** au four. Pas de minuteur intégré, pas de capteur IoT.
-- Le module **ne supporte pas les sous-recettes** (recette qui produit un semi-fini consommé par une autre recette). Une recette = un produit fini directement.
-- Le module **ne fait pas de versioning explicite** des recettes (changelog des modifications). Modifier la recette modifie immédiatement le coût théorique futur. Les productions passées gardent leur coût snapshot.
-- Le module **n'intègre pas d'allergènes** structurés (gluten, lactose, fruits à coque). Les notes libres sur le produit s'en chargent en attendant.
-- Le module **ne supporte pas les recettes en pourcentage de boulanger** (farine = 100 %, eau = 65 %…). Tout est en quantité absolue par unité produite.
+> ⚠️ **V3 dépasse plusieurs limites listées historiquement** (V2 cible). Items corrigés ci-dessous.
+
+- Le module **ne planifie pas la production** automatiquement — V3 a livré `suggest_production_schedule_v1` et `production_schedules` (S19). ✅ DÉPASSÉ V3.
+- Le module **ne suit pas le temps de pétrissage / cuisson** au four. Pas de minuteur intégré, pas de capteur IoT. *(Toujours vrai V3)*
+- ~~Le module **ne supporte pas les sous-recettes**~~ → **V3 supporte les sous-recettes** avec anti-cycle 5-niveaux (`validate_recipe_no_cycle`, `recipe_bom_full_v1`, `tr_recompute_is_semi_finished`, `record_batch_production_v1`). ✅ LIVRÉ V3 S15+S17+S19+S21.
+- ~~Le module **ne fait pas de versioning explicite** des recettes~~ → **V3 livre `recipe_versions` + snapshot avec cost** (`snapshot_recipe_version_helper`, `tr_snapshot_on_product_cost_change`, `bump_recipe_version_snapshot_with_cost`). ✅ LIVRÉ V3 S20+S21.
+- Le module **n'intègre pas d'allergènes** structurés (gluten, lactose, fruits à coque). Les notes libres sur le produit s'en chargent en attendant. *(Toujours vrai V3 — P3 backlog)*
+- ~~Le module **ne supporte pas les recettes en pourcentage de boulanger**~~ → **V3 supporte les baker's percentages** (`extend_recipes_baker_percentage`, `bump_upsert_recipe_v1_baker`). ✅ LIVRÉ V3 S19.
 
 ---
 

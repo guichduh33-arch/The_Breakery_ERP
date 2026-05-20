@@ -1,5 +1,7 @@
 # Module Reports — Objectif métier
 
+> **Statut V2/V3** : décrit la vision business cible (~61 reports en 7 catégories). **V2 jamais déployée**. Implémentation V3 = **partielle — 13 reports livrés sur ~61** (BalanceSheet, ProfitLoss, CashFlow, SalesByCategory, SalesByHour, SalesByStaff, BasketAnalysis, ProductionYield, RecipeCostOverview, RecipeCostTimeline, StockVariance, Audit, ReportsIndexPage). **Reste à livrer ~48 reports — Session S29 Reports Export + Z-Report PDF couvre les priorités**. Voir [`../V2_V3_GLOSSARY.md`](../V2_V3_GLOSSARY.md).
+>
 > **Périmètre fonctionnel** : ce document décrit **ce que le module Reports sert à faire au quotidien** pour The Breakery.
 
 ---

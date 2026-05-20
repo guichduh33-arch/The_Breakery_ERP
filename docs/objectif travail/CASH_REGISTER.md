@@ -1,5 +1,7 @@
 # Module Cash Register (Sessions de caisse) — Objectif métier
 
+> **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée**. Implémentation V3 = DONE (RPCs `close_shift_rpc`, `record_cash_movement_rpc`, `apps/pos/src/features/shift`). Voir [`../V2_V3_GLOSSARY.md`](../V2_V3_GLOSSARY.md).
+>
 > **Périmètre fonctionnel** : ce document décrit **ce que le module Cash Register sert à faire au quotidien** pour The Breakery, sans rentrer dans la mécanique technique 
 
 ---

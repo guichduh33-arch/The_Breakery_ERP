@@ -1,5 +1,7 @@
 # Module Promotions & Combos — Objectif métier
 
+> **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée**. Implémentation V3 = DONE (`evaluate_promotions_v1`, `usePromotionsAutoEval`, `usePromotionsRealtime`, features `promotions` BO + POS, combos avec groupes). Voir [`../V2_V3_GLOSSARY.md`](../V2_V3_GLOSSARY.md).
+>
 > **Périmètre fonctionnel** : ce document décrit **ce que le module Promotions & Combos sert à faire au quotidien** pour The Breakery, 
 
 ---

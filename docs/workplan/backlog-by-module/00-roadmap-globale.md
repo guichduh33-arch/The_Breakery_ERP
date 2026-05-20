@@ -1,9 +1,23 @@
 # Roadmap globale — The Breakery ERP (V3 monorepo)
 
-> Last updated: 2026-05-20 (Session 25 — Hardening Idempotency Cross-EF merged)
-> Source initiale : agrégation des 8 audits 2026-04-09 + `CURRENT_STATE.md` + revue de code 2026-05-03
-> Refresh : intègre l'avancement S13-S22 mergé + audit complet 21 modules métier 2026-05-19 + décision mono-site permanent (4 items WONTFIX)
+> Last updated: 2026-05-20 (audit complet V3 vs vision V2 — 16 fiches métier croisées)
+> **Cadre** : V2 (AppGrav monolithe) **n'a jamais été déployée en production** — elle reste le cahier des charges métier théorique. V3 = code vivant (monorepo pnpm+turbo), construit from scratch, mission = parité fonctionnelle V2 + améliorations + split persona POS/BackOffice.
+> Glossaire V2↔V3 : [`../../V2_V3_GLOSSARY.md`](../../V2_V3_GLOSSARY.md) (mappings RPC, hooks, pages, tables, paths)
 > Plan S24-S30 : [`../plans/2026-05-19-S24-to-S30-plan.md`](../plans/2026-05-19-S24-to-S30-plan.md)
+
+---
+
+## Synthèse audit V3 (2026-05-20)
+
+| Statut | Modules | Détail |
+|---|---|---|
+| 🟢 **DONE (parité atteinte ou dépassée)** | 14 | 01 Auth, 02 POS, 03 Payments, 04 KDS, 05 Products (S27), 06 Inventory, 07 Purchasing, 08 Customers, 12 Cash, 13 Promotions, 15 Production (sub-recipes ✅, baker % ✅), 17 Tablet, 20 Users, 21 LAN |
+| 🟡 **PARTIEL (gap modéré)** | 4 | 09 B2B (S24 Foundation, reste devis/abonnements), 10 Accounting (UI 4/11 → S26 Comptable Cockpit), 11 Expenses (UI 2/4 → S28 Expense Governance), 19 Settings (6/23 pages), 16 Customer Display (à vérifier) |
+| 🔴 **MAJEUR (gros gap)** | 2 | 14 Reports (13/61 → S29 Reports Export), 18 Mobile Shell (0 — P3 backlog, décision business) |
+
+**~70 % parité V2 atteinte ; ~15 améliorations V3 nettes au-delà de V2** (idempotency cross-EF, GRANT hardening, sub-recipes, WAC, RLS helpers, rate limiting durable, etc. — voir glossaire §6).
+
+---
 
 ---
 
@@ -11,11 +25,11 @@
 
 ### Contexte initial (2026-04-09)
 
-AppGrav V2 est en production depuis 2026-03-23 (~200 tx/jour, ~20 utilisateurs, The Breakery, Lombok). L'audit global 2026-04-09 (8 agents BMAD + 7 skills) a produit un état des lieux : **architecture 8/10**, **sécurité 7.5/10**, **complétude produit 88 %**, **53 rapports actifs**. La majorité des P0 d'audit ont été corrigés dans la passe « Global Audit & Fixes » du 2026-04-09 (triggers comptables restaurés, expense approval RPC, VAT RPC, CSP/HSTS, error leakage, Sonner, French strings, .limit() reports).
+AppGrav V2 (vision monolithe Vite + React + Supabase) **n'a jamais été déployée en production**. L'audit global 2026-04-09 (8 agents BMAD + 7 skills) a produit un état des lieux théorique de cette vision : **architecture 8/10**, **sécurité 7.5/10**, **complétude produit 88 %**, **53 rapports actifs** — chiffres aspirationnels, à interpréter comme cible métier et non comme un constat de production. La passe « Global Audit & Fixes » du 2026-04-09 a aligné le design business (triggers comptables, expense approval RPC, VAT RPC, CSP/HSTS, error leakage, Sonner, French strings, .limit() reports).
 
-### Transition V3 et avancement S13-S20
+### Construction V3 — avancement S13-S20
 
-Entre Session 13 (2026-05-13) et Session 20 (2026-05-17), The Breakery a effectué une transition complète vers le monorepo V3 (pnpm + turbo, apps/pos + apps/backoffice + packages/{domain,supabase,ui,utils}) et résolu la majorité des gaps fonctionnels bakery historiquement identifiés. La Session 19 (Hardening polish) a clôturé les 3 derniers items P1/P2 du module 01-auth-permissions (rate limiting durable, session timeout per role, PIN strength warn). La Session 20 (GRANT hardening) a clôturé le gap de sécurité anon GRANT au niveau tables, vues et fonctions — defense-in-depth complémentaire au RLS S13.
+Entre Session 13 (2026-05-13) et Session 20 (2026-05-17), The Breakery a construit le monorepo V3 (pnpm + turbo, apps/pos + apps/backoffice + packages/{domain,supabase,ui,utils}) en s'appuyant sur la vision V2 comme référence métier, et résolu la majorité des gaps fonctionnels bakery historiquement identifiés. La Session 19 (Hardening polish) a clôturé les 3 derniers items P1/P2 du module 01-auth-permissions (rate limiting durable, session timeout per role, PIN strength warn). La Session 20 (GRANT hardening) a clôturé le gap de sécurité anon GRANT au niveau tables, vues et fonctions — defense-in-depth complémentaire au RLS S13.
 
 ### Ce qui reste (état 2026-05-17)
 
