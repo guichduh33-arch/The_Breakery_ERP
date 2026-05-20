@@ -1,19 +1,13 @@
 // apps/backoffice/src/pages/products/ProductDetailPage.tsx
 //
-// Session 14 / Phase 4.B — Product detail page.
+// Session 14 / Phase 4.B — Product detail page (read-only baseline).
+// Session 27 — Wave 2 — Wired the Save button to update_product_v1 RPC. The
+// General tab now tracks a controlled draft + dirty flag; clicking Save fires
+// the JSONB patch and the page refetches on success.
 //
 // URL: /backoffice/products/:productId
-// Composition mirrors `Product detail1.jpg` & `Product detail2.jpg`:
-//   - ProductDetailHeader with back arrow, name, SKU pill, Save changes CTA
-//   - ProductDetailTabs (Overview · General · Units · Recipe · Variants ·
-//     Costing · Purchase · History)
-//   - Per-tab body — see ./components/{Overview,General,Units,Recipe}Panel.
-//
-// Save changes is intentionally inert: the product CRUD RPC family lands in
-// a future session and we don't want to silently drop edits via direct
-// inserts (the codebase rule forbids raw inserts; all writes go via RPCs).
 
-import { useState, type JSX } from 'react';
+import { useEffect, useMemo, useState, type JSX } from 'react';
 import { useParams } from 'react-router-dom';
 import { GeneralPanel } from '@/features/products/components/GeneralPanel.js';
 import { OverviewPanel } from '@/features/products/components/OverviewPanel.js';
@@ -23,14 +17,39 @@ import { StubPanel } from '@/features/products/components/StubPanel.js';
 import { UnitsPanel } from '@/features/products/components/UnitsPanel.js';
 import { useCategories } from '@/features/products/hooks/useCategories.js';
 import { useProductDetail } from '@/features/products/hooks/useProductDetail.js';
-import type { ProductDetailTab } from '@/features/products/types.js';
+import { useUpdateProduct, type ProductUpdatePatch } from '@/features/products/hooks/useUpdateProduct.js';
+import { useAuthStore } from '@/stores/authStore.js';
+import type { ProductDetailTab, ProductRow } from '@/features/products/types.js';
 import { RecipeBuilder } from '@/features/recipes/index.js';
 
 export default function ProductDetailPage(): JSX.Element {
   const { productId } = useParams<{ productId: string }>();
   const product = useProductDetail(productId ?? null);
   const categories = useCategories();
+  const updateProduct = useUpdateProduct();
+  const canUpdate = useAuthStore((s) => s.hasPermission('products.update'));
   const [tab, setTab] = useState<ProductDetailTab>('overview');
+  const [patch, setPatch] = useState<ProductUpdatePatch>({});
+
+  useEffect(() => {
+    setPatch({});
+  }, [product.data?.id]);
+
+  const isDirty = useMemo(() => Object.keys(patch).length > 0, [patch]);
+
+  function handleFieldChange(p: Partial<ProductRow>): void {
+    setPatch((prev) => ({ ...prev, ...(p as ProductUpdatePatch) }));
+  }
+
+  function handleSave(): void {
+    if (productId === undefined || !isDirty) return;
+    updateProduct.mutate(
+      { productId, patch },
+      {
+        onSuccess: () => setPatch({}),
+      },
+    );
+  }
 
   if (product.isLoading) {
     return <div className="py-16 text-center text-sm text-text-secondary">Loading product…</div>;
@@ -50,12 +69,34 @@ export default function ProductDetailPage(): JSX.Element {
 
   return (
     <div className="space-y-6">
-      <ProductDetailHeader name={p.name} sku={p.sku} isDirty={false} />
+      <ProductDetailHeader
+        name={p.name}
+        sku={p.sku}
+        isDirty={isDirty && canUpdate}
+        onSave={canUpdate ? handleSave : undefined}
+        isSaving={updateProduct.isPending}
+      />
+      {updateProduct.error !== null && (
+        <div
+          role="alert"
+          className="rounded-lg border border-red bg-red-soft p-3 text-sm text-red"
+          data-testid="product-detail-save-error"
+        >
+          Failed to save: {updateProduct.error.message}
+        </div>
+      )}
       <ProductDetailTabs active={tab} onChange={setTab} />
 
       <div data-testid={`product-tab-${tab}`}>
         {tab === 'overview' && <OverviewPanel product={p} />}
-        {tab === 'general'  && <GeneralPanel product={p} categories={categories.data ?? []} readOnly />}
+        {tab === 'general'  && (
+          <GeneralPanel
+            product={p}
+            categories={categories.data ?? []}
+            readOnly={!canUpdate}
+            onChange={handleFieldChange}
+          />
+        )}
         {tab === 'units'    && <UnitsPanel product={p} />}
         {tab === 'recipe'   && (
           <RecipeBuilder

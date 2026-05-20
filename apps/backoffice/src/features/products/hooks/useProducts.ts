@@ -27,6 +27,14 @@ interface ProductRowDb {
   is_active:        boolean;
   is_favorite:      boolean;
   allergens:        AllergenType[] | null;
+  description:                string | null;
+  visible_on_pos:             boolean;
+  available_for_sale:         boolean;
+  track_inventory:            boolean;
+  deduct_stock:               boolean;
+  is_semi_finished:           boolean;
+  target_gross_margin_pct:    number | null;
+  default_shelf_life_hours:   number | null;
   categories:       { name: string } | { name: string }[] | null;
 }
 
@@ -43,6 +51,9 @@ export function useProducts() {
           product_type, tax_inclusive, image_url,
           current_stock, min_stock_threshold, unit,
           is_active, is_favorite, allergens,
+          description, visible_on_pos, available_for_sale,
+          track_inventory, deduct_stock, is_semi_finished,
+          target_gross_margin_pct, default_shelf_life_hours,
           categories:categories ( name )
         `)
         .is('deleted_at', null)
@@ -71,7 +82,15 @@ export function useProducts() {
           is_active:           r.is_active,
           is_favorite:         r.is_favorite,
           allergens:           r.allergens ?? [],
-          category_name:       categoryName,
+          description:               r.description,
+          visible_on_pos:            r.visible_on_pos,
+          available_for_sale:        r.available_for_sale,
+          track_inventory:           r.track_inventory,
+          deduct_stock:              r.deduct_stock,
+          is_semi_finished:          r.is_semi_finished,
+          target_gross_margin_pct:   r.target_gross_margin_pct === null ? null : Number(r.target_gross_margin_pct),
+          default_shelf_life_hours:  r.default_shelf_life_hours,
+          category_name:             categoryName,
         } satisfies ProductRow;
       });
     },
