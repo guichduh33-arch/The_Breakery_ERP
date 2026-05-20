@@ -62,7 +62,8 @@ const GROUPS: NavGroup[] = [
   {
     label: 'Management',
     items: [
-      { to: '/backoffice/products', label: 'Products', icon: Package },
+      { to: '/backoffice/products', label: 'Products', icon: Package, end: true },
+      { to: '/backoffice/categories', label: 'Categories', icon: Tag, permission: 'categories.read', indent: 1 },
       { to: '/backoffice/promotions', label: 'Promotions', icon: Tag, permission: 'promotions.read' },
       { to: '/backoffice/loyalty', label: 'Loyalty', icon: Heart, permission: 'loyalty.read' },
       { to: '/backoffice/inventory', label: 'Stock & Inventory', icon: Boxes, permission: 'inventory.read', end: true },

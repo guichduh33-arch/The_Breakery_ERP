@@ -23,6 +23,10 @@ export type PermissionCode =
   | 'products.create'
   | 'products.update'
   | 'products.delete'
+  // Session 27 — granular product edit permissions
+  | 'products.units.update'
+  | 'products.sections.update'
+  | 'products.modifiers.update'
   | 'categories.read'
   | 'categories.create'
   | 'categories.update'

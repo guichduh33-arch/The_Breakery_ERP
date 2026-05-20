@@ -1,0 +1,6 @@
+-- Session 27b — S25 canonical REVOKE pair for create_product_v1.
+REVOKE EXECUTE ON FUNCTION create_product_v1(JSONB) FROM anon;
+REVOKE EXECUTE ON FUNCTION create_product_v1(JSONB) FROM PUBLIC;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres
+  REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION create_product_v1(JSONB) TO authenticated;

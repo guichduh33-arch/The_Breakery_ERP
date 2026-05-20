@@ -6,6 +6,7 @@ import DashboardPage from '@/pages/Dashboard.js';
 import ProductsPage from '@/pages/Products.js';
 import ProductDetailPage from '@/pages/products/ProductDetailPage.js';
 import CombosPage from '@/pages/products/CombosPage.js';
+import CategoriesPage from '@/pages/categories/CategoriesPage.js';
 import PromotionsPage from '@/pages/Promotions.js';
 import LoyaltyPage from '@/pages/Loyalty.js';
 import InventoryPage from '@/pages/Inventory.js';
@@ -97,6 +98,7 @@ export function AppRoutes() {
         <Route path="products" element={<ProductsPage />} />
         <Route path="products/combos" element={<CombosPage />} />
         <Route path="products/:productId" element={<ProductDetailPage />} />
+        <Route path="categories" element={<CategoriesPage />} />
         <Route
           path="promotions"
           element={
