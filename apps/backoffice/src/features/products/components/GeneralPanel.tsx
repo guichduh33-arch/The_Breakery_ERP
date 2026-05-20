@@ -11,7 +11,7 @@
 // the Save action is disabled at the page level.
 
 import { ShoppingCart, Sparkles, Star, TrendingUp } from 'lucide-react';
-import { useState, type JSX } from 'react';
+import { useEffect, useState, type JSX } from 'react';
 import { Card, Currency, Input, SectionLabel } from '@breakery/ui';
 import type { CategoryOption, ProductRow } from '../types.js';
 
@@ -26,6 +26,11 @@ interface Props {
 
 export function GeneralPanel({ product, categories, readOnly = true, onChange }: Props): JSX.Element {
   const [draft, setDraft] = useState<ProductRow>(product);
+
+  // Re-sync draft when the saved product changes (post-mutation refetch).
+  useEffect(() => {
+    setDraft(product);
+  }, [product]);
 
   function update<K extends keyof ProductRow>(key: K, value: ProductRow[K]): void {
     const next = { ...draft, [key]: value };
@@ -80,7 +85,9 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange }:
               <SectionLabel as="div" size="xs">Product description</SectionLabel>
               <textarea
                 rows={4}
+                value={draft.description ?? ''}
                 disabled={readOnly}
+                onChange={(e) => update('description', e.target.value as ProductRow['description'])}
                 placeholder="Add a short description..."
                 className="mt-1.5 block w-full resize-y rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm text-text-primary placeholder:text-text-muted disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
               />
@@ -171,11 +178,41 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange }:
               </div>
             </div>
 
-            <ToggleRow label="Visible on POS" sub="Active in sales menu" enabled />
-            <ToggleRow label="Deduct stock" sub="Real-time inventory deduction" enabled />
-            <ToggleRow label="Active" sub="Product selling status" enabled={draft.is_active} />
-            <ToggleRow label="Available for sale" sub="Shown in POS menu" enabled />
-            <ToggleRow label="Track inventory" sub="Automated stock tracking" enabled />
+            <ToggleRow
+              label="Visible on POS"
+              sub="Active in sales menu"
+              enabled={draft.visible_on_pos}
+              disabled={readOnly}
+              onChange={(v) => update('visible_on_pos', v)}
+            />
+            <ToggleRow
+              label="Deduct stock"
+              sub="Real-time inventory deduction"
+              enabled={draft.deduct_stock}
+              disabled={readOnly}
+              onChange={(v) => update('deduct_stock', v)}
+            />
+            <ToggleRow
+              label="Active"
+              sub="Product selling status"
+              enabled={draft.is_active}
+              disabled={readOnly}
+              onChange={(v) => update('is_active', v)}
+            />
+            <ToggleRow
+              label="Available for sale"
+              sub="Shown in POS menu"
+              enabled={draft.available_for_sale}
+              disabled={readOnly}
+              onChange={(v) => update('available_for_sale', v)}
+            />
+            <ToggleRow
+              label="Track inventory"
+              sub="Automated stock tracking"
+              enabled={draft.track_inventory}
+              disabled={readOnly}
+              onChange={(v) => update('track_inventory', v)}
+            />
           </div>
         </Card>
 
@@ -207,14 +244,25 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange }:
 }
 
 interface ToggleRowProps {
-  label: string;
-  sub:   string;
-  enabled: boolean;
+  label:     string;
+  sub:       string;
+  enabled:   boolean;
+  disabled?: boolean;
+  onChange?: (next: boolean) => void;
 }
 
-function ToggleRow({ label, sub, enabled }: ToggleRowProps): JSX.Element {
+function ToggleRow({ label, sub, enabled, disabled = false, onChange }: ToggleRowProps): JSX.Element {
+  const interactive = !disabled && onChange !== undefined;
   return (
-    <div className="flex items-center justify-between rounded-md border border-border-subtle bg-bg-overlay px-3 py-2.5">
+    <button
+      type="button"
+      role="switch"
+      aria-checked={enabled}
+      aria-label={label}
+      disabled={!interactive}
+      onClick={() => onChange?.(!enabled)}
+      className="flex w-full items-center justify-between rounded-md border border-border-subtle bg-bg-overlay px-3 py-2.5 text-left transition-colors hover:enabled:bg-bg-elevated disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+    >
       <div>
         <div className="text-xs font-semibold uppercase tracking-widest text-text-primary">{label}</div>
         <div className="text-[11px] italic text-text-secondary">{sub}</div>
@@ -225,7 +273,7 @@ function ToggleRow({ label, sub, enabled }: ToggleRowProps): JSX.Element {
       >
         <span className={`inline-block h-4 w-4 transform rounded-full bg-bg-elevated transition-transform ${enabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
       </span>
-    </div>
+    </button>
   );
 }
 

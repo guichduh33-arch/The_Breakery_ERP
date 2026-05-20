@@ -9,13 +9,14 @@ import type { JSX } from 'react';
 import { Link } from 'react-router-dom';
 
 interface Props {
-  name:    string;
-  sku:     string;
-  isDirty?: boolean;
-  onSave?:  () => void;
+  name:      string;
+  sku:       string;
+  isDirty?:  boolean | undefined;
+  isSaving?: boolean | undefined;
+  onSave?:   (() => void) | undefined;
 }
 
-export function ProductDetailHeader({ name, sku, isDirty = false, onSave }: Props): JSX.Element {
+export function ProductDetailHeader({ name, sku, isDirty = false, isSaving = false, onSave }: Props): JSX.Element {
   return (
     <div className="flex flex-wrap items-center justify-between gap-4">
       <div className="flex items-center gap-3">
@@ -38,11 +39,12 @@ export function ProductDetailHeader({ name, sku, isDirty = false, onSave }: Prop
       <button
         type="button"
         onClick={onSave}
-        disabled={!isDirty || onSave === undefined}
+        disabled={!isDirty || isSaving || onSave === undefined}
+        data-testid="product-detail-save"
         className="inline-flex items-center gap-2 rounded-full bg-gold px-5 py-2.5 text-sm font-semibold uppercase tracking-wide text-bg-base hover:bg-gold-hover disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold transition-colors"
       >
         <Save className="h-4 w-4" aria-hidden />
-        Save Changes
+        {isSaving ? 'Saving…' : 'Save Changes'}
       </button>
     </div>
   );
