@@ -10,10 +10,10 @@ import { Box, BookOpen, Plus, Sliders, Upload } from 'lucide-react';
 import { Card, CardContent } from '@breakery/ui';
 
 interface Props {
-  onNew?:       () => void;
-  onImport?:    () => void;
-  onRecipes?:   () => void;
-  onModifiers?: () => void;
+  onNew?:       (() => void) | undefined;
+  onImport?:    (() => void) | undefined;
+  onRecipes?:   (() => void) | undefined;
+  onModifiers?: (() => void) | undefined;
 }
 
 export function ProductsHeader({ onNew, onImport, onRecipes, onModifiers }: Props): JSX.Element {
