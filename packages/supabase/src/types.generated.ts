@@ -5259,6 +5259,7 @@ export type Database = {
         }
         Returns: Json
       }
+      create_category_v1: { Args: { p_payload: Json }; Returns: Json }
       create_expense_v1: {
         Args: {
           p_amount: number
@@ -5292,6 +5293,7 @@ export type Database = {
         }
         Returns: Json
       }
+      create_product_v1: { Args: { p_payload: Json }; Returns: Json }
       create_purchase_order_v1: {
         Args: {
           p_expected_date?: string
@@ -6181,6 +6183,10 @@ export type Database = {
         Returns: undefined
       }
       release_expired_reservations: { Args: never; Returns: number }
+      reorder_categories_v1: {
+        Args: { p_ordered_ids: string[] }
+        Returns: Json
+      }
       reorder_recipe_rows_v1: {
         Args: { p_product_id: string; p_recipe_ids: string[] }
         Returns: number
@@ -6336,6 +6342,10 @@ export type Database = {
           p_reason: string
         }
         Returns: undefined
+      }
+      update_category_v1: {
+        Args: { p_category_id: string; p_patch: Json }
+        Returns: Json
       }
       update_cost_price_v1: {
         Args: {
