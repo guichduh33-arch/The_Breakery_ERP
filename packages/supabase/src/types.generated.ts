@@ -271,6 +271,7 @@ export type Database = {
           id: string
           idempotency_key: string | null
           reason: string
+          reason_code: string | null
           session_id: string
         }
         Insert: {
@@ -281,6 +282,7 @@ export type Database = {
           id?: string
           idempotency_key?: string | null
           reason: string
+          reason_code?: string | null
           session_id: string
         }
         Update: {
@@ -291,6 +293,7 @@ export type Database = {
           id?: string
           idempotency_key?: string | null
           reason?: string
+          reason_code?: string | null
           session_id?: string
         }
         Relationships: [
@@ -5054,12 +5057,12 @@ export type Database = {
         Args: { p_approval_notes?: string; p_expense_id: string }
         Returns: Json
       }
-      calculate_recipe_cost_v1: {
-        Args: { p_max_depth?: number; p_product_id: string }
+      calculate_pb1_payable_v1: {
+        Args: { p_period_end: string; p_period_start: string }
         Returns: Json
       }
-      calculate_vat_payable: {
-        Args: { p_period_end: string; p_period_start: string }
+      calculate_recipe_cost_v1: {
+        Args: { p_max_depth?: number; p_product_id: string }
         Returns: Json
       }
       cancel_internal_transfer_v1: {
@@ -5175,6 +5178,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      close_fiscal_period_v1: {
+        Args: { p_lock?: boolean; p_manager_pin: string; p_period_id: string }
+        Returns: Json
+      }
       close_shift_v1: {
         Args: {
           p_counted_cash: number
@@ -5285,6 +5292,15 @@ export type Database = {
         }
         Returns: Json
       }
+      create_manual_je_v1: {
+        Args: {
+          p_description: string
+          p_entry_date: string
+          p_lines: Json
+          p_manager_pin: string
+        }
+        Returns: Json
+      }
       create_opname_v1: {
         Args: {
           p_idempotency_key?: string
@@ -5339,6 +5355,7 @@ export type Database = {
         }
         Returns: string
       }
+      current_pb1_rate: { Args: never; Returns: number }
       deactivate_recipe_v1: { Args: { p_recipe_id: string }; Returns: string }
       delete_user_v1: {
         Args: { p_reason: string; p_user_id: string }
@@ -5517,6 +5534,16 @@ export type Database = {
           total_count: number
           unit: string
         }[]
+      }
+      get_general_ledger_v1: {
+        Args: {
+          p_account_id: string
+          p_cursor?: Json
+          p_date_end: string
+          p_date_start: string
+          p_limit?: number
+        }
+        Returns: Json
       }
       get_low_stock_v1: {
         Args: { p_section_id?: string }
@@ -5702,6 +5729,10 @@ export type Database = {
           variance: number
           variance_pct: number
         }[]
+      }
+      get_trial_balance_v1: {
+        Args: { p_date_end: string; p_date_start: string }
+        Returns: Json
       }
       has_kiosk_jwt: { Args: { p_required_scope?: string }; Returns: boolean }
       has_permission: {
@@ -6096,12 +6127,13 @@ export type Database = {
         Args: { p_batch: Json; p_items: Json }
         Returns: Json
       }
-      record_cash_movement_v1: {
+      record_cash_movement_v2: {
         Args: {
           p_amount: number
           p_direction: string
           p_idempotency_key?: string
           p_reason: string
+          p_reason_code?: string
           p_session_id: string
         }
         Returns: Json
