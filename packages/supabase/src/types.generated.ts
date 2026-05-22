@@ -5178,6 +5178,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      close_fiscal_period_v1: {
+        Args: { p_lock?: boolean; p_manager_pin: string; p_period_id: string }
+        Returns: Json
+      }
       close_shift_v1: {
         Args: {
           p_counted_cash: number
@@ -5285,6 +5289,15 @@ export type Database = {
           p_notes?: string
           p_send_directly?: boolean
           p_to_section_id: string
+        }
+        Returns: Json
+      }
+      create_manual_je_v1: {
+        Args: {
+          p_description: string
+          p_entry_date: string
+          p_lines: Json
+          p_manager_pin: string
         }
         Returns: Json
       }
@@ -5522,6 +5535,16 @@ export type Database = {
           unit: string
         }[]
       }
+      get_general_ledger_v1: {
+        Args: {
+          p_account_id: string
+          p_cursor?: Json
+          p_date_end: string
+          p_date_start: string
+          p_limit?: number
+        }
+        Returns: Json
+      }
       get_low_stock_v1: {
         Args: { p_section_id?: string }
         Returns: {
@@ -5706,6 +5729,10 @@ export type Database = {
           variance: number
           variance_pct: number
         }[]
+      }
+      get_trial_balance_v1: {
+        Args: { p_date_end: string; p_date_start: string }
+        Returns: Json
       }
       has_kiosk_jwt: { Args: { p_required_scope?: string }; Returns: boolean }
       has_permission: {
