@@ -271,6 +271,7 @@ export type Database = {
           id: string
           idempotency_key: string | null
           reason: string
+          reason_code: string | null
           session_id: string
         }
         Insert: {
@@ -281,6 +282,7 @@ export type Database = {
           id?: string
           idempotency_key?: string | null
           reason: string
+          reason_code?: string | null
           session_id: string
         }
         Update: {
@@ -291,6 +293,7 @@ export type Database = {
           id?: string
           idempotency_key?: string | null
           reason?: string
+          reason_code?: string | null
           session_id?: string
         }
         Relationships: [
@@ -5054,12 +5057,12 @@ export type Database = {
         Args: { p_approval_notes?: string; p_expense_id: string }
         Returns: Json
       }
-      calculate_recipe_cost_v1: {
-        Args: { p_max_depth?: number; p_product_id: string }
+      calculate_pb1_payable_v1: {
+        Args: { p_period_end: string; p_period_start: string }
         Returns: Json
       }
-      calculate_vat_payable: {
-        Args: { p_period_end: string; p_period_start: string }
+      calculate_recipe_cost_v1: {
+        Args: { p_max_depth?: number; p_product_id: string }
         Returns: Json
       }
       cancel_internal_transfer_v1: {
@@ -5339,6 +5342,7 @@ export type Database = {
         }
         Returns: string
       }
+      current_pb1_rate: { Args: never; Returns: number }
       deactivate_recipe_v1: { Args: { p_recipe_id: string }; Returns: string }
       delete_user_v1: {
         Args: { p_reason: string; p_user_id: string }
@@ -6096,12 +6100,13 @@ export type Database = {
         Args: { p_batch: Json; p_items: Json }
         Returns: Json
       }
-      record_cash_movement_v1: {
+      record_cash_movement_v2: {
         Args: {
           p_amount: number
           p_direction: string
           p_idempotency_key?: string
           p_reason: string
+          p_reason_code?: string
           p_session_id: string
         }
         Returns: Json
