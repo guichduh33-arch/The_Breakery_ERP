@@ -15,7 +15,7 @@ import { useCloseFiscalPeriod } from '../hooks/useCloseFiscalPeriod.js';
 export interface FiscalPeriodModalProps {
   onClose: () => void;
   /** Optionally pre-select a period (passed from list). */
-  initialPeriodId?: string;
+  initialPeriodId?: string | undefined;
 }
 
 export function FiscalPeriodModal({

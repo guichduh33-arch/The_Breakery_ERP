@@ -126,14 +126,14 @@ describe('JournalEntriesPage (S26b Wave 2)', () => {
 
     const accountSelects = screen.getAllByTestId(/^je-modal-line-account-/);
     expect(accountSelects.length).toBe(2);
-    fireEvent.change(accountSelects[0], { target: { value: 'a2' } }); // Rent Expense
-    fireEvent.change(accountSelects[1], { target: { value: 'a1' } }); // Cash
+    fireEvent.change(accountSelects[0]!, { target: { value: 'a2' } }); // Rent Expense
+    fireEvent.change(accountSelects[1]!, { target: { value: 'a1' } }); // Cash
 
     // Find debit/credit inputs by position within the table rows.
     const debits  = screen.getAllByRole('spinbutton').filter((_, i) => i % 2 === 0);
     const credits = screen.getAllByRole('spinbutton').filter((_, i) => i % 2 === 1);
-    fireEvent.change(debits[0],  { target: { value: '12000000' } });
-    fireEvent.change(credits[1], { target: { value: '12000000' } });
+    fireEvent.change(debits[0]!,  { target: { value: '12000000' } });
+    fireEvent.change(credits[1]!, { target: { value: '12000000' } });
 
     fireEvent.change(screen.getByTestId('je-modal-pin'), { target: { value: '123456' } });
 

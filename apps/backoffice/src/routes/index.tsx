@@ -16,7 +16,6 @@ import TransferFormPage from '@/pages/TransferForm.js';
 import TransferDetailPage from '@/pages/TransferDetail.js';
 import SuppliersPage from '@/pages/Suppliers.js';
 import SupplierDetailPage from '@/pages/suppliers/SupplierDetailPage.js';
-import ComingSoonPage from '@/pages/ComingSoon.js';
 import ProductionPage from '@/pages/inventory/ProductionPage.js';
 import BatchProductionPage from '@/pages/inventory/BatchProductionPage.js';
 import ProductionSchedulePage from '@/pages/inventory/ProductionSchedulePage.js';
