@@ -28,6 +28,14 @@ export interface ProductRow extends Product {
   is_semi_finished: boolean;
   target_gross_margin_pct: number | null;
   default_shelf_life_hours: number | null;
+  // Session 27c — variant grouping (parent / variant / standalone).
+  // `parent_product_id` is null on parents and standalones, set on variants.
+  // `variant_label`, `variant_axis`, `variant_sort_order` are null on
+  // standalones, populated on variants.
+  parent_product_id: string | null;
+  variant_label: string | null;
+  variant_axis: string | null;
+  variant_sort_order: number;
 }
 
 export interface CategoryOption {

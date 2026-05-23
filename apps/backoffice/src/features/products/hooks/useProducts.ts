@@ -35,6 +35,11 @@ interface ProductRowDb {
   is_semi_finished:           boolean;
   target_gross_margin_pct:    number | null;
   default_shelf_life_hours:   number | null;
+  // Session 27c — variant grouping
+  parent_product_id:          string | null;
+  variant_label:              string | null;
+  variant_axis:               string | null;
+  variant_sort_order:         number;
   categories:       { name: string } | { name: string }[] | null;
 }
 
@@ -54,6 +59,7 @@ export function useProducts() {
           description, visible_on_pos, available_for_sale,
           track_inventory, deduct_stock, is_semi_finished,
           target_gross_margin_pct, default_shelf_life_hours,
+          parent_product_id, variant_label, variant_axis, variant_sort_order,
           categories:categories ( name )
         `)
         .is('deleted_at', null)
@@ -90,6 +96,10 @@ export function useProducts() {
           is_semi_finished:          r.is_semi_finished,
           target_gross_margin_pct:   r.target_gross_margin_pct === null ? null : Number(r.target_gross_margin_pct),
           default_shelf_life_hours:  r.default_shelf_life_hours,
+          parent_product_id:         r.parent_product_id,
+          variant_label:             r.variant_label,
+          variant_axis:              r.variant_axis,
+          variant_sort_order:        Number(r.variant_sort_order),
           category_name:             categoryName,
         } satisfies ProductRow;
       });

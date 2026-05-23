@@ -15,6 +15,7 @@ import { ProductDetailHeader } from '@/features/products/components/ProductDetai
 import { ProductDetailTabs } from '@/features/products/components/ProductDetailTabs.js';
 import { StubPanel } from '@/features/products/components/StubPanel.js';
 import { UnitsPanel } from '@/features/products/components/UnitsPanel.js';
+import { VariantsPanel } from '@/features/products/components/VariantsPanel.js';
 import { useCategories } from '@/features/products/hooks/useCategories.js';
 import { useProductDetail } from '@/features/products/hooks/useProductDetail.js';
 import { useUpdateProduct, type ProductUpdatePatch } from '@/features/products/hooks/useUpdateProduct.js';
@@ -107,9 +108,14 @@ export default function ProductDetailPage(): JSX.Element {
           />
         )}
         {tab === 'variants' && (
-          <StubPanel
-            title="Variants land in a future session"
-            description="Configure size / colour / strength variants and per-variant pricing once the product CRUD RPCs ship."
+          <VariantsPanel
+            product={{
+              id:                p.id,
+              name:              p.name,
+              parent_product_id: p.parent_product_id,
+              variant_label:     p.variant_label,
+              variant_axis:      p.variant_axis,
+            }}
           />
         )}
         {tab === 'costing' && (
