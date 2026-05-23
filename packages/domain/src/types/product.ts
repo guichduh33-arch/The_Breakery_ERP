@@ -14,6 +14,12 @@ export interface Product {
   current_stock: number;
   is_active: boolean;
   is_favorite: boolean;
+  // Session 27c — variant grouping (POS-derived, optional on read).
+  // `parent_product_id` is sourced from the DB column ; `has_variants` is
+  // derived client-side in the POS `useProducts` hook (true when this product
+  // has at least one active child variant).
+  parent_product_id?: string | null;
+  has_variants?: boolean;
 }
 
 export interface Category {
