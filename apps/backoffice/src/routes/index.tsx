@@ -16,7 +16,6 @@ import TransferFormPage from '@/pages/TransferForm.js';
 import TransferDetailPage from '@/pages/TransferDetail.js';
 import SuppliersPage from '@/pages/Suppliers.js';
 import SupplierDetailPage from '@/pages/suppliers/SupplierDetailPage.js';
-import ComingSoonPage from '@/pages/ComingSoon.js';
 import ProductionPage from '@/pages/inventory/ProductionPage.js';
 import BatchProductionPage from '@/pages/inventory/BatchProductionPage.js';
 import ProductionSchedulePage from '@/pages/inventory/ProductionSchedulePage.js';
@@ -65,6 +64,12 @@ import SegmentsPage     from '@/pages/marketing/SegmentsPage.js';
 import PromoRoiPage     from '@/pages/marketing/PromoRoiPage.js';
 import BirthdayPage     from '@/pages/marketing/BirthdayPage.js';
 import MappingsPage     from '@/pages/accounting/MappingsPage.js';
+import AccountingIndexPage   from '@/features/accounting/pages/AccountingIndexPage.js';
+import ChartOfAccountsPage   from '@/features/accounting/pages/ChartOfAccountsPage.js';
+import JournalEntriesPage    from '@/features/accounting/pages/JournalEntriesPage.js';
+import GeneralLedgerPage     from '@/features/accounting/pages/GeneralLedgerPage.js';
+import TrialBalancePage      from '@/features/accounting/pages/TrialBalancePage.js';
+import SettingsAccountingPage from '@/features/accounting/pages/SettingsAccountingPage.js';
 import CustomersListPage      from '@/pages/customers/CustomersListPage.js';
 import CustomerCategoriesPage from '@/pages/customers/CustomerCategoriesPage.js';
 import B2BDashboardPage      from '@/pages/btob/B2BDashboardPage.js';
@@ -355,7 +360,39 @@ export function AppRoutes() {
             </PermissionGate>
           }
         />
-        <Route path="accounting" element={<ComingSoonPage module="Accounting" />} />
+        <Route path="accounting" element={<AccountingIndexPage />} />
+        <Route
+          path="accounting/chart-of-accounts"
+          element={
+            <PermissionGate required="accounting.coa.read">
+              <ChartOfAccountsPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="accounting/journal-entries"
+          element={
+            <PermissionGate required="accounting.gl.read">
+              <JournalEntriesPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="accounting/general-ledger"
+          element={
+            <PermissionGate required="accounting.gl.read">
+              <GeneralLedgerPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="accounting/trial-balance"
+          element={
+            <PermissionGate required="accounting.tb.read">
+              <TrialBalancePage />
+            </PermissionGate>
+          }
+        />
         <Route
           path="accounting/mappings"
           element={
@@ -585,6 +622,14 @@ export function AppRoutes() {
           element={
             <PermissionGate required="settings.read">
               <SecuritySettingsPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="settings/accounting"
+          element={
+            <PermissionGate required="accounting.period.close">
+              <SettingsAccountingPage />
             </PermissionGate>
           }
         />
