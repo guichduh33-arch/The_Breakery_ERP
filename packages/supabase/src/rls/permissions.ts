@@ -27,6 +27,9 @@ export type PermissionCode =
   | 'products.units.update'
   | 'products.sections.update'
   | 'products.modifiers.update'
+  // Session 27c — product variants (parent/child)
+  | 'products.variants.read'
+  | 'products.variants.write'
   | 'categories.read'
   | 'categories.create'
   | 'categories.update'
