@@ -107,6 +107,8 @@ const GROUPS: NavGroup[] = [
       { to: '/backoffice/accounting/journal-entries', label: 'Journal Entries', icon: ClipboardList, permission: 'accounting.gl.read', indent: 1 },
       { to: '/backoffice/accounting/general-ledger', label: 'General Ledger', icon: LineChart, permission: 'accounting.gl.read', indent: 1 },
       { to: '/backoffice/accounting/trial-balance', label: 'Trial Balance', icon: Scale, permission: 'accounting.tb.read', indent: 1 },
+      { to: '/backoffice/accounting/pb1-management', label: 'PB1 Management', icon: Coins, permission: 'reports.financial.read', indent: 1 },
+      { to: '/backoffice/accounting/ar-aging', label: 'AR Aging', icon: CalendarDays, permission: 'reports.financial.read', indent: 1 },
       { to: '/backoffice/accounting/mappings', label: 'Mappings', icon: GitCommitHorizontal, permission: 'accounting.read', indent: 1 },
       { to: '/backoffice/users', label: 'Users', icon: Users, permission: 'users.read', end: true },
       { to: '/backoffice/users/new', label: 'New user', icon: UserPlus, permission: 'users.create', indent: 1 },
