@@ -1,7 +1,7 @@
 -- supabase/tests/product_variants.test.sql
 -- Session 27c / Wave 4 — pgTAP suite for product variants (Approach A "Linked Products").
 --
--- Coverage (18 asserts) :
+-- Coverage (20 asserts) :
 --   T1   convert_product_to_parent_v1 happy path returns UUID                 (SUPER_ADMIN)
 --   T1b  audit_logs row 'products.variant.parent_created' exists
 --   T2   convert_product_to_parent_v1 refuses already-variant                 (P0004)
@@ -20,6 +20,8 @@
 --   T12b dissolved variant flipped to standalone (parent_product_id IS NULL)
 --   T13  Anti-nesting trigger rejects "parent already a variant"              (P0004)
 --   T14  CHECK products_variant_xor rejects partial NULL                      (23514)
+--   T15  dissolve with soft-deleted siblings succeeds (XOR fix corrective — DEV-S27C-4.A-01 fix)
+--   T15b ex-soft-deleted sibling fully detached (parent_product_id + variant_label + variant_axis NULL, is_active still false)
 --
 -- Run via MCP execute_sql wrapped in BEGIN/ROLLBACK so fixtures are rolled back.
 -- pgtap extension is pre-enabled on V3 dev.
@@ -32,21 +34,26 @@
 -- Two notable adaptations from the plan draft (see DEV-S27C-4.A-01/02 in the
 -- session-end report) :
 --   1. T12 uses a fresh single-variant parent (instead of soft-deleting var3
---      then dissolving) — the plan's flow would hit a real RPC bug where
---      convert_parent_to_standalone_v1 NULLs only parent_product_id on
+--      then dissolving) — the plan's flow would have hit a real RPC bug where
+--      convert_parent_to_standalone_v1 NULLed only parent_product_id on
 --      soft-deleted siblings, leaving variant_label/axis partial-NULL and
---      violating the XOR CHECK. The bug is flagged in the report for the
---      controller to triage.
+--      violating the XOR CHECK. That bug is now fixed by migration
+--      20260524012658_bump_convert_parent_to_standalone_v1_xor_fix and
+--      regression-covered by T15/T15b below — kept the T12 fresh-parent flow
+--      to retain isolated coverage of the active_count=1 happy path.
 --   2. T14 uses a fresh standalone product as the referenced parent_product_id
 --      rather than reusing the variant from T13 — BEFORE INSERT triggers
 --      fire before CHECK constraints, so a variant UUID would surface P0004
 --      (anti-nesting trigger) instead of the 23514 (XOR CHECK) we want.
+--   3. T15 explicitly exercises the soft-deleted-sibling dissolve flow (the
+--      exact path that surfaced the XOR partial-NULL bug). Fresh fixture so
+--      it does not collide with the pinned products from T1..T14.
 
 BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-SELECT plan(18);
+SELECT plan(20);
 
 -- ────────────────────────────────────────────────────────────────────────────
 -- Fixtures
@@ -448,6 +455,68 @@ SELECT throws_ok(
   '23514',
   NULL,
   'T14 CHECK products_variant_xor rejects partial NULL (23514)'
+);
+
+-- ────────────────────────────────────────────────────────────────────────────
+-- T15 : XOR fix corrective regression — dissolve with soft-deleted siblings
+--       must succeed. The previous version of convert_parent_to_standalone_v1
+--       NULLed only parent_product_id on soft-deleted siblings, leaving
+--       variant_label + variant_axis populated → 23514 violation of the
+--       products_variant_xor CHECK aborted the dissolve transaction.
+--       Migration 20260524012658_bump_convert_parent_to_standalone_v1_xor_fix
+--       NULLs all 3 variant cols + resets sort_order, satisfying the CHECK.
+--
+--       Flow : fresh standalone → convert_product_to_parent (var1) → add var2
+--       → soft-delete var2 → dissolve. Expect : no exception, parent deleted,
+--       var2 fully detached AND still soft-deleted (is_active = false).
+-- ────────────────────────────────────────────────────────────────────────────
+
+DO $t15_setup$
+DECLARE
+  v_cat_id   UUID := current_setting('breakery.s27c_cat_id')::UUID;
+  v_p_id     UUID := gen_random_uuid();
+  v_parent   UUID;
+  v_var2     UUID;
+  v_returned UUID;
+BEGIN
+  INSERT INTO products (
+    id, name, sku, category_id, unit, retail_price, cost_price,
+    visible_on_pos, available_for_sale, track_inventory, deduct_stock,
+    is_active, created_at, updated_at
+  )
+  VALUES (
+    v_p_id, 'PGTAP_S27C_XORFIX', 'PGTAPXORFIX', v_cat_id, 'pcs',
+    100, 50, true, true, true, true, true, now(), now()
+  );
+
+  v_parent := convert_product_to_parent_v1(v_p_id, 'V1', 'flavor'::variant_axis_type);
+  v_var2   := create_variant_v1(v_parent, 'V2', 'PGTAPXORFIX-V2', 120);
+  PERFORM delete_variant_v1(v_var2);  -- soft-delete V2 → is_active=false
+
+  -- The dissolve : pre-fix this would raise 23514 on the orphan-sibling UPDATE.
+  v_returned := convert_parent_to_standalone_v1(v_parent);
+
+  PERFORM set_config('breakery.s27c_xorfix_parent', v_parent::TEXT, false);
+  PERFORM set_config('breakery.s27c_xorfix_var2',   v_var2::TEXT,   false);
+  PERFORM set_config('breakery.s27c_xorfix_p_id',   v_p_id::TEXT,   false);
+END $t15_setup$;
+
+SELECT ok(
+  NOT EXISTS (SELECT 1 FROM products WHERE id = current_setting('breakery.s27c_xorfix_parent')::UUID),
+  'T15 dissolve with soft-deleted siblings succeeds — parent hard-deleted'
+);
+
+SELECT ok(
+  EXISTS (
+    SELECT 1 FROM products
+     WHERE id = current_setting('breakery.s27c_xorfix_var2')::UUID
+       AND parent_product_id IS NULL
+       AND variant_label IS NULL
+       AND variant_axis IS NULL
+       AND variant_sort_order = 0
+       AND is_active = false
+  ),
+  'T15b ex-soft-deleted sibling fully detached (all 3 variant cols NULL, sort_order=0, still soft-deleted)'
 );
 
 SELECT * FROM finish();
