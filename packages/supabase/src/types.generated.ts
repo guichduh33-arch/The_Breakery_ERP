@@ -5292,6 +5292,19 @@ export type Database = {
         Args: { p_product_id: string; p_target_flour_qty: number }
         Returns: Json
       }
+      convert_parent_to_standalone_v1: {
+        Args: { p_parent_id: string }
+        Returns: string
+      }
+      convert_product_to_parent_v1: {
+        Args: {
+          p_first_variant_label: string
+          p_first_variant_name?: string
+          p_product_id: string
+          p_variant_axis: Database["public"]["Enums"]["variant_axis_type"]
+        }
+        Returns: string
+      }
       convert_quantity: {
         Args: { p_from_unit: string; p_qty: number; p_to_unit: string }
         Returns: number
@@ -5395,12 +5408,26 @@ export type Database = {
         }
         Returns: string
       }
+      create_variant_v1: {
+        Args: {
+          p_cost_price?: number
+          p_name?: string
+          p_parent_id: string
+          p_retail_price: number
+          p_sku: string
+          p_sort_order?: number
+          p_unit?: string
+          p_variant_label: string
+        }
+        Returns: string
+      }
       current_pb1_rate: { Args: never; Returns: number }
       deactivate_recipe_v1: { Args: { p_recipe_id: string }; Returns: string }
       delete_user_v1: {
         Args: { p_reason: string; p_user_id: string }
         Returns: Json
       }
+      delete_variant_v1: { Args: { p_variant_id: string }; Returns: string }
       diag:
         | {
             Args: { msg: unknown }
@@ -6263,6 +6290,10 @@ export type Database = {
         Args: { p_product_id: string; p_recipe_ids: string[] }
         Returns: number
       }
+      reorder_variants_v1: {
+        Args: { p_ordered_variant_ids: string[]; p_parent_id: string }
+        Returns: number
+      }
       reservation_consume_v1: {
         Args: { p_reservation_id: string }
         Returns: Json
@@ -6475,6 +6506,10 @@ export type Database = {
       update_user_role_v1: {
         Args: { p_new_role_code: string; p_reason: string; p_user_id: string }
         Returns: Json
+      }
+      update_variant_v1: {
+        Args: { p_patch: Json; p_variant_id: string }
+        Returns: string
       }
       upsert_product_modifiers_v1: {
         Args: { p_groups: Json; p_product_id: string }
