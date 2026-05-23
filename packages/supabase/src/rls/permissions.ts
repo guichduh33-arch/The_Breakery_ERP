@@ -117,7 +117,14 @@ export type PermissionCode =
   | 'settings.kiosk.manage'
   // Session 13 / Phase 6.C — Accounting mappings admin (module 10-012)
   | 'accounting.read'
-  | 'accounting.mapping.update';
+  | 'accounting.mapping.update'
+  // Session 26 / Wave 1.I — Comptable cockpit (S26 _026 seed)
+  | 'accounting.coa.read'
+  | 'accounting.coa.write'
+  | 'accounting.gl.read'
+  | 'accounting.tb.read'
+  | 'accounting.je.create_manual'
+  | 'accounting.period.close';
 
 /**
  * Check whether a user has a single permission. Pure client-side lookup —

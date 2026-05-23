@@ -78,14 +78,14 @@ describe('CreateManualJEModal validation (S26b Wave 2.D)', () => {
     );
 
     const accountSelects = screen.getAllByTestId(/^je-modal-line-account-/);
-    fireEvent.change(accountSelects[0], { target: { value: 'a2' } });
-    fireEvent.change(accountSelects[1], { target: { value: 'a1' } });
+    fireEvent.change(accountSelects[0]!, { target: { value: 'a2' } });
+    fireEvent.change(accountSelects[1]!, { target: { value: 'a1' } });
 
     const debits  = screen.getAllByRole('spinbutton').filter((_, i) => i % 2 === 0);
     const credits = screen.getAllByRole('spinbutton').filter((_, i) => i % 2 === 1);
     // Debit 100 / Credit 50 -> unbalanced by 50
-    fireEvent.change(debits[0],  { target: { value: '100' } });
-    fireEvent.change(credits[1], { target: { value: '50' } });
+    fireEvent.change(debits[0]!,  { target: { value: '100' } });
+    fireEvent.change(credits[1]!, { target: { value: '50' } });
 
     fireEvent.change(screen.getByTestId('je-modal-pin'), { target: { value: '123456' } });
     fireEvent.click(screen.getByTestId('je-modal-submit'));
