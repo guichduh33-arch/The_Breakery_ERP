@@ -16,3 +16,7 @@ export { default as GeneralLedgerPage } from './pages/GeneralLedgerPage.js';
 export { useTrialBalance, type TrialBalancePayload, type TrialBalanceLine, TRIAL_BALANCE_KEY } from './hooks/useTrialBalance.js';
 export { default as TrialBalancePage } from './pages/TrialBalancePage.js';
 export { buildTrialBalanceCsv, downloadTrialBalanceCsv } from './components/exportTrialBalanceCsv.js';
+export { useFiscalPeriods, type FiscalPeriodRow, FISCAL_PERIODS_KEY } from './hooks/useFiscalPeriods.js';
+export { useCloseFiscalPeriod, type CloseFiscalPeriodArgs } from './hooks/useCloseFiscalPeriod.js';
+export { FiscalPeriodModal, type FiscalPeriodModalProps } from './components/FiscalPeriodModal.js';
+export { default as SettingsAccountingPage } from './pages/SettingsAccountingPage.js';
