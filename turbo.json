@@ -1,5 +1,5 @@
 {
-  "$schema": "https://turbo.build/schema.json",
+  "$schema": "https://turbo.build/schema/v2.json",
   "globalDependencies": [".env", ".env.example", "tsconfig.base.json"],
   "globalEnv": ["NODE_ENV", "VITE_SUPABASE_URL", "VITE_SUPABASE_ANON_KEY"],
   "tasks": {
