@@ -144,10 +144,10 @@ convert_product_to_parent_v1(
   p_first_variant_label TEXT,
   p_variant_axis        variant_axis_type,
   p_first_variant_name  TEXT DEFAULT NULL
-) RETURNS UUID  -- product_id (unchanged, preserved)
+) RETURNS UUID  -- new parent_id (the original UUID becomes the first variant)
 ```
 
-Gate : `products.variants.write`. Transforme un product standalone en parent-with-one-variant. Préserve UUID, stock_movements, order_items, recipes, modifiers, cost_price. Erreurs :
+Gate : `products.variants.write`. Transforme un product standalone en parent-with-one-variant. **Préserve l'UUID original** (qui devient le first variant — stock_movements, order_items, recipes, modifiers, cost_price restent attachés). Insère une **nouvelle** row parent (UUID retourné). Erreurs :
 - `P0002 product_not_found` si product n'existe pas
 - `P0004 already_parent` si product est déjà parent
 - `P0004 already_variant` si product est déjà variant
