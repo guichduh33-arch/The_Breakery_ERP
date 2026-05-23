@@ -2893,6 +2893,7 @@ export type Database = {
           is_semi_finished: boolean
           min_stock_threshold: number
           name: string
+          parent_product_id: string | null
           product_type: string
           retail_price: number
           sku: string
@@ -2901,6 +2902,9 @@ export type Database = {
           track_inventory: boolean
           unit: string
           updated_at: string
+          variant_axis: Database["public"]["Enums"]["variant_axis_type"] | null
+          variant_label: string | null
+          variant_sort_order: number
           visible_on_pos: boolean
           wholesale_price: number | null
         }
@@ -2922,6 +2926,7 @@ export type Database = {
           is_semi_finished?: boolean
           min_stock_threshold?: number
           name: string
+          parent_product_id?: string | null
           product_type?: string
           retail_price: number
           sku: string
@@ -2930,6 +2935,9 @@ export type Database = {
           track_inventory?: boolean
           unit?: string
           updated_at?: string
+          variant_axis?: Database["public"]["Enums"]["variant_axis_type"] | null
+          variant_label?: string | null
+          variant_sort_order?: number
           visible_on_pos?: boolean
           wholesale_price?: number | null
         }
@@ -2951,6 +2959,7 @@ export type Database = {
           is_semi_finished?: boolean
           min_stock_threshold?: number
           name?: string
+          parent_product_id?: string | null
           product_type?: string
           retail_price?: number
           sku?: string
@@ -2959,6 +2968,9 @@ export type Database = {
           track_inventory?: boolean
           unit?: string
           updated_at?: string
+          variant_axis?: Database["public"]["Enums"]["variant_axis_type"] | null
+          variant_label?: string | null
+          variant_sort_order?: number
           visible_on_pos?: boolean
           wholesale_price?: number | null
         }
@@ -2969,6 +2981,34 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "categories"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_parent_product_id_fkey"
+            columns: ["parent_product_id"]
+            isOneToOne: false
+            referencedRelation: "mv_stock_variance"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "products_parent_product_id_fkey"
+            columns: ["parent_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_parent_product_id_fkey"
+            columns: ["parent_product_id"]
+            isOneToOne: false
+            referencedRelation: "v_product_available_stock"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "products_parent_product_id_fkey"
+            columns: ["parent_product_id"]
+            isOneToOne: false
+            referencedRelation: "view_recipe_products"
+            referencedColumns: ["product_id"]
           },
         ]
       }
@@ -6545,6 +6585,7 @@ export type Database = {
         | "threshold"
         | "bundle"
       shift_status: "open" | "closed"
+      variant_axis_type: "flavor" | "size" | "format"
     }
     CompositeTypes: {
       _time_trial_type: {
@@ -6749,6 +6790,7 @@ export const Constants = {
         "bundle",
       ],
       shift_status: ["open", "closed"],
+      variant_axis_type: ["flavor", "size", "format"],
     },
   },
 } as const
