@@ -3,4 +3,11 @@
 
 export { useChartOfAccounts, type AccountRow, CHART_OF_ACCOUNTS_KEY } from './hooks/useChartOfAccounts.js';
 export { useUpdateAccountActive, type UpdateAccountActiveArgs } from './hooks/useUpdateAccountActive.js';
+export { useJournalEntries, type JournalEntryRow, type JournalEntriesFilter, JOURNAL_ENTRIES_KEY } from './hooks/useJournalEntries.js';
+export { useJournalEntryLines, type JournalEntryLineRow, JE_LINES_KEY } from './hooks/useJournalEntryLines.js';
+export { useCreateManualJournalEntry, type CreateManualJEArgs, type ManualJELine } from './hooks/useCreateManualJournalEntry.js';
+export { usePostableAccounts, type PostableAccountOption, POSTABLE_ACCOUNTS_FULL_KEY } from './hooks/usePostableAccounts.js';
 export { default as ChartOfAccountsPage } from './pages/ChartOfAccountsPage.js';
+export { default as JournalEntriesPage } from './pages/JournalEntriesPage.js';
+export { JournalEntryDetailDrawer, type JournalEntryDetailDrawerProps } from './components/JournalEntryDetailDrawer.js';
+export { CreateManualJEModal, type CreateManualJEModalProps } from './components/CreateManualJEModal.js';
