@@ -12,6 +12,9 @@ import type { AllergenType } from '@breakery/ui';
 
 export type ProductTypeFilter = 'all' | 'finished' | 'semi-finished' | 'raw' | 'combo';
 
+/** Session 27c — Variant-grouping filter for the catalog list. */
+export type ProductVariantFilter = 'all' | 'standalone' | 'parents' | 'variants';
+
 export interface ProductRow extends Product {
   cost_price: number;
   unit: string;

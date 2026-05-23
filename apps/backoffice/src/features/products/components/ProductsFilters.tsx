@@ -9,16 +9,19 @@
 import { LayoutGrid, List, Search } from 'lucide-react';
 import type { JSX } from 'react';
 import { Input, cn } from '@breakery/ui';
-import type { CategoryOption, ProductView } from '../types.js';
+import type { CategoryOption, ProductView, ProductVariantFilter } from '../types.js';
 
 interface Props {
-  search:        string;
-  onSearch:      (value: string) => void;
-  categoryId:    string | 'all';
-  onCategory:    (id: string | 'all') => void;
-  categories:    ReadonlyArray<CategoryOption>;
-  view:          ProductView;
-  onViewChange:  (view: ProductView) => void;
+  search:           string;
+  onSearch:         (value: string) => void;
+  categoryId:       string | 'all';
+  onCategory:       (id: string | 'all') => void;
+  categories:       ReadonlyArray<CategoryOption>;
+  view:             ProductView;
+  onViewChange:     (view: ProductView) => void;
+  /** Session 27c — variant grouping filter (all / standalone / parents / variants). */
+  variantFilter:    ProductVariantFilter;
+  onVariantFilter:  (filter: ProductVariantFilter) => void;
 }
 
 export function ProductsFilters({
@@ -26,6 +29,7 @@ export function ProductsFilters({
   categoryId, onCategory,
   categories,
   view, onViewChange,
+  variantFilter, onVariantFilter,
 }: Props): JSX.Element {
   return (
     <div className="space-y-3">
@@ -53,6 +57,22 @@ export function ProductsFilters({
             {categories.map((c) => (
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
+          </select>
+        </div>
+
+        <div className="md:w-48">
+          <label htmlFor="bo-products-variant" className="sr-only">Variant filter</label>
+          <select
+            id="bo-products-variant"
+            data-testid="products-filter"
+            value={variantFilter}
+            onChange={(e) => onVariantFilter(e.target.value as ProductVariantFilter)}
+            className="h-10 w-full rounded-full border border-border-subtle bg-bg-elevated px-4 text-sm text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+          >
+            <option value="all">All products</option>
+            <option value="standalone">Standalone only</option>
+            <option value="parents">Parents only</option>
+            <option value="variants">Variants only</option>
           </select>
         </div>
 

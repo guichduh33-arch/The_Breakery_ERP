@@ -22,6 +22,7 @@ import {
   type ProductView,
   type ProductsKpis,
   type ProductRow,
+  type ProductVariantFilter,
 } from '@/features/products/types.js';
 
 export default function ProductsPage(): JSX.Element {
@@ -34,9 +35,20 @@ export default function ProductsPage(): JSX.Element {
   const [search, setSearch] = useState('');
   const [categoryId, setCategoryId] = useState<string | 'all'>('all');
   const [view, setView] = useState<ProductView>('list');
+  const [variantFilter, setVariantFilter] = useState<ProductVariantFilter>('all');
   const [showNew, setShowNew] = useState(false);
 
   const rows: ProductRow[] = products.data ?? [];
+
+  // Session 27c — derive the set of parent ids from the catalog so the
+  // "parents only" filter can light up without a second query.
+  const parentIds = useMemo<ReadonlySet<string>>(() => {
+    const set = new Set<string>();
+    for (const r of rows) {
+      if (r.parent_product_id !== null) set.add(r.parent_product_id);
+    }
+    return set;
+  }, [rows]);
 
   const kpis: ProductsKpis = useMemo(() => {
     const k: ProductsKpis = { total: 0, finished: 0, semi_finished: 0, raw_material: 0, combo: 0 };
@@ -55,13 +67,17 @@ export default function ProductsPage(): JSX.Element {
     const needle = search.trim().toLowerCase();
     return rows.filter((r) => {
       if (categoryId !== 'all' && r.category_id !== categoryId) return false;
+      // Session 27c — variant grouping filter
+      if (variantFilter === 'variants' && r.parent_product_id === null) return false;
+      if (variantFilter === 'standalone' && (r.parent_product_id !== null || parentIds.has(r.id))) return false;
+      if (variantFilter === 'parents' && !parentIds.has(r.id)) return false;
       if (needle === '') return true;
       return (
         r.name.toLowerCase().includes(needle) ||
         r.sku.toLowerCase().includes(needle)
       );
     });
-  }, [rows, search, categoryId]);
+  }, [rows, search, categoryId, variantFilter, parentIds]);
 
   function openProduct(row: ProductRow): void {
     navigate(`/backoffice/products/${row.id}`);
@@ -97,6 +113,8 @@ export default function ProductsPage(): JSX.Element {
         categories={categories.data ?? []}
         view={view}
         onViewChange={setView}
+        variantFilter={variantFilter}
+        onVariantFilter={setVariantFilter}
       />
 
       {view === 'list' ? (
@@ -104,11 +122,12 @@ export default function ProductsPage(): JSX.Element {
           rows={filtered}
           isLoading={products.isLoading}
           resolvedAllergens={resolvedAllergens.data ?? new Map()}
+          parentIds={parentIds}
           onRowClick={openProduct}
           onView={openProduct}
         />
       ) : (
-        <ProductsGrid rows={filtered} onCardClick={openProduct} />
+        <ProductsGrid rows={filtered} parentIds={parentIds} onCardClick={openProduct} />
       )}
     </div>
   );
