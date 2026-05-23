@@ -20,3 +20,4 @@ export { useFiscalPeriods, type FiscalPeriodRow, FISCAL_PERIODS_KEY } from './ho
 export { useCloseFiscalPeriod, type CloseFiscalPeriodArgs } from './hooks/useCloseFiscalPeriod.js';
 export { FiscalPeriodModal, type FiscalPeriodModalProps } from './components/FiscalPeriodModal.js';
 export { default as SettingsAccountingPage } from './pages/SettingsAccountingPage.js';
+export { default as AccountingIndexPage } from './pages/AccountingIndexPage.js';
