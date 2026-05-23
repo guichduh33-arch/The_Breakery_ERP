@@ -70,6 +70,8 @@ import JournalEntriesPage    from '@/features/accounting/pages/JournalEntriesPag
 import GeneralLedgerPage     from '@/features/accounting/pages/GeneralLedgerPage.js';
 import TrialBalancePage      from '@/features/accounting/pages/TrialBalancePage.js';
 import SettingsAccountingPage from '@/features/accounting/pages/SettingsAccountingPage.js';
+import PB1ManagementPage      from '@/features/accounting/pages/PB1ManagementPage.js';
+import ARAgingPage            from '@/features/accounting/pages/ARAgingPage.js';
 import CustomersListPage      from '@/pages/customers/CustomersListPage.js';
 import CustomerCategoriesPage from '@/pages/customers/CustomerCategoriesPage.js';
 import B2BDashboardPage      from '@/pages/btob/B2BDashboardPage.js';
@@ -390,6 +392,22 @@ export function AppRoutes() {
           element={
             <PermissionGate required="accounting.tb.read">
               <TrialBalancePage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="accounting/pb1-management"
+          element={
+            <PermissionGate required="reports.financial.read">
+              <PB1ManagementPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="accounting/ar-aging"
+          element={
+            <PermissionGate required="reports.financial.read">
+              <ARAgingPage />
             </PermissionGate>
           }
         />

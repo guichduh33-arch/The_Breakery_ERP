@@ -3,7 +3,7 @@
 
 import type { JSX } from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, ClipboardList, LineChart, Scale } from 'lucide-react';
+import { BookOpen, ClipboardList, LineChart, Scale, Coins, CalendarDays } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore.js';
 import type { PermissionCode } from '@breakery/supabase';
 
@@ -43,6 +43,20 @@ const TILES: Tile[] = [
     description: 'All accounts with sum DR/CR + balanced check.',
     icon: Scale,
     permission: 'accounting.tb.read',
+  },
+  {
+    to: '/backoffice/accounting/pb1-management',
+    label: 'PB1 Management',
+    description: 'Monthly PB1 declaration helper (NON-PKP, PEMDA Bali).',
+    icon: Coins,
+    permission: 'reports.financial.read',
+  },
+  {
+    to: '/backoffice/accounting/ar-aging',
+    label: 'AR Aging',
+    description: 'Outstanding B2B receivables by aging bucket.',
+    icon: CalendarDays,
+    permission: 'reports.financial.read',
   },
 ];
 
