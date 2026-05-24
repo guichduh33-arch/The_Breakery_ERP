@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -4781,6 +4781,70 @@ export type Database = {
           },
         ]
       }
+      z_reports: {
+        Row: {
+          generated_at: string
+          id: string
+          pdf_storage_path: string | null
+          shift_id: string
+          signed_at: string | null
+          signed_by: string | null
+          snapshot: Json
+          status: Database["public"]["Enums"]["z_report_status"]
+          void_reason: string | null
+          voided_at: string | null
+          voided_by: string | null
+        }
+        Insert: {
+          generated_at?: string
+          id?: string
+          pdf_storage_path?: string | null
+          shift_id: string
+          signed_at?: string | null
+          signed_by?: string | null
+          snapshot: Json
+          status?: Database["public"]["Enums"]["z_report_status"]
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
+        }
+        Update: {
+          generated_at?: string
+          id?: string
+          pdf_storage_path?: string | null
+          shift_id?: string
+          signed_at?: string | null
+          signed_by?: string | null
+          snapshot?: Json
+          status?: Database["public"]["Enums"]["z_report_status"]
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "z_reports_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: true
+            referencedRelation: "pos_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "z_reports_signed_by_fkey"
+            columns: ["signed_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "z_reports_voided_by_fkey"
+            columns: ["voided_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       audit_log: {
@@ -5103,6 +5167,7 @@ export type Database = {
       }
     }
     Functions: {
+      _build_zreport_snapshot: { Args: { p_shift_id: string }; Returns: Json }
       _calculate_recipe_cost_walk: {
         Args: {
           p_current_depth: number
@@ -5306,7 +5371,7 @@ export type Database = {
         Args: { p_lock?: boolean; p_manager_pin: string; p_period_id: string }
         Returns: Json
       }
-      close_shift_v1: {
+      close_shift_v2: {
         Args: {
           p_counted_cash: number
           p_idempotency_key?: string
@@ -5889,6 +5954,7 @@ export type Database = {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
+      get_zreport_snapshot_v1: { Args: { p_zreport_id: string }; Returns: Json }
       has_kiosk_jwt: { Args: { p_required_scope?: string }; Returns: boolean }
       has_permission: {
         Args: { p_perm: string; p_uid: string }
@@ -6512,6 +6578,7 @@ export type Database = {
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      sign_zreport_v1: { Args: { p_zreport_id: string }; Returns: Json }
       skip:
         | { Args: { "": string }; Returns: string }
         | { Args: { how_many: number; why: string }; Returns: string }
@@ -6641,6 +6708,10 @@ export type Database = {
         Args: { p_authorized_by: string; p_order_id: string; p_reason: string }
         Returns: Json
       }
+      void_zreport_v1: {
+        Args: { p_reason: string; p_zreport_id: string }
+        Returns: Json
+      }
       waste_stock_v1: {
         Args: {
           p_idempotency_key?: string
@@ -6722,6 +6793,7 @@ export type Database = {
         | "bundle"
       shift_status: "open" | "closed"
       variant_axis_type: "flavor" | "size" | "format"
+      z_report_status: "draft" | "signed" | "voided"
     }
     CompositeTypes: {
       _time_trial_type: {
@@ -6927,6 +6999,7 @@ export const Constants = {
       ],
       shift_status: ["open", "closed"],
       variant_axis_type: ["flavor", "size", "format"],
+      z_report_status: ["draft", "signed", "voided"],
     },
   },
 } as const

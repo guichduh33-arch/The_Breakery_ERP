@@ -1,5 +1,6 @@
 // apps/pos/src/features/shift/hooks/useCloseShift.ts
 // Session 13 / Phase 3.C — React Query mutation wrapper around close_shift_v1.
+// Session 29 / Wave 1.B — bumped to close_shift_v2 (adds z_report draft creation).
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -23,6 +24,7 @@ export interface CloseShiftResult {
   expected_cash:    number;
   variance:         number;
   journal_entry_id: string | null;
+  zreport_id:       string | null;
   idempotent_replay: boolean;
 }
 
@@ -43,7 +45,7 @@ export function useCloseShift() {
       };
       if (input.notes !== undefined)            args.p_notes = input.notes;
       if (input.idempotency_key !== undefined)  args.p_idempotency_key = input.idempotency_key;
-      const { data, error } = await supabase.rpc('close_shift_v1', args);
+      const { data, error } = await supabase.rpc('close_shift_v2', args);
       if (error) throw new Error(error.message);
       return data as unknown as CloseShiftResult;
     },
