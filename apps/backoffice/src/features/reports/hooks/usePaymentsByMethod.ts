@@ -26,11 +26,12 @@ export function usePaymentsByMethod(params: UsePaymentsByMethodParams) {
   return useQuery<PaymentsByMethodData, Error>({
     queryKey: ['reports', 'payments_by_method', params.start, params.end],
     queryFn:  async () => {
-      const { data, error } = await supabase.rpc('get_payments_by_method_v1', {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any).rpc('get_payments_by_method_v1', {
         p_start: params.start,
         p_end:   params.end,
       });
-      if (error) throw error;
+      if (error) throw error as Error;
       return data as PaymentsByMethodData;
     },
     enabled: Boolean(params.start && params.end),

@@ -50,6 +50,11 @@ import CashFlowPage       from '@/pages/reports/CashFlowPage.js';
 import BasketAnalysisPage    from '@/pages/reports/BasketAnalysisPage.js';
 import RecipeCostOverviewPage from '@/pages/reports/RecipeCostOverviewPage.js';
 import RecipeCostTimelinePage from '@/pages/reports/RecipeCostTimelinePage.js';
+import WastagePage               from '@/pages/reports/WastagePage.js';
+import PaymentByMethodPage       from '@/pages/reports/PaymentByMethodPage.js';
+import Pb1ReportPage             from '@/pages/reports/Pb1ReportPage.js';
+import StockMovementHistoryPage  from '@/pages/reports/StockMovementHistoryPage.js';
+import PerishableTurnoverPage    from '@/pages/reports/PerishableTurnoverPage.js';
 import SettingsHubPage              from '@/pages/settings/SettingsHubPage.js';
 import SettingsGeneralPage          from '@/pages/settings/SettingsGeneralPage.js';
 import SettingsHolidaysPage         from '@/pages/settings/SettingsHolidaysPage.js';
@@ -576,6 +581,46 @@ export function AppRoutes() {
           element={
             <PermissionGate required="reports.financial.read">
               <RecipeCostTimelinePage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="reports/wastage"
+          element={
+            <PermissionGate required="reports.inventory.read">
+              <WastagePage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="reports/payment-by-method"
+          element={
+            <PermissionGate required="reports.financial.read">
+              <PaymentByMethodPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="reports/pb1"
+          element={
+            <PermissionGate required="reports.financial.read">
+              <Pb1ReportPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="reports/stock-movements"
+          element={
+            <PermissionGate required="reports.inventory.read">
+              <StockMovementHistoryPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="reports/perishable-turnover"
+          element={
+            <PermissionGate required="reports.inventory.read">
+              <PerishableTurnoverPage />
             </PermissionGate>
           }
         />

@@ -38,14 +38,14 @@ const MOVEMENT_TYPES = [
 export default function StockMovementHistoryPage() {
   const [start,         setStart]         = useState<string>(defaultStart);
   const [end,           setEnd]           = useState<string>(() => toLocalDateStr(new Date()));
-  const [productFilter, setProductFilter] = useState<string>('');
-  const [typeFilter,    setTypeFilter]    = useState<string>('');
+  const [typeFilter, setTypeFilter] = useState<string>('');
+
+  const movementType: string | undefined = typeFilter || undefined;
 
   const query = useStockMovementsReport({
     start,
     end,
-    product_id:    productFilter || undefined,
-    movement_type: typeFilter    || undefined,
+    movement_type: movementType,
   });
 
   // Flatten all pages for CSV export

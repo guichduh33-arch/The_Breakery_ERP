@@ -27,16 +27,17 @@ export interface StockMovementsPage {
 export interface UseStockMovementsReportParams {
   start:          string;
   end:            string;
-  product_id?:    string;
-  movement_type?: string;
-  limit?:         number;
+  product_id?:    string | undefined;
+  movement_type?: string | undefined;
+  limit?:         number | undefined;
 }
 
 export function useStockMovementsReport(params: UseStockMovementsReportParams) {
   return useInfiniteQuery<StockMovementsPage, Error>({
     queryKey: ['reports', 'stock_movements', params],
     queryFn:  async ({ pageParam }) => {
-      const { data, error } = await supabase.rpc('get_stock_movements_v1', {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any).rpc('get_stock_movements_v1', {
         p_start:         params.start,
         p_end:           params.end,
         p_product_id:    params.product_id    ?? null,
@@ -44,8 +45,8 @@ export function useStockMovementsReport(params: UseStockMovementsReportParams) {
         p_limit:         params.limit         ?? 50,
         p_cursor:        (pageParam as string | null) ?? null,
       });
-      if (error) throw error;
-      return data as StockMovementsPage;
+      if (error) throw error as Error;
+      return data as unknown as StockMovementsPage;
     },
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage.next_cursor ?? undefined,

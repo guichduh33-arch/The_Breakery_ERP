@@ -35,11 +35,12 @@ export function usePb1Report(params: UsePb1ReportParams) {
   return useQuery<Pb1ReportData, Error>({
     queryKey: ['reports', 'pb1', params.month, params.year],
     queryFn:  async () => {
-      const { data, error } = await supabase.rpc('get_pb1_report_v1', {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any).rpc('get_pb1_report_v1', {
         p_month: params.month,
         p_year:  params.year,
       });
-      if (error) throw error;
+      if (error) throw error as Error;
       return data as Pb1ReportData;
     },
     enabled: Boolean(params.month && params.year),
