@@ -19,3 +19,6 @@ export {
   type StockMovementLite,
   type StockVarianceRow,
 } from './aggregations.js';
+
+export * from './csv.js';
+export * from './period.js';

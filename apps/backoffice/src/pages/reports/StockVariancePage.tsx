@@ -5,11 +5,25 @@
 
 import { useState } from 'react';
 import { cn } from '@breakery/ui';
+import type { CsvColumn } from '@breakery/domain';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import {
   useStockVariance,
   type StockVarianceRow,
 } from '@/features/reports/hooks/useStockVariance.js';
+import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
+
+const csvColumns: CsvColumn<StockVarianceRow>[] = [
+  { header: 'Product',      accessor: (r) => r.product_name,  format: 'text' },
+  { header: 'SKU',          accessor: (r) => r.sku,           format: 'text' },
+  { header: 'Opened',       accessor: (r) => r.opened,        format: 'number' },
+  { header: 'Sold',         accessor: (r) => r.sold,          format: 'number' },
+  { header: 'Adjusted',     accessor: (r) => r.adjusted,      format: 'number' },
+  { header: 'Current',      accessor: (r) => r.current_qty,   format: 'number' },
+  { header: 'Expected',     accessor: (r) => r.expected,      format: 'number' },
+  { header: 'Variance',     accessor: (r) => r.variance,      format: 'number' },
+  { header: 'Variance %',   accessor: (r) => r.variance_pct,  format: 'number' },
+];
 
 function varianceTone(v: number): string {
   if (v === 0) return 'text-text-primary';
@@ -27,10 +41,21 @@ export default function StockVariancePage() {
     dateEnd:   until,
   });
 
+  const sinceDate = new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);
+  const untilDate = new Date().toISOString().slice(0, 10);
+
   return (
     <ReportPage
       title="Stock Variance"
       subtitle={`Per-product variance over the last ${days} days. Positive = surplus, negative = shrinkage.`}
+      filters={
+        data != null ? (
+          <ExportButtons
+            csv={{ rows: data, columns: csvColumns, filename: `stock-variance-${sinceDate}_${untilDate}` }}
+            pdf={{ template: 'stock_variance', data, period: { start: sinceDate, end: untilDate }, filename: `stock-variance-${sinceDate}_${untilDate}` }}
+          />
+        ) : undefined
+      }
     >
       {isLoading && <p className="text-sm text-text-secondary">Loading…</p>}
       {error && (

@@ -11,7 +11,7 @@
 import { useMemo, useState, type JSX } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { toLocalDateStr } from '@breakery/domain';
+import { toLocalDateStr, buildCsv, downloadCsv, type CsvColumn } from '@breakery/domain';
 import { Button } from '@breakery/ui';
 import { supabase } from '@/lib/supabase.js';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
@@ -46,28 +46,14 @@ function formatDelta(d: number | null): string {
   return `${sign}${d.toFixed(2)}%`;
 }
 
-/** Quote a CSV cell; double inner quotes per RFC 4180. */
-function csvCell(v: string | number | null): string {
-  if (v === null || v === undefined) return '';
-  const s = String(v);
-  return /[,"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-}
-
-function rowsToCsv(rows: OverviewRow[]): string {
-  const header = [
-    'product_name', 'current_cost', 'baseline_cost',
-    'delta_pct', 'change_count', 'last_change_date',
-  ].join(',');
-  const body = rows.map((r) => [
-    csvCell(r.product_name),
-    csvCell(r.cost_per_unit),
-    csvCell(r.baseline_cost),
-    csvCell(r.delta_pct === null ? null : r.delta_pct.toFixed(2)),
-    csvCell(r.change_count),
-    csvCell(r.created_at ?? ''),
-  ].join(','));
-  return [header, ...body].join('\n');
-}
+const OVERVIEW_CSV_COLUMNS: CsvColumn<OverviewRow>[] = [
+  { header: 'product_name',   accessor: (r) => r.product_name },
+  { header: 'current_cost',   accessor: (r) => r.cost_per_unit },
+  { header: 'baseline_cost',  accessor: (r) => r.baseline_cost },
+  { header: 'delta_pct',      accessor: (r) => r.delta_pct === null ? null : r.delta_pct.toFixed(2) },
+  { header: 'change_count',   accessor: (r) => r.change_count },
+  { header: 'last_change_date', accessor: (r) => r.created_at ?? '' },
+];
 
 export function RecipeCostOverviewPage(): JSX.Element {
   const navigate = useNavigate();
@@ -99,18 +85,8 @@ export function RecipeCostOverviewPage(): JSX.Element {
   }, [q.data]);
 
   function handleExportCsv(): void {
-    if (typeof document === 'undefined' || typeof URL === 'undefined') return;
-    const csv = rowsToCsv(rows);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `recipe-cost-overview-${start}_${end}.csv`;
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    const csv = buildCsv(rows, OVERVIEW_CSV_COLUMNS);
+    downloadCsv(csv, `recipe-cost-overview-${start}_${end}.csv`);
   }
 
   return (

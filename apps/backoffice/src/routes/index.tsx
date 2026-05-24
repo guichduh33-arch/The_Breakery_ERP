@@ -71,6 +71,7 @@ import GeneralLedgerPage     from '@/features/accounting/pages/GeneralLedgerPage
 import TrialBalancePage      from '@/features/accounting/pages/TrialBalancePage.js';
 import SettingsAccountingPage from '@/features/accounting/pages/SettingsAccountingPage.js';
 import ExpenseThresholdsPage  from '@/features/settings/expense-thresholds/ExpenseThresholdsPage.js';
+import ZReportsListPage       from '@/pages/cash-register/ZReportsListPage.js';
 import CustomersListPage      from '@/pages/customers/CustomersListPage.js';
 import CustomerCategoriesPage from '@/pages/customers/CustomerCategoriesPage.js';
 import B2BDashboardPage      from '@/pages/btob/B2BDashboardPage.js';
@@ -318,6 +319,14 @@ export function AppRoutes() {
           element={
             <PermissionGate required="expenses.read">
               <ExpenseDetailPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="cash-register/zreports"
+          element={
+            <PermissionGate required={'zreports.read' as never}>
+              <ZReportsListPage />
             </PermissionGate>
           }
         />

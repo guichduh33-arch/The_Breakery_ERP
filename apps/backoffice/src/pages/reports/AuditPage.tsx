@@ -5,8 +5,17 @@
 // (cf. fix 14-002).
 
 import { Button } from '@breakery/ui';
+import type { CsvColumn } from '@breakery/domain';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { useAuditLogs, type AuditLogRow } from '@/features/reports/hooks/useAuditLogs.js';
+import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
+
+const csvColumns: CsvColumn<AuditLogRow>[] = [
+  { header: 'Timestamp',   accessor: (r) => r.created_at,  format: 'datetime' },
+  { header: 'Action',      accessor: (r) => r.action,      format: 'text' },
+  { header: 'Entity Type', accessor: (r) => r.entity_type, format: 'text' },
+  { header: 'Actor ID',    accessor: (r) => r.actor_id,    format: 'text' },
+];
 
 export default function AuditPage() {
   const {
@@ -24,6 +33,14 @@ export default function AuditPage() {
     <ReportPage
       title="Audit Log"
       subtitle="System-wide audit trail. Cursor-paginated, newest first."
+      filters={
+        rows.length > 0 ? (
+          <ExportButtons
+            csv={{ rows, columns: csvColumns, filename: 'audit-log-current-view' }}
+            pdf={{ template: 'audit', data: rows, filename: 'audit-log-current-view' }}
+          />
+        ) : undefined
+      }
     >
       {isLoading && <p className="text-sm text-text-secondary">Loading…</p>}
       {error && (

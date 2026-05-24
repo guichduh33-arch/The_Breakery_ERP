@@ -15,7 +15,7 @@
 
 import { useMemo, useState, type JSX } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { toLocalDateStr } from '@breakery/domain';
+import { toLocalDateStr, buildCsv, downloadCsv, type CsvColumn } from '@breakery/domain';
 import { Button, cn } from '@breakery/ui';
 import { supabase } from '@/lib/supabase.js';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
@@ -54,49 +54,15 @@ function formatVariancePct(frac: number | null): string {
   return `${sign}${pct.toFixed(2)}%`;
 }
 
-/** Quote a CSV cell ; double inner quotes per RFC 4180. */
-function csvCell(value: string | number | null): string {
-  if (value === null || value === undefined) return '';
-  const s = String(value);
-  if (s.includes(',') || s.includes('"') || s.includes('\n')) {
-    return `"${s.replace(/"/g, '""')}"`;
-  }
-  return s;
-}
-
-function rowsToCsv(rows: YieldRow[]): string {
-  const header = [
-    'production_number', 'product_name', 'production_date',
-    'expected_yield_qty', 'actual_yield_qty',
-    'yield_variance_pct', 'yield_variance_reason',
-  ].join(',');
-  const body = rows.map((r) => [
-    csvCell(r.production_number),
-    csvCell(r.product_name),
-    csvCell(r.production_date),
-    csvCell(r.expected_yield_qty),
-    csvCell(r.actual_yield_qty),
-    csvCell(r.yield_variance_pct === null ? null : (r.yield_variance_pct * 100).toFixed(4)),
-    csvCell(r.yield_variance_reason),
-  ].join(','));
-  return [header, ...body].join('\n');
-}
-
-/** Triggers a CSV download in the browser. Test-environment safe (skips when
- *  document.createElement is unavailable). */
-function downloadCsv(filename: string, csv: string): void {
-  if (typeof document === 'undefined' || typeof URL === 'undefined') return;
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.style.display = 'none';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
+const YIELD_CSV_COLUMNS: CsvColumn<YieldRow>[] = [
+  { header: 'production_number',    accessor: (r) => r.production_number },
+  { header: 'product_name',         accessor: (r) => r.product_name },
+  { header: 'production_date',      accessor: (r) => r.production_date },
+  { header: 'expected_yield_qty',   accessor: (r) => r.expected_yield_qty },
+  { header: 'actual_yield_qty',     accessor: (r) => r.actual_yield_qty },
+  { header: 'yield_variance_pct',   accessor: (r) => r.yield_variance_pct === null ? null : (r.yield_variance_pct * 100).toFixed(4) },
+  { header: 'yield_variance_reason', accessor: (r) => r.yield_variance_reason },
+];
 
 function useProductionYield(start: string, end: string) {
   return useQuery<YieldRow[]>({
@@ -325,8 +291,8 @@ export default function ProductionYieldPage(): JSX.Element {
       : (yieldRows.find((r) => r.product_id === drillProductId)?.product_name ?? null);
 
   function handleExportCsv(): void {
-    const csv = rowsToCsv(yieldRows);
-    downloadCsv(`production-yield-${start}_to_${end}.csv`, csv);
+    const csv = buildCsv(yieldRows, YIELD_CSV_COLUMNS);
+    downloadCsv(csv, `production-yield-${start}_to_${end}.csv`);
   }
 
   return (

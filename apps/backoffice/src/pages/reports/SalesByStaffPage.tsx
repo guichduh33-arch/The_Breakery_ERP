@@ -5,9 +5,19 @@
 
 import { useState } from 'react';
 import { toLocalDateStr } from '@breakery/domain';
+import type { CsvColumn } from '@breakery/domain';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
 import { useSalesByStaff } from '@/features/reports/hooks/useSalesByStaff.js';
+import type { SalesStaffRow } from '@/features/reports/hooks/useSalesByStaff.js';
+import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
+
+const csvColumns: CsvColumn<SalesStaffRow>[] = [
+  { header: 'Staff',       accessor: (r) => r.staff_name,  format: 'text' },
+  { header: 'Revenue',     accessor: (r) => r.total,       format: 'idr-round100' },
+  { header: 'Order Count', accessor: (r) => r.order_count, format: 'number' },
+  { header: 'Avg Basket',  accessor: (r) => r.avg_basket,  format: 'idr-round100' },
+];
 
 function defaultStart(): string {
   return toLocalDateStr(new Date(Date.now() - 6 * 86_400_000));
@@ -23,12 +33,20 @@ export default function SalesByStaffPage() {
       title="Sales by Staff"
       subtitle="Revenue, order count, and average basket per cashier."
       filters={
-        <DateRangePicker
-          start={start}
-          end={end}
-          onStartChange={setStart}
-          onEndChange={setEnd}
-        />
+        <div className="flex items-center gap-3">
+          <DateRangePicker
+            start={start}
+            end={end}
+            onStartChange={setStart}
+            onEndChange={setEnd}
+          />
+          {data && (
+            <ExportButtons
+              csv={{ rows: data, columns: csvColumns, filename: `sales-by-staff-${start}_${end}` }}
+              pdf={{ template: 'sales_by_staff', data, period: { start, end }, filename: `sales-by-staff-${start}_${end}` }}
+            />
+          )}
+        </div>
       }
     >
       {isLoading && <p className="text-sm text-text-secondary">Loading…</p>}

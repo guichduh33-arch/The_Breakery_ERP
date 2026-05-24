@@ -3,11 +3,39 @@
 // Cash flow statement (indirect method). MVP: Operating section filled
 // in, Investing/Financing zero placeholders (D-W6-6A-2).
 
-import { useState } from 'react';
-import { toLocalDateStr } from '@breakery/domain';
+import { useState, useMemo } from 'react';
+import { toLocalDateStr, previousPeriod } from '@breakery/domain';
+import type { CsvColumn } from '@breakery/domain';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
-import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
+import { DateRangePickerWithCompare } from '@/features/reports/components/DateRangePickerWithCompare.js';
+import { DeltaPct } from '@/features/reports/components/DeltaPct.js';
 import { useCashFlow } from '@/features/reports/hooks/useCashFlow.js';
+import type { CashFlow } from '@/features/reports/hooks/useCashFlow.js';
+import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
+
+interface CfRow { section: string; label: string; value: number }
+
+function buildCfRows(d: CashFlow): CfRow[] {
+  return [
+    { section: 'Operating', label: 'Net profit',            value: d.operating.net_profit },
+    { section: 'Operating', label: 'Δ accounts receivable', value: d.operating.delta_ar },
+    { section: 'Operating', label: 'Δ accounts payable',    value: d.operating.delta_ap },
+    { section: 'Operating', label: 'Δ inventory',           value: d.operating.delta_inventory },
+    { section: 'Operating', label: 'Non-cash adjustments',  value: d.operating.non_cash_adjustments },
+    { section: 'Operating', label: 'Total operating',       value: d.operating.total },
+    { section: 'Investing', label: 'Total investing',       value: d.investing.total },
+    { section: 'Financing', label: 'Total financing',       value: d.financing.total },
+    { section: 'Summary',   label: 'Net change in cash',    value: d.net_change_in_cash },
+    { section: 'Summary',   label: 'Cash, start of period', value: d.cash_start },
+    { section: 'Summary',   label: 'Cash, end of period',   value: d.cash_end },
+  ];
+}
+
+const cfCsvColumns: CsvColumn<CfRow>[] = [
+  { header: 'Section', accessor: (r) => r.section, format: 'text' },
+  { header: 'Label',   accessor: (r) => r.label,   format: 'text' },
+  { header: 'Value',   accessor: (r) => r.value,   format: 'idr-round100' },
+];
 
 function defaultStart(): string {
   return toLocalDateStr(new Date(Date.now() - 29 * 86_400_000));
@@ -19,19 +47,45 @@ function fmt(n: number): string {
 export default function CashFlowPage() {
   const [start, setStart] = useState<string>(defaultStart);
   const [end,   setEnd]   = useState<string>(() => toLocalDateStr(new Date()));
+  const [compare, setCompare] = useState(false);
+
+  const prev = useMemo(() => compare ? previousPeriod(start, end) : null, [compare, start, end]);
+
   const { data, isLoading, error } = useCashFlow(start, end);
+  const { data: prevData } = useCashFlow(
+    prev?.start ?? start,
+    prev?.end   ?? end,
+  );
+
+  const showDelta = compare && !!prevData;
 
   return (
     <ReportPage
       title="Cash Flow Statement"
       subtitle="Indirect method (operating) + account-classified investing / financing totals via accounts.cash_flow_section."
       filters={
-        <DateRangePicker
-          start={start}
-          end={end}
-          onStartChange={setStart}
-          onEndChange={setEnd}
-        />
+        <div className="flex items-center gap-3">
+          <DateRangePickerWithCompare
+            start={start}
+            end={end}
+            onStartChange={setStart}
+            onEndChange={setEnd}
+            compare={compare}
+            onCompareChange={setCompare}
+          />
+          {data && (
+            <ExportButtons
+              csv={{ rows: buildCfRows(data), columns: cfCsvColumns, filename: `cash-flow-${start}_${end}` }}
+              pdf={{
+                template: 'cf',
+                data,
+                period: { start, end },
+                filename: `cash-flow-${start}_${end}`,
+                ...(showDelta && prevData ? { comparePrevious: { data: prevData } } : {}),
+              }}
+            />
+          )}
+        </div>
       }
     >
       {isLoading && <p className="text-sm text-text-secondary">Loading…</p>}
@@ -70,6 +124,14 @@ export default function CashFlowPage() {
                 <td className="py-3 font-semibold uppercase tracking-wider">Net change in cash</td>
                 <td className="py-3 text-right font-semibold tabular-nums">{fmt(data.net_change_in_cash)}</td>
               </tr>
+              {showDelta && (
+                <tr>
+                  <td className="py-1 text-xs text-text-secondary pl-2">Net change vs prev. period</td>
+                  <td className="py-1 text-right">
+                    <DeltaPct current={data.net_change_in_cash} previous={prevData!.net_change_in_cash} />
+                  </td>
+                </tr>
+              )}
               <tr className="border-b border-border-subtle">
                 <td className="py-2 text-text-secondary">Cash, start of period</td>
                 <td className="py-2 text-right tabular-nums">{fmt(data.cash_start)}</td>
@@ -78,6 +140,14 @@ export default function CashFlowPage() {
                 <td className="py-2 text-text-secondary">Cash, end of period</td>
                 <td className="py-2 text-right tabular-nums">{fmt(data.cash_end)}</td>
               </tr>
+              {showDelta && (
+                <tr>
+                  <td className="py-1 text-xs text-text-secondary pl-2">Ending cash vs prev. period</td>
+                  <td className="py-1 text-right">
+                    <DeltaPct current={data.cash_end} previous={prevData!.cash_end} />
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

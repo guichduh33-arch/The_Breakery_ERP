@@ -130,7 +130,11 @@ export type PermissionCode =
   | 'accounting.gl.read'
   | 'accounting.tb.read'
   | 'accounting.je.create_manual'
-  | 'accounting.period.close';
+  | 'accounting.period.close'
+  // Session 29 / Wave 1.D — Z-Reports
+  | 'zreports.read'
+  | 'zreports.sign'
+  | 'zreports.void';
 
 /**
  * Check whether a user has a single permission. Pure client-side lookup —
