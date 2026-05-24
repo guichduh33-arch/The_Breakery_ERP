@@ -1,4 +1,4 @@
-export type Json =
+﻿export type Json =
   | string
   | number
   | boolean
@@ -5116,6 +5116,7 @@ export type Database = {
       _contract_on: { Args: { "": string }; Returns: unknown }
       _currtest: { Args: never; Returns: number }
       _db_privs: { Args: never; Returns: unknown[] }
+      _emit_expense_je: { Args: { p_expense_id: string }; Returns: string }
       _extensions: { Args: never; Returns: unknown[] }
       _get: { Args: { "": string }; Returns: number }
       _get_latest: { Args: { "": string }; Returns: number[] }
@@ -5179,10 +5180,7 @@ export type Database = {
         }
         Returns: Json
       }
-      approve_expense_v1: {
-        Args: { p_approval_notes?: string; p_expense_id: string }
-        Returns: Json
-      }
+      approve_expense_v2: { Args: { p_expense_id: string }; Returns: Json }
       calculate_pb1_payable_v1: {
         Args: { p_period_end: string; p_period_start: string }
         Returns: Json
@@ -5509,6 +5507,10 @@ export type Database = {
       }
       current_pb1_rate: { Args: never; Returns: number }
       deactivate_recipe_v1: { Args: { p_recipe_id: string }; Returns: string }
+      delete_expense_threshold_v1: {
+        Args: { p_threshold_id: string }
+        Returns: boolean
+      }
       delete_user_v1: {
         Args: { p_reason: string; p_user_id: string }
         Returns: Json
@@ -6474,6 +6476,16 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      set_expense_threshold_v1: {
+        Args: {
+          p_amount_max?: number
+          p_amount_min?: number
+          p_category_id?: string
+          p_steps?: Json
+          p_threshold_id?: string
+        }
+        Returns: string
+      }
       set_opname_count_v1: {
         Args: {
           p_count_item_id: string
@@ -6508,7 +6520,10 @@ export type Database = {
         Returns: undefined
       }
       storage_path_to_expense_id: { Args: { p_name: string }; Returns: string }
-      submit_expense_v1: { Args: { p_expense_id: string }; Returns: undefined }
+      submit_expense_v2: {
+        Args: { p_expense_id: string; p_idempotency_key?: string }
+        Returns: Json
+      }
       suggest_production_schedule_v1: {
         Args: { p_target_date: string }
         Returns: Json
