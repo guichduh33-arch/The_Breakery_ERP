@@ -84,6 +84,8 @@ export default function ExpenseDetailPage(): JSX.Element {
   async function handleSubmitForReview(): Promise<void> {
     try {
       await submit.mutateAsync({ id });
+      // Rotate the idempotency key so a subsequent submit (same mount) is a fresh call.
+      submit.resetIdempotency();
     } catch {
       // surfaced via submit.error
     }
