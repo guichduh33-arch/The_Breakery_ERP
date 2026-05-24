@@ -25,7 +25,7 @@ import {
   Receipt, ShieldCheck, UserPlus, CalendarDays, Mail, FileText,
   Printer, Network, Coins, Scale, Banknote, Layers3,
   LineChart, Sparkles, Megaphone, Cake, Monitor, ChefHat as KitchenIcon,
-  ClipboardCheck, TrendingUp,
+  ClipboardCheck, TrendingUp, Signature,
   type LucideIcon,
 } from 'lucide-react';
 import { BrandMark, SectionLabel, cn } from '@breakery/ui';
@@ -82,6 +82,7 @@ const GROUPS: NavGroup[] = [
       { to: '/backoffice/purchasing/purchase-orders', label: 'Purchase Orders', icon: ClipboardCheck, permission: 'purchasing.po.read' as never, indent: 1 },
       { to: '/backoffice/suppliers', label: 'Suppliers', icon: Building2, permission: 'suppliers.read' },
       { to: '/backoffice/expenses', label: 'Expenses', icon: Receipt, permission: 'expenses.read' },
+      { to: '/backoffice/cash-register/zreports', label: 'Z-Reports', icon: Signature, permission: 'zreports.read' as never },
     ],
   },
   {
