@@ -1,4 +1,4 @@
-export type Json =
+﻿export type Json =
   | string
   | number
   | boolean
@@ -698,6 +698,83 @@ export type Database = {
         }
         Relationships: []
       }
+      expense_approval_thresholds: {
+        Row: {
+          amount_max: number
+          amount_min: number
+          category_id: string | null
+          created_at: string
+          id: string
+          steps: Json
+          updated_at: string
+        }
+        Insert: {
+          amount_max: number
+          amount_min?: number
+          category_id?: string | null
+          created_at?: string
+          id?: string
+          steps: Json
+          updated_at?: string
+        }
+        Update: {
+          amount_max?: number
+          amount_min?: number
+          category_id?: string | null
+          created_at?: string
+          id?: string
+          steps?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expense_approval_thresholds_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "expense_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      expense_approvals: {
+        Row: {
+          approved_at: string
+          approver_user_id: string
+          expense_id: string
+          id: string
+          step: number
+        }
+        Insert: {
+          approved_at?: string
+          approver_user_id: string
+          expense_id: string
+          id?: string
+          step: number
+        }
+        Update: {
+          approved_at?: string
+          approver_user_id?: string
+          expense_id?: string
+          id?: string
+          step?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expense_approvals_approver_user_id_fkey"
+            columns: ["approver_user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_approvals_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       expense_categories: {
         Row: {
           account_id: string
@@ -742,9 +819,11 @@ export type Database = {
           approval_notes: string | null
           approved_at: string | null
           approved_by: string | null
+          auto_approved: boolean
           category_id: string
           created_at: string
           created_by: string | null
+          current_approval_step: number
           deleted_at: string | null
           description: string
           expense_date: string
@@ -759,6 +838,7 @@ export type Database = {
           receipt_url: string | null
           rejected_at: string | null
           rejected_reason: string | null
+          required_approval_steps_snapshot: Json | null
           status: string
           submitted_at: string | null
           submitted_by: string | null
@@ -771,9 +851,11 @@ export type Database = {
           approval_notes?: string | null
           approved_at?: string | null
           approved_by?: string | null
+          auto_approved?: boolean
           category_id: string
           created_at?: string
           created_by?: string | null
+          current_approval_step?: number
           deleted_at?: string | null
           description: string
           expense_date?: string
@@ -788,6 +870,7 @@ export type Database = {
           receipt_url?: string | null
           rejected_at?: string | null
           rejected_reason?: string | null
+          required_approval_steps_snapshot?: Json | null
           status?: string
           submitted_at?: string | null
           submitted_by?: string | null
@@ -800,9 +883,11 @@ export type Database = {
           approval_notes?: string | null
           approved_at?: string | null
           approved_by?: string | null
+          auto_approved?: boolean
           category_id?: string
           created_at?: string
           created_by?: string | null
+          current_approval_step?: number
           deleted_at?: string | null
           description?: string
           expense_date?: string
@@ -817,6 +902,7 @@ export type Database = {
           receipt_url?: string | null
           rejected_at?: string | null
           rejected_reason?: string | null
+          required_approval_steps_snapshot?: Json | null
           status?: string
           submitted_at?: string | null
           submitted_by?: string | null
@@ -2893,6 +2979,7 @@ export type Database = {
           is_semi_finished: boolean
           min_stock_threshold: number
           name: string
+          parent_product_id: string | null
           product_type: string
           retail_price: number
           sku: string
@@ -2901,6 +2988,9 @@ export type Database = {
           track_inventory: boolean
           unit: string
           updated_at: string
+          variant_axis: Database["public"]["Enums"]["variant_axis_type"] | null
+          variant_label: string | null
+          variant_sort_order: number
           visible_on_pos: boolean
           wholesale_price: number | null
         }
@@ -2922,6 +3012,7 @@ export type Database = {
           is_semi_finished?: boolean
           min_stock_threshold?: number
           name: string
+          parent_product_id?: string | null
           product_type?: string
           retail_price: number
           sku: string
@@ -2930,6 +3021,9 @@ export type Database = {
           track_inventory?: boolean
           unit?: string
           updated_at?: string
+          variant_axis?: Database["public"]["Enums"]["variant_axis_type"] | null
+          variant_label?: string | null
+          variant_sort_order?: number
           visible_on_pos?: boolean
           wholesale_price?: number | null
         }
@@ -2951,6 +3045,7 @@ export type Database = {
           is_semi_finished?: boolean
           min_stock_threshold?: number
           name?: string
+          parent_product_id?: string | null
           product_type?: string
           retail_price?: number
           sku?: string
@@ -2959,6 +3054,9 @@ export type Database = {
           track_inventory?: boolean
           unit?: string
           updated_at?: string
+          variant_axis?: Database["public"]["Enums"]["variant_axis_type"] | null
+          variant_label?: string | null
+          variant_sort_order?: number
           visible_on_pos?: boolean
           wholesale_price?: number | null
         }
@@ -2969,6 +3067,34 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "categories"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_parent_product_id_fkey"
+            columns: ["parent_product_id"]
+            isOneToOne: false
+            referencedRelation: "mv_stock_variance"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "products_parent_product_id_fkey"
+            columns: ["parent_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_parent_product_id_fkey"
+            columns: ["parent_product_id"]
+            isOneToOne: false
+            referencedRelation: "v_product_available_stock"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "products_parent_product_id_fkey"
+            columns: ["parent_product_id"]
+            isOneToOne: false
+            referencedRelation: "view_recipe_products"
+            referencedColumns: ["product_id"]
           },
         ]
       }
@@ -4990,6 +5116,7 @@ export type Database = {
       _contract_on: { Args: { "": string }; Returns: unknown }
       _currtest: { Args: never; Returns: number }
       _db_privs: { Args: never; Returns: unknown[] }
+      _emit_expense_je: { Args: { p_expense_id: string }; Returns: string }
       _extensions: { Args: never; Returns: unknown[] }
       _get: { Args: { "": string }; Returns: number }
       _get_latest: { Args: { "": string }; Returns: number[] }
@@ -5053,10 +5180,7 @@ export type Database = {
         }
         Returns: Json
       }
-      approve_expense_v1: {
-        Args: { p_approval_notes?: string; p_expense_id: string }
-        Returns: Json
-      }
+      approve_expense_v2: { Args: { p_expense_id: string }; Returns: Json }
       calculate_pb1_payable_v1: {
         Args: { p_period_end: string; p_period_start: string }
         Returns: Json
@@ -5252,6 +5376,19 @@ export type Database = {
         Args: { p_product_id: string; p_target_flour_qty: number }
         Returns: Json
       }
+      convert_parent_to_standalone_v1: {
+        Args: { p_parent_id: string }
+        Returns: string
+      }
+      convert_product_to_parent_v1: {
+        Args: {
+          p_first_variant_label: string
+          p_first_variant_name?: string
+          p_product_id: string
+          p_variant_axis: Database["public"]["Enums"]["variant_axis_type"]
+        }
+        Returns: string
+      }
       convert_quantity: {
         Args: { p_from_unit: string; p_qty: number; p_to_unit: string }
         Returns: number
@@ -5355,12 +5492,30 @@ export type Database = {
         }
         Returns: string
       }
+      create_variant_v1: {
+        Args: {
+          p_cost_price?: number
+          p_name?: string
+          p_parent_id: string
+          p_retail_price: number
+          p_sku: string
+          p_sort_order?: number
+          p_unit?: string
+          p_variant_label: string
+        }
+        Returns: string
+      }
       current_pb1_rate: { Args: never; Returns: number }
       deactivate_recipe_v1: { Args: { p_recipe_id: string }; Returns: string }
+      delete_expense_threshold_v1: {
+        Args: { p_threshold_id: string }
+        Returns: boolean
+      }
       delete_user_v1: {
         Args: { p_reason: string; p_user_id: string }
         Returns: Json
       }
+      delete_variant_v1: { Args: { p_variant_id: string }; Returns: string }
       diag:
         | {
             Args: { msg: unknown }
@@ -6223,6 +6378,10 @@ export type Database = {
         Args: { p_product_id: string; p_recipe_ids: string[] }
         Returns: number
       }
+      reorder_variants_v1: {
+        Args: { p_ordered_variant_ids: string[]; p_parent_id: string }
+        Returns: number
+      }
       reservation_consume_v1: {
         Args: { p_reservation_id: string }
         Returns: Json
@@ -6317,6 +6476,16 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      set_expense_threshold_v1: {
+        Args: {
+          p_amount_max?: number
+          p_amount_min?: number
+          p_category_id?: string
+          p_steps?: Json
+          p_threshold_id?: string
+        }
+        Returns: string
+      }
       set_opname_count_v1: {
         Args: {
           p_count_item_id: string
@@ -6351,7 +6520,10 @@ export type Database = {
         Returns: undefined
       }
       storage_path_to_expense_id: { Args: { p_name: string }; Returns: string }
-      submit_expense_v1: { Args: { p_expense_id: string }; Returns: undefined }
+      submit_expense_v2: {
+        Args: { p_expense_id: string; p_idempotency_key?: string }
+        Returns: Json
+      }
       suggest_production_schedule_v1: {
         Args: { p_target_date: string }
         Returns: Json
@@ -6435,6 +6607,10 @@ export type Database = {
       update_user_role_v1: {
         Args: { p_new_role_code: string; p_reason: string; p_user_id: string }
         Returns: Json
+      }
+      update_variant_v1: {
+        Args: { p_patch: Json; p_variant_id: string }
+        Returns: string
       }
       upsert_product_modifiers_v1: {
         Args: { p_groups: Json; p_product_id: string }
@@ -6545,6 +6721,7 @@ export type Database = {
         | "threshold"
         | "bundle"
       shift_status: "open" | "closed"
+      variant_axis_type: "flavor" | "size" | "format"
     }
     CompositeTypes: {
       _time_trial_type: {
@@ -6749,6 +6926,7 @@ export const Constants = {
         "bundle",
       ],
       shift_status: ["open", "closed"],
+      variant_axis_type: ["flavor", "size", "format"],
     },
   },
 } as const

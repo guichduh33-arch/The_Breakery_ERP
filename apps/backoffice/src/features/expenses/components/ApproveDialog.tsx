@@ -1,27 +1,64 @@
 // apps/backoffice/src/features/expenses/components/ApproveDialog.tsx
+// S28: approve_expense_v2 — PIN collected in dialog, passed via x-manager-pin header (S25 pattern).
+// S28 Task 5.H: SOD-aware button state (creator cannot approve their own expense; double-approve blocked).
 import { useState } from 'react';
 import {
   Button,
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@breakery/ui';
 import { useApproveExpense } from '../hooks/useExpenseActions.js';
+import type { ExpenseApprovalRow } from '../hooks/useExpenseApprovals.js';
 
 export interface ApproveDialogProps {
   open: boolean;
   expenseId: string;
   onClose: () => void;
   onSuccess?: () => void;
+  /** user_profiles.id of whoever created the expense */
+  createdByUserId?: string | null;
+  /** existing approval rows for this expense */
+  approvals?: ExpenseApprovalRow[];
+  /** user_profiles.id of the currently logged-in user */
+  currentUserId?: string | null;
 }
 
-export function ApproveDialog({ open, expenseId, onClose, onSuccess }: ApproveDialogProps): JSX.Element {
-  const [notes, setNotes] = useState('');
+export function ApproveDialog({
+  open,
+  expenseId,
+  onClose,
+  onSuccess,
+  createdByUserId,
+  approvals = [],
+  currentUserId,
+}: ApproveDialogProps): JSX.Element {
+  const [pin, setPin] = useState('');
   const mut = useApproveExpense();
 
+  // Separation-of-duties checks
+  const isCreator = currentUserId !== null && currentUserId !== undefined
+    && createdByUserId !== null && createdByUserId !== undefined
+    && currentUserId === createdByUserId;
+  const alreadyApproved = currentUserId !== null && currentUserId !== undefined
+    && approvals.some((a) => a.approver_user_id === currentUserId);
+  const sodBlocked = isCreator || alreadyApproved;
+
+  const sodTooltip = isCreator
+    ? 'You cannot approve an expense you created (separation of duties)'
+    : alreadyApproved
+      ? 'You have already approved this expense'
+      : undefined;
+
+  function handleClose(): void {
+    setPin('');
+    mut.reset();
+    onClose();
+  }
+
   async function handleSubmit(): Promise<void> {
+    if (pin.trim().length === 0 || sodBlocked) return;
     try {
-      const args: { id: string; notes?: string } = { id: expenseId };
-      if (notes.trim() !== '') args.notes = notes.trim();
-      await mut.mutateAsync(args);
+      await mut.mutateAsync({ id: expenseId, manager_pin: pin.trim() });
+      setPin('');
       onSuccess?.();
       onClose();
     } catch {
@@ -30,34 +67,44 @@ export function ApproveDialog({ open, expenseId, onClose, onSuccess }: ApproveDi
   }
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+    <Dialog open={open} onOpenChange={(o) => { if (!o) handleClose(); }}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Approve expense</DialogTitle>
           <DialogDescription>
-            Approval posts a balanced journal entry. This cannot be undone.
+            Approval posts a balanced journal entry. Enter your manager PIN to confirm.
+            This cannot be undone.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-1">
-          <label htmlFor="approve-notes" className="text-xs uppercase tracking-widest text-text-secondary">
-            Notes (optional)
+          <label htmlFor="approve-pin" className="text-xs uppercase tracking-widest text-text-secondary">
+            Manager PIN
           </label>
-          <textarea
-            id="approve-notes"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            rows={3}
-            maxLength={500}
-            className="w-full rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm text-text-primary"
+          <input
+            id="approve-pin"
+            type="password"
+            inputMode="numeric"
+            maxLength={8}
+            value={pin}
+            onChange={(e) => setPin(e.target.value)}
+            placeholder="••••••"
+            className="w-full rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm text-text-primary tracking-widest"
           />
         </div>
         {mut.error !== null && mut.error !== undefined && (
           <div className="text-xs text-red">{mut.error.message}</div>
         )}
         <DialogFooter>
-          <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button type="button" variant="primary" onClick={() => { void handleSubmit(); }} disabled={mut.isPending}>
-            {mut.isPending ? 'Approving…' : 'Approve'}
+          <Button type="button" variant="ghost" onClick={handleClose}>Cancel</Button>
+          <Button
+            data-testid="approve-submit-btn"
+            type="button"
+            variant="primary"
+            onClick={() => { void handleSubmit(); }}
+            disabled={sodBlocked || mut.isPending || pin.trim().length === 0}
+            title={sodTooltip}
+          >
+            {mut.isPending ? 'Approving…' : sodBlocked ? 'Cannot approve' : 'Approve'}
           </Button>
         </DialogFooter>
       </DialogContent>

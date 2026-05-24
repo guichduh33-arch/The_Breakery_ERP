@@ -27,6 +27,9 @@ export type PermissionCode =
   | 'products.units.update'
   | 'products.sections.update'
   | 'products.modifiers.update'
+  // Session 27c — product variants (parent/child)
+  | 'products.variants.read'
+  | 'products.variants.write'
   | 'categories.read'
   | 'categories.create'
   | 'categories.update'
@@ -96,6 +99,9 @@ export type PermissionCode =
   | 'expenses.approve'
   | 'expenses.pay'
   | 'expenses.manage'
+  // Session 28 / Wave 3.A — Expense threshold governance
+  | 'expenses.thresholds.read'
+  | 'expenses.thresholds.write'
   // Session 13 / Phase 3.C
   | 'shift.open'
   | 'shift.close'

@@ -10,6 +10,7 @@ import { Box, DollarSign, Eye, Trash2 } from 'lucide-react';
 import type { JSX } from 'react';
 import {
   AllergenBadge,
+  Badge,
   Currency,
   DataTable,
   type AllergenType,
@@ -24,6 +25,8 @@ interface Props {
   isLoading?: boolean;
   /** Map<product_id, resolved-allergens> from `view_product_allergens_resolved`. */
   resolvedAllergens?: ReadonlyMap<string, ReadonlyArray<AllergenType>>;
+  /** Session 27c — set of product ids that are parents (i.e. have variants). */
+  parentIds?: ReadonlySet<string>;
   onRowClick?: (row: ProductRow) => void;
   onView?:     (row: ProductRow) => void;
   onPricing?:  (row: ProductRow) => void;
@@ -34,6 +37,7 @@ export function ProductsTable({
   rows,
   isLoading = false,
   resolvedAllergens,
+  parentIds,
   onRowClick,
   onView,
   onPricing,
@@ -57,7 +61,17 @@ export function ProductsTable({
     {
       id: 'type',
       header: 'Type',
-      render: (r) => <ProductTypeBadge type={classifyProduct(r)} />,
+      render: (r) => (
+        <div className="flex flex-wrap items-center gap-1">
+          <ProductTypeBadge type={classifyProduct(r)} />
+          {r.parent_product_id !== null && (
+            <Badge variant="outline" data-testid="badge-variant">Variant</Badge>
+          )}
+          {parentIds !== undefined && parentIds.has(r.id) && (
+            <Badge variant="outline" data-testid="badge-parent">Parent</Badge>
+          )}
+        </div>
+      ),
     },
     {
       id: 'category',

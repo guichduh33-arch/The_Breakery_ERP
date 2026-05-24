@@ -5,17 +5,19 @@
 
 import { ImageOff } from 'lucide-react';
 import type { JSX } from 'react';
-import { Card, CardContent, Currency } from '@breakery/ui';
+import { Badge, Card, CardContent, Currency } from '@breakery/ui';
 import { CategoryChip } from './CategoryChip.js';
 import { ProductTypeBadge } from './ProductTypeBadge.js';
 import { classifyProduct, type ProductRow } from '../types.js';
 
 interface Props {
   rows: ReadonlyArray<ProductRow>;
+  /** Session 27c — set of product ids that are parents (i.e. have variants). */
+  parentIds?: ReadonlySet<string>;
   onCardClick?: (row: ProductRow) => void;
 }
 
-export function ProductsGrid({ rows, onCardClick }: Props): JSX.Element {
+export function ProductsGrid({ rows, parentIds, onCardClick }: Props): JSX.Element {
   if (rows.length === 0) {
     return (
       <div className="rounded-lg border border-border-subtle bg-bg-elevated py-16 text-center">
@@ -62,8 +64,14 @@ export function ProductsGrid({ rows, onCardClick }: Props): JSX.Element {
               <span className="font-mono text-text-muted">{r.sku}</span>
               {r.category_name !== null && <CategoryChip name={r.category_name} />}
             </div>
-            <div className="pt-1">
+            <div className="flex flex-wrap items-center gap-1 pt-1">
               <ProductTypeBadge type={classifyProduct(r)} />
+              {r.parent_product_id !== null && (
+                <Badge variant="outline" data-testid="badge-variant">Variant</Badge>
+              )}
+              {parentIds !== undefined && parentIds.has(r.id) && (
+                <Badge variant="outline" data-testid="badge-parent">Parent</Badge>
+              )}
             </div>
           </CardContent>
         </Card>

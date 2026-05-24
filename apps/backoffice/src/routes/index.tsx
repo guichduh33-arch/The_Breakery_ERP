@@ -70,6 +70,7 @@ import JournalEntriesPage    from '@/features/accounting/pages/JournalEntriesPag
 import GeneralLedgerPage     from '@/features/accounting/pages/GeneralLedgerPage.js';
 import TrialBalancePage      from '@/features/accounting/pages/TrialBalancePage.js';
 import SettingsAccountingPage from '@/features/accounting/pages/SettingsAccountingPage.js';
+import ExpenseThresholdsPage  from '@/features/settings/expense-thresholds/ExpenseThresholdsPage.js';
 import CustomersListPage      from '@/pages/customers/CustomersListPage.js';
 import CustomerCategoriesPage from '@/pages/customers/CustomerCategoriesPage.js';
 import B2BDashboardPage      from '@/pages/btob/B2BDashboardPage.js';
@@ -630,6 +631,14 @@ export function AppRoutes() {
           element={
             <PermissionGate required="accounting.period.close">
               <SettingsAccountingPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="settings/expense-thresholds"
+          element={
+            <PermissionGate required="expenses.thresholds.read">
+              <ExpenseThresholdsPage />
             </PermissionGate>
           }
         />
