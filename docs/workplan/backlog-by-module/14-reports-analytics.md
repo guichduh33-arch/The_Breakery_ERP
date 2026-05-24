@@ -303,3 +303,21 @@
 **Estimation** : S
 **Risques** : aucune.
 **Notes** : placeholder existant à compléter.
+
+---
+
+## S30 updates (2026-05-24) — Vague B : 5 bakery reports delivered
+
+**S30 update (2026-05-24)** : Wastage & Spoilage report delivered — `get_wastage_report_v1(text, text)` RPC + `WastagePage` BO + CSV/PDF export. Réutilise `stock_movements` (waste/manual_waste) + `stock_lots.expires_at` proxy pour périmés. Hub card promu Soon → active. Closes G11 partiel.
+
+**S30 update (2026-05-24)** : Payment by Method report delivered — `get_payments_by_method_v1(text, text)` RPC + `PaymentByMethodPage` BO + CSV/PDF export. Split cash/card/qris/edc/transfer/store_credit + pivot by_day. Hub card promu Soon → active.
+
+**S30 update (2026-05-24)** : VAT/PB1 Report (NON-PKP) delivered — `get_pb1_report_v1(int, int)` RPC mensuel + `Pb1ReportPage` BO + CSV/PDF export. Réutilise helpers S26 `current_pb1_rate()` + `calculate_pb1_payable_v1`. `balance_account_code='2110'` (PB1 Payable). Hub card promu Soon → active.
+
+**S30 update (2026-05-24)** : Stock Movement History report delivered — `get_stock_movements_v1` cursor-paginé + `StockMovementHistoryPage` BO + CSV-only (PDF déféré Vague C). Infinite query pattern. Hub card promu Soon → active.
+
+**S30 update (2026-05-24)** : Perishable Turnover report delivered — `get_perishable_turnover_v1(text, text)` RPC + `PerishableTurnoverPage` BO + CSV/PDF export. Score vélocité 1–5 buckets par produit. Nouvelle card ajoutée au hub. Closes G11 partiel.
+
+**Hub state post-S30** : 18 active cards (was 13 post-S29). 6 Soon cards restantes (Daily Sales, Purchase×3, Staff Performance, Production Report/Efficiency, Price Changes, Permission Change Log).
+
+**Hors scope S31+** : compare toggle sur ces 5 reports (Vague C), drill-down TASK-14-009, UnifiedReportFilters extra dims, mobile responsive, PDF StockMovementHistory. Backlog Vague D+ : TASK-14-007 custom report builder, TASK-14-008 scheduled email, TASK-14-013 unusual transactions.

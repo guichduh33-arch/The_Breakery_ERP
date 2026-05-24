@@ -13,7 +13,7 @@
 |---|---|---|
 | 🟢 **DONE (parité atteinte ou dépassée)** | 14 | 01 Auth, 02 POS, 03 Payments, 04 KDS, 05 Products (S27), 06 Inventory, 07 Purchasing, 08 Customers, 12 Cash, 13 Promotions, 15 Production (sub-recipes ✅, baker % ✅), 17 Tablet, 20 Users, 21 LAN |
 | 🟡 **PARTIEL (gap modéré)** | 4 | 09 B2B (S24 Foundation, reste devis/abonnements), 10 Accounting (UI 4/11 → S26 Comptable Cockpit), 11 Expenses (UI 2/4 → S28 Expense Governance), 19 Settings (6/23 pages), 16 Customer Display (à vérifier) |
-| 🟡 **PARTIEL (gap modéré, Vague A livrée)** | 1 | 14 Reports (TASK-14-005 compare DONE + gap 14-3 CSV/PDF DONE S29 ; reste Vague B/C 5 nouveaux reports + drill-down S30+) |
+| 🟡 **PARTIEL (gap modéré, Vagues A+B livrées)** | 1 | 14 Reports (TASK-14-005 compare DONE S29 + gap 14-3 CSV/PDF DONE S29 + 5 bakery reports DONE S30 ; reste Vague C drill-down + 6 Soon cards restantes S31+) |
 | 🔴 **MAJEUR (gros gap)** | 1 | 18 Mobile Shell (0 — P3 backlog, décision business) |
 
 **~70 % parité V2 atteinte ; ~15 améliorations V3 nettes au-delà de V2** (idempotency cross-EF, GRANT hardening, sub-recipes, WAC, RLS helpers, rate limiting durable, etc. — voir glossaire §6).
@@ -139,6 +139,7 @@ graph TD
 | S27c | 2026-05-24 | swarm/session-27c | Product Variants (TASK-05-003). Architecture Linked-Products : 4 cols nullables + ENUM variant_axis_type + CHECK XOR + trigger anti-nesting. **6 RPCs** + REVOKE pairs. **BO** VariantsPanel 3-case + 5 components + DnD. **POS** VariantSelectModal + useProducts filter. pgTAP 20/20 + BO smoke 10/10 + POS smoke 4/4 PASS. (34 commits, 19 migrations) |
 | S28 | 2026-05-24 | swarm/session-28 | Expense Governance (TASK-11-001 + gaps 11-1 à 11-4). Architecture snapshot-at-submit. **2 tables** : `expense_approval_thresholds` + `expense_approvals`. **5 RPCs** : `submit_expense_v2`, `approve_expense_v2` (SOD + multi-step), `set/delete_expense_threshold_v1`, trigger `sync_cash_expense_to_session`. **BO** 4 components + 5 hooks + `/settings/expense-thresholds`. pgTAP 18/18 + BO smoke 8/8 PASS. (31 commits, 16 migrations) |
 | S29 | 2026-05-24 | swarm/session-29 | Reports Export + Z-Report PDF Vague A (TASK-14-005 + TASK-12-002 + gap 14-3). **Flow 2-temps Z-Report** : `close_shift_v2` snapshot JSONB → EF `generate-zreport-pdf` PDF async bucket `zreports/` 7 ans → `sign_zreport_v1` PIN header. **EF `generate-pdf`** 12 templates. **Domain** `buildCsv` TDD 9/9 + `previousPeriod/formatDelta` TDD 9/9. **BO** : ZReportsListPage + 5 components + 6 hooks + ExportButtons 13 pages + DateRangePickerWithCompare 5 reports. **POS** `useCloseShift` v2. pgTAP 14/14 + BO smoke 345/345 + POS smoke 327/327 + domain unit 18/18 + Vitest live 12 env-gated PASS. (30 commits, 14 migrations `20260606000010..023`) |
+| S30 | 2026-05-24 | swarm/session-30 | Vague B : 5 bakery reports (Wastage, Payment by Method, VAT/PB1, Stock Movement, Perishable Turnover) — promote 5 Soon cards du hub à actives, réutilise infra S29 (15 commits, 10 migrations `20260615000010..019` + `20260524231049..124`, 0 nouvelle perm) |
 
 ### Cadence prévisionnelle
 
