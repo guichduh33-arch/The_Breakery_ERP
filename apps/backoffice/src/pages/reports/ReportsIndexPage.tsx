@@ -14,7 +14,7 @@ import { Link } from 'react-router-dom';
 import {
   BarChart3, PieChart, Users, Boxes, Shield, Coins, Scale, Banknote, Layers3,
   Calendar, Clock, FileSpreadsheet, ListChecks, Receipt, ShoppingCart, Truck,
-  AlertTriangle, TrendingUp, type LucideIcon,
+  AlertTriangle, TrendingUp, Clock4, GitCommitHorizontal, type LucideIcon,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, SectionLabel } from '@breakery/ui';
 
@@ -51,8 +51,9 @@ const SECTIONS: ReportSection[] = [
       { to: 'production-yield',  title: 'Production Yield',   blurb: 'Top-10 batch variance outliers + per-recipe trend.', icon: BarChart3 },
       { to: 'recipe-cost',       title: 'Recipe Cost',        blurb: 'History of per-recipe unit cost.',                  icon: TrendingUp },
       { to: '../inventory/production/margin-watch', title: 'Margin Watch', blurb: 'Recipes whose expected gross margin has slipped below target.', icon: AlertTriangle },
-      {                          title: 'Stock Movement',     blurb: 'History of all stock changes. (Soon)', icon: TrendingUp },
-      {                          title: 'Wastage & Spoilage', blurb: 'Track items discarded due to damage or expiry. (Soon)', icon: AlertTriangle },
+      { to: 'stock-movements',     title: 'Stock Movement',     blurb: 'History of all stock changes.', icon: GitCommitHorizontal },
+      { to: 'wastage',             title: 'Wastage & Spoilage', blurb: 'Manual waste + auto spoilage by product & lot.', icon: AlertTriangle },
+      { to: 'perishable-turnover', title: 'Perishable Turnover', blurb: 'Per-product velocity & waste rate on lots with expiry.', icon: Clock4 },
     ],
   },
   {
@@ -71,8 +72,8 @@ const SECTIONS: ReportSection[] = [
       { to: 'profit-loss',   title: 'Profit & Loss',   blurb: 'Revenue, COGS and OpEx for a period.',       icon: Coins },
       { to: 'balance-sheet', title: 'Balance Sheet',   blurb: 'Assets vs liabilities + equity snapshot.',   icon: Scale },
       { to: 'cash-flow',     title: 'Cash Flow',       blurb: 'Indirect-method cash movement statement.',   icon: Banknote },
-      {                      title: 'Payment by Method', blurb: 'Cash, Card, QRIS, etc. (Soon)',             icon: Receipt },
-      {                      title: 'VAT / Tax Report',  blurb: 'Monthly VAT collected, deductible & payable. (Soon)', icon: FileSpreadsheet },
+      { to: 'payment-by-method', title: 'Payment by Method', blurb: 'Cash, Card, QRIS split + daily trend.',  icon: Receipt },
+      { to: 'pb1',           title: 'VAT / PB1 Report',  blurb: 'Monthly PB1 collected, payable & ledger balance.', icon: FileSpreadsheet },
     ],
   },
   {
