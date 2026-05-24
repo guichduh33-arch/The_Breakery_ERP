@@ -698,6 +698,83 @@ export type Database = {
         }
         Relationships: []
       }
+      expense_approval_thresholds: {
+        Row: {
+          amount_max: number
+          amount_min: number
+          category_id: string | null
+          created_at: string
+          id: string
+          steps: Json
+          updated_at: string
+        }
+        Insert: {
+          amount_max: number
+          amount_min?: number
+          category_id?: string | null
+          created_at?: string
+          id?: string
+          steps: Json
+          updated_at?: string
+        }
+        Update: {
+          amount_max?: number
+          amount_min?: number
+          category_id?: string | null
+          created_at?: string
+          id?: string
+          steps?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expense_approval_thresholds_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "expense_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      expense_approvals: {
+        Row: {
+          approved_at: string
+          approver_user_id: string
+          expense_id: string
+          id: string
+          step: number
+        }
+        Insert: {
+          approved_at?: string
+          approver_user_id: string
+          expense_id: string
+          id?: string
+          step: number
+        }
+        Update: {
+          approved_at?: string
+          approver_user_id?: string
+          expense_id?: string
+          id?: string
+          step?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expense_approvals_approver_user_id_fkey"
+            columns: ["approver_user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_approvals_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       expense_categories: {
         Row: {
           account_id: string
@@ -742,9 +819,11 @@ export type Database = {
           approval_notes: string | null
           approved_at: string | null
           approved_by: string | null
+          auto_approved: boolean
           category_id: string
           created_at: string
           created_by: string | null
+          current_approval_step: number
           deleted_at: string | null
           description: string
           expense_date: string
@@ -759,6 +838,7 @@ export type Database = {
           receipt_url: string | null
           rejected_at: string | null
           rejected_reason: string | null
+          required_approval_steps_snapshot: Json | null
           status: string
           submitted_at: string | null
           submitted_by: string | null
@@ -771,9 +851,11 @@ export type Database = {
           approval_notes?: string | null
           approved_at?: string | null
           approved_by?: string | null
+          auto_approved?: boolean
           category_id: string
           created_at?: string
           created_by?: string | null
+          current_approval_step?: number
           deleted_at?: string | null
           description: string
           expense_date?: string
@@ -788,6 +870,7 @@ export type Database = {
           receipt_url?: string | null
           rejected_at?: string | null
           rejected_reason?: string | null
+          required_approval_steps_snapshot?: Json | null
           status?: string
           submitted_at?: string | null
           submitted_by?: string | null
@@ -800,9 +883,11 @@ export type Database = {
           approval_notes?: string | null
           approved_at?: string | null
           approved_by?: string | null
+          auto_approved?: boolean
           category_id?: string
           created_at?: string
           created_by?: string | null
+          current_approval_step?: number
           deleted_at?: string | null
           description?: string
           expense_date?: string
@@ -817,6 +902,7 @@ export type Database = {
           receipt_url?: string | null
           rejected_at?: string | null
           rejected_reason?: string | null
+          required_approval_steps_snapshot?: Json | null
           status?: string
           submitted_at?: string | null
           submitted_by?: string | null
