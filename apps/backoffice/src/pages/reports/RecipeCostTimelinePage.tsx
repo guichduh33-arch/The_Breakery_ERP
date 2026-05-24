@@ -18,7 +18,7 @@ import {
   CartesianGrid,
   ResponsiveContainer,
 } from 'recharts';
-import { toLocalDateStr } from '@breakery/domain';
+import { toLocalDateStr, buildCsv, downloadCsv, type CsvColumn } from '@breakery/domain';
 import { Button } from '@breakery/ui';
 import { supabase } from '@/lib/supabase.js';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
@@ -54,12 +54,13 @@ function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
-/** Quote a CSV cell; double inner quotes per RFC 4180. */
-function csvCell(v: string | number | null): string {
-  if (v === null || v === undefined) return '';
-  const s = String(v);
-  return /[,"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-}
+const TIMELINE_CSV_COLUMNS: CsvColumn<TimelineRowWithDelta>[] = [
+  { header: 'version_number',    accessor: (r) => r.version_number },
+  { header: 'created_at',        accessor: (r) => r.created_at },
+  { header: 'cost_per_unit',     accessor: (r) => r.cost_per_unit },
+  { header: 'delta_vs_prev_pct', accessor: (r) => r.delta_pct !== null ? r.delta_pct.toFixed(2) : '' },
+  { header: 'change_note',       accessor: (r) => r.change_note ?? '' },
+];
 
 export function RecipeCostTimelinePage(): JSX.Element {
   const { productId = '' } = useParams<{ productId: string }>();
@@ -101,30 +102,9 @@ export function RecipeCostTimelinePage(): JSX.Element {
   })), [rows]);
 
   function handleCsv(): void {
-    if (typeof document === 'undefined' || typeof URL === 'undefined') return;
     const safeName = productName.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 40);
-    const header = [
-      'version_number', 'created_at', 'cost_per_unit',
-      'delta_vs_prev_pct', 'change_note',
-    ].join(',');
-    const body = rowsWithDelta.map((r) => [
-      csvCell(r.version_number),
-      csvCell(r.created_at),
-      csvCell(r.cost_per_unit),
-      csvCell(r.delta_pct !== null ? r.delta_pct.toFixed(2) : ''),
-      csvCell(r.change_note ?? ''),
-    ].join(','));
-    const csv = [header, ...body].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `recipe-cost-timeline-${safeName}-${from}_${to}.csv`;
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    const csv = buildCsv(rowsWithDelta, TIMELINE_CSV_COLUMNS);
+    downloadCsv(csv, `recipe-cost-timeline-${safeName}-${from}_${to}.csv`);
   }
 
   if (productId === '') {
