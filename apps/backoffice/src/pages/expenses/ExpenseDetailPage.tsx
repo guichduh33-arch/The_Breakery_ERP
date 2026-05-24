@@ -27,10 +27,14 @@ import { useAuthStore } from '@/stores/authStore.js';
 import { useExpenseDetail } from '@/features/expenses/hooks/useExpenseDetail.js';
 import { useSubmitExpense } from '@/features/expenses/hooks/useExpenseActions.js';
 import { useExpenseCategories } from '@/features/expenses/hooks/useExpensesList.js';
+import { useExpenseApprovals } from '@/features/expenses/hooks/useExpenseApprovals.js';
 import { ExpenseStatusBadge } from '@/features/expenses/components/ExpenseStatusBadge.js';
 import { ApproveDialog } from '@/features/expenses/components/ApproveDialog.js';
 import { RejectDialog } from '@/features/expenses/components/RejectDialog.js';
 import { PayDialog } from '@/features/expenses/components/PayDialog.js';
+import { ApprovalTimeline } from '@/features/expenses/components/ApprovalTimeline.js';
+import { ThresholdResolutionBadge } from '@/features/expenses/components/ThresholdResolutionBadge.js';
+import type { ApprovalStep } from '@/features/settings/expense-thresholds/hooks/useExpenseThresholds.js';
 
 function fmtIdr(amount: number | string | null): string {
   return `Rp ${formatIdr(Number(amount ?? 0))}`;
@@ -42,11 +46,13 @@ export default function ExpenseDetailPage(): JSX.Element {
   const navigate = useNavigate();
 
   const hasPermission = useAuthStore((s) => s.hasPermission);
+  const currentUserId = useAuthStore((s) => s.user?.id ?? null);
   const canApprove = hasPermission('expenses.approve');
   const canPay     = hasPermission('expenses.pay');
 
   const { data: expense, isLoading, error } = useExpenseDetail(id);
   const { data: cats } = useExpenseCategories();
+  const { data: approvals = [] } = useExpenseApprovals(id || null);
   const submit = useSubmitExpense();
 
   const [approveOpen, setApproveOpen] = useState(false);
@@ -99,7 +105,13 @@ export default function ExpenseDetailPage(): JSX.Element {
         <div>
           <h1 className="font-display text-3xl text-text-primary tabular-nums">{expense.expense_number}</h1>
           <p className="mt-1 text-sm text-text-secondary">{expense.description}</p>
-          <div className="mt-2"><ExpenseStatusBadge status={expense.status} /></div>
+          <div className="mt-2 flex items-center gap-2 flex-wrap">
+            <ExpenseStatusBadge status={expense.status} />
+            <ThresholdResolutionBadge
+              snapshot={expense.required_approval_steps_snapshot as ApprovalStep[] | null}
+              autoApproved={expense.auto_approved}
+            />
+          </div>
         </div>
         <div className="flex flex-wrap gap-2">
           {expense.status === 'draft' && (
@@ -121,6 +133,16 @@ export default function ExpenseDetailPage(): JSX.Element {
                 <XCircle className="h-4 w-4" aria-hidden /> Reject
               </Button>
             </>
+          )}
+          {expense.status === 'submitted' && (
+            <div className="w-full mt-2">
+              <ApprovalTimeline
+                expenseId={id}
+                snapshot={expense.required_approval_steps_snapshot as ApprovalStep[] | null}
+                autoApproved={expense.auto_approved}
+                currentStep={expense.current_approval_step}
+              />
+            </div>
           )}
           {expense.status === 'approved' && canPay && (
             <Button type="button" variant="gold" onClick={() => setPayOpen(true)}>
@@ -224,7 +246,14 @@ export default function ExpenseDetailPage(): JSX.Element {
         </div>
       </div>
 
-      <ApproveDialog open={approveOpen} expenseId={id} onClose={() => setApproveOpen(false)} />
+      <ApproveDialog
+        open={approveOpen}
+        expenseId={id}
+        onClose={() => setApproveOpen(false)}
+        createdByUserId={expense.created_by ?? null}
+        approvals={approvals}
+        currentUserId={currentUserId}
+      />
       <RejectDialog  open={rejectOpen}  expenseId={id} onClose={() => setRejectOpen(false)} />
       <PayDialog     open={payOpen}     expenseId={id} onClose={() => setPayOpen(false)} />
     </div>

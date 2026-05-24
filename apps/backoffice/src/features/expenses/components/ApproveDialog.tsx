@@ -1,22 +1,52 @@
 // apps/backoffice/src/features/expenses/components/ApproveDialog.tsx
 // S28: approve_expense_v2 — PIN collected in dialog, passed via x-manager-pin header (S25 pattern).
+// S28 Task 5.H: SOD-aware button state (creator cannot approve their own expense; double-approve blocked).
 import { useState } from 'react';
 import {
   Button,
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@breakery/ui';
 import { useApproveExpense } from '../hooks/useExpenseActions.js';
+import type { ExpenseApprovalRow } from '../hooks/useExpenseApprovals.js';
 
 export interface ApproveDialogProps {
   open: boolean;
   expenseId: string;
   onClose: () => void;
   onSuccess?: () => void;
+  /** user_profiles.id of whoever created the expense */
+  createdByUserId?: string | null;
+  /** existing approval rows for this expense */
+  approvals?: ExpenseApprovalRow[];
+  /** user_profiles.id of the currently logged-in user */
+  currentUserId?: string | null;
 }
 
-export function ApproveDialog({ open, expenseId, onClose, onSuccess }: ApproveDialogProps): JSX.Element {
+export function ApproveDialog({
+  open,
+  expenseId,
+  onClose,
+  onSuccess,
+  createdByUserId,
+  approvals = [],
+  currentUserId,
+}: ApproveDialogProps): JSX.Element {
   const [pin, setPin] = useState('');
   const mut = useApproveExpense();
+
+  // Separation-of-duties checks
+  const isCreator = currentUserId !== null && currentUserId !== undefined
+    && createdByUserId !== null && createdByUserId !== undefined
+    && currentUserId === createdByUserId;
+  const alreadyApproved = currentUserId !== null && currentUserId !== undefined
+    && approvals.some((a) => a.approver_user_id === currentUserId);
+  const sodBlocked = isCreator || alreadyApproved;
+
+  const sodTooltip = isCreator
+    ? 'You cannot approve an expense you created (separation of duties)'
+    : alreadyApproved
+      ? 'You have already approved this expense'
+      : undefined;
 
   function handleClose(): void {
     setPin('');
@@ -25,7 +55,7 @@ export function ApproveDialog({ open, expenseId, onClose, onSuccess }: ApproveDi
   }
 
   async function handleSubmit(): Promise<void> {
-    if (pin.trim().length === 0) return;
+    if (pin.trim().length === 0 || sodBlocked) return;
     try {
       await mut.mutateAsync({ id: expenseId, manager_pin: pin.trim() });
       setPin('');
@@ -67,12 +97,14 @@ export function ApproveDialog({ open, expenseId, onClose, onSuccess }: ApproveDi
         <DialogFooter>
           <Button type="button" variant="ghost" onClick={handleClose}>Cancel</Button>
           <Button
+            data-testid="approve-submit-btn"
             type="button"
             variant="primary"
             onClick={() => { void handleSubmit(); }}
-            disabled={mut.isPending || pin.trim().length === 0}
+            disabled={sodBlocked || mut.isPending || pin.trim().length === 0}
+            title={sodTooltip}
           >
-            {mut.isPending ? 'Approving…' : 'Approve'}
+            {mut.isPending ? 'Approving…' : sodBlocked ? 'Cannot approve' : 'Approve'}
           </Button>
         </DialogFooter>
       </DialogContent>
