@@ -117,6 +117,7 @@ const GROUPS: NavGroup[] = [
       { to: '/backoffice/settings/templates/receipt', label: 'Receipt templates', icon: FileText, permission: 'settings.read', indent: 1 },
       { to: '/backoffice/settings/permissions', label: 'Permissions', icon: ShieldCheck, permission: 'settings.read', indent: 1 },
       { to: '/backoffice/settings/accounting', label: 'Fiscal Periods', icon: Calculator, permission: 'accounting.period.close', indent: 1 },
+      { to: '/backoffice/settings/expense-thresholds', label: 'Expense Thresholds', icon: Scale, permission: 'expenses.thresholds.read', indent: 1 },
       { to: '/backoffice/print-queue', label: 'Print Queue', icon: Printer, permission: 'print_queue.read' },
       { to: '/backoffice/lan-devices', label: 'LAN Devices', icon: Network, permission: 'lan.devices.read' },
     ],
