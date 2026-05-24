@@ -5,9 +5,36 @@
 
 import { useState } from 'react';
 import { toLocalDateStr } from '@breakery/domain';
+import type { CsvColumn } from '@breakery/domain';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
 import { useCashFlow } from '@/features/reports/hooks/useCashFlow.js';
+import type { CashFlow } from '@/features/reports/hooks/useCashFlow.js';
+import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
+
+interface CfRow { section: string; label: string; value: number }
+
+function buildCfRows(d: CashFlow): CfRow[] {
+  return [
+    { section: 'Operating', label: 'Net profit',            value: d.operating.net_profit },
+    { section: 'Operating', label: 'Δ accounts receivable', value: d.operating.delta_ar },
+    { section: 'Operating', label: 'Δ accounts payable',    value: d.operating.delta_ap },
+    { section: 'Operating', label: 'Δ inventory',           value: d.operating.delta_inventory },
+    { section: 'Operating', label: 'Non-cash adjustments',  value: d.operating.non_cash_adjustments },
+    { section: 'Operating', label: 'Total operating',       value: d.operating.total },
+    { section: 'Investing', label: 'Total investing',       value: d.investing.total },
+    { section: 'Financing', label: 'Total financing',       value: d.financing.total },
+    { section: 'Summary',   label: 'Net change in cash',    value: d.net_change_in_cash },
+    { section: 'Summary',   label: 'Cash, start of period', value: d.cash_start },
+    { section: 'Summary',   label: 'Cash, end of period',   value: d.cash_end },
+  ];
+}
+
+const cfCsvColumns: CsvColumn<CfRow>[] = [
+  { header: 'Section', accessor: (r) => r.section, format: 'text' },
+  { header: 'Label',   accessor: (r) => r.label,   format: 'text' },
+  { header: 'Value',   accessor: (r) => r.value,   format: 'idr-round100' },
+];
 
 function defaultStart(): string {
   return toLocalDateStr(new Date(Date.now() - 29 * 86_400_000));
@@ -26,12 +53,20 @@ export default function CashFlowPage() {
       title="Cash Flow Statement"
       subtitle="Indirect method (operating) + account-classified investing / financing totals via accounts.cash_flow_section."
       filters={
-        <DateRangePicker
-          start={start}
-          end={end}
-          onStartChange={setStart}
-          onEndChange={setEnd}
-        />
+        <div className="flex items-center gap-3">
+          <DateRangePicker
+            start={start}
+            end={end}
+            onStartChange={setStart}
+            onEndChange={setEnd}
+          />
+          {data && (
+            <ExportButtons
+              csv={{ rows: buildCfRows(data), columns: cfCsvColumns, filename: `cash-flow-${start}_${end}` }}
+              pdf={{ template: 'cf', data, period: { start, end }, filename: `cash-flow-${start}_${end}` }}
+            />
+          )}
+        </div>
       }
     >
       {isLoading && <p className="text-sm text-text-secondary">Loading…</p>}

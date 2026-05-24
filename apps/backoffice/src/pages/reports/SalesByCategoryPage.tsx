@@ -13,9 +13,18 @@ import {
   YAxis,
 } from 'recharts';
 import { toLocalDateStr } from '@breakery/domain';
+import type { CsvColumn } from '@breakery/domain';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
 import { useSalesByCategory } from '@/features/reports/hooks/useSalesByCategory.js';
+import type { SalesCategoryRow } from '@/features/reports/hooks/useSalesByCategory.js';
+import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
+
+const csvColumns: CsvColumn<SalesCategoryRow>[] = [
+  { header: 'Category', accessor: (r) => r.category_name, format: 'text' },
+  { header: 'Revenue',  accessor: (r) => r.total,         format: 'idr-round100' },
+  { header: 'Qty',      accessor: (r) => r.qty,           format: 'number' },
+];
 
 function defaultStart(): string {
   return toLocalDateStr(new Date(Date.now() - 6 * 86_400_000));
@@ -31,12 +40,20 @@ export default function SalesByCategoryPage() {
       title="Sales by Category"
       subtitle="Revenue + quantity grouped by product category."
       filters={
-        <DateRangePicker
-          start={start}
-          end={end}
-          onStartChange={setStart}
-          onEndChange={setEnd}
-        />
+        <div className="flex items-center gap-3">
+          <DateRangePicker
+            start={start}
+            end={end}
+            onStartChange={setStart}
+            onEndChange={setEnd}
+          />
+          {data && (
+            <ExportButtons
+              csv={{ rows: data, columns: csvColumns, filename: `sales-by-category-${start}_${end}` }}
+              pdf={{ template: 'sales_by_category', data, period: { start, end }, filename: `sales-by-category-${start}_${end}` }}
+            />
+          )}
+        </div>
       }
     >
       {isLoading && <p className="text-sm text-text-secondary">Loading…</p>}

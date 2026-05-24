@@ -17,6 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@breakery/ui';
+import type { CsvColumn } from '@breakery/domain';
 import { useAuthStore } from '@/stores/authStore.js';
 import {
   useMarginAlerts,
@@ -24,6 +25,18 @@ import {
   type MarginAlertFilter,
   type MarginAlertRow,
 } from '@/features/inventory-production/hooks/useMarginAlerts.js';
+import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
+
+const marginCsvColumns: CsvColumn<MarginAlertRow>[] = [
+  { header: 'Product',          accessor: (r) => r.productName ?? r.productId, format: 'text' },
+  { header: 'Target Margin %',  accessor: (r) => r.targetMarginPct,            format: 'number' },
+  { header: 'Expected Margin %',accessor: (r) => r.expectedMarginPct,          format: 'number' },
+  { header: 'Delta %',          accessor: (r) => r.deltaPct,                   format: 'number' },
+  { header: 'Cost per Unit',    accessor: (r) => r.costPerUnit,                format: 'idr-round100' },
+  { header: 'Selling Price',    accessor: (r) => r.sellingPrice,               format: 'idr-round100' },
+  { header: 'Computed At',      accessor: (r) => r.computedAt,                 format: 'datetime' },
+  { header: 'Status',           accessor: (r) => r.acknowledgedAt === null ? 'Open' : 'Acknowledged', format: 'text' },
+];
 
 const FILTERS: { value: MarginAlertFilter; label: string }[] = [
   { value: 'open',  label: 'Open' },
@@ -109,19 +122,30 @@ export default function MarginWatchPage(): JSX.Element {
             below the per-product target. Recomputed daily at 02:00 UTC.
           </p>
         </div>
-        <div role="tablist" className="flex items-center gap-1 rounded-md border border-border-subtle p-1 text-xs">
-          {FILTERS.map((f) => (
-            <button
-              key={f.value}
-              type="button"
-              role="tab"
-              aria-selected={filter === f.value}
-              onClick={() => setFilter(f.value)}
-              className={`rounded px-3 py-1 ${filter === f.value ? 'bg-bg-overlay text-text-primary' : 'text-text-secondary'}`}
-            >
-              {f.label}
-            </button>
-          ))}
+        <div className="flex items-center gap-2">
+          {rows.length > 0 && (
+            <ExportButtons
+              csv={{
+                rows,
+                columns: marginCsvColumns,
+                filename: `margin-watch-${new Date().toISOString().slice(0, 10)}`,
+              }}
+            />
+          )}
+          <div role="tablist" className="flex items-center gap-1 rounded-md border border-border-subtle p-1 text-xs">
+            {FILTERS.map((f) => (
+              <button
+                key={f.value}
+                type="button"
+                role="tab"
+                aria-selected={filter === f.value}
+                onClick={() => setFilter(f.value)}
+                className={`rounded px-3 py-1 ${filter === f.value ? 'bg-bg-overlay text-text-primary' : 'text-text-secondary'}`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
         </div>
       </header>
 

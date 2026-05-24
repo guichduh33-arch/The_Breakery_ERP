@@ -6,9 +6,20 @@
 
 import { useState } from 'react';
 import { toLocalDateStr } from '@breakery/domain';
+import type { CsvColumn } from '@breakery/domain';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
 import { useProfitLoss } from '@/features/reports/hooks/useProfitLoss.js';
+import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
+import type { PnlLine } from '@/features/reports/hooks/useProfitLoss.js';
+
+const pnlLineColumns: CsvColumn<PnlLine>[] = [
+  { header: 'Code',    accessor: (r) => r.code,    format: 'text' },
+  { header: 'Name',    accessor: (r) => r.name,    format: 'text' },
+  { header: 'Debit',   accessor: (r) => r.debit,   format: 'idr-round100' },
+  { header: 'Credit',  accessor: (r) => r.credit,  format: 'idr-round100' },
+  { header: 'Balance', accessor: (r) => r.balance, format: 'idr-round100' },
+];
 
 function defaultStart(): string {
   return toLocalDateStr(new Date(Date.now() - 29 * 86_400_000));
@@ -28,12 +39,20 @@ export default function ProfitLossPage() {
       title="Profit & Loss"
       subtitle="Revenue, COGS and operating expenses across a date range."
       filters={
-        <DateRangePicker
-          start={start}
-          end={end}
-          onStartChange={setStart}
-          onEndChange={setEnd}
-        />
+        <div className="flex items-center gap-3">
+          <DateRangePicker
+            start={start}
+            end={end}
+            onStartChange={setStart}
+            onEndChange={setEnd}
+          />
+          {data && (
+            <ExportButtons
+              csv={{ rows: data.lines, columns: pnlLineColumns, filename: `pnl-${start}_${end}` }}
+              pdf={{ template: 'pnl', data, period: { start, end }, filename: `pnl-${start}_${end}` }}
+            />
+          )}
+        </div>
       }
     >
       {isLoading && <p className="text-sm text-text-secondary">Loading…</p>}

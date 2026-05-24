@@ -14,8 +14,18 @@ import {
 } from 'recharts';
 import { Input } from '@breakery/ui';
 import { toLocalDateStr } from '@breakery/domain';
+import type { CsvColumn } from '@breakery/domain';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { useSalesByHour } from '@/features/reports/hooks/useSalesByHour.js';
+import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
+
+import type { SalesHourRow } from '@/features/reports/hooks/useSalesByHour.js';
+
+const csvColumns: CsvColumn<SalesHourRow>[] = [
+  { header: 'Hour',        accessor: (r) => r.hour,        format: 'number' },
+  { header: 'Revenue',     accessor: (r) => r.total,       format: 'idr-round100' },
+  { header: 'Order Count', accessor: (r) => r.order_count, format: 'number' },
+];
 
 export default function SalesByHourPage() {
   const [date, setDate] = useState<string>(() => toLocalDateStr(new Date()));
@@ -26,16 +36,24 @@ export default function SalesByHourPage() {
       title="Sales by Hour"
       subtitle="Revenue distribution across 24 hours of a single business day."
       filters={
-        <label className="flex items-center gap-1 text-sm text-text-secondary">
-          <span>Date</span>
-          <Input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="h-9 w-40"
-            aria-label="Report date"
-          />
-        </label>
+        <div className="flex items-center gap-3">
+          <label className="flex items-center gap-1 text-sm text-text-secondary">
+            <span>Date</span>
+            <Input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="h-9 w-40"
+              aria-label="Report date"
+            />
+          </label>
+          {data && (
+            <ExportButtons
+              csv={{ rows: data, columns: csvColumns, filename: `sales-by-hour-${date}` }}
+              pdf={{ template: 'sales_by_hour', data, period: { start: date, end: date }, filename: `sales-by-hour-${date}` }}
+            />
+          )}
+        </div>
       }
     >
       {isLoading && <p className="text-sm text-text-secondary">Loading…</p>}

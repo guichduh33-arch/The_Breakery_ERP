@@ -5,10 +5,21 @@
 
 import { useState } from 'react';
 import { toLocalDateStr } from '@breakery/domain';
+import type { CsvColumn } from '@breakery/domain';
 import { Input } from '@breakery/ui';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
 import { useBasketAnalysis } from '@/features/reports/hooks/useBasketAnalysis.js';
+import type { BasketPair } from '@/features/reports/hooks/useBasketAnalysis.js';
+import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
+
+const csvColumns: CsvColumn<BasketPair>[] = [
+  { header: 'Product A',    accessor: (r) => r.product_a_name,      format: 'text' },
+  { header: 'Product B',    accessor: (r) => r.product_b_name,      format: 'text' },
+  { header: 'Co-occurrence',accessor: (r) => r.co_occurrence_count, format: 'number' },
+  { header: 'Confidence',   accessor: (r) => r.confidence,          format: 'percent' },
+  { header: 'Lift',         accessor: (r) => r.lift.toFixed(2),     format: 'text' },
+];
 
 function defaultStart(): string {
   return toLocalDateStr(new Date(Date.now() - 29 * 86_400_000));
@@ -47,6 +58,12 @@ export default function BasketAnalysisPage() {
               aria-label="Top N"
             />
           </label>
+          {data && (
+            <ExportButtons
+              csv={{ rows: data, columns: csvColumns, filename: `basket-analysis-${start}_${end}` }}
+              pdf={{ template: 'basket', data, period: { start, end }, filename: `basket-analysis-${start}_${end}` }}
+            />
+          )}
         </div>
       }
     >

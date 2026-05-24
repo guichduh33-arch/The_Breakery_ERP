@@ -6,8 +6,41 @@
 import { useState } from 'react';
 import { Input } from '@breakery/ui';
 import { toLocalDateStr } from '@breakery/domain';
+import type { CsvColumn } from '@breakery/domain';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { useBalanceSheet } from '@/features/reports/hooks/useBalanceSheet.js';
+import type { BalanceSheet } from '@/features/reports/hooks/useBalanceSheet.js';
+import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
+
+interface BsRow { section: string; account: string; value: number }
+
+function buildBsRows(d: BalanceSheet): BsRow[] {
+  return [
+    { section: 'Assets',      account: 'Cash',                  value: d.assets.current.cash },
+    { section: 'Assets',      account: 'Accounts receivable',   value: d.assets.current.ar },
+    { section: 'Assets',      account: 'Inventory',             value: d.assets.current.inventory },
+    { section: 'Assets',      account: 'Other current',         value: d.assets.current.other },
+    { section: 'Assets',      account: 'Fixed assets',          value: d.assets.fixed.total },
+    { section: 'Assets',      account: 'Total assets',          value: d.assets.total },
+    { section: 'Liabilities', account: 'Accounts payable',      value: d.liabilities.current.ap },
+    { section: 'Liabilities', account: 'Tax payable',           value: d.liabilities.current.tax_payable },
+    { section: 'Liabilities', account: 'Loyalty liability',     value: d.liabilities.current.loyalty },
+    { section: 'Liabilities', account: 'Other current',         value: d.liabilities.current.other },
+    { section: 'Liabilities', account: 'Long-term liabilities', value: d.liabilities.long_term.total },
+    { section: 'Liabilities', account: 'Total liabilities',     value: d.liabilities.total },
+    { section: 'Equity',      account: 'Share capital',         value: d.equity.share_capital },
+    { section: 'Equity',      account: 'Retained earnings',     value: d.equity.retained_earnings },
+    { section: 'Equity',      account: 'Current year earnings', value: d.equity.current_year_earnings },
+    { section: 'Equity',      account: 'Other',                 value: d.equity.other },
+    { section: 'Equity',      account: 'Total equity',          value: d.equity.total },
+  ];
+}
+
+const bsCsvColumns: CsvColumn<BsRow>[] = [
+  { header: 'Section', accessor: (r) => r.section, format: 'text' },
+  { header: 'Account', accessor: (r) => r.account, format: 'text' },
+  { header: 'Value',   accessor: (r) => r.value,   format: 'idr-round100' },
+];
 
 function fmt(n: number): string {
   return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
@@ -22,16 +55,24 @@ export default function BalanceSheetPage() {
       title="Balance Sheet"
       subtitle="Assets, liabilities and equity as of a chosen date. CYE computed live."
       filters={
-        <label className="flex items-center gap-1 text-sm text-text-secondary">
-          <span>As of</span>
-          <Input
-            type="date"
-            value={asOf}
-            onChange={(e) => setAsOf(e.target.value)}
-            className="h-9 w-40"
-            aria-label="Balance sheet as-of date"
-          />
-        </label>
+        <div className="flex items-center gap-3">
+          <label className="flex items-center gap-1 text-sm text-text-secondary">
+            <span>As of</span>
+            <Input
+              type="date"
+              value={asOf}
+              onChange={(e) => setAsOf(e.target.value)}
+              className="h-9 w-40"
+              aria-label="Balance sheet as-of date"
+            />
+          </label>
+          {data && (
+            <ExportButtons
+              csv={{ rows: buildBsRows(data), columns: bsCsvColumns, filename: `balance-sheet-${asOf}` }}
+              pdf={{ template: 'bs', data, filename: `balance-sheet-${asOf}` }}
+            />
+          )}
+        </div>
       }
     >
       {isLoading && <p className="text-sm text-text-secondary">Loading…</p>}
