@@ -13,9 +13,11 @@ vi.mock('sonner', () => ({
 }));
 
 const rpcMock = vi.fn();
+const invokeMock = vi.fn().mockResolvedValue({ data: { signed_url: 'https://example.test/z' }, error: null });
 vi.mock('@/lib/supabase', () => ({
   supabase: {
     rpc: (...args: unknown[]) => rpcMock(...args),
+    functions: { invoke: (...args: unknown[]) => invokeMock(...args) },
   },
 }));
 
@@ -82,16 +84,17 @@ describe('CloseShiftModal', () => {
     expect(screen.getByTestId('variance-warning-badge')).toBeInTheDocument();
   });
 
-  it('calls close_shift_v1 with parsed args', async () => {
+  it('calls close_shift_v2 with parsed args and chains generate-zreport-pdf EF', async () => {
     rpcMock.mockResolvedValue({
       data: {
         session_id: 's1', status: 'closed', opening_cash: 100_000, cash_sales: 0,
         cash_in_total: 0, cash_out_total: 0, counted_cash: 105_000,
         expected_cash: 100_000, variance: 5_000, journal_entry_id: 'je-1',
-        idempotent_replay: false,
+        zreport_id: 'zr-1', idempotent_replay: false,
       },
       error: null,
     });
+    invokeMock.mockClear();
     const onClose = vi.fn();
     render(withQuery(
       <CloseShiftModal
@@ -103,18 +106,58 @@ describe('CloseShiftModal', () => {
         onClose={onClose}
       />,
     ));
-    // Simulate numpad typing 1 0 5 0 0 0 via button presses.
     for (const ch of '105000') {
       fireEvent.click(screen.getByRole('button', { name: ch }));
     }
     const btn = screen.getByRole('button', { name: /close shift/i });
     fireEvent.click(btn);
-    // The mutation should fire (sync in microtask). Verify the rpc mock saw it.
+    // Flush microtasks: 1st for the RPC await, 2nd for the EF invoke chain, 3rd for the onSuccess.
     await Promise.resolve();
     await Promise.resolve();
-    expect(rpcMock).toHaveBeenCalledWith('close_shift_v1', expect.objectContaining({
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(rpcMock).toHaveBeenCalledWith('close_shift_v2', expect.objectContaining({
       p_session_id: 's1',
       p_counted_cash: 105_000,
     }));
+    expect(invokeMock).toHaveBeenCalledWith('generate-zreport-pdf', expect.objectContaining({
+      body: { zreport_id: 'zr-1' },
+      headers: expect.objectContaining({ 'x-idempotency-key': expect.any(String) }),
+    }));
+  });
+
+  it('does not throw when EF generate-zreport-pdf fails (non-blocking)', async () => {
+    rpcMock.mockResolvedValue({
+      data: {
+        session_id: 's1', status: 'closed', opening_cash: 100_000, cash_sales: 0,
+        cash_in_total: 0, cash_out_total: 0, counted_cash: 100_000,
+        expected_cash: 100_000, variance: 0, journal_entry_id: 'je-2',
+        zreport_id: 'zr-2', idempotent_replay: false,
+      },
+      error: null,
+    });
+    invokeMock.mockRejectedValueOnce(new Error('network failure'));
+    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const onClose = vi.fn();
+    render(withQuery(
+      <CloseShiftModal
+        open={true}
+        sessionId="s1"
+        expectedCash={100_000}
+        thresholdAbs={50_000}
+        thresholdPct={0.005}
+        onClose={onClose}
+      />,
+    ));
+    for (const ch of '100000') {
+      fireEvent.click(screen.getByRole('button', { name: ch }));
+    }
+    fireEvent.click(screen.getByRole('button', { name: /close shift/i }));
+    // Wait for the mutation chain to complete (RPC → EF.invoke → catch → return).
+    await vi.waitFor(() => expect(invokeMock).toHaveBeenCalled());
+    await vi.waitFor(() => expect(consoleSpy).toHaveBeenCalled());
+    // Shift still closed (RPC succeeded), EF failure was swallowed (no throw).
+    expect(rpcMock).toHaveBeenCalled();
+    consoleSpy.mockRestore();
   });
 });
