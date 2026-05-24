@@ -73,8 +73,9 @@
 **Risques** : utilisateurs existants avec rôle "Caissier" peuvent perdre accès → communiquer + roll-out staged.
 **Notes** : `IMPLEMENTATION_PLAN.md` Phase 4.5.
 
-### TASK-14-005 — Filtres globaux unifiés (DateRangePicker partout) [P2] [TODO]
+### TASK-14-005 — Filtres globaux unifiés (DateRangePicker partout) [P2] [PARTIAL]
 **Status note (2026-05-14)** : Partially delivered — `apps/backoffice/src/features/reports/components/DateRangePicker.tsx` is shared across all date-ranged pages. MISSING: comparison toggle ("vs previous period"), `<UnifiedReportFilters>` wrapper with extra dimensions (category/terminal/customer), localStorage persistence. Still applicable, scheduled Session 14+.
+**Status note (2026-05-24 S29)** : Compare toggle DONE. `<DateRangePickerWithCompare>` + `<DeltaPct>` component delivered and wired on 5 reports (P&L, BalanceSheet, CashFlow, SalesByHour, SalesByCategory) via 2 parallel React-Query fetches using `previousPeriod()` domain helper (calendar-aware: same-length-month vs n-day fallback). Domain helper TDD 9/9 PASS. MISSING (Vague B+C, S30+): `<UnifiedReportFilters>` with extra dims (category/terminal/customer), localStorage persistence for date range, 5 additional bakery reports (production cost trend, ingredient usage, category margin, recipe cost evolution, wastage analysis), drill-down modals, mobile responsive. Gap 14-3 (CSV/PDF uniforme) also DONE S29 — see `buildCsv` helper + `<ExportButtons>` wired 13 pages.
 **Contexte** : `useDateRange` utilisé dans 48 reports, mais 1 utilise month/year (VAT), 4 sont snapshots sans date. Pas de comparaison période précédente partout. UX incohérente.
 **Critère d'acceptation** :
 - [ ] Composant `<UnifiedReportFilters>` : DateRange + ComparisonToggle ("vs previous period") + Filtres optionnels (catégorie produit, terminal, customer type).

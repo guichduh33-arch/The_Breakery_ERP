@@ -29,8 +29,9 @@
 **Risques** : tension si trop d'alertes — seuil doit être calibré.
 **Notes** : pas de fix accounting requis (cash check ne génère pas de JE — info only).
 
-### TASK-12-002 — Z-Report PDF complet signable [P1] [TODO]
+### TASK-12-002 — Z-Report PDF complet signable [P1] [DONE]
 **Status note (2026-05-14)** : Not delivered Session 13 — no `zReportPdfService` in V3, no `pos_sessions.z_report_url` column, no manager-validation columns. Close shift via `close_shift_v1` returns JSON only. Still applicable, scheduled Session 14+.
+**Status note (2026-05-24 S29)** : DONE. Flow 2-temps livré : (1) `close_shift_v2` insère draft `z_reports` row avec snapshot JSONB figé (orders + payments + refunds + expenses du shift) — non-bloquant côté POS ; (2) EF `generate-zreport-pdf` génère PDF via pdf-lib + upload bucket `zreports/` 7 ans (conformité Indonésie, service_role, idempotent) ; (3) manager signe depuis BO via `<SignZReportModal>` (PIN 6 digits en header `x-manager-pin`, pattern S25) + RPC `sign_zreport_v1` avec idempotency replay. Nouvelle page BO `ZReportsListPage` liste tous les Z-Reports avec filtre statut/date + actions Sign/Void par ligne. Permissions `zreports.{read, sign, void}` seedées. pgTAP 14/14 PASS. Closes TASK-12-002 DONE complet.
 **Contexte** : F3+F4 (CURRENT_STATE.md) ont livré la génération Z-Report en console. PDF imprimable signable manager n'existe PAS. Comptable demande archive papier.
 **Critère d'acceptation** :
 - [ ] Service `zReportPdfService.generate(session_id)` produit PDF (jsPDF) avec : entête (date, terminal, caissier), opening cash, transactions count + total par méthode, expected vs actual + variance, Top 10 produits, signature manager (zone vide).
