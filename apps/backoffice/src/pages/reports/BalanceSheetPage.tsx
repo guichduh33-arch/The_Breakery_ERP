@@ -3,11 +3,12 @@
 // Snapshot of assets / liabilities / equity as of a chosen date.
 // Includes the balanced indicator (green when |A - (L+E+CYE)| < 0.01).
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Input } from '@breakery/ui';
-import { toLocalDateStr } from '@breakery/domain';
+import { toLocalDateStr, previousPeriod } from '@breakery/domain';
 import type { CsvColumn } from '@breakery/domain';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
+import { DeltaPct } from '@/features/reports/components/DeltaPct.js';
 import { useBalanceSheet } from '@/features/reports/hooks/useBalanceSheet.js';
 import type { BalanceSheet } from '@/features/reports/hooks/useBalanceSheet.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
@@ -48,7 +49,15 @@ function fmt(n: number): string {
 
 export default function BalanceSheetPage() {
   const [asOf, setAsOf] = useState<string>(() => toLocalDateStr(new Date()));
+  const [compare, setCompare] = useState(false);
+
+  // For a balance sheet snapshot, the previous period is the end of the prior equivalent window.
+  const prevAsOf = useMemo(() => compare ? previousPeriod(asOf, asOf).end : null, [compare, asOf]);
+
   const { data, isLoading, error } = useBalanceSheet(asOf);
+  const { data: prevData } = useBalanceSheet(prevAsOf ?? asOf);
+
+  const showDelta = compare && !!prevData;
 
   return (
     <ReportPage
@@ -66,10 +75,26 @@ export default function BalanceSheetPage() {
               aria-label="Balance sheet as-of date"
             />
           </label>
+          <label className="flex items-center gap-1 text-xs text-text-secondary cursor-pointer">
+            <input
+              id="bs-cmp-prev"
+              type="checkbox"
+              checked={compare}
+              onChange={(e) => setCompare(e.target.checked)}
+              data-testid="compare-toggle"
+              className="h-3.5 w-3.5"
+            />
+            <span>Compare to previous period</span>
+          </label>
           {data && (
             <ExportButtons
               csv={{ rows: buildBsRows(data), columns: bsCsvColumns, filename: `balance-sheet-${asOf}` }}
-              pdf={{ template: 'bs', data, filename: `balance-sheet-${asOf}` }}
+              pdf={{
+                template: 'bs',
+                data,
+                filename: `balance-sheet-${asOf}`,
+                ...(showDelta && prevData ? { comparePrevious: { data: prevData } } : {}),
+              }}
             />
           )}
         </div>
@@ -111,7 +136,16 @@ export default function BalanceSheetPage() {
                   <tr><td className="pl-4 py-1 text-text-secondary text-xs">Inventory</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.assets.current.inventory)}</td></tr>
                   <tr><td className="pl-4 py-1 text-text-secondary text-xs">Other current</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.assets.current.other)}</td></tr>
                   <tr className="border-b border-border-subtle"><td className="py-2 font-medium">Fixed assets</td><td className="py-2 text-right tabular-nums">{fmt(data.assets.fixed.total)}</td></tr>
-                  <tr className="border-t-2 border-border-subtle bg-gold-soft"><td className="py-3 font-semibold uppercase tracking-wider">Total assets</td><td className="py-3 text-right font-semibold tabular-nums">{fmt(data.assets.total)}</td></tr>
+                  <tr className="border-t-2 border-border-subtle bg-gold-soft">
+                    <td className="py-3 font-semibold uppercase tracking-wider">Total assets</td>
+                    <td className="py-3 text-right font-semibold tabular-nums">{fmt(data.assets.total)}</td>
+                  </tr>
+                  {showDelta && (
+                    <tr>
+                      <td className="py-1 text-xs text-text-secondary">vs prev. period</td>
+                      <td className="py-1 text-right"><DeltaPct current={data.assets.total} previous={prevData!.assets.total} /></td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </section>
@@ -127,7 +161,16 @@ export default function BalanceSheetPage() {
                   <tr><td className="pl-4 py-1 text-text-secondary text-xs">Loyalty liability</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.liabilities.current.loyalty)}</td></tr>
                   <tr><td className="pl-4 py-1 text-text-secondary text-xs">Other current</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.liabilities.current.other)}</td></tr>
                   <tr className="border-b border-border-subtle"><td className="py-2 font-medium">Long-term liabilities</td><td className="py-2 text-right tabular-nums">{fmt(data.liabilities.long_term.total)}</td></tr>
-                  <tr className="border-t-2 border-border-subtle bg-gold-soft"><td className="py-3 font-semibold uppercase tracking-wider">Total liabilities</td><td className="py-3 text-right font-semibold tabular-nums">{fmt(data.liabilities.total)}</td></tr>
+                  <tr className="border-t-2 border-border-subtle bg-gold-soft">
+                    <td className="py-3 font-semibold uppercase tracking-wider">Total liabilities</td>
+                    <td className="py-3 text-right font-semibold tabular-nums">{fmt(data.liabilities.total)}</td>
+                  </tr>
+                  {showDelta && (
+                    <tr>
+                      <td className="py-1 text-xs text-text-secondary">vs prev. period</td>
+                      <td className="py-1 text-right"><DeltaPct current={data.liabilities.total} previous={prevData!.liabilities.total} /></td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </section>
@@ -141,7 +184,16 @@ export default function BalanceSheetPage() {
                   <tr className="border-b border-border-subtle"><td className="py-2">Retained earnings</td><td className="py-2 text-right tabular-nums">{fmt(data.equity.retained_earnings)}</td></tr>
                   <tr className="border-b border-border-subtle"><td className="py-2">Current year earnings</td><td className="py-2 text-right tabular-nums">{fmt(data.equity.current_year_earnings)}</td></tr>
                   <tr className="border-b border-border-subtle"><td className="py-2">Other</td><td className="py-2 text-right tabular-nums">{fmt(data.equity.other)}</td></tr>
-                  <tr className="border-t-2 border-border-subtle bg-gold-soft"><td className="py-3 font-semibold uppercase tracking-wider">Total equity</td><td className="py-3 text-right font-semibold tabular-nums">{fmt(data.equity.total)}</td></tr>
+                  <tr className="border-t-2 border-border-subtle bg-gold-soft">
+                    <td className="py-3 font-semibold uppercase tracking-wider">Total equity</td>
+                    <td className="py-3 text-right font-semibold tabular-nums">{fmt(data.equity.total)}</td>
+                  </tr>
+                  {showDelta && (
+                    <tr>
+                      <td className="py-1 text-xs text-text-secondary">vs prev. period</td>
+                      <td className="py-1 text-right"><DeltaPct current={data.equity.total} previous={prevData!.equity.total} /></td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </section>

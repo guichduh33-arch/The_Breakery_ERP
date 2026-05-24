@@ -2,7 +2,7 @@
 //
 // Per-category revenue + quantity over a date window. Bar chart + table.
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   BarChart,
   Bar,
@@ -12,10 +12,11 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { toLocalDateStr } from '@breakery/domain';
+import { toLocalDateStr, previousPeriod } from '@breakery/domain';
 import type { CsvColumn } from '@breakery/domain';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
-import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
+import { DateRangePickerWithCompare } from '@/features/reports/components/DateRangePickerWithCompare.js';
+import { DeltaPct } from '@/features/reports/components/DeltaPct.js';
 import { useSalesByCategory } from '@/features/reports/hooks/useSalesByCategory.js';
 import type { SalesCategoryRow } from '@/features/reports/hooks/useSalesByCategory.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
@@ -30,10 +31,30 @@ function defaultStart(): string {
   return toLocalDateStr(new Date(Date.now() - 6 * 86_400_000));
 }
 
+function sumRows(rows: SalesCategoryRow[]): { total: number; qty: number } {
+  return rows.reduce(
+    (acc, r) => ({ total: acc.total + r.total, qty: acc.qty + r.qty }),
+    { total: 0, qty: 0 },
+  );
+}
+
 export default function SalesByCategoryPage() {
   const [start, setStart] = useState<string>(defaultStart);
   const [end,   setEnd]   = useState<string>(() => toLocalDateStr(new Date()));
+  const [compare, setCompare] = useState(false);
+
+  const prev = useMemo(() => compare ? previousPeriod(start, end) : null, [compare, start, end]);
+
   const { data, isLoading, error } = useSalesByCategory(start, end);
+  const { data: prevData } = useSalesByCategory(
+    prev?.start ?? start,
+    prev?.end   ?? end,
+  );
+
+  const showDelta = compare && !!prevData;
+
+  const currentSums = useMemo(() => data ? sumRows(data) : null, [data]);
+  const prevSums    = useMemo(() => prevData ? sumRows(prevData) : null, [prevData]);
 
   return (
     <ReportPage
@@ -41,16 +62,24 @@ export default function SalesByCategoryPage() {
       subtitle="Revenue + quantity grouped by product category."
       filters={
         <div className="flex items-center gap-3">
-          <DateRangePicker
+          <DateRangePickerWithCompare
             start={start}
             end={end}
             onStartChange={setStart}
             onEndChange={setEnd}
+            compare={compare}
+            onCompareChange={setCompare}
           />
           {data && (
             <ExportButtons
               csv={{ rows: data, columns: csvColumns, filename: `sales-by-category-${start}_${end}` }}
-              pdf={{ template: 'sales_by_category', data, period: { start, end }, filename: `sales-by-category-${start}_${end}` }}
+              pdf={{
+                template: 'sales_by_category',
+                data,
+                period: { start, end },
+                filename: `sales-by-category-${start}_${end}`,
+                ...(showDelta && prevData ? { comparePrevious: { data: prevData } } : {}),
+              }}
             />
           )}
         </div>
@@ -61,6 +90,19 @@ export default function SalesByCategoryPage() {
         <p className="text-sm text-red-500" role="alert">
           {error.message ?? 'Failed to load report.'}
         </p>
+      )}
+      {showDelta && currentSums && prevSums && (
+        <div className="flex items-center gap-6 text-sm mb-4 p-3 rounded-md bg-bg-overlay border border-border-subtle">
+          <span className="font-medium text-text-secondary">vs prev. period:</span>
+          <span>
+            Revenue&nbsp;
+            <DeltaPct current={currentSums.total} previous={prevSums.total} />
+          </span>
+          <span>
+            Qty&nbsp;
+            <DeltaPct current={currentSums.qty} previous={prevSums.qty} />
+          </span>
+        </div>
       )}
       {data !== undefined && data !== null && (
         <div className="space-y-6">
