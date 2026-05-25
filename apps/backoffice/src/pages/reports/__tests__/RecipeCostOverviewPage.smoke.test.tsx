@@ -13,6 +13,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter } from 'react-router-dom';
 import RecipeCostOverviewPage from '@/pages/reports/RecipeCostOverviewPage.js';
 
 // --- Fixtures ---
@@ -61,7 +62,7 @@ function renderPage() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <RecipeCostOverviewPage />
+      <MemoryRouter><RecipeCostOverviewPage /></MemoryRouter>
     </QueryClientProvider>,
   );
 }
