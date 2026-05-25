@@ -20,6 +20,7 @@ import { Button, cn } from '@breakery/ui';
 import { supabase } from '@/lib/supabase.js';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
+import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 
 interface YieldRow {
   id:                 string;
@@ -176,7 +177,9 @@ function OutliersTable({
               data-testid="yield-outlier-row"
             >
               <td className="py-2 font-mono text-xs">{r.production_number}</td>
-              <td className="py-2">{r.product_name}</td>
+              <td className="py-2" onClick={(e) => e.stopPropagation()}>
+                <DrilldownLink entity="product" id={r.product_id} label={r.product_name} icon={false} />
+              </td>
               <td className="py-2 text-xs">{r.production_date.slice(0, 10)}</td>
               <td className="py-2 text-right tabular-nums">{r.expected_yield_qty?.toLocaleString() ?? '—'}</td>
               <td className="py-2 text-right tabular-nums">{r.actual_yield_qty?.toLocaleString() ?? '—'}</td>
@@ -244,7 +247,9 @@ function TrendTable({ rows }: { rows: TrendRow[] }): JSX.Element {
       <tbody>
         {rows.map((r) => (
           <tr key={r.product_id} className="border-b border-border-subtle">
-            <td className="py-2">{r.product_name}</td>
+            <td className="py-2">
+              <DrilldownLink entity="recipe" id={r.product_id} label={r.product_name} icon={false} />
+            </td>
             <td className="py-2 text-right tabular-nums">{r.batches}</td>
             <td className={cn('py-2 text-right tabular-nums', varianceTone(r.avg_pct))}>
               {formatVariancePct(r.avg_pct)}

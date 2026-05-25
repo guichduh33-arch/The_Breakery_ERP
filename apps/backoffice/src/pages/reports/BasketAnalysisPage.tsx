@@ -12,6 +12,7 @@ import { DateRangePicker } from '@/features/reports/components/DateRangePicker.j
 import { useBasketAnalysis } from '@/features/reports/hooks/useBasketAnalysis.js';
 import type { BasketPair } from '@/features/reports/hooks/useBasketAnalysis.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
+import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 
 const csvColumns: CsvColumn<BasketPair>[] = [
   { header: 'Product A',    accessor: (r) => r.product_a_name,      format: 'text' },
@@ -103,8 +104,12 @@ export default function BasketAnalysisPage() {
                       : 'border-b border-border-subtle'
                   }
                 >
-                  <td className="py-2">{row.product_a_name}</td>
-                  <td className="py-2">{row.product_b_name}</td>
+                  <td className="py-2">
+                    <DrilldownLink entity="product" id={row.product_id_a} label={row.product_a_name} icon={false} />
+                  </td>
+                  <td className="py-2">
+                    <DrilldownLink entity="product" id={row.product_id_b} label={row.product_b_name} icon={false} />
+                  </td>
                   <td className="py-2 text-right tabular-nums">{row.co_occurrence_count}</td>
                   <td className="py-2 text-right tabular-nums">{(row.confidence * 100).toFixed(1)}%</td>
                   <td className="py-2 text-right tabular-nums font-semibold">{row.lift.toFixed(2)}</td>

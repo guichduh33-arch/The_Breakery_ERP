@@ -16,6 +16,7 @@ import { Button } from '@breakery/ui';
 import { supabase } from '@/lib/supabase.js';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
+import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 
 interface OverviewRow {
   product_id:    string;
@@ -147,7 +148,9 @@ export function RecipeCostOverviewPage(): JSX.Element {
                 data-testid={`overview-row-${r.product_id}`}
                 onClick={() => navigate(`/backoffice/reports/recipe-cost/${r.product_id}`)}
               >
-                <td className="py-1.5">{r.product_name}</td>
+                <td className="py-1.5" onClick={(e) => e.stopPropagation()}>
+                  <DrilldownLink entity="recipe" id={r.product_id} label={r.product_name} icon={false} />
+                </td>
                 <td className="py-1.5 text-right tabular-nums">
                   {r.cost_per_unit?.toLocaleString('en-US', { maximumFractionDigits: 2 }) ?? '—'}
                 </td>
