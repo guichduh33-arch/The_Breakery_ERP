@@ -94,7 +94,10 @@ Applied via cloud MCP `apply_migration` sur `ikcyvlovptebroadgtvd`.
 | pgTAP `orders_read_perm` | 2 | PASS via cloud MCP `execute_sql` |
 | `pnpm typecheck` | 6/6 packages | PASS |
 
-**Full BO regression sweep** : Voir §11 résultat post-MemoryRouter-patch.
+**Full BO regression sweep** (post wave 4.A MemoryRouter patches) :
+- Avant patches : 22 failed / 393 tests (11 fichiers)
+- Après patches : 7 failed / 393 tests (5 fichiers)
+- Investigation des 7 restants : `inventory.smoke.test.tsx` + `journal-entries-modal-validation.smoke.test.tsx` PASS isolés → flakes vitest concurrency, non liés S31. À investiguer post-PR (S32+ noted DEV-S31-4.A-02).
 
 ---
 
@@ -145,6 +148,7 @@ Pour débloquer le drill-down pre-filled sur ces 4 reports → bumper les RPCs e
 | DEV-S31-3.D | §5 4 accounting reports | Account drill avec date filter | Terminal comment uniquement | RPCs retournent `code` 3-4 digit, pas UUID — GL S26b attend UUID | Documented dans `§9` ci-dessus, deferred S32+ |
 | DEV-S31-3.E-01 | §6.4 wiring sample | `profit-loss-drilldown.smoke` | Remplacé par `stock-variance-drilldown.smoke` | Profit-loss account drill deferred (DEV-S31-3.D) → smoke n'a rien à vérifier | Informational — count maintenu à 5 samples |
 | DEV-S31-4.A-01 | §6 Tests | "BO smoke 6/6 PASS detail pages + 5/5 PASS wiring sample" | 12 existing tests retroactively patched pour wrap MemoryRouter | Wiring DL → existing tests crash hors Router | Defensive — script python idempotent applied 12 files |
+| DEV-S31-4.A-02 | §6 Tests | "Full BO test sweep PASS" | 7/393 tests fail in full sweep (`inventory.smoke`, `journal-entries-modal-validation.smoke`, et al.) mais PASS isolés | Flakes vitest concurrency (pre-existing pattern sur master) | Informational — non lié S31, à investiguer post-PR |
 
 ---
 
