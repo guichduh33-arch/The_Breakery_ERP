@@ -126,7 +126,7 @@ export function CustomerDetailPage(): JSX.Element {
                     <DrilldownLink entity="order" id={o.id} label={`#${o.order_number}`} icon={false} />
                   </td>
                   <td>{new Date(o.created_at).toLocaleDateString('id-ID')}</td>
-                  <td className="text-right">{fmtIdr(o.total_amount)}</td>
+                  <td className="text-right">{fmtIdr(o.total)}</td>
                   <td>{o.status}</td>
                 </tr>
               ))}

@@ -5,7 +5,7 @@
 // PostgREST direct SELECT — no new RPC.
 
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@breakery/supabase';
+import { supabase } from '@/lib/supabase.js';
 
 export type CustomerType = 'retail' | 'b2b';
 
@@ -35,7 +35,7 @@ export interface RecentOrder {
   id: string;
   order_number: string;
   created_at: string;
-  total_amount: number;
+  total: number;
   status: string;
 }
 
@@ -67,7 +67,7 @@ export function useCustomerDetail(id: string | undefined) {
 
       const { data: recent } = await supabase
         .from('orders')
-        .select('id, order_number, created_at, total_amount, status')
+        .select('id, order_number, created_at, total, status')
         .eq('customer_id', id)
         .order('created_at', { ascending: false })
         .limit(10);

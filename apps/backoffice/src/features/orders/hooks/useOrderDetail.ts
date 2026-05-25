@@ -4,7 +4,7 @@
 // PostgREST direct SELECT with embeds — no new RPC.
 
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@breakery/supabase';
+import { supabase } from '@/lib/supabase.js';
 
 export interface OrderItem {
   id: string;

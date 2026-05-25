@@ -8,7 +8,7 @@
 // not on a single recipe row id.
 
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@breakery/supabase';
+import { supabase } from '@/lib/supabase.js';
 
 export interface BomRow {
   material_id: string;

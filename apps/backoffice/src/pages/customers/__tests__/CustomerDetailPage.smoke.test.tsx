@@ -35,7 +35,7 @@ vi.mock('@/features/customers/hooks/useCustomerDetail.js', () => ({
           id: 'o-1',
           order_number: 'ORD-001',
           created_at: '2026-05-22T10:00:00Z',
-          total_amount: 250_000,
+          total: 250_000,
           status: 'completed',
         },
       ],
