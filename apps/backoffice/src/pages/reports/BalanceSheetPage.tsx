@@ -2,6 +2,9 @@
 //
 // Snapshot of assets / liabilities / equity as of a chosen date.
 // Includes the balanced indicator (green when |A - (L+E+CYE)| < 0.01).
+//
+// S31 : account cells terminal — get_balance_sheet_v1 RPC returns `code`, not UUID.
+// /accounting/general-ledger expects UUID. Pre-filled drill deferred to S32+ (RPC bump).
 
 import { useState, useMemo } from 'react';
 import { Input } from '@breakery/ui';
