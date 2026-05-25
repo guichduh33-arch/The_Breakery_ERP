@@ -7,6 +7,7 @@ import type { CsvColumn } from '@breakery/domain';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
+import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 import {
   usePerishableTurnover,
   type PerishableTurnoverLine,
@@ -108,7 +109,9 @@ export default function PerishableTurnoverPage() {
             )}
             {rows.map((r) => (
               <tr key={r.product_id} className="border-b border-border-subtle">
-                <td className="py-2 font-medium">{r.product_name}</td>
+                <td className="py-2 font-medium">
+                  <DrilldownLink entity="product" id={r.product_id} label={r.product_name} icon={false} />
+                </td>
                 <td className="py-2 text-right tabular-nums">{r.lots_count}</td>
                 <td className="py-2 text-right tabular-nums">{r.consumed_qty}</td>
                 <td className="py-2 text-right tabular-nums">{r.expired_qty}</td>

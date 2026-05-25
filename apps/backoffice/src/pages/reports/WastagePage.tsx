@@ -7,6 +7,7 @@ import type { CsvColumn } from '@breakery/domain';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
+import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 import {
   useWastageReport,
   type WastageReportLine,
@@ -85,7 +86,9 @@ export default function WastagePage() {
             )}
             {lines.map((r) => (
               <tr key={r.id} className="border-b border-border-subtle">
-                <td className="py-2 font-medium">{r.product_name}</td>
+                <td className="py-2 font-medium">
+                  <DrilldownLink entity="product" id={r.product_id} label={r.product_name} icon={false} />
+                </td>
                 <td className="py-2 text-text-secondary">{r.type}</td>
                 <td className="py-2 text-right tabular-nums">{r.qty}</td>
                 <td className="py-2 text-right tabular-nums">
