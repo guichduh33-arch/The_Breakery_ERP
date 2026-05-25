@@ -1,0 +1,82 @@
+// apps/backoffice/src/features/customers/hooks/useCustomerDetail.ts
+//
+// Session 31 / Wave 2.A — Read-only customer detail for /backoffice/customers/:id.
+// Aggregates : customer row + orders count + 10 recent orders.
+// PostgREST direct SELECT — no new RPC.
+
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@breakery/supabase';
+
+export type CustomerType = 'retail' | 'b2b';
+
+export interface CustomerDetailRow {
+  id: string;
+  name: string;
+  customer_type: CustomerType;
+  email: string | null;
+  phone: string | null;
+  category_id: string | null;
+  loyalty_points: number;
+  lifetime_points: number;
+  total_spent: number;
+  total_visits: number;
+  last_visit_at: string | null;
+  birth_date: string | null;
+  marketing_consent: boolean;
+  b2b_company_name: string | null;
+  b2b_tax_id: string | null;
+  b2b_payment_terms_days: number | null;
+  b2b_credit_limit: number | null;
+  b2b_current_balance: number;
+  created_at: string;
+}
+
+export interface RecentOrder {
+  id: string;
+  order_number: string;
+  created_at: string;
+  total_amount: number;
+  status: string;
+}
+
+export interface CustomerDetail {
+  customer: CustomerDetailRow;
+  orders_count: number;
+  recent_orders: RecentOrder[];
+}
+
+export function useCustomerDetail(id: string | undefined) {
+  return useQuery({
+    queryKey: ['customer-detail', id],
+    enabled: !!id,
+    queryFn: async (): Promise<CustomerDetail> => {
+      if (!id) throw new Error('id required');
+      const { data: customer, error } = await supabase
+        .from('customers')
+        .select(
+          'id, name, customer_type, email, phone, category_id, loyalty_points, lifetime_points, total_spent, total_visits, last_visit_at, birth_date, marketing_consent, b2b_company_name, b2b_tax_id, b2b_payment_terms_days, b2b_credit_limit, b2b_current_balance, created_at',
+        )
+        .eq('id', id)
+        .single();
+      if (error) throw error;
+
+      const { count } = await supabase
+        .from('orders')
+        .select('id', { count: 'exact', head: true })
+        .eq('customer_id', id);
+
+      const { data: recent } = await supabase
+        .from('orders')
+        .select('id, order_number, created_at, total_amount, status')
+        .eq('customer_id', id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      return {
+        customer: customer as CustomerDetailRow,
+        orders_count: count ?? 0,
+        recent_orders: (recent ?? []) as RecentOrder[],
+      };
+    },
+  });
+}
