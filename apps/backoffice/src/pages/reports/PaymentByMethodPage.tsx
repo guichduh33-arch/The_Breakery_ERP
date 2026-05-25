@@ -1,5 +1,8 @@
 // apps/backoffice/src/pages/reports/PaymentByMethodPage.tsx
 // S30 Wave 4.2 — Payments by method report with date range filter + export.
+//
+// S31 : method cells are terminal — no /backoffice/orders list filtered by
+// payment_method yet. Drill-down deferred to S32+ (would need /orders list page).
 
 import { useState } from 'react';
 import { toLocalDateStr } from '@breakery/domain';
