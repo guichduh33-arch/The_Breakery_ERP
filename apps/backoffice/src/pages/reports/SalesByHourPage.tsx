@@ -1,6 +1,9 @@
 // apps/backoffice/src/pages/reports/SalesByHourPage.tsx
 //
 // 24-bucket bar chart of revenue by hour, for a given business-local date.
+//
+// S31 : hour bucket cells are terminal (no /backoffice/orders list filtered
+// by hour yet). Drill-down deferred to S32+ (would need a list page).
 
 import { useState, useMemo } from 'react';
 import {

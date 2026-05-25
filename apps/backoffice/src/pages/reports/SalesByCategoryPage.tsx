@@ -20,6 +20,7 @@ import { DeltaPct } from '@/features/reports/components/DeltaPct.js';
 import { useSalesByCategory } from '@/features/reports/hooks/useSalesByCategory.js';
 import type { SalesCategoryRow } from '@/features/reports/hooks/useSalesByCategory.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
+import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 
 const csvColumns: CsvColumn<SalesCategoryRow>[] = [
   { header: 'Category', accessor: (r) => r.category_name, format: 'text' },
@@ -135,7 +136,15 @@ export default function SalesByCategoryPage() {
               )}
               {data.map((r) => (
                 <tr key={r.category_id} className="border-b border-border-subtle">
-                  <td className="py-2">{r.category_name}</td>
+                  <td className="py-2">
+                    <DrilldownLink
+                      entity="category"
+                      id={r.category_id}
+                      label={r.category_name}
+                      filter={{ date_from: start, date_to: end }}
+                      icon={false}
+                    />
+                  </td>
                   <td className="py-2 text-right tabular-nums">{r.total.toLocaleString()}</td>
                   <td className="py-2 text-right tabular-nums">{r.qty}</td>
                 </tr>
