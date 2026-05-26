@@ -44,13 +44,15 @@ S32 ferme ces 3 gaps + un quatrième identifié à la lecture du code S26b :
 **Choix structurant 4** : **Cursor pagination** identique au pattern S30 `get_stock_movements_v1` — clamp `p_limit` à [1, 200] (default 50), `next_cursor` = `created_at` de la (N+1)ᵉ row. Pas de `total_count` (coûteux sur table 100k+ rows en l'absence de denormalization).
 
 **Choix structurant 5** : **Computed cols inline** dans la RPC (LEFT JOIN aux tables annexes plutôt que côté hook) :
-- `refund_status` ∈ `{none, partial, full}` via `LEFT JOIN refunds` + `SUM(refunds.amount)` vs `orders.total`
+- `refund_status` ∈ `{none, partial, full}` via `LEFT JOIN refunds` + `SUM(refunds.total)` vs `orders.total` (refunds.total, pas refunds.amount — DEV-S32-1.A-03)
 - `has_modifiers` via `EXISTS (SELECT 1 FROM order_items WHERE order_id=o.id AND modifiers IS NOT NULL AND jsonb_array_length(modifiers) > 0)`
 - `customer_type` via `LEFT JOIN customers ON o.customer_id = c.id` → `c.customer_type` (NULL si walk-in)
 - `payment_method_primary` agrégé depuis `order_payments` (méthode unique si une seule, `'mixed'` si N>1)
 - `items_count` via `COUNT(order_items)`
-- `customer_name` via `LEFT JOIN customers`
+- `customer_name` via `LEFT JOIN customers` (c.name, pas full_name — DEV-S32-1.A-02)
 - `served_by_name` via `LEFT JOIN user_profiles ON o.served_by = up.id`
+
+**Choix structurant 5bis** : **`terminal_id` filter axis dropped V1** — DEV-S32-1.A-01 : la table `orders` n'a pas de col `terminal_id` (le terminal est dérivé de `pos_sessions` via `orders.session_id`). Plutôt qu'introduire un JOIN complexe pour ce filter en V1, on drop l'axe. À promouvoir S33+ si demandé via JOIN `pos_sessions`.
 
 **Choix structurant 6** : **URL state = source of truth** pour OrdersListPage. Tous les filtres lus depuis `useSearchParams` avec defaults raisonnables (date range = last 7 days). Permet aux `<DrilldownLink filter={...}>` d'arriver pre-filled. Convention déjà introduite par `<DrilldownLink>` S31, étendue aux multi-filtres.
 
@@ -137,14 +139,13 @@ BEGIN
       o.created_at,
       o.customer_id,
       c.customer_type,
-      COALESCE(c.full_name, c.display_name) AS customer_name,
+      c.name AS customer_name,
       o.served_by,
       up.full_name AS served_by_name,
-      o.terminal_id,
       -- refund_status computed
       CASE
-        WHEN COALESCE(rsum.amount, 0) = 0 THEN 'none'
-        WHEN COALESCE(rsum.amount, 0) >= o.total THEN 'full'
+        WHEN COALESCE(rsum.total, 0) = 0 THEN 'none'
+        WHEN COALESCE(rsum.total, 0) >= o.total THEN 'full'
         ELSE 'partial'
       END AS refund_status,
       -- has_modifiers computed
@@ -167,7 +168,7 @@ BEGIN
     LEFT JOIN customers     c   ON c.id  = o.customer_id
     LEFT JOIN user_profiles up  ON up.id = o.served_by
     LEFT JOIN LATERAL (
-      SELECT SUM(r.amount) AS amount FROM refunds r WHERE r.order_id = o.id
+      SELECT SUM(r.total) AS total FROM refunds r WHERE r.order_id = o.id
     ) rsum ON TRUE
     WHERE o.created_at BETWEEN v_start AND v_end
       AND (p_cursor IS NULL OR o.created_at < p_cursor)
@@ -176,7 +177,6 @@ BEGIN
       AND (p_filters->>'order_type'    IS NULL OR o.order_type::text = p_filters->>'order_type')
       AND (p_filters->>'customer_id'   IS NULL OR o.customer_id      = (p_filters->>'customer_id')::uuid)
       AND (p_filters->>'served_by'     IS NULL OR o.served_by        = (p_filters->>'served_by')::uuid)
-      AND (p_filters->>'terminal_id'   IS NULL OR o.terminal_id::text = p_filters->>'terminal_id')
       AND (p_filters->>'total_min'     IS NULL OR o.total >= (p_filters->>'total_min')::numeric)
       AND (p_filters->>'total_max'     IS NULL OR o.total <= (p_filters->>'total_max')::numeric)
       AND (p_filters->>'customer_type' IS NULL OR c.customer_type::text = p_filters->>'customer_type')
@@ -201,7 +201,6 @@ BEGIN
       'customer_type',          f.customer_type,
       'served_by',              f.served_by,
       'served_by_name',         f.served_by_name,
-      'terminal_id',            f.terminal_id,
       'refund_status',          f.refund_status,
       'has_modifiers',          f.has_modifiers,
       'payment_method_primary', f.payment_method_primary,
@@ -222,10 +221,10 @@ $$;
 
 COMMENT ON FUNCTION public.get_orders_list_v1 IS
   'S32 — Orders list cursor-paginated. p_filters JSONB keys: status, order_type, '
-  'customer_id, served_by, terminal_id, total_min, total_max, customer_type, '
+  'customer_id, served_by, total_min, total_max, customer_type, '
   'payment_method. Computed cols in output: refund_status (none|partial|full), '
   'has_modifiers, payment_method_primary (or ''mixed''), items_count, customer_name, '
-  'customer_type, served_by_name. Gated reports.orders / orders.read.';
+  'customer_type, served_by_name. Gated orders.read.';
 
 GRANT EXECUTE ON FUNCTION public.get_orders_list_v1 TO authenticated;
 ```
@@ -282,12 +281,12 @@ export interface OrdersListLine {
   customer_type:          'retail' | 'b2b' | null;
   served_by:              string | null;
   served_by_name:         string | null;
-  terminal_id:            string | null;
   refund_status:          'none' | 'partial' | 'full';
   has_modifiers:          boolean;
   payment_method_primary: 'cash' | 'card' | 'qris' | 'edc' | 'transfer' | 'store_credit' | 'mixed' | null;
   items_count:            number;
 }
+// NOTE: terminal_id intentionally excluded V1 (DEV-S32-1.A-01 — orders has no terminal_id col, derived via pos_sessions JOIN deferred S33+).
 
 export interface OrdersListPage {
   lines:       OrdersListLine[];
@@ -299,7 +298,6 @@ export interface OrdersListFilters {
   order_type?:     string;
   customer_id?:    string;
   served_by?:      string;
-  terminal_id?:    string;
   total_min?:      number;
   total_max?:      number;
   customer_type?:  'retail' | 'b2b';
@@ -347,9 +345,9 @@ export function useOrdersList(params: UseOrdersListParams) {
 │   Row 3 (advanced — collapsed by default) :
 │     Customer typeahead
 │     Served by typeahead (users)
-│     Terminal select (from list of distinct terminal_id)
 │     Total min/max (numeric)
 │     Customer type select (retail|b2b)
+│     (terminal filter deferred — DEV-S32-1.A-01)
 ├─ Active filter chips (Apple-pill style, click to remove)
 ├─ Results count + "Showing X of Y orders" + sort indicator
 ├─ Table
@@ -369,7 +367,6 @@ export function useOrdersList(params: UseOrdersListParams) {
 | `?payment_method=` | `filters.payment_method` | single (RPC takes single) — multi requires `?payment_method=cash,qris` parsed + N RPC calls or `IN` clause future bump |
 | `?customer_id=` | `filters.customer_id` | single UUID |
 | `?served_by=` | `filters.served_by` | single UUID |
-| `?terminal_id=` | `filters.terminal_id` | single |
 | `?refund_status=` | client-side filter (RPC not aware in V1) | Filter applied after RPC fetch |
 | `?has_modifiers=` | client-side filter (V1) | true/false/all |
 | `?total_min=` / `?total_max=` | `filters.total_min/max` | numeric |
@@ -522,8 +519,9 @@ Plus 1 type regen committé en chore commit (pas une migration).
 
 | ID | Risk | Mitigation |
 |---|---|---|
-| R-S32-1 | `orders.terminal_id` peut ne pas exister sur le schema cloud | Wave 1.D vérifie via `execute_sql \d orders` AVANT d'écrire la RPC ; doc en deviation si missing — fallback : remove filter axis |
-| R-S32-2 | `customers.full_name` vs `customers.display_name` schema discovery | Wave 1.D vérifie ; pattern S31 DEV-S31-2.A-01..02 |
+| R-S32-1 | `orders.terminal_id` n'existe pas | **DEV-S32-1.A-01 confirmé** : terminal_id filter axis dropped V1 (table `orders` n'a que `session_id` ; JOIN `pos_sessions` reporté S33+) |
+| R-S32-2 | `customers.full_name` vs `customers.display_name` | **DEV-S32-1.A-02 confirmé** : col s'appelle juste `name`, COALESCE inutile, SELECT `c.name AS customer_name` |
+| R-S32-2bis | `refunds.amount` vs `refunds.total` | **DEV-S32-1.A-03 confirmé** : col s'appelle `total`, LATERAL utilise `SUM(r.total) AS total` |
 | R-S32-3 | `payment_method_primary` ambigü sur split orders | RPC retourne `'mixed'` ; doc dans COMMENT ON FUNCTION |
 | R-S32-4 | Bump P&L/BS/CF JSONB → consumers existants doivent absorber le nouveau field | Pure additive — TypeScript optional ou required selon hook. Si optional partout suffit, garder optional |
 | R-S32-5 | `refund_status` filter client-side V1 → "Load more" UX bizarre si peu de refunds | Tracké DEV-S32-3.A-01 ; promouvoir server-side S33+ si feedback user |
