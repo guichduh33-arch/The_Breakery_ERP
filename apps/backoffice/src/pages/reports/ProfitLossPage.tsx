@@ -3,6 +3,10 @@
 // Profit & Loss statement for a date range. Renders subtotals
 // (revenue / COGS / gross / OpEx / net) and a per-account drill-down
 // table sorted by code.
+//
+// S31 : account cells terminal — get_profit_loss_v1 RPC returns `code` (e.g. '4100'),
+// not the UUID `account_id`. /accounting/general-ledger expects UUID. Pre-filled
+// account drill deferred to S32+ (bump RPC to include id).
 
 import { useState, useMemo } from 'react';
 import { toLocalDateStr, previousPeriod } from '@breakery/domain';

@@ -9,6 +9,7 @@ import type { CsvColumn } from '@breakery/domain';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { useAuditLogs, type AuditLogRow } from '@/features/reports/hooks/useAuditLogs.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
+import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 
 const csvColumns: CsvColumn<AuditLogRow>[] = [
   { header: 'Timestamp',   accessor: (r) => r.created_at,  format: 'datetime' },
@@ -73,8 +74,24 @@ export default function AuditPage() {
                     {new Date(r.created_at).toLocaleString()}
                   </td>
                   <td className="py-2">{r.action}</td>
-                  <td className="py-2">{r.entity_type}</td>
-                  <td className="py-2 text-xs text-text-secondary">{r.actor_id ?? '—'}</td>
+                  <td className="py-2">
+                    {r.entity_type === 'product' && r.entity_id ? (
+                      <DrilldownLink entity="product" id={r.entity_id} label={`product ${r.entity_id.slice(0, 8)}`} icon={false} />
+                    ) : r.entity_type === 'order' && r.entity_id ? (
+                      <DrilldownLink entity="order" id={r.entity_id} label={`order ${r.entity_id.slice(0, 8)}`} icon={false} />
+                    ) : r.entity_type === 'expense' && r.entity_id ? (
+                      <DrilldownLink entity="expense" id={r.entity_id} label={`expense ${r.entity_id.slice(0, 8)}`} icon={false} />
+                    ) : r.entity_type === 'customer' && r.entity_id ? (
+                      <DrilldownLink entity="customer" id={r.entity_id} label={`customer ${r.entity_id.slice(0, 8)}`} icon={false} />
+                    ) : (
+                      r.entity_type
+                    )}
+                  </td>
+                  <td className="py-2 text-xs text-text-secondary">
+                    {r.actor_id ? (
+                      <DrilldownLink entity="user" id={r.actor_id} label={r.actor_id.slice(0, 8)} icon={false} />
+                    ) : '—'}
+                  </td>
                 </tr>
               ))}
             </tbody>

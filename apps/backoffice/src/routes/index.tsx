@@ -78,6 +78,9 @@ import SettingsAccountingPage from '@/features/accounting/pages/SettingsAccounti
 import ExpenseThresholdsPage  from '@/features/settings/expense-thresholds/ExpenseThresholdsPage.js';
 import ZReportsListPage       from '@/pages/cash-register/ZReportsListPage.js';
 import CustomersListPage      from '@/pages/customers/CustomersListPage.js';
+import { CustomerDetailPage } from '@/pages/customers/CustomerDetailPage.js';
+import { OrderDetailPage }    from '@/pages/orders/OrderDetailPage.js';
+import { RecipeDetailPage }   from '@/pages/recipes/RecipeDetailPage.js';
 import CustomerCategoriesPage from '@/pages/customers/CustomerCategoriesPage.js';
 import B2BDashboardPage      from '@/pages/btob/B2BDashboardPage.js';
 import B2BPaymentsPage       from '@/pages/btob/B2BPaymentsPage.js';
@@ -204,6 +207,14 @@ export function AppRoutes() {
           element={
             <PermissionGate required="inventory.read">
               <RecipeEditorPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="inventory/recipes/:productId"
+          element={
+            <PermissionGate required="reports.inventory.read">
+              <RecipeDetailPage />
             </PermissionGate>
           }
         />
@@ -340,6 +351,22 @@ export function AppRoutes() {
           element={
             <PermissionGate required="customers.read">
               <CustomersListPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="customers/:id"
+          element={
+            <PermissionGate required="customers.read">
+              <CustomerDetailPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="orders/:id"
+          element={
+            <PermissionGate required="orders.read">
+              <OrderDetailPage />
             </PermissionGate>
           }
         />

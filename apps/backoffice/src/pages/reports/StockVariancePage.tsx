@@ -12,6 +12,7 @@ import {
   type StockVarianceRow,
 } from '@/features/reports/hooks/useStockVariance.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
+import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 
 const csvColumns: CsvColumn<StockVarianceRow>[] = [
   { header: 'Product',      accessor: (r) => r.product_name,  format: 'text' },
@@ -88,7 +89,9 @@ export default function StockVariancePage() {
             {data.map((r: StockVarianceRow) => (
               <tr key={r.product_id} className="border-b border-border-subtle">
                 <td className="py-2">
-                  <div className="font-medium">{r.product_name}</div>
+                  <div className="font-medium">
+                    <DrilldownLink entity="product" id={r.product_id} label={r.product_name} icon={false} />
+                  </div>
                   <div className="text-xs text-text-secondary">{r.sku}</div>
                 </td>
                 <td className="py-2 text-right tabular-nums">{r.opened}</td>

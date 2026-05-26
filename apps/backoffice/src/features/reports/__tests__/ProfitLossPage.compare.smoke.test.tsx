@@ -5,6 +5,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter } from 'react-router-dom';
 
 // Mock supabase before importing the page.
 const rpcSpy = vi.fn();
@@ -33,7 +34,7 @@ function wrap(ui: React.ReactElement) {
 describe('ProfitLossPage compare', () => {
   it('fires 2 RPC calls when compare toggle is enabled', async () => {
     rpcSpy.mockResolvedValue({ data: mockPnlData, error: null });
-    render(wrap(<ProfitLossPage />));
+    render(wrap(<MemoryRouter><ProfitLossPage /></MemoryRouter>));
     // Initial render fires 1 call (current period)
     await waitFor(() => expect(rpcSpy).toHaveBeenCalledTimes(1));
     fireEvent.click(screen.getByTestId('compare-toggle'));

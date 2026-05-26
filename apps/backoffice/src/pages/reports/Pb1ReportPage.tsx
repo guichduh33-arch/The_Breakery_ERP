@@ -1,5 +1,9 @@
 // apps/backoffice/src/pages/reports/Pb1ReportPage.tsx
 // S30 Wave 4.2 — PB1 (10% monthly restaurant tax) report with month/year selector + export.
+//
+// S31 : period cell terminal — drilling to JE list filtered by date range would require
+// /accounting/journal-entries to accept date_from/date_to as URL params (currently uses
+// local state only). Deferred to S32+ (JE page bump).
 
 import { useState } from 'react';
 import type { CsvColumn } from '@breakery/domain';

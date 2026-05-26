@@ -134,7 +134,9 @@ export type PermissionCode =
   // Session 29 / Wave 1.D — Z-Reports
   | 'zreports.read'
   | 'zreports.sign'
-  | 'zreports.void';
+  | 'zreports.void'
+  // Session 31 / Wave 1.C — Orders read (drill-down BO)
+  | 'orders.read';
 
 /**
  * Check whether a user has a single permission. Pure client-side lookup —

@@ -11,6 +11,7 @@ import { DateRangePicker } from '@/features/reports/components/DateRangePicker.j
 import { useSalesByStaff } from '@/features/reports/hooks/useSalesByStaff.js';
 import type { SalesStaffRow } from '@/features/reports/hooks/useSalesByStaff.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
+import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 
 const csvColumns: CsvColumn<SalesStaffRow>[] = [
   { header: 'Staff',       accessor: (r) => r.staff_name,  format: 'text' },
@@ -75,7 +76,9 @@ export default function SalesByStaffPage() {
             )}
             {data.map((r) => (
               <tr key={r.staff_id} className="border-b border-border-subtle">
-                <td className="py-2">{r.staff_name}</td>
+                <td className="py-2">
+                  <DrilldownLink entity="user" id={r.staff_id} label={r.staff_name} icon={false} />
+                </td>
                 <td className="py-2 text-right tabular-nums">{r.total.toLocaleString()}</td>
                 <td className="py-2 text-right tabular-nums">{r.order_count}</td>
                 <td className="py-2 text-right tabular-nums">

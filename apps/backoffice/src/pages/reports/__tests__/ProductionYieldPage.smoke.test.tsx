@@ -10,6 +10,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter } from 'react-router-dom';
 import ProductionYieldPage from '@/pages/reports/ProductionYieldPage.js';
 
 const PROD_ROWS = [
@@ -88,7 +89,7 @@ function renderPage() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <ProductionYieldPage />
+      <MemoryRouter><ProductionYieldPage /></MemoryRouter>
     </QueryClientProvider>,
   );
 }

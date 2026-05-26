@@ -9,6 +9,7 @@ import type { CsvColumn } from '@breakery/domain';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
+import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 import {
   useStockMovementsReport,
   type StockMovementLine,
@@ -115,13 +116,22 @@ export default function StockMovementHistoryPage() {
                   <td className="py-2 text-text-secondary">
                     {l.created_at.slice(0, 16).replace('T', ' ')}
                   </td>
+                  {/* S31 : product drill skipped — get_stock_movements_v1 RPC does not return product_id. Deferred to S32+ (RPC bump). */}
                   <td className="py-2 font-medium">{l.product_name}</td>
                   <td className="py-2 text-text-secondary">{l.movement_type}</td>
                   <td className="py-2 text-right tabular-nums">{l.quantity}</td>
                   <td className="py-2 text-right tabular-nums">
                     {l.value.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })}
                   </td>
-                  <td className="py-2 text-xs text-text-secondary">{l.reference_type ?? '—'}</td>
+                  <td className="py-2 text-xs text-text-secondary">
+                    {l.reference_type === 'purchase' && l.reference_id ? (
+                      <DrilldownLink entity="purchase_order" id={l.reference_id} label={`PO ${l.reference_id.slice(0, 8)}`} icon={false} />
+                    ) : l.reference_type === 'expense' && l.reference_id ? (
+                      <DrilldownLink entity="expense" id={l.reference_id} label={`Exp ${l.reference_id.slice(0, 8)}`} icon={false} />
+                    ) : (
+                      l.reference_type ?? '—'
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

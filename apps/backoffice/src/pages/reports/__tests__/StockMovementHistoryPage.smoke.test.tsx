@@ -4,6 +4,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter } from 'react-router-dom';
 import StockMovementHistoryPage from '@/pages/reports/StockMovementHistoryPage.js';
 
 const mockRpc = vi.fn();
@@ -43,7 +44,7 @@ function renderPage() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <StockMovementHistoryPage />
+      <MemoryRouter><StockMovementHistoryPage /></MemoryRouter>
     </QueryClientProvider>,
   );
 }
