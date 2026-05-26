@@ -5790,6 +5790,16 @@ export type Database = {
         }
         Returns: Json
       }
+      get_orders_list_v1: {
+        Args: {
+          p_cursor?: string
+          p_end: string
+          p_filters?: Json
+          p_limit?: number
+          p_start: string
+        }
+        Returns: Json
+      }
       get_payments_by_method_v1: {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
