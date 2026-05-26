@@ -96,9 +96,15 @@ Le CTE `agg` SELECT déjà `a.id AS account_id` mais ne le sortait pas dans le J
 
 Migration `20260617000011_bump_get_balance_sheet_v1_expose_account_id.sql` — même pattern. Si le CTE actuel ne SELECT pas `a.id`, l'ajouter.
 
-### 3.3 `get_cash_flow_v1` bump additif
+### 3.3 `get_cash_flow_v1` bump additif — **SKIPPED V1** (DEV-S32-1.D-01)
 
-Migration `20260617000012_bump_get_cash_flow_v1_expose_account_id.sql` — idem.
+**Découverte schema** : `get_cash_flow_v1` est l'indirect method — il retourne uniquement des summary deltas (`delta_ar`, `delta_ap`, `delta_inventory`, `non_cash_adjustments`) aggregés sur catégories de comptes, **pas de per-account lines**. Bumper pour exposer `account_id` n'a pas de sens sémantique au niveau ligne.
+
+Path V1 retenu : **skip migration**, defer CF drill-down (Wave 3.F) en S33+. Deux options pour S33+ :
+- **A.** Switch BO hook+page de `get_cash_flow_v1` (indirect) vers `cash_flow_v1` (3-section direct, livré S21) — qui a déjà `lines[]` per-account. Bumper juste `cash_flow_v1` pour ajouter `account_id`.
+- **B.** Garder l'indirect method, wirer `delta_ar`/`delta_ap`/`delta_inventory` vers une page filtrée multi-comptes (e.g., GL avec `?account_classes=12*` filter) — nécessite extension GL URL params.
+
+Option A plus propre car la page CF deviendrait plus drillable globalement. Reporté.
 
 ### 3.4 `get_orders_list_v1` nouvelle RPC
 
@@ -407,7 +413,7 @@ Ajouter entry `Orders` dans `apps/backoffice/src/layout/Sidebar.tsx` sous la sec
 |---|---|---|
 | Profit & Loss | `ProfitLossPage` | line cells → `<DrilldownLink entity="account" id={line.account_id} filter={{start, end}} />` |
 | Balance Sheet | `BalanceSheetPage` | idem |
-| Cash Flow | `CashFlowPage` | idem |
+| ~~Cash Flow~~ | ~~`CashFlowPage`~~ | **Deferred S33+ — DEV-S32-1.D-01** (indirect method has no per-account lines) |
 | PB1 Report | `Pb1ReportPage` | `entity="account"` `id={resolvedAccountId('2110')}` `filter={{start: monthStart, end: monthEnd}}` |
 | Stock Movement History | `StockMovementHistoryPage` | column product → `<DrilldownLink entity="product" id={line.product_id} />` |
 | Payment by Method | `PaymentByMethodPage` | row → `<DrilldownLink entity="order_list" filter={{payment_method: line.method, start, end}} />` |
@@ -505,11 +511,13 @@ Block `20260617000010..014` (5 migrations) :
 
 | # | Object | Type |
 |---|---|---|
-| `_010` | `get_profit_loss_v1` | CREATE OR REPLACE additive |
-| `_011` | `get_balance_sheet_v1` | CREATE OR REPLACE additive |
-| `_012` | `get_cash_flow_v1` | CREATE OR REPLACE additive |
+| `_010` | `get_profit_loss_v1` | CREATE OR REPLACE additive — `account_id` added to lines |
+| `_011` | `get_balance_sheet_v1` | CREATE OR REPLACE additive — new `lines[]` array added (DEV-S32-1.C-01) |
+| ~~`_012`~~ | ~~`get_cash_flow_v1`~~ | **Skipped V1 (DEV-S32-1.D-01)** — indirect method has no per-account lines |
 | `_013` | `get_orders_list_v1` | NEW CREATE FUNCTION |
 | `_014` | REVOKE pair on `get_orders_list_v1` | REVOKE FROM PUBLIC + FROM anon + ALTER DEFAULT PRIVILEGES |
+
+**Block effectif : 4 migrations** (au lieu de 5 prévues).
 
 Plus 1 type regen committé en chore commit (pas une migration).
 
