@@ -91,10 +91,10 @@ function newClient(): QueryClient {
   });
 }
 
-function renderPage(): void {
+function renderPage(initialEntry?: string): void {
   render(
     <QueryClientProvider client={newClient()}>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={[initialEntry ?? '/']}>
         <GeneralLedgerPage />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -147,6 +147,27 @@ describe('GeneralLedgerPage (S26b Wave 3)', () => {
     });
     await waitFor(() => {
       expect(screen.queryByTestId('gl-row-JE-2026-0002')).not.toBeNull();
+    });
+  });
+
+  // S32 / Wave 3.A — URL params seed initial state.
+  it('T3 — ?account_id=&start=&end= URL params seed initial selectors', async () => {
+    mockRpc.mockReturnValueOnce({ data: PAGE_1, error: null });
+    renderPage(
+      '/accounting/general-ledger?account_id=a-cash&start=2026-05-01&end=2026-05-26',
+    );
+    await waitFor(() => {
+      expect(screen.queryByRole('option', { name: /1110/i })).not.toBeNull();
+    });
+    // The selector should already have 'a-cash' selected and the date range
+    // should reflect the URL params — so the RPC should fire on mount.
+    await waitFor(() => {
+      expect(mockRpc).toHaveBeenCalledWith('get_general_ledger_v1',
+        expect.objectContaining({
+          p_account_id: 'a-cash',
+          p_date_start: '2026-05-01',
+          p_date_end:   '2026-05-26',
+        }));
     });
   });
 });
