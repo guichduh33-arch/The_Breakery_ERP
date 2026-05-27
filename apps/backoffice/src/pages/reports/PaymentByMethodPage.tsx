@@ -1,8 +1,8 @@
 // apps/backoffice/src/pages/reports/PaymentByMethodPage.tsx
 // S30 Wave 4.2 — Payments by method report with date range filter + export.
 //
-// S31 : method cells are terminal — no /backoffice/orders list filtered by
-// payment_method yet. Drill-down deferred to S32+ (would need /orders list page).
+// S32 / Wave 3.I : method cells now drill into /backoffice/orders filtered by
+// payment_method + start/end (DrilldownLink entity="order_list").
 
 import { useState } from 'react';
 import { toLocalDateStr } from '@breakery/domain';
@@ -10,6 +10,7 @@ import type { CsvColumn } from '@breakery/domain';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
+import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 import {
   usePaymentsByMethod,
   type PaymentByMethodLine,
@@ -86,7 +87,15 @@ export default function PaymentByMethodPage() {
             )}
             {lines.map((r) => (
               <tr key={r.method} className="border-b border-border-subtle">
-                <td className="py-2 font-medium capitalize">{r.method}</td>
+                <td className="py-2 font-medium capitalize">
+                  <DrilldownLink
+                    entity="order_list"
+                    id=""
+                    label={r.method}
+                    filter={{ payment_method: r.method, start, end }}
+                    icon={false}
+                  />
+                </td>
                 <td className="py-2 text-right tabular-nums">
                   {r.amount.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })}
                 </td>
