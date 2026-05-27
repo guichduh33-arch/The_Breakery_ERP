@@ -1,12 +1,19 @@
 // apps/backoffice/src/layouts/__tests__/Sidebar.test.tsx
 //
-// Session 14 / Phase 4.A — Sidebar smoke tests.
+// Sidebar smoke tests — covers the 7-group reorg (2026-05-27).
 //
 // Verifies:
-//   - Group labels render in uppercase (OPERATIONS / MANAGEMENT / ADMIN)
-//   - Active route highlight applied (NavLink isActive class)
-//   - Permission-gated items are hidden when the role lacks the permission
-//   - Navigation items are reachable via role=link
+//   - All 7 group labels render (Operations / Sales / Purchase / Stock Management /
+//     Finance / Reports / Settings)
+//   - Subgroup labels render inside Finance / Reports / Settings when their items
+//     are visible (SUPER_ADMIN render)
+//   - Dropped entries (POS Terminal / Kitchen Display / "New user") never render
+//   - Renamed labels render (Product Categories, Customer Categories,
+//     B2B Credit Settings, Cash Closing, Live Movements, Stock Movement History,
+//     RBAC Editor, Permissions Matrix)
+//   - Active route highlight applied (NavLink aria-current=page)
+//   - Permission-gated groups/items are hidden when the role lacks the permission
+//   - AlertsBadge reachable when user has inventory.read
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
@@ -26,6 +33,37 @@ vi.mock('@/features/inventory/hooks/useExpiringLots.js', () => ({
 
 import { Sidebar } from '@/layouts/Sidebar.js';
 import { useAuthStore } from '@/stores/authStore.js';
+
+// Full SUPER_ADMIN permission set — every gate seen in Sidebar.tsx GROUPS.
+const ALL_PERMS = [
+  'print_queue.read',
+  'orders.read',
+  'customers.read',
+  'customer_categories.read',
+  'settings.read',
+  'promotions.read',
+  'loyalty.read',
+  'purchasing.po.read',
+  'suppliers.read',
+  'categories.read',
+  'inventory.read',
+  'expenses.read',
+  'expenses.thresholds.read',
+  'accounting.coa.read',
+  'accounting.gl.read',
+  'accounting.tb.read',
+  'accounting.read',
+  'accounting.period.close',
+  'zreports.read',
+  'reports.read',
+  'reports.sales.read',
+  'reports.inventory.read',
+  'reports.financial.read',
+  'reports.audit.read',
+  'lan.devices.read',
+  'users.read',
+  'rbac.read',
+];
 
 function setAuthState(perms: string[]) {
   useAuthStore.setState({
@@ -52,40 +90,78 @@ describe('Sidebar', () => {
     cleanup();
   });
 
-  it('renders the three group labels in uppercase', () => {
-    setAuthState([
-      'inventory.read', 'reports.read', 'users.read', 'settings.read',
-    ]);
+  it('renders all 7 top-level group labels with the SUPER_ADMIN perm set', () => {
+    setAuthState(ALL_PERMS);
     renderWith(<Sidebar />);
-    // SectionLabel renders the literal string; CSS uppercases it.
-    // We assert the label exists via the rendered text + check class.
-    const ops = screen.getByRole('heading', { name: /Operations/i });
-    const mgmt = screen.getByRole('heading', { name: /Management/i });
-    const admin = screen.getByRole('heading', { name: /Admin/i });
-    expect(ops).toBeInTheDocument();
-    expect(mgmt).toBeInTheDocument();
-    expect(admin).toBeInTheDocument();
-    // SectionLabel applies uppercase via Tailwind class
-    expect(ops.className).toMatch(/uppercase/);
+    expect(screen.getByRole('heading', { name: /^Operations$/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /^Sales$/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /^Purchase$/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /^Stock Management$/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /^Finance$/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /^Reports$/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /^Settings$/i })).toBeInTheDocument();
+    // SectionLabel applies uppercase via Tailwind
+    expect(screen.getByRole('heading', { name: /^Operations$/i }).className).toMatch(/uppercase/);
+  });
+
+  it('renders subgroup labels inside Finance / Reports / Settings', () => {
+    setAuthState(ALL_PERMS);
+    renderWith(<Sidebar />);
+    // Finance subgroups
+    expect(screen.getByText('Expenses', { selector: 'div' })).toBeInTheDocument();
+    expect(screen.getByText('Accounting', { selector: 'div' })).toBeInTheDocument();
+    // Reports subgroups
+    expect(screen.getByText('Sales reports', { selector: 'div' })).toBeInTheDocument();
+    expect(screen.getByText('Inventory reports', { selector: 'div' })).toBeInTheDocument();
+    expect(screen.getByText('Financial reports', { selector: 'div' })).toBeInTheDocument();
+    expect(screen.getByText('Marketing reports', { selector: 'div' })).toBeInTheDocument();
+    expect(screen.getByText('Audit', { selector: 'div' })).toBeInTheDocument();
+    // Settings subgroups
+    expect(screen.getByText('Devices', { selector: 'div' })).toBeInTheDocument();
+    expect(screen.getByText('Users & Access', { selector: 'div' })).toBeInTheDocument();
+  });
+
+  it('renders the dropped entries nowhere (POS Terminal / Kitchen Display / New user)', () => {
+    setAuthState(ALL_PERMS);
+    renderWith(<Sidebar />);
+    expect(screen.queryByRole('link', { name: /POS Terminal/i })).toBeNull();
+    expect(screen.queryByRole('link', { name: /Kitchen Display/i })).toBeNull();
+    expect(screen.queryByRole('link', { name: /^New user$/i })).toBeNull();
+  });
+
+  it('renders the renamed labels (8 renames)', () => {
+    setAuthState(ALL_PERMS);
+    renderWith(<Sidebar />);
+    expect(screen.getByRole('link', { name: /Product Categories/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Customer Categories/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /B2B Credit Settings/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Cash Closing/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Live Movements/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Stock Movement History/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /RBAC Editor/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Permissions Matrix/i })).toBeInTheDocument();
   });
 
   it('renders Dashboard link as active when on /backoffice', () => {
     setAuthState([]);
     renderWith(<Sidebar />, '/backoffice');
-    const dash = screen.getByRole('link', { name: /Dashboard/i });
-    // NavLink applies aria-current=page when active in v6
+    const dash = screen.getByRole('link', { name: /^Dashboard$/i });
     expect(dash).toHaveAttribute('aria-current', 'page');
   });
 
-  it('hides permission-gated items when permissions are missing', () => {
+  it('hides permission-gated groups + items when permissions are missing', () => {
     setAuthState([]); // no permissions
     renderWith(<Sidebar />);
-    // Settings requires settings.read → must be absent
-    expect(screen.queryByRole('link', { name: /^Settings$/i })).toBeNull();
-    // Reports requires reports.read → must be absent
-    expect(screen.queryByRole('link', { name: /^Reports$/i })).toBeNull();
-    // Dashboard has no permission gate → visible
-    expect(screen.getByRole('link', { name: /Dashboard/i })).toBeInTheDocument();
+    // No perms → Finance / Reports / Settings groups should be empty and therefore
+    // their group labels should NOT render (the filter drops empty groups).
+    expect(screen.queryByRole('heading', { name: /^Finance$/i })).toBeNull();
+    expect(screen.queryByRole('heading', { name: /^Reports$/i })).toBeNull();
+    expect(screen.queryByRole('heading', { name: /^Settings$/i })).toBeNull();
+    // Operations group still renders because Dashboard has no permission gate.
+    expect(screen.getByRole('heading', { name: /^Operations$/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /^Dashboard$/i })).toBeInTheDocument();
+    // Print Queue is gated by print_queue.read → hidden
+    expect(screen.queryByRole('link', { name: /Print Queue/i })).toBeNull();
   });
 
   it('shows AlertsBadge when user has inventory.read', () => {
