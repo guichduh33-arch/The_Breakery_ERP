@@ -2,8 +2,10 @@
 //
 // 24-bucket bar chart of revenue by hour, for a given business-local date.
 //
-// S31 : hour bucket cells are terminal (no /backoffice/orders list filtered
-// by hour yet). Drill-down deferred to S32+ (would need a list page).
+// S32 / Wave 3.J : per-hour drill-down — added a compact table below the chart
+// where each hour wraps in <DrilldownLink entity="order_list"> filtering
+// /backoffice/orders by hour=N + start=date + end=date. (hour filter is
+// applied client-side post-fetch in OrdersListPage V1.)
 
 import { useState, useMemo } from 'react';
 import {
@@ -22,6 +24,7 @@ import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { DeltaPct } from '@/features/reports/components/DeltaPct.js';
 import { useSalesByHour } from '@/features/reports/hooks/useSalesByHour.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
+import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 
 import type { SalesHourRow } from '@/features/reports/hooks/useSalesByHour.js';
 
@@ -115,27 +118,71 @@ export default function SalesByHourPage() {
         </div>
       )}
       {data !== undefined && data !== null && (
-        <div className="h-96 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data} margin={{ top: 10, right: 20, bottom: 30, left: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis
-                dataKey="hour"
-                label={{ value: 'Hour (local)', position: 'insideBottom', offset: -10 }}
-              />
-              <YAxis />
-              <Tooltip
-                formatter={(value: unknown, name: string) =>
-                  name === 'total'
-                    ? [Number(value).toLocaleString(), 'Total']
-                    : [Number(value), 'Orders']
-                }
-                labelFormatter={(label) => `Hour ${label as number}`}
-              />
-              <Bar dataKey="total" fill="#c8a874" name="total" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        <>
+          <div className="h-96 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={data} margin={{ top: 10, right: 20, bottom: 30, left: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis
+                  dataKey="hour"
+                  label={{ value: 'Hour (local)', position: 'insideBottom', offset: -10 }}
+                />
+                <YAxis />
+                <Tooltip
+                  formatter={(value: unknown, name: string) =>
+                    name === 'total'
+                      ? [Number(value).toLocaleString(), 'Total']
+                      : [Number(value), 'Orders']
+                  }
+                  labelFormatter={(label) => `Hour ${label as number}`}
+                />
+                <Bar dataKey="total" fill="#c8a874" name="total" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Per-hour drill-down (S32 Wave 3.J) — click an hour to open the orders list */}
+          <section aria-label="Per-hour detail" className="mt-6">
+            <h2 className="text-sm font-medium uppercase tracking-widest text-text-secondary mb-2">
+              Per-hour detail
+            </h2>
+            <table className="w-full text-sm" data-testid="sbh-hour-detail">
+              <thead className="text-left text-xs text-text-secondary">
+                <tr className="border-b border-border-subtle">
+                  <th className="py-2">Hour</th>
+                  <th className="py-2 text-right">Revenue</th>
+                  <th className="py-2 text-right">Orders</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.filter((r) => r.order_count > 0).map((r) => (
+                  <tr key={r.hour} className="border-b border-border-subtle">
+                    <td className="py-2 font-medium tabular-nums">
+                      <DrilldownLink
+                        entity="order_list"
+                        id=""
+                        label={`${String(r.hour).padStart(2, '0')}:00`}
+                        filter={{ hour: r.hour, start: date, end: date }}
+                        icon={false}
+                      />
+                    </td>
+                    <td className="py-2 text-right tabular-nums">
+                      {r.total.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })}
+                    </td>
+                    <td className="py-2 text-right tabular-nums">{r.order_count}</td>
+                  </tr>
+                ))}
+                {data.every((r) => r.order_count === 0) && (
+                  <tr>
+                    <td className="py-3 text-text-secondary" colSpan={3}>
+                      No orders recorded for this day.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </section>
+        </>
       )}
     </ReportPage>
   );
