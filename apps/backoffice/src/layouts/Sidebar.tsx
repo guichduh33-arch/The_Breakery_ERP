@@ -259,12 +259,23 @@ function NavItemLink({ item }: { item: NavItem }) {
 export function Sidebar() {
   const hasPermission = useAuthStore((s) => s.hasPermission);
 
-  const visibleGroups = GROUPS.map((g) => ({
-    label: g.label,
-    items: g.items.filter(
-      (n) => n.permission === undefined || hasPermission(n.permission),
-    ),
-  })).filter((g) => g.items.length > 0);
+  type VisibleGroup =
+    | { label: string; items: NavItem[]; subgroups?: undefined }
+    | { label: string; subgroups: NavSubgroup[]; items?: undefined };
+
+  const filterItems = (items: NavItem[]): NavItem[] =>
+    items.filter((n) => n.permission === undefined || hasPermission(n.permission));
+
+  const visibleGroups: VisibleGroup[] = GROUPS.flatMap((g): VisibleGroup[] => {
+    if ('items' in g) {
+      const items = filterItems(g.items);
+      return items.length > 0 ? [{ label: g.label, items }] : [];
+    }
+    const subgroups = g.subgroups
+      .map((sg) => ({ label: sg.label, items: filterItems(sg.items) }))
+      .filter((sg) => sg.items.length > 0);
+    return subgroups.length > 0 ? [{ label: g.label, subgroups }] : [];
+  });
 
   return (
     <aside
@@ -294,11 +305,24 @@ export function Sidebar() {
             >
               {group.label}
             </SectionLabel>
-            <div className="space-y-0.5">
-              {group.items.map((item) => (
-                <NavItemLink key={item.to} item={item} />
-              ))}
-            </div>
+            {'items' in group && group.items !== undefined ? (
+              <div className="space-y-0.5">
+                {group.items.map((item) => (
+                  <NavItemLink key={item.to} item={item} />
+                ))}
+              </div>
+            ) : (
+              group.subgroups!.map((sg) => (
+                <div key={`${group.label}::${sg.label}`} className="mb-2">
+                  {sg.label !== '' && <SubgroupLabel>{sg.label}</SubgroupLabel>}
+                  <div className="space-y-0.5">
+                    {sg.items.map((item) => (
+                      <NavItemLink key={item.to} item={item} />
+                    ))}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         ))}
       </nav>
