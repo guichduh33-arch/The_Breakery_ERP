@@ -1,14 +1,18 @@
 // apps/backoffice/src/pages/reports/Pb1ReportPage.tsx
 // S30 Wave 4.2 — PB1 (10% monthly restaurant tax) report with month/year selector + export.
 //
-// S31 : period cell terminal — drilling to JE list filtered by date range would require
-// /accounting/journal-entries to accept date_from/date_to as URL params (currently uses
-// local state only). Deferred to S32+ (JE page bump).
+// S32 / Wave 3.G : the "PB1 payable" KPI card now drills into the GL filtered
+// by account 2110 (PB1 Payable) for the report period. Account UUID resolved
+// client-side via useAccountIdByCode (24h cache). The other 3 KPI cards stay
+// non-drillable (rate is settings, taxable_base / pb1_collected are computed
+// aggregates that don't map 1:1 to a single account).
 
 import { useState } from 'react';
 import type { CsvColumn } from '@breakery/domain';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
+import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
+import { useAccountIdByCode } from '@/features/accounting/hooks/useAccountIdByCode.js';
 import {
   usePb1Report,
   type Pb1ByDay,
@@ -33,6 +37,7 @@ export default function Pb1ReportPage() {
   const [year,  setYear]  = useState<number>(currentYear);
 
   const { data, isLoading, error } = usePb1Report({ month, year });
+  const { data: pb1PayableAccountId } = useAccountIdByCode('2110');
 
   const titlePeriod = MONTHS[month] ? `${MONTHS[month]} ${year}` : `${month}/${year}`;
 
@@ -97,13 +102,25 @@ export default function Pb1ReportPage() {
               { label: 'PB1 rate',        value: `${(data.pb1_rate * 100).toFixed(0)}%` },
               { label: 'Taxable base',    value: data.taxable_base.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }) },
               { label: 'PB1 collected',   value: data.pb1_collected.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }) },
-              { label: 'PB1 payable',     value: data.pb1_payable.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }) },
             ].map(({ label, value }) => (
               <div key={label} className="rounded-lg border border-border-subtle bg-surface-raised p-4">
                 <p className="text-xs text-text-secondary uppercase tracking-wide">{label}</p>
                 <p className="mt-1 text-lg font-semibold tabular-nums">{value}</p>
               </div>
             ))}
+            {/* PB1 payable card — drillable to GL account 2110 */}
+            <div className="rounded-lg border border-border-subtle bg-surface-raised p-4" data-testid="pb1-payable-card">
+              <p className="text-xs text-text-secondary uppercase tracking-wide">PB1 payable</p>
+              <p className="mt-1 text-lg font-semibold tabular-nums">
+                <DrilldownLink
+                  entity="account"
+                  id={pb1PayableAccountId ?? ''}
+                  label={data.pb1_payable.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })}
+                  filter={{ start: data.period.start, end: data.period.end }}
+                  icon={false}
+                />
+              </p>
+            </div>
           </div>
 
           {/* By-day table */}
