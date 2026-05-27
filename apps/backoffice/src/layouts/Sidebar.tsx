@@ -17,6 +17,7 @@
 // Indented sub-items (e.g. inventory subpages) keep the existing visual
 // hierarchy from the legacy layout.
 
+import type { ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Package, Boxes, ShoppingCart, Users, Building2,
@@ -45,10 +46,14 @@ interface NavItem {
   external?: boolean;
 }
 
-interface NavGroup {
+interface NavSubgroup {
   label: string;
   items: NavItem[];
 }
+
+type NavGroup =
+  | { label: string; items: NavItem[] }
+  | { label: string; subgroups: NavSubgroup[] };
 
 const GROUPS: NavGroup[] = [
   {
@@ -130,6 +135,14 @@ const GROUPS: NavGroup[] = [
     ],
   },
 ];
+
+function SubgroupLabel({ children }: { children: ReactNode }) {
+  return (
+    <div className="px-6 pt-3 pb-1 text-[10px] uppercase tracking-wider text-text-muted/70">
+      {children}
+    </div>
+  );
+}
 
 function NavItemLink({ item }: { item: NavItem }) {
   const Icon = item.icon;
