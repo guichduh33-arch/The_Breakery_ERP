@@ -80,6 +80,7 @@ import ZReportsListPage       from '@/pages/cash-register/ZReportsListPage.js';
 import CustomersListPage      from '@/pages/customers/CustomersListPage.js';
 import { CustomerDetailPage } from '@/pages/customers/CustomerDetailPage.js';
 import { OrderDetailPage }    from '@/pages/orders/OrderDetailPage.js';
+import OrdersListPage         from '@/pages/orders/OrdersListPage.js';
 import { RecipeDetailPage }   from '@/pages/recipes/RecipeDetailPage.js';
 import CustomerCategoriesPage from '@/pages/customers/CustomerCategoriesPage.js';
 import B2BDashboardPage      from '@/pages/btob/B2BDashboardPage.js';
@@ -359,6 +360,14 @@ export function AppRoutes() {
           element={
             <PermissionGate required="customers.read">
               <CustomerDetailPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="orders"
+          element={
+            <PermissionGate required="orders.read">
+              <OrdersListPage />
             </PermissionGate>
           }
         />
