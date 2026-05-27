@@ -42,8 +42,6 @@ interface NavItem {
   permission?: PermissionCode;
   /** 0 = top-level, 1 = nested visual indent. */
   indent?: 0 | 1;
-  /** External link (e.g. POS / KDS in another app). */
-  external?: boolean;
 }
 
 interface NavSubgroup {
@@ -221,21 +219,6 @@ function NavItemLink({ item }: { item: NavItem }) {
     'flex items-center gap-3 py-2 text-sm transition-colors',
     indented ? 'pl-9 pr-4 text-xs' : 'px-4',
   );
-
-  if (item.external === true) {
-    return (
-      <a
-        href={item.to}
-        className={cn(
-          baseClass,
-          'text-text-secondary hover:text-text-primary hover:bg-bg-overlay',
-        )}
-      >
-        <Icon className={indented ? 'h-3.5 w-3.5' : 'h-4 w-4'} aria-hidden />
-        {item.label}
-      </a>
-    );
-  }
 
   return (
     <NavLink
