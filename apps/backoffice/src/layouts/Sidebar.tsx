@@ -17,15 +17,17 @@
 // Indented sub-items (e.g. inventory subpages) keep the existing visual
 // hierarchy from the legacy layout.
 
+import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
-  LayoutDashboard, Package, Boxes, ShoppingCart, Users, Building2,
+  LayoutDashboard, Package, Boxes, Users, Building2,
   Calculator, BarChart3, Settings, Tag, Heart, PieChart, Shield,
   ChefHat, BookOpen, ClipboardList, GitCommitHorizontal, BellRing, MapPin,
-  Receipt, ShieldCheck, UserPlus, CalendarDays, Mail, FileText, Clock4, AlertTriangle, FileSpreadsheet,
+  Receipt, ShieldCheck, CalendarDays, Mail, FileText, Clock4, AlertTriangle, FileSpreadsheet,
   Printer, Network, Coins, Scale, Banknote, Layers3,
-  LineChart, Sparkles, Megaphone, Cake, Monitor, ChefHat as KitchenIcon,
+  LineChart, Sparkles, Megaphone, Cake,
   ClipboardCheck, TrendingUp, Signature, ShoppingBag,
+  ChevronDown, ChevronRight,
   type LucideIcon,
 } from 'lucide-react';
 import { BrandMark, SectionLabel, cn } from '@breakery/ui';
@@ -41,95 +43,181 @@ interface NavItem {
   permission?: PermissionCode;
   /** 0 = top-level, 1 = nested visual indent. */
   indent?: 0 | 1;
-  /** External link (e.g. POS / KDS in another app). */
-  external?: boolean;
 }
 
-interface NavGroup {
+interface NavSubgroup {
   label: string;
   items: NavItem[];
 }
+
+type NavGroup =
+  | { label: string; items: NavItem[] }
+  | { label: string; subgroups: NavSubgroup[] };
 
 const GROUPS: NavGroup[] = [
   {
     label: 'Operations',
     items: [
       { to: '/backoffice', label: 'Dashboard', icon: LayoutDashboard, end: true },
-      { to: '/pos', label: 'POS Terminal', icon: Monitor, external: true },
-      { to: '/kds', label: 'Kitchen Display', icon: KitchenIcon, external: true },
+      { to: '/backoffice/print-queue', label: 'Print Queue', icon: Printer, permission: 'print_queue.read' },
     ],
   },
   {
-    label: 'Management',
+    label: 'Sales',
     items: [
-      { to: '/backoffice/products', label: 'Products', icon: Package, end: true },
-      { to: '/backoffice/categories', label: 'Categories', icon: Tag, permission: 'categories.read', indent: 1 },
-      { to: '/backoffice/promotions', label: 'Promotions', icon: Tag, permission: 'promotions.read' },
-      { to: '/backoffice/loyalty', label: 'Loyalty', icon: Heart, permission: 'loyalty.read' },
-      { to: '/backoffice/inventory', label: 'Stock & Inventory', icon: Boxes, permission: 'inventory.read', end: true },
-      { to: '/backoffice/inventory/production', label: 'Production', icon: ChefHat, permission: 'inventory.read', indent: 1 },
-      { to: '/backoffice/inventory/recipes', label: 'Recipes', icon: BookOpen, permission: 'inventory.read', indent: 1 },
-      { to: '/backoffice/inventory/opname', label: 'Opname', icon: ClipboardList, permission: 'inventory.read', indent: 1 },
-      { to: '/backoffice/inventory/movements', label: 'Movements', icon: GitCommitHorizontal, permission: 'inventory.read', indent: 1 },
-      { to: '/backoffice/inventory/alerts', label: 'Alerts', icon: BellRing, permission: 'inventory.read', indent: 1 },
-      { to: '/backoffice/inventory/sections', label: 'Sections', icon: MapPin, permission: 'inventory.read', indent: 1 },
       { to: '/backoffice/orders', label: 'Orders', icon: ShoppingBag, permission: 'orders.read', end: true },
       { to: '/backoffice/customers', label: 'Customers', icon: Users, permission: 'customers.read', end: true },
-      { to: '/backoffice/customers/categories', label: 'Categories', icon: Tag, permission: 'customer_categories.read', indent: 1 },
+      { to: '/backoffice/customers/categories', label: 'Customer Categories', icon: Tag, permission: 'customer_categories.read', indent: 1 },
       { to: '/backoffice/b2b', label: 'B2B Wholesale', icon: Building2, permission: 'customers.read', end: true },
       { to: '/backoffice/b2b/payments', label: 'Payments', icon: Banknote, permission: 'customers.read', indent: 1 },
-      { to: '/backoffice/b2b/settings', label: 'Settings', icon: Settings, permission: 'settings.read', indent: 1 },
-      { to: '/backoffice/purchasing', label: 'Purchases', icon: ShoppingCart, permission: 'purchasing.po.read' as never, end: true },
-      { to: '/backoffice/purchasing/purchase-orders', label: 'Purchase Orders', icon: ClipboardCheck, permission: 'purchasing.po.read' as never, indent: 1 },
-      { to: '/backoffice/suppliers', label: 'Suppliers', icon: Building2, permission: 'suppliers.read' },
-      { to: '/backoffice/expenses', label: 'Expenses', icon: Receipt, permission: 'expenses.read' },
-      { to: '/backoffice/cash-register/zreports', label: 'Z-Reports', icon: Signature, permission: 'zreports.read' as never },
+      { to: '/backoffice/b2b/settings', label: 'B2B Credit Settings', icon: Settings, permission: 'settings.read', indent: 1 },
+      { to: '/backoffice/promotions', label: 'Promotions', icon: Megaphone, permission: 'promotions.read' },
+      { to: '/backoffice/loyalty', label: 'Loyalty', icon: Heart, permission: 'loyalty.read' },
     ],
   },
   {
-    label: 'Admin',
+    label: 'Purchase',
     items: [
-      { to: '/backoffice/reports', label: 'Reports', icon: BarChart3, permission: 'reports.read', end: true },
-      { to: '/backoffice/reports/sales-by-hour', label: 'Sales by Hour', icon: BarChart3, permission: 'reports.sales.read', indent: 1 },
-      { to: '/backoffice/reports/sales-by-category', label: 'Sales by Category', icon: PieChart, permission: 'reports.sales.read', indent: 1 },
-      { to: '/backoffice/reports/sales-by-staff', label: 'Sales by Staff', icon: Users, permission: 'reports.sales.read', indent: 1 },
-      { to: '/backoffice/reports/stock-variance', label: 'Stock Variance', icon: Boxes, permission: 'reports.inventory.read', indent: 1 },
-      { to: '/backoffice/reports/audit', label: 'Audit Log', icon: Shield, permission: 'reports.audit.read', indent: 1 },
-      { to: '/backoffice/reports/profit-loss', label: 'Profit & Loss', icon: Coins, permission: 'reports.financial.read', indent: 1 },
-      { to: '/backoffice/reports/balance-sheet', label: 'Balance Sheet', icon: Scale, permission: 'reports.financial.read', indent: 1 },
-      { to: '/backoffice/reports/cash-flow', label: 'Cash Flow', icon: Banknote, permission: 'reports.financial.read', indent: 1 },
-      { to: '/backoffice/reports/basket-analysis', label: 'Basket Analysis', icon: Layers3, permission: 'reports.sales.read', indent: 1 },
-      { to: '/backoffice/reports/recipe-cost', label: 'Recipe Cost', icon: TrendingUp, permission: 'reports.financial.read', indent: 1 },
-      { to: '/backoffice/reports/wastage', label: 'Wastage & Spoilage', icon: AlertTriangle, permission: 'reports.inventory.read' as PermissionCode, indent: 1 },
-      { to: '/backoffice/reports/stock-movements', label: 'Stock Movements', icon: GitCommitHorizontal, permission: 'reports.inventory.read' as PermissionCode, indent: 1 },
-      { to: '/backoffice/reports/payment-by-method', label: 'Payment by Method', icon: Receipt, permission: 'reports.financial.read' as PermissionCode, indent: 1 },
-      { to: '/backoffice/reports/pb1', label: 'VAT / PB1', icon: FileSpreadsheet, permission: 'reports.financial.read' as PermissionCode, indent: 1 },
-      { to: '/backoffice/reports/perishable-turnover', label: 'Perishable Turnover', icon: Clock4, permission: 'reports.inventory.read' as PermissionCode, indent: 1 },
-      { to: '/backoffice/marketing/cohort', label: 'Cohorts', icon: LineChart, permission: 'reports.read' },
-      { to: '/backoffice/marketing/segments', label: 'Segments', icon: Sparkles, permission: 'reports.read' },
-      { to: '/backoffice/marketing/promo-roi', label: 'Promo ROI', icon: Megaphone, permission: 'reports.read' },
-      { to: '/backoffice/marketing/birthday', label: 'Birthdays', icon: Cake, permission: 'reports.read' },
-      { to: '/backoffice/accounting', label: 'Accounting', icon: Calculator, end: true },
-      { to: '/backoffice/accounting/chart-of-accounts', label: 'Chart of Accounts', icon: BookOpen, permission: 'accounting.coa.read', indent: 1 },
-      { to: '/backoffice/accounting/journal-entries', label: 'Journal Entries', icon: ClipboardList, permission: 'accounting.gl.read', indent: 1 },
-      { to: '/backoffice/accounting/general-ledger', label: 'General Ledger', icon: LineChart, permission: 'accounting.gl.read', indent: 1 },
-      { to: '/backoffice/accounting/trial-balance', label: 'Trial Balance', icon: Scale, permission: 'accounting.tb.read', indent: 1 },
-      { to: '/backoffice/accounting/mappings', label: 'Mappings', icon: GitCommitHorizontal, permission: 'accounting.read', indent: 1 },
-      { to: '/backoffice/users', label: 'Users', icon: Users, permission: 'users.read', end: true },
-      { to: '/backoffice/users/new', label: 'New user', icon: UserPlus, permission: 'users.create', indent: 1 },
-      { to: '/backoffice/users/permissions', label: 'Permissions', icon: ShieldCheck, permission: 'rbac.read', indent: 1 },
-      { to: '/backoffice/settings', label: 'Settings', icon: Settings, permission: 'settings.read', end: true },
-      { to: '/backoffice/settings/holidays', label: 'Holidays', icon: CalendarDays, permission: 'settings.read', indent: 1 },
-      { to: '/backoffice/settings/templates/email', label: 'Email templates', icon: Mail, permission: 'settings.read', indent: 1 },
-      { to: '/backoffice/settings/templates/receipt', label: 'Receipt templates', icon: FileText, permission: 'settings.read', indent: 1 },
-      { to: '/backoffice/settings/permissions', label: 'Permissions', icon: ShieldCheck, permission: 'settings.read', indent: 1 },
-      { to: '/backoffice/settings/accounting', label: 'Fiscal Periods', icon: Calculator, permission: 'accounting.period.close', indent: 1 },
-      { to: '/backoffice/settings/expense-thresholds', label: 'Expense Thresholds', icon: Scale, permission: 'expenses.thresholds.read', indent: 1 },
-      { to: '/backoffice/print-queue', label: 'Print Queue', icon: Printer, permission: 'print_queue.read' },
-      { to: '/backoffice/lan-devices', label: 'LAN Devices', icon: Network, permission: 'lan.devices.read' },
+      { to: '/backoffice/purchasing/purchase-orders', label: 'Purchase Orders', icon: ClipboardCheck, permission: 'purchasing.po.read' as never },
+      { to: '/backoffice/suppliers', label: 'Suppliers', icon: Building2, permission: 'suppliers.read' },
+    ],
+  },
+  {
+    label: 'Stock Management',
+    items: [
+      { to: '/backoffice/products', label: 'Products', icon: Package, end: true },
+      { to: '/backoffice/categories', label: 'Product Categories', icon: Tag, permission: 'categories.read', indent: 1 },
+      { to: '/backoffice/inventory', label: 'Stock & Inventory', icon: Boxes, permission: 'inventory.read', end: true },
+      { to: '/backoffice/inventory/recipes', label: 'Recipes', icon: BookOpen, permission: 'inventory.read', indent: 1 },
+      { to: '/backoffice/inventory/production', label: 'Production', icon: ChefHat, permission: 'inventory.read', indent: 1 },
+      { to: '/backoffice/inventory/opname', label: 'Opname', icon: ClipboardList, permission: 'inventory.read', indent: 1 },
+      { to: '/backoffice/inventory/movements', label: 'Live Movements', icon: GitCommitHorizontal, permission: 'inventory.read', indent: 1 },
+      { to: '/backoffice/inventory/alerts', label: 'Alerts', icon: BellRing, permission: 'inventory.read', indent: 1 },
+      { to: '/backoffice/inventory/sections', label: 'Sections', icon: MapPin, permission: 'inventory.read', indent: 1 },
+    ],
+  },
+  {
+    label: 'Finance',
+    subgroups: [
+      {
+        label: 'Expenses',
+        items: [
+          { to: '/backoffice/expenses', label: 'Expenses', icon: Receipt, permission: 'expenses.read' },
+          { to: '/backoffice/settings/expense-thresholds', label: 'Expense Thresholds', icon: Scale, permission: 'expenses.thresholds.read' },
+        ],
+      },
+      {
+        label: 'Accounting',
+        items: [
+          { to: '/backoffice/accounting/chart-of-accounts', label: 'Chart of Accounts', icon: BookOpen, permission: 'accounting.coa.read' },
+          { to: '/backoffice/accounting/journal-entries', label: 'Journal Entries', icon: ClipboardList, permission: 'accounting.gl.read' },
+          { to: '/backoffice/accounting/general-ledger', label: 'General Ledger', icon: LineChart, permission: 'accounting.gl.read' },
+          { to: '/backoffice/accounting/trial-balance', label: 'Trial Balance', icon: Scale, permission: 'accounting.tb.read' },
+          { to: '/backoffice/accounting/mappings', label: 'Account Mappings', icon: GitCommitHorizontal, permission: 'accounting.read' },
+          { to: '/backoffice/settings/accounting', label: 'Fiscal Periods', icon: Calculator, permission: 'accounting.period.close' },
+          { to: '/backoffice/cash-register/zreports', label: 'Cash Closing (Z-Reports)', icon: Signature, permission: 'zreports.read' as never },
+        ],
+      },
+    ],
+  },
+  {
+    label: 'Reports',
+    subgroups: [
+      {
+        label: '',
+        items: [
+          { to: '/backoffice/reports', label: 'Reports Hub', icon: BarChart3, permission: 'reports.read', end: true },
+        ],
+      },
+      {
+        label: 'Sales reports',
+        items: [
+          { to: '/backoffice/reports/sales-by-hour', label: 'Sales by Hour', icon: BarChart3, permission: 'reports.sales.read' },
+          { to: '/backoffice/reports/sales-by-category', label: 'Sales by Category', icon: PieChart, permission: 'reports.sales.read' },
+          { to: '/backoffice/reports/sales-by-staff', label: 'Sales by Staff', icon: Users, permission: 'reports.sales.read' },
+          { to: '/backoffice/reports/basket-analysis', label: 'Basket Analysis', icon: Layers3, permission: 'reports.sales.read' },
+          { to: '/backoffice/reports/payment-by-method', label: 'Payment by Method', icon: Receipt, permission: 'reports.financial.read' as PermissionCode },
+        ],
+      },
+      {
+        label: 'Inventory reports',
+        items: [
+          { to: '/backoffice/reports/stock-variance', label: 'Stock Variance', icon: Boxes, permission: 'reports.inventory.read' },
+          { to: '/backoffice/reports/stock-movements', label: 'Stock Movement History', icon: GitCommitHorizontal, permission: 'reports.inventory.read' as PermissionCode },
+          { to: '/backoffice/reports/wastage', label: 'Wastage & Spoilage', icon: AlertTriangle, permission: 'reports.inventory.read' as PermissionCode },
+          { to: '/backoffice/reports/perishable-turnover', label: 'Perishable Turnover', icon: Clock4, permission: 'reports.inventory.read' as PermissionCode },
+          { to: '/backoffice/reports/recipe-cost', label: 'Recipe Cost', icon: TrendingUp, permission: 'reports.financial.read' },
+        ],
+      },
+      {
+        label: 'Financial reports',
+        items: [
+          { to: '/backoffice/reports/profit-loss', label: 'Profit & Loss', icon: Coins, permission: 'reports.financial.read' },
+          { to: '/backoffice/reports/balance-sheet', label: 'Balance Sheet', icon: Scale, permission: 'reports.financial.read' },
+          { to: '/backoffice/reports/cash-flow', label: 'Cash Flow', icon: Banknote, permission: 'reports.financial.read' },
+          { to: '/backoffice/reports/pb1', label: 'VAT / PB1', icon: FileSpreadsheet, permission: 'reports.financial.read' as PermissionCode },
+        ],
+      },
+      {
+        label: 'Marketing reports',
+        items: [
+          { to: '/backoffice/marketing/cohort', label: 'Cohorts', icon: LineChart, permission: 'reports.read' },
+          { to: '/backoffice/marketing/segments', label: 'Segments', icon: Sparkles, permission: 'reports.read' },
+          { to: '/backoffice/marketing/promo-roi', label: 'Promo ROI', icon: Megaphone, permission: 'reports.read' },
+          { to: '/backoffice/marketing/birthday', label: 'Birthdays', icon: Cake, permission: 'reports.read' },
+        ],
+      },
+      {
+        label: 'Audit',
+        items: [
+          { to: '/backoffice/reports/audit', label: 'Audit Log', icon: Shield, permission: 'reports.audit.read' },
+        ],
+      },
+    ],
+  },
+  {
+    label: 'Settings',
+    subgroups: [
+      {
+        label: '',
+        items: [
+          { to: '/backoffice/settings', label: 'General settings', icon: Settings, permission: 'settings.read', end: true },
+          { to: '/backoffice/settings/holidays', label: 'Holidays', icon: CalendarDays, permission: 'settings.read' },
+          { to: '/backoffice/settings/templates/email', label: 'Email Templates', icon: Mail, permission: 'settings.read' },
+          { to: '/backoffice/settings/templates/receipt', label: 'Receipt Templates', icon: FileText, permission: 'settings.read' },
+          { to: '/backoffice/settings/permissions', label: 'Permissions Matrix (read-only)', icon: ShieldCheck, permission: 'settings.read' },
+        ],
+      },
+      {
+        label: 'Devices',
+        items: [
+          { to: '/backoffice/lan-devices', label: 'LAN Devices', icon: Network, permission: 'lan.devices.read' },
+        ],
+      },
+      {
+        label: 'Users & Access',
+        items: [
+          { to: '/backoffice/users', label: 'Users', icon: Users, permission: 'users.read', end: true },
+          { to: '/backoffice/users/permissions', label: 'RBAC Editor', icon: ShieldCheck, permission: 'rbac.read' },
+        ],
+      },
     ],
   },
 ];
+
+const SUBGROUP_STORAGE_KEY = 'bo:sidebar:subgroups';
+
+function readOpenSubgroups(): Set<string> {
+  try {
+    const raw = localStorage.getItem(SUBGROUP_STORAGE_KEY);
+    if (raw === null) return new Set();
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return new Set();
+    return new Set(parsed.filter((x): x is string => typeof x === 'string'));
+  } catch {
+    return new Set();
+  }
+}
 
 function NavItemLink({ item }: { item: NavItem }) {
   const Icon = item.icon;
@@ -138,21 +226,6 @@ function NavItemLink({ item }: { item: NavItem }) {
     'flex items-center gap-3 py-2 text-sm transition-colors',
     indented ? 'pl-9 pr-4 text-xs' : 'px-4',
   );
-
-  if (item.external === true) {
-    return (
-      <a
-        href={item.to}
-        className={cn(
-          baseClass,
-          'text-text-secondary hover:text-text-primary hover:bg-bg-overlay',
-        )}
-      >
-        <Icon className={indented ? 'h-3.5 w-3.5' : 'h-4 w-4'} aria-hidden />
-        {item.label}
-      </a>
-    );
-  }
 
   return (
     <NavLink
@@ -175,13 +248,42 @@ function NavItemLink({ item }: { item: NavItem }) {
 
 export function Sidebar() {
   const hasPermission = useAuthStore((s) => s.hasPermission);
+  const [openSubgroups, setOpenSubgroups] = useState<Set<string>>(readOpenSubgroups);
 
-  const visibleGroups = GROUPS.map((g) => ({
-    label: g.label,
-    items: g.items.filter(
-      (n) => n.permission === undefined || hasPermission(n.permission),
-    ),
-  })).filter((g) => g.items.length > 0);
+  useEffect(() => {
+    try {
+      localStorage.setItem(SUBGROUP_STORAGE_KEY, JSON.stringify([...openSubgroups]));
+    } catch {
+      /* quota exceeded or private mode — fail silent */
+    }
+  }, [openSubgroups]);
+
+  const toggleSubgroup = (key: string) => {
+    setOpenSubgroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  type VisibleGroup =
+    | { label: string; items: NavItem[]; subgroups?: undefined }
+    | { label: string; subgroups: NavSubgroup[]; items?: undefined };
+
+  const filterItems = (items: NavItem[]): NavItem[] =>
+    items.filter((n) => n.permission === undefined || hasPermission(n.permission));
+
+  const visibleGroups: VisibleGroup[] = GROUPS.flatMap((g): VisibleGroup[] => {
+    if ('items' in g) {
+      const items = filterItems(g.items);
+      return items.length > 0 ? [{ label: g.label, items }] : [];
+    }
+    const subgroups = g.subgroups
+      .map((sg) => ({ label: sg.label, items: filterItems(sg.items) }))
+      .filter((sg) => sg.items.length > 0);
+    return subgroups.length > 0 ? [{ label: g.label, subgroups }] : [];
+  });
 
   return (
     <aside
@@ -211,11 +313,45 @@ export function Sidebar() {
             >
               {group.label}
             </SectionLabel>
-            <div className="space-y-0.5">
-              {group.items.map((item) => (
-                <NavItemLink key={item.to} item={item} />
-              ))}
-            </div>
+            {'items' in group && group.items !== undefined ? (
+              <div className="space-y-0.5">
+                {group.items.map((item) => (
+                  <NavItemLink key={item.to} item={item} />
+                ))}
+              </div>
+            ) : (
+              group.subgroups!.map((sg) => {
+                const key = `${group.label}::${sg.label}`;
+                const named = sg.label !== '';
+                const isOpen = !named || openSubgroups.has(key);
+                return (
+                  <div key={key} className="mb-2">
+                    {named && (
+                      <button
+                        type="button"
+                        onClick={() => toggleSubgroup(key)}
+                        aria-expanded={isOpen}
+                        className="w-full flex items-center justify-between px-6 pt-3 pb-1 text-[10px] uppercase tracking-wider text-text-muted/70 hover:text-text-primary transition-colors"
+                      >
+                        <span>{sg.label}</span>
+                        {isOpen ? (
+                          <ChevronDown className="h-3 w-3" aria-hidden />
+                        ) : (
+                          <ChevronRight className="h-3 w-3" aria-hidden />
+                        )}
+                      </button>
+                    )}
+                    {isOpen && (
+                      <div className="space-y-0.5">
+                        {sg.items.map((item) => (
+                          <NavItemLink key={item.to} item={item} />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
           </div>
         ))}
       </nav>
