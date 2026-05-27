@@ -3,8 +3,10 @@
 // Snapshot of assets / liabilities / equity as of a chosen date.
 // Includes the balanced indicator (green when |A - (L+E+CYE)| < 0.01).
 //
-// S31 : account cells terminal — get_balance_sheet_v1 RPC returns `code`, not UUID.
-// /accounting/general-ledger expects UUID. Pre-filled drill deferred to S32+ (RPC bump).
+// S32 / Wave 3.E : account codes in the per-account detail table now drill into
+// /accounting/general-ledger via DrilldownLink, using account_id UUID surfaced
+// by the bumped RPC (S32 Wave 1.C). The aggregated 3-column A=L+E view above
+// stays category-rolled (cash/ar/inventory…) since those are 1:N to accounts.
 
 import { useState, useMemo } from 'react';
 import { Input } from '@breakery/ui';
@@ -12,6 +14,7 @@ import { toLocalDateStr, previousPeriod } from '@breakery/domain';
 import type { CsvColumn } from '@breakery/domain';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { DeltaPct } from '@/features/reports/components/DeltaPct.js';
+import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 import { useBalanceSheet } from '@/features/reports/hooks/useBalanceSheet.js';
 import type { BalanceSheet } from '@/features/reports/hooks/useBalanceSheet.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
@@ -201,6 +204,45 @@ export default function BalanceSheetPage() {
               </table>
             </section>
           </div>
+
+          {/* Per-account drill-down (S32 Wave 3.E) — click any code to open the GL */}
+          {data.lines.length > 0 && (
+            <section aria-label="Per-account detail">
+              <h2 className="text-sm font-medium uppercase tracking-widest text-text-secondary mb-2">
+                Per-account detail
+              </h2>
+              <table className="w-full text-sm" data-testid="bs-account-detail">
+                <thead className="text-left text-xs text-text-secondary">
+                  <tr className="border-b border-border-subtle">
+                    <th className="py-2">Code</th>
+                    <th className="py-2">Name</th>
+                    <th className="py-2 text-right">Debit</th>
+                    <th className="py-2 text-right">Credit</th>
+                    <th className="py-2 text-right">Balance</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.lines.map((l) => (
+                    <tr key={l.account_id || l.code} className="border-b border-border-subtle">
+                      <td className="py-2">
+                        <DrilldownLink
+                          entity="account"
+                          id={l.account_id}
+                          label={l.code}
+                          filter={{ start: asOf, end: asOf }}
+                          icon={false}
+                        />
+                      </td>
+                      <td className="py-2">{l.name}</td>
+                      <td className="py-2 text-right tabular-nums">{fmt(l.debit)}</td>
+                      <td className="py-2 text-right tabular-nums">{fmt(l.credit)}</td>
+                      <td className="py-2 text-right tabular-nums">{fmt(l.balance)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </section>
+          )}
         </div>
       )}
     </ReportPage>

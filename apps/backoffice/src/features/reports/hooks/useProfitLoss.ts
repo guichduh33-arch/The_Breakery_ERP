@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
 
 export interface PnlLine {
+  account_id:    string;
   code:          string;
   name:          string;
   debit:         number;
@@ -109,6 +110,7 @@ export function useProfitLoss(dateStart: string, dateEnd: string, sectionId?: st
         lines: linesRaw.map((l) => {
           const o = (l ?? {}) as Record<string, unknown>;
           return {
+            account_id:    String(o.account_id ?? ''),
             code:          String(o.code ?? ''),
             name:          String(o.name ?? ''),
             debit:         toNum(o.debit),

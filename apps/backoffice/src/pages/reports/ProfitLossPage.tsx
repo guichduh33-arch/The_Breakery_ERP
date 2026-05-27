@@ -4,9 +4,8 @@
 // (revenue / COGS / gross / OpEx / net) and a per-account drill-down
 // table sorted by code.
 //
-// S31 : account cells terminal — get_profit_loss_v1 RPC returns `code` (e.g. '4100'),
-// not the UUID `account_id`. /accounting/general-ledger expects UUID. Pre-filled
-// account drill deferred to S32+ (bump RPC to include id).
+// S32 / Wave 3.D : account cells now drill into /accounting/general-ledger via
+// DrilldownLink, using account_id UUID surfaced by the bumped RPC (S32 Wave 1.B).
 
 import { useState, useMemo } from 'react';
 import { toLocalDateStr, previousPeriod } from '@breakery/domain';
@@ -14,6 +13,7 @@ import type { CsvColumn } from '@breakery/domain';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { DateRangePickerWithCompare } from '@/features/reports/components/DateRangePickerWithCompare.js';
 import { DeltaPct } from '@/features/reports/components/DeltaPct.js';
+import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 import { useProfitLoss } from '@/features/reports/hooks/useProfitLoss.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
 import type { PnlLine } from '@/features/reports/hooks/useProfitLoss.js';
@@ -177,7 +177,15 @@ export default function ProfitLossPage() {
                 ) : (
                   data.lines.map((l) => (
                     <tr key={l.code} className="border-b border-border-subtle">
-                      <td className="py-2">{l.code}</td>
+                      <td className="py-2">
+                        <DrilldownLink
+                          entity="account"
+                          id={l.account_id}
+                          label={l.code}
+                          filter={{ start, end }}
+                          icon={false}
+                        />
+                      </td>
                       <td className="py-2">{l.name}</td>
                       <td className="py-2 text-right tabular-nums">{fmt(l.debit)}</td>
                       <td className="py-2 text-right tabular-nums">{fmt(l.credit)}</td>

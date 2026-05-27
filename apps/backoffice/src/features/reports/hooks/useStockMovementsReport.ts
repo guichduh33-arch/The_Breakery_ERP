@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase.js';
 
 export interface StockMovementLine {
   id:               string;
+  product_id:       string; // S32 — exposed by RPC since S30, DEV-S31-3.B-01 fix
   product_name:     string;
   movement_type:    string;
   quantity:         number;

@@ -4,6 +4,7 @@
 // client-side from opening_balance) + Load more button.
 
 import { useMemo, useState, useEffect, type JSX } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Button, Input } from '@breakery/ui';
 import { useChartOfAccounts } from '@/features/accounting/hooks/useChartOfAccounts.js';
 import {
@@ -28,10 +29,17 @@ interface AccumulatedLine extends GLLineRaw {
 
 export default function GeneralLedgerPage(): JSX.Element {
   const accounts = useChartOfAccounts();
+  const [searchParams] = useSearchParams();
 
-  const [accountId, setAccountId] = useState<string>('');
-  const [startDate, setStartDate] = useState(defaultPeriodStart());
-  const [endDate,   setEndDate]   = useState(defaultPeriodEnd());
+  // S32 — seed initial state from URL params (?account_id=&start=&end=).
+  // No 2-way sync — user changes don't write URL (deferred S33+).
+  const initialAccountId = searchParams.get('account_id') ?? '';
+  const initialStart     = searchParams.get('start')      ?? defaultPeriodStart();
+  const initialEnd       = searchParams.get('end')        ?? defaultPeriodEnd();
+
+  const [accountId, setAccountId] = useState<string>(initialAccountId);
+  const [startDate, setStartDate] = useState(initialStart);
+  const [endDate,   setEndDate]   = useState(initialEnd);
   const [cursor,    setCursor]    = useState<{ last_date: string; last_id: string } | null>(null);
   const [pages,     setPages]     = useState<GLLineRaw[][]>([]);
   const [openingBalance, setOpeningBalance] = useState<number>(0);

@@ -116,8 +116,14 @@ export default function StockMovementHistoryPage() {
                   <td className="py-2 text-text-secondary">
                     {l.created_at.slice(0, 16).replace('T', ' ')}
                   </td>
-                  {/* S31 : product drill skipped — get_stock_movements_v1 RPC does not return product_id. Deferred to S32+ (RPC bump). */}
-                  <td className="py-2 font-medium">{l.product_name}</td>
+                  <td className="py-2 font-medium">
+                    <DrilldownLink
+                      entity="product"
+                      id={l.product_id}
+                      label={l.product_name}
+                      icon={false}
+                    />
+                  </td>
                   <td className="py-2 text-text-secondary">{l.movement_type}</td>
                   <td className="py-2 text-right tabular-nums">{l.quantity}</td>
                   <td className="py-2 text-right tabular-nums">

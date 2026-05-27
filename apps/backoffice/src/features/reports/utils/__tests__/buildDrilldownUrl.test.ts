@@ -66,4 +66,40 @@ describe('buildDrilldownUrl', () => {
   it('T13 unknown entity returns null', () => {
     expect(buildDrilldownUrl('terminal' as DrilldownEntity, 't-1')).toBeNull();
   });
+
+  it('T14 order_list with payment_method + date range → /backoffice/orders?...', () => {
+    expect(
+      buildDrilldownUrl('order_list', '', {
+        payment_method: 'cash',
+        start: '2026-05-01',
+        end: '2026-05-31',
+      }),
+    ).toBe('/backoffice/orders?payment_method=cash&start=2026-05-01&end=2026-05-31');
+  });
+
+  it('T15 order_list with hour + start + end', () => {
+    expect(
+      buildDrilldownUrl('order_list', '', {
+        hour: 14,
+        start: '2026-05-15',
+        end: '2026-05-15',
+      }),
+    ).toBe('/backoffice/orders?hour=14&start=2026-05-15&end=2026-05-15');
+  });
+
+  it('T16 order_list with empty filter → /backoffice/orders', () => {
+    expect(buildDrilldownUrl('order_list', '')).toBe('/backoffice/orders');
+  });
+
+  it('T17 order_list with customer_id', () => {
+    expect(buildDrilldownUrl('order_list', '', { customer_id: 'c-1' })).toBe(
+      '/backoffice/orders?customer_id=c-1',
+    );
+  });
+
+  it('T18 order_list with served_by + terminal-equivalent filter', () => {
+    expect(
+      buildDrilldownUrl('order_list', '', { served_by: 'u-1', status: 'completed' }),
+    ).toBe('/backoffice/orders?served_by=u-1&status=completed');
+  });
 });

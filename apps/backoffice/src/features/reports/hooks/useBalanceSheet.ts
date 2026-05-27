@@ -5,6 +5,17 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
 
+// S32 — per-account lines added to RPC output (DEV-S32-1.C-01).
+export interface BalanceSheetLine {
+  account_id:    string;
+  code:          string;
+  name:          string;
+  debit:         number;
+  credit:        number;
+  balance:       number;
+  account_class: number;
+}
+
 export interface BalanceSheet {
   assets: {
     current: {
@@ -38,6 +49,7 @@ export interface BalanceSheet {
   balanced: boolean;
   delta:    number;
   as_of:    string;
+  lines:    BalanceSheetLine[]; // S32 — per-account drill-down (DEV-S32-1.C-01)
 }
 
 export const BALANCE_SHEET_QK = ['reports', 'balance-sheet'] as const;
@@ -65,6 +77,7 @@ export function useBalanceSheet(asOfDate: string) {
       const lc       = (l.current     ?? {}) as Record<string, unknown>;
       const ll       = (l.long_term   ?? {}) as Record<string, unknown>;
       const e        = (r.equity      ?? {}) as Record<string, unknown>;
+      const linesRaw = Array.isArray(r.lines) ? (r.lines as unknown[]) : [];
       return {
         assets: {
           current: {
@@ -98,6 +111,18 @@ export function useBalanceSheet(asOfDate: string) {
         balanced: Boolean(r.balanced),
         delta:    toNum(r.delta),
         as_of:    String(r.as_of ?? asOfDate),
+        lines: linesRaw.map((l) => {
+          const o = (l ?? {}) as Record<string, unknown>;
+          return {
+            account_id:    String(o.account_id ?? ''),
+            code:          String(o.code ?? ''),
+            name:          String(o.name ?? ''),
+            debit:         toNum(o.debit),
+            credit:        toNum(o.credit),
+            balance:       toNum(o.balance),
+            account_class: toNum(o.account_class),
+          };
+        }),
       };
     },
   });

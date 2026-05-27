@@ -25,7 +25,7 @@ import {
   Receipt, ShieldCheck, UserPlus, CalendarDays, Mail, FileText, Clock4, AlertTriangle, FileSpreadsheet,
   Printer, Network, Coins, Scale, Banknote, Layers3,
   LineChart, Sparkles, Megaphone, Cake, Monitor, ChefHat as KitchenIcon,
-  ClipboardCheck, TrendingUp, Signature,
+  ClipboardCheck, TrendingUp, Signature, ShoppingBag,
   type LucideIcon,
 } from 'lucide-react';
 import { BrandMark, SectionLabel, cn } from '@breakery/ui';
@@ -73,6 +73,7 @@ const GROUPS: NavGroup[] = [
       { to: '/backoffice/inventory/movements', label: 'Movements', icon: GitCommitHorizontal, permission: 'inventory.read', indent: 1 },
       { to: '/backoffice/inventory/alerts', label: 'Alerts', icon: BellRing, permission: 'inventory.read', indent: 1 },
       { to: '/backoffice/inventory/sections', label: 'Sections', icon: MapPin, permission: 'inventory.read', indent: 1 },
+      { to: '/backoffice/orders', label: 'Orders', icon: ShoppingBag, permission: 'orders.read', end: true },
       { to: '/backoffice/customers', label: 'Customers', icon: Users, permission: 'customers.read', end: true },
       { to: '/backoffice/customers/categories', label: 'Categories', icon: Tag, permission: 'customer_categories.read', indent: 1 },
       { to: '/backoffice/b2b', label: 'B2B Wholesale', icon: Building2, permission: 'customers.read', end: true },
