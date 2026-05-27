@@ -17,7 +17,7 @@
 // Indented sub-items (e.g. inventory subpages) keep the existing visual
 // hierarchy from the legacy layout.
 
-import type { ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Package, Boxes, Users, Building2,
@@ -27,6 +27,7 @@ import {
   Printer, Network, Coins, Scale, Banknote, Layers3,
   LineChart, Sparkles, Megaphone, Cake,
   ClipboardCheck, TrendingUp, Signature, ShoppingBag,
+  ChevronDown, ChevronRight,
   type LucideIcon,
 } from 'lucide-react';
 import { BrandMark, SectionLabel, cn } from '@breakery/ui';
@@ -204,12 +205,18 @@ const GROUPS: NavGroup[] = [
   },
 ];
 
-function SubgroupLabel({ children }: { children: ReactNode }) {
-  return (
-    <div className="px-6 pt-3 pb-1 text-[10px] uppercase tracking-wider text-text-muted/70">
-      {children}
-    </div>
-  );
+const SUBGROUP_STORAGE_KEY = 'bo:sidebar:subgroups';
+
+function readOpenSubgroups(): Set<string> {
+  try {
+    const raw = localStorage.getItem(SUBGROUP_STORAGE_KEY);
+    if (raw === null) return new Set();
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return new Set();
+    return new Set(parsed.filter((x): x is string => typeof x === 'string'));
+  } catch {
+    return new Set();
+  }
 }
 
 function NavItemLink({ item }: { item: NavItem }) {
@@ -241,6 +248,24 @@ function NavItemLink({ item }: { item: NavItem }) {
 
 export function Sidebar() {
   const hasPermission = useAuthStore((s) => s.hasPermission);
+  const [openSubgroups, setOpenSubgroups] = useState<Set<string>>(readOpenSubgroups);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(SUBGROUP_STORAGE_KEY, JSON.stringify([...openSubgroups]));
+    } catch {
+      /* quota exceeded or private mode — fail silent */
+    }
+  }, [openSubgroups]);
+
+  const toggleSubgroup = (key: string) => {
+    setOpenSubgroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
 
   type VisibleGroup =
     | { label: string; items: NavItem[]; subgroups?: undefined }
@@ -295,16 +320,37 @@ export function Sidebar() {
                 ))}
               </div>
             ) : (
-              group.subgroups!.map((sg) => (
-                <div key={`${group.label}::${sg.label}`} className="mb-2">
-                  {sg.label !== '' && <SubgroupLabel>{sg.label}</SubgroupLabel>}
-                  <div className="space-y-0.5">
-                    {sg.items.map((item) => (
-                      <NavItemLink key={item.to} item={item} />
-                    ))}
+              group.subgroups!.map((sg) => {
+                const key = `${group.label}::${sg.label}`;
+                const named = sg.label !== '';
+                const isOpen = !named || openSubgroups.has(key);
+                return (
+                  <div key={key} className="mb-2">
+                    {named && (
+                      <button
+                        type="button"
+                        onClick={() => toggleSubgroup(key)}
+                        aria-expanded={isOpen}
+                        className="w-full flex items-center justify-between px-6 pt-3 pb-1 text-[10px] uppercase tracking-wider text-text-muted/70 hover:text-text-primary transition-colors"
+                      >
+                        <span>{sg.label}</span>
+                        {isOpen ? (
+                          <ChevronDown className="h-3 w-3" aria-hidden />
+                        ) : (
+                          <ChevronRight className="h-3 w-3" aria-hidden />
+                        )}
+                      </button>
+                    )}
+                    {isOpen && (
+                      <div className="space-y-0.5">
+                        {sg.items.map((item) => (
+                          <NavItemLink key={item.to} item={item} />
+                        ))}
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         ))}

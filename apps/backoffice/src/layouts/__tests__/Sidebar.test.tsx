@@ -16,9 +16,22 @@
 //   - AlertsBadge reachable when user has inventory.read
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+const SUBGROUP_STORAGE_KEY = 'bo:sidebar:subgroups';
+const ALL_NAMED_SUBGROUPS = [
+  'Finance::Expenses',
+  'Finance::Accounting',
+  'Reports::Sales reports',
+  'Reports::Inventory reports',
+  'Reports::Financial reports',
+  'Reports::Marketing reports',
+  'Reports::Audit',
+  'Settings::Devices',
+  'Settings::Users & Access',
+];
 
 // Mock the alerts hooks BEFORE importing Sidebar so AlertsBadge doesn't fail.
 vi.mock('@/features/inventory-alerts/hooks/useLowStock.js', () => ({
@@ -88,6 +101,7 @@ function renderWith(ui: React.ReactNode, route = '/backoffice') {
 describe('Sidebar', () => {
   beforeEach(() => {
     cleanup();
+    localStorage.clear();
   });
 
   it('renders all 7 top-level group labels with the SUPER_ADMIN perm set', () => {
@@ -104,21 +118,19 @@ describe('Sidebar', () => {
     expect(screen.getByRole('heading', { name: /^Operations$/i }).className).toMatch(/uppercase/);
   });
 
-  it('renders subgroup labels inside Finance / Reports / Settings', () => {
+  it('renders subgroup toggle buttons inside Finance / Reports / Settings', () => {
     setAuthState(ALL_PERMS);
     renderWith(<Sidebar />);
-    // Finance subgroups
-    expect(screen.getByText('Expenses', { selector: 'div' })).toBeInTheDocument();
-    expect(screen.getByText('Accounting', { selector: 'div' })).toBeInTheDocument();
-    // Reports subgroups
-    expect(screen.getByText('Sales reports', { selector: 'div' })).toBeInTheDocument();
-    expect(screen.getByText('Inventory reports', { selector: 'div' })).toBeInTheDocument();
-    expect(screen.getByText('Financial reports', { selector: 'div' })).toBeInTheDocument();
-    expect(screen.getByText('Marketing reports', { selector: 'div' })).toBeInTheDocument();
-    expect(screen.getByText('Audit', { selector: 'div' })).toBeInTheDocument();
-    // Settings subgroups
-    expect(screen.getByText('Devices', { selector: 'div' })).toBeInTheDocument();
-    expect(screen.getByText('Users & Access', { selector: 'div' })).toBeInTheDocument();
+    // Named subgroups now render as clickable <button> toggles (collapsed by default).
+    expect(screen.getByRole('button', { name: /^Expenses/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Accounting/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Sales reports/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Inventory reports/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Financial reports/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Marketing reports/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Audit/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Devices/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Users & Access/i })).toBeInTheDocument();
   });
 
   it('renders the dropped entries nowhere (POS Terminal / Kitchen Display / New user)', () => {
@@ -129,7 +141,9 @@ describe('Sidebar', () => {
     expect(screen.queryByRole('link', { name: /^New user$/i })).toBeNull();
   });
 
-  it('renders the renamed labels (8 renames)', () => {
+  it('renders the renamed labels (8 renames) when all named subgroups are opened via localStorage', () => {
+    // Pre-open every named subgroup so renames inside Finance / Reports / Settings render.
+    localStorage.setItem(SUBGROUP_STORAGE_KEY, JSON.stringify(ALL_NAMED_SUBGROUPS));
     setAuthState(ALL_PERMS);
     renderWith(<Sidebar />);
     expect(screen.getByRole('link', { name: /Product Categories/i })).toBeInTheDocument();
@@ -170,5 +184,57 @@ describe('Sidebar', () => {
     // AlertsBadge renders a link to /backoffice/inventory/alerts
     const alerts = screen.getAllByRole('link', { name: /inventory alerts/i });
     expect(alerts.length).toBeGreaterThan(0);
+  });
+
+  it('keeps named subgroup items collapsed by default; unnamed subgroup items stay visible', () => {
+    setAuthState(ALL_PERMS);
+    renderWith(<Sidebar />);
+    // Items inside named subgroups (Finance/Reports/Settings) are hidden at first load.
+    expect(screen.queryByRole('link', { name: /^Profit & Loss$/i })).toBeNull();
+    expect(screen.queryByRole('link', { name: /^Expense Thresholds$/i })).toBeNull();
+    expect(screen.queryByRole('link', { name: /^RBAC Editor$/i })).toBeNull();
+    // The toggle button itself reports aria-expanded=false.
+    expect(screen.getByRole('button', { name: /^Expenses/i })).toHaveAttribute('aria-expanded', 'false');
+    // Items inside unnamed subgroups (Reports Hub line, General settings line) stay visible.
+    expect(screen.getByRole('link', { name: /Reports Hub/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /General settings/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Permissions Matrix/i })).toBeInTheDocument();
+  });
+
+  it('toggles a subgroup open on click — items appear and aria-expanded flips', () => {
+    setAuthState(ALL_PERMS);
+    renderWith(<Sidebar />);
+    const expensesBtn = screen.getByRole('button', { name: /^Expenses/i });
+    expect(expensesBtn).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('link', { name: /^Expense Thresholds$/i })).toBeNull();
+    fireEvent.click(expensesBtn);
+    expect(expensesBtn).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('link', { name: /^Expense Thresholds$/i })).toBeInTheDocument();
+    // Toggling back collapses it again.
+    fireEvent.click(expensesBtn);
+    expect(expensesBtn).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('link', { name: /^Expense Thresholds$/i })).toBeNull();
+  });
+
+  it('restores subgroup state from localStorage on mount', () => {
+    localStorage.setItem(SUBGROUP_STORAGE_KEY, JSON.stringify(['Reports::Financial reports']));
+    setAuthState(ALL_PERMS);
+    renderWith(<Sidebar />);
+    // Pre-opened subgroup renders its items.
+    expect(screen.getByRole('link', { name: /^Profit & Loss$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Financial reports/i })).toHaveAttribute('aria-expanded', 'true');
+    // Other subgroups stay closed.
+    expect(screen.queryByRole('link', { name: /^Expense Thresholds$/i })).toBeNull();
+    expect(screen.getByRole('button', { name: /^Expenses/i })).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('writes opened subgroups to localStorage on toggle', () => {
+    setAuthState(ALL_PERMS);
+    renderWith(<Sidebar />);
+    fireEvent.click(screen.getByRole('button', { name: /^Devices/i }));
+    const raw = localStorage.getItem(SUBGROUP_STORAGE_KEY);
+    expect(raw).not.toBeNull();
+    const stored = JSON.parse(raw!);
+    expect(stored).toContain('Settings::Devices');
   });
 });
