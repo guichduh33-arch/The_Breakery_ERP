@@ -36,6 +36,7 @@ import {
 import { todayIsoDate, formatTimeWita } from '@breakery/utils';
 import { toast } from 'sonner';
 import { useOpenShift } from './hooks/useShift';
+import { useLanDevices } from './hooks/useLanDevices';
 import { usePOSPresets } from '@/features/settings/hooks/usePOSPresets';
 
 type Step = 'pin' | 'cash';
@@ -69,6 +70,12 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
   const [notes, setNotes] = useState('');
   const [pinError, setPinError] = useState<string | null>(null);
   const [pinLoading, setPinLoading] = useState(false);
+
+  const STORAGE_KEY = 'pos:last_terminal_id';
+  const [terminalId, setTerminalId] = useState<string | null>(
+    () => (typeof localStorage !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null),
+  );
+  const lanDevices = useLanDevices({ deviceType: 'pos' });
 
   const openShift = useOpenShift();
   const { presets } = usePOSPresets();
@@ -115,8 +122,9 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
   async function handleSubmit(): Promise<void> {
     if (amount <= 0) return;
     try {
-      const mutInput: { opening_cash: number; opening_notes?: string } = { opening_cash: amount };
+      const mutInput: { opening_cash: number; opening_notes?: string; terminal_id?: string | null } = { opening_cash: amount };
       if (notes) mutInput.opening_notes = notes;
+      if (terminalId) mutInput.terminal_id = terminalId;
       await openShift.mutateAsync(mutInput);
       toast.success('Shift opened');
       // Reset internal state for next mount.
@@ -255,6 +263,28 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
                   );
                 })}
               </div>
+            </section>
+
+            <section className="space-y-2">
+              <SectionLabel as="div">Terminal (optional)</SectionLabel>
+              <select
+                value={terminalId ?? ''}
+                onChange={(e) => {
+                  const v = e.target.value || null;
+                  setTerminalId(v);
+                  if (typeof localStorage !== 'undefined') {
+                    if (v) localStorage.setItem(STORAGE_KEY, v);
+                    else localStorage.removeItem(STORAGE_KEY);
+                  }
+                }}
+                className="w-full bg-bg-input border border-border-subtle rounded-md p-3 text-sm focus:outline-none focus:border-gold"
+                data-testid="shift-terminal"
+              >
+                <option value="">(no terminal selected)</option>
+                {lanDevices.data?.map((d) => (
+                  <option key={d.id} value={d.id}>{d.code} — {d.name}</option>
+                ))}
+              </select>
             </section>
 
             <section className="space-y-2">
