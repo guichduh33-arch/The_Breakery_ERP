@@ -283,7 +283,7 @@ export default function OrdersListPage(): JSX.Element {
               <td>{o.items_count}</td>
               <td>{o.served_by_name ?? '—'}</td>
               <td className="text-right whitespace-nowrap">
-                {hasEditOpen && (o.status === 'draft' || o.status === 'open') && (
+                {hasEditOpen && (o.status === 'draft' || o.status === 'pending_payment') && (
                   <button
                     type="button"
                     title="Edit items"
@@ -295,7 +295,7 @@ export default function OrdersListPage(): JSX.Element {
                     <Edit3 size={16} />
                   </button>
                 )}
-                {hasVoid && (o.status === 'open' || o.status === 'completed') && (
+                {hasVoid && (o.status === 'pending_payment' || o.status === 'completed' || o.status === 'paid') && (
                   <button
                     type="button"
                     title="Void"
