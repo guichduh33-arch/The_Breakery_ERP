@@ -32,11 +32,16 @@ export function useOpenShift() {
   const setCurrent = useShiftStore((s) => s.setCurrent);
 
   return useMutation({
-    mutationFn: async (input: { opening_cash: number; opening_notes?: string }) => {
+    mutationFn: async (input: { opening_cash: number; opening_notes?: string; terminal_id?: string | null }) => {
       if (!userId) throw new Error('not_authenticated');
       const { data, error } = await supabase
         .from('pos_sessions')
-        .insert({ opened_by: userId, opening_cash: input.opening_cash, opening_notes: input.opening_notes ?? null })
+        .insert({
+          opened_by:     userId,
+          opening_cash:  input.opening_cash,
+          opening_notes: input.opening_notes ?? null,
+          terminal_id:   input.terminal_id ?? null,
+        })
         .select('id, opened_at, opening_cash')
         .single();
       if (error) throw error;
