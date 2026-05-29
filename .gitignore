@@ -43,6 +43,8 @@ coverage/
 # Ruflo / claude-flow swarm runtime
 .claude-flow/
 .swarm/
-.claude/
+.claude/*
+!.claude/agents/
+!.claude/skills/
 ruvector.db
 *.ruvector.db
