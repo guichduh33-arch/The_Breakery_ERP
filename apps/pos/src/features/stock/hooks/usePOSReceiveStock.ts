@@ -1,9 +1,11 @@
 // apps/pos/src/features/stock/hooks/usePOSReceiveStock.ts
 //
 // Session 14 — Phase 2.D — POS-side stock receive.
+// POS display-stock isolation: this is now the "mise en vitrine" gesture —
+// it moves finished kitchen stock onto the display counter.
 //
-// Wraps `record_incoming_stock_v1` (supplier optional). Used by POSStockView
-// to bump stock on a product without a full BO incoming form.
+// Wraps `add_display_stock_v1` (gate display.manage). Used by POSStockView
+// to bump the vitrine counter on a display product.
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -24,6 +26,7 @@ export class POSReceiveStockError extends Error {
 }
 
 function classify(message: string): string {
+  if (message.includes('not_a_display_item')) return 'not_a_display_item';
   if (message.includes('forbidden')) return 'forbidden';
   if (message.includes('quantity_must_be_positive')) return 'quantity_must_be_positive';
   if (message.includes('product_not_found')) return 'product_not_found';
@@ -47,7 +50,7 @@ export function usePOSReceiveStock() {
       if (args.reason !== undefined && args.reason.trim() !== '') {
         rpcArgs.p_reason = args.reason.trim();
       }
-      const { data, error } = await supabase.rpc('record_incoming_stock_v1', rpcArgs);
+      const { data, error } = await supabase.rpc('add_display_stock_v1', rpcArgs);
       if (error) throw new POSReceiveStockError(classify(error.message), error.message);
       return data;
     },
