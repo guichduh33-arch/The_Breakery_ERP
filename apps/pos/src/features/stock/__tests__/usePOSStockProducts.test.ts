@@ -62,16 +62,16 @@ describe('usePOSStockProducts', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    const rows = result.current.data!;
+    const rows = result.current.data ?? [];
     expect(rows).toHaveLength(1);
-    expect(rows[0].display_stock).toBe(7);
-    expect(rows[0].name).toBe('Croissant');
-    expect(rows[0].category_name).toBe('Pastry');
+    expect(rows[0]?.display_stock).toBe(7);
+    expect(rows[0]?.name).toBe('Croissant');
+    expect(rows[0]?.category_name).toBe('Pastry');
 
     // SELECT must request the embedded display_stock(quantity)
     expect(selectMock).toHaveBeenCalledWith(expect.stringContaining('display_stock(quantity)'));
     // and must NOT select current_stock anymore
-    expect(selectMock.mock.calls[0][0]).not.toContain('current_stock');
+    expect(selectMock.mock.calls[0]?.[0]).not.toContain('current_stock');
     // .eq('is_display_item', true) must be part of the query chain
     expect(eqMock).toHaveBeenCalledWith('is_display_item', true);
   });
@@ -97,7 +97,8 @@ describe('usePOSStockProducts', () => {
 
     const { result } = renderHook(() => usePOSStockProducts(), { wrapper });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data![0].display_stock).toBe(0);
-    expect(result.current.data![0].category_name).toBe('Uncategorized');
+    const rows = result.current.data ?? [];
+    expect(rows[0]?.display_stock).toBe(0);
+    expect(rows[0]?.category_name).toBe('Uncategorized');
   });
 });
