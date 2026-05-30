@@ -44,7 +44,6 @@ coverage/
 .claude-flow/
 .swarm/
 .claude/*
-!.claude/agents/
 !.claude/skills/
 ruvector.db
 *.ruvector.db
