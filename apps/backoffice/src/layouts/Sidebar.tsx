@@ -22,7 +22,7 @@ import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Package, Boxes, Users, Building2,
   Calculator, BarChart3, Settings, Tag, Heart, PieChart, Shield,
-  ChefHat, BookOpen, ClipboardList, GitCommitHorizontal, BellRing, MapPin,
+  ChefHat, BookOpen, ClipboardList, GitCommitHorizontal, BellRing, MapPin, Store,
   Receipt, ShieldCheck, CalendarDays, Mail, FileText, Clock4, AlertTriangle, FileSpreadsheet,
   Printer, Network, Coins, Scale, Banknote, Layers3,
   LineChart, Sparkles, Megaphone, Cake,
@@ -92,6 +92,7 @@ const GROUPS: NavGroup[] = [
       { to: '/backoffice/inventory/production', label: 'Production', icon: ChefHat, permission: 'inventory.read', indent: 1 },
       { to: '/backoffice/inventory/opname', label: 'Opname', icon: ClipboardList, permission: 'inventory.read', indent: 1 },
       { to: '/backoffice/inventory/movements', label: 'Live Movements', icon: GitCommitHorizontal, permission: 'inventory.read', indent: 1 },
+      { to: '/backoffice/inventory/display', label: 'Display Stock (Vitrine)', icon: Store, permission: 'display.read', indent: 1 },
       { to: '/backoffice/inventory/alerts', label: 'Alerts', icon: BellRing, permission: 'inventory.read', indent: 1 },
       { to: '/backoffice/inventory/sections', label: 'Sections', icon: MapPin, permission: 'inventory.read', indent: 1 },
     ],

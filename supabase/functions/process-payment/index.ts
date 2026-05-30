@@ -146,7 +146,7 @@ serve(async (req) => {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  const { data, error } = await userClient.rpc('complete_order_with_payment_v9', {
+  const { data, error } = await userClient.rpc('complete_order_with_payment_v10', {
     p_session_id: body.session_id,
     p_order_type: body.order_type,
     p_items: body.items,

@@ -1,42 +1,32 @@
-// apps/pos/src/features/stock/hooks/usePOSReceiveStock.ts
+// apps/pos/src/features/stock/hooks/useWasteDisplay.ts
 //
-// Session 14 — Phase 2.D — POS-side stock receive.
-// POS display-stock isolation: this is now the "mise en vitrine" gesture —
-// it moves finished kitchen stock onto the display counter.
-//
-// Wraps `add_display_stock_v1` (gate display.manage). Used by POSStockView
-// to bump the vitrine counter on a display product.
+// POS display-stock isolation — closure gesture "Perte".
+// Wraps `waste_display_stock_v1` (gate display.manage): writes off vitrine
+// stock as waste (also decrements BO stock — returns new_bo_stock).
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { POS_STOCK_PRODUCTS_KEY } from './usePOSStockProducts';
+import { DisplayGestureError } from './useReturnToKitchen';
 
-export interface POSReceiveStockArgs {
+export interface WasteDisplayArgs {
   productId: string;
   quantity: number;
   idempotencyKey: string;
   reason?: string;
 }
 
-export class POSReceiveStockError extends Error {
-  constructor(public code: string, message?: string) {
-    super(message ?? code);
-    this.name = 'POSReceiveStockError';
-  }
-}
-
 function classify(message: string): string {
-  if (message.includes('not_a_display_item')) return 'not_a_display_item';
   if (message.includes('forbidden')) return 'forbidden';
+  if (message.includes('insufficient_display_stock')) return 'insufficient_display_stock';
   if (message.includes('quantity_must_be_positive')) return 'quantity_must_be_positive';
-  if (message.includes('product_not_found')) return 'product_not_found';
   return 'unknown';
 }
 
-export function usePOSReceiveStock() {
+export function useWasteDisplay() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (args: POSReceiveStockArgs) => {
+    mutationFn: async (args: WasteDisplayArgs) => {
       const rpcArgs: {
         p_product_id: string;
         p_quantity: number;
@@ -50,8 +40,8 @@ export function usePOSReceiveStock() {
       if (args.reason !== undefined && args.reason.trim() !== '') {
         rpcArgs.p_reason = args.reason.trim();
       }
-      const { data, error } = await supabase.rpc('add_display_stock_v1', rpcArgs);
-      if (error) throw new POSReceiveStockError(classify(error.message), error.message);
+      const { data, error } = await supabase.rpc('waste_display_stock_v1', rpcArgs);
+      if (error) throw new DisplayGestureError(classify(error.message), error.message);
       return data;
     },
     onSuccess: async () => {

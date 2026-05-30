@@ -81,6 +81,9 @@ export type PermissionCode =
   | 'inventory.opname.create'
   | 'inventory.opname.finalize'
   | 'inventory.sections.update'
+  // POS display-stock isolation — vitrine counter management
+  | 'display.read'
+  | 'display.manage'
   // Session 15 / Phase 4.A — Batch production
   | 'inventory.production.create'
   | 'inventory.production.delete'

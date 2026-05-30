@@ -25,6 +25,7 @@ export function NewProductDialog({ onClose, onCreated, categories }: NewProductD
   const [retailPrice, setRetailPrice] = useState<string>('0');
   const [unit,        setUnit]        = useState<string>('pcs');
   const [description, setDescription] = useState('');
+  const [isDisplayItem, setIsDisplayItem] = useState(false);
   const [error,       setError]       = useState<string | null>(null);
 
   const createProduct = useCreateProduct();
@@ -56,6 +57,7 @@ export function NewProductDialog({ onClose, onCreated, categories }: NewProductD
         retail_price: retail,
         unit,
         description: description.trim() === '' ? null : description.trim(),
+        is_display_item: isDisplayItem,
       },
       {
         onSuccess: (res) => {
@@ -176,6 +178,19 @@ export function NewProductDialog({ onClose, onCreated, categories }: NewProductD
               maxLength={500}
             />
           </div>
+
+          <label className="flex items-center gap-2 text-xs text-text-secondary cursor-pointer">
+            <input
+              type="checkbox"
+              checked={isDisplayItem}
+              onChange={(e) => { setIsDisplayItem(e.target.checked); }}
+              data-testid="new-product-display-item"
+              className="h-4 w-4 rounded border-border-subtle bg-bg-base"
+            />
+            <span>
+              Display-case item (POS vitrine) — stock vitrine séparé, indépendant de l'inventaire global
+            </span>
+          </label>
 
           {error !== null && (
             <div className="text-xs text-red bg-red-soft px-2 py-1.5 rounded" data-testid="new-product-error">

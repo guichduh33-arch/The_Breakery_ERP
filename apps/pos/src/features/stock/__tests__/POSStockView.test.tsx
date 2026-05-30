@@ -41,6 +41,22 @@ vi.mock('../hooks/usePOSReceiveStock', () => ({
   },
 }));
 
+const returnToKitchenMutate = vi.fn();
+vi.mock('../hooks/useReturnToKitchen', () => ({
+  useReturnToKitchen: () => ({ mutate: returnToKitchenMutate, isPending: false }),
+  DisplayGestureError: class extends Error {
+    constructor(public code: string, message?: string) { super(message ?? code); }
+  },
+}));
+
+vi.mock('../hooks/useWasteDisplay', () => ({
+  useWasteDisplay: () => ({ mutate: vi.fn(), isPending: false }),
+}));
+
+vi.mock('../hooks/useAdjustDisplay', () => ({
+  useAdjustDisplay: () => ({ mutate: vi.fn(), isPending: false }),
+}));
+
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: <T,>(selector: (s: { hasPermission: (code: string) => boolean }) => T) =>
     selector({ hasPermission: () => true }),
@@ -53,7 +69,7 @@ function row(overrides: Partial<POSStockProductRow> = {}): POSStockProductRow {
     name: 'Croissant',
     unit: 'pcs',
     image_url: null,
-    current_stock: 5,
+    display_stock: 5,
     min_stock_threshold: 2,
     retail_price: 25_000,
     category_id: 'c1',
@@ -74,6 +90,7 @@ function renderView() {
 describe('POSStockView', () => {
   beforeEach(() => {
     navigateMock.mockReset();
+    returnToKitchenMutate.mockReset();
     productsState.current = { data: [], isLoading: false, isError: false };
   });
 
@@ -99,9 +116,9 @@ describe('POSStockView', () => {
   it('aggregates KPI counts from the loaded rows', () => {
     productsState.current = {
       data: [
-        row({ id: 'p1', current_stock: 0, min_stock_threshold: 2 }),
-        row({ id: 'p2', current_stock: 1, min_stock_threshold: 2 }),
-        row({ id: 'p3', current_stock: 10, min_stock_threshold: 2 }),
+        row({ id: 'p1', display_stock: 0, min_stock_threshold: 2 }),
+        row({ id: 'p2', display_stock: 1, min_stock_threshold: 2 }),
+        row({ id: 'p3', display_stock: 10, min_stock_threshold: 2 }),
       ],
       isLoading: false,
       isError: false,
@@ -116,5 +133,25 @@ describe('POSStockView', () => {
     renderView();
     fireEvent.click(screen.getByTestId('pos-stock-back'));
     expect(navigateMock).toHaveBeenCalledWith('/pos');
+  });
+
+  it('invokes the return-to-kitchen mutation when "Retour cuisine" is tapped', () => {
+    productsState.current = {
+      data: [row({ id: 'p1', name: 'Croissant', display_stock: 5 })],
+      isLoading: false,
+      isError: false,
+    };
+    renderView();
+
+    // Bump the card's local qty stepper so the closure buttons enable.
+    fireEvent.click(screen.getByLabelText('Increase'));
+
+    fireEvent.click(screen.getByRole('button', { name: /retour cuisine/i }));
+
+    expect(returnToKitchenMutate).toHaveBeenCalledTimes(1);
+    expect(returnToKitchenMutate.mock.calls[0]?.[0]).toMatchObject({
+      productId: 'p1',
+      quantity: 1,
+    });
   });
 });

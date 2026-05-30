@@ -213,6 +213,13 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange }:
               disabled={readOnly}
               onChange={(v) => update('track_inventory', v)}
             />
+            <ToggleRow
+              label="Display-case item (POS vitrine)"
+              sub="Stock vitrine séparé ; la vente garde sur le compteur vitrine, pas l'inventaire global."
+              enabled={draft.is_display_item ?? false}
+              disabled={readOnly}
+              onChange={(v) => update('is_display_item', v)}
+            />
           </div>
         </Card>
 

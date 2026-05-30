@@ -88,4 +88,24 @@ describe('NewProductDialog — create flow (S27b)', () => {
       expect(onClose).toHaveBeenCalled();
     });
   });
+
+  // POS display-stock isolation (Wave 6 / Task 24)
+  it('includes is_display_item: true in the payload when the checkbox is ticked', async () => {
+    rpcSpy.mockClear();
+    renderDialog();
+
+    fireEvent.change(screen.getByLabelText(/^name/i), { target: { value: 'Affogato' } });
+    fireEvent.change(screen.getByLabelText(/^sku/i), { target: { value: 'cof-003' } });
+    fireEvent.click(screen.getByTestId('new-product-display-item'));
+    fireEvent.click(screen.getByTestId('new-product-submit'));
+
+    await waitFor(() => {
+      expect(rpcSpy).toHaveBeenCalledWith(
+        'create_product_v1',
+        expect.objectContaining({
+          p_payload: expect.objectContaining({ is_display_item: true }),
+        }),
+      );
+    });
+  });
 });

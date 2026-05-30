@@ -28,6 +28,9 @@ import { toast } from 'sonner';
 import { Button, cn, EmptyState } from '@breakery/ui';
 import { usePOSStockProducts, type POSStockProductRow } from './hooks/usePOSStockProducts';
 import { usePOSReceiveStock, POSReceiveStockError } from './hooks/usePOSReceiveStock';
+import { useReturnToKitchen, DisplayGestureError } from './hooks/useReturnToKitchen';
+import { useWasteDisplay } from './hooks/useWasteDisplay';
+import { useAdjustDisplay } from './hooks/useAdjustDisplay';
 import { POSStockCard } from './components/POSStockCard';
 import { POSStockCategoriesSettings } from './components/POSStockCategoriesSettings';
 import { useAuthStore } from '@/stores/authStore';
@@ -36,7 +39,10 @@ export default function POSStockView(): JSX.Element {
   const navigate = useNavigate();
   const products = usePOSStockProducts();
   const receive = usePOSReceiveStock();
-  const hasInventoryReceive = useAuthStore((s) => s.hasPermission('inventory.receive'));
+  const returnToKitchen = useReturnToKitchen();
+  const wasteDisplay = useWasteDisplay();
+  const adjustDisplay = useAdjustDisplay();
+  const hasDisplayManage = useAuthStore((s) => s.hasPermission('display.manage'));
   const hasInventoryManage = useAuthStore((s) => s.hasPermission('settings.update'));
 
   const [search, setSearch] = useState('');
@@ -51,8 +57,8 @@ export default function POSStockView(): JSX.Element {
     let out = 0;
     let low = 0;
     for (const r of rows) {
-      if (r.current_stock <= 0) out++;
-      else if (r.min_stock_threshold > 0 && r.current_stock <= r.min_stock_threshold) low++;
+      if (r.display_stock <= 0) out++;
+      else if (r.min_stock_threshold > 0 && r.display_stock <= r.min_stock_threshold) low++;
     }
     return { out, low, total: rows.length };
   }, [rows]);
@@ -80,20 +86,79 @@ export default function POSStockView(): JSX.Element {
   }, [rows, search, activeCategory, enabledCategories]);
 
   function handleReceive(product: POSStockProductRow, qty: number): void {
-    if (!hasInventoryReceive) {
-      toast.error('You do not have permission to receive stock.');
+    if (!hasDisplayManage) {
+      toast.error('You do not have permission to manage display stock.');
       return;
     }
     if (qty <= 0) return;
     receive.mutate(
-      { productId: product.id, quantity: qty, idempotencyKey: crypto.randomUUID(), reason: 'pos_quick_receive' },
+      { productId: product.id, quantity: qty, idempotencyKey: crypto.randomUUID(), reason: 'pos_mise_en_vitrine' },
       {
         onSuccess: () => {
-          toast.success(`${product.name}: +${qty} ${product.unit}`);
+          toast.success(`${product.name}: +${qty} ${product.unit} en vitrine`);
         },
         onError: (err: unknown) => {
           const e = err instanceof POSReceiveStockError ? err : null;
-          toast.error(`Receive failed: ${e?.code ?? 'unknown'}`);
+          toast.error(`Mise en vitrine échouée: ${e?.code ?? 'unknown'}`);
+        },
+      },
+    );
+  }
+
+  function handleReturnToKitchen(product: POSStockProductRow, qty: number): void {
+    if (!hasDisplayManage) {
+      toast.error('You do not have permission to manage display stock.');
+      return;
+    }
+    if (qty <= 0) return;
+    returnToKitchen.mutate(
+      { productId: product.id, quantity: qty, idempotencyKey: crypto.randomUUID(), reason: 'pos_retour_cuisine' },
+      {
+        onSuccess: () => {
+          toast.success(`${product.name}: −${qty} ${product.unit} retour cuisine`);
+        },
+        onError: (err: unknown) => {
+          const e = err instanceof DisplayGestureError ? err : null;
+          toast.error(`Retour cuisine échoué: ${e?.code ?? 'unknown'}`);
+        },
+      },
+    );
+  }
+
+  function handleWaste(product: POSStockProductRow, qty: number, reason: string): void {
+    if (!hasDisplayManage) {
+      toast.error('You do not have permission to manage display stock.');
+      return;
+    }
+    if (qty <= 0) return;
+    wasteDisplay.mutate(
+      { productId: product.id, quantity: qty, idempotencyKey: crypto.randomUUID(), reason },
+      {
+        onSuccess: () => {
+          toast.success(`${product.name}: −${qty} ${product.unit} perte`);
+        },
+        onError: (err: unknown) => {
+          const e = err instanceof DisplayGestureError ? err : null;
+          toast.error(`Perte échouée: ${e?.code ?? 'unknown'}`);
+        },
+      },
+    );
+  }
+
+  function handleAdjust(product: POSStockProductRow, newQty: number, reason: string): void {
+    if (!hasDisplayManage) {
+      toast.error('You do not have permission to manage display stock.');
+      return;
+    }
+    adjustDisplay.mutate(
+      { productId: product.id, newQty, reason, idempotencyKey: crypto.randomUUID() },
+      {
+        onSuccess: () => {
+          toast.success(`${product.name}: vitrine ajustée à ${newQty} ${product.unit}`);
+        },
+        onError: (err: unknown) => {
+          const e = err instanceof DisplayGestureError ? err : null;
+          toast.error(`Ajustement échoué: ${e?.code ?? 'unknown'}`);
         },
       },
     );
@@ -195,8 +260,16 @@ export default function POSStockView(): JSX.Element {
             <POSStockCard
               key={p.id}
               product={p}
-              isReceiving={receive.isPending}
+              isReceiving={
+                receive.isPending ||
+                returnToKitchen.isPending ||
+                wasteDisplay.isPending ||
+                adjustDisplay.isPending
+              }
               onReceive={(qty) => handleReceive(p, qty)}
+              onReturnToKitchen={hasDisplayManage ? (qty) => handleReturnToKitchen(p, qty) : undefined}
+              onWaste={hasDisplayManage ? (qty, reason) => handleWaste(p, qty, reason) : undefined}
+              onAdjust={hasDisplayManage ? (newQty, reason) => handleAdjust(p, newQty, reason) : undefined}
             />
           ))}
         </div>

@@ -24,6 +24,7 @@ import RecipeEditorPage from '@/pages/inventory/RecipeEditorPage.js';
 import OpnameListPage from '@/pages/inventory/OpnameListPage.js';
 import OpnameDetailPage from '@/pages/inventory/OpnameDetailPage.js';
 import StockMovementsPage from '@/pages/inventory/StockMovementsPage.js';
+import DisplayStockPage from '@/pages/inventory/DisplayStockPage.js';
 import AlertsPage from '@/pages/inventory/AlertsPage.js';
 import ProductDashboardPage from '@/pages/inventory/ProductDashboardPage.js';
 import SectionsPage from '@/pages/inventory/SectionsPage.js';
@@ -240,6 +241,14 @@ export function AppRoutes() {
           element={
             <PermissionGate required="inventory.read">
               <StockMovementsPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="inventory/display"
+          element={
+            <PermissionGate required="display.read">
+              <DisplayStockPage />
             </PermissionGate>
           }
         />

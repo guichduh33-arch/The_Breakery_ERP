@@ -1,9 +1,13 @@
 // apps/pos/src/features/stock/hooks/usePOSStockProducts.ts
 //
-// Session 14 — Phase 2.D — Fetches all active products with current stock,
-// grouped by category, for the POS-side "Cafe Stock" view (refs 70-72).
+// Session 14 — Phase 2.D — Fetches all active products for the POS-side
+// "Cafe Stock" view (refs 70-72), grouped by category.
 //
-// Pure read — for mutations see usePOSReceiveStock / usePOSWasteStock.
+// POS display-stock isolation: this view now reflects the *vitrine* counter.
+// Only products flagged `is_display_item` are listed, and the stock number is
+// the one-to-one `display_stock.quantity` (NOT the BO `products.current_stock`).
+//
+// Pure read — for mutations see usePOSReceiveStock / closure hooks.
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -14,7 +18,7 @@ export interface POSStockProductRow {
   name: string;
   unit: string;
   image_url: string | null;
-  current_stock: number;
+  display_stock: number;
   min_stock_threshold: number;
   retail_price: number;
   category_id: string;
@@ -28,10 +32,12 @@ interface RawRow {
   name: string;
   unit: string;
   image_url: string | null;
-  current_stock: number;
   min_stock_threshold: number;
   retail_price: number;
   category_id: string;
+  // display_stock is one-to-one with products → PostgREST returns an object
+  // (or null). Defensive: tolerate the array shape too.
+  display_stock: { quantity: number } | { quantity: number }[] | null;
   category: { id: string; name: string; slug: string } | null;
 }
 
@@ -44,27 +50,32 @@ export function usePOSStockProducts() {
       const { data, error } = await supabase
         .from('products')
         .select(
-          'id, sku, name, unit, image_url, current_stock, min_stock_threshold, retail_price, category_id, category:categories(id, name, slug)',
+          'id, sku, name, unit, image_url, min_stock_threshold, retail_price, category_id, display_stock(quantity), category:categories(id, name, slug)',
         )
         .eq('is_active', true)
+        .eq('is_display_item', true)
         .is('deleted_at', null)
         .order('name');
 
       if (error) throw new Error(error.message);
       const rows = (data ?? []) as unknown as RawRow[];
-      return rows.map((r) => ({
-        id: r.id,
-        sku: r.sku,
-        name: r.name,
-        unit: r.unit,
-        image_url: r.image_url,
-        current_stock: Number(r.current_stock),
-        min_stock_threshold: Number(r.min_stock_threshold),
-        retail_price: Number(r.retail_price),
-        category_id: r.category_id,
-        category_name: r.category?.name ?? 'Uncategorized',
-        category_slug: r.category?.slug ?? 'uncategorized',
-      }));
+      return rows.map((r) => {
+        const ds = r.display_stock;
+        const qty = Array.isArray(ds) ? ds[0]?.quantity : ds?.quantity;
+        return {
+          id: r.id,
+          sku: r.sku,
+          name: r.name,
+          unit: r.unit,
+          image_url: r.image_url,
+          display_stock: Number(qty ?? 0),
+          min_stock_threshold: Number(r.min_stock_threshold),
+          retail_price: Number(r.retail_price),
+          category_id: r.category_id,
+          category_name: r.category?.name ?? 'Uncategorized',
+          category_slug: r.category?.slug ?? 'uncategorized',
+        };
+      });
     },
     staleTime: 15_000,
   });

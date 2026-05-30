@@ -25,16 +25,27 @@ export interface POSStockCardProps {
   product: POSStockProductRow;
   isReceiving: boolean;
   onReceive: (qty: number) => void;
+  /** Closure gestures (display-stock isolation). Optional — gated by display.manage upstream. */
+  onReturnToKitchen?: ((qty: number) => void) | undefined;
+  onWaste?: ((qty: number, reason: string) => void) | undefined;
+  onAdjust?: ((newQty: number, reason: string) => void) | undefined;
 }
 
-export function POSStockCard({ product, isReceiving, onReceive }: POSStockCardProps): JSX.Element {
+export function POSStockCard({
+  product,
+  isReceiving,
+  onReceive,
+  onReturnToKitchen,
+  onWaste,
+  onAdjust,
+}: POSStockCardProps): JSX.Element {
   const [qty, setQty] = useState<number>(0);
 
-  const isOut = product.current_stock <= 0;
+  const isOut = product.display_stock <= 0;
   const isLow =
     !isOut &&
     product.min_stock_threshold > 0 &&
-    product.current_stock <= product.min_stock_threshold;
+    product.display_stock <= product.min_stock_threshold;
 
   const borderTone = isOut
     ? 'border-red/40'
@@ -57,6 +68,32 @@ export function POSStockCard({ product, isReceiving, onReceive }: POSStockCardPr
   const handleConfirm = (): void => {
     if (qty <= 0) return;
     onReceive(qty);
+    setQty(0);
+  };
+
+  const handleReturnToKitchen = (): void => {
+    if (qty <= 0 || !onReturnToKitchen) return;
+    onReturnToKitchen(qty);
+    setQty(0);
+  };
+
+  const handleWaste = (): void => {
+    if (qty <= 0 || !onWaste) return;
+    const reason = window.prompt('Raison de la perte ?')?.trim();
+    if (!reason) return;
+    onWaste(qty, reason);
+    setQty(0);
+  };
+
+  const handleAdjust = (): void => {
+    if (!onAdjust) return;
+    const raw = window.prompt('Nouvelle quantité en vitrine ?', String(product.display_stock));
+    if (raw === null) return;
+    const next = Math.max(0, Number(raw));
+    if (!Number.isFinite(next)) return;
+    const reason = window.prompt('Raison de l’ajustement ? (min. 3 caractères)')?.trim();
+    if (!reason) return;
+    onAdjust(next, reason);
     setQty(0);
   };
 
@@ -88,7 +125,7 @@ export function POSStockCard({ product, isReceiving, onReceive }: POSStockCardPr
           <div className="text-[10px] uppercase tracking-widest text-text-muted">{product.sku}</div>
         </div>
         <div className={cn('font-mono text-2xl font-bold tabular-nums', stockTextTone)}>
-          {product.current_stock}
+          {product.display_stock}
         </div>
       </div>
 
@@ -153,6 +190,45 @@ export function POSStockCard({ product, isReceiving, onReceive }: POSStockCardPr
       ) : (
         <div className="h-9 inline-flex items-center justify-center rounded-md border border-border-subtle text-text-muted text-xs">
           Enter quantity
+        </div>
+      )}
+
+      {/* Closure gestures (display-stock isolation) — only rendered when wired by the view. */}
+      {(onReturnToKitchen || onWaste || onAdjust) && (
+        <div className="flex items-center gap-1.5">
+          {onReturnToKitchen && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleReturnToKitchen}
+              disabled={isReceiving || qty <= 0}
+              className="flex-1"
+            >
+              Retour cuisine
+            </Button>
+          )}
+          {onWaste && (
+            <Button
+              variant="ghostDestructive"
+              size="sm"
+              onClick={handleWaste}
+              disabled={isReceiving || qty <= 0}
+              className="flex-1"
+            >
+              Perte
+            </Button>
+          )}
+          {onAdjust && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleAdjust}
+              disabled={isReceiving}
+              className="flex-1"
+            >
+              Ajuster
+            </Button>
+          )}
         </div>
       )}
     </div>

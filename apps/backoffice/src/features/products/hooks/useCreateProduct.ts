@@ -13,6 +13,7 @@ export interface CreateProductPayload {
   description?:  string | null;
   is_active?:    boolean;
   is_favorite?:  boolean;
+  is_display_item?: boolean;
 }
 
 export interface CreateProductResult {

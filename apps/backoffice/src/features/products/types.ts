@@ -31,6 +31,9 @@ export interface ProductRow extends Product {
   is_semi_finished: boolean;
   target_gross_margin_pct: number | null;
   default_shelf_life_hours: number | null;
+  // POS display-stock isolation (Wave 6) — when true, the product is sold off
+  // a separate "vitrine" counter (display_stock), not the BO global inventory.
+  is_display_item: boolean;
   // Session 27c — variant grouping (parent / variant / standalone).
   // `parent_product_id` is null on parents and standalones, set on variants.
   // `variant_label`, `variant_axis`, `variant_sort_order` are null on
