@@ -1,0 +1,4 @@
+-- 20260618000018_revoke_anon_update_order_item_qty_v1.sql
+REVOKE EXECUTE ON FUNCTION public.update_order_item_qty_v1(UUID, INT, UUID) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.update_order_item_qty_v1(UUID, INT, UUID) FROM anon;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;

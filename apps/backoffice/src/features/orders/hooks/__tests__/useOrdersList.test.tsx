@@ -33,7 +33,7 @@ describe('useOrdersList', () => {
       { wrapper },
     );
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(rpcMock).toHaveBeenCalledWith('get_orders_list_v1', {
+    expect(rpcMock).toHaveBeenCalledWith('get_orders_list_v2', {
       p_start:   '2026-05-01',
       p_end:     '2026-05-26',
       p_filters: { status: 'completed', payment_method: 'cash' },
@@ -53,8 +53,40 @@ describe('useOrdersList', () => {
       { wrapper },
     );
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(rpcMock).toHaveBeenCalledWith('get_orders_list_v1', expect.objectContaining({
+    expect(rpcMock).toHaveBeenCalledWith('get_orders_list_v2', expect.objectContaining({
       p_filters: { payment_method: 'qris' },
+    }));
+  });
+
+  it('T3 passes refund_status filter into p_filters JSONB arg', async () => {
+    const { result } = renderHook(
+      () =>
+        useOrdersList({
+          start: '2026-05-01',
+          end: '2026-05-31',
+          filters: { refund_status: 'partial' },
+        }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(rpcMock).toHaveBeenCalledWith('get_orders_list_v2', expect.objectContaining({
+      p_filters: expect.objectContaining({ refund_status: 'partial' }),
+    }));
+  });
+
+  it('T4 passes terminal_id filter into p_filters JSONB arg', async () => {
+    const { result } = renderHook(
+      () =>
+        useOrdersList({
+          start: '2026-05-01',
+          end: '2026-05-31',
+          filters: { terminal_id: '8b55bce3-e1d2-4593-b3a9-ffc774f077c5' },
+        }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(rpcMock).toHaveBeenCalledWith('get_orders_list_v2', expect.objectContaining({
+      p_filters: expect.objectContaining({ terminal_id: '8b55bce3-e1d2-4593-b3a9-ffc774f077c5' }),
     }));
   });
 });

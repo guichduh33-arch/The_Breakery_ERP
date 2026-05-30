@@ -1823,6 +1823,45 @@ export type Database = {
         }
         Relationships: []
       }
+      order_edit_idempotency_keys: {
+        Row: {
+          action: string
+          created_at: string
+          key: string
+          order_id: string
+          result: Json
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          key: string
+          order_id: string
+          result: Json
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          key?: string
+          order_id?: string
+          result?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_edit_idempotency_keys_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_edit_idempotency_keys_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "view_b2b_invoices"
+            referencedColumns: ["invoice_id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           bumped_at: string | null
@@ -2227,6 +2266,7 @@ export type Database = {
           opening_cash: number
           opening_notes: string | null
           status: Database["public"]["Enums"]["shift_status"]
+          terminal_id: string | null
           variance_total: number | null
         }
         Insert: {
@@ -2243,6 +2283,7 @@ export type Database = {
           opening_cash: number
           opening_notes?: string | null
           status?: Database["public"]["Enums"]["shift_status"]
+          terminal_id?: string | null
           variance_total?: number | null
         }
         Update: {
@@ -2259,6 +2300,7 @@ export type Database = {
           opening_cash?: number
           opening_notes?: string | null
           status?: Database["public"]["Enums"]["shift_status"]
+          terminal_id?: string | null
           variance_total?: number | null
         }
         Relationships: [
@@ -2274,6 +2316,13 @@ export type Database = {
             columns: ["opened_by"]
             isOneToOne: false
             referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pos_sessions_terminal_id_fkey"
+            columns: ["terminal_id"]
+            isOneToOne: false
+            referencedRelation: "lan_devices"
             referencedColumns: ["id"]
           },
         ]
@@ -5193,6 +5242,7 @@ export type Database = {
       }
       _prokind: { Args: { p_oid: unknown }; Returns: unknown }
       _query: { Args: { "": string }; Returns: string }
+      _recalc_order_totals: { Args: { p_order_id: string }; Returns: undefined }
       _refine_vol: { Args: { "": string }; Returns: string }
       _resolve_fifo_lot: {
         Args: { p_product_id: string; p_quantity_needed: number }
@@ -5216,6 +5266,16 @@ export type Database = {
           p_expected_qty?: number
           p_notes?: string
           p_product_id: string
+        }
+        Returns: Json
+      }
+      add_order_item_v1: {
+        Args: {
+          p_idempotency_key: string
+          p_modifiers: Json
+          p_order_id: string
+          p_product_id: string
+          p_qty: number
         }
         Returns: Json
       }
@@ -5790,7 +5850,7 @@ export type Database = {
         }
         Returns: Json
       }
-      get_orders_list_v1: {
+      get_orders_list_v2: {
         Args: {
           p_cursor?: string
           p_end: string
@@ -6474,6 +6534,10 @@ export type Database = {
         Returns: undefined
       }
       release_expired_reservations: { Args: never; Returns: number }
+      remove_order_item_v1: {
+        Args: { p_idempotency_key: string; p_order_item_id: string }
+        Returns: Json
+      }
       reorder_categories_v1: {
         Args: { p_ordered_ids: string[] }
         Returns: Json
@@ -6692,6 +6756,14 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      update_order_item_qty_v1: {
+        Args: {
+          p_idempotency_key: string
+          p_order_item_id: string
+          p_qty: number
+        }
+        Returns: Json
       }
       update_product_v1: {
         Args: { p_patch: Json; p_product_id: string }
