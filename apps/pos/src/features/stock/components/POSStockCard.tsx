@@ -20,6 +20,8 @@ import { useState, type JSX } from 'react';
 import { Bell, Minus, Plus } from 'lucide-react';
 import { cn, Button } from '@breakery/ui';
 import type { POSStockProductRow } from '../hooks/usePOSStockProducts';
+import { WasteDisplayModal } from './WasteDisplayModal';
+import { AdjustDisplayModal } from './AdjustDisplayModal';
 
 export interface POSStockCardProps {
   product: POSStockProductRow;
@@ -40,6 +42,8 @@ export function POSStockCard({
   onAdjust,
 }: POSStockCardProps): JSX.Element {
   const [qty, setQty] = useState<number>(0);
+  const [wasteOpen, setWasteOpen] = useState<boolean>(false);
+  const [adjustOpen, setAdjustOpen] = useState<boolean>(false);
 
   const isOut = product.display_stock <= 0;
   const isLow =
@@ -77,23 +81,15 @@ export function POSStockCard({
     setQty(0);
   };
 
-  const handleWaste = (): void => {
-    if (qty <= 0 || !onWaste) return;
-    const reason = window.prompt('Raison de la perte ?')?.trim();
-    if (!reason) return;
-    onWaste(qty, reason);
+  const handleWasteConfirm = (wasteQty: number, reason: string): void => {
+    if (!onWaste) return;
+    onWaste(wasteQty, reason);
     setQty(0);
   };
 
-  const handleAdjust = (): void => {
+  const handleAdjustConfirm = (newQty: number, reason: string): void => {
     if (!onAdjust) return;
-    const raw = window.prompt('Nouvelle quantité en vitrine ?', String(product.display_stock));
-    if (raw === null) return;
-    const next = Math.max(0, Number(raw));
-    if (!Number.isFinite(next)) return;
-    const reason = window.prompt('Raison de l’ajustement ? (min. 3 caractères)')?.trim();
-    if (!reason) return;
-    onAdjust(next, reason);
+    onAdjust(newQty, reason);
     setQty(0);
   };
 
@@ -211,8 +207,8 @@ export function POSStockCard({
             <Button
               variant="ghostDestructive"
               size="sm"
-              onClick={handleWaste}
-              disabled={isReceiving || qty <= 0}
+              onClick={() => setWasteOpen(true)}
+              disabled={isReceiving}
               className="flex-1"
             >
               Perte
@@ -222,7 +218,7 @@ export function POSStockCard({
             <Button
               variant="ghost"
               size="sm"
-              onClick={handleAdjust}
+              onClick={() => setAdjustOpen(true)}
               disabled={isReceiving}
               className="flex-1"
             >
@@ -230,6 +226,29 @@ export function POSStockCard({
             </Button>
           )}
         </div>
+      )}
+
+      {onWaste && (
+        <WasteDisplayModal
+          open={wasteOpen}
+          onOpenChange={setWasteOpen}
+          productName={product.name}
+          unit={product.unit}
+          defaultQty={qty}
+          isPending={isReceiving}
+          onConfirm={handleWasteConfirm}
+        />
+      )}
+      {onAdjust && (
+        <AdjustDisplayModal
+          open={adjustOpen}
+          onOpenChange={setAdjustOpen}
+          productName={product.name}
+          unit={product.unit}
+          currentQty={product.display_stock}
+          isPending={isReceiving}
+          onConfirm={handleAdjustConfirm}
+        />
       )}
     </div>
   );

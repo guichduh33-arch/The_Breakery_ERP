@@ -49,8 +49,9 @@ vi.mock('../hooks/useReturnToKitchen', () => ({
   },
 }));
 
+const wasteMutate = vi.fn();
 vi.mock('../hooks/useWasteDisplay', () => ({
-  useWasteDisplay: () => ({ mutate: vi.fn(), isPending: false }),
+  useWasteDisplay: () => ({ mutate: wasteMutate, isPending: false }),
 }));
 
 vi.mock('../hooks/useAdjustDisplay', () => ({
@@ -91,6 +92,7 @@ describe('POSStockView', () => {
   beforeEach(() => {
     navigateMock.mockReset();
     returnToKitchenMutate.mockReset();
+    wasteMutate.mockReset();
     productsState.current = { data: [], isLoading: false, isError: false };
   });
 
@@ -152,6 +154,34 @@ describe('POSStockView', () => {
     expect(returnToKitchenMutate.mock.calls[0]?.[0]).toMatchObject({
       productId: 'p1',
       quantity: 1,
+    });
+  });
+
+  it('opens the waste modal and invokes the waste mutation on confirm', () => {
+    productsState.current = {
+      data: [row({ id: 'p1', name: 'Croissant', display_stock: 5 })],
+      isLoading: false,
+      isError: false,
+    };
+    renderView();
+
+    // "Perte" opens the modal (no window.prompt anymore).
+    fireEvent.click(screen.getByRole('button', { name: /perte/i }));
+    expect(screen.getByTestId('waste-display-modal')).toBeInTheDocument();
+
+    // Confirm is disabled until a reason (>= 3 chars) is entered.
+    const confirm = screen.getByTestId('waste-display-confirm');
+    expect(confirm).toBeDisabled();
+
+    fireEvent.change(screen.getByLabelText(/raison/i), { target: { value: 'invendu' } });
+    expect(confirm).not.toBeDisabled();
+    fireEvent.click(confirm);
+
+    expect(wasteMutate).toHaveBeenCalledTimes(1);
+    expect(wasteMutate.mock.calls[0]?.[0]).toMatchObject({
+      productId: 'p1',
+      quantity: 1,
+      reason: 'invendu',
     });
   });
 });
