@@ -26,6 +26,7 @@ export type ProductUpdatePatch = Partial<Pick<ProductRow,
   | 'available_for_sale'
   | 'track_inventory'
   | 'deduct_stock'
+  | 'is_display_item'
   | 'min_stock_threshold'
   | 'target_gross_margin_pct'
   | 'default_shelf_life_hours'

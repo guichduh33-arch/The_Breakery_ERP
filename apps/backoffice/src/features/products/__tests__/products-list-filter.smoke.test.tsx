@@ -50,6 +50,7 @@ const mockProducts: ReadonlyArray<ProductRow> = [
     is_semi_finished: false,
     target_gross_margin_pct: null,
     default_shelf_life_hours: null,
+    is_display_item: false,
     parent_product_id: null,
     variant_label: null,
     variant_axis: null,
@@ -81,6 +82,7 @@ const mockProducts: ReadonlyArray<ProductRow> = [
     is_semi_finished: false,
     target_gross_margin_pct: null,
     default_shelf_life_hours: null,
+    is_display_item: false,
     parent_product_id: 'p1', // ← variant
     variant_label: 'Amande',
     variant_axis: 'flavor',
@@ -112,6 +114,7 @@ const mockProducts: ReadonlyArray<ProductRow> = [
     is_semi_finished: false,
     target_gross_margin_pct: null,
     default_shelf_life_hours: null,
+    is_display_item: false,
     parent_product_id: null,
     variant_label: null,
     variant_axis: null,
