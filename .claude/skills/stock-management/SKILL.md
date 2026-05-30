@@ -85,11 +85,17 @@ adjust_stock_v1
 - Full cascade resolved via `recipe_bom_full_v1` (S17, depth-5)
 - `product_cost_at_version` carries the per-version cost
 
-### POS display-stock vs BO stock — intent vs implementation (audit 2026-05-30)
+### POS display-stock vs BO stock — RESOLVED (isolation shipped, re-verified 2026-05-31)
 
-**Business intent (owner, 2026-05-30):** the POS `stock` module is a *display-case counter* ONLY. It records finished goods brought from the kitchen into the front display and decrements them on direct sales, purely to avoid selling out-of-stock items. It is meant to be **independent** of the BO stock module and is NOT a procurement/costing flow. Therefore `incoming` carrying **no lot / no unit_cost / no WAC / no JE is CORRECT by design** — a finished good is already costed upstream via its recipe/production; putting it in the display is not an acquisition. Do NOT "fix" this by adding WAC/lots to the POS path.
+**Business intent (owner, 2026-05-30):** the POS `stock` module is a *display-case counter* ONLY. It records finished goods brought from the kitchen into the front display and decrements them on direct sales, purely to avoid selling out-of-stock items. It is meant to be **independent** of the BO stock module and is NOT a procurement/costing flow — a finished good is already costed upstream via its recipe/production, so putting it in the display is not an acquisition (no lot / no WAC / no JE is correct by design). Do NOT "fix" this by adding WAC/lots to the POS path.
 
-**Implementation gap (the real finding):** that independence is NOT realized in code. `usePOSReceiveStock` → `record_incoming_stock_v1` writes the **shared** `stock_movements` ledger and increments the **global** `products.current_stock` — the exact column the BO reads (`get_stock_levels_v1`, wastage, perishable-turnover S30). A dedicated **`Front Display` section already EXISTS** in `sections` (since S12) but the POS flow does not target it (`to_section_id` stays NULL). Consequences to FLAG (not silently fix): (a) BO inventory reports include finished-goods display stock, possibly at `cost_price = 0` → valuation noise; (b) a BO `adjust_stock_v1`/opname on a finished good overwrites the POS display counter and vice-versa — silent cross-module interference. True isolation would route the POS receive/sale through the `Front Display` `section_stock` rather than the global `current_stock`. Decision pending with owner.
+**Implementation status — ISOLATION DELIVERED (S33 display-stock, on `master`).** The 2026-05-30 "gap" described below is now CLOSED. Verified state on V3 dev `ikcyvlovptebroadgtvd` (2026-05-31):
+- **Dedicated tables** exist, fully separate from the global ledger: `display_stock` (`product_id`, `quantity`, `updated_at` — the front-counter), `display_movements` (append-only ledger: `movement_type`, `quantity`, `reason`, `reference_type/id`, `created_by`, `idempotency_key`). RLS on both = **SELECT-only** (`display.read`) → writes only via SECURITY DEFINER RPCs.
+- **3 dedicated RPCs** (perm-gated, `anon` revoked): `add_display_stock_v1` / `adjust_display_stock_v1` / `waste_display_stock_v1`.
+- **POS rewired**: `usePOSReceiveStock` now wraps **`add_display_stock_v1`** ("mise en vitrine"), NOT `record_incoming_stock_v1`. `record_incoming_stock_v1` is now called **only from the BackOffice** (`useRecordIncomingStock`) — POS is fully isolated.
+- **Sale path**: `complete_order_with_payment_v10` decrements BOTH `display_stock` (+ writes `display_movements`) AND `products.current_stock` — the documented double-deduction. This is the only place both are touched.
+
+> Historical note: prior to S33 the POS receive routed through `record_incoming_stock_v1` into the **shared** `stock_movements` ledger + global `products.current_stock`, causing BO/POS cross-interference. The `Front Display` section approach was superseded by the dedicated `display_stock`/`display_movements` tables. If an audit still finds POS writing `incoming` rows, that is a regression — flag it.
 
 ## Critical patterns (always verify before shipping)
 
