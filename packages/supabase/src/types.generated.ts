@@ -596,6 +596,81 @@ export type Database = {
         }
         Relationships: []
       }
+      display_movements: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          idempotency_key: string | null
+          movement_type: Database["public"]["Enums"]["display_movement_type"]
+          product_id: string
+          quantity: number
+          reason: string | null
+          reference_id: string | null
+          reference_type: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          idempotency_key?: string | null
+          movement_type: Database["public"]["Enums"]["display_movement_type"]
+          product_id: string
+          quantity: number
+          reason?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          idempotency_key?: string | null
+          movement_type?: Database["public"]["Enums"]["display_movement_type"]
+          product_id?: string
+          quantity?: number
+          reason?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "display_movements_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "display_movements_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "mv_stock_variance"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "display_movements_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "display_movements_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_product_available_stock"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "display_movements_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "view_recipe_products"
+            referencedColumns: ["product_id"]
+          },
+        ]
+      }
       display_screens: {
         Row: {
           code: string
@@ -631,6 +706,53 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      display_stock: {
+        Row: {
+          product_id: string
+          quantity: number
+          updated_at: string
+        }
+        Insert: {
+          product_id: string
+          quantity?: number
+          updated_at?: string
+        }
+        Update: {
+          product_id?: string
+          quantity?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "display_stock_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "mv_stock_variance"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "display_stock_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "display_stock_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "v_product_available_stock"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "display_stock_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "view_recipe_products"
+            referencedColumns: ["product_id"]
+          },
+        ]
       }
       edge_function_rate_limits: {
         Row: {
@@ -3024,6 +3146,7 @@ export type Database = {
           id: string
           image_url: string | null
           is_active: boolean
+          is_display_item: boolean
           is_favorite: boolean
           is_semi_finished: boolean
           min_stock_threshold: number
@@ -3057,6 +3180,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean
+          is_display_item?: boolean
           is_favorite?: boolean
           is_semi_finished?: boolean
           min_stock_threshold?: number
@@ -3090,6 +3214,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean
+          is_display_item?: boolean
           is_favorite?: boolean
           is_semi_finished?: boolean
           min_stock_threshold?: number
@@ -5260,6 +5385,15 @@ export type Database = {
       _table_privs: { Args: never; Returns: unknown[] }
       _temptypes: { Args: { "": string }; Returns: string }
       _todo: { Args: never; Returns: string }
+      add_display_stock_v1: {
+        Args: {
+          p_idempotency_key?: string
+          p_product_id: string
+          p_quantity: number
+          p_reason?: string
+        }
+        Returns: Json
+      }
       add_opname_item_v1: {
         Args: {
           p_count_id: string
@@ -5284,6 +5418,15 @@ export type Database = {
           p_customer_id: string
           p_delta: number
           p_idempotency_key?: string
+          p_reason: string
+        }
+        Returns: Json
+      }
+      adjust_display_stock_v1: {
+        Args: {
+          p_idempotency_key?: string
+          p_new_qty: number
+          p_product_id: string
           p_reason: string
         }
         Returns: Json
@@ -5476,7 +5619,7 @@ export type Database = {
             }
             Returns: string
           }
-      complete_order_with_payment_v9: {
+      complete_order_with_payment_v10: {
         Args: {
           p_customer_id?: string
           p_discount_amount?: number
@@ -6583,6 +6726,15 @@ export type Database = {
         Args: { p_order_id: string }
         Returns: Json
       }
+      return_display_to_kitchen_v1: {
+        Args: {
+          p_idempotency_key?: string
+          p_product_id: string
+          p_quantity: number
+          p_reason?: string
+        }
+        Returns: Json
+      }
       revert_production_v1: {
         Args: { p_production_id: string; p_reason: string }
         Returns: Json
@@ -6822,6 +6974,15 @@ export type Database = {
         Args: { p_reason: string; p_zreport_id: string }
         Returns: Json
       }
+      waste_display_stock_v1: {
+        Args: {
+          p_idempotency_key?: string
+          p_product_id: string
+          p_quantity: number
+          p_reason?: string
+        }
+        Returns: Json
+      }
       waste_stock_v1: {
         Args: {
           p_idempotency_key?: string
@@ -6851,6 +7012,12 @@ export type Database = {
       cash_flow_section: "operating" | "investing" | "financing" | "none"
       customer_type: "retail" | "b2b"
       discount_template_type: "percentage" | "fixed_amount"
+      display_movement_type:
+        | "stock_in"
+        | "sale"
+        | "return_to_kitchen"
+        | "waste"
+        | "adjustment"
       loyalty_txn_type: "earn" | "redeem" | "adjust" | "refund"
       modifier_group_type: "single_select" | "multi_select"
       movement_type:
@@ -7052,6 +7219,13 @@ export const Constants = {
       cash_flow_section: ["operating", "investing", "financing", "none"],
       customer_type: ["retail", "b2b"],
       discount_template_type: ["percentage", "fixed_amount"],
+      display_movement_type: [
+        "stock_in",
+        "sale",
+        "return_to_kitchen",
+        "waste",
+        "adjustment",
+      ],
       loyalty_txn_type: ["earn", "redeem", "adjust", "refund"],
       modifier_group_type: ["single_select", "multi_select"],
       movement_type: [
