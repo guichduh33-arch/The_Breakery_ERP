@@ -6,7 +6,9 @@
 @import '@fontsource-variable/inter';
 @import '@fontsource-variable/fraunces';
 @import '@fontsource-variable/jetbrains-mono';
-@import '@fontsource/playfair-display/400-italic.css';
+/* Playfair Display 400-italic loaded via JS import in main.tsx — Vite's
+ * JS resolver handles bare-specifier sub-path CSS imports reliably,
+ * unlike postcss-import which couldn't resolve '@fontsource/.../*.css'. */
 
 @tailwind base;
 @tailwind components;
