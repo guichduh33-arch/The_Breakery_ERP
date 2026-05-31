@@ -13,7 +13,7 @@
 // only for the unprinted item's station when the real printService runs.
 
 /// <reference types="@testing-library/jest-dom" />
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useCartStore } from '@/stores/cartStore';
@@ -120,6 +120,10 @@ describe('PaymentTerminal — checkout auto-fires unprinted items', () => {
     fireToStationsMock.mockReset();
     toastMock.error.mockReset();
     setupEnvironment();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   it('calls fireToStations.mutateAsync with the order_number after successful checkout', async () => {

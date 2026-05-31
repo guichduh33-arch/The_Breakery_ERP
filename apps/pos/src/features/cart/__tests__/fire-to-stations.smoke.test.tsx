@@ -9,7 +9,7 @@
 //   • cartStore.printedItemIds includes both line ids.
 
 /// <reference types="@testing-library/jest-dom" />
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useCartStore } from '@/stores/cartStore';
@@ -94,6 +94,10 @@ describe('SendToKitchenButton — fire to stations smoke', () => {
       isLoading: false,
       error: null,
     } as never);
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   it('prints prep tickets to both stations and marks both lines as printed', async () => {

@@ -9,7 +9,7 @@
 //   • The payload has `totals` present and NO `payment` field.
 
 /// <reference types="@testing-library/jest-dom" />
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useCartStore } from '@/stores/cartStore';
@@ -82,6 +82,10 @@ describe('PrintBillButton — bill targets cashier printer', () => {
       isLoading: false,
       error: null,
     } as never);
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   it('prints a bill entry routed to the cashier printer with totals and no payment field', async () => {

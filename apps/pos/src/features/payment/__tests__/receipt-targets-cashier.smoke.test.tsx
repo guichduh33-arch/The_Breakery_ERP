@@ -112,6 +112,7 @@ describe('SuccessModal — receipt routed to cashier printer', () => {
 
   afterEach(() => {
     globalThis.fetch = originalFetch;
+    vi.unstubAllEnvs();
   });
 
   it('places a receipt entry in the mock buffer routed to the cashier printer', async () => {
