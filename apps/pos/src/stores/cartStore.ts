@@ -302,6 +302,7 @@ export const useCartStore = create<CartState>()(
         set((s) => ({
           cart: restoredCart,
           lockedItemIds: [],
+          printedItemIds: [],
           attachedCustomer: null,
           pickedUpOrderId: s.pickedUpOrderId,
           // Session 9 — restoring a held / picked-up order resets the
