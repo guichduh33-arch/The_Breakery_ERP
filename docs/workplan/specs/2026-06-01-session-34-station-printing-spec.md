@@ -23,11 +23,13 @@ Les 5 « stations » sont **toutes des imprimantes** (`lan_devices` `device_type
 
 **A. Imprimantes de préparation** — reçoivent un ticket `prep` (sans prix), routage **par item** via `dispatch_station` :
 
-| Imprimante prep | Catégories qui y routent |
+| Imprimante prep (`dispatch_station`) | Catégories qui y routent |
 |---|---|
 | **barista** | Beverage |
 | **kitchen** | Plate, Savoury, Sandwiches |
-| **display** | Viennoiserie, Bagel, Pastry, Bread |
+| **bakery** *(libellé UI « Display »)* | Viennoiserie, Bagel, Pastry, Bread |
+
+> **Note vocabulaire (vérifié 2026-06-01)** : le CHECK `categories_dispatch_station_check` autorise `kitchen | barista | bakery | none`. On **réutilise `bakery`** (déjà l'onglet « Bakery » du KDS) pour les produits boulangerie/vitrine — pas de nouvelle valeur `display`, pas de migration de contrainte, pas de rupture KDS S35. « Display » reste un **libellé UI** d'imprimante ; le token de routage = `bakery`.
 
 **B. Imprimantes de document** — PAS de routage par item ; impriment des documents à l'échelle de la **commande entière** :
 
@@ -41,7 +43,7 @@ Les 5 « stations » sont **toutes des imprimantes** (`lan_devices` `device_type
 > **Écrans = S35** : kitchen KDS (revival du pipeline `is_locked`/`kitchen_status` du finding original) + écran KDS waiter éventuel. S34 = imprimantes uniquement.
 
 ### Ce que la donnée confirme (V3 dev, 2026-06-01)
-- `categories.dispatch_station` / `order_items.dispatch_station` sont **TEXT sans CHECK** → libre d'ajouter `'barista'`/`'display'`/`'cashier'`.
+- `categories.dispatch_station` a un **CHECK `categories_dispatch_station_check` = `kitchen|barista|bakery|none`** (vérifié 2026-06-01). On reste DANS ce vocabulaire (réutilise `bakery`) → aucune migration de contrainte. `cashier`/`waiter` ne sont pas des valeurs ici (imprimantes de document via `lan_devices.capabilities`).
 - Catégories actuelles : Bagel/Viennoiserie=`bakery` ; Plate/Savoury=`kitchen` ; Beverage/Pastry/Bread/Sandwiches=`none` ; Ingredient=`none`.
 - `lan_devices` modélise déjà les imprimantes (`device_type='printer'`, colonnes `ip_address`, `port`, `location`, `capabilities` JSONB) — mais **0 imprimante enregistrée** en dev aujourd'hui.
 - `printService.ts` parle à **une** imprimante via `localhost:3001` (`/print/receipt`, `/drawer/open`, `/health`) — **aucun routage multi-imprimantes**.
@@ -50,9 +52,9 @@ Les 5 « stations » sont **toutes des imprimantes** (`lan_devices` `device_type
 
 ## 2. Architecture (choix structurants)
 
-**Choix 1 — `dispatch_station` = vocabulaire de routing PREP uniquement** : valeurs item `barista | kitchen | display | none`. `none` = aucun ticket prep. **`cashier`/`waiter` ne sont PAS des valeurs de `dispatch_station`** (ce sont des imprimantes de document, pas des destinations d'item). Migration data : réassigner les catégories prep (Beverage→barista, Sandwiches→kitchen, bakery→display ; Plate/Savoury déjà kitchen ; Ingredient=none). TEXT, pas d'enum/CHECK. Le POS lit la station par item via `product → category.dispatch_station` (la query `useProducts` doit l'exposer — cf. Wave 1).
+**Choix 1 — `dispatch_station` = vocabulaire de routing PREP uniquement** : valeurs item `barista | kitchen | bakery | none` (CHECK existant, **`bakery`** = imprimante boulangerie, libellé UI « Display »). `none` = aucun ticket prep. **`cashier`/`waiter` ne sont PAS des valeurs de `dispatch_station`** (ce sont des imprimantes de document, pas des destinations d'item). Migration data : réassigner les catégories prep (Beverage→barista, Sandwiches→kitchen, bakery→display ; Plate/Savoury déjà kitchen ; Ingredient=none). TEXT, pas d'enum/CHECK. Le POS lit la station par item via `product → category.dispatch_station` (la query `useProducts` doit l'exposer — cf. Wave 1).
 
-**Choix 2 — Résolution rôle → imprimante via `lan_devices`** : chaque imprimante = `lan_devices` (`device_type='printer'`, `is_active=true`) taguée par **rôle** ∈ `barista|kitchen|display|cashier|waiter`. **Mécanisme = `capabilities->>'station'`** (ex. `{"station":"cashier"}`). Le POS charge les imprimantes actives (`useLanDevices({deviceType:'printer'})`), construit `Map<role, device>`, résout `{ip_address, port}` à l'impression. Les 3 rôles prep sont alimentés par item ; `cashier`/`waiter` par document. **Ratifié 2026-06-01 : tag = `capabilities->>'station'`** (valeurs `barista|kitchen|display|cashier|waiter`). Config éditable en BO plus tard (hors scope — saisie/seed pour l'instant).
+**Choix 2 — Résolution rôle → imprimante via `lan_devices`** : chaque imprimante = `lan_devices` (`device_type='printer'`, `is_active=true`) taguée par **rôle** ∈ `barista|kitchen|bakery|cashier|waiter`. **Mécanisme = `capabilities->>'station'`** (ex. `{"station":"cashier"}`). Le POS charge les imprimantes actives (`useLanDevices({deviceType:'printer'})`), construit `Map<role, device>`, résout `{ip_address, port}` à l'impression. Les 3 rôles prep sont alimentés par item ; `cashier`/`waiter` par document. **Ratifié 2026-06-01 : tag = `capabilities->>'station'`** (valeurs `barista|kitchen|bakery|cashier|waiter`). Config éditable en BO plus tard (hors scope — saisie/seed pour l'instant).
 
 **Choix 3 — Orchestrateur `useFireToStations` (remplace le faux `useSendToKitchen`)** : prend les items non-encore-imprimés du cart, les **groupe par station** (helper domain pur `groupItemsByStation`), résout l'imprimante de chaque station, et POST un ticket par station au pont. Retourne un résultat **par station** (`{station, ok, error?}`). Marque `printedItemIds` localement **seulement pour les stations imprimées avec succès** (idempotence anti-reprint, miroir de `lockedItemIds`). Une station en échec n'est pas marquée → re-tentative ciblée possible.
 
@@ -64,7 +66,7 @@ Les 5 « stations » sont **toutes des imprimantes** (`lan_devices` `device_type
 ```
 { printer: { ip_address, port } | { printer_id },
   kind: 'prep' | 'bill' | 'receipt',
-  role: 'barista'|'kitchen'|'display'|'cashier'|'waiter',
+  role: 'barista'|'kitchen'|'bakery'|'cashier'|'waiter',   // bakery = imprimante "Display"
   order_number, table_number?, created_at, server_name,
   items: [{ name, quantity, modifiers?, note? }],
   totals?: { subtotal, tax, total },                  // bill/receipt seulement
@@ -73,7 +75,7 @@ Les 5 « stations » sont **toutes des imprimantes** (`lan_devices` `device_type
 `prep` = pas de prix. `bill` = totaux, pas de paiement. `receipt` = totaux + paiement. Le pont route vers l'imprimante physique. **Le pont est hors de ce monorepo** (`localhost:3001`) — l'implémentation multi-imprimantes est une **tâche externe** (flaggée §6). Côté repo on livre le **contrat client + payloads + résolution + wiring + tests** ; le repro réel dépend du pont. **Mode mock** (env flag) pour tester le routage sans matériel.
 
 **Choix 5 — Déclencheurs d'impression** :
-- **« Send to Kitchen » (fire)** : imprime les tickets **prep** (barista/kitchen/display) des items non-imprimés. Comptoir ET tablette (fire-before-pay). Le geste honnête qui remplace le `markLocked` mensonger.
+- **« Send to Kitchen » (fire)** : imprime les tickets **prep** (barista/kitchen/bakery) des items non-imprimés. Comptoir ET tablette (fire-before-pay). Le geste honnête qui remplace le `markLocked` mensonger.
 - **« Print Bill » (note)** : action à la demande (cart comptoir + ActiveOrder tablette) → imprime un `bill` de la commande entière vers l'imprimante du contexte (waiter si tablette/table, cashier si comptoir). Ré-imprimable.
 - **Checkout** : imprime le **`receipt`** (cashier) + **auto-fire** les items prep non-encore-imprimés (filet : rien de payé sans être passé en prep).
 - Pas de double-impression prep : `printedItemIds` garde la trace ; un item déjà imprimé au fire n'est pas réimprimé au checkout. (Le `bill` est librement ré-imprimable, ce n'est pas un ticket prep.)
@@ -86,11 +88,11 @@ Les 5 « stations » sont **toutes des imprimantes** (`lan_devices` `device_type
 
 ## 3. DB changes (Wave 1)
 
-Bloc migrations `20260620000010` (monotone après `20260619000043`).
+Migration **appliquée 2026-06-01**, version cloud-assignée **`20260601043059`** (clock-based MCP, conservée pour matcher `schema_migrations.version` — convention héritée S26b/S27). Fichier miroir : `supabase/migrations/20260601043059_remap_categories_dispatch_station_printer_model.sql`.
 
 | # | Migration | Objet |
 |---|---|---|
-| `_010` | `remap_categories_dispatch_station_printer_model` | Data, idempotent : `UPDATE categories SET dispatch_station = …` — Beverage→`barista` ; Sandwiches→`kitchen` (Plate/Savoury déjà `kitchen`) ; Viennoiserie/Bagel/Pastry/Bread→`display` ; Ingredient→`none`. Commentaire : retunable via BO (futur). |
+| `20260601043059` | `remap_categories_dispatch_station_printer_model` | Data, idempotent ✅ appliqué : Beverage→`barista` ; Sandwiches→`kitchen` (Plate/Savoury déjà `kitchen`) ; Pastry/Bread→`bakery` (Viennoiserie/Bagel déjà `bakery`) ; Ingredient→`none`. Résultat : barista=13, kitchen=16, bakery=27, none=0 vendable. Retunable via BO (futur). |
 
 **Pas de migration RPC** (Choix 6). **Pas de CHECK à altérer** (dispatch_station est TEXT libre). **Pas de nouvelle permission**. **Config imprimantes** : pas de migration prod (hardware-spécifique) — saisie ops/manuelle dans `lan_devices` ; **seed dev** des 4 imprimantes (capabilities.station) fait dans la fixture de test, pas en migration prod (cf. Wave 4). Types regen non requis (pas de signature changée) — sauf si on touche `lan_devices` typings (non).
 
@@ -98,10 +100,10 @@ Bloc migrations `20260620000010` (monotone après `20260619000043`).
 
 ## 4. POS changes (Wave 2)
 
-- **Domain pur** `packages/domain/src/printing/groupItemsByStation.ts` : `(items, stationByProductId) → Record<Station, Item[]>` (IO-free, unit-testable). + type `Station = 'barista'|'kitchen'|'display'|'cashier'`.
+- **Domain pur** `packages/domain/src/printing/groupItemsByStation.ts` : `(items, stationByProductId) → Partial<Record<PrepStation, Item[]>>` (IO-free, unit-testable). Types : `PrepStation = 'barista'|'kitchen'|'bakery'` (destinations d'item) ; `PrinterRole = PrepStation | 'cashier' | 'waiter'` (rôles d'imprimante).
 - **`useProducts`** : exposer `dispatch_station` par produit (via embed `categories(dispatch_station)` ou colonne dénormalisée) pour la résolution client-side. (Vérifier le select actuel — l'étendre si absent.)
 - **`printService.ts`** : `StationTicketPayload` (kind `prep|bill|receipt`) + `printStationTicket(printer, payload)` (POST `/print/ticket`, timeout, `{success,error?}`) + **mode mock** (`VITE_PRINT_MOCK`). Conserver `printReceipt` mais le **recibler** sur l'imprimante `cashier` résolue.
-- **`useStationPrinters`** (nouveau, sur `useLanDevices({deviceType:'printer'})`) : `Map<role, {ip_address, port, name}>` depuis `capabilities.station` (rôles `barista|kitchen|display|cashier|waiter`).
+- **`useStationPrinters`** (nouveau, sur `useLanDevices({deviceType:'printer'})`) : `Map<role, {ip_address, port, name}>` depuis `capabilities.station` (rôles `barista|kitchen|bakery|cashier|waiter`).
 - **`useFireToStations`** (nouveau, remplace `useSendToKitchen`) : Choix 3 — group items prep → resolve → print par poste → résultats par poste ; `markPrinted` sur succès.
 - **`usePrintBill`** (nouveau) : imprime un `bill` (commande entière) vers l'imprimante `cashier` (comptoir) ou `waiter` (tablette/table) selon le contexte. Ré-imprimable.
 - **`cartStore.ts`** : `printedItemIds: string[]` + `markPrinted(ids)` + `printedItems()/unprintedItems()` ; reset dans `clear()`/`resetCartAfterCheckout()`. (Orthogonal à `lockedItemIds`.)
@@ -136,11 +138,11 @@ Bloc migrations `20260620000010` (monotone après `20260619000043`).
 
 ## 7. Tests (Wave 4)
 
-- **Domain unit `groupItemsByStation`** : (a) groupe correctement barista/kitchen/display ; (b) ignore les items `none` ; (c) panier vide → {} ; (d) item sans station mappée → bucket `none`/ignoré.
-- **pgTAP `category_station_remap.test.sql`** (≤3 cas) : T1 Beverage=`barista`, Sandwiches=`kitchen`, Bread/Pastry/Viennoiserie/Bagel=`display` ; T2 idempotence (re-run = no-op) ; T3 aucun produit actif vendable ne reste `none` (hors Ingredient).
+- **Domain unit `groupItemsByStation`** : (a) groupe correctement barista/kitchen/bakery ; (b) ignore les items `none` ; (c) panier vide → {} ; (d) item sans station mappée → ignoré.
+- **pgTAP `category_station_remap.test.sql`** (≤3 cas) : T1 Beverage=`barista`, Sandwiches=`kitchen`, Bread/Pastry/Viennoiserie/Bagel=`bakery` ; T2 idempotence (re-run = no-op) ; T3 aucun produit actif vendable ne reste `none` (hors Ingredient).
 - **POS smoke** : (a) `fire-to-stations.smoke` — fire d'un cart mixte → `printStationTicket` appelé 1×/poste prep, payload `prep` sans prix, `printedItemIds` posé pour les succès ; (b) `fire-printer-unreachable.smoke` — imprimante kitchen KO → toast erreur kitchen, item kitchen NON marqué imprimé, items barista marqués ; (c) `checkout-autofire-unprinted.smoke` — items prep non-imprimés → auto-fire au checkout, pas de double-print ; (d) `print-bill.smoke` — « Print Bill » → payload `bill` (commande entière, totaux, **sans** payment) vers imprimante cashier (comptoir) / waiter (tablette) ; (e) `receipt-targets-cashier.smoke` — checkout → `receipt` routé vers l'imprimante `cashier` résolue.
 - **Mode mock** : tests tournent avec `VITE_PRINT_MOCK=1` (le pont enregistre les payloads au lieu d'imprimer).
-- **Repro réel (dépend du pont)** : 1 commande mixte (latte + sandwich + pain) → 3 tickets aux 3 imprimantes (barista/kitchen/display) ; reçu au comptoir. À faire quand le pont multi-imprimantes est livré.
+- **Repro réel (dépend du pont)** : 1 commande mixte (latte + sandwich + pain) → 3 tickets aux 3 imprimantes prep (barista/kitchen/bakery) ; reçu au comptoir. À faire quand le pont multi-imprimantes est livré.
 - **Non-régression** : `pnpm typecheck` ; `pnpm --filter @breakery/domain test` ; `pnpm --filter @breakery/app-pos test payment cart`.
 
 ---
