@@ -31,7 +31,7 @@ export function usePrintBill() {
       }
 
       // 2. Snapshot current cart state (read outside render cycle).
-      const { cart, pickedUpOrderId } = useCartStore.getState();
+      const { cart } = useCartStore.getState();
       const { items, tableNumber } = cart;
 
       // 3. Build items list — whole order, non-cancelled only.
@@ -47,13 +47,9 @@ export function usePrintBill() {
       const t = calculateTotals(cart, TAX_RATE);
 
       // 5. Build a human-readable order label.
-      //    A real order_number isn't available pre-payment; use table / walk-in.
-      const orderLabel =
-        pickedUpOrderId != null
-          ? `Table ${tableNumber ?? 'TBL'}`
-          : tableNumber
-          ? `Table ${tableNumber}`
-          : 'Walk-in';
+      //    A real order_number isn't available pre-payment; use table / walk-in
+      //    (mirrors useFireToStations).
+      const orderLabel = tableNumber ? `Table ${tableNumber}` : 'Walk-in';
 
       const payload: StationTicketPayload = {
         kind: 'bill',
