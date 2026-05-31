@@ -276,7 +276,7 @@ export const useCartStore = create<CartState>()(
 
       unprintedItems: () => {
         const { cart, printedItemIds } = get();
-        return cart.items.filter((i) => !printedItemIds.includes(i.id));
+        return cart.items.filter((i) => !i.is_cancelled && !printedItemIds.includes(i.id));
       },
 
       unprintedItemIds: () =>

@@ -74,6 +74,7 @@ interface MockReceiptEntry {
 
 interface MockStationEntry {
   printer: PrinterTarget;
+  kind: PrintKind;
   payload: StationTicketPayload;
 }
 
@@ -172,7 +173,7 @@ export async function printStationTicket(
 ): Promise<{ success: boolean; error?: string }> {
   // Mock mode: buffer the call, skip network
   if (import.meta.env.VITE_PRINT_MOCK) {
-    _mockBuffer.push({ printer, payload });
+    _mockBuffer.push({ printer, kind: payload.kind, payload });
     return { success: true };
   }
 

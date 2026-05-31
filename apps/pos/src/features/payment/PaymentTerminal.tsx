@@ -188,13 +188,12 @@ export function PaymentTerminal() {
 
       // Auto-fire unprinted prep items to kitchen/barista/bakery stations.
       // Non-blocking: a printer failure must NOT prevent the success screen.
-      // Toasts live in SendToKitchenButton (not the hook), so surface our own
-      // per-station feedback here for checkout-time fires.
+      // The full-screen SuccessModal already signals payment success, so we
+      // surface only printer FAILURES here (the actionable info). Per-station
+      // success toasts stay in the explicit SendToKitchenButton flow.
       fireToStations.mutateAsync({ orderNumber: result.order_number }).then((results) => {
         for (const r of results) {
-          if (r.ok) {
-            toast.success(`Ticket sent to ${r.role} (${r.itemIds.length} item(s))`);
-          } else {
+          if (!r.ok) {
             toast.error(`${r.role} printer unreachable — ticket not printed`);
           }
         }
