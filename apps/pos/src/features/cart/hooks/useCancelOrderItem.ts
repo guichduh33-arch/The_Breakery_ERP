@@ -48,11 +48,12 @@ export function useCancelOrderItem() {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${accessToken}`,
+          // S34: manager PIN in header, never the body (security-fraud-guard gap 2).
+          'x-manager-pin': managerPin,
         },
         body: JSON.stringify({
           order_item_id: orderItemId,
           reason,
-          manager_pin: managerPin,
         }),
       });
       if (!res.ok) {

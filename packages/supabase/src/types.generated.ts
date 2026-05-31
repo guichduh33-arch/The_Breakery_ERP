@@ -5465,8 +5465,9 @@ export type Database = {
         Args: { p_count_id: string; p_reason: string }
         Returns: Json
       }
-      cancel_order_item_rpc: {
+      cancel_order_item_rpc_v2: {
         Args: {
+          p_acting_auth_user_id: string
           p_authorized_by: string
           p_order_item_id: string
           p_reason: string
@@ -5672,6 +5673,30 @@ export type Database = {
         Returns: Json
       }
       create_category_v1: { Args: { p_payload: Json }; Returns: Json }
+      create_customer_v1: {
+        Args: {
+          p_customer_type?: Database["public"]["Enums"]["customer_type"]
+          p_email?: string
+          p_name: string
+          p_phone?: string
+        }
+        Returns: {
+          category_id: string
+          created_at: string
+          customer_type: Database["public"]["Enums"]["customer_type"]
+          deleted_at: string
+          email: string
+          id: string
+          last_visit_at: string
+          lifetime_points: number
+          loyalty_points: number
+          name: string
+          phone: string
+          total_spent: number
+          total_visits: number
+          updated_at: string
+        }[]
+      }
       create_expense_v1: {
         Args: {
           p_amount: number
@@ -5934,6 +5959,25 @@ export type Database = {
           total_spent: number
         }[]
       }
+      get_customer_v1: {
+        Args: { p_id: string }
+        Returns: {
+          category_id: string
+          created_at: string
+          customer_type: Database["public"]["Enums"]["customer_type"]
+          deleted_at: string
+          email: string
+          id: string
+          last_visit_at: string
+          lifetime_points: number
+          loyalty_points: number
+          name: string
+          phone: string
+          total_spent: number
+          total_visits: number
+          updated_at: string
+        }[]
+      }
       get_expiring_lots_v1: {
         Args: {
           p_hours_ahead?: number
@@ -6014,6 +6058,20 @@ export type Database = {
       get_perishable_turnover_v1: {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
+      }
+      get_pos_b2b_debts_v1: {
+        Args: { p_customer_id?: string }
+        Returns: {
+          created_at: string
+          customer_id: string
+          customer_name: string
+          customer_phone: string
+          order_id: string
+          order_number: string
+          outstanding: number
+          paid: number
+          total: number
+        }[]
       }
       get_product_dashboard_v1: {
         Args: { p_days?: number; p_product_id: string }
@@ -6661,10 +6719,11 @@ export type Database = {
       refresh_mv_pl_monthly: { Args: never; Returns: undefined }
       refresh_mv_sales_daily: { Args: never; Returns: undefined }
       refresh_mv_stock_variance: { Args: never; Returns: undefined }
-      refund_order_rpc_v2: {
+      refund_order_rpc_v3: {
         Args: {
+          p_acting_auth_user_id: string
           p_authorized_by: string
-          p_idempotency_key?: string
+          p_idempotency_key: string
           p_lines: Json
           p_order_id: string
           p_reason: string
@@ -6743,6 +6802,25 @@ export type Database = {
       runtests:
         | { Args: never; Returns: string[] }
         | { Args: { "": string }; Returns: string[] }
+      search_customers_v1: {
+        Args: { p_limit?: number; p_query: string }
+        Returns: {
+          category_id: string
+          created_at: string
+          customer_type: Database["public"]["Enums"]["customer_type"]
+          deleted_at: string
+          email: string
+          id: string
+          last_visit_at: string
+          lifetime_points: number
+          loyalty_points: number
+          name: string
+          phone: string
+          total_spent: number
+          total_visits: number
+          updated_at: string
+        }[]
+      }
       search_ingredients_v1: {
         Args: { p_kind?: string; p_limit?: number; p_query?: string }
         Returns: {
@@ -6966,8 +7044,13 @@ export type Database = {
         Args: { p_pin: string; p_user_id: string }
         Returns: boolean
       }
-      void_order_rpc: {
-        Args: { p_authorized_by: string; p_order_id: string; p_reason: string }
+      void_order_rpc_v2: {
+        Args: {
+          p_acting_auth_user_id: string
+          p_authorized_by: string
+          p_order_id: string
+          p_reason: string
+        }
         Returns: Json
       }
       void_zreport_v1: {
