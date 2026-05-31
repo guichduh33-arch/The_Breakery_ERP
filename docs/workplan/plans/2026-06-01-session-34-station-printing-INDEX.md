@@ -72,7 +72,7 @@ Total: **1 migration** (data-only, no schema change — categories.dispatch_stat
 - `packages/domain/src/index.ts` — re-export printing barrel
 - `apps/pos/src/features/products/hooks/useProducts.ts` — append `categories(dispatch_station)` to SELECT, flatten to `dispatch_station` on each Product row
 - `apps/pos/src/stores/cartStore.ts` — add `printedItemIds: string[]` + `markPrinted` + `unprintedItems()` + `unprintedItemIds()`; `clear()` resets `printedItemIds`; `restoreCart()` also resets
-- `apps/pos/src/features/cart/hooks/useSendToKitchen.ts` — replaced by `useFireToStations` (file retained for import compatibility, re-exports the new hook)
+- `apps/pos/src/features/cart/hooks/useSendToKitchen.ts` — **DELETED** (fake markLocked-only hook fully removed; replaced by `useFireToStations`; no dangling importers)
 - `apps/pos/src/features/cart/SendToKitchenButton.tsx` — rewired to `useFireToStations`; per-station toast (success/error)
 - `apps/pos/src/features/cart/ActiveOrderPanel.tsx` — add `<PrintBillButton />`
 - `apps/pos/src/features/payment/PaymentTerminal.tsx` — `dispatchCheckout`: non-blocking auto-fire of unprinted prep items after checkout; per-station error toast on failure; SuccessModal receives the result for receipt routing
@@ -162,7 +162,7 @@ All resolved at runtime by `useStationPrinters()` (5-min stale-time). Missing pr
 3. Receipt enhancements: method-aware (non-cash), tax line itemised, drawer amount display.
 4. openCashDrawer error surfacing (currently silent if bridge unreachable).
 5. Receipt cold-query fix: pre-warm `['station-printers']` query on POS mount so cashierPrinter is always available at SuccessModal render.
-6. `useSendToKitchen.ts` legacy re-export cleanup.
+6. cartStore: align `unprintedItemIds()` with `unprintedItems()` (add `!is_cancelled` guard) ; replace inline `PREP_STATIONS` in `useFireToStations` with `KDS_STATIONS` from `@breakery/domain` (DRY).
 7. Waiter printer bill routing for tablet orders end-to-end test.
 8. BO + POS smoke suite backlog (S33 follow-up: VoidOrderModal, EditOrderItemsModal, OpenShiftModal terminal selector).
 9. Ongoing S33 out-of-scope: refund from BO, edit other order fields, mobile responsive, UnifiedReportFilters, compare toggle, hub KPI/favorites, 6 Soon cards.
