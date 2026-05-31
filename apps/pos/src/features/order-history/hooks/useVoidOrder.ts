@@ -42,8 +42,10 @@ export function useVoidOrder() {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${accessToken}`,
+          // S34: manager PIN in header, never the body (security-fraud-guard gap 2).
+          'x-manager-pin': managerPin,
         },
-        body: JSON.stringify({ order_id: orderId, reason, manager_pin: managerPin }),
+        body: JSON.stringify({ order_id: orderId, reason }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({})) as VoidResponse;

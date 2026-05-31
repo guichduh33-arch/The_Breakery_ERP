@@ -2,6 +2,11 @@
 // Session 10 — manager-PIN-gated partial line refund. Calls refund_order_rpc.
 // Session 25 — PIN sent via `x-manager-pin` header (hard cutover, no body field).
 //              `x-idempotency-key` header propagated to RPC for replay safety.
+// S34 security hardening (security-fraud-guard gap 1):
+//   - calls refund_order_rpc_v3 (service_role-only) via the admin client, passing
+//     the cashier's verified auth.uid as p_acting_auth_user_id. The previous
+//     refund_order_rpc_v2 was GRANT'd to authenticated and directly callable via
+//     PostgREST, bypassing this EF's PIN verification.
 //
 // Headers:
 //   x-manager-pin:     string (6 digits) — REQUIRED
@@ -15,12 +20,12 @@
 // }
 
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.47.10';
 import { handleCors, jsonResponse } from '../_shared/cors.ts';
 import { rateLimitedResponse } from '../_shared/responses.ts';
 import { checkRateLimitDurable, getClientIp } from '../_shared/rate-limit.ts';
 import { verifyManagerPin } from '../_shared/manager-pin.ts';
 import { getIdempotencyKey, InvalidIdempotencyKeyError } from '../_shared/idempotency.ts';
+import { getActingAuthUserId } from '../_shared/acting-user.ts';
 import { getAdminClient } from '../_shared/supabase-admin.ts';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -39,8 +44,7 @@ serve(async (req) => {
 
   if (req.method !== 'POST') return jsonResponse({ error: 'method_not_allowed' }, 405);
 
-  // S25 CR fix — rate-limit MUST run before any header/body validation so that an
-  // attacker cannot flood the endpoint with malformed requests to bypass accounting.
+  // S25 CR fix — rate-limit MUST run before any header/body validation.
   const ip = getClientIp(req);
   const rl = await checkRateLimitDurable({
     functionName: 'refund-order',
@@ -49,7 +53,6 @@ serve(async (req) => {
     maxPerWindow: 10,
     windowSec:    60,
   });
-  // S22 / 1.B.2 — DEV-S19-2.A-02 : surface Retry-After header alongside body.
   if (!rl.allowed) return rateLimitedResponse(rl.retryAfterSec);
 
   const managerPin = req.headers.get('x-manager-pin');
@@ -70,6 +73,12 @@ serve(async (req) => {
   const authHeader = req.headers.get('authorization');
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return jsonResponse({ error: 'authorization_required' }, 401);
+  }
+
+  // GAP 1 — resolve the acting cashier server-side (RPC is service_role-only now).
+  const actingAuthUserId = await getActingAuthUserId(req);
+  if (!actingAuthUserId) {
+    return jsonResponse({ error: 'not_authenticated' }, 401);
   }
 
   let body: RefundOrderPayload;
@@ -109,22 +118,16 @@ serve(async (req) => {
     return jsonResponse({ error: 'internal' }, 500);
   }
 
-  const url = Deno.env.get('SUPABASE_URL');
-  const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
-  if (!url || !anonKey) return jsonResponse({ error: 'server_misconfigured' }, 500);
-
-  const userClient = createClient(url, anonKey, {
-    global: { headers: { Authorization: authHeader } },
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
-
-  const { data, error } = await userClient.rpc('refund_order_rpc_v2', {
-    p_order_id:        body.order_id,
-    p_lines:           body.lines,
-    p_tenders:         body.tenders,
-    p_reason:          body.reason,
-    p_authorized_by:   mgr.manager_profile_id,
-    p_idempotency_key: idempotencyKey,
+  // service_role admin client — the only role allowed to EXECUTE the v3 RPC.
+  const admin = getAdminClient();
+  const { data, error } = await admin.rpc('refund_order_rpc_v3', {
+    p_order_id:            body.order_id,
+    p_lines:               body.lines,
+    p_tenders:             body.tenders,
+    p_reason:              body.reason,
+    p_authorized_by:       mgr.manager_profile_id,
+    p_idempotency_key:     idempotencyKey,
+    p_acting_auth_user_id: actingAuthUserId,
   });
 
   if (error) {
@@ -138,18 +141,16 @@ serve(async (req) => {
   }
 
   if (data?.idempotent_replay === true) {
-    // S25 CR fix — audit_logs has RLS with no INSERT policy for `authenticated` ;
-    // use the service-role admin client so the row is actually written. Failure
-    // is logged but does not fail the user response (audit is best-effort here).
-    const admin = getAdminClient();
+    // Audit the replay. actor = approving manager (matches v3 actor semantics).
     const { error: auditErr } = await admin.from('audit_logs').insert({
       actor_id:    mgr.manager_profile_id,
       action:      'refund.replay',
       entity_type: 'orders',
       entity_id:   body.order_id,
       metadata: {
-        idempotency_key: idempotencyKey,
-        refund_id:       data.refund_id,
+        idempotency_key:   idempotencyKey,
+        refund_id:         data.refund_id,
+        acting_cashier_id: actingAuthUserId,
       },
     });
     if (auditErr) {
