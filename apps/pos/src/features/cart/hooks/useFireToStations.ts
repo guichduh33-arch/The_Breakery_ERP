@@ -1,8 +1,8 @@
 // apps/pos/src/features/cart/hooks/useFireToStations.ts
 // Session 34 — real per-station prep-ticket printing.
 // Replaces the fake useSendToKitchen hook that only called markLocked().
-import { useMutation } from '@tanstack/react-query';
-import type { PrepStation, PrinterRole } from '@breakery/domain';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { PrepStation, PrinterRole, Product } from '@breakery/domain';
 import { groupItemsByStation } from '@breakery/domain';
 import type { DispatchStation } from '@breakery/domain';
 import { printStationTicket } from '@/services/print/printService';
@@ -11,6 +11,19 @@ import { useCartStore } from '@/stores/cartStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useStationPrinters } from './useStationPrinters';
 import { useProducts } from '@/features/products/hooks/useProducts';
+
+const PREP_STATIONS: readonly DispatchStation[] = ['barista', 'kitchen', 'bakery'];
+
+/** Build a product_id → dispatch_station map (defaults to 'none'). */
+function buildStationMap(
+  products: readonly Product[],
+): Record<string, DispatchStation> {
+  const map: Record<string, DispatchStation> = {};
+  for (const p of products) {
+    map[p.id] = p.dispatch_station ?? 'none';
+  }
+  return map;
+}
 
 // ---------------------------------------------------------------------------
 // Result type
@@ -37,12 +50,43 @@ export interface FireContext {
 // Hook
 // ---------------------------------------------------------------------------
 
-export function useFireToStations() {
+export interface UseFireToStationsResult {
+  mutation: ReturnType<
+    typeof useMutation<StationFireResult[], Error, FireContext | undefined>
+  >;
+  /**
+   * Number of currently-unprinted cart items that route to a prep station
+   * (dispatch_station ∈ {barista,kitchen,bakery}). Drives the button's
+   * `disabled` state — when 0, firing would be a no-op (bread-only orders,
+   * products query still loading, everything already printed). Recomputed on
+   * every render so the button reacts to cart edits and the products query
+   * resolving.
+   */
+  firableCount: number;
+}
+
+export function useFireToStations(): UseFireToStationsResult {
+  const queryClient = useQueryClient();
   const { data: printersMap } = useStationPrinters();
+  // Subscribe so firableCount recomputes when the products query resolves.
   const { data: products } = useProducts();
   const serverName = useAuthStore((s) => s.user?.full_name ?? 'Staff');
+  // Subscribe to the cart so firableCount recomputes on every cart edit.
+  const cartItems = useCartStore((s) => s.cart.items);
+  const printedItemIds = useCartStore((s) => s.printedItemIds);
 
-  return useMutation<StationFireResult[], Error, FireContext | undefined>({
+  // Derive the firable count from the same data the mutation will use. When
+  // `products` is undefined (query loading) the map is empty → count 0 →
+  // button disabled, which naturally guards the not-loaded race.
+  const stationMap = buildStationMap(products ?? []);
+  const firableCount = cartItems.filter((item) => {
+    if (item.is_cancelled) return false;
+    if (printedItemIds.includes(item.id)) return false;
+    const station = stationMap[item.product_id];
+    return station != null && (PREP_STATIONS as readonly string[]).includes(station);
+  }).length;
+
+  const mutation = useMutation<StationFireResult[], Error, FireContext | undefined>({
     mutationFn: async (ctx) => {
       const { orderNumber, tableNumber } = ctx ?? {};
 
@@ -50,11 +94,11 @@ export function useFireToStations() {
       const unprinted = useCartStore.getState().unprintedItems();
       if (unprinted.length === 0) return [];
 
-      // 2. Build stationByProductId from the cached products query.
-      const stationByProductId: Record<string, DispatchStation> = {};
-      for (const p of products ?? []) {
-        stationByProductId[p.id] = p.dispatch_station ?? 'none';
-      }
+      // 2. Build stationByProductId from the live query cache (NOT the render
+      //    closure) so routing reflects the products fetched by fire time.
+      const cachedProducts =
+        queryClient.getQueryData<Product[]>(['products']) ?? [];
+      const stationByProductId = buildStationMap(cachedProducts);
 
       // 3. Group by prep station (cancelled / 'none' / unmapped → excluded).
       const grouped = groupItemsByStation(unprinted, stationByProductId);
@@ -103,17 +147,22 @@ export function useFireToStations() {
         }),
       );
 
-      // 5. Mark printed + locked only for stations that succeeded.
+      // 5. Lock THEN mark printed for stations that succeeded. Locking first
+      //    means there is never an intermediate snapshot where a printed item
+      //    is still editable (canEdit true). Failed stations are left
+      //    untouched so they can be re-fired.
       const successfulIds = results
         .filter((r) => r.ok)
         .flatMap((r) => r.itemIds);
 
       if (successfulIds.length > 0) {
-        useCartStore.getState().markPrinted(successfulIds);
         useCartStore.getState().markLocked(successfulIds);
+        useCartStore.getState().markPrinted(successfulIds);
       }
 
       return results;
     },
   });
+
+  return { mutation, firableCount };
 }

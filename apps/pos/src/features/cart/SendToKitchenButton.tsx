@@ -7,17 +7,25 @@ import { useCartStore } from '@/stores/cartStore';
 import { useFireToStations } from './hooks/useFireToStations';
 
 export function SendToKitchenButton() {
-  const unprintedCount = useCartStore((s) => s.unprintedItems().length);
-  const fireMutation = useFireToStations();
+  const { mutation, firableCount } = useFireToStations();
 
-  const disabled = unprintedCount === 0 || fireMutation.isPending;
+  // Disabled when there is nothing that routes to a prep station (bread-only
+  // orders, products query still loading, everything already printed) or while
+  // a fire is in flight.
+  const disabled = firableCount === 0 || mutation.isPending;
 
   async function handleClick() {
     if (disabled) return;
     const rawTable = useCartStore.getState().cart.tableNumber;
     const ctx = rawTable ? { tableNumber: rawTable } : {};
     try {
-      const results = await fireMutation.mutateAsync(ctx);
+      const results = await mutation.mutateAsync(ctx);
+      // Defensive: the disabled gate should prevent this, but never lie about
+      // a no-op — info, not success.
+      if (results.length === 0) {
+        toast.info('No kitchen items to send');
+        return;
+      }
       // Toast per station — honest about partial failures.
       for (const r of results) {
         if (r.ok) {
@@ -25,10 +33,6 @@ export function SendToKitchenButton() {
         } else {
           toast.error(`${r.role} printer unreachable — not printed`);
         }
-      }
-      // Edge case: all items mapped to 'none' / no stations returned.
-      if (results.length === 0) {
-        toast.success('Items locked (no station printers configured)');
       }
     } catch (err) {
       const e = err as Error;
@@ -45,7 +49,7 @@ export function SendToKitchenButton() {
       onClick={() => { void handleClick(); }}
     >
       <Send className="h-4 w-4 mr-2" aria-hidden />
-      {fireMutation.isPending ? 'Sending…' : 'Send to Kitchen'}
+      {mutation.isPending ? 'Sending…' : 'Send to Kitchen'}
     </Button>
   );
 }
