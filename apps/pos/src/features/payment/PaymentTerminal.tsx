@@ -26,6 +26,7 @@ import { useCheckout } from './hooks/useCheckout';
 import { SuccessModal } from './SuccessModal';
 import { SplitPaymentFlow } from './split/SplitPaymentFlow';
 import { usePOSPresets } from '@/features/settings/hooks/usePOSPresets';
+import { useFireToStations } from '@/features/cart/hooks/useFireToStations';
 import { toast } from 'sonner';
 import type { LucideProps } from 'lucide-react';
 import type { ForwardRefExoticComponent, RefAttributes } from 'react';
@@ -69,6 +70,7 @@ export function PaymentTerminal() {
   const appliedPromotions = useCartStore((s) => s.appliedPromotions);
   const user = useAuthStore((s) => s.user);
   const checkout = useCheckout();
+  const { mutation: fireToStations } = useFireToStations();
   const { presets } = usePOSPresets();
   const quickAmounts = presets.quickPayments;
 
@@ -183,6 +185,24 @@ export function PaymentTerminal() {
     setLastTendersShipped(tendersToShip);
     try {
       const result = await checkout.mutateAsync({ cart, payment: tendersToShip });
+
+      // Auto-fire unprinted prep items to kitchen/barista/bakery stations.
+      // Non-blocking: a printer failure must NOT prevent the success screen.
+      // Toasts live in SendToKitchenButton (not the hook), so surface our own
+      // per-station feedback here for checkout-time fires.
+      fireToStations.mutateAsync({ orderNumber: result.order_number }).then((results) => {
+        for (const r of results) {
+          if (r.ok) {
+            toast.success(`Ticket sent to ${r.role} (${r.itemIds.length} item(s))`);
+          } else {
+            toast.error(`${r.role} printer unreachable — ticket not printed`);
+          }
+        }
+      }).catch((err: unknown) => {
+        const message = err instanceof Error ? err.message : 'unknown';
+        toast.error(`Station print failed: ${message}`);
+      });
+
       setSuccess({
         orderNumber: result.order_number,
         total: result.total,

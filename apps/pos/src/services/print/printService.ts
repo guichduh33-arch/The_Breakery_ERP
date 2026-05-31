@@ -32,18 +32,8 @@ export interface StationTicketPayload {
 }
 
 // ---------------------------------------------------------------------------
-// Mock buffer (used when VITE_PRINT_MOCK is truthy — tests / CI)
+// Receipt payload
 // ---------------------------------------------------------------------------
-
-let _mockBuffer: Array<{ printer: PrinterTarget; payload: StationTicketPayload }> = [];
-
-export function getMockPrintBuffer(): Array<{ printer: PrinterTarget; payload: StationTicketPayload }> {
-  return _mockBuffer;
-}
-
-export function clearMockPrintBuffer(): void {
-  _mockBuffer = [];
-}
 
 export interface ReceiptPayload {
   business: { name: string; address: string; phone?: string; tax_id?: string };
@@ -72,6 +62,33 @@ export interface ReceiptPayload {
   footer?: string;
 }
 
+// ---------------------------------------------------------------------------
+// Mock buffer (used when VITE_PRINT_MOCK is truthy — tests / CI)
+// ---------------------------------------------------------------------------
+
+interface MockReceiptEntry {
+  printer: PrinterTarget | null;
+  kind: 'receipt';
+  payload: ReceiptPayload;
+}
+
+interface MockStationEntry {
+  printer: PrinterTarget;
+  payload: StationTicketPayload;
+}
+
+type MockBufferEntry = MockReceiptEntry | MockStationEntry;
+
+let _mockBuffer: Array<MockBufferEntry> = [];
+
+export function getMockPrintBuffer(): Array<MockBufferEntry> {
+  return _mockBuffer;
+}
+
+export function clearMockPrintBuffer(): void {
+  _mockBuffer = [];
+}
+
 export async function checkPrintServer(): Promise<boolean> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 2000);
@@ -85,14 +102,32 @@ export async function checkPrintServer(): Promise<boolean> {
   }
 }
 
-export async function printReceipt(payload: ReceiptPayload): Promise<{ success: boolean; error?: string }> {
+/**
+ * Print a receipt to the cashier printer (or the default server if no printer
+ * is provided). When `printer` is supplied it is included in the POST body so
+ * the print server can route to the correct device. When absent the behaviour
+ * is identical to before this change — no printer field is sent.
+ */
+export async function printReceipt(
+  payload: ReceiptPayload,
+  printer?: PrinterTarget,
+): Promise<{ success: boolean; error?: string }> {
+  // Mock mode: buffer the call, skip network
+  if (import.meta.env.VITE_PRINT_MOCK) {
+    _mockBuffer.push({ printer: printer ?? null, kind: 'receipt', payload });
+    return { success: true };
+  }
+
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 5000);
   try {
+    const body = printer
+      ? JSON.stringify({ ...payload, printer })
+      : JSON.stringify(payload);
     const res = await fetch(`${SERVER_URL}/print/receipt`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body,
       signal: controller.signal,
     });
     if (!res.ok) {
