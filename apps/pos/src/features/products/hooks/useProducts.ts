@@ -8,8 +8,10 @@
 //      avoids the PostgREST relation-embed complexity (forward self-FK on
 //      `products` requires an explicit alias and is easier to get wrong than a
 //      plain 2-step fetch).
+// Session 34 — append `categories(dispatch_station)` to the select and flatten
+//   the embedded relation onto each Product row (defaults to 'none').
 import { useQuery } from '@tanstack/react-query';
-import type { Product } from '@breakery/domain';
+import type { Product, DispatchStation } from '@breakery/domain';
 import { supabase } from '@/lib/supabase';
 
 export function useProducts() {
@@ -20,7 +22,7 @@ export function useProducts() {
       const productsRes = await supabase
         .from('products')
         .select(
-          'id, sku, name, category_id, retail_price, wholesale_price, product_type, tax_inclusive, image_url, current_stock, is_active, is_favorite, parent_product_id',
+          'id, sku, name, category_id, retail_price, wholesale_price, product_type, tax_inclusive, image_url, current_stock, is_active, is_favorite, parent_product_id, categories(dispatch_station)',
         )
         .is('parent_product_id', null)
         .eq('is_active', true)
@@ -46,10 +48,25 @@ export function useProducts() {
           .filter((id): id is string => id !== null),
       );
 
-      return (productsRes.data ?? []).map((p) => ({
-        ...(p as Product),
-        has_variants: parentIds.has(p.id),
-      }));
+      return (productsRes.data ?? []).map((p) => {
+        // Flatten the embedded `categories` relation — PostgREST may return
+        // either an object or an array depending on FK cardinality (same
+        // normalisation pattern as useKdsOrders.ts `pickFirst`).
+        const raw = p as unknown as typeof p & {
+          categories: { dispatch_station: string } | { dispatch_station: string }[] | null;
+        };
+        const cat = Array.isArray(raw.categories)
+          ? (raw.categories[0] ?? null)
+          : raw.categories;
+        const dispatch_station: DispatchStation =
+          (cat?.dispatch_station as DispatchStation | undefined) ?? 'none';
+
+        return {
+          ...(p as unknown as Product),
+          has_variants: parentIds.has(p.id),
+          dispatch_station,
+        };
+      });
     },
   });
 }
