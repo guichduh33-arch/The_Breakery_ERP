@@ -1,4 +1,6 @@
 // packages/domain/src/types/product.ts
+import type { DispatchStation } from '../kitchen/types.js';
+
 export type ProductType = 'finished' | 'combo';
 
 export interface Product {
@@ -20,6 +22,9 @@ export interface Product {
   // has at least one active child variant).
   parent_product_id?: string | null;
   has_variants?: boolean;
+  // Session 34 — station ticket printing. Flattened from categories.dispatch_station
+  // by the POS `useProducts` hook; defaults to 'none' when the category has no routing.
+  dispatch_station?: DispatchStation;
 }
 
 export interface Category {

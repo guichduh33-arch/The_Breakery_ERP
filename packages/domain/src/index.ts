@@ -35,3 +35,4 @@ export * from './reports/index.js';
 export * from './production/index.js';
 export * from './lan/index.js';
 export * from './notifications/index.js';
+export * from './printing/index.js';

@@ -5,6 +5,7 @@ import { Button, Currency, FullScreenModal } from '@breakery/ui';
 import { calculateTotals } from '@breakery/domain';
 import type { Cart } from '@breakery/domain';
 import { printReceipt, openCashDrawer, type ReceiptPayload } from '@/services/print/printService';
+import { useStationPrinters } from '@/features/cart/hooks/useStationPrinters';
 import { toast } from 'sonner';
 
 const TAX_RATE = 0.10;
@@ -70,11 +71,13 @@ function buildReceiptPayload(props: SuccessModalProps): ReceiptPayload {
 export function SuccessModal(props: SuccessModalProps) {
   const { open, orderNumber, total, changeGiven, pointsEarned, customerName, onNewOrder } = props;
   const [isPrinting, setIsPrinting] = useState(false);
+  const { data: printers } = useStationPrinters();
+  const cashierPrinter = printers?.get('cashier');
 
   async function handlePrint() {
     setIsPrinting(true);
     const payload = buildReceiptPayload(props);
-    const result = await printReceipt(payload);
+    const result = await printReceipt(payload, cashierPrinter);
     if (!result.success) {
       toast.warning('Print server unreachable — receipt not printed');
     }

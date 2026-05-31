@@ -69,6 +69,7 @@ import { CartActionsBar } from './CartActionsBar';
 import { CustomerBadge } from './CustomerBadge';
 import { HeldOrdersModal } from './HeldOrdersModal';
 import { SendToKitchenButton } from './SendToKitchenButton';
+import { PrintBillButton } from './PrintBillButton';
 import { CancelItemModal } from './CancelItemModal';
 import { useCancelOrderItem } from './hooks/useCancelOrderItem';
 
@@ -245,6 +246,7 @@ export function ActiveOrderPanel({
           {/* Primary CTAs */}
           <div className="space-y-2 pt-1">
             <SendToKitchenButton />
+            <PrintBillButton />
             <Button
               variant="gold"
               size="lg"

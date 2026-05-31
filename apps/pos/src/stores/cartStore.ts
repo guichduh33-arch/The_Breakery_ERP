@@ -7,6 +7,7 @@
 // Session 6 extension: cartDiscount + setCartDiscount + setLineDiscount.
 // Session 7 extension: attachedCustomer includes optional category for pricing tier display.
 // Session 9 extension: appliedPromotions + dismissedPromotionIds + auto gift sync.
+// Session 34 extension: printedItemIds + markPrinted + unprintedItems/unprintedItemIds (ticket de-dup).
 // Persisted in sessionStorage so a tab reload doesn't drop the lock state.
 // (`appliedPromotions` and `dismissedPromotionIds` are intentionally in-memory
 //  only — they are recomputed at every cart change and a fresh tab should
@@ -51,6 +52,8 @@ interface CartState {
   cart: Cart;
   /** Line ids that have been "sent to kitchen" — read-only afterwards. */
   lockedItemIds: string[];
+  /** Line ids whose ticket has already been printed — prevents re-printing on reconnect / re-render. */
+  printedItemIds: string[];
   /** Full customer object for display — mirrors cart.customerId. */
   attachedCustomer: CustomerWithCategory | null;
   /** Set when a tablet order is picked up; directs checkout to pay_existing_order RPC. */
@@ -96,6 +99,11 @@ interface CartState {
   markLocked: (lineIds: string[]) => void;
   unlockedItems: () => CartItem[];
   unlockedItemIds: () => string[];
+
+  // Print tracking
+  markPrinted: (lineIds: string[]) => void;
+  unprintedItems: () => CartItem[];
+  unprintedItemIds: () => string[];
 
   /**
    * Session 10 — flip a locked item to cancelled state. Called after a
@@ -146,6 +154,7 @@ export const useCartStore = create<CartState>()(
     (set, get) => ({
       cart: { items: [], order_type: 'dine_in' },
       lockedItemIds: [],
+      printedItemIds: [],
       attachedCustomer: null,
       pickedUpOrderId: null,
       appliedPromotions: [],
@@ -211,6 +220,11 @@ export const useCartStore = create<CartState>()(
           // clean (dismissals from a previous session shouldn't leak).
           appliedPromotions: [],
           dismissedPromotionIds: new Set<string>(),
+          // Session 34 — print tracking: keep print status only for items that
+          // survive clear() (the locked ones). A printed locked item must stay
+          // marked printed, otherwise a later fire/checkout would re-print it
+          // (double ticket). Mirrors how clear() keeps locked items in the cart.
+          printedItemIds: s.printedItemIds.filter((id) => s.lockedItemIds.includes(id)),
         })),
 
       setOrderType: (type) => set((s) => ({ cart: setOrderType(s.cart, type) })),
@@ -252,6 +266,24 @@ export const useCartStore = create<CartState>()(
           .cart.items.filter((i) => !get().lockedItemIds.includes(i.id))
           .map((i) => i.id),
 
+      // Session 34 — print tracking
+      markPrinted: (lineIds) =>
+        set((s) => ({
+          printedItemIds: Array.from(
+            new Set([...s.printedItemIds, ...lineIds]),
+          ),
+        })),
+
+      unprintedItems: () => {
+        const { cart, printedItemIds } = get();
+        return cart.items.filter((i) => !i.is_cancelled && !printedItemIds.includes(i.id));
+      },
+
+      unprintedItemIds: () =>
+        get()
+          .cart.items.filter((i) => !get().printedItemIds.includes(i.id))
+          .map((i) => i.id),
+
       // Session 10 — mark a previously-locked item as cancelled (server side has
       // is_cancelled=true after cancel_order_item_rpc). The line stays in the
       // cart so it can render with a strikethrough + badge ; calculateTotals and
@@ -270,6 +302,7 @@ export const useCartStore = create<CartState>()(
         set((s) => ({
           cart: restoredCart,
           lockedItemIds: [],
+          printedItemIds: [],
           attachedCustomer: null,
           pickedUpOrderId: s.pickedUpOrderId,
           // Session 9 — restoring a held / picked-up order resets the
@@ -373,6 +406,7 @@ export const useCartStore = create<CartState>()(
       partialize: (state) => ({
         cart: state.cart,
         lockedItemIds: state.lockedItemIds,
+        printedItemIds: state.printedItemIds,
         attachedCustomer: state.attachedCustomer,
         pickedUpOrderId: state.pickedUpOrderId,
       }),
@@ -415,6 +449,7 @@ export function resetCartAfterCheckout(): void {
     return {
       cart: { ...rest, items: rest.items.map(({ discount: _d, ...i }) => i) },
       lockedItemIds: [],
+      printedItemIds: [],
       attachedCustomer: null,
       pickedUpOrderId: null,
       // Session 9 — wipe promotion state on checkout completion.
