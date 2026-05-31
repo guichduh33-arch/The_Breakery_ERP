@@ -220,10 +220,11 @@ export const useCartStore = create<CartState>()(
           // clean (dismissals from a previous session shouldn't leak).
           appliedPromotions: [],
           dismissedPromotionIds: new Set<string>(),
-          // Session 34 — print tracking resets to empty on clear (a fresh
-          // ring-up should treat all items as unprinted; lock state is
-          // orthogonal and survives clear, but printing de-dup does not need to).
-          printedItemIds: [],
+          // Session 34 — print tracking: keep print status only for items that
+          // survive clear() (the locked ones). A printed locked item must stay
+          // marked printed, otherwise a later fire/checkout would re-print it
+          // (double ticket). Mirrors how clear() keeps locked items in the cart.
+          printedItemIds: s.printedItemIds.filter((id) => s.lockedItemIds.includes(id)),
         })),
 
       setOrderType: (type) => set((s) => ({ cart: setOrderType(s.cart, type) })),
