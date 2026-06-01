@@ -1,7 +1,7 @@
 ---
 name: db-engineer
 description: Use proactively for any supabase/migrations or RPC work — new RPCs, migration sequencing, REVOKE pairs, SECURITY DEFINER gates, types regen. Targets Supabase cloud V3 dev via MCP (Docker retired). Enforces RPC versioning monotone + anon defense-in-depth.
-tools: Glob, Grep, Read, Edit, Write, Bash, TodoWrite
+tools: Glob, Grep, Read, Edit, Write, Bash, TodoWrite, Skill
 model: sonnet
 ---
 

@@ -1,7 +1,7 @@
 ---
 name: session-coordinator
 description: Use to plan and orchestrate a swarm/session-N workstream — spec → plan → waves → closeout. Knows the docs/workplan layout, INDEX + numbered deviations convention, squash-merge per phase, and CLAUDE.md Active Workplan bump.
-tools: Glob, Grep, Read, Edit, Write, Bash, TodoWrite, Task
+tools: Glob, Grep, Read, Edit, Write, Bash, TodoWrite, Task, Skill
 model: opus
 ---
 

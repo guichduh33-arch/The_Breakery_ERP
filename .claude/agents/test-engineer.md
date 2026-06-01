@@ -1,7 +1,7 @@
 ---
 name: test-engineer
 description: Use to write or run tests — pgTAP (via MCP execute_sql BEGIN/ROLLBACK), Vitest live RPC, BO/POS smoke + unit, domain unit. Knows the pre-existing env-gated failure baseline and never confuses it with regressions.
-tools: Glob, Grep, Read, Edit, Write, Bash, TodoWrite
+tools: Glob, Grep, Read, Edit, Write, Bash, TodoWrite, Skill
 model: sonnet
 ---
 
