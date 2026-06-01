@@ -69,14 +69,14 @@ describe('PerishableTurnoverPage (smoke)', () => {
     expect(screen.getByRole('heading', { name: /Perishable Turnover/i, level: 1 })).toBeInTheDocument();
   });
 
-  it('calls get_perishable_turnover_v1 with p_start and p_end', async () => {
+  it('calls get_perishable_turnover_v1 with p_date_start and p_date_end', async () => {
     renderPage();
     await waitFor(() => {
       const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_perishable_turnover_v1');
       expect(call).toBeDefined();
-      const args = (call as [string, { p_start: string; p_end: string }])[1];
-      expect(args.p_start).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-      expect(args.p_end).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      const args = (call as [string, { p_date_start: string; p_date_end: string }])[1];
+      expect(args.p_date_start).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(args.p_date_end).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     });
   });
 

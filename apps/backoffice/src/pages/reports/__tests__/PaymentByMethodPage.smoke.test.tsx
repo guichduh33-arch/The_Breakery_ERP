@@ -14,15 +14,17 @@ vi.mock('@/lib/supabase.js', () => ({
     rpc: (fn: string, args: Record<string, unknown>) => {
       mockRpc(fn, args);
       if (fn === 'get_payments_by_method_v1') {
+        // Real RPC shape: { period, summary, by_method, by_day }.
         return Promise.resolve({
           data: {
-            period: { start: '2026-04-25', end: '2026-05-25' },
-            total: 3_500_000,
-            lines: [
+            period:  { start: '2026-04-25', end: '2026-05-25' },
+            summary: { total_amount: 3_500_000, total_count: 85, total_orders: 80 },
+            by_method: [
               { method: 'cash',   amount: 2_000_000, count: 45, share_pct: 57.14 },
               { method: 'qris',   amount: 1_000_000, count: 28, share_pct: 28.57 },
               { method: 'gopay',  amount:   500_000, count: 12, share_pct: 14.29 },
             ],
+            by_day: [],
           },
           error: null,
         });
@@ -49,14 +51,14 @@ describe('PaymentByMethodPage (smoke)', () => {
     expect(screen.getByRole('heading', { name: /Payment by Method/i, level: 1 })).toBeInTheDocument();
   });
 
-  it('calls get_payments_by_method_v1 with p_start and p_end', async () => {
+  it('calls get_payments_by_method_v1 with p_date_start and p_date_end', async () => {
     renderPage();
     await waitFor(() => {
       const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_payments_by_method_v1');
       expect(call).toBeDefined();
-      const args = (call as [string, { p_start: string; p_end: string }])[1];
-      expect(args.p_start).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-      expect(args.p_end).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      const args = (call as [string, { p_date_start: string; p_date_end: string }])[1];
+      expect(args.p_date_start).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(args.p_date_end).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     });
   });
 

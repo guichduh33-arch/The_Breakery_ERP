@@ -37,8 +37,8 @@ export function usePb1Report(params: UsePb1ReportParams) {
     queryFn:  async () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any).rpc('get_pb1_report_v1', {
-        p_month: params.month,
-        p_year:  params.year,
+        p_period_month: params.month,
+        p_period_year:  params.year,
       });
       if (error) throw error as Error;
       return data as Pb1ReportData;
