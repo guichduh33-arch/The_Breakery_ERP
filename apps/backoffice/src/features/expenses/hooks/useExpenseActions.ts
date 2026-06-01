@@ -1,7 +1,8 @@
 // apps/backoffice/src/features/expenses/hooks/useExpenseActions.ts
 //
 // Workflow mutations: submit, approve, reject, pay.
-// S28: submit → v2 (idempotency_key), approve → v2 (PIN-in-header, S25 pattern).
+// S28: submit → v2 (idempotency_key). approve → v3 (server-side manager-PIN
+// re-auth via verify_user_pin; PIN passed as RPC arg — H1 audit fix 2026-06-01).
 
 import { useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -56,13 +57,15 @@ export function useApproveExpense() {
   const qc = useQueryClient();
   return useMutation<ApproveResult, Error, { id: string; manager_pin: string }>({
     mutationFn: async ({ id, manager_pin }) => {
-      // PIN-in-header (S25 canonical pattern) — never pass secrets in the RPC body/args.
-      const { data, error } = await supabase.rpc(
-        'approve_expense_v2',
-        { p_expense_id: id },
-        // @ts-expect-error supabase-js v2 accepts headers in rpc options
-        { headers: { 'x-manager-pin': manager_pin } },
-      );
+      // H1 audit fix (2026-06-01): approve_expense_v3 verifies the manager PIN
+      // server-side via verify_user_pin. For a Postgres RPC the PIN travels as an
+      // arg (NOT a header — the PIN-in-header rule targets Edge Functions whose
+      // bodies get logged; RPC args do not). v2 (which ignored the PIN) is dropped.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any).rpc('approve_expense_v3', {
+        p_expense_id:  id,
+        p_manager_pin: manager_pin,
+      });
       if (error) throw error;
       return data as unknown as ApproveResult;
     },
