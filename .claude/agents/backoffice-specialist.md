@@ -1,7 +1,7 @@
 ---
 name: backoffice-specialist
 description: Use proactively for any apps/backoffice work — reports, accounting cockpit, inventory admin, products, orders list, expenses, B2B, settings. Knows the project's critical patterns (RPC versioning, REVOKE pairs, PermissionGate, ExportButtons, infinite-query cursor, 7-group sidebar).
-tools: Glob, Grep, Read, Edit, Write, Bash, TodoWrite, WebFetch
+tools: Glob, Grep, Read, Edit, Write, Bash, TodoWrite, WebFetch, Skill
 model: sonnet
 ---
 

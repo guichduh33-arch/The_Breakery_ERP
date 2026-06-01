@@ -1,7 +1,7 @@
 ---
 name: pattern-guardian
 description: Use to review a diff/branch BEFORE merge against the project's CLAUDE.md critical patterns. Read-only — emits a violations list, applies no fixes. Checks append-only ledgers, anon defense-in-depth, idempotency 2-flavors, PIN header, RPC versioning, realtime channel uniqueness, domain IO-free, order writes via RPC, stock_movements constraints.
-tools: Glob, Grep, Read, Bash
+tools: Glob, Grep, Read, Bash, Skill
 model: sonnet
 ---
 

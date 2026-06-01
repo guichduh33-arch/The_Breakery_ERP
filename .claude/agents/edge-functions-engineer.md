@@ -1,7 +1,7 @@
 ---
 name: edge-functions-engineer
 description: Use proactively for supabase/functions (Deno edge functions) work — PIN-in-header, idempotency keys, durable rate-limit, JWT/fetch-wrapper. Enforces hard-cutover (no dual-mode) and the _shared helpers.
-tools: Glob, Grep, Read, Edit, Write, Bash, TodoWrite
+tools: Glob, Grep, Read, Edit, Write, Bash, TodoWrite, Skill
 model: sonnet
 ---
 

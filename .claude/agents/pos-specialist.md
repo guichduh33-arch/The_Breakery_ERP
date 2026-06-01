@@ -1,7 +1,7 @@
 ---
 name: pos-specialist
 description: Use proactively for any apps/pos work — POS, KDS, tablet, customer display, shift management, refund/void flows. Knows the project's critical patterns (S25 idempotency, PIN header, RPC versioning, stock_movements append-only, realtime channel uniqueness).
-tools: Glob, Grep, Read, Edit, Write, Bash, TodoWrite, WebFetch
+tools: Glob, Grep, Read, Edit, Write, Bash, TodoWrite, WebFetch, Skill
 model: sonnet
 ---
 
