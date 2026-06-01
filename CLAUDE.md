@@ -205,6 +205,28 @@ npx @claude-flow/cli@latest hooks worker dispatch --trigger audit
 
 Any string works as a custom agent type.
 
+### Project agents & skills (The Breakery — adaptés au projet)
+
+Au-delà des agents génériques ci-dessus, le repo versionne une **équipe spécialisée** (PR #55). Les **agents** (`.claude/agents/*.md`) sont spawnables via la tâche Agent ; les **skills** (`.claude/skills/<name>/SKILL.md`) s'auto-déclenchent par `pathPatterns`/`promptSignals` quand on touche leur domaine. Chacun pointe vers ce CLAUDE.md comme source de vérité et vérifie le schéma réel (migrations/MCP) avant d'affirmer un fait.
+
+**Agents** (`.claude/agents/`) :
+- `pos-specialist` (sonnet) — `apps/pos/`
+- `backoffice-specialist` (sonnet) — `apps/backoffice/`
+- `db-engineer` (sonnet) — `supabase/migrations/` + RPCs (versioning, REVOKE pairs, MCP V3)
+- `edge-functions-engineer` (sonnet) — `supabase/functions/` (PIN header, idempotency, rate-limit)
+- `pattern-guardian` (sonnet, **read-only**) — revue de diff vs les Critical patterns ci-dessous
+- `test-engineer` (sonnet) — pgTAP/Vitest/smoke + baseline env-gated
+- `session-coordinator` (**opus**) — orchestration `swarm/session-N` (spec→plan→waves→closeout)
+
+**Skills** (`.claude/skills/`, auto-déclenchés) :
+- `stock-management` — inventory/recipes/production/WAC/lots
+- `accounting` — COA/JE/PB1 NON-PKP/fiscal/GL/TB · `b2b-credit` — AR/credit-limit/b2b_payments
+- `reports-exports` — report RPCs/PDF/CSV/Z-report/drill-down · `expense-governance` — thresholds/SOD/multi-step
+- `products-catalog` — products CRUD/variants/categories · `orders` — lifecycle/list v2/edit-items/void/refund
+- `security-auth` — RLS/REVOKE/perms/PIN-JWT/rate-limit · `breakery-ui-kit` — conventions `packages/ui`
+
+Conception : `docs/superpowers/specs/2026-05-31-agents-skills-team-design.md` (spec) + `docs/superpowers/plans/2026-05-31-agents-skills-team.md` (plan). `.gitignore` versionne les `.md` racine de `.claude/agents/` ; les sous-dossiers ruflo restent ignorés.
+
 ## Build & Test
 
 - ALWAYS run tests after code changes
