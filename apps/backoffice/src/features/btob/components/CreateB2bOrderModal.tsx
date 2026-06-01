@@ -208,10 +208,11 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
             <div role="alert" className="rounded-md border border-amber-500 bg-amber-500/10 p-3 text-xs text-amber-700">
               <div className="font-semibold">Credit limit exceeded</div>
               <div className="mt-1 space-y-0.5">
-                <div>Current balance: <span className="font-mono">{formatIdr(creditPayload.current_balance)}</span></div>
-                <div>Credit limit:    <span className="font-mono">{creditPayload.credit_limit !== null ? formatIdr(creditPayload.credit_limit) : '—'}</span></div>
-                <div>Proposed amount: <span className="font-mono">{formatIdr(creditPayload.proposed_amount)}</span></div>
-                <div>Would exceed by: <span className="font-mono">{creditPayload.would_exceed_by !== null ? formatIdr(creditPayload.would_exceed_by) : '—'}</span></div>
+                <div>Current balance:  <span className="font-mono">{formatIdr(creditPayload.current_balance)}</span></div>
+                <div>Credit limit:     <span className="font-mono">{creditPayload.credit_limit !== null ? formatIdr(creditPayload.credit_limit) : '—'}</span></div>
+                <div>Available credit: <span className="font-mono">{creditPayload.available !== null ? formatIdr(creditPayload.available) : '—'}</span></div>
+                <div>Order total:      <span className="font-mono">{formatIdr(itemsTotal)}</span></div>
+                <div>Would exceed by:  <span className="font-mono">{creditPayload.would_exceed_by !== null ? formatIdr(creditPayload.would_exceed_by) : '—'}</span></div>
               </div>
               <div className="mt-2">Adjust the basket or escalate to a manager to increase the credit limit.</div>
             </div>

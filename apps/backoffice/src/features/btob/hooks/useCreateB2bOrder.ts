@@ -28,12 +28,15 @@ export type CreateB2bOrderErrorCode =
   | 'fiscal_period_closed'
   | 'unknown';
 
+// Mirrors the validate_b2b_credit_limit_v1 jsonb payload exactly
+// (migration 20260517000131). NOTE: the RPC does NOT echo the proposed order
+// amount; `available` is the remaining credit (limit - current_balance).
 export interface CreditLimitExceededPayload {
   allowed:           boolean;
+  customer_type:     string;
   current_balance:   number;
   credit_limit:      number | null;
-  available_credit:  number | null;
-  proposed_amount:   number;
+  available:         number | null;
   would_exceed_by:   number | null;
 }
 
