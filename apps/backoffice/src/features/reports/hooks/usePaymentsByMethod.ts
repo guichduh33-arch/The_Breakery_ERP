@@ -28,11 +28,19 @@ export function usePaymentsByMethod(params: UsePaymentsByMethodParams) {
     queryFn:  async () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any).rpc('get_payments_by_method_v1', {
-        p_start: params.start,
-        p_end:   params.end,
+        p_date_start: params.start,
+        p_date_end:   params.end,
       });
       if (error) throw error as Error;
-      return data as PaymentsByMethodData;
+      // RPC returns { period, summary:{ total_amount, … }, by_method:[…], by_day:[…] }.
+      // Map to this hook's stable { lines, total, period } contract.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const raw = (data ?? {}) as any;
+      return {
+        lines:  (raw.by_method ?? []) as PaymentByMethodLine[],
+        total:  Number(raw.summary?.total_amount ?? 0),
+        period: raw.period ?? { start: params.start, end: params.end },
+      } satisfies PaymentsByMethodData;
     },
     enabled: Boolean(params.start && params.end),
   });

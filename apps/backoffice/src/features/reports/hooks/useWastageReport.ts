@@ -32,11 +32,24 @@ export function useWastageReport(params: UseWastageReportParams) {
     queryFn:  async () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any).rpc('get_wastage_report_v1', {
-        p_start: params.start,
-        p_end:   params.end,
+        p_date_start: params.start,
+        p_date_end:   params.end,
       });
       if (error) throw error as Error;
-      return data as WastageReportData;
+      // RPC returns { period, summary:{ total_value, … }, by_product:[…], lines:[…] }
+      // where each line carries `created_by_name`. Map to this hook's stable
+      // { lines, total_value, period } contract.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const raw = (data ?? {}) as any;
+      return {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        lines: ((raw.lines ?? []) as any[]).map((l) => ({
+          ...l,
+          recorded_by: l.recorded_by ?? l.created_by_name ?? null,
+        })) as WastageReportLine[],
+        total_value: Number(raw.summary?.total_value ?? 0),
+        period:      raw.period ?? { start: params.start, end: params.end },
+      } satisfies WastageReportData;
     },
     enabled: Boolean(params.start && params.end),
   });

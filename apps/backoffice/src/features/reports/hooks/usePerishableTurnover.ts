@@ -33,8 +33,8 @@ export function usePerishableTurnover(params: UsePerishableTurnoverParams) {
     queryFn:  async () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any).rpc('get_perishable_turnover_v1', {
-        p_start: params.start,
-        p_end:   params.end,
+        p_date_start: params.start,
+        p_date_end:   params.end,
       });
       if (error) throw error as Error;
       return data as PerishableTurnoverData;

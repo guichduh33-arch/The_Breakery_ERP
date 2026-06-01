@@ -1,7 +1,8 @@
 // apps/backoffice/src/features/orders/hooks/useVoidOrder.ts
 // Session 33 / Wave 2.5 — BO version of POS apps/pos/src/features/order-history/hooks/useVoidOrder.
-// Per DEV-S33-PRE-02: void-order EF accepts manager_pin in body (S25 only
-// hardened refund-order). Header-PIN refactor deferred to backlog.
+// S34 hardening: the void-order EF reads the manager PIN ONLY from the
+// `x-manager-pin` HTTP header (S25 PIN-in-header pattern) and rejects with
+// `missing_manager_pin` (400) when it is absent — never from the JSON body.
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
@@ -41,8 +42,9 @@ export function useVoidOrder() {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${accessToken}`,
+          'x-manager-pin': managerPin,
         },
-        body: JSON.stringify({ order_id: orderId, reason, manager_pin: managerPin }),
+        body: JSON.stringify({ order_id: orderId, reason }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({})) as VoidResponse;

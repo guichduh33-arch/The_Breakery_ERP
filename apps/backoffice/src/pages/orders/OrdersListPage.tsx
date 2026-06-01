@@ -41,8 +41,12 @@ function fmtDateTime(iso: string): string {
   });
 }
 
-const STATUSES        = ['', 'open', 'completed', 'voided', 'refunded'] as const;
-const ORDER_TYPES     = ['', 'dine_in', 'takeaway', 'tablet', 'b2b'] as const;
+// Real DB enums (packages/supabase types.generated.ts):
+//   order_status: draft | paid | voided | pending_payment | completed | b2b_pending
+//   order_type:   dine_in | take_out | delivery | b2b   (tablet is created_via, NOT an order_type)
+// Refund state is filtered separately via REFUND_STATUSES (server-side refund_status).
+const STATUSES        = ['', 'draft', 'paid', 'pending_payment', 'completed', 'voided', 'b2b_pending'] as const;
+const ORDER_TYPES     = ['', 'dine_in', 'take_out', 'delivery', 'b2b'] as const;
 const PAYMENT_METHODS = ['', 'cash', 'card', 'qris', 'edc', 'transfer', 'store_credit'] as const;
 const CUSTOMER_TYPES  = ['', 'retail', 'b2b'] as const;
 const REFUND_STATUSES = ['', 'none', 'partial', 'full'] as const;
@@ -295,7 +299,8 @@ export default function OrdersListPage(): JSX.Element {
                     <Edit3 size={16} />
                   </button>
                 )}
-                {hasVoid && (o.status === 'pending_payment' || o.status === 'completed' || o.status === 'paid') && (
+                {/* void_order_rpc_v2 only accepts status='paid' (raises check_violation otherwise) */}
+                {hasVoid && o.status === 'paid' && (
                   <button
                     type="button"
                     title="Void"

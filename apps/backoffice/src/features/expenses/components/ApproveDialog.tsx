@@ -1,5 +1,6 @@
 // apps/backoffice/src/features/expenses/components/ApproveDialog.tsx
-// S28: approve_expense_v2 — PIN collected in dialog, passed via x-manager-pin header (S25 pattern).
+// S28 + H1 audit fix (2026-06-01): approve_expense_v3 — PIN collected in dialog,
+// passed as the p_manager_pin RPC arg and verified server-side via verify_user_pin.
 // S28 Task 5.H: SOD-aware button state (creator cannot approve their own expense; double-approve blocked).
 import { useState } from 'react';
 import {

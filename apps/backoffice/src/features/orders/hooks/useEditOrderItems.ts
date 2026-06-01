@@ -4,6 +4,7 @@
 // idempotency key. Errors abort (no rollback cross-RPC — each is atomic
 // DB-side). Returns onProgress for UI progress bar.
 
+import { useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAddOrderItem } from './useAddOrderItem';
 import { useUpdateOrderItemQty } from './useUpdateOrderItemQty';
@@ -27,6 +28,18 @@ export function useEditOrderItems(opts?: { onProgress?: (p: ApplyProgress) => vo
   const updM = useUpdateOrderItemQty();
   const remM = useRemoveOrderItem();
 
+  // Stable per-operation idempotency keys, held across retries. A retried "Apply"
+  // of the SAME diff reuses the same keys, so already-applied ops replay server-side
+  // (order_edit_idempotency_keys) instead of double-applying. Cleared on success.
+  const keyMap = useRef<Map<string, string>>(new Map());
+  function keyFor(op: string): string {
+    const existing = keyMap.current.get(op);
+    if (existing !== undefined) return existing;
+    const k = crypto.randomUUID();
+    keyMap.current.set(op, k);
+    return k;
+  }
+
   return useMutation<void, Error, ApplyArgs>({
     mutationFn: async ({ orderId, diff }) => {
       const total = diff.removes.length + diff.updates.length + diff.adds.length;
@@ -34,21 +47,21 @@ export function useEditOrderItems(opts?: { onProgress?: (p: ApplyProgress) => vo
 
       for (const orderItemId of diff.removes) {
         opts?.onProgress?.({ step: 'removes', index: idx++, total });
-        await remM.mutateAsync({ orderItemId, idempotencyKey: crypto.randomUUID() });
+        await remM.mutateAsync({ orderItemId, idempotencyKey: keyFor(`remove:${orderItemId}`) });
       }
 
       for (const u of diff.updates) {
         opts?.onProgress?.({ step: 'updates', index: idx++, total });
-        await updM.mutateAsync({ orderItemId: u.order_item_id, qty: u.qty, idempotencyKey: crypto.randomUUID() });
+        await updM.mutateAsync({ orderItemId: u.order_item_id, qty: u.qty, idempotencyKey: keyFor(`update:${u.order_item_id}:${u.qty}`) });
       }
 
-      for (const a of diff.adds) {
+      for (const [addIdx, a] of diff.adds.entries()) {
         opts?.onProgress?.({ step: 'adds', index: idx++, total });
         await addM.mutateAsync({
           orderId,
           productId:      a.product_id,
           qty:            a.qty,
-          idempotencyKey: crypto.randomUUID(),
+          idempotencyKey: keyFor(`add:${addIdx}:${a.product_id}:${a.qty}`),
           ...(a.modifiers ? { modifiers: [a.modifiers] } : {}),
         });
       }
@@ -56,6 +69,7 @@ export function useEditOrderItems(opts?: { onProgress?: (p: ApplyProgress) => vo
       opts?.onProgress?.({ step: 'done', index: total, total });
     },
     onSuccess: (_, { orderId }) => {
+      keyMap.current.clear();
       void qc.invalidateQueries({ queryKey: ['orders', 'list'] });
       void qc.invalidateQueries({ queryKey: ['orders', 'detail', orderId] });
     },

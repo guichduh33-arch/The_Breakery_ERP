@@ -53,14 +53,14 @@ describe('Pb1ReportPage (smoke)', () => {
     expect(screen.getByRole('heading', { name: /PB1 Report/i, level: 1 })).toBeInTheDocument();
   });
 
-  it('calls get_pb1_report_v1 with p_month and p_year', async () => {
+  it('calls get_pb1_report_v1 with p_period_month and p_period_year', async () => {
     renderPage();
     await waitFor(() => {
       const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_pb1_report_v1');
       expect(call).toBeDefined();
-      const args = (call as [string, { p_month: number; p_year: number }])[1];
-      expect(typeof args.p_month).toBe('number');
-      expect(typeof args.p_year).toBe('number');
+      const args = (call as [string, { p_period_month: number; p_period_year: number }])[1];
+      expect(typeof args.p_period_month).toBe('number');
+      expect(typeof args.p_period_year).toBe('number');
     });
   });
 

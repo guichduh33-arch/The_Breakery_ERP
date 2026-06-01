@@ -14,6 +14,7 @@
 //   product_not_found               — product deleted or inactive
 //   quantity_must_be_positive       — qty <= 0
 
+import { useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { TransferRpcResult } from '@breakery/domain';
 import { supabase } from '@/lib/supabase.js';
@@ -64,9 +65,12 @@ function classify(message: string): CreateTransferErrorCode {
 
 export function useCreateTransfer() {
   const qc = useQueryClient();
+  // Idempotency key held across retries (a network retry of THIS transfer replays
+  // server-side); rotated on success so the next logical transfer gets a fresh key.
+  const idemKey = useRef<string>(crypto.randomUUID());
   return useMutation<TransferRpcResult, CreateTransferError, CreateTransferArgs>({
     mutationFn: async (args) => {
-      const idempotencyKey = crypto.randomUUID();
+      const idempotencyKey = idemKey.current;
       const rpcArgs = {
         p_from_section_id: args.fromSectionId,
         p_to_section_id:   args.toSectionId,
@@ -96,6 +100,7 @@ export function useCreateTransfer() {
       return data as TransferRpcResult;
     },
     onSuccess: async () => {
+      idemKey.current = crypto.randomUUID();
       await qc.invalidateQueries({ queryKey: INTERNAL_TRANSFERS_QUERY_KEY });
     },
   });

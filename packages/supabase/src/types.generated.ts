@@ -5448,7 +5448,10 @@ export type Database = {
         }
         Returns: Json
       }
-      approve_expense_v2: { Args: { p_expense_id: string }; Returns: Json }
+      approve_expense_v3: {
+        Args: { p_expense_id: string; p_manager_pin: string }
+        Returns: Json
+      }
       calculate_pb1_payable_v1: {
         Args: { p_period_end: string; p_period_start: string }
         Returns: Json
