@@ -5,6 +5,7 @@
 // are loose JSONB; we use `unknown` + a thin client-side type for the
 // happy-path payload.
 
+import { useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
 import { OPNAME_LIST_QUERY_KEY } from './useOpnameList.js';
@@ -36,18 +37,21 @@ export interface CreateOpnameResult {
 
 export function useCreateOpname() {
   const qc = useQueryClient();
+  // Idempotency key held across retries; rotated on success so the next opname
+  // gets a fresh key while a network retry of THIS create replays server-side.
+  const idemKey = useRef<string>(crypto.randomUUID());
   return useMutation<CreateOpnameResult, Error, CreateOpnameArgs>({
     mutationFn: async (args) => {
-      const idemKey = crypto.randomUUID();
       const { data, error } = await rpc()('create_opname_v1', {
         p_section_id: args.sectionId,
-        p_idempotency_key: idemKey,
+        p_idempotency_key: idemKey.current,
         ...(args.notes !== undefined && args.notes.trim() !== '' ? { p_notes: args.notes.trim() } : {}),
       });
       if (error !== null) throw new Error(error.message);
       return data as CreateOpnameResult;
     },
     onSuccess: async () => {
+      idemKey.current = crypto.randomUUID();
       await qc.invalidateQueries({ queryKey: OPNAME_LIST_QUERY_KEY });
     },
   });
@@ -147,16 +151,20 @@ export interface FinalizeOpnameResult {
 
 export function useFinalizeOpname() {
   const qc = useQueryClient();
+  // Idempotency key held across retries; rotated on success. finalize_opname_v1
+  // is also status-locked server-side, but a stable key makes the replay explicit.
+  const idemKey = useRef<string>(crypto.randomUUID());
   return useMutation<FinalizeOpnameResult, Error, { countId: string }>({
     mutationFn: async ({ countId }) => {
       const { data, error } = await rpc()('finalize_opname_v1', {
         p_count_id: countId,
-        p_idempotency_key: crypto.randomUUID(),
+        p_idempotency_key: idemKey.current,
       });
       if (error !== null) throw new Error(error.message);
       return data as FinalizeOpnameResult;
     },
     onSuccess: async (_d, args) => {
+      idemKey.current = crypto.randomUUID();
       await qc.invalidateQueries({ queryKey: opnameDetailKey(args.countId) });
       await qc.invalidateQueries({ queryKey: OPNAME_LIST_QUERY_KEY });
       await qc.invalidateQueries({ queryKey: ['stock-levels'] });

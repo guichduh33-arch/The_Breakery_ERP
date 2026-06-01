@@ -15,6 +15,7 @@
 //   received_items_required         — empty items array
 //   transfer_item_not_found         — item_id doesn't belong to this transfer
 
+import { useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { TransferRpcResult } from '@breakery/domain';
 import { supabase } from '@/lib/supabase.js';
@@ -57,9 +58,11 @@ function classify(message: string): ReceiveTransferErrorCode {
 
 export function useReceiveTransfer() {
   const qc = useQueryClient();
+  // Idempotency key held across retries; rotated on success (see useCreateTransfer).
+  const idemKey = useRef<string>(crypto.randomUUID());
   return useMutation<TransferRpcResult, ReceiveTransferError, ReceiveTransferArgs>({
     mutationFn: async (args) => {
-      const idempotencyKey = crypto.randomUUID();
+      const idempotencyKey = idemKey.current;
       const rpcArgs = {
         p_transfer_id:    args.transferId,
         p_received_items: args.items.map((it) => ({
@@ -82,6 +85,7 @@ export function useReceiveTransfer() {
       return data as TransferRpcResult;
     },
     onSuccess: async (_data, vars) => {
+      idemKey.current = crypto.randomUUID();
       await Promise.all([
         qc.invalidateQueries({ queryKey: transferDetailQueryKey(vars.transferId) }),
         qc.invalidateQueries({ queryKey: INTERNAL_TRANSFERS_QUERY_KEY }),
