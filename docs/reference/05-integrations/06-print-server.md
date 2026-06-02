@@ -190,3 +190,127 @@ flowchart LR
 - Hub/client protocol: `06-lan-architecture/02-hub-client-protocol.md`
 - Print routing & hub responsibilities: `06-lan-architecture/04-print-routing.md`
 - Discovery / heartbeat: `06-lan-architecture/05-discovery.md`
+
+## V3 station-routing contract (Session 34 — current code)
+
+> **Last verified**: 2026-06-01 against `apps/pos/src/services/print/printService.ts`.
+
+S34 replaced the V2 per-printer endpoints (`/print/kitchen`, `/print/barista`, …)
+with a single station-routing endpoint. The bridge receives the target printer in
+the request body and opens an ESC/POS connection to `printer.ip_address:printer.port`.
+
+### Base URL
+The POS reads the base URL from `VITE_PRINT_SERVER_URL` (fallback `http://localhost:3001`).
+In prod, set it to the bridge's LAN address on the counter PC (e.g. `http://192.168.1.50:3001`).
+S35 (F-009) will add a manager-editable override stored in `usePosSettingsStore`
+(resolution: store > env var > fallback).
+
+### Endpoints
+
+| Method | Endpoint | Caller | Timeout | Body |
+|--------|----------|--------|---------|------|
+| GET  | `/health`         | `checkPrintServer`   | 2 s | — |
+| POST | `/print/ticket`   | `printStationTicket` | 5 s | `{ printer, ...StationTicketPayload }` |
+| POST | `/print/receipt`  | `printReceipt`       | 5 s | `{ ...ReceiptPayload, printer? }` (printer field omitted when absent) |
+| POST | `/drawer/open`    | `openCashDrawer`     | 2 s | — |
+
+`Content-Type: application/json` on the two POST-with-body endpoints. The bridge MUST
+return a 2xx on success; any non-2xx makes the client return `{ success:false, error:'HTTP <status>' }`.
+A network error / abort makes the client return `{ success:false, error:<message> }`.
+
+### `/print/ticket` body — `{ printer, ...StationTicketPayload }`
+
+`printer` is first in the object; the payload fields are spread after it:
+
+- `printer`: `{ ip_address: string, port: number }` — the target station printer.
+- `kind`: `'prep' | 'bill' | 'receipt'` (`PrintKind`).
+- `role`: one of `'barista' | 'kitchen' | 'bakery' | 'cashier' | 'waiter'` (`PrinterRole`).
+- `order_number`: string.
+- `table_number?`: string.
+- `created_at`: ISO string.
+- `server_name`: string.
+- `items[]`: `{ name: string, quantity: number, modifiers?: string[], note?: string }`.
+- `totals?`: `{ subtotal, tax, total }` (present for `bill` and `receipt`).
+- `payment?`: `{ method, amount, change_given }` (present for `receipt` only).
+
+### `/print/receipt` body — `{ ...ReceiptPayload, printer? }`
+
+`printer` is spread **last** and is **omitted** when the POS has no cashier printer to route to:
+
+- `business`: `{ name, address, phone?, tax_id? }`.
+- `order`: `{ order_number, created_at, cashier_name, order_type: 'dine_in'|'take_out' }`.
+- `customer?`: `{ name, loyalty_tier? }`.
+- `items[]`: `{ name, quantity, unit_price, modifiers?: { label, price_adjustment }[], line_total }`.
+- `totals`: `{ items_total, redemption_amount, total, tax_amount }`.
+- `payment`: `{ method, amount, cash_received?, change_given? }`.
+- `loyalty?`: `{ points_earned, balance_after }`.
+- `footer?`: string.
+- `printer?`: `{ ip_address, port }` when a cashier printer is resolved.
+
+### `/drawer/open` and `/health`
+`/drawer/open` takes no body (POST), pulses the cash drawer, returns 2xx on success.
+`/health` is a GET liveness probe used by `checkPrintServer` (2 s timeout, returns `res.ok`).
+
+## Bridge deployment runbook (ops — counter PC)
+
+> The bridge source is **outside this monorepo**. This runbook deploys the
+> compiled bridge on the counter PC and verifies it against the contract above.
+
+### Prerequisites
+- Counter PC on the same LAN as the thermal printers (barista/kitchen/bakery prep
+  + cashier/waiter document) — each printer reachable at `ip:9100` (ESC/POS raw).
+- Node 18+ on the counter PC.
+- A fixed LAN IP for the counter PC (e.g. `192.168.1.50`) so the POS env var is stable.
+
+### Deploy
+1. Copy the bridge build to the counter PC (e.g. `C:\breakery-print-bridge\`).
+2. Configure the listen port (default `3001`).
+3. Start it as a supervised service so it restarts on boot/crash:
+   - Windows: register via NSSM or a Scheduled Task at logon.
+   - Linux: a `systemd` unit with `Restart=always`.
+
+### Verify (run from the counter PC, then from a POS tablet on the LAN)
+```bash
+# Liveness — expect HTTP 200.
+curl -i http://192.168.1.50:3001/health
+
+# Station ticket — expect 2xx and a physical ticket on the kitchen printer.
+curl -i -X POST http://192.168.1.50:3001/print/ticket \
+  -H 'Content-Type: application/json' \
+  -d '{"printer":{"ip_address":"192.168.1.12","port":9100},"kind":"prep","role":"kitchen","order_number":"TEST-1","created_at":"2026-06-01T00:00:00Z","server_name":"ops","items":[{"name":"Test item","quantity":1}]}'
+
+# Drawer kick — expect 2xx and the cashier drawer opens.
+curl -i -X POST http://192.168.1.50:3001/drawer/open
+```
+Acceptance: `/health` returns 200; `/print/ticket` prints on the addressed printer;
+`/drawer/open` pulses the drawer.
+
+### Wire the POS
+Set `VITE_PRINT_SERVER_URL=http://192.168.1.50:3001` in `apps/pos/.env.local` on each
+tablet (or via S35's Printing tab once shipped) and rebuild/reload the POS.
+
+## Prod `lan_devices` provisioning (ops — per site)
+
+> The dev fixture (`supabase/tests/seed_dev_printers.sql`) is for dev only.
+> Prod rows carry the site's **real** printer IPs and must be inserted by an
+> account holding `lan.devices.manage` (RLS gate).
+
+For each of the 5 station roles, insert one `lan_devices` row:
+
+| `code` (unique) | `name` | `device_type` | `capabilities` | `ip_address` / `port` |
+|---|---|---|---|---|
+| e.g. `LBK-PRINTER-BARISTA` | Barista printer | `printer` | `{"station":"barista"}` | real LAN IP / 9100 |
+| e.g. `LBK-PRINTER-KITCHEN` | Kitchen printer | `printer` | `{"station":"kitchen"}` | real LAN IP / 9100 |
+| e.g. `LBK-PRINTER-BAKERY`  | Bakery printer  | `printer` | `{"station":"bakery"}`  | real LAN IP / 9100 |
+| e.g. `LBK-PRINTER-CASHIER` | Cashier printer | `printer` | `{"station":"cashier"}` | real LAN IP / 9100 |
+| e.g. `LBK-PRINTER-WAITER`  | Waiter printer  | `printer` | `{"station":"waiter"}`  | real LAN IP / 9100 |
+
+Rules:
+- `code` must be unique and non-null (`code UNIQUE NOT NULL`).
+- `ip_address` is `INET` — a valid IP literal, not a hostname string.
+- `is_active = TRUE`, `deleted_at` NULL.
+- A missing role is non-fatal: `useStationPrinters` simply won't resolve it and the
+  S34 flow shows "no printer configured for [station]" (no crash).
+
+A BO "Devices" management UI is the intended long-term entry point (out of scope here;
+tracked as a separate backlog item).
