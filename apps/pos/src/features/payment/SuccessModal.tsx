@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { Check, Printer, RotateCw } from 'lucide-react';
 import { Button, Currency, FullScreenModal } from '@breakery/ui';
 import { calculateTotals } from '@breakery/domain';
-import type { Cart } from '@breakery/domain';
+import type { Cart, PaymentMethod } from '@breakery/domain';
 import { printReceipt, openCashDrawer, type ReceiptPayload } from '@/services/print/printService';
 import { useStationPrinters } from '@/features/cart/hooks/useStationPrinters';
 import { toast } from 'sonner';
@@ -23,7 +23,7 @@ export interface SuccessModalProps {
   pointsEarned?: number;
   customerName?: string;
   cart: Cart;
-  paymentMethod: string;
+  paymentMethod: PaymentMethod;
   cashReceived: number;
   cashierName: string;
   onNewOrder: () => void;
@@ -56,10 +56,11 @@ function buildReceiptPayload(props: SuccessModalProps): ReceiptPayload {
       tax_amount: totals.tax_amount,
     },
     payment: {
-      method: 'cash',
+      method: props.paymentMethod,
       amount: props.total,
-      cash_received: props.cashReceived,
-      change_given: props.changeGiven ?? 0,
+      ...(props.paymentMethod === 'cash'
+        ? { cash_received: props.cashReceived, change_given: props.changeGiven ?? 0 }
+        : {}),
     },
     ...(props.pointsEarned && props.pointsEarned > 0 ? {
       loyalty: { points_earned: props.pointsEarned, balance_after: 0 },

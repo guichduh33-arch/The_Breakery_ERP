@@ -1,5 +1,5 @@
 // apps/pos/src/services/print/printService.ts
-import type { PrintKind, PrinterRole } from '@breakery/domain';
+import type { PaymentMethod, PrintKind, PrinterRole } from '@breakery/domain';
 
 const SERVER_URL = 'http://localhost:3001';
 
@@ -57,7 +57,7 @@ export interface ReceiptPayload {
     total: number;
     tax_amount: number;
   };
-  payment: { method: 'cash'; amount: number; cash_received: number; change_given: number };
+  payment: { method: PaymentMethod; amount: number; cash_received?: number; change_given?: number };
   loyalty?: { points_earned: number; balance_after: number };
   footer?: string;
 }
