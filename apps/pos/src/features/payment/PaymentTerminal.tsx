@@ -10,33 +10,20 @@
 // Refactored 2026-06-01: flow logic extracted to usePaymentFlowLogic; JSX sub-blocks
 // extracted to presentation components. Iso-behaviour.
 
-import { ArrowLeft, ArrowRightLeft, Banknote, CheckCircle2, CreditCard, Plus, QrCode, Smartphone, Users, Wallet, X } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Plus, Users, X } from 'lucide-react';
 import {
   Button, Currency, FullScreenModal, LoyaltyBadge, Numpad,
   PromotionLineRow, SectionLabel, TenderListBuilder, cn,
 } from '@breakery/ui';
 import {
   calculateChange, tierFromLifetime, TIERS,
-  type PaymentMethod,
 } from '@breakery/domain';
 import { SuccessModal } from './SuccessModal';
 import { SplitPaymentFlow } from './split/SplitPaymentFlow';
 import { formatLabel } from './format';
 import { usePaymentFlowLogic } from './hooks/usePaymentFlowLogic';
 import { RetryBanner } from './components/RetryBanner';
-import type { LucideProps } from 'lucide-react';
-import type { ForwardRefExoticComponent, RefAttributes } from 'react';
-
-type IconComponent = ForwardRefExoticComponent<Omit<LucideProps, 'ref'> & RefAttributes<SVGSVGElement>>;
-
-const METHODS: { value: PaymentMethod; label: string; icon: IconComponent }[] = [
-  { value: 'cash',         label: 'Cash',         icon: Banknote },
-  { value: 'card',         label: 'Card',         icon: CreditCard },
-  { value: 'qris',         label: 'QRIS',         icon: QrCode },
-  { value: 'edc',          label: 'EDC',          icon: Smartphone },
-  { value: 'transfer',     label: 'Transfer',     icon: ArrowRightLeft },
-  { value: 'store_credit', label: 'Store Credit', icon: Wallet },
-];
+import { PaymentMethodGrid } from './components/PaymentMethodGrid';
 
 export function PaymentTerminal() {
   const {
@@ -256,30 +243,7 @@ export function PaymentTerminal() {
 
           {remaining > 0 && (
             <>
-              <SectionLabel as="div" className="mb-2">Select Payment Method</SectionLabel>
-              <div className="grid grid-cols-3 gap-3 mb-6">
-                {METHODS.map((m) => {
-                  const Icon = m.icon;
-                  const active = selectedMethod === m.value;
-                  return (
-                    <button
-                      key={m.value}
-                      onClick={() => selectMethod(m.value)}
-                      className={cn(
-                        'h-24 rounded-md border flex flex-col items-center justify-center gap-1.5 transition-colors',
-                        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold',
-                        active
-                          ? 'border-gold bg-gold-soft text-gold'
-                          : 'border-border-subtle bg-bg-elevated text-text-secondary hover:text-text-primary hover:border-gold/60',
-                      )}
-                      data-testid={`pay-method-${m.value}`}
-                    >
-                      <Icon className="h-5 w-5" aria-hidden />
-                      <span className="text-xs uppercase tracking-widest font-semibold">{m.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
+              <PaymentMethodGrid selectedMethod={selectedMethod} onSelect={selectMethod} />
 
               {selectedMethod && (
                 <div className="space-y-4 mb-4">
