@@ -22,9 +22,15 @@ interface Props {
   readOnly?: boolean;
   /** Called when any field changes. */
   onChange?: (patch: Partial<ProductRow>) => void;
+  /**
+   * Vitrine counter for this product (display_stock). `null` = no row / not
+   * stocked yet, `undefined` = not provided. Drives the M7 "needs stocking"
+   * banner: a display-case item with a 0/empty counter is unsellable at the POS.
+   */
+  displayStockQty?: number | null;
 }
 
-export function GeneralPanel({ product, categories, readOnly = true, onChange }: Props): JSX.Element {
+export function GeneralPanel({ product, categories, readOnly = true, onChange, displayStockQty }: Props): JSX.Element {
   const [draft, setDraft] = useState<ProductRow>(product);
 
   // Re-sync draft when the saved product changes (post-mutation refetch).
@@ -220,6 +226,20 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange }:
               disabled={readOnly}
               onChange={(v) => update('is_display_item', v)}
             />
+            {draft.is_display_item === true && (displayStockQty ?? 0) <= 0 && (
+              <div
+                role="alert"
+                data-testid="display-stock-warning"
+                className="rounded-md border border-gold-soft bg-gold/5 px-3 py-2 text-xs text-text-secondary"
+              >
+                <span className="font-semibold text-gold">
+                  Compteur vitrine à {displayStockQty ?? 0}.
+                </span>{' '}
+                Ce produit ne sera pas vendable au POS tant que la vitrine n'est pas
+                approvisionnée (geste POS «&nbsp;Mettre en vitrine&nbsp;»). Le BackOffice
+                ne gère pas le stock vitrine.
+              </div>
+            )}
           </div>
         </Card>
 

@@ -6181,54 +6181,53 @@ export type Database = {
           total_count: number
         }[]
       }
-      get_stock_movements_v1:
-        | {
-            Args: {
-              p_cursor?: string
-              p_cursor_id?: string
-              p_date_end?: string
-              p_date_start?: string
-              p_limit?: number
-              p_movement_type?: string
-              p_product_id?: string
-              p_section_id?: string
-            }
-            Returns: {
-              author_name: string
-              created_at: string
-              created_by: string
-              from_section_code: string
-              from_section_id: string
-              id: string
-              lot_id: string
-              metadata: Json
-              movement_type: Database["public"]["Enums"]["movement_type"]
-              product_id: string
-              product_name: string
-              product_sku: string
-              quantity: number
-              reason: string
-              reference_id: string
-              reference_type: string
-              supplier_id: string
-              supplier_name: string
-              to_section_code: string
-              to_section_id: string
-              unit: string
-              unit_cost: number
-            }[]
-          }
-        | {
-            Args: {
-              p_cursor?: string
-              p_end: string
-              p_limit?: number
-              p_movement_type?: string
-              p_product_id?: string
-              p_start: string
-            }
-            Returns: Json
-          }
+      get_stock_movements_v1: {
+        Args: {
+          p_cursor?: string
+          p_cursor_id?: string
+          p_date_end?: string
+          p_date_start?: string
+          p_limit?: number
+          p_movement_type?: string
+          p_product_id?: string
+          p_section_id?: string
+        }
+        Returns: {
+          author_name: string
+          created_at: string
+          created_by: string
+          from_section_code: string
+          from_section_id: string
+          id: string
+          lot_id: string
+          metadata: Json
+          movement_type: Database["public"]["Enums"]["movement_type"]
+          product_id: string
+          product_name: string
+          product_sku: string
+          quantity: number
+          reason: string
+          reference_id: string
+          reference_type: string
+          supplier_id: string
+          supplier_name: string
+          to_section_code: string
+          to_section_id: string
+          unit: string
+          unit_cost: number
+        }[]
+      }
+      get_stock_movements_v2: {
+        Args: {
+          p_cursor?: string
+          p_end: string
+          p_limit?: number
+          p_movement_type?: string
+          p_product_id?: string
+          p_start: string
+        }
+        Returns: Json
+      }
       get_stock_variance_v1: {
         Args: {
           p_date_end?: string

@@ -9,7 +9,7 @@
 
 ## Résolution (2026-06-01)
 
-**Corrigés + vérifiés** (Critical + High + 7/9 Medium) :
+**Corrigés + vérifiés** (Critical + High + 9/9 Medium — tous résolus) :
 
 | Finding | Sévérité | Fix | Vérif |
 |---|---|---|---|
@@ -25,13 +25,17 @@
 | M4 idempotency transfers | Medium | clé en `useRef`, rotée on-success (create/receive) | typecheck |
 | M5 idempotency opname/edit | Medium | `useRef`/Map de clés stables, rotées on-success | typecheck |
 | M6 void button | Medium | gate `status==='paid'` (matche `void_order_rpc_v2`) | typecheck |
+| M7 display seed | Medium | Trigger `tr_seed_display_stock` seed `display_stock(id,0)` au flag + backfill + bannière BO « approvisionner vitrine » (GeneralPanel + NewProductDialog) — migration `20260602120000` (Option C, 2026-06-02) | pgTAP 5/5 + 9 smoke + typecheck |
 | M8 SKU pre-check | Medium | `create_variant_v1` raise `sku_taken` — migration `20260601183121` | pgTAP ✓ |
+| M9 curseur + pivot | Medium | (a) `get_stock_movements_v2` curseur keyset `(created_at, id)` via token TEXT — drop 6-arg v1 — migration `20260602130000` ; (b) `get_payments_by_method_v1` by_day bucket `other` (Σcolonnes = total) — migration `20260602130010` (2026-06-02) | pgTAP 2/2 + 9 smoke + typecheck 6/6 |
 
-**Restants — décisions de design/contrat (non corrigés, à arbitrer)** :
+**Restants** :
 
-- **M7** (`is_display_item` sans `display_stock`) : le vrai correctif est un **avertissement BO** (« initialiser le compteur vitrine ») et/ou un seed de ligne zéro-qty — un seed seul ne rend pas le produit vendable (stock 0). Choix produit requis.
-- **M9** (curseur `get_stock_movements_v1` + pivot `by_day`) : le tiebreaker propre `(created_at, id)` change le **contrat** (signature RPC + hook + page + regen types) ; le pivot hardcodé (6 méthodes) demande un choix (`other` bucket vs dynamique). Impact faible (<500 mvts/jour). À planifier en bump dédié.
 - **Low/Info** (~20) : non traités (cf. tableaux ci-dessous).
+
+> **M7 résolu (2026-06-02, Option C).** Un seed à 0 ne rend pas vendable (la garde de vente exige qty > 0) — le trigger rend le produit **visible** dans `DisplayStockPage` (« needs stocking ») au lieu d'être silencieusement absent, et la **bannière BO** avertit le manager au moment où il coche le flag (point de décision, pas à l'encaissement). `ON CONFLICT DO NOTHING` ne réinitialise jamais un compteur déjà approvisionné (pgTAP T4). Le stock vitrine reste mutable **uniquement** côté POS (`add_display_stock_v1`).
+
+> **M9 résolu (2026-06-02).** (a) Le curseur du report Stock-Movements keyset sur `(created_at, id)` (token opaque `"<created_at>|<id>"`) — fini les drops/dupes sur un cluster d'égalité (inserts bulk même `created_at`) ; le 8-arg S13 (`useStockMovementsFeed`) était déjà keyset, seul le 6-arg S30 était buggy → bumpé `_v2`, 6-arg droppé (supprime aussi l'ambiguïté d'overload DEV-S30-1.A-04). `next_cursor` était déjà typé `string` côté hook → migration transparente. (b) `by_day` gagne un bucket `other` (catch-all hors-6-méthodes) : `Σcolonnes = total` **par construction**, robuste à tout futur tender ajouté à l'enum. PDF template `payment_by_method.ts` : colonne « Other » = `transfer + store_credit + other`. Enum actuel = 6 exactement → pas de bug live, fix préventif.
 
 Migrations appliquées sur cloud V3 `ikcyvlovptebroadgtvd`. Aucun commit (closeout laissé à l'utilisateur).
 

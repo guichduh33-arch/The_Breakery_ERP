@@ -108,4 +108,12 @@ describe('NewProductDialog — create flow (S27b)', () => {
       );
     });
   });
+
+  // M7 audit fix — "stock the vitrine from POS" advisory note.
+  it('surfaces the vitrine advisory note only when the display-item box is ticked', () => {
+    renderDialog();
+    expect(screen.queryByTestId('new-product-display-item-note')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('new-product-display-item'));
+    expect(screen.getByTestId('new-product-display-item-note')).toBeInTheDocument();
+  });
 });
