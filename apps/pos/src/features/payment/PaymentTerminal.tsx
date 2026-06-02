@@ -10,10 +10,10 @@
 // Refactored 2026-06-01: flow logic extracted to usePaymentFlowLogic; JSX sub-blocks
 // extracted to presentation components. Iso-behaviour.
 
-import { ArrowLeft, CheckCircle2, Plus, Users, X } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Users, X } from 'lucide-react';
 import {
-  Button, Currency, FullScreenModal, LoyaltyBadge, Numpad,
-  PromotionLineRow, SectionLabel, TenderListBuilder, cn,
+  Button, Currency, FullScreenModal, LoyaltyBadge,
+  PromotionLineRow, SectionLabel, TenderListBuilder,
 } from '@breakery/ui';
 import {
   calculateChange, tierFromLifetime, TIERS,
@@ -24,6 +24,7 @@ import { formatLabel } from './format';
 import { usePaymentFlowLogic } from './hooks/usePaymentFlowLogic';
 import { RetryBanner } from './components/RetryBanner';
 import { PaymentMethodGrid } from './components/PaymentMethodGrid';
+import { TenderDraftPanel } from './components/TenderDraftPanel';
 
 export function PaymentTerminal() {
   const {
@@ -246,70 +247,18 @@ export function PaymentTerminal() {
               <PaymentMethodGrid selectedMethod={selectedMethod} onSelect={selectMethod} />
 
               {selectedMethod && (
-                <div className="space-y-4 mb-4">
-                  {/* ENTER AMOUNT — big centered display */}
-                  <div>
-                    <SectionLabel as="div" className="text-gold mb-2 text-center">
-                      Enter Amount
-                    </SectionLabel>
-                    <div className="bg-bg-input border-2 border-gold rounded-md py-5 text-center">
-                      <span className="font-mono tabular-nums text-3xl text-text-primary">
-                        Rp {cashReceivedStr || '0'}
-                      </span>
-                    </div>
-                    {isCashDraft && cashChange > 0 && draftTenderAmount === remaining && (
-                      <div className="mt-2 text-xs text-text-secondary text-right">
-                        Change: <Currency amount={cashChange} className="text-gold" />
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    {/* AMOUNT RECEIVED preset grid */}
-                    <div>
-                      <SectionLabel as="div" className="text-gold mb-2">Amount Received</SectionLabel>
-                      <div className="grid grid-cols-2 gap-2">
-                        <button
-                          onClick={() => setCashReceivedStr(String(remaining))}
-                          className={cn(
-                            'col-span-2 rounded-md py-2.5 text-xs font-bold uppercase tracking-widest border',
-                            draftAmount === remaining
-                              ? 'bg-gold text-bg-base border-gold'
-                              : 'bg-bg-input border-border-subtle hover:bg-bg-overlay text-text-primary',
-                          )}
-                        >
-                          Exact ({formatLabel(remaining)})
-                        </button>
-                        {isCashDraft && quickAmounts.filter((q) => q >= remaining).slice(0, 4).map((q) => (
-                          <button
-                            key={q}
-                            onClick={() => setCashReceivedStr(String(q))}
-                            className="rounded-md py-2.5 text-xs font-mono tabular-nums bg-bg-input border border-border-subtle hover:bg-bg-overlay text-text-primary"
-                          >
-                            {formatLabel(q)}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Numpad */}
-                    <div>
-                      <SectionLabel as="div" className="text-gold mb-2">Cash Received</SectionLabel>
-                      <Numpad value={cashReceivedStr} onChange={setCashReceivedStr} />
-                    </div>
-                  </div>
-
-                  <Button
-                    variant="secondary"
-                    size="lg"
-                    className="w-full uppercase tracking-widest"
-                    onClick={handleAddTender}
-                    disabled={!draftValid}
-                    data-testid="pay-add-tender"
-                  >
-                    <Plus className="h-4 w-4 mr-2" aria-hidden /> Add Tender
-                  </Button>
-                </div>
+                <TenderDraftPanel
+                  cashReceivedStr={cashReceivedStr}
+                  setCashReceivedStr={setCashReceivedStr}
+                  isCashDraft={isCashDraft}
+                  cashChange={cashChange}
+                  draftTenderAmount={draftTenderAmount}
+                  draftAmount={draftAmount}
+                  remaining={remaining}
+                  quickAmounts={quickAmounts}
+                  draftValid={draftValid}
+                  onAddTender={handleAddTender}
+                />
               )}
             </>
           )}
