@@ -10,7 +10,7 @@
 // Refactored 2026-06-01: flow logic extracted to usePaymentFlowLogic; JSX sub-blocks
 // extracted to presentation components. Iso-behaviour.
 
-import { AlertCircle, ArrowLeft, ArrowRightLeft, Banknote, CheckCircle2, CreditCard, Plus, QrCode, RefreshCw, Smartphone, Users, Wallet, X } from 'lucide-react';
+import { ArrowLeft, ArrowRightLeft, Banknote, CheckCircle2, CreditCard, Plus, QrCode, Smartphone, Users, Wallet, X } from 'lucide-react';
 import {
   Button, Currency, FullScreenModal, LoyaltyBadge, Numpad,
   PromotionLineRow, SectionLabel, TenderListBuilder, cn,
@@ -23,6 +23,7 @@ import { SuccessModal } from './SuccessModal';
 import { SplitPaymentFlow } from './split/SplitPaymentFlow';
 import { formatLabel } from './format';
 import { usePaymentFlowLogic } from './hooks/usePaymentFlowLogic';
+import { RetryBanner } from './components/RetryBanner';
 import type { LucideProps } from 'lucide-react';
 import type { ForwardRefExoticComponent, RefAttributes } from 'react';
 
@@ -213,61 +214,12 @@ export function PaymentTerminal() {
             </div>
           )}
 
-          {/* Phase 4.A — idempotency-aware retry banner. Surfaces transient
-              failures with a one-click Retry that reuses the same idempotency
-              key (regenerated only on close/reset) so the server returns the
-              same row instead of double-charging. */}
-          {lastError?.kind === 'retryable' && (
-            <div
-              role="alert"
-              data-testid="payment-retry-banner"
-              className="mb-4 rounded-md border border-warning bg-warning-soft p-3 text-sm"
-            >
-              <div className="flex items-start gap-2">
-                <AlertCircle className="h-4 w-4 mt-0.5 text-warning shrink-0" aria-hidden />
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-text-primary">Payment did not reach the server</div>
-                  <p className="text-text-secondary mt-1">{lastError.userMessage}</p>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="mt-2"
-                    onClick={handleRetry}
-                    disabled={checkoutPending}
-                    data-testid="payment-retry-button"
-                  >
-                    <RefreshCw className="h-3.5 w-3.5 mr-1.5" aria-hidden />
-                    {checkoutPending ? 'Retrying…' : 'Retry payment'}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {lastError?.kind === 'already_paid' && (
-            <div
-              role="alert"
-              data-testid="payment-already-paid-banner"
-              className="mb-4 rounded-md border border-success bg-success-soft p-3 text-sm"
-            >
-              <div className="flex items-start gap-2">
-                <CheckCircle2 className="h-4 w-4 mt-0.5 text-success shrink-0" aria-hidden />
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-text-primary">Order already finalized</div>
-                  <p className="text-text-secondary mt-1">{lastError.userMessage}</p>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="mt-2"
-                    onClick={handleDismissAlreadyPaid}
-                    data-testid="payment-already-paid-dismiss"
-                  >
-                    Continue
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
+          <RetryBanner
+            lastError={lastError}
+            checkoutPending={checkoutPending}
+            onRetry={handleRetry}
+            onDismissAlreadyPaid={handleDismissAlreadyPaid}
+          />
 
           {/* Quick-pay row : prominent CASH EXACT (when fast-path-ready) + SPLIT BY ITEM */}
           {remaining > 0 && (
