@@ -9,9 +9,7 @@
 // hub's transport loop.
 
 import type { QueryClient } from '@tanstack/react-query';
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type SupabaseClient = any;
+import type { TypedSupabaseClient } from '@breakery/supabase';
 import type {
   LanMessage,
   KdsBumpMessage,
@@ -21,7 +19,7 @@ import type {
 } from '@breakery/domain';
 
 export interface LanHandlerContext {
-  supabase: SupabaseClient;
+  supabase: TypedSupabaseClient;
   /** Optional react-query client to invalidate on inbound events. */
   queryClient?: QueryClient;
   /** Hub's own device id, for `to=`-targeted replies. */
