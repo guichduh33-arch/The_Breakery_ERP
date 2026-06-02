@@ -87,14 +87,19 @@ async function handleKdsBump(
   msg: KdsBumpMessage,
   ctx: LanHandlerContext,
 ): Promise<void> {
-  // The bump itself is performed by the kds RPC on the originating device.
-  // The hub just invalidates downstream caches so the cashier-side
-  // dashboards reflect the new state immediately. We also enqueue a
-  // kitchen-chit print job if the new_status is 'preparing' (D-W5-5A-* design).
+  // The bump invalidates downstream caches so cashier-side dashboards refresh.
   ctx.queryClient?.invalidateQueries({ queryKey: ['kds'] });
   ctx.queryClient?.invalidateQueries({ queryKey: ['orders'] });
 
-  if (msg.payload.new_status === 'preparing') {
+  // Legacy kitchen-chit print path (S13). Since S34, prep tickets print via the
+  // direct station bridge (Path A: useFireToStations -> printStationTicket). To
+  // avoid the post-S34 double-print risk, this legacy enqueue is OFF by default
+  // and only runs when VITE_LEGACY_KITCHEN_CHIT === '1'. The flag exists ONLY as
+  // a rollback during print-bridge rollout; it MUST be removed once the bridge is
+  // stable in prod. See plan 2026-06-01-pos-double-print-risk (gate b) +
+  // 2026-06-01-pos-print-bridge-deploy (DEV-S34-W0-02).
+  const legacyChitEnabled = import.meta.env.VITE_LEGACY_KITCHEN_CHIT === '1';
+  if (legacyChitEnabled && msg.payload.new_status === 'preparing') {
     const p_payload: Json = {
       ticket_type:    'kitchen_chit',
       order_item_id:  msg.payload.order_item_id,
