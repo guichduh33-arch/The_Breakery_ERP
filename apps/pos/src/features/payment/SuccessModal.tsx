@@ -87,7 +87,15 @@ export function SuccessModal(props: SuccessModalProps) {
 
   useEffect(() => {
     if (!open) return;
-    void Promise.all([handlePrint(), openCashDrawer()]);
+    void (async () => {
+      const [, drawer] = await Promise.all([handlePrint(), openCashDrawer()]);
+      // Cash-gated at the call-site: openCashDrawer() takes no argument and
+      // cannot know the method, so card/QRIS would otherwise produce a false
+      // "drawer didn't open" warning. Only cash payments expect a drawer pop.
+      if (props.paymentMethod === 'cash' && !drawer.success) {
+        toast.warning('Cash drawer did not open — please open it manually');
+      }
+    })();
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
