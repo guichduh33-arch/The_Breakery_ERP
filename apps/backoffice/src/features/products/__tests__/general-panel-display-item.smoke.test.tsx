@@ -67,4 +67,56 @@ describe('GeneralPanel — display-item toggle [Wave 6 / Task 23]', () => {
 
     expect(onChange).toHaveBeenCalledWith({ is_display_item: true });
   });
+
+  // M7 audit fix — "needs stocking" banner.
+  it('hides the vitrine warning for a non-display product', () => {
+    render(
+      <MemoryRouter>
+        <GeneralPanel product={product} categories={categories} readOnly />
+      </MemoryRouter>,
+    );
+    expect(screen.queryByTestId('display-stock-warning')).not.toBeInTheDocument();
+  });
+
+  it('shows the vitrine warning when flagged and the counter is empty', () => {
+    render(
+      <MemoryRouter>
+        <GeneralPanel
+          product={{ ...product, is_display_item: true }}
+          categories={categories}
+          readOnly
+          displayStockQty={0}
+        />
+      </MemoryRouter>,
+    );
+    expect(screen.getByTestId('display-stock-warning')).toBeInTheDocument();
+  });
+
+  it('shows the vitrine warning when flagged and the counter row is missing (null)', () => {
+    render(
+      <MemoryRouter>
+        <GeneralPanel
+          product={{ ...product, is_display_item: true }}
+          categories={categories}
+          readOnly
+          displayStockQty={null}
+        />
+      </MemoryRouter>,
+    );
+    expect(screen.getByTestId('display-stock-warning')).toBeInTheDocument();
+  });
+
+  it('hides the vitrine warning once the counter is stocked (> 0)', () => {
+    render(
+      <MemoryRouter>
+        <GeneralPanel
+          product={{ ...product, is_display_item: true }}
+          categories={categories}
+          readOnly
+          displayStockQty={12}
+        />
+      </MemoryRouter>,
+    );
+    expect(screen.queryByTestId('display-stock-warning')).not.toBeInTheDocument();
+  });
 });

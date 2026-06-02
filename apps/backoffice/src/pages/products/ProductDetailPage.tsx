@@ -18,6 +18,7 @@ import { UnitsPanel } from '@/features/products/components/UnitsPanel.js';
 import { VariantsPanel } from '@/features/products/components/VariantsPanel.js';
 import { useCategories } from '@/features/products/hooks/useCategories.js';
 import { useProductDetail } from '@/features/products/hooks/useProductDetail.js';
+import { useProductDisplayStock } from '@/features/products/hooks/useProductDisplayStock.js';
 import { useUpdateProduct, type ProductUpdatePatch } from '@/features/products/hooks/useUpdateProduct.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import type { ProductDetailTab, ProductRow } from '@/features/products/types.js';
@@ -26,6 +27,10 @@ import { RecipeBuilder } from '@/features/recipes/index.js';
 export default function ProductDetailPage(): JSX.Element {
   const { productId } = useParams<{ productId: string }>();
   const product = useProductDetail(productId ?? null);
+  const displayStock = useProductDisplayStock(
+    productId ?? null,
+    product.data?.is_display_item === true,
+  );
   const categories = useCategories();
   const updateProduct = useUpdateProduct();
   const canUpdate = useAuthStore((s) => s.hasPermission('products.update'));
@@ -96,6 +101,7 @@ export default function ProductDetailPage(): JSX.Element {
             categories={categories.data ?? []}
             readOnly={!canUpdate}
             onChange={handleFieldChange}
+            displayStockQty={displayStock.data ?? null}
           />
         )}
         {tab === 'units'    && <UnitsPanel product={p} />}

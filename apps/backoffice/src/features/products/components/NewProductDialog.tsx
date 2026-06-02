@@ -192,6 +192,17 @@ export function NewProductDialog({ onClose, onCreated, categories }: NewProductD
             </span>
           </label>
 
+          {isDisplayItem && (
+            <p
+              data-testid="new-product-display-item-note"
+              className="rounded border border-gold-soft bg-gold/5 px-2 py-1.5 text-[11px] text-text-secondary"
+            >
+              <span className="font-semibold text-gold">Compteur vitrine à 0 à la création.</span>{' '}
+              Approvisionnez la vitrine depuis le POS («&nbsp;Mettre en vitrine&nbsp;») avant de
+              vendre, sinon l'encaissement sera bloqué «&nbsp;stock vitrine insuffisant&nbsp;».
+            </p>
+          )}
+
           {error !== null && (
             <div className="text-xs text-red bg-red-soft px-2 py-1.5 rounded" data-testid="new-product-error">
               {error}
