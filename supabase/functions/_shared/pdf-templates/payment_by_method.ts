@@ -24,6 +24,7 @@ export interface PaymentsByMethodData {
     edc:          number;
     transfer:     number;
     store_credit: number;
+    other?:       number; // M9(b) — catch-all for any tender outside the 6 named methods
     total:        number;
   }>;
 }
@@ -109,7 +110,7 @@ export async function render(
       [d.card,                        265],
       [d.qris,                        335],
       [d.edc,                         405],
-      [d.transfer + d.store_credit,   475],
+      [d.transfer + d.store_credit + (d.other ?? 0),   475],
       [d.total,                       555],
     ];
     for (const [val, xRight] of cells) {

@@ -153,6 +153,7 @@ BEGIN
         AND (v_by_day->0 ? 'edc')
         AND (v_by_day->0 ? 'transfer')
         AND (v_by_day->0 ? 'store_credit')
+        AND (v_by_day->0 ? 'other')  -- M9(b) catch-all
         AND (v_by_day->0 ? 'total')
         AND (v_by_day->0 ? 'day')
        );
@@ -161,7 +162,7 @@ END
 $$;
 SELECT ok(
   current_setting('breakery.t6_pass')::boolean,
-  'T6: get_payments_by_method_v1 by_day pivots 6 methods + total + day'
+  'T6: get_payments_by_method_v1 by_day pivots 6 methods + other + total + day'
 );
 
 -- ============================================================

@@ -13,7 +13,7 @@ vi.mock('@/lib/supabase.js', () => ({
   supabase: {
     rpc: (fn: string, args: Record<string, unknown>) => {
       mockRpc(fn, args);
-      if (fn === 'get_stock_movements_v1') {
+      if (fn === 'get_stock_movements_v2') {
         return Promise.resolve({
           data: {
             lines: [
@@ -57,10 +57,10 @@ describe('StockMovementHistoryPage (smoke)', () => {
     expect(screen.getByRole('heading', { name: /Stock Movement History/i, level: 1 })).toBeInTheDocument();
   });
 
-  it('calls get_stock_movements_v1 with date range params', async () => {
+  it('calls get_stock_movements_v2 with date range params', async () => {
     renderPage();
     await waitFor(() => {
-      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_stock_movements_v1');
+      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_stock_movements_v2');
       expect(call).toBeDefined();
       const args = (call as [string, { p_start: string; p_end: string }])[1];
       expect(args.p_start).toMatch(/^\d{4}-\d{2}-\d{2}$/);

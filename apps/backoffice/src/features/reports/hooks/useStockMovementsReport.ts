@@ -1,5 +1,8 @@
 // apps/backoffice/src/features/reports/hooks/useStockMovementsReport.ts
-// S30 Wave 4.1 — InfiniteQuery hook for get_stock_movements_v1 RPC (cursor-based pagination).
+// S30 Wave 4.1 — InfiniteQuery hook for get_stock_movements_v2 RPC (cursor-based pagination).
+// M9(a) — bumped v1 → v2 : composite keyset cursor "<created_at>|<id>" (TEXT). The
+// next_cursor/p_cursor were already typed string here (timestamptz serialized to
+// string by PostgREST), so the v2 opaque token is transparent to this hook.
 // Named useStockMovementsReport (not useStockMovements) to avoid collision with the
 // existing inventory hook in features/inventory.
 
@@ -38,7 +41,7 @@ export function useStockMovementsReport(params: UseStockMovementsReportParams) {
     queryKey: ['reports', 'stock_movements', params],
     queryFn:  async ({ pageParam }) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase as any).rpc('get_stock_movements_v1', {
+      const { data, error } = await (supabase as any).rpc('get_stock_movements_v2', {
         p_start:         params.start,
         p_end:           params.end,
         p_product_id:    params.product_id    ?? null,

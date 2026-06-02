@@ -49,7 +49,7 @@ RPC (SECURITY DEFINER)          Domain helpers (IO-free)         EF Deno
 get_wastage_report_v1           buildCsv<T>(rows, cols, opts?)   generate-pdf
 get_payments_by_method_v1        ↓ RFC 4180 + UTF-8 BOM            ↓ 17 templates
 get_pb1_report_v1                ↓ id-ID locale (IDR)              ↓ rate-limit 30/min durable
-get_stock_movements_v1           previousPeriod(start, end)        ↓ bucket reports-exports/ TTL 30d
+get_stock_movements_v2           previousPeriod(start, end)        ↓ bucket reports-exports/ TTL 30d
 get_perishable_turnover_v1       formatDelta(curr, prev) → Delta
 get_orders_list_v2 (S33)        downloadCsv(csv, filename)       generate-zreport-pdf
                                                                     ↓ idempotent x-idempotency-key
@@ -89,9 +89,9 @@ get_orders_list_v2 (S33)        downloadCsv(csv, filename)       generate-zrepor
 | RPC | Gate | Cursor |
 |-----|------|--------|
 | `get_wastage_report_v1(text, text)` | `reports.inventory.read` | non |
-| `get_payments_by_method_v1(text, text)` | `reports.financial.read` | non |
+| `get_payments_by_method_v1(text, text)` | `reports.financial.read` | non (by_day pivot = 6 méthodes + `other` + total, M9(b)) |
 | `get_pb1_report_v1(int, int)` | `reports.financial.read` | non |
-| `get_stock_movements_v1(text, text, uuid, text, int, timestamptz)` | `reports.inventory.read` | oui (infinite scroll) |
+| `get_stock_movements_v2(text, text, uuid, text, int, text)` | `reports.inventory.read` | oui — keyset `(created_at, id)` via token TEXT `"<created_at>\|<id>"` (M9(a), v1 6-arg droppé ; 8-arg S13 RETURNS TABLE distinct) |
 | `get_perishable_turnover_v1(text, text)` | `reports.inventory.read` | non |
 | `get_orders_list_v2(p_start, p_end, p_filters JSONB, p_limit, p_cursor)` | `orders.read` | oui (cursor-paginé) |
 
