@@ -30,6 +30,7 @@ import { useFireToStations } from '@/features/cart/hooks/useFireToStations';
 import { toast } from 'sonner';
 import type { LucideProps } from 'lucide-react';
 import type { ForwardRefExoticComponent, RefAttributes } from 'react';
+import { formatLabel } from './format';
 
 const TAX_RATE = 0.10;
 
@@ -623,10 +624,6 @@ export function PaymentTerminal() {
       </footer>
     </FullScreenModal>
   );
-}
-
-function formatLabel(amount: number): string {
-  return `Rp ${amount.toLocaleString('en-US')}`;
 }
 
 // calculateChange import retained for potential SuccessModal interplay; helpers kept in domain.
