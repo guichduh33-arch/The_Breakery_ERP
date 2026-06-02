@@ -6,33 +6,25 @@
 // Single-tender fast-path: if no tenders accumulated AND a cash draft covers the
 // total, the cashier can hit "Process Payment" directly — equivalent to v7 behaviour
 // (the store will ship a single-element tenders array).
+//
+// Refactored 2026-06-01: flow logic extracted to usePaymentFlowLogic; JSX sub-blocks
+// extracted to presentation components. Iso-behaviour.
 
-import { useState } from 'react';
 import { AlertCircle, ArrowLeft, ArrowRightLeft, Banknote, CheckCircle2, CreditCard, Plus, QrCode, RefreshCw, Smartphone, Users, Wallet, X } from 'lucide-react';
 import {
   Button, Currency, FullScreenModal, LoyaltyBadge, Numpad,
   PromotionLineRow, SectionLabel, TenderListBuilder, cn,
 } from '@breakery/ui';
 import {
-  calculateTotals, calculateChange, earnPointsForCustomer, tierFromLifetime, TIERS,
-  validateTenders, sumTenders, computeRemaining,
-  classifyCheckoutError, type RetryClassification,
-  type PaymentMethod, type Tender,
+  calculateChange, tierFromLifetime, TIERS,
+  type PaymentMethod,
 } from '@breakery/domain';
-import { resetCartAfterCheckout, useCartStore } from '@/stores/cartStore';
-import { usePaymentStore } from '@/stores/paymentStore';
-import { useAuthStore } from '@/stores/authStore';
-import { useCheckout } from './hooks/useCheckout';
 import { SuccessModal } from './SuccessModal';
 import { SplitPaymentFlow } from './split/SplitPaymentFlow';
-import { usePOSPresets } from '@/features/settings/hooks/usePOSPresets';
-import { useFireToStations } from '@/features/cart/hooks/useFireToStations';
-import { toast } from 'sonner';
+import { formatLabel } from './format';
+import { usePaymentFlowLogic } from './hooks/usePaymentFlowLogic';
 import type { LucideProps } from 'lucide-react';
 import type { ForwardRefExoticComponent, RefAttributes } from 'react';
-import { formatLabel } from './format';
-
-const TAX_RATE = 0.10;
 
 type IconComponent = ForwardRefExoticComponent<Omit<LucideProps, 'ref'> & RefAttributes<SVGSVGElement>>;
 
@@ -45,214 +37,18 @@ const METHODS: { value: PaymentMethod; label: string; icon: IconComponent }[] = 
   { value: 'store_credit', label: 'Store Credit', icon: Wallet },
 ];
 
-interface SuccessState {
-  orderNumber: string;
-  total: number;
-  changeGiven: number | null;
-  pointsEarned: number;
-  customerName: string | undefined;
-  paymentMethod: PaymentMethod;
-}
-
 export function PaymentTerminal() {
-  const isOpen = usePaymentStore((s) => s.isOpen);
-  const close = usePaymentStore((s) => s.close);
-  const reset = usePaymentStore((s) => s.reset);
-  const selectedMethod = usePaymentStore((s) => s.selectedMethod);
-  const selectMethod = usePaymentStore((s) => s.selectMethod);
-  const cashReceivedStr = usePaymentStore((s) => s.cashReceivedStr);
-  const setCashReceivedStr = usePaymentStore((s) => s.setCashReceivedStr);
-  const tenders = usePaymentStore((s) => s.tenders);
-  const addTender = usePaymentStore((s) => s.addTender);
-  const removeTender = usePaymentStore((s) => s.removeTender);
-
-  const cart = useCartStore((s) => s.cart);
-  const attachedCustomer = useCartStore((s) => s.attachedCustomer);
-  const appliedPromotions = useCartStore((s) => s.appliedPromotions);
-  const user = useAuthStore((s) => s.user);
-  const checkout = useCheckout();
-  const { mutation: fireToStations } = useFireToStations();
-  const { presets } = usePOSPresets();
-  const quickAmounts = presets.quickPayments;
-
-  const baseTotals = calculateTotals(cart, TAX_RATE);
-  const promotionTotal = appliedPromotions.reduce((s, ap) => s + ap.amount, 0);
-  const total = Math.max(0, baseTotals.total - promotionTotal);
-  const tax_amount = Math.round((total * TAX_RATE) / (1 + TAX_RATE));
-  const totals = { ...baseTotals, total, tax_amount };
-
-  const tenderedSum = sumTenders(tenders);
-  const remaining = computeRemaining(total, tenders);
-
-  // Draft state derived from selectedMethod + cashReceivedStr
-  const draftAmount = Number(cashReceivedStr || '0');
-  // For cash: the amount on the tender = min(received, remaining); change = received - amount (last tender only).
-  // For non-cash: amount = parsed.
-  const isCashDraft = selectedMethod === 'cash';
-  const draftTenderAmount = isCashDraft
-    ? Math.min(draftAmount, remaining)
-    : draftAmount;
-  const cashChange = isCashDraft && draftAmount > remaining
-    ? draftAmount - remaining
-    : 0;
-
-  const draftValid =
-    selectedMethod !== null
-    && draftTenderAmount > 0
-    && remaining > 0
-    && draftTenderAmount <= remaining
-    // When non-cash, must equal exactly what they typed (no overpay)
-    && (isCashDraft || draftAmount === draftTenderAmount);
-
-  // Single-tender fast-path: no accumulated tenders, draft covers total
-  const fastPathReady =
-    tenders.length === 0
-    && selectedMethod !== null
-    && (
-      // cash: cashReceived >= total
-      (isCashDraft && draftAmount >= total)
-      // non-cash: amount === total
-      || (!isCashDraft && draftAmount === total)
-    );
-
-  const canProcess = remaining === 0 || fastPathReady;
-
-  const [success, setSuccess] = useState<SuccessState | null>(null);
-  /**
-   * Phase 4.A — idempotency-aware retry state. When the RPC throws we keep
-   * the last shipped tenders array around (so the Retry button can resend
-   * the exact same payload — and crucially the same `idempotencyKey` from
-   * the store, which is regenerated only on close/reset).
-   */
-  const [lastError, setLastError] = useState<RetryClassification | null>(null);
-  const [lastTendersShipped, setLastTendersShipped] = useState<Tender[] | null>(null);
-  /** Session 14 / Phase 2.C — split-by-item flow toggle. When true, the
-   *  split sub-flow takes over the modal body until the cashier completes
-   *  the assignment + per-payer payment steps. */
-  const [splitOpen, setSplitOpen] = useState(false);
-
-  function handleAddTender(): void {
-    if (!selectedMethod || !draftValid) return;
-    const isLast = draftTenderAmount === remaining;
-    const tender: Tender = {
-      method: selectedMethod,
-      amount: draftTenderAmount,
-      ...(isCashDraft ? { cash_received: draftAmount } : {}),
-      ...(isCashDraft && cashChange > 0 && isLast ? { change_given: cashChange } : {}),
-    };
-    if (isCashDraft && cashChange > 0 && !isLast) {
-      toast.error('Cash overpay only allowed on the last tender');
-      return;
-    }
-    addTender(tender);
-  }
-
-  async function handleProcess(): Promise<void> {
-    let tendersToShip: Tender[];
-    if (tenders.length > 0 && remaining === 0) {
-      tendersToShip = tenders;
-    } else if (fastPathReady && selectedMethod) {
-      // Build a 1-tender from draft state
-      const lastChange = isCashDraft ? Math.max(0, draftAmount - total) : 0;
-      const tender: Tender = {
-        method: selectedMethod,
-        amount: total,
-        ...(isCashDraft ? { cash_received: draftAmount } : {}),
-        ...(isCashDraft && lastChange > 0 ? { change_given: lastChange } : {}),
-      };
-      tendersToShip = [tender];
-    } else {
-      return;
-    }
-
-    // Final client-side validation (server re-validates)
-    const v = validateTenders(total, tendersToShip);
-    if (!v.ok) {
-      toast.error(`Validation: ${v.error}${v.detail ? ` — ${v.detail}` : ''}`);
-      return;
-    }
-
-    await dispatchCheckout(tendersToShip);
-  }
-
-  /**
-   * Phase 4.A — extracted so the inline Retry button can re-run the same
-   * payload (including the same idempotencyKey from the paymentStore) without
-   * the user retouching the numpad. The store's idempotency key is regenerated
-   * only on close/reset ; this Retry preserves it.
-   */
-  async function dispatchCheckout(tendersToShip: Tender[]): Promise<void> {
-    setLastError(null);
-    setLastTendersShipped(tendersToShip);
-    try {
-      const result = await checkout.mutateAsync({ cart, payment: tendersToShip });
-
-      // Auto-fire unprinted prep items to kitchen/barista/bakery stations.
-      // Non-blocking: a printer failure must NOT prevent the success screen.
-      // The full-screen SuccessModal already signals payment success, so we
-      // surface only printer FAILURES here (the actionable info). Per-station
-      // success toasts stay in the explicit SendToKitchenButton flow.
-      fireToStations.mutateAsync({ orderNumber: result.order_number }).then((results) => {
-        for (const r of results) {
-          if (!r.ok) {
-            toast.error(`${r.role} printer unreachable — ticket not printed`);
-          }
-        }
-      }).catch((err: unknown) => {
-        const message = err instanceof Error ? err.message : 'unknown';
-        toast.error(`Station print failed: ${message}`);
-      });
-
-      setSuccess({
-        orderNumber: result.order_number,
-        total: result.total,
-        changeGiven: result.change_given,
-        pointsEarned: attachedCustomer
-          ? earnPointsForCustomer(result.total, attachedCustomer.lifetime_points)
-          : 0,
-        customerName: attachedCustomer?.name ?? undefined,
-        paymentMethod: tendersToShip[0]!.method,
-      });
-    } catch (err: unknown) {
-      const classified = classifyCheckoutError(err);
-      setLastError(classified);
-      // Toast for fatal-only ; retryable + already_paid use the inline banner
-      // (more actionable than a transient toast).
-      if (classified.kind === 'fatal') {
-        toast.error(classified.userMessage);
-      }
-    }
-  }
-
-  function handleRetry(): void {
-    if (!lastTendersShipped) return;
-    void dispatchCheckout(lastTendersShipped);
-  }
-
-  function handleDismissAlreadyPaid(): void {
-    // Order already finalized — close the modal and reset state. The
-    // resetCartAfterCheckout / reset() pair regenerates the idempotency key.
-    resetCartAfterCheckout();
-    reset();
-    setLastError(null);
-    setLastTendersShipped(null);
-  }
-
-  function handleNewOrder(): void {
-    setSuccess(null);
-    resetCartAfterCheckout();
-    reset();
-  }
-
-  async function handleSplitComplete(splitTenders: Tender[]): Promise<void> {
-    const v = validateTenders(total, splitTenders);
-    if (!v.ok) {
-      toast.error(`Validation: ${v.error}${v.detail ? ` — ${v.detail}` : ''}`);
-      return;
-    }
-    await dispatchCheckout(splitTenders);
-    setSplitOpen(false);
-  }
+  const {
+    isOpen, close,
+    user, cart, attachedCustomer, appliedPromotions, totals, tenderedSum,
+    selectedMethod, selectMethod, cashReceivedStr, setCashReceivedStr,
+    quickAmounts, draftAmount, isCashDraft, draftTenderAmount, cashChange, draftValid,
+    tenders, removeTender,
+    total, remaining, fastPathReady, canProcess, checkoutPending,
+    success, lastError, splitOpen, setSplitOpen,
+    handleAddTender, handleProcess, handleRetry,
+    handleDismissAlreadyPaid, handleNewOrder, handleSplitComplete,
+  } = usePaymentFlowLogic();
 
   if (success) {
     return (
@@ -437,11 +233,11 @@ export function PaymentTerminal() {
                     size="sm"
                     className="mt-2"
                     onClick={handleRetry}
-                    disabled={checkout.isPending}
+                    disabled={checkoutPending}
                     data-testid="payment-retry-button"
                   >
                     <RefreshCw className="h-3.5 w-3.5 mr-1.5" aria-hidden />
-                    {checkout.isPending ? 'Retrying…' : 'Retry payment'}
+                    {checkoutPending ? 'Retrying…' : 'Retry payment'}
                   </Button>
                 </div>
               </div>
@@ -480,11 +276,11 @@ export function PaymentTerminal() {
                 <button
                   type="button"
                   onClick={() => { void handleProcess(); }}
-                  disabled={checkout.isPending}
+                  disabled={checkoutPending}
                   data-testid="pay-cash-exact"
                   className="flex-1 h-12 rounded-md bg-green hover:bg-green/90 text-white font-bold uppercase tracking-widest text-sm transition-colors disabled:opacity-60"
                 >
-                  {checkout.isPending
+                  {checkoutPending
                     ? 'Processing…'
                     : `${isCashDraft ? 'Cash' : selectedMethod?.toUpperCase()} Exact — ${formatLabel(total)}`}
                 </button>
@@ -496,7 +292,7 @@ export function PaymentTerminal() {
               <button
                 type="button"
                 onClick={() => setSplitOpen(true)}
-                disabled={cart.items.length === 0 || checkout.isPending}
+                disabled={cart.items.length === 0 || checkoutPending}
                 data-testid="pay-split-entry"
                 className="h-12 px-4 rounded-md border border-purple-400/60 bg-purple-400/10 text-purple-400 font-bold uppercase tracking-widest text-xs hover:bg-purple-400/20 transition-colors disabled:opacity-40 inline-flex items-center gap-2"
               >
@@ -609,10 +405,10 @@ export function PaymentTerminal() {
         <Button
           variant="primary"
           size="lg"
-          disabled={!canProcess || checkout.isPending}
+          disabled={!canProcess || checkoutPending}
           onClick={() => { void handleProcess(); }}
         >
-          {checkout.isPending ? (
+          {checkoutPending ? (
             'Processing…'
           ) : (
             <span className="inline-flex items-center gap-2">

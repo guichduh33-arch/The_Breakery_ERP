@@ -13,7 +13,7 @@ import {
 import { safeStorage, logger } from '@breakery/utils';
 import { supabaseUrl } from '../lib/supabase.js';
 
-interface AuthUser {
+export interface AuthUser {
   id: string;
   full_name: string;
   role_code: string;
