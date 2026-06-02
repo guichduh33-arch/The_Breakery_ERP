@@ -10,7 +10,7 @@
 // Refactored 2026-06-01: flow logic extracted to usePaymentFlowLogic; JSX sub-blocks
 // extracted to presentation components. Iso-behaviour.
 
-import { ArrowLeft, CheckCircle2, Users, X } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, X } from 'lucide-react';
 import {
   Button, Currency, FullScreenModal, LoyaltyBadge,
   PromotionLineRow, SectionLabel, TenderListBuilder,
@@ -20,11 +20,11 @@ import {
 } from '@breakery/domain';
 import { SuccessModal } from './SuccessModal';
 import { SplitPaymentFlow } from './split/SplitPaymentFlow';
-import { formatLabel } from './format';
 import { usePaymentFlowLogic } from './hooks/usePaymentFlowLogic';
 import { RetryBanner } from './components/RetryBanner';
 import { PaymentMethodGrid } from './components/PaymentMethodGrid';
 import { TenderDraftPanel } from './components/TenderDraftPanel';
+import { QuickPayRow } from './components/QuickPayRow';
 
 export function PaymentTerminal() {
   const {
@@ -211,35 +211,16 @@ export function PaymentTerminal() {
 
           {/* Quick-pay row : prominent CASH EXACT (when fast-path-ready) + SPLIT BY ITEM */}
           {remaining > 0 && (
-            <div className="flex items-stretch gap-3 mb-5">
-              {fastPathReady ? (
-                <button
-                  type="button"
-                  onClick={() => { void handleProcess(); }}
-                  disabled={checkoutPending}
-                  data-testid="pay-cash-exact"
-                  className="flex-1 h-12 rounded-md bg-green hover:bg-green/90 text-white font-bold uppercase tracking-widest text-sm transition-colors disabled:opacity-60"
-                >
-                  {checkoutPending
-                    ? 'Processing…'
-                    : `${isCashDraft ? 'Cash' : selectedMethod?.toUpperCase()} Exact — ${formatLabel(total)}`}
-                </button>
-              ) : (
-                <div className="flex-1 h-12 rounded-md border border-dashed border-border-subtle grid place-items-center text-text-muted text-xs uppercase tracking-widest">
-                  Select a method to proceed
-                </div>
-              )}
-              <button
-                type="button"
-                onClick={() => setSplitOpen(true)}
-                disabled={cart.items.length === 0 || checkoutPending}
-                data-testid="pay-split-entry"
-                className="h-12 px-4 rounded-md border border-purple-400/60 bg-purple-400/10 text-purple-400 font-bold uppercase tracking-widest text-xs hover:bg-purple-400/20 transition-colors disabled:opacity-40 inline-flex items-center gap-2"
-              >
-                <Users className="h-3.5 w-3.5" aria-hidden />
-                Split by Item
-              </button>
-            </div>
+            <QuickPayRow
+              fastPathReady={fastPathReady}
+              isCashDraft={isCashDraft}
+              selectedMethod={selectedMethod}
+              total={total}
+              checkoutPending={checkoutPending}
+              cartEmpty={cart.items.length === 0}
+              onProcess={() => { void handleProcess(); }}
+              onSplitOpen={() => setSplitOpen(true)}
+            />
           )}
 
           {remaining > 0 && (
