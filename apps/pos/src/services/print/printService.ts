@@ -1,7 +1,11 @@
 // apps/pos/src/services/print/printService.ts
 import type { PaymentMethod, PrintKind, PrinterRole } from '@breakery/domain';
 
-const SERVER_URL = 'http://localhost:3001';
+// Print-bridge base URL. Resolution order once S35 lands its Printing tab:
+//   usePosSettingsStore (S35 F-009) > VITE_PRINT_SERVER_URL (this fix) > fallback.
+// This fix introduces ONLY the env var; the editable store is S35 F-009/F-015.
+// Read once at module load — tests must vi.resetModules() after stubbing the env.
+const SERVER_URL = import.meta.env.VITE_PRINT_SERVER_URL ?? 'http://localhost:3001';
 
 // ---------------------------------------------------------------------------
 // Station ticket types
