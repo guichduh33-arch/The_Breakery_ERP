@@ -9,7 +9,7 @@
 // hub's transport loop.
 
 import type { QueryClient } from '@tanstack/react-query';
-import type { TypedSupabaseClient } from '@breakery/supabase';
+import type { Json, TypedSupabaseClient } from '@breakery/supabase';
 import type {
   LanMessage,
   KdsBumpMessage,
@@ -95,19 +95,21 @@ async function handleKdsBump(
   ctx.queryClient?.invalidateQueries({ queryKey: ['orders'] });
 
   if (msg.payload.new_status === 'preparing') {
+    const p_payload: Json = {
+      ticket_type:    'kitchen_chit',
+      order_item_id:  msg.payload.order_item_id,
+      order_id:       msg.payload.order_id,
+      station:        msg.payload.station,
+    };
+    // p_device_id (uuid) accepts NULL at runtime; generated Args omits `| null`.
     const { error } = await ctx.supabase.rpc('enqueue_print_job_v1', {
-      p_device_id:      null,
-      p_payload:        {
-        ticket_type:    'kitchen_chit',
-        order_item_id:  msg.payload.order_item_id,
-        order_id:       msg.payload.order_id,
-        station:        msg.payload.station,
-      } as never,
+      p_device_id:      null as unknown as string,
+      p_payload,
       p_source:         'kds',
       p_reference_type: 'order_item',
       p_reference_id:   msg.payload.order_item_id,
       p_priority:       5,
-    } as never);
+    });
     if (error !== null) {
       // Surface but don't throw — print queue is best-effort.
       console.warn('[lan-hub] enqueue_print_job failed', error.message);
@@ -121,14 +123,17 @@ async function handlePrintRequest(
 ): Promise<void> {
   // Persist the print job. The actual print server (separate process)
   // polls `claim_print_job_v1` for the targeted device.
+  // `enqueue_print_job_v1(p_device_id uuid, ...)` accepts NULL at runtime
+  // (unassigned/broadcast job); the generated Args type omits the `| null`.
+  const p_payload: Json = msg.payload.data as Json;
   const { data, error } = await ctx.supabase.rpc('enqueue_print_job_v1', {
-    p_device_id:      null,
-    p_payload:        msg.payload.data as never,
+    p_device_id:      null as unknown as string,
+    p_payload,
     p_source:         'pos',
     p_reference_type: msg.payload.reference_type,
-    p_reference_id:   msg.payload.reference_id as never,
+    p_reference_id:   msg.payload.reference_id,
     p_priority:       msg.payload.priority ?? 5,
-  } as never);
+  });
 
   if (error !== null) {
     console.warn('[lan-hub] print.request enqueue failed', error.message);
@@ -171,7 +176,7 @@ async function handleHeartbeat(
   // Touch lan_devices.last_heartbeat_at by code (= device id here).
   const { error } = await ctx.supabase.rpc('update_lan_heartbeat_v1', {
     p_device_code: msg.from,
-  } as never);
+  });
   if (error !== null) {
     // Device not registered yet — silent. The BO operator can create it.
     // Don't log noise.
