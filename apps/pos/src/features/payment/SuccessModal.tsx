@@ -1,9 +1,9 @@
 // apps/pos/src/features/payment/SuccessModal.tsx
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Check, Printer, RotateCw } from 'lucide-react';
 import { Button, Currency, FullScreenModal } from '@breakery/ui';
 import { calculateTotals } from '@breakery/domain';
-import type { Cart } from '@breakery/domain';
+import type { Cart, PaymentMethod } from '@breakery/domain';
 import { printReceipt, openCashDrawer, type ReceiptPayload } from '@/services/print/printService';
 import { useStationPrinters } from '@/features/cart/hooks/useStationPrinters';
 import { toast } from 'sonner';
@@ -23,7 +23,7 @@ export interface SuccessModalProps {
   pointsEarned?: number;
   customerName?: string;
   cart: Cart;
-  paymentMethod: string;
+  paymentMethod: PaymentMethod;
   cashReceived: number;
   cashierName: string;
   onNewOrder: () => void;
@@ -56,10 +56,11 @@ function buildReceiptPayload(props: SuccessModalProps): ReceiptPayload {
       tax_amount: totals.tax_amount,
     },
     payment: {
-      method: 'cash',
+      method: props.paymentMethod,
       amount: props.total,
-      cash_received: props.cashReceived,
-      change_given: props.changeGiven ?? 0,
+      ...(props.paymentMethod === 'cash'
+        ? { cash_received: props.cashReceived, change_given: props.changeGiven ?? 0 }
+        : {}),
     },
     ...(props.pointsEarned && props.pointsEarned > 0 ? {
       loyalty: { points_earned: props.pointsEarned, balance_after: 0 },
@@ -71,6 +72,11 @@ function buildReceiptPayload(props: SuccessModalProps): ReceiptPayload {
 export function SuccessModal(props: SuccessModalProps) {
   const { open, orderNumber, total, changeGiven, pointsEarned, customerName, onNewOrder } = props;
   const [isPrinting, setIsPrinting] = useState(false);
+  // Guards the mount-effect side effects (toast) against firing after the modal
+  // has unmounted — e.g. the cashier hits "New Order" before the print/drawer
+  // bridge responds. Firing a toast on a dead component is wrong in prod and
+  // also leaks across test boundaries under load.
+  const mountedRef = useRef(true);
   const { data: printers } = useStationPrinters();
   const cashierPrinter = printers?.get('cashier');
 
@@ -85,8 +91,19 @@ export function SuccessModal(props: SuccessModalProps) {
   }
 
   useEffect(() => {
+    mountedRef.current = true;
     if (!open) return;
-    void Promise.all([handlePrint(), openCashDrawer()]);
+    void (async () => {
+      const [, drawer] = await Promise.all([handlePrint(), openCashDrawer()]);
+      if (!mountedRef.current) return;
+      // Cash-gated at the call-site: openCashDrawer() takes no argument and
+      // cannot know the method, so card/QRIS would otherwise produce a false
+      // "drawer didn't open" warning. Only cash payments expect a drawer pop.
+      if (props.paymentMethod === 'cash' && !drawer.success) {
+        toast.warning('Cash drawer did not open — please open it manually');
+      }
+    })();
+    return () => { mountedRef.current = false; };
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (

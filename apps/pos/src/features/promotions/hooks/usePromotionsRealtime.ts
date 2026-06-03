@@ -5,22 +5,24 @@
 //
 // Spec ref: 2026-05-10-session-9-promotions-spec.md §7 risk row "Realtime
 // cache invalidation". supabase-js re-subscribes automatically on reconnect.
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { PROMOTIONS_QUERY_KEY } from './usePromotions';
 
 export function usePromotionsRealtime(): void {
   const qc = useQueryClient();
-  // StrictMode double-invokes effects in dev; a static channel name would
-  // collide with the still-subscribed channel from the first mount
-  // (removeChannel is async). Suffix with a per-mount UUID.
-  // Pattern ref: apps/pos/src/features/kds/hooks/useKdsRealtime.ts (C2 fix).
-  const mountId = useMemo(() => crypto.randomUUID(), []);
 
   useEffect(() => {
+    // StrictMode double-invokes effects in dev; a static channel name would
+    // collide with the still-subscribed channel from the first mount
+    // (removeChannel is async). We generate the UUID INSIDE the effect, NOT
+    // via a component-body `useMemo` — the memo from the first render is
+    // discarded in StrictMode and the second-render UUID would be reused
+    // across both effect mounts. Pattern ref: useKdsRealtime.ts.
+    const channelName = `promotions-changes-${crypto.randomUUID()}`;
     const channel = supabase
-      .channel(`promotions-changes-${mountId}`)
+      .channel(channelName)
       .on(
         // Strict supabase-js literal typing — same `as never` cast as
         // useKdsRealtime to avoid `any`.
@@ -39,5 +41,5 @@ export function usePromotionsRealtime(): void {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [qc, mountId]);
+  }, [qc]);
 }
