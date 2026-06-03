@@ -97,15 +97,14 @@ export function SuccessModal(props: SuccessModalProps) {
     mountedRef.current = true;
     if (!open) return;
     void (async () => {
-      const tasks: Promise<unknown>[] = [];
-      if (autoPrint) tasks.push(handlePrint());
       // Only attempt (and therefore only warn about) the drawer when the
       // autoOpenDrawer setting is on. Card/QRIS still wouldn't warn because of
       // the method gate below, but a disabled setting must also skip the pop.
-      const drawerTask = autoOpenDrawer ? openCashDrawer() : Promise.resolve({ success: true } as const);
-      tasks.push(drawerTask);
-      const drawer = await drawerTask;
-      await Promise.all(tasks);
+      const drawerTask = autoOpenDrawer
+        ? openCashDrawer()
+        : Promise.resolve({ success: true } as const);
+      const printTask = autoPrint ? handlePrint() : Promise.resolve();
+      const [drawer] = await Promise.all([drawerTask, printTask]);
       if (!mountedRef.current) return;
       // Cash-gated at the call-site: openCashDrawer() takes no argument and
       // cannot know the method, so card/QRIS would otherwise produce a false
