@@ -408,6 +408,7 @@ export function CustomerAttachModal({
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 aria-label="Search customer"
+                data-vkp="qwerty"
               />
               {isSearching && (
                 <p className="text-xs text-text-secondary px-1">Searching…</p>
