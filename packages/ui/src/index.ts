@@ -220,6 +220,10 @@ export {
   type AllergenType,
 } from './components/AllergenBadge.js';
 
+// virtual keypad (F-005)
+export { VirtualKeypadProvider } from './components/VirtualKeypadProvider.js';
+export { useVirtualKeypad, type VkpLayout } from './hooks/useVirtualKeypad.js';
+
 // hooks
 export { useIdleTimeout, type UseIdleTimeoutArgs, IDLE_WARNING_LEAD_MS } from './hooks/useIdleTimeout.js';
 
