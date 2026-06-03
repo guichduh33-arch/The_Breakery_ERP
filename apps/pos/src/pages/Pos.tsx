@@ -37,6 +37,7 @@ import { PaymentTerminal } from '@/features/payment/PaymentTerminal';
 import { OrderHistoryPanel } from '@/features/order-history/OrderHistoryPanel';
 import { LiveSessionsModal } from '@/features/shift/LiveSessionsModal';
 import { ChangePinModal } from '@/features/auth/ChangePinModal';
+import { TerminalLockedOverlay } from '@/features/auth/TerminalLockedOverlay';
 import { useAuthStore } from '@/stores/authStore';
 import { useCurrentShift } from '@/features/shift/hooks/useShift';
 import { useCartStore } from '@/stores/cartStore';
@@ -48,6 +49,8 @@ export default function PosPage() {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
+  const isLocked = useAuthStore((s) => s.isLocked);
+  const lock = useAuthStore((s) => s.lock);
   const [selectedSlug, setSelectedSlug] = useState<string | null>('favorites');
   const [customerSearchOpen, setCustomerSearchOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -175,6 +178,7 @@ export default function PosPage() {
         userInitial={user?.full_name?.charAt(0) ?? null}
         onOpenHistory={() => setHistoryOpen(true)}
         onOpenLiveSessions={() => setLiveSessionsOpen(true)}
+        onLockTerminal={() => { setMenuOpen(false); lock(); }}
         {...(currentUserId ? { onChangePin: () => setChangePinOpen(true) } : {})}
         onLogout={() => { void handleLogout(); }}
       />
@@ -209,6 +213,8 @@ export default function PosPage() {
         searchFn={searchCustomers}
         createFn={createCustomer}
       />
+
+      {isLocked && <TerminalLockedOverlay />}
     </div>
   );
 }
