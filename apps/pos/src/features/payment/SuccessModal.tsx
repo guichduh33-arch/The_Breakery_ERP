@@ -6,6 +6,7 @@ import { calculateTotals } from '@breakery/domain';
 import type { Cart, PaymentMethod } from '@breakery/domain';
 import { printReceipt, openCashDrawer, type ReceiptPayload } from '@/services/print/printService';
 import { useStationPrinters } from '@/features/cart/hooks/useStationPrinters';
+import { usePosSettingsStore } from '@/stores/posSettingsStore';
 import { toast } from 'sonner';
 
 const TAX_RATE = 0.10;
@@ -79,6 +80,8 @@ export function SuccessModal(props: SuccessModalProps) {
   const mountedRef = useRef(true);
   const { data: printers } = useStationPrinters();
   const cashierPrinter = printers?.get('cashier');
+  const autoPrint = usePosSettingsStore((s) => s.autoPrint);
+  const autoOpenDrawer = usePosSettingsStore((s) => s.autoOpenDrawer);
 
   async function handlePrint() {
     setIsPrinting(true);
@@ -94,12 +97,21 @@ export function SuccessModal(props: SuccessModalProps) {
     mountedRef.current = true;
     if (!open) return;
     void (async () => {
-      const [, drawer] = await Promise.all([handlePrint(), openCashDrawer()]);
+      const tasks: Promise<unknown>[] = [];
+      if (autoPrint) tasks.push(handlePrint());
+      // Only attempt (and therefore only warn about) the drawer when the
+      // autoOpenDrawer setting is on. Card/QRIS still wouldn't warn because of
+      // the method gate below, but a disabled setting must also skip the pop.
+      const drawerTask = autoOpenDrawer ? openCashDrawer() : Promise.resolve({ success: true } as const);
+      tasks.push(drawerTask);
+      const drawer = await drawerTask;
+      await Promise.all(tasks);
       if (!mountedRef.current) return;
       // Cash-gated at the call-site: openCashDrawer() takes no argument and
       // cannot know the method, so card/QRIS would otherwise produce a false
-      // "drawer didn't open" warning. Only cash payments expect a drawer pop.
-      if (props.paymentMethod === 'cash' && !drawer.success) {
+      // "drawer didn't open" warning. Only cash payments expect a drawer pop,
+      // and only when autoOpenDrawer actually attempted to open it.
+      if (autoOpenDrawer && props.paymentMethod === 'cash' && !drawer.success) {
         toast.warning('Cash drawer did not open — please open it manually');
       }
     })();
