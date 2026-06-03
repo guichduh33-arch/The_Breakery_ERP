@@ -71,6 +71,7 @@ export {
   type NumpadVirtualProps,
   type NumpadMode,
 } from './components/NumpadVirtual.js';
+export { QwertyLayout, type QwertyLayoutProps } from './components/QwertyLayout.js';
 export {
   DataTable,
   type DataTableProps,
