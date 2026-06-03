@@ -63,6 +63,7 @@ import {
 } from '@/features/discounts/hooks/useApplyLineDiscount';
 import { usePromotionsAutoEval } from '@/features/promotions/hooks/usePromotionsAutoEval';
 import { usePromotionsRealtime } from '@/features/promotions/hooks/usePromotionsRealtime';
+import { useCartBroadcast } from '@/features/display/hooks/useCartBroadcast';
 import { CartLineRow } from './CartLineRow';
 import { CartTotals } from './CartTotals';
 import { CartActionsBar } from './CartActionsBar';
@@ -124,6 +125,9 @@ export function ActiveOrderPanel({
   // ── promotion orchestrator (anchored here per spec) ──────────────────────
   usePromotionsAutoEval();
   usePromotionsRealtime();
+
+  // ── live cart mirror to the customer display (F-007) ─────────────────────
+  useCartBroadcast();
 
   // ── local UI state ───────────────────────────────────────────────────────
   const [redeemOpen, setRedeemOpen] = useState(false);
