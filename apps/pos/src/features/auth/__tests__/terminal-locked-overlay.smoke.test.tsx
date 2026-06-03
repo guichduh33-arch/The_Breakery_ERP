@@ -35,4 +35,17 @@ describe('TerminalLockedOverlay', () => {
     await waitFor(() => expect(loginMock).toHaveBeenCalledWith('u1', '123456'));
     await waitFor(() => expect(useAuthStore.getState().isLocked).toBe(false));
   });
+
+  it('clears the PIN buffer after a wrong attempt so the next PIN is not concatenated', async () => {
+    loginMock.mockRejectedValueOnce(new Error('bad')).mockResolvedValueOnce(undefined);
+    render(<TerminalLockedOverlay />);
+    // wrong PIN
+    for (const d of '111111') fireEvent.click(screen.getByRole('button', { name: d }));
+    fireEvent.click(screen.getByRole('button', { name: /verify/i }));
+    await waitFor(() => expect(screen.getByText(/incorrect pin/i)).toBeInTheDocument());
+    // second attempt — if the buffer were NOT reset, Numpad maxLength=6 would keep '111111'
+    for (const d of '222222') fireEvent.click(screen.getByRole('button', { name: d }));
+    fireEvent.click(screen.getByRole('button', { name: /verify/i }));
+    await waitFor(() => expect(loginMock).toHaveBeenLastCalledWith('u1', '222222'));
+  });
 });

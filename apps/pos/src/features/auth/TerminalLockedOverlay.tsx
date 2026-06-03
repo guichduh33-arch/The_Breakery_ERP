@@ -14,6 +14,11 @@ export function TerminalLockedOverlay() {
   const unlock = useAuthStore((s) => s.unlock);
   const [isVerifying, setIsVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // NumpadPin (packages/ui) only clears its internal buffer on its "Cancel"
+  // button, so after a wrong PIN the 6-digit buffer stays full and "Verify"
+  // would just re-submit the same wrong PIN. Bumping this counter on failure
+  // remounts NumpadPin (via key) and resets its buffer to empty.
+  const [attempt, setAttempt] = useState(0);
 
   async function handleSubmit(pin: string) {
     if (!user) return;
@@ -24,6 +29,7 @@ export function TerminalLockedOverlay() {
       unlock();
     } catch {
       setError('Incorrect PIN');
+      setAttempt((n) => n + 1);
     } finally {
       setIsVerifying(false);
     }
@@ -41,7 +47,7 @@ export function TerminalLockedOverlay() {
           <h2 className="font-serif text-2xl">Terminal locked</h2>
           <p className="text-text-secondary text-sm">{user?.full_name ?? 'Cashier'} — enter your PIN to resume</p>
         </div>
-        <NumpadPin onSubmit={(pin) => { void handleSubmit(pin); }} isLoading={isVerifying} error={error} />
+        <NumpadPin key={attempt} onSubmit={(pin) => { void handleSubmit(pin); }} isLoading={isVerifying} error={error} />
       </div>
     </FullScreenModal>
   );
