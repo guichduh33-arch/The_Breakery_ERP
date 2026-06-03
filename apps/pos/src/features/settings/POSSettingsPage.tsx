@@ -33,6 +33,7 @@ import { formatIdr } from '@breakery/utils';
 import { Button, SectionLabel, Card, cn } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore';
 import { usePOSPresets, type DiscountPreset } from './hooks/usePOSPresets';
+import { PrintingSettingsTab } from './components/PrintingSettingsTab';
 
 type TopTab = 'pos' | 'printing' | 'kds' | 'devices';
 type ConfigTab = 'general' | 'automation' | 'advanced' | 'behavior';
@@ -75,7 +76,7 @@ export default function POSSettingsPage(): JSX.Element {
 
       <main className="flex-1 overflow-y-auto p-6">
         {topTab === 'pos' && <PosConfigSection readOnly={!canEdit} />}
-        {topTab === 'printing' && <PlaceholderSection title="Printing" />}
+        {topTab === 'printing' && <PrintingSettingsTab />}
         {topTab === 'kds' && <PlaceholderSection title="KDS & Display" />}
         {topTab === 'devices' && <PlaceholderSection title="Devices" />}
       </main>
