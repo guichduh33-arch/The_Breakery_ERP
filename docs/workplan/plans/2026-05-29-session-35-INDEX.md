@@ -30,6 +30,7 @@
 | `…000013` | `create_restore_held_order_v1` (+ REVOKE pair inline) |
 | `…000014` | `create_discard_held_order_v1` (+ REVOKE pair inline) |
 | `…000015` | `relax_orders_session_id_for_held` (corrective — caught by pgTAP T1) |
+| `…000016` | `fix_held_rpcs_default_privileges_from_public` (corrective — pattern-guardian P11: ALTER DEFAULT PRIVILEGES `FROM anon` → canonical `FROM PUBLIC`) |
 
 Base verified via `list_migrations` (prior max `20260606000013`). Types regen → `packages/supabase/src/types.generated.ts`.
 
