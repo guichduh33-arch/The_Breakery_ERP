@@ -1,5 +1,5 @@
 // apps/pos/src/features/payment/SuccessModal.tsx
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Check, Printer, RotateCw } from 'lucide-react';
 import { Button, Currency, FullScreenModal } from '@breakery/ui';
 import { calculateTotals } from '@breakery/domain';
@@ -72,6 +72,11 @@ function buildReceiptPayload(props: SuccessModalProps): ReceiptPayload {
 export function SuccessModal(props: SuccessModalProps) {
   const { open, orderNumber, total, changeGiven, pointsEarned, customerName, onNewOrder } = props;
   const [isPrinting, setIsPrinting] = useState(false);
+  // Guards the mount-effect side effects (toast) against firing after the modal
+  // has unmounted — e.g. the cashier hits "New Order" before the print/drawer
+  // bridge responds. Firing a toast on a dead component is wrong in prod and
+  // also leaks across test boundaries under load.
+  const mountedRef = useRef(true);
   const { data: printers } = useStationPrinters();
   const cashierPrinter = printers?.get('cashier');
 
@@ -86,9 +91,11 @@ export function SuccessModal(props: SuccessModalProps) {
   }
 
   useEffect(() => {
+    mountedRef.current = true;
     if (!open) return;
     void (async () => {
       const [, drawer] = await Promise.all([handlePrint(), openCashDrawer()]);
+      if (!mountedRef.current) return;
       // Cash-gated at the call-site: openCashDrawer() takes no argument and
       // cannot know the method, so card/QRIS would otherwise produce a false
       // "drawer didn't open" warning. Only cash payments expect a drawer pop.
@@ -96,6 +103,7 @@ export function SuccessModal(props: SuccessModalProps) {
         toast.warning('Cash drawer did not open — please open it manually');
       }
     })();
+    return () => { mountedRef.current = false; };
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (

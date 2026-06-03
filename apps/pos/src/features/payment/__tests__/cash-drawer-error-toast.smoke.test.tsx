@@ -16,11 +16,11 @@
 
 /// <reference types="@testing-library/jest-dom" />
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, cleanup } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { openCashDrawer } from '@/services/print/printService';
-import type { SuccessModalProps } from '../SuccessModal';
+import { SuccessModal, type SuccessModalProps } from '../SuccessModal';
 
 // ── Static mocks ──────────────────────────────────────────────────────────────
 
@@ -93,13 +93,18 @@ describe('SuccessModal — cash drawer error toast', () => {
     vi.stubEnv('VITE_PRINT_MOCK', '1');
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    // Unmount the modal and drain any in-flight mount-effect promises BEFORE the
+    // next test's clearAllMocks. Otherwise, under heavy parallel CPU load a slow
+    // T1 effect can resolve late and fire toast.warning() across the test
+    // boundary, polluting T2's assertions (flake-under-load isolation guard).
+    cleanup();
+    await new Promise((r) => setTimeout(r, 0));
     vi.unstubAllEnvs();
   });
 
   it('T1: cash payment + drawer failure raises a warning toast', async () => {
     openCashDrawerMock.mockResolvedValue({ success: false, error: 'HTTP 503' });
-    const { SuccessModal } = await import('../SuccessModal');
 
     render(withQuery(<SuccessModal {...buildProps({ paymentMethod: 'cash' })} />));
 
@@ -110,7 +115,6 @@ describe('SuccessModal — cash drawer error toast', () => {
 
   it('T2: card payment + drawer failure does NOT raise a drawer toast', async () => {
     openCashDrawerMock.mockResolvedValue({ success: false, error: 'HTTP 503' });
-    const { SuccessModal } = await import('../SuccessModal');
 
     render(withQuery(<SuccessModal {...buildProps({ paymentMethod: 'card' })} />));
 
@@ -123,7 +127,6 @@ describe('SuccessModal — cash drawer error toast', () => {
 
   it('T3: drawer failure does not block the modal (receipt not blocked)', async () => {
     openCashDrawerMock.mockResolvedValue({ success: false, error: 'HTTP 503' });
-    const { SuccessModal } = await import('../SuccessModal');
 
     render(withQuery(<SuccessModal {...buildProps({ paymentMethod: 'cash' })} />));
 
