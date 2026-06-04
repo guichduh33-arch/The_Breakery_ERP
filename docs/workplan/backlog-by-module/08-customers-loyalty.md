@@ -138,7 +138,7 @@
 
 ## Backlog métier (objectif fonctionnel)
 
-> Items issus de `docs/objectif travail/CUSTOMERS.md` §13 (limites assumées V2) — vision produit du module au-delà du tech-debt existant.
+> Items issus de `docs/_archive/objectif-travail-v2/CUSTOMERS.md` §13 (limites assumées V2) — vision produit du module au-delà du tech-debt existant.
 > Ajoutés 2026-05-13 lors de la cascade docs (session 13). Expiration points, merge doublons, birthday rewards, notifications sont déjà couverts par TASK-08-002/004/005/006.
 
 ### TASK-08-009 — Segmentation marketing RFM / scoring / cohortes [P3] [DONE]

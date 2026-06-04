@@ -11,7 +11,7 @@ Session 24 wired the **B2B order/payment JE chain** to the existing COA mappings
 
 These extend the chain mapped in the file below (`SALE_REVENUE`/`SALE_PAYMENT_CASH`/etc.) — no schema change to `accounting_mappings`, only one INSERT.
 
-Reference plan : [`../plans/2026-05-19-session-24-INDEX.md`](../plans/2026-05-19-session-24-INDEX.md).
+Reference plan : [`../plans/2026-05-19-session-24-INDEX.md`](../plans/archive/2026-05-19-session-24-INDEX.md).
 
 ---
 
@@ -216,7 +216,7 @@ Reference plan : [`../plans/2026-05-19-session-24-INDEX.md`](../plans/2026-05-19
 
 ## Backlog métier (objectif fonctionnel)
 
-> Items issus de `docs/objectif travail/ACCOUNTING.md` §18 — vision produit du module au-delà du tech-debt P0/P1.
+> Items issus de `docs/_archive/objectif-travail-v2/ACCOUNTING.md` §18 — vision produit du module au-delà du tech-debt P0/P1.
 > Ajoutés 2026-05-13 lors de la cascade docs (session 13).
 
 ### TASK-10-014 — E-Faktur / e-Bupot integration [P2] [BLOCKED]

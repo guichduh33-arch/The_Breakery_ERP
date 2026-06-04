@@ -1,7 +1,7 @@
 # Glossaire V2 ↔ V3
 
 > **Last updated** : 2026-05-20
-> **Statut V2** : ⛔ Jamais déployée en production. Conservée comme **cahier des charges métier théorique** dans `docs/reference/` et `docs/objectif travail/`.
+> **Statut V2** : ⛔ Jamais déployée en production. Conservée comme **cahier des charges métier théorique** dans `docs/reference/` et `docs/_archive/objectif-travail-v2/`.
 > **Statut V3** : ✅ Code vivant — monorepo pnpm + turbo (`apps/pos` + `apps/backoffice` + `packages/*`). Sessions S1→S25+ mergées.
 > **Mission V3** : reprendre la vision V2 + l'améliorer + diviser en 2 apps spécialisées par persona (POS + BackOffice).
 
@@ -21,7 +21,7 @@ Ce glossaire mappe les noms V2 (qui apparaissent dans la doc business) vers leur
 
 ## 1. RPCs critiques
 
-| V2 (fiches `docs/objectif travail/`) | V3 réel | Statut | Notes |
+| V2 (fiches `docs/_archive/objectif-travail-v2/`) | V3 réel | Statut | Notes |
 |---|---|---|---|
 | `complete_order_with_payments` | `complete_order` (v9) | 🔄 | Versionné, atomique, multi-method, idempotent S25 |
 | `pay_existing_order_with_payments` | `pay_existing_order` (v6) | 🔄 | Versionné |
@@ -152,6 +152,6 @@ Liste des **gains nets V3** au-delà du cahier des charges V2 :
 
 Quand une session V3 ajoute, renomme ou supprime un symbole V2 :
 1. Mettre à jour la ligne correspondante ci-dessus
-2. Mettre à jour la fiche `docs/objectif travail/<MODULE>.md` correspondante
+2. Mettre à jour la fiche `docs/_archive/objectif-travail-v2/<MODULE>.md` correspondante
 3. Mettre à jour `docs/reference/04-modules/<NN-module>.md` correspondante
 4. Mentionner le glossaire dans la PR description

@@ -11,7 +11,7 @@ Closes the 5 gaps the audit of module 09 flagged as P0 (surface UI shipped in S1
 - **UI BO** : `useB2bDashboard` aging KPI now reads `view_ar_aging` (no more `last_visit_at` proxy). New `CreateB2bOrderModal` activates the dashboard "+ New B2B Order" button (closes deviation D-W6-B2B-01). New `RecordB2bPaymentModal` + B2BPaymentsPage "Received" tab consuming `b2b_payments` (closes deviation D-W6-B2BPAY-01).
 - **Tests** : pgTAP `b2b_foundation.test.sql` 15 cas ; Vitest live `record-b2b-payment.test.ts` 5 scénarios ; BO smoke `b2b-foundation.smoke.test.tsx` 3 cas (T1 aging KPI, T2 enabled button, T3 record payment mutation).
 
-Reference plan : [`../plans/2026-05-19-session-24-INDEX.md`](../plans/2026-05-19-session-24-INDEX.md).
+Reference plan : [`../plans/2026-05-19-session-24-INDEX.md`](../plans/archive/2026-05-19-session-24-INDEX.md).
 
 Closes : TASK-09-001 (PARTIAL — KPI aging done, PDF/email deferred S29), TASK-09-002 (DONE — gate wired), TASK-09-006 (DONE — dashboard KPI fixed) + deviations D-W6-B2B-01 (button activated), D-W6-B2BPAY-01 (Received tab consuming ledger).
 
@@ -151,7 +151,7 @@ Closes : TASK-09-001 (PARTIAL — KPI aging done, PDF/email deferred S29), TASK-
 
 ## Backlog métier (objectif fonctionnel)
 
-> Items issus de `docs/objectif travail/B2B.md` §16 — vision produit du module au-delà du tech-debt existant.
+> Items issus de `docs/_archive/objectif-travail-v2/B2B.md` §16 — vision produit du module au-delà du tech-debt existant.
 > Ajoutés 2026-05-13 lors de la cascade docs (session 13). Le portal client B2B est déjà couvert par TASK-09-007.
 
 ### TASK-09-009 — Auto-approval workflow [P2] [BLOCKED]

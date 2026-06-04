@@ -10,7 +10,7 @@ Closes the refund-order hardening gaps identified by the S23 audit §2 (refund P
 - **POS** : `useRefundOrder.ts` + `RefundOrderModal.tsx` send `x-manager-pin` + `x-idempotency-key` via headers (no longer in body). `useRef(crypto.randomUUID())` UUID lifecycle preserves the key across re-renders / network retries ; reset on modal dismiss for the next refund.
 - **Tests** : pgTAP `idempotency_hardening.test.sql` 8/8 PASS via cloud MCP (covers refund T4-T5) ; Vitest live `idempotency-hardening.test.ts` 5 scénarios authored (TS3-TS5 cover refund EF) ; POS smoke `refund-modal-pin-header.smoke.test.tsx` 2/2 PASS.
 
-Reference plan : [`../plans/2026-05-19-session-25-INDEX.md`](../plans/2026-05-19-session-25-INDEX.md). Closes gaps audit S23 03-1 + 03-2 ; TASK-03-006 (receipt split) remains TODO (out of S25 scope — distinct from refund hardening). Sweep of other manager-PIN EFs (`void-order`, `cancel-item`, `kiosk-issue-jwt`) deferred to backlog post-S30.
+Reference plan : [`../plans/2026-05-19-session-25-INDEX.md`](../plans/archive/2026-05-19-session-25-INDEX.md). Closes gaps audit S23 03-1 + 03-2 ; TASK-03-006 (receipt split) remains TODO (out of S25 scope — distinct from refund hardening). Sweep of other manager-PIN EFs (`void-order`, `cancel-item`, `kiosk-issue-jwt`) deferred to backlog post-S30.
 
 ---
 

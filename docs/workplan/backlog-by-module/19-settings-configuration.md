@@ -161,7 +161,7 @@
 
 ## Backlog métier (objectif fonctionnel)
 
-> Items issus de `docs/objectif travail/SETTINGS.md` §12 — vision produit du module.
+> Items issus de `docs/_archive/objectif-travail-v2/SETTINGS.md` §12 — vision produit du module.
 > Ajoutés 2026-05-13 lors de la cascade docs (session 13). Approval workflows sont couverts par TASK-09-009 (B2B), TASK-07-014 (Purchasing), TASK-11-001 (Expense). Pricing horaire par TASK-13-004. Multi-tenancy par TASK-19-008. Export/Import par TASK-19-004.
 
 ### TASK-19-011 — Notification scheduler (alertes programmées) [P3] [TODO]

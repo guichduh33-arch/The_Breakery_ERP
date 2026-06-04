@@ -120,7 +120,7 @@ Ajouter les 3 fixes comptable Critiques/Élevés dans la même branche que S26 :
 
 ## 5. Validation plan S26→S30 — 3 ajustements proposés
 
-Le plan séquencé existant ([`docs/workplan/plans/2026-05-19-S24-to-S30-plan.md`](docs/workplan/plans/2026-05-19-S24-to-S30-plan.md)) est globalement valide. Les ajustements ci-dessous proviennent de l'analyse V6 + V3.
+Le plan séquencé existant ([`docs/workplan/plans/2026-05-19-S24-to-S30-plan.md`](../../plans/archive/2026-05-19-S24-to-S30-plan.md)) est globalement valide. Les ajustements ci-dessous proviennent de l'analyse V6 + V3.
 
 ### Ajustement 1 — Avancer S28 avant ou en parallèle de S26
 

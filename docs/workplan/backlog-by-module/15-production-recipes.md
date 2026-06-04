@@ -117,7 +117,7 @@
 
 ## Backlog métier (objectif fonctionnel)
 
-> Items issus de `docs/objectif travail/PRODUCTION.md` §16 — vision produit du module.
+> Items issus de `docs/_archive/objectif-travail-v2/PRODUCTION.md` §16 — vision produit du module.
 > Ajoutés 2026-05-13 lors de la cascade docs (session 13). Sous-recettes, versioning, scheduling sont déjà couverts par TASK-15-001/005/006.
 
 ### TASK-15-007 — Boulanger's percentages [P3] [TODO]
