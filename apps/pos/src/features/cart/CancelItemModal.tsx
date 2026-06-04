@@ -82,6 +82,7 @@ export function CancelItemModal({
               placeholder="e.g. wrong order, customer changed mind…"
               className={cn('w-full', reason.trim().length > 0 && reason.trim().length < 3 && 'border-red-400')}
               disabled={isPending}
+              data-vkp="qwerty"
             />
             {reason.length > 0 && reason.trim().length < 3 && (
               <div className="mt-1 text-xs text-red-400">Reason must be at least 3 characters</div>

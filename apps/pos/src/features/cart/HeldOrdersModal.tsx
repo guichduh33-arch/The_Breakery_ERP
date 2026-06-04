@@ -1,35 +1,19 @@
 // apps/pos/src/features/cart/HeldOrdersModal.tsx
 //
-// Session 14 / Phase 2.B — POS-specific held-orders chooser.
+// Session 14 / Phase 2.B — POS-specific held-orders chooser (visual).
+// Session 35 (F-003) — rewired DB-backed: the list is now multi-terminal,
+// served by `useHeldOrdersQuery` (orders flagged `is_held`), restored via
+// `restore_held_order_v1` and discarded via `discard_held_order_v1`. The old
+// localStorage `heldOrdersStore` is retired. `useHeldOrdersRealtime` keeps the
+// list live across terminals.
 //
 // Ref: docs/Design/caissapp/51-held-orders-takeaway-list.jpg
 //
-// Sits above the existing generic `<HeldOrdersModal />` in `packages/ui` —
-// that one is the older minimal list. The visual reference shows a richer
-// presentation specific to the POS surface:
-//
-//   ┌──────────────────────────────────────────────────────────────┐
-//   │ ⌚  ACTIVE ORDERS              [DINE IN (0)] [TAKEAWAY (1)] X │
-//   │     manage held orders                                        │
-//   │                                                                │
-//   │  ┌────────────────────────────────────────────────────────┐  │
-//   │  │ POS-20260429-0001   TAKEAWAY        ⌚ 01:37 PM        │  │
-//   │  │ ─────────────────────────────────────────────────────  │  │
-//   │  │ 1x  Americano                                Rp 35,000  │  │
-//   │  │ 1x  Flat white                               Rp 45,000  │  │
-//   │  │ ─────────────────────────────────────────────────────  │  │
-//   │  │ TOTAL AMOUNT                                            │  │
-//   │  │ Rp 80,000                  [trash]  [↻ RESTORE]         │  │
-//   │  └────────────────────────────────────────────────────────┘  │
-//   └──────────────────────────────────────────────────────────────┘
-//
-// The component is purely visual — wires through the existing
-// `useHeldOrdersStore` and `useRestoreHeldOrder` hooks. No store mutation
-// happens here directly.
+// The summary list rows carry order_number / table_number / notes / total /
+// created_at only (no item breakdown — that lives server-side until restore).
 
 import { Clock, RotateCcw, Trash2, X } from 'lucide-react';
-import { useMemo, useState, type JSX } from 'react';
-import type { HeldOrder } from '@breakery/domain';
+import { useState, type JSX } from 'react';
 import {
   Currency,
   Dialog,
@@ -40,15 +24,15 @@ import {
   cn,
 } from '@breakery/ui';
 import { useCartStore } from '@/stores/cartStore';
-import { useHeldOrdersStore } from '@/stores/heldOrdersStore';
+import { useHeldOrdersQuery, type HeldOrderRow } from '@/features/heldOrders/hooks/useHeldOrdersQuery';
 import { useRestoreHeldOrder } from '@/features/heldOrders/hooks/useRestoreHeldOrder';
+import { useDiscardHeldOrder } from '@/features/heldOrders/hooks/useDiscardHeldOrder';
+import { useHeldOrdersRealtime } from '@/features/heldOrders/hooks/useHeldOrdersRealtime';
 
 interface HeldOrdersModalProps {
   open: boolean;
   onClose: () => void;
 }
-
-type FilterMode = 'dine_in' | 'take_out';
 
 const SR_ONLY = 'absolute -m-px h-px w-px overflow-hidden whitespace-nowrap border-0 p-0';
 
@@ -57,90 +41,58 @@ function formatTime(iso: string): string {
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-function orderShortId(id: string): string {
-  // Held order ids are uuids — show last 4 chars as a readable suffix so the
-  // visual matches POS-prefixed labels in ref 51 ("POS-…-0001"). Fall back
-  // to the full id when shorter than 4.
-  if (id.length <= 4) return id.toUpperCase();
-  return `POS-${id.slice(-4).toUpperCase()}`;
-}
-
 function HeldOrderCard({
-  entry,
+  row,
   onRestore,
   onDelete,
 }: {
-  entry: HeldOrder;
+  row: HeldOrderRow;
   onRestore: () => void;
   onDelete: () => void;
 }): JSX.Element {
-  const itemCount = entry.cart.items.reduce((s, i) => s + i.quantity, 0);
-  const total = entry.cart.items.reduce(
-    (s, i) => s + (i.unit_price ?? 0) * i.quantity,
-    0,
-  );
-  const isTakeaway = entry.cart.orderType === 'take_out';
-
   return (
     <article
       className="rounded-xl border border-border-subtle bg-bg-elevated overflow-hidden"
-      data-held-order-id={entry.id}
+      data-held-order-id={row.id}
     >
       {/* Header strip */}
       <header className="flex items-center justify-between gap-2 px-4 py-3 border-b border-border-subtle">
         <div className="flex items-center gap-2 min-w-0">
           <span className="font-mono text-sm text-gold underline underline-offset-4 decoration-gold/60">
-            {orderShortId(entry.id)}
+            {row.order_number}
           </span>
-          <span
-            className={cn(
-              'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest',
-              isTakeaway ? 'bg-blue-info/20 text-blue-info' : 'bg-success-soft text-success',
-            )}
-          >
-            {isTakeaway ? 'Takeaway' : 'Dine-In'}
-          </span>
+          {row.table_number && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest bg-blue-info/20 text-blue-info">
+              Table {row.table_number}
+            </span>
+          )}
         </div>
         <span className="inline-flex items-center gap-1 text-xs text-text-secondary font-mono">
           <Clock className="h-3 w-3" aria-hidden />
-          {formatTime(entry.heldAt)}
+          {formatTime(row.created_at)}
         </span>
       </header>
 
-      {/* Items */}
-      <ul className="px-4 py-3 space-y-1.5 max-h-48 overflow-y-auto">
-        {entry.cart.items.map((item) => (
-          <li key={item.id} className="flex items-center justify-between gap-2 text-sm">
-            <span className="flex items-center gap-2 min-w-0">
-              <span className="font-mono text-xs text-text-muted shrink-0">
-                {item.quantity}x
-              </span>
-              <span className="truncate text-text-primary">{item.name}</span>
-            </span>
-            <Currency
-              amount={(item.unit_price ?? 0) * item.quantity}
-              className="text-text-secondary text-xs"
-            />
-          </li>
-        ))}
-        {itemCount === 0 && (
-          <li className="text-xs italic text-text-muted">No items in this held order.</li>
-        )}
-      </ul>
+      {/* Notes */}
+      {row.notes && (
+        <p className="px-4 py-2 text-sm text-text-secondary italic border-b border-border-subtle">
+          {row.notes}
+        </p>
+      )}
 
       {/* Footer with total + actions */}
-      <footer className="px-4 py-3 border-t border-border-subtle bg-bg-overlay/40 flex items-end justify-between gap-3">
+      <footer className="px-4 py-3 bg-bg-overlay/40 flex items-end justify-between gap-3">
         <div className="min-w-0">
           <SectionLabel size="xs" className="text-text-muted">
             Total Amount
           </SectionLabel>
-          <Currency amount={total} emphasis="gold" className="text-xl font-semibold" />
+          <Currency amount={row.total} emphasis="gold" className="text-xl font-semibold" />
         </div>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={onDelete}
-            aria-label={`Delete held order ${orderShortId(entry.id)}`}
+            aria-label={`Delete held order ${row.order_number}`}
             className={cn(
               'h-10 w-10 inline-flex items-center justify-center rounded-md',
               'text-red border border-red/30 bg-red-soft hover:bg-red/20',
@@ -159,7 +111,7 @@ function HeldOrderCard({
               'transition-colors duration-fast motion-reduce:transition-none',
               'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
             )}
-            aria-label={`Restore held order ${orderShortId(entry.id)}`}
+            aria-label={`Restore held order ${row.order_number}`}
           >
             <RotateCcw className="h-4 w-4" aria-hidden />
             Restore
@@ -171,47 +123,42 @@ function HeldOrderCard({
 }
 
 export function HeldOrdersModal({ open, onClose }: HeldOrdersModalProps): JSX.Element {
-  const entries = useHeldOrdersStore((s) => s.entries);
-  const removeEntry = useHeldOrdersStore((s) => s.remove);
+  useHeldOrdersRealtime();
+
+  const { data, isLoading } = useHeldOrdersQuery();
+  const rows = data ?? [];
   const cartHasItems = useCartStore((s) => s.cart.items.length > 0);
   const restore = useRestoreHeldOrder();
+  const discard = useDiscardHeldOrder();
 
-  const [filter, setFilter] = useState<FilterMode>('take_out');
   const [confirmId, setConfirmId] = useState<string | null>(null);
 
-  const counts = useMemo(() => {
-    let dineIn = 0;
-    let takeOut = 0;
-    for (const e of entries) {
-      if (e.cart.orderType === 'dine_in') dineIn++;
-      else takeOut++;
-    }
-    return { dineIn, takeOut };
-  }, [entries]);
-
-  const visible = useMemo(
-    () =>
-      [...entries]
-        .filter((e) => e.cart.orderType === filter)
-        .sort((a, b) => new Date(b.heldAt).getTime() - new Date(a.heldAt).getTime()),
-    [entries, filter],
-  );
+  async function doRestore(id: string): Promise<void> {
+    await restore.mutateAsync(id);
+    onClose();
+  }
 
   function handleRestoreTap(id: string): void {
     if (cartHasItems) {
       setConfirmId(id);
       return;
     }
-    restore(id);
-    onClose();
+    void doRestore(id);
   }
 
   function handleConfirmReplace(): void {
     if (confirmId) {
-      restore(confirmId);
+      void doRestore(confirmId);
       setConfirmId(null);
-      onClose();
     }
+  }
+
+  function handleDelete(id: string): void {
+    const reason = window.prompt('Reason for discarding this held order (min 10 chars):');
+    if (!reason || reason.trim().length < 10) {
+      return;
+    }
+    void discard.mutateAsync({ orderId: id, reason: reason.trim() });
   }
 
   return (
@@ -223,7 +170,7 @@ export function HeldOrdersModal({ open, onClose }: HeldOrdersModalProps): JSX.El
           </DialogTitle>
           <DialogDescription asChild>
             <span className={SR_ONLY}>
-              Restore or delete an order that was previously placed on hold.
+              Restore or discard an order that was previously placed on hold.
             </span>
           </DialogDescription>
 
@@ -236,21 +183,6 @@ export function HeldOrdersModal({ open, onClose }: HeldOrdersModalProps): JSX.El
                 </h2>
                 <SectionLabel size="xs">Manage held orders</SectionLabel>
               </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <FilterTab
-                active={filter === 'dine_in'}
-                onClick={() => setFilter('dine_in')}
-                label="Dine In"
-                count={counts.dineIn}
-              />
-              <FilterTab
-                active={filter === 'take_out'}
-                onClick={() => setFilter('take_out')}
-                label="Takeaway"
-                count={counts.takeOut}
-              />
             </div>
 
             <button
@@ -269,11 +201,18 @@ export function HeldOrdersModal({ open, onClose }: HeldOrdersModalProps): JSX.El
           </header>
 
           <div className="max-h-[60vh] overflow-y-auto px-6 py-5">
-            {visible.length === 0 ? (
+            {isLoading ? (
+              <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
+                <Clock className="h-12 w-12 text-text-muted opacity-50 animate-pulse" aria-hidden />
+                <SectionLabel size="sm" className="text-text-muted">
+                  Loading held orders…
+                </SectionLabel>
+              </div>
+            ) : rows.length === 0 ? (
               <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
                 <Clock className="h-12 w-12 text-text-muted opacity-50" aria-hidden />
                 <SectionLabel size="sm" className="text-text-muted">
-                  No {filter === 'dine_in' ? 'dine-in' : 'takeaway'} orders held
+                  No orders held
                 </SectionLabel>
                 <p className="text-xs text-text-muted max-w-sm">
                   Ring up an order and tap “Hold” to park it here — useful for
@@ -282,12 +221,12 @@ export function HeldOrdersModal({ open, onClose }: HeldOrdersModalProps): JSX.El
               </div>
             ) : (
               <div className="space-y-3">
-                {visible.map((entry) => (
+                {rows.map((row) => (
                   <HeldOrderCard
-                    key={entry.id}
-                    entry={entry}
-                    onRestore={() => handleRestoreTap(entry.id)}
-                    onDelete={() => removeEntry(entry.id)}
+                    key={row.id}
+                    row={row}
+                    onRestore={() => handleRestoreTap(row.id)}
+                    onDelete={() => handleDelete(row.id)}
                   />
                 ))}
               </div>
@@ -323,43 +262,5 @@ export function HeldOrdersModal({ open, onClose }: HeldOrdersModalProps): JSX.El
         </DialogContent>
       </Dialog>
     </>
-  );
-}
-
-function FilterTab({
-  active,
-  onClick,
-  label,
-  count,
-}: {
-  active: boolean;
-  onClick: () => void;
-  label: string;
-  count: number;
-}): JSX.Element {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={cn(
-        'h-10 px-4 inline-flex items-center justify-center gap-2 rounded-md text-xs font-bold uppercase tracking-widest',
-        'transition-colors duration-fast motion-reduce:transition-none',
-        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
-        active
-          ? 'bg-gold-soft text-gold border border-gold'
-          : 'bg-bg-overlay text-text-secondary border border-border-subtle hover:text-text-primary',
-      )}
-    >
-      <span>{label}</span>
-      <span
-        className={cn(
-          'font-mono normal-case tracking-normal text-[10px] px-1.5 py-0.5 rounded-full',
-          active ? 'bg-gold text-bg-base' : 'bg-bg-input text-text-muted',
-        )}
-      >
-        {count}
-      </span>
-    </button>
   );
 }

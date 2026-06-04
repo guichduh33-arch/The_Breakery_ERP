@@ -9,9 +9,9 @@
 //   authenticating → authenticated → realtime/orders refresh on tick.
 //                  ↘ pin_fallback  → render PairDevicePrompt (D-4C-7).
 //
-// MVP scope (per D-4C-6) : branded layout + queue ticker + featured card.
-// The full live cart mirror (`CDActiveCartView`) lands in Phase 5.A with
-// the LAN BroadcastChannel port.
+// Scope : branded layout + live cart mirror (left) + queue ticker + featured
+// card (right). The cart mirror reflects the active POS cart in real time via
+// the same-origin BroadcastChannel (F-007).
 
 import { useEffect, useMemo, useState } from 'react';
 
@@ -21,8 +21,10 @@ import { BrandedLayout } from './components/BrandedLayout';
 import { CurrentOrderCard } from './components/CurrentOrderCard';
 import { OrderQueueTicker } from './components/OrderQueueTicker';
 import { PairDevicePrompt } from './components/PairDevicePrompt';
+import { CDActiveCartView } from './CDActiveCartView';
 import { useDisplayOrders } from './hooks/useDisplayOrders';
 import { useDisplayRealtime } from './hooks/useDisplayRealtime';
+import { useCartBroadcastReceiver } from './hooks/useCartBroadcastReceiver';
 import { useKioskAuth } from './hooks/useKioskAuth';
 
 export default function CustomerDisplayPage() {
@@ -56,6 +58,10 @@ export default function CustomerDisplayPage() {
   useDisplayRealtime(screenId);
   const ordersEnabled = auth.status === 'authenticated' && pairedCode !== null;
   const { data: orders } = useDisplayOrders(ordersEnabled);
+
+  // Live cart mirror from the POS side (F-007). Safe to read on every render —
+  // the view renders its own welcome empty-state when the message is null.
+  const cartMessage = useCartBroadcastReceiver();
 
   // ----- Render branches -----
 
@@ -127,12 +133,19 @@ export default function CustomerDisplayPage() {
       }
     >
       <div
-        className="h-full flex flex-col gap-8"
+        className="h-full flex gap-8"
         data-testid="display-authenticated"
       >
-        <CurrentOrderCard order={current} />
-        <div className="flex-1 min-h-0">
-          <OrderQueueTicker orders={tail} />
+        {/* Live cart mirror (left) — reflects the active POS cart (F-007). */}
+        <div className="flex-1 min-h-0 flex">
+          <CDActiveCartView message={cartMessage} />
+        </div>
+        {/* Order queue + featured card (right). */}
+        <div className="flex-1 min-h-0 flex flex-col gap-8">
+          <CurrentOrderCard order={current} />
+          <div className="flex-1 min-h-0">
+            <OrderQueueTicker orders={tail} />
+          </div>
         </div>
       </div>
     </BrandedLayout>

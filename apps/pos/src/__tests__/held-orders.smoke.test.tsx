@@ -1,147 +1,82 @@
 // apps/pos/src/__tests__/held-orders.smoke.test.tsx
+//
+// Session 35 (F-003) — rewritten for the DB-backed hold flow. The old
+// localStorage `heldOrdersStore` is retired; hold/restore/discard now go
+// through `hold_order_v1` / `restore_held_order_v1` / `discard_held_order_v1`.
+// These smokes assert the UI wiring (HoldOrderButton fires the mutation with
+// the live cart and clears it) and the still-valid checkout reset behavior.
 /// <reference types="@testing-library/jest-dom" />
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+const holdMutateAsync = vi.fn().mockResolvedValue('order-1');
+vi.mock('@/features/heldOrders/hooks/useHoldOrder', () => ({
+  useHoldOrder: () => ({ mutateAsync: holdMutateAsync, isPending: false }),
+}));
 
 vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn() },
   Toaster: () => null,
 }));
 
-vi.mock('@/lib/supabase', () => ({
-  supabase: {
-    auth: { getSession: vi.fn().mockResolvedValue({ data: { session: null } }) },
-    channel: vi.fn(() => ({ on: vi.fn().mockReturnThis(), subscribe: vi.fn().mockReturnThis() })),
-    removeChannel: vi.fn(),
-  },
-  supabaseUrl: 'http://localhost:54321',
-}));
-
 import { useCartStore, resetCartAfterCheckout } from '@/stores/cartStore';
-import { useHeldOrdersStore, HeldOrdersLimitError, HELD_ORDERS_LIMIT } from '@/stores/heldOrdersStore';
-import { useHoldOrder } from '@/features/heldOrders/hooks/useHoldOrder';
-import { useRestoreHeldOrder } from '@/features/heldOrders/hooks/useRestoreHeldOrder';
+import { HoldOrderButton } from '@/features/heldOrders/components/HoldOrderButton';
 import { toast } from 'sonner';
 
 const ITEM = { id: 'l1', product_id: 'p1', name: 'Americano', unit_price: 35000, quantity: 2, modifiers: [] };
 
-describe('held-orders smoke — hold flow', () => {
+function wrap(node: React.ReactElement) {
+  return <QueryClientProvider client={new QueryClient()}>{node}</QueryClientProvider>;
+}
+
+describe('held-orders smoke — DB-backed hold flow', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
+    vi.spyOn(window, 'prompt').mockReturnValue('for Mr. Tan');
     useCartStore.setState({
       cart: { items: [ITEM], order_type: 'dine_in', tableNumber: 'T-03' },
       lockedItemIds: [],
       attachedCustomer: null,
-    });
-    useHeldOrdersStore.setState({ entries: [] });
+    } as never);
   });
 
-  it('holds the cart: cart clears, held count becomes 1', () => {
-    const holdOrder = useHoldOrder();
-    holdOrder('for Mr. Tan');
+  it('holds the cart: mutation fires with the cart payload + table, then cart clears', async () => {
+    render(wrap(<HoldOrderButton />));
+    fireEvent.click(screen.getByRole('button', { name: /hold/i }));
 
-    expect(useCartStore.getState().cart.items).toHaveLength(0);
-    expect(useHeldOrdersStore.getState().entries).toHaveLength(1);
+    await waitFor(() => expect(holdMutateAsync).toHaveBeenCalled());
+    const arg = holdMutateAsync.mock.calls[0]?.[0] as {
+      cartPayload: { items: unknown[]; order_type: string };
+      tableNumber: string | null;
+      notes: string | null;
+    };
+    expect(arg.cartPayload.items).toHaveLength(1);
+    expect(arg.cartPayload.order_type).toBe('dine_in');
+    expect(arg.tableNumber).toBe('T-03');
+    expect(arg.notes).toBe('for Mr. Tan');
+
+    await waitFor(() => expect(useCartStore.getState().cart.items).toHaveLength(0));
   });
 
-  it('held entry preserves items, tableNumber, notes', () => {
-    const holdOrder = useHoldOrder();
-    holdOrder('for Mr. Tan');
-
-    const entry = useHeldOrdersStore.getState().entries[0]!;
-    expect(entry.cart.items).toHaveLength(1);
-    expect(entry.cart.items[0]?.name).toBe('Americano');
-    expect(entry.cart.tableNumber).toBe('T-03');
-    expect(entry.notes).toBe('for Mr. Tan');
+  it('toasts success after hold', async () => {
+    render(wrap(<HoldOrderButton />));
+    fireEvent.click(screen.getByRole('button', { name: /hold/i }));
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith('Held'));
   });
 
-  it('toasts success after hold', () => {
-    useHoldOrder()();
-    expect(toast.success).toHaveBeenCalledWith('Held');
-  });
-
-  it('toasts error when cart is empty', () => {
-    useCartStore.setState({ cart: { items: [], order_type: 'dine_in' }, lockedItemIds: [], attachedCustomer: null });
-    useHoldOrder()();
-    expect(toast.error).toHaveBeenCalledWith('Cart is empty');
-  });
-
-  it('throws HeldOrdersLimitError as toast when limit reached', () => {
-    useHeldOrdersStore.setState({
-      entries: Array.from({ length: HELD_ORDERS_LIMIT }, (_, i) => ({
-        id: `held-${i}`,
-        heldAt: new Date().toISOString(),
-        cart: { items: [], customerId: null, loyaltyPointsToRedeem: 0, orderType: 'dine_in' as const, tableNumber: null },
-      })),
-    });
-    useHoldOrder()();
-    expect(toast.error).toHaveBeenCalledWith('Held orders limit reached');
-  });
-});
-
-describe('held-orders smoke — restore flow', () => {
-  const HELD_ID = 'held-uuid-1';
-
-  beforeEach(() => {
+  it('does not fire the mutation when the cart is empty', () => {
     useCartStore.setState({
       cart: { items: [], order_type: 'dine_in' },
       lockedItemIds: [],
       attachedCustomer: null,
-    });
-    useHeldOrdersStore.setState({
-      entries: [
-        {
-          id: HELD_ID,
-          heldAt: new Date().toISOString(),
-          cart: {
-            items: [{ id: 'l1', product_id: 'p1', name: 'Americano', unit_price: 35000, quantity: 2, modifiers: [] }],
-            customerId: null,
-            loyaltyPointsToRedeem: 0,
-            orderType: 'dine_in',
-            tableNumber: 'T-05',
-          },
-          notes: 'for Mr. Tan',
-        },
-      ],
-    });
-  });
-
-  it('restores the held entry: cart gets items, held list is empty', () => {
-    const restore = useRestoreHeldOrder();
-    restore(HELD_ID);
-
-    expect(useCartStore.getState().cart.items).toHaveLength(1);
-    expect(useHeldOrdersStore.getState().entries).toHaveLength(0);
-  });
-
-  it('restores tableNumber from held snapshot', () => {
-    const restore = useRestoreHeldOrder();
-    restore(HELD_ID);
-
-    expect(useCartStore.getState().cart.tableNumber).toBe('T-05');
-  });
-
-  it('no-op if id not found', () => {
-    const restore = useRestoreHeldOrder();
-    restore('nonexistent-id');
-
-    expect(useCartStore.getState().cart.items).toHaveLength(0);
-    expect(useHeldOrdersStore.getState().entries).toHaveLength(1);
-  });
-
-  it('locks cleared after restore', () => {
-    useCartStore.setState((s) => ({ ...s, lockedItemIds: ['l1'] }));
-    const restore = useRestoreHeldOrder();
-    restore(HELD_ID);
-
-    expect(useCartStore.getState().lockedItemIds).toHaveLength(0);
-  });
-});
-
-describe('HeldOrdersLimitError', () => {
-  it('is an instance of Error with correct name', () => {
-    const err = new HeldOrdersLimitError();
-    expect(err).toBeInstanceOf(Error);
-    expect(err.name).toBe('HeldOrdersLimitError');
-    expect(err.message).toBe('Held orders limit reached');
+    } as never);
+    render(wrap(<HoldOrderButton />));
+    // Button is disabled when the cart is empty.
+    const btn = screen.getByRole('button', { name: /hold/i });
+    expect(btn).toBeDisabled();
+    fireEvent.click(btn);
+    expect(holdMutateAsync).not.toHaveBeenCalled();
   });
 });
 
@@ -151,7 +86,7 @@ describe('resetCartAfterCheckout clears tableNumber', () => {
       cart: { items: [], order_type: 'dine_in', tableNumber: 'T-03' },
       lockedItemIds: [],
       attachedCustomer: null,
-    });
+    } as never);
     resetCartAfterCheckout();
     expect(useCartStore.getState().cart.tableNumber).toBeUndefined();
   });

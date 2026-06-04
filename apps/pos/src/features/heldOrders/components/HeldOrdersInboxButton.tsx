@@ -1,16 +1,15 @@
 import { useState } from 'react';
-import { Button, HeldOrdersModal } from '@breakery/ui';
-import { useCartStore } from '@/stores/cartStore';
-import { useHeldOrdersStore } from '@/stores/heldOrdersStore';
-import { useRestoreHeldOrder } from '../hooks/useRestoreHeldOrder';
+import { Button } from '@breakery/ui';
+import { HeldOrdersModal } from '@/features/cart/HeldOrdersModal';
+import { useHeldOrdersQuery } from '../hooks/useHeldOrdersQuery';
 
+/**
+ * Session 35 (F-003) — held-orders entry point with a DB-backed count badge.
+ * The list + restore/discard actions live in the shared `HeldOrdersModal`.
+ */
 export function HeldOrdersInboxButton() {
   const [open, setOpen] = useState(false);
-  const entries = useHeldOrdersStore((s) => s.entries);
-  const removeEntry = useHeldOrdersStore((s) => s.remove);
-  const cartHasItems = useCartStore((s) => s.cart.items.length > 0);
-  const restore = useRestoreHeldOrder();
-  const count = entries.length;
+  const count = useHeldOrdersQuery().data?.length ?? 0;
 
   return (
     <>
@@ -23,14 +22,7 @@ export function HeldOrdersInboxButton() {
       >
         Held {count > 0 ? `(${count})` : ''}
       </Button>
-      <HeldOrdersModal
-        open={open}
-        onClose={() => setOpen(false)}
-        entries={entries}
-        onRestore={(id) => { restore(id); setOpen(false); }}
-        onDelete={removeEntry}
-        cartHasItems={cartHasItems}
-      />
+      <HeldOrdersModal open={open} onClose={() => setOpen(false)} />
     </>
   );
 }

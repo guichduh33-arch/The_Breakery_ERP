@@ -1,11 +1,17 @@
 // apps/pos/src/services/print/printService.ts
 import type { PaymentMethod, PrintKind, PrinterRole } from '@breakery/domain';
+import { usePosSettingsStore } from '@/stores/posSettingsStore';
 
-// Print-bridge base URL. Resolution order once S35 lands its Printing tab:
-//   usePosSettingsStore (S35 F-009) > VITE_PRINT_SERVER_URL (this fix) > fallback.
-// This fix introduces ONLY the env var; the editable store is S35 F-009/F-015.
-// Read once at module load — tests must vi.resetModules() after stubbing the env.
-const SERVER_URL = import.meta.env.VITE_PRINT_SERVER_URL ?? 'http://localhost:3001';
+/**
+ * Print-bridge base URL, resolved at CALL TIME (F-015) so a settings change
+ * takes effect immediately without a reload.
+ * Resolution order: store `printerUrl` override > VITE_PRINT_SERVER_URL > fallback.
+ */
+function getServerUrl(): string {
+  const override = usePosSettingsStore.getState().printerUrl;
+  if (override) return override;
+  return import.meta.env.VITE_PRINT_SERVER_URL ?? 'http://localhost:3001';
+}
 
 // ---------------------------------------------------------------------------
 // Station ticket types
@@ -98,7 +104,7 @@ export async function checkPrintServer(): Promise<boolean> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 2000);
   try {
-    const res = await fetch(`${SERVER_URL}/health`, { signal: controller.signal });
+    const res = await fetch(`${getServerUrl()}/health`, { signal: controller.signal });
     return res.ok;
   } catch {
     return false;
@@ -129,7 +135,7 @@ export async function printReceipt(
     const body = printer
       ? JSON.stringify({ ...payload, printer })
       : JSON.stringify(payload);
-    const res = await fetch(`${SERVER_URL}/print/receipt`, {
+    const res = await fetch(`${getServerUrl()}/print/receipt`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body,
@@ -151,7 +157,7 @@ export async function openCashDrawer(): Promise<{ success: boolean; error?: stri
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 2000);
   try {
-    const res = await fetch(`${SERVER_URL}/drawer/open`, {
+    const res = await fetch(`${getServerUrl()}/drawer/open`, {
       method: 'POST',
       signal: controller.signal,
     });
@@ -184,7 +190,7 @@ export async function printStationTicket(
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 5000);
   try {
-    const res = await fetch(`${SERVER_URL}/print/ticket`, {
+    const res = await fetch(`${getServerUrl()}/print/ticket`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ printer, ...payload }),

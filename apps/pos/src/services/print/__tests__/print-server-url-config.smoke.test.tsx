@@ -54,9 +54,13 @@ describe('printService — VITE_PRINT_SERVER_URL', () => {
     vi.stubEnv('VITE_PRINT_MOCK', '');
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     globalThis.fetch = originalFetch;
     vi.unstubAllEnvs();
+    // The settings store is a module singleton — reset its printerUrl so a
+    // store override set in one case can't leak into the env/fallback cases.
+    const { usePosSettingsStore } = await import('@/stores/posSettingsStore');
+    usePosSettingsStore.setState({ printerUrl: '' });
     vi.resetModules();
   });
 
@@ -94,5 +98,18 @@ describe('printService — VITE_PRINT_SERVER_URL', () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock.mock.calls[0]![0]).toBe('http://localhost:3001/print/ticket');
+  });
+
+  it('prefers usePosSettingsStore.printerUrl over the env var', async () => {
+    vi.resetModules();
+    vi.stubEnv('VITE_PRINT_SERVER_URL', 'http://env-host:3001');
+    const { usePosSettingsStore } = await import('@/stores/posSettingsStore');
+    usePosSettingsStore.setState({ printerUrl: 'http://store-host:3001' });
+    const fetchSpy = mockFetchOk();
+    const { openCashDrawer } = await import('../printService');
+    await openCashDrawer();
+    const calledUrl = String(fetchSpy.mock.calls[0]?.[0] ?? '');
+    expect(calledUrl).toContain('store-host');
+    expect(calledUrl).not.toContain('env-host');
   });
 });

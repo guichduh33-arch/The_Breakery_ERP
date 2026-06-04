@@ -172,6 +172,7 @@ export function DiscountModal({
             </label>
             <textarea
               id="discount-reason"
+              data-vkp="qwerty"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="Why discount?"

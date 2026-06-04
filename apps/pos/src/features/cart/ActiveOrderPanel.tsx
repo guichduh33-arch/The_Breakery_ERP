@@ -48,7 +48,7 @@ import { calculateTotals } from '@breakery/domain';
 import type { CartItem } from '@breakery/domain';
 import { useCartStore } from '@/stores/cartStore';
 import { usePaymentStore } from '@/stores/paymentStore';
-import { useHeldOrdersStore } from '@/stores/heldOrdersStore';
+import { useHeldOrdersQuery } from '@/features/heldOrders/hooks/useHeldOrdersQuery';
 import { CustomerAttachButton } from '@/features/customers/components/CustomerAttachButton';
 import { LoyaltyPointsLine } from '@/features/loyalty/components/LoyaltyPointsLine';
 import { RedeemButton } from '@/features/loyalty/components/RedeemButton';
@@ -63,6 +63,7 @@ import {
 } from '@/features/discounts/hooks/useApplyLineDiscount';
 import { usePromotionsAutoEval } from '@/features/promotions/hooks/usePromotionsAutoEval';
 import { usePromotionsRealtime } from '@/features/promotions/hooks/usePromotionsRealtime';
+import { useCartBroadcast } from '@/features/display/hooks/useCartBroadcast';
 import { CartLineRow } from './CartLineRow';
 import { CartTotals } from './CartTotals';
 import { CartActionsBar } from './CartActionsBar';
@@ -119,11 +120,14 @@ export function ActiveOrderPanel({
   const clear = useCartStore((s) => s.clear);
   const appliedPromotions = useCartStore((s) => s.appliedPromotions);
   const openPayment = usePaymentStore((s) => s.open);
-  const heldCount = useHeldOrdersStore((s) => s.entries.length);
+  const heldCount = useHeldOrdersQuery().data?.length ?? 0;
 
   // ── promotion orchestrator (anchored here per spec) ──────────────────────
   usePromotionsAutoEval();
   usePromotionsRealtime();
+
+  // ── live cart mirror to the customer display (F-007) ─────────────────────
+  useCartBroadcast();
 
   // ── local UI state ───────────────────────────────────────────────────────
   const [redeemOpen, setRedeemOpen] = useState(false);
