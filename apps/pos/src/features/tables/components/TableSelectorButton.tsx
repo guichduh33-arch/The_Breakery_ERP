@@ -5,7 +5,7 @@
 // The legacy modal lives in @breakery/ui and is still used by the tablet
 // shell, so it stays — we just switch the POS-shell entry point.
 
-import { useState } from 'react';
+import { useState, type ComponentProps } from 'react';
 import { MapPin } from 'lucide-react';
 import { Button } from '@breakery/ui';
 import { useCartStore } from '@/stores/cartStore';
@@ -13,7 +13,13 @@ import { useRestaurantTables } from '../hooks/useRestaurantTables';
 import { useTableOccupancy } from '../hooks/useTableOccupancy';
 import { FloorPlanModal } from '@/features/floor-plan/FloorPlanModal';
 
-export function TableSelectorButton() {
+interface TableSelectorButtonProps {
+  /** When provided, replaces the default styling (e.g. for the bottom bar). */
+  className?: string;
+  variant?: ComponentProps<typeof Button>['variant'];
+}
+
+export function TableSelectorButton({ className, variant }: TableSelectorButtonProps = {}) {
   const [open, setOpen] = useState(false);
   const tableNumber = useCartStore((s) => s.cart.tableNumber);
   const setTableNumber = useCartStore((s) => s.setTableNumber);
@@ -25,9 +31,9 @@ export function TableSelectorButton() {
   return (
     <>
       <Button
-        variant="secondary"
+        variant={variant ?? 'secondary'}
         size="sm"
-        className="w-full text-left justify-start gap-2"
+        className={className ?? 'w-full text-left justify-start gap-2'}
         onClick={() => setOpen(true)}
         data-testid="pos-table-selector-trigger"
       >

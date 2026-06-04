@@ -184,8 +184,8 @@ describe('Session 2 golden path — modifiers + send to kitchen', () => {
     expect(screen.getByText('Americano')).toBeInTheDocument();
     expect(screen.getByText('Croissant')).toBeInTheDocument();
     expect(screen.getAllByLabelText(/sent to kitchen/i).length).toBeGreaterThan(0);
-    // Croissant remove button is not locked
-    expect(screen.getByRole('button', { name: /remove item/i })).toBeInTheDocument();
+    // Croissant remove button is not locked (descriptive per-item aria-label)
+    expect(screen.getByRole('button', { name: /remove croissant/i })).toBeInTheDocument();
   });
 
   it('canEdit returns false for locked item', () => {

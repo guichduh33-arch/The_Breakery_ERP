@@ -83,6 +83,14 @@ interface CartState {
   update: (lineId: string, quantity: number) => void;
   remove: (lineId: string) => void;
   clear: () => void;
+  /**
+   * Session 36 — full order void. Unlike {@link clear} (which keeps locked /
+   * already-sent lines), this wipes EVERY line including those fired to the
+   * kitchen, plus all per-order transient state (locks, print flags, promos,
+   * cart discount, redemption). Used by the bottom-bar "Void Order" action,
+   * which gates this behind a manager PIN once anything has been sent.
+   */
+  voidOrder: () => void;
   setOrderType: (type: OrderType) => void;
 
   // Table selection (session 4)
@@ -226,6 +234,20 @@ export const useCartStore = create<CartState>()(
           // (double ticket). Mirrors how clear() keeps locked items in the cart.
           printedItemIds: s.printedItemIds.filter((id) => s.lockedItemIds.includes(id)),
         })),
+
+      voidOrder: () =>
+        set((s) => {
+          // Drop order-specific monetary state ; keep order_type / customer /
+          // table so the cashier can immediately re-ring if needed.
+          const { cartDiscount: _cd, loyaltyPointsToRedeem: _l, ...rest } = s.cart;
+          return {
+            cart: { ...rest, items: [] },
+            lockedItemIds: [],
+            printedItemIds: [],
+            appliedPromotions: [],
+            dismissedPromotionIds: new Set<string>(),
+          };
+        }),
 
       setOrderType: (type) => set((s) => ({ cart: setOrderType(s.cart, type) })),
 
@@ -380,8 +402,16 @@ export const useCartStore = create<CartState>()(
           addedGifts.push({ name: giftName, promotion_id: ap.promotion_id });
         }
 
+        // Session 36 / Bug 1 fix — idempotent reconcile. When no gift line was
+        // added or removed, `nextItems` is content-identical to the current
+        // cart (only a fresh array instance). Preserve the EXISTING `cart`
+        // reference in that case so `usePromotionsAutoEval` (whose effect
+        // depends on `cart`) does NOT re-fire and re-call `evaluate_promotions_v1`
+        // on a 200ms loop. `appliedPromotions` is not in that effect's deps, so
+        // refreshing it is safe and keeps the totals display in sync.
+        const giftsChanged = addedGifts.length > 0 || removedGifts.length > 0;
         set({
-          cart: { ...state.cart, items: nextItems },
+          cart: giftsChanged ? { ...state.cart, items: nextItems } : state.cart,
           appliedPromotions: next,
         });
         return { addedGifts, removedGifts };

@@ -21,6 +21,20 @@ import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const SUBGROUP_STORAGE_KEY = 'bo:sidebar:subgroups';
+const GROUP_STORAGE_KEY = 'bo:sidebar:groups';
+const ALL_TOP_GROUPS = [
+  'Operations',
+  'Sales',
+  'Purchase',
+  'Stock Management',
+  'Finance',
+  'Reports',
+  'Settings',
+];
+/** Pre-open every top-level category so nested subgroup buttons/links render. */
+function openAllTopGroups() {
+  localStorage.setItem(GROUP_STORAGE_KEY, JSON.stringify(ALL_TOP_GROUPS));
+}
 const ALL_NAMED_SUBGROUPS = [
   'Finance::Expenses',
   'Finance::Accounting',
@@ -119,6 +133,7 @@ describe('Sidebar', () => {
   });
 
   it('renders subgroup toggle buttons inside Finance / Reports / Settings', () => {
+    openAllTopGroups();
     setAuthState(ALL_PERMS);
     renderWith(<Sidebar />);
     // Named subgroups now render as clickable <button> toggles (collapsed by default).
@@ -142,7 +157,9 @@ describe('Sidebar', () => {
   });
 
   it('renders the renamed labels (8 renames) when all named subgroups are opened via localStorage', () => {
-    // Pre-open every named subgroup so renames inside Finance / Reports / Settings render.
+    // Pre-open every top-level category + named subgroup so renames inside
+    // Finance / Reports / Settings render.
+    openAllTopGroups();
     localStorage.setItem(SUBGROUP_STORAGE_KEY, JSON.stringify(ALL_NAMED_SUBGROUPS));
     setAuthState(ALL_PERMS);
     renderWith(<Sidebar />);
@@ -187,6 +204,7 @@ describe('Sidebar', () => {
   });
 
   it('keeps named subgroup items collapsed by default; unnamed subgroup items stay visible', () => {
+    openAllTopGroups();
     setAuthState(ALL_PERMS);
     renderWith(<Sidebar />);
     // Items inside named subgroups (Finance/Reports/Settings) are hidden at first load.
@@ -202,6 +220,7 @@ describe('Sidebar', () => {
   });
 
   it('toggles a subgroup open on click — items appear and aria-expanded flips', () => {
+    openAllTopGroups();
     setAuthState(ALL_PERMS);
     renderWith(<Sidebar />);
     const expensesBtn = screen.getByRole('button', { name: /^Expenses/i });
@@ -217,6 +236,7 @@ describe('Sidebar', () => {
   });
 
   it('restores subgroup state from localStorage on mount', () => {
+    openAllTopGroups();
     localStorage.setItem(SUBGROUP_STORAGE_KEY, JSON.stringify(['Reports::Financial reports']));
     setAuthState(ALL_PERMS);
     renderWith(<Sidebar />);
@@ -229,6 +249,7 @@ describe('Sidebar', () => {
   });
 
   it('writes opened subgroups to localStorage on toggle', () => {
+    openAllTopGroups();
     setAuthState(ALL_PERMS);
     renderWith(<Sidebar />);
     fireEvent.click(screen.getByRole('button', { name: /^Devices/i }));
@@ -236,5 +257,77 @@ describe('Sidebar', () => {
     expect(raw).not.toBeNull();
     const stored = JSON.parse(raw!);
     expect(stored).toContain('Settings::Devices');
+  });
+
+  // ---- Top-level category collapsibility (collapsible accordion) ----
+
+  it('collapses top-level categories by default — only the active route category is open', () => {
+    setAuthState(ALL_PERMS);
+    renderWith(<Sidebar />, '/backoffice'); // Dashboard → Operations is active
+    // Operations is auto-opened → Dashboard link visible.
+    expect(screen.getByRole('link', { name: /^Dashboard$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Operations$/i })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+    // Sales is NOT active → collapsed → its links are not rendered.
+    expect(screen.queryByRole('link', { name: /^Orders$/i })).toBeNull();
+    expect(screen.getByRole('button', { name: /^Sales$/i })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+  });
+
+  it('auto-opens the category that owns the active deep route', () => {
+    setAuthState(ALL_PERMS);
+    // /backoffice/inventory/recipes lives under Stock Management.
+    renderWith(<Sidebar />, '/backoffice/inventory/recipes');
+    expect(screen.getByRole('button', { name: /^Stock Management$/i })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+    expect(screen.getByRole('link', { name: /^Recipes$/i })).toBeInTheDocument();
+    // Operations (not the active group) stays collapsed.
+    expect(screen.getByRole('button', { name: /^Operations$/i })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+  });
+
+  it('toggles a top-level category open/closed and persists to localStorage', () => {
+    setAuthState(ALL_PERMS);
+    renderWith(<Sidebar />, '/backoffice');
+    const salesBtn = screen.getByRole('button', { name: /^Sales$/i });
+    expect(salesBtn).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('link', { name: /^Orders$/i })).toBeNull();
+
+    fireEvent.click(salesBtn);
+    expect(salesBtn).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('link', { name: /^Orders$/i })).toBeInTheDocument();
+
+    const stored = JSON.parse(localStorage.getItem(GROUP_STORAGE_KEY)!);
+    expect(stored).toContain('Sales');
+  });
+
+  it('restores top-level category state from localStorage on mount', () => {
+    localStorage.setItem(GROUP_STORAGE_KEY, JSON.stringify(['Sales']));
+    setAuthState(ALL_PERMS);
+    renderWith(<Sidebar />, '/backoffice');
+    // Sales was persisted-open even though it does not own the active route.
+    expect(screen.getByRole('button', { name: /^Sales$/i })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+    expect(screen.getByRole('link', { name: /^Orders$/i })).toBeInTheDocument();
+  });
+
+  it('wires each category trigger to its panel via aria-controls', () => {
+    openAllTopGroups();
+    setAuthState(ALL_PERMS);
+    renderWith(<Sidebar />, '/backoffice');
+    const opsBtn = screen.getByRole('button', { name: /^Operations$/i });
+    const panelId = opsBtn.getAttribute('aria-controls');
+    expect(panelId).toBeTruthy();
+    expect(document.getElementById(panelId!)).not.toBeNull();
   });
 });

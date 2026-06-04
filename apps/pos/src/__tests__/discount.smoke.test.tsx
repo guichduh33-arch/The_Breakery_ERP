@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { useCartStore } from '@/stores/cartStore';
-import { ActiveOrderPanel } from '@/features/cart/ActiveOrderPanel';
+import { BottomActionBar } from '@/features/cart/BottomActionBar';
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -91,10 +91,11 @@ describe('Discount smoke — cart discount with PIN guard', () => {
   });
 
   it('below threshold (5%): confirm without PIN modal, cart shows discount line', async () => {
-    render(wrapper(<ActiveOrderPanel />));
+    render(wrapper(<BottomActionBar />));
 
-    // Open discount modal
-    fireEvent.click(screen.getByRole('button', { name: /apply cart discount/i }));
+    // Open discount modal via the bottom-bar More menu
+    fireEvent.click(screen.getByRole('button', { name: /more/i }));
+    fireEvent.click(screen.getByRole('menuitem', { name: /apply discount/i }));
 
     await waitFor(() => {
       expect(screen.getByTestId('discount-value-display')).toBeInTheDocument();
@@ -126,9 +127,10 @@ describe('Discount smoke — cart discount with PIN guard', () => {
   });
 
   it('above threshold (15%): confirm triggers PinVerificationModal, discount applied with authorized_by=mgr-1', async () => {
-    render(wrapper(<ActiveOrderPanel />));
+    render(wrapper(<BottomActionBar />));
 
-    fireEvent.click(screen.getByRole('button', { name: /apply cart discount/i }));
+    fireEvent.click(screen.getByRole('button', { name: /more/i }));
+    fireEvent.click(screen.getByRole('menuitem', { name: /apply discount/i }));
 
     await waitFor(() => {
       expect(screen.getByTestId('discount-value-display')).toBeInTheDocument();
@@ -170,9 +172,10 @@ describe('Discount smoke — cart discount with PIN guard', () => {
 
     const { toast } = await import('sonner');
 
-    render(wrapper(<ActiveOrderPanel />));
+    render(wrapper(<BottomActionBar />));
 
-    fireEvent.click(screen.getByRole('button', { name: /apply cart discount/i }));
+    fireEvent.click(screen.getByRole('button', { name: /more/i }));
+    fireEvent.click(screen.getByRole('menuitem', { name: /apply discount/i }));
 
     await waitFor(() => {
       expect(screen.getByTestId('discount-value-display')).toBeInTheDocument();

@@ -15,7 +15,7 @@
 //
 // Customer pricing: if a customer is attached, unit_price is resolved via
 // get_customer_product_price RPC before addItem. Spec §4.4.
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { ModifierModal, type ModifierModalProduct } from '@breakery/ui';
 import type { Product, SelectedModifiers } from '@breakery/domain';
@@ -101,20 +101,40 @@ export function ProductTapHandler({ selectedSlug }: ProductTapHandlerProps) {
     setPending(null);
   }
 
-  if (pending && modifiersQuery.isSuccess) {
-    const groups = modifiersQuery.data;
+  // Bug 2 (Session 36) — auto-add for products that need no modifier choice
+  // (combos without groups, finished products with no groups). This MUST live
+  // in an effect, not in the render body: running `add()` during render made
+  // StrictMode's dev double-render fire it TWICE for a single tap, doubling the
+  // line quantity (a Croissant tapped twice billed ×4 = Rp 100,000 instead of
+  // Rp 50,000). The ref guards against a re-fire for the same `pending` product
+  // before `setPending(null)` commits.
+  const autoAddedRef = useRef<Product | null>(null);
+  useEffect(() => {
+    if (!pending || !modifiersQuery.isSuccess) {
+      autoAddedRef.current = null;
+      return;
+    }
+    if (autoAddedRef.current === pending) return;
+    const groups = modifiersQuery.data ?? [];
     if (pending.product_type === 'combo') {
       if (groups.length > 0) {
         toast.error('Modifiers not supported on combos');
       } else {
+        autoAddedRef.current = pending;
         void addWithPrice(pending, []);
       }
-      queueMicrotask(() => setPending(null));
+      setPending(null);
     } else if (groups.length === 0) {
+      autoAddedRef.current = pending;
       void addWithPrice(pending, []);
-      queueMicrotask(() => setPending(null));
+      setPending(null);
     }
-  }
+    // groups.length > 0 (non-combo) → the ModifierModal opens; nothing to add.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- addWithPrice is a
+    // stable closure recreated each render; depending on it would re-run the
+    // effect on every render. The (pending, query-success, data) tuple fully
+    // captures when an auto-add should fire.
+  }, [pending, modifiersQuery.isSuccess, modifiersQuery.data]);
 
   const isCombo = pending?.product_type === 'combo';
   const groups = modifiersQuery.data ?? [];

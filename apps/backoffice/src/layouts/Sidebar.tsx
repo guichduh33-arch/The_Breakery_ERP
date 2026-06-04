@@ -7,18 +7,20 @@
 //   - OPERATIONS  — Dashboard, POS Terminal, Kitchen Display
 //   - MANAGEMENT  — Products, Stock & Inventory, Order History, B2B, Purchases,
 //                   Suppliers, Expenses, Customers
-//   - ADMIN       — Reports, Accounting, Users, Settings (collapsed groups in
-//                   future — for now we render all visible items)
+//   - ADMIN       — Reports, Accounting, Users, Settings
 //
-// Each group renders an uppercase SectionLabel (group name). Items are
+// Each top-level category renders as a collapsible accordion header (beige
+// `bg-surface-4` pill, uppercase SectionLabel h2, pivoting chevron). Items are
 // permission-filtered via the auth store — empty groups are hidden so the
 // sidebar stays clean for non-owner roles.
 //
-// Indented sub-items (e.g. inventory subpages) keep the existing visual
-// hierarchy from the legacy layout.
+// Open/closed state is persisted per category in localStorage
+// (`bo:sidebar:groups`) and per named subgroup (`bo:sidebar:subgroups`); the
+// category owning the active route is auto-opened on load. Indented sub-items
+// (e.g. inventory subpages) keep the existing visual hierarchy.
 
-import { useEffect, useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { useEffect, useId, useState, type ReactNode } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Package, Boxes, Users, Building2,
   Calculator, BarChart3, Settings, Tag, Heart, PieChart, Shield,
@@ -27,7 +29,7 @@ import {
   Printer, Network, Coins, Scale, Banknote, Layers3,
   LineChart, Sparkles, Megaphone, Cake,
   ClipboardCheck, TrendingUp, Signature, ShoppingBag,
-  ChevronDown, ChevronRight,
+  ChevronRight,
   type LucideIcon,
 } from 'lucide-react';
 import { BrandMark, SectionLabel, cn } from '@breakery/ui';
@@ -207,10 +209,12 @@ const GROUPS: NavGroup[] = [
 ];
 
 const SUBGROUP_STORAGE_KEY = 'bo:sidebar:subgroups';
+/** Top-level category open/closed state (collapsible accordion). */
+const GROUP_STORAGE_KEY = 'bo:sidebar:groups';
 
-function readOpenSubgroups(): Set<string> {
+function readStringSet(key: string): Set<string> {
   try {
-    const raw = localStorage.getItem(SUBGROUP_STORAGE_KEY);
+    const raw = localStorage.getItem(key);
     if (raw === null) return new Set();
     const parsed: unknown = JSON.parse(raw);
     if (!Array.isArray(parsed)) return new Set();
@@ -218,6 +222,104 @@ function readOpenSubgroups(): Set<string> {
   } catch {
     return new Set();
   }
+}
+
+const readOpenSubgroups = (): Set<string> => readStringSet(SUBGROUP_STORAGE_KEY);
+const readOpenGroups = (): Set<string> => readStringSet(GROUP_STORAGE_KEY);
+
+/** NavLink-equivalent active matching used to auto-open the owning category. */
+function routeMatches(to: string, end: boolean | undefined, pathname: string): boolean {
+  if (end === true) return pathname === to;
+  return pathname === to || pathname.startsWith(`${to}/`);
+}
+
+/**
+ * Returns the label of the top-level category that owns the active route, or
+ * null. Picks the longest matching `to` so deep links resolve to the right
+ * group (e.g. /backoffice/inventory/recipes → Stock Management, not Operations).
+ */
+function findActiveGroupLabel(
+  groups: {
+    label: string;
+    items?: NavItem[] | undefined;
+    subgroups?: NavSubgroup[] | undefined;
+  }[],
+  pathname: string,
+): string | null {
+  let best: { len: number; label: string } | null = null;
+  for (const g of groups) {
+    const items: NavItem[] = g.items ?? (g.subgroups ?? []).flatMap((sg) => sg.items);
+    for (const it of items) {
+      if (routeMatches(it.to, it.end, pathname) && (best === null || it.to.length > best.len)) {
+        best = { len: it.to.length, label: g.label };
+      }
+    }
+  }
+  return best === null ? null : best.label;
+}
+
+/**
+ * Shared collapsible primitive — one component for both the top-level category
+ * headers (`variant="group"`, beige pill header) and the inner named subgroups
+ * (`variant="subgroup"`). The chevron pivots via rotate-90; the panel is wired
+ * to the trigger with aria-expanded / aria-controls.
+ */
+function Collapsible({
+  title,
+  isOpen,
+  onToggle,
+  variant,
+  children,
+}: {
+  title: string;
+  isOpen: boolean;
+  onToggle: () => void;
+  variant: 'group' | 'subgroup';
+  children: ReactNode;
+}) {
+  const panelId = useId();
+  const chevron = (size: string) => (
+    <ChevronRight
+      className={cn(size, 'shrink-0 transition-transform', isOpen && 'rotate-90')}
+      aria-hidden
+    />
+  );
+
+  const trigger =
+    variant === 'group' ? (
+      <SectionLabel as="h2" size="xs" className="px-2">
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={isOpen}
+          aria-controls={panelId}
+          className="w-full flex items-center justify-between gap-2 rounded-md bg-surface-4 px-3 py-2.5 text-text-muted transition-colors hover:bg-gold-soft hover:text-text-primary"
+        >
+          <span className="truncate">{title}</span>
+          {chevron('h-4 w-4')}
+        </button>
+      </SectionLabel>
+    ) : (
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={isOpen}
+        aria-controls={panelId}
+        className="w-full flex items-center justify-between px-6 pt-3 pb-1 text-[10px] uppercase tracking-wider text-text-muted/70 hover:text-text-primary transition-colors"
+      >
+        <span>{title}</span>
+        {chevron('h-3 w-3')}
+      </button>
+    );
+
+  return (
+    <>
+      {trigger}
+      <div id={panelId} hidden={!isOpen} className={variant === 'group' ? 'mt-1' : undefined}>
+        {isOpen && children}
+      </div>
+    </>
+  );
 }
 
 function NavItemLink({ item }: { item: NavItem }) {
@@ -249,6 +351,9 @@ function NavItemLink({ item }: { item: NavItem }) {
 
 export function Sidebar() {
   const hasPermission = useAuthStore((s) => s.hasPermission);
+  const { pathname } = useLocation();
+
+  // Inner named-subgroup open/closed state (existing behaviour, unchanged).
   const [openSubgroups, setOpenSubgroups] = useState<Set<string>>(readOpenSubgroups);
 
   useEffect(() => {
@@ -286,6 +391,44 @@ export function Sidebar() {
     return subgroups.length > 0 ? [{ label: g.label, subgroups }] : [];
   });
 
+  // Top-level category open/closed state (collapsible accordion). Default is
+  // collapsed; the category owning the active route is auto-opened on load and
+  // whenever the active route moves into a different category.
+  const activeGroupLabel = findActiveGroupLabel(visibleGroups, pathname);
+
+  const [openGroups, setOpenGroups] = useState<Set<string>>(() => {
+    const stored = readOpenGroups();
+    if (activeGroupLabel !== null) stored.add(activeGroupLabel);
+    return stored;
+  });
+
+  useEffect(() => {
+    if (activeGroupLabel === null) return;
+    setOpenGroups((prev) => {
+      if (prev.has(activeGroupLabel)) return prev;
+      const next = new Set(prev);
+      next.add(activeGroupLabel);
+      return next;
+    });
+  }, [activeGroupLabel]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(GROUP_STORAGE_KEY, JSON.stringify([...openGroups]));
+    } catch {
+      /* quota exceeded or private mode — fail silent */
+    }
+  }, [openGroups]);
+
+  const toggleGroup = (label: string) => {
+    setOpenGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(label)) next.delete(label);
+      else next.add(label);
+      return next;
+    });
+  };
+
   return (
     <aside
       aria-label="Backoffice navigation"
@@ -306,53 +449,52 @@ export function Sidebar() {
 
       <nav className="flex-1 py-4 overflow-y-auto" aria-label="Primary">
         {visibleGroups.map((group) => (
-          <div key={group.label} className="mb-5">
-            <SectionLabel
-              as="h2"
-              size="xs"
-              className="px-4 mb-2 text-text-muted"
+          <div key={group.label} className="mb-3">
+            <Collapsible
+              title={group.label}
+              isOpen={openGroups.has(group.label)}
+              onToggle={() => toggleGroup(group.label)}
+              variant="group"
             >
-              {group.label}
-            </SectionLabel>
-            {'items' in group && group.items !== undefined ? (
-              <div className="space-y-0.5">
-                {group.items.map((item) => (
-                  <NavItemLink key={item.to} item={item} />
-                ))}
-              </div>
-            ) : (
-              group.subgroups!.map((sg) => {
-                const key = `${group.label}::${sg.label}`;
-                const named = sg.label !== '';
-                const isOpen = !named || openSubgroups.has(key);
-                return (
-                  <div key={key} className="mb-2">
-                    {named && (
-                      <button
-                        type="button"
-                        onClick={() => toggleSubgroup(key)}
-                        aria-expanded={isOpen}
-                        className="w-full flex items-center justify-between px-6 pt-3 pb-1 text-[10px] uppercase tracking-wider text-text-muted/70 hover:text-text-primary transition-colors"
-                      >
-                        <span>{sg.label}</span>
-                        {isOpen ? (
-                          <ChevronDown className="h-3 w-3" aria-hidden />
-                        ) : (
-                          <ChevronRight className="h-3 w-3" aria-hidden />
-                        )}
-                      </button>
-                    )}
-                    {isOpen && (
-                      <div className="space-y-0.5">
+              {'items' in group && group.items !== undefined ? (
+                <div className="space-y-0.5 pt-1">
+                  {group.items.map((item) => (
+                    <NavItemLink key={item.to} item={item} />
+                  ))}
+                </div>
+              ) : (
+                group.subgroups!.map((sg) => {
+                  const key = `${group.label}::${sg.label}`;
+                  // Unnamed subgroup ('') has no toggle — its items render
+                  // directly whenever the parent category is open.
+                  if (sg.label === '') {
+                    return (
+                      <div key={key} className="space-y-0.5 pt-1">
                         {sg.items.map((item) => (
                           <NavItemLink key={item.to} item={item} />
                         ))}
                       </div>
-                    )}
-                  </div>
-                );
-              })
-            )}
+                    );
+                  }
+                  return (
+                    <div key={key} className="mb-1">
+                      <Collapsible
+                        title={sg.label}
+                        isOpen={openSubgroups.has(key)}
+                        onToggle={() => toggleSubgroup(key)}
+                        variant="subgroup"
+                      >
+                        <div className="space-y-0.5">
+                          {sg.items.map((item) => (
+                            <NavItemLink key={item.to} item={item} />
+                          ))}
+                        </div>
+                      </Collapsible>
+                    </div>
+                  );
+                })
+              )}
+            </Collapsible>
           </div>
         ))}
       </nav>

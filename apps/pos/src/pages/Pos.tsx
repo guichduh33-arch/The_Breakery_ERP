@@ -30,6 +30,7 @@ import { CategoryNav } from '@/features/products/CategoryNav';
 import { ProductTapHandler } from '@/features/products/ProductTapHandler';
 import { SideMenuDrawer } from '@/features/nav/SideMenuDrawer';
 import { ActiveOrderPanel } from '@/features/cart/ActiveOrderPanel';
+import { BottomActionBar } from '@/features/cart/BottomActionBar';
 import { CustomerAttachModal } from '@/features/cart/CustomerAttachModal';
 import { OpenShiftModal } from '@/features/shift/OpenShiftModal';
 import { ShiftClosedState } from '@/features/shift/ShiftClosedState';
@@ -155,7 +156,7 @@ export default function PosPage() {
         </div>
       </header>
 
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 min-h-0 flex overflow-hidden">
         <CategoryNav
           selectedSlug={selectedSlug}
           onSelect={setSelectedSlug}
@@ -164,11 +165,11 @@ export default function PosPage() {
         <main id="main-content" tabIndex={-1} className="flex-1 flex flex-col overflow-hidden">
           <ProductTapHandler selectedSlug={selectedSlug} />
         </main>
-        <ActiveOrderPanel
-          onOpenCustomerSearch={() => setCustomerSearchOpen(true)}
-          onDetachCustomer={handleDetachCustomer}
-        />
+        <ActiveOrderPanel onDetachCustomer={handleDetachCustomer} />
       </div>
+
+      {/* Global action bar — all order actions live here (full width). */}
+      <BottomActionBar onOpenCustomerSearch={() => setCustomerSearchOpen(true)} />
 
       <SideMenuDrawer
         open={menuOpen}

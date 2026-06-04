@@ -13,3 +13,35 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer utilities {
+  /* Hide the scrollbar while keeping the element scrollable (POS category rail). */
+  .scrollbar-none {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE / legacy Edge */
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none; /* Chromium / Safari */
+  }
+}
+
+@layer components {
+  /* Per-category tile. Tint + accent are injected per button via the
+   * `--cat-tint` (R,G,B triplet) and `--cat-accent` (hex) CSS custom
+   * properties so each category gets its own translucent fill / border /
+   * text without hardcoding 11 Tailwind classes. Opacities follow the spec:
+   * idle .10 / .22, hover .18 / .45, active .22 / .75. */
+  .cat-btn {
+    background-color: rgba(var(--cat-tint), 0.1);
+    border: 1px solid rgba(var(--cat-tint), 0.22);
+    color: var(--cat-accent);
+  }
+  .cat-btn:hover:not([aria-current='page']) {
+    background-color: rgba(var(--cat-tint), 0.18);
+    border-color: rgba(var(--cat-tint), 0.45);
+  }
+  .cat-btn[aria-current='page'] {
+    background-color: rgba(var(--cat-tint), 0.22);
+    border-color: rgba(var(--cat-tint), 0.75);
+  }
+}
