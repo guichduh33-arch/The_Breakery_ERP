@@ -1,12 +1,13 @@
 // apps/pos/src/__tests__/loyalty.smoke.test.tsx
 /// <reference types="@testing-library/jest-dom" />
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { useCartStore } from '@/stores/cartStore';
 import { ActiveOrderPanel } from '@/features/cart/ActiveOrderPanel';
+import { BottomActionBar } from '@/features/cart/BottomActionBar';
 import type { Customer } from '@breakery/domain';
 
 vi.mock('sonner', () => ({
@@ -66,9 +67,10 @@ describe('Loyalty smoke — customer attach + earn display', () => {
     });
   });
 
-  it('shows CustomerAttachButton when no customer attached', () => {
-    render(wrapper(<ActiveOrderPanel onOpenCustomerSearch={vi.fn()} />));
-    expect(screen.getByRole('button', { name: /attach customer/i })).toBeInTheDocument();
+  it('shows the Customer action in the bottom bar when no customer attached', () => {
+    // The attach trigger moved from the cart panel to the global action bar.
+    render(wrapper(<BottomActionBar onOpenCustomerSearch={vi.fn()} />));
+    expect(screen.getByRole('button', { name: /customer/i })).toBeInTheDocument();
   });
 
   it('shows CustomerAttachedBadge after attaching a customer', () => {
@@ -131,7 +133,7 @@ describe('Loyalty smoke — customer attach + earn display', () => {
     expect(useCartStore.getState().redemptionAmount()).toBe(5000);
   });
 
-  it('Redeem Points button appears when customer attached', () => {
+  it('Redeem Points action appears in the bottom-bar More menu when customer attached', () => {
     useCartStore.setState({
       cart: {
         items: [{ id: 'l1', product_id: 'p1', name: 'Americano', unit_price: 35000, quantity: 1, modifiers: [] }],
@@ -140,7 +142,8 @@ describe('Loyalty smoke — customer attach + earn display', () => {
       lockedItemIds: [],
       attachedCustomer: GOLD_CUSTOMER,
     });
-    render(wrapper(<ActiveOrderPanel onOpenCustomerSearch={vi.fn()} />));
-    expect(screen.getByRole('button', { name: /redeem points/i })).toBeInTheDocument();
+    render(wrapper(<BottomActionBar onOpenCustomerSearch={vi.fn()} />));
+    fireEvent.click(screen.getByRole('button', { name: /more/i }));
+    expect(screen.getByRole('menuitem', { name: /redeem points/i })).toBeInTheDocument();
   });
 });

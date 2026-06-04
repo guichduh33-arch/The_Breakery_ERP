@@ -12,7 +12,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import type { Cart, Promotion } from '@breakery/domain';
-import { normalizeV1Payload, useEvaluatePromotions } from '../hooks/useEvaluatePromotions';
+import {
+  cartToRpcPayload,
+  normalizeV1Payload,
+  useEvaluatePromotions,
+  zeroGiftDiscountAmount,
+} from '../hooks/useEvaluatePromotions';
 
 vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() },
@@ -112,7 +117,11 @@ function withProviders() {
 }
 
 describe('normalizeV1Payload', () => {
-  it('converts RPC shape to AppliedPromotion[] + gift_to_add', () => {
+  it('converts RPC shape to AppliedPromotion[] + gift_to_add, zeroing the gift amount', () => {
+    // Bug 1 (Session 36): the RPC emits discount_amount AND free_items for a
+    // gift-bearing promo. The gift line (unit_price=0) IS the discount, so the
+    // monetary amount must be 0 — otherwise the cart subtracts the value twice
+    // (over-discount that can exceed the subtotal).
     const out = normalizeV1Payload({
       applied_promotions: [
         {
@@ -129,9 +138,23 @@ describe('normalizeV1Payload', () => {
       total_discount: 15000,
     });
     expect(out).toHaveLength(1);
-    expect(out[0]!.amount).toBe(15000);
+    expect(out[0]!.amount).toBe(0);
     expect(out[0]!.free_items).toEqual([{ product_id: 'prod-x', qty: 2 }]);
     expect(out[0]!.gift_to_add).toEqual({ product_id: 'prod-x', qty: 2 });
+  });
+
+  it('preserves a monetary amount for non-gift promos (percentage)', () => {
+    const out = normalizeV1Payload({
+      applied_promotions: [
+        { promotion_id: 'p1', slug: 'pct', name: '10% off', type: 'percentage', discount_amount: 10000 },
+      ],
+      subtotal_before: 100000,
+      subtotal_after_discount: 90000,
+      total_discount: 10000,
+    });
+    expect(out).toHaveLength(1);
+    expect(out[0]!.amount).toBe(10000);
+    expect(out[0]!.gift_to_add).toBeUndefined();
   });
 
   it('filters dismissedIds', () => {
@@ -190,7 +213,8 @@ describe('useEvaluatePromotions', () => {
       p_subtotal: 45000,
     }));
     expect(applied).toHaveLength(1);
-    expect(applied[0]!.amount).toBe(15000);
+    // Gift-bearing promo → discount realised by the free line, amount=0.
+    expect(applied[0]!.amount).toBe(0);
     expect(applied[0]!.free_items).toEqual([{ product_id: 'prod-baguette', qty: 1 }]);
   });
 
@@ -205,10 +229,11 @@ describe('useEvaluatePromotions', () => {
 
     const applied = await result.current.runEvaluation(CART_3_BAGUETTES, null);
 
-    // Fallback `evaluatePromotionsFallback` evaluates the new-shape BOGO
-    // and produces `free_items` + amount equal to 1 × unit_price (15k).
+    // Fallback `evaluatePromotionsFallback` evaluates the new-shape BOGO and
+    // produces `free_items` (1 baguette). The hook normalises the gift amount
+    // to 0 just like the RPC path, so totals never double-count the gift.
     expect(applied).toHaveLength(1);
-    expect(applied[0]!.amount).toBe(15000);
+    expect(applied[0]!.amount).toBe(0);
     expect(applied[0]!.free_items![0]!.qty).toBe(1);
   });
 
@@ -225,5 +250,113 @@ describe('useEvaluatePromotions', () => {
     );
     expect(applied).toEqual([]);
     expect(rpcMock).not.toHaveBeenCalled();
+  });
+
+  it('idempotent re-eval: a gift line in the cart is not sent back to the RPC and the amount stays 0', async () => {
+    rpcMock.mockResolvedValue({
+      data: {
+        applied_promotions: [
+          {
+            promotion_id: 'p-bogo',
+            slug: 'bogo-2-1-baguette',
+            name: 'BOGO 2+1 Baguette',
+            type: 'bogo',
+            discount_amount: 15000,
+            free_items: [{ product_id: 'prod-baguette', quantity: 1 }],
+          },
+        ],
+        subtotal_before: 30000,
+        subtotal_after_discount: 30000,
+        total_discount: 15000,
+      },
+      error: null,
+    });
+
+    const { result } = renderHook(() => useEvaluatePromotions(), { wrapper: withProviders() });
+    await waitFor(() => expect(result.current.runEvaluation).toBeTypeOf('function'));
+
+    // Cart already carries the gift line emitted by a previous evaluation.
+    const cartWithGift: Cart = {
+      items: [
+        { id: 'l1', product_id: 'prod-baguette', name: 'Baguette', unit_price: 15000, quantity: 2, modifiers: [] },
+        {
+          id: 'gift-p-bogo',
+          product_id: 'prod-baguette',
+          name: 'Baguette',
+          unit_price: 0,
+          quantity: 1,
+          modifiers: [],
+          is_promo_gift: true,
+          promotion_id: 'p-bogo',
+        },
+      ],
+      order_type: 'dine_in',
+    };
+
+    const first = await result.current.runEvaluation(cartWithGift, null);
+    const second = await result.current.runEvaluation(cartWithGift, null);
+
+    // The subtotal sent excludes the gift line (2 × 15000), never 3 × 15000 —
+    // this is what stops the discount from accumulating on each pass.
+    for (const call of rpcMock.mock.calls) {
+      const args = call[1] as { p_cart_items: Array<{ line_id: string }>; p_subtotal: number };
+      expect(args.p_subtotal).toBe(30000);
+      expect(args.p_cart_items.some((i) => i.line_id === 'gift-p-bogo')).toBe(false);
+    }
+    // Re-evaluation is idempotent: amount stays 0, gift stable.
+    expect(first[0]!.amount).toBe(0);
+    expect(second[0]!.amount).toBe(0);
+    expect(second).toEqual(first);
+  });
+});
+
+describe('cartToRpcPayload — gift lines are not fed back into the RPC', () => {
+  it('excludes is_promo_gift lines from the payload (Bug 1 accumulation guard)', () => {
+    const cart: Cart = {
+      items: [
+        { id: 'l1', product_id: 'prod-baguette', name: 'Baguette', unit_price: 15000, quantity: 2, modifiers: [] },
+        {
+          id: 'gift-p',
+          product_id: 'prod-baguette',
+          name: 'Baguette',
+          unit_price: 0,
+          quantity: 1,
+          modifiers: [],
+          is_promo_gift: true,
+          promotion_id: 'p',
+        },
+      ],
+      order_type: 'dine_in',
+    };
+    const payload = cartToRpcPayload(cart);
+    expect(payload).toHaveLength(1);
+    expect(payload[0]!.line_id).toBe('l1');
+    expect(payload.some((p) => p.line_id === 'gift-p')).toBe(false);
+  });
+});
+
+describe('zeroGiftDiscountAmount', () => {
+  it('forces amount to 0 when a gift_to_add is attached', () => {
+    const out = zeroGiftDiscountAmount({
+      promotion_id: 'p', slug: 's', name: 'n', type: 'free_product', amount: 75000,
+      description: 'd', gift_to_add: { product_id: 'x', qty: 1 },
+    });
+    expect(out.amount).toBe(0);
+  });
+
+  it('forces amount to 0 when free_items is non-empty', () => {
+    const out = zeroGiftDiscountAmount({
+      promotion_id: 'p', slug: 's', name: 'n', type: 'bogo', amount: 15000,
+      description: 'd', free_items: [{ product_id: 'x', qty: 1 }],
+    });
+    expect(out.amount).toBe(0);
+  });
+
+  it('leaves a monetary (non-gift) promo untouched', () => {
+    const ap = {
+      promotion_id: 'p', slug: 's', name: 'n', type: 'percentage' as const,
+      amount: 12000, description: 'd',
+    };
+    expect(zeroGiftDiscountAmount(ap)).toBe(ap);
   });
 });

@@ -1,3 +1,4 @@
+import type { ComponentProps } from 'react';
 import { PauseCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@breakery/ui';
@@ -6,6 +7,9 @@ import { useHoldOrder } from '../hooks/useHoldOrder';
 
 interface HoldOrderButtonProps {
   disabled?: boolean;
+  /** When provided, replaces the default `w-full` styling (e.g. bottom-bar menu item). */
+  className?: string;
+  variant?: ComponentProps<typeof Button>['variant'];
 }
 
 /**
@@ -13,7 +17,7 @@ interface HoldOrderButtonProps {
  * held draft via `hold_order_v1`, then clears the local cart. Prompts for an
  * optional note (preserving the pre-S35 UX) before firing the mutation.
  */
-export function HoldOrderButton({ disabled }: HoldOrderButtonProps) {
+export function HoldOrderButton({ disabled, className, variant }: HoldOrderButtonProps) {
   const cart = useCartStore((s) => s.cart);
   const attachedCustomer = useCartStore((s) => s.attachedCustomer);
   const clearCart = useCartStore((s) => s.clear);
@@ -50,11 +54,11 @@ export function HoldOrderButton({ disabled }: HoldOrderButtonProps) {
 
   return (
     <Button
-      variant="outlineGold"
+      variant={variant ?? 'outlineGold'}
       size="lg"
-      className="w-full"
-      onClick={handleClick}
-      disabled={disabled || holdOrder.isPending || cart.items.length === 0}
+      className={className ?? 'w-full'}
+      onClick={() => { void handleClick(); }}
+      disabled={(disabled ?? false) || holdOrder.isPending || cart.items.length === 0}
     >
       <PauseCircle className="h-4 w-4 mr-2" aria-hidden />
       Hold

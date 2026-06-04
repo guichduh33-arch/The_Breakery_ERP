@@ -1,202 +1,160 @@
 // apps/pos/src/features/cart/ActiveOrderPanel.tsx
 //
-// Session 14 / Phase 2.B — visual rewrite of the right-hand "Active Order"
-// panel. The functional surface (zustand cart store, RPC payloads, promotion
-// orchestrator, discount + redeem modals, send-to-kitchen, checkout) is
-// preserved 1:1 — only the layout, typography, and component composition
-// were rebuilt to match the design references.
+// Active Order panel — DISPLAY ONLY (cart redesign).
 //
-// Refs:
-//   - 01-grid-bagel-empty-cart-dine-in.jpg     (empty state)
-//   - 30-cart-active-2items-dine-in-totals.jpg (2 items + totals)
-//   - 31-cart-takeout-customer-bronze.jpg      (customer attached)
-//   - 32-cart-locked-items-after-kitchen-send.jpg (post-send lock state)
-//   - 50-customer-attach-search-list.jpg       (customer picker)
-//   - 51-held-orders-takeaway-list.jpg         (held orders modal)
+// All action buttons (Send to Kitchen, Checkout, Hold, Print Bill, Discount,
+// Customer, Table, Clear/Void, Held Orders…) now live in the global
+// <BottomActionBar> rendered by the POS shell. This panel renders:
+//   - header  : "Order #NEW" + compact service-type tabs + condensed
+//               table / customer info (read-only here ; edited from the bar).
+//   - list    : the cart lines (delete-first rows), scrollable, fills height.
+//   - footer  : subtotal / promotions / tax / TOTAL — no buttons.
 //
-// Composition:
-//   <aside class="theme-pos">                                 ← gold spine on left
-//     <header>                                                 ← SectionLabel "ACTIVE ORDER" + order# + mode sub-line
-//       <OrderTypeTabs />                                      ← Dine-In / Take-Out / Delivery
-//       <CustomerBadge | AttachCustomerButton />               ← gold-outlined pill
-//       <CartActionsBar heldOrders / clear>                    ← grid of secondary CTAs
-//       <TableSelector? />                                     ← only when order_type === dine_in
-//     </header>
-//     <ScrollArea>
-//       <EmptyBag | CartLineRow[]>                             ← items list
-//     </ScrollArea>
-//     <footer>
-//       <CartTotals />                                         ← subtotal/redeem/promo/discount/tax/total
-//       <RedeemButton? /> <DiscountButton /> <HoldOrderButton />
-//       <SendToKitchenButton /> <CheckoutButton />
-//     </footer>
-//   </aside>
+// The promotion orchestrator + realtime + customer-display mirror stay anchored
+// here (single source of truth for promo sync), and the per-line cancel flow
+// (tablet pickups) remains because it is triggered from the rows themselves.
 
 import { useState, type JSX } from 'react';
-import { CreditCard, ShoppingBag } from 'lucide-react';
+import { MapPin, ShoppingBag, User } from 'lucide-react';
 import { toast } from 'sonner';
-import {
-  Button,
-  Currency,
-  DiscountModal,
-  OrderTypeTabs,
-  PinVerificationModal,
-  RedeemPointsModal,
-  SectionLabel,
-} from '@breakery/ui';
+import { DiscountModal, PinVerificationModal, SectionLabel, cn } from '@breakery/ui';
 import { calculateTotals } from '@breakery/domain';
-import type { CartItem } from '@breakery/domain';
+import type { CartItem, OrderType } from '@breakery/domain';
 import { useCartStore } from '@/stores/cartStore';
-import { usePaymentStore } from '@/stores/paymentStore';
-import { useHeldOrdersQuery } from '@/features/heldOrders/hooks/useHeldOrdersQuery';
-import { CustomerAttachButton } from '@/features/customers/components/CustomerAttachButton';
+import { useApplyLineDiscount, lineDiscountBase } from '@/features/discounts/hooks/useApplyLineDiscount';
 import { LoyaltyPointsLine } from '@/features/loyalty/components/LoyaltyPointsLine';
-import { RedeemButton } from '@/features/loyalty/components/RedeemButton';
-import { HoldOrderButton } from '@/features/heldOrders/components/HoldOrderButton';
-import { TabletInboxButton } from '@/features/inbox/components/TabletInboxButton';
-import { TableSelectorButton } from '@/features/tables/components/TableSelectorButton';
-import { DiscountButton } from '@/features/discounts/components/DiscountButton';
-import { useApplyCartDiscount } from '@/features/discounts/hooks/useApplyCartDiscount';
-import {
-  useApplyLineDiscount,
-  lineDiscountBase,
-} from '@/features/discounts/hooks/useApplyLineDiscount';
 import { usePromotionsAutoEval } from '@/features/promotions/hooks/usePromotionsAutoEval';
 import { usePromotionsRealtime } from '@/features/promotions/hooks/usePromotionsRealtime';
+import { PromotionsList } from '@/features/promotions/components/PromotionsList';
 import { useCartBroadcast } from '@/features/display/hooks/useCartBroadcast';
 import { CartLineRow } from './CartLineRow';
-import { CartTotals } from './CartTotals';
-import { CartActionsBar } from './CartActionsBar';
 import { CustomerBadge } from './CustomerBadge';
-import { HeldOrdersModal } from './HeldOrdersModal';
-import { SendToKitchenButton } from './SendToKitchenButton';
-import { PrintBillButton } from './PrintBillButton';
 import { CancelItemModal } from './CancelItemModal';
 import { useCancelOrderItem } from './hooks/useCancelOrderItem';
 
 const TAX_RATE = 0.1;
 
+const CurrencyFmt = new Intl.NumberFormat('en-US');
+function rp(amount: number): string {
+  return `Rp ${CurrencyFmt.format(Math.round(amount))}`;
+}
+
 interface ActiveOrderPanelProps {
+  /** Kept for POS-shell wiring compatibility (the attach trigger lives in the bar). */
   onOpenCustomerSearch?: () => void;
   onDetachCustomer?: () => void;
 }
 
-/**
- * Display the order number for the active cart. For tablet pickups we keep
- * a deterministic POS-style suffix; otherwise we surface "#NEW" until the
- * order is persisted (mirrors ref 30 → ref 32 transition).
- */
+const SERVICE_TABS: { value: OrderType; label: string }[] = [
+  { value: 'dine_in', label: 'Dine-In' },
+  { value: 'take_out', label: 'Take-Out' },
+  { value: 'delivery', label: 'Delivery' },
+];
+
 function orderLabel(pickedUpOrderId: string | null): string {
   if (!pickedUpOrderId) return '#NEW';
-  const tail = pickedUpOrderId.slice(-4).toUpperCase();
-  return `POS-${tail}`;
+  return `POS-${pickedUpOrderId.slice(-4).toUpperCase()}`;
 }
 
-function ORDER_MODE_LABEL(orderType: 'dine_in' | 'take_out' | 'delivery'): string {
-  switch (orderType) {
-    case 'dine_in':
-      return 'Dine-In';
-    case 'take_out':
-      return 'Take-Out';
-    case 'delivery':
-      return 'Delivery';
-  }
-}
-
-export function ActiveOrderPanel({
-  onOpenCustomerSearch,
-  onDetachCustomer,
-}: ActiveOrderPanelProps): JSX.Element {
+export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): JSX.Element {
   // ── store reads ──────────────────────────────────────────────────────────
   const cart = useCartStore((s) => s.cart);
   const lockedIds = useCartStore((s) => s.lockedItemIds);
   const attachedCustomer = useCartStore((s) => s.attachedCustomer);
   const pickedUpOrderId = useCartStore((s) => s.pickedUpOrderId);
   const detachCustomer = useCartStore((s) => s.detachCustomer);
-  const setRedeemPoints = useCartStore((s) => s.setRedeemPoints);
   const update = useCartStore((s) => s.update);
   const remove = useCartStore((s) => s.remove);
   const setOrderType = useCartStore((s) => s.setOrderType);
-  const clear = useCartStore((s) => s.clear);
   const appliedPromotions = useCartStore((s) => s.appliedPromotions);
-  const openPayment = usePaymentStore((s) => s.open);
-  const heldCount = useHeldOrdersQuery().data?.length ?? 0;
 
-  // ── promotion orchestrator (anchored here per spec) ──────────────────────
+  // ── orchestrators anchored here (single source of truth) ─────────────────
   usePromotionsAutoEval();
   usePromotionsRealtime();
-
-  // ── live cart mirror to the customer display (F-007) ─────────────────────
   useCartBroadcast();
 
-  // ── local UI state ───────────────────────────────────────────────────────
-  const [redeemOpen, setRedeemOpen] = useState(false);
-  const [heldOrdersOpen, setHeldOrdersOpen] = useState(false);
+  // ── per-line cancel (tablet pickups) ─────────────────────────────────────
   const [cancelTarget, setCancelTarget] = useState<CartItem | null>(null);
   const cancelMutation = useCancelOrderItem();
 
-  const cartDiscount = useApplyCartDiscount();
+  // ── per-line discount (manager-PIN gated above threshold) ────────────────
   const lineDiscount = useApplyLineDiscount();
 
-  // ── totals (Session 9 spec — promo applied after redeem/discount) ─────────
+  // ── totals (promo applied after base, never negative) ────────────────────
   const baseTotals = calculateTotals(cart, TAX_RATE);
   const promotionTotal = appliedPromotions.reduce((s, ap) => s + ap.amount, 0);
   const total = Math.max(0, baseTotals.total - promotionTotal);
   const tax_amount = Math.round((total * TAX_RATE) / (1 + TAX_RATE));
-  const totals = { ...baseTotals, total, tax_amount };
 
   const isEmpty = cart.items.length === 0;
-  const hasUnlocked = cart.items.some((i) => !lockedIds.includes(i.id));
   const pickedUp = Boolean(pickedUpOrderId);
 
-  // ── render ───────────────────────────────────────────────────────────────
   return (
     <aside
-      className="w-[360px] shrink-0 bg-bg-elevated border-l border-border-subtle flex flex-col h-full"
       aria-label="Active order"
+      className="w-[340px] shrink-0 bg-bg-elevated border-l border-border-subtle flex flex-col h-full"
     >
-      {/* Header ──────────────────────────────────────────────────────── */}
-      <header className="px-5 pt-5 pb-4 border-b border-border-subtle space-y-4">
-        <div className="flex items-start justify-between gap-2">
-          <div>
-            <div className="flex items-center gap-2">
-              <SectionLabel as="h2" size="sm" className="text-text-primary">
-                Active Order
-              </SectionLabel>
-              <span className="font-display italic text-sm text-gold">
-                {orderLabel(pickedUpOrderId)}
-              </span>
-            </div>
-            <p className="text-xs text-text-secondary mt-0.5">
-              {ORDER_MODE_LABEL(cart.order_type)}
-            </p>
+      {/* Header ──────────────────────────────────────────────────────────── */}
+      <header className="px-4 pt-4 pb-3 border-b border-border-subtle space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-baseline gap-2 min-w-0">
+            <span className="font-bold uppercase tracking-widest text-sm text-text-primary">
+              Order
+            </span>
+            <span className="font-display italic text-base text-gold">
+              {orderLabel(pickedUpOrderId)}
+            </span>
+          </div>
+          {/* Compact service-type tabs */}
+          <div className="flex gap-1 p-0.5 bg-bg-input rounded-md" role="tablist" aria-label="Service type">
+            {SERVICE_TABS.map((tab) => {
+              const active = cart.order_type === tab.value;
+              return (
+                <button
+                  key={tab.value}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => setOrderType(tab.value)}
+                  className={cn(
+                    'h-7 px-2.5 rounded text-[10px] font-semibold uppercase tracking-wide transition-colors',
+                    'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-gold',
+                    active
+                      ? 'bg-gold-soft text-gold border border-gold'
+                      : 'text-text-muted hover:text-text-primary',
+                  )}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        <OrderTypeTabs value={cart.order_type} onChange={setOrderType} />
-
+        {/* Condensed order info — read-only (edited from the bottom bar) */}
         {attachedCustomer ? (
-          <CustomerBadge
-            customer={attachedCustomer}
-            onDetach={onDetachCustomer ?? detachCustomer}
-          />
+          <CustomerBadge customer={attachedCustomer} onDetach={onDetachCustomer ?? detachCustomer} />
         ) : (
-          <CustomerAttachButton onClick={() => onOpenCustomerSearch?.()} />
+          <div className="flex items-center gap-2 text-sm text-text-secondary">
+            {cart.order_type === 'dine_in' && (
+              <>
+                <span className="flex items-center gap-1">
+                  <MapPin className="h-4 w-4 text-gold" aria-hidden />
+                  {cart.tableNumber ? `Table ${cart.tableNumber}` : 'No table'}
+                </span>
+                <span className="text-border-subtle" aria-hidden>•</span>
+              </>
+            )}
+            <span className="flex items-center gap-1">
+              <User className="h-4 w-4 text-gold" aria-hidden />
+              Walk-in
+            </span>
+          </div>
         )}
-
-        <CartActionsBar
-          heldCount={heldCount}
-          onOpenHeldOrders={() => setHeldOrdersOpen(true)}
-          onClear={clear}
-          canClear={hasUnlocked}
-          tabletInboxSlot={<TabletInboxButton />}
-        />
-
-        {cart.order_type === 'dine_in' && <TableSelectorButton />}
       </header>
 
-      {/* Items list ──────────────────────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto" data-testid="cart-items">
+      {/* Items list ──────────────────────────────────────────────────────── */}
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 py-3 space-y-2" data-testid="cart-items">
         {isEmpty ? (
           <EmptyBagState />
         ) : (
@@ -214,124 +172,57 @@ export function ActiveOrderPanel({
         )}
       </div>
 
-      {/* Footer ──────────────────────────────────────────────────────── */}
+      {/* Totals footer — no buttons ──────────────────────────────────────── */}
       {!isEmpty && (
-        <footer className="px-5 py-4 border-t border-border-subtle space-y-3 bg-bg-elevated">
-          <CartTotals
-            breakdown={{
-              subtotal: totals.subtotal,
-              redemption_amount: totals.redemption_amount,
-              loyaltyPointsToRedeem: cart.loyaltyPointsToRedeem ?? 0,
-              tax_amount: totals.tax_amount,
-              total: totals.total,
-              appliedPromotions,
-              cartDiscount: cart.cartDiscount,
-            }}
-          />
+        <footer className="px-4 py-3 border-t border-border-subtle space-y-1 bg-bg-elevated">
+          {attachedCustomer && <LoyaltyPointsLine total={total} />}
 
-          {attachedCustomer && <LoyaltyPointsLine total={totals.total} />}
-
-          {/* Secondary buttons grouped */}
-          <div className="space-y-2">
-            {attachedCustomer && (
-              <RedeemButton
-                balance={attachedCustomer.loyalty_points}
-                onClick={() => setRedeemOpen(true)}
-                disabled={totals.redemption_amount > 0}
-              />
-            )}
-            <DiscountButton
-              onClick={cartDiscount.openDiscountModal}
-              hasDiscount={Boolean(cart.cartDiscount)}
-            />
-            <HoldOrderButton disabled={isEmpty} />
+          <div className="flex items-center justify-between text-[11px] text-text-muted">
+            <span className="uppercase tracking-wide">Subtotal</span>
+            <span className="font-mono tabular-nums">{rp(baseTotals.subtotal)}</span>
           </div>
 
-          {/* Primary CTAs */}
-          <div className="space-y-2 pt-1">
-            <SendToKitchenButton />
-            <PrintBillButton />
-            <Button
-              variant="gold"
-              size="lg"
-              className="w-full"
-              onClick={openPayment}
-              data-testid="checkout-cta"
-            >
-              <CreditCard className="h-4 w-4" aria-hidden />
-              <span>Checkout</span>
-              <span aria-hidden className="opacity-70">·</span>
-              <Currency amount={totals.total} className="font-bold" />
-            </Button>
+          {appliedPromotions.length > 0 && (
+            <div className="text-[11px] text-red-400">
+              <PromotionsList applied={appliedPromotions} />
+            </div>
+          )}
+
+          {baseTotals.redemption_amount > 0 && (
+            <div className="flex items-center justify-between text-[11px] text-red-400">
+              <span className="uppercase tracking-wide">
+                Loyalty Discount ({cart.loyaltyPointsToRedeem ?? 0} pts)
+              </span>
+              <span className="font-mono tabular-nums">-{rp(baseTotals.redemption_amount)}</span>
+            </div>
+          )}
+
+          {cart.cartDiscount && (
+            <div className="flex items-center justify-between text-[11px] text-red-400">
+              <span className="uppercase tracking-wide">
+                Discount ({cart.cartDiscount.type === 'percentage' ? `${cart.cartDiscount.value}%` : 'fixed'})
+              </span>
+              <span className="font-mono tabular-nums">-{rp(cart.cartDiscount.amount)}</span>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between text-[11px] text-text-muted">
+            <span className="uppercase tracking-wide">Tax Included (10%)</span>
+            <span className="font-mono tabular-nums">{rp(tax_amount)}</span>
+          </div>
+
+          <div className="flex items-baseline justify-between pt-2 mt-1 border-t border-border-subtle">
+            <span className="font-bold uppercase tracking-widest text-xs text-text-primary">
+              Total
+            </span>
+            <span className="font-mono tabular-nums text-2xl font-bold text-gold">
+              {rp(total)}
+            </span>
           </div>
         </footer>
       )}
 
-      {/* Empty-cart bottom rail — only Send-to-Kitchen / Checkout shells */}
-      {isEmpty && (
-        <footer className="px-5 py-4 border-t border-border-subtle space-y-2 bg-bg-elevated">
-          <Button
-            variant="secondary"
-            size="lg"
-            className="w-full opacity-50 pointer-events-none"
-            disabled
-          >
-            <ShoppingBag className="h-4 w-4" aria-hidden />
-            Send to Kitchen
-          </Button>
-          <Button
-            variant="secondary"
-            size="lg"
-            className="w-full opacity-50 pointer-events-none"
-            disabled
-          >
-            <CreditCard className="h-4 w-4" aria-hidden />
-            Checkout
-          </Button>
-        </footer>
-      )}
-
-      {/* Modals ──────────────────────────────────────────────────────── */}
-      {attachedCustomer && (
-        <RedeemPointsModal
-          open={redeemOpen}
-          onClose={() => setRedeemOpen(false)}
-          onConfirm={(points) => {
-            setRedeemPoints(points);
-            setRedeemOpen(false);
-          }}
-          customerBalance={attachedCustomer.loyalty_points}
-          itemsTotal={totals.subtotal}
-        />
-      )}
-      <DiscountModal
-        open={cartDiscount.discountModalOpen}
-        onClose={cartDiscount.closeDiscountModal}
-        onConfirm={cartDiscount.onConfirm}
-        base={cartDiscount.base}
-        onRequireAuthorization={cartDiscount.onRequireAuthorization}
-      />
-      <PinVerificationModal
-        open={cartDiscount.pinModalOpen}
-        onClose={cartDiscount.onPinClose}
-        onVerified={cartDiscount.onPinVerified}
-        verifyFn={cartDiscount.verifyFn}
-      />
-      {lineDiscount.targetItem && (
-        <DiscountModal
-          open={Boolean(lineDiscount.targetItem)}
-          onClose={lineDiscount.closeDiscountModal}
-          onConfirm={lineDiscount.onConfirm}
-          base={lineDiscountBase(lineDiscount.targetItem)}
-          onRequireAuthorization={lineDiscount.onRequireAuthorization}
-        />
-      )}
-      <PinVerificationModal
-        open={lineDiscount.pinModalOpen}
-        onClose={lineDiscount.onPinClose}
-        onVerified={lineDiscount.onPinVerified}
-        verifyFn={lineDiscount.verifyFn}
-      />
+      {/* Per-line cancel (tablet pickup) ─────────────────────────────────── */}
       {cancelTarget && (
         <CancelItemModal
           open={Boolean(cancelTarget)}
@@ -358,9 +249,21 @@ export function ActiveOrderPanel({
         />
       )}
 
-      <HeldOrdersModal
-        open={heldOrdersOpen}
-        onClose={() => setHeldOrdersOpen(false)}
+      {/* Per-line discount (triggered from the Tag button on each row) ────── */}
+      {lineDiscount.targetItem && (
+        <DiscountModal
+          open={Boolean(lineDiscount.targetItem)}
+          onClose={lineDiscount.closeDiscountModal}
+          onConfirm={lineDiscount.onConfirm}
+          base={lineDiscountBase(lineDiscount.targetItem)}
+          onRequireAuthorization={lineDiscount.onRequireAuthorization}
+        />
+      )}
+      <PinVerificationModal
+        open={lineDiscount.pinModalOpen}
+        onClose={lineDiscount.onPinClose}
+        onVerified={lineDiscount.onPinVerified}
+        verifyFn={lineDiscount.verifyFn}
       />
     </aside>
   );

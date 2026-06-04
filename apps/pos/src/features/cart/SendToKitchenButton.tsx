@@ -1,12 +1,19 @@
 // apps/pos/src/features/cart/SendToKitchenButton.tsx
 // Fires prep tickets to all mapped station printers for unprinted cart items.
-import { Send } from 'lucide-react';
+import type { ComponentProps } from 'react';
+import { ChefHat } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@breakery/ui';
 import { useCartStore } from '@/stores/cartStore';
 import { useFireToStations } from './hooks/useFireToStations';
 
-export function SendToKitchenButton() {
+interface SendToKitchenButtonProps {
+  /** When provided, replaces the default `w-full` styling (e.g. for the bottom bar). */
+  className?: string;
+  variant?: ComponentProps<typeof Button>['variant'];
+}
+
+export function SendToKitchenButton({ className, variant }: SendToKitchenButtonProps = {}) {
   const { mutation, firableCount } = useFireToStations();
 
   // Disabled when there is nothing that routes to a prep station (bread-only
@@ -42,13 +49,13 @@ export function SendToKitchenButton() {
 
   return (
     <Button
-      variant="secondary"
+      variant={variant ?? 'secondary'}
       size="lg"
-      className="w-full"
+      className={className ?? 'w-full'}
       disabled={disabled}
       onClick={() => { void handleClick(); }}
     >
-      <Send className="h-4 w-4 mr-2" aria-hidden />
+      <ChefHat className="h-4 w-4" aria-hidden />
       {mutation.isPending ? 'Sending…' : 'Send to Kitchen'}
     </Button>
   );

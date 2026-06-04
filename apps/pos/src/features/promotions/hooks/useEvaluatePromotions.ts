@@ -67,11 +67,33 @@ interface EvaluatePromotionsV1Payload {
 }
 
 /**
+ * Honour the {@link AppliedPromotion} contract (see `types.ts`): a promotion
+ * that hands the customer a free gift line (`gift_to_add` / non-empty
+ * `free_items`) realises its discount AS that `unit_price=0` cart line. Its
+ * monetary `amount` MUST therefore be 0 — otherwise the cart subtracts the
+ * gift value twice (once via the 0-priced line, once via `amount`), which is
+ * exactly the "Buy 2 Get 1 Free discount exceeds the subtotal" bug.
+ *
+ * Both the `evaluate_promotions_v1` RPC and the new-shape BOGO TS fallback
+ * (`evaluateBogoNew`) emit `amount > 0` alongside a gift, so we normalise here
+ * — the single boundary every cart total flows through (Bug 1, Session 36).
+ * Non-gift promos (percentage / fixed / threshold / bundle / classic BOGO) are
+ * untouched: their `amount` is the only expression of the discount.
+ */
+export function zeroGiftDiscountAmount(ap: AppliedPromotion): AppliedPromotion {
+  const hasGift = Boolean(ap.gift_to_add) || (ap.free_items?.length ?? 0) > 0;
+  return hasGift && ap.amount !== 0 ? { ...ap, amount: 0 } : ap;
+}
+
+/**
  * Convert the SQL RPC payload to the TS `AppliedPromotion[]` shape
  * the cart store already consumes. For each applied promo whose
  * `free_items[]` has at least one entry, we also seed `gift_to_add`
  * with the first free item so the cart-store auto-add path fires
  * (it's the existing single-gift convention from Session 9).
+ *
+ * Gift-bearing promos are run through {@link zeroGiftDiscountAmount} so their
+ * `amount` is 0 — the free line is the discount, never double-counted.
  */
 export function normalizeV1Payload(
   payload: EvaluatePromotionsV1Payload,
@@ -84,35 +106,47 @@ export function normalizeV1Payload(
       (fi) => ({ product_id: fi.product_id, qty: fi.quantity }),
     );
     const giftToAdd: AppliedFreeProduct | undefined = freeItems?.[0];
-    out.push({
-      promotion_id: ap.promotion_id,
-      slug: ap.slug,
-      name: ap.name,
-      type: ap.type,
-      amount: Number(ap.discount_amount ?? 0),
-      description: ap.description ?? ap.name,
-      ...(freeItems && freeItems.length > 0 ? { free_items: freeItems } : {}),
-      ...(giftToAdd ? { gift_to_add: giftToAdd } : {}),
-    });
+    out.push(
+      zeroGiftDiscountAmount({
+        promotion_id: ap.promotion_id,
+        slug: ap.slug,
+        name: ap.name,
+        type: ap.type,
+        amount: Number(ap.discount_amount ?? 0),
+        description: ap.description ?? ap.name,
+        ...(freeItems && freeItems.length > 0 ? { free_items: freeItems } : {}),
+        ...(giftToAdd ? { gift_to_add: giftToAdd } : {}),
+      }),
+    );
   }
   return out;
 }
 
-/** Build `p_cart_items` JSON payload from a domain `Cart`. */
-function cartToRpcPayload(cart: Cart): Array<{
+/**
+ * Build `p_cart_items` JSON payload from a domain `Cart`.
+ *
+ * Promo gift lines (`is_promo_gift`) are deliberately excluded: they are an
+ * OUTPUT of the evaluator, not an input. Feeding them back into the RPC made
+ * each re-evaluation count the gift as another eligible unit, inflating the
+ * discount on every pass (−75k → −150k → …) — the "promo discount accumulates"
+ * half of Bug 1 (Session 36). The TS fallback already ignores gift lines
+ * everywhere (`nonGiftSubtotal` / `is_promo_gift` guards), so this keeps both
+ * evaluation paths idempotent and aligned.
+ */
+export function cartToRpcPayload(cart: Cart): Array<{
   line_id: string;
   product_id: string;
   quantity: number;
   unit_price: number;
-  is_promo_gift?: boolean;
 }> {
-  return cart.items.map((it) => ({
-    line_id: it.id,
-    product_id: it.product_id,
-    quantity: it.quantity,
-    unit_price: it.unit_price,
-    ...(it.is_promo_gift ? { is_promo_gift: true } : {}),
-  }));
+  return cart.items
+    .filter((it) => !it.is_promo_gift)
+    .map((it) => ({
+      line_id: it.id,
+      product_id: it.product_id,
+      quantity: it.quantity,
+      unit_price: it.unit_price,
+    }));
 }
 
 export function useEvaluatePromotions(): UseEvaluatePromotionsResult {
@@ -183,9 +217,12 @@ export function useEvaluatePromotions(): UseEvaluatePromotionsResult {
           rpcErr,
         );
         if (promotions.length === 0) return [];
+        // The new-shape BOGO fallback (`evaluateBogoNew`) emits amount>0
+        // alongside a gift line, just like the RPC — normalise it the same way
+        // so the gift discount is never double-counted (Bug 1, Session 36).
         return evaluatePromotionsFallback(promotions, cart, customer, now, catalog, {
           ...(dismissedIds ? { dismissedPromotionIds: dismissedIds } : {}),
-        });
+        }).map(zeroGiftDiscountAmount);
       }
     },
     [promotions, catalog],
