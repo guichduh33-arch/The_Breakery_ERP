@@ -10,7 +10,7 @@ Closes the online-side idempotence gap (TASK-17-002) — prerequisite for any fu
 - **POS** : `useCreateTabletOrder.ts` signature now requires `clientUuid: string` ; calls `create_tablet_order_v2` with `p_client_uuid`. Both call sites (`TabletOrderPage.tsx` and `TabletCheckoutButton.tsx`) generate their own `clientUuidRef = useRef(crypto.randomUUID())` and reset on success — each component owns its own lifecycle.
 - **Tests** : pgTAP `idempotency_hardening.test.sql` 8/8 PASS via cloud MCP (T1-T3, T6-T8 cover tablet) ; Vitest live `idempotency-hardening.test.ts` TS1-TS2 cover happy path + retry semantics ; POS smoke `tablet-send-idempotent.smoke.test.tsx` 2/2 PASS.
 
-Reference plan : [`../plans/2026-05-19-session-25-INDEX.md`](../plans/2026-05-19-session-25-INDEX.md). Closes TASK-17-002 (DONE) + gap audit S23 17-1. Tablet PWA offline queue (TASK-17-001 — IndexedDB queue + sync) remains deferred ; S25 ships the online idempotence prerequisite that the offline retry path will rely on.
+Reference plan : [`../plans/2026-05-19-session-25-INDEX.md`](../plans/archive/2026-05-19-session-25-INDEX.md). Closes TASK-17-002 (DONE) + gap audit S23 17-1. Tablet PWA offline queue (TASK-17-001 — IndexedDB queue + sync) remains deferred ; S25 ships the online idempotence prerequisite that the offline retry path will rely on.
 
 ---
 
@@ -131,7 +131,7 @@ Reference plan : [`../plans/2026-05-19-session-25-INDEX.md`](../plans/2026-05-19
 
 ## Backlog métier (objectif fonctionnel)
 
-> Items issus de `docs/objectif travail/TABLET_ORDERING.md` §13 — vision produit du module.
+> Items issus de `docs/_archive/objectif-travail-v2/TABLET_ORDERING.md` §13 — vision produit du module.
 > Ajoutés 2026-05-13 lors de la cascade docs (session 13). Queue offline est déjà couverte par TASK-17-001/002.
 
 ### TASK-17-007 — Auto-send à la cuisine optionnel [P2] [TODO]

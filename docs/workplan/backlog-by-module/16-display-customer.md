@@ -92,7 +92,7 @@
 
 ## Backlog métier (objectif fonctionnel)
 
-> Items issus de `docs/objectif travail/CUSTOMER_DISPLAY.md` §13 — vision produit du module.
+> Items issus de `docs/_archive/objectif-travail-v2/CUSTOMER_DISPLAY.md` §13 — vision produit du module.
 > Ajoutés 2026-05-13 lors de la cascade docs (session 13). La vidéo en idle est déjà couverte par TASK-16-005.
 
 ### TASK-16-006 — QR de paiement digital affiché [P2] [BLOCKED]

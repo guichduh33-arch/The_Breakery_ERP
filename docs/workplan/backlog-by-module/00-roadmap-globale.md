@@ -3,7 +3,7 @@
 > Last updated: 2026-05-20 (audit complet V3 vs vision V2 — 16 fiches métier croisées)
 > **Cadre** : V2 (AppGrav monolithe) **n'a jamais été déployée en production** — elle reste le cahier des charges métier théorique. V3 = code vivant (monorepo pnpm+turbo), construit from scratch, mission = parité fonctionnelle V2 + améliorations + split persona POS/BackOffice.
 > Glossaire V2↔V3 : [`../../V2_V3_GLOSSARY.md`](../../V2_V3_GLOSSARY.md) (mappings RPC, hooks, pages, tables, paths)
-> Plan S24-S30 : [`../plans/2026-05-19-S24-to-S30-plan.md`](../plans/2026-05-19-S24-to-S30-plan.md)
+> Plan S24-S30 : [`../plans/2026-05-19-S24-to-S30-plan.md`](../plans/archive/2026-05-19-S24-to-S30-plan.md)
 
 ---
 
@@ -41,8 +41,8 @@ Entre Session 13 (2026-05-13) et Session 20 (2026-05-17), The Breakery a constru
 
 ### Prochains jalons
 
-- **Session 23 (en cours)** : Landed cost shipping pro-rata + skip_wac sample/promo (TASK-07-012 + DEV-S17-1.C-01). Spec : [`../specs/2026-05-19-session-23-spec.md`](../specs/2026-05-19-session-23-spec.md).
-- **Sessions 24-30** : 7 sessions séquencées issues de l'audit 21-modules du 2026-05-19. Voir [`../plans/2026-05-19-S24-to-S30-plan.md`](../plans/2026-05-19-S24-to-S30-plan.md). Thèmes : B2B Foundation (S24), Idempotency Hardening (S25), Comptable Cockpit (S26), Product CRUD (S27), Expense Governance (S28), Reports Export + Z-Report PDF (S29), Decision Sprint + Cleanup (S30).
+- **Session 23 (en cours)** : Landed cost shipping pro-rata + skip_wac sample/promo (TASK-07-012 + DEV-S17-1.C-01). Spec : [`../specs/2026-05-19-session-23-spec.md`](../specs/archive/2026-05-19-session-23-spec.md).
+- **Sessions 24-30** : 7 sessions séquencées issues de l'audit 21-modules du 2026-05-19. Voir [`../plans/2026-05-19-S24-to-S30-plan.md`](../plans/archive/2026-05-19-S24-to-S30-plan.md). Thèmes : B2B Foundation (S24), Idempotency Hardening (S25), Comptable Cockpit (S26), Product CRUD (S27), Expense Governance (S28), Reports Export + Z-Report PDF (S29), Decision Sprint + Cleanup (S30).
 - **Items WONTFIX 2026-05-19** (décision mono-site permanent) : TASK-08-011 (multi-établissement loyalty), TASK-10-020 (consolidation multi-entité), TASK-19-008 (multi-tenancy foundation), TASK-21-011 (multi-LAN segmentation). 4 items BLOCKED purgés du backlog actif.
 - **Cycle review** : tous les 3-5 sessions, refresh de cette roadmap + des Status notes (`docs/workplan/backlog-by-module/0N-*.md`).
 

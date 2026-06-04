@@ -156,7 +156,7 @@
 
 ## Backlog métier (objectif fonctionnel — page /orders)
 
-> Items issus de `docs/objectif travail/ORDERS.md` §14 — vision produit de la page Orders (consultation/inspection des commandes, distincte du POS de saisie).
+> Items issus de `docs/_archive/objectif-travail-v2/ORDERS.md` §14 — vision produit de la page Orders (consultation/inspection des commandes, distincte du POS de saisie).
 > Ajoutés 2026-05-13 lors de la cascade docs (session 13).
 
 ### TASK-02-011 — Filtre par cashier / serveur [P2] [TODO]
@@ -294,7 +294,7 @@
 
 ## Backlog métier (objectif fonctionnel — app POS)
 
-> Items issus de `docs/objectif travail/POS.md` §18 — vision produit de l'app POS (caisse).
+> Items issus de `docs/_archive/objectif-travail-v2/POS.md` §18 — vision produit de l'app POS (caisse).
 > Ajoutés 2026-05-13 lors de la cascade docs (session 13). Customer-facing payment QR est déjà couvert par TASK-16-006 (cascade Customer Display).
 
 ### TASK-02-020 — Mode dégradé offline (POS resilience) [P2] [TODO]

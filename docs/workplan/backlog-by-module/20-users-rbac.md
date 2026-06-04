@@ -153,7 +153,7 @@
 
 ## Backlog métier (objectif fonctionnel)
 
-> Items issus de `docs/objectif travail/USERS_AND_PERMISSIONS.md` §11 — vision produit du module.
+> Items issus de `docs/_archive/objectif-travail-v2/USERS_AND_PERMISSIONS.md` §11 — vision produit du module.
 > Ajoutés 2026-05-13 lors de la cascade docs (session 13). 2FA est couvert par TASK-20-008 (et TASK-01-010). Bulk import est couvert par TASK-20-003.
 
 ### TASK-20-010 — Détection auto d'escalade de privilèges [P2] [TODO]
