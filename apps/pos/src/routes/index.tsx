@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Suspense, lazy, type ReactNode } from 'react';
+import { VirtualKeypadProvider } from '@breakery/ui';
 import LoginPage from '@/pages/Login';
 import PosPage from '@/pages/Pos';
 import { useAuthStore } from '@/stores/authStore';
@@ -48,7 +49,16 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
-      <Route path="/pos" element={<Protected><PosPage /></Protected>} />
+      <Route
+        path="/pos"
+        element={
+          <Protected>
+            <VirtualKeypadProvider>
+              <PosPage />
+            </VirtualKeypadProvider>
+          </Protected>
+        }
+      />
 
       {/* Session 14 / Phase 2.D — auxiliary POS surfaces. */}
       <Route path="/pos/stock" element={<ProtectedLazy><POSStockView /></ProtectedLazy>} />

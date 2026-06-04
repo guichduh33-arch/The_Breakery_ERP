@@ -130,7 +130,7 @@
 
 ## Backlog métier (objectif fonctionnel)
 
-> Items issus de `docs/objectif travail/KDS.md` §16 — vision produit du module.
+> Items issus de `docs/_archive/objectif-travail-v2/KDS.md` §16 — vision produit du module.
 > Ajoutés 2026-05-13 lors de la cascade docs (session 13).
 
 ### TASK-04-009 — Service Speed report [P2] [TODO]

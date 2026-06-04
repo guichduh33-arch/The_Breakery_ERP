@@ -1204,6 +1204,39 @@ export type Database = {
           },
         ]
       }
+      held_order_idempotency_keys: {
+        Row: {
+          client_uuid: string
+          created_at: string
+          order_id: string
+        }
+        Insert: {
+          client_uuid: string
+          created_at?: string
+          order_id: string
+        }
+        Update: {
+          client_uuid?: string
+          created_at?: string
+          order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "held_order_idempotency_keys_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "held_order_idempotency_keys_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "view_b2b_invoices"
+            referencedColumns: ["invoice_id"]
+          },
+        ]
+      }
       holidays: {
         Row: {
           created_at: string
@@ -2219,9 +2252,11 @@ export type Database = {
           discount_value: number | null
           id: string
           idempotency_key: string | null
+          is_held: boolean
           loyalty_points_earned: number
           loyalty_points_redeemed: number
           loyalty_redemption_amount: number
+          notes: string | null
           order_number: string
           order_type: Database["public"]["Enums"]["order_type"]
           paid_at: string | null
@@ -2251,9 +2286,11 @@ export type Database = {
           discount_value?: number | null
           id?: string
           idempotency_key?: string | null
+          is_held?: boolean
           loyalty_points_earned?: number
           loyalty_points_redeemed?: number
           loyalty_redemption_amount?: number
+          notes?: string | null
           order_number: string
           order_type?: Database["public"]["Enums"]["order_type"]
           paid_at?: string | null
@@ -2283,9 +2320,11 @@ export type Database = {
           discount_value?: number | null
           id?: string
           idempotency_key?: string | null
+          is_held?: boolean
           loyalty_points_earned?: number
           loyalty_points_redeemed?: number
           loyalty_redemption_amount?: number
+          notes?: string | null
           order_number?: string
           order_type?: Database["public"]["Enums"]["order_type"]
           paid_at?: string | null
@@ -5519,9 +5558,11 @@ export type Database = {
           discount_value: number | null
           id: string
           idempotency_key: string | null
+          is_held: boolean
           loyalty_points_earned: number
           loyalty_points_redeemed: number
           loyalty_redemption_amount: number
+          notes: string | null
           order_number: string
           order_type: Database["public"]["Enums"]["order_type"]
           paid_at: string | null
@@ -5826,6 +5867,10 @@ export type Database = {
             } & "Could not choose the best candidate function between: public.diag(msg => text), public.diag(msg => anyelement). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
           }
       diag_test_name: { Args: { "": string }; Returns: string }
+      discard_held_order_v1: {
+        Args: { p_order_id: string; p_reason: string }
+        Returns: undefined
+      }
       do_tap:
         | { Args: never; Returns: string[] }
         | { Args: { "": string }; Returns: string[] }
@@ -6267,6 +6312,15 @@ export type Database = {
       }
       has_unique: { Args: { "": string }; Returns: string }
       hash_pin: { Args: { p_pin: string }; Returns: string }
+      hold_order_v1: {
+        Args: {
+          p_cart_payload: Json
+          p_client_uuid: string
+          p_notes?: string
+          p_table_number?: string
+        }
+        Returns: string
+      }
       in_todo: { Args: never; Returns: boolean }
       is_authenticated: { Args: never; Returns: boolean }
       is_empty: { Args: { "": string }; Returns: string }
@@ -6551,9 +6605,11 @@ export type Database = {
           discount_value: number | null
           id: string
           idempotency_key: string | null
+          is_held: boolean
           loyalty_points_earned: number
           loyalty_points_redeemed: number
           loyalty_redemption_amount: number
+          notes: string | null
           order_number: string
           order_type: Database["public"]["Enums"]["order_type"]
           paid_at: string | null
@@ -6783,6 +6839,7 @@ export type Database = {
         Args: { p_mapping_key: string }
         Returns: string
       }
+      restore_held_order_v1: { Args: { p_order_id: string }; Returns: Json }
       retry_sale_journal_entry_v1: {
         Args: { p_order_id: string }
         Returns: Json

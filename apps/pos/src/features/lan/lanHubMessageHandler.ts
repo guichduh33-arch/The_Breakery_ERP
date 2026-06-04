@@ -9,9 +9,7 @@
 // hub's transport loop.
 
 import type { QueryClient } from '@tanstack/react-query';
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type SupabaseClient = any;
+import type { Json, TypedSupabaseClient } from '@breakery/supabase';
 import type {
   LanMessage,
   KdsBumpMessage,
@@ -21,7 +19,7 @@ import type {
 } from '@breakery/domain';
 
 export interface LanHandlerContext {
-  supabase: SupabaseClient;
+  supabase: TypedSupabaseClient;
   /** Optional react-query client to invalidate on inbound events. */
   queryClient?: QueryClient;
   /** Hub's own device id, for `to=`-targeted replies. */
@@ -89,27 +87,34 @@ async function handleKdsBump(
   msg: KdsBumpMessage,
   ctx: LanHandlerContext,
 ): Promise<void> {
-  // The bump itself is performed by the kds RPC on the originating device.
-  // The hub just invalidates downstream caches so the cashier-side
-  // dashboards reflect the new state immediately. We also enqueue a
-  // kitchen-chit print job if the new_status is 'preparing' (D-W5-5A-* design).
+  // The bump invalidates downstream caches so cashier-side dashboards refresh.
   ctx.queryClient?.invalidateQueries({ queryKey: ['kds'] });
   ctx.queryClient?.invalidateQueries({ queryKey: ['orders'] });
 
-  if (msg.payload.new_status === 'preparing') {
+  // Legacy kitchen-chit print path (S13). Since S34, prep tickets print via the
+  // direct station bridge (Path A: useFireToStations -> printStationTicket). To
+  // avoid the post-S34 double-print risk, this legacy enqueue is OFF by default
+  // and only runs when VITE_LEGACY_KITCHEN_CHIT === '1'. The flag exists ONLY as
+  // a rollback during print-bridge rollout; it MUST be removed once the bridge is
+  // stable in prod. See plan 2026-06-01-pos-double-print-risk (gate b) +
+  // 2026-06-01-pos-print-bridge-deploy (DEV-S34-W0-02).
+  const legacyChitEnabled = import.meta.env.VITE_LEGACY_KITCHEN_CHIT === '1';
+  if (legacyChitEnabled && msg.payload.new_status === 'preparing') {
+    const p_payload: Json = {
+      ticket_type:    'kitchen_chit',
+      order_item_id:  msg.payload.order_item_id,
+      order_id:       msg.payload.order_id,
+      station:        msg.payload.station,
+    };
+    // p_device_id (uuid) accepts NULL at runtime; generated Args omits `| null`.
     const { error } = await ctx.supabase.rpc('enqueue_print_job_v1', {
-      p_device_id:      null,
-      p_payload:        {
-        ticket_type:    'kitchen_chit',
-        order_item_id:  msg.payload.order_item_id,
-        order_id:       msg.payload.order_id,
-        station:        msg.payload.station,
-      } as never,
+      p_device_id:      null as unknown as string,
+      p_payload,
       p_source:         'kds',
       p_reference_type: 'order_item',
       p_reference_id:   msg.payload.order_item_id,
       p_priority:       5,
-    } as never);
+    });
     if (error !== null) {
       // Surface but don't throw — print queue is best-effort.
       console.warn('[lan-hub] enqueue_print_job failed', error.message);
@@ -123,14 +128,17 @@ async function handlePrintRequest(
 ): Promise<void> {
   // Persist the print job. The actual print server (separate process)
   // polls `claim_print_job_v1` for the targeted device.
+  // `enqueue_print_job_v1(p_device_id uuid, ...)` accepts NULL at runtime
+  // (unassigned/broadcast job); the generated Args type omits the `| null`.
+  const p_payload: Json = msg.payload.data as Json;
   const { data, error } = await ctx.supabase.rpc('enqueue_print_job_v1', {
-    p_device_id:      null,
-    p_payload:        msg.payload.data as never,
+    p_device_id:      null as unknown as string,
+    p_payload,
     p_source:         'pos',
     p_reference_type: msg.payload.reference_type,
-    p_reference_id:   msg.payload.reference_id as never,
+    p_reference_id:   msg.payload.reference_id,
     p_priority:       msg.payload.priority ?? 5,
-  } as never);
+  });
 
   if (error !== null) {
     console.warn('[lan-hub] print.request enqueue failed', error.message);
@@ -173,7 +181,7 @@ async function handleHeartbeat(
   // Touch lan_devices.last_heartbeat_at by code (= device id here).
   const { error } = await ctx.supabase.rpc('update_lan_heartbeat_v1', {
     p_device_code: msg.from,
-  } as never);
+  });
   if (error !== null) {
     // Device not registered yet — silent. The BO operator can create it.
     // Don't log noise.

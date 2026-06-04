@@ -121,7 +121,7 @@
 
 ## Backlog métier (objectif fonctionnel)
 
-> Items issus de `docs/objectif travail/EXPENSES.md` §15 — vision produit du module au-delà du tech-debt existant.
+> Items issus de `docs/_archive/objectif-travail-v2/EXPENSES.md` §15 — vision produit du module au-delà du tech-debt existant.
 > Ajoutés 2026-05-13 lors de la cascade docs (session 13). Récurrence, workflow approval, OCR, note de frais sont déjà couverts par TASK-11-003/001/004/006. Export comptable est couvert par TASK-10-018 (cascade Accounting).
 
 ### TASK-11-008 — Budget par catégorie [P3] [TODO]

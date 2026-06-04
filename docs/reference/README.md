@@ -1,8 +1,8 @@
 # The Breakery ERP — Documentation de référence
 
 > **Last verified**: 2026-05-13
-> **Version documentée**: Vision business V2 (AppGrav monolithe Vite + React + Supabase) — **jamais déployée en production**. Conservée comme référence métier cible pour la construction V3.
-> **Implémentation réelle**: V3 monorepo pnpm + turbo (apps/pos + apps/backoffice + packages/{domain,supabase,ui,utils}). Voir [`../workplan/`](../workplan/) pour l'état d'avancement réel.
+> **Statut**: **référence canonique du V3** (monorepo pnpm + turbo : apps/pos + apps/backoffice + packages/{domain,supabase,ui,utils}) — source de vérité évergreen. Certaines pages décrivent la cible métier héritée de la vision V2 (AppGrav monolithe, jamais déployée) ; en cas de divergence avec le code, c'est le code/migrations qui font foi et la page doit être corrigée.
+> **État d'avancement par session**: voir [`../workplan/`](../workplan/).
 > **Point d'entrée global** : voir [`../README.md`](../README.md) pour la carte complète de `docs/`.
 
 ---
@@ -44,9 +44,10 @@ Les fichiers dans [`04-modules/`](04-modules/) suivent un pattern à **4 parties
 | Fichier | Contenu |
 |---|---|
 | [01-product-context.md](00-overview/01-product-context.md) | The Breakery, métier, contraintes, volumétrie |
-| [02-tech-stack.md](00-overview/02-tech-stack.md) | Stack complet avec versions exactes |
-| [03-repository-structure.md](00-overview/03-repository-structure.md) | Arbo repo, V2 vs V3 |
-| [04-glossary.md](00-overview/04-glossary.md) | PB1, KDS, LAN hub, B2B, SAK EMKM, etc. |
+| [02-business-overview.md](00-overview/02-business-overview.md) | Vue d'ensemble business, personas, modules |
+| [03-tech-stack.md](00-overview/03-tech-stack.md) | Stack complet avec versions exactes |
+| [04-repository-structure.md](00-overview/04-repository-structure.md) | Arbo repo, V2 vs V3 |
+| [05-glossary.md](00-overview/05-glossary.md) | PB1, KDS, LAN hub, B2B, SAK EMKM, etc. |
 
 ### 01 — Architecture
 | Fichier | Contenu |
@@ -81,7 +82,7 @@ Les fichiers dans [`04-modules/`](04-modules/) suivent un pattern à **4 parties
 | [07-migrations-history.md](03-database/07-migrations-history.md) | 223+ migrations, milestones |
 | [08-seed-data.md](03-database/08-seed-data.md) | COA, permissions, enums seed |
 
-### 04 — Modules métier (21 modules)
+### 04 — Modules métier (19 modules + index)
 | # | Fichier |
 |---|---|
 | 00 | [Index des modules](04-modules/00-modules-index.md) |
@@ -104,7 +105,8 @@ Les fichiers dans [`04-modules/`](04-modules/) suivent un pattern à **4 parties
 | 17 | [Tablet Ordering](04-modules/17-tablet-ordering.md) |
 | 18 | [Mobile Shell](04-modules/18-mobile-shell.md) |
 | 19 | [Settings](04-modules/19-settings-configuration.md) |
-| 20 | [Users & RBAC](04-modules/20-users-rbac.md) |
+
+> Users / RBAC sont couverts par [01-auth-permissions.md](04-modules/01-auth-permissions.md) (pas de fichier `20-` séparé). Le module Orders côté backoffice a une fiche dédiée : [02b-orders.md](04-modules/02b-orders.md).
 
 ### 05 — Intégrations externes
 | Fichier | Contenu |
@@ -225,9 +227,8 @@ Chaque fichier dans [`04-modules/`](04-modules/) suit la structure :
 
 | Document | Usage |
 |---|---|
-| [`CLAUDE.md`](../../CLAUDE.md) | Instructions agents IA, conventions condensées |
-| [`DESIGN.md`](../../DESIGN.md) | Source design "Luxe Dark" (distillée dans `02-design-system/`) |
-| [`CURRENT_STATE.md`](../../CURRENT_STATE.md) | Sprint progress + backlog vivant |
+| [`CLAUDE.md`](../../CLAUDE.md) | Instructions agents IA, conventions condensées, **Active Workplan** (état courant + historique) |
+| [`02-design-system/`](02-design-system/) | Source design "Luxe Dark" (tokens, primitives, layouts) — la référence design canonique |
 | [`DESIGN_POS_AND_BACKOFFICE.md`](../DESIGN_POS_AND_BACKOFFICE.md) | Design détaillé POS & Backoffice (~600 lignes) — référence Partie IV des modules |
 | [`docs/workplan/`](../workplan/) | Plans, specs et backlog opérationnel (sessions + tâches par module) |
 | [`docs/audit/`](../audit/) | Rapports d'audit (sécu, accounting, code, reports, UX, doc, backlog, ops) si présents |

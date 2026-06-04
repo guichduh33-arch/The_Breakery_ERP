@@ -121,7 +121,7 @@
 
 ## Backlog métier (objectif fonctionnel)
 
-> Items issus de `docs/objectif travail/CASH_REGISTER.md` §15 — vision produit du module.
+> Items issus de `docs/_archive/objectif-travail-v2/CASH_REGISTER.md` §15 — vision produit du module.
 > Ajoutés 2026-05-13 lors de la cascade docs (session 13). Cash-in/out, alerte écart, pause/reprise, auto-close sont déjà couverts par TASK-12-001/004/005/006.
 
 ### TASK-12-008 — Validation à deux mains pour gros écarts [P2] [TODO]

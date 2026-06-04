@@ -137,7 +137,7 @@
 
 ## Backlog métier (objectif fonctionnel)
 
-> Items issus de `docs/objectif travail/PROMOTIONS_AND_COMBOS.md` §15 — vision produit du module.
+> Items issus de `docs/_archive/objectif-travail-v2/PROMOTIONS_AND_COMBOS.md` §15 — vision produit du module.
 > Ajoutés 2026-05-13 lors de la cascade docs (session 13). Stacking, effectiveness report, segment client, A/B testing sont déjà couverts par TASK-13-002/006/005/007. Parrainage est couvert par TASK-08-010 (cascade Customers).
 
 ### TASK-13-009 — Coupons QR sérialisés (1 code unique par client) [P3] [TODO]

@@ -92,11 +92,11 @@ describe('POSSettingsPage', () => {
     expect(screen.getByText(/read only/i)).toBeInTheDocument();
   });
 
-  it('switches to Printing placeholder when the Printing tab is clicked', () => {
+  it('switches to the Printing settings tab when the Printing tab is clicked', () => {
     renderPage();
     fireEvent.click(screen.getByRole('button', { name: /printing/i }));
     expect(screen.queryByText(/quick payment amounts/i)).toBeNull();
-    expect(screen.getAllByText(/printing/i).length).toBeGreaterThan(0);
+    expect(screen.getByLabelText(/print server url/i)).toBeInTheDocument();
   });
 
   it('switches between Configuration sub-tabs (General → Automation)', () => {

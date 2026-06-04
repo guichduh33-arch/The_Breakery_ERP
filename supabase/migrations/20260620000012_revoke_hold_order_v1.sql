@@ -1,0 +1,5 @@
+-- Session 35 — F-003 (Wave C2): REVOKE pair for hold_order_v1 (S25 canonical).
+REVOKE EXECUTE ON FUNCTION public.hold_order_v1(UUID, JSONB, TEXT, TEXT) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.hold_order_v1(UUID, JSONB, TEXT, TEXT) FROM anon;
+GRANT  EXECUTE ON FUNCTION public.hold_order_v1(UUID, JSONB, TEXT, TEXT) TO authenticated;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public REVOKE EXECUTE ON FUNCTIONS FROM anon;

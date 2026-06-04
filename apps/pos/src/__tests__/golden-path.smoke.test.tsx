@@ -6,9 +6,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { useCartStore, resetCartAfterCheckout } from '@/stores/cartStore';
-import { useHeldOrdersStore } from '@/stores/heldOrdersStore';
-import { useHoldOrder } from '@/features/heldOrders/hooks/useHoldOrder';
-import { useRestoreHeldOrder } from '@/features/heldOrders/hooks/useRestoreHeldOrder';
 import { ActiveOrderPanel } from '@/features/cart/ActiveOrderPanel';
 import { CartItemRow } from '@/features/cart/CartItemRow';
 import type { Customer } from '@breakery/domain';
@@ -351,31 +348,30 @@ describe('Session 3 golden path — customer attach + loyalty earn', () => {
 // Session 4 — hold + restore golden path
 // ---------------------------------------------------------------------------
 
-describe('Session 4 golden path — hold + restore before send-to-kitchen', () => {
-  const ITEM = { id: 'l1', product_id: 'p1', name: 'Americano', unit_price: 35000, quantity: 1, modifiers: [] as never[] };
+// Session 35 (F-003) — hold + restore are now DB-backed. The hold wiring is
+// covered by `features/heldOrders/__tests__/hold-order-db.smoke.test.tsx`; the
+// restore side ultimately rehydrates the cart via `cartStore.restoreCart`,
+// which we assert here at the store level (the mechanism the restore hook drives).
+describe('Session 4 golden path — restore rehydrates the cart (DB-backed)', () => {
+  const RESTORED = [
+    { id: 'r1', product_id: 'p1', name: 'Americano', unit_price: 35000, quantity: 1, modifiers: [] as never[] },
+  ];
 
   beforeEach(() => {
-    useCartStore.setState({ cart: { items: [ITEM], order_type: 'dine_in', tableNumber: 'T-02' }, lockedItemIds: [], attachedCustomer: null });
-    useHeldOrdersStore.setState({ entries: [] });
+    useCartStore.setState({ cart: { items: [], order_type: 'dine_in' }, lockedItemIds: [], attachedCustomer: null });
   });
 
-  it('hold puts cart into held store and clears cart', () => {
-    useHoldOrder()('for Mr. Lee');
-    expect(useCartStore.getState().cart.items).toHaveLength(0);
-    expect(useHeldOrdersStore.getState().entries).toHaveLength(1);
-    expect(useHeldOrdersStore.getState().entries[0]?.notes).toBe('for Mr. Lee');
-  });
-
-  it('restore from held store restores items + tableNumber + removes entry', () => {
-    const holdOrder = useHoldOrder();
-    holdOrder('note');
-    const heldId = useHeldOrdersStore.getState().entries[0]!.id;
-
-    useRestoreHeldOrder()(heldId);
+  it('restoreCart replays a held snapshot into the cart incl. tableNumber + clears locks', () => {
+    useCartStore.setState((s) => ({ ...s, lockedItemIds: ['stale'] }));
+    useCartStore.getState().restoreCart({
+      items: RESTORED,
+      order_type: 'dine_in',
+      tableNumber: 'T-02',
+    });
 
     expect(useCartStore.getState().cart.items).toHaveLength(1);
     expect(useCartStore.getState().cart.tableNumber).toBe('T-02');
-    expect(useHeldOrdersStore.getState().entries).toHaveLength(0);
+    expect(useCartStore.getState().lockedItemIds).toHaveLength(0);
   });
 });
 

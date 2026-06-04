@@ -13,7 +13,7 @@ import {
 import { safeStorage, logger } from '@breakery/utils';
 import { supabaseUrl } from '../lib/supabase.js';
 
-interface AuthUser {
+export interface AuthUser {
   id: string;
   full_name: string;
   role_code: string;
@@ -25,6 +25,10 @@ interface AuthState {
   sessionToken: string | null;
   permissions: string[];
   isAuthenticated: boolean;
+  // Session 35 / Task A1 — manual "Lock Terminal" gate. Pauses the POS behind
+  // an overlay without dropping the PIN-JWT session, cart or shift. NOT
+  // persisted (see partialize) so a page reload always starts unlocked.
+  isLocked: boolean;
   isLoading: boolean;
   error: string | null;
   // Session 19 / Phase 3.A — populated by validateSession() from the role row.
@@ -34,6 +38,8 @@ interface AuthState {
 
   login: (userId: string, pin: string) => Promise<void>;
   logout: () => Promise<void>;
+  lock: () => void;
+  unlock: () => void;
   validateSession: () => Promise<void>;
   hasPermission: (code: PermissionCode) => boolean;
   setError: (msg: string | null) => void;
@@ -54,6 +60,7 @@ export const useAuthStore = create<AuthState>()(
       sessionToken: null,
       permissions: [],
       isAuthenticated: false,
+      isLocked: false,
       isLoading: false,
       error: null,
       sessionTimeoutMinutes: null,
@@ -108,10 +115,14 @@ export const useAuthStore = create<AuthState>()(
           sessionToken: null,
           permissions: [],
           isAuthenticated: false,
+          isLocked: false,
           error: null,
           sessionTimeoutMinutes: null,
         });
       },
+
+      lock: () => set({ isLocked: true }),
+      unlock: () => set({ isLocked: false }),
 
       async validateSession() {
         const token = get().sessionToken;

@@ -1,11 +1,12 @@
 // apps/pos/src/features/payment/SuccessModal.tsx
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Check, Printer, RotateCw } from 'lucide-react';
 import { Button, Currency, FullScreenModal } from '@breakery/ui';
 import { calculateTotals } from '@breakery/domain';
-import type { Cart } from '@breakery/domain';
+import type { Cart, PaymentMethod } from '@breakery/domain';
 import { printReceipt, openCashDrawer, type ReceiptPayload } from '@/services/print/printService';
 import { useStationPrinters } from '@/features/cart/hooks/useStationPrinters';
+import { usePosSettingsStore } from '@/stores/posSettingsStore';
 import { toast } from 'sonner';
 
 const TAX_RATE = 0.10;
@@ -23,7 +24,7 @@ export interface SuccessModalProps {
   pointsEarned?: number;
   customerName?: string;
   cart: Cart;
-  paymentMethod: string;
+  paymentMethod: PaymentMethod;
   cashReceived: number;
   cashierName: string;
   onNewOrder: () => void;
@@ -56,10 +57,11 @@ function buildReceiptPayload(props: SuccessModalProps): ReceiptPayload {
       tax_amount: totals.tax_amount,
     },
     payment: {
-      method: 'cash',
+      method: props.paymentMethod,
       amount: props.total,
-      cash_received: props.cashReceived,
-      change_given: props.changeGiven ?? 0,
+      ...(props.paymentMethod === 'cash'
+        ? { cash_received: props.cashReceived, change_given: props.changeGiven ?? 0 }
+        : {}),
     },
     ...(props.pointsEarned && props.pointsEarned > 0 ? {
       loyalty: { points_earned: props.pointsEarned, balance_after: 0 },
@@ -71,8 +73,15 @@ function buildReceiptPayload(props: SuccessModalProps): ReceiptPayload {
 export function SuccessModal(props: SuccessModalProps) {
   const { open, orderNumber, total, changeGiven, pointsEarned, customerName, onNewOrder } = props;
   const [isPrinting, setIsPrinting] = useState(false);
+  // Guards the mount-effect side effects (toast) against firing after the modal
+  // has unmounted — e.g. the cashier hits "New Order" before the print/drawer
+  // bridge responds. Firing a toast on a dead component is wrong in prod and
+  // also leaks across test boundaries under load.
+  const mountedRef = useRef(true);
   const { data: printers } = useStationPrinters();
   const cashierPrinter = printers?.get('cashier');
+  const autoPrint = usePosSettingsStore((s) => s.autoPrint);
+  const autoOpenDrawer = usePosSettingsStore((s) => s.autoOpenDrawer);
 
   async function handlePrint() {
     setIsPrinting(true);
@@ -85,8 +94,27 @@ export function SuccessModal(props: SuccessModalProps) {
   }
 
   useEffect(() => {
+    mountedRef.current = true;
     if (!open) return;
-    void Promise.all([handlePrint(), openCashDrawer()]);
+    void (async () => {
+      // Only attempt (and therefore only warn about) the drawer when the
+      // autoOpenDrawer setting is on. Card/QRIS still wouldn't warn because of
+      // the method gate below, but a disabled setting must also skip the pop.
+      const drawerTask = autoOpenDrawer
+        ? openCashDrawer()
+        : Promise.resolve({ success: true } as const);
+      const printTask = autoPrint ? handlePrint() : Promise.resolve();
+      const [drawer] = await Promise.all([drawerTask, printTask]);
+      if (!mountedRef.current) return;
+      // Cash-gated at the call-site: openCashDrawer() takes no argument and
+      // cannot know the method, so card/QRIS would otherwise produce a false
+      // "drawer didn't open" warning. Only cash payments expect a drawer pop,
+      // and only when autoOpenDrawer actually attempted to open it.
+      if (autoOpenDrawer && props.paymentMethod === 'cash' && !drawer.success) {
+        toast.warning('Cash drawer did not open — please open it manually');
+      }
+    })();
+    return () => { mountedRef.current = false; };
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (

@@ -131,7 +131,7 @@
 
 ## Backlog métier (objectif fonctionnel)
 
-> Items issus de `docs/objectif travail/PURCHASING_AND_SUPPLIERS.md` §7 (limites assumées V2) — vision produit du module pour V3.
+> Items issus de `docs/_archive/objectif-travail-v2/PURCHASING_AND_SUPPLIERS.md` §7 (limites assumées V2) — vision produit du module pour V3.
 > Ajoutés 2026-05-13 lors de la cascade docs (session 13, version révisée de l'objectif).
 
 ### TASK-07-009 — Envoi automatique d'email PO au fournisseur [P3] [TODO]

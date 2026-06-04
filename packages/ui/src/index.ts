@@ -71,6 +71,7 @@ export {
   type NumpadVirtualProps,
   type NumpadMode,
 } from './components/NumpadVirtual.js';
+export { QwertyLayout, type QwertyLayoutProps } from './components/QwertyLayout.js';
 export {
   DataTable,
   type DataTableProps,
@@ -218,6 +219,10 @@ export {
   type AllergenBadgeSize,
   type AllergenType,
 } from './components/AllergenBadge.js';
+
+// virtual keypad (F-005)
+export { VirtualKeypadProvider } from './components/VirtualKeypadProvider.js';
+export { useVirtualKeypad, type VkpLayout } from './hooks/useVirtualKeypad.js';
 
 // hooks
 export { useIdleTimeout, type UseIdleTimeoutArgs, IDLE_WARNING_LEAD_MS } from './hooks/useIdleTimeout.js';

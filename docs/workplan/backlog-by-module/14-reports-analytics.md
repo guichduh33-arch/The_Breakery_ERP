@@ -192,7 +192,7 @@
 
 ## Backlog métier (objectif fonctionnel)
 
-> Items issus de `docs/objectif travail/REPORTS.md` §15 — vision produit du module.
+> Items issus de `docs/_archive/objectif-travail-v2/REPORTS.md` §15 — vision produit du module.
 > Ajoutés 2026-05-13 lors de la cascade docs (session 13). KDS Service Speed est couvert par TASK-04-009 (cascade KDS), B2B Self-Approval Risk par TASK-09-010, Customer Cohort par TASK-08-009 (cascade Customers), Promotion Effectiveness par TASK-13-006.
 
 ### TASK-14-013 — Report "Unusual Transaction Patterns" [P2] [TODO]

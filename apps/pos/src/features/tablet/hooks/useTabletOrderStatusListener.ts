@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
@@ -12,11 +12,6 @@ const DEDUPE_LIMIT = 1000;
 export function useTabletOrderStatusListener() {
   const userId = useAuthStore((s) => s.user?.id);
   const queryClient = useQueryClient();
-  // StrictMode double-invokes effects in dev; a static channel name would
-  // collide with the still-subscribed channel from the first mount
-  // (removeChannel is async). Suffix with a per-mount UUID.
-  // Pattern ref: apps/pos/src/features/kds/hooks/useKdsRealtime.ts (C2 fix).
-  const mountId = useMemo(() => crypto.randomUUID(), []);
 
   // Phase 4.D — dedupe ready events. Realtime can replay events on
   // reconnect or deliver them out of order ; the toast must fire at most
@@ -26,8 +21,15 @@ export function useTabletOrderStatusListener() {
   useEffect(() => {
     if (!userId) return;
 
+    // StrictMode double-invokes effects in dev; a static channel name would
+    // collide with the still-subscribed channel from the first mount
+    // (removeChannel is async). We generate the UUID INSIDE the effect, NOT
+    // via a component-body `useMemo` — the memo from the first render is
+    // discarded in StrictMode and the second-render UUID would be reused
+    // across both effect mounts. Pattern ref: useKdsRealtime.ts.
+    const channelName = `tablet-order-status-${crypto.randomUUID()}`;
     const channel = supabase
-      .channel(`tablet-order-status-${mountId}`)
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -61,5 +63,5 @@ export function useTabletOrderStatusListener() {
       .subscribe();
 
     return () => { void supabase.removeChannel(channel); };
-  }, [userId, queryClient, mountId]);
+  }, [userId, queryClient]);
 }
