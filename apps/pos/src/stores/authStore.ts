@@ -20,6 +20,18 @@ export interface AuthUser {
   employee_code: string;
 }
 
+/**
+ * Boot-time rehydration lifecycle. `isAuthenticated` + `sessionToken` survive a
+ * reload (persisted), but `permissions` and the PIN bearer (`_accessToken` in
+ * the supabase client, a module variable) do NOT. They must be restored from
+ * `auth-get-session` before any query fires — otherwise every Supabase request
+ * goes out with only the anon key and 401s (the reload bug + retry storm).
+ *
+ * pending → loading → ready | error. On `error` (backend unreachable) the
+ * session is KEPT so a retry can recover without a fresh PIN login.
+ */
+export type BootstrapStatus = 'pending' | 'loading' | 'ready' | 'error';
+
 interface AuthState {
   user: AuthUser | null;
   sessionToken: string | null;
@@ -31,6 +43,7 @@ interface AuthState {
   isLocked: boolean;
   isLoading: boolean;
   error: string | null;
+  bootstrapStatus: BootstrapStatus;
   // Session 19 / Phase 3.A — populated by validateSession() from the role row.
   // null until the first auth-get-session round-trip lands (e.g. fresh login
   // before the rehydrate fires). Treat null/0 as "no idle logout".
@@ -38,6 +51,7 @@ interface AuthState {
 
   login: (userId: string, pin: string) => Promise<void>;
   logout: () => Promise<void>;
+  bootstrap: () => Promise<void>;
   lock: () => void;
   unlock: () => void;
   validateSession: () => Promise<void>;
@@ -63,6 +77,7 @@ export const useAuthStore = create<AuthState>()(
       isLocked: false,
       isLoading: false,
       error: null,
+      bootstrapStatus: 'pending',
       sessionTimeoutMinutes: null,
 
       async login(userId, pin) {
@@ -85,6 +100,7 @@ export const useAuthStore = create<AuthState>()(
             permissions: res.permissions,
             isAuthenticated: true,
             isLoading: false,
+            bootstrapStatus: 'ready',
           });
           logger.info('login.success', { user_id: res.user.id });
         } catch (err: unknown) {
@@ -117,8 +133,54 @@ export const useAuthStore = create<AuthState>()(
           isAuthenticated: false,
           isLocked: false,
           error: null,
+          // Terminal state — bootstrap is "done" (router → /login). Never leave
+          // it loading/error after a sign-out.
+          bootstrapStatus: 'ready',
           sessionTimeoutMinutes: null,
         });
+      },
+
+      /**
+       * Boot-time rehydration. Call once on app mount. If a PIN session was
+       * persisted, restore the bearer (lost on reload — it lives in a module
+       * variable, not storage) AND re-fetch permissions before any query fires.
+       * The shell must stay behind the 'loading' gate until this resolves, or
+       * every Supabase request 401s with only the anon key.
+       */
+      async bootstrap() {
+        const { sessionToken, isAuthenticated } = get();
+        if (!sessionToken || !isAuthenticated) {
+          // No PIN session (fresh load, or kiosk/display/tablet surfaces that
+          // use their own token) — nothing to restore.
+          set({ bootstrapStatus: 'ready' });
+          return;
+        }
+        set({ bootstrapStatus: 'loading', error: null });
+        try {
+          const session = await getSession(supabaseUrl, sessionToken);
+          if (session.auth) {
+            // Restore the PIN bearer so RLS-protected queries stop 401-ing.
+            setSupabaseAccessToken(session.auth.access_token);
+          }
+          set({
+            user: { id: session.id, full_name: session.full_name, role_code: session.role_code, employee_code: session.employee_code },
+            permissions: session.permissions,
+            isAuthenticated: true,
+            sessionTimeoutMinutes: session.session_timeout_minutes,
+            bootstrapStatus: 'ready',
+          });
+          logger.info('bootstrap.rehydrated', { user_id: session.id, perms: session.permissions.length });
+        } catch (err: unknown) {
+          const e = err as { status?: number };
+          if (e.status === 401) {
+            await get().logout();
+          } else {
+            // Backend unreachable — keep the session for retry, surface an error
+            // screen instead of silently degrading to an empty/anon state.
+            logger.error('bootstrap.failed', { status: e.status ?? 'network' });
+            set({ bootstrapStatus: 'error', error: 'backend_unreachable' });
+          }
+        }
       },
 
       lock: () => set({ isLocked: true }),
@@ -129,6 +191,10 @@ export const useAuthStore = create<AuthState>()(
         if (!token) return;
         try {
           const session = await getSession(supabaseUrl, token);
+          if (session.auth) {
+            // Keep the bearer fresh (re-minted by the EF) on every re-probe.
+            setSupabaseAccessToken(session.auth.access_token);
+          }
           set({
             user: { id: session.id, full_name: session.full_name, role_code: session.role_code, employee_code: session.employee_code },
             permissions: session.permissions,
@@ -148,6 +214,11 @@ export const useAuthStore = create<AuthState>()(
       },
 
       hasPermission(code) {
+        // SUPER_ADMIN (Owner) is an all-access role server-side too — this
+        // front-side bypass just removes the dependency on the perms list being
+        // fully hydrated (fixes SUPER_ADMIN being blocked on /pos/reports). RLS
+        // still governs data access.
+        if (get().user?.role_code === 'SUPER_ADMIN') return true;
         return has(get().permissions, code);
       },
 

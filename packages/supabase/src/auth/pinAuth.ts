@@ -124,7 +124,19 @@ export async function loginWithPin(supabaseUrl: string, body: LoginRequest): Pro
 export async function getSession(
   supabaseUrl: string,
   sessionToken: string,
-): Promise<LoginResponse['user'] & { permissions: string[]; session_timeout_minutes: number | null }> {
+): Promise<
+  LoginResponse['user'] & {
+    permissions: string[];
+    session_timeout_minutes: number | null;
+    /**
+     * Fresh HS256 JWT bundle re-minted by the EF so the caller can restore the
+     * PostgREST bearer after a hard reload (the clients run with
+     * `persistSession: false`). `null` only for legacy EF deployments that
+     * predate this field — callers must tolerate that.
+     */
+    auth: LoginResponse['auth'] | null;
+  }
+> {
   const res = await fetchWithTimeout(`${supabaseUrl}/functions/v1/auth-get-session`, {
     headers: { 'x-session-token': sessionToken },
   });
@@ -133,11 +145,13 @@ export async function getSession(
     user: LoginResponse['user'];
     permissions: string[];
     session_timeout_minutes?: number | null;
+    auth?: LoginResponse['auth'] | null;
   };
   return {
     ...body.user,
     permissions: body.permissions,
     session_timeout_minutes: body.session_timeout_minutes ?? null,
+    auth: body.auth ?? null,
   };
 }
 

@@ -154,7 +154,7 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
   return (
     <FullScreenModal open={open} onOpenChange={(o) => !o && handleClose()}>
       <div
-        className="m-auto bg-bg-overlay rounded-2xl border border-border-subtle shadow-modal w-full max-w-md p-8 space-y-6"
+        className="m-auto bg-bg-overlay rounded-2xl border border-border-subtle shadow-modal w-full max-w-md p-8 space-y-6 max-h-[90dvh] overflow-y-auto"
         data-testid="open-shift-modal"
         data-step={step}
       >
