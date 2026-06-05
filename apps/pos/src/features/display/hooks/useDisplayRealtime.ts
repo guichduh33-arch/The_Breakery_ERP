@@ -30,14 +30,8 @@ export function useDisplayRealtime(screenId: string): void {
     const channel = supabase
       .channel(channelName)
       .on(
-        // The Supabase JS typings are strict about the 'postgres_changes'
-        // literal generic ; cast through `never` to bypass without `any`.
-        'postgres_changes' as never,
-        {
-          event: '*',
-          schema: 'public',
-          table: 'orders',
-        } as never,
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'orders' },
         () => {
           void qc.invalidateQueries({ queryKey: DISPLAY_ORDERS_QUERY_KEY });
         },
