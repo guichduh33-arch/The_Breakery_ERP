@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import {
   VirtualKeypadContext,
   type VkpLayout,
@@ -20,14 +21,22 @@ function setInputValue(el: VkpTarget, next: string): void {
 
 export function VirtualKeypadProvider({ children }: { children: ReactNode }) {
   const [layout, setLayout] = useState<VkpLayout | null>(null);
+  // DEV-S35-E3-01 — when the focused input lives inside a Radix Dialog, portal
+  // the overlay INTO that dialog's content node. Radix marks everything OUTSIDE
+  // the open dialog as aria-hidden ; an overlay rendered at the provider root
+  // (a dialog sibling) would inherit it and be silenced for screen readers.
+  // Portaling it as a dialog descendant keeps it announced. null → render inline.
+  const [portalEl, setPortalEl] = useState<HTMLElement | null>(null);
   const targetRef = useRef<VkpTarget | null>(null);
 
   const openFor = useCallback((el: VkpTarget, l: VkpLayout) => {
     targetRef.current = el;
+    setPortalEl((el.closest('[role="dialog"]') as HTMLElement | null) ?? null);
     setLayout(l);
   }, []);
   const close = useCallback(() => {
     setLayout(null);
+    setPortalEl(null);
     targetRef.current = null;
   }, []);
 
@@ -55,42 +64,47 @@ export function VirtualKeypadProvider({ children }: { children: ReactNode }) {
     if (el) setInputValue(el, el.value.slice(0, -1));
   };
 
+  const overlay = layout && (
+    <div
+      data-testid="vkp-overlay"
+      className="fixed inset-x-0 bottom-0 z-50 bg-bg-elevated border-t border-border-subtle p-4 shadow-modal"
+      role="dialog"
+      aria-label="Virtual keyboard"
+    >
+      {layout === 'qwerty' ? (
+        <QwertyLayout
+          onKey={writeKey}
+          onBackspace={backspace}
+          onSpace={() => writeKey(' ')}
+          onDone={close}
+        />
+      ) : (
+        <div className="max-w-xs mx-auto">
+          <Numpad
+            value={targetRef.current?.value ?? ''}
+            onChange={(next) => {
+              const el = targetRef.current;
+              if (el) setInputValue(el, next);
+            }}
+          />
+          <button
+            type="button"
+            onClick={close}
+            className="mt-3 w-full h-touch-comfy rounded-md bg-gold text-black font-semibold"
+          >
+            Done
+          </button>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <VirtualKeypadContext.Provider value={{ openFor, close }}>
       {children}
-      {layout && (
-        <div
-          className="fixed inset-x-0 bottom-0 z-50 bg-bg-elevated border-t border-border-subtle p-4 shadow-modal"
-          role="dialog"
-          aria-label="Virtual keyboard"
-        >
-          {layout === 'qwerty' ? (
-            <QwertyLayout
-              onKey={writeKey}
-              onBackspace={backspace}
-              onSpace={() => writeKey(' ')}
-              onDone={close}
-            />
-          ) : (
-            <div className="max-w-xs mx-auto">
-              <Numpad
-                value={targetRef.current?.value ?? ''}
-                onChange={(next) => {
-                  const el = targetRef.current;
-                  if (el) setInputValue(el, next);
-                }}
-              />
-              <button
-                type="button"
-                onClick={close}
-                className="mt-3 w-full h-touch-comfy rounded-md bg-gold text-black font-semibold"
-              >
-                Done
-              </button>
-            </div>
-          )}
-        </div>
-      )}
+      {/* Position is `fixed` (viewport-relative) so the portal parent never
+          affects layout — only the DOM ancestry, which is what a11y needs. */}
+      {overlay && (portalEl ? createPortal(overlay, portalEl) : overlay)}
     </VirtualKeypadContext.Provider>
   );
 }
