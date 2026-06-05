@@ -2,12 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Cart, CartItem, OrderType, SelectedModifiers } from '@breakery/domain';
 import { supabase } from '@/lib/supabase';
 import { useCartStore } from '@/stores/cartStore';
-import type { CustomerWithCategory } from '@/features/customers/hooks/useCustomerSearch';
-
-// Same projection as useCustomerSearch — keeps the restored attachedCustomer
-// shape identical to one attached via the search modal (badge tier + points).
-const CUSTOMER_SELECT =
-  'id, name, phone, email, customer_type, loyalty_points, lifetime_points, total_spent, total_visits, last_visit_at, category_id, category:customer_categories(id, name, slug, color, icon, price_modifier_type, discount_percentage, loyalty_enabled, points_multiplier, is_default)';
+import { CUSTOMER_SELECT, type CustomerWithCategory } from '@/features/customers/hooks/useCustomerSearch';
 
 /**
  * Shape returned by `restore_held_order_v1`. The RPC deletes the held draft
