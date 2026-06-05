@@ -28,7 +28,7 @@
 // expose `promoLabel` for richer text.
 
 import { Star } from 'lucide-react';
-import type { JSX, ReactNode } from 'react';
+import { useState, type JSX, type ReactNode } from 'react';
 import { Currency, BrandMark, AllergenBadge, cn, type AllergenType } from '@breakery/ui';
 import type { Product } from '@breakery/domain';
 
@@ -61,6 +61,10 @@ export function ProductCard({
   topLeftSlot,
 }: ProductCardProps): JSX.Element {
   const allergenList = allergens ?? [];
+  // P1 #6 — fall back to the BrandMark placeholder when image_url is absent OR
+  // fails to load (broken/404 URL), instead of showing a broken-image icon.
+  const [imgError, setImgError] = useState(false);
+  const showImage = !!product.image_url && !imgError;
   return (
     <button
       type="button"
@@ -78,11 +82,12 @@ export function ProductCard({
       )}
     >
       <div className="relative aspect-square bg-bg-input overflow-hidden">
-        {product.image_url ? (
+        {showImage ? (
           <img
-            src={product.image_url}
+            src={product.image_url ?? undefined}
             alt=""
             loading="lazy"
+            onError={() => setImgError(true)}
             className={cn(
               'object-cover w-full h-full',
               disabled && 'grayscale',
