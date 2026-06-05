@@ -52,7 +52,7 @@ export function CurrentOrderCard({ order }: CurrentOrderCardProps) {
           <p className="text-text-primary text-xl">
             {order.order_type === 'dine_in' && order.table_number
               ? `Table ${order.table_number}`
-              : order.order_type === 'take_away'
+              : order.order_type === 'take_out'
                 ? 'Pickup'
                 : order.order_type}
           </p>

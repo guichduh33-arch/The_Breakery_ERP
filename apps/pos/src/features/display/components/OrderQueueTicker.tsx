@@ -30,7 +30,9 @@ function statusPillClasses(status: string): string {
 
 function orderTypeLabel(orderType: string, tableNumber: string | null): string {
   if (orderType === 'dine_in') return tableNumber ? `Table ${tableNumber}` : 'Dine-in';
-  if (orderType === 'take_away') return 'Pickup';
+  // Customer-facing "Pickup" copy for the DB enum value take_out (the V2-era
+  // ghost value never reaches here — F-002 / DEV-S36-B-03).
+  if (orderType === 'take_out') return 'Pickup';
   if (orderType === 'delivery') return 'Delivery';
   return orderType;
 }
