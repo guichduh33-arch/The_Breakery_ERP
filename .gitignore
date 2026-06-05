@@ -46,6 +46,7 @@ coverage/
 .claude/*
 !.claude/skills/
 !.claude/agents/
+!.claude/settings.json
 .claude/agents/*/
 ruvector.db
 *.ruvector.db
