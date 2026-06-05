@@ -2,6 +2,12 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Cart, CartItem, OrderType, SelectedModifiers } from '@breakery/domain';
 import { supabase } from '@/lib/supabase';
 import { useCartStore } from '@/stores/cartStore';
+import type { CustomerWithCategory } from '@/features/customers/hooks/useCustomerSearch';
+
+// Same projection as useCustomerSearch — keeps the restored attachedCustomer
+// shape identical to one attached via the search modal (badge tier + points).
+const CUSTOMER_SELECT =
+  'id, name, phone, email, customer_type, loyalty_points, lifetime_points, total_spent, total_visits, last_visit_at, category_id, category:customer_categories(id, name, slug, color, icon, price_modifier_type, discount_percentage, loyalty_enabled, points_multiplier, is_default)';
 
 /**
  * Shape returned by `restore_held_order_v1`. The RPC deletes the held draft
@@ -59,6 +65,31 @@ export function useRestoreHeldOrder() {
       }
 
       useCartStore.getState().restoreCart(cart);
+
+      // DEV-S35-C-05 — restore_held_order_v1 returns only customerId, and
+      // restoreCart resets attachedCustomer to null. Re-fetch the full customer
+      // so the badge (name, tier, points) reappears. Best-effort: pricing/JE run
+      // off cart.customerId (already set), so a lookup failure just leaves the
+      // badge absent rather than blocking the restore.
+      if (payload.customerId !== null) {
+        try {
+          const { data: customer } = await supabase
+            .from('customers')
+            .select(CUSTOMER_SELECT)
+            .eq('id', payload.customerId)
+            .is('deleted_at', null)
+            .maybeSingle();
+          if (customer) {
+            useCartStore.getState().attachCustomer({
+              ...customer,
+              category: (customer as { category?: unknown }).category ?? null,
+            } as unknown as CustomerWithCategory);
+          }
+        } catch {
+          // Best-effort badge restore — cart.customerId is already set.
+        }
+      }
+
       return payload.order_id;
     },
     onSuccess: () => {
