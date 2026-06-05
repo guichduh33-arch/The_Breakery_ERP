@@ -1,5 +1,7 @@
 // apps/backoffice/src/routes/index.tsx
+import { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import type { PermissionCode } from '@breakery/supabase';
 import LoginPage from '@/pages/Login.js';
 import DashboardPage from '@/pages/Dashboard.js';
@@ -103,6 +105,13 @@ function PermissionGate({
   children: React.ReactNode;
 }) {
   const has = useAuthStore((s) => s.hasPermission(required));
+  // P1 #4 — surface an explicit "access denied" toast instead of bouncing the
+  // user back to the dashboard with no explanation. By the time a PermissionGate
+  // renders, boot rehydration is done (see <BootGate>), so a `false` here is a
+  // genuine permission denial, not a not-yet-loaded state.
+  useEffect(() => {
+    if (!has) toast.error("Accès refusé : vous n'avez pas la permission requise pour cette page.");
+  }, [has]);
   return has ? <>{children}</> : <Navigate to="/backoffice" replace />;
 }
 
