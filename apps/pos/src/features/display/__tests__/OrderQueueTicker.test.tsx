@@ -45,7 +45,7 @@ describe('OrderQueueTicker', () => {
 
   it('shows a "Ready" pill for completed orders and order_type label', () => {
     const orders = [
-      fakeOrder(1, { status: 'completed', order_type: 'take_away', table_number: null }),
+      fakeOrder(1, { status: 'completed', order_type: 'take_out', table_number: null }),
       fakeOrder(2, { status: 'paid', order_type: 'dine_in', table_number: '12' }),
     ];
     render(<OrderQueueTicker orders={orders} />);

@@ -11,6 +11,7 @@ import { useMemo, useState, type JSX } from 'react';
 import { X, Receipt, CreditCard, Coins, QrCode } from 'lucide-react';
 import { Button, Currency, FullScreenModal, SectionLabel, cn } from '@breakery/ui';
 import { RefundReceiptModal } from '@breakery/ui';
+import { orderTypeLabel } from '@breakery/domain';
 import { useOrderHistory, type OrderHistoryRow } from './hooks/useOrderHistory';
 import { useOrderDetail } from './hooks/useOrderDetail';
 import { useVoidOrder, type VoidResponse } from './hooks/useVoidOrder';
@@ -186,7 +187,7 @@ export function OrderHistoryPanel({ open, onClose }: OrderHistoryPanelProps): JS
                             )}
                             {row.order_type && (
                               <span className="px-1.5 h-5 inline-flex items-center rounded-md bg-bg-overlay text-text-secondary text-[10px] uppercase tracking-widest">
-                                {row.order_type === 'takeaway' ? 'Takeaway' : row.order_type === 'dine_in' ? 'Dine-in' : row.order_type}
+                                {orderTypeLabel(row.order_type)}
                               </span>
                             )}
                           </div>
