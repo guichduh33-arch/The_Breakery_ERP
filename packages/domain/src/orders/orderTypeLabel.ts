@@ -10,6 +10,12 @@
 // DEV-S36-B-01. Orders, however, CAN be b2b, so the labels are keyed on an
 // explicit 4-member union that mirrors the DB enum, without loosening the
 // narrower Cart type.
+//
+// SCOPE: these are the STAFF-facing labels (used by OrderHistoryPanel). The
+// CUSTOMER-facing display surfaces (OrderQueueTicker, CurrentOrderCard) keep
+// their own bespoke copy — "Pickup" instead of "Takeaway", plus table-aware
+// "Table N" — and intentionally do NOT consume this helper (DEV-S36-B-03).
+// That divergence is by design (customer vs staff vocabulary), not drift.
 
 /** Every value of the DB `order_type` enum. */
 export type OrderTypeLabelKey = 'dine_in' | 'take_out' | 'delivery' | 'b2b';
