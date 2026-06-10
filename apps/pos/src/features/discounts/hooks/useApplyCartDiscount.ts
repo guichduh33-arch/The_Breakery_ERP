@@ -1,11 +1,9 @@
 // apps/pos/src/features/discounts/hooks/useApplyCartDiscount.ts
 import { useState } from 'react';
-import { calculateTotals, pointsToValue } from '@breakery/domain';
+import { calculateTotals, pointsToValue, DEFAULT_TAX_RATE } from '@breakery/domain';
 import type { Discount } from '@breakery/domain';
 import { useCartStore } from '@/stores/cartStore';
 import { useVerifyManagerPin } from './useVerifyManagerPin';
-
-const TAX_RATE = 0.10;
 
 export interface ApplyCartDiscountState {
   discountModalOpen: boolean;
@@ -29,7 +27,7 @@ export function useApplyCartDiscount(): ApplyCartDiscountState {
   const [pinModalOpen, setPinModalOpen] = useState(false);
   const [pinResolver, setPinResolver] = useState<((id: string | null) => void) | null>(null);
 
-  const totals = calculateTotals(cart, TAX_RATE);
+  const totals = calculateTotals(cart, DEFAULT_TAX_RATE);
   const redemption = pointsToValue(cart.loyaltyPointsToRedeem ?? 0);
   const base = totals.subtotal - redemption;
 

@@ -18,7 +18,7 @@ import { useState, type JSX } from 'react';
 import { MapPin, ShoppingBag, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { DiscountModal, PinVerificationModal, SectionLabel, cn } from '@breakery/ui';
-import { calculateTotals } from '@breakery/domain';
+import { calculateTotals, DEFAULT_TAX_RATE } from '@breakery/domain';
 import type { CartItem, OrderType } from '@breakery/domain';
 import { useCartStore } from '@/stores/cartStore';
 import { useApplyLineDiscount, lineDiscountBase } from '@/features/discounts/hooks/useApplyLineDiscount';
@@ -31,8 +31,6 @@ import { CartLineRow } from './CartLineRow';
 import { CustomerBadge } from './CustomerBadge';
 import { CancelItemModal } from './CancelItemModal';
 import { useCancelOrderItem } from './hooks/useCancelOrderItem';
-
-const TAX_RATE = 0.1;
 
 const CurrencyFmt = new Intl.NumberFormat('en-US');
 function rp(amount: number): string {
@@ -81,10 +79,10 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
   const lineDiscount = useApplyLineDiscount();
 
   // ── totals (promo applied after base, never negative) ────────────────────
-  const baseTotals = calculateTotals(cart, TAX_RATE);
+  const baseTotals = calculateTotals(cart, DEFAULT_TAX_RATE);
   const promotionTotal = appliedPromotions.reduce((s, ap) => s + ap.amount, 0);
   const total = Math.max(0, baseTotals.total - promotionTotal);
-  const tax_amount = Math.round((total * TAX_RATE) / (1 + TAX_RATE));
+  const tax_amount = Math.round((total * DEFAULT_TAX_RATE) / (1 + DEFAULT_TAX_RATE));
 
   const isEmpty = cart.items.length === 0;
   const pickedUp = Boolean(pickedUpOrderId);

@@ -2,7 +2,7 @@
 // Session 34 — W2.6 — print a "bill" (addition) to the cashier or waiter printer.
 // The bill shows the whole order with totals, pre-payment, re-printable at will.
 import { useMutation } from '@tanstack/react-query';
-import { calculateTotals } from '@breakery/domain';
+import { calculateTotals, DEFAULT_TAX_RATE } from '@breakery/domain';
 import type { PrinterRole } from '@breakery/domain';
 import { printStationTicket } from '@/services/print/printService';
 import type { StationTicketPayload } from '@/services/print/printService';
@@ -10,8 +10,6 @@ import { useCartStore } from '@/stores/cartStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useStationPrinters } from './useStationPrinters';
 
-// Matches the constant used in ActiveOrderPanel, PaymentTerminal, SuccessModal.
-const TAX_RATE = 0.10;
 
 export interface PrintBillInput {
   /** Which counter to target: cashier (walk-in/take-out) or waiter (dine-in/tablet). */
@@ -44,7 +42,7 @@ export function usePrintBill() {
         }));
 
       // 4. Compute totals (includes tax extraction, discounts, loyalty).
-      const t = calculateTotals(cart, TAX_RATE);
+      const t = calculateTotals(cart, DEFAULT_TAX_RATE);
 
       // 5. Build a human-readable order label.
       //    A real order_number isn't available pre-payment; use table / walk-in

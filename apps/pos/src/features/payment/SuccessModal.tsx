@@ -2,14 +2,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { Check, Printer, RotateCw } from 'lucide-react';
 import { Button, Currency, FullScreenModal } from '@breakery/ui';
-import { calculateTotals } from '@breakery/domain';
+import { calculateTotals, DEFAULT_TAX_RATE } from '@breakery/domain';
 import type { Cart, PaymentMethod } from '@breakery/domain';
 import { printReceipt, openCashDrawer, type ReceiptPayload } from '@/services/print/printService';
 import { useStationPrinters } from '@/features/cart/hooks/useStationPrinters';
 import { usePosSettingsStore } from '@/stores/posSettingsStore';
 import { toast } from 'sonner';
 
-const TAX_RATE = 0.10;
 const BUSINESS = {
   name: 'The Breakery',
   address: 'Jl. Contoh No. 1, Jakarta',
@@ -31,7 +30,7 @@ export interface SuccessModalProps {
 }
 
 function buildReceiptPayload(props: SuccessModalProps): ReceiptPayload {
-  const totals = calculateTotals(props.cart, TAX_RATE);
+  const totals = calculateTotals(props.cart, DEFAULT_TAX_RATE);
   return {
     business: BUSINESS,
     order: {

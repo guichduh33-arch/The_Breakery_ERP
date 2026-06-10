@@ -36,7 +36,7 @@ import {
   RedeemPointsModal,
   cn,
 } from '@breakery/ui';
-import { calculateTotals } from '@breakery/domain';
+import { calculateTotals, DEFAULT_TAX_RATE } from '@breakery/domain';
 import { useCartStore } from '@/stores/cartStore';
 import { usePaymentStore } from '@/stores/paymentStore';
 import { useHeldOrdersQuery } from '@/features/heldOrders/hooks/useHeldOrdersQuery';
@@ -47,8 +47,6 @@ import { TableSelectorButton } from '@/features/tables/components/TableSelectorB
 import { SendToKitchenButton } from './SendToKitchenButton';
 import { PrintBillButton } from './PrintBillButton';
 import { HeldOrdersModal } from './HeldOrdersModal';
-
-const TAX_RATE = 0.1;
 
 /** Shared "ghost" management-button styling (left group). */
 const GHOST_BTN =
@@ -102,7 +100,7 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
     };
   }, [moreOpen]);
 
-  const baseTotals = calculateTotals(cart, TAX_RATE);
+  const baseTotals = calculateTotals(cart, DEFAULT_TAX_RATE);
   const promotionTotal = appliedPromotions.reduce((s, ap) => s + ap.amount, 0);
   const total = Math.max(0, baseTotals.total - promotionTotal);
 

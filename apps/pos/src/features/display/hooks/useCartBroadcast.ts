@@ -1,8 +1,6 @@
 import { useEffect } from 'react';
 import { useCartStore } from '@/stores/cartStore';
-import { calculateTotals } from '@breakery/domain';
-
-const TAX_RATE = 0.10;
+import { calculateTotals, DEFAULT_TAX_RATE } from '@breakery/domain';
 export const CART_CHANNEL = 'breakery-cart';
 
 export interface CartBroadcastMessage {
@@ -18,7 +16,7 @@ export function useCartBroadcast(): void {
     const bc = new BroadcastChannel(CART_CHANNEL);
     const publish = (): void => {
       const { cart, attachedCustomer } = useCartStore.getState();
-      const totals = calculateTotals(cart, TAX_RATE);
+      const totals = calculateTotals(cart, DEFAULT_TAX_RATE);
       const msg: CartBroadcastMessage = {
         type: 'cart_update',
         cart: { items: cart.items, order_type: cart.order_type },
