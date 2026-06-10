@@ -43,6 +43,7 @@ import { useHeldOrdersQuery } from '@/features/heldOrders/hooks/useHeldOrdersQue
 import { HoldOrderButton } from '@/features/heldOrders/components/HoldOrderButton';
 import { useApplyCartDiscount } from '@/features/discounts/hooks/useApplyCartDiscount';
 import { useVerifyManagerPin } from '@/features/discounts/hooks/useVerifyManagerPin';
+import { useVoidServerOrder } from './hooks/useVoidServerOrder';
 import { TableSelectorButton } from '@/features/tables/components/TableSelectorButton';
 import { SendToKitchenButton } from './SendToKitchenButton';
 import { PrintBillButton } from './PrintBillButton';
@@ -75,7 +76,19 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
 
   const heldCount = useHeldOrdersQuery().data?.length ?? 0;
   const discount = useApplyCartDiscount();
-  const voidVerifyFn = useVerifyManagerPin();
+  const rawVoidVerifyFn = useVerifyManagerPin();
+  const voidServerOrder = useVoidServerOrder();
+
+  // Capture the PIN entered during the void flow so we can forward it to the
+  // void-order EF (which requires x-manager-pin). The PIN is available in the
+  // verifyFn call but onVerified only carries userId.
+  const voidPinRef = useRef<string>('');
+
+  // Wrap the raw verifyFn to intercept the PIN before it's consumed.
+  const voidVerifyFn = async (pin: string) => {
+    voidPinRef.current = pin;
+    return rawVoidVerifyFn(pin);
+  };
 
   const [heldOpen, setHeldOpen] = useState(false);
   const [redeemOpen, setRedeemOpen] = useState(false);
@@ -277,14 +290,26 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
         verifyFn={discount.verifyFn}
       />
 
-      {/* Void Order — manager PIN once items were sent to the kitchen. */}
+      {/* Void Order — manager PIN once items were sent to the kitchen.
+          Session 37 B4: if this is a tablet pickup order (pickedUpOrderId set),
+          the server row is voided via the void-order EF before local reset. */}
       <PinVerificationModal
         open={voidPinOpen}
-        onClose={() => setVoidPinOpen(false)}
+        onClose={() => { setVoidPinOpen(false); voidPinRef.current = ''; }}
         onVerified={() => {
-          voidOrder();
+          const pin = voidPinRef.current;
+          voidPinRef.current = '';
           setVoidPinOpen(false);
-          toast.success('Order voided (manager approved)');
+          // Fire-and-forget with toast feedback; voidServerOrder handles routing:
+          // tablet pickup → EF void-order (server first); counter → client only.
+          void voidServerOrder(pin)
+            .then(() => {
+              toast.success('Order voided (manager approved)');
+            })
+            .catch((err: unknown) => {
+              const msg = err instanceof Error ? err.message : 'void_failed';
+              toast.error(`Void failed: ${msg}`);
+            });
         }}
         verifyFn={voidVerifyFn}
       />
