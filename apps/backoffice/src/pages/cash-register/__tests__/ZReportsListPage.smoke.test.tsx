@@ -117,10 +117,11 @@ describe('ZReportsListPage', () => {
     fromSpy.mockReturnValue(makeChain([ROW_Z1, ROW_Z2]));
 
     // Make z1 PDF generation hang (never resolves) to observe the pending state
-    let resolveZ1: (() => void) | null = null;
+    // We use a holder object to avoid TypeScript narrowing resolveZ1 to never.
+    const holder: { resolve: (() => void) | null } = { resolve: null };
     mutateAsyncImpl = vi.fn().mockImplementation(({ zreportId }: { zreportId: string }) => {
       if (zreportId === 'z1') {
-        return new Promise<unknown>((resolve) => { resolveZ1 = () => resolve({ signed_url: null, storage_path: '', expires_at: '', status: 'draft', idempotent_replay: false }); });
+        return new Promise<unknown>((resolve) => { holder.resolve = () => resolve({ signed_url: null, storage_path: '', expires_at: '', status: 'draft', idempotent_replay: false }); });
       }
       return Promise.resolve({ signed_url: null, storage_path: '', expires_at: '', status: 'draft', idempotent_replay: false });
     });
@@ -142,7 +143,7 @@ describe('ZReportsListPage', () => {
     expect(pdfZ2).not.toBeDisabled();
 
     // Resolve z1 to clean up the hanging promise
-    resolveZ1?.();
+    holder.resolve?.();
     await waitFor(() => expect(pdfZ1).not.toBeDisabled());
   });
 });
