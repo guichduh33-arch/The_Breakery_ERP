@@ -71,7 +71,7 @@ export function useEditOrderItems(opts?: { onProgress?: (p: ApplyProgress) => vo
     onSuccess: (_, { orderId }) => {
       keyMap.current.clear();
       void qc.invalidateQueries({ queryKey: ['orders', 'list'] });
-      void qc.invalidateQueries({ queryKey: ['orders', 'detail', orderId] });
+      void qc.invalidateQueries({ queryKey: ['order-detail', orderId] });
     },
   });
 }
