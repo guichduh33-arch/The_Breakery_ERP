@@ -45,7 +45,7 @@ function jwtClient(token: string) {
 
 interface JeRow { id: string; total_debit: number; total_credit: number }
 
-describe('expenses — RPC cycle (Phase 3.B)', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('expenses — RPC cycle (Phase 3.B)', () => {
   let managerToken: string;
   let adminToken:   string;
   let cashierToken: string;

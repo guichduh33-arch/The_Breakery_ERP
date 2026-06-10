@@ -48,7 +48,7 @@ function rpc(sb: SupabaseClient) {
   return sb.rpc as unknown as (fn: string, args?: Record<string, unknown>) => Promise<{ data: any; error: { message: string } | null }>;
 }
 
-describe('print_queue RPCs (live)', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('print_queue RPCs (live)', () => {
   let managerToken: string;
   let cleanupIds: string[] = [];
 

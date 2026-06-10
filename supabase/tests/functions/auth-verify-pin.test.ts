@@ -7,7 +7,7 @@ const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 
 const FN_URL = `${SUPABASE_URL}/functions/v1/auth-verify-pin`;
 
-describe('auth-verify-pin', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('auth-verify-pin', () => {
   let adminUserId: string;
 
   beforeAll(async () => {

@@ -30,7 +30,7 @@ function jwtClient(token: string) {
   });
 }
 
-describe('adjust_loyalty_points RPC', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('adjust_loyalty_points RPC', () => {
   let adminToken:   string;
   let managerToken: string;
   let customerId:   string;
@@ -204,7 +204,7 @@ describe('adjust_loyalty_points RPC', () => {
   });
 });
 
-describe('get_loyalty_tier helper — boundary table', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('get_loyalty_tier helper — boundary table', () => {
   // Mirrors packages/domain/src/loyalty/tiers.ts. A drift here means the
   // SQL helper and the TS helper disagree on a tier boundary, which would
   // cause server projections and client rendering to diverge.

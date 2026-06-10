@@ -6,7 +6,7 @@ const ANON = process.env.VITE_SUPABASE_ANON_KEY ?? '';
 const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 const FN_URL = `${SUPABASE_URL}/functions/v1/process-payment`;
 
-describe('process-payment', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('process-payment', () => {
   let accessToken: string;
   let sessionId: string;
   let productIds: string[] = [];

@@ -57,7 +57,7 @@ async function openShift(token: string, openingCash: number): Promise<string> {
   return data!.id;
 }
 
-describe('cash register — close_shift_v1 integration', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('cash register — close_shift_v1 integration', () => {
   let managerToken: string;
 
   beforeAll(async () => {

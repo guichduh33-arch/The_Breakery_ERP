@@ -2,14 +2,19 @@
 // Session 19 / Phase 1.A — Live RPC smoke for record_rate_limit_v1.
 // Unskipped in Phase 2.A now that checkRateLimitDurable is wired.
 
-import { describe, it, expect } from 'vitest';
-import { createClient } from '@supabase/supabase-js';
+import { describe, it, expect, beforeAll } from 'vitest';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL!;
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabaseUrl = process.env.VITE_SUPABASE_URL ?? process.env.SUPABASE_URL ?? 'http://127.0.0.1:54321';
+const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 
-describe('record_rate_limit_v1 (live)', () => {
-  const supabase = createClient(supabaseUrl, serviceKey);
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('record_rate_limit_v1 (live)', () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let supabase: SupabaseClient;
+
+  beforeAll(() => {
+    supabase = createClient(supabaseUrl, serviceKey);
+  });
 
   it('enforces max_per_window across two clients', async () => {
     const args = { p_function_name: 'vitest-fn', p_bucket_key: 'vitest-' + Date.now(), p_ip_address: '127.0.0.1', p_max_per_window: 3, p_window_sec: 60 };

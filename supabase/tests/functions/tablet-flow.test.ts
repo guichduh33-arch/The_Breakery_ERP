@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? 'http://127.0.0.1:54321';
 const SERVICE      = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 
-describe('tablet flow — create / pickup / pay / cancel', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('tablet flow — create / pickup / pay / cancel', () => {
   let admin: ReturnType<typeof createClient>;
   let waiterClient: ReturnType<typeof createClient>;
   let cashierClient: ReturnType<typeof createClient>;

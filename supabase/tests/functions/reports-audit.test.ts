@@ -54,7 +54,7 @@ interface AuditRow {
   created_at:  string;
 }
 
-describe('reports — audit cursor pagination (live)', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('reports — audit cursor pagination (live)', () => {
   let adminToken: string;
   let adminProfileId: string;
 

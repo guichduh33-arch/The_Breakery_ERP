@@ -43,7 +43,7 @@ function jwtClient(token: string) {
   });
 }
 
-describe('waste_stock_v1 RPC — integration', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('waste_stock_v1 RPC — integration', () => {
   let managerToken: string;
   let productId:    string;
 

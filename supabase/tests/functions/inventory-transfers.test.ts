@@ -81,7 +81,7 @@ type CancelResult = {
   cancel_reason: string;
 };
 
-describe('internal-transfer RPCs — integration', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('internal-transfer RPCs — integration', () => {
   let adminToken:   string;
   let cashierToken: string;
 

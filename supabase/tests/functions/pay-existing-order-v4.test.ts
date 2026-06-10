@@ -10,7 +10,7 @@ const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? 'http://127.0.0.1:54321';
 const SERVICE      = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 const PIN_FN_URL   = `${SUPABASE_URL}/functions/v1/auth-verify-pin`;
 
-describe('pay_existing_order v4 — promotions at pickup', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('pay_existing_order v4 — promotions at pickup', () => {
   let admin: ReturnType<typeof createClient>;
   let cashierClient: ReturnType<typeof createClient>;
   let waiterClient: ReturnType<typeof createClient>;

@@ -77,7 +77,7 @@ async function ensureProduct(
   return data as ProdRow;
 }
 
-describe('record_production_v1 + revert_production_v1 — integration', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('record_production_v1 + revert_production_v1 — integration', () => {
   let managerToken: string;
   let cashierToken: string;
   let adminToken:   string;

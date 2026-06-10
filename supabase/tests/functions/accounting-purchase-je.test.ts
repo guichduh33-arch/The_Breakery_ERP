@@ -12,7 +12,7 @@ import { createClient } from '@supabase/supabase-js';
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? 'http://127.0.0.1:54321';
 const SERVICE      = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 
-describe('accounting — purchase JE function (Phase 1.A 10-006, placeholder)', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('accounting — purchase JE function (Phase 1.A 10-006, placeholder)', () => {
   it('create_purchase_journal_entry function exists post-migration', async () => {
     const admin = createClient(SUPABASE_URL, SERVICE);
     const { data, error } = await admin.rpc('pg_get_functiondef' as never, {

@@ -67,7 +67,7 @@ function assertRetryAfter(res: Response | undefined, label: string): void {
   expect(n, `${label} — Retry-After is in [1, 60]`).toBeLessThanOrEqual(60);
 }
 
-describe('S22 / 1.B.2 — Retry-After header on 5 rate-limited EFs', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('S22 / 1.B.2 — Retry-After header on 5 rate-limited EFs', () => {
   it('auth-verify-pin sets Retry-After on 429', async () => {
     const res = await burstUntil429(
       'auth-verify-pin',

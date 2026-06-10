@@ -50,7 +50,7 @@ function jwtClient(token: string) {
   });
 }
 
-describe('F1 expiry tracking — stock_lots integration', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('F1 expiry tracking — stock_lots integration', () => {
   let managerToken: string;
   let productId:    string;
 

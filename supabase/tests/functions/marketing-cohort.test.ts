@@ -39,7 +39,7 @@ function jwtClient(token: string) {
   });
 }
 
-describe('marketing — cohort + segments RPCs (live)', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('marketing — cohort + segments RPCs (live)', () => {
   let adminToken: string;
 
   beforeAll(async () => {

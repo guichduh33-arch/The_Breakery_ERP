@@ -45,7 +45,7 @@ function jwtClient(token: string) {
   });
 }
 
-describe('inventory RLS + GRANT matrix', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory RLS + GRANT matrix', () => {
   let adminToken:   string;
   let managerToken: string;
   let cashierToken: string;

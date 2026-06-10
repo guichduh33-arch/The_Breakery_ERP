@@ -52,7 +52,7 @@ function rpc(sb: SupabaseClient) {
   return sb.rpc as unknown as (fn: string, args?: Record<string, unknown>) => Promise<{ data: any; error: { message: string } | null }>;
 }
 
-describe('inventory opname — full cycle', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory opname — full cycle', () => {
   let adminToken: string;
   let managerToken: string;
   let sectionId: string;

@@ -25,7 +25,7 @@ const ANON         = process.env.SUPABASE_ANON_KEY
   ?? 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH';
 const PIN_FN_URL   = `${SUPABASE_URL}/functions/v1/auth-verify-pin`;
 
-describe('promotions RLS — role matrix', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('promotions RLS — role matrix', () => {
   let admin: ReturnType<typeof createClient>;
   let cashierClient: ReturnType<typeof createClient>;
   let managerClient: ReturnType<typeof createClient>;

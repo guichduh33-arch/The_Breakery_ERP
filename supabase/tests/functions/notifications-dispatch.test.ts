@@ -55,7 +55,7 @@ interface OutboxRow {
   error_message: string | null;
 }
 
-describe('notifications — pipeline (Phase 5.B)', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('notifications — pipeline (Phase 5.B)', () => {
   let managerToken: string;
   let cashierToken: string;
   let createdIds: string[] = [];

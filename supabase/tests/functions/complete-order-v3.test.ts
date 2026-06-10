@@ -5,7 +5,7 @@ const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? 'http://127.0.0.1:54321';
 const SERVICE      = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 const FN_URL       = `${SUPABASE_URL}/functions/v1/process-payment`;
 
-describe('complete_order_with_payment v3 — loyalty', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('complete_order_with_payment v3 — loyalty', () => {
   let accessToken: string;
   let sessionId:   string;
   let productId:   string;
