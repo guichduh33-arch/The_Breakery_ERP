@@ -6,9 +6,16 @@
 // Session 10: support multi-tender via `payments` field (array). Forwarded as
 // p_payments to RPC v8. Legacy `payment` (single object) still accepted and
 // forwarded as p_payment (RPC v8 wraps it into a single-element array → iso v7).
+//
+// Session 37 (DB-02): durable Postgres-backed rate-limit added (checkRateLimitDurable).
+// Limit: 60 req/min per IP — 1 payment/second sustained, covers peak cashier throughput
+// on a single terminal while blocking automated abuse or runaway retry loops.
+// Fail-open on DB error (trade-off S19 DEV-S19-1.A-02).
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.47.10';
 import { handleCors, jsonResponse } from '../_shared/cors.ts';
+import { rateLimitedResponse } from '../_shared/responses.ts';
+import { checkRateLimitDurable, getClientIp } from '../_shared/rate-limit.ts';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const VALID_METHODS = new Set(['cash', 'card', 'qris', 'edc', 'transfer', 'store_credit']);
@@ -70,6 +77,19 @@ serve(async (req) => {
   if (req.method !== 'POST') {
     return jsonResponse({ error: 'method_not_allowed' }, 405);
   }
+
+  // S37 DB-02 — rate-limit MUST run before any header/body validation.
+  // 60/min per IP: 1 payment/second sustained, covers peak cashier throughput
+  // on a single terminal while blocking automated abuse. Fail-open on DB error.
+  const ip = getClientIp(req);
+  const rl = await checkRateLimitDurable({
+    functionName: 'process-payment',
+    bucketKey:    `ip:${ip}`,
+    ipAddress:    ip,
+    maxPerWindow: 60,
+    windowSec:    60,
+  });
+  if (!rl.allowed) return rateLimitedResponse(rl.retryAfterSec);
 
   const authHeader = req.headers.get('authorization');
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
