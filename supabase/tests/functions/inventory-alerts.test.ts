@@ -46,7 +46,7 @@ function rpc(sb: SupabaseClient) {
   return sb.rpc as unknown as (fn: string, args?: Record<string, unknown>) => Promise<{ data: any; error: { message: string } | null }>;
 }
 
-describe('inventory alerts + product dashboard', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory alerts + product dashboard', () => {
   let managerToken: string;
   let lowStockProductId: string;
 

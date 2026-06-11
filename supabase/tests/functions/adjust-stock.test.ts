@@ -45,7 +45,7 @@ function jwtClient(token: string) {
   });
 }
 
-describe('adjust_stock_v1 RPC — integration', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('adjust_stock_v1 RPC — integration', () => {
   let adminToken:   string;
   let managerToken: string;
   let productId:    string;

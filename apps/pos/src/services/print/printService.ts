@@ -68,7 +68,8 @@ export interface ReceiptPayload {
     tax_amount: number;
   };
   payment: { method: PaymentMethod; amount: number; cash_received?: number; change_given?: number };
-  loyalty?: { points_earned: number; balance_after: number };
+  /** balance_after is optional — omitted when the RPC doesn't return it yet (deferred v11). */
+  loyalty?: { points_earned: number; balance_after?: number };
   footer?: string;
 }
 

@@ -33,6 +33,7 @@ export default function ZReportsListPage(): JSX.Element {
   const [endDate, setEnd]       = useState<string>('');
   const [signOpen, setSignOpen] = useState<string | null>(null);
   const [voidOpen, setVoidOpen] = useState<string | null>(null);
+  const [pendingPdfId, setPendingPdfId] = useState<string | null>(null);
 
   const filters: { status?: ZReportStatus; startDate?: string; endDate?: string } = {};
   if (status !== 'all')  filters.status    = status;
@@ -43,8 +44,13 @@ export default function ZReportsListPage(): JSX.Element {
   const pdfMutation = useGenerateZReportPdf();
 
   const handleViewPdf = async (row: ZReportListRow): Promise<void> => {
-    const result = await pdfMutation.mutateAsync({ zreportId: row.id });
-    if (result.signed_url) window.open(result.signed_url, '_blank', 'noopener,noreferrer');
+    setPendingPdfId(row.id);
+    try {
+      const result = await pdfMutation.mutateAsync({ zreportId: row.id });
+      if (result.signed_url) window.open(result.signed_url, '_blank', 'noopener,noreferrer');
+    } finally {
+      setPendingPdfId(null);
+    }
   };
 
   return (
@@ -120,10 +126,10 @@ export default function ZReportsListPage(): JSX.Element {
                           variant="ghost"
                           size="sm"
                           onClick={() => void handleViewPdf(r)}
-                          disabled={pdfMutation.isPending}
+                          disabled={pendingPdfId === r.id}
                           data-testid={`view-pdf-${r.id}`}
                         >
-                          {pdfMutation.isPending
+                          {pendingPdfId === r.id
                             ? <Loader2 className="h-4 w-4 mr-1 animate-spin" />
                             : <FileText className="h-4 w-4 mr-1" />}
                           PDF

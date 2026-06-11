@@ -12,7 +12,7 @@ const CHECK_VIOLATION = '23514';
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? 'http://127.0.0.1:54321';
 const SERVICE      = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 
-describe('promotions table — CHECK constraints', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('promotions table — CHECK constraints', () => {
   let admin: ReturnType<typeof createClient>;
   let beverageCategoryId: string;
   let croissantId: string;

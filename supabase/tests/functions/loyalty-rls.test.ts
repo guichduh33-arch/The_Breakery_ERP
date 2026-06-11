@@ -22,7 +22,7 @@ async function loginAs(employeeCode: string, pin: string): Promise<string> {
   return body.auth.access_token;
 }
 
-describe('customers RLS — column GRANTs', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('customers RLS — column GRANTs', () => {
   let token: string;
   let customerId: string;
 
@@ -123,7 +123,7 @@ describe('customers RLS — column GRANTs', () => {
   });
 });
 
-describe('soft_delete_customer RPC — failure paths', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('soft_delete_customer RPC — failure paths', () => {
   let adminToken:   string;
   let managerToken: string;
   let customerId:   string;
@@ -176,7 +176,7 @@ describe('soft_delete_customer RPC — failure paths', () => {
   });
 });
 
-describe('anon role — PII lockout', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('anon role — PII lockout', () => {
   it('anon CANNOT read customers PII columns', async () => {
     const sb = createClient(SUPABASE_URL, ANON); // no JWT — anon role
     const { data, error } = await sb.from('customers')

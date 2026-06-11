@@ -44,7 +44,7 @@ function jwtClient(token: string) {
   });
 }
 
-describe('stock_reservations RPCs — integration', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('stock_reservations RPCs — integration', () => {
   let cashierToken: string;
   let productId: string;
   const futureIso = () => new Date(Date.now() + 10 * 60_000).toISOString();

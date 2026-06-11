@@ -22,7 +22,7 @@ function decodeJwtPayload(jwt: string): Record<string, unknown> {
   return JSON.parse(atob(padded + '='.repeat(padLen))) as Record<string, unknown>;
 }
 
-describe('kiosk-issue-jwt', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('kiosk-issue-jwt', () => {
   it('returns 405 on GET', async () => {
     const res = await fetch(FN_URL, { method: 'GET' });
     expect(res.status).toBe(405);

@@ -22,6 +22,7 @@ import { EditOrderItemsModal } from '@/features/orders/components/EditOrderItems
 import type { OrderItemEdit } from '@/features/orders/types.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { supabase } from '@/lib/supabase.js';
+import { toast } from 'sonner';
 
 function defaultStart(): string {
   return new Date(Date.now() - 7 * 86_400_000).toISOString().slice(0, 10);
@@ -114,7 +115,11 @@ export default function OrdersListPage(): JSX.Element {
       .from('order_items')
       .select('id, product_id, name_snapshot, quantity, unit_price, line_total, modifiers')
       .eq('order_id', row.id);
-    if (error) { console.error('load order_items failed', error); return; }
+    if (error) {
+      console.error('load order_items failed', error);
+      toast.error(`Failed to load order items: ${(error as { message?: string }).message ?? 'unknown error'}`);
+      return;
+    }
     const items: OrderItemEdit[] = (data ?? []).map((it: {
       id: string;
       product_id: string;

@@ -4,7 +4,7 @@ import type { Cart, PaymentInput, PaymentResult } from '@breakery/domain';
 import { buildOrderPayload, TIERS, tierFromLifetime } from '@breakery/domain';
 import type { Database } from '@breakery/supabase';
 
-type PayExistingOrderArgs = Database['public']['Functions']['pay_existing_order_v6']['Args'];
+type PayExistingOrderArgs = Database['public']['Functions']['pay_existing_order_v7']['Args'];
 
 /** Wire-format row sent as `p_promotions` to RPC v7 / v4 (§3.6). */
 interface PromotionWirePayload {
@@ -16,6 +16,7 @@ interface PromotionWirePayload {
 import { supabase, supabaseUrl } from '@/lib/supabase';
 import { useShiftStore } from '@/stores/shiftStore';
 import { usePaymentStore } from '@/stores/paymentStore';
+import { clearManagerPin, getManagerPin } from '@/features/discounts/managerPinHolder';
 
 interface CheckoutInput {
   cart: Cart;
@@ -90,15 +91,27 @@ export function useCheckout() {
         if (promotionPayload.length > 0) {
           args.p_promotions = promotionPayload;
         }
-        const { error, data } = await supabase.rpc('pay_existing_order_v6', args as PayExistingOrderArgs);
+        // S37 — v7 returns a jsonb envelope: the POS finally shows the REAL
+        // pickup total instead of the hardcoded 0 (POS-01).
+        const { error, data } = await supabase.rpc('pay_existing_order_v7', args as PayExistingOrderArgs);
         if (error) throw Object.assign(new Error(error.message), { details: error });
+        const envelope = data as unknown as {
+          order_id: string;
+          order_number: string;
+          subtotal: number;
+          tax_amount: number;
+          total: number;
+          change_given: number | null;
+          idempotent_replay: boolean;
+        };
+        clearManagerPin();
         return {
           ok: true,
-          order_id: pickedUpOrderId,
-          order_number: (data as { order_number?: string })?.order_number ?? '',
-          total: 0,
-          tax_amount: 0,
-          change_given: null,
+          order_id: envelope.order_id ?? pickedUpOrderId,
+          order_number: envelope.order_number ?? '',
+          total: envelope.total ?? 0,
+          tax_amount: envelope.tax_amount ?? 0,
+          change_given: envelope.change_given ?? null,
         };
       }
 
@@ -121,11 +134,16 @@ export function useCheckout() {
         appliedPromotions,
       );
 
+      // S37 SEC-01 — when a discount was authorized, relay the manager PIN via
+      // header (S25 pattern, never in the JSON body); RPC v11 re-validates it.
+      const managerPin = getManagerPin();
+      const hasDiscount = Boolean(cartDiscount) || input.cart.items.some((i) => i.discount);
       const res = await fetch(`${supabaseUrl}/functions/v1/process-payment`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${accessToken}`,
+          ...(hasDiscount && managerPin ? { 'x-manager-pin': managerPin } : {}),
         },
         body: JSON.stringify(payload),
       });
@@ -134,6 +152,7 @@ export function useCheckout() {
         throw Object.assign(new Error(err.error ?? 'checkout_failed'), { details: err, status: res.status });
       }
       const body = await res.json() as CheckoutResponse;
+      clearManagerPin();
       return {
         ok: true,
         order_id: body.order_id,

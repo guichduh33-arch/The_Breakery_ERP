@@ -44,7 +44,7 @@ function jwtClient(token: string) {
   });
 }
 
-describe('accounting — refund JE refactor (Phase 1.A D16)', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('accounting — refund JE refactor (Phase 1.A D16)', () => {
   let managerToken: string;
   let managerProfileId: string;
 

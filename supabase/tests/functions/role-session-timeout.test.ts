@@ -28,7 +28,7 @@ const hasBaseEnv   = Boolean(supabaseUrl && serviceKey);
 
 const rpcName = 'update_role_session_timeout_v1' as never;
 
-describe('update_role_session_timeout_v1 (live)', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('update_role_session_timeout_v1 (live)', () => {
   if (!hasBaseEnv) {
     it.skip('skipped — VITE_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY not set', () => undefined);
     return;

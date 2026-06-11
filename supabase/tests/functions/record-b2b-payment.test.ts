@@ -58,7 +58,7 @@ function rpc(sb: SupabaseClient) {
   return sb.rpc as unknown as (fn: string, args?: Record<string, unknown>) => Promise<{ data: any; error: { message: string; code?: string } | null }>;
 }
 
-describe('B2B Foundation — record_b2b_payment_v1 + create_b2b_order_v1 + adjust', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('B2B Foundation — record_b2b_payment_v1 + create_b2b_order_v1 + adjust', () => {
   let managerToken: string;
   let customerId: string;
   let productId: string;

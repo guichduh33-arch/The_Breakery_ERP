@@ -64,7 +64,7 @@ interface EvaluatePromotionsV1Result {
   total_discount: number;
 }
 
-describe('evaluate_promotions_v1 RPC — live', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('evaluate_promotions_v1 RPC — live', () => {
   let token: string;
   let originalActiveSlugs: string[] = [];
   let productAId: string;

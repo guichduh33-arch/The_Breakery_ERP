@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Cart, CartItem, OrderType, SelectedModifiers } from '@breakery/domain';
 import { supabase } from '@/lib/supabase';
 import { useCartStore } from '@/stores/cartStore';
-import { CUSTOMER_SELECT, type CustomerWithCategory } from '@/features/customers/hooks/useCustomerSearch';
+import type { CustomerWithCategory } from '@/features/customers/hooks/useCustomerSearch';
 
 /**
  * Shape returned by `restore_held_order_v1`. The RPC deletes the held draft
@@ -66,14 +66,14 @@ export function useRestoreHeldOrder() {
       // so the badge (name, tier, points) reappears. Best-effort: pricing/JE run
       // off cart.customerId (already set), so a lookup failure just leaves the
       // badge absent rather than blocking the restore.
+      // S37 C5 (SEC-03) — via the definer RPC get_customer_v2 (category embed)
+      // so the badge re-fetch survives the customers.read SELECT gate.
       if (payload.customerId !== null) {
         try {
-          const { data: customer } = await supabase
-            .from('customers')
-            .select(CUSTOMER_SELECT)
-            .eq('id', payload.customerId)
-            .is('deleted_at', null)
-            .maybeSingle();
+          const { data: customers } = await supabase.rpc('get_customer_v2', {
+            p_id: payload.customerId,
+          });
+          const customer = (customers ?? [])[0];
           if (customer) {
             useCartStore.getState().attachCustomer({
               ...customer,

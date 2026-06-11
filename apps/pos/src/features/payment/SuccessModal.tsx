@@ -2,14 +2,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { Check, Printer, RotateCw } from 'lucide-react';
 import { Button, Currency, FullScreenModal } from '@breakery/ui';
-import { calculateTotals } from '@breakery/domain';
+import { calculateTotals, DEFAULT_TAX_RATE } from '@breakery/domain';
 import type { Cart, PaymentMethod } from '@breakery/domain';
 import { printReceipt, openCashDrawer, type ReceiptPayload } from '@/services/print/printService';
 import { useStationPrinters } from '@/features/cart/hooks/useStationPrinters';
 import { usePosSettingsStore } from '@/stores/posSettingsStore';
 import { toast } from 'sonner';
 
-const TAX_RATE = 0.10;
 const BUSINESS = {
   name: 'The Breakery',
   address: 'Jl. Contoh No. 1, Jakarta',
@@ -22,6 +21,13 @@ export interface SuccessModalProps {
   total: number;
   changeGiven: number | null;
   pointsEarned?: number;
+  /**
+   * Session 37 B3 — real loyalty balance after the sale, as returned by the
+   * RPC (loyalty_transactions.points_balance_after). When absent (the v10 RPC
+   * envelope does not expose it — deferred to v11), the `balance_after` field
+   * is OMITTED from the receipt rather than rendered as 0.
+   */
+  loyaltyBalanceAfter?: number;
   customerName?: string;
   cart: Cart;
   paymentMethod: PaymentMethod;
@@ -31,7 +37,7 @@ export interface SuccessModalProps {
 }
 
 function buildReceiptPayload(props: SuccessModalProps): ReceiptPayload {
-  const totals = calculateTotals(props.cart, TAX_RATE);
+  const totals = calculateTotals(props.cart, DEFAULT_TAX_RATE);
   return {
     business: BUSINESS,
     order: {
@@ -64,7 +70,15 @@ function buildReceiptPayload(props: SuccessModalProps): ReceiptPayload {
         : {}),
     },
     ...(props.pointsEarned && props.pointsEarned > 0 ? {
-      loyalty: { points_earned: props.pointsEarned, balance_after: 0 },
+      loyalty: {
+        points_earned: props.pointsEarned,
+        // Only include balance_after when the caller provides the real value.
+        // Omitting it (rather than rendering 0) avoids misleading the customer
+        // until the v11 RPC exposes loyalty_transactions.points_balance_after.
+        ...(props.loyaltyBalanceAfter !== undefined
+          ? { balance_after: props.loyaltyBalanceAfter }
+          : {}),
+      },
     } : {}),
     footer: 'Thank you!',
   };

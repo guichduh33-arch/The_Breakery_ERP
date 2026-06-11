@@ -46,7 +46,7 @@ function jwtClient(token: string) {
   });
 }
 
-describe('reports — sales RPCs (live)', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('reports — sales RPCs (live)', () => {
   let adminToken: string;
 
   beforeAll(async () => {

@@ -5664,7 +5664,7 @@ export type Database = {
             }
             Returns: string
           }
-      complete_order_with_payment_v10: {
+      complete_order_with_payment_v11: {
         Args: {
           p_customer_id?: string
           p_discount_amount?: number
@@ -5676,6 +5676,7 @@ export type Database = {
           p_items: Json
           p_loyalty_multiplier?: number
           p_loyalty_points_redeemed?: number
+          p_manager_pin?: string
           p_order_type: Database["public"]["Enums"]["order_type"]
           p_payment?: Json
           p_payments?: Json
@@ -5717,7 +5718,7 @@ export type Database = {
         Returns: Json
       }
       create_category_v1: { Args: { p_payload: Json }; Returns: Json }
-      create_customer_v1: {
+      create_customer_v2: {
         Args: {
           p_customer_type?: Database["public"]["Enums"]["customer_type"]
           p_email?: string
@@ -5725,6 +5726,7 @@ export type Database = {
           p_phone?: string
         }
         Returns: {
+          category: Json
           category_id: string
           created_at: string
           customer_type: Database["public"]["Enums"]["customer_type"]
@@ -6007,9 +6009,10 @@ export type Database = {
           total_spent: number
         }[]
       }
-      get_customer_v1: {
+      get_customer_v2: {
         Args: { p_id: string }
         Returns: {
+          category: Json
           category_id: string
           created_at: string
           customer_type: Database["public"]["Enums"]["customer_type"]
@@ -6107,15 +6110,18 @@ export type Database = {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
-      get_pos_b2b_debts_v1: {
-        Args: { p_customer_id?: string }
+      get_pos_b2b_debts_v2: {
+        Args: { p_customer_id?: string; p_lookback_days?: number }
         Returns: {
+          b2b_credit_limit: number
+          b2b_current_balance: number
           created_at: string
           customer_id: string
           customer_name: string
           customer_phone: string
           order_id: string
           order_number: string
+          order_type: string
           outstanding: number
           paid: number
           total: number
@@ -6553,7 +6559,7 @@ export type Database = {
       pass:
         | { Args: never; Returns: string }
         | { Args: { "": string }; Returns: string }
-      pay_existing_order_v6: {
+      pay_existing_order_v7: {
         Args: {
           p_customer_id?: string
           p_discount_amount?: number
@@ -6569,7 +6575,7 @@ export type Database = {
           p_payments?: Json
           p_promotions?: Json
         }
-        Returns: string
+        Returns: Json
       }
       pay_expense_v1: {
         Args: { p_expense_id: string; p_payment_method?: string }
@@ -6861,9 +6867,10 @@ export type Database = {
       runtests:
         | { Args: never; Returns: string[] }
         | { Args: { "": string }; Returns: string[] }
-      search_customers_v1: {
+      search_customers_v2: {
         Args: { p_limit?: number; p_query: string }
         Returns: {
+          category: Json
           category_id: string
           created_at: string
           customer_type: Database["public"]["Enums"]["customer_type"]
@@ -6969,7 +6976,10 @@ export type Database = {
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
-      sign_zreport_v1: { Args: { p_zreport_id: string }; Returns: Json }
+      sign_zreport_v2: {
+        Args: { p_manager_pin: string; p_zreport_id: string }
+        Returns: Json
+      }
       skip:
         | { Args: { "": string }; Returns: string }
         | { Args: { how_many: number; why: string }; Returns: string }

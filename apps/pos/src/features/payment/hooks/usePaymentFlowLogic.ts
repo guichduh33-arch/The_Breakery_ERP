@@ -13,6 +13,7 @@ import {
   validateTenders, sumTenders, computeRemaining,
   classifyCheckoutError, type RetryClassification,
   type Tender,
+  DEFAULT_TAX_RATE,
 } from '@breakery/domain';
 import { resetCartAfterCheckout, useCartStore } from '@/stores/cartStore';
 import { usePaymentStore } from '@/stores/paymentStore';
@@ -22,8 +23,6 @@ import { usePOSPresets } from '@/features/settings/hooks/usePOSPresets';
 import { useFireToStations } from '@/features/cart/hooks/useFireToStations';
 import { toast } from 'sonner';
 import type { PaymentMethod } from '@breakery/domain';
-
-const TAX_RATE = 0.10;
 
 export interface PaymentSuccessState {
   orderNumber: string;
@@ -55,10 +54,10 @@ export function usePaymentFlowLogic() {
   const { presets } = usePOSPresets();
   const quickAmounts = presets.quickPayments;
 
-  const baseTotals = calculateTotals(cart, TAX_RATE);
+  const baseTotals = calculateTotals(cart, DEFAULT_TAX_RATE);
   const promotionTotal = appliedPromotions.reduce((s, ap) => s + ap.amount, 0);
   const total = Math.max(0, baseTotals.total - promotionTotal);
-  const tax_amount = Math.round((total * TAX_RATE) / (1 + TAX_RATE));
+  const tax_amount = Math.round((total * DEFAULT_TAX_RATE) / (1 + DEFAULT_TAX_RATE));
   const totals = { ...baseTotals, total, tax_amount };
 
   const tenderedSum = sumTenders(tenders);

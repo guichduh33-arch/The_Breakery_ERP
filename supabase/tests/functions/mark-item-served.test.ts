@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? 'http://127.0.0.1:54321';
 const SERVICE      = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 
-describe('mark_item_served RPC', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('mark_item_served RPC', () => {
   let admin: ReturnType<typeof createClient>;
   let authedClient: ReturnType<typeof createClient>;
   let sessionId: string;

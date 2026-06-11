@@ -80,14 +80,14 @@ export default function PosPage() {
     navigate('/login', { replace: true });
   }
 
+  // S37 C5 (SEC-03) — search/create go through the SECURITY DEFINER customer
+  // RPCs v2 so they survive the customers.read SELECT gate (PII cutover).
   async function searchCustomers(query: string): Promise<CustomerWithCategory[]> {
     if (query.trim().length < 2) return [];
-    const { data } = await supabase
-      .from('customers')
-      .select('id, name, phone, email, customer_type, loyalty_points, lifetime_points, total_spent, total_visits, last_visit_at, category_id, category:customer_categories(id, name, slug, color, icon, price_modifier_type, discount_percentage, loyalty_enabled, points_multiplier, is_default)')
-      .or(`phone.ilike.%${query}%,name.ilike.%${query}%`)
-      .is('deleted_at', null)
-      .limit(10);
+    const { data } = await supabase.rpc('search_customers_v2', {
+      p_query: query,
+      p_limit: 10,
+    });
     return (data ?? []).map((row) => ({
       ...row,
       category: row.category ?? null,
@@ -95,26 +95,16 @@ export default function PosPage() {
   }
 
   async function createCustomer(input: { name: string; phone: string; email?: string }): Promise<Customer> {
-    const defaultCat = await supabase
-      .from('customer_categories')
-      .select('id')
-      .eq('is_default', true)
-      .is('deleted_at', null)
-      .limit(1)
-      .single();
-    const { data, error } = await supabase
-      .from('customers')
-      .insert({
-        name: input.name,
-        phone: input.phone,
-        email: input.email ?? null,
-        customer_type: 'retail',
-        ...(defaultCat.data?.id ? { category_id: defaultCat.data.id } : {}),
-      })
-      .select('id, name, phone, email, customer_type, loyalty_points, lifetime_points, total_spent, total_visits, last_visit_at')
-      .single();
+    // Default category is assigned server-side by create_customer_v2 (_019).
+    const { data, error } = await supabase.rpc('create_customer_v2', {
+      p_name: input.name,
+      p_phone: input.phone,
+      ...(input.email ? { p_email: input.email } : {}),
+    });
     if (error) throw error;
-    return data as Customer;
+    const row = (data ?? [])[0];
+    if (!row) throw new Error('create_customer_v2 returned no row');
+    return row as unknown as Customer;
   }
 
   function handleDetachCustomer() {

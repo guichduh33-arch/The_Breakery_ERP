@@ -6,9 +6,22 @@
 // Session 10: support multi-tender via `payments` field (array). Forwarded as
 // p_payments to RPC v8. Legacy `payment` (single object) still accepted and
 // forwarded as p_payment (RPC v8 wraps it into a single-element array → iso v7).
+//
+// Session 37 (DB-02): durable Postgres-backed rate-limit added (checkRateLimitDurable).
+// Limit: 60 req/min per IP — 1 payment/second sustained, covers peak cashier throughput
+// on a single terminal while blocking automated abuse or runaway retry loops.
+// Fail-open on DB error (trade-off S19 DEV-S19-1.A-02).
+//
+// Session 37 (SEC-01): RPC bumped v10 → v11. Order-level discount fields are now
+// forwarded (they were silently dropped before), and the manager PIN is read from
+// the `x-manager-pin` header (S25 pattern — never in the JSON body) and relayed as
+// p_manager_pin. The RPC validates discount authority (sales.discount) + PIN
+// server-side whenever any discount is present.
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.47.10';
 import { handleCors, jsonResponse } from '../_shared/cors.ts';
+import { rateLimitedResponse } from '../_shared/responses.ts';
+import { checkRateLimitDurable, getClientIp } from '../_shared/rate-limit.ts';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const VALID_METHODS = new Set(['cash', 'card', 'qris', 'edc', 'transfer', 'store_credit']);
@@ -54,6 +67,16 @@ interface ProcessPaymentPayload {
     description: string;
     scope_line_id?: string;
   }>;
+  /**
+   * Session 37 (SEC-01): order-level cart discount, produced by buildOrderPayload.
+   * Forwarded to RPC v11 which enforces sales.discount authority + manager PIN
+   * (PIN travels in the x-manager-pin header, not here).
+   */
+  discount_amount?: number;
+  discount_type?: string;
+  discount_value?: number;
+  discount_reason?: string;
+  discount_authorized_by?: string;
 }
 
 function isValidPaymentEntry(p: PaymentEntry | undefined): p is PaymentEntry {
@@ -70,6 +93,19 @@ serve(async (req) => {
   if (req.method !== 'POST') {
     return jsonResponse({ error: 'method_not_allowed' }, 405);
   }
+
+  // S37 DB-02 — rate-limit MUST run before any header/body validation.
+  // 60/min per IP: 1 payment/second sustained, covers peak cashier throughput
+  // on a single terminal while blocking automated abuse. Fail-open on DB error.
+  const ip = getClientIp(req);
+  const rl = await checkRateLimitDurable({
+    functionName: 'process-payment',
+    bucketKey:    `ip:${ip}`,
+    ipAddress:    ip,
+    maxPerWindow: 60,
+    windowSec:    60,
+  });
+  if (!rl.allowed) return rateLimitedResponse(rl.retryAfterSec);
 
   const authHeader = req.headers.get('authorization');
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -146,7 +182,10 @@ serve(async (req) => {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  const { data, error } = await userClient.rpc('complete_order_with_payment_v10', {
+  // S37 SEC-01 — manager PIN in header (S25 pattern), relayed to the RPC arg.
+  const managerPin = req.headers.get('x-manager-pin');
+
+  const { data, error } = await userClient.rpc('complete_order_with_payment_v11', {
     p_session_id: body.session_id,
     p_order_type: body.order_type,
     p_items: body.items,
@@ -158,6 +197,17 @@ serve(async (req) => {
     ...(body.loyalty_points_redeemed ? { p_loyalty_points_redeemed: body.loyalty_points_redeemed } : {}),
     ...(body.table_number ? { p_table_number: body.table_number } : {}),
     ...(body.promotions && body.promotions.length > 0 ? { p_promotions: body.promotions } : {}),
+    // S37 SEC-01: forward the order-level discount (was silently dropped pre-v11).
+    ...(typeof body.discount_amount === 'number' && body.discount_amount > 0
+      ? {
+          p_discount_amount: body.discount_amount,
+          ...(body.discount_type ? { p_discount_type: body.discount_type } : {}),
+          ...(typeof body.discount_value === 'number' ? { p_discount_value: body.discount_value } : {}),
+          ...(body.discount_reason ? { p_discount_reason: body.discount_reason } : {}),
+        }
+      : {}),
+    ...(body.discount_authorized_by ? { p_discount_authorized_by: body.discount_authorized_by } : {}),
+    ...(managerPin ? { p_manager_pin: managerPin } : {}),
   });
 
   if (error) {

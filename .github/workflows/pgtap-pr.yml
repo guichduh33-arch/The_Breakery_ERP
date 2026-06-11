@@ -1,0 +1,99 @@
+name: pgTAP PR Smoke
+
+# TEST-02 (Session 37) — PR-time pgTAP smoke gate.
+#
+# The full pgTAP suite runs nightly (pgtap-nightly.yml, cron). Before this
+# workflow, NO DB test ran at PR time, so a breaking migration could merge
+# with zero database coverage. This workflow runs a small, fast SUBSET of
+# critical guard tests (REVOKE pairs / money-flow integrity) against the
+# cloud V3 dev project (ikcyvlovptebroadgtvd) via the same pooler connection
+# and secret as the nightly.
+#
+# Scope: only fires on PRs that touch DB surface (migrations, pgTAP tests,
+# Edge Functions) — front-only PRs skip it entirely (paths filter below).
+
+on:
+  pull_request:
+    branches: [master, main]
+    paths:
+      - 'supabase/migrations/**'
+      - 'supabase/tests/**'
+      - 'supabase/functions/**'
+  workflow_dispatch:
+
+concurrency:
+  group: pgtap-pr-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pgtap-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # continue-on-error until the V3_DEV_PG_POOLER_URL secret is confirmed
+    # present in this repo's GitHub secrets (it is the same secret the
+    # nightly pgtap-nightly.yml already references — if the nightly is
+    # green, flip this to false to make the smoke gate blocking).
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      # Same psql install as pgtap-nightly.yml — keep the two in sync.
+      - name: Install psql 16
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
+          sudo sh -c 'echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(. /etc/os-release && echo $VERSION_CODENAME)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-16
+
+      # Smoke subset — critical REVOKE / permission / money-flow guards,
+      # chosen for speed (smallest files) and blast-radius coverage:
+      #   - ci_smoke                          : pgTAP plumbing sanity
+      #   - send_items_anon_revoke            : S36 canonical REVOKE pair guard
+      #   - security_anon_grants              : S20 anon/PUBLIC grant sweep
+      #   - security_authenticated_policies   : RLS policies for authenticated
+      #   - security_refund_sequences         : refund money-flow integrity
+      #   - products_cost_price_guard         : cost_price REVOKE UPDATE guard
+      #   - security                          : core security suite
+      #
+      # TODO(S37+): add the Session 37 guards (e.g. order_discount_gate)
+      # to this list once the corresponding *.test.sql files land.
+      - name: Run pgTAP smoke subset via pooler
+        id: pgtap
+        env:
+          PGURL: ${{ secrets.V3_DEV_PG_POOLER_URL }}
+        run: |
+          set -uo pipefail
+          if [ -z "${PGURL:-}" ]; then
+            echo "::error::V3_DEV_PG_POOLER_URL secret is not set" >&2
+            exit 1
+          fi
+          smoke_files=(
+            supabase/tests/ci_smoke.test.sql
+            supabase/tests/send_items_anon_revoke.test.sql
+            supabase/tests/security_anon_grants.test.sql
+            supabase/tests/security_authenticated_policies.test.sql
+            supabase/tests/security_refund_sequences.test.sql
+            supabase/tests/products_cost_price_guard.test.sql
+            supabase/tests/security.test.sql
+          )
+          fail_count=0
+          fail_list=""
+          for f in "${smoke_files[@]}"; do
+            if [ ! -f "$f" ]; then
+              echo "::error::smoke file missing from repo: $f" >&2
+              fail_count=$((fail_count+1))
+              fail_list="${fail_list}\n - ${f} (missing)"
+              continue
+            fi
+            echo "=== Running $f ==="
+            if ! psql "$PGURL" -v ON_ERROR_STOP=1 -f "$f"; then
+              fail_count=$((fail_count+1))
+              fail_list="${fail_list}\n - ${f}"
+            fi
+          done
+          if [ "$fail_count" -gt 0 ]; then
+            echo "::error::${fail_count} pgTAP smoke file(s) failed:${fail_list}"
+            exit 1
+          fi
+          echo "All pgTAP smoke files passed."

@@ -9,36 +9,27 @@ interface CreateCustomerInput {
   email?: string;
 }
 
-async function resolveDefaultCategoryId(): Promise<string | null> {
-  const { data } = await supabase
-    .from('customer_categories')
-    .select('id')
-    .eq('is_default', true)
-    .is('deleted_at', null)
-    .limit(1)
-    .single();
-  return data?.id ?? null;
-}
-
+/**
+ * S37 C5 (SEC-03) — walk-in creation goes through the SECURITY DEFINER RPC
+ * `create_customer_v2` instead of a direct INSERT, so it survives the
+ * `customers.read` gate. The default customer category is now assigned
+ * server-side (migration `_019`), replacing the old client-side
+ * resolveDefaultCategoryId pre-fetch.
+ */
 export function useCreateCustomer() {
   const queryClient = useQueryClient();
 
   return useMutation<Customer, Error, CreateCustomerInput>({
     mutationFn: async (input) => {
-      const defaultCategoryId = await resolveDefaultCategoryId();
-      const { data, error } = await supabase
-        .from('customers')
-        .insert({
-          name: input.name,
-          phone: input.phone,
-          email: input.email ?? null,
-          customer_type: 'retail',
-          ...(defaultCategoryId ? { category_id: defaultCategoryId } : {}),
-        })
-        .select('id, name, phone, email, customer_type, loyalty_points, lifetime_points, total_spent, total_visits, last_visit_at')
-        .single();
+      const { data, error } = await supabase.rpc('create_customer_v2', {
+        p_name: input.name,
+        p_phone: input.phone,
+        ...(input.email ? { p_email: input.email } : {}),
+      });
       if (error) throw error;
-      return data as Customer;
+      const row = (data ?? [])[0];
+      if (!row) throw new Error('create_customer_v2 returned no row');
+      return row as unknown as Customer;
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['customers'] });

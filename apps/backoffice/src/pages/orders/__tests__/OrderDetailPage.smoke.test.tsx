@@ -80,4 +80,11 @@ describe('OrderDetailPage', () => {
     expect(screen.getAllByText(/cash/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/99\.000|99,000/).length).toBeGreaterThan(0);
   });
+
+  it('T3 (C4/BO-12) Back link points to /backoffice/orders, not /backoffice', async () => {
+    renderAt('/backoffice/orders/o-1');
+    await waitFor(() => expect(screen.getByText(/ORD-001/)).toBeInTheDocument());
+    const backLink = screen.getByRole('link', { name: /back/i });
+    expect(backLink.getAttribute('href')).toBe('/backoffice/orders');
+  });
 });

@@ -110,7 +110,7 @@ function rpc(sb: SupabaseClient): (fn: string, args?: Record<string, unknown>) =
   return sb.rpc.bind(sb) as any;
 }
 
-describe('S25 idempotency hardening — Vitest live', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('S25 idempotency hardening — Vitest live', () => {
   let cashierToken:   string;
   let cashierProfile: string;
   let waiterToken:    string;

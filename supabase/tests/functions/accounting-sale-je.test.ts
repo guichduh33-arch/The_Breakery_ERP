@@ -43,7 +43,7 @@ function jwtClient(token: string) {
   });
 }
 
-describe('accounting — sale JE refactor (Phase 1.A 10-001)', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('accounting — sale JE refactor (Phase 1.A 10-001)', () => {
   let managerToken: string;
   let productId:    string;
   let sessionId:    string;

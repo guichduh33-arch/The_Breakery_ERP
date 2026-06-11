@@ -41,7 +41,7 @@ export function OrderDetailPage(): JSX.Element {
     <div className="p-6 space-y-6">
       <div className="flex items-center gap-3 flex-wrap">
         <Button variant="ghost" asChild>
-          <Link to="/backoffice">
+          <Link to="/backoffice/orders">
             <ArrowLeft size={16} /> Back
           </Link>
         </Button>

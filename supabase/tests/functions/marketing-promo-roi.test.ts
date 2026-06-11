@@ -37,7 +37,7 @@ function jwtClient(token: string) {
   });
 }
 
-describe('marketing — promo ROI RPC (live)', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('marketing — promo ROI RPC (live)', () => {
   let adminToken: string;
 
   beforeAll(async () => {

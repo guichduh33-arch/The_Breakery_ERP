@@ -93,7 +93,7 @@ async function ensureSupplier(admin: ReturnType<typeof createClient>, code: stri
   return data as { id: string };
 }
 
-describe('purchasing PO full cycle — integration', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('purchasing PO full cycle — integration', () => {
   let managerToken: string;
   let cashierToken: string;
   let prodA:        ProdRow;

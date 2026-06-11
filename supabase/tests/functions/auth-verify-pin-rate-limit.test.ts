@@ -12,7 +12,7 @@ const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 
 const FN_URL = `${SUPABASE_URL}/functions/v1/auth-verify-pin`;
 
-describe('auth-verify-pin rate-limit', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('auth-verify-pin rate-limit', () => {
   let adminUserId: string;
 
   beforeAll(async () => {

@@ -52,9 +52,9 @@ export function useVoidOrder() {
       }
       return await res.json() as VoidResponse;
     },
-    onSuccess: () => {
+    onSuccess: (_, { orderId }) => {
       void qc.invalidateQueries({ queryKey: ['orders', 'list'] });
-      void qc.invalidateQueries({ queryKey: ['orders', 'detail'] });
+      void qc.invalidateQueries({ queryKey: ['order-detail', orderId] });
     },
   });
 }

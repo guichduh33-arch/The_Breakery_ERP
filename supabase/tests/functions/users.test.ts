@@ -43,7 +43,7 @@ function jwtClient(token: string): SupabaseClient {
   });
 }
 
-describe('users — RPC cycle (Phase 5.D)', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('users — RPC cycle (Phase 5.D)', () => {
   let adminToken: string;
   let cashierToken: string;
   let admin: SupabaseClient;

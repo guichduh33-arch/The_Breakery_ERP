@@ -49,7 +49,7 @@ function jwtClient(token: string) {
   });
 }
 
-describe('inventory concurrency — adjust_stock_v1 row-lock serialization', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory concurrency — adjust_stock_v1 row-lock serialization', () => {
   let adminToken: string;
   let productId:  string;
 
