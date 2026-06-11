@@ -3,16 +3,16 @@
 > **Branch** : `swarm/session-37` (base `master` @ `06b8283`, post-merge S36 PR #68)
 > **Spec** : [`../specs/2026-06-11-session-37-spec.md`](../specs/2026-06-11-session-37-spec.md)
 > **Plan** : [`./2026-06-11-session-37-plan.md`](./2026-06-11-session-37-plan.md)
-> **Status** : ⏳ **skeleton** — to be filled at close-out (Task Z). Sections below are placeholders.
+> **Status** : ✅ **executed 2026-06-11** — all four waves delivered, hard cutover PII applied (gate `_018` live), full sweeps green.
 
 ---
 
 ## 1. Summary
 
-- **Wave A — money-flow security** : _TBD_ — SEC-01 discount authority+PIN gate (`complete_order_with_payment_v11` + `pay_existing_order_v7`), SEC-02 `unit_price` reconciliation, SEC-04 `loyalty_transactions` append-only, DB-02 `process-payment` rate-limit, BO-01 `sign_zreport_v2` PIN validation.
-- **Wave B — POS correctness** : _TBD_ — POS-01 real pickup total, POS-02 post-promo display total, POS-04 real loyalty balance, POS-06 server-side post-kitchen void, POS-05 centralized `DEFAULT_TAX_RATE`.
-- **Wave C — BO + PII cutover** : _TBD_ — BO-02 query-key alignment, BO-03/05/12 UX fixes, SEC-03/DB-03/DB-06 customers RPC wiring + `customers.read` gate cutover.
-- **Wave D — tests + docs** : _TBD_ — TEST-02 PR-time pgTAP gate, TEST-01 Vitest `skipIf` backfill, PAT-05/06/17/18 CLAUDE.md refresh.
+- **Wave A — money-flow security** : ✅ DONE — SEC-01 discount authority+PIN gate (`complete_order_with_payment_v11` + `pay_existing_order_v7` permission-only DEV-S37-A2-01), SEC-02 `unit_price` reconciliation via `get_customer_product_price` (DEV-S37-A1-02) + gift-line/promo tie (DEV-S37-A1-01), SEC-04 `loyalty_transactions` append-only, DB-02 `process-payment` rate-limit (EF v6 deployed), BO-01 `sign_zreport_v2` PIN validated in-RPC (D3).
+- **Wave B — POS correctness** : ✅ DONE — POS-01 real pickup total (v7 jsonb envelope), POS-02 post-promo display total, POS-04 real loyalty balance (`loyalty_balance_after` additif v11), POS-06 server-side post-kitchen void (livré pré-run `e3cadee`), POS-05 `DEFAULT_TAX_RATE` centralisé dans `@breakery/domain` (7 sites POS migrés, grep 0).
+- **Wave C — BO + PII cutover** : ✅ DONE — BO-02 query keys alignés (`['order-detail', id]`), BO-03 toast erreur OrdersListPage, BO-05 per-row PDF pending, BO-12 back URL ; **SEC-03/DB-03/DB-06 hard cutover customers** : RPCs v2 (category JSONB embed) + corrective `_019` (default category server-side) + bump `get_pos_b2b_debts_v2` (`_020`, vraie sémantique panel) + 4+1 sites POS câblés + build OK + **gate `_018` appliqué EN DERNIER** — pgTAP 7/7 PASS post-gate.
+- **Wave D — tests + docs** : ✅ DONE — TEST-02 PR-time pgTAP gate (`ci.yml`), TEST-01 Vitest live suites `skipIf`-guarded, PAT-05/06/17/18 CLAUDE.md 4 stale facts corrigés (`b0f939e`).
 - **No new feature; fraud-hardening + correctness close-out only.**
 
 ---
@@ -47,26 +47,30 @@
 | `20260621000015_bump_sign_zreport_v2_pin` | clock-assigned | ✅ APPLIED — PIN in-arg validé (D3) + REVOKE pair inline; DROP v1 (BO-01) |
 | ~~`_016_seed_orders_discount_permission`~~ | — | **SKIPPED** — D4 : `sales.discount` pré-existante réutilisée |
 | `20260621000017_create_customers_pos_rpcs_v2` | clock-assigned | ✅ APPLIED — search/get/create_customer_v2 + `category JSONB` embed; DROP v1 (SEC-03/DB-03) |
-| `20260621000018_gate_customers_read` | — | ⏸️ **AUTHORED, NOT APPLIED** — hard cutover PII : front C5 d'abord (4+1 sites POS), gate en dernier |
+| `20260621000019_fix_create_customer_v2_default_category` | clock-assigned | ✅ APPLIED — corrective : la v2 assigne la catégorie par défaut server-side (parité avec l'ex-`resolveDefaultCategoryId` client) + retourne l'embed peuplé (DEV-S37-C5-02) |
+| `20260621000020_bump_get_pos_b2b_debts_v2` | clock-assigned | ✅ APPLIED — bump v1→v2 : vraie sémantique CustomerDebtsPanel (tous types d'ordres dû > 0, lookback 180 j, champs crédit affichés par le panel) ; DROP v1 + REVOKE pair (DEV-S37-C5-03) |
+| `20260621000018_gate_customers_read` | clock-assigned (appliquée **après** `_020`) | ✅ **APPLIED EN DERNIER** — hard cutover PII : policy `auth_read` gated `customers.read` + grant MANAGER/ADMIN/SUPER_ADMIN. Front C5 câblé/buildé/committé avant (DEV-S37-C5-01) |
 
-> Applied via MCP `apply_migration` (cloud V3 dev `ikcyvlovptebroadgtvd`). Types regen ✅ committed (v11/v7/sign_v2/customers v2). EF `process-payment` v6 deployed (calls v11, forwards discounts, relays `x-manager-pin`; DB-02 rate-limit now live).
+> Applied via MCP `apply_migration` (cloud V3 dev `ikcyvlovptebroadgtvd`). Types regen ✅ committed ×2 (v11/v7/sign_v2/customers v2, puis debts v2). EF `process-payment` v6 deployed (calls v11, forwards discounts, relays `x-manager-pin`; DB-02 rate-limit now live). NB : `_018` est appliquée chronologiquement après `_019`/`_020` (cloud versions clock-assignées) — les trois sont order-independent au replay.
 
 ---
 
 ## 4. New files
 
-- **DB + tests** : _TBD_ (migrations above + `supabase/tests/{order_discount_gate,pay_existing_discount_gate,loyalty_transactions_append_only,sign_zreport_pin,customers_pii_gate}.test.sql`).
-- **Domain** : _TBD_ (`packages/domain/src/.../taxRate.ts` + test).
-- **POS** : _TBD_ (possible `useVoidServerOrder.ts`).
-- **POS tests** : _TBD_ (`checkout-pickup-total`, `cart-broadcast-promo`, `success-modal-loyalty`, `void-post-kitchen`).
-- **BO tests** : _TBD_ (`order-detail-invalidation`).
-- **CI** : _TBD_ (pgTAP smoke job in `ci.yml`).
+- **DB + tests** : migrations `_010.._020` (sauf `_016` skipped) + `supabase/tests/{order_discount_gate,pay_existing_discount_gate,loyalty_transactions_append_only,sign_zreport_pin,customers_pii_gate}.test.sql` (le dernier étendu à 7 tests : T3 default-category `_019`, T7 debts v2 `_020`).
+- **Domain** : `packages/domain/src/orders/taxRate.ts` (`DEFAULT_TAX_RATE = 0.10`) + `__tests__/taxRate.test.ts` + barrel export.
+- **POS tests** : `checkout-pickup-total`, `cart-broadcast-promo`, `success-modal-loyalty`, `void-post-kitchen` smokes (Wave B) ; `restore-customer-refetch` réécrit sur `get_customer_v2`.
+- **BO tests** : `order-detail-invalidation.smoke.test.tsx`.
+- **CI** : pgTAP smoke job dans `.github/workflows/ci.yml` (TEST-02).
 
 ---
 
 ## 5. Files modified
 
-- _TBD_ — `process-payment/index.ts` (rate-limit + PIN relay), `useCheckout.ts`, `useCartBroadcast.ts`, `SuccessModal.tsx`, `BottomActionBar.tsx`, 7× TAX_RATE sites, `useSignZReport.ts`, `useOrderDetail.ts`/`useEditOrderItems.ts`/`useVoidOrder.ts`, `OrdersListPage.tsx`, `ZReportsListPage.tsx`, `OrderDetailPage.tsx`, `useCustomerSearch.ts`/`useCreateCustomer.ts`/`Pos.tsx`/`useRestoreHeldOrder.ts`/`useOutstandingDebts.ts`, `packages/supabase/src/types.generated.ts`, `.github/workflows/ci.yml`, ~57 Vitest live suites, `CLAUDE.md`.
+- **EF** : `process-payment/index.ts` (rate-limit DB-02 + appel v11 + relay `x-manager-pin` + forward discounts) — v6 deployed.
+- **POS** : `useCheckout.ts` (v7 pickup réel + PIN relay), `useCartBroadcast.ts` (POS-02), `SuccessModal.tsx` (POS-04), `BottomActionBar.tsx` (POS-06 + tax), 7× sites `TAX_RATE` → `DEFAULT_TAX_RATE`, `managerPinHolder` (DEV-S37-A1-03) ; **C5** : `useCustomerSearch.ts` / `useCreateCustomer.ts` / `Pos.tsx` (search+create inline) / `useRestoreHeldOrder.ts` → customer RPCs v2 ; `useOutstandingDebts.ts` → `get_pos_b2b_debts_v2` (agrégation client conservée).
+- **BO** : `useSignZReport.ts` (v2 PIN in-arg), `useOrderDetail.ts`/`useEditOrderItems.ts`/`useVoidOrder.ts` (BO-02), `OrdersListPage.tsx` (BO-03), `ZReportsListPage.tsx` (BO-05), `OrderDetailPage.tsx` (BO-12).
+- **Infra** : `packages/supabase/src/types.generated.ts` (regen ×2), `.github/workflows/ci.yml`, Vitest live suites `skipIf`-guarded (TEST-01), `CLAUDE.md` (PAT-05/06/17/18), `pay-existing.smoke.test.tsx` (assertion v7).
 
 ---
 
@@ -78,18 +82,18 @@
 | pgTAP `pay_existing_discount_gate` | 5 | ✅ 5/5 PASS |
 | pgTAP `loyalty_transactions_append_only` | 5 | ✅ 5/5 PASS (incl. sanity earn-row via v11) |
 | pgTAP `sign_zreport_pin` | 6 | ✅ 6/6 PASS |
-| pgTAP `customers_pii_gate` | 6 | ✅ 5/5 + T6 gate expected-FAIL tant que `_018` non appliquée |
-| domain `taxRate` | 1 | _TBD_ |
-| POS smokes (B1-B4) | _TBD_ | _TBD_ |
-| BO smokes (C1-C4) | _TBD_ | _TBD_ |
-| Full sweeps domain / UI / POS / BO | _TBD_ | _TBD_ |
-| `pnpm typecheck` | 6/6 | _TBD_ |
+| pgTAP `customers_pii_gate` | 7 | ✅ **7/7 PASS post-gate** (avant `_018` : 6/7, T6 expected-FAIL documenté) |
+| domain full sweep (incl. `taxRate`) | 57 files | ✅ PASS |
+| UI full sweep | 54 files | ✅ PASS |
+| POS full sweep | 102 files / 412 tests (+1 skip) | ✅ PASS (1 fix : `pay-existing` assertion v6→v7) |
+| BO full sweep | 134 files (+1 skip) | ✅ PASS |
+| `pnpm typecheck` | 6/6 | ✅ PASS |
 
 ---
 
 ## 7. Permissions seeded
 
-- _TBD_ — `orders.discount` (MANAGER+/ADMIN+/SUPER_ADMIN) if D4 = new perm; `customers.read` gate flip (perm pre-existing).
+- Aucune nouvelle permission : D4 = `sales.discount` pré-existante (S5) réutilisée ; `customers.read` pré-existante — gate flip `_018` + grant MANAGER/ADMIN/SUPER_ADMIN (UPSERT idempotent).
 
 ---
 
@@ -97,11 +101,13 @@
 
 | Action | RPC | Notes |
 |---|---|---|
-| Bumped | `complete_order_with_payment_v10 → v11` | _TBD_ — discount gate + PIN + unit_price reconcil + audit |
-| Bumped | `pay_existing_order_v6 → v7` | _TBD_ — discount gate + jsonb return |
-| Bumped | `sign_zreport_v1 → v2` | _TBD_ — PIN validation (or EF wrapper) |
-| Bumped | `search_customers_v1 → v2` / `get_customer_v1 → v2` / `create_customer_v1 → v2` | _TBD_ — + category pricing |
-| Hardened | `loyalty_transactions` (table) | _TBD_ — REVOKE writes |
+| Bumped | `complete_order_with_payment_v10 → v11` | discount gate (`sales.discount` + PIN) + unit_price reconcil (`get_customer_product_price`) + audits `order.discount_applied`/`order.price_overridden` + `loyalty_balance_after` ; DROP v10 |
+| Bumped | `pay_existing_order_v6 → v7` | discount gate permission-only (DEV-S37-A2-01) + jsonb envelope `{order_id, order_number, total, tax_amount, change_given}` ; DROP v6 |
+| Bumped | `sign_zreport_v1 → v2` | PIN validé in-arg (D3, idiome `close_fiscal_period_v1`) ; DROP v1 |
+| Bumped | `search_customers_v1 → v2` / `get_customer_v1 → v2` / `create_customer_v1 → v2` | embed `category JSONB` (1 round-trip, D6) ; corrective `_019` : default category server-side au create ; DROP v1 ×3 |
+| Bumped | `get_pos_b2b_debts_v1 → v2` | vraie sémantique panel (tous types d'ordres, lookback, champs crédit) ; DROP v1 (DEV-S37-C5-03) |
+| Hardened | `loyalty_transactions` (table) | REVOKE INSERT/UPDATE/DELETE FROM authenticated/anon/PUBLIC — append-only |
+| Hardened | `customers` (table) | policy `auth_read` gated `has_permission(auth.uid(), 'customers.read')` — PII fermée (`_018`) |
 
 ---
 
@@ -121,6 +127,8 @@ Per spec §9: PAT-01/02 auth BO setSession refactor (dedicated session), POS-15 
 | DEV-S37-D4-01 | Task 0 | Seed `orders.discount` (`_016`) | Permission `sales.discount` pré-existante (S5) réutilisée ; `_016` skipped | D4 le prévoyait ("reuse if found") | Informational |
 | DEV-S37-C5-01 | C5 | — | `_018` gate authored mais NON appliquée ; pgTAP T6 expected-FAIL documenté | Cutover front-first/gate-last (anticipée) | Informational |
 | DEV-S37-A1-03 | A1 | Spec: PIN "collected by the discount modal" | Le POS ne retenait pas le PIN après vérif → nouveau `managerPinHolder` module-scoped (jamais persisté, hors cart broadcast), set par `useVerifyManagerPin`, lu/cleared par `useCheckout` | v11 revalide le PIN au checkout ; il faut le transporter de l'autorisation au paiement | Informational |
+| DEV-S37-C5-02 | C5 | `create_customer_v2` (_017) telle quelle | Corrective `_019` : la v2 assigne la catégorie par défaut server-side | Le front pré-cutover résolvait `customer_categories.is_default` au create (`resolveDefaultCategoryId`) ; la v2 de `_017` ne le faisait pas → un walk-in créé via RPC aurait perdu le multiplier loyalty/pricing par défaut | Informational (parité comportementale, caught au wiring) |
+| DEV-S37-C5-03 | C5 | Plan : câbler `get_pos_b2b_debts_v1` tel quel | Bump `_020` v1→v2 : tous types d'ordres dû > 0 (pas seulement `order_type='b2b'`), lookback 180 j, expose `b2b_credit_limit`/`b2b_current_balance` | La prémisse v1 « the panel never displayed them » était fausse — `CustomerDebtsPanel` affiche la barre de crédit et couvre l'ardoise retail ; câbler v1 aurait régressé le panel silencieusement. Champs crédit ≠ PII (le gate vise phones/emails/birth_dates) et déjà visibles au POS pré-cutover | Informational (anti-régression) |
 
 > Anticipated: `DEV-S37-A2-01` (Medium) if `pay_existing_order_v7` discount uses permission-gate-only (no PIN) on the direct-RPC pickup path (§A3.1); `DEV-S37-C5-01` (Informational) customers PII hard cutover front-first/gate-last.
 
@@ -128,21 +136,21 @@ Per spec §9: PAT-01/02 auth BO setSession refactor (dedicated session), POS-15 
 
 ## 11. Acceptance criteria
 
-- [ ] SEC-01 — discount > 0 requires authorized_by with `orders.discount` + valid PIN; audit `order.discount_applied` — pgTAP PASS.
-- [ ] SEC-02 — `unit_price` reconciled vs `retail_price` — pgTAP PASS.
-- [ ] SEC-04 — `loyalty_transactions` append-only — pgTAP PASS.
-- [ ] DB-02 — `process-payment` rate-limited — review + happy-path PASS.
-- [ ] BO-01 — Z-report signing validates PIN — pgTAP PASS.
-- [ ] POS-01 — real pickup total — smoke PASS.
-- [ ] POS-02 — post-promo display total — smoke PASS.
-- [ ] POS-04 — real loyalty balance on receipt — smoke PASS.
-- [ ] POS-06 — server-side post-kitchen void — smoke PASS.
-- [ ] POS-05 — centralized tax rate — grep 0; suites PASS.
-- [ ] BO-02 — query keys aligned; refetch after mutation — smoke PASS.
-- [ ] BO-03/05/12 — toast / per-row PDF / back URL — smoke PASS.
-- [ ] SEC-03/DB-03/DB-06 — POS wired on RPCs; `customers.read` gate applied last; PII closed — pgTAP + smoke PASS.
-- [ ] TEST-02 — PR-time pgTAP gate (or blocker documented).
-- [ ] TEST-01 — 57 Vitest live suites `skipIf`-guarded.
-- [ ] PAT-05/06/17/18 — CLAUDE.md refreshed.
-- [ ] `pnpm typecheck` full sweep PASS; types regen committed.
-- [ ] INDEX filled + CLAUDE.md §Active Workplan bumped.
+- [x] SEC-01 — discount > 0 requires authorized_by with `sales.discount` (D4) + valid PIN; audit `order.discount_applied` — pgTAP 10/10 PASS.
+- [x] SEC-02 — `unit_price` reconciled vs `get_customer_product_price` (DEV-S37-A1-02) — pgTAP PASS.
+- [x] SEC-04 — `loyalty_transactions` append-only — pgTAP 5/5 PASS.
+- [x] DB-02 — `process-payment` rate-limited — EF v6 deployed, golden-path PASS.
+- [x] BO-01 — Z-report signing validates PIN — pgTAP 6/6 PASS.
+- [x] POS-01 — real pickup total (v7 jsonb) — smoke PASS.
+- [x] POS-02 — post-promo display total — smoke PASS.
+- [x] POS-04 — real loyalty balance on receipt — smoke PASS.
+- [x] POS-06 — server-side post-kitchen void — smoke PASS (livré pré-run `e3cadee`).
+- [x] POS-05 — centralized tax rate — `git grep "TAX_RATE = 0.1" apps/pos/src` → 0; suites PASS.
+- [x] BO-02 — query keys aligned; refetch after mutation — smoke PASS.
+- [x] BO-03/05/12 — toast / per-row PDF / back URL — smoke PASS.
+- [x] SEC-03/DB-03/DB-06 — POS wired on RPCs v2 (grep direct customers reads → 0); `customers.read` gate applied LAST; PII closed — pgTAP 7/7 + smokes 32/32 PASS, BO orders 16/16 PASS post-gate.
+- [x] TEST-02 — PR-time pgTAP gate in `ci.yml`.
+- [x] TEST-01 — Vitest live suites `skipIf`-guarded (`c651a13`).
+- [x] PAT-05/06/17/18 — CLAUDE.md refreshed (`b0f939e`).
+- [x] `pnpm typecheck` 6/6 PASS; types regen committed ×2.
+- [x] INDEX filled + CLAUDE.md §Active Workplan bumped.
