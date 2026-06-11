@@ -6110,15 +6110,18 @@ export type Database = {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
-      get_pos_b2b_debts_v1: {
-        Args: { p_customer_id?: string }
+      get_pos_b2b_debts_v2: {
+        Args: { p_customer_id?: string; p_lookback_days?: number }
         Returns: {
+          b2b_credit_limit: number
+          b2b_current_balance: number
           created_at: string
           customer_id: string
           customer_name: string
           customer_phone: string
           order_id: string
           order_number: string
+          order_type: string
           outstanding: number
           paid: number
           total: number

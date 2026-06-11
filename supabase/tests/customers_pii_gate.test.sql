@@ -5,7 +5,7 @@
 -- tant que _018 n'est pas appliquée, T6 est attendu FAIL (documenté INDEX S37).
 -- Exécuter via MCP execute_sql (BEGIN..ROLLBACK).
 BEGIN;
-SELECT plan(6);
+SELECT plan(7);
 
 DO $$
 DECLARE
@@ -47,14 +47,19 @@ BEGIN
 END $$;
 SELECT is(current_setting('breakery.t2_ok'), 'true', 'T2 get_customer_v2 embeds the category');
 
--- T3 : create_customer_v2 retourne la row créée (category NULL au create)
-DO $$ DECLARE v_row RECORD;
+-- T3 : create_customer_v2 retourne la row créée, avec la catégorie par défaut
+-- assignée server-side (_019) si une catégorie is_default existe.
+DO $$ DECLARE v_row RECORD; v_default UUID;
 BEGIN
+  SELECT id INTO v_default FROM customer_categories
+   WHERE is_default = true AND deleted_at IS NULL LIMIT 1;
   SELECT * INTO v_row FROM create_customer_v2('S37 Walkin', '0899887766');
   PERFORM set_config('breakery.t3_ok',
-    (v_row.id IS NOT NULL AND v_row.name = 'S37 Walkin' AND v_row.category IS NULL)::text, true);
+    (v_row.id IS NOT NULL AND v_row.name = 'S37 Walkin'
+     AND v_row.category_id IS NOT DISTINCT FROM v_default
+     AND ((v_default IS NULL) = (v_row.category IS NULL)))::text, true);
 END $$;
-SELECT is(current_setting('breakery.t3_ok'), 'true', 'T3 create_customer_v2 returns the created row');
+SELECT is(current_setting('breakery.t3_ok'), 'true', 'T3 create_customer_v2 returns the created row with the server-side default category (_019)');
 
 -- T4 : v1 RPCs bien droppées (versioning monotone)
 SELECT is(
@@ -69,6 +74,15 @@ SELECT is(
   OR has_function_privilege('anon', 'public.get_customer_v2(uuid)', 'EXECUTE')
   OR has_function_privilege('anon', 'public.create_customer_v2(text, text, text, customer_type)', 'EXECUTE'),
   false, 'T5 anon cannot execute the v2 customer RPCs');
+
+-- T7 (DB-06, _020) : get_pos_b2b_debts_v2 existe, v1 droppée, anon sans EXECUTE
+SELECT is(
+  (SELECT count(*)::int FROM pg_proc
+    WHERE proname = 'get_pos_b2b_debts_v2' AND pronamespace = 'public'::regnamespace) = 1
+  AND (SELECT count(*)::int FROM pg_proc
+    WHERE proname = 'get_pos_b2b_debts_v1' AND pronamespace = 'public'::regnamespace) = 0
+  AND NOT has_function_privilege('anon', 'public.get_pos_b2b_debts_v2(uuid, int)', 'EXECUTE'),
+  true, 'T7 get_pos_b2b_debts_v2 replaces v1 (panel semantics), anon revoked');
 
 -- T6 (post-_018 SEULEMENT) : la policy SELECT exige customers.read
 SELECT is(
