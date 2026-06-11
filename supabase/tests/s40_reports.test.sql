@@ -22,8 +22,8 @@
 --   T18 : get_production_efficiency_v1 MANAGER → waste_rate_pct = 16.67, avg_yield_variance_pct = -10
 --   T19 : get_price_changes_v1 CASHIER → 42501
 --   T20 : get_price_changes_v1 MANAGER → LAG correct (old 1000 → new 1500, delta 50) + p_product_id filter
---   T21 : get_permission_changes_v1 MANAGER → 42501 (audit_log.read is ADMIN+)
---   T22 : get_permission_changes_v1 SUPER_ADMIN → finds the T2 revoked row
+--   T21 : get_permission_changes_v1 CASHIER → 42501 (gate reports.audit.read, MANAGER+ — corrective _021)
+--   T22 : get_permission_changes_v1 MANAGER → finds the T2 revoked row
 --
 -- Seeded users (from seed.sql):
 --   SUPER_ADMIN : auth_user_id = 00000000-0000-0000-0000-000000000001 (EMP000)
@@ -742,12 +742,12 @@ SELECT ok(
 -- S40.12 — get_permission_changes_v1 (T21-T22)
 -- ============================================================
 
--- T21 : MANAGER → 42501 (audit_log.read is ADMIN/SUPER_ADMIN only)
+-- T21 : CASHIER → 42501 (gate reports.audit.read since corrective _021, MANAGER+)
 DO $$
 DECLARE
   v_caught BOOLEAN := false;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000002"}';
   BEGIN
     PERFORM get_permission_changes_v1('2026-01-01', '2026-12-31');
   EXCEPTION WHEN insufficient_privilege THEN
@@ -757,17 +757,17 @@ BEGIN
 END $$;
 SELECT ok(
   current_setting('breakery.t21_pass')::boolean,
-  'T21: get_permission_changes_v1 MANAGER raises 42501 (ADMIN+ gate)'
+  'T21: get_permission_changes_v1 CASHIER raises 42501 (reports.audit.read gate)'
 );
 
--- T22 : SUPER_ADMIN → finds the T2 trigger row (revoked CASHIER/reports.read today)
+-- T22 : MANAGER (allowed since corrective _021) → finds the T2 trigger row
 DO $$
 DECLARE
   v_result JSONB;
   v_found  INT;
   v_ok     BOOLEAN;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
   v_result := get_permission_changes_v1(
     current_setting('breakery.t_s40_date_start'),
     current_setting('breakery.t_s40_date_end')
@@ -782,7 +782,7 @@ BEGIN
 END $$;
 SELECT ok(
   current_setting('breakery.t22_pass')::boolean,
-  'T22: get_permission_changes_v1 SUPER_ADMIN finds the trigger revoked row'
+  'T22: get_permission_changes_v1 MANAGER finds the trigger revoked row'
 );
 
 SELECT * FROM finish();
