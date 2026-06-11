@@ -1,5 +1,6 @@
 // apps/backoffice/src/features/reports/__tests__/ReportsIndexPage.smoke.test.tsx
 // Session 14 / Phase 6.A — verifies the rebuilt categorized hub.
+// Session 40 / Wave C — updated: all 26 cards active, 0 Soon tiles.
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
@@ -38,5 +39,18 @@ describe('ReportsIndexPage (rebuild)', () => {
     const link = screen.getByText(/Sales by Hour/i).closest('a');
     expect(link).not.toBeNull();
     expect(link?.getAttribute('href')).toBe('/sales-by-hour');
+  });
+
+  it('has exactly 26 active card links (all reports wired — Wave C S40)', () => {
+    renderPage();
+    // Every card is now an <a> element; disabled tiles are <div aria-disabled>.
+    const links = screen.getAllByRole('link');
+    expect(links).toHaveLength(26);
+  });
+
+  it('has zero "Soon" disabled tiles after Wave C wiring', () => {
+    renderPage();
+    const disabled = document.querySelectorAll('[aria-disabled="true"]');
+    expect(disabled).toHaveLength(0);
   });
 });

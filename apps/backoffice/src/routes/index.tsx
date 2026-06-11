@@ -58,6 +58,15 @@ import PaymentByMethodPage       from '@/pages/reports/PaymentByMethodPage.js';
 import Pb1ReportPage             from '@/pages/reports/Pb1ReportPage.js';
 import StockMovementHistoryPage  from '@/pages/reports/StockMovementHistoryPage.js';
 import PerishableTurnoverPage    from '@/pages/reports/PerishableTurnoverPage.js';
+import DailySalesPage            from '@/pages/reports/DailySalesPage.js';
+import StaffPerformancePage      from '@/pages/reports/StaffPerformancePage.js';
+import PurchaseItemsPage         from '@/pages/reports/PurchaseItemsPage.js';
+import PurchaseByDatePage        from '@/pages/reports/PurchaseByDatePage.js';
+import PurchaseBySupplierPage    from '@/pages/reports/PurchaseBySupplierPage.js';
+import ProductionReportPage      from '@/pages/reports/ProductionReportPage.js';
+import ProductionEfficiencyPage  from '@/pages/reports/ProductionEfficiencyPage.js';
+import PriceChangesPage          from '@/pages/reports/PriceChangesPage.js';
+import PermissionChangesPage     from '@/pages/reports/PermissionChangesPage.js';
 import SettingsHubPage              from '@/pages/settings/SettingsHubPage.js';
 import SettingsGeneralPage          from '@/pages/settings/SettingsGeneralPage.js';
 import SettingsHolidaysPage         from '@/pages/settings/SettingsHolidaysPage.js';
@@ -675,6 +684,78 @@ export function AppRoutes() {
           element={
             <PermissionGate required="reports.inventory.read">
               <PerishableTurnoverPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="reports/daily-sales"
+          element={
+            <PermissionGate required="reports.sales.read">
+              <DailySalesPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="reports/staff-performance"
+          element={
+            <PermissionGate required="reports.sales.read">
+              <StaffPerformancePage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="reports/purchase-items"
+          element={
+            <PermissionGate required="reports.inventory.read">
+              <PurchaseItemsPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="reports/purchase-by-date"
+          element={
+            <PermissionGate required="reports.inventory.read">
+              <PurchaseByDatePage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="reports/purchase-by-supplier"
+          element={
+            <PermissionGate required="reports.inventory.read">
+              <PurchaseBySupplierPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="reports/production-report"
+          element={
+            <PermissionGate required="reports.inventory.read">
+              <ProductionReportPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="reports/production-efficiency"
+          element={
+            <PermissionGate required="reports.inventory.read">
+              <ProductionEfficiencyPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="reports/price-changes"
+          element={
+            <PermissionGate required="reports.financial.read">
+              <PriceChangesPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="reports/permission-changes"
+          element={
+            <PermissionGate required="reports.audit.read">
+              <PermissionChangesPage />
             </PermissionGate>
           }
         />
