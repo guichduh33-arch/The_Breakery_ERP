@@ -16,9 +16,9 @@
 | B2 | Purchase Items / by Date / by Supplier ×3 | ✅ | `c165840` |
 | B3 | Production Report / Efficiency + Price Changes + Permission Change Log ×4 | ✅ | `910f00e` |
 | C | Wiring : 9 routes + 9 sidebar + hub 0 Soon + smoke hub | ✅ | `4421d36`, corrective gate `9e69ee5` |
-| D | pattern-guardian + sweeps + E2E + INDEX + CLAUDE.md + PR | — voir §4 | — |
+| D | pattern-guardian (13/14, P11 fermé `_022`) + sweeps ✅ + E2E 4/4 + INDEX + CLAUDE.md + PR | ✅ | `e8de80e`, `c2268e9` |
 
-Reviews : spec-reviewer Wave A ✅ (1 défaut de test T1 vacueux → corrigé `d9aaf76`) ; spec-reviewer Wave B ✅ ; pattern-guardian — voir §4.
+Reviews : spec-reviewer Wave A ✅ (1 défaut de test T1 vacueux → corrigé `d9aaf76`) ; spec-reviewer Wave B ✅ (shapes hooks ↔ RPC exacts ×9, 0 prop pdf, 5 notes LOW — 1 fixée DEV-S40-B-02) ; pattern-guardian 13/14 — voir §4.
 
 ## 2. Migrations
 
@@ -56,8 +56,13 @@ REVOKE pair S25 canonique sur les 9 RPCs + ré-assertion dans les 2 correctives.
 | DEV-S40-C-02 | informational | Hub : 26 liens actifs après promotion (17 pré-existants + 9), le plan en prédisait 27. Smoke hub asserte 26. |
 | DEV-S40-C-03 | informational | Sidebar : nouveau sous-groupe nommé « Purchase reports » (3 entrées) créé plutôt que de forcer les reports purchase dans « Inventory reports » — miroir du groupement du hub. |
 | DEV-S40-B-01 | informational | Smokes B2/B3 : pattern erreur via flag module-level mutable dans la factory `vi.mock` (le `vi.doMock` + dynamic import de B1 ne se propage pas à travers le cache ES modules) — comportement testé équivalent. |
+| DEV-S40-B-02 | informational, fixée (CSV) | Spec-review Wave B LOW : le CSV Purchase by Supplier exportait `avg_lead_days` null comme `0` (la table affiche « — ») → fixé en passant `null` (cellule vide via `formatCell`). Notes LOW restantes non bloquantes : drill-down `served_by` disponible mais non pris sur Staff Performance (S41+ one-liner) ; queryKey `'production'` au lieu de `'production-report'` (cosmétique, sans collision) ; badge Δ% hausse=rouge (choix implémenteur) ; format CSV Old Price texte vs New Price idr-round100 sur Price Changes. |
 | DEV-S40-D-01 | **medium, fixée** | pattern-guardian P11 : les 12 migrations S40 portaient les 2 lignes REVOKE function-level mais omettaient la 3ᵉ ligne canonique `ALTER DEFAULT PRIVILEGES … REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC` (no-op runtime depuis le sweep S20 — DEV-S25-1.A-02 — mais garde-fou exigé). Fermé par une corrective unique `_022` (pattern S25 `_013`). ACL vérifiées post-fix : `anon` EXECUTE = false sur les 10 fonctions, `authenticated` = true sur les 9 RPCs. |
 | DEV-S40-D-02 | informational | `authenticated` détient techniquement EXECUTE sur la fonction trigger `audit_role_permissions_changes` (grant par défaut Supabase, non annulé par le REVOKE PUBLIC/anon) — sans effet : PostgreSQL interdit l'invocation directe d'une fonction `RETURNS TRIGGER` (0A000). |
+| DEV-S40-D3-01 | informational | E2E T2 utilise une fenêtre 90 jours pour maximiser la couverture du seed. |
+| DEV-S40-D3-02 | informational | CSV validé via `waitForEvent('download')` + taille fichier > 0. |
+| DEV-S40-D3-03 | informational | E2E T4 accepte l'empty state — l'audit trail permission_changes peut être vide sur la fenêtre 30j par défaut du dev DB (grant/revoke live couverts par pgTAP T1/T2/T22). |
+| DEV-S40-D3-04 | informational | `playwright.config.ts` étendu (testMatch backoffice) pour inclure le spec S40. |
 | DEV-S40-A-04 | informational (spec-review LOW) | `_012` : l'ordre du tableau `lines` n'est pas garanti SQL (tri dans la CTE interne seulement) ; `summary.total_value` ne couvre que les ≤1000 lignes retournées quand truncated ; `_019`/`_020` n'ont pas le clamp 366j (bornés LIMIT 501, fidèle au template du plan) ; `_019` calcule un `day` inutilisé ; `_014` round-trip timestamptz inutile mais correct (cols DATE). Aucun bloquant. |
 
 ## 4. Critères d'acceptation & tests
@@ -66,7 +71,7 @@ REVOKE pair S25 canonique sur les 9 RPCs + ré-assertion dans les 2 correctives.
 - BO : smokes des 9 pages 18/18 + smoke hub (26 liens, 0 Soon) ; **full sweep BO 146/147 fichiers / 472/473 tests** (1 skip pré-existant), 0 régression.
 - Sweeps transverses domain / UI / POS : ✅ exit 0 (aucune régression).
 - `pnpm typecheck` : 6/6 packages PASS.
-- spec-reviewer Wave A : ✅ conforme (après fix T1) ; spec-reviewer Wave B : ✅ ; pattern-guardian : **13/14 PASS** (P11 ×12 MEDIUM → tous fermés par `_022`, DEV-S40-D-01) ; E2E `tests/e2e/s40-reports.spec.ts` T1-T4 : voir PR.
+- spec-reviewer Wave A : ✅ conforme (après fix T1) ; spec-reviewer Wave B : ✅ ; pattern-guardian : **13/14 PASS** (P11 ×12 MEDIUM → tous fermés par `_022`, DEV-S40-D-01) ; E2E `tests/e2e/s40-reports.spec.ts` **T1-T4 4/4 PASS** (commit `c2268e9`, captures `test-results/s40-t1..t4.png` non committées — convention S39 tests/e2e only ; login partagé beforeAll, rate-limit 3/min/IP).
 - Hub Reports : **0 card « Soon »** — les 25 modules reports sont tous actifs.
 
 ## 5. Hors scope S41+

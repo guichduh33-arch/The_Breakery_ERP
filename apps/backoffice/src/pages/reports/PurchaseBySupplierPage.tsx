@@ -19,7 +19,7 @@ const csvColumns: CsvColumn<PurchaseBySupplierRow>[] = [
   { header: 'Total (IDR)',    accessor: (r) => r.total,                  format: 'idr-round100' },
   { header: 'Received',       accessor: (r) => r.received_count,         format: 'number' },
   { header: 'Cancelled',      accessor: (r) => r.cancelled_count,        format: 'number' },
-  { header: 'Avg lead days',  accessor: (r) => r.avg_lead_days ?? 0,     format: 'number' },
+  { header: 'Avg lead days',  accessor: (r) => r.avg_lead_days,          format: 'number' },
   { header: 'Share (%)',      accessor: (r) => r.share_pct / 100,        format: 'percent' },
 ];
 
