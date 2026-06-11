@@ -14,6 +14,7 @@
 - **Wave C — BO + PII cutover** : ✅ DONE — BO-02 query keys alignés (`['order-detail', id]`), BO-03 toast erreur OrdersListPage, BO-05 per-row PDF pending, BO-12 back URL ; **SEC-03/DB-03/DB-06 hard cutover customers** : RPCs v2 (category JSONB embed) + corrective `_019` (default category server-side) + bump `get_pos_b2b_debts_v2` (`_020`, vraie sémantique panel) + 4+1 sites POS câblés + build OK + **gate `_018` appliqué EN DERNIER** — pgTAP 7/7 PASS post-gate.
 - **Wave D — tests + docs** : ✅ DONE — TEST-02 PR-time pgTAP gate (`ci.yml`), TEST-01 Vitest live suites `skipIf`-guarded, PAT-05/06/17/18 CLAUDE.md 4 stale facts corrigés (`b0f939e`).
 - **No new feature; fraud-hardening + correctness close-out only.**
+- **Pre-merge review** : pattern-guardian read-only sur `master...HEAD` — **14/14 patterns PASS**, 0 violation HIGH/MEDIUM, 3 notes INFO (corrective `_019` intra-session pré-publication conforme ; ACLs préservés par CREATE OR REPLACE ; lacune PIN pickup déjà trackée DEV-S37-A2-01).
 
 ---
 
