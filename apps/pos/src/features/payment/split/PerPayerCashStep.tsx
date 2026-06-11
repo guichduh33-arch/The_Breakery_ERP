@@ -13,8 +13,13 @@ import type { JSX } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { Button, Currency, Numpad, cn } from '@breakery/ui';
 import type { CartItem } from '@breakery/domain';
-import { COLOR_CLASSES, type SplitPayer } from './types';
+import { COLOR_CLASSES, type SplitMode, type SplitPayer } from './types';
 import { payerSubtotal } from './ItemAssignStep';
+
+function effectiveSubtotal(payer: SplitPayer, cartItems: readonly CartItem[]): number {
+  if (payer.assignedAmount !== undefined) return payer.assignedAmount;
+  return payerSubtotal(payer, cartItems);
+}
 
 const QUICK_AMOUNTS = [50_000, 100_000, 150_000, 200_000, 500_000];
 
@@ -23,6 +28,8 @@ export interface PerPayerCashStepProps {
   cartItems: readonly CartItem[];
   grandTotal: number;
   activePayerId: string;
+  /** Split mode — used to display the correct subtotal. */
+  mode: SplitMode;
   onSetActivePayer: (id: string) => void;
   onCashChange: (payerId: string, value: string) => void;
   onConfirmPayer: (payerId: string) => void;
@@ -34,6 +41,7 @@ export function PerPayerCashStep({
   cartItems,
   grandTotal,
   activePayerId,
+  mode: _mode,
   onSetActivePayer,
   onCashChange,
   onConfirmPayer,
@@ -41,12 +49,12 @@ export function PerPayerCashStep({
 }: PerPayerCashStepProps): JSX.Element {
   const activePayer = payers.find((p) => p.id === activePayerId) ?? payers[0]!;
   const activeColors = COLOR_CLASSES[activePayer.color];
-  const total = payerSubtotal(activePayer, cartItems);
+  const total = effectiveSubtotal(activePayer, cartItems);
   const received = Number(activePayer.cashReceivedStr || '0');
   const change = Math.max(0, received - total);
   const canConfirm = received >= total && !activePayer.confirmed;
 
-  const paid = payers.filter((p) => p.confirmed).reduce((s, p) => s + payerSubtotal(p, cartItems), 0);
+  const paid = payers.filter((p) => p.confirmed).reduce((s, p) => s + effectiveSubtotal(p, cartItems), 0);
   const remaining = Math.max(0, grandTotal - paid);
 
   return (
@@ -64,7 +72,7 @@ export function PerPayerCashStep({
           {payers.map((p) => {
             const colors = COLOR_CLASSES[p.color];
             const isActive = p.id === activePayer.id;
-            const sub = payerSubtotal(p, cartItems);
+            const sub = effectiveSubtotal(p, cartItems);
             return (
               <li key={p.id}>
                 <button

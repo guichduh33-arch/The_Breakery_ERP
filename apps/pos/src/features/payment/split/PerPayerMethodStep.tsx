@@ -24,8 +24,17 @@ import { Button, Currency, cn } from '@breakery/ui';
 import type { CartItem, PaymentMethod } from '@breakery/domain';
 import type { LucideProps } from 'lucide-react';
 import type { ForwardRefExoticComponent, RefAttributes } from 'react';
-import { COLOR_CLASSES, type SplitPayer } from './types';
+import { COLOR_CLASSES, type SplitMode, type SplitPayer } from './types';
 import { payerSubtotal } from './ItemAssignStep';
+
+/**
+ * Effective subtotal for a payer: uses assignedAmount for equal/custom modes,
+ * item-based calculation for items mode.
+ */
+function effectiveSubtotal(payer: SplitPayer, cartItems: readonly CartItem[]): number {
+  if (payer.assignedAmount !== undefined) return payer.assignedAmount;
+  return payerSubtotal(payer, cartItems);
+}
 
 type IconComponent = ForwardRefExoticComponent<Omit<LucideProps, 'ref'> & RefAttributes<SVGSVGElement>>;
 
@@ -43,6 +52,8 @@ export interface PerPayerMethodStepProps {
   cartItems: readonly CartItem[];
   grandTotal: number;
   activePayerId: string;
+  /** Split mode — used to display the correct subtotal (assigned vs. item-based). */
+  mode: SplitMode;
   onSetActivePayer: (id: string) => void;
   /** Selecting a method updates the payer's draft method. */
   onPickMethod: (payerId: string, method: PaymentMethod) => void;
@@ -55,15 +66,16 @@ export function PerPayerMethodStep({
   cartItems,
   grandTotal,
   activePayerId,
+  mode: _mode,
   onSetActivePayer,
   onPickMethod,
   onConfirmPayer,
 }: PerPayerMethodStepProps): JSX.Element {
   const activePayer = payers.find((p) => p.id === activePayerId) ?? payers[0]!;
   const activeColors = COLOR_CLASSES[activePayer.color];
-  const activeTotal = payerSubtotal(activePayer, cartItems);
+  const activeTotal = effectiveSubtotal(activePayer, cartItems);
 
-  const paid = payers.filter((p) => p.confirmed).reduce((s, p) => s + payerSubtotal(p, cartItems), 0);
+  const paid = payers.filter((p) => p.confirmed).reduce((s, p) => s + effectiveSubtotal(p, cartItems), 0);
   const remaining = Math.max(0, grandTotal - paid);
 
   return (
@@ -75,7 +87,7 @@ export function PerPayerMethodStep({
           {payers.map((p) => {
             const colors = COLOR_CLASSES[p.color];
             const isActive = p.id === activePayer.id;
-            const sub = payerSubtotal(p, cartItems);
+            const sub = effectiveSubtotal(p, cartItems);
             return (
               <li key={p.id}>
                 <button
@@ -142,9 +154,11 @@ export function PerPayerMethodStep({
             {activePayer.label}
           </span>
           <Currency amount={activeTotal} className={cn('text-3xl block', activeColors.text)} />
-          <div className="text-[11px] uppercase tracking-widest text-text-muted">
-            {activePayer.items.reduce((s, a) => s + a.quantity, 0)} items
-          </div>
+          {activePayer.assignedAmount === undefined && (
+            <div className="text-[11px] uppercase tracking-widest text-text-muted">
+              {activePayer.items.reduce((s, a) => s + a.quantity, 0)} items
+            </div>
+          )}
         </div>
 
         <h3 className="text-xs uppercase tracking-widest text-gold mb-3">

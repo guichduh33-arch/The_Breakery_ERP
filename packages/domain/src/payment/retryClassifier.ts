@@ -141,6 +141,9 @@ function friendlyFatalMessage(code: string, message?: string): string {
       return 'A promotion in this cart is no longer valid. Remove it and try again.';
     case 'invalid_loyalty_redemption':
       return 'Loyalty redemption is invalid (insufficient points or expired tier).';
+    case 'account_locked':
+      // S38 SEC-06 — the named manager hit 5 failed discount PINs.
+      return 'Compte manager verrouillé 15 min (PIN erronés).';
     case '':
       return message ?? 'Payment failed for an unknown reason. Try again or contact support.';
     default:

@@ -1,11 +1,13 @@
 // apps/pos/src/features/payment/split/SplitPaymentFlow.tsx
 //
 // Session 14 / Phase 2.C — Split-payment orchestrator (refs 90-95).
+// Session 38 / Wave C — extended with mode_select, equal, and custom modes.
 //
 // State machine :
-//   payer_count → assign_items → per_payer_method → [per_payer_cash] → process
-//                ↑__________________|                          ↑
-//                       (back nav at any step)            (back to method)
+//
+//   mode_select → payer_count → assign_items → per_payer_method → [per_payer_cash] → process
+//                              ↳ (equal mode: skip assign_items)
+//                              ↳ (custom mode: custom_amounts → per_payer_method)
 //
 // Outputs :
 //   onCancel()                                     — close the split flow
@@ -14,19 +16,22 @@
 //                                                    per payer (consolidates
 //                                                    `confirmed` payers).
 //
-// Validation : the cashier must assign EVERY cart unit before leaving the
-// assign step. Total of payer subtotals must equal cart total. Each payer
-// must confirm before the flow completes.
+// Validation : the cashier must assign EVERY cart unit (items mode) OR all
+// amounts must sum to the grand total (equal/custom modes) before proceeding.
+// Each payer must confirm before the flow completes.
 
 import { useCallback, useMemo, useState, type JSX } from 'react';
 import { ArrowLeft, Users, X } from 'lucide-react';
 import { Button, cn } from '@breakery/ui';
 import type { CartItem, Tender } from '@breakery/domain';
+import { splitEqualAmounts } from '@breakery/domain';
+import { ModeSelectStep } from './ModeSelectStep';
 import { PayerCountStep } from './PayerCountStep';
 import { ItemAssignStep, payerSubtotal } from './ItemAssignStep';
+import { CustomAmountsStep } from './CustomAmountsStep';
 import { PerPayerMethodStep } from './PerPayerMethodStep';
 import { PerPayerCashStep } from './PerPayerCashStep';
-import { makePayers, type SplitPayer, type SplitStep } from './types';
+import { makePayers, type SplitMode, type SplitPayer, type SplitStep } from './types';
 
 export interface SplitPaymentFlowProps {
   cartItems: readonly CartItem[];
@@ -37,13 +42,23 @@ export interface SplitPaymentFlowProps {
   onComplete: (tenders: Tender[]) => void;
 }
 
+/**
+ * Helper: compute the effective subtotal for a payer.
+ * Equal/custom modes use `assignedAmount`; items mode uses item-based calculation.
+ */
+function effectiveSubtotal(payer: SplitPayer, cartItems: readonly CartItem[]): number {
+  if (payer.assignedAmount !== undefined) return payer.assignedAmount;
+  return payerSubtotal(payer, cartItems);
+}
+
 export function SplitPaymentFlow({
   cartItems,
   grandTotal,
   onCancel,
   onComplete,
 }: SplitPaymentFlowProps): JSX.Element {
-  const [step, setStep] = useState<SplitStep>('payer_count');
+  const [step, setStep] = useState<SplitStep>('mode_select');
+  const [mode, setMode] = useState<SplitMode>('items');
   const [payerCount, setPayerCount] = useState<number | null>(null);
   const [payers, setPayers] = useState<SplitPayer[]>([]);
   const [activePayerId, setActivePayerId] = useState<string>('');
@@ -60,16 +75,45 @@ export function SplitPaymentFlow({
   const allAssigned = assignedUnits === totalCartUnits && totalCartUnits > 0;
   const allConfirmed = payers.length > 0 && payers.every((p) => p.confirmed);
 
-  // ─── Step 1 : pick count ───────────────────────────────────────────────
-  const handlePickCount = useCallback((count: number) => {
-    setPayerCount(count);
-    const fresh = makePayers(count);
-    setPayers(fresh);
-    setActivePayerId(fresh[0]!.id);
-    setStep('assign_items');
+  // ─── Step 0 : select split mode ────────────────────────────────────────
+  const handleSelectMode = useCallback((selectedMode: SplitMode) => {
+    setMode(selectedMode);
+    setStep('payer_count');
   }, []);
 
-  // ─── Step 2 : assign items ─────────────────────────────────────────────
+  // ─── Step 1 : pick count ───────────────────────────────────────────────
+  const handlePickCount = useCallback((count: number, currentMode: SplitMode) => {
+    setPayerCount(count);
+    const fresh = makePayers(count);
+
+    if (currentMode === 'equal') {
+      // Pre-assign equal amounts directly — skip assign_items
+      const amounts = splitEqualAmounts(grandTotal, count);
+      const withAmounts = fresh.map((p, i) => ({ ...p, assignedAmount: amounts[i]! }));
+      setPayers(withAmounts);
+      setActivePayerId(withAmounts[0]!.id);
+      setStep('per_payer_method');
+    } else if (currentMode === 'custom') {
+      setPayers(fresh);
+      setActivePayerId(fresh[0]!.id);
+      setStep('custom_amounts');
+    } else {
+      // items mode — original flow
+      setPayers(fresh);
+      setActivePayerId(fresh[0]!.id);
+      setStep('assign_items');
+    }
+  }, [grandTotal]);
+
+  // ─── Step 2 (custom mode) : amounts confirmed ──────────────────────────
+  const handleCustomAmountsContinue = useCallback((amounts: number[]) => {
+    setPayers((prev) =>
+      prev.map((p, i) => ({ ...p, assignedAmount: amounts[i]! })),
+    );
+    setStep('per_payer_method');
+  }, []);
+
+  // ─── Step 2 (items mode) : assign items ───────────────────────────────
   const handleAssign = useCallback((cartItemId: string) => {
     setPayers((prev) => prev.map((p) => {
       if (p.id !== activePayerId) return p;
@@ -140,7 +184,7 @@ export function SplitPaymentFlow({
   // ─── Finalize : build tenders + ship ───────────────────────────────────
   const handleProcessAll = useCallback(() => {
     const tenders: Tender[] = payers.map((p) => {
-      const amount = payerSubtotal(p, cartItems);
+      const amount = effectiveSubtotal(p, cartItems);
       const base: Tender = { method: p.method!, amount };
       if (p.method === 'cash') {
         const received = Number(p.cashReceivedStr || amount);
@@ -156,13 +200,40 @@ export function SplitPaymentFlow({
     onComplete(tenders);
   }, [payers, cartItems, onComplete]);
 
+  // ─── Back navigation ────────────────────────────────────────────────────
+  const handleBack = useCallback(() => {
+    switch (step) {
+      case 'payer_count':
+        setStep('mode_select');
+        break;
+      case 'custom_amounts':
+        setStep('payer_count');
+        break;
+      case 'assign_items':
+        setStep('payer_count');
+        break;
+      case 'per_payer_method':
+        if (mode === 'custom') setStep('custom_amounts');
+        else if (mode === 'equal') setStep('payer_count');
+        else setStep('assign_items');
+        break;
+      case 'per_payer_cash':
+        setStep('per_payer_method');
+        break;
+      default:
+        break;
+    }
+  }, [step, mode]);
+
   // ─── Header (per ref 90 / 91 / 94 / 95) ────────────────────────────────
   const headerLabel = useMemo<string>(() => {
     switch (step) {
-      case 'payer_count':     return 'Split by item';
-      case 'assign_items':    return 'Assign items to payers';
+      case 'mode_select':      return 'Split payment';
+      case 'payer_count':      return 'Split payment';
+      case 'custom_amounts':   return 'Custom amounts';
+      case 'assign_items':     return 'Assign items to payers';
       case 'per_payer_method':
-      case 'per_payer_cash':  return 'Split payment — per payer';
+      case 'per_payer_cash':   return 'Split payment — per payer';
     }
   }, [step]);
 
@@ -171,7 +242,7 @@ export function SplitPaymentFlow({
     if (step === 'assign_items') {
       return (
         <div className="h-16 px-6 flex items-center justify-between border-t border-border-subtle bg-bg-elevated">
-          <Button variant="ghost" onClick={() => setStep('payer_count')}>
+          <Button variant="ghost" onClick={handleBack}>
             <ArrowLeft className="h-4 w-4 mr-2" aria-hidden /> Back
           </Button>
           <div className="text-xs text-text-secondary">
@@ -193,7 +264,7 @@ export function SplitPaymentFlow({
     if (step === 'per_payer_method' || step === 'per_payer_cash') {
       return (
         <div className="h-16 px-6 flex items-center justify-between border-t border-border-subtle bg-bg-elevated">
-          <Button variant="ghost" onClick={() => setStep('assign_items')}>
+          <Button variant="ghost" onClick={handleBack}>
             <ArrowLeft className="h-4 w-4 mr-2" aria-hidden /> Back
           </Button>
           <Button
@@ -210,7 +281,7 @@ export function SplitPaymentFlow({
       );
     }
     return null;
-  }, [step, assignedUnits, totalCartUnits, allAssigned, allConfirmed, handleProcessAll]);
+  }, [step, assignedUnits, totalCartUnits, allAssigned, allConfirmed, handleProcessAll, handleBack]);
 
   return (
     <div className="absolute inset-0 z-30 bg-bg-base flex flex-col" data-testid="split-payment-flow">
@@ -234,8 +305,19 @@ export function SplitPaymentFlow({
       </header>
 
       {/* Body */}
+      {step === 'mode_select' && (
+        <ModeSelectStep onSelect={handleSelectMode} />
+      )}
       {step === 'payer_count' && (
-        <PayerCountStep value={payerCount} onPick={handlePickCount} />
+        <PayerCountStep value={payerCount} onPick={(count) => handlePickCount(count, mode)} />
+      )}
+      {step === 'custom_amounts' && (
+        <CustomAmountsStep
+          payers={payers}
+          grandTotal={grandTotal}
+          onContinue={handleCustomAmountsContinue}
+          onBack={handleBack}
+        />
       )}
       {step === 'assign_items' && (
         <ItemAssignStep
@@ -255,6 +337,7 @@ export function SplitPaymentFlow({
           cartItems={cartItems}
           grandTotal={grandTotal}
           activePayerId={activePayerId}
+          mode={mode}
           onSetActivePayer={setActivePayerId}
           onPickMethod={handlePickMethod}
           onConfirmPayer={handleConfirmPayer}
@@ -266,6 +349,7 @@ export function SplitPaymentFlow({
           cartItems={cartItems}
           grandTotal={grandTotal}
           activePayerId={activePayerId}
+          mode={mode}
           onSetActivePayer={setActivePayerId}
           onCashChange={handleCashChange}
           onConfirmPayer={handleConfirmPayer}

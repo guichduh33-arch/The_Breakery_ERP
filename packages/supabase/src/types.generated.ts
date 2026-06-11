@@ -5424,6 +5424,10 @@ export type Database = {
       _table_privs: { Args: never; Returns: unknown[] }
       _temptypes: { Args: { "": string }; Returns: string }
       _todo: { Args: never; Returns: string }
+      _verify_pin_with_lockout: {
+        Args: { p_pin: string; p_user_id: string }
+        Returns: boolean
+      }
       add_display_stock_v1: {
         Args: {
           p_idempotency_key?: string
@@ -6731,6 +6735,10 @@ export type Database = {
           p_supplier_id?: string
           p_unit_cost?: number
         }
+        Returns: Json
+      }
+      record_pin_failure_v1: {
+        Args: { p_source?: string; p_user_id: string }
         Returns: Json
       }
       record_production_v1: {

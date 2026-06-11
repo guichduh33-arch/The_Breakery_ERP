@@ -149,7 +149,11 @@ export function useCheckout() {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({})) as CheckoutResponse;
-        throw Object.assign(new Error(err.error ?? 'checkout_failed'), { details: err, status: res.status });
+        const code = err.error ?? 'checkout_failed';
+        // S38 — `account_locked` (manager hit 5 failed discount PINs) is mapped to a
+        // dedicated French message by classifyCheckoutError via the `account_locked`
+        // code; we just forward the envelope so `details.error` carries the code.
+        throw Object.assign(new Error(code), { details: err, status: res.status });
       }
       const body = await res.json() as CheckoutResponse;
       clearManagerPin();

@@ -8,6 +8,9 @@
 
 import type { PaymentMethod } from '@breakery/domain';
 
+/** Split mode: how amounts are divided among payers. */
+export type SplitMode = 'items' | 'equal' | 'custom';
+
 /** A single payer in the flow. */
 export interface SplitPayer {
   /** Stable id : "client-1", "client-2", etc. */
@@ -24,6 +27,11 @@ export interface SplitPayer {
   cashReceivedStr: string;
   /** Marks this payer as "paid in the per-payer step" (confirm pressed). */
   confirmed: boolean;
+  /**
+   * Pre-assigned amount for equal/custom modes only.
+   * When set, this overrides the item-based subtotal for this payer.
+   */
+  assignedAmount?: number;
 }
 
 /** Item assignment row : pointer back to a cart line + quantity assigned. */
@@ -36,7 +44,9 @@ export interface SplitAssignment {
 
 /** Flow steps. */
 export type SplitStep =
+  | 'mode_select'      // S38 POS-15 — "How do you want to split?"
   | 'payer_count'      // ref 90 / 92 — "How many payers?"
+  | 'custom_amounts'   // S38 POS-15 — per-payer amount entry (custom mode)
   | 'assign_items'     // ref 91 / 93 — left list + per-payer tab assignment
   | 'per_payer_method' // ref 94 — per-payer method picker
   | 'per_payer_cash';  // ref 95 — per-payer cash numpad

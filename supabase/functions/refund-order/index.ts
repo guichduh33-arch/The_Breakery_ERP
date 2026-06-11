@@ -23,7 +23,7 @@ import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { handleCors, jsonResponse } from '../_shared/cors.ts';
 import { rateLimitedResponse } from '../_shared/responses.ts';
 import { checkRateLimitDurable, getClientIp } from '../_shared/rate-limit.ts';
-import { verifyManagerPin } from '../_shared/manager-pin.ts';
+import { verifyManagerPin, isManagerPinBlocked, recordManagerPinFailure, MANAGER_PIN_FAIL_WINDOW_SEC } from '../_shared/manager-pin.ts';
 import { getIdempotencyKey, InvalidIdempotencyKeyError } from '../_shared/idempotency.ts';
 import { getActingAuthUserId } from '../_shared/acting-user.ts';
 import { getAdminClient } from '../_shared/supabase-admin.ts';
@@ -111,10 +111,19 @@ serve(async (req) => {
     return jsonResponse({ error: 'reason_too_short' }, 400);
   }
 
+  // SEC-07 — check fail bucket before attempting PIN verification.
+  if (await isManagerPinBlocked(ip)) {
+    return rateLimitedResponse(MANAGER_PIN_FAIL_WINDOW_SEC);
+  }
+
   const mgr = await verifyManagerPin(managerPin);
   if (!mgr.ok) {
     if (mgr.reason === 'invalid_pin_format') return jsonResponse({ error: 'invalid_pin_format' }, 400);
-    if (mgr.reason === 'no_match') return jsonResponse({ error: 'wrong_pin' }, 401);
+    if (mgr.reason === 'no_match') {
+      const { blocked, retryAfterSec } = await recordManagerPinFailure(ip, 'refund-order');
+      if (blocked) return rateLimitedResponse(retryAfterSec);
+      return jsonResponse({ error: 'wrong_pin' }, 401);
+    }
     return jsonResponse({ error: 'internal' }, 500);
   }
 

@@ -16,6 +16,11 @@ export {
   type CheckoutErrorShape,
   type RetryClassification,
 } from './payment/retryClassifier.js';
+export {
+  splitEqualAmounts,
+  validateCustomSplit,
+  type CustomSplitValidation,
+} from './payment/splitModes.js';
 export * from './refunds/index.js';
 export { buildOrderPayload } from './orders/buildOrderPayload.js';
 export { ORDER_TYPE_LABELS, orderTypeLabel, type OrderTypeLabelKey } from './orders/orderTypeLabel.js';
