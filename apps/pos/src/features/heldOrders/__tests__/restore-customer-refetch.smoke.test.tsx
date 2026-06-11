@@ -6,7 +6,7 @@
 // tier, points) comes back — not just the bare customerId used for pricing/JE.
 // S37 C5 (SEC-03) — the badge re-fetch goes through the definer RPC
 // `get_customer_v2` (survives the customers.read gate), no more direct
-// from('customers') read.
+// customers table read.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';

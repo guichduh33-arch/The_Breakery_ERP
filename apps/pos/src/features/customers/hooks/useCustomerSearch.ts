@@ -8,7 +8,7 @@ export type CustomerWithCategory = Customer & { category: CustomerCategory | nul
 /**
  * S37 C5 (SEC-03) — customer search goes through the SECURITY DEFINER RPC
  * `search_customers_v2` (embed `category` JSONB) instead of a direct
- * `from('customers')` read, so it survives the `customers.read` SELECT gate.
+ * customers table read, so it survives the `customers.read` SELECT gate.
  * The RPC row shape mirrors the old CUSTOMER_SELECT projection exactly.
  */
 export function useCustomerSearch(query: string) {
