@@ -65,6 +65,7 @@ export default function B2BSettingsPage(): JSX.Element {
   const [newTerm,        setNewTerm       ] = useState<string>('');
   const [threshold,      setThreshold     ] = useState<number>(30);
   const [buckets,        setBuckets       ] = useState<LocalBucket[]>([]);
+  const [saveError,      setSaveError     ] = useState<string | null>(null);
 
   // Track which server snapshot is loaded so we don't clobber user edits on
   // background refetches — only re-sync when the server data object reference
@@ -116,8 +117,6 @@ export default function B2BSettingsPage(): JSX.Element {
   function removeBucket(id: string): void {
     setBuckets((prev) => prev.filter((b) => b.id !== id));
   }
-
-  const [saveError, setSaveError] = useState<string | null>(null);
 
   async function handleSave(): Promise<void> {
     setSaveError(null);
