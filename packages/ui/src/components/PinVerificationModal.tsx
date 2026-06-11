@@ -20,7 +20,7 @@ const SR_ONLY = 'absolute -m-px h-px w-px overflow-hidden whitespace-nowrap bord
 
 export type VerifyResult =
   | { ok: true; userId: string }
-  | { ok: false; error: 'wrong_pin' | 'permission_missing' | 'unknown' };
+  | { ok: false; error: 'wrong_pin' | 'permission_missing' | 'account_locked' | 'unknown' };
 
 export interface PinVerificationModalProps {
   open: boolean;
@@ -39,6 +39,8 @@ export interface PinVerificationModalProps {
 const ERROR_MESSAGES = {
   wrong_pin: 'Wrong PIN',
   permission_missing: 'User lacks permission',
+  // S38 — lockout from RPCs with in-arg PIN validation (SEC-06/07)
+  account_locked: 'Compte verrouillé 15 min — trop de tentatives erronées.',
   unknown: 'Verification failed',
 } as const satisfies Record<string, string>;
 

@@ -149,7 +149,13 @@ export function useCheckout() {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({})) as CheckoutResponse;
-        throw Object.assign(new Error(err.error ?? 'checkout_failed'), { details: err, status: res.status });
+        const code = err.error ?? 'checkout_failed';
+        // S38 — surface account_locked from process-payment EF with a
+        // dedicated French message so the cashier knows to wait 15 min.
+        const message = code === 'account_locked'
+          ? 'Compte manager verrouillé 15 min (PIN erronés).'
+          : undefined;
+        throw Object.assign(new Error(code), { details: { ...err, message }, status: res.status });
       }
       const body = await res.json() as CheckoutResponse;
       clearManagerPin();

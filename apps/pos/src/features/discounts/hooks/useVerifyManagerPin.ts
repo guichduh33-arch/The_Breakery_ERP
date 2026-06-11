@@ -10,10 +10,20 @@ export function useVerifyManagerPin() {
         body: { pin, required_permission: 'sales.discount' },
       });
       const data = result.data as { verified_user_id: string } | null;
-      const error = result.error as { context?: { status?: number } } | null;
+      const error = result.error as {
+        context?: { status?: number };
+        message?: string;
+      } | null;
       if (error) {
         const status = error.context?.status;
-        if (status === 403) return { ok: false, error: 'permission_missing' };
+        const msg = (error.message ?? '').toLowerCase();
+        // S38 — distinguish account_locked (403 with body 'account_locked') from
+        // plain permission_missing (403 without lockout body). The EF returns
+        // 403 + body { error: 'account_locked' } when locked_until is in the future.
+        if (status === 403) {
+          if (msg.includes('account_locked')) return { ok: false, error: 'account_locked' };
+          return { ok: false, error: 'permission_missing' };
+        }
         if (status === 401 || status === 400) return { ok: false, error: 'wrong_pin' };
         return { ok: false, error: 'unknown' };
       }
