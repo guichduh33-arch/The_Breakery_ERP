@@ -37,7 +37,7 @@ export default defineConfig({
     },
     {
       name: 'backoffice',
-      testMatch: /(opname-finalize|po-receive|bo-admin-pin-reset|kiosk-display-realtime|s39-bo-completion|s40-reports)\.spec\.ts$/,
+      testMatch: /(opname-finalize|po-receive|bo-admin-pin-reset|kiosk-display-realtime|s39-bo-completion|s40-reports|s41-catalog-import)\.spec\.ts$/,
       use: {
         ...devices['Desktop Chrome'],
         baseURL: process.env.E2E_BO_URL ?? process.env.E2E_BASE_URL ?? 'http://localhost:5174',
