@@ -29,6 +29,7 @@ import {
   Printer, Network, Coins, Scale, Banknote, Layers3,
   LineChart, Sparkles, Megaphone, Cake,
   ClipboardCheck, TrendingUp, Signature, ShoppingBag,
+  Calendar, ShoppingCart, Truck, ListChecks,
   ChevronRight,
   type LucideIcon,
 } from 'lucide-react';
@@ -139,6 +140,8 @@ const GROUPS: NavGroup[] = [
           { to: '/backoffice/reports/sales-by-category', label: 'Sales by Category', icon: PieChart, permission: 'reports.sales.read' },
           { to: '/backoffice/reports/sales-by-staff', label: 'Sales by Staff', icon: Users, permission: 'reports.sales.read' },
           { to: '/backoffice/reports/basket-analysis', label: 'Basket Analysis', icon: Layers3, permission: 'reports.sales.read' },
+          { to: '/backoffice/reports/daily-sales', label: 'Daily Sales', icon: Calendar, permission: 'reports.sales.read' },
+          { to: '/backoffice/reports/staff-performance', label: 'Staff Performance', icon: Users, permission: 'reports.sales.read' },
           { to: '/backoffice/reports/payment-by-method', label: 'Payment by Method', icon: Receipt, permission: 'reports.financial.read' as PermissionCode },
         ],
       },
@@ -150,6 +153,16 @@ const GROUPS: NavGroup[] = [
           { to: '/backoffice/reports/wastage', label: 'Wastage & Spoilage', icon: AlertTriangle, permission: 'reports.inventory.read' as PermissionCode },
           { to: '/backoffice/reports/perishable-turnover', label: 'Perishable Turnover', icon: Clock4, permission: 'reports.inventory.read' as PermissionCode },
           { to: '/backoffice/reports/recipe-cost', label: 'Recipe Cost', icon: TrendingUp, permission: 'reports.financial.read' },
+          { to: '/backoffice/reports/production-report', label: 'Production Report', icon: BarChart3, permission: 'reports.inventory.read' as PermissionCode },
+          { to: '/backoffice/reports/production-efficiency', label: 'Production Efficiency', icon: TrendingUp, permission: 'reports.inventory.read' as PermissionCode },
+        ],
+      },
+      {
+        label: 'Purchase reports',
+        items: [
+          { to: '/backoffice/reports/purchase-items', label: 'Purchase Items', icon: ShoppingCart, permission: 'reports.inventory.read' as PermissionCode },
+          { to: '/backoffice/reports/purchase-by-date', label: 'Purchase by Date', icon: Calendar, permission: 'reports.inventory.read' as PermissionCode },
+          { to: '/backoffice/reports/purchase-by-supplier', label: 'Purchase by Supplier', icon: Truck, permission: 'reports.inventory.read' as PermissionCode },
         ],
       },
       {
@@ -174,6 +187,8 @@ const GROUPS: NavGroup[] = [
         label: 'Audit',
         items: [
           { to: '/backoffice/reports/audit', label: 'Audit Log', icon: Shield, permission: 'reports.audit.read' },
+          { to: '/backoffice/reports/price-changes', label: 'Price Changes', icon: ListChecks, permission: 'reports.financial.read' as PermissionCode },
+          { to: '/backoffice/reports/permission-changes', label: 'Permission Change Log', icon: Shield, permission: 'reports.audit.read' as PermissionCode },
         ],
       },
     ],

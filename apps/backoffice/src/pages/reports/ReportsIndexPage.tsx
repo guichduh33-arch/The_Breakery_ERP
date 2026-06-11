@@ -40,7 +40,7 @@ const SECTIONS: ReportSection[] = [
       { to: 'sales-by-category', title: 'Sales by Category', blurb: 'Revenue + qty per product category.',           icon: PieChart },
       { to: 'sales-by-staff',    title: 'Sales by Staff',    blurb: 'Total / order count / avg basket per staff.',   icon: Users },
       { to: 'basket-analysis',   title: 'Basket Analysis',   blurb: 'Top cross-sell product pairs by lift.',         icon: Layers3 },
-      {                          title: 'Daily Sales',       blurb: 'Sales breakdown by day. (Soon)',                icon: Calendar },
+      { to: 'daily-sales',       title: 'Daily Sales',       blurb: 'Sales breakdown by day.',                       icon: Calendar },
     ],
   },
   {
@@ -60,9 +60,9 @@ const SECTIONS: ReportSection[] = [
     id: 'purchases',
     title: 'Purchases',
     cards: [
-      { title: 'Purchase Items',     blurb: 'All purchased items with prices and dates. (Soon)', icon: ShoppingCart },
-      { title: 'Purchase by Date',   blurb: 'Purchase history timeline. (Soon)',                  icon: Calendar },
-      { title: 'Purchase by Supplier', blurb: 'Supplier performance and costs. (Soon)',           icon: Truck },
+      { to: 'purchase-items',     title: 'Purchase Items',     blurb: 'All purchased items with prices and dates.',  icon: ShoppingCart },
+      { to: 'purchase-by-date',   title: 'Purchase by Date',   blurb: 'Purchase history timeline.',                  icon: Calendar },
+      { to: 'purchase-by-supplier', title: 'Purchase by Supplier', blurb: 'Supplier performance and costs.',         icon: Truck },
     ],
   },
   {
@@ -80,9 +80,9 @@ const SECTIONS: ReportSection[] = [
     id: 'operations',
     title: 'Operations',
     cards: [
-      { title: 'Staff Performance',    blurb: 'Orders, revenue and performance per staff. (Soon)',                       icon: Users },
-      { title: 'Production Report',    blurb: 'Production quantities, values and costs. (Soon)',                          icon: BarChart3 },
-      { title: 'Production Efficiency', blurb: 'Waste rate by product and daily trend. (Soon)',                            icon: TrendingUp },
+      { to: 'staff-performance',    title: 'Staff Performance',    blurb: 'Orders, revenue and performance per staff.',                       icon: Users },
+      { to: 'production-report',    title: 'Production Report',    blurb: 'Production quantities, values and costs.',                          icon: BarChart3 },
+      { to: 'production-efficiency', title: 'Production Efficiency', blurb: 'Waste rate by product and daily trend.',                            icon: TrendingUp },
     ],
   },
   {
@@ -90,8 +90,8 @@ const SECTIONS: ReportSection[] = [
     title: 'Logs & Audit',
     cards: [
       { to: 'audit',                 title: 'Audit Log',         blurb: 'System-wide audit trail.',         icon: Shield },
-      {                              title: 'Price Changes',     blurb: 'History of product price updates. (Soon)', icon: ListChecks },
-      {                              title: 'Permission Change Log', blurb: 'Role & permission modifications. (Soon)',  icon: Shield },
+      { to: 'price-changes',         title: 'Price Changes',     blurb: 'History of product price updates.', icon: ListChecks },
+      { to: 'permission-changes',    title: 'Permission Change Log', blurb: 'Role & permission modifications.',  icon: Shield },
     ],
   },
 ];
