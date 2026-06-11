@@ -21,10 +21,15 @@ import { MemoryRouter } from 'react-router-dom';
 
 // ── Hoisted stable refs (DEV-S39-B1-01) ──────────────────────────────────────
 
-const { importMutateAsync, mockImportState, VALID_PAYLOAD, VALID_REPORT, ERRORS_REPORT } =
+const { importMutateAsync, mockImportState, VALID_PAYLOAD, VALID_REPORT, ERRORS_REPORT, EMPTY_ROWMAPS } =
   vi.hoisted(() => {
     const importMutateAsync = vi.fn();
     const mockImportState = { isPending: false };
+
+    const EMPTY_ROWMAPS = {
+      categories: [], ingredients: [], products: [2],
+      units: [], variants: [], recipes: [],
+    };
 
     // Stable CatalogPayload fixture
     const VALID_PAYLOAD = {
@@ -64,7 +69,7 @@ const { importMutateAsync, mockImportState, VALID_PAYLOAD, VALID_REPORT, ERRORS_
       idempotent_replay: false,
     };
 
-    return { importMutateAsync, mockImportState, VALID_PAYLOAD, VALID_REPORT, ERRORS_REPORT };
+    return { importMutateAsync, mockImportState, VALID_PAYLOAD, VALID_REPORT, ERRORS_REPORT, EMPTY_ROWMAPS };
   });
 
 // ── Module mocks ──────────────────────────────────────────────────────────────
@@ -83,7 +88,7 @@ vi.mock('@/stores/authStore.js', () => ({
 // parseCatalogWorkbook — intercepted for both static and dynamic imports.
 // Returns VALID_PAYLOAD by default; individual tests override via mockReturnValueOnce.
 vi.mock('@/features/catalog-import/parseCatalogWorkbook.js', () => ({
-  parseCatalogWorkbook: vi.fn(() => ({ payload: VALID_PAYLOAD, errors: [] })),
+  parseCatalogWorkbook: vi.fn(() => ({ payload: VALID_PAYLOAD, errors: [], rowMaps: EMPTY_ROWMAPS })),
 }));
 
 // useImportCatalog — controls the mutation.
@@ -244,5 +249,21 @@ describe('ProductsImportExportPage [S41 smoke]', () => {
     expect(secondCallArgs[0].idempotencyKey).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
     );
+  });
+
+  // ── Case 4 (review I-1): dry-run rejection returns to idle ────────────────
+
+  it('T4: dry-run RPC rejection → back to idle, dropzone reappears (no dead-end)', async () => {
+    importMutateAsync.mockRejectedValueOnce(new Error('network down'));
+
+    renderPage();
+    await triggerUpload();
+
+    // The page must fall back to idle: dropzone visible again, no preview UI.
+    await waitFor(() => {
+      expect(screen.getByTestId('import-dropzone')).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId('confirm-import')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Validating/i)).not.toBeInTheDocument();
   });
 });

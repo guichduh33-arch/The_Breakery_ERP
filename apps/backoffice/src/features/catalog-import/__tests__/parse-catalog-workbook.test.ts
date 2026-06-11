@@ -72,4 +72,20 @@ describe('parseCatalogWorkbook', () => {
     expect(payload!.units[0]!.tags).toEqual(['recipe', 'purchase']);
     expect(payload!.products[0]!.visible_on_pos).toBe(false);
   });
+
+  it('builds rowMaps mapping payload ordinals back to Excel rows (blank rows skipped)', () => {
+    // Middle row is whitespace-only: the parser skips it, but it still occupies
+    // Excel row 3 — so the two accepted categories live on Excel rows 2 and 4.
+    const buf = makeWb({
+      Categories: [
+        ['Cat A', null, null],
+        ['', '', ''],
+        ['Cat B', null, null],
+      ],
+    });
+    const { payload, errors, rowMaps } = parseCatalogWorkbook(buf);
+    expect(errors).toEqual([]);
+    expect(payload!.categories).toHaveLength(2);
+    expect(rowMaps.categories).toEqual([2, 4]);
+  });
 });

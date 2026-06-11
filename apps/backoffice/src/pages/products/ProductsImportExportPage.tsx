@@ -1,7 +1,8 @@
 // apps/backoffice/src/pages/products/ProductsImportExportPage.tsx
 // S41 — Import / Export tab: template download, full export, 3-step import.
 // State machine: idle → parsed → previewed → done.
-// Idempotency key: useRef<string>(crypto.randomUUID()), reset after commit.
+// Idempotency key: useRef<string>(crypto.randomUUID()), reset on new file AND
+// after a successful commit (I-2: different file = different import intent).
 
 import { useRef, useState, type JSX } from 'react';
 import { Link } from 'react-router-dom';
@@ -13,10 +14,28 @@ import { ImportSummaryCards } from '@/features/catalog-import/components/ImportS
 import { ImportErrorsTable } from '@/features/catalog-import/components/ImportErrorsTable.js';
 import {
   useImportCatalog,
+  type ImportError,
   type ImportReport,
 } from '@/features/catalog-import/hooks/useImportCatalog.js';
 import { useExportCatalog } from '@/features/catalog-import/hooks/useExportCatalog.js';
-import type { CatalogPayload, StructureError } from '@/features/catalog-import/parseCatalogWorkbook.js';
+import type { CatalogPayload, StructureError, RowMaps } from '@/features/catalog-import/parseCatalogWorkbook.js';
+import { CATALOG_SHEETS, type PayloadKey } from '@/features/catalog-import/templateDefinition.js';
+
+const SHEET_TO_PAYLOAD_KEY: ReadonlyMap<string, PayloadKey> = new Map(
+  CATALOG_SHEETS.map((s) => [s.name, s.payloadKey]),
+);
+
+// I-3: RPC errors carry the 1-based ordinal of the row inside the JSONB array;
+// the spreadsheet user thinks in Excel rows (header = 1, blank rows skipped by
+// the parser shift the ordinals). Translate before display.
+function toExcelRows(errors: ImportError[], rowMaps: RowMaps): ImportError[] {
+  return errors.map((err) => {
+    const key = SHEET_TO_PAYLOAD_KEY.get(err.sheet);
+    if (key === undefined) return err;
+    const excelRow = rowMaps[key]?.[err.row - 1];
+    return excelRow === undefined ? err : { ...err, row: excelRow };
+  });
+}
 
 type Stage =
   | { step: 'idle' }
@@ -25,12 +44,14 @@ type Stage =
       payload: CatalogPayload | null;
       structureErrors: StructureError[];
       filename: string;
+      rowMaps: RowMaps;
     }
   | {
       step: 'previewed';
       payload: CatalogPayload;
       report: ImportReport;
       filename: string;
+      rowMaps: RowMaps;
     }
   | { step: 'done'; report: ImportReport };
 
@@ -64,16 +85,24 @@ export default function ProductsImportExportPage(): JSX.Element {
   }
 
   async function handleFile(buf: ArrayBuffer, filename: string): Promise<void> {
+    // I-2: new file = new import intent → generate a fresh idempotency key so
+    // a previous successful commit (whose key is already in the DB) cannot
+    // silently replay the old payload if the user uploads a different file.
+    idemKeyRef.current = crypto.randomUUID();
+
     const { parseCatalogWorkbook } = await import(
       '@/features/catalog-import/parseCatalogWorkbook.js'
     );
-    const { payload, errors } = parseCatalogWorkbook(buf);
-    setStage({ step: 'parsed', payload, structureErrors: errors, filename });
+    const { payload, errors, rowMaps } = parseCatalogWorkbook(buf);
+    setStage({ step: 'parsed', payload, structureErrors: errors, filename, rowMaps });
     if (payload !== null && errors.length === 0) {
       try {
         const report = await importMutation.mutateAsync({ payload, dryRun: true });
-        setStage({ step: 'previewed', payload, report, filename });
+        setStage({ step: 'previewed', payload, report, filename, rowMaps });
       } catch (e) {
+        // I-1: dry-run RPC rejection — fall back to idle so the dropzone
+        // reappears and the user can retry or upload a different file.
+        setStage({ step: 'idle' });
         toast.error(`Validation failed: ${(e as Error).message}`);
       }
     }
@@ -96,6 +125,8 @@ export default function ProductsImportExportPage(): JSX.Element {
   }
 
   function handleReset(): void {
+    // I-2: leaving the flow invalidates the current import intent.
+    idemKeyRef.current = crypto.randomUUID();
     setStage({ step: 'idle' });
     importMutation.reset();
   }
@@ -216,7 +247,7 @@ export default function ProductsImportExportPage(): JSX.Element {
               <ImportSummaryCards summary={stage.report.summary} />
 
               {stage.report.errors.length > 0 && (
-                <ImportErrorsTable errors={stage.report.errors} />
+                <ImportErrorsTable errors={toExcelRows(stage.report.errors, stage.rowMaps)} />
               )}
 
               <div className="flex items-center gap-3">

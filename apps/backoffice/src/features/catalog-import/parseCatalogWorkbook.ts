@@ -4,7 +4,7 @@
 // (category resolution, cycles, conversions…) lives in import_catalog_v1.
 
 import * as XLSX from 'xlsx';
-import { CATALOG_SHEETS, type SheetDef } from './templateDefinition.js';
+import { CATALOG_SHEETS, type PayloadKey, type SheetDef } from './templateDefinition.js';
 
 export interface StructureError {
   sheet: string;
@@ -58,16 +58,33 @@ function coerce(
   }
 }
 
+// rowMaps maps each PayloadKey to an array of Excel row numbers (1-based).
+// rowMaps[key][ordinalIndex] = the Excel row number of the (ordinalIndex+1)-th
+// data row that was accepted into payload[key]. This lets callers translate
+// RPC error.row (1-based ordinal in the JSONB array) back to the original
+// Excel row shown in the spreadsheet — skipped blank rows mean the two
+// numbering schemes diverge whenever blank lines appear in the file.
+export type RowMaps = { [K in PayloadKey]: number[] };
+
 export function parseCatalogWorkbook(buf: ArrayBuffer): {
   payload: CatalogPayload | null;
   errors: StructureError[];
+  rowMaps: RowMaps;
 } {
   const errors: StructureError[] = [];
+  const rowMaps: RowMaps = {
+    categories: [], ingredients: [], products: [],
+    units: [], variants: [], recipes: [],
+  };
   let wb: XLSX.WorkBook;
   try {
     wb = XLSX.read(buf, { type: 'array' });
   } catch {
-    return { payload: null, errors: [{ sheet: '—', row: 0, message: 'File is not a readable .xlsx workbook' }] };
+    return {
+      payload: null,
+      errors: [{ sheet: '—', row: 0, message: 'File is not a readable .xlsx workbook' }],
+      rowMaps,
+    };
   }
 
   const payload: CatalogPayload = {
@@ -105,6 +122,7 @@ export function parseCatalogWorkbook(buf: ArrayBuffer): {
         row[col.key] = v;
       }
       payload[def.payloadKey].push(row);
+      rowMaps[def.payloadKey].push(rowIdx);
     }
   }
 
@@ -127,5 +145,5 @@ export function parseCatalogWorkbook(buf: ArrayBuffer): {
   }
 
   const fatal = errors.some((e) => e.row === 0);
-  return { payload: fatal ? null : payload, errors };
+  return { payload: fatal ? null : payload, errors, rowMaps };
 }
