@@ -127,7 +127,7 @@ SECURITY DEFINER. Retour : `{ valid BOOLEAN, errors JSONB[], summary JSONB, idem
   - **cycle de recettes** (A → B → A, profondeur quelconque) ;
   - axe de variante invalide ; axes mixtes sur un même parent.
 - **`p_dry_run=true`** : validation + summary `{<type>: {create: n, update: n}}`, **zéro écriture**.
-- **`p_dry_run=false`** : même validation ; si erreurs → retour sans écriture ; sinon écritures dans la transaction de la RPC (atomique, tout ou rien). **Upsert par SKU** (catégories par nom). Recettes : delete logique des lignes BOM actuelles + insert des nouvelles (1 seul snapshot version par produit importé).
+- **`p_dry_run=false`** : même validation ; si erreurs → retour sans écriture ; sinon écritures dans la transaction de la RPC (atomique, tout ou rien). **Upsert par SKU** (catégories par nom). Recettes : delete logique des lignes BOM actuelles + insert des nouvelles. Note : le trigger `tr_snapshot_recipe_version` est FOR EACH ROW (S15 D4) — un remplacement de BOM de N lignes produit plusieurs snapshots `recipe_versions`, comportement documenté acceptable pour l'audit.
 - **Idempotency (flavor 2 S25)** : table dédiée `catalog_import_idempotency_keys` (PK = key, stocke le rapport JSONB) ; replay renvoie le rapport du 1er import avec `idempotent_replay: true` ; race gérée par catch `unique_violation` + re-read. Le dry-run n'écrit PAS de clé.
 - **Gate** : permission `catalog.import` (seed MANAGER/ADMIN/SUPER_ADMIN). `audit_logs` action `catalog.imported` avec summary en metadata (pas en dry-run).
 - **REVOKE pair canonique S25/S40** : REVOKE PUBLIC + anon + `ALTER DEFAULT PRIVILEGES` (3 lignes complètes — leçon P11 S40).
