@@ -212,10 +212,34 @@ serve(async (req) => {
 
   if (error) {
     console.error('complete_order_with_payment error', error);
+    // S38 SEC-06 (DEV-S38-A-02) — the RPC's own failure counting is rolled back with the
+    // P0003 raise (single PostgREST transaction). Record the discount-PIN failure here, in
+    // a separate committed transaction, against the named manager.
+    if (
+      error.code === 'P0003'
+      && typeof error.message === 'string'
+      && error.message.includes('invalid_pin')
+      && body.discount_authorized_by
+    ) {
+      try {
+        const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+        if (serviceKey) {
+          const admin = createClient(url, serviceKey);
+          await admin.rpc('record_pin_failure_v1', {
+            p_user_id: body.discount_authorized_by,
+            p_source: 'process-payment',
+          });
+        }
+      } catch (e) {
+        console.error('record_pin_failure_v1 failed', e);
+      }
+    }
     // Map Postgres error codes
     if (error.code === 'P0001') return jsonResponse({ error: 'no_open_session', message: error.message }, 409);
     if (error.code === 'P0002') return jsonResponse({ error: 'insufficient_stock', message: error.message }, 409);
     if (error.code === 'P0003') return jsonResponse({ error: 'permission_denied', message: error.message }, 403);
+    // S38 SEC-06 — manager account locked (5 failed PINs / 15 min).
+    if (error.code === 'P0004') return jsonResponse({ error: 'account_locked', message: error.message }, 403);
     if (error.code === 'P0010') return jsonResponse({ error: 'insufficient_loyalty_points', message: error.message }, 409);
     if (error.code === '23514') return jsonResponse({ error: 'check_violation', message: error.message }, 422);
     return jsonResponse({ error: 'internal', message: error.message }, 500);
