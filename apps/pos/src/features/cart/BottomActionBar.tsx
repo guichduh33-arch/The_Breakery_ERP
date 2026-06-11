@@ -3,7 +3,7 @@
 // Global POS action bar (bottom of the shell, full width). It concentrates ALL
 // order actions that used to live inside the Active Order panel:
 //
-//   left  : Held Orders · Customer · Table · Print Bill · More(▾)
+//   left  : Held Orders · Tablet inbox · Customer · Table · Print Bill · More(▾)
 //   right : Void Order · Send to Kitchen · Checkout (+ total)
 //
 // It is a *connected* component — it reuses the existing hooks / self-contained
@@ -45,6 +45,7 @@ import { useApplyCartDiscount } from '@/features/discounts/hooks/useApplyCartDis
 import { useVerifyManagerPin } from '@/features/discounts/hooks/useVerifyManagerPin';
 import { useVoidServerOrder } from './hooks/useVoidServerOrder';
 import { TableSelectorButton } from '@/features/tables/components/TableSelectorButton';
+import { TabletInboxButton } from '@/features/inbox/components/TabletInboxButton';
 import { SendToKitchenButton } from './SendToKitchenButton';
 import { PrintBillButton } from './PrintBillButton';
 import { HeldOrdersModal } from './HeldOrdersModal';
@@ -157,6 +158,8 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
           </span>
         )}
       </button>
+
+      <TabletInboxButton className={GHOST_BTN} />
 
       <button type="button" className={GHOST_BTN} onClick={() => onOpenCustomerSearch?.()}>
         {attachedCustomer ? (

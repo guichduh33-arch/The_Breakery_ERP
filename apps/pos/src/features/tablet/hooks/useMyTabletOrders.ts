@@ -28,7 +28,7 @@ export function useMyTabletOrders() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('orders')
-        .select('id, order_number, table_number, order_type, status, sent_to_kitchen_at, order_items(id, name, quantity, kitchen_status)')
+        .select('id, order_number, table_number, order_type, status, sent_to_kitchen_at, order_items(id, name_snapshot, quantity, kitchen_status)')
         .eq('waiter_id', userId!)
         .eq('created_via', 'tablet')
         .order('sent_to_kitchen_at', { ascending: false });
@@ -40,7 +40,13 @@ export function useMyTabletOrders() {
         order_type: row.order_type as 'dine_in' | 'take_out',
         status: row.status,
         sent_to_kitchen_at: row.sent_to_kitchen_at ?? new Date().toISOString(),
-        items: (row.order_items as unknown as TabletOrderItemRow[]) ?? [],
+        // Column is `name_snapshot` — map it onto the UI-facing `name` field.
+        items: (row.order_items ?? []).map((item) => ({
+          id: item.id,
+          name: item.name_snapshot,
+          quantity: item.quantity,
+          kitchen_status: item.kitchen_status,
+        })),
       }));
     },
   });
