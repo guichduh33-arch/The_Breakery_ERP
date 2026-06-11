@@ -48,14 +48,16 @@ export async function recordManagerPinFailure(
   });
 
   // Audit the failure (actor_id is NULL — the PIN didn't match anyone).
+  // supabase-js does not throw on DB errors — check the returned error explicitly.
   try {
-    await admin.from('audit_logs').insert({
+    const { error: auditErr } = await admin.from('audit_logs').insert({
       actor_id:    null,
       action:      'manager_pin.failed',
       entity_type: 'edge_function',
       entity_id:   null,
       metadata:    { ip, function: functionName },
     });
+    if (auditErr) console.warn('[manager-pin] audit_logs insert failed', auditErr);
   } catch (auditErr) {
     console.warn('[manager-pin] audit_logs insert failed', auditErr);
   }
