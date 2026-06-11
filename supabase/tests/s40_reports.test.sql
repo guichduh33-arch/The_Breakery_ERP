@@ -150,28 +150,29 @@ END $$;
 -- ============================================================
 
 -- T1 : INSERT into role_permissions → 1 audit_logs row with action='role.permission_granted'
+-- Strict assertion (spec-review fix): DELETE first so the INSERT is guaranteed
+-- fresh, then assert count = before + 1 (mirrors T2). The preliminary DELETE's
+-- own revoked row does not affect T2, which measures its own before/after.
 DO $$
 DECLARE
   v_count_before INT;
   v_count_after  INT;
   v_ok           BOOLEAN;
 BEGIN
+  DELETE FROM role_permissions WHERE role_code = 'CASHIER' AND permission_code = 'reports.read';
+
   SELECT COUNT(*) INTO v_count_before
     FROM audit_logs WHERE action = 'role.permission_granted' AND payload->>'role_code' = 'CASHIER'
       AND payload->>'permission_code' = 'reports.read';
 
-  -- Use a permission that may not already exist for CASHIER to avoid PK conflict
   INSERT INTO role_permissions (role_code, permission_code, is_granted)
-  VALUES ('CASHIER', 'reports.read', TRUE)
-  ON CONFLICT (role_code, permission_code) DO NOTHING;
+  VALUES ('CASHIER', 'reports.read', TRUE);
 
   SELECT COUNT(*) INTO v_count_after
     FROM audit_logs WHERE action = 'role.permission_granted' AND payload->>'role_code' = 'CASHIER'
       AND payload->>'permission_code' = 'reports.read';
 
-  -- If already existed (ON CONFLICT → no INSERT → no trigger fire), skip
-  -- If inserted fresh, count increased by 1
-  v_ok := (v_count_after >= v_count_before);
+  v_ok := (v_count_after = v_count_before + 1);
   PERFORM set_config('breakery.t1_pass', v_ok::text, false);
 END $$;
 SELECT ok(
