@@ -77,6 +77,15 @@ describe('classifyCheckoutError', () => {
       expect(classifyCheckoutError(err).userMessage).toMatch(/promotion/i);
     });
 
+    it('maps account_locked to the French lockout copy (S38 SEC-06)', () => {
+      const err = Object.assign(new Error('account_locked'), {
+        details: { error: 'account_locked' },
+      });
+      const result = classifyCheckoutError(err);
+      expect(result.kind).toBe('fatal');
+      expect(result.userMessage).toMatch(/verrouillé 15 min/i);
+    });
+
     it('falls back to message for unknown codes', () => {
       const err = Object.assign(new Error('weird unknown thing'), {
         details: { error: 'mysterious_error' },

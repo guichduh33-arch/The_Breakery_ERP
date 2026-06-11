@@ -218,7 +218,7 @@ serve(async (req) => {
     if (
       error.code === 'P0003'
       && typeof error.message === 'string'
-      && error.message.includes('invalid_pin')
+      && error.message.includes('Invalid manager PIN')
       && body.discount_authorized_by
     ) {
       try {
