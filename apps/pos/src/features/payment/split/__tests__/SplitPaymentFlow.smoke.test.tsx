@@ -1,8 +1,11 @@
 // apps/pos/src/features/payment/split/__tests__/SplitPaymentFlow.smoke.test.tsx
 //
-// Session 14 / Phase 2.C — RTL smoke for the new split-by-item flow.
-// Verifies the happy path : pick 2 payers → assign items → pick method for
-// each → confirm → flow surfaces a tenders[] payload to onComplete.
+// Session 14 / Phase 2.C — RTL smoke for the split-by-item flow.
+// Session 38 / Wave C — updated to navigate through mode_select (now the
+// initial step), then select "By items" to reach the original payer_count step.
+//
+// Verifies the happy path : mode_select → pick items mode → pick 2 payers →
+// assign items → pick method for each → confirm → tenders[] to onComplete.
 
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
@@ -28,8 +31,13 @@ const cartItems: CartItem[] = [
   } as never,
 ];
 
+/** Navigate to payer_count via mode_select → items. */
+function selectItemsMode() {
+  fireEvent.click(screen.getByTestId('split-mode-items'));
+}
+
 describe('SplitPaymentFlow', () => {
-  it('renders the payer count step on first mount', () => {
+  it('renders the mode_select step on first mount', () => {
     render(
       <SplitPaymentFlow
         cartItems={cartItems}
@@ -38,6 +46,22 @@ describe('SplitPaymentFlow', () => {
         onComplete={vi.fn()}
       />,
     );
+    expect(screen.getByTestId('split-mode-select')).toBeInTheDocument();
+    expect(screen.getByTestId('split-mode-items')).toBeInTheDocument();
+    expect(screen.getByTestId('split-mode-equal')).toBeInTheDocument();
+    expect(screen.getByTestId('split-mode-custom')).toBeInTheDocument();
+  });
+
+  it('navigates to payer count step after selecting items mode', () => {
+    render(
+      <SplitPaymentFlow
+        cartItems={cartItems}
+        grandTotal={145_000}
+        onCancel={vi.fn()}
+        onComplete={vi.fn()}
+      />,
+    );
+    selectItemsMode();
     expect(screen.getByTestId('split-payer-count')).toBeInTheDocument();
     expect(screen.getByText(/HOW MANY PAYERS/i)).toBeInTheDocument();
     // 4 guest tiles : 2 / 3 / 4 / 5
@@ -54,6 +78,7 @@ describe('SplitPaymentFlow', () => {
         onComplete={vi.fn()}
       />,
     );
+    selectItemsMode();
     fireEvent.click(screen.getByTestId('split-payer-count-2'));
     expect(screen.getByTestId('split-item-assign')).toBeInTheDocument();
     // Both cart lines visible
@@ -73,6 +98,7 @@ describe('SplitPaymentFlow', () => {
         onComplete={vi.fn()}
       />,
     );
+    selectItemsMode();
     fireEvent.click(screen.getByTestId('split-payer-count-2'));
     const proceed = screen.getByTestId('split-proceed-to-payment');
     expect(proceed).toBeDisabled();
