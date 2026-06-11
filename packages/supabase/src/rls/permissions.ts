@@ -142,7 +142,9 @@ export type PermissionCode =
   | 'orders.read'
   // Session 33 / Wave 1.8 — Orders BO control (edit open + void)
   | 'orders.edit_open'
-  | 'orders.void';
+  | 'orders.void'
+  // Session 22 — Cost price correction (seeded by 20260526000012)
+  | 'inventory.cost_correction';
 
 /**
  * Check whether a user has a single permission. Pure client-side lookup —

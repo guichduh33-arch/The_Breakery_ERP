@@ -1,40 +1,164 @@
 // apps/backoffice/src/features/products/components/UnitsPanel.tsx
 //
-// Session 14 / Phase 4.B — Units tab on product detail page.
-// Mirrors `product unit.jpg` and `productunit2.jpg`:
-//   - Base unit selector card
-//   - Alternative units list (purchase / recipe / sales tags)
-//   - Units by Context (stock opname, recipe, purchase, sales)
+// Session 39 — Wave B1 — UnitsPanel write-mode via set_product_units_v1 (BO-09).
+// Replaces the S14 read-only stub that used SAMPLE_ALT_UNITS.
 //
-// Read-only for v1 — alt units + context mapping are not yet persisted via
-// RPC. The UI is wired so a future patch only needs to attach mutations.
+// Reads real data from product_unit_alternatives + product_unit_contexts (S27).
+// Editable alts list + 4 context selects + dirty flag + Save button.
+// Gate: products.units.update — without the perm, inputs are disabled, no Save.
 
-import { Box, BookOpen, ClipboardList, Plus, ShoppingCart, Trash2 } from 'lucide-react';
-import type { JSX } from 'react';
+import { BookOpen, Box, ClipboardList, Plus, ShoppingCart, Trash2 } from 'lucide-react';
+import { useEffect, useMemo, useState, type JSX } from 'react';
+import { toast } from 'sonner';
 import { Card, SectionLabel } from '@breakery/ui';
+import { useAuthStore } from '@/stores/authStore.js';
+import { useProductUnits, type ProductUnitAlt, type ProductUnitContexts } from '../hooks/useProductUnits.js';
+import { useSetProductUnits } from '../hooks/useSetProductUnits.js';
 import type { ProductRow } from '../types.js';
 
 interface Props {
   product: ProductRow;
 }
 
-interface AlternativeUnit {
-  id:           string;
-  code:         string;
-  factor:       number;
-  factor_label: string;
-  tags:         ReadonlyArray<'purchase' | 'recipe' | 'sales'>;
+/** Build an initial contexts object, falling back to baseUnit for every field. */
+function defaultContexts(base: string, saved: ProductUnitContexts | null): ProductUnitContexts {
+  return {
+    stock_opname_unit: saved?.stock_opname_unit ?? base,
+    recipe_unit:       saved?.recipe_unit       ?? base,
+    purchase_unit:     saved?.purchase_unit     ?? base,
+    sales_unit:        saved?.sales_unit        ?? base,
+  };
 }
 
-const SAMPLE_ALT_UNITS: ReadonlyArray<AlternativeUnit> = [
-  { id: 'g',  code: 'g',  factor: 0.001, factor_label: '1 g = 0.001 kg', tags: ['purchase'] },
-  { id: 'kg', code: 'kg', factor: 1,     factor_label: '1 kg = 1 kg',    tags: [] },
-  { id: 'gr', code: 'gr', factor: 0.001, factor_label: '1 gr = 0.001 kg', tags: ['recipe', 'purchase'] },
-];
+/** Draft alt with a stable local key for React list rendering. */
+interface DraftAlt extends ProductUnitAlt {
+  _key: string;
+}
+
+let _keyCounter = 0;
+function newKey() { return `alt-${++_keyCounter}`; }
+
+function toDraft(alt: ProductUnitAlt): DraftAlt {
+  return { ...alt, _key: newKey() };
+}
+
+/** True when two alternatives arrays are semantically equal (order matters). */
+function altsEqual(a: ProductUnitAlt[], b: ProductUnitAlt[]): boolean {
+  if (a.length !== b.length) return false;
+  return a.every((x, i) => {
+    const y = b[i]!;
+    return x.code === y.code && x.factor_to_base === y.factor_to_base;
+  });
+}
+
+function contextsEqual(a: ProductUnitContexts, b: ProductUnitContexts): boolean {
+  return (
+    a.stock_opname_unit === b.stock_opname_unit &&
+    a.recipe_unit       === b.recipe_unit &&
+    a.purchase_unit     === b.purchase_unit &&
+    a.sales_unit        === b.sales_unit
+  );
+}
 
 export function UnitsPanel({ product }: Props): JSX.Element {
+  const canWrite = useAuthStore((s) => s.hasPermission('products.units.update'));
+  const { data, isLoading, error } = useProductUnits(product.id);
+  const setUnits = useSetProductUnits(product.id);
+
+  const baseUnit = product.unit;
+
+  const [draftAlts, setDraftAlts] = useState<DraftAlt[]>([]);
+  const [draftCtx, setDraftCtx] = useState<ProductUnitContexts>(() =>
+    defaultContexts(baseUnit, null),
+  );
+
+  // Re-sync draft when server data arrives or changes (GeneralPanel pattern).
+  useEffect(() => {
+    if (data === undefined) return;
+    setDraftAlts((data.alternatives ?? []).map(toDraft));
+    setDraftCtx(defaultContexts(baseUnit, data.contexts));
+  }, [data, baseUnit]);
+
+  const isDirty = useMemo(() => {
+    if (data === undefined) return false;
+    const serverAlts = data.alternatives ?? [];
+    const serverCtx  = defaultContexts(baseUnit, data.contexts);
+    const currentAlts: ProductUnitAlt[] = draftAlts.map((a, i) => ({
+      code:           a.code,
+      factor_to_base: a.factor_to_base,
+      tags:           a.tags,
+      display_order:  i * 10,
+    }));
+    return !altsEqual(currentAlts, serverAlts) || !contextsEqual(draftCtx, serverCtx);
+  }, [data, draftAlts, draftCtx, baseUnit]);
+
+  /** Validate: no empty codes, factor > 0, no duplicate codes among alts. */
+  const isValid = useMemo(() => {
+    const codes = draftAlts.map((a) => a.code.trim());
+    const hasBlanks   = codes.some((c) => c === '');
+    const hasBadFactor = draftAlts.some((a) => !(a.factor_to_base > 0));
+    const hasDupes    = new Set(codes).size !== codes.length;
+    return !hasBlanks && !hasBadFactor && !hasDupes;
+  }, [draftAlts]);
+
+  /** The option list for context selects: base unit + active alt codes. */
+  const unitOptions = useMemo(
+    () => [baseUnit, ...draftAlts.map((a) => a.code.trim()).filter(Boolean)],
+    [baseUnit, draftAlts],
+  );
+
+  function addAlt(): void {
+    setDraftAlts((prev) => [
+      ...prev,
+      { _key: newKey(), code: '', factor_to_base: 1, tags: [], display_order: prev.length * 10 },
+    ]);
+  }
+
+  function updateAlt(key: string, field: 'code' | 'factor_to_base', value: string | number): void {
+    setDraftAlts((prev) =>
+      prev.map((a) => (a._key === key ? { ...a, [field]: value } : a)),
+    );
+  }
+
+  function removeAlt(key: string): void {
+    setDraftAlts((prev) => prev.filter((a) => a._key !== key));
+  }
+
+  function updateCtx(field: keyof ProductUnitContexts, value: string): void {
+    setDraftCtx((prev) => ({ ...prev, [field]: value }));
+  }
+
+  function handleSave(): void {
+    if (!isDirty || !isValid) return;
+    const alts: ProductUnitAlt[] = draftAlts.map((a, i) => ({
+      code:           a.code.trim(),
+      factor_to_base: a.factor_to_base,
+      tags:           a.tags,
+      display_order:  i * 10,
+    }));
+    setUnits.mutate(
+      { alts, contexts: draftCtx },
+      {
+        onSuccess: () => { toast.success('Units saved.'); },
+        onError:   (err) => { toast.error(`Failed to save units: ${err.message}`); },
+      },
+    );
+  }
+
+  if (isLoading) {
+    return <div className="py-16 text-center text-sm text-text-secondary">Loading units…</div>;
+  }
+  if (error !== null && error !== undefined) {
+    return (
+      <div role="alert" className="rounded-lg border border-red bg-red-soft p-4 text-sm text-red">
+        Failed to load units: {(error as Error).message}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
+      {/* ── Base unit (read-only — comes from products.unit) ── */}
       <Card padding="md" className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-md bg-gold-soft text-gold">
@@ -47,14 +171,15 @@ export function UnitsPanel({ product }: Props): JSX.Element {
         </div>
         <select
           aria-label="Base unit"
-          defaultValue={product.unit}
+          value={baseUnit}
           disabled
           className="h-touch-min rounded-md border border-border-subtle bg-bg-input px-3 text-sm font-mono text-text-primary disabled:opacity-50"
         >
-          <option value={product.unit}>{product.unit}</option>
+          <option value={baseUnit}>{baseUnit}</option>
         </select>
       </Card>
 
+      {/* ── Alternative units ── */}
       <Card padding="md">
         <div className="mb-4 flex items-center justify-between">
           <div>
@@ -63,50 +188,70 @@ export function UnitsPanel({ product }: Props): JSX.Element {
           </div>
           <button
             type="button"
-            disabled
-            className="inline-flex items-center gap-2 rounded-full bg-gold px-4 py-2 text-xs font-semibold uppercase tracking-widest text-bg-base disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={!canWrite}
+            onClick={addAlt}
+            data-testid="add-alt-unit-btn"
+            className="inline-flex items-center gap-2 rounded-full bg-gold px-4 py-2 text-xs font-semibold uppercase tracking-widest text-bg-base disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Plus className="h-4 w-4" aria-hidden />
             New Unit
           </button>
         </div>
 
-        <ul className="space-y-2">
-          {SAMPLE_ALT_UNITS.map((u) => (
-            <li
-              key={u.id}
-              className="flex items-center gap-4 rounded-lg border border-border-subtle bg-bg-overlay px-4 py-3"
-            >
-              <span className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-bg-elevated text-xs font-bold uppercase tracking-widest text-text-secondary">
-                {u.code.toUpperCase()}
-              </span>
-              <div className="flex-1">
-                <div className="font-mono text-sm text-text-primary">{u.code}</div>
-                <div className="text-xs text-text-secondary">{u.factor_label}</div>
-              </div>
-              <div className="flex items-center gap-2">
-                {u.tags.map((t) => (
-                  <span
-                    key={t}
-                    className="rounded-full border border-gold-soft px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-gold"
-                  >
-                    {t}
-                  </span>
-                ))}
-              </div>
-              <button
-                type="button"
-                aria-label={`Remove ${u.code}`}
-                disabled
-                className="inline-flex h-8 w-8 items-center justify-center rounded-full text-text-muted hover:bg-red-soft hover:text-red disabled:opacity-50 disabled:cursor-not-allowed"
+        {draftAlts.length === 0 ? (
+          <p className="text-sm italic text-text-muted" data-testid="no-alt-units">
+            No alternative units defined.
+          </p>
+        ) : (
+          <ul className="space-y-2">
+            {draftAlts.map((alt) => (
+              <li
+                key={alt._key}
+                data-testid={`alt-unit-row-${alt._key}`}
+                className="flex items-center gap-4 rounded-lg border border-border-subtle bg-bg-overlay px-4 py-3"
               >
-                <Trash2 className="h-4 w-4" aria-hidden />
-              </button>
-            </li>
-          ))}
-        </ul>
+                {/* Code */}
+                <input
+                  type="text"
+                  aria-label="Unit code"
+                  value={alt.code}
+                  disabled={!canWrite}
+                  onChange={(e) => updateAlt(alt._key, 'code', e.target.value)}
+                  placeholder="e.g. kg"
+                  className="w-20 rounded-md border border-border-subtle bg-bg-input px-2 py-1.5 font-mono text-sm text-text-primary disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+                />
+                {/* Factor */}
+                <div className="flex flex-1 items-center gap-2">
+                  <span className="text-xs text-text-secondary">1 unit =</span>
+                  <input
+                    type="number"
+                    aria-label="Factor to base"
+                    value={alt.factor_to_base}
+                    min={0.000001}
+                    step="any"
+                    disabled={!canWrite}
+                    onChange={(e) => updateAlt(alt._key, 'factor_to_base', Number(e.target.value))}
+                    className="w-28 rounded-md border border-border-subtle bg-bg-input px-2 py-1.5 font-mono text-sm text-text-primary disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+                  />
+                  <span className="text-xs text-text-secondary font-mono">{baseUnit}</span>
+                </div>
+                {/* Remove */}
+                <button
+                  type="button"
+                  aria-label={`Remove unit ${alt.code || 'row'}`}
+                  disabled={!canWrite}
+                  onClick={() => removeAlt(alt._key)}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full text-text-muted hover:enabled:bg-red-soft hover:enabled:text-red disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <Trash2 className="h-4 w-4" aria-hidden />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </Card>
 
+      {/* ── Units by context ── */}
       <Card padding="md">
         <div className="mb-4">
           <h2 className="font-display text-lg text-text-primary">Units by Context</h2>
@@ -118,34 +263,77 @@ export function UnitsPanel({ product }: Props): JSX.Element {
             icon={<ClipboardList className="h-4 w-4" aria-hidden />}
             label="Stock Opname"
             sub="Unit used for inventory counting"
-            unit={product.unit}
+            field="stock_opname_unit"
+            value={draftCtx.stock_opname_unit}
+            options={unitOptions}
+            disabled={!canWrite}
+            onChange={(v) => updateCtx('stock_opname_unit', v)}
           />
           <ContextRow
             icon={<BookOpen className="h-4 w-4" aria-hidden />}
             label="Recipe"
             sub="Unit used in BOM definition"
-            unit={product.unit}
+            field="recipe_unit"
+            value={draftCtx.recipe_unit}
+            options={unitOptions}
+            disabled={!canWrite}
+            onChange={(v) => updateCtx('recipe_unit', v)}
           />
           <ContextRow
             icon={<ShoppingCart className="h-4 w-4" aria-hidden />}
             label="Purchase"
             sub="Unit used in supplier orders"
-            unit={product.unit}
+            field="purchase_unit"
+            value={draftCtx.purchase_unit}
+            options={unitOptions}
+            disabled={!canWrite}
+            onChange={(v) => updateCtx('purchase_unit', v)}
+          />
+          <ContextRow
+            icon={<ShoppingCart className="h-4 w-4" aria-hidden />}
+            label="Sales"
+            sub="Unit used in POS sales"
+            field="sales_unit"
+            value={draftCtx.sales_unit}
+            options={unitOptions}
+            disabled={!canWrite}
+            onChange={(v) => updateCtx('sales_unit', v)}
           />
         </div>
       </Card>
+
+      {/* ── Save bar ── */}
+      {canWrite && (
+        <div className="flex justify-end">
+          <button
+            type="button"
+            disabled={!isDirty || !isValid || setUnits.isPending}
+            onClick={handleSave}
+            data-testid="units-save-btn"
+            className="rounded-full bg-gold px-6 py-2.5 text-xs font-semibold uppercase tracking-widest text-bg-base disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {setUnits.isPending ? 'Saving…' : 'Save Units'}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
 
+// ── ContextRow sub-component ──────────────────────────────────────────────────
+
 interface ContextRowProps {
-  icon: JSX.Element;
-  label: string;
-  sub: string;
-  unit: string;
+  icon:     JSX.Element;
+  label:    string;
+  sub:      string;
+  field:    keyof ProductUnitContexts;
+  value:    string;
+  options:  string[];
+  disabled: boolean;
+  onChange: (v: string) => void;
 }
 
-function ContextRow({ icon, label, sub, unit }: ContextRowProps): JSX.Element {
+function ContextRow({ icon, label, sub, field, value, options, disabled, onChange }: ContextRowProps): JSX.Element {
   return (
     <div className="rounded-lg border border-border-subtle bg-bg-overlay p-4">
       <div className="flex items-center gap-3">
@@ -159,11 +347,17 @@ function ContextRow({ icon, label, sub, unit }: ContextRowProps): JSX.Element {
       </div>
       <select
         aria-label={`${label} unit`}
-        defaultValue={unit}
-        disabled
-        className="mt-3 h-touch-min w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm font-mono text-text-primary disabled:opacity-50"
+        value={value}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.value)}
+        data-testid={`context-select-${field}`}
+        className="mt-3 h-touch-min w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm font-mono text-text-primary disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
       >
-        <option value={unit}>{unit} (Base unit)</option>
+        {options.map((opt) => (
+          <option key={opt} value={opt}>
+            {opt}{opt === options[0] ? ' (Base unit)' : ''}
+          </option>
+        ))}
       </select>
     </div>
   );

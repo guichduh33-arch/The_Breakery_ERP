@@ -1,21 +1,20 @@
 // apps/backoffice/src/pages/btob/B2BSettingsPage.tsx
 //
-// Session 14 / Phase 5.B — B2B Settings.
+// Session 39 / Wave C2 — B2B Settings page wired to b2b_settings RPC.
 //
-// Mirrors docs/Design/backoffice/BtoB setting.jpg :
+// Mirrors docs/Design/backoffice/BtoB setting.jpg:
 //   - Default Payment Terms (select)
 //   - Available Payment Terms (chip list + add)
 //   - Critical Overdue Threshold (number input, days)
 //   - Aging Report Buckets (Current / Overdue / Critical, with day range
 //     editors + add bucket)
 //
-// SCOPE: there is no `b2b_settings` table or `update_b2b_settings_v*` RPC
-// today. The form persists into local component state only and surfaces a
-// "Read-only preview — backend pending (D-W6-B2BSET-01)" banner. Once the
-// settings backend lands, swap the local state for a hooks call without
-// changing this file's surface.
+// Data is fetched via get_b2b_settings_v1 and persisted via
+// update_b2b_settings_v1(p_patch JSONB). Draft pattern: 4 local states
+// are kept in sync with server data; a dirty flag gates the Save bar.
+// Buckets carry a local `id` for React keys but the payload strips it.
 
-import { useState, type JSX } from 'react';
+import { useState, useEffect, type JSX } from 'react';
 import { Link } from 'react-router-dom';
 import {
   AlertTriangle,
@@ -27,8 +26,12 @@ import {
   Plus,
   Trash2,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button, Card, SectionLabel } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
+import { useB2bSettings } from '@/features/btob/hooks/useB2bSettings.js';
+import { useUpdateB2bSettings } from '@/features/btob/hooks/useUpdateB2bSettings.js';
+import type { AgingBucket } from '@/features/btob/hooks/useB2bSettings.js';
 
 const DEFAULT_TERM_OPTIONS: ReadonlyArray<{ value: string; label: string }> = [
   { value: 'cod',    label: 'Cash on delivery (COD)' },
@@ -38,27 +41,58 @@ const DEFAULT_TERM_OPTIONS: ReadonlyArray<{ value: string; label: string }> = [
   { value: 'net_60', label: 'Net 60' },
 ];
 
-interface AgingBucket { id: string; label: string; min: number; max: number | null }
+// Local bucket keeps an `id` for React key stability across edits.
+interface LocalBucket extends AgingBucket { id: string }
 
-const SEED_BUCKETS: AgingBucket[] = [
-  { id: 'current',  label: 'Current',  min: 0,  max: 30   },
-  { id: 'overdue',  label: 'Overdue',  min: 31, max: 60   },
-  { id: 'critical', label: 'Critical', min: 61, max: null },
-];
+function serverBucketsToLocal(buckets: AgingBucket[]): LocalBucket[] {
+  return buckets.map((b, i) => ({ ...b, id: `bucket-${i}` }));
+}
+
+function localBucketsToPayload(buckets: LocalBucket[]): AgingBucket[] {
+  return buckets.map(({ label, min, max }) => ({ label, min, max }));
+}
 
 export default function B2BSettingsPage(): JSX.Element {
   const hasPermission = useAuthStore((s) => s.hasPermission);
-  const canRead  = hasPermission('settings.read');
+  const canRead   = hasPermission('settings.read');
+  const canUpdate = hasPermission('settings.update');
+
+  const { data: serverData, isLoading } = useB2bSettings();
+  const updateMut = useUpdateB2bSettings();
 
   const [defaultTerm,    setDefaultTerm   ] = useState<string>('net_30');
-  const [availableTerms, setAvailableTerms] = useState<string[]>(['cod','net_7','net_14','net_30','net_60']);
+  const [availableTerms, setAvailableTerms] = useState<string[]>([]);
   const [newTerm,        setNewTerm       ] = useState<string>('');
   const [threshold,      setThreshold     ] = useState<number>(30);
-  const [buckets,        setBuckets       ] = useState<AgingBucket[]>(SEED_BUCKETS);
+  const [buckets,        setBuckets       ] = useState<LocalBucket[]>([]);
+  const [saveError,      setSaveError     ] = useState<string | null>(null);
+
+  // Track which server snapshot is loaded so we don't clobber user edits on
+  // background refetches — only re-sync when the server data object reference
+  // changes (i.e. a new fetch result arrived).
+  const [loadedData, setLoadedData] = useState(serverData);
+  useEffect(() => {
+    if (serverData !== undefined && serverData !== loadedData) {
+      setLoadedData(serverData);
+      setDefaultTerm(serverData.default_payment_terms);
+      setAvailableTerms([...serverData.available_payment_terms]);
+      setThreshold(serverData.critical_overdue_days);
+      setBuckets(serverBucketsToLocal(serverData.aging_buckets));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serverData]);
 
   if (!canRead) {
     return <div className="text-text-secondary">No access to settings.</div>;
   }
+
+  // Dirty flag: compare draft vs server
+  const isDirty = serverData !== undefined && (
+    defaultTerm !== serverData.default_payment_terms ||
+    JSON.stringify(availableTerms) !== JSON.stringify(serverData.available_payment_terms) ||
+    threshold !== serverData.critical_overdue_days ||
+    JSON.stringify(localBucketsToPayload(buckets)) !== JSON.stringify(serverData.aging_buckets)
+  );
 
   function addTerm(): void {
     const trimmed = newTerm.trim();
@@ -71,17 +105,34 @@ export default function B2BSettingsPage(): JSX.Element {
     setAvailableTerms((prev) => prev.filter((t) => t !== term));
   }
 
-  function updateBucket(id: string, patch: Partial<AgingBucket>): void {
+  function updateBucket(id: string, patch: Partial<LocalBucket>): void {
     setBuckets((prev) => prev.map((b) => b.id === id ? { ...b, ...patch } : b));
   }
 
   function addBucket(): void {
-    const id = `bucket-${buckets.length + 1}`;
+    const id = `bucket-${buckets.length + 1}-${Date.now()}`;
     setBuckets((prev) => [...prev, { id, label: 'New bucket', min: 0, max: null }]);
   }
 
   function removeBucket(id: string): void {
     setBuckets((prev) => prev.filter((b) => b.id !== id));
+  }
+
+  async function handleSave(): Promise<void> {
+    setSaveError(null);
+    const patch = {
+      default_payment_terms:   defaultTerm,
+      available_payment_terms: availableTerms,
+      critical_overdue_days:   threshold,
+      aging_buckets:           localBucketsToPayload(buckets),
+    };
+    try {
+      await updateMut.mutateAsync(patch);
+      toast.success('B2B settings saved.');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      setSaveError(message);
+    }
   }
 
   return (
@@ -104,9 +155,11 @@ export default function B2BSettingsPage(): JSX.Element {
         </div>
       </header>
 
-      <div role="status" className="rounded-md border border-border-subtle bg-bg-overlay p-3 text-xs text-text-secondary">
-        Read-only preview — a `b2b_settings` table + `update_b2b_settings_v*` RPC are tracked as deviation D-W6-B2BSET-01 for Session 15+. Changes here do not persist yet.
-      </div>
+      {isLoading && (
+        <div role="status" aria-label="Loading settings" className="rounded-md border border-border-subtle bg-bg-overlay p-3 text-xs text-text-secondary">
+          Loading settings…
+        </div>
+      )}
 
       <Card variant="default" padding="md" className="space-y-3">
         <SectionLabel as="div" size="xs">
@@ -235,6 +288,25 @@ export default function B2BSettingsPage(): JSX.Element {
           ))}
         </ul>
       </Card>
+
+      {/* Save bar — visible only when canUpdate */}
+      {canUpdate && (
+        <div className="sticky bottom-0 flex flex-col gap-2 rounded-md border border-border-subtle bg-bg-surface px-4 py-3 shadow-sm">
+          {saveError !== null && (
+            <p role="alert" className="text-xs text-danger">{saveError}</p>
+          )}
+          <div className="flex items-center justify-end gap-3">
+            <Button
+              variant="primary"
+              size="sm"
+              disabled={!isDirty || updateMut.isPending}
+              onClick={() => { void handleSave(); }}
+            >
+              {updateMut.isPending ? 'Saving…' : 'Save changes'}
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

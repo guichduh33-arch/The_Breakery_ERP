@@ -208,6 +208,44 @@ export type Database = {
           },
         ]
       }
+      b2b_settings: {
+        Row: {
+          aging_buckets: Json
+          available_payment_terms: Json
+          critical_overdue_days: number
+          default_payment_terms: string
+          id: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          aging_buckets?: Json
+          available_payment_terms?: Json
+          critical_overdue_days?: number
+          default_payment_terms?: string
+          id?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          aging_buckets?: Json
+          available_payment_terms?: Json
+          critical_overdue_days?: number
+          default_payment_terms?: string
+          id?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "b2b_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_config: {
         Row: {
           created_at: string
@@ -5967,6 +6005,7 @@ export type Database = {
           metadata: Json
         }[]
       }
+      get_b2b_settings_v1: { Args: never; Returns: Json }
       get_balance_sheet_data: { Args: { p_as_of?: string }; Returns: Json }
       get_balance_sheet_v1: { Args: { p_as_of_date: string }; Returns: Json }
       get_basket_analysis_v1: {
@@ -7027,6 +7066,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      update_b2b_settings_v1: { Args: { p_patch: Json }; Returns: Json }
       update_category_v1: {
         Args: { p_category_id: string; p_patch: Json }
         Returns: Json
