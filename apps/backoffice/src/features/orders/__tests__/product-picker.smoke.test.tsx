@@ -4,8 +4,10 @@
 // T1: mock 3 products where one is referenced as parent by another →
 //     search "croiss" filters; parent absent from list.
 // T2: click a row in the modal → diff.adds gets {product_id, qty: 1};
-//     preview shows real name + price.
+//     preview shows real name + price (retail_price → line_total arithmetic).
 // T3: pick the same product twice → single add with qty 2.
+// T4: Apply after double-pick → rpcMock called with add_order_item_v1,
+//     p_product_id and p_qty: 2.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
@@ -131,6 +133,10 @@ describe('ProductPicker smoke [S39-W-C1]', () => {
     });
     expect(screen.getByText('(new)')).toBeInTheDocument();
 
+    // retail_price (30_000) × qty (1) = line_total 30_000 → id-ID: "30.000"
+    const cartPreview = screen.getByTestId('cart-preview');
+    expect(cartPreview).toHaveTextContent('30.000');
+
     // Apply button should be enabled (1 pending change)
     expect(screen.getByTestId('apply-changes')).not.toBeDisabled();
   });
@@ -166,5 +172,52 @@ describe('ProductPicker smoke [S39-W-C1]', () => {
     // Only one "(new)" badge — not two
     const newBadges = screen.getAllByText('(new)');
     expect(newBadges).toHaveLength(1);
+  });
+
+  it('T4: Apply after double-pick calls add_order_item_v1 with p_qty:2 and correct p_product_id', async () => {
+    render(
+      <Providers qc={qc}>
+        <EditOrderItemsModal
+          open
+          onClose={vi.fn()}
+          orderId="ord-apply"
+          orderNumber="ORD-0002"
+          currentItems={NO_ITEMS}
+        />
+      </Providers>,
+    );
+
+    // Wait for products
+    await waitFor(() => {
+      expect(screen.queryByText(/loading products/i)).not.toBeInTheDocument();
+    });
+
+    // Pick "Pain au Chocolat" twice → coalesces to qty 2
+    fireEvent.click(screen.getByTestId('picker-row-prod-standalone'));
+    fireEvent.click(screen.getByTestId('picker-row-prod-standalone'));
+
+    await waitFor(() => {
+      const qtyInput = screen.getByTestId('qty-__pending-0') as HTMLInputElement;
+      expect(qtyInput.value).toBe('2');
+    });
+
+    // Click Apply
+    fireEvent.click(screen.getByTestId('apply-changes'));
+
+    // Orchestrator calls add_order_item_v1 once with the coalesced qty
+    await waitFor(() => {
+      expect(rpcMock).toHaveBeenCalledWith(
+        'add_order_item_v1',
+        expect.objectContaining({
+          p_order_id:   'ord-apply',
+          p_product_id: 'prod-standalone',
+          p_qty:        2,
+        }),
+      );
+    });
+
+    // Only one add call — not two separate single-qty calls
+    const addCalls = rpcMock.mock.calls.filter(([fn]) => fn === 'add_order_item_v1');
+    expect(addCalls).toHaveLength(1);
   });
 });
