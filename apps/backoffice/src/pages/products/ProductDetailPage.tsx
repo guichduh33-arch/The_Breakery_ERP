@@ -13,6 +13,7 @@ import { GeneralPanel } from '@/features/products/components/GeneralPanel.js';
 import { OverviewPanel } from '@/features/products/components/OverviewPanel.js';
 import { ProductDetailHeader } from '@/features/products/components/ProductDetailHeader.js';
 import { ProductDetailTabs } from '@/features/products/components/ProductDetailTabs.js';
+import { CostingPanel } from '@/features/products/components/CostingPanel.js';
 import { StubPanel } from '@/features/products/components/StubPanel.js';
 import { UnitsPanel } from '@/features/products/components/UnitsPanel.js';
 import { VariantsPanel } from '@/features/products/components/VariantsPanel.js';
@@ -125,10 +126,7 @@ export default function ProductDetailPage(): JSX.Element {
           />
         )}
         {tab === 'costing' && (
-          <StubPanel
-            title="Costing arrives later"
-            description="Detailed cost breakdown by ingredient and labour will appear here when the costing RPC ships."
-          />
+          <CostingPanel product={p} />
         )}
         {tab === 'purchase' && (
           <StubPanel
