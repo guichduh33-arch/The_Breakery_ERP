@@ -7,6 +7,7 @@ import LoginPage from '@/pages/Login.js';
 import DashboardPage from '@/pages/Dashboard.js';
 import ProductsPage from '@/pages/Products.js';
 import ProductDetailPage from '@/pages/products/ProductDetailPage.js';
+import ProductsImportExportPage from '@/pages/products/ProductsImportExportPage.js';
 import CombosPage from '@/pages/products/CombosPage.js';
 import CategoriesPage from '@/pages/categories/CategoriesPage.js';
 import PromotionsPage from '@/pages/Promotions.js';
@@ -132,6 +133,14 @@ export function AppRoutes() {
         <Route index element={<DashboardPage />} />
         <Route path="products" element={<ProductsPage />} />
         <Route path="products/combos" element={<CombosPage />} />
+        <Route
+          path="products/import-export"
+          element={
+            <PermissionGate required="catalog.import">
+              <ProductsImportExportPage />
+            </PermissionGate>
+          }
+        />
         <Route path="products/:productId" element={<ProductDetailPage />} />
         <Route path="categories" element={<CategoriesPage />} />
         <Route
