@@ -16,11 +16,30 @@ import { UnitsPanel } from '../components/UnitsPanel.js';
 import type { ProductRow } from '../types.js';
 
 // ── Hoisted shared state (available when vi.mock factories execute) ────────────
+// IMPORTANT: The mock data objects MUST be defined here (in vi.hoisted) so they
+// have stable references across renders. If defined inside the vi.mock factory,
+// a new object is returned on every render call, causing useEffect (which
+// depends on `data` by reference) to fire in an infinite loop → worker crash.
 
-const { mockState, mutateMock } = vi.hoisted(() => {
+const { mockState, mutateMock, MOCK_DATA } = vi.hoisted(() => {
   const mutateMock = vi.fn();
   const mockState = { hasPerm: true, isPending: false };
-  return { mockState, mutateMock };
+
+  // Stable reference objects — created once, reused across renders.
+  const MOCK_DATA = {
+    alternatives: [
+      { code: 'kg', factor_to_base: 1,     tags: [] as string[],           display_order: 0  },
+      { code: 'g',  factor_to_base: 0.001, tags: ['purchase'] as string[], display_order: 10 },
+    ],
+    contexts: {
+      stock_opname_unit: 'pcs',
+      recipe_unit:       'g',
+      purchase_unit:     'kg',
+      sales_unit:        'pcs',
+    },
+  };
+
+  return { mockState, mutateMock, MOCK_DATA };
 });
 
 // ── Module mocks ──────────────────────────────────────────────────────────────
@@ -32,18 +51,9 @@ vi.mock('@/stores/authStore.js', () => ({
 
 vi.mock('@/features/products/hooks/useProductUnits.js', () => ({
   useProductUnits: (_id: string) => ({
-    data: {
-      alternatives: [
-        { code: 'kg', factor_to_base: 1,     tags: [],           display_order: 0  },
-        { code: 'g',  factor_to_base: 0.001, tags: ['purchase'], display_order: 10 },
-      ],
-      contexts: {
-        stock_opname_unit: 'pcs',
-        recipe_unit:       'g',
-        purchase_unit:     'kg',
-        sales_unit:        'pcs',
-      },
-    },
+    // Stable reference: MOCK_DATA is created once in vi.hoisted, not recreated
+    // on every render call. This prevents useEffect infinite-loop.
+    data: MOCK_DATA,
     isLoading: false,
     error: null,
   }),
@@ -116,9 +126,10 @@ describe('UnitsPanel — write-mode [S39 WB1]', () => {
   it('T1: renders real alt unit codes from query data — no SAMPLE_ALT_UNITS', () => {
     renderPanel();
 
-    // Real codes from mocked query
-    expect(screen.getByDisplayValue('kg')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('g')).toBeInTheDocument();
+    // Real codes from mocked query — use getAllByDisplayValue since 'kg' appears
+    // in both the code text-input and the purchase_unit context select.
+    expect(screen.getAllByDisplayValue('kg').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByDisplayValue('g').length).toBeGreaterThanOrEqual(1);
 
     // factor_to_base inputs: 2 alts — verify values present
     const spinButtons = screen.getAllByRole('spinbutton');
@@ -130,7 +141,7 @@ describe('UnitsPanel — write-mode [S39 WB1]', () => {
     const textInputs = screen.getAllByRole('textbox');
     const codes = textInputs.map((el) => (el as HTMLInputElement).value);
     expect(codes).not.toContain('gr');
-    // Only 2 non-empty codes
+    // Only 2 non-empty code text-inputs (the alt unit code fields)
     expect(codes.filter((c) => c !== '')).toHaveLength(2);
   });
 
