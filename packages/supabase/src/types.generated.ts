@@ -6072,6 +6072,10 @@ export type Database = {
           updated_at: string
         }[]
       }
+      get_daily_sales_v1: {
+        Args: { p_date_end: string; p_date_start: string }
+        Returns: Json
+      }
       get_expiring_lots_v1: {
         Args: {
           p_hours_ahead?: number
@@ -6153,6 +6157,10 @@ export type Database = {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
+      get_permission_changes_v1: {
+        Args: { p_date_end: string; p_date_start: string }
+        Returns: Json
+      }
       get_pos_b2b_debts_v2: {
         Args: { p_customer_id?: string; p_lookback_days?: number }
         Returns: {
@@ -6170,8 +6178,24 @@ export type Database = {
           total: number
         }[]
       }
+      get_price_changes_v1: {
+        Args: {
+          p_date_end: string
+          p_date_start: string
+          p_product_id?: string
+        }
+        Returns: Json
+      }
       get_product_dashboard_v1: {
         Args: { p_days?: number; p_product_id: string }
+        Returns: Json
+      }
+      get_production_efficiency_v1: {
+        Args: { p_date_end: string; p_date_start: string }
+        Returns: Json
+      }
+      get_production_report_v1: {
+        Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
       get_production_suggestions_v1: {
@@ -6204,6 +6228,22 @@ export type Database = {
           p_date_end: string
           p_date_start: string
           p_promotion_id: string
+        }
+        Returns: Json
+      }
+      get_purchase_by_date_v1: {
+        Args: { p_date_end: string; p_date_start: string }
+        Returns: Json
+      }
+      get_purchase_by_supplier_v1: {
+        Args: { p_date_end: string; p_date_start: string }
+        Returns: Json
+      }
+      get_purchase_items_v1: {
+        Args: {
+          p_date_end: string
+          p_date_start: string
+          p_supplier_id?: string
         }
         Returns: Json
       }
@@ -6253,6 +6293,10 @@ export type Database = {
       }
       get_settings_by_category_v1: {
         Args: { p_category: string }
+        Returns: Json
+      }
+      get_staff_performance_v1: {
+        Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
       get_stock_levels_v1: {
