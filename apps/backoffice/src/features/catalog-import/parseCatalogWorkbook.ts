@@ -1,0 +1,131 @@
+// apps/backoffice/src/features/catalog-import/parseCatalogWorkbook.ts
+// S41 — pure ArrayBuffer → { payload, structure errors }. No network, no DOM.
+// Structure errors are exhaustive (never fail-fast). Semantic validation
+// (category resolution, cycles, conversions…) lives in import_catalog_v1.
+
+import * as XLSX from 'xlsx';
+import { CATALOG_SHEETS, type SheetDef } from './templateDefinition.js';
+
+export interface StructureError {
+  sheet: string;
+  row: number;          // 1-based Excel row (header = 1)
+  column?: string;
+  message: string;
+}
+
+export type SheetRow = Record<string, string | number | boolean | string[] | null>;
+
+export interface CatalogPayload {
+  categories: SheetRow[];
+  ingredients: SheetRow[];
+  products: SheetRow[];
+  units: SheetRow[];
+  variants: SheetRow[];
+  recipes: SheetRow[];
+}
+
+const TRUTHY = new Set(['true', '1', 'yes', 'oui', 'vrai']);
+const FALSY  = new Set(['false', '0', 'no', 'non', 'faux']);
+
+function coerce(
+  def: SheetDef, key: string, type: string, raw: unknown,
+  rowIdx: number, errors: StructureError[],
+): string | number | boolean | string[] | null {
+  if (raw === null || raw === undefined || raw === '') return null;
+  switch (type) {
+    case 'number': {
+      const n = typeof raw === 'number' ? raw : Number(String(raw).replace(',', '.'));
+      if (Number.isNaN(n)) {
+        errors.push({ sheet: def.name, row: rowIdx, column: key, message: `"${String(raw)}" is not a number` });
+        return null;
+      }
+      return n;
+    }
+    case 'boolean': {
+      if (typeof raw === 'boolean') return raw;
+      const s = String(raw).trim().toLowerCase();
+      if (TRUTHY.has(s)) return true;
+      if (FALSY.has(s)) return false;
+      errors.push({ sheet: def.name, row: rowIdx, column: key, message: `"${String(raw)}" is not a boolean (TRUE/FALSE)` });
+      return null;
+    }
+    case 'tags': {
+      const parts = String(raw).split(',').map((p) => p.trim()).filter((p) => p !== '');
+      return parts;
+    }
+    default:
+      return String(raw).trim() === '' ? null : String(raw).trim();
+  }
+}
+
+export function parseCatalogWorkbook(buf: ArrayBuffer): {
+  payload: CatalogPayload | null;
+  errors: StructureError[];
+} {
+  const errors: StructureError[] = [];
+  let wb: XLSX.WorkBook;
+  try {
+    wb = XLSX.read(buf, { type: 'array' });
+  } catch {
+    return { payload: null, errors: [{ sheet: '—', row: 0, message: 'File is not a readable .xlsx workbook' }] };
+  }
+
+  const payload: CatalogPayload = {
+    categories: [], ingredients: [], products: [], units: [], variants: [], recipes: [],
+  };
+
+  for (const def of CATALOG_SHEETS) {
+    const ws = wb.Sheets[def.name];
+    if (ws === undefined) {
+      errors.push({ sheet: def.name, row: 0, message: `Missing sheet "${def.name}"` });
+      continue;
+    }
+    const aoa = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, defval: null }) as unknown[][];
+    if (aoa.length === 0) continue; // empty sheet = no rows, fine
+    const headers = (aoa[0] ?? []).map((h) => String(h ?? '').trim());
+    const known = new Set(def.columns.map((c) => c.key));
+    headers.forEach((h) => {
+      if (h !== '' && !known.has(h)) {
+        errors.push({ sheet: def.name, row: 1, column: h, message: `Unknown column "${h}"` });
+      }
+    });
+
+    for (let i = 1; i < aoa.length; i++) {
+      const cells = aoa[i] ?? [];
+      if (cells.every((c) => c === null || String(c).trim() === '')) continue; // skip blank rows
+      const rowIdx = i + 1; // 1-based Excel row
+      const row: SheetRow = {};
+      for (const col of def.columns) {
+        const hIdx = headers.indexOf(col.key);
+        const raw = hIdx === -1 ? null : cells[hIdx] ?? null;
+        const v = coerce(def, col.key, col.type, raw, rowIdx, errors);
+        if (col.required && (v === null || v === '')) {
+          errors.push({ sheet: def.name, row: rowIdx, column: col.key, message: `Required value missing` });
+        }
+        row[col.key] = v;
+      }
+      payload[def.payloadKey].push(row);
+    }
+  }
+
+  // duplicate SKUs across Ingredients / Products / Variants
+  const seen = new Map<string, string>();
+  const skuRows: Array<[string, SheetRow[]]> = [
+    ['Ingredients', payload.ingredients], ['Products', payload.products], ['Variants', payload.variants],
+  ];
+  for (const [sheet, rows] of skuRows) {
+    rows.forEach((row, idx) => {
+      const sku = typeof row['sku'] === 'string' ? row['sku'] : null;
+      if (sku === null) return;
+      const prev = seen.get(sku);
+      if (prev !== undefined) {
+        errors.push({ sheet, row: idx + 2, column: 'sku', message: `Duplicate SKU "${sku}" (already used in ${prev})` });
+      } else {
+        seen.set(sku, sheet);
+      }
+    });
+  }
+
+  const fatal = errors.some((e) => e.row === 0);
+  return { payload: fatal ? null : payload, errors };
+}
