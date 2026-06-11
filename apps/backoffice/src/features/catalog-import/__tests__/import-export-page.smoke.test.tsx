@@ -251,6 +251,31 @@ describe('ProductsImportExportPage [S41 smoke]', () => {
     );
   });
 
+  // ── Case 5 (review residual): commit resolving valid:false stays in preview ──
+
+  it('T5: commit returning valid:false → stays in preview with errors, no "Import complete"', async () => {
+    importMutateAsync.mockResolvedValueOnce(VALID_REPORT);  // dry-run OK
+    importMutateAsync.mockResolvedValueOnce(ERRORS_REPORT); // commit re-validates → invalid
+
+    renderPage();
+    await triggerUpload();
+    await waitFor(() => {
+      expect(screen.getByTestId('confirm-import')).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('confirm-import'));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    // Still in preview: confirm button present (now disabled), errors visible,
+    // and NOT the success state.
+    expect(screen.getByTestId('confirm-import')).toBeDisabled();
+    expect(screen.getByTestId('import-errors-table')).toBeInTheDocument();
+    expect(screen.queryByText(/Import complete/i)).not.toBeInTheDocument();
+  });
+
   // ── Case 4 (review I-1): dry-run rejection returns to idle ────────────────
 
   it('T4: dry-run RPC rejection → back to idle, dropzone reappears (no dead-end)', async () => {

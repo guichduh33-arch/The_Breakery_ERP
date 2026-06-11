@@ -116,6 +116,14 @@ export default function ProductsImportExportPage(): JSX.Element {
         dryRun: false,
         idempotencyKey: idemKeyRef.current,
       });
+      if (!report.valid) {
+        // DB state changed between dry-run and commit (e.g. concurrent import):
+        // the RPC validated again, wrote nothing and stored no key — stay in
+        // preview with the fresh error report instead of claiming success.
+        setStage({ ...stage, report });
+        toast.error('Validation failed at import time — review the errors below');
+        return;
+      }
       idemKeyRef.current = crypto.randomUUID();
       setStage({ step: 'done', report });
       toast.success('Catalog imported successfully');
