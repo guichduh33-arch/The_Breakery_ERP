@@ -98,7 +98,7 @@ export function DiscountModal({
   const displayValue = raw === '' ? '—' : type === 'percentage' ? `${raw}%` : `${parseInt(raw, 10).toLocaleString('id-ID')} IDR`;
 
   return (
-    <FullScreenModal open={open} onOpenChange={handleOpenChange}>
+    <FullScreenModal open={open} onOpenChange={handleOpenChange} accessibleTitle="Apply discount">
       <DialogPrimitive.Title asChild>
         <span className={cn(SR_ONLY)}>Apply discount</span>
       </DialogPrimitive.Title>

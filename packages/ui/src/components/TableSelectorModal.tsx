@@ -85,7 +85,7 @@ export function TableSelectorModal({
   }
 
   return (
-    <FullScreenModal open={open} onOpenChange={(o) => !o && onClose()}>
+    <FullScreenModal open={open} onOpenChange={(o) => !o && onClose()} accessibleTitle="Pick a table">
       <DialogPrimitive.Title asChild>
         <span className={cn(SR_ONLY)}>Pick a table</span>
       </DialogPrimitive.Title>

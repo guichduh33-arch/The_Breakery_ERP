@@ -144,7 +144,7 @@ export function CustomerSearchModal({
   const showNewCta = query.length >= 2 && results.length === 0 && !isSearching && !!createFn;
 
   return (
-    <FullScreenModal open={open} onOpenChange={(o) => !o && onClose()}>
+    <FullScreenModal open={open} onOpenChange={(o) => !o && onClose()} accessibleTitle="Search customer">
       <DialogPrimitive.Title asChild>
         <span className={cn(SR_ONLY)}>Search customer</span>
       </DialogPrimitive.Title>

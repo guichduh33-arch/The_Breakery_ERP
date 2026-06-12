@@ -61,7 +61,12 @@ export function FullScreenModal({
             className,
           )}
         >
-          <DialogPrimitive.Title className={SR_ONLY}>{resolvedTitle}</DialogPrimitive.Title>
+          {/* asChild → span : Radix renders Title as <h2> by default, which
+              would duplicate consumers' visible <h2> in the heading tree
+              (S43 review follow-up). A span still resolves aria-labelledby. */}
+          <DialogPrimitive.Title asChild>
+            <span className={SR_ONLY}>{resolvedTitle}</span>
+          </DialogPrimitive.Title>
           {description && (
             <DialogPrimitive.Description className={SR_ONLY}>
               {description}
