@@ -24,7 +24,7 @@ type RpcFn = (
 ) => Promise<{ data: ReorderSuggestion[] | null; error: { message: string } | null }>;
 
 function rpc(): RpcFn {
-  return supabase.rpc as unknown as RpcFn;
+  return supabase.rpc.bind(supabase) as unknown as RpcFn;
 }
 
 export const REORDER_SUGGESTIONS_KEY = ['reorder-suggestions-v1'] as const;

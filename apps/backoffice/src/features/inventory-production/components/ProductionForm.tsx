@@ -118,6 +118,7 @@ export default function ProductionForm(): JSX.Element {
     hasValidExpected &&
     hasValidActual &&
     numericWaste >= 0 &&
+    sectionId !== '' &&
     !recordMut.isPending;
 
   async function submitWithReason(reason: string | null): Promise<void> {
@@ -162,6 +163,10 @@ export default function ProductionForm(): JSX.Element {
           setFormError(`Insufficient stock: ${list}`);
         } else if (err.code === 'variance_reason_too_short') {
           setFormError('Yield variance reason must be at least 5 characters.');
+        } else if (err.code === 'section_required') {
+          setFormError('Section is required.');
+        } else if (err.code === 'unknown') {
+          setFormError(`Server error: ${err.message}`);
         } else {
           setFormError(`Error: ${err.code}`);
         }
@@ -279,12 +284,13 @@ export default function ProductionForm(): JSX.Element {
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs uppercase tracking-widest text-text-secondary">Section (optional)</label>
+            <label className="text-xs uppercase tracking-widest text-text-secondary">Section</label>
             <select
               className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm"
               value={sectionId} onChange={(e) => setSectionId(e.target.value)} disabled={recordMut.isPending}
+              required
             >
-              <option value="">— none —</option>
+              <option value="">— select section —</option>
               {(sections.data ?? []).map((s) => (
                 <option key={s.id} value={s.id}>{s.name}</option>
               ))}

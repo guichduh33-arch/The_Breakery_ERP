@@ -12,6 +12,7 @@ export type RecordProductionErrorCode =
   | 'waste_must_be_non_negative'
   | 'product_not_found'
   | 'section_not_found'
+  | 'section_required'
   | 'recipe_not_found'
   | 'insufficient_stock'
   | 'unit_conversion_failed'
@@ -36,7 +37,7 @@ export class RecordProductionError extends Error {
 export interface RecordProductionArgs {
   productId:         string;
   quantityProduced:  number;
-  /** Empty string sent to server when no section is chosen — server validates. */
+  /** UUID de section — REQUIS (CHECK chk_stock_movements_section_required côté DB). */
   sectionId:         string;
   batchNumber?:      string;
   quantityWaste?:    number;
@@ -78,6 +79,11 @@ export function useRecordProduction() {
   const qc = useQueryClient();
   return useMutation<RecordProductionResult, RecordProductionError, RecordProductionArgs>({
     mutationFn: async (args) => {
+      // Defense-in-depth: section is required by DB CHECK chk_stock_movements_section_required.
+      // The UI enforces this via canSubmit, but guard here to prevent a cryptic 23514.
+      if (args.sectionId === '') {
+        throw new RecordProductionError('section_required', 'Section is required');
+      }
       const rpcArgs: {
         p_product_id:             string;
         p_quantity_produced:      number;

@@ -69,6 +69,8 @@ export interface IngredientPickerProps {
   showKindTabs?: boolean;
   /** Optional id for the input — useful for aria-labelledby. */
   inputId?: string;
+  /** aria-label for the search input. Defaults to "Search ingredient". */
+  inputAriaLabel?: string;
   /** Optional className for the outer wrapper. */
   className?: string;
 }
@@ -191,6 +193,7 @@ export function IngredientPicker({
   disabled = false,
   showKindTabs = true,
   inputId,
+  inputAriaLabel = 'Search ingredient',
   className,
 }: IngredientPickerProps): JSX.Element {
   const [query, setQuery] = useState('');
@@ -329,7 +332,7 @@ export function IngredientPicker({
           disabled={disabled}
           autoComplete="off"
           aria-autocomplete="list"
-          aria-label="Search ingredient"
+          aria-label={inputAriaLabel}
           onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
           onFocus={() => setOpen(true)}
           onBlur={() => {

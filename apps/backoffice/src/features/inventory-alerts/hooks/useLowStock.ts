@@ -22,7 +22,7 @@ type RpcFn = (
 ) => Promise<{ data: LowStockRow[] | null; error: { message: string } | null }>;
 
 function rpc(): RpcFn {
-  return supabase.rpc as unknown as RpcFn;
+  return supabase.rpc.bind(supabase) as unknown as RpcFn;
 }
 
 export const LOW_STOCK_KEY = ['low-stock-v1'] as const;

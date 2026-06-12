@@ -32,7 +32,7 @@ export function useProductsForInventory(search: string) {
         .from('products')
         .select('id, sku, name, current_stock')
         .is('deleted_at', null)
-        .eq('is_active', true)
+        .eq('track_inventory', true)   // was .eq('is_active', true) — audit M1
         .ilike('name', `%${term}%`)
         .order('name')
         .limit(20);

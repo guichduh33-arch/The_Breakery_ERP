@@ -283,7 +283,7 @@ export default function RecipeEditor({ productId, onProductChange }: RecipeEdito
         >
           <option value="">— select —</option>
           {(products.data ?? []).map((p) => (
-            <option key={p.id} value={p.id}>{p.name} ({p.unit})</option>
+            <option key={p.id} value={p.id}>{p.name} — {p.sku} ({p.unit})</option>
           ))}
         </select>
         <Button
@@ -367,6 +367,7 @@ export default function RecipeEditor({ productId, onProductChange }: RecipeEdito
                   sensors={sensors}
                   collisionDetection={closestCenter}
                   onDragEnd={handleDragEnd}
+                  accessibility={{ container: document.body }}
                 >
                   <SortableContext
                     items={recipe.map((r) => r.recipe_id)}

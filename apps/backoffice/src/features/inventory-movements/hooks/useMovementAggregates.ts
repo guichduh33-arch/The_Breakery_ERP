@@ -24,7 +24,7 @@ type RpcFn = (
 ) => Promise<{ data: MovementAggregate[] | null; error: { message: string } | null }>;
 
 function rpc(): RpcFn {
-  return supabase.rpc as unknown as RpcFn;
+  return supabase.rpc.bind(supabase) as unknown as RpcFn;
 }
 
 export function useMovementAggregates(filters: AggregateFilters = {}) {

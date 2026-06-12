@@ -72,7 +72,7 @@ export function useProductDashboard(productId: string | null, days = 30) {
     staleTime: 60_000,
     queryFn: async () => {
       if (productId === null) return null;
-      const rpc = supabase.rpc as unknown as RpcFn;
+      const rpc = supabase.rpc.bind(supabase) as unknown as RpcFn;
       const { data, error } = await rpc('get_product_dashboard_v1', {
         p_product_id: productId, p_days: days,
       });

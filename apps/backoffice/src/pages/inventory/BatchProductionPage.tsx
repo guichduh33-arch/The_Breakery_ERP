@@ -75,7 +75,7 @@ export default function BatchProductionPage(): JSX.Element {
       });
   }, [items]);
 
-  const canSubmit = submittableItems.length > 0 && !recordMut.isPending;
+  const canSubmit = submittableItems.length > 0 && sectionId !== '' && !recordMut.isPending;
 
   function addRow(): void {
     setItems((prev) => [...prev, emptyRow()]);
@@ -103,7 +103,8 @@ export default function BatchProductionPage(): JSX.Element {
       } = { idempotencyKey, items: submittableItems };
       const trimmedNotes = notes.trim();
       if (trimmedNotes !== '') args.notes = trimmedNotes;
-      if (sectionId !== '')    args.sectionId = sectionId;
+      // sectionId is required (canSubmit gates on sectionId !== '').
+      args.sectionId = sectionId;
       const result = await recordMut.mutateAsync(args);
       setSuccessMsg(`Recorded ${result.batch_number} (${result.production_records.length} items)`);
       setItems([emptyRow()]);
@@ -121,6 +122,8 @@ export default function BatchProductionPage(): JSX.Element {
           setFormError('At least one item references a product without an active recipe.');
         } else if (err.code === 'items_must_be_non_empty_array') {
           setFormError('Add at least one recipe.');
+        } else if (err.code === 'unknown') {
+          setFormError(`Server error: ${err.message}`);
         } else {
           setFormError(`Error: ${err.code}`);
         }
@@ -209,8 +212,9 @@ export default function BatchProductionPage(): JSX.Element {
               onChange={(e) => setSectionId(e.target.value)}
               disabled={recordMut.isPending}
               aria-label="Section"
+              required
             >
-              <option value="">— none —</option>
+              <option value="">— select section —</option>
               {(sections.data ?? []).map((s) => (
                 <option key={s.id} value={s.id}>{s.name}</option>
               ))}
