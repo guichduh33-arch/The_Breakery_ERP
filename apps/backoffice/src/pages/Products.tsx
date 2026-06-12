@@ -8,6 +8,7 @@
 import { useMemo, useState, type JSX } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ProductsHeader } from '@/features/products/components/ProductsHeader.js';
+import { ProductsPageTabs } from '@/features/products/components/ProductsPageTabs.js';
 import { ProductsKpiGrid } from '@/features/products/components/ProductsKpiGrid.js';
 import { ProductsFilters } from '@/features/products/components/ProductsFilters.js';
 import { ProductsTable } from '@/features/products/components/ProductsTable.js';
@@ -94,6 +95,7 @@ export default function ProductsPage(): JSX.Element {
   return (
     <div className="space-y-6">
       <ProductsHeader onNew={canCreate ? () => setShowNew(true) : undefined} />
+      <ProductsPageTabs />
 
       {showNew && (
         <NewProductDialog

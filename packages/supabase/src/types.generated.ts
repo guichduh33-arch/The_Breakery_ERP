@@ -344,6 +344,27 @@ export type Database = {
           },
         ]
       }
+      catalog_import_idempotency_keys: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          key: string
+          report: Json
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          key: string
+          report: Json
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          key?: string
+          report?: Json
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string
@@ -5977,6 +5998,7 @@ export type Database = {
         }
         Returns: Json
       }
+      export_catalog_v1: { Args: never; Returns: Json }
       fail:
         | { Args: never; Returns: string }
         | { Args: { "": string }; Returns: string }
@@ -6413,6 +6435,14 @@ export type Database = {
           p_table_number?: string
         }
         Returns: string
+      }
+      import_catalog_v1: {
+        Args: {
+          p_dry_run?: boolean
+          p_idempotency_key?: string
+          p_payload: Json
+        }
+        Returns: Json
       }
       in_todo: { Args: never; Returns: boolean }
       is_authenticated: { Args: never; Returns: boolean }

@@ -30,6 +30,9 @@ export type PermissionCode =
   // Session 27c — product variants (parent/child)
   | 'products.variants.read'
   | 'products.variants.write'
+  // Session 41 — catalog import/export
+  | 'catalog.import'
+  | 'catalog.export'
   | 'categories.read'
   | 'categories.create'
   | 'categories.update'

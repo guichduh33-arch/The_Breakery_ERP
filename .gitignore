@@ -37,6 +37,11 @@ pnpm-debug.log*
 # Test coverage
 coverage/
 
+# Playwright CLI / MCP artifacts (snapshots, traces, sessions)
+.playwright-cli/
+.playwright-mcp/
+test-results/
+
 # Sentry
 .sentryclirc
 
