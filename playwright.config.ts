@@ -29,7 +29,7 @@ export default defineConfig({
   projects: [
     {
       name: 'pos',
-      testMatch: /(complete-order|pos-login-order)\.spec\.ts$/,
+      testMatch: /(complete-order|pos-login-order|s43-pos-audit-fixes)\.spec\.ts$/,
       use: {
         ...devices['Desktop Chrome'],
         baseURL: process.env.E2E_POS_URL ?? process.env.E2E_BASE_URL ?? 'http://localhost:5173',
