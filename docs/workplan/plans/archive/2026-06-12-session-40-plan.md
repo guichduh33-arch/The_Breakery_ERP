@@ -8,7 +8,7 @@
 
 **Tech stack :** Supabase cloud V3 dev `ikcyvlovptebroadgtvd` (MCP apply_migration/execute_sql/generate_typescript_types), pgTAP, React 18 + TanStack Query + `@breakery/ui`, Vitest smokes, Playwright E2E.
 
-**Spec :** [`docs/workplan/specs/2026-06-12-session-40-spec.md`](../specs/2026-06-12-session-40-spec.md)
+**Spec :** [`docs/workplan/specs/2026-06-12-session-40-spec.md`](../../specs/archive/2026-06-12-session-40-spec.md)
 **Branche :** `swarm/session-40` (base `master` @ `e3ec866`)
 **Bloc migrations :** `20260624000010..019` (vérifier base via `list_migrations` — prior max NAME attendu `20260623000012`)
 

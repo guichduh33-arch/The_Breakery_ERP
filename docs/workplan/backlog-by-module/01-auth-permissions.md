@@ -1,7 +1,7 @@
 # Travail — Auth & Permissions
 
 > Last updated: 2026-05-03
-> Référence : [`../04-modules/01-auth-permissions.md`](../04-modules/01-auth-permissions.md)
+> Référence : [`../../reference/04-modules/01-auth-permissions.md`](../../reference/04-modules/01-auth-permissions.md)
 > Audits sources : `01-architecture-security-audit.md`, `08-operations-lan-audit.md`, `04-reports-testing-audit.md`
 
 ## Objectifs du module

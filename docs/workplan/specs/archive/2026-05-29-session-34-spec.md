@@ -1,3 +1,5 @@
+> 🗄️ **ARCHIVED / SUPERSEDED (banner added 2026-06-12).** This draft numbered the POS Critical Fixes as **Session 34** before the **Station Ticket Printing** track took the S34 slot (merged PR #54/#56). Never executed under this scope (no INDEX). Les findings se sont dissous ailleurs : **F-002/F-008 → S36** (PR #68), **F-006 PIN-en-body → PR #53**, **F-004 receipt/drawer → S35/S35a** (PR #62/#61), **F-001 Option B (draft-order RPCs) → abandonné** — le S35 INDEX l'acte comme « S34 draft-RPC myth » (DEV-S35-PLAN-01) ; les held orders ont shippé en Option A (`orders.is_held`, S35). Kept verbatim for history — do not act on the session number.
+
 # Session 34 — POS Critical Fixes (Spec)
 
 > **Date** : 2026-05-29
@@ -5,7 +7,7 @@
 > **Base** : `master` @ post-merge S33 PR (Orders v2 BO) — S34 dépend de S33 pour le helper `_recalc_order_totals` (réutilisé) et la convention de filtres realtime.
 > **Effort estimé** : ~8-12 jours wall-time (L) — dominé par F-001 Option B (full draft-order flow). Les 5 autres findings sont S/XS et parallélisables.
 > **Status** : draft pour ratification user (avant Wave 0 spec commit)
-> **Source** : [`outputs/audit-pos-2026-05-28.md`](../../../outputs/audit-pos-2026-05-28.md) — Couche 2 findings F-001, F-002, F-004, F-006, F-008 + minor F-016/F-017/F-018.
+> **Source** : [`docs/audit/2026-05-28-pos-audit.md`](../../../audit/2026-05-28-pos-audit.md) — Couche 2 findings F-001, F-002, F-004, F-006, F-008 + minor F-016/F-017/F-018.
 > **Decisions user (2026-05-29)** : (1) split en S34 Critical + S35 Polish ; (2) F-001 = **Option B** (full draft-order flow, pas le quick v10 bump) ; (3) full plan pour S34, spec-only pour S35.
 
 ---

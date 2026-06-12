@@ -3,7 +3,7 @@
 **Date :** 2026-05-27 (même journée que le plan parent)
 **Branche :** `feat/bo-menu-reorg` (post Waves 0-7 du plan parent)
 **Plan parent :** [`2026-05-27-backoffice-menu-reorg-plan.md`](2026-05-27-backoffice-menu-reorg-plan.md)
-**Spec parent :** [`../specs/2026-05-27-backoffice-menu-reorg-spec.md`](../specs/2026-05-27-backoffice-menu-reorg-spec.md)
+**Spec parent :** [`../specs/2026-05-27-backoffice-menu-reorg-spec.md`](../../specs/archive/2026-05-27-backoffice-menu-reorg-spec.md)
 
 ---
 

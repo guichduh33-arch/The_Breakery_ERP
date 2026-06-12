@@ -10,7 +10,7 @@
 
 **Tech Stack:** Vitest, `@testing-library/react` (`render`/`screen`/`fireEvent`/`waitFor`/`within`/`act`/`cleanup`), jsdom, `@radix-ui/react-dialog` (via `@breakery/ui` `FullScreenModal`), `@tanstack/react-query` (QueryClient wrapper), pnpm + turbo. No types regen, no MCP, no cloud DB.
 
-**Spec:** [`../specs/2026-06-01-pos-refund-test-investigation-spec.md`](../specs/2026-06-01-pos-refund-test-investigation-spec.md)
+**Spec:** [`../specs/2026-06-01-pos-refund-test-investigation-spec.md`](../../specs/archive/2026-06-01-pos-refund-test-investigation-spec.md)
 
 **Branch:** `fix/pos-refund-modal-test` (create from `master` @ `70c5cf1`). Commit the spec + this plan first; commit code/test changes only if the verdict (Task 9) requires them.
 

@@ -2,7 +2,7 @@
 
 - **Date** : 2026-06-11
 - **Branche** : `swarm/session-39` (base `master` @ `79d7f13`)
-- **Spec** : [`docs/workplan/specs/2026-06-11-session-39-spec.md`](../specs/2026-06-11-session-39-spec.md)
+- **Spec** : [`docs/workplan/specs/2026-06-11-session-39-spec.md`](../../specs/archive/2026-06-11-session-39-spec.md)
 - **Plan** : [`docs/workplan/plans/2026-06-11-session-39-plan.md`](2026-06-11-session-39-plan.md)
 - **Statut** : ✅ exécutée — 12 commits code+tests (`382cfb8..739f409`) + docs, PR ouverte vers `master`
 

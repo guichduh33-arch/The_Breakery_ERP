@@ -1,6 +1,6 @@
 # Docs Curation Audit — 2026-06-12
 
-> Follow-up to [`2026-06-04-docs-curation-audit.md`](2026-06-04-docs-curation-audit.md) (executed, not yet archived). Scope = drift accumulated S36 → S42 (7 merged sessions + 2 audits in 8 days).
+> Follow-up to [`2026-06-04-docs-curation-audit.md`](archive/2026-06-04-docs-curation-audit.md) (executed ; archivé par la passe 2 ci-dessous). Scope = drift accumulated S36 → S42 (7 merged sessions + 2 audits in 8 days).
 
 ## 1. Summary
 
@@ -113,7 +113,15 @@ All cross-checked against `git log`: S36 merged via #68 (06-05), S37 #69, S38 #7
 3. ✅ **Étape 4 (C6, C7, C8)** — `docs/README.md` : date → 2026-06-12, « 18 modules » → 19 (×4 emplacements), range plans « 1-35+ » → « 1-42+, archive/ » ; `docs/reference/README.md` : Last verified → 2026-06-12 (index spot-checké exact) ; `00-modules-index.md` : note V3 ajoutée sous le header (catalogue V2 historique vs index V3 vivant = fichiers numérotés).
 4. ✅ **Étape 5 (C5, Q1 mapping confirmé)** — bannières 🗄️ SUPERSEDED (avec la dissolution F-002/F-008→S36, F-006→PR #53, F-004→S35/S35a, F-001 Option B→abandonné « S34 draft-RPC myth ») prépendées aux 2 fichiers fantômes, puis `git mv` vers `{specs,plans}/archive/` ; lien Predecessor de la spec S35 réécrit vers `./archive/`. Link-check post-batch : **0 lien mort** vers les fichiers déplacés, toutes les cibles des one-liners CLAUDE.md résolvent.
 
-**Non exécuté (hors scope approuvé)** : étapes 2–3 (liens morts backlog + `outputs/`), 6–9 (archivage S34→S40, menu-reorg, display-stock, paires pos-*, audits résolus, refs orphelines), 10 (junk files), 11 (CHANGELOG). Q2/Q3/Q5 restées ouvertes.
+**Passe 2 (même jour, étapes 2–3 + 6–11 approuvées) :**
+
+5. ✅ **Étape 2 (D1, D3)** — 15 liens `](../04-modules/...)` → `](../../reference/04-modules/...)` dans 14 fichiers backlog (labels inclus) ; lien glossaire de l'exec-summary integral-V3 corrigé (`docs/V2_V3_GLOSSARY.md` → `../../../V2_V3_GLOSSARY.md`).
+6. ✅ **Étape 3 (D2)** — les 3 liens `outputs/audit-pos-2026-05-28.md` repointés vers `docs/audit/2026-05-28-pos-audit.md` (spec S35 + ghost S34 spec/plan archivés).
+7. ✅ **Étapes 6–9 (B1–B7)** — **59 fichiers `git mv`** : triplets S34 station-printing → S40 (21), menu-reorg ×3, display-stock ×2, 7 paires `pos-*` (14 — `print-bridge-deploy` gardé live), 17 refs → `refs/archive/`, BO-integrity audit → `docs/audit/archive/`, curation audit 06-04 → `workplan/audits/archive/`. Link-fixer global : **66 liens réécrits dans 31 fichiers** (dont 25 dans CLAUDE.md, le lien archive→live de `double-print-risk-plan`, et des liens d'INDEX déjà archivés vers les refs déplacées). Vérification : **0 lien vers un ancien chemin** ; les 132 liens morts restants en zone vivante = rot pré-existant `docs/reference/` (D5, hors scope acté).
+8. ✅ **Étape 10 (A1)** — 6 fichiers junk zéro-octet supprimés + un 7ᵉ apparu en cours de session (`Safety`, 0 octet, même pattern de redirect shell).
+9. ✅ **Étape 11 (C9)** — pointeur de fraîcheur ajouté en tête de `CHANGELOG.md` (figé v0.1.0 → renvoi vers `docs/workplan/` + CLAUDE.md).
+
+**Restes ouverts** : Q2 (INDEX S42 manquant — décision process), Q5 (`.claude/skills/playwright-cli/` non tracké), rot pré-existant D5 (~132 liens dans `docs/reference/`) et D4 (`DESIGN_POS_AND_BACKOFFICE.md`).
 
 ---
 

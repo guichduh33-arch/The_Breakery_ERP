@@ -8,7 +8,7 @@
 
 **Tech Stack:** React 18 + TypeScript + Vitest + React Testing Library, `apps/pos`. Print mock mode `VITE_PRINT_MOCK=1` for the smoke test (asserts the buffered payload via `getMockPrintBuffer()`). Domain types from `@breakery/domain`.
 
-**Spec:** [`../specs/2026-06-01-pos-receipt-payment-method-fix-spec.md`](../specs/2026-06-01-pos-receipt-payment-method-fix-spec.md)
+**Spec:** [`../specs/2026-06-01-pos-receipt-payment-method-fix-spec.md`](../../specs/archive/2026-06-01-pos-receipt-payment-method-fix-spec.md)
 **Branch:** `fix/pos-receipt-payment-method` (from `master` @ `70c5cf1`)
 **Effort:** S (~0.5–1 day)
 

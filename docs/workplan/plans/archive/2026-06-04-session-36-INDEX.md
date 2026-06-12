@@ -1,7 +1,7 @@
 # Session 36 — POS Correctness & Security Close-out — INDEX
 
 > **Branch** : `swarm/session-36` (base `feat/pos-redesign` @ `7dbb10a` — see DEV-S36-PLAN-01, NOT `master`)
-> **Spec** : [`../specs/2026-06-04-session-36-spec.md`](../specs/2026-06-04-session-36-spec.md)
+> **Spec** : [`../specs/2026-06-04-session-36-spec.md`](../../specs/archive/2026-06-04-session-36-spec.md)
 > **Plan** : [`./2026-06-04-session-36-plan.md`](./2026-06-04-session-36-plan.md)
 > **Status** : ✅ **executed** — all 3 waves shipped, reviewed (spec ✅ / quality ✅ / pattern-guardian 14/14), green.
 

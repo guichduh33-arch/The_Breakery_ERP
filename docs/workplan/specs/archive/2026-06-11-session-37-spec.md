@@ -4,7 +4,7 @@
 > **Branche cible** : `swarm/session-37`
 > **Base** : `master` @ `06b8283` (post-merge S36 PR #68).
 > **Effort estimé** : ~5-7 jours wall-time (M) — close-out, zéro nouvelle feature. Mix money-flow DB hardening (M/L), POS correctness (S/M), BO quick fixes (S), customers PII cutover (M).
-> **Status** : **spec** — plan détaillé rédigé en parallèle via `superpowers:writing-plans` (voir [`../plans/2026-06-11-session-37-plan.md`](../plans/2026-06-11-session-37-plan.md)).
+> **Status** : **spec** — plan détaillé rédigé en parallèle via `superpowers:writing-plans` (voir [`../plans/2026-06-11-session-37-plan.md`](../../plans/archive/2026-06-11-session-37-plan.md)).
 > **Source** : audit complet 6-agents (POS / BackOffice / DB / sécurité-fraude / tests / pattern-guardian) sur `master` post-S36 (2026-06-11).
 > **Predecessor** : [`./2026-06-04-session-36-spec.md`](./2026-06-04-session-36-spec.md).
 
@@ -390,4 +390,4 @@ Arbitrages à trancher en **Task 0** (préflight) avant de figer le plan d'exéc
 6. customers v2 : étendre le TABLE result (1 round-trip) vs fetch category séparé.
 7. État de `_043` : confirmée non appliquée (sinon hotfix).
 
-Exécuter le plan [`../plans/2026-06-11-session-37-plan.md`](../plans/2026-06-11-session-37-plan.md) via `superpowers:subagent-driven-development` — Wave A (db-engineer + edge-functions-engineer + test-engineer), Wave B (pos-specialist + test-engineer, B1 attend A1), Wave C (backoffice-specialist + pos-specialist + db-engineer, cutover séquencé), Wave D (test-engineer + docs). Revue pré-merge `pattern-guardian`.
+Exécuter le plan [`../plans/2026-06-11-session-37-plan.md`](../../plans/archive/2026-06-11-session-37-plan.md) via `superpowers:subagent-driven-development` — Wave A (db-engineer + edge-functions-engineer + test-engineer), Wave B (pos-specialist + test-engineer, B1 attend A1), Wave C (backoffice-specialist + pos-specialist + db-engineer, cutover séquencé), Wave D (test-engineer + docs). Revue pré-merge `pattern-guardian`.

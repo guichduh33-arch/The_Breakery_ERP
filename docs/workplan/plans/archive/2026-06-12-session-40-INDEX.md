@@ -1,6 +1,6 @@
 # Session 40 — INDEX : Reports close-out — les 9 cards « Soon » du hub
 
-> Spec : [`2026-06-12-session-40-spec.md`](../specs/2026-06-12-session-40-spec.md)
+> Spec : [`2026-06-12-session-40-spec.md`](../../specs/archive/2026-06-12-session-40-spec.md)
 > Plan : [`2026-06-12-session-40-plan.md`](2026-06-12-session-40-plan.md)
 > Branche : `swarm/session-40` (base `master` @ `e3ec866`)
 

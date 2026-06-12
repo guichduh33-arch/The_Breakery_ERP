@@ -1,7 +1,7 @@
 # Travail — Expenses
 
 > Last updated: 2026-05-03
-> Référence : [docs/reference/04-modules/11-expenses.md](../04-modules/11-expenses.md)
+> Référence : [docs/reference/04-modules/11-expenses.md](../../reference/04-modules/11-expenses.md)
 > Sources d'audit : `docs/audit/02-accounting-business-audit.md` (P0-4 expense approval RPC), `docs/audit/00-executive-summary.md`, `docs/audit/07-product-backlog-audit.md`
 
 ## Objectifs du module

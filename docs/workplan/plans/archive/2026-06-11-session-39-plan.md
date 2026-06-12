@@ -8,7 +8,7 @@
 
 **Tech Stack:** Postgres (Supabase cloud V3 dev `ikcyvlovptebroadgtvd` via MCP), React + TanStack Query BO, Vitest, pgTAP, Chrome MCP (E2E).
 
-**Spec:** [`docs/workplan/specs/2026-06-11-session-39-spec.md`](../specs/2026-06-11-session-39-spec.md)
+**Spec:** [`docs/workplan/specs/2026-06-11-session-39-spec.md`](../../specs/archive/2026-06-11-session-39-spec.md)
 
 **Migrations:** NAME-block `20260623000010..012` — vérifier d'abord `list_migrations` (prior max NAME attendu `20260622000016`).
 

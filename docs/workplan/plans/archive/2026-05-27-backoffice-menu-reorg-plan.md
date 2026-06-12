@@ -8,7 +8,7 @@
 
 **Tech Stack:** TypeScript, React 18, react-router-dom, lucide-react icons, Tailwind utility classes via `cn()` helper de `@breakery/ui`, Vitest + @testing-library/react.
 
-**Spec:** [`../specs/2026-05-27-backoffice-menu-reorg-spec.md`](../specs/2026-05-27-backoffice-menu-reorg-spec.md) (committed `18e884f`)
+**Spec:** [`../specs/2026-05-27-backoffice-menu-reorg-spec.md`](../../specs/archive/2026-05-27-backoffice-menu-reorg-spec.md) (committed `18e884f`)
 
 **Branch:** `feat/bo-menu-reorg` (créée depuis `master` @ `18e884f` post-spec-commit)
 

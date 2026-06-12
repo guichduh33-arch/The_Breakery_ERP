@@ -291,6 +291,6 @@ Still within initial 60-100h envelope.
 When picking up a phase :
 1. Open the audit table filter to your phase (e.g. all rows tagged Phase 2.A).
 2. For each row, open the screenshot side-by-side with the React file.
-3. Apply changes respecting the [spec D1-D15](../specs/archive/2026-05-14-session-14-spec.md) decisions.
+3. Apply changes respecting the [spec D1-D15](../../specs/archive/2026-05-14-session-14-spec.md) decisions.
 4. Mark the row gap as ✓ done in this doc (append-only edit, datestamped).
 5. Commit per Wave (e.g. all 2.A screens done = squash-merge phase branch).

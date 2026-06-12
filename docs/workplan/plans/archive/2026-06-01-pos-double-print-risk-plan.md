@@ -8,7 +8,7 @@
 
 **Tech Stack:** pnpm 9.15 + turbo monorepo; TypeScript strict (`@breakery/supabase` re-exports the generated `Database` type from `@supabase/supabase-js`'s `SupabaseClient<Database>`); React + Vitest (`apps/pos`); Supabase cloud V3 dev (`ikcyvlovptebroadgtvd`) via MCP for any types regen (none expected — the 3 LAN RPCs are already in `types.generated.ts`). No DB migration.
 
-**Spec:** [`../specs/2026-06-01-pos-double-print-risk-spec.md`](../specs/2026-06-01-pos-double-print-risk-spec.md)
+**Spec:** [`../specs/2026-06-01-pos-double-print-risk-spec.md`](../../specs/archive/2026-06-01-pos-double-print-risk-spec.md)
 **Branch:** `fix/pos-double-print-risk` (create from `master` @ `70c5cf1`)
 **Effort:** S-M (~0.5-1 day repo work; P2 gated on an external dependency)
 **No DB migration.** `enqueue_print_job_v1` stays in the DB (still used by generic `print.request`); the deprecation is client-side only.
@@ -117,7 +117,7 @@ Confirm `handlePrintRequest` (`:120-156`) is **kept** (explicit jobs, ≠ the bu
 
 - [ ] **Step 1.5: GATE DECISION (Task 4 input) — pick (a) or (b) or STOP**
 
-Check the state of [`pos-print-bridge-deploy`](2026-06-01-pos-print-bridge-deploy-plan.md). Record one of:
+Check the state of [`pos-print-bridge-deploy`](../2026-06-01-pos-print-bridge-deploy-plan.md). Record one of:
 - **(a)** Bridge deployed & reachable — its acceptance §3 met (real repro: 1 mixed order → 3 prep tickets + receipt; 5 `lan_devices` printer rows present). → Task 5 hard-removes the block.
 - **(b)** Bridge NOT yet deployed (expected as of 2026-06-01, `DEV-S34-W0-02` open) → Task 5 ships behind `VITE_LEGACY_KITCHEN_CHIT` **OFF**.
 - **STOP** — if neither is acceptable to ship, skip Task 5 entirely; deliver P1 only (Tasks 2-3) + follow-up in INDEX/CLAUDE.md.
@@ -497,7 +497,7 @@ Expected: one commit. **P1 is now complete and independently mergeable.**
 
 - [ ] **Step 4.1: Evaluate gate (a) — bridge deployed & reachable**
 
-Confirm against [`pos-print-bridge-deploy`](2026-06-01-pos-print-bridge-deploy-plan.md) Acceptance §3: are the 5 `lan_devices` printer rows present in prod/dev AND has the real repro been observed (1 mixed order → 3 prep tickets on barista/kitchen/bakery + cashier receipt)? Verify the seed via MCP `execute_sql` (`project_id='ikcyvlovptebroadgtvd'`):
+Confirm against [`pos-print-bridge-deploy`](../2026-06-01-pos-print-bridge-deploy-plan.md) Acceptance §3: are the 5 `lan_devices` printer rows present in prod/dev AND has the real repro been observed (1 mixed order → 3 prep tickets on barista/kitchen/bakery + cashier receipt)? Verify the seed via MCP `execute_sql` (`project_id='ikcyvlovptebroadgtvd'`):
 
 ```sql
 SELECT capabilities ->> 'station' AS station, ip_address, port

@@ -1,7 +1,7 @@
 # Session 37 — Fraud Hardening & Correctness Close-out — INDEX
 
 > **Branch** : `swarm/session-37` (base `master` @ `06b8283`, post-merge S36 PR #68)
-> **Spec** : [`../specs/2026-06-11-session-37-spec.md`](../specs/2026-06-11-session-37-spec.md)
+> **Spec** : [`../specs/2026-06-11-session-37-spec.md`](../../specs/archive/2026-06-11-session-37-spec.md)
 > **Plan** : [`./2026-06-11-session-37-plan.md`](./2026-06-11-session-37-plan.md)
 > **Status** : ✅ **executed 2026-06-11** — all four waves delivered, hard cutover PII applied (gate `_018` live), full sweeps green.
 

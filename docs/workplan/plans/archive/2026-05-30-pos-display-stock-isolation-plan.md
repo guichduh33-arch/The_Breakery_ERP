@@ -12,7 +12,7 @@
 
 ## Contexte de référence (lire avant de commencer)
 
-- **Spec source** : [`docs/workplan/specs/2026-05-30-pos-display-stock-isolation-spec.md`](../specs/2026-05-30-pos-display-stock-isolation-spec.md) — le modèle métier validé. Ce plan en est la traduction exécutable.
+- **Spec source** : [`docs/workplan/specs/2026-05-30-pos-display-stock-isolation-spec.md`](../../specs/archive/2026-05-30-pos-display-stock-isolation-spec.md) — le modèle métier validé. Ce plan en est la traduction exécutable.
 - **Mémoire projet** : `pos-stock-display-counter` (le module stock POS EST un compteur de vitrine, indépendant en intention du BO).
 - **Base** : branche `feat/pos-display-stock-isolation` (déjà checkout), `master` post-S32 (`780e12e`).
 

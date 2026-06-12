@@ -1,7 +1,7 @@
 # Session 38 — INDEX (close-out)
 
 - **Branche** : `swarm/session-38` (base `master` @ `4b235bd`, post-merge S37 PR #69)
-- **Spec** : [`docs/workplan/specs/2026-06-11-session-38-spec.md`](../specs/2026-06-11-session-38-spec.md)
+- **Spec** : [`docs/workplan/specs/2026-06-11-session-38-spec.md`](../../specs/archive/2026-06-11-session-38-spec.md)
 - **Plan** : [`docs/workplan/plans/2026-06-11-session-38-plan.md`](2026-06-11-session-38-plan.md)
 - **Thème** : SEC-06/07 PIN lockout (anti brute-force) + POS-15 split-bill étendu (modes equal/custom) + TEST-05/07 (pgTAP + unit + smoke + **premier E2E navigateur**). Zéro nouvelle table.
 

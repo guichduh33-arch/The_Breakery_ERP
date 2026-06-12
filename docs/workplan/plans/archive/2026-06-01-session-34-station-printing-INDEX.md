@@ -4,7 +4,7 @@
 > **Branche** : `swarm/session-34`
 > **Base** : `master` @ `dafc500` (post-merge S33 PR #53 security-fraud-guard)
 > **Status** : ✓ ready to merge
-> **Spec** : [`../specs/2026-06-01-session-34-station-printing-spec.md`](../specs/2026-06-01-session-34-station-printing-spec.md)
+> **Spec** : [`../specs/2026-06-01-session-34-station-printing-spec.md`](../../specs/archive/2026-06-01-session-34-station-printing-spec.md)
 > **Plan** : [`./2026-06-01-session-34-station-printing-plan.md`](./2026-06-01-session-34-station-printing-plan.md)
 
 ---

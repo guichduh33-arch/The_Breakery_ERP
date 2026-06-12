@@ -10,7 +10,7 @@
 
 **Spec:** [`../specs/2026-06-01-pos-print-bridge-deploy-spec.md`](../specs/2026-06-01-pos-print-bridge-deploy-spec.md)
 **Branch:** `fix/pos-print-bridge-config` (create from `master` @ `70c5cf1`)
-**Cross-ref S35 (DO NOT duplicate):** [`../specs/2026-05-29-session-35-spec.md`](../specs/2026-05-29-session-35-spec.md) §5 — F-009 Printing tab + F-015. S35 will add `usePosSettingsStore` reading the **same** key; canonical resolution order will be `store (S35) > VITE_PRINT_SERVER_URL (this plan) > 'http://localhost:3001'`.
+**Cross-ref S35 (DO NOT duplicate):** [`../specs/2026-05-29-session-35-spec.md`](../specs/archive/2026-05-29-session-35-spec.md) §5 — F-009 Printing tab + F-015. S35 will add `usePosSettingsStore` reading the **same** key; canonical resolution order will be `store (S35) > VITE_PRINT_SERVER_URL (this plan) > 'http://localhost:3001'`.
 
 ---
 

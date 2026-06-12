@@ -8,7 +8,7 @@
 
 **Tech Stack:** React 18 (StrictMode double-mount), `@tanstack/react-query`, `@testing-library/react` `renderHook`, Vitest, `apps/pos` (workspace `@breakery/app-pos`). Channel transport: `supabase.channel(name)` from `@/lib/supabase`.
 
-**Spec:** [`../specs/2026-06-01-pos-realtime-channel-uniqueness-fix-spec.md`](../specs/2026-06-01-pos-realtime-channel-uniqueness-fix-spec.md)
+**Spec:** [`../specs/2026-06-01-pos-realtime-channel-uniqueness-fix-spec.md`](../../specs/archive/2026-06-01-pos-realtime-channel-uniqueness-fix-spec.md)
 **Branch:** `fix/pos-realtime-channel-uniqueness` (from `master` @ `70c5cf1`)
 **Effort:** S (~0.5 day)
 

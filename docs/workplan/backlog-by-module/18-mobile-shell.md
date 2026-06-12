@@ -1,7 +1,7 @@
 # Travail — Mobile Shell
 
 > Last updated: 2026-05-03
-> Référence : [`../04-modules/18-mobile-shell.md`](../04-modules/18-mobile-shell.md)
+> Référence : [`../../reference/04-modules/18-mobile-shell.md`](../../reference/04-modules/18-mobile-shell.md)
 > Sources audit : `docs/audit/08-operations-lan-audit.md` §3, `docs/audit/05-uiux-design-audit.md`, `docs/audit/ux-gap-analysis-2026-05-01.md`
 
 ## Objectifs du module

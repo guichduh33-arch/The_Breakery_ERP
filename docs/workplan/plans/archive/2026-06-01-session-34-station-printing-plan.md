@@ -8,7 +8,7 @@
 
 **Tech Stack:** Supabase cloud V3 dev (`ikcyvlovptebroadgtvd`), pnpm/turbo monorepo, React Query + Vitest, pont d'impression externe `localhost:3001` (hors-repo).
 
-**Spec:** [`../specs/2026-06-01-session-34-station-printing-spec.md`](../specs/2026-06-01-session-34-station-printing-spec.md)
+**Spec:** [`../specs/2026-06-01-session-34-station-printing-spec.md`](../../specs/archive/2026-06-01-session-34-station-printing-spec.md)
 **Branch:** `swarm/session-34` (à créer depuis `master` @ `dafc500`)
 
 ---

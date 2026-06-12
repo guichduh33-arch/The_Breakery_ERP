@@ -1,7 +1,7 @@
 # Session 35 — POS Service Polish — INDEX
 
 > **Branch** : `swarm/session-35` (base `master` @ `2de5eac`, post-S35a PR #61)
-> **Spec** : [`../specs/2026-05-29-session-35-spec.md`](../specs/2026-05-29-session-35-spec.md)
+> **Spec** : [`../specs/2026-05-29-session-35-spec.md`](../../specs/archive/2026-05-29-session-35-spec.md)
 > **Plan** : [`./2026-05-29-session-35-plan.md`](./2026-05-29-session-35-plan.md)
 > **Status** : ✅ all 5 findings delivered — ready to merge.
 > **Execution** : subagent-driven (one implementer + 2-stage review per task).

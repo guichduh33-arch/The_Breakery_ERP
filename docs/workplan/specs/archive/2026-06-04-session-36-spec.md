@@ -5,7 +5,7 @@
 > **Base** : `master` @ `0086017` (post-merge S35 PR #62).
 > **Effort estimé** : ~3-5 jours wall-time (S) — close-out, zero new feature. Mostly XS/S findings.
 > **Status** : **spec** — plan détaillé rédigé en parallèle via `superpowers:writing-plans` (voir `../plans/2026-06-04-session-36-plan.md`).
-> **Source** : [`docs/audit/2026-05-28-pos-audit.md`](../../audit/2026-05-28-pos-audit.md) — findings F-008, F-002, F-021 + S35 follow-ups (DEV-S35-C-05, DEV-S35-E3-01, idle→lock).
+> **Source** : [`docs/audit/2026-05-28-pos-audit.md`](../../../audit/2026-05-28-pos-audit.md) — findings F-008, F-002, F-021 + S35 follow-ups (DEV-S35-C-05, DEV-S35-E3-01, idle→lock).
 > **Predecessor** : [`./2026-05-29-session-35-spec.md`](./2026-05-29-session-35-spec.md).
 
 ---

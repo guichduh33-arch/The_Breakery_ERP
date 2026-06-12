@@ -8,7 +8,7 @@
 
 **Tech Stack:** Markdown (`CLAUDE.md`), `grep`/ripgrep for call-site verification, `git` + `gh` for branch and PR. No application code, no SQL migration, no runtime test framework.
 
-**Spec:** [`../specs/2026-06-01-pos-claudemd-doc-sync-spec.md`](../specs/2026-06-01-pos-claudemd-doc-sync-spec.md)
+**Spec:** [`../specs/2026-06-01-pos-claudemd-doc-sync-spec.md`](../../specs/archive/2026-06-01-pos-claudemd-doc-sync-spec.md)
 **Branch:** `docs/claudemd-rpc-versions-sync` (from `master` @ `70c5cf1`)
 **Effort:** S (~0.25 day)
 

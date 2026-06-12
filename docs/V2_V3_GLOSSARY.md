@@ -112,7 +112,7 @@ Ce glossaire mappe les noms V2 (qui apparaissent dans la doc business) vers leur
 
 ## 5. Chemins V2 → V3 (mapping condensé)
 
-Le mapping complet figé à S13 est dans [`docs/workplan/refs/2026-05-13-v2-v3-path-translation.md`](workplan/refs/2026-05-13-v2-v3-path-translation.md) — 164 paths V2 cartographiés. Règles principales :
+Le mapping complet figé à S13 est dans [`docs/workplan/refs/2026-05-13-v2-v3-path-translation.md`](workplan/refs/archive/2026-05-13-v2-v3-path-translation.md) — 164 paths V2 cartographiés. Règles principales :
 
 | V2 monolithe | V3 monorepo |
 |---|---|

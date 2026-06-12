@@ -1,7 +1,7 @@
 # Session 25 — Phase 1.A.0 — Pre-flight DB introspection (2026-05-19)
 
-**Spec ref :** [`docs/workplan/specs/2026-05-19-session-25-spec.md`](../specs/archive/2026-05-19-session-25-spec.md)
-**INDEX ref :** [`docs/workplan/plans/2026-05-19-session-25-INDEX.md`](../plans/archive/2026-05-19-session-25-INDEX.md) (Phase 1.A.0)
+**Spec ref :** [`docs/workplan/specs/2026-05-19-session-25-spec.md`](../../specs/archive/2026-05-19-session-25-spec.md)
+**INDEX ref :** [`docs/workplan/plans/2026-05-19-session-25-INDEX.md`](../../plans/archive/2026-05-19-session-25-INDEX.md) (Phase 1.A.0)
 **Target project :** `ikcyvlovptebroadgtvd` (V3 dev, region `ap-southeast-1`)
 **Migration block reserved (S25) :** `20260602000010..099`
 

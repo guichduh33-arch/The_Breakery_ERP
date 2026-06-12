@@ -1,3 +1,5 @@
+> 🗄️ **ARCHIVED / SUPERSEDED (banner added 2026-06-12).** This draft numbered the POS Critical Fixes as **Session 34** before the **Station Ticket Printing** track took the S34 slot (merged PR #54/#56). Never executed under this scope (no INDEX). Les findings se sont dissous ailleurs : **F-002/F-008 → S36** (PR #68), **F-006 PIN-en-body → PR #53**, **F-004 receipt/drawer → S35/S35a** (PR #62/#61), **F-001 Option B (draft-order RPCs) → abandonné** — le S35 INDEX l'acte comme « S34 draft-RPC myth » (DEV-S35-PLAN-01) ; les held orders ont shippé en Option A (`orders.is_held`, S35). Kept verbatim for history — do not act on the session number.
+
 # Session 34 — POS Critical Fixes Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. Each Wave is isolated → one subagent per Task, parallelizable per Wave. Waves 3, 4, 5 are **independent** of Waves 1-2 and of each other → fully parallelizable.
@@ -10,7 +12,7 @@
 
 **Spec:** [`../specs/2026-05-29-session-34-spec.md`](../specs/2026-05-29-session-34-spec.md)
 
-**Source audit:** [`../../../outputs/audit-pos-2026-05-28.md`](../../../outputs/audit-pos-2026-05-28.md)
+**Source audit:** [`docs/audit/2026-05-28-pos-audit.md`](../../../audit/2026-05-28-pos-audit.md)
 
 **Branch:** `swarm/session-34` (créée depuis `master` post-merge S33)
 
