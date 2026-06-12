@@ -152,7 +152,7 @@ export function usePaymentFlowLogic() {
       fireToStations.mutateAsync({ orderNumber: result.order_number }).then((results) => {
         for (const r of results) {
           if (!r.ok) {
-            toast.error(`${r.role} printer unreachable — ticket not printed`);
+            toast.error(`${r.role} printer unreachable — ticket saved to KDS, not printed`);
           }
         }
       }).catch((err: unknown) => {

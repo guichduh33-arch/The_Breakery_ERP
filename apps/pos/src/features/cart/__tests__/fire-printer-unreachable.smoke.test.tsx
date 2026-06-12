@@ -1,12 +1,15 @@
 // apps/pos/src/features/cart/__tests__/fire-printer-unreachable.smoke.test.tsx
 //
 // Session 34 / W4 — kitchen printer absent from map.
+// Session 43 / P0-3 — semantics updated: the fire persists the order via
+// fire_counter_order_v1 BEFORE printing, so ALL sent items are sealed
+// (locked + printed) even when a station printer is unreachable — the ticket
+// lives in the DB/KDS and a re-fire would duplicate the order lines.
 //
 // Scenario: barista printer present, kitchen printer ABSENT.
 // After clicking "Send to Kitchen":
-//   • toast.error is called mentioning kitchen.
-//   • 'line-kitchen' is NOT in printedItemIds.
-//   • 'line-barista' IS in printedItemIds.
+//   • toast.error is called mentioning kitchen ("saved to KDS, not printed").
+//   • BOTH lines are in printedItemIds (DB is the source of truth).
 
 /// <reference types="@testing-library/jest-dom" />
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -14,6 +17,7 @@ import { render, screen, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useCartStore } from '@/stores/cartStore';
 import { useAuthStore } from '@/stores/authStore';
+import { useShiftStore } from '@/stores/shiftStore';
 import { clearMockPrintBuffer } from '@/services/print/printService';
 
 // ── Static mocks ──────────────────────────────────────────────────────────────
@@ -25,8 +29,14 @@ vi.mock('sonner', () => ({
   Toaster: () => null,
 }));
 
+// Session 43 / P0-3 — the fire now persists via fire_counter_order_v1 first.
+const { rpcMock } = vi.hoisted(() => ({ rpcMock: vi.fn() }));
+
 vi.mock('@/lib/supabase', () => ({
-  supabase: { auth: { getSession: vi.fn().mockResolvedValue({ data: { session: { access_token: 'tok' } } }) } },
+  supabase: {
+    rpc: (...a: unknown[]) => rpcMock(...a),
+    auth: { getSession: vi.fn().mockResolvedValue({ data: { session: { access_token: 'tok' } } }) },
+  },
   supabaseUrl: 'http://localhost:54321',
 }));
 
@@ -64,6 +74,13 @@ describe('SendToKitchenButton — kitchen printer unreachable', () => {
     clearMockPrintBuffer();
     toastMock.error.mockReset();
 
+    rpcMock.mockReset();
+    rpcMock.mockResolvedValue({
+      data: { order_id: 'order-db-1', order_number: '#0042', idempotent_replay: false },
+      error: null,
+    });
+    useShiftStore.setState({ current: { id: 'sess-1', opened_at: '', opening_cash: 0 } });
+
     useCartStore.setState({
       cart: {
         items: [
@@ -95,7 +112,7 @@ describe('SendToKitchenButton — kitchen printer unreachable', () => {
     vi.unstubAllEnvs();
   });
 
-  it('toasts kitchen error, keeps kitchen line unprinted, marks barista line printed', async () => {
+  it('toasts kitchen error but seals BOTH lines (DB is the source of truth — P0-3)', async () => {
     const { SendToKitchenButton } = await import('../SendToKitchenButton');
 
     render(withQuery(<SendToKitchenButton />));
@@ -123,7 +140,11 @@ describe('SendToKitchenButton — kitchen printer unreachable', () => {
     // Barista succeeded → in printedItemIds.
     expect(printed).toContain('line-barista');
 
-    // Kitchen failed (no printer) → NOT in printedItemIds.
-    expect(printed).not.toContain('line-kitchen');
+    // Session 43 / P0-3 — kitchen print failed BUT the line is persisted in
+    // the DB order, so it is sealed too (re-firing it would duplicate the
+    // DB line). The toast tells the cashier the ticket is on the KDS.
+    expect(printed).toContain('line-kitchen');
+    expect(useCartStore.getState().lockedItemIds).toContain('line-kitchen');
+    expect(useCartStore.getState().pickedUpOrderId).toBe('order-db-1');
   });
 });

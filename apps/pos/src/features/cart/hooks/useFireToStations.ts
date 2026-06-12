@@ -1,14 +1,20 @@
 // apps/pos/src/features/cart/hooks/useFireToStations.ts
 // Session 34 — real per-station prep-ticket printing.
-// Replaces the fake useSendToKitchen hook that only called markLocked().
+// Session 43 — P0-3 : persist the order via fire_counter_order_v1 BEFORE
+// printing. The DB is the source of truth — a print failure no longer leaves
+// items "unsent" (re-firing them would duplicate the DB lines).
+import { useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { PrepStation, PrinterRole, Product } from '@breakery/domain';
 import { groupItemsByStation } from '@breakery/domain';
 import type { DispatchStation } from '@breakery/domain';
+import type { Json } from '@breakery/supabase';
+import { supabase } from '@/lib/supabase';
 import { printStationTicket } from '@/services/print/printService';
 import type { StationTicketPayload } from '@/services/print/printService';
 import { useCartStore } from '@/stores/cartStore';
 import { useAuthStore } from '@/stores/authStore';
+import { useShiftStore } from '@/stores/shiftStore';
 import { useStationPrinters } from './useStationPrinters';
 import { useProducts } from '@/features/products/hooks/useProducts';
 
@@ -86,27 +92,80 @@ export function useFireToStations(): UseFireToStationsResult {
     return station != null && (PREP_STATIONS as readonly string[]).includes(station);
   }).length;
 
+  // P0-3 idempotence : the fire's client uuid is generated per FIRE (not per
+  // call) and kept across failed attempts — a network retry of the SAME fire
+  // replays the same uuid (RPC flavor-2 idempotency). Reset on success.
+  const fireClientUuidRef = useRef<string | null>(null);
+
   const mutation = useMutation<StationFireResult[], Error, FireContext | undefined>({
     mutationFn: async (ctx) => {
       const { orderNumber, tableNumber } = ctx ?? {};
 
-      // 1. Grab unprinted items from the cart store.
+      // 1. Grab unprinted items from the cart store (excludes cancelled lines).
       const unprinted = useCartStore.getState().unprintedItems();
       if (unprinted.length === 0) return [];
 
-      // 2. Build stationByProductId from the live query cache (NOT the render
+      const sessionId = useShiftStore.getState().current?.id;
+      if (!sessionId) throw new Error('no_open_shift');
+
+      // 2. P0-3 — persist FIRST via fire_counter_order_v1. ALL unprinted
+      //    non-cancelled items go to the RPC, including station-'none' ones:
+      //    they must exist on the DB order for payment, even though they
+      //    print nowhere.
+      fireClientUuidRef.current ??= crypto.randomUUID();
+      const existingOrderId = useCartStore.getState().pickedUpOrderId;
+      const tableNo =
+        tableNumber ?? useCartStore.getState().cart.tableNumber ?? undefined;
+      const { data, error } = await supabase.rpc('fire_counter_order_v1', {
+        p_client_uuid: fireClientUuidRef.current,
+        p_session_id: sessionId,
+        p_items: unprinted.map((i) => ({
+          product_id: i.product_id,
+          quantity: i.quantity,
+          unit_price: i.unit_price,
+          modifiers: i.modifiers,
+          ...(i.discount ? { discount_amount: i.discount.amount } : {}),
+        })) as unknown as Json,
+        ...(existingOrderId ? { p_order_id: existingOrderId } : {}),
+        ...(tableNo !== undefined ? { p_table_number: tableNo } : {}),
+        p_order_type: useCartStore.getState().cart.order_type,
+      });
+      if (error) throw Object.assign(new Error(error.message), { details: error });
+      const env = data as unknown as {
+        order_id: string;
+        order_number: string;
+        idempotent_replay: boolean;
+      };
+
+      // Success → next fire gets a fresh uuid.
+      fireClientUuidRef.current = null;
+      if (!existingOrderId) {
+        useCartStore.getState().setPickedUpOrderId(env.order_id);
+      }
+
+      // 3. The DB is the source of truth: every item we just persisted is
+      //    sealed (locked + printed) regardless of print outcome — otherwise a
+      //    re-fire would duplicate the lines server-side. Locking first means
+      //    there is never a snapshot where a sent item is still editable.
+      const allIds = unprinted.map((i) => i.id);
+      useCartStore.getState().markLocked(allIds);
+      useCartStore.getState().markPrinted(allIds);
+
+      // 4. Build stationByProductId from the live query cache (NOT the render
       //    closure) so routing reflects the products fetched by fire time.
       const cachedProducts =
         queryClient.getQueryData<Product[]>(['products']) ?? [];
       const stationByProductId = buildStationMap(cachedProducts);
 
-      // 3. Group by prep station (cancelled / 'none' / unmapped → excluded).
+      // 5. Group by prep station (cancelled / 'none' / unmapped → excluded
+      //    from PRINTING only — they are already persisted above).
       const grouped = groupItemsByStation(unprinted, stationByProductId);
 
       const entries = Object.entries(grouped) as [PrepStation, typeof unprinted][];
       if (entries.length === 0) return [];
 
-      // 4. Fire all station buckets concurrently.
+      // 6. Print all station buckets concurrently (best effort — a print
+      //    failure does NOT invalidate the persisted order).
       const results = await Promise.all(
         entries.map(async ([station, items]): Promise<StationFireResult> => {
           const itemIds = items.map((i) => i.id);
@@ -118,16 +177,15 @@ export function useFireToStations(): UseFireToStationsResult {
             return { role: station, ok: false, error: 'no_printer', itemIds };
           }
 
-          // Build the identifier: use order_number if known, else table / walk-in label.
-          const orderLabel =
-            orderNumber ??
-            (tableNumber ? `Table ${tableNumber}` : 'Walk-in');
+          // Build the identifier: caller-supplied order_number if known, else
+          // the REAL order number minted by fire_counter_order_v1.
+          const orderLabel = orderNumber ?? env.order_number;
 
           const payload: StationTicketPayload = {
             kind: 'prep',
             role,
             order_number: orderLabel,
-            ...(tableNumber !== undefined ? { table_number: tableNumber } : {}),
+            ...(tableNo !== undefined ? { table_number: tableNo } : {}),
             created_at: new Date().toISOString(),
             server_name: serverName,
             items: items.map((item) => ({
@@ -147,19 +205,10 @@ export function useFireToStations(): UseFireToStationsResult {
         }),
       );
 
-      // 5. Lock THEN mark printed for stations that succeeded. Locking first
-      //    means there is never an intermediate snapshot where a printed item
-      //    is still editable (canEdit true). Failed stations are left
-      //    untouched so they can be re-fired.
-      const successfulIds = results
-        .filter((r) => r.ok)
-        .flatMap((r) => r.itemIds);
-
-      if (successfulIds.length > 0) {
-        useCartStore.getState().markLocked(successfulIds);
-        useCartStore.getState().markPrinted(successfulIds);
-      }
-
+      // NOTE (P0-3): items were already locked + marked printed right after
+      // the RPC succeeded (step 3) — failed stations are NOT re-firable, the
+      // ticket lives in the DB/KDS. Callers surface per-station failures via
+      // the returned results ("saved to KDS, not printed").
       return results;
     },
   });
