@@ -66,7 +66,7 @@ export function CloseShiftModal({
   }
 
   return (
-    <FullScreenModal open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+    <FullScreenModal open={open} onOpenChange={(o) => { if (!o) onClose(); }} accessibleTitle="Close shift">
       {/* max-h + scroll : sur un écran tablette (~800px) le contenu (numpad +
           notes + footer) dépasse le viewport et le bouton Close devenait
           inatteignable (constaté à l'audit POS 2026-06-12). */}

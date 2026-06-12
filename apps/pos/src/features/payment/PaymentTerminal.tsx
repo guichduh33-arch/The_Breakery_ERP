@@ -60,7 +60,7 @@ export function PaymentTerminal() {
 
   if (splitOpen) {
     return (
-      <FullScreenModal open={isOpen} onOpenChange={close}>
+      <FullScreenModal open={isOpen} onOpenChange={close} accessibleTitle="Payment terminal">
         <SplitPaymentFlow
           cartItems={cart.items}
           grandTotal={total}
@@ -72,7 +72,7 @@ export function PaymentTerminal() {
   }
 
   return (
-    <FullScreenModal open={isOpen} onOpenChange={close}>
+    <FullScreenModal open={isOpen} onOpenChange={close} accessibleTitle="Payment terminal">
       <header className="h-14 flex items-center justify-between px-6 border-b border-border-subtle bg-bg-elevated">
         <div className="flex items-center gap-3">
           <span className="font-serif text-lg">The Breakery</span>

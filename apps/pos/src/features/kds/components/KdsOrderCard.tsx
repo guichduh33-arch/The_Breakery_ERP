@@ -164,9 +164,19 @@ export function KdsOrderCard({ items }: KdsOrderCardProps) {
       className={`rounded-lg border-2 bg-bg-elevated p-4 flex flex-col gap-3 shadow-md ${style.border}`}
     >
       <header className="flex items-center justify-between gap-3">
-        <span className="font-mono text-2xl font-extrabold tabular-nums text-gold">
-          #{head.order_number}
-        </span>
+        <div className="flex items-center gap-2 min-w-0">
+          {/* S43 P2-5a — order_number already carries its `#` prefix; do NOT
+              re-prefix here (was rendering `##B-123`). */}
+          <span className="font-mono text-2xl font-extrabold tabular-nums text-gold truncate">
+            {head.order_number}
+          </span>
+          {/* S43 P2-5b — surfaced so the kitchen knows the ticket is already paid. */}
+          {head.order_status === 'paid' && (
+            <Badge variant="default" className="bg-green text-white border-transparent shrink-0">
+              PAID
+            </Badge>
+          )}
+        </div>
         <span
           className={`font-mono text-sm tabular-nums ${style.timer}`}
           aria-label="Order age"

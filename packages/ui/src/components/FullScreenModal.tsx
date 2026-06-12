@@ -11,10 +11,19 @@ export interface FullScreenModalProps {
   children: ReactNode;
   className?: string;
   /**
-   * Screen-reader title. Radix DialogContent requires a Title for a11y;
-   * we render it visually-hidden by default so callers can keep their own
-   * visible header. Override per modal for clearer SR output. Defaults to
-   * "Modal" — fine to silence the Radix warning, less great for SR users.
+   * Accessible dialog title (Session 43 P2-4). Radix DialogContent requires
+   * a Title for a11y; we render it visually-hidden so callers can keep their
+   * own visible header. Always rendered FIRST inside the Content, so it wins
+   * as the accessible name even when a consumer also renders its own
+   * `DialogPrimitive.Title` in children (duplicate titles are harmless to
+   * Radix — the first in DOM resolves the aria-labelledby reference).
+   * Defaults to "Dialog" — fine to silence the Radix warning, less great
+   * for SR users, so pass a real title per modal.
+   */
+  accessibleTitle?: string;
+  /**
+   * Legacy alias for `accessibleTitle` (pre-S43 call-sites). Ignored when
+   * `accessibleTitle` is provided.
    */
   title?: string;
   /**
@@ -30,9 +39,11 @@ export function FullScreenModal({
   onOpenChange,
   children,
   className,
-  title = 'Modal',
+  accessibleTitle,
+  title,
   description,
 }: FullScreenModalProps): JSX.Element {
+  const resolvedTitle = accessibleTitle ?? title ?? 'Dialog';
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
@@ -50,7 +61,7 @@ export function FullScreenModal({
             className,
           )}
         >
-          <DialogPrimitive.Title className={SR_ONLY}>{title}</DialogPrimitive.Title>
+          <DialogPrimitive.Title className={SR_ONLY}>{resolvedTitle}</DialogPrimitive.Title>
           {description && (
             <DialogPrimitive.Description className={SR_ONLY}>
               {description}

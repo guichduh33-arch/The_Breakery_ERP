@@ -123,7 +123,7 @@ export function HeldOrdersModal({
 
   return (
     <>
-      <FullScreenModal open={open} onOpenChange={(o) => !o && onClose()}>
+      <FullScreenModal open={open} onOpenChange={(o) => !o && onClose()} accessibleTitle="Held orders">
         <DialogPrimitive.Title asChild>
           <span className={cn(SR_ONLY)}>Held orders</span>
         </DialogPrimitive.Title>

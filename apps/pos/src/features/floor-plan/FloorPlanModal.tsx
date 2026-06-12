@@ -119,7 +119,7 @@ export function FloorPlanModal({
   }
 
   return (
-    <FullScreenModal open={open} onOpenChange={(o) => !o && onClose()}>
+    <FullScreenModal open={open} onOpenChange={(o) => !o && onClose()} accessibleTitle="Floor plan">
       <DialogTitle className={cn(SR_ONLY)}>Floor plan</DialogTitle>
       <DialogDescription className={cn(SR_ONLY)}>
         Select an available table to start a new order, or tap an occupied table to restore it.
