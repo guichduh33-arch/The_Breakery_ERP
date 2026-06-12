@@ -238,7 +238,10 @@ serve(async (req) => {
     if (error.code === 'P0001') {
       const msg = String(error.message ?? '');
       // v11 lève P0001 pour plusieurs gates distincts — différencie le gate
-      // discount (audit 2026-06-12 P0-1) du vrai no_open_session.
+      // discount (audit 2026-06-12 P0-1) des autres P0001 (mappés no_open_session).
+      // Contrat substring : matche le RAISE 'Discount requires an authorizing
+      // manager (p_discount_authorized_by)' de 20260621000010 — garder en sync
+      // à tout bump vN. TODO(v12): ERRCODE dédié et supprimer ce match.
       if (msg.includes('authorizing manager')) {
         return jsonResponse({ error: 'discount_requires_authorizer', message: msg }, 409);
       }
