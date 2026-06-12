@@ -4,12 +4,12 @@
 > **Auteur** : reviewer (Claude, supervised by guichduh33@gmail.com).
 > **Pipeline position** : last in Wave 0 → Wave 1 gate.
 > **Wave 0 artifacts under review** :
-> 1. [`../refs/2026-05-13-v2-v3-path-translation.md`](../../refs/2026-05-13-v2-v3-path-translation.md) (624 L, Phase 0.1)
-> 2. [`../refs/2026-05-13-decision-pack.md`](../../refs/2026-05-13-decision-pack.md) (468 L, Phase 0.1)
-> 3. [`../refs/2026-05-13-has_permission-refactor-design.md`](../../refs/2026-05-13-has_permission-refactor-design.md) (545 L, Phase 0.1)
-> 4. [`../refs/2026-05-13-staging-config.md`](../../refs/2026-05-13-staging-config.md) (314 L, Phase 0.2)
-> 5. [`../refs/2026-05-13-kiosk-auth-design.md`](../../refs/2026-05-13-kiosk-auth-design.md) (783 L, Phase 0.3)
-> 6. [`../refs/2026-05-13-ui-steward-charter.md`](../../refs/2026-05-13-ui-steward-charter.md) (485 L, Phase 0.3)
+> 1. [`../refs/2026-05-13-v2-v3-path-translation.md`](../../refs/archive/2026-05-13-v2-v3-path-translation.md) (624 L, Phase 0.1)
+> 2. [`../refs/2026-05-13-decision-pack.md`](../../refs/archive/2026-05-13-decision-pack.md) (468 L, Phase 0.1)
+> 3. [`../refs/2026-05-13-has_permission-refactor-design.md`](../../refs/archive/2026-05-13-has_permission-refactor-design.md) (545 L, Phase 0.1)
+> 4. [`../refs/2026-05-13-staging-config.md`](../../refs/archive/2026-05-13-staging-config.md) (314 L, Phase 0.2)
+> 5. [`../refs/2026-05-13-kiosk-auth-design.md`](../../refs/archive/2026-05-13-kiosk-auth-design.md) (783 L, Phase 0.3)
+> 6. [`../refs/2026-05-13-ui-steward-charter.md`](../../refs/archive/2026-05-13-ui-steward-charter.md) (485 L, Phase 0.3)
 > 7. `.github/workflows/ci.yml` (149 L, Phase 0.2 — replaced existing)
 > 8. `.github/workflows/staging-deploy.yml` (183 L, Phase 0.2 — new)
 

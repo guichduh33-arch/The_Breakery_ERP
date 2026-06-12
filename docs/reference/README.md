@@ -1,6 +1,6 @@
 # The Breakery ERP — Documentation de référence
 
-> **Last verified**: 2026-05-13
+> **Last verified**: 2026-06-12
 > **Statut**: **référence canonique du V3** (monorepo pnpm + turbo : apps/pos + apps/backoffice + packages/{domain,supabase,ui,utils}) — source de vérité évergreen. Certaines pages décrivent la cible métier héritée de la vision V2 (AppGrav monolithe, jamais déployée) ; en cas de divergence avec le code, c'est le code/migrations qui font foi et la page doit être corrigée.
 > **État d'avancement par session**: voir [`../workplan/`](../workplan/).
 > **Point d'entrée global** : voir [`../README.md`](../README.md) pour la carte complète de `docs/`.

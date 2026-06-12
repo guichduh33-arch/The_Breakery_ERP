@@ -100,7 +100,7 @@ Tous les champs sont obligatoires sauf `Notes` (libre). Un champ vide doit affic
 ## Pointeurs
 
 - Roadmap globale + dépendances inter-modules : [`00-roadmap-globale.md`](./00-roadmap-globale.md)
-- État détaillé du système (référence) : [`../04-modules/`](../04-modules/)
+- État détaillé du système (référence) : [`../../reference/04-modules/`](../../reference/04-modules/)
 - Audit complet (8 rapports + executive summary) : [`../../audit/`](../../audit/)
 - Plan d'implémentation original : [`../../audit/IMPLEMENTATION_PLAN.md`](../../audit/IMPLEMENTATION_PLAN.md)
 - Sprint progress global : [`../../../CURRENT_STATE.md`](../../../CURRENT_STATE.md)

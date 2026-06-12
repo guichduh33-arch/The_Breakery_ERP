@@ -1,7 +1,7 @@
 # Travail — Inventory & Stock
 
 > Last updated: 2026-05-03
-> Référence : [`../04-modules/06-inventory-stock.md`](../04-modules/06-inventory-stock.md)
+> Référence : [`../../reference/04-modules/06-inventory-stock.md`](../../reference/04-modules/06-inventory-stock.md)
 > Audits sources : `02-accounting-business-audit.md`, `03-code-quality-schema-audit.md`, `04-reports-testing-audit.md`, `07-product-backlog-audit.md`
 
 ## Objectifs du module

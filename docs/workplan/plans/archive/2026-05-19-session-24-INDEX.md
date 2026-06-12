@@ -13,7 +13,7 @@
 **Spec :** [`../specs/2026-05-19-session-24-spec.md`](../../specs/archive/2026-05-19-session-24-spec.md)
 **Migration block réservé :** `20260601000005..099`
 **Multi-session plan parent :** [`./2026-05-19-S24-to-S30-plan.md`](./2026-05-19-S24-to-S30-plan.md)
-**Pre-flight findings :** [`../refs/2026-05-19-session-24-preflight.md`](../../refs/2026-05-19-session-24-preflight.md)
+**Pre-flight findings :** [`../refs/2026-05-19-session-24-preflight.md`](../../refs/archive/2026-05-19-session-24-preflight.md)
 
 ---
 

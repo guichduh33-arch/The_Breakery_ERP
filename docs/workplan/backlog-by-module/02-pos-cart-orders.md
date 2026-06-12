@@ -1,7 +1,7 @@
 # Travail — POS / Cart / Orders
 
 > Last updated: 2026-05-03
-> Référence : [`../04-modules/02-pos-cart-orders.md`](../04-modules/02-pos-cart-orders.md)
+> Référence : [`../../reference/04-modules/02-pos-cart-orders.md`](../../reference/04-modules/02-pos-cart-orders.md)
 > Audits sources : `01-architecture-security-audit.md`, `03-code-quality-schema-audit.md`, `05-uiux-design-audit.md`, `08-operations-lan-audit.md`
 
 ## Objectifs du module

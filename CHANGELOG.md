@@ -1,5 +1,7 @@
 # Changelog
 
+> ℹ️ Ce changelog est figé au bootstrap (v0.1.0). L'historique vivant du projet est tenu **par session** dans [`docs/workplan/`](docs/workplan/) (specs + plans + INDEX de clôture, sessions mergées dans `plans/archive/`) et résumé dans le bloc « Active Workplan » de [`CLAUDE.md`](CLAUDE.md).
+
 ## v0.1.0 — 2026-05-03
 
 Bootstrap monorepo + premier vertical POS end-to-end.

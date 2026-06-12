@@ -1,7 +1,7 @@
 # Travail — Cash Register & Shift
 
 > Last updated: 2026-05-03
-> Référence : [docs/reference/04-modules/12-cash-register-shift.md](../04-modules/12-cash-register-shift.md)
+> Référence : [docs/reference/04-modules/12-cash-register-shift.md](../../reference/04-modules/12-cash-register-shift.md)
 > Sources d'audit : `docs/audit/00-executive-summary.md` (F3+F4 Z-Report ✅), `docs/audit/02-accounting-business-audit.md` (pas de JE auto à la close — pitfall), `docs/audit/05-uiux-design-audit.md` (touch targets), `docs/audit/08-operations-lan-audit.md` (multi-terminal)
 
 ## Objectifs du module

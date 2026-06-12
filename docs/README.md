@@ -1,6 +1,6 @@
 # 📚 The Breakery ERP — Documentation
 
-> **Last updated** : 2026-06-04
+> **Last updated** : 2026-06-12
 > **Périmètre** : `docs/reference/` est **la référence canonique du monorepo V3** (apps/pos + apps/backoffice + packages/*) — source de vérité évergreen, maintenue à jour. L'état d'avancement par session vit dans `docs/workplan/`. Le dossier legacy `docs/_archive/objectif-travail-v2/` capture l'ancienne **vision business V2** (AppGrav monolithe, jamais déployée) et n'est conservé que comme référence métier historique — en cas de divergence, `reference/` fait foi.
 >
 > **Pont V2 ↔ V3** : pour les renommages de symboles (`complete_order_with_payments` → `complete_order`, hooks renommés, pages déplacées, améliorations V3 sans équivalent V2), voir **[`V2_V3_GLOSSARY.md`](V2_V3_GLOSSARY.md)** — c'est le mapping de référence à consulter quand un nom V2 ne se retrouve pas dans le code V3.
@@ -13,13 +13,13 @@
 docs/
 ├── README.md                              ← Tu es ici
 ├── DESIGN_POS_AND_BACKOFFICE.md           ← Design détaillé des deux apps (~600 lignes)
-├── reference/                             ← LA RÉFÉRENCE — 12 chapitres + 18 modules fusionnés
+├── reference/                             ← LA RÉFÉRENCE — 12 chapitres + 19 modules fusionnés
 │   ├── README.md                          ← Index complet de la référence
 │   ├── 00-overview/                       ← Contexte produit, business overview, tech stack, glossaire
 │   ├── 01-architecture/                   ← Frontend, state, routing, data flow, bundling
 │   ├── 02-design-system/                  ← Luxe Dark, tokens, shadcn, layouts, responsive
 │   ├── 03-database/                       ← Schéma, tables, RPC, triggers, RLS, migrations
-│   ├── 04-modules/                        ← LES 18 MODULES MÉTIER (4 parties chacun)
+│   ├── 04-modules/                        ← LES 19 MODULES MÉTIER (4 parties chacun)
 │   ├── 05-integrations/                   ← Supabase, Edge Functions, Sentry, Capacitor, PWA…
 │   ├── 06-lan-architecture/               ← Hub/client, discovery, heartbeat, print routing
 │   ├── 07-security/                       ← PIN auth, RLS, RBAC, Edge Function security
@@ -29,7 +29,7 @@ docs/
 │   ├── 11-conventions/                    ← Coding, file org, React patterns, Supabase patterns
 │   └── 12-appendices/                     ← Business rules, permission codes, env vars, V2↔V3
 └── workplan/                              ← LE TRAVAIL — plans, specs, backlog
-    ├── plans/                             ← Plans de session datés (sessions 1-35+)
+    ├── plans/                             ← Plans de session datés (sessions 1-42+, archive/ pour les sessions mergées)
     ├── specs/                             ← Specs de session datées
     └── backlog-by-module/                 ← Backlog opérationnel par module (TASK-XX-NNN)
 ```
@@ -52,7 +52,7 @@ docs/
 
 ---
 
-## 📐 Le pattern des 18 modules
+## 📐 Le pattern des 19 modules
 
 Chaque fichier dans [`reference/04-modules/`](reference/04-modules/) suit la **même structure en 4 parties** :
 
@@ -65,7 +65,7 @@ Chaque fichier dans [`reference/04-modules/`](reference/04-modules/) suit la **m
 
 ---
 
-## 🗺️ Carte des 18 modules métier
+## 🗺️ Carte des 19 modules métier (+ annexe 02b)
 
 | # | Module | App | Fichier |
 |---|---|---|---|

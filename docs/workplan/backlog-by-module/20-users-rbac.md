@@ -1,7 +1,7 @@
 # Travail — Users & RBAC
 
 > Last updated: 2026-05-03
-> Référence : [`../04-modules/01-auth-permissions.md`](../04-modules/01-auth-permissions.md) (auth flow), table `roles` / `user_roles` / `permissions`
+> Référence : [`../../reference/04-modules/01-auth-permissions.md`](../../reference/04-modules/01-auth-permissions.md) (auth flow), table `roles` / `user_roles` / `permissions`
 > Sources audit : `docs/audit/01-architecture-security-audit.md` §P1-01 / P2-03 / P2-06, `docs/audit/04-reports-testing-audit.md` §P1-2, `docs/audit/07-product-backlog-audit.md` §10 (T6 2FA), `CLAUDE.md` (Permission Codes)
 
 ## Objectifs du module

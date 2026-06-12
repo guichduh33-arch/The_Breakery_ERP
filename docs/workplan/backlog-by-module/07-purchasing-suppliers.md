@@ -1,7 +1,7 @@
 # Travail — Purchasing & Suppliers
 
 > Last updated: 2026-05-03
-> Référence : [`../04-modules/07-purchasing-suppliers.md`](../04-modules/07-purchasing-suppliers.md)
+> Référence : [`../../reference/04-modules/07-purchasing-suppliers.md`](../../reference/04-modules/07-purchasing-suppliers.md)
 > Audits sources : `02-accounting-business-audit.md`, `03-code-quality-schema-audit.md`, `07-product-backlog-audit.md`, `08-operations-lan-audit.md`
 
 ## Objectifs du module

@@ -172,7 +172,7 @@ S30 Cleanup + Polish (UX sweep palette + Sidebar responsive + DataTable migratio
 
 ## 6. Améliorations V3 à conserver (gains nets vs vision V2)
 
-L'audit confirme les 15 améliorations déjà listées dans le [glossaire V2↔V3 §6](docs/V2_V3_GLOSSARY.md), et en ajoute 5 nouvelles découvertes pendant l'audit :
+L'audit confirme les 15 améliorations déjà listées dans le [glossaire V2↔V3 §6](../../../V2_V3_GLOSSARY.md), et en ajoute 5 nouvelles découvertes pendant l'audit :
 
 **Originelles (rappel)** :
 1. Idempotency cross-EF (S25 — `idempotency_keys` + `_shared/idempotency.ts` + `client_uuid` lifecycle)

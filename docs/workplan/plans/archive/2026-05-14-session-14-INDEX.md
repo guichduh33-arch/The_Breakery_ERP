@@ -3,8 +3,8 @@
 **Date:** 2026-05-14
 **Branch:** `swarm/session-14`
 **Spec:** [`../specs/2026-05-14-session-14-spec.md`](../../specs/archive/2026-05-14-session-14-spec.md)
-**Audit:** [`../refs/2026-05-14-session-14-screenshot-audit.md`](../../refs/2026-05-14-session-14-screenshot-audit.md)
-**Seed:** [`../refs/2026-05-14-session-14-seed-plan.md`](../../refs/2026-05-14-session-14-seed-plan.md)
+**Audit:** [`../refs/2026-05-14-session-14-screenshot-audit.md`](../../refs/archive/2026-05-14-session-14-screenshot-audit.md)
+**Seed:** [`../refs/2026-05-14-session-14-seed-plan.md`](../../refs/archive/2026-05-14-session-14-seed-plan.md)
 
 ---
 
