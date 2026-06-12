@@ -2,8 +2,8 @@
 //
 // Full-screen modal that lets the cashier apply a manual discount to an order
 // or line item. Supports percentage (%) and fixed IDR modes, requires a reason
-// text of ≥ 5 chars, and triggers PinVerificationModal when the discount
-// exceeds the threshold (default 10 %).
+// text of ≥ 5 chars, and triggers PinVerificationModal for EVERY discount
+// (S43 P0-1 — the server RPC v11 gates all discounts, not just > 10 %).
 //
 // Spec ref: docs/superpowers/specs/2026-05-06-session-6-discounts-multi-modifiers-loyalty-mult-spec.md §4.2, §D8
 
@@ -12,7 +12,6 @@ import { X } from 'lucide-react';
 import { useMemo, useState, type JSX } from 'react';
 import {
   calculateDiscountAmount,
-  isAboveThreshold,
   validateDiscount,
   type Discount,
 } from '@breakery/domain';
@@ -32,7 +31,7 @@ export interface DiscountModalProps {
   /** Amount that the discount applies to (items_total − redemption for cart, line_total for line-level). */
   base: number;
   /**
-   * Called when the discount exceeds the threshold (> 10%).
+   * Called for EVERY discount confirm (server v11 gates all discounts).
    * Returns userId of the authorizing manager, or null if cancelled.
    */
   onRequireAuthorization: () => Promise<string | null>;
@@ -81,16 +80,15 @@ export function DiscountModal({
     if (hasError || isSubmitting) return;
     setIsSubmitting(true);
     try {
-      if (isAboveThreshold(discount.amount, base)) {
-        const userId = await onRequireAuthorization();
-        if (userId === null) {
-          onClose();
-          return;
-        }
-        onConfirm({ ...discount, authorized_by: userId });
-      } else {
-        onConfirm(discount);
+      // S43 (P0-1) : le RPC v11 exige un autorisateur pour TOUTE remise (ligne ou
+      // commande) — l'ancien seuil client de 10 % produisait un 409 systématique
+      // sous le seuil. isAboveThreshold n'est volontairement plus consulté ici.
+      const userId = await onRequireAuthorization();
+      if (userId === null) {
+        onClose();
+        return;
       }
+      onConfirm({ ...discount, authorized_by: userId });
       handleOpenChange(false);
     } finally {
       setIsSubmitting(false);
@@ -209,8 +207,8 @@ export function DiscountModal({
           {/* Validation errors */}
           {hasError && (
             <div className="space-y-1" role="alert">
-              {errors.map((e) => (
-                <p key={e.code} className="text-red text-sm">
+              {errors.map((e, i) => (
+                <p key={`${e.code}-${i}`} className="text-red text-sm">
                   {e.message}
                 </p>
               ))}
