@@ -242,4 +242,70 @@ describe('buildOrderPayload', () => {
     const payload = buildOrderPayload('session-1', cart, payment);
     expect('loyalty_multiplier' in payload).toBe(false);
   });
+
+  // Session 43 — P0-1: line-discount authorizer hoisted to top-level
+  it('hoists the line-discount authorizer to top-level discount_authorized_by (P0-1)', () => {
+    const cart: Cart = {
+      order_type: 'take_out',
+      items: [{
+        id: 'l1', product_id: 'p1', name: 'Americano', unit_price: 35000, quantity: 1,
+        modifiers: [], is_cancelled: false,
+        discount: { type: 'percentage', value: 10, amount: 3500, reason: 'fidelite', authorized_by: 'mgr-7' },
+      }],
+    };
+    const payment: PaymentInput = { method: 'cash', amount: 31500, cash_received: 31500, change_given: 0 };
+    const payload = buildOrderPayload('sess-1', cart, payment);
+    expect(payload.discount_authorized_by).toBe('mgr-7');
+    // La remise reste portée par l'item (pas dupliquée en remise commande).
+    expect(payload.discount_amount).toBeUndefined();
+    expect(payload.items[0]?.discount_authorized_by).toBe('mgr-7');
+  });
+
+  it('skips cancelled items when hoisting the line-discount authorizer (P0-1)', () => {
+    const cart: Cart = {
+      order_type: 'take_out',
+      items: [
+        {
+          id: 'l1', product_id: 'p1', name: 'Americano', unit_price: 35000, quantity: 1,
+          modifiers: [], is_cancelled: true,
+          discount: { type: 'percentage', value: 10, amount: 3500, reason: 'fidelite', authorized_by: 'mgr-cancelled' },
+        },
+        {
+          id: 'l2', product_id: 'p2', name: 'Latte', unit_price: 40000, quantity: 1,
+          modifiers: [],
+          discount: { type: 'fixed_amount', value: 5000, amount: 5000, reason: 'damage', authorized_by: 'mgr-live' },
+        },
+      ],
+    };
+    const payment: PaymentInput = { method: 'cash', amount: 35000, cash_received: 35000, change_given: 0 };
+    const payload = buildOrderPayload('sess-1', cart, payment);
+    expect(payload.discount_authorized_by).toBe('mgr-live');
+  });
+
+  it('omits top-level discount_authorized_by when no discount carries an authorizer (P0-1)', () => {
+    const cart: Cart = {
+      order_type: 'take_out',
+      items: [{
+        id: 'l1', product_id: 'p1', name: 'Latte', unit_price: 40000, quantity: 1, modifiers: [],
+        discount: { type: 'fixed_amount', value: 5000, amount: 5000, reason: 'damage' },
+      }],
+    };
+    const payment: PaymentInput = { method: 'cash', amount: 35000, cash_received: 35000, change_given: 0 };
+    const payload = buildOrderPayload('sess-1', cart, payment);
+    expect('discount_authorized_by' in payload).toBe(false);
+  });
+
+  it('keeps the cartDiscount authorizer when both cart and line discounts exist (P0-1)', () => {
+    const cart: Cart = {
+      order_type: 'dine_in',
+      items: [{
+        id: 'l1', product_id: 'p1', name: 'Latte', unit_price: 40000, quantity: 1, modifiers: [],
+        discount: { type: 'percentage', value: 10, amount: 4000, reason: 'fidelite', authorized_by: 'mgr-line' },
+      }],
+      cartDiscount: { type: 'percentage', value: 15, amount: 6000, reason: 'Manager comp', authorized_by: 'mgr-cart' },
+    };
+    const payment: PaymentInput = { method: 'cash', amount: 30000, cash_received: 30000, change_given: 0 };
+    const payload = buildOrderPayload('session-1', cart, payment);
+    expect(payload.discount_authorized_by).toBe('mgr-cart');
+  });
 });
