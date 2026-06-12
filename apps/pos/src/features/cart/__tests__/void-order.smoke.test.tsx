@@ -1,7 +1,7 @@
 // apps/pos/src/features/cart/__tests__/void-order.smoke.test.tsx
 //
 // Session 36 — "Void Order" in the bottom bar:
-//   - before any kitchen send → voids immediately.
+//   - before any kitchen send → confirm dialog (S43 P2-1), then voids.
 //   - after items were sent to kitchen (locked) → requires a manager PIN first
 //     (the order is NOT wiped until the PIN modal is satisfied).
 
@@ -56,9 +56,13 @@ describe('BottomActionBar — Void Order', () => {
     });
   });
 
-  it('voids immediately when nothing has been sent to the kitchen', () => {
+  it('voids after confirmation when nothing has been sent to the kitchen', () => {
     render(wrapper(<BottomActionBar />));
     fireEvent.click(screen.getByRole('button', { name: /void order/i }));
+    // S43 P2-1 — a confirm dialog appears first; nothing is wiped yet.
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+    expect(useCartStore.getState().cart.items).toHaveLength(1);
+    fireEvent.click(screen.getByRole('button', { name: /confirm void/i }));
     expect(useCartStore.getState().cart.items).toHaveLength(0);
   });
 

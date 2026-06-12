@@ -16,8 +16,6 @@ function wrap(n: React.ReactElement) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  // jsdom prompt returns null by default — stub it so the flow proceeds.
-  vi.spyOn(window, 'prompt').mockReturnValue('table 5 note');
   useCartStore.setState({
     cart: {
       items: [{ id: 'l1', product_id: 'p1', name: 'X', unit_price: 1000, quantity: 1, modifiers: [] }],
@@ -33,18 +31,28 @@ beforeEach(() => {
   } as never);
 });
 
+/** S43 P2-2 — drives the hold-note modal (window.prompt is retired). */
+function holdViaModal(note?: string) {
+  fireEvent.click(screen.getByRole('button', { name: /^hold$/i }));
+  if (note !== undefined) {
+    fireEvent.change(screen.getByRole('textbox', { name: /note/i }), { target: { value: note } });
+  }
+  fireEvent.click(screen.getByTestId('hold-note-confirm'));
+}
+
 describe('HoldOrderButton (DB-backed)', () => {
   it('holds the current cart via the RPC mutation', async () => {
     render(wrap(<HoldOrderButton />));
-    fireEvent.click(screen.getByRole('button', { name: /hold/i }));
+    holdViaModal('table 5 note');
     await waitFor(() => expect(mutateAsync).toHaveBeenCalled());
-    const arg = mutateAsync.mock.calls[0]?.[0] as { cartPayload: { items: unknown[] } };
+    const arg = mutateAsync.mock.calls[0]?.[0] as { cartPayload: { items: unknown[] }; notes: string | null };
     expect(arg.cartPayload.items.length).toBe(1);
+    expect(arg.notes).toBe('table 5 note');
   });
 
   it('clears the cart after a successful hold', async () => {
     render(wrap(<HoldOrderButton />));
-    fireEvent.click(screen.getByRole('button', { name: /hold/i }));
+    holdViaModal();
     await waitFor(() => expect(useCartStore.getState().cart.items).toHaveLength(0));
   });
 });
