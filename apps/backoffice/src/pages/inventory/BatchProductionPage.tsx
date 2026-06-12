@@ -75,7 +75,7 @@ export default function BatchProductionPage(): JSX.Element {
       });
   }, [items]);
 
-  const canSubmit = submittableItems.length > 0 && !recordMut.isPending;
+  const canSubmit = submittableItems.length > 0 && sectionId !== '' && !recordMut.isPending;
 
   function addRow(): void {
     setItems((prev) => [...prev, emptyRow()]);
@@ -103,7 +103,8 @@ export default function BatchProductionPage(): JSX.Element {
       } = { idempotencyKey, items: submittableItems };
       const trimmedNotes = notes.trim();
       if (trimmedNotes !== '') args.notes = trimmedNotes;
-      if (sectionId !== '')    args.sectionId = sectionId;
+      // sectionId is required (canSubmit gates on sectionId !== '').
+      args.sectionId = sectionId;
       const result = await recordMut.mutateAsync(args);
       setSuccessMsg(`Recorded ${result.batch_number} (${result.production_records.length} items)`);
       setItems([emptyRow()]);
@@ -209,8 +210,9 @@ export default function BatchProductionPage(): JSX.Element {
               onChange={(e) => setSectionId(e.target.value)}
               disabled={recordMut.isPending}
               aria-label="Section"
+              required
             >
-              <option value="">— none —</option>
+              <option value="">— select section —</option>
               {(sections.data ?? []).map((s) => (
                 <option key={s.id} value={s.id}>{s.name}</option>
               ))}

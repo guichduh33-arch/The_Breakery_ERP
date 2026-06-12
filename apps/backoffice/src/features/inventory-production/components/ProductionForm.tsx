@@ -118,6 +118,7 @@ export default function ProductionForm(): JSX.Element {
     hasValidExpected &&
     hasValidActual &&
     numericWaste >= 0 &&
+    sectionId !== '' &&
     !recordMut.isPending;
 
   async function submitWithReason(reason: string | null): Promise<void> {
@@ -279,12 +280,13 @@ export default function ProductionForm(): JSX.Element {
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs uppercase tracking-widest text-text-secondary">Section (optional)</label>
+            <label className="text-xs uppercase tracking-widest text-text-secondary">Section</label>
             <select
               className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm"
               value={sectionId} onChange={(e) => setSectionId(e.target.value)} disabled={recordMut.isPending}
+              required
             >
-              <option value="">— none —</option>
+              <option value="">— select section —</option>
               {(sections.data ?? []).map((s) => (
                 <option key={s.id} value={s.id}>{s.name}</option>
               ))}
