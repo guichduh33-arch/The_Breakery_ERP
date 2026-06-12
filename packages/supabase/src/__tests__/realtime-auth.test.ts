@@ -17,7 +17,9 @@ describe('realtime auth propagation (P0-2)', () => {
   it('setSupabaseAccessToken forwards the token to realtime.setAuth', () => {
     const client = getSupabaseClient(CONFIG);
     const calls: (string | null | undefined)[] = [];
-    client.realtime.setAuth = ((t?: string | null) => {
+    // async pour matcher la vraie signature realtime-js (Promise<void>) —
+    // les call sites chaînent .catch() sur la valeur de retour.
+    client.realtime.setAuth = (async (t?: string | null) => {
       calls.push(t);
     }) as typeof client.realtime.setAuth;
 
@@ -31,7 +33,7 @@ describe('realtime auth propagation (P0-2)', () => {
   it('setSupabaseKioskAccessToken forwards the kiosk token too', () => {
     const client = getSupabaseClient(CONFIG);
     const calls: (string | null | undefined)[] = [];
-    client.realtime.setAuth = ((t?: string | null) => {
+    client.realtime.setAuth = (async (t?: string | null) => {
       calls.push(t);
     }) as typeof client.realtime.setAuth;
 
