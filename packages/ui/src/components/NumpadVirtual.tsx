@@ -38,6 +38,8 @@ export interface NumpadVirtualProps {
   initialValue?: string;
   /** Maximum digit count. Default: 6 for pin, undefined for others. */
   maxLength?: number;
+  /** Auto-submit when the value reaches maxLength (mode 'pin' only). Opt-in. */
+  autoSubmitAtMaxLength?: boolean;
   /** Loading state — disables submit + shows "Verifying..." copy in pin mode. */
   isLoading?: boolean;
   /** Error message shown below the keypad in danger color. */
@@ -96,6 +98,7 @@ function NumpadVirtualInner({
   onCancel,
   initialValue = '',
   maxLength,
+  autoSubmitAtMaxLength,
   isLoading,
   error,
   submitLabel,
@@ -113,13 +116,24 @@ function NumpadVirtualInner({
       if (key.type === 'decimal') {
         return setValue((v) => (v.includes('.') ? v : v === '' ? '0.' : `${v}.`));
       }
-      // digit
-      setValue((v) => {
-        if (effectiveMaxLength !== undefined && v.length >= effectiveMaxLength) return v;
-        return v + key.label;
-      });
+      // digit — computed from the rendered `value` (not a functional updater)
+      // so the auto-submit side-effect below stays OUT of the state updater
+      // (StrictMode double-invokes updaters). Each tap is its own event →
+      // its own render, so `value` is always fresh here.
+      if (effectiveMaxLength !== undefined && value.length >= effectiveMaxLength) return;
+      const next = value + key.label;
+      setValue(next);
+      // Session 43 / P2-10 — opt-in auto-submit on the last PIN digit.
+      if (
+        autoSubmitAtMaxLength &&
+        mode === 'pin' &&
+        effectiveMaxLength !== undefined &&
+        next.length === effectiveMaxLength
+      ) {
+        onSubmit(next);
+      }
     },
-    [effectiveMaxLength],
+    [effectiveMaxLength, value, autoSubmitAtMaxLength, mode, onSubmit],
   );
 
   const handleSubmit = useCallback(() => onSubmit(value), [onSubmit, value]);

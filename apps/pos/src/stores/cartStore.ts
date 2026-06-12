@@ -160,7 +160,10 @@ interface CartState {
 export const useCartStore = create<CartState>()(
   persist(
     (set, get) => ({
-      cart: { items: [], order_type: 'dine_in' },
+      // Session 43 / P2-6 — default order type is take_out (counter bakery
+      // flow ; D9, owner to ratify). Resets (clear/voidOrder/checkout) keep the
+      // current order_type via spread, so this is the only default site.
+      cart: { items: [], order_type: 'take_out' },
       lockedItemIds: [],
       printedItemIds: [],
       attachedCustomer: null,

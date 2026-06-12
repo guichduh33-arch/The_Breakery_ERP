@@ -206,6 +206,7 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
             <NumpadVirtual
               mode="pin"
               maxLength={6}
+              autoSubmitAtMaxLength
               isLoading={pinLoading}
               error={pinError}
               onSubmit={(p) => { void handlePinSubmit(p); }}
