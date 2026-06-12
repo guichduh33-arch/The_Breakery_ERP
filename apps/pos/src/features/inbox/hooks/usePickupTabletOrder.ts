@@ -12,10 +12,13 @@ interface OrderRow {
   order_number: string;
 }
 
+// NB: the column is `name_snapshot` (frozen at order time) — there is no
+// `order_items.name`. Selecting `name` 42703s the whole pickup (silent in
+// mocked tests, fatal in prod).
 interface OrderItemRow {
   id: string;
   product_id: string;
-  name: string;
+  name_snapshot: string;
   unit_price: number;
   quantity: number;
   modifiers: unknown;
@@ -25,7 +28,7 @@ function toCartItem(row: OrderItemRow): CartItem {
   return {
     id: row.id,
     product_id: row.product_id,
-    name: row.name,
+    name: row.name_snapshot,
     unit_price: row.unit_price,
     quantity: row.quantity,
     modifiers: (row.modifiers as CartItem['modifiers']) ?? [],
@@ -49,7 +52,7 @@ export function usePickupTabletOrder(onClose: () => void) {
 
       const { data: itemsData, error: itemsError } = await supabase
         .from('order_items')
-        .select('id, product_id, name, unit_price, quantity, modifiers')
+        .select('id, product_id, name_snapshot, unit_price, quantity, modifiers')
         .eq('order_id', orderId);
       if (itemsError) throw new Error(itemsError.message);
 

@@ -33,6 +33,8 @@ import { ActiveOrderPanel } from '@/features/cart/ActiveOrderPanel';
 import { BottomActionBar } from '@/features/cart/BottomActionBar';
 import { CustomerAttachModal } from '@/features/cart/CustomerAttachModal';
 import { OpenShiftModal } from '@/features/shift/OpenShiftModal';
+import { CloseShiftModal } from '@/features/shift/components/CloseShiftModal';
+import { useShiftCloseSummary } from '@/features/shift/hooks/useShiftCloseSummary';
 import { ShiftClosedState } from '@/features/shift/ShiftClosedState';
 import { PaymentTerminal } from '@/features/payment/PaymentTerminal';
 import { OrderHistoryPanel } from '@/features/order-history/OrderHistoryPanel';
@@ -71,6 +73,14 @@ export default function PosPage() {
   const [openShiftOpen, setOpenShiftOpen] = useState(false);
   const [shiftAlertDismissed, setShiftAlertDismissed] = useState(false);
   const shiftAlertOpen = needsShift && !openShiftOpen && !shiftAlertDismissed;
+
+  // POS audit 2026-06-12 lot 3 — close-shift flow. The summary query only
+  // runs while the modal is requested so the preview is fresh at open time;
+  // close_shift_v2 recomputes server-side regardless.
+  const [closeShiftOpen, setCloseShiftOpen] = useState(false);
+  const { data: closeSummary } = useShiftCloseSummary(
+    closeShiftOpen ? (currentShift?.id ?? null) : null,
+  );
 
   const attachCustomer = useCartStore((s) => s.attachCustomer);
   const detachCustomer = useCartStore((s) => s.detachCustomer);
@@ -169,6 +179,7 @@ export default function PosPage() {
         userInitial={user?.full_name?.charAt(0) ?? null}
         onOpenHistory={() => setHistoryOpen(true)}
         onOpenLiveSessions={() => setLiveSessionsOpen(true)}
+        {...(currentShift ? { onCloseShift: () => setCloseShiftOpen(true) } : {})}
         onLockTerminal={() => { setMenuOpen(false); lock(); }}
         {...(currentUserId ? { onChangePin: () => setChangePinOpen(true) } : {})}
         onLogout={() => { void handleLogout(); }}
@@ -195,6 +206,16 @@ export default function PosPage() {
         open={needsShift && openShiftOpen}
         onClose={() => setOpenShiftOpen(false)}
       />
+      {currentShift && closeShiftOpen && closeSummary && (
+        <CloseShiftModal
+          open
+          sessionId={currentShift.id}
+          expectedCash={closeSummary.expectedCash}
+          thresholdAbs={closeSummary.thresholdAbs}
+          thresholdPct={closeSummary.thresholdPct}
+          onClose={() => setCloseShiftOpen(false)}
+        />
+      )}
       <PaymentTerminal />
       <OrderHistoryPanel open={historyOpen} onClose={() => setHistoryOpen(false)} />
       <CustomerAttachModal

@@ -20,9 +20,12 @@ const PICKUP_RESULT = {
   order_number: '#T001',
 };
 
+// Real schema: the column is `name_snapshot` (there is no `order_items.name`).
+// Keeping the mock on the real column name is what lets this suite catch a
+// 42703-style drift instead of masking it (POS audit 2026-06-12).
 const ORDER_ITEMS = [
-  { id: 'item-1', product_id: 'p1', name: 'Americano', unit_price: 35000, quantity: 1, modifiers: [] },
-  { id: 'item-2', product_id: 'p2', name: 'Croissant', unit_price: 35000, quantity: 1, modifiers: [] },
+  { id: 'item-1', product_id: 'p1', name_snapshot: 'Americano', unit_price: 35000, quantity: 1, modifiers: [] },
+  { id: 'item-2', product_id: 'p2', name_snapshot: 'Croissant', unit_price: 35000, quantity: 1, modifiers: [] },
 ];
 
 const mocks = vi.hoisted(() => ({
@@ -122,6 +125,8 @@ describe('pickup-flow smoke', () => {
       const state = useCartStore.getState();
       expect(state.pickedUpOrderId).toBe('order-tablet-1');
       expect(state.cart.items).toHaveLength(2);
+      // name_snapshot → CartItem.name mapping
+      expect(state.cart.items.map((i) => i.name)).toEqual(['Americano', 'Croissant']);
       expect(state.lockedItemIds).toContain('item-1');
       expect(state.lockedItemIds).toContain('item-2');
     });

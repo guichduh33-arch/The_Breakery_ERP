@@ -5,7 +5,8 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { PaymentMethod } from '@breakery/domain';
-import { supabase, supabaseUrl } from '@/lib/supabase';
+import { supabaseUrl } from '@/lib/supabase';
+import { getAccessToken } from '@/lib/accessToken';
 
 interface VoidArgs {
   orderId: string;
@@ -24,12 +25,6 @@ export interface VoidResponse {
   manager: { id: string; full_name: string; role_code: string };
   error?: string;
   message?: string;
-}
-
-async function getAccessToken(): Promise<string> {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.access_token) throw new Error('no_auth_session');
-  return session.access_token;
 }
 
 export function useVoidOrder() {

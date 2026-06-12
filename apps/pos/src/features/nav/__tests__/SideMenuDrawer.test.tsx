@@ -50,6 +50,7 @@ describe('SideMenuDrawer', () => {
       onOpenHistory: () => {},
       onOpenLiveSessions: () => {},
       onOpenCustomers: () => {},
+      onCloseShift: () => {},
       onLockTerminal: () => {},
       onChangePin: () => {},
       onLogout: () => {},
@@ -59,6 +60,7 @@ describe('SideMenuDrawer', () => {
     expect(screen.getByTestId('side-menu-pos-reports')).toBeInTheDocument();
     expect(screen.getByTestId('side-menu-live-sessions')).toBeInTheDocument();
     expect(screen.getByTestId('side-menu-customer-list')).toBeInTheDocument();
+    expect(screen.getByTestId('side-menu-close-shift')).toBeInTheDocument();
     expect(screen.getByTestId('side-menu-cafe-stock')).toBeInTheDocument();
     expect(screen.getByTestId('side-menu-outstanding-debts')).toBeInTheDocument();
     expect(screen.getByTestId('side-menu-kds')).toBeInTheDocument();
@@ -91,6 +93,25 @@ describe('SideMenuDrawer', () => {
     // Handler is dispatched via queueMicrotask — flush the microtask queue.
     return Promise.resolve().then(() => {
       expect(onChangePin).toHaveBeenCalled();
+    });
+  });
+
+  // POS audit 2026-06-12 lot 3 — Close Shift item (was unreachable: the modal
+  // existed but had no production mount, so shifts could never be closed).
+  it('disables Close Shift when onCloseShift is missing (no open shift)', () => {
+    renderDrawer({});
+    const item = screen.getByTestId('side-menu-close-shift') as HTMLButtonElement;
+    expect(item.disabled).toBe(true);
+  });
+
+  it('dispatches onCloseShift on click and closes the drawer', () => {
+    const onCloseShift = vi.fn();
+    const onClose = vi.fn();
+    renderDrawer({ onCloseShift, onClose });
+    fireEvent.click(screen.getByTestId('side-menu-close-shift'));
+    expect(onClose).toHaveBeenCalled();
+    return Promise.resolve().then(() => {
+      expect(onCloseShift).toHaveBeenCalled();
     });
   });
 

@@ -47,7 +47,10 @@ export async function render(
 ): Promise<void> {
   const snap = envelope.snapshot;
   const page = ctx.doc.addPage([595, 842]);
-  const periodLabel = `${snap.opened_at.slice(0, 16).replace('T', ' ')} → ${(snap.closed_at ?? '').slice(0, 16).replace('T', ' ')}`;
+  // "—" (U+2014) est encodable WinAnsi ; "→" (U+2192) ne l'est pas et faisait
+  // crasher pdf-lib (`WinAnsi cannot encode`) — bug S29 jamais vu car le close
+  // shift était inatteignable avant l'audit POS 2026-06-12 (lot 3).
+  const periodLabel = `${snap.opened_at.slice(0, 16).replace('T', ' ')} — ${(snap.closed_at ?? '').slice(0, 16).replace('T', ' ')}`;
   let y = drawHeader(page, ctx, 'Z-Report (End-of-Shift)', undefined);
 
   // Subtitle : shift period

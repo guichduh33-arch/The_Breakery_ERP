@@ -61,7 +61,10 @@ export function CloseShiftModal({
 
   return (
     <FullScreenModal open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <div className="m-auto bg-bg-overlay rounded-xl p-8 max-w-md w-full shadow-modal space-y-6">
+      {/* max-h + scroll : sur un écran tablette (~800px) le contenu (numpad +
+          notes + footer) dépasse le viewport et le bouton Close devenait
+          inatteignable (constaté à l'audit POS 2026-06-12). */}
+      <div className="m-auto bg-bg-overlay rounded-xl p-8 max-w-md w-full shadow-modal space-y-6 max-h-[92vh] overflow-y-auto">
         <header className="flex items-center justify-between">
           <h2 className="font-serif text-2xl">Close Shift</h2>
           <VarianceWarningBadge

@@ -14,6 +14,7 @@ interface PromotionWirePayload {
   scope_line_id?: string;
 }
 import { supabase, supabaseUrl } from '@/lib/supabase';
+import { getAccessToken } from '@/lib/accessToken';
 import { useShiftStore } from '@/stores/shiftStore';
 import { usePaymentStore } from '@/stores/paymentStore';
 import { clearManagerPin, getManagerPin } from '@/features/discounts/managerPinHolder';
@@ -171,11 +172,4 @@ export function useCheckout() {
       void queryClient.invalidateQueries({ queryKey: ['orders'] });
     },
   });
-}
-
-async function getAccessToken(): Promise<string> {
-  const { supabase } = await import('@/lib/supabase');
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.access_token) throw new Error('no_auth_session');
-  return session.access_token;
 }

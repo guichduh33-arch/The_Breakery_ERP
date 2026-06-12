@@ -48,6 +48,7 @@ import {
   Lock,
   Users,
   KeyRound,
+  ClipboardCheck,
 } from 'lucide-react';
 import type { JSX, ReactNode } from 'react';
 import {
@@ -77,6 +78,9 @@ export interface SideMenuDrawerProps {
   onOpenCustomers?: () => void;
   /** Open the live sessions modal (cashier connections). */
   onOpenLiveSessions?: () => void;
+  /** Open the close-shift modal (cash count → close_shift_v2 → Z-report draft).
+      Omit when no shift is open — the item renders disabled. */
+  onCloseShift?: () => void;
   /** Lock the terminal (force re-auth). */
   onLockTerminal?: () => void;
   /** Open the self-change PIN modal (Session 19 / Phase 3.C). */
@@ -95,6 +99,7 @@ export function SideMenuDrawer({
   onOpenHistory,
   onOpenCustomers,
   onOpenLiveSessions,
+  onCloseShift,
   onLockTerminal,
   onChangePin,
   onLogout,
@@ -201,6 +206,12 @@ export function SideMenuDrawer({
           </NavGroup>
 
           <NavGroup label="Shift">
+            <NavLink
+              icon={<ClipboardCheck className="h-5 w-5" aria-hidden />}
+              label="Close Shift"
+              onClick={() => dispatch(onCloseShift)}
+              disabled={!onCloseShift}
+            />
             <NavLink
               icon={<Package className="h-5 w-5" aria-hidden />}
               label="Cafe Stock"
