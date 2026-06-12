@@ -119,7 +119,8 @@ $$, 'T8: fire with oversized line discount succeeds');
 SELECT is(
   (SELECT oi.line_total::int FROM order_items oi
     JOIN counter_fire_idempotency_keys k ON k.order_id = oi.order_id
-    WHERE k.client_uuid = '44444444-4444-4444-4444-444444444444'),
+    WHERE k.client_uuid = '44444444-4444-4444-4444-444444444444'
+      AND oi.discount_amount = 10000), -- le discount STOCKÉ est le clampé (= brut), pas le 999999 brut
   0, 'T8b: oversized discount clamped to gross, line_total floored at 0');
 
 SELECT * FROM finish();
