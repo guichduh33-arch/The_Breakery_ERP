@@ -139,12 +139,15 @@ export default function ProductsImportExportPage(): JSX.Element {
     importMutation.reset();
   }
 
-  // Compute total items to import for the button label
+  // Items to import = create + update only. Replacement counters
+  // (units.replace_products, recipes.products_replaced) count affected
+  // products, not items — summing them inflates the label (P8, DEV-S41-A2-01).
   const importTotal =
     stage.step === 'previewed'
-      ? Object.values(stage.report.summary)
-          .flatMap((section) => Object.values(section))
-          .reduce((sum, n) => sum + n, 0)
+      ? Object.values(stage.report.summary).reduce(
+          (sum, section) => sum + (section['create'] ?? 0) + (section['update'] ?? 0),
+          0,
+        )
       : 0;
 
   return (

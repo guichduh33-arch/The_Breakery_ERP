@@ -21,8 +21,16 @@ import { MemoryRouter } from 'react-router-dom';
 
 // ── Hoisted stable refs (DEV-S39-B1-01) ──────────────────────────────────────
 
-const { importMutateAsync, mockImportState, VALID_PAYLOAD, VALID_REPORT, ERRORS_REPORT, EMPTY_ROWMAPS } =
-  vi.hoisted(() => {
+const {
+  importMutateAsync,
+  mockImportState,
+  VALID_PAYLOAD,
+  VALID_REPORT,
+  ERRORS_REPORT,
+  MIXED_SUMMARY_REPORT,
+  REPLACE_ONLY_REPORT,
+  EMPTY_ROWMAPS,
+} = vi.hoisted(() => {
     const importMutateAsync = vi.fn();
     const mockImportState = { isPending: false };
 
@@ -69,7 +77,46 @@ const { importMutateAsync, mockImportState, VALID_PAYLOAD, VALID_REPORT, ERRORS_
       idempotent_replay: false,
     };
 
-    return { importMutateAsync, mockImportState, VALID_PAYLOAD, VALID_REPORT, ERRORS_REPORT, EMPTY_ROWMAPS };
+    // P8: replacement counters (units/recipes) must NOT inflate the items count.
+    const MIXED_SUMMARY_REPORT = {
+      valid: true,
+      errors: [],
+      summary: {
+        categories:  { create: 0, update: 0 },
+        ingredients: { create: 0, update: 0 },
+        products:    { create: 1, update: 2 },
+        units:       { replace_products: 5 },
+        variants:    { create: 0, update: 0 },
+        recipes:     { products_replaced: 3 },
+      },
+      idempotent_replay: false,
+    };
+
+    // P8 fallback: nothing created/updated, only replacements → "Import catalog".
+    const REPLACE_ONLY_REPORT = {
+      valid: true,
+      errors: [],
+      summary: {
+        categories:  { create: 0, update: 0 },
+        ingredients: { create: 0, update: 0 },
+        products:    { create: 0, update: 0 },
+        units:       { replace_products: 5 },
+        variants:    { create: 0, update: 0 },
+        recipes:     { products_replaced: 3 },
+      },
+      idempotent_replay: false,
+    };
+
+    return {
+      importMutateAsync,
+      mockImportState,
+      VALID_PAYLOAD,
+      VALID_REPORT,
+      ERRORS_REPORT,
+      MIXED_SUMMARY_REPORT,
+      REPLACE_ONLY_REPORT,
+      EMPTY_ROWMAPS,
+    };
   });
 
 // ── Module mocks ──────────────────────────────────────────────────────────────
@@ -290,5 +337,28 @@ describe('ProductsImportExportPage [S41 smoke]', () => {
     });
     expect(screen.queryByTestId('confirm-import')).not.toBeInTheDocument();
     expect(screen.queryByText(/Validating/i)).not.toBeInTheDocument();
+  });
+
+  // ── P8: button label counts create+update only (DEV-S41-A2-01) ────────────
+
+  it('P8a: commit button counts only create+update, not replacement counters', async () => {
+    importMutateAsync.mockResolvedValueOnce(MIXED_SUMMARY_REPORT);
+    renderPage();
+    await triggerUpload();
+    await waitFor(() => {
+      expect(screen.getByTestId('confirm-import')).toBeInTheDocument();
+    });
+    // 1 create + 2 update = 3 — NOT 11 (3 + 5 replace_products + 3 products_replaced)
+    expect(screen.getByTestId('confirm-import')).toHaveTextContent('Import 3 items');
+  });
+
+  it('P8b: replacements only → falls back to "Import catalog"', async () => {
+    importMutateAsync.mockResolvedValueOnce(REPLACE_ONLY_REPORT);
+    renderPage();
+    await triggerUpload();
+    await waitFor(() => {
+      expect(screen.getByTestId('confirm-import')).toBeInTheDocument();
+    });
+    expect(screen.getByTestId('confirm-import')).toHaveTextContent('Import catalog');
   });
 });
