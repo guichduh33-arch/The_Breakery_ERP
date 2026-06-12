@@ -257,13 +257,20 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
             <div>
               <div className="text-[10px] uppercase tracking-widest text-text-secondary">Alert threshold</div>
               <Input
+                type="number"
+                inputMode="numeric"
+                min={0}
+                step={1}
                 value={draft.min_stock_threshold}
                 disabled={readOnly}
-                onChange={(e) => update('min_stock_threshold', Number(e.target.value))}
+                onChange={(e) => update('min_stock_threshold', Math.max(0, Number(e.target.value) || 0))}
                 className="mt-1.5 font-mono"
               />
             </div>
           </div>
+          <p className="mt-3 text-xs text-text-muted">
+            Sous ce seuil le produit remonte dans Alerts / reorder suggestions. 0 = jamais.
+          </p>
         </Card>
       </div>
     </div>

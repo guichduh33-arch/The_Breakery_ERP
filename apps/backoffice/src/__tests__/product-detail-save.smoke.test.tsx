@@ -101,6 +101,34 @@ describe('ProductDetailPage — save flow (S27)', () => {
     expect(btn).toBeDisabled();
   });
 
+  it('saves an edited min_stock_threshold through update_product_v1 (audit M7)', async () => {
+    rpcSpy.mockClear();
+    renderDetail();
+    expect(await screen.findByText('Affogato')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: /General/i }));
+
+    // The Inventory levels card explains what the threshold drives (audit M7).
+    expect(await screen.findByText(/sous ce seuil/i)).toBeInTheDocument();
+
+    const thresholdInput = screen.getByDisplayValue('5');
+    fireEvent.change(thresholdInput, { target: { value: '12' } });
+
+    const btn = screen.getByTestId('product-detail-save');
+    await waitFor(() => expect(btn).not.toBeDisabled());
+    fireEvent.click(btn);
+
+    await waitFor(() => {
+      expect(rpcSpy).toHaveBeenCalledWith(
+        'update_product_v1',
+        expect.objectContaining({
+          p_product_id: 'p-1',
+          p_patch: expect.objectContaining({ min_stock_threshold: 12 }),
+        }),
+      );
+    });
+  });
+
   it('enables Save when a field changes, then calls update_product_v1', async () => {
     rpcSpy.mockClear();
     renderDetail();
