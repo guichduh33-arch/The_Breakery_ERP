@@ -3,7 +3,7 @@
 -- Exécuter via MCP execute_sql (BEGIN..ROLLBACK). Pattern jwt-claims S37 (order_discount_gate) :
 -- caller = un VRAI user_profiles avec pos.sale.create, auth.uid() simulé via request.jwt.claims.
 BEGIN;
-SELECT plan(10);
+SELECT plan(11);
 
 -- Fixture : caller authentifié + session POS open + produit seed (BEV-AMER canonique, cf. Stock Audit _020).
 DO $$
@@ -122,6 +122,31 @@ SELECT is(
     WHERE k.client_uuid = '44444444-4444-4444-4444-444444444444'
       AND oi.discount_amount = 10000), -- le discount STOCKÉ est le clampé (= brut), pas le 999999 brut
   0, 'T8b: oversized discount clamped to gross, line_total floored at 0');
+
+-- T9 : corrective _016 (DEV-S43-F1-03) — pay_existing_order_v7 accepte un ordre
+-- comptoir fired (pending_payment + created_via='pos') : l'appel avec un montant
+-- volontairement faux échoue PLUS LOIN que le gate de statut (le message n'est
+-- plus « not in draft status » / « not payable »). GUC pattern S25 DEV-S25-2.A-03.
+DO $$
+DECLARE v_msg TEXT := '';
+BEGIN
+  BEGIN
+    PERFORM pay_existing_order_v7(
+      p_order_id := (SELECT order_id FROM counter_fire_idempotency_keys
+                     WHERE client_uuid = '11111111-1111-1111-1111-111111111111'),
+      p_payment  := jsonb_build_object('method', 'cash', 'amount', 1, 'cash_received', 1)
+    );
+  EXCEPTION WHEN OTHERS THEN
+    v_msg := SQLERRM;
+  END;
+  PERFORM set_config('breakery.t9_msg', v_msg, true);
+END $$;
+SELECT ok(
+  current_setting('breakery.t9_msg') NOT ILIKE '%not in draft status%'
+  AND current_setting('breakery.t9_msg') NOT ILIKE '%not payable%'
+  AND current_setting('breakery.t9_msg') NOT ILIKE '%does not exist%', -- guard faux positif (résolution de fonction)
+  'T9: status gate accepts a fired counter order (failure, if any, is past the gate: '
+    || current_setting('breakery.t9_msg') || ')');
 
 SELECT * FROM finish();
 ROLLBACK;
