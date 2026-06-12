@@ -25,6 +25,7 @@ export * from './refunds/index.js';
 export { buildOrderPayload } from './orders/buildOrderPayload.js';
 export { ORDER_TYPE_LABELS, orderTypeLabel, type OrderTypeLabelKey } from './orders/orderTypeLabel.js';
 export { DEFAULT_TAX_RATE } from './orders/taxRate.js';
+export { isSellable } from './products/sellability.js';
 export * from './modifiers/index.js';
 export * from './kitchen/index.js';
 export * from './customers/index.js';
