@@ -66,7 +66,7 @@ adjust_stock_v1
 - **Ledger actor is `created_by`** (FK user_profiles). There is NO `actor_id` on `stock_movements` (`actor_id` is the `audit_logs` column).
 - **Free-text reason column is `reason`** (TEXT, ≥3 chars except sale/sale_void via CHECK `chk_stock_movements_reason_required`). There is NO `reason_code`.
 - **JE trigger is `tr_20_je_emit`** (the trigger name); the *function* it calls is `tr_stock_movement_je`. Query `pg_trigger` by `tr_20_je_emit`.
-- **WAC trigger is `tr_update_product_cost_on_purchase`** — `AFTER INSERT … WHEN (movement_type='purchase')`. WAC lives in a trigger, NOT inside `receive_stock_v1`, and it does **NOT** fire on `movement_type='incoming'` (see "Known gap: incoming bypasses WAC+FIFO" below).
+- **WAC trigger is `tr_update_product_cost_on_purchase`** — `AFTER INSERT … WHEN (movement_type IN ('purchase','production_in'))` since the 2026-06-12 audit fix (`20260626000015`). WAC lives in a trigger, NOT inside `receive_stock_v1`, and it does **NOT** fire on `movement_type='incoming'` (see "Known gap: incoming bypasses WAC+FIFO" below).
 
 ### Traceability backbone
 
@@ -79,7 +79,8 @@ adjust_stock_v1
 
 ### Cost backbone
 
-- `movement_type='purchase'` (PO receipt via `receive_po_v1`) updates `products.cost_price` (WAC) via trigger `tr_update_product_cost_on_purchase`
+- `movement_type='purchase'` (PO receipt via `receive_po_v1`) AND `movement_type='production_in'` (since `20260626000015`) update `products.cost_price` (WAC) via trigger `tr_update_product_cost_on_purchase`
+- `production_in` is valued at the **actual consumed cost** (`SUM(total_consumed × material_cost)` from the BOM walk ÷ actual yield), NOT at stale `products.cost_price` (audit 2026-06-12 M5, `20260626000015`) — the production JE pair (DR 1135 finished goods / CR 5110) is balanced against the `production_out` legs by construction
 - `movement_type='incoming'` (free-form / `record_incoming_stock_v1` / POS quick-receive) does **NOT** touch `cost_price` — a product received only this way stays at its prior cost (often 0). Manual fix path: `update_cost_price_v1` (S22, movement_type=`cost_price_correction`, quantity=0).
 - A `cost_price` change fires `tr_snapshot_on_product_cost_change` → re-snapshots ancestor `recipe_versions.snapshot`
 - Full cascade resolved via `recipe_bom_full_v1` (S17, depth-5)
@@ -96,6 +97,27 @@ adjust_stock_v1
 - **Sale path**: `complete_order_with_payment_v10` decrements BOTH `display_stock` (+ writes `display_movements`) AND `products.current_stock` — the documented double-deduction. This is the only place both are touched.
 
 > Historical note: prior to S33 the POS receive routed through `record_incoming_stock_v1` into the **shared** `stock_movements` ledger + global `products.current_stock`, causing BO/POS cross-interference. The `Front Display` section approach was superseded by the dedicated `display_stock`/`display_movements` tables. If an audit still finds POS writing `incoming` rows, that is a regression — flag it.
+
+## Audit 2026-06-12 — fixes shipped + ledger conventions
+
+Plan : `docs/workplan/plans/2026-06-12-stock-audit-fixes-plan.md` ; audit : `docs/audit/2026-06-12-stock-management-audit.md`. Migrations `20260626000010..016`.
+
+**Fixes shipped (don't re-flag these as gaps):**
+- **C2 réparé** (`_010`) — `record_stock_movement_v1` accepte le contexte cron : profil SYSTEM `00000000-0000-0000-0000-000000000999` (`SYS-CRON`, pin_hash non-bcrypt, is_active=false) utilisé quand `auth.uid() IS NULL AND session_user = 'postgres'`. ⚠️ Si le pooler / l'utilisateur d'exécution des crons change, re-vérifier la condition `session_user='postgres'`.
+- **C3 réparé** (`_011`) — `margin_alerts.{expected_margin_pct, target_margin_pct, delta_pct}` élargis en NUMERIC(7,2) (le calcul est en 7,2 ; un produit cost élevé / prix faible donne des marges < -999.99 %).
+- **C4 réparé** (`_012`) — `record_production_v1` + `record_batch_production_v1` raisent `section_required` (P0001) au lieu de violer le CHECK 23514 ; le front exige la section (single + batch).
+- **M2 réparé** (`_013`) — gate de solde par section dans `create_internal_transfer_v1` (branche `send_directly`) et `receive_internal_transfer_v1` : `insufficient_section_stock` (P0001, DETAIL JSON) avant émission des mouvements. 7 lignes `section_stock` négatives remises à 0 (trace `audit_logs` action `section_stock.negative_reset`). **Pas de CHECK `quantity >= 0`** — décision actée : les flux production_out/waste/adjustment légitimes décrémentent des sections jamais seedées (cache, pas ledger).
+- **M1 côté DB** (`_014`) — `create_internal_transfer_v1` valide les items sur `track_inventory` (plus `is_active`) : les ingrédients sont transférables. Doctrine : `is_active` = vendable au POS ; le gate stock est `track_inventory`.
+- **M5 réparé** (`_015`) — voir Cost backbone ci-dessus (production_in au coût réel + WAC).
+- **m1 réparé** (`_016`) — REVOKE TRUNCATE/TRIGGER/REFERENCES sur les 5 tables stock (`stock_movements`, `stock_lots`, `section_stock`, `display_stock`, `display_movements`) FROM authenticated, anon.
+
+**Statut M3 — FIFO non câblé (fausse assurance) :** les lots existent et le spoilage cron tourne, mais la consommation (sale/production_out/waste/transfer_out) ne décrémente qu'au mieux UN lot heuristique dans la primitive. Spec dédiée requise avant tout code (`docs/workplan/specs/2026-06-XX-fifo-consumption-spec.md`) — un fix partiel ferait auto-waster du stock déjà vendu maintenant que le cron C2 est réparé.
+
+**Conventions ledger (actées, pas des bugs) :**
+- **m9** — l'audit `stock.movement` a pour `subject_id` l'**id du mouvement** ; le produit est dans `payload`/metadata. Ne pas "corriger" vers product_id.
+- **m10** — toute mise en production d'un site migré doit **entrer le stock initial via le ledger** (mouvements `incoming`/`adjustment_in` par section), sinon les caches `section_stock` partent de 0 et les consommations sectionnées créent des négatifs.
+- **m11** — les lignes `transfer_in` ET `transfer_out` portent toutes deux `from_section_id` + `to_section_id` (le CHECK l'exige) ; le sens est porté par le signe de `quantity` et le `movement_type`.
+- **m2 (ouvert)** — parents de variantes stockables : décision produit requise (un parent porte-t-il du stock ?). Pas de code tant que non tranché.
 
 ## Critical patterns (always verify before shipping)
 
