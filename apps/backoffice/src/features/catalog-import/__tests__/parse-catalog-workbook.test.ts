@@ -88,4 +88,20 @@ describe('parseCatalogWorkbook', () => {
     expect(payload!.categories).toHaveLength(2);
     expect(rowMaps.categories).toEqual([2, 4]);
   });
+
+  it('flags a duplicated header column once, at row 1', () => {
+    // Build a Categories sheet whose header row contains "name" twice.
+    const wb = XLSX.utils.book_new();
+    for (const def of CATALOG_SHEETS) {
+      const headers = def.columns.map((c) => c.key);
+      if (def.name === 'Categories') headers.push('name'); // duplicate
+      const ws = XLSX.utils.aoa_to_sheet([headers, ...(def.name === 'Categories' ? [['Cat A', null, null, null]] : [])]);
+      XLSX.utils.book_append_sheet(wb, ws, def.name);
+    }
+    const { errors } = parseCatalogWorkbook(wbToBuffer(wb));
+    const dup = errors.filter((e) => e.sheet === 'Categories' && e.message.includes('Duplicate column'));
+    expect(dup).toHaveLength(1);
+    expect(dup[0]!.row).toBe(1);
+    expect(dup[0]!.column).toBe('name');
+  });
 });

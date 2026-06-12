@@ -101,11 +101,19 @@ export function parseCatalogWorkbook(buf: ArrayBuffer): {
     if (aoa.length === 0) continue; // empty sheet = no rows, fine
     const headers = (aoa[0] ?? []).map((h) => String(h ?? '').trim());
     const known = new Set(def.columns.map((c) => c.key));
+    const headerCounts = new Map<string, number>();
     headers.forEach((h) => {
-      if (h !== '' && !known.has(h)) {
+      if (h === '') return;
+      headerCounts.set(h, (headerCounts.get(h) ?? 0) + 1);
+      if (!known.has(h) && headerCounts.get(h) === 1) {
         errors.push({ sheet: def.name, row: 1, column: h, message: `Unknown column "${h}"` });
       }
     });
+    for (const [h, n] of headerCounts) {
+      if (n > 1) {
+        errors.push({ sheet: def.name, row: 1, column: h, message: `Duplicate column "${h}" (${n} occurrences) — only the first is read` });
+      }
+    }
 
     for (let i = 1; i < aoa.length; i++) {
       const cells = aoa[i] ?? [];
