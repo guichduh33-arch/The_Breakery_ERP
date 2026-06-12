@@ -74,6 +74,7 @@ const ALL_PERMS = [
   'suppliers.read',
   'categories.read',
   'inventory.read',
+  'inventory.receive',
   'expenses.read',
   'expenses.thresholds.read',
   'accounting.coa.read',
@@ -171,6 +172,15 @@ describe('Sidebar', () => {
     expect(screen.getByRole('link', { name: /Stock Movement History/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /RBAC Editor/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Permissions Matrix/i })).toBeInTheDocument();
+  });
+
+  it('renders Incoming / Transfers / Expiring stock links under Stock Management (audit M6)', () => {
+    openAllTopGroups();
+    setAuthState(ALL_PERMS);
+    renderWith(<Sidebar />);
+    expect(screen.getByRole('link', { name: /^Incoming$/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /^Transfers$/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /^Expiring stock$/i })).toBeInTheDocument();
   });
 
   it('renders Dashboard link as active when on /backoffice', () => {

@@ -30,6 +30,7 @@ import {
   LineChart, Sparkles, Megaphone, Cake,
   ClipboardCheck, TrendingUp, Signature, ShoppingBag,
   Calendar, ShoppingCart, Truck, ListChecks,
+  PackagePlus, ArrowLeftRight, TimerOff,
   ChevronRight,
   type LucideIcon,
 } from 'lucide-react';
@@ -91,6 +92,9 @@ const GROUPS: NavGroup[] = [
       { to: '/backoffice/products', label: 'Products', icon: Package, end: true },
       { to: '/backoffice/categories', label: 'Product Categories', icon: Tag, permission: 'categories.read', indent: 1 },
       { to: '/backoffice/inventory', label: 'Stock & Inventory', icon: Boxes, permission: 'inventory.read', end: true },
+      { to: '/backoffice/inventory/incoming', label: 'Incoming', icon: PackagePlus, permission: 'inventory.receive', indent: 1 },
+      { to: '/backoffice/inventory/transfers', label: 'Transfers', icon: ArrowLeftRight, permission: 'inventory.read', indent: 1 },
+      { to: '/backoffice/inventory/expiring', label: 'Expiring stock', icon: TimerOff, permission: 'inventory.read', indent: 1 },
       { to: '/backoffice/inventory/recipes', label: 'Recipes', icon: BookOpen, permission: 'inventory.read', indent: 1 },
       { to: '/backoffice/inventory/production', label: 'Production', icon: ChefHat, permission: 'inventory.read', indent: 1 },
       { to: '/backoffice/inventory/opname', label: 'Opname', icon: ClipboardList, permission: 'inventory.read', indent: 1 },

@@ -15,6 +15,7 @@ import LoyaltyPage from '@/pages/Loyalty.js';
 import InventoryPage from '@/pages/Inventory.js';
 import IncomingStockPage from '@/pages/IncomingStock.js';
 import TransfersListPage from '@/pages/TransfersList.js';
+import ExpiringStockPage from '@/features/inventory/pages/ExpiringStockPage.js';
 import TransferFormPage from '@/pages/TransferForm.js';
 import TransferDetailPage from '@/pages/TransferDetail.js';
 import SuppliersPage from '@/pages/Suppliers.js';
@@ -172,6 +173,14 @@ export function AppRoutes() {
           element={
             <PermissionGate required="inventory.receive">
               <IncomingStockPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="inventory/expiring"
+          element={
+            <PermissionGate required="inventory.read">
+              <ExpiringStockPage />
             </PermissionGate>
           }
         />
