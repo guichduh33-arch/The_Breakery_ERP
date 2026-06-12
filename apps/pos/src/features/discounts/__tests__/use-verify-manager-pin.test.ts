@@ -46,11 +46,9 @@ describe('useVerifyManagerPin (S43 raw fetch → verify-manager-pin EF)', () => 
   });
 
   it('success → POSTs to verify-manager-pin with PIN in header (not body), stashes PIN', async () => {
-    const fetchMock = mockFetchResponse(200, {
-      verified_user_id: 'mgr-1',
-      full_name: 'Manager One',
-      role_code: 'MANAGER',
-    });
+    // Review follow-up: the EF returns ONLY verified_user_id (full_name/role_code
+    // would be gratuitous PIN→identity disclosure).
+    const fetchMock = mockFetchResponse(200, { verified_user_id: 'mgr-1' });
 
     const verify = useVerifyManagerPin();
     const result = await verify('123456');
@@ -72,6 +70,17 @@ describe('useVerifyManagerPin (S43 raw fetch → verify-manager-pin EF)', () => 
 
     expect(result).toEqual({ ok: true, userId: 'mgr-1' });
     expect(getManagerPin()).toBe('123456');
+  });
+
+  it('threads an explicit requiredPermission into the body (default stays sales.discount)', async () => {
+    const fetchMock = mockFetchResponse(200, { verified_user_id: 'mgr-1' });
+
+    const verify = useVerifyManagerPin();
+    await verify('123456', 'orders.void');
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse(init.body as string) as Record<string, unknown>;
+    expect(body).toEqual({ required_permission: 'orders.void' });
   });
 
   it('429 (SEC-07 lockout) → account_locked, PIN not stashed', async () => {

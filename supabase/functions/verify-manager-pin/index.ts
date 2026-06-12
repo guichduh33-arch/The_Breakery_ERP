@@ -13,22 +13,27 @@
 //   - SEC-07: failures consume the SHARED per-IP `manager-pin-fail` bucket
 //     (5 fails / 15 min) — a brute-force attempt against this EF locks the IP
 //     out of the reversal EFs too, and vice versa.
-// This EF performs NO write — it only verifies the PIN and (optionally) checks
-// a permission, so no acting-user resolution is needed beyond the platform's
-// verify_jwt + the Authorization presence check.
+// The acting cashier's Bearer PIN-JWT is HS256-verified in-function via
+// `getActingAuthUserId` (same as void-order) — the EF stays self-defending even
+// if verify_jwt were ever disabled at deploy. A successful verification writes
+// an audit_logs row (`manager_pin.verified`, non-fatal on error) — unlike
+// void-order whose success necessarily writes a void, this EF would otherwise
+// confirm a guessed PIN silently (new oracle).
 //
 // Headers:
 //   x-manager-pin: string (6 digits) — REQUIRED
 //   Authorization: Bearer <cashier JWT> — REQUIRED
 // Body: { required_permission?: string } (e.g. 'sales.discount'; empty body OK)
-// 200 → { verified_user_id, full_name, role_code }
+// 200 → { verified_user_id }
 
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { handleCors, jsonResponse } from '../_shared/cors.ts';
 import { rateLimitedResponse } from '../_shared/responses.ts';
 import { checkRateLimitDurable, getClientIp } from '../_shared/rate-limit.ts';
 import { verifyManagerPin, isManagerPinBlocked, recordManagerPinFailure, MANAGER_PIN_FAIL_WINDOW_SEC } from '../_shared/manager-pin.ts';
+import { getActingAuthUserId } from '../_shared/acting-user.ts';
 import { checkPermissionForRole } from '../_shared/permissions.ts';
+import { getAdminClient } from '../_shared/supabase-admin.ts';
 
 interface VerifyManagerPinPayload {
   required_permission?: string;
@@ -61,6 +66,13 @@ serve(async (req) => {
     return jsonResponse({ error: 'authorization_required' }, 401);
   }
 
+  // HS256-verify the cashier's PIN-JWT in-function (parity with void-order) —
+  // self-defending even if verify_jwt were ever disabled at deploy.
+  const actingAuthUserId = await getActingAuthUserId(req);
+  if (!actingAuthUserId) {
+    return jsonResponse({ error: 'not_authenticated' }, 401);
+  }
+
   // Body is optional — tolerate an empty/absent body.
   const body = await req.json().catch(() => ({})) as VerifyManagerPinPayload;
   const requiredPermission = typeof body.required_permission === 'string' && body.required_permission.length > 0
@@ -88,9 +100,25 @@ serve(async (req) => {
     if (!allowed) return jsonResponse({ error: 'permission_missing' }, 403);
   }
 
-  return jsonResponse({
-    verified_user_id: mgr.manager_profile_id,
-    full_name:        mgr.full_name,
-    role_code:        mgr.role_code,
-  });
+  // Audit the successful verification (non-fatal on error) — without this row a
+  // guessed PIN would be confirmed silently, unlike void-order whose success
+  // necessarily writes a void. supabase-js does not throw on DB errors — check
+  // the returned error explicitly.
+  try {
+    const admin = getAdminClient();
+    const { error: auditErr } = await admin.from('audit_logs').insert({
+      actor_id:    mgr.manager_profile_id,
+      action:      'manager_pin.verified',
+      entity_type: 'edge_function',
+      entity_id:   null,
+      metadata:    { ip, function: 'verify-manager-pin', required_permission: requiredPermission },
+    });
+    if (auditErr) console.warn('[verify-manager-pin] audit_logs insert failed', auditErr);
+  } catch (auditErr) {
+    console.warn('[verify-manager-pin] audit_logs insert failed', auditErr);
+  }
+
+  // Tightened response — full_name/role_code would be gratuitous PIN→identity
+  // disclosure; the client only needs the verified profile id.
+  return jsonResponse({ verified_user_id: mgr.manager_profile_id });
 });

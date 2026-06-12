@@ -9,7 +9,9 @@ import type { VerifyResult } from '@breakery/ui';
 import { setManagerPin } from '../managerPinHolder';
 
 export function useVerifyManagerPin() {
-  return async (pin: string): Promise<VerifyResult> => {
+  // PinVerificationModal calls verifyFn(pin, requiredPermission) — thread it so
+  // future call-sites can gate on other permissions (e.g. orders.void).
+  return async (pin: string, requiredPermission: string = 'sales.discount'): Promise<VerifyResult> => {
     try {
       const accessToken = await getAccessToken();
       const res = await fetch(`${supabaseUrl}/functions/v1/verify-manager-pin`, {
@@ -20,7 +22,7 @@ export function useVerifyManagerPin() {
           // S25 — manager PIN in header, never the body.
           'x-manager-pin': pin,
         },
-        body: JSON.stringify({ required_permission: 'sales.discount' }),
+        body: JSON.stringify({ required_permission: requiredPermission }),
       });
       const body = await res.json().catch(() => ({})) as { verified_user_id?: string };
       if (res.ok) {

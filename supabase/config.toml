@@ -382,6 +382,9 @@ verify_jwt = false
 [functions.process-payment]
 verify_jwt = true
 
+[functions.verify-manager-pin]
+verify_jwt = true
+
 [analytics]
 # Disabled on Windows: analytics container requires Docker TCP on localhost:2375
 # which is not available with Docker Desktop named-pipe context.
