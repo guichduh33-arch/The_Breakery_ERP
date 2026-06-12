@@ -135,8 +135,10 @@ export function parseCatalogWorkbook(buf: ArrayBuffer): {
       for (const col of def.columns) {
         const hIdx = headers.indexOf(col.key);
         const raw = hIdx === -1 ? null : cells[hIdx] ?? null;
+        const errCountBefore = errors.length;
         const v = coerce(def, col.key, col.type, raw, rowIdx, errors);
-        if (col.required && hIdx !== -1 && (v === null || v === '')) {
+        const coerceErrored = errors.length > errCountBefore;
+        if (col.required && hIdx !== -1 && !coerceErrored && (v === null || v === '')) {
           errors.push({ sheet: def.name, row: rowIdx, column: col.key, message: `Required value missing` });
         }
         row[col.key] = v;

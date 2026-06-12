@@ -145,4 +145,13 @@ describe('parseCatalogWorkbook', () => {
     expect(headerErr[0]!.column).toBe('name');
     expect(perRow).toHaveLength(0); // today: 3 noisy per-row errors
   });
+
+  it('emits a single error when a required numeric cell holds garbage (no double error)', () => {
+    // Ingredients.cost_price is required+number; "abc" must yield exactly 1 error.
+    const buf = makeWb({ Ingredients: [['ING-9', 'Sel', 'kg', 'abc', null, null, null, null, null, null, null]] });
+    const { errors } = parseCatalogWorkbook(buf);
+    const cellErrors = errors.filter((e) => e.sheet === 'Ingredients' && e.row === 2 && e.column === 'cost_price');
+    expect(cellErrors).toHaveLength(1);
+    expect(cellErrors[0]!.message).toContain('is not a number');
+  });
 });
