@@ -7,7 +7,7 @@
 // Tap an order → drawer (right pane) with details + Void / Refund buttons,
 // preserving the Session 10/13 flows underneath.
 
-import { useMemo, useState, type JSX } from 'react';
+import { useEffect, useMemo, useState, type JSX } from 'react';
 import { X, Receipt, CreditCard, Coins, QrCode } from 'lucide-react';
 import { Button, Currency, FullScreenModal, SectionLabel, cn } from '@breakery/ui';
 import { RefundReceiptModal } from '@breakery/ui';
@@ -71,6 +71,13 @@ function bucketStats(rows: OrderHistoryRow[]): {
 
 export function OrderHistoryPanel({ open, onClose }: OrderHistoryPanelProps): JSX.Element {
   const history = useOrderHistory();
+  // P1-3 : le panel est monté en permanence — sans refetch à l'ouverture, la
+  // liste et les KPI (même query, via bucketStats) restent figés au dernier
+  // mount (constaté live : vente tablette absente du shift history).
+  useEffect(() => {
+    if (open) void history.refetch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const detail = useOrderDetail(selectedId);
 

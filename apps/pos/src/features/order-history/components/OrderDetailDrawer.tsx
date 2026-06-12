@@ -19,6 +19,15 @@ export function OrderDetailDrawer({
 }: OrderDetailDrawerProps): JSX.Element {
   const isVoided = order.status === 'voided';
   const remainingRefundable = order.total - order.total_refunded;
+  // P1-3 : « Remaining » displayed in the totals section is the customer's
+  // outstanding balance DUE, not the refundable amount — a fully-paid order
+  // must show 0 (it used to show the gross total). Statuses meaning "fully
+  // paid" short-circuit to 0; otherwise total minus the sum of tenders.
+  const FULLY_PAID_STATUSES: readonly string[] = ['paid', 'completed'];
+  const paidSum = order.payments.reduce((s, p) => s + p.amount, 0);
+  const remainingDue = FULLY_PAID_STATUSES.includes(order.status)
+    ? 0
+    : Math.max(0, order.total - paidSum);
 
   return (
     <div
@@ -107,7 +116,7 @@ export function OrderDetailDrawer({
           )}
           <div className="flex justify-between pt-2 border-t border-border-subtle text-text-primary font-semibold">
             <span>Remaining</span>
-            <Currency amount={remainingRefundable} />
+            <Currency amount={remainingDue} />
           </div>
         </section>
       </div>
