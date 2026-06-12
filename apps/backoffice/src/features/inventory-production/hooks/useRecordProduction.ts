@@ -12,6 +12,7 @@ export type RecordProductionErrorCode =
   | 'waste_must_be_non_negative'
   | 'product_not_found'
   | 'section_not_found'
+  | 'section_required'
   | 'recipe_not_found'
   | 'insufficient_stock'
   | 'unit_conversion_failed'
@@ -81,7 +82,7 @@ export function useRecordProduction() {
       // Defense-in-depth: section is required by DB CHECK chk_stock_movements_section_required.
       // The UI enforces this via canSubmit, but guard here to prevent a cryptic 23514.
       if (args.sectionId === '') {
-        throw new RecordProductionError('section_not_found', 'section_required');
+        throw new RecordProductionError('section_required', 'Section is required');
       }
       const rpcArgs: {
         p_product_id:             string;

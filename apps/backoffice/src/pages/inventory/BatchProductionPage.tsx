@@ -122,6 +122,8 @@ export default function BatchProductionPage(): JSX.Element {
           setFormError('At least one item references a product without an active recipe.');
         } else if (err.code === 'items_must_be_non_empty_array') {
           setFormError('Add at least one recipe.');
+        } else if (err.code === 'unknown') {
+          setFormError(`Server error: ${err.message}`);
         } else {
           setFormError(`Error: ${err.code}`);
         }

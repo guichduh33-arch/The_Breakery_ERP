@@ -163,6 +163,10 @@ export default function ProductionForm(): JSX.Element {
           setFormError(`Insufficient stock: ${list}`);
         } else if (err.code === 'variance_reason_too_short') {
           setFormError('Yield variance reason must be at least 5 characters.');
+        } else if (err.code === 'section_required') {
+          setFormError('Section is required.');
+        } else if (err.code === 'unknown') {
+          setFormError(`Server error: ${err.message}`);
         } else {
           setFormError(`Error: ${err.code}`);
         }

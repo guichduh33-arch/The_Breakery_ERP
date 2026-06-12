@@ -60,9 +60,13 @@ export default function AlertsPage(): JSX.Element {
         />
         <KpiTile
           label="Status"
-          value={counts.total === 0 ? 'All clear' : 'Action needed'}
+          value={
+            lowStock.error !== null ? 'Unavailable'
+            : counts.total === 0    ? 'All clear'
+            :                         'Action needed'
+          }
           icon={ShoppingCart}
-          footer={lowStock.error !== null ? 'Failed to load' : undefined}
+          footer={lowStock.error !== null ? 'Failed to load — check console / retry' : undefined}
         />
       </section>
 
