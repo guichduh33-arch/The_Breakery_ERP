@@ -485,6 +485,39 @@ export type Database = {
           },
         ]
       }
+      counter_fire_idempotency_keys: {
+        Row: {
+          client_uuid: string
+          created_at: string
+          order_id: string
+        }
+        Insert: {
+          client_uuid: string
+          created_at?: string
+          order_id: string
+        }
+        Update: {
+          client_uuid?: string
+          created_at?: string
+          order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "counter_fire_idempotency_keys_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "counter_fire_idempotency_keys_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "view_b2b_invoices"
+            referencedColumns: ["invoice_id"]
+          },
+        ]
+      }
       customer_categories: {
         Row: {
           color: string | null
@@ -6008,6 +6041,17 @@ export type Database = {
       }
       findfuncs: { Args: { "": string }; Returns: string[] }
       finish: { Args: { exception_on_failure?: boolean }; Returns: string[] }
+      fire_counter_order_v1: {
+        Args: {
+          p_client_uuid: string
+          p_items: Json
+          p_order_id?: string
+          p_order_type?: Database["public"]["Enums"]["order_type"]
+          p_session_id: string
+          p_table_number?: string
+        }
+        Returns: Json
+      }
       format_type_string: { Args: { "": string }; Returns: string }
       get_audit_logs_v1: {
         Args: {
