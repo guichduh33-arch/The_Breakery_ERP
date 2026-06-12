@@ -101,11 +101,31 @@ export function parseCatalogWorkbook(buf: ArrayBuffer): {
     if (aoa.length === 0) continue; // empty sheet = no rows, fine
     const headers = (aoa[0] ?? []).map((h) => String(h ?? '').trim());
     const known = new Set(def.columns.map((c) => c.key));
+    const headerCounts = new Map<string, number>();
     headers.forEach((h) => {
-      if (h !== '' && !known.has(h)) {
+      if (h === '') return;
+      headerCounts.set(h, (headerCounts.get(h) ?? 0) + 1);
+      if (!known.has(h) && headerCounts.get(h) === 1) {
         errors.push({ sheet: def.name, row: 1, column: h, message: `Unknown column "${h}"` });
       }
     });
+    for (const [h, n] of headerCounts) {
+      if (n > 1) {
+        errors.push({ sheet: def.name, row: 1, column: h, message: `Duplicate column "${h}" (${n} occurrences) — only the first is read` });
+      }
+    }
+
+    const headerSet = new Set(headers.filter((h) => h !== ''));
+    const hasDataRows = aoa.slice(1).some(
+      (cells) => (cells ?? []).some((c) => c !== null && String(c).trim() !== ''),
+    );
+    if (hasDataRows) {
+      for (const col of def.columns) {
+        if (col.required && !headerSet.has(col.key)) {
+          errors.push({ sheet: def.name, row: 1, column: col.key, message: `Required column "${col.key}" is missing` });
+        }
+      }
+    }
 
     for (let i = 1; i < aoa.length; i++) {
       const cells = aoa[i] ?? [];
@@ -115,8 +135,10 @@ export function parseCatalogWorkbook(buf: ArrayBuffer): {
       for (const col of def.columns) {
         const hIdx = headers.indexOf(col.key);
         const raw = hIdx === -1 ? null : cells[hIdx] ?? null;
+        const errCountBefore = errors.length;
         const v = coerce(def, col.key, col.type, raw, rowIdx, errors);
-        if (col.required && (v === null || v === '')) {
+        const coerceErrored = errors.length > errCountBefore;
+        if (col.required && hIdx !== -1 && !coerceErrored && (v === null || v === '')) {
           errors.push({ sheet: def.name, row: rowIdx, column: col.key, message: `Required value missing` });
         }
         row[col.key] = v;
@@ -128,16 +150,21 @@ export function parseCatalogWorkbook(buf: ArrayBuffer): {
 
   // duplicate SKUs across Ingredients / Products / Variants
   const seen = new Map<string, string>();
-  const skuRows: Array<[string, SheetRow[]]> = [
-    ['Ingredients', payload.ingredients], ['Products', payload.products], ['Variants', payload.variants],
+  const skuSheets: Array<[string, PayloadKey]> = [
+    ['Ingredients', 'ingredients'], ['Products', 'products'], ['Variants', 'variants'],
   ];
-  for (const [sheet, rows] of skuRows) {
-    rows.forEach((row, idx) => {
+  for (const [sheet, key] of skuSheets) {
+    payload[key].forEach((row, idx) => {
       const sku = typeof row['sku'] === 'string' ? row['sku'] : null;
       if (sku === null) return;
       const prev = seen.get(sku);
       if (prev !== undefined) {
-        errors.push({ sheet, row: idx + 2, column: 'sku', message: `Duplicate SKU "${sku}" (already used in ${prev})` });
+        errors.push({
+          sheet,
+          row: rowMaps[key][idx] ?? idx + 2,
+          column: 'sku',
+          message: `Duplicate SKU "${sku}" (already used in ${prev})`,
+        });
       } else {
         seen.set(sku, sheet);
       }

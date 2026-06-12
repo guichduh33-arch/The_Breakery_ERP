@@ -88,4 +88,70 @@ describe('parseCatalogWorkbook', () => {
     expect(payload!.categories).toHaveLength(2);
     expect(rowMaps.categories).toEqual([2, 4]);
   });
+
+  it('flags a duplicated header column once, at row 1', () => {
+    // Build a Categories sheet whose header row contains "name" twice.
+    const wb = XLSX.utils.book_new();
+    for (const def of CATALOG_SHEETS) {
+      const headers = def.columns.map((c) => c.key);
+      if (def.name === 'Categories') headers.push('name'); // duplicate
+      const ws = XLSX.utils.aoa_to_sheet([headers, ...(def.name === 'Categories' ? [['Cat A', null, null, null]] : [])]);
+      XLSX.utils.book_append_sheet(wb, ws, def.name);
+    }
+    const { errors } = parseCatalogWorkbook(wbToBuffer(wb));
+    const dup = errors.filter((e) => e.sheet === 'Categories' && e.message.includes('Duplicate column'));
+    expect(dup).toHaveLength(1);
+    expect(dup[0]!.row).toBe(1);
+    expect(dup[0]!.column).toBe('name');
+  });
+
+  it('reports duplicate-SKU errors with real Excel rows (blank rows skipped)', () => {
+    // Ingredients: data on Excel rows 2 and 4 (row 3 blank). The duplicate is on row 4.
+    const buf = makeWb({
+      Ingredients: [
+        ['DUP-2', 'Farine', 'kg', 1000, null, null, null, null, null, null, null],
+        ['', '', '', '', '', '', '', '', '', '', ''],
+        ['DUP-2', 'Beurre', 'kg', 2000, null, null, null, null, null, null, null],
+      ],
+    });
+    const { errors } = parseCatalogWorkbook(buf);
+    const dup = errors.find((e) => e.message.includes('Duplicate SKU "DUP-2"'));
+    expect(dup).toBeDefined();
+    expect(dup!.row).toBe(4); // not 3 (= ordinal + 2)
+  });
+
+  it('emits one header-level error when a required column is missing, no per-row noise', () => {
+    // Categories sheet WITHOUT the required "name" column, 3 data rows.
+    const wb = XLSX.utils.book_new();
+    for (const def of CATALOG_SHEETS) {
+      if (def.name === 'Categories') {
+        const ws = XLSX.utils.aoa_to_sheet([
+          ['dispatch_station', 'sort_order'],
+          ['bakery', 10],
+          ['kitchen', 20],
+          ['none', 30],
+        ]);
+        XLSX.utils.book_append_sheet(wb, ws, def.name);
+      } else {
+        const ws = XLSX.utils.aoa_to_sheet([def.columns.map((c) => c.key)]);
+        XLSX.utils.book_append_sheet(wb, ws, def.name);
+      }
+    }
+    const { errors } = parseCatalogWorkbook(wbToBuffer(wb));
+    const headerErr = errors.filter((e) => e.sheet === 'Categories' && e.message.includes('Required column'));
+    const perRow = errors.filter((e) => e.sheet === 'Categories' && e.message === 'Required value missing');
+    expect(headerErr).toHaveLength(1);
+    expect(headerErr[0]!.row).toBe(1);
+    expect(headerErr[0]!.column).toBe('name');
+    expect(perRow).toHaveLength(0); // today: 3 noisy per-row errors
+  });
+
+  it('emits a single error when a required numeric cell holds garbage (no double error)', () => {
+    // Ingredients.cost_price is required+number; "abc" must yield exactly 1 error.
+    const buf = makeWb({ Ingredients: [['ING-9', 'Sel', 'kg', 'abc', null, null, null, null, null, null, null]] });
+    const { errors } = parseCatalogWorkbook(buf);
+    const cellErrors = errors.filter((e) => e.sheet === 'Ingredients' && e.row === 2 && e.column === 'cost_price');
+    expect(cellErrors).toHaveLength(1);
+    expect(cellErrors[0]!.message).toContain('is not a number');
+  });
 });

@@ -3,6 +3,7 @@
 // Calls onFile(arrayBuffer, filename) when the user picks or drops a .xlsx file.
 
 import { useRef, useState, type JSX, type DragEvent, type ChangeEvent } from 'react';
+import { toast } from 'sonner';
 import { cn } from '@breakery/ui';
 
 interface Props {
@@ -33,7 +34,9 @@ export function ImportDropzone({ onFile, disabled = false }: Props): JSX.Element
     if (!disabled) setIsDragOver(true);
   }
 
-  function handleDragLeave(): void {
+  function handleDragLeave(e: DragEvent<HTMLDivElement>): void {
+    // dragleave also fires when the cursor moves onto a child — ignore those.
+    if (e.relatedTarget !== null && e.currentTarget.contains(e.relatedTarget as Node)) return;
     setIsDragOver(false);
   }
 
@@ -42,9 +45,12 @@ export function ImportDropzone({ onFile, disabled = false }: Props): JSX.Element
     setIsDragOver(false);
     if (disabled) return;
     const file = e.dataTransfer.files[0];
-    if (file !== undefined && file.name.endsWith('.xlsx')) {
-      void processFile(file);
+    if (file === undefined) return;
+    if (!file.name.toLowerCase().endsWith('.xlsx')) {
+      toast.error('Only .xlsx files are supported');
+      return;
     }
+    void processFile(file);
   }
 
   return (
@@ -77,6 +83,7 @@ export function ImportDropzone({ onFile, disabled = false }: Props): JSX.Element
         className="sr-only"
         onChange={handleChange}
         disabled={disabled}
+        tabIndex={-1}
         aria-hidden
       />
       <svg
