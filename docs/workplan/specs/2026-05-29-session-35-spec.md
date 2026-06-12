@@ -6,7 +6,7 @@
 > **Effort estimé** : ~10-15 jours wall-time (L) — 5 findings *Major* dont 2 M et 1 L.
 > **Status** : **spec-only** (plan détaillé à rédiger via `superpowers:writing-plans` au démarrage de S35, après ratification du périmètre).
 > **Source** : [`outputs/audit-pos-2026-05-28.md`](../../../outputs/audit-pos-2026-05-28.md) — findings F-003, F-005, F-007, F-009 (+ F-015 résolu), F-014.
-> **Predecessor** : [`./2026-05-29-session-34-spec.md`](./2026-05-29-session-34-spec.md).
+> **Predecessor** : [`./archive/2026-05-29-session-34-spec.md`](./archive/2026-05-29-session-34-spec.md) (draft « POS Critical Fixes » superseded — archivé 2026-06-12).
 
 ---
 

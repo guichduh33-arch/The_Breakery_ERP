@@ -1,7 +1,8 @@
 # 00 — Modules Index
 
-> **Last verified**: 2026-05-03
+> **Last verified**: 2026-06-12
 > **Scope**: Catalogue exhaustif des 21 modules métier d'AppGrav V2 et leurs dépendances inter-modules.
+> **Note V3** : ce fichier est le catalogue **V2 historique** (conservé pour la carte des dépendances) ; l'index V3 vivant, ce sont les 19 modules `01-…19-*.md` (+ annexe `02b-orders.md`) de ce même dossier — en cas de divergence, les fichiers numérotés font foi.
 
 ## Vue d'ensemble
 
