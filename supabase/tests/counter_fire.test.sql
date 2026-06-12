@@ -3,7 +3,7 @@
 -- Exécuter via MCP execute_sql (BEGIN..ROLLBACK). Pattern jwt-claims S37 (order_discount_gate) :
 -- caller = un VRAI user_profiles avec pos.sale.create, auth.uid() simulé via request.jwt.claims.
 BEGIN;
-SELECT plan(8);
+SELECT plan(10);
 
 -- Fixture : caller authentifié + session POS open + produit seed (BEV-AMER canonique, cf. Stock Audit _020).
 DO $$
@@ -104,6 +104,23 @@ $$, 'P0002', NULL, 'T6: unknown product raises P0002');
 SELECT is(
   has_function_privilege('anon', 'public.fire_counter_order_v1(uuid,uuid,jsonb,uuid,text,order_type)', 'EXECUTE'),
   false, 'T7: anon revoked');
+
+-- T8 : clamp money-path (corrective _013) — discount > brut est clampé au brut,
+-- line_total ne devient jamais négatif (pay_existing_order_v7 encaisse SUM(line_total)).
+SELECT lives_ok($$
+  SELECT fire_counter_order_v1(
+    '44444444-4444-4444-4444-444444444444'::uuid,
+    (SELECT session_id FROM _fx),
+    jsonb_build_array(jsonb_build_object(
+      'product_id', (SELECT product_id FROM _fx), 'quantity', 1, 'unit_price', 10000,
+      'modifiers', '[]'::jsonb, 'discount_amount', 999999)),
+    NULL, 'T-04')
+$$, 'T8: fire with oversized line discount succeeds');
+SELECT is(
+  (SELECT oi.line_total::int FROM order_items oi
+    JOIN counter_fire_idempotency_keys k ON k.order_id = oi.order_id
+    WHERE k.client_uuid = '44444444-4444-4444-4444-444444444444'),
+  0, 'T8b: oversized discount clamped to gross, line_total floored at 0');
 
 SELECT * FROM finish();
 ROLLBACK;
