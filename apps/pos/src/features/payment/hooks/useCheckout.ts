@@ -1,8 +1,9 @@
 // apps/pos/src/features/payment/hooks/useCheckout.ts
+import { useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Cart, PaymentInput, PaymentResult } from '@breakery/domain';
 import { buildOrderPayload, TIERS, tierFromLifetime } from '@breakery/domain';
-import type { Database } from '@breakery/supabase';
+import type { Database, Json } from '@breakery/supabase';
 
 type PayExistingOrderArgs = Database['public']['Functions']['pay_existing_order_v7']['Args'];
 
@@ -43,6 +44,16 @@ export function useCheckout() {
   const idempotencyKey = usePaymentStore((s) => s.idempotencyKey);
   const queryClient = useQueryClient();
 
+  // S43 P0-3 — append idempotency. This mutation has NO automatic retry
+  // (React-Query mutation default `retry: 0`), but usePaymentFlowLogic's
+  // handleRetry re-runs mutationFn on retryable failures: an inline
+  // crypto.randomUUID() would mint a NEW p_client_uuid on every retry and
+  // duplicate the appended lines server-side. We key the append uuid to the
+  // payment attempt's idempotencyKey (regenerated on open/close/reset — same
+  // lifecycle as the EF x-idempotency-key) so a retry of the SAME attempt
+  // replays the SAME uuid → RPC flavor-2 idempotent replay.
+  const appendUuidRef = useRef<{ attempt: string; uuid: string } | null>(null);
+
   return useMutation({
     mutationFn: async (input: CheckoutInput): Promise<PaymentResult> => {
       if (!sessionId) throw new Error('no_open_shift');
@@ -66,6 +77,39 @@ export function useCheckout() {
       }));
 
       if (pickedUpOrderId) {
+        // S43 P0-3 — fired COUNTER order: items added to the cart after the
+        // last fire exist only locally; pay_existing_order_v7 pays the
+        // PERSISTED order_items, not the local cart. Append them to the DB
+        // order first, or the customer pays a partial total.
+        //
+        // Counter-only guard: a fired counter order always has non-empty
+        // printedItemIds (the fire seals every persisted line locked+printed);
+        // a tablet pickup has ALL its items in DB already and printedItemIds
+        // empty — appending there would duplicate the whole cart.
+        const printedIds = cartState.printedItemIds;
+        const isCounterFired = printedIds.length > 0;
+        const unsynced = input.cart.items.filter(
+          (i) => !i.is_cancelled && !printedIds.includes(i.id),
+        );
+        if (isCounterFired && unsynced.length > 0) {
+          if (appendUuidRef.current?.attempt !== idempotencyKey) {
+            appendUuidRef.current = { attempt: idempotencyKey, uuid: crypto.randomUUID() };
+          }
+          const { error: appendErr } = await supabase.rpc('fire_counter_order_v1', {
+            p_client_uuid: appendUuidRef.current.uuid,
+            p_session_id: sessionId,
+            p_items: unsynced.map((i) => ({
+              product_id: i.product_id,
+              quantity: i.quantity,
+              unit_price: i.unit_price,
+              modifiers: i.modifiers,
+              ...(i.discount ? { discount_amount: i.discount.amount } : {}),
+            })) as unknown as Json,
+            p_order_id: pickedUpOrderId,
+          });
+          if (appendErr) throw Object.assign(new Error(appendErr.message), { details: appendErr });
+        }
+
         // Session 11 — tablet pay_existing_order v5 supports multi-tender. We forward
         // either p_payment (single) or p_payments (array). Server raises if both are
         // supplied, so we choose exactly one based on the input shape.

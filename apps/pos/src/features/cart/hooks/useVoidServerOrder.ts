@@ -1,13 +1,12 @@
 // apps/pos/src/features/cart/hooks/useVoidServerOrder.ts
 //
-// Session 37 B4 — server-side void for tablet pickup orders that have been
-// sent to kitchen. A tablet pickup cart (pickedUpOrderId !== null) has a server
-// orders row created by create_tablet_order_v2; if the cashier sends items and
-// then voids before checkout, the server row must be voided too.
+// Session 37 B4 — server-side void for carts backed by a server orders row.
 //
-// Counter orders (no pickedUpOrderId) do NOT have a server row before checkout —
-// useFireToStations is print-only (no INSERT into orders). Client-only void is
-// correct for those.
+// S43 P0-3 update: useFireToStations now PERSISTS counter fires via
+// fire_counter_order_v1 (create/append) and sets pickedUpOrderId — so a FIRED
+// counter order has a server row and routes through the void-order EF exactly
+// like a tablet pickup (create_tablet_order_v2). Only a never-fired cart
+// (pickedUpOrderId === null, nothing persisted) is voided client-side.
 //
 // This hook wraps the same void-order EF contract used by the order-history
 // panel (PIN in x-manager-pin header, S34 pattern).
@@ -17,10 +16,11 @@ import { useCartStore } from '@/stores/cartStore';
 
 /**
  * Returns a function that:
- *  - If the cart has a server-side order (pickedUpOrderId) → calls the
- *    void-order EF (PIN required) then resets the cart on success.
- *  - If the cart is a plain counter cart (no pickedUpOrderId) → does a
- *    client-only void (same as before B4).
+ *  - If the cart has a server-side order (pickedUpOrderId — tablet pickup or
+ *    fired counter order) → calls the void-order EF (PIN required) then
+ *    resets the cart on success.
+ *  - If the cart was never fired (no pickedUpOrderId) → does a client-only
+ *    void (same as before B4).
  *
  * The returned fn is async; callers should await it.
  */
@@ -32,7 +32,7 @@ export function useVoidServerOrder() {
     const { pickedUpOrderId } = useCartStore.getState();
 
     if (pickedUpOrderId) {
-      // Tablet pickup: server row exists → void it first.
+      // Server row exists (tablet pickup OR fired counter order) → void it first.
       await voidOrderMutation.mutateAsync({
         orderId: pickedUpOrderId,
         reason: 'Voided by manager at POS',
@@ -42,7 +42,7 @@ export function useVoidServerOrder() {
       // propagate to the caller otherwise).
       voidLocal();
     } else {
-      // Counter cart: no server row before checkout → client-only void.
+      // Never-fired cart: nothing persisted yet → client-only void.
       voidLocal();
     }
   };

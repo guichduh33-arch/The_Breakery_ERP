@@ -3,20 +3,18 @@
 //
 // Session 37 — B4: void routing after kitchen send.
 //
-// Finding POS-06 investigation: for POS COUNTER orders, "send to kitchen" is
-// print-ticket-only (useFireToStations calls markLocked + markPrinted but never
-// creates a server orders row). The orders row is only created at checkout.
-// Therefore there is NO server order to void for a plain counter cart.
-//
-// For TABLET PICKUP orders, cartStore.pickedUpOrderId holds the server-side
-// order UUID (created by create_tablet_order_v2). Those DO have a server row
-// and should be voided via the void-order EF.
+// S43 P0-3 update: "send to kitchen" now PERSISTS counter orders via
+// fire_counter_order_v1 and sets cartStore.pickedUpOrderId — a fired counter
+// order therefore has a server orders row, exactly like a tablet pickup
+// (create_tablet_order_v2). Void routing keys solely on pickedUpOrderId.
 //
 // Tests:
-//   (a) Cart with locked items AND a pickedUpOrderId (tablet pickup after kitchen
-//       send) → the server void hook is called with the order id before local reset.
-//   (b) Cart with locked items but NO pickedUpOrderId (counter cart after kitchen
-//       send) → only the local cartStore.voidOrder() runs; no server call.
+//   (a) Cart with locked items AND a pickedUpOrderId (tablet pickup or fired
+//       counter order) → the server void hook is called with the order id
+//       before local reset.
+//   (b) Cart with locked items but NO pickedUpOrderId (nothing persisted —
+//       e.g. the fire RPC never succeeded) → only the local
+//       cartStore.voidOrder() runs; no server call.
 //
 // PinVerificationModal is mocked so we can directly trigger onVerified without
 // needing to simulate NumpadPin digit-by-digit input. This test is about void

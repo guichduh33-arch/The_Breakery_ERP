@@ -69,6 +69,7 @@ interface BottomActionBarProps {
 export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps): JSX.Element {
   const cart = useCartStore((s) => s.cart);
   const lockedItemIds = useCartStore((s) => s.lockedItemIds);
+  const pickedUpOrderId = useCartStore((s) => s.pickedUpOrderId);
   const attachedCustomer = useCartStore((s) => s.attachedCustomer);
   const appliedPromotions = useCartStore((s) => s.appliedPromotions);
   const setRedeemPoints = useCartStore((s) => s.setRedeemPoints);
@@ -193,11 +194,19 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
             role="menu"
             className="absolute bottom-full left-0 mb-2 w-56 p-1 rounded-md bg-bg-elevated border border-border-subtle shadow-lg z-50"
           >
-            {/* Hold reuses the existing self-contained component (its own logic). */}
-            <div role="menuitem">
+            {/* Hold reuses the existing self-contained component (its own logic).
+                S43 P0-3: a fired order (pickedUpOrderId set) has a live DB row —
+                holding the local cart would orphan it. Pay or void instead. */}
+            <div
+              role="menuitem"
+              {...(pickedUpOrderId !== null
+                ? { title: 'Order already sent to kitchen — pay or void it' }
+                : {})}
+            >
               <HoldOrderButton
                 variant="ghost"
                 className={cn(MENU_ITEM, 'justify-start')}
+                disabled={pickedUpOrderId !== null}
               />
             </div>
             <button
