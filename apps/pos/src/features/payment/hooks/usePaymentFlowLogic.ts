@@ -35,7 +35,7 @@ export interface PaymentSuccessState {
 
 export function usePaymentFlowLogic() {
   const isOpen = usePaymentStore((s) => s.isOpen);
-  const close = usePaymentStore((s) => s.close);
+  const closeStore = usePaymentStore((s) => s.close);
   const reset = usePaymentStore((s) => s.reset);
   const selectedMethod = usePaymentStore((s) => s.selectedMethod);
   const selectMethod = usePaymentStore((s) => s.selectMethod);
@@ -93,6 +93,13 @@ export function usePaymentFlowLogic() {
   const [lastError, setLastError] = useState<RetryClassification | null>(null);
   const [lastTendersShipped, setLastTendersShipped] = useState<Tender[] | null>(null);
   const [splitOpen, setSplitOpen] = useState(false);
+
+  function close(): void {
+    // S43 P0-1b — un fatal corrigé hors modal (ex: discount ré-autorisé au PIN) ne doit pas
+    // réapparaître en bannière périmée au reopen. retryable/already_paid sont préservés.
+    setLastError((prev) => (prev?.kind === 'fatal' ? null : prev));
+    closeStore();
+  }
 
   function handleAddTender(): void {
     if (!selectedMethod || !draftValid) return;

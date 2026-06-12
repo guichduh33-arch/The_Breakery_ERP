@@ -1,6 +1,6 @@
 // apps/pos/src/features/payment/components/RetryBanner.tsx
 // Iso-behaviour extraction of PaymentTerminal's idempotency banners.
-// Renders the retryable banner OR the already-paid banner from `lastError`.
+// Renders the retryable, already-paid OR fatal (S43 P0-1b) banner from `lastError`.
 // data-testids preserved byte-for-byte (consumed by PaymentTerminal.idempotency.test).
 
 import { AlertCircle, CheckCircle2, RefreshCw } from 'lucide-react';
