@@ -10,7 +10,7 @@ type RpcFn = (
 ) => Promise<{ data: unknown; error: { message: string } | null }>;
 
 function rpc(): RpcFn {
-  return supabase.rpc as unknown as RpcFn;
+  return supabase.rpc.bind(supabase) as unknown as RpcFn;
 }
 
 export function useCancelPrintJob() {

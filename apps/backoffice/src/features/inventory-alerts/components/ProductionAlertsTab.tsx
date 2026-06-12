@@ -29,7 +29,7 @@ export function ProductionAlertsTab() {
     queryKey: ['production-suggestions'] as const,
     staleTime: 60_000,
     queryFn: async () => {
-      const rpc = supabase.rpc as unknown as RpcFn;
+      const rpc = supabase.rpc.bind(supabase) as unknown as RpcFn;
       const { data, error } = await rpc('get_production_suggestions_v1', {});
       if (error !== null) {
         // RPC may not exist yet (Phase 2.A not merged) — treat as empty.

@@ -45,7 +45,7 @@ type RpcFn = (
 ) => Promise<{ data: MovementRow[] | null; error: { message: string } | null }>;
 
 function rpc(): RpcFn {
-  return supabase.rpc as unknown as RpcFn;
+  return supabase.rpc.bind(supabase) as unknown as RpcFn;
 }
 
 export const STOCK_MOVEMENTS_FEED_KEY = ['stock-movements-feed'] as const;
