@@ -269,7 +269,9 @@ export default function ProductsImportExportPage(): JSX.Element {
                 >
                   {importMutation.isPending
                     ? 'Importing…'
-                    : `Import ${importTotal > 0 ? importTotal + ' items' : 'catalog'}`}
+                    : importTotal > 0
+                      ? `Import ${importTotal} item${importTotal !== 1 ? 's' : ''}`
+                      : 'Import catalog'}
                 </Button>
                 <Button variant="secondary" onClick={handleReset}>
                   Cancel

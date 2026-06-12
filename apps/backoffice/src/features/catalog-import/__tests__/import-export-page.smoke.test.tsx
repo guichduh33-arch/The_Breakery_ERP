@@ -29,6 +29,7 @@ const {
   ERRORS_REPORT,
   MIXED_SUMMARY_REPORT,
   REPLACE_ONLY_REPORT,
+  SINGLE_ITEM_REPORT,
   EMPTY_ROWMAPS,
 } = vi.hoisted(() => {
     const importMutateAsync = vi.fn();
@@ -107,6 +108,21 @@ const {
       idempotent_replay: false,
     };
 
+    // P8 pluralization: exactly one item (1 create) → singular "Import 1 item".
+    const SINGLE_ITEM_REPORT = {
+      valid: true,
+      errors: [],
+      summary: {
+        categories:  { create: 0, update: 0 },
+        ingredients: { create: 0, update: 0 },
+        products:    { create: 1, update: 0 },
+        units:       { replace_products: 5 },
+        variants:    { create: 0, update: 0 },
+        recipes:     { products_replaced: 3 },
+      },
+      idempotent_replay: false,
+    };
+
     return {
       importMutateAsync,
       mockImportState,
@@ -115,6 +131,7 @@ const {
       ERRORS_REPORT,
       MIXED_SUMMARY_REPORT,
       REPLACE_ONLY_REPORT,
+      SINGLE_ITEM_REPORT,
       EMPTY_ROWMAPS,
     };
   });
@@ -360,5 +377,15 @@ describe('ProductsImportExportPage [S41 smoke]', () => {
       expect(screen.getByTestId('confirm-import')).toBeInTheDocument();
     });
     expect(screen.getByTestId('confirm-import')).toHaveTextContent('Import catalog');
+  });
+
+  it('P8c: exactly one item → singular "Import 1 item"', async () => {
+    importMutateAsync.mockResolvedValueOnce(SINGLE_ITEM_REPORT);
+    renderPage();
+    await triggerUpload();
+    await waitFor(() => {
+      expect(screen.getByTestId('confirm-import')).toBeInTheDocument();
+    });
+    expect(screen.getByTestId('confirm-import')).toHaveTextContent(/^Import 1 item$/);
   });
 });
