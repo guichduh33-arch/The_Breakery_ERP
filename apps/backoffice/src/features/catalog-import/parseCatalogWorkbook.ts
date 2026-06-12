@@ -136,16 +136,21 @@ export function parseCatalogWorkbook(buf: ArrayBuffer): {
 
   // duplicate SKUs across Ingredients / Products / Variants
   const seen = new Map<string, string>();
-  const skuRows: Array<[string, SheetRow[]]> = [
-    ['Ingredients', payload.ingredients], ['Products', payload.products], ['Variants', payload.variants],
+  const skuSheets: Array<[string, PayloadKey]> = [
+    ['Ingredients', 'ingredients'], ['Products', 'products'], ['Variants', 'variants'],
   ];
-  for (const [sheet, rows] of skuRows) {
-    rows.forEach((row, idx) => {
+  for (const [sheet, key] of skuSheets) {
+    payload[key].forEach((row, idx) => {
       const sku = typeof row['sku'] === 'string' ? row['sku'] : null;
       if (sku === null) return;
       const prev = seen.get(sku);
       if (prev !== undefined) {
-        errors.push({ sheet, row: idx + 2, column: 'sku', message: `Duplicate SKU "${sku}" (already used in ${prev})` });
+        errors.push({
+          sheet,
+          row: rowMaps[key][idx] ?? idx + 2,
+          column: 'sku',
+          message: `Duplicate SKU "${sku}" (already used in ${prev})`,
+        });
       } else {
         seen.set(sku, sheet);
       }

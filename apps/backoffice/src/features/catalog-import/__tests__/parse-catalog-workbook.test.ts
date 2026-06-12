@@ -104,4 +104,19 @@ describe('parseCatalogWorkbook', () => {
     expect(dup[0]!.row).toBe(1);
     expect(dup[0]!.column).toBe('name');
   });
+
+  it('reports duplicate-SKU errors with real Excel rows (blank rows skipped)', () => {
+    // Ingredients: data on Excel rows 2 and 4 (row 3 blank). The duplicate is on row 4.
+    const buf = makeWb({
+      Ingredients: [
+        ['DUP-2', 'Farine', 'kg', 1000, null, null, null, null, null, null, null],
+        ['', '', '', '', '', '', '', '', '', '', ''],
+        ['DUP-2', 'Beurre', 'kg', 2000, null, null, null, null, null, null, null],
+      ],
+    });
+    const { errors } = parseCatalogWorkbook(buf);
+    const dup = errors.find((e) => e.message.includes('Duplicate SKU "DUP-2"'));
+    expect(dup).toBeDefined();
+    expect(dup!.row).toBe(4); // not 3 (= ordinal + 2)
+  });
 });
