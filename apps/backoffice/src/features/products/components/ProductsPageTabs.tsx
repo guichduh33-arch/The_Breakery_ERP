@@ -18,13 +18,12 @@ export function ProductsPageTabs(): JSX.Element {
   ];
   return (
     <div className="border-b border-border-subtle">
-      <nav role="tablist" aria-label="Products sections" className="flex flex-wrap gap-x-6">
+      <nav aria-label="Products sections" className="flex flex-wrap gap-x-6">
         {tabs.map((t) => (
           <NavLink
             key={t.to}
             to={t.to}
             end={t.end}
-            role="tab"
             className={({ isActive }) =>
               cn(
                 'relative -mb-px py-3 text-xs font-semibold uppercase tracking-widest transition-colors duration-fast',
