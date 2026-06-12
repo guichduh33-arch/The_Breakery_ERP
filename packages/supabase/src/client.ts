@@ -34,6 +34,10 @@ export interface BreakerySupabaseConfig {
  */
 export function setSupabaseAccessToken(token: string | null): void {
   _accessToken = token;
+  // P0-2 (audit 2026-06-12) : le realtime roule en WebSocket, pas via le fetch
+  // wrapper — sans setAuth, les subscriptions postgres_changes s'authentifient
+  // en anon (révoqué S20) et ne reçoivent aucun événement.
+  void _client?.realtime.setAuth(token);
 }
 
 /**
@@ -57,6 +61,9 @@ export function getSupabaseAccessToken(): string | null {
  */
 export function setSupabaseKioskAccessToken(token: string | null): void {
   _accessToken = token;
+  // P0-2 : même propagation realtime que setSupabaseAccessToken — les écrans
+  // kiosk (KDS/Display/Tablet) dépendent aussi de postgres_changes.
+  void _client?.realtime.setAuth(token);
 }
 
 /**
@@ -94,6 +101,9 @@ export function getSupabaseClient(config?: BreakerySupabaseConfig): SupabaseClie
       },
     },
   });
+  // Reload flow : authStore réinjecte le token persisté AVANT le premier accès
+  // au client — ré-applique-le au RealtimeClient fraîchement créé.
+  if (_accessToken) void _client.realtime.setAuth(_accessToken);
   return _client;
 }
 
