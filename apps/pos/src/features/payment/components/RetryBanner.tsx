@@ -76,5 +76,27 @@ export function RetryBanner({
     );
   }
 
+  // S43 P0-1b — fatal errors used to surface only as a 4 s toast, easy to miss.
+  // Render a persistent banner (no Retry — fatal means "fix the cart, don't
+  // replay the same key"). It clears on the next checkout attempt
+  // (dispatchCheckout resets lastError) — same lifecycle as the other banners.
+  if (lastError?.kind === 'fatal') {
+    return (
+      <div
+        role="alert"
+        data-testid="payment-fatal-banner"
+        className="mb-4 rounded-md border border-danger/40 bg-danger-soft p-3 text-sm"
+      >
+        <div className="flex items-start gap-2">
+          <AlertCircle className="h-4 w-4 mt-0.5 text-danger shrink-0" aria-hidden />
+          <div className="flex-1 min-w-0">
+            <div className="font-semibold text-danger">Payment failed</div>
+            <p className="text-text-secondary mt-1">{lastError.userMessage}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return null;
 }
