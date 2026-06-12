@@ -6,7 +6,7 @@ import { useMemo, useState, type JSX } from 'react';
 import { Button, Currency, Numpad, FullScreenModal } from '@breakery/ui';
 import { toast } from 'sonner';
 import { useCloseShift } from '../hooks/useCloseShift';
-import { VarianceWarningBadge } from './VarianceWarningBadge';
+import { VarianceWarningBadge, shouldShowWarning } from './VarianceWarningBadge';
 
 export interface CloseShiftModalProps {
   open:               boolean;
@@ -34,6 +34,12 @@ export function CloseShiftModal({
 
   const counted = Number(amountStr || '0');
   const variance = useMemo(() => counted - expectedCash, [counted, expectedCash]);
+
+  // P1-2 (S43): above-threshold variance requires an explanatory note before
+  // the shift can be closed. Same predicate as the VarianceWarningBadge so the
+  // note requirement kicks in exactly when the badge shows.
+  const overThreshold = shouldShowWarning(variance, expectedCash, thresholdAbs, thresholdPct);
+  const noteRequired = amountStr !== '' && overThreshold && notes.trim() === '';
 
   async function handleSubmit(): Promise<void> {
     if (amountStr === '') {
@@ -108,7 +114,9 @@ export function CloseShiftModal({
 
         <section className="space-y-2">
           <label htmlFor="close_notes" className="text-xs uppercase tracking-wide text-text-secondary">
-            Notes (optional — variance reason, manager override)
+            Notes {overThreshold
+              ? '(required — variance above threshold)'
+              : '(optional — variance reason, manager override)'}
           </label>
           <textarea
             id="close_notes"
@@ -118,6 +126,11 @@ export function CloseShiftModal({
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Add notes..."
           />
+          {noteRequired && (
+            <p className="text-xs text-danger" role="alert">
+              Variance above threshold — a note explaining the difference is required.
+            </p>
+          )}
         </section>
 
         <div className="grid grid-cols-2 gap-3">
@@ -127,7 +140,7 @@ export function CloseShiftModal({
           <Button
             variant="gold"
             size="lg"
-            disabled={closeMut.isPending || amountStr === ''}
+            disabled={closeMut.isPending || amountStr === '' || noteRequired}
             onClick={() => { void handleSubmit(); }}
           >
             {closeMut.isPending ? 'Closing…' : 'Close Shift'}
