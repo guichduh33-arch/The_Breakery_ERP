@@ -204,6 +204,50 @@ describe('useFireToStations persists before printing (P0-3)', () => {
     expect(uuid3).not.toBe(uuid1);
   });
 
+  it('locked-but-unprinted lines (checkout append) are excluded from the RPC payload', async () => {
+    // l2 was appended to the DB order by a failed checkout attempt (useCheckout
+    // markLocked's it on append success) — a manual fire must NOT re-send it
+    // (duplicate DB line), but must still seal + print everything unprinted.
+    seedCart({ pickedUpOrderId: 'order-db-1' });
+    useCartStore.setState({ lockedItemIds: ['l2'] });
+
+    const { useFireToStations } = await import('../hooks/useFireToStations');
+    const { result } = renderHook(() => useFireToStations(), { wrapper });
+
+    await act(async () => {
+      await result.current.mutation.mutateAsync(undefined);
+    });
+
+    expect(rpcMock).toHaveBeenCalledTimes(1);
+    const args = rpcMock.mock.calls[0]![1] as Record<string, unknown>;
+    expect(args.p_items).toEqual([
+      { product_id: 'p-barista', quantity: 1, unit_price: 30_000, modifiers: [] },
+    ]);
+
+    // Both lines still end up sealed + the barista ticket printed.
+    expect(useCartStore.getState().printedItemIds).toEqual(expect.arrayContaining(['l1', 'l2']));
+    expect(printStationTicketMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('every unprinted line already locked (e.g. pickup cart) → RPC skipped, print still happens', async () => {
+    // Pre-follow-up this fired an append against the server order — a
+    // guaranteed P0002 on a tablet pickup (created_via != 'pos').
+    seedCart({ pickedUpOrderId: 'order-db-1' });
+    useCartStore.setState({ lockedItemIds: ['l1', 'l2'] });
+    printStationTicketMock.mockResolvedValue({ success: true });
+
+    const { useFireToStations } = await import('../hooks/useFireToStations');
+    const { result } = renderHook(() => useFireToStations(), { wrapper });
+
+    await act(async () => {
+      await result.current.mutation.mutateAsync(undefined);
+    });
+
+    expect(rpcMock).not.toHaveBeenCalled();
+    expect(printStationTicketMock).toHaveBeenCalledTimes(1);
+    expect(useCartStore.getState().printedItemIds).toEqual(expect.arrayContaining(['l1', 'l2']));
+  });
+
   it('printOnly (post-payment auto-fire): RPC is NOT called, items still seal and print', async () => {
     // Post-payment, the order already exists in DB (created by v11 / paid via
     // pay_existing_order_v7) — persisting here would mint an orphan order

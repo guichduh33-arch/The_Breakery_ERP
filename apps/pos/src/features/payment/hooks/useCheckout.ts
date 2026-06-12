@@ -86,10 +86,19 @@ export function useCheckout() {
         // printedItemIds (the fire seals every persisted line locked+printed);
         // a tablet pickup has ALL its items in DB already and printedItemIds
         // empty — appending there would duplicate the whole cart.
+        //
+        // Locked lines are excluded too: a line locked-but-unprinted was
+        // already appended by a previous checkout attempt (markLocked on
+        // append success below) — re-sending it would duplicate the DB line
+        // even across payment attempts (close/reopen regenerates the
+        // idempotencyKey → new p_client_uuid, so the uuid replay alone
+        // cannot protect us there).
         const printedIds = cartState.printedItemIds;
         const isCounterFired = printedIds.length > 0;
-        const unsynced = input.cart.items.filter(
-          (i) => !i.is_cancelled && !printedIds.includes(i.id),
+        const unsynced = cartState.cart.items.filter(
+          (i) => !i.is_cancelled
+            && !printedIds.includes(i.id)
+            && !cartState.lockedItemIds.includes(i.id),
         );
         if (isCounterFired && unsynced.length > 0) {
           if (appendUuidRef.current?.attempt !== idempotencyKey) {
@@ -108,6 +117,12 @@ export function useCheckout() {
             p_order_id: pickedUpOrderId,
           });
           if (appendErr) throw Object.assign(new Error(appendErr.message), { details: appendErr });
+
+          // The DB now owns these lines: lock them so a reopen/retry/manual
+          // fire can't re-append or edit them. NOT markPrinted — the post-pay
+          // printOnly auto-fire computes from unprintedItems() and must still
+          // print their prep tickets.
+          useCartStore.getState().markLocked(unsynced.map((i) => i.id));
         }
 
         // Session 11 — tablet pay_existing_order v5 supports multi-tender. We forward

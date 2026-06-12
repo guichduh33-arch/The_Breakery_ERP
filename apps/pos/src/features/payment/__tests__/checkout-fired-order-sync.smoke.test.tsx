@@ -136,6 +136,12 @@ describe('useCheckout — fired counter order syncs unfired items before paying 
 
     const payArgs = rpcMock.mock.calls[1]![1] as Record<string, unknown>;
     expect(payArgs.p_order_id).toBe('order-db-1');
+
+    // Append success seals l2 LOCKED (the DB owns it — no re-append/edit) but
+    // NOT printed: the post-pay printOnly auto-fire computes from
+    // unprintedItems() and must still print l2's prep ticket.
+    expect(useCartStore.getState().lockedItemIds).toContain('l2');
+    expect(useCartStore.getState().printedItemIds).not.toContain('l2');
   });
 
   it('pays directly (no append) when every item was already fired', async () => {
@@ -156,7 +162,47 @@ describe('useCheckout — fired counter order syncs unfired items before paying 
     expect(rpcMock.mock.calls.map((c) => c[0])).toEqual(['pay_existing_order_v7']);
   });
 
-  it('manual retry after a pay failure replays the SAME append p_client_uuid (no duplicate lines)', async () => {
+  it('retry after an append FAILURE replays the SAME p_client_uuid (nothing was locked)', async () => {
+    rpcMock.mockImplementation((fn: unknown) =>
+      Promise.resolve(
+        fn === 'fire_counter_order_v1' ? { data: null, error: { message: 'append_boom' } } : PAY_OK,
+      ),
+    );
+
+    const { useCheckout } = await import('../hooks/useCheckout');
+    const { result } = renderHook(() => useCheckout(), { wrapper });
+
+    await act(async () => {
+      await expect(
+        result.current.mutateAsync({
+          cart: useCartStore.getState().cart,
+          payment: { method: 'cash', amount: 60_000 },
+        }),
+      ).rejects.toThrow('append_boom');
+    });
+
+    // Append never succeeded → l2 was NOT locked, so the retry re-appends…
+    expect(useCartStore.getState().lockedItemIds).not.toContain('l2');
+
+    rpcMock.mockImplementation((fn: unknown) =>
+      Promise.resolve(fn === 'fire_counter_order_v1' ? FIRE_OK : PAY_OK),
+    );
+    await act(async () => {
+      await result.current.mutateAsync({
+        cart: useCartStore.getState().cart,
+        payment: { method: 'cash', amount: 60_000 },
+      });
+    });
+
+    // …with the SAME uuid (RPC flavor-2 idempotent replay, no duplicate).
+    const fireCalls = rpcMock.mock.calls.filter((c) => c[0] === 'fire_counter_order_v1');
+    expect(fireCalls).toHaveLength(2);
+    const uuid1 = (fireCalls[0]![1] as Record<string, unknown>).p_client_uuid;
+    const uuid2 = (fireCalls[1]![1] as Record<string, unknown>).p_client_uuid;
+    expect(uuid2).toBe(uuid1);
+  });
+
+  it('retry after append SUCCESS + pay failure makes ZERO additional append calls (lines locked)', async () => {
     rpcMock.mockImplementation((fn: unknown) =>
       Promise.resolve(
         fn === 'fire_counter_order_v1' ? FIRE_OK : { data: null, error: { message: 'network' } },
@@ -175,8 +221,52 @@ describe('useCheckout — fired counter order syncs unfired items before paying 
       ).rejects.toThrow('network');
     });
 
-    // handleRetry path: same payment attempt (same paymentStore idempotencyKey),
-    // mutationFn runs again.
+    // Append succeeded → l2 locked; the DB owns the line now.
+    expect(useCartStore.getState().lockedItemIds).toContain('l2');
+
+    rpcMock.mockImplementation((fn: unknown) =>
+      Promise.resolve(fn === 'fire_counter_order_v1' ? FIRE_OK : PAY_OK),
+    );
+    await act(async () => {
+      await result.current.mutateAsync({
+        cart: useCartStore.getState().cart,
+        payment: { method: 'cash', amount: 60_000 },
+      });
+    });
+
+    // unsynced is now empty → no second fire call, just the pay.
+    const fireCalls = rpcMock.mock.calls.filter((c) => c[0] === 'fire_counter_order_v1');
+    expect(fireCalls).toHaveLength(1);
+  });
+
+  it('close/reopen (new idempotencyKey) after append success + pay failure: NO double append', async () => {
+    // Regression: the close/reopen of the payment modal regenerates
+    // paymentStore.idempotencyKey → a fresh append p_client_uuid. The uuid
+    // replay alone can't prevent a duplicate — the LOCK on the appended
+    // lines is what keeps them out of the unsynced set.
+    rpcMock.mockImplementation((fn: unknown) =>
+      Promise.resolve(
+        fn === 'fire_counter_order_v1' ? FIRE_OK : { data: null, error: { message: 'network' } },
+      ),
+    );
+
+    const { useCheckout } = await import('../hooks/useCheckout');
+    const { result } = renderHook(() => useCheckout(), { wrapper });
+
+    await act(async () => {
+      await expect(
+        result.current.mutateAsync({
+          cart: useCartStore.getState().cart,
+          payment: { method: 'cash', amount: 60_000 },
+        }),
+      ).rejects.toThrow('network');
+    });
+
+    // Cashier closes then reopens the terminal → fresh attempt key.
+    act(() => {
+      usePaymentStore.setState({ idempotencyKey: 'attempt-2' });
+    });
+
     rpcMock.mockImplementation((fn: unknown) =>
       Promise.resolve(fn === 'fire_counter_order_v1' ? FIRE_OK : PAY_OK),
     );
@@ -188,9 +278,6 @@ describe('useCheckout — fired counter order syncs unfired items before paying 
     });
 
     const fireCalls = rpcMock.mock.calls.filter((c) => c[0] === 'fire_counter_order_v1');
-    expect(fireCalls).toHaveLength(2);
-    const uuid1 = (fireCalls[0]![1] as Record<string, unknown>).p_client_uuid;
-    const uuid2 = (fireCalls[1]![1] as Record<string, unknown>).p_client_uuid;
-    expect(uuid2).toBe(uuid1); // RPC flavor-2 idempotent replay, no duplicate append
+    expect(fireCalls).toHaveLength(1); // first attempt only — l2 stayed locked
   });
 });

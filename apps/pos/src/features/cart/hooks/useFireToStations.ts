@@ -123,39 +123,52 @@ export function useFireToStations(): UseFireToStationsResult {
       //    they must exist on the DB order for payment, even though they
       //    print nowhere. Skipped in printOnly mode (post-payment auto-fire):
       //    the order is already in the DB — see FireContext.printOnly.
+      //
+      //    Lines already LOCKED are excluded from the RPC: a line
+      //    locked-but-unprinted was persisted by the checkout append
+      //    (useCheckout markLocked's it on append success) — re-sending it
+      //    would duplicate the DB line. This closes the re-append window
+      //    after a checkout append (failed pay → manual fire), and also
+      //    converts a manual fire on a pickup cart (all lines locked, none
+      //    printed) from a guaranteed P0002 into a working print.
       let persistedOrderNumber: string | undefined;
       if (!printOnly) {
-        const sessionId = useShiftStore.getState().current?.id;
-        if (!sessionId) throw new Error('no_open_shift');
+        const lockedIds = useCartStore.getState().lockedItemIds;
+        const toPersist = unprinted.filter((i) => !lockedIds.includes(i.id));
 
-        fireClientUuidRef.current ??= crypto.randomUUID();
-        const existingOrderId = useCartStore.getState().pickedUpOrderId;
-        const { data, error } = await supabase.rpc('fire_counter_order_v1', {
-          p_client_uuid: fireClientUuidRef.current,
-          p_session_id: sessionId,
-          p_items: unprinted.map((i) => ({
-            product_id: i.product_id,
-            quantity: i.quantity,
-            unit_price: i.unit_price,
-            modifiers: i.modifiers,
-            ...(i.discount ? { discount_amount: i.discount.amount } : {}),
-          })) as unknown as Json,
-          ...(existingOrderId ? { p_order_id: existingOrderId } : {}),
-          ...(tableNo !== undefined ? { p_table_number: tableNo } : {}),
-          p_order_type: useCartStore.getState().cart.order_type,
-        });
-        if (error) throw Object.assign(new Error(error.message), { details: error });
-        const env = data as unknown as {
-          order_id: string;
-          order_number: string;
-          idempotent_replay: boolean;
-        };
-        persistedOrderNumber = env.order_number;
+        if (toPersist.length > 0) {
+          const sessionId = useShiftStore.getState().current?.id;
+          if (!sessionId) throw new Error('no_open_shift');
 
-        // Success → next fire gets a fresh uuid.
-        fireClientUuidRef.current = null;
-        if (!existingOrderId) {
-          useCartStore.getState().setPickedUpOrderId(env.order_id);
+          fireClientUuidRef.current ??= crypto.randomUUID();
+          const existingOrderId = useCartStore.getState().pickedUpOrderId;
+          const { data, error } = await supabase.rpc('fire_counter_order_v1', {
+            p_client_uuid: fireClientUuidRef.current,
+            p_session_id: sessionId,
+            p_items: toPersist.map((i) => ({
+              product_id: i.product_id,
+              quantity: i.quantity,
+              unit_price: i.unit_price,
+              modifiers: i.modifiers,
+              ...(i.discount ? { discount_amount: i.discount.amount } : {}),
+            })) as unknown as Json,
+            ...(existingOrderId ? { p_order_id: existingOrderId } : {}),
+            ...(tableNo !== undefined ? { p_table_number: tableNo } : {}),
+            p_order_type: useCartStore.getState().cart.order_type,
+          });
+          if (error) throw Object.assign(new Error(error.message), { details: error });
+          const env = data as unknown as {
+            order_id: string;
+            order_number: string;
+            idempotent_replay: boolean;
+          };
+          persistedOrderNumber = env.order_number;
+
+          // Success → next fire gets a fresh uuid.
+          fireClientUuidRef.current = null;
+          if (!existingOrderId) {
+            useCartStore.getState().setPickedUpOrderId(env.order_id);
+          }
         }
       }
 
