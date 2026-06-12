@@ -123,6 +123,7 @@ export function BatchSelector({
               showKindTabs={false}
               excludeIds={excludeIds}
               placeholder="Search recipe…"
+              inputAriaLabel="Search recipe"
               disabled={disabled}
             />
           )}

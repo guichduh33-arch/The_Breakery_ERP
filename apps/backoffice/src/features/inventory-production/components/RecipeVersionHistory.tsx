@@ -24,7 +24,7 @@ interface MaterialDiff {
   prev_unit?:     string;
 }
 
-const DATE_FMT = new Intl.DateTimeFormat('id-ID', {
+const DATE_FMT = new Intl.DateTimeFormat('en-US', {
   dateStyle: 'medium',
   timeStyle: 'short',
 });
