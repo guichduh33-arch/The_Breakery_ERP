@@ -115,6 +115,18 @@ export function parseCatalogWorkbook(buf: ArrayBuffer): {
       }
     }
 
+    const headerSet = new Set(headers.filter((h) => h !== ''));
+    const hasDataRows = aoa.slice(1).some(
+      (cells) => (cells ?? []).some((c) => c !== null && String(c).trim() !== ''),
+    );
+    if (hasDataRows) {
+      for (const col of def.columns) {
+        if (col.required && !headerSet.has(col.key)) {
+          errors.push({ sheet: def.name, row: 1, column: col.key, message: `Required column "${col.key}" is missing` });
+        }
+      }
+    }
+
     for (let i = 1; i < aoa.length; i++) {
       const cells = aoa[i] ?? [];
       if (cells.every((c) => c === null || String(c).trim() === '')) continue; // skip blank rows
@@ -124,7 +136,7 @@ export function parseCatalogWorkbook(buf: ArrayBuffer): {
         const hIdx = headers.indexOf(col.key);
         const raw = hIdx === -1 ? null : cells[hIdx] ?? null;
         const v = coerce(def, col.key, col.type, raw, rowIdx, errors);
-        if (col.required && (v === null || v === '')) {
+        if (col.required && hIdx !== -1 && (v === null || v === '')) {
           errors.push({ sheet: def.name, row: rowIdx, column: col.key, message: `Required value missing` });
         }
         row[col.key] = v;

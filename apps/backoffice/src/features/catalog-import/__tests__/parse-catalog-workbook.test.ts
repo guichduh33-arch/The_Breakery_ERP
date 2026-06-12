@@ -119,4 +119,30 @@ describe('parseCatalogWorkbook', () => {
     expect(dup).toBeDefined();
     expect(dup!.row).toBe(4); // not 3 (= ordinal + 2)
   });
+
+  it('emits one header-level error when a required column is missing, no per-row noise', () => {
+    // Categories sheet WITHOUT the required "name" column, 3 data rows.
+    const wb = XLSX.utils.book_new();
+    for (const def of CATALOG_SHEETS) {
+      if (def.name === 'Categories') {
+        const ws = XLSX.utils.aoa_to_sheet([
+          ['dispatch_station', 'sort_order'],
+          ['bakery', 10],
+          ['kitchen', 20],
+          ['none', 30],
+        ]);
+        XLSX.utils.book_append_sheet(wb, ws, def.name);
+      } else {
+        const ws = XLSX.utils.aoa_to_sheet([def.columns.map((c) => c.key)]);
+        XLSX.utils.book_append_sheet(wb, ws, def.name);
+      }
+    }
+    const { errors } = parseCatalogWorkbook(wbToBuffer(wb));
+    const headerErr = errors.filter((e) => e.sheet === 'Categories' && e.message.includes('Required column'));
+    const perRow = errors.filter((e) => e.sheet === 'Categories' && e.message === 'Required value missing');
+    expect(headerErr).toHaveLength(1);
+    expect(headerErr[0]!.row).toBe(1);
+    expect(headerErr[0]!.column).toBe('name');
+    expect(perRow).toHaveLength(0); // today: 3 noisy per-row errors
+  });
 });
