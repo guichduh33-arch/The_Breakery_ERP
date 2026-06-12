@@ -149,7 +149,10 @@ export function usePaymentFlowLogic() {
     try {
       const result = await checkout.mutateAsync({ cart, payment: tendersToShip });
 
-      fireToStations.mutateAsync({ orderNumber: result.order_number }).then((results) => {
+      // S43 P0-3 — printOnly: the order already exists in the DB (created by
+      // complete_order_with_payment_v11 / paid via pay_existing_order_v7).
+      // Persisting here would mint an orphan order or append to a paid one.
+      fireToStations.mutateAsync({ orderNumber: result.order_number, printOnly: true }).then((results) => {
         for (const r of results) {
           if (!r.ok) {
             toast.error(`${r.role} printer unreachable — ticket saved to KDS, not printed`);

@@ -204,6 +204,33 @@ describe('useFireToStations persists before printing (P0-3)', () => {
     expect(uuid3).not.toBe(uuid1);
   });
 
+  it('printOnly (post-payment auto-fire): RPC is NOT called, items still seal and print', async () => {
+    // Post-payment, the order already exists in DB (created by v11 / paid via
+    // pay_existing_order_v7) — persisting here would mint an orphan order
+    // (direct pay) or append against a PAID order (pickup) → P0002.
+    printStationTicketMock.mockResolvedValue({ success: true });
+
+    const { useFireToStations } = await import('../hooks/useFireToStations');
+    const { result } = renderHook(() => useFireToStations(), { wrapper });
+
+    await act(async () => {
+      await result.current.mutation.mutateAsync({ orderNumber: 'ORD-7', printOnly: true });
+    });
+
+    // No persist, no pickedUpOrderId capture.
+    expect(rpcMock).not.toHaveBeenCalled();
+    expect(useCartStore.getState().pickedUpOrderId).toBeNull();
+
+    // Items are still sealed (legacy post-payment behaviour) …
+    expect(useCartStore.getState().printedItemIds).toEqual(expect.arrayContaining(['l1', 'l2']));
+    expect(useCartStore.getState().lockedItemIds).toEqual(expect.arrayContaining(['l1', 'l2']));
+
+    // … and the barista ticket printed with the caller-supplied order number.
+    expect(printStationTicketMock).toHaveBeenCalledTimes(1);
+    const payload = printStationTicketMock.mock.calls[0]![1] as { order_number: string };
+    expect(payload.order_number).toBe('ORD-7');
+  });
+
   it('throws no_open_shift when there is no open session', async () => {
     useShiftStore.setState({ current: null });
 
