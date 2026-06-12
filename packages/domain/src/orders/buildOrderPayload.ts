@@ -73,6 +73,15 @@ export function buildOrderPayload(
 
   const isArray = Array.isArray(paymentOrTenders);
 
+  // Session 43 P0-1 — RPC v11 gates ANY discount on p_discount_authorized_by (top-level),
+  // which the process-payment EF reads from body.discount_authorized_by. When only LINE
+  // discounts exist, hoist the first authorizer so the gate sees the captured PIN holder.
+  // Premier autorisateur non-cancelled gagne ; v11 n'accepte qu'un autorisateur top-level
+  // par commande, les autorisateurs des autres lignes restent au niveau item.
+  const hoistedLineAuthorizer = cart.cartDiscount
+    ? undefined
+    : cart.items.find((i) => !i.is_cancelled && i.discount?.authorized_by)?.discount?.authorized_by;
+
   return {
     session_id: sessionId,
     order_type: cart.order_type,
@@ -92,17 +101,7 @@ export function buildOrderPayload(
       discount_reason: cart.cartDiscount.reason,
       ...(cart.cartDiscount.authorized_by ? { discount_authorized_by: cart.cartDiscount.authorized_by } : {}),
     } : {}),
-    // Session 43 P0-1 — RPC v11 gates ANY discount on p_discount_authorized_by (top-level),
-    // which the process-payment EF reads from body.discount_authorized_by. When only LINE
-    // discounts exist, hoist the first authorizer so the gate sees the captured PIN holder.
-    ...(!cart.cartDiscount
-      ? (() => {
-          const lineAuth = cart.items.find(
-            (i) => !i.is_cancelled && i.discount?.authorized_by,
-          )?.discount?.authorized_by;
-          return lineAuth ? { discount_authorized_by: lineAuth } : {};
-        })()
-      : {}),
+    ...(hoistedLineAuthorizer ? { discount_authorized_by: hoistedLineAuthorizer } : {}),
     ...(multiplier !== 1.0 ? { loyalty_multiplier: multiplier } : {}),
     ...(promotions ? { promotions } : {}),
   };

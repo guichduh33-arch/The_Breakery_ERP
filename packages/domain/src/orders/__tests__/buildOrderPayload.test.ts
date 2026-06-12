@@ -308,4 +308,27 @@ describe('buildOrderPayload', () => {
     const payload = buildOrderPayload('session-1', cart, payment);
     expect(payload.discount_authorized_by).toBe('mgr-cart');
   });
+
+  it('scans past unauthorized line discounts and hoists the FIRST authorizer (P0-1)', () => {
+    const cart: Cart = {
+      order_type: 'take_out',
+      items: [
+        {
+          id: 'l1', product_id: 'p1', name: 'Americano', unit_price: 35000, quantity: 1, modifiers: [],
+          discount: { type: 'fixed_amount', value: 2000, amount: 2000, reason: 'damage' },
+        },
+        {
+          id: 'l2', product_id: 'p2', name: 'Latte', unit_price: 40000, quantity: 1, modifiers: [],
+          discount: { type: 'percentage', value: 10, amount: 4000, reason: 'fidelite', authorized_by: 'mgr-A' },
+        },
+        {
+          id: 'l3', product_id: 'p3', name: 'Croissant', unit_price: 25000, quantity: 1, modifiers: [],
+          discount: { type: 'percentage', value: 20, amount: 5000, reason: 'comp', authorized_by: 'mgr-B' },
+        },
+      ],
+    };
+    const payment: PaymentInput = { method: 'cash', amount: 89000, cash_received: 89000, change_given: 0 };
+    const payload = buildOrderPayload('sess-1', cart, payment);
+    expect(payload.discount_authorized_by).toBe('mgr-A');
+  });
 });
