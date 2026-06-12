@@ -42,6 +42,9 @@ export function usePendingTabletOrders() {
 
   return useQuery({
     queryKey: ['pending-tablet-orders'],
+    // P0-2 filet (audit 2026-06-12) : un event realtime perdu (blip Wi-Fi,
+    // reconnexion) est rattrapé en ≤ 30 s. Le realtime reste le chemin nominal.
+    refetchInterval: 30_000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('orders')
