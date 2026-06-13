@@ -109,7 +109,9 @@ export function ProductGrid({ selectedSlug, onSelect }: ProductGridProps): JSX.E
         ) : (
           <div className="grid grid-cols-4 gap-4">
             {filtered.map((p) => {
-              const soldOut = p.current_stock <= 0;
+              // S43 (P1-1) — sold-out is derived in useProducts via the domain
+              // isSellable rule (track_inventory + display_stock-first).
+              const soldOut = p.is_sellable === false;
               const lots = lotsByProduct?.get(p.id);
               const isLotTracked = lots !== undefined && lots.length > 0;
               const allExpired = isLotTracked && allLotsExpiredOrConsumed(lots, p.id);

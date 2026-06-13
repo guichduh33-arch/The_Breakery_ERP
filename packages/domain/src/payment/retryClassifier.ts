@@ -144,6 +144,10 @@ function friendlyFatalMessage(code: string, message?: string): string {
     case 'account_locked':
       // S38 SEC-06 — the named manager hit 5 failed discount PINs.
       return 'Compte manager verrouillé 15 min (PIN erronés).';
+    case 'discount_requires_authorizer':
+      // S43 P0-1 — v11 discount gate: discount sent without an authorizing
+      // manager (p_discount_authorized_by) ; surfaced by the process-payment EF.
+      return 'This discount needs a manager authorization. Re-apply the discount and enter the manager PIN.';
     case '':
       return message ?? 'Payment failed for an unknown reason. Try again or contact support.';
     default:

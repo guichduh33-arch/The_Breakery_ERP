@@ -84,6 +84,28 @@ describe('NumpadVirtual', () => {
     expect(submit).not.toBeDisabled();
   });
 
+  it('auto-submits on the last digit when autoSubmitAtMaxLength is set (pin mode)', () => {
+    const handler = vi.fn();
+    render(<NumpadVirtual mode="pin" autoSubmitAtMaxLength onSubmit={handler} />);
+    for (const d of ['1', '2', '3', '4', '5']) {
+      fireEvent.click(screen.getByRole('button', { name: d }));
+    }
+    expect(handler).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: '6' }));
+    // Submitted WITHOUT clicking Verify.
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(handler).toHaveBeenCalledWith('123456');
+  });
+
+  it('does NOT auto-submit when autoSubmitAtMaxLength is not set', () => {
+    const handler = vi.fn();
+    render(<NumpadVirtual mode="pin" onSubmit={handler} />);
+    for (const d of ['1', '2', '3', '4', '5', '6']) {
+      fireEvent.click(screen.getByRole('button', { name: d }));
+    }
+    expect(handler).not.toHaveBeenCalled();
+  });
+
   it('renders error message in danger color', () => {
     render(<NumpadVirtual onSubmit={vi.fn()} error="Bad PIN" />);
     const err = screen.getByRole('alert');

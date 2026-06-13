@@ -30,7 +30,7 @@ interface FixtureItem {
   sent_to_kitchen_at: string;
   ready_at: string | null;
   products: { name: string };
-  orders: { order_number: string };
+  orders: { order_number: string; status: string };
 }
 
 let fixtureRows: FixtureItem[] = [];
@@ -122,7 +122,7 @@ describe('KDS smoke', () => {
         sent_to_kitchen_at: new Date().toISOString(),
         ready_at: null,
         products: { name: 'Americano' },
-        orders: { order_number: 'A-001' },
+        orders: { order_number: '#A-001', status: 'pending_payment' },
       },
     ];
 
@@ -147,7 +147,7 @@ describe('KDS smoke', () => {
         sent_to_kitchen_at: new Date().toISOString(),
         ready_at: null,
         products: { name: 'Croissant' },
-        orders: { order_number: 'B-007' },
+        orders: { order_number: '#B-007', status: 'pending_payment' },
       },
     ];
 

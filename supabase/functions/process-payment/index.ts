@@ -235,7 +235,18 @@ serve(async (req) => {
       }
     }
     // Map Postgres error codes
-    if (error.code === 'P0001') return jsonResponse({ error: 'no_open_session', message: error.message }, 409);
+    if (error.code === 'P0001') {
+      const msg = String(error.message ?? '');
+      // v11 lève P0001 pour plusieurs gates distincts — différencie le gate
+      // discount (audit 2026-06-12 P0-1) des autres P0001 (mappés no_open_session).
+      // Contrat substring : matche le RAISE 'Discount requires an authorizing
+      // manager (p_discount_authorized_by)' de 20260621000010 — garder en sync
+      // à tout bump vN. TODO(v12): ERRCODE dédié et supprimer ce match.
+      if (msg.includes('authorizing manager')) {
+        return jsonResponse({ error: 'discount_requires_authorizer', message: msg }, 409);
+      }
+      return jsonResponse({ error: 'no_open_session', message: msg }, 409);
+    }
     if (error.code === 'P0002') return jsonResponse({ error: 'insufficient_stock', message: error.message }, 409);
     if (error.code === 'P0003') return jsonResponse({ error: 'permission_denied', message: error.message }, 403);
     // S38 SEC-06 — manager account locked (5 failed PINs / 15 min).

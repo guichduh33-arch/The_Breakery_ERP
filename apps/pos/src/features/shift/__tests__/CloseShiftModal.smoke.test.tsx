@@ -84,6 +84,49 @@ describe('CloseShiftModal', () => {
     expect(screen.getByTestId('variance-warning-badge')).toBeInTheDocument();
   });
 
+  it('blocks closing on above-threshold variance without a note (P1-2)', () => {
+    render(withQuery(
+      <CloseShiftModal
+        open={true}
+        sessionId="s1"
+        expectedCash={570_000}
+        thresholdAbs={50_000}
+        thresholdPct={0.005}
+        onClose={vi.fn()}
+      />,
+    ));
+    // Compte 500 000 → variance -70 000 > seuil abs 50 000.
+    for (const ch of '500000') {
+      fireEvent.click(screen.getByRole('button', { name: ch }));
+    }
+    expect(screen.getByRole('button', { name: /close shift/i })).toBeDisabled();
+    expect(screen.getByText(/note .*(required|obligatoire)/i)).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/notes/i), {
+      target: { value: 'till miscount, recount pending' },
+    });
+    expect(screen.getByRole('button', { name: /close shift/i })).toBeEnabled();
+  });
+
+  it('does not require a note when variance is within threshold', () => {
+    render(withQuery(
+      <CloseShiftModal
+        open={true}
+        sessionId="s1"
+        expectedCash={100_000}
+        thresholdAbs={50_000}
+        thresholdPct={0.005}
+        onClose={vi.fn()}
+      />,
+    ));
+    // Compte 100 300 → variance +300 : sous le seuil abs (50 000) ET sous le
+    // seuil pct (0,3 % < 0,5 %).
+    for (const ch of '100300') {
+      fireEvent.click(screen.getByRole('button', { name: ch }));
+    }
+    expect(screen.getByRole('button', { name: /close shift/i })).toBeEnabled();
+    expect(screen.queryByText(/note .*(required|obligatoire)/i)).not.toBeInTheDocument();
+  });
+
   it('calls close_shift_v2 with parsed args and chains generate-zreport-pdf EF', async () => {
     rpcMock.mockResolvedValue({
       data: {
@@ -109,6 +152,10 @@ describe('CloseShiftModal', () => {
     for (const ch of '105000') {
       fireEvent.click(screen.getByRole('button', { name: ch }));
     }
+    // Variance +5 000 = 5 % > seuil pct 0,5 % → une note est requise (P1-2).
+    fireEvent.change(screen.getByLabelText(/notes/i), {
+      target: { value: 'recount confirmed by manager' },
+    });
     const btn = screen.getByRole('button', { name: /close shift/i });
     fireEvent.click(btn);
     // Flush microtasks: 1st for the RPC await, 2nd for the EF invoke chain, 3rd for the onSuccess.

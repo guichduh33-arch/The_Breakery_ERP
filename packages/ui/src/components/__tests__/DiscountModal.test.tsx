@@ -85,9 +85,9 @@ describe('DiscountModal', () => {
     expect(confirmBtn).not.toBeDisabled();
   });
 
-  it('below-threshold confirm fires onConfirm directly without calling onRequireAuthorization', async () => {
+  it('below-threshold confirm STILL requires authorization (server v11 gates ALL discounts)', async () => {
     const onConfirm = vi.fn();
-    const onRequireAuthorization = vi.fn();
+    const onRequireAuthorization = vi.fn().mockResolvedValue('manager-uuid-9');
     render(
       <DiscountModal
         {...baseProps}
@@ -96,20 +96,22 @@ describe('DiscountModal', () => {
         base={35000}
       />,
     );
-    // 5% of 35000 = 1750 — below 10% threshold
+    // 5% of 35000 = 1750 — below the OLD 10% client threshold; v11 gates ALL discounts
     pressKey('5');
     fireEvent.change(screen.getByPlaceholderText('Why discount?'), {
-      target: { value: 'Promotion staff' },
+      target: { value: 'loyal customer' },
     });
     fireEvent.click(screen.getByRole('button', { name: /Confirm/i }));
     await waitFor(() => {
+      expect(onRequireAuthorization).toHaveBeenCalledTimes(1);
+    });
+    await waitFor(() => {
       expect(onConfirm).toHaveBeenCalledTimes(1);
     });
-    expect(onRequireAuthorization).not.toHaveBeenCalled();
     const arg = onConfirm.mock.calls[0]?.[0] as Discount;
     expect(arg.type).toBe('percentage');
     expect(arg.value).toBe(5);
-    expect(arg.authorized_by).toBeUndefined();
+    expect(arg.authorized_by).toBe('manager-uuid-9');
   });
 
   it('above-threshold confirm calls onRequireAuthorization first; userId returned → onConfirm with authorized_by', async () => {

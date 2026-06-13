@@ -132,7 +132,7 @@ export function SuccessModal(props: SuccessModalProps) {
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <FullScreenModal open={open} onOpenChange={() => { /* must click action */ }}>
+    <FullScreenModal open={open} onOpenChange={() => { /* must click action */ }} accessibleTitle="Payment successful">
       <div className="m-auto bg-bg-overlay rounded-xl p-8 max-w-md w-full shadow-modal text-center space-y-6" data-testid="receipt-success">
         <div className="grid place-items-center">
           <div className="h-16 w-16 rounded-full bg-green-soft border-2 border-green grid place-items-center">

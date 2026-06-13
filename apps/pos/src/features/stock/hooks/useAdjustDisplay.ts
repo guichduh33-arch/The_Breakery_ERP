@@ -40,6 +40,8 @@ export function useAdjustDisplay() {
     },
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: POS_STOCK_PRODUCTS_KEY });
+      // S43 P1-1 — la grille dérive is_sellable de display_stock : un restock vitrine doit la rafraîchir.
+      void qc.invalidateQueries({ queryKey: ['products'] });
     },
   });
 }

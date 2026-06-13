@@ -139,7 +139,9 @@ describe('SuccessModal auto-print integration', () => {
     ));
 
     await waitFor(() => {
-      expect(screen.getByText(/payment successful/i)).toBeInTheDocument();
+      // S43 E2: FullScreenModal renders an sr-only span title "Payment successful"
+      // in addition to the visible <h2> — query by heading role to disambiguate.
+      expect(screen.getByRole('heading', { name: /payment successful/i })).toBeInTheDocument();
     });
     expect(vi.mocked(toast.warning)).not.toHaveBeenCalled();
   });
@@ -164,7 +166,8 @@ describe('SuccessModal auto-print integration', () => {
     await waitFor(() => {
       expect(vi.mocked(toast.warning)).toHaveBeenCalledWith('Print server unreachable — receipt not printed');
     });
-    expect(screen.getByText(/payment successful/i)).toBeInTheDocument();
+    // Heading query — the sr-only dialog title duplicates the text (S43 E2 a11y).
+    expect(screen.getByRole('heading', { name: /payment successful/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /reprint/i })).toBeInTheDocument();
   });
 

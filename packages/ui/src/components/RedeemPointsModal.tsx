@@ -52,7 +52,7 @@ export function RedeemPointsModal({
   }
 
   return (
-    <FullScreenModal open={open} onOpenChange={handleOpenChange}>
+    <FullScreenModal open={open} onOpenChange={handleOpenChange} accessibleTitle="Redeem points">
       <DialogPrimitive.Title asChild>
         <span className={cn(SR_ONLY)}>Redeem points</span>
       </DialogPrimitive.Title>

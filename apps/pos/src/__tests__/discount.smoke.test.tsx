@@ -90,7 +90,7 @@ describe('Discount smoke — cart discount with PIN guard', () => {
     vi.clearAllMocks();
   });
 
-  it('below threshold (5%): confirm without PIN modal, cart shows discount line', async () => {
+  it('below threshold (5%): confirm STILL triggers PinVerificationModal (v11 gates ALL discounts), discount applied with authorized_by=mgr-1', async () => {
     render(wrapper(<BottomActionBar />));
 
     // Open discount modal via the bottom-bar More menu
@@ -101,7 +101,7 @@ describe('Discount smoke — cart discount with PIN guard', () => {
       expect(screen.getByTestId('discount-value-display')).toBeInTheDocument();
     });
 
-    // Type "5" — 5% discount (below 10% threshold)
+    // Type "5" — 5% discount (below the OLD 10% client threshold)
     fireEvent.click(screen.getByRole('button', { name: '5' }));
 
     // Fill reason
@@ -109,21 +109,27 @@ describe('Discount smoke — cart discount with PIN guard', () => {
       target: { value: 'Promotion staff' },
     });
 
-    // Confirm
+    // Confirm — S43 Wave B2: server RPC v11 gates ALL discounts, so even
+    // below-threshold confirms require manager authorization via PIN modal
     fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
 
-    // Discount applied; no PIN modal visible
+    // PIN modal appears
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /verify/i })).toBeInTheDocument();
+    });
+
+    // Enter 6-digit PIN and click Verify (mock resolves { ok: true, userId: 'mgr-1' })
+    enterPin(['1', '2', '3', '4', '5', '6']);
+
+    // Discount applied with manager authorization
     await waitFor(() => {
       const state = useCartStore.getState();
       expect(state.cart.cartDiscount).toBeDefined();
       expect(state.cart.cartDiscount?.type).toBe('percentage');
       expect(state.cart.cartDiscount?.value).toBe(5);
       expect(state.cart.cartDiscount?.reason).toBe('Promotion staff');
-      expect(state.cart.cartDiscount?.authorized_by).toBeUndefined();
+      expect(state.cart.cartDiscount?.authorized_by).toBe('mgr-1');
     });
-
-    // PinVerificationModal should NOT be visible after confirm
-    expect(screen.queryByRole('button', { name: /verify/i })).not.toBeInTheDocument();
   });
 
   it('above threshold (15%): confirm triggers PinVerificationModal, discount applied with authorized_by=mgr-1', async () => {

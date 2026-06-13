@@ -35,7 +35,7 @@ export interface PaymentSuccessState {
 
 export function usePaymentFlowLogic() {
   const isOpen = usePaymentStore((s) => s.isOpen);
-  const close = usePaymentStore((s) => s.close);
+  const closeStore = usePaymentStore((s) => s.close);
   const reset = usePaymentStore((s) => s.reset);
   const selectedMethod = usePaymentStore((s) => s.selectedMethod);
   const selectMethod = usePaymentStore((s) => s.selectMethod);
@@ -94,6 +94,13 @@ export function usePaymentFlowLogic() {
   const [lastTendersShipped, setLastTendersShipped] = useState<Tender[] | null>(null);
   const [splitOpen, setSplitOpen] = useState(false);
 
+  function close(): void {
+    // S43 P0-1b — un fatal corrigé hors modal (ex: discount ré-autorisé au PIN) ne doit pas
+    // réapparaître en bannière périmée au reopen. retryable/already_paid sont préservés.
+    setLastError((prev) => (prev?.kind === 'fatal' ? null : prev));
+    closeStore();
+  }
+
   function handleAddTender(): void {
     if (!selectedMethod || !draftValid) return;
     const isLast = draftTenderAmount === remaining;
@@ -142,10 +149,13 @@ export function usePaymentFlowLogic() {
     try {
       const result = await checkout.mutateAsync({ cart, payment: tendersToShip });
 
-      fireToStations.mutateAsync({ orderNumber: result.order_number }).then((results) => {
+      // S43 P0-3 — printOnly: the order already exists in the DB (created by
+      // complete_order_with_payment_v11 / paid via pay_existing_order_v7).
+      // Persisting here would mint an orphan order or append to a paid one.
+      fireToStations.mutateAsync({ orderNumber: result.order_number, printOnly: true }).then((results) => {
         for (const r of results) {
           if (!r.ok) {
-            toast.error(`${r.role} printer unreachable — ticket not printed`);
+            toast.error(`${r.role} printer unreachable — ticket saved to KDS, not printed`);
           }
         }
       }).catch((err: unknown) => {

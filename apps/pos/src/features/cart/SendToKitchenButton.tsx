@@ -38,7 +38,7 @@ export function SendToKitchenButton({ className, variant }: SendToKitchenButtonP
         if (r.ok) {
           toast.success(`Sent to ${r.role} (${r.itemIds.length} item(s))`);
         } else {
-          toast.error(`${r.role} printer unreachable — not printed`);
+          toast.error(`${r.role} printer unreachable — ticket saved to KDS, not printed`);
         }
       }
     } catch (err) {

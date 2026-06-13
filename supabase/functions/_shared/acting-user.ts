@@ -17,8 +17,14 @@ let _key: CryptoKey | null = null;
 
 async function getVerifyKey(): Promise<CryptoKey> {
   if (_key) return _key;
-  const secret = Deno.env.get('SUPABASE_JWT_SECRET');
-  if (!secret) throw new Error('Missing SUPABASE_JWT_SECRET');
+  // S43 (DEV-S43-F1-01) : même chaîne de résolution que le signer (_shared/jwt.ts).
+  // Le runtime déployé n'injecte PAS SUPABASE_JWT_SECRET (les secrets custom
+  // SUPABASE_* sont interdits) — le secret vit dans JWT_SECRET. Ne lire que
+  // SUPABASE_JWT_SECRET faisait throw → getActingAuthUserId null → 401
+  // not_authenticated sur TOUTES les EFs consommatrices (void/cancel/refund/
+  // verify-manager-pin) en environnement déployé.
+  const secret = Deno.env.get('JWT_SECRET') ?? Deno.env.get('SUPABASE_JWT_SECRET');
+  if (!secret) throw new Error('Missing JWT_SECRET / SUPABASE_JWT_SECRET');
   _key = await crypto.subtle.importKey(
     'raw',
     new TextEncoder().encode(secret),

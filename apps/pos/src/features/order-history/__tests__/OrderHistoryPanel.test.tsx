@@ -15,6 +15,8 @@ const historyState = {
     data: [] as OrderHistoryRow[] | undefined,
     isLoading: false,
     isError: false,
+    // S43 P1-3: the panel calls refetch() when it opens.
+    refetch: vi.fn(),
   },
 };
 
@@ -59,7 +61,7 @@ function row(overrides: Partial<OrderHistoryRow> = {}): OrderHistoryRow {
 
 describe('OrderHistoryPanel', () => {
   beforeEach(() => {
-    historyState.current = { data: [], isLoading: false, isError: false };
+    historyState.current = { data: [], isLoading: false, isError: false, refetch: vi.fn() };
   });
 
   it('renders the Transaction History header and KPI strip when open', () => {
@@ -83,6 +85,7 @@ describe('OrderHistoryPanel', () => {
       data: [row(), row({ id: 'o2', order_number: '1002', status: 'voided' })],
       isLoading: false,
       isError: false,
+      refetch: vi.fn(),
     };
     render(<OrderHistoryPanel open onClose={() => {}} />);
     expect(screen.getByTestId('history-row-o1')).toBeInTheDocument();

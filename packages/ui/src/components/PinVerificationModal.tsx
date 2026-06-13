@@ -82,7 +82,7 @@ export function PinVerificationModal({
   }
 
   return (
-    <FullScreenModal open={open} onOpenChange={handleOpenChange}>
+    <FullScreenModal open={open} onOpenChange={handleOpenChange} accessibleTitle="Manager verification">
       <DialogPrimitive.Title asChild>
         <span className={cn(SR_ONLY)}>Manager verification</span>
       </DialogPrimitive.Title>

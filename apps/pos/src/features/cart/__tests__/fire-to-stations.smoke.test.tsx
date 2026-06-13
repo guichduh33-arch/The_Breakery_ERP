@@ -14,6 +14,7 @@ import { render, screen, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useCartStore } from '@/stores/cartStore';
 import { useAuthStore } from '@/stores/authStore';
+import { useShiftStore } from '@/stores/shiftStore';
 import {
   getMockPrintBuffer,
   clearMockPrintBuffer,
@@ -26,8 +27,14 @@ vi.mock('sonner', () => ({
   Toaster: () => null,
 }));
 
+// Session 43 / P0-3 — the fire now persists via fire_counter_order_v1 first.
+const { rpcMock } = vi.hoisted(() => ({ rpcMock: vi.fn() }));
+
 vi.mock('@/lib/supabase', () => ({
-  supabase: { auth: { getSession: vi.fn().mockResolvedValue({ data: { session: { access_token: 'tok' } } }) } },
+  supabase: {
+    rpc: (...a: unknown[]) => rpcMock(...a),
+    auth: { getSession: vi.fn().mockResolvedValue({ data: { session: { access_token: 'tok' } } }) },
+  },
   supabaseUrl: 'http://localhost:54321',
 }));
 
@@ -67,6 +74,13 @@ describe('SendToKitchenButton — fire to stations smoke', () => {
   beforeEach(() => {
     vi.stubEnv('VITE_PRINT_MOCK', '1');
     clearMockPrintBuffer();
+
+    rpcMock.mockReset();
+    rpcMock.mockResolvedValue({
+      data: { order_id: 'order-db-1', order_number: '#0042', idempotent_replay: false },
+      error: null,
+    });
+    useShiftStore.setState({ current: { id: 'sess-1', opened_at: '', opening_cash: 0 } });
 
     // Cart: one barista item + one kitchen item, both unprinted.
     useCartStore.setState({
@@ -137,5 +151,10 @@ describe('SendToKitchenButton — fire to stations smoke', () => {
     const printed = useCartStore.getState().printedItemIds;
     expect(printed).toContain('line-barista');
     expect(printed).toContain('line-kitchen');
+
+    // Session 43 / P0-3 — the order was persisted BEFORE printing.
+    expect(rpcMock).toHaveBeenCalledTimes(1);
+    expect(rpcMock.mock.calls[0]![0]).toBe('fire_counter_order_v1');
+    expect(useCartStore.getState().pickedUpOrderId).toBe('order-db-1');
   });
 });

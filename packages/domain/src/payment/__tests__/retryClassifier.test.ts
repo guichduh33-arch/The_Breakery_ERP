@@ -86,6 +86,24 @@ describe('classifyCheckoutError', () => {
       expect(result.userMessage).toMatch(/verrouillé 15 min/i);
     });
 
+    it('maps discount_requires_authorizer to a clear fatal message (S43 P0-1)', () => {
+      // Real shape thrown by useCheckout for EF 409 responses:
+      // Object.assign(new Error(code), { details: bodyJson, status: 409 })
+      // where bodyJson = { error: 'discount_requires_authorizer', message }.
+      const err = Object.assign(new Error('discount_requires_authorizer'), {
+        details: {
+          error: 'discount_requires_authorizer',
+          message: 'Discount requires an authorizing manager (p_discount_authorized_by)',
+        },
+        status: 409,
+      });
+      const result = classifyCheckoutError(err);
+      expect(result.kind).toBe('fatal');
+      expect(result.userMessage).toMatch(/manager/i);
+      // Must be the friendly copy, not the generic "Payment failed (<code>)" fallback.
+      expect(result.userMessage).not.toContain('discount_requires_authorizer');
+    });
+
     it('falls back to message for unknown codes', () => {
       const err = Object.assign(new Error('weird unknown thing'), {
         details: { error: 'mysterious_error' },

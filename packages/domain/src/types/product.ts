@@ -25,6 +25,11 @@ export interface Product {
   // Session 34 — station ticket printing. Flattened from categories.dispatch_station
   // by the POS `useProducts` hook; defaults to 'none' when the category has no routing.
   dispatch_station?: DispatchStation;
+  // S43 (P1-1) — sellability POS. `track_inventory=false` (boissons à la minute)
+  // n'est jamais sold out ; sinon le compteur vitrine display_stock prime,
+  // fallback current_stock quand aucune ligne vitrine n'existe.
+  track_inventory?: boolean;
+  is_sellable?: boolean;
 }
 
 export interface Category {

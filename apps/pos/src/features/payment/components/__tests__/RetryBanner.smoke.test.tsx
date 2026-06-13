@@ -5,6 +5,7 @@ import type { RetryClassification } from '@breakery/domain';
 
 const retryable: RetryClassification = { kind: 'retryable', userMessage: 'try again' } as RetryClassification;
 const alreadyPaid: RetryClassification = { kind: 'already_paid', userMessage: 'done' } as RetryClassification;
+const fatal: RetryClassification = { kind: 'fatal', userMessage: 'Discount needs a manager authorization.' };
 
 describe('RetryBanner', () => {
   it('renders nothing when lastError is null', () => {
@@ -28,5 +29,15 @@ describe('RetryBanner', () => {
     expect(screen.getByTestId('payment-already-paid-banner')).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('payment-already-paid-dismiss'));
     expect(onDismiss).toHaveBeenCalled();
+  });
+
+  it('renders a persistent banner for fatal errors (S43 P0-1b)', () => {
+    render(<RetryBanner lastError={fatal} checkoutPending={false} onRetry={vi.fn()} onDismissAlreadyPaid={vi.fn()} />);
+    const banner = screen.getByTestId('payment-fatal-banner');
+    expect(banner).toBeInTheDocument();
+    expect(banner).toHaveAttribute('role', 'alert');
+    expect(screen.getByText('Discount needs a manager authorization.')).toBeInTheDocument();
+    // No retry button — fatal errors must not be retried with the same key.
+    expect(screen.queryByTestId('payment-retry-button')).not.toBeInTheDocument();
   });
 });

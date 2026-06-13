@@ -58,8 +58,13 @@ function HeldOrderCard({
       {/* Header strip */}
       <header className="flex items-center justify-between gap-2 px-4 py-3 border-b border-border-subtle">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="font-mono text-sm text-gold underline underline-offset-4 decoration-gold/60">
-            {row.order_number}
+          {/* S43 P2-3 — human label instead of the raw HELD-<uuid> order_number.
+              The full order_number stays in title= for support lookups. */}
+          <span
+            className="font-mono text-sm text-gold"
+            title={row.order_number}
+          >
+            Held {formatTime(row.created_at)} · {row.table_number ? `Table ${row.table_number}` : 'No table'}
           </span>
           {row.table_number && (
             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest bg-blue-info/20 text-blue-info">

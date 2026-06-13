@@ -49,7 +49,10 @@ function makeItem(overrides: Partial<KdsItemRow> = {}): KdsItemRow {
     dispatch_station: 'kitchen',
     sent_to_kitchen_at: new Date('2026-05-14T12:00:00.000Z').toISOString(),
     ready_at: null,
-    order_number: 'A-001',
+    // S43 P2-5a — real order_numbers already carry the `#` prefix; the card
+    // must render them verbatim (no re-prefixing).
+    order_number: '#A-001',
+    order_status: 'pending_payment',
     is_cancelled: false,
     cancelled_at: null,
     cancelled_reason: null,
@@ -73,8 +76,10 @@ describe('KdsOrderCard', () => {
 
     render(wrap(<KdsOrderCard items={[item]} />));
 
-    // Order number prefixed with `#`, mono + tabular-nums for the gold display.
+    // Order number rendered verbatim (already `#`-prefixed in the DB — S43
+    // P2-5a, no double `##`), mono + tabular-nums for the gold display.
     const orderNum = screen.getByText('#A-001');
+    expect(screen.queryByText('##A-001')).not.toBeInTheDocument();
     expect(orderNum).toBeInTheDocument();
     expect(orderNum.className).toMatch(/font-mono/);
     expect(orderNum.className).toMatch(/tabular-nums/);
@@ -95,13 +100,13 @@ describe('KdsOrderCard', () => {
     const warningItem = makeItem({
       id: 'oi-warn',
       order_id: 'ord-warn',
-      order_number: 'A-002',
+      order_number: '#A-002',
       sent_to_kitchen_at: new Date('2026-05-14T11:55:00.000Z').toISOString(), // 5min ago
     });
     const urgentItem = makeItem({
       id: 'oi-urg',
       order_id: 'ord-urg',
-      order_number: 'A-003',
+      order_number: '#A-003',
       sent_to_kitchen_at: new Date('2026-05-14T11:50:00.000Z').toISOString(), // 10min ago
     });
 
@@ -122,7 +127,7 @@ describe('KdsOrderCard', () => {
     const cancelled = makeItem({
       id: 'oi-x',
       order_id: 'ord-x',
-      order_number: 'A-004',
+      order_number: '#A-004',
       kitchen_status: 'pending',
       is_cancelled: true,
       cancelled_at: new Date().toISOString(),
@@ -137,6 +142,19 @@ describe('KdsOrderCard', () => {
     expect(screen.queryByRole('button', { name: /start/i })).not.toBeInTheDocument();
     // Reason is surfaced for the operator.
     expect(screen.getByText(/Customer request/i)).toBeInTheDocument();
+  });
+
+  it('shows a PAID badge when the parent order is paid, and none otherwise (S43 P2-5b)', () => {
+    const unpaid = makeItem({ order_status: 'pending_payment' });
+    const { rerender } = render(wrap(<KdsOrderCard items={[unpaid]} />));
+    expect(screen.queryByText('PAID')).not.toBeInTheDocument();
+
+    const paid = makeItem({ order_status: 'paid' });
+    rerender(wrap(<KdsOrderCard items={[paid]} />));
+    const badge = screen.getByText('PAID');
+    expect(badge).toBeInTheDocument();
+    // Green success token per design system.
+    expect(badge.className).toMatch(/bg-green/);
   });
 
   it('uses the oldest item in the order to compute card age (FIFO fairness)', () => {

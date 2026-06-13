@@ -30,6 +30,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
+  Button,
+  CenterModal,
   Currency,
   DiscountModal,
   PinVerificationModal,
@@ -69,6 +71,7 @@ interface BottomActionBarProps {
 export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps): JSX.Element {
   const cart = useCartStore((s) => s.cart);
   const lockedItemIds = useCartStore((s) => s.lockedItemIds);
+  const pickedUpOrderId = useCartStore((s) => s.pickedUpOrderId);
   const attachedCustomer = useCartStore((s) => s.attachedCustomer);
   const appliedPromotions = useCartStore((s) => s.appliedPromotions);
   const setRedeemPoints = useCartStore((s) => s.setRedeemPoints);
@@ -95,12 +98,18 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
   const [redeemOpen, setRedeemOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [voidPinOpen, setVoidPinOpen] = useState(false);
+  const [voidConfirmOpen, setVoidConfirmOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
 
   // Close the More popover on outside click + Escape.
   useEffect(() => {
     if (!moreOpen) return;
     function onDocClick(e: MouseEvent) {
+      // S43 P2-2: dialogs opened from menu items (e.g. the hold-note modal)
+      // are portaled to <body>. Clicking inside them must NOT close the menu
+      // — that would unmount the menu item that owns the dialog.
+      const target = e.target as Element | null;
+      if (target?.closest?.('[role="dialog"], [role="alertdialog"]')) return;
       if (moreRef.current && !moreRef.current.contains(e.target as Node)) setMoreOpen(false);
     }
     function onKey(e: KeyboardEvent) {
@@ -123,13 +132,18 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
 
   // Void Order — once anything has been fired to the kitchen, require a manager
   // PIN before wiping the order (waste / fraud control). Before any send, the
-  // cashier can void freely.
+  // cashier confirms via an alertdialog (S43 P2-1 — no more one-tap wipe).
   function handleVoid(): void {
     if (!hasItems) return;
     if (hasSentItems) {
       setVoidPinOpen(true);
       return;
     }
+    setVoidConfirmOpen(true);
+  }
+
+  function handleVoidConfirmed(): void {
+    setVoidConfirmOpen(false);
     voidOrder();
     toast.info('Order voided');
   }
@@ -193,11 +207,19 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
             role="menu"
             className="absolute bottom-full left-0 mb-2 w-56 p-1 rounded-md bg-bg-elevated border border-border-subtle shadow-lg z-50"
           >
-            {/* Hold reuses the existing self-contained component (its own logic). */}
-            <div role="menuitem">
+            {/* Hold reuses the existing self-contained component (its own logic).
+                S43 P0-3: a fired order (pickedUpOrderId set) has a live DB row —
+                holding the local cart would orphan it. Pay or void instead. */}
+            <div
+              role="menuitem"
+              {...(pickedUpOrderId !== null
+                ? { title: 'Order already sent to kitchen — pay or void it' }
+                : {})}
+            >
               <HoldOrderButton
                 variant="ghost"
                 className={cn(MENU_ITEM, 'justify-start')}
+                disabled={pickedUpOrderId !== null}
               />
             </div>
             <button
@@ -278,6 +300,42 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
 
       {/* ── Owned modals ────────────────────────────────────────────────── */}
       <HeldOrdersModal open={heldOpen} onClose={() => setHeldOpen(false)} />
+
+      {/* Void Order — local confirmation (cart not yet fired). S43 P2-1:
+          a one-tap Void wiped the whole cart with no way back — confirm first. */}
+      <CenterModal
+        open={voidConfirmOpen}
+        onOpenChange={setVoidConfirmOpen}
+        title="Void order"
+        className="w-[min(420px,92vw)]"
+        data-testid="void-confirm-modal"
+      >
+        <div role="alertdialog" aria-labelledby="void-confirm-title" className="p-6 space-y-5">
+          <header className="flex items-center gap-2">
+            <XCircle className="h-5 w-5 text-red-400" aria-hidden />
+            <h2 id="void-confirm-title" className="font-serif text-xl text-text-primary">
+              Void this order?
+            </h2>
+          </header>
+          <p className="text-sm text-text-secondary">
+            All items in the current cart will be removed. This cannot be undone.
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <Button variant="secondary" size="lg" onClick={() => setVoidConfirmOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="ghostDestructive"
+              size="lg"
+              className="border border-red-400/30"
+              onClick={handleVoidConfirmed}
+              data-testid="void-confirm-button"
+            >
+              Confirm Void
+            </Button>
+          </div>
+        </div>
+      </CenterModal>
 
       <DiscountModal
         open={discount.discountModalOpen}

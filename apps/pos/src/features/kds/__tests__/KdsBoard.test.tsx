@@ -76,7 +76,8 @@ function makeItem(overrides: Partial<KdsItemRow> = {}): KdsItemRow {
     dispatch_station: 'kitchen',
     sent_to_kitchen_at: new Date('2026-05-14T11:59:00.000Z').toISOString(),
     ready_at: null,
-    order_number: 'A-001',
+    order_number: '#A-001',
+    order_status: 'pending_payment',
     is_cancelled: false,
     cancelled_at: null,
     cancelled_reason: null,
@@ -113,9 +114,9 @@ describe('KdsBoard', () => {
 
   it('renders one card per order and groups items sharing the same order_id', () => {
     mockItems = [
-      makeItem({ id: 'oi-1', order_id: 'ord-1', order_number: 'A-001', product_name: 'Americano' }),
-      makeItem({ id: 'oi-2', order_id: 'ord-1', order_number: 'A-001', product_name: 'Croissant' }),
-      makeItem({ id: 'oi-3', order_id: 'ord-2', order_number: 'A-002', product_name: 'Espresso' }),
+      makeItem({ id: 'oi-1', order_id: 'ord-1', order_number: '#A-001', product_name: 'Americano' }),
+      makeItem({ id: 'oi-2', order_id: 'ord-1', order_number: '#A-001', product_name: 'Croissant' }),
+      makeItem({ id: 'oi-3', order_id: 'ord-2', order_number: '#A-002', product_name: 'Espresso' }),
     ];
 
     render(wrap(<KdsBoard />));

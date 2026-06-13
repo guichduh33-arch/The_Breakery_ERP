@@ -30,10 +30,18 @@ function wrap(node: React.ReactElement) {
   return <QueryClientProvider client={new QueryClient()}>{node}</QueryClientProvider>;
 }
 
+/** S43 P2-2 — drives the hold-note modal (window.prompt is retired). */
+function holdViaModal(note?: string) {
+  fireEvent.click(screen.getByRole('button', { name: /^hold$/i }));
+  if (note !== undefined) {
+    fireEvent.change(screen.getByRole('textbox', { name: /note/i }), { target: { value: note } });
+  }
+  fireEvent.click(screen.getByTestId('hold-note-confirm'));
+}
+
 describe('held-orders smoke — DB-backed hold flow', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.spyOn(window, 'prompt').mockReturnValue('for Mr. Tan');
     useCartStore.setState({
       cart: { items: [ITEM], order_type: 'dine_in', tableNumber: 'T-03' },
       lockedItemIds: [],
@@ -43,7 +51,7 @@ describe('held-orders smoke — DB-backed hold flow', () => {
 
   it('holds the cart: mutation fires with the cart payload + table, then cart clears', async () => {
     render(wrap(<HoldOrderButton />));
-    fireEvent.click(screen.getByRole('button', { name: /hold/i }));
+    holdViaModal('for Mr. Tan');
 
     await waitFor(() => expect(holdMutateAsync).toHaveBeenCalled());
     const arg = holdMutateAsync.mock.calls[0]?.[0] as {
@@ -61,7 +69,7 @@ describe('held-orders smoke — DB-backed hold flow', () => {
 
   it('toasts success after hold', async () => {
     render(wrap(<HoldOrderButton />));
-    fireEvent.click(screen.getByRole('button', { name: /hold/i }));
+    holdViaModal();
     await waitFor(() => expect(toast.success).toHaveBeenCalledWith('Held'));
   });
 
@@ -73,7 +81,7 @@ describe('held-orders smoke — DB-backed hold flow', () => {
     } as never);
     render(wrap(<HoldOrderButton />));
     // Button is disabled when the cart is empty.
-    const btn = screen.getByRole('button', { name: /hold/i });
+    const btn = screen.getByRole('button', { name: /^hold$/i });
     expect(btn).toBeDisabled();
     fireEvent.click(btn);
     expect(holdMutateAsync).not.toHaveBeenCalled();

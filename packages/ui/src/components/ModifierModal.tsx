@@ -154,7 +154,7 @@ export function ModifierModal({
   }
 
   return (
-    <FullScreenModal open={open} onOpenChange={(o) => !o && onClose()}>
+    <FullScreenModal open={open} onOpenChange={(o) => !o && onClose()} accessibleTitle={`Customize ${product.name}`}>
       <DialogPrimitive.Title asChild>
         <span className={cn(SR_ONLY)}>Customize {product.name}</span>
       </DialogPrimitive.Title>

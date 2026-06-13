@@ -1,45 +1,42 @@
 // apps/pos/src/features/discounts/hooks/useVerifyManagerPin.ts
-import { supabase } from '@/lib/supabase';
+// S43 (P0-1c, DEV-S43-B1-01) : fetch brut vers la nouvelle EF verify-manager-pin —
+// functions.invoke hérite du header global `x-app` (CORS) et auth-verify-pin est
+// l'EF de LOGIN (exige user_id) : le flux discount est PIN-only. PIN en header
+// x-manager-pin (pattern S25), lockout SEC-07 per-IP partagé avec void/cancel/refund.
+import { supabaseUrl } from '@/lib/supabase';
+import { getAccessToken } from '@/lib/accessToken';
 import type { VerifyResult } from '@breakery/ui';
 import { setManagerPin } from '../managerPinHolder';
 
 export function useVerifyManagerPin() {
-  return async (pin: string): Promise<VerifyResult> => {
+  // PinVerificationModal calls verifyFn(pin, requiredPermission) — thread it so
+  // future call-sites can gate on other permissions (e.g. orders.void).
+  return async (pin: string, requiredPermission: string = 'sales.discount'): Promise<VerifyResult> => {
     try {
-      const result = await supabase.functions.invoke('auth-verify-pin', {
-        body: { pin, required_permission: 'sales.discount' },
+      const accessToken = await getAccessToken();
+      const res = await fetch(`${supabaseUrl}/functions/v1/verify-manager-pin`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+          // S25 — manager PIN in header, never the body.
+          'x-manager-pin': pin,
+        },
+        body: JSON.stringify({ required_permission: requiredPermission }),
       });
-      const data = result.data as { verified_user_id: string } | null;
-      // supabase-js wraps non-2xx in a FunctionsHttpError whose `message` is the
-      // generic "Edge Function returned a non-2xx status code". The real body
-      // (e.g. { error: 'account_locked' }) is on `context`, a Response object —
-      // we must read it explicitly to distinguish lockout from permission_missing.
-      const error = result.error as {
-        context?: Response & { status?: number };
-      } | null;
-      if (error) {
-        const status = error.context?.status;
-        let bodyError = '';
-        try {
-          if (error.context && typeof error.context.json === 'function') {
-            const body = await error.context.clone().json() as { error?: string };
-            bodyError = (body.error ?? '').toLowerCase();
-          }
-        } catch { /* body not JSON — fall through to status-based mapping */ }
-        // S38 — distinguish account_locked (403 with body 'account_locked') from
-        // plain permission_missing (403 without lockout body). The EF returns
-        // 403 + body { error: 'account_locked' } when locked_until is in the future.
-        if (status === 403) {
-          if (bodyError === 'account_locked') return { ok: false, error: 'account_locked' };
-          return { ok: false, error: 'permission_missing' };
-        }
-        if (status === 401 || status === 400) return { ok: false, error: 'wrong_pin' };
-        return { ok: false, error: 'unknown' };
+      const body = await res.json().catch(() => ({})) as { verified_user_id?: string };
+      if (res.ok) {
+        // S37 SEC-01 — RPC v11 re-validates this PIN server-side at checkout;
+        // stash it in volatile memory until then (cleared by useCheckout).
+        setManagerPin(pin);
+        return { ok: true, userId: body.verified_user_id ?? '' };
       }
-      // S37 SEC-01 — RPC v11 re-validates this PIN server-side at checkout;
-      // stash it in volatile memory until then (cleared by useCheckout).
-      setManagerPin(pin);
-      return { ok: true, userId: data?.verified_user_id ?? '' };
+      // SEC-07 — 429 means the per-IP manager-pin fail bucket is full: surface
+      // it as the lockout UX (same copy as the account_locked path).
+      if (res.status === 429) return { ok: false, error: 'account_locked' };
+      if (res.status === 403) return { ok: false, error: 'permission_missing' };
+      if (res.status === 401 || res.status === 400) return { ok: false, error: 'wrong_pin' };
+      return { ok: false, error: 'unknown' };
     } catch {
       return { ok: false, error: 'unknown' };
     }
