@@ -219,24 +219,27 @@ export const useCartStore = create<CartState>()(
         }),
 
       clear: () =>
-        set((s) => ({
+        set((s) => {
           // `Clear` only wipes unlocked items; locked items survive until
           // checkout completes. This matches K3 (incremental send) so that the
           // cashier can't accidentally drop already-sent items.
-          cart: {
-            ...s.cart,
-            items: s.cart.items.filter((i) => s.lockedItemIds.includes(i.id)),
-          },
-          // Session 9 — wipe promotion state too so a fresh ring-up starts
-          // clean (dismissals from a previous session shouldn't leak).
-          appliedPromotions: [],
-          dismissedPromotionIds: new Set<string>(),
-          // Session 34 — print tracking: keep print status only for items that
-          // survive clear() (the locked ones). A printed locked item must stay
-          // marked printed, otherwise a later fire/checkout would re-print it
-          // (double ticket). Mirrors how clear() keeps locked items in the cart.
-          printedItemIds: s.printedItemIds.filter((id) => s.lockedItemIds.includes(id)),
-        })),
+          const lockedItems = s.cart.items.filter((i) => s.lockedItemIds.includes(i.id));
+          const hasLocked = lockedItems.length > 0;
+          // S44 P1-B — without any in-flight fired line, the client/table context
+          // must leave with the cart. Otherwise the NEXT sale credits points and
+          // category pricing to the previous customer (Hold → "empty" cart → sale).
+          // With locked lines (same fired order still in flight), keep the context.
+          const { customerId: _c, tableNumber: _t, ...restCart } = s.cart;
+          return {
+            cart: { ...(hasLocked ? s.cart : restCart), items: lockedItems },
+            // Session 9 — wipe promotion state too so a fresh ring-up starts clean.
+            appliedPromotions: [],
+            dismissedPromotionIds: new Set<string>(),
+            // Session 34 — keep print status only for surviving (locked) items.
+            printedItemIds: s.printedItemIds.filter((id) => s.lockedItemIds.includes(id)),
+            ...(hasLocked ? {} : { attachedCustomer: null }),
+          };
+        }),
 
       voidOrder: () =>
         set((s) => {
@@ -249,6 +252,10 @@ export const useCartStore = create<CartState>()(
             printedItemIds: [],
             appliedPromotions: [],
             dismissedPromotionIds: new Set<string>(),
+            // S44 P1-A — a void of a FIRED order must not leave the next cart
+            // routing append/pay to the voided order (P0002 loop, persisted in
+            // sessionStorage → reload inoperant). The DB order is gone.
+            pickedUpOrderId: null,
           };
         }),
 

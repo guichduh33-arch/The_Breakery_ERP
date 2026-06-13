@@ -13,6 +13,7 @@
 // created_at only (no item breakdown — that lives server-side until restore).
 
 import { Clock, RotateCcw, Trash2, X } from 'lucide-react';
+import { toast } from 'sonner';
 import { useState, type JSX } from 'react';
 import {
   Currency,
@@ -133,6 +134,11 @@ export function HeldOrdersModal({ open, onClose }: HeldOrdersModalProps): JSX.El
   const { data, isLoading } = useHeldOrdersQuery();
   const rows = data ?? [];
   const cartHasItems = useCartStore((s) => s.cart.items.length > 0);
+  // S44 P1-A — a FIRED counter order is already in the DB (pickedUpOrderId set).
+  // Restoring a held order on top would append the held items to the fired order
+  // at checkout (the customer would pay the union of both). It must be paid or
+  // voided first.
+  const pickedUpOrderId = useCartStore((s) => s.pickedUpOrderId);
   const restore = useRestoreHeldOrder();
   const discard = useDiscardHeldOrder();
 
@@ -144,6 +150,10 @@ export function HeldOrdersModal({ open, onClose }: HeldOrdersModalProps): JSX.El
   }
 
   function handleRestoreTap(id: string): void {
+    if (pickedUpOrderId) {
+      toast.error('Finish or void the current fired order before restoring a held one.');
+      return;
+    }
     if (cartHasItems) {
       setConfirmId(id);
       return;

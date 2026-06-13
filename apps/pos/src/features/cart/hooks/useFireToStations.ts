@@ -5,7 +5,7 @@
 // items "unsent" (re-firing them would duplicate the DB lines).
 import { useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { PrepStation, PrinterRole, Product } from '@breakery/domain';
+import type { PrepStation, PrinterRole } from '@breakery/domain';
 import { groupItemsByStation } from '@breakery/domain';
 import type { DispatchStation } from '@breakery/domain';
 import type { Json } from '@breakery/supabase';
@@ -16,20 +16,9 @@ import { useCartStore } from '@/stores/cartStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useShiftStore } from '@/stores/shiftStore';
 import { useStationPrinters } from './useStationPrinters';
-import { useProducts } from '@/features/products/hooks/useProducts';
+import { useStationMap, getStationMap } from './useStationMap';
 
 const PREP_STATIONS: readonly DispatchStation[] = ['barista', 'kitchen', 'bakery'];
-
-/** Build a product_id → dispatch_station map (defaults to 'none'). */
-function buildStationMap(
-  products: readonly Product[],
-): Record<string, DispatchStation> {
-  const map: Record<string, DispatchStation> = {};
-  for (const p of products) {
-    map[p.id] = p.dispatch_station ?? 'none';
-  }
-  return map;
-}
 
 // ---------------------------------------------------------------------------
 // Result type
@@ -84,17 +73,19 @@ export interface UseFireToStationsResult {
 export function useFireToStations(): UseFireToStationsResult {
   const queryClient = useQueryClient();
   const { data: printersMap } = useStationPrinters();
-  // Subscribe so firableCount recomputes when the products query resolves.
-  const { data: products } = useProducts();
+  // S44 P0-B — subscribe to the station map (includes variant children) so
+  // firableCount recomputes when it resolves. NOT useProducts (which filters
+  // parent_product_id IS NULL → variant lines route nowhere).
+  const { data: stationMapData } = useStationMap();
   const serverName = useAuthStore((s) => s.user?.full_name ?? 'Staff');
   // Subscribe to the cart so firableCount recomputes on every cart edit.
   const cartItems = useCartStore((s) => s.cart.items);
   const printedItemIds = useCartStore((s) => s.printedItemIds);
 
   // Derive the firable count from the same data the mutation will use. When
-  // `products` is undefined (query loading) the map is empty → count 0 →
+  // the station map is undefined (query loading) it is empty → count 0 →
   // button disabled, which naturally guards the not-loaded race.
-  const stationMap = buildStationMap(products ?? []);
+  const stationMap = stationMapData ?? {};
   const firableCount = cartItems.filter((item) => {
     if (item.is_cancelled) return false;
     if (printedItemIds.includes(item.id)) return false;
@@ -142,7 +133,10 @@ export function useFireToStations(): UseFireToStationsResult {
 
           fireClientUuidRef.current ??= crypto.randomUUID();
           const existingOrderId = useCartStore.getState().pickedUpOrderId;
-          const { data, error } = await supabase.rpc('fire_counter_order_v1', {
+          // S44 P0-C(3) — fire_counter_order_v2 gates any line discount on an
+          // authorizing manager. Hoist the first discounted line's authorizer.
+          const fireAuthorizer = toPersist.find((i) => i.discount?.authorized_by)?.discount?.authorized_by;
+          const { data, error } = await supabase.rpc('fire_counter_order_v2', {
             p_client_uuid: fireClientUuidRef.current,
             p_session_id: sessionId,
             p_items: toPersist.map((i) => ({
@@ -155,6 +149,7 @@ export function useFireToStations(): UseFireToStationsResult {
             ...(existingOrderId ? { p_order_id: existingOrderId } : {}),
             ...(tableNo !== undefined ? { p_table_number: tableNo } : {}),
             p_order_type: useCartStore.getState().cart.order_type,
+            ...(fireAuthorizer ? { p_discount_authorized_by: fireAuthorizer } : {}),
           });
           if (error) throw Object.assign(new Error(error.message), { details: error });
           const env = data as unknown as {
@@ -181,11 +176,11 @@ export function useFireToStations(): UseFireToStationsResult {
       useCartStore.getState().markLocked(allIds);
       useCartStore.getState().markPrinted(allIds);
 
-      // 4. Build stationByProductId from the live query cache (NOT the render
-      //    closure) so routing reflects the products fetched by fire time.
-      const cachedProducts =
-        queryClient.getQueryData<Product[]>(['products']) ?? [];
-      const stationByProductId = buildStationMap(cachedProducts);
+      // 4. Build stationByProductId from the live station-map cache (NOT the
+      //    render closure) so routing reflects products fetched by fire time.
+      //    S44 P0-B — the station map includes variant children (useProducts
+      //    filters them out), so a variant line routes to its real station.
+      const stationByProductId = await getStationMap(queryClient);
 
       // 5. Group by prep station (cancelled / 'none' / unmapped → excluded
       //    from PRINTING only — they are already persisted above).

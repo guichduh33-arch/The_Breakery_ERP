@@ -117,21 +117,12 @@ describe('Category loyalty multiplier — buildOrderPayload', () => {
     expect(earn).toBe(46);
   });
 
-  it('buildOrderPayload with cumulLoyaltyMultiplier=1.2 includes loyalty_multiplier=1.2', () => {
-    const cart: Cart = { order_type: 'dine_in', items: [CART_ITEM], customerId: BRONZE_VIP_CUSTOMER.id };
-    const payload = buildOrderPayload('sess-1', cart, payment, undefined, undefined, 1.2);
-    expect(payload.loyalty_multiplier).toBe(1.2);
-  });
-
-  it('buildOrderPayload with cumulLoyaltyMultiplier=1.32 includes loyalty_multiplier=1.32', () => {
+  // S44 P0-C(2) — the multiplier is no longer a client payload field
+  // (complete_order_with_payment_v12 resolves it server-side from the customer
+  // tier × category). buildOrderPayload never emits loyalty_multiplier anymore.
+  it('buildOrderPayload never emits loyalty_multiplier (resolved server-side, S44)', () => {
     const cart: Cart = { order_type: 'dine_in', items: [CART_ITEM], customerId: GOLD_VIP_CUSTOMER.id };
-    const payload = buildOrderPayload('sess-1', cart, payment, undefined, undefined, 1.32);
-    expect(payload.loyalty_multiplier).toBe(1.32);
-  });
-
-  it('buildOrderPayload with cumul=1.0 omits loyalty_multiplier', () => {
-    const cart: Cart = { order_type: 'dine_in', items: [CART_ITEM] };
-    const payload = buildOrderPayload('sess-1', cart, payment, undefined, undefined, 1.0);
+    const payload = buildOrderPayload('sess-1', cart, payment);
     expect('loyalty_multiplier' in payload).toBe(false);
   });
 });
@@ -149,7 +140,7 @@ describe('Category loyalty multiplier — useCheckout integration', () => {
     usePaymentStore.setState({ idempotencyKey: crypto.randomUUID() });
   });
 
-  it('VIP Bronze customer: checkout payload includes loyalty_multiplier=1.2', async () => {
+  it('VIP Bronze customer: checkout payload omits client loyalty_multiplier (S44)', async () => {
     useCartStore.setState({
       cart: { items: [CART_ITEM], order_type: 'dine_in', customerId: BRONZE_VIP_CUSTOMER.id },
       lockedItemIds: [],
@@ -177,10 +168,11 @@ describe('Category loyalty multiplier — useCheckout integration', () => {
     });
 
     expect(capturedBody).not.toBeNull();
-    expect(capturedBody!.loyalty_multiplier).toBe(1.2); // 1.0 (Bronze) × 1.2 (VIP) = 1.2
+    // S44 P0-C(2) — the client no longer forwards a multiplier; v12 resolves it server-side.
+    expect('loyalty_multiplier' in capturedBody!).toBe(false);
   });
 
-  it('VIP Gold customer: checkout payload includes loyalty_multiplier=1.32', async () => {
+  it('VIP Gold customer: checkout payload omits client loyalty_multiplier (S44)', async () => {
     useCartStore.setState({
       cart: { items: [CART_ITEM], order_type: 'dine_in', customerId: GOLD_VIP_CUSTOMER.id },
       lockedItemIds: [],
@@ -208,7 +200,7 @@ describe('Category loyalty multiplier — useCheckout integration', () => {
     });
 
     expect(capturedBody).not.toBeNull();
-    // 1.1 (Gold) × 1.2 (VIP) = 1.32
-    expect(capturedBody!.loyalty_multiplier).toBeCloseTo(1.32, 5);
+    // S44 P0-C(2) — the client no longer forwards a multiplier; v12 resolves it server-side.
+    expect('loyalty_multiplier' in capturedBody!).toBe(false);
   });
 });

@@ -162,15 +162,15 @@ describe('Customer pricing smoke — RPC get_customer_product_price', () => {
     expect(items[0]?.unit_price).toBe(35000);
   });
 
-  it('VIP customer earn multiplier = 1.2 → buildOrderPayload loyalty_multiplier = 1.2', async () => {
+  // S44 P0-C(2) — multiplier resolved server-side (v12); the client payload omits it.
+  it('VIP customer: buildOrderPayload omits loyalty_multiplier (S44)', async () => {
     const { buildOrderPayload } = await import('@breakery/domain');
     const cart = {
       order_type: 'dine_in' as const,
       items: [{ id: 'l1', product_id: 'prod-amer', name: 'Americano', unit_price: 33250, quantity: 1, modifiers: [] as never[] }],
       customerId: VIP_CUSTOMER.id,
     };
-    // VIP: Bronze tier (2000 pts = gold 1.1) × category 1.2 = 1.32
-    const payload = buildOrderPayload('sess-1', cart, { method: 'cash', amount: 33250 }, undefined, undefined, 1.32);
-    expect(payload.loyalty_multiplier).toBe(1.32);
+    const payload = buildOrderPayload('sess-1', cart, { method: 'cash', amount: 33250 });
+    expect('loyalty_multiplier' in payload).toBe(false);
   });
 });

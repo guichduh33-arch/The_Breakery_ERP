@@ -18,7 +18,8 @@ const checkoutMock = vi.hoisted(() => ({ mutateAsync: vi.fn() }));
 vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() }, Toaster: () => null }));
 vi.mock('../useCheckout', () => ({ useCheckout: () => ({ mutateAsync: checkoutMock.mutateAsync, isPending: false }) }));
 vi.mock('@/features/cart/hooks/useFireToStations', () => ({
-  useFireToStations: () => ({ mutation: { mutateAsync: vi.fn(), isPending: false }, firableCount: 0 }),
+  // mutateAsync must RESOLVE (the success path chains `.then()` on it).
+  useFireToStations: () => ({ mutation: { mutateAsync: vi.fn().mockResolvedValue([]), isPending: false }, firableCount: 0 }),
 }));
 vi.mock('@/features/settings/hooks/usePOSPresets', () => ({
   usePOSPresets: () => ({ presets: { quickPayments: [50_000, 100_000] } }),
@@ -127,5 +128,32 @@ describe('usePaymentFlowLogic — fatal error lifecycle on close (S43 P0-1b)', (
 
     act(() => { result.current.close(); });
     expect(result.current.lastError?.kind).toBe('already_paid');
+  });
+});
+
+describe('usePaymentFlowLogic — loyalty from server envelope (S44 D4)', () => {
+  beforeEach(() => {
+    seedCartOneItem();
+    checkoutMock.mutateAsync.mockReset();
+    usePaymentStore.setState({ isOpen: true, selectedMethod: 'cash', cashReceivedStr: '25000', tenders: [] });
+  });
+
+  it('success.pointsEarned + loyaltyBalanceAfter come from the server result, not a client recompute', async () => {
+    // Server-resolved figures (DB tier × category multiplier). 73 ≠ any local
+    // estimate for a 25 000 cart, so a client recompute would NOT produce 73.
+    checkoutMock.mutateAsync.mockResolvedValueOnce({
+      ok: true,
+      order_id: 'o-1',
+      order_number: '#0001',
+      total: 25_000,
+      tax_amount: 2_273,
+      change_given: 0,
+      loyalty_points_earned: 73,
+      loyalty_balance_after: 666,
+    });
+    const { result } = renderHook(() => usePaymentFlowLogic(), { wrapper });
+    await act(async () => { await result.current.handleProcess(); });
+    expect(result.current.success?.pointsEarned).toBe(73);
+    expect(result.current.success?.loyaltyBalanceAfter).toBe(666);
   });
 });

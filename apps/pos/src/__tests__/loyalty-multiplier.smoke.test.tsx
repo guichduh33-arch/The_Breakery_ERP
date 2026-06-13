@@ -94,25 +94,13 @@ function wrapper(children: ReactNode) {
 describe('Loyalty multiplier smoke — buildOrderPayload', () => {
   const payment: PaymentInput = { method: 'cash', amount: 35000, cash_received: 35000, change_given: 0 };
 
-  it('Gold customer (lifetime_points=2500) → loyalty_multiplier=1.1', () => {
-    const cart: Cart = {
-      order_type: 'dine_in',
-      items: [CART_ITEM],
-      customerId: GOLD_CUSTOMER.id,
-    };
-    const payload = buildOrderPayload('session-1', cart, payment, undefined, 2500);
-    expect(payload.loyalty_multiplier).toBe(1.1);
-  });
-
-  it('Bronze customer (lifetime_points=0) → multiplier omitted (1.0 default)', () => {
-    const cart: Cart = {
-      order_type: 'dine_in',
-      items: [CART_ITEM],
-      customerId: BRONZE_CUSTOMER.id,
-    };
-    const payload = buildOrderPayload('session-1', cart, payment, undefined, 0);
-    // multiplier=1.0 → omitted from payload per buildOrderPayload convention
-    expect('loyalty_multiplier' in payload).toBe(false);
+  // S44 P0-C(2) — the multiplier is resolved server-side (v12); buildOrderPayload
+  // never emits loyalty_multiplier. The earn math is verified in pgTAP (s44 T12).
+  it('Gold/Bronze: buildOrderPayload omits loyalty_multiplier (resolved server-side, S44)', () => {
+    const gold: Cart = { order_type: 'dine_in', items: [CART_ITEM], customerId: GOLD_CUSTOMER.id };
+    const bronze: Cart = { order_type: 'dine_in', items: [CART_ITEM], customerId: BRONZE_CUSTOMER.id };
+    expect('loyalty_multiplier' in buildOrderPayload('session-1', gold, payment)).toBe(false);
+    expect('loyalty_multiplier' in buildOrderPayload('session-1', bronze, payment)).toBe(false);
   });
 
   it('Gold: earn = floor(35000 × 1.1 / 1000) = 38', () => {
@@ -139,7 +127,7 @@ describe('Loyalty multiplier smoke — useCheckout sends correct multiplier', ()
     usePaymentStore.setState({ idempotencyKey: crypto.randomUUID() });
   });
 
-  it('Gold customer checkout: fetch payload includes loyalty_multiplier=1.1', async () => {
+  it('Gold customer checkout: fetch payload omits client loyalty_multiplier (S44)', async () => {
     useCartStore.setState({
       cart: {
         items: [CART_ITEM],
@@ -173,7 +161,8 @@ describe('Loyalty multiplier smoke — useCheckout sends correct multiplier', ()
     });
 
     expect(capturedBody).not.toBeNull();
-    expect(capturedBody!.loyalty_multiplier).toBe(1.1);
+    // S44 P0-C(2) — v12 resolves the multiplier server-side; the client omits it.
+    expect('loyalty_multiplier' in capturedBody!).toBe(false);
   });
 
   it('Bronze customer checkout: fetch payload omits loyalty_multiplier (defaults to 1.0)', async () => {

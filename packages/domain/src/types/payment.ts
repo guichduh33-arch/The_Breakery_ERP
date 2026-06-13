@@ -23,6 +23,12 @@ export interface PaymentResult {
   total: number;
   tax_amount: number;
   change_given: number | null;
+  // S44 D4 — loyalty figures come from the server envelope (the DB resolves the
+  // tier × category multiplier). The receipt/success modal display these instead
+  // of recomputing client-side. `loyalty_balance_after` is present on the direct
+  // (EF/v12) path ; the pickup (v8) path returns points_earned only.
+  loyalty_points_earned?: number;
+  loyalty_balance_after?: number;
 }
 
 export interface PaymentError {

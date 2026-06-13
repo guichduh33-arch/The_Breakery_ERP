@@ -7,7 +7,6 @@ import type {
   PaymentInput,
 } from '../types/index.js';
 import type { AppliedPromotion } from '../promotions/types.js';
-import { TIERS, tierFromLifetime } from '../loyalty/tiers.js';
 
 function buildItemPayload(item: Cart['items'][number]): OrderPayloadItem {
   const base: OrderPayloadItem = {
@@ -28,11 +27,6 @@ function buildItemPayload(item: Cart['items'][number]): OrderPayloadItem {
     discount_reason: item.discount.reason,
     ...(item.discount.authorized_by ? { discount_authorized_by: item.discount.authorized_by } : {}),
   };
-}
-
-function resolveLoyaltyMultiplier(cart: Cart): number {
-  if (!cart.customerId) return 1.0;
-  return 1.0;
 }
 
 /**
@@ -57,16 +51,11 @@ export function buildOrderPayload(
    */
   paymentOrTenders: PaymentInput | PaymentInput[],
   idempotencyKey?: string,
-  lifetimePoints?: number,
-  cumulLoyaltyMultiplier?: number,
+  // S44 P0-C(2) — the loyalty multiplier is no longer a client-supplied value.
+  // complete_order_with_payment_v12 resolves it server-side from the customer's
+  // lifetime tier × category. The `loyalty_multiplier` payload field is dropped.
   appliedPromotions?: AppliedPromotion[],
 ): OrderPayload {
-  const multiplier =
-    cumulLoyaltyMultiplier ??
-    (lifetimePoints != null
-      ? (TIERS.find((t) => t.tier === tierFromLifetime(lifetimePoints))?.points_multiplier ?? 1.0)
-      : resolveLoyaltyMultiplier(cart));
-
   const promotions = appliedPromotions && appliedPromotions.length > 0
     ? mapPromotions(appliedPromotions)
     : null;
@@ -102,7 +91,6 @@ export function buildOrderPayload(
       ...(cart.cartDiscount.authorized_by ? { discount_authorized_by: cart.cartDiscount.authorized_by } : {}),
     } : {}),
     ...(hoistedLineAuthorizer ? { discount_authorized_by: hoistedLineAuthorizer } : {}),
-    ...(multiplier !== 1.0 ? { loyalty_multiplier: multiplier } : {}),
     ...(promotions ? { promotions } : {}),
   };
 }

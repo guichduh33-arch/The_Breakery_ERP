@@ -210,33 +210,15 @@ describe('buildOrderPayload', () => {
     expect('discount_amount' in (payload.items[0] ?? {})).toBe(false);
   });
 
-  // Session 6: loyalty_multiplier
-  it('includes loyalty_multiplier=1.1 for Gold customer (lifetime >= 2000)', () => {
+  // S44 P0-C(2) — the loyalty multiplier is no longer a client payload field.
+  // complete_order_with_payment_v12 / pay_existing_order_v8 resolve it
+  // server-side (get_loyalty_multiplier × category). buildOrderPayload never
+  // emits `loyalty_multiplier` anymore.
+  it('never emits loyalty_multiplier (resolved server-side, S44)', () => {
     const cart: Cart = {
       order_type: 'dine_in',
       items: [{ id: 'l1', product_id: 'p1', name: 'Latte', unit_price: 35000, quantity: 1, modifiers: [] }],
       customerId: 'cust-gold',
-    };
-    const payment: PaymentInput = { method: 'cash', amount: 35000, cash_received: 35000, change_given: 0 };
-    const payload = buildOrderPayload('session-1', cart, payment, undefined, 2500);
-    expect(payload.loyalty_multiplier).toBe(1.1);
-  });
-
-  it('omits loyalty_multiplier when Bronze (multiplier=1.0)', () => {
-    const cart: Cart = {
-      order_type: 'dine_in',
-      items: [{ id: 'l1', product_id: 'p1', name: 'Latte', unit_price: 35000, quantity: 1, modifiers: [] }],
-      customerId: 'cust-bronze',
-    };
-    const payment: PaymentInput = { method: 'cash', amount: 35000, cash_received: 35000, change_given: 0 };
-    const payload = buildOrderPayload('session-1', cart, payment, undefined, 100);
-    expect('loyalty_multiplier' in payload).toBe(false);
-  });
-
-  it('omits loyalty_multiplier when no customer', () => {
-    const cart: Cart = {
-      order_type: 'dine_in',
-      items: [{ id: 'l1', product_id: 'p1', name: 'Latte', unit_price: 35000, quantity: 1, modifiers: [] }],
     };
     const payment: PaymentInput = { method: 'cash', amount: 35000, cash_received: 35000, change_given: 0 };
     const payload = buildOrderPayload('session-1', cart, payment);

@@ -29,6 +29,8 @@ export interface PaymentSuccessState {
   total: number;
   changeGiven: number | null;
   pointsEarned: number;
+  // S44 D4 — server-resolved loyalty balance (direct/EF path only).
+  loyaltyBalanceAfter?: number;
   customerName: string | undefined;
   paymentMethod: PaymentMethod;
 }
@@ -163,13 +165,18 @@ export function usePaymentFlowLogic() {
         toast.error(`Station print failed: ${message}`);
       });
 
+      // S44 D4 — points and balance come from the server envelope (the DB
+      // resolves the tier × category multiplier). Fall back to the local
+      // estimate only if the server omitted points (legacy / no customer).
       setSuccess({
         orderNumber: result.order_number,
         total: result.total,
         changeGiven: result.change_given,
-        pointsEarned: attachedCustomer
-          ? earnPointsForCustomer(result.total, attachedCustomer.lifetime_points)
-          : 0,
+        pointsEarned: result.loyalty_points_earned
+          ?? (attachedCustomer
+            ? earnPointsForCustomer(result.total, attachedCustomer.lifetime_points)
+            : 0),
+        ...(result.loyalty_balance_after != null ? { loyaltyBalanceAfter: result.loyalty_balance_after } : {}),
         customerName: attachedCustomer?.name ?? undefined,
         paymentMethod: tendersToShip[0]!.method,
       });
