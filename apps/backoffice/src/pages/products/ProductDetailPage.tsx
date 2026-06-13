@@ -8,7 +8,7 @@
 // URL: /backoffice/products/:productId
 
 import { useEffect, useMemo, useState, type JSX } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { GeneralPanel } from '@/features/products/components/GeneralPanel.js';
 import { OverviewPanel } from '@/features/products/components/OverviewPanel.js';
 import { ProductDetailHeader } from '@/features/products/components/ProductDetailHeader.js';
@@ -25,8 +25,13 @@ import { useAuthStore } from '@/stores/authStore.js';
 import type { ProductDetailTab, ProductRow } from '@/features/products/types.js';
 import { RecipeBuilder } from '@/features/recipes/index.js';
 
+const VALID_TABS: ReadonlySet<ProductDetailTab> = new Set([
+  'overview', 'general', 'units', 'recipe', 'variants', 'costing', 'purchase', 'history',
+]);
+
 export default function ProductDetailPage(): JSX.Element {
   const { productId } = useParams<{ productId: string }>();
+  const [searchParams] = useSearchParams();
   const product = useProductDetail(productId ?? null);
   const displayStock = useProductDisplayStock(
     productId ?? null,
@@ -35,7 +40,14 @@ export default function ProductDetailPage(): JSX.Element {
   const categories = useCategories();
   const updateProduct = useUpdateProduct();
   const canUpdate = useAuthStore((s) => s.hasPermission('products.update'));
-  const [tab, setTab] = useState<ProductDetailTab>('overview');
+  // S45 Wave C — initialize from ?tab= query param (deep-link from $ pricing action).
+  // One-time read on mount; no 2-way sync on tab clicks (out of scope).
+  const tabParam = searchParams.get('tab');
+  const initialTab: ProductDetailTab =
+    tabParam !== null && VALID_TABS.has(tabParam as ProductDetailTab)
+      ? (tabParam as ProductDetailTab)
+      : 'overview';
+  const [tab, setTab] = useState<ProductDetailTab>(initialTab);
   const [patch, setPatch] = useState<ProductUpdatePatch>({});
 
   useEffect(() => {

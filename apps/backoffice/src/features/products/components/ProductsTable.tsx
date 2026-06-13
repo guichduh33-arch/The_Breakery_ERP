@@ -150,10 +150,13 @@ export function ProductsTable({
             label={`View ${r.name}`}
             onClick={(e) => { e.stopPropagation(); onView?.(r); }}
           ><Eye className="h-3.5 w-3.5" aria-hidden /></RowAction>
-          <RowAction
-            label={`Edit pricing for ${r.name}`}
-            onClick={(e) => { e.stopPropagation(); onPricing?.(r); }}
-          ><DollarSign className="h-3.5 w-3.5" aria-hidden /></RowAction>
+          {onPricing !== undefined && (
+            <RowAction
+              label={`Edit pricing for ${r.name}`}
+              onClick={(e) => { e.stopPropagation(); onPricing(r); }}
+              data-testid={`pricing-btn-${r.id}`}
+            ><DollarSign className="h-3.5 w-3.5" aria-hidden /></RowAction>
+          )}
           {onDelete !== undefined && (
             <RowAction
               label={`Delete ${r.name}`}

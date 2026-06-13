@@ -34,8 +34,9 @@ export default function ProductsPage(): JSX.Element {
   const products = useProducts();
   const categories = useCategories();
   const resolvedAllergens = useResolvedAllergensMap();
-  const canCreate = useAuthStore((s) => s.hasPermission('products.create'));
-  const canDelete = useAuthStore((s) => s.hasPermission('products.delete'));
+  const canCreate      = useAuthStore((s) => s.hasPermission('products.create'));
+  const canDelete      = useAuthStore((s) => s.hasPermission('products.delete'));
+  const canEditPricing = useAuthStore((s) => s.hasPermission('products.update'));
 
   const [search, setSearch] = useState('');
   const [categoryId, setCategoryId] = useState<string | 'all'>('all');
@@ -89,6 +90,10 @@ export default function ProductsPage(): JSX.Element {
     navigate(`/backoffice/products/${row.id}`);
   }
 
+  function openPricing(row: ProductRow): void {
+    navigate(`/backoffice/products/${row.id}?tab=general`);
+  }
+
   if (products.error !== null && products.error !== undefined) {
     return (
       <div className="rounded-lg border border-red bg-red-soft p-4 text-sm text-red" role="alert">
@@ -137,6 +142,7 @@ export default function ProductsPage(): JSX.Element {
           parentIds={parentIds}
           onRowClick={openProduct}
           onView={openProduct}
+          {...(canEditPricing ? { onPricing: openPricing } : {})}
           {...(canDelete ? { onDelete: (row: ProductRow) => setToDelete(row) } : {})}
         />
       ) : (
