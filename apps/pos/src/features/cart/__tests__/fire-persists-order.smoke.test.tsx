@@ -1,7 +1,7 @@
 // apps/pos/src/features/cart/__tests__/fire-persists-order.smoke.test.tsx
 //
 // Session 43 / Wave C — P0-3 : le fire comptoir doit persister AVANT d'imprimer
-// (fire_counter_order_v1), et marquer les items locked+printed même si
+// (fire_counter_order_v2), et marquer les items locked+printed même si
 // l'imprimante échoue — la DB est la source de vérité ; un échec d'impression
 // ne doit plus laisser les items « non envoyés » (sinon re-fire = doublon DB).
 //
@@ -100,6 +100,17 @@ function seedCart(opts: { pickedUpOrderId?: string | null } = {}) {
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
+vi.mock('@/features/cart/hooks/useStationMap', () => {
+  // S44 P0-B — useFireToStations now reads the station map (variant-aware) for
+  // firableCount (render) and routing (getStationMap, fire path). Mock both so
+  // the test never hits supabase.from.
+  const STATION_MAP: Record<string, string> = { 'p-barista': 'barista', 'p-kitchen': 'kitchen', 'p-none': 'none' };
+  return {
+    useStationMap: () => ({ data: STATION_MAP }),
+    getStationMap: () => Promise.resolve(STATION_MAP),
+  };
+});
+
 describe('useFireToStations persists before printing (P0-3)', () => {
   beforeEach(() => {
     rpcMock.mockReset();
@@ -114,7 +125,7 @@ describe('useFireToStations persists before printing (P0-3)', () => {
     seedCart();
   });
 
-  it('calls fire_counter_order_v1 with ALL unprinted items, sets pickedUpOrderId, marks items even when print fails', async () => {
+  it('calls fire_counter_order_v2 with ALL unprinted items, sets pickedUpOrderId, marks items even when print fails', async () => {
     const { useFireToStations } = await import('../hooks/useFireToStations');
     const { result } = renderHook(() => useFireToStations(), { wrapper });
 
@@ -124,7 +135,7 @@ describe('useFireToStations persists before printing (P0-3)', () => {
 
     expect(rpcMock).toHaveBeenCalledTimes(1);
     const [fnName, args] = rpcMock.mock.calls[0] as [string, Record<string, unknown>];
-    expect(fnName).toBe('fire_counter_order_v1');
+    expect(fnName).toBe('fire_counter_order_v2');
     expect(args.p_session_id).toBe('sess-1');
     expect(args.p_order_id).toBeUndefined(); // create mode
     expect(args.p_table_number).toBe('T5');
@@ -250,7 +261,7 @@ describe('useFireToStations persists before printing (P0-3)', () => {
 
   it('printOnly (post-payment auto-fire): RPC is NOT called, items still seal and print', async () => {
     // Post-payment, the order already exists in DB (created by v11 / paid via
-    // pay_existing_order_v7) — persisting here would mint an orphan order
+    // pay_existing_order_v8) — persisting here would mint an orphan order
     // (direct pay) or append against a PAID order (pickup) → P0002.
     printStationTicketMock.mockResolvedValue({ success: true });
 

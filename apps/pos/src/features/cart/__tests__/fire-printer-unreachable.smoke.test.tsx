@@ -2,7 +2,7 @@
 //
 // Session 34 / W4 — kitchen printer absent from map.
 // Session 43 / P0-3 — semantics updated: the fire persists the order via
-// fire_counter_order_v1 BEFORE printing, so ALL sent items are sealed
+// fire_counter_order_v2 BEFORE printing, so ALL sent items are sealed
 // (locked + printed) even when a station printer is unreachable — the ticket
 // lives in the DB/KDS and a re-fire would duplicate the order lines.
 //
@@ -29,7 +29,7 @@ vi.mock('sonner', () => ({
   Toaster: () => null,
 }));
 
-// Session 43 / P0-3 — the fire now persists via fire_counter_order_v1 first.
+// Session 43 / P0-3 — the fire now persists via fire_counter_order_v2 first.
 const { rpcMock } = vi.hoisted(() => ({ rpcMock: vi.fn() }));
 
 vi.mock('@/lib/supabase', () => ({
@@ -67,6 +67,17 @@ function withQuery(node: React.ReactElement) {
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
+
+vi.mock('@/features/cart/hooks/useStationMap', () => {
+  // S44 P0-B — useFireToStations now reads the station map (variant-aware) for
+  // firableCount (render) and routing (getStationMap, fire path). Mock both so
+  // the test never hits supabase.from.
+  const STATION_MAP: Record<string, string> = { 'p-barista': 'barista', 'p-kitchen': 'kitchen', 'p-none': 'none' };
+  return {
+    useStationMap: () => ({ data: STATION_MAP }),
+    getStationMap: () => Promise.resolve(STATION_MAP),
+  };
+});
 
 describe('SendToKitchenButton — kitchen printer unreachable', () => {
   beforeEach(() => {

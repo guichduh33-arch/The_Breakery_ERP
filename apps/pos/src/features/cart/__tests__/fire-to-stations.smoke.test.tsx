@@ -27,7 +27,7 @@ vi.mock('sonner', () => ({
   Toaster: () => null,
 }));
 
-// Session 43 / P0-3 — the fire now persists via fire_counter_order_v1 first.
+// Session 43 / P0-3 — the fire now persists via fire_counter_order_v2 first.
 const { rpcMock } = vi.hoisted(() => ({ rpcMock: vi.fn() }));
 
 vi.mock('@/lib/supabase', () => ({
@@ -69,6 +69,17 @@ function withQuery(node: React.ReactElement) {
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
+
+vi.mock('@/features/cart/hooks/useStationMap', () => {
+  // S44 P0-B — useFireToStations now reads the station map (variant-aware) for
+  // firableCount (render) and routing (getStationMap, fire path). Mock both so
+  // the test never hits supabase.from.
+  const STATION_MAP: Record<string, string> = { 'p-barista': 'barista', 'p-kitchen': 'kitchen', 'p-none': 'none' };
+  return {
+    useStationMap: () => ({ data: STATION_MAP }),
+    getStationMap: () => Promise.resolve(STATION_MAP),
+  };
+});
 
 describe('SendToKitchenButton — fire to stations smoke', () => {
   beforeEach(() => {
@@ -154,7 +165,7 @@ describe('SendToKitchenButton — fire to stations smoke', () => {
 
     // Session 43 / P0-3 — the order was persisted BEFORE printing.
     expect(rpcMock).toHaveBeenCalledTimes(1);
-    expect(rpcMock.mock.calls[0]![0]).toBe('fire_counter_order_v1');
+    expect(rpcMock.mock.calls[0]![0]).toBe('fire_counter_order_v2');
     expect(useCartStore.getState().pickedUpOrderId).toBe('order-db-1');
   });
 });
