@@ -2,10 +2,10 @@
 import { useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Cart, PaymentInput, PaymentResult } from '@breakery/domain';
-import { buildOrderPayload, TIERS, tierFromLifetime } from '@breakery/domain';
+import { buildOrderPayload } from '@breakery/domain';
 import type { Database, Json } from '@breakery/supabase';
 
-type PayExistingOrderArgs = Database['public']['Functions']['pay_existing_order_v7']['Args'];
+type PayExistingOrderArgs = Database['public']['Functions']['pay_existing_order_v8']['Args'];
 
 /** Wire-format row sent as `p_promotions` to RPC v7 / v4 (§3.6). */
 interface PromotionWirePayload {
@@ -60,12 +60,11 @@ export function useCheckout() {
       const { useCartStore } = await import('@/stores/cartStore');
       const cartState = useCartStore.getState();
       const { customerId, loyaltyPointsToRedeem, tableNumber, cartDiscount } = cartState.cart;
-      const { attachedCustomer, pickedUpOrderId, appliedPromotions } = cartState;
+      const { pickedUpOrderId, appliedPromotions } = cartState;
 
-      const tier = attachedCustomer ? tierFromLifetime(attachedCustomer.lifetime_points) : null;
-      const tierMultiplier = tier ? (TIERS.find((t) => t.tier === tier)?.points_multiplier ?? 1.0) : 1.0;
-      const categoryMultiplier = attachedCustomer?.category?.points_multiplier ?? 1.0;
-      const multiplier = tierMultiplier * categoryMultiplier;
+      // S44 P0-C(2) — the loyalty multiplier is resolved server-side now
+      // (complete_order_with_payment_v12 / pay_existing_order_v8). The client no
+      // longer computes or forwards it.
 
       // Session 9 — both branches forward applied promotions to the server,
       // which re-validates eligibility and inserts promotion_applications.
@@ -104,7 +103,11 @@ export function useCheckout() {
           if (appendUuidRef.current?.attempt !== idempotencyKey) {
             appendUuidRef.current = { attempt: idempotencyKey, uuid: crypto.randomUUID() };
           }
-          const { error: appendErr } = await supabase.rpc('fire_counter_order_v1', {
+          // S44 P0-C(3) — fire_counter_order_v2 gates any appended line discount
+          // on an authorizing manager (sales.discount). Hoist the first
+          // discounted line's authorizer so the gate sees the captured PIN holder.
+          const appendAuthorizer = unsynced.find((i) => i.discount?.authorized_by)?.discount?.authorized_by;
+          const { error: appendErr } = await supabase.rpc('fire_counter_order_v2', {
             p_client_uuid: appendUuidRef.current.uuid,
             p_session_id: sessionId,
             p_items: unsynced.map((i) => ({
@@ -115,6 +118,7 @@ export function useCheckout() {
               ...(i.discount ? { discount_amount: i.discount.amount } : {}),
             })) as unknown as Json,
             p_order_id: pickedUpOrderId,
+            ...(appendAuthorizer ? { p_discount_authorized_by: appendAuthorizer } : {}),
           });
           if (appendErr) throw Object.assign(new Error(appendErr.message), { details: appendErr });
 
@@ -138,7 +142,7 @@ export function useCheckout() {
           p_order_id: pickedUpOrderId,
           p_loyalty_points_redeemed: loyaltyPointsToRedeem ?? 0,
           p_discount_amount: cartDiscount?.amount ?? 0,
-          p_loyalty_multiplier: multiplier,
+          // S44 P0-C(2) — no p_loyalty_multiplier: v8 resolves it server-side.
         };
         if (singlePayment) args.p_payment = singlePayment;
         if (arrayPayments) args.p_payments = arrayPayments;
@@ -151,9 +155,9 @@ export function useCheckout() {
         if (promotionPayload.length > 0) {
           args.p_promotions = promotionPayload;
         }
-        // S37 — v7 returns a jsonb envelope: the POS finally shows the REAL
+        // S37 — v8 returns a jsonb envelope: the POS finally shows the REAL
         // pickup total instead of the hardcoded 0 (POS-01).
-        const { error, data } = await supabase.rpc('pay_existing_order_v7', args as PayExistingOrderArgs);
+        const { error, data } = await supabase.rpc('pay_existing_order_v8', args as PayExistingOrderArgs);
         if (error) throw Object.assign(new Error(error.message), { details: error });
         const envelope = data as unknown as {
           order_id: string;
@@ -183,14 +187,11 @@ export function useCheckout() {
         ...(tableNumber ? { tableNumber } : {}),
         ...(cartDiscount ? { cartDiscount } : {}),
       };
-      const lifetimePoints = attachedCustomer?.lifetime_points;
       const payload = buildOrderPayload(
         sessionId,
         cartWithLoyalty,
         input.payment,
         idempotencyKey,
-        lifetimePoints,
-        multiplier,
         appliedPromotions,
       );
 

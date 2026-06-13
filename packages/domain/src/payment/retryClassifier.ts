@@ -148,6 +148,13 @@ function friendlyFatalMessage(code: string, message?: string): string {
       // S43 P0-1 — v11 discount gate: discount sent without an authorizing
       // manager (p_discount_authorized_by) ; surfaced by the process-payment EF.
       return 'This discount needs a manager authorization. Re-apply the discount and enter the manager PIN.';
+    case 'promo_amount_mismatch':
+      // S44 P0-C(1) — v12 re-evaluates promotions server-side ; the client
+      // amount no longer matches (promo changed / expired since the cart eval).
+      return 'La promotion a changé — réévaluez le panier avant d’encaisser.';
+    case 'invalid_change':
+      // S44 P0-C(4) — v12/v8 revalidate the change against cash_received.
+      return 'Montant de monnaie invalide — recommencez le paiement.';
     case '':
       return message ?? 'Payment failed for an unknown reason. Try again or contact support.';
     default:

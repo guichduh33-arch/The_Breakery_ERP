@@ -519,7 +519,7 @@ describe('Session 7 golden path — default category (Retail) customer', () => {
       items: [{ id: 'l1', product_id: 'p1', name: 'Americano', unit_price: 35000, quantity: 1, modifiers: [] as never[] }],
       customerId: RETAIL_CUSTOMER.id,
     };
-    const payload = buildOrderPayload('sess-7', cart, { method: 'cash', amount: 35000 }, undefined, undefined, 1.0);
+    const payload = buildOrderPayload('sess-7', cart, { method: 'cash', amount: 35000 });
     expect('loyalty_multiplier' in payload).toBe(false);
   });
 });

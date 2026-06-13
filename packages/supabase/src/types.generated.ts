@@ -5760,7 +5760,7 @@ export type Database = {
             }
             Returns: string
           }
-      complete_order_with_payment_v11: {
+      complete_order_with_payment_v12: {
         Args: {
           p_customer_id?: string
           p_discount_amount?: number
@@ -5770,7 +5770,6 @@ export type Database = {
           p_discount_value?: number
           p_idempotency_key?: string
           p_items: Json
-          p_loyalty_multiplier?: number
           p_loyalty_points_redeemed?: number
           p_manager_pin?: string
           p_order_type: Database["public"]["Enums"]["order_type"]
@@ -6041,9 +6040,10 @@ export type Database = {
       }
       findfuncs: { Args: { "": string }; Returns: string[] }
       finish: { Args: { exception_on_failure?: boolean }; Returns: string[] }
-      fire_counter_order_v1: {
+      fire_counter_order_v2: {
         Args: {
           p_client_uuid: string
+          p_discount_authorized_by?: string
           p_items: Json
           p_order_id?: string
           p_order_type?: Database["public"]["Enums"]["order_type"]
@@ -6190,6 +6190,10 @@ export type Database = {
           shortfall: number
           unit: string
         }[]
+      }
+      get_loyalty_multiplier: {
+        Args: { p_lifetime_points: number }
+        Returns: number
       }
       get_loyalty_tier: { Args: { p_lifetime_points: number }; Returns: string }
       get_movement_aggregates_v1: {
@@ -6720,7 +6724,7 @@ export type Database = {
       pass:
         | { Args: never; Returns: string }
         | { Args: { "": string }; Returns: string }
-      pay_existing_order_v7: {
+      pay_existing_order_v8: {
         Args: {
           p_customer_id?: string
           p_discount_amount?: number
@@ -6729,7 +6733,6 @@ export type Database = {
           p_discount_type?: string
           p_discount_value?: number
           p_idempotency_key?: string
-          p_loyalty_multiplier?: number
           p_loyalty_points_redeemed?: number
           p_order_id: string
           p_payment?: Json

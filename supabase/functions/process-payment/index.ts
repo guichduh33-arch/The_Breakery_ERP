@@ -17,6 +17,11 @@
 // the `x-manager-pin` header (S25 pattern — never in the JSON body) and relayed as
 // p_manager_pin. The RPC validates discount authority (sales.discount) + PIN
 // server-side whenever any discount is present.
+//
+// Session 44 (P0-A/P0-C): RPC bumped v11 → v12. The client no longer forwards a
+// loyalty_multiplier (v12 resolves it server-side from tier × category). New
+// check_violation gates surface as `promo_amount_mismatch` (server re-evaluates
+// promotions) and `invalid_change` (change revalidated vs cash_received).
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.47.10';
 import { handleCors, jsonResponse } from '../_shared/cors.ts';
@@ -185,7 +190,7 @@ serve(async (req) => {
   // S37 SEC-01 — manager PIN in header (S25 pattern), relayed to the RPC arg.
   const managerPin = req.headers.get('x-manager-pin');
 
-  const { data, error } = await userClient.rpc('complete_order_with_payment_v11', {
+  const { data, error } = await userClient.rpc('complete_order_with_payment_v12', {
     p_session_id: body.session_id,
     p_order_type: body.order_type,
     p_items: body.items,
@@ -252,7 +257,18 @@ serve(async (req) => {
     // S38 SEC-06 — manager account locked (5 failed PINs / 15 min).
     if (error.code === 'P0004') return jsonResponse({ error: 'account_locked', message: error.message }, 403);
     if (error.code === 'P0010') return jsonResponse({ error: 'insufficient_loyalty_points', message: error.message }, 409);
-    if (error.code === '23514') return jsonResponse({ error: 'check_violation', message: error.message }, 422);
+    if (error.code === '23514') {
+      const msg = String(error.message ?? '');
+      // S44 P0-C — v12 raises check_violation for the recomputed-promo and
+      // change-amount gates ; surface dedicated codes (classifier → FR copy).
+      if (msg.includes('Promotion amount mismatch')) {
+        return jsonResponse({ error: 'promo_amount_mismatch', message: msg }, 409);
+      }
+      if (msg.includes('Invalid change amount')) {
+        return jsonResponse({ error: 'invalid_change', message: msg }, 409);
+      }
+      return jsonResponse({ error: 'check_violation', message: error.message }, 422);
+    }
     return jsonResponse({ error: 'internal', message: error.message }, 500);
   }
 

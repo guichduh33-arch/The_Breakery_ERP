@@ -62,7 +62,6 @@ export interface OrderPayload {
   discount_value?: number;
   discount_reason?: string;
   discount_authorized_by?: string;
-  loyalty_multiplier?: number;
   /**
    * Session 9 — applied promotions to forward to RPC v7 / v4 as
    * `p_promotions`. Server re-validates eligibility and inserts
