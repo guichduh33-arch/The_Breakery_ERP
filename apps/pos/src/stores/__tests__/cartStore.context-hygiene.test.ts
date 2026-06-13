@@ -26,7 +26,7 @@ function fullReset() {
   sessionStorage.removeItem('breakery.cart.v2');
 }
 
-const CUSTOMER = { id: 'cust-A', name: 'A', lifetime_points: 0 } as never;
+const CUSTOMER = { id: 'cust-A', name: 'A', lifetime_points: 0 };
 
 describe('cartStore context hygiene (S44)', () => {
   beforeEach(() => fullReset());
@@ -39,7 +39,7 @@ describe('cartStore context hygiene (S44)', () => {
 
   it('P1-B: clear() with no locked items purges customer + table + attachedCustomer', () => {
     const s = useCartStore.getState();
-    s.attachCustomer(CUSTOMER);
+    s.attachCustomer(CUSTOMER as never);
     s.setTableNumber('T-05');
     s.clear();
     const after = useCartStore.getState();
@@ -51,9 +51,9 @@ describe('cartStore context hygiene (S44)', () => {
   it('P1-B: clear() WITH locked items keeps the context (same in-flight fired order)', () => {
     const s = useCartStore.getState();
     s.add(makeProduct('p1', 'Latte'));
-    const lineId = useCartStore.getState().cart.items[0]!.id;
+    const lineId = (useCartStore.getState().cart.items as Array<{ id: string }>)[0]!.id;
     s.markLocked([lineId]);
-    s.attachCustomer(CUSTOMER);
+    s.attachCustomer(CUSTOMER as never);
     s.setTableNumber('T-09');
     s.clear();
     const after = useCartStore.getState();
@@ -62,6 +62,6 @@ describe('cartStore context hygiene (S44)', () => {
     expect(after.cart.tableNumber).toBe('T-09');
     expect(after.attachedCustomer).not.toBeNull();
     // The locked line survives.
-    expect(after.cart.items.map((i) => i.id)).toEqual([lineId]);
+    expect((after.cart.items as Array<{ id: string }>).map((i) => i.id)).toEqual([lineId]);
   });
 });
