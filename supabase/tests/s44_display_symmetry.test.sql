@@ -43,6 +43,15 @@ BEGIN
   PERFORM set_config('s44.cust', v_cust::text, true);
   PERFORM set_config('s44.promo', v_promo::text, true);
   PERFORM set_config('s44.prof', v_prof::text, true);
+  PERFORM set_config('s44.auth', v_auth::text, true);
+  -- Voider : profil porteur de pos.sale.void (fallback caller).
+  DECLARE v_voider UUID;
+  BEGIN
+    SELECT up.id INTO v_voider FROM user_profiles up
+      WHERE up.deleted_at IS NULL AND up.auth_user_id IS NOT NULL
+        AND has_permission(up.auth_user_id, 'pos.sale.void') LIMIT 1;
+    PERFORM set_config('s44.voider', COALESCE(v_voider, v_prof)::text, true);
+  END;
 END $$;
 
 -- Helper : crée un ordre comptoir pending_payment pos avec 1 item.
@@ -140,19 +149,18 @@ BEGIN
 END $$;
 SELECT ok(current_setting('s44.t7')::boolean, 'T7 v8 replay envelope honest');
 
--- T8 : (Wave D) void d'une vente display restaure display_stock + display_movements 'sale_void'.
+-- T8 : (Wave D _017) void d'une vente display restaure display_stock + display_movements 'adjustment'.
 DO $$ DECLARE v_oid UUID; v_q0 INT; v_q1 INT; v_vm INT;
 BEGIN
   v_oid := pg_temp._mk_order(current_setting('s44.disp')::uuid, 20000, 1, '#SYM8');
   PERFORM pay_existing_order_v8(p_order_id := v_oid, p_payment := jsonb_build_object('method','cash','amount',20000,'cash_received',20000,'change_given',0));
   SELECT quantity::int INTO v_q0 FROM display_stock WHERE product_id=current_setting('s44.disp')::uuid;
-  UPDATE orders SET status='voided', voided_at=now(), voided_by=current_setting('s44.prof')::uuid, void_reason='s44 void test' WHERE id=v_oid;
-  PERFORM void_order_rpc_v2(v_oid);  -- restaure stock + display (Wave D _017)
+  PERFORM void_order_rpc_v2(v_oid, 's44 void test', current_setting('s44.voider')::uuid, current_setting('s44.auth')::uuid);
   SELECT quantity::int INTO v_q1 FROM display_stock WHERE product_id=current_setting('s44.disp')::uuid;
-  SELECT count(*) INTO v_vm FROM display_movements WHERE reference_id=v_oid AND movement_type='sale_void';
+  SELECT count(*) INTO v_vm FROM display_movements WHERE reference_id=v_oid AND movement_type='adjustment' AND product_id=current_setting('s44.disp')::uuid;
   PERFORM set_config('s44.t8', (v_q1 = v_q0 + 1 AND v_vm = 1)::text, true);
 END $$;
-SELECT ok(current_setting('s44.t8')::boolean, 'T8 void restores display_stock + sale_void movement (Wave D)');
+SELECT ok(current_setting('s44.t8')::boolean, 'T8 void restores display_stock + adjustment movement (Wave D)');
 
 SELECT * FROM finish();
 ROLLBACK;
