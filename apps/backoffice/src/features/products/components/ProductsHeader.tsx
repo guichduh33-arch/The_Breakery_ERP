@@ -9,6 +9,9 @@
 //   - Recipes pill wired (navigates to /backoffice/inventory/recipes)
 //   - Modifiers pill removed (no route/page exists)
 //   - Products pill rendered as a static active indicator (not a button)
+// Session 45 / Wave D fix:
+//   - Import pill omitted entirely when onImport is undefined (no dead button,
+//     matches ProductsPageTabs which omits the tab without catalog.import)
 
 import { type JSX } from 'react';
 import { Box, BookOpen, Plus, Upload } from 'lucide-react';
@@ -44,7 +47,7 @@ export function ProductsHeader({ onNew, onImport, onRecipes }: Props): JSX.Eleme
             <Box className="h-4 w-4" aria-hidden />
             Products
           </span>
-          <PillButton icon={<Upload className="h-4 w-4" aria-hidden />} label="Import" onClick={onImport} />
+          {onImport && <PillButton icon={<Upload className="h-4 w-4" aria-hidden />} label="Import" onClick={onImport} />}
           <PillButton icon={<BookOpen className="h-4 w-4" aria-hidden />} label="Recipes" onClick={onRecipes} />
           <button
             type="button"

@@ -4,7 +4,7 @@
 //
 // Component-level assertions (ProductsHeader):
 //   1. Import pill is present and fires onImport when provided.
-//   2. Import pill is absent when onImport is undefined.
+//   2. Import pill is NOT rendered when onImport is undefined.
 //   3. Recipes pill is present and fires onRecipes when provided.
 //   4. No Modifiers button rendered.
 //   5. Products pill carries aria-current="page" and is not a button/link.
@@ -12,7 +12,7 @@
 // Page-level assertions (Products.tsx via mocked deps):
 //   6. Import pill navigates to /backoffice/products/import-export.
 //   7. Recipes pill navigates to /backoffice/inventory/recipes.
-//   8. Import pill is hidden when catalog.import permission is absent.
+//   8. Import pill is NOT rendered when catalog.import permission is absent.
 
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
@@ -45,15 +45,11 @@ describe('ProductsHeader pills [S45 W-D]', () => {
     expect(onImport).toHaveBeenCalledTimes(1);
   });
 
-  it('Import pill is absent when onImport is not provided', () => {
+  it('Import pill is NOT rendered when onImport is not provided', () => {
     renderHeader({});
-    // The Import button should still be rendered by PillButton (onClick=undefined)
-    // but the page-level gate controls whether onImport is passed.
-    // Here we simply confirm clicking it does not throw (onClick is undefined).
-    const btn = screen.getByRole('button', { name: /import/i });
-    expect(btn).toBeInTheDocument();
-    // no handler — click should be a no-op (no assertion error)
-    expect(() => fireEvent.click(btn)).not.toThrow();
+    // The component conditionally renders {onImport && <PillButton ...>} —
+    // no onImport means no Import button in the DOM at all.
+    expect(screen.queryByRole('button', { name: /^import$/i })).not.toBeInTheDocument();
   });
 
   it('Recipes pill is present and calls onRecipes when clicked', () => {
@@ -171,13 +167,11 @@ describe('ProductsPage — header pill navigation [S45 W-D]', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/backoffice/inventory/recipes');
   });
 
-  it('Import pill button has no handler when catalog.import is absent', async () => {
+  it('Import pill is NOT rendered when catalog.import permission is absent', async () => {
     permRef.current = new Set(['products.create']); // no catalog.import
     mockNavigate.mockClear();
     await renderPage();
-    const btn = screen.getByRole('button', { name: /import/i });
-    fireEvent.click(btn);
-    // navigate should NOT have been called for the import route
-    expect(mockNavigate).not.toHaveBeenCalledWith('/backoffice/products/import-export');
+    // Products.tsx passes onImport only when canImport — so the pill is fully absent.
+    expect(screen.queryByRole('button', { name: /^import$/i })).not.toBeInTheDocument();
   });
 });
