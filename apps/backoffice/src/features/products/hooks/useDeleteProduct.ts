@@ -8,7 +8,9 @@
 //   P0001 message 'parent_has_active_variants' — user-friendly message surfaced to the UI
 //   P0002 message 'product_not_found'
 //
-// Idempotency: useRef(crypto.randomUUID()) — stable across re-renders, reset on success.
+// Idempotency: useRef(crypto.randomUUID()) — key is held across re-renders and survives
+// errors intentionally (rotates only on success). This way a retry of the same failed
+// delete sends the same UUID, letting the RPC deduplicate server-side.
 // Pattern: supabase.rpc bound (critical S27 lesson: unbound RPC throws at runtime).
 
 import { useRef } from 'react';
@@ -50,17 +52,20 @@ export function useDeleteProduct() {
         p_idempotency_key: idempotencyKeyRef.current,
       });
       if (error !== null) throw new Error(mapDeleteError(error.message));
-      return data as unknown as DeleteProductResult;
+      const result = data as unknown as DeleteProductResult;
+      // Defensive guard: the RPC normally RAISEs on any failure path, but if it
+      // somehow returned without deleted=true, surface a failure rather than a
+      // false success.
+      if (result.deleted !== true) {
+        throw new Error('Le produit n\'a pas pu être désactivé. Veuillez réessayer.');
+      }
+      return result;
     },
     onSuccess: async () => {
-      // Reset idempotency key for the next deletion.
+      // Rotate the idempotency key only on success — see file-level comment.
       idempotencyKeyRef.current = crypto.randomUUID();
       // Invalidate the products catalog list — exact key from useProducts.
       await qc.invalidateQueries({ queryKey: ['products', 'catalog'] });
-    },
-    onError: (error) => {
-      // Error is surfaced by the dialog component; no extra side-effect here.
-      void error;
     },
   });
 

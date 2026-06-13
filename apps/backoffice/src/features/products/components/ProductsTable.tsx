@@ -4,7 +4,8 @@
 // Mirrors `product page.jpg`: PRODUCT · SKU · TYPE · CATEGORY · COST · RETAIL ·
 // WHOLESALE · STATUS · ACTIONS.
 //
-// Read-only data — write paths arrive when the product CRUD RPCs land.
+// S27: update_product_v1 wired. S27b: create_product_v1 wired. S27c: variants.
+// S45: delete_product_v1 wired (Trash2 renders only when onDelete is passed).
 
 import { Box, DollarSign, Eye, Trash2 } from 'lucide-react';
 import type { JSX } from 'react';

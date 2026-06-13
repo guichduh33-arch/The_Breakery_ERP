@@ -2,8 +2,10 @@
 //
 // Session 14 / Phase 4.B — Catalog list view.
 // Composition mirrors `product page.jpg` (header card -> KPI tiles ->
-// search/filter strip -> dense table or card grid). Read-only — write paths
-// arrive when the product CRUD RPCs land in a future session.
+// search/filter strip -> dense table or card grid).
+//
+// Write paths: S27 update, S27b create + categories DnD, S27c variants,
+// S45 soft-delete (delete_product_v1, gate products.delete, ADMIN+ only).
 
 import { useMemo, useState, type JSX } from 'react';
 import { useNavigate } from 'react-router-dom';

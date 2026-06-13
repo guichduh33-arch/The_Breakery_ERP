@@ -6,12 +6,15 @@
 //   1. Clicking confirm calls the delete mutation with the product id.
 //   2. Clicking cancel closes the dialog without calling the mutation.
 //   3. When the mutation rejects with a parent-error message, the error renders.
+//   4. (hardening) Pending state: confirm + cancel disabled, pending label shows.
+//   5. (hardening) Success lifecycle: toast.success fired and onClose called.
 //
 // IMPORTANT: mock DATA objects defined via vi.hoisted() so refs are stable across
 // re-renders and do not trigger an infinite render loop (S39 B1 lesson).
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { toast } from 'sonner';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DeleteProductDialog } from '../components/DeleteProductDialog.js';
 import type { ProductRow } from '../types.js';
@@ -141,5 +144,27 @@ describe('DeleteProductDialog [S45 W-B]', () => {
     expect(screen.getByTestId('delete-product-error')).toHaveTextContent(
       "Ce produit est un parent de variantes actives",
     );
+  });
+
+  it('disables confirm and cancel and shows pending label while isPending is true', () => {
+    mockIsPending.value = true;
+    renderDialog(MOCK_PRODUCT);
+    const confirmBtn = screen.getByTestId('delete-product-confirm');
+    const cancelBtn  = screen.getByTestId('delete-product-cancel');
+    expect(confirmBtn).toBeDisabled();
+    expect(cancelBtn).toBeDisabled();
+    expect(confirmBtn).toHaveTextContent('Désactivation…');
+  });
+
+  it('calls toast.success and onClose after successful mutation', async () => {
+    const onClose = vi.fn();
+    renderDialog(MOCK_PRODUCT, onClose);
+    fireEvent.click(screen.getByTestId('delete-product-confirm'));
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith(
+        expect.stringContaining('Croissant Nature'),
+      );
+    });
+    expect(onClose).toHaveBeenCalled();
   });
 });
