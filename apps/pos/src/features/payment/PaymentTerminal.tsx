@@ -54,6 +54,7 @@ export function PaymentTerminal() {
         cashierName={user?.full_name ?? 'Cashier'}
         onNewOrder={handleNewOrder}
         {...(success.customerName ? { customerName: success.customerName } : {})}
+        {...(success.loyaltyBalanceAfter !== undefined ? { loyaltyBalanceAfter: success.loyaltyBalanceAfter } : {})}
       />
     );
   }
