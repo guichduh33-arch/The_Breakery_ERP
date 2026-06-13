@@ -37,6 +37,7 @@ export default function ProductsPage(): JSX.Element {
   const canCreate      = useAuthStore((s) => s.hasPermission('products.create'));
   const canDelete      = useAuthStore((s) => s.hasPermission('products.delete'));
   const canEditPricing = useAuthStore((s) => s.hasPermission('products.update'));
+  const canImport      = useAuthStore((s) => s.hasPermission('catalog.import'));
 
   const [search, setSearch] = useState('');
   const [categoryId, setCategoryId] = useState<string | 'all'>('all');
@@ -104,7 +105,11 @@ export default function ProductsPage(): JSX.Element {
 
   return (
     <div className="space-y-6">
-      <ProductsHeader onNew={canCreate ? () => setShowNew(true) : undefined} />
+      <ProductsHeader
+        onNew={canCreate ? () => setShowNew(true) : undefined}
+        {...(canImport ? { onImport: () => navigate('/backoffice/products/import-export') } : {})}
+        onRecipes={() => navigate('/backoffice/inventory/recipes')}
+      />
       <ProductsPageTabs />
 
       {showNew && (
