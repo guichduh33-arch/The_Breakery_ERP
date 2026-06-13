@@ -14,6 +14,7 @@ import { ProductsFilters } from '@/features/products/components/ProductsFilters.
 import { ProductsTable } from '@/features/products/components/ProductsTable.js';
 import { ProductsGrid } from '@/features/products/components/ProductsGrid.js';
 import { NewProductDialog } from '@/features/products/components/NewProductDialog.js';
+import { DeleteProductDialog } from '@/features/products/components/DeleteProductDialog.js';
 import { useProducts } from '@/features/products/hooks/useProducts.js';
 import { useCategories } from '@/features/products/hooks/useCategories.js';
 import { useResolvedAllergensMap } from '@/features/products/hooks/useResolvedAllergensMap.js';
@@ -32,12 +33,14 @@ export default function ProductsPage(): JSX.Element {
   const categories = useCategories();
   const resolvedAllergens = useResolvedAllergensMap();
   const canCreate = useAuthStore((s) => s.hasPermission('products.create'));
+  const canDelete = useAuthStore((s) => s.hasPermission('products.delete'));
 
   const [search, setSearch] = useState('');
   const [categoryId, setCategoryId] = useState<string | 'all'>('all');
   const [view, setView] = useState<ProductView>('list');
   const [variantFilter, setVariantFilter] = useState<ProductVariantFilter>('all');
   const [showNew, setShowNew] = useState(false);
+  const [toDelete, setToDelete] = useState<ProductRow | null>(null);
 
   const rows: ProductRow[] = products.data ?? [];
 
@@ -105,6 +108,11 @@ export default function ProductsPage(): JSX.Element {
         />
       )}
 
+      <DeleteProductDialog
+        product={toDelete}
+        onClose={() => setToDelete(null)}
+      />
+
       <ProductsKpiGrid kpis={kpis} isLoading={products.isLoading} />
 
       <ProductsFilters
@@ -127,6 +135,7 @@ export default function ProductsPage(): JSX.Element {
           parentIds={parentIds}
           onRowClick={openProduct}
           onView={openProduct}
+          {...(canDelete ? { onDelete: (row: ProductRow) => setToDelete(row) } : {})}
         />
       ) : (
         <ProductsGrid rows={filtered} parentIds={parentIds} onCardClick={openProduct} />
