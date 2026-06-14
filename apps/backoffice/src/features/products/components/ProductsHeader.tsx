@@ -2,21 +2,28 @@
 //
 // Session 14 / Phase 4.B — Top header strip on the Products page.
 // Mirrors `product page.jpg`: page title + subtitle on the left, a horizontal
-// pill toolbar (Products / Import / Recipes / Modifiers / + New Product) on
-// the right.
+// pill toolbar (Products / Import / Recipes / + New Product) on the right.
+//
+// Session 45 / Wave D:
+//   - Import pill wired (navigates to /backoffice/products/import-export)
+//   - Recipes pill wired (navigates to /backoffice/inventory/recipes)
+//   - Modifiers pill removed (no route/page exists)
+//   - Products pill rendered as a static active indicator (not a button)
+// Session 45 / Wave D fix:
+//   - Import pill omitted entirely when onImport is undefined (no dead button,
+//     matches ProductsPageTabs which omits the tab without catalog.import)
 
 import { type JSX } from 'react';
-import { Box, BookOpen, Plus, Sliders, Upload } from 'lucide-react';
+import { Box, BookOpen, Plus, Upload } from 'lucide-react';
 import { Card, CardContent } from '@breakery/ui';
 
 interface Props {
-  onNew?:       (() => void) | undefined;
-  onImport?:    (() => void) | undefined;
-  onRecipes?:   (() => void) | undefined;
-  onModifiers?: (() => void) | undefined;
+  onNew?:     (() => void) | undefined;
+  onImport?:  (() => void) | undefined;
+  onRecipes?: (() => void) | undefined;
 }
 
-export function ProductsHeader({ onNew, onImport, onRecipes, onModifiers }: Props): JSX.Element {
+export function ProductsHeader({ onNew, onImport, onRecipes }: Props): JSX.Element {
   return (
     <Card variant="default">
       <CardContent className="flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between">
@@ -32,10 +39,16 @@ export function ProductsHeader({ onNew, onImport, onRecipes, onModifiers }: Prop
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <PillButton icon={<Box className="h-4 w-4" aria-hidden />} label="Products" />
-          <PillButton icon={<Upload className="h-4 w-4" aria-hidden />} label="Import" onClick={onImport} />
+          {/* Products — current page indicator, not a clickable action */}
+          <span
+            aria-current="page"
+            className="inline-flex items-center gap-2 rounded-full border border-gold bg-gold-soft px-4 py-2 text-sm font-semibold text-gold select-none"
+          >
+            <Box className="h-4 w-4" aria-hidden />
+            Products
+          </span>
+          {onImport && <PillButton icon={<Upload className="h-4 w-4" aria-hidden />} label="Import" onClick={onImport} />}
           <PillButton icon={<BookOpen className="h-4 w-4" aria-hidden />} label="Recipes" onClick={onRecipes} />
-          <PillButton icon={<Sliders className="h-4 w-4" aria-hidden />} label="Modifiers" onClick={onModifiers} />
           <button
             type="button"
             onClick={onNew}
@@ -51,8 +64,8 @@ export function ProductsHeader({ onNew, onImport, onRecipes, onModifiers }: Prop
 }
 
 interface PillButtonProps {
-  icon:   JSX.Element;
-  label:  string;
+  icon:     JSX.Element;
+  label:    string;
   onClick?: (() => void) | undefined;
 }
 

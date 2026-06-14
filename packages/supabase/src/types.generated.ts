@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       accounting_mappings: {
@@ -5945,6 +5970,10 @@ export type Database = {
         Args: { p_threshold_id: string }
         Returns: boolean
       }
+      delete_product_v1: {
+        Args: { p_idempotency_key?: string; p_product_id: string }
+        Returns: Json
+      }
       delete_user_v1: {
         Args: { p_reason: string; p_user_id: string }
         Returns: Json
@@ -7519,6 +7548,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       allergen_type: [
