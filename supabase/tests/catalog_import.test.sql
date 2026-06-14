@@ -36,7 +36,7 @@ BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-SELECT plan(26);
+SELECT plan(28);
 
 -- T1 : CASHIER -> 42501 on import
 DO $t1$ BEGIN
@@ -373,6 +373,41 @@ BEGIN
 END $t2324$;
 SELECT is(current_setting('breakery.t23_valid'), 'true', 'T23 S41-only dry-run valid=true');
 SELECT is(current_setting('breakery.t24_creates'), '0', 'T24 S41-only dry-run products+ingredients.create=0');
+
+-- =================== DEV-S45-IMP-01 V19 -- T25/T26 ===================
+-- V19 numeric magnitude: an over-range value is caught at dry-run as a structured
+-- error instead of crashing the commit with a raw 22003 (opaque 400).
+-- T25 : retail_price > NUMERIC(12,2) bound -> value_out_of_range, valid=false
+DO $t25$
+DECLARE v_rep JSONB;
+BEGIN
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  v_rep := import_catalog_v1(jsonb_build_object(
+    'products', jsonb_build_array(jsonb_build_object(
+      'sku', 'S41-OVF', 'name', 'S41 Overflow', 'category', 'S41 Test Cat',
+      'unit', 'pcs', 'retail_price', 99999999999999::numeric))
+  ), true);
+  PERFORM set_config('breakery.t25',
+    (SELECT COUNT(*)::text FROM jsonb_array_elements(v_rep->'errors') e
+      WHERE e->>'code' = 'value_out_of_range'), true);
+END $t25$;
+SELECT is(current_setting('breakery.t25'), '1', 'T25 over-range retail_price -> value_out_of_range');
+
+-- T26 : exact NUMERIC(12,2) max (9,999,999,999.99) is NOT a false positive
+DO $t26$
+DECLARE v_rep JSONB;
+BEGIN
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  v_rep := import_catalog_v1(jsonb_build_object(
+    'products', jsonb_build_array(jsonb_build_object(
+      'sku', 'S41-OVF-OK', 'name', 'S41 At Max', 'category', 'S41 Test Cat',
+      'unit', 'pcs', 'retail_price', 9999999999.99::numeric))
+  ), true);
+  PERFORM set_config('breakery.t26',
+    (SELECT COUNT(*)::text FROM jsonb_array_elements(v_rep->'errors') e
+      WHERE e->>'code' = 'value_out_of_range'), true);
+END $t26$;
+SELECT is(current_setting('breakery.t26'), '0', 'T26 boundary max retail_price -> no false positive');
 
 SELECT * FROM finish();
 ROLLBACK;
