@@ -11,6 +11,7 @@ export interface BomLine {
   material_id:   string;
   material_name: string;
   material_unit: string;
+  recipe_unit:   string;
   qty_per_unit:  number;
   current_stock: number;
   cost_price:    number;
