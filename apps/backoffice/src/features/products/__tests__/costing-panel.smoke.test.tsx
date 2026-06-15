@@ -29,6 +29,7 @@ const { rpcMock, mockState, BOM_DATA } = vi.hoisted(() => {
       material_id:   string;
       material_name: string;
       material_unit: string;
+      recipe_unit:   string;
       qty_per_unit:  number;
       current_stock: number;
       cost_price:    number;
@@ -38,11 +39,14 @@ const { rpcMock, mockState, BOM_DATA } = vi.hoisted(() => {
   };
 
   // Stable BOM data object — created ONCE so useEffect deps don't fire infinitely.
+  // material_unit (stock unit) deliberately differs from recipe_unit (per-line
+  // unit) so the table must render recipe_unit, matching the Recipe tab.
   const BOM_DATA = [
     {
       material_id:   'mat-1',
       material_name: 'Flour',
       material_unit: 'kg',
+      recipe_unit:   'gr',
       qty_per_unit:  0.5,
       current_stock: 100,
       cost_price:    8_000,
@@ -51,6 +55,7 @@ const { rpcMock, mockState, BOM_DATA } = vi.hoisted(() => {
       material_id:   'mat-2',
       material_name: 'Sugar',
       material_unit: 'kg',
+      recipe_unit:   'gr',
       qty_per_unit:  0.2,
       current_stock: 50,
       cost_price:    15_000,
@@ -151,6 +156,11 @@ describe('CostingPanel [S39 WB2]', () => {
     // Total = (0.5 × 8000) + (0.2 × 15000) = 4000 + 3000 = 7000 → "7.000"
     const totalCell = screen.getByTestId('bom-total');
     expect(totalCell).toHaveTextContent('7.000');
+
+    // Unit column shows the recipe line unit (gr), NOT the material stock unit (kg).
+    const row1 = screen.getByTestId('bom-row-mat-1');
+    expect(row1).toHaveTextContent('gr');
+    expect(row1).not.toHaveTextContent('kg');
   });
 
   it('T3: open dialog, fill fields, submit → update_cost_price_v1 called with correct args', async () => {

@@ -6871,6 +6871,7 @@ export type Database = {
           material_name: string
           material_unit: string
           qty_per_unit: number
+          recipe_unit: string
         }[]
       }
       recipe_cost_history_v1: {
