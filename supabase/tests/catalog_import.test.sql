@@ -36,7 +36,7 @@ BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-SELECT plan(28);
+SELECT plan(30);
 
 -- T1 : CASHIER -> 42501 on import
 DO $t1$ BEGIN
@@ -408,6 +408,36 @@ BEGIN
       WHERE e->>'code' = 'value_out_of_range'), true);
 END $t26$;
 SELECT is(current_setting('breakery.t26'), '0', 'T26 boundary max retail_price -> no false positive');
+
+-- T27 : recipes.quantity > NUMERIC(10,3) bound -> value_out_of_range (DEV-S45-IMP-01 follow-up)
+DO $t27$
+DECLARE v_rep JSONB;
+BEGIN
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  v_rep := import_catalog_v1(jsonb_build_object(
+    'recipes', jsonb_build_array(jsonb_build_object(
+      'product_sku', 'S41-DOUGH', 'material_sku', 'S41-FLOUR', 'quantity', 50000000::numeric, 'unit', 'g'))
+  ), true);
+  PERFORM set_config('breakery.t27',
+    (SELECT COUNT(*)::text FROM jsonb_array_elements(v_rep->'errors') e
+      WHERE e->>'code' = 'value_out_of_range'), true);
+END $t27$;
+SELECT is(current_setting('breakery.t27'), '1', 'T27 over-range recipe quantity -> value_out_of_range');
+
+-- T28 : product_unit_alternatives.factor_to_base > NUMERIC(20,10) bound -> value_out_of_range
+DO $t28$
+DECLARE v_rep JSONB;
+BEGIN
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  v_rep := import_catalog_v1(jsonb_build_object(
+    'units', jsonb_build_array(jsonb_build_object(
+      'product_sku', 'S41-FLOUR', 'code', 'megabag', 'factor_to_base', 99999999999::numeric, 'tags', jsonb_build_array('purchase')))
+  ), true);
+  PERFORM set_config('breakery.t28',
+    (SELECT COUNT(*)::text FROM jsonb_array_elements(v_rep->'errors') e
+      WHERE e->>'code' = 'value_out_of_range'), true);
+END $t28$;
+SELECT is(current_setting('breakery.t28'), '1', 'T28 over-range factor_to_base -> value_out_of_range');
 
 SELECT * FROM finish();
 ROLLBACK;
