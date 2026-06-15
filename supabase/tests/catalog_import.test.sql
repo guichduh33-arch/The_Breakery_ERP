@@ -36,7 +36,7 @@ BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-SELECT plan(30);
+SELECT plan(31);
 
 -- T1 : CASHIER -> 42501 on import
 DO $t1$ BEGIN
@@ -438,6 +438,23 @@ BEGIN
       WHERE e->>'code' = 'value_out_of_range'), true);
 END $t28$;
 SELECT is(current_setting('breakery.t28'), '1', 'T28 over-range factor_to_base -> value_out_of_range');
+
+-- T29 : commit a recipe whose COMPUTED cost_per_unit exceeds the old DECIMAL(14,4)
+-- ceiling (~10^10). Quantity 1,000,000 is within recipes.quantity bound (V19), so it
+-- is NOT rejected; before migration _015 the cost-walk (_calculate_recipe_cost_walk /
+-- _snapshot_recipe_version) raised a raw 22003 at commit via tr_recipes_snapshot_version.
+-- S41-FLOUR cost_price = 12000 -> 1,000,000 * 12000 = 1.2e10 > 10^10. Must now commit.
+DO $t29$
+DECLARE v_rep JSONB;
+BEGIN
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  v_rep := import_catalog_v1(jsonb_build_object(
+    'recipes', jsonb_build_array(jsonb_build_object(
+      'product_sku', 'S41-CROIS', 'material_sku', 'S41-FLOUR', 'quantity', 1000000::numeric, 'unit', 'kg'))
+  ), false, 'aaaaaaaa-0000-0000-0000-000000000029'::uuid);
+  PERFORM set_config('breakery.t29', (v_rep->>'valid'), true);
+END $t29$;
+SELECT is(current_setting('breakery.t29'), 'true', 'T29 large computed recipe cost commits (no 22003 from cost-walk)');
 
 SELECT * FROM finish();
 ROLLBACK;
