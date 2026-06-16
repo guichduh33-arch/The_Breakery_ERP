@@ -181,13 +181,13 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
           </div>
 
           {appliedPromotions.length > 0 && (
-            <div className="text-[11px] text-red-400">
+            <div className="text-[11px] text-red-fg">
               <PromotionsList applied={appliedPromotions} />
             </div>
           )}
 
           {baseTotals.redemption_amount > 0 && (
-            <div className="flex items-center justify-between text-[11px] text-red-400">
+            <div className="flex items-center justify-between text-[11px] text-red-fg">
               <span className="uppercase tracking-wide">
                 Loyalty Discount ({cart.loyaltyPointsToRedeem ?? 0} pts)
               </span>
@@ -196,7 +196,7 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
           )}
 
           {cart.cartDiscount && (
-            <div className="flex items-center justify-between text-[11px] text-red-400">
+            <div className="flex items-center justify-between text-[11px] text-red-fg">
               <span className="uppercase tracking-wide">
                 Discount ({cart.cartDiscount.type === 'percentage' ? `${cart.cartDiscount.value}%` : 'fixed'})
               </span>
@@ -213,7 +213,10 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
             <span className="font-bold uppercase tracking-widest text-xs text-text-primary">
               Total
             </span>
-            <span className="font-mono tabular-nums text-2xl font-bold text-gold">
+            <span
+              key={total}
+              className="font-mono tabular-nums text-2xl font-bold text-gold motion-safe:animate-in motion-safe:zoom-in-95 motion-safe:fade-in-0 motion-safe:duration-200"
+            >
               {rp(total)}
             </span>
           </div>

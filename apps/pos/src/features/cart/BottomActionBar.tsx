@@ -55,7 +55,8 @@ import { HeldOrdersModal } from './HeldOrdersModal';
 /** Shared "ghost" management-button styling (left group). */
 const GHOST_BTN =
   'flex items-center gap-2 h-11 px-3.5 rounded-md bg-bg-overlay border border-border-subtle ' +
-  'text-text-primary text-[13px] font-semibold hover:bg-bg-input transition-colors ' +
+  'text-text-primary text-[13px] font-semibold hover:bg-bg-input ' +
+  'transition-[color,background-color,transform] duration-fast ease-motion-out active:scale-[0.98] motion-reduce:active:scale-100 ' +
   'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold ' +
   'disabled:opacity-50 disabled:pointer-events-none';
 
@@ -263,8 +264,9 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
       <button
         type="button"
         className={cn(
-          'flex items-center gap-2 h-11 px-3.5 rounded-md bg-transparent border border-red-400/30',
-          'text-red-400 text-[13px] font-semibold hover:bg-red-400/10 transition-colors',
+          'flex items-center gap-2 h-11 px-3.5 rounded-md bg-transparent border border-red-fg/30',
+          'text-red-fg text-[13px] font-semibold hover:bg-red-soft',
+          'transition-[color,background-color,transform] duration-fast ease-motion-out active:scale-[0.98] motion-reduce:active:scale-100',
           'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
           'disabled:opacity-50 disabled:pointer-events-none',
         )}
@@ -285,7 +287,8 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
         type="button"
         className={cn(
           'flex items-center gap-2.5 h-11 px-6 rounded-md bg-gold text-bg-base uppercase tracking-wide',
-          'text-sm font-bold hover:opacity-90 transition-opacity',
+          'text-sm font-bold hover:bg-gold-hover active:bg-gold-pressed',
+          'transition-[background-color,transform] duration-fast ease-motion-out active:scale-[0.98] motion-reduce:active:scale-100',
           'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
           'disabled:opacity-50 disabled:pointer-events-none',
         )}
@@ -312,7 +315,7 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
       >
         <div role="alertdialog" aria-labelledby="void-confirm-title" className="p-6 space-y-5">
           <header className="flex items-center gap-2">
-            <XCircle className="h-5 w-5 text-red-400" aria-hidden />
+            <XCircle className="h-5 w-5 text-red-fg" aria-hidden />
             <h2 id="void-confirm-title" className="font-serif text-xl text-text-primary">
               Void this order?
             </h2>
@@ -327,7 +330,7 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
             <Button
               variant="ghostDestructive"
               size="lg"
-              className="border border-red-400/30"
+              className="border border-red-fg/30"
               onClick={handleVoidConfirmed}
               data-testid="void-confirm-button"
             >

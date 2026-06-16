@@ -28,6 +28,11 @@
 
   --red-base:     #ef4444;
   --red-soft:     #ef444420;
+  /* --red-fg — canonical RED for text/icons on the near-black POS surface.
+   * The saturated --red-base (#ef4444) is harsh as small text on #0a0a0c;
+   * this lighter tint reads cleanly. Components must use this (not raw
+   * Tailwind red-400) so every destructive/discount red is the SAME red. */
+  --red-fg:       #f87171;
 
   --blue-info:    #3b82f6;
   --amber-warn:   #f59e0b;
