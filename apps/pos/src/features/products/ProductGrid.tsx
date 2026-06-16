@@ -92,7 +92,11 @@ export function ProductGrid({ selectedSlug, onSelect }: ProductGridProps): JSX.E
 
       <div className="flex-1 overflow-y-auto p-6">
         {isLoading ? (
-          <div className="text-text-secondary">Loading products…</div>
+          <div className="grid grid-cols-4 gap-4" aria-busy="true" aria-label="Loading products">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <ProductCardSkeleton key={i} />
+            ))}
+          </div>
         ) : filtered.length === 0 ? (
           <EmptyState
             tone="branded"
@@ -146,6 +150,22 @@ export function ProductGrid({ selectedSlug, onSelect }: ProductGridProps): JSX.E
             })}
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+/** Loading placeholder mirroring ProductCard's shape (image + name + price). */
+function ProductCardSkeleton(): JSX.Element {
+  return (
+    <div
+      aria-hidden
+      className="rounded-lg overflow-hidden border border-border-subtle bg-bg-elevated motion-safe:animate-pulse"
+    >
+      <div className="aspect-square bg-bg-input" />
+      <div className="px-3 py-2.5 space-y-2">
+        <div className="h-3.5 w-3/4 rounded bg-bg-input" />
+        <div className="h-3 w-1/3 rounded bg-bg-input" />
       </div>
     </div>
   );

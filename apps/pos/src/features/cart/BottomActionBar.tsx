@@ -261,37 +261,25 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
       <div className="flex-1" />
 
       {/* ── Right group : validation ────────────────────────────────────── */}
-      <button
-        type="button"
-        className={cn(
-          'flex items-center gap-2 h-11 px-3.5 rounded-md bg-transparent border border-red-fg/30',
-          'text-red-fg text-[13px] font-semibold hover:bg-red-soft',
-          'transition-[color,background-color,transform] duration-fast ease-motion-out active:scale-[0.98] motion-reduce:active:scale-100',
-          'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
-          'disabled:opacity-50 disabled:pointer-events-none',
-        )}
+      <Button
+        variant="ghostDestructive"
+        className="h-11 px-3.5 gap-2 text-[13px] text-red-fg border border-red-fg/30"
         onClick={handleVoid}
         disabled={!hasItems}
         title={hasSentItems ? 'Already sent to kitchen — manager PIN required' : undefined}
       >
         <XCircle className="h-4 w-4" aria-hidden />
         <span>Void Order</span>
-      </button>
+      </Button>
 
       <SendToKitchenButton
         variant="outlineGold"
         className="h-11 px-4 rounded-md text-[13px] font-bold uppercase tracking-wide"
       />
 
-      <button
-        type="button"
-        className={cn(
-          'flex items-center gap-2.5 h-11 px-6 rounded-md bg-gold text-bg-base uppercase tracking-wide',
-          'text-sm font-bold hover:bg-gold-hover active:bg-gold-pressed',
-          'transition-[background-color,transform] duration-fast ease-motion-out active:scale-[0.98] motion-reduce:active:scale-100',
-          'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
-          'disabled:opacity-50 disabled:pointer-events-none',
-        )}
+      <Button
+        variant="gold"
+        className="h-11 px-6 gap-2.5 text-sm font-bold active:bg-gold-pressed"
         onClick={() => openPayment()}
         disabled={!hasItems}
         data-testid="checkout-cta"
@@ -299,7 +287,7 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
         <CreditCard className="h-4 w-4" aria-hidden />
         <span>Checkout</span>
         <Currency amount={total} className="font-mono" />
-      </button>
+      </Button>
 
       {/* ── Owned modals ────────────────────────────────────────────────── */}
       <HeldOrdersModal open={heldOpen} onClose={() => setHeldOpen(false)} />
