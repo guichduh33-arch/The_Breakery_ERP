@@ -209,13 +209,13 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
             <span className="font-mono tabular-nums">{rp(tax_amount)}</span>
           </div>
 
-          <div className="flex items-baseline justify-between pt-2 mt-1 border-t border-border-subtle">
-            <span className="font-bold uppercase tracking-widest text-xs text-text-primary">
+          <div className="flex items-baseline justify-between pt-2.5 mt-1 border-t border-border-subtle">
+            <span className="font-bold uppercase tracking-widest text-sm text-text-primary">
               Total
             </span>
             <span
               key={total}
-              className="font-mono tabular-nums text-2xl font-bold text-gold motion-safe:animate-in motion-safe:zoom-in-95 motion-safe:fade-in-0 motion-safe:duration-200"
+              className="font-mono tabular-nums text-3xl font-bold tracking-tight text-gold motion-safe:animate-in motion-safe:zoom-in-95 motion-safe:fade-in-0 motion-safe:duration-200"
             >
               {rp(total)}
             </span>

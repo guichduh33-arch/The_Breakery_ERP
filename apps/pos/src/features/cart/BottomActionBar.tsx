@@ -277,6 +277,10 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
         className="h-11 px-4 rounded-md text-[13px] font-bold uppercase tracking-wide"
       />
 
+      {/* CTA colour rule (intentional, do NOT "fix" to match the terminal):
+          GOLD = "navigate toward the money" (Checkout opens the payment terminal).
+          GREEN = "commit the money" (PaymentTerminal's Process Payment — the
+          irreversible final action, where green reads as the universal "go"). */}
       <Button
         variant="gold"
         className="h-11 px-6 gap-2.5 text-sm font-bold active:bg-gold-pressed"
