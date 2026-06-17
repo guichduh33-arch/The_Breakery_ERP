@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       accounting_mappings: {
@@ -392,6 +367,7 @@ export type Database = {
       }
       categories: {
         Row: {
+          category_type: string
           created_at: string
           deleted_at: string | null
           dispatch_station: string
@@ -399,11 +375,13 @@ export type Database = {
           is_active: boolean
           kds_station: string
           name: string
+          show_in_pos: boolean
           slug: string
           sort_order: number
           updated_at: string
         }
         Insert: {
+          category_type?: string
           created_at?: string
           deleted_at?: string | null
           dispatch_station?: string
@@ -411,11 +389,13 @@ export type Database = {
           is_active?: boolean
           kds_station?: string
           name: string
+          show_in_pos?: boolean
           slug: string
           sort_order?: number
           updated_at?: string
         }
         Update: {
+          category_type?: string
           created_at?: string
           deleted_at?: string | null
           dispatch_station?: string
@@ -423,6 +403,7 @@ export type Database = {
           is_active?: boolean
           kds_station?: string
           name?: string
+          show_in_pos?: boolean
           slug?: string
           sort_order?: number
           updated_at?: string
@@ -5966,6 +5947,10 @@ export type Database = {
       }
       current_pb1_rate: { Args: never; Returns: number }
       deactivate_recipe_v1: { Args: { p_recipe_id: string }; Returns: string }
+      delete_category_v1: {
+        Args: { p_category_id: string; p_idempotency_key?: string }
+        Returns: Json
+      }
       delete_expense_threshold_v1: {
         Args: { p_threshold_id: string }
         Returns: boolean
@@ -7549,9 +7534,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       allergen_type: [
