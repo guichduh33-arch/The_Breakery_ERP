@@ -10,13 +10,15 @@ import type { CategoryRow } from '../hooks/useAllCategories.js';
 export interface CategorySortableRowProps {
   category: CategoryRow;
   canEdit:  boolean;
+  canDelete: boolean;
   onEdit:   (c: CategoryRow) => void;
+  onDelete: (c: CategoryRow) => void;
   onToggleActive: (c: CategoryRow) => void;
   togglePending:  boolean;
 }
 
 export function CategorySortableRow({
-  category, canEdit, onEdit, onToggleActive, togglePending,
+  category, canEdit, canDelete, onEdit, onDelete, onToggleActive, togglePending,
 }: CategorySortableRowProps): JSX.Element {
   const {
     attributes, listeners, setNodeRef, transform, transition, isDragging,
@@ -87,6 +89,16 @@ export function CategorySortableRow({
           >
             {category.is_active ? 'Hide' : 'Activate'}
           </Button>
+          {canDelete && (
+            <Button
+              variant="ghostDestructive"
+              size="sm"
+              onClick={() => onDelete(category)}
+              data-testid={`category-delete-${category.id}`}
+            >
+              Delete
+            </Button>
+          )}
         </div>
       </td>
     </tr>
