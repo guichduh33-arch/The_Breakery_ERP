@@ -11,7 +11,7 @@ export interface CreateCategoryPayload {
   dispatch_station?: string;
   kds_station?:      string;
   show_in_pos?:      boolean;
-  is_raw_material?:  boolean;
+  category_type?:    'raw_material' | 'semi_finished' | 'finished';
 }
 
 export interface UpdateCategoryPatch {
@@ -22,7 +22,7 @@ export interface UpdateCategoryPatch {
   dispatch_station?: string;
   kds_station?:      string;
   show_in_pos?:      boolean;
-  is_raw_material?:  boolean;
+  category_type?:    'raw_material' | 'semi_finished' | 'finished';
 }
 
 const CATEGORIES_KEY = ['categories', 'all'] as const;
