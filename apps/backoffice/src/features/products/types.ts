@@ -76,6 +76,7 @@ export interface ProductsKpis {
  */
 export type ProductDetailTab =
   | 'overview'
+  | 'analytics'
   | 'general'
   | 'units'
   | 'recipe'
