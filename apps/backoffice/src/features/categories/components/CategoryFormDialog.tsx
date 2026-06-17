@@ -19,12 +19,14 @@ export interface CategoryFormDialogProps {
 }
 
 export function CategoryFormDialog({ mode, category, onClose }: CategoryFormDialogProps): JSX.Element {
-  const [name,     setName]     = useState(category?.name ?? '');
-  const [slug,     setSlug]     = useState(category?.slug ?? '');
-  const [dispatch, setDispatch] = useState(category?.dispatch_station ?? 'none');
-  const [kds,      setKds]      = useState(category?.kds_station ?? 'expo');
-  const [active,   setActive]   = useState(category?.is_active ?? true);
-  const [error,    setError]    = useState<string | null>(null);
+  const [name,        setName]        = useState(category?.name ?? '');
+  const [slug,        setSlug]        = useState(category?.slug ?? '');
+  const [dispatch,    setDispatch]    = useState(category?.dispatch_station ?? 'none');
+  const [kds,         setKds]         = useState(category?.kds_station ?? 'expo');
+  const [showInPos,   setShowInPos]   = useState(category?.show_in_pos ?? true);
+  const [rawMaterial, setRawMaterial] = useState(category?.is_raw_material ?? false);
+  const [active,      setActive]      = useState(category?.is_active ?? true);
+  const [error,       setError]       = useState<string | null>(null);
 
   const createCat = useCreateCategory();
   const updateCat = useUpdateCategory();
@@ -45,6 +47,8 @@ export function CategoryFormDialog({ mode, category, onClose }: CategoryFormDial
           is_active: active,
           dispatch_station: dispatch,
           kds_station: kds,
+          show_in_pos: showInPos,
+          is_raw_material: rawMaterial,
         },
         {
           onSuccess: () => onClose(),
@@ -65,6 +69,8 @@ export function CategoryFormDialog({ mode, category, onClose }: CategoryFormDial
             is_active: active,
             dispatch_station: dispatch,
             kds_station: kds,
+            show_in_pos: showInPos,
+            is_raw_material: rawMaterial,
           },
         },
         {
@@ -139,14 +145,26 @@ export function CategoryFormDialog({ mode, category, onClose }: CategoryFormDial
             </div>
           </div>
 
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={active}
-              onChange={(e) => { setActive(e.target.checked); }}
+          <div className="space-y-1 pt-1">
+            <ToggleRow
+              checked={showInPos}
+              onChange={setShowInPos}
+              label="Show in POS"
+              description="Category appears in the POS product grid."
             />
-            Active
-          </label>
+            <ToggleRow
+              checked={rawMaterial}
+              onChange={setRawMaterial}
+              label="Raw Material Category"
+              description="Mark as raw material for inventory management."
+            />
+            <ToggleRow
+              checked={active}
+              onChange={setActive}
+              label="Active"
+              description="Inactive categories are hidden everywhere."
+            />
+          </div>
 
           {error !== null && (
             <div className="text-xs text-red bg-red-soft px-2 py-1.5 rounded">{error}</div>
@@ -163,5 +181,39 @@ export function CategoryFormDialog({ mode, category, onClose }: CategoryFormDial
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+interface ToggleRowProps {
+  checked:     boolean;
+  onChange:    (next: boolean) => void;
+  label:       string;
+  description: string;
+}
+
+function ToggleRow({ checked, onChange, label, description }: ToggleRowProps): JSX.Element {
+  return (
+    <div className="flex items-start gap-3 py-1.5">
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        aria-label={label}
+        onClick={() => onChange(!checked)}
+        className={`mt-0.5 inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
+          checked ? 'bg-gold' : 'bg-border-subtle'
+        }`}
+      >
+        <span
+          className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+            checked ? 'translate-x-5' : 'translate-x-0.5'
+          }`}
+        />
+      </button>
+      <div className="leading-tight">
+        <div className="text-sm font-medium text-text-primary">{label}</div>
+        <div className="text-xs text-text-secondary">{description}</div>
+      </div>
+    </div>
   );
 }
