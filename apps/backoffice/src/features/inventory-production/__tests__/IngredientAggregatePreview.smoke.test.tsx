@@ -47,13 +47,20 @@ function leaf(overrides: {
   current_stock?: number;
   cost_price?: number;
 }) {
+  const qty = overrides.qty_per_unit;
   return {
     material_id:   overrides.material_id,
     material_name: overrides.material_name,
     material_unit: overrides.material_unit ?? 'kg',
-    qty_per_unit:  overrides.qty_per_unit,
+    recipe_unit:   overrides.material_unit ?? 'kg',
+    qty_per_unit:  qty,
     current_stock: overrides.current_stock ?? 1000,
     cost_price:    overrides.cost_price ?? 0,
+    // PR #91 — the component aggregates on qty_in_base (recipe qty already
+    // converted into the material stock unit); these test quantities are
+    // expressed directly in the stock unit, so qty_in_base === qty_per_unit.
+    qty_in_base:   qty,
+    line_cost:     qty * (overrides.cost_price ?? 0),
   };
 }
 

@@ -41,6 +41,8 @@ const { rpcMock, mockState, BOM_DATA } = vi.hoisted(() => {
   // Stable BOM data object — created ONCE so useEffect deps don't fire infinitely.
   // material_unit (stock unit) deliberately differs from recipe_unit (per-line
   // unit) so the table must render recipe_unit, matching the Recipe tab.
+  // qty_in_base + line_cost are computed server-side (recipe-unit → stock-unit
+  // conversion, PR #91); mirrored here so the panel's line_cost sum reconciles.
   const BOM_DATA = [
     {
       material_id:   'mat-1',
@@ -50,6 +52,8 @@ const { rpcMock, mockState, BOM_DATA } = vi.hoisted(() => {
       qty_per_unit:  0.5,
       current_stock: 100,
       cost_price:    8_000,
+      qty_in_base:   0.5,
+      line_cost:     4_000,
     },
     {
       material_id:   'mat-2',
@@ -59,6 +63,8 @@ const { rpcMock, mockState, BOM_DATA } = vi.hoisted(() => {
       qty_per_unit:  0.2,
       current_stock: 50,
       cost_price:    15_000,
+      qty_in_base:   0.2,
+      line_cost:     3_000,
     },
   ];
 
