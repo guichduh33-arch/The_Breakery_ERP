@@ -15,6 +15,7 @@ export interface OrderItem {
   line_total: number;
   modifiers: unknown;
   is_cancelled: boolean;
+  kitchen_status: string | null;
 }
 
 export interface OrderPayment {
@@ -72,7 +73,7 @@ export function useOrderDetail(id: string | undefined) {
           subtotal, discount_amount, tax_amount, total,
           customers(name),
           user_profiles!orders_served_by_fkey(full_name),
-          order_items(id, product_id, name_snapshot, quantity, unit_price, line_total, modifiers, is_cancelled),
+          order_items(id, product_id, name_snapshot, quantity, unit_price, line_total, modifiers, is_cancelled, kitchen_status),
           order_payments(id, method, amount, cash_received, change_given, paid_at, reference),
           refunds(id, refund_number, total, reason, created_at, refunded_by, is_full_void)
         `,
