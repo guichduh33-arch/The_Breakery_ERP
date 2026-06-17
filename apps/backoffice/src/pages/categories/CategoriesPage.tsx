@@ -112,6 +112,7 @@ export default function CategoriesPage(): JSX.Element {
                 <th className="px-3 py-2">Name</th>
                 <th className="px-3 py-2">Slug</th>
                 <th className="px-3 py-2">Dispatch / KDS</th>
+                <th className="px-3 py-2 text-center">POS</th>
                 <th className="px-3 py-2 text-center">Active</th>
                 <th className="px-3 py-2 text-right">Actions</th>
               </tr>
