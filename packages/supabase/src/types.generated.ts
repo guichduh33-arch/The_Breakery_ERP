@@ -5947,6 +5947,10 @@ export type Database = {
       }
       current_pb1_rate: { Args: never; Returns: number }
       deactivate_recipe_v1: { Args: { p_recipe_id: string }; Returns: string }
+      delete_category_v1: {
+        Args: { p_category_id: string; p_idempotency_key?: string }
+        Returns: Json
+      }
       delete_expense_threshold_v1: {
         Args: { p_threshold_id: string }
         Returns: boolean
