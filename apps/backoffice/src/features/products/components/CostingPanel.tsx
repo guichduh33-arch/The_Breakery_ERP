@@ -174,7 +174,7 @@ export function CostingPanel({ product }: CostingPanelProps): JSX.Element {
                       <td className="py-2 pr-4 text-right font-mono text-text-primary">
                         {row.qty_per_unit}
                       </td>
-                      <td className="py-2 pr-4 text-text-secondary font-mono">{row.material_unit}</td>
+                      <td className="py-2 pr-4 text-text-secondary font-mono">{row.recipe_unit}</td>
                       <td className="py-2 pr-4 text-right font-mono text-text-primary">
                         Rp {formatIdr(row.cost_price)}
                       </td>

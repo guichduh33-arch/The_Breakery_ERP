@@ -4,7 +4,8 @@
 // Mirrors `product page.jpg`: PRODUCT · SKU · TYPE · CATEGORY · COST · RETAIL ·
 // WHOLESALE · STATUS · ACTIONS.
 //
-// Read-only data — write paths arrive when the product CRUD RPCs land.
+// S27: update_product_v1 wired. S27b: create_product_v1 wired. S27c: variants.
+// S45: delete_product_v1 wired (Trash2 renders only when onDelete is passed).
 
 import { Box, DollarSign, Eye, Trash2 } from 'lucide-react';
 import type { JSX } from 'react';
@@ -149,15 +150,21 @@ export function ProductsTable({
             label={`View ${r.name}`}
             onClick={(e) => { e.stopPropagation(); onView?.(r); }}
           ><Eye className="h-3.5 w-3.5" aria-hidden /></RowAction>
-          <RowAction
-            label={`Edit pricing for ${r.name}`}
-            onClick={(e) => { e.stopPropagation(); onPricing?.(r); }}
-          ><DollarSign className="h-3.5 w-3.5" aria-hidden /></RowAction>
-          <RowAction
-            label={`Delete ${r.name}`}
-            onClick={(e) => { e.stopPropagation(); onDelete?.(r); }}
-            destructive
-          ><Trash2 className="h-3.5 w-3.5" aria-hidden /></RowAction>
+          {onPricing !== undefined && (
+            <RowAction
+              label={`Edit pricing for ${r.name}`}
+              onClick={(e) => { e.stopPropagation(); onPricing(r); }}
+              data-testid={`pricing-btn-${r.id}`}
+            ><DollarSign className="h-3.5 w-3.5" aria-hidden /></RowAction>
+          )}
+          {onDelete !== undefined && (
+            <RowAction
+              label={`Delete ${r.name}`}
+              onClick={(e) => { e.stopPropagation(); onDelete(r); }}
+              destructive
+              data-testid={`delete-btn-${r.id}`}
+            ><Trash2 className="h-3.5 w-3.5" aria-hidden /></RowAction>
+          )}
         </div>
       ),
     },
@@ -189,15 +196,17 @@ interface RowActionProps {
   label: string;
   onClick: (e: React.MouseEvent) => void;
   destructive?: boolean;
+  'data-testid'?: string;
   children: React.ReactNode;
 }
 
-function RowAction({ label, onClick, destructive = false, children }: RowActionProps): JSX.Element {
+function RowAction({ label, onClick, destructive = false, 'data-testid': testId, children }: RowActionProps): JSX.Element {
   return (
     <button
       type="button"
       aria-label={label}
       onClick={onClick}
+      data-testid={testId}
       className={
         destructive
           ? 'inline-flex h-7 w-7 items-center justify-center rounded-full text-text-muted hover:bg-red-soft hover:text-red focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold transition-colors'

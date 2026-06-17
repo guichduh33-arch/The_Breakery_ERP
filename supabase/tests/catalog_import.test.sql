@@ -36,7 +36,7 @@ BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-SELECT plan(26);
+SELECT plan(31);
 
 -- T1 : CASHIER -> 42501 on import
 DO $t1$ BEGIN
@@ -373,6 +373,88 @@ BEGIN
 END $t2324$;
 SELECT is(current_setting('breakery.t23_valid'), 'true', 'T23 S41-only dry-run valid=true');
 SELECT is(current_setting('breakery.t24_creates'), '0', 'T24 S41-only dry-run products+ingredients.create=0');
+
+-- =================== DEV-S45-IMP-01 V19 -- T25/T26 ===================
+-- V19 numeric magnitude: an over-range value is caught at dry-run as a structured
+-- error instead of crashing the commit with a raw 22003 (opaque 400).
+-- T25 : retail_price > NUMERIC(12,2) bound -> value_out_of_range, valid=false
+DO $t25$
+DECLARE v_rep JSONB;
+BEGIN
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  v_rep := import_catalog_v1(jsonb_build_object(
+    'products', jsonb_build_array(jsonb_build_object(
+      'sku', 'S41-OVF', 'name', 'S41 Overflow', 'category', 'S41 Test Cat',
+      'unit', 'pcs', 'retail_price', 99999999999999::numeric))
+  ), true);
+  PERFORM set_config('breakery.t25',
+    (SELECT COUNT(*)::text FROM jsonb_array_elements(v_rep->'errors') e
+      WHERE e->>'code' = 'value_out_of_range'), true);
+END $t25$;
+SELECT is(current_setting('breakery.t25'), '1', 'T25 over-range retail_price -> value_out_of_range');
+
+-- T26 : exact NUMERIC(12,2) max (9,999,999,999.99) is NOT a false positive
+DO $t26$
+DECLARE v_rep JSONB;
+BEGIN
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  v_rep := import_catalog_v1(jsonb_build_object(
+    'products', jsonb_build_array(jsonb_build_object(
+      'sku', 'S41-OVF-OK', 'name', 'S41 At Max', 'category', 'S41 Test Cat',
+      'unit', 'pcs', 'retail_price', 9999999999.99::numeric))
+  ), true);
+  PERFORM set_config('breakery.t26',
+    (SELECT COUNT(*)::text FROM jsonb_array_elements(v_rep->'errors') e
+      WHERE e->>'code' = 'value_out_of_range'), true);
+END $t26$;
+SELECT is(current_setting('breakery.t26'), '0', 'T26 boundary max retail_price -> no false positive');
+
+-- T27 : recipes.quantity > NUMERIC(10,3) bound -> value_out_of_range (DEV-S45-IMP-01 follow-up)
+DO $t27$
+DECLARE v_rep JSONB;
+BEGIN
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  v_rep := import_catalog_v1(jsonb_build_object(
+    'recipes', jsonb_build_array(jsonb_build_object(
+      'product_sku', 'S41-DOUGH', 'material_sku', 'S41-FLOUR', 'quantity', 50000000::numeric, 'unit', 'g'))
+  ), true);
+  PERFORM set_config('breakery.t27',
+    (SELECT COUNT(*)::text FROM jsonb_array_elements(v_rep->'errors') e
+      WHERE e->>'code' = 'value_out_of_range'), true);
+END $t27$;
+SELECT is(current_setting('breakery.t27'), '1', 'T27 over-range recipe quantity -> value_out_of_range');
+
+-- T28 : product_unit_alternatives.factor_to_base > NUMERIC(20,10) bound -> value_out_of_range
+DO $t28$
+DECLARE v_rep JSONB;
+BEGIN
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  v_rep := import_catalog_v1(jsonb_build_object(
+    'units', jsonb_build_array(jsonb_build_object(
+      'product_sku', 'S41-FLOUR', 'code', 'megabag', 'factor_to_base', 99999999999::numeric, 'tags', jsonb_build_array('purchase')))
+  ), true);
+  PERFORM set_config('breakery.t28',
+    (SELECT COUNT(*)::text FROM jsonb_array_elements(v_rep->'errors') e
+      WHERE e->>'code' = 'value_out_of_range'), true);
+END $t28$;
+SELECT is(current_setting('breakery.t28'), '1', 'T28 over-range factor_to_base -> value_out_of_range');
+
+-- T29 : commit a recipe whose COMPUTED cost_per_unit exceeds the old DECIMAL(14,4)
+-- ceiling (~10^10). Quantity 1,000,000 is within recipes.quantity bound (V19), so it
+-- is NOT rejected; before migration _015 the cost-walk (_calculate_recipe_cost_walk /
+-- _snapshot_recipe_version) raised a raw 22003 at commit via tr_recipes_snapshot_version.
+-- S41-FLOUR cost_price = 12000 -> 1,000,000 * 12000 = 1.2e10 > 10^10. Must now commit.
+DO $t29$
+DECLARE v_rep JSONB;
+BEGIN
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  v_rep := import_catalog_v1(jsonb_build_object(
+    'recipes', jsonb_build_array(jsonb_build_object(
+      'product_sku', 'S41-CROIS', 'material_sku', 'S41-FLOUR', 'quantity', 1000000::numeric, 'unit', 'kg'))
+  ), false, 'aaaaaaaa-0000-0000-0000-000000000029'::uuid);
+  PERFORM set_config('breakery.t29', (v_rep->>'valid'), true);
+END $t29$;
+SELECT is(current_setting('breakery.t29'), 'true', 'T29 large computed recipe cost commits (no 22003 from cost-walk)');
 
 SELECT * FROM finish();
 ROLLBACK;
