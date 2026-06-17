@@ -15,7 +15,7 @@
 // `customers` directly — Session 14 spec D-W6-CUST-01 still applies (no
 // dedicated create_customer RPC yet, raw inserts are RLS-protected).
 
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useMemo, useState, type JSX } from 'react';
 import {
   Calendar,
@@ -78,6 +78,7 @@ function formatLastVisit(iso: string | null): string {
 }
 
 export default function CustomersListPage(): JSX.Element {
+  const navigate      = useNavigate();
   const hasPermission = useAuthStore((s) => s.hasPermission);
   const canRead       = hasPermission('customers.read');
   const canCreate     = hasPermission('customers.create');
@@ -299,6 +300,7 @@ export default function CustomersListPage(): JSX.Element {
           rows={list.data ?? []}
           getRowKey={(r) => r.id}
           isLoading={list.isLoading}
+          onRowClick={(row) => navigate(`/backoffice/customers/${row.id}`)}
           emptyTitle="No customers match"
           emptyDescription="Adjust the filters above or invite your first customer."
           data-testid="customers-table"

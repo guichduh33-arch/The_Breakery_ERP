@@ -113,7 +113,7 @@ describe('OrdersListPage smoke', () => {
 
   it('T1 default mount calls RPC v2 with default range and empty filters', async () => {
     renderRoute('/backoffice/orders');
-    await screen.findByText('ORD-001');
+    await screen.findByText(/ORD-001/);
     expect(rpcMock).toHaveBeenCalledWith('get_orders_list_v2', expect.objectContaining({
       p_filters: {},
     }));
@@ -121,7 +121,7 @@ describe('OrdersListPage smoke', () => {
 
   it('T2 URL params propagate to RPC v2 filters', async () => {
     renderRoute('/backoffice/orders?payment_method=cash&customer_id=c-1&start=2026-05-01&end=2026-05-26');
-    await screen.findByText('ORD-001');
+    await screen.findByText(/ORD-001/);
     expect(rpcMock).toHaveBeenCalledWith('get_orders_list_v2', expect.objectContaining({
       p_start: '2026-05-01',
       p_end: '2026-05-26',
@@ -129,11 +129,11 @@ describe('OrdersListPage smoke', () => {
     }));
   });
 
-  it('T3 row click navigates to /backoffice/orders/:id', async () => {
+  it('T3 clicking Details opens the order drawer', async () => {
     renderRoute('/backoffice/orders');
-    const link = await screen.findByRole('link', { name: /15\/05\/2026/ });
-    fireEvent.click(link);
-    await waitFor(() => expect(screen.getByText('OrderDetailStub')).toBeInTheDocument());
+    const detailsBtn = await screen.findByTestId('row-details-o-1');
+    fireEvent.click(detailsBtn);
+    await waitFor(() => expect(screen.getByTestId('order-detail-drawer')).toBeInTheDocument());
   });
 
   it('T4 (C2/BO-03) toast.error fires when order_items fetch fails', async () => {
