@@ -7,7 +7,13 @@ import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
 } from '@breakery/ui';
 import { useCreateCategory, useUpdateCategory } from '../hooks/useCategoryMutations.js';
-import type { CategoryRow } from '../hooks/useAllCategories.js';
+import type { CategoryRow, CategoryType } from '../hooks/useAllCategories.js';
+
+const CATEGORY_TYPES: ReadonlyArray<{ value: CategoryType; label: string }> = [
+  { value: 'raw_material',  label: 'Raw material' },
+  { value: 'semi_finished', label: 'Semi-finished' },
+  { value: 'finished',      label: 'Finished product' },
+];
 
 const DISPATCH_STATIONS = ['none', 'kitchen', 'bar', 'pastry', 'bakery'] as const;
 const KDS_STATIONS = ['expo', 'kitchen', 'bar', 'pastry', 'bakery'] as const;
@@ -24,7 +30,7 @@ export function CategoryFormDialog({ mode, category, onClose }: CategoryFormDial
   const [dispatch,    setDispatch]    = useState(category?.dispatch_station ?? 'none');
   const [kds,         setKds]         = useState(category?.kds_station ?? 'expo');
   const [showInPos,   setShowInPos]   = useState(category?.show_in_pos ?? true);
-  const [rawMaterial, setRawMaterial] = useState(category?.is_raw_material ?? false);
+  const [catType,     setCatType]     = useState<CategoryType>(category?.category_type ?? 'finished');
   const [active,      setActive]      = useState(category?.is_active ?? true);
   const [error,       setError]       = useState<string | null>(null);
 
@@ -48,7 +54,7 @@ export function CategoryFormDialog({ mode, category, onClose }: CategoryFormDial
           dispatch_station: dispatch,
           kds_station: kds,
           show_in_pos: showInPos,
-          is_raw_material: rawMaterial,
+          category_type: catType,
         },
         {
           onSuccess: () => onClose(),
@@ -70,7 +76,7 @@ export function CategoryFormDialog({ mode, category, onClose }: CategoryFormDial
             dispatch_station: dispatch,
             kds_station: kds,
             show_in_pos: showInPos,
-            is_raw_material: rawMaterial,
+            category_type: catType,
           },
         },
         {
@@ -145,18 +151,41 @@ export function CategoryFormDialog({ mode, category, onClose }: CategoryFormDial
             </div>
           </div>
 
+          <div>
+            <label className="block text-xs uppercase tracking-wider text-text-secondary mb-1">
+              Type
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {CATEGORY_TYPES.map((t) => {
+                const on = catType === t.value;
+                return (
+                  <button
+                    key={t.value}
+                    type="button"
+                    onClick={() => setCatType(t.value)}
+                    aria-pressed={on}
+                    className={`rounded-md border px-2 py-2 text-xs font-medium transition-colors ${
+                      on
+                        ? 'border-gold bg-gold/10 text-text-primary'
+                        : 'border-border-subtle text-text-secondary hover:bg-bg-overlay'
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-1 text-xs text-text-secondary">
+              Classifies the category for inventory (raw material → semi-finished → finished product).
+            </p>
+          </div>
+
           <div className="space-y-1 pt-1">
             <ToggleRow
               checked={showInPos}
               onChange={setShowInPos}
               label="Show in POS"
               description="Category appears in the POS product grid."
-            />
-            <ToggleRow
-              checked={rawMaterial}
-              onChange={setRawMaterial}
-              label="Raw Material Category"
-              description="Mark as raw material for inventory management."
             />
             <ToggleRow
               checked={active}

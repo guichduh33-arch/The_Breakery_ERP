@@ -367,12 +367,12 @@ export type Database = {
       }
       categories: {
         Row: {
+          category_type: string
           created_at: string
           deleted_at: string | null
           dispatch_station: string
           id: string
           is_active: boolean
-          is_raw_material: boolean
           kds_station: string
           name: string
           show_in_pos: boolean
@@ -381,12 +381,12 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          category_type?: string
           created_at?: string
           deleted_at?: string | null
           dispatch_station?: string
           id?: string
           is_active?: boolean
-          is_raw_material?: boolean
           kds_station?: string
           name: string
           show_in_pos?: boolean
@@ -395,12 +395,12 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          category_type?: string
           created_at?: string
           deleted_at?: string | null
           dispatch_station?: string
           id?: string
           is_active?: boolean
-          is_raw_material?: boolean
           kds_station?: string
           name?: string
           show_in_pos?: boolean

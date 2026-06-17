@@ -114,6 +114,7 @@ export default function CategoriesPage(): JSX.Element {
                 <th className="px-2 py-2 w-8" aria-label="Drag handle"></th>
                 <th className="px-3 py-2">Name</th>
                 <th className="px-3 py-2">Slug</th>
+                <th className="px-3 py-2">Type</th>
                 <th className="px-3 py-2">Dispatch / KDS</th>
                 <th className="px-3 py-2 text-center">POS</th>
                 <th className="px-3 py-2 text-center">Active</th>
