@@ -5522,6 +5522,10 @@ export type Database = {
       _table_privs: { Args: never; Returns: unknown[] }
       _temptypes: { Args: { "": string }; Returns: string }
       _todo: { Args: never; Returns: string }
+      _try_convert_quantity: {
+        Args: { p_from: string; p_qty: number; p_to: string }
+        Returns: number
+      }
       _verify_pin_with_lockout: {
         Args: { p_pin: string; p_user_id: string }
         Returns: boolean
@@ -6852,9 +6856,11 @@ export type Database = {
         Returns: {
           cost_price: number
           current_stock: number
+          line_cost: number
           material_id: string
           material_name: string
           material_unit: string
+          qty_in_base: number
           qty_per_unit: number
           recipe_unit: string
         }[]
@@ -7139,6 +7145,10 @@ export type Database = {
           p_counted_qty: number
           p_notes?: string
         }
+        Returns: Json
+      }
+      set_product_base_unit_v1: {
+        Args: { p_new_unit: string; p_product_id: string }
         Returns: Json
       }
       set_product_sections_v1: {
