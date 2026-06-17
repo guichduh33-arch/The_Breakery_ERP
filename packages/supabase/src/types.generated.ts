@@ -367,6 +367,7 @@ export type Database = {
       }
       categories: {
         Row: {
+          category_type: string
           created_at: string
           deleted_at: string | null
           dispatch_station: string
@@ -374,11 +375,13 @@ export type Database = {
           is_active: boolean
           kds_station: string
           name: string
+          show_in_pos: boolean
           slug: string
           sort_order: number
           updated_at: string
         }
         Insert: {
+          category_type?: string
           created_at?: string
           deleted_at?: string | null
           dispatch_station?: string
@@ -386,11 +389,13 @@ export type Database = {
           is_active?: boolean
           kds_station?: string
           name: string
+          show_in_pos?: boolean
           slug: string
           sort_order?: number
           updated_at?: string
         }
         Update: {
+          category_type?: string
           created_at?: string
           deleted_at?: string | null
           dispatch_station?: string
@@ -398,6 +403,7 @@ export type Database = {
           is_active?: boolean
           kds_station?: string
           name?: string
+          show_in_pos?: boolean
           slug?: string
           sort_order?: number
           updated_at?: string
@@ -5941,9 +5947,17 @@ export type Database = {
       }
       current_pb1_rate: { Args: never; Returns: number }
       deactivate_recipe_v1: { Args: { p_recipe_id: string }; Returns: string }
+      delete_category_v1: {
+        Args: { p_category_id: string; p_idempotency_key?: string }
+        Returns: Json
+      }
       delete_expense_threshold_v1: {
         Args: { p_threshold_id: string }
         Returns: boolean
+      }
+      delete_product_v1: {
+        Args: { p_idempotency_key?: string; p_product_id: string }
+        Returns: Json
       }
       delete_user_v1: {
         Args: { p_reason: string; p_user_id: string }
@@ -6842,6 +6856,7 @@ export type Database = {
           material_name: string
           material_unit: string
           qty_per_unit: number
+          recipe_unit: string
         }[]
       }
       recipe_cost_history_v1: {

@@ -5,18 +5,26 @@ import type { JSX } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Button } from '@breakery/ui';
-import type { CategoryRow } from '../hooks/useAllCategories.js';
+import type { CategoryRow, CategoryType } from '../hooks/useAllCategories.js';
+
+const TYPE_META: Record<CategoryType, { label: string; cls: string }> = {
+  raw_material:  { label: 'Raw material',  cls: 'bg-amber-100 text-amber-700' },
+  semi_finished: { label: 'Semi-finished', cls: 'bg-sky-100 text-sky-700' },
+  finished:      { label: 'Finished',      cls: 'bg-emerald-100 text-emerald-700' },
+};
 
 export interface CategorySortableRowProps {
   category: CategoryRow;
   canEdit:  boolean;
+  canDelete: boolean;
   onEdit:   (c: CategoryRow) => void;
+  onDelete: (c: CategoryRow) => void;
   onToggleActive: (c: CategoryRow) => void;
   togglePending:  boolean;
 }
 
 export function CategorySortableRow({
-  category, canEdit, onEdit, onToggleActive, togglePending,
+  category, canEdit, canDelete, onEdit, onDelete, onToggleActive, togglePending,
 }: CategorySortableRowProps): JSX.Element {
   const {
     attributes, listeners, setNodeRef, transform, transition, isDragging,
@@ -50,8 +58,24 @@ export function CategorySortableRow({
       </td>
       <td className="px-3 py-2">{category.name}</td>
       <td className="px-3 py-2 font-mono text-xs text-text-secondary">{category.slug}</td>
+      <td className="px-3 py-2">
+        <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${TYPE_META[category.category_type].cls}`}>
+          {TYPE_META[category.category_type].label}
+        </span>
+      </td>
       <td className="px-3 py-2 text-xs uppercase tracking-widest text-text-secondary">
         {category.dispatch_station} / {category.kds_station}
+      </td>
+      <td className="px-3 py-2 text-center">
+        <span
+          className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-xs ${
+            category.show_in_pos ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+          }`}
+          aria-label={category.show_in_pos ? 'Visible in POS' : 'Hidden from POS'}
+          title={category.show_in_pos ? 'Visible in POS' : 'Hidden from POS'}
+        >
+          {category.show_in_pos ? '✓' : '✗'}
+        </span>
       </td>
       <td className="px-3 py-2 text-center">
         <span
@@ -76,6 +100,16 @@ export function CategorySortableRow({
           >
             {category.is_active ? 'Hide' : 'Activate'}
           </Button>
+          {canDelete && (
+            <Button
+              variant="ghostDestructive"
+              size="sm"
+              onClick={() => onDelete(category)}
+              data-testid={`category-delete-${category.id}`}
+            >
+              Delete
+            </Button>
+          )}
         </div>
       </td>
     </tr>

@@ -2,8 +2,10 @@
 //
 // Session 14 / Phase 4.B — Catalog list view.
 // Composition mirrors `product page.jpg` (header card -> KPI tiles ->
-// search/filter strip -> dense table or card grid). Read-only — write paths
-// arrive when the product CRUD RPCs land in a future session.
+// search/filter strip -> dense table or card grid).
+//
+// Write paths: S27 update, S27b create + categories DnD, S27c variants,
+// S45 soft-delete (delete_product_v1, gate products.delete, ADMIN+ only).
 
 import { useMemo, useState, type JSX } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -14,6 +16,7 @@ import { ProductsFilters } from '@/features/products/components/ProductsFilters.
 import { ProductsTable } from '@/features/products/components/ProductsTable.js';
 import { ProductsGrid } from '@/features/products/components/ProductsGrid.js';
 import { NewProductDialog } from '@/features/products/components/NewProductDialog.js';
+import { DeleteProductDialog } from '@/features/products/components/DeleteProductDialog.js';
 import { useProducts } from '@/features/products/hooks/useProducts.js';
 import { useCategories } from '@/features/products/hooks/useCategories.js';
 import { useResolvedAllergensMap } from '@/features/products/hooks/useResolvedAllergensMap.js';
@@ -31,13 +34,17 @@ export default function ProductsPage(): JSX.Element {
   const products = useProducts();
   const categories = useCategories();
   const resolvedAllergens = useResolvedAllergensMap();
-  const canCreate = useAuthStore((s) => s.hasPermission('products.create'));
+  const canCreate      = useAuthStore((s) => s.hasPermission('products.create'));
+  const canDelete      = useAuthStore((s) => s.hasPermission('products.delete'));
+  const canEditPricing = useAuthStore((s) => s.hasPermission('products.update'));
+  const canImport      = useAuthStore((s) => s.hasPermission('catalog.import'));
 
   const [search, setSearch] = useState('');
   const [categoryId, setCategoryId] = useState<string | 'all'>('all');
   const [view, setView] = useState<ProductView>('list');
   const [variantFilter, setVariantFilter] = useState<ProductVariantFilter>('all');
   const [showNew, setShowNew] = useState(false);
+  const [toDelete, setToDelete] = useState<ProductRow | null>(null);
 
   const rows: ProductRow[] = products.data ?? [];
 
@@ -84,6 +91,10 @@ export default function ProductsPage(): JSX.Element {
     navigate(`/backoffice/products/${row.id}`);
   }
 
+  function openPricing(row: ProductRow): void {
+    navigate(`/backoffice/products/${row.id}?tab=general`);
+  }
+
   if (products.error !== null && products.error !== undefined) {
     return (
       <div className="rounded-lg border border-red bg-red-soft p-4 text-sm text-red" role="alert">
@@ -94,7 +105,11 @@ export default function ProductsPage(): JSX.Element {
 
   return (
     <div className="space-y-6">
-      <ProductsHeader onNew={canCreate ? () => setShowNew(true) : undefined} />
+      <ProductsHeader
+        onNew={canCreate ? () => setShowNew(true) : undefined}
+        {...(canImport ? { onImport: () => navigate('/backoffice/products/import-export') } : {})}
+        onRecipes={() => navigate('/backoffice/inventory/recipes')}
+      />
       <ProductsPageTabs />
 
       {showNew && (
@@ -104,6 +119,11 @@ export default function ProductsPage(): JSX.Element {
           onCreated={(newId) => navigate(`/backoffice/products/${newId}`)}
         />
       )}
+
+      <DeleteProductDialog
+        product={toDelete}
+        onClose={() => setToDelete(null)}
+      />
 
       <ProductsKpiGrid kpis={kpis} isLoading={products.isLoading} />
 
@@ -127,6 +147,8 @@ export default function ProductsPage(): JSX.Element {
           parentIds={parentIds}
           onRowClick={openProduct}
           onView={openProduct}
+          {...(canEditPricing ? { onPricing: openPricing } : {})}
+          {...(canDelete ? { onDelete: (row: ProductRow) => setToDelete(row) } : {})}
         />
       ) : (
         <ProductsGrid rows={filtered} parentIds={parentIds} onCardClick={openProduct} />

@@ -19,6 +19,7 @@ import {
 } from '@/features/categories/hooks/useCategoryMutations.js';
 import { CategorySortableRow } from '@/features/categories/components/CategorySortableRow.js';
 import { CategoryFormDialog } from '@/features/categories/components/CategoryFormDialog.js';
+import { DeleteCategoryDialog } from '@/features/categories/components/DeleteCategoryDialog.js';
 import { useAuthStore } from '@/stores/authStore.js';
 
 export default function CategoriesPage(): JSX.Element {
@@ -27,9 +28,11 @@ export default function CategoriesPage(): JSX.Element {
   const updateCat = useUpdateCategory();
   const canCreate = useAuthStore((s) => s.hasPermission('categories.create'));
   const canEdit = useAuthStore((s) => s.hasPermission('categories.update'));
+  const canDelete = useAuthStore((s) => s.hasPermission('categories.delete'));
 
   const [order, setOrder] = useState<CategoryRow[]>([]);
   const [editing, setEditing] = useState<CategoryRow | null>(null);
+  const [deleting, setDeleting] = useState<CategoryRow | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [reorderError, setReorderError] = useState<string | null>(null);
 
@@ -111,7 +114,9 @@ export default function CategoriesPage(): JSX.Element {
                 <th className="px-2 py-2 w-8" aria-label="Drag handle"></th>
                 <th className="px-3 py-2">Name</th>
                 <th className="px-3 py-2">Slug</th>
+                <th className="px-3 py-2">Type</th>
                 <th className="px-3 py-2">Dispatch / KDS</th>
+                <th className="px-3 py-2 text-center">POS</th>
                 <th className="px-3 py-2 text-center">Active</th>
                 <th className="px-3 py-2 text-right">Actions</th>
               </tr>
@@ -124,7 +129,9 @@ export default function CategoriesPage(): JSX.Element {
                       key={c.id}
                       category={c}
                       canEdit={canEdit}
+                      canDelete={canDelete}
                       onEdit={(cat) => setEditing(cat)}
+                      onDelete={(cat) => setDeleting(cat)}
                       onToggleActive={handleToggleActive}
                       togglePending={updateCat.isPending}
                     />
@@ -144,6 +151,12 @@ export default function CategoriesPage(): JSX.Element {
           mode="edit"
           category={editing}
           onClose={() => setEditing(null)}
+        />
+      )}
+      {deleting !== null && (
+        <DeleteCategoryDialog
+          category={deleting}
+          onClose={() => setDeleting(null)}
         />
       )}
     </div>

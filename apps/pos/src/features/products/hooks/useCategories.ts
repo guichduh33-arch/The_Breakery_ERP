@@ -11,6 +11,7 @@ export function useCategories() {
         .from('categories')
         .select('id, name, slug, sort_order, is_active')
         .eq('is_active', true)
+        .eq('show_in_pos', true)
         .is('deleted_at', null)
         .order('sort_order');
       if (error) throw error;

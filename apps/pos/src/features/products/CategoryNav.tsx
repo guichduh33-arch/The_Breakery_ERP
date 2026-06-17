@@ -99,7 +99,7 @@ function CategoryItem({ slug, label, active, onSelect }: CategoryItemProps): JSX
         'cat-btn relative w-full mb-1.5 py-3 px-1 rounded-lg',
         'flex flex-col items-center justify-center gap-1.5',
         'text-[10px] uppercase tracking-wide font-semibold',
-        'transition-all motion-reduce:transition-none',
+        'transition-all duration-fast ease-motion-out active:scale-95 motion-reduce:transition-none motion-reduce:active:scale-100',
         'focus:outline focus:outline-2 focus:outline-gold focus:outline-offset-[-2px]',
       )}
     >

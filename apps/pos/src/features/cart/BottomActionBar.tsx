@@ -55,7 +55,8 @@ import { HeldOrdersModal } from './HeldOrdersModal';
 /** Shared "ghost" management-button styling (left group). */
 const GHOST_BTN =
   'flex items-center gap-2 h-11 px-3.5 rounded-md bg-bg-overlay border border-border-subtle ' +
-  'text-text-primary text-[13px] font-semibold hover:bg-bg-input transition-colors ' +
+  'text-text-primary text-[13px] font-semibold hover:bg-bg-input ' +
+  'transition-[color,background-color,transform] duration-fast ease-motion-out active:scale-[0.98] motion-reduce:active:scale-100 ' +
   'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold ' +
   'disabled:opacity-50 disabled:pointer-events-none';
 
@@ -260,35 +261,29 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
       <div className="flex-1" />
 
       {/* ── Right group : validation ────────────────────────────────────── */}
-      <button
-        type="button"
-        className={cn(
-          'flex items-center gap-2 h-11 px-3.5 rounded-md bg-transparent border border-red-400/30',
-          'text-red-400 text-[13px] font-semibold hover:bg-red-400/10 transition-colors',
-          'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
-          'disabled:opacity-50 disabled:pointer-events-none',
-        )}
+      <Button
+        variant="ghostDestructive"
+        className="h-11 px-3.5 gap-2 text-[13px] text-red-fg border border-red-fg/30"
         onClick={handleVoid}
         disabled={!hasItems}
         title={hasSentItems ? 'Already sent to kitchen — manager PIN required' : undefined}
       >
         <XCircle className="h-4 w-4" aria-hidden />
         <span>Void Order</span>
-      </button>
+      </Button>
 
       <SendToKitchenButton
         variant="outlineGold"
         className="h-11 px-4 rounded-md text-[13px] font-bold uppercase tracking-wide"
       />
 
-      <button
-        type="button"
-        className={cn(
-          'flex items-center gap-2.5 h-11 px-6 rounded-md bg-gold text-bg-base uppercase tracking-wide',
-          'text-sm font-bold hover:opacity-90 transition-opacity',
-          'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
-          'disabled:opacity-50 disabled:pointer-events-none',
-        )}
+      {/* CTA colour rule (intentional, do NOT "fix" to match the terminal):
+          GOLD = "navigate toward the money" (Checkout opens the payment terminal).
+          GREEN = "commit the money" (PaymentTerminal's Process Payment — the
+          irreversible final action, where green reads as the universal "go"). */}
+      <Button
+        variant="gold"
+        className="h-11 px-6 gap-2.5 text-sm font-bold active:bg-gold-pressed"
         onClick={() => openPayment()}
         disabled={!hasItems}
         data-testid="checkout-cta"
@@ -296,7 +291,7 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
         <CreditCard className="h-4 w-4" aria-hidden />
         <span>Checkout</span>
         <Currency amount={total} className="font-mono" />
-      </button>
+      </Button>
 
       {/* ── Owned modals ────────────────────────────────────────────────── */}
       <HeldOrdersModal open={heldOpen} onClose={() => setHeldOpen(false)} />
@@ -312,7 +307,7 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
       >
         <div role="alertdialog" aria-labelledby="void-confirm-title" className="p-6 space-y-5">
           <header className="flex items-center gap-2">
-            <XCircle className="h-5 w-5 text-red-400" aria-hidden />
+            <XCircle className="h-5 w-5 text-red-fg" aria-hidden />
             <h2 id="void-confirm-title" className="font-serif text-xl text-text-primary">
               Void this order?
             </h2>
@@ -327,7 +322,7 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
             <Button
               variant="ghostDestructive"
               size="lg"
-              className="border border-red-400/30"
+              className="border border-red-fg/30"
               onClick={handleVoidConfirmed}
               data-testid="void-confirm-button"
             >

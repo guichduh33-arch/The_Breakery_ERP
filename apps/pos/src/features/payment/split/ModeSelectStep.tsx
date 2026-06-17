@@ -60,9 +60,10 @@ export function ModeSelectStep({ onSelect }: ModeSelectStepProps): JSX.Element {
               onClick={() => onSelect(value)}
               data-testid={`split-mode-${value}`}
               className={cn(
-                'w-80 rounded-lg border-2 flex items-center gap-4 px-6 py-5 text-left transition-colors',
+                'w-80 rounded-lg border-2 flex items-center gap-4 px-6 py-5 text-left',
+                'transition-[border-color,background-color,transform] duration-fast ease-motion-out active:scale-[0.98] motion-reduce:active:scale-100',
                 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
-                'border-border-subtle bg-bg-elevated text-text-primary hover:border-gold/60',
+                'border-border-subtle bg-bg-elevated text-text-primary hover:border-gold/60 hover:bg-bg-overlay',
               )}
             >
               <Icon className="h-6 w-6 text-gold shrink-0" aria-hidden />

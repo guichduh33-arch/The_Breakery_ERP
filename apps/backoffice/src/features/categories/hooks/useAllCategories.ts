@@ -4,6 +4,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
 
+export type CategoryType = 'raw_material' | 'semi_finished' | 'finished';
+
 export interface CategoryRow {
   id:               string;
   name:             string;
@@ -12,6 +14,8 @@ export interface CategoryRow {
   is_active:        boolean;
   dispatch_station: string;
   kds_station:      string;
+  show_in_pos:      boolean;
+  category_type:    CategoryType;
 }
 
 export const CATEGORIES_ALL_KEY = ['categories', 'all'] as const;
@@ -23,7 +27,7 @@ export function useAllCategories() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('categories')
-        .select('id, name, slug, sort_order, is_active, dispatch_station, kds_station')
+        .select('id, name, slug, sort_order, is_active, dispatch_station, kds_station, show_in_pos, category_type')
         .is('deleted_at', null)
         .order('sort_order');
       if (error) throw error;

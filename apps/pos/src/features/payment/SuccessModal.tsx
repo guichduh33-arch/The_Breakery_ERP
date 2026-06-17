@@ -133,9 +133,12 @@ export function SuccessModal(props: SuccessModalProps) {
 
   return (
     <FullScreenModal open={open} onOpenChange={() => { /* must click action */ }} accessibleTitle="Payment successful">
-      <div className="m-auto bg-bg-overlay rounded-xl p-8 max-w-md w-full shadow-modal text-center space-y-6" data-testid="receipt-success">
+      <div
+        className="m-auto bg-bg-overlay rounded-xl p-8 max-w-md w-full shadow-modal text-center space-y-6 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:zoom-in-95 motion-safe:duration-300"
+        data-testid="receipt-success"
+      >
         <div className="grid place-items-center">
-          <div className="h-16 w-16 rounded-full bg-green-soft border-2 border-green grid place-items-center">
+          <div className="h-16 w-16 rounded-full bg-green-soft border-2 border-green grid place-items-center motion-safe:animate-in motion-safe:zoom-in-50 motion-safe:duration-500">
             <Check className="h-8 w-8 text-green" strokeWidth={3} aria-hidden />
           </div>
         </div>
@@ -144,23 +147,37 @@ export function SuccessModal(props: SuccessModalProps) {
           <p className="text-text-secondary text-sm">Order completed · {orderNumber}</p>
           {customerName && <p className="text-text-secondary text-xs">{customerName}</p>}
         </div>
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span className="text-text-secondary">Total</span>
-            <Currency amount={total} emphasis="gold" />
-          </div>
+        <div className="space-y-4">
+          {/* Change to give — the #1 operational number on this screen (cashier
+              reads it to hand back cash). Hero treatment when there's change due;
+              omitted entirely for card/QRIS where changeGiven is null/0. */}
           {changeGiven !== null && changeGiven > 0 && (
-            <div className="flex justify-between text-sm">
-              <span className="text-text-secondary">Change</span>
-              <Currency amount={changeGiven} emphasis="gold" />
+            <div
+              className="rounded-lg border border-gold/40 bg-gold-soft px-4 py-4"
+              data-testid="success-change-block"
+            >
+              <div className="text-[11px] uppercase tracking-widest text-text-secondary mb-1">
+                Change to give
+              </div>
+              <Currency
+                amount={changeGiven}
+                emphasis="gold"
+                className="block font-mono tabular-nums text-4xl font-bold tracking-tight"
+              />
             </div>
           )}
-          {pointsEarned !== undefined && pointsEarned > 0 && (
+          <div className="space-y-2">
             <div className="flex justify-between text-sm">
-              <span className="text-text-secondary">Points earned</span>
-              <span className="font-mono text-gold font-semibold">+{pointsEarned} pts</span>
+              <span className="text-text-secondary">Total</span>
+              <Currency amount={total} emphasis="gold" />
             </div>
-          )}
+            {pointsEarned !== undefined && pointsEarned > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-text-secondary">Points earned</span>
+                <span className="font-mono text-gold font-semibold">+{pointsEarned} pts</span>
+              </div>
+            )}
+          </div>
         </div>
         <div className="flex gap-3">
           <Button

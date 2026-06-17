@@ -35,14 +35,14 @@ export function QuickPayRow({
           onClick={onProcess}
           disabled={checkoutPending}
           data-testid="pay-cash-exact"
-          className="flex-1 h-12 rounded-md bg-green hover:bg-green/90 text-white font-bold uppercase tracking-widest text-sm transition-colors disabled:opacity-60"
+          className="flex-1 h-14 rounded-md bg-green hover:bg-green-hover active:bg-green-pressed text-white font-bold uppercase tracking-widest text-sm transition-[background-color,transform] duration-fast ease-motion-out active:scale-[0.98] motion-reduce:active:scale-100 disabled:opacity-60"
         >
           {checkoutPending
             ? 'Processing…'
             : `${isCashDraft ? 'Cash' : selectedMethod?.toUpperCase()} Exact — ${formatLabel(total)}`}
         </button>
       ) : (
-        <div className="flex-1 h-12 rounded-md border border-dashed border-border-subtle grid place-items-center text-text-muted text-xs uppercase tracking-widest">
+        <div className="flex-1 h-14 rounded-md border border-dashed border-border-subtle grid place-items-center text-text-muted text-xs uppercase tracking-widest">
           Select a method to proceed
         </div>
       )}
@@ -51,7 +51,7 @@ export function QuickPayRow({
         onClick={onSplitOpen}
         disabled={cartEmpty || checkoutPending}
         data-testid="pay-split-entry"
-        className="h-12 px-4 rounded-md border border-purple-400/60 bg-purple-400/10 text-purple-400 font-bold uppercase tracking-widest text-xs hover:bg-purple-400/20 transition-colors disabled:opacity-40 inline-flex items-center gap-2"
+        className="h-14 px-4 rounded-md border border-info/50 bg-info-soft text-info font-bold uppercase tracking-widest text-xs hover:bg-info/15 transition-[background-color,transform] duration-fast ease-motion-out active:scale-[0.97] motion-reduce:active:scale-100 disabled:opacity-40 inline-flex items-center gap-2"
       >
         <Users className="h-3.5 w-3.5" aria-hidden />
         Split by Item
