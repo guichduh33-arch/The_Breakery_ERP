@@ -12,6 +12,8 @@ export interface CategoryRow {
   is_active:        boolean;
   dispatch_station: string;
   kds_station:      string;
+  show_in_pos:      boolean;
+  is_raw_material:  boolean;
 }
 
 export const CATEGORIES_ALL_KEY = ['categories', 'all'] as const;
@@ -23,7 +25,7 @@ export function useAllCategories() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('categories')
-        .select('id, name, slug, sort_order, is_active, dispatch_station, kds_station')
+        .select('id, name, slug, sort_order, is_active, dispatch_station, kds_station, show_in_pos, is_raw_material')
         .is('deleted_at', null)
         .order('sort_order');
       if (error) throw error;

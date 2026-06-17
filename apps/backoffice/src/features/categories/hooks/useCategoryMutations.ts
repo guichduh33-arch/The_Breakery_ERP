@@ -10,6 +10,8 @@ export interface CreateCategoryPayload {
   is_active?:        boolean;
   dispatch_station?: string;
   kds_station?:      string;
+  show_in_pos?:      boolean;
+  is_raw_material?:  boolean;
 }
 
 export interface UpdateCategoryPatch {
@@ -19,6 +21,8 @@ export interface UpdateCategoryPatch {
   is_active?:        boolean;
   dispatch_station?: string;
   kds_station?:      string;
+  show_in_pos?:      boolean;
+  is_raw_material?:  boolean;
 }
 
 const CATEGORIES_KEY = ['categories', 'all'] as const;
