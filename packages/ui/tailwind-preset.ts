@@ -51,6 +51,7 @@ const preset: Partial<Config> = {
         red: {
           DEFAULT: 'var(--red-base)',
           soft: 'var(--red-soft)',
+          fg: 'var(--red-fg)',
         },
         blue: { info: 'var(--blue-info)' },
         amber: { warn: 'var(--amber-warn)' },
@@ -68,6 +69,7 @@ const preset: Partial<Config> = {
         danger: {
           DEFAULT: 'var(--danger)',
           soft: 'var(--danger-soft)',
+          fg: 'var(--red-fg)',
         },
         info: {
           DEFAULT: 'var(--info)',

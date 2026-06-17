@@ -24,7 +24,8 @@ export function PaymentMethodGrid({ selectedMethod, onSelect }: PaymentMethodGri
               key={m.value}
               onClick={() => onSelect(m.value)}
               className={cn(
-                'h-24 rounded-md border flex flex-col items-center justify-center gap-1.5 transition-colors',
+                'h-24 rounded-md border flex flex-col items-center justify-center gap-1.5',
+                'transition-[color,background-color,border-color,transform] duration-fast ease-motion-out active:scale-[0.97] motion-reduce:active:scale-100',
                 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold',
                 active
                   ? 'border-gold bg-gold-soft text-gold'

@@ -116,6 +116,7 @@ export function CartLineRow({
     <div
       className={cn(
         'flex items-center gap-2 p-3 rounded-md bg-bg-overlay border border-border-subtle',
+        'motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-right-2 motion-safe:duration-300 motion-safe:ease-out',
         locked && 'before:absolute relative before:inset-y-2 before:left-0 before:w-0.5 before:bg-gold/60 before:rounded-r',
         cancelled && 'opacity-60',
       )}
@@ -142,7 +143,7 @@ export function CartLineRow({
           'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
           locked
             ? 'text-gold/70'
-            : 'text-text-muted hover:text-red-400 hover:bg-red-400/10',
+            : 'text-text-muted hover:text-red-fg hover:bg-red-soft',
           cancelled && 'opacity-50 pointer-events-none',
         )}
       >
@@ -238,7 +239,7 @@ export function CartLineRow({
           )}
         />
         {item.discount && !cancelled && (
-          <div className="text-[11px] text-red-400 font-mono">
+          <div className="text-[11px] text-red-fg font-mono">
             {item.discount.type === 'percentage' ? (
               `-${item.discount.value}%`
             ) : (

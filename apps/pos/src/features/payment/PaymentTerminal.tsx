@@ -180,6 +180,9 @@ export function PaymentTerminal() {
 
       <footer className="h-16 flex items-center justify-between px-6 border-t border-border-subtle bg-bg-elevated">
         <Button variant="secondary" onClick={close}>Cancel</Button>
+        {/* GREEN (primary), not gold — intentional. Gold = "go to pay" (the
+            Checkout button in BottomActionBar); green = "commit the money"
+            here, the irreversible final action. See BottomActionBar checkout. */}
         <Button
           variant="primary"
           size="lg"

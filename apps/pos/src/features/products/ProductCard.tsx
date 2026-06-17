@@ -73,12 +73,13 @@ export function ProductCard({
       data-testid={`product-card-${product.id}`}
       aria-label={`${product.name} — ${disabled && overlayLabel ? overlayLabel : 'tap to add'}`}
       className={cn(
-        'group relative bg-bg-elevated rounded-lg overflow-hidden border border-border-subtle text-left',
-        'transition-colors motion-reduce:transition-none',
+        'group relative bg-bg-elevated rounded-lg overflow-hidden border border-border-subtle text-left will-change-transform',
+        'transition-[transform,box-shadow,border-color,background-color] duration-fast ease-motion-out',
+        'motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:active:scale-100',
         'focus:outline focus:outline-2 focus:outline-gold focus:outline-offset-2',
         disabled
           ? 'opacity-50 cursor-not-allowed'
-          : 'cursor-pointer hover:border-border-strong hover:bg-bg-overlay',
+          : 'cursor-pointer hover:-translate-y-0.5 hover:border-border-strong hover:bg-bg-overlay hover:shadow-lg active:scale-[0.97] active:translate-y-0 active:shadow-md',
       )}
     >
       <div className="relative aspect-square bg-bg-input overflow-hidden">
@@ -89,8 +90,8 @@ export function ProductCard({
             loading="lazy"
             onError={() => setImgError(true)}
             className={cn(
-              'object-cover w-full h-full',
-              disabled && 'grayscale',
+              'object-cover w-full h-full transition-transform duration-slow ease-motion-out motion-reduce:transition-none',
+              disabled ? 'grayscale' : 'group-hover:scale-[1.06]',
             )}
           />
         ) : (

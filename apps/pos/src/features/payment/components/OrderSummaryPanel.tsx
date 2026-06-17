@@ -77,7 +77,7 @@ export function OrderSummaryPanel({
         {totals.redemption_amount > 0 && (
           <div className="flex justify-between text-text-secondary">
             <span>Loyalty redeem ({cart.loyaltyPointsToRedeem} pts)</span>
-            <span className="font-mono text-red-400">-<Currency amount={totals.redemption_amount} /></span>
+            <span className="font-mono text-red-fg">-<Currency amount={totals.redemption_amount} /></span>
           </div>
         )}
         {appliedPromotions.map((ap) => (
@@ -88,7 +88,7 @@ export function OrderSummaryPanel({
             <span>
               Manual discount ({cart.cartDiscount.type === 'percentage' ? `${cart.cartDiscount.value}%` : 'fixed'})
             </span>
-            <span className="font-mono text-red-400">-<Currency amount={cart.cartDiscount.amount} /></span>
+            <span className="font-mono text-red-fg">-<Currency amount={cart.cartDiscount.amount} /></span>
           </div>
         )}
         <div className="flex justify-between text-text-secondary">

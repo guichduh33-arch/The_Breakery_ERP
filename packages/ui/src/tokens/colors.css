@@ -91,6 +91,8 @@
   --green-pressed: #0a7a57;
   --red-base:      #d63b3b;
   --red-soft:      rgba(214, 59, 59, 0.10);
+  /* On cream the base red already reads as foreground — no lighter tint. */
+  --red-fg:        var(--red-base);
   --blue-info:     #2563eb;
   --amber-warn:    #d97706;
 

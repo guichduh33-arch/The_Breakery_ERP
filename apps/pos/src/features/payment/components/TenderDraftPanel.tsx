@@ -58,7 +58,8 @@ export function TenderDraftPanel({
             <button
               onClick={() => setCashReceivedStr(String(remaining))}
               className={cn(
-                'col-span-2 rounded-md py-2.5 text-xs font-bold uppercase tracking-widest border',
+                'col-span-2 min-h-[44px] rounded-md py-2.5 text-xs font-bold uppercase tracking-widest border',
+                'transition-[background-color,transform] duration-fast ease-motion-out active:scale-[0.97] motion-reduce:active:scale-100',
                 draftAmount === remaining
                   ? 'bg-gold text-bg-base border-gold'
                   : 'bg-bg-input border-border-subtle hover:bg-bg-overlay text-text-primary',
@@ -70,7 +71,7 @@ export function TenderDraftPanel({
               <button
                 key={q}
                 onClick={() => setCashReceivedStr(String(q))}
-                className="rounded-md py-2.5 text-xs font-mono tabular-nums bg-bg-input border border-border-subtle hover:bg-bg-overlay text-text-primary"
+                className="min-h-[44px] rounded-md py-2.5 text-xs font-mono tabular-nums bg-bg-input border border-border-subtle hover:bg-bg-overlay text-text-primary transition-[background-color,transform] duration-fast ease-motion-out active:scale-[0.97] motion-reduce:active:scale-100"
               >
                 {formatLabel(q)}
               </button>
