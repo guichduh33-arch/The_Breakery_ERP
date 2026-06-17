@@ -29,7 +29,6 @@ import {
   Clock,
   CreditCard,
   DollarSign,
-  Gauge,
   LineChart,
   Package,
   Pencil,
@@ -58,8 +57,12 @@ import {
   type SupplierPOListRow,
 } from '@/features/suppliers/hooks/useSupplierPurchases.js';
 import { useSupplierMetrics } from '@/features/suppliers/hooks/useSupplierMetrics.js';
+import { useSupplierPurchaseItems } from '@/features/suppliers/hooks/useSupplierPurchaseItems.js';
 import { useUpdateSupplier } from '@/features/suppliers/hooks/useUpdateSupplier.js';
 import { SupplierFormModal } from '@/features/suppliers/components/SupplierFormModal.js';
+import { SupplierAnalyticsTab } from '@/features/suppliers/components/SupplierAnalyticsTab.js';
+import { SupplierPriceEvolutionTab } from '@/features/suppliers/components/SupplierPriceEvolutionTab.js';
+import { SupplierPaymentDistribution } from '@/features/suppliers/components/SupplierPaymentDistribution.js';
 import type { SupplierRow } from '@/features/suppliers/hooks/useSuppliersList.js';
 
 function StatusBadge({ active }: { active: boolean }): JSX.Element {
@@ -92,7 +95,8 @@ function PaymentBadge({ row }: { row: SupplierPOListRow }): JSX.Element {
 }
 
 function fmtIdrPrefixed(amount: number): string {
-  return `Rp ${formatIdr(amount)}`;
+  // formatIdr already prefixes "Rp ".
+  return formatIdr(amount);
 }
 
 function fmtDays(days: number): string {
@@ -174,6 +178,7 @@ export default function SupplierDetailPage(): JSX.Element {
 
   const detail    = useSupplierDetail(id);
   const purchases = useSupplierPurchases(id);
+  const items     = useSupplierPurchaseItems(id);
   const updateMut = useUpdateSupplier();
   const metrics   = useSupplierMetrics(purchases.data ?? []);
 
@@ -314,12 +319,7 @@ export default function SupplierDetailPage(): JSX.Element {
         </TabsContent>
 
         <TabsContent value="price" className="mt-4">
-          <EmptyState
-            icon={TrendingUp}
-            title="Price evolution coming soon"
-            description="A per-product unit-price chart will surface here once the supplier price history materialised view ships."
-            size="md"
-          />
+          <SupplierPriceEvolutionTab items={items.data ?? []} />
         </TabsContent>
 
         <TabsContent value="payments" className="mt-4">
@@ -327,20 +327,10 @@ export default function SupplierDetailPage(): JSX.Element {
         </TabsContent>
 
         <TabsContent value="analytics" className="mt-4">
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <EmptyState
-              icon={BarChart3}
-              title="Monthly spend analytics"
-              description="Volume + spend trend charts arrive once the supplier monthly aggregates view is built."
-              size="md"
-            />
-            <EmptyState
-              icon={Gauge}
-              title="Top products"
-              description="Per-supplier product purchase volume + average price will surface here."
-              size="md"
-            />
-          </div>
+          <SupplierAnalyticsTab
+            items={items.data ?? []}
+            spendByPo={purchaseRows.map((r) => ({ order_date: r.order_date, total_amount: Number(r.total_amount ?? 0) }))}
+          />
         </TabsContent>
       </Tabs>
 
@@ -415,7 +405,11 @@ function PaymentsSection({
           size="md"
         />
       ) : (
-        <div className="overflow-hidden rounded-lg border border-border-subtle bg-bg-elevated">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[280px_1fr]">
+          <Card variant="default" padding="md">
+            <SupplierPaymentDistribution paidAmount={metrics.paidAmount} overdueAmount={overdue} />
+          </Card>
+          <div className="overflow-hidden rounded-lg border border-border-subtle bg-bg-elevated">
           <table className="w-full text-sm">
             <thead className="border-b border-border-subtle bg-bg-base/40">
               <tr>
@@ -442,6 +436,7 @@ function PaymentsSection({
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </div>
