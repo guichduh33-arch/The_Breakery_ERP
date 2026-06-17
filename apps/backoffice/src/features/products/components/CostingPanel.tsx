@@ -24,6 +24,12 @@ function formatIdr(n: number): string {
   return n.toLocaleString('id-ID');
 }
 
+// Per-unit cost: always 2 decimals so a per-gram price (e.g. 173,88) is not
+// visually mistaken for the per-kilo magnitude it derives from (173.880,78).
+function formatUnitCost(n: number): string {
+  return n.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 function computeMargin(cost: number, retail: number): number | null {
   if (retail <= 0) return null;
   return ((retail - cost) / retail) * 100;
@@ -54,10 +60,10 @@ export function CostingPanel({ product }: CostingPanelProps): JSX.Element {
   const margin = computeMargin(product.cost_price, product.retail_price);
 
   // ── BOM total ──────────────────────────────────────────────────────────────
-  const bomTotal = (bom ?? []).reduce(
-    (acc, row) => acc + row.qty_per_unit * row.cost_price,
-    0,
-  );
+  // line_cost is computed server-side with the recipe-unit → stock-unit conversion
+  // (e.g. 284 gr of a material priced per kg). Summing raw qty × per-kg cost would
+  // overstate the total 1000×.
+  const bomTotal = (bom ?? []).reduce((acc, row) => acc + row.line_cost, 0);
 
   return (
     <div className="space-y-6">
@@ -163,7 +169,11 @@ export function CostingPanel({ product }: CostingPanelProps): JSX.Element {
               </thead>
               <tbody>
                 {bom!.map((row) => {
-                  const lineCost = row.qty_per_unit * row.cost_price;
+                  // Unit cost expressed per the recipe line's own unit (e.g. per gr),
+                  // not per the material's stock unit (per kg), so qty × unit cost
+                  // reconciles with the line cost shown.
+                  const unitCostPerRecipeUnit =
+                    row.qty_per_unit > 0 ? row.line_cost / row.qty_per_unit : row.cost_price;
                   return (
                     <tr
                       key={row.material_id}
@@ -175,11 +185,12 @@ export function CostingPanel({ product }: CostingPanelProps): JSX.Element {
                         {row.qty_per_unit}
                       </td>
                       <td className="py-2 pr-4 text-text-secondary font-mono">{row.recipe_unit}</td>
-                      <td className="py-2 pr-4 text-right font-mono text-text-primary">
-                        Rp {formatIdr(row.cost_price)}
+                      <td className="py-2 pr-4 text-right font-mono text-text-primary whitespace-nowrap">
+                        Rp {formatUnitCost(unitCostPerRecipeUnit)}
+                        <span className="text-text-secondary"> /{row.recipe_unit}</span>
                       </td>
                       <td className="py-2 text-right font-mono text-text-primary">
-                        Rp {formatIdr(lineCost)}
+                        Rp {formatIdr(row.line_cost)}
                       </td>
                     </tr>
                   );

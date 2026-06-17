@@ -17,6 +17,10 @@ export interface BomRow {
   qty_per_unit: number;
   current_stock: number;
   cost_price: number;
+  // recipe qty converted into the material's stock unit + the resulting line cost,
+  // both computed server-side (recipe_bom_full_v1) with unit conversion applied.
+  qty_in_base: number;
+  line_cost: number;
 }
 
 export interface RecipeProduct {
@@ -66,12 +70,13 @@ export function useRecipeDetail(productId: string | undefined) {
         qty_per_unit: Number(r.qty_per_unit ?? 0),
         current_stock: Number(r.current_stock ?? 0),
         cost_price: Number(r.cost_price ?? 0),
+        qty_in_base: Number(r.qty_in_base ?? 0),
+        line_cost: Number(r.line_cost ?? 0),
       }));
 
-      const total_cost = bom.reduce(
-        (sum, r) => sum + r.qty_per_unit * r.cost_price,
-        0,
-      );
+      // line_cost already accounts for the recipe-unit → stock-unit conversion;
+      // summing raw qty × per-stock-unit cost would be 1000× off (gr vs kg).
+      const total_cost = bom.reduce((sum, r) => sum + r.line_cost, 0);
 
       return {
         product: product as RecipeProduct,

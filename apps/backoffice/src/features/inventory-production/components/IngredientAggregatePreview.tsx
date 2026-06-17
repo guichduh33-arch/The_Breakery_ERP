@@ -22,6 +22,9 @@ interface BomLeafRow {
   qty_per_unit:  number;
   current_stock: number;
   cost_price:    number;
+  // recipe qty already converted into the material's stock unit (material_unit),
+  // so it can be compared against current_stock directly (both in material_unit).
+  qty_in_base:   number;
 }
 
 interface AggregatedRow {
@@ -81,7 +84,9 @@ export function IngredientAggregatePreview({ items }: IngredientAggregatePreview
       const mult = qty + waste;
       if (mult <= 0) return;
       for (const leaf of bom) {
-        const need = leaf.qty_per_unit * mult;
+        // qty_in_base is in the material's stock unit (kg/lt/pcs), matching
+        // current_stock — using the raw recipe qty (gr/ml) would overstate needs 1000×.
+        const need = leaf.qty_in_base * mult;
         const existing = acc.get(leaf.material_id);
         if (existing) {
           existing.totalQty += need;
