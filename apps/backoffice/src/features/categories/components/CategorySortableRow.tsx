@@ -56,6 +56,17 @@ export function CategorySortableRow({
       <td className="px-3 py-2 text-center">
         <span
           className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-xs ${
+            category.show_in_pos ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+          }`}
+          aria-label={category.show_in_pos ? 'Visible in POS' : 'Hidden from POS'}
+          title={category.show_in_pos ? 'Visible in POS' : 'Hidden from POS'}
+        >
+          {category.show_in_pos ? '✓' : '✗'}
+        </span>
+      </td>
+      <td className="px-3 py-2 text-center">
+        <span
+          className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-xs ${
             category.is_active ? 'bg-green-100 text-green-700' : 'bg-bg-overlay text-text-muted'
           }`}
           aria-label={category.is_active ? 'Active' : 'Inactive'}
