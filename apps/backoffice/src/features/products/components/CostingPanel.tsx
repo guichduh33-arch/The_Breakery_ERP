@@ -12,7 +12,7 @@ import { useRef, useState, type JSX } from 'react';
 import { DollarSign, Percent, Tag } from 'lucide-react';
 import { Card, EmptyState } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
-import { useRecipeBomFull } from '../hooks/useRecipeBomFull.js';
+import { useRecipeDirectCost } from '../hooks/useRecipeDirectCost.js';
 import { CorrectCostDialog } from './CorrectCostDialog.js';
 import type { ProductRow } from '../types.js';
 
@@ -38,7 +38,10 @@ function computeMargin(cost: number, retail: number): number | null {
 export function CostingPanel({ product }: CostingPanelProps): JSX.Element {
   const canCorrect = useAuthStore((s) => s.hasPermission('inventory.cost_correction'));
 
-  const { data: bom, isLoading, error } = useRecipeBomFull(product.id);
+  // Direct (depth-1) recipe lines so the breakdown matches the Recipe tab. A
+  // semi-finished line is costed at its own cost_price (which already rolls up
+  // its sub-ingredients) — NOT exploded into leaf materials.
+  const { data: bom, isLoading, error } = useRecipeDirectCost(product.id);
 
   const [dialogOpen, setDialogOpen] = useState(false);
 
