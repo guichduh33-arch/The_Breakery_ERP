@@ -78,8 +78,8 @@ vi.mock('@/stores/authStore.js', () => ({
     selector({ hasPermission: (_code: string) => mockState.hasPerm }),
 }));
 
-vi.mock('@/features/products/hooks/useRecipeBomFull.js', () => ({
-  useRecipeBomFull: (_productId: string) => ({
+vi.mock('@/features/products/hooks/useRecipeDirectCost.js', () => ({
+  useRecipeDirectCost: (_productId: string) => ({
     // Return the stable BOM_DATA reference when there are rows,
     // or mockState.bomRows (empty array) when the test wants no BOM.
     data:      mockState.bomRows.length > 0 ? BOM_DATA : mockState.bomRows,
