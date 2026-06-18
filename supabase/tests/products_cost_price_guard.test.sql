@@ -28,9 +28,26 @@ CREATE EXTENSION IF NOT EXISTS pgtap;
 SELECT plan(6);
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- Fixture : pick a real product on V3 dev. BEV-AMER (998c9eee...) is stable.
--- We rely on its current cost_price=0 + current_stock=50 baseline.
+-- Fixture : create a throwaway product (rolled back at the end) with a known
+-- baseline (cost_price=0, current_stock=50, no recipe) so the suite no longer
+-- depends on a specific live product. The previous BEV-AMER dependency broke
+-- whenever catalog cleanup soft-deleted that product. The id is stashed in a
+-- transaction-local GUC so every assert can reference it.
 -- ─────────────────────────────────────────────────────────────────────────────
+DO $fixture$
+DECLARE
+  v_cat UUID;
+  v_id  UUID;
+BEGIN
+  SELECT id INTO v_cat FROM categories WHERE deleted_at IS NULL ORDER BY sort_order LIMIT 1;
+  INSERT INTO products (sku, name, category_id, retail_price, unit, cost_price,
+                        current_stock, product_type, is_semi_finished)
+  VALUES ('TEST-COSTGUARD-' || substr(gen_random_uuid()::text, 1, 8),
+          'Cost Guard Fixture', v_cat, 25.00, 'pcs', 0, 50, 'finished', false)
+  RETURNING id INTO v_id;
+  PERFORM set_config('breakery.costguard_pid', v_id::text, true);
+END
+$fixture$;
 
 -- =============================================================================
 -- T1 : direct UPDATE as `authenticated` role raises 42501 insufficient_privilege.
@@ -41,7 +58,7 @@ SELECT plan(6);
 SET LOCAL ROLE authenticated;
 
 SELECT throws_ok(
-  $$UPDATE products SET cost_price = 9.99 WHERE sku = 'BEV-AMER'$$,
+  $$UPDATE products SET cost_price = 9.99 WHERE id = current_setting('breakery.costguard_pid')::uuid$$,
   '42501',
   NULL,
   'T1 direct UPDATE on products.cost_price as authenticated raises 42501'
@@ -62,7 +79,7 @@ END $$;
 
 SELECT lives_ok(
   $$SELECT update_cost_price_v1(
-      (SELECT id FROM products WHERE sku = 'BEV-AMER'),
+      (SELECT id FROM products WHERE id = current_setting('breakery.costguard_pid')::uuid),
       12.50,
       'S22 pgTAP T2 — manual correction'
     )$$,
@@ -71,7 +88,7 @@ SELECT lives_ok(
 
 -- Verify cost_price mutated (was 0.00 → expected 12.50).
 SELECT is(
-  (SELECT cost_price FROM products WHERE sku = 'BEV-AMER'),
+  (SELECT cost_price FROM products WHERE id = current_setting('breakery.costguard_pid')::uuid),
   12.50::DECIMAL(14,2),
   'T2.b products.cost_price actually mutated to 12.50'
 );
@@ -86,7 +103,7 @@ SELECT is(
 -- =============================================================================
 
 SELECT receive_stock_v1(
-  (SELECT id FROM products WHERE sku = 'BEV-AMER'),
+  (SELECT id FROM products WHERE id = current_setting('breakery.costguard_pid')::uuid),
   10::DECIMAL(10,3),
   (SELECT id FROM suppliers WHERE is_active = true AND deleted_at IS NULL LIMIT 1),
   20.00::DECIMAL(14,2),
@@ -94,7 +111,7 @@ SELECT receive_stock_v1(
 );
 
 SELECT is(
-  (SELECT cost_price FROM products WHERE sku = 'BEV-AMER'),
+  (SELECT cost_price FROM products WHERE id = current_setting('breakery.costguard_pid')::uuid),
   13.75::DECIMAL(14,2),
   'T3 receive_stock_v1 WAC path still updates cost_price (13.75 = round((50*12.50+10*20)/60,2))'
 );
@@ -108,7 +125,7 @@ SELECT is(
   (SELECT COUNT(*)::INT
      FROM stock_movements
     WHERE movement_type = 'cost_price_correction'::movement_type
-      AND product_id = (SELECT id FROM products WHERE sku = 'BEV-AMER')
+      AND product_id = (SELECT id FROM products WHERE id = current_setting('breakery.costguard_pid')::uuid)
       AND quantity = 0
       AND reason LIKE 'S22 pgTAP T2 — manual correction%'
       AND (metadata->>'old_cost')::NUMERIC = 0.00
@@ -129,7 +146,7 @@ SELECT is(
 -- Two calls with the same fixed UUID idempotency key. The first creates the
 -- audit row ; the second must short-circuit through the replay branch.
 SELECT update_cost_price_v1(
-  (SELECT id FROM products WHERE sku = 'BEV-AMER'),
+  (SELECT id FROM products WHERE id = current_setting('breakery.costguard_pid')::uuid),
   15.00::DECIMAL(14,2),
   'S22 pgTAP T5 — idempotent replay',
   '11111111-1111-1111-1111-111111111111'::UUID
@@ -147,7 +164,7 @@ SELECT is(
     )
     FROM (
       SELECT update_cost_price_v1(
-        (SELECT id FROM products WHERE sku = 'BEV-AMER'),
+        (SELECT id FROM products WHERE id = current_setting('breakery.costguard_pid')::uuid),
         15.00::DECIMAL(14,2),
         'S22 pgTAP T5 — idempotent replay',
         '11111111-1111-1111-1111-111111111111'::UUID

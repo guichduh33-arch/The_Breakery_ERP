@@ -7,14 +7,20 @@
 // Editable alts list + 4 context selects + dirty flag + Save button.
 // Gate: products.units.update — without the perm, inputs are disabled, no Save.
 
-import { BookOpen, Box, ClipboardList, Plus, ShoppingCart, Trash2 } from 'lucide-react';
+import { AlertTriangle, BookOpen, Box, ClipboardList, Plus, ShoppingCart, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState, type JSX } from 'react';
 import { toast } from 'sonner';
 import { Card, SectionLabel } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useProductUnits, type ProductUnitAlt, type ProductUnitContexts } from '../hooks/useProductUnits.js';
 import { useSetProductUnits } from '../hooks/useSetProductUnits.js';
+import { useSetProductBaseUnit } from '../hooks/useSetProductBaseUnit.js';
 import type { ProductRow } from '../types.js';
+
+// Common base/stock units offered in the selector. The product's current unit is
+// always merged in first so a non-standard legacy unit (e.g. 'cup', 'Bag') stays
+// selectable. Metric units here ARE convertible (see unit_conversions).
+const COMMON_BASE_UNITS = ['kg', 'g', 'gr', 'mg', 'lt', 'L', 'ml', 'mL', 'pcs'];
 
 interface Props {
   product: ProductRow;
@@ -64,8 +70,36 @@ export function UnitsPanel({ product }: Props): JSX.Element {
   const canWrite = useAuthStore((s) => s.hasPermission('products.units.update'));
   const { data, isLoading, error } = useProductUnits(product.id);
   const setUnits = useSetProductUnits(product.id);
+  const setBaseUnit = useSetProductBaseUnit(product.id);
 
   const baseUnit = product.unit;
+
+  // ── Base unit draft (separate, deliberate action — it resets alts & contexts) ─
+  const [baseDraft, setBaseDraft] = useState<string>(baseUnit);
+  useEffect(() => { setBaseDraft(baseUnit); }, [baseUnit]);
+  const baseChanged = baseDraft !== baseUnit;
+
+  const baseUnitOptions = useMemo(
+    () => Array.from(new Set([baseUnit, ...COMMON_BASE_UNITS].filter(Boolean))),
+    [baseUnit],
+  );
+
+  function applyBaseUnit(): void {
+    setBaseUnit.mutate(baseDraft, {
+      onSuccess: (res) => {
+        toast.success(
+          `Base unit changed to ${res.new_unit}.` +
+            (res.cost_price_converted ? '' : ' Cost price kept as-is — review it.'),
+        );
+      },
+      onError: (err) => {
+        const msg = err.message.includes('base_unit_change_requires_zero_stock')
+          ? 'Cannot change the base unit: this product still has stock or stock movements. Zero them out first.'
+          : `Failed to change base unit: ${err.message}`;
+        toast.error(msg);
+      },
+    });
+  }
 
   const [draftAlts, setDraftAlts] = useState<DraftAlt[]>([]);
   const [draftCtx, setDraftCtx] = useState<ProductUnitContexts>(() =>
@@ -158,25 +192,69 @@ export function UnitsPanel({ product }: Props): JSX.Element {
 
   return (
     <div className="space-y-6">
-      {/* ── Base unit (read-only — comes from products.unit) ── */}
-      <Card padding="md" className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-gold-soft text-gold">
-            <Box className="h-5 w-5" aria-hidden />
+      {/* ── Base unit (editable via set_product_base_unit_v1, guarded) ── */}
+      <Card padding="md">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-md bg-gold-soft text-gold">
+              <Box className="h-5 w-5" aria-hidden />
+            </div>
+            <div>
+              <h2 className="font-display text-lg text-text-primary">Base Unit (Stock)</h2>
+              <p className="text-xs italic text-text-secondary">All conversions are done relative to this unit</p>
+            </div>
           </div>
-          <div>
-            <h2 className="font-display text-lg text-text-primary">Base Unit (Stock)</h2>
-            <p className="text-xs italic text-text-secondary">All conversions are done relative to this unit</p>
-          </div>
+          <select
+            aria-label="Base unit"
+            value={baseDraft}
+            disabled={!canWrite || setBaseUnit.isPending}
+            onChange={(e) => setBaseDraft(e.target.value)}
+            data-testid="base-unit-select"
+            className="h-touch-min rounded-md border border-border-subtle bg-bg-input px-3 text-sm font-mono text-text-primary disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+          >
+            {baseUnitOptions.map((u) => (
+              <option key={u} value={u}>{u}</option>
+            ))}
+          </select>
         </div>
-        <select
-          aria-label="Base unit"
-          value={baseUnit}
-          disabled
-          className="h-touch-min rounded-md border border-border-subtle bg-bg-input px-3 text-sm font-mono text-text-primary disabled:opacity-50"
-        >
-          <option value={baseUnit}>{baseUnit}</option>
-        </select>
+
+        {/* Deliberate confirm — changing the base unit resets alternative units &
+            contexts and is refused by the server when stock/movements exist. */}
+        {baseChanged && (
+          <div
+            data-testid="base-unit-confirm"
+            className="mt-4 flex flex-col gap-3 rounded-lg border border-gold/40 bg-gold-soft/40 p-4 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <div className="flex items-start gap-2 text-xs text-text-secondary">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-gold" aria-hidden />
+              <span>
+                Changing <span className="font-mono text-text-primary">{baseUnit}</span> →{' '}
+                <span className="font-mono text-text-primary">{baseDraft}</span> resets the
+                alternative units and context choices. Only allowed when this product has zero
+                stock and no stock movements.
+              </span>
+            </div>
+            <div className="flex shrink-0 gap-2">
+              <button
+                type="button"
+                onClick={() => setBaseDraft(baseUnit)}
+                disabled={setBaseUnit.isPending}
+                className="rounded-full border border-border-subtle px-4 py-2 text-xs font-semibold uppercase tracking-widest text-text-secondary disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={applyBaseUnit}
+                disabled={setBaseUnit.isPending}
+                data-testid="base-unit-apply"
+                className="rounded-full bg-gold px-4 py-2 text-xs font-semibold uppercase tracking-widest text-bg-base disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {setBaseUnit.isPending ? 'Changing…' : 'Change base unit'}
+              </button>
+            </div>
+          </div>
+        )}
       </Card>
 
       {/* ── Alternative units ── */}
