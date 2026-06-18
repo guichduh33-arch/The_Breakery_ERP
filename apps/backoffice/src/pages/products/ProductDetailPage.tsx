@@ -14,6 +14,7 @@ import { OverviewPanel } from '@/features/products/components/OverviewPanel.js';
 import { ProductDetailHeader } from '@/features/products/components/ProductDetailHeader.js';
 import { ProductDetailTabs } from '@/features/products/components/ProductDetailTabs.js';
 import { CostingPanel } from '@/features/products/components/CostingPanel.js';
+import { StockAnalyticsPanel } from '@/features/products/components/StockAnalyticsPanel.js';
 import { StubPanel } from '@/features/products/components/StubPanel.js';
 import { UnitsPanel } from '@/features/products/components/UnitsPanel.js';
 import { VariantsPanel } from '@/features/products/components/VariantsPanel.js';
@@ -26,7 +27,7 @@ import type { ProductDetailTab, ProductRow } from '@/features/products/types.js'
 import { RecipeBuilder } from '@/features/recipes/index.js';
 
 const VALID_TABS: ReadonlySet<ProductDetailTab> = new Set([
-  'overview', 'general', 'units', 'recipe', 'variants', 'costing', 'purchase', 'history',
+  'overview', 'analytics', 'general', 'units', 'recipe', 'variants', 'costing', 'purchase', 'history',
 ]);
 
 export default function ProductDetailPage(): JSX.Element {
@@ -108,6 +109,7 @@ export default function ProductDetailPage(): JSX.Element {
 
       <div data-testid={`product-tab-${tab}`}>
         {tab === 'overview' && <OverviewPanel product={p} />}
+        {tab === 'analytics' && <StockAnalyticsPanel product={p} />}
         {tab === 'general'  && (
           <GeneralPanel
             product={p}
