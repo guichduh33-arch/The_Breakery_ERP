@@ -15,7 +15,8 @@ import { ProductDetailHeader } from '@/features/products/components/ProductDetai
 import { ProductDetailTabs } from '@/features/products/components/ProductDetailTabs.js';
 import { CostingPanel } from '@/features/products/components/CostingPanel.js';
 import { StockAnalyticsPanel } from '@/features/products/components/StockAnalyticsPanel.js';
-import { StubPanel } from '@/features/products/components/StubPanel.js';
+import { PurchasePanel } from '@/features/products/components/PurchasePanel.js';
+import { HistoryPanel } from '@/features/products/components/HistoryPanel.js';
 import { UnitsPanel } from '@/features/products/components/UnitsPanel.js';
 import { VariantsPanel } from '@/features/products/components/VariantsPanel.js';
 import { useCategories } from '@/features/products/hooks/useCategories.js';
@@ -142,18 +143,8 @@ export default function ProductDetailPage(): JSX.Element {
         {tab === 'costing' && (
           <CostingPanel product={p} />
         )}
-        {tab === 'purchase' && (
-          <StubPanel
-            title="Purchase history coming soon"
-            description="Suppliers, last-purchase price and lead-time will surface here as the purchasing module matures."
-          />
-        )}
-        {tab === 'history' && (
-          <StubPanel
-            title="Audit trail coming soon"
-            description="A unified change-log of price, recipe and stock edits will land here in a follow-up session."
-          />
-        )}
+        {tab === 'purchase' && <PurchasePanel productId={p.id} />}
+        {tab === 'history' && <HistoryPanel productId={p.id} />}
       </div>
     </div>
   );
