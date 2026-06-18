@@ -83,7 +83,7 @@ export function MovementsFiltersBar({ value, onChange }: MovementsFiltersProps) 
       </button>
 
       <div className="ml-auto text-xs text-text-secondary self-center inline-flex items-center gap-1">
-        <Search className="h-3 w-3" aria-hidden /> Cursor-paginated, 50 rows / page (cap 200).
+        <Search className="h-3 w-3" aria-hidden /> Full range, running balance per product (cap 5,000 rows).
       </div>
     </div>
   );
