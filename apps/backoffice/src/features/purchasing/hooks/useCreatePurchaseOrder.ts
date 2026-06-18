@@ -15,6 +15,7 @@ export type CreatePOErrorCode =
   | 'invalid_vat_rate'
   | 'product_id_required'
   | 'product_not_found'
+  | 'product_not_raw_material'
   | 'quantity_must_be_positive'
   | 'unit_cost_must_be_non_negative'
   | 'unknown';
@@ -27,11 +28,12 @@ export class CreatePOError extends Error {
 }
 
 export interface CreatePOItemArgs {
-  productId: string;
-  quantity:  number;
-  unit?:     string;
-  unitCost:  number;
-  notes?:    string;
+  productId:        string;
+  quantity:         number;
+  unit?:            string;
+  unitFactorToBase?: number;   // base-unit conversion factor (default 1)
+  unitCost:         number;
+  notes?:           string;
 }
 
 export interface CreatePOArgs {
@@ -63,6 +65,7 @@ function classify(message: string): CreatePOErrorCode {
   if (message.includes('invalid_payment_terms'))           return 'invalid_payment_terms';
   if (message.includes('invalid_vat_rate'))                return 'invalid_vat_rate';
   if (message.includes('product_id_required'))             return 'product_id_required';
+  if (message.includes('product_not_raw_material'))        return 'product_not_raw_material';
   if (message.includes('product_not_found'))               return 'product_not_found';
   if (message.includes('quantity_must_be_positive'))       return 'quantity_must_be_positive';
   if (message.includes('unit_cost_must_be_non_negative'))  return 'unit_cost_must_be_non_negative';
@@ -80,6 +83,7 @@ export function useCreatePurchaseOrder() {
           product_id: it.productId,
           quantity:   it.quantity,
           ...(it.unit  !== undefined && it.unit.trim()  !== '' ? { unit:  it.unit.trim() }  : {}),
+          ...(it.unitFactorToBase !== undefined ? { unit_factor_to_base: it.unitFactorToBase } : {}),
           unit_cost:  it.unitCost,
           ...(it.notes !== undefined && it.notes.trim() !== '' ? { notes: it.notes.trim() } : {}),
         })),
@@ -97,12 +101,12 @@ export function useCreatePurchaseOrder() {
         rpcArgs['p_notes'] = args.notes.trim();
       }
 
-      // create_purchase_order_v1 may not be in types yet — cast through unknown.
+      // Session 46 — bumped to v2 (raw_material guard + unit_factor_to_base persist).
       const { data, error } = await (supabase.rpc as unknown as (
         fn: string,
         args: Record<string, unknown>,
       ) => Promise<{ data: unknown; error: { message: string } | null }>)(
-        'create_purchase_order_v1',
+        'create_purchase_order_v2',
         rpcArgs,
       );
 

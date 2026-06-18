@@ -24,6 +24,7 @@ import {
   Pencil,
   Printer,
   Truck,
+  Wallet,
   XCircle,
 } from 'lucide-react';
 import {
@@ -38,10 +39,29 @@ import { useAuthStore } from '@/stores/authStore.js';
 import { usePurchaseOrderDetail } from '@/features/purchasing/hooks/usePurchaseOrderDetail.js';
 import { useReceivePurchaseOrder } from '@/features/purchasing/hooks/useReceivePurchaseOrder.js';
 import { useCancelPurchaseOrder } from '@/features/purchasing/hooks/useCancelPurchaseOrder.js';
+import {
+  usePoPayments,
+  derivePaymentStatus,
+  type PoPaymentStatus,
+} from '@/features/purchasing/hooks/usePoPayments.js';
+import { useRecordPoPayment } from '@/features/purchasing/hooks/useRecordPoPayment.js';
+import {
+  useUpdatePurchaseOrder,
+  updatePoErrorMessage,
+  type UpdatePOItemArg,
+} from '@/features/purchasing/hooks/useUpdatePurchaseOrder.js';
+import { useAllProductsForPO } from '@/features/purchasing/hooks/useAllProductsForPO.js';
+import { useSuppliersList } from '@/features/suppliers/hooks/useSuppliersList.js';
 import { POStatusBadge } from '@/features/purchasing/components/POStatusBadge.js';
 import { ReceiveDialog } from '@/features/purchasing/components/ReceiveDialog.js';
 import { CancelDialog } from '@/features/purchasing/components/CancelDialog.js';
+import { RecordPaymentDialog } from '@/features/purchasing/components/RecordPaymentDialog.js';
 import { POPrintView } from '@/features/purchasing/components/POPrintView.js';
+import {
+  POFormDraft,
+  validatePOFormDraft,
+  type POFormDraftValue,
+} from '@/features/purchasing/components/POFormDraft.js';
 import { useSections } from '@/features/inventory-transfers/hooks/useSections.js';
 import type { POStatus } from '@/features/purchasing/hooks/usePurchaseOrdersList.js';
 
@@ -60,17 +80,29 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
   const canRead       = hasPermission('purchasing.po.read' as never);
   const canReceive    = hasPermission('purchasing.po.receive' as never);
   const canCancel     = hasPermission('purchasing.po.cancel' as never);
+  const canPay        = hasPermission('purchasing.po.pay' as never);
+  const canEdit       = hasPermission('purchasing.po.edit' as never);
 
   const detail   = usePurchaseOrderDetail(id);
   const sections = useSections();
   const receive  = useReceivePurchaseOrder();
   const cancel   = useCancelPurchaseOrder();
+  const payments = usePoPayments(id);
+  const recordPayment = useRecordPoPayment();
+  const updatePo = useUpdatePurchaseOrder();
+  const products = useAllProductsForPO();
+  const suppliers = useSuppliersList({ active: 'active' });
 
   const [showReceive, setShowReceive] = useState(false);
   const [showCancel,  setShowCancel]  = useState(false);
   const [showPrint,   setShowPrint]   = useState(false);
+  const [showPay,     setShowPay]     = useState(false);
+  const [showEdit,    setShowEdit]    = useState(false);
+  const [editValue,   setEditValue]   = useState<POFormDraftValue | null>(null);
   const [receiveError, setReceiveError] = useState<string | undefined>(undefined);
   const [cancelError,  setCancelError]  = useState<string | undefined>(undefined);
+  const [payError,     setPayError]     = useState<string | undefined>(undefined);
+  const [editError,    setEditError]    = useState<string | undefined>(undefined);
 
   if (!canRead) {
     return <div className="text-text-secondary">You do not have permission to view this purchase order.</div>;
@@ -97,6 +129,18 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
   const canRcv   = canReceive && (status === 'pending' || status === 'partial');
   const canCncl  = canCancel  && status === 'pending'
                               && (po.goods_receipt_notes?.length ?? 0) === 0;
+
+  // Payment status is DERIVED from the ledger, INDEPENDENT of goods reception (R3).
+  const totalDue      = Number(po.total_amount ?? 0);
+  const totalPaid     = payments.data?.totalPaid ?? 0;
+  const remainingDue  = Math.max(0, Math.round((totalDue - totalPaid) * 100) / 100);
+  const paymentStatus: PoPaymentStatus = derivePaymentStatus(totalPaid, totalDue);
+  const hasPayments   = (payments.data?.payments.length ?? 0) > 0;
+  const canRecordPay  = canPay && paymentStatus !== 'paid' && totalDue > 0;
+
+  // Edit lock (D6): editable only while pending AND no GRN AND no payment.
+  const hasGrn        = (po.goods_receipt_notes?.length ?? 0) > 0;
+  const editable      = canEdit && status === 'pending' && !hasGrn && !hasPayments;
 
   async function handleReceive(args: {
     sectionId: string;
@@ -125,6 +169,73 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
     }
   }
 
+  async function handleRecordPayment(args: {
+    amount: number; method: 'cash' | 'transfer' | 'card' | 'qris' | 'edc';
+    reference?: string; idempotencyKey: string;
+  }): Promise<void> {
+    setPayError(undefined);
+    try {
+      await recordPayment.mutateAsync({ poId: po!.id, ...args });
+      setShowPay(false);
+    } catch (e) {
+      setPayError(e instanceof Error ? e.message : 'Unknown error');
+    }
+  }
+
+  function openEdit(): void {
+    setEditError(undefined);
+    const vatRate = Number(po!.subtotal) > 0
+      ? Math.round((Number(po!.vat_amount) / Number(po!.subtotal)) * 10000) / 10000
+      : 0.11;
+    setEditValue({
+      supplierId:   po!.supplier_id,
+      expectedDate: po!.expected_date ?? '',
+      orderDate:    po!.order_date ?? '',
+      paymentTerms: (po!.payment_terms === 'cash' ? 'cash' : 'credit'),
+      vatRate,
+      notes:        po!.notes ?? '',
+      items: po!.purchase_order_items.map((it) => ({
+        productId:        it.product_id,
+        quantity:         Number(it.quantity),
+        unit:             it.unit ?? '',
+        unitFactorToBase: Number(it.unit_factor_to_base ?? 1),
+        unitCost:         Number(it.unit_cost),
+        notes:            it.notes ?? '',
+      })),
+    });
+    setShowEdit(true);
+  }
+
+  async function handleEditSubmit(): Promise<void> {
+    if (editValue === null) return;
+    setEditError(undefined);
+    const validation = validatePOFormDraft(editValue);
+    if (validation !== undefined) { setEditError(validation); return; }
+    const items: UpdatePOItemArg[] = editValue.items.map((it) => ({
+      product_id:           it.productId,
+      quantity:             it.quantity,
+      unit_factor_to_base:  it.unitFactorToBase,
+      unit_cost:            it.unitCost,
+      ...(it.unit.trim()  !== '' ? { unit:  it.unit.trim() }  : {}),
+      ...(it.notes.trim() !== '' ? { notes: it.notes.trim() } : {}),
+    }));
+    try {
+      await updatePo.mutateAsync({
+        poId:         po!.id,
+        supplierId:   editValue.supplierId,
+        expectedDate: editValue.expectedDate !== '' ? editValue.expectedDate : null,
+        paymentTerms: editValue.paymentTerms,
+        notes:        editValue.notes,
+        items,
+      });
+      setShowEdit(false);
+      setEditValue(null);
+    } catch (e) {
+      const code = (e as { code?: import('@/features/purchasing/hooks/useUpdatePurchaseOrder.js').UpdatePOErrorCode }).code;
+      setEditError(code !== undefined ? updatePoErrorMessage(code) : (e instanceof Error ? e.message : 'Unknown error'));
+    }
+  }
+
   if (showPrint) {
     return (
       <div className="space-y-3">
@@ -141,9 +252,35 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
     );
   }
 
-  const isUnpaid =
-    po.payment_terms === 'credit' &&
-    (po.received_date === null || status === 'pending' || status === 'partial');
+  if (showEdit && editValue !== null) {
+    return (
+      <div className="space-y-4 max-w-5xl">
+        <Button
+          type="button" variant="ghost" size="sm"
+          onClick={() => { setShowEdit(false); setEditValue(null); }}
+          disabled={updatePo.isPending}
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden /> Back to order
+        </Button>
+        <header>
+          <h1 className="font-display text-3xl text-text-primary">Edit {po.po_number}</h1>
+          <p className="mt-1 text-sm text-text-secondary">
+            Editing is locked once goods are received or any payment is recorded.
+          </p>
+        </header>
+        <POFormDraft
+          value={editValue}
+          onChange={setEditValue}
+          suppliers={(suppliers.data ?? []).map((s) => ({ id: s.id, code: s.code, name: s.name }))}
+          products={(products.data ?? [])}
+          onSubmit={() => { void handleEditSubmit(); }}
+          submitting={updatePo.isPending}
+          submitLabel="Save changes"
+          {...(editError !== undefined ? { error: editError } : {})}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -180,10 +317,19 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
               <XCircle className="h-4 w-4" aria-hidden /> Cancel
             </Button>
           )}
-          {/* Edit is intentionally inert today — no update_purchase_order_v* RPC exists. */}
-          <Button type="button" variant="ghost" disabled aria-label="Edit (not yet implemented)">
-            <Pencil className="h-4 w-4" aria-hidden /> Edit
-          </Button>
+          {/* Session 46 — Edit is wired to update_purchase_order_v1, gated by
+              purchasing.po.edit and locked once received or paid (D6). */}
+          {canEdit && (
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={openEdit}
+              disabled={!editable}
+              title={editable ? undefined : 'Locked — PO already received or paid'}
+            >
+              <Pencil className="h-4 w-4" aria-hidden /> Edit
+            </Button>
+          )}
         </div>
       </header>
 
@@ -316,18 +462,42 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
           </Card>
 
           <Card variant="default" padding="md" className="space-y-3">
-            <SectionLabel as="h2" size="sm" className="text-gold">Payment Status</SectionLabel>
-            {isUnpaid ? (
-              <Badge variant="outline" className="border-danger/40 text-danger">UNPAID</Badge>
-            ) : (
-              <Badge variant="outline" className="border-success/40 text-success">PAID</Badge>
+            <div className="flex items-center justify-between">
+              <SectionLabel as="h2" size="sm" className="text-gold">Payment Status</SectionLabel>
+              <PaymentStatusBadge status={paymentStatus} />
+            </div>
+            <dl className="space-y-2 text-sm">
+              <SummaryRow label="Total due"  value={fmtIdr(totalDue)} />
+              <SummaryRow label="Paid"       value={fmtIdr(totalPaid)} />
+              <SummaryRow label="Remaining"  value={fmtIdr(remainingDue)} />
+            </dl>
+
+            {payments.data !== undefined && payments.data.payments.length > 0 && (
+              <div className="space-y-1 border-t border-border-subtle pt-3">
+                <SectionLabel as="div" size="xs">Payment history</SectionLabel>
+                <ul className="space-y-1.5">
+                  {payments.data.payments.map((p) => (
+                    <li key={p.id} className="flex items-center justify-between text-xs">
+                      <span className="text-text-secondary tabular-nums">
+                        {p.paid_at.slice(0, 10)} · <span className="uppercase">{p.method}</span>
+                        {p.reference !== null && p.reference !== '' && (
+                          <span className="text-text-muted"> · {p.reference}</span>
+                        )}
+                      </span>
+                      <span className="tabular-nums text-text-primary">{fmtIdr(p.amount)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {canRecordPay && (
+              <Button type="button" variant="gold" className="w-full" onClick={() => { setPayError(undefined); setShowPay(true); }}>
+                <Wallet className="h-4 w-4" aria-hidden /> Record payment
+              </Button>
             )}
             <p className="text-xs text-text-muted">
-              {isUnpaid
-                ? 'Confirm the order is received before recording supplier payment.'
-                : po.payment_terms === 'cash'
-                  ? 'Cash on delivery — settled at receipt.'
-                  : 'Credit terms — payment recorded against goods receipt.'}
+              Payment is tracked independently from goods reception.
             </p>
           </Card>
 
@@ -365,8 +535,28 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
           {...(cancelError !== undefined ? { error: cancelError } : {})}
         />
       )}
+      {showPay && (
+        <RecordPaymentDialog
+          poNumber={po.po_number}
+          remainingDue={remainingDue}
+          onCancel={() => setShowPay(false)}
+          onConfirm={handleRecordPayment}
+          submitting={recordPayment.isPending}
+          {...(payError !== undefined ? { error: payError } : {})}
+        />
+      )}
     </div>
   );
+}
+
+function PaymentStatusBadge({ status }: { status: PoPaymentStatus }): JSX.Element {
+  if (status === 'paid') {
+    return <Badge variant="outline" className="border-success/40 text-success">PAID</Badge>;
+  }
+  if (status === 'partial') {
+    return <Badge variant="outline" className="border-gold/40 text-gold">PARTIAL</Badge>;
+  }
+  return <Badge variant="outline" className="border-danger/40 text-danger">UNPAID</Badge>;
 }
 
 function Field({ label, value, mono = false }: { label: string; value: string; mono?: boolean }): JSX.Element {

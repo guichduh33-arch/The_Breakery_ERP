@@ -12,6 +12,7 @@
 import { useId, useMemo, type JSX } from 'react';
 import { Button } from '@breakery/ui';
 import type { CreatePOItemArgs } from '../hooks/useCreatePurchaseOrder.js';
+import type { PoUnitOption } from '../hooks/useAllProductsForPO.js';
 
 const NOTES_MAX = 500;
 
@@ -27,6 +28,11 @@ export interface ProductOption {
   name:      string;
   unit:      string;
   cost_price?: number | null;
+  // Session 46 — R2: valid purchase units for this product (base ∪ alternatives)
+  // + the default purchase unit. When absent, the unit cell falls back to the
+  // base unit only.
+  unitOptions?:         PoUnitOption[];
+  defaultPurchaseUnit?: string;
 }
 
 export interface POFormDraftValue {
@@ -40,11 +46,12 @@ export interface POFormDraftValue {
 }
 
 export interface POFormDraftItem {
-  productId:  string;
-  quantity:   number;
-  unit:       string;
-  unitCost:   number;
-  notes:      string;
+  productId:         string;
+  quantity:          number;
+  unit:              string;
+  unitFactorToBase:  number;   // base-unit conversion factor (default 1)
+  unitCost:          number;
+  notes:             string;
 }
 
 export interface POFormDraftProps {
@@ -55,10 +62,17 @@ export interface POFormDraftProps {
   onSubmit?:    () => void;
   submitting?:  boolean;
   error?:       string;
+  submitLabel?: string;   // Session 46 — B4 reuses the form in edit mode
 }
 
 export function newEmptyItem(): POFormDraftItem {
-  return { productId: '', quantity: 0, unit: '', unitCost: 0, notes: '' };
+  return { productId: '', quantity: 0, unit: '', unitFactorToBase: 1, unitCost: 0, notes: '' };
+}
+
+/** Resolve the base-unit factor for a chosen unit code on a given product. */
+function factorForUnit(prod: ProductOption | undefined, unit: string): number {
+  if (prod?.unitOptions === undefined) return 1;
+  return prod.unitOptions.find((o) => o.code === unit)?.factor ?? 1;
 }
 
 export function emptyPOFormDraftValue(): POFormDraftValue {
@@ -90,9 +104,10 @@ export function validatePOFormDraft(v: POFormDraftValue): string | undefined {
 export function toCreatePOItems(v: POFormDraftValue): CreatePOItemArgs[] {
   return v.items.map((it) => {
     const base: CreatePOItemArgs = {
-      productId: it.productId,
-      quantity:  it.quantity,
-      unitCost:  it.unitCost,
+      productId:        it.productId,
+      quantity:         it.quantity,
+      unitFactorToBase: it.unitFactorToBase,
+      unitCost:         it.unitCost,
     };
     const unit = it.unit.trim();
     if (unit !== '') base.unit = unit;
@@ -105,6 +120,7 @@ export function toCreatePOItems(v: POFormDraftValue): CreatePOItemArgs[] {
 export function POFormDraft({
   value, onChange, suppliers, products,
   onSubmit, submitting = false, error,
+  submitLabel = 'Create purchase order',
 }: POFormDraftProps): JSX.Element {
   const reactId = useId();
   const subtotal = useMemo(() =>
@@ -120,14 +136,21 @@ export function POFormDraft({
   function patchItem(idx: number, p: Partial<POFormDraftItem>): void {
     const next = value.items.slice();
     const merged = { ...next[idx], ...p } as POFormDraftItem;
-    // Auto-default unit + unit_cost from product if just selected.
+    // Product just selected → default unit (purchase unit), factor + unit cost.
     if (p.productId !== undefined) {
       const prod = products.find((x) => x.id === p.productId);
       if (prod !== undefined) {
-        if (merged.unit === '')       merged.unit     = prod.unit;
+        const defUnit = prod.defaultPurchaseUnit ?? prod.unit;
+        merged.unit             = defUnit;
+        merged.unitFactorToBase = factorForUnit(prod, defUnit);
         if (merged.unitCost === 0 && (prod.cost_price ?? 0) > 0)
           merged.unitCost = Number(prod.cost_price);
       }
+    }
+    // Unit changed via the constrained select → recompute the base-unit factor.
+    if (p.unit !== undefined) {
+      const prod = products.find((x) => x.id === merged.productId);
+      merged.unitFactorToBase = factorForUnit(prod, p.unit);
     }
     next[idx] = merged;
     patch({ items: next });
@@ -274,13 +297,38 @@ export function POFormDraft({
                     />
                   </td>
                   <td className="px-3 py-1.5">
-                    <input
-                      type="text" maxLength={16}
-                      value={it.unit}
-                      onChange={(e) => patchItem(idx, { unit: e.target.value })}
-                      disabled={submitting}
-                      className="h-8 w-full rounded-md border border-border-subtle bg-bg-input px-2 text-sm"
-                    />
+                    {(() => {
+                      const prod = products.find((x) => x.id === it.productId);
+                      const opts = prod?.unitOptions;
+                      if (opts === undefined || opts.length === 0) {
+                        // No product selected yet, or product carries no unit metadata.
+                        return (
+                          <select
+                            value={it.unit}
+                            disabled
+                            aria-label={`Unit for line ${idx + 1}`}
+                            className="h-8 w-full rounded-md border border-border-subtle bg-bg-input px-2 text-sm disabled:opacity-50"
+                          >
+                            <option value="">{it.unit || '—'}</option>
+                          </select>
+                        );
+                      }
+                      return (
+                        <select
+                          value={it.unit}
+                          onChange={(e) => patchItem(idx, { unit: e.target.value })}
+                          disabled={submitting}
+                          aria-label={`Unit for line ${idx + 1}`}
+                          className="h-8 w-full rounded-md border border-border-subtle bg-bg-input px-2 text-sm"
+                        >
+                          {opts.map((o) => (
+                            <option key={o.code} value={o.code}>
+                              {o.code}{o.factor !== 1 ? ` (×${o.factor})` : ''}
+                            </option>
+                          ))}
+                        </select>
+                      );
+                    })()}
                   </td>
                   <td className="px-3 py-1.5">
                     <input
@@ -353,7 +401,7 @@ export function POFormDraft({
 
       <div className="flex justify-end">
         <Button type="submit" variant="primary" disabled={submitting}>
-          {submitting ? 'Saving…' : 'Create purchase order'}
+          {submitting ? 'Saving…' : submitLabel}
         </Button>
       </div>
     </form>
