@@ -147,7 +147,10 @@ export type PermissionCode =
   | 'orders.edit_open'
   | 'orders.void'
   // Session 22 — Cost price correction (seeded by 20260526000012)
-  | 'inventory.cost_correction';
+  | 'inventory.cost_correction'
+  // Session 46 — Purchasing: traceable payments + editable PO (seeded by 20260701000017)
+  | 'purchasing.po.pay'
+  | 'purchasing.po.edit';
 
 /**
  * Check whether a user has a single permission. Pure client-side lookup —

@@ -3653,6 +3653,7 @@ export type Database = {
           subtotal: number | null
           unit: string
           unit_cost: number
+          unit_factor_to_base: number
           updated_at: string
         }
         Insert: {
@@ -3666,6 +3667,7 @@ export type Database = {
           subtotal?: number | null
           unit: string
           unit_cost: number
+          unit_factor_to_base?: number
           updated_at?: string
         }
         Update: {
@@ -3679,6 +3681,7 @@ export type Database = {
           subtotal?: number | null
           unit?: string
           unit_cost?: number
+          unit_factor_to_base?: number
           updated_at?: string
         }
         Relationships: [
@@ -3819,6 +3822,57 @@ export type Database = {
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      purchase_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          idempotency_key: string
+          method: string
+          paid_at: string
+          paid_by: string | null
+          purchase_order_id: string
+          reference: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          idempotency_key: string
+          method: string
+          paid_at?: string
+          paid_by?: string | null
+          purchase_order_id: string
+          reference?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          idempotency_key?: string
+          method?: string
+          paid_at?: string
+          paid_by?: string | null
+          purchase_order_id?: string
+          reference?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_payments_paid_by_fkey"
+            columns: ["paid_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_payments_purchase_order_id_fkey"
+            columns: ["purchase_order_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
             referencedColumns: ["id"]
           },
         ]
@@ -5505,6 +5559,17 @@ export type Database = {
       _prokind: { Args: { p_oid: unknown }; Returns: unknown }
       _query: { Args: { "": string }; Returns: string }
       _recalc_order_totals: { Args: { p_order_id: string }; Returns: undefined }
+      _record_po_payment_internal: {
+        Args: {
+          p_actor: string
+          p_amount: number
+          p_idempotency_key: string
+          p_method: string
+          p_po_id: string
+          p_reference: string
+        }
+        Returns: Json
+      }
       _refine_vol: { Args: { "": string }; Returns: string }
       _resolve_fifo_lot: {
         Args: { p_product_id: string; p_quantity_needed: number }
@@ -6274,6 +6339,10 @@ export type Database = {
         }
         Returns: Json
       }
+      get_product_analytics_v1: {
+        Args: { p_days?: number; p_product_id: string }
+        Returns: Json
+      }
       get_product_dashboard_v1: {
         Args: { p_days?: number; p_product_id: string }
         Returns: Json
@@ -6831,7 +6900,7 @@ export type Database = {
         }
         Returns: Json
       }
-      receive_purchase_order_v1: {
+      receive_purchase_order_v2: {
         Args: {
           p_idempotency_key?: string
           p_po_id: string
@@ -6879,6 +6948,28 @@ export type Database = {
           version_number: number
         }[]
       }
+      recipe_direct_cost_v1: {
+        Args: { p_product_id: string }
+        Returns: {
+          cost_price: number
+          current_stock: number
+          line_cost: number
+          material_id: string
+          material_name: string
+          material_unit: string
+          qty_in_base: number
+          qty_per_unit: number
+          recipe_unit: string
+        }[]
+      }
+      recompute_all_recipe_costs_v1: {
+        Args: { p_max_plausible?: number }
+        Returns: Json
+      }
+      recompute_recipe_cost_v1: {
+        Args: { p_max_plausible?: number; p_product_id: string }
+        Returns: Json
+      }
       recompute_recipe_margins_v1: { Args: never; Returns: Json }
       record_b2b_payment_v1: {
         Args: {
@@ -6920,6 +7011,16 @@ export type Database = {
       }
       record_pin_failure_v1: {
         Args: { p_source?: string; p_user_id: string }
+        Returns: Json
+      }
+      record_po_payment_v1: {
+        Args: {
+          p_amount: number
+          p_idempotency_key?: string
+          p_method: string
+          p_po_id: string
+          p_reference?: string
+        }
         Returns: Json
       }
       record_production_v1: {
@@ -7260,6 +7361,10 @@ export type Database = {
       }
       update_product_v1: {
         Args: { p_patch: Json; p_product_id: string }
+        Returns: Json
+      }
+      update_purchase_order_v1: {
+        Args: { p_patch: Json; p_po_id: string }
         Returns: Json
       }
       update_role_session_timeout_v1: {

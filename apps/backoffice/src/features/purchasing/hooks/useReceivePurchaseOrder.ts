@@ -87,7 +87,9 @@ export function useReceivePurchaseOrder() {
         fn: string,
         args: Record<string, unknown>,
       ) => Promise<{ data: unknown; error: { message: string } | null }>)(
-        'receive_purchase_order_v1',
+        // Session 46 — bumped to v2 (base-unit conversion via unit_factor_to_base).
+        // Signature is identical (p_po_id, p_section_id, p_received_items, p_idempotency_key).
+        'receive_purchase_order_v2',
         rpcArgs,
       );
 
