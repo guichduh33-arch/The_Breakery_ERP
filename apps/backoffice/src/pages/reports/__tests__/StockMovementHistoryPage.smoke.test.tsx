@@ -1,5 +1,6 @@
 // apps/backoffice/src/pages/reports/__tests__/StockMovementHistoryPage.smoke.test.tsx
-// S30 Wave 4.3 — Smoke test: StockMovementHistoryPage renders heading, calls RPC, shows CSV export only (no PDF).
+// 2026-06-18 — stock-card ledger layout: heading, RPC call, 13 columns, generated
+// ref_no + type label, CSV export (no PDF).
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
@@ -13,24 +14,32 @@ vi.mock('@/lib/supabase.js', () => ({
   supabase: {
     rpc: (fn: string, args: Record<string, unknown>) => {
       mockRpc(fn, args);
-      if (fn === 'get_stock_movements_v2') {
+      if (fn === 'get_stock_movement_ledger_v1') {
         return Promise.resolve({
           data: {
             lines: [
               {
                 id: 'sm-1',
-                product_name:   'Flour',
-                movement_type:  'incoming',
-                quantity:       100,
-                unit_cost:      5000,
-                value:          500_000,
-                reference_type: 'purchase_order',
-                reference_id:   'po-001',
+                movement_date:   '2026-05-20',
+                created_time:    '2026-05-20T08:00:00Z',
+                movement_type:   'incoming',
+                product_id:      'prod-1',
+                product_name:    'Flour',
+                product_group:   'Ingredient',
+                unit:            'kg',
+                incoming_qty:    100,
+                outgoing_qty:    0,
+                beginning_qty:   0,
+                balance_qty:     100,
+                price:           5000,
+                movement_amount: 500_000,
+                reference_type:  'admin_action',
+                reference_id:    null,
                 created_by_name: 'Admin',
-                created_at:     '2026-05-20T08:00:00Z',
               },
             ],
-            next_cursor: null,
+            truncated: false,
+            row_count: 1,
           },
           error: null,
         });
@@ -57,10 +66,10 @@ describe('StockMovementHistoryPage (smoke)', () => {
     expect(screen.getByRole('heading', { name: /Stock Movement History/i, level: 1 })).toBeInTheDocument();
   });
 
-  it('calls get_stock_movements_v2 with date range params', async () => {
+  it('calls get_stock_movement_ledger_v1 with a date range', async () => {
     renderPage();
     await waitFor(() => {
-      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_stock_movements_v2');
+      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_stock_movement_ledger_v1');
       expect(call).toBeDefined();
       const args = (call as [string, { p_start: string; p_end: string }])[1];
       expect(args.p_start).toMatch(/^\d{4}-\d{2}-\d{2}$/);
@@ -68,20 +77,25 @@ describe('StockMovementHistoryPage (smoke)', () => {
     });
   });
 
-  it('renders movement rows once data loads', async () => {
+  it('renders the 13 stock-card columns', async () => {
     renderPage();
-    expect(await screen.findByText('Flour')).toBeInTheDocument();
-    // 'incoming' appears both in the type filter <option> and in the table cell
-    const incomingEls = screen.getAllByText('incoming');
-    expect(incomingEls.length).toBeGreaterThanOrEqual(1);
+    await screen.findByText('Flour');
+    for (const h of ['date', 'created_time', 'ref_no', 'type', 'product_group', 'product', 'uom',
+      'beginning_qty', 'incoming_qty', 'outgoing_qty', 'balance_qty', 'price', 'movement_amount']) {
+      expect(screen.getByRole('columnheader', { name: h })).toBeInTheDocument();
+    }
   });
 
-  it('shows CSV export button but NOT PDF export button (pagination limitation)', async () => {
+  it('renders a movement row with generated ref_no + type label', async () => {
     renderPage();
-    await waitFor(() => {
-      expect(screen.getByTestId('export-csv')).toBeInTheDocument();
-    });
-    // PDF is intentionally omitted for paginated stock movements (DEV-S30-4.X-01)
+    expect(await screen.findByText('Flour')).toBeInTheDocument();
+    expect(screen.getByText('IN26052000000001')).toBeInTheDocument(); // incoming → IN prefix
+    expect(screen.getByText('INCOMING')).toBeInTheDocument();
+  });
+
+  it('shows CSV export button but NOT PDF', async () => {
+    renderPage();
+    await waitFor(() => expect(screen.getByTestId('export-csv')).toBeInTheDocument());
     expect(screen.queryByTestId('export-pdf')).toBeNull();
   });
 });

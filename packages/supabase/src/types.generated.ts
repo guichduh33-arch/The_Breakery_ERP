@@ -6495,6 +6495,17 @@ export type Database = {
           total_count: number
         }[]
       }
+      get_stock_movement_ledger_v1: {
+        Args: {
+          p_end: string
+          p_limit?: number
+          p_movement_type?: string
+          p_product_id?: string
+          p_section_id?: string
+          p_start: string
+        }
+        Returns: Json
+      }
       get_stock_movements_v1: {
         Args: {
           p_cursor?: string
