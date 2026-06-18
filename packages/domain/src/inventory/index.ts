@@ -25,6 +25,14 @@ export type {
 
 export { computeNewStock } from './computeNewStock.js';
 export { classifyMovement, type MovementClassification } from './classifyMovement.js';
+export {
+  movementTypeLabel,
+  movementRefPrefix,
+  buildMovementRefNo,
+  assignRefNos,
+  type BuildRefNoInput,
+  type LedgerLineForRef,
+} from './stockLedgerRef.js';
 export { validateAdjust } from './validateAdjust.js';
 export { validateReceive } from './validateReceive.js';
 export { validateWaste } from './validateWaste.js';
