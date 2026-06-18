@@ -62,11 +62,11 @@ export function useRecordPoPayment() {
         p_po_id:           args.poId,
         p_amount:          args.amount,
         p_method:          args.method,
+        p_idempotency_key: args.idempotencyKey,
         ...(args.reference !== undefined && args.reference.trim() !== ''
           ? { p_reference: args.reference.trim() }
           : {}),
-        p_idempotency_key: args.idempotencyKey,
-      } as never);
+      });
       if (error !== null) throw new RecordPaymentError(classify(error.message), error.message);
       if (data === null)  throw new RecordPaymentError('unknown', 'Empty RPC response');
       return data as unknown as RecordPaymentResult;

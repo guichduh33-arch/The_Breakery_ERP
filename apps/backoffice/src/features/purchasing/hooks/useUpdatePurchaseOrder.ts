@@ -6,6 +6,7 @@
 // raises po_locked (P0001), surfaced here as a friendly message.
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { Json } from '@breakery/supabase';
 import { supabase } from '@/lib/supabase.js';
 import { PURCHASE_ORDERS_QUERY_KEY } from './usePurchaseOrdersList.js';
 import { PURCHASE_ORDER_DETAIL_QUERY_KEY } from './usePurchaseOrderDetail.js';
@@ -101,8 +102,8 @@ export function useUpdatePurchaseOrder() {
 
       const { data, error } = await supabase.rpc('update_purchase_order_v1', {
         p_po_id: args.poId,
-        p_patch: patch,
-      } as never);
+        p_patch: patch as unknown as Json,
+      });
 
       if (error !== null) throw new UpdatePOError(classify(error.message), error.message);
       if (data === null)  throw new UpdatePOError('unknown', 'Empty RPC response');
