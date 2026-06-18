@@ -62,7 +62,7 @@ BEGIN
   v_items := jsonb_build_array(
     jsonb_build_object('product_id', v_prod_id, 'quantity', 100, 'unit', 'kg', 'unit_cost', 1000)
   );
-  SELECT (create_purchase_order_v1(
+  SELECT (create_purchase_order_v2(
     p_supplier_id := v_supplier_id, p_items := v_items,
     p_payment_terms := 'credit', p_vat_rate := 0.0
   ))->>'po_id' INTO v_po_credit_id;
@@ -71,7 +71,7 @@ BEGIN
   v_items := jsonb_build_array(
     jsonb_build_object('product_id', v_prod_id, 'quantity', 50, 'unit', 'kg', 'unit_cost', 1000)
   );
-  SELECT (create_purchase_order_v1(
+  SELECT (create_purchase_order_v2(
     p_supplier_id := v_supplier_id, p_items := v_items,
     p_payment_terms := 'cash', p_vat_rate := 0.0
   ))->>'po_id' INTO v_po_cash_id;

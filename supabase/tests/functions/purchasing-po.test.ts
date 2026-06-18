@@ -58,7 +58,7 @@ async function ensureProduct(
   cost: number,
   shelfLifeHours: number | null,
 ): Promise<ProdRow> {
-  const { data: cat } = await admin.from('categories').select('id').limit(1).single();
+  const { data: cat } = await admin.from('categories').select('id').eq('category_type','raw_material').limit(1).single();
   const { data: existing } = await admin
     .from('products')
     .select('id, sku')
@@ -119,7 +119,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('purchasing PO full cycl
     const sb = jwtClient(managerToken);
 
     // 1. Create PO with 2 lines.
-    const { data: createRes, error: createErr } = await sb.rpc('create_purchase_order_v1', {
+    const { data: createRes, error: createErr } = await sb.rpc('create_purchase_order_v2', {
       p_supplier_id:   supplier.id,
       p_items: [
         { product_id: prodA.id, quantity: 10, unit: 'kg',  unit_cost: 3000 },
@@ -224,9 +224,9 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('purchasing PO full cycl
     expect(cancelErr?.message ?? '').toMatch(/PO_ALREADY_RECEIVED/);
   });
 
-  it('cashier forbidden on create_purchase_order_v1', async () => {
+  it('cashier forbidden on create_purchase_order_v2', async () => {
     const sb = jwtClient(cashierToken);
-    const { error } = await sb.rpc('create_purchase_order_v1', {
+    const { error } = await sb.rpc('create_purchase_order_v2', {
       p_supplier_id: supplier.id,
       p_items: [{ product_id: prodA.id, quantity: 1, unit: 'kg', unit_cost: 3000 }],
     });
@@ -235,7 +235,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('purchasing PO full cycl
 
   it('cancel before receipt succeeds', async () => {
     const sb = jwtClient(managerToken);
-    const { data: createRes } = await sb.rpc('create_purchase_order_v1', {
+    const { data: createRes } = await sb.rpc('create_purchase_order_v2', {
       p_supplier_id: supplier.id,
       p_items: [{ product_id: prodA.id, quantity: 2, unit: 'kg', unit_cost: 3000 }],
     });

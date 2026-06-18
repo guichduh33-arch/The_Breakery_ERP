@@ -78,19 +78,19 @@ BEGIN
   );
 
   -- PO 1: stays pending (for edit tests).
-  SELECT (create_purchase_order_v1(
+  SELECT (create_purchase_order_v2(
     p_supplier_id := v_supplier_id, p_items := v_items,
     p_payment_terms := 'credit', p_vat_rate := 0.0
   ))->>'po_id' INTO v_po_pending_id;
 
   -- PO 2: will have a GRN (for lock-on-GRN test).
-  SELECT (create_purchase_order_v1(
+  SELECT (create_purchase_order_v2(
     p_supplier_id := v_supplier_id, p_items := v_items,
     p_payment_terms := 'credit', p_vat_rate := 0.0
   ))->>'po_id' INTO v_po_locked_id;
 
   -- PO 3: will be cancelled (for lock-on-status test).
-  SELECT (create_purchase_order_v1(
+  SELECT (create_purchase_order_v2(
     p_supplier_id := v_supplier_id, p_items := v_items,
     p_payment_terms := 'credit', p_vat_rate := 0.0
   ))->>'po_id' INTO v_po_cancel_id;

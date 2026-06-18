@@ -82,7 +82,7 @@ BEGIN
       'unit_cost', 3000
     )
   );
-  SELECT (create_purchase_order_v1(
+  SELECT (create_purchase_order_v2(
     p_supplier_id   := v_supplier_id,
     p_items         := v_items,
     p_payment_terms := 'credit',
@@ -96,7 +96,7 @@ BEGIN
       'unit_cost', 1200
     )
   );
-  SELECT (create_purchase_order_v1(
+  SELECT (create_purchase_order_v2(
     p_supplier_id   := v_supplier_id,
     p_items         := v_items,
     p_payment_terms := 'credit',

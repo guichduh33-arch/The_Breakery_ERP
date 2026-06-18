@@ -5956,7 +5956,7 @@ export type Database = {
         Returns: Json
       }
       create_product_v1: { Args: { p_payload: Json }; Returns: Json }
-      create_purchase_order_v1: {
+      create_purchase_order_v2: {
         Args: {
           p_expected_date?: string
           p_idempotency_key?: string
