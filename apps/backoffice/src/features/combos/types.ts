@@ -1,64 +1,50 @@
 // apps/backoffice/src/features/combos/types.ts
 //
-// Session 14 / Phase 4.B — Local types for the Combos feature.
+// Session 47 — rewrites the old combo_items-based types to the new
+// choice-group schema (combo_groups + combo_group_options).
 //
-// Mirrors the data shape of `combo_items`:
-//   - parent_product_id (a product whose product_type='combo')
-//   - component_product_id (any product included in the bundle)
-//   - quantity
-//   - sort_order
-//
-// We surface a denormalised `Combo` entity that bundles the parent product +
-// a grouped list of components by category so the cards in `combo
-// management.jpg` render efficiently.
+// The `Combo` card type carries groups (by name) + priceRange + valuePrice
+// derived via domain helpers so the grid and cards render efficiently.
 
-import type { ProductRow } from '../products/types.js';
-
-export interface ComboComponent {
-  product_id:    string;
-  product_name:  string;
-  category_name: string | null;
-  quantity:      number;
-  sort_order:    number;
-  /** Markup vs base — surfaced as "+Rp X" pills in the screenshot. */
-  upcharge:      number;
+export interface ComboOptionSummary {
+  component_product_id: string;
+  label: string;
+  surcharge: number;
+  is_default: boolean;
 }
 
-export interface ComboCategoryGroup {
-  category_name: string;
-  components:    ReadonlyArray<ComboComponent>;
+export interface ComboGroupSummary {
+  id: string;
+  name: string;
+  group_type: 'single' | 'multi';
+  is_required: boolean;
+  min_select: number;
+  max_select: number;
+  options: ComboOptionSummary[];
 }
 
 export interface Combo {
-  id:           string;
-  name:         string;
-  sku:          string;
+  id: string;
+  name: string;
+  sku: string;
+  /** Bundle Set Price (combo_base_price on the products row). */
   retail_price: number;
-  /** Sum of `cost_price * quantity` across components. */
-  base_price:   number;
-  is_active:    boolean;
-  image_url:    string | null;
-  groups:       ReadonlyArray<ComboCategoryGroup>;
+  /** Value price = Σ default-component retail prices (struck-through). */
+  value_price: number | null;
+  /** Min/max bundle price including surcharges across all choices. */
+  price_min: number;
+  price_max: number;
+  is_active: boolean;
+  image_url: string | null;
+  groups: ComboGroupSummary[];
 }
 
 export interface CombosKpis {
-  total:     number;
-  active:    number;
-  inactive:  number;
+  total: number;
+  active: number;
+  inactive: number;
 }
 
 export function emptyKpis(): CombosKpis {
   return { total: 0, active: 0, inactive: 0 };
 }
-
-/**
- * Derive the discount % a combo offers vs its base price (cost-of-components
- * sum). Returns `null` when the base price is 0 (no components).
- */
-export function comboSavingsPct(combo: Pick<Combo, 'retail_price' | 'base_price'>): number | null {
-  if (combo.base_price <= 0) return null;
-  if (combo.retail_price >= combo.base_price) return 0;
-  return Math.round(((combo.base_price - combo.retail_price) / combo.base_price) * 100);
-}
-
-export type ComboParent = Pick<ProductRow, 'id' | 'name' | 'sku' | 'retail_price' | 'is_active' | 'image_url'>;
