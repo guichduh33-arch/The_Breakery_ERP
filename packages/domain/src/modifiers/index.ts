@@ -6,3 +6,10 @@ export {
   calculateLineTotal,
 } from './calculatePriceAdjustment.js';
 export { validateSelections, type ValidationError } from './validateSelections.js';
+export { parseModifierIngredientsToDeduct } from './parseIngredients.js';
+export type {
+  ModifierIngredient,
+  EditableModifierOption,
+  EditableModifierGroup,
+  AdminProductModifierRow,
+} from './types.js';
