@@ -27,7 +27,7 @@ SELECT throws_ok($$
 SELECT throws_ok($$
   INSERT INTO combo_groups (combo_product_id, name, group_type)
   VALUES ('00000000-0000-0000-0000-0000000f0001','G','single') $$,
-  'check_violation', NULL, 'parent must be combo');
+  '23514', NULL, 'parent must be combo');
 -- T4 valid group inserts
 PREPARE g AS INSERT INTO combo_groups (id, combo_product_id, name, group_type, is_required, min_select, max_select)
   VALUES ('00000000-0000-0000-0000-0000000a0001','00000000-0000-0000-0000-0000000c0001','Drinks','single',true,1,1);
@@ -36,7 +36,7 @@ SELECT lives_ok('EXECUTE g', 'valid single group inserts');
 SELECT throws_ok($$
   INSERT INTO combo_group_options (group_id, component_product_id)
   VALUES ('00000000-0000-0000-0000-0000000a0001','00000000-0000-0000-0000-0000000c0001') $$,
-  'check_violation', NULL, 'option cannot be a combo');
+  '23514', NULL, 'option cannot be a combo');
 -- T6 valid option inserts
 SELECT lives_ok($$
   INSERT INTO combo_group_options (group_id, component_product_id, surcharge, is_default)
