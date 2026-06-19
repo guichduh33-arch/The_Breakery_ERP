@@ -144,6 +144,14 @@ vi.mock('@/features/combos/hooks/useComboConfig', () => ({
   useComboConfig: (_id: string) => mockQueryResult,
 }));
 
+// DEV-S47-D3-02: import the component STATICALLY at the top (after the mock is
+// registered — vi.mock is hoisted above this line). The previous version did
+// `await import('../ComboConfigModal')` inside every test, which re-paid the
+// module transform/resolve cost per test and pushed T2 (5 sequential clicks +
+// Radix re-renders) past the timeout under the combined sweep (13–20s/test).
+// A static import mirrors product-tap-combo.smoke (which runs ~1.3s).
+import { ComboConfigModal } from '../ComboConfigModal';
+
 // ---------------------------------------------------------------------------
 // Wrapper
 // ---------------------------------------------------------------------------
@@ -170,8 +178,10 @@ describe('ComboConfigModal', () => {
     mockQueryResult.data = MOCK_DEF;
   });
 
+  // 20s timeout: this is the first test in a heavy module graph (collect ~20s);
+  // under the combined POS sweep the cold-start pushes it just past the 15s
+  // global default (passes ~14s in isolation). DEV-S47-D3-02.
   it('T2: multi group — 3rd option disabled when max_select (2) reached; Confirm disabled when below min', async () => {
-    const { ComboConfigModal } = await import('../ComboConfigModal');
     const Wrapper = makeWrapper();
     render(
       <Wrapper>
@@ -205,10 +215,9 @@ describe('ComboConfigModal', () => {
     const cookieCheckbox = screen.getByRole('checkbox', { name: /cookie/i });
     fireEvent.click(cookieCheckbox); // uncheck Cookie → 0 selected
     expect(confirmBtn).toBeDisabled();
-  });
+  }, 20000);
 
   it('T3: defaults pre-selected on open', async () => {
-    const { ComboConfigModal } = await import('../ComboConfigModal');
     const Wrapper = makeWrapper();
     render(
       <Wrapper>
@@ -235,7 +244,6 @@ describe('ComboConfigModal', () => {
   });
 
   it('T4: price summary shows base + surcharge of chosen options', async () => {
-    const { ComboConfigModal } = await import('../ComboConfigModal');
     const Wrapper = makeWrapper();
     render(
       <Wrapper>
@@ -260,7 +268,6 @@ describe('ComboConfigModal', () => {
   });
 
   it('T5: Confirm emits exact {components, modifiers, unitPrice} shape', async () => {
-    const { ComboConfigModal } = await import('../ComboConfigModal');
     const onConfirm = vi.fn();
     const onClose = vi.fn();
     const Wrapper = makeWrapper();
@@ -314,7 +321,6 @@ describe('ComboConfigModal', () => {
     // Placed last to avoid cold-start timeout on Windows jsdom.
     mockQueryResult.data = DEF_NO_DEFAULT;
 
-    const { ComboConfigModal } = await import('../ComboConfigModal');
     const Wrapper = makeWrapper();
     render(
       <Wrapper>

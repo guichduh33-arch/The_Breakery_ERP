@@ -9,20 +9,24 @@
 //      `product_type='finished'` per the Wave 1 CHECK ; modifiers attach to
 //      the parent's category, so we keep the parent's `category_id` in the
 //      synthesised product so `useProductModifiers` resolves correctly.
-//   2. Combo products: skip ModifierModal entirely (spec CB5). If combo has
-//      modifier groups → toast error and abort. Otherwise → addItem direct.
+//   2. Session 47 — Combo products open `ComboConfigModal` directly (bypasses
+//      the modifier pipeline entirely). On confirm, `addCombo` is called with
+//      the chosen components + modifiers snapshot. Combos never route through
+//      `setPending` or `useProductModifiers`.
 //   3. Finished products: existing flow (open ModifierModal if groups, else direct).
 //
 // Customer pricing: if a customer is attached, unit_price is resolved via
-// get_customer_product_price RPC before addItem. Spec §4.4.
+// get_customer_product_price RPC before addItem. Combos use
+// `combo_base_price` (emitted by ComboConfigModal as `unitPrice`) and do NOT
+// go through the fetchPrice path.
 import { useEffect, useRef, useState } from 'react';
-import { toast } from 'sonner';
 import { ModifierModal, type ModifierModalProduct } from '@breakery/ui';
 import type { Product, SelectedModifiers } from '@breakery/domain';
 import { useCartStore } from '@/stores/cartStore';
 import { useCustomerProductPrice } from '@/features/customerCategories/hooks/useCustomerProductPrice';
 import { VariantSelectModal } from '@/features/cart/VariantSelectModal';
 import type { POSVariantRow } from '@/features/products/hooks/useProductVariants';
+import { ComboConfigModal } from '@/features/combos/components/ComboConfigModal';
 import { ProductGrid } from './ProductGrid';
 import { useProductModifiers } from './hooks/useProductModifiers';
 
@@ -32,6 +36,7 @@ export interface ProductTapHandlerProps {
 
 export function ProductTapHandler({ selectedSlug }: ProductTapHandlerProps) {
   const add = useCartStore((s) => s.add);
+  const addCombo = useCartStore((s) => s.addCombo);
   const attachedCustomer = useCartStore((s) => s.attachedCustomer);
   const [pending, setPending] = useState<Product | null>(null);
   // Session 27c — variant picker state. The parent product is preserved so
@@ -39,6 +44,8 @@ export function ProductTapHandler({ selectedSlug }: ProductTapHandlerProps) {
   // inherits the parent's category_id (for modifier resolution), image_url,
   // tax_inclusive, etc.
   const [variantParent, setVariantParent] = useState<Product | null>(null);
+  // Session 47 — combo picker state. Combos bypass the modifier pipeline.
+  const [comboPending, setComboPending] = useState<Product | null>(null);
   const fetchPrice = useCustomerProductPrice();
 
   const modifiersQuery = useProductModifiers({
@@ -60,6 +67,12 @@ export function ProductTapHandler({ selectedSlug }: ProductTapHandlerProps) {
     // Session 27c — parent products open the variant picker first.
     if (product.has_variants) {
       setVariantParent(product);
+      return;
+    }
+    // Session 47 — combos open ComboConfigModal directly; never enter the
+    // modifier pipeline.
+    if (product.product_type === 'combo') {
+      setComboPending(product);
       return;
     }
     setPending(product);
@@ -102,12 +115,14 @@ export function ProductTapHandler({ selectedSlug }: ProductTapHandlerProps) {
   }
 
   // Bug 2 (Session 36) — auto-add for products that need no modifier choice
-  // (combos without groups, finished products with no groups). This MUST live
-  // in an effect, not in the render body: running `add()` during render made
-  // StrictMode's dev double-render fire it TWICE for a single tap, doubling the
-  // line quantity (a Croissant tapped twice billed ×4 = Rp 100,000 instead of
-  // Rp 50,000). The ref guards against a re-fire for the same `pending` product
-  // before `setPending(null)` commits.
+  // (finished products with no groups). This MUST live in an effect, not in
+  // the render body: running `add()` during render made StrictMode's dev
+  // double-render fire it TWICE for a single tap, doubling the line quantity.
+  // The ref guards against a re-fire for the same `pending` product before
+  // `setPending(null)` commits.
+  //
+  // Session 47: combos never set `pending` — they go through `comboPending` +
+  // `ComboConfigModal` instead. The combo branch is therefore removed here.
   const autoAddedRef = useRef<Product | null>(null);
   useEffect(() => {
     if (!pending || !modifiersQuery.isSuccess) {
@@ -116,39 +131,29 @@ export function ProductTapHandler({ selectedSlug }: ProductTapHandlerProps) {
     }
     if (autoAddedRef.current === pending) return;
     const groups = modifiersQuery.data ?? [];
-    if (pending.product_type === 'combo') {
-      if (groups.length > 0) {
-        toast.error('Modifiers not supported on combos');
-      } else {
-        autoAddedRef.current = pending;
-        void addWithPrice(pending, []);
-      }
-      setPending(null);
-    } else if (groups.length === 0) {
+    if (groups.length === 0) {
       autoAddedRef.current = pending;
       void addWithPrice(pending, []);
       setPending(null);
     }
-    // groups.length > 0 (non-combo) → the ModifierModal opens; nothing to add.
+    // groups.length > 0 → the ModifierModal opens; nothing to add here.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- addWithPrice is a
     // stable closure recreated each render; depending on it would re-run the
     // effect on every render. The (pending, query-success, data) tuple fully
     // captures when an auto-add should fire.
   }, [pending, modifiersQuery.isSuccess, modifiersQuery.data]);
 
-  const isCombo = pending?.product_type === 'combo';
   const groups = modifiersQuery.data ?? [];
-  const modalOpen = Boolean(pending) && modifiersQuery.isSuccess && groups.length > 0 && !isCombo;
+  const modalOpen = Boolean(pending) && modifiersQuery.isSuccess && groups.length > 0;
 
-  const product: ModifierModalProduct | null =
-    pending && !isCombo
-      ? {
-          id: pending.id,
-          name: pending.name,
-          retail_price: pending.retail_price,
-          image_url: pending.image_url ?? null,
-        }
-      : null;
+  const product: ModifierModalProduct | null = pending
+    ? {
+        id: pending.id,
+        name: pending.name,
+        retail_price: pending.retail_price,
+        image_url: pending.image_url ?? null,
+      }
+    : null;
 
   return (
     <>
@@ -170,6 +175,16 @@ export function ProductTapHandler({ selectedSlug }: ProductTapHandlerProps) {
           onConfirm={handleConfirm}
         />
       )}
+      {/* Session 47 — combo configuration modal */}
+      <ComboConfigModal
+        open={comboPending !== null}
+        product={comboPending ? { id: comboPending.id, name: comboPending.name } : null}
+        onConfirm={({ components, modifiers, unitPrice }) => {
+          if (comboPending) addCombo(comboPending, modifiers, components, unitPrice);
+          setComboPending(null);
+        }}
+        onClose={() => setComboPending(null)}
+      />
     </>
   );
 }

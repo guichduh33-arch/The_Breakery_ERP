@@ -1,4 +1,6 @@
 // packages/domain/src/cart/mutations.ts
+// Session 47: addComboItem added — mirrors addItem but always sets product_type='combo'
+// and carries the resolved combo_components snapshot.
 import type { Cart, CartItem, Product } from '../types/index.js';
 import type { SelectedModifiers } from '../modifiers/types.js';
 
@@ -60,6 +62,50 @@ export function addItem(
     quantity,
     modifiers,
     ...(product.product_type !== 'finished' ? { product_type: product.product_type } : {}),
+  };
+  return { ...cart, items: [...cart.items, newItem] };
+}
+
+/**
+ * Session 47 — add a configured combo line to the cart.
+ * Mirrors `addItem` but always sets `product_type='combo'` and attaches the
+ * resolved `combo_components` snapshot so the cart display and server payload
+ * can show (and deduct stock for) the chosen component products.
+ *
+ * Merge semantics: two taps of the same combo with identical modifier selections
+ * (same chosen options → same line signature) stack into one line, same as
+ * `addItem`. Distinct configurations create separate lines.
+ */
+export function addComboItem(
+  cart: Cart,
+  product: Product,
+  modifiers: SelectedModifiers,
+  components: { product_id: string; quantity: number }[],
+  quantity = 1,
+  unitPriceOverride?: number,
+): Cart {
+  // Combos merge on the same product+modifier signature as addItem — two
+  // identically-configured combos stack (same chosen options ⇒ same components).
+  const sig = lineSignature(product.id, modifiers);
+  let merged = false;
+  const nextItems = cart.items.map((i) => {
+    if (!merged && lineSignature(i.product_id, i.modifiers) === sig) {
+      merged = true;
+      return { ...i, quantity: i.quantity + quantity };
+    }
+    return i;
+  });
+  if (merged) return { ...cart, items: nextItems };
+
+  const newItem: CartItem = {
+    id: newLineId(),
+    product_id: product.id,
+    name: product.name,
+    unit_price: unitPriceOverride ?? product.retail_price,
+    quantity,
+    modifiers,
+    product_type: 'combo',
+    combo_components: components,
   };
   return { ...cart, items: [...cart.items, newItem] };
 }

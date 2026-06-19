@@ -3,9 +3,9 @@
 //
 // Smoke tests for combo cart display and add flow.
 // Spec §4.5 CB1–CB5.
-//   - Tap combo → addItem direct (no ModifierModal)
-//   - Combo with modifiers → toast "Modifiers not supported on combos"
-//   - Cart shows ComboLineRow with components
+//   - Tap combo → ComboConfigModal opens (Session 47)
+//   - Cart shows ComboLineRow with CHOSEN components (from modifiers snapshot)
+//   - addCombo stores combo_components + modifiers, two identical taps merge
 //
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
@@ -14,7 +14,8 @@ import { MemoryRouter } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { useCartStore } from '@/stores/cartStore';
 import { CartItemRow } from '@/features/cart/CartItemRow';
-import type { CartItem } from '@breakery/domain';
+import { addComboItem } from '@breakery/domain';
+import type { Cart, CartItem } from '@breakery/domain';
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -95,7 +96,12 @@ const COMBO_CART_ITEM: CartItem = {
   name: 'Breakfast Set',
   unit_price: 75000,
   quantity: 1,
-  modifiers: [],
+  // Session 47 — modifiers carry the chosen options; ComboCartItemRow renders
+  // components from this snapshot rather than from useComboConfig defaults.
+  modifiers: [
+    { group_name: 'Choose a drink', option_label: 'Americano', price_adjustment: 0 },
+    { group_name: 'Choose a pastry', option_label: 'Croissant', price_adjustment: 0 },
+  ],
   product_type: 'combo',
 };
 
@@ -193,5 +199,64 @@ describe('Combo cart display smoke', () => {
     useCartStore.getState().add(FINISHED_PRODUCT, []);
     const items = useCartStore.getState().cart.items;
     expect(items[0]?.product_type).toBeUndefined();
+  });
+
+  it('cartStore.addCombo stores combo_components and modifiers', () => {
+    const COMBO_PRODUCT = {
+      id: 'prod-combo-001',
+      sku: 'COMBO-001',
+      name: 'Breakfast Set',
+      category_id: 'cat-bev',
+      retail_price: 75000,
+      wholesale_price: null,
+      product_type: 'combo' as const,
+      tax_inclusive: true,
+      image_url: null,
+      current_stock: 99,
+      is_active: true,
+      is_favorite: false,
+    };
+    const components = [
+      { product_id: 'prod-amer', quantity: 1 },
+      { product_id: 'prod-croi', quantity: 1 },
+    ];
+    const modifiers = [
+      { group_name: 'Choose a drink', option_label: 'Americano', price_adjustment: 0 },
+      { group_name: 'Choose a pastry', option_label: 'Croissant', price_adjustment: 0 },
+    ];
+
+    useCartStore.getState().addCombo(COMBO_PRODUCT, modifiers, components, 75000);
+    const items = useCartStore.getState().cart.items;
+    expect(items).toHaveLength(1);
+    expect(items[0]?.product_type).toBe('combo');
+    expect(items[0]?.unit_price).toBe(75000);
+    expect(items[0]?.combo_components).toEqual(components);
+    expect(items[0]?.modifiers).toEqual(modifiers);
+  });
+
+  it('addComboItem merges two identical combo taps into quantity 2', () => {
+    const COMBO_PRODUCT = {
+      id: 'prod-combo-001',
+      sku: 'COMBO-001',
+      name: 'Breakfast Set',
+      category_id: 'cat-bev',
+      retail_price: 75000,
+      wholesale_price: null,
+      product_type: 'combo' as const,
+      tax_inclusive: true,
+      image_url: null,
+      current_stock: 99,
+      is_active: true,
+      is_favorite: false,
+    };
+    const components = [{ product_id: 'prod-amer', quantity: 1 }];
+    const modifiers = [{ group_name: 'Choose a drink', option_label: 'Americano', price_adjustment: 0 }];
+    const emptyCart: Cart = { items: [], order_type: 'dine_in' };
+
+    const afterFirst = addComboItem(emptyCart, COMBO_PRODUCT, modifiers, components, 1, 75000);
+    const afterSecond = addComboItem(afterFirst, COMBO_PRODUCT, modifiers, components, 1, 75000);
+
+    expect(afterSecond.items).toHaveLength(1);
+    expect(afterSecond.items[0]?.quantity).toBe(2);
   });
 });
