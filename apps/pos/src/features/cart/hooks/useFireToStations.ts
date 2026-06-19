@@ -133,10 +133,10 @@ export function useFireToStations(): UseFireToStationsResult {
 
           fireClientUuidRef.current ??= crypto.randomUUID();
           const existingOrderId = useCartStore.getState().pickedUpOrderId;
-          // S44 P0-C(3) — fire_counter_order_v2 gates any line discount on an
+          // S44 P0-C(3) — fire_counter_order_v3 gates any line discount on an
           // authorizing manager. Hoist the first discounted line's authorizer.
           const fireAuthorizer = toPersist.find((i) => i.discount?.authorized_by)?.discount?.authorized_by;
-          const { data, error } = await supabase.rpc('fire_counter_order_v2', {
+          const { data, error } = await supabase.rpc('fire_counter_order_v3', {
             p_client_uuid: fireClientUuidRef.current,
             p_session_id: sessionId,
             p_items: toPersist.map((i) => ({
@@ -144,6 +144,9 @@ export function useFireToStations(): UseFireToStationsResult {
               quantity: i.quantity,
               unit_price: i.unit_price,
               modifiers: i.modifiers,
+              // S47 — combo lines persist their components so pay_existing_order_v9
+              // deducts each component's stock at payment (the fire only persists).
+              ...(i.combo_components ? { combo_components: i.combo_components } : {}),
               ...(i.discount ? { discount_amount: i.discount.amount } : {}),
             })) as unknown as Json,
             ...(existingOrderId ? { p_order_id: existingOrderId } : {}),

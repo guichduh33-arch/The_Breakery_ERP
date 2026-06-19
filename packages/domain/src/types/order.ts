@@ -24,6 +24,12 @@ export interface OrderPayloadItem {
   is_promo_gift?: boolean;
   /** Session 9 — id of the promotion that produced this gift line. */
   promotion_id?: string;
+  /**
+   * Session 47 — for combo lines, the chosen component products. The sale RPC
+   * (complete_order_with_payment_v13) deducts each component's stock instead of
+   * the virtual combo product's. Omitted for non-combo lines.
+   */
+  combo_components?: { product_id: string; quantity: number }[];
 }
 
 /** Session 9 — promotion entry in the OrderPayload promotions array. */
