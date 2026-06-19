@@ -287,23 +287,33 @@ UPDATE customers
   SET category_id = (SELECT id FROM customer_categories WHERE slug = 'vip')
   WHERE name = 'Loyal Gold Customer' AND category_id IS NULL;
 
-INSERT INTO products (sku, name, category_id, retail_price, product_type, current_stock)
+INSERT INTO products (sku, name, category_id, retail_price, product_type, current_stock, combo_base_price)
 VALUES (
   'COMBO-001',
   'Breakfast Set',
   '11111111-1111-1111-1111-111111111111',
   75000,
   'combo',
-  0
+  0,
+  75000
 ) ON CONFLICT (sku) DO NOTHING;
 
-INSERT INTO combo_items (parent_product_id, component_product_id, quantity, sort_order)
-SELECT combo.id, comp.id, 1, comp_skus.sort_order
+-- Session 47: choice-group combo model (replaces the dropped combo_items).
+-- COMBO-001 = one single + required group per component, each with a default option.
+INSERT INTO combo_groups (combo_product_id, name, group_type, is_required, min_select, max_select, sort_order)
+SELECT combo.id, g.name, 'single', true, 1, 1, g.sort_order
 FROM products combo,
-     (VALUES ('BEV-AMER', 1), ('PAS-CROI', 2)) AS comp_skus(sku, sort_order)
-JOIN products comp ON comp.sku = comp_skus.sku
+     (VALUES ('Americano', 1), ('Croissant', 2)) AS g(name, sort_order)
 WHERE combo.sku = 'COMBO-001'
-ON CONFLICT (parent_product_id, component_product_id) DO NOTHING;
+  AND NOT EXISTS (SELECT 1 FROM combo_groups eg WHERE eg.combo_product_id = combo.id);
+
+INSERT INTO combo_group_options (group_id, component_product_id, surcharge, is_default, sort_order)
+SELECT grp.id, comp.id, 0, true, 0
+FROM combo_groups grp
+JOIN products combo ON combo.id = grp.combo_product_id AND combo.sku = 'COMBO-001'
+JOIN (VALUES ('Americano', 'BEV-AMER'), ('Croissant', 'PAS-CROI')) AS m(gname, csku) ON m.gname = grp.name
+JOIN products comp ON comp.sku = m.csku
+ON CONFLICT (group_id, component_product_id) DO NOTHING;
 
 -- ============================================================
 -- SESSION 9 — Demo promotions
