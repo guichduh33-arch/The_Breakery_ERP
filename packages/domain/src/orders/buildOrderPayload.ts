@@ -17,6 +17,9 @@ function buildItemPayload(item: Cart['items'][number]): OrderPayloadItem {
     // Session 9 — pass through gift flags so RPC v7 can tag order_items.
     ...(item.is_promo_gift ? { is_promo_gift: true } : {}),
     ...(item.promotion_id ? { promotion_id: item.promotion_id } : {}),
+    // Session 47 — combo lines carry their chosen components so v13 deducts
+    // component stock (not the virtual combo product).
+    ...(item.combo_components ? { combo_components: item.combo_components } : {}),
   };
   if (!item.discount) return base;
   return {

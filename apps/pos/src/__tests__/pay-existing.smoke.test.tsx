@@ -80,7 +80,7 @@ describe('pay-existing smoke', () => {
       });
     });
 
-    expect(mocks.rpc).toHaveBeenCalledWith('pay_existing_order_v8', expect.objectContaining({
+    expect(mocks.rpc).toHaveBeenCalledWith('pay_existing_order_v9', expect.objectContaining({
       p_order_id: 'order-tablet-1',
     }));
     expect(mockFetch).not.toHaveBeenCalled();
@@ -111,7 +111,7 @@ describe('pay-existing smoke', () => {
       });
     });
 
-    expect(mocks.rpc).not.toHaveBeenCalledWith('pay_existing_order_v8', expect.anything());
+    expect(mocks.rpc).not.toHaveBeenCalledWith('pay_existing_order_v9', expect.anything());
     expect(mockFetch).toHaveBeenCalledWith(
       expect.stringContaining('process-payment'),
       expect.anything(),

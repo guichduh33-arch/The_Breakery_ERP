@@ -34,6 +34,12 @@ export interface CartItem {
    * Excluded from cart totals; rendered struck-through with "CANCELLED" badge.
    */
   is_cancelled?: boolean;
+  /**
+   * Session 47 — for combo lines, the resolved component products chosen during
+   * configuration. Each component deducts its own stock server-side; the combo
+   * product itself does not. Undefined for non-combo lines.
+   */
+  combo_components?: { product_id: string; quantity: number }[];
 }
 
 export interface Cart {

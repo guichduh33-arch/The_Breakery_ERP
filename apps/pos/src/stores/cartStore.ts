@@ -16,6 +16,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import {
   addItem,
+  addComboItem,
   removeItem,
   updateQuantity,
   clearCart,
@@ -80,6 +81,19 @@ interface CartState {
 
   // Actions
   add: (product: Product, modifiers?: SelectedModifiers, unitPriceOverride?: number) => void;
+  /**
+   * Session 47 — add a configured combo line. Unlike `add`, this always
+   * creates a combo cart line carrying the cashier's chosen `components`
+   * (for server-side stock deduction) and the resolved `modifiers` snapshot
+   * (for cart-line display). `unitPrice` is the configured price emitted by
+   * `ComboConfigModal` (base_price; surcharges ride in `modifiers`).
+   */
+  addCombo: (
+    product: Product,
+    modifiers: SelectedModifiers,
+    components: { product_id: string; quantity: number }[],
+    unitPrice: number,
+  ) => void;
   update: (lineId: string, quantity: number) => void;
   remove: (lineId: string) => void;
   clear: () => void;
@@ -189,6 +203,10 @@ export const useCartStore = create<CartState>()(
           // ProcessPayment button reads `isOffline` and disables itself.
           return { cart: addItem(s.cart, product, modifiers, 1, unitPriceOverride) };
         }),
+
+      // Session 47 — add a configured combo line after ComboConfigModal confirms.
+      addCombo: (product, modifiers, components, unitPrice) =>
+        set((s) => ({ cart: addComboItem(s.cart, product, modifiers, components, 1, unitPrice) })),
 
       update: (id, qty) =>
         set((s) => {

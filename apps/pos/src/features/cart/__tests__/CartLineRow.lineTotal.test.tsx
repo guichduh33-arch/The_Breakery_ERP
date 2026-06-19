@@ -18,10 +18,10 @@ vi.mock('sonner', () => ({
   Toaster: () => null,
 }));
 
-// useComboItems is only invoked on the combo branch; we never hit it here
+// useComboConfig is only invoked on the combo branch; we never hit it here
 // (finished product), but mock it so importing the module never touches I/O.
-vi.mock('@/features/combos/hooks/useComboItems', () => ({
-  useComboItems: () => ({ data: [] }),
+vi.mock('@/features/combos/hooks/useComboConfig', () => ({
+  useComboConfig: () => ({ data: undefined }),
 }));
 
 function makeItem(quantity: number): CartItem {

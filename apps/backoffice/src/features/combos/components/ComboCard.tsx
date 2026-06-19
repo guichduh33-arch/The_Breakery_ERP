@@ -1,32 +1,41 @@
 // apps/backoffice/src/features/combos/components/ComboCard.tsx
 //
-// Session 14 / Phase 4.B — Single combo tile shown on the management grid.
-// Mirrors `combo management.jpg`: header (image), name + POS-visible badge,
-// "SELECTIONS" section listing components grouped by category as pill chips,
-// and a footer with Bundle Set Price (gold) + struck-through Value Price +
-// optional savings badge.
+// Session 47 — rewritten for choice-group model.
+// Groups by name + option pills + "+N more", struck-through value price,
+// min→max bundle range, Save% badge (from domain savingsPct).
 
-import { Box, GripVertical } from 'lucide-react';
+import { Box } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import type { JSX } from 'react';
 import { Card, CardContent, Currency } from '@breakery/ui';
-import { comboSavingsPct, type Combo } from '../types.js';
+import { savingsPct } from '@breakery/domain';
+import type { Combo } from '../types.js';
 
 interface Props {
   combo: Combo;
+  onEdit?: () => void;
 }
 
-export function ComboCard({ combo }: Props): JSX.Element {
-  const savings = comboSavingsPct(combo);
+export function ComboCard({ combo, onEdit }: Props): JSX.Element {
+  const navigate = useNavigate();
+  const savings = savingsPct(combo.value_price, combo.retail_price);
+
+  function handleClick() {
+    if (onEdit !== undefined) {
+      onEdit();
+    } else {
+      navigate(`/backoffice/products/combos/${combo.id}/edit`);
+    }
+  }
+
   return (
-    <Card variant="default" className="overflow-hidden">
+    <Card
+      variant="default"
+      className="overflow-hidden cursor-pointer hover:border-gold/60 transition-colors"
+      onClick={handleClick}
+      data-testid={`combo-card-${combo.id}`}
+    >
       <div className="relative aspect-[16/9] w-full overflow-hidden bg-bg-overlay">
-        <button
-          type="button"
-          aria-label={`Reorder ${combo.name}`}
-          className="absolute left-3 top-3 inline-flex h-8 w-8 cursor-grab items-center justify-center rounded-full bg-bg-elevated/80 text-text-secondary backdrop-blur transition hover:bg-bg-elevated"
-        >
-          <GripVertical className="h-4 w-4" aria-hidden />
-        </button>
         {combo.image_url === null ? (
           <div className="flex h-full w-full items-center justify-center text-text-muted">
             <Box className="h-10 w-10" aria-hidden />
@@ -58,30 +67,30 @@ export function ComboCard({ combo }: Props): JSX.Element {
           </div>
 
           {combo.groups.length === 0 ? (
-            <div className="text-xs italic text-text-secondary">No components yet.</div>
+            <div className="text-xs italic text-text-secondary">No choice groups yet.</div>
           ) : (
             combo.groups.map((g) => (
-              <div key={g.category_name} className="mt-2">
+              <div key={g.id} className="mt-2">
                 <div className="text-[11px] uppercase tracking-widest text-text-secondary">
-                  {g.category_name}
+                  {g.name}
                 </div>
                 <div className="mt-1.5 flex flex-wrap gap-1.5">
-                  {g.components.slice(0, 3).map((c) => (
+                  {g.options.slice(0, 3).map((opt) => (
                     <span
-                      key={c.product_id}
+                      key={opt.component_product_id}
                       className="inline-flex items-center gap-1 rounded-full border border-gold-soft bg-bg-elevated px-2 py-0.5 text-[11px] text-text-primary"
                     >
-                      {c.product_name}
-                      {c.upcharge > 0 && (
+                      {opt.label}
+                      {opt.surcharge > 0 && (
                         <span className="ml-1 font-mono text-[10px] text-gold">
-                          +Rp {c.upcharge.toLocaleString()}
+                          +Rp {opt.surcharge.toLocaleString('id-ID')}
                         </span>
                       )}
                     </span>
                   ))}
-                  {g.components.length > 3 && (
+                  {g.options.length > 3 && (
                     <span className="rounded-full border border-border-subtle px-2 py-0.5 text-[11px] text-text-secondary">
-                      +{g.components.length - 3} more
+                      +{g.options.length - 3} more
                     </span>
                   )}
                 </div>
@@ -93,16 +102,26 @@ export function ComboCard({ combo }: Props): JSX.Element {
         <div className="flex items-end justify-between gap-2 pt-1">
           <div>
             <div className="text-[10px] uppercase tracking-widest text-text-secondary">Value Price</div>
-            {combo.base_price > 0 ? (
+            {combo.value_price !== null && combo.value_price > 0 ? (
               <div className="text-xs font-mono text-text-muted line-through">
-                Rp {Math.round(combo.base_price).toLocaleString()}
+                Rp {Math.round(combo.value_price).toLocaleString('id-ID')}
               </div>
             ) : (
               <div className="text-xs text-text-muted">—</div>
             )}
-            <div className="mt-1 text-[10px] uppercase tracking-widest text-text-secondary">Bundle Set Price</div>
+            <div className="mt-1 text-[10px] uppercase tracking-widest text-text-secondary">
+              Bundle Set Price
+            </div>
             <div className="font-display text-2xl text-gold">
-              <Currency amount={combo.retail_price} emphasis="gold" />
+              {combo.price_min === combo.price_max ? (
+                <Currency amount={combo.price_min} emphasis="gold" />
+              ) : (
+                <span>
+                  Rp {combo.price_min.toLocaleString('id-ID')}
+                  {' – '}
+                  Rp {combo.price_max.toLocaleString('id-ID')}
+                </span>
+              )}
             </div>
           </div>
           {savings !== null && savings > 0 && (

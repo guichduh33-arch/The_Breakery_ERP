@@ -45,7 +45,15 @@ interface PaymentEntry {
 interface ProcessPaymentPayload {
   session_id: string;
   order_type: 'dine_in' | 'take_out' | 'delivery';
-  items: Array<{ product_id: string; quantity: number; unit_price: number }>;
+  // Items are forwarded verbatim to the RPC (modifiers, combo_components, discount
+  // fields ride along at runtime). S47: combo lines carry combo_components so v13
+  // deducts each chosen component's stock instead of the virtual combo product.
+  items: Array<{
+    product_id: string;
+    quantity: number;
+    unit_price: number;
+    combo_components?: Array<{ product_id: string; quantity: number }>;
+  }>;
   /** Single-tender (legacy v7). Either `payment` or `payments` MUST be supplied (not both). */
   payment?: PaymentEntry;
   /** Multi-tender array (session 10 / RPC v8). Length 1..5. Sum(amounts) = final total. */
@@ -190,7 +198,7 @@ serve(async (req) => {
   // S37 SEC-01 — manager PIN in header (S25 pattern), relayed to the RPC arg.
   const managerPin = req.headers.get('x-manager-pin');
 
-  const { data, error } = await userClient.rpc('complete_order_with_payment_v12', {
+  const { data, error } = await userClient.rpc('complete_order_with_payment_v13', {
     p_session_id: body.session_id,
     p_order_type: body.order_type,
     p_items: body.items,

@@ -1,17 +1,23 @@
 // apps/backoffice/src/pages/products/CombosPage.tsx
 //
-// Session 14 / Phase 4.B — Combo Management page.
+// Session 47 — Combo Management page rewired to choice-group model.
 // URL: /backoffice/products/combos
-// Mirrors `combo management.jpg`: header + 3 KPI tiles + searchable card grid.
+// Header "Create New Combo" gated on combos.create perm → /combos/new.
+// Card click → /:comboId/edit.
 
 import { useMemo, type JSX } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { CombosGrid } from '@/features/combos/components/CombosGrid.js';
 import { CombosHeader } from '@/features/combos/components/CombosHeader.js';
 import { CombosKpiGrid } from '@/features/combos/components/CombosKpiGrid.js';
 import { useCombos } from '@/features/combos/hooks/useCombos.js';
+import { useAuthStore } from '@/stores/authStore.js';
 import { emptyKpis, type CombosKpis } from '@/features/combos/types.js';
 
 export default function CombosPage(): JSX.Element {
+  const navigate = useNavigate();
+  const canCreate = useAuthStore((s) => s.hasPermission('combos.create'));
+
   const combos = useCombos();
   const list = combos.data ?? [];
 
@@ -35,7 +41,11 @@ export default function CombosPage(): JSX.Element {
 
   return (
     <div className="space-y-6">
-      <CombosHeader />
+      <CombosHeader
+        {...(canCreate
+          ? { onCreate: () => { navigate('/backoffice/products/combos/new'); } }
+          : {})}
+      />
       <CombosKpiGrid kpis={kpis} isLoading={combos.isLoading} />
       <CombosGrid combos={list} isLoading={combos.isLoading} />
     </div>

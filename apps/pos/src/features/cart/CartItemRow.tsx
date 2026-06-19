@@ -1,10 +1,14 @@
 // apps/pos/src/features/cart/CartItemRow.tsx
+// Session 47 (DEV-S47-D3-01): ComboCartItemRow now derives the component
+// display from the cart line's own `item.modifiers` snapshot (the cashier's
+// chosen options). The previous approach used `useComboConfig` default options,
+// which would have shown defaults regardless of the cashier's configuration.
+// `useComboConfig` is no longer called here.
 import { Lock, Trash2, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import type { CartItem } from '@breakery/domain';
 import { Button, Currency, QuantityStepper, cn, ComboLineRow } from '@breakery/ui';
 import { LineDiscountButton } from '@/features/discounts/components/LineDiscountButton';
-import { useComboItems } from '@/features/combos/hooks/useComboItems';
 
 export interface CartItemRowProps {
   item: CartItem;
@@ -22,9 +26,13 @@ export interface CartItemRowProps {
 }
 
 function ComboCartItemRow({ item, locked, onChangeQty, onRemove }: Omit<CartItemRowProps, 'onApplyLineDiscount'>) {
-  const { data: comboItems = [] } = useComboItems(item.product_id);
-  const components = comboItems.map((ci) => ({ name: ci.product.name, quantity: ci.quantity }));
-  const lineTotal = item.unit_price * item.quantity;
+  // Session 47 (DEV-S47-D3-01) — derive displayed components from the cart
+  // line's own `modifiers` snapshot (each chosen option is a ModifierOption).
+  // This correctly reflects the cashier's configuration, not static defaults.
+  const components = item.modifiers.map((m) => ({ name: m.option_label, quantity: 1 }));
+  // Surcharges ride in modifiers; include them in the line total.
+  const adj = item.modifiers.reduce((s, m) => s + m.price_adjustment, 0);
+  const lineTotal = (item.unit_price + adj) * item.quantity;
 
   return (
     <ComboLineRow

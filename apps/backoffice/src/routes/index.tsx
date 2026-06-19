@@ -9,6 +9,7 @@ import ProductsPage from '@/pages/Products.js';
 import ProductDetailPage from '@/pages/products/ProductDetailPage.js';
 import ProductsImportExportPage from '@/pages/products/ProductsImportExportPage.js';
 import CombosPage from '@/pages/products/CombosPage.js';
+import ComboBuilderPageBase from '@/features/combos/components/ComboBuilderPage.js';
 import CategoriesPage from '@/pages/categories/CategoriesPage.js';
 import PromotionsPage from '@/pages/Promotions.js';
 import LoyaltyPage from '@/pages/Loyalty.js';
@@ -103,6 +104,9 @@ import B2BSettingsPage       from '@/pages/btob/B2BSettingsPage.js';
 import { BackofficeLayout } from '@/layouts/BackofficeLayout.js';
 import { useAuthStore } from '@/stores/authStore.js';
 
+function ComboBuilderNewPage() { return <ComboBuilderPageBase mode="create" />; }
+function ComboBuilderEditPage() { return <ComboBuilderPageBase mode="edit" />; }
+
 function Protected({ children }: { children: React.ReactNode }) {
   const isAuth = useAuthStore((s) => s.isAuthenticated);
   return isAuth ? <>{children}</> : <Navigate to="/login" replace />;
@@ -134,6 +138,22 @@ export function AppRoutes() {
         <Route index element={<DashboardPage />} />
         <Route path="products" element={<ProductsPage />} />
         <Route path="products/combos" element={<CombosPage />} />
+        <Route
+          path="products/combos/new"
+          element={
+            <PermissionGate required="combos.create">
+              <ComboBuilderNewPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="products/combos/:comboId/edit"
+          element={
+            <PermissionGate required="combos.update">
+              <ComboBuilderEditPage />
+            </PermissionGate>
+          }
+        />
         <Route
           path="products/import-export"
           element={

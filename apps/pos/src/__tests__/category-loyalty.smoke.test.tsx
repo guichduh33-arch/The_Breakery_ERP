@@ -118,7 +118,7 @@ describe('Category loyalty multiplier — buildOrderPayload', () => {
   });
 
   // S44 P0-C(2) — the multiplier is no longer a client payload field
-  // (complete_order_with_payment_v12 resolves it server-side from the customer
+  // (complete_order_with_payment_v13 resolves it server-side from the customer
   // tier × category). buildOrderPayload never emits loyalty_multiplier anymore.
   it('buildOrderPayload never emits loyalty_multiplier (resolved server-side, S44)', () => {
     const cart: Cart = { order_type: 'dine_in', items: [CART_ITEM], customerId: GOLD_VIP_CUSTOMER.id };
