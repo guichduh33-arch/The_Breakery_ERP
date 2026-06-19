@@ -7,6 +7,12 @@ export {
 } from './calculatePriceAdjustment.js';
 export { validateSelections, type ValidationError } from './validateSelections.js';
 export { parseModifierIngredientsToDeduct } from './parseIngredients.js';
+export {
+  foldModifierRowsForEdit,
+  validateModifierDraft,
+  serializeModifierGroups,
+  type ModifierDraftError,
+} from './editModel.js';
 export type {
   ModifierIngredient,
   EditableModifierOption,
