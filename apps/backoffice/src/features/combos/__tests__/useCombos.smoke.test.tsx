@@ -102,20 +102,21 @@ describe('useCombos', () => {
 
     const combos = result.current.data!;
     expect(combos).toHaveLength(1);
-    const combo = combos[0];
+    const combo = combos[0]!;
     expect(combo.name).toBe('Morning Set');
     expect(combo.groups).toHaveLength(2);
-    expect(combo.groups[0].name).toBe('Drinks');
-    expect(combo.groups[0].options).toHaveLength(2);
-    expect(combo.groups[0].options[0].label).toBe('Americano');
-    expect(combo.groups[0].options[1].surcharge).toBe(5000);
+    const g0 = combo.groups[0]!;
+    expect(g0.name).toBe('Drinks');
+    expect(g0.options).toHaveLength(2);
+    expect(g0.options[0]!.label).toBe('Americano');
+    expect(g0.options[1]!.surcharge).toBe(5000);
   });
 
   it('derives price_min and price_max via priceRange', async () => {
     const { result } = renderHook(() => useCombos(), { wrapper });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    const combo = result.current.data![0];
+    const combo = result.current.data![0]!;
     // min = base(45000) + required cheapest: Drinks(0) + Food(0) = 45000
     expect(combo.price_min).toBe(45000);
     // max = base(45000) + max surcharge per group: Drinks(5000) + Food(0) = 50000
@@ -126,7 +127,7 @@ describe('useCombos', () => {
     const { result } = renderHook(() => useCombos(), { wrapper });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    const combo = result.current.data![0];
+    const combo = result.current.data![0]!;
     // valuePrice = Americano(35000) + Croissant(25000) = 60000
     expect(combo.value_price).toBe(60000);
   });
@@ -135,7 +136,7 @@ describe('useCombos', () => {
     const { result } = renderHook(() => useCombos(), { wrapper });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    const combo = result.current.data![0];
+    const combo = result.current.data![0]!;
     expect(combo.retail_price).toBe(45000);
   });
 });
@@ -151,7 +152,7 @@ describe('useComboDetail', () => {
     expect(detail.name).toBe('Morning Set');
     expect(detail.base_price).toBe(45000);
     expect(detail.definition.groups).toHaveLength(2);
-    expect(detail.definition.groups[0].options[0].label).toBe('Americano');
+    expect(detail.definition.groups[0]!.options[0]!.label).toBe('Americano');
   });
 
   it('is disabled when comboId is undefined', () => {

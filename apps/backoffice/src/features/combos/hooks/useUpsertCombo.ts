@@ -8,6 +8,7 @@
 import { useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
+import type { Json } from '@breakery/supabase';
 
 /**
  * Payload for upsert_combo_v1. Matches the RPC's p_combo JSON argument.
@@ -55,7 +56,8 @@ export function useUpsertCombo() {
   const mutation = useMutation<UpsertComboResult, Error, UpsertComboPayload>({
     mutationFn: async (payload) => {
       const { data, error } = await supabase.rpc('upsert_combo_v1', {
-        p_combo: payload,
+        // p_combo is typed as Json; UpsertComboPayload is structurally compatible
+        p_combo: payload as unknown as Json,
         p_idempotency_key: idempotencyKey.current,
       });
       if (error) throw error;
