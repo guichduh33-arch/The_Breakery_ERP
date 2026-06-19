@@ -410,86 +410,154 @@ export type Database = {
         }
         Relationships: []
       }
-      combo_items: {
+      combo_group_options: {
         Row: {
           component_product_id: string
           created_at: string
-          parent_product_id: string
-          quantity: number
+          group_id: string
+          id: string
+          is_default: boolean
           sort_order: number
+          surcharge: number
         }
         Insert: {
           component_product_id: string
           created_at?: string
-          parent_product_id: string
-          quantity?: number
+          group_id: string
+          id?: string
+          is_default?: boolean
           sort_order?: number
+          surcharge?: number
         }
         Update: {
           component_product_id?: string
           created_at?: string
-          parent_product_id?: string
-          quantity?: number
+          group_id?: string
+          id?: string
+          is_default?: boolean
           sort_order?: number
+          surcharge?: number
         }
         Relationships: [
           {
-            foreignKeyName: "combo_items_component_product_id_fkey"
+            foreignKeyName: "combo_group_options_component_product_id_fkey"
             columns: ["component_product_id"]
             isOneToOne: false
             referencedRelation: "mv_stock_variance"
             referencedColumns: ["product_id"]
           },
           {
-            foreignKeyName: "combo_items_component_product_id_fkey"
+            foreignKeyName: "combo_group_options_component_product_id_fkey"
             columns: ["component_product_id"]
             isOneToOne: false
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "combo_items_component_product_id_fkey"
+            foreignKeyName: "combo_group_options_component_product_id_fkey"
             columns: ["component_product_id"]
             isOneToOne: false
             referencedRelation: "v_product_available_stock"
             referencedColumns: ["product_id"]
           },
           {
-            foreignKeyName: "combo_items_component_product_id_fkey"
+            foreignKeyName: "combo_group_options_component_product_id_fkey"
             columns: ["component_product_id"]
             isOneToOne: false
             referencedRelation: "view_recipe_products"
             referencedColumns: ["product_id"]
           },
           {
-            foreignKeyName: "combo_items_parent_product_id_fkey"
-            columns: ["parent_product_id"]
+            foreignKeyName: "combo_group_options_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "combo_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      combo_groups: {
+        Row: {
+          combo_product_id: string
+          created_at: string
+          group_type: string
+          id: string
+          is_required: boolean
+          max_select: number
+          min_select: number
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          combo_product_id: string
+          created_at?: string
+          group_type: string
+          id?: string
+          is_required?: boolean
+          max_select?: number
+          min_select?: number
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          combo_product_id?: string
+          created_at?: string
+          group_type?: string
+          id?: string
+          is_required?: boolean
+          max_select?: number
+          min_select?: number
+          name?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "combo_groups_combo_product_id_fkey"
+            columns: ["combo_product_id"]
             isOneToOne: false
             referencedRelation: "mv_stock_variance"
             referencedColumns: ["product_id"]
           },
           {
-            foreignKeyName: "combo_items_parent_product_id_fkey"
-            columns: ["parent_product_id"]
+            foreignKeyName: "combo_groups_combo_product_id_fkey"
+            columns: ["combo_product_id"]
             isOneToOne: false
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "combo_items_parent_product_id_fkey"
-            columns: ["parent_product_id"]
+            foreignKeyName: "combo_groups_combo_product_id_fkey"
+            columns: ["combo_product_id"]
             isOneToOne: false
             referencedRelation: "v_product_available_stock"
             referencedColumns: ["product_id"]
           },
           {
-            foreignKeyName: "combo_items_parent_product_id_fkey"
-            columns: ["parent_product_id"]
+            foreignKeyName: "combo_groups_combo_product_id_fkey"
+            columns: ["combo_product_id"]
             isOneToOne: false
             referencedRelation: "view_recipe_products"
             referencedColumns: ["product_id"]
           },
         ]
+      }
+      combo_upsert_idempotency_keys: {
+        Row: {
+          combo_product_id: string
+          created_at: string
+          key: string
+        }
+        Insert: {
+          combo_product_id: string
+          created_at?: string
+          key: string
+        }
+        Update: {
+          combo_product_id?: string
+          created_at?: string
+          key?: string
+        }
+        Relationships: []
       }
       counter_fire_idempotency_keys: {
         Row: {
@@ -2121,6 +2189,7 @@ export type Database = {
           cancelled_at: string | null
           cancelled_by: string | null
           cancelled_reason: string | null
+          combo_components: Json | null
           created_at: string
           discount_amount: number
           discount_reason: string | null
@@ -2152,6 +2221,7 @@ export type Database = {
           cancelled_at?: string | null
           cancelled_by?: string | null
           cancelled_reason?: string | null
+          combo_components?: Json | null
           created_at?: string
           discount_amount?: number
           discount_reason?: string | null
@@ -2183,6 +2253,7 @@ export type Database = {
           cancelled_at?: string | null
           cancelled_by?: string | null
           cancelled_reason?: string | null
+          combo_components?: Json | null
           created_at?: string
           discount_amount?: number
           discount_reason?: string | null
@@ -3273,6 +3344,10 @@ export type Database = {
           allergens: Database["public"]["Enums"]["allergen_type"][]
           available_for_sale: boolean
           category_id: string
+          combo_available_from: string | null
+          combo_available_to: string | null
+          combo_base_price: number | null
+          combo_display_order: number
           cost_price: number
           created_at: string
           current_stock: number
@@ -3307,6 +3382,10 @@ export type Database = {
           allergens?: Database["public"]["Enums"]["allergen_type"][]
           available_for_sale?: boolean
           category_id: string
+          combo_available_from?: string | null
+          combo_available_to?: string | null
+          combo_base_price?: number | null
+          combo_display_order?: number
           cost_price?: number
           created_at?: string
           current_stock?: number
@@ -3341,6 +3420,10 @@ export type Database = {
           allergens?: Database["public"]["Enums"]["allergen_type"][]
           available_for_sale?: boolean
           category_id?: string
+          combo_available_from?: string | null
+          combo_available_to?: string | null
+          combo_base_price?: number | null
+          combo_display_order?: number
           cost_price?: number
           created_at?: string
           current_stock?: number
@@ -5835,7 +5918,7 @@ export type Database = {
             }
             Returns: string
           }
-      complete_order_with_payment_v12: {
+      complete_order_with_payment_v13: {
         Args: {
           p_customer_id?: string
           p_discount_amount?: number
@@ -6020,6 +6103,7 @@ export type Database = {
         Args: { p_category_id: string; p_idempotency_key?: string }
         Returns: Json
       }
+      delete_combo_v1: { Args: { p_combo_product_id: string }; Returns: Json }
       delete_expense_threshold_v1: {
         Args: { p_threshold_id: string }
         Returns: boolean
@@ -6620,6 +6704,7 @@ export type Database = {
           cancelled_at: string | null
           cancelled_by: string | null
           cancelled_reason: string | null
+          combo_components: Json | null
           created_at: string
           discount_amount: number
           discount_reason: string | null
@@ -6664,6 +6749,7 @@ export type Database = {
           cancelled_at: string | null
           cancelled_by: string | null
           cancelled_reason: string | null
+          combo_components: Json | null
           created_at: string
           discount_amount: number
           discount_reason: string | null
@@ -6704,6 +6790,7 @@ export type Database = {
           cancelled_at: string | null
           cancelled_by: string | null
           cancelled_reason: string | null
+          combo_components: Json | null
           created_at: string
           discount_amount: number
           discount_reason: string | null
@@ -6747,6 +6834,7 @@ export type Database = {
           cancelled_at: string | null
           cancelled_by: string | null
           cancelled_reason: string | null
+          combo_components: Json | null
           created_at: string
           discount_amount: number
           discount_reason: string | null
@@ -7227,6 +7315,7 @@ export type Database = {
           cancelled_at: string | null
           cancelled_by: string | null
           cancelled_reason: string | null
+          combo_components: Json | null
           created_at: string
           discount_amount: number
           discount_reason: string | null
@@ -7416,6 +7505,10 @@ export type Database = {
       update_variant_v1: {
         Args: { p_patch: Json; p_variant_id: string }
         Returns: string
+      }
+      upsert_combo_v1: {
+        Args: { p_combo: Json; p_idempotency_key?: string }
+        Returns: Json
       }
       upsert_product_modifiers_v1: {
         Args: { p_groups: Json; p_product_id: string }

@@ -1,43 +1,43 @@
 // apps/backoffice/src/features/combos/hooks/useCombos.ts
 //
-// Session 14 / Phase 4.B — List combos with their components grouped by
-// category. Read-only — write paths arrive when the combo CRUD RPCs ship.
+// Session 47 — combos now use the choice-group model (combo_groups +
+// combo_group_options) instead of the dropped `combo_items` table. This lists
+// combos with their groups (by name) for the management grid. Read-only.
 //
-// The query joins:
-//   products (where product_type='combo')   -> parent rows
-//   combo_items                              -> link rows
-//   products (component side) + categories   -> component metadata
-//
-// We deliberately stay within plain Supabase reads (no RPC) since this is a
-// read-only listing surface.
+// `retail_price` surfaces combo_base_price (the "Bundle Set Price"); `base_price`
+// is the value anchor = Σ default-option component retail (the struck-through
+// "Value Price"). The richer min→max range is layered on in the card (Wave C).
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
 import type { Combo, ComboCategoryGroup, ComboComponent } from '../types.js';
 
-interface ComboParentRow {
-  id:           string;
-  name:         string;
-  sku:          string;
+interface OptionRow {
+  surcharge: number;
+  is_default: boolean;
+  sort_order: number;
+  component: { name: string; retail_price: number } | { name: string; retail_price: number }[] | null;
+}
+interface GroupRow {
+  id: string;
+  name: string;
+  sort_order: number;
+  combo_group_options: OptionRow[] | null;
+}
+interface ComboRow {
+  id: string;
+  name: string;
+  sku: string;
   retail_price: number;
-  is_active:    boolean;
-  image_url:    string | null;
+  combo_base_price: number | null;
+  is_active: boolean;
+  image_url: string | null;
+  combo_groups: GroupRow[] | null;
 }
 
-interface ComboItemRow {
-  parent_product_id:   string;
-  component_product_id: string;
-  quantity:            number;
-  sort_order:          number;
-}
-
-interface ComponentRow {
-  id:           string;
-  name:         string;
-  retail_price: number;
-  cost_price:   number;
-  category_id:  string;
-  categories:   { name: string } | { name: string }[] | null;
+function one<T>(v: T | T[] | null): T | null {
+  if (v === null) return null;
+  return Array.isArray(v) ? v[0] ?? null : v;
 }
 
 export function useCombos() {
@@ -45,97 +45,52 @@ export function useCombos() {
     queryKey: ['combos', 'list'] as const,
     staleTime: 60_000,
     queryFn: async () => {
-      const { data: parents, error: parentsErr } = await supabase
+      const { data, error } = await supabase
         .from('products')
-        .select('id, name, sku, retail_price, is_active, image_url')
+        .select(
+          'id, name, sku, retail_price, combo_base_price, is_active, image_url, ' +
+            'combo_groups ( id, name, sort_order, ' +
+            'combo_group_options ( surcharge, is_default, sort_order, component:products!component_product_id ( name, retail_price ) ) )',
+        )
         .eq('product_type', 'combo')
         .is('deleted_at', null)
         .order('name');
-      if (parentsErr) throw parentsErr;
-      const parentRows = (parents ?? []) as ComboParentRow[];
-      if (parentRows.length === 0) return [];
+      if (error) throw error;
+      const rows = (data ?? []) as unknown as ComboRow[];
 
-      const parentIds = parentRows.map((p) => p.id);
-
-      const { data: items, error: itemsErr } = await supabase
-        .from('combo_items')
-        .select('parent_product_id, component_product_id, quantity, sort_order')
-        .in('parent_product_id', parentIds)
-        .order('sort_order');
-      if (itemsErr) throw itemsErr;
-      const itemRows = (items ?? []) as ComboItemRow[];
-
-      const componentIds = Array.from(new Set(itemRows.map((i) => i.component_product_id)));
-      let componentRows: ComponentRow[] = [];
-      if (componentIds.length > 0) {
-        const { data: comps, error: compsErr } = await supabase
-          .from('products')
-          .select('id, name, retail_price, cost_price, category_id, categories:categories ( name )')
-          .in('id', componentIds);
-        if (compsErr) throw compsErr;
-        componentRows = (comps ?? []) as ComponentRow[];
-      }
-      const componentById = new Map(componentRows.map((c) => [c.id, c]));
-
-      const itemsByParent = new Map<string, ComboItemRow[]>();
-      for (const it of itemRows) {
-        const list = itemsByParent.get(it.parent_product_id) ?? [];
-        list.push(it);
-        itemsByParent.set(it.parent_product_id, list);
-      }
-
-      return parentRows.map((p) => {
-        const links = itemsByParent.get(p.id) ?? [];
-        const components: ComboComponent[] = links.map((l) => {
-          const c = componentById.get(l.component_product_id);
-          const categoryName = c === undefined
-            ? null
-            : Array.isArray(c.categories)
-              ? c.categories[0]?.name ?? null
-              : c.categories?.name ?? null;
-          return {
-            product_id:    l.component_product_id,
-            product_name:  c?.name ?? '—',
-            category_name: categoryName,
-            quantity:      Number(l.quantity),
-            sort_order:    l.sort_order,
-            upcharge:      0,
-          };
+      return rows.map((p) => {
+        const groupRows = [...(p.combo_groups ?? [])].sort((a, b) => a.sort_order - b.sort_order);
+        let valuePrice = 0;
+        const groups: ComboCategoryGroup[] = groupRows.map((g) => {
+          const opts = [...(g.combo_group_options ?? [])].sort((a, b) => a.sort_order - b.sort_order);
+          const components: ComboComponent[] = opts.map((o) => {
+            const comp = one(o.component);
+            return {
+              product_id: '',
+              product_name: comp?.name ?? '—',
+              category_name: g.name,
+              quantity: 1,
+              sort_order: o.sort_order,
+              upcharge: Number(o.surcharge),
+            };
+          });
+          const def = opts.find((o) => o.is_default) ?? opts[0];
+          if (def !== undefined) valuePrice += Number(one(def.component)?.retail_price ?? 0);
+          return { category_name: g.name, components };
         });
 
-        const base = components.reduce((acc, comp) => {
-          const c = componentById.get(comp.product_id);
-          if (c === undefined) return acc;
-          return acc + Number(c.retail_price) * comp.quantity;
-        }, 0);
-
-        const groups: ComboCategoryGroup[] = groupByCategory(components);
-
+        const base = Number(p.combo_base_price ?? p.retail_price);
         return {
-          id:           p.id,
-          name:         p.name,
-          sku:          p.sku,
-          retail_price: Number(p.retail_price),
-          base_price:   base,
-          is_active:    p.is_active,
-          image_url:    p.image_url,
+          id: p.id,
+          name: p.name,
+          sku: p.sku,
+          retail_price: base,
+          base_price: valuePrice,
+          is_active: p.is_active,
+          image_url: p.image_url,
           groups,
         } satisfies Combo;
       });
     },
   });
-}
-
-function groupByCategory(components: ReadonlyArray<ComboComponent>): ComboCategoryGroup[] {
-  const map = new Map<string, ComboComponent[]>();
-  for (const c of components) {
-    const key = c.category_name ?? 'Other';
-    const list = map.get(key) ?? [];
-    list.push(c);
-    map.set(key, list);
-  }
-  return Array.from(map.entries()).map(([name, list]) => ({
-    category_name: name,
-    components:    list,
-  }));
 }
