@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import type { CartItem } from '@breakery/domain';
 import { Button, Currency, QuantityStepper, cn, ComboLineRow } from '@breakery/ui';
 import { LineDiscountButton } from '@/features/discounts/components/LineDiscountButton';
-import { useComboItems } from '@/features/combos/hooks/useComboItems';
+import { useComboConfig } from '@/features/combos/hooks/useComboConfig';
 
 export interface CartItemRowProps {
   item: CartItem;
@@ -22,8 +22,13 @@ export interface CartItemRowProps {
 }
 
 function ComboCartItemRow({ item, locked, onChangeQty, onRemove }: Omit<CartItemRowProps, 'onApplyLineDiscount'>) {
-  const { data: comboItems = [] } = useComboItems(item.product_id);
-  const components = comboItems.map((ci) => ({ name: ci.product.name, quantity: ci.quantity }));
+  const { data: def } = useComboConfig(item.product_id);
+  // Flatten all default options across groups for the component summary display.
+  const components = (def?.groups ?? []).flatMap((g) =>
+    g.options
+      .filter((o) => o.is_default)
+      .map((o) => ({ name: o.label, quantity: 1 })),
+  );
   const lineTotal = item.unit_price * item.quantity;
 
   return (

@@ -49,12 +49,39 @@ vi.mock('@/lib/supabase', () => ({
   supabaseUrl: 'http://localhost:54321',
 }));
 
-vi.mock('@/features/combos/hooks/useComboItems', () => ({
-  useComboItems: () => ({
-    data: [
-      { component_product_id: 'prod-amer', quantity: 1, sort_order: 0, product: { id: 'prod-amer', name: 'Americano' } },
-      { component_product_id: 'prod-croi', quantity: 1, sort_order: 1, product: { id: 'prod-croi', name: 'Croissant' } },
-    ],
+vi.mock('@/features/combos/hooks/useComboConfig', () => ({
+  useComboConfig: () => ({
+    data: {
+      combo_product_id: 'prod-combo-001',
+      name: 'Breakfast Set',
+      base_price: 75000,
+      groups: [
+        {
+          id: 'g1',
+          name: 'Choose a drink',
+          group_type: 'single',
+          is_required: true,
+          min_select: 1,
+          max_select: 1,
+          sort_order: 0,
+          options: [
+            { id: 'prod-amer', component_product_id: 'prod-amer', label: 'Americano', surcharge: 0, is_default: true, sort_order: 0 },
+          ],
+        },
+        {
+          id: 'g2',
+          name: 'Choose a pastry',
+          group_type: 'single',
+          is_required: true,
+          min_select: 1,
+          max_select: 1,
+          sort_order: 1,
+          options: [
+            { id: 'prod-croi', component_product_id: 'prod-croi', label: 'Croissant', surcharge: 0, is_default: true, sort_order: 0 },
+          ],
+        },
+      ],
+    },
   }),
 }));
 
