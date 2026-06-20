@@ -234,15 +234,19 @@ BEGIN
         END IF;
       END IF;
 
-      -- Phase 2: modifier ingredient availability check (non-combo line)
+      -- Phase 2: modifier ingredient availability check (non-combo line).
+      -- The persist/deduct pass (below) resolves the SAME (product, modifiers, qty)
+      -- via the deterministic helper — keep the two resolves in lockstep.
       FOR v_ing IN
         SELECT * FROM jsonb_to_recordset(
           _resolve_modifier_ingredients_v1(v_product.id, v_item->'modifiers', v_quantity)
         ) AS x(product_id UUID, qty_base NUMERIC, unit TEXT, group_name TEXT, option_label TEXT)
       LOOP
+        -- Lock the ingredient row (mirror the combo component FOR UPDATE) so a
+        -- concurrent order cannot clear this availability gate and oversell.
         SELECT current_stock, is_display_item, COALESCE(track_inventory, true)
           INTO v_ing_stock, v_ing_is_display, v_ing_track
-          FROM products WHERE id = v_ing.product_id;
+          FROM products WHERE id = v_ing.product_id FOR UPDATE;
         IF v_ing_is_display THEN
           SELECT quantity INTO v_ing_stock FROM display_stock WHERE product_id = v_ing.product_id;
         END IF;
