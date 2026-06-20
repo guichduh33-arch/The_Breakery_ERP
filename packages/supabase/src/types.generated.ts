@@ -6214,7 +6214,7 @@ export type Database = {
       }
       findfuncs: { Args: { "": string }; Returns: string[] }
       finish: { Args: { exception_on_failure?: boolean }; Returns: string[] }
-      fire_counter_order_v3: {
+      fire_counter_order_v4: {
         Args: {
           p_client_uuid: string
           p_discount_authorized_by?: string

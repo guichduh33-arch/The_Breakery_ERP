@@ -27,7 +27,7 @@ vi.mock('sonner', () => ({
   Toaster: () => null,
 }));
 
-// Session 43 / P0-3 — the fire now persists via fire_counter_order_v3 first.
+// Session 43 / P0-3 — the fire now persists via fire_counter_order_v4 first.
 const { rpcMock } = vi.hoisted(() => ({ rpcMock: vi.fn() }));
 
 vi.mock('@/lib/supabase', () => ({
@@ -165,7 +165,7 @@ describe('SendToKitchenButton — fire to stations smoke', () => {
 
     // Session 43 / P0-3 — the order was persisted BEFORE printing.
     expect(rpcMock).toHaveBeenCalledTimes(1);
-    expect(rpcMock.mock.calls[0]![0]).toBe('fire_counter_order_v3');
+    expect(rpcMock.mock.calls[0]![0]).toBe('fire_counter_order_v4');
     expect(useCartStore.getState().pickedUpOrderId).toBe('order-db-1');
   });
 });

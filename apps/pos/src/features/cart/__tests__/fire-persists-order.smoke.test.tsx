@@ -1,7 +1,7 @@
 // apps/pos/src/features/cart/__tests__/fire-persists-order.smoke.test.tsx
 //
 // Session 43 / Wave C — P0-3 : le fire comptoir doit persister AVANT d'imprimer
-// (fire_counter_order_v3), et marquer les items locked+printed même si
+// (fire_counter_order_v4), et marquer les items locked+printed même si
 // l'imprimante échoue — la DB est la source de vérité ; un échec d'impression
 // ne doit plus laisser les items « non envoyés » (sinon re-fire = doublon DB).
 //
@@ -125,7 +125,7 @@ describe('useFireToStations persists before printing (P0-3)', () => {
     seedCart();
   });
 
-  it('calls fire_counter_order_v3 with ALL unprinted items, sets pickedUpOrderId, marks items even when print fails', async () => {
+  it('calls fire_counter_order_v4 with ALL unprinted items, sets pickedUpOrderId, marks items even when print fails', async () => {
     const { useFireToStations } = await import('../hooks/useFireToStations');
     const { result } = renderHook(() => useFireToStations(), { wrapper });
 
@@ -135,7 +135,7 @@ describe('useFireToStations persists before printing (P0-3)', () => {
 
     expect(rpcMock).toHaveBeenCalledTimes(1);
     const [fnName, args] = rpcMock.mock.calls[0] as [string, Record<string, unknown>];
-    expect(fnName).toBe('fire_counter_order_v3');
+    expect(fnName).toBe('fire_counter_order_v4');
     expect(args.p_session_id).toBe('sess-1');
     expect(args.p_order_id).toBeUndefined(); // create mode
     expect(args.p_table_number).toBe('T5');

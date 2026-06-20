@@ -2,7 +2,7 @@
 //
 // Session 34 / W4 — kitchen printer absent from map.
 // Session 43 / P0-3 — semantics updated: the fire persists the order via
-// fire_counter_order_v3 BEFORE printing, so ALL sent items are sealed
+// fire_counter_order_v4 BEFORE printing, so ALL sent items are sealed
 // (locked + printed) even when a station printer is unreachable — the ticket
 // lives in the DB/KDS and a re-fire would duplicate the order lines.
 //
@@ -29,7 +29,7 @@ vi.mock('sonner', () => ({
   Toaster: () => null,
 }));
 
-// Session 43 / P0-3 — the fire now persists via fire_counter_order_v3 first.
+// Session 43 / P0-3 — the fire now persists via fire_counter_order_v4 first.
 const { rpcMock } = vi.hoisted(() => ({ rpcMock: vi.fn() }));
 
 vi.mock('@/lib/supabase', () => ({

@@ -133,10 +133,10 @@ export function useFireToStations(): UseFireToStationsResult {
 
           fireClientUuidRef.current ??= crypto.randomUUID();
           const existingOrderId = useCartStore.getState().pickedUpOrderId;
-          // S44 P0-C(3) — fire_counter_order_v3 gates any line discount on an
+          // S44 P0-C(3) — fire_counter_order_v4 gates any line discount on an
           // authorizing manager. Hoist the first discounted line's authorizer.
           const fireAuthorizer = toPersist.find((i) => i.discount?.authorized_by)?.discount?.authorized_by;
-          const { data, error } = await supabase.rpc('fire_counter_order_v3', {
+          const { data, error } = await supabase.rpc('fire_counter_order_v4', {
             p_client_uuid: fireClientUuidRef.current,
             p_session_id: sessionId,
             p_items: toPersist.map((i) => ({

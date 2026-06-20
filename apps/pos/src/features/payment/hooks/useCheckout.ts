@@ -106,11 +106,11 @@ export function useCheckout() {
           if (appendUuidRef.current?.attempt !== idempotencyKey) {
             appendUuidRef.current = { attempt: idempotencyKey, uuid: crypto.randomUUID() };
           }
-          // S44 P0-C(3) — fire_counter_order_v3 gates any appended line discount
+          // S44 P0-C(3) — fire_counter_order_v4 gates any appended line discount
           // on an authorizing manager (sales.discount). Hoist the first
           // discounted line's authorizer so the gate sees the captured PIN holder.
           const appendAuthorizer = unsynced.find((i) => i.discount?.authorized_by)?.discount?.authorized_by;
-          const { error: appendErr } = await supabase.rpc('fire_counter_order_v3', {
+          const { error: appendErr } = await supabase.rpc('fire_counter_order_v4', {
             p_client_uuid: appendUuidRef.current.uuid,
             p_session_id: sessionId,
             p_items: unsynced.map((i) => ({
