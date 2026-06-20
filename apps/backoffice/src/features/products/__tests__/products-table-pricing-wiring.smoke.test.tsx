@@ -20,6 +20,7 @@ const MOCK_ROW: ProductRow = {
   sku:                      'PAS-CRO',
   category_id:              'cat-pastry',
   category_name:            'Pastry',
+  category_type:            'finished',
   retail_price:             18_000,
   wholesale_price:          null,
   cost_price:               5_500,

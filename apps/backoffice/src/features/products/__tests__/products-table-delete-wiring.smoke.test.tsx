@@ -20,6 +20,7 @@ const MOCK_ROW: ProductRow = {
   sku:                      'PAIN-CHO',
   category_id:              'cat-1',
   category_name:            'Bakery',
+  category_type:            'finished',
   retail_price:             20_000,
   wholesale_price:          null,
   cost_price:               6_000,
