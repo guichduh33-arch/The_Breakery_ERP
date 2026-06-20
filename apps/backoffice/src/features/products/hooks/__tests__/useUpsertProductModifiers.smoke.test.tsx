@@ -42,11 +42,11 @@ describe('useUpsertProductModifiers', () => {
     expect(rpc).toHaveBeenCalledWith('upsert_product_modifiers_v1', expect.objectContaining({
       p_product_id: 'prod-1',
     }));
-    const arg = rpc.mock.calls[0][1] as { p_groups: Array<Record<string, unknown>> };
-    expect(arg.p_groups[0].group_name).toBe('Milk');
-    expect(arg.p_groups[0].group_sort_order).toBe(0);
-    const opts = arg.p_groups[0].options as Array<Record<string, unknown>>;
-    expect(opts[1].ingredients_to_deduct).toEqual([{ product_id: 'oat', qty: 30, unit: 'ml' }]);
+    const arg = rpc.mock.calls[0]![1] as { p_groups: Array<Record<string, unknown>> };
+    expect(arg.p_groups[0]!.group_name).toBe('Milk');
+    expect(arg.p_groups[0]!.group_sort_order).toBe(0);
+    const opts = arg.p_groups[0]!.options as Array<Record<string, unknown>>;
+    expect(opts[1]!.ingredients_to_deduct).toEqual([{ product_id: 'oat', qty: 30, unit: 'ml' }]);
   });
 
   it('throws on RPC error', async () => {
