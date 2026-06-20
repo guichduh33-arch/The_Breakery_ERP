@@ -95,6 +95,17 @@ vi.mock('@/features/products/hooks/useCorrectCostPrice.js', () => ({
   }),
 }));
 
+// ModifierCostBreakdown (mounted by CostingPanel) pulls these two hooks, which
+// import the real supabase client. Mock them empty so the breakdown renders
+// null and these T1–T3 assertions stay isolated to the base panel.
+vi.mock('@/features/products/hooks/useProductModifiersAdmin.js', () => ({
+  useProductModifiersAdmin: (_productId: string) => ({ data: [], isLoading: false }),
+}));
+
+vi.mock('@/features/purchasing/hooks/useAllProductsForPO.js', () => ({
+  useAllProductsForPO: () => ({ data: [], isLoading: false }),
+}));
+
 // ── Product fixture ───────────────────────────────────────────────────────────
 
 const PRODUCT = {

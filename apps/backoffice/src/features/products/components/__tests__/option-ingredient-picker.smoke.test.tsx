@@ -6,8 +6,8 @@ import type { ModifierIngredient } from '@breakery/domain';
 vi.mock('@/features/purchasing/hooks/useAllProductsForPO.js', () => ({
   useAllProductsForPO: () => ({
     data: [
-      { id: 'oat', name: 'Oat Milk', unit: 'ml', unitOptions: [{ code: 'ml', factor: 1 }, { code: 'L', factor: 1000 }] },
-      { id: 'sugar', name: 'Sugar', unit: 'g', unitOptions: [{ code: 'g', factor: 1 }] },
+      { id: 'oat', name: 'Oat Milk', unit: 'ml', cost_price: 50, unitOptions: [{ code: 'ml', factor: 1 }, { code: 'L', factor: 1000 }] },
+      { id: 'sugar', name: 'Sugar', unit: 'g', cost_price: 10, unitOptions: [{ code: 'g', factor: 1 }] },
     ],
     isLoading: false,
   }),
@@ -39,5 +39,15 @@ describe('OptionIngredientPicker', () => {
     render(<OptionIngredientPicker value={value} onChange={onChange} />);
     fireEvent.click(screen.getByRole('button', { name: /remove ingredient/i }));
     expect(onChange).toHaveBeenCalledWith([]);
+  });
+
+  it('shows the per-option material cost (Σ qty × factor × cost_price)', () => {
+    // 30 ml oat × 50 + 4 g sugar × 10 = 1500 + 40 = 1540 → "Rp 1.540" (id-ID)
+    const value: ModifierIngredient[] = [
+      { product_id: 'oat', qty: 30, unit: 'ml' },
+      { product_id: 'sugar', qty: 4, unit: 'g' },
+    ];
+    render(<OptionIngredientPicker value={value} onChange={() => {}} />);
+    expect(screen.getByTestId('option-material-cost').textContent).toContain('1.540');
   });
 });

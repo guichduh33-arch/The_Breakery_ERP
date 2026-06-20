@@ -52,6 +52,7 @@ import { useUpsertRecipe, UpsertRecipeError } from '../hooks/useUpsertRecipe.js'
 import { useDeactivateRecipe } from '../hooks/useDeactivateRecipe.js';
 import { useFinishedProducts } from '../hooks/useFinishedProducts.js';
 import { useReorderRecipeRows } from '../hooks/useReorderRecipeRows.js';
+import { useUnits, eligibleRecipeUnits } from '../hooks/useUnits.js';
 import { RecipeVersionHistory } from './RecipeVersionHistory.js';
 import { RecipeCostPreviewCard } from './RecipeCostPreviewCard.js';
 import { RecipeDuplicateModal } from './RecipeDuplicateModal.js';
@@ -68,8 +69,6 @@ export interface RecipeEditorProps {
   productId: string | null;
   onProductChange: (productId: string | null) => void;
 }
-
-const UNIT_OPTIONS = ['g', 'kg', 'mg', 'mL', 'L', 'pcs'] as const;
 
 // Bound to the module-level supabase client. IngredientPicker owns its own
 // 200ms debounce + abort logic ; this thunk only wraps the RPC.
@@ -105,6 +104,7 @@ export default function RecipeEditor({ productId, onProductChange }: RecipeEdito
   const upsertMut = useUpsertRecipe();
   const deactivateMut = useDeactivateRecipe();
   const reorderMut = useReorderRecipeRows();
+  const { data: allUnits = [] } = useUnits();
 
   // Picker integration : we manage the selected material via state populated
   // by IngredientPicker's `onChange`. The picker fetches results live via
@@ -112,11 +112,19 @@ export default function RecipeEditor({ productId, onProductChange }: RecipeEdito
   const [materialId, setMaterialId] = useState<string | null>(null);
   const [materialUnit, setMaterialUnit] = useState<string>('kg');
   const [qtyStr, setQtyStr] = useState('');
-  const [unit, setUnit] = useState<string>('g');
+  const [unit, setUnit] = useState<string>('gr');
   const [notes, setNotes] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
   const [duplicateOpen, setDuplicateOpen] = useState(false);
   const [targetFlourStr, setTargetFlourStr] = useState('1000');
+
+  // Recipe-line units offered for the picked material: every registry unit
+  // sharing the material's dimension (kg-based → mg/g/gr/kg), sourced from the
+  // central units table. Replaces the old hardcoded list that offered g/mL/L.
+  const eligibleUnits = useMemo(
+    () => eligibleRecipeUnits(materialUnit, allUnits),
+    [materialUnit, allUnits],
+  );
 
   // Baker's-percentage mode (spec §D13). The flag is read from the DB per
   // product ; toggling flips ALL active rows. The preview is debounced so
@@ -412,9 +420,10 @@ export default function RecipeEditor({ productId, onProductChange }: RecipeEdito
                     setMaterialId(id);
                     if (row !== null) {
                       setMaterialUnit(row.unit);
-                      // Default the row unit to the material's stock unit when
-                      // the user hasn't typed anything yet.
-                      if (qtyStr === '') setUnit(row.unit);
+                      // Reset the row unit to the material's stock unit on pick,
+                      // so the chosen unit is always valid for this material
+                      // (its dimension drives the dropdown options below).
+                      setUnit(row.unit);
                     }
                   }}
                   searchFn={searchFn}
@@ -452,7 +461,7 @@ export default function RecipeEditor({ productId, onProductChange }: RecipeEdito
                   className="mt-1 h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm"
                   value={unit} onChange={(e) => setUnit(e.target.value)}
                 >
-                  {UNIT_OPTIONS.map((u) => <option key={u} value={u}>{u}</option>)}
+                  {eligibleUnits.map((u) => <option key={u} value={u}>{u}</option>)}
                 </select>
               </div>
               <div className="col-span-3">

@@ -5077,6 +5077,36 @@ export type Database = {
         }
         Relationships: []
       }
+      units: {
+        Row: {
+          code: string
+          created_at: string
+          dimension: string
+          factor_to_canonical: number | null
+          is_active: boolean
+          label: string
+          sort_order: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          dimension: string
+          factor_to_canonical?: number | null
+          is_active?: boolean
+          label: string
+          sort_order?: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          dimension?: string
+          factor_to_canonical?: number | null
+          is_active?: boolean
+          label?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       user_permission_overrides: {
         Row: {
           expires_at: string | null
