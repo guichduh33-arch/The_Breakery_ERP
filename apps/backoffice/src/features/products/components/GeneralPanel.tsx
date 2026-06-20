@@ -10,10 +10,11 @@
 // are kept editable visually so the form layout review is meaningful, but
 // the Save action is disabled at the page level.
 
-import { ShoppingCart, Sparkles, Star, TrendingUp } from 'lucide-react';
+import { ShoppingCart, Sparkles, TrendingUp } from 'lucide-react';
 import { useEffect, useState, type JSX } from 'react';
 import { Card, Currency, Input, SectionLabel } from '@breakery/ui';
 import type { CategoryOption, ProductRow } from '../types.js';
+import { ProductImageUploader } from './ProductImageUploader.js';
 
 interface Props {
   product: ProductRow;
@@ -108,18 +109,12 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
               High Resolution
             </span>
           </div>
-          <div className="flex aspect-[16/9] w-full items-center justify-center rounded-lg border border-dashed border-border-subtle bg-bg-overlay text-text-muted">
-            {draft.image_url === null ? (
-              <div className="flex flex-col items-center gap-2 text-center">
-                <Star className="h-10 w-10 text-gold" aria-hidden />
-                <div className="font-display text-base text-text-primary">Digital Canvas</div>
-                <div className="text-xs uppercase tracking-widest">Drag and drop or click to upload</div>
-              </div>
-            ) : (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={draft.image_url} alt={draft.name} className="h-full w-full rounded-lg object-cover" />
-            )}
-          </div>
+          <ProductImageUploader
+            productId={draft.id}
+            imageUrl={draft.image_url}
+            readOnly={readOnly}
+            onChange={(url) => update('image_url', url)}
+          />
         </Card>
 
         <Card padding="md">
