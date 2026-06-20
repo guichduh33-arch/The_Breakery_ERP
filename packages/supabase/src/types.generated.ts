@@ -2202,6 +2202,7 @@ export type Database = {
           is_promo_gift: boolean
           kitchen_status: string
           line_total: number
+          modifier_ingredients_deducted: Json | null
           modifiers: Json
           modifiers_total: number
           name_snapshot: string
@@ -2234,6 +2235,7 @@ export type Database = {
           is_promo_gift?: boolean
           kitchen_status?: string
           line_total: number
+          modifier_ingredients_deducted?: Json | null
           modifiers?: Json
           modifiers_total?: number
           name_snapshot: string
@@ -2266,6 +2268,7 @@ export type Database = {
           is_promo_gift?: boolean
           kitchen_status?: string
           line_total?: number
+          modifier_ingredients_deducted?: Json | null
           modifiers?: Json
           modifiers_total?: number
           name_snapshot?: string
@@ -6717,6 +6720,7 @@ export type Database = {
           is_promo_gift: boolean
           kitchen_status: string
           line_total: number
+          modifier_ingredients_deducted: Json | null
           modifiers: Json
           modifiers_total: number
           name_snapshot: string
@@ -6762,6 +6766,7 @@ export type Database = {
           is_promo_gift: boolean
           kitchen_status: string
           line_total: number
+          modifier_ingredients_deducted: Json | null
           modifiers: Json
           modifiers_total: number
           name_snapshot: string
@@ -6803,6 +6808,7 @@ export type Database = {
           is_promo_gift: boolean
           kitchen_status: string
           line_total: number
+          modifier_ingredients_deducted: Json | null
           modifiers: Json
           modifiers_total: number
           name_snapshot: string
@@ -6847,6 +6853,7 @@ export type Database = {
           is_promo_gift: boolean
           kitchen_status: string
           line_total: number
+          modifier_ingredients_deducted: Json | null
           modifiers: Json
           modifiers_total: number
           name_snapshot: string
@@ -7328,6 +7335,7 @@ export type Database = {
           is_promo_gift: boolean
           kitchen_status: string
           line_total: number
+          modifier_ingredients_deducted: Json | null
           modifiers: Json
           modifiers_total: number
           name_snapshot: string
