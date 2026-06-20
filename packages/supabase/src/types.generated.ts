@@ -5661,6 +5661,10 @@ export type Database = {
         Args: { p_product_id: string; p_quantity_needed: number }
         Returns: string
       }
+      _resolve_modifier_ingredients_v1: {
+        Args: { p_line_qty: number; p_modifiers: Json; p_product_id: string }
+        Returns: Json
+      }
       _retval: { Args: { "": string }; Returns: string }
       _revoke_user_sessions_v1: {
         Args: { p_profile_id: string }
@@ -5921,7 +5925,7 @@ export type Database = {
             }
             Returns: string
           }
-      complete_order_with_payment_v13: {
+      complete_order_with_payment_v14: {
         Args: {
           p_customer_id?: string
           p_discount_amount?: number
