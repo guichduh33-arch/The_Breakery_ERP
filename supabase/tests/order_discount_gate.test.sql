@@ -1,5 +1,5 @@
 -- supabase/tests/order_discount_gate.test.sql
--- S37 Wave A Task A1 (SEC-01/02/05) — complete_order_with_payment_v12 :
+-- S37 Wave A Task A1 (SEC-01/02/05) — complete_order_with_payment_v14 :
 --   discount gate (authorité + PIN), réconciliation unit_price, audits.
 -- Exécuter via MCP execute_sql (BEGIN..ROLLBACK).
 BEGIN;
@@ -56,7 +56,7 @@ END $$;
 
 -- T1 : discount > 0 sans authorized_by → exception P0001
 SELECT throws_ok(
-  $$ SELECT complete_order_with_payment_v12(
+  $$ SELECT complete_order_with_payment_v14(
        p_session_id := current_setting('breakery.v_sess')::uuid,
        p_order_type := 'take_out'::order_type,
        p_items := jsonb_build_array(jsonb_build_object('product_id', current_setting('breakery.v_prod'), 'quantity', 1, 'unit_price', 20000)),
@@ -66,7 +66,7 @@ SELECT throws_ok(
 
 -- T2 : authorized_by sans sales.discount → P0003
 SELECT throws_ok(
-  $$ SELECT complete_order_with_payment_v12(
+  $$ SELECT complete_order_with_payment_v14(
        p_session_id := current_setting('breakery.v_sess')::uuid,
        p_order_type := 'take_out'::order_type,
        p_items := jsonb_build_array(jsonb_build_object('product_id', current_setting('breakery.v_prod'), 'quantity', 1, 'unit_price', 20000)),
@@ -79,7 +79,7 @@ SELECT throws_ok(
 -- T3 : authorizer valide + bon PIN → succès + audit order.discount_applied
 DO $$ DECLARE v_res JSONB; v_oid UUID; v_audit INT;
 BEGIN
-  v_res := complete_order_with_payment_v12(
+  v_res := complete_order_with_payment_v14(
     p_session_id := current_setting('breakery.v_sess')::uuid,
     p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(jsonb_build_object('product_id', current_setting('breakery.v_prod'), 'quantity', 1, 'unit_price', 20000)),
@@ -100,7 +100,7 @@ SELECT is(current_setting('breakery.t3_audit'), 'true', 'T3 emits one order.disc
 
 -- T4 : mauvais PIN → P0003
 SELECT throws_ok(
-  $$ SELECT complete_order_with_payment_v12(
+  $$ SELECT complete_order_with_payment_v14(
        p_session_id := current_setting('breakery.v_sess')::uuid,
        p_order_type := 'take_out'::order_type,
        p_items := jsonb_build_array(jsonb_build_object('product_id', current_setting('breakery.v_prod'), 'quantity', 1, 'unit_price', 20000)),
@@ -113,7 +113,7 @@ SELECT throws_ok(
 -- T5 : pas de discount → pas de PIN requis → succès
 DO $$ DECLARE v_res JSONB;
 BEGIN
-  v_res := complete_order_with_payment_v12(
+  v_res := complete_order_with_payment_v14(
     p_session_id := current_setting('breakery.v_sess')::uuid,
     p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(jsonb_build_object('product_id', current_setting('breakery.v_prod'), 'quantity', 1, 'unit_price', 20000)),
@@ -125,7 +125,7 @@ SELECT is(current_setting('breakery.t5_ok'), 'true', 'T5 no-discount sale needs 
 -- T6 : unit_price client 15000 < retail 20000 sans override → serveur force 20000 + audit
 DO $$ DECLARE v_res JSONB; v_oid UUID; v_persisted NUMERIC; v_audit INT;
 BEGIN
-  v_res := complete_order_with_payment_v12(
+  v_res := complete_order_with_payment_v14(
     p_session_id := current_setting('breakery.v_sess')::uuid,
     p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(jsonb_build_object('product_id', current_setting('breakery.v_prod'), 'quantity', 1, 'unit_price', 15000)),
@@ -143,7 +143,7 @@ SELECT is(current_setting('breakery.t6_audit'), 'true', 'T6 emits order.price_ov
 -- T7 : gift line avec promotion déclarée → prix 0 respecté
 DO $$ DECLARE v_res JSONB; v_oid UUID; v_gift_price NUMERIC;
 BEGIN
-  v_res := complete_order_with_payment_v12(
+  v_res := complete_order_with_payment_v14(
     p_session_id := current_setting('breakery.v_sess')::uuid,
     p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(
@@ -162,7 +162,7 @@ SELECT is(current_setting('breakery.t7_ok'), 'true', 'T7 declared gift line keep
 
 -- T8 : gift line SANS promotion déclarée → check_violation
 SELECT throws_ok(
-  $$ SELECT complete_order_with_payment_v12(
+  $$ SELECT complete_order_with_payment_v14(
        p_session_id := current_setting('breakery.v_sess')::uuid,
        p_order_type := 'take_out'::order_type,
        p_items := jsonb_build_array(

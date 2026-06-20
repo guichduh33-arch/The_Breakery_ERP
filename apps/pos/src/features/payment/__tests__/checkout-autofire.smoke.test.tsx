@@ -166,7 +166,7 @@ describe('PaymentTerminal — checkout auto-fires unprinted items', () => {
 
     // fireToStations was called with the resolved order_number, in printOnly
     // mode (S43 P0-3): the order already exists in DB — the auto-fire must
-    // NOT call fire_counter_order_v3 (orphan order / append-to-paid → P0002).
+    // NOT call fire_counter_order_v4 (orphan order / append-to-paid → P0002).
     const callArg = fireToStationsMock.mock.calls[0]![0] as { orderNumber: string; printOnly?: boolean };
     expect(callArg.orderNumber).toBe('ORD-042');
     expect(callArg.printOnly).toBe(true);

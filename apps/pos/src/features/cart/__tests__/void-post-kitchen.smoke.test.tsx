@@ -4,7 +4,7 @@
 // Session 37 — B4: void routing after kitchen send.
 //
 // S43 P0-3 update: "send to kitchen" now PERSISTS counter orders via
-// fire_counter_order_v3 and sets cartStore.pickedUpOrderId — a fired counter
+// fire_counter_order_v4 and sets cartStore.pickedUpOrderId — a fired counter
 // order therefore has a server orders row, exactly like a tablet pickup
 // (create_tablet_order_v2). Void routing keys solely on pickedUpOrderId.
 //

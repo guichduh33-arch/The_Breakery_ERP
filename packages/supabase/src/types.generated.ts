@@ -2202,6 +2202,7 @@ export type Database = {
           is_promo_gift: boolean
           kitchen_status: string
           line_total: number
+          modifier_ingredients_deducted: Json | null
           modifiers: Json
           modifiers_total: number
           name_snapshot: string
@@ -2234,6 +2235,7 @@ export type Database = {
           is_promo_gift?: boolean
           kitchen_status?: string
           line_total: number
+          modifier_ingredients_deducted?: Json | null
           modifiers?: Json
           modifiers_total?: number
           name_snapshot: string
@@ -2266,6 +2268,7 @@ export type Database = {
           is_promo_gift?: boolean
           kitchen_status?: string
           line_total?: number
+          modifier_ingredients_deducted?: Json | null
           modifiers?: Json
           modifiers_total?: number
           name_snapshot?: string
@@ -5658,6 +5661,10 @@ export type Database = {
         Args: { p_product_id: string; p_quantity_needed: number }
         Returns: string
       }
+      _resolve_modifier_ingredients_v1: {
+        Args: { p_line_qty: number; p_modifiers: Json; p_product_id: string }
+        Returns: Json
+      }
       _retval: { Args: { "": string }; Returns: string }
       _revoke_user_sessions_v1: {
         Args: { p_profile_id: string }
@@ -5918,7 +5925,7 @@ export type Database = {
             }
             Returns: string
           }
-      complete_order_with_payment_v13: {
+      complete_order_with_payment_v14: {
         Args: {
           p_customer_id?: string
           p_discount_amount?: number
@@ -6207,7 +6214,7 @@ export type Database = {
       }
       findfuncs: { Args: { "": string }; Returns: string[] }
       finish: { Args: { exception_on_failure?: boolean }; Returns: string[] }
-      fire_counter_order_v3: {
+      fire_counter_order_v4: {
         Args: {
           p_client_uuid: string
           p_discount_authorized_by?: string
@@ -6717,6 +6724,7 @@ export type Database = {
           is_promo_gift: boolean
           kitchen_status: string
           line_total: number
+          modifier_ingredients_deducted: Json | null
           modifiers: Json
           modifiers_total: number
           name_snapshot: string
@@ -6762,6 +6770,7 @@ export type Database = {
           is_promo_gift: boolean
           kitchen_status: string
           line_total: number
+          modifier_ingredients_deducted: Json | null
           modifiers: Json
           modifiers_total: number
           name_snapshot: string
@@ -6803,6 +6812,7 @@ export type Database = {
           is_promo_gift: boolean
           kitchen_status: string
           line_total: number
+          modifier_ingredients_deducted: Json | null
           modifiers: Json
           modifiers_total: number
           name_snapshot: string
@@ -6847,6 +6857,7 @@ export type Database = {
           is_promo_gift: boolean
           kitchen_status: string
           line_total: number
+          modifier_ingredients_deducted: Json | null
           modifiers: Json
           modifiers_total: number
           name_snapshot: string
@@ -6929,7 +6940,7 @@ export type Database = {
       pass:
         | { Args: never; Returns: string }
         | { Args: { "": string }; Returns: string }
-      pay_existing_order_v9: {
+      pay_existing_order_v10: {
         Args: {
           p_customer_id?: string
           p_discount_amount?: number
@@ -7191,7 +7202,7 @@ export type Database = {
       refresh_mv_pl_monthly: { Args: never; Returns: undefined }
       refresh_mv_sales_daily: { Args: never; Returns: undefined }
       refresh_mv_stock_variance: { Args: never; Returns: undefined }
-      refund_order_rpc_v3: {
+      refund_order_rpc_v4: {
         Args: {
           p_acting_auth_user_id: string
           p_authorized_by: string
@@ -7328,6 +7339,7 @@ export type Database = {
           is_promo_gift: boolean
           kitchen_status: string
           line_total: number
+          modifier_ingredients_deducted: Json | null
           modifiers: Json
           modifiers_total: number
           name_snapshot: string
@@ -7535,7 +7547,7 @@ export type Database = {
         Args: { p_pin: string; p_user_id: string }
         Returns: boolean
       }
-      void_order_rpc_v2: {
+      void_order_rpc_v3: {
         Args: {
           p_acting_auth_user_id: string
           p_authorized_by: string

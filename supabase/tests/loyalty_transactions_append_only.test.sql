@@ -34,7 +34,7 @@ BEGIN
     VALUES (v_prof, 0, 'open') RETURNING id INTO v_sess;
   INSERT INTO customers (name, customer_type) VALUES ('S37 Loyalty Sanity','retail') RETURNING id INTO v_cust;
 
-  v_res := complete_order_with_payment_v12(
+  v_res := complete_order_with_payment_v14(
     p_session_id := v_sess,
     p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(jsonb_build_object('product_id', v_prod, 'quantity', 1, 'unit_price', 50000)),

@@ -5,7 +5,7 @@ import type { Cart, PaymentInput, PaymentResult } from '@breakery/domain';
 import { buildOrderPayload } from '@breakery/domain';
 import type { Database, Json } from '@breakery/supabase';
 
-type PayExistingOrderArgs = Database['public']['Functions']['pay_existing_order_v9']['Args'];
+type PayExistingOrderArgs = Database['public']['Functions']['pay_existing_order_v10']['Args'];
 
 /** Wire-format row sent as `p_promotions` to RPC v7 / v4 (§3.6). */
 interface PromotionWirePayload {
@@ -66,7 +66,7 @@ export function useCheckout() {
       const { pickedUpOrderId, appliedPromotions } = cartState;
 
       // S44 P0-C(2) — the loyalty multiplier is resolved server-side now
-      // (complete_order_with_payment_v13 / pay_existing_order_v9). The client no
+      // (complete_order_with_payment_v13 / pay_existing_order_v10). The client no
       // longer computes or forwards it.
 
       // Session 9 — both branches forward applied promotions to the server,
@@ -106,11 +106,11 @@ export function useCheckout() {
           if (appendUuidRef.current?.attempt !== idempotencyKey) {
             appendUuidRef.current = { attempt: idempotencyKey, uuid: crypto.randomUUID() };
           }
-          // S44 P0-C(3) — fire_counter_order_v3 gates any appended line discount
+          // S44 P0-C(3) — fire_counter_order_v4 gates any appended line discount
           // on an authorizing manager (sales.discount). Hoist the first
           // discounted line's authorizer so the gate sees the captured PIN holder.
           const appendAuthorizer = unsynced.find((i) => i.discount?.authorized_by)?.discount?.authorized_by;
-          const { error: appendErr } = await supabase.rpc('fire_counter_order_v3', {
+          const { error: appendErr } = await supabase.rpc('fire_counter_order_v4', {
             p_client_uuid: appendUuidRef.current.uuid,
             p_session_id: sessionId,
             p_items: unsynced.map((i) => ({
@@ -118,7 +118,7 @@ export function useCheckout() {
               quantity: i.quantity,
               unit_price: i.unit_price,
               modifiers: i.modifiers,
-              // S47 — combo lines persist their components so pay_existing_order_v9
+              // S47 — combo lines persist their components so pay_existing_order_v10
               // deducts each component's stock at payment.
               ...(i.combo_components ? { combo_components: i.combo_components } : {}),
               ...(i.discount ? { discount_amount: i.discount.amount } : {}),
@@ -163,7 +163,7 @@ export function useCheckout() {
         }
         // S37 — v8 returns a jsonb envelope: the POS finally shows the REAL
         // pickup total instead of the hardcoded 0 (POS-01).
-        const { error, data } = await supabase.rpc('pay_existing_order_v9', args as PayExistingOrderArgs);
+        const { error, data } = await supabase.rpc('pay_existing_order_v10', args as PayExistingOrderArgs);
         if (error) throw Object.assign(new Error(error.message), { details: error });
         const envelope = data as unknown as {
           order_id: string;
