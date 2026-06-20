@@ -90,6 +90,7 @@ const GROUPS: NavGroup[] = [
     label: 'Stock Management',
     items: [
       { to: '/backoffice/products', label: 'Products', icon: Package, end: true },
+      { to: '/backoffice/products/combos', label: 'Combos', icon: Layers3, permission: 'combos.read', indent: 1 },
       { to: '/backoffice/categories', label: 'Product Categories', icon: Tag, permission: 'categories.read', indent: 1 },
       { to: '/backoffice/inventory', label: 'Stock & Inventory', icon: Boxes, permission: 'inventory.read', end: true },
       { to: '/backoffice/inventory/incoming', label: 'Incoming', icon: PackagePlus, permission: 'inventory.receive', indent: 1 },

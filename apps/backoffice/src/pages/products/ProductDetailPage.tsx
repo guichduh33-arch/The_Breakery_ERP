@@ -19,6 +19,7 @@ import { PurchasePanel } from '@/features/products/components/PurchasePanel.js';
 import { HistoryPanel } from '@/features/products/components/HistoryPanel.js';
 import { UnitsPanel } from '@/features/products/components/UnitsPanel.js';
 import { VariantsPanel } from '@/features/products/components/VariantsPanel.js';
+import { ModifiersPanel } from '@/features/products/components/ModifiersPanel.js';
 import { useCategories } from '@/features/products/hooks/useCategories.js';
 import { useProductDetail } from '@/features/products/hooks/useProductDetail.js';
 import { useProductDisplayStock } from '@/features/products/hooks/useProductDisplayStock.js';
@@ -140,6 +141,7 @@ export default function ProductDetailPage(): JSX.Element {
             }}
           />
         )}
+        {tab === 'modifiers' && <ModifiersPanel product={{ id: p.id }} />}
         {tab === 'costing' && (
           <CostingPanel product={p} />
         )}

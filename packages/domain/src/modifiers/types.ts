@@ -78,3 +78,40 @@ export interface ProductModifierRow {
   is_default: boolean;
   is_active: boolean;
 }
+
+/**
+ * One raw-material deduction line attached to a modifier option.
+ * Stored in `product_modifiers.ingredients_to_deduct` (JSONB).
+ * Consumed by the money-path RPCs in Phase 2 (currently inert).
+ */
+export interface ModifierIngredient {
+  product_id: string;
+  qty: number;
+  unit: string;
+}
+
+/** Editable option shape used by the Backoffice modifiers editor. */
+export interface EditableModifierOption {
+  option_label: string;
+  price_adjustment: number;
+  is_default: boolean;
+  option_sort_order: number;
+  ingredients_to_deduct: ModifierIngredient[];
+}
+
+/** Editable group shape used by the Backoffice modifiers editor. */
+export interface EditableModifierGroup {
+  group_name: string;
+  group_type: ModifierGroupType;
+  group_required: boolean;
+  group_sort_order: number;
+  options: EditableModifierOption[];
+}
+
+/**
+ * `product_modifiers` row including the raw JSONB `ingredients_to_deduct`
+ * column (not present on the POS-facing `ProductModifierRow`).
+ */
+export interface AdminProductModifierRow extends ProductModifierRow {
+  ingredients_to_deduct: unknown;
+}

@@ -73,6 +73,7 @@ const ALL_PERMS = [
   'purchasing.po.read',
   'suppliers.read',
   'categories.read',
+  'combos.read',
   'inventory.read',
   'inventory.receive',
   'expenses.read',
@@ -181,6 +182,22 @@ describe('Sidebar', () => {
     expect(screen.getByRole('link', { name: /^Incoming$/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /^Transfers$/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /^Expiring stock$/i })).toBeInTheDocument();
+  });
+
+  it('renders the Combos link under Stock Management gated on combos.read (S48)', () => {
+    openAllTopGroups();
+    setAuthState(ALL_PERMS);
+    renderWith(<Sidebar />);
+    const combos = screen.getByRole('link', { name: /^Combos$/i });
+    expect(combos).toBeInTheDocument();
+    expect(combos).toHaveAttribute('href', '/backoffice/products/combos');
+  });
+
+  it('hides the Combos link when combos.read is missing (S48)', () => {
+    openAllTopGroups();
+    setAuthState(ALL_PERMS.filter((p) => p !== 'combos.read'));
+    renderWith(<Sidebar />);
+    expect(screen.queryByRole('link', { name: /^Combos$/i })).toBeNull();
   });
 
   it('renders Dashboard link as active when on /backoffice', () => {

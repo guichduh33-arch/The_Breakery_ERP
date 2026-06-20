@@ -81,6 +81,7 @@ export type ProductDetailTab =
   | 'units'
   | 'recipe'
   | 'variants'
+  | 'modifiers'
   | 'costing'
   | 'purchase'
   | 'history';
