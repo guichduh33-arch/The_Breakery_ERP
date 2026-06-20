@@ -40,7 +40,7 @@ describe('ModifierGroupCard', () => {
     const onChange = vi.fn();
     render(<ModifierGroupCard group={GROUP} onChange={onChange} onRemove={() => {}} />);
     fireEvent.click(screen.getByRole('button', { name: /add option/i }));
-    const next = onChange.mock.calls[0][0] as EditableModifierGroup;
+    const next = onChange.mock.calls[0]![0] as EditableModifierGroup;
     expect(next.options).toHaveLength(3);
   });
 
@@ -48,8 +48,8 @@ describe('ModifierGroupCard', () => {
     const onChange = vi.fn();
     render(<ModifierGroupCard group={GROUP} onChange={onChange} onRemove={() => {}} />);
     const radios = screen.getAllByRole('radio');
-    fireEvent.click(radios[1]); // make "Oat" the default
-    const next = onChange.mock.calls[0][0] as EditableModifierGroup;
+    fireEvent.click(radios[1]!); // make "Oat" the default
+    const next = onChange.mock.calls[0]![0] as EditableModifierGroup;
     expect(next.options.filter((o) => o.is_default).map((o) => o.option_label)).toEqual(['Oat']);
   });
 

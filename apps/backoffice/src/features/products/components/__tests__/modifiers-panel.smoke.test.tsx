@@ -62,8 +62,8 @@ describe('ModifiersPanel', () => {
     render(<ModifiersPanel product={{ id: 'p1' }} />);
     fireEvent.click(screen.getByRole('button', { name: /^save/i }));
     await waitFor(() => expect(mutate).toHaveBeenCalledTimes(1));
-    const groups = mutate.mock.calls[0][0] as EditableModifierGroup[];
-    expect(groups[0].group_name).toBe('Milk');
+    const groups = mutate.mock.calls[0]![0] as EditableModifierGroup[];
+    expect(groups[0]!.group_name).toBe('Milk');
   });
 
   it('hides Save without products.modifiers.update', () => {

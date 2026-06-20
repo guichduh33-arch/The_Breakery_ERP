@@ -29,7 +29,7 @@ describe('OptionIngredientPicker', () => {
     render(<OptionIngredientPicker value={[]} onChange={onChange} />);
     fireEvent.click(screen.getByRole('button', { name: /add ingredient/i }));
     expect(onChange).toHaveBeenCalledTimes(1);
-    const next = onChange.mock.calls[0][0] as ModifierIngredient[];
+    const next = onChange.mock.calls[0]![0] as ModifierIngredient[];
     expect(next).toHaveLength(1);
   });
 
