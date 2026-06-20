@@ -74,7 +74,39 @@ BEGIN
   PERFORM set_config('p2.fire1', r->>'order_id', false);
 END $$;
 
-SELECT plan(9);
+-- capture the post-fire / pre-pay state (the pay blocks below mutate it)
+DO $$
+BEGIN
+  PERFORM set_config('p2.fire_snapshot',
+    (SELECT (modifier_ingredients_deducted->0->>'qty_base')
+       FROM order_items WHERE order_id = current_setting('p2.fire1')::uuid), false);
+  PERFORM set_config('p2.fire_oat2_mv',
+    (SELECT count(*)::text FROM stock_movements
+       WHERE product_id = '00000000-0000-0000-0000-0000000000a2' AND movement_type = 'sale'), false);
+  PERFORM set_config('p2.fire_oat2_stock',
+    (SELECT current_stock::text FROM products WHERE id = '00000000-0000-0000-0000-0000000000a2'), false);
+END $$;
+
+-- ---- Section B: pay the fired order (deducts the persisted snapshot, once) ----
+DO $$
+DECLARE r jsonb;
+BEGIN
+  r := pay_existing_order_v10(
+    p_order_id := current_setting('p2.fire1')::uuid,
+    p_payment := '{"method":"cash","amount":40000,"cash_received":40000,"change_given":0}'::jsonb,
+    p_idempotency_key := '00000000-0000-0000-0000-0000000000a9'::uuid);
+END $$;
+-- replay with the SAME idempotency key must NOT deduct again
+DO $$
+DECLARE r jsonb;
+BEGIN
+  r := pay_existing_order_v10(
+    p_order_id := current_setting('p2.fire1')::uuid,
+    p_payment := '{"method":"cash","amount":40000,"cash_received":40000,"change_given":0}'::jsonb,
+    p_idempotency_key := '00000000-0000-0000-0000-0000000000a9'::uuid);
+END $$;
+
+SELECT plan(12);
 
 -- Section A assertions
 SELECT has_column('public', 'order_items', 'modifier_ingredients_deducted',
@@ -103,18 +135,27 @@ SELECT throws_ok($q$
     p_payment := '{"method":"cash","amount":8000000,"cash_received":8000000,"change_given":0}'::jsonb)
 $q$, 'P0002', NULL, 'T5: insufficient modifier ingredient stock rejected');
 
--- Section B assertions (fire persists the snapshot, deducts nothing)
+-- Section B assertions (fire persists the snapshot, deducts nothing) — captured pre-pay
+SELECT is(current_setting('p2.fire_snapshot')::numeric, 0.03, 'T6: fired order snapshot qty_base = 0.03');
+SELECT is(current_setting('p2.fire_oat2_mv')::int, 0, 'T7: fire deducts no ingredient stock (no sale movement for Oat2)');
+SELECT is(current_setting('p2.fire_oat2_stock')::numeric, 5::numeric, 'T8: Oat Milk2 current_stock unchanged at fire (5)');
+
+-- Section B pay assertions (deduct from snapshot, exactly once incl. replay)
 SELECT is(
-  (SELECT (modifier_ingredients_deducted->0->>'qty_base')::numeric
-     FROM order_items WHERE order_id = current_setting('p2.fire1')::uuid),
-  0.03, 'T6: fired order snapshot qty_base = 0.03');
-SELECT ok(
-  NOT EXISTS (SELECT 1 FROM stock_movements
-    WHERE product_id = '00000000-0000-0000-0000-0000000000a2' AND movement_type = 'sale'),
-  'T7: fire deducts no ingredient stock (no sale movement for Oat2)');
+  (SELECT count(*) FROM stock_movements
+     WHERE product_id = '00000000-0000-0000-0000-0000000000a2'
+       AND movement_type = 'sale'
+       AND reference_id = current_setting('p2.fire1')::uuid),
+  1::bigint, 'T9: pay deducts Oat2 exactly once (replay does not double)');
 SELECT is(
   (SELECT current_stock FROM products WHERE id = '00000000-0000-0000-0000-0000000000a2'),
-  5::numeric, 'T8: Oat Milk2 current_stock unchanged at fire (5)');
+  4.97, 'T10: Oat Milk2 current_stock 5 -> 4.97 after pay');
+SELECT is(
+  (SELECT quantity FROM stock_movements
+     WHERE product_id = '00000000-0000-0000-0000-0000000000a2'
+       AND movement_type = 'sale'
+       AND reference_id = current_setting('p2.fire1')::uuid),
+  -0.03, 'T11: pay sale movement for Oat2 = -0.03');
 
 SELECT * FROM finish();
 ROLLBACK;

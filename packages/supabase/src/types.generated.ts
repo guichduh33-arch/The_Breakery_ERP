@@ -6940,7 +6940,7 @@ export type Database = {
       pass:
         | { Args: never; Returns: string }
         | { Args: { "": string }; Returns: string }
-      pay_existing_order_v9: {
+      pay_existing_order_v10: {
         Args: {
           p_customer_id?: string
           p_discount_amount?: number
