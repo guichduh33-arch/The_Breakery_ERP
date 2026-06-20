@@ -1,5 +1,5 @@
 -- supabase/tests/combo_fire_pay.test.sql
--- Session 47 / fire-path extension — fire_counter_order_v3 + pay_existing_order_v9
+-- Session 47 / fire-path extension — fire_counter_order_v4 + pay_existing_order_v10
 -- combo-aware. Cashier ...0002 has pos.sale.create + payments.process.
 -- Fire a combo (persists combo_components), then pay → component stock deducted,
 -- combo product stock untouched.
@@ -18,7 +18,7 @@ INSERT INTO products (id, sku, name, category_id, retail_price, product_type, cu
 DO $$
 DECLARE r jsonb;
 BEGIN
-  r := fire_counter_order_v3(
+  r := fire_counter_order_v4(
     p_client_uuid := '00000000-0000-0000-0000-0000000cfaaa'::uuid,
     p_session_id := '00000000-0000-0000-0000-0000000cf001',
     p_items := $items$[
@@ -44,7 +44,7 @@ SELECT is((SELECT current_stock::int FROM products WHERE id='00000000-0000-0000-
 DO $$
 DECLARE r jsonb;
 BEGIN
-  r := pay_existing_order_v9(
+  r := pay_existing_order_v10(
     p_order_id := current_setting('combo.fp_order_id')::uuid,
     p_payment := '{"method":"cash","amount":50000,"cash_received":50000,"change_given":0}'::jsonb
   );
@@ -60,10 +60,10 @@ SELECT is((SELECT status::text FROM orders WHERE id=current_setting('combo.fp_or
   'T5 order paid');
 
 -- Hardening checks.
-SELECT ok(NOT has_function_privilege('anon','pay_existing_order_v9(uuid, jsonb, uuid, integer, uuid, numeric, text, numeric, text, uuid, jsonb, jsonb)','EXECUTE'),
-  'T6 anon EXECUTE revoked on pay_existing_order_v9');
-SELECT ok(NOT EXISTS (SELECT 1 FROM pg_proc WHERE proname='pay_existing_order_v8'),
-  'T7 pay_existing_order_v8 dropped');
+SELECT ok(NOT has_function_privilege('anon','pay_existing_order_v10(uuid, jsonb, uuid, integer, uuid, numeric, text, numeric, text, uuid, jsonb, jsonb)','EXECUTE'),
+  'T6 anon EXECUTE revoked on pay_existing_order_v10');
+SELECT ok(NOT EXISTS (SELECT 1 FROM pg_proc WHERE proname='pay_existing_order_v9'),
+  'T7 pay_existing_order_v9 dropped');
 
 SELECT * FROM finish();
 ROLLBACK;

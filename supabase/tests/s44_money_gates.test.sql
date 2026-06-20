@@ -1,6 +1,6 @@
 -- supabase/tests/s44_money_gates.test.sql
 -- S44 money-path hardening gates : get_loyalty_multiplier (Wave A) +
--- complete_order_with_payment_v12 (Wave B : P0-A sequencing, change gate,
+-- complete_order_with_payment_v14 (Wave B : P0-A sequencing, change gate,
 -- promo recompute, DB multiplier, honest replay). Cas v8/fire_v2 dans
 -- s44_display_symmetry.test.sql. Exécuter via MCP execute_sql (BEGIN..ROLLBACK).
 -- Pattern jwt-claims S37/S43 (counter_fire) + GUC pass-flag S25 (DEV-S25-2.A-03).
@@ -52,7 +52,7 @@ SELECT is(get_loyalty_multiplier(5000), 1.2::numeric, 'T5 platinum boundary');
 DO $$ DECLARE v_msg TEXT := '';
 BEGIN
   BEGIN
-    PERFORM complete_order_with_payment_v12(
+    PERFORM complete_order_with_payment_v14(
       p_session_id := current_setting('s44.session_id')::uuid, p_order_type := 'take_out',
       p_items := jsonb_build_array(jsonb_build_object('product_id', current_setting('s44.prod')::uuid, 'quantity', 1, 'unit_price', 35000, 'modifiers', '[]'::jsonb)),
       p_payment := jsonb_build_object('method','cash','amount',35000,'cash_received',50000,'change_given',20000));
@@ -65,7 +65,7 @@ SELECT ok(current_setting('s44.t6')::boolean, 'T6 forged cash change rejected');
 DO $$ DECLARE v_msg TEXT := '';
 BEGIN
   BEGIN
-    PERFORM complete_order_with_payment_v12(
+    PERFORM complete_order_with_payment_v14(
       p_session_id := current_setting('s44.session_id')::uuid, p_order_type := 'take_out',
       p_items := jsonb_build_array(jsonb_build_object('product_id', current_setting('s44.prod')::uuid, 'quantity', 1, 'unit_price', 35000, 'modifiers', '[]'::jsonb)),
       p_payment := jsonb_build_object('method','qris','amount',35000,'change_given',5000));
@@ -77,7 +77,7 @@ SELECT ok(current_setting('s44.t7')::boolean, 'T7 non-cash change rejected');
 -- T8 : happy cash ⇒ JE 'sale' débite le compte cash + AUCUN fallback (P0-A sequencing) + enveloppe change réel.
 DO $$ DECLARE v_env JSONB; v_oid UUID; v_cash UUID; v_dbt INT; v_fb INT;
 BEGIN
-  v_env := complete_order_with_payment_v12(
+  v_env := complete_order_with_payment_v14(
     p_session_id := current_setting('s44.session_id')::uuid, p_order_type := 'take_out',
     p_items := jsonb_build_array(jsonb_build_object('product_id', current_setting('s44.prod')::uuid, 'quantity', 1, 'unit_price', 35000, 'modifiers', '[]'::jsonb)),
     p_payment := jsonb_build_object('method','cash','amount',35000,'cash_received',50000,'change_given',15000));
@@ -94,12 +94,12 @@ SELECT ok(current_setting('s44.t8')::boolean, 'T8 cash sale: JE cash debit, no f
 -- T9 : replay même idempotency_key ⇒ idempotent_replay + change_given réel.
 DO $$ DECLARE v_key UUID := gen_random_uuid(); v_e1 JSONB; v_e2 JSONB;
 BEGIN
-  v_e1 := complete_order_with_payment_v12(
+  v_e1 := complete_order_with_payment_v14(
     p_session_id := current_setting('s44.session_id')::uuid, p_order_type := 'take_out',
     p_items := jsonb_build_array(jsonb_build_object('product_id', current_setting('s44.prod')::uuid, 'quantity', 1, 'unit_price', 35000, 'modifiers', '[]'::jsonb)),
     p_payment := jsonb_build_object('method','cash','amount',35000,'cash_received',50000,'change_given',15000),
     p_idempotency_key := v_key);
-  v_e2 := complete_order_with_payment_v12(
+  v_e2 := complete_order_with_payment_v14(
     p_session_id := current_setting('s44.session_id')::uuid, p_order_type := 'take_out',
     p_items := jsonb_build_array(jsonb_build_object('product_id', current_setting('s44.prod')::uuid, 'quantity', 1, 'unit_price', 35000, 'modifiers', '[]'::jsonb)),
     p_payment := jsonb_build_object('method','cash','amount',35000,'cash_received',50000,'change_given',15000),
@@ -111,7 +111,7 @@ SELECT ok(current_setting('s44.t9')::boolean, 'T9 replay envelope: idempotent + 
 -- T10 : promo montant exact 3500 (10 % de 35000) ⇒ PASS, promotion_applications.amount=3500.
 DO $$ DECLARE v_env JSONB; v_oid UUID; v_amt INT;
 BEGIN
-  v_env := complete_order_with_payment_v12(
+  v_env := complete_order_with_payment_v14(
     p_session_id := current_setting('s44.session_id')::uuid, p_order_type := 'take_out',
     p_items := jsonb_build_array(jsonb_build_object('product_id', current_setting('s44.prod')::uuid, 'quantity', 1, 'unit_price', 35000, 'modifiers', '[]'::jsonb)),
     p_payment := jsonb_build_object('method','cash','amount',31500,'cash_received',31500,'change_given',0),
@@ -126,7 +126,7 @@ SELECT ok(current_setting('s44.t10')::boolean, 'T10 promo exact amount applied')
 DO $$ DECLARE v_msg TEXT := '';
 BEGIN
   BEGIN
-    PERFORM complete_order_with_payment_v12(
+    PERFORM complete_order_with_payment_v14(
       p_session_id := current_setting('s44.session_id')::uuid, p_order_type := 'take_out',
       p_items := jsonb_build_array(jsonb_build_object('product_id', current_setting('s44.prod')::uuid, 'quantity', 1, 'unit_price', 35000, 'modifiers', '[]'::jsonb)),
       p_payment := jsonb_build_object('method','cash','amount',25000,'cash_received',25000,'change_given',0),
@@ -139,7 +139,7 @@ SELECT ok(current_setting('s44.t11')::boolean, 'T11 forged promo amount rejected
 -- T12 : multiplier DB ⇒ points = FLOOR(35000 * 1.05 (silver 600) * 2.0 (cat) / 1000) = 73.
 DO $$ DECLARE v_env JSONB; v_oid UUID; v_pts INT;
 BEGIN
-  v_env := complete_order_with_payment_v12(
+  v_env := complete_order_with_payment_v14(
     p_session_id := current_setting('s44.session_id')::uuid, p_order_type := 'take_out',
     p_items := jsonb_build_array(jsonb_build_object('product_id', current_setting('s44.prod')::uuid, 'quantity', 1, 'unit_price', 35000, 'modifiers', '[]'::jsonb)),
     p_payment := jsonb_build_object('method','cash','amount',35000,'cash_received',35000,'change_given',0),
