@@ -8,6 +8,11 @@ export {
 export { validateSelections, type ValidationError } from './validateSelections.js';
 export { parseModifierIngredientsToDeduct } from './parseIngredients.js';
 export {
+  modifierIngredientLineCost,
+  modifierOptionMaterialCost,
+  type ModifierCostMaterial,
+} from './cost.js';
+export {
   foldModifierRowsForEdit,
   validateModifierDraft,
   serializeModifierGroups,

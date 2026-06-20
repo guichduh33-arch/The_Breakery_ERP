@@ -14,20 +14,21 @@ import { Card, EmptyState } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useRecipeDirectCost } from '../hooks/useRecipeDirectCost.js';
 import { CorrectCostDialog } from './CorrectCostDialog.js';
+import { ModifierCostBreakdown } from './ModifierCostBreakdown.js';
 import type { ProductRow } from '../types.js';
 
 export interface CostingPanelProps {
   product: Pick<ProductRow, 'id' | 'cost_price' | 'retail_price'>;
 }
 
+// Prices are shown as whole rupiah (owner decision: no decimals anywhere).
 function formatIdr(n: number): string {
-  return n.toLocaleString('id-ID');
+  return Math.round(n).toLocaleString('id-ID', { maximumFractionDigits: 0 });
 }
 
-// Per-unit cost: always 2 decimals so a per-gram price (e.g. 173,88) is not
-// visually mistaken for the per-kilo magnitude it derives from (173.880,78).
+// Per-unit cost: same whole-rupiah rule.
 function formatUnitCost(n: number): string {
-  return n.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return Math.round(n).toLocaleString('id-ID', { maximumFractionDigits: 0 });
 }
 
 function computeMargin(cost: number, retail: number): number | null {
@@ -216,6 +217,9 @@ export function CostingPanel({ product }: CostingPanelProps): JSX.Element {
           </div>
         )}
       </Card>
+
+      {/* ── Total cost per modifier option ── */}
+      <ModifierCostBreakdown productId={product.id} baseCost={product.cost_price} />
 
       {/* ── Correct cost dialog ── */}
       <CorrectCostDialog

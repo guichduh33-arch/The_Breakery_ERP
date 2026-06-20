@@ -10,6 +10,9 @@
 --   T6  — REVOKE: anon cannot execute receive_purchase_order_v2
 --   T7  — Partial receipt leaves PO status='partial'
 --   T8  — Full receipt leaves PO status='received'
+--   T2c — unit_cost on the stock movement converted to per-base-unit (1200/box ÷ 12 = 100/pcs)
+--   T2d — products.cost_price seeded from the per-base-unit cost (= 100)
+--   T9  — Large factor (gr base, buy at 'kg' factor 1000): unit_cost ÷ 1000 per base gr (= 50)
 --
 -- Run via MCP execute_sql inside BEGIN ... ROLLBACK.
 
@@ -17,7 +20,7 @@ BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-SELECT plan(13);
+SELECT plan(18);
 
 -- ─── Fixtures ────────────────────────────────────────────────────────────────
 DO $fix$
@@ -26,11 +29,13 @@ DECLARE
   v_supplier_id  UUID;
   v_prod_base_id UUID;  -- base unit = 'kg', factor product
   v_prod_alt_id  UUID;  -- base unit = 'pcs', will receive in 'box' (factor=12)
+  v_prod_frac_id UUID;  -- base unit = 'gr', will receive in 'kg' (factor=1000)
   v_section_id   UUID;
   v_manager_uid  UUID;
   v_cashier_uid  UUID;
   v_po_base_id   UUID;
   v_po_alt_id    UUID;
+  v_po_frac_id   UUID;
   v_items        JSONB;
 BEGIN
   -- Use an existing raw_material category (category_type='raw_material').
@@ -61,6 +66,16 @@ BEGIN
     VALUES ('T46_PROD_PCS', 'Test S46 Product pcs', v_cat_id, 200, 0, 'pcs', 100, 'finished', true)
     ON CONFLICT (sku) DO UPDATE SET current_stock = 0, deleted_at = NULL, is_active = true
     RETURNING id INTO v_prod_alt_id;
+
+  -- Product C: base unit 'gr', receives in 'kg' with factor 1000 (fractional case
+  -- mirroring Almond Ground: price quoted per LARGE unit must divide DOWN to the
+  -- small base unit → unit_cost ÷ 0.001-style factor = unit_cost × 1000 per gr...
+  -- here factor = 1000 (1 kg = 1000 gr) so per-gr cost = unit_cost / 1000).
+  INSERT INTO products (sku, name, category_id, retail_price, current_stock, unit,
+                        cost_price, product_type, is_active)
+    VALUES ('T46_PROD_GR', 'Test S46 Product gr', v_cat_id, 50, 0, 'gr', 0, 'finished', true)
+    ON CONFLICT (sku) DO UPDATE SET current_stock = 0, cost_price = 0, deleted_at = NULL, is_active = true
+    RETURNING id INTO v_prod_frac_id;
 
   -- Section.
   SELECT id INTO v_section_id FROM sections WHERE deleted_at IS NULL ORDER BY display_order LIMIT 1;
@@ -109,6 +124,25 @@ BEGIN
     WHERE po_id = v_po_alt_id::uuid
       AND product_id = v_prod_alt_id;
 
+  -- PO for Product C (kg → gr, factor 1000, unit_cost 50000/kg → 50/gr).
+  v_items := jsonb_build_array(
+    jsonb_build_object(
+      'product_id', v_prod_frac_id, 'quantity', 2, 'unit', 'kg',
+      'unit_cost', 50000
+    )
+  );
+  SELECT (create_purchase_order_v2(
+    p_supplier_id   := v_supplier_id,
+    p_items         := v_items,
+    p_payment_terms := 'credit',
+    p_vat_rate      := 0.0
+  ))->>'po_id' INTO v_po_frac_id;
+
+  UPDATE purchase_order_items
+    SET unit_factor_to_base = 1000
+    WHERE po_id = v_po_frac_id::uuid
+      AND product_id = v_prod_frac_id;
+
   -- Store in GUCs for assertion blocks.
   PERFORM set_config('t46.supplier',    v_supplier_id::text,  true);
   PERFORM set_config('t46.prod_base',   v_prod_base_id::text, true);
@@ -118,6 +152,8 @@ BEGIN
   PERFORM set_config('t46.cashier_uid', v_cashier_uid::text,  true);
   PERFORM set_config('t46.po_base',     v_po_base_id::text,   true);
   PERFORM set_config('t46.po_alt',      v_po_alt_id::text,    true);
+  PERFORM set_config('t46.prod_frac',   v_prod_frac_id::text, true);
+  PERFORM set_config('t46.po_frac',     v_po_frac_id::text,   true);
 END $fix$;
 
 -- ─── T1: Factor = 1, receive 5 kg → stock +5 kg ─────────────────────────────
@@ -205,6 +241,24 @@ SELECT is(
    ORDER BY created_at DESC LIMIT 1),
   'pcs',
   'T2b: stock movement unit = products.unit (base unit = pcs, not box)'
+);
+
+-- ─── T2c: unit_cost converted to per-base-unit (1200/box ÷ 12 = 100/pcs) ─────
+SELECT is(
+  (SELECT unit_cost::numeric FROM stock_movements
+   WHERE metadata->>'po_id' = current_setting('t46.po_alt', true)
+     AND movement_type = 'purchase'
+   ORDER BY created_at DESC LIMIT 1),
+  100::numeric,
+  'T2c: stock movement unit_cost = per-base-unit cost (1200/box ÷ 12 = 100/pcs)'
+);
+
+-- ─── T2d: products.cost_price seeded from the per-base-unit cost ─────────────
+SELECT is(
+  (SELECT cost_price::numeric FROM products
+   WHERE id = current_setting('t46.prod_alt', true)::uuid),
+  100::numeric,
+  'T2d: cost_price seeded from converted unit_cost (= 100/pcs, not 1200)'
 );
 
 -- ─── T3: received_quantity on PO line = 3 (PO-line unit, NOT 36) ─────────────
@@ -342,6 +396,53 @@ SELECT is(
      AND movement_type = 'purchase'),
   60::numeric,
   'T8b: total base-unit stock movements = 60 pcs (5 boxes × 12)'
+);
+
+-- ─── T9: Fractional/large factor (gr base, buy 2 kg, factor 1000) ────────────
+-- Mirrors Almond Ground: a price quoted per large unit must divide down to the
+-- small base unit. 2 kg × 1000 = 2000 gr; 50000/kg ÷ 1000 = 50/gr.
+DO $$
+DECLARE
+  v_uid     UUID := current_setting('t46.manager_uid', true)::uuid;
+  v_po_id   UUID := current_setting('t46.po_frac', true)::uuid;
+  v_item_id UUID;
+BEGIN
+  PERFORM set_config('request.jwt.claim.sub', v_uid::text, true);
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub', v_uid::text, 'role','authenticated')::text, true);
+  SELECT id INTO v_item_id FROM purchase_order_items WHERE po_id = v_po_id LIMIT 1;
+  PERFORM receive_purchase_order_v2(
+    p_po_id          := v_po_id,
+    p_section_id     := current_setting('t46.section', true)::uuid,
+    p_received_items := jsonb_build_array(
+      jsonb_build_object('po_item_id', v_item_id, 'received_quantity', 2)
+    )
+  );
+END $$;
+
+SELECT is(
+  (SELECT quantity::numeric FROM stock_movements
+   WHERE metadata->>'po_id' = current_setting('t46.po_frac', true)
+     AND movement_type = 'purchase'
+   ORDER BY created_at DESC LIMIT 1),
+  2000::numeric,
+  'T9: factor=1000, receive 2 kg → stock movement qty = 2000 gr (base)'
+);
+
+SELECT is(
+  (SELECT unit_cost::numeric FROM stock_movements
+   WHERE metadata->>'po_id' = current_setting('t46.po_frac', true)
+     AND movement_type = 'purchase'
+   ORDER BY created_at DESC LIMIT 1),
+  50::numeric,
+  'T9b: unit_cost = per-base-unit (50000/kg ÷ 1000 = 50/gr)'
+);
+
+SELECT is(
+  (SELECT cost_price::numeric FROM products
+   WHERE id = current_setting('t46.prod_frac', true)::uuid),
+  50::numeric,
+  'T9c: cost_price seeded = 50/gr (not 50000) — invoice total preserved: 2000 gr × 50 = 100000'
 );
 
 SELECT * FROM finish();
