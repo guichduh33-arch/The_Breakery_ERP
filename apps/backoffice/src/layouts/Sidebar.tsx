@@ -255,7 +255,7 @@ function routeMatches(to: string, end: boolean | undefined, pathname: string): b
 /**
  * Returns the label of the top-level category that owns the active route, or
  * null. Picks the longest matching `to` so deep links resolve to the right
- * group (e.g. /backoffice/inventory/recipes → Stock Management, not Operations).
+ * group (e.g. /backoffice/inventory/transfers → Stock Management, not Operations).
  */
 function findActiveGroupLabel(
   groups: {

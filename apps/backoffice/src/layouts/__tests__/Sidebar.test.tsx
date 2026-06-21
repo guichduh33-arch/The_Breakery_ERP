@@ -307,13 +307,13 @@ describe('Sidebar', () => {
 
   it('auto-opens the category that owns the active deep route', () => {
     setAuthState(ALL_PERMS);
-    // /backoffice/inventory/recipes lives under Stock Management.
-    renderWith(<Sidebar />, '/backoffice/inventory/recipes');
+    // /backoffice/inventory/transfers lives under Stock Management.
+    renderWith(<Sidebar />, '/backoffice/inventory/transfers');
     expect(screen.getByRole('button', { name: /^Stock Management$/i })).toHaveAttribute(
       'aria-expanded',
       'true',
     );
-    expect(screen.getByRole('link', { name: /^Recipes$/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /^Transfers$/i })).toBeInTheDocument();
     // Operations (not the active group) stays collapsed.
     expect(screen.getByRole('button', { name: /^Operations$/i })).toHaveAttribute(
       'aria-expanded',
