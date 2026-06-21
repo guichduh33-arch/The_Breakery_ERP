@@ -18,8 +18,8 @@
 > under `archive/`. **Do not duplicate that history here** — link to the dated file instead.
 > Plans/specs are dated, append-only history: never rewrite a past plan; create a new dated file.
 
-- **In flight:** `feat/unify-recipe-editor-into-product-tab` (base `master` post-PR #104) — makes the Product **Recipe** tab the sole recipe editor (100 % front, zero migration). Design + plan: [`docs/superpowers/specs/2026-06-21-unify-recipe-editor-into-product-tab-design.md`](docs/superpowers/specs/2026-06-21-unify-recipe-editor-into-product-tab-design.md), [`docs/superpowers/plans/2026-06-21-unify-recipe-editor-into-product-tab-plan.md`](docs/superpowers/plans/2026-06-21-unify-recipe-editor-into-product-tab-plan.md).
-- **Latest on `master`:** PR #103 Units Registry + unit-cost-per-base fix (`9d40365`). The full merged chain (S13→S49, standalone PRs, stock/backoffice audits) is documented in `docs/workplan/` — open the relevant dated INDEX for detail.
+- **In flight:** none — pick the next workstream from the backlog (below). All recent session branches are merged.
+- **Latest on `master`:** PR #106 — unify recipe editor into the product Recipe tab (`6b6ce78`). Recent merged chain: #103 Units Registry, #95 S46 Purchasing, #98 S47 Combos, #99 S48 Modifiers Editor, #100 S49 Modifiers Phase 2 — all on `master`. Full per-session detail (S13→S49, standalone PRs, stock/backoffice audits) is in `docs/workplan/` — open the relevant dated INDEX.
 - **Migrations:** numbering is monotonic. Check `supabase/migrations/` for the highest NAME-block before picking the next. Cloud `version`s are clock-assigned (S36+ convention); local file names use the NAME-block. Always regen types after a schema change (see Build & Test).
 - **Next-session source:** triage `docs/workplan/backlog-by-module/01-…25-….md` (25 modules, ~280 tasks).
 - **Execution skill:** invoke `superpowers:subagent-driven-development` (or `superpowers:executing-plans`) before running a phase — one subagent per isolated phase, parallelizable per Wave.
