@@ -41,7 +41,7 @@ interface ProductRowDb {
   variant_label:              string | null;
   variant_axis:               string | null;
   variant_sort_order:         number;
-  categories:       { name: string; category_type: string } | { name: string; category_type: string }[] | null;
+  categories:       { name: string; category_type: string | null } | { name: string; category_type: string | null }[] | null;
 }
 
 export function useProducts() {
@@ -69,11 +69,9 @@ export function useProducts() {
 
       const rows = (data ?? []) as ProductRowDb[];
       return rows.map((r) => {
-        const categoryEmbed = Array.isArray(r.categories)
-          ? r.categories[0] ?? null
-          : r.categories ?? null;
-        const categoryName = categoryEmbed?.name ?? null;
-        const categoryType = categoryEmbed?.category_type ?? null;
+        const category = Array.isArray(r.categories) ? r.categories[0] ?? null : r.categories;
+        const categoryName = category?.name ?? null;
+        const categoryType = category?.category_type ?? null;
         return {
           id:                  r.id,
           sku:                 r.sku,

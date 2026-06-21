@@ -21,11 +21,11 @@ export interface ProductRow extends Product {
   min_stock_threshold: number;
   category_name: string | null;
   /**
-   * The owning category's `category_type` ('raw_material' | 'semi_finished' |
-   * 'finished'), embedded from the join. Source of truth for the Type column.
-   * Optional because not every ProductRow producer embeds the category.
+   * Authoritative conceptual type, from `categories.category_type`
+   * ('raw_material' | 'semi_finished' | 'finished'). Drives `classifyProduct`;
+   * the old SKU-prefix heuristic was unreliable (only RAW/CON/HAS/SFG matched).
    */
-  category_type?: string | null;
+  category_type: string | null;
   /** Self-declared allergens (Session 15 Phase 5.C — `products.allergens`). */
   allergens: ReadonlyArray<AllergenType>;
   // Session 27 — editable fields surfaced by update_product_v1
@@ -93,27 +93,32 @@ export type ProductDetailTab =
   | 'history';
 
 /**
- * The four conceptual product types we surface in the tabs filter + Type
- * column. Derived from the owning category's `category_type` — the real source
- * of truth shared with S46 purchasing (`useAllProductsForPO` filters on it).
+ * The four conceptual product types surfaced in the tabs filter, KPI grid and
+ * the catalog "Type" column.
  *
- * `product.is_semi_finished` is intentionally NOT consulted here: it is an
- * orthogonal "usable as a recipe ingredient" flag, so a finished product sold
- * to customers (e.g. American Bagel) can carry it while still being Finished.
+ * The authoritative source is the product's `categories.category_type`
+ * ('raw_material' | 'semi_finished' | 'finished') — NOT the `product_type`
+ * column (schema only allows 'finished' | 'combo') nor the SKU prefix. The old
+ * SKU-prefix heuristic only recognised RAW/CON/HAS/SFG, so raw materials with
+ * any other prefix (SEE, PAC, VEG, DAI, DRY, FRU…) were mislabelled 'Finished'.
  *
- * The legacy SKU-prefix heuristic is kept only as a defensive fallback for rows
- * whose producer did not embed the category (`category_type` null/undefined).
+ * `combo` still comes from `product_type`. When `category_type` is absent we
+ * fall back to the per-product `is_semi_finished` flag, then the legacy SKU
+ * heuristic, then 'finished'.
  */
 export function classifyProduct(
-  p: Pick<ProductRow, 'product_type' | 'sku' | 'category_type'>,
+  p: Pick<ProductRow, 'product_type' | 'sku' | 'category_type' | 'is_semi_finished'>,
 ): ProductTypeFilter {
   if (p.product_type === 'combo') return 'combo';
+
   switch (p.category_type) {
     case 'raw_material':  return 'raw';
     case 'semi_finished': return 'semi-finished';
     case 'finished':      return 'finished';
-    default:              break; // null/undefined → fall through to the heuristic
+    default:              break; // category_type missing → fall through
   }
+
+  if (p.is_semi_finished) return 'semi-finished';
   const sku = (p.sku ?? '').toUpperCase();
   if (sku.startsWith('RAW') || sku.startsWith('CON') || sku.startsWith('HAS')) return 'raw';
   if (sku.startsWith('SFG')) return 'semi-finished';

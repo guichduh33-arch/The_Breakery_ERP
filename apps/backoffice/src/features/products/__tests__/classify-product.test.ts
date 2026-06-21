@@ -1,34 +1,48 @@
 // apps/backoffice/src/features/products/__tests__/classify-product.test.ts
 //
-// classifyProduct now derives the conceptual product type from the category's
-// `category_type` (the real source of truth used across S46 purchasing), not a
-// SKU-prefix guess. The old heuristic mislabelled raw materials whose SKU did
-// not start with RAW/CON/HAS (e.g. SEE-012 Almond Ground, KIT-010 Aluminium
-// Foil) as "Finished Product".
+// classifyProduct must derive the conceptual type from categories.category_type
+// (authoritative), not the SKU prefix. Regression: Almond Ground (SEE-012, a
+// raw material) was shown as "Finished" because its SKU prefix wasn't in the
+// old RAW/CON/HAS/SFG allowlist.
 
 import { describe, it, expect } from 'vitest';
 import { classifyProduct } from '../types.js';
 
+type Args = Parameters<typeof classifyProduct>[0];
+const base: Args = {
+  product_type: 'finished',
+  sku: 'SEE-012',
+  category_type: null,
+  is_semi_finished: false,
+};
+
 describe('classifyProduct', () => {
-  it('classifies by category_type (source of truth)', () => {
-    expect(classifyProduct({ product_type: 'finished', sku: 'SEE-012', category_type: 'raw_material' })).toBe('raw');
-    expect(classifyProduct({ product_type: 'finished', sku: 'KIT-010', category_type: 'raw_material' })).toBe('raw');
-    expect(classifyProduct({ product_type: 'finished', sku: 'SFG-054', category_type: 'semi_finished' })).toBe('semi-finished');
-    expect(classifyProduct({ product_type: 'finished', sku: 'COF-012', category_type: 'finished' })).toBe('finished');
+  it('uses category_type as the source of truth (SEE-012 raw material → raw)', () => {
+    expect(classifyProduct({ ...base, category_type: 'raw_material' })).toBe('raw');
   });
 
-  it('does NOT trust the SKU prefix when category_type disagrees', () => {
-    // HAS-006 Almond Butter sits in a `finished` category despite the HAS prefix.
-    expect(classifyProduct({ product_type: 'finished', sku: 'HAS-006', category_type: 'finished' })).toBe('finished');
+  it('maps semi_finished category → semi-finished', () => {
+    expect(classifyProduct({ ...base, sku: 'PAC-001', category_type: 'semi_finished' })).toBe('semi-finished');
   });
 
-  it('treats combo products as combo regardless of category_type', () => {
-    expect(classifyProduct({ product_type: 'combo', sku: 'COMBO-001', category_type: 'finished' })).toBe('combo');
+  it('maps finished category → finished', () => {
+    expect(classifyProduct({ ...base, sku: 'CR-NAT', category_type: 'finished' })).toBe('finished');
   });
 
-  it('falls back to the SKU-prefix heuristic only when category_type is absent', () => {
-    expect(classifyProduct({ product_type: 'finished', sku: 'SFG-001', category_type: null })).toBe('semi-finished');
-    expect(classifyProduct({ product_type: 'finished', sku: 'RAW-001' })).toBe('raw'); // category_type omitted
-    expect(classifyProduct({ product_type: 'finished', sku: 'COF-001', category_type: null })).toBe('finished');
+  it('combo wins regardless of category_type', () => {
+    expect(classifyProduct({ ...base, product_type: 'combo', category_type: 'raw_material' })).toBe('combo');
+  });
+
+  it('falls back to is_semi_finished when category_type is null', () => {
+    expect(classifyProduct({ ...base, category_type: null, is_semi_finished: true })).toBe('semi-finished');
+  });
+
+  it('falls back to the legacy SKU heuristic when category_type is null', () => {
+    expect(classifyProduct({ ...base, sku: 'RAW-001', category_type: null })).toBe('raw');
+    expect(classifyProduct({ ...base, sku: 'SFG-003', category_type: null })).toBe('semi-finished');
+  });
+
+  it('defaults to finished when nothing else matches', () => {
+    expect(classifyProduct({ ...base, sku: 'SEE-012', category_type: null })).toBe('finished');
   });
 });

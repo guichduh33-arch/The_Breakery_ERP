@@ -74,6 +74,7 @@ const PRODUCT: ProductRow = {
   sku:                  'FL-1KG',
   category_id:          'cat-1',
   category_name:        'Ingredients',
+  category_type:        'raw_material',
   cost_price:           5000,
   retail_price:         12000,
   wholesale_price:      null,
