@@ -17,6 +17,7 @@ const product: ProductRow = {
   sku: 'CR',
   category_id: 'c1',
   category_name: 'Pastry',
+  category_type: 'finished',
   cost_price: 0,
   retail_price: 25000,
   wholesale_price: null,

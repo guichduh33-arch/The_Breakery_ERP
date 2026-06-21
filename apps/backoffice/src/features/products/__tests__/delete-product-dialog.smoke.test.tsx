@@ -49,6 +49,7 @@ const MOCK_PRODUCT: ProductRow = {
   sku:                      'CR-NAT',
   category_id:              'cat-1',
   category_name:            'Pastry',
+  category_type:            'finished',
   retail_price:             25_000,
   wholesale_price:          null,
   cost_price:               8_000,

@@ -38,7 +38,7 @@ interface ProductRowDb {
   variant_label:              string | null;
   variant_axis:               string | null;
   variant_sort_order:         number;
-  categories:       { name: string } | { name: string }[] | null;
+  categories:       { name: string; category_type: string | null } | { name: string; category_type: string | null }[] | null;
 }
 
 export function useProductDetail(productId: string | null) {
@@ -60,7 +60,7 @@ export function useProductDetail(productId: string | null) {
           track_inventory, deduct_stock, is_semi_finished,
           target_gross_margin_pct, default_shelf_life_hours, is_display_item,
           parent_product_id, variant_label, variant_axis, variant_sort_order,
-          categories:categories ( name )
+          categories:categories ( name, category_type )
         `)
         .eq('id', productId)
         .is('deleted_at', null)
@@ -68,9 +68,9 @@ export function useProductDetail(productId: string | null) {
       if (error) throw error;
       if (data === null) return null;
       const r = data as ProductRowDb;
-      const categoryName = Array.isArray(r.categories)
-        ? r.categories[0]?.name ?? null
-        : r.categories?.name ?? null;
+      const category = Array.isArray(r.categories) ? r.categories[0] ?? null : r.categories;
+      const categoryName = category?.name ?? null;
+      const categoryType = category?.category_type ?? null;
       return {
         id:                  r.id,
         sku:                 r.sku,
@@ -102,6 +102,7 @@ export function useProductDetail(productId: string | null) {
         variant_axis:              r.variant_axis,
         variant_sort_order:        Number(r.variant_sort_order),
         category_name:             categoryName,
+        category_type:             categoryType,
       } satisfies ProductRow;
     },
   });
