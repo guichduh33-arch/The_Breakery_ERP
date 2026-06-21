@@ -1,11 +1,19 @@
 @import '@breakery/ui/tokens.css';
 
-/* Session 14 D3 — 4 canonical fonts. Inter / Fraunces / JetBrains Mono are
- * variable-axis (single file). Playfair Display loads italic 400 only
- * (the only weight + style we use for branding + dashboard titles). */
-@import '@fontsource-variable/inter';
-@import '@fontsource-variable/fraunces';
-@import '@fontsource-variable/jetbrains-mono';
+/* Body font (Backoffice) — IBM Plex Sans, a professional enterprise-software
+ * workhorse, more legible than Inter on dense ERP tables. Scoped to the
+ * Backoffice only: the body token is overridden under `.theme-backoffice`
+ * in @breakery/ui colors.css, so the POS stays on Inter.
+ * Fraunces / JetBrains Mono are variable-axis (single file). Playfair Display
+ * loads italic 400 only (branding + dashboard titles). */
+@import '@fontsource-variable/ibm-plex-sans';
+/* Amounts / numbers (Backoffice) — IBM Plex Mono, a tabular monospace with very
+ * clear digit forms, family-matched to IBM Plex Sans. Overrides --font-mono and
+ * --font-data under `.theme-backoffice`. No variable build exists, so we load
+ * the three weights actually used (400 body, 500 medium, 600 semibold). */
+@import '@fontsource/ibm-plex-mono/latin-400.css';
+@import '@fontsource/ibm-plex-mono/latin-500.css';
+@import '@fontsource/ibm-plex-mono/latin-600.css';
 @import '@fontsource/playfair-display/400-italic.css';
 
 @tailwind base;

@@ -24,7 +24,8 @@ export interface CorrectCostDialogProps {
 }
 
 function formatIdr(n: number): string {
-  return n.toLocaleString('id-ID');
+  // Whole rupiah only — IDR has no circulating sub-unit (no decimals).
+  return Math.round(n).toLocaleString('id-ID', { maximumFractionDigits: 0 });
 }
 
 export function CorrectCostDialog({

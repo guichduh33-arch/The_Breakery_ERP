@@ -28,8 +28,13 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen grid place-items-center bg-bg-base p-8">
       <div className="space-y-8">
-        <div className="text-center space-y-2">
-          <h1 className="font-serif text-4xl">The Breakery</h1>
+        <div className="text-center space-y-4">
+          <img
+            src="/brand-logo.png"
+            alt="The Breakery"
+            className="mx-auto h-44 w-auto select-none rounded-2xl bg-white p-5 shadow-modal"
+            draggable={false}
+          />
           <p className="text-text-secondary text-sm uppercase tracking-widest">Backoffice</p>
         </div>
 

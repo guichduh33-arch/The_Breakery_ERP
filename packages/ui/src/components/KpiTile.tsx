@@ -6,7 +6,7 @@
 // Structure (top-to-bottom in the tile):
 //   1. Optional Lucide icon (top-left, gold)
 //   2. SectionLabel xs uppercase (the label)
-//   3. Big value in Fraunces / JetBrains Mono (depending on format)
+//   3. Big value in the theme's data / mono face (depending on format)
 //   4. Optional delta indicator (▲ green / ▼ red / · neutral)
 //
 // `valueFormat`:

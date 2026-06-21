@@ -8,7 +8,7 @@
 //
 // Implementation is pure SVG so it stays crisp at any size. The "B" glyph is
 // rendered as a styled <text> inside the SVG with the Playfair Display
-// italic 400 stack via --font-display. If Playfair hasn't loaded yet, the
+// italic 400 stack via --font-brand. If Playfair hasn't loaded yet, the
 // browser falls back to Times New Roman (still serif italic — visually close
 // enough on first paint).
 //
@@ -83,7 +83,7 @@ export function BrandMark({
           y="50"
           textAnchor="middle"
           dominantBaseline="central"
-          fontFamily="var(--font-display)"
+          fontFamily="var(--font-brand)"
           fontStyle="italic"
           fontWeight="400"
           fontSize={fontSize}
