@@ -34,7 +34,7 @@ import {
   ChevronRight,
   type LucideIcon,
 } from 'lucide-react';
-import { BrandMark, SectionLabel, cn } from '@breakery/ui';
+import { SectionLabel, cn } from '@breakery/ui';
 import type { PermissionCode } from '@breakery/supabase';
 import { useAuthStore } from '@/stores/authStore.js';
 import { AlertsBadge } from '@/features/inventory-alerts/components/AlertsBadge.js';
@@ -453,17 +453,21 @@ export function Sidebar() {
       aria-label="Backoffice navigation"
       className="w-60 shrink-0 bg-bg-elevated border-r border-border-subtle flex flex-col"
     >
-      <div className="px-4 py-5 border-b border-border-subtle flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <BrandMark size="sm" />
-          <div className="leading-tight">
-            <div className="font-serif text-base text-text-primary">The Breakery</div>
-            <div className="text-[10px] text-text-secondary uppercase tracking-widest">
-              Backoffice
-            </div>
+      <div className="relative px-4 py-4 border-b border-border-subtle">
+        {hasPermission('inventory.read') && (
+          <div className="absolute right-3 top-3">
+            <AlertsBadge />
           </div>
+        )}
+        <img
+          src="/brand-logo.png"
+          alt="The Breakery"
+          className="mx-auto h-24 w-auto select-none"
+          draggable={false}
+        />
+        <div className="mt-1 text-center text-[10px] text-text-secondary uppercase tracking-[0.2em]">
+          Backoffice
         </div>
-        {hasPermission('inventory.read') && <AlertsBadge />}
       </div>
 
       <nav className="flex-1 py-4 overflow-y-auto" aria-label="Primary">

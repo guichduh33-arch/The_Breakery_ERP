@@ -12,7 +12,7 @@
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, RefreshCw } from 'lucide-react';
+import { LogOut, RefreshCw, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { Button } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
 
@@ -21,6 +21,10 @@ interface TopbarProps {
   lastUpdated?: string;
   /** Manual refresh hook — page-level handler. */
   onRefresh?: () => void;
+  /** Whether the left sidebar is currently collapsed. */
+  sidebarCollapsed?: boolean;
+  /** Toggle the left sidebar open/closed. When omitted, the toggle is hidden. */
+  onToggleSidebar?: () => void;
 }
 
 function formatTime(iso: string): string {
@@ -32,7 +36,7 @@ function formatTime(iso: string): string {
   }
 }
 
-export function Topbar({ lastUpdated, onRefresh }: TopbarProps) {
+export function Topbar({ lastUpdated, onRefresh, sidebarCollapsed, onToggleSidebar }: TopbarProps) {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
@@ -50,6 +54,23 @@ export function Topbar({ lastUpdated, onRefresh }: TopbarProps) {
 
   return (
     <header className="h-14 px-6 flex items-center justify-end gap-3 border-b border-border-subtle bg-bg-elevated">
+      {onToggleSidebar !== undefined && (
+        <button
+          type="button"
+          onClick={onToggleSidebar}
+          className="mr-auto inline-flex h-9 w-9 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-bg-overlay hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+          aria-label={sidebarCollapsed === true ? 'Expand navigation menu' : 'Collapse navigation menu'}
+          aria-expanded={sidebarCollapsed !== true}
+          title={sidebarCollapsed === true ? 'Expand menu' : 'Collapse menu'}
+        >
+          {sidebarCollapsed === true ? (
+            <PanelLeftOpen className="h-5 w-5" aria-hidden />
+          ) : (
+            <PanelLeftClose className="h-5 w-5" aria-hidden />
+          )}
+        </button>
+      )}
+
       {lastUpdated !== undefined && (
         <div
           className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-bg-overlay text-xs text-text-secondary"
