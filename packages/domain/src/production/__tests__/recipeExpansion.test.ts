@@ -38,6 +38,20 @@ describe('unitConversionFactor', () => {
     ['pcs', 'pcs', 1],
     ['kg', 'kg', 1],
     ['Kg', 'KG', 1],   // case-insensitive
+    // Units-registry canonical aliases (PR #103): 'gr' == gram, 'lt' == litre.
+    // Mirrors DB migration 20260630000018. Recipe lines now spell mass as 'gr'.
+    ['gr', 'kg', 0.001],
+    ['kg', 'gr', 1000],
+    ['gr', 'g', 1],
+    ['g', 'gr', 1],
+    ['gr', 'gr', 1],
+    ['gr', 'mg', 1000],
+    ['mg', 'gr', 0.001],
+    ['lt', 'mL', 1000],
+    ['mL', 'lt', 0.001],
+    ['lt', 'L', 1],
+    ['L', 'lt', 1],
+    ['lt', 'lt', 1],
   ])('%s → %s = %s', (from, to, expected) => {
     expect(unitConversionFactor(from, to)).toBe(expected);
   });
@@ -91,5 +105,18 @@ describe('expandRecipe', () => {
     const expanded = expandRecipe(recipe, 50);
     // 50 × 250g = 12.5kg ; cost = 12.5 × 10,000 = 125,000 IDR
     expect(expanded[0]!.cost).toBe(125_000);
+  });
+
+  it('resolves cost for a "gr" recipe line on a "kg" material (units registry)', () => {
+    const recipe: RecipeRow[] = [
+      makeRow({
+        quantity: 18, unit: 'gr', material_unit: 'kg',
+        material_cost_price: 200_000, material_id: 'coffee',
+      }),
+    ];
+    const expanded = expandRecipe(recipe, 1);
+    // 18 gr = 0.018 kg ; cost = 0.018 × 200,000 = 3,600 IDR
+    expect(expanded[0]!.quantity_in_material_unit).toBeCloseTo(0.018, 9);
+    expect(expanded[0]!.cost).toBeCloseTo(3_600, 6);
   });
 });
