@@ -20,6 +20,12 @@ export interface ProductRow extends Product {
   unit: string;
   min_stock_threshold: number;
   category_name: string | null;
+  /**
+   * The owning category's `category_type` ('raw_material' | 'semi_finished' |
+   * 'finished'), embedded from the join. Source of truth for the Type column.
+   * Optional because not every ProductRow producer embeds the category.
+   */
+  category_type?: string | null;
   /** Self-declared allergens (Session 15 Phase 5.C — `products.allergens`). */
   allergens: ReadonlyArray<AllergenType>;
   // Session 27 — editable fields surfaced by update_product_v1
@@ -87,16 +93,27 @@ export type ProductDetailTab =
   | 'history';
 
 /**
- * The four conceptual product types we surface in the tabs filter, mapped
- * from the wider `product_type` text column. Anything outside the canonical
- * set falls back to 'finished'.
+ * The four conceptual product types we surface in the tabs filter + Type
+ * column. Derived from the owning category's `category_type` — the real source
+ * of truth shared with S46 purchasing (`useAllProductsForPO` filters on it).
+ *
+ * `product.is_semi_finished` is intentionally NOT consulted here: it is an
+ * orthogonal "usable as a recipe ingredient" flag, so a finished product sold
+ * to customers (e.g. American Bagel) can carry it while still being Finished.
+ *
+ * The legacy SKU-prefix heuristic is kept only as a defensive fallback for rows
+ * whose producer did not embed the category (`category_type` null/undefined).
  */
-export function classifyProduct(p: Pick<ProductRow, 'product_type' | 'sku'>): ProductTypeFilter {
+export function classifyProduct(
+  p: Pick<ProductRow, 'product_type' | 'sku' | 'category_type'>,
+): ProductTypeFilter {
   if (p.product_type === 'combo') return 'combo';
-  // The schema only has `finished` | `combo`. We use SKU prefixes (RAW, SFG)
-  // to surface the conceptual breakdown the screenshots show. This is a
-  // presentation-only classification — DB writes still go through the
-  // `product_type` column.
+  switch (p.category_type) {
+    case 'raw_material':  return 'raw';
+    case 'semi_finished': return 'semi-finished';
+    case 'finished':      return 'finished';
+    default:              break; // null/undefined → fall through to the heuristic
+  }
   const sku = (p.sku ?? '').toUpperCase();
   if (sku.startsWith('RAW') || sku.startsWith('CON') || sku.startsWith('HAS')) return 'raw';
   if (sku.startsWith('SFG')) return 'semi-finished';
