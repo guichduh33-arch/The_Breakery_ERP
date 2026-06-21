@@ -165,7 +165,7 @@ export function BrandLogo({
           x="140"
           y="24"
           textAnchor="middle"
-          fontFamily="var(--font-display, 'Playfair Display', 'Times New Roman', Georgia, serif)"
+          fontFamily="var(--font-brand, 'Playfair Display', 'Times New Roman', Georgia, serif)"
           fontWeight="500"
           fontSize="14"
           letterSpacing="2.4"
@@ -261,7 +261,7 @@ export function BrandLogo({
         {/* Tagline — "French Bakery / & / Pastry" stacked */}
         {withTagline && (
           <g
-            fontFamily="var(--font-display, 'Playfair Display', 'Times New Roman', Georgia, serif)"
+            fontFamily="var(--font-brand, 'Playfair Display', 'Times New Roman', Georgia, serif)"
             fontStyle="italic"
             fontWeight="400"
             fill={textFill}

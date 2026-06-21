@@ -3,7 +3,10 @@
 // scope so we don't re-construct (and re-parse the en-US locale data) on every
 // call. `toLocaleString` builds a fresh formatter under the hood each time —
 // the cached `_fmt` skips that overhead. Output is byte-identical.
-const _fmt = new Intl.NumberFormat('en-US');
+// IDR has no circulating sub-unit — amounts are always whole rupiah. Force
+// zero fraction digits so a fractional input (e.g. a WAC unit cost of
+// 1234.56) renders as "Rp 1,235" rather than leaking decimals into the UI.
+const _fmt = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
 
 export function roundIdr(amount: number): number {
   if (amount < 0) {
