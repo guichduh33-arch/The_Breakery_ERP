@@ -25,7 +25,6 @@ import ProductionPage from '@/pages/inventory/ProductionPage.js';
 import BatchProductionPage from '@/pages/inventory/BatchProductionPage.js';
 import ProductionSchedulePage from '@/pages/inventory/ProductionSchedulePage.js';
 import MarginWatchPage from '@/pages/inventory/MarginWatchPage.js';
-import RecipeEditorPage from '@/pages/inventory/RecipeEditorPage.js';
 import OpnameListPage from '@/pages/inventory/OpnameListPage.js';
 import OpnameDetailPage from '@/pages/inventory/OpnameDetailPage.js';
 import StockMovementsPage from '@/pages/inventory/StockMovementsPage.js';
@@ -260,14 +259,7 @@ export function AppRoutes() {
             </PermissionGate>
           }
         />
-        <Route
-          path="inventory/recipes"
-          element={
-            <PermissionGate required="inventory.read">
-              <RecipeEditorPage />
-            </PermissionGate>
-          }
-        />
+        <Route path="inventory/recipes" element={<Navigate to="/backoffice/products" replace />} />
         <Route
           path="inventory/recipes/:productId"
           element={

@@ -96,7 +96,6 @@ const GROUPS: NavGroup[] = [
       { to: '/backoffice/inventory/incoming', label: 'Incoming', icon: PackagePlus, permission: 'inventory.receive', indent: 1 },
       { to: '/backoffice/inventory/transfers', label: 'Transfers', icon: ArrowLeftRight, permission: 'inventory.read', indent: 1 },
       { to: '/backoffice/inventory/expiring', label: 'Expiring stock', icon: TimerOff, permission: 'inventory.read', indent: 1 },
-      { to: '/backoffice/inventory/recipes', label: 'Recipes', icon: BookOpen, permission: 'inventory.read', indent: 1 },
       { to: '/backoffice/inventory/production', label: 'Production', icon: ChefHat, permission: 'inventory.read', indent: 1 },
       { to: '/backoffice/inventory/opname', label: 'Opname', icon: ClipboardList, permission: 'inventory.read', indent: 1 },
       { to: '/backoffice/inventory/movements', label: 'Live Movements', icon: GitCommitHorizontal, permission: 'inventory.read', indent: 1 },

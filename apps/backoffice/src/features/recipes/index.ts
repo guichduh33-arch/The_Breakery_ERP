@@ -9,4 +9,3 @@
 // revealing path.
 
 export { RecipeBuilder, type RecipeBuilderProps } from './components/RecipeBuilder.js';
-export { RecipeStudio, type RecipeStudioProps } from './components/RecipeStudio.js';
