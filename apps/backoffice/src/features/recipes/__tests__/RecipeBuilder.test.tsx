@@ -1,85 +1,129 @@
 // apps/backoffice/src/features/recipes/__tests__/RecipeBuilder.test.tsx
-//
-// Session 14 / Phase 4.B — Smoke test for the recipe builder.
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import type { RecipeRow } from '@breakery/domain';
 
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { RecipeBuilder } from '@/features/recipes/index.js';
-
-const RECIPE_ROWS = [
+const ROWS: RecipeRow[] = [
   {
-    recipe_id: 'r-1', product_id: 'p-1', product_name: 'Aioli Sauce', product_unit: 'kg',
-    material_id: 'm-1', material_name: 'Mayonnaise', material_unit: 'kg', material_cost_price: 50000,
-    quantity: 0.9, unit: 'kg', is_active: true, notes: null,
-    created_at: '2026-01-01', updated_at: '2026-01-01',
-  },
-  {
-    recipe_id: 'r-2', product_id: 'p-1', product_name: 'Aioli Sauce', product_unit: 'kg',
-    material_id: 'm-2', material_name: 'Olive Oil', material_unit: 'l', material_cost_price: 100000,
-    quantity: 0.083, unit: 'l', is_active: true, notes: null,
-    created_at: '2026-01-01', updated_at: '2026-01-01',
+    recipe_id: 'r1', product_id: 'p1', product_name: 'Bread', product_unit: 'pcs',
+    material_id: 'm1', material_name: 'Flour', material_unit: 'kg',
+    material_cost_price: 12000, quantity: 500, unit: 'gr', is_active: true, notes: null,
   },
 ];
 
-vi.mock('@/lib/supabase.js', () => {
-  function buildChain(table: string): unknown {
-    const chain = {
-      select: () => chain,
-      eq:     () => chain,
-      is:     () => chain,
-      order:  () => Promise.resolve({
-        data: table === 'products' ? [
-          { id: 'p-1', sku: 'SFG-012', name: 'Aioli Sauce', unit: 'kg', current_stock: 0, cost_price: 60452 },
-          { id: 'p-2', sku: 'SFG-013', name: 'Garlic Paste', unit: 'kg', current_stock: 0, cost_price: 0 },
-        ] : table === 'recipes' ? [{ product_id: 'p-1' }] : [],
-        error: null,
-      }),
-      limit: () => Promise.resolve({ data: [], error: null }),
-    };
-    return chain;
-  }
+// --- hook mocks ------------------------------------------------------------
+const upsertMutateAsync = vi.fn().mockResolvedValue('r2');
+const deactivateMutate = vi.fn();
+const reorderMutate = vi.fn();
+const toggleMutateAsync = vi.fn().mockResolvedValue(undefined);
+let recipesData: RecipeRow[] = ROWS;
+let bakerData = false;
+
+vi.mock('@/features/inventory-production/hooks/useRecipes.js', () => ({
+  useRecipes: () => ({ data: recipesData, isLoading: false }),
+}));
+vi.mock('@/features/inventory-production/hooks/useUpsertRecipe.js', () => ({
+  useUpsertRecipe: () => ({ mutateAsync: upsertMutateAsync, isPending: false }),
+  UpsertRecipeError: class extends Error { code = 'unknown'; },
+}));
+vi.mock('@/features/inventory-production/hooks/useDeactivateRecipe.js', () => ({
+  useDeactivateRecipe: () => ({ mutate: deactivateMutate, isPending: false }),
+}));
+vi.mock('@/features/inventory-production/hooks/useReorderRecipeRows.js', () => ({
+  useReorderRecipeRows: () => ({ mutate: reorderMutate }),
+}));
+vi.mock('@/features/inventory-production/hooks/useUnits.js', async (orig) => ({
+  ...(await orig<typeof import('@/features/inventory-production/hooks/useUnits.js')>()),
+  useUnits: () => ({ data: [
+    { code: 'kg', label: 'kg', dimension: 'mass', factor_to_canonical: 1000 },
+    { code: 'gr', label: 'gr', dimension: 'mass', factor_to_canonical: 1 },
+  ] }),
+}));
+vi.mock('@/features/inventory-production/hooks/useBakerRecipeMode.js', () => ({
+  useBakerRecipeMode: () => ({ data: bakerData }),
+  useToggleBakerMode: () => ({ mutateAsync: toggleMutateAsync, isPending: false }),
+  useConvertBakerToAbsolute: () => ({ data: undefined, isFetching: false }),
+}));
+
+// --- heavy sub-component mocks --------------------------------------------
+vi.mock('@/features/inventory-production/components/RecipeCostPreviewCard.js', () => ({
+  RecipeCostPreviewCard: () => <div data-testid="cost-preview-card" />,
+}));
+vi.mock('@/features/inventory-production/components/RecipeVersionHistory.js', () => ({
+  RecipeVersionHistory: () => <div data-testid="version-history" />,
+}));
+vi.mock('@/features/inventory-production/components/BakerPreviewPanel.js', () => ({
+  BakerPreviewPanel: () => <div data-testid="baker-preview" />,
+}));
+vi.mock('@/features/inventory-production/components/RecipeDuplicateModal.js', () => ({
+  RecipeDuplicateModal: (props: { open: boolean }) =>
+    props.open ? <div data-testid="duplicate-modal" /> : null,
+}));
+vi.mock('@breakery/ui', async (orig) => {
+  const actual = await orig<typeof import('@breakery/ui')>();
   return {
-    supabase: {
-      from: (t: string) => buildChain(t),
-      rpc: (fn: string) => {
-        if (fn === 'list_recipes_v1') {
-          return Promise.resolve({ data: RECIPE_ROWS, error: null });
-        }
-        return Promise.resolve({ data: null, error: null });
-      },
-    },
+    ...actual,
+    IngredientPicker: (props: { onChange: (id: string, row: unknown) => void }) => (
+      <button
+        type="button"
+        data-testid="ingredient-picker"
+        onClick={() => props.onChange('m9', { unit: 'kg' })}
+      >
+        picker
+      </button>
+    ),
   };
 });
 
-function renderBuilder() {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+import { RecipeBuilder } from '../components/RecipeBuilder.js';
+
+function renderBuilder(readOnly = false) {
   return render(
-    <QueryClientProvider client={qc}>
-      <RecipeBuilder
-        productId="p-1"
-        productName="Aioli Sauce"
-        productUnit="kg"
-      />
-    </QueryClientProvider>,
+    <MemoryRouter>
+      <RecipeBuilder productId="p1" productName="Bread" productUnit="pcs" readOnly={readOnly} />
+    </MemoryRouter>,
   );
 }
 
-describe('RecipeBuilder', () => {
-  it('renders the calculation-base callout and recipe rows', async () => {
-    renderBuilder();
-    expect(await screen.findByText('Mayonnaise')).toBeInTheDocument();
-    expect(screen.getByText('Olive Oil')).toBeInTheDocument();
-    expect(screen.getByText(/Calculation base: 1 kg of finished product/i)).toBeInTheDocument();
-    // Footer total row + header label both mention "2 ingredients" — assert at least one.
-    expect(screen.getAllByText(/2 ingredients/i).length).toBeGreaterThan(0);
+describe('RecipeBuilder (unified)', () => {
+  beforeEach(() => {
+    recipesData = ROWS;
+    bakerData = false;
+    vi.clearAllMocks();
   });
 
-  it('exposes the add-ingredient form when not read-only', async () => {
+  it('keeps the calculation-base callout and shows the cost-preview card + ingredient picker', () => {
     renderBuilder();
-    await screen.findByText('Mayonnaise');
-    expect(screen.getByLabelText('Ingredient')).toBeInTheDocument();
-    expect(screen.getByLabelText('Quantity')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Add ingredient/i })).toBeInTheDocument();
+    expect(screen.getByText(/Calculation base: 1 pcs/i)).toBeInTheDocument();
+    expect(screen.getByTestId('cost-preview-card')).toBeInTheDocument();
+    expect(screen.getByTestId('ingredient-picker')).toBeInTheDocument();
+    expect(screen.getByText('Flour')).toBeInTheDocument();
+  });
+
+  it('opens the duplicate modal from the Duplicate button', () => {
+    renderBuilder();
+    expect(screen.queryByTestId('duplicate-modal')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('duplicate-recipe-button'));
+    expect(screen.getByTestId('duplicate-modal')).toBeInTheDocument();
+  });
+
+  it('shows the History tab content when selected', () => {
+    renderBuilder();
+    fireEvent.mouseDown(screen.getByRole('tab', { name: /history/i }));
+    expect(screen.getByTestId('version-history')).toBeInTheDocument();
+  });
+
+  it('reveals the target-flour block when baker mode is on', () => {
+    bakerData = true;
+    renderBuilder();
+    expect(screen.getByTestId('baker-target-flour-block')).toBeInTheDocument();
+  });
+
+  it('hides the add form and duplicate button in readOnly mode', () => {
+    renderBuilder(true);
+    expect(screen.queryByTestId('ingredient-picker')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('duplicate-recipe-button')).not.toBeInTheDocument();
+    expect(screen.getByText('Flour')).toBeInTheDocument();
   });
 });

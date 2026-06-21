@@ -96,7 +96,6 @@ const GROUPS: NavGroup[] = [
       { to: '/backoffice/inventory/incoming', label: 'Incoming', icon: PackagePlus, permission: 'inventory.receive', indent: 1 },
       { to: '/backoffice/inventory/transfers', label: 'Transfers', icon: ArrowLeftRight, permission: 'inventory.read', indent: 1 },
       { to: '/backoffice/inventory/expiring', label: 'Expiring stock', icon: TimerOff, permission: 'inventory.read', indent: 1 },
-      { to: '/backoffice/inventory/recipes', label: 'Recipes', icon: BookOpen, permission: 'inventory.read', indent: 1 },
       { to: '/backoffice/inventory/production', label: 'Production', icon: ChefHat, permission: 'inventory.read', indent: 1 },
       { to: '/backoffice/inventory/opname', label: 'Opname', icon: ClipboardList, permission: 'inventory.read', indent: 1 },
       { to: '/backoffice/inventory/movements', label: 'Live Movements', icon: GitCommitHorizontal, permission: 'inventory.read', indent: 1 },
@@ -256,7 +255,7 @@ function routeMatches(to: string, end: boolean | undefined, pathname: string): b
 /**
  * Returns the label of the top-level category that owns the active route, or
  * null. Picks the longest matching `to` so deep links resolve to the right
- * group (e.g. /backoffice/inventory/recipes → Stock Management, not Operations).
+ * group (e.g. /backoffice/inventory/transfers → Stock Management, not Operations).
  */
 function findActiveGroupLabel(
   groups: {
