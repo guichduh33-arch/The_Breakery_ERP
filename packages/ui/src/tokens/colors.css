@@ -49,63 +49,95 @@
   --border-gold:  var(--gold-base);
 }
 
-/* ---------- Backoffice theme — light cream ---------- */
+/* ---------- Backoffice theme — light, high-contrast cool neutral ----------
+ * Owner direction (2026-06-22): keep a LIGHT theme (less eye fatigue) but raise
+ * contrast and DROP the gold accent. The warm cream/ivoire surfaces were too
+ * washed out; this palette uses a cool neutral gray scale (crisp white cards on
+ * a light-gray page), near-black cool text, firmer borders, and a professional
+ * royal-blue accent. The `--gold-*` tokens are remapped to blue here so every
+ * `text-gold` / `bg-gold-soft` / `border-gold` utility becomes blue in the
+ * Backoffice WITHOUT editing components — the POS keeps real gold (tokens
+ * unchanged under .theme-pos / :root). */
 .theme-backoffice {
-  /* Surfaces — cream/ivoire layered (D4 — "ivoire mat"). */
-  --surface-0: #f7f3ec;        /* page bg — warm cream */
-  --surface-1: #fbf8f2;        /* primary panels */
+  /* Body font — IBM Plex Sans (professional enterprise-software workhorse,
+   * highly legible on dense ERP tables). Scoped here so the POS keeps Inter.
+   * The app must @import '@fontsource-variable/ibm-plex-sans'. */
+  --font-body: 'IBM Plex Sans Variable', 'IBM Plex Sans', 'Inter Fallback',
+    system-ui, -apple-system, sans-serif;
+  --font-sans: var(--font-body);
+
+  /* Display/headings — also IBM Plex Sans in the Backoffice. The default
+   * --font-display is Playfair Display (decorative serif italic, the POS
+   * "luxe" branding face); on a staff tool it reads as inconsistent. This
+   * switches product names + all `font-display` section headings to the
+   * readable sans. POS keeps Playfair (token unchanged under .theme-pos). */
+  --font-display: var(--font-body);
+
+  /* Amounts & data numbers — IBM Plex Mono (tabular, very legible digits,
+   * family-matched to IBM Plex Sans). Replaces JetBrains Mono on all
+   * `font-mono` (amounts, SKU, IDs) and Fraunces on `font-data` (KPI values).
+   * The app must @import the three IBM Plex Mono weights. POS keeps its own
+   * mono/data faces (tokens unchanged under .theme-pos). */
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'JetBrains Mono', monospace;
+  --font-data: var(--font-mono);
+
+  /* Surfaces — cool neutral, layered for contrast (white cards pop on a
+   * light-gray page). */
+  --surface-0: #eaeef3;        /* page bg — cool light gray */
+  --surface-1: #f3f6f9;        /* primary panels */
   --surface-2: #ffffff;        /* cards */
   --surface-3: #ffffff;        /* popovers */
-  --surface-4: #f1ebe0;        /* hover */
-  --cream:     #f7f3ec;        /* explicit alias for components that want it */
+  --surface-4: #dde4ec;        /* hover — clearly distinct from bg */
+  --cream:     #eaeef3;        /* legacy alias → now the cool page bg */
 
   --bg-base:     var(--surface-0);
   --bg-elevated: var(--surface-2);
   --bg-overlay:  var(--surface-3);
   --bg-input:    #ffffff;
 
-  /* Borders — warm beige tinted. */
-  --border-subtle: #ece4d4;
-  --border-strong: #d9ccb3;
-  --border-muted:  #f3ecdd;
+  /* Borders — cool gray, firmer for crisp separation. */
+  --border-subtle: #d3dae3;
+  --border-strong: #aeb9c6;
+  --border-muted:  #e2e7ed;
   --border-focus:  var(--gold-base);
+  --border-gold:   rgba(30, 85, 214, 0.35);   /* accent-tinted (now blue) */
 
-  /* Text — warm near-black on cream. */
-  --text-primary:   #1a1408;
-  --text-secondary: #5a4a35;
-  --text-muted:     #8a7660;
-  --text-subtle:    #a89a82;
-  --text-disabled:  #c8baa0;
+  /* Text — cool near-black, stronger mid-tones for legibility. */
+  --text-primary:   #0e1726;   /* ~13:1 on white */
+  --text-secondary: #33404f;   /* ~9:1  */
+  --text-muted:     #58646f;   /* ~5.3:1 */
+  --text-subtle:    #79838f;
+  --text-disabled:  #a9b3be;
 
-  /* Gold — same hue, soft tint shifted for light bg. */
-  --gold-soft:   rgba(201, 165, 87, 0.18);
-  --gold-base:   #c9a557;
-  --gold-hover:  #b8954a;
-  --gold-pressed:#a08245;
-  --gold-strong: #a08245;
-  --gold-fg:     #ffffff;       /* on gold buttons text becomes white */
+  /* Accent — royal blue, replaces gold. Tokens keep the `--gold-*` names so
+   * `text-gold` / `bg-gold-soft` / `border-gold` utilities Just Work. */
+  --gold-soft:   rgba(30, 85, 214, 0.12);   /* active-nav / icon tint */
+  --gold-base:   #1e55d6;                    /* primary action / active (~6.4:1) */
+  --gold-hover:  #1a4abf;
+  --gold-pressed:#163f9f;
+  --gold-strong: #163f9f;
+  --gold-fg:     #ffffff;                     /* white text on blue fills */
 
-  /* Semantic — same hues, adjusted softs for light bg. */
-  --green-base:    #0f9a6e;
-  --green-hover:   #14b481;
-  --green-pressed: #0a7a57;
-  --red-base:      #d63b3b;
-  --red-soft:      rgba(214, 59, 59, 0.10);
-  /* On cream the base red already reads as foreground — no lighter tint. */
+  /* Semantic — darkened for AA contrast on the light surfaces. */
+  --green-base:    #0f8a5a;
+  --green-hover:   #11a06a;
+  --green-pressed: #0b6e48;
+  --red-base:      #d32f2f;
+  --red-soft:      rgba(211, 47, 47, 0.10);
   --red-fg:        var(--red-base);
-  --blue-info:     #2563eb;
-  --amber-warn:    #d97706;
+  --blue-info:     #2d8fe0;     /* lighter sky-blue — distinct from accent */
+  --amber-warn:    #b45309;     /* deep amber so it reads on light */
 
   --success:      var(--green-base);
-  --success-soft: rgba(15, 154, 110, 0.10);
+  --success-soft: rgba(15, 138, 90, 0.10);
   --warning:      var(--amber-warn);
-  --warning-soft: rgba(217, 119, 6, 0.10);
+  --warning-soft: rgba(180, 83, 9, 0.10);
   --danger:       var(--red-base);
   --danger-soft:  var(--red-soft);
   --info:         var(--blue-info);
-  --info-soft:    rgba(37, 99, 235, 0.10);
+  --info-soft:    rgba(45, 143, 224, 0.12);
 
-  /* Backdrop — softer on light. */
-  --backdrop:      rgba(20, 14, 8, 0.45);
+  /* Backdrop — cool, slightly deeper for modal focus. */
+  --backdrop:      rgba(14, 23, 38, 0.50);
   --backdrop-blur: 6px;
 }
