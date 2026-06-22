@@ -7146,6 +7146,10 @@ export type Database = {
         Args: { p_batch: Json; p_items: Json }
         Returns: Json
       }
+      record_batch_production_v2: {
+        Args: { p_batch: Json; p_items: Json }
+        Returns: Json
+      }
       record_cash_movement_v2: {
         Args: {
           p_amount: number

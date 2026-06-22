@@ -23,6 +23,7 @@ const TABS: ReadonlyArray<{ id: ProductDetailTab; label: string }> = [
   { id: 'modifiers', label: 'Modifiers' },
   { id: 'costing',  label: 'Costing'  },
   { id: 'purchase', label: 'Purchase' },
+  { id: 'stations', label: 'Stations' },
   { id: 'history',  label: 'History'  },
 ];
 
