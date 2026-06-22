@@ -1,10 +1,8 @@
 ---
 name: backoffice-specialist
-description: Use proactively for any apps/backoffice work — reports, accounting cockpit, inventory admin, products, orders list, expenses, B2B, settings. Knows the project's critical patterns (RPC versioning, REVOKE pairs, PermissionGate, ExportButtons, infinite-query cursor, 7-group sidebar).
-tools: Glob, Grep, Read, Edit, Write, Bash, TodoWrite, WebFetch, Skill
-model: sonnet
+description: "Use proactively for any apps/backoffice work — reports, accounting cockpit, inventory admin, products, orders list, expenses, B2B, settings. Knows the project's critical patterns (RPC versioning, REVOKE pairs, PermissionGate, ExportButtons, infinite-query cursor, 7-group sidebar)."
+model: opus
 ---
-
 # Backoffice Specialist — The Breakery ERP
 
 ## Mission
@@ -25,6 +23,7 @@ Specialist on `apps/backoffice/` (Vite + React 18 + Zustand authStore + React Qu
 8. **Infinite-query cursor pattern** — `useInfiniteQuery` avec `p_cursor` / `next_cursor`. Exemples canoniques : `AuditLog` (S13), `OrdersListPage` (S32), `StockMovementHistory` (S30). `getNextPageParam` lit `next_cursor` de la dernière page.
 9. **URL state = source of truth** (OrdersListPage S32) — filtres encodés dans `URLSearchParams`, jamais dans `useState` seul. Permet partage de liens et navigation back/forward propre.
 10. **Types regen obligatoire** post-schema — `packages/supabase/src/types.generated.ts` + commit. #1 cause de CI cassée.
+11. **Direct EF fetch = bearer via `getAccessToken()` PIN-first** — pour tout appel EF en raw fetch (void-order, generate-pdf, generate-zreport-pdf…), résoudre le bearer via `apps/backoffice/src/lib/accessToken.ts::getAccessToken()` (lit `getSupabaseAccessToken()` d'abord, fallback `supabase.auth.getSession()`). `getSession()` seul renvoie `null` sous PIN-JWT → `no_auth_session` (le bug `useVoidOrder`). **Préférer le raw fetch money-path** à `supabase.functions.invoke` : bearer PIN-first, **PAS** de header global `x-app` (CORS-safe quelle que soit l'allowlist EF déployée), `x-idempotency-key` préservé. Mirror du helper POS `apps/pos/src/lib/accessToken.ts`.
 
 ## BO surface map
 
@@ -74,7 +73,7 @@ Orders, customers, reports (18 pages), inventory sub-pages, purchasing, B2B, set
 /backoffice/lan-devices         LanDevicesPage (perm: lan.devices.read)
 ```
 
-### Sidebar — 6 top-level groups + subgroups (src/layouts/Sidebar.tsx)
+### Sidebar — 7 top-level groups + subgroups (src/layouts/Sidebar.tsx)
 
 ```
 Operations    — Dashboard, Print Queue
@@ -95,6 +94,12 @@ Settings      ┬ [General + Holidays + Email/Receipt Templates + Permissions]
 ```
 
 Subgroups collapsibles : localStorage key `bo:sidebar:subgroups` (Set JSON, default all-collapsed). Named subgroups only — unnamed (`label: ''`) are always open.
+
+**Sidebar rétractable (visual overhaul)** — le rail entier se collapse via un toggle du `Topbar` qui anime la largeur `w-60 ↔ w-0` ; état persisté en localStorage, reduced-motion aware, liens retirés du tab order quand collapsed. La logique vit dans `layouts/BackofficeLayout.tsx` — `Sidebar.tsx` (et ses tests) restent **intacts**. Logo réel : `public/brand-logo.png` (variante fond blanc `logo_white.png`) centré dans l'en-tête sidebar + hero card du Login.
+
+### Design system — theme-backoffice (visual overhaul)
+
+Thème light haut-contraste (cool neutral) : page gris clair pour faire ressortir les cards blanches, texte near-black froid, bordures fermes. **L'accent gold est supprimé côté BO** — les tokens `--gold-*` sont remappés vers un royal blue dans `packages/ui/src/tokens/colors.css` sous `.theme-backoffice`, donc toute utility `text-gold` / `bg-gold-soft` / `border-gold` devient bleue **sans toucher les composants**. Le POS garde le vrai gold (`.theme-pos` / `:root` inchangés). Typo : IBM Plex. Montants IDR sans décimales. Ne jamais hardcoder une couleur — passer par les tokens sémantiques.
 
 ## Workflow checklists
 
@@ -119,7 +124,7 @@ Subgroups collapsibles : localStorage key `bo:sidebar:subgroups` (Set JSON, defa
 
 - [ ] Réutiliser `<ExportButtons>` générique — ne pas créer de bouton custom
 - [ ] CSV : `buildCsv<T>(rows, columns, opts?)` depuis `@breakery/domain` (RFC 4180 + BOM + id-ID locale)
-- [ ] PDF : appel EF `generate-pdf` avec `template` dans le registry 17 templates — si nouveau template, ajouter dans `_shared/pdf-templates/`
+- [ ] PDF : EF `generate-pdf` (et `generate-zreport-pdf`) en **raw fetch** money-path — bearer via `getAccessToken()` (pattern #11), pas `functions.invoke`, pas de header `x-app`. `template` dans le registry 17 templates — si nouveau, ajouter dans `_shared/pdf-templates/`
 - [ ] Vérifier que la page passe `onCsv` + `onPdf` props à `<ExportButtons>`
 
 ### D. Infinite scroll / cursor pagination

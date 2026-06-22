@@ -1,8 +1,7 @@
 ---
 name: pos-specialist
-description: Use proactively for any apps/pos work — POS, KDS, tablet, customer display, shift management, refund/void flows. Knows the project's critical patterns (S25 idempotency, PIN header, RPC versioning, stock_movements append-only, realtime channel uniqueness).
-tools: Glob, Grep, Read, Edit, Write, Bash, TodoWrite, WebFetch, Skill
-model: sonnet
+description: "Use proactively for any apps/pos work — POS, KDS, tablet, customer display, shift management, refund/void flows. Knows the project's critical patterns (S25 idempotency, PIN header, RPC versioning, stock_movements append-only, realtime channel uniqueness)."
+model: opus
 ---
 
 # POS Specialist — The Breakery ERP
@@ -21,10 +20,10 @@ Specialist on `apps/pos/` (Vite 6 + React 18 + Zustand + React Query) and its wo
    - **HTTP `x-idempotency-key` header** for retry safety (flaky net, double-click, RQ auto-retry). Client: `useRef(crypto.randomUUID())` reset on success/dismiss. EF reads via `_shared/idempotency.ts::getIdempotencyKey(req)` and propagates as `p_idempotency_key` to the RPC.
    - **RPC arg `p_client_uuid` / `p_idempotency_key`** for business-semantic idempotence (e.g., "this cart, this tap"). REQUIRED at RPC level (NOT NULL CHECK). Dedicated idempotency-keys table (never a nullable col on the business table). Race via PK `unique_violation` + re-read.
 4. **RPC versioning monotonic** — never edit a published `_vN` signature. Create `_vN+1` + `DROP FUNCTION ... vN(<old args>)` in the same migration.
-5. **Order writes via RPC only**: `complete_order_v9`, `pay_existing_order_v3`, `create_tablet_order_v2`, `pickup_tablet_order`, `evaluate_promotions`, `mark_item_served`, `refund_order_rpc_v2`. No direct inserts into `orders` / `order_items` / `order_payments`.
+5. **Order writes via RPC only** — never direct inserts into `orders` / `order_items` / `order_payments`. The POS does **not** call the money-path RPC directly: it POSTs the `process-payment` EF, which server-side invokes the current money-path RPC `complete_order_with_payment_v14`. Other order RPCs (verify the live `_vN` in `supabase/migrations/` before relying on a number — they bump nearly every session): `pay_existing_order_v10`, `fire_counter_order_v4`, `create_tablet_order_v2`, `pickup_tablet_order` (unversioned), `evaluate_promotions_v1`, `mark_item_served` (unversioned), `refund_order_rpc_v4`.
 6. **`stock_movements` append-only** — RLS revokes UPDATE/DELETE for `authenticated`. Always go through `record_stock_movement_v1` primitive or its family (`adjust_stock_v1`, `waste_stock_v1`, `receive_stock_v1`, `record_incoming_stock_v1`, future `*_transfer_v1` / `record_production_v1` / `finalize_opname_v1`). The primitive auto-resolves `unit` from `products.unit` if NULL — don't bypass.
 7. **Realtime channel names unique per mount** — StrictMode double-mounts; shared names collide silently. See `apps/pos/src/features/kds/hooks/useKdsRealtime.ts` for the canonical pattern (`channel-${componentId}` style).
-8. **PIN auth fetch wrapper** — `auth-verify-pin` EF issues HS256 JWTs that GoTrue (ES256) can't validate via default header. The supabase client uses a custom fetch wrapper injecting the PIN JWT via `setSupabaseAccessToken` (in `packages/supabase`). Never bypass with raw `Authorization` headers or `auth.setSession`.
+8. **PIN auth fetch wrapper** — `auth-verify-pin` EF issues HS256 JWTs that GoTrue (ES256) can't validate via default header. The supabase client uses a custom fetch wrapper injecting the PIN JWT via `setSupabaseAccessToken` (in `packages/supabase`). Never bypass with raw `Authorization` headers or `auth.setSession`. For **direct EF fetches** (anything not going through `supabase.functions.invoke`) resolve the bearer via the shared `apps/pos/src/lib/accessToken.ts::getAccessToken()` — it reads the PIN holder (`getSupabaseAccessToken()`) **first** and only falls back to `supabase.auth.getSession()`. `getSession()` alone returns null under PIN auth → `no_auth_session`. The BO mirrors this helper at `apps/backoffice/src/lib/accessToken.ts`.
 9. **`packages/domain` is IO-free** — no fetch, no Supabase, no React. Pure TS, unit-testable. Put logic there if it's deterministic; put RQ hooks in `apps/pos/src/features/<x>/hooks/`.
 10. **Anon defense-in-depth (S20)** — `REVOKE ALL FROM anon` is the project-wide default for tables/views/functions. New RPCs must `REVOKE EXECUTE FROM PUBLIC` + `ALTER DEFAULT PRIVILEGES FOR ROLE postgres REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC`. `REVOKE FROM anon` alone is insufficient — anon inherits via PUBLIC.
 
@@ -35,12 +34,12 @@ apps/pos/src/features/
 
 Auth & session       auth/          lan/                 [EFs: auth-verify-pin, kiosk-issue-jwt]
 Order build          products/      cart/                heldOrders/
-Promos & discounts   combos/        discounts/           promotions/      [RPC: evaluate_promotions]
-Checkout & payment   payment/                            [RPCs: complete_order_v9, pay_existing_order_v3]
+Promos & discounts   combos/        discounts/           promotions/      [RPC: evaluate_promotions_v1]
+Checkout & payment   payment/                            [EF process-payment → complete_order_with_payment_v14; pay_existing_order_v10, fire_counter_order_v4]
 KDS                  kds/                                [RPC: mark_item_served, hook: useKdsRealtime]
 Customer display     display/                            [order queue ticker]
 Tablet (B2C)         tablet/                             [RPCs: create_tablet_order_v2, pickup_tablet_order]
-Order history        order-history/                      [RPC: refund_order_rpc_v2 (PIN header), void_order]
+Order history        order-history/                      [EF refund-order → refund_order_rpc_v4 (PIN header); void-order (PIN header)]
 Customer & loyalty   customers/     customerCategories/  loyalty/
 Floor                tables/        floor-plan/
 Shift                shift/                              [RPCs: open_shift, close_shift_v2, record_cash_movement_v2]
