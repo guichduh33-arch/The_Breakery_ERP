@@ -101,7 +101,7 @@ export function useCustomersList(filters: CustomersListFilters = {}) {
       if (filters.search !== undefined && filters.search.trim() !== '') {
         const term = sanitizeSearchTerm(filters.search.trim());
         if (term !== '') {
-          q = q.or(`name.ilike.%${term}%,phone.ilike.${term}%,email.ilike.%${term}%`);
+          q = q.or(`name.ilike.%${term}%,phone.ilike.%${term}%,email.ilike.%${term}%`);
         }
       }
       if (filters.categoryId !== undefined && filters.categoryId !== null && filters.categoryId !== '') {

@@ -42,8 +42,10 @@ export function useImportCatalog() {
     },
     onSuccess: async (_report, vars) => {
       if (!vars.dryRun) {
-        await qc.invalidateQueries({ queryKey: ['products'] });
-        await qc.invalidateQueries({ queryKey: ['categories'] });
+        await Promise.all([
+          qc.invalidateQueries({ queryKey: ['products'] }),
+          qc.invalidateQueries({ queryKey: ['categories'] }),
+        ]);
       }
     },
   });
