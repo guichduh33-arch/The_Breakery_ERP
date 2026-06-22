@@ -82,7 +82,7 @@ const GROUPS: NavGroup[] = [
   {
     label: 'Purchase',
     items: [
-      { to: '/backoffice/purchasing/purchase-orders', label: 'Purchase Orders', icon: ClipboardCheck, permission: 'purchasing.po.read' as never },
+      { to: '/backoffice/purchasing/purchase-orders', label: 'Purchase Orders', icon: ClipboardCheck, permission: 'purchasing.po.read' },
       { to: '/backoffice/suppliers', label: 'Suppliers', icon: Building2, permission: 'suppliers.read' },
     ],
   },
@@ -123,7 +123,7 @@ const GROUPS: NavGroup[] = [
           { to: '/backoffice/accounting/trial-balance', label: 'Trial Balance', icon: Scale, permission: 'accounting.tb.read' },
           { to: '/backoffice/accounting/mappings', label: 'Account Mappings', icon: GitCommitHorizontal, permission: 'accounting.read' },
           { to: '/backoffice/settings/accounting', label: 'Fiscal Periods', icon: Calculator, permission: 'accounting.period.close' },
-          { to: '/backoffice/cash-register/zreports', label: 'Cash Closing (Z-Reports)', icon: Signature, permission: 'zreports.read' as never },
+          { to: '/backoffice/cash-register/zreports', label: 'Cash Closing (Z-Reports)', icon: Signature, permission: 'zreports.read' },
         ],
       },
     ],

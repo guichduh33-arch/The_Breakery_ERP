@@ -27,7 +27,7 @@ export function SalesVelocityChart({ data, unit }: SalesVelocityChartProps) {
           <XAxis dataKey="label" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
           <YAxis tick={{ fontSize: 10 }} />
           <Tooltip />
-          <Bar dataKey="units" fill="#c89b4f" />
+          <Bar dataKey="units" fill="var(--gold-base, #c89b4f)" />
         </BarChart>
       </ResponsiveContainer>
     </div>

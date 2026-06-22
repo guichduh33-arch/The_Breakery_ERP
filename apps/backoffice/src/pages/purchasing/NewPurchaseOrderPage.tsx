@@ -22,7 +22,7 @@ import { useAllProductsForPO } from '@/features/purchasing/hooks/useAllProductsF
 export default function NewPurchaseOrderPage(): JSX.Element {
   const navigate = useNavigate();
   const hasPermission = useAuthStore((s) => s.hasPermission);
-  const canCreate = hasPermission('purchasing.po.create' as never);
+  const canCreate = hasPermission('purchasing.po.create');
 
   const [value, setValue]     = useState<POFormDraftValue>(emptyPOFormDraftValue);
   const [error, setError]     = useState<string | undefined>(undefined);

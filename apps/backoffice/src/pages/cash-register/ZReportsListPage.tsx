@@ -25,8 +25,8 @@ function statusBadgeVariant(status: ZReportStatus): 'default' | 'secondary' | 'd
 
 export default function ZReportsListPage(): JSX.Element {
   const hasPermission = useAuthStore((s) => s.hasPermission);
-  const canSign = hasPermission('zreports.sign' as never);
-  const canVoid = hasPermission('zreports.void' as never);
+  const canSign = hasPermission('zreports.sign');
+  const canVoid = hasPermission('zreports.void');
 
   const [status, setStatus]     = useState<ZReportStatus | 'all'>('all');
   const [startDate, setStart]   = useState<string>('');

@@ -136,7 +136,7 @@ export default function SalesByHourPage() {
                   }
                   labelFormatter={(label) => `Hour ${label as number}`}
                 />
-                <Bar dataKey="total" fill="#c8a874" name="total" />
+                <Bar dataKey="total" fill="var(--gold-base, #c8a874)" name="total" />
               </BarChart>
             </ResponsiveContainer>
           </div>

@@ -77,11 +77,11 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
   const navigate      = useNavigate();
   const { id }        = useParams<{ id: string }>();
   const hasPermission = useAuthStore((s) => s.hasPermission);
-  const canRead       = hasPermission('purchasing.po.read' as never);
-  const canReceive    = hasPermission('purchasing.po.receive' as never);
-  const canCancel     = hasPermission('purchasing.po.cancel' as never);
-  const canPay        = hasPermission('purchasing.po.pay' as never);
-  const canEdit       = hasPermission('purchasing.po.edit' as never);
+  const canRead       = hasPermission('purchasing.po.read');
+  const canReceive    = hasPermission('purchasing.po.receive');
+  const canCancel     = hasPermission('purchasing.po.cancel');
+  const canPay        = hasPermission('purchasing.po.pay');
+  const canEdit       = hasPermission('purchasing.po.edit');
 
   const detail   = usePurchaseOrderDetail(id);
   const sections = useSections();

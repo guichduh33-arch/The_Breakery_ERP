@@ -150,7 +150,12 @@ export type PermissionCode =
   | 'inventory.cost_correction'
   // Session 46 — Purchasing: traceable payments + editable PO (seeded by 20260701000017)
   | 'purchasing.po.pay'
-  | 'purchasing.po.edit';
+  | 'purchasing.po.edit'
+  // Purchasing PO lifecycle (seeded by 20260517000110_init_purchase_orders)
+  | 'purchasing.po.read'
+  | 'purchasing.po.create'
+  | 'purchasing.po.receive'
+  | 'purchasing.po.cancel';
 
 /**
  * Check whether a user has a single permission. Pure client-side lookup —

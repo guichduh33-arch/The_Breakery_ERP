@@ -526,7 +526,7 @@ function AnalyticsTab({ customerId }: { customerId: string | null }): JSX.Elemen
                 formatter={(v: number) => [rp(v), 'Spend']}
                 contentStyle={{ fontSize: 12, borderRadius: 8 }}
               />
-              <Bar dataKey="total" fill="#c8a874" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="total" fill="var(--gold-base, #c8a874)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

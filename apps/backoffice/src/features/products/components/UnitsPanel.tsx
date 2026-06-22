@@ -308,7 +308,7 @@ export function UnitsPanel({ product }: Props): JSX.Element {
                     min={0.000001}
                     step="any"
                     disabled={!canWrite}
-                    onChange={(e) => updateAlt(alt._key, 'factor_to_base', Number(e.target.value))}
+                    onChange={(e) => updateAlt(alt._key, 'factor_to_base', Number(e.target.value) || 0)}
                     className="w-28 rounded-md border border-border-subtle bg-bg-input px-2 py-1.5 font-mono text-sm text-text-primary disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
                   />
                   <span className="text-xs text-text-secondary font-mono">{baseUnit}</span>

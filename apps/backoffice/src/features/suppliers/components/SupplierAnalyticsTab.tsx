@@ -98,7 +98,7 @@ export function SupplierAnalyticsTab({ items, spendByPo }: SupplierAnalyticsTabP
                   <XAxis dataKey="label" tick={{ fontSize: 10 }} stroke="#9ca3af" interval={1} />
                   <YAxis tick={{ fontSize: 10 }} stroke="#9ca3af" width={28} allowDecimals={false} />
                   <Tooltip formatter={(v: number) => [v, 'Qty']} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
-                  <Bar dataKey="volume" fill="#c8a874" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="volume" fill="var(--gold-base, #c8a874)" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (

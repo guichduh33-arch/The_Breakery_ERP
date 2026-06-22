@@ -20,7 +20,7 @@ import { TrendingUp } from 'lucide-react';
 import { formatIdr } from '@breakery/utils';
 import type { SupplierPurchaseItem } from '@/features/suppliers/hooks/useSupplierPurchaseItems.js';
 
-const PALETTE = ['#c8a874', '#6366f1', '#16a34a', '#dc2626', '#0891b2', '#d946ef'];
+const PALETTE = ['var(--gold-base, #c8a874)', '#6366f1', '#16a34a', '#dc2626', '#0891b2', '#d946ef'];
 
 function fmtDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: '2-digit' });
@@ -39,7 +39,7 @@ export function SupplierPriceEvolutionTab({ items }: SupplierPriceEvolutionTabPr
 
   const colorFor = useMemo(() => {
     const m = new Map<string, string>();
-    products.forEach((p, i) => m.set(p.id, PALETTE[i % PALETTE.length] ?? '#c8a874'));
+    products.forEach((p, i) => m.set(p.id, PALETTE[i % PALETTE.length] ?? 'var(--gold-base, #c8a874)'));
     return m;
   }, [products]);
 
@@ -91,7 +91,7 @@ export function SupplierPriceEvolutionTab({ items }: SupplierPriceEvolutionTabPr
         <div className="flex flex-wrap gap-2">
           {products.map((p) => {
             const on = selected.has(p.id);
-            const color = colorFor.get(p.id) ?? '#c8a874';
+            const color = colorFor.get(p.id) ?? 'var(--gold-base, #c8a874)';
             return (
               <button
                 key={p.id}
