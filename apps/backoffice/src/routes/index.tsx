@@ -31,6 +31,7 @@ import StockMovementsPage from '@/pages/inventory/StockMovementsPage.js';
 import DisplayStockPage from '@/pages/inventory/DisplayStockPage.js';
 import AlertsPage from '@/pages/inventory/AlertsPage.js';
 import ProductDashboardPage from '@/pages/inventory/ProductDashboardPage.js';
+import ProductStockPage from '@/pages/inventory/ProductStockPage.js';
 import SectionsPage from '@/pages/inventory/SectionsPage.js';
 import PurchaseOrdersListPage from '@/pages/purchasing/PurchaseOrdersListPage.js';
 import NewPurchaseOrderPage from '@/pages/purchasing/NewPurchaseOrderPage.js';
@@ -198,6 +199,14 @@ export function AppRoutes() {
           element={
             <PermissionGate required="inventory.read">
               <InventoryPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="inventory/:productId"
+          element={
+            <PermissionGate required="inventory.read">
+              <ProductStockPage />
             </PermissionGate>
           }
         />

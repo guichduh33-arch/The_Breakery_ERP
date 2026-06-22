@@ -8,12 +8,12 @@
 
 import { Plus, Truck, Trash2, Boxes, Package, Coffee, AlertTriangle } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button, KpiTile, SectionLabel } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
 import { AdjustModal } from '@/features/inventory/components/AdjustModal.js';
 import { ReceiveModal } from '@/features/inventory/components/ReceiveModal.js';
 import { WasteModal } from '@/features/inventory/components/WasteModal.js';
-import { MovementHistoryDrawer } from '@/features/inventory/components/MovementHistoryDrawer.js';
 import { StockLevelRow } from '@/features/inventory/components/StockLevelRow.js';
 import {
   useStockLevels,
@@ -28,10 +28,10 @@ type ModalState =
   | { kind: 'none' }
   | { kind: 'adjust';  product?: Row }
   | { kind: 'receive'; product?: Row }
-  | { kind: 'waste';   product?: Row }
-  | { kind: 'history'; product: Row };
+  | { kind: 'waste';   product?: Row };
 
 export default function InventoryPage() {
+  const navigate = useNavigate();
   const hasPermission = useAuthStore((s) => s.hasPermission);
   const canRead    = hasPermission('inventory.read');
   const canAdjust  = hasPermission('inventory.adjust');
@@ -190,7 +190,7 @@ export default function InventoryPage() {
                   canAdjust={canAdjust}
                   canReceive={canReceive}
                   canWaste={canWaste}
-                  onView={(r) => setModal({ kind: 'history', product: r })}
+                  onView={(r) => navigate(`/backoffice/inventory/${r.product_id}`)}
                   onAdjust={(r) => setModal({ kind: 'adjust', product: r })}
                   onReceive={(r) => setModal({ kind: 'receive', product: r })}
                   onWaste={(r) => setModal({ kind: 'waste', product: r })}
@@ -241,10 +241,6 @@ export default function InventoryPage() {
       <WasteModal
         open={modal.kind === 'waste'}
         {...(modal.kind === 'waste' && modal.product !== undefined ? { initialProduct: modal.product } : {})}
-        onClose={closeModal}
-      />
-      <MovementHistoryDrawer
-        product={modal.kind === 'history' ? modal.product : undefined}
         onClose={closeModal}
       />
     </div>

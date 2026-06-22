@@ -1,17 +1,21 @@
 // apps/backoffice/src/features/products/components/StockAnalyticsPanel.tsx
 //
-// Product detail "Stock / Analytics" tab — recreates the V2 product
-// stock-detail screens on top of get_product_analytics_v1 :
-//   - window selector (7 / 30 / 90 days)
-//   - KPI row : current stock · stock value · days remaining · stock status
-//   - stock level timeline + movement breakdown
-//   - weekly consumption + purchase price trend
-//   - purchase pattern + recipe usage
-//   - operational cards : incoming POs · production · transfers · wastage ·
-//     opname · recent movements
+// Product stock analytics on top of get_product_analytics_v1. Originally one
+// monolithic panel on the product detail "Analytics" tab; since the stock data
+// was dissociated from the product configuration sheet (2026-06-23) the body is
+// split into exported sections so the ProductStockPage can spread them across
+// tabs (Stock / Movements / Purchase / Transfers / Production) instead of one
+// very long scroll.
 //
-// All data is real; sections with no rows render a faithful "not enough data"
-// empty state (matching the screenshots).
+// Exported sections (each takes the resolved analytics `data`):
+//   - AnalyticsKpiRow       current stock · value · days remaining · status
+//   - MovementsSection      stock timeline · movement breakdown · recent moves
+//   - PurchaseSection       purchase price trend · purchase pattern · incoming POs
+//   - TransfersSection      transfers (date · from→to · qty)
+//   - ProductionLossSection weekly consumption · recipe usage · production · waste · opname
+//
+// `StockAnalyticsPanel` keeps the original all-in-one layout (own window
+// selector) for standalone use.
 
 import { useState, type JSX, type ReactNode } from 'react';
 import {
@@ -26,6 +30,8 @@ import { Badge, Card, EmptyState, KpiTile, SectionLabel, cn } from '@breakery/ui
 import { formatIdr } from '@breakery/utils';
 import { useProductAnalytics } from '../hooks/useProductAnalytics.js';
 import type { ProductRow } from '../types.js';
+
+export type ProductAnalyticsData = NonNullable<ReturnType<typeof useProductAnalytics>['data']>;
 
 const WINDOWS: ReadonlyArray<{ value: number; label: string }> = [
   { value: 7,  label: '7 Days'  },
@@ -84,49 +90,59 @@ export function StockAnalyticsPanel({ product }: Props): JSX.Element {
       )}
 
       {q.data !== null && q.data !== undefined && (
-        <AnalyticsBody data={q.data} />
+        <div className="space-y-6" data-testid="stock-analytics-body">
+          <AnalyticsKpiRow data={q.data} />
+          <MovementsSection data={q.data} />
+          <PurchaseSection data={q.data} />
+          <TransfersSection data={q.data} />
+          <ProductionLossSection data={q.data} />
+        </div>
       )}
     </div>
   );
 }
 
-function AnalyticsBody({ data }: { data: NonNullable<ReturnType<typeof useProductAnalytics>['data']> }): JSX.Element {
+/* ── Exported sections (consumed by ProductStockPage tabs) ─────────────────── */
+
+export function AnalyticsKpiRow({ data }: { data: ProductAnalyticsData }): JSX.Element {
   const k = data.kpis;
   const statusLabel = k.stock_status === 'out' ? 'Out of Stock' : k.stock_status === 'low' ? 'Low Stock' : 'In Stock';
   const daysRemaining = k.days_remaining === null ? '0d' : `${Math.round(Number(k.days_remaining))}d`;
 
   return (
-    <div className="space-y-6" data-testid="stock-analytics-body">
-      {/* KPI row */}
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4" aria-label="Stock KPIs">
-        <KpiTile
-          label="Current stock"
-          value={`${fmtNum(k.current_stock, 3)} ${k.unit}`}
-          icon={Package}
-          footer={`Min: ${k.min_stock_threshold > 0 ? fmtNum(k.min_stock_threshold, 3) : 'N/A'}`}
-        />
-        <KpiTile
-          label="Stock value"
-          value={Math.round(Number(k.stock_value))}
-          valueFormat="currency"
-          icon={DollarSign}
-          footer={`@${formatIdr(Number(k.unit_cost))}/unit`}
-        />
-        <KpiTile
-          label="Days remaining"
-          value={daysRemaining}
-          icon={Clock}
-          footer={`Avg ${fmtNum(k.avg_daily_consumption, 1)}/day`}
-        />
-        <KpiTile
-          label="Stock status"
-          value={statusLabel}
-          icon={AlertTriangle}
-          footer={k.min_stock_threshold > 0 ? `Threshold ${fmtNum(k.min_stock_threshold, 3)}` : 'No min level set'}
-        />
-      </section>
+    <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4" aria-label="Stock KPIs">
+      <KpiTile
+        label="Current stock"
+        value={`${fmtNum(k.current_stock, 3)} ${k.unit}`}
+        icon={Package}
+        footer={`Min: ${k.min_stock_threshold > 0 ? fmtNum(k.min_stock_threshold, 3) : 'N/A'}`}
+      />
+      <KpiTile
+        label="Stock value"
+        value={Math.round(Number(k.stock_value))}
+        valueFormat="currency"
+        icon={DollarSign}
+        footer={`@${formatIdr(Number(k.unit_cost))}/unit`}
+      />
+      <KpiTile
+        label="Days remaining"
+        value={daysRemaining}
+        icon={Clock}
+        footer={`Avg ${fmtNum(k.avg_daily_consumption, 1)}/day`}
+      />
+      <KpiTile
+        label="Stock status"
+        value={statusLabel}
+        icon={AlertTriangle}
+        footer={k.min_stock_threshold > 0 ? `Threshold ${fmtNum(k.min_stock_threshold, 3)}` : 'No min level set'}
+      />
+    </section>
+  );
+}
 
-      {/* Timeline + breakdown */}
+export function MovementsSection({ data }: { data: ProductAnalyticsData }): JSX.Element {
+  return (
+    <div className="space-y-6">
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Panel title="Stock Level Timeline">
           {hasMovement(data.stock_timeline) ? (
@@ -172,29 +188,24 @@ function AnalyticsBody({ data }: { data: NonNullable<ReturnType<typeof useProduc
         </Panel>
       </div>
 
-      {/* Weekly consumption + purchase price trend */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <Panel
-          title="Weekly Consumption"
-          right={<TrendChip trend={data.consumption_trend} />}
-        >
-          {data.weekly_consumption.some((w) => Number(w.units) > 0) ? (
-            <div className="h-56 p-2">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data.weekly_consumption.map((w) => ({ label: fmtDate(w.week_start), units: Number(w.units) }))}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-subtle, #e5e7eb)" />
-                  <XAxis dataKey="label" tick={{ fontSize: 10 }} />
-                  <YAxis tick={{ fontSize: 10 }} width={36} />
-                  <Tooltip />
-                  <Bar dataKey="units" fill={GOLD} radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <CardEmpty icon={Utensils} text="Not enough data. Select a longer date range for trend analysis." />
-          )}
-        </Panel>
+      <RecordCard title="Recent Movements" icon={Boxes} count={data.recent_movements.length} unit={`of ${data.recent_movements.length}`} empty="No movements for this period" wide>
+        {data.recent_movements.map((m) => (
+          <Line3 key={m.id}
+            a={<span className="font-mono text-xs uppercase tracking-wide">{m.movement_type.replace(/_/g, ' ')}</span>}
+            b={<span className="text-xs text-text-muted">{m.reason ?? ''}</span>}
+            c={<span className={Number(m.quantity) > 0 ? 'text-success' : 'text-red'}>{Number(m.quantity) > 0 ? '+' : ''}{fmtNum(m.quantity, 3)} {m.unit}</span>}
+            d={fmtDate(m.created_at)}
+          />
+        ))}
+      </RecordCard>
+    </div>
+  );
+}
 
+export function PurchaseSection({ data }: { data: ProductAnalyticsData }): JSX.Element {
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Panel
           title="Purchase Price Trend"
           right={
@@ -220,10 +231,7 @@ function AnalyticsBody({ data }: { data: NonNullable<ReturnType<typeof useProduc
             <CardEmpty icon={TrendingUp} text="Not enough purchase data to show price trend." />
           )}
         </Panel>
-      </div>
 
-      {/* Purchase pattern + recipe usage */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Panel title="Purchase Pattern" subtitle="Monthly quantity purchased & order frequency">
           {data.purchase_pattern.length > 0 ? (
             <div className="h-56 p-2">
@@ -241,12 +249,60 @@ function AnalyticsBody({ data }: { data: NonNullable<ReturnType<typeof useProduc
             <CardEmpty icon={Truck} text="Not enough purchase data to show patterns." />
           )}
         </Panel>
+      </div>
 
-        <Panel
-          title="Recipe Usage"
-          icon={Utensils}
-          right={<span className="text-xs text-text-muted">{data.recipe_usage.length} products</span>}
-        >
+      <RecordCard title="Incoming (Purchase Orders)" icon={Truck} count={data.incoming_pos.length} unit="orders" empty="No purchase orders for this product" wide>
+        {data.incoming_pos.map((po) => (
+          <Line3 key={po.po_id}
+            a={po.po_number}
+            b={<Badge variant="outline" className="uppercase">{po.status}</Badge>}
+            c={`${fmtNum(po.received_quantity ?? 0)}/${fmtNum(po.quantity)} ${po.unit}`}
+            d={fmtDate(po.order_date)}
+          />
+        ))}
+      </RecordCard>
+    </div>
+  );
+}
+
+export function TransfersSection({ data }: { data: ProductAnalyticsData }): JSX.Element {
+  return (
+    <RecordCard title="Transfers" icon={Truck} count={data.transfers.length} unit="transfers" empty="No transfers for this product" wide>
+      {data.transfers.map((t) => (
+        <Line3 key={t.id}
+          a={t.transfer_number}
+          b={<span className="text-xs text-text-muted">{t.from_section_code ?? '—'} → {t.to_section_code ?? '—'}</span>}
+          c={`${fmtNum(t.quantity_received ?? t.quantity_requested, 3)} ${t.unit}`}
+          d={fmtDate(t.transferred_at ?? t.created_at)}
+        />
+      ))}
+    </RecordCard>
+  );
+}
+
+export function ProductionLossSection({ data }: { data: ProductAnalyticsData }): JSX.Element {
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <Panel title="Weekly Consumption" right={<TrendChip trend={data.consumption_trend} />}>
+          {data.weekly_consumption.some((w) => Number(w.units) > 0) ? (
+            <div className="h-56 p-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data.weekly_consumption.map((w) => ({ label: fmtDate(w.week_start), units: Number(w.units) }))}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-subtle, #e5e7eb)" />
+                  <XAxis dataKey="label" tick={{ fontSize: 10 }} />
+                  <YAxis tick={{ fontSize: 10 }} width={36} />
+                  <Tooltip />
+                  <Bar dataKey="units" fill={GOLD} radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <CardEmpty icon={Utensils} text="Not enough data. Select a longer date range for trend analysis." />
+          )}
+        </Panel>
+
+        <Panel title="Recipe Usage" icon={Utensils} right={<span className="text-xs text-text-muted">{data.recipe_usage.length} products</span>}>
           {data.recipe_usage.length === 0 ? (
             <CardEmpty icon={Utensils} text="This product is not used in any recipe." />
           ) : (
@@ -282,19 +338,7 @@ function AnalyticsBody({ data }: { data: NonNullable<ReturnType<typeof useProduc
         </Panel>
       </div>
 
-      {/* Operational cards */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <RecordCard title="Incoming (Purchase Orders)" icon={Truck} count={data.incoming_pos.length} unit="orders" empty="No purchase orders for this product">
-          {data.incoming_pos.map((po) => (
-            <Line3 key={po.po_id}
-              a={po.po_number}
-              b={<Badge variant="outline" className="uppercase">{po.status}</Badge>}
-              c={`${fmtNum(po.received_quantity ?? 0)}/${fmtNum(po.quantity)} ${po.unit}`}
-              d={fmtDate(po.order_date)}
-            />
-          ))}
-        </RecordCard>
-
         <RecordCard title="Production" icon={Factory} count={data.production.length} unit="records" empty="No production records">
           {data.production.map((p) => (
             <Line3 key={p.id}
@@ -302,17 +346,6 @@ function AnalyticsBody({ data }: { data: NonNullable<ReturnType<typeof useProduc
               b={p.reverted ? <Badge variant="destructive" className="uppercase">Reverted</Badge> : <Badge variant="secondary" className="uppercase">Done</Badge>}
               c={`${fmtNum(p.quantity_produced, 3)} produced`}
               d={fmtDate(p.production_date)}
-            />
-          ))}
-        </RecordCard>
-
-        <RecordCard title="Transfers" icon={Truck} count={data.transfers.length} unit="transfers" empty="No transfers for this product">
-          {data.transfers.map((t) => (
-            <Line3 key={t.id}
-              a={t.transfer_number}
-              b={<span className="text-xs text-text-muted">{t.from_section_code ?? '—'} → {t.to_section_code ?? '—'}</span>}
-              c={`${fmtNum(t.quantity_received ?? t.quantity_requested, 3)} ${t.unit}`}
-              d={fmtDate(t.transferred_at ?? t.created_at)}
             />
           ))}
         </RecordCard>
@@ -335,17 +368,6 @@ function AnalyticsBody({ data }: { data: NonNullable<ReturnType<typeof useProduc
               b={<Badge variant="outline" className="uppercase">{o.status}</Badge>}
               c={`Var ${o.variance === null ? '—' : fmtNum(o.variance, 3)}`}
               d={fmtDate(o.finalized_at ?? o.created_at)}
-            />
-          ))}
-        </RecordCard>
-
-        <RecordCard title="Recent Movements" icon={Boxes} count={data.recent_movements.length} unit={`of ${data.recent_movements.length}`} empty="No movements for this period" wide>
-          {data.recent_movements.map((m) => (
-            <Line3 key={m.id}
-              a={<span className="font-mono text-xs uppercase tracking-wide">{m.movement_type.replace(/_/g, ' ')}</span>}
-              b={<span className="text-xs text-text-muted">{m.reason ?? ''}</span>}
-              c={<span className={Number(m.quantity) > 0 ? 'text-success' : 'text-red'}>{Number(m.quantity) > 0 ? '+' : ''}{fmtNum(m.quantity, 3)} {m.unit}</span>}
-              d={fmtDate(m.created_at)}
             />
           ))}
         </RecordCard>

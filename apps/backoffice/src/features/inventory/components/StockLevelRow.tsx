@@ -1,7 +1,7 @@
 // apps/backoffice/src/features/inventory/components/StockLevelRow.tsx
 //
 // One row in the inventory list. Click anywhere on the SKU/name to open
-// the movement history drawer. Action menu offers Adjust / Receive /
+// the product stock detail page. Action menu offers Adjust / Receive /
 // Waste — each gated by the matching permission.
 
 import { useEffect, useRef, useState, type JSX, type KeyboardEvent } from 'react';
@@ -78,7 +78,7 @@ export function StockLevelRow({
         tabIndex={0}
         onClick={() => onView(row)}
         onKeyDown={handleNameKey}
-        aria-label={`View movement history for ${row.name}`}
+        aria-label={`View stock detail for ${row.name}`}
       >
         <div className="flex items-center">
           <span>{row.name}</span>
@@ -113,7 +113,7 @@ export function StockLevelRow({
               className="block w-full text-left px-3 py-2 text-sm hover:bg-bg-overlay focus:bg-bg-overlay focus:outline-none"
               onClick={() => { setMenuOpen(false); onView(row); }}
             >
-              View history
+              View stock
             </button>
             {canAdjust && (
               <button

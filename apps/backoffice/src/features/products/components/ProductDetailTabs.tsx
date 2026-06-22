@@ -15,7 +15,6 @@ interface Props {
 
 const TABS: ReadonlyArray<{ id: ProductDetailTab; label: string }> = [
   { id: 'overview', label: 'Overview' },
-  { id: 'analytics', label: 'Analytics' },
   { id: 'general',  label: 'General'  },
   { id: 'units',    label: 'Units'    },
   { id: 'recipe',   label: 'Recipe'   },

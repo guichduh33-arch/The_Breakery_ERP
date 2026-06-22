@@ -8,13 +8,13 @@
 // URL: /backoffice/products/:productId
 
 import { useEffect, useMemo, useState, type JSX } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { BarChart3 } from 'lucide-react';
 import { GeneralPanel } from '@/features/products/components/GeneralPanel.js';
 import { OverviewPanel } from '@/features/products/components/OverviewPanel.js';
 import { ProductDetailHeader } from '@/features/products/components/ProductDetailHeader.js';
 import { ProductDetailTabs } from '@/features/products/components/ProductDetailTabs.js';
 import { CostingPanel } from '@/features/products/components/CostingPanel.js';
-import { StockAnalyticsPanel } from '@/features/products/components/StockAnalyticsPanel.js';
 import { PurchasePanel } from '@/features/products/components/PurchasePanel.js';
 import { HistoryPanel } from '@/features/products/components/HistoryPanel.js';
 import { UnitsPanel } from '@/features/products/components/UnitsPanel.js';
@@ -30,7 +30,7 @@ import type { ProductDetailTab, ProductRow } from '@/features/products/types.js'
 import { RecipeBuilder } from '@/features/recipes/index.js';
 
 const VALID_TABS: ReadonlySet<ProductDetailTab> = new Set([
-  'overview', 'analytics', 'general', 'units', 'recipe', 'variants', 'costing', 'purchase', 'stations', 'history',
+  'overview', 'general', 'units', 'recipe', 'variants', 'costing', 'purchase', 'stations', 'history',
 ]);
 
 export default function ProductDetailPage(): JSX.Element {
@@ -108,11 +108,19 @@ export default function ProductDetailPage(): JSX.Element {
           Failed to save: {updateProduct.error.message}
         </div>
       )}
+      <div className="flex justify-end">
+        <Link
+          to={`/backoffice/inventory/${p.id}`}
+          className="inline-flex items-center gap-1.5 rounded-md border border-border-subtle px-3 py-1.5 text-xs font-semibold uppercase tracking-widest text-text-secondary transition-colors hover:border-gold-soft hover:text-gold"
+        >
+          <BarChart3 className="h-3.5 w-3.5" aria-hidden /> Voir le stock
+        </Link>
+      </div>
+
       <ProductDetailTabs active={tab} onChange={setTab} />
 
       <div data-testid={`product-tab-${tab}`}>
         {tab === 'overview' && <OverviewPanel product={p} />}
-        {tab === 'analytics' && <StockAnalyticsPanel product={p} />}
         {tab === 'general'  && (
           <GeneralPanel
             product={p}
