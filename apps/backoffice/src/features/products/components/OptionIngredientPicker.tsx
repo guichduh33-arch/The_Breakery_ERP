@@ -96,7 +96,7 @@ export function OptionIngredientPicker({
               step="any"
               className="w-24 rounded border border-border-subtle bg-bg-input px-2 py-1 text-sm"
               value={row.qty}
-              onChange={(e) => updateRow(idx, { qty: Number(e.target.value) })}
+              onChange={(e) => updateRow(idx, { qty: Number(e.target.value) || 0 })}
             />
             <select
               aria-label="Unit"

@@ -74,7 +74,7 @@ export function RecordPaymentDialog({
               id={`${reactId}-amount`}
               type="number" min={0} max={remainingDue} step={1}
               value={amount}
-              onChange={(e) => setAmount(Number(e.target.value))}
+              onChange={(e) => setAmount(Number(e.target.value) || 0)}
               disabled={submitting}
               className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
               aria-required="true"

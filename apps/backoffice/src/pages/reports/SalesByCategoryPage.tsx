@@ -114,7 +114,7 @@ export default function SalesByCategoryPage() {
                 <XAxis dataKey="category_name" angle={-25} textAnchor="end" interval={0} />
                 <YAxis />
                 <Tooltip />
-                <Bar dataKey="total" fill="#c8a874" />
+                <Bar dataKey="total" fill="var(--gold-base, #c8a874)" />
               </BarChart>
             </ResponsiveContainer>
           </div>

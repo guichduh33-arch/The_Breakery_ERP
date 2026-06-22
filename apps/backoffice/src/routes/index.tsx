@@ -136,7 +136,14 @@ export function AppRoutes() {
       <Route path="/backoffice" element={<Protected><BackofficeLayout /></Protected>}>
         <Route index element={<DashboardPage />} />
         <Route path="products" element={<ProductsPage />} />
-        <Route path="products/combos" element={<CombosPage />} />
+        <Route
+          path="products/combos"
+          element={
+            <PermissionGate required="combos.read">
+              <CombosPage />
+            </PermissionGate>
+          }
+        />
         <Route
           path="products/combos/new"
           element={
@@ -162,7 +169,14 @@ export function AppRoutes() {
           }
         />
         <Route path="products/:productId" element={<ProductDetailPage />} />
-        <Route path="categories" element={<CategoriesPage />} />
+        <Route
+          path="categories"
+          element={
+            <PermissionGate required="categories.read">
+              <CategoriesPage />
+            </PermissionGate>
+          }
+        />
         <Route
           path="promotions"
           element={
@@ -343,7 +357,7 @@ export function AppRoutes() {
         <Route
           path="purchasing"
           element={
-            <PermissionGate required={'purchasing.po.read' as never}>
+            <PermissionGate required={'purchasing.po.read'}>
               <PurchaseOrdersListPage />
             </PermissionGate>
           }
@@ -351,7 +365,7 @@ export function AppRoutes() {
         <Route
           path="purchasing/purchase-orders"
           element={
-            <PermissionGate required={'purchasing.po.read' as never}>
+            <PermissionGate required={'purchasing.po.read'}>
               <PurchaseOrdersListPage />
             </PermissionGate>
           }
@@ -359,7 +373,7 @@ export function AppRoutes() {
         <Route
           path="purchasing/purchase-orders/new"
           element={
-            <PermissionGate required={'purchasing.po.create' as never}>
+            <PermissionGate required={'purchasing.po.create'}>
               <NewPurchaseOrderPage />
             </PermissionGate>
           }
@@ -367,7 +381,7 @@ export function AppRoutes() {
         <Route
           path="purchasing/purchase-orders/:id"
           element={
-            <PermissionGate required={'purchasing.po.read' as never}>
+            <PermissionGate required={'purchasing.po.read'}>
               <PurchaseOrderDetailPage />
             </PermissionGate>
           }
@@ -399,7 +413,7 @@ export function AppRoutes() {
         <Route
           path="cash-register/zreports"
           element={
-            <PermissionGate required={'zreports.read' as never}>
+            <PermissionGate required={'zreports.read'}>
               <ZReportsListPage />
             </PermissionGate>
           }

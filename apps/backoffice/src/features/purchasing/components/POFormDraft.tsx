@@ -245,7 +245,7 @@ export function POFormDraft({
             max={1}
             step={0.01}
             value={value.vatRate}
-            onChange={(e) => patch({ vatRate: Number(e.target.value) })}
+            onChange={(e) => patch({ vatRate: Number(e.target.value) || 0 })}
             disabled={submitting}
             className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
           />
@@ -291,7 +291,7 @@ export function POFormDraft({
                     <input
                       type="number" min={0} step={0.001}
                       value={it.quantity}
-                      onChange={(e) => patchItem(idx, { quantity: Number(e.target.value) })}
+                      onChange={(e) => patchItem(idx, { quantity: Number(e.target.value) || 0 })}
                       disabled={submitting}
                       className="h-8 w-full text-right rounded-md border border-border-subtle bg-bg-input px-2 text-sm"
                     />
@@ -334,7 +334,7 @@ export function POFormDraft({
                     <input
                       type="number" min={0} step={1}
                       value={it.unitCost}
-                      onChange={(e) => patchItem(idx, { unitCost: Number(e.target.value) })}
+                      onChange={(e) => patchItem(idx, { unitCost: Number(e.target.value) || 0 })}
                       disabled={submitting}
                       className="h-8 w-full text-right rounded-md border border-border-subtle bg-bg-input px-2 text-sm"
                     />

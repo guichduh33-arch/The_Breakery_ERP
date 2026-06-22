@@ -117,7 +117,7 @@ export default function ExpiringStockPage(): JSX.Element {
           <select
             id="exp-window"
             value={hoursAhead}
-            onChange={(e) => { setHoursAhead(Number(e.target.value)); setPage(0); }}
+            onChange={(e) => { setHoursAhead(Number(e.target.value) || 0); setPage(0); }}
             className="h-9 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary min-w-[12rem]"
           >
             {WINDOW_OPTIONS.map((w) => (

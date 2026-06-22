@@ -69,8 +69,8 @@ const QUICK_FILTERS: { value: POStatus | 'all'; label: string }[] = [
 export default function PurchaseOrdersListPage(): JSX.Element {
   const navigate      = useNavigate();
   const hasPermission = useAuthStore((s) => s.hasPermission);
-  const canRead   = hasPermission('purchasing.po.read' as never);
-  const canCreate = hasPermission('purchasing.po.create' as never);
+  const canRead   = hasPermission('purchasing.po.read');
+  const canCreate = hasPermission('purchasing.po.create');
 
   const [status, setStatus]         = useState<POStatus | 'all'>('all');
   const [supplierId, setSupplierId] = useState<string>('');

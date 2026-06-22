@@ -165,7 +165,7 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
                   min={0}
                   value={draft.retail_price}
                   disabled={readOnly}
-                  onChange={(e) => update('retail_price', Number(e.target.value))}
+                  onChange={(e) => update('retail_price', Number(e.target.value) || 0)}
                   className="w-full bg-transparent text-text-primary outline-none disabled:cursor-not-allowed"
                 />
               </div>

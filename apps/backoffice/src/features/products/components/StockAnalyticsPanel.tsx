@@ -33,7 +33,7 @@ const WINDOWS: ReadonlyArray<{ value: number; label: string }> = [
   { value: 90, label: '90 Days' },
 ];
 
-const GOLD = '#c89b4f';
+const GOLD = 'var(--gold-base, #c89b4f)';
 
 function fmtDate(s: string | null): string {
   if (s === null) return '—';
