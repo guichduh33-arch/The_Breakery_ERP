@@ -90,6 +90,7 @@ export type ProductDetailTab =
   | 'modifiers'
   | 'costing'
   | 'purchase'
+  | 'stations'
   | 'history';
 
 /**

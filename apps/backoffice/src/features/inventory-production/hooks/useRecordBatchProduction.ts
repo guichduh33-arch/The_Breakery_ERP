@@ -1,9 +1,15 @@
 // apps/backoffice/src/features/inventory-production/hooks/useRecordBatchProduction.ts
 //
-// Session 15 / Phase 4.A — Wraps `record_batch_production_v1` atomic RPC.
+// Session 15 / Phase 4.A — Wraps `record_batch_production_v2` atomic RPC.
+//
+// v2 == v1 plus an optional, backdatable p_batch.production_date. When absent
+// the behaviour is identical to v1 (production_date defaults to now()), so the
+// pre-existing BatchProductionPage caller is unaffected. Only the production
+// page's date navigator sets it (the financial ledger/JEs stay at now() —
+// v2 only patches production_records.production_date).
 //
 // Server contract :
-//   p_batch = { notes?, section_id?, idempotency_key? }
+//   p_batch = { notes?, section_id?, idempotency_key?, production_date? }
 //   p_items = [{
 //     product_id, quantity_produced,
 //     quantity_waste?, expected_yield_qty?, actual_yield_qty?,
@@ -27,6 +33,7 @@ export type RecordBatchProductionErrorCode =
   | 'waste_must_be_non_negative'
   | 'recipe_not_found'
   | 'insufficient_stock'
+  | 'invalid_production_date'
   | 'unknown';
 
 export class RecordBatchProductionError extends Error {
@@ -55,6 +62,8 @@ export interface RecordBatchProductionArgs {
   notes?:          string;
   idempotencyKey:  string;
   items:           BatchItemInput[];
+  /** ISO-8601 timestamp. Backdates production_records.production_date only. */
+  productionDate?: string;
 }
 
 export interface BatchProductionRecord {
@@ -85,6 +94,7 @@ function classify(message: string): RecordBatchProductionErrorCode {
   if (message.includes('waste_must_be_non_negative'))      return 'waste_must_be_non_negative';
   if (message.includes('recipe_not_found'))                return 'recipe_not_found';
   if (message.includes('insufficient_stock'))              return 'insufficient_stock';
+  if (message.includes('invalid_production_date'))         return 'invalid_production_date';
   return 'unknown';
 }
 
@@ -110,10 +120,13 @@ export function useRecordBatchProduction() {
       };
       if (args.notes !== undefined)     batchPayload.notes      = args.notes;
       if (args.sectionId !== undefined) batchPayload.section_id = args.sectionId;
+      if (args.productionDate !== undefined && args.productionDate !== '') {
+        batchPayload.production_date = args.productionDate;
+      }
 
       const itemsPayload = args.items.map(buildItemPayload);
 
-      const { data, error } = await supabase.rpc('record_batch_production_v1', {
+      const { data, error } = await supabase.rpc('record_batch_production_v2', {
         p_batch: batchPayload as unknown as never,
         p_items: itemsPayload as unknown as never,
       });
