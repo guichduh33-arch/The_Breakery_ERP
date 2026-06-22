@@ -11,10 +11,13 @@ vi.mock('@breakery/domain', async (orig) => {
   return { ...actual, downloadCsv: (...args: unknown[]) => downloadCsvSpy(...args) };
 });
 
-const invokeSpy = vi.fn();
-vi.mock('@/lib/supabase.js', () => ({
-  supabase: { functions: { invoke: (...args: unknown[]) => invokeSpy(...args) } },
-}));
+// useGeneratePdf now calls the EF via a direct fetch (POS money-path pattern),
+// not supabase.functions.invoke — so we mock the URL + token helper + global fetch.
+vi.mock('@/lib/supabase.js', () => ({ supabaseUrl: 'http://test.local' }));
+vi.mock('@/lib/accessToken.js', () => ({ getAccessToken: async () => 'test-token' }));
+
+const fetchMock = vi.fn();
+Object.defineProperty(globalThis, 'fetch', { value: fetchMock, writable: true });
 
 function wrap(ui: ReactElement) {
   const qc = new QueryClient({ defaultOptions: { mutations: { retry: false }, queries: { retry: false } } });
@@ -24,8 +27,11 @@ function wrap(ui: ReactElement) {
 describe('ExportButtons', () => {
   beforeEach(() => {
     downloadCsvSpy.mockClear();
-    invokeSpy.mockClear();
-    invokeSpy.mockResolvedValue({ data: { signed_url: 'https://example.test/x', storage_path: 'reports-exports/x', expires_at: 'z' }, error: null });
+    fetchMock.mockReset();
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({ signed_url: 'https://example.test/x', storage_path: 'reports-exports/x', expires_at: 'z' }),
+    });
   });
 
   it('triggers CSV download with filename', () => {
@@ -52,9 +58,12 @@ describe('ExportButtons', () => {
       }} />
     ));
     fireEvent.click(screen.getByTestId('export-pdf'));
-    await waitFor(() => expect(invokeSpy).toHaveBeenCalledWith('generate-pdf', expect.objectContaining({
-      body: expect.objectContaining({ template: 'pnl', filename: 'pnl-2026-05' }),
-    })));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+      'http://test.local/functions/v1/generate-pdf',
+      expect.objectContaining({ method: 'POST' }),
+    ));
+    const sentBody = JSON.parse((fetchMock.mock.calls[0]?.[1] as { body: string }).body) as Record<string, unknown>;
+    expect(sentBody).toMatchObject({ template: 'pnl', filename: 'pnl-2026-05' });
     await waitFor(() => expect(openSpy).toHaveBeenCalledWith('https://example.test/x', '_blank', 'noopener,noreferrer'));
     openSpy.mockRestore();
   });
