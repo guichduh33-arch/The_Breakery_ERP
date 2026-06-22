@@ -18,6 +18,7 @@ import { StockAnalyticsPanel } from '@/features/products/components/StockAnalyti
 import { PurchasePanel } from '@/features/products/components/PurchasePanel.js';
 import { HistoryPanel } from '@/features/products/components/HistoryPanel.js';
 import { UnitsPanel } from '@/features/products/components/UnitsPanel.js';
+import { StationsPanel } from '@/features/products/components/StationsPanel.js';
 import { VariantsPanel } from '@/features/products/components/VariantsPanel.js';
 import { ModifiersPanel } from '@/features/products/components/ModifiersPanel.js';
 import { useCategories } from '@/features/products/hooks/useCategories.js';
@@ -29,7 +30,7 @@ import type { ProductDetailTab, ProductRow } from '@/features/products/types.js'
 import { RecipeBuilder } from '@/features/recipes/index.js';
 
 const VALID_TABS: ReadonlySet<ProductDetailTab> = new Set([
-  'overview', 'analytics', 'general', 'units', 'recipe', 'variants', 'costing', 'purchase', 'history',
+  'overview', 'analytics', 'general', 'units', 'recipe', 'variants', 'costing', 'purchase', 'stations', 'history',
 ]);
 
 export default function ProductDetailPage(): JSX.Element {
@@ -146,6 +147,7 @@ export default function ProductDetailPage(): JSX.Element {
           <CostingPanel product={p} />
         )}
         {tab === 'purchase' && <PurchasePanel productId={p.id} />}
+        {tab === 'stations' && <StationsPanel product={p} />}
         {tab === 'history' && <HistoryPanel productId={p.id} />}
       </div>
     </div>
