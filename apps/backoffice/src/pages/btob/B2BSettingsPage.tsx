@@ -230,7 +230,7 @@ export default function B2BSettingsPage(): JSX.Element {
             <input
               type="number"
               value={threshold}
-              onChange={(e) => setThreshold(Number(e.target.value))}
+              onChange={(e) => setThreshold(Number(e.target.value) || 0)}
               min={0}
               max={365}
               className="h-9 w-20 rounded-md bg-transparent px-2 text-right font-mono text-sm text-text-primary outline-none"
@@ -263,7 +263,7 @@ export default function B2BSettingsPage(): JSX.Element {
               <input
                 type="number"
                 value={b.min}
-                onChange={(e) => updateBucket(b.id, { min: Number(e.target.value) })}
+                onChange={(e) => updateBucket(b.id, { min: Number(e.target.value) || 0 })}
                 aria-label={`${b.id} min days`}
                 className="h-9 w-20 rounded-md bg-bg-input px-2 text-right font-mono text-sm text-text-primary outline-none"
               />

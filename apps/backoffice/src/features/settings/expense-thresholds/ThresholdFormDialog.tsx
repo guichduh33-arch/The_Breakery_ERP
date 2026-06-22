@@ -113,7 +113,7 @@ export function ThresholdFormDialog({ open, onOpenChange, initial, categories }:
                 className={INPUT_CLS}
                 value={amountMin}
                 min={0}
-                onChange={(e) => setAmountMin(Number(e.target.value))}
+                onChange={(e) => setAmountMin(Number(e.target.value) || 0)}
               />
             </div>
             <div>
@@ -123,7 +123,7 @@ export function ThresholdFormDialog({ open, onOpenChange, initial, categories }:
                 className={INPUT_CLS}
                 value={amountMax}
                 min={0}
-                onChange={(e) => setAmountMax(Number(e.target.value))}
+                onChange={(e) => setAmountMax(Number(e.target.value) || 0)}
               />
             </div>
           </div>

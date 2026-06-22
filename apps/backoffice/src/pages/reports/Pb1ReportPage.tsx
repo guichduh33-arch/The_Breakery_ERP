@@ -70,7 +70,7 @@ export default function Pb1ReportPage() {
               value={year}
               min={2020}
               max={2099}
-              onChange={(e) => setYear(Number(e.target.value))}
+              onChange={(e) => setYear(Number(e.target.value) || 0)}
               aria-label="Select year"
             />
           </label>
