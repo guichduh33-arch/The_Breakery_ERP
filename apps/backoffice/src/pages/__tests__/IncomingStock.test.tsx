@@ -70,19 +70,19 @@ function renderPage() {
 describe('IncomingStockPage', () => {
   beforeEach(() => { currentPerms = new Set(); });
 
-  it('CASHIER role (no inventory.receive) is blocked by the permission gate', () => {
+  it('CASHIER role (no purchasing.po.create) is blocked by the permission gate', () => {
     currentPerms = new Set(['orders.create']);
     renderPage();
-    expect(screen.getByText(/do not have permission to record incoming stock/i)).toBeInTheDocument();
+    expect(screen.getByText(/do not have permission to record purchases/i)).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /Incoming Stock/i })).not.toBeInTheDocument();
   });
 
-  it('MANAGER role (inventory.receive) renders the heading and Record receipt button', async () => {
-    currentPerms = new Set(['inventory.read', 'inventory.receive']);
+  it('MANAGER role (purchasing.po.create) renders the heading and Record purchase button', async () => {
+    currentPerms = new Set(['inventory.read', 'purchasing.po.create']);
     renderPage();
     expect(screen.getByRole('heading', { name: /Incoming Stock/i })).toBeInTheDocument();
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /Record receipt/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Record purchase/i })).toBeInTheDocument();
     });
   });
 });
