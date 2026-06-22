@@ -4,7 +4,8 @@
 // S30 Wave 3.2 — Extended to 17 templates (added 5 bakery reports).
 
 import { useMutation } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase.js';
+import { supabaseUrl } from '@/lib/supabase.js';
+import { getAccessToken } from '@/lib/accessToken.js';
 
 export type PdfTemplate =
   | 'pnl' | 'bs' | 'cf' | 'basket'
@@ -30,9 +31,23 @@ export interface GeneratePdfResult {
 export function useGeneratePdf() {
   return useMutation<GeneratePdfResult, Error, GeneratePdfArgs>({
     mutationFn: async (args) => {
-      const { data, error } = await supabase.functions.invoke('generate-pdf', { body: args });
-      if (error) throw error;
-      const result = data as GeneratePdfResult | { error: string };
+      // Direct EF fetch (not supabase.functions.invoke): mirrors the POS
+      // money-path so the call carries the PIN-JWT via getAccessToken() and
+      // skips the client's `x-app` global header (defense-in-depth vs CORS).
+      const accessToken = await getAccessToken();
+      const res = await fetch(`${supabaseUrl}/functions/v1/generate-pdf`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify(args),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({})) as { error?: string };
+        throw new Error(err.error ?? 'pdf_failed');
+      }
+      const result = await res.json() as GeneratePdfResult | { error: string };
       if ('error' in result) throw new Error(result.error);
       return result;
     },

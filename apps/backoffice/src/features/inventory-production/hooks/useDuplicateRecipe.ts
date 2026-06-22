@@ -73,7 +73,7 @@ export function useDuplicateRecipe() {
           queryKey: ['inventory-production', 'recipes', result.target_product_id],
         }),
         qc.invalidateQueries({ queryKey: ['inventory-production', 'finished-products'] }),
-        qc.invalidateQueries({ queryKey: ['inventory-bo', 'stock-levels'] }),
+        qc.invalidateQueries({ queryKey: ['stock-levels'] }),
         qc.invalidateQueries({ queryKey: ['products'] }),
       ]);
     },

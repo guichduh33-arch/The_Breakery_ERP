@@ -4,13 +4,16 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactElement } from 'react';
 
 const rpcSpy = vi.fn();
-const invokeSpy = vi.fn();
 vi.mock('@/lib/supabase.js', () => ({
-  supabase: {
-    rpc: (...a: unknown[]) => rpcSpy(...a),
-    functions: { invoke: (...a: unknown[]) => invokeSpy(...a) },
-  },
+  supabase: { rpc: (...a: unknown[]) => rpcSpy(...a) },
+  supabaseUrl: 'http://test.local',
 }));
+
+// useGenerateZReportPdf now calls the EF via a direct fetch (POS money-path
+// pattern), not supabase.functions.invoke.
+vi.mock('@/lib/accessToken.js', () => ({ getAccessToken: async () => 'test-token' }));
+const fetchMock = vi.fn();
+Object.defineProperty(globalThis, 'fetch', { value: fetchMock, writable: true });
 
 import { SignZReportModal } from '../SignZReportModal.js';
 
@@ -24,7 +27,7 @@ function wrap(ui: ReactElement) {
 describe('SignZReportModal', () => {
   beforeEach(() => {
     rpcSpy.mockClear();
-    invokeSpy.mockClear();
+    fetchMock.mockReset();
     rpcSpy.mockResolvedValue({
       data: {
         id: 'z1',
@@ -47,9 +50,9 @@ describe('SignZReportModal', () => {
       },
       error: null,
     });
-    invokeSpy.mockResolvedValue({
-      data: { signed_url: 'https://example.test/zreport', status: 'signed' },
-      error: null,
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({ signed_url: 'https://example.test/zreport', status: 'signed' }),
     });
   });
 
@@ -74,7 +77,10 @@ describe('SignZReportModal', () => {
     fireEvent.click(screen.getByTestId('sign-submit'));
 
     await waitFor(() => expect(rpcSpy).toHaveBeenCalled());
-    await waitFor(() => expect(invokeSpy).toHaveBeenCalledWith('generate-zreport-pdf', expect.anything()));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+      'http://test.local/functions/v1/generate-zreport-pdf',
+      expect.objectContaining({ method: 'POST' }),
+    ));
     await waitFor(() =>
       expect(openSpy).toHaveBeenCalledWith('https://example.test/zreport', '_blank', 'noopener,noreferrer'),
     );

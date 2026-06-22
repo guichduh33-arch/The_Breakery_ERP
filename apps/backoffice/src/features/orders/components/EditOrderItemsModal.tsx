@@ -161,7 +161,7 @@ export function EditOrderItemsModal({ open, onClose, orderId, orderNumber, curre
                     min={1}
                     value={l.qty}
                     onChange={(e) =>
-                      handleUpdateQty(l.id, l.product_id, Math.max(1, Number(e.target.value)), !!l.isPending)
+                      handleUpdateQty(l.id, l.product_id, Math.max(1, Number(e.target.value) || 1), !!l.isPending)
                     }
                     className="w-16 border rounded px-1 py-0.5 text-sm"
                     data-testid={`qty-${l.id}`}

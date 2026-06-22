@@ -131,7 +131,7 @@ export function useRecordBatchProduction() {
       await Promise.all([
         qc.invalidateQueries({ queryKey: ['inventory-production', 'records'] }),
         qc.invalidateQueries({ queryKey: ['inventory-production', 'batches'] }),
-        qc.invalidateQueries({ queryKey: ['inventory-bo', 'stock-levels'] }),
+        qc.invalidateQueries({ queryKey: ['stock-levels'] }),
       ]);
     },
   });

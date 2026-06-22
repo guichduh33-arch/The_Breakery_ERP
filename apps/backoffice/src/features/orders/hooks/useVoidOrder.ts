@@ -5,7 +5,7 @@
 // `missing_manager_pin` (400) when it is absent — never from the JSON body.
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase.js';
+import { getAccessToken } from '@/lib/accessToken.js';
 
 interface VoidArgs {
   orderId:    string;
@@ -22,12 +22,6 @@ export interface VoidResponse {
   tax_refunded:   number;
   error?:         string;
   message?:       string;
-}
-
-async function getAccessToken(): Promise<string> {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.access_token) throw new Error('no_auth_session');
-  return session.access_token;
 }
 
 export function useVoidOrder() {
