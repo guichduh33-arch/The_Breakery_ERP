@@ -6354,19 +6354,22 @@ export type Database = {
           balance: number
         }[]
       }
-      get_cash_wallet_ledger_v1: {
+      get_cash_wallet_ledger_v2: {
         Args: {
           p_account_code: string
           p_date_end: string
           p_date_start: string
         }
         Returns: {
+          category: string
+          description: string
           in_amount: number
           out_amount: number
           ref_type: string
           remark: string
           row_date: string
           saldo: number
+          supplier: string
         }[]
       }
       get_current_profile_id: { Args: never; Returns: string }
