@@ -10,7 +10,7 @@ BEGIN;
 CREATE OR REPLACE FUNCTION public.has_permission(p_uid uuid, p_perm text)
 RETURNS boolean LANGUAGE sql AS $$ SELECT true $$;
 
-SELECT plan(22);
+SELECT plan(25);
 
 -- ── Task 1: COA accounts, mappings, permissions ───────────────────────────────
 SELECT ok( (SELECT is_postable FROM accounts WHERE code='1117'), '1117 Small Money is postable');
@@ -89,6 +89,24 @@ SELECT ok( (get_cash_wallet_analysis_v1(CURRENT_DATE-31, CURRENT_DATE+1)) ? 'rev
   'analysis payload has revenue_by_shift key');
 SELECT is( has_function_privilege('anon','get_cash_wallet_analysis_v1(date,date)','EXECUTE'), false,
   'anon has no EXECUTE on get_cash_wallet_analysis_v1');
+
+-- ── Task 22: stricter accounting.cash.adjust gate (adjustments + boss withdrawal) ──
+-- Re-stub: caller has cash.write but NOT cash.adjust.
+CREATE OR REPLACE FUNCTION public.has_permission(p_uid uuid, p_perm text)
+RETURNS boolean LANGUAGE sql AS $$ SELECT p_perm <> 'accounting.cash.adjust' $$;
+
+SELECT throws_ok(
+  $q$ SELECT record_cash_wallet_movement_v1('adjustment_gain',5000,CURRENT_DATE,'over',
+        'b0000001-0000-0000-0000-000000000001','1111') $q$,
+  'P0001', NULL, 'adjustment_gain denied without cash.adjust');
+SELECT throws_ok(
+  $q$ SELECT record_cash_wallet_movement_v1('boss_withdrawal',5000,CURRENT_DATE,'boss',
+        'b0000002-0000-0000-0000-000000000002',NULL) $q$,
+  'P0001', NULL, 'boss_withdrawal denied without cash.adjust');
+SELECT isnt(
+  record_cash_wallet_movement_v1('undepo_to_petty',5000,CURRENT_DATE,'ok',
+        'b0000003-0000-0000-0000-000000000003',NULL),
+  NULL, 'undepo_to_petty still allowed with only cash.write');
 
 SELECT * FROM finish();
 ROLLBACK;
