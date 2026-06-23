@@ -89,6 +89,7 @@ import ChartOfAccountsPage   from '@/features/accounting/pages/ChartOfAccountsPa
 import JournalEntriesPage    from '@/features/accounting/pages/JournalEntriesPage.js';
 import GeneralLedgerPage     from '@/features/accounting/pages/GeneralLedgerPage.js';
 import TrialBalancePage      from '@/features/accounting/pages/TrialBalancePage.js';
+import CashTreasuryPage      from '@/features/accounting/pages/CashTreasuryPage.js';
 import SettingsAccountingPage from '@/features/accounting/pages/SettingsAccountingPage.js';
 import ExpenseThresholdsPage  from '@/features/settings/expense-thresholds/ExpenseThresholdsPage.js';
 import ZReportsListPage       from '@/pages/cash-register/ZReportsListPage.js';
@@ -521,6 +522,14 @@ export function AppRoutes() {
           element={
             <PermissionGate required="accounting.tb.read">
               <TrialBalancePage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="accounting/cash"
+          element={
+            <PermissionGate required="accounting.cash.read">
+              <CashTreasuryPage />
             </PermissionGate>
           }
         />
