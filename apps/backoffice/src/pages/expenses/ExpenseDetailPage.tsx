@@ -47,6 +47,7 @@ export default function ExpenseDetailPage(): JSX.Element {
 
   const hasPermission = useAuthStore((s) => s.hasPermission);
   const currentUserId = useAuthStore((s) => s.user?.id ?? null);
+  const currentUserRole = useAuthStore((s) => s.user?.role_code ?? null);
   const canApprove = hasPermission('expenses.approve');
   const canPay     = hasPermission('expenses.pay');
 
@@ -255,6 +256,7 @@ export default function ExpenseDetailPage(): JSX.Element {
         createdByUserId={expense.created_by ?? null}
         approvals={approvals}
         currentUserId={currentUserId}
+        currentUserRole={currentUserRole}
       />
       <RejectDialog  open={rejectOpen}  expenseId={id} onClose={() => setRejectOpen(false)} />
       <PayDialog     open={payOpen}     expenseId={id} onClose={() => setPayOpen(false)} />

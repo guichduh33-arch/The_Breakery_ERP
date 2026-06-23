@@ -21,6 +21,8 @@ export interface ApproveDialogProps {
   approvals?: ExpenseApprovalRow[];
   /** user_profiles.id of the currently logged-in user */
   currentUserId?: string | null;
+  /** role_code of the currently logged-in user — SUPER_ADMIN may self-approve (SOD block 1 relaxed) */
+  currentUserRole?: string | null;
 }
 
 export function ApproveDialog({
@@ -31,12 +33,17 @@ export function ApproveDialog({
   createdByUserId,
   approvals = [],
   currentUserId,
+  currentUserRole,
 }: ApproveDialogProps): JSX.Element {
   const [pin, setPin] = useState('');
   const mut = useApproveExpense();
 
-  // Separation-of-duties checks
-  const isCreator = currentUserId !== null && currentUserId !== undefined
+  // Separation-of-duties checks.
+  // SUPER_ADMIN may self-approve (single-operator policy) — SOD block 1 is relaxed
+  // for that role server-side (approve_expense_v3) and mirrored here.
+  const isSuperAdmin = currentUserRole === 'SUPER_ADMIN';
+  const isCreator = !isSuperAdmin
+    && currentUserId !== null && currentUserId !== undefined
     && createdByUserId !== null && createdByUserId !== undefined
     && currentUserId === createdByUserId;
   const alreadyApproved = currentUserId !== null && currentUserId !== undefined
