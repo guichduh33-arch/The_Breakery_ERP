@@ -212,7 +212,9 @@ SELECT is(
   'T11 : category-specific 2-step override wins over NULL 1-step default'
 );
 
--- T12: cash sync trigger — open POS session then mark expense paid
+-- T12: cash expenses no longer sync to the shift drawer (trigger dropped 2026-06-23,
+-- migration _019). Paying a cash expense leaves cash_out_total unchanged — the expense
+-- now leaves the Petty Cash wallet (CR 1111), not the active POS till.
 INSERT INTO pos_sessions (id, opened_by, opening_cash, status)
 VALUES ('cccccccc-0000-0000-0000-000000000001',
         (SELECT id FROM user_profiles WHERE auth_user_id = '00000000-0000-0000-0000-000000000004' LIMIT 1),
@@ -226,11 +228,12 @@ WHERE id = 'eeeeeeee-0000-0000-0000-000000000001';
 
 SELECT is(
   (SELECT cash_out_total FROM pos_sessions WHERE id = 'cccccccc-0000-0000-0000-000000000001'),
-  50000::NUMERIC,
-  'T12 : cash sync trigger → pos_sessions.cash_out_total += 50000'
+  0::NUMERIC,
+  'T12 : shift-drawer sync removed → cash_out_total unchanged on cash expense pay'
 );
 
--- T13: no open session → audit_log written, UPDATE not blocked
+-- T13: paying a cash expense with no open session is never blocked (trigger removed,
+-- so the former 'expense.cash_paid_no_session' audit row is no longer written).
 UPDATE pos_sessions SET status = 'closed' WHERE id = 'cccccccc-0000-0000-0000-000000000001';
 
 INSERT INTO expenses (id, expense_number, category_id, amount, vat_amount, payment_method,
@@ -246,11 +249,10 @@ SET status  = 'paid',
     paid_by = (SELECT id FROM user_profiles WHERE auth_user_id = '00000000-0000-0000-0000-000000000004' LIMIT 1)
 WHERE id = 'eeeeeeee-0000-0000-0000-000000000013';
 
-SELECT ok(
-  EXISTS (SELECT 1 FROM audit_logs
-          WHERE entity_id = 'eeeeeeee-0000-0000-0000-000000000013'::UUID
-            AND action    = 'expense.cash_paid_no_session'),
-  'T13 : no open session → audit_log expense.cash_paid_no_session written, no block'
+SELECT is(
+  (SELECT status FROM expenses WHERE id = 'eeeeeeee-0000-0000-0000-000000000013'),
+  'paid',
+  'T13 : cash expense pay not blocked without an open session (sync trigger removed)'
 );
 
 -- T14: audit_log completeness for threshold + approval

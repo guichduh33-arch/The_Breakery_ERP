@@ -155,7 +155,12 @@ export type PermissionCode =
   | 'purchasing.po.read'
   | 'purchasing.po.create'
   | 'purchasing.po.receive'
-  | 'purchasing.po.cancel';
+  | 'purchasing.po.cancel'
+  // 2026-06-23 — Cash Wallets / Trésorerie (seeded by 20260706000017_cash_wallets_coa_mappings_perms)
+  | 'accounting.cash.read'
+  | 'accounting.cash.write'
+  // 2026-06-23 — stricter gate for adjustments + boss withdrawal (20260706000022)
+  | 'accounting.cash.adjust';
 
 /**
  * Check whether a user has a single permission. Pure client-side lookup —

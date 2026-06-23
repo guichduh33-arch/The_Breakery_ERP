@@ -83,6 +83,7 @@ const ALL_PERMS = [
   'accounting.tb.read',
   'accounting.read',
   'accounting.period.close',
+  'accounting.cash.read',
   'zreports.read',
   'reports.read',
   'reports.sales.read',
@@ -173,6 +174,7 @@ describe('Sidebar', () => {
     expect(screen.getByRole('link', { name: /Stock Movement History/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /RBAC Editor/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Permissions Matrix/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Cash Treasury/i })).toBeInTheDocument();
   });
 
   it('renders Incoming / Transfers / Expiring stock links under Stock Management (audit M6)', () => {
