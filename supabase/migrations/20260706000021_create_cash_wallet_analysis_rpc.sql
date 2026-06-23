@@ -61,3 +61,6 @@ END $$;
 COMMENT ON FUNCTION get_cash_wallet_analysis_v1(DATE,DATE) IS 'Cash Wallets : Private-Analysis replica (revenue/shift, top petty categories, deposits, boss withdrawals).';
 REVOKE EXECUTE ON FUNCTION get_cash_wallet_analysis_v1(DATE,DATE) FROM PUBLIC, anon;
 GRANT  EXECUTE ON FUNCTION get_cash_wallet_analysis_v1(DATE,DATE) TO authenticated;
+
+-- Project anon defense-in-depth (S20): ensure future public functions default-revoked from PUBLIC.
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;

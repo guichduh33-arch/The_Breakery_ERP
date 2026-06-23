@@ -87,3 +87,6 @@ COMMENT ON FUNCTION get_cash_wallet_ledger_v1(TEXT,DATE,DATE) IS
   'Cash Wallets : In/Out/Saldo ledger for one wallet, opening carry-forward, Undeposited sales aggregated per shift.';
 REVOKE EXECUTE ON FUNCTION get_cash_wallet_ledger_v1(TEXT,DATE,DATE) FROM PUBLIC, anon;
 GRANT  EXECUTE ON FUNCTION get_cash_wallet_ledger_v1(TEXT,DATE,DATE) TO authenticated;
+
+-- Project anon defense-in-depth (S20): ensure future public functions default-revoked from PUBLIC.
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;

@@ -1,5 +1,9 @@
--- 20260706000018 — record_cash_movement_v1 : single balanced-JE poster for cash wallets.
+-- 20260706000018 — record_cash_wallet_movement_v1 : single balanced-JE poster for cash wallets.
 -- Also extends journal_entries.reference_type to allow 'cash_movement'.
+-- NOTE on naming: the function is record_cash_WALLET_movement_v1 (not record_cash_movement_v1)
+-- to avoid colliding with the pre-existing in-shift record_cash_movement family
+-- (record_cash_movement_v2(uuid,text,numeric,text,uuid,text)). On cloud this was reached via a
+-- create-then-rename pair; this file declares the correct final name directly for fresh replays.
 
 -- (a) Allow the new reference_type discriminator.
 ALTER TABLE journal_entries DROP CONSTRAINT journal_entries_reference_type_check;
@@ -28,7 +32,7 @@ CREATE POLICY cash_movement_idem_select_auth ON cash_movement_idempotency_keys
   FOR SELECT TO authenticated USING (true);
 
 -- (c) The poster.
-CREATE OR REPLACE FUNCTION record_cash_movement_v1(
+CREATE OR REPLACE FUNCTION record_cash_wallet_movement_v1(
   p_movement_type   TEXT,
   p_amount          NUMERIC,
   p_movement_date   DATE,
@@ -125,7 +129,7 @@ BEGIN
     VALUES (p_idempotency_key, v_je_id);
 
   INSERT INTO audit_logs (actor_id, action, entity_type, entity_id, metadata)
-  VALUES (v_uid, 'cash.movement', 'journal_entries', v_je_id,
+  VALUES (v_uid, 'cash.wallet_movement', 'journal_entries', v_je_id,
           jsonb_build_object('movement_type', p_movement_type, 'amount', p_amount,
                              'date', p_movement_date, 'remark', p_remark));
 
@@ -137,10 +141,13 @@ EXCEPTION WHEN unique_violation THEN
   RETURN v_existing;
 END $$;
 
-COMMENT ON FUNCTION record_cash_movement_v1(TEXT,NUMERIC,DATE,TEXT,UUID,TEXT) IS
-  'Cash Wallets : posts one balanced JE for a wallet movement. Idempotent on p_idempotency_key. '
-  'Gated by accounting.cash.write. Fiscal-period guarded.';
+COMMENT ON FUNCTION record_cash_wallet_movement_v1(TEXT,NUMERIC,DATE,TEXT,UUID,TEXT) IS
+  'Cash Wallets : posts one balanced JE for a wallet movement (Undeposited/Petty/Small Money). '
+  'Idempotent on p_idempotency_key. Gated by accounting.cash.write. Fiscal-period guarded. '
+  'Distinct from the in-shift record_cash_movement_v2(uuid,text,numeric,text,uuid,text).';
 
-REVOKE EXECUTE ON FUNCTION record_cash_movement_v1(TEXT,NUMERIC,DATE,TEXT,UUID,TEXT) FROM PUBLIC;
-REVOKE EXECUTE ON FUNCTION record_cash_movement_v1(TEXT,NUMERIC,DATE,TEXT,UUID,TEXT) FROM anon;
-GRANT  EXECUTE ON FUNCTION record_cash_movement_v1(TEXT,NUMERIC,DATE,TEXT,UUID,TEXT) TO authenticated;
+REVOKE EXECUTE ON FUNCTION record_cash_wallet_movement_v1(TEXT,NUMERIC,DATE,TEXT,UUID,TEXT) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION record_cash_wallet_movement_v1(TEXT,NUMERIC,DATE,TEXT,UUID,TEXT) FROM anon;
+GRANT  EXECUTE ON FUNCTION record_cash_wallet_movement_v1(TEXT,NUMERIC,DATE,TEXT,UUID,TEXT) TO authenticated;
+-- Project anon defense-in-depth (S20): ensure future public functions default-revoked from PUBLIC.
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;
