@@ -1,22 +1,23 @@
 // apps/backoffice/src/pages/IncomingStock.tsx
 //
-// Standalone page at /backoffice/inventory/incoming. Lets a user record a
-// free-form stock receipt that isn't tied to a purchase order — supplier is
-// optional. Permission-gated on `inventory.receive`.
+// Standalone page at /backoffice/inventory/incoming. Records an ACCOUNTED direct
+// purchase (without first drafting a PO): it routes through the Purchasing
+// money-path so the buy integrates with stock, WAC, the stock analytics AND the
+// accounting ledger. Gated on `purchasing.po.create` (the buy needs it).
 //
-// Session 14 / Phase 5.A — header polish: Fraunces title + branded breadcrumb,
-// matching the rebuilt purchasing surfaces. Form behaviour unchanged.
+// Session 14 / Phase 5.A — header polish. 2026-06-23 — replaced the free-form
+// incoming receipt with the accounted DirectPurchaseForm.
 
 import type { JSX } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore.js';
-import IncomingStockForm from '@/features/inventory/components/IncomingStockForm.js';
+import DirectPurchaseForm from '@/features/inventory/components/DirectPurchaseForm.js';
 
 export default function IncomingStockPage(): JSX.Element {
   const hasPermission = useAuthStore((s) => s.hasPermission);
-  if (!hasPermission('inventory.receive')) {
-    return <div className="text-text-secondary">You do not have permission to record incoming stock.</div>;
+  if (!hasPermission('purchasing.po.create')) {
+    return <div className="text-text-secondary">You do not have permission to record purchases.</div>;
   }
   return (
     <div className="space-y-6">
@@ -27,12 +28,13 @@ export default function IncomingStockPage(): JSX.Element {
         <ArrowLeft className="h-4 w-4" aria-hidden /> Back to Stock &amp; Inventory
       </Link>
       <header>
-        <h1 className="font-display text-3xl text-text-primary">Incoming Stock</h1>
+        <h1 className="font-display text-3xl text-text-primary">Incoming Stock — Direct Purchase</h1>
         <p className="mt-1 text-sm text-text-secondary">
-          Record stock receipts that aren&apos;t tied to a purchase order. Supplier optional.
+          Record a supplier purchase that posts straight to stock, weighted-average cost,
+          the stock analytics and the accounting ledger (Inventory · Payable · Cash/Bank).
         </p>
       </header>
-      <IncomingStockForm />
+      <DirectPurchaseForm />
     </div>
   );
 }
