@@ -72,4 +72,23 @@ describe('ApproveDialog SOD smoke', () => {
     // Actual tooltip from Task 5.H: "You have already approved this expense"
     expect(btn.getAttribute('title')).toMatch(/already approved/i);
   });
+
+  it('T3 SUPER_ADMIN creator may self-approve (button not SOD-blocked)', () => {
+    wrap(
+      <ApproveDialog
+        open={true}
+        expenseId="e1"
+        onClose={vi.fn()}
+        createdByUserId="u1"
+        approvals={[]}
+        currentUserId="u1"
+        currentUserRole="SUPER_ADMIN"
+      />,
+    );
+    const btn = screen.getByTestId('approve-submit-btn');
+    // Creator block relaxed for SUPER_ADMIN — no SOD tooltip; button gated only by empty PIN.
+    expect(btn.getAttribute('title')).toBeNull();
+    expect(btn).toHaveTextContent(/approve/i);
+    expect(btn).not.toHaveTextContent(/cannot approve/i);
+  });
 });

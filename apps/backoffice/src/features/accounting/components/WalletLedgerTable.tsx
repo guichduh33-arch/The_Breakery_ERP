@@ -23,6 +23,9 @@ export function WalletLedgerTable({
         <tr className="text-left text-muted-foreground border-b">
           <th className="py-2">Date</th>
           <th>Remark</th>
+          <th>Category</th>
+          <th>Description</th>
+          <th>Supplier</th>
           <th className="text-right">In</th>
           <th className="text-right">Out</th>
           <th className="text-right">Saldo</th>
@@ -32,7 +35,10 @@ export function WalletLedgerTable({
         {rows.map((r, i) => (
           <tr key={i} className="border-b last:border-0">
             <td className="py-1.5 whitespace-nowrap">{r.row_date}</td>
-            <td className="truncate max-w-[280px]">{r.remark}</td>
+            <td className="truncate max-w-[220px]">{r.remark}</td>
+            <td className="truncate max-w-[140px]">{r.category ?? ''}</td>
+            <td className="truncate max-w-[200px]">{r.description ?? ''}</td>
+            <td className="truncate max-w-[160px]">{r.supplier ?? ''}</td>
             <td className="text-right tabular-nums">{r.in_amount ? idr.format(r.in_amount) : ''}</td>
             <td className="text-right tabular-nums">{r.out_amount ? idr.format(r.out_amount) : ''}</td>
             <td className="text-right tabular-nums font-medium">{idr.format(r.saldo)}</td>

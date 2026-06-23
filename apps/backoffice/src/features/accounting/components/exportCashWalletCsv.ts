@@ -6,11 +6,14 @@ import { buildCsv, downloadCsv, type CsvColumn } from '@breakery/domain';
 import type { WalletLedgerRow } from '../hooks/useCashWalletLedger.js';
 
 const COLUMNS: CsvColumn<WalletLedgerRow>[] = [
-  { header: 'Date',   accessor: (r) => r.row_date,              format: 'date' },
-  { header: 'Remark', accessor: (r) => r.remark ?? '',          format: 'text' },
-  { header: 'In',     accessor: (r) => r.in_amount ?? 0,        format: 'idr' },
-  { header: 'Out',    accessor: (r) => r.out_amount ?? 0,       format: 'idr' },
-  { header: 'Saldo',  accessor: (r) => r.saldo,                 format: 'idr' },
+  { header: 'Date',        accessor: (r) => r.row_date,         format: 'date' },
+  { header: 'Remark',      accessor: (r) => r.remark ?? '',     format: 'text' },
+  { header: 'Category',    accessor: (r) => r.category ?? '',   format: 'text' },
+  { header: 'Description', accessor: (r) => r.description ?? '', format: 'text' },
+  { header: 'Supplier',    accessor: (r) => r.supplier ?? '',   format: 'text' },
+  { header: 'In',          accessor: (r) => r.in_amount ?? 0,   format: 'idr' },
+  { header: 'Out',         accessor: (r) => r.out_amount ?? 0,  format: 'idr' },
+  { header: 'Saldo',       accessor: (r) => r.saldo,            format: 'idr' },
 ];
 
 export function exportCashWalletCsv(rows: WalletLedgerRow[], walletName: string): void {
