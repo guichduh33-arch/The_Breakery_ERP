@@ -6,6 +6,9 @@ import React from 'react';
 const mockRpc = vi.fn().mockResolvedValue({ data: 'je-1', error: null });
 vi.mock('@/lib/supabase.js', () => ({ supabase: { rpc: (...a: unknown[]) => mockRpc(...a) } }));
 
+let mockCanAdjust = true;
+vi.mock('@/stores/authStore.js', () => ({ useAuthStore: (sel: any) => sel({ hasPermission: () => mockCanAdjust }) }));
+
 import { CashReconciliationPanel } from '../components/CashReconciliationPanel.js';
 
 const wrapper = ({ children }: { children: React.ReactNode }) => {
@@ -14,7 +17,10 @@ const wrapper = ({ children }: { children: React.ReactNode }) => {
 };
 
 describe('CashReconciliationPanel', () => {
-  beforeEach(() => mockRpc.mockClear());
+  beforeEach(() => {
+    mockRpc.mockClear();
+    mockCanAdjust = true;
+  });
 
   it('computes the difference and enables booking when counted > GL', () => {
     render(
@@ -48,5 +54,18 @@ describe('CashReconciliationPanel', () => {
     );
     fireEvent.change(screen.getByPlaceholderText(/Counted/i), { target: { value: '90000' } });
     expect(screen.getByRole('button', { name: /Book shortage/i })).toBeEnabled();
+  });
+
+  it('disables the Book button and shows hint when canAdjust is false', () => {
+    mockCanAdjust = false;
+    render(
+      <CashReconciliationPanel
+        wallet={{ account_code: '1111', account_name: 'Petty Cash', balance: 47200 }}
+      />,
+      { wrapper },
+    );
+    fireEvent.change(screen.getByPlaceholderText(/Counted/i), { target: { value: '50000' } });
+    expect(screen.getByRole('button', { name: /Book overage/i })).toBeDisabled();
+    expect(screen.getByText(/Requires cash-adjust permission/i)).toBeInTheDocument();
   });
 });

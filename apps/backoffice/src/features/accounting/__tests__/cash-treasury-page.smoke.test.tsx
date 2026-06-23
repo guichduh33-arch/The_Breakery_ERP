@@ -6,6 +6,7 @@ import React from 'react';
 const rpc = vi.fn();
 vi.mock('@/lib/supabase.js', () => ({ supabase: { rpc: (...a: unknown[]) => rpc(...a) } }));
 vi.mock('@/components/PermissionGate.js', () => ({ default: ({ children }: any) => <>{children}</>, PermissionGate: ({ children }: any) => <>{children}</> }));
+vi.mock('@/stores/authStore.js', () => ({ useAuthStore: (sel: any) => sel({ hasPermission: () => true }) }));
 
 import CashTreasuryPage from '../pages/CashTreasuryPage.js';
 

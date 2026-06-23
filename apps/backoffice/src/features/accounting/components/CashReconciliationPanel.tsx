@@ -6,12 +6,14 @@ import { useState } from 'react';
 import { Card, Button } from '@breakery/ui';
 import type { WalletBalance } from '../hooks/useCashWallets.js';
 import { useRecordCashMovement } from '../hooks/useRecordCashMovement.js';
+import { useAuthStore } from '@/stores/authStore.js';
 
 const idr = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 });
 
 const todayISO = (): string => new Date().toISOString().slice(0, 10);
 
 export function CashReconciliationPanel({ wallet }: { wallet: WalletBalance }) {
+  const canAdjust = useAuthStore((s) => s.hasPermission('accounting.cash.adjust'));
   const [counted, setCounted] = useState('');
   const mut = useRecordCashMovement();
   const diff = counted === '' ? 0 : Number(counted) - wallet.balance;
@@ -49,9 +51,12 @@ export function CashReconciliationPanel({ wallet }: { wallet: WalletBalance }) {
       {mut.isError && (
         <p className="text-sm text-destructive">{(mut.error as Error).message}</p>
       )}
-      <Button disabled={diff === 0 || mut.isPending} onClick={book}>
+      <Button disabled={diff === 0 || mut.isPending || !canAdjust} onClick={book}>
         {diff === 0 ? 'Balanced' : `Book ${diff > 0 ? 'overage' : 'shortage'}`}
       </Button>
+      {!canAdjust && (
+        <p className="text-xs text-muted-foreground">Requires cash-adjust permission</p>
+      )}
     </Card>
   );
 }
