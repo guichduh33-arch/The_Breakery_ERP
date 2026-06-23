@@ -10,7 +10,7 @@ BEGIN;
 CREATE OR REPLACE FUNCTION public.has_permission(p_uid uuid, p_perm text)
 RETURNS boolean LANGUAGE sql AS $$ SELECT true $$;
 
-SELECT plan(20);
+SELECT plan(22);
 
 -- ── Task 1: COA accounts, mappings, permissions ───────────────────────────────
 SELECT ok( (SELECT is_postable FROM accounts WHERE code='1117'), '1117 Small Money is postable');
@@ -83,6 +83,12 @@ SELECT is(
 SELECT cmp_ok(
   (SELECT count(*)::int FROM get_cash_wallet_ledger_v1('1110', CURRENT_DATE-1, CURRENT_DATE+1)), '>=', 1,
   'undeposited ledger executes and returns rows');
+
+-- ── Task 9: analysis RPC ──────────────────────────────────────────────────────
+SELECT ok( (get_cash_wallet_analysis_v1(CURRENT_DATE-31, CURRENT_DATE+1)) ? 'revenue_by_shift',
+  'analysis payload has revenue_by_shift key');
+SELECT is( has_function_privilege('anon','get_cash_wallet_analysis_v1(date,date)','EXECUTE'), false,
+  'anon has no EXECUTE on get_cash_wallet_analysis_v1');
 
 SELECT * FROM finish();
 ROLLBACK;

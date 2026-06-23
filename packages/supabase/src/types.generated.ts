@@ -300,6 +300,32 @@ export type Database = {
         }
         Relationships: []
       }
+      cash_movement_idempotency_keys: {
+        Row: {
+          created_at: string
+          idempotency_key: string
+          je_id: string
+        }
+        Insert: {
+          created_at?: string
+          idempotency_key: string
+          je_id: string
+        }
+        Update: {
+          created_at?: string
+          idempotency_key?: string
+          je_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_movement_idempotency_keys_je_id_fkey"
+            columns: ["je_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cash_movements: {
         Row: {
           amount: number
@@ -6316,6 +6342,33 @@ export type Database = {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
+      get_cash_wallet_analysis_v1: {
+        Args: { p_date_end: string; p_date_start: string }
+        Returns: Json
+      }
+      get_cash_wallet_balances_v1: {
+        Args: never
+        Returns: {
+          account_code: string
+          account_name: string
+          balance: number
+        }[]
+      }
+      get_cash_wallet_ledger_v1: {
+        Args: {
+          p_account_code: string
+          p_date_end: string
+          p_date_start: string
+        }
+        Returns: {
+          in_amount: number
+          out_amount: number
+          ref_type: string
+          remark: string
+          row_date: string
+          saldo: number
+        }[]
+      }
       get_current_profile_id: { Args: never; Returns: string }
       get_current_role: { Args: never; Returns: string }
       get_customer_cohort_v1: {
@@ -7160,6 +7213,17 @@ export type Database = {
           p_session_id: string
         }
         Returns: Json
+      }
+      record_cash_wallet_movement_v1: {
+        Args: {
+          p_amount: number
+          p_idempotency_key: string
+          p_movement_date: string
+          p_movement_type: string
+          p_remark: string
+          p_wallet_code?: string
+        }
+        Returns: string
       }
       record_incoming_stock_v1: {
         Args: {
