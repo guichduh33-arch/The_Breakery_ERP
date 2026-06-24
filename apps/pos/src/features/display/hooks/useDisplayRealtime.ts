@@ -19,11 +19,16 @@ import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { supabase } from '@/lib/supabase';
+import { useReconnectInvalidate } from '@/lib/useReconnectInvalidate';
 
 export const DISPLAY_ORDERS_QUERY_KEY = ['display', 'orders'] as const;
 
 export function useDisplayRealtime(screenId: string): void {
   const qc = useQueryClient();
+
+  // LOT 5 — recover a missed event on reconnect (this hook holds no query of
+  // its own, so it can't rely on a refetchInterval).
+  useReconnectInvalidate([DISPLAY_ORDERS_QUERY_KEY]);
 
   useEffect(() => {
     const channelName = `display-${screenId}-${crypto.randomUUID()}`;

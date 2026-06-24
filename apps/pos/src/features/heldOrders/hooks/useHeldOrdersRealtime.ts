@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
+import { useReconnectInvalidate } from '@/lib/useReconnectInvalidate';
 
 /**
  * Session 35 (F-003) — subscribe to `orders` changes and invalidate the
@@ -10,6 +11,10 @@ import { supabase } from '@/lib/supabase';
  */
 export function useHeldOrdersRealtime(): void {
   const qc = useQueryClient();
+
+  // LOT 5 — reconnect safety net for this realtime-only hook.
+  useReconnectInvalidate([['held-orders']]);
+
   useEffect(() => {
     const channelName = `held-orders-${crypto.randomUUID()}`;
     const channel = supabase

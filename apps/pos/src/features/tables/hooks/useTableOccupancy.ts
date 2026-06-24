@@ -34,6 +34,9 @@ export function useTableOccupancy(): Record<string, boolean> {
     queryKey: OCCUPANCY_KEY,
     queryFn: fetchOccupied,
     staleTime: 30_000,
+    // LOT 5 (audit 2026-06-25) — reconnect safety net: a realtime event lost
+    // during a Wi-Fi blip is recovered in ≤30s. Realtime stays the nominal path.
+    refetchInterval: 30_000,
   });
 
   useEffect(() => {

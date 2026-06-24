@@ -8,10 +8,14 @@
 import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
+import { useReconnectInvalidate } from '@/lib/useReconnectInvalidate';
 import { PROMOTIONS_QUERY_KEY } from './usePromotions';
 
 export function usePromotionsRealtime(): void {
   const qc = useQueryClient();
+
+  // LOT 5 — reconnect safety net for this realtime-only hook.
+  useReconnectInvalidate([PROMOTIONS_QUERY_KEY]);
 
   useEffect(() => {
     // StrictMode double-invokes effects in dev; a static channel name would

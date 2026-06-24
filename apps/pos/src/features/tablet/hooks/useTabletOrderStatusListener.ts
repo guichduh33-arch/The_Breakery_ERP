@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
+import { useReconnectInvalidate } from '@/lib/useReconnectInvalidate';
 import { useAuthStore } from '@/stores/authStore';
 
 // Bound the dedupe set so a long-running tablet session can't leak memory
@@ -17,6 +18,11 @@ export function useTabletOrderStatusListener() {
   // reconnect or deliver them out of order ; the toast must fire at most
   // once per (order_item_id, kitchen_status) transition.
   const seenRef = useRef<Set<string>>(new Set());
+
+  // LOT 5 — reconnect safety net: re-pull the tablet orders on `online` so a
+  // status change missed during a network blip is recovered. The dedupe set
+  // above keeps the ready-toast from re-firing on the replayed rows.
+  useReconnectInvalidate(userId ? [['tablet-orders', userId]] : []);
 
   useEffect(() => {
     if (!userId) return;
