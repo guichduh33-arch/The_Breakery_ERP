@@ -36,6 +36,9 @@ import {
   type SupplierRow,
   type SuppliersListFilters,
 } from '@/features/suppliers/hooks/useSuppliersList.js';
+import { ImportEntityModal } from '@/features/data-import/components/ImportEntityModal.js';
+import { buildTemplateWorkbook, buildExportWorkbook, downloadWorkbook } from '@/features/data-import/buildEntityWorkbook.js';
+import { suppliersImportDef } from '@/features/suppliers/import/suppliersImportDef.js';
 
 interface SuppliersKpi {
   total:    number;
@@ -77,6 +80,7 @@ export default function SuppliersPage(): JSX.Element {
   const [creating, setCreating] = useState(false);
   const [editing,  setEditing]  = useState<SupplierRow | undefined>(undefined);
   const [deleting, setDeleting] = useState<SupplierRow | undefined>(undefined);
+  const [importing, setImporting] = useState(false);
 
   if (!canRead) {
     return <div className="text-text-secondary">You do not have permission to view suppliers.</div>;
@@ -84,6 +88,16 @@ export default function SuppliersPage(): JSX.Element {
 
   function handleToggleActive(row: SupplierRow): void {
     updateMut.mutate({ id: row.id, values: { is_active: !row.is_active } });
+  }
+
+  function handleTemplate(): void {
+    downloadWorkbook(buildTemplateWorkbook(suppliersImportDef), 'breakery-suppliers-template.xlsx');
+  }
+  function handleExport(): void {
+    downloadWorkbook(
+      buildExportWorkbook(suppliersImportDef, allList.data ?? []),
+      `breakery-suppliers-export-${new Date().toISOString().slice(0, 10)}.xlsx`,
+    );
   }
 
   const rows = list.data ?? [];
@@ -99,13 +113,15 @@ export default function SuppliersPage(): JSX.Element {
           <Button variant="ghost" size="sm" disabled aria-label="Categories (coming soon)">
             <Tag className="h-4 w-4" aria-hidden /> Categories
           </Button>
-          <Button variant="ghost" size="sm" disabled aria-label="Template (coming soon)">
+          <Button variant="ghost" size="sm" onClick={handleTemplate} aria-label="Download suppliers template">
             <FileText className="h-4 w-4" aria-hidden /> Template
           </Button>
-          <Button variant="ghost" size="sm" disabled aria-label="Import (coming soon)">
-            <Upload className="h-4 w-4" aria-hidden /> Import
-          </Button>
-          <Button variant="ghost" size="sm" disabled aria-label="Export (coming soon)">
+          {canCreate && (
+            <Button variant="ghost" size="sm" onClick={() => setImporting(true)} aria-label="Import suppliers">
+              <Upload className="h-4 w-4" aria-hidden /> Import
+            </Button>
+          )}
+          <Button variant="ghost" size="sm" onClick={handleExport} aria-label="Export suppliers">
             <Download className="h-4 w-4" aria-hidden /> Export
           </Button>
           {canCreate && (
@@ -220,6 +236,13 @@ export default function SuppliersPage(): JSX.Element {
         open={deleting !== undefined}
         row={deleting}
         onClose={() => setDeleting(undefined)}
+      />
+      <ImportEntityModal
+        open={importing}
+        onClose={() => setImporting(false)}
+        def={suppliersImportDef}
+        title="Import suppliers"
+        description="Upload a filled .xlsx template. Existing codes are updated; new codes are created. The file is validated before any writes."
       />
     </div>
   );
