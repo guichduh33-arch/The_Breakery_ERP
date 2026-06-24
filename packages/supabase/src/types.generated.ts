@@ -3869,6 +3869,8 @@ export type Database = {
           expected_date: string | null
           id: string
           idempotency_key: string | null
+          import_reference: string | null
+          is_historical_import: boolean
           metadata: Json
           notes: string | null
           order_date: string
@@ -3893,6 +3895,8 @@ export type Database = {
           expected_date?: string | null
           id?: string
           idempotency_key?: string | null
+          import_reference?: string | null
+          is_historical_import?: boolean
           metadata?: Json
           notes?: string | null
           order_date?: string
@@ -3917,6 +3921,8 @@ export type Database = {
           expected_date?: string | null
           id?: string
           idempotency_key?: string | null
+          import_reference?: string | null
+          is_historical_import?: boolean
           metadata?: Json
           notes?: string | null
           order_date?: string
@@ -6811,6 +6817,14 @@ export type Database = {
         Returns: Json
       }
       import_customers_v1: {
+        Args: {
+          p_dry_run?: boolean
+          p_idempotency_key?: string
+          p_payload: Json
+        }
+        Returns: Json
+      }
+      import_purchases_v1: {
         Args: {
           p_dry_run?: boolean
           p_idempotency_key?: string

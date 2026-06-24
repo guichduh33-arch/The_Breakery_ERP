@@ -26,6 +26,8 @@ const ROWS: PurchaseOrderListRow[] = [
     received_date:    null,
     notes:            null,
     cancel_reason:    null,
+    import_reference: null,
+    is_historical_import: false,
     cancelled_at:     null,
     cancelled_by:     null,
     received_by:      null,
@@ -51,6 +53,8 @@ const ROWS: PurchaseOrderListRow[] = [
     received_date:    '2026-03-17',
     notes:            null,
     cancel_reason:    null,
+    import_reference: null,
+    is_historical_import: false,
     cancelled_at:     null,
     cancelled_by:     null,
     received_by:      null,
@@ -63,6 +67,24 @@ const ROWS: PurchaseOrderListRow[] = [
     suppliers:        { code: 'BU', name: 'Banyu Urip' },
   },
 ];
+
+vi.mock('@/features/purchasing/hooks/useHistoricalPurchasesExport.js', () => ({
+  useHistoricalPurchasesExport: () => ({ mutateAsync: vi.fn(), isPending: false }),
+}));
+
+vi.mock('@/features/data-import/components/ImportEntityModal.js', () => ({
+  ImportEntityModal: () => null,
+}));
+
+vi.mock('@/features/data-import/buildEntityWorkbook.js', () => ({
+  buildTemplateWorkbook: vi.fn(),
+  buildExportWorkbook: vi.fn(),
+  downloadWorkbook: vi.fn(),
+}));
+
+vi.mock('@/features/purchasing/import/purchasesImportDef.js', () => ({
+  purchasesImportDef: { entity: 'purchases', sheetName: 'Purchases', columns: [], queryKeysToInvalidate: [] },
+}));
 
 vi.mock('@/features/purchasing/hooks/usePurchaseOrdersList.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/features/purchasing/hooks/usePurchaseOrdersList.js')>();

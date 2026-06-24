@@ -45,6 +45,7 @@ export function usePurchaseOrdersList(filters: PurchaseOrdersFilters = {}) {
         .select(
           'id, po_number, supplier_id, status, payment_terms, subtotal, vat_amount, ' +
           'total_amount, order_date, expected_date, received_date, notes, cancel_reason, ' +
+          'import_reference, is_historical_import, ' +
           'metadata, idempotency_key, created_by, received_by, cancelled_by, cancelled_at, ' +
           'created_at, updated_at, deleted_at, ' +
           'suppliers(code, name)'
