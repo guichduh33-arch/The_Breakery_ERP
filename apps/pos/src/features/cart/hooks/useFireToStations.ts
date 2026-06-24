@@ -68,6 +68,15 @@ export interface UseFireToStationsResult {
    * resolving.
    */
   firableCount: number;
+  /**
+   * LOT 3 (KDS, audit 2026-06-25) — number of currently-unprinted cart items
+   * whose category routes NOWHERE (dispatch_station 'none' or unmapped). These
+   * are persisted on the DB order for payment but never reach a KDS station, so
+   * the kitchen never sees them. The button surfaces a non-blocking warning
+   * toast when this is > 0 at fire time. Computed off the same live station map
+   * as `firableCount` (empty while loading → count 0, no false alarm).
+   */
+  unroutedCount: number;
 }
 
 export function useFireToStations(): UseFireToStationsResult {
@@ -86,12 +95,26 @@ export function useFireToStations(): UseFireToStationsResult {
   // the station map is undefined (query loading) it is empty → count 0 →
   // button disabled, which naturally guards the not-loaded race.
   const stationMap = stationMapData ?? {};
-  const firableCount = cartItems.filter((item) => {
+  // Candidate lines = unprinted, non-cancelled. They split into routed (a prep
+  // station) and unrouted ('none'/unmapped). We only flag the unrouted ones
+  // once the station map has resolved — an empty map (loading) yields 0 on both
+  // counters, so the warning never fires on a stale render.
+  const stationMapReady = stationMapData !== undefined && Object.keys(stationMap).length > 0;
+  const candidates = cartItems.filter((item) => {
     if (item.is_cancelled) return false;
     if (printedItemIds.includes(item.id)) return false;
+    return true;
+  });
+  const firableCount = candidates.filter((item) => {
     const station = stationMap[item.product_id];
     return station != null && (PREP_STATIONS as readonly string[]).includes(station);
   }).length;
+  const unroutedCount = stationMapReady
+    ? candidates.filter((item) => {
+        const station = stationMap[item.product_id];
+        return station == null || !(PREP_STATIONS as readonly string[]).includes(station);
+      }).length
+    : 0;
 
   // P0-3 idempotence : the fire's client uuid is generated per FIRE (not per
   // call) and kept across failed attempts — a network retry of the SAME fire
@@ -242,5 +265,5 @@ export function useFireToStations(): UseFireToStationsResult {
     },
   });
 
-  return { mutation, firableCount };
+  return { mutation, firableCount, unroutedCount };
 }

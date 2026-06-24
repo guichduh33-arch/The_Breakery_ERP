@@ -14,7 +14,7 @@ interface SendToKitchenButtonProps {
 }
 
 export function SendToKitchenButton({ className, variant }: SendToKitchenButtonProps = {}) {
-  const { mutation, firableCount } = useFireToStations();
+  const { mutation, firableCount, unroutedCount } = useFireToStations();
 
   // Disabled when there is nothing that routes to a prep station (bread-only
   // orders, products query still loading, everything already printed) or while
@@ -23,6 +23,9 @@ export function SendToKitchenButton({ className, variant }: SendToKitchenButtonP
 
   async function handleClick() {
     if (disabled) return;
+    // LOT 3 — snapshot the unrouted count BEFORE firing: the fire marks the
+    // items printed, which immediately drops the live counter back to 0.
+    const unroutedAtFire = unroutedCount;
     const rawTable = useCartStore.getState().cart.tableNumber;
     const ctx = rawTable ? { tableNumber: rawTable } : {};
     try {
@@ -40,6 +43,15 @@ export function SendToKitchenButton({ className, variant }: SendToKitchenButtonP
         } else {
           toast.error(`${r.role} printer unreachable — ticket saved to KDS, not printed`);
         }
+      }
+      // LOT 3 — non-blocking warning: some lines route to no station and never
+      // reach the kitchen (category dispatch_station 'none' / unmapped). The
+      // order still persists for payment; this just makes the silent skip
+      // visible so staff can follow up.
+      if (unroutedAtFire > 0) {
+        toast.warning(
+          `${unroutedAtFire} item(s) not routed to any kitchen station — check category routing`,
+        );
       }
     } catch (err) {
       const e = err as Error;
