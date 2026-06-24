@@ -8,6 +8,9 @@ import type { CsvColumn } from '@breakery/domain';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
+import { ChartCard } from '@/features/reports/components/ChartCard.js';
+import { CostDonut } from '@/features/reports/components/CostDonut.js';
+import { COGS_BASE } from '@/features/reports/utils/chartColors.js';
 import {
   usePurchaseBySupplier,
   type PurchaseBySupplierRow,
@@ -65,7 +68,17 @@ export default function PurchaseBySupplierPage() {
         </p>
       )}
       {data && (
-        <table className="w-full text-sm">
+        <div className="space-y-6">
+          {/* Spend distribution by supplier */}
+          <ChartCard title="Spend by supplier" accent={COGS_BASE}>
+            <CostDonut
+              family="cogs"
+              centerLabel="Total"
+              data={rows.map((r) => ({ name: r.supplier_name, value: r.total }))}
+            />
+          </ChartCard>
+
+          <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border-subtle text-text-secondary">
               <th className="py-2 text-left">Supplier</th>
@@ -101,7 +114,8 @@ export default function PurchaseBySupplierPage() {
               </tr>
             ))}
           </tbody>
-        </table>
+          </table>
+        </div>
       )}
     </ReportPage>
   );

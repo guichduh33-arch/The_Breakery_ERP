@@ -60,6 +60,7 @@ const SECTIONS: ReportSection[] = [
     id: 'purchases',
     title: 'Purchases',
     cards: [
+      { to: 'cost-spend',         title: 'Cost & Spend Analytics', blurb: 'Material purchases (COGS) + OpEx — charts, categories, trend.', icon: PieChart },
       { to: 'purchase-items',     title: 'Purchase Items',     blurb: 'All purchased items with prices and dates.',  icon: ShoppingCart },
       { to: 'purchase-by-date',   title: 'Purchase by Date',   blurb: 'Purchase history timeline.',                  icon: Calendar },
       { to: 'purchase-by-supplier', title: 'Purchase by Supplier', blurb: 'Supplier performance and costs.',         icon: Truck },
@@ -70,6 +71,7 @@ const SECTIONS: ReportSection[] = [
     title: 'Finance & Payments',
     cards: [
       { to: 'profit-loss',   title: 'Profit & Loss',   blurb: 'Revenue, COGS and OpEx for a period.',       icon: Coins },
+      { to: 'operating-expenses', title: 'Operating Expenses', blurb: 'Expense ledger by category, status & trend.', icon: Receipt },
       { to: 'balance-sheet', title: 'Balance Sheet',   blurb: 'Assets vs liabilities + equity snapshot.',   icon: Scale },
       { to: 'cash-flow',     title: 'Cash Flow',       blurb: 'Indirect-method cash movement statement.',   icon: Banknote },
       { to: 'payment-by-method', title: 'Payment by Method', blurb: 'Cash, Card, QRIS split + daily trend.',  icon: Receipt },
