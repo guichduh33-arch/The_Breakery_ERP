@@ -51,6 +51,11 @@ import {
 import { useCustomerCategories } from '@/features/customers/hooks/useCustomerCategories.js';
 import { useCustomersStats } from '@/features/customers/hooks/useCustomersStats.js';
 import { CustomerFormModal } from '@/features/loyalty/components/CustomerFormModal.js';
+import { toast } from 'sonner';
+import { ImportEntityModal } from '@/features/data-import/components/ImportEntityModal.js';
+import { buildTemplateWorkbook, buildExportWorkbook, downloadWorkbook } from '@/features/data-import/buildEntityWorkbook.js';
+import { customersImportDef } from '@/features/customers/import/customersImportDef.js';
+import { useCustomersExport } from '@/features/customers/hooks/useCustomersExport.js';
 
 const TIER_OPTIONS: ReadonlyArray<{ value: CustomersTier; label: string }> = [
   { value: 'all',      label: 'Loyalty Tier: All' },
@@ -89,6 +94,8 @@ export default function CustomersListPage(): JSX.Element {
   const [tier,       setTier      ] = useState<CustomersTier>('all');
   const [sort,       setSort      ] = useState<CustomersSort>('last_visit');
   const [creating,   setCreating  ] = useState<boolean>(false);
+  const [importing,  setImporting ] = useState<boolean>(false);
+  const exportMut = useCustomersExport();
 
   const filters = useMemo(
     () => ({
@@ -103,6 +110,21 @@ export default function CustomersListPage(): JSX.Element {
   const list  = useCustomersList(filters);
   const cats  = useCustomerCategories();
   const stats = useCustomersStats();
+
+  function handleTemplate(): void {
+    downloadWorkbook(buildTemplateWorkbook(customersImportDef), 'breakery-customers-template.xlsx');
+  }
+  async function handleExport(): Promise<void> {
+    try {
+      const rows = await exportMut.mutateAsync();
+      downloadWorkbook(
+        buildExportWorkbook(customersImportDef, rows),
+        `breakery-customers-export-${new Date().toISOString().slice(0, 10)}.xlsx`,
+      );
+    } catch (e) {
+      toast.error(`Export failed: ${(e as Error).message}`);
+    }
+  }
 
   if (!canRead) {
     return (
@@ -204,14 +226,16 @@ export default function CustomersListPage(): JSX.Element {
               </Link>
             </Button>
           )}
-          <Button variant="ghost" size="md" disabled aria-label="Customer template (coming soon)">
+          <Button variant="ghost" size="md" onClick={handleTemplate} aria-label="Download customers template">
             <FileText className="h-4 w-4" aria-hidden /> Template
           </Button>
-          <Button variant="ghost" size="md" disabled aria-label="Import customers (coming soon)">
-            <Upload className="h-4 w-4" aria-hidden /> Import
-          </Button>
-          <Button variant="ghost" size="md" disabled aria-label="Export customers (coming soon)">
-            <Download className="h-4 w-4" aria-hidden /> Export
+          {canCreate && (
+            <Button variant="ghost" size="md" onClick={() => setImporting(true)} aria-label="Import customers">
+              <Upload className="h-4 w-4" aria-hidden /> Import
+            </Button>
+          )}
+          <Button variant="ghost" size="md" onClick={() => void handleExport()} disabled={exportMut.isPending} aria-label="Export customers">
+            <Download className="h-4 w-4" aria-hidden /> {exportMut.isPending ? 'Exporting…' : 'Export'}
           </Button>
           {canCreate && (
             <Button variant="primary" size="md" onClick={() => setCreating(true)}>
@@ -311,6 +335,13 @@ export default function CustomersListPage(): JSX.Element {
         open={creating}
         mode="create"
         onClose={() => setCreating(false)}
+      />
+      <ImportEntityModal
+        open={importing}
+        onClose={() => setImporting(false)}
+        def={customersImportDef}
+        title="Import customers"
+        description="Upload a filled .xlsx template. New customers are created; duplicates (by phone or email) are flagged before any writes."
       />
     </div>
   );
