@@ -70,6 +70,8 @@ import ProductionReportPage      from '@/pages/reports/ProductionReportPage.js';
 import ProductionEfficiencyPage  from '@/pages/reports/ProductionEfficiencyPage.js';
 import PriceChangesPage          from '@/pages/reports/PriceChangesPage.js';
 import PermissionChangesPage     from '@/pages/reports/PermissionChangesPage.js';
+import CostSpendAnalyticsPage    from '@/pages/reports/CostSpendAnalyticsPage.js';
+import OperatingExpensesPage     from '@/pages/reports/OperatingExpensesPage.js';
 import SettingsHubPage              from '@/pages/settings/SettingsHubPage.js';
 import SettingsGeneralPage          from '@/pages/settings/SettingsGeneralPage.js';
 import SettingsHolidaysPage         from '@/pages/settings/SettingsHolidaysPage.js';
@@ -786,6 +788,22 @@ export function AppRoutes() {
           element={
             <PermissionGate required="reports.inventory.read">
               <PurchaseBySupplierPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="reports/cost-spend"
+          element={
+            <PermissionGate required="reports.financial.read">
+              <CostSpendAnalyticsPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="reports/operating-expenses"
+          element={
+            <PermissionGate required="reports.financial.read">
+              <OperatingExpensesPage />
             </PermissionGate>
           }
         />

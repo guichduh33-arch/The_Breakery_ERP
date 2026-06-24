@@ -6451,6 +6451,15 @@ export type Database = {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
+      get_expenses_by_category_v1: {
+        Args: {
+          p_category_id?: string
+          p_date_end: string
+          p_date_start: string
+          p_status?: string
+        }
+        Returns: Json
+      }
       get_expiring_lots_v1: {
         Args: {
           p_hours_ahead?: number
@@ -6620,6 +6629,14 @@ export type Database = {
       }
       get_purchase_by_supplier_v1: {
         Args: { p_date_end: string; p_date_start: string }
+        Returns: Json
+      }
+      get_purchase_cogs_breakdown_v1: {
+        Args: {
+          p_category_id?: string
+          p_date_end: string
+          p_date_start: string
+        }
         Returns: Json
       }
       get_purchase_items_v1: {

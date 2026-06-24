@@ -2,11 +2,31 @@
 // S40 Wave B2 — Purchase orders aggregated by date: KPI cards + by_day table.
 
 import { useState } from 'react';
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  Legend,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import { toLocalDateStr } from '@breakery/domain';
 import type { CsvColumn } from '@breakery/domain';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
+import { ChartCard } from '@/features/reports/components/ChartCard.js';
+import {
+  COGS_BASE,
+  familyColor,
+  CHART_GRID_STROKE,
+  CHART_AXIS_TICK,
+  CHART_TOOLTIP_STYLE,
+  formatIdrFull,
+  formatIdrCompact,
+} from '@/features/reports/utils/chartColors.js';
 import {
   usePurchaseByDate,
   type PurchaseByDayRow,
@@ -77,6 +97,53 @@ export default function PurchaseByDatePage() {
               </div>
             ))}
           </div>
+
+          {/* Stacked received vs pending value over time */}
+          <ChartCard
+            title="Purchase value over time"
+            subtitle="Received vs pending PO value by day"
+            accent={COGS_BASE}
+          >
+            <div className="h-72 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={rows} margin={{ top: 10, right: 16, bottom: 0, left: 8 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_STROKE} />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fill: CHART_AXIS_TICK, fontSize: 12 }}
+                  />
+                  <YAxis
+                    tickFormatter={formatIdrCompact}
+                    tick={{ fill: CHART_AXIS_TICK, fontSize: 12 }}
+                    width={72}
+                  />
+                  <Tooltip
+                    formatter={(v: number, n: string) => [formatIdrFull(v), n]}
+                    contentStyle={CHART_TOOLTIP_STYLE}
+                  />
+                  <Legend />
+                  <Area
+                    type="monotone"
+                    dataKey="received_total"
+                    name="Received"
+                    stackId="v"
+                    stroke={COGS_BASE}
+                    fill={COGS_BASE}
+                    fillOpacity={0.85}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="pending_total"
+                    name="Pending"
+                    stackId="v"
+                    stroke={familyColor('cogs', 2)}
+                    fill={familyColor('cogs', 2)}
+                    fillOpacity={0.7}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </ChartCard>
 
           {/* By-day table */}
           <table className="w-full text-sm">

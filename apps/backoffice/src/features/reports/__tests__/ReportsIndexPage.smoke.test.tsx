@@ -41,11 +41,11 @@ describe('ReportsIndexPage (rebuild)', () => {
     expect(link?.getAttribute('href')).toBe('/sales-by-hour');
   });
 
-  it('has exactly 26 active card links (all reports wired — Wave C S40)', () => {
+  it('has exactly 28 active card links (Wave C S40 + Cost & Spend / Operating Expenses)', () => {
     renderPage();
     // Every card is now an <a> element; disabled tiles are <div aria-disabled>.
     const links = screen.getAllByRole('link');
-    expect(links).toHaveLength(26);
+    expect(links).toHaveLength(28);
   });
 
   it('has zero "Soon" disabled tiles after Wave C wiring', () => {

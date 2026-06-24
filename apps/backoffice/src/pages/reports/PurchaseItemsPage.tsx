@@ -1,13 +1,31 @@
 // apps/backoffice/src/pages/reports/PurchaseItemsPage.tsx
 // S40 Wave B2 — Purchase order line items report with supplier filter + CSV export.
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import { toLocalDateStr } from '@breakery/domain';
 import type { CsvColumn } from '@breakery/domain';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
+import { ChartCard } from '@/features/reports/components/ChartCard.js';
+import {
+  COGS_BASE,
+  CHART_GRID_STROKE,
+  CHART_AXIS_TICK,
+  CHART_TOOLTIP_STYLE,
+  formatIdrFull,
+  formatIdrCompact,
+} from '@/features/reports/utils/chartColors.js';
 import { supabase } from '@/lib/supabase.js';
 import {
   usePurchaseItems,
@@ -65,7 +83,27 @@ export default function PurchaseItemsPage() {
     supplierId: supplierId || null,
   });
 
-  const lines = data?.lines ?? [];
+  const lines = useMemo(() => data?.lines ?? [], [data]);
+
+  // Top 8 products by total purchased value (aggregate subtotal per product_id).
+  const topProducts = useMemo(() => {
+    const byProduct = new Map<string, { name: string; value: number }>();
+    for (const l of lines) {
+      const prev = byProduct.get(l.product_id);
+      if (prev) {
+        prev.value += l.subtotal;
+      } else {
+        byProduct.set(l.product_id, { name: l.product_name, value: l.subtotal });
+      }
+    }
+    return [...byProduct.values()]
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 8)
+      .map((p) => ({
+        ...p,
+        name: p.name.length > 24 ? `${p.name.slice(0, 23)}…` : p.name,
+      }));
+  }, [lines]);
 
   return (
     <ReportPage
@@ -114,7 +152,43 @@ export default function PurchaseItemsPage() {
         </p>
       )}
       {data && (
-        <table className="w-full text-sm">
+        <div className="space-y-6">
+          {/* Top products by purchased value */}
+          <ChartCard
+            title="Top products by value"
+            subtitle="Top 8 purchased products by total value"
+            accent={COGS_BASE}
+          >
+            <div className="h-72 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={topProducts}
+                  layout="vertical"
+                  margin={{ top: 8, right: 16, bottom: 0, left: 8 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_STROKE} horizontal={false} />
+                  <XAxis
+                    type="number"
+                    tickFormatter={formatIdrCompact}
+                    tick={{ fill: CHART_AXIS_TICK, fontSize: 12 }}
+                  />
+                  <YAxis
+                    type="category"
+                    dataKey="name"
+                    width={140}
+                    tick={{ fill: CHART_AXIS_TICK, fontSize: 12 }}
+                  />
+                  <Tooltip
+                    formatter={(v: number) => [formatIdrFull(v), 'Value']}
+                    contentStyle={CHART_TOOLTIP_STYLE}
+                  />
+                  <Bar dataKey="value" fill={COGS_BASE} radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </ChartCard>
+
+          <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border-subtle text-text-secondary">
               <th className="py-2 text-left">PO#</th>
@@ -163,7 +237,8 @@ export default function PurchaseItemsPage() {
               </tr>
             </tfoot>
           )}
-        </table>
+          </table>
+        </div>
       )}
     </ReportPage>
   );
