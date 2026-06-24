@@ -34,7 +34,10 @@ export function PaymentMethodGrid({ selectedMethod, onSelect }: PaymentMethodGri
               data-testid={`pay-method-${m.value}`}
             >
               <Icon className="h-5 w-5" aria-hidden />
-              <span className="text-xs uppercase tracking-widest font-semibold">{m.label}</span>
+              {/* LOT 7 (audit 2026-06-25) — bump to text-sm for legibility at
+                  arm's length during the rush; ease the tracking so longer
+                  labels (Voucher) don't crowd. */}
+              <span className="text-sm uppercase tracking-wide font-semibold">{m.label}</span>
             </button>
           );
         })}
