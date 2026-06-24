@@ -83,7 +83,7 @@ export default function PurchaseItemsPage() {
     supplierId: supplierId || null,
   });
 
-  const lines = data?.lines ?? [];
+  const lines = useMemo(() => data?.lines ?? [], [data]);
 
   // Top 8 products by total purchased value (aggregate subtotal per product_id).
   const topProducts = useMemo(() => {

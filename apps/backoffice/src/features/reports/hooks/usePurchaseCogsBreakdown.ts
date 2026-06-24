@@ -37,6 +37,10 @@ function toNum(v: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+function toStr(v: unknown, fallback: string): string {
+  return typeof v === 'string' ? v : fallback;
+}
+
 export function usePurchaseCogsBreakdown(params: UsePurchaseCogsParams) {
   return useQuery<PurchaseCogsBreakdown, Error>({
     queryKey: ['reports', 'purchase-cogs', params.start, params.end, params.categoryId ?? null],
@@ -60,8 +64,8 @@ export function usePurchaseCogsBreakdown(params: UsePurchaseCogsParams) {
 
       return {
         period: {
-          start: String(period.start ?? params.start),
-          end:   String(period.end   ?? params.end),
+          start: toStr(period.start, params.start),
+          end:   toStr(period.end,   params.end),
         },
         summary: {
           total:          toNum(summary.total),
@@ -71,8 +75,8 @@ export function usePurchaseCogsBreakdown(params: UsePurchaseCogsParams) {
         by_category: cats.map((c) => {
           const o = (c ?? {}) as Record<string, unknown>;
           return {
-            category_id: String(o.category_id ?? ''),
-            name:        String(o.name ?? 'Uncategorized'),
+            category_id: toStr(o.category_id, ''),
+            name:        toStr(o.name, 'Uncategorized'),
             total:       toNum(o.total),
             qty:         toNum(o.qty),
             share_pct:   toNum(o.share_pct),
@@ -80,7 +84,7 @@ export function usePurchaseCogsBreakdown(params: UsePurchaseCogsParams) {
         }),
         by_day: days.map((d) => {
           const o = (d ?? {}) as Record<string, unknown>;
-          return { date: String(o.date ?? ''), total: toNum(o.total) };
+          return { date: toStr(o.date, ''), total: toNum(o.total) };
         }),
       } satisfies PurchaseCogsBreakdown;
     },

@@ -58,7 +58,7 @@ export default function OperatingExpensesPage() {
     status:     status || null,
   });
 
-  const rows = data?.by_category ?? [];
+  const rows = useMemo(() => data?.by_category ?? [], [data]);
   const donut = useMemo(() => rows.map((r) => ({ name: r.name, value: r.total })), [rows]);
   const trend = data?.by_day ?? [];
   const maxShare = rows.reduce((m, r) => Math.max(m, r.share_pct), 0) || 1;

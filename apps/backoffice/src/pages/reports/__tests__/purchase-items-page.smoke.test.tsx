@@ -70,6 +70,16 @@ vi.mock('@/lib/supabase.js', () => ({
 
 import PurchaseItemsPage from '@/pages/reports/PurchaseItemsPage.js';
 
+// recharts' ResponsiveContainer needs ResizeObserver, absent in jsdom.
+class StubResizeObserver {
+  observe()    { /* no-op */ }
+  unobserve()  { /* no-op */ }
+  disconnect() { /* no-op */ }
+}
+Object.defineProperty(globalThis, 'ResizeObserver', {
+  configurable: true, writable: true, value: StubResizeObserver,
+});
+
 function renderPage() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(

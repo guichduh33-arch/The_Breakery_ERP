@@ -37,7 +37,7 @@ export function familyRamp(family: CostFamily): readonly string[] {
 /** Color for slice `i` within a family (cycles). */
 export function familyColor(family: CostFamily, i: number): string {
   const ramp = familyRamp(family);
-  return ramp[i % ramp.length] as string;
+  return ramp[i % ramp.length]!;
 }
 
 /** Base accent for a family. */

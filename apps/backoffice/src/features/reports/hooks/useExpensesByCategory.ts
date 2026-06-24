@@ -38,6 +38,10 @@ function toNum(v: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+function toStr(v: unknown, fallback: string): string {
+  return typeof v === 'string' ? v : fallback;
+}
+
 export function useExpensesByCategory(params: UseExpensesByCategoryParams) {
   return useQuery<ExpensesByCategory, Error>({
     queryKey: [
@@ -65,8 +69,8 @@ export function useExpensesByCategory(params: UseExpensesByCategoryParams) {
 
       return {
         period: {
-          start: String(period.start ?? params.start),
-          end:   String(period.end   ?? params.end),
+          start: toStr(period.start, params.start),
+          end:   toStr(period.end,   params.end),
         },
         summary: {
           total: toNum(summary.total),
@@ -76,9 +80,9 @@ export function useExpensesByCategory(params: UseExpensesByCategoryParams) {
         by_category: cats.map((c) => {
           const o = (c ?? {}) as Record<string, unknown>;
           return {
-            category_id: String(o.category_id ?? ''),
-            code:        String(o.code ?? ''),
-            name:        String(o.name ?? ''),
+            category_id: toStr(o.category_id, ''),
+            code:        toStr(o.code, ''),
+            name:        toStr(o.name, ''),
             total:       toNum(o.total),
             count:       toNum(o.count),
             share_pct:   toNum(o.share_pct),
@@ -86,7 +90,7 @@ export function useExpensesByCategory(params: UseExpensesByCategoryParams) {
         }),
         by_day: days.map((d) => {
           const o = (d ?? {}) as Record<string, unknown>;
-          return { date: String(o.date ?? ''), total: toNum(o.total) };
+          return { date: toStr(o.date, ''), total: toNum(o.total) };
         }),
       } satisfies ExpensesByCategory;
     },

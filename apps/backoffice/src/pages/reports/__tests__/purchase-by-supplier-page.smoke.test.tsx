@@ -52,6 +52,16 @@ vi.mock('@/lib/supabase.js', () => ({
 
 import PurchaseBySupplierPage from '@/pages/reports/PurchaseBySupplierPage.js';
 
+// recharts' ResponsiveContainer needs ResizeObserver, absent in jsdom.
+class StubResizeObserver {
+  observe()    { /* no-op */ }
+  unobserve()  { /* no-op */ }
+  disconnect() { /* no-op */ }
+}
+Object.defineProperty(globalThis, 'ResizeObserver', {
+  configurable: true, writable: true, value: StubResizeObserver,
+});
+
 function renderPage() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
@@ -67,9 +77,10 @@ describe('PurchaseBySupplierPage (smoke)', () => {
     renderPage();
     // Page heading
     expect(screen.getByRole('heading', { name: /Purchase by Supplier/i, level: 1 })).toBeInTheDocument();
-    // Supplier rows
-    expect(await screen.findByText('Bali Flour')).toBeInTheDocument();
-    expect(screen.getByText('Bali Dairy')).toBeInTheDocument();
+    // Supplier rows — names now appear in BOTH the donut legend and the table,
+    // so assert at least one occurrence rather than exactly one.
+    expect((await screen.findAllByText('Bali Flour')).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Bali Dairy').length).toBeGreaterThanOrEqual(1);
     // Bali Flour has avg_lead_days 3.5
     expect(screen.getByText('3.5')).toBeInTheDocument();
     // Bali Dairy has avg_lead_days null — rendered as em-dash
