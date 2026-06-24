@@ -68,6 +68,24 @@ const ROWS: PurchaseOrderListRow[] = [
   },
 ];
 
+vi.mock('@/features/purchasing/hooks/useHistoricalPurchasesExport.js', () => ({
+  useHistoricalPurchasesExport: () => ({ mutateAsync: vi.fn(), isPending: false }),
+}));
+
+vi.mock('@/features/data-import/components/ImportEntityModal.js', () => ({
+  ImportEntityModal: () => null,
+}));
+
+vi.mock('@/features/data-import/buildEntityWorkbook.js', () => ({
+  buildTemplateWorkbook: vi.fn(),
+  buildExportWorkbook: vi.fn(),
+  downloadWorkbook: vi.fn(),
+}));
+
+vi.mock('@/features/purchasing/import/purchasesImportDef.js', () => ({
+  purchasesImportDef: { entity: 'purchases', sheetName: 'Purchases', columns: [], queryKeysToInvalidate: [] },
+}));
+
 vi.mock('@/features/purchasing/hooks/usePurchaseOrdersList.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/features/purchasing/hooks/usePurchaseOrdersList.js')>();
   return {

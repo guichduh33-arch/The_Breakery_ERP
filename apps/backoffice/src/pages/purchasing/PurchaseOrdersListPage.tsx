@@ -17,17 +17,26 @@ import {
   CheckCircle2,
   ClipboardList,
   Clock,
+  Download,
+  FileText,
   Package,
   Plus,
   Search,
   TrendingUp,
+  Upload,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import {
+  Badge,
   Button,
   DataTable,
   KpiTile,
   type DataTableColumn,
 } from '@breakery/ui';
+import { ImportEntityModal } from '@/features/data-import/components/ImportEntityModal.js';
+import { buildTemplateWorkbook, buildExportWorkbook, downloadWorkbook } from '@/features/data-import/buildEntityWorkbook.js';
+import { purchasesImportDef } from '@/features/purchasing/import/purchasesImportDef.js';
+import { useHistoricalPurchasesExport } from '@/features/purchasing/hooks/useHistoricalPurchasesExport.js';
 import { formatIdr } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import {
@@ -75,6 +84,25 @@ export default function PurchaseOrdersListPage(): JSX.Element {
   const [status, setStatus]         = useState<POStatus | 'all'>('all');
   const [supplierId, setSupplierId] = useState<string>('');
   const [search, setSearch]         = useState<string>('');
+  const [importing, setImporting]   = useState<boolean>(false);
+
+  const exportMut = useHistoricalPurchasesExport();
+
+  function handleTemplate(): void {
+    downloadWorkbook(buildTemplateWorkbook(purchasesImportDef), 'breakery-purchases-template.xlsx');
+  }
+  async function handleExport(): Promise<void> {
+    try {
+      const exportRows = await exportMut.mutateAsync();
+      if (exportRows.length === 0) { toast.info('No historical imports to export yet'); return; }
+      downloadWorkbook(
+        buildExportWorkbook(purchasesImportDef, exportRows),
+        `breakery-purchases-export-${new Date().toISOString().slice(0, 10)}.xlsx`,
+      );
+    } catch (e) {
+      toast.error(`Export failed: ${(e as Error).message}`);
+    }
+  }
 
   const filters = useMemo<PurchaseOrdersFilters>(() => ({
     ...(status !== 'all' ? { status } : {}),
@@ -112,7 +140,14 @@ export default function PurchaseOrdersListPage(): JSX.Element {
       id:    'status',
       header: 'Status',
       width: '120px',
-      render: (r) => <POStatusBadge status={r.status as POStatus} />,
+      render: (r) => (
+        <span className="flex items-center gap-1">
+          <POStatusBadge status={r.status as POStatus} />
+          {r.is_historical_import && (
+            <Badge variant="secondary" className="ml-1">Imported</Badge>
+          )}
+        </span>
+      ),
     },
     {
       id:    'order_date',
@@ -150,13 +185,26 @@ export default function PurchaseOrdersListPage(): JSX.Element {
             Track open and historical POs ; receive goods to post inventory + accounting entries.
           </p>
         </div>
-        {canCreate && (
-          <Button asChild variant="gold">
-            <Link to="/backoffice/purchasing/purchase-orders/new">
-              <Plus className="h-4 w-4" aria-hidden /> New purchase order
-            </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={handleTemplate} aria-label="Download purchases template">
+            <FileText className="h-4 w-4" aria-hidden /> Template
           </Button>
-        )}
+          {canCreate && (
+            <Button variant="ghost" size="sm" onClick={() => setImporting(true)} aria-label="Import historical purchases">
+              <Upload className="h-4 w-4" aria-hidden /> Import
+            </Button>
+          )}
+          <Button variant="ghost" size="sm" onClick={() => void handleExport()} disabled={exportMut.isPending} aria-label="Export historical purchases">
+            <Download className="h-4 w-4" aria-hidden /> {exportMut.isPending ? 'Exporting…' : 'Export'}
+          </Button>
+          {canCreate && (
+            <Button asChild variant="gold">
+              <Link to="/backoffice/purchasing/purchase-orders/new">
+                <Plus className="h-4 w-4" aria-hidden /> New purchase order
+              </Link>
+            </Button>
+          )}
+        </div>
       </header>
 
       <section
@@ -265,6 +313,14 @@ export default function PurchaseOrdersListPage(): JSX.Element {
           }
         />
       )}
+
+      <ImportEntityModal
+        open={importing}
+        onClose={() => setImporting(false)}
+        def={purchasesImportDef}
+        title="Import historical purchases"
+        description="Upload a filled .xlsx template. Rows are grouped by po_reference into received purchase orders for reporting only — no stock movement, no accounting entry. The file is validated before any writes."
+      />
     </div>
   );
 }
