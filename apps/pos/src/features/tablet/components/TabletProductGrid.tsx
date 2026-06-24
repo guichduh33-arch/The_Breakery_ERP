@@ -1,8 +1,24 @@
-import type { JSX } from 'react';
-import { useState } from 'react';
-import { ModifierModal, type ModifierModalProduct } from '@breakery/ui';
+// apps/pos/src/features/tablet/components/TabletProductGrid.tsx
+//
+// LOT 6 (POS P0 hardening, audit 2026-06-25) — iPad-first waiter product grid.
+//
+// Previously this just wrapped the cashier desktop ProductGrid (fixed 4 cols,
+// h-9 search) which is cramped on a tablet held at arm's length. This is a
+// dedicated grid: 2 columns in portrait / 3 in landscape (lg), a tall h-12
+// search field, and the shared ProductCard tiles. The ModifierModal flow is
+// unchanged.
+
+import { useMemo, useState, type JSX } from 'react';
+import { Search } from 'lucide-react';
+import { EmptyState, Input, ModifierModal, type ModifierModalProduct } from '@breakery/ui';
 import type { Product, SelectedModifiers } from '@breakery/domain';
-import { ProductGrid } from '@/features/products/ProductGrid';
+import { allLotsExpiredOrConsumed } from '@breakery/domain';
+import { ComboBadge } from '@/features/combos/components/ComboBadge';
+import { ProductCard } from '@/features/products/ProductCard';
+import { useProducts } from '@/features/products/hooks/useProducts';
+import { useCategories } from '@/features/products/hooks/useCategories';
+import { useActiveLotsByProduct } from '@/features/products/hooks/useActiveLotsByProduct';
+import { useProductAllergensMap } from '@/features/products/hooks/useProductAllergens';
 import { useProductModifiers } from '@/features/products/hooks/useProductModifiers';
 import { useTabletCartStore } from '@/stores/tabletCartStore';
 
@@ -12,6 +28,11 @@ export interface TabletProductGridProps {
 
 export function TabletProductGrid({ selectedSlug }: TabletProductGridProps): JSX.Element {
   const addItem = useTabletCartStore((s) => s.addItem);
+  const { data: products = [], isLoading } = useProducts();
+  const { data: categories = [] } = useCategories();
+  const { data: lotsByProduct } = useActiveLotsByProduct();
+  const { data: allergensByProduct } = useProductAllergensMap();
+  const [query, setQuery] = useState('');
   const [pending, setPending] = useState<Product | null>(null);
 
   const modifiersQuery = useProductModifiers({
@@ -19,6 +40,30 @@ export function TabletProductGrid({ selectedSlug }: TabletProductGridProps): JSX
     categoryId: pending?.category_id ?? null,
     enabled: pending !== null,
   });
+
+  const selectedCat = categories.find((c) => c.slug === selectedSlug);
+  const title = selectedSlug === 'favorites'
+    ? 'Favorites'
+    : selectedSlug === 'combos'
+      ? 'Combos'
+      : selectedCat?.name ?? 'All';
+
+  const filtered = useMemo(() => {
+    return products.filter((p) => {
+      if (selectedSlug === 'favorites' && !p.is_favorite) return false;
+      if (selectedSlug === 'combos' && p.product_type !== 'combo') return false;
+      if (selectedSlug && selectedSlug !== 'favorites' && selectedSlug !== 'combos') {
+        if (!selectedCat || p.category_id !== selectedCat.id) return false;
+      }
+      if (query.trim().length > 0) {
+        const q = query.trim().toLowerCase();
+        if (!p.name.toLowerCase().includes(q) && !p.sku.toLowerCase().includes(q)) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [products, selectedSlug, selectedCat, query]);
 
   function handleSelect(product: Product) {
     setPending(product);
@@ -33,6 +78,7 @@ export function TabletProductGrid({ selectedSlug }: TabletProductGridProps): JSX
     setPending(null);
   }
 
+  // Products with no modifier group add straight to the cart.
   if (pending && modifiersQuery.isSuccess) {
     const groups = modifiersQuery.data;
     if (groups.length === 0) {
@@ -44,13 +90,92 @@ export function TabletProductGrid({ selectedSlug }: TabletProductGridProps): JSX
   const product: ModifierModalProduct | null = pending
     ? { id: pending.id, name: pending.name, retail_price: pending.retail_price }
     : null;
-
   const groups = modifiersQuery.data ?? [];
   const modalOpen = Boolean(product) && modifiersQuery.isSuccess && groups.length > 0;
 
   return (
-    <>
-      <ProductGrid selectedSlug={selectedSlug} onSelect={handleSelect} />
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="px-5 py-3 flex items-center justify-between gap-4 border-b border-border-subtle">
+        <h1 className="font-display text-xl text-text-primary capitalize">{title}</h1>
+        <div className="relative w-64">
+          <Search
+            aria-hidden
+            className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-text-muted pointer-events-none"
+          />
+          {/* h-12 search — comfortable to tap on a tablet (LOT 6). */}
+          <Input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search menu..."
+            aria-label="Search products"
+            className="pl-10 h-12 bg-bg-base border-border-subtle rounded-md text-base"
+          />
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-5">
+        {isLoading ? (
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4" aria-busy="true" aria-label="Loading products">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div
+                key={i}
+                aria-hidden
+                className="rounded-lg overflow-hidden border border-border-subtle bg-bg-elevated motion-safe:animate-pulse"
+              >
+                <div className="aspect-square bg-bg-input" />
+                <div className="px-3 py-3 space-y-2">
+                  <div className="h-4 w-3/4 rounded bg-bg-input" />
+                  <div className="h-3 w-1/3 rounded bg-bg-input" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
+          <EmptyState
+            tone="branded"
+            title={query.trim() ? 'No matches' : 'No products yet'}
+            description={
+              query.trim()
+                ? `No products match "${query.trim()}".`
+                : selectedSlug === 'favorites'
+                  ? 'Mark products as favourite from the backoffice to pin them here.'
+                  : 'Add products to this category from the backoffice.'
+            }
+            size="md"
+          />
+        ) : (
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+            {filtered.map((p) => {
+              const soldOut = p.is_sellable === false;
+              const lots = lotsByProduct?.get(p.id);
+              const isLotTracked = lots !== undefined && lots.length > 0;
+              const allExpired = isLotTracked && allLotsExpiredOrConsumed(lots, p.id);
+              const disabled = soldOut || allExpired;
+              const overlayLabel = soldOut ? 'Sold out' : allExpired ? 'Expired' : null;
+              const lowStockLabel =
+                !disabled && p.current_stock > 0 && p.current_stock <= 3
+                  ? `Low stock · ${p.current_stock} left`
+                  : null;
+              const allergens = allergensByProduct?.get(p.id) ?? [];
+
+              return (
+                <ProductCard
+                  key={p.id}
+                  product={p}
+                  disabled={disabled}
+                  overlayLabel={overlayLabel}
+                  lowStockLabel={lowStockLabel}
+                  allergens={allergens}
+                  onSelect={handleSelect}
+                  topLeftSlot={p.product_type === 'combo' ? <ComboBadge /> : undefined}
+                />
+              );
+            })}
+          </div>
+        )}
+      </div>
+
       {product && (
         <ModifierModal
           open={modalOpen}
@@ -60,6 +185,6 @@ export function TabletProductGrid({ selectedSlug }: TabletProductGridProps): JSX
           onConfirm={handleConfirm}
         />
       )}
-    </>
+    </div>
   );
 }

@@ -21,7 +21,7 @@
 import { useEffect, type JSX, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { Category, Product } from '@breakery/domain';
-import { CategorySidebar } from '@/features/products/CategorySidebar';
+import { TabletCategorySidebar } from './TabletCategorySidebar';
 import { TabletProductGrid } from './TabletProductGrid';
 import { useTabletMenuCacheRead, useTabletMenuCacheWriter } from '../hooks/useTabletMenuCache';
 
@@ -54,7 +54,7 @@ export function TabletMenuView({ selectedSlug, onSelectCategory, toolbar }: Tabl
 
   return (
     <div className="flex flex-1 overflow-hidden">
-      <CategorySidebar selectedSlug={selectedSlug} onSelect={onSelectCategory} />
+      <TabletCategorySidebar selectedSlug={selectedSlug} onSelect={onSelectCategory} />
       <div className="flex-1 flex flex-col overflow-hidden">
         {toolbar !== undefined && toolbar}
         <div className="flex-1 overflow-hidden flex">

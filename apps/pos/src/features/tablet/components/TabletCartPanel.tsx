@@ -16,7 +16,7 @@ export function TabletCartPanel(): JSX.Element {
   const isEmpty = items.length === 0;
 
   return (
-    <aside className="w-[300px] bg-bg-elevated border-l border-border-subtle flex flex-col">
+    <aside className="w-[340px] shrink-0 bg-bg-elevated border-l border-border-subtle flex flex-col">
       <header className="p-4 border-b border-border-subtle">
         <h2 className="text-xs uppercase tracking-widest font-semibold text-text-primary">Order</h2>
       </header>
@@ -30,39 +30,46 @@ export function TabletCartPanel(): JSX.Element {
             </div>
           </div>
         ) : (
-          <ul className="p-3 space-y-2">
+          <ul className="p-3 space-y-3">
             {items.map((item) => (
-              <li key={item.id} className="flex items-center justify-between gap-2 text-sm">
-                <div className="flex-1 min-w-0">
-                  <div className="text-text-primary truncate">{item.name}</div>
-                  {item.modifiers.length > 0 && (
-                    <div className="text-xs text-text-muted">
-                      {item.modifiers.map((m) => m.option_label).join(' · ')}
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center gap-1">
+              <li key={item.id} className="flex flex-col gap-2 rounded-md bg-bg-input/40 p-2.5 text-sm">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="text-text-primary truncate">{item.name}</div>
+                    {item.modifiers.length > 0 && (
+                      <div className="text-xs text-text-muted">
+                        {item.modifiers.map((m) => m.option_label).join(' · ')}
+                      </div>
+                    )}
+                  </div>
+                  {/* h-12/w-12 remove target — tablet-comfortable (LOT 6). */}
                   <button
-                    className="w-6 h-6 rounded bg-bg-input text-text-secondary hover:text-text-primary"
-                    onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                    aria-label={`Decrease ${item.name}`}
-                  >
-                    −
-                  </button>
-                  <span className="w-5 text-center font-mono">{item.quantity}</span>
-                  <button
-                    className="w-6 h-6 rounded bg-bg-input text-text-secondary hover:text-text-primary"
-                    onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                    aria-label={`Increase ${item.name}`}
-                  >
-                    +
-                  </button>
-                  <button
-                    className="w-6 h-6 rounded bg-bg-input text-text-secondary hover:text-red-400 ml-1"
+                    className="h-12 w-12 shrink-0 grid place-items-center rounded-md bg-bg-input text-text-secondary hover:text-red-400 text-lg"
                     onClick={() => removeItem(item.id)}
                     aria-label={`Remove ${item.name}`}
                   >
                     ×
+                  </button>
+                </div>
+                {/* Quantity stepper — 48px targets (LOT 6). The shared
+                    @breakery/ui QuantityStepper is h-8 (desktop) and not
+                    size-configurable, so this row uses h-12 buttons inline. */}
+                <div className="flex items-center gap-2">
+                  <button
+                    className="h-12 w-12 grid place-items-center rounded-md bg-bg-input border border-border-subtle text-text-primary text-xl hover:bg-bg-overlay disabled:opacity-50"
+                    onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                    disabled={item.quantity <= 1}
+                    aria-label={`Decrease ${item.name}`}
+                  >
+                    −
+                  </button>
+                  <span className="min-w-10 text-center font-mono tabular-nums text-base">{item.quantity}</span>
+                  <button
+                    className="h-12 w-12 grid place-items-center rounded-md bg-bg-input border border-border-subtle text-text-primary text-xl hover:bg-bg-overlay"
+                    onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                    aria-label={`Increase ${item.name}`}
+                  >
+                    +
                   </button>
                 </div>
               </li>
