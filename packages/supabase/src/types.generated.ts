@@ -1465,6 +1465,30 @@ export type Database = {
         }
         Relationships: []
       }
+      import_master_data_idempotency_keys: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          entity: string
+          key: string
+          report: Json
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          entity: string
+          key: string
+          report: Json
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          entity?: string
+          key?: string
+          report?: Json
+        }
+        Relationships: []
+      }
       internal_transfers: {
         Row: {
           approved_by: string | null
@@ -6779,6 +6803,22 @@ export type Database = {
         Returns: string
       }
       import_catalog_v1: {
+        Args: {
+          p_dry_run?: boolean
+          p_idempotency_key?: string
+          p_payload: Json
+        }
+        Returns: Json
+      }
+      import_customers_v1: {
+        Args: {
+          p_dry_run?: boolean
+          p_idempotency_key?: string
+          p_payload: Json
+        }
+        Returns: Json
+      }
+      import_suppliers_v1: {
         Args: {
           p_dry_run?: boolean
           p_idempotency_key?: string
