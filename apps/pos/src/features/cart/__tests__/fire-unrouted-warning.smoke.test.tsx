@@ -114,7 +114,10 @@ describe('SendToKitchenButton — unrouted product warning (LOT 3)', () => {
     expect((toast.warning as ReturnType<typeof vi.fn>).mock.calls[0]![0]).toMatch(/1 item\(s\) not routed/i);
 
     // Non-blocking: the order was still persisted and the barista line printed.
-    expect(rpcMock).toHaveBeenCalledTimes(1);
-    expect(useCartStore.getState().printedItemIds).toContain('line-barista');
+    // Bloc 2: hold_fired_order_v1 is called after fire, so 2 RPC calls total.
+    expect(rpcMock).toHaveBeenCalledTimes(2);
+    // After hold succeeds, resetCartAfterCheckout clears the terminal — the
+    // barista line was printed (before the reset), and now the store is clean.
+    expect(rpcMock).toHaveBeenNthCalledWith(2, 'hold_fired_order_v1', expect.objectContaining({ p_order_id: 'order-db-1' }));
   });
 });
