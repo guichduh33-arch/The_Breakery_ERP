@@ -1,6 +1,12 @@
 // supabase/tests/functions/reopen-held-order-v1.test.ts
 // Live RPC round-trip (V3 dev cloud). Skipped when SUPABASE_TEST_LIVE is unset.
 //
+// NOTE: the server-side hold→reopen contract (steps 2-4 below) is ALREADY proven
+// by an executable controller-run test: `supabase/tests/reopen_held_order_v1_behavior.test.sql`
+// (run via MCP execute_sql under a real authenticated cashier — verified ALL GREEN
+// 2026-06-25). This Vitest file remains a skeleton for an end-to-end variant via
+// the PIN-JWT HTTP path; fill it in if/when a shared login helper lands.
+//
 // Auth pattern mirrors pay-existing-order-v4.test.ts — each file carries its
 // own inline login helper (no shared module exists; each is self-contained).
 // Step plan (fill in when live creds available):
