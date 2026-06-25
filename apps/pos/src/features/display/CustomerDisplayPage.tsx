@@ -26,9 +26,16 @@ import { useDisplayOrders } from './hooks/useDisplayOrders';
 import { useDisplayRealtime } from './hooks/useDisplayRealtime';
 import { useCartBroadcastReceiver } from './hooks/useCartBroadcastReceiver';
 import { useKioskAuth } from './hooks/useKioskAuth';
+import { usePosSettingsStore } from '@/stores/posSettingsStore';
+
+/** Built-in idle footer used when no custom message is configured. */
+const DEFAULT_DISPLAY_FOOTER = 'Open daily · 07:00 — 21:00';
 
 export default function CustomerDisplayPage() {
   const auth = useKioskAuth();
+  // Per-terminal customer-display copy (POS Settings → KDS & Display).
+  const idleFooter =
+    usePosSettingsStore((s) => s.displayFooterMessage) || DEFAULT_DISPLAY_FOOTER;
   const [pairedCode, setPairedCode] = useState<string | null>(null);
   const [pairingChecked, setPairingChecked] = useState(false);
 
@@ -127,7 +134,7 @@ export default function CustomerDisplayPage() {
       footer={
         <span>
           {ordersList.length === 0
-            ? 'Open daily · 07:00 — 21:00'
+            ? idleFooter
             : `${ordersList.length} order${ordersList.length === 1 ? '' : 's'} active`}
         </span>
       }

@@ -34,6 +34,11 @@ import { Button, SectionLabel, Card, cn } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore';
 import { usePOSPresets, type DiscountPreset } from './hooks/usePOSPresets';
 import { PrintingSettingsTab } from './components/PrintingSettingsTab';
+import { BehaviorSettingsTab } from './components/BehaviorSettingsTab';
+import { AutomationSettingsTab } from './components/AutomationSettingsTab';
+import { AdvancedSettingsTab } from './components/AdvancedSettingsTab';
+import { DevicesSettingsTab } from './components/DevicesSettingsTab';
+import { DisplaySettingsTab } from './components/DisplaySettingsTab';
 
 type TopTab = 'pos' | 'printing' | 'kds' | 'devices';
 type ConfigTab = 'general' | 'automation' | 'advanced' | 'behavior';
@@ -77,8 +82,8 @@ export default function POSSettingsPage(): JSX.Element {
       <main className="flex-1 overflow-y-auto p-6">
         {topTab === 'pos' && <PosConfigSection readOnly={!canEdit} />}
         {topTab === 'printing' && <PrintingSettingsTab />}
-        {topTab === 'kds' && <PlaceholderSection title="KDS & Display" />}
-        {topTab === 'devices' && <PlaceholderSection title="Devices" />}
+        {topTab === 'kds' && <DisplaySettingsTab readOnly={!canEdit} />}
+        {topTab === 'devices' && <DevicesSettingsTab readOnly={!canEdit} />}
       </main>
     </div>
   );
@@ -137,9 +142,9 @@ function PosConfigSection({ readOnly }: { readOnly: boolean }): JSX.Element {
       </div>
 
       {tab === 'general' && <GeneralTab readOnly={readOnly} />}
-      {tab === 'automation' && <PlaceholderInline title="Automation" />}
-      {tab === 'advanced' && <PlaceholderInline title="Advanced" />}
-      {tab === 'behavior' && <PlaceholderInline title="Behavior" />}
+      {tab === 'automation' && <AutomationSettingsTab readOnly={readOnly} />}
+      {tab === 'advanced' && <AdvancedSettingsTab readOnly={readOnly} />}
+      {tab === 'behavior' && <BehaviorSettingsTab readOnly={readOnly} />}
     </div>
   );
 }
@@ -515,25 +520,3 @@ function DiscountPresetsGroup({
   );
 }
 
-function PlaceholderInline({ title }: { title: string }): JSX.Element {
-  return (
-    <Card variant="default" padding="md">
-      <SectionLabel size="sm" as="h3">{title}</SectionLabel>
-      <p className="text-text-secondary text-sm mt-2">
-        This section is configured via the backoffice settings module.
-      </p>
-    </Card>
-  );
-}
-
-function PlaceholderSection({ title }: { title: string }): JSX.Element {
-  return (
-    <Card variant="default" padding="lg">
-      <h2 className="font-display text-xl">{title}</h2>
-      <p className="text-text-secondary text-sm mt-2">
-        Manage {title.toLowerCase()} configuration from the backoffice settings module.
-        This page mirrors the canonical configuration in read-only form on the terminal.
-      </p>
-    </Card>
-  );
-}

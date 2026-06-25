@@ -37,6 +37,7 @@ import type {
   Product,
   SelectedModifiers,
 } from '@breakery/domain';
+import { usePosSettingsStore } from './posSettingsStore';
 
 export type CustomerWithCategory = Customer & { category?: CustomerCategory | null };
 
@@ -207,7 +208,11 @@ export const useCartStore = create<CartState>()(
       // Session 43 / P2-6 — default order type is take_out (counter bakery
       // flow ; D9, owner to ratify). Resets (clear/voidOrder/checkout) keep the
       // current order_type via spread, so this is the only default site.
-      cart: { items: [], order_type: 'take_out' },
+      // Audit 2026-06-25 — the literal is now the per-terminal Behavior setting
+      // (posSettingsStore.defaultOrderType): a fresh tab/session boots into the
+      // configured default. localStorage is hydrated synchronously, so the
+      // getState() read here resolves to the persisted value at store creation.
+      cart: { items: [], order_type: usePosSettingsStore.getState().defaultOrderType },
       lockedItemIds: [],
       printedItemIds: [],
       attachedCustomer: null,
