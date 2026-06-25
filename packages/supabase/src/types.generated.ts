@@ -7360,6 +7360,7 @@ export type Database = {
       }
       record_stock_movement_v1: {
         Args: {
+          p_allow_negative?: boolean
           p_from_section_id?: string
           p_idempotency_key?: string
           p_lot_id?: string
