@@ -248,6 +248,7 @@ export type Database = {
       }
       business_config: {
         Row: {
+          allow_negative_stock: boolean
           created_at: string
           currency: string
           fiscal_address: string | null
@@ -265,6 +266,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          allow_negative_stock?: boolean
           created_at?: string
           currency?: string
           fiscal_address?: string | null
@@ -282,6 +284,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          allow_negative_stock?: boolean
           created_at?: string
           currency?: string
           fiscal_address?: string | null
