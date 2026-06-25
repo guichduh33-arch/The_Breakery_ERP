@@ -8,6 +8,8 @@ export interface HeldOrderRow {
   notes: string | null;
   total: number;
   created_at: string;
+  status: string;
+  sent_to_kitchen_at: string | null;
 }
 
 /**
@@ -21,7 +23,7 @@ export function useHeldOrdersQuery() {
     queryFn: async (): Promise<HeldOrderRow[]> => {
       const { data, error } = await supabase
         .from('orders')
-        .select('id, order_number, table_number, notes, total, created_at')
+        .select('id, order_number, table_number, notes, total, created_at, status, sent_to_kitchen_at')
         .eq('is_held', true)
         .order('created_at', { ascending: false });
       if (error) throw error;
