@@ -6816,6 +6816,7 @@ export type Database = {
       }
       has_unique: { Args: { "": string }; Returns: string }
       hash_pin: { Args: { p_pin: string }; Returns: string }
+      hold_fired_order_v1: { Args: { p_order_id: string }; Returns: undefined }
       hold_order_v1: {
         Args: {
           p_cart_payload: Json
@@ -7395,6 +7396,7 @@ export type Database = {
         Args: { p_idempotency_key: string; p_order_item_id: string }
         Returns: Json
       }
+      reopen_held_order_v1: { Args: { p_order_id: string }; Returns: Json }
       reorder_categories_v1: {
         Args: { p_ordered_ids: string[] }
         Returns: Json
