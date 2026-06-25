@@ -74,6 +74,7 @@ import CostSpendAnalyticsPage    from '@/pages/reports/CostSpendAnalyticsPage.js
 import OperatingExpensesPage     from '@/pages/reports/OperatingExpensesPage.js';
 import SettingsHubPage              from '@/pages/settings/SettingsHubPage.js';
 import SettingsGeneralPage          from '@/pages/settings/SettingsGeneralPage.js';
+import SettingsInventoryPage        from '@/pages/settings/SettingsInventoryPage.js';
 import SettingsHolidaysPage         from '@/pages/settings/SettingsHolidaysPage.js';
 import SettingsEmailTemplatesPage   from '@/pages/settings/SettingsEmailTemplatesPage.js';
 import SettingsReceiptTemplatesPage from '@/pages/settings/SettingsReceiptTemplatesPage.js';
@@ -852,6 +853,14 @@ export function AppRoutes() {
           element={
             <PermissionGate required="settings.read">
               <SettingsGeneralPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="settings/inventory"
+          element={
+            <PermissionGate required="settings.read">
+              <SettingsInventoryPage />
             </PermissionGate>
           }
         />
