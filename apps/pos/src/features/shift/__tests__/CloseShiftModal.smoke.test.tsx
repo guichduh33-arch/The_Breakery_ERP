@@ -1,6 +1,7 @@
 // apps/pos/src/features/shift/__tests__/CloseShiftModal.smoke.test.tsx
-// Session 13 / Phase 3.C — RTL smoke for CloseShiftModal: renders the
-// variance preview correctly and disables submit until counted_cash entered.
+// Session 13 / Phase 3.C — RTL smoke for CloseShiftModal.
+// LOT 4 (audit 2026-06-25) — blind cash count: expected & variance are hidden
+// during entry and only revealed after the count is confirmed.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
@@ -31,13 +32,21 @@ function withQuery(node: React.ReactElement) {
   return <QueryClientProvider client={qc}>{node}</QueryClientProvider>;
 }
 
+/** Type the digits on the numpad then commit the blind count → review step. */
+function countAndConfirm(amount: string): void {
+  for (const ch of amount) {
+    fireEvent.click(screen.getByRole('button', { name: ch }));
+  }
+  fireEvent.click(screen.getByRole('button', { name: /confirm count/i }));
+}
+
 describe('CloseShiftModal', () => {
   beforeEach(() => {
     rpcMock.mockReset();
     storeMock.clear.mockReset();
   });
 
-  it('shows expected cash and computes variance live', () => {
+  it('hides expected cash and variance during the blind count (LOT 4)', () => {
     render(withQuery(
       <CloseShiftModal
         open={true}
@@ -48,14 +57,34 @@ describe('CloseShiftModal', () => {
         onClose={() => {}}
       />,
     ));
-    expect(screen.getByText(/expected cash/i)).toBeInTheDocument();
+    // Blind step: counted cash field shows, but NOT expected/variance.
     expect(screen.getByText(/counted cash/i)).toBeInTheDocument();
+    expect(screen.queryByText(/expected cash/i)).not.toBeInTheDocument();
+    expect(screen.queryByTestId('variance-preview')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('variance-warning-badge')).not.toBeInTheDocument();
+    // The expected figure (500.000) must not leak anywhere on screen.
+    expect(screen.queryByText(/500\.000/)).not.toBeInTheDocument();
+  });
+
+  it('reveals expected cash and variance only after confirming the count', () => {
+    render(withQuery(
+      <CloseShiftModal
+        open={true}
+        sessionId="s1"
+        expectedCash={500_000}
+        thresholdAbs={50_000}
+        thresholdPct={0.005}
+        onClose={() => {}}
+      />,
+    ));
+    countAndConfirm('500000');
+    expect(screen.getByText(/expected cash/i)).toBeInTheDocument();
     expect(screen.getByTestId('variance-preview')).toBeInTheDocument();
-    // Initial variance = 0 - 500_000 = -500_000 (large red).
-    expect(screen.getByTestId('variance-preview').textContent).toMatch(/-500\.000/);
+    // Counted 500.000 vs expected 500.000 → variance 0.
+    expect(screen.getByTestId('variance-preview').textContent).toMatch(/^0$/);
   });
 
-  it('disables submit until amount entered', () => {
+  it('disables confirm until amount entered', () => {
     render(withQuery(
       <CloseShiftModal
         open={true}
@@ -66,11 +95,10 @@ describe('CloseShiftModal', () => {
         onClose={() => {}}
       />,
     ));
-    const close = screen.getByRole('button', { name: /close shift/i });
-    expect(close).toBeDisabled();
+    expect(screen.getByRole('button', { name: /confirm count/i })).toBeDisabled();
   });
 
-  it('emits warning badge when variance breaches threshold', () => {
+  it('emits warning badge when variance breaches threshold (after reveal)', () => {
     render(withQuery(
       <CloseShiftModal
         open={true}
@@ -81,6 +109,7 @@ describe('CloseShiftModal', () => {
         onClose={() => {}}
       />,
     ));
+    countAndConfirm('0');
     expect(screen.getByTestId('variance-warning-badge')).toBeInTheDocument();
   });
 
@@ -96,9 +125,7 @@ describe('CloseShiftModal', () => {
       />,
     ));
     // Compte 500 000 → variance -70 000 > seuil abs 50 000.
-    for (const ch of '500000') {
-      fireEvent.click(screen.getByRole('button', { name: ch }));
-    }
+    countAndConfirm('500000');
     expect(screen.getByRole('button', { name: /close shift/i })).toBeDisabled();
     expect(screen.getByText(/note .*(required|obligatoire)/i)).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText(/notes/i), {
@@ -120,11 +147,27 @@ describe('CloseShiftModal', () => {
     ));
     // Compte 100 300 → variance +300 : sous le seuil abs (50 000) ET sous le
     // seuil pct (0,3 % < 0,5 %).
-    for (const ch of '100300') {
-      fireEvent.click(screen.getByRole('button', { name: ch }));
-    }
+    countAndConfirm('100300');
     expect(screen.getByRole('button', { name: /close shift/i })).toBeEnabled();
     expect(screen.queryByText(/note .*(required|obligatoire)/i)).not.toBeInTheDocument();
+  });
+
+  it('Back returns to the blind count and re-hides expected/variance', () => {
+    render(withQuery(
+      <CloseShiftModal
+        open={true}
+        sessionId="s1"
+        expectedCash={100_000}
+        thresholdAbs={50_000}
+        thresholdPct={0.005}
+        onClose={vi.fn()}
+      />,
+    ));
+    countAndConfirm('100000');
+    expect(screen.getByText(/expected cash/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /back/i }));
+    expect(screen.queryByText(/expected cash/i)).not.toBeInTheDocument();
+    expect(screen.queryByTestId('variance-preview')).not.toBeInTheDocument();
   });
 
   it('calls close_shift_v2 with parsed args and chains generate-zreport-pdf EF', async () => {
@@ -149,9 +192,7 @@ describe('CloseShiftModal', () => {
         onClose={onClose}
       />,
     ));
-    for (const ch of '105000') {
-      fireEvent.click(screen.getByRole('button', { name: ch }));
-    }
+    countAndConfirm('105000');
     // Variance +5 000 = 5 % > seuil pct 0,5 % → une note est requise (P1-2).
     fireEvent.change(screen.getByLabelText(/notes/i), {
       target: { value: 'recount confirmed by manager' },
@@ -196,9 +237,7 @@ describe('CloseShiftModal', () => {
         onClose={onClose}
       />,
     ));
-    for (const ch of '100000') {
-      fireEvent.click(screen.getByRole('button', { name: ch }));
-    }
+    countAndConfirm('100000');
     fireEvent.click(screen.getByRole('button', { name: /close shift/i }));
     // Wait for the mutation chain to complete (RPC → EF.invoke → catch → return).
     await vi.waitFor(() => expect(invokeMock).toHaveBeenCalled());

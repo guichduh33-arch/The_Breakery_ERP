@@ -261,9 +261,12 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
       <div className="flex-1" />
 
       {/* ── Right group : validation ────────────────────────────────────── */}
+      {/* LOT 7 (audit 2026-06-25) — visual hierarchy by touch size:
+          Checkout (h-14/56px) dominates ▸ Void/Send (h-12/48px) ▸ ghosts (h-11).
+          Bigger = more important = faster to hit during the rush. */}
       <Button
         variant="ghostDestructive"
-        className="h-11 px-3.5 gap-2 text-[13px] text-red-fg border border-red-fg/30"
+        className="h-12 px-3.5 gap-2 text-[13px] text-red-fg border border-red-fg/30"
         onClick={handleVoid}
         disabled={!hasItems}
         title={hasSentItems ? 'Already sent to kitchen — manager PIN required' : undefined}
@@ -274,7 +277,7 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
 
       <SendToKitchenButton
         variant="outlineGold"
-        className="h-11 px-4 rounded-md text-[13px] font-bold uppercase tracking-wide"
+        className="h-12 px-4 rounded-md text-[13px] font-bold uppercase tracking-wide"
       />
 
       {/* CTA colour rule (intentional, do NOT "fix" to match the terminal):
@@ -283,12 +286,13 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
           irreversible final action, where green reads as the universal "go"). */}
       <Button
         variant="gold"
-        className="h-11 px-6 gap-2.5 text-sm font-bold active:bg-gold-pressed"
+        size="lg"
+        className="h-14 px-7 gap-2.5 text-base font-bold active:bg-gold-pressed"
         onClick={() => openPayment()}
         disabled={!hasItems}
         data-testid="checkout-cta"
       >
-        <CreditCard className="h-4 w-4" aria-hidden />
+        <CreditCard className="h-5 w-5" aria-hidden />
         <span>Checkout</span>
         <Currency amount={total} className="font-mono" />
       </Button>

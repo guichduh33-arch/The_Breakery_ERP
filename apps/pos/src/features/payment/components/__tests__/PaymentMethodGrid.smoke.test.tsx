@@ -16,4 +16,12 @@ describe('PaymentMethodGrid', () => {
     fireEvent.click(screen.getByTestId('pay-method-qris'));
     expect(onSelect).toHaveBeenCalledWith('qris');
   });
+
+  it('renders method labels at text-sm for rush legibility (LOT 7)', () => {
+    render(<PaymentMethodGrid selectedMethod={null} onSelect={vi.fn()} />);
+    const cashTile = screen.getByTestId('pay-method-cash');
+    const label = cashTile.querySelector('span');
+    expect(label?.className).toContain('text-sm');
+    expect(label?.className).not.toContain('text-xs');
+  });
 });
