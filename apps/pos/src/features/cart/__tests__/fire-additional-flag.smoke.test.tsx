@@ -47,4 +47,15 @@ describe('useFireToStations — additional flag', () => {
     expect(stationEntries.length).toBeGreaterThan(0);
     expect(stationEntries.every((e) => (e.payload as { additional?: boolean }).additional === true)).toBe(true);
   });
+
+  it('does NOT mark the ticket additional on a first-phase fire (pickedUpOrderId null)', async () => {
+    // First-phase fire: no existing order on the terminal → the RPC mints a new
+    // order. The phase-1 ticket must NOT carry the ADDITIONAL ORDER flag.
+    useCartStore.setState((s) => ({ ...s, pickedUpOrderId: null }) as never);
+    const { result } = renderHook(() => useFireToStations(), { wrapper });
+    await act(async () => { await result.current.mutation.mutateAsync(undefined); });
+    const stationEntries = getMockPrintBuffer().filter((e) => e.kind === 'prep');
+    expect(stationEntries.length).toBeGreaterThan(0);
+    expect(stationEntries.every((e) => !(e.payload as { additional?: boolean }).additional)).toBe(true);
+  });
 });
