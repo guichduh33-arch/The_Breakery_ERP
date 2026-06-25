@@ -4,8 +4,9 @@ import type { ComponentProps } from 'react';
 import { ChefHat } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@breakery/ui';
-import { useCartStore } from '@/stores/cartStore';
+import { useCartStore, resetCartAfterCheckout } from '@/stores/cartStore';
 import { useFireToStations } from './hooks/useFireToStations';
+import { useHoldFiredOrder } from './hooks/useHoldFiredOrder';
 
 interface SendToKitchenButtonProps {
   /** When provided, replaces the default `w-full` styling (e.g. for the bottom bar). */
@@ -15,6 +16,7 @@ interface SendToKitchenButtonProps {
 
 export function SendToKitchenButton({ className, variant }: SendToKitchenButtonProps = {}) {
   const { mutation, firableCount, unroutedCount } = useFireToStations();
+  const holdFired = useHoldFiredOrder();
 
   // Disabled when there is nothing that routes to a prep station (bread-only
   // orders, products query still loading, everything already printed) or while
@@ -52,6 +54,22 @@ export function SendToKitchenButton({ className, variant }: SendToKitchenButtonP
         toast.warning(
           `${unroutedAtFire} item(s) not routed to any kitchen station — check category routing`,
         );
+      }
+      // Spec A Bloc 2 — park the fired order in Held Orders and free the
+      // terminal for the next customer. The order persists in the DB (held);
+      // it reappears in the held list and can be reopened later. Best-effort:
+      // a hold failure leaves the order on the terminal (still payable), so we
+      // only reset after the hold succeeds.
+      const orderId = useCartStore.getState().pickedUpOrderId;
+      if (orderId) {
+        try {
+          await holdFired.mutateAsync(orderId);
+          resetCartAfterCheckout();
+          toast.info('Order sent & parked in Held Orders');
+        } catch (holdErr) {
+          const he = holdErr as Error;
+          toast.error(`Sent to kitchen, but could not park the order: ${he.message}`);
+        }
       }
     } catch (err) {
       const e = err as Error;

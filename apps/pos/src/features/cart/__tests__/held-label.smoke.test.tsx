@@ -37,6 +37,9 @@ vi.mock('@/features/heldOrders/hooks/useRestoreHeldOrder', () => ({
 vi.mock('@/features/heldOrders/hooks/useDiscardHeldOrder', () => ({
   useDiscardHeldOrder: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
+vi.mock('@/features/heldOrders/hooks/useReopenHeldOrder', () => ({
+  useReopenHeldOrder: () => ({ mutateAsync: vi.fn(), isPending: false }),
+}));
 vi.mock('@/features/heldOrders/hooks/useHeldOrdersRealtime', () => ({
   useHeldOrdersRealtime: () => undefined,
 }));

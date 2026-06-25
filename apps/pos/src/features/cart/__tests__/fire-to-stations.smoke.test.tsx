@@ -1,12 +1,16 @@
 // apps/pos/src/features/cart/__tests__/fire-to-stations.smoke.test.tsx
 //
 // Session 34 / W4 — smoke test for SendToKitchenButton → useFireToStations.
+// Updated (branch feat/bulk-import-purchases) to reflect park+clear-on-send:
+//   after a successful manual fire, hold_fired_order_v1 is called and the
+//   terminal is cleared (cart items emptied, pickedUpOrderId null, printedItemIds []).
 //
 // Scenario: cart with one barista item + one kitchen item.
 // Both stations have printers in the map.
 // After clicking "Send to Kitchen":
 //   • getMockPrintBuffer() has two 'prep' entries (one per station).
-//   • cartStore.printedItemIds includes both line ids.
+//   • fire_counter_order_v4 is called first, then hold_fired_order_v1.
+//   • Terminal is cleared: cart.items=[], pickedUpOrderId=null, printedItemIds=[].
 
 /// <reference types="@testing-library/jest-dom" />
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -125,7 +129,7 @@ describe('SendToKitchenButton — fire to stations smoke', () => {
     vi.unstubAllEnvs();
   });
 
-  it('prints prep tickets to both stations and marks both lines as printed', async () => {
+  it('prints prep tickets to both stations, then parks the order and clears the terminal', async () => {
     // Lazy import so vi.stubEnv + mocks are in place first.
     const { SendToKitchenButton } = await import('../SendToKitchenButton');
 
@@ -158,14 +162,16 @@ describe('SendToKitchenButton — fire to stations smoke', () => {
       expect(entry.kind).toBe('prep');
     }
 
-    // Cart store: both line ids are now in printedItemIds.
-    const printed = useCartStore.getState().printedItemIds;
-    expect(printed).toContain('line-barista');
-    expect(printed).toContain('line-kitchen');
-
     // Session 43 / P0-3 — the order was persisted BEFORE printing.
-    expect(rpcMock).toHaveBeenCalledTimes(1);
+    // After fire+print, hold_fired_order_v1 parks the order and clears the terminal.
+    expect(rpcMock).toHaveBeenCalledTimes(2);
     expect(rpcMock.mock.calls[0]![0]).toBe('fire_counter_order_v4');
-    expect(useCartStore.getState().pickedUpOrderId).toBe('order-db-1');
+    expect(rpcMock.mock.calls[1]![0]).toBe('hold_fired_order_v1');
+    expect(rpcMock.mock.calls[1]![1]).toEqual({ p_order_id: 'order-db-1' });
+
+    // Terminal is cleared after park.
+    expect(useCartStore.getState().printedItemIds).toEqual([]);
+    expect(useCartStore.getState().pickedUpOrderId).toBeNull();
+    expect(useCartStore.getState().cart.items).toHaveLength(0);
   });
 });
