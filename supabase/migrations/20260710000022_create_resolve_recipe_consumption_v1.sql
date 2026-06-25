@@ -50,8 +50,13 @@ BEGIN
   HAVING public._try_convert_quantity(SUM(w.qty), MIN(w.line_unit), p.unit) > 0;
 END $$;
 
+-- INTERNAL helper : appelé uniquement depuis les RPC SECURITY DEFINER (complete_order).
+-- Comme record_stock_movement_v1 et _resolve_modifier_ingredients_v1, on révoque
+-- AUSSI authenticated (REVOKE FROM PUBLIC seul laisse authenticated exécuter via
+-- son grant direct par défaut).
 REVOKE ALL ON FUNCTION public._resolve_recipe_consumption_v1(UUID, NUMERIC, INT) FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION public._resolve_recipe_consumption_v1(UUID, NUMERIC, INT) FROM anon;
+REVOKE EXECUTE ON FUNCTION public._resolve_recipe_consumption_v1(UUID, NUMERIC, INT) FROM authenticated;
 ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;
 
 COMMENT ON FUNCTION public._resolve_recipe_consumption_v1(UUID, NUMERIC, INT) IS
