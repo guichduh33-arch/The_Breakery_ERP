@@ -45,6 +45,16 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
     onChange?.({ [key]: value } as Partial<ProductRow>);
   }
 
+  // Spec B-1 Ph2 — toggle a dispatch station in the per-product override array.
+  // Empty array collapses to null (inherit from category); non-empty is persisted as-is.
+  function toggleStation(station: 'kitchen' | 'barista' | 'display'): void {
+    const current = [...(draft.dispatch_stations ?? [])];
+    const next = current.includes(station)
+      ? current.filter((s) => s !== station)
+      : [...current, station];
+    update('dispatch_stations', next.length > 0 ? next : null);
+  }
+
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
       {/* ───────────── Left column (2/3) ───────────── */}
@@ -236,6 +246,45 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
               </div>
             )}
           </div>
+        </Card>
+
+        {/* Spec B-1 Ph2 — override multi-station de dispatch par produit. */}
+        <Card padding="md">
+          <h2 className="mb-1 font-display text-xl text-text-primary">Dispatch Routing</h2>
+          <p className="mb-3 text-[11px] italic text-text-secondary">
+            Stations qui reçoivent le KOT pour ce produit. Vide = hériter de la catégorie.
+          </p>
+          <div className="space-y-2" data-testid="dispatch-stations-picker">
+            {(['kitchen', 'barista', 'display'] as const).map((station) => {
+              const checked = (draft.dispatch_stations ?? []).includes(station);
+              return (
+                <label
+                  key={station}
+                  className="flex cursor-pointer items-center gap-3 rounded-md border border-border-subtle bg-bg-overlay px-3 py-2.5 has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-60"
+                >
+                  <input
+                    type="checkbox"
+                    data-testid={`dispatch-station-${station}`}
+                    checked={checked}
+                    disabled={readOnly}
+                    onChange={() => toggleStation(station)}
+                    className="h-4 w-4 accent-gold disabled:cursor-not-allowed"
+                  />
+                  <span className="text-xs font-semibold uppercase tracking-widest text-text-primary">
+                    {station}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+          {(draft.dispatch_stations === null || draft.dispatch_stations.length === 0) && (
+            <p
+              data-testid="dispatch-inherit-label"
+              className="mt-2 text-[11px] italic text-text-muted"
+            >
+              Hérite le dispatch de la catégorie.
+            </p>
+          )}
         </Card>
 
         <Card padding="md">

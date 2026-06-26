@@ -38,6 +38,8 @@ interface ProductRowDb {
   variant_label:              string | null;
   variant_axis:               string | null;
   variant_sort_order:         number;
+  // Spec B-1 Ph2 — per-product dispatch override
+  dispatch_stations:          string[] | null;
   categories:       { name: string; category_type: string | null } | { name: string; category_type: string | null }[] | null;
 }
 
@@ -60,6 +62,7 @@ export function useProductDetail(productId: string | null) {
           track_inventory, deduct_stock, is_semi_finished,
           target_gross_margin_pct, default_shelf_life_hours, is_display_item,
           parent_product_id, variant_label, variant_axis, variant_sort_order,
+          dispatch_stations,
           categories:categories ( name, category_type )
         `)
         .eq('id', productId)
@@ -101,6 +104,7 @@ export function useProductDetail(productId: string | null) {
         variant_label:             r.variant_label,
         variant_axis:              r.variant_axis,
         variant_sort_order:        Number(r.variant_sort_order),
+        dispatch_stations:         r.dispatch_stations ?? null,
         category_name:             categoryName,
         category_type:             categoryType,
       } satisfies ProductRow;

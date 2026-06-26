@@ -75,6 +75,7 @@ const MOCK_PRODUCT: ProductRow = {
   variant_label:            null,
   variant_axis:             null,
   variant_sort_order:       0,
+  dispatch_stations:        null,
 };
 
 function renderDialog(product: ProductRow | null, onClose = vi.fn()) {

@@ -30,6 +30,9 @@ export type ProductUpdatePatch = Partial<Pick<ProductRow,
   | 'min_stock_threshold'
   | 'target_gross_margin_pct'
   | 'default_shelf_life_hours'
+  // Spec B-1 Ph2 — override dispatch stations per product (NULL = inherit from category).
+  // NOTE: update_product_v1 allowlist needs a follow-up migration to persist this field.
+  | 'dispatch_stations'
 >>;
 
 export interface UpdateProductArgs {

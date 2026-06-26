@@ -48,6 +48,9 @@ export interface ProductRow extends Product {
   variant_label: string | null;
   variant_axis: string | null;
   variant_sort_order: number;
+  // Spec B-1 Ph2 — per-product dispatch override. NULL = inherit from category.
+  // Non-null = explicit list ⊆ {kitchen,barista,display} (CHECK on DB side).
+  dispatch_stations: ReadonlyArray<string> | null;
 }
 
 export interface CategoryOption {

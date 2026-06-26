@@ -56,6 +56,7 @@ const mockProducts: ReadonlyArray<ProductRow> = [
     variant_label: null,
     variant_axis: null,
     variant_sort_order: 0,
+    dispatch_stations: null,
   },
   {
     id: 'p2',
@@ -89,6 +90,7 @@ const mockProducts: ReadonlyArray<ProductRow> = [
     variant_label: 'Amande',
     variant_axis: 'flavor',
     variant_sort_order: 10,
+    dispatch_stations: null,
   },
   {
     id: 'p3',
@@ -122,6 +124,7 @@ const mockProducts: ReadonlyArray<ProductRow> = [
     variant_label: null,
     variant_axis: null,
     variant_sort_order: 0,
+    dispatch_stations: null,
   },
 ];
 
