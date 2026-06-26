@@ -188,7 +188,7 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
             />
             <ToggleRow
               label="Deduct stock"
-              sub="Real-time inventory deduction"
+              sub="Déduit les matières premières de la recette (à la production si suivi, à la vente sinon)"
               enabled={draft.deduct_stock}
               disabled={readOnly}
               onChange={(v) => update('deduct_stock', v)}
@@ -209,7 +209,7 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
             />
             <ToggleRow
               label="Track inventory"
-              sub="Automated stock tracking"
+              sub="Suit le stock du produit lui-même (décrémenté à la vente, monté à la production)"
               enabled={draft.track_inventory}
               disabled={readOnly}
               onChange={(v) => update('track_inventory', v)}

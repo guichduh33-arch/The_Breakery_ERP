@@ -205,6 +205,7 @@ const GROUPS: NavGroup[] = [
         label: '',
         items: [
           { to: '/backoffice/settings', label: 'General settings', icon: Settings, permission: 'settings.read', end: true },
+          { to: '/backoffice/settings/inventory', label: 'Inventory settings', icon: Settings, permission: 'settings.read' },
           { to: '/backoffice/settings/holidays', label: 'Holidays', icon: CalendarDays, permission: 'settings.read' },
           { to: '/backoffice/settings/templates/email', label: 'Email Templates', icon: Mail, permission: 'settings.read' },
           { to: '/backoffice/settings/templates/receipt', label: 'Receipt Templates', icon: FileText, permission: 'settings.read' },
