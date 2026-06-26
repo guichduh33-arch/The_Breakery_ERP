@@ -5,7 +5,33 @@ import {
   movementRefPrefix,
   buildMovementRefNo,
   assignRefNos,
+  movementOrigin,
 } from '../stockLedgerRef.js';
+
+describe('movementOrigin', () => {
+  it('shows the order number for a sale', () => {
+    expect(movementOrigin({ movementType: 'sale', referenceLabel: 'ORD-0042', reason: null }))
+      .toBe('Sale · order ORD-0042');
+  });
+  it('falls back to "POS sale" when no order number', () => {
+    expect(movementOrigin({ movementType: 'sale', referenceLabel: null, reason: null }))
+      .toBe('POS sale');
+  });
+  it('appends the reason for a waste movement', () => {
+    expect(movementOrigin({ movementType: 'waste', referenceLabel: null, reason: 'expired lot' }))
+      .toBe('Waste / spoilage — expired lot');
+  });
+  it('labels a purchase and a production consumption', () => {
+    expect(movementOrigin({ movementType: 'purchase', referenceLabel: null, reason: null }))
+      .toBe('Purchase received');
+    expect(movementOrigin({ movementType: 'production_out', referenceLabel: null, reason: null }))
+      .toBe('Production consumption');
+  });
+  it('falls back to the raw movement_type for unknown values', () => {
+    expect(movementOrigin({ movementType: 'mystery', referenceLabel: null, reason: '  ' }))
+      .toBe('mystery');
+  });
+});
 
 describe('movementTypeLabel', () => {
   it('maps sale to POS_SALE', () => {

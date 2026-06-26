@@ -4,6 +4,46 @@
 // the Backoffice stock-movement pages. The DB RPC returns raw rows; the ref_no is
 // synthesized here so the sequence is per loaded result set.
 
+export interface MovementOriginInput {
+  movementType:   string;
+  referenceLabel: string | null; // human document no. (e.g. orders.order_number)
+  reason:         string | null; // free-text reason (adjustment/waste/…)
+}
+
+/**
+ * One-line human origin of a movement, for the stock-card detail panel.
+ * e.g. "Sale · order #ORD-0042", "Waste / spoilage — expired lot", "Stock in".
+ * Pure presentation — never throws, falls back to the raw movement_type.
+ */
+export function movementOrigin({ movementType, referenceLabel, reason }: MovementOriginInput): string {
+  const ref = referenceLabel?.trim();
+  const base = (() => {
+    switch (movementType) {
+      case 'sale':                  return ref ? `Sale · order ${ref}` : 'POS sale';
+      case 'sale_void':             return ref ? `Sale void · order ${ref}` : 'Sale void';
+      case 'purchase':              return ref ? `Purchase · ${ref}` : 'Purchase received';
+      case 'purchase_return':       return 'Purchase return';
+      case 'incoming':              return 'Stock in';
+      case 'transfer_in':           return 'Transfer in';
+      case 'transfer_out':          return 'Transfer out';
+      case 'production_in':         return 'Production output';
+      case 'production_out':        return 'Production consumption';
+      case 'adjustment':
+      case 'adjustment_in':
+      case 'adjustment_out':        return 'Manual adjustment';
+      case 'opname_in':
+      case 'opname_out':            return 'Stock opname';
+      case 'waste':                 return 'Waste / spoilage';
+      case 'cost_price_correction': return 'Cost correction';
+      case 'reservation_hold':      return 'Reservation hold';
+      case 'reservation_release':   return 'Reservation release';
+      default:                      return movementType;
+    }
+  })();
+  const r = reason?.trim();
+  return r && r.length > 0 ? `${base} — ${r}` : base;
+}
+
 /** Screenshot-style uppercase label for a movement_type. */
 export function movementTypeLabel(movementType: string): string {
   switch (movementType) {

@@ -24,6 +24,8 @@ export interface StockLedgerLine {
   movement_amount: number;
   reference_type:  string | null;
   reference_id:    string | null;
+  reason:          string | null;
+  reference_label: string | null; // human document no. (orders.order_number for sales)
   created_by_name: string | null;
 }
 

@@ -30,8 +30,10 @@ export {
   movementRefPrefix,
   buildMovementRefNo,
   assignRefNos,
+  movementOrigin,
   type BuildRefNoInput,
   type LedgerLineForRef,
+  type MovementOriginInput,
 } from './stockLedgerRef.js';
 export { validateAdjust } from './validateAdjust.js';
 export { validateReceive } from './validateReceive.js';

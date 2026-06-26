@@ -3,7 +3,7 @@
 // ref_no + type label, CSV export (no PDF).
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import StockMovementHistoryPage from '@/pages/reports/StockMovementHistoryPage.js';
@@ -35,6 +35,8 @@ vi.mock('@/lib/supabase.js', () => ({
                 movement_amount: 500_000,
                 reference_type:  'admin_action',
                 reference_id:    null,
+                reason:          null,
+                reference_label: null,
                 created_by_name: 'Admin',
               },
             ],
@@ -77,20 +79,27 @@ describe('StockMovementHistoryPage (smoke)', () => {
     });
   });
 
-  it('renders the 13 stock-card columns', async () => {
+  it('renders the 10 slim stock-card columns', async () => {
     renderPage();
     await screen.findByText('Flour');
-    for (const h of ['date', 'created_time', 'ref_no', 'type', 'product_group', 'product', 'uom',
+    for (const h of ['date', 'type', 'product', 'uom',
       'beginning_qty', 'incoming_qty', 'outgoing_qty', 'balance_qty', 'price', 'movement_amount']) {
       expect(screen.getByRole('columnheader', { name: h })).toBeInTheDocument();
     }
+    // Detail-only fields are NOT top-level columns anymore.
+    expect(screen.queryByRole('columnheader', { name: 'created_time' })).toBeNull();
+    expect(screen.queryByRole('columnheader', { name: 'ref_no' })).toBeNull();
+    expect(screen.queryByRole('columnheader', { name: 'product_group' })).toBeNull();
   });
 
-  it('renders a movement row with generated ref_no + type label', async () => {
+  it('renders the type label in the main row and ref_no only after expanding', async () => {
     renderPage();
     expect(await screen.findByText('Flour')).toBeInTheDocument();
-    expect(screen.getByText('IN26052000000001')).toBeInTheDocument(); // incoming → IN prefix
-    expect(screen.getByText('INCOMING')).toBeInTheDocument();
+    expect(screen.getByText('INCOMING')).toBeInTheDocument();          // type label, main row
+    expect(screen.queryByText('IN26052000000001')).toBeNull();          // ref_no hidden until expanded
+    fireEvent.click(screen.getByRole('button', { name: /Expand movement detail/i }));
+    expect(screen.getByText('IN26052000000001')).toBeInTheDocument();   // incoming → IN prefix
+    expect(screen.getByText('Stock in')).toBeInTheDocument();           // origin label
   });
 
   it('shows CSV export button but NOT PDF', async () => {

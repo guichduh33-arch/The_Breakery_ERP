@@ -2,15 +2,16 @@
 // 2026-06-18 — enrich ledger lines with the generated ref_no + screenshot-style type
 // label, and the shared 13-column CSV definition used by both stock-movement pages.
 
-import { assignRefNos, movementTypeLabel, type CsvColumn } from '@breakery/domain';
+import { assignRefNos, movementTypeLabel, movementOrigin, type CsvColumn } from '@breakery/domain';
 import type { StockLedgerLine } from './hooks/useStockLedger.js';
 
 export interface StockLedgerRow extends StockLedgerLine {
   ref_no:     string;
   type_label: string;
+  origin:     string;
 }
 
-/** Attach the per-document ref_no + uppercase type label (display order preserved). */
+/** Attach the per-document ref_no + uppercase type label + human origin (display order preserved). */
 export function enrichLedgerLines(lines: StockLedgerLine[]): StockLedgerRow[] {
   const refs = assignRefNos(
     lines.map((l) => ({
@@ -24,6 +25,11 @@ export function enrichLedgerLines(lines: StockLedgerLine[]): StockLedgerRow[] {
     ...l,
     ref_no:     refs.get(l.id) ?? '',
     type_label: movementTypeLabel(l.movement_type),
+    origin:     movementOrigin({
+      movementType:   l.movement_type,
+      referenceLabel: l.reference_label,
+      reason:         l.reason,
+    }),
   }));
 }
 
@@ -42,4 +48,6 @@ export const stockLedgerCsvColumns: CsvColumn<StockLedgerRow>[] = [
   { header: 'balance_qty',     accessor: (r) => r.balance_qty,     format: 'number' },
   { header: 'price',           accessor: (r) => r.price,           format: 'number' },
   { header: 'movement_amount', accessor: (r) => r.movement_amount, format: 'number' },
+  { header: 'origin',          accessor: (r) => r.origin,          format: 'text' },
+  { header: 'user',            accessor: (r) => r.created_by_name ?? '', format: 'text' },
 ];

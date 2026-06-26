@@ -4,7 +4,7 @@
 // useMovementAggregates + useSections.
 
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import StockMovementsPage from '@/pages/inventory/StockMovementsPage.js';
@@ -15,13 +15,15 @@ const MOCK_LINES: StockLedgerLine[] = [
     id: 'mv-1', movement_date: '2026-05-12', created_time: '2026-05-12T08:00:00Z',
     movement_type: 'sale', product_id: 'p-1', product_name: 'Americano', product_group: 'Beverage',
     unit: 'pcs', incoming_qty: 0, outgoing_qty: 2, beginning_qty: 10, balance_qty: 8,
-    price: 9000, movement_amount: -18000, reference_type: 'orders', reference_id: 'so-1', created_by_name: 'Jane',
+    price: 9000, movement_amount: -18000, reference_type: 'orders', reference_id: 'so-1',
+    reason: null, reference_label: 'ORD-0042', created_by_name: 'Jane',
   },
   {
     id: 'mv-2', movement_date: '2026-05-12', created_time: '2026-05-12T07:00:00Z',
     movement_type: 'purchase', product_id: 'p-2', product_name: 'Croissant', product_group: 'Pastry',
     unit: 'pcs', incoming_qty: 24, outgoing_qty: 0, beginning_qty: 0, balance_qty: 24,
-    price: 5000, movement_amount: 120000, reference_type: 'admin_action', reference_id: null, created_by_name: 'John',
+    price: 5000, movement_amount: 120000, reference_type: 'admin_action', reference_id: null,
+    reason: null, reference_label: null, created_by_name: 'John',
   },
 ];
 
@@ -72,14 +74,39 @@ describe('StockMovementsPage (stock-card rewrite)', () => {
     expect(screen.getByText(/Value moved/i)).toBeInTheDocument();
   });
 
-  it('renders ledger rows with product group + generated ref_no', () => {
+  it('renders slim ledger rows (product + type label) without detail until expanded', () => {
     renderPage();
     expect(screen.getByText('Americano')).toBeInTheDocument();
     expect(screen.getByText('Croissant')).toBeInTheDocument();
-    expect(screen.getByText('Beverage')).toBeInTheDocument();
-    expect(screen.getByText('Pastry')).toBeInTheDocument();
-    expect(screen.getByText('SL26051200000001')).toBeInTheDocument(); // sale → SL
-    expect(screen.getByText('PO26051200000001')).toBeInTheDocument(); // purchase → PO
+    expect(screen.getByText('POS_SALE')).toBeInTheDocument();   // type label, main row
+    expect(screen.getByText('PURCHASE')).toBeInTheDocument();
+    // Detail-only fields are collapsed by default.
+    expect(screen.queryByText('SL26051200000001')).toBeNull();
+    expect(screen.queryByText('Beverage')).toBeNull();
+  });
+
+  it('sorts rows by product when the product header is toggled', () => {
+    renderPage();
+    const productOrder = () =>
+      screen.getAllByText(/^(Americano|Croissant)$/).map((el) => el.textContent);
+    // default = server order (Americano, then Croissant)
+    expect(productOrder()).toEqual(['Americano', 'Croissant']);
+    const header = screen.getByRole('button', { name: /product/i });
+    fireEvent.click(header); // asc
+    expect(productOrder()).toEqual(['Americano', 'Croissant']);
+    fireEvent.click(header); // desc
+    expect(productOrder()).toEqual(['Croissant', 'Americano']);
+  });
+
+  it('reveals movement detail (origin, user, ref_no, group) when a row is expanded', () => {
+    renderPage();
+    const expandButtons = screen.getAllByRole('button', { name: /Expand movement detail/i });
+    fireEvent.click(expandButtons[0]!);
+    // The first row (Americano sale) detail surfaces.
+    expect(screen.getByText('Sale · order ORD-0042')).toBeInTheDocument(); // origin
+    expect(screen.getByText('SL26051200000001')).toBeInTheDocument();      // ref_no
+    expect(screen.getByText('Jane')).toBeInTheDocument();                  // user
+    expect(screen.getByText('Beverage')).toBeInTheDocument();             // product group
   });
 
   it('renders the filter bar and CSV export', () => {
