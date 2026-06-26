@@ -31,7 +31,8 @@ export type ProductUpdatePatch = Partial<Pick<ProductRow,
   | 'target_gross_margin_pct'
   | 'default_shelf_life_hours'
   // Spec B-1 Ph2 — override dispatch stations per product (NULL = inherit from category).
-  // NOTE: update_product_v1 allowlist needs a follow-up migration to persist this field.
+  // Persisted via update_product_v1 allowlist (migration 20260710000043); an explicit
+  // null clears the override (inherit), an absent key preserves it.
   | 'dispatch_stations'
 >>;
 
