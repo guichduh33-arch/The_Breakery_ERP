@@ -1,5 +1,6 @@
 // apps/backoffice/src/features/accounting/hooks/useGeneralLedger.ts
-// Session 26b / Wave 3 — Wraps get_general_ledger_v1 RPC (cursor-paginate).
+// Session 26b / Wave 3 — Wraps get_general_ledger_v2 RPC (cursor-paginate).
+// S50 W1.2 — bumped v1 → v2 (permission gate: accounting.gl.read).
 // Returns { account, period, opening_balance, lines, total_debit, total_credit,
 //           next_cursor }.
 
@@ -55,7 +56,7 @@ export function useGeneralLedger({
     enabled: accountId !== null && accountId !== '',
     staleTime: 60_000,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_general_ledger_v1', {
+      const { data, error } = await supabase.rpc('get_general_ledger_v2', {
         p_account_id: accountId as string,
         p_date_start: startDate,
         p_date_end:   endDate,

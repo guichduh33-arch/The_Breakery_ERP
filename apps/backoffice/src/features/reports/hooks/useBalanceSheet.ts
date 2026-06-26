@@ -1,6 +1,7 @@
 // apps/backoffice/src/features/reports/hooks/useBalanceSheet.ts
 //
-// Wraps `get_balance_sheet_v1(p_as_of_date)`. Asserts A = L + E + CYE.
+// Wraps `get_balance_sheet_v2(p_as_of_date)`. Asserts A = L + E + CYE.
+// S50 W1.2 — bumped v1 → v2 (permission gate: reports.financial.read).
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
@@ -65,7 +66,7 @@ export function useBalanceSheet(asOfDate: string) {
     queryKey: [...BALANCE_SHEET_QK, asOfDate] as const,
     staleTime: 60_000,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_balance_sheet_v1', {
+      const { data, error } = await supabase.rpc('get_balance_sheet_v2', {
         p_as_of_date: asOfDate,
       });
       if (error) throw error;

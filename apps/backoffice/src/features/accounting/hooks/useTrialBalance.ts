@@ -1,5 +1,6 @@
 // apps/backoffice/src/features/accounting/hooks/useTrialBalance.ts
-// Session 26b / Wave 4 — Wraps get_trial_balance_v1 RPC.
+// Session 26b / Wave 4 — Wraps get_trial_balance_v2 RPC.
+// S50 W1.2 — bumped v1 → v2 (permission gate: accounting.tb.read).
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
@@ -32,7 +33,7 @@ export function useTrialBalance(startDate: string, endDate: string) {
     enabled: startDate !== '' && endDate !== '',
     staleTime: 60_000,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_trial_balance_v1', {
+      const { data, error } = await supabase.rpc('get_trial_balance_v2', {
         p_date_start: startDate,
         p_date_end:   endDate,
       });

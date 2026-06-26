@@ -24,11 +24,11 @@ export function useReopenHeldOrder() {
 
       // Best-effort customer badge restore (mirrors useRestoreHeldOrder): pricing
       // runs off cart.customerId (already set by reopenOrder), so a lookup miss
-      // just leaves the badge absent. Definer RPC get_customer_v2 survives the
-      // customers.read SELECT gate.
+      // just leaves the badge absent. Definer RPC get_customer_v3 survives the
+      // customers.read SELECT gate (S50 W1.4: v2 → v3, dual gate).
       if (payload.customerId !== null) {
         try {
-          const { data: customers } = await supabase.rpc('get_customer_v2', {
+          const { data: customers } = await supabase.rpc('get_customer_v3', {
             p_id: payload.customerId,
           });
           const customer = (customers ?? [])[0];

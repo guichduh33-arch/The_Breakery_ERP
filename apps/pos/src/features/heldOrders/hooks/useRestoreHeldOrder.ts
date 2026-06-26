@@ -66,11 +66,12 @@ export function useRestoreHeldOrder() {
       // so the badge (name, tier, points) reappears. Best-effort: pricing/JE run
       // off cart.customerId (already set), so a lookup failure just leaves the
       // badge absent rather than blocking the restore.
-      // S37 C5 (SEC-03) — via the definer RPC get_customer_v2 (category embed)
+      // S37 C5 (SEC-03) — via the definer RPC get_customer_v3 (category embed)
       // so the badge re-fetch survives the customers.read SELECT gate.
+      // S50 W1.4 — bumped v2 → v3 (dual gate: customers.read OR pos.sale.create).
       if (payload.customerId !== null) {
         try {
-          const { data: customers } = await supabase.rpc('get_customer_v2', {
+          const { data: customers } = await supabase.rpc('get_customer_v3', {
             p_id: payload.customerId,
           });
           const customer = (customers ?? [])[0];
