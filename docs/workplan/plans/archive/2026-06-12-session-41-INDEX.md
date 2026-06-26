@@ -2,7 +2,7 @@
 
 **Date d'exécution :** 2026-06-12 (exécution subagent-driven, même session que spec + plan)
 **Branche :** `swarm/session-41` (base `master` @ `f6f5947`, post-bump turbo `a997a86`)
-**Spec :** [`docs/workplan/specs/2026-06-12-session-41-catalog-import-spec.md`](../specs/2026-06-12-session-41-catalog-import-spec.md)
+**Spec :** [`docs/workplan/specs/2026-06-12-session-41-catalog-import-spec.md`](../../specs/archive/2026-06-12-session-41-catalog-import-spec.md)
 **Plan :** [`docs/workplan/plans/2026-06-12-session-41-plan.md`](2026-06-12-session-41-plan.md)
 
 ---

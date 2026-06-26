@@ -8,7 +8,7 @@
 
 **Tech Stack:** React + TS, Vitest + Testing Library (jsdom), SheetJS (`xlsx`) pour les workbooks de test.
 
-**Spec:** [`docs/workplan/specs/2026-06-12-session-42-catalog-import-minors-spec.md`](../specs/2026-06-12-session-42-catalog-import-minors-spec.md)
+**Spec:** [`docs/workplan/specs/2026-06-12-session-42-catalog-import-minors-spec.md`](../../specs/archive/2026-06-12-session-42-catalog-import-minors-spec.md)
 
 **Branche:** `fix/catalog-import-minors` (déjà créée, base `origin/master` @ `740f938`, spec committée `b9c7907`). PR focalisée vers `master` à la fin.
 

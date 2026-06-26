@@ -1,7 +1,7 @@
 # Session 45 — INDEX : Products page — finir les actions catalogue (boutons morts)
 
 > Branche : `swarm/session-45` (base `master` @ `b80e3d9`, post-merge S44 PR #81).
-> Spec : [`../specs/2026-06-13-session-45-products-actions-spec.md`](../specs/2026-06-13-session-45-products-actions-spec.md) · Plan : [`2026-06-13-session-45-products-actions-plan.md`](2026-06-13-session-45-products-actions-plan.md).
+> Spec : [`../specs/2026-06-13-session-45-products-actions-spec.md`](../../specs/archive/2026-06-13-session-45-products-actions-spec.md) · Plan : [`2026-06-13-session-45-products-actions-plan.md`](2026-06-13-session-45-products-actions-plan.md).
 > Méthode : subagent-driven TDD, spec-review + code-quality review par wave, pattern-guardian sur la migration, vérif live navigateur (playwright-cli), final review whole-branch.
 
 ## §1. Résultat

@@ -1,6 +1,6 @@
 # Session 46 — Plan : Purchasing Hardening (page Backoffice Achats)
 
-> Spec : [`docs/workplan/specs/2026-06-18-session-46-purchasing-hardening-spec.md`](../specs/2026-06-18-session-46-purchasing-hardening-spec.md)
+> Spec : [`docs/workplan/specs/2026-06-18-session-46-purchasing-hardening-spec.md`](../../specs/archive/2026-06-18-session-46-purchasing-hardening-spec.md)
 > Branche : `swarm/session-46` (base `master` @ `80cfaba`).
 > Méthode : **subagent-driven TDD**, 1 subagent par task, **spec-review + code-review par wave**, `pattern-guardian` sur les diffs migration, `test-engineer` sur le pgTAP. Squash-merge par PR en fin de session.
 > Migration NAME-block : `20260701000010..` (base à vérifier `list_migrations`, prior max NAME `20260630000024`). **Appliquer via MCP `apply_migration`** sur V3 dev `ikcyvlovptebroadgtvd`. Types regen MCP → commit.

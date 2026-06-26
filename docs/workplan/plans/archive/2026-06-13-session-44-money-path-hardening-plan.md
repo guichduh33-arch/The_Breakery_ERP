@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal :** implémenter la spec [`2026-06-13-session-44-money-path-hardening-spec.md`](../specs/2026-06-13-session-44-money-path-hardening-spec.md) — JE par méthode de paiement réelle (P0-A), routage des variantes vers les stations (P0-B), montants money-path recalculés server-side (P0-C : promo/loyalty/discount-append/change), hygiène `pickedUpOrderId`/`clear()` (P1-A/B), symétrie `display_stock` v8 + void (P1-C), enveloppe de replay honnête (OPP-1).
+**Goal :** implémenter la spec [`2026-06-13-session-44-money-path-hardening-spec.md`](../../specs/archive/2026-06-13-session-44-money-path-hardening-spec.md) — JE par méthode de paiement réelle (P0-A), routage des variantes vers les stations (P0-B), montants money-path recalculés server-side (P0-C : promo/loyalty/discount-append/change), hygiène `pickedUpOrderId`/`clear()` (P1-A/B), symétrie `display_stock` v8 + void (P1-C), enveloppe de replay honnête (OPP-1).
 
 **Architecture :** Wave A = fondations DB (helper multiplier, corrective JE CASE + seeds, pgTAP trigger-level). Wave B = bumps RPC (`complete_order_with_payment_v12`, `pay_existing_order_v8`, `fire_counter_order_v2`) + types regen + EF + call-sites client. Wave C = front (station map variantes, hygiène cartStore, loyalty depuis l'enveloppe serveur). Wave D = corrective void `display_stock` + vérif reversal RPCs. Wave E = E2E + sweeps + closeout.
 

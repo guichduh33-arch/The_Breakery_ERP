@@ -8,7 +8,7 @@
 
 **Tech Stack:** Postgres plpgsql (Supabase cloud V3 dev `ikcyvlovptebroadgtvd` via MCP — PAS de Docker), React + TanStack Query (BO), SheetJS (`xlsx`), pgTAP via MCP `execute_sql`, Vitest.
 
-**Spec:** [`docs/workplan/specs/2026-06-12-session-41-catalog-import-spec.md`](../specs/2026-06-12-session-41-catalog-import-spec.md)
+**Spec:** [`docs/workplan/specs/2026-06-12-session-41-catalog-import-spec.md`](../../specs/archive/2026-06-12-session-41-catalog-import-spec.md)
 
 **Branche:** `swarm/session-41` (base `master` post-`1eb8b4b`). Commits conventionnels `feat(db|backoffice): session 41 — task N — <topic>`.
 

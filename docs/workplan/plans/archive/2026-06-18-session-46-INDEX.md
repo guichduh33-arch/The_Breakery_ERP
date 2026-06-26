@@ -2,7 +2,7 @@
 
 > Statut : **Wave A + B + C livrées** (DB/RPC, UI, durcissement). PR non encore ouverte.
 > Branche : `swarm/session-46` (base `master` @ `80cfaba`, post-merge PR #93 costing).
-> Spec : [`../specs/2026-06-18-session-46-purchasing-hardening-spec.md`](../specs/2026-06-18-session-46-purchasing-hardening-spec.md) · Plan : [`2026-06-18-session-46-purchasing-hardening-plan.md`](2026-06-18-session-46-purchasing-hardening-plan.md).
+> Spec : [`../specs/2026-06-18-session-46-purchasing-hardening-spec.md`](../../specs/archive/2026-06-18-session-46-purchasing-hardening-spec.md) · Plan : [`2026-06-18-session-46-purchasing-hardening-plan.md`](2026-06-18-session-46-purchasing-hardening-plan.md).
 > Méthode : controller-driven (subagents sans MCP — DEV-S46-PROC-01), TDD DB, pattern-guardian sur le diff Wave B.
 > Commits : `d3190b8` (Wave A) · `0751d97` (Wave B) · `63b8665` (cleanup junk) · `c1d4e7a` (Wave C hardening).
 

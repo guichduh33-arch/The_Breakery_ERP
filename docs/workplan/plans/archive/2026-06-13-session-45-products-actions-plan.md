@@ -1,6 +1,6 @@
 # Session 45 — Plan : Products page — finir les actions catalogue
 
-> Spec : [`docs/workplan/specs/2026-06-13-session-45-products-actions-spec.md`](../specs/2026-06-13-session-45-products-actions-spec.md)
+> Spec : [`docs/workplan/specs/2026-06-13-session-45-products-actions-spec.md`](../../specs/archive/2026-06-13-session-45-products-actions-spec.md)
 > Branche : `swarm/session-45` (base `master` @ `b80e3d9`).
 > Méthode : **subagent-driven TDD**, 1 subagent par task, **spec-review + code-review par wave**, pattern-guardian sur le diff migration, test-engineer sur le pgTAP. Squash-merge par PR en fin de session.
 > Migration NAME-block : `20260629000010..` (base vérifiée `list_migrations`, prior max NAME `20260628000018`). **Appliquer via MCP `apply_migration`** sur V3 dev `ikcyvlovptebroadgtvd`. Types regen MCP → commit.
