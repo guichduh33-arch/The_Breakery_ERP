@@ -31,6 +31,39 @@ describe('movementOrigin', () => {
     expect(movementOrigin({ movementType: 'mystery', referenceLabel: null, reason: '  ' }))
       .toBe('mystery');
   });
+
+  it('labels every known movement_type (no ref, no reason)', () => {
+    const cases: Record<string, string> = {
+      sale:                  'POS sale',
+      sale_void:             'Sale void',
+      purchase:              'Purchase received',
+      purchase_return:       'Purchase return',
+      incoming:              'Stock in',
+      transfer_in:           'Transfer in',
+      transfer_out:          'Transfer out',
+      production_in:         'Production output',
+      production_out:        'Production consumption',
+      adjustment:            'Manual adjustment',
+      adjustment_in:         'Manual adjustment',
+      adjustment_out:        'Manual adjustment',
+      opname_in:             'Stock opname',
+      opname_out:            'Stock opname',
+      waste:                 'Waste / spoilage',
+      cost_price_correction: 'Cost correction',
+      reservation_hold:      'Reservation hold',
+      reservation_release:   'Reservation release',
+    };
+    for (const [type, expected] of Object.entries(cases)) {
+      expect(movementOrigin({ movementType: type, referenceLabel: null, reason: null })).toBe(expected);
+    }
+  });
+
+  it('includes the ref for sale_void and purchase when present', () => {
+    expect(movementOrigin({ movementType: 'sale_void', referenceLabel: 'ORD-9', reason: null }))
+      .toBe('Sale void · order ORD-9');
+    expect(movementOrigin({ movementType: 'purchase', referenceLabel: 'PO-7', reason: null }))
+      .toBe('Purchase · PO-7');
+  });
 });
 
 describe('movementTypeLabel', () => {
