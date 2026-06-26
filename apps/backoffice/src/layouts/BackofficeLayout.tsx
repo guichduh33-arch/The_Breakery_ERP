@@ -8,13 +8,29 @@
 // content area can use the full width. The collapsed state is persisted in
 // localStorage (`bo:sidebar:collapsed`) so it survives reloads.
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { cn } from '@breakery/ui';
 import { Sidebar } from './Sidebar.js';
 import { Topbar } from './Topbar.js';
 
 const SIDEBAR_COLLAPSED_KEY = 'bo:sidebar:collapsed';
+
+/** Shown while a route-split page chunk is being fetched (React.lazy). */
+function RouteFallback() {
+  return (
+    <div
+      className="grid h-full place-items-center text-text-secondary"
+      aria-busy="true"
+      aria-live="polite"
+    >
+      <div
+        className="h-6 w-6 animate-spin rounded-full border-2 border-border-subtle border-t-gold"
+        aria-hidden
+      />
+    </div>
+  );
+}
 
 function readCollapsed(): boolean {
   try {
@@ -59,7 +75,9 @@ export function BackofficeLayout() {
           tabIndex={-1}
           className="flex-1 overflow-y-auto p-6"
         >
-          <Outlet />
+          <Suspense fallback={<RouteFallback />}>
+            <Outlet />
+          </Suspense>
         </main>
       </div>
     </div>
