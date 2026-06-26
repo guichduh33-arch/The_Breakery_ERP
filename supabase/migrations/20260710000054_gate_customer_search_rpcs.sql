@@ -7,7 +7,7 @@
 --
 -- Gate dual : has_permission(., 'customers.read') OR has_permission(., 'pos.sale.create')
 --   - customers.read  → MANAGER/ADMIN/SUPER_ADMIN (BO accès complet)
---   - pos.sale.create → CASHIER/WAITER (POS flux attach client sur vente)
+--   - pos.sale.create → CASHIER/waiter (POS flux attach client sur vente)
 -- Rationale : le CASHIER n'a pas customers.read (évite l'accès PII brut),
 -- mais a pos.sale.create pour attacher un client à la commande.
 --
@@ -31,7 +31,7 @@ ON CONFLICT (code) DO NOTHING;
 INSERT INTO role_permissions (role_code, permission_code, is_granted)
 VALUES
   ('CASHIER', 'pos.sale.create', true),
-  ('WAITER',  'pos.sale.create', true)
+  ('waiter',  'pos.sale.create', true)
 ON CONFLICT (role_code, permission_code) DO UPDATE SET is_granted = true;
 
 -- ============================================================

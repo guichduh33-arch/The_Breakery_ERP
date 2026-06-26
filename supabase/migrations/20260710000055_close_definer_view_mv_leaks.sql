@@ -9,18 +9,18 @@
 --   sans changer le schéma de la vue.
 --
 -- Vues traitées :
---   1. audit_log         (20260517000034) → security_invoker=on
+--   1. audit_log (20260517000034) → security_invoker=on ✅ APPLIQUÉ
 --      AUCUN REVOKE : les RPCs hérités (audit_log_insert_trigger) écrivent via
 --      l'INSTEAD-OF trigger. audit_log est accessible à authenticated pour lecture
 --      (permissions), le RLS sur audit_logs contrôle déjà les lignes.
 --
---   2. v_product_available_stock (20260517000132) → security_invoker=on
---      GRANT SELECT authenticated déjà en place, RLS sur products + stock_reservations
---      contrôle l'accès ; security_invoker transporte l'identité du caller.
+--   2. v_product_available_stock (20260517000132) → DEFERRED to V2
+--      Raison : CASHIER/waiter n'ont PAS inventory.read, et recipes + stock_reservations
+--      sont gatés inventory.read en RLS → security_invoker casserait le held-qty POS.
 --
---   3. view_product_allergens_resolved (20260519000162) → security_invoker=on
---      READ par POS et BO — REVOKE SELECT authenticated non-négociable.
---      security_invoker uniquement (pas de REVOKE).
+--   3. view_product_allergens_resolved (20260519000162) → DEFERRED to V2
+--      Raison : même cascade — POS useProductAllergens lit via cette vue ;
+--      security_invoker casserait l'affichage allergènes pour CASHIER/waiter.
 --
 -- Vues non traitées :
 --   - view_b2b_invoices, view_ar_aging : gates futures via b2b.read ; ce ticket
@@ -52,19 +52,14 @@ COMMENT ON VIEW public.audit_log IS
   '(le RLS sur audit_logs filtre désormais par identité du caller, '
   'pas par le rôle postgres/definer créateur). INSTEAD-OF trigger préservé.';
 
-ALTER VIEW public.v_product_available_stock
-  SET (security_invoker = true);
+-- DEFERRED to V2 — v_product_available_stock
+-- ALTER VIEW public.v_product_available_stock SET (security_invoker = true);
+-- Raison : CASHIER/waiter sans inventory.read → RLS stock_reservations bloque
+-- la vue en mode invoker (held-qty POS cassé vérifié live S50).
 
-COMMENT ON VIEW public.v_product_available_stock IS
-  'Stock disponible = stock - réservations. S50 W1.5 : security_invoker=on '
-  '(RLS sur products + stock_reservations contrôle les lignes du caller).';
-
-ALTER VIEW public.view_product_allergens_resolved
-  SET (security_invoker = true);
-
-COMMENT ON VIEW public.view_product_allergens_resolved IS
-  'Allergènes produits résolus (POS + BO). S50 W1.5 : security_invoker=on. '
-  'GRANT SELECT authenticated maintenu — ne pas révoquer (call-sites POS actifs).';
+-- DEFERRED to V2 — view_product_allergens_resolved
+-- ALTER VIEW public.view_product_allergens_resolved SET (security_invoker = true);
+-- Raison : même cascade RLS → useProductAllergens POS cassé (CASHIER/waiter).
 
 -- ============================================================
 -- 2. Vues B2B — annotation (pas encore gatées dans ce ticket)
