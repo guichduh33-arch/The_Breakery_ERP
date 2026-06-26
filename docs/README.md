@@ -1,6 +1,6 @@
 # 📚 The Breakery ERP — Documentation
 
-> **Last updated** : 2026-06-12
+> **Last updated** : 2026-06-27
 > **Périmètre** : `docs/reference/` est **la référence canonique du monorepo V3** (apps/pos + apps/backoffice + packages/*) — source de vérité évergreen, maintenue à jour. L'état d'avancement par session vit dans `docs/workplan/`. Le dossier legacy `docs/_archive/objectif-travail-v2/` capture l'ancienne **vision business V2** (AppGrav monolithe, jamais déployée) et n'est conservé que comme référence métier historique — en cas de divergence, `reference/` fait foi.
 >
 > **Pont V2 ↔ V3** : pour les renommages de symboles (`complete_order_with_payments` → `complete_order`, hooks renommés, pages déplacées, améliorations V3 sans équivalent V2), voir **[`V2_V3_GLOSSARY.md`](V2_V3_GLOSSARY.md)** — c'est le mapping de référence à consulter quand un nom V2 ne se retrouve pas dans le code V3.
@@ -29,7 +29,7 @@ docs/
 │   ├── 11-conventions/                    ← Coding, file org, React patterns, Supabase patterns
 │   └── 12-appendices/                     ← Business rules, permission codes, env vars, V2↔V3
 └── workplan/                              ← LE TRAVAIL — plans, specs, backlog
-    ├── plans/                             ← Plans de session datés (sessions 1-42+, archive/ pour les sessions mergées)
+    ├── plans/                             ← Plans de session datés (sessions 1-47+, archive/ pour les sessions mergées)
     ├── specs/                             ← Specs de session datées
     └── backlog-by-module/                 ← Backlog opérationnel par module (TASK-XX-NNN)
 ```

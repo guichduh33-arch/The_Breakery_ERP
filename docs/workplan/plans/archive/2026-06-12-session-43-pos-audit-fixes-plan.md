@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal :** corriger les findings de l'audit POS live du 2026-06-12 (spec : [`2026-06-12-session-43-pos-audit-fixes-spec.md`](../specs/2026-06-12-session-43-pos-audit-fixes-spec.md)) — 3 P0 (remises impayables, realtime mort sous PIN-auth, fire comptoir non persisté), 4 P1, 10 P2 — en 5 waves committables indépendamment + validation E2E.
+**Goal :** corriger les findings de l'audit POS live du 2026-06-12 (spec : [`2026-06-12-session-43-pos-audit-fixes-spec.md`](../../specs/archive/2026-06-12-session-43-pos-audit-fixes-spec.md)) — 3 P0 (remises impayables, realtime mort sous PIN-auth, fire comptoir non persisté), 4 P1, 10 P2 — en 5 waves committables indépendamment + validation E2E.
 
 **Architecture :** Wave A = plomberie systémique (realtime setAuth, filets refetch, mapping erreurs EF + redeploys). Wave B = money path remises (alignement client↔serveur, PIN pour toute remise, feedback persistant). Wave C = fire comptoir persistant (RPC `fire_counter_order_v1` symétrique de `create_tablet_order_v2`, checkout bascule sur `pay_existing_order_v7` via `pickedUpOrderId`). Wave D = P1 (sold-out, close-shift gate, history). Wave E = P2 polish + data fixes. Wave F = E2E + sweeps.
 

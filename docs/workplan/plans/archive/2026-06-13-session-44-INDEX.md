@@ -1,6 +1,6 @@
 # Session 44 — Money-Path Hardening — INDEX
 
-> Branche `swarm/session-44` (base `master` @ `fc36f3e` post-spec/plan + Wave A D4). Spec : [`../specs/2026-06-13-session-44-money-path-hardening-spec.md`](../specs/2026-06-13-session-44-money-path-hardening-spec.md) · Plan : [`2026-06-13-session-44-money-path-hardening-plan.md`](2026-06-13-session-44-money-path-hardening-plan.md).
+> Branche `swarm/session-44` (base `master` @ `fc36f3e` post-spec/plan + Wave A D4). Spec : [`../specs/2026-06-13-session-44-money-path-hardening-spec.md`](../../specs/archive/2026-06-13-session-44-money-path-hardening-spec.md) · Plan : [`2026-06-13-session-44-money-path-hardening-plan.md`](2026-06-13-session-44-money-path-hardening-plan.md).
 
 ## 1. Statut par task
 

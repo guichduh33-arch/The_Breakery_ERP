@@ -1,6 +1,6 @@
 # Design actuel — POS & Backoffice
 
-> **Périmètre fonctionnel** : ce document décrit le **design visuel et l'ergonomie effectivement déployés** dans AppGrav V2 pour les deux applications POS et Backoffice. Il complète le doc technique racine [`DESIGN.md`](../DESIGN.md) (tokens, dual-theme) et les **screenshots de référence canoniques** dans [`docs/ux/assets/screens/`](ux/assets/screens/) — qui restent la **source de vérité visuelle** en cas de désaccord avec ce texte.
+> **Périmètre fonctionnel** : ce document décrit le **langage de design visuel et l'ergonomie** des deux applications POS et Backoffice du monorepo **V3** — issu de la vision originale V2 (AppGrav, jamais déployée) et repris tel quel dans V3. Pour les **tokens techniques canoniques** (Luxe Dark, variables CSS, scales, classes Tailwind), la source de vérité est [`reference/02-design-system/`](reference/02-design-system/) ; les **screenshots de référence** vivent dans [`docs/Design/`](Design/) (`backoffice/`, `caissapp/`).
 
 ---
 
@@ -81,7 +81,7 @@ L'œil ne se fatigue **jamais** : le contraste est élevé sans être agressif, 
 
 ### 3.2 Le POS principal — `/pos`
 
-**Réf visuelle** : `docs/ux/assets/screens/caissapp/v2-reference/04-grid-coffee-cart-2items-table-t12.jpg`
+**Réf visuelle** : `docs/Design/caissapp/04-grid-coffee-cart-2items-table-t12.jpg`
 
 Layout en **deux colonnes** plein écran :
 
@@ -214,7 +214,7 @@ L'or `#C9A55C` reste **identique** entre les deux thèmes — c'est la constante
 
 ### 4.2 Le Dashboard — `/`
 
-**Réf visuelle** : `docs/ux/assets/screens/backoffice/Dashboard.jpg`
+**Réf visuelle** : `docs/Design/backoffice/Dashboard.jpg`
 
 Layout **sidebar fixe gauche + content scrollable droite**.
 
@@ -545,11 +545,13 @@ Un utilisateur qui bascule du POS au Backoffice **ressent immédiatement** que c
 
 ## 12. Le legacy V2 vs la vision V3
 
-### 12.1 Ce qui est figé en V2
+> ⚠️ **Note de cadrage (2026-06-27)** : V2 (AppGrav monolithe) n'a **jamais été déployée** — voir MEMORY `v2-not-in-production`. Le produit vivant est le **monorepo V3** (2 apps : `apps/pos` + `apps/backoffice`). Les références ci-dessous à un « monolithe Vercel », à `breakery-platform/`, aux apps `kitchen`/`comptable` et aux artefacts `_bmad/` décrivent une **ancienne vision de planification**, pas l'état livré. Pour l'état courant, la source de vérité est [`reference/02-design-system/`](reference/02-design-system/).
 
-- Les **tokens de DESIGN.md racine** sont canoniques pour le monolithe déployé sur Vercel.
-- Les **screenshots `docs/ux/assets/screens/`** sont la référence visuelle officielle.
-- Les **2 thèmes** (`.theme-pos` + `.theme-backoffice`) sont la mécanique en production.
+### 12.1 Tokens & référence visuelle (canoniques V3)
+
+- Les **tokens canoniques** vivent dans [`reference/02-design-system/02-tokens.md`](reference/02-design-system/02-tokens.md).
+- Les **screenshots de référence** sont dans [`docs/Design/`](Design/) (`backoffice/`, `caissapp/`).
+- Les **2 thèmes** (`.theme-pos` dark + `.theme-backoffice` light) sont la mécanique réellement en place.
 
 ### 12.2 Ce qui évolue en V3
 
@@ -578,15 +580,13 @@ Aucun token V2 n'est supprimé en V3 — l'extension est **strictement additive*
 
 | Tu cherches… | Va voir |
 |---|---|
-| Les **tokens techniques** (valeurs hex, scales, classes Tailwind) | [`DESIGN.md`](../DESIGN.md) à la racine |
-| Les **specs typo et échelle** détaillées | [`docs/design/03-design-system.md`](design/03-design-system.md) |
-| Les **specs composants** spécifiques | [`docs/design/05-component-specs.md`](design/05-component-specs.md) |
-| Les **screenshots Backoffice** de référence | [`docs/ux/assets/screens/backoffice/`](ux/assets/screens/backoffice/) |
-| Les **screenshots POS** de référence | [`docs/ux/assets/screens/caissapp/v2-reference/`](ux/assets/screens/caissapp/v2-reference/) |
-| L'**inventaire des tokens V2** | [`docs/ux/v2-token-inventory.md`](ux/v2-token-inventory.md) |
-| Les **améliorations V3 vs V2** | [`docs/design/v3-improvements-from-v2-2026-05-01.md`](design/v3-improvements-from-v2-2026-05-01.md) |
-| La **spec design V3** complète | `_bmad/output/planning-artifacts/ux-design-specification/` |
-| Les **fiches métier business-first** | Le dossier `docs/*.md` (les 18 fiches couvertes par OVERVIEW.md) |
+| Les **tokens techniques** (valeurs hex, scales, classes Tailwind) | [`reference/02-design-system/02-tokens.md`](reference/02-design-system/02-tokens.md) |
+| L'**overview Luxe Dark** + fondamentaux | [`reference/02-design-system/01-luxe-dark-overview.md`](reference/02-design-system/01-luxe-dark-overview.md) |
+| Les **primitifs shadcn** + **feature components** | [`reference/02-design-system/03-shadcn-primitives.md`](reference/02-design-system/03-shadcn-primitives.md) · [`04-feature-components.md`](reference/02-design-system/04-feature-components.md) |
+| Les **layouts** + **responsive / mobile** | [`reference/02-design-system/05-layouts.md`](reference/02-design-system/05-layouts.md) · [`07-responsive-mobile.md`](reference/02-design-system/07-responsive-mobile.md) |
+| Les **screenshots Backoffice** de référence | [`docs/Design/backoffice/`](Design/backoffice/) |
+| Les **screenshots POS** de référence | [`docs/Design/caissapp/`](Design/caissapp/) |
+| Les **fiches métier business-first** par module | [`reference/04-modules/`](reference/04-modules/) (Partie IV de chaque module) |
 
 ---
 

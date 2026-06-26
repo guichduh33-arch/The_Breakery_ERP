@@ -1,7 +1,7 @@
 # Session 47 — Configurable Combos — INDEX
 
 **Branch:** `swarm/session-47-combos` (base `master` post-S46).
-**Spec:** [`2026-06-19-session-47-configurable-combos-spec.md`](../specs/2026-06-19-session-47-configurable-combos-spec.md)
+**Spec:** [`2026-06-19-session-47-configurable-combos-spec.md`](../../specs/archive/2026-06-19-session-47-configurable-combos-spec.md)
 **Plan:** [`2026-06-19-session-47-configurable-combos-plan.md`](./2026-06-19-session-47-configurable-combos-plan.md)
 
 Replaces the fixed-bundle combo model with configurable **choice groups** (single/multi,
