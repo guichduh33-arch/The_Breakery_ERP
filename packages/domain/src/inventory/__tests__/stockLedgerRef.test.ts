@@ -5,7 +5,66 @@ import {
   movementRefPrefix,
   buildMovementRefNo,
   assignRefNos,
+  movementOrigin,
 } from '../stockLedgerRef.js';
+
+describe('movementOrigin', () => {
+  it('shows the order number for a sale', () => {
+    expect(movementOrigin({ movementType: 'sale', referenceLabel: 'ORD-0042', reason: null }))
+      .toBe('Sale · order ORD-0042');
+  });
+  it('falls back to "POS sale" when no order number', () => {
+    expect(movementOrigin({ movementType: 'sale', referenceLabel: null, reason: null }))
+      .toBe('POS sale');
+  });
+  it('appends the reason for a waste movement', () => {
+    expect(movementOrigin({ movementType: 'waste', referenceLabel: null, reason: 'expired lot' }))
+      .toBe('Waste / spoilage — expired lot');
+  });
+  it('labels a purchase and a production consumption', () => {
+    expect(movementOrigin({ movementType: 'purchase', referenceLabel: null, reason: null }))
+      .toBe('Purchase received');
+    expect(movementOrigin({ movementType: 'production_out', referenceLabel: null, reason: null }))
+      .toBe('Production consumption');
+  });
+  it('falls back to the raw movement_type for unknown values', () => {
+    expect(movementOrigin({ movementType: 'mystery', referenceLabel: null, reason: '  ' }))
+      .toBe('mystery');
+  });
+
+  it('labels every known movement_type (no ref, no reason)', () => {
+    const cases: Record<string, string> = {
+      sale:                  'POS sale',
+      sale_void:             'Sale void',
+      purchase:              'Purchase received',
+      purchase_return:       'Purchase return',
+      incoming:              'Stock in',
+      transfer_in:           'Transfer in',
+      transfer_out:          'Transfer out',
+      production_in:         'Production output',
+      production_out:        'Production consumption',
+      adjustment:            'Manual adjustment',
+      adjustment_in:         'Manual adjustment',
+      adjustment_out:        'Manual adjustment',
+      opname_in:             'Stock opname',
+      opname_out:            'Stock opname',
+      waste:                 'Waste / spoilage',
+      cost_price_correction: 'Cost correction',
+      reservation_hold:      'Reservation hold',
+      reservation_release:   'Reservation release',
+    };
+    for (const [type, expected] of Object.entries(cases)) {
+      expect(movementOrigin({ movementType: type, referenceLabel: null, reason: null })).toBe(expected);
+    }
+  });
+
+  it('includes the ref for sale_void and purchase when present', () => {
+    expect(movementOrigin({ movementType: 'sale_void', referenceLabel: 'ORD-9', reason: null }))
+      .toBe('Sale void · order ORD-9');
+    expect(movementOrigin({ movementType: 'purchase', referenceLabel: 'PO-7', reason: null }))
+      .toBe('Purchase · PO-7');
+  });
+});
 
 describe('movementTypeLabel', () => {
   it('maps sale to POS_SALE', () => {

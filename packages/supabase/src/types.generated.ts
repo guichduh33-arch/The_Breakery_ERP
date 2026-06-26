@@ -5761,6 +5761,10 @@ export type Database = {
         Returns: Json
       }
       _refine_vol: { Args: { "": string }; Returns: string }
+      _resolve_dispatch_stations_v1: {
+        Args: { p_product_id: string }
+        Returns: string[]
+      }
       _resolve_fifo_lot: {
         Args: { p_product_id: string; p_quantity_needed: number }
         Returns: string
