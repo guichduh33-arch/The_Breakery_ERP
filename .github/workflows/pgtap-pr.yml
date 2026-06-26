@@ -55,7 +55,7 @@ jobs:
       #   - products_cost_price_guard         : cost_price REVOKE UPDATE guard
       #   - security                          : core security suite
       #   - security_leak_guard               : S50 view/MV PII-financial leak guard
-      #   - financial_rpc_permission_gate     : S50 permission-denied on gated RPCs
+      #   - financial_rpc_perm_gates          : S50 permission-denied on gated RPCs
       - name: Run pgTAP smoke subset via pooler
         id: pgtap
         env:
@@ -75,7 +75,7 @@ jobs:
             supabase/tests/products_cost_price_guard.test.sql
             supabase/tests/security.test.sql
             supabase/tests/security_leak_guard.test.sql
-            supabase/tests/financial_rpc_permission_gate.test.sql
+            supabase/tests/financial_rpc_perm_gates.test.sql
           )
           fail_count=0
           fail_list=""

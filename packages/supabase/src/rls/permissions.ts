@@ -160,7 +160,11 @@ export type PermissionCode =
   | 'accounting.cash.read'
   | 'accounting.cash.write'
   // 2026-06-23 — stricter gate for adjustments + boss withdrawal (20260706000022)
-  | 'accounting.cash.adjust';
+  | 'accounting.cash.adjust'
+  // Session 50 / Vague 1 — dedicated B2B read gate + security-settings management
+  // (seeded by 20260710000053_seed_b2b_settings_security_perms)
+  | 'b2b.read'
+  | 'settings.security.manage';
 
 /**
  * Check whether a user has a single permission. Pure client-side lookup —
