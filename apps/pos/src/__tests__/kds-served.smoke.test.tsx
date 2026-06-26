@@ -37,7 +37,8 @@ const { mockRpc, mockFrom, mockChannel } = vi.hoisted(() => {
   }));
   const mockFrom = vi.fn((_table: string) => ({
     select: vi.fn(() => ({
-      eq: vi.fn(() => ({
+      // Spec B-1 Ph2: useKdsOrders now uses .or() instead of .eq() as first filter.
+      or: vi.fn(() => ({
         in: vi.fn(() => ({
           eq: vi.fn(() => ({
             order: vi.fn().mockImplementation(() => {
