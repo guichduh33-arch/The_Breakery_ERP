@@ -37,6 +37,12 @@ export interface StationTicketPayload {
   created_at: string; // ISO
   server_name: string;
   items: StationTicketItem[];
+  /**
+   * Spec A Bloc 4 — true when these lines are a 2nd-phase append to a reopened
+   * order. The print template renders an "ADDITIONAL ORDER" header so the
+   * station knows it's a top-up, not a fresh ticket.
+   */
+  additional?: boolean;
   totals?: { subtotal: number; tax: number; total: number }; // bill + receipt
   payment?: { method: string; amount: number; change_given: number }; // receipt only
 }

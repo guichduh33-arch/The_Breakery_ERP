@@ -80,6 +80,7 @@ const CostSpendAnalyticsPage = lazy(() => import('@/pages/reports/CostSpendAnaly
 const OperatingExpensesPage = lazy(() => import('@/pages/reports/OperatingExpensesPage.js'));
 const SettingsHubPage = lazy(() => import('@/pages/settings/SettingsHubPage.js'));
 const SettingsGeneralPage = lazy(() => import('@/pages/settings/SettingsGeneralPage.js'));
+const SettingsInventoryPage = lazy(() => import('@/pages/settings/SettingsInventoryPage.js'));
 const SettingsHolidaysPage = lazy(() => import('@/pages/settings/SettingsHolidaysPage.js'));
 const SettingsEmailTemplatesPage = lazy(() => import('@/pages/settings/SettingsEmailTemplatesPage.js'));
 const SettingsReceiptTemplatesPage = lazy(() => import('@/pages/settings/SettingsReceiptTemplatesPage.js'));
@@ -862,6 +863,14 @@ export function AppRoutes() {
           element={
             <PermissionGate required="settings.read">
               <SettingsGeneralPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="settings/inventory"
+          element={
+            <PermissionGate required="settings.read">
+              <SettingsInventoryPage />
             </PermissionGate>
           }
         />

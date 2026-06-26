@@ -7,10 +7,20 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useShiftStore } from '@/stores/shiftStore';
 
+/**
+ * Finalized order statuses surfaced in the Transaction History panel.
+ * Excludes `draft` / `pending_payment` (and any held/in-flight order): those
+ * carry total 0 and a null `paid_at`, so they inflated the transaction count,
+ * broke the KPI strip, and (NULLS-FIRST) floated to the top of the list.
+ * `completed` is the money-path RPC's success status alongside `paid` — both
+ * are real sales and MUST be kept (dropping it hid completed orders entirely).
+ */
+export const FINALIZED_ORDER_STATUSES = ['paid', 'completed', 'voided'] as const;
+
 export interface OrderHistoryRow {
   id: string;
   order_number: string;
-  status: 'paid' | 'voided' | 'draft';
+  status: 'paid' | 'completed' | 'voided';
   total: number;
   paid_at: string | null;
   voided_at: string | null;
@@ -28,7 +38,7 @@ export interface OrderHistoryRow {
 interface RawOrderRow {
   id: string;
   order_number: string;
-  status: 'paid' | 'voided' | 'draft';
+  status: 'paid' | 'completed' | 'voided';
   total: number;
   paid_at: string | null;
   voided_at: string | null;
@@ -45,6 +55,7 @@ interface QueryResult<T> {
 }
 interface SelectBuilder {
   eq: (col: string, val: unknown) => SelectBuilder;
+  in: (col: string, vals: readonly unknown[]) => SelectBuilder;
   order: (col: string, opts: { ascending: boolean }) => Promise<QueryResult<unknown[]>>;
 }
 interface LooseFromBuilder {
@@ -70,6 +81,7 @@ export function useOrderHistory() {
            order_payments(method, amount)`,
         )
         .eq('session_id', sessionId)
+        .in('status', FINALIZED_ORDER_STATUSES)
         .order('paid_at', { ascending: false });
 
       if (error) throw new Error(error.message);

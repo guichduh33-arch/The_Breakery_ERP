@@ -2,14 +2,17 @@
 //
 // Session 34 / W4 — kitchen printer absent from map.
 // Session 43 / P0-3 — semantics updated: the fire persists the order via
-// fire_counter_order_v4 BEFORE printing, so ALL sent items are sealed
-// (locked + printed) even when a station printer is unreachable — the ticket
-// lives in the DB/KDS and a re-fire would duplicate the order lines.
+// fire_counter_order_v4 BEFORE printing.
+// Updated (branch feat/bulk-import-purchases) to reflect park+clear-on-send:
+//   kitchen printer unreachable still toasts the error, the order is persisted
+//   and held via hold_fired_order_v1, and the terminal is cleared.
+//   DB/KDS is the source of truth; the order is recoverable from Held Orders.
 //
 // Scenario: barista printer present, kitchen printer ABSENT.
 // After clicking "Send to Kitchen":
 //   • toast.error is called mentioning kitchen ("saved to KDS, not printed").
-//   • BOTH lines are in printedItemIds (DB is the source of truth).
+//   • fire_counter_order_v4 called first, then hold_fired_order_v1.
+//   • Terminal is cleared: cart.items=[], pickedUpOrderId=null, printedItemIds=[], lockedItemIds=[].
 
 /// <reference types="@testing-library/jest-dom" />
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -123,7 +126,7 @@ describe('SendToKitchenButton — kitchen printer unreachable', () => {
     vi.unstubAllEnvs();
   });
 
-  it('toasts kitchen error but seals BOTH lines (DB is the source of truth — P0-3)', async () => {
+  it('toasts kitchen error, persists+holds the order, and clears the terminal (DB is the source of truth — P0-3)', async () => {
     const { SendToKitchenButton } = await import('../SendToKitchenButton');
 
     render(withQuery(<SendToKitchenButton />));
@@ -146,16 +149,17 @@ describe('SendToKitchenButton — kitchen printer unreachable', () => {
     );
     expect(errorCall).toBeDefined();
 
-    const printed = useCartStore.getState().printedItemIds;
+    // After fire+print (with kitchen unreachable), hold_fired_order_v1 parks
+    // the order and clears the terminal.
+    expect(rpcMock).toHaveBeenCalledTimes(2);
+    expect(rpcMock.mock.calls[0]![0]).toBe('fire_counter_order_v4');
+    expect(rpcMock.mock.calls[1]![0]).toBe('hold_fired_order_v1');
+    expect(rpcMock.mock.calls[1]![1]).toEqual({ p_order_id: 'order-db-1' });
 
-    // Barista succeeded → in printedItemIds.
-    expect(printed).toContain('line-barista');
-
-    // Session 43 / P0-3 — kitchen print failed BUT the line is persisted in
-    // the DB order, so it is sealed too (re-firing it would duplicate the
-    // DB line). The toast tells the cashier the ticket is on the KDS.
-    expect(printed).toContain('line-kitchen');
-    expect(useCartStore.getState().lockedItemIds).toContain('line-kitchen');
-    expect(useCartStore.getState().pickedUpOrderId).toBe('order-db-1');
+    // Terminal is cleared after park.
+    expect(useCartStore.getState().printedItemIds).toEqual([]);
+    expect(useCartStore.getState().lockedItemIds).toEqual([]);
+    expect(useCartStore.getState().pickedUpOrderId).toBeNull();
+    expect(useCartStore.getState().cart.items).toHaveLength(0);
   });
 });

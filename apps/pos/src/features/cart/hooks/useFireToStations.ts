@@ -125,6 +125,11 @@ export function useFireToStations(): UseFireToStationsResult {
     mutationFn: async (ctx) => {
       const { orderNumber, tableNumber, printOnly = false } = ctx ?? {};
 
+      // Spec A Bloc 4 — this fire is an "additional order" (2nd phase) when the
+      // order already exists on the terminal (reopened ⇒ pickedUpOrderId set)
+      // and we are not in the post-payment printOnly path.
+      const isAdditional = !printOnly && useCartStore.getState().pickedUpOrderId !== null;
+
       // 1. Grab unprinted items from the cart store (excludes cancelled lines).
       const unprinted = useCartStore.getState().unprintedItems();
       if (unprinted.length === 0) return [];
@@ -245,6 +250,7 @@ export function useFireToStations(): UseFireToStationsResult {
               quantity: item.quantity,
               modifiers: item.modifiers.map((m) => m.option_label),
             })),
+            ...(isAdditional ? { additional: true } : {}),
           };
 
           const { success, error } = await printStationTicket(printer, payload);

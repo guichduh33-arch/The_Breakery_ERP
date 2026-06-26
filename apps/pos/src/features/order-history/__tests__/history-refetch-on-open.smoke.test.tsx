@@ -36,6 +36,7 @@ const { fromSpy } = vi.hoisted(() => {
     const builder: Record<string, unknown> = {};
     builder.select = () => builder;
     builder.eq = () => builder;
+    builder.in = () => builder;
     builder.order = () => Promise.resolve(result);
     builder.maybeSingle = () => Promise.resolve({ data: null, error: null });
     builder.single = () => Promise.resolve({ data: null, error: null });

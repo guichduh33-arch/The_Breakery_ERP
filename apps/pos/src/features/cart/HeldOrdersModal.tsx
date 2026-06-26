@@ -27,6 +27,7 @@ import {
 import { useCartStore } from '@/stores/cartStore';
 import { useHeldOrdersQuery, type HeldOrderRow } from '@/features/heldOrders/hooks/useHeldOrdersQuery';
 import { useRestoreHeldOrder } from '@/features/heldOrders/hooks/useRestoreHeldOrder';
+import { useReopenHeldOrder } from '@/features/heldOrders/hooks/useReopenHeldOrder';
 import { useDiscardHeldOrder } from '@/features/heldOrders/hooks/useDiscardHeldOrder';
 import { useHeldOrdersRealtime } from '@/features/heldOrders/hooks/useHeldOrdersRealtime';
 
@@ -72,6 +73,16 @@ function HeldOrderCard({
               Table {row.table_number}
             </span>
           )}
+          <span
+            className={cn(
+              'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest',
+              row.status === 'pending_payment'
+                ? 'bg-gold/20 text-gold'
+                : 'bg-bg-overlay text-text-muted',
+            )}
+          >
+            {row.status === 'pending_payment' ? 'Sent' : 'Draft'}
+          </span>
         </div>
         <span className="inline-flex items-center gap-1 text-xs text-text-secondary font-mono">
           <Clock className="h-3 w-3" aria-hidden />
@@ -92,7 +103,11 @@ function HeldOrderCard({
           <SectionLabel size="xs" className="text-text-muted">
             Total Amount
           </SectionLabel>
-          <Currency amount={row.total} emphasis="gold" className="text-xl font-semibold" />
+          {row.total > 0 ? (
+            <Currency amount={row.total} emphasis="gold" className="text-xl font-semibold" />
+          ) : (
+            <span className="text-sm text-text-muted">—</span>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -140,31 +155,36 @@ export function HeldOrdersModal({ open, onClose }: HeldOrdersModalProps): JSX.El
   // voided first.
   const pickedUpOrderId = useCartStore((s) => s.pickedUpOrderId);
   const restore = useRestoreHeldOrder();
+  const reopen = useReopenHeldOrder();
   const discard = useDiscardHeldOrder();
 
-  const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [confirmRow, setConfirmRow] = useState<HeldOrderRow | null>(null);
 
-  async function doRestore(id: string): Promise<void> {
-    await restore.mutateAsync(id);
+  async function doRestore(row: HeldOrderRow): Promise<void> {
+    if (row.status === 'pending_payment') {
+      await reopen.mutateAsync(row.id);
+    } else {
+      await restore.mutateAsync(row.id);
+    }
     onClose();
   }
 
-  function handleRestoreTap(id: string): void {
+  function handleRestoreTap(row: HeldOrderRow): void {
     if (pickedUpOrderId) {
       toast.error('Finish or void the current fired order before restoring a held one.');
       return;
     }
     if (cartHasItems) {
-      setConfirmId(id);
+      setConfirmRow(row);
       return;
     }
-    void doRestore(id);
+    void doRestore(row);
   }
 
   function handleConfirmReplace(): void {
-    if (confirmId) {
-      void doRestore(confirmId);
-      setConfirmId(null);
+    if (confirmRow) {
+      void doRestore(confirmRow);
+      setConfirmRow(null);
     }
   }
 
@@ -240,7 +260,7 @@ export function HeldOrdersModal({ open, onClose }: HeldOrdersModalProps): JSX.El
                   <HeldOrderCard
                     key={row.id}
                     row={row}
-                    onRestore={() => handleRestoreTap(row.id)}
+                    onRestore={() => handleRestoreTap(row)}
                     onDelete={() => handleDelete(row.id)}
                   />
                 ))}
@@ -251,7 +271,7 @@ export function HeldOrdersModal({ open, onClose }: HeldOrdersModalProps): JSX.El
       </Dialog>
 
       {/* Replace-cart confirmation */}
-      <Dialog open={confirmId !== null} onOpenChange={(o) => !o && setConfirmId(null)}>
+      <Dialog open={confirmRow !== null} onOpenChange={(o) => !o && setConfirmRow(null)}>
         <DialogContent className="max-w-md">
           <DialogTitle>Discard current cart?</DialogTitle>
           <DialogDescription>
@@ -261,7 +281,7 @@ export function HeldOrdersModal({ open, onClose }: HeldOrdersModalProps): JSX.El
           <div className="flex justify-end gap-2 mt-2">
             <button
               type="button"
-              onClick={() => setConfirmId(null)}
+              onClick={() => setConfirmRow(null)}
               className="h-10 px-4 rounded-md border border-border-subtle bg-bg-overlay text-text-primary text-sm font-semibold hover:bg-bg-input focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
             >
               Cancel

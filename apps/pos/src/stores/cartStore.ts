@@ -37,8 +37,28 @@ import type {
   Product,
   SelectedModifiers,
 } from '@breakery/domain';
+import { usePosSettingsStore } from './posSettingsStore';
 
 export type CustomerWithCategory = Customer & { category?: CustomerCategory | null };
+
+export interface ReopenOrderItem {
+  id: string;
+  product_id: string;
+  name: string;
+  unit_price: number;
+  quantity: number;
+  modifiers: unknown;
+  is_locked: boolean;
+  kitchen_status: string | null;
+}
+export interface ReopenOrderPayload {
+  order_id: string;
+  order_type: string;
+  customerId: string | null;
+  tableNumber: string | null;
+  notes: string | null;
+  items: ReopenOrderItem[];
+}
 
 /**
  * Stable id for a promotion-driven gift line. Deterministic per promotion id
@@ -138,6 +158,17 @@ interface CartState {
   // Held orders restore (session 4)
   restoreCart: (cart: Cart) => void;
 
+  /**
+   * Spec A (held-order lifecycle) — rehydrate a REOPENED fired order. Unlike
+   * `restoreCart` (draft, fresh ids, no locks), this reuses each
+   * `order_items.id` as the cart line id and pushes already-fired
+   * (`is_locked`) lines into BOTH `lockedItemIds` (non-editable, excluded from
+   * the next fire's RPC) AND `printedItemIds` (never reprinted). Sets
+   * `pickedUpOrderId` so the next fire appends and checkout pays the existing
+   * order.
+   */
+  reopenOrder: (payload: ReopenOrderPayload) => void;
+
   // Tablet pickup (session 5)
   setPickedUpOrderId: (id: string | null) => void;
 
@@ -177,7 +208,11 @@ export const useCartStore = create<CartState>()(
       // Session 43 / P2-6 — default order type is take_out (counter bakery
       // flow ; D9, owner to ratify). Resets (clear/voidOrder/checkout) keep the
       // current order_type via spread, so this is the only default site.
-      cart: { items: [], order_type: 'take_out' },
+      // Audit 2026-06-25 — the literal is now the per-terminal Behavior setting
+      // (posSettingsStore.defaultOrderType): a fresh tab/session boots into the
+      // configured default. localStorage is hydrated synchronously, so the
+      // getState() read here resolves to the persisted value at store creation.
+      cart: { items: [], order_type: usePosSettingsStore.getState().defaultOrderType },
       lockedItemIds: [],
       printedItemIds: [],
       attachedCustomer: null,
@@ -360,6 +395,34 @@ export const useCartStore = create<CartState>()(
           appliedPromotions: [],
           dismissedPromotionIds: new Set<string>(),
         })),
+
+      reopenOrder: (payload) =>
+        set(() => {
+          const items: CartItem[] = payload.items.map((it) => ({
+            id: it.id,
+            product_id: it.product_id,
+            name: it.name,
+            unit_price: it.unit_price,
+            quantity: it.quantity,
+            modifiers: (it.modifiers ?? []) as SelectedModifiers,
+          }));
+          const lockedIds = payload.items.filter((it) => it.is_locked).map((it) => it.id);
+
+          const cart: Cart = { items, order_type: payload.order_type as OrderType };
+          if (payload.customerId !== null) cart.customerId = payload.customerId;
+          if (payload.tableNumber !== null) cart.tableNumber = payload.tableNumber;
+
+          return {
+            cart,
+            // Locked = already fired → non-editable AND non-reprinted.
+            lockedItemIds: lockedIds,
+            printedItemIds: lockedIds,
+            attachedCustomer: null,
+            pickedUpOrderId: payload.order_id,
+            appliedPromotions: [],
+            dismissedPromotionIds: new Set<string>(),
+          };
+        }),
 
       setPickedUpOrderId: (id) => set({ pickedUpOrderId: id }),
 
