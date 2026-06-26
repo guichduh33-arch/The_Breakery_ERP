@@ -24,10 +24,10 @@ vi.mock('../hooks/useStationPrinters', () => ({
 }));
 
 vi.mock('../hooks/useStationMap', () => {
-  const STATION_MAP: Record<string, string> = {
-    'p-cappuccino': 'barista',
-    'p-croissant': 'none',
-    'p-sandwich': 'kitchen',
+  const STATION_MAP: Record<string, string[]> = {
+    'p-cappuccino': ['barista'],
+    'p-croissant': [],
+    'p-sandwich': ['kitchen'],
   };
   return {
     useStationMap: () => ({ data: STATION_MAP }),

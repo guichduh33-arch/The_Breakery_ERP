@@ -106,13 +106,13 @@ export function useFireToStations(): UseFireToStationsResult {
     return true;
   });
   const firableCount = candidates.filter((item) => {
-    const station = stationMap[item.product_id];
-    return station != null && (PREP_STATIONS as readonly string[]).includes(station);
+    const stations = stationMap[item.product_id] ?? [];
+    return stations.some((s) => (PREP_STATIONS as readonly string[]).includes(s));
   }).length;
   const unroutedCount = stationMapReady
     ? candidates.filter((item) => {
-        const station = stationMap[item.product_id];
-        return station == null || !(PREP_STATIONS as readonly string[]).includes(station);
+        const stations = stationMap[item.product_id] ?? [];
+        return !stations.some((s) => (PREP_STATIONS as readonly string[]).includes(s));
       }).length
     : 0;
 

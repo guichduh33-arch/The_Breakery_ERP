@@ -12,8 +12,8 @@ vi.mock('../hooks/useStationPrinters', () => ({
   useStationPrinters: () => ({ data: new Map([['barista', { ip_address: '1.1.1.1', port: 9100 }]]) }),
 }));
 vi.mock('../hooks/useStationMap', () => ({
-  useStationMap: () => ({ data: { p1: 'barista' } }),
-  getStationMap: async () => ({ p1: 'barista' }),
+  useStationMap: () => ({ data: { p1: ['barista'] } }),
+  getStationMap: async () => ({ p1: ['barista'] }),
 }));
 
 import { renderHook, act } from '@testing-library/react';

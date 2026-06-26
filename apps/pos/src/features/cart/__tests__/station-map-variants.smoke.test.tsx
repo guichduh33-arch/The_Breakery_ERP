@@ -18,7 +18,7 @@ vi.mock('sonner', () => ({
 
 // The variant child product_id is NOT in ['products'] (filtered) but IS in the
 // station map (useStationMap drops the parent_product_id filter).
-const STATION_MAP: Record<string, string> = { 'variant-child-1': 'barista' };
+const STATION_MAP: Record<string, string[]> = { 'variant-child-1': ['barista'] };
 
 vi.mock('@/features/cart/hooks/useStationMap', () => ({
   useStationMap: () => ({ data: STATION_MAP }),
@@ -66,7 +66,7 @@ describe('S44 P0-B — station map routes variant children', () => {
   it('T1: useStationMap exposes the variant child → barista', async () => {
     const { useStationMap } = await import('../hooks/useStationMap');
     const { result } = renderHook(() => useStationMap(), { wrapper });
-    expect(result.current.data?.['variant-child-1']).toBe('barista');
+    expect(result.current.data?.['variant-child-1']).toEqual(['barista']);
   });
 
   it('T2: firableCount === 1 for a 100%-variant cart', async () => {
@@ -78,7 +78,7 @@ describe('S44 P0-B — station map routes variant children', () => {
   it('T3: groupItemsByStation places the variant line under barista', () => {
     const grouped = groupItemsByStation(
       [VARIANT_LINE as never],
-      STATION_MAP as Record<string, 'barista' | 'kitchen' | 'display' | 'none'>,
+      STATION_MAP as Record<string, import('@breakery/domain').DispatchStation[]>,
     );
     expect(grouped.barista?.map((i) => i.id)).toEqual(['line-1']);
   });
