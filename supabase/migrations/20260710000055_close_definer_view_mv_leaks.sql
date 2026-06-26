@@ -33,14 +33,10 @@
 --                    Si une query doit subsister, créer une RPC DEFINER dédiée.
 --
 -- Stockage (buckets) :
---   ⚠️  ESCALATION ÉQUIPE : le bucket 'product-images' est actuellement PUBLIC.
---      Migrer vers PRIVATE + signed URLs impacte le rendu images dans POS et BO
---      (les <img src> actuels utilisent des URLs publiques non signées).
---      Action requise AVANT d'appliquer :
---        1. Confirmer avec l'équipe front que le POS peut gérer des signed URLs.
---        2. Mettre à jour les hooks useProductImage / product card components.
---        3. Rendre le bucket PRIVATE via le dashboard Supabase (hors migration SQL).
---      → NE PAS BLOQUER W1.5 sur ce point ; marquer comme dette sécurité S50.
+--   DEFERRED to V4: migrate ProductImageUploader to signed URLs before making
+--   bucket private. ProductImageUploader.tsx:64 uses getPublicUrl() — a private
+--   bucket would break product image display in BackOffice. Images are non-sensitive
+--   (product photos). No SQL action here.
 --
 -- DEV-S50-W1.5
 
@@ -86,27 +82,27 @@ COMMENT ON VIEW public.view_ar_aging IS
   'Même statut que view_b2b_invoices.';
 
 -- ============================================================
--- 3. MVs — REVOKE SELECT TO authenticated
--- ⚠️  ESCALATION : valider avec équipe avant d'appliquer en prod
---     (aucun call-site confirmé, mais non vérifié sur toutes les branches).
+-- 3. MVs — REVOKE SELECT FROM authenticated ET PUBLIC
+-- Validé team-lead S50 : aucun call-site apps/ (grep .from('mv_') → 0 résultats),
+-- pas de RPC FROM/JOIN sur ces MVs. Rafraîchissement cron uniquement → service_role
+-- suffit. Accès futur via RPC DEFINER dédiée + permission gate.
 -- ============================================================
 
 REVOKE SELECT ON public.mv_sales_daily    FROM authenticated;
+REVOKE SELECT ON public.mv_sales_daily    FROM PUBLIC;
 REVOKE SELECT ON public.mv_stock_variance FROM authenticated;
+REVOKE SELECT ON public.mv_stock_variance FROM PUBLIC;
 REVOKE SELECT ON public.mv_pl_monthly     FROM authenticated;
-
--- Garder service_role (CRON refresh, admin queries).
--- Si un futur tableau de bord a besoin d'une MV, créer une RPC DEFINER
--- qui RETURN QUERY SELECT ... FROM mv_* avec gate permission.
+REVOKE SELECT ON public.mv_pl_monthly     FROM PUBLIC;
 
 COMMENT ON MATERIALIZED VIEW public.mv_sales_daily IS
-  'Daily sales summary MV. S50 W1.5 : REVOKE SELECT FROM authenticated '
-  '(aucun call-site BO/POS confirmé). Accès futur via RPC DEFINER + permission gate.';
+  'Daily sales summary MV. S50 W1.5 : REVOKE SELECT FROM authenticated + PUBLIC '
+  '(validé : aucun call-site BO/POS). Accès futur via RPC DEFINER + permission gate.';
 
 COMMENT ON MATERIALIZED VIEW public.mv_stock_variance IS
-  'Stock variance MV. S50 W1.5 : REVOKE SELECT FROM authenticated. '
+  'Stock variance MV. S50 W1.5 : REVOKE SELECT FROM authenticated + PUBLIC. '
   'Même traitement que mv_sales_daily.';
 
 COMMENT ON MATERIALIZED VIEW public.mv_pl_monthly IS
-  'Monthly P&L MV. S50 W1.5 : REVOKE SELECT FROM authenticated. '
+  'Monthly P&L MV. S50 W1.5 : REVOKE SELECT FROM authenticated + PUBLIC. '
   'Même traitement que mv_sales_daily.';
