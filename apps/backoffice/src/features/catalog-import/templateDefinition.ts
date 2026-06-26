@@ -37,7 +37,7 @@ export const CATALOG_SHEETS: readonly SheetDef[] = [
       { key: 'dispatch_station', required: false, type: 'text' },
       { key: 'sort_order',       required: false, type: 'number' },
     ],
-    example: { name: 'Viennoiserie', dispatch_station: 'bakery', sort_order: 10 },
+    example: { name: 'Viennoiserie', dispatch_station: 'display', sort_order: 10 },
   },
   {
     name: 'Ingredients',

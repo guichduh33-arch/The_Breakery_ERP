@@ -78,7 +78,7 @@ describe('S44 P0-B — station map routes variant children', () => {
   it('T3: groupItemsByStation places the variant line under barista', () => {
     const grouped = groupItemsByStation(
       [VARIANT_LINE as never],
-      STATION_MAP as Record<string, 'barista' | 'kitchen' | 'bakery' | 'none'>,
+      STATION_MAP as Record<string, 'barista' | 'kitchen' | 'display' | 'none'>,
     );
     expect(grouped.barista?.map((i) => i.id)).toEqual(['line-1']);
   });

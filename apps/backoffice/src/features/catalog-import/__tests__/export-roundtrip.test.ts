@@ -5,7 +5,7 @@ import { buildExportWorkbook } from '../buildExportWorkbook.js';
 import { parseCatalogWorkbook, type CatalogPayload } from '../parseCatalogWorkbook.js';
 
 const SAMPLE: CatalogPayload = {
-  categories:  [{ name: 'Viennoiserie', dispatch_station: 'bakery', sort_order: 10 }],
+  categories:  [{ name: 'Viennoiserie', dispatch_station: 'display', sort_order: 10 }],
   ingredients: [{ sku: 'ING-1', name: 'Farine', unit: 'kg', cost_price: 12000, category: 'Ingredients', min_stock_threshold: null, shelf_life_hours: null, purchase_unit: null, recipe_unit: 'g', opname_unit: null, sales_unit: null }],
   products:    [{ sku: 'PRD-1', name: 'Croissant', category: 'Viennoiserie', unit: 'pcs', retail_price: 25000, wholesale_price: null, description: null, image_url: null, visible_on_pos: true, is_favorite: false, shelf_life_hours: null, purchase_unit: null, recipe_unit: null, opname_unit: null, sales_unit: null }],
   units:       [{ product_sku: 'ING-1', code: 'g', factor_to_base: 0.001, tags: ['recipe'] }],

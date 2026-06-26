@@ -18,7 +18,7 @@ import { useShiftStore } from '@/stores/shiftStore';
 import { useStationPrinters } from './useStationPrinters';
 import { useStationMap, getStationMap } from './useStationMap';
 
-const PREP_STATIONS: readonly DispatchStation[] = ['barista', 'kitchen', 'bakery'];
+const PREP_STATIONS: readonly DispatchStation[] = ['barista', 'kitchen', 'display'];
 
 // ---------------------------------------------------------------------------
 // Result type
@@ -61,7 +61,7 @@ export interface UseFireToStationsResult {
   >;
   /**
    * Number of currently-unprinted cart items that route to a prep station
-   * (dispatch_station ∈ {barista,kitchen,bakery}). Drives the button's
+   * (dispatch_station ∈ {barista,kitchen,display}). Drives the button's
    * `disabled` state — when 0, firing would be a no-op (bread-only orders,
    * products query still loading, everything already printed). Recomputed on
    * every render so the button reacts to cart edits and the products query

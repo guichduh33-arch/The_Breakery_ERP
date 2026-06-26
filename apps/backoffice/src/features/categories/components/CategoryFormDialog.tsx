@@ -15,7 +15,7 @@ const CATEGORY_TYPES: ReadonlyArray<{ value: CategoryType; label: string }> = [
   { value: 'finished',      label: 'Finished product' },
 ];
 
-const DISPATCH_STATIONS = ['none', 'kitchen', 'bar', 'pastry', 'bakery'] as const;
+const DISPATCH_STATIONS = ['none', 'kitchen', 'barista', 'display'] as const;
 const KDS_STATIONS = ['expo', 'kitchen', 'bar', 'pastry', 'bakery'] as const;
 
 export interface CategoryFormDialogProps {

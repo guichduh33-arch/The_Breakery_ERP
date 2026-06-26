@@ -9,7 +9,7 @@ import type { CartItem } from '../types/cart.js';
 import type { DispatchStation } from '../kitchen/types.js';
 import type { PrepStation } from './types.js';
 
-const PREP_STATIONS: readonly PrepStation[] = ['barista', 'kitchen', 'bakery'];
+const PREP_STATIONS: readonly PrepStation[] = ['barista', 'kitchen', 'display'];
 
 function isPrepStation(value: DispatchStation | undefined | null): value is PrepStation {
   return value != null && (PREP_STATIONS as readonly string[]).includes(value);

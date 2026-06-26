@@ -11,8 +11,8 @@ function item(id: string, product_id: string, extra: Partial<CartItem> = {}): Ca
 const stations: Record<string, DispatchStation> = {
   latte: 'barista',
   sandwich: 'kitchen',
-  croissant: 'bakery',
-  baguette: 'bakery',
+  croissant: 'display',
+  baguette: 'display',
   ingredient: 'none',
 };
 
@@ -24,7 +24,7 @@ describe('groupItemsByStation', () => {
     );
     expect(out.barista?.map((i) => i.id)).toEqual(['l1']);
     expect(out.kitchen?.map((i) => i.id)).toEqual(['s1']);
-    expect(out.bakery?.map((i) => i.id)).toEqual(['c1', 'b1']);
+    expect(out.display?.map((i) => i.id)).toEqual(['c1', 'b1']);
   });
 
   it("ignores items mapped to 'none' or unmapped", () => {
@@ -52,6 +52,6 @@ describe('groupItemsByStation', () => {
       [item('c2', 'croissant'), item('c1', 'croissant'), item('c3', 'croissant')],
       stations,
     );
-    expect(out.bakery?.map((i) => i.id)).toEqual(['c2', 'c1', 'c3']);
+    expect(out.display?.map((i) => i.id)).toEqual(['c2', 'c1', 'c3']);
   });
 });
