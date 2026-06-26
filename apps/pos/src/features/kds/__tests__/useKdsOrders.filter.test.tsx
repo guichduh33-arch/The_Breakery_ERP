@@ -183,4 +183,20 @@ describe('useKdsOrders — multi-station filter (Spec B-1 Ph2)', () => {
     expect(legacyRow.dispatch_stations).toBeNull();
     expect(legacyRow.dispatch_station).toBe('kitchen');
   });
+
+  it('scopes the filter to the requested station only (a different station does not leak in)', async () => {
+    // The exclusion is enforced server-side by the .or() filter string: a
+    // "kitchen" query must target only kitchen (array-contains or legacy single),
+    // never another station like "barista".
+    fakeDbRows = [];
+    const { result } = renderHook(() => useKdsOrders('kitchen'), { wrapper: wrap() });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(orMock).toHaveBeenCalledOnce();
+    const filter = orMock.mock.calls[0]![0] as string;
+    expect(filter).toContain('dispatch_stations.cs.{kitchen}');
+    expect(filter).toContain('dispatch_station.eq.kitchen');
+    expect(filter).not.toContain('barista');
+    expect(filter).not.toContain('display');
+  });
 });
