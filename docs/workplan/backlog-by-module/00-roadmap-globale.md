@@ -1,6 +1,6 @@
 # Roadmap globale — The Breakery ERP (V3 monorepo)
 
-> Last updated: 2026-05-20 (audit complet V3 vs vision V2 — 16 fiches métier croisées)
+> Last updated: 2026-06-26 (refresh cadence PRs #94→#121 — voir §Refresh 2026-06-26 + addendum sessions). Dernier audit complet 16-fiches croisées : 2026-05-20.
 > **Cadre** : V2 (AppGrav monolithe) **n'a jamais été déployée en production** — elle reste le cahier des charges métier théorique. V3 = code vivant (monorepo pnpm+turbo), construit from scratch, mission = parité fonctionnelle V2 + améliorations + split persona POS/BackOffice.
 > Glossaire V2↔V3 : [`../../V2_V3_GLOSSARY.md`](../../V2_V3_GLOSSARY.md) (mappings RPC, hooks, pages, tables, paths)
 > Plan S24-S30 : [`../plans/2026-05-19-S24-to-S30-plan.md`](../plans/archive/2026-05-19-S24-to-S30-plan.md)
@@ -17,6 +17,35 @@
 | 🔴 **MAJEUR (gros gap)** | 1 | 18 Mobile Shell (0 — P3 backlog, décision business) |
 
 **~70 % parité V2 atteinte ; ~15 améliorations V3 nettes au-delà de V2** (idempotency cross-EF, GRANT hardening, sub-recipes, WAC, RLS helpers, rate limiting durable, etc. — voir glossaire §6).
+
+---
+
+## Refresh 2026-06-26 (cadence S31→ + PRs #94→#121)
+
+> **Note** : ce refresh intègre la cadence livrée depuis le dernier audit complet (2026-05-20, qui s'arrêtait à S30). Il **ne ré-attribue pas formellement** un score module-par-module (un re-audit 16-fiches reste à planifier) ; il liste les deltas vérifiés sur `git log master` et met à jour les statuts qui ont clairement bougé. Détail PR-par-PR : voir l'addendum « Sessions S31→ + PRs autonomes » dans §Cadence.
+
+**Statuts qui ont progressé depuis 2026-05-20 :**
+
+| Module | Avant (2026-05-20) | Maintenant | Source |
+|---|---|---|---|
+| 05 Products | 🟢 (CRUD S27) | 🟢 **enrichi** — combos configurables (#98), modifiers editor + déduction stock order-time (#99/#100), upload photo (#102), units registry central (#103), éditeur recette unifié dans l'onglet produit (#106) | #98–#106 |
+| 07 Purchasing | 🟢 | 🟢 **durci** — picker raw-material, unités contraintes, paiements traçables, PO éditable (#95) ; tabs Purchase/History réels (#96) | #95/#96 |
+| 06 Inventory | 🟢 (WAC S17) | 🟢 **overhaul** — stock-card ledger + CSV (#97), filtres mouvements + page produit en onglets + achat direct comptabilisé (#111) | #97/#111 |
+| 11 Expenses | 🟡 (governance S28) | 🟡→🟢 self-approve SUPER_ADMIN + sync cash colonnes (#113) | #113 |
+| 12 Cash | 🟢 | 🟢 **étendu** — trésorerie 3-wallets (Undeposited / Petty Cash / Small Money) (#112) | #112 |
+| 14 Reports | 🟡 (Vagues A+B) | 🟡 **+Cost & Spend Analytics** (COGS achats + OpEx + charts) (#117) | #117 |
+| 15 Production | 🟢 | 🟢 **+page station-based + saisie lot rétro-datable** (#110) | #110 |
+| 22 Design System | 🟡 | 🟡 **refonte visuelle BackOffice** (type system Plex, thème clair, sidebar rétractable, vrai logo) (#107/#108/#109) | #107–#109 |
+| 02 POS | 🟢 | 🟢 **+P0 hardening** (reversal REVOKE, ledger balance, KDS/tactile/realtime, #118) **+held-order lifecycle "addition ouverte" Spec A** (#120/#121) | #118/#120/#121 |
+| (transverse) Data import | — (n'existait pas) | 🆕 **framework bulk import** master-data Phase 1 (#114/#115) + historical purchases Phase 2a (#116) | #114–#116 |
+
+**Estimation parité** : qualitativement au-dessus des ~70 % de mai (nouveaux modules trésorerie/import + durcissement transverse), mais **le chiffrage exact attend un re-audit formel**.
+
+**Toujours en vol / reste à faire :**
+- **Held-order Spec B** — station `display`, destination transversale `waiter`, mapping complet catégories.
+- **Bulk import Phase 2 restante** — Sales + Expenses.
+- **Bloqueur métier inchangé** — statut **PKP** non confirmé → I1/I2/I3 compliance fiscale bloqués (projet en NON-PKP, ADR-003).
+- **Gros gap inchangé** — 18 Mobile Shell Capacitor (P3, décision business).
 
 ---
 
@@ -140,6 +169,38 @@ graph TD
 | S28 | 2026-05-24 | swarm/session-28 | Expense Governance (TASK-11-001 + gaps 11-1 à 11-4). Architecture snapshot-at-submit. **2 tables** : `expense_approval_thresholds` + `expense_approvals`. **5 RPCs** : `submit_expense_v2`, `approve_expense_v2` (SOD + multi-step), `set/delete_expense_threshold_v1`, trigger `sync_cash_expense_to_session`. **BO** 4 components + 5 hooks + `/settings/expense-thresholds`. pgTAP 18/18 + BO smoke 8/8 PASS. (31 commits, 16 migrations) |
 | S29 | 2026-05-24 | swarm/session-29 | Reports Export + Z-Report PDF Vague A (TASK-14-005 + TASK-12-002 + gap 14-3). **Flow 2-temps Z-Report** : `close_shift_v2` snapshot JSONB → EF `generate-zreport-pdf` PDF async bucket `zreports/` 7 ans → `sign_zreport_v1` PIN header. **EF `generate-pdf`** 12 templates. **Domain** `buildCsv` TDD 9/9 + `previousPeriod/formatDelta` TDD 9/9. **BO** : ZReportsListPage + 5 components + 6 hooks + ExportButtons 13 pages + DateRangePickerWithCompare 5 reports. **POS** `useCloseShift` v2. pgTAP 14/14 + BO smoke 345/345 + POS smoke 327/327 + domain unit 18/18 + Vitest live 12 env-gated PASS. (30 commits, 14 migrations `20260606000010..023`) |
 | S30 | 2026-05-24 | swarm/session-30 | Vague B : 5 bakery reports (Wastage, Payment by Method, VAT/PB1, Stock Movement, Perishable Turnover) — promote 5 Soon cards du hub à actives, réutilise infra S29 (15 commits, 10 migrations `20260615000010..019` + `20260524231049..124`, 0 nouvelle perm) |
+
+#### Addendum — Sessions S31→ + PRs autonomes (2026-05-26 → 2026-06-26)
+
+> Granularité PR (le détail par session/wave vit dans les `INDEX` datés `docs/workplan/plans/` et les plans `docs/superpowers/plans/`). Reconstruit depuis `git log master` au 2026-06-26.
+
+| PR | Thème |
+|---|---|
+| #94 | Réparation CI préexistante (PR #91 BomLine + fixture BEV-AMER) |
+| #95 | **S46** Purchasing hardening — picker raw-material, unités contraintes, paiements traçables, PO éditable |
+| #96 | Tabs Purchase & History du détail produit câblés sur données réelles |
+| #97 | Inventory — stock-card ledger layout + CSV sur les 2 pages stock-movement |
+| #98 | **S47** Configurable Combos (choice groups) |
+| #99 | **S48** Product Modifiers Editor (BackOffice) |
+| #100 | **S49** Product Modifiers Phase 2 — déduction stock ingrédient à la commande |
+| #101 | Fix combos — vrais noms de colonnes `combo_*` dans `useComboDetail` |
+| #102 | Upload photo produit (carte Visual Asset) |
+| #103 | Inventory — registry d'unités central + picker unité recette + coût par modifier |
+| #104 | Chore migrations — fix collision timestamp local + enregistrement Units Registry |
+| #105 | Fix products — colonne Type dérivée de `category_type`, pas du préfixe SKU |
+| #106 | Unification de l'éditeur de recette dans l'onglet Recipe du produit (+ fixes coût/type) |
+| #107/#108/#109 | Refonte visuelle BackOffice — type system Plex, thème clair sans or, sidebar rétractable, vrai logo, quick-wins audit |
+| #110 | Production — page station-based + saisie de lot rétro-datable |
+| #111 | Stock module overhaul — filtres mouvements, page produit en onglets, achat direct comptabilisé |
+| #112 | Accounting — trésorerie cash 3-wallets (Undeposited / Petty Cash / Small Money) |
+| #113 | SUPER_ADMIN self-approve expense + colonnes Category/Description/Supplier sur la trésorerie cash |
+| #114/#115 | **Bulk import Phase 1** — master-data suppliers + customers (framework `data-import`) |
+| #116 | **Bulk import Phase 2a** — historical purchases (reports-only) |
+| #117 | Reports — Cost & Spend Analytics (purchase COGS + OpEx + charts) |
+| #118 | **POS P0 hardening** — reversal REVOKE + ledger balance + KDS/tactile/realtime (audit 2026-06-25) |
+| #119/#120/#121 | **POS held-order lifecycle "addition ouverte" Spec A** + audit Settings & Transaction History |
+
+> Suite : **Spec B** held-order (display/waiter/mapping) + **Phase 2** import (Sales + Expenses). Détail mergé condensé : [`../2026-06-26-claude-md-workplan-archive.md`](../2026-06-26-claude-md-workplan-archive.md).
 
 ### Cadence prévisionnelle
 
