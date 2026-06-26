@@ -7,7 +7,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
 
-export type SettingsCategory = 'business' | 'localization' | 'tax' | 'pos';
+export type SettingsCategory = 'business' | 'localization' | 'tax' | 'pos' | 'inventory';
 
 export interface SettingsPayload {
   category: string;

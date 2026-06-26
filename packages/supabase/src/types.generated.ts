@@ -248,6 +248,7 @@ export type Database = {
       }
       business_config: {
         Row: {
+          allow_negative_stock: boolean
           created_at: string
           currency: string
           fiscal_address: string | null
@@ -265,6 +266,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          allow_negative_stock?: boolean
           created_at?: string
           currency?: string
           fiscal_address?: string | null
@@ -282,6 +284,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          allow_negative_stock?: boolean
           created_at?: string
           currency?: string
           fiscal_address?: string | null
@@ -5751,6 +5754,14 @@ export type Database = {
         Args: { p_line_qty: number; p_modifiers: Json; p_product_id: string }
         Returns: Json
       }
+      _resolve_recipe_consumption_v1: {
+        Args: { p_max_depth?: number; p_product_id: string; p_qty: number }
+        Returns: {
+          product_id: string
+          qty_base: number
+          unit: string
+        }[]
+      }
       _retval: { Args: { "": string }; Returns: string }
       _revoke_user_sessions_v1: {
         Args: { p_profile_id: string }
@@ -7357,6 +7368,7 @@ export type Database = {
       }
       record_stock_movement_v1: {
         Args: {
+          p_allow_negative?: boolean
           p_from_section_id?: string
           p_idempotency_key?: string
           p_lot_id?: string
