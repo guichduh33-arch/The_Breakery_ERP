@@ -74,6 +74,7 @@ function makeItem(overrides: Partial<KdsItemRow> = {}): KdsItemRow {
     modifiers_total: 0,
     kitchen_status: 'pending',
     dispatch_station: 'kitchen',
+    dispatch_stations: null,
     sent_to_kitchen_at: new Date('2026-05-14T11:59:00.000Z').toISOString(),
     ready_at: null,
     order_number: '#A-001',
@@ -101,7 +102,7 @@ describe('KdsBoard', () => {
     // Station tabs from KdsStationSelector — the 3 dispatch stations.
     expect(screen.getByRole('tab', { name: /kitchen/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /barista/i })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: /bakery/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /display/i })).toBeInTheDocument();
     // Filter chip group from StationFilter.
     expect(screen.getByRole('group', { name: /kds station filter/i })).toBeInTheDocument();
   });

@@ -10,7 +10,7 @@ import { useKdsStore, type KdsStation } from '@/stores/kdsStore';
 const STATIONS: readonly { value: KdsStation; label: string }[] = [
   { value: 'kitchen', label: 'Kitchen' },
   { value: 'barista', label: 'Barista' },
-  { value: 'bakery', label: 'Bakery' },
+  { value: 'display', label: 'Display / Vitrine' },
 ];
 
 export function KdsStationSelector() {

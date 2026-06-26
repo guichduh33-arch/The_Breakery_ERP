@@ -20,7 +20,7 @@ interface FixtureItem {
   modifiers: { group_name: string; option_label: string; price_adjustment: number }[];
   modifiers_total: number;
   kitchen_status: 'pending' | 'preparing' | 'ready';
-  dispatch_station: 'kitchen' | 'barista' | 'bakery' | 'none';
+  dispatch_station: 'kitchen' | 'barista' | 'display' | 'none';
   sent_to_kitchen_at: string;
   ready_at: string | null;
   products: { name: string };
@@ -37,7 +37,8 @@ const { mockRpc, mockFrom, mockChannel } = vi.hoisted(() => {
   }));
   const mockFrom = vi.fn((_table: string) => ({
     select: vi.fn(() => ({
-      eq: vi.fn(() => ({
+      // Spec B-1 Ph2: useKdsOrders now uses .or() instead of .eq() as first filter.
+      or: vi.fn(() => ({
         in: vi.fn(() => ({
           eq: vi.fn(() => ({
             order: vi.fn().mockImplementation(() => {

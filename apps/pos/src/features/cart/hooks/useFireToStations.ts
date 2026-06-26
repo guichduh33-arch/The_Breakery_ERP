@@ -18,7 +18,7 @@ import { useShiftStore } from '@/stores/shiftStore';
 import { useStationPrinters } from './useStationPrinters';
 import { useStationMap, getStationMap } from './useStationMap';
 
-const PREP_STATIONS: readonly DispatchStation[] = ['barista', 'kitchen', 'bakery'];
+const PREP_STATIONS: readonly DispatchStation[] = ['barista', 'kitchen', 'display'];
 
 // ---------------------------------------------------------------------------
 // Result type
@@ -61,7 +61,7 @@ export interface UseFireToStationsResult {
   >;
   /**
    * Number of currently-unprinted cart items that route to a prep station
-   * (dispatch_station ∈ {barista,kitchen,bakery}). Drives the button's
+   * (dispatch_station ∈ {barista,kitchen,display}). Drives the button's
    * `disabled` state — when 0, firing would be a no-op (bread-only orders,
    * products query still loading, everything already printed). Recomputed on
    * every render so the button reacts to cart edits and the products query
@@ -106,13 +106,13 @@ export function useFireToStations(): UseFireToStationsResult {
     return true;
   });
   const firableCount = candidates.filter((item) => {
-    const station = stationMap[item.product_id];
-    return station != null && (PREP_STATIONS as readonly string[]).includes(station);
+    const stations = stationMap[item.product_id] ?? [];
+    return stations.some((s) => (PREP_STATIONS as readonly string[]).includes(s));
   }).length;
   const unroutedCount = stationMapReady
     ? candidates.filter((item) => {
-        const station = stationMap[item.product_id];
-        return station == null || !(PREP_STATIONS as readonly string[]).includes(station);
+        const stations = stationMap[item.product_id] ?? [];
+        return !stations.some((s) => (PREP_STATIONS as readonly string[]).includes(s));
       }).length
     : 0;
 
@@ -262,6 +262,34 @@ export function useFireToStations(): UseFireToStationsResult {
           };
         }),
       );
+
+      // Spec B-1 Ph1 Bloc 1.4 — un ticket waiter consolidé par fire (best
+      // effort, comme les KOT station). Récapitule TOUS les items non annulés
+      // (y compris dispatch 'none') pour la distribution table + take-away.
+      const waiterPrinter = printersMap?.get('waiter');
+      if (waiterPrinter) {
+        const waiterItems = unprinted
+          .filter((i) => !i.is_cancelled)
+          .map((item) => ({
+            name: item.name,
+            quantity: item.quantity,
+            modifiers: item.modifiers.map((m) => m.option_label),
+          }));
+        if (waiterItems.length > 0) {
+          const waiterPayload: StationTicketPayload = {
+            kind: 'waiter',
+            role: 'waiter',
+            order_number: orderNumber ?? persistedOrderNumber ?? '',
+            ...(tableNo !== undefined ? { table_number: tableNo } : {}),
+            created_at: new Date().toISOString(),
+            server_name: serverName,
+            items: waiterItems,
+            ...(isAdditional ? { additional: true } : {}),
+          };
+          // Best effort : un échec n'affecte ni la commande ni les results KOT.
+          await printStationTicket(waiterPrinter, waiterPayload).catch(() => undefined);
+        }
+      }
 
       // NOTE (P0-3): items were already locked + marked printed right after
       // the RPC succeeded (step 3) — failed stations are NOT re-firable, the

@@ -46,6 +46,7 @@ const MOCK_ROW: ProductRow = {
   variant_label:            null,
   variant_axis:             null,
   variant_sort_order:       0,
+  dispatch_stations:        null,
 };
 
 function renderTable(onDelete?: (row: ProductRow) => void) {

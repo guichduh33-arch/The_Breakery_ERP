@@ -127,7 +127,7 @@ describe('parseCatalogWorkbook', () => {
       if (def.name === 'Categories') {
         const ws = XLSX.utils.aoa_to_sheet([
           ['dispatch_station', 'sort_order'],
-          ['bakery', 10],
+          ['display', 10],
           ['kitchen', 20],
           ['none', 30],
         ]);

@@ -9,36 +9,39 @@ import type { CartItem } from '../types/cart.js';
 import type { DispatchStation } from '../kitchen/types.js';
 import type { PrepStation } from './types.js';
 
-const PREP_STATIONS: readonly PrepStation[] = ['barista', 'kitchen', 'bakery'];
+const PREP_STATIONS: readonly PrepStation[] = ['barista', 'kitchen', 'display'];
 
 function isPrepStation(value: DispatchStation | undefined | null): value is PrepStation {
   return value != null && (PREP_STATIONS as readonly string[]).includes(value);
 }
 
 /**
- * Group cart items by their prep station.
+ * Group cart items by their prep station(s).
  *
- * @param items              cart lines to route
- * @param stationByProductId map product_id → dispatch_station ('none'/missing → skipped)
+ * @param items                 cart lines to route
+ * @param stationsByProductId   map product_id → dispatch_station[] ; a product
+ *                              routed to multiple stations appears in EVERY bucket.
+ *                              Empty array / missing / 'none' entries → skipped.
  * @returns a partial record keyed by prep station ; stations with no item are absent.
  *
  * Rules:
  *  - cancelled lines (`is_cancelled`) are skipped (never printed).
- *  - a product with no mapping, or mapped to 'none', is skipped.
+ *  - a product with no mapping, or whose station list is empty, is skipped.
+ *  - 'none' entries inside the list are silently ignored via `isPrepStation`.
  *  - order within each bucket preserves input order (FIFO for the ticket).
  */
 export function groupItemsByStation(
   items: readonly CartItem[],
-  stationByProductId: Readonly<Record<string, DispatchStation>>,
+  stationsByProductId: Readonly<Record<string, DispatchStation[]>>,
 ): Partial<Record<PrepStation, CartItem[]>> {
   const grouped: Partial<Record<PrepStation, CartItem[]>> = {};
-
   for (const item of items) {
     if (item.is_cancelled) continue;
-    const station = stationByProductId[item.product_id];
-    if (!isPrepStation(station)) continue;
-    (grouped[station] ??= []).push(item);
+    const stations = stationsByProductId[item.product_id] ?? [];
+    for (const station of stations) {
+      if (!isPrepStation(station)) continue;
+      (grouped[station] ??= []).push(item);
+    }
   }
-
   return grouped;
 }

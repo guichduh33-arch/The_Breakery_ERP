@@ -17,7 +17,7 @@ export type KitchenStatus = 'pending' | 'preparing' | 'ready' | 'served';
  * `'none'` means the category has no KDS routing — the item never appears
  * on any KDS screen (e.g. cold drinks ringed up directly).
  */
-export type DispatchStation = 'kitchen' | 'barista' | 'bakery' | 'none';
+export type DispatchStation = 'kitchen' | 'barista' | 'display' | 'none';
 
 export const KITCHEN_STATUSES: readonly KitchenStatus[] = [
   'pending',
@@ -29,7 +29,7 @@ export const KITCHEN_STATUSES: readonly KitchenStatus[] = [
 export const DISPATCH_STATIONS: readonly DispatchStation[] = [
   'kitchen',
   'barista',
-  'bakery',
+  'display',
   'none',
 ] as const;
 
@@ -40,5 +40,5 @@ export const DISPATCH_STATIONS: readonly DispatchStation[] = [
 export const KDS_STATIONS: readonly Exclude<DispatchStation, 'none'>[] = [
   'kitchen',
   'barista',
-  'bakery',
+  'display',
 ] as const;

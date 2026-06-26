@@ -37,6 +37,7 @@ const EXPENSE: ExpenseRow = {
   created_at:       '2026-04-17T00:00:00Z',
   updated_at:       '2026-04-17T00:00:00Z',
   deleted_at:       null,
+  is_historical_import:             false,
   auto_approved:                    false,
   current_approval_step:            0,
   required_approval_steps_snapshot: null,

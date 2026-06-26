@@ -29,6 +29,7 @@ interface QueryResult<T> {
 interface SelectBuilder {
   eq: (col: string, val: unknown) => SelectBuilder;
   in: (col: string, vals: readonly unknown[]) => SelectBuilder;
+  or: (filter: string) => SelectBuilder;
   order: (col: string, opts: { ascending: boolean }) => Promise<QueryResult<unknown[]>>;
 }
 interface LooseFromBuilder {
@@ -56,6 +57,8 @@ export interface KdsItemRow {
   modifiers_total: number;
   kitchen_status: KitchenStatus;
   dispatch_station: DispatchStation;
+  /** Spec B-1 Ph2 — multi-station array; NULL for legacy rows not yet re-snapshotted. */
+  dispatch_stations: string[] | null;
   sent_to_kitchen_at: string;
   ready_at: string | null;
   order_number: string;
@@ -77,6 +80,8 @@ interface RawRow {
   modifiers_total: number | null;
   kitchen_status: KitchenStatus;
   dispatch_station: DispatchStation;
+  /** Spec B-1 Ph2 — multi-station array; NULL for legacy rows. */
+  dispatch_stations: string[] | null;
   sent_to_kitchen_at: string;
   ready_at: string | null;
   is_cancelled: boolean | null;
@@ -109,13 +114,20 @@ export function useKdsOrders(station: KdsStation) {
           `
           id, order_id, product_id, quantity, unit_price,
           modifiers, modifiers_total, kitchen_status, dispatch_station,
+          dispatch_stations,
           sent_to_kitchen_at, ready_at,
           is_cancelled, cancelled_at, cancelled_reason,
           products(name),
           orders(order_number, status)
         `,
         )
-        .eq('dispatch_station', station)
+        // Spec B-1 Ph2 — dual-branch filter:
+        //   NEW rows: dispatch_stations array contains the station (cs = contains).
+        //   LEGACY rows (dispatch_stations IS NULL): fall back to the single
+        //   dispatch_station column so pre-Phase-2 items are not lost.
+        .or(
+          `dispatch_stations.cs.{${station}},and(dispatch_stations.is.null,dispatch_station.eq.${station})`,
+        )
         .in('kitchen_status', ['pending', 'preparing', 'ready'])
         .eq('is_locked', true)
         .order('sent_to_kitchen_at', { ascending: true });
@@ -137,6 +149,7 @@ export function useKdsOrders(station: KdsStation) {
           modifiers_total: row.modifiers_total ?? 0,
           kitchen_status: row.kitchen_status,
           dispatch_station: row.dispatch_station,
+          dispatch_stations: row.dispatch_stations ?? null,
           sent_to_kitchen_at: row.sent_to_kitchen_at,
           ready_at: row.ready_at,
           order_number: order?.order_number ?? '?',

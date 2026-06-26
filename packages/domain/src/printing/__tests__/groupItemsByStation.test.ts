@@ -8,26 +8,31 @@ function item(id: string, product_id: string, extra: Partial<CartItem> = {}): Ca
   return { id, product_id, name: product_id, unit_price: 1000, quantity: 1, modifiers: [], ...extra };
 }
 
-const stations: Record<string, DispatchStation> = {
-  latte: 'barista',
-  sandwich: 'kitchen',
-  croissant: 'bakery',
-  baguette: 'bakery',
-  ingredient: 'none',
+const stations: Record<string, DispatchStation[]> = {
+  latte: ['barista'],
+  sandwich: ['kitchen', 'display'],   // multi : handoff cuisine → vitrine
+  croissant: ['display'],
+  baguette: ['display'],
+  ingredient: [],                      // non routé
 };
 
 describe('groupItemsByStation', () => {
   it('groups items into their prep station buckets', () => {
     const out = groupItemsByStation(
-      [item('l1', 'latte'), item('s1', 'sandwich'), item('c1', 'croissant'), item('b1', 'baguette')],
+      [item('l1', 'latte'), item('c1', 'croissant'), item('b1', 'baguette')],
       stations,
     );
     expect(out.barista?.map((i) => i.id)).toEqual(['l1']);
-    expect(out.kitchen?.map((i) => i.id)).toEqual(['s1']);
-    expect(out.bakery?.map((i) => i.id)).toEqual(['c1', 'b1']);
+    expect(out.display?.map((i) => i.id)).toEqual(['c1', 'b1']);
   });
 
-  it("ignores items mapped to 'none' or unmapped", () => {
+  it('routes a multi-station item into every bucket', () => {
+    const out = groupItemsByStation([item('s1', 'sandwich')], stations);
+    expect(out.kitchen?.map((i) => i.id)).toEqual(['s1']);
+    expect(out.display?.map((i) => i.id)).toEqual(['s1']);
+  });
+
+  it("ignores items mapped to [] or unmapped", () => {
     const out = groupItemsByStation(
       [item('i1', 'ingredient'), item('x1', 'unknown_product')],
       stations,
@@ -41,6 +46,7 @@ describe('groupItemsByStation', () => {
       stations,
     );
     expect(out.kitchen?.map((i) => i.id)).toEqual(['s2']);
+    expect(out.display?.map((i) => i.id)).toEqual(['s2']);
   });
 
   it('returns an empty object for an empty cart', () => {
@@ -52,6 +58,6 @@ describe('groupItemsByStation', () => {
       [item('c2', 'croissant'), item('c1', 'croissant'), item('c3', 'croissant')],
       stations,
     );
-    expect(out.bakery?.map((i) => i.id)).toEqual(['c2', 'c1', 'c3']);
+    expect(out.display?.map((i) => i.id)).toEqual(['c2', 'c1', 'c3']);
   });
 });

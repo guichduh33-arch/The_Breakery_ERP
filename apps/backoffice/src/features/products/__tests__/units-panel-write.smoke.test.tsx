@@ -100,6 +100,7 @@ const PRODUCT: ProductRow = {
   variant_label:        null,
   variant_axis:         null,
   variant_sort_order:   0,
+  dispatch_stations:    null,
 };
 
 // ── Render helper ─────────────────────────────────────────────────────────────

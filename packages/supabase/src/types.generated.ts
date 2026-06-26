@@ -1147,6 +1147,7 @@ export type Database = {
           expense_number: string
           id: string
           idempotency_key: string | null
+          is_historical_import: boolean
           je_id: string | null
           paid_at: string | null
           paid_by: string | null
@@ -1179,6 +1180,7 @@ export type Database = {
           expense_number: string
           id?: string
           idempotency_key?: string | null
+          is_historical_import?: boolean
           je_id?: string | null
           paid_at?: string | null
           paid_by?: string | null
@@ -1211,6 +1213,7 @@ export type Database = {
           expense_number?: string
           id?: string
           idempotency_key?: string | null
+          is_historical_import?: boolean
           je_id?: string | null
           paid_at?: string | null
           paid_by?: string | null
@@ -2249,6 +2252,7 @@ export type Database = {
           discount_type: string | null
           discount_value: number | null
           dispatch_station: string | null
+          dispatch_stations: string[] | null
           id: string
           is_cancelled: boolean
           is_locked: boolean
@@ -2282,6 +2286,7 @@ export type Database = {
           discount_type?: string | null
           discount_value?: number | null
           dispatch_station?: string | null
+          dispatch_stations?: string[] | null
           id?: string
           is_cancelled?: boolean
           is_locked?: boolean
@@ -2315,6 +2320,7 @@ export type Database = {
           discount_type?: string | null
           discount_value?: number | null
           dispatch_station?: string | null
+          dispatch_stations?: string[] | null
           id?: string
           is_cancelled?: boolean
           is_locked?: boolean
@@ -2477,7 +2483,9 @@ export type Database = {
           discount_value: number | null
           id: string
           idempotency_key: string | null
+          import_reference: string | null
           is_held: boolean
+          is_historical_import: boolean
           loyalty_points_earned: number
           loyalty_points_redeemed: number
           loyalty_redemption_amount: number
@@ -2511,7 +2519,9 @@ export type Database = {
           discount_value?: number | null
           id?: string
           idempotency_key?: string | null
+          import_reference?: string | null
           is_held?: boolean
+          is_historical_import?: boolean
           loyalty_points_earned?: number
           loyalty_points_redeemed?: number
           loyalty_redemption_amount?: number
@@ -2545,7 +2555,9 @@ export type Database = {
           discount_value?: number | null
           id?: string
           idempotency_key?: string | null
+          import_reference?: string | null
           is_held?: boolean
+          is_historical_import?: boolean
           loyalty_points_earned?: number
           loyalty_points_redeemed?: number
           loyalty_redemption_amount?: number
@@ -3411,6 +3423,7 @@ export type Database = {
           default_shelf_life_hours: number | null
           deleted_at: string | null
           description: string | null
+          dispatch_stations: string[] | null
           id: string
           image_url: string | null
           is_active: boolean
@@ -3449,6 +3462,7 @@ export type Database = {
           default_shelf_life_hours?: number | null
           deleted_at?: string | null
           description?: string | null
+          dispatch_stations?: string[] | null
           id?: string
           image_url?: string | null
           is_active?: boolean
@@ -3487,6 +3501,7 @@ export type Database = {
           default_shelf_life_hours?: number | null
           deleted_at?: string | null
           description?: string | null
+          dispatch_stations?: string[] | null
           id?: string
           image_url?: string | null
           is_active?: boolean
@@ -5916,7 +5931,9 @@ export type Database = {
           discount_value: number | null
           id: string
           idempotency_key: string | null
+          import_reference: string | null
           is_held: boolean
+          is_historical_import: boolean
           loyalty_points_earned: number
           loyalty_points_redeemed: number
           loyalty_redemption_amount: number
@@ -6853,7 +6870,23 @@ export type Database = {
         }
         Returns: Json
       }
+      import_expenses_v1: {
+        Args: {
+          p_dry_run?: boolean
+          p_idempotency_key?: string
+          p_payload: Json
+        }
+        Returns: Json
+      }
       import_purchases_v1: {
+        Args: {
+          p_dry_run?: boolean
+          p_idempotency_key?: string
+          p_payload: Json
+        }
+        Returns: Json
+      }
+      import_sales_v1: {
         Args: {
           p_dry_run?: boolean
           p_idempotency_key?: string
@@ -6887,6 +6920,7 @@ export type Database = {
           discount_type: string | null
           discount_value: number | null
           dispatch_station: string | null
+          dispatch_stations: string[] | null
           id: string
           is_cancelled: boolean
           is_locked: boolean
@@ -6933,6 +6967,7 @@ export type Database = {
           discount_type: string | null
           discount_value: number | null
           dispatch_station: string | null
+          dispatch_stations: string[] | null
           id: string
           is_cancelled: boolean
           is_locked: boolean
@@ -6975,6 +7010,7 @@ export type Database = {
           discount_type: string | null
           discount_value: number | null
           dispatch_station: string | null
+          dispatch_stations: string[] | null
           id: string
           is_cancelled: boolean
           is_locked: boolean
@@ -7020,6 +7056,7 @@ export type Database = {
           discount_type: string | null
           discount_value: number | null
           dispatch_station: string | null
+          dispatch_stations: string[] | null
           id: string
           is_cancelled: boolean
           is_locked: boolean
@@ -7160,7 +7197,9 @@ export type Database = {
           discount_value: number | null
           id: string
           idempotency_key: string | null
+          import_reference: string | null
           is_held: boolean
+          is_historical_import: boolean
           loyalty_points_earned: number
           loyalty_points_redeemed: number
           loyalty_redemption_amount: number
@@ -7519,6 +7558,7 @@ export type Database = {
           discount_type: string | null
           discount_value: number | null
           dispatch_station: string | null
+          dispatch_stations: string[] | null
           id: string
           is_cancelled: boolean
           is_locked: boolean

@@ -39,7 +39,7 @@ vi.mock('@/features/cart/hooks/useStationPrinters', () => ({
 
 // Station map: one routed product (barista) + one product routed nowhere ('none').
 vi.mock('@/features/cart/hooks/useStationMap', () => {
-  const STATION_MAP: Record<string, string> = { 'p-barista': 'barista', 'p-none': 'none' };
+  const STATION_MAP: Record<string, string[]> = { 'p-barista': ['barista'], 'p-none': [] };
   return {
     useStationMap: () => ({ data: STATION_MAP }),
     getStationMap: () => Promise.resolve(STATION_MAP),

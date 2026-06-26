@@ -41,6 +41,8 @@ interface ProductRowDb {
   variant_label:              string | null;
   variant_axis:               string | null;
   variant_sort_order:         number;
+  // Spec B-1 Ph2 — per-product dispatch override (not fetched in list view, default null)
+  dispatch_stations:          string[] | null;
   categories:       { name: string; category_type: string | null } | { name: string; category_type: string | null }[] | null;
 }
 
@@ -102,6 +104,8 @@ export function useProducts() {
           variant_label:             r.variant_label,
           variant_axis:              r.variant_axis,
           variant_sort_order:        Number(r.variant_sort_order),
+          // dispatch_stations not included in catalog list select — default null
+          dispatch_stations:         null,
           category_name:             categoryName,
           category_type:             categoryType,
         } satisfies ProductRow;

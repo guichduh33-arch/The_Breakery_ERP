@@ -58,6 +58,6 @@ describe('nextStatus', () => {
 
 describe('KDS_STATIONS', () => {
   it('exposes the three real stations', () => {
-    expect(KDS_STATIONS).toEqual(['kitchen', 'barista', 'bakery']);
+    expect(KDS_STATIONS).toEqual(['kitchen', 'barista', 'display']);
   });
 });

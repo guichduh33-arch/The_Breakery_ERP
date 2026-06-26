@@ -75,7 +75,7 @@ vi.mock('@/features/cart/hooks/useStationMap', () => {
   // S44 P0-B — useFireToStations now reads the station map (variant-aware) for
   // firableCount (render) and routing (getStationMap, fire path). Mock both so
   // the test never hits supabase.from.
-  const STATION_MAP: Record<string, string> = { 'p-barista': 'barista', 'p-kitchen': 'kitchen', 'p-none': 'none' };
+  const STATION_MAP: Record<string, string[]> = { 'p-barista': ['barista'], 'p-kitchen': ['kitchen'], 'p-none': [] };
   return {
     useStationMap: () => ({ data: STATION_MAP }),
     getStationMap: () => Promise.resolve(STATION_MAP),
