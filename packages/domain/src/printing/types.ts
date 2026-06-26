@@ -17,4 +17,4 @@ export type PrepStation = Exclude<DispatchStation, 'none'>;
 export type PrinterRole = PrepStation | 'cashier' | 'waiter';
 
 /** Document kinds the print bridge understands. */
-export type PrintKind = 'prep' | 'bill' | 'receipt';
+export type PrintKind = 'prep' | 'bill' | 'receipt' | 'waiter';

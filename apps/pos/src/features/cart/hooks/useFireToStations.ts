@@ -263,6 +263,34 @@ export function useFireToStations(): UseFireToStationsResult {
         }),
       );
 
+      // Spec B-1 Ph1 Bloc 1.4 — un ticket waiter consolidé par fire (best
+      // effort, comme les KOT station). Récapitule TOUS les items non annulés
+      // (y compris dispatch 'none') pour la distribution table + take-away.
+      const waiterPrinter = printersMap?.get('waiter');
+      if (waiterPrinter) {
+        const waiterItems = unprinted
+          .filter((i) => !i.is_cancelled)
+          .map((item) => ({
+            name: item.name,
+            quantity: item.quantity,
+            modifiers: item.modifiers.map((m) => m.option_label),
+          }));
+        if (waiterItems.length > 0) {
+          const waiterPayload: StationTicketPayload = {
+            kind: 'waiter',
+            role: 'waiter',
+            order_number: orderNumber ?? persistedOrderNumber ?? '',
+            ...(tableNo !== undefined ? { table_number: tableNo } : {}),
+            created_at: new Date().toISOString(),
+            server_name: serverName,
+            items: waiterItems,
+            ...(isAdditional ? { additional: true } : {}),
+          };
+          // Best effort : un échec n'affecte ni la commande ni les results KOT.
+          await printStationTicket(waiterPrinter, waiterPayload).catch(() => undefined);
+        }
+      }
+
       // NOTE (P0-3): items were already locked + marked printed right after
       // the RPC succeeded (step 3) — failed stations are NOT re-firable, the
       // ticket lives in the DB/KDS. Callers surface per-station failures via
