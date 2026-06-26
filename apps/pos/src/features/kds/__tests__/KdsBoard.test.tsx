@@ -101,7 +101,7 @@ describe('KdsBoard', () => {
     // Station tabs from KdsStationSelector — the 3 dispatch stations.
     expect(screen.getByRole('tab', { name: /kitchen/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /barista/i })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: /bakery/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /display/i })).toBeInTheDocument();
     // Filter chip group from StationFilter.
     expect(screen.getByRole('group', { name: /kds station filter/i })).toBeInTheDocument();
   });
