@@ -64,3 +64,115 @@ jobs:
             });
         env:
           ISSUE_NUMBER: ${{ vars.PGTAP_TRACKING_ISSUE }}
+
+  # S50 — Live-RPC Vitest suite (supabase/tests/functions/*.test.ts, ~62 files).
+  # Requires SUPABASE_SERVICE_ROLE_KEY repository secret. Tests are env-gated
+  # (they skip gracefully when env vars are absent), but we fail fast here to
+  # ensure the secret is present and the suite actually runs.
+  live-rpc-vitest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SUPABASE_URL: https://ikcyvlovptebroadgtvd.supabase.co
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Run live-RPC Vitest suite
+        run: |
+          set -uo pipefail
+          if [ -z "${SUPABASE_SERVICE_ROLE_KEY:-}" ]; then
+            echo "::error::SUPABASE_SERVICE_ROLE_KEY secret is not set — live-RPC tests cannot run." >&2
+            exit 1
+          fi
+          pnpm --filter @breakery/supabase-tests test
+
+  # S50 — Drift checks (types.generated.ts + schema_migrations).
+  # Both steps use V3_DEV_PG_POOLER_URL secret; they skip with a warning if
+  # the secret is absent rather than blocking the entire nightly run.
+  drift-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install psql 16 and Supabase CLI
+        run: |
+          # psql — same version as pgtap job
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+            -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
+          sudo sh -c 'echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] \
+            https://apt.postgresql.org/pub/repos/apt $(. /etc/os-release && echo $VERSION_CODENAME)-pgdg main" \
+            > /etc/apt/sources.list.d/pgdg.list'
+          sudo apt-get update -q
+          sudo apt-get install -y postgresql-client-16
+          # supabase CLI (latest release)
+          curl -fsSL \
+            https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz \
+            | tar xz -C /usr/local/bin supabase
+
+      # Regenerate types against the live dev DB and check for uncommitted drift.
+      # Uses --db-url (pooler connection string) — no SUPABASE_ACCESS_TOKEN required.
+      # If the regen produces a diff, it means a migration was applied on the cloud
+      # but types.generated.ts was not committed. Fail hard so it's visible.
+      - name: Check types.generated.ts drift
+        env:
+          PGURL: ${{ secrets.V3_DEV_PG_POOLER_URL }}
+        run: |
+          set -uo pipefail
+          if [ -z "${PGURL:-}" ]; then
+            echo "::warning::V3_DEV_PG_POOLER_URL secret not set — skipping types drift check."
+            exit 0
+          fi
+          supabase gen types typescript --db-url "$PGURL" \
+            > packages/supabase/src/types.generated.ts
+          if ! git diff --exit-code -- packages/supabase/src/types.generated.ts; then
+            echo "::error::types.generated.ts is stale relative to the live DB schema."
+            echo "Run generate_typescript_types via MCP and commit the result."
+            exit 1
+          fi
+          echo "types.generated.ts is up to date with the live schema."
+
+      # Compare local migration file count with cloud schema_migrations row count.
+      # INFORMATIONAL ONLY — does not block the run.
+      #
+      # Limitation: cloud version IDs are clock-assigned (S36+ convention) and
+      # do NOT map 1:1 to local file name-block prefixes. Additionally, ~400 rows
+      # were dropped by 'supabase migration repair' (max tracked: 20260629000012);
+      # actual schema is intact. A hard gate is infeasible without a name→version
+      # mapping. Verify manually with: supabase migration list --project-ref ikcyvlovptebroadgtvd
+      - name: Check schema_migrations drift (informational)
+        env:
+          PGURL: ${{ secrets.V3_DEV_PG_POOLER_URL }}
+        run: |
+          set -uo pipefail
+          if [ -z "${PGURL:-}" ]; then
+            echo "::warning::V3_DEV_PG_POOLER_URL not set — skipping schema drift check."
+            exit 0
+          fi
+          local_count=$(ls supabase/migrations/*.sql 2>/dev/null | wc -l | tr -d ' ')
+          cloud_count=$(psql "$PGURL" -t -c \
+            "SELECT count(*) FROM supabase_migrations.schema_migrations;" \
+            2>/dev/null | tr -d ' ' || echo "error")
+          echo "Local migration files : $local_count"
+          echo "Cloud schema_migrations rows: $cloud_count (clock-assigned; baseline ~400 dropped)"
+          if [ "$cloud_count" = "error" ]; then
+            echo "::warning::Could not query schema_migrations — check pooler URL and permissions."
+          elif [ "$cloud_count" -lt "$local_count" ]; then
+            echo "::warning::Drift: $local_count local files vs $cloud_count cloud rows."
+            echo "Some migrations may not be applied. Verify with MCP list_migrations or"
+            echo "'supabase migration list --project-ref ikcyvlovptebroadgtvd'."
+            echo "(Known baseline: ~400 rows dropped by migration repair — see CLAUDE.md)"
+          else
+            echo "schema_migrations count parity OK (approximate — see known limitations above)."
+          fi

@@ -62,6 +62,35 @@ jobs:
           fi
           echo "$new_migrations" | sed 's/^/  scanned: /'
 
+      # S50 — Guard types.generated.ts regen (migration → types sync).
+      # If a new migration is added in this PR/push, types.generated.ts must
+      # also have been updated in the same diff. This catches the #1 source of
+      # broken CI on this repo (stale types after a schema change).
+      # Content-level drift (file vs live schema) is verified nightly via
+      # pgtap-nightly.yml drift-checks job, which requires cloud secrets.
+      - name: Guard types.generated.ts regen (S50 migration-sync gate)
+        run: |
+          set -e
+          if [ -n "${{ github.base_ref }}" ]; then
+            base="origin/${{ github.base_ref }}"
+            git fetch origin "${{ github.base_ref }}" --depth=1 || true
+          else
+            base="HEAD~1"
+          fi
+          new_migrations=$(git diff --name-only --diff-filter=A "$base"...HEAD -- 'supabase/migrations/*.sql' || true)
+          if [ -z "$new_migrations" ]; then
+            echo "No new migrations in this diff — types regen guard skipped."
+            exit 0
+          fi
+          types_changed=$(git diff --name-only "$base"...HEAD -- 'packages/supabase/src/types.generated.ts' || true)
+          if [ -z "$types_changed" ]; then
+            echo "::error::New migration(s) added but types.generated.ts was NOT regenerated."
+            echo "Run generate_typescript_types via MCP and commit packages/supabase/src/types.generated.ts."
+            printf '%s\n' "$new_migrations" | sed 's/^/  + /'
+            exit 1
+          fi
+          echo "types.generated.ts regenerated alongside new migrations — OK."
+
       # Lint is non-blocking: 250+ pre-existing tech-debt errors across the
       # monorepo (mostly @typescript-eslint stylistic rules + React Hook
       # ordering issues). They were hidden by the broken has_permission
