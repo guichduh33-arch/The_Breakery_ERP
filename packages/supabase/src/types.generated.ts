@@ -6829,7 +6829,7 @@ export type Database = {
           variance_pct: number
         }[]
       }
-      get_trial_balance_v2: {
+      get_trial_balance_v3: {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
