@@ -4,6 +4,8 @@ import { handleCors, jsonResponse } from '../_shared/cors.ts';
 import { requireSession } from '../_shared/session-auth.ts';
 import { getAdminClient } from '../_shared/supabase-admin.ts';
 import { evaluatePinStrength } from '../_shared/pin-strength.ts';
+import { rateLimitedResponse } from '../_shared/responses.ts';
+import { checkRateLimitDurable, getClientIp } from '../_shared/rate-limit.ts';
 
 const PIN_REGEX = /^\d{6}$/;
 
@@ -38,6 +40,21 @@ serve(async (req) => {
   if (!PIN_REGEX.test(new_pin)) {
     return jsonResponse({ error: 'invalid_new_pin_format' }, 400);
   }
+
+  // Durable rate-limit (SEC-S30-MED-03) — the self-rotate path verifies current_pin
+  // via verify_user_pin, which has NO lockout (unlike auth-verify-pin). Without this,
+  // a holder of a valid session can brute-force the current PIN to rotate it. Bucket on
+  // the TARGET user_id (caps attempts per account regardless of how many sessions the
+  // attacker mints — stronger than a per-session bucket).
+  const ip = getClientIp(req);
+  const rl = await checkRateLimitDurable({
+    functionName: 'auth-change-pin',
+    bucketKey:    `user:${user_id}`,
+    ipAddress:    ip,
+    maxPerWindow: 5,
+    windowSec:    60,
+  });
+  if (!rl.allowed) return rateLimitedResponse(rl.retryAfterSec);
 
   const admin = getAdminClient();
   const isSelf = user_id === sessionResult.userId;

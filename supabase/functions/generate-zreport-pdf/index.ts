@@ -17,6 +17,7 @@ import { rateLimitedResponse } from '../_shared/responses.ts';
 import { checkRateLimitDurable, getClientIp } from '../_shared/rate-limit.ts';
 import { getIdempotencyKey, MissingIdempotencyKeyError, InvalidIdempotencyKeyError } from '../_shared/idempotency.ts';
 import { getAdminClient } from '../_shared/supabase-admin.ts';
+import { getActingAuthUserId } from '../_shared/acting-user.ts';
 import { initLayout, type BusinessInfo } from '../_shared/pdf-layout.ts';
 import { render as renderZReport, type ZReportEnvelope } from '../_shared/pdf-templates/zreport.ts';
 
@@ -47,17 +48,22 @@ serve(async (req) => {
     throw err;
   }
 
-  // Auth
+  // Auth — verify the PIN-JWT signature server-side. GoTrue (asymmetric ES256)
+  // cannot validate the HS256 PIN-JWTs the app sends, so `auth.getUser()` always
+  // 401'd under PIN-auth (the dominant mode) — the EF was effectively broken.
+  // getActingAuthUserId VERIFIES the HMAC signature (JWT_SECRET) and returns the
+  // `sub`; the snapshot RPC below independently enforces the zreports.read perm.
   const authHeader = req.headers.get('authorization');
   if (!authHeader?.startsWith('Bearer ')) return jsonResponse({ error: 'authorization_required' }, 401);
+
+  const actingUserId = await getActingAuthUserId(req);
+  if (!actingUserId) return jsonResponse({ error: 'invalid_auth' }, 401);
 
   const userClient = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_ANON_KEY')!,
     { global: { headers: { Authorization: authHeader } } },
   );
-  const { data: userData, error: userErr } = await userClient.auth.getUser();
-  if (userErr || !userData?.user) return jsonResponse({ error: 'invalid_auth' }, 401);
 
   // Parse body
   let body: { zreport_id?: string };
@@ -130,9 +136,12 @@ serve(async (req) => {
   const storagePath = `${yyyy}/${mm}/${shiftId}_${ts}.pdf`;
   const fullPath    = `zreports/${storagePath}`;
 
+  // upsert:true — two concurrent generations for the same z_report (before
+  // pdf_storage_path is persisted) could otherwise collide on an identical
+  // path and fail the second caller; overwriting the identical PDF is safe.
   const { error: uploadErr } = await admin.storage
     .from('zreports')
-    .upload(storagePath, pdfBytes, { contentType: 'application/pdf', upsert: false });
+    .upload(storagePath, pdfBytes, { contentType: 'application/pdf', upsert: true });
   if (uploadErr) {
     console.error('[generate-zreport-pdf] upload failed', uploadErr);
     return jsonResponse({ error: 'upload_failed', detail: uploadErr.message }, 500);
