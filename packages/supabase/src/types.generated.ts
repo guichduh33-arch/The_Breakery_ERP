@@ -7787,8 +7787,8 @@ export type Database = {
         }
         Returns: Json
       }
-      void_zreport_v1: {
-        Args: { p_reason: string; p_zreport_id: string }
+      void_zreport_v2: {
+        Args: { p_manager_pin: string; p_reason: string; p_zreport_id: string }
         Returns: Json
       }
       waste_display_stock_v1: {
