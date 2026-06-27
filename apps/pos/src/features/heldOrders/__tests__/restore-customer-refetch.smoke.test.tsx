@@ -5,8 +5,8 @@
 // with a customer must re-fetch the full customer object so the badge (name,
 // tier, points) comes back — not just the bare customerId used for pricing/JE.
 // S37 C5 (SEC-03) — the badge re-fetch goes through the definer RPC
-// `get_customer_v2` (survives the customers.read gate), no more direct
-// customers table read.
+// `get_customer_v3` (survives the customers.read gate, S50 perm-gated bump),
+// no more direct customers table read.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
@@ -34,7 +34,7 @@ beforeEach(() => {
 });
 
 describe('held restore re-attaches the customer object (DEV-S35-C-05)', () => {
-  it('restores attachedCustomer (badge) via get_customer_v2, not just customerId', async () => {
+  it('restores attachedCustomer (badge) via get_customer_v3, not just customerId', async () => {
     rpc.mockImplementation((name: string) => {
       if (name === 'restore_held_order_v1') {
         return Promise.resolve({
@@ -42,7 +42,7 @@ describe('held restore re-attaches the customer object (DEV-S35-C-05)', () => {
           error: null,
         });
       }
-      if (name === 'get_customer_v2') {
+      if (name === 'get_customer_v3') {
         return Promise.resolve({
           data: [{ id: 'c1', name: 'Jean Habitué', customer_type: 'retail', loyalty_points: 120, category: null }],
           error: null,
@@ -59,7 +59,7 @@ describe('held restore re-attaches the customer object (DEV-S35-C-05)', () => {
       expect(s.attachedCustomer?.name).toBe('Jean Habitué');
       expect(s.cart.customerId).toBe('c1');
     });
-    expect(rpc).toHaveBeenCalledWith('get_customer_v2', { p_id: 'c1' });
+    expect(rpc).toHaveBeenCalledWith('get_customer_v3', { p_id: 'c1' });
   });
 
   it('keeps customerId even if the customer lookup fails (best-effort badge)', async () => {
