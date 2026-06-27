@@ -9,9 +9,9 @@
 --   T5  : record_b2b_payment_v1 idempotency replay (même UUID)
 --   T6  : record_b2b_payment_v1 overpayment → RAISE P0011
 --   T7  : record_b2b_payment_v1 non-b2b customer → RAISE P0001
---   T8  : adjust_b2b_balance_v1 happy path positive delta
---   T9  : adjust_b2b_balance_v1 happy path negative delta
---   T10 : adjust_b2b_balance_v1 underflow → RAISE P0011
+--   T8  : adjust_b2b_balance_v2 happy path positive delta (JE + manager PIN, S50 V2a-i)
+--   T9  : adjust_b2b_balance_v2 happy path negative delta
+--   T10 : adjust_b2b_balance_v2 underflow → RAISE P0011
 --   T11 : create_b2b_order_v1 happy path → AR augmenté + JE + stock décrémenté
 --   T12 : create_b2b_order_v1 credit limit exceeded → RAISE P0011
 --   T13 : create_b2b_order_v1 idempotency replay
@@ -59,7 +59,9 @@ VALUES (
   (SELECT id FROM categories LIMIT 1),
   50000, 100.000, 0
 ) ON CONFLICT (id) DO NOTHING;
-UPDATE products SET current_stock = 100.000
+-- S50 V2a-i : flags explicites (le décrément stock B2B est désormais flag-aware ;
+-- T11 teste un produit tracké → stock 100→97).
+UPDATE products SET current_stock = 100.000, track_inventory = true, deduct_stock = false
  WHERE id = 'b2bf0002-0000-0000-0000-000000000001';
 
 -- Bootstrap admin uid (EMP000 — pre-existing seed)
@@ -71,6 +73,9 @@ BEGIN
     RAISE EXCEPTION 'Seed user EMP000 not found';
   END IF;
   PERFORM set_config('breakery.admin_uid', v_admin_uid::text, false);
+  -- S50 V2a-i : PIN manager connu pour adjust_b2b_balance_v2 (transaction-local, ROLLBACK).
+  UPDATE user_profiles SET pin_hash = hash_pin('112233'), locked_until = NULL, failed_login_attempts = 0
+   WHERE employee_code = 'EMP000';
 END $bootstrap$;
 
 CREATE OR REPLACE FUNCTION pg_temp.set_jwt_uid(p_uid UUID) RETURNS VOID
@@ -247,10 +252,11 @@ BEGIN
   UPDATE customers SET b2b_current_balance = 100000
    WHERE id = 'b2bf0001-0000-0000-0000-000000000002';
 
-  v_result := adjust_b2b_balance_v1(
+  v_result := adjust_b2b_balance_v2(
     p_customer_id => 'b2bf0001-0000-0000-0000-000000000002',
     p_delta       => 50000,
-    p_reason      => 'T8 admin adjustment'
+    p_reason      => 'T8 admin adjustment',
+    p_manager_pin => '112233'
   );
 
   SELECT b2b_current_balance INTO v_balance_after
@@ -280,10 +286,11 @@ BEGIN
   UPDATE customers SET b2b_current_balance = 100000
    WHERE id = 'b2bf0001-0000-0000-0000-000000000002';
 
-  v_result := adjust_b2b_balance_v1(
+  v_result := adjust_b2b_balance_v2(
     p_customer_id => 'b2bf0001-0000-0000-0000-000000000002',
     p_delta       => -30000,
-    p_reason      => 'T9 admin credit'
+    p_reason      => 'T9 admin credit',
+    p_manager_pin => '112233'
   );
 
   SELECT b2b_current_balance INTO v_balance_after
@@ -311,14 +318,15 @@ BEGIN
 END $t10_setup$;
 
 SELECT throws_ok(
-  $$ SELECT adjust_b2b_balance_v1(
+  $$ SELECT adjust_b2b_balance_v2(
        p_customer_id => 'b2bf0001-0000-0000-0000-000000000002',
        p_delta       => -100000,
-       p_reason      => 'T10 underflow test'
+       p_reason      => 'T10 underflow test',
+       p_manager_pin => '112233'
      ) $$,
   'P0011',
   NULL,
-  'T10: adjust_b2b_balance_v1 underflow raises P0011 balance_underflow'
+  'T10: adjust_b2b_balance_v2 underflow raises P0011 balance_underflow'
 );
 
 -- ===========================================================================

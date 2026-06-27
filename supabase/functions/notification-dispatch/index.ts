@@ -11,10 +11,14 @@
 // Authentication :
 //   - Bearer JWT with `notifications.send` perm (manager+) — primary
 //     pathway for app-side manual flushes.
-//   - `?secret=<NOTIFICATION_DISPATCH_SECRET>` query param — for
+//   - `x-dispatch-secret: <NOTIFICATION_DISPATCH_SECRET>` HTTP header — for
 //     scheduled invocations (Vercel Cron, GitHub Action, manual curl).
 //     If `NOTIFICATION_DISPATCH_SECRET` env var is unset, this pathway
 //     is disabled (Bearer-only).
+//     S50 V2a-i T6 — moved off the `?secret=` query param: query strings get
+//     logged by CDNs / load balancers / the Supabase dashboard, leaking the
+//     shared secret. Headers are far less commonly captured. Hard cutover —
+//     external schedulers must send the header (no query fallback).
 //
 // Channels v1 :
 //   - email  : Resend (or console mode if RESEND_API_KEY unset). See
@@ -56,11 +60,12 @@ function computeBackoffMinutes(nextRetries: number): number {
 }
 
 async function authorize(req: Request): Promise<{ ok: boolean; reason?: string }> {
-  const url = new URL(req.url);
-  const querySecret = url.searchParams.get('secret');
-  const envSecret   = Deno.env.get('NOTIFICATION_DISPATCH_SECRET');
+  // S50 V2a-i T6 — read the shared secret from a header (not the query string,
+  // which leaks into access logs / CDN logs / the dashboard).
+  const headerSecret = req.headers.get('x-dispatch-secret');
+  const envSecret    = Deno.env.get('NOTIFICATION_DISPATCH_SECRET');
 
-  if (envSecret && querySecret && querySecret === envSecret) {
+  if (envSecret && headerSecret && headerSecret === envSecret) {
     return { ok: true };
   }
 

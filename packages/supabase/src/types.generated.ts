@@ -5829,11 +5829,12 @@ export type Database = {
         }
         Returns: Json
       }
-      adjust_b2b_balance_v1: {
+      adjust_b2b_balance_v2: {
         Args: {
           p_customer_id: string
           p_delta: number
           p_idempotency_key?: string
+          p_manager_pin: string
           p_reason: string
         }
         Returns: Json
@@ -6828,7 +6829,7 @@ export type Database = {
           variance_pct: number
         }[]
       }
-      get_trial_balance_v2: {
+      get_trial_balance_v3: {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
@@ -7786,8 +7787,8 @@ export type Database = {
         }
         Returns: Json
       }
-      void_zreport_v1: {
-        Args: { p_reason: string; p_zreport_id: string }
+      void_zreport_v2: {
+        Args: { p_manager_pin: string; p_reason: string; p_zreport_id: string }
         Returns: Json
       }
       waste_display_stock_v1: {
