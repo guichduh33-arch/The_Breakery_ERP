@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/reports/__tests__/ProfitLossPage.smoke.test.tsx
 // Phase 6.A smoke: renders the Profit & Loss page, asserts heading + RPC
-// call to get_profit_loss_v1 with YYYY-MM-DD args, and renders the
+// call to get_profit_loss_v2 with YYYY-MM-DD args, and renders the
 // "Net profit" total.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -15,7 +15,7 @@ vi.mock('@/lib/supabase.js', () => ({
   supabase: {
     rpc: (fn: string, args: Record<string, unknown>) => {
       mockRpc(fn, args);
-      if (fn === 'get_profit_loss_v1') {
+      if (fn === 'get_profit_loss_v2') {
         return Promise.resolve({
           data: {
             revenue: { sales: 100, discounts: 0, adjustments: 0, total: 100 },
@@ -51,11 +51,11 @@ function renderPage() {
 describe('ProfitLossPage (smoke)', () => {
   beforeEach(() => { mockRpc.mockReset(); });
 
-  it('renders the heading and queries get_profit_loss_v1 with YYYY-MM-DD args', async () => {
+  it('renders the heading and queries get_profit_loss_v2 with YYYY-MM-DD args', async () => {
     renderPage();
     expect(screen.getByRole('heading', { name: 'Profit & Loss', level: 1 })).toBeInTheDocument();
     await waitFor(() => {
-      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_profit_loss_v1');
+      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_profit_loss_v2');
       expect(call).toBeDefined();
       const args = (call as [string, { p_date_start: string; p_date_end: string }])[1];
       expect(args.p_date_start).toMatch(/^\d{4}-\d{2}-\d{2}$/);

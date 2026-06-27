@@ -29,11 +29,10 @@ jobs:
   pgtap-smoke:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # continue-on-error until the V3_DEV_PG_POOLER_URL secret is confirmed
-    # present in this repo's GitHub secrets (it is the same secret the
-    # nightly pgtap-nightly.yml already references — if the nightly is
-    # green, flip this to false to make the smoke gate blocking).
-    continue-on-error: true
+    # S50: flipped to false — V3_DEV_PG_POOLER_URL confirmed present (same as
+    # nightly). Failures now block the PR. Revert to true only if the secret
+    # becomes unavailable for fork PRs (rare on this private repo).
+    continue-on-error: false
     steps:
       - uses: actions/checkout@v4
 
@@ -55,9 +54,8 @@ jobs:
       #   - security_refund_sequences         : refund money-flow integrity
       #   - products_cost_price_guard         : cost_price REVOKE UPDATE guard
       #   - security                          : core security suite
-      #
-      # TODO(S37+): add the Session 37 guards (e.g. order_discount_gate)
-      # to this list once the corresponding *.test.sql files land.
+      #   - security_leak_guard               : S50 view/MV PII-financial leak guard
+      #   - financial_rpc_perm_gates          : S50 permission-denied on gated RPCs
       - name: Run pgTAP smoke subset via pooler
         id: pgtap
         env:
@@ -76,6 +74,8 @@ jobs:
             supabase/tests/security_refund_sequences.test.sql
             supabase/tests/products_cost_price_guard.test.sql
             supabase/tests/security.test.sql
+            supabase/tests/security_leak_guard.test.sql
+            supabase/tests/financial_rpc_perm_gates.test.sql
           )
           fail_count=0
           fail_list=""

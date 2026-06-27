@@ -67,7 +67,7 @@ describe('useReopenHeldOrder', () => {
     });
   });
 
-  it('restores customer badge via get_customer_v2 when customerId present', async () => {
+  it('restores customer badge via get_customer_v3 when customerId present', async () => {
     rpc.mockImplementation((name: string) => {
       if (name === 'reopen_held_order_v1') {
         return Promise.resolve({
@@ -82,7 +82,7 @@ describe('useReopenHeldOrder', () => {
           error: null,
         });
       }
-      if (name === 'get_customer_v2') {
+      if (name === 'get_customer_v3') {
         return Promise.resolve({
           data: [{ id: 'c1', name: 'Pelanggan VIP', customer_type: 'retail', loyalty_points: 200, category: null }],
           error: null,
@@ -99,7 +99,7 @@ describe('useReopenHeldOrder', () => {
       expect(s.cart.customerId).toBe('c1');
       expect(s.attachedCustomer?.name).toBe('Pelanggan VIP');
     });
-    expect(rpc).toHaveBeenCalledWith('get_customer_v2', { p_id: 'c1' });
+    expect(rpc).toHaveBeenCalledWith('get_customer_v3', { p_id: 'c1' });
   });
 
   it('keeps customerId even if customer lookup fails (best-effort badge)', async () => {

@@ -6384,7 +6384,7 @@ export type Database = {
       }
       get_b2b_settings_v1: { Args: never; Returns: Json }
       get_balance_sheet_data: { Args: { p_as_of?: string }; Returns: Json }
-      get_balance_sheet_v1: { Args: { p_as_of_date: string }; Returns: Json }
+      get_balance_sheet_v2: { Args: { p_as_of_date: string }; Returns: Json }
       get_basket_analysis_v1: {
         Args: { p_date_end: string; p_date_start: string; p_top_n?: number }
         Returns: {
@@ -6459,7 +6459,7 @@ export type Database = {
           total_spent: number
         }[]
       }
-      get_customer_v2: {
+      get_customer_v3: {
         Args: { p_id: string }
         Returns: {
           category: Json
@@ -6516,7 +6516,7 @@ export type Database = {
           unit: string
         }[]
       }
-      get_general_ledger_v1: {
+      get_general_ledger_v2: {
         Args: {
           p_account_id: string
           p_cursor?: Json
@@ -6639,7 +6639,7 @@ export type Database = {
           suggested_quantity: number
         }[]
       }
-      get_profit_loss_v1: {
+      get_profit_loss_v2: {
         Args: {
           p_date_end: string
           p_date_start: string
@@ -6705,7 +6705,7 @@ export type Database = {
           total: number
         }[]
       }
-      get_sales_by_hour_v1: {
+      get_sales_by_hour_v2: {
         Args: { p_date: string }
         Returns: {
           hour: number
@@ -6828,7 +6828,7 @@ export type Database = {
           variance_pct: number
         }[]
       }
-      get_trial_balance_v1: {
+      get_trial_balance_v2: {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
@@ -7515,7 +7515,7 @@ export type Database = {
       runtests:
         | { Args: never; Returns: string[] }
         | { Args: { "": string }; Returns: string[] }
-      search_customers_v2: {
+      search_customers_v3: {
         Args: { p_limit?: number; p_query: string }
         Returns: {
           category: Json

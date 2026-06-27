@@ -150,7 +150,14 @@ export function AppRoutes() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/backoffice" element={<Protected><BackofficeLayout /></Protected>}>
         <Route index element={<DashboardPage />} />
-        <Route path="products" element={<ProductsPage />} />
+        <Route
+          path="products"
+          element={
+            <PermissionGate required="products.read">
+              <ProductsPage />
+            </PermissionGate>
+          }
+        />
         <Route
           path="products/combos"
           element={
@@ -183,7 +190,14 @@ export function AppRoutes() {
             </PermissionGate>
           }
         />
-        <Route path="products/:productId" element={<ProductDetailPage />} />
+        <Route
+          path="products/:productId"
+          element={
+            <PermissionGate required="products.read">
+              <ProductDetailPage />
+            </PermissionGate>
+          }
+        />
         <Route
           path="categories"
           element={
@@ -484,7 +498,7 @@ export function AppRoutes() {
         <Route
           path="b2b"
           element={
-            <PermissionGate required="customers.read">
+            <PermissionGate required="b2b.read">
               <B2BDashboardPage />
             </PermissionGate>
           }
@@ -492,7 +506,7 @@ export function AppRoutes() {
         <Route
           path="b2b/payments"
           element={
-            <PermissionGate required="customers.read">
+            <PermissionGate required="b2b.read">
               <B2BPaymentsPage />
             </PermissionGate>
           }
@@ -909,7 +923,7 @@ export function AppRoutes() {
         <Route
           path="settings/security"
           element={
-            <PermissionGate required="settings.read">
+            <PermissionGate required="settings.security.manage">
               <SecuritySettingsPage />
             </PermissionGate>
           }

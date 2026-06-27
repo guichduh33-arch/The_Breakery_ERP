@@ -91,10 +91,11 @@ export default function PosPage() {
   }
 
   // S37 C5 (SEC-03) — search/create go through the SECURITY DEFINER customer
-  // RPCs v2 so they survive the customers.read SELECT gate (PII cutover).
+  // RPCs v3 so they survive the customers.read SELECT gate (PII cutover).
+  // S50 W1.4 — bumped v2 → v3 (dual gate: customers.read OR pos.sale.create).
   async function searchCustomers(query: string): Promise<CustomerWithCategory[]> {
     if (query.trim().length < 2) return [];
-    const { data } = await supabase.rpc('search_customers_v2', {
+    const { data } = await supabase.rpc('search_customers_v3', {
       p_query: query,
       p_limit: 10,
     });

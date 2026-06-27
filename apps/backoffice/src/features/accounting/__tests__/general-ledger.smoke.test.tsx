@@ -104,7 +104,7 @@ function renderPage(initialEntry?: string): void {
 describe('GeneralLedgerPage (S26b Wave 3)', () => {
   beforeEach(() => mockRpc.mockReset());
 
-  it('T1 — selecting an account triggers get_general_ledger_v1 RPC', async () => {
+  it('T1 — selecting an account triggers get_general_ledger_v2 RPC', async () => {
     mockRpc.mockReturnValueOnce({ data: PAGE_1, error: null });
     renderPage();
     await waitFor(() => {
@@ -115,7 +115,7 @@ describe('GeneralLedgerPage (S26b Wave 3)', () => {
       { target: { value: 'a-cash' } });
 
     await waitFor(() => {
-      expect(mockRpc).toHaveBeenCalledWith('get_general_ledger_v1',
+      expect(mockRpc).toHaveBeenCalledWith('get_general_ledger_v2',
         expect.objectContaining({ p_account_id: 'a-cash' }));
     });
     await waitFor(() => {
@@ -139,7 +139,7 @@ describe('GeneralLedgerPage (S26b Wave 3)', () => {
     fireEvent.click(screen.getByTestId('gl-load-more'));
 
     await waitFor(() => {
-      expect(mockRpc).toHaveBeenCalledWith('get_general_ledger_v1',
+      expect(mockRpc).toHaveBeenCalledWith('get_general_ledger_v2',
         expect.objectContaining({
           p_account_id: 'a-cash',
           p_cursor: { last_date: '2026-05-02', last_id: 'je1' },
@@ -162,7 +162,7 @@ describe('GeneralLedgerPage (S26b Wave 3)', () => {
     // The selector should already have 'a-cash' selected and the date range
     // should reflect the URL params — so the RPC should fire on mount.
     await waitFor(() => {
-      expect(mockRpc).toHaveBeenCalledWith('get_general_ledger_v1',
+      expect(mockRpc).toHaveBeenCalledWith('get_general_ledger_v2',
         expect.objectContaining({
           p_account_id: 'a-cash',
           p_date_start: '2026-05-01',
