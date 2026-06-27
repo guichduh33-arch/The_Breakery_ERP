@@ -13,7 +13,7 @@ vi.mock('@/lib/supabase.js', () => ({
   supabase: {
     rpc: (fn: string, args: Record<string, unknown>) => {
       mockRpc(fn, args);
-      if (fn === 'get_balance_sheet_v1') {
+      if (fn === 'get_balance_sheet_v2') {
         return Promise.resolve({
           data: {
             assets: {
@@ -57,11 +57,11 @@ function renderPage() {
 describe('BalanceSheetPage (smoke)', () => {
   beforeEach(() => { mockRpc.mockReset(); });
 
-  it('renders heading and queries get_balance_sheet_v1 with YYYY-MM-DD as-of', async () => {
+  it('renders heading and queries get_balance_sheet_v2 with YYYY-MM-DD as-of', async () => {
     renderPage();
     expect(screen.getByRole('heading', { name: 'Balance Sheet', level: 1 })).toBeInTheDocument();
     await waitFor(() => {
-      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_balance_sheet_v1');
+      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_balance_sheet_v2');
       expect(call).toBeDefined();
       const args = (call as [string, { p_as_of_date: string }])[1];
       expect(args.p_as_of_date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
