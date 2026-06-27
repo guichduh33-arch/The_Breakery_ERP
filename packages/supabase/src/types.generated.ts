@@ -5829,11 +5829,12 @@ export type Database = {
         }
         Returns: Json
       }
-      adjust_b2b_balance_v1: {
+      adjust_b2b_balance_v2: {
         Args: {
           p_customer_id: string
           p_delta: number
           p_idempotency_key?: string
+          p_manager_pin: string
           p_reason: string
         }
         Returns: Json

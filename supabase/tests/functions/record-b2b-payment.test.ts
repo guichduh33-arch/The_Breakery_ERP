@@ -4,7 +4,7 @@
 // Couvre les RPCs S24 :
 //   - record_b2b_payment_v1 (happy path, idempotency, overpayment)
 //   - create_b2b_order_v1   (happy path + then payment chain)
-//   - adjust_b2b_balance_v1 (±delta chain)
+//   - adjust_b2b_balance_v2 (±delta chain, JE + manager PIN — S50 V2a-i)
 //
 // 5 scénarios :
 //   S1 : create B2B customer + B2B order + record full payment → balance=0
@@ -281,28 +281,31 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('B2B Foundation — reco
       .eq('id', customerId);
 
     // +30K
-    const { data: r1, error: e1 } = await rpc(sb)('adjust_b2b_balance_v1', {
+    const { data: r1, error: e1 } = await rpc(sb)('adjust_b2b_balance_v2', {
       p_customer_id: customerId,
       p_delta: 30000,
       p_reason: 'S5 positive adjustment test',
+      p_manager_pin: '111111',
     });
     expect(e1).toBeNull();
     expect(Number(r1.balance_after)).toBe(80000);
 
     // -20K
-    const { data: r2, error: e2 } = await rpc(sb)('adjust_b2b_balance_v1', {
+    const { data: r2, error: e2 } = await rpc(sb)('adjust_b2b_balance_v2', {
       p_customer_id: customerId,
       p_delta: -20000,
       p_reason: 'S5 negative adjustment test',
+      p_manager_pin: '111111',
     });
     expect(e2).toBeNull();
     expect(Number(r2.balance_after)).toBe(60000);
 
     // Underflow attempt → expect error
-    const { data: r3, error: e3 } = await rpc(sb)('adjust_b2b_balance_v1', {
+    const { data: r3, error: e3 } = await rpc(sb)('adjust_b2b_balance_v2', {
       p_customer_id: customerId,
       p_delta: -100000,
       p_reason: 'S5 underflow attempt',
+      p_manager_pin: '111111',
     });
     expect(r3).toBeNull();
     expect(e3).not.toBeNull();
