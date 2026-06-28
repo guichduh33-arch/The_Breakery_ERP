@@ -34,17 +34,17 @@ describe('VoidZReportModal', () => {
     });
   });
 
-  it('disables submit until reason length >= 10', () => {
+  it('disables continue until reason length >= 10 (step 1)', () => {
     render(wrap(<VoidZReportModal open zreportId="z1" onOpenChange={() => {}} />));
-    const submit = screen.getByTestId('void-submit') as HTMLButtonElement;
-    expect(submit.disabled).toBe(true);
+    const cont = screen.getByTestId('void-continue') as HTMLButtonElement;
+    expect(cont.disabled).toBe(true);
     fireEvent.change(screen.getByTestId('void-reason-input'), { target: { value: 'too short' } });
-    expect(submit.disabled).toBe(true);
+    expect(cont.disabled).toBe(true);
     fireEvent.change(screen.getByTestId('void-reason-input'), { target: { value: 'this is long enough' } });
-    expect(submit.disabled).toBe(false);
+    expect(cont.disabled).toBe(false);
   });
 
-  it('calls void_zreport_v1 with trimmed reason and closes on success', async () => {
+  it('S50 T5 — calls void_zreport_v2 with trimmed reason + manager PIN and closes on success', async () => {
     const onSuccess = vi.fn();
     const onOpenChange = vi.fn();
     render(wrap(
@@ -55,15 +55,18 @@ describe('VoidZReportModal', () => {
         onSuccess={onSuccess}
       />,
     ));
+    // Step 1 : reason -> continue
     fireEvent.change(screen.getByTestId('void-reason-input'), {
       target: { value: '  manager misclicked  ' },
     });
+    fireEvent.click(screen.getByTestId('void-continue'));
+    // Step 2 : PIN -> submit
+    fireEvent.change(screen.getByTestId('void-pin-input'), { target: { value: '123456' } });
     fireEvent.click(screen.getByTestId('void-submit'));
     await waitFor(() =>
       expect(rpcSpy).toHaveBeenCalledWith(
-        'void_zreport_v1',
-        { p_zreport_id: 'z1', p_reason: 'manager misclicked' },
-        expect.anything(),
+        'void_zreport_v2',
+        { p_zreport_id: 'z1', p_reason: 'manager misclicked', p_manager_pin: '123456' },
       ),
     );
     await waitFor(() => expect(onSuccess).toHaveBeenCalled());

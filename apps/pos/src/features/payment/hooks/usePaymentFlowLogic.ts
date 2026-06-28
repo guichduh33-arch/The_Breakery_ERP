@@ -13,12 +13,13 @@ import {
   validateTenders, sumTenders, computeRemaining,
   classifyCheckoutError, type RetryClassification,
   type Tender,
-  DEFAULT_TAX_RATE,
+  type PaymentResultLine,
 } from '@breakery/domain';
 import { resetCartAfterCheckout, useCartStore } from '@/stores/cartStore';
 import { usePaymentStore } from '@/stores/paymentStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useCheckout } from './useCheckout';
+import { useTaxRate } from '@/features/settings/hooks/useTaxRate';
 import { usePOSPresets } from '@/features/settings/hooks/usePOSPresets';
 import { useFireToStations } from '@/features/cart/hooks/useFireToStations';
 import { toast } from 'sonner';
@@ -27,6 +28,12 @@ import type { PaymentMethod } from '@breakery/domain';
 export interface PaymentSuccessState {
   orderNumber: string;
   total: number;
+  // S51 — server-authoritative tax + per-line breakdown (money-path v15). The
+  // receipt consumes these instead of recomputing client-side. `taxAmount` falls
+  // back to the pre-payment estimate only if the server omitted it.
+  taxAmount: number;
+  subtotal?: number;
+  lines?: PaymentResultLine[];
   changeGiven: number | null;
   pointsEarned: number;
   // S44 D4 — server-resolved loyalty balance (direct/EF path only).
@@ -52,14 +59,18 @@ export function usePaymentFlowLogic() {
   const appliedPromotions = useCartStore((s) => s.appliedPromotions);
   const user = useAuthStore((s) => s.user);
   const checkout = useCheckout();
+  const taxRate = useTaxRate();
   const { mutation: fireToStations } = useFireToStations();
   const { presets } = usePOSPresets();
   const quickAmounts = presets.quickPayments;
 
-  const baseTotals = calculateTotals(cart, DEFAULT_TAX_RATE);
+  // Pre-payment estimate shown in the terminal — uses the SERVER tax rate
+  // (useTaxRate) so it matches what the money-path RPC will charge. The receipt
+  // (post-payment) consumes the server `tax_amount`/`total` directly below.
+  const baseTotals = calculateTotals(cart, taxRate);
   const promotionTotal = appliedPromotions.reduce((s, ap) => s + ap.amount, 0);
   const total = Math.max(0, baseTotals.total - promotionTotal);
-  const tax_amount = Math.round((total * DEFAULT_TAX_RATE) / (1 + DEFAULT_TAX_RATE));
+  const tax_amount = Math.round((total * taxRate) / (1 + taxRate));
   const totals = { ...baseTotals, total, tax_amount };
 
   const tenderedSum = sumTenders(tenders);
@@ -171,6 +182,11 @@ export function usePaymentFlowLogic() {
       setSuccess({
         orderNumber: result.order_number,
         total: result.total,
+        // S51 — consume server tax/subtotal/lines; fall back to the pre-payment
+        // estimate for tax only if the envelope omitted it (legacy pickup path).
+        taxAmount: result.tax_amount ?? tax_amount,
+        ...(result.subtotal != null ? { subtotal: result.subtotal } : {}),
+        ...(result.lines ? { lines: result.lines } : {}),
         changeGiven: result.change_given,
         pointsEarned: result.loyalty_points_earned
           ?? (attachedCustomer

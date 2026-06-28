@@ -30,11 +30,11 @@ BEGIN
   SELECT id INTO v_cat FROM categories WHERE deleted_at IS NULL LIMIT 1;
   INSERT INTO products (sku,name,category_id,retail_price,cost_price,unit,current_stock)
     VALUES ('TST-S37-LT','S37 LoyaltySanity',v_cat,50000,10000,'pcs',10) RETURNING id INTO v_prod;
-  INSERT INTO pos_sessions (opened_by, opening_cash, status)
-    VALUES (v_prof, 0, 'open') RETURNING id INTO v_sess;
+  SELECT id INTO v_sess FROM pos_sessions WHERE status='open' AND opened_by=v_prof ORDER BY opened_at DESC LIMIT 1;
+  IF v_sess IS NULL THEN INSERT INTO pos_sessions (opened_by, opening_cash, status) VALUES (v_prof,0,'open') RETURNING id INTO v_sess; END IF;
   INSERT INTO customers (name, customer_type) VALUES ('S37 Loyalty Sanity','retail') RETURNING id INTO v_cust;
 
-  v_res := complete_order_with_payment_v14(
+  v_res := complete_order_with_payment_v15(
     p_session_id := v_sess,
     p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(jsonb_build_object('product_id', v_prod, 'quantity', 1, 'unit_price', 50000)),

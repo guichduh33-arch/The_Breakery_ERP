@@ -42,10 +42,10 @@ SELECT ok(
     SELECT 1 FROM pg_proc p
     JOIN pg_namespace n ON n.oid = p.pronamespace
     WHERE n.nspname = 'public'
-      AND p.proname = 'get_trial_balance_v2'
+      AND p.proname = 'get_trial_balance_v3'
       AND p.prosecdef = true
   ),
-  'T2 — get_trial_balance_v2 existe et SECURITY DEFINER'
+  'T2 — get_trial_balance_v3 existe et SECURITY DEFINER'
 );
 
 SELECT ok(

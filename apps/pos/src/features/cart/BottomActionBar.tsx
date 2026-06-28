@@ -38,9 +38,10 @@ import {
   RedeemPointsModal,
   cn,
 } from '@breakery/ui';
-import { calculateTotals, DEFAULT_TAX_RATE } from '@breakery/domain';
+import { calculateTotals } from '@breakery/domain';
 import { useCartStore } from '@/stores/cartStore';
 import { usePaymentStore } from '@/stores/paymentStore';
+import { useTaxRate } from '@/features/settings/hooks/useTaxRate';
 import { useHeldOrdersQuery } from '@/features/heldOrders/hooks/useHeldOrdersQuery';
 import { HoldOrderButton } from '@/features/heldOrders/components/HoldOrderButton';
 import { useApplyCartDiscount } from '@/features/discounts/hooks/useApplyCartDiscount';
@@ -124,7 +125,10 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
     };
   }, [moreOpen]);
 
-  const baseTotals = calculateTotals(cart, DEFAULT_TAX_RATE);
+  // total is tax-inclusive (rate-independent); pass the SERVER rate so no
+  // hardcoded 0.10 remains on the checkout bar.
+  const taxRate = useTaxRate();
+  const baseTotals = calculateTotals(cart, taxRate);
   const promotionTotal = appliedPromotions.reduce((s, ap) => s + ap.amount, 0);
   const total = Math.max(0, baseTotals.total - promotionTotal);
 

@@ -1,7 +1,7 @@
 // apps/backoffice/src/features/accounting/__tests__/trial-balance.smoke.test.tsx
 //
 // Session 26b / Wave 4 — smoke for TrialBalancePage + CSV builder.
-//   T1 — Renders balanced badge + lines from get_trial_balance_v1.
+//   T1 — Renders balanced badge + lines from get_trial_balance_v3.
 //   T2 — buildTrialBalanceCsv emits BOM + header + locale-formatted numbers.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -19,10 +19,12 @@ const TB_PAYLOAD = {
     {
       account_id: 'a1', code: '1110', name: 'Cash', account_class: 1,
       balance_type: 'debit', total_debit: 1500000, total_credit: 0, balance: 1500000,
+      opening_balance: 0,
     },
     {
       account_id: 'a2', code: '4100', name: 'Sales Revenue', account_class: 4,
       balance_type: 'credit', total_debit: 0, total_credit: 1500000, balance: 1500000,
+      opening_balance: 0,
     },
   ],
   total_debit: 1500000,

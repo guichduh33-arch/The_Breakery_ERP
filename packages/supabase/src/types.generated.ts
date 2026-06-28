@@ -5769,6 +5769,22 @@ export type Database = {
         Args: { p_product_id: string; p_quantity_needed: number }
         Returns: string
       }
+      _resolve_line_price_v1: {
+        Args: {
+          p_combo: boolean
+          p_customer_id: string
+          p_is_gift: boolean
+          p_modifiers: Json
+          p_product_id: string
+          p_quantity: number
+        }
+        Returns: {
+          line_subtotal: number
+          modifiers_resolved: Json
+          modifiers_total: number
+          unit_price: number
+        }[]
+      }
       _resolve_modifier_ingredients_v1: {
         Args: { p_line_qty: number; p_modifiers: Json; p_product_id: string }
         Returns: Json
@@ -5829,11 +5845,12 @@ export type Database = {
         }
         Returns: Json
       }
-      adjust_b2b_balance_v1: {
+      adjust_b2b_balance_v2: {
         Args: {
           p_customer_id: string
           p_delta: number
           p_idempotency_key?: string
+          p_manager_pin: string
           p_reason: string
         }
         Returns: Json
@@ -6043,7 +6060,7 @@ export type Database = {
             }
             Returns: string
           }
-      complete_order_with_payment_v14: {
+      complete_order_with_payment_v15: {
         Args: {
           p_customer_id?: string
           p_discount_amount?: number
@@ -6828,7 +6845,7 @@ export type Database = {
           variance_pct: number
         }[]
       }
-      get_trial_balance_v2: {
+      get_trial_balance_v3: {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
@@ -7786,8 +7803,8 @@ export type Database = {
         }
         Returns: Json
       }
-      void_zreport_v1: {
-        Args: { p_reason: string; p_zreport_id: string }
+      void_zreport_v2: {
+        Args: { p_manager_pin: string; p_reason: string; p_zreport_id: string }
         Returns: Json
       }
       waste_display_stock_v1: {
