@@ -198,7 +198,7 @@ serve(async (req) => {
   // S37 SEC-01 — manager PIN in header (S25 pattern), relayed to the RPC arg.
   const managerPin = req.headers.get('x-manager-pin');
 
-  const { data, error } = await userClient.rpc('complete_order_with_payment_v14', {
+  const { data, error } = await userClient.rpc('complete_order_with_payment_v15', {
     p_session_id: body.session_id,
     p_order_type: body.order_type,
     p_items: body.items,
