@@ -5769,6 +5769,22 @@ export type Database = {
         Args: { p_product_id: string; p_quantity_needed: number }
         Returns: string
       }
+      _resolve_line_price_v1: {
+        Args: {
+          p_combo: boolean
+          p_customer_id: string
+          p_is_gift: boolean
+          p_modifiers: Json
+          p_product_id: string
+          p_quantity: number
+        }
+        Returns: {
+          line_subtotal: number
+          modifiers_resolved: Json
+          modifiers_total: number
+          unit_price: number
+        }[]
+      }
       _resolve_modifier_ingredients_v1: {
         Args: { p_line_qty: number; p_modifiers: Json; p_product_id: string }
         Returns: Json
@@ -6044,7 +6060,7 @@ export type Database = {
             }
             Returns: string
           }
-      complete_order_with_payment_v14: {
+      complete_order_with_payment_v15: {
         Args: {
           p_customer_id?: string
           p_discount_amount?: number

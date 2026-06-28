@@ -2,8 +2,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Check, Printer, RotateCw } from 'lucide-react';
 import { Button, Currency, FullScreenModal } from '@breakery/ui';
-import { calculateTotals, DEFAULT_TAX_RATE } from '@breakery/domain';
-import type { Cart, PaymentMethod } from '@breakery/domain';
+import { calculateTotals } from '@breakery/domain';
+import type { Cart, PaymentMethod, PaymentResultLine } from '@breakery/domain';
+import { useTaxRate } from '@/features/settings/hooks/useTaxRate';
 import { printReceipt, openCashDrawer, type ReceiptPayload } from '@/services/print/printService';
 import { useStationPrinters } from '@/features/cart/hooks/useStationPrinters';
 import { usePosSettingsStore } from '@/stores/posSettingsStore';
@@ -18,7 +19,19 @@ const BUSINESS = {
 export interface SuccessModalProps {
   open: boolean;
   orderNumber: string;
+  /** Server-authoritative charged total (money-path v15). */
   total: number;
+  /**
+   * S51 — server-authoritative tax amount (money-path v15). Consumed verbatim on
+   * the receipt. Optional only so the isolated smoke tests can omit it; in
+   * production PaymentTerminal always threads the server value. Falls back to the
+   * client estimate at the SERVER tax rate (never the hardcoded 0.10).
+   */
+  taxAmount?: number;
+  /** S51 — server-authoritative subtotal (money-path v15). */
+  subtotal?: number;
+  /** S51 — server-authoritative per-line breakdown (money-path v15). */
+  lines?: PaymentResultLine[];
   changeGiven: number | null;
   pointsEarned?: number;
   /**
@@ -36,8 +49,26 @@ export interface SuccessModalProps {
   onNewOrder: () => void;
 }
 
-function buildReceiptPayload(props: SuccessModalProps): ReceiptPayload {
-  const totals = calculateTotals(props.cart, DEFAULT_TAX_RATE);
+function buildReceiptPayload(props: SuccessModalProps, taxRate: number): ReceiptPayload {
+  // S51 — the CHARGED total, tax and per-line money come from the server (v15);
+  // `calculateTotals` is used ONLY for the tax-independent informational lines
+  // (subtotal fallback + loyalty redemption). It runs at the SERVER tax rate so
+  // there is no hardcoded 0.10 left on this path.
+  const derived = calculateTotals(props.cart, taxRate);
+
+  // Align the server line breakdown to the non-cancelled cart lines by index —
+  // the money-path processes buildOrderPayload's items (cancelled filtered) in
+  // order. Fall back to a client per-line estimate when the breakdown is absent
+  // or its length doesn't match (defensive — never throw on the receipt).
+  const charged = props.cart.items.filter((i) => !i.is_cancelled);
+  const serverLines = props.lines;
+  const useServerLines = serverLines != null && serverLines.length === charged.length;
+
+  const itemsTotal = props.subtotal
+    ?? (useServerLines
+      ? serverLines!.reduce((sum, l) => sum + l.line_subtotal, 0)
+      : derived.subtotal);
+
   return {
     business: BUSINESS,
     order: {
@@ -47,20 +78,27 @@ function buildReceiptPayload(props: SuccessModalProps): ReceiptPayload {
       order_type: props.cart.order_type === 'dine_in' ? 'dine_in' : 'take_out',
     },
     ...(props.customerName ? { customer: { name: props.customerName } } : {}),
-    items: props.cart.items.map((item) => ({
-      name: item.name,
-      quantity: item.quantity,
-      unit_price: item.unit_price,
-      ...(item.modifiers.length > 0 ? {
-        modifiers: item.modifiers.map((m) => ({ label: m.option_label, price_adjustment: m.price_adjustment })),
-      } : {}),
-      line_total: (item.unit_price + item.modifiers.reduce((s, m) => s + m.price_adjustment, 0)) * item.quantity,
-    })),
+    items: charged.map((item, idx) => {
+      const sl = useServerLines ? serverLines![idx] : undefined;
+      const clientLineTotal =
+        (item.unit_price + item.modifiers.reduce((s, m) => s + m.price_adjustment, 0)) * item.quantity;
+      return {
+        name: item.name,
+        quantity: item.quantity,
+        unit_price: sl ? sl.unit_price : item.unit_price,
+        ...(item.modifiers.length > 0 ? {
+          modifiers: item.modifiers.map((m) => ({ label: m.option_label, price_adjustment: m.price_adjustment })),
+        } : {}),
+        line_total: sl ? sl.line_total : clientLineTotal,
+      };
+    }),
     totals: {
-      items_total: totals.subtotal,
-      redemption_amount: totals.redemption_amount,
-      total: totals.total,
-      tax_amount: totals.tax_amount,
+      items_total: itemsTotal,
+      redemption_amount: derived.redemption_amount,
+      // Server-authoritative charged total + tax (v15). Tax falls back to the
+      // client estimate at the server rate only when omitted (legacy/tests).
+      total: props.total,
+      tax_amount: props.taxAmount ?? derived.tax_amount,
     },
     payment: {
       method: props.paymentMethod,
@@ -86,6 +124,7 @@ function buildReceiptPayload(props: SuccessModalProps): ReceiptPayload {
 
 export function SuccessModal(props: SuccessModalProps) {
   const { open, orderNumber, total, changeGiven, pointsEarned, customerName, onNewOrder } = props;
+  const taxRate = useTaxRate();
   const [isPrinting, setIsPrinting] = useState(false);
   // Guards the mount-effect side effects (toast) against firing after the modal
   // has unmounted — e.g. the cashier hits "New Order" before the print/drawer
@@ -99,7 +138,7 @@ export function SuccessModal(props: SuccessModalProps) {
 
   async function handlePrint() {
     setIsPrinting(true);
-    const payload = buildReceiptPayload(props);
+    const payload = buildReceiptPayload(props, taxRate);
     const result = await printReceipt(payload, cashierPrinter);
     if (!result.success) {
       toast.warning('Print server unreachable — receipt not printed');
