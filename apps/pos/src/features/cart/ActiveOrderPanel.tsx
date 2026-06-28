@@ -18,9 +18,10 @@ import { useState, type JSX } from 'react';
 import { MapPin, ShoppingBag, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { DiscountModal, PinVerificationModal, SectionLabel, cn } from '@breakery/ui';
-import { calculateTotals, DEFAULT_TAX_RATE } from '@breakery/domain';
+import { calculateTotals } from '@breakery/domain';
 import type { CartItem, OrderType } from '@breakery/domain';
 import { useCartStore } from '@/stores/cartStore';
+import { useTaxRate } from '@/features/settings/hooks/useTaxRate';
 import { useApplyLineDiscount, lineDiscountBase } from '@/features/discounts/hooks/useApplyLineDiscount';
 import { LoyaltyPointsLine } from '@/features/loyalty/components/LoyaltyPointsLine';
 import { usePromotionsAutoEval } from '@/features/promotions/hooks/usePromotionsAutoEval';
@@ -79,10 +80,13 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
   const lineDiscount = useApplyLineDiscount();
 
   // ── totals (promo applied after base, never negative) ────────────────────
-  const baseTotals = calculateTotals(cart, DEFAULT_TAX_RATE);
+  // Tax estimated at the SERVER rate (useTaxRate) — the money-path RPC charges
+  // this same rate; no hardcoded 0.10 on the encaissement path.
+  const taxRate = useTaxRate();
+  const baseTotals = calculateTotals(cart, taxRate);
   const promotionTotal = appliedPromotions.reduce((s, ap) => s + ap.amount, 0);
   const total = Math.max(0, baseTotals.total - promotionTotal);
-  const tax_amount = Math.round((total * DEFAULT_TAX_RATE) / (1 + DEFAULT_TAX_RATE));
+  const tax_amount = Math.round((total * taxRate) / (1 + taxRate));
 
   const isEmpty = cart.items.length === 0;
   const pickedUp = Boolean(pickedUpOrderId);
@@ -205,7 +209,7 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
           )}
 
           <div className="flex items-center justify-between text-[11px] text-text-muted">
-            <span className="uppercase tracking-wide">Tax Included (10%)</span>
+            <span className="uppercase tracking-wide">Tax Included ({Math.round(taxRate * 100)}%)</span>
             <span className="font-mono tabular-nums">{rp(tax_amount)}</span>
           </div>
 

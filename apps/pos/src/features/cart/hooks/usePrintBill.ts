@@ -2,13 +2,14 @@
 // Session 34 — W2.6 — print a "bill" (addition) to the cashier or waiter printer.
 // The bill shows the whole order with totals, pre-payment, re-printable at will.
 import { useMutation } from '@tanstack/react-query';
-import { calculateTotals, DEFAULT_TAX_RATE } from '@breakery/domain';
+import { calculateTotals } from '@breakery/domain';
 import type { PrinterRole } from '@breakery/domain';
 import { printStationTicket } from '@/services/print/printService';
 import type { StationTicketPayload } from '@/services/print/printService';
 import { useCartStore } from '@/stores/cartStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useStationPrinters } from './useStationPrinters';
+import { useTaxRate } from '@/features/settings/hooks/useTaxRate';
 
 
 export interface PrintBillInput {
@@ -19,6 +20,10 @@ export interface PrintBillInput {
 export function usePrintBill() {
   const { data: printersMap } = useStationPrinters();
   const serverName = useAuthStore((s) => s.user?.full_name ?? 'Staff');
+  // D1 (S51) — the bill is printed BEFORE the order exists, so there is no v15
+  // server response yet. It stays a client-side computation, but at the SERVER
+  // tax rate (useTaxRate) instead of the hardcoded DEFAULT_TAX_RATE.
+  const taxRate = useTaxRate();
 
   return useMutation<void, Error, PrintBillInput>({
     mutationFn: async ({ role }) => {
@@ -42,7 +47,7 @@ export function usePrintBill() {
         }));
 
       // 4. Compute totals (includes tax extraction, discounts, loyalty).
-      const t = calculateTotals(cart, DEFAULT_TAX_RATE);
+      const t = calculateTotals(cart, taxRate);
 
       // 5. Build a human-readable order label.
       //    A real order_number isn't available pre-payment; use table / walk-in

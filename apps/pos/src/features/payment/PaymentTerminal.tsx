@@ -46,6 +46,7 @@ export function PaymentTerminal() {
         open
         orderNumber={success.orderNumber}
         total={success.total}
+        taxAmount={success.taxAmount}
         changeGiven={success.changeGiven}
         pointsEarned={success.pointsEarned}
         cart={cart}
@@ -53,6 +54,8 @@ export function PaymentTerminal() {
         cashReceived={Number(cashReceivedStr || '0')}
         cashierName={user?.full_name ?? 'Cashier'}
         onNewOrder={handleNewOrder}
+        {...(success.subtotal !== undefined ? { subtotal: success.subtotal } : {})}
+        {...(success.lines ? { lines: success.lines } : {})}
         {...(success.customerName ? { customerName: success.customerName } : {})}
         {...(success.loyaltyBalanceAfter !== undefined ? { loyaltyBalanceAfter: success.loyaltyBalanceAfter } : {})}
       />

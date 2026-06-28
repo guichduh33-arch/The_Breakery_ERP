@@ -1,7 +1,7 @@
 // apps/pos/src/features/payment/hooks/useCheckout.ts
 import { useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { Cart, PaymentInput, PaymentResult } from '@breakery/domain';
+import type { Cart, PaymentInput, PaymentResult, PaymentResultLine } from '@breakery/domain';
 import { buildOrderPayload } from '@breakery/domain';
 import type { Database, Json } from '@breakery/supabase';
 
@@ -35,6 +35,9 @@ interface CheckoutResponse {
   total: number;
   tax_amount: number;
   change_given: number | null;
+  // S51 — server-authoritative subtotal + per-line breakdown (money-path v15).
+  subtotal?: number;
+  lines?: PaymentResultLine[];
   // S44 D4 — v12 returns the server-resolved loyalty figures.
   loyalty_points_earned?: number;
   loyalty_balance_after?: number;
@@ -172,6 +175,9 @@ export function useCheckout() {
           tax_amount: number;
           total: number;
           change_given: number | null;
+          // S51 — present when the pickup RPC exposes the per-line breakdown;
+          // omitted otherwise (pay_existing_order_v10 is not part of the v15 bump).
+          lines?: PaymentResultLine[];
           loyalty_points_earned?: number;
           idempotent_replay: boolean;
         };
@@ -183,6 +189,9 @@ export function useCheckout() {
           total: envelope.total ?? 0,
           tax_amount: envelope.tax_amount ?? 0,
           change_given: envelope.change_given ?? null,
+          // S51 — forward the server breakdown so the receipt consumes it.
+          ...(envelope.subtotal != null ? { subtotal: envelope.subtotal } : {}),
+          ...(envelope.lines ? { lines: envelope.lines } : {}),
           // S44 D4 — v8 returns points_earned (no balance_after on the pickup path).
           ...(envelope.loyalty_points_earned != null ? { loyalty_points_earned: envelope.loyalty_points_earned } : {}),
         };
@@ -234,6 +243,11 @@ export function useCheckout() {
         total: body.total,
         tax_amount: body.tax_amount,
         change_given: body.change_given,
+        // S51 — the money-path v15 envelope carries the canonical subtotal + the
+        // per-line breakdown; thread them so the receipt/display consume server
+        // values instead of recomputing client-side.
+        ...(body.subtotal != null ? { subtotal: body.subtotal } : {}),
+        ...(body.lines ? { lines: body.lines } : {}),
         // S44 D4 — v12 envelope carries the server-resolved loyalty figures.
         ...(body.loyalty_points_earned != null ? { loyalty_points_earned: body.loyalty_points_earned } : {}),
         ...(body.loyalty_balance_after != null ? { loyalty_balance_after: body.loyalty_balance_after } : {}),
