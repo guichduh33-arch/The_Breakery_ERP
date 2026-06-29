@@ -8,6 +8,10 @@
 // `customers.read` SELECT gate (the embed would silently resolve to NULL
 // for POS roles once the gate is applied). Per-customer aggregation stays
 // client-side, unchanged.
+// Session 52 — P1.2 (C4) — bumped to `get_pos_b2b_debts_v3`: for B2B orders
+// `paid` is now derived from the `b2b_payment_allocations` ledger (not
+// `order_payments`, which B2B payments never populate), so the POS panel and
+// the BackOffice AR views agree on outstanding. Retail ardoise unchanged.
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -40,7 +44,7 @@ export function useOutstandingDebts() {
   return useQuery<OutstandingDebt[]>({
     queryKey: ['pos-outstanding-debts'],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_pos_b2b_debts_v2', {
+      const { data, error } = await supabase.rpc('get_pos_b2b_debts_v3', {
         p_lookback_days: DEBT_LOOKBACK_DAYS,
       });
 

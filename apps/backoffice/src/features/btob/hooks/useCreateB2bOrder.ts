@@ -1,6 +1,7 @@
 // apps/backoffice/src/features/btob/hooks/useCreateB2bOrder.ts
 //
-// Session 24 / Phase 2.A.3 — call create_b2b_order_v1 (S24 migration _022).
+// Session 24 / Phase 2.A.3 — call create_b2b_order_v2 (S52 migration _069, TOCTOU fix:
+// credit re-checked after the customer FOR UPDATE lock).
 //
 // The RPC creates a B2B order in status='b2b_pending' with paid_at=NULL,
 // emits the JE (DR B2B_AR / CR SALE_B2B_REVENUE), decrements stock and
@@ -120,7 +121,7 @@ export function useCreateB2bOrder() {
       if (args.deliveryDate !== undefined && args.deliveryDate     !== '') rpcArgs.p_delivery_date = args.deliveryDate;
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await supabase.rpc('create_b2b_order_v1', rpcArgs as any);
+      const { data, error } = await supabase.rpc('create_b2b_order_v2', rpcArgs as any);
       if (error) {
         const code = classify(error.message);
         // Supabase exposes Postgres DETAIL on `error.details` (snake_case differs by SDK version);
