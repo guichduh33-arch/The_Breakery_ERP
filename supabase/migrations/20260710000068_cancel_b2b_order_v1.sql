@@ -115,7 +115,9 @@ BEGIN
   END IF;
   UPDATE customers SET b2b_current_balance=v_balance_after, updated_at=now() WHERE id=v_order.customer_id;
 
-  UPDATE orders SET status='voided', updated_at=now() WHERE id=p_order_id;
+  UPDATE orders SET status='voided', voided_at=v_now, voided_by=v_profile_id,
+                    void_reason=p_reason, updated_at=now()
+   WHERE id=p_order_id;
 
   INSERT INTO audit_logs (actor_id, action, entity_type, entity_id, metadata)
   VALUES (v_profile_id, 'b2b.order.cancelled', 'orders', p_order_id, jsonb_build_object(
