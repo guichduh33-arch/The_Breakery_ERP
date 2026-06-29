@@ -1,10 +1,13 @@
 // apps/backoffice/src/features/btob/hooks/useRecordB2bPayment.ts
 //
-// Session 24 / Phase 2.A.4 — call record_b2b_payment_v1 (S24 migration _020).
+// Session 24 / Phase 2.A.4 — call record_b2b_payment_v2 (S52 migration _067).
 //
 // Records a payment received from a B2B customer. The RPC emits the JE
-// (DR Cash/Bank / CR B2B_AR), inserts a b2b_payments row, decrements the
-// customer's cached balance, and records an audit_log. Idempotent.
+// (DR Cash/Bank / CR B2B_AR), inserts a b2b_payments row + real per-invoice
+// allocation rows (b2b_payment_allocations), sets orders.paid_at on full
+// settlement, decrements the customer's cached balance, and records an
+// audit_log. Idempotent. Optional invoiceIds → targeted allocation (array
+// order), else FIFO over the oldest unpaid invoices.
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
@@ -39,12 +42,14 @@ export interface RecordB2bPaymentArgs {
   paidAt?:         string;          // ISO datetime
   notes?:          string;
   idempotencyKey:  string;
+  invoiceIds?:     string[];        // optional targeted allocation (array order), else FIFO
 }
 
 export interface RecordB2bPaymentResult {
   payment_id:             string;
   payment_number:         string;
-  allocation:             Array<{ invoice_id: string; amount_applied: number }>;
+  allocations:            Array<{ invoice_id: string; amount_applied: number; fully_settled: boolean }>;
+  allocation:             Array<{ invoice_id: string; amount_applied: number; fully_settled?: boolean }>;
   je_id:                  string;
   customer_balance_after: number;
   idempotent_replay:      boolean;
@@ -73,6 +78,7 @@ export function useRecordB2bPayment() {
         p_paid_at?:        string;
         p_notes?:          string;
         p_idempotency_key: string;
+        p_invoice_ids?:    string[];
       } = {
         p_customer_id:     args.customerId,
         p_amount:          args.amount,
@@ -82,8 +88,9 @@ export function useRecordB2bPayment() {
       if (args.reference !== undefined && args.reference.trim() !== '') rpcArgs.p_reference = args.reference.trim();
       if (args.paidAt    !== undefined && args.paidAt    !== '')        rpcArgs.p_paid_at   = args.paidAt;
       if (args.notes     !== undefined && args.notes.trim() !== '')     rpcArgs.p_notes     = args.notes.trim();
+      if (args.invoiceIds !== undefined && args.invoiceIds.length > 0)  rpcArgs.p_invoice_ids = args.invoiceIds;
 
-      const { data, error } = await supabase.rpc('record_b2b_payment_v1', rpcArgs);
+      const { data, error } = await supabase.rpc('record_b2b_payment_v2', rpcArgs);
       if (error) throw new RecordB2bPaymentError(classify(error.message), error.message);
       if (data === null) throw new RecordB2bPaymentError('unknown', 'Empty RPC response');
       return data as unknown as RecordB2bPaymentResult;

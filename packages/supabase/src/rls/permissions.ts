@@ -164,7 +164,13 @@ export type PermissionCode =
   // Session 50 / Vague 1 — dedicated B2B read gate + security-settings management
   // (seeded by 20260710000053_seed_b2b_settings_security_perms)
   | 'b2b.read'
-  | 'settings.security.manage';
+  | 'settings.security.manage'
+  // Session 50 / Vague 2a-i — dedicated B2B AR balance adjust gate (20260710000058)
+  | 'b2b.balance.adjust'
+  // Session 52 / P1.2 — dedicated B2B payment-record + invoice-cancel gates
+  // (seeded by 20260710000066_seed_b2b_payment_record_cancel_perms)
+  | 'b2b.payment.record'
+  | 'b2b.order.cancel';
 
 /**
  * Check whether a user has a single permission. Pure client-side lookup —

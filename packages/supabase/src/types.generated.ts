@@ -138,6 +138,52 @@ export type Database = {
           },
         ]
       }
+      b2b_payment_allocations: {
+        Row: {
+          amount_applied: number
+          created_at: string
+          id: string
+          invoice_id: string
+          payment_id: string
+        }
+        Insert: {
+          amount_applied: number
+          created_at?: string
+          id?: string
+          invoice_id: string
+          payment_id: string
+        }
+        Update: {
+          amount_applied?: number
+          created_at?: string
+          id?: string
+          invoice_id?: string
+          payment_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "b2b_payment_allocations_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "b2b_payment_allocations_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "view_b2b_invoices"
+            referencedColumns: ["invoice_id"]
+          },
+          {
+            foreignKeyName: "b2b_payment_allocations_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "b2b_payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       b2b_payments: {
         Row: {
           allocation: Json
@@ -5546,6 +5592,7 @@ export type Database = {
       view_b2b_invoices: {
         Row: {
           age_days: number | null
+          amount_paid: number | null
           b2b_company_name: string | null
           customer_id: string | null
           customer_name: string | null
@@ -5555,6 +5602,7 @@ export type Database = {
           is_unpaid: boolean | null
           order_number: string | null
           order_status: Database["public"]["Enums"]["order_status"] | null
+          outstanding: number | null
           paid_at: string | null
         }
         Relationships: [
@@ -5893,6 +5941,14 @@ export type Database = {
         Args: { p_max_depth?: number; p_product_id: string }
         Returns: Json
       }
+      cancel_b2b_order_v1: {
+        Args: {
+          p_idempotency_key?: string
+          p_order_id: string
+          p_reason: string
+        }
+        Returns: Json
+      }
       cancel_internal_transfer_v1: {
         Args: { p_reason: string; p_transfer_id: string }
         Returns: Json
@@ -6102,7 +6158,7 @@ export type Database = {
         Args: { p_from_unit: string; p_qty: number; p_to_unit: string }
         Returns: number
       }
-      create_b2b_order_v1: {
+      create_b2b_order_v2: {
         Args: {
           p_customer_id: string
           p_delivery_date?: string
@@ -6598,7 +6654,7 @@ export type Database = {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
-      get_pos_b2b_debts_v2: {
+      get_pos_b2b_debts_v3: {
         Args: { p_customer_id?: string; p_lookback_days?: number }
         Returns: {
           b2b_credit_limit: number
@@ -7329,11 +7385,23 @@ export type Database = {
         Returns: Json
       }
       recompute_recipe_margins_v1: { Args: never; Returns: Json }
-      record_b2b_payment_v1: {
+      reconcile_b2b_balance_v1: {
+        Args: { p_customer_id?: string }
+        Returns: {
+          cached_balance: number
+          customer_id: string
+          customer_name: string
+          derived_balance: number
+          drift: number
+          has_drift: boolean
+        }[]
+      }
+      record_b2b_payment_v2: {
         Args: {
           p_amount: number
           p_customer_id: string
           p_idempotency_key?: string
+          p_invoice_ids?: string[]
           p_method: Database["public"]["Enums"]["payment_method"]
           p_notes?: string
           p_paid_at?: string

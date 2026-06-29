@@ -74,7 +74,8 @@ vi.mock('@/stores/authStore.js', () => ({
   useAuthStore: (sel: (s: { hasPermission: (p: string) => boolean }) => unknown) =>
     sel({
       hasPermission: (p: string) =>
-        p === 'customers.read' || p === 'pos.sale.create' || p === 'customers.update',
+        p === 'customers.read' || p === 'pos.sale.create' || p === 'customers.update'
+        || p === 'b2b.payment.record' || p === 'b2b.order.cancel',
     }),
 }));
 
@@ -130,7 +131,7 @@ describe('B2B foundation (S24)', () => {
     expect(btn).toBeEnabled();
   });
 
-  it('T3 — RecordB2bPaymentModal submit calls record_b2b_payment_v1', async () => {
+  it('T3 — RecordB2bPaymentModal submit calls record_b2b_payment_v2', async () => {
     renderPaymentModal();
     // Wait for B2B customer option to appear.
     await waitFor(() => {
@@ -145,7 +146,7 @@ describe('B2B foundation (S24)', () => {
     fireEvent.click(submit);
 
     await waitFor(() => {
-      expect(mockRpc).toHaveBeenCalledWith('record_b2b_payment_v1', expect.objectContaining({
+      expect(mockRpc).toHaveBeenCalledWith('record_b2b_payment_v2', expect.objectContaining({
         p_customer_id: 'b1',
         p_amount:      100000,
       }));

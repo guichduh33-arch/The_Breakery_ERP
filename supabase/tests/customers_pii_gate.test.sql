@@ -75,14 +75,14 @@ SELECT is(
   OR has_function_privilege('anon', 'public.create_customer_v2(text, text, text, customer_type)', 'EXECUTE'),
   false, 'T5 anon cannot execute the v2 customer RPCs');
 
--- T7 (DB-06, _020) : get_pos_b2b_debts_v2 existe, v1 droppée, anon sans EXECUTE
+-- T7 (DB-06, _020 → S52 v3) : get_pos_b2b_debts_v3 existe, v2 droppée, anon sans EXECUTE
 SELECT is(
   (SELECT count(*)::int FROM pg_proc
-    WHERE proname = 'get_pos_b2b_debts_v2' AND pronamespace = 'public'::regnamespace) = 1
+    WHERE proname = 'get_pos_b2b_debts_v3' AND pronamespace = 'public'::regnamespace) = 1
   AND (SELECT count(*)::int FROM pg_proc
-    WHERE proname = 'get_pos_b2b_debts_v1' AND pronamespace = 'public'::regnamespace) = 0
-  AND NOT has_function_privilege('anon', 'public.get_pos_b2b_debts_v2(uuid, int)', 'EXECUTE'),
-  true, 'T7 get_pos_b2b_debts_v2 replaces v1 (panel semantics), anon revoked');
+    WHERE proname = 'get_pos_b2b_debts_v2' AND pronamespace = 'public'::regnamespace) = 0
+  AND NOT has_function_privilege('anon', 'public.get_pos_b2b_debts_v3(uuid, int)', 'EXECUTE'),
+  true, 'T7 get_pos_b2b_debts_v3 replaces v2 (B2B paid from allocations), anon revoked');
 
 -- T6 (post-_018 SEULEMENT) : la policy SELECT exige customers.read
 SELECT is(

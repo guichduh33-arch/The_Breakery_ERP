@@ -43,7 +43,7 @@ type TabKey = 'received' | 'outstanding' | 'aging';
 export default function B2BPaymentsPage(): JSX.Element {
   const hasPermission = useAuthStore((s) => s.hasPermission);
   const canRead   = hasPermission('customers.read');
-  const canRecord = hasPermission('customers.update');
+  const canRecord = hasPermission('b2b.payment.record');
   const dash = useB2bDashboard();
   const [tab,    setTab   ] = useState<TabKey>('received');
   const [search, setSearch] = useState<string>('');
