@@ -1,5 +1,5 @@
 // apps/backoffice/src/features/reports/hooks/usePaymentsByMethod.ts
-// S30 Wave 4.1 — Query hook for get_payments_by_method_v1 RPC.
+// S30 Wave 4.1 — Query hook for get_payments_by_method RPC (repointed v1 → v2, S57).
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
@@ -27,7 +27,7 @@ export function usePaymentsByMethod(params: UsePaymentsByMethodParams) {
     queryKey: ['reports', 'payments_by_method', params.start, params.end],
     queryFn:  async () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase as any).rpc('get_payments_by_method_v1', {
+      const { data, error } = await (supabase as any).rpc('get_payments_by_method_v2', {
         p_date_start: params.start,
         p_date_end:   params.end,
       });
