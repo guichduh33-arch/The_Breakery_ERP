@@ -12,6 +12,8 @@ interface VoidArgs {
   orderId: string;
   reason: string;
   managerPin: string;
+  /** S55 — stable per-modal-open UUID for HTTP retry-safe idempotency. */
+  idempotencyKey?: string;
 }
 
 export interface VoidResponse {
@@ -30,16 +32,20 @@ export interface VoidResponse {
 export function useVoidOrder() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ orderId, reason, managerPin }: VoidArgs): Promise<VoidResponse> => {
+    mutationFn: async ({ orderId, reason, managerPin, idempotencyKey }: VoidArgs): Promise<VoidResponse> => {
       const accessToken = await getAccessToken();
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+        // S34: manager PIN in header, never the body (security-fraud-guard gap 2).
+        'x-manager-pin': managerPin,
+      };
+      // S55: HTTP retry-safe idempotency — the EF forwards this to void_order_rpc_v4.
+      if (idempotencyKey) headers['x-idempotency-key'] = idempotencyKey;
+
       const res = await fetch(`${supabaseUrl}/functions/v1/void-order`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-          // S34: manager PIN in header, never the body (security-fraud-guard gap 2).
-          'x-manager-pin': managerPin,
-        },
+        headers,
         body: JSON.stringify({ order_id: orderId, reason }),
       });
       if (!res.ok) {

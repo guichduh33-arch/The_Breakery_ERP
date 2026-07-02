@@ -28,7 +28,7 @@ export function useVoidServerOrder() {
   const voidOrderMutation = useVoidOrder();
   const voidLocal = useCartStore((s) => s.voidOrder);
 
-  return async (managerPin: string): Promise<void> => {
+  return async (managerPin: string, idempotencyKey?: string): Promise<void> => {
     const { pickedUpOrderId } = useCartStore.getState();
 
     if (pickedUpOrderId) {
@@ -37,6 +37,9 @@ export function useVoidServerOrder() {
         orderId: pickedUpOrderId,
         reason: 'Voided by manager at POS',
         managerPin,
+        // exactOptionalPropertyTypes: omit the key entirely when absent rather
+        // than passing `undefined` into the optional VoidArgs.idempotencyKey.
+        ...(idempotencyKey ? { idempotencyKey } : {}),
       });
       // Only reset local state if the server call succeeded (exception would
       // propagate to the caller otherwise).

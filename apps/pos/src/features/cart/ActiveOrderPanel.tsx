@@ -234,12 +234,13 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
           itemName={cancelTarget.name}
           onClose={() => setCancelTarget(null)}
           isPending={cancelMutation.isPending}
-          onSubmit={async ({ reason, managerPin }) => {
+          onSubmit={async ({ reason, managerPin, idempotencyKey }) => {
             try {
               await cancelMutation.mutateAsync({
                 orderItemId: cancelTarget.id,
                 reason,
                 managerPin,
+                idempotencyKey,
               });
               toast.success(`${cancelTarget.name} cancelled`);
             } catch (err: unknown) {

@@ -4,7 +4,7 @@
 // (b) the manager 6-digit PIN, then submits to the cancel-item EF.
 // Reuses the NumpadPin primitive for consistent PIN entry UX.
 
-import { useState, type JSX } from 'react';
+import { useRef, useState, type JSX } from 'react';
 import { X } from 'lucide-react';
 import { Button, NumpadPin, FullScreenModal, cn, Input } from '@breakery/ui';
 import { toast } from 'sonner';
@@ -14,7 +14,7 @@ export interface CancelItemModalProps {
   onClose: () => void;
   itemName: string;
   /** Called once the cashier has provided BOTH a valid reason AND PIN. */
-  onSubmit: (args: { reason: string; managerPin: string }) => Promise<void> | void;
+  onSubmit: (args: { reason: string; managerPin: string; idempotencyKey: string }) => Promise<void> | void;
   isPending?: boolean;
 }
 
@@ -27,10 +27,15 @@ export function CancelItemModal({
 }: CancelItemModalProps): JSX.Element {
   const [reason, setReason] = useState('');
   const [pinKey, setPinKey] = useState(0);
+  // S55 — one UUID per "modal open session", sticky across re-renders and retries
+  // (never regenerated inside onSubmit, so RQ auto-retries reuse it). Rotated on
+  // close (dismiss or post-success) so the next open gets a fresh key.
+  const idempotencyKeyRef = useRef<string>(crypto.randomUUID());
 
   function handleClose(): void {
     setReason('');
     setPinKey((k) => k + 1);
+    idempotencyKeyRef.current = crypto.randomUUID();
     onClose();
   }
 
@@ -41,7 +46,7 @@ export function CancelItemModal({
       return;
     }
     try {
-      await onSubmit({ reason: reason.trim(), managerPin: pin });
+      await onSubmit({ reason: reason.trim(), managerPin: pin, idempotencyKey: idempotencyKeyRef.current });
       handleClose();
     } catch {
       // The mutation surface its own toast ; clear PIN to allow retry.

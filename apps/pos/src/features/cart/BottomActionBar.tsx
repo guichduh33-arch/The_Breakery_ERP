@@ -90,6 +90,12 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
   // verifyFn call but onVerified only carries userId.
   const voidPinRef = useRef<string>('');
 
+  // S55 — one x-idempotency-key per void-PIN-modal opening. Regenerated each time
+  // the modal opens (handleVoid, fired-order branch) so reopen rotates the key,
+  // yet it stays stable across PIN retries within the same open and across any
+  // React-Query auto-retry inside a single voidServerOrder call.
+  const voidIdempotencyKeyRef = useRef<string>(crypto.randomUUID());
+
   // Wrap the raw verifyFn to intercept the PIN before it's consumed.
   const voidVerifyFn = async (pin: string) => {
     voidPinRef.current = pin;
@@ -141,6 +147,8 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
   function handleVoid(): void {
     if (!hasItems) return;
     if (hasSentItems) {
+      // Fresh idempotency key for this void attempt (server-void path).
+      voidIdempotencyKeyRef.current = crypto.randomUUID();
       setVoidPinOpen(true);
       return;
     }
@@ -363,10 +371,11 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
         onVerified={() => {
           const pin = voidPinRef.current;
           voidPinRef.current = '';
+          const idempotencyKey = voidIdempotencyKeyRef.current;
           setVoidPinOpen(false);
           // Fire-and-forget with toast feedback; voidServerOrder handles routing:
           // tablet pickup → EF void-order (server first); counter → client only.
-          void voidServerOrder(pin)
+          void voidServerOrder(pin, idempotencyKey)
             .then(() => {
               toast.success('Order voided (manager approved)');
             })

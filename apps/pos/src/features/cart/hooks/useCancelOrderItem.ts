@@ -15,6 +15,8 @@ interface CancelItemArgs {
   orderItemId: string;
   reason: string;
   managerPin: string;
+  /** S55 — stable per-modal-open UUID for HTTP retry-safe idempotency. */
+  idempotencyKey?: string;
 }
 
 interface CancelItemResponse {
@@ -36,16 +38,20 @@ export function useCancelOrderItem() {
   const markCancelled = useCartStore((s) => s.markCancelled);
 
   return useMutation({
-    mutationFn: async ({ orderItemId, reason, managerPin }: CancelItemArgs): Promise<CancelItemResponse> => {
+    mutationFn: async ({ orderItemId, reason, managerPin, idempotencyKey }: CancelItemArgs): Promise<CancelItemResponse> => {
       const accessToken = await getAccessToken();
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+        // S34: manager PIN in header, never the body (security-fraud-guard gap 2).
+        'x-manager-pin': managerPin,
+      };
+      // S55: HTTP retry-safe idempotency — the EF forwards this to cancel_order_item_rpc_v3.
+      if (idempotencyKey) headers['x-idempotency-key'] = idempotencyKey;
+
       const res = await fetch(`${supabaseUrl}/functions/v1/cancel-item`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-          // S34: manager PIN in header, never the body (security-fraud-guard gap 2).
-          'x-manager-pin': managerPin,
-        },
+        headers,
         body: JSON.stringify({
           order_item_id: orderItemId,
           reason,
