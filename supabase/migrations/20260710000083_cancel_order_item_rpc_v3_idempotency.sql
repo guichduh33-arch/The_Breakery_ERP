@@ -147,6 +147,9 @@ END $$;
 
 REVOKE EXECUTE ON FUNCTION public.cancel_order_item_rpc_v3(UUID, TEXT, UUID, UUID, UUID) FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION public.cancel_order_item_rpc_v3(UUID, TEXT, UUID, UUID, UUID) FROM anon;
+-- Nouvelle signature = ACL fraîche ; pas de default-privilege revoke pour
+-- authenticated (S20 ne couvre que PUBLIC/anon) — cf. incident 20260709000010.
+REVOKE EXECUTE ON FUNCTION public.cancel_order_item_rpc_v3(UUID, TEXT, UUID, UUID, UUID) FROM authenticated;
 GRANT  EXECUTE ON FUNCTION public.cancel_order_item_rpc_v3(UUID, TEXT, UUID, UUID, UUID) TO service_role;
 
 COMMENT ON FUNCTION public.cancel_order_item_rpc_v3 IS

@@ -146,4 +146,7 @@ END $function$;
 
 REVOKE EXECUTE ON FUNCTION public.void_order_rpc_v4(uuid, text, uuid, uuid, uuid) FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION public.void_order_rpc_v4(uuid, text, uuid, uuid, uuid) FROM anon;
+-- Nouvelle signature = ACL fraîche ; pas de default-privilege revoke pour
+-- authenticated (S20 ne couvre que PUBLIC/anon) — cf. incident 20260709000010.
+REVOKE EXECUTE ON FUNCTION public.void_order_rpc_v4(uuid, text, uuid, uuid, uuid) FROM authenticated;
 GRANT  EXECUTE ON FUNCTION public.void_order_rpc_v4(uuid, text, uuid, uuid, uuid) TO service_role;
