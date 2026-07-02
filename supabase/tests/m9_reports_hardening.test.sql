@@ -2,7 +2,8 @@
 -- pgTAP — M9 audit fix (2026-06-01 §Medium) :
 --   T1 get_stock_movements_v2 keyset cursor — rows sharing one created_at paginate
 --      with no drop/dupe (the created_at-only v1 cursor dropped them).
---   T2 get_payments_by_method_v1 by_day reconciles — 6 named methods + other = total.
+--   T2 get_payments_by_method_v2 by_day reconciles — 6 named methods + other = total.
+-- S57 B-D4 : repointed v1 -> v2 (v1 dropped, 20260710000094).
 -- Run via MCP execute_sql (BEGIN..ROLLBACK).
 BEGIN;
 SELECT plan(2);
@@ -62,7 +63,7 @@ BEGIN
     (v_ord, 'card', 50,  '2026-06-02 09:05:00+00'),
     (v_ord, 'qris', 30,  '2026-06-02 09:10:00+00');
 
-  v_res := get_payments_by_method_v1('2026-06-02','2026-06-02');
+  v_res := get_payments_by_method_v2('2026-06-02','2026-06-02');
   v_day := v_res->'by_day'->0;
   v_recon := (v_day->>'cash')::numeric + (v_day->>'card')::numeric + (v_day->>'qris')::numeric
            + (v_day->>'edc')::numeric + (v_day->>'transfer')::numeric
@@ -72,7 +73,7 @@ BEGIN
     ((v_day ? 'other') AND v_recon = v_total AND v_total = 180)::text, false);
 END $$;
 SELECT ok(current_setting('breakery.m9_t2')::boolean,
-  'T2: get_payments_by_method_v1 by_day reconciles — cash+card+qris+edc+transfer+store_credit+other = total');
+  'T2: get_payments_by_method_v2 by_day reconciles — cash+card+qris+edc+transfer+store_credit+other = total');
 
 SELECT * FROM finish();
 ROLLBACK;
