@@ -27,7 +27,7 @@ DECLARE
   v_mgr_auth UUID; v_mgr_prof UUID;
   v_mgr2_auth UUID; v_mgr2_prof UUID;
   v_sess UUID; v_cat UUID;
-  v_prod UUID := '55dn0001-0000-0000-0000-000000000001';
+  v_prod UUID := '55da0001-0000-0000-0000-000000000001';
 BEGIN
   SELECT up.auth_user_id, up.id INTO v_cashier_auth, v_cashier_prof FROM user_profiles up
    WHERE up.deleted_at IS NULL AND up.auth_user_id IS NOT NULL
@@ -58,12 +58,12 @@ BEGIN
   VALUES (v_prod, 'PGTAP-S55-DAN', 'pgTAP S55 Discount-Auth-Nonce Product', v_cat, 50000, 100.000, true, true)
   ON CONFLICT (id) DO UPDATE SET current_stock=100.000, track_inventory=true, deduct_stock=true, retail_price=50000;
 
-  PERFORM set_config('s55dn.cashier_auth', v_cashier_auth::text, true);
-  PERFORM set_config('s55dn.cashier_prof', v_cashier_prof::text, true);
-  PERFORM set_config('s55dn.mgr_prof',     v_mgr_prof::text, true);
-  PERFORM set_config('s55dn.mgr2_prof',    v_mgr2_prof::text, true);
-  PERFORM set_config('s55dn.sess', v_sess::text, true);
-  PERFORM set_config('s55dn.prod', v_prod::text, true);
+  PERFORM set_config('s55da.cashier_auth', v_cashier_auth::text, true);
+  PERFORM set_config('s55da.cashier_prof', v_cashier_prof::text, true);
+  PERFORM set_config('s55da.mgr_prof',     v_mgr_prof::text, true);
+  PERFORM set_config('s55da.mgr2_prof',    v_mgr2_prof::text, true);
+  PERFORM set_config('s55da.sess', v_sess::text, true);
+  PERFORM set_config('s55da.prod', v_prod::text, true);
 END $fixture$;
 
 -- ===========================================================================
@@ -72,10 +72,10 @@ END $fixture$;
 -- ===========================================================================
 DO $t1$
 DECLARE
-  v_sess UUID := current_setting('s55dn.sess')::uuid;
-  v_cashier_auth UUID := current_setting('s55dn.cashier_auth')::uuid;
-  v_mgr_prof UUID := current_setting('s55dn.mgr_prof')::uuid;
-  v_prod UUID := current_setting('s55dn.prod')::uuid;
+  v_sess UUID := current_setting('s55da.sess')::uuid;
+  v_cashier_auth UUID := current_setting('s55da.cashier_auth')::uuid;
+  v_mgr_prof UUID := current_setting('s55da.mgr_prof')::uuid;
+  v_prod UUID := current_setting('s55da.prod')::uuid;
   v_caught BOOLEAN := false;
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_cashier_auth::text, true);
@@ -91,9 +91,9 @@ BEGIN
   EXCEPTION WHEN SQLSTATE 'P0003' THEN
     v_caught := true;
   END;
-  PERFORM set_config('s55dn.t1', v_caught::text, false);
+  PERFORM set_config('s55da.t1', v_caught::text, false);
 END $t1$;
-SELECT ok(current_setting('s55dn.t1')::boolean,
+SELECT ok(current_setting('s55da.t1')::boolean,
   'T1: discount with p_discount_auth_id NULL -> SQLSTATE P0003');
 
 -- ===========================================================================
@@ -102,10 +102,10 @@ SELECT ok(current_setting('s55dn.t1')::boolean,
 -- ===========================================================================
 DO $t2$
 DECLARE
-  v_sess UUID := current_setting('s55dn.sess')::uuid;
-  v_cashier_auth UUID := current_setting('s55dn.cashier_auth')::uuid;
-  v_mgr_prof UUID := current_setting('s55dn.mgr_prof')::uuid;
-  v_prod UUID := current_setting('s55dn.prod')::uuid;
+  v_sess UUID := current_setting('s55da.sess')::uuid;
+  v_cashier_auth UUID := current_setting('s55da.cashier_auth')::uuid;
+  v_mgr_prof UUID := current_setting('s55da.mgr_prof')::uuid;
+  v_prod UUID := current_setting('s55da.prod')::uuid;
   v_nonce UUID;
   v_res JSONB; v_order_id UUID;
   v_consumed_at TIMESTAMPTZ; v_consumed_order UUID;
@@ -126,15 +126,15 @@ BEGIN
   SELECT consumed_at, consumed_order_id INTO v_consumed_at, v_consumed_order
     FROM discount_authorizations WHERE id = v_nonce;
 
-  PERFORM set_config('s55dn.t2_nonce', v_nonce::text, false);
-  PERFORM set_config('s55dn.t2', CASE WHEN
+  PERFORM set_config('s55da.t2_nonce', v_nonce::text, false);
+  PERFORM set_config('s55da.t2', CASE WHEN
     v_order_id IS NOT NULL
     AND (v_res->>'total')::numeric = 45000
     AND v_consumed_at IS NOT NULL
     AND v_consumed_order = v_order_id
   THEN 'true' ELSE 'false' END, false);
 END $t2$;
-SELECT ok(current_setting('s55dn.t2')::boolean,
+SELECT ok(current_setting('s55da.t2')::boolean,
   'T2: valid nonce -> order created, nonce consumed_at set + consumed_order_id = order_id');
 
 -- ===========================================================================
@@ -142,11 +142,11 @@ SELECT ok(current_setting('s55dn.t2')::boolean,
 -- ===========================================================================
 DO $t3$
 DECLARE
-  v_sess UUID := current_setting('s55dn.sess')::uuid;
-  v_cashier_auth UUID := current_setting('s55dn.cashier_auth')::uuid;
-  v_mgr_prof UUID := current_setting('s55dn.mgr_prof')::uuid;
-  v_prod UUID := current_setting('s55dn.prod')::uuid;
-  v_nonce UUID := current_setting('s55dn.t2_nonce')::uuid;
+  v_sess UUID := current_setting('s55da.sess')::uuid;
+  v_cashier_auth UUID := current_setting('s55da.cashier_auth')::uuid;
+  v_mgr_prof UUID := current_setting('s55da.mgr_prof')::uuid;
+  v_prod UUID := current_setting('s55da.prod')::uuid;
+  v_nonce UUID := current_setting('s55da.t2_nonce')::uuid;
   v_caught BOOLEAN := false;
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_cashier_auth::text, true);
@@ -162,9 +162,9 @@ BEGIN
   EXCEPTION WHEN SQLSTATE 'P0003' THEN
     v_caught := true;
   END;
-  PERFORM set_config('s55dn.t3', v_caught::text, false);
+  PERFORM set_config('s55da.t3', v_caught::text, false);
 END $t3$;
-SELECT ok(current_setting('s55dn.t3')::boolean,
+SELECT ok(current_setting('s55da.t3')::boolean,
   'T3: replaying the same (already-consumed) nonce -> SQLSTATE P0003');
 
 -- ===========================================================================
@@ -172,10 +172,10 @@ SELECT ok(current_setting('s55dn.t3')::boolean,
 -- ===========================================================================
 DO $t4$
 DECLARE
-  v_sess UUID := current_setting('s55dn.sess')::uuid;
-  v_cashier_auth UUID := current_setting('s55dn.cashier_auth')::uuid;
-  v_mgr_prof UUID := current_setting('s55dn.mgr_prof')::uuid;
-  v_prod UUID := current_setting('s55dn.prod')::uuid;
+  v_sess UUID := current_setting('s55da.sess')::uuid;
+  v_cashier_auth UUID := current_setting('s55da.cashier_auth')::uuid;
+  v_mgr_prof UUID := current_setting('s55da.mgr_prof')::uuid;
+  v_prod UUID := current_setting('s55da.prod')::uuid;
   v_nonce UUID;
   v_caught BOOLEAN := false;
 BEGIN
@@ -196,9 +196,9 @@ BEGIN
   EXCEPTION WHEN SQLSTATE 'P0003' THEN
     v_caught := true;
   END;
-  PERFORM set_config('s55dn.t4', v_caught::text, false);
+  PERFORM set_config('s55da.t4', v_caught::text, false);
 END $t4$;
-SELECT ok(current_setting('s55dn.t4')::boolean,
+SELECT ok(current_setting('s55da.t4')::boolean,
   'T4: expired nonce (expires_at < now()) -> SQLSTATE P0003');
 
 -- ===========================================================================
@@ -206,11 +206,11 @@ SELECT ok(current_setting('s55dn.t4')::boolean,
 -- ===========================================================================
 DO $t5$
 DECLARE
-  v_sess UUID := current_setting('s55dn.sess')::uuid;
-  v_cashier_auth UUID := current_setting('s55dn.cashier_auth')::uuid;
-  v_mgr_prof UUID := current_setting('s55dn.mgr_prof')::uuid;
-  v_mgr2_prof UUID := current_setting('s55dn.mgr2_prof')::uuid;
-  v_prod UUID := current_setting('s55dn.prod')::uuid;
+  v_sess UUID := current_setting('s55da.sess')::uuid;
+  v_cashier_auth UUID := current_setting('s55da.cashier_auth')::uuid;
+  v_mgr_prof UUID := current_setting('s55da.mgr_prof')::uuid;
+  v_mgr2_prof UUID := current_setting('s55da.mgr2_prof')::uuid;
+  v_prod UUID := current_setting('s55da.prod')::uuid;
   v_nonce UUID;
   v_caught BOOLEAN := false;
 BEGIN
@@ -230,9 +230,9 @@ BEGIN
   EXCEPTION WHEN SQLSTATE 'P0003' THEN
     v_caught := true;
   END;
-  PERFORM set_config('s55dn.t5', v_caught::text, false);
+  PERFORM set_config('s55da.t5', v_caught::text, false);
 END $t5$;
-SELECT ok(current_setting('s55dn.t5')::boolean,
+SELECT ok(current_setting('s55da.t5')::boolean,
   'T5: nonce minted for a different manager than p_discount_authorized_by -> SQLSTATE P0003');
 
 -- ===========================================================================
@@ -240,9 +240,9 @@ SELECT ok(current_setting('s55dn.t5')::boolean,
 -- ===========================================================================
 DO $t6$
 DECLARE
-  v_sess UUID := current_setting('s55dn.sess')::uuid;
-  v_cashier_auth UUID := current_setting('s55dn.cashier_auth')::uuid;
-  v_prod UUID := current_setting('s55dn.prod')::uuid;
+  v_sess UUID := current_setting('s55da.sess')::uuid;
+  v_cashier_auth UUID := current_setting('s55da.cashier_auth')::uuid;
+  v_prod UUID := current_setting('s55da.prod')::uuid;
   v_res JSONB;
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_cashier_auth::text, true);
@@ -251,9 +251,9 @@ BEGIN
     p_items := jsonb_build_array(jsonb_build_object(
       'product_id', v_prod, 'quantity', 1, 'unit_price', 50000, 'modifiers', '[]'::jsonb)),
     p_payment := jsonb_build_object('method','cash','amount',50000,'cash_received',50000,'change_given',0));
-  PERFORM set_config('s55dn.t6', ((v_res->>'order_id') IS NOT NULL AND (v_res->>'total')::numeric = 50000)::text, false);
+  PERFORM set_config('s55da.t6', ((v_res->>'order_id') IS NOT NULL AND (v_res->>'total')::numeric = 50000)::text, false);
 END $t6$;
-SELECT ok(current_setting('s55dn.t6')::boolean,
+SELECT ok(current_setting('s55da.t6')::boolean,
   'T6: no discount, no nonce -> sale completes normally');
 
 SELECT * FROM finish();

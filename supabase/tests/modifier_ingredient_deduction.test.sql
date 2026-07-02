@@ -178,7 +178,7 @@ BEGIN
     p_session_id := '00000000-0000-0000-0000-00000000e201', p_order_type := 'take_out'::order_type,
     p_items := $i$[{"product_id":"00000000-0000-0000-0000-0000000000b3","quantity":1,"unit_price":30000,"modifiers":[{"group_name":"Milk","option_label":"Oat","price_adjustment":10000}]}]$i$::jsonb,
     p_payment := '{"method":"cash","amount":40000,"cash_received":40000,"change_given":0}'::jsonb);
-  PERFORM void_order_rpc_v3((r->>'order_id')::uuid, 'modifier void test', '00000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000002');
+  PERFORM void_order_rpc_v4((r->>'order_id')::uuid, 'modifier void test', '00000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000002');
 END $$;
 
 -- ---- Section D: complete a qty-2 sale then PARTIAL refund qty 1 (scaled restore) ----
@@ -205,7 +205,7 @@ BEGIN
     p_items := $i$[{"product_id":"00000000-0000-0000-0000-0000000000b5","quantity":1,"unit_price":30000,"modifiers":[{"group_name":"Milk","option_label":"Oat","price_adjustment":10000}]}]$i$::jsonb,
     p_payment := '{"method":"cash","amount":40000,"cash_received":40000,"change_given":0}'::jsonb);
   PERFORM set_config('p2.e_disp_after_sale', (SELECT quantity::text FROM display_stock WHERE product_id='00000000-0000-0000-0000-0000000000a5'), false);
-  PERFORM void_order_rpc_v3((r->>'order_id')::uuid, 'display modifier void', '00000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000002');
+  PERFORM void_order_rpc_v4((r->>'order_id')::uuid, 'display modifier void', '00000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000002');
 END $$;
 
 -- ---- Section F: one line carrying TWO modifier groups, each deducting its own ingredient ----
