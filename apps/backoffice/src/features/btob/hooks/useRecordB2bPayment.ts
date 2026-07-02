@@ -105,6 +105,7 @@ export function useRecordB2bPayment() {
         qc.invalidateQueries({ queryKey: B2B_PAYMENTS_RECEIVED_QUERY_KEY }),
         qc.invalidateQueries({ queryKey: B2B_CUSTOMERS_QUERY_KEY }),
         qc.invalidateQueries({ queryKey: ['customers'] }),
+        qc.invalidateQueries({ queryKey: ['b2b-invoices'] }),
       ]);
     },
   });
