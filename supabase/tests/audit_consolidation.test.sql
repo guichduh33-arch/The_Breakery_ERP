@@ -59,12 +59,21 @@ BEGIN
    WHERE up.role_code = 'SUPER_ADMIN' AND up.deleted_at IS NULL
      AND up.auth_user_id IS NOT NULL
    LIMIT 1;
+  IF v_user IS NULL THEN
+    RAISE EXCEPTION 'T5 precondition: no SUPER_ADMIN profile with auth_user_id';
+  END IF;
   PERFORM set_config('request.jwt.claims',
     json_build_object('sub', v_user, 'role', 'authenticated')::text, true);
 
   SELECT id INTO v_product FROM products
    WHERE is_active AND deleted_at IS NULL AND track_inventory LIMIT 1;
+  IF v_product IS NULL THEN
+    RAISE EXCEPTION 'T5 precondition: no active track_inventory product found';
+  END IF;
   SELECT id INTO v_section FROM sections LIMIT 1;
+  IF v_section IS NULL THEN
+    RAISE EXCEPTION 'T5 precondition: no section found';
+  END IF;
 
   SELECT record_stock_movement_v1(
     p_product_id := v_product, p_movement_type := 'adjustment_in',

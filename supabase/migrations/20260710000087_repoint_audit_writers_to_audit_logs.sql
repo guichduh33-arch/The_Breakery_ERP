@@ -192,6 +192,7 @@ BEGIN
     EXECUTE v_new;
     v_cnt := v_cnt + 1;
   END LOOP;
+  -- Compte épinglé sur l'état live du 2026-07-03 ; un replay from-scratch de la lignée pourrait légitimement différer et devra ajuster cette assertion.
   IF v_cnt <> 25 THEN
     RAISE EXCEPTION 'expected 25 remaining writers (26 minus duplicate_recipe_v1), rewrote %', v_cnt;
   END IF;

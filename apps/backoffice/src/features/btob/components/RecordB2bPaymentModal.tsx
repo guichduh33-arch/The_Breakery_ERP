@@ -81,6 +81,15 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
 
   const invoices = useB2bInvoices(customerId, true, open && customerId !== '');
 
+  useEffect(() => {
+    if (!open || selectedIds.length === 0 || amount !== '' || !invoices.data) return;
+    const sum = invoices.data
+      .filter((r) => selectedIds.includes(r.invoice_id))
+      .reduce((acc, r) => acc + Number(r.outstanding), 0);
+    if (sum > 0) setAmount(String(sum));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, invoices.data, selectedIds]);
+
   const selectedCustomer = useMemo(
     () => customers.data?.find((c) => c.id === customerId) ?? null,
     [customers.data, customerId],
@@ -108,6 +117,7 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
         .filter((r) => next.includes(r.invoice_id))
         .reduce((acc, r) => acc + Number(r.outstanding), 0);
       if (next.length > 0) setAmount(String(sum));
+      else setAmount('');
       return next;
     });
   }
@@ -167,7 +177,7 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
               Payment <span className="font-mono">{result.payment_number}</span> recorded.
             </div>
             <ul className="divide-y divide-border-subtle rounded-md border border-border-subtle text-xs">
-              {(result.allocations ?? []).map((a) => (
+              {result.allocations.map((a) => (
                 <li key={a.invoice_id} className="flex items-center justify-between px-3 py-2">
                   <span className="font-mono">{a.invoice_id.slice(0, 8)}…</span>
                   <span className="flex items-center gap-2">

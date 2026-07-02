@@ -78,7 +78,7 @@ export function AnnualCloseModal({ onClose }: { onClose: () => void }): JSX.Elem
   }
 
   return (
-    <Dialog open={true} onOpenChange={(o) => { if (!o) onClose(); }}>
+    <Dialog open={true} onOpenChange={(o) => { if (!o && !closeYear.isPending) onClose(); }}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Annual close</DialogTitle>
