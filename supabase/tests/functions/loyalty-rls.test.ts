@@ -107,19 +107,19 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('customers RLS — colum
     const { data: row } = await admin.from('customers').select('deleted_at').eq('id', data!.id).single();
     expect(row?.deleted_at).not.toBeNull();
 
-    // Audit row is present with actor + payload (session 12 hardening).
+    // Audit row is present with actor + metadata (session 12 hardening).
     const { data: profile } = await admin.from('user_profiles')
       .select('id').eq('employee_code', 'EMP000').single();
-    const { data: audit } = await admin.from('audit_log')
-      .select('actor_profile_id, action, subject_table, subject_id, payload')
-      .eq('subject_id', data!.id)
+    const { data: audit } = await admin.from('audit_logs')
+      .select('actor_id, action, entity_type, entity_id, metadata')
+      .eq('entity_id', data!.id)
       .eq('action', 'customer.soft_delete')
-      .order('occurred_at', { ascending: false })
+      .order('created_at', { ascending: false })
       .limit(1)
       .single();
-    expect(audit?.actor_profile_id).toBe(profile?.id);
-    expect(audit?.subject_table).toBe('customers');
-    expect((audit?.payload as { reason: string | null }).reason).toBe('duplicate record from CSV import');
+    expect(audit?.actor_id).toBe(profile?.id);
+    expect(audit?.entity_type).toBe('customers');
+    expect((audit?.metadata as { reason: string | null }).reason).toBe('duplicate record from CSV import');
   });
 });
 

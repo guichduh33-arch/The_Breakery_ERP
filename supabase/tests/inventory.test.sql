@@ -14,7 +14,7 @@
 -- Coverage matrix:
 --   T1  record_stock_movement_v1: rejects sale movement_type
 --   T2  record_stock_movement_v1: rejects quantity = 0
---   T3  adjust_stock_v1: happy path 10 -> 15 (+ audit_log + signed movement)
+--   T3  adjust_stock_v1: happy path 10 -> 15 (+ audit_logs + signed movement)
 --   T4  adjust_stock_v1: idempotent replay (same idempotency_key)
 --   T5  adjust_stock_v1: MANAGER lacking inventory.adjust -> forbidden (P0003)
 --   T6  adjust_stock_v1: p_new_qty < 0 rejected
@@ -154,7 +154,7 @@ SELECT throws_ok(
 );
 
 -- =========================================================================
--- T3 — adjust_stock_v1 happy path 10 -> 15 (+ movement +5, audit_log row)
+-- T3 — adjust_stock_v1 happy path 10 -> 15 (+ movement +5, audit_logs row)
 -- =========================================================================
 DO $t3$
 DECLARE
@@ -178,10 +178,10 @@ BEGIN
   v_mvt_id := (v_result->>'movement_id')::uuid;
   SELECT quantity INTO v_movement_qty FROM stock_movements WHERE id = v_mvt_id;
   SELECT COUNT(*) INTO v_audit_count
-    FROM audit_log WHERE subject_id = v_mvt_id AND subject_table = 'stock_movements';
-  SELECT actor_profile_id INTO v_actor
-    FROM audit_log WHERE subject_id = v_mvt_id AND subject_table = 'stock_movements'
-    ORDER BY occurred_at DESC LIMIT 1;
+    FROM audit_logs WHERE entity_id = v_mvt_id AND entity_type = 'stock_movements';
+  SELECT actor_id INTO v_actor
+    FROM audit_logs WHERE entity_id = v_mvt_id AND entity_type = 'stock_movements'
+    ORDER BY created_at DESC LIMIT 1;
 
   PERFORM set_config('breakery.t3_pass',
     CASE WHEN
@@ -585,7 +585,7 @@ SELECT throws_ok(
 -- =========================================================================
 -- T18 — record_incoming_stock_v1 MANAGER happy path (no supplier, qty 5):
 --       stock_movements row with movement_type='incoming' and supplier_id IS NULL,
---       products.current_stock increased by 5, one new audit_log row.
+--       products.current_stock increased by 5, one new audit_logs row.
 -- =========================================================================
 DO $t18$
 DECLARE
@@ -614,8 +614,8 @@ BEGIN
   SELECT movement_type, quantity, supplier_id
     INTO v_mvt FROM stock_movements WHERE id = v_mvt_id;
   SELECT COUNT(*) INTO v_audit_count
-    FROM audit_log
-   WHERE subject_table = 'stock_movements' AND subject_id = v_mvt_id;
+    FROM audit_logs
+   WHERE entity_type = 'stock_movements' AND entity_id = v_mvt_id;
   SELECT current_stock INTO v_after FROM products
     WHERE id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid;
 

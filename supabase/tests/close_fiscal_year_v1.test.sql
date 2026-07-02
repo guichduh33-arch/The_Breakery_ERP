@@ -150,8 +150,8 @@ SELECT ok((SELECT (j->'je_id') = 'null'::jsonb
   'T13 — annee sans activite P&L : aucune JE emise (je_id null)');
 
 -- ==== T14 : audit rows ====
-SELECT ok((SELECT COUNT(*) = 3 FROM audit_log WHERE action='accounting.year.closed'
-    AND (payload->>'fiscal_year')::int IN (2094,2096,2098)),
+SELECT ok((SELECT COUNT(*) = 3 FROM audit_logs WHERE action='accounting.year.closed'
+    AND (metadata->>'fiscal_year')::int IN (2094,2096,2098)),
   'T14 — 1 row audit accounting.year.closed par cloture');
 
 -- ==== T15 : ACL defense-in-depth ====

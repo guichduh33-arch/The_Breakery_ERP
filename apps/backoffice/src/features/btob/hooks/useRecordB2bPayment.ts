@@ -6,7 +6,7 @@
 // (DR Cash/Bank / CR B2B_AR), inserts a b2b_payments row + real per-invoice
 // allocation rows (b2b_payment_allocations), sets orders.paid_at on full
 // settlement, decrements the customer's cached balance, and records an
-// audit_log. Idempotent. Optional invoiceIds → targeted allocation (array
+// audit_logs. Idempotent. Optional invoiceIds → targeted allocation (array
 // order), else FIFO over the oldest unpaid invoices.
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';

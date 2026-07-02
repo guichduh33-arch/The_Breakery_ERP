@@ -263,14 +263,15 @@ SELECT ok(
 );
 
 -- ============================================================
--- T20 : audit_log singular dropped, plural canonical
+-- T20 : audit_log singular fully dropped (S56 _088)
 -- ============================================================
--- audit_log is now a VIEW (compat layer), not a BASE TABLE.
+-- S56: la couche compat (vue + trigger) a été démantelée — audit_logs
+-- est la seule surface de l'audit-trail.
 SELECT is(
-  (SELECT table_type FROM information_schema.tables
-    WHERE table_schema = 'public' AND table_name = 'audit_log' LIMIT 1),
-  'VIEW',
-  'T20: audit_log singular is now a VIEW (compat over audit_logs)'
+  (SELECT COUNT(*)::INT FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'audit_log'),
+  0,
+  'T20: audit_log singular fully dropped (audit_logs is the only surface)'
 );
 
 SELECT * FROM finish();
