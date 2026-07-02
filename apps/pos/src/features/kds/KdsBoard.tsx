@@ -34,6 +34,7 @@ import { useMemo } from 'react';
 
 import { SectionLabel } from '@breakery/ui';
 
+import { ErrorState } from '@/components/ErrorState';
 import { useKdsStore, type KdsStation, type KdsStationFilter } from '@/stores/kdsStore';
 import { useKdsOrders, type KdsItemRow } from './hooks/useKdsOrders';
 import { useAgeTimer } from './hooks/useAgeTimer';
@@ -74,7 +75,7 @@ export function KdsBoard({ station: stationProp }: KdsBoardProps = {}) {
   const stationFilter = useKdsStore((s) => s.kdsStationFilter);
   const station = stationProp ?? storeStation;
 
-  const { data: items = [], isLoading } = useKdsOrders(station);
+  const { data: items = [], isLoading, isError, refetch } = useKdsOrders(station);
   const now = useAgeTimer(ARCHIVE_TICK_MS);
 
   const visibleOrders = useMemo(() => {
@@ -104,7 +105,17 @@ export function KdsBoard({ station: stationProp }: KdsBoardProps = {}) {
         tabIndex={-1}
         className="flex-1 overflow-auto p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 auto-rows-min"
       >
-        {isLoading ? (
+        {isError ? (
+          // Never fall through to "No active tickets" on a fetch error — the
+          // kitchen would wrongly believe the queue is empty (C-D1).
+          <div className="col-span-full">
+            <ErrorState
+              title="Connexion au KDS perdue"
+              description="Les tickets n'ont pas pu être chargés. Vérifiez le réseau et réessayez."
+              onRetry={() => void refetch()}
+            />
+          </div>
+        ) : isLoading ? (
           <div className="col-span-full text-text-secondary text-sm">
             Loading…
           </div>

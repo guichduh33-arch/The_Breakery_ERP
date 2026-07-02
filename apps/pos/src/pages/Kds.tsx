@@ -12,11 +12,16 @@
 
 import { useKdsStore } from '@/stores/kdsStore';
 import { useKdsRealtime } from '@/features/kds/hooks/useKdsRealtime';
+import { useReconnectInvalidate } from '@/lib/useReconnectInvalidate';
 import { KdsBoard } from '@/features/kds/KdsBoard';
 
 export default function KdsPage() {
   const station = useKdsStore((s) => s.selectedStation);
   useKdsRealtime(station);
+  // S57 P2.3 (C-D2) — resync the board after a LAN outage so the kitchen never
+  // keeps a stale queue silently (backlog TASK-04-006). Reuses the canonical
+  // reconnect net already wired on the other realtime hooks (display, tablet…).
+  useReconnectInvalidate([['kds', station]]);
 
   return <KdsBoard station={station} />;
 }
