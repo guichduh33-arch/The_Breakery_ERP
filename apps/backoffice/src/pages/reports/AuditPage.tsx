@@ -34,6 +34,11 @@ export default function AuditPage() {
     <ReportPage
       title="Audit Log"
       subtitle="System-wide audit trail. Cursor-paginated, newest first."
+      isEmpty={!isLoading && !error && rows.length === 0}
+      emptyState={{
+        title: 'No audit entries',
+        description: 'No audit entries recorded yet.',
+      }}
       filters={
         rows.length > 0 ? (
           <ExportButtons
@@ -61,13 +66,6 @@ export default function AuditPage() {
               </tr>
             </thead>
             <tbody>
-              {rows.length === 0 && (
-                <tr>
-                  <td className="py-3 text-text-secondary" colSpan={4}>
-                    No audit entries.
-                  </td>
-                </tr>
-              )}
               {rows.map((r) => (
                 <tr key={r.id} className="border-b border-border-subtle">
                   <td className="py-2 tabular-nums text-text-secondary">

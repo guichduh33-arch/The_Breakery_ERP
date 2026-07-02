@@ -6,13 +6,14 @@
 // S31 : account cells terminal — get_cash_flow_v1 RPC returns `code`, not UUID.
 // /accounting/general-ledger expects UUID. Pre-filled drill deferred to S32+ (RPC bump).
 
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { toLocalDateStr, previousPeriod } from '@breakery/domain';
 import type { CsvColumn } from '@breakery/domain';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { DateRangePickerWithCompare } from '@/features/reports/components/DateRangePickerWithCompare.js';
 import { DeltaPct } from '@/features/reports/components/DeltaPct.js';
 import { useCashFlow } from '@/features/reports/hooks/useCashFlow.js';
+import { useUrlState, useUrlBoolean } from '@/hooks/useUrlState.js';
 import type { CashFlow } from '@/features/reports/hooks/useCashFlow.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
 
@@ -48,9 +49,9 @@ function fmt(n: number): string {
 }
 
 export default function CashFlowPage() {
-  const [start, setStart] = useState<string>(defaultStart);
-  const [end,   setEnd]   = useState<string>(() => toLocalDateStr(new Date()));
-  const [compare, setCompare] = useState(false);
+  const [start, setStart] = useUrlState('start', defaultStart());
+  const [end,   setEnd]   = useUrlState('end', toLocalDateStr(new Date()));
+  const [compare, setCompare] = useUrlBoolean('compare');
 
   const prev = useMemo(() => compare ? previousPeriod(start, end) : null, [compare, start, end]);
 

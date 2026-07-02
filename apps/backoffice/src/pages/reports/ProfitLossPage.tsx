@@ -7,7 +7,7 @@
 // S32 / Wave 3.D : account cells now drill into /accounting/general-ledger via
 // DrilldownLink, using account_id UUID surfaced by the bumped RPC (S32 Wave 1.B).
 
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { toLocalDateStr, previousPeriod } from '@breakery/domain';
 import type { CsvColumn } from '@breakery/domain';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
@@ -15,6 +15,7 @@ import { DateRangePickerWithCompare } from '@/features/reports/components/DateRa
 import { DeltaPct } from '@/features/reports/components/DeltaPct.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 import { useProfitLoss } from '@/features/reports/hooks/useProfitLoss.js';
+import { useUrlState, useUrlBoolean } from '@/hooks/useUrlState.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
 import type { PnlLine } from '@/features/reports/hooks/useProfitLoss.js';
 
@@ -35,9 +36,9 @@ function fmt(n: number): string {
 }
 
 export default function ProfitLossPage() {
-  const [start, setStart] = useState<string>(defaultStart);
-  const [end,   setEnd]   = useState<string>(() => toLocalDateStr(new Date()));
-  const [compare, setCompare] = useState(false);
+  const [start, setStart] = useUrlState('start', defaultStart());
+  const [end,   setEnd]   = useUrlState('end', toLocalDateStr(new Date()));
+  const [compare, setCompare] = useUrlBoolean('compare');
 
   const prev = useMemo(() => compare ? previousPeriod(start, end) : null, [compare, start, end]);
 

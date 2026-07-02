@@ -3,7 +3,6 @@
 // Table of revenue / order count / avg basket per staff member over a date
 // range. No chart — table is the primary view here.
 
-import { useState } from 'react';
 import { toLocalDateStr } from '@breakery/domain';
 import type { CsvColumn } from '@breakery/domain';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
@@ -12,6 +11,7 @@ import { useSalesByStaff } from '@/features/reports/hooks/useSalesByStaff.js';
 import type { SalesStaffRow } from '@/features/reports/hooks/useSalesByStaff.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
+import { useUrlState } from '@/hooks/useUrlState.js';
 
 const csvColumns: CsvColumn<SalesStaffRow>[] = [
   { header: 'Staff',       accessor: (r) => r.staff_name,  format: 'text' },
@@ -25,14 +25,19 @@ function defaultStart(): string {
 }
 
 export default function SalesByStaffPage() {
-  const [start, setStart] = useState<string>(defaultStart);
-  const [end,   setEnd]   = useState<string>(() => toLocalDateStr(new Date()));
+  const [start, setStart] = useUrlState('start', defaultStart());
+  const [end,   setEnd]   = useUrlState('end', toLocalDateStr(new Date()));
   const { data, isLoading, error } = useSalesByStaff(start, end);
 
   return (
     <ReportPage
       title="Sales by Staff"
       subtitle="Revenue, order count, and average basket per cashier."
+      isEmpty={!isLoading && !error && data !== undefined && data.length === 0}
+      emptyState={{
+        title: 'No sales',
+        description: 'No sales in the selected date range.',
+      }}
       filters={
         <div className="flex items-center gap-3">
           <DateRangePicker
@@ -67,13 +72,6 @@ export default function SalesByStaffPage() {
             </tr>
           </thead>
           <tbody>
-            {data.length === 0 && (
-              <tr>
-                <td className="py-3 text-text-secondary" colSpan={4}>
-                  No sales in the selected range.
-                </td>
-              </tr>
-            )}
             {data.map((r) => (
               <tr key={r.staff_id} className="border-b border-border-subtle">
                 <td className="py-2">

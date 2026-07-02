@@ -1,12 +1,12 @@
 // apps/backoffice/src/pages/reports/PermissionChangesPage.tsx
 // S40 Wave B3 — Permission change log: Date / Actor / Action badge / Role / Permission / Detail.
 
-import { useState } from 'react';
 import { toLocalDateStr } from '@breakery/domain';
 import type { CsvColumn } from '@breakery/domain';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
+import { useUrlState } from '@/hooks/useUrlState.js';
 import {
   usePermissionChanges,
   type PermissionChangeLine,
@@ -40,8 +40,8 @@ function actionBadge(action: string): JSX.Element {
 }
 
 export default function PermissionChangesPage() {
-  const [start, setStart] = useState<string>(defaultStart);
-  const [end,   setEnd]   = useState<string>(() => toLocalDateStr(new Date()));
+  const [start, setStart] = useUrlState('start', defaultStart());
+  const [end,   setEnd]   = useUrlState('end', toLocalDateStr(new Date()));
 
   const { data, isLoading, error } = usePermissionChanges({ start, end });
 
@@ -51,6 +51,11 @@ export default function PermissionChangesPage() {
     <ReportPage
       title="Permission Change Log"
       subtitle="Audit trail of permission grants and revocations across a date range."
+      isEmpty={!isLoading && !error && data !== undefined && changes.length === 0}
+      emptyState={{
+        title: 'No permission changes',
+        description: 'No permission changes recorded for this period.',
+      }}
       filters={
         <div className="flex items-center gap-3">
           <DateRangePicker
@@ -91,13 +96,6 @@ export default function PermissionChangesPage() {
             </tr>
           </thead>
           <tbody>
-            {changes.length === 0 && (
-              <tr>
-                <td className="py-3 text-text-secondary" colSpan={6}>
-                  No permission changes recorded for this period.
-                </td>
-              </tr>
-            )}
             {changes.map((r, idx) => (
               <tr key={`${r.changed_at}-${idx}`} className="border-b border-border-subtle">
                 <td className="py-2 text-text-secondary whitespace-nowrap">{r.changed_at.slice(0, 10)}</td>

@@ -31,6 +31,7 @@ import {
   usePurchaseItems,
   type PurchaseItemLine,
 } from '@/features/reports/hooks/usePurchaseItems.js';
+import { useUrlState } from '@/hooks/useUrlState.js';
 
 interface SupplierOption {
   id:   string;
@@ -58,8 +59,8 @@ function defaultStart(): string {
 }
 
 export default function PurchaseItemsPage() {
-  const [start,      setStart]      = useState<string>(defaultStart);
-  const [end,        setEnd]        = useState<string>(() => toLocalDateStr(new Date()));
+  const [start,      setStart]      = useUrlState('start', defaultStart());
+  const [end,        setEnd]        = useUrlState('end', toLocalDateStr(new Date()));
   const [supplierId, setSupplierId] = useState<string>('');
 
   // Supplier options for the native <select>
@@ -109,6 +110,11 @@ export default function PurchaseItemsPage() {
     <ReportPage
       title="Purchase Items"
       subtitle="Line items across received purchase orders, with optional supplier filter."
+      isEmpty={!isLoading && !error && data !== undefined && lines.length === 0}
+      emptyState={{
+        title: 'No purchase lines',
+        description: 'No purchase lines for this period.',
+      }}
       filters={
         <div className="flex items-center gap-3 flex-wrap">
           <DateRangePicker
@@ -204,13 +210,6 @@ export default function PurchaseItemsPage() {
             </tr>
           </thead>
           <tbody>
-            {lines.length === 0 && (
-              <tr>
-                <td className="py-3 text-text-secondary" colSpan={10}>
-                  No purchase lines for this period.
-                </td>
-              </tr>
-            )}
             {lines.map((r, idx) => (
               <tr key={`${r.po_id}-${r.product_id}-${idx}`} className="border-b border-border-subtle">
                 <td className="py-2 font-medium">{r.po_number}</td>

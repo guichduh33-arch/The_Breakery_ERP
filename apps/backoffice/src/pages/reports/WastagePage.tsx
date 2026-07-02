@@ -1,13 +1,13 @@
 // apps/backoffice/src/pages/reports/WastagePage.tsx
 // S30 Wave 4.2 — Wastage report page with date range filter + export.
 
-import { useState } from 'react';
 import { toLocalDateStr } from '@breakery/domain';
 import type { CsvColumn } from '@breakery/domain';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
+import { useUrlState } from '@/hooks/useUrlState.js';
 import {
   useWastageReport,
   type WastageReportLine,
@@ -26,8 +26,8 @@ function defaultStart(): string {
 }
 
 export default function WastagePage() {
-  const [start, setStart] = useState<string>(defaultStart);
-  const [end,   setEnd]   = useState<string>(() => toLocalDateStr(new Date()));
+  const [start, setStart] = useUrlState('start', defaultStart());
+  const [end,   setEnd]   = useUrlState('end', toLocalDateStr(new Date()));
 
   const { data, isLoading, error } = useWastageReport({ start, end });
 
@@ -37,6 +37,11 @@ export default function WastagePage() {
     <ReportPage
       title="Wastage"
       subtitle="Waste and expired stock recorded across a date range."
+      isEmpty={!isLoading && !error && data !== undefined && lines.length === 0}
+      emptyState={{
+        title: 'No wastage',
+        description: 'No wastage recorded for this period.',
+      }}
       filters={
         <div className="flex items-center gap-3">
           <DateRangePicker
@@ -77,13 +82,6 @@ export default function WastagePage() {
             </tr>
           </thead>
           <tbody>
-            {lines.length === 0 && (
-              <tr>
-                <td className="py-3 text-text-secondary" colSpan={5}>
-                  No wastage recorded for this period.
-                </td>
-              </tr>
-            )}
             {lines.map((r) => (
               <tr key={r.id} className="border-b border-border-subtle">
                 <td className="py-2 font-medium">

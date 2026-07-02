@@ -14,6 +14,7 @@ import {
   usePriceChanges,
   type PriceChangeLine,
 } from '@/features/reports/hooks/usePriceChanges.js';
+import { useUrlState } from '@/hooks/useUrlState.js';
 
 const csvColumns: CsvColumn<PriceChangeLine>[] = [
   { header: 'Date',          accessor: (r) => r.changed_at.slice(0, 10), format: 'text' },
@@ -68,8 +69,8 @@ function deltaBadge(pct: number | null): JSX.Element {
 }
 
 export default function PriceChangesPage() {
-  const [start,     setStart]     = useState<string>(defaultStart);
-  const [end,       setEnd]       = useState<string>(() => toLocalDateStr(new Date()));
+  const [start,     setStart]     = useUrlState('start', defaultStart());
+  const [end,       setEnd]       = useUrlState('end', toLocalDateStr(new Date()));
   const [productId, setProductId] = useState<string>('');
 
   const { data, isLoading, error } = usePriceChanges({
@@ -86,6 +87,11 @@ export default function PriceChangesPage() {
     <ReportPage
       title="Price Changes"
       subtitle="Retail price change log for all products across a date range."
+      isEmpty={!isLoading && !error && data !== undefined && changes.length === 0}
+      emptyState={{
+        title: 'No price changes',
+        description: 'No price changes recorded for this period.',
+      }}
       filters={
         <div className="flex flex-wrap items-center gap-3">
           <DateRangePicker
@@ -141,13 +147,6 @@ export default function PriceChangesPage() {
             </tr>
           </thead>
           <tbody>
-            {changes.length === 0 && (
-              <tr>
-                <td className="py-3 text-text-secondary" colSpan={6}>
-                  No price changes recorded for this period.
-                </td>
-              </tr>
-            )}
             {changes.map((r, idx) => (
               <tr key={`${r.product_id}-${r.changed_at}-${idx}`} className="border-b border-border-subtle">
                 <td className="py-2 text-text-secondary">{r.changed_at.slice(0, 10)}</td>

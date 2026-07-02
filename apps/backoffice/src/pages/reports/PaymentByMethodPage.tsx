@@ -4,13 +4,13 @@
 // S32 / Wave 3.I : method cells now drill into /backoffice/orders filtered by
 // payment_method + start/end (DrilldownLink entity="order_list").
 
-import { useState } from 'react';
 import { toLocalDateStr } from '@breakery/domain';
 import type { CsvColumn } from '@breakery/domain';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
+import { useUrlState } from '@/hooks/useUrlState.js';
 import {
   usePaymentsByMethod,
   type PaymentByMethodLine,
@@ -28,8 +28,8 @@ function defaultStart(): string {
 }
 
 export default function PaymentByMethodPage() {
-  const [start, setStart] = useState<string>(defaultStart);
-  const [end,   setEnd]   = useState<string>(() => toLocalDateStr(new Date()));
+  const [start, setStart] = useUrlState('start', defaultStart());
+  const [end,   setEnd]   = useUrlState('end', toLocalDateStr(new Date()));
 
   const { data, isLoading, error } = usePaymentsByMethod({ start, end });
 
@@ -39,6 +39,11 @@ export default function PaymentByMethodPage() {
     <ReportPage
       title="Payment by Method"
       subtitle="Total collected per payment method across a date range."
+      isEmpty={!isLoading && !error && data !== undefined && lines.length === 0}
+      emptyState={{
+        title: 'No payments',
+        description: 'No payment data for this period.',
+      }}
       filters={
         <div className="flex items-center gap-3">
           <DateRangePicker
@@ -78,13 +83,6 @@ export default function PaymentByMethodPage() {
             </tr>
           </thead>
           <tbody>
-            {lines.length === 0 && (
-              <tr>
-                <td className="py-3 text-text-secondary" colSpan={4}>
-                  No payment data for this period.
-                </td>
-              </tr>
-            )}
             {lines.map((r) => (
               <tr key={r.method} className="border-b border-border-subtle">
                 <td className="py-2 font-medium capitalize">

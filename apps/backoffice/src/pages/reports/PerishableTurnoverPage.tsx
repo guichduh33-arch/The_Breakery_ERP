@@ -1,13 +1,13 @@
 // apps/backoffice/src/pages/reports/PerishableTurnoverPage.tsx
 // S30 Wave 4.2 — Perishable lot turnover report with velocity score visual.
 
-import { useState } from 'react';
 import { toLocalDateStr } from '@breakery/domain';
 import type { CsvColumn } from '@breakery/domain';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
+import { useUrlState } from '@/hooks/useUrlState.js';
 import {
   usePerishableTurnover,
   type PerishableTurnoverLine,
@@ -46,8 +46,8 @@ function wasteTone(pct: number): string {
 }
 
 export default function PerishableTurnoverPage() {
-  const [start, setStart] = useState<string>(defaultStart);
-  const [end,   setEnd]   = useState<string>(() => toLocalDateStr(new Date()));
+  const [start, setStart] = useUrlState('start', defaultStart());
+  const [end,   setEnd]   = useUrlState('end', toLocalDateStr(new Date()));
 
   const { data, isLoading, error } = usePerishableTurnover({ start, end });
 
@@ -57,6 +57,11 @@ export default function PerishableTurnoverPage() {
     <ReportPage
       title="Perishable Turnover"
       subtitle="Lot consumption, expiry, and velocity for perishable products."
+      isEmpty={!isLoading && !error && data !== undefined && rows.length === 0}
+      emptyState={{
+        title: 'No perishable data',
+        description: 'No perishable lot data for this period.',
+      }}
       filters={
         <div className="flex items-center gap-3">
           <DateRangePicker
@@ -100,13 +105,6 @@ export default function PerishableTurnoverPage() {
             </tr>
           </thead>
           <tbody>
-            {rows.length === 0 && (
-              <tr>
-                <td className="py-3 text-text-secondary" colSpan={8}>
-                  No perishable lot data for this period.
-                </td>
-              </tr>
-            )}
             {rows.map((r) => (
               <tr key={r.product_id} className="border-b border-border-subtle">
                 <td className="py-2 font-medium">

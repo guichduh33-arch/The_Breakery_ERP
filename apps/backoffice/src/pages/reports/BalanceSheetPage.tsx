@@ -8,7 +8,7 @@
 // by the bumped RPC (S32 Wave 1.C). The aggregated 3-column A=L+E view above
 // stays category-rolled (cash/ar/inventory…) since those are 1:N to accounts.
 
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { Input } from '@breakery/ui';
 import { toLocalDateStr, previousPeriod } from '@breakery/domain';
 import type { CsvColumn } from '@breakery/domain';
@@ -16,6 +16,7 @@ import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { DeltaPct } from '@/features/reports/components/DeltaPct.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 import { useBalanceSheet } from '@/features/reports/hooks/useBalanceSheet.js';
+import { useUrlState, useUrlBoolean } from '@/hooks/useUrlState.js';
 import type { BalanceSheet } from '@/features/reports/hooks/useBalanceSheet.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
 
@@ -54,8 +55,8 @@ function fmt(n: number): string {
 }
 
 export default function BalanceSheetPage() {
-  const [asOf, setAsOf] = useState<string>(() => toLocalDateStr(new Date()));
-  const [compare, setCompare] = useState(false);
+  const [asOf, setAsOf] = useUrlState('asOf', toLocalDateStr(new Date()));
+  const [compare, setCompare] = useUrlBoolean('compare');
 
   // For a balance sheet snapshot, the previous period is the end of the prior equivalent window.
   const prevAsOf = useMemo(() => compare ? previousPeriod(asOf, asOf).end : null, [compare, asOf]);

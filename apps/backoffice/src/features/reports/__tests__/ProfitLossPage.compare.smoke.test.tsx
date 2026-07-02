@@ -44,7 +44,7 @@ describe('ProfitLossPage compare', () => {
 
   it('renders DeltaPct testid when compare data ready', async () => {
     rpcSpy.mockResolvedValue({ data: mockPnlData, error: null });
-    render(wrap(<ProfitLossPage />));
+    render(wrap(<MemoryRouter><ProfitLossPage /></MemoryRouter>));
     fireEvent.click(screen.getByTestId('compare-toggle'));
     await waitFor(() => expect(screen.queryAllByTestId('delta-pct').length).toBeGreaterThan(0));
   });

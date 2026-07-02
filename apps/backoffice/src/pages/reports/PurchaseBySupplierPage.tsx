@@ -2,7 +2,6 @@
 // S40 Wave B2 — Purchase orders aggregated by supplier: table with share % and avg lead days.
 // Terminal page — no supplier drill-down (documented decision: Wave C owns routing).
 
-import { useState } from 'react';
 import { toLocalDateStr } from '@breakery/domain';
 import type { CsvColumn } from '@breakery/domain';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
@@ -11,6 +10,7 @@ import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
 import { ChartCard } from '@/features/reports/components/ChartCard.js';
 import { CostDonut } from '@/features/reports/components/CostDonut.js';
 import { COGS_BASE } from '@/features/reports/utils/chartColors.js';
+import { useUrlState } from '@/hooks/useUrlState.js';
 import {
   usePurchaseBySupplier,
   type PurchaseBySupplierRow,
@@ -34,8 +34,8 @@ function defaultStart(): string {
 }
 
 export default function PurchaseBySupplierPage() {
-  const [start, setStart] = useState<string>(defaultStart);
-  const [end,   setEnd]   = useState<string>(() => toLocalDateStr(new Date()));
+  const [start, setStart] = useUrlState('start', defaultStart());
+  const [end,   setEnd]   = useUrlState('end', toLocalDateStr(new Date()));
 
   const { data, isLoading, error } = usePurchaseBySupplier({ start, end });
 
@@ -45,6 +45,11 @@ export default function PurchaseBySupplierPage() {
     <ReportPage
       title="Purchase by Supplier"
       subtitle="Purchase volume, value, and lead time broken down by supplier."
+      isEmpty={!isLoading && !error && data !== undefined && rows.length === 0}
+      emptyState={{
+        title: 'No purchase orders',
+        description: 'No purchase orders for this period.',
+      }}
       filters={
         <div className="flex items-center gap-3">
           <DateRangePicker
@@ -91,13 +96,6 @@ export default function PurchaseBySupplierPage() {
             </tr>
           </thead>
           <tbody>
-            {rows.length === 0 && (
-              <tr>
-                <td className="py-3 text-text-secondary" colSpan={7}>
-                  No purchase orders for this period.
-                </td>
-              </tr>
-            )}
             {rows.map((r) => (
               <tr key={r.supplier_id} className="border-b border-border-subtle">
                 <td className="py-2 font-medium">{r.supplier_name}</td>

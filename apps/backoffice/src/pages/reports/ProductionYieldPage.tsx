@@ -21,6 +21,7 @@ import { supabase } from '@/lib/supabase.js';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
+import { useUrlState } from '@/hooks/useUrlState.js';
 
 interface YieldRow {
   id:                 string;
@@ -265,8 +266,8 @@ function TrendTable({ rows }: { rows: TrendRow[] }): JSX.Element {
 }
 
 export default function ProductionYieldPage(): JSX.Element {
-  const [start, setStart] = useState<string>(defaultStart);
-  const [end,   setEnd]   = useState<string>(() => toLocalDateStr(new Date()));
+  const [start, setStart] = useUrlState('start', defaultStart());
+  const [end,   setEnd]   = useUrlState('end', toLocalDateStr(new Date()));
   const [drillProductId, setDrillProductId] = useState<string | null>(null);
   const { data, isLoading, error } = useProductionYield(start, end);
 

@@ -1,7 +1,6 @@
 // apps/backoffice/src/pages/reports/DailySalesPage.tsx
 // S40 Wave B1 — Per-day gross/refunds/net/AOV with summary KPI cards + drill-down.
 
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toLocalDateStr } from '@breakery/domain';
 import type { CsvColumn } from '@breakery/domain';
@@ -14,6 +13,7 @@ import {
   useDailySales,
   type DailySalesRow,
 } from '@/features/reports/hooks/useDailySales.js';
+import { useUrlState } from '@/hooks/useUrlState.js';
 
 const csvColumns: CsvColumn<DailySalesRow>[] = [
   { header: 'Date',        accessor: (r) => r.date,        format: 'text' },
@@ -32,8 +32,8 @@ function defaultStart(): string {
 }
 
 export default function DailySalesPage() {
-  const [start, setStart] = useState<string>(defaultStart);
-  const [end,   setEnd]   = useState<string>(() => toLocalDateStr(new Date()));
+  const [start, setStart] = useUrlState('start', defaultStart());
+  const [end,   setEnd]   = useUrlState('end', toLocalDateStr(new Date()));
 
   const { data, isLoading, error } = useDailySales({ start, end });
 
@@ -44,6 +44,11 @@ export default function DailySalesPage() {
     <ReportPage
       title="Daily Sales"
       subtitle="Per-day gross, refunds, net and average order value."
+      isEmpty={!isLoading && !error && data !== undefined && byDay.length === 0}
+      emptyState={{
+        title: 'No sales',
+        description: 'No sales for this period.',
+      }}
       filters={
         <div className="flex items-center gap-3">
           <DateRangePicker
@@ -110,13 +115,6 @@ export default function DailySalesPage() {
             </tr>
           </thead>
           <tbody>
-            {byDay.length === 0 && (
-              <tr>
-                <td className="py-3 text-text-secondary" colSpan={6}>
-                  No sales for this period.
-                </td>
-              </tr>
-            )}
             {byDay.map((r) => {
               const drillUrl = buildDrilldownUrl('order_list', '', { start: r.date, end: r.date });
               return (

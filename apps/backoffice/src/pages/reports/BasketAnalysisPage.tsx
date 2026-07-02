@@ -13,6 +13,7 @@ import { useBasketAnalysis } from '@/features/reports/hooks/useBasketAnalysis.js
 import type { BasketPair } from '@/features/reports/hooks/useBasketAnalysis.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
+import { useUrlState } from '@/hooks/useUrlState.js';
 
 const csvColumns: CsvColumn<BasketPair>[] = [
   { header: 'Product A',    accessor: (r) => r.product_a_name,      format: 'text' },
@@ -27,8 +28,8 @@ function defaultStart(): string {
 }
 
 export default function BasketAnalysisPage() {
-  const [start, setStart] = useState<string>(defaultStart);
-  const [end,   setEnd]   = useState<string>(() => toLocalDateStr(new Date()));
+  const [start, setStart] = useUrlState('start', defaultStart());
+  const [end,   setEnd]   = useUrlState('end', toLocalDateStr(new Date()));
   const [topN,  setTopN]  = useState<number>(10);
   const { data, isLoading, error } = useBasketAnalysis(start, end, topN);
 
@@ -36,6 +37,11 @@ export default function BasketAnalysisPage() {
     <ReportPage
       title="Basket Analysis"
       subtitle="Product pairs frequently bought together — sorted by lift (cross-sell opportunities)."
+      isEmpty={!isLoading && !error && data !== undefined && data.length === 0}
+      emptyState={{
+        title: 'No paired sales',
+        description: 'No paired sales in the selected range.',
+      }}
       filters={
         <div className="flex items-center gap-3">
           <DateRangePicker
@@ -86,13 +92,6 @@ export default function BasketAnalysisPage() {
             </tr>
           </thead>
           <tbody>
-            {data.length === 0 && (
-              <tr>
-                <td className="py-3 text-text-secondary" colSpan={5}>
-                  No paired sales in the selected range.
-                </td>
-              </tr>
-            )}
             {data.map((row, i) => {
               const highlight = i < 3 && row.lift > 1.0;
               return (

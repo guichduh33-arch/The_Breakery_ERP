@@ -1,13 +1,13 @@
 // apps/backoffice/src/pages/reports/ProductionReportPage.tsx
 // S40 Wave B3 — Production report: KPI cards + by_product table + by_day table.
 
-import { useState } from 'react';
 import { toLocalDateStr } from '@breakery/domain';
 import type { CsvColumn } from '@breakery/domain';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
+import { useUrlState } from '@/hooks/useUrlState.js';
 import {
   useProductionReport,
   type ProductionReportByProduct,
@@ -26,8 +26,8 @@ function defaultStart(): string {
 }
 
 export default function ProductionReportPage() {
-  const [start, setStart] = useState<string>(defaultStart);
-  const [end,   setEnd]   = useState<string>(() => toLocalDateStr(new Date()));
+  const [start, setStart] = useUrlState('start', defaultStart());
+  const [end,   setEnd]   = useUrlState('end', toLocalDateStr(new Date()));
 
   const { data, isLoading, error } = useProductionReport({ start, end });
 
@@ -41,6 +41,11 @@ export default function ProductionReportPage() {
     <ReportPage
       title="Production Report"
       subtitle="Daily production runs — produced quantities, waste, and value per product."
+      isEmpty={!isLoading && !error && data !== undefined && byProduct.length === 0 && byDay.length === 0}
+      emptyState={{
+        title: 'No production',
+        description: 'No production runs recorded for this period.',
+      }}
       filters={
         <div className="flex items-center gap-3">
           <DateRangePicker
@@ -96,13 +101,6 @@ export default function ProductionReportPage() {
                 </tr>
               </thead>
               <tbody>
-                {byProduct.length === 0 && (
-                  <tr>
-                    <td className="py-3 text-text-secondary" colSpan={5}>
-                      No production runs recorded for this period.
-                    </td>
-                  </tr>
-                )}
                 {byProduct.map((r) => (
                   <tr key={r.product_id} className="border-b border-border-subtle">
                     <td className="py-2 font-medium">
@@ -133,13 +131,6 @@ export default function ProductionReportPage() {
                 </tr>
               </thead>
               <tbody>
-                {byDay.length === 0 && (
-                  <tr>
-                    <td className="py-3 text-text-secondary" colSpan={4}>
-                      No daily production data for this period.
-                    </td>
-                  </tr>
-                )}
                 {byDay.map((d) => (
                   <tr key={d.date} className="border-b border-border-subtle">
                     <td className="py-2 text-text-secondary">{d.date.slice(0, 10)}</td>

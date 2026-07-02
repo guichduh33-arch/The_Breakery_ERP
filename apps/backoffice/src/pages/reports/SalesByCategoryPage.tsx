@@ -2,7 +2,7 @@
 //
 // Per-category revenue + quantity over a date window. Bar chart + table.
 
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import {
   BarChart,
   Bar,
@@ -21,6 +21,7 @@ import { useSalesByCategory } from '@/features/reports/hooks/useSalesByCategory.
 import type { SalesCategoryRow } from '@/features/reports/hooks/useSalesByCategory.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
+import { useUrlState, useUrlBoolean } from '@/hooks/useUrlState.js';
 
 const csvColumns: CsvColumn<SalesCategoryRow>[] = [
   { header: 'Category', accessor: (r) => r.category_name, format: 'text' },
@@ -40,9 +41,9 @@ function sumRows(rows: SalesCategoryRow[]): { total: number; qty: number } {
 }
 
 export default function SalesByCategoryPage() {
-  const [start, setStart] = useState<string>(defaultStart);
-  const [end,   setEnd]   = useState<string>(() => toLocalDateStr(new Date()));
-  const [compare, setCompare] = useState(false);
+  const [start, setStart] = useUrlState('start', defaultStart());
+  const [end,   setEnd]   = useUrlState('end', toLocalDateStr(new Date()));
+  const [compare, setCompare] = useUrlBoolean('compare');
 
   const prev = useMemo(() => compare ? previousPeriod(start, end) : null, [compare, start, end]);
 
@@ -61,6 +62,11 @@ export default function SalesByCategoryPage() {
     <ReportPage
       title="Sales by Category"
       subtitle="Revenue + quantity grouped by product category."
+      isEmpty={!isLoading && !error && data !== undefined && data.length === 0}
+      emptyState={{
+        title: 'No sales',
+        description: 'No sales in the selected date range.',
+      }}
       filters={
         <div className="flex items-center gap-3">
           <DateRangePickerWithCompare
@@ -127,13 +133,6 @@ export default function SalesByCategoryPage() {
               </tr>
             </thead>
             <tbody>
-              {data.length === 0 && (
-                <tr>
-                  <td className="py-3 text-text-secondary" colSpan={3}>
-                    No sales in the selected range.
-                  </td>
-                </tr>
-              )}
               {data.map((r) => (
                 <tr key={r.category_id} className="border-b border-border-subtle">
                   <td className="py-2">
