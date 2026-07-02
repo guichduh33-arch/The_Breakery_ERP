@@ -1,5 +1,5 @@
 -- supabase/tests/combo_sale.test.sql
--- Session 47 / Task A5 — complete_order_with_payment_v15 combo-aware stock.
+-- Session 47 / Task A5 — complete_order_with_payment_v16 combo-aware stock.
 -- Cashier ...0002 has pos.sale.create. Fresh products + open session seeded in-tx.
 BEGIN;
 SELECT set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000002',true);
@@ -20,7 +20,7 @@ VALUES ('00000000-0000-0000-0000-0000000cb001', NULL, 'Drinks', 'Affogato', 5000
 DO $$
 DECLARE r jsonb;
 BEGIN
-  r := complete_order_with_payment_v15(
+  r := complete_order_with_payment_v16(
     p_session_id := '00000000-0000-0000-0000-0000000ce001',
     p_order_type := 'take_out'::order_type,
     p_items := $items$[
@@ -37,7 +37,7 @@ DO $$
 DECLARE r jsonb; p numeric;
 BEGIN
   p := get_customer_product_price('00000000-0000-0000-0000-0000000fa004', NULL);
-  r := complete_order_with_payment_v15(
+  r := complete_order_with_payment_v16(
     p_session_id := '00000000-0000-0000-0000-0000000ce001',
     p_order_type := 'take_out'::order_type,
     p_items := ('[{"product_id":"00000000-0000-0000-0000-0000000fa004","quantity":2,"unit_price":'||p||',"modifiers":[]}]')::jsonb,
@@ -53,11 +53,11 @@ SELECT is((SELECT line_total::int FROM order_items WHERE order_id=current_settin
 SELECT ok((SELECT combo_components IS NOT NULL FROM order_items WHERE order_id=current_setting('combo.order_id')::uuid), 'T3c combo_components snapshot present');
 SELECT is((SELECT product_id FROM order_items WHERE order_id=current_setting('combo.order_id')::uuid), '00000000-0000-0000-0000-0000000cb001'::uuid, 'T3d order_item product_id = combo');
 SELECT is((SELECT current_stock::int FROM products WHERE id='00000000-0000-0000-0000-0000000fa004'), 98, 'T4 standalone (non-combo) still deducts itself');
-SELECT throws_ok($q$ SELECT complete_order_with_payment_v15(
+SELECT throws_ok($q$ SELECT complete_order_with_payment_v16(
     p_session_id := '00000000-0000-0000-0000-0000000ce001', p_order_type := 'take_out'::order_type,
     p_items := '[{"product_id":"00000000-0000-0000-0000-0000000cb002","quantity":1,"unit_price":30000,"modifiers":[],"combo_components":[{"product_id":"00000000-0000-0000-0000-0000000fa003","quantity":1}]}]'::jsonb,
     p_payment := '{"method":"cash","amount":30000,"cash_received":30000,"change_given":0}'::jsonb) $q$, 'P0002', NULL, 'T5 insufficient component stock rejected');
-SELECT ok(NOT has_function_privilege('anon','complete_order_with_payment_v15(uuid, order_type, jsonb, jsonb, uuid, uuid, integer, text, numeric, text, numeric, text, uuid, jsonb, jsonb, text)','EXECUTE'), 'T6 anon EXECUTE revoked on v15');
+SELECT ok(NOT has_function_privilege('anon','complete_order_with_payment_v16(uuid, order_type, jsonb, jsonb, uuid, uuid, integer, text, numeric, text, numeric, text, uuid, jsonb, jsonb, uuid)','EXECUTE'), 'T6 anon EXECUTE revoked on v16');
 SELECT ok(NOT EXISTS (SELECT 1 FROM pg_proc WHERE proname='complete_order_with_payment_v14'), 'T7 v14 dropped');
 SELECT * FROM finish();
 ROLLBACK;
