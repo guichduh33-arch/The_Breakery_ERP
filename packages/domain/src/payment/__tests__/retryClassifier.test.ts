@@ -104,6 +104,40 @@ describe('classifyCheckoutError', () => {
       expect(result.userMessage).not.toContain('discount_requires_authorizer');
     });
 
+    it('maps combo_invalid_component to friendly FR copy (S57 P2.1)', () => {
+      const err = Object.assign(new Error('combo_invalid_component'), {
+        details: { error: 'combo_invalid_component', message: 'combo_invalid_component: ...' },
+        status: 409,
+      });
+      const result = classifyCheckoutError(err);
+      expect(result.kind).toBe('fatal');
+      expect(result.userMessage).toMatch(/combo/i);
+      // Friendly copy, not the generic "Payment failed (<code>)" fallback.
+      expect(result.userMessage).not.toContain('combo_invalid_component');
+    });
+
+    it('maps combo_group_violation to friendly FR copy (S57 P2.1)', () => {
+      const err = Object.assign(new Error('combo_group_violation'), {
+        details: { error: 'combo_group_violation', message: 'combo_group_violation: ...' },
+        status: 409,
+      });
+      const result = classifyCheckoutError(err);
+      expect(result.kind).toBe('fatal');
+      expect(result.userMessage).toMatch(/combo/i);
+      expect(result.userMessage).not.toContain('combo_group_violation');
+    });
+
+    it('maps promo_cap_exceeded to friendly FR copy (S57 P2.1)', () => {
+      const err = Object.assign(new Error('promo_cap_exceeded'), {
+        details: { error: 'promo_cap_exceeded', message: 'promo_cap_exceeded: ...' },
+        status: 409,
+      });
+      const result = classifyCheckoutError(err);
+      expect(result.kind).toBe('fatal');
+      expect(result.userMessage).toMatch(/promotion/i);
+      expect(result.userMessage).not.toContain('promo_cap_exceeded');
+    });
+
     it('falls back to message for unknown codes', () => {
       const err = Object.assign(new Error('weird unknown thing'), {
         details: { error: 'mysterious_error' },

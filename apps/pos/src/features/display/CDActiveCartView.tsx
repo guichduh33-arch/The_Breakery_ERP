@@ -9,6 +9,29 @@ interface Item {
 }
 
 export function CDActiveCartView({ message }: { message: CartBroadcastMessage | null }) {
+  // S57 C-D4 — payment confirmation screen (thank-you + change to collect).
+  if (message?.type === 'payment_complete') {
+    const showChange = message.method === 'cash' && (message.change ?? 0) > 0;
+    return (
+      <div className="m-auto text-center space-y-4" data-testid="cd-payment-complete">
+        <h2 className="font-serif text-4xl text-gold">Merci !</h2>
+        <p className="text-text-secondary">Paiement reçu</p>
+        {showChange && (
+          <div className="pt-2">
+            <div className="text-text-secondary uppercase tracking-widest text-xs mb-1">
+              Monnaie à rendre
+            </div>
+            <Currency
+              amount={message.change ?? 0}
+              emphasis="gold"
+              className="text-5xl font-bold tabular-nums"
+            />
+          </div>
+        )}
+      </div>
+    );
+  }
+
   if (!message || message.cart.items.length === 0) {
     return (
       <div className="m-auto text-center space-y-2">

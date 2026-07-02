@@ -8,6 +8,7 @@ import { useTaxRate } from '@/features/settings/hooks/useTaxRate';
 import { printReceipt, openCashDrawer, type ReceiptPayload } from '@/services/print/printService';
 import { useStationPrinters } from '@/features/cart/hooks/useStationPrinters';
 import { usePosSettingsStore } from '@/stores/posSettingsStore';
+import { broadcastPaymentComplete } from '@/features/display/hooks/useCartBroadcast';
 import { toast } from 'sonner';
 
 const BUSINESS = {
@@ -123,7 +124,7 @@ function buildReceiptPayload(props: SuccessModalProps, taxRate: number): Receipt
 }
 
 export function SuccessModal(props: SuccessModalProps) {
-  const { open, orderNumber, total, changeGiven, pointsEarned, customerName, onNewOrder } = props;
+  const { open, orderNumber, total, changeGiven, pointsEarned, customerName, onNewOrder, paymentMethod } = props;
   const taxRate = useTaxRate();
   const [isPrinting, setIsPrinting] = useState(false);
   // Guards the mount-effect side effects (toast) against firing after the modal
@@ -145,6 +146,14 @@ export function SuccessModal(props: SuccessModalProps) {
     }
     setIsPrinting(false);
   }
+
+  // S57 C-D4 — confirm the sale on the customer display (thank-you + change to
+  // collect). Emitted here so it fires for every tender path (fast-path AND
+  // split), since this modal renders after any successful checkout.
+  useEffect(() => {
+    if (!open) return;
+    broadcastPaymentComplete({ total, change: changeGiven, method: paymentMethod });
+  }, [open, total, changeGiven, paymentMethod]);
 
   useEffect(() => {
     mountedRef.current = true;

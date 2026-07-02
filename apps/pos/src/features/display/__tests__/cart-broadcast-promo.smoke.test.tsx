@@ -8,7 +8,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useCartStore } from '@/stores/cartStore';
-import { useCartBroadcast, type CartBroadcastMessage } from '../hooks/useCartBroadcast';
+import { useCartBroadcast, type CartUpdateMessage } from '../hooks/useCartBroadcast';
 
 let posted: unknown[] = [];
 class FakeBC {
@@ -53,7 +53,7 @@ describe('useCartBroadcast — post-promo total (POS-02)', () => {
       } as never);
     });
 
-    const last = posted.at(-1) as CartBroadcastMessage;
+    const last = posted.at(-1) as CartUpdateMessage;
     expect(last.type).toBe('cart_update');
 
     // calculateTotals: 2 × 30 000 = 60 000 subtotal; tax included → total ≈ 60 000 (gross)
@@ -80,7 +80,7 @@ describe('useCartBroadcast — post-promo total (POS-02)', () => {
       } as never);
     });
 
-    const last = posted.at(-1) as CartBroadcastMessage;
+    const last = posted.at(-1) as CartUpdateMessage;
     // 60 000 − 5 000 promo − 3 000 cart discount = 52 000
     expect(last.totals.total).toBe(52000);
   });
@@ -100,7 +100,7 @@ describe('useCartBroadcast — post-promo total (POS-02)', () => {
       } as never);
     });
 
-    const last = posted.at(-1) as CartBroadcastMessage;
+    const last = posted.at(-1) as CartUpdateMessage;
     expect(last.totals.total).toBeGreaterThanOrEqual(0);
   });
 });
