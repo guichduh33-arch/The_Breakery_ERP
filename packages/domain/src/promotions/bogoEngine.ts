@@ -11,7 +11,7 @@
 //                         price (discount = matched_subtotal − bundle_price).
 //
 // All functions are pure (no Date.now(), no rng, no I/O) so they double as:
-//   1. Executable spec for `evaluate_promotions_v1` SQL function.
+//   1. Executable spec for `evaluate_promotions_v2` SQL function.
 //   2. Offline fallback when the RPC fails (network outage on the POS).
 //
 // Used together with the Session 9 `evaluator.ts` / `computeAmount.ts` set —
@@ -340,7 +340,10 @@ export interface EvaluatePromotionsFallbackOptions {
 /**
  * Offline fallback entry — full promo evaluation (matchers + per-type
  * compute + stacking) covering Session 9 shapes AND the Phase 2.C new
- * shapes. Used by the POS hook when `evaluate_promotions_v1` RPC fails.
+ * shapes. Used by the POS hook when `evaluate_promotions_v2` RPC fails.
+ * (S57 A-D10: this offline fallback has no knowledge of usage caps — the
+ * server, via evaluate_promotions_v2, is the reference for max_uses /
+ * max_uses_per_customer. Only exercised when the RPC is unreachable.)
  *
  * Pure / deterministic given (promotions, cart, customer, now, catalog).
  */

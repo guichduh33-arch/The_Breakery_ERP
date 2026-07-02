@@ -3,7 +3,7 @@
 // Session 13 / Phase 2.C — unit tests for the extended promo engine
 // (BOGO new shape, threshold, bundle) + fallback orchestrator.
 // Mirrors the case matrix used by `supabase/tests/promotions_bogo.test.sql`
-// so that the offline-fallback path and the SQL `evaluate_promotions_v1`
+// so that the offline-fallback path and the SQL `evaluate_promotions_v2`
 // agree on every scenario.
 
 import { describe, it, expect } from 'vitest';

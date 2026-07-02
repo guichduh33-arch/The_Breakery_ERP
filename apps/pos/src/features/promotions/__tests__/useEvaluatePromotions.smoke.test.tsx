@@ -208,7 +208,7 @@ describe('useEvaluatePromotions', () => {
 
     const applied = await result.current.runEvaluation(CART_3_BAGUETTES, null);
 
-    expect(rpcMock).toHaveBeenCalledWith('evaluate_promotions_v1', expect.objectContaining({
+    expect(rpcMock).toHaveBeenCalledWith('evaluate_promotions_v2', expect.objectContaining({
       p_cart_items: expect.any(Array),
       p_subtotal: 45000,
     }));

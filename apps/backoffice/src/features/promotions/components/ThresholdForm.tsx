@@ -7,7 +7,7 @@
 // so the row lands in the `promotions` table with `type='threshold'`.
 //
 // `max_discount_amount` doubles as the rate-vs-fixed switch on the SQL
-// side : when set, `evaluate_promotions_v1` treats `discount_value` as
+// side : when set, `evaluate_promotions_v2` treats `discount_value` as
 // a percent (with cap) ; when null, fixed IDR. Mirrored here via the
 // `discount_kind` radio.
 

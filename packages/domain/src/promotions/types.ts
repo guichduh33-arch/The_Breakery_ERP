@@ -117,7 +117,7 @@ export interface AppliedPromotion {
   gift_to_add?: AppliedFreeProduct;
   /**
    * Session 13 / Phase 2.C — free-items list emitted by the BOGO "new shape"
-   * (buy N get M of product P) and surfaced by `evaluate_promotions_v1`.
+   * (buy N get M of product P) and surfaced by `evaluate_promotions_v2`.
    * Cart store mirrors each into a `is_promo_gift=true` line.
    */
   free_items?: AppliedFreeProduct[];

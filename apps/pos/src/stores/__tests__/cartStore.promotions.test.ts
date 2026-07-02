@@ -3,7 +3,7 @@
 // Bug 1 (Session 36) — loop guard. `setAppliedPromotions` must be idempotent:
 // re-applying the same promotions must NOT mint a new `cart` reference, or
 // `usePromotionsAutoEval` (whose effect depends on `cart`) re-fires and
-// re-calls `evaluate_promotions_v1` every 200ms. It must also never add more
+// re-calls `evaluate_promotions_v2` every 200ms. It must also never add more
 // than one gift line per promotion.
 
 import { describe, it, expect, beforeEach } from 'vitest';

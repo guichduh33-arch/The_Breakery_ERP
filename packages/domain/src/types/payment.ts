@@ -18,7 +18,7 @@ export type Tender = PaymentInput;
 
 /**
  * S51 — server-authoritative per-line price breakdown returned by the money-path
- * RPC `complete_order_with_payment_v16` (forwarded verbatim by the process-payment
+ * RPC `complete_order_with_payment_v17` (forwarded verbatim by the process-payment
  * EF). Every money value is server-computed (IDR integers). The receipt and the
  * customer display consume these instead of recomputing client-side.
  */

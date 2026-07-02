@@ -32,6 +32,13 @@
 // `record_pin_failure_v1` fallback (previously here to record failures the RPC
 // itself couldn't durably persist) is gone — `recordManagerPinFailure` now does
 // that job in-EF, in the same transaction as the verification.
+//
+// Session 57 (P2.1): RPC bumped v16 → v17. Combo lines are now priced AND
+// validated server-side against combo_groups/combo_group_options (surcharges
+// billed, composition checked) via the internal `_resolve_combo_price_v1`
+// helper — same signature, no EF change beyond the RPC name. New check_violation
+// codes surface: `combo_invalid_component`, `combo_group_violation`,
+// `promo_cap_exceeded` (promotion usage caps, hard-gated atomically in v17).
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.47.10';
 import { handleCors, jsonResponse } from '../_shared/cors.ts';
@@ -211,7 +218,7 @@ serve(async (req) => {
   // S55 T7 — le PIN discount est vérifié ICI (parité void/cancel/refund) et ne
   // descend plus jamais dans un arg SQL de la money-path. Un nonce single-use
   // (discount_authorizations, service-role only) transporte l'autorisation
-  // jusqu'à complete_order_with_payment_v16, qui le consomme atomiquement.
+  // jusqu'à complete_order_with_payment_v17, qui le consomme atomiquement.
   const managerPin = req.headers.get('x-manager-pin');
   const hasDiscount = (typeof body.discount_amount === 'number' && body.discount_amount > 0)
     || body.items.some((i) => typeof (i as { discount_amount?: number }).discount_amount === 'number'
@@ -255,7 +262,7 @@ serve(async (req) => {
     discountAuthId = nonce.id;
   }
 
-  const { data, error } = await userClient.rpc('complete_order_with_payment_v16', {
+  const { data, error } = await userClient.rpc('complete_order_with_payment_v17', {
     p_session_id: body.session_id,
     p_order_type: body.order_type,
     p_items: body.items,
@@ -311,6 +318,17 @@ serve(async (req) => {
       }
       if (msg.includes('Invalid change amount')) {
         return jsonResponse({ error: 'invalid_change', message: msg }, 409);
+      }
+      // S57 P2.1 — v17 raises check_violation for combo composition and promo
+      // usage-cap gates ; surface dedicated codes (classifier → FR copy, C-D5).
+      if (msg.includes('combo_invalid_component')) {
+        return jsonResponse({ error: 'combo_invalid_component', message: msg }, 409);
+      }
+      if (msg.includes('combo_group_violation')) {
+        return jsonResponse({ error: 'combo_group_violation', message: msg }, 409);
+      }
+      if (msg.includes('promo_cap_exceeded')) {
+        return jsonResponse({ error: 'promo_cap_exceeded', message: msg }, 409);
       }
       return jsonResponse({ error: 'check_violation', message: error.message }, 422);
     }

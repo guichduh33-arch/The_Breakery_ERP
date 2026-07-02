@@ -7,10 +7,14 @@
 // dismissedIds, now)` callback.
 //
 // Evaluation order:
-//   1. Call `supabase.rpc('evaluate_promotions_v1', { p_cart_items, p_customer_id, p_subtotal })`.
+//   1. Call `supabase.rpc('evaluate_promotions_v2', { p_cart_items, p_customer_id, p_subtotal })`.
 //      The RPC mirrors `packages/domain/src/promotions/bogoEngine.ts` and
 //      knows about every shape (percentage / fixed_amount / bogo legacy /
-//      bogo new / threshold / bundle / free_product).
+//      bogo new / threshold / bundle / free_product). Session 57 (A-D5): v2
+//      additionally filters out promotions that have hit their usage cap
+//      (max_uses / max_uses_per_customer) — advisory only, the atomic hard
+//      gate lives in complete_order_with_payment_v17. The TS fallback below
+//      has NO knowledge of usage caps (A-D10 — server is the reference).
 //   2. On RPC error (network / RLS / function missing in older envs),
 //      fall back to the pure-TS `evaluatePromotionsFallback`.
 //
@@ -50,7 +54,7 @@ export interface UseEvaluatePromotionsResult {
   ) => Promise<AppliedPromotion[]>;
 }
 
-/** Server-side payload shape emitted by `evaluate_promotions_v1`. */
+/** Server-side payload shape emitted by `evaluate_promotions_v2`. */
 interface EvaluatePromotionsV1Payload {
   applied_promotions: Array<{
     promotion_id: string;
@@ -74,7 +78,7 @@ interface EvaluatePromotionsV1Payload {
  * gift value twice (once via the 0-priced line, once via `amount`), which is
  * exactly the "Buy 2 Get 1 Free discount exceeds the subtotal" bug.
  *
- * Both the `evaluate_promotions_v1` RPC and the new-shape BOGO TS fallback
+ * Both the `evaluate_promotions_v2` RPC and the new-shape BOGO TS fallback
  * (`evaluateBogoNew`) emit `amount > 0` alongside a gift, so we normalise here
  * — the single boundary every cart total flows through (Bug 1, Session 36).
  * Non-gift promos (percentage / fixed / threshold / bundle / classic BOGO) are
@@ -197,7 +201,7 @@ export function useEvaluatePromotions(): UseEvaluatePromotionsResult {
           p_subtotal: subtotal,
           ...(customer?.id ? { p_customer_id: customer.id } : {}),
         };
-        const { data, error } = await supabase.rpc('evaluate_promotions_v1', rpcArgs);
+        const { data, error } = await supabase.rpc('evaluate_promotions_v2', rpcArgs);
         if (error) throw error;
         if (data) {
           // supabase-js types this as `Json`; narrow defensively.
