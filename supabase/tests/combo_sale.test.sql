@@ -20,13 +20,13 @@ INSERT INTO products (id, sku, name, category_id, retail_price, product_type, cu
 -- S57 P2.1: combo_groups/combo_group_options — one required single-choice group
 -- per selected component, surcharge=0 (price parity with pre-S57 fixture).
 INSERT INTO combo_groups (id, combo_product_id, name, group_type, is_required, min_select, max_select, sort_order) VALUES
-  ('00000000-0000-0000-0000-0000000cg001','00000000-0000-0000-0000-0000000cb001','Comp A','single',true,1,1,0),
-  ('00000000-0000-0000-0000-0000000cg002','00000000-0000-0000-0000-0000000cb001','Comp B','single',true,1,1,1),
-  ('00000000-0000-0000-0000-0000000cg003','00000000-0000-0000-0000-0000000cb002','Comp C','single',true,1,1,0);
+  ('00000000-0000-0000-0000-0000000c9001','00000000-0000-0000-0000-0000000cb001','Comp A','single',true,1,1,0),
+  ('00000000-0000-0000-0000-0000000c9002','00000000-0000-0000-0000-0000000cb001','Comp B','single',true,1,1,1),
+  ('00000000-0000-0000-0000-0000000c9003','00000000-0000-0000-0000-0000000cb002','Comp C','single',true,1,1,0);
 INSERT INTO combo_group_options (group_id, component_product_id, surcharge, is_default, sort_order) VALUES
-  ('00000000-0000-0000-0000-0000000cg001','00000000-0000-0000-0000-0000000fa001',0,true,0),
-  ('00000000-0000-0000-0000-0000000cg002','00000000-0000-0000-0000-0000000fa002',0,true,0),
-  ('00000000-0000-0000-0000-0000000cg003','00000000-0000-0000-0000-0000000fa003',0,true,0);
+  ('00000000-0000-0000-0000-0000000c9001','00000000-0000-0000-0000-0000000fa001',0,true,0),
+  ('00000000-0000-0000-0000-0000000c9002','00000000-0000-0000-0000-0000000fa002',0,true,0),
+  ('00000000-0000-0000-0000-0000000c9003','00000000-0000-0000-0000-0000000fa003',0,true,0);
 -- Seed modifier scope-produit pour le combo CB1 : Drinks/Affogato 5000
 -- Nécessaire sous v15 : _resolve_line_price_v1 lookup SERVER-SIDE (client price_adjustment ignoré).
 INSERT INTO product_modifiers (product_id, category_id, group_name, option_label, price_adjustment, is_active)

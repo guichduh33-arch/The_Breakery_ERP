@@ -12,11 +12,11 @@ INSERT INTO products (id, sku, name, category_id, retail_price, product_type, cu
 -- S57 P2.1: v17 validates combo composition — seed one required single-choice
 -- group per selected component, surcharge=0 (price parity, cf. combo_sale.test.sql).
 INSERT INTO combo_groups (id, combo_product_id, name, group_type, is_required, min_select, max_select, sort_order) VALUES
-  ('00000000-0000-0000-0000-0000000cg010','00000000-0000-0000-0000-0000000cb010','Comp A','single',true,1,1,0),
-  ('00000000-0000-0000-0000-0000000cg011','00000000-0000-0000-0000-0000000cb010','Comp B','single',true,1,1,1);
+  ('00000000-0000-0000-0000-0000000c9010','00000000-0000-0000-0000-0000000cb010','Comp A','single',true,1,1,0),
+  ('00000000-0000-0000-0000-0000000c9011','00000000-0000-0000-0000-0000000cb010','Comp B','single',true,1,1,1);
 INSERT INTO combo_group_options (group_id, component_product_id, surcharge, is_default, sort_order) VALUES
-  ('00000000-0000-0000-0000-0000000cg010','00000000-0000-0000-0000-0000000fb010',0,true,0),
-  ('00000000-0000-0000-0000-0000000cg011','00000000-0000-0000-0000-0000000fb011',0,true,0);
+  ('00000000-0000-0000-0000-0000000c9010','00000000-0000-0000-0000-0000000fb010',0,true,0),
+  ('00000000-0000-0000-0000-0000000c9011','00000000-0000-0000-0000-0000000fb011',0,true,0);
 DO $$
 DECLARE r jsonb;
 BEGIN
