@@ -557,3 +557,4 @@ END $function$;
 REVOKE ALL ON FUNCTION public.pay_existing_order_v11(uuid, jsonb, uuid, integer, uuid, numeric, text, numeric, text, uuid, jsonb, jsonb) FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION public.pay_existing_order_v11(uuid, jsonb, uuid, integer, uuid, numeric, text, numeric, text, uuid, jsonb, jsonb) FROM anon;
 GRANT EXECUTE ON FUNCTION public.pay_existing_order_v11(uuid, jsonb, uuid, integer, uuid, numeric, text, numeric, text, uuid, jsonb, jsonb) TO authenticated;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;

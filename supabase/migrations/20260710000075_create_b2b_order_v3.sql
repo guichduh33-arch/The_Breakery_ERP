@@ -284,3 +284,4 @@ DROP FUNCTION IF EXISTS public.create_b2b_order_v2(uuid, jsonb, text, date, uuid
 REVOKE ALL ON FUNCTION public.create_b2b_order_v3(uuid, jsonb, text, date, uuid) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.create_b2b_order_v3(uuid, jsonb, text, date, uuid) FROM anon;
 GRANT EXECUTE ON FUNCTION public.create_b2b_order_v3(uuid, jsonb, text, date, uuid) TO authenticated;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;

@@ -18,6 +18,7 @@ SET search_path TO 'public'
 AS $$
 DECLARE
   v_is_display boolean;
+  v_track      boolean;
   v_current    numeric;
   v_unit       text;
   v_name       text;
@@ -27,8 +28,8 @@ BEGIN
     RAISE EXCEPTION 'Invalid sale quantity % for product %', p_quantity, p_product_id;
   END IF;
 
-  SELECT is_display_item, current_stock, COALESCE(p_unit, unit, 'pcs'), name
-    INTO v_is_display, v_current, v_unit, v_name
+  SELECT is_display_item, COALESCE(track_inventory, true), current_stock, COALESCE(p_unit, unit, 'pcs'), name
+    INTO v_is_display, v_track, v_current, v_unit, v_name
     FROM products WHERE id = p_product_id FOR UPDATE;
 
   IF NOT FOUND THEN
@@ -36,13 +37,17 @@ BEGIN
   END IF;
 
   -- Sufficiency guard (skipped when negative stock is allowed).
+  -- The guard applies only to display items (checked vs display_stock) and to TRACKED
+  -- non-display items. A non-tracked non-display product (e.g. a non-tracked combo
+  -- component) is deducted without a stock check — matching the pre-refactor raw paths,
+  -- which gated their sufficiency RAISE on track_inventory. The cache is still decremented.
   IF v_is_display THEN
     SELECT quantity INTO v_disp_qty FROM display_stock WHERE product_id = p_product_id;
     IF NOT p_allow_negative AND COALESCE(v_disp_qty, 0) < p_quantity THEN
       RAISE EXCEPTION 'Insufficient display stock for product % (need %, have %)',
         v_name, p_quantity, COALESCE(v_disp_qty, 0);
     END IF;
-  ELSE
+  ELSIF v_track THEN
     IF NOT p_allow_negative AND COALESCE(v_current, 0) < p_quantity THEN
       RAISE EXCEPTION 'Insufficient stock for product % (need %, have %)',
         v_name, p_quantity, COALESCE(v_current, 0);
@@ -85,3 +90,4 @@ $$;
 REVOKE ALL ON FUNCTION public._record_sale_stock_v1(uuid, numeric, uuid, uuid, text, movement_type, text, text, boolean) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public._record_sale_stock_v1(uuid, numeric, uuid, uuid, text, movement_type, text, text, boolean) FROM anon;
 REVOKE ALL ON FUNCTION public._record_sale_stock_v1(uuid, numeric, uuid, uuid, text, movement_type, text, text, boolean) FROM authenticated;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;
