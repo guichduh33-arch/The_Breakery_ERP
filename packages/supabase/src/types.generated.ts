@@ -5808,6 +5808,20 @@ export type Database = {
         }
         Returns: Json
       }
+      _record_sale_stock_v1: {
+        Args: {
+          p_allow_negative?: boolean
+          p_created_by: string
+          p_movement_type?: Database["public"]["Enums"]["movement_type"]
+          p_product_id: string
+          p_quantity: number
+          p_reason: string
+          p_reference_id: string
+          p_reference_type?: string
+          p_unit?: string
+        }
+        Returns: undefined
+      }
       _refine_vol: { Args: { "": string }; Returns: string }
       _resolve_dispatch_stations_v1: {
         Args: { p_product_id: string }
@@ -6158,7 +6172,7 @@ export type Database = {
         Args: { p_from_unit: string; p_qty: number; p_to_unit: string }
         Returns: number
       }
-      create_b2b_order_v2: {
+      create_b2b_order_v3: {
         Args: {
           p_customer_id: string
           p_delivery_date?: string
@@ -7223,7 +7237,7 @@ export type Database = {
       pass:
         | { Args: never; Returns: string }
         | { Args: { "": string }; Returns: string }
-      pay_existing_order_v10: {
+      pay_existing_order_v11: {
         Args: {
           p_customer_id?: string
           p_discount_amount?: number

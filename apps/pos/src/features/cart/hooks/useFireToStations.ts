@@ -172,7 +172,7 @@ export function useFireToStations(): UseFireToStationsResult {
               quantity: i.quantity,
               unit_price: i.unit_price,
               modifiers: i.modifiers,
-              // S47 — combo lines persist their components so pay_existing_order_v10
+              // S47 — combo lines persist their components so pay_existing_order_v11
               // deducts each component's stock at payment (the fire only persists).
               ...(i.combo_components ? { combo_components: i.combo_components } : {}),
               ...(i.discount ? { discount_amount: i.discount.amount } : {}),
