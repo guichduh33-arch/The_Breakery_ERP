@@ -27,6 +27,8 @@ SET LOCAL session_replication_role = replica;  -- suppress sale-JE/other trigger
 DO $$
 DECLARE
   v_auth     uuid;
+  v_prof     uuid;
+  v_sess     uuid;
   v_tz       text;
   v_ord      uuid;
   v_paid_at  timestamptz;
@@ -37,7 +39,7 @@ DECLARE
   v_t1       boolean;
   v_t2       boolean;
 BEGIN
-  SELECT up.auth_user_id INTO v_auth FROM user_profiles up
+  SELECT up.auth_user_id, up.id INTO v_auth, v_prof FROM user_profiles up
   WHERE up.deleted_at IS NULL AND up.auth_user_id IS NOT NULL
     AND has_permission(up.auth_user_id, 'reports.sales.read')
     AND has_permission(up.auth_user_id, 'reports.financial.read')
@@ -45,13 +47,17 @@ BEGIN
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_auth)::text, true);
   SELECT COALESCE(MAX(timezone), 'Asia/Makassar') INTO v_tz FROM business_config WHERE id = 1;
 
+  -- orders_session_id_required_for_pos : created_via='pos' requires a real session_id.
+  INSERT INTO pos_sessions (opened_by, opening_cash, status) VALUES (v_prof, 0, 'open')
+  RETURNING id INTO v_sess;
+
   -- Local day 2031-04-16, 00:15 local — falls on 2031-04-15 in UTC for any
   -- positive-offset tz (same construction as get_gross_margin_by_product_v1's
   -- T2 fixture, gross_margin_by_product.test.sql).
   v_paid_at := ('2031-04-16 00:15:00')::timestamp AT TIME ZONE v_tz;
 
-  INSERT INTO orders (order_number, status, subtotal, tax_amount, total, created_via, paid_at)
-  VALUES ('PPM-TZ-ORD-1', 'paid', 1000, 100, 1100, 'pos', v_paid_at)
+  INSERT INTO orders (order_number, session_id, status, subtotal, tax_amount, total, created_via, paid_at)
+  VALUES ('PPM-TZ-ORD-1', v_sess, 'paid', 1000, 100, 1100, 'pos', v_paid_at)
   RETURNING id INTO v_ord;
   INSERT INTO order_payments (order_id, method, amount, paid_at)
   VALUES (v_ord, 'cash', 1100, v_paid_at);

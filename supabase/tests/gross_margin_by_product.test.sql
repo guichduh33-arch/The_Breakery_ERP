@@ -37,6 +37,8 @@ SET LOCAL session_replication_role = replica;  -- suppress sale-JE/other trigger
 DO $$
 DECLARE
   v_auth  uuid;
+  v_prof  uuid;
+  v_sess  uuid;
   v_cat   uuid;
   v_prod  uuid;
   v_ord   uuid;
@@ -44,18 +46,22 @@ DECLARE
   v_line  jsonb;
   v_ok    boolean;
 BEGIN
-  SELECT up.auth_user_id INTO v_auth FROM user_profiles up
+  SELECT up.auth_user_id, up.id INTO v_auth, v_prof FROM user_profiles up
   WHERE up.deleted_at IS NULL AND up.auth_user_id IS NOT NULL
     AND has_permission(up.auth_user_id, 'reports.financial.read') LIMIT 1;
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_auth)::text, true);
   SELECT id INTO v_cat FROM categories WHERE deleted_at IS NULL LIMIT 1;
 
+  -- orders_session_id_required_for_pos : created_via='pos' requires a real session_id.
+  INSERT INTO pos_sessions (opened_by, opening_cash, status) VALUES (v_prof, 0, 'open')
+  RETURNING id INTO v_sess;
+
   INSERT INTO products (name, sku, category_id, retail_price, unit, cost_price)
   VALUES ('GM Test Product 1', 'GM-TEST-1', v_cat, 2500, 'pcs', 1000)
   RETURNING id INTO v_prod;
 
-  INSERT INTO orders (order_number, status, subtotal, tax_amount, total, created_via, paid_at)
-  VALUES ('GM-TEST-ORD-1', 'paid', 7500, 750, 8250, 'pos', '2031-03-15 10:00:00+00')
+  INSERT INTO orders (order_number, session_id, status, subtotal, tax_amount, total, created_via, paid_at)
+  VALUES ('GM-TEST-ORD-1', v_sess, 'paid', 7500, 750, 8250, 'pos', '2031-03-15 10:00:00+00')
   RETURNING id INTO v_ord;
   INSERT INTO order_items (order_id, product_id, name_snapshot, unit_price, quantity, line_total)
   VALUES (v_ord, v_prod, 'GM Test Product 1', 2500, 3, 7500);
@@ -79,6 +85,8 @@ SELECT ok(current_setting('breakery.gm_t1')::boolean,
 DO $$
 DECLARE
   v_auth      uuid;
+  v_prof      uuid;
+  v_sess      uuid;
   v_cat       uuid;
   v_tz        text;
   v_prod      uuid;
@@ -89,12 +97,16 @@ DECLARE
   v_found_d   boolean;
   v_found_dm1 boolean;
 BEGIN
-  SELECT up.auth_user_id INTO v_auth FROM user_profiles up
+  SELECT up.auth_user_id, up.id INTO v_auth, v_prof FROM user_profiles up
   WHERE up.deleted_at IS NULL AND up.auth_user_id IS NOT NULL
     AND has_permission(up.auth_user_id, 'reports.financial.read') LIMIT 1;
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_auth)::text, true);
   SELECT COALESCE(MAX(timezone), 'Asia/Makassar') INTO v_tz FROM business_config WHERE id = 1;
   SELECT id INTO v_cat FROM categories WHERE deleted_at IS NULL LIMIT 1;
+
+  -- orders_session_id_required_for_pos : created_via='pos' requires a real session_id.
+  INSERT INTO pos_sessions (opened_by, opening_cash, status) VALUES (v_prof, 0, 'open')
+  RETURNING id INTO v_sess;
 
   INSERT INTO products (name, sku, category_id, retail_price, unit, cost_price)
   VALUES ('GM Test Product TZ', 'GM-TEST-TZ', v_cat, 1000, 'pcs', 400)
@@ -104,8 +116,8 @@ BEGIN
   -- any positive-offset tz.
   v_paid_at := ('2031-03-16 00:15:00')::timestamp AT TIME ZONE v_tz;
 
-  INSERT INTO orders (order_number, status, subtotal, tax_amount, total, created_via, paid_at)
-  VALUES ('GM-TEST-ORD-TZ', 'paid', 1000, 100, 1100, 'pos', v_paid_at)
+  INSERT INTO orders (order_number, session_id, status, subtotal, tax_amount, total, created_via, paid_at)
+  VALUES ('GM-TEST-ORD-TZ', v_sess, 'paid', 1000, 100, 1100, 'pos', v_paid_at)
   RETURNING id INTO v_ord;
   INSERT INTO order_items (order_id, product_id, name_snapshot, unit_price, quantity, line_total)
   VALUES (v_ord, v_prod, 'GM Test Product TZ', 1000, 1, 1000);
@@ -128,24 +140,30 @@ SELECT ok(current_setting('breakery.gm_t2')::boolean,
 DO $$
 DECLARE
   v_auth  uuid;
+  v_prof  uuid;
+  v_sess  uuid;
   v_cat   uuid;
   v_prod  uuid;
   v_ord   uuid;
   v_res   jsonb;
   v_found boolean;
 BEGIN
-  SELECT up.auth_user_id INTO v_auth FROM user_profiles up
+  SELECT up.auth_user_id, up.id INTO v_auth, v_prof FROM user_profiles up
   WHERE up.deleted_at IS NULL AND up.auth_user_id IS NOT NULL
     AND has_permission(up.auth_user_id, 'reports.financial.read') LIMIT 1;
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_auth)::text, true);
   SELECT id INTO v_cat FROM categories WHERE deleted_at IS NULL LIMIT 1;
 
+  -- orders_session_id_required_for_pos : created_via='pos' requires a real session_id.
+  INSERT INTO pos_sessions (opened_by, opening_cash, status) VALUES (v_prof, 0, 'open')
+  RETURNING id INTO v_sess;
+
   INSERT INTO products (name, sku, category_id, retail_price, unit, cost_price)
   VALUES ('GM Test Product Void', 'GM-TEST-VOID', v_cat, 1000, 'pcs', 400)
   RETURNING id INTO v_prod;
 
-  INSERT INTO orders (order_number, status, subtotal, tax_amount, total, created_via, paid_at, voided_at)
-  VALUES ('GM-TEST-ORD-VOID', 'voided', 1000, 100, 1100, 'pos',
+  INSERT INTO orders (order_number, session_id, status, subtotal, tax_amount, total, created_via, paid_at, voided_at)
+  VALUES ('GM-TEST-ORD-VOID', v_sess, 'voided', 1000, 100, 1100, 'pos',
           '2031-03-17 10:00:00+00', '2031-03-17 10:05:00+00')
   RETURNING id INTO v_ord;
   INSERT INTO order_items (order_id, product_id, name_snapshot, unit_price, quantity, line_total)
