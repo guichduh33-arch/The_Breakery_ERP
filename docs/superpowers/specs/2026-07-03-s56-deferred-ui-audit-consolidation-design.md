@@ -35,11 +35,12 @@ Hors périmètre : P2.1 (promo caps), P2.3/P2.4 (UX POS/BO), credit-notes B2B (T
    - Step 1 : `<select>` natif (ui-kit : pas de Select exporté) des années dérivées de `useFiscalPeriods` (années distinctes, défaut = plus ancienne année entièrement `closed`/`locked` sinon année courante −1) + rappel des préconditions (12 périodes closed/locked, carry-forward → 3200, seed N+1).
    - Step 2 : PIN inline 6 chiffres (copie exacte du champ `FiscalPeriodModal.tsx:131-141`) + bandeau amber « irréversible ».
    - Succès : panneau récap — `entry_number`, `net_result` (formatIdr, signe → « Bénéfice reporté » / « Perte reportée »), `periods_seeded_next_year` ; cas `je_id=null` → message info « Aucun mouvement 4/5/6 sur l'exercice — périodes N+1 seedées ».
-   - Erreurs : `switch` sur le code classifié → libellés FR (bloc `role="alert"`, pas de toast — convention BO).
+   - Erreurs : `switch` sur le code classifié → libellés **EN** (toute la copy BO est en anglais ; bloc `role="alert"`, pas de toast — convention BO).
 4. **Bouton « Clôture annuelle »** dans `SettingsAccountingPage.tsx`, à côté de « Close a period », gaté `hasPermission('accounting.year.close')` (pattern `canClose` existant L20).
 5. **`period_undefined`** :
-   - `CreateManualJEModal` : mapper le message brut → libellé FR « Aucune période fiscale ne couvre cette date — lancez la clôture annuelle pour seeder l'exercice suivant » (détection `includes('period_undefined')`).
+   - `CreateManualJEModal` : mapper le message brut → libellé EN « No fiscal period covers this date — run the annual close to seed the next year. » (détection `includes('period_undefined')`).
    - Fix des 3 `classify()` B2B : ajouter la branche `message.includes('period_undefined') || message.includes('no fiscal period')` → code `fiscal_period_closed` existant (libellé déjà câblé).
+   - **Chantier C — précisions live (contrôleur)** : exactement **26 fonctions** live écrivent via la vue ; 25 partagent la liste `(action, subject_table, subject_id, payload, actor_profile_id)`, 1 (`soft_delete_customer`) la permutation `(actor_profile_id, action, subject_table, subject_id, payload)` → réécriture programmatique par 2 regex + assertions dures. **`duplicate_recipe_v1` LIT aussi la vue** (replay idempotence : `SELECT payload … FROM audit_log … ORDER BY occurred_at`) → corps explicite dédié (alias `metadata AS payload`, `ORDER BY created_at`).
 
 ### Critères d'acceptation (A)
 
