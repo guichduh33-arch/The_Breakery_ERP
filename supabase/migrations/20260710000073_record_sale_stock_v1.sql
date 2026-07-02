@@ -50,6 +50,9 @@ BEGIN
   END IF;
 
   -- Ledger (append-only). stock_movements.reference_type stays plural 'orders'.
+  -- reason is intentionally omitted here: stock_movements has no reason on the sale family
+  -- (chk_stock_movements_reason_required allows NULL for sale/sale_void), matching the
+  -- pre-refactor raw inserts. p_reason is used only for the display_movements ledger below.
   INSERT INTO stock_movements (
     product_id, movement_type, quantity, unit, reference_type, reference_id, created_by
   ) VALUES (
@@ -62,15 +65,19 @@ BEGIN
 
   -- Display isolation. display_movements.reference_type is the historical singular 'order'
   -- (read by BO MovementHistoryDrawer.tsx:100). Do NOT unify to 'orders'.
+  -- movement_type is a DISTINCT enum here (display_movement_type) — cast via text.
   IF v_is_display THEN
     INSERT INTO display_movements (
       product_id, movement_type, quantity, reason, reference_type, reference_id, created_by
     ) VALUES (
-      p_product_id, p_movement_type, -p_quantity, p_reason, 'order', p_reference_id, p_created_by
+      p_product_id, p_movement_type::text::display_movement_type, -p_quantity, p_reason, 'order', p_reference_id, p_created_by
     );
     UPDATE display_stock
       SET quantity = quantity - p_quantity, updated_at = now()
       WHERE product_id = p_product_id;
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'No display_stock row for display product % — run add_display_stock_v1 first', p_product_id;
+    END IF;
   END IF;
 END;
 $$;
