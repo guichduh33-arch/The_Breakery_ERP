@@ -15,6 +15,9 @@
 --   T4 2990.balance   = 500 et total_debit période = 0 (compte permanent à ouverture seule : surface).
 --   T5 invariant TB    : mouvements de période globalement équilibrés (balanced=true, delta=0).
 --   T6 v2 droppée (bump v2→v3).
+--   T7 (S54 _078) : le cumul n'absorbe NI les JE draft NI les JE datées > end — le double
+--      LEFT JOIN de _061 laissait survivre les lignes jel dont la JE échoue les filtres
+--      (leak reproduit : posted 100 + draft 40 + future 25 → balance 165 au lieu de 100).
 --
 -- Run via MCP execute_sql sous BEGIN/ROLLBACK. Auth simulée via request.jwt.claim.sub (EMP000,
 -- SUPER_ADMIN → a accounting.tb.read). Insertions JE directes (aucun trigger de validation sur
@@ -23,7 +26,7 @@
 
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
-SELECT plan(6);
+SELECT plan(7);
 
 SELECT set_config('request.jwt.claim.sub',
   (SELECT auth_user_id::text FROM user_profiles WHERE employee_code='EMP000'), true);
@@ -75,6 +78,29 @@ SELECT ok((SELECT ((j)->>'balanced')::boolean AND ((j)->>'delta')::numeric=0 FRO
 SELECT ok(NOT EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
                       WHERE n.nspname='public' AND p.proname='get_trial_balance_v2'),
   'T6 — get_trial_balance_v2 droppe (bump v2->v3)');
+
+-- T7 (S54 _078) — leak cumul : JE draft + JE future ne polluent pas le solde cumulé
+INSERT INTO accounts (code,name,account_class,account_type,balance_type,is_postable,is_active) VALUES
+ ('1991','TBLEAK Test Cash',1,'asset','debit',true,true),
+ ('2991','TBLEAK Counter',2,'liability','credit',true,true);
+INSERT INTO journal_entries (entry_number, entry_date, description, reference_type, reference_id, status, created_by)
+VALUES
+ ('TBLK-P','2026-06-10','posted in period','manual',NULL,'posted',(SELECT id FROM user_profiles WHERE employee_code='EMP000')),
+ ('TBLK-D','2026-06-05','draft in period','manual',NULL,'draft',(SELECT id FROM user_profiles WHERE employee_code='EMP000')),
+ ('TBLK-F','2026-07-15','posted after end','manual',NULL,'posted',(SELECT id FROM user_profiles WHERE employee_code='EMP000'));
+INSERT INTO journal_entry_lines (journal_entry_id, account_id, debit, credit, description)
+SELECT je.id, a.id,
+       CASE WHEN a.code='1991' THEN v.amt ELSE 0 END,
+       CASE WHEN a.code='2991' THEN v.amt ELSE 0 END, 'x'
+FROM (VALUES ('TBLK-P',100::numeric),('TBLK-D',40),('TBLK-F',25)) v(en,amt)
+JOIN journal_entries je ON je.entry_number=v.en
+CROSS JOIN accounts a WHERE a.code IN ('1991','2991');
+
+SELECT ok(
+  (SELECT (e->>'balance')::numeric
+     FROM jsonb_array_elements((get_trial_balance_v3('2026-06-01','2026-06-30'))->'lines') e
+    WHERE e->>'code'='1991') = 100,
+  'T7 — cumul 1991 = 100 (JE draft 40 et JE future 25 exclues du cumul, leak _061 corrige)');
 
 SELECT * FROM finish();
 ROLLBACK;
