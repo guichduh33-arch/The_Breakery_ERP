@@ -798,6 +798,44 @@ export type Database = {
           },
         ]
       }
+      discount_authorizations: {
+        Row: {
+          consumed_at: string | null
+          consumed_order_id: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          manager_profile_id: string
+          scope: string
+        }
+        Insert: {
+          consumed_at?: string | null
+          consumed_order_id?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          manager_profile_id: string
+          scope?: string
+        }
+        Update: {
+          consumed_at?: string | null
+          consumed_order_id?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          manager_profile_id?: string
+          scope?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discount_authorizations_manager_profile_id_fkey"
+            columns: ["manager_profile_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       discount_templates: {
         Row: {
           cashier_max_percentage: number | null
@@ -2288,6 +2326,7 @@ export type Database = {
       order_items: {
         Row: {
           bumped_at: string | null
+          cancel_idempotency_key: string | null
           cancelled_at: string | null
           cancelled_by: string | null
           cancelled_reason: string | null
@@ -2322,6 +2361,7 @@ export type Database = {
         }
         Insert: {
           bumped_at?: string | null
+          cancel_idempotency_key?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
           cancelled_reason?: string | null
@@ -2356,6 +2396,7 @@ export type Database = {
         }
         Update: {
           bumped_at?: string | null
+          cancel_idempotency_key?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
           cancelled_reason?: string | null
@@ -5971,10 +6012,11 @@ export type Database = {
         Args: { p_count_id: string; p_reason: string }
         Returns: Json
       }
-      cancel_order_item_rpc_v2: {
+      cancel_order_item_rpc_v3: {
         Args: {
           p_acting_auth_user_id: string
           p_authorized_by: string
+          p_idempotency_key?: string
           p_order_item_id: string
           p_reason: string
         }
@@ -6134,10 +6176,11 @@ export type Database = {
             }
             Returns: string
           }
-      complete_order_with_payment_v15: {
+      complete_order_with_payment_v16: {
         Args: {
           p_customer_id?: string
           p_discount_amount?: number
+          p_discount_auth_id?: string
           p_discount_authorized_by?: string
           p_discount_reason?: string
           p_discount_type?: string
@@ -6145,7 +6188,6 @@ export type Database = {
           p_idempotency_key?: string
           p_items: Json
           p_loyalty_points_redeemed?: number
-          p_manager_pin?: string
           p_order_type: Database["public"]["Enums"]["order_type"]
           p_payment?: Json
           p_payments?: Json
@@ -7005,6 +7047,7 @@ export type Database = {
         Args: { p_idempotency_key?: string; p_order_item_id: string }
         Returns: {
           bumped_at: string | null
+          cancel_idempotency_key: string | null
           cancelled_at: string | null
           cancelled_by: string | null
           cancelled_reason: string | null
@@ -7052,6 +7095,7 @@ export type Database = {
         Args: { p_order_item_id: string }
         Returns: {
           bumped_at: string | null
+          cancel_idempotency_key: string | null
           cancelled_at: string | null
           cancelled_by: string | null
           cancelled_reason: string | null
@@ -7095,6 +7139,7 @@ export type Database = {
         Args: { p_order_item_id: string }
         Returns: {
           bumped_at: string | null
+          cancel_idempotency_key: string | null
           cancelled_at: string | null
           cancelled_by: string | null
           cancelled_reason: string | null
@@ -7141,6 +7186,7 @@ export type Database = {
         Args: { p_item_id: string }
         Returns: {
           bumped_at: string | null
+          cancel_idempotency_key: string | null
           cancelled_at: string | null
           cancelled_by: string | null
           cancelled_reason: string | null
@@ -7655,6 +7701,7 @@ export type Database = {
         Args: { p_item_ids: string[] }
         Returns: {
           bumped_at: string | null
+          cancel_idempotency_key: string | null
           cancelled_at: string | null
           cancelled_by: string | null
           cancelled_reason: string | null
@@ -7880,10 +7927,11 @@ export type Database = {
         Args: { p_pin: string; p_user_id: string }
         Returns: boolean
       }
-      void_order_rpc_v3: {
+      void_order_rpc_v4: {
         Args: {
           p_acting_auth_user_id: string
           p_authorized_by: string
+          p_idempotency_key?: string
           p_order_id: string
           p_reason: string
         }
