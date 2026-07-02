@@ -1,5 +1,9 @@
 -- supabase/tests/combo_sale.test.sql
 -- Session 47 / Task A5 — complete_order_with_payment_v16 combo-aware stock.
+-- S57 P2.1: repointed v16 -> v17. Combo products now require combo_groups /
+-- combo_group_options rows (v17 validates composition via _resolve_combo_price_v1) —
+-- seeded below with surcharge=0 so the pre-existing price assertions (T3b) are
+-- unaffected by the new server-side combo pricing/validation.
 -- Cashier ...0002 has pos.sale.create. Fresh products + open session seeded in-tx.
 BEGIN;
 SELECT set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000002',true);
@@ -13,6 +17,16 @@ INSERT INTO products (id, sku, name, category_id, retail_price, product_type, cu
   ('00000000-0000-0000-0000-0000000fa002','S47-F2','S47 Comp2','9c751b3c-2cbf-49a9-a442-cc6a4b5ffc4a',15000,'finished',100,true,NULL),
   ('00000000-0000-0000-0000-0000000fa003','S47-F3','S47 Comp0','9c751b3c-2cbf-49a9-a442-cc6a4b5ffc4a',15000,'finished',0,true,NULL),
   ('00000000-0000-0000-0000-0000000fa004','S47-F4','S47 Standalone','9c751b3c-2cbf-49a9-a442-cc6a4b5ffc4a',20000,'finished',100,true,NULL);
+-- S57 P2.1: combo_groups/combo_group_options — one required single-choice group
+-- per selected component, surcharge=0 (price parity with pre-S57 fixture).
+INSERT INTO combo_groups (id, combo_product_id, name, group_type, is_required, min_select, max_select, sort_order) VALUES
+  ('00000000-0000-0000-0000-0000000cg001','00000000-0000-0000-0000-0000000cb001','Comp A','single',true,1,1,0),
+  ('00000000-0000-0000-0000-0000000cg002','00000000-0000-0000-0000-0000000cb001','Comp B','single',true,1,1,1),
+  ('00000000-0000-0000-0000-0000000cg003','00000000-0000-0000-0000-0000000cb002','Comp C','single',true,1,1,0);
+INSERT INTO combo_group_options (group_id, component_product_id, surcharge, is_default, sort_order) VALUES
+  ('00000000-0000-0000-0000-0000000cg001','00000000-0000-0000-0000-0000000fa001',0,true,0),
+  ('00000000-0000-0000-0000-0000000cg002','00000000-0000-0000-0000-0000000fa002',0,true,0),
+  ('00000000-0000-0000-0000-0000000cg003','00000000-0000-0000-0000-0000000fa003',0,true,0);
 -- Seed modifier scope-produit pour le combo CB1 : Drinks/Affogato 5000
 -- Nécessaire sous v15 : _resolve_line_price_v1 lookup SERVER-SIDE (client price_adjustment ignoré).
 INSERT INTO product_modifiers (product_id, category_id, group_name, option_label, price_adjustment, is_active)
@@ -20,7 +34,7 @@ VALUES ('00000000-0000-0000-0000-0000000cb001', NULL, 'Drinks', 'Affogato', 5000
 DO $$
 DECLARE r jsonb;
 BEGIN
-  r := complete_order_with_payment_v16(
+  r := complete_order_with_payment_v17(
     p_session_id := '00000000-0000-0000-0000-0000000ce001',
     p_order_type := 'take_out'::order_type,
     p_items := $items$[
@@ -37,14 +51,14 @@ DO $$
 DECLARE r jsonb; p numeric;
 BEGIN
   p := get_customer_product_price('00000000-0000-0000-0000-0000000fa004', NULL);
-  r := complete_order_with_payment_v16(
+  r := complete_order_with_payment_v17(
     p_session_id := '00000000-0000-0000-0000-0000000ce001',
     p_order_type := 'take_out'::order_type,
     p_items := ('[{"product_id":"00000000-0000-0000-0000-0000000fa004","quantity":2,"unit_price":'||p||',"modifiers":[]}]')::jsonb,
     p_payment := ('{"method":"cash","amount":'||(p*2)||',"cash_received":'||(p*2)||',"change_given":0}')::jsonb
   );
 END $$;
-SELECT plan(11);
+SELECT plan(12);
 SELECT is((SELECT current_stock::int FROM products WHERE id='00000000-0000-0000-0000-0000000cb001'), 0, 'T1 combo product stock unchanged');
 SELECT is((SELECT current_stock::int FROM products WHERE id='00000000-0000-0000-0000-0000000fa001'), 99, 'T2a component1 stock -1');
 SELECT is((SELECT current_stock::int FROM products WHERE id='00000000-0000-0000-0000-0000000fa002'), 99, 'T2b component2 stock -1');
@@ -53,11 +67,12 @@ SELECT is((SELECT line_total::int FROM order_items WHERE order_id=current_settin
 SELECT ok((SELECT combo_components IS NOT NULL FROM order_items WHERE order_id=current_setting('combo.order_id')::uuid), 'T3c combo_components snapshot present');
 SELECT is((SELECT product_id FROM order_items WHERE order_id=current_setting('combo.order_id')::uuid), '00000000-0000-0000-0000-0000000cb001'::uuid, 'T3d order_item product_id = combo');
 SELECT is((SELECT current_stock::int FROM products WHERE id='00000000-0000-0000-0000-0000000fa004'), 98, 'T4 standalone (non-combo) still deducts itself');
-SELECT throws_ok($q$ SELECT complete_order_with_payment_v16(
+SELECT throws_ok($q$ SELECT complete_order_with_payment_v17(
     p_session_id := '00000000-0000-0000-0000-0000000ce001', p_order_type := 'take_out'::order_type,
     p_items := '[{"product_id":"00000000-0000-0000-0000-0000000cb002","quantity":1,"unit_price":30000,"modifiers":[],"combo_components":[{"product_id":"00000000-0000-0000-0000-0000000fa003","quantity":1}]}]'::jsonb,
     p_payment := '{"method":"cash","amount":30000,"cash_received":30000,"change_given":0}'::jsonb) $q$, 'P0002', NULL, 'T5 insufficient component stock rejected');
-SELECT ok(NOT has_function_privilege('anon','complete_order_with_payment_v16(uuid, order_type, jsonb, jsonb, uuid, uuid, integer, text, numeric, text, numeric, text, uuid, jsonb, jsonb, uuid)','EXECUTE'), 'T6 anon EXECUTE revoked on v16');
-SELECT ok(NOT EXISTS (SELECT 1 FROM pg_proc WHERE proname='complete_order_with_payment_v14'), 'T7 v14 dropped');
+SELECT ok(NOT has_function_privilege('anon','complete_order_with_payment_v17(uuid, order_type, jsonb, jsonb, uuid, uuid, integer, text, numeric, text, numeric, text, uuid, jsonb, jsonb, uuid)','EXECUTE'), 'T6 anon EXECUTE revoked on v17');
+SELECT ok(NOT EXISTS (SELECT 1 FROM pg_proc WHERE proname='complete_order_with_payment_v16'), 'T7 v16 dropped');
+SELECT ok(NOT EXISTS (SELECT 1 FROM pg_proc WHERE proname='complete_order_with_payment_v14'), 'T8 v14 dropped (regression)');
 SELECT * FROM finish();
 ROLLBACK;

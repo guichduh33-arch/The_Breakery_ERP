@@ -1,5 +1,6 @@
 // supabase/tests/functions/promotions-evaluate-v1.test.ts
-// Session 13 / Phase 2.C — live Vitest integration for `evaluate_promotions_v1`.
+// Session 13 / Phase 2.C — live Vitest integration for `evaluate_promotions_v2`
+// (S57 P2.1: repointed v1 -> v2, file name kept for history/git-blame).
 //
 // Runs against staging `ikcyvlovptebroadgtvd`. Uses PIN-login to obtain a
 // JWT and calls the RPC through the same auth path the POS uses.
@@ -64,7 +65,7 @@ interface EvaluatePromotionsV1Result {
   total_discount: number;
 }
 
-describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('evaluate_promotions_v1 RPC — live', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('evaluate_promotions_v2 RPC — live', () => {
   let token: string;
   let originalActiveSlugs: string[] = [];
   let productAId: string;
@@ -171,7 +172,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('evaluate_promotions_v1 
     await admin.from('promotions').update({ is_active: true }).eq('slug', 'live-bogo-2-1-baguette');
 
     const sb = jwtClient(token);
-    const { data, error } = await sb.rpc('evaluate_promotions_v1', {
+    const { data, error } = await sb.rpc('evaluate_promotions_v2', {
       p_cart_items: [
         { line_id: 'L1', product_id: productAId, quantity: 3, unit_price: 15000 },
       ],
@@ -194,7 +195,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('evaluate_promotions_v1 
     await admin.from('promotions').update({ is_active: true }).eq('slug', 'live-threshold-100k-10');
 
     const sb = jwtClient(token);
-    const { data, error } = await sb.rpc('evaluate_promotions_v1', {
+    const { data, error } = await sb.rpc('evaluate_promotions_v2', {
       p_cart_items: [
         { line_id: 'L1', product_id: productBId, quantity: 3, unit_price: 50000 },
       ],
@@ -215,7 +216,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('evaluate_promotions_v1 
     await admin.from('promotions').update({ is_active: true }).eq('slug', 'live-bundle-bcd-50k');
 
     const sb = jwtClient(token);
-    const { data, error } = await sb.rpc('evaluate_promotions_v1', {
+    const { data, error } = await sb.rpc('evaluate_promotions_v2', {
       p_cart_items: [
         { line_id: 'L1', product_id: productBId, quantity: 1, unit_price: 20000 },
         { line_id: 'L2', product_id: productCId, quantity: 1, unit_price: 25000 },

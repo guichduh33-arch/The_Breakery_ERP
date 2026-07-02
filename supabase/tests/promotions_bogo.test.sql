@@ -1,5 +1,7 @@
 -- supabase/tests/promotions_bogo.test.sql
--- Session 13 / Phase 2.C — pgTAP suite for `evaluate_promotions_v1`.
+-- Session 13 / Phase 2.C — pgTAP suite for `evaluate_promotions_v2` (S57 P2.1:
+-- repointed v1 -> v2 ; usage-cap behavior is covered separately in
+-- promotion_usage_caps.test.sql).
 --
 -- Runs against the deployed schema on staging
 -- (`ikcyvlovptebroadgtvd`). Invoke via MCP `execute_sql` wrapped in
@@ -150,9 +152,9 @@ END $$;
 -- T_BOGO_01 — function signature.
 -- ============================================================
 SELECT has_function(
-  'public', 'evaluate_promotions_v1',
+  'public', 'evaluate_promotions_v2',
   ARRAY['jsonb','uuid','numeric'],
-  'evaluate_promotions_v1 exists with (jsonb, uuid, numeric) signature'
+  'evaluate_promotions_v2 exists with (jsonb, uuid, numeric) signature'
 );
 
 -- ============================================================
@@ -160,7 +162,7 @@ SELECT has_function(
 -- ============================================================
 UPDATE promotions SET is_active = (slug = 'test-bogo-2-1-baguette') WHERE slug LIKE 'test-%';
 WITH payload AS (
-  SELECT evaluate_promotions_v1(
+  SELECT evaluate_promotions_v2(
     jsonb_build_array(jsonb_build_object(
       'line_id','L1',
       'product_id',(SELECT id FROM products WHERE name='Test Baguette 2C'),
@@ -180,7 +182,7 @@ SELECT is(
 -- ============================================================
 UPDATE promotions SET is_active = (slug = 'test-bogo-legacy') WHERE slug LIKE 'test-%';
 WITH payload AS (
-  SELECT evaluate_promotions_v1(
+  SELECT evaluate_promotions_v2(
     jsonb_build_array(
       jsonb_build_object('line_id','L1','product_id',(SELECT id FROM products WHERE name='Test Baguette 2C'),'quantity',2,'unit_price',15000),
       jsonb_build_object('line_id','L2','product_id',(SELECT id FROM products WHERE name='Test Croissant 2C'),'quantity',1,'unit_price',20000)
@@ -199,7 +201,7 @@ SELECT is(
 -- ============================================================
 UPDATE promotions SET is_active = (slug = 'test-threshold-subtotal') WHERE slug LIKE 'test-%';
 WITH payload AS (
-  SELECT evaluate_promotions_v1(
+  SELECT evaluate_promotions_v2(
     jsonb_build_array(jsonb_build_object(
       'line_id','L1','product_id',(SELECT id FROM products WHERE name='Test Croissant 2C'),
       'quantity',3,'unit_price',50000
@@ -218,7 +220,7 @@ SELECT is(
 -- ============================================================
 UPDATE promotions SET is_active = (slug = 'test-threshold-quantity') WHERE slug LIKE 'test-%';
 WITH payload AS (
-  SELECT evaluate_promotions_v1(
+  SELECT evaluate_promotions_v2(
     jsonb_build_array(jsonb_build_object(
       'line_id','L1','product_id',(SELECT id FROM products WHERE name='Test Croissant 2C'),
       'quantity',4,'unit_price',5000
@@ -237,7 +239,7 @@ SELECT is(
 -- ============================================================
 UPDATE promotions SET is_active = (slug = 'test-bundle') WHERE slug LIKE 'test-%';
 WITH payload AS (
-  SELECT evaluate_promotions_v1(
+  SELECT evaluate_promotions_v2(
     jsonb_build_array(
       jsonb_build_object('line_id','L1','product_id',(SELECT id FROM products WHERE name='Test Croissant 2C'),'quantity',1,'unit_price',20000),
       jsonb_build_object('line_id','L2','product_id',(SELECT id FROM products WHERE name='Test Coffee 2C'),   'quantity',1,'unit_price',25000),
@@ -257,7 +259,7 @@ SELECT is(
 -- ============================================================
 UPDATE promotions SET is_active = (slug = 'test-expired') WHERE slug LIKE 'test-%';
 WITH payload AS (
-  SELECT evaluate_promotions_v1(
+  SELECT evaluate_promotions_v2(
     jsonb_build_array(jsonb_build_object(
       'line_id','L1','product_id',(SELECT id FROM products WHERE name='Test Croissant 2C'),
       'quantity',5,'unit_price',1000
@@ -276,7 +278,7 @@ SELECT is(
 -- ============================================================
 UPDATE promotions SET is_active = (slug = 'test-dow-skip') WHERE slug LIKE 'test-%';
 WITH payload AS (
-  SELECT evaluate_promotions_v1(
+  SELECT evaluate_promotions_v2(
     jsonb_build_array(jsonb_build_object(
       'line_id','L1','product_id',(SELECT id FROM products WHERE name='Test Croissant 2C'),
       'quantity',1,'unit_price',1000
@@ -295,7 +297,7 @@ SELECT is(
 -- ============================================================
 UPDATE promotions SET is_active = (slug = 'test-cust-cat-required') WHERE slug LIKE 'test-%';
 WITH payload AS (
-  SELECT evaluate_promotions_v1(
+  SELECT evaluate_promotions_v2(
     jsonb_build_array(jsonb_build_object(
       'line_id','L1','product_id',(SELECT id FROM products WHERE name='Test Croissant 2C'),
       'quantity',1,'unit_price',1000
@@ -314,7 +316,7 @@ SELECT is(
 -- ============================================================
 UPDATE promotions SET is_active = (slug IN ('test-stack-a','test-stack-b')) WHERE slug LIKE 'test-%';
 WITH payload AS (
-  SELECT evaluate_promotions_v1(
+  SELECT evaluate_promotions_v2(
     jsonb_build_array(jsonb_build_object(
       'line_id','L1','product_id',(SELECT id FROM products WHERE name='Test Croissant 2C'),
       'quantity',2,'unit_price',50000
