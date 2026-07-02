@@ -7,9 +7,11 @@
 //     passing the cashier's verified auth.uid as p_acting_auth_user_id. The old
 //     void_order_rpc was directly callable via PostgREST by any authenticated
 //     cashier, bypassing this PIN check entirely.
+// S55 — idempotency: reads `x-idempotency-key` header, relays to void_order_rpc_v4.
 //
 // Headers:
-//   x-manager-pin: string (6 digits) — REQUIRED
+//   x-manager-pin:     string (6 digits) — REQUIRED
+//   x-idempotency-key: UUID v4 — OPTIONAL (enables replay-safe retries)
 // Body: { order_id: UUID, reason: string (>=3) }
 
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
@@ -17,6 +19,7 @@ import { handleCors, jsonResponse } from '../_shared/cors.ts';
 import { rateLimitedResponse } from '../_shared/responses.ts';
 import { checkRateLimitDurable, getClientIp } from '../_shared/rate-limit.ts';
 import { verifyManagerPin, isManagerPinBlocked, recordManagerPinFailure, MANAGER_PIN_FAIL_WINDOW_SEC } from '../_shared/manager-pin.ts';
+import { getIdempotencyKey, InvalidIdempotencyKeyError } from '../_shared/idempotency.ts';
 import { getActingAuthUserId } from '../_shared/acting-user.ts';
 import { getAdminClient } from '../_shared/supabase-admin.ts';
 
@@ -67,6 +70,16 @@ serve(async (req) => {
     return jsonResponse({ error: 'invalid_json' }, 400);
   }
 
+  let idempotencyKey: string | null = null;
+  try {
+    idempotencyKey = getIdempotencyKey(req);
+  } catch (e) {
+    if (e instanceof InvalidIdempotencyKeyError) {
+      return jsonResponse({ error: 'invalid_idempotency_key' }, 400);
+    }
+    throw e;
+  }
+
   if (!body.order_id || !UUID_REGEX.test(body.order_id)) {
     return jsonResponse({ error: 'invalid_order_id' }, 400);
   }
@@ -90,13 +103,14 @@ serve(async (req) => {
     return jsonResponse({ error: 'internal' }, 500);
   }
 
-  // service_role admin client — the only role allowed to EXECUTE the v2 RPC.
+  // service_role admin client — the only role allowed to EXECUTE the v4 RPC.
   const admin = getAdminClient();
-  const { data, error } = await admin.rpc('void_order_rpc_v3', {
+  const { data, error } = await admin.rpc('void_order_rpc_v4', {
     p_order_id:            body.order_id,
     p_reason:              body.reason,
     p_authorized_by:       mgr.manager_profile_id,
     p_acting_auth_user_id: actingAuthUserId,
+    p_idempotency_key:     idempotencyKey,
   });
 
   if (error) {

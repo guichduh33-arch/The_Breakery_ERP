@@ -3,7 +3,7 @@
 // S51 — server-authoritative POS tax rate.
 //
 // Reads `business_config.tax_rate` — the SAME value the money-path RPC
-// `complete_order_with_payment_v15` applies server-side — so the PRE-payment
+// `complete_order_with_payment_v16` applies server-side — so the PRE-payment
 // pricing surfaces (cart footer, payment terminal estimate, printed bill,
 // customer-display mirror) estimate tax at the real rate instead of the
 // hardcoded `DEFAULT_TAX_RATE`. POST-payment surfaces consume the server-returned

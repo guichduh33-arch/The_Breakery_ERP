@@ -3,7 +3,7 @@
 // Session 10 — full void confirmation. Reason input + manager PIN.
 // Mirrors CancelItemModal layout for consistency.
 
-import { useState, type JSX } from 'react';
+import { useRef, useState, type JSX } from 'react';
 import { X } from 'lucide-react';
 import { Button, NumpadPin, FullScreenModal, cn, Input, Currency } from '@breakery/ui';
 import { toast } from 'sonner';
@@ -13,7 +13,7 @@ export interface VoidOrderModalProps {
   onClose: () => void;
   orderNumber: string;
   total: number;
-  onSubmit: (args: { reason: string; managerPin: string }) => Promise<void> | void;
+  onSubmit: (args: { reason: string; managerPin: string; idempotencyKey: string }) => Promise<void> | void;
   isPending?: boolean;
 }
 
@@ -22,10 +22,15 @@ export function VoidOrderModal({
 }: VoidOrderModalProps): JSX.Element {
   const [reason, setReason] = useState('');
   const [pinKey, setPinKey] = useState(0);
+  // S55 — one UUID per "modal open session", sticky across re-renders and retries
+  // (never regenerated inside onSubmit, so RQ auto-retries reuse it). Rotated on
+  // close (dismiss or post-success) so the next open gets a fresh key.
+  const idempotencyKeyRef = useRef<string>(crypto.randomUUID());
 
   function handleClose(): void {
     setReason('');
     setPinKey((k) => k + 1);
+    idempotencyKeyRef.current = crypto.randomUUID();
     onClose();
   }
 
@@ -36,7 +41,7 @@ export function VoidOrderModal({
       return;
     }
     try {
-      await onSubmit({ reason: reason.trim(), managerPin: pin });
+      await onSubmit({ reason: reason.trim(), managerPin: pin, idempotencyKey: idempotencyKeyRef.current });
       handleClose();
     } catch {
       setPinKey((k) => k + 1);

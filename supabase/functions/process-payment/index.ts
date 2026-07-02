@@ -22,11 +22,24 @@
 // loyalty_multiplier (v12 resolves it server-side from tier × category). New
 // check_violation gates surface as `promo_amount_mismatch` (server re-evaluates
 // promotions) and `invalid_change` (change revalidated vs cash_received).
+//
+// Session 55 (T7): RPC bumped v15 → v16. `p_manager_pin` no longer exists on the
+// RPC — the discount PIN is verified HERE (parity with void-order/cancel-item/
+// refund-order, S25 pattern: PIN only ever travels via the `x-manager-pin`
+// header). On a discount, the EF verifies the PIN, checks `sales.discount`, and
+// mints a single-use nonce row in `discount_authorizations` (service-role only)
+// forwarded as `p_discount_auth_id`; v16 consumes it atomically. The S38
+// `record_pin_failure_v1` fallback (previously here to record failures the RPC
+// itself couldn't durably persist) is gone — `recordManagerPinFailure` now does
+// that job in-EF, in the same transaction as the verification.
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.47.10';
 import { handleCors, jsonResponse } from '../_shared/cors.ts';
 import { rateLimitedResponse } from '../_shared/responses.ts';
 import { checkRateLimitDurable, getClientIp } from '../_shared/rate-limit.ts';
+import { verifyManagerPin, isManagerPinBlocked, recordManagerPinFailure, MANAGER_PIN_FAIL_WINDOW_SEC } from '../_shared/manager-pin.ts';
+import { checkPermissionForRole } from '../_shared/permissions.ts';
+import { getAdminClient } from '../_shared/supabase-admin.ts';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const VALID_METHODS = new Set(['cash', 'card', 'qris', 'edc', 'transfer', 'store_credit']);
@@ -195,10 +208,54 @@ serve(async (req) => {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  // S37 SEC-01 — manager PIN in header (S25 pattern), relayed to the RPC arg.
+  // S55 T7 — le PIN discount est vérifié ICI (parité void/cancel/refund) et ne
+  // descend plus jamais dans un arg SQL de la money-path. Un nonce single-use
+  // (discount_authorizations, service-role only) transporte l'autorisation
+  // jusqu'à complete_order_with_payment_v16, qui le consomme atomiquement.
   const managerPin = req.headers.get('x-manager-pin');
+  const hasDiscount = (typeof body.discount_amount === 'number' && body.discount_amount > 0)
+    || body.items.some((i) => typeof (i as { discount_amount?: number }).discount_amount === 'number'
+        && ((i as { discount_amount?: number }).discount_amount ?? 0) > 0);
 
-  const { data, error } = await userClient.rpc('complete_order_with_payment_v15', {
+  let discountAuthId: string | null = null;
+  let discountAuthorizedBy: string | null = null;
+  if (hasDiscount) {
+    if (!managerPin || managerPin.trim().length === 0) {
+      return jsonResponse({ error: 'permission_denied', message: 'Discount requires the manager PIN (x-manager-pin header)' }, 403);
+    }
+    if (await isManagerPinBlocked(ip)) {
+      return rateLimitedResponse(MANAGER_PIN_FAIL_WINDOW_SEC);
+    }
+    const mgr = await verifyManagerPin(managerPin);
+    if (!mgr.ok) {
+      if (mgr.reason === 'invalid_pin_format') return jsonResponse({ error: 'invalid_pin_format' }, 400);
+      if (mgr.reason === 'no_match') {
+        const { blocked, retryAfterSec } = await recordManagerPinFailure(ip, 'process-payment');
+        if (blocked) return rateLimitedResponse(retryAfterSec);
+        return jsonResponse({ error: 'permission_denied', message: 'Invalid manager PIN for discount authorization' }, 403);
+      }
+      return jsonResponse({ error: 'internal' }, 500);
+    }
+    const allowed = await checkPermissionForRole(mgr.role_code, 'sales.discount', mgr.manager_profile_id);
+    if (!allowed) {
+      return jsonResponse({ error: 'permission_denied', message: 'Permission denied: sales.discount (authorizer)' }, 403);
+    }
+    // L'autorisation est DÉRIVÉE du PIN vérifié — le body client n'est plus cru.
+    discountAuthorizedBy = mgr.manager_profile_id;
+    const admin = getAdminClient();
+    const { data: nonce, error: nonceErr } = await admin
+      .from('discount_authorizations')
+      .insert({ manager_profile_id: mgr.manager_profile_id })
+      .select('id')
+      .single();
+    if (nonceErr || !nonce) {
+      console.error('[process-payment] discount nonce mint failed', nonceErr);
+      return jsonResponse({ error: 'internal' }, 500);
+    }
+    discountAuthId = nonce.id;
+  }
+
+  const { data, error } = await userClient.rpc('complete_order_with_payment_v16', {
     p_session_id: body.session_id,
     p_order_type: body.order_type,
     p_items: body.items,
@@ -219,34 +276,14 @@ serve(async (req) => {
           ...(body.discount_reason ? { p_discount_reason: body.discount_reason } : {}),
         }
       : {}),
-    ...(body.discount_authorized_by ? { p_discount_authorized_by: body.discount_authorized_by } : {}),
-    ...(managerPin ? { p_manager_pin: managerPin } : {}),
+    ...(discountAuthorizedBy
+      ? { p_discount_authorized_by: discountAuthorizedBy }
+      : (body.discount_authorized_by ? { p_discount_authorized_by: body.discount_authorized_by } : {})),
+    ...(discountAuthId ? { p_discount_auth_id: discountAuthId } : {}),
   });
 
   if (error) {
     console.error('complete_order_with_payment error', error);
-    // S38 SEC-06 (DEV-S38-A-02) — the RPC's own failure counting is rolled back with the
-    // P0003 raise (single PostgREST transaction). Record the discount-PIN failure here, in
-    // a separate committed transaction, against the named manager.
-    if (
-      error.code === 'P0003'
-      && typeof error.message === 'string'
-      && error.message.includes('Invalid manager PIN')
-      && body.discount_authorized_by
-    ) {
-      try {
-        const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-        if (serviceKey) {
-          const admin = createClient(url, serviceKey);
-          await admin.rpc('record_pin_failure_v1', {
-            p_user_id: body.discount_authorized_by,
-            p_source: 'process-payment',
-          });
-        }
-      } catch (e) {
-        console.error('record_pin_failure_v1 failed', e);
-      }
-    }
     // Map Postgres error codes
     if (error.code === 'P0001') {
       const msg = String(error.message ?? '');

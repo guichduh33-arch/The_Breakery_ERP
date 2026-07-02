@@ -244,12 +244,13 @@ export function OrderHistoryPanel({ open, onClose }: OrderHistoryPanelProps): JS
           orderNumber={detail.data.order_number}
           total={detail.data.total}
           isPending={voidMutation.isPending}
-          onSubmit={async ({ reason, managerPin }) => {
+          onSubmit={async ({ reason, managerPin, idempotencyKey }) => {
             try {
               const res = await voidMutation.mutateAsync({
                 orderId: detail.data!.id,
                 reason,
                 managerPin,
+                idempotencyKey,
               });
               setVoidOpen(false);
               presentReceipt(res, true);
