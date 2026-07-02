@@ -14,6 +14,7 @@ import {
   ChevronDown,
   Clock,
   CreditCard,
+  FileText,
   Plus,
   Search,
   TrendingUp,
@@ -37,8 +38,9 @@ import {
   type B2bPaymentsPeriod,
 } from '@/features/btob/hooks/useB2bPaymentsReceived.js';
 import { RecordB2bPaymentModal } from '@/features/btob/components/RecordB2bPaymentModal.js';
+import { B2bInvoicesTab } from '@/features/btob/components/B2bInvoicesTab.js';
 
-type TabKey = 'received' | 'outstanding' | 'aging';
+type TabKey = 'received' | 'outstanding' | 'invoices' | 'aging';
 
 export default function B2BPaymentsPage(): JSX.Element {
   const hasPermission = useAuthStore((s) => s.hasPermission);
@@ -50,6 +52,15 @@ export default function B2BPaymentsPage(): JSX.Element {
   const [method, setMethod] = useState<string>('all');
   const [period, setPeriod] = useState<B2bPaymentsPeriod>('all');
   const [recordOpen, setRecordOpen] = useState<boolean>(false);
+  const [recordCustomerId, setRecordCustomerId] = useState<string | undefined>(undefined);
+  const [recordInvoiceIds, setRecordInvoiceIds] = useState<string[] | undefined>(undefined);
+  const canCancel = hasPermission('b2b.order.cancel');
+
+  function openRecord(customerId?: string, invoiceIds?: string[]): void {
+    setRecordCustomerId(customerId);
+    setRecordInvoiceIds(invoiceIds);
+    setRecordOpen(true);
+  }
 
   const payments = useB2bPaymentsReceived(period);
 
@@ -108,7 +119,7 @@ export default function B2BPaymentsPage(): JSX.Element {
           variant="primary"
           size="md"
           disabled={!canRecord}
-          onClick={() => setRecordOpen(true)}
+          onClick={() => openRecord()}
         >
           <Plus className="h-4 w-4" aria-hidden /> Record Payment
         </Button>
@@ -129,6 +140,9 @@ export default function B2BPaymentsPage(): JSX.Element {
             </TabsTrigger>
             <TabsTrigger value="outstanding">
               <Clock className="mr-1.5 h-3.5 w-3.5" aria-hidden /> Outstanding ({filteredOutstanding.length})
+            </TabsTrigger>
+            <TabsTrigger value="invoices">
+              <FileText className="mr-1.5 h-3.5 w-3.5" aria-hidden /> Invoices
             </TabsTrigger>
             <TabsTrigger value="aging">
               <AlertCircle className="mr-1.5 h-3.5 w-3.5" aria-hidden /> Aging report
@@ -217,11 +231,20 @@ export default function B2BPaymentsPage(): JSX.Element {
               ) : (
                 <ul className="divide-y divide-border-subtle">
                   {filteredOutstanding.map((c) => (
-                    <OutstandingRow key={c.id} client={c} />
+                    <OutstandingRow key={c.id} client={c} canRecord={canRecord} onRecord={openRecord} />
                   ))}
                 </ul>
               )}
             </div>
+          </TabsContent>
+
+          <TabsContent value="invoices">
+            <B2bInvoicesTab
+              search={search}
+              canRecord={canRecord}
+              canCancel={canCancel}
+              onRecord={openRecord}
+            />
           </TabsContent>
 
           <TabsContent value="aging">
@@ -241,12 +264,17 @@ export default function B2BPaymentsPage(): JSX.Element {
         </Tabs>
       </Card>
 
-      <RecordB2bPaymentModal open={recordOpen} onClose={() => setRecordOpen(false)} />
+      <RecordB2bPaymentModal
+        open={recordOpen}
+        initialCustomerId={recordCustomerId}
+        initialInvoiceIds={recordInvoiceIds}
+        onClose={() => setRecordOpen(false)}
+      />
     </div>
   );
 }
 
-function OutstandingRow({ client }: { client: B2bClientRow }): JSX.Element {
+function OutstandingRow({ client, canRecord, onRecord }: { client: B2bClientRow; canRecord: boolean; onRecord: (customerId: string) => void }): JSX.Element {
   const overLimit = client.b2b_credit_limit !== null
     && Number(client.b2b_current_balance) > Number(client.b2b_credit_limit);
   return (
@@ -262,6 +290,11 @@ function OutstandingRow({ client }: { client: B2bClientRow }): JSX.Element {
           {formatIdr(Number(client.b2b_current_balance))}
         </div>
         {overLimit && <div className="text-[10px] uppercase tracking-widest text-danger">Over limit</div>}
+        {canRecord && (
+          <Button variant="ghost" size="sm" onClick={() => onRecord(client.id)} data-testid={`out-record-${client.id}`}>
+            Record payment
+          </Button>
+        )}
       </div>
     </li>
   );
