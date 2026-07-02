@@ -177,6 +177,7 @@ const GROUPS: NavGroup[] = [
         label: 'Financial reports',
         items: [
           { to: '/backoffice/reports/profit-loss', label: 'Profit & Loss', icon: Coins, permission: 'reports.financial.read' },
+          { to: '/backoffice/reports/gross-margin', label: 'Gross Margin', icon: TrendingUp, permission: 'reports.financial.read' },
           { to: '/backoffice/reports/operating-expenses', label: 'Operating Expenses', icon: Receipt, permission: 'reports.financial.read' },
           { to: '/backoffice/reports/balance-sheet', label: 'Balance Sheet', icon: Scale, permission: 'reports.financial.read' },
           { to: '/backoffice/reports/cash-flow', label: 'Cash Flow', icon: Banknote, permission: 'reports.financial.read' },

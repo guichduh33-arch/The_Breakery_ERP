@@ -72,6 +72,7 @@ const SECTIONS: ReportSection[] = [
     title: 'Finance & Payments',
     cards: [
       { to: 'profit-loss',   title: 'Profit & Loss',   blurb: 'Revenue, COGS and OpEx for a period.',       icon: Coins },
+      { to: 'gross-margin',  title: 'Gross Margin',    blurb: 'Revenue, COGS & margin per product (current WAC).', icon: TrendingUp },
       { to: 'operating-expenses', title: 'Operating Expenses', blurb: 'Expense ledger by category, status & trend.', icon: Receipt },
       { to: 'balance-sheet', title: 'Balance Sheet',   blurb: 'Assets vs liabilities + equity snapshot.',   icon: Scale },
       { to: 'cash-flow',     title: 'Cash Flow',       blurb: 'Indirect-method cash movement statement.',   icon: Banknote },
