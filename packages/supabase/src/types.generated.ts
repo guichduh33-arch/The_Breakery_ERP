@@ -6085,6 +6085,10 @@ export type Database = {
         Args: { p_lock?: boolean; p_manager_pin: string; p_period_id: string }
         Returns: Json
       }
+      close_fiscal_year_v1: {
+        Args: { p_fiscal_year: number; p_manager_pin: string }
+        Returns: Json
+      }
       close_shift_v2: {
         Args: {
           p_counted_cash: number
