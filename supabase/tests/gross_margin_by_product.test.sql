@@ -177,9 +177,12 @@ BEGIN
   VALUES ('GM Test Product Void', 'GM-TEST-VOID', v_cat, 1000, 'pcs', 400)
   RETURNING id INTO v_prod;
 
-  INSERT INTO orders (order_number, session_id, status, subtotal, tax_amount, total, created_via, paid_at, voided_at)
+  -- chk_orders_void_consistency requires voided_at + voided_by + void_reason
+  -- (length >= 3) together whenever status='voided'.
+  INSERT INTO orders (order_number, session_id, status, subtotal, tax_amount, total, created_via,
+                       paid_at, voided_at, voided_by, void_reason)
   VALUES ('GM-TEST-ORD-VOID', v_sess, 'voided', 1000, 100, 1100, 'pos',
-          '2031-03-17 10:00:00+00', '2031-03-17 10:05:00+00')
+          '2031-03-17 10:00:00+00', '2031-03-17 10:05:00+00', v_prof, 'test fixture void')
   RETURNING id INTO v_ord;
   INSERT INTO order_items (order_id, product_id, name_snapshot, unit_price, quantity, line_total)
   VALUES (v_ord, v_prod, 'GM Test Product Void', 1000, 1, 1000);
