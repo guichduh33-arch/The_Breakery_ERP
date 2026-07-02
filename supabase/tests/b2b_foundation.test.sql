@@ -349,7 +349,7 @@ BEGIN
   UPDATE products SET current_stock = 100.000
    WHERE id = 'b2bf0002-0000-0000-0000-000000000001';
 
-  v_result := create_b2b_order_v2(
+  v_result := create_b2b_order_v3(
     p_customer_id => 'b2bf0001-0000-0000-0000-000000000002',
     p_items       => jsonb_build_array(jsonb_build_object(
       'product_id', 'b2bf0002-0000-0000-0000-000000000001',
@@ -390,7 +390,7 @@ BEGIN
 END $t12_setup$;
 
 SELECT throws_ok(
-  $$ SELECT create_b2b_order_v2(
+  $$ SELECT create_b2b_order_v3(
        p_customer_id => 'b2bf0001-0000-0000-0000-000000000004',
        p_items       => jsonb_build_array(jsonb_build_object(
          'product_id', 'b2bf0002-0000-0000-0000-000000000001',
@@ -420,7 +420,7 @@ BEGIN
   UPDATE products SET current_stock = 100.000
    WHERE id = 'b2bf0002-0000-0000-0000-000000000001';
 
-  v_r1 := create_b2b_order_v2(
+  v_r1 := create_b2b_order_v3(
     p_customer_id     => 'b2bf0001-0000-0000-0000-000000000002',
     p_items           => jsonb_build_array(jsonb_build_object(
       'product_id', 'b2bf0002-0000-0000-0000-000000000001',
@@ -430,7 +430,7 @@ BEGIN
     p_idempotency_key => v_key
   );
 
-  v_r2 := create_b2b_order_v2(
+  v_r2 := create_b2b_order_v3(
     p_customer_id     => 'b2bf0001-0000-0000-0000-000000000002',
     p_items           => jsonb_build_array(jsonb_build_object(
       'product_id', 'b2bf0002-0000-0000-0000-000000000001',
@@ -496,7 +496,7 @@ BEGIN
    WHERE id = 'b2bf0002-0000-0000-0000-000000000001';
 
   BEGIN
-    PERFORM create_b2b_order_v2(
+    PERFORM create_b2b_order_v3(
       p_customer_id => 'b2bf0001-0000-0000-0000-000000000004',
       p_items       => jsonb_build_array(jsonb_build_object(
         'product_id', 'b2bf0002-0000-0000-0000-000000000001',
