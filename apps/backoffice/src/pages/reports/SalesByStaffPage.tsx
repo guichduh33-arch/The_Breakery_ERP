@@ -33,7 +33,7 @@ export default function SalesByStaffPage() {
     <ReportPage
       title="Sales by Staff"
       subtitle="Revenue, order count, and average basket per cashier."
-      isEmpty={!isLoading && !error && data !== undefined && data.length === 0}
+      isEmpty={!isLoading && !error && data?.length === 0}
       emptyState={{
         title: 'No sales',
         description: 'No sales in the selected date range.',

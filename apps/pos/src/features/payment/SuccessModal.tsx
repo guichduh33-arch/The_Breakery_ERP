@@ -63,11 +63,11 @@ function buildReceiptPayload(props: SuccessModalProps, taxRate: number): Receipt
   // or its length doesn't match (defensive — never throw on the receipt).
   const charged = props.cart.items.filter((i) => !i.is_cancelled);
   const serverLines = props.lines;
-  const useServerLines = serverLines != null && serverLines.length === charged.length;
+  const useServerLines = serverLines?.length === charged.length;
 
   const itemsTotal = props.subtotal
     ?? (useServerLines
-      ? serverLines!.reduce((sum, l) => sum + l.line_subtotal, 0)
+      ? serverLines.reduce((sum, l) => sum + l.line_subtotal, 0)
       : derived.subtotal);
 
   return {
@@ -80,7 +80,7 @@ function buildReceiptPayload(props: SuccessModalProps, taxRate: number): Receipt
     },
     ...(props.customerName ? { customer: { name: props.customerName } } : {}),
     items: charged.map((item, idx) => {
-      const sl = useServerLines ? serverLines![idx] : undefined;
+      const sl = useServerLines ? serverLines[idx] : undefined;
       const clientLineTotal =
         (item.unit_price + item.modifiers.reduce((s, m) => s + m.price_adjustment, 0)) * item.quantity;
       return {

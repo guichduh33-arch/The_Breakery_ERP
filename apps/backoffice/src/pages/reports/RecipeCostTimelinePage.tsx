@@ -79,7 +79,7 @@ export function RecipeCostTimelinePage(): JSX.Element {
         p_product_id: productId,
       });
       if (error) throw new Error(error.message);
-      return (data ?? []) as unknown as TimelineRow[];
+      return data ?? [];
     },
   });
 
@@ -156,7 +156,7 @@ export function RecipeCostTimelinePage(): JSX.Element {
       )}
       {q.error && (
         <p role="alert" className="text-sm text-red-600">
-          {(q.error as Error).message}
+          {(q.error).message}
         </p>
       )}
       {!q.isLoading && !q.error && rows.length === 0 && (

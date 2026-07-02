@@ -37,7 +37,7 @@ class FakeBC {
 
 beforeEach(() => {
   instances = [];
-  (globalThis as { BroadcastChannel: unknown }).BroadcastChannel = FakeBC as never;
+  (globalThis as { BroadcastChannel: unknown }).BroadcastChannel = FakeBC;
   vi.useFakeTimers();
 });
 afterEach(() => {

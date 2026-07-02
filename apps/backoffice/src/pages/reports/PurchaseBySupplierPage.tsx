@@ -104,7 +104,7 @@ export default function PurchaseBySupplierPage() {
                 <td className="py-2 text-right tabular-nums">{r.received_count}</td>
                 <td className="py-2 text-right tabular-nums">{r.cancelled_count}</td>
                 <td className="py-2 text-right tabular-nums text-text-secondary">
-                  {r.avg_lead_days !== null ? r.avg_lead_days : '—'}
+                  {r.avg_lead_days ?? '—'}
                 </td>
                 <td className="py-2 text-right tabular-nums">
                   {r.share_pct.toFixed(2)}%

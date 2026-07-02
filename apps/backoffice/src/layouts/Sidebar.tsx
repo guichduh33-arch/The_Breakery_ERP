@@ -494,7 +494,7 @@ export function Sidebar() {
                   ))}
                 </div>
               ) : (
-                group.subgroups!.map((sg) => {
+                group.subgroups.map((sg) => {
                   const key = `${group.label}::${sg.label}`;
                   // Unnamed subgroup ('') has no toggle — its items render
                   // directly whenever the parent category is open.

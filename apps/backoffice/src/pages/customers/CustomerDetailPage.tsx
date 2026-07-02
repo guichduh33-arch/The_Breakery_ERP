@@ -116,7 +116,7 @@ export function CustomerDetailPage(): JSX.Element {
   const avgBasket =
     customer.total_visits > 0 ? Math.round(customer.total_spent / customer.total_visits) : 0;
 
-  const tabs: ReadonlyArray<{ id: TabId; label: string; icon: typeof UserIcon; count?: number }> = [
+  const tabs: readonly { id: TabId; label: string; icon: typeof UserIcon; count?: number }[] = [
     { id: 'info', label: 'Info', icon: UserIcon },
     { id: 'orders', label: 'Orders', icon: ShoppingBag, count: data?.orders_count ?? 0 },
     { id: 'loyalty', label: 'Loyalty', icon: Star, count: history.data?.length ?? 0 },
@@ -263,7 +263,7 @@ export function CustomerDetailPage(): JSX.Element {
 
       {/* Tab panels */}
       {tab === 'info' && <InfoTab customer={customer} />}
-      {tab === 'orders' && <OrdersTab data={data!} />}
+      {tab === 'orders' && <OrdersTab data={data} />}
       {tab === 'loyalty' && <LoyaltyTab customerId={id ?? null} />}
       {tab === 'analytics' && <AnalyticsTab customerId={id ?? null} />}
       {tab === 'pricing' && <PricingTab customer={customer} />}

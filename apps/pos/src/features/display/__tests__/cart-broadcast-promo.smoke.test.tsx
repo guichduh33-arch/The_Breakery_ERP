@@ -20,7 +20,7 @@ class FakeBC {
 
 beforeEach(() => {
   posted = [];
-  (globalThis as { BroadcastChannel: unknown }).BroadcastChannel = FakeBC as never;
+  (globalThis as { BroadcastChannel: unknown }).BroadcastChannel = FakeBC;
   useCartStore.setState({
     cart: { items: [], order_type: 'dine_in' },
     lockedItemIds: [],

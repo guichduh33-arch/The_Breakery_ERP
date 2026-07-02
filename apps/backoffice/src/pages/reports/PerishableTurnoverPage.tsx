@@ -118,7 +118,7 @@ export default function PerishableTurnoverPage() {
                   {r.waste_pct.toFixed(1)}%
                 </td>
                 <td className="py-2 text-right tabular-nums text-text-secondary">
-                  {r.avg_days_in_stock !== null ? r.avg_days_in_stock : '—'}
+                  {r.avg_days_in_stock ?? '—'}
                 </td>
                 <td className="py-2">
                   <VelocityStars score={r.velocity_score} />

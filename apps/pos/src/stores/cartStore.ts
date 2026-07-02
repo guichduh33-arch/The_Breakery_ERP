@@ -544,7 +544,7 @@ export const useCartStore = create<CartState>()(
  * cleanup returned by the latest call should be used to detach.
  */
 export function initNetworkListener(): () => void {
-  if (typeof window === 'undefined') return () => {};
+  if (typeof window === 'undefined') return () => { /* no-op cleanup */ };
   const onOnline = (): void => useCartStore.getState().setOffline(false);
   const onOffline = (): void => useCartStore.getState().setOffline(true);
   // Sync immediately in case the page loaded while offline.

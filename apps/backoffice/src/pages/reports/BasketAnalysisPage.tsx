@@ -37,7 +37,7 @@ export default function BasketAnalysisPage() {
     <ReportPage
       title="Basket Analysis"
       subtitle="Product pairs frequently bought together — sorted by lift (cross-sell opportunities)."
-      isEmpty={!isLoading && !error && data !== undefined && data.length === 0}
+      isEmpty={!isLoading && !error && data?.length === 0}
       emptyState={{
         title: 'No paired sales',
         description: 'No paired sales in the selected range.',

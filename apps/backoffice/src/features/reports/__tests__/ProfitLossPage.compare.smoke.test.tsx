@@ -10,7 +10,7 @@ import { MemoryRouter } from 'react-router-dom';
 // Mock supabase before importing the page.
 const rpcSpy = vi.fn();
 vi.mock('@/lib/supabase.js', () => ({
-  supabase: { rpc: (...args: unknown[]) => rpcSpy(...args), functions: { invoke: vi.fn() } },
+  supabase: { rpc: (...args: unknown[]) => rpcSpy(...args) as unknown, functions: { invoke: vi.fn() } },
 }));
 
 import ProfitLossPage from '@/pages/reports/ProfitLossPage.js';

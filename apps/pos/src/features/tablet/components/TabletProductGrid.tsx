@@ -54,7 +54,7 @@ export function TabletProductGrid({ selectedSlug }: TabletProductGridProps): JSX
       if (selectedSlug === 'favorites' && !p.is_favorite) return false;
       if (selectedSlug === 'combos' && p.product_type !== 'combo') return false;
       if (selectedSlug && selectedSlug !== 'favorites' && selectedSlug !== 'combos') {
-        if (!selectedCat || p.category_id !== selectedCat.id) return false;
+        if (p.category_id !== selectedCat?.id) return false;
       }
       if (query.trim().length > 0) {
         const q = query.trim().toLowerCase();

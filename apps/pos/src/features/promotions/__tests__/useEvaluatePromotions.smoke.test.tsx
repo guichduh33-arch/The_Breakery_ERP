@@ -29,8 +29,8 @@ const fromMock = vi.fn();
 
 vi.mock('@/lib/supabase', () => ({
   supabase: {
-    rpc: (...args: unknown[]) => rpcMock(...args),
-    from: (...args: unknown[]) => fromMock(...args),
+    rpc: (...args: unknown[]) => rpcMock(...args) as unknown,
+    from: (...args: unknown[]) => fromMock(...args) as unknown,
     auth: { getSession: vi.fn().mockResolvedValue({ data: { session: null } }) },
     channel: vi.fn(() => ({ on: vi.fn().mockReturnThis(), subscribe: vi.fn().mockReturnThis() })),
     removeChannel: vi.fn(),
@@ -209,7 +209,7 @@ describe('useEvaluatePromotions', () => {
     const applied = await result.current.runEvaluation(CART_3_BAGUETTES, null);
 
     expect(rpcMock).toHaveBeenCalledWith('evaluate_promotions_v2', expect.objectContaining({
-      p_cart_items: expect.any(Array),
+      p_cart_items: expect.any(Array) as unknown,
       p_subtotal: 45000,
     }));
     expect(applied).toHaveLength(1);
@@ -299,7 +299,7 @@ describe('useEvaluatePromotions', () => {
     // The subtotal sent excludes the gift line (2 × 15000), never 3 × 15000 —
     // this is what stops the discount from accumulating on each pass.
     for (const call of rpcMock.mock.calls) {
-      const args = call[1] as { p_cart_items: Array<{ line_id: string }>; p_subtotal: number };
+      const args = call[1] as { p_cart_items: { line_id: string }[]; p_subtotal: number };
       expect(args.p_subtotal).toBe(30000);
       expect(args.p_cart_items.some((i) => i.line_id === 'gift-p-bogo')).toBe(false);
     }

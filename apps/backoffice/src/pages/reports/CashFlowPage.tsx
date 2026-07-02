@@ -132,7 +132,7 @@ export default function CashFlowPage() {
                 <tr>
                   <td className="py-1 text-xs text-text-secondary pl-2">Net change vs prev. period</td>
                   <td className="py-1 text-right">
-                    <DeltaPct current={data.net_change_in_cash} previous={prevData!.net_change_in_cash} />
+                    <DeltaPct current={data.net_change_in_cash} previous={prevData.net_change_in_cash} />
                   </td>
                 </tr>
               )}
@@ -148,7 +148,7 @@ export default function CashFlowPage() {
                 <tr>
                   <td className="py-1 text-xs text-text-secondary pl-2">Ending cash vs prev. period</td>
                   <td className="py-1 text-right">
-                    <DeltaPct current={data.cash_end} previous={prevData!.cash_end} />
+                    <DeltaPct current={data.cash_end} previous={prevData.cash_end} />
                   </td>
                 </tr>
               )}

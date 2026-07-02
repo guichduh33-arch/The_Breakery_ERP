@@ -73,7 +73,7 @@ export default function PurchaseItemsPage() {
         .eq('is_active', true)
         .order('name');
       if (error) throw error;
-      return (data ?? []) as SupplierOption[];
+      return (data ?? []);
     },
     staleTime: 5 * 60 * 1000,
   });

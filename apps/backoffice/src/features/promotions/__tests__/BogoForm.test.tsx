@@ -55,7 +55,7 @@ describe('BogoForm', () => {
         mode="create"
         productOptions={PRODUCTS}
         onSubmit={onSubmit}
-        onCancel={() => {}}
+        onCancel={vi.fn()}
       />,
     );
     fireEvent.change(screen.getByPlaceholderText(/Buy 2 baguettes/), { target: { value: 'BOGO no product' } });
@@ -74,12 +74,12 @@ describe('ThresholdForm', () => {
   it('submits subtotal-percent threshold with cap', async () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined);
     render(
-      <ThresholdForm mode="create" onSubmit={onSubmit} onCancel={() => {}} />,
+      <ThresholdForm mode="create" onSubmit={onSubmit} onCancel={vi.fn()} />,
     );
 
     fireEvent.change(screen.getByPlaceholderText(/Spend 100k/), { target: { value: 'Spend 100k Get 10' } });
     fireEvent.change(screen.getByPlaceholderText(/threshold-100k-10/), { target: { value: 'thr-100k-10' } });
-    const ta = screen.getByLabelText('threshold-amount') as HTMLInputElement;
+    const ta = screen.getByLabelText('threshold-amount');
     fireEvent.change(ta, { target: { value: '100000' } });
 
     // Submit via the form element, not the button click (jsdom won't
@@ -143,15 +143,15 @@ describe('ThresholdForm', () => {
           is_active: true,
         }}
         onSubmit={onSubmit}
-        onCancel={() => {}}
+        onCancel={vi.fn()}
       />,
     );
 
     // Cap input should be absent.
     expect(screen.queryByLabelText('max-discount-amount')).toBeNull();
     // Fixed radio should be selected.
-    expect((screen.getByRole('radio', { name: 'fixed' }) as HTMLInputElement).checked).toBe(true);
-    expect((screen.getByRole('radio', { name: 'percent' }) as HTMLInputElement).checked).toBe(false);
+    expect(screen.getByRole('radio', { name: 'fixed' })).toBeChecked();
+    expect(screen.getByRole('radio', { name: 'percent' })).not.toBeChecked();
 
     // Submitting should preserve max=null.
     const form = screen.getByLabelText('threshold-amount').closest('form')!;

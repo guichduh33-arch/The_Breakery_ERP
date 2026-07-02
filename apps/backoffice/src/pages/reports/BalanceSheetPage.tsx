@@ -150,7 +150,7 @@ export default function BalanceSheetPage() {
                   {showDelta && (
                     <tr>
                       <td className="py-1 text-xs text-text-secondary">vs prev. period</td>
-                      <td className="py-1 text-right"><DeltaPct current={data.assets.total} previous={prevData!.assets.total} /></td>
+                      <td className="py-1 text-right"><DeltaPct current={data.assets.total} previous={prevData.assets.total} /></td>
                     </tr>
                   )}
                 </tbody>
@@ -175,7 +175,7 @@ export default function BalanceSheetPage() {
                   {showDelta && (
                     <tr>
                       <td className="py-1 text-xs text-text-secondary">vs prev. period</td>
-                      <td className="py-1 text-right"><DeltaPct current={data.liabilities.total} previous={prevData!.liabilities.total} /></td>
+                      <td className="py-1 text-right"><DeltaPct current={data.liabilities.total} previous={prevData.liabilities.total} /></td>
                     </tr>
                   )}
                 </tbody>
@@ -198,7 +198,7 @@ export default function BalanceSheetPage() {
                   {showDelta && (
                     <tr>
                       <td className="py-1 text-xs text-text-secondary">vs prev. period</td>
-                      <td className="py-1 text-right"><DeltaPct current={data.equity.total} previous={prevData!.equity.total} /></td>
+                      <td className="py-1 text-right"><DeltaPct current={data.equity.total} previous={prevData.equity.total} /></td>
                     </tr>
                   )}
                 </tbody>

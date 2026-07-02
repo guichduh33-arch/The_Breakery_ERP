@@ -92,7 +92,7 @@ export default function ProfitLossPage() {
               <tr className="border-b border-border-subtle">
                 <td className="py-2 font-medium">Revenue</td>
                 <td className="py-2 text-right tabular-nums">{fmt(data.revenue.total)}</td>
-                {showDelta && <td className="py-2 text-right pl-2"><DeltaPct current={data.revenue.total} previous={prevData!.revenue.total} /></td>}
+                {showDelta && <td className="py-2 text-right pl-2"><DeltaPct current={data.revenue.total} previous={prevData.revenue.total} /></td>}
               </tr>
               <tr>
                 <td className="pl-6 py-1 text-text-secondary text-xs">Sales</td>
@@ -112,7 +112,7 @@ export default function ProfitLossPage() {
               <tr className="border-b border-border-subtle">
                 <td className="py-2 font-medium">COGS</td>
                 <td className="py-2 text-right tabular-nums">{fmt(data.cogs.total)}</td>
-                {showDelta && <td className="py-2 text-right pl-2"><DeltaPct current={data.cogs.total} previous={prevData!.cogs.total} /></td>}
+                {showDelta && <td className="py-2 text-right pl-2"><DeltaPct current={data.cogs.total} previous={prevData.cogs.total} /></td>}
               </tr>
               <tr>
                 <td className="pl-6 py-1 text-text-secondary text-xs">Production</td>
@@ -132,7 +132,7 @@ export default function ProfitLossPage() {
               <tr className="border-b border-border-subtle bg-bg-overlay">
                 <td className="py-2 font-semibold">Gross profit</td>
                 <td className="py-2 text-right font-semibold tabular-nums">{fmt(data.gross_profit)}</td>
-                {showDelta && <td className="py-2 text-right pl-2"><DeltaPct current={data.gross_profit} previous={prevData!.gross_profit} /></td>}
+                {showDelta && <td className="py-2 text-right pl-2"><DeltaPct current={data.gross_profit} previous={prevData.gross_profit} /></td>}
               </tr>
               <tr className="border-b border-border-subtle">
                 <td className="py-2 font-medium">Operating expenses</td>
@@ -149,7 +149,7 @@ export default function ProfitLossPage() {
               <tr className="border-t-2 border-border-subtle bg-gold-soft">
                 <td className="py-3 font-semibold uppercase tracking-wider">Net profit</td>
                 <td className="py-3 text-right font-semibold tabular-nums">{fmt(data.net_profit)}</td>
-                {showDelta && <td className="py-3 text-right pl-2"><DeltaPct current={data.net_profit} previous={prevData!.net_profit} /></td>}
+                {showDelta && <td className="py-3 text-right pl-2"><DeltaPct current={data.net_profit} previous={prevData.net_profit} /></td>}
               </tr>
             </tbody>
           </table>

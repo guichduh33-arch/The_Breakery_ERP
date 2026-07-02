@@ -103,9 +103,9 @@ export function evaluateBogoNew(
   catalog: PromotionCatalog,
 ): AppliedPromotion | null {
   if (!isNewBogoShape(promo)) return null;
-  const buyQty = promo.bogo_buy_quantity as number;
-  const getQty = promo.bogo_get_quantity as number;
-  const getProductId = promo.bogo_get_product_id as string;
+  const buyQty = promo.bogo_buy_quantity!;
+  const getQty = promo.bogo_get_quantity!;
+  const getProductId = promo.bogo_get_product_id!;
 
   // Count trigger units. If legacy `bogo_trigger_product_ids` list is
   // present + non-empty, restrict to those products ; else any non-gift line.

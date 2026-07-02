@@ -40,7 +40,7 @@ describe('ProductGrid — load error (C-D1)', () => {
 
   it('renders the error panel (not the empty state) when the fetch fails', async () => {
     const { ProductGrid } = await import('../ProductGrid');
-    render(wrap(<ProductGrid selectedSlug={null} onSelect={() => {}} />));
+    render(wrap(<ProductGrid selectedSlug={null} onSelect={vi.fn()} />));
 
     expect(screen.getByRole('alert')).toBeInTheDocument();
     expect(screen.getByText(/impossible de charger les produits/i)).toBeInTheDocument();
@@ -50,7 +50,7 @@ describe('ProductGrid — load error (C-D1)', () => {
 
   it('calls refetch when Retry is tapped', async () => {
     const { ProductGrid } = await import('../ProductGrid');
-    render(wrap(<ProductGrid selectedSlug={null} onSelect={() => {}} />));
+    render(wrap(<ProductGrid selectedSlug={null} onSelect={vi.fn()} />));
 
     fireEvent.click(screen.getByRole('button', { name: /réessayer/i }));
     expect(refetch).toHaveBeenCalledTimes(1);

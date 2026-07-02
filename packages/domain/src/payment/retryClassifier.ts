@@ -112,7 +112,9 @@ export function classifyCheckoutError(err: unknown): RetryClassification {
  * EF errors — we read both.
  */
 function extractErrorShape(err: unknown): CheckoutErrorShape {
-  if (!err || typeof err !== 'object') return { message: String(err ?? '') };
+  if (!err || typeof err !== 'object') {
+    return { message: typeof err === 'string' || typeof err === 'number' ? String(err) : '' };
+  }
   const e = err as {
     message?: string;
     details?: { error?: string; code?: string; message?: string };

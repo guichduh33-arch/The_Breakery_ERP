@@ -325,7 +325,7 @@ describe('Sidebar', () => {
     fireEvent.click(screen.getByRole('button', { name: /^Devices/i }));
     const raw = localStorage.getItem(SUBGROUP_STORAGE_KEY);
     expect(raw).not.toBeNull();
-    const stored = JSON.parse(raw!);
+    const stored = JSON.parse(raw!) as string[];
     expect(stored).toContain('Settings::Devices');
   });
 
@@ -375,7 +375,7 @@ describe('Sidebar', () => {
     expect(salesBtn).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByRole('link', { name: /^Orders$/i })).toBeInTheDocument();
 
-    const stored = JSON.parse(localStorage.getItem(GROUP_STORAGE_KEY)!);
+    const stored = JSON.parse(localStorage.getItem(GROUP_STORAGE_KEY)!) as string[];
     expect(stored).toContain('Sales');
   });
 

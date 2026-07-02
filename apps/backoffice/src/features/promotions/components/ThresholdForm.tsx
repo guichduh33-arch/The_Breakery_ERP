@@ -81,7 +81,7 @@ export function ThresholdForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4" aria-labelledby="threshold-form-title">
+    <form onSubmit={(e) => { void handleSubmit(e); }} className="space-y-4" aria-labelledby="threshold-form-title">
       <header className="flex items-center justify-between">
         <h2 id="threshold-form-title" className="text-lg font-semibold text-text-primary">
           {mode === 'create' ? 'New threshold promotion' : 'Edit threshold promotion'}

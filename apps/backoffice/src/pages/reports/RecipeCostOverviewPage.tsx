@@ -72,7 +72,7 @@ export function RecipeCostOverviewPage(): JSX.Element {
         // omit p_product_id → PostgreSQL DEFAULT NULL → overview mode
       });
       if (error) throw new Error(error.message);
-      return (data ?? []) as unknown as OverviewRow[];
+      return data ?? [];
     },
   });
 
@@ -127,7 +127,7 @@ export function RecipeCostOverviewPage(): JSX.Element {
       )}
       {q.error && (
         <p role="alert" className="text-sm text-red-600">
-          {(q.error as Error).message}
+          {(q.error).message}
         </p>
       )}
       {rows.length > 0 && (

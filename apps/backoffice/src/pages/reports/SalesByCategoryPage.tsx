@@ -62,7 +62,7 @@ export default function SalesByCategoryPage() {
     <ReportPage
       title="Sales by Category"
       subtitle="Revenue + quantity grouped by product category."
-      isEmpty={!isLoading && !error && data !== undefined && data.length === 0}
+      isEmpty={!isLoading && !error && data?.length === 0}
       emptyState={{
         title: 'No sales',
         description: 'No sales in the selected date range.',

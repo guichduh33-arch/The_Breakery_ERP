@@ -86,7 +86,7 @@ function useProductionYield(start: string, end: string) {
       if (error) throw error;
       const rows = data ?? [];
 
-      const productIds = Array.from(new Set(rows.map((r) => r.product_id as string)));
+      const productIds = Array.from(new Set(rows.map((r) => r.product_id)));
       const nameById: Record<string, string> = {};
       if (productIds.length > 0) {
         const { data: prods, error: pe } = await supabase
@@ -94,19 +94,19 @@ function useProductionYield(start: string, end: string) {
           .select('id, name')
           .in('id', productIds);
         if (pe) throw pe;
-        for (const p of prods ?? []) nameById[p.id as string] = p.name as string;
+        for (const p of prods ?? []) nameById[p.id] = p.name;
       }
 
       return rows.map((r): YieldRow => ({
-        id: r.id as string,
-        production_number: r.production_number as string,
-        product_id: r.product_id as string,
-        product_name: nameById[r.product_id as string] ?? '—',
-        production_date: r.production_date as string,
+        id: r.id,
+        production_number: r.production_number,
+        product_id: r.product_id,
+        product_name: nameById[r.product_id] ?? '—',
+        production_date: r.production_date,
         expected_yield_qty: r.expected_yield_qty === null ? null : Number(r.expected_yield_qty),
         actual_yield_qty:   r.actual_yield_qty   === null ? null : Number(r.actual_yield_qty),
         yield_variance_pct: r.yield_variance_pct === null ? null : Number(r.yield_variance_pct),
-        yield_variance_reason: r.yield_variance_reason as string | null,
+        yield_variance_reason: r.yield_variance_reason,
       }));
     },
   });
@@ -328,7 +328,7 @@ export default function ProductionYieldPage(): JSX.Element {
       {isLoading && <p className="text-sm text-text-secondary">Loading…</p>}
       {error && (
         <p role="alert" className="text-sm text-red-500">
-          {(error as Error).message ?? 'Failed to load report.'}
+          {(error).message ?? 'Failed to load report.'}
         </p>
       )}
       {data !== undefined && (

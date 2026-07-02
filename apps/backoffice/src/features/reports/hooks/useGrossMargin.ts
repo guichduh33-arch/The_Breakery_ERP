@@ -55,6 +55,10 @@ function toNum(v: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+function toStr(v: unknown): string {
+  return typeof v === 'string' ? v : typeof v === 'number' ? String(v) : '';
+}
+
 export function useGrossMargin(params: UseGrossMarginParams) {
   const { start, end, categoryId } = params;
   return useQuery<GrossMarginData, Error>({
@@ -77,8 +81,8 @@ export function useGrossMargin(params: UseGrossMarginParams) {
       const byCategory = Array.isArray(r.by_category) ? (r.by_category as unknown[]) : [];
       return {
         period: {
-          start: String(period.start ?? start),
-          end:   String(period.end   ?? end),
+          start: toStr(period.start) || start,
+          end:   toStr(period.end)   || end,
         },
         summary: {
           revenue:    toNum(summary.revenue),
@@ -89,9 +93,9 @@ export function useGrossMargin(params: UseGrossMarginParams) {
         by_product: byProduct.map((p) => {
           const o = (p ?? {}) as Record<string, unknown>;
           return {
-            product_id:    String(o.product_id ?? ''),
-            name:          String(o.name ?? ''),
-            category_name: o.category_name != null ? String(o.category_name) : null,
+            product_id:    toStr(o.product_id),
+            name:          toStr(o.name),
+            category_name: o.category_name != null ? toStr(o.category_name) : null,
             qty:           toNum(o.qty),
             revenue:       toNum(o.revenue),
             cogs:          toNum(o.cogs),
@@ -102,8 +106,8 @@ export function useGrossMargin(params: UseGrossMarginParams) {
         by_category: byCategory.map((c) => {
           const o = (c ?? {}) as Record<string, unknown>;
           return {
-            category_id:   o.category_id != null ? String(o.category_id) : null,
-            category_name: o.category_name != null ? String(o.category_name) : null,
+            category_id:   o.category_id != null ? toStr(o.category_id) : null,
+            category_name: o.category_name != null ? toStr(o.category_name) : null,
             qty:           toNum(o.qty),
             revenue:       toNum(o.revenue),
             cogs:          toNum(o.cogs),

@@ -47,7 +47,7 @@ function useActiveProducts() {
         .order('name', { ascending: true })
         .limit(500);
       if (error) throw error;
-      return (data ?? []) as unknown as ProductOption[];
+      return data ?? [];
     },
   });
 }

@@ -56,15 +56,15 @@ export interface UseEvaluatePromotionsResult {
 
 /** Server-side payload shape emitted by `evaluate_promotions_v2`. */
 interface EvaluatePromotionsV1Payload {
-  applied_promotions: Array<{
+  applied_promotions: {
     promotion_id: string;
     slug: string;
     name: string;
     type: PromotionType;
     discount_amount: number;
     description?: string;
-    free_items?: Array<{ product_id: string; quantity: number }>;
-  }>;
+    free_items?: { product_id: string; quantity: number }[];
+  }[];
   subtotal_before: number;
   subtotal_after_discount: number;
   total_discount: number;
@@ -137,12 +137,12 @@ export function normalizeV1Payload(
  * everywhere (`nonGiftSubtotal` / `is_promo_gift` guards), so this keeps both
  * evaluation paths idempotent and aligned.
  */
-export function cartToRpcPayload(cart: Cart): Array<{
+export function cartToRpcPayload(cart: Cart): {
   line_id: string;
   product_id: string;
   quantity: number;
   unit_price: number;
-}> {
+}[] {
   return cart.items
     .filter((it) => !it.is_promo_gift)
     .map((it) => ({
