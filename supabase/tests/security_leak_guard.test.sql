@@ -64,20 +64,18 @@ SELECT throws_ok(
 RESET ROLE;
 
 -- ============================================================
--- T4 : audit_log security_invoker
--- Postgres stocke 'security_invoker=true' (pas '=on') dans reloptions.
+-- T4 : audit_log compat view dropped (S56 _088)
+-- (remplace l'assertion S50 security_invoker — la vue n'existe plus)
 -- ============================================================
-
 SELECT ok(
-  EXISTS (
+  NOT EXISTS (
     SELECT 1
     FROM pg_class c
     JOIN pg_namespace n ON n.oid = c.relnamespace
     WHERE n.nspname = 'public'
       AND c.relname = 'audit_log'
-      AND c.reloptions @> ARRAY['security_invoker=true']
   ),
-  'T4 — audit_log security_invoker=true'
+  'T4 — audit_log compat view dropped (S56)'
 );
 
 -- ============================================================

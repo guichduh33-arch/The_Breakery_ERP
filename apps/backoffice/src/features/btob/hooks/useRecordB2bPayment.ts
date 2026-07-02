@@ -6,7 +6,7 @@
 // (DR Cash/Bank / CR B2B_AR), inserts a b2b_payments row + real per-invoice
 // allocation rows (b2b_payment_allocations), sets orders.paid_at on full
 // settlement, decrements the customer's cached balance, and records an
-// audit_log. Idempotent. Optional invoiceIds → targeted allocation (array
+// audit_logs. Idempotent. Optional invoiceIds → targeted allocation (array
 // order), else FIFO over the oldest unpaid invoices.
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -55,7 +55,7 @@ export interface RecordB2bPaymentResult {
   idempotent_replay:      boolean;
 }
 
-function classify(message: string): RecordB2bPaymentErrorCode {
+export function classify(message: string): RecordB2bPaymentErrorCode {
   if (message.includes('overpayment_not_allowed')) return 'overpayment_not_allowed';
   if (message.includes('customer_not_b2b'))        return 'customer_not_b2b';
   if (message.includes('customer_not_found'))      return 'customer_not_found';
@@ -63,6 +63,10 @@ function classify(message: string): RecordB2bPaymentErrorCode {
   if (message.includes('permission_denied'))       return 'permission_denied';
   if (message.includes('not_authenticated'))       return 'not_authenticated';
   if (message.includes('fiscal_period'))           return 'fiscal_period_closed';
+  // S54 fail-closed guard: 'period_undefined: no fiscal period covers <date>'
+  if (message.includes('period_undefined') || message.includes('no fiscal period')) {
+    return 'fiscal_period_closed';
+  }
   return 'unknown';
 }
 
@@ -101,6 +105,7 @@ export function useRecordB2bPayment() {
         qc.invalidateQueries({ queryKey: B2B_PAYMENTS_RECEIVED_QUERY_KEY }),
         qc.invalidateQueries({ queryKey: B2B_CUSTOMERS_QUERY_KEY }),
         qc.invalidateQueries({ queryKey: ['customers'] }),
+        qc.invalidateQueries({ queryKey: ['b2b-invoices'] }),
       ]);
     },
   });

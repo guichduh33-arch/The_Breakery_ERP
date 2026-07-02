@@ -5489,44 +5489,6 @@ export type Database = {
       }
     }
     Views: {
-      audit_log: {
-        Row: {
-          action: string | null
-          actor_profile_id: string | null
-          id: number | null
-          occurred_at: string | null
-          payload: Json | null
-          subject_id: string | null
-          subject_table: string | null
-        }
-        Insert: {
-          action?: string | null
-          actor_profile_id?: string | null
-          id?: number | null
-          occurred_at?: string | null
-          payload?: Json | null
-          subject_id?: string | null
-          subject_table?: string | null
-        }
-        Update: {
-          action?: string | null
-          actor_profile_id?: string | null
-          id?: number | null
-          occurred_at?: string | null
-          payload?: Json | null
-          subject_id?: string | null
-          subject_table?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "audit_logs_actor_id_fkey"
-            columns: ["actor_profile_id"]
-            isOneToOne: false
-            referencedRelation: "user_profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       mv_pl_monthly: {
         Row: {
           cogs: number | null

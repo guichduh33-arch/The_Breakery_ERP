@@ -5,7 +5,7 @@
 --   T1  SUPER_ADMIN happy path : toggle is_active mutates accounts row
 --   T2  MANAGER (no accounting.coa.write) raises P0003 forbidden
 --   T3  Unknown account_id raises P0002 account_not_found
---   T4  audit_log row emitted with action='accounting.account.active_toggled'
+--   T4  audit_logs row emitted with action='accounting.account.active_toggled'
 --
 -- Run via MCP execute_sql wrap BEGIN/ROLLBACK ; pgtap extension is pre-created
 -- on V3 dev. Convention ERRCODE alignée sur S26 cockpit family (P0003 forbidden).
@@ -134,19 +134,19 @@ SELECT throws_ok(
 );
 
 -- =============================================================================
--- T4 : audit_log row emitted with action='accounting.account.active_toggled'.
+-- T4 : audit_logs row emitted with action='accounting.account.active_toggled'.
 -- T1 already inserted 1 row -- assert it exists with correct payload shape.
 -- =============================================================================
 
 SELECT is(
-  (SELECT COUNT(*)::INT FROM audit_log
+  (SELECT COUNT(*)::INT FROM audit_logs
     WHERE action = 'accounting.account.active_toggled'
-      AND subject_id = current_setting('breakery.s26b_account_id')::UUID
-      AND occurred_at > now() - interval '1 minute'
-      AND payload ? 'old_is_active'
-      AND payload ? 'new_is_active'),
+      AND entity_id = current_setting('breakery.s26b_account_id')::UUID
+      AND created_at > now() - interval '1 minute'
+      AND metadata ? 'old_is_active'
+      AND metadata ? 'new_is_active'),
   1,
-  'T4 audit_log has 1 accounting.account.active_toggled row from T1 with correct payload'
+  'T4 audit_logs has 1 accounting.account.active_toggled row from T1 with correct payload'
 );
 
 SELECT * FROM finish();

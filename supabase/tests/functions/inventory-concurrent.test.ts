@@ -121,9 +121,9 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory concurrency â
     expect(totalDelta).toBe(finalStock - 100);
 
     // Audit log: 2 rows, both pointing at our movement_ids.
-    const { count: auditCount } = await admin.from('audit_log')
+    const { count: auditCount } = await admin.from('audit_logs')
       .select('*', { count: 'exact', head: true })
-      .in('subject_id', [data1.movement_id, data2.movement_id])
+      .in('entity_id', [data1.movement_id, data2.movement_id])
       .eq('action', 'stock.movement');
     expect(auditCount).toBe(2);
   });

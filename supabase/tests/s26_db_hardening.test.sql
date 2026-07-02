@@ -31,13 +31,15 @@ SELECT ok(
 -- Wave 1.C : fold PPN supplier dans INVENTORY
 -- ============================================================================
 
+-- S56 refresh : le COMMENT a été réécrit en S46 (redesign GRN) — l'invariant
+-- NON-PKP « vat folded » reste, l'ancre F-S26-AC-09 non.
 SELECT ok(
   (SELECT obj_description(p.oid, 'pg_proc')
    FROM pg_proc p
    JOIN pg_namespace n ON n.oid = p.pronamespace
    WHERE n.nspname = 'public' AND p.proname = 'create_purchase_journal_entry'
-  ) LIKE '%F-S26-AC-09%',
-  'T3: create_purchase_journal_entry comment mentions F-S26-AC-09 (folded vat)'
+  ) ILIKE '%folded%',
+  'T3: create_purchase_journal_entry comment documents folded vat (NON-PKP)'
 );
 
 -- ============================================================================
@@ -103,13 +105,13 @@ SELECT ok(
 -- ============================================================================
 
 SELECT is(
-  (SELECT account_class FROM accounts WHERE code = '3200'),
+  (SELECT account_class::int FROM accounts WHERE code = '3200'),
   3,
   'T10: account 3200 Retained Earnings exists with class=3 equity'
 );
 
 SELECT is(
-  (SELECT account_class FROM accounts WHERE code = '5910'),
+  (SELECT account_class::int FROM accounts WHERE code = '5910'),
   6,
   'T11: account 5910 Cash Variance Loss reclassified to class=6 expense'
 );
@@ -124,26 +126,31 @@ SELECT is(
 -- Wave 1.I : 4 RPCs cockpit + permissions
 -- ============================================================================
 
+-- S56 refresh : GL/TB bumpées v2/v3 (gates S50 #129 + cumul S51) — la suite
+-- référençait encore les v1 droppées.
 SELECT ok(
   EXISTS (
     SELECT 1 FROM pg_proc p
     JOIN pg_namespace n ON n.oid = p.pronamespace
     WHERE n.nspname = 'public' AND p.proname IN (
-      'close_fiscal_period_v1', 'get_general_ledger_v1',
-      'get_trial_balance_v1', 'create_manual_je_v1'
+      'close_fiscal_period_v1', 'get_general_ledger_v2',
+      'get_trial_balance_v3', 'create_manual_je_v1'
     )
     GROUP BY 1 HAVING COUNT(*) = 4
   ),
-  'T13: 4 cockpit RPCs exist (close_fiscal_period_v1, get_general_ledger_v1, get_trial_balance_v1, create_manual_je_v1)'
+  'T13: 4 cockpit RPCs exist (close_fiscal_period_v1, get_general_ledger_v2, get_trial_balance_v3, create_manual_je_v1)'
 );
 
 -- T14 vérifie structurellement que le payload contient les bons champs.
 -- Note : sur V3 dev cloud le seed est déséquilibré (fixtures incomplètes — pré-S26),
 -- donc on n'asserte PAS balanced=true ici. Une suite séparée avec fixtures
 -- propres (Wave 4 ou test runner Vitest live) vérifiera l'équation comptable.
+-- v3 est gatée accounting.tb.read → identité EMP000 (SUPER_ADMIN) requise.
+SELECT set_config('request.jwt.claim.sub',
+  (SELECT auth_user_id::text FROM user_profiles WHERE employee_code='EMP000'), true);
 SELECT ok(
-  get_trial_balance_v1(DATE '2026-01-01', DATE '2026-12-31') ?& ARRAY['balanced', 'total_debit', 'total_credit', 'lines'],
-  'T14: get_trial_balance_v1 returns payload with balanced+totals+lines keys'
+  get_trial_balance_v3(DATE '2026-01-01', DATE '2026-12-31') ?& ARRAY['balanced', 'total_debit', 'total_credit', 'lines'],
+  'T14: get_trial_balance_v3 returns payload with balanced+totals+lines keys'
 );
 
 SELECT ok(

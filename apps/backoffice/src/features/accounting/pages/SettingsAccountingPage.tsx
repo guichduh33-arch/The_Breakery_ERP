@@ -4,9 +4,10 @@
 
 import { useState, type JSX } from 'react';
 import { Button } from '@breakery/ui';
-import { Lock, ChevronRight } from 'lucide-react';
+import { Lock, ChevronRight, CalendarCheck } from 'lucide-react';
 import { useFiscalPeriods, type FiscalPeriodRow } from '../hooks/useFiscalPeriods.js';
 import { FiscalPeriodModal } from '../components/FiscalPeriodModal.js';
+import { AnnualCloseModal } from '../components/AnnualCloseModal.js';
 import { useAuthStore } from '@/stores/authStore.js';
 
 function statusBadgeClass(status: string): string {
@@ -18,6 +19,8 @@ function statusBadgeClass(status: string): string {
 export default function SettingsAccountingPage(): JSX.Element {
   const periods = useFiscalPeriods();
   const canClose = useAuthStore((s) => s.hasPermission('accounting.period.close'));
+  const canCloseYear = useAuthStore((s) => s.hasPermission('accounting.year.close'));
+  const [showAnnual, setShowAnnual]     = useState(false);
   const [pickedPeriod, setPickedPeriod] = useState<FiscalPeriodRow | null>(null);
   const [showAll, setShowAll]           = useState(false);
 
@@ -37,16 +40,29 @@ export default function SettingsAccountingPage(): JSX.Element {
             Manage fiscal periods (close / lock for backdating prevention)
           </p>
         </div>
-        {canClose && (
-          <Button
-            onClick={() => openModalFor(null)}
-            className="inline-flex items-center gap-2"
-            data-testid="fp-new-btn"
-          >
-            <Lock className="h-4 w-4" aria-hidden />
-            Close a period
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {canClose && (
+            <Button
+              onClick={() => openModalFor(null)}
+              className="inline-flex items-center gap-2"
+              data-testid="fp-new-btn"
+            >
+              <Lock className="h-4 w-4" aria-hidden />
+              Close a period
+            </Button>
+          )}
+          {canCloseYear && (
+            <Button
+              variant="secondary"
+              onClick={() => setShowAnnual(true)}
+              className="inline-flex items-center gap-2"
+              data-testid="ac-open-btn"
+            >
+              <CalendarCheck className="h-4 w-4" aria-hidden />
+              Annual close
+            </Button>
+          )}
+        </div>
       </div>
 
       {periods.isLoading && <p className="text-sm text-text-secondary">Loading…</p>}
@@ -113,6 +129,8 @@ export default function SettingsAccountingPage(): JSX.Element {
           initialPeriodId={pickedPeriod?.id}
         />
       )}
+
+      {showAnnual && <AnnualCloseModal onClose={() => setShowAnnual(false)} />}
     </div>
   );
 }

@@ -97,7 +97,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('adjust_stock_v1 RPC —
     expect(mvt!.created_by).toBe(adminProfileId);
   });
 
-  it('admin: audit_log row inserted with actor_profile_id + payload', async () => {
+  it('admin: audit_logs row inserted with actor_id + metadata', async () => {
     const sb = jwtClient(adminToken);
     const { data, error } = await sb.rpc('adjust_stock_v1', {
       p_product_id: productId,
@@ -108,18 +108,18 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('adjust_stock_v1 RPC —
     const result = data as { movement_id: string };
 
     const admin = createClient(SUPABASE_URL, SERVICE);
-    const { data: audit } = await admin.from('audit_log')
-      .select('action, subject_table, actor_profile_id, payload')
-      .eq('subject_id', result.movement_id)
-      .order('occurred_at', { ascending: false })
+    const { data: audit } = await admin.from('audit_logs')
+      .select('action, entity_type, actor_id, metadata')
+      .eq('entity_id', result.movement_id)
+      .order('created_at', { ascending: false })
       .limit(1)
       .single();
     expect(audit?.action).toBe('stock.movement');
-    expect(audit?.subject_table).toBe('stock_movements');
-    expect(audit?.actor_profile_id).toBe(adminProfileId);
-    const payload = audit?.payload as { movement_type: string; quantity: string; reason: string };
-    expect(payload.movement_type).toBe('adjustment');
-    expect(payload.reason).toBe('Audit trail verification');
+    expect(audit?.entity_type).toBe('stock_movements');
+    expect(audit?.actor_id).toBe(adminProfileId);
+    const metadata = audit?.metadata as { movement_type: string; quantity: string; reason: string };
+    expect(metadata.movement_type).toBe('adjustment');
+    expect(metadata.reason).toBe('Audit trail verification');
   });
 
   it('idempotency: same key on retry returns idempotent_replay=true, single row', async () => {

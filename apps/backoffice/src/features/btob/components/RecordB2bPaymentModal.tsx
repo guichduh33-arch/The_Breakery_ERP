@@ -18,13 +18,17 @@ import {
   useRecordB2bPayment,
   RecordB2bPaymentError,
   type B2bPaymentMethod,
+  type RecordB2bPaymentResult,
 } from '../hooks/useRecordB2bPayment.js';
 import { useB2bCustomers } from '../hooks/useB2bCustomers.js';
+import { useB2bInvoices, type B2bInvoiceRow } from '../hooks/useB2bInvoices.js';
 
 export interface RecordB2bPaymentModalProps {
   open:    boolean;
   /** Pre-select a customer (e.g. from an Outstanding row). */
-  initialCustomerId?: string;
+  initialCustomerId?: string | undefined;
+  /** Pre-select invoices for targeted allocation (array order = allocation order). */
+  initialInvoiceIds?: string[] | undefined;
   onClose: () => void;
 }
 
@@ -37,7 +41,7 @@ const METHODS: ReadonlyArray<{ value: B2bPaymentMethod; label: string }> = [
   { value: 'store_credit', label: 'Store credit' },
 ];
 
-export function RecordB2bPaymentModal({ open, initialCustomerId, onClose }: RecordB2bPaymentModalProps): JSX.Element {
+export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceIds, onClose }: RecordB2bPaymentModalProps): JSX.Element {
   const recordMut = useRecordB2bPayment();
   const customers = useB2bCustomers();
 
@@ -57,6 +61,8 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, onClose }: Reco
   const [notes,      setNotes]            = useState<string>('');
   const [idempotencyKey, setIdempotencyKey] = useState<string>(() => crypto.randomUUID());
   const [formError, setFormError]         = useState<string | null>(null);
+  const [selectedIds, setSelectedIds]     = useState<string[]>([]);
+  const [result, setResult]               = useState<RecordB2bPaymentResult | null>(null);
 
   useEffect(() => {
     if (open) {
@@ -68,8 +74,21 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, onClose }: Reco
       setNotes('');
       setIdempotencyKey(crypto.randomUUID());
       setFormError(null);
+      setSelectedIds(initialInvoiceIds ?? []);
+      setResult(null);
     }
-  }, [open, initialCustomerId]);
+  }, [open, initialCustomerId, initialInvoiceIds]);
+
+  const invoices = useB2bInvoices(customerId, true, open && customerId !== '');
+
+  useEffect(() => {
+    if (!open || selectedIds.length === 0 || amount !== '' || !invoices.data) return;
+    const sum = invoices.data
+      .filter((r) => selectedIds.includes(r.invoice_id))
+      .reduce((acc, r) => acc + Number(r.outstanding), 0);
+    if (sum > 0) setAmount(String(sum));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, invoices.data, selectedIds]);
 
   const selectedCustomer = useMemo(
     () => customers.data?.find((c) => c.id === customerId) ?? null,
@@ -89,13 +108,27 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, onClose }: Reco
     onClose();
   }
 
+  function toggleInvoice(inv: B2bInvoiceRow): void {
+    setSelectedIds((prev) => {
+      const next = prev.includes(inv.invoice_id)
+        ? prev.filter((id) => id !== inv.invoice_id)
+        : [...prev, inv.invoice_id];
+      const sum = (invoices.data ?? [])
+        .filter((r) => next.includes(r.invoice_id))
+        .reduce((acc, r) => acc + Number(r.outstanding), 0);
+      if (next.length > 0) setAmount(String(sum));
+      else setAmount('');
+      return next;
+    });
+  }
+
   async function handleSubmit(e: FormEvent): Promise<void> {
     e.preventDefault();
     if (!canSubmit) return;
     setFormError(null);
 
     try {
-      await recordMut.mutateAsync({
+      const res = await recordMut.mutateAsync({
         customerId,
         amount: numericAmount,
         method,
@@ -103,8 +136,9 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, onClose }: Reco
         ...(paidAt.trim()    !== '' ? { paidAt }                       : {}),
         ...(notes.trim()     !== '' ? { notes: notes.trim() }          : {}),
         idempotencyKey,
+        ...(selectedIds.length > 0 ? { invoiceIds: selectedIds } : {}),
       });
-      handleClose();
+      setResult(res);
     } catch (err) {
       if (err instanceof RecordB2bPaymentError) {
         switch (err.code) {
@@ -137,6 +171,29 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, onClose }: Reco
           Record a payment received from a B2B customer. Decreases the customer's outstanding balance.
         </DialogDescription>
 
+        {result !== null ? (
+          <div className="space-y-3" data-testid="rp-success">
+            <div className="rounded-md border border-border-subtle bg-bg-overlay p-3 text-sm">
+              Payment <span className="font-mono">{result.payment_number}</span> recorded.
+            </div>
+            <ul className="divide-y divide-border-subtle rounded-md border border-border-subtle text-xs">
+              {result.allocations.map((a) => (
+                <li key={a.invoice_id} className="flex items-center justify-between px-3 py-2">
+                  <span className="font-mono">{a.invoice_id.slice(0, 8)}…</span>
+                  <span className="flex items-center gap-2">
+                    <span className="font-mono">{formatIdr(a.amount_applied)}</span>
+                    {a.fully_settled && (
+                      <span className="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-semibold text-green-700">settled</span>
+                    )}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <div className="flex justify-end">
+              <Button type="button" variant="primary" onClick={handleClose}>Done</Button>
+            </div>
+          </div>
+        ) : (
         <form onSubmit={(e) => { void handleSubmit(e); }} noValidate className="space-y-4">
           {formError !== null && (
             <div role="alert" className="rounded-md border border-red bg-red/5 p-2 text-xs text-red">
@@ -151,7 +208,7 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, onClose }: Reco
             <select
               id={customerId_}
               value={customerId}
-              onChange={(e) => setCustomerId(e.target.value)}
+              onChange={(e) => { setCustomerId(e.target.value); setSelectedIds([]); }}
               className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
               disabled={customers.isLoading}
             >
@@ -168,6 +225,49 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, onClose }: Reco
               </p>
             )}
           </div>
+
+          {customerId !== '' && (
+            <div className="space-y-1">
+              <span className="text-xs uppercase tracking-widest text-text-secondary">
+                Open invoices {selectedIds.length > 0 ? `(${selectedIds.length} selected — allocation order)` : '(none selected → FIFO)'}
+              </span>
+              {invoices.isLoading ? (
+                <p className="text-xs text-text-muted">Loading invoices…</p>
+              ) : (invoices.data ?? []).length === 0 ? (
+                <p className="text-xs text-text-muted">No open invoices for this customer.</p>
+              ) : (
+                <ul className="max-h-44 overflow-y-auto divide-y divide-border-subtle rounded-md border border-border-subtle">
+                  {(invoices.data ?? []).map((inv) => (
+                    <li key={inv.invoice_id}>
+                      <label className="flex cursor-pointer items-center justify-between gap-2 px-3 py-2 text-xs">
+                        <span className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.includes(inv.invoice_id)}
+                            onChange={() => toggleInvoice(inv)}
+                            data-testid={`rp-invoice-${inv.order_number}`}
+                          />
+                          <span className="font-mono text-text-primary">{inv.order_number}</span>
+                          <span className="text-text-muted">{inv.age_days}d</span>
+                        </span>
+                        <span className="font-mono text-text-primary">{formatIdr(Number(inv.outstanding))}</span>
+                      </label>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {selectedIds.length > 0 && amountValid && (() => {
+                const sum = (invoices.data ?? [])
+                  .filter((r) => selectedIds.includes(r.invoice_id))
+                  .reduce((acc, r) => acc + Number(r.outstanding), 0);
+                return numericAmount > sum ? (
+                  <p className="text-[10px] text-amber-500">
+                    Amount exceeds the selected invoices — the excess will be allocated FIFO across the remaining ones.
+                  </p>
+                ) : null;
+              })()}
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
@@ -252,6 +352,7 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, onClose }: Reco
             </Button>
           </div>
         </form>
+        )}
       </DialogContent>
     </Dialog>
   );

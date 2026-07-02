@@ -60,7 +60,7 @@ vi.mock('@/lib/supabase.js', () => {
         return Promise.resolve(out ?? {
           data: {
             payment_id: 'pay-1', payment_number: 'BP-2026-0001',
-            allocation: [], je_id: 'je-1',
+            allocation: [], allocations: [], je_id: 'je-1',
             customer_balance_after: 150000, idempotent_replay: false,
           },
           error: null,
