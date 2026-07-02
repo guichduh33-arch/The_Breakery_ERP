@@ -137,6 +137,8 @@ export type PermissionCode =
   | 'accounting.tb.read'
   | 'accounting.je.create_manual'
   | 'accounting.period.close'
+  // Session 54 — Annual close (seeded by 20260710000079)
+  | 'accounting.year.close'
   // Session 29 / Wave 1.D — Z-Reports
   | 'zreports.read'
   | 'zreports.sign'
