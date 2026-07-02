@@ -53,7 +53,12 @@ BEGIN
   SELECT id INTO v_cat FROM categories WHERE deleted_at IS NULL LIMIT 1;
 
   -- orders_session_id_required_for_pos : created_via='pos' requires a real session_id.
-  INSERT INTO pos_sessions (opened_by, opening_cash, status) VALUES (v_prof, 0, 'open')
+  -- status='closed' (not 'open') : one_open_session_per_user is a partial EXCLUDE
+  -- constraint scoped to status='open' — each DO block below runs in the SAME
+  -- transaction and would otherwise collide on the same manager's opened_by.
+  -- We never exercise session-open business logic here, only the FK, so 'closed'
+  -- is correct and side-effect-free.
+  INSERT INTO pos_sessions (opened_by, opening_cash, status) VALUES (v_prof, 0, 'closed')
   RETURNING id INTO v_sess;
 
   INSERT INTO products (name, sku, category_id, retail_price, unit, cost_price)
@@ -105,7 +110,12 @@ BEGIN
   SELECT id INTO v_cat FROM categories WHERE deleted_at IS NULL LIMIT 1;
 
   -- orders_session_id_required_for_pos : created_via='pos' requires a real session_id.
-  INSERT INTO pos_sessions (opened_by, opening_cash, status) VALUES (v_prof, 0, 'open')
+  -- status='closed' (not 'open') : one_open_session_per_user is a partial EXCLUDE
+  -- constraint scoped to status='open' — each DO block below runs in the SAME
+  -- transaction and would otherwise collide on the same manager's opened_by.
+  -- We never exercise session-open business logic here, only the FK, so 'closed'
+  -- is correct and side-effect-free.
+  INSERT INTO pos_sessions (opened_by, opening_cash, status) VALUES (v_prof, 0, 'closed')
   RETURNING id INTO v_sess;
 
   INSERT INTO products (name, sku, category_id, retail_price, unit, cost_price)
@@ -155,7 +165,12 @@ BEGIN
   SELECT id INTO v_cat FROM categories WHERE deleted_at IS NULL LIMIT 1;
 
   -- orders_session_id_required_for_pos : created_via='pos' requires a real session_id.
-  INSERT INTO pos_sessions (opened_by, opening_cash, status) VALUES (v_prof, 0, 'open')
+  -- status='closed' (not 'open') : one_open_session_per_user is a partial EXCLUDE
+  -- constraint scoped to status='open' — each DO block below runs in the SAME
+  -- transaction and would otherwise collide on the same manager's opened_by.
+  -- We never exercise session-open business logic here, only the FK, so 'closed'
+  -- is correct and side-effect-free.
+  INSERT INTO pos_sessions (opened_by, opening_cash, status) VALUES (v_prof, 0, 'closed')
   RETURNING id INTO v_sess;
 
   INSERT INTO products (name, sku, category_id, retail_price, unit, cost_price)
