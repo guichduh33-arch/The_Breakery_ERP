@@ -14,7 +14,8 @@ import { Link } from 'react-router-dom';
 import {
   BarChart3, PieChart, Users, Boxes, Shield, Coins, Scale, Banknote, Layers3,
   Calendar, Clock, FileSpreadsheet, ListChecks, Receipt, ShoppingCart, Truck,
-  AlertTriangle, TrendingUp, Clock4, GitCommitHorizontal, type LucideIcon,
+  AlertTriangle, TrendingUp, Clock4, GitCommitHorizontal,
+  LineChart, Sparkles, Megaphone, Cake, type LucideIcon,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, SectionLabel } from '@breakery/ui';
 
@@ -85,6 +86,16 @@ const SECTIONS: ReportSection[] = [
       { to: 'staff-performance',    title: 'Staff Performance',    blurb: 'Orders, revenue and performance per staff.',                       icon: Users },
       { to: 'production-report',    title: 'Production Report',    blurb: 'Production quantities, values and costs.',                          icon: BarChart3 },
       { to: 'production-efficiency', title: 'Production Efficiency', blurb: 'Waste rate by product and daily trend.',                            icon: TrendingUp },
+    ],
+  },
+  {
+    id: 'marketing',
+    title: 'Marketing',
+    cards: [
+      { to: '../marketing/cohort',    title: 'Cohorts',   blurb: 'Retention cohorts by first-order month.',      icon: LineChart },
+      { to: '../marketing/segments',  title: 'Segments',  blurb: 'RFM customer segments & spend distribution.',   icon: Sparkles },
+      { to: '../marketing/promo-roi', title: 'Promo ROI', blurb: 'Redemptions, discount cost & incremental lift.', icon: Megaphone },
+      { to: '../marketing/birthday',  title: 'Birthdays', blurb: 'Upcoming customer birthdays for outreach.',      icon: Cake },
     ],
   },
   {

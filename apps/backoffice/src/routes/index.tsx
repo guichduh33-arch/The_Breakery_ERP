@@ -519,7 +519,14 @@ export function AppRoutes() {
             </PermissionGate>
           }
         />
-        <Route path="accounting" element={<AccountingIndexPage />} />
+        <Route
+          path="accounting"
+          element={
+            <PermissionGate required="accounting.read">
+              <AccountingIndexPage />
+            </PermissionGate>
+          }
+        />
         <Route
           path="accounting/chart-of-accounts"
           element={
