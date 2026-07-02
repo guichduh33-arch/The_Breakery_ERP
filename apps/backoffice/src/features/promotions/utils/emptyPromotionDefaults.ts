@@ -38,6 +38,8 @@ function baseValues(): PromotionFormValues {
     day_of_week_mask: 127,
     start_hour: null,
     end_hour: null,
+    max_uses: null,
+    max_uses_per_customer: null,
     priority: 50,
     stackable_with_promo: false,
     stackable_with_manual: true,

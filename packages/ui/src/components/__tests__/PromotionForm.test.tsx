@@ -173,6 +173,62 @@ describe('validatePromotion', () => {
     });
     expect(Object.keys(errs)).toHaveLength(0);
   });
+
+  // --- Usage caps (Session 57) -------------------------------------------
+  it('accepts null usage caps (unlimited)', () => {
+    const errs = validatePromotion({
+      ...emptyPromotionValues(),
+      name: 'Uncapped',
+      slug: 'uncapped',
+      type: 'percentage',
+      scope: 'cart',
+      discount_value: 10,
+      max_uses: null,
+      max_uses_per_customer: null,
+    });
+    expect(errs.max_uses).toBeUndefined();
+    expect(errs.max_uses_per_customer).toBeUndefined();
+  });
+
+  it('accepts positive usage caps', () => {
+    const errs = validatePromotion({
+      ...emptyPromotionValues(),
+      name: 'Capped',
+      slug: 'capped',
+      type: 'percentage',
+      scope: 'cart',
+      discount_value: 10,
+      max_uses: 100,
+      max_uses_per_customer: 1,
+    });
+    expect(Object.keys(errs)).toHaveLength(0);
+  });
+
+  it('rejects max_uses <= 0', () => {
+    const errs = validatePromotion({
+      ...emptyPromotionValues(),
+      name: 'Bad cap',
+      slug: 'bad-cap',
+      type: 'percentage',
+      scope: 'cart',
+      discount_value: 10,
+      max_uses: 0,
+    });
+    expect(errs.max_uses).toBeDefined();
+  });
+
+  it('rejects max_uses_per_customer <= 0', () => {
+    const errs = validatePromotion({
+      ...emptyPromotionValues(),
+      name: 'Bad per-cust cap',
+      slug: 'bad-per-cust',
+      type: 'percentage',
+      scope: 'cart',
+      discount_value: 10,
+      max_uses_per_customer: -1,
+    });
+    expect(errs.max_uses_per_customer).toBeDefined();
+  });
 });
 
 describe('PromotionForm', () => {
@@ -287,6 +343,48 @@ describe('PromotionForm', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: /Cancel/i }));
     expect(onCancel).toHaveBeenCalledTimes(1);
+  });
+
+  it('carries usage caps through onSubmit when valid', async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    renderForm(
+      {
+        name: 'Capped promo',
+        slug: 'capped-promo',
+        type: 'percentage',
+        scope: 'cart',
+        discount_value: 10,
+        max_uses: 50,
+        max_uses_per_customer: 2,
+      },
+      onSubmit,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Create promotion/i }));
+    await Promise.resolve();
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    const arg = onSubmit.mock.calls[0]?.[0] as PromotionFormValues;
+    expect(arg.max_uses).toBe(50);
+    expect(arg.max_uses_per_customer).toBe(2);
+  });
+
+  it('blocks submit when a usage cap is <= 0', async () => {
+    const onSubmit = vi.fn();
+    renderForm(
+      {
+        name: 'Bad cap',
+        slug: 'bad-cap',
+        type: 'percentage',
+        scope: 'cart',
+        discount_value: 10,
+        max_uses: 0,
+      },
+      onSubmit,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Create promotion/i }));
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(
+      await screen.findByText(/Please fix the errors above before saving/i),
+    ).toBeInTheDocument();
   });
 
   it('clears scope when switching from percentage to free_product (scope must be null per P2)', () => {
