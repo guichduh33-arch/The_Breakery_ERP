@@ -55,7 +55,7 @@ export interface RecordB2bPaymentResult {
   idempotent_replay:      boolean;
 }
 
-function classify(message: string): RecordB2bPaymentErrorCode {
+export function classify(message: string): RecordB2bPaymentErrorCode {
   if (message.includes('overpayment_not_allowed')) return 'overpayment_not_allowed';
   if (message.includes('customer_not_b2b'))        return 'customer_not_b2b';
   if (message.includes('customer_not_found'))      return 'customer_not_found';
@@ -63,6 +63,10 @@ function classify(message: string): RecordB2bPaymentErrorCode {
   if (message.includes('permission_denied'))       return 'permission_denied';
   if (message.includes('not_authenticated'))       return 'not_authenticated';
   if (message.includes('fiscal_period'))           return 'fiscal_period_closed';
+  // S54 fail-closed guard: 'period_undefined: no fiscal period covers <date>'
+  if (message.includes('period_undefined') || message.includes('no fiscal period')) {
+    return 'fiscal_period_closed';
+  }
   return 'unknown';
 }
 

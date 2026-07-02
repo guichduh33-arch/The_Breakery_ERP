@@ -119,7 +119,11 @@ export function CreateManualJEModal({ onClose }: CreateManualJEModalProps): JSX.
       { description: description.trim(), entry_date: entryDate, lines: rpcLines, manager_pin: pin },
       {
         onSuccess: () => onClose(),
-        onError:   (e) => setError(e.message),
+        onError:   (e) => setError(
+          e.message.includes('period_undefined')
+            ? 'No fiscal period covers this date — run the annual close to seed the next year.'
+            : e.message,
+        ),
       },
     );
   }

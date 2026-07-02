@@ -73,7 +73,7 @@ export interface CreateB2bOrderResult {
   idempotent_replay: boolean;
 }
 
-function classify(message: string): CreateB2bOrderErrorCode {
+export function classify(message: string): CreateB2bOrderErrorCode {
   if (message.includes('credit_limit_exceeded'))   return 'credit_limit_exceeded';
   if (message.includes('insufficient_stock'))      return 'insufficient_stock';
   if (message.includes('product_not_found'))       return 'product_not_found';
@@ -86,6 +86,10 @@ function classify(message: string): CreateB2bOrderErrorCode {
   if (message.includes('permission_denied'))       return 'permission_denied';
   if (message.includes('not_authenticated'))       return 'not_authenticated';
   if (message.includes('fiscal_period'))           return 'fiscal_period_closed';
+  // S54 fail-closed guard: 'period_undefined: no fiscal period covers <date>'
+  if (message.includes('period_undefined') || message.includes('no fiscal period')) {
+    return 'fiscal_period_closed';
+  }
   return 'unknown';
 }
 
