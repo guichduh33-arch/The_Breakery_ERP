@@ -26,9 +26,9 @@ import { useB2bInvoices, type B2bInvoiceRow } from '../hooks/useB2bInvoices.js';
 export interface RecordB2bPaymentModalProps {
   open:    boolean;
   /** Pre-select a customer (e.g. from an Outstanding row). */
-  initialCustomerId?: string;
+  initialCustomerId?: string | undefined;
   /** Pre-select invoices for targeted allocation (array order = allocation order). */
-  initialInvoiceIds?: string[];
+  initialInvoiceIds?: string[] | undefined;
   onClose: () => void;
 }
 
