@@ -100,6 +100,38 @@ jobs:
         run: pnpm lint
         continue-on-error: true
 
+      # S57 / P2.5 — lint-ratchet (BLOCKING). The full-repo lint step above stays
+      # non-blocking (250+ pre-existing tech-debt errors). This step enforces a
+      # clean bill on ONLY the .ts/.tsx files this PR touches, so new code cannot
+      # add lint debt while the backlog is worked down. Zero touched files → no-op
+      # pass.
+      #
+      # Scope note: restricted to `**/src/**` — this mirrors exactly what
+      # `pnpm lint` covers (each workspace runs `eslint src`). Files outside a
+      # package `src/` (supabase/functions, supabase/tests, root/config .ts,
+      # tools/) are NOT in any tsconfig reachable by the root projectService, so
+      # linting them yields "not found by the project service" parse errors —
+      # they were never in lint scope and must stay out of the ratchet too.
+      # types.generated.ts is machine-generated and excluded. Deletions are
+      # filtered out (ACMR) so we never lint a path that no longer exists.
+      - name: Lint ratchet (blocking, changed files only)
+        run: |
+          set -e
+          if [ -n "${{ github.base_ref }}" ]; then
+            base="origin/${{ github.base_ref }}"
+            git fetch origin "${{ github.base_ref }}" --depth=1 || true
+          else
+            base="HEAD~1"
+          fi
+          changed=$(git diff --name-only --diff-filter=ACMR "$base"...HEAD -- \
+            '**/src/**/*.ts' '**/src/**/*.tsx' ':(exclude)**/*.generated.ts' || true)
+          if [ -z "$changed" ]; then
+            echo "No changed src .ts/.tsx files in this diff — lint ratchet skipped."
+            exit 0
+          fi
+          printf '%s\n' "$changed" | sed 's/^/  linting: /'
+          printf '%s\n' "$changed" | xargs -r pnpm exec eslint
+
       - name: Typecheck
         run: pnpm typecheck
 
