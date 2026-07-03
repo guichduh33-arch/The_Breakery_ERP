@@ -13,9 +13,21 @@ name: Playwright E2E
 #
 # See .github/workflows/STAGING_SETUP.md for provisioning steps.
 
+# Staging environment provisioning status: NOT SET UP
+# ────────────────────────────────────────────────────────────────────────────
+# Automatic nightly runs (cron 22:00 UTC) are DISABLED because:
+#  1. Staging frontend URLs (STAGING_POS_URL, STAGING_BO_URL) are not set
+#  2. Required E2E secrets (E2E_PIN_CASHIER, E2E_PIN_ADMIN, E2E_KIOSK_JWT) are not provisioned
+#
+# To reactivate:
+#  1. Follow the provisioning checklist in .github/workflows/STAGING_SETUP.md
+#  2. Ensure STAGING_POS_URL and STAGING_BO_URL are hosted and accessible
+#  3. Restore the 'schedule' trigger below with the cron expression
+#
+# Until then, workflow_dispatch (manual trigger) remains enabled for testing.
+# ────────────────────────────────────────────────────────────────────────────
+
 on:
-  schedule:
-    - cron: '0 22 * * *'  # 22:00 UTC = 05:00 ICT next day
   workflow_dispatch:
 
 jobs:
