@@ -720,11 +720,16 @@ DECLARE
   v_kitchen UUID;
   v_pastry UUID;
 BEGIN
-  SELECT id INTO v_main    FROM sections WHERE code = 'MAIN_WAREHOUSE';
-  SELECT id INTO v_kitchen FROM sections WHERE code = 'PRODUCTION_KITCHEN';
-  SELECT id INTO v_pastry  FROM sections WHERE code = 'PASTRY';
+  -- Resolve three distinct ACTIVE sections for the transfer tests.
+  -- create_internal_transfer_v1 requires from/to sections to be is_active=true
+  -- AND deleted_at IS NULL. PRODUCTION_KITCHEN and MAIN_KITCHEN have both been
+  -- deactivated on the dev DB (Spec B-1 station rework) — the kitchen role is
+  -- served by the ACTIVE station section STN_HOT_KITCHEN instead.
+  SELECT id INTO v_main    FROM sections WHERE code = 'MAIN_WAREHOUSE'  AND is_active = true AND deleted_at IS NULL;
+  SELECT id INTO v_kitchen FROM sections WHERE code = 'STN_HOT_KITCHEN' AND is_active = true AND deleted_at IS NULL;
+  SELECT id INTO v_pastry  FROM sections WHERE code = 'PASTRY'          AND is_active = true AND deleted_at IS NULL;
   IF v_main IS NULL OR v_kitchen IS NULL OR v_pastry IS NULL THEN
-    RAISE EXCEPTION 'Seeded sections MAIN_WAREHOUSE / PRODUCTION_KITCHEN / PASTRY not found — run pnpm db:reset first';
+    RAISE EXCEPTION 'Active seeded sections MAIN_WAREHOUSE / STN_HOT_KITCHEN / PASTRY not found — run pnpm db:reset first';
   END IF;
   PERFORM set_config('breakery.section_warehouse_id', v_main::text,    false);
   PERFORM set_config('breakery.section_kitchen_id',   v_kitchen::text, false);
@@ -1101,6 +1106,12 @@ BEGIN
   DELETE FROM section_stock
    WHERE product_id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid
      AND section_id IN (v_from, v_to);
+  -- S58: create_internal_transfer_v1(send_directly) now FOR UPDATE-checks the
+  -- FROM-section availability (insufficient_section_stock) — seed it explicitly
+  -- (the old fixture relied on implicit 0 + negative section_stock).
+  INSERT INTO section_stock (section_id, product_id, quantity, unit)
+  VALUES (v_from, '99999999-aaaa-bbbb-cccc-111111111111'::uuid, 50,
+          (SELECT unit FROM products WHERE id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid));
 
   SELECT create_internal_transfer_v1(
     v_from, v_to,
@@ -1138,12 +1149,13 @@ BEGIN
       AND v_mvt_count = 2
       AND v_out_qty = -5.000
       AND v_in_qty  =  5.000
-      AND v_from_delta = -5.000
+      -- Seeded from-section = 50 → -5 delta lands at 45 ; to-section created at +5.
+      AND v_from_delta = 45.000
       AND v_to_delta   =  5.000
     THEN 'true' ELSE 'false' END, false);
 END $t33$;
 SELECT ok(current_setting('breakery.t33_pass')::boolean,
-  'T33: create_internal_transfer_v1(send_directly=true) emits transfer_out -5 + transfer_in +5 + section_stock deltas');
+  'T33: create_internal_transfer_v1(send_directly=true) emits transfer_out -5 + transfer_in +5 + section_stock deltas (50→45 / 0→5)');
 
 -- =========================================================================
 -- T34 — receive_internal_transfer_v1 happy path:
@@ -1172,6 +1184,10 @@ BEGIN
   DELETE FROM section_stock
    WHERE product_id = '99999999-aaaa-bbbb-cccc-222222222222'::uuid
      AND section_id IN (v_from, v_to);
+  -- S58: receive_internal_transfer_v1 now checks FROM-section availability — seed it.
+  INSERT INTO section_stock (section_id, product_id, quantity, unit)
+  VALUES (v_from, '99999999-aaaa-bbbb-cccc-222222222222'::uuid, 50,
+          (SELECT unit FROM products WHERE id = '99999999-aaaa-bbbb-cccc-222222222222'::uuid));
 
   SELECT create_internal_transfer_v1(
     v_from, v_to,
@@ -1210,12 +1226,13 @@ BEGIN
       AND v_mvt_count = 2
       AND v_out_qty = -10.000
       AND v_in_qty  =  10.000
-      AND v_from_delta = -10.000
-      AND v_to_delta   =  10.000
+      -- Seeded from-section = 50 → -10 delta lands at 40 ; to-section created at +10.
+      AND v_from_delta = 40.000
+      AND v_to_delta   = 10.000
     THEN 'true' ELSE 'false' END, false);
 END $t34$;
 SELECT ok(current_setting('breakery.t34_pass')::boolean,
-  'T34: receive_internal_transfer_v1 happy path sets status=received + emits 2 movements + updates section_stock');
+  'T34: receive_internal_transfer_v1 happy path sets status=received + emits 2 movements + section_stock deltas (50→40 / 0→10)');
 
 -- =========================================================================
 -- T35 — receive_internal_transfer_v1 on cancelled transfer ->
@@ -1289,6 +1306,10 @@ BEGIN
   DELETE FROM section_stock
    WHERE product_id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid
      AND section_id IN (v_from, v_to);
+  -- S58: receive checks FROM-section availability — seed it.
+  INSERT INTO section_stock (section_id, product_id, quantity, unit)
+  VALUES (v_from, '99999999-aaaa-bbbb-cccc-111111111111'::uuid, 40,
+          (SELECT unit FROM products WHERE id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid));
 
   SELECT create_internal_transfer_v1(
     v_from, v_to,
@@ -1393,6 +1414,12 @@ BEGIN
   PERFORM pg_temp.set_jwt_uid(v_admin);
   UPDATE products SET current_stock = 30
     WHERE id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid;
+  -- S58: receive checks FROM-section availability — make sure the warehouse
+  -- section holds enough for this 2-unit transfer (self-contained fixture).
+  INSERT INTO section_stock (section_id, product_id, quantity, unit)
+  VALUES (v_from, '99999999-aaaa-bbbb-cccc-111111111111'::uuid, 30,
+          (SELECT unit FROM products WHERE id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid))
+  ON CONFLICT (section_id, product_id) DO UPDATE SET quantity = 30;
 
   SELECT create_internal_transfer_v1(
     v_from, v_to,
