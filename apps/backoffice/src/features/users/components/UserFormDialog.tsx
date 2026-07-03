@@ -35,8 +35,8 @@ export function UserFormDialog({ onClose, onCreated, roles }: UserFormDialogProp
       setError('Full name must be at least 2 characters.');
       return;
     }
-    if (!/^[0-9]{4,8}$/.test(pin)) {
-      setError('PIN must be 4 to 8 digits.');
+    if (!/^[0-9]{6}$/.test(pin)) {
+      setError('PIN must be exactly 6 digits.');
       return;
     }
     setError(null);
@@ -114,7 +114,7 @@ export function UserFormDialog({ onClose, onCreated, roles }: UserFormDialogProp
 
           <div>
             <label htmlFor="usr-pin" className="block text-xs uppercase tracking-wider text-text-secondary mb-1">
-              PIN (4-8 digits)
+              PIN (exactly 6 digits)
             </label>
             <input
               id="usr-pin"
@@ -123,8 +123,8 @@ export function UserFormDialog({ onClose, onCreated, roles }: UserFormDialogProp
               type="password"
               inputMode="numeric"
               className="w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded font-mono"
-              placeholder="••••"
-              maxLength={8}
+              placeholder="••••••"
+              maxLength={6}
             />
             <p className="text-xs text-text-secondary mt-1">
               The PIN is bcrypt-hashed server-side. Communicate it securely to the user.

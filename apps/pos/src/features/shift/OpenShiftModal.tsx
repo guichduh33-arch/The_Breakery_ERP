@@ -46,9 +46,10 @@ export interface OpenShiftModalProps {
   /**
    * Optional PIN verifier — when present, step 1 (PIN) gates the cash
    * step on a successful PIN. When omitted, the PIN step still appears
-   * (per ref 11) but accepts any 4-6 digit PIN. Default behaviour kept
-   * lenient so the existing seed/dev flow continues to work without
-   * extra wiring.
+   * (per ref 11) but accepts any 6-digit PIN (S58: aligned with the
+   * project-wide exactly-6 rule, was a stale "4-6" lenient check).
+   * Default behaviour kept lenient so the existing seed/dev flow continues
+   * to work without extra wiring.
    */
   verifyPin?: (pin: string) => Promise<{ ok: true } | { ok: false; error: string }>;
   /** Optional close handler — when omitted, the modal cannot be dismissed
@@ -89,8 +90,8 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
 
   async function handlePinSubmit(pin: string): Promise<void> {
     setPinError(null);
-    if (pin.length < 4 || pin.length > 6) {
-      setPinError('PIN must be 4-6 digits.');
+    if (pin.length !== 6) {
+      setPinError('PIN must be 6 digits.');
       return;
     }
     if (!verifyPin) {

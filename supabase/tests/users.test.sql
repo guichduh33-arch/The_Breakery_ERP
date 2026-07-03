@@ -21,7 +21,7 @@ BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-SELECT plan(26);
+SELECT plan(28);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures : pin a seeded SUPER_ADMIN id to act as caller when needed.
@@ -113,17 +113,35 @@ SELECT throws_ok(
 );
 
 SELECT throws_ok(
-  $$SELECT create_user_v1('USR_T2','Test User','MANAGER','abcd')$$,
+  $$SELECT create_user_v1('USR_T2','Test User','MANAGER','abcdef')$$,
   '22023',
   NULL,
   'T_USR_02e non-numeric pin refused'
 );
 
+-- Pin argument must be a *valid* 6-digit pin here so the flow reaches the
+-- role-existence check (pin validation runs before the role check in the
+-- function body) — 'NOT_A_ROLE' is what's under test, not the pin.
 SELECT throws_ok(
-  $$SELECT create_user_v1('USR_T2','Test User','NOT_A_ROLE','1234')$$,
+  $$SELECT create_user_v1('USR_T2','Test User','NOT_A_ROLE','123456')$$,
   '23503',
   NULL,
   'T_USR_02f unknown role refused'
+);
+
+-- S58 (Vague 0, T3c) : pin must be EXACTLY 6 digits (was 4-8).
+SELECT throws_ok(
+  $$SELECT create_user_v1('USR_T2','Test User','MANAGER','12345')$$,
+  '22023',
+  NULL,
+  'T_USR_02g 5-digit pin refused (exactly-6 rule)'
+);
+
+SELECT throws_ok(
+  $$SELECT create_user_v1('USR_T2','Test User','MANAGER','1234567')$$,
+  '22023',
+  NULL,
+  'T_USR_02h 7-digit pin refused (exactly-6 rule)'
 );
 
 -- =============================================================================
