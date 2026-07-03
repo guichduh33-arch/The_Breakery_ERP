@@ -80,7 +80,9 @@ SELECT plan(5);
 
 SELECT is((SELECT line_total::int FROM order_items WHERE order_id=current_setting('csp.order1')::uuid), 48000,
   'T1 combo surcharge billed: 40000 base + 8000 Large surcharge = 48000');
-SELECT is(current_setting('csp.total1')::int, 48000, 'T1b order total reflects the surcharge-inclusive combo price');
+-- S58: the v17 envelope serializes total with decimals ('48000.00') — cast via
+-- numeric first (value-preserving; a wrong total still fails the assert).
+SELECT is(current_setting('csp.total1')::numeric::int, 48000, 'T1b order total reflects the surcharge-inclusive combo price');
 
 SELECT throws_ok($q$ SELECT complete_order_with_payment_v17(
     p_session_id := current_setting('csp.sess')::uuid, p_order_type := 'take_out'::order_type,
@@ -97,7 +99,7 @@ SELECT throws_ok($q$ SELECT complete_order_with_payment_v17(
     p_payment := '{"method":"cash","amount":40000,"cash_received":40000,"change_given":0}'::jsonb) $q$,
   '23514', NULL, 'T3 required "Size" group unselected (min_select violated) -> combo_group_violation');
 
-SELECT is(current_setting('csp.total4')::int, 20000, 'T4 non-combo sale total unaffected (regression vs pre-S57 v16)');
+SELECT is(current_setting('csp.total4')::numeric::int, 20000, 'T4 non-combo sale total unaffected (regression vs pre-S57 v16)');
 
 SELECT * FROM finish();
 ROLLBACK;
