@@ -69,12 +69,25 @@ jobs:
   # Requires SUPABASE_SERVICE_ROLE_KEY repository secret. Tests are env-gated
   # (they skip gracefully when env vars are absent), but we fail fast here to
   # ensure the secret is present and the suite actually runs.
+  #
+  # S58 fix (T4): the test files read VITE_SUPABASE_URL (~60 files) with a hard
+  # fallback to http://127.0.0.1:54321 (retired local Docker stack). Exporting
+  # only SUPABASE_URL left them dialing localhost — the real cause of the
+  # nightly "TypeError: fetch failed / ECONNREFUSED 127.0.0.1:54321".
+  # VITE_SUPABASE_ANON_KEY / SUPABASE_ANON_KEY (publishable key) are wired to
+  # the optional SUPABASE_ANON_KEY secret — set it once via
+  #   gh secret set SUPABASE_ANON_KEY --body "<anon key: dashboard > API>"
+  # to unlock the ~45 anon-path tests (while absent they fail with 401s,
+  # not fetch errors).
   live-rpc-vitest:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
       SUPABASE_URL: https://ikcyvlovptebroadgtvd.supabase.co
+      VITE_SUPABASE_URL: https://ikcyvlovptebroadgtvd.supabase.co
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
     steps:
       - uses: actions/checkout@v4
 
