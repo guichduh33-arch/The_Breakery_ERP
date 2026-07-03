@@ -35,7 +35,7 @@ function QuantityStepperInner({
       <button
         type="button"
         aria-label="Decrease"
-        className="h-8 w-8 rounded-md bg-bg-input border border-border-subtle hover:bg-bg-overlay disabled:opacity-50"
+        className="h-11 w-11 rounded-md bg-bg-input border border-border-subtle hover:bg-bg-overlay disabled:opacity-50"
         onClick={handleDecrement}
         disabled={value <= min}
       >
@@ -45,7 +45,7 @@ function QuantityStepperInner({
       <button
         type="button"
         aria-label="Increase"
-        className="h-8 w-8 rounded-md bg-bg-input border border-border-subtle hover:bg-bg-overlay disabled:opacity-50"
+        className="h-11 w-11 rounded-md bg-bg-input border border-border-subtle hover:bg-bg-overlay disabled:opacity-50"
         onClick={handleIncrement}
         disabled={value >= max}
       >

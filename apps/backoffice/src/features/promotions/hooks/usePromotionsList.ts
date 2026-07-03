@@ -59,6 +59,9 @@ const SELECT_COLS = [
   'day_of_week_mask',
   'start_hour',
   'end_hour',
+  // Session 57 — usage caps (NULL = unlimited)
+  'max_uses',
+  'max_uses_per_customer',
   'priority',
   'stackable_with_promo',
   'stackable_with_manual',

@@ -40,6 +40,7 @@ const ALL_NAMED_SUBGROUPS = [
   'Finance::Accounting',
   'Reports::Sales reports',
   'Reports::Inventory reports',
+  'Reports::Purchase reports',
   'Reports::Financial reports',
   'Reports::Marketing reports',
   'Reports::Audit',
@@ -93,6 +94,8 @@ const ALL_PERMS = [
   'lan.devices.read',
   'users.read',
   'rbac.read',
+  'display.read',
+  'settings.security.manage',
 ];
 
 function setAuthState(perms: string[]) {
@@ -175,6 +178,44 @@ describe('Sidebar', () => {
     expect(screen.getByRole('link', { name: /RBAC Editor/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Permissions Matrix/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Cash Treasury/i })).toBeInTheDocument();
+  });
+
+  it('renders the 4 sidebar↔hub parity reports (S57 D-D2)', () => {
+    openAllTopGroups();
+    localStorage.setItem(SUBGROUP_STORAGE_KEY, JSON.stringify(ALL_NAMED_SUBGROUPS));
+    setAuthState(ALL_PERMS);
+    renderWith(<Sidebar />);
+    expect(screen.getByRole('link', { name: /^Production Yield$/i })).toHaveAttribute(
+      'href',
+      '/backoffice/reports/production-yield',
+    );
+    expect(screen.getByRole('link', { name: /^Margin Watch$/i })).toHaveAttribute(
+      'href',
+      '/backoffice/inventory/production/margin-watch',
+    );
+    expect(screen.getByRole('link', { name: /^Cost & Spend Analytics$/i })).toHaveAttribute(
+      'href',
+      '/backoffice/reports/cost-spend',
+    );
+    expect(screen.getByRole('link', { name: /^Operating Expenses$/i })).toHaveAttribute(
+      'href',
+      '/backoffice/reports/operating-expenses',
+    );
+  });
+
+  it('renders the Security link under Settings gated on settings.security.manage (S57 D-D2)', () => {
+    openAllTopGroups();
+    setAuthState(ALL_PERMS);
+    renderWith(<Sidebar />);
+    const security = screen.getByRole('link', { name: /^Security$/i });
+    expect(security).toHaveAttribute('href', '/backoffice/settings/security');
+  });
+
+  it('hides the Security link when settings.security.manage is missing (S57 D-D2)', () => {
+    openAllTopGroups();
+    setAuthState(ALL_PERMS.filter((p) => p !== 'settings.security.manage'));
+    renderWith(<Sidebar />);
+    expect(screen.queryByRole('link', { name: /^Security$/i })).toBeNull();
   });
 
   it('renders Incoming / Transfers / Expiring stock links under Stock Management (audit M6)', () => {
@@ -284,7 +325,7 @@ describe('Sidebar', () => {
     fireEvent.click(screen.getByRole('button', { name: /^Devices/i }));
     const raw = localStorage.getItem(SUBGROUP_STORAGE_KEY);
     expect(raw).not.toBeNull();
-    const stored = JSON.parse(raw!);
+    const stored = JSON.parse(raw!) as string[];
     expect(stored).toContain('Settings::Devices');
   });
 
@@ -334,7 +375,7 @@ describe('Sidebar', () => {
     expect(salesBtn).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByRole('link', { name: /^Orders$/i })).toBeInTheDocument();
 
-    const stored = JSON.parse(localStorage.getItem(GROUP_STORAGE_KEY)!);
+    const stored = JSON.parse(localStorage.getItem(GROUP_STORAGE_KEY)!) as string[];
     expect(stored).toContain('Sales');
   });
 

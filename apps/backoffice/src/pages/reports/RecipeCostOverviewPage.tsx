@@ -8,7 +8,7 @@
 // Pattern source: ProductionYieldPage (S15) — same ReportPage + DateRangePicker
 // + CSV idioms.
 
-import { useMemo, useState, type JSX } from 'react';
+import { useMemo, type JSX } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { toLocalDateStr, buildCsv, downloadCsv, type CsvColumn } from '@breakery/domain';
@@ -17,6 +17,7 @@ import { supabase } from '@/lib/supabase.js';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
+import { useUrlState } from '@/hooks/useUrlState.js';
 
 interface OverviewRow {
   product_id:    string;
@@ -58,8 +59,8 @@ const OVERVIEW_CSV_COLUMNS: CsvColumn<OverviewRow>[] = [
 
 export function RecipeCostOverviewPage(): JSX.Element {
   const navigate = useNavigate();
-  const [start, setStart] = useState<string>(defaultStart);
-  const [end,   setEnd]   = useState<string>(() => toLocalDateStr(new Date()));
+  const [start, setStart] = useUrlState('start', defaultStart());
+  const [end,   setEnd]   = useUrlState('end', toLocalDateStr(new Date()));
 
   const q = useQuery<OverviewRow[]>({
     queryKey: ['reports', 'recipe-cost', 'overview', start, end] as const,
@@ -71,7 +72,7 @@ export function RecipeCostOverviewPage(): JSX.Element {
         // omit p_product_id → PostgreSQL DEFAULT NULL → overview mode
       });
       if (error) throw new Error(error.message);
-      return (data ?? []) as unknown as OverviewRow[];
+      return data ?? [];
     },
   });
 
@@ -94,6 +95,12 @@ export function RecipeCostOverviewPage(): JSX.Element {
     <ReportPage
       title="Recipe Cost Overview"
       subtitle="Delta in the selected window. Click a row for the full version timeline."
+      isEmpty={!q.isLoading && !q.error && rows.length === 0}
+      emptyState={{
+        title: 'No cost movement',
+        description: 'No recipe cost movement in the selected window.',
+        'data-testid': 'empty-overview',
+      }}
       filters={
         <>
           <DateRangePicker
@@ -120,12 +127,7 @@ export function RecipeCostOverviewPage(): JSX.Element {
       )}
       {q.error && (
         <p role="alert" className="text-sm text-red-600">
-          {(q.error as Error).message}
-        </p>
-      )}
-      {!q.isLoading && !q.error && rows.length === 0 && (
-        <p className="text-sm text-text-secondary" data-testid="empty-overview">
-          No recipe cost movement in the selected window.
+          {(q.error).message}
         </p>
       )}
       {rows.length > 0 && (

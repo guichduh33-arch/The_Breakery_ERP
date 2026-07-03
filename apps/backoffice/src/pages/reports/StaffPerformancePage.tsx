@@ -1,12 +1,12 @@
 // apps/backoffice/src/pages/reports/StaffPerformancePage.tsx
 // S40 Wave B1 — Staff orders / revenue / voids / refunds / discounts breakdown.
 
-import { useState } from 'react';
 import { toLocalDateStr } from '@breakery/domain';
 import type { CsvColumn } from '@breakery/domain';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
+import { useUrlState } from '@/hooks/useUrlState.js';
 import {
   useStaffPerformance,
   type StaffPerformanceRow,
@@ -35,8 +35,8 @@ function defaultStart(): string {
 }
 
 export default function StaffPerformancePage() {
-  const [start, setStart] = useState<string>(defaultStart);
-  const [end,   setEnd]   = useState<string>(() => toLocalDateStr(new Date()));
+  const [start, setStart] = useUrlState('start', defaultStart());
+  const [end,   setEnd]   = useUrlState('end', toLocalDateStr(new Date()));
 
   const { data, isLoading, error } = useStaffPerformance({ start, end });
 
@@ -46,6 +46,11 @@ export default function StaffPerformancePage() {
     <ReportPage
       title="Staff Performance"
       subtitle="Per-staff orders, revenue, voids, refunds, discounts and cancellations."
+      isEmpty={!isLoading && !error && data !== undefined && rows.length === 0}
+      emptyState={{
+        title: 'No performance data',
+        description: 'No staff performance data for this period.',
+      }}
       filters={
         <div className="flex items-center gap-3">
           <DateRangePicker
@@ -89,13 +94,6 @@ export default function StaffPerformancePage() {
               </tr>
             </thead>
             <tbody>
-              {rows.length === 0 && (
-                <tr>
-                  <td className="py-3 text-text-secondary" colSpan={12}>
-                    No staff performance data for this period.
-                  </td>
-                </tr>
-              )}
               {rows.map((r) => (
                 <tr key={r.staff_id} className="border-b border-border-subtle">
                   <td className="py-2 font-medium">{r.staff_name}</td>

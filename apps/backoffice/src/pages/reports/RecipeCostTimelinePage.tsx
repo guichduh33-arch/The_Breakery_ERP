@@ -6,7 +6,7 @@
 // table with delta-vs-prev computed client-side. CSV export.
 // Reached from RecipeCostOverviewPage (Phase 2.A) row click.
 
-import { useMemo, useState, type JSX } from 'react';
+import { useMemo, type JSX } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -23,6 +23,7 @@ import { Button } from '@breakery/ui';
 import { supabase } from '@/lib/supabase.js';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
+import { useUrlState } from '@/hooks/useUrlState.js';
 
 interface TimelineRow {
   product_id:     string;
@@ -64,8 +65,8 @@ const TIMELINE_CSV_COLUMNS: CsvColumn<TimelineRowWithDelta>[] = [
 
 export function RecipeCostTimelinePage(): JSX.Element {
   const { productId = '' } = useParams<{ productId: string }>();
-  const [from, setFrom] = useState<string>(defaultStart);
-  const [to,   setTo]   = useState<string>(() => toLocalDateStr(new Date()));
+  const [from, setFrom] = useUrlState('from', defaultStart());
+  const [to,   setTo]   = useUrlState('to', toLocalDateStr(new Date()));
 
   const q = useQuery<TimelineRow[]>({
     queryKey: ['reports', 'recipe-cost', 'timeline', productId, from, to] as const,
@@ -78,7 +79,7 @@ export function RecipeCostTimelinePage(): JSX.Element {
         p_product_id: productId,
       });
       if (error) throw new Error(error.message);
-      return (data ?? []) as unknown as TimelineRow[];
+      return data ?? [];
     },
   });
 
@@ -155,7 +156,7 @@ export function RecipeCostTimelinePage(): JSX.Element {
       )}
       {q.error && (
         <p role="alert" className="text-sm text-red-600">
-          {(q.error as Error).message}
+          {(q.error).message}
         </p>
       )}
       {!q.isLoading && !q.error && rows.length === 0 && (

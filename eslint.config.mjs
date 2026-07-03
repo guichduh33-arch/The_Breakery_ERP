@@ -28,6 +28,10 @@ export default tseslint.config(
       'import/resolver': { typescript: true }
     },
     rules: {
+      // S57 / P2.5 — CLAUDE.md « Keep files under 500 lines ». Warn only:
+      // codified as a soft ceiling (skips blank lines + comments) so it does
+      // not block CI on pre-existing large files, but surfaces new bloat.
+      'max-lines': ['warn', { max: 500, skipBlankLines: true, skipComments: true }],
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
       '@typescript-eslint/consistent-type-imports': ['error', { prefer: 'type-imports' }],

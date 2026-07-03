@@ -7,7 +7,7 @@
 // so the row lands in the `promotions` table with `type='threshold'`.
 //
 // `max_discount_amount` doubles as the rate-vs-fixed switch on the SQL
-// side : when set, `evaluate_promotions_v1` treats `discount_value` as
+// side : when set, `evaluate_promotions_v2` treats `discount_value` as
 // a percent (with cap) ; when null, fixed IDR. Mirrored here via the
 // `discount_kind` radio.
 
@@ -81,7 +81,7 @@ export function ThresholdForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4" aria-labelledby="threshold-form-title">
+    <form onSubmit={(e) => { void handleSubmit(e); }} className="space-y-4" aria-labelledby="threshold-form-title">
       <header className="flex items-center justify-between">
         <h2 id="threshold-form-title" className="text-lg font-semibold text-text-primary">
           {mode === 'create' ? 'New threshold promotion' : 'Edit threshold promotion'}

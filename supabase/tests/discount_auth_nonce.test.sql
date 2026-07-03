@@ -1,5 +1,5 @@
 -- supabase/tests/discount_auth_nonce.test.sql
--- S55 P1.5 (audit T7) Task 6 — complete_order_with_payment_v16 discount-PIN
+-- S55 P1.5 (audit T7) Task 6 — complete_order_with_payment_v17 discount-PIN
 -- authorization via single-use nonce (discount_authorizations, _085/_086).
 --   T1 : discount + no nonce -> P0003
 --   T2 : discount + valid nonce -> order created, nonce consumed + traced
@@ -80,7 +80,7 @@ DECLARE
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_cashier_auth::text, true);
   BEGIN
-    PERFORM complete_order_with_payment_v16(
+    PERFORM complete_order_with_payment_v17(
       p_session_id := v_sess, p_order_type := 'take_out'::order_type,
       p_items := jsonb_build_array(jsonb_build_object(
         'product_id', v_prod, 'quantity', 1, 'unit_price', 50000, 'modifiers', '[]'::jsonb)),
@@ -113,7 +113,7 @@ BEGIN
   INSERT INTO discount_authorizations (manager_profile_id) VALUES (v_mgr_prof) RETURNING id INTO v_nonce;
 
   PERFORM set_config('request.jwt.claim.sub', v_cashier_auth::text, true);
-  v_res := complete_order_with_payment_v16(
+  v_res := complete_order_with_payment_v17(
     p_session_id := v_sess, p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(jsonb_build_object(
       'product_id', v_prod, 'quantity', 1, 'unit_price', 50000, 'modifiers', '[]'::jsonb)),
@@ -151,7 +151,7 @@ DECLARE
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_cashier_auth::text, true);
   BEGIN
-    PERFORM complete_order_with_payment_v16(
+    PERFORM complete_order_with_payment_v17(
       p_session_id := v_sess, p_order_type := 'take_out'::order_type,
       p_items := jsonb_build_array(jsonb_build_object(
         'product_id', v_prod, 'quantity', 1, 'unit_price', 50000, 'modifiers', '[]'::jsonb)),
@@ -185,7 +185,7 @@ BEGIN
 
   PERFORM set_config('request.jwt.claim.sub', v_cashier_auth::text, true);
   BEGIN
-    PERFORM complete_order_with_payment_v16(
+    PERFORM complete_order_with_payment_v17(
       p_session_id := v_sess, p_order_type := 'take_out'::order_type,
       p_items := jsonb_build_array(jsonb_build_object(
         'product_id', v_prod, 'quantity', 1, 'unit_price', 50000, 'modifiers', '[]'::jsonb)),
@@ -219,7 +219,7 @@ BEGIN
 
   PERFORM set_config('request.jwt.claim.sub', v_cashier_auth::text, true);
   BEGIN
-    PERFORM complete_order_with_payment_v16(
+    PERFORM complete_order_with_payment_v17(
       p_session_id := v_sess, p_order_type := 'take_out'::order_type,
       p_items := jsonb_build_array(jsonb_build_object(
         'product_id', v_prod, 'quantity', 1, 'unit_price', 50000, 'modifiers', '[]'::jsonb)),
@@ -246,7 +246,7 @@ DECLARE
   v_res JSONB;
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_cashier_auth::text, true);
-  v_res := complete_order_with_payment_v16(
+  v_res := complete_order_with_payment_v17(
     p_session_id := v_sess, p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(jsonb_build_object(
       'product_id', v_prod, 'quantity', 1, 'unit_price', 50000, 'modifiers', '[]'::jsonb)),

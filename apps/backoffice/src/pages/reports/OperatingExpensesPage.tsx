@@ -24,6 +24,7 @@ import {
   CHART_GRID_STROKE, CHART_AXIS_TICK, CHART_TOOLTIP_STYLE,
   formatIdrFull, formatIdrCompact,
 } from '@/features/reports/utils/chartColors.js';
+import { useUrlState } from '@/hooks/useUrlState.js';
 
 const STATUS_OPTIONS: { value: string; label: string }[] = [
   { value: '',          label: 'Committed (default)' },
@@ -46,8 +47,8 @@ function defaultStart(): string {
 }
 
 export default function OperatingExpensesPage() {
-  const [start, setStart]           = useState<string>(defaultStart);
-  const [end,   setEnd]             = useState<string>(() => toLocalDateStr(new Date()));
+  const [start, setStart]           = useUrlState('start', defaultStart());
+  const [end,   setEnd]             = useUrlState('end', toLocalDateStr(new Date()));
   const [categoryId, setCategoryId] = useState<string>('');
   const [status, setStatus]         = useState<string>('');
 

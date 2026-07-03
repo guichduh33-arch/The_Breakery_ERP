@@ -1,5 +1,5 @@
 // apps/backoffice/src/features/reports/hooks/usePaymentsByMethod.ts
-// S30 Wave 4.1 — Query hook for get_payments_by_method_v1 RPC.
+// S30 Wave 4.1 — Query hook for get_payments_by_method RPC (repointed v1 → v2, S57).
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
@@ -26,20 +26,19 @@ export function usePaymentsByMethod(params: UsePaymentsByMethodParams) {
   return useQuery<PaymentsByMethodData, Error>({
     queryKey: ['reports', 'payments_by_method', params.start, params.end],
     queryFn:  async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase as any).rpc('get_payments_by_method_v1', {
+      const { data, error } = await supabase.rpc('get_payments_by_method_v2', {
         p_date_start: params.start,
         p_date_end:   params.end,
       });
       if (error) throw error as Error;
       // RPC returns { period, summary:{ total_amount, … }, by_method:[…], by_day:[…] }.
       // Map to this hook's stable { lines, total, period } contract.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const raw = (data ?? {}) as any;
+      const raw     = (data ?? {}) as Record<string, unknown>;
+      const summary = (raw.summary ?? {}) as Record<string, unknown>;
       return {
-        lines:  (raw.by_method ?? []) as PaymentByMethodLine[],
-        total:  Number(raw.summary?.total_amount ?? 0),
-        period: raw.period ?? { start: params.start, end: params.end },
+        lines:  Array.isArray(raw.by_method) ? (raw.by_method as PaymentByMethodLine[]) : [],
+        total:  Number(summary.total_amount ?? 0),
+        period: (raw.period ?? { start: params.start, end: params.end }) as { start: string; end: string },
       } satisfies PaymentsByMethodData;
     },
     enabled: Boolean(params.start && params.end),

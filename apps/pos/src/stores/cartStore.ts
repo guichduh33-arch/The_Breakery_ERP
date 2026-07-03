@@ -497,7 +497,7 @@ export const useCartStore = create<CartState>()(
         // added or removed, `nextItems` is content-identical to the current
         // cart (only a fresh array instance). Preserve the EXISTING `cart`
         // reference in that case so `usePromotionsAutoEval` (whose effect
-        // depends on `cart`) does NOT re-fire and re-call `evaluate_promotions_v1`
+        // depends on `cart`) does NOT re-fire and re-call `evaluate_promotions_v2`
         // on a 200ms loop. `appliedPromotions` is not in that effect's deps, so
         // refreshing it is safe and keeps the totals display in sync.
         const giftsChanged = addedGifts.length > 0 || removedGifts.length > 0;
@@ -544,7 +544,7 @@ export const useCartStore = create<CartState>()(
  * cleanup returned by the latest call should be used to detach.
  */
 export function initNetworkListener(): () => void {
-  if (typeof window === 'undefined') return () => {};
+  if (typeof window === 'undefined') return () => { /* no-op cleanup */ };
   const onOnline = (): void => useCartStore.getState().setOffline(false);
   const onOffline = (): void => useCartStore.getState().setOffline(true);
   // Sync immediately in case the page loaded while offline.

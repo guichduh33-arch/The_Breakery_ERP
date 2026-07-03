@@ -9,10 +9,18 @@ INSERT INTO products (id, sku, name, category_id, retail_price, product_type, cu
   ('00000000-0000-0000-0000-0000000cb010','S47R-CB','S47R Combo','9c751b3c-2cbf-49a9-a442-cc6a4b5ffc4a',0,'combo',0,false,50000),
   ('00000000-0000-0000-0000-0000000fb010','S47R-F1','S47R Comp1','9c751b3c-2cbf-49a9-a442-cc6a4b5ffc4a',15000,'finished',100,true,NULL),
   ('00000000-0000-0000-0000-0000000fb011','S47R-F2','S47R Comp2','9c751b3c-2cbf-49a9-a442-cc6a4b5ffc4a',15000,'finished',100,true,NULL);
+-- S57 P2.1: v17 validates combo composition — seed one required single-choice
+-- group per selected component, surcharge=0 (price parity, cf. combo_sale.test.sql).
+INSERT INTO combo_groups (id, combo_product_id, name, group_type, is_required, min_select, max_select, sort_order) VALUES
+  ('00000000-0000-0000-0000-0000000c9010','00000000-0000-0000-0000-0000000cb010','Comp A','single',true,1,1,0),
+  ('00000000-0000-0000-0000-0000000c9011','00000000-0000-0000-0000-0000000cb010','Comp B','single',true,1,1,1);
+INSERT INTO combo_group_options (group_id, component_product_id, surcharge, is_default, sort_order) VALUES
+  ('00000000-0000-0000-0000-0000000c9010','00000000-0000-0000-0000-0000000fb010',0,true,0),
+  ('00000000-0000-0000-0000-0000000c9011','00000000-0000-0000-0000-0000000fb011',0,true,0);
 DO $$
 DECLARE r jsonb;
 BEGIN
-  r := complete_order_with_payment_v16(
+  r := complete_order_with_payment_v17(
     p_session_id := '00000000-0000-0000-0000-0000000ce002', p_order_type := 'take_out'::order_type,
     p_items := '[{"product_id":"00000000-0000-0000-0000-0000000cb010","quantity":1,"unit_price":50000,"modifiers":[],"combo_components":[{"product_id":"00000000-0000-0000-0000-0000000fb010","quantity":1},{"product_id":"00000000-0000-0000-0000-0000000fb011","quantity":1}]}]'::jsonb,
     p_payment := '{"method":"cash","amount":50000,"cash_received":50000,"change_given":0}'::jsonb);
@@ -21,7 +29,7 @@ END $$;
 DO $$
 DECLARE r jsonb; oi uuid;
 BEGIN
-  r := complete_order_with_payment_v16(
+  r := complete_order_with_payment_v17(
     p_session_id := '00000000-0000-0000-0000-0000000ce002', p_order_type := 'take_out'::order_type,
     p_items := '[{"product_id":"00000000-0000-0000-0000-0000000cb010","quantity":1,"unit_price":50000,"modifiers":[],"combo_components":[{"product_id":"00000000-0000-0000-0000-0000000fb010","quantity":1},{"product_id":"00000000-0000-0000-0000-0000000fb011","quantity":1}]}]'::jsonb,
     p_payment := '{"method":"cash","amount":50000,"cash_received":50000,"change_given":0}'::jsonb);

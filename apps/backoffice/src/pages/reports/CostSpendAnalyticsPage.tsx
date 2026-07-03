@@ -7,7 +7,7 @@
 // Hero = stacked daily spend composition; two donuts ventilate each bucket by
 // category; a split bar shows the COGS↔OpEx ratio with revenue context.
 
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import {
   Area, AreaChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
@@ -25,6 +25,7 @@ import {
   CHART_GRID_STROKE, CHART_AXIS_TICK, CHART_TOOLTIP_STYLE,
   formatIdrFull, formatIdrCompact,
 } from '@/features/reports/utils/chartColors.js';
+import { useUrlState } from '@/hooks/useUrlState.js';
 
 interface DailyCost { date: string; cogs: number; opex: number }
 
@@ -56,8 +57,8 @@ function FamilyKpi({
 }
 
 export default function CostSpendAnalyticsPage() {
-  const [start, setStart] = useState<string>(defaultStart);
-  const [end,   setEnd]   = useState<string>(() => toLocalDateStr(new Date()));
+  const [start, setStart] = useUrlState('start', defaultStart());
+  const [end,   setEnd]   = useUrlState('end', toLocalDateStr(new Date()));
 
   const cogs = usePurchaseCogsBreakdown({ start, end });
   const opex = useExpensesByCategory({ start, end });

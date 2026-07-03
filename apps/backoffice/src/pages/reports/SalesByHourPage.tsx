@@ -7,7 +7,7 @@
 // /backoffice/orders by hour=N + start=date + end=date. (hour filter is
 // applied client-side post-fetch in OrdersListPage V1.)
 
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import {
   BarChart,
   Bar,
@@ -25,6 +25,7 @@ import { DeltaPct } from '@/features/reports/components/DeltaPct.js';
 import { useSalesByHour } from '@/features/reports/hooks/useSalesByHour.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
+import { useUrlState, useUrlBoolean } from '@/hooks/useUrlState.js';
 
 import type { SalesHourRow } from '@/features/reports/hooks/useSalesByHour.js';
 
@@ -42,8 +43,8 @@ function sumRows(rows: SalesHourRow[]): { total: number; orders: number } {
 }
 
 export default function SalesByHourPage() {
-  const [date, setDate] = useState<string>(() => toLocalDateStr(new Date()));
-  const [compare, setCompare] = useState(false);
+  const [date, setDate] = useUrlState('date', toLocalDateStr(new Date()));
+  const [compare, setCompare] = useUrlBoolean('compare');
 
   // Previous period for a single day = the day before.
   const prevDate = useMemo(() => compare ? previousPeriod(date, date).end : null, [compare, date]);
@@ -60,6 +61,14 @@ export default function SalesByHourPage() {
     <ReportPage
       title="Sales by Hour"
       subtitle="Revenue distribution across 24 hours of a single business day."
+      isEmpty={
+        !isLoading && !error && data !== undefined && data.length > 0 &&
+        data.every((r) => r.order_count === 0)
+      }
+      emptyState={{
+        title: 'No orders',
+        description: 'No orders recorded for this day.',
+      }}
       filters={
         <div className="flex items-center gap-3">
           <label className="flex items-center gap-1 text-sm text-text-secondary">
@@ -172,13 +181,6 @@ export default function SalesByHourPage() {
                     <td className="py-2 text-right tabular-nums">{r.order_count}</td>
                   </tr>
                 ))}
-                {data.every((r) => r.order_count === 0) && (
-                  <tr>
-                    <td className="py-3 text-text-secondary" colSpan={3}>
-                      No orders recorded for this day.
-                    </td>
-                  </tr>
-                )}
               </tbody>
             </table>
           </section>

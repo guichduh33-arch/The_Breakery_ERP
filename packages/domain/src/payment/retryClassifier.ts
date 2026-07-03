@@ -112,7 +112,9 @@ export function classifyCheckoutError(err: unknown): RetryClassification {
  * EF errors — we read both.
  */
 function extractErrorShape(err: unknown): CheckoutErrorShape {
-  if (!err || typeof err !== 'object') return { message: String(err ?? '') };
+  if (!err || typeof err !== 'object') {
+    return { message: typeof err === 'string' || typeof err === 'number' ? String(err) : '' };
+  }
   const e = err as {
     message?: string;
     details?: { error?: string; code?: string; message?: string };
@@ -155,6 +157,15 @@ function friendlyFatalMessage(code: string, message?: string): string {
     case 'invalid_change':
       // S44 P0-C(4) — v12/v8 revalidate the change against cash_received.
       return 'Montant de monnaie invalide — recommencez le paiement.';
+    case 'combo_invalid_component':
+      // S57 P2.1 — v17 validates each combo line against its groups/options.
+      return 'Un composant de ce combo n’est pas valide. Reconfigurez le combo et réessayez.';
+    case 'combo_group_violation':
+      // S57 P2.1 — v17 enforces the combo group min/max selection rules.
+      return 'La composition du combo ne respecte pas les règles (choix requis). Corrigez le combo et réessayez.';
+    case 'promo_cap_exceeded':
+      // S57 P2.1 — v17 hard-gates promotion usage caps atomically.
+      return 'Le plafond d’utilisation de cette promotion est atteint. Retirez la promotion et réessayez.';
     case '':
       return message ?? 'Payment failed for an unknown reason. Try again or contact support.';
     default:

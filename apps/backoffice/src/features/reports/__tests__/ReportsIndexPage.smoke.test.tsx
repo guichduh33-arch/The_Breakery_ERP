@@ -23,14 +23,26 @@ describe('ReportsIndexPage (rebuild)', () => {
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/Reports\s*&\s*Analytics/i);
   });
 
-  it('renders all 6 section labels (Sales / Inventory / Purchases / Finance / Operations / Logs)', () => {
+  it('renders all 7 section labels (Sales / Inventory / Purchases / Finance / Operations / Marketing / Logs)', () => {
     renderPage();
     expect(screen.getByRole('heading', { level: 2, name: /^Sales$/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2, name: /^Inventory$/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2, name: /^Purchases$/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2, name: /Finance/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2, name: /^Operations$/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: /^Marketing$/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2, name: /Logs/i })).toBeInTheDocument();
+  });
+
+  it('renders the Marketing section cards (D-D2 parity with sidebar)', () => {
+    renderPage();
+    // `../marketing/cohort` is resolved by react-router; at the test root it
+    // becomes `/marketing/cohort` (in-app under /backoffice/reports it resolves
+    // to /backoffice/marketing/cohort).
+    expect(screen.getByText('Cohorts').closest('a')?.getAttribute('href')).toBe('/marketing/cohort');
+    expect(screen.getByText('Segments').closest('a')).not.toBeNull();
+    expect(screen.getByText('Promo ROI').closest('a')).not.toBeNull();
+    expect(screen.getByText('Birthdays').closest('a')).not.toBeNull();
   });
 
   it('renders working report links for the implemented reports', () => {
@@ -41,11 +53,11 @@ describe('ReportsIndexPage (rebuild)', () => {
     expect(link?.getAttribute('href')).toBe('/sales-by-hour');
   });
 
-  it('has exactly 28 active card links (Wave C S40 + Cost & Spend / Operating Expenses)', () => {
+  it('has exactly 33 active card links (28 + 4 Marketing + 1 Gross Margin, S57 D-D2/B-D5)', () => {
     renderPage();
     // Every card is now an <a> element; disabled tiles are <div aria-disabled>.
     const links = screen.getAllByRole('link');
-    expect(links).toHaveLength(28);
+    expect(links).toHaveLength(33);
   });
 
   it('has zero "Soon" disabled tiles after Wave C wiring', () => {

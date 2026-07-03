@@ -3725,6 +3725,8 @@ export type Database = {
           id: string
           is_active: boolean
           max_discount_amount: number | null
+          max_uses: number | null
+          max_uses_per_customer: number | null
           min_items_total: number
           name: string
           priority: number
@@ -3766,6 +3768,8 @@ export type Database = {
           id?: string
           is_active?: boolean
           max_discount_amount?: number | null
+          max_uses?: number | null
+          max_uses_per_customer?: number | null
           min_items_total?: number
           name: string
           priority?: number
@@ -3807,6 +3811,8 @@ export type Database = {
           id?: string
           is_active?: boolean
           max_discount_amount?: number | null
+          max_uses?: number | null
+          max_uses_per_customer?: number | null
           min_items_total?: number
           name?: string
           priority?: number
@@ -5826,6 +5832,10 @@ export type Database = {
         Returns: undefined
       }
       _refine_vol: { Args: { "": string }; Returns: string }
+      _resolve_combo_price_v1: {
+        Args: { p_combo_product_id: string; p_components: Json }
+        Returns: number
+      }
       _resolve_dispatch_stations_v1: {
         Args: { p_product_id: string }
         Returns: string[]
@@ -6138,7 +6148,7 @@ export type Database = {
             }
             Returns: string
           }
-      complete_order_with_payment_v16: {
+      complete_order_with_payment_v17: {
         Args: {
           p_customer_id?: string
           p_discount_amount?: number
@@ -6409,7 +6419,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      evaluate_promotions_v1: {
+      evaluate_promotions_v2: {
         Args: {
           p_cart_items: Json
           p_customer_id?: string
@@ -6621,6 +6631,14 @@ export type Database = {
         }
         Returns: Json
       }
+      get_gross_margin_by_product_v1: {
+        Args: {
+          p_category_id?: string
+          p_end_date: string
+          p_start_date: string
+        }
+        Returns: Json
+      }
       get_low_stock_v1: {
         Args: { p_section_id?: string }
         Returns: {
@@ -6660,7 +6678,7 @@ export type Database = {
         }
         Returns: Json
       }
-      get_payments_by_method_v1: {
+      get_payments_by_method_v2: {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }

@@ -154,10 +154,12 @@ const GROUPS: NavGroup[] = [
         label: 'Inventory reports',
         items: [
           { to: '/backoffice/reports/stock-variance', label: 'Stock Variance', icon: Boxes, permission: 'reports.inventory.read' },
+          { to: '/backoffice/reports/production-yield', label: 'Production Yield', icon: BarChart3, permission: 'inventory.read' },
           { to: '/backoffice/reports/stock-movements', label: 'Stock Movement History', icon: GitCommitHorizontal, permission: 'reports.inventory.read' },
           { to: '/backoffice/reports/wastage', label: 'Wastage & Spoilage', icon: AlertTriangle, permission: 'reports.inventory.read' },
           { to: '/backoffice/reports/perishable-turnover', label: 'Perishable Turnover', icon: Clock4, permission: 'reports.inventory.read' },
           { to: '/backoffice/reports/recipe-cost', label: 'Recipe Cost', icon: TrendingUp, permission: 'reports.financial.read' },
+          { to: '/backoffice/inventory/production/margin-watch', label: 'Margin Watch', icon: AlertTriangle, permission: 'reports.inventory.read' },
           { to: '/backoffice/reports/production-report', label: 'Production Report', icon: BarChart3, permission: 'reports.inventory.read' },
           { to: '/backoffice/reports/production-efficiency', label: 'Production Efficiency', icon: TrendingUp, permission: 'reports.inventory.read' },
         ],
@@ -165,6 +167,7 @@ const GROUPS: NavGroup[] = [
       {
         label: 'Purchase reports',
         items: [
+          { to: '/backoffice/reports/cost-spend', label: 'Cost & Spend Analytics', icon: PieChart, permission: 'reports.financial.read' },
           { to: '/backoffice/reports/purchase-items', label: 'Purchase Items', icon: ShoppingCart, permission: 'reports.inventory.read' },
           { to: '/backoffice/reports/purchase-by-date', label: 'Purchase by Date', icon: Calendar, permission: 'reports.inventory.read' },
           { to: '/backoffice/reports/purchase-by-supplier', label: 'Purchase by Supplier', icon: Truck, permission: 'reports.inventory.read' },
@@ -174,6 +177,8 @@ const GROUPS: NavGroup[] = [
         label: 'Financial reports',
         items: [
           { to: '/backoffice/reports/profit-loss', label: 'Profit & Loss', icon: Coins, permission: 'reports.financial.read' },
+          { to: '/backoffice/reports/gross-margin', label: 'Gross Margin', icon: TrendingUp, permission: 'reports.financial.read' },
+          { to: '/backoffice/reports/operating-expenses', label: 'Operating Expenses', icon: Receipt, permission: 'reports.financial.read' },
           { to: '/backoffice/reports/balance-sheet', label: 'Balance Sheet', icon: Scale, permission: 'reports.financial.read' },
           { to: '/backoffice/reports/cash-flow', label: 'Cash Flow', icon: Banknote, permission: 'reports.financial.read' },
           { to: '/backoffice/reports/pb1', label: 'VAT / PB1', icon: FileSpreadsheet, permission: 'reports.financial.read' },
@@ -210,6 +215,7 @@ const GROUPS: NavGroup[] = [
           { to: '/backoffice/settings/templates/email', label: 'Email Templates', icon: Mail, permission: 'settings.read' },
           { to: '/backoffice/settings/templates/receipt', label: 'Receipt Templates', icon: FileText, permission: 'settings.read' },
           { to: '/backoffice/settings/permissions', label: 'Permissions Matrix (read-only)', icon: ShieldCheck, permission: 'settings.read' },
+          { to: '/backoffice/settings/security', label: 'Security', icon: Shield, permission: 'settings.security.manage' },
         ],
       },
       {
@@ -488,7 +494,7 @@ export function Sidebar() {
                   ))}
                 </div>
               ) : (
-                group.subgroups!.map((sg) => {
+                group.subgroups.map((sg) => {
                   const key = `${group.label}::${sg.label}`;
                   // Unnamed subgroup ('') has no toggle — its items render
                   // directly whenever the parent category is open.

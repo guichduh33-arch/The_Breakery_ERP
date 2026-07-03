@@ -3,11 +3,39 @@ import { useCartStore } from '@/stores/cartStore';
 import { calculateTotals, DEFAULT_TAX_RATE } from '@breakery/domain';
 export const CART_CHANNEL = 'breakery-cart';
 
-export interface CartBroadcastMessage {
+/** S57 C-D4 — how long the customer display shows the "Merci" / change screen
+ *  after a successful checkout before it reverts to the welcome idle state. */
+export const PAYMENT_COMPLETE_DISPLAY_MS = 8_000;
+
+/** Live cart mirror pushed on every cart mutation (the nominal broadcast). */
+export interface CartUpdateMessage {
   type: 'cart_update';
   cart: { items: unknown[]; order_type: string };
   totals: { subtotal: number; total: number; item_count: number };
   customer: { name: string } | null;
+}
+
+/** S57 C-D4 — one-shot broadcast emitted at checkout success so the customer
+ *  display can confirm the sale (and the change to collect on cash). */
+export interface PaymentCompleteMessage {
+  type: 'payment_complete';
+  total: number;
+  /** Change to hand back; null / 0 for non-cash tenders (masked on screen). */
+  change: number | null;
+  method: string;
+}
+
+export type CartBroadcastMessage = CartUpdateMessage | PaymentCompleteMessage;
+
+/** POS side: fire-and-forget a payment_complete snapshot to the customer
+ *  display. Covers every tender path (fast-path AND split) because it is
+ *  emitted from the shared SuccessModal that renders after any successful sale. */
+export function broadcastPaymentComplete(
+  payload: Omit<PaymentCompleteMessage, 'type'>,
+): void {
+  const bc = new BroadcastChannel(CART_CHANNEL);
+  bc.postMessage({ type: 'payment_complete', ...payload } satisfies PaymentCompleteMessage);
+  bc.close();
 }
 
 /** Mount on the POS side: mirrors the live cart to /display via BroadcastChannel. */

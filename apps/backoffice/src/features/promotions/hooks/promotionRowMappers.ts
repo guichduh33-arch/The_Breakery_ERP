@@ -90,6 +90,12 @@ export function toRow(values: Partial<PromotionFormValues>): PromotionRow {
   if (values.start_hour !== undefined) row.start_hour = values.start_hour;
   if (values.end_hour !== undefined) row.end_hour = values.end_hour;
 
+  // Usage caps (Session 57 / A-D4) — NULL = unlimited.
+  if (values.max_uses !== undefined) row.max_uses = values.max_uses;
+  if (values.max_uses_per_customer !== undefined) {
+    row.max_uses_per_customer = values.max_uses_per_customer;
+  }
+
   if (values.priority !== undefined) row.priority = values.priority;
   if (values.stackable_with_promo !== undefined) {
     row.stackable_with_promo = values.stackable_with_promo;

@@ -1,13 +1,13 @@
 // apps/backoffice/src/pages/reports/ProductionEfficiencyPage.tsx
 // S40 Wave B3 — Production efficiency: yield variance % (colored) + waste rate by product + by_day trend.
 
-import { useState } from 'react';
 import { toLocalDateStr } from '@breakery/domain';
 import type { CsvColumn } from '@breakery/domain';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
+import { useUrlState } from '@/hooks/useUrlState.js';
 import {
   useProductionEfficiency,
   type ProductionEfficiencyByProduct,
@@ -41,8 +41,8 @@ function fmtPct(pct: number | null): string {
 }
 
 export default function ProductionEfficiencyPage() {
-  const [start, setStart] = useState<string>(defaultStart);
-  const [end,   setEnd]   = useState<string>(() => toLocalDateStr(new Date()));
+  const [start, setStart] = useUrlState('start', defaultStart());
+  const [end,   setEnd]   = useUrlState('end', toLocalDateStr(new Date()));
 
   const { data, isLoading, error } = useProductionEfficiency({ start, end });
 
@@ -53,6 +53,11 @@ export default function ProductionEfficiencyPage() {
     <ReportPage
       title="Production Efficiency"
       subtitle="Yield variance and waste rate per product across a date range."
+      isEmpty={!isLoading && !error && data !== undefined && byProduct.length === 0 && byDay.length === 0}
+      emptyState={{
+        title: 'No production data',
+        description: 'No production efficiency data for this period.',
+      }}
       filters={
         <div className="flex items-center gap-3">
           <DateRangePicker
@@ -94,13 +99,6 @@ export default function ProductionEfficiencyPage() {
                 </tr>
               </thead>
               <tbody>
-                {byProduct.length === 0 && (
-                  <tr>
-                    <td className="py-3 text-text-secondary" colSpan={6}>
-                      No production efficiency data for this period.
-                    </td>
-                  </tr>
-                )}
                 {byProduct.map((r) => (
                   <tr key={r.product_id} className="border-b border-border-subtle">
                     <td className="py-2 font-medium">
@@ -139,13 +137,6 @@ export default function ProductionEfficiencyPage() {
                 </tr>
               </thead>
               <tbody>
-                {byDay.length === 0 && (
-                  <tr>
-                    <td className="py-3 text-text-secondary" colSpan={3}>
-                      No daily trend data for this period.
-                    </td>
-                  </tr>
-                )}
                 {byDay.map((d) => (
                   <tr key={d.date} className="border-b border-border-subtle">
                     <td className="py-2 text-text-secondary">{d.date.slice(0, 10)}</td>

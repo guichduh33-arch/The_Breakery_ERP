@@ -8,6 +8,7 @@ import { useTaxRate } from '@/features/settings/hooks/useTaxRate';
 import { printReceipt, openCashDrawer, type ReceiptPayload } from '@/services/print/printService';
 import { useStationPrinters } from '@/features/cart/hooks/useStationPrinters';
 import { usePosSettingsStore } from '@/stores/posSettingsStore';
+import { broadcastPaymentComplete } from '@/features/display/hooks/useCartBroadcast';
 import { toast } from 'sonner';
 
 const BUSINESS = {
@@ -62,11 +63,11 @@ function buildReceiptPayload(props: SuccessModalProps, taxRate: number): Receipt
   // or its length doesn't match (defensive — never throw on the receipt).
   const charged = props.cart.items.filter((i) => !i.is_cancelled);
   const serverLines = props.lines;
-  const useServerLines = serverLines != null && serverLines.length === charged.length;
+  const useServerLines = serverLines?.length === charged.length;
 
   const itemsTotal = props.subtotal
     ?? (useServerLines
-      ? serverLines!.reduce((sum, l) => sum + l.line_subtotal, 0)
+      ? serverLines.reduce((sum, l) => sum + l.line_subtotal, 0)
       : derived.subtotal);
 
   return {
@@ -79,7 +80,7 @@ function buildReceiptPayload(props: SuccessModalProps, taxRate: number): Receipt
     },
     ...(props.customerName ? { customer: { name: props.customerName } } : {}),
     items: charged.map((item, idx) => {
-      const sl = useServerLines ? serverLines![idx] : undefined;
+      const sl = useServerLines ? serverLines[idx] : undefined;
       const clientLineTotal =
         (item.unit_price + item.modifiers.reduce((s, m) => s + m.price_adjustment, 0)) * item.quantity;
       return {
@@ -123,7 +124,7 @@ function buildReceiptPayload(props: SuccessModalProps, taxRate: number): Receipt
 }
 
 export function SuccessModal(props: SuccessModalProps) {
-  const { open, orderNumber, total, changeGiven, pointsEarned, customerName, onNewOrder } = props;
+  const { open, orderNumber, total, changeGiven, pointsEarned, customerName, onNewOrder, paymentMethod } = props;
   const taxRate = useTaxRate();
   const [isPrinting, setIsPrinting] = useState(false);
   // Guards the mount-effect side effects (toast) against firing after the modal
@@ -145,6 +146,14 @@ export function SuccessModal(props: SuccessModalProps) {
     }
     setIsPrinting(false);
   }
+
+  // S57 C-D4 — confirm the sale on the customer display (thank-you + change to
+  // collect). Emitted here so it fires for every tender path (fast-path AND
+  // split), since this modal renders after any successful checkout.
+  useEffect(() => {
+    if (!open) return;
+    broadcastPaymentComplete({ total, change: changeGiven, method: paymentMethod });
+  }, [open, total, changeGiven, paymentMethod]);
 
   useEffect(() => {
     mountedRef.current = true;

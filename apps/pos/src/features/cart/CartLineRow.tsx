@@ -144,7 +144,7 @@ export function CartLineRow({
               : undefined
         }
         className={cn(
-          'h-8 w-8 shrink-0 grid place-items-center rounded-md transition-colors',
+          'h-11 w-11 shrink-0 grid place-items-center rounded-md transition-colors',
           'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
           locked
             ? 'text-gold/70'
@@ -224,7 +224,7 @@ export function CartLineRow({
           onClick={() => onApplyLineDiscount(item)}
           aria-label={item.discount ? `Edit discount on ${item.name}` : `Apply discount on ${item.name}`}
           className={cn(
-            'h-8 w-8 shrink-0 grid place-items-center rounded-md transition-colors',
+            'h-11 w-11 shrink-0 grid place-items-center rounded-md transition-colors',
             'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
             item.discount ? 'text-gold' : 'text-text-muted hover:text-text-primary hover:bg-bg-input',
           )}

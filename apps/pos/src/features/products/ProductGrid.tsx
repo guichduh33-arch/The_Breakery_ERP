@@ -25,6 +25,7 @@ import { Search } from 'lucide-react';
 import type { Product } from '@breakery/domain';
 import { allLotsExpiredOrConsumed } from '@breakery/domain';
 import { EmptyState, Input } from '@breakery/ui';
+import { ErrorState } from '@/components/ErrorState';
 import { ComboBadge } from '@/features/combos/components/ComboBadge';
 import { ProductCard } from './ProductCard';
 import { useProducts } from './hooks/useProducts';
@@ -38,7 +39,7 @@ export interface ProductGridProps {
 }
 
 export function ProductGrid({ selectedSlug, onSelect }: ProductGridProps): JSX.Element {
-  const { data: products = [], isLoading } = useProducts();
+  const { data: products = [], isLoading, isError, refetch } = useProducts();
   const { data: categories = [] } = useCategories();
   const { data: lotsByProduct } = useActiveLotsByProduct();
   const { data: allergensByProduct } = useProductAllergensMap();
@@ -56,7 +57,7 @@ export function ProductGrid({ selectedSlug, onSelect }: ProductGridProps): JSX.E
       if (selectedSlug === 'favorites' && !p.is_favorite) return false;
       if (selectedSlug === 'combos' && p.product_type !== 'combo') return false;
       if (selectedSlug && selectedSlug !== 'favorites' && selectedSlug !== 'combos') {
-        if (!selectedCat || p.category_id !== selectedCat.id) return false;
+        if (p.category_id !== selectedCat?.id) return false;
       }
       if (query.trim().length > 0) {
         const q = query.trim().toLowerCase();
@@ -85,13 +86,19 @@ export function ProductGrid({ selectedSlug, onSelect }: ProductGridProps): JSX.E
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search..."
             aria-label="Search products"
-            className="pl-9 h-9 bg-bg-base border-border-subtle rounded-md text-sm"
+            className="pl-9 h-11 bg-bg-base border-border-subtle rounded-md text-sm"
           />
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto p-6">
-        {isLoading ? (
+        {isError ? (
+          <ErrorState
+            title="Impossible de charger les produits"
+            description="Le catalogue n'a pas pu être récupéré. Vérifiez la connexion et réessayez."
+            onRetry={() => void refetch()}
+          />
+        ) : isLoading ? (
           <div className="grid grid-cols-4 gap-4" aria-busy="true" aria-label="Loading products">
             {Array.from({ length: 8 }).map((_, i) => (
               <ProductCardSkeleton key={i} />

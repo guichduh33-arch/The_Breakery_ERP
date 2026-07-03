@@ -1,7 +1,6 @@
 // apps/backoffice/src/pages/reports/PurchaseByDatePage.tsx
 // S40 Wave B2 — Purchase orders aggregated by date: KPI cards + by_day table.
 
-import { useState } from 'react';
 import {
   Area,
   AreaChart,
@@ -31,6 +30,7 @@ import {
   usePurchaseByDate,
   type PurchaseByDayRow,
 } from '@/features/reports/hooks/usePurchaseByDate.js';
+import { useUrlState } from '@/hooks/useUrlState.js';
 
 const csvColumns: CsvColumn<PurchaseByDayRow>[] = [
   { header: 'Date',           accessor: (r) => r.date,           format: 'text' },
@@ -48,8 +48,8 @@ function defaultStart(): string {
 }
 
 export default function PurchaseByDatePage() {
-  const [start, setStart] = useState<string>(defaultStart);
-  const [end,   setEnd]   = useState<string>(() => toLocalDateStr(new Date()));
+  const [start, setStart] = useUrlState('start', defaultStart());
+  const [end,   setEnd]   = useUrlState('end', toLocalDateStr(new Date()));
 
   const { data, isLoading, error } = usePurchaseByDate({ start, end });
 
@@ -59,6 +59,11 @@ export default function PurchaseByDatePage() {
     <ReportPage
       title="Purchase by Date"
       subtitle="Purchase order volume and value aggregated by order date."
+      isEmpty={!isLoading && !error && data !== undefined && rows.length === 0}
+      emptyState={{
+        title: 'No purchase orders',
+        description: 'No purchase orders for this period.',
+      }}
       filters={
         <div className="flex items-center gap-3">
           <DateRangePicker
@@ -157,13 +162,6 @@ export default function PurchaseByDatePage() {
               </tr>
             </thead>
             <tbody>
-              {rows.length === 0 && (
-                <tr>
-                  <td className="py-3 text-text-secondary" colSpan={5}>
-                    No purchase orders for this period.
-                  </td>
-                </tr>
-              )}
               {rows.map((r) => (
                 <tr key={r.date} className="border-b border-border-subtle">
                   <td className="py-2 text-text-secondary">{r.date}</td>

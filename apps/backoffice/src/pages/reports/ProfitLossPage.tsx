@@ -7,7 +7,7 @@
 // S32 / Wave 3.D : account cells now drill into /accounting/general-ledger via
 // DrilldownLink, using account_id UUID surfaced by the bumped RPC (S32 Wave 1.B).
 
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { toLocalDateStr, previousPeriod } from '@breakery/domain';
 import type { CsvColumn } from '@breakery/domain';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
@@ -15,6 +15,7 @@ import { DateRangePickerWithCompare } from '@/features/reports/components/DateRa
 import { DeltaPct } from '@/features/reports/components/DeltaPct.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 import { useProfitLoss } from '@/features/reports/hooks/useProfitLoss.js';
+import { useUrlState, useUrlBoolean } from '@/hooks/useUrlState.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
 import type { PnlLine } from '@/features/reports/hooks/useProfitLoss.js';
 
@@ -35,9 +36,9 @@ function fmt(n: number): string {
 }
 
 export default function ProfitLossPage() {
-  const [start, setStart] = useState<string>(defaultStart);
-  const [end,   setEnd]   = useState<string>(() => toLocalDateStr(new Date()));
-  const [compare, setCompare] = useState(false);
+  const [start, setStart] = useUrlState('start', defaultStart());
+  const [end,   setEnd]   = useUrlState('end', toLocalDateStr(new Date()));
+  const [compare, setCompare] = useUrlBoolean('compare');
 
   const prev = useMemo(() => compare ? previousPeriod(start, end) : null, [compare, start, end]);
 
@@ -91,7 +92,7 @@ export default function ProfitLossPage() {
               <tr className="border-b border-border-subtle">
                 <td className="py-2 font-medium">Revenue</td>
                 <td className="py-2 text-right tabular-nums">{fmt(data.revenue.total)}</td>
-                {showDelta && <td className="py-2 text-right pl-2"><DeltaPct current={data.revenue.total} previous={prevData!.revenue.total} /></td>}
+                {showDelta && <td className="py-2 text-right pl-2"><DeltaPct current={data.revenue.total} previous={prevData.revenue.total} /></td>}
               </tr>
               <tr>
                 <td className="pl-6 py-1 text-text-secondary text-xs">Sales</td>
@@ -111,7 +112,7 @@ export default function ProfitLossPage() {
               <tr className="border-b border-border-subtle">
                 <td className="py-2 font-medium">COGS</td>
                 <td className="py-2 text-right tabular-nums">{fmt(data.cogs.total)}</td>
-                {showDelta && <td className="py-2 text-right pl-2"><DeltaPct current={data.cogs.total} previous={prevData!.cogs.total} /></td>}
+                {showDelta && <td className="py-2 text-right pl-2"><DeltaPct current={data.cogs.total} previous={prevData.cogs.total} /></td>}
               </tr>
               <tr>
                 <td className="pl-6 py-1 text-text-secondary text-xs">Production</td>
@@ -131,7 +132,7 @@ export default function ProfitLossPage() {
               <tr className="border-b border-border-subtle bg-bg-overlay">
                 <td className="py-2 font-semibold">Gross profit</td>
                 <td className="py-2 text-right font-semibold tabular-nums">{fmt(data.gross_profit)}</td>
-                {showDelta && <td className="py-2 text-right pl-2"><DeltaPct current={data.gross_profit} previous={prevData!.gross_profit} /></td>}
+                {showDelta && <td className="py-2 text-right pl-2"><DeltaPct current={data.gross_profit} previous={prevData.gross_profit} /></td>}
               </tr>
               <tr className="border-b border-border-subtle">
                 <td className="py-2 font-medium">Operating expenses</td>
@@ -148,7 +149,7 @@ export default function ProfitLossPage() {
               <tr className="border-t-2 border-border-subtle bg-gold-soft">
                 <td className="py-3 font-semibold uppercase tracking-wider">Net profit</td>
                 <td className="py-3 text-right font-semibold tabular-nums">{fmt(data.net_profit)}</td>
-                {showDelta && <td className="py-3 text-right pl-2"><DeltaPct current={data.net_profit} previous={prevData!.net_profit} /></td>}
+                {showDelta && <td className="py-3 text-right pl-2"><DeltaPct current={data.net_profit} previous={prevData.net_profit} /></td>}
               </tr>
             </tbody>
           </table>

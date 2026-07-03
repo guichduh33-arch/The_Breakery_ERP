@@ -57,6 +57,7 @@ const StockVariancePage = lazy(() => import('@/pages/reports/StockVariancePage.j
 const ProductionYieldPage = lazy(() => import('@/pages/reports/ProductionYieldPage.js'));
 const AuditPage = lazy(() => import('@/pages/reports/AuditPage.js'));
 const ProfitLossPage = lazy(() => import('@/pages/reports/ProfitLossPage.js'));
+const GrossMarginPage = lazy(() => import('@/pages/reports/GrossMarginPage.js'));
 const BalanceSheetPage = lazy(() => import('@/pages/reports/BalanceSheetPage.js'));
 const CashFlowPage = lazy(() => import('@/pages/reports/CashFlowPage.js'));
 const BasketAnalysisPage = lazy(() => import('@/pages/reports/BasketAnalysisPage.js'));
@@ -519,7 +520,14 @@ export function AppRoutes() {
             </PermissionGate>
           }
         />
-        <Route path="accounting" element={<AccountingIndexPage />} />
+        <Route
+          path="accounting"
+          element={
+            <PermissionGate required="accounting.read">
+              <AccountingIndexPage />
+            </PermissionGate>
+          }
+        />
         <Route
           path="accounting/chart-of-accounts"
           element={
@@ -693,6 +701,14 @@ export function AppRoutes() {
           element={
             <PermissionGate required="reports.financial.read">
               <ProfitLossPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="reports/gross-margin"
+          element={
+            <PermissionGate required="reports.financial.read">
+              <GrossMarginPage />
             </PermissionGate>
           }
         />

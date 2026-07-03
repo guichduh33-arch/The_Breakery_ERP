@@ -11,6 +11,7 @@
 import { useMemo, useState, type JSX } from 'react';
 import { Search } from 'lucide-react';
 import { EmptyState, Input, ModifierModal, type ModifierModalProduct } from '@breakery/ui';
+import { ErrorState } from '@/components/ErrorState';
 import type { Product, SelectedModifiers } from '@breakery/domain';
 import { allLotsExpiredOrConsumed } from '@breakery/domain';
 import { ComboBadge } from '@/features/combos/components/ComboBadge';
@@ -28,7 +29,7 @@ export interface TabletProductGridProps {
 
 export function TabletProductGrid({ selectedSlug }: TabletProductGridProps): JSX.Element {
   const addItem = useTabletCartStore((s) => s.addItem);
-  const { data: products = [], isLoading } = useProducts();
+  const { data: products = [], isLoading, isError, refetch } = useProducts();
   const { data: categories = [] } = useCategories();
   const { data: lotsByProduct } = useActiveLotsByProduct();
   const { data: allergensByProduct } = useProductAllergensMap();
@@ -53,7 +54,7 @@ export function TabletProductGrid({ selectedSlug }: TabletProductGridProps): JSX
       if (selectedSlug === 'favorites' && !p.is_favorite) return false;
       if (selectedSlug === 'combos' && p.product_type !== 'combo') return false;
       if (selectedSlug && selectedSlug !== 'favorites' && selectedSlug !== 'combos') {
-        if (!selectedCat || p.category_id !== selectedCat.id) return false;
+        if (p.category_id !== selectedCat?.id) return false;
       }
       if (query.trim().length > 0) {
         const q = query.trim().toLowerCase();
@@ -115,7 +116,13 @@ export function TabletProductGrid({ selectedSlug }: TabletProductGridProps): JSX
       </div>
 
       <div className="flex-1 overflow-y-auto p-5">
-        {isLoading ? (
+        {isError ? (
+          <ErrorState
+            title="Impossible de charger les produits"
+            description="Le menu n'a pas pu être récupéré. Vérifiez la connexion et réessayez."
+            onRetry={() => void refetch()}
+          />
+        ) : isLoading ? (
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-4" aria-busy="true" aria-label="Loading products">
             {Array.from({ length: 6 }).map((_, i) => (
               <div

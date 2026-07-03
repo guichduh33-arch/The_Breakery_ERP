@@ -10,7 +10,7 @@ import { MemoryRouter } from 'react-router-dom';
 // Mock supabase before importing the page.
 const rpcSpy = vi.fn();
 vi.mock('@/lib/supabase.js', () => ({
-  supabase: { rpc: (...args: unknown[]) => rpcSpy(...args), functions: { invoke: vi.fn() } },
+  supabase: { rpc: (...args: unknown[]) => rpcSpy(...args) as unknown, functions: { invoke: vi.fn() } },
 }));
 
 import ProfitLossPage from '@/pages/reports/ProfitLossPage.js';
@@ -44,7 +44,7 @@ describe('ProfitLossPage compare', () => {
 
   it('renders DeltaPct testid when compare data ready', async () => {
     rpcSpy.mockResolvedValue({ data: mockPnlData, error: null });
-    render(wrap(<ProfitLossPage />));
+    render(wrap(<MemoryRouter><ProfitLossPage /></MemoryRouter>));
     fireEvent.click(screen.getByTestId('compare-toggle'));
     await waitFor(() => expect(screen.queryAllByTestId('delta-pct').length).toBeGreaterThan(0));
   });

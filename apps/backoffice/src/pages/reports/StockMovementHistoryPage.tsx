@@ -11,6 +11,7 @@ import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
 import { useStockLedger } from '@/features/inventory-movements/hooks/useStockLedger.js';
 import { StockLedgerTable } from '@/features/inventory-movements/components/StockLedgerTable.js';
 import { enrichLedgerLines, stockLedgerCsvColumns } from '@/features/inventory-movements/stockLedgerColumns.js';
+import { useUrlState } from '@/hooks/useUrlState.js';
 
 function defaultStart(): string {
   return toLocalDateStr(new Date(Date.now() - 29 * 86_400_000));
@@ -26,8 +27,8 @@ const MOVEMENT_TYPES = [
 ];
 
 export default function StockMovementHistoryPage() {
-  const [start,      setStart]      = useState<string>(defaultStart);
-  const [end,        setEnd]        = useState<string>(() => toLocalDateStr(new Date()));
+  const [start,      setStart]      = useUrlState('start', defaultStart());
+  const [end,        setEnd]        = useUrlState('end', toLocalDateStr(new Date()));
   const [typeFilter, setTypeFilter] = useState<string>('');
 
   const query = useStockLedger({
