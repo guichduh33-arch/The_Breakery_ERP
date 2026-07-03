@@ -1,5 +1,7 @@
 # Module 20 — Gestion des employés & droits
 
+> ⚠️ **Mise à jour S58 (2026-07-04, `swarm/session-58`)** : **D1.1 livré** (sidebar « RBAC Editor » → « Permissions (read-only) ») ; le prérequis module 01 D2.1 (login des comptes créés) est livré. **Finding P0 nouveau (F-1, session INDEX S58)** : la garde dernier-admin de `delete_user_v1` ne filtre pas `is_active` — le seed `SYS-CRON` (SUPER_ADMIN inactif) permet de supprimer le dernier admin réel ; la revendication « impossible de supprimer le dernier administrateur » (A/C-B1.2) est donc contournable en l'état. Le reste de la fiche reste daté `5b0fa92`.
+
 > **Remise à plat — analyse comparative.** Doc : Description v1.2 (2026-07-03), module 20. Code : commit `5b0fa92` (2026-07-03).
 > **Statut annoncé par la doc :** Opérationnel
 > **Verdict global de l'analyse :** La traçabilité des opérations sur comptes est réelle et complète, et la révocation de sessions va plus loin que ce que la doc annonce ; mais la revendication phare — « grille visuelle des droits avec cases à cocher pour ajuster » — est fausse : la grille est strictement en lecture seule, aucune écriture RBAC n'existe (ni RPC, ni UI), et le nouvel employé créé ne peut pas se connecter (sélecteur de login codé en dur, cf. module 01).

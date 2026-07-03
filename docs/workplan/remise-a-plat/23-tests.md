@@ -1,5 +1,7 @@
 # Module 23 — Qualité & tests
 
+> ⚠️ **Mise à jour S58 (2026-07-04, `swarm/session-58`)** : **D1 + D2 (triage) livrés** — 28/33 suites re-vertes (16 réparées), 3 quarantaines datées (`supabase/tests/_quarantine/`), 2 rouges assumées tests intacts (`users` F-1, `expenses` F-4) ; le job live-RPC est réparé (cause réelle : fallback `localhost:54321` faute de `VITE_SUPABASE_URL` exportée — ni clé ni secret) ; drift types nul + comparaison normalisée `--schema public` ; dette CLAUDE.md corrigée. C-B1.2 passe de 🟠 à ≈✅ (2 tripwires documentés). Détail : session INDEX S58. Le reste de la fiche reste daté `5b0fa92`.
+
 > **Remise à plat — analyse comparative.** Doc : Description v1.2 (2026-07-03), module 23. Code : commit `5b0fa92` (2026-07-03).
 > **Statut annoncé par la doc :** Opérationnel sur les flux critiques
 > **Verdict global de l'analyse :** La doc est fidèle sur la chaîne PR (bloquante et verte) mais **surclame sur le nightly** : les parcours navigateur « chaque nuit » échouent toutes les nuits en ~10 s (environnement de staging jamais provisionné), et la batterie DB complète nightly est actuellement rouge (33 suites sur 131 en échec + drift de types + job live-RPC en erreur réseau).

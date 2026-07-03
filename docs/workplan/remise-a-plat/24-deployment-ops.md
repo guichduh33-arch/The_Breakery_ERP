@@ -1,5 +1,7 @@
 # Module 24 — Mises à jour & exploitation
 
+> ⚠️ **Mise à jour S58 (2026-07-04, `swarm/session-58`)** : **D1.1 livré** — `staging-deploy.yml` (push retiré) et `playwright-e2e.yml` (cron retiré) sur `workflow_dispatch` seul, avec commentaires de réactivation ; plus d'échec automatique. D1.2 (environnement GitHub `staging`) et D1.3 (DSN Sentry) restent à faire. Le reste de la fiche reste daté `5b0fa92`.
+
 > **Remise à plat — analyse comparative.** Doc : Description v1.2 (2026-07-03), module 24. Code : commit `5b0fa92` (2026-07-03).
 > **Statut annoncé par la doc :** Opérationnel sur la chaîne de livraison
 > **Verdict global de l'analyse :** La doc surclame sur son cœur : la chaîne de déploiement staging **échoue en 0 s à chaque push depuis des mois** (environnement GitHub `staging` jamais configuré, secrets absents) et il n'existe aucune cible de production V3 — le « vrai magasin » n'est pas déployable par cette chaîne. Le runbook 6 scénarios est en revanche bien réel, et l'intégration Sentry est câblée côté code mais sans DSN provisionné démontrable.
