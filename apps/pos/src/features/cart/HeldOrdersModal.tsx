@@ -147,13 +147,16 @@ export function HeldOrdersModal({ open, onClose }: HeldOrdersModalProps): JSX.El
   useHeldOrdersRealtime();
 
   const { data, isLoading } = useHeldOrdersQuery();
-  const rows = data ?? [];
+  const allRows = data ?? [];
   const cartHasItems = useCartStore((s) => s.cart.items.length > 0);
   // S44 P1-A — a FIRED counter order is already in the DB (pickedUpOrderId set).
   // Restoring a held order on top would append the held items to the fired order
   // at checkout (the customer would pay the union of both). It must be paid or
   // voided first.
   const pickedUpOrderId = useCartStore((s) => s.pickedUpOrderId);
+  // The order currently loaded in the cart (active fired tab) is managed from the
+  // cart itself — don't also list it here as restorable/discardable.
+  const rows = allRows.filter((r) => r.id !== pickedUpOrderId);
   const restore = useRestoreHeldOrder();
   const reopen = useReopenHeldOrder();
   const discard = useDiscardHeldOrder();
