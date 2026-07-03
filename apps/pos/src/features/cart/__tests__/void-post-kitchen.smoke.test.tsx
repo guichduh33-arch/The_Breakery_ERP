@@ -15,8 +15,10 @@
 //   (b) Cart with locked items but NO pickedUpOrderId (nothing persisted —
 //       e.g. the fire RPC never succeeded) → only the local
 //       cartStore.voidOrder() runs; no server call.
-//   (c) S43 — Hold gating: a fired order (pickedUpOrderId set) has a live DB
-//       row; holding the local cart would orphan it → Hold is disabled.
+//   (c) Spec A — Hold gating on a fired order (pickedUpOrderId set): the draft
+//       hold path would orphan the live DB row, so "Hold" instead re-parks the
+//       fired order via hold_fired_order_v1. It is ENABLED when nothing changed
+//       (no unfired lines) and DISABLED while new unfired lines await firing.
 //
 // PinVerificationModal is mocked so we can directly trigger onVerified without
 // needing to simulate NumpadPin digit-by-digit input. This test is about void
@@ -152,7 +154,7 @@ describe('BottomActionBar — Void Order post-kitchen routing (POS-06)', () => {
   });
 });
 
-describe('BottomActionBar — Hold gating on fired orders (S43 P0-3)', () => {
+describe('BottomActionBar — Hold gating on fired orders (Spec A re-hold)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     useCartStore.setState({
@@ -165,25 +167,36 @@ describe('BottomActionBar — Hold gating on fired orders (S43 P0-3)', () => {
     });
   });
 
-  it('(c) fired order (pickedUpOrderId set): Hold is disabled with an explanatory title', () => {
+  it('(c) reopened fired order, nothing changed: Hold is enabled (re-park)', () => {
+    // All lines locked (reopened, none added) → no unfired items → re-park OK.
     useCartStore.setState({ pickedUpOrderId: 'order-123' });
 
     render(wrapper(<BottomActionBar />));
     fireEvent.click(screen.getByRole('button', { name: /^more$/i }));
 
-    expect(screen.getByRole('button', { name: /^hold$/i })).toBeDisabled();
-    expect(
-      screen.getByTitle('Order already sent to kitchen — pay or void it'),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: /^hold$/i })).toBeEnabled();
   });
 
-  it('(c) never-fired cart: Hold stays enabled, no gating title', () => {
+  it('(c) reopened fired order with a new unfired line: Hold is disabled', () => {
+    useCartStore.setState({
+      cart: { items: [ITEM, { ...ITEM, id: 'new1', name: 'Croissant' }], order_type: 'dine_in' },
+      lockedItemIds: ['l1'],
+      printedItemIds: ['l1'],
+      pickedUpOrderId: 'order-123',
+    });
+
+    render(wrapper(<BottomActionBar />));
+    fireEvent.click(screen.getByRole('button', { name: /^more$/i }));
+
+    const hold = screen.getByRole('menuitem', { name: /^hold$/i });
+    expect(hold).toBeDisabled();
+    expect(hold).toHaveAttribute('title', 'Send the new items to the kitchen first');
+  });
+
+  it('(c) never-fired cart: Hold stays enabled (draft hold)', () => {
     render(wrapper(<BottomActionBar />));
     fireEvent.click(screen.getByRole('button', { name: /^more$/i }));
 
     expect(screen.getByRole('button', { name: /^hold$/i })).toBeEnabled();
-    expect(
-      screen.queryByTitle('Order already sent to kitchen — pay or void it'),
-    ).not.toBeInTheDocument();
   });
 });

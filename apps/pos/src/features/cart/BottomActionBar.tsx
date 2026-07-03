@@ -22,6 +22,7 @@ import {
   Clock,
   CreditCard,
   MoreHorizontal,
+  PauseCircle,
   Percent,
   Star,
   User,
@@ -39,11 +40,12 @@ import {
   cn,
 } from '@breakery/ui';
 import { calculateTotals } from '@breakery/domain';
-import { useCartStore } from '@/stores/cartStore';
+import { useCartStore, resetCartAfterCheckout } from '@/stores/cartStore';
 import { usePaymentStore } from '@/stores/paymentStore';
 import { useTaxRate } from '@/features/settings/hooks/useTaxRate';
 import { useHeldOrdersQuery } from '@/features/heldOrders/hooks/useHeldOrdersQuery';
 import { HoldOrderButton } from '@/features/heldOrders/components/HoldOrderButton';
+import { useHoldFiredOrder } from './hooks/useHoldFiredOrder';
 import { useApplyCartDiscount } from '@/features/discounts/hooks/useApplyCartDiscount';
 import { useVerifyManagerPin } from '@/features/discounts/hooks/useVerifyManagerPin';
 import { useVoidServerOrder } from './hooks/useVoidServerOrder';
@@ -81,6 +83,7 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
   const openPayment = usePaymentStore((s) => s.open);
 
   const heldCount = useHeldOrdersQuery().data?.length ?? 0;
+  const holdFired = useHoldFiredOrder();
   const discount = useApplyCartDiscount();
   const rawVoidVerifyFn = useVerifyManagerPin();
   const voidServerOrder = useVoidServerOrder();
@@ -140,6 +143,30 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
 
   const hasItems = cart.items.some((i) => !i.is_cancelled);
   const hasSentItems = lockedItemIds.length > 0;
+
+  // Spec A fix — re-hold a reopened FIRED order ("addition ouverte") even when
+  // nothing changed. After reopen_held_order_v1 the order sits on the terminal
+  // (pickedUpOrderId set, all lines locked); Send-to-Kitchen is disabled with no
+  // new items to fire, and the draft Hold path would orphan the live DB row. So
+  // when a fired order is open with no unfired lines, "Hold" re-parks it via
+  // hold_fired_order_v1 and frees the terminal. New unfired lines must go through
+  // Send to Kitchen first (it fires + parks).
+  const hasFiredOrderOpen = pickedUpOrderId !== null;
+  const hasUnfiredItems = cart.items.some(
+    (i) => !i.is_cancelled && !lockedItemIds.includes(i.id),
+  );
+
+  async function handleReholdFired(): Promise<void> {
+    if (!pickedUpOrderId) return;
+    setMoreOpen(false);
+    try {
+      await holdFired.mutateAsync(pickedUpOrderId);
+      resetCartAfterCheckout();
+      toast.success('Order held');
+    } catch {
+      toast.error('Could not hold order');
+    }
+  }
 
   // Void Order — once anything has been fired to the kitchen, require a manager
   // PIN before wiping the order (waste / fraud control). Before any send, the
@@ -220,21 +247,33 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
             role="menu"
             className="absolute bottom-full left-0 mb-2 w-56 p-1 rounded-md bg-bg-elevated border border-border-subtle shadow-lg z-50"
           >
-            {/* Hold reuses the existing self-contained component (its own logic).
-                S43 P0-3: a fired order (pickedUpOrderId set) has a live DB row —
-                holding the local cart would orphan it. Pay or void instead. */}
-            <div
-              role="menuitem"
-              {...(pickedUpOrderId !== null
-                ? { title: 'Order already sent to kitchen — pay or void it' }
-                : {})}
-            >
-              <HoldOrderButton
-                variant="ghost"
+            {/* Hold. A fresh cart → draft hold (HoldOrderButton, hold_order_v1).
+                A reopened FIRED order (pickedUpOrderId set) already has a live DB
+                row, so the draft path would orphan it — instead re-park it via
+                hold_fired_order_v1. New unfired lines must be fired first (Send
+                to Kitchen fires + parks), so re-hold is gated on hasUnfiredItems. */}
+            {hasFiredOrderOpen ? (
+              <button
+                type="button"
+                role="menuitem"
                 className={cn(MENU_ITEM, 'justify-start')}
-                disabled={pickedUpOrderId !== null}
-              />
-            </div>
+                disabled={hasUnfiredItems || holdFired.isPending}
+                {...(hasUnfiredItems
+                  ? { title: 'Send the new items to the kitchen first' }
+                  : {})}
+                onClick={() => { void handleReholdFired(); }}
+              >
+                <PauseCircle className="h-4 w-4 text-gold" aria-hidden />
+                <span>Hold</span>
+              </button>
+            ) : (
+              <div role="menuitem">
+                <HoldOrderButton
+                  variant="ghost"
+                  className={cn(MENU_ITEM, 'justify-start')}
+                />
+              </div>
+            )}
             <button
               type="button"
               role="menuitem"
