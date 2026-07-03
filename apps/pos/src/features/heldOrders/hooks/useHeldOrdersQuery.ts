@@ -36,7 +36,7 @@ export function useHeldOrdersQuery() {
         .or('is_held.eq.true,and(status.eq.pending_payment,created_via.eq.pos)')
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return (data ?? []) as HeldOrderRow[];
+      return data ?? [];
     },
   });
 }

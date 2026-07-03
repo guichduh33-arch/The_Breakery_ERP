@@ -29,13 +29,14 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import type { ReactNode } from 'react';
+import type * as BreakeryUi from '@breakery/ui';
 import { useCartStore } from '@/stores/cartStore';
 import { BottomActionBar } from '../BottomActionBar';
 
 // Mock PinVerificationModal so we can trigger onVerified without digit input.
 // The test is about void routing, not the PIN modal UI.
 vi.mock('@breakery/ui', async (importOriginal) => {
-  const mod = await importOriginal<typeof import('@breakery/ui')>();
+  const mod = await importOriginal<typeof BreakeryUi>();
   return {
     ...mod,
     PinVerificationModal: ({
