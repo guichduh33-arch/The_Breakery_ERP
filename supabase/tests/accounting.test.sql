@@ -255,7 +255,7 @@ DECLARE
 BEGIN
   -- Find any active MANAGER profile (seed convention).
   SELECT id INTO v_profile_id FROM user_profiles
-    WHERE deleted_at IS NULL AND role = 'MANAGER'
+    WHERE deleted_at IS NULL AND role_code = 'MANAGER'
     LIMIT 1;
   IF v_profile_id IS NULL THEN
     PERFORM set_config('breakery.t16_skip', 'no_manager', true);
@@ -399,7 +399,7 @@ DECLARE
   v_cnt         INT;
 BEGIN
   SELECT id INTO v_profile_id FROM user_profiles
-    WHERE deleted_at IS NULL AND role = 'MANAGER' LIMIT 1;
+    WHERE deleted_at IS NULL AND role_code = 'MANAGER' LIMIT 1;
   IF v_profile_id IS NULL THEN
     PERFORM set_config('breakery.t23_skip', 'no_manager', true);
     RETURN;
@@ -418,10 +418,11 @@ BEGIN
   v_inv  := resolve_mapping_account('INVENTORY_GENERAL');
 
   -- T23: insert a waste movement directly (SECURITY DEFINER context — pgtap runs as superuser).
+  -- reference_type is NOT NULL since Phase-1.A (manual movements use 'admin_action').
   INSERT INTO stock_movements (
-    product_id, movement_type, quantity, unit, reason, unit_cost, created_by
+    product_id, movement_type, quantity, unit, reason, unit_cost, created_by, reference_type
   ) VALUES (
-    v_product_id, 'waste', -1, 'pcs', 'pgTAP waste test', 1000, v_profile_id
+    v_product_id, 'waste', -1, 'pcs', 'pgTAP waste test', 1000, v_profile_id, 'admin_action'
   ) RETURNING id INTO v_mvt_id;
 
   SELECT * INTO v_je FROM journal_entries
@@ -430,11 +431,14 @@ BEGIN
     (v_je.id IS NOT NULL AND v_je.total_debit = v_je.total_credit AND v_je.total_debit > 0)::TEXT,
     true);
 
-  -- T24: adjustment_in
+  -- T24: adjustment_in — needs a section (chk_stock_movements_section_required exempts
+  -- 'adjustment' but not 'adjustment_in').
   INSERT INTO stock_movements (
-    product_id, movement_type, quantity, unit, reason, unit_cost, created_by
+    product_id, movement_type, quantity, unit, reason, unit_cost, created_by, reference_type,
+    to_section_id
   ) VALUES (
-    v_product_id, 'adjustment_in', 1, 'pcs', 'pgTAP adj_in test', 1000, v_profile_id
+    v_product_id, 'adjustment_in', 1, 'pcs', 'pgTAP adj_in test', 1000, v_profile_id, 'admin_action',
+    (SELECT id FROM sections WHERE code='FRONT_SALES')
   ) RETURNING id INTO v_mvt_id;
 
   SELECT * INTO v_je FROM journal_entries
@@ -453,11 +457,11 @@ BEGIN
   -- T26: transfer_in must NOT emit a JE.
   INSERT INTO stock_movements (
     product_id, movement_type, quantity, unit, reason, unit_cost, created_by,
-    from_section_id, to_section_id
+    from_section_id, to_section_id, reference_type
   )
   SELECT v_product_id, 'transfer_in', 1, 'pcs', 'pgTAP transfer test', 0, v_profile_id,
     (SELECT id FROM sections WHERE code='MAIN_WAREHOUSE'),
-    (SELECT id FROM sections WHERE code='FRONT_SALES')
+    (SELECT id FROM sections WHERE code='FRONT_SALES'), 'admin_action'
   RETURNING id INTO v_mvt_id;
 
   SELECT COUNT(*)::INT INTO v_cnt FROM journal_entries
@@ -468,14 +472,16 @@ BEGIN
   -- We bypass the default created_at by explicit override.
   BEGIN
     INSERT INTO stock_movements (
-      product_id, movement_type, quantity, unit, reason, unit_cost, created_by, created_at
+      product_id, movement_type, quantity, unit, reason, unit_cost, created_by, created_at, reference_type
     ) VALUES (
       v_product_id, 'waste', -1, 'pcs', 'pgTAP fiscal guard', 1000, v_profile_id,
-      '2025-12-30 12:00:00+00'::TIMESTAMPTZ
+      '2025-12-30 12:00:00+00'::TIMESTAMPTZ, 'admin_action'
     );
     PERFORM set_config('breakery.t27_pass', 'false', true);
-  EXCEPTION WHEN OTHERS THEN
-    -- Accept any error from the guard (SQLSTATE P0004 expected).
+  EXCEPTION WHEN SQLSTATE 'P0004' OR OTHERS THEN
+    -- P0004 must be trapped BY NAME: plpgsql `WHEN OTHERS` deliberately excludes
+    -- assert_failure (SQLSTATE P0004), the guard's errcode. Assertion unchanged
+    -- (still requires SQLSTATE = 'P0004').
     PERFORM set_config('breakery.t27_pass',
       (SQLSTATE = 'P0004' OR SQLERRM ILIKE '%period_locked%')::TEXT,
       true);
@@ -511,9 +517,9 @@ SELECT ok(
 -- T28 — calculate_vat_payable returns the correct shape
 -- ---------------------------------------------------------------------------
 SELECT ok(
-  (SELECT (calculate_vat_payable(DATE '2026-01-01', DATE '2026-12-31'))
-          ? 'vat_payable'),
-  'T28: calculate_vat_payable returns object with vat_payable key'
+  (SELECT (calculate_pb1_payable_v1(DATE '2026-01-01', DATE '2026-12-31'))
+          ? 'pb1_payable'),
+  'T28: calculate_pb1_payable_v1 returns object with pb1_payable key (VAT→PB1, ADR-003)'
 );
 
 -- ---------------------------------------------------------------------------
@@ -554,20 +560,20 @@ SELECT ok(
 -- ---------------------------------------------------------------------------
 SELECT ok(
   NOT EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'refund_order_rpc' AND pronamespace = 'public'::regnamespace)
-  AND EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'refund_order_rpc_v2'),
-  'T33: refund_order_rpc dropped ; refund_order_rpc_v2 exists'
+  AND EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'refund_order_rpc_v4'),
+  'T33: refund_order_rpc dropped ; refund_order_rpc_v4 exists'
 );
 
 SELECT ok(
   NOT EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'complete_order_with_payment' AND pronamespace = 'public'::regnamespace)
-  AND EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'complete_order_with_payment_v9'),
-  'T34: complete_order_with_payment dropped ; complete_order_with_payment_v9 exists'
+  AND EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'complete_order_with_payment_v17'),
+  'T34: complete_order_with_payment dropped ; complete_order_with_payment_v17 exists'
 );
 
 SELECT ok(
   NOT EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'pay_existing_order' AND pronamespace = 'public'::regnamespace)
-  AND EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'pay_existing_order_v6'),
-  'T35: pay_existing_order dropped ; pay_existing_order_v6 exists'
+  AND EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'pay_existing_order_v11'),
+  'T35: pay_existing_order dropped ; pay_existing_order_v11 exists'
 );
 
 -- ---------------------------------------------------------------------------
@@ -579,8 +585,8 @@ SELECT is(
      WHERE tgrelid = 'stock_movements'::regclass
        AND tgenabled = 'O'
        AND NOT tgisinternal),
-  ARRAY['tr_20_je_emit']::TEXT,
-  'T_TRIGGER_ORDER_STOCK_MOVEMENTS (M1): only tr_20_je_emit is attached on stock_movements'
+  ARRAY['tr_20_je_emit','tr_update_product_cost_on_purchase']::TEXT,
+  'T_TRIGGER_ORDER_STOCK_MOVEMENTS (M1): tr_20_je_emit + tr_update_product_cost_on_purchase (PR #103, asserted in purchasing_po) — no other trigger'
 );
 
 -- ---------------------------------------------------------------------------

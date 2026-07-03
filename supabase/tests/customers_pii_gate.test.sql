@@ -11,9 +11,12 @@ DO $$
 DECLARE
   v_auth UUID; v_catg UUID; v_cust UUID;
 BEGIN
+  -- v3 customer RPCs gate on customers.read OR pos.sale.create — pick a caller that has it.
   SELECT up.auth_user_id INTO v_auth
     FROM user_profiles up
    WHERE up.deleted_at IS NULL AND up.auth_user_id IS NOT NULL
+     AND (has_permission(up.auth_user_id, 'customers.read')
+          OR has_permission(up.auth_user_id, 'pos.sale.create'))
    LIMIT 1;
   PERFORM set_config('request.jwt.claim.sub', v_auth::text, true);
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_auth)::text, true);
@@ -30,22 +33,22 @@ END $$;
 -- T1 : search_customers_v2 trouve le client et embed la catégorie
 DO $$ DECLARE v_row RECORD;
 BEGIN
-  SELECT * INTO v_row FROM search_customers_v2('S37 PII Gate', 20) LIMIT 1;
+  SELECT * INTO v_row FROM search_customers_v3('S37 PII Gate', 20) LIMIT 1;
   PERFORM set_config('breakery.t1_ok',
     (v_row.id IS NOT NULL AND v_row.category IS NOT NULL
      AND (v_row.category->>'id')::uuid = current_setting('breakery.v_catg')::uuid
      AND v_row.category ? 'points_multiplier' AND v_row.category ? 'price_modifier_type')::text, true);
 END $$;
-SELECT is(current_setting('breakery.t1_ok'), 'true', 'T1 search_customers_v2 embeds the full category');
+SELECT is(current_setting('breakery.t1_ok'), 'true', 'T1 search_customers_v3 embeds the full category');
 
 -- T2 : get_customer_v2 retourne la même shape
 DO $$ DECLARE v_row RECORD;
 BEGIN
-  SELECT * INTO v_row FROM get_customer_v2(current_setting('breakery.v_cust')::uuid);
+  SELECT * INTO v_row FROM get_customer_v3(current_setting('breakery.v_cust')::uuid);
   PERFORM set_config('breakery.t2_ok',
     (v_row.id IS NOT NULL AND v_row.category ? 'loyalty_enabled')::text, true);
 END $$;
-SELECT is(current_setting('breakery.t2_ok'), 'true', 'T2 get_customer_v2 embeds the category');
+SELECT is(current_setting('breakery.t2_ok'), 'true', 'T2 get_customer_v3 embeds the category');
 
 -- T3 : create_customer_v2 retourne la row créée, avec la catégorie par défaut
 -- assignée server-side (_019) si une catégorie is_default existe.
@@ -68,12 +71,12 @@ SELECT is(
       AND pronamespace = 'public'::regnamespace),
   0, 'T4 v1 customer RPCs dropped');
 
--- T5 : anon n'a pas EXECUTE sur les v2
+-- T5 : anon n'a pas EXECUTE sur les RPCs customer live (search/get bumpés v3, create resté v2)
 SELECT is(
-  has_function_privilege('anon', 'public.search_customers_v2(text, int)', 'EXECUTE')
-  OR has_function_privilege('anon', 'public.get_customer_v2(uuid)', 'EXECUTE')
+  has_function_privilege('anon', 'public.search_customers_v3(text, int)', 'EXECUTE')
+  OR has_function_privilege('anon', 'public.get_customer_v3(uuid)', 'EXECUTE')
   OR has_function_privilege('anon', 'public.create_customer_v2(text, text, text, customer_type)', 'EXECUTE'),
-  false, 'T5 anon cannot execute the v2 customer RPCs');
+  false, 'T5 anon cannot execute the live customer RPCs');
 
 -- T7 (DB-06, _020 → S52 v3) : get_pos_b2b_debts_v3 existe, v2 droppée, anon sans EXECUTE
 SELECT is(

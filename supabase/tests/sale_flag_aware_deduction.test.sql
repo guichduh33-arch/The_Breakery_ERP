@@ -30,7 +30,12 @@ BEGIN
   SELECT id INTO v_cat FROM categories LIMIT 1;
   SELECT enumlabel INTO v_otype FROM pg_enum e JOIN pg_type t ON t.oid=e.enumtypid WHERE t.typname='order_type' LIMIT 1;
   SELECT id INTO v_sess FROM pos_sessions WHERE opened_by=v_admin AND status='open' LIMIT 1;
-  IF v_sess IS NULL THEN RAISE EXCEPTION 'fixture: EMP000 needs an open POS session'; END IF;
+  -- S58 T4 : self-seed the open session in-tx (rolled back) instead of aborting —
+  -- the nightly DB has no standing open session for EMP000.
+  IF v_sess IS NULL THEN
+    INSERT INTO pos_sessions (opened_by, opening_cash, status)
+      VALUES (v_admin, 0, 'open') RETURNING id INTO v_sess;
+  END IF;
 
   INSERT INTO products (id, sku, name, category_id, retail_price, unit, track_inventory, deduct_stock, current_stock) VALUES
     (v_beans,  'TB-'||v_beans,  'Beans',  v_cat, 0,     'g',   true,  false, 1000),

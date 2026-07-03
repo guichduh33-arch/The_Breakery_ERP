@@ -13,16 +13,29 @@ BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
 SELECT plan(12);
 
+-- S58 repair: get_profit_loss_v1/get_balance_sheet_v1 were dropped and bumped to
+-- _v2 (gate: reports.financial.read, SECURITY DEFINER). Set an auth context that
+-- holds that permission so the gated RPCs don't RAISE 42501.
+DO $fixture$
+DECLARE v_auth UUID;
+BEGIN
+  SELECT up.auth_user_id INTO v_auth FROM user_profiles up
+   WHERE up.deleted_at IS NULL AND up.auth_user_id IS NOT NULL
+     AND has_permission(up.auth_user_id, 'reports.financial.read') LIMIT 1;
+  PERFORM set_config('request.jwt.claim.sub', v_auth::text, true);
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_auth)::text, true);
+END $fixture$;
+
 -- ============================================================
 -- T_RPT_FIN_01..04 — RPC existence
 -- ============================================================
 SELECT has_function(
-  'public', 'get_profit_loss_v1', ARRAY['date','date','uuid'],
-  'T_RPT_FIN_01 — get_profit_loss_v1 exists'
+  'public', 'get_profit_loss_v2', ARRAY['date','date','uuid'],
+  'T_RPT_FIN_01 — get_profit_loss_v2 exists'
 );
 SELECT has_function(
-  'public', 'get_balance_sheet_v1', ARRAY['date'],
-  'T_RPT_FIN_02 — get_balance_sheet_v1 exists'
+  'public', 'get_balance_sheet_v2', ARRAY['date'],
+  'T_RPT_FIN_02 — get_balance_sheet_v2 exists'
 );
 SELECT has_function(
   'public', 'get_cash_flow_v1', ARRAY['date','date'],
@@ -32,6 +45,19 @@ SELECT has_function(
   'public', 'get_basket_analysis_v1', ARRAY['date','date','integer'],
   'T_RPT_FIN_04 — get_basket_analysis_v1 exists'
 );
+
+-- ============================================================
+-- Baseline capture (S58 repair): the dev DB is not empty — CYE is a YTD
+-- cumulative that includes every real posted JE. Capture it BEFORE the seed
+-- so T_RPT_FIN_08 can assert the DELTA (+40) instead of an absolute value
+-- that only held on a virgin S13 database. Intent unchanged: the 3 seeded
+-- JEs must move CYE by exactly net profit = 40.
+-- ============================================================
+DO $baseline$
+BEGIN
+  PERFORM set_config('breakery.cye_before',
+    ((get_balance_sheet_v2(CURRENT_DATE))->'equity'->>'current_year_earnings'), true);
+END $baseline$;
 
 -- ============================================================
 -- Seed data
@@ -77,17 +103,17 @@ END $seed$;
 -- T_RPT_FIN_05..07 — P&L math
 -- ============================================================
 SELECT is(
-  ((get_profit_loss_v1(CURRENT_DATE, CURRENT_DATE))->'revenue'->>'total')::NUMERIC,
+  ((get_profit_loss_v2(CURRENT_DATE, CURRENT_DATE))->'revenue'->>'total')::NUMERIC,
   100::NUMERIC,
   'T_RPT_FIN_05 — P&L revenue total = 100'
 );
 SELECT is(
-  ((get_profit_loss_v1(CURRENT_DATE, CURRENT_DATE))->'cogs'->>'total')::NUMERIC,
+  ((get_profit_loss_v2(CURRENT_DATE, CURRENT_DATE))->'cogs'->>'total')::NUMERIC,
   40::NUMERIC,
   'T_RPT_FIN_06 — P&L COGS total = 40'
 );
 SELECT is(
-  ((get_profit_loss_v1(CURRENT_DATE, CURRENT_DATE))->>'net_profit')::NUMERIC,
+  ((get_profit_loss_v2(CURRENT_DATE, CURRENT_DATE))->>'net_profit')::NUMERIC,
   40::NUMERIC,
   'T_RPT_FIN_07 — P&L net profit = 100 - 40 - 20 = 40'
 );
@@ -96,12 +122,13 @@ SELECT is(
 -- T_RPT_FIN_08..09 — Balance Sheet math + balanced
 -- ============================================================
 SELECT is(
-  ((get_balance_sheet_v1(CURRENT_DATE))->'equity'->>'current_year_earnings')::NUMERIC,
+  ((get_balance_sheet_v2(CURRENT_DATE))->'equity'->>'current_year_earnings')::NUMERIC
+    - current_setting('breakery.cye_before')::NUMERIC,
   40::NUMERIC,
-  'T_RPT_FIN_08 — Balance Sheet CYE = net profit = 40'
+  'T_RPT_FIN_08 — Balance Sheet CYE moved by seeded net profit (+40)'
 );
 SELECT ok(
-  ((get_balance_sheet_v1(CURRENT_DATE))->>'balanced')::BOOLEAN,
+  ((get_balance_sheet_v2(CURRENT_DATE))->>'balanced')::BOOLEAN,
   'T_RPT_FIN_09 — Balance Sheet is balanced (A = L + E + CYE)'
 );
 
