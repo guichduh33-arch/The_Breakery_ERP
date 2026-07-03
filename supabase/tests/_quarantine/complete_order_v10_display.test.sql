@@ -1,4 +1,19 @@
 -- supabase/tests/complete_order_v10_display.test.sql
+-- ⚠️ OBSOLETE — candidate for dated exclusion (2026-07-04, S58 stale-suite triage).
+-- Cette suite cible complete_order_with_payment_v10, DROPPÉE (money-path courante = v17, cf. S57).
+-- Vérification sur v17 (repoint tenté) : T1 (double déduction display), T3 (current_stock peut
+-- passer négatif si display suffit) et T4 (isolation non-display, aucun display_movements) sont
+-- reproduits FIDÈLEMENT sous v17. Ces trois intentions sont déjà couvertes VERT par les suites
+-- s44_display_symmetry et sale_stock_unification (S53 P1.4).
+-- SEUL T2 n'est PAS reproductible sans réécrire l'assertion : v10 opposait une garde propre
+-- « display_stock insuffisant » → P0002 ; v17 laisse l'oversell buter sur la CHECK brute
+-- display_stock_quantity_check → SQLSTATE 23514 (l'oversell reste BLOQUÉ, mais le contrat
+-- d'erreur a changé). Voir POSSIBLE REGRESSION dans le rapport S58 : garde d'oversell vitrine
+-- dégradée d'un P0002 métier à une contrainte CHECK 23514.
+-- => Fichier laissé INTACT (aucun repoint fabriqué). À exclure du run nightly ou à réécrire
+--    délibérément (décision propriétaire) si la couverture des 3 intentions restantes est jugée
+--    redondante avec les suites vertes ci-dessus.
+--
 -- pgTAP — vente v10 : double déduction display, garde vitrine, non-régression non-display.
 -- Exécuter via MCP execute_sql (BEGIN..ROLLBACK).
 BEGIN;
