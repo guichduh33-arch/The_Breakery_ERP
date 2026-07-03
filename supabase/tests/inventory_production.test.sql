@@ -292,7 +292,7 @@ SELECT ok(current_setting('breakery.t_prod_08_pass') IN ('yes','skip'),
 -- T_PROD_09 — qty <= 0 rejected with quantity_must_be_positive
 -- ---------------------------------------------------------------------------
 DO $$
-DECLARE v_mgr UUID; v_bag UUID := current_setting('breakery.t_prod_baguette')::uuid; v_caught TEXT;
+DECLARE v_mgr UUID; v_bag UUID := current_setting('breakery.t_prod_baguette')::uuid; v_section UUID := current_setting('breakery.t_prod_section')::uuid; v_caught TEXT;
 BEGIN
   SELECT auth_user_id INTO v_mgr FROM user_profiles WHERE employee_code='EMP003';
   IF v_mgr IS NULL THEN
@@ -301,7 +301,10 @@ BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
   PERFORM set_config('role','authenticated',true);
   BEGIN
-    PERFORM record_production_v1(v_bag, 0, NULL, NULL, 0, NULL, NULL);
+    -- record_production_v1 now requires a non-null section (raised as
+    -- section_required BEFORE the qty check), so pass the seeded section to
+    -- actually reach and exercise the quantity_must_be_positive guard.
+    PERFORM record_production_v1(v_bag, 0, v_section, NULL, 0, NULL, NULL);
     v_caught := 'no_raise';
   EXCEPTION WHEN OTHERS THEN v_caught := SQLERRM;
   END;
@@ -320,6 +323,7 @@ DECLARE
   v_mgr UUID;
   v_bag UUID := current_setting('breakery.t_prod_baguette')::uuid;
   v_flo UUID := current_setting('breakery.t_prod_flour')::uuid;
+  v_section UUID := current_setting('breakery.t_prod_section')::uuid;
   v_caught TEXT; v_detail TEXT;
 BEGIN
   SELECT auth_user_id INTO v_mgr FROM user_profiles WHERE employee_code='EMP003';
@@ -328,24 +332,39 @@ BEGIN
   END IF;
   -- Bring flour stock down to 0.5kg so 50 baguettes need 12.5kg → insufficient.
   UPDATE products SET current_stock = 0.5 WHERE id = v_flo;
+  -- record_production_v1 is now flag-aware (S53/#122): it only raises
+  -- insufficient_stock when business_config.allow_negative_stock is FALSE
+  -- (the column defaults to allow, COALESCE(...,true)). Force it off for the
+  -- duration of this insufficiency check (rolled back with the suite). Also
+  -- pass the seeded section (section is now required before the stock check).
+  UPDATE business_config SET allow_negative_stock = false WHERE id = 1;
   PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
   PERFORM set_config('role','authenticated',true);
   -- Ensure single recipe for clarity (deactivate any others on this product first)
   -- Skipped to keep the test isolated.
   PERFORM upsert_recipe_v1(v_bag, v_flo, 250, 'g', NULL);
   BEGIN
-    PERFORM record_production_v1(v_bag, 50, NULL, NULL, 0, NULL, NULL);
+    PERFORM record_production_v1(v_bag, 50, v_section, NULL, 0, NULL, NULL);
     v_caught := 'no_raise';
   EXCEPTION WHEN OTHERS THEN
     GET STACKED DIAGNOSTICS v_detail = PG_EXCEPTION_DETAIL;
     v_caught := SQLERRM;
   END;
   PERFORM set_config('role','postgres',true);
+  UPDATE business_config SET allow_negative_stock = true WHERE id = 1;
   PERFORM set_config('breakery.t_prod_10_pass',
     CASE WHEN v_caught='insufficient_stock' AND v_detail LIKE '%Test Flour%' THEN 'yes' ELSE 'no' END, true);
 END $$;
 SELECT ok(current_setting('breakery.t_prod_10_pass') IN ('yes','skip'),
   'T_PROD_10: insufficient_stock raised with missing material in DETAIL');
+
+-- record_production_v1 issues `CREATE TEMP TABLE _bom_flatten / _leaf_consumption
+-- ON COMMIT DROP`. Under this suite's single BEGIN..ROLLBACK envelope the temp
+-- tables survive across successive invocations and the next call collides with
+-- `relation "_bom_flatten" already exists`. Flush them between invocations. In
+-- production each RPC call is its own transaction so this never fires.
+DROP TABLE IF EXISTS pg_temp._bom_flatten;
+DROP TABLE IF EXISTS pg_temp._leaf_consumption;
 
 -- ---------------------------------------------------------------------------
 -- T_PROD_11 — happy path : 50 baguettes → 1 in + 4 out + balanced JEs
@@ -401,6 +420,9 @@ END $$;
 SELECT ok(current_setting('breakery.t_prod_11_pass') IN ('yes','skip'),
   'T_PROD_11: 50-baguette happy path → 5 movements + 5 balanced JEs');
 
+DROP TABLE IF EXISTS pg_temp._bom_flatten;
+DROP TABLE IF EXISTS pg_temp._leaf_consumption;
+
 -- ---------------------------------------------------------------------------
 -- T_PROD_12 — idempotency replay returns same production_id, no duplicate movements
 -- ---------------------------------------------------------------------------
@@ -434,6 +456,9 @@ BEGIN
 END $$;
 SELECT ok(current_setting('breakery.t_prod_12_pass') IN ('yes','skip'),
   'T_PROD_12: idempotency replay same production_id, no duplicate');
+
+DROP TABLE IF EXISTS pg_temp._bom_flatten;
+DROP TABLE IF EXISTS pg_temp._leaf_consumption;
 -- ---------------------------------------------------------------------------
 -- T_PROD_13 — MANAGER → forbidden on revert_production_v1
 -- ---------------------------------------------------------------------------
@@ -483,6 +508,12 @@ BEGIN
   SELECT current_stock INTO v_flo_before FROM products WHERE id=v_flo;
   SELECT id INTO v_section FROM sections WHERE deleted_at IS NULL ORDER BY display_order LIMIT 1;
 
+  -- Isolate: T_PROD_11 left salt/yeast/water recipes active on the shared
+  -- T_PROD_BAGUETTE product. Deactivate every active recipe (postgres context —
+  -- authenticated has no UPDATE on recipes) so this single-ingredient production
+  -- yields exactly 1 production_in + 1 production_out = 2 movements to reverse.
+  UPDATE recipes SET is_active = false, deleted_at = now() WHERE product_id = v_bag AND is_active;
+
   PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
   PERFORM set_config('role','authenticated',true);
   PERFORM upsert_recipe_v1(v_bag, v_flo, 250, 'g', NULL);
@@ -518,6 +549,8 @@ DECLARE
   v_flo UUID := current_setting('breakery.t_prod_flour')::uuid;
   v_count INT;
   v_test_order UUID;
+  v_session UUID;
+  v_opener UUID;
 BEGIN
   SELECT auth_user_id INTO v_mgr FROM user_profiles WHERE employee_code='EMP003';
   IF v_mgr IS NULL THEN
@@ -532,8 +565,14 @@ BEGIN
   PERFORM upsert_recipe_v1(v_bag, v_flo, 250, 'g', NULL);
   PERFORM set_config('role','postgres',true);
 
-  INSERT INTO orders (order_number, order_type, status, subtotal, tax_amount, total, created_at, created_via)
-  VALUES ('T_PROD_15_O1', 'dine_in', 'completed', 50000, 0, 50000, now() - INTERVAL '1 day', 'pos')
+  -- POS orders now require a session_id (constraint orders_session_id_required_for_pos).
+  -- Seed an open POS session for the synthetic recent-sale fixture.
+  SELECT id INTO v_opener FROM user_profiles ORDER BY created_at LIMIT 1;
+  INSERT INTO pos_sessions (id, opened_by, opened_at, opening_cash, status)
+  VALUES (gen_random_uuid(), v_opener, NOW(), 0, 'open') RETURNING id INTO v_session;
+
+  INSERT INTO orders (order_number, order_type, status, subtotal, tax_amount, total, created_at, created_via, session_id)
+  VALUES ('T_PROD_15_O1', 'dine_in', 'completed', 50000, 0, 50000, now() - INTERVAL '1 day', 'pos', v_session)
   RETURNING id INTO v_test_order;
   INSERT INTO order_items (order_id, product_id, name_snapshot, unit_price, quantity, line_total, created_at)
   VALUES (v_test_order, v_bag, 'Baguette', 5000, 10, 50000, now() - INTERVAL '1 day');

@@ -126,6 +126,13 @@ LANGUAGE plpgsql AS $$
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', p_uid::text, true);
 END $$;
+-- The project-wide anon/PUBLIC hardening (ALTER DEFAULT PRIVILEGES FOR ROLE
+-- postgres REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC) strips PUBLIC EXECUTE from
+-- newly created functions — including this pg_temp helper — which makes the
+-- nightly runner (non-owner role) fail with "permission denied for function
+-- set_jwt_uid". Re-grant EXECUTE explicitly so the helper is callable whatever
+-- role runs the suite.
+GRANT EXECUTE ON FUNCTION pg_temp.set_jwt_uid(UUID) TO PUBLIC;
 
 -- =========================================================================
 -- T1 — record_stock_movement_v1 rejects sale movement_type

@@ -1,4 +1,14 @@
 -- supabase/tests/category_station_remap.test.sql
+-- ⚠️ OBSOLETE — exclusion datée 2026-07-04 (S58 T4, triage nightly).
+-- Cette ancre vérifiait le remap S34 (migration 20260601043059) sur le catalogue
+-- de l'époque. Depuis : (a) Spec B-1 (#125) a changé le vocabulaire des stations —
+-- la CHECK live est (kitchen|barista|display|none), 'bakery' N'EXISTE PLUS ;
+-- (b) le catalogue a été refondu (~2026-06-15) — les catégories S34 (Beverage,
+-- Sandwiches, Viennoiserie, Pastry, Bread, Plate, Savoury) sont soft-deleted et
+-- doublées par de nouvelles (ex. 'BEVERAGE' ingrédients → 'none'), d'où le
+-- « more than one row returned by a subquery » du nightly. Réparer = réécrire
+-- toutes les assertions sur le nouveau mapping, c.-à-d. réinventer le test.
+-- Le routing ACTUEL est couvert VERT par route_categories_prep_stations.test.sql.
 -- Session 34 — verify the category → prep-station remap (migration 20260601043059).
 -- Run via MCP execute_sql wrapped in BEGIN ... ROLLBACK (Docker retired).
 --   T1  : categories route to the expected prep station vocabulary

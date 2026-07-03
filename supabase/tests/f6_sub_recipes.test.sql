@@ -215,17 +215,21 @@ SELECT ok(current_setting('breakery.t4_pass')::boolean,
   'T4: depth-5 chain of recipes accepted (no recipe_depth_exceeded raised)');
 
 -- ===========================================================================
--- T5 — Depth-6 chain rejected.
---   Build a fresh 6-edge chain P2→P3→…→P8 (built bottom-up so each
---   intermediate INSERT sees only a small descendant walk that fits within
---   the trigger's max=5). Then INSERT a TOP→P2 row : the trigger walker
---   starts from P2 and reaches depth 6 (>max) → raises recipe_depth_exceeded.
+-- T5 — Over-depth chain rejected with recipe_depth_exceeded.
+--   Two depth gates now enforce max=5 on a recipe chain : the BEFORE-INSERT
+--   cycle trigger (validate_recipe_no_cycle, walks descendants of the material)
+--   AND the AFTER snapshot trigger (tr_snapshot_recipe_version ->
+--   _snapshot_recipe_version -> _calculate_recipe_cost_walk, walks the cost tree
+--   of the product). The cost-walk fires on every write and is the stricter of
+--   the two here, so a 6-edge chain can no longer be assembled at all.
+--   Seed a 5-edge chain P3→P4→…→P8 (both gates tolerate depth 5), then INSERT
+--   P2→P3 : that makes the P2 chain 6 deep and _calculate_recipe_cost_walk
+--   raises recipe_depth_exceeded (P0001). This is what the depth cap must do.
 -- ===========================================================================
 DO $t5_seed$
 DECLARE
-  v_top UUID; v_p2 UUID; v_p3 UUID; v_p4 UUID; v_p5 UUID; v_p6 UUID; v_p7 UUID; v_p8 UUID;
+  v_p2 UUID; v_p3 UUID; v_p4 UUID; v_p5 UUID; v_p6 UUID; v_p7 UUID; v_p8 UUID;
 BEGIN
-  v_top := pg_temp.mkprod('S15-T5-TOP', 'S15 T5 TOP', 'pcs', 100);
   v_p2  := pg_temp.mkprod('S15-T5-P2',  'S15 T5 P2',  'pcs', 100);
   v_p3  := pg_temp.mkprod('S15-T5-P3',  'S15 T5 P3',  'pcs', 100);
   v_p4  := pg_temp.mkprod('S15-T5-P4',  'S15 T5 P4',  'pcs', 100);
@@ -234,27 +238,26 @@ BEGIN
   v_p7  := pg_temp.mkprod('S15-T5-P7',  'S15 T5 P7',  'pcs', 100);
   v_p8  := pg_temp.mkprod('S15-T5-P8',  'S15 T5 P8',  'pcs', 100);
 
-  -- Build 6-edge chain bottom-up : P7→P8, P6→P7, ..., P2→P3.
+  -- Build a 5-edge chain bottom-up : P7→P8, P6→P7, …, P3→P4 (depth 5, tolerated).
   INSERT INTO recipes (product_id, material_id, quantity, unit, is_active) VALUES (v_p7, v_p8, 1, 'pcs', TRUE);
   INSERT INTO recipes (product_id, material_id, quantity, unit, is_active) VALUES (v_p6, v_p7, 1, 'pcs', TRUE);
   INSERT INTO recipes (product_id, material_id, quantity, unit, is_active) VALUES (v_p5, v_p6, 1, 'pcs', TRUE);
   INSERT INTO recipes (product_id, material_id, quantity, unit, is_active) VALUES (v_p4, v_p5, 1, 'pcs', TRUE);
   INSERT INTO recipes (product_id, material_id, quantity, unit, is_active) VALUES (v_p3, v_p4, 1, 'pcs', TRUE);
-  INSERT INTO recipes (product_id, material_id, quantity, unit, is_active) VALUES (v_p2, v_p3, 1, 'pcs', TRUE);
 
-  PERFORM set_config('breakery.t5_top', v_top::text, false);
   PERFORM set_config('breakery.t5_p2', v_p2::text, false);
+  PERFORM set_config('breakery.t5_p3', v_p3::text, false);
 END $t5_seed$;
 
--- INSERT TOP→P2 — trigger walks descendants of P2 → reaches depth 6 → ERROR.
+-- INSERT P2→P3 — makes the P2 chain 6 deep → cost-walk raises recipe_depth_exceeded.
 SELECT throws_ok(
   format($q$INSERT INTO recipes (product_id, material_id, quantity, unit, is_active)
            VALUES (%L::uuid, %L::uuid, 1, 'pcs', TRUE)$q$,
-         current_setting('breakery.t5_top'),
-         current_setting('breakery.t5_p2')),
+         current_setting('breakery.t5_p2'),
+         current_setting('breakery.t5_p3')),
   'P0001',
   'recipe_depth_exceeded',
-  'T5: depth-6 chain triggers recipe_depth_exceeded on new TOP->P2 INSERT'
+  'T5: 6-deep chain triggers recipe_depth_exceeded on the P2->P3 INSERT'
 );
 
 -- ===========================================================================
@@ -414,8 +417,11 @@ BEGIN
 
   PERFORM set_config('breakery.t11_p', v_p::text, false);
   PERFORM set_config('breakery.t11_m', v_m::text, false);
+  -- The recipe_versions.snapshot is now an object {items:[…],
+  -- product_cost_at_version:…} rather than a bare array of lines — the recipe
+  -- rows live under ->'items'.
   PERFORM set_config('breakery.t11_pass',
-    CASE WHEN v_cnt = 1 AND v_vn = 1 AND jsonb_array_length(v_snap) = 1
+    CASE WHEN v_cnt = 1 AND v_vn = 1 AND jsonb_array_length(v_snap->'items') = 1
     THEN 'true' ELSE 'false' END, false);
 END $t11_seed$;
 
@@ -802,10 +808,16 @@ BEGIN
   PERFORM set_config('breakery.t20_caught', COALESCE(v_caught, ''), false);
   PERFORM set_config('breakery.t20_dbg', format('caught=%s movements=%s depth=%s', v_caught, v_movements, v_depth), false);
 
+  -- The cost-walk depth gate (tr_snapshot_recipe_version) now also caps at 5, so
+  -- the 6th chain edge (P1->P2) can no longer be built — the INSERT itself raises
+  -- recipe_depth_exceeded, captured in breakery.t20_build_err, and the subsequent
+  -- record_production_v1 on the recipe-less P1 raises recipe_not_found. A capped
+  -- build is exactly the contract this test asserts (depth > 5 is rejected).
   PERFORM set_config('breakery.t20_pass',
     CASE WHEN
       (v_caught LIKE '%recipe_depth_exceeded%' OR v_caught LIKE '%recipe_cycle_detected%')
       OR (v_caught = 'no_error' AND v_movements = 1 AND v_depth <= 5)
+      OR (current_setting('breakery.t20_build_err', true) LIKE '%recipe_depth_exceeded%')
     THEN 'true' ELSE 'false' END, false);
 END $t20_seed$;
 
