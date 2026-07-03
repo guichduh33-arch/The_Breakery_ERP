@@ -68,6 +68,12 @@ jobs:
       # broken CI on this repo (stale types after a schema change).
       # Content-level drift (file vs live schema) is verified nightly via
       # pgtap-nightly.yml drift-checks job, which requires cloud secrets.
+      # Escape hatch (PR #142): a migration that only CREATE OR REPLACEs an
+      # existing function body (same signature) regenerates byte-identical
+      # types — nothing to commit. The author runs the regen, verifies zero
+      # diff, and tags a commit message with [types-noop]; the nightly drift
+      # job remains the content-level backstop. Do NOT tag without running
+      # the regen first.
       - name: Guard types.generated.ts regen (S50 migration-sync gate)
         run: |
           set -e
@@ -84,8 +90,13 @@ jobs:
           fi
           types_changed=$(git diff --name-only "$base"...HEAD -- 'packages/supabase/src/types.generated.ts' || true)
           if [ -z "$types_changed" ]; then
+            if git log "$base"..HEAD --format=%B | grep -qF '[types-noop]'; then
+              echo "[types-noop] tag found — author ran the regen and verified byte-identical output (body-only migrations). Nightly drift job remains the content check."
+              exit 0
+            fi
             echo "::error::New migration(s) added but types.generated.ts was NOT regenerated."
             echo "Run generate_typescript_types via MCP and commit packages/supabase/src/types.generated.ts."
+            echo "If the regen output is byte-identical (body-only CREATE OR REPLACE), tag a commit message with [types-noop] instead."
             printf '%s\n' "$new_migrations" | sed 's/^/  + /'
             exit 1
           fi
