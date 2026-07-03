@@ -45,14 +45,14 @@ const SECTIONS: SettingSection[] = [
     tiles: [
       { title: 'POS Configuration', blurb: 'Quick payment amounts, opening cash, discount presets. (Soon)', icon: Coffee },
       { title: 'Payment Methods',   blurb: 'Cash, Card, QRIS, store credit. (Soon)',                        icon: CreditCard },
-      { title: 'Loyalty Program',   blurb: 'Points earn rules, tiers, redemption. (Soon)',                  icon: Heart },
+      { to: '/backoffice/loyalty', title: 'Loyalty Program', blurb: 'Points earn rules, tiers, redemption.', icon: Heart },
     ],
   },
   {
     id: 'operations',
     title: 'Operations',
     tiles: [
-      { title: 'Inventory Config',  blurb: 'Default thresholds, opname cadence. (Soon)', icon: Boxes },
+      { to: '/backoffice/settings/inventory', title: 'Inventory Config', blurb: 'Default thresholds, opname cadence.', icon: Boxes },
       { title: 'Product Categories', blurb: 'Category tree + colours. (Soon)',           icon: Tag },
       { title: 'Product Types',      blurb: 'Raw / Semi-finished / Finished. (Soon)',     icon: Layers },
       { title: 'KDS Configuration',  blurb: 'Stations, routing, prep times. (Soon)',      icon: Monitor },
@@ -73,11 +73,11 @@ const SECTIONS: SettingSection[] = [
       { title: 'Printing',                 blurb: 'Receipt + KDS printer config. (Soon)',                   icon: Printer },
       { title: 'Notifications',            blurb: 'Email + push notification preferences. (Soon)',          icon: Bell },
       { to: '/backoffice/settings/security', title: 'Security & PIN', blurb: 'PIN policies, session timeout, 2FA placeholder.', icon: ShieldCheck },
-      { title: 'Financial / Accounting',   blurb: 'Account mappings, posting rules. (Soon)',                icon: FileText },
+      { to: '/backoffice/settings/accounting', title: 'Financial / Accounting', blurb: 'Fiscal periods, year-end close.', icon: FileText },
       { to: '/backoffice/settings/permissions', title: 'Roles & Permissions', blurb: 'View the role/permission matrix.', icon: ShieldCheck },
       { to: '/backoffice/settings/templates/email',   title: 'Email Templates',   blurb: 'Order confirmations, receipts, reset PIN.', icon: Mail },
       { to: '/backoffice/settings/templates/receipt', title: 'Receipt Templates', blurb: 'Header, footer, logo.',                       icon: Receipt },
-      { title: 'Audit Log',                blurb: 'System-wide audit trail. (Soon)',                        icon: History },
+      { to: '/backoffice/reports/audit', title: 'Audit Log', blurb: 'System-wide audit trail.', icon: History },
       { to: '/backoffice/lan-devices',     title: 'LAN Network',  blurb: 'Devices participating in the on-site mesh.', icon: Wifi },
       { title: 'Network Devices',          blurb: 'Discovered devices on the LAN. (Soon)',                  icon: Network },
       { title: 'Settings History',         blurb: 'Audit trail of every setting change. (Soon)',            icon: History },
@@ -88,7 +88,7 @@ const SECTIONS: SettingSection[] = [
     title: 'Layout',
     tiles: [
       { title: 'Floor Plan', blurb: 'Tables, sections, walking paths. (Soon)', icon: Map },
-      { title: 'Sections',   blurb: 'Inventory section topology. (Soon)',      icon: Grid3x3 },
+      { to: '/backoffice/inventory/sections', title: 'Sections', blurb: 'Inventory section topology.', icon: Grid3x3 },
     ],
   },
 ];

@@ -228,7 +228,7 @@ const GROUPS: NavGroup[] = [
         label: 'Users & Access',
         items: [
           { to: '/backoffice/users', label: 'Users', icon: Users, permission: 'users.read', end: true },
-          { to: '/backoffice/users/permissions', label: 'RBAC Editor', icon: ShieldCheck, permission: 'rbac.read' },
+          { to: '/backoffice/users/permissions', label: 'Permissions (read-only)', icon: ShieldCheck, permission: 'rbac.read' },
         ],
       },
     ],
