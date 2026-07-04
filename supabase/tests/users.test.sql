@@ -12,6 +12,7 @@
 --   T_USR_08 : reset_user_pin_v1 happy path — pin_hash updated + lockout cleared.
 --   T_USR_09 : update_user_profile_v1 self-edit allowed without users.update perm.
 --   T_USR_10 : has_permission() NOT re-CREATEd (body still contains 'user_permission_overrides').
+--   T_USR_11 : update_user_role_v1 last-admin downgrade protection (SQLSTATE P0001, S58 F-1).
 --
 -- Runner :
 --   Wrapped in BEGIN ... ROLLBACK via Supabase MCP execute_sql.
@@ -21,7 +22,7 @@ BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-SELECT plan(28);
+SELECT plan(29);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures : pin a seeded SUPER_ADMIN id to act as caller when needed.
@@ -289,6 +290,18 @@ SELECT throws_ok(
   'P0001',
   NULL,
   'T_USR_07 last admin / super-admin cannot be deleted (P0001 LAST_ADMIN_PROTECTED)'
+);
+
+-- =============================================================================
+-- T_USR_11 : update_user_role_v1 LAST_ADMIN_PROTECTED (downgrade path, S58 F-1)
+-- =============================================================================
+
+SELECT throws_ok(
+  format($f$SELECT update_user_role_v1(%L::UUID, 'CASHIER', 'attempt to downgrade last admin')$f$,
+         (SELECT admin_prof FROM _usr_ctx)),
+  'P0001',
+  NULL,
+  'T_USR_11 last active admin cannot be downgraded (P0001 LAST_ADMIN_PROTECTED, ignores inactive SYS-CRON)'
 );
 
 -- =============================================================================
