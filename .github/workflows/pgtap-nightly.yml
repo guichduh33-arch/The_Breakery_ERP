@@ -69,12 +69,25 @@ jobs:
   # Requires SUPABASE_SERVICE_ROLE_KEY repository secret. Tests are env-gated
   # (they skip gracefully when env vars are absent), but we fail fast here to
   # ensure the secret is present and the suite actually runs.
+  #
+  # S58 fix (T4): the test files read VITE_SUPABASE_URL (~60 files) with a hard
+  # fallback to http://127.0.0.1:54321 (retired local Docker stack). Exporting
+  # only SUPABASE_URL left them dialing localhost — the real cause of the
+  # nightly "TypeError: fetch failed / ECONNREFUSED 127.0.0.1:54321".
+  # VITE_SUPABASE_ANON_KEY / SUPABASE_ANON_KEY (publishable key) are wired to
+  # the optional SUPABASE_ANON_KEY secret — set it once via
+  #   gh secret set SUPABASE_ANON_KEY --body "<anon key: dashboard > API>"
+  # to unlock the ~45 anon-path tests (while absent they fail with 401s,
+  # not fetch errors).
   live-rpc-vitest:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
       SUPABASE_URL: https://ikcyvlovptebroadgtvd.supabase.co
+      VITE_SUPABASE_URL: https://ikcyvlovptebroadgtvd.supabase.co
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
     steps:
       - uses: actions/checkout@v4
 
@@ -125,6 +138,11 @@ jobs:
       # Uses --db-url (pooler connection string) — no SUPABASE_ACCESS_TOKEN required.
       # If the regen produces a diff, it means a migration was applied on the cloud
       # but types.generated.ts was not committed. Fail hard so it's visible.
+      #
+      # S58 fix (T4): normalize the comparison — the committed file is generated
+      # via the MCP tool, whose output covers ONLY the public schema, while the
+      # bare CLI also emits a graphql_public section. Without --schema public the
+      # step flagged a permanent structural pseudo-drift (see run 28680835452).
       - name: Check types.generated.ts drift
         env:
           PGURL: ${{ secrets.V3_DEV_PG_POOLER_URL }}
@@ -134,7 +152,7 @@ jobs:
             echo "::warning::V3_DEV_PG_POOLER_URL secret not set — skipping types drift check."
             exit 0
           fi
-          supabase gen types typescript --db-url "$PGURL" \
+          supabase gen types typescript --db-url "$PGURL" --schema public \
             > packages/supabase/src/types.generated.ts
           if ! git diff --exit-code -- packages/supabase/src/types.generated.ts; then
             echo "::error::types.generated.ts is stale relative to the live DB schema."

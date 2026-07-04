@@ -168,10 +168,14 @@ SELECT is(
   2,
   'T_PO_06b: 2 line items inserted'
 );
+-- S58 fix : l'attendu historique (124300.00) était arithmétiquement FAUX — il
+-- correspond à x1.13, en contradiction avec la formule x1.11 du libellé même du
+-- test (PPN input = 11 %, NON-PKP, p_vat_rate := 0.11 ci-dessus).
+-- (10*3000 + 20*4000) * 1.11 = 110000 * 1.11 = 122100. Comportement code inchangé.
 SELECT is(
   (SELECT total_amount FROM purchase_orders WHERE id = current_setting('breakery.t_po_id', true)::uuid)::text,
-  '124300.00',
-  'T_PO_06c: total_amount = (10*3000 + 20*4000) * 1.11 = 124300'
+  '122100.00',
+  'T_PO_06c: total_amount = (10*3000 + 20*4000) * 1.11 = 122100'
 );
 
 -- ---------------------------------------------------------------------------
@@ -197,7 +201,7 @@ BEGIN
     jsonb_build_object('po_item_id', v_item_a_id, 'received_quantity', 5)
   );
 
-  v_result := receive_purchase_order_v1(
+  v_result := receive_purchase_order_v2(
     p_po_id          := v_po_id,
     p_section_id     := current_setting('breakery.t_po_section', true)::uuid,
     p_received_items := v_received
@@ -271,7 +275,7 @@ BEGIN
     jsonb_build_object('po_item_id', v_item_b_id, 'received_quantity', 20)
   );
 
-  PERFORM receive_purchase_order_v1(
+  PERFORM receive_purchase_order_v2(
     p_po_id          := v_po_id,
     p_section_id     := current_setting('breakery.t_po_section', true)::uuid,
     p_received_items := v_received

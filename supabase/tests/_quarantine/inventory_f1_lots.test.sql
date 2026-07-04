@@ -1,4 +1,14 @@
 -- supabase/tests/inventory_f1_lots.test.sql
+-- ⚠️ QUARANTAINE — exclusion datée 2026-07-04 (S58 T4, triage nightly).
+-- Cette suite couvre EXCLUSIVEMENT l'infra lots/FIFO/péremption (stock_lots,
+-- create_stock_lot_v1, _resolve_fifo_lot, get_expiring_lots_v1,
+-- mark_expired_lots_hourly) — chantier ABANDONNÉ par décision propriétaire du
+-- 2026-07-04 (pas de péremption/FIFO ; COGS découplé, WAC à la vente), avec
+-- décommissionnement léger prévu en Vague 2 de la remise à plat.
+-- Le rouge nightly immédiat était superficiel (seed sur products.slug, colonne
+-- droppée), mais réparer 20 asserts sur une infra en cours de décommissionnement
+-- serait du travail jeté : quarantaine jusqu'au décommissionnement, puis
+-- suppression du fichier avec l'infra.
 -- Session 13 / Phase 1.C — F1 expiry tracking pgTAP suite.
 --
 -- Covers the 6 migrations 20260517000040-045 :

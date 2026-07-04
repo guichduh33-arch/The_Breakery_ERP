@@ -1,20 +1,58 @@
 // apps/backoffice/src/features/auth/UserPicker.tsx
+// Vague 0 / Tâche 3b — dynamic picker via `list_login_users_v1` (was
+// hardcoded to 2 seed accounts — any employee created in the BackOffice
+// used to be invisible at login).
 import { Button } from '@breakery/ui';
-
-const SEED_USERS = [
-  { id: '00000000-0000-0000-0000-000000000001', name: 'Mamat (Owner)' },
-  { id: '00000000-0000-0000-0000-000000000002', name: 'Test Cashier' },
-];
+import { useLoginUsers } from './hooks/useLoginUsers.js';
 
 export interface UserPickerProps {
   onSelect: (userId: string) => void;
 }
 
 export function UserPicker({ onSelect }: UserPickerProps) {
+  const { data, isLoading, isError, refetch, isFetching } = useLoginUsers();
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3 w-full max-w-xs text-center" data-testid="user-picker-loading">
+        <h2 className="text-text-secondary text-sm uppercase tracking-wide">Select user</h2>
+        <p className="text-text-secondary text-sm">Loading staff…</p>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="space-y-3 w-full max-w-xs text-center" data-testid="user-picker-error">
+        <h2 className="text-text-secondary text-sm uppercase tracking-wide">Select user</h2>
+        <p className="text-rose-600 text-sm">Could not load staff list. Check your connection.</p>
+        <Button
+          variant="secondary"
+          size="md"
+          onClick={() => { void refetch(); }}
+          disabled={isFetching}
+        >
+          {isFetching ? 'Retrying…' : 'Retry'}
+        </Button>
+      </div>
+    );
+  }
+
+  const users = data ?? [];
+
+  if (users.length === 0) {
+    return (
+      <div className="space-y-3 w-full max-w-xs text-center" data-testid="user-picker-empty">
+        <h2 className="text-text-secondary text-sm uppercase tracking-wide">Select user</h2>
+        <p className="text-text-secondary text-sm">No active staff found.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-3 w-full max-w-xs">
       <h2 className="text-text-secondary text-sm uppercase tracking-wide text-center">Select user</h2>
-      {SEED_USERS.map((u) => (
+      {users.map((u) => (
         <Button
           key={u.id}
           variant="secondary"
@@ -23,7 +61,8 @@ export function UserPicker({ onSelect }: UserPickerProps) {
           onClick={() => onSelect(u.id)}
           data-testid={`user-picker-${u.id}`}
         >
-          {u.name}
+          {u.display_name}
+          <span className="ml-2 text-[10px] uppercase tracking-widest text-text-muted">{u.role}</span>
         </Button>
       ))}
     </div>

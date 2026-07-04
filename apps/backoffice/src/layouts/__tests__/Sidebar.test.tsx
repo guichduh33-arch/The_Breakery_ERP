@@ -10,7 +10,7 @@
 //   - Dropped entries (POS Terminal / Kitchen Display / "New user") never render
 //   - Renamed labels render (Product Categories, Customer Categories,
 //     B2B Credit Settings, Cash Closing, Live Movements, Stock Movement History,
-//     RBAC Editor, Permissions Matrix)
+//     Permissions (read-only), Permissions Matrix)
 //   - Active route highlight applied (NavLink aria-current=page)
 //   - Permission-gated groups/items are hidden when the role lacks the permission
 //   - AlertsBadge reachable when user has inventory.read
@@ -175,7 +175,7 @@ describe('Sidebar', () => {
     expect(screen.getByRole('link', { name: /Cash Closing/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Live Movements/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Stock Movement History/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /RBAC Editor/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Permissions \(read-only\)/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Permissions Matrix/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Cash Treasury/i })).toBeInTheDocument();
   });
@@ -280,7 +280,7 @@ describe('Sidebar', () => {
     // Items inside named subgroups (Finance/Reports/Settings) are hidden at first load.
     expect(screen.queryByRole('link', { name: /^Profit & Loss$/i })).toBeNull();
     expect(screen.queryByRole('link', { name: /^Expense Thresholds$/i })).toBeNull();
-    expect(screen.queryByRole('link', { name: /^RBAC Editor$/i })).toBeNull();
+    expect(screen.queryByRole('link', { name: /^Permissions \(read-only\)$/i })).toBeNull();
     // The toggle button itself reports aria-expanded=false.
     expect(screen.getByRole('button', { name: /^Expenses/i })).toHaveAttribute('aria-expanded', 'false');
     // Items inside unnamed subgroups (Reports Hub line, General settings line) stay visible.

@@ -1,5 +1,7 @@
 # Module 19 — Réglages & configuration
 
+> ⚠️ **Mise à jour S58 (2026-07-04, `swarm/session-58`)** : **D1.1 livré** — les 5 tuiles « Soon » contredisant des pages existantes (Inventory Config, Loyalty, Audit Log, Sections, Financial/Accounting) sont désormais des liens actifs dans `SettingsHubPage`. Les 11 autres tuiles « Soon » restent (pages inexistantes). Le reste de la fiche reste daté `5b0fa92`.
+
 > **Remise à plat — analyse comparative.** Doc : Description v1.2 (2026-07-03), module 19. Code : commit `5b0fa92` (2026-07-03).
 > **Statut annoncé par la doc :** Opérationnel pour l'essentiel
 > **Verdict global de l'analyse :** La doc surclame nettement. Le socle existe (business_config via `set_setting_v1` audité, jours fériés, templates avec aperçu, timeouts de session), mais : les **moyens de paiement ne sont pas activables/désactivables** (le scénario phare « désactiver la carte en un clic » est impossible — méthodes codées en dur dans le POS), l'**historique des réglages n'a pas d'UI** (tuile « Settings History (Soon) ») et la traçabilité avant/après ne couvre que `business_config` + timeouts — pas les fériés ni les templates, dont **aucun n'est d'ailleurs consommé** par le reste du système. 16 tuiles « Soon » sur le hub, dont certaines contredisent des pages qui existent.

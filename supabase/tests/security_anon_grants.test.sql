@@ -8,6 +8,13 @@
 -- A2 (Wave 2.5 / Phase 2.5.A):
 --   zero anon EXECUTE remains on public functions
 --   Placeholder pass until Phase 2.5.A migration applied; replaced inline.
+--
+-- S58 (Vague 0, T3) exception: `list_login_users_v1` is the FIRST legitimate
+-- anon-callable function on this project — the pre-auth login user picker
+-- has no PIN JWT yet, so it must query with the anon key. Named exclusion
+-- (not a general allowlist) so the zero-tolerance check can't silently widen;
+-- the companion suite `list_login_users.test.sql` positively asserts anon
+-- CAN execute it and that its exposure stays minimal.
 BEGIN;
 
 SELECT plan(2);
@@ -41,8 +48,9 @@ SELECT is_empty(
        JOIN pg_roles ro ON ro.oid = p.proowner
       WHERE n.nspname = 'public'
         AND has_function_privilege('anon', p.oid, 'EXECUTE')
-        AND ro.rolname != 'supabase_admin' $$,
-  'no anon function EXECUTE remains on postgres-owned public.*'
+        AND ro.rolname != 'supabase_admin'
+        AND p.proname != 'list_login_users_v1' $$,
+  'no anon function EXECUTE remains on postgres-owned public.* (except list_login_users_v1, S58 pre-auth login picker — see list_login_users.test.sql)'
 );
 
 SELECT * FROM finish();

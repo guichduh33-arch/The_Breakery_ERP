@@ -18,6 +18,19 @@ BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
 SELECT plan(10);
 
+-- S58 repair: get_sales_by_hour_v1 → v2 (gate reports.read) and get_stock_variance_v1
+-- gained an inventory.read gate. Set an auth context holding both permissions.
+DO $fixture$
+DECLARE v_auth UUID;
+BEGIN
+  SELECT up.auth_user_id INTO v_auth FROM user_profiles up
+   WHERE up.deleted_at IS NULL AND up.auth_user_id IS NOT NULL
+     AND has_permission(up.auth_user_id, 'reports.read')
+     AND has_permission(up.auth_user_id, 'inventory.read') LIMIT 1;
+  PERFORM set_config('request.jwt.claim.sub', v_auth::text, true);
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_auth)::text, true);
+END $fixture$;
+
 -- ============================================================
 -- T_RPT_01..03 — Materialised views
 -- ============================================================
@@ -50,9 +63,9 @@ SELECT lives_ok(
 -- T_RPT_06 — sales-by-hour 24-bucket
 -- ============================================================
 SELECT is(
-  (SELECT COUNT(*)::INT FROM public.get_sales_by_hour_v1(CURRENT_DATE)),
+  (SELECT COUNT(*)::INT FROM public.get_sales_by_hour_v2(CURRENT_DATE)),
   24,
-  'T_RPT_06 — get_sales_by_hour_v1 returns 24 rows (zero-filled)'
+  'T_RPT_06 — get_sales_by_hour_v2 returns 24 rows (zero-filled)'
 );
 
 -- ============================================================

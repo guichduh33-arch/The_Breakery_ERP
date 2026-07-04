@@ -18,14 +18,22 @@ name: Deploy to Staging
 #   - VERCEL_PROJECT_ID_POS          (optional)
 #   - VERCEL_PROJECT_ID_BACKOFFICE   (optional)
 
+# Staging environment provisioning status: NOT SET UP
+# ────────────────────────────────────────────────────────────────────────────
+# Automatic triggers (push to master + swarm/session-*) are DISABLED because:
+#  1. GitHub environment 'staging' does not exist
+#  2. Required secrets (SUPABASE_*_STAGING, VERCEL_*) are not provisioned
+#
+# To reactivate:
+#  1. Follow the provisioning checklist in .github/workflows/STAGING_SETUP.md
+#  2. Create the GitHub environment 'staging' and set required reviewers
+#  3. Restore the 'push' trigger below
+#  4. Restore the default 'master' + 'swarm/session-**' branch filters
+#
+# Until then, workflow_dispatch (manual trigger) remains enabled for testing.
+# ────────────────────────────────────────────────────────────────────────────
+
 on:
-  push:
-    branches:
-      # Match every session branch (session-13, session-14, session-15, ...).
-      - 'swarm/session-**'
-      # Session 21 / Phase 1.B.2 (D-W6-CICD-01): also trigger on master so
-      # post-merge pushes deploy the latest migrations + EFs to staging.
-      - master
   workflow_dispatch:
     inputs:
       ref:

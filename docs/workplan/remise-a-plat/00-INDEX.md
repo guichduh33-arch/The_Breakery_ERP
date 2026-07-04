@@ -87,12 +87,14 @@ Le tableau §1 se lit avec le §2.3 : un module « fidèle » peut cacher du non
 ## 3. Plan de correction consolidé (transverse)
 
 > **Règle money-path (garde-fou de séquencement)** : tant que les ancres pgTAP money-path du nightly ne sont pas re-vertes (Vague 0.2), **aucun quick win touchant `orders`/`order_items`/paiements ne part** (paiement direct ardoise 02-D1.1, note d'écart serveur 12-D1.4, lignes promo ticket 13-D1.1, bump en masse KDS 04-D1.2…) — sauf re-passe manuelle préalable des ancres concernées via MCP. Les quick wins purement UI (renommages, tuiles, filtres, heartbeats, affichages) passent toujours.
+> **Mise à jour S58 (2026-07-04) : verrou LEVÉ** — toutes les ancres money-path sont re-vertes (combo_sale 12, s44_money_gates 12, canonical_line_price 13, reversal_idempotency, order_discount_gate 10, modifier_ingredient 24, sale_flag_aware 6, discount_auth_nonce 6, combo_server_pricing 5). Les 2 rouges restants (`users`, `expenses`) sont des tripwires documentés hors money-path (findings F-1/F-4, session INDEX S58).
 
-### Vague 0 — Réparer ce qui trompe l'exploitant (P0, 1 session)
-1. **Login employés** : RPC `list_login_users_v1` + remplacement des 2 UserPicker + alignement PIN 6 chiffres (fiches 01/20). *Sans ça, la gestion d'employés est une impasse.*
-2. **Triage des 33 suites pgTAP rouges** + réparation du job live-RPC (fiche 23). *Tant que c'est rouge, aucune garantie « batteries de tests » n'est vraie — et la règle money-path ci-dessus bloque une partie de la Vague 1.*
-3. **Stopper les échecs CI automatiques** : `staging-deploy.yml` et `playwright-e2e.yml` sur `workflow_dispatch` tant que staging n'existe pas (fiche 24).
-4. **Renommer les labels mensongers** : « RBAC Editor » → « Permissions (lecture) », tuiles « Soon » pointant vers des pages existantes (fiches 20/19).
+### Vague 0 — Réparer ce qui trompe l'exploitant (P0, 1 session) — ✅ **SOLDÉE (S58, 2026-07-04)**
+> Exécutée sur `swarm/session-58` — détail, commits et findings dans [`../plans/2026-07-04-session-58-INDEX.md`](../plans/2026-07-04-session-58-INDEX.md).
+1. ✅ **Login employés** : RPC `list_login_users_v1` (anon-callable, migration `_099`) + les 3 UserPicker dynamiques + PIN exactement 6 chiffres partout (`_100`) (fiches 01/20).
+2. ✅ **Triage des 33 suites pgTAP rouges** + réparation du job live-RPC (fiche 23) : 28/33 vertes, 3 quarantaines datées (`_quarantine/`), 2 rouges assumées tests intacts (`users` F-1 P0 `delete_user_v1`, `expenses` F-4 P1 `_emit_expense_je`/ADR-003) ; live-RPC = fallback localhost corrigé (`VITE_SUPABASE_URL`), zéro `fetch failed` au run dispatché ; drift types nul + normalisation `--schema public`.
+3. ✅ **Stopper les échecs CI automatiques** : `staging-deploy.yml` et `playwright-e2e.yml` sur `workflow_dispatch` seul, commentaires de réactivation (fiche 24).
+4. ✅ **Renommer les labels mensongers** : « RBAC Editor » → « Permissions (read-only) », 5 tuiles « Soon » reliées aux pages existantes (fiches 20/19).
 
 ### Vague 1 — Quick wins de câblage (2-3 sessions, zéro spec)
 **UI pures (démarrables immédiatement)** : `visible_on_pos` au POS (05) · KDS undo-bump/recall/prep-timer + alarme sonore (04 D1.1/D1.3) · ticker `ready` réel (16) · note **par commande** tablette (17 D1.1) · drill-down JE → origine (10) · bouton « Dupliquer » dépense (11) · doublon suggestions production (15) · purge hex (22) · `auth-change-pin` en headers (25) · filtres + avant/après dans l'UI du journal d'audit (01) · heartbeats LAN (21 D1.1).

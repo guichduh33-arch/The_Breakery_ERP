@@ -6,14 +6,18 @@
 // virtual numpad and a gold "SIGN IN" CTA.
 //
 // Wiring is preserved : we still call `useAuthStore.login(userId, pin)`
-// and route to /pos (waiter → /tablet/order) on success. The PIN length
-// stays 6 (PIN spec D6 session 1).
+// and route to /pos (waiter → /tablet/order) on success.
+//
+// Vague 0 / Tâche 3 (S58) : the picker used to be hardcoded to 2 seed
+// accounts (`SEED_USERS`) — any employee created in the BackOffice was
+// invisible here and could never sign in. It now consumes
+// `useLoginUsers()` (→ `list_login_users_v1`, anon-callable pre-auth RPC).
+// PIN length is also now EXACTLY 6 digits everywhere (was a stale "4-6"
+// copy while `create_user_v1` accepted 4-8 — the two were out of sync).
 //
 // Notes:
 //  - Dots indicator is purely visual ; auto-submit fires when length ===
-//    PIN_LENGTH so the SIGN IN button is mostly a fallback for shorter PINs.
-//    We keep it always-clickable when length ∈ [4,6] for ergonomics —
-//    matches the "4-6 digit PIN" sub-copy on the screenshot.
+//    PIN_LENGTH.
 //  - SWITCH chip opens the picker without losing already-typed digits ;
 //    selecting another user resets the PIN buffer for safety.
 //  - We intentionally do NOT use `NumpadVirtual` here because the screenshot
@@ -26,23 +30,13 @@ import { useNavigate } from 'react-router-dom';
 import { Delete } from 'lucide-react';
 import { BrandLogo, Button, SectionLabel, cn } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore';
+import { useLoginUsers, type LoginUser } from '@/features/auth/hooks/useLoginUsers';
 
-const PIN_MIN = 4;
 const PIN_MAX = 6;
 
-interface SeedUser {
-  id: string;
-  full_name: string;
-  role_label: string;
-  initial: string;
+function initialOf(displayName: string): string {
+  return displayName.trim().charAt(0).toUpperCase() || '?';
 }
-
-// Same seed as the historical UserPicker — replaced when
-// `list_login_users()` RPC ships (session 2 backlog).
-const SEED_USERS: SeedUser[] = [
-  { id: '00000000-0000-0000-0000-000000000001', full_name: 'Mamat (Owner)', role_label: 'Owner', initial: 'M' },
-  { id: '00000000-0000-0000-0000-000000000002', full_name: 'Test Cashier',  role_label: 'Cashier', initial: 'T' },
-];
 
 function friendlyError(err: string): string {
   switch (err) {
@@ -52,7 +46,7 @@ function friendlyError(err: string): string {
     case 'rate_limited':        return 'Too many attempts. Wait a moment.';
     case 'user_inactive':       return 'User inactive.';
     case 'user_not_found':      return 'User not found.';
-    case 'invalid_pin_format':  return 'PIN must be 4-6 digits.';
+    case 'invalid_pin_format':  return 'PIN must be 6 digits.';
     case 'network_timeout':     return 'Network slow — try again.';
     default:                    return 'Sign in failed.';
   }
@@ -65,12 +59,23 @@ export default function LoginPage(): JSX.Element {
   const setError = useAuthStore((s) => s.setError);
   const isLoading = useAuthStore((s) => s.isLoading);
 
-  const [selectedUser, setSelectedUser] = useState<SeedUser>(SEED_USERS[0]!);
+  const { data: users, isLoading: usersLoading, isError: usersError, refetch: refetchUsers, isFetching: usersFetching } = useLoginUsers();
+
+  const [selectedUser, setSelectedUser] = useState<LoginUser | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pin, setPin] = useState('');
 
+  // Default to the first returned user once the list loads (mirrors the
+  // old SEED_USERS[0] synchronous default, now async).
+  useEffect(() => {
+    if (selectedUser === null && users && users.length > 0) {
+      setSelectedUser(users[0]!);
+    }
+  }, [users, selectedUser]);
+
   const submitPin = useCallback(
     (rawPin: string) => {
+      if (!selectedUser) return;
       setError(null);
       void login(selectedUser.id, rawPin)
         .then(() => {
@@ -80,7 +85,7 @@ export default function LoginPage(): JSX.Element {
         })
         .catch(() => { /* error surfaced via authStore.error */ });
     },
-    [selectedUser.id, setError, login, navigate],
+    [selectedUser, setError, login, navigate],
   );
 
   const handleDigit = useCallback((d: string) => {
@@ -103,10 +108,10 @@ export default function LoginPage(): JSX.Element {
     if (error) setPin('');
   }, [error]);
 
-  const canSubmit = pin.length >= PIN_MIN && !isLoading;
+  const canSubmit = pin.length === PIN_MAX && !isLoading && selectedUser !== null;
   const errorCopy = error ? friendlyError(error) : null;
 
-  const switchUser = useCallback((u: SeedUser) => {
+  const switchUser = useCallback((u: LoginUser) => {
     setSelectedUser(u);
     setPin('');
     setError(null);
@@ -133,14 +138,30 @@ export default function LoginPage(): JSX.Element {
           >
             STAFF PIN ACCESS
           </h1>
-          <p className="text-text-secondary text-sm">Enter your 4-6 digit PIN</p>
+          <p className="text-text-secondary text-sm">Enter your 6-digit PIN</p>
         </div>
 
         {/* User picker chip */}
-        {pickerOpen ? (
+        {usersLoading ? (
+          <p className="text-text-secondary text-sm" data-testid="login-users-loading">Loading staff…</p>
+        ) : usersError ? (
+          <div className="flex flex-col items-center gap-2" data-testid="login-users-error">
+            <p className="text-danger text-sm text-center">Could not load staff list. Check your connection.</p>
+            <Button
+              variant="secondary"
+              size="md"
+              onClick={() => { void refetchUsers(); }}
+              disabled={usersFetching}
+            >
+              {usersFetching ? 'Retrying…' : 'Retry'}
+            </Button>
+          </div>
+        ) : !users || users.length === 0 ? (
+          <p className="text-text-secondary text-sm" data-testid="login-users-empty">No active staff found.</p>
+        ) : pickerOpen ? (
           <div className="w-full space-y-2 rounded-md border border-border-subtle bg-bg-input p-3">
             <SectionLabel as="div">Switch user</SectionLabel>
-            {SEED_USERS.map((u) => (
+            {users.map((u) => (
               <button
                 key={u.id}
                 type="button"
@@ -148,17 +169,17 @@ export default function LoginPage(): JSX.Element {
                 className={cn(
                   'w-full flex items-center gap-3 rounded-md px-3 py-2 text-left transition-colors',
                   'hover:bg-bg-overlay focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold',
-                  u.id === selectedUser.id ? 'bg-bg-overlay' : '',
+                  u.id === selectedUser?.id ? 'bg-bg-overlay' : '',
                 )}
               >
                 <span
                   aria-hidden
                   className="h-8 w-8 grid place-items-center rounded-full bg-gold-soft text-gold font-display text-sm"
                 >
-                  {u.initial}
+                  {initialOf(u.display_name)}
                 </span>
-                <span className="flex-1 text-sm text-text-primary truncate">{u.full_name}</span>
-                <span className="text-[10px] uppercase tracking-widest text-text-muted">{u.role_label}</span>
+                <span className="flex-1 text-sm text-text-primary truncate">{u.display_name}</span>
+                <span className="text-[10px] uppercase tracking-widest text-text-muted">{u.role}</span>
               </button>
             ))}
             <button
@@ -169,17 +190,17 @@ export default function LoginPage(): JSX.Element {
               Cancel
             </button>
           </div>
-        ) : (
+        ) : selectedUser ? (
           <div className="flex flex-col items-center gap-2">
             <div
               aria-hidden
               className="h-14 w-14 grid place-items-center rounded-full border-2 border-gold-soft bg-bg-elevated"
             >
-              <span className="font-display text-xl text-gold">{selectedUser.initial}</span>
+              <span className="font-display text-xl text-gold">{initialOf(selectedUser.display_name)}</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-sm text-text-primary">
-                Welcome, <span className="font-semibold">{selectedUser.full_name}</span>
+                Welcome, <span className="font-semibold">{selectedUser.display_name}</span>
               </span>
               <button
                 type="button"
@@ -190,7 +211,7 @@ export default function LoginPage(): JSX.Element {
               </button>
             </div>
           </div>
-        )}
+        ) : null}
 
         {/* PIN dots */}
         <div className="flex justify-center gap-3" aria-label="PIN dots" role="status">

@@ -7,13 +7,25 @@
 BEGIN;
 SELECT plan(2);
 
+-- S58 repair: get_profit_loss_v1/get_balance_sheet_v1 dropped → _v2 (gate
+-- reports.financial.read). Set an auth context holding that permission.
+DO $fixture$
+DECLARE v_auth UUID;
+BEGIN
+  SELECT up.auth_user_id INTO v_auth FROM user_profiles up
+   WHERE up.deleted_at IS NULL AND up.auth_user_id IS NOT NULL
+     AND has_permission(up.auth_user_id, 'reports.financial.read') LIMIT 1;
+  PERFORM set_config('request.jwt.claim.sub', v_auth::text, true);
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_auth)::text, true);
+END $fixture$;
+
 -- T1 : P&L lines contain account_id UUID
 DO $$
 DECLARE
   v_lines JSONB;
   v_first JSONB;
 BEGIN
-  SELECT get_profit_loss_v1('2020-01-01'::date, '2030-12-31'::date)->'lines'
+  SELECT get_profit_loss_v2('2020-01-01'::date, '2030-12-31'::date)->'lines'
     INTO v_lines;
   v_first := v_lines->0;
   IF v_first IS NULL THEN
@@ -35,7 +47,7 @@ DECLARE
   v_lines JSONB;
   v_first JSONB;
 BEGIN
-  SELECT get_balance_sheet_v1('2030-12-31'::date)->'lines' INTO v_lines;
+  SELECT get_balance_sheet_v2('2030-12-31'::date)->'lines' INTO v_lines;
   v_first := v_lines->0;
   IF v_first IS NULL THEN
     PERFORM set_config('breakery.t2_pass', 'skipped_empty', false);

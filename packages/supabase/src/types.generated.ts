@@ -7159,6 +7159,14 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      list_login_users_v1: {
+        Args: never
+        Returns: {
+          display_name: string
+          id: string
+          role: string
+        }[]
+      }
       list_recipes_v1: { Args: { p_product_id: string }; Returns: Json[] }
       lives_ok: { Args: { "": string }; Returns: string }
       mark_expired_lots_hourly: { Args: never; Returns: Json }

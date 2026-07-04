@@ -22,7 +22,11 @@ SELECT plan(5);
 -- Fixtures
 -- ---------------------------------------------------------------------------
 
--- Pick a real product on V3 dev (BEV-AMER is stable from S22 suite).
+-- Pick a real, ACTIVE product on V3 dev (BEV-AMER from the original S22 suite
+-- has since been soft-deleted — deleted_at IS NOT NULL — so the sku-pinned
+-- fixture resolved to NULL and downstream ::UUID casts on '' failed). Pick the
+-- first live, active product deterministically so this stays robust to any one
+-- product being retired.
 -- Capture its baseline cost_price so T4 can assert it didn't change.
 DO $$
 DECLARE
@@ -30,7 +34,9 @@ DECLARE
   v_baseline_cost NUMERIC;
 BEGIN
   SELECT id, cost_price INTO v_product_id, v_baseline_cost
-    FROM products WHERE sku = 'BEV-AMER' AND deleted_at IS NULL LIMIT 1;
+    FROM products
+    WHERE deleted_at IS NULL AND is_active = true AND cost_price IS NOT NULL
+    ORDER BY sku LIMIT 1;
   PERFORM set_config('breakery.s27_product_id', v_product_id::text, false);
   PERFORM set_config('breakery.s27_baseline_cost', v_baseline_cost::text, false);
 END $$;

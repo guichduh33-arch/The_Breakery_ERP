@@ -53,7 +53,7 @@ SELECT is(current_setting('breakery.t1'), '42501', 'T1 import CASHIER rejected 4
 -- Fixtures payload (happy path) stored in a GUC for reuse
 DO $fix$ BEGIN
   PERFORM set_config('breakery.payload', '{
-    "categories": [{"name": "S41 Test Cat", "dispatch_station": "bakery"}],
+    "categories": [{"name": "S41 Test Cat", "dispatch_station": "kitchen"}],
     "ingredients": [
       {"sku": "S41-FLOUR", "name": "S41 Flour", "unit": "kg", "cost_price": 12000},
       {"sku": "S41-BUTTER", "name": "S41 Butter", "unit": "kg", "cost_price": 95000}
@@ -351,7 +351,7 @@ BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
   v_rep := import_catalog_v1(jsonb_build_object(
     'categories', jsonb_build_array(jsonb_build_object(
-      'name', 'S41 Test Cat', 'dispatch_station', 'bakery')),
+      'name', 'S41 Test Cat', 'dispatch_station', 'kitchen')),
     'ingredients', jsonb_build_array(
       jsonb_build_object('sku', 'S41-FLOUR', 'name', 'S41 Flour', 'unit', 'kg', 'cost_price', 12000),
       jsonb_build_object('sku', 'S41-BUTTER', 'name', 'S41 Butter', 'unit', 'kg', 'cost_price', 95000)

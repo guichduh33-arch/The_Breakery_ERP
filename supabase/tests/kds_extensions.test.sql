@@ -30,6 +30,8 @@ DECLARE
   v_product  UUID;
   v_order    UUID;
   v_item     UUID;
+  v_session  UUID;
+  v_opener   UUID;
 BEGIN
   -- Pick first category + product (any will do — we ROLLBACK).
   SELECT id INTO v_category FROM categories ORDER BY created_at LIMIT 1;
@@ -41,8 +43,16 @@ BEGIN
     RETURN;
   END IF;
 
-  INSERT INTO orders (id, order_number, order_type, status, subtotal, tax_amount, total, created_at)
-  VALUES (gen_random_uuid(), 'TEST-KDS-001', 'dine_in', 'draft', 0, 0, 0, NOW())
+  -- POS orders now require a session_id (constraint orders_session_id_required_for_pos:
+  -- session_id NOT NULL OR order_type='b2b' OR created_via='tablet' OR is_held OR
+  -- is_historical_import). Seed an open POS session for the dine_in fixture.
+  SELECT id INTO v_opener FROM user_profiles ORDER BY created_at LIMIT 1;
+  INSERT INTO pos_sessions (id, opened_by, opened_at, opening_cash, status)
+  VALUES (gen_random_uuid(), v_opener, NOW(), 0, 'open')
+  RETURNING id INTO v_session;
+
+  INSERT INTO orders (id, order_number, order_type, status, subtotal, tax_amount, total, created_at, session_id)
+  VALUES (gen_random_uuid(), 'TEST-KDS-001', 'dine_in', 'draft', 0, 0, 0, NOW(), v_session)
   RETURNING id INTO v_order;
 
   INSERT INTO order_items (

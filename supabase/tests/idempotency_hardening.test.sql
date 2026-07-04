@@ -233,19 +233,20 @@ DECLARE
 BEGIN
   PERFORM pg_temp.set_jwt_uid(v_cashier_uid);
 
-  v_result := refund_order_rpc_v2(
-    p_order_id        => v_order_id,
-    p_lines           => jsonb_build_array(jsonb_build_object(
+  v_result := refund_order_rpc_v4(
+    p_order_id            => v_order_id,
+    p_lines               => jsonb_build_array(jsonb_build_object(
       'order_item_id', v_oi_id,
       'qty',           1
     )),
-    p_tenders         => jsonb_build_array(jsonb_build_object(
+    p_tenders             => jsonb_build_array(jsonb_build_object(
       'method', 'cash',
       'amount', 20000
     )),
-    p_reason          => 'T4 first refund call',
-    p_authorized_by   => v_manager_pid,
-    p_idempotency_key => v_idemp_key
+    p_reason              => 'T4 first refund call',
+    p_authorized_by       => v_manager_pid,
+    p_idempotency_key     => v_idemp_key,
+    p_acting_auth_user_id => v_cashier_uid
   );
 
   v_replay := COALESCE((v_result->>'idempotent_replay')::boolean, false);
@@ -288,19 +289,20 @@ BEGIN
 
   -- Replay : same idempotency_key, identical args (the RPC short-circuits before
   -- touching refunds / refund_lines / stock_movements).
-  v_result := refund_order_rpc_v2(
-    p_order_id        => v_order_id,
-    p_lines           => jsonb_build_array(jsonb_build_object(
+  v_result := refund_order_rpc_v4(
+    p_order_id            => v_order_id,
+    p_lines               => jsonb_build_array(jsonb_build_object(
       'order_item_id', v_oi_id,
       'qty',           1
     )),
-    p_tenders         => jsonb_build_array(jsonb_build_object(
+    p_tenders             => jsonb_build_array(jsonb_build_object(
       'method', 'cash',
       'amount', 20000
     )),
-    p_reason          => 'T5 replay (should be ignored)',
-    p_authorized_by   => v_manager_pid,
-    p_idempotency_key => v_idemp_key
+    p_reason              => 'T5 replay (should be ignored)',
+    p_authorized_by       => v_manager_pid,
+    p_idempotency_key     => v_idemp_key,
+    p_acting_auth_user_id => v_cashier_uid
   );
 
   v_refund_id_2 := (v_result->>'refund_id')::uuid;
