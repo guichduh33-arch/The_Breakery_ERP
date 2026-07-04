@@ -3,12 +3,13 @@
 // (Wave 1 deliverable on V3 dev `ikcyvlovptebroadgtvd`).
 //
 // Couvre :
-//   - create_tablet_order_v2 (RPC, idempotent replay via p_client_uuid)
+//   - create_tablet_order_v3 (RPC, idempotent replay via p_client_uuid ;
+//     bumped from v2 in Session 59 / 17 D1.1 — v2 is DROPped on cloud)
 //   - refund-order EF (header `x-manager-pin` + `x-idempotency-key`, hard cutover)
 //
 // 5 scénarios :
-//   TS1 : create_tablet_order_v2 happy path via supabase-js client → valid UUID order_id
-//   TS2 : create_tablet_order_v2 retry SAME clientUuid → same order_id ; 1 row only in
+//   TS1 : create_tablet_order_v3 happy path via supabase-js client → valid UUID order_id
+//   TS2 : create_tablet_order_v3 retry SAME clientUuid → same order_id ; 1 row only in
 //         tablet_order_idempotency_keys for that client_uuid
 //   TS3 : refund-order EF with x-manager-pin + x-idempotency-key → 200, idempotent_replay=false
 //   TS4 : refund-order EF retry SAME x-idempotency-key → 200, idempotent_replay=true,
@@ -18,7 +19,7 @@
 // Bootstrap :
 //   - admin client (service role) → seed product + create paid order via direct INSERTs
 //     (même pattern que le pgTAP `idempotency_hardening.test.sql`).
-//   - cashier client (EMP001 / PIN 567890) → JWT pour appeler create_tablet_order_v2 RPC
+//   - cashier client (EMP001 / PIN 567890) → JWT pour appeler create_tablet_order_v3 RPC
 //     ET pour le Bearer token du refund EF.
 //   - manager PIN 111111 (EMP003) passé via header x-manager-pin.
 //
@@ -59,7 +60,7 @@ const TEST_ORDER_ITEM_ID = 'feedca50-0000-0000-0000-000000002504';
 // Refund RPC checks manager perm via p_authorized_by ; cashier just needs to be authenticated.
 const CASHIER_EMPLOYEE = 'EMP001';
 const CASHIER_PIN      = '567890';
-// Waiter PIN (EMP002 / 567800) — used for create_tablet_order_v2 tests (TS1/TS2).
+// Waiter PIN (EMP002 / 567800) — used for create_tablet_order_v3 tests (TS1/TS2).
 // waiter role has `sales.create` perm ; CASHIER does NOT (seed 20260507000002).
 const WAITER_EMPLOYEE  = 'EMP002';
 const WAITER_PIN       = '567800';
@@ -211,14 +212,14 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('S25 idempotency hardeni
   });
 
   // ===========================================================================
-  // TS1 — create_tablet_order_v2 happy path
+  // TS1 — create_tablet_order_v3 happy path
   // ===========================================================================
-  it('TS1: create_tablet_order_v2 happy path returns a valid UUID order_id', async () => {
+  it('TS1: create_tablet_order_v3 happy path returns a valid UUID order_id', async () => {
     const sb = jwtClient(waiterToken);
     const clientUuid = crypto.randomUUID();
     createdClientUuids.push(clientUuid);
 
-    const { data, error } = await rpc(sb)('create_tablet_order_v2', {
+    const { data, error } = await rpc(sb)('create_tablet_order_v3', {
       p_client_uuid:  clientUuid,
       p_waiter_id:    waiterProfile,
       p_table_number: 'TS1',
@@ -258,12 +259,12 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('S25 idempotency hardeni
       }],
     };
 
-    const first  = await rpc(sb)('create_tablet_order_v2', args);
+    const first  = await rpc(sb)('create_tablet_order_v3', args);
     expect(first.error).toBeNull();
     expect(typeof first.data).toBe('string');
 
     // Replay : different args on purpose (table_number changed) — replay must ignore.
-    const second = await rpc(sb)('create_tablet_order_v2', {
+    const second = await rpc(sb)('create_tablet_order_v3', {
       ...args,
       p_table_number: 'TS2-REPLAY',
       p_items: [{
