@@ -17,7 +17,7 @@ const loginUsersState = {
     data: [
       { id: 'u1', display_name: 'Mamat (Owner)', role: 'Super Admin' },
       { id: 'u2', display_name: 'New Hire', role: 'Cashier' },
-    ] as Array<{ id: string; display_name: string; role: string }> | undefined,
+    ] as { id: string; display_name: string; role: string }[] | undefined,
     isLoading: false,
     isError: false,
     isFetching: false,

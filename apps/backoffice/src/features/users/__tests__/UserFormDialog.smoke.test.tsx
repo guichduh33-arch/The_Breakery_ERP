@@ -20,7 +20,7 @@ import { UserFormDialog } from '../components/UserFormDialog.js';
 const rpcMock = vi.fn();
 vi.mock('@/lib/supabase.js', () => ({
   supabase: {
-    rpc: (...args: unknown[]) => rpcMock(...args),
+    rpc: (...args: unknown[]) => rpcMock(...args) as unknown,
   },
 }));
 
