@@ -9,9 +9,12 @@
 //      This is the documented, in-scope deviation (brief allows "payload
 //      et/ou metadata"); adding `payload` to the RPC would need a migration,
 //      out of scope for this BO-pure task.
+//   4. Review finding (fixed) — Action/Entity type are debounced 300ms
+//      before reaching useAuditLogs, so typing doesn't re-fetch per
+//      keystroke. Actor (a <select>) stays immediate.
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import AuditPage from '@/pages/reports/AuditPage.js';
 
@@ -73,19 +76,60 @@ describe('AuditPage — filters + before/after (S59 Task 6c)', () => {
     expect(screen.getByTestId('audit-row-2')).toBeInTheDocument();
   });
 
-  it('passes actor/action/entity filters through to useAuditLogs once set (empty filters omit keys)', () => {
+  it('actor (select) filter reaches useAuditLogs immediately, no debounce', () => {
     renderPage();
     expect(mockUseAuditLogs).toHaveBeenCalledWith({});
 
     fireEvent.change(screen.getByTestId('audit-filter-actor'), { target: { value: 'u-1' } });
     expect(mockUseAuditLogs).toHaveBeenLastCalledWith({ actorId: 'u-1' });
+  });
 
-    fireEvent.change(screen.getByTestId('audit-filter-action'), { target: { value: 'expense.approve' } });
-    expect(mockUseAuditLogs).toHaveBeenLastCalledWith({ actorId: 'u-1', action: 'expense.approve' });
+  describe('debounced action/entity filters (review finding fix)', () => {
+    beforeEach(() => { vi.useFakeTimers(); });
+    afterEach(() => { vi.useRealTimers(); });
 
-    fireEvent.change(screen.getByTestId('audit-filter-entity'), { target: { value: 'expense' } });
-    expect(mockUseAuditLogs).toHaveBeenLastCalledWith({
-      actorId: 'u-1', action: 'expense.approve', entityType: 'expense',
+    it('debounces action/entity so useAuditLogs settles 300ms after the last keystroke', () => {
+      renderPage();
+
+      fireEvent.change(screen.getByTestId('audit-filter-actor'), { target: { value: 'u-1' } });
+      expect(mockUseAuditLogs).toHaveBeenLastCalledWith({ actorId: 'u-1' });
+
+      fireEvent.change(screen.getByTestId('audit-filter-action'), { target: { value: 'expense.approve' } });
+      // Not yet committed to useAuditLogs — still debouncing.
+      expect(mockUseAuditLogs).toHaveBeenLastCalledWith({ actorId: 'u-1' });
+      act(() => { vi.advanceTimersByTime(300); });
+      expect(mockUseAuditLogs).toHaveBeenLastCalledWith({ actorId: 'u-1', action: 'expense.approve' });
+
+      fireEvent.change(screen.getByTestId('audit-filter-entity'), { target: { value: 'expense' } });
+      expect(mockUseAuditLogs).toHaveBeenLastCalledWith({ actorId: 'u-1', action: 'expense.approve' });
+      act(() => { vi.advanceTimersByTime(300); });
+      expect(mockUseAuditLogs).toHaveBeenLastCalledWith({
+        actorId: 'u-1', action: 'expense.approve', entityType: 'expense',
+      });
+    });
+
+    it('typing character by character only triggers ONE fetch, after stabilization', () => {
+      renderPage();
+      const callsBefore = mockUseAuditLogs.mock.calls.length;
+      const input = screen.getByTestId('audit-filter-action');
+
+      // "exp" typed one character at a time, 100ms apart — well under the
+      // 300ms debounce window between keystrokes.
+      fireEvent.change(input, { target: { value: 'e' } });
+      act(() => { vi.advanceTimersByTime(100); });
+      fireEvent.change(input, { target: { value: 'ex' } });
+      act(() => { vi.advanceTimersByTime(100); });
+      fireEvent.change(input, { target: { value: 'exp' } });
+      act(() => { vi.advanceTimersByTime(100); });
+
+      // 300ms hasn't elapsed since the LAST keystroke yet — no commit.
+      expect(mockUseAuditLogs).toHaveBeenLastCalledWith({});
+      expect(mockUseAuditLogs.mock.calls.length).toBe(callsBefore); // no re-render/re-call yet
+
+      act(() => { vi.advanceTimersByTime(200); }); // total 300ms since last keystroke
+      expect(mockUseAuditLogs).toHaveBeenLastCalledWith({ action: 'exp' });
+      // Exactly one additional call committed the debounced value (not one per keystroke).
+      expect(mockUseAuditLogs.mock.calls.length).toBe(callsBefore + 1);
     });
   });
 
