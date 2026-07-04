@@ -10,8 +10,8 @@ import { resolveJeSourceEntity } from '../utils/resolveJeSourceEntity.js';
 import { buildDrilldownUrl } from '@/features/reports/utils/buildDrilldownUrl.js';
 
 describe('resolveJeSourceEntity (S59 Task 6a)', () => {
-  it('sale / sale_void / sale_refund / void / refund → order detail URL', () => {
-    for (const rt of ['sale', 'sale_void', 'sale_refund', 'void', 'refund']) {
+  it('sale / sale_void / void → order detail URL', () => {
+    for (const rt of ['sale', 'sale_void', 'void']) {
       const target = resolveJeSourceEntity(rt, 'o-1');
       expect(target).toEqual({ entity: 'order', id: 'o-1' });
       expect(buildDrilldownUrl(target!.entity, target!.id)).toBe('/backoffice/orders/o-1');
@@ -45,6 +45,11 @@ describe('resolveJeSourceEntity (S59 Task 6a)', () => {
       'manual', 'purchase', 'purchase_return', 'purchase_payment', 'shift_close',
       'adjustment', 'waste', 'opname', 'production', 'transfer', 'stock_movement',
       'year_close', 'pos_outstanding', 'pos_outstanding_payment',
+      // Review finding I-1 — sale_refund/refund: reference_id is a
+      // refunds.id, NOT an orders.id (fn_create_je_for_refund inserts
+      // NEW.id from the `refunds` row). Mapping to `order` would build
+      // /orders/<refund_uuid>, a 404 — falls back to plain text instead.
+      'sale_refund', 'refund',
     ];
     for (const rt of unmapped) {
       expect(resolveJeSourceEntity(rt, 'x')).toBeNull();
