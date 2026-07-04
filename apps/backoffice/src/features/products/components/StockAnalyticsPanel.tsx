@@ -34,7 +34,7 @@ import type { ProductRow } from '../types.js';
 
 export type ProductAnalyticsData = NonNullable<ReturnType<typeof useProductAnalytics>['data']>;
 
-const WINDOWS: ReadonlyArray<{ value: number; label: string }> = [
+const WINDOWS: readonly { value: number; label: string }[] = [
   { value: 7,  label: '7 Days'  },
   { value: 30, label: '30 Days' },
   { value: 90, label: '90 Days' },
@@ -86,7 +86,7 @@ export function StockAnalyticsPanel({ product }: Props): JSX.Element {
       )}
       {q.error !== null && q.error !== undefined && (
         <div role="alert" className="rounded-lg border border-red bg-red-soft p-3 text-sm text-red">
-          Failed to load analytics: {(q.error as Error).message}
+          Failed to load analytics: {(q.error).message}
         </div>
       )}
 
@@ -379,7 +379,7 @@ export function ProductionLossSection({ data }: { data: ProductAnalyticsData }):
 
 /* ── helpers ─────────────────────────────────────────────────────────────── */
 
-function hasMovement(timeline: Array<{ balance: number }>): boolean {
+function hasMovement(timeline: { balance: number }[]): boolean {
   if (timeline.length < 2) return false;
   const vals = timeline.map((p) => Number(p.balance));
   return Math.max(...vals) !== Math.min(...vals) || vals.some((v) => v !== 0);

@@ -17,18 +17,18 @@ const useKioskAuthMock = vi.fn();
 const readKioskPairingMock = vi.fn();
 
 vi.mock('../hooks/useKioskAuth', () => ({
-  useKioskAuth: () => useKioskAuthMock(),
+  useKioskAuth: () => useKioskAuthMock() as unknown,
 }));
 
 vi.mock('@/lib/kioskAuth', () => ({
-  readKioskPairing: () => readKioskPairingMock(),
+  readKioskPairing: () => readKioskPairingMock() as unknown,
   writeKioskPairing: vi.fn().mockResolvedValue(undefined),
 }));
 
 const fromMock = vi.fn();
 vi.mock('@/lib/supabase', () => ({
   supabase: {
-    from: (...args: unknown[]) => fromMock(...args),
+    from: (...args: unknown[]) => fromMock(...args) as unknown,
     channel: vi.fn(() => ({
       on: vi.fn().mockReturnThis(),
       subscribe: vi.fn().mockReturnThis(),

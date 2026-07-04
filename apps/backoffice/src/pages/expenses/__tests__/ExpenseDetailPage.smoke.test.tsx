@@ -9,6 +9,7 @@ import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import type { JSX } from 'react';
 import ExpenseDetailPage from '@/pages/expenses/ExpenseDetailPage.js';
 import type { ExpenseRow } from '@/features/expenses/hooks/useExpensesList.js';
+import type * as UseExpensesListModule from '@/features/expenses/hooks/useExpensesList.js';
 
 const EXPENSE: ExpenseRow = {
   id:               'e-1',
@@ -49,7 +50,7 @@ vi.mock('@/features/expenses/hooks/useExpenseDetail.js', () => ({
 }));
 
 vi.mock('@/features/expenses/hooks/useExpensesList.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/features/expenses/hooks/useExpensesList.js')>();
+  const actual = await importOriginal<typeof UseExpensesListModule>();
   return {
     ...actual,
     useExpenseCategories: () => ({
@@ -64,7 +65,7 @@ vi.mock('@/features/expenses/hooks/useExpensesList.js', async (importOriginal) =
 });
 
 vi.mock('@/features/expenses/hooks/useExpenseActions.js', () => ({
-  useSubmitExpense: () => ({ mutateAsync: async () => undefined, isPending: false, error: null }),
+  useSubmitExpense: () => ({ mutateAsync: () => Promise.resolve(undefined), isPending: false, error: null }),
 }));
 
 vi.mock('@/features/expenses/components/ApproveDialog.js', () => ({ ApproveDialog: () => null }));
@@ -133,7 +134,7 @@ describe('ExpenseDetailPage (Phase 5.A rewrite)', () => {
     renderPage();
     const duplicateBtn = screen.getByRole('button', { name: /Duplicate/i });
     fireEvent.click(duplicateBtn);
-    const seed = JSON.parse(screen.getByTestId('duplicate-seed').textContent ?? 'null');
+    const seed: unknown = JSON.parse(screen.getByTestId('duplicate-seed').textContent ?? 'null');
     expect(seed).toEqual({
       category_id:    'cat-1',
       amount:         '250000',

@@ -43,8 +43,8 @@ export function DevicesSettingsTab({ readOnly }: { readOnly: boolean }): JSX.Ele
   const [printBusy, setPrintBusy] = useState(false);
   const [drawerBusy, setDrawerBusy] = useState(false);
 
-  const resolvedUrl =
-    printerUrl || (import.meta.env.VITE_PRINT_SERVER_URL ?? 'http://localhost:3001');
+  const envPrintUrl = import.meta.env.VITE_PRINT_SERVER_URL as string | undefined;
+  const resolvedUrl = printerUrl || (envPrintUrl ?? 'http://localhost:3001');
 
   async function runProbe(): Promise<void> {
     setProbe('busy');

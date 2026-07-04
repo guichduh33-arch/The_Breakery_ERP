@@ -18,7 +18,7 @@ const fromMock = vi.fn();
 
 vi.mock('@/lib/supabase', () => ({
   supabase: {
-    from: (...args: unknown[]) => fromMock(...args),
+    from: (...args: unknown[]) => fromMock(...args) as unknown,
   },
 }));
 

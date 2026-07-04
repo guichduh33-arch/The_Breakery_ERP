@@ -11,7 +11,7 @@ import { renderHook } from '@testing-library/react';
 const rpcMock = vi.fn().mockResolvedValue({ data: null, error: null });
 
 vi.mock('@/lib/supabase', () => ({
-  supabase: { rpc: (fn: string, args: Record<string, unknown>) => rpcMock(fn, args) },
+  supabase: { rpc: (fn: string, args: Record<string, unknown>) => rpcMock(fn, args) as unknown },
 }));
 
 import { useLanHeartbeat } from '../hooks/useLanHeartbeat';

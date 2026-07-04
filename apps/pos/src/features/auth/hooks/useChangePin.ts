@@ -27,20 +27,25 @@ export function useChangePin() {
     mutationFn: async ({ userId, currentPin, newPin }: ChangePinArgs): Promise<ChangePinResult> => {
       // S25 hard cutover (session 59) — PINs travel via headers, never the
       // JSON body (request bodies get logged by PostgREST/pgaudit/proxies).
-      const { data, error } = await supabase.functions.invoke('auth-change-pin', {
+      const response = await supabase.functions.invoke<
+        ChangePinResult | { ok?: false; error?: string }
+      >('auth-change-pin', {
         body: { user_id: userId },
         headers: { 'x-current-pin': currentPin, 'x-new-pin': newPin },
       });
+      const { data } = response;
+      // functions-js types `error` as `any` — pin it to `unknown` before use.
+      const error: unknown = response.error;
       if (error) {
         // Surface the EF error code (e.g. 'invalid_current_pin') for the modal
         // to map onto a user-friendly toast. Network errors get the raw message.
         const code = (error as { message?: string }).message ?? 'change_pin_failed';
         throw new Error(code);
       }
-      if (!data?.ok) {
-        throw new Error((data as { error?: string })?.error ?? 'change_pin_failed');
+      if (data?.ok !== true) {
+        throw new Error(data?.error ?? 'change_pin_failed');
       }
-      return data as ChangePinResult;
+      return data;
     },
   });
 }

@@ -49,7 +49,7 @@ function buildMonths(): MonthlyPoint[] {
 
 export interface SupplierAnalyticsTabProps {
   items: SupplierPurchaseItem[];
-  spendByPo: Array<{ order_date: string | null; total_amount: number }>;
+  spendByPo: { order_date: string | null; total_amount: number }[];
 }
 
 export function SupplierAnalyticsTab({ items, spendByPo }: SupplierAnalyticsTabProps): JSX.Element {

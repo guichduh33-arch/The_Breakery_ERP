@@ -40,7 +40,7 @@ export function useKdsRecallOrder() {
         const err = Object.assign(new Error(error.message), { code: error.code });
         throw err;
       }
-      return (data ?? 0) as number;
+      return (data ?? 0);
     },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['kds'] });

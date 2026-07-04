@@ -15,7 +15,7 @@ const rpcMock = vi.fn();
 
 vi.mock('@/lib/supabase', () => ({
   supabase: {
-    rpc: (...args: unknown[]) => rpcMock(...args),
+    rpc: (...args: unknown[]) => rpcMock(...args) as unknown,
   },
 }));
 

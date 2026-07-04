@@ -33,7 +33,7 @@ const ROWS = [
 
 const mockUseAuditLogs = vi.fn();
 vi.mock('@/features/reports/hooks/useAuditLogs.js', () => ({
-  useAuditLogs: (filters: unknown) => mockUseAuditLogs(filters),
+  useAuditLogs: (filters: unknown) => mockUseAuditLogs(filters) as unknown,
 }));
 
 vi.mock('@/features/auth/hooks/useLoginUsers.js', () => ({

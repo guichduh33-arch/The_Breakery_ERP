@@ -127,7 +127,7 @@ export function SupplierPriceEvolutionTab({ items }: SupplierPriceEvolutionTabPr
               <XAxis dataKey="label" tick={{ fontSize: 10 }} stroke={CHART_AXIS_STROKE} />
               <YAxis tick={{ fontSize: 10 }} stroke={CHART_AXIS_STROKE} width={56} tickFormatter={(v) => `${formatIdr(Number(v))}`} />
               <Tooltip formatter={(v: number, name: string) => [`${formatIdr(v)}`, products.find((p) => p.id === name)?.name ?? name]} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
-              <Legend formatter={(value) => products.find((p) => p.id === value)?.name ?? value} />
+              <Legend formatter={(value: string) => products.find((p) => p.id === value)?.name ?? value} />
               {products.filter((p) => selected.has(p.id)).map((p) => (
                 <Line
                   key={p.id}

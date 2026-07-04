@@ -59,15 +59,15 @@ export default function GeneralLedgerPage(): JSX.Element {
     if (!gl.data) return;
     setPages((prev) => {
       if (cursor === null) {
-        setOpeningBalance(gl.data!.opening_balance);
-        return [gl.data!.lines];
+        setOpeningBalance(gl.data.opening_balance);
+        return [gl.data.lines];
       }
       // Avoid duplicating the same page on re-render.
       const last = prev[prev.length - 1];
-      if (last && last.length === gl.data!.lines.length && last[0]?.je_id === gl.data!.lines[0]?.je_id) {
+      if (last?.length === gl.data.lines.length && last[0]?.je_id === gl.data.lines[0]?.je_id) {
         return prev;
       }
-      return [...prev, gl.data!.lines];
+      return [...prev, gl.data.lines];
     });
   }, [gl.data, cursor]);
 

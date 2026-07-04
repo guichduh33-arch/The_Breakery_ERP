@@ -96,7 +96,7 @@ describe('tablet-send smoke', () => {
 
     await waitFor(() => {
       expect(mocks.rpc).toHaveBeenCalledWith('create_tablet_order_v3', expect.objectContaining({
-        p_client_uuid: expect.stringMatching(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i),
+        p_client_uuid: expect.stringMatching(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i) as unknown,
         p_waiter_id: 'waiter-001',
         p_table_number: 'T-03',
         p_order_type: 'dine_in',

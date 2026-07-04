@@ -38,7 +38,7 @@ function formatMetadata(metadata: unknown): string {
   try {
     return JSON.stringify(metadata, null, 2);
   } catch {
-    return String(metadata);
+    return '[unserializable]';
   }
 }
 

@@ -14,7 +14,7 @@ describe('changePin (S25 hard cutover)', () => {
   it('sends current_pin/new_pin as headers and only user_id in the body', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({}),
+      json: () => Promise.resolve({}),
     });
     vi.stubGlobal('fetch', fetchMock);
 
@@ -41,7 +41,7 @@ describe('changePin (S25 hard cutover)', () => {
   it('omits x-current-pin on admin override (no current_pin)', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({}),
+      json: () => Promise.resolve({}),
     });
     vi.stubGlobal('fetch', fetchMock);
 

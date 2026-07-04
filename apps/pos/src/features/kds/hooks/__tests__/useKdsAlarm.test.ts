@@ -81,7 +81,7 @@ describe('useKdsAlarm', () => {
       .fn()
       .mockImplementation(() => {
         const ctx = new FakeAudioContext();
-        ctx.createOscillator = createOscillatorSpy as unknown as FakeAudioContext['createOscillator'];
+        ctx.createOscillator = createOscillatorSpy;
         return ctx;
       });
   });
@@ -160,7 +160,7 @@ describe('useKdsAlarm', () => {
         const ctx = new FakeAudioContext();
         ctx.state = 'suspended';
         ctx.resume = resumeMock;
-        ctx.createOscillator = createOscillatorSpy as unknown as FakeAudioContext['createOscillator'];
+        ctx.createOscillator = createOscillatorSpy;
         return ctx;
       });
 
@@ -196,7 +196,7 @@ describe('useKdsAlarm', () => {
         const ctx = new FakeAudioContext();
         ctx.state = 'suspended';
         ctx.resume = resumeMock;
-        ctx.createOscillator = createOscillatorSpy as unknown as FakeAudioContext['createOscillator'];
+        ctx.createOscillator = createOscillatorSpy;
         return ctx;
       });
 

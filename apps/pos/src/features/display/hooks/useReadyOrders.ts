@@ -52,7 +52,7 @@ function pickFirst<T>(value: T | T[] | null): T | null {
   return Array.isArray(value) ? (value[0] ?? null) : value;
 }
 
-export function useReadyOrders(enabled: boolean = true) {
+export function useReadyOrders(enabled = true) {
   return useQuery<ReadyOrder[]>({
     queryKey: READY_ORDERS_QUERY_KEY,
     enabled,

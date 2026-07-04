@@ -10,6 +10,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useCreateExpense } from '@/features/expenses/hooks/useCreateExpense.js';
+import type { CreateExpenseInput } from '@/features/expenses/hooks/useCreateExpense.js';
 import {
   ExpenseForm,
   emptyExpenseFormValues,
@@ -55,7 +56,7 @@ export default function NewExpensePage(): JSX.Element {
 
   async function handleSubmit(): Promise<void> {
     try {
-      const input: import('@/features/expenses/hooks/useCreateExpense.js').CreateExpenseInput = {
+      const input: CreateExpenseInput = {
         category_id: values.category_id,
         amount: Number.parseFloat(values.amount),
         vat_amount: values.vat_amount === '' ? 0 : Number.parseFloat(values.vat_amount),

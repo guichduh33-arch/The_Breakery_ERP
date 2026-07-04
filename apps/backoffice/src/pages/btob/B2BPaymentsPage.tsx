@@ -316,7 +316,7 @@ function FilterRow({
   label: string;
   value: string;
   onChange: (next: string) => void;
-  options: ReadonlyArray<{ value: string; label: string }>;
+  options: readonly { value: string; label: string }[];
 }): JSX.Element {
   return (
     <label className="flex items-center justify-between gap-2 rounded-md border border-border-subtle bg-bg-base px-3">

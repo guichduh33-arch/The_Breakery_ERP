@@ -20,7 +20,7 @@ vi.mock('sonner', () => ({
 
 const rpcMock = vi.fn().mockResolvedValue({ data: null, error: null });
 vi.mock('@/lib/supabase', () => ({
-  supabase: { rpc: (fn: string, args: Record<string, unknown>) => rpcMock(fn, args) },
+  supabase: { rpc: (fn: string, args: Record<string, unknown>) => rpcMock(fn, args) as unknown },
   supabaseUrl: 'http://localhost:54321',
 }));
 
@@ -72,7 +72,7 @@ describe('POS shell — LAN heartbeat wiring (session 59, 21 D1.1)', () => {
       isLoading: false,
       error: null,
       isLocked: false,
-    } as never);
+    });
   });
 
   it('emits a LAN heartbeat when a device code is configured', async () => {

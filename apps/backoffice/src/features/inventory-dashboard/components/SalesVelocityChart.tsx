@@ -7,7 +7,7 @@ import {
 import { CHART_GRID_STROKE } from '@/features/reports/utils/chartColors.js';
 
 export interface SalesVelocityChartProps {
-  data: Array<{ day: string; units_sold: number }>;
+  data: { day: string; units_sold: number }[];
   unit: string;
 }
 

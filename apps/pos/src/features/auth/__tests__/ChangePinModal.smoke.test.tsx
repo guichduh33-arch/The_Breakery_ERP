@@ -12,6 +12,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactElement } from 'react';
+import type * as BreakeryUi from '@breakery/ui';
 import { ChangePinModal } from '../ChangePinModal';
 
 // --- Mocks -----------------------------------------------------------------
@@ -27,7 +28,7 @@ const { invokeMock, toastMock } = vi.hoisted(() => ({
 vi.mock('@/lib/supabase', () => ({
   supabase: {
     functions: {
-      invoke: (...args: unknown[]) => invokeMock(...args),
+      invoke: (...args: unknown[]) => invokeMock(...args) as unknown,
     },
   },
 }));
@@ -41,7 +42,7 @@ vi.mock('sonner', () => ({
 // of the modal's state machine. The `key` prop makes it remount between
 // steps, exactly as the production component does.
 vi.mock('@breakery/ui', async () => {
-  const actual = await vi.importActual<typeof import('@breakery/ui')>('@breakery/ui');
+  const actual = await vi.importActual<typeof BreakeryUi>('@breakery/ui');
   return {
     ...actual,
     NumpadPin: ({

@@ -79,7 +79,7 @@ const channelMock = {
 vi.mock('@/lib/supabase', () => ({
   supabase: {
     from: (table: string) => fromMock(table),
-    rpc: (fn: string, args: Record<string, unknown>) => rpcMock(fn, args),
+    rpc: (fn: string, args: Record<string, unknown>) => rpcMock(fn, args) as unknown,
     channel: vi.fn(() => channelMock),
     removeChannel: vi.fn(),
   },

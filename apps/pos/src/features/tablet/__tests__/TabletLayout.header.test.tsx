@@ -16,7 +16,7 @@ import { usePosSettingsStore } from '@/stores/posSettingsStore';
 const rpcMock = vi.fn().mockResolvedValue({ data: null, error: null });
 
 vi.mock('@/lib/supabase', () => ({
-  supabase: { from: vi.fn(), rpc: (fn: string, args: Record<string, unknown>) => rpcMock(fn, args) },
+  supabase: { from: vi.fn(), rpc: (fn: string, args: Record<string, unknown>) => rpcMock(fn, args) as unknown },
   supabaseUrl: 'http://localhost:54321',
 }));
 
