@@ -10,6 +10,7 @@ import { describe, expect, it } from 'vitest';
 import { OrderQueueTicker } from '../components/OrderQueueTicker';
 import type { DisplayOrder } from '../hooks/useDisplayOrders';
 import type { ReadyOrder } from '../hooks/useReadyOrders';
+import { READY_ORDERS_LIMIT } from '../hooks/useReadyOrders';
 
 function fakeReadyOrder(n: number, overrides: Partial<ReadyOrder> = {}): ReadyOrder {
   return {
@@ -102,5 +103,20 @@ describe('OrderQueueTicker', () => {
     expect(screen.getAllByTestId('display-queue-row')).toHaveLength(1);
     expect(screen.getByTestId('display-ready-row')).toHaveTextContent('#2001');
     expect(screen.getByTestId('display-queue-row')).toHaveTextContent('#1001');
+  });
+
+  // Session 59 (review finding) — the ready section must not overflow the
+  // fixed-height screen during a rush; defensive re-slice mirrors the D-4C-5
+  // paid-queue clamp.
+  it('clamps the ready section to READY_ORDERS_LIMIT rows even when given more', () => {
+    const readyOrders = Array.from({ length: READY_ORDERS_LIMIT + 2 }, (_, i) =>
+      fakeReadyOrder(i + 1),
+    );
+    render(<OrderQueueTicker orders={[]} readyOrders={readyOrders} />);
+
+    const rows = screen.getAllByTestId('display-ready-row');
+    expect(rows).toHaveLength(READY_ORDERS_LIMIT);
+    expect(rows[0]).toHaveTextContent('#2001');
+    expect(rows[rows.length - 1]).toHaveTextContent(`#${2000 + READY_ORDERS_LIMIT}`);
   });
 });

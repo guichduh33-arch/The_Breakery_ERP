@@ -21,7 +21,7 @@ vi.mock('@/lib/supabase', () => ({
   },
 }));
 
-import { useReadyOrders } from '../useReadyOrders';
+import { useReadyOrders, READY_ORDERS_LIMIT } from '../useReadyOrders';
 
 function wrapper({ children }: { children: ReactNode }) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -87,5 +87,27 @@ describe('useReadyOrders', () => {
   it('does not fetch when disabled', () => {
     renderHook(() => useReadyOrders(false), { wrapper });
     expect(fromMock).not.toHaveBeenCalled();
+  });
+
+  // Session 59 (review finding) — unbounded ready section would overflow
+  // the fixed-height customer-display screen during a rush.
+  it('caps aggregated orders to READY_ORDERS_LIMIT, keeping the oldest-waiting first', async () => {
+    const rowCount = READY_ORDERS_LIMIT + 3;
+    const data = Array.from({ length: rowCount }, (_, i) => ({
+      order_id: `o-${i}`,
+      ready_at: `2026-07-04T10:${String(i).padStart(2, '0')}:00.000Z`,
+      orders: { order_number: String(1000 + i), order_type: 'dine_in', table_number: null },
+    }));
+    orderMock.mockResolvedValue({ data, error: null });
+
+    const { result } = renderHook(() => useReadyOrders(), { wrapper });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    const rows = result.current.data ?? [];
+    expect(rows).toHaveLength(READY_ORDERS_LIMIT);
+    // Ascending ready_at — the oldest-waiting (earliest ready_at) orders are
+    // the ones kept, not the most recent.
+    expect(rows[0]?.order_id).toBe('o-0');
+    expect(rows[rows.length - 1]?.order_id).toBe(`o-${READY_ORDERS_LIMIT - 1}`);
   });
 });

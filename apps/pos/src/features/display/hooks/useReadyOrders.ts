@@ -14,12 +14,21 @@
 // Realtime refresh is wired in `useDisplayRealtime` (shared channel,
 // `order_items` postgres_changes → invalidates READY_ORDERS_QUERY_KEY).
 // `refetchInterval` here is the same 30s catch-up net as `useKdsOrders`.
+//
+// Session 59 (review finding) — capped to READY_ORDERS_LIMIT (mirrors
+// DISPLAY_ORDERS_LIMIT in useDisplayOrders.ts) : during a rush, an
+// unbounded "Ready for pickup" section would overflow the fixed-height
+// customer-display screen. Rows are already ascending by `ready_at`
+// (earliest-ready-first — the longest-waiting handoff stays the most
+// urgent/visible), so the slice keeps the oldest N.
 
 import { useQuery } from '@tanstack/react-query';
 
 import { supabase } from '@/lib/supabase';
 
 import { READY_ORDERS_QUERY_KEY } from './useDisplayRealtime';
+
+export const READY_ORDERS_LIMIT = 5;
 
 export interface ReadyOrder {
   order_id: string;
@@ -74,7 +83,9 @@ export function useReadyOrders(enabled: boolean = true) {
         });
       }
 
-      return Array.from(byOrder.values());
+      // Ascending ready_at (oldest-waiting first) — cap defensively so a
+      // rush never renders an unbounded list.
+      return Array.from(byOrder.values()).slice(0, READY_ORDERS_LIMIT);
     },
     refetchInterval: 30_000,
     staleTime: 5_000,

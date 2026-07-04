@@ -15,10 +15,16 @@
 // payment — an order can surface here with no `paid_at` at all (fired but
 // not yet tendered). The two feeds never merge : the paid queue below is
 // unchanged.
+//
+// Session 59 (review finding) — the ready section is defensively re-sliced
+// to READY_ORDERS_LIMIT here too (same D-4C-5 pattern as the paid queue
+// below), so a caller passing more rows than the hook already capped can't
+// overflow the fixed-height display screen during a rush.
 
 import type { DisplayOrder } from '../hooks/useDisplayOrders';
 import { DISPLAY_ORDERS_LIMIT } from '../hooks/useDisplayOrders';
 import type { ReadyOrder } from '../hooks/useReadyOrders';
+import { READY_ORDERS_LIMIT } from '../hooks/useReadyOrders';
 
 interface OrderQueueTickerProps {
   orders: DisplayOrder[];
@@ -54,10 +60,11 @@ export function OrderQueueTicker({
 }: OrderQueueTickerProps) {
   // D-4C-5 — render at most 5 rows even if the caller passes more.
   const rows = orders.slice(0, DISPLAY_ORDERS_LIMIT);
+  const readyRows = readyOrders.slice(0, READY_ORDERS_LIMIT);
 
   return (
     <div className="h-full flex flex-col gap-6" data-testid="display-queue-ticker">
-      {readyOrders.length > 0 && (
+      {readyRows.length > 0 && (
         <div data-testid="display-ready-section">
           <p className="text-success text-sm uppercase tracking-widest mb-2">
             Ready for pickup
@@ -67,7 +74,7 @@ export function OrderQueueTicker({
             data-testid="display-ready-list"
             aria-label="Ready for pickup"
           >
-            {readyOrders.map((order) => (
+            {readyRows.map((order) => (
               <li
                 key={order.order_id}
                 className="flex items-center justify-between rounded-2xl bg-success-soft border border-success/30 px-8 py-5 transition-base"
