@@ -24,6 +24,7 @@ import { PairDevicePrompt } from './components/PairDevicePrompt';
 import { CDActiveCartView } from './CDActiveCartView';
 import { useDisplayOrders } from './hooks/useDisplayOrders';
 import { useDisplayRealtime } from './hooks/useDisplayRealtime';
+import { useReadyOrders } from './hooks/useReadyOrders';
 import { useCartBroadcastReceiver } from './hooks/useCartBroadcastReceiver';
 import { useKioskAuth } from './hooks/useKioskAuth';
 import { usePosSettingsStore } from '@/stores/posSettingsStore';
@@ -65,6 +66,8 @@ export default function CustomerDisplayPage() {
   useDisplayRealtime(screenId);
   const ordersEnabled = auth.status === 'authenticated' && pairedCode !== null;
   const { data: orders } = useDisplayOrders(ordersEnabled);
+  // Session 59 (16 D1.2) — kitchen-ready feed, independent of payment status.
+  const { data: readyOrders } = useReadyOrders(ordersEnabled);
 
   // Live cart mirror from the POS side (F-007). Safe to read on every render —
   // the view renders its own welcome empty-state when the message is null.
@@ -151,7 +154,7 @@ export default function CustomerDisplayPage() {
         <div className="flex-1 min-h-0 flex flex-col gap-8">
           <CurrentOrderCard order={current} />
           <div className="flex-1 min-h-0">
-            <OrderQueueTicker orders={tail} />
+            <OrderQueueTicker orders={tail} readyOrders={readyOrders ?? []} />
           </div>
         </div>
       </div>

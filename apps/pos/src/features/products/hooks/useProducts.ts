@@ -15,6 +15,10 @@
 //   product) and derive `is_sellable` via the pure domain helper : untracked
 //   products are never sold out ; tracked ones use the vitrine counter first,
 //   falling back to `current_stock` when no vitrine row exists.
+// Session 59 (05 D1.1) — filter `visible_on_pos = true` on both the parent
+//   query and the variant-existence probe : the BO toggle
+//   (products.visible_on_pos, editable in GeneralPanel.tsx) previously had no
+//   effect at the counter. `is_active = false` remains excluded as before.
 import { useQuery } from '@tanstack/react-query';
 import type { Product, DispatchStation } from '@breakery/domain';
 import { isSellable } from '@breakery/domain';
@@ -32,6 +36,7 @@ export function useProducts() {
         )
         .is('parent_product_id', null)
         .eq('is_active', true)
+        .eq('visible_on_pos', true)
         .is('deleted_at', null)
         .order('name');
 
@@ -44,6 +49,7 @@ export function useProducts() {
         .select('parent_product_id')
         .not('parent_product_id', 'is', null)
         .eq('is_active', true)
+        .eq('visible_on_pos', true)
         .is('deleted_at', null);
 
       if (variantsRes.error) throw variantsRes.error;
