@@ -6,14 +6,17 @@
 
 /// <reference types="@testing-library/jest-dom" />
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { useAuthStore } from '@/stores/authStore';
 import { useTabletCartStore } from '@/stores/tabletCartStore';
+import { usePosSettingsStore } from '@/stores/posSettingsStore';
+
+const rpcMock = vi.fn().mockResolvedValue({ data: null, error: null });
 
 vi.mock('@/lib/supabase', () => ({
-  supabase: { from: vi.fn(), rpc: vi.fn() },
+  supabase: { from: vi.fn(), rpc: (fn: string, args: Record<string, unknown>) => rpcMock(fn, args) },
   supabaseUrl: 'http://localhost:54321',
 }));
 
@@ -33,8 +36,10 @@ function wrap(node: ReactNode): ReactNode {
 
 describe('TabletLayout header (LOT 6)', () => {
   beforeEach(() => {
+    rpcMock.mockClear();
     offlineMock.isOnline = true;
     ordersMock.data = [];
+    usePosSettingsStore.setState({ deviceCode: '' });
     useAuthStore.setState({
       user: { id: 'w1', full_name: 'Demo Waiter', role_code: 'waiter', employee_code: 'EMP1' },
       permissions: ['sales.create'],
@@ -71,5 +76,30 @@ describe('TabletLayout header (LOT 6)', () => {
     const { default: TabletLayout } = await import('@/pages/tablet/TabletLayout');
     render(wrap(<TabletLayout />));
     expect(screen.getByLabelText(/3 orders/i)).toHaveTextContent('3');
+  });
+
+  // Session 59 (21 D1.1) — useLanHeartbeat is now mounted on this shell so BO
+  // "LAN Devices" can see the waiter tablet as online.
+  it('emits a LAN heartbeat when a device code is configured', async () => {
+    usePosSettingsStore.setState({ deviceCode: 'TABLET-01' });
+    const { default: TabletLayout } = await import('@/pages/tablet/TabletLayout');
+    render(wrap(<TabletLayout />));
+
+    await waitFor(() => {
+      expect(rpcMock).toHaveBeenCalledWith('update_lan_heartbeat_v1', {
+        p_device_code: 'TABLET-01',
+      });
+    });
+  });
+
+  it('does not emit a heartbeat when no device code is configured', async () => {
+    const { default: TabletLayout } = await import('@/pages/tablet/TabletLayout');
+    render(wrap(<TabletLayout />));
+    expect(screen.getByTestId('tablet-active-table')).toBeInTheDocument();
+
+    expect(rpcMock).not.toHaveBeenCalledWith(
+      'update_lan_heartbeat_v1',
+      expect.anything(),
+    );
   });
 });

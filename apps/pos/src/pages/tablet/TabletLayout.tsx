@@ -3,13 +3,21 @@ import { Navigate, Outlet, NavLink } from 'react-router-dom';
 import { MapPin, Wifi, WifiOff } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { useTabletCartStore } from '@/stores/tabletCartStore';
+import { usePosSettingsStore } from '@/stores/posSettingsStore';
 import { useTabletOffline } from '@/features/tablet/hooks/useTabletOffline';
 import { useMyTabletOrders } from '@/features/tablet/hooks/useMyTabletOrders';
+import { useLanHeartbeat } from '@/features/lan/hooks/useLanHeartbeat';
 
 export default function TabletLayout(): JSX.Element {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);
   const permissions = useAuthStore((s) => s.permissions);
+
+  // Session 59 (21 D1.1) — heartbeat so BO "LAN Devices" reflects this tablet
+  // as online. No-ops until an operator sets a device code in POS Settings →
+  // Devices (mesh hub/client stay unmounted — decision 2 pending).
+  const deviceCode = usePosSettingsStore((s) => s.deviceCode);
+  useLanHeartbeat({ deviceCode, deviceType: 'tablet' });
 
   // LOT 6 (audit 2026-06-25) — header context: active table, a persistent
   // online/offline pill, and a live order count. These hooks are cheap (cached

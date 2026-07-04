@@ -89,6 +89,7 @@ vi.mock('@/lib/supabase', () => ({
 // Import AFTER the mock so the module under test picks the mocked client.
 import KdsPage from '@/pages/Kds';
 import { useKdsStore } from '@/stores/kdsStore';
+import { usePosSettingsStore } from '@/stores/posSettingsStore';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -116,6 +117,7 @@ describe('KDS smoke', () => {
     channelMock.on.mockClear();
     channelMock.subscribe.mockClear();
     useKdsStore.setState({ selectedStation: 'kitchen' });
+    usePosSettingsStore.setState({ deviceCode: '' });
   });
 
   it('shows empty state when there are no active tickets', async () => {
@@ -185,5 +187,29 @@ describe('KDS smoke', () => {
 
     // The RPC (not a raw table PATCH) owns the pending→preparing transition now.
     expect(updateMock).not.toHaveBeenCalled();
+  });
+
+  // Session 59 (21 D1.1) — useLanHeartbeat is now mounted on this shell so BO
+  // "LAN Devices" can see the KDS screen as online.
+  it('emits a LAN heartbeat when a device code is configured', async () => {
+    usePosSettingsStore.setState({ deviceCode: 'KDS-KITCHEN-01' });
+
+    render(wrapper(<KdsPage />));
+
+    await waitFor(() => {
+      expect(rpcMock).toHaveBeenCalledWith('update_lan_heartbeat_v1', {
+        p_device_code: 'KDS-KITCHEN-01',
+      });
+    });
+  });
+
+  it('does not emit a heartbeat when no device code is configured', async () => {
+    render(wrapper(<KdsPage />));
+    await screen.findByText(/no active tickets/i);
+
+    expect(rpcMock).not.toHaveBeenCalledWith(
+      'update_lan_heartbeat_v1',
+      expect.anything(),
+    );
   });
 });

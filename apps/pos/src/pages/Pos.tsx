@@ -44,6 +44,8 @@ import { TerminalLockedOverlay } from '@/features/auth/TerminalLockedOverlay';
 import { useAuthStore } from '@/stores/authStore';
 import { useCurrentShift } from '@/features/shift/hooks/useShift';
 import { useCartStore } from '@/stores/cartStore';
+import { usePosSettingsStore } from '@/stores/posSettingsStore';
+import { useLanHeartbeat } from '@/features/lan/hooks/useLanHeartbeat';
 import { supabase } from '@/lib/supabase';
 import type { Customer } from '@breakery/domain';
 import type { CustomerWithCategory } from '@/stores/cartStore';
@@ -84,6 +86,12 @@ export default function PosPage() {
 
   const attachCustomer = useCartStore((s) => s.attachCustomer);
   const detachCustomer = useCartStore((s) => s.detachCustomer);
+
+  // Session 59 (21 D1.1) — emit a heartbeat so BO "LAN Devices" reflects this
+  // terminal as online. No-ops until an operator sets a device code in
+  // Settings → Devices (mesh hub/client stay unmounted — decision 2 pending).
+  const deviceCode = usePosSettingsStore((s) => s.deviceCode);
+  useLanHeartbeat({ deviceCode, deviceType: 'pos' });
 
   async function handleLogout() {
     await logout();
