@@ -107,7 +107,10 @@ export function SupplierPriceEvolutionTab({ items }: SupplierPriceEvolutionTabPr
                 }`}
                 style={on ? { borderColor: color, backgroundColor: `${color}1a` } : undefined}
               >
-                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: on ? color : CHART_AXIS_STROKE }} />
+                {/* No design-system token maps to this "deselected" chip-dot
+                    gray — semantically distinct from an axis/grid stroke.
+                    Kept literal — see S59 T7 report. */}
+                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: on ? color : '#cbd5e1' }} />
                 {p.name}
               </button>
             );
