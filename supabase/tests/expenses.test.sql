@@ -1,7 +1,14 @@
 -- supabase/tests/expenses.test.sql
 -- Session 13 / Phase 3.B — pgTAP suite for Expenses module.
+-- Session 59 — T_EXP_08 updated + T_EXP_11 added : F-4 (P1, S58) fix — ADR-003 NON-PKP
+-- folds vat_amount into the expense category line ; no more separate EXPENSE_VAT_INPUT
+-- (account 1151, deactivated) line. See migration
+-- 20260710000102_emit_expense_je_fold_vat_non_pkp.sql. The plan() count below was also
+-- corrected (declared 15, actually 16 assertions pre-S59 — this suite crashed before
+-- reaching finish() ever since account 1151 was deactivated, so the mismatch was never
+-- surfaced ; unrelated pre-existing bookkeeping bug, fixed alongside).
 --
--- Coverage T_EXP_01..10 :
+-- Coverage T_EXP_01..11 :
 --   T_EXP_01 : tables/indexes/columns exist
 --   T_EXP_02 : 12 standard categories seeded with active account
 --   T_EXP_03 : next_expense_number() formats and monotonic
@@ -9,9 +16,11 @@
 --   T_EXP_05 : create_expense_v1 happy path
 --   T_EXP_06 : submit_expense_v1 draft -> submitted
 --   T_EXP_07 : approve_expense_v1 (cash) emits balanced 2-line JE
---   T_EXP_08 : approve_expense_v1 (credit + VAT) emits 3-line JE
+--   T_EXP_08 : approve_expense_v1 (credit + VAT) emits 2-line JE (VAT folded, S59 F-4)
 --   T_EXP_09 : pay_expense_v1 on credit-approved emits payment JE
 --   T_EXP_10 : create_expense_v1 idempotency_key replay returns same id
+--   T_EXP_11 : real _emit_expense_je(uuid) call, vat_amount>0 — balanced JE, 2 lines,
+--              no line on account 1151 (S59 F-4 fix, real RPC not a simulation)
 --
 -- Runner :
 --   Run via Supabase MCP execute_sql wrapped BEGIN ... ROLLBACK.
@@ -20,7 +29,7 @@ BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-SELECT plan(15);
+SELECT plan(19);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures : create a test admin profile (super-admin role) to satisfy
@@ -182,6 +191,12 @@ SELECT is(
 );
 
 -- T_EXP_08 : test credit + VAT shape ; create another fixture with vat_amount>0.
+-- S59 F-4 fix (ADR-003 NON-PKP) : vat_amount is folded into the category debit line —
+-- no more separate EXPENSE_VAT_INPUT/1151 line (that account is deactivated). Updated
+-- alongside migration 20260710000102_emit_expense_je_fold_vat_non_pkp.sql ; this DO
+-- block previously called resolve_mapping_account('EXPENSE_VAT_INPUT') directly, which
+-- unconditionally raised mapping_key_unknown once account 1151 was deactivated —
+-- independent of the _emit_expense_je bug itself, and aborted this whole suite.
 DO $$
 DECLARE
   v_cat       UUID;
@@ -190,7 +205,6 @@ DECLARE
   v_je_id     UUID;
   v_cat_acc   UUID;
   v_ap        UUID;
-  v_vat       UUID;
   v_n         TEXT;
 BEGIN
   SELECT id INTO v_cat FROM expense_categories WHERE code='UTILITIES';
@@ -205,7 +219,6 @@ BEGIN
 
   SELECT account_id INTO v_cat_acc FROM expense_categories WHERE id = v_cat;
   v_ap  := resolve_mapping_account('EXPENSE_AP');
-  v_vat := resolve_mapping_account('EXPENSE_VAT_INPUT');
 
   INSERT INTO journal_entries (entry_number, entry_date, description, reference_type, reference_id,
                                status, total_debit, total_credit)
@@ -214,8 +227,7 @@ BEGIN
   RETURNING id INTO v_je_id;
 
   INSERT INTO journal_entry_lines (journal_entry_id, account_id, debit, credit) VALUES
-    (v_je_id, v_cat_acc, 1000000, 0),
-    (v_je_id, v_vat,     100000,  0),
+    (v_je_id, v_cat_acc, 1100000, 0),
     (v_je_id, v_ap,      0,       1100000);
 
   UPDATE expenses SET status='approved', je_id=v_je_id, approved_by=v_admin, approved_at=now()
@@ -227,8 +239,8 @@ END $$;
 
 SELECT is(
   (SELECT COUNT(*)::INT FROM journal_entry_lines WHERE journal_entry_id = current_setting('test.je_credit_id')::UUID),
-  3,
-  'T_EXP_08 approve_expense_v1 credit+VAT : 3 JE lines (cat / VAT / AP)'
+  2,
+  'T_EXP_08 approve_expense_v1 credit+VAT (S59 F-4 fold) : 2 JE lines (cat incl. VAT / AP)'
 );
 
 -- T_EXP_09 : Pay credit expense → another JE.
@@ -299,6 +311,59 @@ SELECT is(
   current_setting('test.idem_failed'),
   'true',
   'T_EXP_10 UNIQUE(idempotency_key) blocks duplicate'
+);
+
+-- ---------------------------------------------------------------------------
+-- T_EXP_11 : S59 F-4 fix — real _emit_expense_je(uuid) call (not a simulation) with
+-- vat_amount > 0. Spoof auth.uid() via request.jwt.claim.sub (pgTAP runs as
+-- service_role, auth.uid() would otherwise be NULL and the function's own guard
+-- would raise '_emit_expense_je: no auth context').
+-- ---------------------------------------------------------------------------
+
+DO $$
+DECLARE
+  v_cat        UUID;
+  v_admin      UUID;
+  v_admin_auth UUID;
+  v_exp_id     UUID;
+  v_je_id      UUID;
+  v_n          TEXT;
+BEGIN
+  SELECT id INTO v_cat FROM expense_categories WHERE code='UTILITIES';
+  SELECT id, auth_user_id INTO v_admin, v_admin_auth
+    FROM user_profiles WHERE role_code IN ('SUPER_ADMIN','ADMIN') AND is_active = true LIMIT 1;
+
+  v_n := next_expense_number('2026-06-05');
+  INSERT INTO expenses (expense_number, category_id, amount, vat_amount, payment_method,
+                        description, expense_date, status, created_by, submitted_by, submitted_at)
+  VALUES (v_n, v_cat, 1100000, 100000, 'credit', 'T_EXP_11 real _emit_expense_je fold-VAT fixture',
+          '2026-06-05', 'submitted', v_admin, v_admin, now())
+  RETURNING id INTO v_exp_id;
+
+  PERFORM set_config('request.jwt.claim.sub', v_admin_auth::TEXT, true);
+
+  v_je_id := _emit_expense_je(v_exp_id);
+
+  PERFORM set_config('test.je_fold_id', v_je_id::TEXT, false);
+END $$;
+
+SELECT is(
+  (SELECT total_debit FROM journal_entries WHERE id = current_setting('test.je_fold_id')::UUID),
+  (SELECT total_credit FROM journal_entries WHERE id = current_setting('test.je_fold_id')::UUID),
+  'T_EXP_11a _emit_expense_je(uuid) vat_amount>0 : JE balanced (S59 F-4 fix, real call)'
+);
+
+SELECT is(
+  (SELECT COUNT(*)::INT FROM journal_entry_lines WHERE journal_entry_id = current_setting('test.je_fold_id')::UUID),
+  2,
+  'T_EXP_11b _emit_expense_je(uuid) vat_amount>0 : 2 JE lines (VAT folded into category)'
+);
+
+SELECT is(
+  (SELECT COUNT(*)::INT FROM journal_entry_lines jel JOIN accounts a ON a.id = jel.account_id
+     WHERE jel.journal_entry_id = current_setting('test.je_fold_id')::UUID AND a.code = '1151'),
+  0,
+  'T_EXP_11c _emit_expense_je(uuid) vat_amount>0 : no line on account 1151 (ADR-003 NON-PKP)'
 );
 
 SELECT * FROM finish();
