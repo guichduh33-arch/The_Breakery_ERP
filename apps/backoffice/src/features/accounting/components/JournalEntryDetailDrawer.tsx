@@ -7,6 +7,8 @@ import {
 } from '@breakery/ui';
 import { useJournalEntryLines } from '../hooks/useJournalEntryLines.js';
 import type { JournalEntryRow } from '../hooks/useJournalEntries.js';
+import { resolveJeSourceEntity } from '../utils/resolveJeSourceEntity.js';
+import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 
 export interface JournalEntryDetailDrawerProps {
   entry: JournalEntryRow | null;
@@ -25,6 +27,8 @@ export function JournalEntryDetailDrawer({
 
   if (entry === null) return null;
 
+  const source = resolveJeSourceEntity(entry.reference_type, entry.reference_id);
+
   return (
     <Sheet open={true} onOpenChange={(o) => { if (!o) onClose(); }}>
       <SheetContent side="right" className="w-full max-w-2xl overflow-y-auto">
@@ -36,7 +40,17 @@ export function JournalEntryDetailDrawer({
         </SheetHeader>
 
         <div className="mt-4 text-xs text-text-secondary">
-          Source : <span className="font-mono">{entry.reference_type ?? '—'}</span>
+          Source :{' '}
+          {source !== null ? (
+            <DrilldownLink
+              entity={source.entity}
+              id={source.id}
+              label={<span className="font-mono">{entry.reference_type}</span>}
+              icon={false}
+            />
+          ) : (
+            <span className="font-mono">{entry.reference_type ?? '—'}</span>
+          )}
           {' · '}Status : <span className="font-mono">{entry.status}</span>
         </div>
 

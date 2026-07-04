@@ -5,7 +5,7 @@
 // ledger (S24 migration _010) and the page header gets a "+ Record Payment"
 // button wired to RecordB2bPaymentModal. Closes deviation D-W6-B2BPAY-01.
 
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useMemo, useState, type JSX } from 'react';
 import {
   AlertCircle,
@@ -42,12 +42,22 @@ import { B2bInvoicesTab } from '@/features/btob/components/B2bInvoicesTab.js';
 
 type TabKey = 'received' | 'outstanding' | 'invoices' | 'aging';
 
+const TAB_KEYS: readonly TabKey[] = ['received', 'outstanding', 'invoices', 'aging'];
+
 export default function B2BPaymentsPage(): JSX.Element {
   const hasPermission = useAuthStore((s) => s.hasPermission);
   const canRead   = hasPermission('customers.read');
   const canRecord = hasPermission('b2b.payment.record');
   const dash = useB2bDashboard();
-  const [tab,    setTab   ] = useState<TabKey>('received');
+  // Session 59 / Task 6a — seed the initial tab from `?tab=` so a JE-source
+  // drilldown link (reference_type b2b_*) can land straight on Invoices.
+  // No 2-way sync — same pattern as GeneralLedgerPage's URL-seeded selectors.
+  const [searchParams] = useSearchParams();
+  const initialTabParam = searchParams.get('tab');
+  const initialTab: TabKey = TAB_KEYS.includes(initialTabParam as TabKey)
+    ? (initialTabParam as TabKey)
+    : 'received';
+  const [tab,    setTab   ] = useState<TabKey>(initialTab);
   const [search, setSearch] = useState<string>('');
   const [method, setMethod] = useState<string>('all');
   const [period, setPeriod] = useState<B2bPaymentsPeriod>('all');

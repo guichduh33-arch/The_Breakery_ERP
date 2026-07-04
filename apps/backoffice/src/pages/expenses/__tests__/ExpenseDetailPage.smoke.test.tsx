@@ -3,9 +3,10 @@
 // Session 14 / Phase 5.A — smoke for the rebuilt expense detail page.
 
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
+import type { JSX } from 'react';
 import ExpenseDetailPage from '@/pages/expenses/ExpenseDetailPage.js';
 import type { ExpenseRow } from '@/features/expenses/hooks/useExpensesList.js';
 
@@ -76,6 +77,15 @@ vi.mock('@/stores/authStore.js', () => ({
     sel({ hasPermission: (p: string) => currentPerms.has(p) }),
 }));
 
+// Session 59 / Task 6b — stand-in for NewExpensePage that just echoes the
+// navigation state, so the "Duplicate" test can assert on the seed without
+// pulling in NewExpensePage's own mocking (covered separately in
+// NewExpensePage.smoke.test.tsx).
+function DuplicateTargetProbe(): JSX.Element {
+  const location = useLocation() as { state: { duplicateFrom?: unknown } | null };
+  return <pre data-testid="duplicate-seed">{JSON.stringify(location.state?.duplicateFrom ?? null)}</pre>;
+}
+
 function renderPage(): ReturnType<typeof render> {
   const qc = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
@@ -85,6 +95,7 @@ function renderPage(): ReturnType<typeof render> {
       <MemoryRouter initialEntries={['/backoffice/expenses/e-1']}>
         <Routes>
           <Route path="/backoffice/expenses/:id" element={<ExpenseDetailPage />} />
+          <Route path="/backoffice/expenses/new" element={<DuplicateTargetProbe />} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -113,6 +124,31 @@ describe('ExpenseDetailPage (Phase 5.A rewrite)', () => {
     renderPage();
     expect(screen.queryByRole('button', { name: /Approve/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Reject/i })).not.toBeInTheDocument();
+    currentPerms = new Set(['expenses.read', 'expenses.approve', 'expenses.pay']);
+  });
+
+  // Session 59 / Task 6b — "Duplicate" button.
+  it('shows Duplicate for a user with expenses.create and navigates with a prefilled seed', () => {
+    currentPerms = new Set(['expenses.read', 'expenses.create']);
+    renderPage();
+    const duplicateBtn = screen.getByRole('button', { name: /Duplicate/i });
+    fireEvent.click(duplicateBtn);
+    const seed = JSON.parse(screen.getByTestId('duplicate-seed').textContent ?? 'null');
+    expect(seed).toEqual({
+      category_id:    'cat-1',
+      amount:         '250000',
+      vat_amount:     '0',
+      payment_method: 'cash',
+      vendor_name:    'Acme Stationary',
+      description:    'Office supplies',
+    });
+    currentPerms = new Set(['expenses.read', 'expenses.approve', 'expenses.pay']);
+  });
+
+  it('hides Duplicate for a user without expenses.create', () => {
+    currentPerms = new Set(['expenses.read']);
+    renderPage();
+    expect(screen.queryByRole('button', { name: /Duplicate/i })).not.toBeInTheDocument();
     currentPerms = new Set(['expenses.read', 'expenses.approve', 'expenses.pay']);
   });
 });

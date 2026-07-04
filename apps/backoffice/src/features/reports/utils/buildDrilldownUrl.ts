@@ -1,6 +1,8 @@
 /**
  * Session 31 — Reports Drill-Down navigation transverse.
  * Session 32 — Extended with `order_list` filter-only entity.
+ * Session 59 — Extended with `b2b_invoices` / `cash_treasury` filter-only
+ *   entities (Task 6a — JE drilldown to source).
  *
  * Pure helper mapping (entity, id, filter?) → URL string or null.
  * Used by <DrilldownLink> component to build navigation targets from report cells.
@@ -8,7 +10,8 @@
  * Returns `null` when the combo has no viable target (empty id for detail/list-with-id
  * entities, unknown entity). Callers render plain text instead of <Link> in that case.
  *
- * `order_list` is a filter-only entity: pass `id=''` and the URL is built from `filter`.
+ * `order_list`, `b2b_invoices`, `cash_treasury` are filter-only entities: pass
+ * `id=''` and the URL is built from the base route (+ `filter` when relevant).
  */
 
 export type DrilldownEntity =
@@ -22,7 +25,9 @@ export type DrilldownEntity =
   | 'supplier'
   | 'expense'
   | 'purchase_order'
-  | 'order_list';
+  | 'order_list'
+  | 'b2b_invoices'
+  | 'cash_treasury';
 
 export interface DrilldownFilter {
   // S31 legacy filter keys
@@ -68,8 +73,13 @@ const LIST_FILTERED: Partial<Record<DrilldownEntity, (id: string) => string>> = 
 };
 
 // S32 — filter-only entities: URL built from filter alone, id ignored.
+// S59 — b2b_invoices / cash_treasury added for the JE-source drilldown (Task 6a):
+// these reference_types don't point at a single-record detail page, they point
+// at a filtered list/tab, so id is unused just like order_list.
 const LIST_FILTER_ONLY: Partial<Record<DrilldownEntity, string>> = {
-  order_list: '/backoffice/orders',
+  order_list:    '/backoffice/orders',
+  b2b_invoices:  '/backoffice/b2b/payments?tab=invoices',
+  cash_treasury: '/backoffice/accounting/cash',
 };
 
 function appendFilter(base: string, filter?: DrilldownFilter): string {

@@ -123,6 +123,23 @@ describe('GeneralLedgerPage (S26b Wave 3)', () => {
     });
   });
 
+  // Session 59 / Task 6a — Source column drilldown link.
+  it('T4 — a "sale" line renders a Source link to /backoffice/orders/:id', async () => {
+    mockRpc.mockReturnValueOnce({ data: PAGE_1, error: null });
+    renderPage();
+    await waitFor(() => {
+      expect(screen.queryByRole('option', { name: /1110/i })).not.toBeNull();
+    });
+    fireEvent.change(screen.getByTestId('gl-account-select'),
+      { target: { value: 'a-cash' } });
+
+    await waitFor(() => {
+      const row = screen.getByTestId('gl-row-JE-2026-0001');
+      const link = row.querySelector('a[href="/backoffice/orders/o1"]');
+      expect(link).not.toBeNull();
+    });
+  });
+
   it('T2 — Load more passes p_cursor from page 1', async () => {
     mockRpc.mockReturnValueOnce({ data: PAGE_1, error: null });
     renderPage();
