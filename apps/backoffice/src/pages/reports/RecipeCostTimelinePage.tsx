@@ -24,6 +24,7 @@ import { supabase } from '@/lib/supabase.js';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
 import { useUrlState } from '@/hooks/useUrlState.js';
+import { CHART_GRID_STROKE } from '@/features/reports/utils/chartColors.js';
 
 interface TimelineRow {
   product_id:     string;
@@ -169,13 +170,15 @@ export function RecipeCostTimelinePage(): JSX.Element {
           <div data-testid="timeline-chart" style={{ width: '100%', height: 300 }}>
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData} margin={{ top: 10, right: 20, bottom: 10, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_STROKE} />
                 <XAxis dataKey="date" />
                 <YAxis />
                 <Tooltip />
                 <Line
                   type="monotone"
                   dataKey="cost"
+                  // No design-system token maps to this amber (not COGS/OpEx —
+                  // recipe cost-per-unit line). Kept literal — see S59 T7 report.
                   stroke="#d4a437"
                   strokeWidth={2}
                   dot

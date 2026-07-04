@@ -6,8 +6,8 @@ import type { JSX } from 'react';
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import { formatIdr } from '@breakery/utils';
 
-const PAID = '#16a34a';
-const OVERDUE = '#b91c1c';
+const PAID = 'var(--success)';
+const OVERDUE = 'var(--danger)';
 
 export interface SupplierPaymentDistributionProps {
   paidAmount: number;

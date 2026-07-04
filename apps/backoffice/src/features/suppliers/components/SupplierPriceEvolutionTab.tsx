@@ -18,9 +18,14 @@ import {
 import { Card, EmptyState, SectionLabel } from '@breakery/ui';
 import { TrendingUp } from 'lucide-react';
 import { formatIdr } from '@breakery/utils';
+import { CHART_GRID_STROKE, CHART_AXIS_STROKE, familyColor } from '@/features/reports/utils/chartColors.js';
 import type { SupplierPurchaseItem } from '@/features/suppliers/hooks/useSupplierPurchaseItems.js';
 
-const PALETTE = ['var(--gold-base, #c8a874)', '#6366f1', '#16a34a', '#dc2626', '#0891b2', '#d946ef'];
+// Per-product qualitative palette (distinguishing arbitrary SKUs, not a cost
+// family) — only the first two slots have a design-system equivalent (gold
+// accent, COGS ramp indigo); the rest have no token match yet and are kept
+// literal — see S59 T7 report.
+const PALETTE = ['var(--gold-base)', familyColor('cogs', 4), '#16a34a', '#dc2626', '#0891b2', '#d946ef'];
 
 function fmtDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: '2-digit' });
@@ -39,7 +44,7 @@ export function SupplierPriceEvolutionTab({ items }: SupplierPriceEvolutionTabPr
 
   const colorFor = useMemo(() => {
     const m = new Map<string, string>();
-    products.forEach((p, i) => m.set(p.id, PALETTE[i % PALETTE.length] ?? 'var(--gold-base, #c8a874)'));
+    products.forEach((p, i) => m.set(p.id, PALETTE[i % PALETTE.length] ?? 'var(--gold-base)'));
     return m;
   }, [products]);
 
@@ -91,7 +96,7 @@ export function SupplierPriceEvolutionTab({ items }: SupplierPriceEvolutionTabPr
         <div className="flex flex-wrap gap-2">
           {products.map((p) => {
             const on = selected.has(p.id);
-            const color = colorFor.get(p.id) ?? 'var(--gold-base, #c8a874)';
+            const color = colorFor.get(p.id) ?? 'var(--gold-base)';
             return (
               <button
                 key={p.id}
@@ -102,7 +107,7 @@ export function SupplierPriceEvolutionTab({ items }: SupplierPriceEvolutionTabPr
                 }`}
                 style={on ? { borderColor: color, backgroundColor: `${color}1a` } : undefined}
               >
-                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: on ? color : '#cbd5e1' }} />
+                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: on ? color : CHART_AXIS_STROKE }} />
                 {p.name}
               </button>
             );
@@ -115,9 +120,9 @@ export function SupplierPriceEvolutionTab({ items }: SupplierPriceEvolutionTabPr
         <div className="h-72 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData} margin={{ top: 4, right: 16, bottom: 0, left: 12 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
-              <XAxis dataKey="label" tick={{ fontSize: 10 }} stroke="#9ca3af" />
-              <YAxis tick={{ fontSize: 10 }} stroke="#9ca3af" width={56} tickFormatter={(v) => `${formatIdr(Number(v))}`} />
+              <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_STROKE} vertical={false} />
+              <XAxis dataKey="label" tick={{ fontSize: 10 }} stroke={CHART_AXIS_STROKE} />
+              <YAxis tick={{ fontSize: 10 }} stroke={CHART_AXIS_STROKE} width={56} tickFormatter={(v) => `${formatIdr(Number(v))}`} />
               <Tooltip formatter={(v: number, name: string) => [`${formatIdr(v)}`, products.find((p) => p.id === name)?.name ?? name]} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
               <Legend formatter={(value) => products.find((p) => p.id === value)?.name ?? value} />
               {products.filter((p) => selected.has(p.id)).map((p) => (
