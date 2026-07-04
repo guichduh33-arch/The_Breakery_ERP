@@ -36,13 +36,15 @@ const TEST_RECEIPT: ReceiptPayload = {
 export function DevicesSettingsTab({ readOnly }: { readOnly: boolean }): JSX.Element {
   const printerUrl = usePosSettingsStore((s) => s.printerUrl);
   const setPrinterUrl = usePosSettingsStore((s) => s.setPrinterUrl);
+  const deviceCode = usePosSettingsStore((s) => s.deviceCode);
+  const setDeviceCode = usePosSettingsStore((s) => s.setDeviceCode);
 
   const [probe, setProbe] = useState<Probe>('idle');
   const [printBusy, setPrintBusy] = useState(false);
   const [drawerBusy, setDrawerBusy] = useState(false);
 
-  const resolvedUrl =
-    printerUrl || (import.meta.env.VITE_PRINT_SERVER_URL ?? 'http://localhost:3001');
+  const envPrintUrl = import.meta.env.VITE_PRINT_SERVER_URL as string | undefined;
+  const resolvedUrl = printerUrl || (envPrintUrl ?? 'http://localhost:3001');
 
   async function runProbe(): Promise<void> {
     setProbe('busy');
@@ -111,6 +113,32 @@ export function DevicesSettingsTab({ readOnly }: { readOnly: boolean }): JSX.Ele
               <XCircle className="h-4 w-4" aria-hidden /> Unreachable
             </span>
           )}
+        </div>
+      </Card>
+
+      <Card variant="default" padding="md" className="space-y-3">
+        <SectionLabel size="sm" as="h3" className="text-text-primary normal-case tracking-normal font-serif text-base">
+          LAN device code
+        </SectionLabel>
+        <div className="space-y-2">
+          <label
+            htmlFor="devices-lan-code"
+            className="block font-bold uppercase tracking-widest text-text-muted text-xs"
+          >
+            This terminal&apos;s device code
+          </label>
+          <Input
+            id="devices-lan-code"
+            aria-label="This terminal's device code"
+            placeholder="e.g. POS-FRONT-01"
+            value={deviceCode}
+            disabled={readOnly}
+            onChange={(e) => setDeviceCode(e.target.value)}
+          />
+          <p className="text-xs text-text-muted">
+            Must match a code registered in BO &raquo; LAN Devices. Leave blank to
+            skip heartbeats on this terminal.
+          </p>
         </div>
       </Card>
 

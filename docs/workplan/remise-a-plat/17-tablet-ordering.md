@@ -1,5 +1,7 @@
 # Module 17 — Commande sur tablette
 
+> ⚠️ **Mise à jour S59 (2026-07-04, `swarm/session-59`)** : **D1.1 (note par commande) livré** — `create_tablet_order_v3(+ p_notes)` (DROP v2, trio S20, idempotence préservée) ; textarea `TabletCartPanel` → `orders.notes`, affichée sur le KDS et au pickup caisse ; C-B1.1 n'est plus 🟠 sur la note. La **note par ligne** (D2.1) reste un chantier moyen. Voir `docs/workplan/plans/2026-07-04-session-59-INDEX.md`.
+
 > **Remise à plat — analyse comparative.** Doc : Description v1.2 (2026-07-03), module 17. Code : commit `5b0fa92` (2026-07-03).
 > **Statut annoncé par la doc :** Opérationnel pour le service courant
 > **Verdict global de l'analyse :** Largement fidèle — identification serveur, plan de salle, envoi idempotent, indicateur hors-ligne, historique et annulation sont réels. Deux écarts notables : **aucune saisie de notes/allergies** (revendiquée comme fonctionnant), et le flux décrit est faux dans le bon sens : la cuisine reçoit la commande **immédiatement** à l'envoi (l'« envoi direct en cuisine » listé « à venir » est déjà le comportement du code) ; la validation caisse ne conditionne que l'encaissement.

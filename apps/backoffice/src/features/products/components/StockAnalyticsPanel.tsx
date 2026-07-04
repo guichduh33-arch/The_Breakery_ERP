@@ -28,18 +28,19 @@ import {
 } from 'recharts';
 import { Badge, Card, EmptyState, KpiTile, SectionLabel, cn } from '@breakery/ui';
 import { formatIdr } from '@breakery/utils';
+import { CHART_GRID_STROKE } from '@/features/reports/utils/chartColors.js';
 import { useProductAnalytics } from '../hooks/useProductAnalytics.js';
 import type { ProductRow } from '../types.js';
 
 export type ProductAnalyticsData = NonNullable<ReturnType<typeof useProductAnalytics>['data']>;
 
-const WINDOWS: ReadonlyArray<{ value: number; label: string }> = [
+const WINDOWS: readonly { value: number; label: string }[] = [
   { value: 7,  label: '7 Days'  },
   { value: 30, label: '30 Days' },
   { value: 90, label: '90 Days' },
 ];
 
-const GOLD = 'var(--gold-base, #c89b4f)';
+const GOLD = 'var(--gold-base)';
 
 function fmtDate(s: string | null): string {
   if (s === null) return '—';
@@ -85,7 +86,7 @@ export function StockAnalyticsPanel({ product }: Props): JSX.Element {
       )}
       {q.error !== null && q.error !== undefined && (
         <div role="alert" className="rounded-lg border border-red bg-red-soft p-3 text-sm text-red">
-          Failed to load analytics: {(q.error as Error).message}
+          Failed to load analytics: {(q.error).message}
         </div>
       )}
 
@@ -155,7 +156,7 @@ export function MovementsSection({ data }: { data: ProductAnalyticsData }): JSX.
                       <stop offset="100%" stopColor={GOLD} stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-subtle, #e5e7eb)" />
+                  <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_STROKE} />
                   <XAxis dataKey="label" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
                   <YAxis tick={{ fontSize: 10 }} width={36} />
                   <Tooltip />
@@ -219,7 +220,7 @@ export function PurchaseSection({ data }: { data: ProductAnalyticsData }): JSX.E
             <div className="h-56 p-2">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={[...data.purchase_price_trend].reverse().map((p) => ({ label: fmtDate(p.date), cost: Number(p.unit_cost) }))}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-subtle, #e5e7eb)" />
+                  <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_STROKE} />
                   <XAxis dataKey="label" tick={{ fontSize: 10 }} />
                   <YAxis tick={{ fontSize: 10 }} width={48} tickFormatter={(v: number) => formatIdr(v)} />
                   <Tooltip formatter={(v: number) => formatIdr(v)} />
@@ -237,7 +238,7 @@ export function PurchaseSection({ data }: { data: ProductAnalyticsData }): JSX.E
             <div className="h-56 p-2">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data.purchase_pattern.map((p) => ({ label: fmtDate(p.month), qty: Number(p.qty), orders: Number(p.order_count) }))}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-subtle, #e5e7eb)" />
+                  <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_STROKE} />
                   <XAxis dataKey="label" tick={{ fontSize: 10 }} />
                   <YAxis tick={{ fontSize: 10 }} width={36} />
                   <Tooltip />
@@ -289,7 +290,7 @@ export function ProductionLossSection({ data }: { data: ProductAnalyticsData }):
             <div className="h-56 p-2">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data.weekly_consumption.map((w) => ({ label: fmtDate(w.week_start), units: Number(w.units) }))}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-subtle, #e5e7eb)" />
+                  <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_STROKE} />
                   <XAxis dataKey="label" tick={{ fontSize: 10 }} />
                   <YAxis tick={{ fontSize: 10 }} width={36} />
                   <Tooltip />
@@ -378,7 +379,7 @@ export function ProductionLossSection({ data }: { data: ProductAnalyticsData }):
 
 /* ── helpers ─────────────────────────────────────────────────────────────── */
 
-function hasMovement(timeline: Array<{ balance: number }>): boolean {
+function hasMovement(timeline: { balance: number }[]): boolean {
   if (timeline.length < 2) return false;
   const vals = timeline.map((p) => Number(p.balance));
   return Math.max(...vals) !== Math.min(...vals) || vals.some((v) => v !== 0);

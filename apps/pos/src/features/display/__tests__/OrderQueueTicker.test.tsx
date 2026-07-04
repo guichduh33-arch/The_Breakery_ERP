@@ -9,6 +9,19 @@ import { describe, expect, it } from 'vitest';
 
 import { OrderQueueTicker } from '../components/OrderQueueTicker';
 import type { DisplayOrder } from '../hooks/useDisplayOrders';
+import type { ReadyOrder } from '../hooks/useReadyOrders';
+import { READY_ORDERS_LIMIT } from '../hooks/useReadyOrders';
+
+function fakeReadyOrder(n: number, overrides: Partial<ReadyOrder> = {}): ReadyOrder {
+  return {
+    order_id: `ro-${n}`,
+    order_number: String(2000 + n),
+    order_type: 'dine_in',
+    table_number: String(n),
+    ready_at: new Date().toISOString(),
+    ...overrides,
+  };
+}
 
 function fakeOrder(n: number, overrides: Partial<DisplayOrder> = {}): DisplayOrder {
   return {
@@ -58,5 +71,52 @@ describe('OrderQueueTicker', () => {
   it('accepts a custom emptyText prop', () => {
     render(<OrderQueueTicker orders={[]} emptyText="No orders yet" />);
     expect(screen.getByText('No orders yet')).toBeInTheDocument();
+  });
+
+  // Session 59 (16 D1.2) — "Ready for pickup" section.
+  it('does not render the ready section when readyOrders is empty', () => {
+    render(<OrderQueueTicker orders={[]} readyOrders={[]} />);
+    expect(screen.queryByTestId('display-ready-section')).toBeNull();
+  });
+
+  it('renders a distinct "Ready for pickup" section, independent of the paid queue', () => {
+    const readyOrders = [fakeReadyOrder(1, { order_type: 'take_out', table_number: null })];
+    render(<OrderQueueTicker orders={[]} readyOrders={readyOrders} />);
+
+    // Ready section shows the kitchen-ready order even though the paid
+    // queue (`orders`) is empty — no payment precondition.
+    const readySection = screen.getByTestId('display-ready-section');
+    expect(readySection).toBeInTheDocument();
+    expect(screen.getByTestId('display-ready-row')).toHaveTextContent('#2001');
+    expect(screen.getByTestId('display-ready-row')).toHaveTextContent('Pickup');
+
+    // The paid-queue empty state still renders, untouched (section distincte).
+    expect(screen.getByTestId('display-queue-empty')).toBeInTheDocument();
+  });
+
+  it('renders both the ready section and the paid queue simultaneously without merging them', () => {
+    const readyOrders = [fakeReadyOrder(1)];
+    const orders = [fakeOrder(1)];
+    render(<OrderQueueTicker orders={orders} readyOrders={readyOrders} />);
+
+    expect(screen.getAllByTestId('display-ready-row')).toHaveLength(1);
+    expect(screen.getAllByTestId('display-queue-row')).toHaveLength(1);
+    expect(screen.getByTestId('display-ready-row')).toHaveTextContent('#2001');
+    expect(screen.getByTestId('display-queue-row')).toHaveTextContent('#1001');
+  });
+
+  // Session 59 (review finding) — the ready section must not overflow the
+  // fixed-height screen during a rush; defensive re-slice mirrors the D-4C-5
+  // paid-queue clamp.
+  it('clamps the ready section to READY_ORDERS_LIMIT rows even when given more', () => {
+    const readyOrders = Array.from({ length: READY_ORDERS_LIMIT + 2 }, (_, i) =>
+      fakeReadyOrder(i + 1),
+    );
+    render(<OrderQueueTicker orders={[]} readyOrders={readyOrders} />);
+
+    const rows = screen.getAllByTestId('display-ready-row');
+    expect(rows).toHaveLength(READY_ORDERS_LIMIT);
+    expect(rows[0]).toHaveTextContent('#2001');
+    expect(rows[rows.length - 1]).toHaveTextContent(`#${2000 + READY_ORDERS_LIMIT}`);
   });
 });

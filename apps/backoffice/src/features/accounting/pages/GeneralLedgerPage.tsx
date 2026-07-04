@@ -11,6 +11,8 @@ import {
   useGeneralLedger,
   type GLLineRaw,
 } from '@/features/accounting/hooks/useGeneralLedger.js';
+import { resolveJeSourceEntity } from '@/features/accounting/utils/resolveJeSourceEntity.js';
+import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 
 function fmt(n: number): string {
   return new Intl.NumberFormat('id-ID').format(n);
@@ -57,15 +59,15 @@ export default function GeneralLedgerPage(): JSX.Element {
     if (!gl.data) return;
     setPages((prev) => {
       if (cursor === null) {
-        setOpeningBalance(gl.data!.opening_balance);
-        return [gl.data!.lines];
+        setOpeningBalance(gl.data.opening_balance);
+        return [gl.data.lines];
       }
       // Avoid duplicating the same page on re-render.
       const last = prev[prev.length - 1];
-      if (last && last.length === gl.data!.lines.length && last[0]?.je_id === gl.data!.lines[0]?.je_id) {
+      if (last?.length === gl.data.lines.length && last[0]?.je_id === gl.data.lines[0]?.je_id) {
         return prev;
       }
-      return [...prev, gl.data!.lines];
+      return [...prev, gl.data.lines];
     });
   }, [gl.data, cursor]);
 
@@ -160,6 +162,7 @@ export default function GeneralLedgerPage(): JSX.Element {
                 <th className="px-3 py-2">Date</th>
                 <th className="px-3 py-2">Entry #</th>
                 <th className="px-3 py-2">Description</th>
+                <th className="px-3 py-2">Source</th>
                 <th className="px-3 py-2 text-right">Debit</th>
                 <th className="px-3 py-2 text-right">Credit</th>
                 <th className="px-3 py-2 text-right">Running balance</th>
@@ -167,34 +170,49 @@ export default function GeneralLedgerPage(): JSX.Element {
             </thead>
             <tbody>
               <tr className="border-t border-border-subtle bg-bg-overlay font-semibold">
-                <td colSpan={5} className="px-3 py-2 text-right">Opening balance</td>
+                <td colSpan={6} className="px-3 py-2 text-right">Opening balance</td>
                 <td className="px-3 py-2 text-right font-mono">{fmt(openingBalance)}</td>
               </tr>
-              {accumulated.map((line, idx) => (
-                <tr
-                  key={`${line.je_id}-${idx}`}
-                  data-testid={`gl-row-${line.entry_number}`}
-                  className="border-t border-border-subtle"
-                >
-                  <td className="px-3 py-2">{line.entry_date}</td>
-                  <td className="px-3 py-2 font-mono text-xs">{line.entry_number}</td>
-                  <td className="px-3 py-2">
-                    {line.description ?? '—'}
-                    {line.line_description && (
-                      <span className="ml-2 text-xs text-text-secondary">{line.line_description}</span>
-                    )}
-                  </td>
-                  <td className="px-3 py-2 text-right font-mono">
-                    {Number(line.debit) > 0 ? fmt(Number(line.debit)) : ''}
-                  </td>
-                  <td className="px-3 py-2 text-right font-mono">
-                    {Number(line.credit) > 0 ? fmt(Number(line.credit)) : ''}
-                  </td>
-                  <td className="px-3 py-2 text-right font-mono">{fmt(line.running_balance)}</td>
-                </tr>
-              ))}
+              {accumulated.map((line, idx) => {
+                const source = resolveJeSourceEntity(line.reference_type, line.reference_id);
+                return (
+                  <tr
+                    key={`${line.je_id}-${idx}`}
+                    data-testid={`gl-row-${line.entry_number}`}
+                    className="border-t border-border-subtle"
+                  >
+                    <td className="px-3 py-2">{line.entry_date}</td>
+                    <td className="px-3 py-2 font-mono text-xs">{line.entry_number}</td>
+                    <td className="px-3 py-2">
+                      {line.description ?? '—'}
+                      {line.line_description && (
+                        <span className="ml-2 text-xs text-text-secondary">{line.line_description}</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2 text-xs">
+                      {source !== null ? (
+                        <DrilldownLink
+                          entity={source.entity}
+                          id={source.id}
+                          label={line.reference_type ?? '—'}
+                          icon={false}
+                        />
+                      ) : (
+                        <span className="text-text-secondary">{line.reference_type ?? '—'}</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2 text-right font-mono">
+                      {Number(line.debit) > 0 ? fmt(Number(line.debit)) : ''}
+                    </td>
+                    <td className="px-3 py-2 text-right font-mono">
+                      {Number(line.credit) > 0 ? fmt(Number(line.credit)) : ''}
+                    </td>
+                    <td className="px-3 py-2 text-right font-mono">{fmt(line.running_balance)}</td>
+                  </tr>
+                );
+              })}
               <tr className="border-t-2 border-border-strong font-semibold">
-                <td colSpan={3} className="px-3 py-2 text-right">Period totals</td>
+                <td colSpan={4} className="px-3 py-2 text-right">Period totals</td>
                 <td className="px-3 py-2 text-right font-mono">{fmt(gl.data.total_debit)}</td>
                 <td className="px-3 py-2 text-right font-mono">{fmt(gl.data.total_credit)}</td>
                 <td></td>

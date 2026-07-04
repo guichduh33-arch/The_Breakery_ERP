@@ -19,6 +19,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
+import type * as ReactRouterDom from 'react-router-dom';
 import type { ReactNode } from 'react';
 import type { RestaurantTable } from '@breakery/domain';
 import { useTabletCartStore } from '@/stores/tabletCartStore';
@@ -27,7 +28,7 @@ import { useAuthStore } from '@/stores/authStore';
 // ── Hoisted mocks ────────────────────────────────────────────────────
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
+  const actual = await vi.importActual<typeof ReactRouterDom>('react-router-dom');
   return { ...actual, useNavigate: () => mockNavigate };
 });
 
@@ -156,7 +157,7 @@ describe('TabletOrderPage', () => {
     expect(useTabletCartStore.getState().tableNumber).toBe('T1');
   });
 
-  it('calls create_tablet_order_v2 RPC, clears cart, toasts, and navigates on success', async () => {
+  it('calls create_tablet_order_v3 RPC, clears cart, toasts, and navigates on success', async () => {
     const { TabletOrderPage } = await import('../TabletOrderPage');
     const { toast } = await import('sonner');
 
@@ -176,9 +177,9 @@ describe('TabletOrderPage', () => {
 
     await waitFor(() => {
       expect(supaMocks.rpc).toHaveBeenCalledWith(
-        'create_tablet_order_v2',
+        'create_tablet_order_v3',
         expect.objectContaining({
-          p_client_uuid: expect.stringMatching(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i),
+          p_client_uuid: expect.stringMatching(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i) as unknown,
           p_waiter_id: 'waiter-001',
           p_table_number: 'T1',
           p_order_type: 'dine_in',

@@ -15,6 +15,7 @@ import {
   Building2,
   Calendar,
   CheckCircle2,
+  Copy,
   CreditCard,
   FileText,
   Receipt,
@@ -34,6 +35,7 @@ import { RejectDialog } from '@/features/expenses/components/RejectDialog.js';
 import { PayDialog } from '@/features/expenses/components/PayDialog.js';
 import { ApprovalTimeline } from '@/features/expenses/components/ApprovalTimeline.js';
 import { ThresholdResolutionBadge } from '@/features/expenses/components/ThresholdResolutionBadge.js';
+import type { DuplicateExpenseSeed } from '@/features/expenses/components/ExpenseForm.js';
 import type { ApprovalStep } from '@/features/settings/expense-thresholds/hooks/useExpenseThresholds.js';
 
 function fmtIdr(amount: number | string | null): string {
@@ -50,6 +52,7 @@ export default function ExpenseDetailPage(): JSX.Element {
   const currentUserRole = useAuthStore((s) => s.user?.role_code ?? null);
   const canApprove = hasPermission('expenses.approve');
   const canPay     = hasPermission('expenses.pay');
+  const canCreate  = hasPermission('expenses.create');
 
   const { data: expense, isLoading, error } = useExpenseDetail(id);
   const { data: cats } = useExpenseCategories();
@@ -92,6 +95,22 @@ export default function ExpenseDetailPage(): JSX.Element {
     }
   }
 
+  // Session 59 / Task 6b — "Duplicate" seeds a fresh draft with this expense's
+  // category/amount/VAT/payment method/vendor/description via navigation
+  // state. NewExpensePage forces expense_date to today and drops the
+  // receipt regardless of what's passed here.
+  function handleDuplicate(): void {
+    const seed: DuplicateExpenseSeed = {
+      category_id: expense!.category_id,
+      amount: String(expense!.amount),
+      vat_amount: String(expense!.vat_amount ?? 0),
+      payment_method: expense!.payment_method as DuplicateExpenseSeed['payment_method'],
+      vendor_name: expense!.vendor_name ?? '',
+      description: expense!.description ?? '',
+    };
+    navigate('/backoffice/expenses/new', { state: { duplicateFrom: seed } });
+  }
+
   return (
     <div className="space-y-6 max-w-5xl">
       <nav className="flex items-center gap-2 text-xs text-text-secondary" aria-label="Breadcrumb">
@@ -117,6 +136,11 @@ export default function ExpenseDetailPage(): JSX.Element {
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
+          {canCreate && (
+            <Button type="button" variant="ghost" onClick={handleDuplicate}>
+              <Copy className="h-4 w-4" aria-hidden /> Duplicate
+            </Button>
+          )}
           {expense.status === 'draft' && (
             <Button
               type="button"

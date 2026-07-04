@@ -58,17 +58,17 @@ Le « prêt mais débranché » : composants jamais importés, RPCs sans call-si
 
 | # | Élément | Nature | Fiche | Sort proposé |
 |---|---|---|---|---|
-| 1 | Undo-bump 60 s KDS (`BumpButton`/`UndoBumpToast` + `kds_bump_item_v1`/`kds_undo_bump_v1`) | Composants + RPCs live | 04 | Câbler (D1.3) |
-| 2 | Recall commande servie (`RecallButton` + `kds_recall_order_v1`) | Composant + RPC live | 04 | Câbler (D1.3) |
-| 3 | Prep-timer serveur (`PrepTimer` + `kds_start_prep_timer_v1` + `order_items.prep_started_at`) | Composant + RPC + colonne | 04 | Câbler (D1.3) |
+| 1 | Undo-bump 60 s KDS (`BumpButton`/`UndoBumpToast` + `kds_bump_item_v1`/`kds_undo_bump_v1`) | Composants + RPCs live | 04 | ✅ **Câblé S59** (T4) |
+| 2 | Recall commande servie (`RecallButton` + `kds_recall_order_v1`) | Composant + RPC live | 04 | ✅ **Câblé S59** (T4) |
+| 3 | Prep-timer serveur (`PrepTimer` + `kds_start_prep_timer_v1` + `order_items.prep_started_at`) | Composant + RPC + colonne | 04 | ✅ **Câblé S59** (T4) |
 | 4 | Chips `StationFilter` hot/cold/bar (prédicat inerte, champ jamais sélectionné) | UI câblée mais no-op | 04 | Câbler ou retirer (D1.4) |
 | 5 | Auth kiosque KDS (`features/kds/hooks/useKioskAuth.ts`) | Hook sans consommateur | 04 | Purger ou spécifier (appareils non-staff) |
 | 6 | Auth kiosque tablette (`features/tablet/hooks/useKioskAuth.ts`) | Hook sans consommateur | 17 | Idem #5 (trancher ensemble) |
 | 7 | Mesh LAN hybride complet (`useLanHub`/`useLanClient`/`MessageDedup`, S13 Phase 5.A) — bug topics suspecté `lan-hub-*` vs `lan-client-*` | Feature entière morte | 21 | 🔒 décision 2 (réhabiliter ou purger) |
-| 8 | Heartbeats appareils (`useLanHeartbeat` + `update_lan_heartbeat_v1`) → page BO « LAN Devices » affiche tout « stale » | Hook + RPC orphelins, UI aux données mortes | 21 | Câbler (D1.1 — le RPC existe) |
+| 8 | Heartbeats appareils (`useLanHeartbeat` + `update_lan_heartbeat_v1`) → page BO « LAN Devices » affiche tout « stale » | Hook + RPC orphelins, UI aux données mortes | 21 | ✅ **Câblé S59** (T9 — deviceCode Settings requis par terminal) |
 | 9 | File d'impression DB (`print_jobs` + `claim_print_job_v1`, migration `20260517000170`) — ni producteur ni consommateur | Infra DB orpheline | 21 | 🔒 décision 2 (consommer via bridge ou dropper) |
 | 10 | `CustomerDisplayView` (vue riche : photos produits, badges promo/annulé) | Composant jamais importé | 16 | Câbler (enrichit B1.1 gratuitement) |
-| 11 | `ProductionSuggestions.tsx` + `useProductionSuggestions` + `get_production_suggestions_v1` (doublon de la page Planning) | Composant + RPC orphelins | 15 | Purger ou monter (D1.1) |
+| 11 | `ProductionSuggestions.tsx` + `useProductionSuggestions` + `get_production_suggestions_v1` (doublon de la page Planning) | Composant + RPC orphelins | 15 | ✅ **Purgé S59** (T7 — RPC gardé, consommé par ProductionAlertsTab) |
 | 12 | `reconcile_b2b_balance_v1` (alerte drift cache↔ledger, gate `b2b.read`) | RPC sans call-site UI | 09 | Câbler (panneau admin B2B) |
 | 13 | `adjust_b2b_balance_v2` (JE + PIN) | RPC sans call-site UI | 09 | Câbler (action admin B2B) |
 | 14 | `RedeemButton.tsx` (le redeem passe par `BottomActionBar`) | Composant orphelin | 08 | Purger (D_nettoyage) |
@@ -78,7 +78,7 @@ Le « prêt mais débranché » : composants jamais importés, RPCs sans call-si
 | 18 | `pos_presets` (prêts côté serveur, aucune UI) | Tables/RPC sans UI | 19 | Câbler ou purger |
 | 19 | Permission `rbac.update` seedée, consommée nulle part | Permission orpheline | 20 | 🔒 décision 1 (éditeur RBAC) |
 | 20 | `vite-plugin-pwa@^1.0.0` déclaré, jamais importé (`vite.config.ts`) | Dépendance morte | 18 | 🔒 décision 5 (purge ou activation) |
-| 21 | Toggle `visible_on_pos` (BO) sans effet au POS (`useProducts` filtre `is_active` seulement) | Réglage sans effet | 05 | Câbler (D1.1, 1 ligne) |
+| 21 | Toggle `visible_on_pos` (BO) sans effet au POS (`useProducts` filtre `is_active` seulement) | Réglage sans effet | 05 | ✅ **Câblé S59** (T3 — useProducts + variantes) |
 | 22 | JE des cash in/out : `record_cash_movement_v2` sait émettre la JE, `CashInOutModal` n'expose pas `reason_code` | Capacité RPC non exposée | 12 | Câbler (D1.1) |
 
 ### 2.4 Modules par fidélité — rappel de lecture
@@ -97,8 +97,8 @@ Le tableau §1 se lit avec le §2.3 : un module « fidèle » peut cacher du non
 4. ✅ **Renommer les labels mensongers** : « RBAC Editor » → « Permissions (read-only) », 5 tuiles « Soon » reliées aux pages existantes (fiches 20/19).
 
 ### Vague 1 — Quick wins de câblage (2-3 sessions, zéro spec)
-**UI pures (démarrables immédiatement)** : `visible_on_pos` au POS (05) · KDS undo-bump/recall/prep-timer + alarme sonore (04 D1.1/D1.3) · ticker `ready` réel (16) · note **par commande** tablette (17 D1.1) · drill-down JE → origine (10) · bouton « Dupliquer » dépense (11) · doublon suggestions production (15) · purge hex (22) · `auth-change-pin` en headers (25) · filtres + avant/après dans l'UI du journal d'audit (01) · heartbeats LAN (21 D1.1).
-**Sous règle money-path (après nightly vert ou re-passe des ancres)** : paiement direct ardoise (02 D1.1) · `reason_code` dans `CashInOutModal` (12 D1.1) · note d'écart enforced serveur (12 D1.4) · lignes promo sur ticket + détail BO (13 D1.1/D1.2) · « Tout prêt » bump en masse (04 D1.2) · `x-idempotency-key` sur le void BO (02b — la clé est générée mais jamais envoyée, parité POS S55).
+**Lot 1 — UI pures + 2 findings S58 : ✅ SOLDÉ (S59, 2026-07-04)** — cf. [`../plans/2026-07-04-session-59-INDEX.md`](../plans/2026-07-04-session-59-INDEX.md). Toutes les UI pures livrées : `visible_on_pos` au POS (05) · KDS undo-bump/recall/prep-timer + alarme sonore (04 D1.1/D1.3) · ticker `ready` réel (16) · note **par commande** tablette (17 D1.1) · drill-down JE → origine (10) · bouton « Dupliquer » dépense (11) · doublon suggestions production (15) · purge hex (22) · `auth-change-pin` en headers (25) · filtres + avant/après dans l'UI du journal d'audit (01) · heartbeats LAN (21 D1.1). **Findings S58 fixés** : F-1 P0 (`delete_user_v1`/`update_user_role_v1` garde `is_active`) et F-4 P1 (`_emit_expense_je` fold VAT NON-PKP) — les tripwires `users`/`expenses` sont re-verts.
+**Lot 2 — sous règle money-path (S60, à venir)** : paiement direct ardoise (02 D1.1) · `reason_code` dans `CashInOutModal` (12 D1.1) · note d'écart enforced serveur (12 D1.4) · lignes promo sur ticket + détail BO (13 D1.1/D1.2) · « Tout prêt » bump en masse (04 D1.2) · `x-idempotency-key` sur le void BO (02b — la clé est générée mais jamais envoyée, parité POS S55). *(Le verrou money-path est LEVÉ depuis S58 ; ces items sont réservés à S60 par ordonnancement.)*
 
 ### Vague 2 — Chantiers moyens (1 session chacun, plan requis)
 - **Dashboard BO réel** : créer `get_dashboard_overview_v1` + câblage (14).

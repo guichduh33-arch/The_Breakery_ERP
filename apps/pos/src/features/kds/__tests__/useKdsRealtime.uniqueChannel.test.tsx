@@ -14,17 +14,25 @@ import { createElement, StrictMode, type ReactNode } from 'react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 const channelSpy = vi.fn();
+// Session 59 review (finding 1) — capture the postgres_changes callback so a
+// test can fire it and assert both ['kds', station] AND
+// ['kds-served', station] get invalidated (the recall strip's cache).
+// A ref object (rather than a reassigned `let`) avoids TS narrowing the
+// captured-closure variable to `undefined` across the intervening
+// renderHook() call.
+const handlerRef: { current: ((payload: unknown) => void) | undefined } = { current: undefined };
 
 vi.mock('@/lib/supabase', () => {
-  const onMock = vi.fn().mockReturnThis();
-  const subscribeMock = vi.fn().mockReturnThis();
+  const onMock = vi.fn((_event: unknown, _filter: unknown, handler: (payload: unknown) => void) => {
+    handlerRef.current = handler;
+    return { subscribe: vi.fn().mockReturnThis() };
+  });
   return {
     supabase: {
       channel: (name: string) => {
         channelSpy(name);
         return {
           on: onMock,
-          subscribe: subscribeMock,
         };
       },
       removeChannel: vi.fn(),
@@ -33,6 +41,14 @@ vi.mock('@/lib/supabase', () => {
 });
 
 import { useKdsRealtime } from '../hooks/useKdsRealtime';
+
+function fireCapturedHandler(payload: unknown): void {
+  const handler = handlerRef.current;
+  if (!handler) {
+    throw new Error('useKdsRealtime — postgres_changes handler was not captured by the mock');
+  }
+  handler(payload);
+}
 
 function makeWrapper(strict: boolean) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -71,5 +87,24 @@ describe('useKdsRealtime — D19 channel uniqueness', () => {
     expect(channelSpy).toHaveBeenCalledTimes(1);
     const name = channelSpy.mock.calls[0]?.[0] as string;
     expect(name).toMatch(/^kds-barista-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+  });
+
+  // Session 59 review (finding 1) — a postgres_changes event must refresh
+  // BOTH the main board query AND the recall strip's, or "Recently served"
+  // lags up to 30s (its refetchInterval) behind a Mark Served / recall.
+  it('invalidates both ["kds", station] and ["kds-served", station] on a postgres_changes event', () => {
+    handlerRef.current = undefined;
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const invalidateSpy = vi.spyOn(qc, 'invalidateQueries');
+    const wrapper = ({ children }: { children: ReactNode }) =>
+      createElement(QueryClientProvider, { client: qc }, children);
+
+    renderHook(() => useKdsRealtime('kitchen'), { wrapper });
+
+    expect(handlerRef.current).toBeDefined();
+    fireCapturedHandler({});
+
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['kds', 'kitchen'] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['kds-served', 'kitchen'] });
   });
 });

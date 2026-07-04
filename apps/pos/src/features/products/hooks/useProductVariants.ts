@@ -4,6 +4,10 @@
 // Returns the active variants of a parent product, ordered by variant_sort_order.
 // Used by VariantSelectModal to render the variant grid when a cashier taps a
 // parent product.
+//
+// Session 59 (05 D1.1 review finding) — also filter `visible_on_pos = true`.
+// A variant hidden from the counter in BO must not remain tappable inside
+// the VariantSelectModal, mirroring the parent-grid filter in useProducts.ts.
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -32,6 +36,7 @@ export function useProductVariants(parentId: string | null | undefined) {
         )
         .eq('parent_product_id', parentId!)
         .eq('is_active', true)
+        .eq('visible_on_pos', true)
         .is('deleted_at', null)
         .order('variant_sort_order', { ascending: true });
 

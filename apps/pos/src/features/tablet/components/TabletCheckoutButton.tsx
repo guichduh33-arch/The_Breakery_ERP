@@ -10,6 +10,7 @@ export function TabletCheckoutButton(): JSX.Element {
   const items = useTabletCartStore((s) => s.items);
   const tableNumber = useTabletCartStore((s) => s.tableNumber);
   const orderType = useTabletCartStore((s) => s.orderType);
+  const notes = useTabletCartStore((s) => s.notes);
   const clearCart = useTabletCartStore((s) => s.clearCart);
   const userId = useAuthStore((s) => s.user?.id);
   const navigate = useNavigate();
@@ -22,7 +23,7 @@ export function TabletCheckoutButton(): JSX.Element {
     if (!userId) return;
     mutation.mutate(
       {
-        cart: { items, tableNumber, orderType },
+        cart: { items, tableNumber, orderType, notes },
         waiterId: userId,
         clientUuid: clientUuidRef.current,
       },

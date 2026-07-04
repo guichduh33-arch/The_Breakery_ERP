@@ -12,6 +12,7 @@ const makeEntry = (overrides: Partial<TabletOrderEntry> = {}): TabletOrderEntry 
   sent_to_kitchen_at: new Date(Date.now() - 150_000).toISOString(),
   items_count: 3,
   items_total: 105_000,
+  notes: null,
   ...overrides,
 });
 
@@ -103,5 +104,16 @@ describe('TabletInboxRow', () => {
   it('does not render table badge when table_number is null', () => {
     render(<TabletInboxRow entry={makeEntry({ table_number: null })} {...baseProps} />);
     expect(screen.queryByText('T-03')).not.toBeInTheDocument();
+  });
+
+  // Session 59 (17 D1.1) — order-level note surfaced on the pickup screen.
+  it('renders the order note when notes is set', () => {
+    render(<TabletInboxRow entry={makeEntry({ notes: 'No gluten — nut allergy' })} {...baseProps} />);
+    expect(screen.getByTestId('tablet-inbox-note')).toHaveTextContent('No gluten — nut allergy');
+  });
+
+  it('renders no note element when notes is null', () => {
+    render(<TabletInboxRow entry={makeEntry({ notes: null })} {...baseProps} />);
+    expect(screen.queryByTestId('tablet-inbox-note')).not.toBeInTheDocument();
   });
 });

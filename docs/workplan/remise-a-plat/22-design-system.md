@@ -1,5 +1,7 @@
 # Module 22 — Charte graphique & cohérence visuelle
 
+> ⚠️ **Mise à jour S59 (2026-07-04, `swarm/session-59`)** : **D1.1 (purge hex) livré** — 9 fichiers `apps/*/src` migrés des littéraux hex vers les tokens / `chartColors.ts`. Reliquat documenté : 6 littéraux sans token équivalent restent commentés dans 2 fichiers (B2.1 quasi soldé). Voir `docs/workplan/plans/2026-07-04-session-59-INDEX.md`.
+
 > **Remise à plat — analyse comparative.** Doc : Description v1.2 (2026-07-03), module 22. Code : commit `5b0fa92` (2026-07-03).
 > **Statut annoncé par la doc :** Partiel (fondations solides, finitions en cours)
 > **Verdict global de l'analyse :** La doc est fidèle et même prudente — toutes ses revendications « aujourd'hui » sont vérifiées dans le code (bibliothèque partagée, garde-fou anti-modale, ratchet lint, cibles 44 px, emptyState), et sa liste « À venir » correspond bien aux trous réels (couleurs en dur, contrastes, annonces lecteur d'écran).

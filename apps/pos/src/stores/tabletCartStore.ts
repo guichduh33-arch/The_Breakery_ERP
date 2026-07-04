@@ -10,11 +10,14 @@ export interface TabletCartState {
   items: CartItem[];
   tableNumber: string | null;
   orderType: 'dine_in' | 'take_out';
+  /** Session 59 (17 D1.1) — order-level free-text note (allergy, "no gluten"...). */
+  notes: string | null;
   addItem: (product: Product, modifiers?: SelectedModifiers) => void;
   updateQuantity: (itemId: string, qty: number) => void;
   removeItem: (itemId: string) => void;
   setTableNumber: (name: string | null) => void;
   setOrderType: (type: 'dine_in' | 'take_out') => void;
+  setNotes: (notes: string | null) => void;
   clearCart: () => void;
 }
 
@@ -22,6 +25,7 @@ export const useTabletCartStore = create<TabletCartState>()((set, get) => ({
   items: [],
   tableNumber: null,
   orderType: 'dine_in',
+  notes: null,
 
   addItem: (product, modifiers = []) => {
     const fakeCart = { items: get().items, order_type: get().orderType };
@@ -45,5 +49,7 @@ export const useTabletCartStore = create<TabletCartState>()((set, get) => ({
 
   setOrderType: (type) => set({ orderType: type }),
 
-  clearCart: () => set({ items: [], tableNumber: null, orderType: 'dine_in' }),
+  setNotes: (notes) => set({ notes }),
+
+  clearCart: () => set({ items: [], tableNumber: null, orderType: 'dine_in', notes: null }),
 }));

@@ -40,10 +40,14 @@ export function useKdsRecallOrder() {
         const err = Object.assign(new Error(error.message), { code: error.code });
         throw err;
       }
-      return (data ?? 0) as number;
+      return (data ?? 0);
     },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['kds'] });
+      // Session 59 review (finding 1) — a recall moves items served→preparing,
+      // which should drop the order from the "Recently served" strip
+      // (['kds-served', station]) immediately rather than up to 30s later.
+      void qc.invalidateQueries({ queryKey: ['kds-served'] });
     },
   });
 }

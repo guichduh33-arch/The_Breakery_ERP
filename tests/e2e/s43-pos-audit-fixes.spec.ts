@@ -237,11 +237,11 @@ test('T2: tablet order on page B bumps the POS inbox badge on page A without rel
     await addAmericano(pageB, 'tablet');
 
     const createResp = pageB.waitForResponse(
-      (r) => r.url().includes('create_tablet_order_v2'),
+      (r) => r.url().includes('create_tablet_order_v3'),
       { timeout: 20_000 },
     );
     await pageB.getByRole('button', { name: /send to kitchen/i }).click();
-    expect((await createResp).status(), 'create_tablet_order_v2 must succeed').toBe(200);
+    expect((await createResp).status(), 'create_tablet_order_v3 must succeed').toBe(200);
 
     // Page A, NO reload: the badge must move via realtime well inside 10s
     // (the refetch safety net alone would need up to 30s).

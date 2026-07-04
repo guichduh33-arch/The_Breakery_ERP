@@ -1,5 +1,7 @@
 # Module 05 — Catalogue produits & catégories
 
+> ⚠️ **Mise à jour S59 (2026-07-04, `swarm/session-59`)** : **D1.1 livré** — `visible_on_pos` est désormais respecté au POS (`useProducts` **et** `useProductVariants`), un produit masqué en BO disparaît de la grille caisse et du sélecteur de variantes ; C-B1.2 n'est plus 🟠. Dette connexe : le cache offline tablette 24 h peut encore servir un produit masqué (INDEX S59). Voir `docs/workplan/plans/2026-07-04-session-59-INDEX.md`.
+
 > **Remise à plat — analyse comparative.** Doc : Description v1.2 (2026-07-03), module 5. Code : commit `5b0fa92` (2026-07-03).
 > **Statut annoncé par la doc :** Opérationnel à la vente ; partiel sur certains outils d'administration.
 > **Verdict global de l'analyse :** Largement fidèle sur le cœur (fiche produit, modifiers, combos, import Excel), mais trois surclames notables : le toggle « visible en caisse » n'a **aucun effet** au POS, la « couleur » des familles n'est pas configurable, et les **prix négociés n'ont aucune UI de saisie** (lecture seule de bout en bout).

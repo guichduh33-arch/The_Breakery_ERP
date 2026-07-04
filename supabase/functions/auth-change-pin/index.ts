@@ -11,8 +11,6 @@ const PIN_REGEX = /^\d{6}$/;
 
 interface ChangePinPayload {
   user_id: string;
-  current_pin?: string;
-  new_pin: string;
 }
 
 serve(async (req) => {
@@ -33,7 +31,12 @@ serve(async (req) => {
     return jsonResponse({ error: 'invalid_json' }, 400);
   }
 
-  const { user_id, current_pin, new_pin } = body;
+  // S25 hard cutover (session 59) — PINs travel via dedicated headers, never
+  // in the JSON body (request bodies get logged by PostgREST/pgaudit/proxies).
+  const current_pin = req.headers.get('x-current-pin') ?? undefined;
+  const new_pin = req.headers.get('x-new-pin') ?? undefined;
+
+  const { user_id } = body;
   if (!user_id || !new_pin) {
     return jsonResponse({ error: 'missing_fields' }, 400);
   }

@@ -20,6 +20,10 @@ export interface PosSettingsState {
   printerUrl: string;        // '' = fall back to VITE_PRINT_SERVER_URL then localhost:3001
   autoPrint: boolean;        // auto-print receipt on SuccessModal mount
   autoOpenDrawer: boolean;   // auto-pop the cash drawer (cash payments)
+  // Session 59 (21 D1.1) — this terminal's `lan_devices.code` (e.g.
+  // "POS-FRONT-01"), pre-registered by an operator. '' = unregistered:
+  // useLanHeartbeat no-ops rather than emit against an unknown code.
+  deviceCode: string;
   // ── Behavior ────────────────────────────────────────────────────────
   defaultOrderType: OrderType; // order type a fresh cart starts on (cartStore)
   // ── Customer display (KDS & Display tab) ────────────────────────────
@@ -28,6 +32,7 @@ export interface PosSettingsState {
   setPrinterUrl: (url: string) => void;
   setAutoPrint: (on: boolean) => void;
   setAutoOpenDrawer: (on: boolean) => void;
+  setDeviceCode: (code: string) => void;
   setDefaultOrderType: (t: OrderType) => void;
   setDisplayFooterMessage: (t: string) => void;
   /** Restore every field to its factory default (Advanced → Reset). */
@@ -38,6 +43,7 @@ const DEFAULTS = {
   printerUrl: '',
   autoPrint: true,
   autoOpenDrawer: true,
+  deviceCode: '',
   defaultOrderType: 'take_out' as OrderType,
   displayFooterMessage: '',
 } as const;
@@ -49,6 +55,7 @@ export const usePosSettingsStore = create<PosSettingsState>()(
       setPrinterUrl: (url) => set({ printerUrl: url.trim() }),
       setAutoPrint: (on) => set({ autoPrint: on }),
       setAutoOpenDrawer: (on) => set({ autoOpenDrawer: on }),
+      setDeviceCode: (code) => set({ deviceCode: code.trim() }),
       setDefaultOrderType: (t) => set({ defaultOrderType: t }),
       setDisplayFooterMessage: (t) => set({ displayFooterMessage: t }),
       resetToDefaults: () => set({ ...DEFAULTS }),
@@ -60,6 +67,7 @@ export const usePosSettingsStore = create<PosSettingsState>()(
         printerUrl: s.printerUrl,
         autoPrint: s.autoPrint,
         autoOpenDrawer: s.autoOpenDrawer,
+        deviceCode: s.deviceCode,
         defaultOrderType: s.defaultOrderType,
         displayFooterMessage: s.displayFooterMessage,
       }),

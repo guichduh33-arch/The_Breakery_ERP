@@ -12,6 +12,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactElement } from 'react';
+import type * as BreakeryUi from '@breakery/ui';
 import { ChangePinModal } from '../ChangePinModal';
 
 // --- Mocks -----------------------------------------------------------------
@@ -27,7 +28,7 @@ const { invokeMock, toastMock } = vi.hoisted(() => ({
 vi.mock('@/lib/supabase', () => ({
   supabase: {
     functions: {
-      invoke: (...args: unknown[]) => invokeMock(...args),
+      invoke: (...args: unknown[]) => invokeMock(...args) as unknown,
     },
   },
 }));
@@ -41,7 +42,7 @@ vi.mock('sonner', () => ({
 // of the modal's state machine. The `key` prop makes it remount between
 // steps, exactly as the production component does.
 vi.mock('@breakery/ui', async () => {
-  const actual = await vi.importActual<typeof import('@breakery/ui')>('@breakery/ui');
+  const actual = await vi.importActual<typeof BreakeryUi>('@breakery/ui');
   return {
     ...actual,
     NumpadPin: ({
@@ -172,9 +173,12 @@ describe('ChangePinModal', () => {
     fireEvent.click(screen.getByTestId('fire-pin')); // 3 : match (same pin)
 
     // Flush microtasks for the react-query mutation.
+    // S25 hard cutover (session 59) — PINs travel via x-current-pin/x-new-pin
+    // headers, never the JSON body.
     await vi.waitFor(() => {
       expect(invokeMock).toHaveBeenCalledWith('auth-change-pin', {
-        body: { user_id: 'u1', current_pin: '999111', new_pin: '123456' },
+        body: { user_id: 'u1' },
+        headers: { 'x-current-pin': '999111', 'x-new-pin': '123456' },
       });
     });
 

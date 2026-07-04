@@ -4,7 +4,12 @@
 // Mocks the Supabase client to avoid network and asserts:
 //   1. Empty state renders when there are no active tickets
 //   2. A ticket renders for a single fetched item with modifiers
-//   3. Tapping "Start" fires the bump mutation with `{from: pending, to: preparing}`
+//   3. Tapping "Start" calls the `kds_start_prep_timer_v1` RPC
+//
+// Session 59 (04 D1.1) — "Start" now goes through the server RPC
+// `kds_start_prep_timer_v1` (sets `order_items.prep_started_at` and
+// transitions pending→preparing atomically) instead of a raw table PATCH.
+// Assertion 3 was updated accordingly (was: raw `.update()` call).
 
 /// <reference types="@testing-library/jest-dom" />
 import { describe, it, expect, beforeEach, vi } from 'vitest';
@@ -39,6 +44,15 @@ const updateMock = vi.fn((_payload: Record<string, unknown>) => ({
   eq: vi.fn().mockResolvedValue({ data: null, error: null }),
 }));
 
+// Session 59 — useKdsServedOrders (recall strip) queries the same table via
+// .select().or().eq().gte().order(); return an empty result down that path
+// so it never crashes the render (the strip just stays hidden).
+const servedOrdersChain = {
+  gte: vi.fn(() => ({
+    order: vi.fn().mockResolvedValue({ data: [], error: null }),
+  })),
+};
+
 const fromMock = vi.fn((_table: string) => ({
   select: vi.fn(() => ({
     // Spec B-1 Ph2: useKdsOrders now uses .or() instead of .eq() as first filter.
@@ -48,10 +62,14 @@ const fromMock = vi.fn((_table: string) => ({
           order: vi.fn().mockResolvedValue({ data: fixtureRows, error: null }),
         })),
       })),
+      // useKdsServedOrders shape: .or().eq('kitchen_status', 'served').gte(...).order(...)
+      eq: vi.fn(() => servedOrdersChain),
     })),
   })),
   update: updateMock,
 }));
+
+const rpcMock = vi.fn().mockResolvedValue({ data: null, error: null });
 
 const channelMock = {
   on: vi.fn().mockReturnThis(),
@@ -61,6 +79,7 @@ const channelMock = {
 vi.mock('@/lib/supabase', () => ({
   supabase: {
     from: (table: string) => fromMock(table),
+    rpc: (fn: string, args: Record<string, unknown>) => rpcMock(fn, args) as unknown,
     channel: vi.fn(() => channelMock),
     removeChannel: vi.fn(),
   },
@@ -70,6 +89,7 @@ vi.mock('@/lib/supabase', () => ({
 // Import AFTER the mock so the module under test picks the mocked client.
 import KdsPage from '@/pages/Kds';
 import { useKdsStore } from '@/stores/kdsStore';
+import { usePosSettingsStore } from '@/stores/posSettingsStore';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -93,9 +113,11 @@ describe('KDS smoke', () => {
     fixtureRows = [];
     fromMock.mockClear();
     updateMock.mockClear();
+    rpcMock.mockClear();
     channelMock.on.mockClear();
     channelMock.subscribe.mockClear();
     useKdsStore.setState({ selectedStation: 'kitchen' });
+    usePosSettingsStore.setState({ deviceCode: '' });
   });
 
   it('shows empty state when there are no active tickets', async () => {
@@ -133,7 +155,7 @@ describe('KDS smoke', () => {
     expect(screen.getByText(/Oat milk/)).toBeInTheDocument();
   });
 
-  it('fires bump mutation with pending→preparing when Start is tapped', async () => {
+  it('calls kds_start_prep_timer_v1 when Start is tapped', async () => {
     fixtureRows = [
       {
         id: 'item-42',
@@ -158,15 +180,36 @@ describe('KDS smoke', () => {
     fireEvent.click(startBtn);
 
     await waitFor(() => {
-      expect(updateMock).toHaveBeenCalledTimes(1);
+      expect(rpcMock).toHaveBeenCalledWith('kds_start_prep_timer_v1', {
+        p_order_item_id: 'item-42',
+      });
     });
 
-    const firstCall = updateMock.mock.calls[0];
-    expect(firstCall).toBeDefined();
-    const updatePayload = firstCall?.[0];
-    expect(updatePayload).toBeDefined();
-    expect(updatePayload?.kitchen_status).toBe('preparing');
-    // pending→preparing should NOT set ready_at
-    expect(updatePayload?.ready_at).toBeUndefined();
+    // The RPC (not a raw table PATCH) owns the pending→preparing transition now.
+    expect(updateMock).not.toHaveBeenCalled();
+  });
+
+  // Session 59 (21 D1.1) — useLanHeartbeat is now mounted on this shell so BO
+  // "LAN Devices" can see the KDS screen as online.
+  it('emits a LAN heartbeat when a device code is configured', async () => {
+    usePosSettingsStore.setState({ deviceCode: 'KDS-KITCHEN-01' });
+
+    render(wrapper(<KdsPage />));
+
+    await waitFor(() => {
+      expect(rpcMock).toHaveBeenCalledWith('update_lan_heartbeat_v1', {
+        p_device_code: 'KDS-KITCHEN-01',
+      });
+    });
+  });
+
+  it('does not emit a heartbeat when no device code is configured', async () => {
+    render(wrapper(<KdsPage />));
+    await screen.findByText(/no active tickets/i);
+
+    expect(rpcMock).not.toHaveBeenCalledWith(
+      'update_lan_heartbeat_v1',
+      expect.anything(),
+    );
   });
 });

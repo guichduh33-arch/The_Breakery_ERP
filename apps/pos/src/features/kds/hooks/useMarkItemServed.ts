@@ -20,6 +20,11 @@ export function useMarkItemServed() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['kds'] });
+      // Session 59 review (finding 1) — a served item leaves the main ['kds']
+      // query and becomes eligible for the recall strip, which reads a
+      // separate ['kds-served', station] key that ['kds'] does not prefix.
+      // Without this, "Recently served" lags up to 30s (refetchInterval).
+      void queryClient.invalidateQueries({ queryKey: ['kds-served'] });
     },
     onError: (err: Error & { code?: string }) => {
       if (err.code === P0011) {

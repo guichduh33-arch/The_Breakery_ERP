@@ -22,6 +22,7 @@ import type { SalesCategoryRow } from '@/features/reports/hooks/useSalesByCatego
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 import { useUrlState, useUrlBoolean } from '@/hooks/useUrlState.js';
+import { CHART_GRID_STROKE } from '@/features/reports/utils/chartColors.js';
 
 const csvColumns: CsvColumn<SalesCategoryRow>[] = [
   { header: 'Category', accessor: (r) => r.category_name, format: 'text' },
@@ -116,11 +117,11 @@ export default function SalesByCategoryPage() {
           <div className="h-72 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data} margin={{ top: 10, right: 20, bottom: 50, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_STROKE} />
                 <XAxis dataKey="category_name" angle={-25} textAnchor="end" interval={0} />
                 <YAxis />
                 <Tooltip />
-                <Bar dataKey="total" fill="var(--gold-base, #c8a874)" />
+                <Bar dataKey="total" fill="var(--gold-base)" />
               </BarChart>
             </ResponsiveContainer>
           </div>

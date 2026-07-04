@@ -15,6 +15,7 @@ import {
 } from 'recharts';
 import { Card } from '@breakery/ui';
 import { useCustomerAnalytics } from '@/features/customers/hooks/useCustomerAnalytics.js';
+import { CHART_GRID_STROKE, CHART_AXIS_STROKE } from '@/features/reports/utils/chartColors.js';
 import { rp } from './shared.js';
 
 export function AnalyticsTab({ customerId }: { customerId: string | null }): JSX.Element {
@@ -34,14 +35,14 @@ export function AnalyticsTab({ customerId }: { customerId: string | null }): JSX
         <div className="h-64 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data.monthly} margin={{ top: 4, right: 8, bottom: 0, left: 8 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
-              <XAxis dataKey="label" tick={{ fontSize: 11 }} stroke="#9ca3af" />
-              <YAxis tick={{ fontSize: 11 }} stroke="#9ca3af" tickFormatter={(v) => `${Math.round(Number(v) / 1000)}k`} width={40} />
+              <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_STROKE} vertical={false} />
+              <XAxis dataKey="label" tick={{ fontSize: 11 }} stroke={CHART_AXIS_STROKE} />
+              <YAxis tick={{ fontSize: 11 }} stroke={CHART_AXIS_STROKE} tickFormatter={(v) => `${Math.round(Number(v) / 1000)}k`} width={40} />
               <Tooltip
                 formatter={(v: number) => [rp(v), 'Spend']}
                 contentStyle={{ fontSize: 12, borderRadius: 8 }}
               />
-              <Bar dataKey="total" fill="var(--gold-base, #c8a874)" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="total" fill="var(--gold-base)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

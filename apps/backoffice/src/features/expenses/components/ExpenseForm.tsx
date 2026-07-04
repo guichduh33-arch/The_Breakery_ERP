@@ -29,6 +29,14 @@ export const emptyExpenseFormValues = (): ExpenseFormValues => ({
   receipt_url: '',
 });
 
+// Session 59 / Task 6b — fields carried over by "Duplicate" from an existing
+// expense. Deliberately excludes `expense_date` (always today on the new
+// draft) and `receipt_url` (never carried over — see ExpenseDetailPage).
+export type DuplicateExpenseSeed = Pick<
+  ExpenseFormValues,
+  'category_id' | 'amount' | 'vat_amount' | 'payment_method' | 'vendor_name' | 'description'
+>;
+
 export interface ExpenseFormProps {
   /** Pre-generated UUID (for namespacing receipt uploads before insert). */
   draftId: string;

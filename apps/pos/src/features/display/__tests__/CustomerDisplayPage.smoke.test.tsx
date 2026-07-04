@@ -17,18 +17,18 @@ const useKioskAuthMock = vi.fn();
 const readKioskPairingMock = vi.fn();
 
 vi.mock('../hooks/useKioskAuth', () => ({
-  useKioskAuth: () => useKioskAuthMock(),
+  useKioskAuth: () => useKioskAuthMock() as unknown,
 }));
 
 vi.mock('@/lib/kioskAuth', () => ({
-  readKioskPairing: () => readKioskPairingMock(),
+  readKioskPairing: () => readKioskPairingMock() as unknown,
   writeKioskPairing: vi.fn().mockResolvedValue(undefined),
 }));
 
 const fromMock = vi.fn();
 vi.mock('@/lib/supabase', () => ({
   supabase: {
-    from: (...args: unknown[]) => fromMock(...args),
+    from: (...args: unknown[]) => fromMock(...args) as unknown,
     channel: vi.fn(() => ({
       on: vi.fn().mockReturnThis(),
       subscribe: vi.fn().mockReturnThis(),
@@ -46,6 +46,16 @@ function ordersBuilder(rows: unknown[]) {
   const gte = vi.fn(() => ({ order }));
   const inFn = vi.fn(() => ({ gte }));
   const select = vi.fn(() => ({ in: inFn }));
+  return { select };
+}
+
+// Session 59 (16 D1.2) — mimics the `order_items` chain used by
+// `useReadyOrders` : .select().eq().eq().order().
+function readyOrdersBuilder(rows: unknown[]) {
+  const order = vi.fn().mockResolvedValue({ data: rows, error: null });
+  const eq2 = vi.fn(() => ({ order }));
+  const eq1 = vi.fn(() => ({ eq: eq2 }));
+  const select = vi.fn(() => ({ eq: eq1 }));
   return { select };
 }
 
@@ -71,8 +81,17 @@ describe('CustomerDisplayPage — smoke', () => {
       retry: vi.fn(),
     });
     readKioskPairingMock.mockResolvedValue({ kiosk_id: 'screen-front-1' });
-    fromMock.mockReturnValue(
-      ordersBuilder([
+    fromMock.mockImplementation((table: string) => {
+      if (table === 'order_items') {
+        return readyOrdersBuilder([
+          {
+            order_id: 'o-2',
+            ready_at: new Date().toISOString(),
+            orders: { order_number: '1002', order_type: 'take_out', table_number: null },
+          },
+        ]);
+      }
+      return ordersBuilder([
         {
           id: 'o-1',
           order_number: '1001',
@@ -83,8 +102,8 @@ describe('CustomerDisplayPage — smoke', () => {
           paid_at: new Date().toISOString(),
           created_at: new Date().toISOString(),
         },
-      ]),
-    );
+      ]);
+    });
 
     const Wrapper = withProviders();
     render(
@@ -108,6 +127,13 @@ describe('CustomerDisplayPage — smoke', () => {
       expect(screen.getByTestId('display-current-card')).toBeInTheDocument();
     });
     expect(screen.getByText('#1001')).toBeInTheDocument();
+
+    // Session 59 (16 D1.2) — "Ready for pickup" section, fed by
+    // order_items.kitchen_status='ready', independent of the paid queue.
+    await waitFor(() => {
+      expect(screen.getByTestId('display-ready-section')).toBeInTheDocument();
+    });
+    expect(screen.getByText('#1002')).toBeInTheDocument();
   });
 
   it('shows PairDevicePrompt when the device is unpaired', async () => {

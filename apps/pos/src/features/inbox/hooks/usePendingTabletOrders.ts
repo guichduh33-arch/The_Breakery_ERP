@@ -55,6 +55,7 @@ export function usePendingTabletOrders() {
           order_type,
           waiter_id,
           sent_to_kitchen_at,
+          notes,
           order_items(id, unit_price, quantity),
           user_profiles!waiter_id(full_name)
         `)
@@ -84,6 +85,7 @@ export function usePendingTabletOrders() {
           sent_to_kitchen_at: row.sent_to_kitchen_at!,
           items_count: orderItems.length,
           items_total,
+          notes: row.notes ?? null,
         } satisfies TabletOrderEntry;
       });
     },

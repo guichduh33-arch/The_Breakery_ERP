@@ -26,6 +26,7 @@ import { useSalesByHour } from '@/features/reports/hooks/useSalesByHour.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 import { useUrlState, useUrlBoolean } from '@/hooks/useUrlState.js';
+import { CHART_GRID_STROKE } from '@/features/reports/utils/chartColors.js';
 
 import type { SalesHourRow } from '@/features/reports/hooks/useSalesByHour.js';
 
@@ -131,7 +132,7 @@ export default function SalesByHourPage() {
           <div className="h-96 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data} margin={{ top: 10, right: 20, bottom: 30, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_STROKE} />
                 <XAxis
                   dataKey="hour"
                   label={{ value: 'Hour (local)', position: 'insideBottom', offset: -10 }}
@@ -145,7 +146,7 @@ export default function SalesByHourPage() {
                   }
                   labelFormatter={(label) => `Hour ${label as number}`}
                 />
-                <Bar dataKey="total" fill="var(--gold-base, #c8a874)" name="total" />
+                <Bar dataKey="total" fill="var(--gold-base)" name="total" />
               </BarChart>
             </ResponsiveContainer>
           </div>

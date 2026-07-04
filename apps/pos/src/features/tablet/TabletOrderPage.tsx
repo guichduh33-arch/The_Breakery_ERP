@@ -81,6 +81,7 @@ export function TabletOrderPage({
   const setTableNumber = useTabletCartStore((s) => s.setTableNumber);
   const orderType = useTabletCartStore((s) => s.orderType);
   const setOrderType = useTabletCartStore((s) => s.setOrderType);
+  const notes = useTabletCartStore((s) => s.notes);
   const clearCart = useTabletCartStore((s) => s.clearCart);
   const userId = useAuthStore((s) => s.user?.id);
   const navigate = useNavigate();
@@ -114,7 +115,7 @@ export function TabletOrderPage({
         await onSendOverride(userId);
       } else {
         await mutation.mutateAsync({
-          cart: { items, tableNumber, orderType },
+          cart: { items, tableNumber, orderType, notes },
           waiterId: userId,
           clientUuid: clientUuidRef.current,
         });
@@ -135,6 +136,7 @@ export function TabletOrderPage({
     items,
     tableNumber,
     orderType,
+    notes,
     clearCart,
     navigate,
     redirectAfterSend,

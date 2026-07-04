@@ -29,6 +29,10 @@ interface KdsState {
   /** Phase 4.B — client-side filter on order_items joined to categories.kds_station. */
   kdsStationFilter: KdsStationFilter;
   setKdsStationFilter: (filter: KdsStationFilter) => void;
+  /** Session 59 (fiche 04 D1.3) — mutes the new-order WebAudio beep. Persisted
+   *  so a kitchen that mutes it once doesn't get re-alerted on every reload. */
+  alarmMuted: boolean;
+  setAlarmMuted: (muted: boolean) => void;
 }
 
 const STORAGE_KEY = 'breakery-kds';
@@ -46,6 +50,8 @@ export const useKdsStore = create<KdsState>()(
       setStation: (station) => set({ selectedStation: station }),
       kdsStationFilter: 'all',
       setKdsStationFilter: (filter) => set({ kdsStationFilter: filter }),
+      alarmMuted: false,
+      setAlarmMuted: (muted) => set({ alarmMuted: muted }),
     }),
     {
       name: STORAGE_KEY,

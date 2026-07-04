@@ -1,5 +1,7 @@
 # Module 21 — Réseau local (postes, imprimantes)
 
+> ⚠️ **Mise à jour S59 (2026-07-04, `swarm/session-59`)** : **D1.1 (heartbeats) livré** — `useLanHeartbeat` est monté sur POS/KDS/tablette (tick 10 s, RPC `update_lan_heartbeat_v1`), la page BO « LAN Devices » affiche du vrai online/stale ; le mesh LAN mort reste **non monté** (décision 2 gelée). Dettes ouvertes : le hook **avale les erreurs RPC en silence** (mauvais `deviceCode` = échec muet en boucle) et il n'existe **aucun flux d'enregistrement d'appareil** (`LanDevicesPage` read-only) ; le `deviceCode` doit être renseigné par terminal (seed dev `KDS-CUISINE-1`/`TABLETTE-1` à adapter). Voir `docs/workplan/plans/2026-07-04-session-59-INDEX.md`.
+
 > **Remise à plat — analyse comparative.** Doc : Description v1.2 (2026-07-03), module 21. Code : commit `5b0fa92` (2026-07-03).
 > **Statut annoncé par la doc :** Opérationnel pour un magasin mono-site
 > **Verdict global de l'analyse :** C'est le module le plus surclamé des quatre. Le « système nerveux » réel est **Supabase Realtime (internet) + impression HTTP directe vers un print-bridge externe**. Tout le mesh LAN décrit par la doc (double canal dédoublonné, file d'impression avec retry ×3, heartbeats, réponses d'impression ciblées) existe en code **mais n'est monté nulle part** : `useLanHub`/`useLanClient`/`useLanHeartbeat` ont zéro call-site production. Conséquences concrètes : la file d'impression ne reçoit ni ne sert aucun ticket, et la page BO « LAN Devices » affiche tous les appareils « stale » en permanence.

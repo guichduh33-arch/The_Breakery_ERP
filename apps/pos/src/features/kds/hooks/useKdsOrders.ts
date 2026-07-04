@@ -61,9 +61,13 @@ export interface KdsItemRow {
   dispatch_stations: string[] | null;
   sent_to_kitchen_at: string;
   ready_at: string | null;
+  /** Session 59 — set by `kds_start_prep_timer_v1`; drives the on-card PrepTimer. */
+  prep_started_at: string | null;
   order_number: string;
   /** Session 43 (P2-5) — parent order status; drives the PAID badge on the ticket. */
   order_status: string;
+  /** Session 59 (17 D1.1) — order-level free-text note (allergy, "no gluten"...). */
+  order_notes: string | null;
   /** Session 10 — true if cashier cancelled the line via cancel_order_item_rpc. */
   is_cancelled: boolean;
   cancelled_at: string | null;
@@ -84,6 +88,7 @@ interface RawRow {
   dispatch_stations: string[] | null;
   sent_to_kitchen_at: string;
   ready_at: string | null;
+  prep_started_at: string | null;
   is_cancelled: boolean | null;
   cancelled_at: string | null;
   cancelled_reason: string | null;
@@ -91,8 +96,8 @@ interface RawRow {
   // depending on the FK cardinality — normalise both shapes below.
   products: { name: string } | { name: string }[] | null;
   orders:
-    | { order_number: string; status: string }
-    | { order_number: string; status: string }[]
+    | { order_number: string; status: string; notes: string | null }
+    | { order_number: string; status: string; notes: string | null }[]
     | null;
 }
 
@@ -115,10 +120,10 @@ export function useKdsOrders(station: KdsStation) {
           id, order_id, product_id, quantity, unit_price,
           modifiers, modifiers_total, kitchen_status, dispatch_station,
           dispatch_stations,
-          sent_to_kitchen_at, ready_at,
+          sent_to_kitchen_at, ready_at, prep_started_at,
           is_cancelled, cancelled_at, cancelled_reason,
           products(name),
-          orders(order_number, status)
+          orders(order_number, status, notes)
         `,
         )
         // Spec B-1 Ph2 — dual-branch filter:
@@ -152,8 +157,10 @@ export function useKdsOrders(station: KdsStation) {
           dispatch_stations: row.dispatch_stations ?? null,
           sent_to_kitchen_at: row.sent_to_kitchen_at,
           ready_at: row.ready_at,
+          prep_started_at: row.prep_started_at,
           order_number: order?.order_number ?? '?',
           order_status: order?.status ?? '',
+          order_notes: order?.notes ?? null,
           is_cancelled: row.is_cancelled === true,
           cancelled_at: row.cancelled_at,
           cancelled_reason: row.cancelled_reason,

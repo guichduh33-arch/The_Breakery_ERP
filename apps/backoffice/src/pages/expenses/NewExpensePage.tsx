@@ -6,24 +6,44 @@
 // idempotent submission.
 
 import { useMemo, useState, type JSX } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useCreateExpense } from '@/features/expenses/hooks/useCreateExpense.js';
+import type { CreateExpenseInput } from '@/features/expenses/hooks/useCreateExpense.js';
 import {
   ExpenseForm,
   emptyExpenseFormValues,
   type ExpenseFormValues,
+  type DuplicateExpenseSeed,
 } from '@/features/expenses/components/ExpenseForm.js';
+
+interface NewExpenseNavigationState {
+  duplicateFrom?: DuplicateExpenseSeed;
+}
 
 export default function NewExpensePage(): JSX.Element {
   const hasPermission = useAuthStore((s) => s.hasPermission);
   const canCreate     = hasPermission('expenses.create');
   const navigate      = useNavigate();
+  const location      = useLocation();
 
   const [draftId] = useState<string>(() => crypto.randomUUID());
   const [idemKey] = useState<string>(() => crypto.randomUUID());
-  const [values, setValues] = useState<ExpenseFormValues>(emptyExpenseFormValues);
+  // Session 59 / Task 6b — "Duplicate" (ExpenseDetailPage) navigates here with
+  // { duplicateFrom } in navigation state. The date is always today and the
+  // receipt is never carried over, regardless of what's in duplicateFrom.
+  const [values, setValues] = useState<ExpenseFormValues>(() => {
+    const base = emptyExpenseFormValues();
+    const duplicateFrom = (location.state as NewExpenseNavigationState | null)?.duplicateFrom;
+    if (duplicateFrom === undefined) return base;
+    return {
+      ...base,
+      ...duplicateFrom,
+      expense_date: base.expense_date,
+      receipt_url: '',
+    };
+  });
 
   const create = useCreateExpense();
 
@@ -36,7 +56,7 @@ export default function NewExpensePage(): JSX.Element {
 
   async function handleSubmit(): Promise<void> {
     try {
-      const input: import('@/features/expenses/hooks/useCreateExpense.js').CreateExpenseInput = {
+      const input: CreateExpenseInput = {
         category_id: values.category_id,
         amount: Number.parseFloat(values.amount),
         vat_amount: values.vat_amount === '' ? 0 : Number.parseFloat(values.vat_amount),

@@ -20,6 +20,7 @@ import {
 import { Card, EmptyState, SectionLabel } from '@breakery/ui';
 import { Clock } from 'lucide-react';
 import { formatIdr } from '@breakery/utils';
+import { CHART_GRID_STROKE, CHART_AXIS_STROKE, familyColor } from '@/features/reports/utils/chartColors.js';
 import type { SupplierPurchaseItem } from '@/features/suppliers/hooks/useSupplierPurchaseItems.js';
 
 const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -48,7 +49,7 @@ function buildMonths(): MonthlyPoint[] {
 
 export interface SupplierAnalyticsTabProps {
   items: SupplierPurchaseItem[];
-  spendByPo: Array<{ order_date: string | null; total_amount: number }>;
+  spendByPo: { order_date: string | null; total_amount: number }[];
 }
 
 export function SupplierAnalyticsTab({ items, spendByPo }: SupplierAnalyticsTabProps): JSX.Element {
@@ -94,11 +95,11 @@ export function SupplierAnalyticsTab({ items, spendByPo }: SupplierAnalyticsTabP
             {hasData ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={monthly} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
-                  <XAxis dataKey="label" tick={{ fontSize: 10 }} stroke="#9ca3af" interval={1} />
-                  <YAxis tick={{ fontSize: 10 }} stroke="#9ca3af" width={28} allowDecimals={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_STROKE} vertical={false} />
+                  <XAxis dataKey="label" tick={{ fontSize: 10 }} stroke={CHART_AXIS_STROKE} interval={1} />
+                  <YAxis tick={{ fontSize: 10 }} stroke={CHART_AXIS_STROKE} width={28} allowDecimals={false} />
                   <Tooltip formatter={(v: number) => [v, 'Qty']} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
-                  <Bar dataKey="volume" fill="var(--gold-base, #c8a874)" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="volume" fill="var(--gold-base)" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -115,15 +116,15 @@ export function SupplierAnalyticsTab({ items, spendByPo }: SupplierAnalyticsTabP
                 <AreaChart data={monthly} margin={{ top: 4, right: 8, bottom: 0, left: 8 }}>
                   <defs>
                     <linearGradient id="supplierSpend" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#6366f1" stopOpacity={0.35} />
-                      <stop offset="100%" stopColor="#6366f1" stopOpacity={0} />
+                      <stop offset="0%" stopColor={familyColor('cogs', 4)} stopOpacity={0.35} />
+                      <stop offset="100%" stopColor={familyColor('cogs', 4)} stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
-                  <XAxis dataKey="label" tick={{ fontSize: 10 }} stroke="#9ca3af" interval={1} />
-                  <YAxis tick={{ fontSize: 10 }} stroke="#9ca3af" width={42} tickFormatter={(v) => `${(Number(v) / 1_000_000).toFixed(1)}M`} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_STROKE} vertical={false} />
+                  <XAxis dataKey="label" tick={{ fontSize: 10 }} stroke={CHART_AXIS_STROKE} interval={1} />
+                  <YAxis tick={{ fontSize: 10 }} stroke={CHART_AXIS_STROKE} width={42} tickFormatter={(v) => `${(Number(v) / 1_000_000).toFixed(1)}M`} />
                   <Tooltip formatter={(v: number) => [formatIdr(v), 'Spend']} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
-                  <Area type="monotone" dataKey="spend" stroke="#6366f1" strokeWidth={2} fill="url(#supplierSpend)" />
+                  <Area type="monotone" dataKey="spend" stroke={familyColor('cogs', 4)} strokeWidth={2} fill="url(#supplierSpend)" />
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
