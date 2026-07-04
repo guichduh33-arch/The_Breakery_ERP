@@ -8,8 +8,12 @@
 //   - `live order2.jpg`    — Order detail / drilldown: same chrome, ticket
 //     cards stay rectangular with a border that picks up urgency colour.
 //   - `kds configue.jpg`   — Source of truth for the warning/urgent thresholds
-//     applied on the cards (300s / 600s) and the audio-alerts toggle (out of
-//     scope here — handled by BO settings).
+//     applied on the cards (300s / 600s).
+//
+// Session 59 (04 D1.1 / D1.3) — mounts the recall strip (`useKdsServedOrders`
+// + `RecentlyServedStrip`, the only place `RecallButton` is reachable, since
+// served items drop out of the main `useKdsOrders` query) and the new-order
+// WebAudio alarm (`useKdsAlarm`) with its persisted mute toggle in the header.
 //
 // The board is split out from `pages/Kds.tsx` so it can be reused under
 // other shells later (e.g. embedded inside a Customer Display dual-pane view)
@@ -31,17 +35,21 @@
 //     (Map insertion order = first-seen).
 
 import { useMemo } from 'react';
+import { Volume2, VolumeX } from 'lucide-react';
 
 import { SectionLabel } from '@breakery/ui';
 
 import { ErrorState } from '@/components/ErrorState';
 import { useKdsStore, type KdsStation, type KdsStationFilter } from '@/stores/kdsStore';
 import { useKdsOrders, type KdsItemRow } from './hooks/useKdsOrders';
+import { useKdsServedOrders } from './hooks/useKdsServedOrders';
 import { useAgeTimer } from './hooks/useAgeTimer';
+import { useKdsAlarm } from './hooks/useKdsAlarm';
 import { KdsStationSelector } from './components/KdsStationSelector';
 import { KdsOrderCard } from './components/KdsOrderCard';
 import { KdsEmptyState } from './components/KdsEmptyState';
 import { StationFilter } from './components/StationFilter';
+import { RecentlyServedStrip } from './components/RecentlyServedStrip';
 
 /** Ready items are kept on screen for 5 minutes so the cashier sees the
  *  green badge before they disappear (D9 — auto-archive client-side). */
@@ -73,10 +81,17 @@ function groupByOrder(items: KdsItemRow[]): KdsItemRow[][] {
 export function KdsBoard({ station: stationProp }: KdsBoardProps = {}) {
   const storeStation = useKdsStore((s) => s.selectedStation);
   const stationFilter = useKdsStore((s) => s.kdsStationFilter);
+  const alarmMuted = useKdsStore((s) => s.alarmMuted);
+  const setAlarmMuted = useKdsStore((s) => s.setAlarmMuted);
   const station = stationProp ?? storeStation;
 
   const { data: items = [], isLoading, isError, refetch } = useKdsOrders(station);
+  const { data: servedOrders = [] } = useKdsServedOrders(station);
   const now = useAgeTimer(ARCHIVE_TICK_MS);
+
+  // Session 59 (04 D1.3) — one beep per newly-arrived order, deduped by
+  // order_id and gated on the persisted mute toggle below.
+  useKdsAlarm(items);
 
   const visibleOrders = useMemo(() => {
     const visible = items.filter((item) => filterAndArchive(item, stationFilter, now));
@@ -95,10 +110,27 @@ export function KdsBoard({ station: stationProp }: KdsBoardProps = {}) {
               KDS
             </SectionLabel>
           </div>
-          <KdsStationSelector />
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setAlarmMuted(!alarmMuted)}
+              aria-label={alarmMuted ? 'Unmute new-order alarm' : 'Mute new-order alarm'}
+              aria-pressed={alarmMuted}
+              className="rounded-md border border-border-subtle p-2 text-text-secondary hover:text-text-primary"
+            >
+              {alarmMuted ? (
+                <VolumeX className="h-5 w-5" aria-hidden />
+              ) : (
+                <Volume2 className="h-5 w-5" aria-hidden />
+              )}
+            </button>
+            <KdsStationSelector />
+          </div>
         </div>
         <StationFilter />
       </header>
+
+      <RecentlyServedStrip orders={servedOrders} />
 
       <main
         id="main-content"

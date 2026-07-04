@@ -22,9 +22,18 @@ import type { ReactNode } from 'react';
 import { KdsOrderCard } from '../KdsOrderCard';
 import type { KdsItemRow } from '../../hooks/useKdsOrders';
 
-// Mock the bump / serve mutations so we never touch supabase or realtime.
-vi.mock('../../hooks/useBumpItem', () => ({
-  useBumpItem: () => ({ mutate: vi.fn(), isPending: false }),
+// Mock the bump / serve / prep-timer mutations so we never touch supabase or
+// realtime. Session 59 wires BumpButton (kds_bump_item_v1) onto "preparing"
+// and useKdsStartPrepTimer (kds_start_prep_timer_v1) onto "Start" — both
+// mocked at hook level, same pattern as the pre-existing mocks below.
+vi.mock('../../hooks/useKdsStartPrepTimer', () => ({
+  useKdsStartPrepTimer: () => ({ mutate: vi.fn(), isPending: false }),
+}));
+vi.mock('../../hooks/useKdsBumpItem', () => ({
+  useKdsBumpItem: () => ({ mutate: vi.fn(), isPending: false }),
+}));
+vi.mock('../../hooks/useKdsUndoBump', () => ({
+  useKdsUndoBump: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 vi.mock('../../hooks/useMarkItemServed', () => ({
   useMarkItemServed: () => ({ mutate: vi.fn(), isPending: false }),
@@ -50,6 +59,7 @@ function makeItem(overrides: Partial<KdsItemRow> = {}): KdsItemRow {
     dispatch_stations: null,
     sent_to_kitchen_at: new Date('2026-05-14T12:00:00.000Z').toISOString(),
     ready_at: null,
+    prep_started_at: null,
     // S43 P2-5a — real order_numbers already carry the `#` prefix; the card
     // must render them verbatim (no re-prefixing).
     order_number: '#A-001',
@@ -174,5 +184,31 @@ describe('KdsOrderCard', () => {
     const card = screen.getByText('#A-001').closest('article');
     expect(card?.getAttribute('data-age-band')).toBe('urgent');
     expect(screen.getByLabelText(/order age/i).textContent).toBe('10:00');
+  });
+
+  // Session 59 (04 D1.1) — undo-bump / prep-timer real wiring.
+  it('shows the real BumpButton (kds_bump_item_v1) for a preparing item', () => {
+    const preparing = makeItem({ kitchen_status: 'preparing' });
+    render(wrap(<KdsOrderCard items={[preparing]} />));
+
+    const bumpBtn = screen.getByRole('button', { name: /bump item to ready/i });
+    expect(bumpBtn).toBeInTheDocument();
+    expect(bumpBtn.textContent).toBe('Bump');
+    // The old direct-PATCH "Bump Ready" CTA must be gone.
+    expect(screen.queryByRole('button', { name: /^bump ready$/i })).not.toBeInTheDocument();
+  });
+
+  it('renders the PrepTimer once prep_started_at is set, and omits it otherwise', () => {
+    const notStarted = makeItem({ kitchen_status: 'pending', prep_started_at: null });
+    const { rerender } = render(wrap(<KdsOrderCard items={[notStarted]} />));
+    expect(screen.queryByLabelText(/prep elapsed/i)).not.toBeInTheDocument();
+
+    const started = makeItem({
+      kitchen_status: 'preparing',
+      prep_started_at: new Date('2026-05-14T11:58:00.000Z').toISOString(), // 2min ago
+    });
+    rerender(wrap(<KdsOrderCard items={[started]} />));
+    const timer = screen.getByLabelText(/prep elapsed/i);
+    expect(timer.textContent).toBe('02:00');
   });
 });

@@ -61,6 +61,8 @@ export interface KdsItemRow {
   dispatch_stations: string[] | null;
   sent_to_kitchen_at: string;
   ready_at: string | null;
+  /** Session 59 — set by `kds_start_prep_timer_v1`; drives the on-card PrepTimer. */
+  prep_started_at: string | null;
   order_number: string;
   /** Session 43 (P2-5) — parent order status; drives the PAID badge on the ticket. */
   order_status: string;
@@ -84,6 +86,7 @@ interface RawRow {
   dispatch_stations: string[] | null;
   sent_to_kitchen_at: string;
   ready_at: string | null;
+  prep_started_at: string | null;
   is_cancelled: boolean | null;
   cancelled_at: string | null;
   cancelled_reason: string | null;
@@ -115,7 +118,7 @@ export function useKdsOrders(station: KdsStation) {
           id, order_id, product_id, quantity, unit_price,
           modifiers, modifiers_total, kitchen_status, dispatch_station,
           dispatch_stations,
-          sent_to_kitchen_at, ready_at,
+          sent_to_kitchen_at, ready_at, prep_started_at,
           is_cancelled, cancelled_at, cancelled_reason,
           products(name),
           orders(order_number, status)
@@ -152,6 +155,7 @@ export function useKdsOrders(station: KdsStation) {
           dispatch_stations: row.dispatch_stations ?? null,
           sent_to_kitchen_at: row.sent_to_kitchen_at,
           ready_at: row.ready_at,
+          prep_started_at: row.prep_started_at,
           order_number: order?.order_number ?? '?',
           order_status: order?.status ?? '',
           is_cancelled: row.is_cancelled === true,

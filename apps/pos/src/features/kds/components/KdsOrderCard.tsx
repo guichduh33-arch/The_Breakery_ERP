@@ -21,6 +21,12 @@
 // from session 13 — the page-level rewrite (KdsBoard) only changes layout
 // chrome, not the bump/serve flow.
 //
+// Session 59 (04 D1.1 / D1.3) — Start now calls the server RPC
+// `kds_start_prep_timer_v1` (sets `prep_started_at`) instead of the raw
+// table PATCH, and "Bump Ready" is replaced by `BumpButton`, which wraps
+// `kds_bump_item_v1` and surfaces a 60s `UndoBumpToast`. The PrepTimer shows
+// once an item has actually been started (`prep_started_at` set).
+//
 // Constraints:
 //   - Zero hardcoded hex (D-color). All colours flow through tokens via
 //     Tailwind preset (`bg-bg-elevated`, `text-text-primary`, `border-red`,
@@ -31,10 +37,12 @@
 
 import { Button, Badge } from '@breakery/ui';
 
-import { useBumpItem } from '../hooks/useBumpItem';
 import { useAgeTimer } from '../hooks/useAgeTimer';
+import { useKdsStartPrepTimer } from '../hooks/useKdsStartPrepTimer';
 import { useMarkItemServed } from '../hooks/useMarkItemServed';
 import type { KdsItemRow } from '../hooks/useKdsOrders';
+import { BumpButton } from './BumpButton';
+import { PrepTimer } from './PrepTimer';
 
 interface KdsOrderCardProps {
   items: KdsItemRow[];
@@ -81,7 +89,7 @@ function ageStyle(ageMs: number): AgeStyle {
 }
 
 function ItemCta({ item }: { item: KdsItemRow }) {
-  const bump = useBumpItem();
+  const startTimer = useKdsStartPrepTimer();
   const serve = useMarkItemServed();
 
   // Session 10: cancelled items have no actionable CTA — only the badge.
@@ -99,9 +107,9 @@ function ItemCta({ item }: { item: KdsItemRow }) {
         variant="primary"
         size="sm"
         onClick={() => {
-          bump.mutate({ id: item.id, from: 'pending', to: 'preparing' });
+          startTimer.mutate(item.id);
         }}
-        disabled={bump.isPending}
+        disabled={startTimer.isPending}
       >
         Start
       </Button>
@@ -109,18 +117,7 @@ function ItemCta({ item }: { item: KdsItemRow }) {
   }
 
   if (item.kitchen_status === 'preparing') {
-    return (
-      <Button
-        variant="gold"
-        size="sm"
-        onClick={() => {
-          bump.mutate({ id: item.id, from: 'preparing', to: 'ready' });
-        }}
-        disabled={bump.isPending}
-      >
-        Bump Ready
-      </Button>
-    );
+    return <BumpButton orderItemId={item.id} />;
   }
 
   if (item.kitchen_status === 'ready') {
@@ -225,7 +222,12 @@ export function KdsOrderCard({ items }: KdsOrderCardProps) {
                   </div>
                 )}
               </div>
-              <ItemCta item={item} />
+              <div className="flex flex-col items-end gap-1 shrink-0">
+                {!cancelled && item.prep_started_at && (
+                  <PrepTimer prepStartedAt={item.prep_started_at} />
+                )}
+                <ItemCta item={item} />
+              </div>
             </li>
           );
         })}
