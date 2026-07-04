@@ -14,7 +14,7 @@ export interface UserFormDialogProps {
   /** Called with the new user_profiles.id on success. */
   onCreated?: (newId: string) => void;
   /** Available role codes — sourced from the roles table. */
-  roles:     Array<{ code: string; name: string }>;
+  roles:     { code: string; name: string }[];
 }
 
 export function UserFormDialog({ onClose, onCreated, roles }: UserFormDialogProps): JSX.Element {

@@ -33,7 +33,7 @@ export function useLoginUsers() {
     queryFn: async () => {
       const { data, error } = await supabase.rpc('list_login_users_v1');
       if (error !== null) throw new Error(error.message);
-      return (data as unknown as LoginUser[]) ?? [];
+      return data ?? [];
     },
   });
 }

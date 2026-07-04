@@ -11,11 +11,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import type * as ReactRouterDom from 'react-router-dom';
 import LoginPage from '../Login';
 
 const navigateMock = vi.fn();
 vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
+  const actual = await vi.importActual<typeof ReactRouterDom>('react-router-dom');
   return { ...actual, useNavigate: () => navigateMock };
 });
 
@@ -46,7 +47,7 @@ const loginUsersState = {
     data: [
       { id: 'u1', display_name: 'Mamat (Owner)', role: 'Super Admin' },
       { id: 'u2', display_name: 'New Hire', role: 'Cashier' },
-    ] as Array<{ id: string; display_name: string; role: string }> | undefined,
+    ] as { id: string; display_name: string; role: string }[] | undefined,
     isLoading: false,
     isError: false,
     isFetching: false,
