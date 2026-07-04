@@ -3,9 +3,13 @@
 // Session 59 (fiche 04 D1.3) — useKdsAlarm beeps (WebAudio) exactly once per
 // newly-arrived order_id, never for tickets already on screen at mount, and
 // stays silent while `kdsStore.alarmMuted` is true.
+//
+// Session 59 review (finding 2) — also covers the suspended→resume autoplay
+// path: a freshly-loaded KDS starts its AudioContext `suspended` (no prior
+// user gesture), so `.start()` alone would be a silent no-op.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook } from '@testing-library/react';
+import { renderHook, waitFor } from '@testing-library/react';
 
 import type { KdsItemRow } from '../useKdsOrders';
 
@@ -36,6 +40,7 @@ function makeItem(overrides: Partial<KdsItemRow> = {}): KdsItemRow {
     prep_started_at: null,
     order_number: '#A-001',
     order_status: 'pending_payment',
+    order_notes: null,
     is_cancelled: false,
     cancelled_at: null,
     cancelled_reason: null,
@@ -59,9 +64,11 @@ class FakeGain {
 }
 class FakeAudioContext {
   currentTime = 0;
+  state: AudioContextState = 'running';
   createOscillator = vi.fn(() => new FakeOscillator());
   createGain = vi.fn(() => new FakeGain());
   close = vi.fn().mockResolvedValue(undefined);
+  resume = vi.fn().mockResolvedValue(undefined);
 }
 
 describe('useKdsAlarm', () => {
@@ -142,5 +149,71 @@ describe('useKdsAlarm', () => {
       ],
     });
     expect(createOscillatorSpy).not.toHaveBeenCalled();
+  });
+
+  // Session 59 review (finding 2) — suspended→resume autoplay path.
+  it('resumes a suspended AudioContext before emitting the tone', async () => {
+    const resumeMock = vi.fn().mockResolvedValue(undefined);
+    (window as unknown as { AudioContext: unknown }).AudioContext = vi
+      .fn()
+      .mockImplementation(() => {
+        const ctx = new FakeAudioContext();
+        ctx.state = 'suspended';
+        ctx.resume = resumeMock;
+        ctx.createOscillator = createOscillatorSpy as unknown as FakeAudioContext['createOscillator'];
+        return ctx;
+      });
+
+    const { rerender } = renderHook(({ items }) => useKdsAlarm(items), {
+      initialProps: { items: [makeItem({ order_id: 'ord-1' })] },
+    });
+
+    rerender({
+      items: [
+        makeItem({ order_id: 'ord-1' }),
+        makeItem({ id: 'oi-2', order_id: 'ord-2', order_number: '#A-002' }),
+      ],
+    });
+
+    expect(resumeMock).toHaveBeenCalledTimes(1);
+    // The tone is deferred behind the resume() promise, not emitted synchronously.
+    expect(createOscillatorSpy).not.toHaveBeenCalled();
+
+    await waitFor(() => expect(createOscillatorSpy).toHaveBeenCalledTimes(1));
+  });
+
+  it('logs a single console.warn when resume() rejects, and never throws', async () => {
+    // Isolated module instance so the internal "warned once" flag starts fresh
+    // regardless of test order in this file.
+    vi.resetModules();
+    const { useKdsAlarm: freshUseKdsAlarm } = await import('../useKdsAlarm');
+
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const resumeMock = vi.fn().mockRejectedValue(new Error('autoplay blocked'));
+    (window as unknown as { AudioContext: unknown }).AudioContext = vi
+      .fn()
+      .mockImplementation(() => {
+        const ctx = new FakeAudioContext();
+        ctx.state = 'suspended';
+        ctx.resume = resumeMock;
+        ctx.createOscillator = createOscillatorSpy as unknown as FakeAudioContext['createOscillator'];
+        return ctx;
+      });
+
+    const { rerender } = renderHook(({ items }) => freshUseKdsAlarm(items), {
+      initialProps: { items: [makeItem({ order_id: 'ord-1' })] },
+    });
+
+    rerender({
+      items: [
+        makeItem({ order_id: 'ord-1' }),
+        makeItem({ id: 'oi-2', order_id: 'ord-2', order_number: '#A-002' }),
+      ],
+    });
+
+    await waitFor(() => expect(warnSpy).toHaveBeenCalledTimes(1));
+    expect(createOscillatorSpy).not.toHaveBeenCalled();
+
+    warnSpy.mockRestore();
   });
 });

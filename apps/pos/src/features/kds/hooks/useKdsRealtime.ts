@@ -18,6 +18,10 @@
 // without waiting on their own DB subscription. Accepts an `onBump`
 // callback ; production callers wire it to `useLanClient.send`.
 //
+// Session 59 review (finding 1) — also invalidates ['kds-served', station]
+// so a served/recalled item's move into or out of the recall strip reflects
+// in realtime rather than waiting on that query's 30s refetchInterval.
+//
 // D19 — Channel-name uniqueness pattern (Wave 1 hotfix). Under StrictMode,
 // React double-invokes effects in dev ; with a static channel name the
 // second mount's `.on()` runs against the still-subscribed channel from
@@ -67,6 +71,7 @@ export function useKdsRealtime(
         } as never,
         (payload: unknown) => {
           void qc.invalidateQueries({ queryKey: ['kds', station] });
+          void qc.invalidateQueries({ queryKey: ['kds-served', station] });
           if (onEvent !== undefined) onEvent(payload);
         },
       )
