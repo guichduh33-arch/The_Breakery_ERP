@@ -8,7 +8,7 @@
 // minimal, already-anon-callable id/display_name/role listing reused here
 // purely for populating an admin-only <select> ; no new RPC / grant needed.
 
-import { useEffect, useRef, useState, type JSX } from 'react';
+import { useEffect, useRef, useState, type Dispatch, type JSX, type SetStateAction } from 'react';
 import { useLoginUsers } from '@/features/auth/hooks/useLoginUsers.js';
 
 export interface AuditLogFilterValues {
@@ -22,8 +22,11 @@ export const EMPTY_AUDIT_LOG_FILTERS: AuditLogFilterValues = {
 };
 
 export interface AuditLogFiltersProps {
-  value:    AuditLogFilterValues;
-  onChange: (next: AuditLogFilterValues) => void;
+  value: AuditLogFilterValues;
+  // Functional-updater form (matches useState's setter, which AuditPage
+  // passes directly). Required — see the review-fix comment below on the
+  // stale-closure bug a plain `(next) => void` signature caused.
+  onChange: Dispatch<SetStateAction<AuditLogFilterValues>>;
 }
 
 // Known entity_type values written by audit RPCs across the codebase — a
@@ -40,6 +43,16 @@ const ENTITY_TYPE_HINTS = [
 // apps) — mirrors the inline setTimeout+ref idiom used elsewhere (e.g.
 // apps/pos/src/features/cart/CustomerAttachModal.tsx).
 const DEBOUNCE_MS = 300;
+
+// Re-review finding — the first cut of the debounce closed over `value`
+// (and the sibling draft) AT KEYSTROKE TIME. If the user changed Actor (an
+// immediate commit) while a debounced Action/Entity timer was in flight,
+// the timer's callback fired 300ms later with the STALE actorId it had
+// captured, silently reverting the Actor selection the user just made.
+// Fix: every commit uses the functional-updater form (`(prev) => ...`), so
+// React always merges into the freshest state regardless of how long ago
+// the timer/handler closed over its arguments — the whole stale-closure
+// class of bug disappears.
 
 export function AuditLogFilters({ value, onChange }: AuditLogFiltersProps): JSX.Element {
   const users = useLoginUsers();
@@ -69,14 +82,14 @@ export function AuditLogFilters({ value, onChange }: AuditLogFiltersProps): JSX.
   }, []);
 
   function patchNow(p: Partial<AuditLogFilterValues>): void {
-    onChange({ ...value, ...p });
+    onChange((prev) => ({ ...prev, ...p }));
   }
 
   function handleActionChange(next: string): void {
     setActionDraft(next);
     if (actionTimer.current) clearTimeout(actionTimer.current);
     actionTimer.current = setTimeout(() => {
-      onChange({ actorId: value.actorId, action: next, entityType: entityDraft });
+      onChange((prev) => ({ ...prev, action: next }));
     }, DEBOUNCE_MS);
   }
 
@@ -84,7 +97,7 @@ export function AuditLogFilters({ value, onChange }: AuditLogFiltersProps): JSX.
     setEntityDraft(next);
     if (entityTimer.current) clearTimeout(entityTimer.current);
     entityTimer.current = setTimeout(() => {
-      onChange({ actorId: value.actorId, action: actionDraft, entityType: next });
+      onChange((prev) => ({ ...prev, entityType: next }));
     }, DEBOUNCE_MS);
   }
 

@@ -131,6 +131,27 @@ describe('AuditPage — filters + before/after (S59 Task 6c)', () => {
       // Exactly one additional call committed the debounced value (not one per keystroke).
       expect(mockUseAuditLogs.mock.calls.length).toBe(callsBefore + 1);
     });
+
+    // Re-review finding — stale closure: the debounced timer used to close
+    // over `value.actorId` (and the sibling draft) at KEYSTROKE time. If
+    // Actor was changed (immediate commit) while an Action/Entity timer was
+    // still in flight, the timer fired 300ms later with the STALE actorId,
+    // silently reverting the just-made Actor selection. Functional updaters
+    // fix this — this test reproduces the exact overlap and fails on the
+    // stale-closure version.
+    it('overlapping an immediate Actor change with an in-flight Action debounce keeps BOTH (no reversion)', () => {
+      renderPage();
+
+      fireEvent.change(screen.getByTestId('audit-filter-action'), { target: { value: 'exp' } }); // t=0
+      act(() => { vi.advanceTimersByTime(150); }); // t=150ms — Action timer still in flight
+
+      fireEvent.change(screen.getByTestId('audit-filter-actor'), { target: { value: 'u-1' } }); // immediate commit
+      expect(mockUseAuditLogs).toHaveBeenLastCalledWith({ actorId: 'u-1' });
+
+      act(() => { vi.advanceTimersByTime(150); }); // t=300ms since the Action keystroke — timer fires
+      // The new actorId must survive — NOT reverted to '' by the Action timer's stale closure.
+      expect(mockUseAuditLogs).toHaveBeenLastCalledWith({ actorId: 'u-1', action: 'exp' });
+    });
   });
 
   it('"Clear filters" resets back to no filters', () => {
