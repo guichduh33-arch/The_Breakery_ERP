@@ -1,5 +1,7 @@
 # Module 10 — Comptabilité en partie double
 
+> ⚠️ **Mise à jour S59 (2026-07-04, `swarm/session-59`)** : **D1.1 drill-down JE → origine livré** (`resolveJeSourceEntity`, 26 `reference_type` couverts) ; C-B1.2 n'est plus 🟠 texte-mort. **À documenter (leçon S59)** : la sémantique de `journal_entries.reference_id` **varie selon `reference_type`** — pour `sale_refund`/`refund`, `reference_id` pointe une ligne `refunds.id`, PAS un `orders.id` (ces deux types sont volontairement en fallback texte, pas de lien order). Une table de correspondance `reference_type` → entité + colonne cible reste à ajouter à cette fiche. Voir `docs/workplan/plans/2026-07-04-session-59-INDEX.md`.
+
 > **Remise à plat — analyse comparative.** Doc : Description v1.2 (2026-07-03), module 10. Code : commit `5b0fa92` (2026-07-03).
 > **Statut annoncé par la doc :** Opérationnel
 > **Verdict global de l'analyse :** Le cœur (JE auto partout, écriture manuelle équilibrée+PIN, TB/P&L/BS, périodes fail-closed, clôture annuelle câblée) est réel et conforme. La doc surclame en revanche le **rapprochement bancaire** (inexistant — seul un comptage cash-vs-GL existe), les **notes annexes SAK EMKM** (aucune trace) et la « **déclaration PB1 en un clic** » (c'est un rapport exportable, pas un workflow déclaratif) ; le drill-down GL s'arrête au type de source sans lien vers l'opération d'origine.

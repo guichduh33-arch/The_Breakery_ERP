@@ -1,5 +1,7 @@
 # Module 04 — Écran cuisine (KDS)
 
+> ⚠️ **Mise à jour S59 (2026-07-04, `swarm/session-59`)** : **D1.1/D1.3 livrés** — undo-bump 60 s, recall, prep-timer câblés (RPCs `kds_*_v1`) + alarme sonore WebAudio à la nouvelle commande (dédup + toggle mute persisté). **D1.2 « Tout prêt » (bump en masse) reste au lot 2 (S60)** car sous règle money-path. Voir `docs/workplan/plans/2026-07-04-session-59-INDEX.md`.
+
 > **Remise à plat — analyse comparative.** Doc : Description v1.2 (2026-07-03), module 4. Code : commit `5b0fa92` (2026-07-03).
 > **Statut annoncé par la doc :** Opérationnel
 > **Verdict global de l'analyse :** Le socle (routage par poste, chronos, couleurs, cycle Prêt/Servi, temps réel) est réel et robuste, mais la doc surclame nettement : pas d'alarme sonore, pas de « Tout prêt », pas de notes/allergies, pas de vue serveur agrégée, pas de compteur du jour, aucun réglage par poste — et le « canal de secours internet » décrit à l'envers (l'internet est le canal nominal, le mesh LAN est du code mort).

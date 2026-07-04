@@ -1,5 +1,7 @@
 # Module 15 — Production & recettes
 
+> ⚠️ **Mise à jour S59 (2026-07-04, `swarm/session-59`)** : **D1.1 (doublon suggestions) résorbé** — l'UI orpheline `ProductionSuggestions.tsx` + `useProductionSuggestions.ts` est purgée. Le RPC `get_production_suggestions_v1` est **conservé** (2ᵉ consommateur actif découvert : `ProductionAlertsTab`) — pas de DROP. Voir `docs/workplan/plans/2026-07-04-session-59-INDEX.md`.
+
 > **Remise à plat — analyse comparative.** Doc : Description v1.2 (2026-07-03), module 15. Code : commit `5b0fa92` (2026-07-03).
 > **Statut annoncé par la doc :** Opérationnel
 > **Verdict global de l'analyse :** La doc est **fidèle** — les cinq revendications « aujourd'hui » sont réelles, câblées et souvent plus riches que décrites (planning de production avec calendrier, revert, rapports yield/efficiency, allergènes déjà en base et affichés au POS). Deux nuances : le composant « suggestions du matin » historique est orphelin (la fonction vit dans la page Planning) et plusieurs « à venir » sont en réalité déjà partiellement livrés (lots datés à la production, allergènes).

@@ -2,6 +2,8 @@
 
 > ⚠️ **Mise à jour S58 (2026-07-04, `swarm/session-58`)** : **D2.1 livré** (`list_login_users_v1` anon-callable `_099` + les 3 UserPicker dynamiques POS/BO) et **D1.1 livré** (PIN exactement 6 partout, `_100`) — la chaîne d'embauche est réparée, C-B1.1 n'est plus 🔴. D1.3 (renommage sidebar) livré via module 20. Le reste de la fiche reste daté `5b0fa92`.
 
+> ⚠️ **Mise à jour S59 (2026-07-04, `swarm/session-59`)** : **D1.1 #2 livré** — les filtres actor/action/entity du journal d'audit sont branchés et le `metadata` est déplié dans l'UI (`AuditPage`). Nuance : `get_audit_logs_v1/v2` ne SELECT pas encore `payload` → le vrai avant/après reste une dette (INDEX S59 M-3). Voir `docs/workplan/plans/2026-07-04-session-59-INDEX.md`.
+
 > **Remise à plat — analyse comparative.** Doc : Description v1.2 (2026-07-03), module 01. Code : commit `5b0fa92` (2026-07-03).
 > **Statut annoncé par la doc :** Opérationnel
 > **Verdict global de l'analyse :** Le socle (PIN, lockout, rate-limit, audit, RBAC serveur) est réel et plus solide que décrit, mais deux revendications centrales sont fausses : le sélecteur d'utilisateurs à la connexion est **codé en dur sur 2 comptes de seed** (un nouvel employé ne peut pas se connecter depuis l'UI), et le réglage « fin, case par case » des droits n'existe pas (grille en lecture seule).

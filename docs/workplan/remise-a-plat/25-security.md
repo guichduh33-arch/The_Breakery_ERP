@@ -1,5 +1,7 @@
 # Module 25 — Sécurité
 
+> ⚠️ **Mise à jour S59 (2026-07-04, `swarm/session-59`)** : **D1.1 livré** — `auth-change-pin` lit les PINs depuis les headers `x-current-pin`/`x-new-pin` (hard cutover S25, plus aucun PIN en body JSON, CORS étendu, EF redéployée v8 ACTIVE) ; la réserve B1.3 sur le PIN de rotation en body est levée (reste le PIN de login `auth-verify-pin`, à documenter/basculer). Voir `docs/workplan/plans/2026-07-04-session-59-INDEX.md`.
+
 > **Remise à plat — analyse comparative.** Doc : Description v1.2 (2026-07-03), module 25. Code : commit `5b0fa92` (2026-07-03).
 > **Statut annoncé par la doc :** Opérationnel avec un socle solide
 > **Verdict global de l'analyse :** La doc est globalement fidèle — c'est le module le plus honnête des trois analysés. Les cinq revendications sont vérifiables dans le code (REVOKE anon + default privileges, lockout/rate-limit, redaction, prix serveur + advisory locks promo, audit consolidé), et les dettes annoncées « À venir » correspondent aux deferred réels. Deux nuances : les PINs transitent encore en body JSON sur les EFs `auth-*` (la règle « header » ne couvre que les manager-PINs), et la lecture du journal d'audit est réservée ADMIN/SUPER_ADMIN.

@@ -1,5 +1,7 @@
 # Module 11 — Dépenses
 
+> ⚠️ **Mise à jour S59 (2026-07-04, `swarm/session-59`)** : **D1.1 « Dupliquer » livré** (bouton `ExpenseDetailPage` → `NewExpensePage` pré-remplie, date du jour, sans receipt, brouillon) ; C-B1.5 n'est plus 🔴. **F-4 (P1) FIXÉ** (`_102`) : `_emit_expense_je` fold `vat_amount` dans le débit de charge et retire la ligne compte 1151 / `EXPENSE_VAT_INPUT` (ADR-003 NON-PKP) — une dépense avec PPN saisie ne crashe plus à l'approbation ; suite `expenses.test.sql` 19/19. Voir `docs/workplan/plans/2026-07-04-session-59-INDEX.md`.
+
 > **Remise à plat — analyse comparative.** Doc : Description v1.2 (2026-07-03), module 11. Code : commit `5b0fa92` (2026-07-03).
 > **Statut annoncé par la doc :** Opérationnel
 > **Verdict global de l'analyse :** Le cœur revendiqué est conforme (saisie + photo, circuit de validation, JE à l'approbation, engagement vs décaissement) et le code fait **beaucoup plus** que la doc — la validation multi-niveaux par montant avec SOD, listée « À venir », **existe déjà**. En sens inverse, la doc surclame la duplication d'une dépense (inexistante), le comparatif mois précédent (absent) et surtout le lien caisse (« sort du tiroir ») qui a été **volontairement débranché** au profit du Petty Cash.
