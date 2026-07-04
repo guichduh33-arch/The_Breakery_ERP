@@ -1,24 +1,28 @@
 -- supabase/tests/idempotency_hardening.test.sql
 -- Session 25 — Phase 2.A.1 — pgTAP coverage for idempotency hardening.
+-- Session 59 (17 D1.1) — bumped to create_tablet_order_v3 (+p_notes); v2 dropped.
 --
--- Covers Session 25 / Phase 1.A migrations 20260602000010..012 :
+-- Covers Session 25 / Phase 1.A migrations 20260602000010..012 and Session 59
+-- migrations 20260710000103..104 :
 --   - tablet_order_idempotency_keys table + RLS + grants
---   - create_tablet_order_v2 (idempotent replay via p_client_uuid)
---   - v1 create_tablet_order dropped (D14 monotonic versioning)
+--   - create_tablet_order_v3 (idempotent replay via p_client_uuid ; +p_notes -> orders.notes)
+--   - v1 create_tablet_order AND v2 create_tablet_order_v2 both dropped (D14 monotonic versioning)
 --   - refund_order_rpc_v2 idempotency_key replay (already shipped S13/000014,
 --     but re-exercised here in the hardening suite for regression).
 --
--- T1 create_tablet_order_v2 first call with a fresh client_uuid → succeeds, returns UUID order_id
--- T2 create_tablet_order_v2 same p_client_uuid second call → returns SAME order_id,
---    1 row in orders, 1 row in tablet_order_idempotency_keys
--- T3 v1 create_tablet_order is dropped (hasnt_function)
--- T4 refund_order_rpc_v2 first call with a fresh p_idempotency_key → succeeds,
---    idempotent_replay missing/false
--- T5 refund_order_rpc_v2 same p_idempotency_key second call → returns same response
---    with idempotent_replay=true, no new stock_movements (same refund_id, same stock impact)
--- T6 tablet_order_idempotency_keys REVOKE — anon has NO SELECT privilege
--- T7 tablet_order_idempotency_keys policy — authenticated HAS SELECT privilege
--- T8 create_tablet_order_v2 EXECUTE REVOKE — anon has NO EXECUTE privilege
+-- T1  create_tablet_order_v3 first call with a fresh client_uuid → succeeds, returns UUID order_id
+-- T2  create_tablet_order_v3 same p_client_uuid second call → returns SAME order_id,
+--     1 row in orders, 1 row in tablet_order_idempotency_keys
+-- T3  v1 create_tablet_order is dropped (hasnt_function)
+-- T4  refund_order_rpc_v2 first call with a fresh p_idempotency_key → succeeds,
+--     idempotent_replay missing/false
+-- T5  refund_order_rpc_v2 same p_idempotency_key second call → returns same response
+--     with idempotent_replay=true, no new stock_movements (same refund_id, same stock impact)
+-- T6  tablet_order_idempotency_keys REVOKE — anon has NO SELECT privilege
+-- T7  tablet_order_idempotency_keys policy — authenticated HAS SELECT privilege
+-- T8  create_tablet_order_v3 EXECUTE REVOKE — anon has NO EXECUTE privilege
+-- T9  v2 create_tablet_order_v2 is dropped (hasnt_function, S59 bump)
+-- T10 create_tablet_order_v3 with p_notes writes orders.notes verbatim
 --
 -- Run via MCP execute_sql wrap BEGIN/ROLLBACK ; pgtap extension is pre-created
 -- on V3 dev (ikcyvlovptebroadgtvd).
@@ -34,7 +38,7 @@ BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-SELECT plan(8);
+SELECT plan(10);
 
 -- ---------------------------------------------------------------------------
 -- Bootstrap fixtures
@@ -136,7 +140,7 @@ BEGIN
 END $$;
 
 -- ===========================================================================
--- T1 — create_tablet_order_v2 first call with a fresh client_uuid succeeds
+-- T1 — create_tablet_order_v3 first call with a fresh client_uuid succeeds
 -- ===========================================================================
 DO $t1$
 DECLARE
@@ -147,7 +151,7 @@ DECLARE
 BEGIN
   PERFORM pg_temp.set_jwt_uid(v_admin_uid);
 
-  v_order_id := create_tablet_order_v2(
+  v_order_id := create_tablet_order_v3(
     p_client_uuid  => v_client,
     p_waiter_id    => v_admin_pid,
     p_table_number => 'T-T1',
@@ -165,10 +169,10 @@ BEGIN
   PERFORM set_config('breakery.t1_order_id', v_order_id::text, false);
 END $t1$;
 SELECT ok(current_setting('breakery.t1_pass')::boolean,
-  'T1: create_tablet_order_v2 first call with fresh client_uuid returns a UUID order_id');
+  'T1: create_tablet_order_v3 first call with fresh client_uuid returns a UUID order_id');
 
 -- ===========================================================================
--- T2 — create_tablet_order_v2 same p_client_uuid second call → replay
+-- T2 — create_tablet_order_v3 same p_client_uuid second call → replay
 -- ===========================================================================
 DO $t2$
 DECLARE
@@ -183,7 +187,7 @@ BEGIN
   PERFORM pg_temp.set_jwt_uid(v_admin_uid);
 
   -- Second call with the SAME p_client_uuid → must return same order_id.
-  v_order_id_2 := create_tablet_order_v2(
+  v_order_id_2 := create_tablet_order_v3(
     p_client_uuid  => v_client,
     p_waiter_id    => v_admin_pid,
     p_table_number => 'T-T2',  -- different on purpose; replay must ignore the new args
@@ -208,14 +212,14 @@ BEGIN
     THEN 'true' ELSE 'false' END, false);
 END $t2$;
 SELECT ok(current_setting('breakery.t2_pass')::boolean,
-  'T2: create_tablet_order_v2 replay returns same order_id, 1 orders row, 1 idempotency_keys row');
+  'T2: create_tablet_order_v3 replay returns same order_id, 1 orders row, 1 idempotency_keys row');
 
 -- ===========================================================================
 -- T3 — create_tablet_order v1 dropped (D14 monotonic versioning)
 -- ===========================================================================
 SELECT hasnt_function(
   'public', 'create_tablet_order',
-  'T3: create_tablet_order v1 is dropped (only create_tablet_order_v2 remains)'
+  'T3: create_tablet_order v1 is dropped'
 );
 
 -- ===========================================================================
@@ -339,16 +343,60 @@ SELECT ok(
 );
 
 -- ===========================================================================
--- T8 — create_tablet_order_v2 EXECUTE REVOKE: anon has NO EXECUTE
+-- T8 — create_tablet_order_v3 EXECUTE REVOKE: anon has NO EXECUTE
 -- ===========================================================================
 SELECT ok(
   NOT has_function_privilege(
     'anon',
-    'public.create_tablet_order_v2(uuid, uuid, text, order_type, jsonb)',
+    'public.create_tablet_order_v3(uuid, uuid, text, order_type, jsonb, text)',
     'EXECUTE'
   ),
-  'T8: anon has NO EXECUTE privilege on create_tablet_order_v2'
+  'T8: anon has NO EXECUTE privilege on create_tablet_order_v3'
 );
+
+-- ===========================================================================
+-- T9 — create_tablet_order_v2 dropped (S59 bump to v3)
+-- ===========================================================================
+SELECT hasnt_function(
+  'public', 'create_tablet_order_v2',
+  'T9: create_tablet_order_v2 is dropped (only create_tablet_order_v3 remains)'
+);
+
+-- ===========================================================================
+-- T10 — create_tablet_order_v3 with p_notes writes orders.notes verbatim
+-- (Session 59, 17 D1.1 — order-level free-text note surfaced on KDS + pickup)
+-- ===========================================================================
+DO $t10$
+DECLARE
+  v_admin_uid  UUID := current_setting('breakery.admin_uid')::uuid;
+  v_admin_pid  UUID := current_setting('breakery.admin_pid')::uuid;
+  v_client     UUID := 'fefefefe-0000-0000-0000-000000000010'::uuid;
+  v_note       TEXT := 'No gluten — nut allergy';
+  v_order_id   UUID;
+  v_db_notes   TEXT;
+BEGIN
+  PERFORM pg_temp.set_jwt_uid(v_admin_uid);
+
+  v_order_id := create_tablet_order_v3(
+    p_client_uuid  => v_client,
+    p_waiter_id    => v_admin_pid,
+    p_table_number => 'T-T10',
+    p_order_type   => 'dine_in'::order_type,
+    p_items        => jsonb_build_array(jsonb_build_object(
+      'product_id', 'aaaaaaaa-bbbb-cccc-dddd-000000000025'::uuid,
+      'quantity',   1,
+      'unit_price', 20000
+    )),
+    p_notes        => v_note
+  );
+
+  SELECT notes INTO v_db_notes FROM orders WHERE id = v_order_id;
+
+  PERFORM set_config('breakery.t10_pass',
+    CASE WHEN v_db_notes = v_note THEN 'true' ELSE 'false' END, false);
+END $t10$;
+SELECT ok(current_setting('breakery.t10_pass')::boolean,
+  'T10: create_tablet_order_v3 writes p_notes verbatim to orders.notes');
 
 SELECT * FROM finish();
 ROLLBACK;

@@ -105,6 +105,7 @@ function makeItem(overrides: Partial<KdsItemRow> = {}): KdsItemRow {
     prep_started_at: null,
     order_number: '#A-001',
     order_status: 'pending_payment',
+    order_notes: null,
     is_cancelled: false,
     cancelled_at: null,
     cancelled_reason: null,

@@ -9,6 +9,8 @@ export function TabletCartPanel(): JSX.Element {
   const items = useTabletCartStore((s) => s.items);
   const tableNumber = useTabletCartStore((s) => s.tableNumber);
   const orderType = useTabletCartStore((s) => s.orderType);
+  const notes = useTabletCartStore((s) => s.notes);
+  const setNotes = useTabletCartStore((s) => s.setNotes);
   const updateQuantity = useTabletCartStore((s) => s.updateQuantity);
   const removeItem = useTabletCartStore((s) => s.removeItem);
 
@@ -93,6 +95,20 @@ export function TabletCartPanel(): JSX.Element {
               <span className="uppercase tracking-wide font-semibold">Est. Total</span>
               <Currency amount={preview.items_total} emphasis="gold" className="text-lg" />
             </div>
+          </div>
+          {/* Session 59 (17 D1.1) — order-level note (allergy, "no gluten"...). */}
+          <div className="space-y-1">
+            <label htmlFor="tablet-order-note" className="text-xs uppercase tracking-widest text-text-muted">
+              Note for kitchen
+            </label>
+            <textarea
+              id="tablet-order-note"
+              value={notes ?? ''}
+              onChange={(e) => setNotes(e.target.value.length > 0 ? e.target.value : null)}
+              placeholder="e.g. no gluten, nut allergy…"
+              rows={2}
+              className="w-full resize-none rounded-md bg-bg-input border border-border-subtle p-2 text-sm text-text-primary placeholder:text-text-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold"
+            />
           </div>
           <TabletCheckoutButton />
         </footer>

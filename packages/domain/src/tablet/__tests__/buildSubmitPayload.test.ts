@@ -79,4 +79,20 @@ describe('buildSubmitPayload', () => {
     expect('id' in item).toBe(false);
     expect('name' in item).toBe(false);
   });
+
+  // Session 59 (17 D1.1) — order-level note forwarded as p_notes.
+  it('forwards a non-empty note as p_notes', () => {
+    const payload = buildSubmitPayload({ ...baseCart, notes: 'No gluten — nut allergy' }, 'w1');
+    expect(payload.p_notes).toBe('No gluten — nut allergy');
+  });
+
+  it('defaults p_notes to null when the cart has no notes field', () => {
+    const payload = buildSubmitPayload(baseCart, 'w1');
+    expect(payload.p_notes).toBeNull();
+  });
+
+  it('defaults p_notes to null when notes is explicitly null', () => {
+    const payload = buildSubmitPayload({ ...baseCart, notes: null }, 'w1');
+    expect(payload.p_notes).toBeNull();
+  });
 });

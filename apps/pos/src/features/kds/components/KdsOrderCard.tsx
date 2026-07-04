@@ -182,6 +182,16 @@ export function KdsOrderCard({ items }: KdsOrderCardProps) {
         </span>
       </header>
 
+      {/* Session 59 (17 D1.1) — order-level note (tablet), e.g. allergy / "no gluten". */}
+      {head.order_notes && (
+        <div
+          className="rounded-md border border-amber-warn/40 bg-amber-warn/10 px-3 py-2 text-sm text-amber-warn"
+          data-testid="kds-order-note"
+        >
+          {head.order_notes}
+        </div>
+      )}
+
       <ul className="flex flex-col gap-3">
         {items.map((item) => {
           const cancelled = item.is_cancelled;

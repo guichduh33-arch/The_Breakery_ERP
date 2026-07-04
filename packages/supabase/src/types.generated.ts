@@ -6295,10 +6295,11 @@ export type Database = {
         }
         Returns: Json
       }
-      create_tablet_order_v2: {
+      create_tablet_order_v3: {
         Args: {
           p_client_uuid: string
           p_items: Json
+          p_notes?: string
           p_order_type: Database["public"]["Enums"]["order_type"]
           p_table_number: string
           p_waiter_id: string

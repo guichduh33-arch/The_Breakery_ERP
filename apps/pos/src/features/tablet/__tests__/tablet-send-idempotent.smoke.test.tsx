@@ -7,7 +7,7 @@
 //     pure spy. No live DB, no UI rendering — we exercise the
 //     `useCreateTabletOrder` hook in isolation with React Query.
 //   - Verifies that the post-S25 hook signature `{ cart, waiterId, clientUuid }`
-//     forwards `clientUuid` as `p_client_uuid` to the `create_tablet_order_v2`
+//     forwards `clientUuid` as `p_client_uuid` to the `create_tablet_order_v3`
 //     RPC, and that a retry with the SAME `clientUuid` re-sends the SAME
 //     `p_client_uuid` value (sticky UUID lifecycle).
 
@@ -50,7 +50,7 @@ describe('S25 useCreateTabletOrder — idempotency wiring', () => {
     supaMocks.rpc.mockReset();
   });
 
-  it('C1: passes the provided clientUuid as p_client_uuid to create_tablet_order_v2', async () => {
+  it('C1: passes the provided clientUuid as p_client_uuid to create_tablet_order_v3', async () => {
     supaMocks.rpc.mockResolvedValue({ data: 'order-id-1', error: null });
 
     const wrapper = makeWrapper();
@@ -67,7 +67,7 @@ describe('S25 useCreateTabletOrder — idempotency wiring', () => {
 
     expect(supaMocks.rpc).toHaveBeenCalledTimes(1);
     expect(supaMocks.rpc).toHaveBeenCalledWith(
-      'create_tablet_order_v2',
+      'create_tablet_order_v3',
       expect.objectContaining({
         p_client_uuid: myUuid,
         p_waiter_id: 'w-1',
@@ -109,8 +109,8 @@ describe('S25 useCreateTabletOrder — idempotency wiring', () => {
     const firstCallArgs = supaMocks.rpc.mock.calls[0]!;
     const secondCallArgs = supaMocks.rpc.mock.calls[1]!;
 
-    expect(firstCallArgs[0]).toBe('create_tablet_order_v2');
-    expect(secondCallArgs[0]).toBe('create_tablet_order_v2');
+    expect(firstCallArgs[0]).toBe('create_tablet_order_v3');
+    expect(secondCallArgs[0]).toBe('create_tablet_order_v3');
 
     const firstClientUuid = (firstCallArgs[1] as { p_client_uuid: string }).p_client_uuid;
     const secondClientUuid = (secondCallArgs[1] as { p_client_uuid: string }).p_client_uuid;

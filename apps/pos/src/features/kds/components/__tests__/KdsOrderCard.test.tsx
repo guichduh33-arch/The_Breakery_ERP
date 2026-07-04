@@ -64,6 +64,7 @@ function makeItem(overrides: Partial<KdsItemRow> = {}): KdsItemRow {
     // must render them verbatim (no re-prefixing).
     order_number: '#A-001',
     order_status: 'pending_payment',
+    order_notes: null,
     is_cancelled: false,
     cancelled_at: null,
     cancelled_reason: null,
@@ -105,6 +106,19 @@ describe('KdsOrderCard', () => {
     expect(timer.textContent).toBe('01:00');
     expect(timer.className).toMatch(/font-mono/);
     expect(timer.className).toMatch(/tabular-nums/);
+  });
+
+  // Session 59 (17 D1.1) — order-level note (tablet) surfaced on the ticket.
+  it('renders the order-level note when orders.notes is set', () => {
+    const item = makeItem({ order_notes: 'No gluten — nut allergy' });
+    render(wrap(<KdsOrderCard items={[item]} />));
+    expect(screen.getByTestId('kds-order-note')).toHaveTextContent('No gluten — nut allergy');
+  });
+
+  it('renders no note block when orders.notes is null', () => {
+    const item = makeItem({ order_notes: null });
+    render(wrap(<KdsOrderCard items={[item]} />));
+    expect(screen.queryByTestId('kds-order-note')).not.toBeInTheDocument();
   });
 
   it('escalates the age band to "warning" at 300s and "urgent" at 600s (kds configue thresholds)', () => {

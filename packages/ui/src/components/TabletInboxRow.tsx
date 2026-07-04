@@ -56,6 +56,15 @@ export function TabletInboxRow({ entry, onPickup, isPicking = false }: TabletInb
           {entry.items_count} item{entry.items_count !== 1 ? 's' : ''}
         </span>
         <span className="text-xs text-text-secondary">{entry.waiter_name}</span>
+        {/* Session 59 (17 D1.1) — order-level note, surfaced to the cashier before pickup. */}
+        {entry.notes && (
+          <span
+            className="text-xs text-amber-warn truncate"
+            data-testid="tablet-inbox-note"
+          >
+            {entry.notes}
+          </span>
+        )}
       </div>
 
       <div className="flex flex-col items-end gap-0.5">
