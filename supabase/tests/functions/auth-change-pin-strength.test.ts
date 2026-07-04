@@ -24,8 +24,10 @@ describe.skip('auth-change-pin — strength flag', () => {
 
   it('returns weak:true,reason:sequence for 123456', async () => {
     // (Test setup mirrors the existing auth-change-pin tests — reuse session bootstrap.)
+    // S25 hard cutover (session 59) — PINs travel via x-current-pin/x-new-pin headers.
     const { data } = await client.functions.invoke('auth-change-pin', {
-      body: { user_id: adminId, current_pin: '654321', new_pin: '123456' },
+      body: { user_id: adminId },
+      headers: { 'x-current-pin': '654321', 'x-new-pin': '123456' },
     });
     expect(data?.ok).toBe(true);
     expect(data?.weak).toBe(true);
@@ -34,7 +36,8 @@ describe.skip('auth-change-pin — strength flag', () => {
 
   it('returns weak:false for 285741', async () => {
     const { data } = await client.functions.invoke('auth-change-pin', {
-      body: { user_id: adminId, current_pin: '123456', new_pin: '285741' },
+      body: { user_id: adminId },
+      headers: { 'x-current-pin': '123456', 'x-new-pin': '285741' },
     });
     expect(data?.ok).toBe(true);
     expect(data?.weak).toBe(false);

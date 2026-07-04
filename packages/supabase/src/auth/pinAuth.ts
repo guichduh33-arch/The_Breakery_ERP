@@ -173,7 +173,11 @@ export async function logoutSession(supabaseUrl: string, sessionToken: string): 
 }
 
 /**
- * Body POSTed to `auth-change-pin`.
+ * Params for `auth-change-pin`. Wrapper-level shape only — {@link changePin}
+ * sends `current_pin`/`new_pin` as the `x-current-pin`/`x-new-pin` headers
+ * (S25 hard cutover, session 59) and `user_id` alone in the JSON body, since
+ * request bodies get logged by default (PostgREST/pgaudit/proxies) and PINs
+ * must not appear there.
  *
  * @property user_id     - Target user. May be self or another user (admin override
  *                          requires the `users.update` permission server-side).
@@ -189,9 +193,10 @@ export interface ChangePinRequest {
 /**
  * Rotate a user's PIN.
  *
- * Calls `POST {supabaseUrl}/functions/v1/auth-change-pin`. Authentication is
- * by `x-session-token` (Authorization is unused — the EF re-derives identity
- * from the session row).
+ * Calls `POST {supabaseUrl}/functions/v1/auth-change-pin` with `current_pin`/
+ * `new_pin` carried in the `x-current-pin`/`x-new-pin` headers (never in the
+ * body — S25 hard cutover). Authentication is by `x-session-token`
+ * (Authorization is unused — the EF re-derives identity from the session row).
  *
  * @param supabaseUrl  - Project URL.
  * @param sessionToken - Session token of the *acting* user (self or admin).
@@ -205,10 +210,17 @@ export async function changePin(
   sessionToken: string,
   body: ChangePinRequest,
 ): Promise<void> {
+  const { user_id, current_pin, new_pin } = body;
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'x-session-token': sessionToken,
+    'x-new-pin': new_pin,
+  };
+  if (current_pin) headers['x-current-pin'] = current_pin;
   const res = await fetchWithTimeout(`${supabaseUrl}/functions/v1/auth-change-pin`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-session-token': sessionToken },
-    body: JSON.stringify(body),
+    headers,
+    body: JSON.stringify({ user_id }),
   });
   if (!res.ok) {
     const errBody = (await res.json().catch(() => ({}))) as { error?: string };
