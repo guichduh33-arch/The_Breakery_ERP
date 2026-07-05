@@ -1,5 +1,7 @@
 # Module 08 — Clients & fidélité
 
+> ⚠️ **Mise à jour S62 (2026-07-06, `swarm/session-62`)** : **D2.3 soldé par PURGE** (décision propriétaire 3 du 2026-07-06) — le champ `discount` des `TIERS` est retiré du domaine : les paliers ne servent plus qu'au multiplicateur de POINTS (`points_multiplier`, intact serveur et client). Besoin futur de remise → promotion par catégorie client (mécanisme existant). Voir `docs/workplan/plans/2026-07-06-session-62-INDEX.md`.
+
 > **Remise à plat — analyse comparative.** Doc : Description v1.2 (2026-07-03), module 8. Code : commit `5b0fa92` (2026-07-03).
 > **Statut annoncé par la doc :** Opérationnel.
 > **Verdict global de l'analyse :** Le socle (fiche client, earn/redeem, ledger infalsifiable, import, segments, anniversaires) est réel et solide. Mais la doc surclame trois points visibles du client : **pas de numéro de membre ni de QR code** (onglet « coming soon »), **les remises de palier (5/8/10 %) ne sont jamais appliquées**, et la **gestion des catégories tarifaires est en lecture seule** (aucun RPC d'écriture).

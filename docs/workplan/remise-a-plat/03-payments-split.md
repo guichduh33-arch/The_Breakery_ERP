@@ -1,5 +1,7 @@
 # Module 03 — Encaissement & paiements
 
+> ⚠️ **Mise à jour S62 (2026-07-06, `swarm/session-62`)** : **D2.1 livré** — plafond de crédit ardoise retail contrôlé SERVEUR : colonne `customers.retail_credit_limit` (NULL = illimité) + gate d'encours live dans `attach_tab_customer_v1` (P0011 `credit_limit_exceeded`, DETAIL jsonb, anti-TOCTOU). Le gate joue à l'attache ; `pay_existing_order_v11` (money-path, intouchée) recalcule le total au paiement sans re-gater — design assumé (dette D-7 INDEX S62). Voir `docs/workplan/plans/2026-07-06-session-62-INDEX.md`.
+
 > **Remise à plat — analyse comparative.** Doc : Description v1.2 (2026-07-03), module 3. Code : commit `5b0fa92` (2026-07-03).
 > **Statut annoncé par la doc :** Opérationnel pour le quotidien ; partiel sur les paiements électroniques modernes
 > **Verdict global de l'analyse :** Fidèle sur le cœur (multi-tender, split par convive, idempotence, discount sécurisé, taxe serveur) ; surclamation sur les moyens de paiement : il n'existe **ni tender « crédit professionnel » ni tender « ardoise »** au terminal, et le plafond de crédit n'est pas contrôlé pour le « payer plus tard » retail.

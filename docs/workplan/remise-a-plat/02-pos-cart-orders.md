@@ -1,5 +1,7 @@
 # Module 02 — Caisse : panier & commandes
 
+> ⚠️ **Mise à jour S62 (2026-07-06, `swarm/session-62`)** : **D1.2 livré** — bouton « Ardoise » sur les lignes `pending_payment` de `HeldOrdersModal` → picker client → RPC `attach_tab_customer_v1` (attache le client + pose le total provisoire, gate plafond `retail_credit_limit` P0011). L'ardoise nommée apparaît dans `/pos/debts` et s'encaisse via le flux S60. Voir `docs/workplan/plans/2026-07-06-session-62-INDEX.md`.
+
 > ⚠️ **Mise à jour S60 (2026-07-05, `swarm/session-60`)** : **D1.1 livré** — le CTA « Pay » de `/pos/debts` charge la créance dans le panier (`useLoadDebtOrder`, mirror pickup) et l'encaissement route vers `pay_existing_order_v11` ; lignes B2B exclues (hint « settle in Backoffice »). Le B1.7 passe 🟠→✅ pour l'ardoise retail (D1.2 « bouton Ardoise nommé » reste ouvert). Voir `docs/workplan/plans/2026-07-05-session-60-INDEX.md`.
 
 > **Remise à plat — analyse comparative.** Doc : Description v1.2 (2026-07-03), module 2. Code : commit `5b0fa92` (2026-07-03).
