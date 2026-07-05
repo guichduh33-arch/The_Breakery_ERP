@@ -21,7 +21,8 @@
 - Ancre money-path **`s44_money_gates` 12/12** re-passée live (v17/v11/fire_v4/`_record_sale_stock_v1` **non modifiés** par la branche).
 - Ancre **`pay_existing_flag_aware` 3/3** live post-`_112`.
 - **Types regénérés et commités** (drift attendu seul : −191/+7).
-- Suite monorepo complète + revue finale de branche (fable) : voir PR.
+- **Suite monorepo complète exit 0** (typecheck 6/6, build 2/2, test 7/7).
+- **Revue finale de branche (fable) : READY TO MERGE** — 0 Critical/Important. Cohérence transverse des purges vérifiée par greps exhaustifs (zéro résiduel de code), flux ardoise bout-en-bout validé maillon par maillon (fire → held → attach → debts → pay S60), money-path confirmée intacte, trio sécurité complet. Condition unique satisfaite : le merge inclut `0d559d25` (restauration #150).
 
 ## Incident de branche (résolu)
 
@@ -41,6 +42,9 @@ Le commit du plan (`d821bf41`) a embarqué par accident des versions **périmée
 | D-8 | Design assumé | Modèle live-recompute non rétroactif : baisser un plafond ne re-signale pas la dette existante (miroir du comportement B2B) | Revue T4 |
 | D-9 | Minor | Case `credit_limit_exceeded` du `retryClassifier` sans call-site réel — le flux ardoise a son propre message FR local plus riche → 2 messages pour la même erreur, risque de drift | Revue T5 |
 | D-10 | Minor | Pas de test bout-en-bout clic-Save sur `CustomerDetailPage` complet (couverture split composant/page) ; `B2BFieldsSection` découvert **code mort** (importé par son seul smoke test) — à purger dans un futur lot | Revue T6 |
+| D-11 | Minor | `CustomerAttachModal` affiche l'onglet « New » même sans `createFn` — dans le flux Ardoise, le submit du QuickCreateForm no-op silencieusement (dead-end UX). Fix : masquer l'onglet si `!createFn` | Revue finale |
+| D-12 | Minor | Casts loose + commentaires « types regen pending » devenus inutiles après la regen `459565e5` (`useCustomerDetail.ts`, `useUpdateRetailCreditLimit.ts`, `useAttachTabCustomer.ts`) — nettoyage follow-up sans risque | Revue finale |
+| D-13 | Cosmétique | 3ᵉ commentaire mort famille mesh : `packages/supabase/src/index.ts:12` référence « apps/pos lanHub.ts » (supprimé) | Revue finale |
 
 ## Actions utilisateur
 
