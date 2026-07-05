@@ -7068,6 +7068,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      kds_bump_order_v1: {
+        Args: { p_idempotency_key?: string; p_order_id: string }
+        Returns: number
+      }
       kds_recall_order_v1: {
         Args: { p_order_id: string; p_reason?: string }
         Returns: number
