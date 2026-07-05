@@ -6103,7 +6103,7 @@ export type Database = {
         Args: { p_fiscal_year: number; p_manager_pin: string }
         Returns: Json
       }
-      close_shift_v2: {
+      close_shift_v3: {
         Args: {
           p_counted_cash: number
           p_idempotency_key?: string

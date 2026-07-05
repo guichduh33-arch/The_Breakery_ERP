@@ -4,6 +4,10 @@
 // Session 29 / Wave 6.D — after successful close_shift_v2, chain EF generate-zreport-pdf
 // (non-blocking: PDF generation failure does NOT roll back the shift close; user can
 // retry from the Z-Reports page in BO).
+// S60 (12 D1.4) — bumped to close_shift_v3: the variance note is now enforced
+// server-side (ERRCODE P0001 variance_note_required) when |variance| exceeds
+// business_config.shift_variance_threshold_abs/pct and no note was provided;
+// mapped to a friendly toast here instead of the raw RPC error message.
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -48,8 +52,18 @@ export function useCloseShift() {
       };
       if (input.notes !== undefined)            args.p_notes = input.notes;
       if (input.idempotency_key !== undefined)  args.p_idempotency_key = input.idempotency_key;
-      const { data, error } = await supabase.rpc('close_shift_v2', args);
-      if (error) throw new Error(error.message);
+      const { data, error } = await supabase.rpc('close_shift_v3', args);
+      if (error) {
+        // S60 (12 D1.4): close_shift_v3 enforces the above-threshold variance
+        // note server-side (ERRCODE P0001 variance_note_required). The UI
+        // already blocks this locally (CloseShiftModal.noteRequired), but a
+        // direct RPC call (or a client/server threshold drift) still hits it —
+        // map it to the same friendly copy the caller's catch block toasts.
+        if (error.message.includes('variance_note_required')) {
+          throw new Error('A note is required: the variance is above the configured threshold');
+        }
+        throw new Error(error.message);
+      }
       const result = data as unknown as CloseShiftResult;
 
       // S29 Wave 6.D — fire-and-forget PDF generation. We await it but DO NOT throw

@@ -1,14 +1,17 @@
 // supabase/tests/functions/cash-register-close.test.ts
 // Session 13 / Phase 3.C — Live integration tests for cash register flow.
+// S60 (12 D1.4) — repointed to record_cash_movement_v2 / close_shift_v3
+// (v1/v2 were dropped ; v3 additionally enforces the above-threshold variance
+// note server-side — see close_shift_note_enforced.test.sql for that guard).
 //
 // Covers:
-//   - record_cash_movement_v1 increments cash_in_total / cash_out_total
-//   - close_shift_v1 with zero variance: no JE emitted
-//   - close_shift_v1 with positive variance: balanced JE through
+//   - record_cash_movement_v2 increments cash_in_total / cash_out_total
+//   - close_shift_v3 with zero variance: no JE emitted
+//   - close_shift_v3 with positive variance: balanced JE through
 //     SHIFT_CASH_VARIANCE_INCOME mapping
-//   - close_shift_v1 with negative variance: balanced JE through
+//   - close_shift_v3 with negative variance: balanced JE through
 //     SHIFT_CASH_VARIANCE_EXPENSE mapping
-//   - close_shift_v1 idempotency on a closed session
+//   - close_shift_v3 idempotency on a closed session
 //   - Permission gate: cashier without shift.close gets forbidden
 
 import { describe, it, expect, beforeAll } from 'vitest';
@@ -57,7 +60,7 @@ async function openShift(token: string, openingCash: number): Promise<string> {
   return data!.id;
 }
 
-describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('cash register — close_shift_v1 integration', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('cash register — close_shift_v3 integration', () => {
   let managerToken: string;
 
   beforeAll(async () => {
@@ -65,11 +68,11 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('cash register — close
     managerToken = m.token;
   });
 
-  it('record_cash_movement_v1 updates session totals', async () => {
+  it('record_cash_movement_v2 updates session totals', async () => {
     const sb = jwtClient(managerToken);
     const sessionId = await openShift(managerToken, 500_000);
 
-    const { data: cashIn, error: e1 } = await sb.rpc('record_cash_movement_v1', {
+    const { data: cashIn, error: e1 } = await sb.rpc('record_cash_movement_v2', {
       p_session_id: sessionId,
       p_direction: 'in',
       p_amount: 100_000,
@@ -78,7 +81,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('cash register — close
     expect(e1).toBeNull();
     expect(cashIn).toMatchObject({ cash_in_total: 100_000, cash_out_total: 0 });
 
-    const { data: cashOut, error: e2 } = await sb.rpc('record_cash_movement_v1', {
+    const { data: cashOut, error: e2 } = await sb.rpc('record_cash_movement_v2', {
       p_session_id: sessionId,
       p_direction: 'out',
       p_amount: 25_000,
@@ -92,11 +95,11 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('cash register — close
     await admin.from('pos_sessions').delete().eq('id', sessionId);
   });
 
-  it('close_shift_v1 with zero variance posts no JE', async () => {
+  it('close_shift_v3 with zero variance posts no JE', async () => {
     const sb = jwtClient(managerToken);
     const sessionId = await openShift(managerToken, 1_000_000);
 
-    const { data: close, error } = await sb.rpc('close_shift_v1', {
+    const { data: close, error } = await sb.rpc('close_shift_v3', {
       p_session_id: sessionId,
       p_counted_cash: 1_000_000,
       p_notes: 'zero variance smoke',
@@ -115,12 +118,12 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('cash register — close
     await admin.from('pos_sessions').delete().eq('id', sessionId);
   });
 
-  it('close_shift_v1 with positive variance posts JE via SHIFT_CASH_VARIANCE_INCOME', async () => {
+  it('close_shift_v3 with positive variance posts JE via SHIFT_CASH_VARIANCE_INCOME', async () => {
     const sb = jwtClient(managerToken);
     const sessionId = await openShift(managerToken, 500_000);
 
     const counted = 530_000; // +30k over
-    const { data: close, error } = await sb.rpc('close_shift_v1', {
+    const { data: close, error } = await sb.rpc('close_shift_v3', {
       p_session_id: sessionId,
       p_counted_cash: counted,
       p_notes: 'positive variance smoke',
@@ -150,12 +153,12 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('cash register — close
     await admin.from('pos_sessions').delete().eq('id', sessionId);
   });
 
-  it('close_shift_v1 with negative variance posts JE via SHIFT_CASH_VARIANCE_EXPENSE', async () => {
+  it('close_shift_v3 with negative variance posts JE via SHIFT_CASH_VARIANCE_EXPENSE', async () => {
     const sb = jwtClient(managerToken);
     const sessionId = await openShift(managerToken, 500_000);
 
     const counted = 480_000; // -20k short
-    const { data: close, error } = await sb.rpc('close_shift_v1', {
+    const { data: close, error } = await sb.rpc('close_shift_v3', {
       p_session_id: sessionId,
       p_counted_cash: counted,
       p_notes: 'negative variance smoke',
@@ -173,13 +176,13 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('cash register — close
     await admin.from('pos_sessions').delete().eq('id', sessionId);
   });
 
-  it('close_shift_v1 idempotent on an already-closed session', async () => {
+  it('close_shift_v3 idempotent on an already-closed session', async () => {
     const sb = jwtClient(managerToken);
     const sessionId = await openShift(managerToken, 100_000);
-    await sb.rpc('close_shift_v1', {
+    await sb.rpc('close_shift_v3', {
       p_session_id: sessionId, p_counted_cash: 100_000,
     });
-    const { data: replay, error } = await sb.rpc('close_shift_v1', {
+    const { data: replay, error } = await sb.rpc('close_shift_v3', {
       p_session_id: sessionId, p_counted_cash: 100_000,
     });
     expect(error).toBeNull();
@@ -188,4 +191,3 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('cash register — close
     await admin.from('pos_sessions').delete().eq('id', sessionId);
   });
 });
-

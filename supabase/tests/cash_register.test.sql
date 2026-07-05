@@ -1,9 +1,11 @@
 -- supabase/tests/cash_register.test.sql
 -- Session 13 / Phase 3.C — pgTAP suite for cash_movements / close_shift_v1.
+-- S60 (12 D1.4): T_SHIFT_03 repaired — record_cash_movement_v1/close_shift_v1
+-- were dropped (bumped to v2/v3 respectively); assertions repointed.
 --
 -- T_SHIFT_01: pos_sessions has cash_in_total/cash_out_total/variance_total/closing_notes columns
 -- T_SHIFT_02: cash_movements table exists
--- T_SHIFT_03: record_cash_movement_v1 + close_shift_v1 functions exist
+-- T_SHIFT_03: record_cash_movement_v2 + close_shift_v3 functions exist
 -- T_SHIFT_04: shift close with zero variance emits NO JE
 -- T_SHIFT_05: shift close with positive variance (over) emits balanced JE via mappings
 -- T_SHIFT_06: shift close with negative variance (short) emits balanced JE via mappings
@@ -14,7 +16,7 @@ BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-SELECT plan(8);
+SELECT plan(9);
 
 -- T_SHIFT_01
 SELECT has_column('public', 'pos_sessions', 'cash_in_total',  'T_SHIFT_01a: pos_sessions.cash_in_total');
@@ -26,12 +28,12 @@ SELECT has_column('public', 'pos_sessions', 'closing_notes',  'T_SHIFT_01d: pos_
 SELECT has_table('public', 'cash_movements', 'T_SHIFT_02: cash_movements table exists');
 
 -- T_SHIFT_03
-SELECT has_function('public', 'record_cash_movement_v1',
-  ARRAY['uuid','text','numeric','text','uuid'],
-  'T_SHIFT_03a: record_cash_movement_v1');
-SELECT has_function('public', 'close_shift_v1',
+SELECT has_function('public', 'record_cash_movement_v2',
+  ARRAY['uuid','text','numeric','text','uuid','text'],
+  'T_SHIFT_03a: record_cash_movement_v2');
+SELECT has_function('public', 'close_shift_v3',
   ARRAY['uuid','numeric','text','uuid'],
-  'T_SHIFT_03b: close_shift_v1');
+  'T_SHIFT_03b: close_shift_v3');
 
 -- T_SHIFT_08
 SELECT has_column('public', 'business_config', 'shift_variance_threshold_pct',

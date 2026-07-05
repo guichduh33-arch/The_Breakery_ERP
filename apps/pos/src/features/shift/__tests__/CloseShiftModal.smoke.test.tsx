@@ -170,7 +170,7 @@ describe('CloseShiftModal', () => {
     expect(screen.queryByTestId('variance-preview')).not.toBeInTheDocument();
   });
 
-  it('calls close_shift_v2 with parsed args and chains generate-zreport-pdf EF', async () => {
+  it('calls close_shift_v3 with parsed args and chains generate-zreport-pdf EF', async () => {
     rpcMock.mockResolvedValue({
       data: {
         session_id: 's1', status: 'closed', opening_cash: 100_000, cash_sales: 0,
@@ -204,7 +204,7 @@ describe('CloseShiftModal', () => {
     await Promise.resolve();
     await Promise.resolve();
     await Promise.resolve();
-    expect(rpcMock).toHaveBeenCalledWith('close_shift_v2', expect.objectContaining({
+    expect(rpcMock).toHaveBeenCalledWith('close_shift_v3', expect.objectContaining({
       p_session_id: 's1',
       p_counted_cash: 105_000,
     }));
