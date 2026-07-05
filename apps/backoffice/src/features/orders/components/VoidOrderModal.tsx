@@ -1,7 +1,8 @@
 // apps/backoffice/src/features/orders/components/VoidOrderModal.tsx
 // Session 33 / Wave 3.4 — modal to void an order from the BO list page.
 // Reason textarea (min 10 chars) + 6-digit manager PIN. Submit disabled
-// until both validate. PIN sent in body per DEV-S33-PRE-02.
+// until both validate. PIN travels in the `x-manager-pin` header (S34);
+// idempotency key in `x-idempotency-key` (S55 parity, S60).
 
 import { useState, useRef } from 'react';
 import { useVoidOrder } from '@/features/orders/hooks/useVoidOrder.js';
@@ -28,7 +29,7 @@ export function VoidOrderModal({ open, onClose, orderId, orderNumber }: Props) {
   const handleSubmit = async () => {
     if (!canSubmit) return;
     try {
-      await m.mutateAsync({ orderId, reason, managerPin: pin });
+      await m.mutateAsync({ orderId, reason, managerPin: pin, idempotencyKey: idem.current });
       onClose();
       setReason('');
       setPin('');
@@ -36,6 +37,11 @@ export function VoidOrderModal({ open, onClose, orderId, orderNumber }: Props) {
     } catch {
       // m.error displayed below
     }
+  };
+
+  const handleClose = () => {
+    idem.current = crypto.randomUUID();
+    onClose();
   };
 
   return (
@@ -71,7 +77,7 @@ export function VoidOrderModal({ open, onClose, orderId, orderNumber }: Props) {
         </div>
         {m.error && <p className="mt-3 text-sm text-red-600" data-testid="void-error">{m.error.message}</p>}
         <div className="mt-6 flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 text-sm">Cancel</button>
+          <button onClick={handleClose} className="px-4 py-2 text-sm" data-testid="void-cancel">Cancel</button>
           <button
             onClick={handleSubmit}
             disabled={!canSubmit}
