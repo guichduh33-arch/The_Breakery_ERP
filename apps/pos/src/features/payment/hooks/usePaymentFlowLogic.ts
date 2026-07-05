@@ -14,6 +14,7 @@ import {
   classifyCheckoutError, type RetryClassification,
   type Tender,
   type PaymentResultLine,
+  type AppliedPromotion,
 } from '@breakery/domain';
 import { resetCartAfterCheckout, useCartStore } from '@/stores/cartStore';
 import { usePaymentStore } from '@/stores/paymentStore';
@@ -40,6 +41,10 @@ export interface PaymentSuccessState {
   loyaltyBalanceAfter?: number;
   customerName: string | undefined;
   paymentMethod: PaymentMethod;
+  // Session 60 (fiche 13 D1.1) — snapshot of cartStore.appliedPromotions at the
+  // moment of success, so the receipt shows named promo lines without reading
+  // the store directly (parity with the other frozen PaymentSuccessState fields).
+  appliedPromotions?: AppliedPromotion[];
 }
 
 export function usePaymentFlowLogic() {
@@ -195,6 +200,7 @@ export function usePaymentFlowLogic() {
         ...(result.loyalty_balance_after != null ? { loyaltyBalanceAfter: result.loyalty_balance_after } : {}),
         customerName: attachedCustomer?.name ?? undefined,
         paymentMethod: tendersToShip[0]!.method,
+        ...(appliedPromotions.length > 0 ? { appliedPromotions } : {}),
       });
     } catch (err: unknown) {
       const classified = classifyCheckoutError(err);
