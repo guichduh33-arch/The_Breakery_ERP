@@ -116,8 +116,6 @@ export type PermissionCode =
   | 'inventory.reservation.create'
   | 'inventory.reservation.release'
   // Session 13 / Phase 5.A — LAN port
-  | 'print_queue.read'
-  | 'print_queue.manage'
   | 'lan.devices.read'
   | 'lan.devices.manage'
   // Session 13 / Phase 5.B — Notifications pipeline

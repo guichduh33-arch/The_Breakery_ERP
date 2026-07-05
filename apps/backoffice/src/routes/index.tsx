@@ -85,7 +85,6 @@ const SettingsEmailTemplatesPage = lazy(() => import('@/pages/settings/SettingsE
 const SettingsReceiptTemplatesPage = lazy(() => import('@/pages/settings/SettingsReceiptTemplatesPage.js'));
 const SettingsPermissionsPage = lazy(() => import('@/pages/settings/SettingsPermissionsPage.js'));
 const SecuritySettingsPage = lazy(() => import('@/pages/settings/security/SecuritySettingsPage.js'));
-const PrintQueuePage = lazy(() => import('@/pages/print-queue/PrintQueuePage.js'));
 const LanDevicesPage = lazy(() => import('@/pages/lan-devices/LanDevicesPage.js'));
 const CohortReportPage = lazy(() => import('@/pages/marketing/CohortReportPage.js'));
 const SegmentsPage = lazy(() => import('@/pages/marketing/SegmentsPage.js'));
@@ -939,14 +938,6 @@ export function AppRoutes() {
           element={
             <PermissionGate required="expenses.thresholds.read">
               <ExpenseThresholdsPage />
-            </PermissionGate>
-          }
-        />
-        <Route
-          path="print-queue"
-          element={
-            <PermissionGate required="print_queue.read">
-              <PrintQueuePage />
             </PermissionGate>
           }
         />
