@@ -7,9 +7,13 @@ import type { JSX } from 'react';
 import { Mail, Phone } from 'lucide-react';
 import { Card } from '@breakery/ui';
 import type { CustomerDetailRow } from '@/features/customers/hooks/useCustomerDetail.js';
+import { useUpdateRetailCreditLimit } from '@/features/customers/hooks/useUpdateRetailCreditLimit.js';
+import { RetailCreditLimitSection } from '@/features/customers/components/RetailCreditLimitSection.js';
 import { rp } from './shared.js';
 
-export function InfoTab({ customer }: { customer: CustomerDetailRow }): JSX.Element {
+export function InfoTab({ customer, canEdit }: { customer: CustomerDetailRow; canEdit: boolean }): JSX.Element {
+  const updateCreditLimit = useUpdateRetailCreditLimit(customer.id);
+
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
       <Card variant="default" padding="md" className="space-y-3">
@@ -48,6 +52,15 @@ export function InfoTab({ customer }: { customer: CustomerDetailRow }): JSX.Elem
             <div className="text-xs text-text-muted">Payment terms: {customer.b2b_payment_terms_days} days net</div>
           )}
         </Card>
+      )}
+
+      {customer.customer_type === 'retail' && (
+        <RetailCreditLimitSection
+          value={customer.retail_credit_limit}
+          canEdit={canEdit}
+          saving={updateCreditLimit.isPending}
+          onSave={(next) => updateCreditLimit.mutate(next)}
+        />
       )}
     </div>
   );

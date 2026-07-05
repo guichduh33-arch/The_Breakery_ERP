@@ -46,6 +46,9 @@ export interface CustomerDetailRow {
   b2b_payment_terms_days: number | null;
   b2b_credit_limit: number | null;
   b2b_current_balance: number;
+  // S62 Task 6 — retail-only tab credit ceiling (attach_tab_customer_v1 P0011
+  // gate). Not yet in types.generated.ts (closeout regen pending, mig. _112).
+  retail_credit_limit: number | null;
   created_at: string;
 }
 
@@ -71,10 +74,22 @@ export function useCustomerDetail(id: string | undefined) {
     enabled: !!id,
     queryFn: async (): Promise<CustomerDetail> => {
       if (!id) throw new Error('id required');
-      const { data: customer, error } = await supabase
+      // retail_credit_limit: cast the select chain — the column post-dates
+      // types.generated.ts (S62 closeout regen pending, migration _112). The
+      // final result is already normalised via `as unknown as` below.
+      const sb = supabase as unknown as {
+        from: (table: string) => {
+          select: (cols: string) => {
+            eq: (col: string, val: string) => {
+              single: () => Promise<{ data: unknown; error: Error | null }>;
+            };
+          };
+        };
+      };
+      const { data: customer, error } = await sb
         .from('customers')
         .select(
-          'id, name, customer_type, email, phone, category_id, loyalty_points, lifetime_points, total_spent, total_visits, last_visit_at, birth_date, marketing_consent, deleted_at, b2b_company_name, b2b_tax_id, b2b_payment_terms_days, b2b_credit_limit, b2b_current_balance, created_at, ' +
+          'id, name, customer_type, email, phone, category_id, loyalty_points, lifetime_points, total_spent, total_visits, last_visit_at, birth_date, marketing_consent, deleted_at, b2b_company_name, b2b_tax_id, b2b_payment_terms_days, b2b_credit_limit, b2b_current_balance, retail_credit_limit, created_at, ' +
             'category:customer_categories(id, name, slug, price_modifier_type, discount_percentage, points_multiplier, loyalty_enabled)',
         )
         .eq('id', id)
@@ -111,11 +126,13 @@ export function useCustomerDetail(id: string | undefined) {
 
       // PostgREST may return the embedded to-one relation as an object or a
       // single-element array depending on FK detection — normalise to object.
-      const rawCat = (customer as unknown as Record<string, unknown>).category;
-      const category = (Array.isArray(rawCat) ? rawCat[0] : rawCat) ?? null;
+      // `customer` is already `unknown` (see the narrowed select chain above),
+      // so a single assertion suffices — no unknown-to-unknown bridge needed.
+      const rawCat = (customer as Record<string, unknown>).category;
+      const category = (Array.isArray(rawCat) ? (rawCat as unknown[])[0] : rawCat) ?? null;
 
       return {
-        customer: { ...(customer as unknown as CustomerDetailRow), category } as CustomerDetailRow,
+        customer: { ...(customer as CustomerDetailRow), category } as CustomerDetailRow,
         orders_count: count ?? 0,
         recent_orders: recentOrders,
       };

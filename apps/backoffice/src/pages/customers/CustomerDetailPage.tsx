@@ -262,7 +262,7 @@ export function CustomerDetailPage(): JSX.Element {
       </div>
 
       {/* Tab panels */}
-      {tab === 'info' && <InfoTab customer={customer} />}
+      {tab === 'info' && <InfoTab customer={customer} canEdit={canUpdate} />}
       {tab === 'orders' && <OrdersTab data={data} />}
       {tab === 'loyalty' && <LoyaltyTab customerId={id ?? null} />}
       {tab === 'analytics' && <AnalyticsTab customerId={id ?? null} />}
