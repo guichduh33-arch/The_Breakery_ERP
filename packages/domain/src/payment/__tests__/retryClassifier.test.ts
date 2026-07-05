@@ -138,6 +138,17 @@ describe('classifyCheckoutError', () => {
       expect(result.userMessage).not.toContain('promo_cap_exceeded');
     });
 
+    it('maps credit_limit_exceeded to friendly FR copy (S62 D4)', () => {
+      const err = Object.assign(new Error('credit_limit_exceeded'), {
+        details: { error: 'credit_limit_exceeded', message: 'credit_limit_exceeded: {"allowed":false}' },
+        status: 409,
+      });
+      const result = classifyCheckoutError(err);
+      expect(result.kind).toBe('fatal');
+      expect(result.userMessage).toMatch(/plafond|crédit/i);
+      expect(result.userMessage).not.toContain('credit_limit_exceeded');
+    });
+
     it('falls back to message for unknown codes', () => {
       const err = Object.assign(new Error('weird unknown thing'), {
         details: { error: 'mysterious_error' },

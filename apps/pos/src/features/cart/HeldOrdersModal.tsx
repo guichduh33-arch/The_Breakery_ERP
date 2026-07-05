@@ -30,6 +30,7 @@ import { useRestoreHeldOrder } from '@/features/heldOrders/hooks/useRestoreHeldO
 import { useReopenHeldOrder } from '@/features/heldOrders/hooks/useReopenHeldOrder';
 import { useDiscardHeldOrder } from '@/features/heldOrders/hooks/useDiscardHeldOrder';
 import { useHeldOrdersRealtime } from '@/features/heldOrders/hooks/useHeldOrdersRealtime';
+import { AttachTabCustomerButton } from '@/features/heldOrders/components/AttachTabCustomerButton';
 
 interface HeldOrdersModalProps {
   open: boolean;
@@ -110,6 +111,7 @@ function HeldOrderCard({
           )}
         </div>
         <div className="flex items-center gap-2">
+          {row.status === 'pending_payment' && <AttachTabCustomerButton orderId={row.id} />}
           <button
             type="button"
             onClick={onDelete}

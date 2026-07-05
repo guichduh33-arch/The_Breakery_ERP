@@ -4,7 +4,7 @@
 -- DEV-S20-3.A-01..05 deviations in the migration header.
 BEGIN;
 
-SELECT plan(5);
+SELECT plan(4);
 
 -- A1 : cash_movements policy uses cash_register.read OR reports.financial.read
 --      (spec: cashier.view OR reports.financial.read — DEV-S20-3.A-01)
@@ -38,17 +38,6 @@ SELECT ok(
     WHERE schemaname='public' AND tablename='notification_outbox'
       AND policyname='notification_outbox_select_authenticated'),
   'notification_outbox_select_authenticated is permission-gated'
-);
-
--- A4 : print_queue allows kiosk-JWT OR print_queue.read (spec: has_kiosk_jwt OR orders.view — DEV-S20-3.A-03)
-SELECT ok(
-  (SELECT qual ILIKE '%has_kiosk_jwt%'
-       AND (qual ILIKE '%has_permission%print_queue.read%'
-            OR qual ILIKE '%has_permission%orders.view%')
-     FROM pg_policies
-    WHERE schemaname='public' AND tablename='print_queue'
-      AND policyname='print_queue_select_authenticated'),
-  'print_queue_select_authenticated allows kiosk-JWT OR print_queue.read'
 );
 
 -- A5 : stock_reservations uses inventory.read (spec: inventory.view — DEV-S20-3.A-04)

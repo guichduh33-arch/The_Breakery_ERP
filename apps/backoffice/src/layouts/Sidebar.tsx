@@ -26,7 +26,7 @@ import {
   Calculator, BarChart3, Settings, Tag, Heart, PieChart, Shield,
   ChefHat, BookOpen, ClipboardList, GitCommitHorizontal, BellRing, MapPin, Store,
   Receipt, ShieldCheck, CalendarDays, Mail, FileText, AlertTriangle, FileSpreadsheet,
-  Printer, Network, Coins, Scale, Banknote, Layers3,
+  Network, Coins, Scale, Banknote, Layers3,
   LineChart, Sparkles, Megaphone, Cake,
   ClipboardCheck, TrendingUp, Signature, ShoppingBag, Wallet,
   Calendar, ShoppingCart, Truck, ListChecks,
@@ -63,7 +63,6 @@ const GROUPS: NavGroup[] = [
     label: 'Operations',
     items: [
       { to: '/backoffice', label: 'Dashboard', icon: LayoutDashboard, end: true },
-      { to: '/backoffice/print-queue', label: 'Print Queue', icon: Printer, permission: 'print_queue.read' },
     ],
   },
   {

@@ -64,9 +64,9 @@ Le « prêt mais débranché » : composants jamais importés, RPCs sans call-si
 | 4 | Chips `StationFilter` hot/cold/bar (prédicat inerte, champ jamais sélectionné) | UI câblée mais no-op | 04 | Câbler ou retirer (D1.4) |
 | 5 | Auth kiosque KDS (`features/kds/hooks/useKioskAuth.ts`) | Hook sans consommateur | 04 | Purger ou spécifier (appareils non-staff) |
 | 6 | Auth kiosque tablette (`features/tablet/hooks/useKioskAuth.ts`) | Hook sans consommateur | 17 | Idem #5 (trancher ensemble) |
-| 7 | Mesh LAN hybride complet (`useLanHub`/`useLanClient`/`MessageDedup`, S13 Phase 5.A) — bug topics suspecté `lan-hub-*` vs `lan-client-*` | Feature entière morte | 21 | 🔒 décision 2 (réhabiliter ou purger) |
+| 7 | Mesh LAN hybride complet (`useLanHub`/`useLanClient`/`MessageDedup`, S13 Phase 5.A) — bug topics suspecté `lan-hub-*` vs `lan-client-*` | Feature entière morte | 21 | ✅ **Purgé S62** (T1 — décision 2 internet-first ; heartbeats S59 conservés) |
 | 8 | Heartbeats appareils (`useLanHeartbeat` + `update_lan_heartbeat_v1`) → page BO « LAN Devices » affiche tout « stale » | Hook + RPC orphelins, UI aux données mortes | 21 | ✅ **Câblé S59** (T9 — deviceCode Settings requis par terminal) |
-| 9 | File d'impression DB (`print_jobs` + `claim_print_job_v1`, migration `20260517000170`) — ni producteur ni consommateur | Infra DB orpheline | 21 | 🔒 décision 2 (consommer via bridge ou dropper) |
+| 9 | File d'impression DB (`print_queue` + 5 RPCs `*_print_job_v1`, migration `20260517000170`) — ni producteur ni consommateur | Infra DB orpheline | 21 | ✅ **Purgée S62** (T2, `_110` — statuée DROPPÉE : table vide, le vrai print POST directement au bridge) |
 | 10 | `CustomerDisplayView` (vue riche : photos produits, badges promo/annulé) | Composant jamais importé | 16 | Câbler (enrichit B1.1 gratuitement) |
 | 11 | `ProductionSuggestions.tsx` + `useProductionSuggestions` + `get_production_suggestions_v1` (doublon de la page Planning) | Composant + RPC orphelins | 15 | ✅ **Purgé S59** (T7 — RPC gardé, consommé par ProductionAlertsTab) |
 | 12 | `reconcile_b2b_balance_v1` (alerte drift cache↔ledger, gate `b2b.read`) | RPC sans call-site UI | 09 | Câbler (panneau admin B2B) |
@@ -76,8 +76,8 @@ Le « prêt mais débranché » : composants jamais importés, RPCs sans call-si
 | 16 | Templates e-mails (`email_templates`) : éditeur + aperçu réels, aucune EF n'envoie | Feature sans consommateur | 19 | Câbler (infra notifications) ou re-statuer |
 | 17 | Templates tickets (`receipt_templates`) : l'impression POS ne les lit pas | Feature sans consommateur | 19/21 | Câbler côté printService |
 | 18 | `pos_presets` (prêts côté serveur, aucune UI) | Tables/RPC sans UI | 19 | Câbler ou purger |
-| 19 | Permission `rbac.update` seedée, consommée nulle part | Permission orpheline | 20 | 🔒 décision 1 (éditeur RBAC) |
-| 20 | `vite-plugin-pwa@^1.0.0` déclaré, jamais importé (`vite.config.ts`) | Dépendance morte | 18 | 🔒 décision 5 (purge ou activation) |
+| 19 | Permission `rbac.update` seedée, consommée nulle part | Permission orpheline | 20 | ✅ **Purgée S62** (T3, `_111` — décision 1 lecture seule) |
+| 20 | `vite-plugin-pwa@^1.0.0` déclaré, jamais importé (`vite.config.ts`) | Dépendance morte | 18 | ✅ **Purgée S62** (T3 — décision 5, arbre workbox évacué du lockfile) |
 | 21 | Toggle `visible_on_pos` (BO) sans effet au POS (`useProducts` filtre `is_active` seulement) | Réglage sans effet | 05 | ✅ **Câblé S59** (T3 — useProducts + variantes) |
 | 22 | JE des cash in/out : `record_cash_movement_v2` sait émettre la JE, `CashInOutModal` n'expose pas `reason_code` | Capacité RPC non exposée | 12 | ✅ **Câblé S60** (T2 — select reason_code + montage du modal, qui était de surcroît orphelin) |
 
@@ -105,18 +105,18 @@ Le tableau §1 se lit avec le §2.3 : un module « fidèle » peut cacher du non
 - **Dashboard BO réel** : créer `get_dashboard_overview_v1` + câblage (14).
 - **Moyens de paiement configurables** : `enabled_payment_methods` + filtre POS temps réel (19/03).
 - **Clôture de caisse — 3 chantiers distincts** (fiche 12, une session chacun) : ① PIN manager sur gros écart (`close_shift_v3`) ; ② comptage 3 volets espèces/mobile/carte (variance par volet, JE par méthode) ; ③ comptage par coupure (optionnel via `business_config`).
-- **Plafond de crédit sur l'ardoise retail** : gate serveur à l'ouverture (02/03/08).
+- ✅ **Plafond de crédit sur l'ardoise retail — SOLDÉ (S62, 2026-07-06)** : `customers.retail_credit_limit` (NULL = illimité) + RPC **`attach_tab_customer_v1`** (« ardoise nommée » : attache client + total provisoire sur une commande fired, gate d'encours live anti-TOCTOU, P0011 miroir B2B, money-path intouchée — v11 recalcule au paiement) + bouton « Ardoise » POS (HeldOrdersModal) + champ BO fiche client retail. Par client, sans défaut `business_config` ni override PIN (v1 minimale). Cf. [`../plans/2026-07-06-session-62-INDEX.md`](../plans/2026-07-06-session-62-INDEX.md).
 - **Facture PDF B2B** avec séquence de numérotation dédiée (09).
 - **CRUD Customer Categories + UI prix négociés** (08/05, débloque le B2B « prix négocié » 09).
 - **E2E réellement nightly** : front staging hébergé + secrets + premier run vert (23/24 — **DÉGELÉ** par décision 7 : le dev actuel est officiellement le staging).
-- **Purges actées 2026-07-06** (lot quick wins, une demi-session) : mesh LAN mort (`useLanHub`/`useLanClient`/`MessageDedup`, décision 2), remises de palier du domaine (décision 3), `vite-plugin-pwa` (décision 5), permission orpheline `rbac.update` (décision 1) ; statuer `print_jobs` (consommer via print-bridge versionné ou dropper — décision 2).
+- ✅ **Purges actées 2026-07-06 — SOLDÉES (S62, 2026-07-06)** : mesh LAN mort purgé (heartbeats S59 conservés), remises de palier retirées du domaine (`points_multiplier` intact), `vite-plugin-pwa` + arbre workbox évacués, `rbac.update` supprimée (`_111`, cascade grants) ; **`print_jobs`/`print_queue` statuée : DROPPÉE** (`_110` — table vide, unique écrivain = mesh mort, le vrai print POST directement au bridge externe). Cf. [`../plans/2026-07-06-session-62-INDEX.md`](../plans/2026-07-06-session-62-INDEX.md).
 - ✅ **Décommissionnement péremption/FIFO — SOLDÉ (S61, 2026-07-05)** : cron `mark_expired_lots_hourly` désactivé (`_109`, réversible), `/inventory/expiring` + rapport perishable-turnover purgés du BO, `stock_lots` + RPCs conservés dormants — pas de DROP (06 D3.1). Cf. [`../plans/2026-07-05-session-61-INDEX.md`](../plans/2026-07-05-session-61-INDEX.md).
 
 ### Vague 3 — Chantiers lourds (spec dédiée AVANT code)
 - **Snapshot COGS à la vente (coût figé)** — découplé des lots (abandonnés le 2026-07-04) : figer le WAC ligne à ligne au moment du paiement (10/14/15).
 - **QC réception + retours fournisseurs + notes de crédit** (07).
 - ~~**Édition RBAC**~~ — **ANNULÉ** (décision 1 actée 2026-07-06 : lecture seule assumée).
-- **Print-bridge versionné** : internet-first acté (décision 2, 2026-07-06) — le chantier se réduit à versionner le print-bridge dans le repo + statuer `print_jobs` (consommer ou dropper) ; la purge du mesh est un quick win Vague 2 (21/04).
+- **Print-bridge versionné** : internet-first acté (décision 2, 2026-07-06) — chantier réduit au seul **versionnage du print-bridge dans le repo** (+ MAJ template `promotions[]`, action utilisateur S60) : `print_jobs`/`print_queue` a été **statuée et droppée S62** (`_110`), le mesh purgé S62 (21/04).
 - **Mise en prod V3** : décision 7 actée (2026-07-06) — **nouveau projet Supabase prod dédié** (schéma par dump du dev, seed propre, EFs/secrets redéployés), le dev actuel devient le staging officiel ; spec dédiée avant exécution (24).
 - **Mode hors-ligne** (02/17) — chantier n°1 annoncé par la doc, inchangé.
 

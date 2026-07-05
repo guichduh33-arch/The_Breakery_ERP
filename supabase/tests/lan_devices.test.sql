@@ -5,7 +5,7 @@ BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-SELECT plan(14);
+SELECT plan(13);
 
 -- ---------------------------------------------------------------------------
 -- T_LD_01 : table + columns exist
@@ -80,19 +80,6 @@ SELECT ok(
 SELECT ok(
   EXISTS(SELECT 1 FROM permissions WHERE code = 'lan.devices.manage'),
   'T_LD_06b lan.devices.manage seeded'
-);
-
--- ---------------------------------------------------------------------------
--- T_LD_07 : FK from print_queue.device_id → lan_devices.id
--- ---------------------------------------------------------------------------
-SELECT ok(
-  EXISTS(
-    SELECT 1 FROM pg_constraint con
-     JOIN pg_class rel ON rel.oid = con.conrelid
-    WHERE rel.relname = 'print_queue'
-      AND con.conname = 'print_queue_device_id_fkey'
-  ),
-  'T_LD_07 print_queue.device_id FK to lan_devices.id exists'
 );
 
 -- ---------------------------------------------------------------------------

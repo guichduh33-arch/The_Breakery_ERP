@@ -2,37 +2,27 @@
 //
 // Session 13 / Phase 5.A — emit a 10-second heartbeat to lan_devices.
 //
-// On every tick :
-//   1. Calls `update_lan_heartbeat_v1(p_device_code)` to touch
-//      `lan_devices.last_heartbeat_at` server-side. Silently no-ops if the
-//      device is not registered (the BO operator can create it via
-//      LanDevicesPage).
-//
-// The heartbeat is also broadcast over the LAN mesh (Realtime+BroadcastChannel)
-// so the elected hub can refresh its in-memory peers map.
+// On every tick, calls `update_lan_heartbeat_v1(p_device_code)` to touch
+// `lan_devices.last_heartbeat_at` server-side. Silently no-ops if the
+// device is not registered (the BO operator can create it via
+// LanDevicesPage).
 
 import { useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { createMessage, type HeartbeatMessage } from '@breakery/domain';
-import type { LanMessage } from '@breakery/domain';
 
 const HEARTBEAT_INTERVAL_MS = 10_000;
 
 interface UseLanHeartbeatOptions {
   /** Device code (== `lan_devices.code`). */
   deviceCode: string;
-  /** Device type (drives the HeartbeatMessage payload). */
-  deviceType: HeartbeatMessage['payload']['device_type'];
-  /** Optional LAN client send fn (from useLanClient). */
-  send?: (msg: LanMessage) => void;
+  /** Device type. */
+  deviceType: string;
   /** Disable in tests / E2E. */
   enabled?: boolean;
 }
 
 export function useLanHeartbeat({
   deviceCode,
-  deviceType,
-  send,
   enabled = true,
 }: UseLanHeartbeatOptions): void {
   useEffect(() => {
@@ -50,16 +40,6 @@ export function useLanHeartbeat({
       if (error !== null && error !== undefined) {
         // Device not registered yet — silent.
       }
-
-      // Broadcast on the LAN mesh.
-      if (send !== undefined) {
-        const hb = createMessage<HeartbeatMessage>({
-          from: deviceCode,
-          type: 'heartbeat',
-          payload: { device_type: deviceType },
-        });
-        send(hb);
-      }
     }
 
     // Fire immediately, then on interval.
@@ -70,5 +50,5 @@ export function useLanHeartbeat({
       cancelled = true;
       window.clearInterval(handle);
     };
-  }, [deviceCode, deviceType, send, enabled]);
+  }, [deviceCode, enabled]);
 }

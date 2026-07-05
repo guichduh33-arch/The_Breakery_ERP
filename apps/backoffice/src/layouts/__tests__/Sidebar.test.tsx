@@ -61,7 +61,6 @@ import { useAuthStore } from '@/stores/authStore.js';
 
 // Full SUPER_ADMIN permission set — every gate seen in Sidebar.tsx GROUPS.
 const ALL_PERMS = [
-  'print_queue.read',
   'orders.read',
   'customers.read',
   'customer_categories.read',
@@ -257,8 +256,6 @@ describe('Sidebar', () => {
     // Operations group still renders because Dashboard has no permission gate.
     expect(screen.getByRole('heading', { name: /^Operations$/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /^Dashboard$/i })).toBeInTheDocument();
-    // Print Queue is gated by print_queue.read → hidden
-    expect(screen.queryByRole('link', { name: /Print Queue/i })).toBeNull();
   });
 
   it('shows AlertsBadge when user has inventory.read', () => {
