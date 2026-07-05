@@ -22,7 +22,6 @@ const LoyaltyPage = lazy(() => import('@/pages/Loyalty.js'));
 const InventoryPage = lazy(() => import('@/pages/Inventory.js'));
 const IncomingStockPage = lazy(() => import('@/pages/IncomingStock.js'));
 const TransfersListPage = lazy(() => import('@/pages/TransfersList.js'));
-const ExpiringStockPage = lazy(() => import('@/features/inventory/pages/ExpiringStockPage.js'));
 const TransferFormPage = lazy(() => import('@/pages/TransferForm.js'));
 const TransferDetailPage = lazy(() => import('@/pages/TransferDetail.js'));
 const SuppliersPage = lazy(() => import('@/pages/Suppliers.js'));
@@ -67,7 +66,6 @@ const WastagePage = lazy(() => import('@/pages/reports/WastagePage.js'));
 const PaymentByMethodPage = lazy(() => import('@/pages/reports/PaymentByMethodPage.js'));
 const Pb1ReportPage = lazy(() => import('@/pages/reports/Pb1ReportPage.js'));
 const StockMovementHistoryPage = lazy(() => import('@/pages/reports/StockMovementHistoryPage.js'));
-const PerishableTurnoverPage = lazy(() => import('@/pages/reports/PerishableTurnoverPage.js'));
 const DailySalesPage = lazy(() => import('@/pages/reports/DailySalesPage.js'));
 const StaffPerformancePage = lazy(() => import('@/pages/reports/StaffPerformancePage.js'));
 const PurchaseItemsPage = lazy(() => import('@/pages/reports/PurchaseItemsPage.js'));
@@ -244,14 +242,6 @@ export function AppRoutes() {
           element={
             <PermissionGate required="inventory.receive">
               <IncomingStockPage />
-            </PermissionGate>
-          }
-        />
-        <Route
-          path="inventory/expiring"
-          element={
-            <PermissionGate required="inventory.read">
-              <ExpiringStockPage />
             </PermissionGate>
           }
         />
@@ -781,14 +771,6 @@ export function AppRoutes() {
           element={
             <PermissionGate required="reports.inventory.read">
               <StockMovementHistoryPage />
-            </PermissionGate>
-          }
-        />
-        <Route
-          path="reports/perishable-turnover"
-          element={
-            <PermissionGate required="reports.inventory.read">
-              <PerishableTurnoverPage />
             </PermissionGate>
           }
         />

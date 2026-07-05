@@ -5,7 +5,7 @@
 // (/backoffice/products/:productId), which now holds only general settings.
 //
 // Tabbed to keep each view light (2026-06-23):
-//   - Stock       live KPIs · stock per station/section · expiring lots · velocity
+//   - Stock       live KPIs · stock per station/section · velocity
 //   - Movements   stock timeline · movement breakdown · recent movements
 //   - Purchase    purchase price trend · purchase pattern · incoming POs
 //   - Transfers   transfers (date · from→to · qty)
@@ -13,12 +13,12 @@
 //
 // URL: /backoffice/inventory/:productId
 
-import { useState, type JSX, type ReactNode } from 'react';
+import { useState, type JSX } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
-  ArrowLeft, CalendarRange, Coins, Inbox, Package, Settings2, TrendingUp,
+  ArrowLeft, CalendarRange, Coins, Package, Settings2, TrendingUp,
 } from 'lucide-react';
-import { EmptyState, KpiTile, cn } from '@breakery/ui';
+import { KpiTile, cn } from '@breakery/ui';
 import { useProductDetail } from '@/features/products/hooks/useProductDetail.js';
 import { useProductAnalytics } from '@/features/products/hooks/useProductAnalytics.js';
 import {
@@ -28,7 +28,7 @@ import { useProductDashboard } from '@/features/inventory-dashboard/hooks/usePro
 import { SalesVelocityChart } from '@/features/inventory-dashboard/components/SalesVelocityChart.js';
 import { StockBySectionList } from '@/features/inventory-dashboard/components/StockBySectionList.js';
 
-const WINDOW_OPTIONS: ReadonlyArray<{ value: number; label: string }> = [
+const WINDOW_OPTIONS: readonly { value: number; label: string }[] = [
   { value: 7,  label: '7 days'  },
   { value: 14, label: '14 days' },
   { value: 30, label: '30 days' },
@@ -37,7 +37,7 @@ const WINDOW_OPTIONS: ReadonlyArray<{ value: number; label: string }> = [
 ];
 
 type StockTab = 'stock' | 'movements' | 'purchase' | 'transfers' | 'production';
-const TABS: ReadonlyArray<{ id: StockTab; label: string }> = [
+const TABS: readonly { id: StockTab; label: string }[] = [
   { id: 'stock',      label: 'Stock'      },
   { id: 'movements',  label: 'Movements'  },
   { id: 'purchase',   label: 'Purchase'   },
@@ -59,7 +59,7 @@ export default function ProductStockPage(): JSX.Element {
   if (product.error !== null && product.error !== undefined) {
     return (
       <div role="alert" className="rounded-lg border border-red bg-red-soft p-4 text-sm text-red">
-        Failed to load product: {(product.error as Error).message}
+        Failed to load product: {product.error.message}
       </div>
     );
   }
@@ -167,35 +167,6 @@ export default function ProductStockPage(): JSX.Element {
               ) : (
                 <StockBySectionList rows={d?.stock_by_section ?? []} />
               )}
-
-              <Panel title="Expiring lots">
-                {(d?.expiring_lots.length ?? 0) === 0 ? (
-                  <div className="p-4">
-                    <EmptyState icon={Inbox} title="No active lots" size="sm" />
-                  </div>
-                ) : (
-                  <table className="w-full text-sm">
-                    <thead className="text-xs uppercase tracking-widest text-text-muted">
-                      <tr>
-                        <th className="py-2 px-3 text-left">Batch</th>
-                        <th className="py-2 px-3 text-right">Qty</th>
-                        <th className="py-2 px-3 text-right">Expires in</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(d?.expiring_lots ?? []).map((l) => (
-                        <tr key={l.id} className="border-t border-border-subtle">
-                          <td className="py-2 px-3 font-mono text-xs">{l.batch_number ?? l.id.slice(0, 8)}</td>
-                          <td className="py-2 px-3 text-right font-mono">{Number(l.quantity)} {l.unit}</td>
-                          <td className={`py-2 px-3 text-right font-mono ${l.hours_until_expiry < 24 ? 'text-danger' : 'text-text-secondary'}`}>
-                            {Number(l.hours_until_expiry).toFixed(1)}h
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </Panel>
             </div>
 
             {d !== null && d !== undefined && (
@@ -242,15 +213,4 @@ function AnalyticsTab({ tab, isLoading, error, data }: {
     case 'transfers':  return <TransfersSection data={data} />;
     case 'production': return <ProductionLossSection data={data} />;
   }
-}
-
-function Panel({ title, children }: { title: string; children: ReactNode }): JSX.Element {
-  return (
-    <div className="overflow-hidden rounded-lg border border-border-subtle bg-bg-elevated">
-      <div className="border-b border-border-subtle px-4 py-2 text-xs uppercase tracking-widest text-text-muted">
-        {title}
-      </div>
-      {children}
-    </div>
-  );
 }

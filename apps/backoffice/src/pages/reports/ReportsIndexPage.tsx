@@ -14,7 +14,7 @@ import { Link } from 'react-router-dom';
 import {
   BarChart3, PieChart, Users, Boxes, Shield, Coins, Scale, Banknote, Layers3,
   Calendar, Clock, FileSpreadsheet, ListChecks, Receipt, ShoppingCart, Truck,
-  AlertTriangle, TrendingUp, Clock4, GitCommitHorizontal,
+  AlertTriangle, TrendingUp, GitCommitHorizontal,
   LineChart, Sparkles, Megaphone, Cake, type LucideIcon,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, SectionLabel } from '@breakery/ui';
@@ -54,7 +54,6 @@ const SECTIONS: ReportSection[] = [
       { to: '../inventory/production/margin-watch', title: 'Margin Watch', blurb: 'Recipes whose expected gross margin has slipped below target.', icon: AlertTriangle },
       { to: 'stock-movements',     title: 'Stock Movement',     blurb: 'History of all stock changes.', icon: GitCommitHorizontal },
       { to: 'wastage',             title: 'Wastage & Spoilage', blurb: 'Manual waste + auto spoilage by product & lot.', icon: AlertTriangle },
-      { to: 'perishable-turnover', title: 'Perishable Turnover', blurb: 'Per-product velocity & waste rate on lots with expiry.', icon: Clock4 },
     ],
   },
   {

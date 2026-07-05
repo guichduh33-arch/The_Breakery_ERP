@@ -55,9 +55,6 @@ vi.mock('@/features/inventory-alerts/hooks/useLowStock.js', () => ({
 vi.mock('@/features/inventory-alerts/hooks/useReorderSuggestions.js', () => ({
   useReorderSuggestions: () => ({ data: [] }),
 }));
-vi.mock('@/features/inventory/hooks/useExpiringLots.js', () => ({
-  useExpiringLots: () => ({ data: [] }),
-}));
 
 import { Sidebar } from '@/layouts/Sidebar.js';
 import { useAuthStore } from '@/stores/authStore.js';
@@ -218,13 +215,12 @@ describe('Sidebar', () => {
     expect(screen.queryByRole('link', { name: /^Security$/i })).toBeNull();
   });
 
-  it('renders Incoming / Transfers / Expiring stock links under Stock Management (audit M6)', () => {
+  it('renders Incoming / Transfers links under Stock Management (audit M6)', () => {
     openAllTopGroups();
     setAuthState(ALL_PERMS);
     renderWith(<Sidebar />);
     expect(screen.getByRole('link', { name: /^Incoming$/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /^Transfers$/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /^Expiring stock$/i })).toBeInTheDocument();
   });
 
   it('renders the Combos link under Stock Management gated on combos.read (S48)', () => {
