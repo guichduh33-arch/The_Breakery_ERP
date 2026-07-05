@@ -49,8 +49,9 @@ import {
   Users,
   KeyRound,
   ClipboardCheck,
+  Wallet,
 } from 'lucide-react';
-import type { JSX, ReactNode } from 'react';
+import { useState, type JSX, type ReactNode } from 'react';
 import {
   Sheet,
   SheetContent,
@@ -60,6 +61,7 @@ import {
   BrandMark,
   cn,
 } from '@breakery/ui';
+import { CashInOutModal } from '@/features/shift/components/CashInOutModal';
 
 export interface SideMenuDrawerProps {
   open: boolean;
@@ -87,6 +89,9 @@ export interface SideMenuDrawerProps {
   onChangePin?: () => void;
   /** Sign the cashier out completely. */
   onLogout?: () => void;
+  /** Current open pos_sessions.id. Omit/null when no shift is open — the
+      Cash In / Cash Out items render disabled (Session 60 / 12 D1.1). */
+  sessionId?: string | null;
 }
 
 export function SideMenuDrawer({
@@ -103,9 +108,12 @@ export function SideMenuDrawer({
   onLockTerminal,
   onChangePin,
   onLogout,
+  sessionId,
 }: SideMenuDrawerProps): JSX.Element {
   const navigate = useNavigate();
   const initial = (userInitial ?? userName?.trim().charAt(0) ?? 'U').toUpperCase();
+  // Session 60 (12 D1.1) — the modal was built but never mounted anywhere.
+  const [cashModal, setCashModal] = useState<'in' | 'out' | null>(null);
 
   function go(path: string): void {
     onClose();
@@ -122,6 +130,7 @@ export function SideMenuDrawer({
   }
 
   return (
+    <>
     <Sheet open={open} onOpenChange={(o) => (!o ? onClose() : null)}>
       <SheetContent
         side="left"
@@ -213,6 +222,18 @@ export function SideMenuDrawer({
               disabled={!onCloseShift}
             />
             <NavLink
+              icon={<Wallet className="h-5 w-5" aria-hidden />}
+              label="Cash In"
+              onClick={() => dispatch(sessionId ? () => setCashModal('in') : undefined)}
+              disabled={!sessionId}
+            />
+            <NavLink
+              icon={<Wallet className="h-5 w-5" aria-hidden />}
+              label="Cash Out"
+              onClick={() => dispatch(sessionId ? () => setCashModal('out') : undefined)}
+              disabled={!sessionId}
+            />
+            <NavLink
               icon={<Package className="h-5 w-5" aria-hidden />}
               label="Cafe Stock"
               onClick={() => go('/pos/stock')}
@@ -263,6 +284,15 @@ export function SideMenuDrawer({
         </nav>
       </SheetContent>
     </Sheet>
+    {sessionId && cashModal && (
+      <CashInOutModal
+        open
+        sessionId={sessionId}
+        direction={cashModal}
+        onClose={() => setCashModal(null)}
+      />
+    )}
+    </>
   );
 }
 

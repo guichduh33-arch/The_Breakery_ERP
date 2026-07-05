@@ -1,10 +1,10 @@
 // apps/pos/src/features/shift/components/CashInOutModal.tsx
 // Session 13 / Phase 3.C — mid-shift cash in/out recorder.
 
-import { useState, type JSX } from 'react';
+import { useRef, useState, type JSX } from 'react';
 import { Button, Currency, Numpad, FullScreenModal } from '@breakery/ui';
 import { toast } from 'sonner';
-import { useCashMovement } from '../hooks/useCashMovement';
+import { useCashMovement, type CashMovementReasonCode } from '../hooks/useCashMovement';
 
 export interface CashInOutModalProps {
   open:       boolean;
@@ -13,6 +13,15 @@ export interface CashInOutModalProps {
   onClose:    () => void;
   onRecorded?: (newCashInTotal: number, newCashOutTotal: number) => void;
 }
+
+const REASON_CODE_OPTIONS: { value: CashMovementReasonCode; label: string }[] = [
+  { value: 'misc',           label: 'Miscellaneous — no journal entry' },
+  { value: 'apport_owner',   label: 'Owner cash injection — posts JE 1110/3100' },
+  { value: 'bank_transfer',  label: 'Bank transfer — posts JE 1110↔1112' },
+  { value: 'replenishment',  label: 'Float rotation — no journal entry' },
+];
+
+const POSTS_JE: ReadonlySet<CashMovementReasonCode> = new Set(['apport_owner', 'bank_transfer']);
 
 export function CashInOutModal({
   open,
@@ -23,10 +32,20 @@ export function CashInOutModal({
 }: CashInOutModalProps): JSX.Element {
   const [amountStr, setAmountStr] = useState('');
   const [reason, setReason] = useState('');
+  const [reasonCode, setReasonCode] = useState<CashMovementReasonCode>('misc');
   const mut = useCashMovement();
+  // S25/S55 idempotency pattern: stable across retries of the same modal,
+  // rotated only after a successful record or when the modal is closed.
+  const idemRef = useRef(crypto.randomUUID());
 
   const amount = Number(amountStr || '0');
   const title = direction === 'in' ? 'Cash In' : 'Cash Out';
+
+  function resetAndClose(): void {
+    idemRef.current = crypto.randomUUID();
+    setReasonCode('misc');
+    onClose();
+  }
 
   async function handleSubmit(): Promise<void> {
     if (amount <= 0) {
@@ -43,19 +62,21 @@ export function CashInOutModal({
         direction,
         amount,
         reason: reason.trim(),
+        reason_code: reasonCode,
+        idempotency_key: idemRef.current,
       });
       toast.success(`${title} recorded (${amount.toLocaleString('id-ID')} IDR).`);
       onRecorded?.(result.cash_in_total, result.cash_out_total);
       setAmountStr('');
       setReason('');
-      onClose();
+      resetAndClose();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to record');
     }
   }
 
   return (
-    <FullScreenModal open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+    <FullScreenModal open={open} onOpenChange={(o) => { if (!o) resetAndClose(); }}>
       <div className="m-auto bg-bg-overlay rounded-xl p-8 max-w-md w-full shadow-modal space-y-6">
         <header className="flex items-center justify-between">
           <h2 className="font-serif text-2xl">{title}</h2>
@@ -90,8 +111,28 @@ export function CashInOutModal({
           />
         </section>
 
+        <section className="space-y-2">
+          <label htmlFor="cash_reason_code" className="text-xs uppercase tracking-wide text-text-secondary">
+            Reason Code
+          </label>
+          <select
+            id="cash_reason_code"
+            data-testid="cash-reason-code"
+            className="w-full bg-bg-input border border-border-subtle rounded-md p-3 text-sm focus:outline-none focus:border-gold"
+            value={reasonCode}
+            onChange={(e) => setReasonCode(e.target.value as CashMovementReasonCode)}
+          >
+            {REASON_CODE_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+          {POSTS_JE.has(reasonCode) && (
+            <p className="text-xs text-gold">This will post a journal entry.</p>
+          )}
+        </section>
+
         <div className="grid grid-cols-2 gap-3">
-          <Button variant="secondary" size="lg" onClick={onClose} disabled={mut.isPending}>
+          <Button variant="secondary" size="lg" onClick={resetAndClose} disabled={mut.isPending}>
             Cancel
           </Button>
           <Button

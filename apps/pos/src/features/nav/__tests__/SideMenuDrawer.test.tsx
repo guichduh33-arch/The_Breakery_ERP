@@ -4,6 +4,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { SideMenuDrawer } from '../SideMenuDrawer';
 
@@ -17,18 +18,28 @@ vi.mock('react-router-dom', async () => {
   };
 });
 
+// CashInOutModal (Session 60 / 12 D1.1) is now mounted inline — its own
+// hooks (useCashMovement, react-query) are exercised by its dedicated
+// smoke suite; here we only mock supabase so mounting it doesn't error.
+vi.mock('@/lib/supabase', () => ({
+  supabase: { rpc: vi.fn() },
+}));
+
 function renderDrawer(overrides: Partial<Parameters<typeof SideMenuDrawer>[0]> = {}) {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <MemoryRouter>
-      <SideMenuDrawer
-        open
-        onClose={() => {}}
-        userName="Mamat Owner"
-        userRole="OWNER"
-        userInitial="M"
-        {...overrides}
-      />
-    </MemoryRouter>,
+    <QueryClientProvider client={qc}>
+      <MemoryRouter>
+        <SideMenuDrawer
+          open
+          onClose={vi.fn()}
+          userName="Mamat Owner"
+          userRole="OWNER"
+          userInitial="M"
+          {...overrides}
+        />
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 }
 
@@ -113,6 +124,27 @@ describe('SideMenuDrawer', () => {
     return Promise.resolve().then(() => {
       expect(onCloseShift).toHaveBeenCalled();
     });
+  });
+
+  // Session 60 (12 D1.1) — T5: Cash In / Cash Out items (CashInOutModal was
+  // built in S13 but never mounted anywhere until now).
+  it('shows Cash In / Cash Out enabled when a session is open', () => {
+    renderDrawer({ sessionId: 's1' });
+    expect(screen.getByTestId('side-menu-cash-in')).toBeEnabled();
+    expect(screen.getByTestId('side-menu-cash-out')).toBeEnabled();
+  });
+
+  it('disables Cash In / Cash Out when no session is open', () => {
+    renderDrawer({});
+    expect(screen.getByTestId('side-menu-cash-in')).toBeDisabled();
+    expect(screen.getByTestId('side-menu-cash-out')).toBeDisabled();
+  });
+
+  it('dispatches Cash In click and closes the drawer', () => {
+    const onClose = vi.fn();
+    renderDrawer({ sessionId: 's1', onClose });
+    fireEvent.click(screen.getByTestId('side-menu-cash-in'));
+    expect(onClose).toHaveBeenCalled();
   });
 
   it('navigates to /pos/reports when "POS Reports" is clicked', () => {
