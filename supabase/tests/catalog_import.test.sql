@@ -36,7 +36,7 @@ BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-SELECT plan(31);
+SELECT plan(33);
 
 -- T1 : CASHIER -> 42501 on import
 DO $t1$ BEGIN
@@ -455,6 +455,42 @@ BEGIN
   PERFORM set_config('breakery.t29', (v_rep->>'valid'), true);
 END $t29$;
 SELECT is(current_setting('breakery.t29'), 'true', 'T29 large computed recipe cost commits (no 22003 from cost-walk)');
+
+-- =================== S61 F-5 -- station allowlist aligned on live CHECK -- T30/T31 ===================
+-- categories_dispatch_station_check enforces {kitchen,barista,display,none} in the live schema.
+-- Before the fix the RPC's own allowlist checked {kitchen,barista,bakery,none} instead: 'display'
+-- was falsely rejected at validation (T30) and 'bakery' passed validation then crashed with a
+-- raw 23514 at commit (T31 uses dry-run to observe the missing rejection without crashing).
+
+-- T30 : dispatch_station='display' -- commit succeeds, category persisted with dispatch_station='display'
+DO $t30$
+DECLARE v_rep JSONB;
+BEGIN
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  v_rep := import_catalog_v1(jsonb_build_object(
+    'categories', jsonb_build_array(jsonb_build_object(
+      'name', 'S61 Display Cat', 'dispatch_station', 'display'))
+  ), false, 'aaaaaaaa-0000-0000-0000-000000000030'::uuid);
+  PERFORM set_config('breakery.t30_valid', (v_rep->>'valid'), true);
+END $t30$;
+SELECT is(
+  (SELECT dispatch_station FROM categories WHERE name = 'S61 Display Cat'), 'display',
+  'T30 display category committed with dispatch_station=display');
+
+-- T31 : dispatch_station='bakery' -- rejected in validation (dry-run), never reaches the CHECK
+DO $t31$
+DECLARE v_rep JSONB;
+BEGIN
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  v_rep := import_catalog_v1(jsonb_build_object(
+    'categories', jsonb_build_array(jsonb_build_object(
+      'name', 'S61 Bakery Cat', 'dispatch_station', 'bakery'))
+  ), true);
+  PERFORM set_config('breakery.t31',
+    (SELECT COUNT(*)::text FROM jsonb_array_elements(v_rep->'errors') e
+      WHERE e->>'code' = 'invalid_dispatch_station'), true);
+END $t31$;
+SELECT is(current_setting('breakery.t31'), '1', 'T31 bakery category rejected at validation (invalid_dispatch_station)');
 
 SELECT * FROM finish();
 ROLLBACK;
