@@ -1,5 +1,7 @@
 # Module 02b — Orders (page BO — suivi des commandes)
 
+> ⚠️ **Mise à jour S60 (2026-07-05, `swarm/session-60`)** : **D1.1 livré** — le void BO envoie désormais `x-idempotency-key` (parité POS S55, EF inchangée) ; **D1.2 livré** — commentaire stale « PIN in body » corrigé. Le caveat idempotence du C-B1.15 est levé. Voir `docs/workplan/plans/2026-07-05-session-60-INDEX.md`.
+
 > **Module hors Description v1.2 (page BO transverse) — source doc : fiche de référence 02b (S13, potentiellement périmée).**
 >
 > **Remise à plat — analyse comparative.** Doc : `docs/reference/04-modules/02b-orders.md` (« Last verified 2026-05-13 »). Code : commit `5b0fa92` (2026-07-03).

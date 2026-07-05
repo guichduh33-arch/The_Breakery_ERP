@@ -1,5 +1,7 @@
 # Module 02 — Caisse : panier & commandes
 
+> ⚠️ **Mise à jour S60 (2026-07-05, `swarm/session-60`)** : **D1.1 livré** — le CTA « Pay » de `/pos/debts` charge la créance dans le panier (`useLoadDebtOrder`, mirror pickup) et l'encaissement route vers `pay_existing_order_v11` ; lignes B2B exclues (hint « settle in Backoffice »). Le B1.7 passe 🟠→✅ pour l'ardoise retail (D1.2 « bouton Ardoise nommé » reste ouvert). Voir `docs/workplan/plans/2026-07-05-session-60-INDEX.md`.
+
 > **Remise à plat — analyse comparative.** Doc : Description v1.2 (2026-07-03), module 2. Code : commit `5b0fa92` (2026-07-03).
 > **Statut annoncé par la doc :** Opérationnel
 > **Verdict global de l'analyse :** La doc est largement fidèle au code — le cœur (panier, envoi cuisine verrouillé, hold/reprise, promos serveur, void gaté PIN, tablette) est réel et câblé ; deux surclamations légères : l'« ardoise » est un flux implicite sans action dédiée, et le tarif négocié ne se recalcule pas si on lie le client après coup (la doc le classe d'ailleurs en « à venir »).

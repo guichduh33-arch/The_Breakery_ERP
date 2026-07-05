@@ -79,7 +79,7 @@ Le « prêt mais débranché » : composants jamais importés, RPCs sans call-si
 | 19 | Permission `rbac.update` seedée, consommée nulle part | Permission orpheline | 20 | 🔒 décision 1 (éditeur RBAC) |
 | 20 | `vite-plugin-pwa@^1.0.0` déclaré, jamais importé (`vite.config.ts`) | Dépendance morte | 18 | 🔒 décision 5 (purge ou activation) |
 | 21 | Toggle `visible_on_pos` (BO) sans effet au POS (`useProducts` filtre `is_active` seulement) | Réglage sans effet | 05 | ✅ **Câblé S59** (T3 — useProducts + variantes) |
-| 22 | JE des cash in/out : `record_cash_movement_v2` sait émettre la JE, `CashInOutModal` n'expose pas `reason_code` | Capacité RPC non exposée | 12 | Câbler (D1.1) |
+| 22 | JE des cash in/out : `record_cash_movement_v2` sait émettre la JE, `CashInOutModal` n'expose pas `reason_code` | Capacité RPC non exposée | 12 | ✅ **Câblé S60** (T2 — select reason_code + montage du modal, qui était de surcroît orphelin) |
 
 ### 2.4 Modules par fidélité — rappel de lecture
 Le tableau §1 se lit avec le §2.3 : un module « fidèle » peut cacher du non-câblé (15, 16, 17), et un module surclamé peut n'avoir besoin que de câblage (04, 21-heartbeats) plutôt que de développement neuf.
@@ -98,7 +98,7 @@ Le tableau §1 se lit avec le §2.3 : un module « fidèle » peut cacher du non
 
 ### Vague 1 — Quick wins de câblage (2-3 sessions, zéro spec)
 **Lot 1 — UI pures + 2 findings S58 : ✅ SOLDÉ (S59, 2026-07-04)** — cf. [`../plans/2026-07-04-session-59-INDEX.md`](../plans/2026-07-04-session-59-INDEX.md). Toutes les UI pures livrées : `visible_on_pos` au POS (05) · KDS undo-bump/recall/prep-timer + alarme sonore (04 D1.1/D1.3) · ticker `ready` réel (16) · note **par commande** tablette (17 D1.1) · drill-down JE → origine (10) · bouton « Dupliquer » dépense (11) · doublon suggestions production (15) · purge hex (22) · `auth-change-pin` en headers (25) · filtres + avant/après dans l'UI du journal d'audit (01) · heartbeats LAN (21 D1.1). **Findings S58 fixés** : F-1 P0 (`delete_user_v1`/`update_user_role_v1` garde `is_active`) et F-4 P1 (`_emit_expense_je` fold VAT NON-PKP) — les tripwires `users`/`expenses` sont re-verts.
-**Lot 2 — sous règle money-path (S60, à venir)** : paiement direct ardoise (02 D1.1) · `reason_code` dans `CashInOutModal` (12 D1.1) · note d'écart enforced serveur (12 D1.4) · lignes promo sur ticket + détail BO (13 D1.1/D1.2) · « Tout prêt » bump en masse (04 D1.2) · `x-idempotency-key` sur le void BO (02b — la clé est générée mais jamais envoyée, parité POS S55). *(Le verrou money-path est LEVÉ depuis S58 ; ces items sont réservés à S60 par ordonnancement.)*
+**Lot 2 — sous règle money-path : ✅ SOLDÉ (S60, 2026-07-05)** — cf. [`../plans/2026-07-05-session-60-INDEX.md`](../plans/2026-07-05-session-60-INDEX.md). Les 6 items livrés : paiement direct ardoise (02 D1.1, hint B2B → BO) · `reason_code` dans `CashInOutModal` **+ montage du modal orphelin** (12 D1.1) · note d'écart enforced serveur via **`close_shift_v3`** (12 D1.4, migration `_105`, DROP v2) · lignes promo sur ticket (payload — template print-bridge externe à MAJ, action utilisateur) + détail BO (13 D1.1/D1.2) · « All ready » bump en masse via **`kds_bump_order_v1`** (04 D1.2, migration `_106`) · `x-idempotency-key` sur le void BO (02b, parité POS S55). Ancre `s44_money_gates` 12/12 re-passée en closeout — v17/v11/fire_v4 non modifiés.
 
 ### Vague 2 — Chantiers moyens (1 session chacun, plan requis)
 - **Dashboard BO réel** : créer `get_dashboard_overview_v1` + câblage (14).
