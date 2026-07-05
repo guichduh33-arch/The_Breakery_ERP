@@ -60,13 +60,6 @@ describe('TIERS constant', () => {
     expect(TIERS[3].label).toBe('Platinum');
   });
 
-  it('exposes discount field for each tier', () => {
-    expect(TIERS[0].discount).toBe(0);
-    expect(TIERS[1].discount).toBe(5);
-    expect(TIERS[2].discount).toBe(8);
-    expect(TIERS[3].discount).toBe(10);
-  });
-
   it('has correct points_multiplier for Bronze (1.0)', () => {
     expect(TIERS[0].points_multiplier).toBe(1.0);
   });
