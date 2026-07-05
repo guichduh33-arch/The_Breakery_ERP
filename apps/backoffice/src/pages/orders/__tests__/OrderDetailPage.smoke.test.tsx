@@ -46,6 +46,7 @@ vi.mock('@/features/orders/hooks/useOrderDetail.js', () => ({
         },
       ],
       refunds: [],
+      promotions: [{ description: 'Happy Hour −15%', name: 'Happy Hour', amount: 15_000 }],
     },
   }),
 }));
@@ -86,5 +87,12 @@ describe('OrderDetailPage', () => {
     await waitFor(() => expect(screen.getByText(/ORD-001/)).toBeInTheDocument());
     const backLink = screen.getByRole('link', { name: /back/i });
     expect(backLink.getAttribute('href')).toBe('/backoffice/orders');
+  });
+
+  it('renders a named promotion line between Discount and PB1', async () => {
+    renderAt('/backoffice/orders/o-1');
+    await waitFor(() => expect(screen.getByText(/ORD-001/)).toBeInTheDocument());
+    expect(screen.getByText('Happy Hour −15%')).toBeInTheDocument();
+    expect(screen.getAllByText(/15\.000|15,000/).length).toBeGreaterThan(0);
   });
 });

@@ -165,6 +165,9 @@ function Body({ order }: { order: OrderDetail }): JSX.Element {
       <div className="rounded-xl border border-border-subtle p-4 text-sm">
         <Row label="Subtotal" value={`Rp ${rp(order.subtotal)}`} muted />
         {order.discount_amount > 0 && <Row label="Discount" value={`− Rp ${rp(order.discount_amount)}`} muted />}
+        {order.promotions.map((promo, i) => (
+          <Row key={i} label={promo.description} value={`− Rp ${rp(promo.amount)}`} muted />
+        ))}
         <Row label="Tax (10%)" value={`Rp ${rp(order.tax_amount)}`} muted />
         <div className="my-2 border-t border-border-subtle" />
         <div className="flex items-center justify-between">

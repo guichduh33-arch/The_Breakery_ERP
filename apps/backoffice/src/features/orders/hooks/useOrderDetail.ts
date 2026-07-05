@@ -38,6 +38,12 @@ export interface OrderRefundRow {
   is_full_void: boolean;
 }
 
+export interface OrderPromotionRow {
+  description: string;
+  name: string | null;
+  amount: number;
+}
+
 export interface OrderDetail {
   id: string;
   order_number: string;
@@ -56,6 +62,7 @@ export interface OrderDetail {
   items: OrderItem[];
   payments: OrderPayment[];
   refunds: OrderRefundRow[];
+  promotions: OrderPromotionRow[];
 }
 
 export function useOrderDetail(id: string | undefined) {
@@ -75,7 +82,8 @@ export function useOrderDetail(id: string | undefined) {
           user_profiles!orders_served_by_fkey(full_name),
           order_items(id, product_id, name_snapshot, quantity, unit_price, line_total, modifiers, is_cancelled, kitchen_status),
           order_payments(id, method, amount, cash_received, change_given, paid_at, reference),
-          refunds(id, refund_number, total, reason, created_at, refunded_by, is_full_void)
+          refunds(id, refund_number, total, reason, created_at, refunded_by, is_full_void),
+          promotion_applications(amount, description, promotions(name))
         `,
         )
         .eq('id', id)
@@ -99,6 +107,7 @@ export function useOrderDetail(id: string | undefined) {
         order_items: OrderItem[];
         order_payments: OrderPayment[];
         refunds: OrderRefundRow[];
+        promotion_applications: { amount: number; description: string; promotions: { name: string } | null }[];
       };
       return {
         id: row.id,
@@ -118,6 +127,11 @@ export function useOrderDetail(id: string | undefined) {
         items: row.order_items ?? [],
         payments: row.order_payments ?? [],
         refunds: row.refunds ?? [],
+        promotions: (row.promotion_applications ?? []).map((pa) => ({
+          description: pa.description,
+          name: pa.promotions?.name ?? null,
+          amount: Number(pa.amount),
+        })),
       };
     },
   });
