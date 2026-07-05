@@ -13,8 +13,10 @@ vi.mock('sonner', () => ({
   Toaster: () => null,
 }));
 
-const rpcMock = vi.fn();
-const invokeMock = vi.fn().mockResolvedValue({ data: { signed_url: 'https://example.test/z' }, error: null });
+const rpcMock = vi.fn<(...args: unknown[]) => Promise<{ data: unknown; error: unknown }>>();
+const invokeMock = vi
+  .fn<(...args: unknown[]) => Promise<{ data: unknown; error: unknown }>>()
+  .mockResolvedValue({ data: { signed_url: 'https://example.test/z' }, error: null });
 vi.mock('@/lib/supabase', () => ({
   supabase: {
     rpc: (...args: unknown[]) => rpcMock(...args),
@@ -26,6 +28,8 @@ const storeMock = { clear: vi.fn() };
 vi.mock('@/stores/shiftStore', () => ({
   useShiftStore: <T,>(selector: (s: { clear: () => void }) => T) => selector(storeMock),
 }));
+
+const noop = () => undefined;
 
 function withQuery(node: React.ReactElement) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -54,7 +58,7 @@ describe('CloseShiftModal', () => {
         expectedCash={500_000}
         thresholdAbs={50_000}
         thresholdPct={0.005}
-        onClose={() => {}}
+        onClose={noop}
       />,
     ));
     // Blind step: counted cash field shows, but NOT expected/variance.
@@ -74,7 +78,7 @@ describe('CloseShiftModal', () => {
         expectedCash={500_000}
         thresholdAbs={50_000}
         thresholdPct={0.005}
-        onClose={() => {}}
+        onClose={noop}
       />,
     ));
     countAndConfirm('500000');
@@ -92,7 +96,7 @@ describe('CloseShiftModal', () => {
         expectedCash={100_000}
         thresholdAbs={50_000}
         thresholdPct={0.005}
-        onClose={() => {}}
+        onClose={noop}
       />,
     ));
     expect(screen.getByRole('button', { name: /confirm count/i })).toBeDisabled();
@@ -106,7 +110,7 @@ describe('CloseShiftModal', () => {
         expectedCash={100_000}
         thresholdAbs={50_000}
         thresholdPct={0.005}
-        onClose={() => {}}
+        onClose={noop}
       />,
     ));
     countAndConfirm('0');
@@ -210,7 +214,7 @@ describe('CloseShiftModal', () => {
     }));
     expect(invokeMock).toHaveBeenCalledWith('generate-zreport-pdf', expect.objectContaining({
       body: { zreport_id: 'zr-1' },
-      headers: expect.objectContaining({ 'x-idempotency-key': expect.any(String) }),
+      headers: expect.objectContaining({ 'x-idempotency-key': expect.any(String) as unknown }) as unknown,
     }));
   });
 
@@ -225,7 +229,7 @@ describe('CloseShiftModal', () => {
       error: null,
     });
     invokeMock.mockRejectedValueOnce(new Error('network failure'));
-    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const onClose = vi.fn();
     render(withQuery(
       <CloseShiftModal

@@ -10,7 +10,7 @@ import { usePosSettingsStore } from '@/stores/posSettingsStore';
 function getServerUrl(): string {
   const override = usePosSettingsStore.getState().printerUrl;
   if (override) return override;
-  return import.meta.env.VITE_PRINT_SERVER_URL ?? 'http://localhost:3001';
+  return (import.meta.env.VITE_PRINT_SERVER_URL as string | undefined) ?? 'http://localhost:3001';
 }
 
 // ---------------------------------------------------------------------------
@@ -108,9 +108,9 @@ interface MockStationEntry {
 
 type MockBufferEntry = MockReceiptEntry | MockStationEntry;
 
-let _mockBuffer: Array<MockBufferEntry> = [];
+let _mockBuffer: MockBufferEntry[] = [];
 
-export function getMockPrintBuffer(): Array<MockBufferEntry> {
+export function getMockPrintBuffer(): MockBufferEntry[] {
   return _mockBuffer;
 }
 

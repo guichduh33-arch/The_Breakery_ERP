@@ -9,7 +9,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { KdsOrderCard } from '../components/KdsOrderCard';
 import type { KdsItemRow } from '../hooks/useKdsOrders';
 
-const rpcMock = vi.fn();
+const rpcMock = vi.fn<(...args: unknown[]) => Promise<{ data: unknown; error: unknown }>>();
 
 vi.mock('@/lib/supabase', () => ({
   supabase: {
@@ -50,7 +50,7 @@ function makeItem(overrides: Partial<KdsItemRow>): KdsItemRow {
     cancelled_at: null,
     cancelled_reason: null,
     ...overrides,
-  } as KdsItemRow;
+  };
 }
 
 describe('AllReadyButton (KdsOrderCard header)', () => {
@@ -89,7 +89,7 @@ describe('AllReadyButton (KdsOrderCard header)', () => {
     await waitFor(() => {
       expect(rpcMock).toHaveBeenCalledWith('kds_bump_order_v1', expect.objectContaining({
         p_order_id: 'ord-1',
-        p_idempotency_key: expect.any(String),
+        p_idempotency_key: expect.any(String) as unknown,
       }));
     });
   });

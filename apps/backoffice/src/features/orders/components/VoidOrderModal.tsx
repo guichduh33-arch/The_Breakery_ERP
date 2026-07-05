@@ -4,7 +4,10 @@
 // until both validate. PIN travels in the `x-manager-pin` header (S34);
 // idempotency key in `x-idempotency-key` (S55 parity, S60).
 
-import { useState, useRef } from 'react';
+import { useState, useRef, type JSX } from 'react';
+import {
+  Dialog, DialogContent, DialogTitle, DialogDescription,
+} from '@breakery/ui';
 import { useVoidOrder } from '@/features/orders/hooks/useVoidOrder.js';
 
 interface Props {
@@ -14,19 +17,22 @@ interface Props {
   orderNumber: string;
 }
 
-export function VoidOrderModal({ open, onClose, orderId, orderNumber }: Props) {
+export function VoidOrderModal({ open, onClose, orderId, orderNumber }: Props): JSX.Element {
   const [reason, setReason] = useState('');
   const [pin, setPin]       = useState('');
   const idem = useRef(crypto.randomUUID());
   const m = useVoidOrder();
 
-  if (!open) return null;
-
   const reasonOk = reason.trim().length >= 10;
   const pinOk    = /^\d{6}$/.test(pin);
   const canSubmit = reasonOk && pinOk && !m.isPending;
 
-  const handleSubmit = async () => {
+  const handleClose = (): void => {
+    idem.current = crypto.randomUUID();
+    onClose();
+  };
+
+  const handleSubmit = async (): Promise<void> => {
     if (!canSubmit) return;
     try {
       await m.mutateAsync({ orderId, reason, managerPin: pin, idempotencyKey: idem.current });
@@ -39,19 +45,17 @@ export function VoidOrderModal({ open, onClose, orderId, orderNumber }: Props) {
     }
   };
 
-  const handleClose = () => {
-    idem.current = crypto.randomUUID();
-    onClose();
-  };
-
   return (
-    <div role="dialog" aria-modal="true" aria-label={`Void order ${orderNumber}`} className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-lg p-6 w-[480px] max-w-[90vw]">
-        <h2 className="text-lg font-semibold">Void order {orderNumber}</h2>
-        <p className="mt-2 rounded bg-red-50 border border-red-200 p-3 text-sm text-red-900">
+    <Dialog open={open} onOpenChange={(o) => { if (!o) handleClose(); }}>
+      <DialogContent className="max-w-md">
+        <DialogTitle>Void order {orderNumber}</DialogTitle>
+        <DialogDescription className="sr-only">
+          Voids the order, restoring inventory to stock. This action cannot be undone.
+        </DialogDescription>
+        <p className="rounded bg-red-50 border border-red-200 p-3 text-sm text-red-900">
           This action cannot be undone. Inventory will be restored to stock.
         </p>
-        <div className="mt-4">
+        <div>
           <label className="block text-sm font-medium">Reason for voiding</label>
           <textarea
             value={reason}
@@ -63,7 +67,7 @@ export function VoidOrderModal({ open, onClose, orderId, orderNumber }: Props) {
           />
           {!reasonOk && reason.length > 0 && <p className="text-xs text-red-600 mt-1">Min. 10 characters</p>}
         </div>
-        <div className="mt-4">
+        <div>
           <label className="block text-sm font-medium">Manager PIN</label>
           <input
             type="password"
@@ -75,11 +79,11 @@ export function VoidOrderModal({ open, onClose, orderId, orderNumber }: Props) {
             data-testid="void-pin"
           />
         </div>
-        {m.error && <p className="mt-3 text-sm text-red-600" data-testid="void-error">{m.error.message}</p>}
-        <div className="mt-6 flex justify-end gap-2">
+        {m.error && <p className="text-sm text-red-600" data-testid="void-error">{m.error.message}</p>}
+        <div className="flex justify-end gap-2">
           <button onClick={handleClose} className="px-4 py-2 text-sm" data-testid="void-cancel">Cancel</button>
           <button
-            onClick={handleSubmit}
+            onClick={() => { void handleSubmit(); }}
             disabled={!canSubmit}
             className="px-4 py-2 text-sm bg-red-600 text-white rounded disabled:opacity-50"
             data-testid="void-submit"
@@ -87,7 +91,7 @@ export function VoidOrderModal({ open, onClose, orderId, orderNumber }: Props) {
             {m.isPending ? 'Voiding…' : 'Void order'}
           </button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

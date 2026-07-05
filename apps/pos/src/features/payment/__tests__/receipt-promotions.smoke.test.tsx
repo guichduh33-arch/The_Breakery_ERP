@@ -88,7 +88,7 @@ describe('SuccessModal — receipt carries named promotion lines', () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({}),
-    }) as unknown as typeof fetch;
+    });
 
     useCartStore.setState({
       cart: { items: [], order_type: 'dine_in' },
@@ -108,7 +108,7 @@ describe('SuccessModal — receipt carries named promotion lines', () => {
       isAuthenticated: true,
       isLoading: false,
       error: null,
-    } as never);
+    });
   });
 
   afterEach(() => {

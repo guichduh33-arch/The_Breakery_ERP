@@ -100,7 +100,7 @@ function Body({ order }: { order: OrderDetail }): JSX.Element {
   const firstPayment = order.payments[0];
   const isPaid = order.payments.length > 0 || order.status === 'paid' || order.status === 'completed';
 
-  const activity: Array<{ key: string; title: string; at: string; tone: string; icon: typeof Plus; detail?: string }> = [
+  const activity: { key: string; title: string; at: string; tone: string; icon: typeof Plus; detail?: string }[] = [
     { key: 'created', title: 'Order created', at: order.created_at, tone: 'text-blue-500 ring-blue-200', icon: Plus },
     ...order.payments.map((p, i) => ({
       key: `pay-${p.id ?? i}`,

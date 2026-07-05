@@ -6,12 +6,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
+import type * as ReactRouterDom from 'react-router-dom';
 import { SideMenuDrawer } from '../SideMenuDrawer';
 
 const navigateMock = vi.fn();
+const noop = () => undefined;
 
 vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
+  const actual = await vi.importActual<typeof ReactRouterDom>('react-router-dom');
   return {
     ...actual,
     useNavigate: () => navigateMock,
@@ -57,14 +59,14 @@ describe('SideMenuDrawer', () => {
 
   it('renders all required nav items', () => {
     renderDrawer({
-      onOpenHeldOrders: () => {},
-      onOpenHistory: () => {},
-      onOpenLiveSessions: () => {},
-      onOpenCustomers: () => {},
-      onCloseShift: () => {},
-      onLockTerminal: () => {},
-      onChangePin: () => {},
-      onLogout: () => {},
+      onOpenHeldOrders: noop,
+      onOpenHistory: noop,
+      onOpenLiveSessions: noop,
+      onOpenCustomers: noop,
+      onCloseShift: noop,
+      onLockTerminal: noop,
+      onChangePin: noop,
+      onLogout: noop,
     });
     expect(screen.getByTestId('side-menu-held-orders')).toBeInTheDocument();
     expect(screen.getByTestId('side-menu-transaction-history')).toBeInTheDocument();
@@ -83,15 +85,15 @@ describe('SideMenuDrawer', () => {
 
   // Session 19 / Phase 3.C — Change PIN item.
   it('renders Change PIN item when onChangePin prop is provided', () => {
-    renderDrawer({ onChangePin: () => {} });
-    const item = screen.getByTestId('side-menu-change-pin') as HTMLButtonElement;
+    renderDrawer({ onChangePin: noop });
+    const item = screen.getByTestId<HTMLButtonElement>('side-menu-change-pin');
     expect(item).toBeInTheDocument();
     expect(item.disabled).toBe(false);
   });
 
   it('disables Change PIN item when onChangePin is missing', () => {
     renderDrawer({});
-    const item = screen.getByTestId('side-menu-change-pin') as HTMLButtonElement;
+    const item = screen.getByTestId<HTMLButtonElement>('side-menu-change-pin');
     expect(item.disabled).toBe(true);
   });
 
@@ -111,7 +113,7 @@ describe('SideMenuDrawer', () => {
   // existed but had no production mount, so shifts could never be closed).
   it('disables Close Shift when onCloseShift is missing (no open shift)', () => {
     renderDrawer({});
-    const item = screen.getByTestId('side-menu-close-shift') as HTMLButtonElement;
+    const item = screen.getByTestId<HTMLButtonElement>('side-menu-close-shift');
     expect(item.disabled).toBe(true);
   });
 
@@ -156,7 +158,7 @@ describe('SideMenuDrawer', () => {
   it('disables an item when its handler is missing', () => {
     // Omit onOpenHeldOrders entirely (NOT set to undefined — exactOptionalPropertyTypes).
     renderDrawer({});
-    const item = screen.getByTestId('side-menu-held-orders') as HTMLButtonElement;
+    const item = screen.getByTestId<HTMLButtonElement>('side-menu-held-orders');
     expect(item.disabled).toBe(true);
   });
 
