@@ -167,6 +167,12 @@ export function OrderDetailPage(): JSX.Element {
           <span>Discount</span>
           <span>− {fmtIdr(data.discount_amount)}</span>
         </div>
+        {data.promotions.map((promo, i) => (
+          <div key={i} className="flex justify-between text-sm">
+            <span>{promo.description}</span>
+            <span>− {fmtIdr(promo.amount)}</span>
+          </div>
+        ))}
         <div className="flex justify-between text-sm">
           <span>PB1</span>
           <span>{fmtIdr(data.tax_amount)}</span>

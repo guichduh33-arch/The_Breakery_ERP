@@ -4,31 +4,44 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
+import type * as ReactRouterDom from 'react-router-dom';
 import { SideMenuDrawer } from '../SideMenuDrawer';
 
 const navigateMock = vi.fn();
+const noop = () => undefined;
 
 vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
+  const actual = await vi.importActual<typeof ReactRouterDom>('react-router-dom');
   return {
     ...actual,
     useNavigate: () => navigateMock,
   };
 });
 
+// CashInOutModal (Session 60 / 12 D1.1) is now mounted inline — its own
+// hooks (useCashMovement, react-query) are exercised by its dedicated
+// smoke suite; here we only mock supabase so mounting it doesn't error.
+vi.mock('@/lib/supabase', () => ({
+  supabase: { rpc: vi.fn() },
+}));
+
 function renderDrawer(overrides: Partial<Parameters<typeof SideMenuDrawer>[0]> = {}) {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <MemoryRouter>
-      <SideMenuDrawer
-        open
-        onClose={() => {}}
-        userName="Mamat Owner"
-        userRole="OWNER"
-        userInitial="M"
-        {...overrides}
-      />
-    </MemoryRouter>,
+    <QueryClientProvider client={qc}>
+      <MemoryRouter>
+        <SideMenuDrawer
+          open
+          onClose={vi.fn()}
+          userName="Mamat Owner"
+          userRole="OWNER"
+          userInitial="M"
+          {...overrides}
+        />
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 }
 
@@ -46,14 +59,14 @@ describe('SideMenuDrawer', () => {
 
   it('renders all required nav items', () => {
     renderDrawer({
-      onOpenHeldOrders: () => {},
-      onOpenHistory: () => {},
-      onOpenLiveSessions: () => {},
-      onOpenCustomers: () => {},
-      onCloseShift: () => {},
-      onLockTerminal: () => {},
-      onChangePin: () => {},
-      onLogout: () => {},
+      onOpenHeldOrders: noop,
+      onOpenHistory: noop,
+      onOpenLiveSessions: noop,
+      onOpenCustomers: noop,
+      onCloseShift: noop,
+      onLockTerminal: noop,
+      onChangePin: noop,
+      onLogout: noop,
     });
     expect(screen.getByTestId('side-menu-held-orders')).toBeInTheDocument();
     expect(screen.getByTestId('side-menu-transaction-history')).toBeInTheDocument();
@@ -72,15 +85,15 @@ describe('SideMenuDrawer', () => {
 
   // Session 19 / Phase 3.C — Change PIN item.
   it('renders Change PIN item when onChangePin prop is provided', () => {
-    renderDrawer({ onChangePin: () => {} });
-    const item = screen.getByTestId('side-menu-change-pin') as HTMLButtonElement;
+    renderDrawer({ onChangePin: noop });
+    const item = screen.getByTestId<HTMLButtonElement>('side-menu-change-pin');
     expect(item).toBeInTheDocument();
     expect(item.disabled).toBe(false);
   });
 
   it('disables Change PIN item when onChangePin is missing', () => {
     renderDrawer({});
-    const item = screen.getByTestId('side-menu-change-pin') as HTMLButtonElement;
+    const item = screen.getByTestId<HTMLButtonElement>('side-menu-change-pin');
     expect(item.disabled).toBe(true);
   });
 
@@ -100,7 +113,7 @@ describe('SideMenuDrawer', () => {
   // existed but had no production mount, so shifts could never be closed).
   it('disables Close Shift when onCloseShift is missing (no open shift)', () => {
     renderDrawer({});
-    const item = screen.getByTestId('side-menu-close-shift') as HTMLButtonElement;
+    const item = screen.getByTestId<HTMLButtonElement>('side-menu-close-shift');
     expect(item.disabled).toBe(true);
   });
 
@@ -115,6 +128,27 @@ describe('SideMenuDrawer', () => {
     });
   });
 
+  // Session 60 (12 D1.1) — T5: Cash In / Cash Out items (CashInOutModal was
+  // built in S13 but never mounted anywhere until now).
+  it('shows Cash In / Cash Out enabled when a session is open', () => {
+    renderDrawer({ sessionId: 's1' });
+    expect(screen.getByTestId('side-menu-cash-in')).toBeEnabled();
+    expect(screen.getByTestId('side-menu-cash-out')).toBeEnabled();
+  });
+
+  it('disables Cash In / Cash Out when no session is open', () => {
+    renderDrawer({});
+    expect(screen.getByTestId('side-menu-cash-in')).toBeDisabled();
+    expect(screen.getByTestId('side-menu-cash-out')).toBeDisabled();
+  });
+
+  it('dispatches Cash In click and closes the drawer', () => {
+    const onClose = vi.fn();
+    renderDrawer({ sessionId: 's1', onClose });
+    fireEvent.click(screen.getByTestId('side-menu-cash-in'));
+    expect(onClose).toHaveBeenCalled();
+  });
+
   it('navigates to /pos/reports when "POS Reports" is clicked', () => {
     renderDrawer();
     fireEvent.click(screen.getByTestId('side-menu-pos-reports'));
@@ -124,7 +158,7 @@ describe('SideMenuDrawer', () => {
   it('disables an item when its handler is missing', () => {
     // Omit onOpenHeldOrders entirely (NOT set to undefined — exactOptionalPropertyTypes).
     renderDrawer({});
-    const item = screen.getByTestId('side-menu-held-orders') as HTMLButtonElement;
+    const item = screen.getByTestId<HTMLButtonElement>('side-menu-held-orders');
     expect(item.disabled).toBe(true);
   });
 

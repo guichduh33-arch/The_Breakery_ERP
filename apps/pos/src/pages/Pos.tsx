@@ -189,6 +189,7 @@ export default function PosPage() {
         onOpenHistory={() => setHistoryOpen(true)}
         onOpenLiveSessions={() => setLiveSessionsOpen(true)}
         {...(currentShift ? { onCloseShift: () => setCloseShiftOpen(true) } : {})}
+        sessionId={currentShift?.id ?? null}
         onLockTerminal={() => { setMenuOpen(false); lock(); }}
         {...(currentUserId ? { onChangePin: () => setChangePinOpen(true) } : {})}
         onLogout={() => { void handleLogout(); }}

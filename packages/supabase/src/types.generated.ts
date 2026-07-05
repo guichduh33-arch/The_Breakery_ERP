@@ -6103,7 +6103,7 @@ export type Database = {
         Args: { p_fiscal_year: number; p_manager_pin: string }
         Returns: Json
       }
-      close_shift_v2: {
+      close_shift_v3: {
         Args: {
           p_counted_cash: number
           p_idempotency_key?: string
@@ -7067,6 +7067,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      kds_bump_order_v1: {
+        Args: { p_idempotency_key?: string; p_order_id: string }
+        Returns: number
       }
       kds_recall_order_v1: {
         Args: { p_order_id: string; p_reason?: string }

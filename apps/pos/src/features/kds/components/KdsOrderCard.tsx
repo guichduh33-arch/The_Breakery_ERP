@@ -36,10 +36,12 @@
 //     the shared `useAgeTimer` hook.
 
 import { Button, Badge } from '@breakery/ui';
+import { toast } from 'sonner';
 
 import { useAgeTimer } from '../hooks/useAgeTimer';
 import { useKdsStartPrepTimer } from '../hooks/useKdsStartPrepTimer';
 import { useMarkItemServed } from '../hooks/useMarkItemServed';
+import { useKdsBumpOrder } from '../hooks/useKdsBumpOrder';
 import type { KdsItemRow } from '../hooks/useKdsOrders';
 import { BumpButton } from './BumpButton';
 import { PrepTimer } from './PrepTimer';
@@ -141,6 +143,46 @@ function ItemCta({ item }: { item: KdsItemRow }) {
   );
 }
 
+// Session 60 (04 D1.2) — order-scope "All ready" mass bump, wrapping
+// `kds_bump_order_v1`. Only rendered when at least one live (non-cancelled)
+// item is still pending/preparing. No grouped undo toast — the per-item undo
+// (`kds_undo_bump_v1`, 60s via BumpButton/UndoBumpToast) stays available since
+// mass-bumped items get `bumped_at` set exactly like a single bump.
+function AllReadyButton({ orderId, items }: { orderId: string; items: KdsItemRow[] }) {
+  const bumpOrder = useKdsBumpOrder();
+
+  const hasActionableItems = items.some(
+    (i) => !i.is_cancelled && (i.kitchen_status === 'pending' || i.kitchen_status === 'preparing'),
+  );
+  if (!hasActionableItems) return null;
+
+  const handleClick = () => {
+    bumpOrder.mutate(
+      { orderId },
+      {
+        onSuccess: ({ bumpedCount }) => {
+          toast.success(`${bumpedCount} item${bumpedCount === 1 ? '' : 's'} ready`);
+        },
+        onError: (err: Error & { code?: string }) => {
+          toast.error(err.message || 'Could not bump order');
+        },
+      },
+    );
+  };
+
+  return (
+    <Button
+      variant="gold"
+      size="sm"
+      onClick={handleClick}
+      disabled={bumpOrder.isPending}
+      aria-label="Bump all items to ready"
+    >
+      All ready
+    </Button>
+  );
+}
+
 export function KdsOrderCard({ items }: KdsOrderCardProps) {
   const now = useAgeTimer();
   const head = items[0];
@@ -174,12 +216,15 @@ export function KdsOrderCard({ items }: KdsOrderCardProps) {
             </Badge>
           )}
         </div>
-        <span
-          className={`font-mono text-sm tabular-nums ${style.timer}`}
-          aria-label="Order age"
-        >
-          {formatAge(ageMs)}
-        </span>
+        <div className="flex items-center gap-3 shrink-0">
+          <AllReadyButton orderId={head.order_id} items={items} />
+          <span
+            className={`font-mono text-sm tabular-nums ${style.timer}`}
+            aria-label="Order age"
+          >
+            {formatAge(ageMs)}
+          </span>
+        </div>
       </header>
 
       {/* Session 59 (17 D1.1) — order-level note (tablet), e.g. allergy / "no gluten". */}

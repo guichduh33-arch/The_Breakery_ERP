@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Check, Printer, RotateCw } from 'lucide-react';
 import { Button, Currency, FullScreenModal } from '@breakery/ui';
 import { calculateTotals } from '@breakery/domain';
-import type { Cart, PaymentMethod, PaymentResultLine } from '@breakery/domain';
+import type { AppliedPromotion, Cart, PaymentMethod, PaymentResultLine } from '@breakery/domain';
 import { useTaxRate } from '@/features/settings/hooks/useTaxRate';
 import { printReceipt, openCashDrawer, type ReceiptPayload } from '@/services/print/printService';
 import { useStationPrinters } from '@/features/cart/hooks/useStationPrinters';
@@ -48,6 +48,14 @@ export interface SuccessModalProps {
   cashReceived: number;
   cashierName: string;
   onNewOrder: () => void;
+  /**
+   * Session 60 (fiche 13 D1.1) — snapshot of cartStore.appliedPromotions taken
+   * at checkout success (PaymentSuccessState), NOT read live from the store
+   * here (parity with the other frozen success fields above). Rendered as
+   * named lines on the receipt; the server envelope only exposes the
+   * aggregate promotion_total.
+   */
+  appliedPromotions?: AppliedPromotion[];
 }
 
 function buildReceiptPayload(props: SuccessModalProps, taxRate: number): ReceiptPayload {
@@ -69,6 +77,18 @@ function buildReceiptPayload(props: SuccessModalProps, taxRate: number): Receipt
     ?? (useServerLines
       ? serverLines.reduce((sum, l) => sum + l.line_subtotal, 0)
       : derived.subtotal);
+
+  // Session 60 (fiche 13 D1.1) — named promo lines for the printed receipt.
+  // Drop non-positive amounts UNLESS the promo is a free_product gift (amount
+  // is legitimately 0 there — labelled explicitly so the bridge never renders
+  // a bare "−Rp 0" line).
+  const promoLines = (props.appliedPromotions ?? [])
+    .filter((ap) => ap.amount > 0 || ap.type === 'free_product')
+    .map((ap) => ({
+      name: ap.type === 'free_product' ? `${ap.name} (free item)` : ap.name,
+      amount: ap.amount,
+    }));
+  const promotionTotal = promoLines.reduce((sum, p) => sum + p.amount, 0);
 
   return {
     business: BUSINESS,
@@ -93,6 +113,7 @@ function buildReceiptPayload(props: SuccessModalProps, taxRate: number): Receipt
         line_total: sl ? sl.line_total : clientLineTotal,
       };
     }),
+    ...(promoLines.length > 0 ? { promotions: promoLines } : {}),
     totals: {
       items_total: itemsTotal,
       redemption_amount: derived.redemption_amount,
@@ -100,6 +121,7 @@ function buildReceiptPayload(props: SuccessModalProps, taxRate: number): Receipt
       // client estimate at the server rate only when omitted (legacy/tests).
       total: props.total,
       tax_amount: props.taxAmount ?? derived.tax_amount,
+      ...(promoLines.length > 0 ? { promotion_total: promotionTotal } : {}),
     },
     payment: {
       method: props.paymentMethod,

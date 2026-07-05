@@ -10,7 +10,7 @@ import { usePosSettingsStore } from '@/stores/posSettingsStore';
 function getServerUrl(): string {
   const override = usePosSettingsStore.getState().printerUrl;
   if (override) return override;
-  return import.meta.env.VITE_PRINT_SERVER_URL ?? 'http://localhost:3001';
+  return (import.meta.env.VITE_PRINT_SERVER_URL as string | undefined) ?? 'http://localhost:3001';
 }
 
 // ---------------------------------------------------------------------------
@@ -72,10 +72,21 @@ export interface ReceiptPayload {
     redemption_amount: number;
     total: number;
     tax_amount: number;
+    /** Session 60 (fiche 13 D1.1) — sum of `promotions[].amount`. Omitted when no promo applied. */
+    promotion_total?: number;
   };
   payment: { method: PaymentMethod; amount: number; cash_received?: number; change_given?: number };
   /** balance_after is optional — omitted when the RPC doesn't return it yet (deferred v11). */
   loyalty?: { points_earned: number; balance_after?: number };
+  /**
+   * Session 60 (fiche 13 D1.1) — named promotion lines applied to the cart.
+   * The server envelope (v17) only returns the aggregate `promotion_total`;
+   * these named lines come from cartStore.appliedPromotions, snapshotted at
+   * checkout success. Omitted (or empty) when no promo applied.
+   * NOTE (dette de session) : le template du print-bridge externe doit être
+   * mis à jour pour rendre ce champ — action utilisateur.
+   */
+  promotions?: { name: string; amount: number }[];
   footer?: string;
 }
 
@@ -97,9 +108,9 @@ interface MockStationEntry {
 
 type MockBufferEntry = MockReceiptEntry | MockStationEntry;
 
-let _mockBuffer: Array<MockBufferEntry> = [];
+let _mockBuffer: MockBufferEntry[] = [];
 
-export function getMockPrintBuffer(): Array<MockBufferEntry> {
+export function getMockPrintBuffer(): MockBufferEntry[] {
   return _mockBuffer;
 }
 

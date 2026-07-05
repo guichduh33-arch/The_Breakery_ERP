@@ -1,5 +1,7 @@
 # Module 12 — Caisse physique & shifts
 
+> ⚠️ **Mise à jour S60 (2026-07-05, `swarm/session-60`)** : **D1.1 livré** — `reason_code` exposé dans `CashInOutModal` (+ clé d'idempotence) et **le modal, découvert orphelin, est monté** (SideMenuDrawer → Cash In / Cash Out, session requise) : un apport owner produit sa JE 1110/3100. **D1.4 livré** — **`close_shift_v2 → v3`** (migration `_105`, DROP v2) : la note d'écart au-delà du seuil est enforced serveur (`variance_note_required`, prédicat miroir de `shouldShowWarning`, replay idempotent exempté) ; suite pgTAP `close_shift_note_enforced` + `cash_register.test.sql` réparée (T_SHIFT_03 assertait les v1 droppées). Voir `docs/workplan/plans/2026-07-05-session-60-INDEX.md`.
+
 > **Remise à plat — analyse comparative.** Doc : Description v1.2 (2026-07-03), module 12. Code : commit `5b0fa92` (2026-07-03).
 > **Statut annoncé par la doc :** Opérationnel
 > **Verdict global de l'analyse :** Le cycle ouvrir → cash in/out → clôture aveugle → écart+JE → Z-report signé/annulé sous PIN est réel ; mais la doc surclame nettement le comptage : **pas de détail par coupure, pas de comptage en trois volets (espèces/mobile/carte), pas de PIN manager sur les gros écarts, pas d'alerte d'écart avant clôture**, et le suivi live ne montre ni panier moyen ni annulations.

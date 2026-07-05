@@ -100,7 +100,7 @@ function Body({ order }: { order: OrderDetail }): JSX.Element {
   const firstPayment = order.payments[0];
   const isPaid = order.payments.length > 0 || order.status === 'paid' || order.status === 'completed';
 
-  const activity: Array<{ key: string; title: string; at: string; tone: string; icon: typeof Plus; detail?: string }> = [
+  const activity: { key: string; title: string; at: string; tone: string; icon: typeof Plus; detail?: string }[] = [
     { key: 'created', title: 'Order created', at: order.created_at, tone: 'text-blue-500 ring-blue-200', icon: Plus },
     ...order.payments.map((p, i) => ({
       key: `pay-${p.id ?? i}`,
@@ -165,6 +165,9 @@ function Body({ order }: { order: OrderDetail }): JSX.Element {
       <div className="rounded-xl border border-border-subtle p-4 text-sm">
         <Row label="Subtotal" value={`Rp ${rp(order.subtotal)}`} muted />
         {order.discount_amount > 0 && <Row label="Discount" value={`− Rp ${rp(order.discount_amount)}`} muted />}
+        {order.promotions.map((promo, i) => (
+          <Row key={i} label={promo.description} value={`− Rp ${rp(promo.amount)}`} muted />
+        ))}
         <Row label="Tax (10%)" value={`Rp ${rp(order.tax_amount)}`} muted />
         <div className="my-2 border-t border-border-subtle" />
         <div className="flex items-center justify-between">
