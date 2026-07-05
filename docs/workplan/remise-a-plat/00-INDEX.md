@@ -108,31 +108,32 @@ Le tableau §1 se lit avec le §2.3 : un module « fidèle » peut cacher du non
 - **Plafond de crédit sur l'ardoise retail** : gate serveur à l'ouverture (02/03/08).
 - **Facture PDF B2B** avec séquence de numérotation dédiée (09).
 - **CRUD Customer Categories + UI prix négociés** (08/05, débloque le B2B « prix négocié » 09).
-- **E2E réellement nightly** : front staging hébergé + secrets + premier run vert (23/24 — gelé par décision 7).
+- **E2E réellement nightly** : front staging hébergé + secrets + premier run vert (23/24 — **DÉGELÉ** par décision 7 : le dev actuel est officiellement le staging).
+- **Purges actées 2026-07-06** (lot quick wins, une demi-session) : mesh LAN mort (`useLanHub`/`useLanClient`/`MessageDedup`, décision 2), remises de palier du domaine (décision 3), `vite-plugin-pwa` (décision 5), permission orpheline `rbac.update` (décision 1) ; statuer `print_jobs` (consommer via print-bridge versionné ou dropper — décision 2).
 - ✅ **Décommissionnement péremption/FIFO — SOLDÉ (S61, 2026-07-05)** : cron `mark_expired_lots_hourly` désactivé (`_109`, réversible), `/inventory/expiring` + rapport perishable-turnover purgés du BO, `stock_lots` + RPCs conservés dormants — pas de DROP (06 D3.1). Cf. [`../plans/2026-07-05-session-61-INDEX.md`](../plans/2026-07-05-session-61-INDEX.md).
 
 ### Vague 3 — Chantiers lourds (spec dédiée AVANT code)
 - **Snapshot COGS à la vente (coût figé)** — découplé des lots (abandonnés le 2026-07-04) : figer le WAC ligne à ligne au moment du paiement (10/14/15).
 - **QC réception + retours fournisseurs + notes de crédit** (07).
-- **Édition RBAC** avec garde-fous anti-auto-élévation (20/01 — gelé par décision 1).
-- **Architecture réseau/impression** : internet-first + print-bridge versionné, ou réhabilitation du mesh ; file d'impression réelle (21/04 — gelé par décision 2).
-- **Cible de production V3** : environnement staging GitHub + stratégie de mise en prod — dépendance systémique (24 — c'est la décision 7 elle-même).
+- ~~**Édition RBAC**~~ — **ANNULÉ** (décision 1 actée 2026-07-06 : lecture seule assumée).
+- **Print-bridge versionné** : internet-first acté (décision 2, 2026-07-06) — le chantier se réduit à versionner le print-bridge dans le repo + statuer `print_jobs` (consommer ou dropper) ; la purge du mesh est un quick win Vague 2 (21/04).
+- **Mise en prod V3** : décision 7 actée (2026-07-06) — **nouveau projet Supabase prod dédié** (schéma par dump du dev, seed propre, EFs/secrets redéployés), le dev actuel devient le staging officiel ; spec dédiée avant exécution (24).
 - **Mode hors-ligne** (02/17) — chantier n°1 annoncé par la doc, inchangé.
 
 ### Décisions à trancher par le propriétaire (bloquantes)
 **Déjà actée — 2026-07-04 : pas de gestion de péremption/expiration ni de FIFO stock.** Le suivi en quantité globale par produit est le modèle retenu. Conséquences : le chantier P3 « FIFO/lots » (ex-« prochain grand chantier » de la Description) sort du plan, le snapshot COGS est découplé (source = WAC à la vente), l'infra `stock_lots` existante est décommissionnée légèrement (Vague 2). *Le « FIFO » d'allocation des paiements B2B (fiche 09) et l'expiration des points de fidélité (fiche 08) ne sont pas concernés — sujets distincts du stock.*
 
-**Ordre recommandé : décisions 2 et 7 d'abord** (systémiques — elles gèlent des chantiers entiers) ; 1/3/4/5/6 au fil de l'eau.
+**✅ TOUTES ACTÉES le 2026-07-06** (session propriétaire, décisions 1→7) — plus aucun chantier gelé par une décision :
 
-| # | Décision | Modules | Options | Chantiers gelés en attendant |
-|---|---|---|---|---|
-| 1 | Édition RBAC depuis l'UI ? | 20/01 | spec complète · rester lecture seule (et le dire) | 20-D3.1 (éditeur), sort de `rbac.update` (§2.3 #19) ; le renommage Vague 0.4 passe quoi qu'il arrive |
-| 2 | Architecture réseau : internet-first assumé ou mesh LAN ? | 21/04/16 | purger le code mort · le réhabiliter (bug topics à corriger) | 21-D1.3/D3.2 (transport), 21-D3.3 (file d'impression, §2.3 #7/#9), 16-D2.1 (miroir multi-appareils), 04-D3.2 (mode panne totale), B2.4 « internet coupé » |
-| 3 | Remises de palier fidélité : appliquer ou retirer ? | 08 | activer les 5/8/10 % (bump money-path) · retirer du domaine et de la doc | 08-D2.3 ; l'amendement doc B1.3 (checklist v1.3) |
-| 4 | Ardoise : tender POS dédié + plafond ? | 02/03 | oui (Vague 2) · statu quo documenté | 03-D2.1 (gate plafond), amendements doc ardoise |
-| 5 | PWA : purger `vite-plugin-pwa` ou l'activer ? | 18 | purge · activation (pré-mobile) | §2.3 #20 |
-| 6 | Vente à stock zéro (`allow_negative_stock`) | 06 | héritée de P3, toujours ouverte | Aucun chantier gelé — décision d'exploitation pure (le toggle Settings existe, la garde de vente flag-aware est en place) |
-| 7 | Cible de production V3 | 24 | nouveau projet Supabase prod · promotion du dev actuel | 24-D2/D3 (staging/prod), 23-D3 (E2E nightly, Vague 2), toute revendication « en production » |
+| # | Décision | Choix acté (2026-07-06) | Conséquences |
+|---|---|---|---|
+| 1 | Édition RBAC depuis l'UI ? | **Rester lecture seule** (et l'assumer) | 20-D3.1 (éditeur) **ANNULÉ** ; **purger la permission orpheline `rbac.update`** (quick win, §2.3 #19) ; doc v1.3 : retirer la revendication « RBAC Editor » ; changements de rôles = migration SQL |
+| 2 | Architecture réseau : internet-first ou mesh LAN ? | **Internet-first assumé + purge du mesh mort** | **Purger** `useLanHub`/`useLanClient`/`MessageDedup` (§2.3 #7, quick win) ; file d'impression : **consommer `print_jobs` via un print-bridge VERSIONNÉ dans le repo ou la dropper** (§2.3 #9, chantier Vague 3 réduit à « print-bridge versionné ») ; 16-D2.1 (miroir multi-appareils) et 04-D3.2 (mode panne) passent par internet/Realtime ; doc v1.3 : « connexion internet requise » |
+| 3 | Remises de palier fidélité : appliquer ou retirer ? | **Retirer du domaine et de la doc** | **Purger le code mort** des remises 5/8/10 % (08-D2.3 devient une purge, quick win) ; les paliers ne servent qu'au multiplicateur de POINTS (vivant, serveur v17) ; besoin futur → promotion ciblée par catégorie client (mécanisme existant) |
+| 4 | Ardoise : tender POS dédié + plafond ? | **Oui — plafond de crédit serveur** (Vague 2) | 03-D2.1 **DÉGELÉ** : plafond par client (défaut `business_config` + override), gate serveur à l'ouverture d'ardoise, pattern miroir du credit-limit B2B ; dépassement = refus ou PIN manager (à spécifier dans le plan de session) |
+| 5 | PWA : purger `vite-plugin-pwa` ou l'activer ? | **Purger** | Retirer la dépendance morte (§2.3 #20, quick win) ; la voie mobile reste le shell Capacitor (module 18) |
+| 6 | Vente à stock zéro (`allow_negative_stock`) | **ON — négatif autorisé** (exploitation) | Déjà effectif en base (`business_config.allow_negative_stock=true`, vérifié 2026-07-06) ; ne concerne QUE le stock BO (matières/finis suivis non-vitrine) — la vitrine bloque toujours à zéro (garde inconditionnelle S61) ; correction du réel à l'opname |
+| 7 | Cible de production V3 | **Nouveau projet Supabase prod dédié** | Chantier « mise en prod » (Vague 3, spec dédiée) : schéma par **dump du dev** (`pg_dump --schema-only`, PAS de replay de la lignée jamais rejouée from scratch), seed minimal propre, EFs/secrets redéployés ; **le dev actuel `ikcyvlovptebroadgtvd` devient officiellement le staging** → 23-D3 (E2E nightly, Vague 2) **DÉGELÉ** ; doc v1.3 : aucune revendication « en production » tant que le projet prod n'existe pas |
 
 ### Amendements Description v1.2 → v1.3
 La checklist consolidée, générée depuis les 25 sections D4 et étiquetée **DOC** / **DOC⇄CODE** / **DOC+**, vit dans [`00-AMENDEMENTS-V13.md`](00-AMENDEMENTS-V13.md) — ~70 items couvrant les 25 modules (y compris 01, 05, 07, 16, 17, 23, 24 et la nuance légale « 10 ans » du module 12).
@@ -148,5 +149,5 @@ La remise à plat est **terminée** quand les cinq conditions sont réunies :
 1. **Nightly pgTAP vert** (ou liste d'exclusions datée et motivée, revue à chaque session).
 2. **Zéro tuile/label mensonger** dans les deux apps (RBAC Editor, tuiles « Soon » pointant vers de l'existant, chips no-op, page LAN Devices aux données mortes).
 3. **Description v1.3 publiée** avec les ~70 amendements de `00-AMENDEMENTS-V13.md` intégrés (dans les deux sens : surclaims retirés, sous-ventes ajoutées).
-4. **Les 7 décisions actées** (au minimum 2 et 7, qui gèlent des chantiers).
+4. ✅ **Les 7 décisions actées** — fait : péremption/FIFO le 2026-07-04, les 6 restantes le 2026-07-06 (tableau §3).
 5. **Inventaire ⚫ (§2.3) soldé** : chaque entrée câblée ou purgée — plus aucun code mort ambigu.
