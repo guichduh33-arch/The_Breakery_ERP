@@ -5,7 +5,7 @@
 // (/backoffice/products/:productId), which now holds only general settings.
 //
 // Tabbed to keep each view light (2026-06-23):
-//   - Stock       live KPIs · stock per station/section · expiring lots · velocity
+//   - Stock       live KPIs · stock per station/section · velocity
 //   - Movements   stock timeline · movement breakdown · recent movements
 //   - Purchase    purchase price trend · purchase pattern · incoming POs
 //   - Transfers   transfers (date · from→to · qty)

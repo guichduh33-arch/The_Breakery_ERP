@@ -1,5 +1,7 @@
 # Module 06 — Stock & inventaire
 
+> ⚠️ **Mise à jour S61 (2026-07-05, `swarm/session-61`)** : **D3.1 livré** — décommissionnement léger péremption exécuté : cron `mark_expired_lots_hourly` désactivé (`_109`, réversible), pages `/inventory/expiring` + rapport perishable-turnover purgés du BO (routes, sidebar, tuile, badge, hooks, panneaux dashboards), `stock_lots` + RPCs conservés **dormants** (aucun DROP). Également **F-2 soldé** : les gardes d'insuffisance de `_record_sale_stock_v1` lèvent P0002 (contrat `insufficient_stock`) et la garde vitrine est inconditionnelle (`_107`). Voir `docs/workplan/plans/2026-07-05-session-61-INDEX.md`.
+
 > **Remise à plat — analyse comparative.** Doc : Description v1.2 (2026-07-03), module 6. Code : commit `5b0fa92` (2026-07-03).
 > **Statut annoncé par la doc :** Opérationnel
 > **Verdict global de l'analyse :** La doc est fidèle et même **sous-estime** le code : toutes les revendications « aujourd'hui » sont réelles et câblées, et une infrastructure complète de lots avec dates de péremption + cron horaire + page « Expiring stock » existe déjà alors que la doc la déclare inexistante. Seule nuance : l'alerte visuelle à deux niveaux (orange/rouge) n'existe telle quelle que côté POS vitrine, pas au back-office.

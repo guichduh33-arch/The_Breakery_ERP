@@ -1,5 +1,7 @@
 # Module 05 — Catalogue produits & catégories
 
+> ⚠️ **Mise à jour S61 (2026-07-05, `swarm/session-61`)** : **finding S58 F-5 soldé** — l'allowlist stations d'`import_catalog_v1` est alignée sur la CHECK live `categories_dispatch_station_check` (`bakery`→`display`, migration `_108`) : une catégorie `display` est désormais importable et `bakery` est rejetée en validation (`invalid_dispatch_station`) au lieu de crasher en 23514. Suite `catalog_import` 33/33. Voir `docs/workplan/plans/2026-07-05-session-61-INDEX.md`.
+
 > ⚠️ **Mise à jour S59 (2026-07-04, `swarm/session-59`)** : **D1.1 livré** — `visible_on_pos` est désormais respecté au POS (`useProducts` **et** `useProductVariants`), un produit masqué en BO disparaît de la grille caisse et du sélecteur de variantes ; C-B1.2 n'est plus 🟠. Dette connexe : le cache offline tablette 24 h peut encore servir un produit masqué (INDEX S59). Voir `docs/workplan/plans/2026-07-04-session-59-INDEX.md`.
 
 > **Remise à plat — analyse comparative.** Doc : Description v1.2 (2026-07-03), module 5. Code : commit `5b0fa92` (2026-07-03).
