@@ -28,7 +28,7 @@ import { useProductDashboard } from '@/features/inventory-dashboard/hooks/usePro
 import { SalesVelocityChart } from '@/features/inventory-dashboard/components/SalesVelocityChart.js';
 import { StockBySectionList } from '@/features/inventory-dashboard/components/StockBySectionList.js';
 
-const WINDOW_OPTIONS: ReadonlyArray<{ value: number; label: string }> = [
+const WINDOW_OPTIONS: readonly { value: number; label: string }[] = [
   { value: 7,  label: '7 days'  },
   { value: 14, label: '14 days' },
   { value: 30, label: '30 days' },
@@ -37,7 +37,7 @@ const WINDOW_OPTIONS: ReadonlyArray<{ value: number; label: string }> = [
 ];
 
 type StockTab = 'stock' | 'movements' | 'purchase' | 'transfers' | 'production';
-const TABS: ReadonlyArray<{ id: StockTab; label: string }> = [
+const TABS: readonly { id: StockTab; label: string }[] = [
   { id: 'stock',      label: 'Stock'      },
   { id: 'movements',  label: 'Movements'  },
   { id: 'purchase',   label: 'Purchase'   },
@@ -59,7 +59,7 @@ export default function ProductStockPage(): JSX.Element {
   if (product.error !== null && product.error !== undefined) {
     return (
       <div role="alert" className="rounded-lg border border-red bg-red-soft p-4 text-sm text-red">
-        Failed to load product: {(product.error as Error).message}
+        Failed to load product: {product.error.message}
       </div>
     );
   }

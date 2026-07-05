@@ -20,7 +20,7 @@ import { useProductDashboard } from '@/features/inventory-dashboard/hooks/usePro
 import { SalesVelocityChart } from '@/features/inventory-dashboard/components/SalesVelocityChart.js';
 import { StockBySectionList } from '@/features/inventory-dashboard/components/StockBySectionList.js';
 
-const WINDOW_OPTIONS: ReadonlyArray<{ value: number; label: string }> = [
+const WINDOW_OPTIONS: readonly { value: number; label: string }[] = [
   { value: 7,  label: '7 days'  },
   { value: 14, label: '14 days' },
   { value: 30, label: '30 days' },

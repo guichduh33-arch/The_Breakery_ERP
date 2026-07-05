@@ -5,9 +5,12 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { UseQueryResult } from '@tanstack/react-query';
 import { AlertsBadge } from '../components/AlertsBadge.js';
 import * as lowStockMod from '../hooks/useLowStock.js';
+import type { LowStockRow } from '../hooks/useLowStock.js';
 import * as reorderMod from '../hooks/useReorderSuggestions.js';
+import type { ReorderSuggestion } from '../hooks/useReorderSuggestions.js';
 
 function wrap(ui: React.ReactNode) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -18,15 +21,14 @@ function wrap(ui: React.ReactNode) {
   );
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function fakeQuery(data: unknown): any {
-  return { data, isLoading: false, error: null };
+function fakeQuery<T>(data: T): UseQueryResult<T, Error> {
+  return { data, isLoading: false, error: null } as unknown as UseQueryResult<T, Error>;
 }
 
 describe('AlertsBadge', () => {
   it('renders zero state when no alerts', () => {
-    vi.spyOn(lowStockMod, 'useLowStock').mockReturnValue(fakeQuery([]));
-    vi.spyOn(reorderMod, 'useReorderSuggestions').mockReturnValue(fakeQuery([]));
+    vi.spyOn(lowStockMod, 'useLowStock').mockReturnValue(fakeQuery<LowStockRow[]>([]));
+    vi.spyOn(reorderMod, 'useReorderSuggestions').mockReturnValue(fakeQuery<ReorderSuggestion[]>([]));
 
     render(wrap(<AlertsBadge />));
     expect(screen.getByLabelText(/No inventory alerts/i)).toBeInTheDocument();
@@ -35,10 +37,10 @@ describe('AlertsBadge', () => {
   it('renders total count when alerts present', () => {
     vi.spyOn(lowStockMod, 'useLowStock').mockReturnValue(fakeQuery([
       { product_id: '1' }, { product_id: '2' },
-    ]));
+    ] as LowStockRow[]));
     vi.spyOn(reorderMod, 'useReorderSuggestions').mockReturnValue(fakeQuery([
       { product_id: '3' },
-    ]));
+    ] as ReorderSuggestion[]));
 
     render(wrap(<AlertsBadge />));
     // total = 2 + 1 = 3
