@@ -738,6 +738,7 @@ export type Database = {
           marketing_consent: boolean
           name: string
           phone: string | null
+          retail_credit_limit: number | null
           total_spent: number
           total_visits: number
           updated_at: string
@@ -761,6 +762,7 @@ export type Database = {
           marketing_consent?: boolean
           name: string
           phone?: string | null
+          retail_credit_limit?: number | null
           total_spent?: number
           total_visits?: number
           updated_at?: string
@@ -784,6 +786,7 @@ export type Database = {
           marketing_consent?: boolean
           name?: string
           phone?: string | null
+          retail_credit_limit?: number | null
           total_spent?: number
           total_visits?: number
           updated_at?: string
@@ -2806,65 +2809,6 @@ export type Database = {
           {
             foreignKeyName: "pos_sessions_terminal_id_fkey"
             columns: ["terminal_id"]
-            isOneToOne: false
-            referencedRelation: "lan_devices"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      print_queue: {
-        Row: {
-          created_at: string
-          device_id: string | null
-          error_message: string | null
-          id: string
-          payload: Json
-          printed_at: string | null
-          priority: number
-          queued_at: string
-          reference_id: string | null
-          reference_type: string | null
-          retries: number
-          source: string | null
-          status: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          device_id?: string | null
-          error_message?: string | null
-          id?: string
-          payload: Json
-          printed_at?: string | null
-          priority?: number
-          queued_at?: string
-          reference_id?: string | null
-          reference_type?: string | null
-          retries?: number
-          source?: string | null
-          status?: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          device_id?: string | null
-          error_message?: string | null
-          id?: string
-          payload?: Json
-          printed_at?: string | null
-          priority?: number
-          queued_at?: string
-          reference_id?: string | null
-          reference_type?: string | null
-          retries?: number
-          source?: string | null
-          status?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "print_queue_device_id_fkey"
-            columns: ["device_id"]
             isOneToOne: false
             referencedRelation: "lan_devices"
             referencedColumns: ["id"]
@@ -5960,6 +5904,10 @@ export type Database = {
         Args: { p_expense_id: string; p_manager_pin: string }
         Returns: Json
       }
+      attach_tab_customer_v1: {
+        Args: { p_customer_id: string; p_order_id: string }
+        Returns: Json
+      }
       calculate_pb1_payable_v1: {
         Args: { p_period_end: string; p_period_start: string }
         Returns: Json
@@ -5993,31 +5941,6 @@ export type Database = {
           p_reason: string
         }
         Returns: Json
-      }
-      cancel_print_job_v1: {
-        Args: { p_id: string }
-        Returns: {
-          created_at: string
-          device_id: string | null
-          error_message: string | null
-          id: string
-          payload: Json
-          printed_at: string | null
-          priority: number
-          queued_at: string
-          reference_id: string | null
-          reference_type: string | null
-          retries: number
-          source: string | null
-          status: string
-          updated_at: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "print_queue"
-          isOneToOne: true
-          isSetofReturn: false
-        }
       }
       cancel_purchase_order_v1: {
         Args: { p_po_id: string; p_reason: string }
@@ -6070,31 +5993,6 @@ export type Database = {
       }
       cash_flow_v1: { Args: { p_from: string; p_to: string }; Returns: Json }
       check_fiscal_period_open: { Args: { p_date: string }; Returns: undefined }
-      claim_print_job_v1: {
-        Args: { p_device_id: string }
-        Returns: {
-          created_at: string
-          device_id: string | null
-          error_message: string | null
-          id: string
-          payload: Json
-          printed_at: string | null
-          priority: number
-          queued_at: string
-          reference_id: string | null
-          reference_type: string | null
-          retries: number
-          source: string | null
-          status: string
-          updated_at: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "print_queue"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
       close_fiscal_period_v1: {
         Args: { p_lock?: boolean; p_manager_pin: string; p_period_id: string }
         Returns: Json
@@ -6387,38 +6285,6 @@ export type Database = {
           p_variables?: Json
         }
         Returns: string
-      }
-      enqueue_print_job_v1: {
-        Args: {
-          p_device_id: string
-          p_payload: Json
-          p_priority?: number
-          p_reference_id?: string
-          p_reference_type?: string
-          p_source?: string
-        }
-        Returns: {
-          created_at: string
-          device_id: string | null
-          error_message: string | null
-          id: string
-          payload: Json
-          printed_at: string | null
-          priority: number
-          queued_at: string
-          reference_id: string | null
-          reference_type: string | null
-          retries: number
-          source: string | null
-          status: string
-          updated_at: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "print_queue"
-          isOneToOne: true
-          isSetofReturn: false
-        }
       }
       evaluate_promotions_v2: {
         Args: {
@@ -7215,56 +7081,6 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "order_items"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
-      mark_print_done_v1: {
-        Args: { p_id: string }
-        Returns: {
-          created_at: string
-          device_id: string | null
-          error_message: string | null
-          id: string
-          payload: Json
-          printed_at: string | null
-          priority: number
-          queued_at: string
-          reference_id: string | null
-          reference_type: string | null
-          retries: number
-          source: string | null
-          status: string
-          updated_at: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "print_queue"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
-      mark_print_failed_v1: {
-        Args: { p_error: string; p_id: string }
-        Returns: {
-          created_at: string
-          device_id: string | null
-          error_message: string | null
-          id: string
-          payload: Json
-          printed_at: string | null
-          priority: number
-          queued_at: string
-          reference_id: string | null
-          reference_type: string | null
-          retries: number
-          source: string | null
-          status: string
-          updated_at: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "print_queue"
           isOneToOne: true
           isSetofReturn: false
         }
