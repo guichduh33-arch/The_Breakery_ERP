@@ -13,12 +13,12 @@
 //
 // URL: /backoffice/inventory/:productId
 
-import { useState, type JSX, type ReactNode } from 'react';
+import { useState, type JSX } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
-  ArrowLeft, CalendarRange, Coins, Inbox, Package, Settings2, TrendingUp,
+  ArrowLeft, CalendarRange, Coins, Package, Settings2, TrendingUp,
 } from 'lucide-react';
-import { EmptyState, KpiTile, cn } from '@breakery/ui';
+import { KpiTile, cn } from '@breakery/ui';
 import { useProductDetail } from '@/features/products/hooks/useProductDetail.js';
 import { useProductAnalytics } from '@/features/products/hooks/useProductAnalytics.js';
 import {
@@ -167,35 +167,6 @@ export default function ProductStockPage(): JSX.Element {
               ) : (
                 <StockBySectionList rows={d?.stock_by_section ?? []} />
               )}
-
-              <Panel title="Expiring lots">
-                {(d?.expiring_lots.length ?? 0) === 0 ? (
-                  <div className="p-4">
-                    <EmptyState icon={Inbox} title="No active lots" size="sm" />
-                  </div>
-                ) : (
-                  <table className="w-full text-sm">
-                    <thead className="text-xs uppercase tracking-widest text-text-muted">
-                      <tr>
-                        <th className="py-2 px-3 text-left">Batch</th>
-                        <th className="py-2 px-3 text-right">Qty</th>
-                        <th className="py-2 px-3 text-right">Expires in</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(d?.expiring_lots ?? []).map((l) => (
-                        <tr key={l.id} className="border-t border-border-subtle">
-                          <td className="py-2 px-3 font-mono text-xs">{l.batch_number ?? l.id.slice(0, 8)}</td>
-                          <td className="py-2 px-3 text-right font-mono">{Number(l.quantity)} {l.unit}</td>
-                          <td className={`py-2 px-3 text-right font-mono ${l.hours_until_expiry < 24 ? 'text-danger' : 'text-text-secondary'}`}>
-                            {Number(l.hours_until_expiry).toFixed(1)}h
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </Panel>
             </div>
 
             {d !== null && d !== undefined && (
@@ -242,15 +213,4 @@ function AnalyticsTab({ tab, isLoading, error, data }: {
     case 'transfers':  return <TransfersSection data={data} />;
     case 'production': return <ProductionLossSection data={data} />;
   }
-}
-
-function Panel({ title, children }: { title: string; children: ReactNode }): JSX.Element {
-  return (
-    <div className="overflow-hidden rounded-lg border border-border-subtle bg-bg-elevated">
-      <div className="border-b border-border-subtle px-4 py-2 text-xs uppercase tracking-widest text-text-muted">
-        {title}
-      </div>
-      {children}
-    </div>
-  );
 }

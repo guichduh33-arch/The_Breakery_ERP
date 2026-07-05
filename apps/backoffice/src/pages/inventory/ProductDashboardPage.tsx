@@ -115,32 +115,6 @@ export default function ProductDashboardPage(): JSX.Element {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <StockBySectionList rows={d.stock_by_section} />
-        <Panel title="Expiring lots">
-          {d.expiring_lots.length === 0 ? (
-            <EmptyState icon={Inbox} title="No active lots" size="sm" />
-          ) : (
-            <table className="w-full text-sm">
-              <thead className="text-xs uppercase tracking-widest text-text-muted">
-                <tr>
-                  <th className="text-left py-2 px-3">Batch</th>
-                  <th className="text-right py-2 px-3">Qty</th>
-                  <th className="text-right py-2 px-3">Expires in</th>
-                </tr>
-              </thead>
-              <tbody>
-                {d.expiring_lots.map((l) => (
-                  <tr key={l.id} className="border-t border-border-subtle">
-                    <td className="py-2 px-3 font-mono text-xs">{l.batch_number ?? l.id.slice(0, 8)}</td>
-                    <td className="py-2 px-3 text-right font-mono">{Number(l.quantity)} {l.unit}</td>
-                    <td className={`py-2 px-3 text-right font-mono ${l.hours_until_expiry < 24 ? 'text-danger' : 'text-text-secondary'}`}>
-                      {Number(l.hours_until_expiry).toFixed(1)}h
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </Panel>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
