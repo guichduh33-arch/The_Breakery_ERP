@@ -8,9 +8,13 @@
 // age), right pane with selected customer's outstanding orders. Each order
 // shows Total / Paid / Due in 3-col grid and a "Pay" CTA.
 //
-// Routed at `/pos/debts`. The "Pay" CTA currently routes to the order
-// detail in history (which carries the existing pay_existing_order flow).
-// Inline payment from this panel is deferred — the goal here is visibility.
+// Routed at `/pos/debts`. Session 60 (fiche 02 D1.1) — the "Pay" CTA loads
+// the order's persisted items into the cart via `useLoadDebtOrder` (mirror of
+// the tablet pickup pattern) and sets `pickedUpOrderId`, which routes
+// `useCheckout` to `pay_existing_order_v11` — no navigation to order history
+// needed, the cashier settles it from the standard payment terminal. B2B
+// orders never get a Pay button here: the server guard rejects them, and B2B
+// settlement is per-invoice allocation, done in Backoffice.
 
 import { useMemo, useState, type JSX } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -21,17 +25,18 @@ import {
   Clock,
   CreditCard,
 } from 'lucide-react';
-import { toast } from 'sonner';
 import { Button, Currency, EmptyState, cn } from '@breakery/ui';
 import {
   useOutstandingDebts,
   type OutstandingDebt,
   type OutstandingOrder,
 } from './hooks/useOutstandingDebts';
+import { useLoadDebtOrder } from './hooks/useLoadDebtOrder';
 
 export default function CustomerDebtsPanel(): JSX.Element {
   const navigate = useNavigate();
   const { data, isLoading, isError } = useOutstandingDebts();
+  const { loadDebtOrder, isLoading: isPaying } = useLoadDebtOrder();
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -117,9 +122,8 @@ export default function CustomerDebtsPanel(): JSX.Element {
           {selected ? (
             <DebtDetail
               debt={selected}
-              onPay={(order) => {
-                toast.info(`Payment flow for ${order.order_number} — opening cashier terminal…`);
-              }}
+              isPaying={isPaying}
+              onPay={(order) => void loadDebtOrder(order, selected.customer_id)}
             />
           ) : (
             <div className="h-full grid place-items-center">
@@ -183,9 +187,11 @@ function DebtSidebarItem({
 
 function DebtDetail({
   debt,
+  isPaying,
   onPay,
 }: {
   debt: OutstandingDebt;
+  isPaying: boolean;
   onPay: (order: OutstandingOrder) => void;
 }): JSX.Element {
   const utilizationPct =
@@ -227,7 +233,7 @@ function DebtDetail({
 
       <ul className="space-y-3">
         {debt.orders.map((o) => (
-          <DebtOrderRow key={o.id} order={o} onPay={() => onPay(o)} />
+          <DebtOrderRow key={o.id} order={o} isPaying={isPaying} onPay={() => onPay(o)} />
         ))}
       </ul>
     </div>
@@ -236,9 +242,11 @@ function DebtDetail({
 
 function DebtOrderRow({
   order,
+  isPaying,
   onPay,
 }: {
   order: OutstandingOrder;
+  isPaying: boolean;
   onPay: () => void;
 }): JSX.Element {
   return (
@@ -271,9 +279,21 @@ function DebtOrderRow({
         </div>
       </div>
 
-      <Button variant="outlineGold" size="md" onClick={onPay} className="w-full">
-        <CreditCard className="h-4 w-4" aria-hidden /> Pay {new Intl.NumberFormat().format(order.due)}
-      </Button>
+      {order.order_type === 'b2b' ? (
+        <p className="text-xs text-text-muted text-center py-1.5">
+          B2B invoice — settle in Backoffice
+        </p>
+      ) : (
+        <Button
+          variant="outlineGold"
+          size="md"
+          onClick={onPay}
+          disabled={isPaying}
+          className="w-full"
+        >
+          <CreditCard className="h-4 w-4" aria-hidden /> Pay {new Intl.NumberFormat().format(order.due)}
+        </Button>
+      )}
     </li>
   );
 }
