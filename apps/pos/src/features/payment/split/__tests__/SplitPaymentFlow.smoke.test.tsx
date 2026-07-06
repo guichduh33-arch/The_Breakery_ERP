@@ -9,8 +9,17 @@
 
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { ReactNode } from 'react';
 import type { CartItem } from '@breakery/domain';
 import { SplitPaymentFlow } from '../SplitPaymentFlow';
+
+// S64 — PerPayerMethodStep now reads useEnabledPaymentMethods (React Query),
+// so every render needs a QueryClientProvider ancestor.
+function wrapper({ children }: { children: ReactNode }) {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
+}
 
 const cartItems: CartItem[] = [
   {
@@ -45,6 +54,7 @@ describe('SplitPaymentFlow', () => {
         onCancel={vi.fn()}
         onComplete={vi.fn()}
       />,
+      { wrapper },
     );
     expect(screen.getByTestId('split-mode-select')).toBeInTheDocument();
     expect(screen.getByTestId('split-mode-items')).toBeInTheDocument();
@@ -60,6 +70,7 @@ describe('SplitPaymentFlow', () => {
         onCancel={vi.fn()}
         onComplete={vi.fn()}
       />,
+      { wrapper },
     );
     selectItemsMode();
     expect(screen.getByTestId('split-payer-count')).toBeInTheDocument();
@@ -77,6 +88,7 @@ describe('SplitPaymentFlow', () => {
         onCancel={vi.fn()}
         onComplete={vi.fn()}
       />,
+      { wrapper },
     );
     selectItemsMode();
     fireEvent.click(screen.getByTestId('split-payer-count-2'));
@@ -97,6 +109,7 @@ describe('SplitPaymentFlow', () => {
         onCancel={vi.fn()}
         onComplete={vi.fn()}
       />,
+      { wrapper },
     );
     selectItemsMode();
     fireEvent.click(screen.getByTestId('split-payer-count-2'));
@@ -122,6 +135,7 @@ describe('SplitPaymentFlow', () => {
         onCancel={onCancel}
         onComplete={vi.fn()}
       />,
+      { wrapper },
     );
     fireEvent.click(screen.getByLabelText(/Cancel split/i));
     expect(onCancel).toHaveBeenCalled();

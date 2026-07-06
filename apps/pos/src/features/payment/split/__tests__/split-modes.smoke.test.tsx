@@ -10,8 +10,17 @@
 
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { ReactNode } from 'react';
 import type { CartItem, Tender } from '@breakery/domain';
 import { SplitPaymentFlow } from '../SplitPaymentFlow';
+
+// S64 — PerPayerMethodStep now reads useEnabledPaymentMethods (React Query),
+// so every render needs a QueryClientProvider ancestor.
+function wrapper({ children }: { children: ReactNode }) {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
+}
 
 const cartItems: CartItem[] = [
   {
@@ -52,6 +61,7 @@ describe('SplitPaymentFlow — mode select + new modes', () => {
         onCancel={vi.fn()}
         onComplete={vi.fn()}
       />,
+      { wrapper },
     );
     expect(screen.getByTestId('split-mode-select')).toBeInTheDocument();
     expect(screen.getByTestId('split-mode-items')).toBeInTheDocument();
@@ -69,6 +79,7 @@ describe('SplitPaymentFlow — mode select + new modes', () => {
         onCancel={vi.fn()}
         onComplete={onComplete}
       />,
+      { wrapper },
     );
 
     // Select equal mode → payer_count → 3
@@ -117,6 +128,7 @@ describe('SplitPaymentFlow — mode select + new modes', () => {
         onCancel={vi.fn()}
         onComplete={vi.fn()}
       />,
+      { wrapper },
     );
 
     // Select custom mode → 2 payers
@@ -145,6 +157,7 @@ describe('SplitPaymentFlow — mode select + new modes', () => {
         onCancel={vi.fn()}
         onComplete={vi.fn()}
       />,
+      { wrapper },
     );
 
     // Select items mode → 2 payers

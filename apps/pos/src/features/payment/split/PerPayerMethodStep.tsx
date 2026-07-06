@@ -26,6 +26,7 @@ import type { LucideProps } from 'lucide-react';
 import type { ForwardRefExoticComponent, RefAttributes } from 'react';
 import { COLOR_CLASSES, type SplitMode, type SplitPayer } from './types';
 import { payerSubtotal } from './ItemAssignStep';
+import { useEnabledPaymentMethods } from '@/features/settings/hooks/useEnabledPaymentMethods';
 
 /**
  * Effective subtotal for a payer: uses assignedAmount for equal/custom modes,
@@ -71,6 +72,8 @@ export function PerPayerMethodStep({
   onPickMethod,
   onConfirmPayer,
 }: PerPayerMethodStepProps): JSX.Element {
+  // S64 — only methods enabled in BO Settings render (fail-open = all 6).
+  const enabledMethods = useEnabledPaymentMethods();
   const activePayer = payers.find((p) => p.id === activePayerId) ?? payers[0]!;
   const activeColors = COLOR_CLASSES[activePayer.color];
   const activeTotal = effectiveSubtotal(activePayer, cartItems);
@@ -166,7 +169,7 @@ export function PerPayerMethodStep({
         </h3>
 
         <div className="grid grid-cols-2 gap-3 mb-6">
-          {METHODS.map((m) => {
+          {METHODS.filter((m) => enabledMethods.has(m.value)).map((m) => {
             const Icon = m.icon;
             const selected = activePayer.method === m.value;
             return (
