@@ -79,7 +79,7 @@ export function createApp({ config, send, kick, probe = realProbe, scan = realSc
   app.get('/scan/printers', (req, res) => {
     void (async () => {
       try {
-        const prefix = String(req.query.prefix ?? '');
+        const prefix = typeof req.query.prefix === 'string' ? req.query.prefix : '';
         if (!isPrivatePrefix(prefix)) {
           res.status(400).json({ error: 'invalid_range' });
           return;
@@ -101,7 +101,7 @@ export function createApp({ config, send, kick, probe = realProbe, scan = realSc
   app.get('/status/probe', (req, res) => {
     void (async () => {
       try {
-        const ip = String(req.query.ip ?? '');
+        const ip = typeof req.query.ip === 'string' ? req.query.ip : '';
         if (!isPrivateIpv4(ip)) {
           res.status(400).json({ error: 'invalid_range' });
           return;

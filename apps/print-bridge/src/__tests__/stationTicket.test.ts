@@ -38,7 +38,7 @@ describe('renderStationTicket', () => {
 
   it('waiter ticket shows WAITER header, no table line when absent', () => {
     const { p, log } = makeFake();
-    const { table_number, ...baseWithoutTable } = BASE;
+    const { table_number: _table_number, ...baseWithoutTable } = BASE;
     renderStationTicket(p, { ...baseWithoutTable, kind: 'waiter', role: 'waiter' });
     const flat = log.join('\n');
     expect(flat).toContain('WAITER');

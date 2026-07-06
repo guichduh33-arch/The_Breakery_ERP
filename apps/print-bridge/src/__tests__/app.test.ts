@@ -19,6 +19,12 @@ function app(receiptPrinter: PrinterTarget | null = { ip_address: '192.168.1.50'
   return createApp({ config: { port: 3001, receiptPrinter }, send, kick, probe, scan });
 }
 
+// supertest's Response.body is `any` — narrow it once here instead of
+// scattering unsafe member accesses across every assertion below.
+function body(res: { body: unknown }): Record<string, unknown> {
+  return res.body as Record<string, unknown>;
+}
+
 const RECEIPT: ReceiptPayload = {
   business: { name: 'B', address: 'A' },
   order: { order_number: '1', created_at: '2026-07-06T00:00:00Z', cashier_name: 'C', order_type: 'take_out' },
@@ -38,7 +44,7 @@ describe('GET /health', () => {
   it('200 ok', async () => {
     const res = await request(app()).get('/health');
     expect(res.status).toBe(200);
-    expect(res.body.status).toBe('ok');
+    expect(body(res).status).toBe('ok');
   });
 });
 
@@ -66,7 +72,7 @@ describe('POST /print/receipt', () => {
     send.mockRejectedValueOnce(new Error('ECONNREFUSED'));
     const res = await request(app()).post('/print/receipt').send(RECEIPT);
     expect(res.status).toBe(502);
-    expect(res.body.success).toBe(false);
+    expect(body(res).success).toBe(false);
   });
 });
 
@@ -80,7 +86,7 @@ describe('POST /print/ticket', () => {
   it('400 missing_printer without printer', async () => {
     const res = await request(app()).post('/print/ticket').send(TICKET);
     expect(res.status).toBe(400);
-    expect(res.body.error).toBe('missing_printer');
+    expect(body(res).error).toBe('missing_printer');
   });
 });
 
@@ -100,15 +106,15 @@ describe('GET /scan/printers', () => {
   it('scans a private prefix', async () => {
     const res = await request(app()).get('/scan/printers?prefix=192.168.1&timeout=300');
     expect(res.status).toBe(200);
-    expect(res.body.devices).toEqual([{ ip: '192.168.1.60', port: 9100, latencyMs: 8 }]);
-    expect(res.body.hostsScanned).toBe(254);
-    expect(typeof res.body.durationMs).toBe('number');
+    expect(body(res).devices).toEqual([{ ip: '192.168.1.60', port: 9100, latencyMs: 8 }]);
+    expect(body(res).hostsScanned).toBe(254);
+    expect(typeof body(res).durationMs).toBe('number');
     expect(scan).toHaveBeenCalledWith(expect.arrayContaining(['192.168.1.1']), 9100, 300, 50);
   });
   it('400 invalid_range on public prefix', async () => {
     const res = await request(app()).get('/scan/printers?prefix=8.8.8');
     expect(res.status).toBe(400);
-    expect(res.body.error).toBe('invalid_range');
+    expect(body(res).error).toBe('invalid_range');
   });
   it('400 invalid_range without prefix', async () => {
     const res = await request(app()).get('/scan/printers');
@@ -118,7 +124,7 @@ describe('GET /scan/printers', () => {
     scan.mockRejectedValueOnce(new Error('scan_failed'));
     const res = await request(app()).get('/scan/printers?prefix=192.168.1');
     expect(res.status).toBe(502);
-    expect(res.body.error).toBe('scan_failed');
+    expect(body(res).error).toBe('scan_failed');
   });
 });
 
@@ -141,6 +147,6 @@ describe('GET /status/probe', () => {
     probe.mockRejectedValueOnce(new Error('probe_failed'));
     const res = await request(app()).get('/status/probe?ip=192.168.1.62');
     expect(res.status).toBe(502);
-    expect(res.body.error).toBe('probe_failed');
+    expect(body(res).error).toBe('probe_failed');
   });
 });

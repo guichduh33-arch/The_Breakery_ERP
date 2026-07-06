@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const executed: string[] = [];
-const instances: Array<{ iface: string; calls: string[] }> = [];
+const instances: { iface: string; calls: string[] }[] = [];
 
 vi.mock('node-thermal-printer', () => {
   class ThermalPrinter {
@@ -20,7 +20,10 @@ vi.mock('node-thermal-printer', () => {
     leftRight(): void { this.calls.push('leftRight'); }
     cut(): void { this.calls.push('cut'); }
     openCashDrawer(): void { this.calls.push('openCashDrawer'); }
-    async execute(): Promise<void> { executed.push(instances[instances.length - 1]!.iface); }
+    execute(): Promise<void> {
+      executed.push(instances[instances.length - 1]!.iface);
+      return Promise.resolve();
+    }
   }
   return { ThermalPrinter, PrinterTypes: { EPSON: 'epson' }, printer: ThermalPrinter };
 });

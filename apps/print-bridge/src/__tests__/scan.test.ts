@@ -26,7 +26,7 @@ describe('probeTcp', () => {
 describe('scanHosts', () => {
   it('finds only the reachable host', async () => {
     const hits = await scanHosts(['127.0.0.1'], openPort, 1000);
-    expect(hits).toEqual([{ ip: '127.0.0.1', port: openPort, latencyMs: expect.any(Number) }]);
+    expect(hits).toEqual([{ ip: '127.0.0.1', port: openPort, latencyMs: expect.any(Number) as unknown }]);
   });
   it('empty when nothing listens', async () => {
     expect(await scanHosts(['127.0.0.1'], 1, 300)).toEqual([]);
