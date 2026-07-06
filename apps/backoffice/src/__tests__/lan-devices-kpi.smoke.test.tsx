@@ -23,6 +23,16 @@ vi.mock('@/features/lan-devices/hooks/useLanDevices.js', () => ({
   LAN_DEVICES_KEY: ['lan-devices'],
 }));
 
+// Same treatment as the other lan-devices smokes (e.g. LanDevicesTable.smoke.test.tsx):
+// useAuthStore is a zustand store hook, not spy-able in place, and importing the real
+// LanDevicesPage now pulls in ScanPanel/LanDeviceFormModal/bridgeApi/authStore->supabase
+// client, which grew this branch and made the real module graph slow under coverage.
+const currentCanManage = false;
+vi.mock('@/stores/authStore.js', () => ({
+  useAuthStore: (sel: (s: { hasPermission: (p: string) => boolean }) => unknown) =>
+    sel({ hasPermission: () => currentCanManage }),
+}));
+
 function renderPage(Component: React.ComponentType) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
@@ -45,7 +55,7 @@ describe('LanDevicesPage (KPI rebuild)', () => {
     expect(screen.getByText(/^Printers$/i)).toBeInTheDocument();
   });
 
-  it('renders the underlying device rows', { timeout: 15_000 }, async () => {
+  it('renders the underlying device rows', { timeout: 30_000 }, async () => {
     const LanDevicesPage = (await import('@/pages/lan-devices/LanDevicesPage.js')).default;
     renderPage(LanDevicesPage);
     expect(screen.getByText('POS-01')).toBeInTheDocument();
