@@ -297,6 +297,7 @@ export type Database = {
           allow_negative_stock: boolean
           created_at: string
           currency: string
+          enabled_payment_methods: Json
           fiscal_address: string | null
           id: number
           name: string
@@ -315,6 +316,7 @@ export type Database = {
           allow_negative_stock?: boolean
           created_at?: string
           currency?: string
+          enabled_payment_methods?: Json
           fiscal_address?: string | null
           id?: number
           name?: string
@@ -333,6 +335,7 @@ export type Database = {
           allow_negative_stock?: boolean
           created_at?: string
           currency?: string
+          enabled_payment_methods?: Json
           fiscal_address?: string | null
           id?: number
           name?: string
