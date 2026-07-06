@@ -1,6 +1,13 @@
 // apps/pos/src/services/print/printService.ts
-import type { PaymentMethod, PrintKind, PrinterRole } from '@breakery/domain';
+import type { PrinterTarget, ReceiptPayload, StationTicketPayload, PrintKind } from '@breakery/domain';
 import { usePosSettingsStore } from '@/stores/posSettingsStore';
+
+export type {
+  PrinterTarget,
+  StationTicketItem,
+  StationTicketPayload,
+  ReceiptPayload,
+} from '@breakery/domain';
 
 /**
  * Print-bridge base URL, resolved at CALL TIME (F-015) so a settings change
@@ -11,83 +18,6 @@ function getServerUrl(): string {
   const override = usePosSettingsStore.getState().printerUrl;
   if (override) return override;
   return (import.meta.env.VITE_PRINT_SERVER_URL as string | undefined) ?? 'http://localhost:3001';
-}
-
-// ---------------------------------------------------------------------------
-// Station ticket types
-// ---------------------------------------------------------------------------
-
-export interface PrinterTarget {
-  ip_address: string;
-  port: number;
-}
-
-export interface StationTicketItem {
-  name: string;
-  quantity: number;
-  modifiers?: string[];
-  note?: string;
-}
-
-export interface StationTicketPayload {
-  kind: PrintKind;
-  role: PrinterRole;
-  order_number: string;
-  table_number?: string;
-  created_at: string; // ISO
-  server_name: string;
-  items: StationTicketItem[];
-  /**
-   * Spec A Bloc 4 — true when these lines are a 2nd-phase append to a reopened
-   * order. The print template renders an "ADDITIONAL ORDER" header so the
-   * station knows it's a top-up, not a fresh ticket.
-   */
-  additional?: boolean;
-  totals?: { subtotal: number; tax: number; total: number }; // bill + receipt
-  payment?: { method: string; amount: number; change_given: number }; // receipt only
-}
-
-// ---------------------------------------------------------------------------
-// Receipt payload
-// ---------------------------------------------------------------------------
-
-export interface ReceiptPayload {
-  business: { name: string; address: string; phone?: string; tax_id?: string };
-  order: {
-    order_number: string;
-    created_at: string;
-    cashier_name: string;
-    order_type: 'dine_in' | 'take_out';
-  };
-  customer?: { name: string; loyalty_tier?: string };
-  items: {
-    name: string;
-    quantity: number;
-    unit_price: number;
-    modifiers?: { label: string; price_adjustment: number }[];
-    line_total: number;
-  }[];
-  totals: {
-    items_total: number;
-    redemption_amount: number;
-    total: number;
-    tax_amount: number;
-    /** Session 60 (fiche 13 D1.1) — sum of `promotions[].amount`. Omitted when no promo applied. */
-    promotion_total?: number;
-  };
-  payment: { method: PaymentMethod; amount: number; cash_received?: number; change_given?: number };
-  /** balance_after is optional — omitted when the RPC doesn't return it yet (deferred v11). */
-  loyalty?: { points_earned: number; balance_after?: number };
-  /**
-   * Session 60 (fiche 13 D1.1) — named promotion lines applied to the cart.
-   * The server envelope (v17) only returns the aggregate `promotion_total`;
-   * these named lines come from cartStore.appliedPromotions, snapshotted at
-   * checkout success. Omitted (or empty) when no promo applied.
-   * NOTE (dette de session) : le template du print-bridge externe doit être
-   * mis à jour pour rendre ce champ — action utilisateur.
-   */
-  promotions?: { name: string; amount: number }[];
-  footer?: string;
 }
 
 // ---------------------------------------------------------------------------
