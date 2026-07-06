@@ -33,7 +33,9 @@
 - **DEV-S63-03** : migration **`_114`** non prévue au plan — fix du finding Important de la revue T1 (le bloc payment_methods du plan omettait `paid_at IS NOT NULL` alors que la Global Constraint « commande valide » le mandatait ; la contrainte globale gouverne).
 - **DEV-S63-04** : polyfill **`ResizeObserver`** centralisé dans `apps/backoffice/vitest.setup.ts` (hors liste de fichiers du brief T3, **non déclaré** par l'implémenteur — détecté en revue) : requis par recharts `ResponsiveContainer` en jsdom, feature-detected, miroir d'un stub déjà dupliqué dans 6 suites. Adjugé cascade légitime ; le défaut est la non-déclaration, pas le code.
 
-## Finding Important de la revue finale — décision propriétaire due
+## Finding Important de la revue finale — ✅ FERMÉ S64
+
+> **Fixé S64** (décision propriétaire 2026-07-06) : migration `20260710000116` — `AND NOT r.is_full_void` dans les 3 soustractions de refunds (`revenue_today` + CTE `day_refunds` 30 j du dashboard, CTE `day_refunds` de `get_daily_sales_v1`). Pin pgTAP `supabase/tests/net_revenue_full_void.test.sql` 11/11 live ; non-régression `dashboard_overview` 14/14.
 
 - **I-1 (hérité de la spec, PAS un bug d'implémentation)** : **les voids même-jour double-pénalisent le net** de `revenue_today` et `revenue_30d`. Le lineage void (`20260704000018`) pose `status='voided'` ET insère un refund `is_full_void=true` : la commande sort du brut (correct) et son refund est soustrait quand même → une vente 50k payée puis voidée le jour même compte −50k au lieu de 0. **Biais partagé verbatim avec `get_daily_sales_v1` depuis S40** (le miroir était mandaté par la spec §3.2 — patcher le seul dashboard casserait la cohérence voulue). **Fix proposé (session future)** : `AND NOT r.is_full_void` dans les CTEs refunds des **deux** RPCs + pin pgTAP — change le sens de « net » sur deux surfaces à la fois, décision propriétaire requise.
 
