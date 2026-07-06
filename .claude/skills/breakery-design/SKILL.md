@@ -76,7 +76,7 @@ L'esthétique n'est jamais décorative : chaque surface a un **job** et son desi
 Pour tout écran nouveau ou redesign structurant :
 
 1. **Design-system-first** : lister d'abord les tokens/primitives disponibles (via `breakery-ui-kit`). La contrainte précède la créativité.
-2. **2-3 variantes** avant de coder : artifact HTML self-contained (tokens copiés en variables CSS locales) ou mockup dans un outil AI externe (Stitch, etc.). Chaque variante = un parti pris nommé (« densité max », « respiration éditoriale », « urgence d'abord »).
+2. **2-3 variantes** avant de coder : artifact HTML self-contained (tokens copiés en variables CSS locales) ou mockup dans un outil AI externe (Stitch, etc.). Chaque variante = un parti pris nommé (« densité max », « respiration éditoriale », « urgence d'abord »). **Les thèmes actuels (luxe-dark/ivoire, gold) sont l'héritage, pas un carcan** : les variantes peuvent proposer des directions de palette/ambiance neuves — présentées comme telles, jamais imposées ; si la gagnante sort des thèmes existants, c'est une décision cascade-tokens (escalate).
 3. **Choix argumenté** contre le job de la surface (pas « c'est joli ») — montrer les variantes à l'utilisateur si la décision est structurante.
 4. **Traduction en tokens** : le gagnant s'implémente exclusivement en tokens + primitives `@breakery/ui`. Un mockup externe est une **inspiration, jamais une source de code** — on ne colle pas le CSS d'un outil AI dans le repo.
 5. Nouveau token nécessaire → `colors.css` sous la bonne classe de thème (règle ui-kit), jamais dans le composant.
@@ -102,6 +102,8 @@ Applicable à tout écran existant (posture audit) comme à toute création (def
 | 11 | Performance perçue | Feedback < 100 ms après tap/clic ; opération longue = skeleton/spinner + bouton désactivé (pas d'UI muette) |
 
 Restituer un audit sous forme de findings par sévérité (bloquant a11y / incohérence / polish), avec le token ou primitive de correction proposé.
+
+**Vérifier au navigateur, pas à l'œil (MCP Playwright)** : les checks mesurables (contraste, tailles de cibles, rendu des 2 thèmes, lisibilité à distance) se vérifient sur le rendu réel via les outils `mcp__plugin_playwright_playwright__browser_*` — naviguer vers le dev server ou un mockup HTML, mesurer par `browser_evaluate` (`getBoundingClientRect`, `getComputedStyle`, ratio WCAG calculé sur les couleurs computed), capturer par `browser_take_screenshot` aux dimensions des devices cibles. Protocole détaillé et chiffré : skill `pos-design-craft` (section Playwright) — même méthode pour toutes les surfaces. Pour l'état de l'art au-delà du digest trends : WebSearch + navigation Playwright sur des références publiques, en extraire des principes mesurés, jamais du code copié.
 
 ---
 
