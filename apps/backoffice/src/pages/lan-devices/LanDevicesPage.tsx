@@ -14,7 +14,7 @@ import { useLanDevices, type LanDeviceRow } from '@/features/lan-devices/hooks/u
 export default function LanDevicesPage() {
   const { data } = useLanDevices();
   const canManage = useAuthStore((s) => s.hasPermission('lan.devices.manage'));
-  const rows = data ?? [];
+  const rows = useMemo(() => data ?? [], [data]);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<LanDeviceRow | null>(null);

@@ -29,13 +29,11 @@ export function useLanDevices() {
     queryKey: LAN_DEVICES_KEY,
     staleTime: 15_000,
     queryFn: async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const builder = (supabase as any).from('lan_devices')
+      const { data, error } = await supabase.from('lan_devices')
         .select('*')
         .is('deleted_at', null)
         .order('created_at', { ascending: false });
-      const { data, error } = await builder;
-      if (error !== null && error !== undefined) throw new Error((error as { message: string }).message);
+      if (error !== null) throw new Error(error.message);
       return (data ?? []) as LanDeviceRow[];
     },
   });

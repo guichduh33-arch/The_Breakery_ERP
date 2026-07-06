@@ -3,9 +3,10 @@
 
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, type UseQueryResult } from '@tanstack/react-query';
 import { LanDevicesTable } from '../components/LanDevicesTable.js';
 import * as devicesMod from '../hooks/useLanDevices.js';
+import type { LanDeviceRow } from '../hooks/useLanDevices.js';
 
 // Module-level mock, controllable per-test via `currentCanManage` — mirrors
 // the pattern used across BO smokes (e.g. ExpenseDetailPage.smoke.test.tsx)
@@ -21,9 +22,10 @@ function wrap(ui: React.ReactNode) {
   return <QueryClientProvider client={qc}>{ui}</QueryClientProvider>;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function fakeQuery(data: unknown, overrides: Partial<any> = {}): any {
-  return { data, isLoading: false, error: null, ...overrides };
+type DevicesQuery = UseQueryResult<LanDeviceRow[], Error>;
+
+function fakeQuery(data: LanDeviceRow[], overrides: Partial<DevicesQuery> = {}): DevicesQuery {
+  return { data, isLoading: false, error: null, ...overrides } as unknown as DevicesQuery;
 }
 
 describe('LanDevicesTable', () => {

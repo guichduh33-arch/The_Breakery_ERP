@@ -27,7 +27,7 @@ vi.mock('@/features/lan-devices/hooks/useLanDevices.js', () => ({
 // useAuthStore is a zustand store hook, not spy-able in place, and importing the real
 // LanDevicesPage now pulls in ScanPanel/LanDeviceFormModal/bridgeApi/authStore->supabase
 // client, which grew this branch and made the real module graph slow under coverage.
-let currentCanManage = false;
+const currentCanManage = false;
 vi.mock('@/stores/authStore.js', () => ({
   useAuthStore: (sel: (s: { hasPermission: (p: string) => boolean }) => unknown) =>
     sel({ hasPermission: () => currentCanManage }),

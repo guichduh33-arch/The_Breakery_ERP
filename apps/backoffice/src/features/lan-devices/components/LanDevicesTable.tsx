@@ -31,7 +31,7 @@ export function LanDevicesTable({ onEdit }: { onEdit: (device: LanDeviceRow) => 
         toast.error(`${d.code}: printer unreachable on ${d.ip_address}:${d.port}`);
         return;
       }
-      const station = typeof d.capabilities?.['station'] === 'string' ? (d.capabilities['station'] as string) : 'kitchen';
+      const station = typeof d.capabilities.station === 'string' ? d.capabilities.station : 'kitchen';
       const res = await sendTestTicket(bridge, { ip_address: d.ip_address, port: d.port }, station);
       if (res.success) toast.success(`${d.code}: test ticket sent (${probe.latencyMs ?? '?'} ms)`);
       else toast.error(`${d.code}: print failed — ${res.error ?? 'unknown'}`);
@@ -47,7 +47,7 @@ export function LanDevicesTable({ onEdit }: { onEdit: (device: LanDeviceRow) => 
 
   if (isLoading) return <div className="text-sm text-text-secondary">Loading LAN devices…</div>;
   if (error !== null) {
-    return <div className="text-sm text-danger">Failed to load LAN devices: {(error as Error).message}</div>;
+    return <div className="text-sm text-danger">Failed to load LAN devices: {error.message}</div>;
   }
 
   const rows = data ?? [];
@@ -78,7 +78,7 @@ export function LanDevicesTable({ onEdit }: { onEdit: (device: LanDeviceRow) => 
           const isStale = d.last_heartbeat_at === null
             ? true
             : Date.now() - new Date(d.last_heartbeat_at).getTime() > 60_000;
-          const station = typeof d.capabilities?.['station'] === 'string' ? (d.capabilities['station'] as string) : null;
+          const station = typeof d.capabilities.station === 'string' ? d.capabilities.station : null;
           return (
             <tr key={d.id} className="border-b border-border-subtle">
               <td className="py-2 font-mono text-xs">{d.code}</td>

@@ -43,7 +43,12 @@ describe('sendTestTicket', () => {
     expect(res.success).toBe(true);
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url).toBe('http://x/print/ticket');
-    const sent = JSON.parse(String(init.body));
+    const sent = JSON.parse(init.body as string) as {
+      printer: { ip_address: string; port: number };
+      kind: string;
+      role: string;
+      order_number: string;
+    };
     expect(sent.printer).toEqual({ ip_address: '192.168.1.60', port: 9100 });
     expect(sent.kind).toBe('prep');
     expect(sent.role).toBe('kitchen');

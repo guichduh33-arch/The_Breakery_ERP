@@ -3,10 +3,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { LanDeviceRow } from '../hooks/useLanDevices.js';
+import type * as UpsertLanDeviceModule from '../hooks/useUpsertLanDevice.js';
 
 const mutate = vi.fn();
 vi.mock('../hooks/useUpsertLanDevice.js', async (importOriginal) => {
-  const mod = await importOriginal<typeof import('../hooks/useUpsertLanDevice.js')>();
+  const mod = await importOriginal<typeof UpsertLanDeviceModule>();
   return { ...mod, useUpsertLanDevice: () => ({ mutate, isPending: false }) };
 });
 
@@ -30,7 +31,7 @@ beforeEach(() => mutate.mockClear());
 
 describe('LanDeviceFormModal', () => {
   it('shows the station select only for printers', () => {
-    render(wrap(<LanDeviceFormModal open onClose={() => {}} device={null} prefill={null} allDevices={[]} />));
+    render(wrap(<LanDeviceFormModal open onClose={vi.fn()} device={null} prefill={null} allDevices={[]} />));
     // défaut = printer → station visible
     expect(screen.getByLabelText(/station/i)).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText(/device type/i), { target: { value: 'kds' } });
@@ -39,7 +40,7 @@ describe('LanDeviceFormModal', () => {
 
   it('prefills ip/port from a scan hit and submits capabilities.station', () => {
     render(wrap(
-      <LanDeviceFormModal open onClose={() => {}} device={null}
+      <LanDeviceFormModal open onClose={vi.fn()} device={null}
         prefill={{ ip_address: '192.168.1.60', port: 9100 }} allDevices={[]} />,
     ));
     expect(screen.getByLabelText(/ip address/i)).toHaveValue('192.168.1.60');
@@ -55,7 +56,7 @@ describe('LanDeviceFormModal', () => {
 
   it('warns (non-blocking) when another active printer already has the station', () => {
     render(wrap(
-      <LanDeviceFormModal open onClose={() => {}} device={null} prefill={null}
+      <LanDeviceFormModal open onClose={vi.fn()} device={null} prefill={null}
         allDevices={[row({ id: 'other', capabilities: { station: 'kitchen' } })]} />,
     ));
     fireEvent.change(screen.getByLabelText(/station/i), { target: { value: 'kitchen' } });
@@ -65,7 +66,7 @@ describe('LanDeviceFormModal', () => {
   });
 
   it('requires ip+port for printers', () => {
-    render(wrap(<LanDeviceFormModal open onClose={() => {}} device={null} prefill={null} allDevices={[]} />));
+    render(wrap(<LanDeviceFormModal open onClose={vi.fn()} device={null} prefill={null} allDevices={[]} />));
     fireEvent.change(screen.getByLabelText(/^code/i), { target: { value: 'PRN-1' } });
     fireEvent.change(screen.getByLabelText(/^name/i), { target: { value: 'P' } });
     fireEvent.click(screen.getByRole('button', { name: /save/i }));
