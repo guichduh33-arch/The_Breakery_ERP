@@ -39,6 +39,8 @@ export default function SettingsPaymentMethodsPage() {
     return <div className="text-text-secondary">Accès refusé aux réglages.</div>;
   }
 
+  // Save (dirty) exige un `original` array — garanti aujourd'hui par le
+  // NOT NULL + CHECK array non vide de business_config.enabled_payment_methods.
   const original = payments.data && Array.isArray(payments.data.settings.enabled_payment_methods)
     ? (payments.data.settings.enabled_payment_methods as string[])
     : null;
