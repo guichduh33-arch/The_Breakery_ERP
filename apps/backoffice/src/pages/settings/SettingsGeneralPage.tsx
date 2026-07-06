@@ -45,7 +45,8 @@ function valueFromAny(v: unknown): DraftValue {
   if (typeof v === 'number')  return v;
   if (typeof v === 'boolean') return v;
   if (typeof v === 'object')  return JSON.stringify(v);
-  return String(v);
+  // Unreachable for JSONB-sourced settings (only bigint/symbol/function left).
+  return null;
 }
 
 export default function SettingsGeneralPage() {
@@ -93,7 +94,7 @@ export default function SettingsGeneralPage() {
   }, [business.data, localization.data, tax.data, pos.data]);
 
   const isLoading = business.isLoading || localization.isLoading || tax.isLoading || pos.isLoading;
-  const loadError = business.error || localization.error || tax.error || pos.error;
+  const loadError = business.error ?? localization.error ?? tax.error ?? pos.error;
 
   const dirtyKeys = useMemo(() => {
     const keys: string[] = [];
