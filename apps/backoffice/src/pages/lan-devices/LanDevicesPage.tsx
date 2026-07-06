@@ -49,7 +49,8 @@ export default function LanDevicesPage() {
       </div>
 
       <Card padding="md">
-        <LanDevicesTable />
+        {/* TODO(Task 15): wire onEdit to an edit modal (LanDeviceFormModal). */}
+        <LanDevicesTable onEdit={() => {}} />
       </Card>
     </div>
   );
