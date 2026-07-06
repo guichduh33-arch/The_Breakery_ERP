@@ -1,5 +1,6 @@
 # Module 14 — Rapports & analyses
 
+> **MAJ S63 (2026-07-06)** : Dashboard d'accueil câblé — `get_dashboard_overview_v1` (migrations `_113`+`_114`, gate `reports.read`) + hook `useDashboardOverview` (polling 60 s) + 5 panneaux réels (trend 30 j, donut par type, barres horaires, top produits, paiements). Le constat « stub à zéros » (§C, fin) et **D2.1 sont soldés**. Cf. `../plans/2026-07-06-session-63-INDEX.md`.
 > **Remise à plat — analyse comparative.** Doc : Description v1.2 (2026-07-03), module 14. Code : commit `5b0fa92` (2026-07-03).
 > **Statut annoncé par la doc :** Opérationnel
 > **Verdict global de l'analyse :** Largement fidèle — la surface de rapports est réelle et même plus vaste que la doc (33 cartes, 6 thèmes, exports, drill-down). Trois surclames ciblées : pas de rapport « valorisation du stock » ni « produits dormants », pas de tendance des écarts de caisse, la comparaison période précédente n'existe que sur 3 rapports sur ~30. Angle mort majeur non revendiqué par ce module mais adjacent : le Dashboard d'accueil est un stub à zéros.
@@ -71,7 +72,7 @@
 3. **Amender la doc** pour la comparaison de période (cf. D4) ou, côté code, étendre `DateRangePickerWithCompare` à Daily Sales et Payment by Method (composant déjà générique). Done : compare visible sur les 2 pages.
 
 ### D2. Chantiers moyens (1 session, plan requis)
-1. **Câbler le Dashboard d'accueil** : créer `get_dashboard_overview_v1` (KPIs jour + tendance 30 j + top produits + paiements — réutiliser les agrégats des RPCs rapports existants), REVOKE pair + gate, hook `useDashboardOverview`, brancher `Dashboard.tsx` (la page attend déjà l'interface `DashboardOverview`). Regen types. Done : KPIs réels, tests smoke verts.
+1. ✅ **Câbler le Dashboard d'accueil — SOLDÉ (S63, 2026-07-06)** : `get_dashboard_overview_v1` créé (migrations `_113`+`_114`, gate `reports.read`, trio S20, tz-aware, net des refunds), hook `useDashboardOverview` (polling 60 s), `Dashboard.tsx` branché + 5 panneaux recharts/listes. pgTAP `dashboard_overview` 14/14 live, smoke 8/8. Cf. `../plans/2026-07-06-session-63-INDEX.md`.
 2. **Rapport « Valorisation du stock »** : RPC `get_stock_valuation_v1` (qty × WAC par produit/catégorie/section) + page + carte hub/sidebar. Done : total IDR rapproché de `products.current_stock × cost_price`.
 3. **Rapport « Écarts de caisse — tendance »** : agréger `z_reports` (variance par shift, par caissier, série temporelle). Done : page routée gate `reports.audit.read`.
 4. **Rapport « Produits dormants »** : produits sans vente sur N jours avec stock > 0 (croisement `order_items`×`products`). Done : page + carte hub.
