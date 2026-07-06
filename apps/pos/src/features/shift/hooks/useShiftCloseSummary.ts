@@ -15,11 +15,16 @@ import { supabase } from '@/lib/supabase';
 /** Fallbacks when business_config is unreadable under the POS JWT. */
 export const DEFAULT_VARIANCE_THRESHOLD_ABS = 50_000;
 export const DEFAULT_VARIANCE_THRESHOLD_PCT = 0.005;
+// S66 (12 D2.1) — manager-PIN thresholds (server defaults in close_shift_v4).
+export const DEFAULT_VARIANCE_PIN_THRESHOLD_ABS = 200_000;
+export const DEFAULT_VARIANCE_PIN_THRESHOLD_PCT = 0.02;
 
 export interface ShiftCloseSummary {
   expectedCash: number;
   thresholdAbs: number;
   thresholdPct: number;
+  pinThresholdAbs: number;
+  pinThresholdPct: number;
 }
 
 export function useShiftCloseSummary(sessionId: string | null) {
@@ -51,14 +56,18 @@ export function useShiftCloseSummary(sessionId: string | null) {
       // is unreadable rather than blocking the close flow.
       let thresholdAbs = DEFAULT_VARIANCE_THRESHOLD_ABS;
       let thresholdPct = DEFAULT_VARIANCE_THRESHOLD_PCT;
+      let pinThresholdAbs = DEFAULT_VARIANCE_PIN_THRESHOLD_ABS;
+      let pinThresholdPct = DEFAULT_VARIANCE_PIN_THRESHOLD_PCT;
       const { data: cfg } = await supabase
         .from('business_config')
-        .select('shift_variance_threshold_abs, shift_variance_threshold_pct')
+        .select('shift_variance_threshold_abs, shift_variance_threshold_pct, shift_variance_pin_threshold_abs, shift_variance_pin_threshold_pct')
         .limit(1)
         .maybeSingle();
       if (cfg) {
         thresholdAbs = Number(cfg.shift_variance_threshold_abs ?? thresholdAbs);
         thresholdPct = Number(cfg.shift_variance_threshold_pct ?? thresholdPct);
+        pinThresholdAbs = Number(cfg.shift_variance_pin_threshold_abs ?? pinThresholdAbs);
+        pinThresholdPct = Number(cfg.shift_variance_pin_threshold_pct ?? pinThresholdPct);
       }
 
       const expectedCash =
@@ -67,7 +76,7 @@ export function useShiftCloseSummary(sessionId: string | null) {
         + Number(session.cash_in_total ?? 0)
         - Number(session.cash_out_total ?? 0);
 
-      return { expectedCash, thresholdAbs, thresholdPct };
+      return { expectedCash, thresholdAbs, thresholdPct, pinThresholdAbs, pinThresholdPct };
     },
   });
 }
