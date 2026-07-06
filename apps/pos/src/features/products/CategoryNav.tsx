@@ -32,9 +32,10 @@ export function CategoryNav({
   return (
     <aside
       aria-label="Product categories"
-      className="w-[104px] shrink-0 bg-bg-elevated border-r border-border-subtle flex flex-col"
+      className="w-[104px] shrink-0 bg-bg-elevated border-r border-border-subtle flex flex-col max-md:w-full max-md:border-r-0 max-md:border-b max-md:flex-row"
     >
-      <nav className="flex-1 overflow-y-auto scrollbar-none p-2">
+      {/* Below md the vertical rail becomes a horizontal swipe strip. */}
+      <nav className="flex-1 overflow-y-auto scrollbar-none p-2 max-md:overflow-y-hidden max-md:overflow-x-auto max-md:flex max-md:items-stretch max-md:gap-1.5">
         <CategoryItem
           slug="favorites"
           label="Favorites"
@@ -58,7 +59,7 @@ export function CategoryNav({
         ))}
       </nav>
       {onOpenSettings && (
-        <div className="border-t border-border-subtle py-3 flex justify-center">
+        <div className="border-t border-border-subtle py-3 flex justify-center max-md:hidden">
           <button
             type="button"
             onClick={onOpenSettings}
@@ -97,6 +98,7 @@ function CategoryItem({ slug, label, active, onSelect }: CategoryItemProps): JSX
       style={cssVars}
       className={cn(
         'cat-btn relative w-full mb-1.5 py-3 px-1 rounded-lg',
+        'max-md:w-[88px] max-md:shrink-0 max-md:mb-0',
         'flex flex-col items-center justify-center gap-1.5',
         'text-[10px] uppercase tracking-wide font-semibold',
         'transition-all duration-fast ease-motion-out active:scale-95 motion-reduce:transition-none motion-reduce:active:scale-100',

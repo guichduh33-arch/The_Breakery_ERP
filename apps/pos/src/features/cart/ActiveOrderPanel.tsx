@@ -94,7 +94,7 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
   return (
     <aside
       aria-label="Active order"
-      className="w-[340px] shrink-0 bg-bg-elevated border-l border-border-subtle flex flex-col h-full"
+      className="w-[340px] shrink-0 bg-bg-elevated border-l border-border-subtle flex flex-col h-full max-md:w-full max-md:h-[42%] max-md:border-l-0 max-md:border-t"
     >
       {/* Header ──────────────────────────────────────────────────────────── */}
       <header className="px-4 pt-4 pb-3 border-b border-border-subtle space-y-3">
@@ -107,30 +107,32 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
               {orderLabel(pickedUpOrderId)}
             </span>
           </div>
-          {/* Compact service-type tabs */}
-          <div className="flex gap-1 p-0.5 bg-bg-input rounded-md" role="tablist" aria-label="Service type">
-            {SERVICE_TABS.map((tab) => {
-              const active = cart.order_type === tab.value;
-              return (
-                <button
-                  key={tab.value}
-                  type="button"
-                  role="tab"
-                  aria-selected={active}
-                  onClick={() => setOrderType(tab.value)}
-                  className={cn(
-                    'h-7 px-2.5 rounded text-[10px] font-semibold uppercase tracking-wide transition-colors',
-                    'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-gold',
-                    active
-                      ? 'bg-gold-soft text-gold border border-gold'
-                      : 'text-text-muted hover:text-text-primary',
-                  )}
-                >
-                  {tab.label}
-                </button>
-              );
-            })}
-          </div>
+        </div>
+
+        {/* Service-type tabs — frequent rush action: 44px touch targets on a
+            dedicated full-width row (was h-7/10px inline, below the 44px floor). */}
+        <div className="grid grid-cols-3 gap-1 p-1 bg-bg-input rounded-md" role="tablist" aria-label="Service type">
+          {SERVICE_TABS.map((tab) => {
+            const active = cart.order_type === tab.value;
+            return (
+              <button
+                key={tab.value}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => setOrderType(tab.value)}
+                className={cn(
+                  'h-11 rounded text-[13px] font-semibold uppercase tracking-wide transition-colors',
+                  'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-gold',
+                  active
+                    ? 'bg-gold-soft text-gold border border-gold'
+                    : 'text-text-muted hover:text-text-primary',
+                )}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
 
         {/* Condensed order info — read-only (edited from the bottom bar) */}
