@@ -32,24 +32,26 @@ function QuantityStepperInner({
 
   return (
     <div className={cn('inline-flex items-center gap-2', className)}>
+      {/* 56px (h-14): rush-action touch size — ± quantity is hit with greasy/
+          floury fingers mid-service; 44px is the WCAG floor, not the target. */}
       <button
         type="button"
         aria-label="Decrease"
-        className="h-11 w-11 rounded-md bg-bg-input border border-border-subtle hover:bg-bg-overlay disabled:opacity-50"
+        className="h-14 w-14 rounded-md bg-bg-input border border-border-subtle hover:bg-bg-overlay disabled:opacity-50"
         onClick={handleDecrement}
         disabled={value <= min}
       >
-        <Minus className="h-4 w-4 mx-auto" aria-hidden />
+        <Minus className="h-5 w-5 mx-auto" aria-hidden />
       </button>
       <span className="min-w-[2rem] text-center font-mono tabular-nums">{value}</span>
       <button
         type="button"
         aria-label="Increase"
-        className="h-11 w-11 rounded-md bg-bg-input border border-border-subtle hover:bg-bg-overlay disabled:opacity-50"
+        className="h-14 w-14 rounded-md bg-bg-input border border-border-subtle hover:bg-bg-overlay disabled:opacity-50"
         onClick={handleIncrement}
         disabled={value >= max}
       >
-        <Plus className="h-4 w-4 mx-auto" aria-hidden />
+        <Plus className="h-5 w-5 mx-auto" aria-hidden />
       </button>
     </div>
   );

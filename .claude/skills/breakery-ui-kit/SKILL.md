@@ -23,6 +23,8 @@ promptSignals:
 
 **`CLAUDE.md` est la source de vérité** pour les patterns globaux du projet. Ce skill ajoute la surface map réelle du kit UI, les tokens de design, et les fallbacks à utiliser quand un primitif n'existe pas — CLAUDE.md ne documente pas ça.
 
+> Complémentarité : pour la **direction artistique/ergonomie** (quoi viser), voir `breakery-design` (transversal, 5 surfaces) et `pos-design-craft` (conception générative POS). Ce skill-ci répond à « avec quoi l'implémenter ».
+
 > Toute assertion sur les exports a été vérifiée contre `packages/ui/src/index.ts` (barrel unique) — 2026-05-31.
 
 ---

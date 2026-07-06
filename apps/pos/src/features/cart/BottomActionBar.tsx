@@ -3,8 +3,11 @@
 // Global POS action bar (bottom of the shell, full width). It concentrates ALL
 // order actions that used to live inside the Active Order panel:
 //
-//   left  : Held Orders · Tablet inbox · Customer · Table · Print Bill · More(▾)
-//   right : Void Order · Send to Kitchen · Checkout (+ total)
+//   left  : Held Orders · Tablet inbox · Customer · Table · Print Bill · More(▾) · Void Order
+//   right : Send to Kitchen · Checkout (+ total)
+//   (Void lives LEFT of the spacer — destructive stays out of the rush reflex
+//   zone next to Send/Checkout. Below md the bar wraps and the validation pair
+//   becomes a full-width bottom row, Checkout stretched — waiter one-hand use.)
 //
 // It is a *connected* component — it reuses the existing hooks / self-contained
 // button components (no business logic is rewritten here):
@@ -190,7 +193,7 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
 
   return (
     <div
-      className="bg-bg-elevated border-t border-border-subtle px-4 py-2.5 flex items-center gap-2 shadow-[0_-4px_16px_rgba(0,0,0,0.25)] z-50"
+      className="shrink-0 bg-bg-elevated border-t border-border-subtle px-4 py-2.5 flex max-md:flex-wrap items-center gap-2 shadow-[0_-4px_16px_rgba(0,0,0,0.25)] z-50"
       role="toolbar"
       aria-label="Order actions"
     >
@@ -309,12 +312,11 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
         )}
       </div>
 
-      <div className="flex-1" />
-
-      {/* ── Right group : validation ────────────────────────────────────── */}
-      {/* LOT 7 (audit 2026-06-25) — visual hierarchy by touch size:
-          Checkout (h-14/56px) dominates ▸ Void/Send (h-12/48px) ▸ ghosts (h-11).
-          Bigger = more important = faster to hit during the rush. */}
+      {/* Void Order — destructive: kept in the LEFT (management) group, the
+          full flex-1 spacer away from Send/Checkout. It used to sit 8px from
+          Send to Kitchen (the most-tapped rush button) — one greasy mis-tap
+          from wiping the order. Destructive actions stay out of the reflex
+          zone (pos-design-craft P1, 2026-07-06). */}
       <Button
         variant="ghostDestructive"
         className="h-12 px-3.5 gap-2 text-[13px] text-red-fg border border-red-fg/30"
@@ -326,27 +328,41 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
         <span>Void Order</span>
       </Button>
 
-      <SendToKitchenButton
-        variant="outlineGold"
-        className="h-12 px-4 rounded-md text-[13px] font-bold uppercase tracking-wide"
-      />
+      {/* min-w guarantees ≥24px between the destructive Void and the
+          validation pair even on a crowded bar (spacing floor, rush). */}
+      <div className="flex-1 min-w-[24px] max-md:hidden" />
 
-      {/* CTA colour rule (intentional, do NOT "fix" to match the terminal):
-          GOLD = "navigate toward the money" (Checkout opens the payment terminal).
-          GREEN = "commit the money" (PaymentTerminal's Process Payment — the
-          irreversible final action, where green reads as the universal "go"). */}
-      <Button
-        variant="gold"
-        size="lg"
-        className="h-14 px-7 gap-2.5 text-base font-bold active:bg-gold-pressed"
-        onClick={() => openPayment()}
-        disabled={!hasItems}
-        data-testid="checkout-cta"
-      >
-        <CreditCard className="h-5 w-5" aria-hidden />
-        <span>Checkout</span>
-        <Currency amount={total} className="font-mono" />
-      </Button>
+      {/* ── Right group : validation ────────────────────────────────────── */}
+      {/* LOT 7 (audit 2026-06-25) — visual hierarchy by touch size:
+          Checkout (h-14/56px) dominates ▸ Send (h-12/48px) ▸ ghosts (h-11).
+          Bigger = more important = faster to hit during the rush. */}
+      {/* Below md the validation pair stacks full-width: Send+Checkout side by
+          side can't fit 390px without horizontal scroll (measured 403px), and
+          the total must never be truncated. Two stacked full-width rows give
+          the waiter maximal one-thumb targets. */}
+      <div className="flex items-center gap-2 max-md:w-full max-md:flex-col max-md:items-stretch">
+        <SendToKitchenButton
+          variant="outlineGold"
+          className="h-12 px-4 rounded-md text-[13px] font-bold uppercase tracking-wide"
+        />
+
+        {/* CTA colour rule (intentional, do NOT "fix" to match the terminal):
+            GOLD = "navigate toward the money" (Checkout opens the payment terminal).
+            GREEN = "commit the money" (PaymentTerminal's Process Payment — the
+            irreversible final action, where green reads as the universal "go"). */}
+        <Button
+          variant="gold"
+          size="lg"
+          className="h-14 shrink-0 px-7 gap-2.5 text-base font-bold active:bg-gold-pressed max-md:px-4"
+          onClick={() => openPayment()}
+          disabled={!hasItems}
+          data-testid="checkout-cta"
+        >
+          <CreditCard className="h-5 w-5" aria-hidden />
+          <span>Checkout</span>
+          <Currency amount={total} className="font-mono" />
+        </Button>
+      </div>
 
       {/* ── Owned modals ────────────────────────────────────────────────── */}
       <HeldOrdersModal open={heldOpen} onClose={() => setHeldOpen(false)} />

@@ -165,7 +165,10 @@ export default function PosPage() {
         </div>
       </header>
 
-      <div className="flex-1 min-h-0 flex overflow-hidden">
+      {/* Below md (waiter phone, one-hand) the 3-column desktop layout stacks:
+          category strip on top, grid, then the order panel — no horizontal
+          scroll at 390px (pos-design-craft P0, 2026-07-06). */}
+      <div className="flex-1 min-h-0 flex overflow-hidden max-md:flex-col">
         <CategoryNav
           selectedSlug={selectedSlug}
           onSelect={setSelectedSlug}
