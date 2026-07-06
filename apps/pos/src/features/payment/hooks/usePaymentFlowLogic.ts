@@ -7,7 +7,7 @@
 // IMPORTANT: imports useCheckout from './useCheckout' so the test mock
 // vi.mock('../hooks/useCheckout', ...) (resolved from __tests__/) hits this module.
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   calculateTotals, earnPointsForCustomer,
   validateTenders, sumTenders, computeRemaining,
@@ -21,6 +21,7 @@ import { usePaymentStore } from '@/stores/paymentStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useCheckout } from './useCheckout';
 import { useTaxRate } from '@/features/settings/hooks/useTaxRate';
+import { useEnabledPaymentMethods } from '@/features/settings/hooks/useEnabledPaymentMethods';
 import { usePOSPresets } from '@/features/settings/hooks/usePOSPresets';
 import { useFireToStations } from '@/features/cart/hooks/useFireToStations';
 import { toast } from 'sonner';
@@ -65,6 +66,15 @@ export function usePaymentFlowLogic() {
   const user = useAuthStore((s) => s.user);
   const checkout = useCheckout();
   const taxRate = useTaxRate();
+  const enabledMethods = useEnabledPaymentMethods();
+  // S64 — si la méthode draft vient d'être désactivée au BO (ou si le défaut
+  // 'cash' posé par open() est désactivé), on désélectionne. paymentStore.
+  // selectMethod n'accepte pas null → setState direct.
+  useEffect(() => {
+    if (selectedMethod && !enabledMethods.has(selectedMethod)) {
+      usePaymentStore.setState({ selectedMethod: null, cashReceivedStr: '' });
+    }
+  }, [selectedMethod, enabledMethods]);
   const { mutation: fireToStations } = useFireToStations();
   const { presets } = usePOSPresets();
   const quickAmounts = presets.quickPayments;
