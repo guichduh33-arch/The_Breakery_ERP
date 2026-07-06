@@ -114,6 +114,12 @@ describe('GET /scan/printers', () => {
     const res = await request(app()).get('/scan/printers');
     expect(res.status).toBe(400);
   });
+  it('502 when the injected scan rejects', async () => {
+    scan.mockRejectedValueOnce(new Error('scan_failed'));
+    const res = await request(app()).get('/scan/printers?prefix=192.168.1');
+    expect(res.status).toBe(502);
+    expect(res.body.error).toBe('scan_failed');
+  });
 });
 
 describe('GET /status/probe', () => {
@@ -130,5 +136,11 @@ describe('GET /status/probe', () => {
   it('400 invalid_range on public ip', async () => {
     const res = await request(app()).get('/status/probe?ip=8.8.8.8');
     expect(res.status).toBe(400);
+  });
+  it('502 when the injected probe rejects', async () => {
+    probe.mockRejectedValueOnce(new Error('probe_failed'));
+    const res = await request(app()).get('/status/probe?ip=192.168.1.62');
+    expect(res.status).toBe(502);
+    expect(res.body.error).toBe('probe_failed');
   });
 });

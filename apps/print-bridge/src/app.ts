@@ -78,33 +78,41 @@ export function createApp({ config, send, kick, probe = realProbe, scan = realSc
 
   app.get('/scan/printers', (req, res) => {
     void (async () => {
-      const prefix = String(req.query.prefix ?? '');
-      if (!isPrivatePrefix(prefix)) {
-        res.status(400).json({ error: 'invalid_range' });
-        return;
+      try {
+        const prefix = String(req.query.prefix ?? '');
+        if (!isPrivatePrefix(prefix)) {
+          res.status(400).json({ error: 'invalid_range' });
+          return;
+        }
+        const timeoutRaw = Number(req.query.timeout);
+        const timeout = Number.isInteger(timeoutRaw) ? Math.min(Math.max(timeoutRaw, 100), 2000) : 500;
+        const portRaw = Number(req.query.port);
+        const port = Number.isInteger(portRaw) && portRaw > 0 && portRaw <= 65535 ? portRaw : 9100;
+        const hosts = hostsForPrefix(prefix);
+        const started = Date.now();
+        const devices = await scan(hosts, port, timeout, 50);
+        res.json({ devices, hostsScanned: hosts.length, durationMs: Date.now() - started });
+      } catch (err) {
+        res.status(502).json({ error: (err as Error).message });
       }
-      const timeoutRaw = Number(req.query.timeout);
-      const timeout = Number.isInteger(timeoutRaw) ? Math.min(Math.max(timeoutRaw, 100), 2000) : 500;
-      const portRaw = Number(req.query.port);
-      const port = Number.isInteger(portRaw) && portRaw > 0 && portRaw <= 65535 ? portRaw : 9100;
-      const hosts = hostsForPrefix(prefix);
-      const started = Date.now();
-      const devices = await scan(hosts, port, timeout, 50);
-      res.json({ devices, hostsScanned: hosts.length, durationMs: Date.now() - started });
     })();
   });
 
   app.get('/status/probe', (req, res) => {
     void (async () => {
-      const ip = String(req.query.ip ?? '');
-      if (!isPrivateIpv4(ip)) {
-        res.status(400).json({ error: 'invalid_range' });
-        return;
+      try {
+        const ip = String(req.query.ip ?? '');
+        if (!isPrivateIpv4(ip)) {
+          res.status(400).json({ error: 'invalid_range' });
+          return;
+        }
+        const portRaw = Number(req.query.port);
+        const port = Number.isInteger(portRaw) && portRaw > 0 && portRaw <= 65535 ? portRaw : 9100;
+        const latencyMs = await probe(ip, port, 1500);
+        res.json(latencyMs === null ? { reachable: false } : { reachable: true, latencyMs });
+      } catch (err) {
+        res.status(502).json({ error: (err as Error).message });
       }
-      const portRaw = Number(req.query.port);
-      const port = Number.isInteger(portRaw) && portRaw > 0 && portRaw <= 65535 ? portRaw : 9100;
-      const latencyMs = await probe(ip, port, 1500);
-      res.json(latencyMs === null ? { reachable: false } : { reachable: true, latencyMs });
     })();
   });
 
