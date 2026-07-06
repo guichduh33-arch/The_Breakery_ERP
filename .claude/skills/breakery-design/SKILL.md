@@ -31,6 +31,11 @@ promptSignals:
 
 # Breakery Design — direction artistique + ergonomie
 
+**Carte des 3 couches design (complémentaires, pas concurrentes)** :
+1. `breakery-design` (ici) — direction artistique + ergonomie **transversale** aux 5 surfaces, et audit.
+2. `pos-design-craft` — spécialiste **génératif POS** : pour concevoir/refondre un écran, composant ou flux d'`apps/pos`, c'est LUI qui mène (règles chiffrées Fitts/cibles rush/OKLCH/Playwright) ; ce skill fournit alors le cadre identitaire, pas le détail d'exécution.
+3. `breakery-ui-kit` — surface map factuelle de `@breakery/ui` (exports réels, tokens, fallbacks) : source de vérité d'implémentation pour les deux autres.
+
 **Couche AU-DESSUS de `breakery-ui-kit`** : ce skill dit *quoi viser* esthétiquement et ergonomiquement ; `breakery-ui-kit` reste la source de vérité pour *avec quoi* (exports réels, tokens, fallbacks — y compris le contenu réel de `typography.css`/`motion.css`/`colors.css`). CLAUDE.md reste la source des patterns globaux. **Hors scope ici** : l'emplacement des fichiers, les routes et les conventions feature-folder (voir CLAUDE.md + l'app concernée). Ne jamais contourner : tout choix esthétique s'implémente en tokens `@breakery/ui/tokens.css`, jamais en hex.
 
 > Digest trends daté dans [`references/trends.md`](references/trends.md) (2026-07). **Protocole refresh** : si décision esthétique structurante (nouveau module, redesign de page, nouveau composant partagé) ET digest vieux de plus de ~6 mois → WebSearch d'abord, mettre à jour le digest ensuite.
@@ -91,7 +96,7 @@ Applicable à tout écran existant (posture audit) comme à toute création (def
 |---|-------|---------|
 | 1 | Hiérarchie visuelle | 1 seul point focal par écran ; l'œil trouve l'action primaire en < 1 s |
 | 2 | Contraste | WCAG AA : 4.5:1 texte normal, 3:1 grand texte/UI — vérifier les deux thèmes |
-| 3 | Touch targets | ≥ 44 px sur POS/KDS/Tablet ; espacement suffisant entre cibles adjacentes |
+| 3 | Touch targets | ≥ 44 px sur POS/KDS/Tablet (plancher) ; sur le POS, les actions de rush visent 56-72 px — barème détaillé dans `pos-design-craft` ; espacement suffisant entre cibles adjacentes |
 | 4 | Densité | Adaptée à la surface (dense en BO tables, aérée en Customer Display) |
 | 5 | États | loading / empty / error / success TOUS designés — jamais d'écran blanc muet |
 | 6 | Motion | Fonctionnel (feedback, transition d'état), durées/easings via `motion.css`, respecte `prefers-reduced-motion` |
