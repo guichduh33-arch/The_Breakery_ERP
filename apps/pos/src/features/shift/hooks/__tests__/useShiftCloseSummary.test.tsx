@@ -32,7 +32,7 @@ function wrapper({ children }: { children: ReactNode }) {
 
 function mockTables(opts: {
   session: { opening_cash: number; cash_in_total: number; cash_out_total: number };
-  cashPayments: Array<{ amount: number }>;
+  cashPayments: { amount: number }[];
   config: {
     shift_variance_threshold_abs: number;
     shift_variance_threshold_pct: number;
