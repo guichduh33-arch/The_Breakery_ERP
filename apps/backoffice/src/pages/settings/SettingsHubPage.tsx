@@ -44,7 +44,7 @@ const SECTIONS: SettingSection[] = [
     title: 'Sales & POS',
     tiles: [
       { title: 'POS Configuration', blurb: 'Quick payment amounts, opening cash, discount presets. (Soon)', icon: Coffee },
-      { title: 'Payment Methods',   blurb: 'Cash, Card, QRIS, store credit. (Soon)',                        icon: CreditCard },
+      { to: '/backoffice/settings/payment-methods', title: 'Payment Methods', blurb: 'Enable or disable POS payment methods.', icon: CreditCard },
       { to: '/backoffice/loyalty', title: 'Loyalty Program', blurb: 'Points earn rules, tiers, redemption.', icon: Heart },
     ],
   },
