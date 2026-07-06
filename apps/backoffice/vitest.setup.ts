@@ -25,3 +25,25 @@ if (typeof window !== 'undefined' && typeof window.DragEvent === 'undefined') {
   class DragEventPolyfill extends MouseEvent {}
   window.DragEvent = DragEventPolyfill as unknown as typeof DragEvent;
 }
+
+// jsdom does not implement ResizeObserver (https://github.com/jsdom/jsdom/issues/2961).
+// recharts ResponsiveContainer uses it to measure container width. For tests, we
+// mock it as a no-op to allow the charts to render (they will have width: 0 in jsdom,
+// which is why we don't assert on chart SVG — only on lists and empty states).
+if (typeof window !== 'undefined' && typeof window.ResizeObserver === 'undefined') {
+  class ResizeObserverPolyfill {
+    constructor(callback: ResizeObserverCallback) {
+      // no-op
+    }
+    observe() {
+      // no-op
+    }
+    unobserve() {
+      // no-op
+    }
+    disconnect() {
+      // no-op
+    }
+  }
+  window.ResizeObserver = ResizeObserverPolyfill as unknown as typeof ResizeObserver;
+}

@@ -6455,6 +6455,7 @@ export type Database = {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
+      get_dashboard_overview_v1: { Args: never; Returns: Json }
       get_expenses_by_category_v1: {
         Args: {
           p_category_id?: string
