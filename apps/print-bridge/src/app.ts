@@ -25,6 +25,14 @@ function isTarget(x: unknown): x is PrinterTarget {
     && typeof (x as PrinterTarget).port === 'number';
 }
 
+// Anti-SSRF (spec D7) : un `printer` fourni dans le body doit pointer vers une
+// cible LAN privée, comme /scan/printers et /status/probe. Ne s'applique pas au
+// repli env `config.receiptPrinter` (déjà de confiance, config serveur).
+function isValidPrinterTarget(target: PrinterTarget): boolean {
+  return isPrivateIpv4(target.ip_address)
+    && Number.isInteger(target.port) && target.port > 0 && target.port <= 65535;
+}
+
 export function createApp({ config, send, kick, probe = realProbe, scan = realScan }: AppDeps): express.Express {
   const app = express();
   app.use(cors({ origin: true }));
@@ -38,6 +46,10 @@ export function createApp({ config, send, kick, probe = realProbe, scan = realSc
     const body = req.body as ReceiptPayload & { printer?: PrinterTarget };
     if (!body?.order?.order_number || !Array.isArray(body.items) || !body.totals || !body.payment) {
       res.status(400).json({ success: false, error: 'invalid_payload' });
+      return;
+    }
+    if (isTarget(body.printer) && !isValidPrinterTarget(body.printer)) {
+      res.status(400).json({ success: false, error: 'invalid_printer_target' });
       return;
     }
     const target = isTarget(body.printer) ? body.printer : config.receiptPrinter;
@@ -54,6 +66,10 @@ export function createApp({ config, send, kick, probe = realProbe, scan = realSc
     const body = req.body as StationTicketPayload & { printer?: PrinterTarget };
     if (!isTarget(body?.printer)) {
       res.status(400).json({ success: false, error: 'missing_printer' });
+      return;
+    }
+    if (!isValidPrinterTarget(body.printer)) {
+      res.status(400).json({ success: false, error: 'invalid_printer_target' });
       return;
     }
     if (!body.order_number && body.order_number !== '' || !Array.isArray(body.items)) {

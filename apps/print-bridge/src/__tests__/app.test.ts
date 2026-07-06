@@ -74,6 +74,13 @@ describe('POST /print/receipt', () => {
     expect(res.status).toBe(502);
     expect(body(res).success).toBe(false);
   });
+  it('400 invalid_printer_target on a public IP', async () => {
+    const res = await request(app()).post('/print/receipt')
+      .send({ ...RECEIPT, printer: { ip_address: '8.8.8.8', port: 9100 } });
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({ success: false, error: 'invalid_printer_target' });
+    expect(send).not.toHaveBeenCalled();
+  });
 });
 
 describe('POST /print/ticket', () => {
@@ -87,6 +94,13 @@ describe('POST /print/ticket', () => {
     const res = await request(app()).post('/print/ticket').send(TICKET);
     expect(res.status).toBe(400);
     expect(body(res).error).toBe('missing_printer');
+  });
+  it('400 invalid_printer_target on a public IP', async () => {
+    const res = await request(app()).post('/print/ticket')
+      .send({ printer: { ip_address: '8.8.8.8', port: 9100 }, ...TICKET });
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({ success: false, error: 'invalid_printer_target' });
+    expect(send).not.toHaveBeenCalled();
   });
 });
 
