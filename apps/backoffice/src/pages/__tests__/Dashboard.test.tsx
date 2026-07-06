@@ -129,4 +129,35 @@ describe('DashboardPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /Refresh dashboard/i }));
     expect(refetch).toHaveBeenCalledTimes(1);
   });
+
+  it('renders panel content (top product name, payment method) from data', () => {
+    wrap(
+      <DashboardPage
+        data={{ data: overviewFixture(), isLoading: false, error: null, refetch: vi.fn() }}
+      />,
+    );
+    expect(screen.getByText(/Croissant/i)).toBeInTheDocument();
+    expect(screen.getByText(/^cash$/i)).toBeInTheDocument();
+  });
+
+  it('renders panel empty states when today has no activity', () => {
+    const empty: DashboardOverview = {
+      ...overviewFixture(),
+      revenue_30d: Array.from({ length: 30 }, (_, i) => ({
+        date: `2026-06-${String(i + 1).padStart(2, '0')}`, net: 0, order_count: 0,
+      })),
+      revenue_by_type: [],
+      top_products: [],
+      hourly_sales: [],
+      payment_methods: [],
+    };
+    wrap(
+      <DashboardPage
+        data={{ data: empty, isLoading: false, error: null, refetch: vi.fn() }}
+      />,
+    );
+    expect(screen.getByText(/No revenue data/i)).toBeInTheDocument();
+    expect(screen.getByText(/No sales today yet/i)).toBeInTheDocument();
+    expect(screen.getByText(/No payments yet/i)).toBeInTheDocument();
+  });
 });

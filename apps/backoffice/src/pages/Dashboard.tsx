@@ -19,7 +19,7 @@ import {
   RefreshCw, Lock,
 } from 'lucide-react';
 import {
-  Card, KpiTile, SectionLabel, EmptyState, cn,
+  Card, KpiTile, SectionLabel, cn,
 } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
 import {
@@ -27,6 +27,11 @@ import {
   classifyDashboardError,
   type DashboardOverview,
 } from '@/features/dashboard/hooks/useDashboardOverview.js';
+import { RevenueTrendChart } from '@/features/dashboard/components/RevenueTrendChart.js';
+import { RevenueByTypeDonut } from '@/features/dashboard/components/RevenueByTypeDonut.js';
+import { HourlySalesChart } from '@/features/dashboard/components/HourlySalesChart.js';
+import { TopProductsList } from '@/features/dashboard/components/TopProductsList.js';
+import { PaymentMethodsList } from '@/features/dashboard/components/PaymentMethodsList.js';
 
 export interface DashboardData {
   data: DashboardOverview | null;
@@ -188,21 +193,13 @@ export default function DashboardPage({ data }: DashboardPageProps) {
                 30-day revenue trend
               </SectionLabel>
               <p className="text-xs text-text-muted mb-4">Daily revenue over the last 30 days</p>
-              <div className="h-48 flex items-center justify-center">
-                <EmptyState
-                  size="sm"
-                  title="No revenue data"
-                  description="Trend chart appears once orders are recorded."
-                />
-              </div>
+              <RevenueTrendChart data={overview?.revenue_30d ?? []} />
             </Card>
             <Card variant="default" padding="md" className="min-h-[280px]">
               <SectionLabel as="h2" size="xs" className="mb-2">
                 Revenue by order type
               </SectionLabel>
-              <div className="h-56 flex items-center justify-center">
-                <EmptyState size="sm" title="No data available" />
-              </div>
+              <RevenueByTypeDonut data={overview?.revenue_by_type ?? []} />
             </Card>
           </div>
 
@@ -211,25 +208,19 @@ export default function DashboardPage({ data }: DashboardPageProps) {
               <SectionLabel as="h2" size="xs" className="mb-3">
                 Top products today
               </SectionLabel>
-              <div className="h-40 flex items-center justify-center">
-                <EmptyState size="sm" title="No sales today yet" />
-              </div>
+              <TopProductsList data={overview?.top_products ?? []} />
             </Card>
             <Card variant="default" padding="md" className="min-h-[220px]">
               <SectionLabel as="h2" size="xs" className="mb-3">
                 Hourly sales
               </SectionLabel>
-              <div className="h-40 flex items-center justify-center">
-                <EmptyState size="sm" title="No sales data yet" />
-              </div>
+              <HourlySalesChart data={overview?.hourly_sales ?? []} />
             </Card>
             <Card variant="default" padding="md" className="min-h-[220px]">
               <SectionLabel as="h2" size="xs" className="mb-3">
                 Payment methods
               </SectionLabel>
-              <div className="h-40 flex items-center justify-center">
-                <EmptyState size="sm" title="No payments yet" />
-              </div>
+              <PaymentMethodsList data={overview?.payment_methods ?? []} />
             </Card>
           </div>
         </>
