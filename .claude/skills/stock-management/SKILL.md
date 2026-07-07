@@ -1,6 +1,16 @@
 ---
 name: stock-management
-description: Stock flow expert — raw materials → semi-finished → finished products, entry → exit. Audit the existing inventory flow for precision/automation/security/traceability gaps AND guide future changes. Triggers on inventory/recipe/production/opname/transfer/WAC/lot work across apps/backoffice, apps/pos, packages/domain, and supabase migrations/tests.
+description: >-
+  Stock flow expert — raw materials → semi-finished → finished products, entry → exit.
+  Audits the inventory flow for precision/automation/security/traceability gaps AND guides
+  future changes. Use this skill whenever the task mentions stock, inventory / inventaire,
+  stock movement / mouvement de stock, WAC / coût moyen pondéré, recipe / recette,
+  production, opname, lot / péremption, FIFO, matière première, semi-fini, spoilage /
+  wastage / perte / gaspillage, transfer / transfert, receive / réception, purchase order /
+  bon de commande / achat, current_stock / display_stock — or touches apps/backoffice
+  inventory|recipes features, POS stock, packages/domain inventory|production, or any
+  supabase migration/test with stock/inventory/recipe/production in the name. Invoke it
+  BEFORE editing any stock-writing RPC — stock_movements is an append-only ledger.
 pathPatterns:
   - 'apps/backoffice/src/features/inventory*/**'
   - 'apps/backoffice/src/features/recipes/**'

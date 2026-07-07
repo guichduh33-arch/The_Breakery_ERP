@@ -1,6 +1,16 @@
 ---
 name: reports-exports
-description: Reports, exports & Z-reports expert — report RPCs (S29-S33), generate-pdf EF (17 templates), CSV (buildCsv domain helper), Z-report 2-step sign flow, drill-down navigation (buildDrilldownUrl). Guide new reports and export wiring.
+description: >-
+  Reports, exports & Z-reports expert — report RPCs (S29+), generate-pdf EF (17 templates),
+  CSV via the buildCsv domain helper, Z-report 2-step sign flow, drill-down navigation
+  (buildDrilldownUrl). Guides new reports and export wiring. Use this skill whenever the
+  task mentions report / rapport, export, CSV, PDF, Z-report / zreport, drill-down, sales
+  report / rapport de ventes, gross margin / marge, wastage / pertes, payments by method,
+  compare period / comparaison de période, dashboard report, ExportButtons — or touches
+  apps/backoffice reports|zreports features/pages, supabase functions
+  generate-pdf/generate-zreport-pdf/_shared/pdf-templates, packages/domain reports, or any
+  migration with report in the name. Invoke it BEFORE adding or modifying any report RPC,
+  PDF template, or export button.
 pathPatterns:
   - 'apps/backoffice/src/features/reports/**'
   - 'apps/backoffice/src/pages/reports/**'

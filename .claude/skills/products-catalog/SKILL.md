@@ -1,6 +1,16 @@
 ---
 name: products-catalog
-description: Product catalog expert — products CRUD, variants (linked-products architecture), categories, units/sections/modifiers, is_display_item flag. Knows the variant XOR + anti-nesting invariants, SKU uniqueness rules, and display-stock isolation. Guide catalog changes AND audit integrity.
+description: >-
+  Product catalog expert — products CRUD, variants (linked-products architecture),
+  categories, units/sections/modifiers, is_display_item flag. Knows the variant XOR +
+  anti-nesting invariants, SKU uniqueness rules, and display-stock isolation. Use this
+  skill whenever the task mentions product / produit, variant / variante / déclinaison,
+  parent product / produit parent, linked product, category / catégorie, SKU, modifier /
+  modificateur, unit / unité, section, vitrine / display item / is_display_item, import
+  catalogue / import_catalog, visible_on_pos — or touches apps/backoffice
+  features/products|categories, Product*/Categor* pages, POS variant code, or any supabase
+  migration/test with product/variant/categor in the name. Invoke it BEFORE any catalog
+  CRUD or variant-architecture change.
 pathPatterns:
   - 'apps/backoffice/src/features/products/**'
   - 'apps/backoffice/src/features/categories/**'

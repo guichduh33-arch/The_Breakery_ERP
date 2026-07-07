@@ -1,6 +1,11 @@
 ---
 name: playwright-cli
-description: Automate browser interactions, test web pages and work with Playwright tests.
+description: >-
+  Automate browser interactions, test web pages and work with Playwright tests via the
+  playwright-cli. Use this skill whenever the user wants to open or drive a browser from
+  the terminal, screenshot a page, verify the POS/BO UI in a real browser, run or debug
+  Playwright E2E tests — or mentions playwright, E2E, screenshot / capture d'écran, teste
+  dans le navigateur, vérifie la page. Prefer it over ad-hoc npx playwright commands.
 allowed-tools: Bash(playwright-cli:*) Bash(npx:*) Bash(npm:*)
 ---
 
