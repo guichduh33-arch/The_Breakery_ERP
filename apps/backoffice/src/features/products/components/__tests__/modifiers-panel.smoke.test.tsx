@@ -72,7 +72,7 @@ describe('ModifiersPanel', () => {
     expect(screen.queryByRole('button', { name: /^save/i })).toBeNull();
   });
 
-  it('blocks save and shows an error on a blank group name', async () => {
+  it('blocks save and shows an error on a blank group name', () => {
     loadData.current = [
       {
         group_name: '',

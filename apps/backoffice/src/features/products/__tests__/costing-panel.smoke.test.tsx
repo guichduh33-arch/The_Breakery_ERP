@@ -25,7 +25,7 @@ const { rpcMock, mockState, BOM_DATA } = vi.hoisted(() => {
   const rpcMock = vi.fn();
   const mockState = {
     hasPerm:   true,
-    bomRows:   [] as Array<{
+    bomRows:   [] as {
       material_id:   string;
       material_name: string;
       material_unit: string;
@@ -33,7 +33,7 @@ const { rpcMock, mockState, BOM_DATA } = vi.hoisted(() => {
       qty_per_unit:  number;
       current_stock: number;
       cost_price:    number;
-    }>,
+    }[],
     bomLoading: false,
     bomError:   null as Error | null,
   };
@@ -156,7 +156,7 @@ describe('CostingPanel [S39 WB2]', () => {
 
   it('T2: BOM table renders 2 rows + correct total', () => {
     // Make useRecipeBomFull return the stable BOM_DATA (2 rows).
-    mockState.bomRows = BOM_DATA as typeof mockState.bomRows;
+    mockState.bomRows = BOM_DATA;
 
     renderPanel();
 
