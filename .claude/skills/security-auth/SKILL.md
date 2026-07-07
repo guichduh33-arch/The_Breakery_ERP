@@ -8,7 +8,11 @@ description: >-
   JWT, rate limit, session timeout, SECURITY DEFINER, login / connexion, role / rôle,
   security / sécurité, auth / authentification — or touches apps auth/rbac features,
   Settings Security pages, supabase functions auth-*, or migrations touching
-  rls/permission/rate_limit. Invoke it BEFORE creating any new RPC gate, granting anything
+  rls/permission/rate_limit. Boundary vs security-fraud-guard: THIS skill owns the auth
+  MECHANICS (how to build a correct RLS policy / RPC gate / REVOKE pair, the PIN-JWT fetch
+  wrapper, rate-limit, session timeout); for the cross-cut FRAUD/MONEY/PII/audit-log
+  AUDIT ("qui peut faire quoi", refund/void/discount/cash abuse, data-leak surfaces) →
+  security-fraud-guard. Invoke it BEFORE creating any new RPC gate, granting anything
   to anon/authenticated, or relaxing RLS — even for a one-line migration.
 pathPatterns:
   - 'apps/*/src/features/auth/**'

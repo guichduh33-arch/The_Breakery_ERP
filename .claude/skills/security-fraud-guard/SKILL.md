@@ -1,6 +1,6 @@
 ---
 name: security-fraud-guard
-description: Cross-cutting security & anti-fraud authority for the ERP/POS — money flows (refund/void/discount/cash/manual JE), RBAC integrity, audit-log completeness, PII & information-leak surfaces, anon/PUBLIC hardening, and append-only ledger integrity. Two modes — AUDIT the system for fraud/manipulation/leak gaps (executable SQL checks) AND INTERVENE to add the controls (permissions, REVOKE pairs, audit_log writes, manager-PIN gates, pgTAP). Use this skill WHENEVER the user mentions security, fraud, manipulation by employees, "qui peut faire quoi", permissions/RBAC/roles, audit logs/traçabilité, refund/void/discount/cash-drawer/manual-journal-entry abuse, manager PIN, data leak / fuite d'information / PII, RLS / REVOKE / anon hardening, append-only ledgers, or "sécuriser / contrôler / enregistrer les actions" — even if they don't say the word "audit". Defer inventory-specific security to stock-management and POS-flow technical correctness to pos-flow-audit; this skill owns the money, identity, traceability, and data-exposure cross-cut.
+description: Cross-cutting security & anti-fraud authority for the ERP/POS — money flows (refund/void/discount/cash/manual JE), RBAC integrity, audit-log completeness, PII & information-leak surfaces, anon/PUBLIC hardening, and append-only ledger integrity. Two modes — AUDIT the system for fraud/manipulation/leak gaps (executable SQL checks) AND INTERVENE to add the controls (permissions, REVOKE pairs, audit_log writes, manager-PIN gates, pgTAP). Use this skill WHENEVER the user mentions security, fraud, manipulation by employees, "qui peut faire quoi", permissions/RBAC/roles, audit logs/traçabilité, refund/void/discount/cash-drawer/manual-journal-entry abuse, manager PIN, data leak / fuite d'information / PII, RLS / REVOKE / anon hardening, append-only ledgers, or "sécuriser / contrôler / enregistrer les actions" — even if they don't say the word "audit". Boundary vs security-auth: security-auth owns the AUTH MECHANICS (building an RLS policy or RPC gate, REVOKE/anon defense-in-depth, the PIN-JWT fetch wrapper, durable rate-limit, per-role session timeout); THIS skill owns the cross-cut FRAUD/MONEY/PII/traceability AUDIT and the addition of anti-fraud controls — reach here for "qui peut faire quoi", refund/void/discount/cash abuse, audit-log completeness, and data-leak surfaces. Defer inventory-specific security to stock-management and POS-flow technical correctness to pos-flow-audit; this skill owns the money, identity, traceability, and data-exposure cross-cut.
 pathPatterns:
   - 'supabase/migrations/*permission*.sql'
   - 'supabase/migrations/*has_permission*.sql'
@@ -47,9 +47,6 @@ promptSignals:
     - 'data leak'
     - 'fuite information'
     - 'PII'
-    - 'RLS'
-    - 'REVOKE'
-    - 'anon'
     - 'append-only'
     - 'separation of duties'
     - 'SOD'

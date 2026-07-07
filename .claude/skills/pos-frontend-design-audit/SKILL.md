@@ -19,7 +19,9 @@ description: >-
   commande→paiement (une commande qui n'atteint pas la cuisine, idempotence, versioning RPC,
   silent failures, races realtime) → pos-flow-audit ; les faits du design-system (quels primitifs
   existent, noms des tokens, fallbacks) → breakery-ui-kit ; RBAC/permissions/audit-log →
-  security-fraud-guard ; WAC/recette/stock → stock-management. Ce skill possède l'ASPECT (à quoi ça
+  security-fraud-guard ; WAC/recette/stock → stock-management ; la CONCEPTION d'un écran ou
+  composant POS entièrement NEUF (from scratch, génératif, tokens neufs) → pos-design-craft.
+  Ce skill possède l'ASPECT (à quoi ça
   ressemble et comment ça se manipule), pas la PLOMBERIE (est-ce que ça marche).
 pathPatterns:
   - 'apps/pos/src/**/*.tsx'

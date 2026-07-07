@@ -1,6 +1,6 @@
 ---
 name: breakery-design
-description: 'Direction artistique + ergonomie The Breakery — identité visuelle par surface (POS luxe-dark, BO ivoire, KDS, Customer Display, Tablet), trends UI applicables vs gadgets, méthodologie variantes-avant-implémentation, checklist audit esthétique/pratique (WCAG, touch 44px, états, motion). Use when designing, redesigning, polishing or auditing any screen/component look & feel.'
+description: 'Direction artistique + ergonomie The Breakery — identité visuelle par surface (POS luxe-dark, BO ivoire, KDS, Customer Display, Tablet), trends UI applicables vs gadgets, méthodologie variantes-avant-implémentation, checklist audit esthétique/pratique (WCAG, touch 44px, états, motion). Use when designing, redesigning, polishing or auditing any screen/component look & feel. Frontière : ce skill porte la DA TRANSVERSE et les surfaces non-POS (BO ivoire, KDS, Customer Display, dashboard). Pour le POS spécifiquement (apps/pos, CAISSE/WAITER), préférer pos-design-craft (créer un écran/composant neuf) ou pos-frontend-design-audit / pos-frontend-design-implement (auditer puis coder l''existant) ; pour les faits du design-system (primitifs, tokens) → breakery-ui-kit.'
 pathPatterns:
   - 'apps/*/src/**/components/**'
   - 'apps/*/src/**/pages/**'
@@ -23,9 +23,6 @@ promptSignals:
     - 'audit visuel'
     - 'glassmorphism'
     - 'glass'
-    - 'dashboard'
-    - 'nouvelle page'
-    - 'nouvel écran'
     - 'moderne'
 ---
 

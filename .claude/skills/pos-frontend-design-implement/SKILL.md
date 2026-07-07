@@ -14,7 +14,8 @@ description: >-
   d'audit n'existe encore ou si la demande est "trouve les problèmes de design", c'est l'autre skill
   (pos-frontend-design-audit) qui s'exécute d'abord. DÉFÉRER : l'ajout d'un nouveau primitif PARTAGÉ
   → packages/ui + breakery-ui-kit ; la logique du parcours commande→paiement et la correction
-  fonctionnelle (RPC, idempotence, realtime) → pos-flow-audit ; RBAC/permissions → security-fraud-guard.
+  fonctionnelle (RPC, idempotence, realtime) → pos-flow-audit ; RBAC/permissions → security-fraud-guard ;
+  concevoir un écran/composant POS entièrement NEUF sans rapport d'audit préalable (from scratch) → pos-design-craft.
   Ce skill TRANSFORME une proposition de design validée en code POS qui tient en production.
 pathPatterns:
   - 'apps/pos/src/**/*.tsx'

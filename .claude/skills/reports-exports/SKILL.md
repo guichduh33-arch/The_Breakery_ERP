@@ -9,8 +9,11 @@ description: >-
   compare period / comparaison de période, dashboard report, ExportButtons — or touches
   apps/backoffice reports|zreports features/pages, supabase functions
   generate-pdf/generate-zreport-pdf/_shared/pdf-templates, packages/domain reports, or any
-  migration with report in the name. Invoke it BEFORE adding or modifying any report RPC,
-  PDF template, or export button.
+  migration with report in the name. Boundary vs report-audit: THIS skill GUIDES building
+  and wiring reports/exports; to DIAGNOSE a broken or inaccurate existing report (dead
+  RPC/view binding, a chart that doesn't match the data, a decorative date filter) →
+  report-audit. Invoke it BEFORE adding or modifying any report RPC, PDF template, or export
+  button.
 pathPatterns:
   - 'apps/backoffice/src/features/reports/**'
   - 'apps/backoffice/src/pages/reports/**'
