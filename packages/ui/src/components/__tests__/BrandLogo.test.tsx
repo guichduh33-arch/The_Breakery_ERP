@@ -3,73 +3,73 @@ import { render, screen } from '@testing-library/react';
 import { BrandLogo, type BrandLogoSize } from '../BrandLogo.js';
 
 describe('BrandLogo', () => {
-  it('renders default size (lg = 280x140) with default label', () => {
+  it('renders default size (lg, height 128) with default label', () => {
     render(<BrandLogo />);
     const wrapper = screen.getByRole('img', {
       name: 'The Breakery — French Bakery & Pastry',
     });
     expect(wrapper).toBeInTheDocument();
-    expect(wrapper.getAttribute('style')).toContain('width: 280px');
-    expect(wrapper.getAttribute('style')).toContain('height: 140px');
+    expect(wrapper.getAttribute('style')).toContain('height: 128px');
     expect(wrapper.getAttribute('data-size')).toBe('lg');
-    // Wordmark is rendered as SVG <text> — query by text content
-    expect(screen.getByText('THE BREAKERY')).toBeInTheDocument();
+    expect(wrapper.getAttribute('data-testid')).toBe('brand-logo');
+    // Artwork is a raster <img> nested in the wrapper.
+    expect(wrapper.querySelector('img')).not.toBeNull();
   });
 
-  it('renders all 4 size variants with correct pixel dimensions', () => {
-    const cases: Array<[BrandLogoSize, number, number]> = [
-      ['sm', 120, 60],
-      ['md', 200, 100],
-      ['lg', 280, 140],
-      ['xl', 400, 200],
+  it('renders all 4 size variants with the correct rendered height', () => {
+    const cases: [BrandLogoSize, number][] = [
+      ['sm', 52],
+      ['md', 84],
+      ['lg', 128],
+      ['xl', 190],
     ];
-    for (const [size, w, h] of cases) {
+    for (const [size, h] of cases) {
       const { unmount } = render(<BrandLogo size={size} />);
       const el = screen.getByRole('img', {
         name: 'The Breakery — French Bakery & Pastry',
       });
-      expect(el.getAttribute('style')).toContain(`width: ${w}px`);
       expect(el.getAttribute('style')).toContain(`height: ${h}px`);
       expect(el.getAttribute('data-size')).toBe(size);
       unmount();
     }
   });
 
-  it('shows tagline by default for lg + xl', () => {
+  it('marks tagline on by default for lg + xl (dark theme)', () => {
     const { unmount: u1 } = render(<BrandLogo size="lg" />);
-    expect(screen.getByTestId('brand-logo-tagline')).toBeInTheDocument();
-    expect(screen.getByText('French Bakery')).toBeInTheDocument();
-    expect(screen.getByText('Pastry')).toBeInTheDocument();
+    expect(screen.getByTestId('brand-logo').getAttribute('data-tagline')).toBe('on');
     u1();
 
     const { unmount: u2 } = render(<BrandLogo size="xl" />);
-    expect(screen.getByTestId('brand-logo-tagline')).toBeInTheDocument();
+    expect(screen.getByTestId('brand-logo').getAttribute('data-tagline')).toBe('on');
     u2();
   });
 
-  it('hides tagline by default for sm + md', () => {
+  it('marks tagline off by default for sm + md', () => {
     const { unmount: u1 } = render(<BrandLogo size="sm" />);
-    expect(screen.queryByTestId('brand-logo-tagline')).not.toBeInTheDocument();
-    expect(screen.queryByText('French Bakery')).not.toBeInTheDocument();
+    expect(screen.getByTestId('brand-logo').getAttribute('data-tagline')).toBe('off');
     u1();
 
     const { unmount: u2 } = render(<BrandLogo size="md" />);
-    expect(screen.queryByTestId('brand-logo-tagline')).not.toBeInTheDocument();
+    expect(screen.getByTestId('brand-logo').getAttribute('data-tagline')).toBe('off');
     u2();
   });
 
   it('respects explicit showTagline=false on lg', () => {
     render(<BrandLogo size="lg" showTagline={false} />);
-    expect(screen.queryByTestId('brand-logo-tagline')).not.toBeInTheDocument();
-    expect(screen.queryByText('French Bakery')).not.toBeInTheDocument();
-    // Wordmark and croissant are still present
-    expect(screen.getByText('THE BREAKERY')).toBeInTheDocument();
+    expect(screen.getByTestId('brand-logo').getAttribute('data-tagline')).toBe('off');
   });
 
   it('respects explicit showTagline=true on sm', () => {
     render(<BrandLogo size="sm" showTagline />);
-    expect(screen.getByTestId('brand-logo-tagline')).toBeInTheDocument();
-    expect(screen.getByText('French Bakery')).toBeInTheDocument();
+    expect(screen.getByTestId('brand-logo').getAttribute('data-tagline')).toBe('on');
+  });
+
+  it('uses the light variant (no tagline) under theme="backoffice"', () => {
+    render(<BrandLogo size="lg" theme="backoffice" />);
+    const el = screen.getByTestId('brand-logo');
+    expect(el.getAttribute('data-theme')).toBe('backoffice');
+    // Light artwork has no tagline crop — always off regardless of size.
+    expect(el.getAttribute('data-tagline')).toBe('off');
   });
 
   it('merges custom className on outer wrapper', () => {
