@@ -305,6 +305,8 @@ export type Database = {
           pos_opening_cash_presets: Json
           pos_quick_payment_amounts: Json
           production_yield_variance_threshold_pct: number
+          shift_variance_pin_threshold_abs: number
+          shift_variance_pin_threshold_pct: number
           shift_variance_threshold_abs: number
           shift_variance_threshold_pct: number
           tax_inclusive: boolean
@@ -324,6 +326,8 @@ export type Database = {
           pos_opening_cash_presets?: Json
           pos_quick_payment_amounts?: Json
           production_yield_variance_threshold_pct?: number
+          shift_variance_pin_threshold_abs?: number
+          shift_variance_pin_threshold_pct?: number
           shift_variance_threshold_abs?: number
           shift_variance_threshold_pct?: number
           tax_inclusive?: boolean
@@ -343,6 +347,8 @@ export type Database = {
           pos_opening_cash_presets?: Json
           pos_quick_payment_amounts?: Json
           production_yield_variance_threshold_pct?: number
+          shift_variance_pin_threshold_abs?: number
+          shift_variance_pin_threshold_pct?: number
           shift_variance_threshold_abs?: number
           shift_variance_threshold_pct?: number
           tax_inclusive?: boolean
@@ -2758,6 +2764,7 @@ export type Database = {
           opening_notes: string | null
           status: Database["public"]["Enums"]["shift_status"]
           terminal_id: string | null
+          variance_approved_by: string | null
           variance_total: number | null
         }
         Insert: {
@@ -2775,6 +2782,7 @@ export type Database = {
           opening_notes?: string | null
           status?: Database["public"]["Enums"]["shift_status"]
           terminal_id?: string | null
+          variance_approved_by?: string | null
           variance_total?: number | null
         }
         Update: {
@@ -2792,6 +2800,7 @@ export type Database = {
           opening_notes?: string | null
           status?: Database["public"]["Enums"]["shift_status"]
           terminal_id?: string | null
+          variance_approved_by?: string | null
           variance_total?: number | null
         }
         Relationships: [
@@ -2814,6 +2823,13 @@ export type Database = {
             columns: ["terminal_id"]
             isOneToOne: false
             referencedRelation: "lan_devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pos_sessions_variance_approved_by_fkey"
+            columns: ["variance_approved_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -6004,10 +6020,12 @@ export type Database = {
         Args: { p_fiscal_year: number; p_manager_pin: string }
         Returns: Json
       }
-      close_shift_v3: {
+      close_shift_v4: {
         Args: {
+          p_approver_id?: string
           p_counted_cash: number
           p_idempotency_key?: string
+          p_manager_pin?: string
           p_notes?: string
           p_session_id: string
         }

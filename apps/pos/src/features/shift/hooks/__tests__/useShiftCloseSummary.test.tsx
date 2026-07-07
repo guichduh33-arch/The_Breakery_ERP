@@ -21,6 +21,8 @@ import {
   useShiftCloseSummary,
   DEFAULT_VARIANCE_THRESHOLD_ABS,
   DEFAULT_VARIANCE_THRESHOLD_PCT,
+  DEFAULT_VARIANCE_PIN_THRESHOLD_ABS,
+  DEFAULT_VARIANCE_PIN_THRESHOLD_PCT,
 } from '../useShiftCloseSummary';
 
 function wrapper({ children }: { children: ReactNode }) {
@@ -30,8 +32,13 @@ function wrapper({ children }: { children: ReactNode }) {
 
 function mockTables(opts: {
   session: { opening_cash: number; cash_in_total: number; cash_out_total: number };
-  cashPayments: Array<{ amount: number }>;
-  config: { shift_variance_threshold_abs: number; shift_variance_threshold_pct: number } | null;
+  cashPayments: { amount: number }[];
+  config: {
+    shift_variance_threshold_abs: number;
+    shift_variance_threshold_pct: number;
+    shift_variance_pin_threshold_abs?: number;
+    shift_variance_pin_threshold_pct?: number;
+  } | null;
 }) {
   mocks.from.mockImplementation((table: string) => {
     if (table === 'pos_sessions') {
@@ -76,7 +83,12 @@ describe('useShiftCloseSummary', () => {
     mockTables({
       session: { opening_cash: 200_000, cash_in_total: 50_000, cash_out_total: 30_000 },
       cashPayments: [{ amount: 95_000 }, { amount: 25_000 }],
-      config: { shift_variance_threshold_abs: 100_000, shift_variance_threshold_pct: 0.01 },
+      config: {
+        shift_variance_threshold_abs: 100_000,
+        shift_variance_threshold_pct: 0.01,
+        shift_variance_pin_threshold_abs: 500_000,
+        shift_variance_pin_threshold_pct: 0.05,
+      },
     });
 
     const { result } = renderHook(() => useShiftCloseSummary('session-1'), { wrapper });
@@ -87,6 +99,8 @@ describe('useShiftCloseSummary', () => {
       expectedCash: 340_000,
       thresholdAbs: 100_000,
       thresholdPct: 0.01,
+      pinThresholdAbs: 500_000,
+      pinThresholdPct: 0.05,
     });
   });
 
@@ -104,6 +118,8 @@ describe('useShiftCloseSummary', () => {
       expectedCash: 100_000,
       thresholdAbs: DEFAULT_VARIANCE_THRESHOLD_ABS,
       thresholdPct: DEFAULT_VARIANCE_THRESHOLD_PCT,
+      pinThresholdAbs: DEFAULT_VARIANCE_PIN_THRESHOLD_ABS,
+      pinThresholdPct: DEFAULT_VARIANCE_PIN_THRESHOLD_PCT,
     });
   });
 
