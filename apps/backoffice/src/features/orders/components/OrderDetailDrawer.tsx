@@ -18,6 +18,7 @@ import {
   Clock,
   CreditCard,
   Hash,
+  MapPin,
   PackageOpen,
   Plus,
   ReceiptText,
@@ -121,6 +122,11 @@ function Body({ order }: { order: OrderDetail }): JSX.Element {
         </InfoCell>
         <InfoCell icon={CalendarDays} label="Date & Time">{fmtDateTime(order.created_at)}</InfoCell>
         <InfoCell icon={PackageOpen} label="Type">{TYPE_LABEL[order.order_type] ?? order.order_type}</InfoCell>
+        {/* Fiche 02 D2.5 — table visible au BO ; l'historique des transferts se
+            consulte dans le journal d'audit (action order.table_transfer). */}
+        <InfoCell icon={MapPin} label="Table">
+          {order.table_number ?? '—'}
+        </InfoCell>
         <InfoCell icon={ReceiptText} label="Payment Status">
           {isPaid ? (
             <span className="font-medium text-success">✓ Paid</span>

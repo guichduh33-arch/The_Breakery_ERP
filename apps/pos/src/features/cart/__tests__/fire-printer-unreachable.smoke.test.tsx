@@ -37,7 +37,7 @@ const { rpcMock } = vi.hoisted(() => ({ rpcMock: vi.fn() }));
 
 vi.mock('@/lib/supabase', () => ({
   supabase: {
-    rpc: (...a: unknown[]) => rpcMock(...a),
+    rpc: (...a: unknown[]): unknown => rpcMock(...a) as unknown,
     auth: { getSession: vi.fn().mockResolvedValue({ data: { session: { access_token: 'tok' } } }) },
   },
   supabaseUrl: 'http://localhost:54321',
@@ -102,6 +102,8 @@ describe('SendToKitchenButton — kitchen printer unreachable', () => {
           { id: 'line-kitchen', product_id: 'p-kitchen', name: 'Omelette', unit_price: 45_000, quantity: 1, modifiers: [] },
         ],
         order_type: 'dine_in',
+        // Fiche 02 D2.5 — dine-in fires require a table (useDineInTableGuard).
+        tableNumber: 'T-01',
       },
       printedItemIds: [],
       lockedItemIds: [],
@@ -119,7 +121,7 @@ describe('SendToKitchenButton — kitchen printer unreachable', () => {
       isAuthenticated: true,
       isLoading: false,
       error: null,
-    } as never);
+    });
   });
 
   afterEach(() => {
@@ -135,6 +137,7 @@ describe('SendToKitchenButton — kitchen printer unreachable', () => {
 
     await act(async () => {
       btn.click();
+      await Promise.resolve();
     });
 
     // Wait for the mutation to settle — button re-enables (firableCount > 0

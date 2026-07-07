@@ -144,10 +144,19 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
           <div className="flex items-center gap-2 text-sm text-text-secondary">
             {cart.order_type === 'dine_in' && (
               <>
-                <span className="flex items-center gap-1">
-                  <MapPin className="h-4 w-4 text-gold" aria-hidden />
-                  {cart.tableNumber ? `Table ${cart.tableNumber}` : 'No table'}
-                </span>
+                {/* Fiche 02 D2.5 — dine-in requires a table: missing state reads
+                    as a warning, not a neutral fact (fire/checkout will block). */}
+                {cart.tableNumber ? (
+                  <span className="flex items-center gap-1">
+                    <MapPin className="h-4 w-4 text-gold" aria-hidden />
+                    Table {cart.tableNumber}
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1 text-amber-warn font-semibold">
+                    <MapPin className="h-4 w-4" aria-hidden />
+                    Table required
+                  </span>
+                )}
                 <span className="text-border-subtle" aria-hidden>•</span>
               </>
             )}

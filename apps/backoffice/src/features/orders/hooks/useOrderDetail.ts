@@ -49,6 +49,7 @@ export interface OrderDetail {
   order_number: string;
   status: string;
   order_type: string;
+  table_number: string | null;
   created_at: string;
   paid_at: string | null;
   customer_id: string | null;
@@ -75,7 +76,7 @@ export function useOrderDetail(id: string | undefined) {
         .from('orders')
         .select(
           `
-          id, order_number, status, order_type, created_at, paid_at,
+          id, order_number, status, order_type, table_number, created_at, paid_at,
           customer_id, served_by,
           subtotal, discount_amount, tax_amount, total,
           customers(name),
@@ -94,6 +95,7 @@ export function useOrderDetail(id: string | undefined) {
         order_number: string;
         status: string;
         order_type: string;
+        table_number: string | null;
         created_at: string;
         paid_at: string | null;
         customer_id: string | null;
@@ -114,6 +116,7 @@ export function useOrderDetail(id: string | undefined) {
         order_number: row.order_number,
         status: row.status,
         order_type: row.order_type,
+        table_number: row.table_number,
         created_at: row.created_at,
         paid_at: row.paid_at,
         customer_id: row.customer_id,

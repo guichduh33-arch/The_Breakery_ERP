@@ -53,6 +53,7 @@ import { useApplyCartDiscount } from '@/features/discounts/hooks/useApplyCartDis
 import { useVerifyManagerPin } from '@/features/discounts/hooks/useVerifyManagerPin';
 import { useVoidServerOrder } from './hooks/useVoidServerOrder';
 import { TableSelectorButton } from '@/features/tables/components/TableSelectorButton';
+import { useDineInTableGuard } from '@/features/tables/hooks/useDineInTableGuard';
 import { TabletInboxButton } from '@/features/inbox/components/TabletInboxButton';
 import { SendToKitchenButton } from './SendToKitchenButton';
 import { PrintBillButton } from './PrintBillButton';
@@ -87,6 +88,9 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
 
   const heldCount = useHeldOrdersQuery().data?.length ?? 0;
   const holdFired = useHoldFiredOrder();
+  // Fiche 02 D2.5 — a dine-in order can be paid directly without a fire; the
+  // checkout CTA carries the same mandatory-table guard as Send to Kitchen.
+  const checkoutTableGuard = useDineInTableGuard({ onSelected: () => openPayment() });
   const discount = useApplyCartDiscount();
   const rawVoidVerifyFn = useVerifyManagerPin();
   const voidServerOrder = useVoidServerOrder();
@@ -354,7 +358,7 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
           variant="gold"
           size="lg"
           className="h-14 shrink-0 px-7 gap-2.5 text-base font-bold active:bg-gold-pressed max-md:px-4"
-          onClick={() => openPayment()}
+          onClick={() => { if (checkoutTableGuard.ensureTable()) openPayment(); }}
           disabled={!hasItems}
           data-testid="checkout-cta"
         >
@@ -365,6 +369,7 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
       </div>
 
       {/* ── Owned modals ────────────────────────────────────────────────── */}
+      {checkoutTableGuard.modal}
       <HeldOrdersModal open={heldOpen} onClose={() => setHeldOpen(false)} />
 
       {/* Void Order — local confirmation (cart not yet fired). S43 P2-1:

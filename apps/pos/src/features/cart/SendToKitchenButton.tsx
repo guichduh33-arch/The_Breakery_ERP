@@ -7,6 +7,7 @@ import { Button } from '@breakery/ui';
 import { useCartStore, resetCartAfterCheckout } from '@/stores/cartStore';
 import { useFireToStations } from './hooks/useFireToStations';
 import { useHoldFiredOrder } from './hooks/useHoldFiredOrder';
+import { useDineInTableGuard } from '@/features/tables/hooks/useDineInTableGuard';
 
 interface SendToKitchenButtonProps {
   /** When provided, replaces the default `w-full` styling (e.g. for the bottom bar). */
@@ -17,6 +18,9 @@ interface SendToKitchenButtonProps {
 export function SendToKitchenButton({ className, variant }: SendToKitchenButtonProps = {}) {
   const { mutation, firableCount, unroutedCount } = useFireToStations();
   const holdFired = useHoldFiredOrder();
+  // Fiche 02 D2.5 — dine-in fires need a table (the KOT prints it). The guard
+  // opens the floor plan and resumes the fire once a table is picked.
+  const tableGuard = useDineInTableGuard({ onSelected: () => { void handleClick(); } });
 
   // Disabled when there is nothing that routes to a prep station (bread-only
   // orders, products query still loading, everything already printed) or while
@@ -25,6 +29,7 @@ export function SendToKitchenButton({ className, variant }: SendToKitchenButtonP
 
   async function handleClick() {
     if (disabled) return;
+    if (!tableGuard.ensureTable()) return;
     // LOT 3 — snapshot the unrouted count BEFORE firing: the fire marks the
     // items printed, which immediately drops the live counter back to 0.
     const unroutedAtFire = unroutedCount;
@@ -73,20 +78,29 @@ export function SendToKitchenButton({ className, variant }: SendToKitchenButtonP
       }
     } catch (err) {
       const e = err as Error;
+      // Server-side net of the dine-in table guard (fire_v4 P0011, _122) —
+      // reachable only if the client guard was bypassed (stale state).
+      if (e.message.includes('table_required_for_dine_in')) {
+        toast.error('Dine-in orders need a table — pick one on the floor plan');
+        return;
+      }
       toast.error(`Fire to stations failed: ${e.message}`);
     }
   }
 
   return (
-    <Button
-      variant={variant ?? 'secondary'}
-      size="lg"
-      className={className ?? 'w-full'}
-      disabled={disabled}
-      onClick={() => { void handleClick(); }}
-    >
-      <ChefHat className="h-4 w-4" aria-hidden />
-      {mutation.isPending ? 'Sending…' : 'Send to Kitchen'}
-    </Button>
+    <>
+      <Button
+        variant={variant ?? 'secondary'}
+        size="lg"
+        className={className ?? 'w-full'}
+        disabled={disabled}
+        onClick={() => { void handleClick(); }}
+      >
+        <ChefHat className="h-4 w-4" aria-hidden />
+        {mutation.isPending ? 'Sending…' : 'Send to Kitchen'}
+      </Button>
+      {tableGuard.modal}
+    </>
   );
 }
