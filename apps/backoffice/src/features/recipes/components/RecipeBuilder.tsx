@@ -39,6 +39,7 @@ import {
   IngredientPicker,
   Input,
   SectionLabel,
+  Select,
   Tabs, TabsContent, TabsList, TabsTrigger,
   type IngredientSearchResult,
 } from '@breakery/ui';
@@ -82,10 +83,10 @@ async function searchIngredientsFn(
     });
     if (error) return [];
     return (data ?? []).map((r) => ({
-      product_id:    r.product_id as string,
-      sku:           r.sku as string,
-      name:          r.name as string,
-      unit:          r.unit as string,
+      product_id:    r.product_id,
+      sku:           r.sku,
+      name:          r.name,
+      unit:          r.unit,
       cost_price:    Number(r.cost_price),
       current_stock: Number(r.current_stock),
       kind:          r.kind as IngredientSearchResult['kind'],
@@ -151,14 +152,12 @@ export function RecipeBuilder({
     const productsMap: Record<string, RecipeGraphProduct> = {};
     productsMap[productId] = { id: productId, name: productName, unit: productUnit, cost_price: 0 };
     for (const r of recipe) {
-      if (!productsMap[r.material_id]) {
-        productsMap[r.material_id] = {
-          id:         r.material_id,
-          name:       r.material_name,
-          unit:       r.material_unit,
-          cost_price: Number(r.material_cost_price),
-        };
-      }
+      productsMap[r.material_id] ??= {
+        id:         r.material_id,
+        name:       r.material_name,
+        unit:       r.material_unit,
+        cost_price: Number(r.material_cost_price),
+      };
     }
     return {
       products: productsMap,
@@ -462,14 +461,14 @@ export function RecipeBuilder({
                 </div>
                 <div className="md:col-span-2">
                   <SectionLabel as="div" size="xs">Unit</SectionLabel>
-                  <select
+                  <Select
                     aria-label="Unit"
                     value={unit}
                     onChange={(e) => setUnit(e.target.value)}
-                    className="mt-1.5 h-touch-min w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm font-mono text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+                    className="mt-1.5 font-mono"
                   >
                     {eligibleUnits.map((u) => <option key={u} value={u}>{u}</option>)}
-                  </select>
+                  </Select>
                 </div>
                 <div className="md:col-span-2">
                   <button

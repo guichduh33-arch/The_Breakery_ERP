@@ -41,7 +41,7 @@ function valueFromAny(v: unknown): DraftValue {
   if (typeof v === 'number')  return v;
   if (typeof v === 'boolean') return v;
   if (typeof v === 'object')  return JSON.stringify(v);
-  return String(v);
+  return null;
 }
 
 export default function SettingsGeneralPage() {
@@ -89,7 +89,7 @@ export default function SettingsGeneralPage() {
   }, [business.data, localization.data, tax.data, pos.data]);
 
   const isLoading = business.isLoading || localization.isLoading || tax.isLoading || pos.isLoading;
-  const loadError = business.error || localization.error || tax.error || pos.error;
+  const loadError = business.error ?? localization.error ?? tax.error ?? pos.error;
 
   const dirtyKeys = useMemo(() => {
     const keys: string[] = [];
@@ -194,7 +194,7 @@ export default function SettingsGeneralPage() {
 
           {serverError && <p className="text-red text-sm" role="alert">{serverError}</p>}
           {savedAt && dirtyKeys.length === 0 && (
-            <p className="text-emerald-700 text-xs" role="status">Saved at {savedAt}</p>
+            <p className="text-success text-xs" role="status">Saved at {savedAt}</p>
           )}
 
           {canUpdate && (

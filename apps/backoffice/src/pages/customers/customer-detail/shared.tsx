@@ -14,12 +14,12 @@ export function rp(amount: number | string | null): string {
 export function StatusPill({ status }: { status: string }): JSX.Element {
   const tone =
     status === 'completed' || status === 'paid'
-      ? 'bg-emerald-100 text-emerald-700'
+      ? 'bg-success-soft text-success'
       : status === 'voided'
-        ? 'bg-rose-100 text-rose-700'
+        ? 'bg-danger-soft text-danger'
         : status === 'pending_payment' || status === 'b2b_pending'
-          ? 'bg-amber-100 text-amber-700'
-          : 'bg-gray-100 text-gray-600';
+          ? 'bg-warning-soft text-warning'
+          : 'bg-bg-overlay text-text-muted';
   return (
     <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${tone}`}>
       {status}

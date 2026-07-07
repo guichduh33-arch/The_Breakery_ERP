@@ -178,7 +178,7 @@ export function CartLineRow({
           </span>
           {isGift && (
             <span
-              className="inline-flex items-center rounded-full border border-rose-500/30 bg-rose-500/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-rose-300"
+              className="inline-flex items-center rounded-full border border-gold/30 bg-gold-soft px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gold"
               aria-label="Free gift from promotion"
             >
               Promo

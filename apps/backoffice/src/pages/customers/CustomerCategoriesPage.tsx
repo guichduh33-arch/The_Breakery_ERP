@@ -45,13 +45,13 @@ const ICON_BY_SLUG: Record<string, LucideIcon> = {
 };
 
 const TONE_BY_SLUG: Record<string, string> = {
-  retail:    'bg-blue-500',
-  general:   'bg-blue-500',
-  wholesale: 'bg-emerald-500',
-  vip:       'bg-amber-500',
-  staff:     'bg-violet-500',
-  asap:      'bg-rose-500',
-  enak:      'bg-fuchsia-500',
+  retail:    'bg-cat-blue',
+  general:   'bg-cat-blue',
+  wholesale: 'bg-cat-emerald',
+  vip:       'bg-cat-amber',
+  staff:     'bg-cat-violet',
+  asap:      'bg-cat-rose',
+  enak:      'bg-cat-indigo',
 };
 
 function pricingLabel(cat: CustomerCategoryRow): string {

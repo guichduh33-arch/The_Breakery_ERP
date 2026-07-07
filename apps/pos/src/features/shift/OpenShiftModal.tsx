@@ -31,6 +31,7 @@ import {
   FullScreenModal,
   NumpadVirtual,
   SectionLabel,
+  Select,
   cn,
 } from '@breakery/ui';
 import { todayIsoDate, formatTimeWita } from '@breakery/utils';
@@ -269,7 +270,7 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
 
             <section className="space-y-2">
               <SectionLabel as="div">Terminal (optional)</SectionLabel>
-              <select
+              <Select
                 value={terminalId ?? ''}
                 onChange={(e) => {
                   const v = e.target.value || null;
@@ -279,14 +280,13 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
                     else localStorage.removeItem(STORAGE_KEY);
                   }
                 }}
-                className="w-full bg-bg-input border border-border-subtle rounded-md p-3 text-sm focus:outline-none focus:border-gold"
                 data-testid="shift-terminal"
               >
                 <option value="">(no terminal selected)</option>
                 {lanDevices.data?.map((d) => (
                   <option key={d.id} value={d.id}>{d.code} — {d.name}</option>
                 ))}
-              </select>
+              </Select>
             </section>
 
             <section className="space-y-2">

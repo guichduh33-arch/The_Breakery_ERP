@@ -5,11 +5,12 @@ import { useState, type JSX } from 'react';
 import {
   Button,
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
+  selectClassName, cn,
 } from '@breakery/ui';
 import { useCreateCategory, useUpdateCategory } from '../hooks/useCategoryMutations.js';
 import type { CategoryRow, CategoryType } from '../hooks/useAllCategories.js';
 
-const CATEGORY_TYPES: ReadonlyArray<{ value: CategoryType; label: string }> = [
+const CATEGORY_TYPES: readonly { value: CategoryType; label: string }[] = [
   { value: 'raw_material',  label: 'Raw material' },
   { value: 'semi_finished', label: 'Semi-finished' },
   { value: 'finished',      label: 'Finished product' },
@@ -131,7 +132,7 @@ export function CategoryFormDialog({ mode, category, onClose }: CategoryFormDial
                 id="cat-disp"
                 value={dispatch}
                 onChange={(e) => { setDispatch(e.target.value); }}
-                className="w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded"
+                className={cn(selectClassName)}
               >
                 {DISPATCH_STATIONS.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
@@ -144,7 +145,7 @@ export function CategoryFormDialog({ mode, category, onClose }: CategoryFormDial
                 id="cat-kds"
                 value={kds}
                 onChange={(e) => { setKds(e.target.value); }}
-                className="w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded"
+                className={cn(selectClassName)}
               >
                 {KDS_STATIONS.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
@@ -196,7 +197,7 @@ export function CategoryFormDialog({ mode, category, onClose }: CategoryFormDial
           </div>
 
           {error !== null && (
-            <div className="text-xs text-red bg-red-soft px-2 py-1.5 rounded">{error}</div>
+            <div className="text-xs text-danger bg-danger-soft px-2 py-1.5 rounded">{error}</div>
           )}
         </div>
 

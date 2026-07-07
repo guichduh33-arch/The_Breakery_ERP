@@ -2,6 +2,7 @@
 // S40 Wave B3 — Price changes report: product filter, old→new price, delta %, truncated banner.
 
 import { useState } from 'react';
+import { selectClassName, cn } from '@breakery/ui';
 import { toLocalDateStr } from '@breakery/domain';
 import type { CsvColumn } from '@breakery/domain';
 import { useQuery } from '@tanstack/react-query';
@@ -61,9 +62,9 @@ function deltaBadge(pct: number | null): JSX.Element {
     return <span className="text-text-secondary text-xs">—</span>;
   }
   const cls = pct > 0
-    ? 'inline-flex rounded px-1 py-0.5 text-xs font-medium bg-red-100 text-red-700'
+    ? 'inline-flex rounded px-1 py-0.5 text-xs font-medium bg-danger-soft text-danger'
     : pct < 0
-      ? 'inline-flex rounded px-1 py-0.5 text-xs font-medium bg-green-100 text-green-700'
+      ? 'inline-flex rounded px-1 py-0.5 text-xs font-medium bg-success-soft text-success'
       : 'inline-flex rounded px-1 py-0.5 text-xs font-medium bg-surface-raised text-text-secondary';
   return <span className={cls}>{pct >= 0 ? '+' : ''}{pct.toFixed(1)}%</span>;
 }
@@ -104,7 +105,7 @@ export default function PriceChangesPage() {
           <label className="flex items-center gap-2 text-sm text-text-secondary">
             <span>Product</span>
             <select
-              className="h-9 rounded-md border border-border-subtle bg-surface px-2 text-sm text-text-primary"
+              className={cn(selectClassName, 'h-9 w-auto')}
               value={productId}
               onChange={(e) => setProductId(e.target.value)}
               aria-label="Filter by product"
@@ -125,12 +126,12 @@ export default function PriceChangesPage() {
     >
       {isLoading && <p className="text-sm text-text-secondary">Loading…</p>}
       {error && (
-        <p className="text-sm text-red-500" role="alert">
+        <p className="text-sm text-danger" role="alert">
           {error.message ?? 'Failed to load report.'}
         </p>
       )}
       {data?.truncated && (
-        <p className="mb-3 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-700" role="status">
+        <p className="mb-3 rounded border border-warning/30 bg-warning-soft px-3 py-2 text-sm text-warning" role="status">
           First 500 rows shown — narrow the date range to see all changes.
         </p>
       )}

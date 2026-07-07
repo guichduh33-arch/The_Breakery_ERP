@@ -3,6 +3,7 @@ import { useState } from 'react';
 import {
   Button,
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+  Select,
 } from '@breakery/ui';
 import { usePayExpense } from '../hooks/useExpenseActions.js';
 
@@ -40,16 +41,16 @@ export function PayDialog({ open, expenseId, onClose, onSuccess }: PayDialogProp
           <label htmlFor="pay-method" className="text-xs uppercase tracking-widest text-text-secondary">
             Payment method
           </label>
-          <select
+          <Select
             id="pay-method"
             value={method}
             onChange={(e) => setMethod(e.target.value as typeof method)}
-            className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
+            className="w-full"
           >
             <option value="cash">Cash</option>
             <option value="transfer">Bank transfer</option>
             <option value="card">Card</option>
-          </select>
+          </Select>
         </div>
         {mut.error !== null && mut.error !== undefined && (
           <div className="text-xs text-red">{mut.error.message}</div>

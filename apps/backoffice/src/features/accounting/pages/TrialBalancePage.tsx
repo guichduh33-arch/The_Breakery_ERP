@@ -41,7 +41,7 @@ export default function TrialBalancePage(): JSX.Element {
         {tb.data && (
           <Button
             variant="secondary"
-            onClick={() => downloadTrialBalanceCsv(tb.data!)}
+            onClick={() => downloadTrialBalanceCsv(tb.data)}
             className="inline-flex items-center gap-2"
             data-testid="tb-csv-export"
           >
@@ -78,7 +78,7 @@ export default function TrialBalancePage(): JSX.Element {
         <>
           <div data-testid="tb-balanced-badge">
             {tb.data.balanced ? (
-              <span className="inline-flex items-center gap-2 rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
+              <span className="inline-flex items-center gap-2 rounded-full bg-success-soft px-3 py-1 text-xs font-semibold text-success">
                 ✓ Balanced
               </span>
             ) : (
@@ -129,7 +129,7 @@ export default function TrialBalancePage(): JSX.Element {
         </>
       )}
 
-      {!tb.isLoading && tb.data && tb.data.lines.length === 0 && (
+      {!tb.isLoading && tb.data?.lines.length === 0 && (
         <p className="text-sm text-text-secondary">No activity in this period.</p>
       )}
     </div>

@@ -1,7 +1,8 @@
 // apps/backoffice/src/features/settings/expense-thresholds/ThresholdFormDialog.tsx
 // S28 — wave 5.E — create/edit modal for expense approval thresholds with steps builder.
 //
-// Select/Label/Input: native HTML elements (project convention — @breakery/ui has no Select/Label exports).
+// Native HTML controls kept for form uniformity (this dialog is hand-styled end to end;
+// swapping a single field to the @breakery/ui Select primitive would break its internal rhythm).
 // Only Button + Dialog* come from @breakery/ui.
 import { useState, useEffect } from 'react';
 import {
@@ -184,7 +185,7 @@ export function ThresholdFormDialog({ open, onOpenChange, initial, categories }:
 
           {setMut.error != null && (
             <p className="text-sm text-red" data-testid="threshold-form-error">
-              {(setMut.error as Error).message}
+              {(setMut.error).message}
             </p>
           )}
         </div>

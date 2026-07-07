@@ -6,7 +6,7 @@
 
 import { useState, type JSX } from 'react';
 import {
-  Button, Input,
+  Button, Input, Select,
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@breakery/ui';
 import { useFiscalPeriods, type FiscalPeriodRow } from '../hooks/useFiscalPeriods.js';
@@ -79,10 +79,10 @@ export function FiscalPeriodModal({
           <div className="space-y-4">
             <label className="flex flex-col text-sm">
               Period
-              <select
+              <Select
                 value={periodId}
                 onChange={(e) => setPeriodId(e.target.value)}
-                className="mt-1 rounded-md border border-border-subtle bg-bg-elevated px-3 py-2 text-sm"
+                className="mt-1"
                 data-testid="fp-modal-period-select"
               >
                 <option value="">— select a period —</option>
@@ -91,7 +91,7 @@ export function FiscalPeriodModal({
                     {p.period_start} — {p.period_end} ({p.status})
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
 
             <label className="flex items-start gap-2 text-sm">
@@ -123,7 +123,7 @@ export function FiscalPeriodModal({
 
         {step === 2 && (
           <div className="space-y-4">
-            <div className="rounded border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+            <div className="rounded border border-warning/30 bg-warning-soft px-3 py-2 text-xs text-warning">
               You are about to <strong>{lock ? 'LOCK' : 'CLOSE'}</strong> period{' '}
               <strong>{selectedPeriod?.period_start} → {selectedPeriod?.period_end}</strong>.
               This action is audit-logged and cannot be undone via UI.

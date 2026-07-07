@@ -19,19 +19,19 @@ export interface ScheduleSlotCellProps {
 }
 
 const STATUS_DOT: Record<ScheduleRow['status'], string> = {
-  scheduled: 'bg-gray-400',
-  started:   'bg-blue-500',
-  completed: 'bg-emerald-500',
-  cancelled: 'bg-red-500',
-  skipped:   'bg-amber-500',
+  scheduled: 'bg-text-muted',
+  started:   'bg-info',
+  completed: 'bg-success',
+  cancelled: 'bg-danger',
+  skipped:   'bg-warning',
 };
 
 const STATUS_PILL: Record<ScheduleRow['status'], string> = {
-  scheduled: 'bg-gray-100 text-gray-700 ring-gray-300',
-  started:   'bg-blue-50 text-blue-700 ring-blue-300',
-  completed: 'bg-emerald-50 text-emerald-700 ring-emerald-300',
-  cancelled: 'bg-red-50 text-red-700 ring-red-300',
-  skipped:   'bg-amber-50 text-amber-800 ring-amber-300',
+  scheduled: 'bg-bg-overlay text-text-secondary ring-border-subtle',
+  started:   'bg-info-soft text-info ring-info/30',
+  completed: 'bg-success-soft text-success ring-success/30',
+  cancelled: 'bg-danger-soft text-danger ring-danger/30',
+  skipped:   'bg-warning-soft text-warning ring-warning/30',
 };
 
 export function ScheduleSlotCell({

@@ -65,7 +65,7 @@ export default function UserDetailPage() {
 
   if (user.isLoading) return <div className="text-sm text-text-secondary">Loading user…</div>;
   if (user.error != null) {
-    return <div className="text-sm text-rose-600">Failed: {user.error.message}</div>;
+    return <div className="text-sm text-danger">Failed: {user.error.message}</div>;
   }
   if (user.data === null || user.data === undefined) {
     return <div className="text-sm text-text-secondary">User not found.</div>;
@@ -87,7 +87,7 @@ export default function UserDetailPage() {
             <span className="font-mono mr-3">{u.employee_code}</span>
             <span className="uppercase tracking-wider text-xs">{u.role_code}</span>
             {isDeleted && (
-              <span className="ml-3 text-xs text-rose-600">(deleted)</span>
+              <span className="ml-3 text-xs text-danger">(deleted)</span>
             )}
           </p>
         </div>
@@ -99,7 +99,7 @@ export default function UserDetailPage() {
             <Button
               variant="ghost"
               onClick={() => { setShowDelete(true); }}
-              className="text-rose-600 hover:text-rose-700"
+              className="text-danger hover:opacity-80"
             >
               <Trash2 className="h-4 w-4 mr-1.5" aria-hidden /> Delete
             </Button>
@@ -112,8 +112,8 @@ export default function UserDetailPage() {
           <div className="text-xs uppercase tracking-wider text-text-secondary">Status</div>
           <div>
             {isDeleted
-              ? <span className="text-rose-600">Deleted</span>
-              : u.is_active ? <span className="text-emerald-600">Active</span>
+              ? <span className="text-danger">Deleted</span>
+              : u.is_active ? <span className="text-success">Active</span>
                             : <span>Inactive</span>}
           </div>
         </div>
@@ -177,20 +177,20 @@ export default function UserDetailPage() {
             </Button>
           </div>
           {pinWeak && !pinSuccess && (
-            <p className="text-xs italic text-amber-600" data-testid="pin-weak-hint">
+            <p className="text-xs italic text-warning" data-testid="pin-weak-hint">
               ⚠ Weak PIN ({pinWeakReason})
             </p>
           )}
           {pinError !== null && (
-            <div className="text-xs text-rose-600">{pinError}</div>
+            <div className="text-xs text-danger">{pinError}</div>
           )}
           {pinSuccess && (
-            <div className="text-xs text-emerald-600" data-testid="pin-reset-success">PIN updated. The lockout (if any) is also cleared.</div>
+            <div className="text-xs text-success" data-testid="pin-reset-success">PIN updated. The lockout (if any) is also cleared.</div>
           )}
           {pinSuccess && pinWeak && (
             <div
               role="alert"
-              className="mt-2 rounded border border-amber-400 bg-amber-50 px-3 py-2 text-xs text-amber-900"
+              className="mt-2 rounded border border-warning bg-warning-soft px-3 py-2 text-xs text-warning"
               data-testid="pin-weak-banner"
             >
               ⚠ This PIN is weak ({pinWeakReason}). Consider a stronger PIN next time.

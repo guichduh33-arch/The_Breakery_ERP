@@ -37,8 +37,8 @@ import { CreateB2bOrderModal } from '@/features/btob/components/CreateB2bOrderMo
 
 const AGING_TONES: Record<string, string> = {
   Current:  'text-success',
-  Overdue:  'text-amber-500',
-  Critical: 'text-orange-500',
+  Overdue:  'text-warning',
+  Critical: 'text-cat-orange',
   Default:  'text-danger',
 };
 
@@ -143,7 +143,7 @@ export default function B2BDashboardPage(): JSX.Element {
   );
 }
 
-interface TopClientsCardProps { rows: ReadonlyArray<B2bClientRow>; loading: boolean }
+interface TopClientsCardProps { rows: readonly B2bClientRow[]; loading: boolean }
 function TopClientsCard({ rows, loading }: TopClientsCardProps): JSX.Element {
   return (
     <Card variant="default" padding="md" className="space-y-3">
@@ -172,7 +172,7 @@ function TopClientsCard({ rows, loading }: TopClientsCardProps): JSX.Element {
               <div className="text-right">
                 <div className="font-mono text-text-primary">{formatIdr(c.total_spent)}</div>
                 {Number(c.b2b_current_balance) > 0 && (
-                  <div className="text-xs text-amber-500">
+                  <div className="text-xs text-warning">
                     {formatIdr(Number(c.b2b_current_balance))} outstanding
                   </div>
                 )}
@@ -185,7 +185,7 @@ function TopClientsCard({ rows, loading }: TopClientsCardProps): JSX.Element {
   );
 }
 
-interface RecentOrdersCardProps { rows: ReadonlyArray<B2bRecentOrder>; loading: boolean }
+interface RecentOrdersCardProps { rows: readonly B2bRecentOrder[]; loading: boolean }
 function RecentOrdersCard({ rows, loading }: RecentOrdersCardProps): JSX.Element {
   return (
     <Card variant="default" padding="md" className="space-y-3">
@@ -227,7 +227,7 @@ function RecentOrdersCard({ rows, loading }: RecentOrdersCardProps): JSX.Element
   );
 }
 
-interface AgingSummaryCardProps { buckets: ReadonlyArray<B2bAgingBucket>; loading: boolean }
+interface AgingSummaryCardProps { buckets: readonly B2bAgingBucket[]; loading: boolean }
 function AgingSummaryCard({ buckets, loading }: AgingSummaryCardProps): JSX.Element {
   const totalCount = buckets.reduce((acc, b) => acc + b.count, 0);
   return (
@@ -240,7 +240,7 @@ function AgingSummaryCard({ buckets, loading }: AgingSummaryCardProps): JSX.Elem
         </SectionLabel>
         <div className="flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-widest">
           <Legend tone="text-success"  label="0-30 Days" />
-          <Legend tone="text-amber-500" label="31-60 Days" />
+          <Legend tone="text-warning" label="31-60 Days" />
           <Legend tone="text-danger"    label="61-90+ Days" />
         </div>
       </div>

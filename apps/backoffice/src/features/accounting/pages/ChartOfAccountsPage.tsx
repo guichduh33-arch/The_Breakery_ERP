@@ -132,7 +132,7 @@ export default function ChartOfAccountsPage(): JSX.Element {
                     <span
                       className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-xs ${
                         row.is_active
-                          ? 'bg-green-100 text-green-700'
+                          ? 'bg-success-soft text-success'
                           : 'bg-bg-overlay text-text-muted'
                       }`}
                       aria-label={row.is_active ? 'Active' : 'Inactive'}

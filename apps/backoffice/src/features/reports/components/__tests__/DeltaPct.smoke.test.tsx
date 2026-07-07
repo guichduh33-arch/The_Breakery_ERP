@@ -7,14 +7,14 @@ describe('DeltaPct', () => {
     render(<DeltaPct current={112} previous={100} />);
     const el = screen.getByTestId('delta-pct');
     expect(el).toHaveTextContent('+12.0%');
-    expect(el.className).toContain('text-green-600');
+    expect(el.className).toContain('text-success');
   });
 
   it('renders -20.0% in red when current < previous', () => {
     render(<DeltaPct current={80} previous={100} />);
     const el = screen.getByTestId('delta-pct');
     expect(el).toHaveTextContent('-20.0%');
-    expect(el.className).toContain('text-red-600');
+    expect(el.className).toContain('text-danger');
   });
 
   it('renders em-dash when previous is 0', () => {

@@ -6,6 +6,7 @@ import { useState, type JSX } from 'react';
 import {
   Button,
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+  Select,
 } from '@breakery/ui';
 import { useSections } from '@/features/inventory-transfers/hooks/useSections.js';
 import { useCreateOpname } from '../hooks/useOpnameMutations.js';
@@ -50,17 +51,17 @@ export function CreateOpnameModal({ onCreated, onClose }: CreateOpnameModalProps
         <div className="space-y-3">
           <div>
             <label htmlFor="opname-section" className="block text-xs uppercase tracking-wider text-text-secondary mb-1">Section</label>
-            <select
+            <Select
               id="opname-section"
               value={sectionId}
               onChange={(e) => { setSectionId(e.target.value); }}
-              className="w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded"
+              className="w-full"
             >
               <option value="">— Select a section —</option>
               {(sections.data ?? []).map((s) => (
                 <option key={s.id} value={s.id}>{s.name}</option>
               ))}
-            </select>
+            </Select>
           </div>
 
           <div>

@@ -57,17 +57,17 @@ const TYPE_LABEL: Record<string, string> = {
 };
 
 const STATUS_TONE: Record<string, string> = {
-  completed: 'bg-emerald-100 text-emerald-700',
-  paid: 'bg-emerald-100 text-emerald-700',
-  voided: 'bg-rose-100 text-rose-700',
-  pending_payment: 'bg-amber-100 text-amber-700',
-  b2b_pending: 'bg-amber-100 text-amber-700',
-  draft: 'bg-gray-100 text-gray-600',
+  completed: 'bg-success-soft text-success',
+  paid: 'bg-success-soft text-success',
+  voided: 'bg-danger-soft text-danger',
+  pending_payment: 'bg-warning-soft text-warning',
+  b2b_pending: 'bg-warning-soft text-warning',
+  draft: 'bg-surface-2 text-text-secondary',
 };
 
 // Fulfillment-style tabs mapped onto the real order_status enum
 // (draft | paid | voided | pending_payment | completed | b2b_pending).
-const STATUS_TABS: ReadonlyArray<{ id: string; label: string; status?: string }> = [
+const STATUS_TABS: readonly { id: string; label: string; status?: string }[] = [
   { id: 'all', label: 'All' },
   { id: 'new', label: 'New', status: 'pending_payment' },
   { id: 'preparing', label: 'Preparing', status: 'draft' },
@@ -216,12 +216,12 @@ export default function OrdersListPage(): JSX.Element {
           <ShoppingBag className="h-7 w-7 text-gold" aria-hidden />
           <h1 className="font-serif text-3xl text-text-primary">Live Orders</h1>
           <span className="flex items-center gap-1.5 text-xs text-text-secondary" data-testid="realtime-indicator">
-            <span className={`inline-block h-2 w-2 rounded-full ${isConnected ? 'bg-emerald-500' : 'bg-gray-400'}`} />
+            <span className={`inline-block h-2 w-2 rounded-full ${isConnected ? 'bg-success' : 'bg-text-muted'}`} />
             {isConnected ? 'Live' : 'Offline'}
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="md" onClick={() => query.refetch()} disabled={query.isFetching}>
+          <Button variant="ghost" size="md" onClick={() => { void query.refetch(); }} disabled={query.isFetching}>
             <RefreshCw className={`h-4 w-4 ${query.isFetching ? 'animate-spin' : ''}`} aria-hidden /> Refresh
           </Button>
           <Button variant="secondary" size="md" onClick={exportCsv} disabled={lines.length === 0}>
@@ -234,20 +234,20 @@ export default function OrdersListPage(): JSX.Element {
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         <KpiCard icon={ShoppingBag} label="Total orders" value={String(kpis.total)} />
         <KpiCard icon={DollarSign} label="Total amount" value={`Rp ${fmtIdr(kpis.totalAmount)}`} />
-        <KpiCard icon={CheckCircle2} label="Completion" value={`${kpis.completion}%`} accent="text-blue-600" />
+        <KpiCard icon={CheckCircle2} label="Completion" value={`${kpis.completion}%`} accent="text-info" />
         <KpiCard
           icon={CheckCircle2}
           label="Paid"
           value={String(kpis.paidCount)}
           footer={`Rp ${fmtIdr(kpis.paidAmount)}`}
-          accent="text-emerald-600"
+          accent="text-success"
         />
         <KpiCard
           icon={Clock3}
           label="Unpaid"
           value={String(kpis.unpaidCount)}
           footer={`Rp ${fmtIdr(kpis.unpaidAmount)}`}
-          accent="text-rose-600"
+          accent="text-danger"
         />
       </div>
 
@@ -339,26 +339,26 @@ export default function OrdersListPage(): JSX.Element {
                   <td className="px-4 py-3 text-right tabular-nums">{o.items_count} items</td>
                   <td className="px-4 py-3 text-right font-mono font-medium">Rp {fmtIdr(o.total)}</td>
                   <td className="px-4 py-3">
-                    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase ${STATUS_TONE[o.status] ?? 'bg-gray-100 text-gray-600'}`}>{o.status}</span>
+                    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase ${STATUS_TONE[o.status] ?? 'bg-surface-2 text-text-secondary'}`}>{o.status}</span>
                   </td>
                   <td className="px-4 py-3">
                     {paid ? (
                       <div className="leading-tight">
-                        <div className="flex items-center gap-1 text-xs font-medium text-emerald-600">✓ Paid</div>
+                        <div className="flex items-center gap-1 text-xs font-medium text-success">✓ Paid</div>
                         {o.payment_method_primary && <div className="text-xs capitalize text-text-muted">{o.payment_method_primary}</div>}
                       </div>
                     ) : (
-                      <span className="text-xs text-amber-600">Unpaid</span>
+                      <span className="text-xs text-warning">Unpaid</span>
                     )}
                   </td>
                   <td className="px-4 py-3 text-right whitespace-nowrap">
                     {hasEditOpen && (o.status === 'draft' || o.status === 'pending_payment') && (
-                      <button type="button" title="Edit items" onClick={() => void loadItemsAndOpenEdit(o)} data-testid={`row-edit-${o.id}`} className="mr-1 text-blue-600 hover:text-blue-800" aria-label={`Edit items of ${o.order_number}`}>
+                      <button type="button" title="Edit items" onClick={() => void loadItemsAndOpenEdit(o)} data-testid={`row-edit-${o.id}`} className="mr-1 text-info hover:text-info/80" aria-label={`Edit items of ${o.order_number}`}>
                         <Edit3 size={16} />
                       </button>
                     )}
                     {hasVoid && o.status === 'paid' && (
-                      <button type="button" title="Void" onClick={() => setVoidTarget({ id: o.id, number: o.order_number })} data-testid={`row-void-${o.id}`} className="mr-1 text-red-600 hover:text-red-800" aria-label={`Void ${o.order_number}`}>
+                      <button type="button" title="Void" onClick={() => setVoidTarget({ id: o.id, number: o.order_number })} data-testid={`row-void-${o.id}`} className="mr-1 text-danger hover:text-danger/80" aria-label={`Void ${o.order_number}`}>
                         <XCircle size={16} />
                       </button>
                     )}
@@ -386,7 +386,7 @@ export default function OrdersListPage(): JSX.Element {
         <div className="flex items-center justify-between border-t border-border-subtle px-4 py-3 text-sm text-text-secondary">
           <span>Showing {lines.length} order{lines.length === 1 ? '' : 's'}</span>
           {query.hasNextPage && (
-            <Button variant="ghost" size="sm" onClick={() => query.fetchNextPage()} disabled={query.isFetchingNextPage}>
+            <Button variant="ghost" size="sm" onClick={() => { void query.fetchNextPage(); }} disabled={query.isFetchingNextPage}>
               {query.isFetchingNextPage ? 'Loading…' : 'Load more'}
             </Button>
           )}

@@ -50,7 +50,7 @@ export function TableCell({ table, selected, onTap }: TableCellProps): JSX.Eleme
         : 'bg-green/15 border-green/50';
 
   const ring = selected
-    ? 'ring-2 ring-offset-2 ring-offset-bg-base ring-white shadow-[0_0_24px_rgba(255,255,255,0.25)]'
+    ? 'ring-2 ring-offset-2 ring-offset-bg-base ring-gold shadow-lg'
     : 'ring-0';
 
   return (

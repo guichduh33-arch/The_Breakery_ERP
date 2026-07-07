@@ -5,6 +5,7 @@
 // the AMBER cost-family language. Filterable by period, category and status.
 
 import { useMemo, useState } from 'react';
+import { selectClassName, cn } from '@breakery/ui';
 import {
   Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
@@ -78,7 +79,7 @@ export default function OperatingExpensesPage() {
           <label className="flex items-center gap-2 text-sm text-text-secondary">
             <span>Category</span>
             <select
-              className="h-9 rounded-md border border-border-subtle bg-surface-2 px-2 text-sm text-text-primary"
+              className={cn(selectClassName, 'h-9 w-auto')}
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
               aria-label="Filter by expense category"
@@ -92,7 +93,7 @@ export default function OperatingExpensesPage() {
           <label className="flex items-center gap-2 text-sm text-text-secondary">
             <span>Status</span>
             <select
-              className="h-9 rounded-md border border-border-subtle bg-surface-2 px-2 text-sm text-text-primary"
+              className={cn(selectClassName, 'h-9 w-auto')}
               value={status}
               onChange={(e) => setStatus(e.target.value)}
               aria-label="Filter by expense status"
@@ -111,7 +112,7 @@ export default function OperatingExpensesPage() {
       </div>
 
       {error && (
-        <p className="text-sm text-red-500" role="alert">
+        <p className="text-sm text-danger" role="alert">
           {error.message ?? 'Failed to load expenses report.'}
         </p>
       )}

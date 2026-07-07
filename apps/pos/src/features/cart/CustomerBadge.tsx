@@ -31,6 +31,7 @@ import type { JSX } from 'react';
 import { cn } from '@breakery/ui';
 import { tierFromLifetime } from '@breakery/domain';
 import type { LoyaltyTier } from '@breakery/domain';
+import { avatarTint } from '@/features/customers/avatarTint';
 import type { CustomerWithCategory } from '@/stores/cartStore';
 
 interface CustomerBadgeProps {
@@ -51,26 +52,6 @@ const TIER_TEXT: Record<LoyaltyTier, string> = {
   gold: 'text-gold',
   platinum: 'text-blue-info',
 };
-
-/**
- * 5 muted, theatrical avatar tints. Avatar background is computed from a
- * stable hash so the same customer always gets the same color across mounts.
- * Values are intentionally desaturated to sit comfortably on the dark POS
- * surface without competing with the gold border.
- */
-const AVATAR_TINTS = [
-  'bg-emerald-500',
-  'bg-sky-500',
-  'bg-rose-500',
-  'bg-amber-500',
-  'bg-violet-500',
-] as const;
-
-function avatarTint(seed: string): string {
-  let h = 0;
-  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
-  return AVATAR_TINTS[h % AVATAR_TINTS.length] as string;
-}
 
 function firstInitial(name: string): string {
   const trimmed = name.trim();
@@ -94,7 +75,7 @@ export function CustomerBadge({ customer, onDetach }: CustomerBadgeProps): JSX.E
       <span
         className={cn(
           'flex items-center justify-center h-9 w-9 rounded-full shrink-0',
-          'text-white text-sm font-semibold',
+          'text-sm font-semibold',
           tint,
         )}
         aria-hidden="true"

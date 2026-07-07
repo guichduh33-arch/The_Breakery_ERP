@@ -1,4 +1,5 @@
 // apps/backoffice/src/features/expenses/components/CategoryPicker.tsx
+import { Select } from '@breakery/ui';
 import { useExpenseCategories } from '../hooks/useExpensesList.js';
 
 export interface CategoryPickerProps {
@@ -18,12 +19,12 @@ export function CategoryPicker({ value, onChange, disabled, id }: CategoryPicker
     return <div className="text-xs text-red">Failed to load categories.</div>;
   }
   return (
-    <select
+    <Select
       id={id}
       value={value}
       disabled={disabled === true}
       onChange={(e) => onChange(e.target.value)}
-      className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
+      className="w-full"
     >
       <option value="">Select a category…</option>
       {(data ?? []).map((cat) => (
@@ -31,6 +32,6 @@ export function CategoryPicker({ value, onChange, disabled, id }: CategoryPicker
           {cat.name}
         </option>
       ))}
-    </select>
+    </Select>
   );
 }

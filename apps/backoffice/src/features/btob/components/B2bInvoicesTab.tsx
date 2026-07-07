@@ -13,8 +13,8 @@ import { useB2bCustomers } from '../hooks/useB2bCustomers.js';
 import { CancelB2bOrderModal } from './CancelB2bOrderModal.js';
 
 function statusBadge(inv: B2bInvoiceRow): { label: string; cls: string } {
-  if (Number(inv.outstanding) === 0) return { label: 'paid',    cls: 'bg-green-100 text-green-700' };
-  if (Number(inv.amount_paid) > 0)   return { label: 'partial', cls: 'bg-amber-100 text-amber-900' };
+  if (Number(inv.outstanding) === 0) return { label: 'paid',    cls: 'bg-success-soft text-success' };
+  if (Number(inv.amount_paid) > 0)   return { label: 'partial', cls: 'bg-warning-soft text-warning' };
   return { label: 'unpaid', cls: 'bg-red-soft text-red' };
 }
 

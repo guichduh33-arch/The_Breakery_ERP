@@ -55,10 +55,10 @@ export function VoidOrderModal({
         aria-label={`Void order ${orderNumber}`}
         className="flex flex-col items-center justify-center min-h-screen bg-bg-base p-6"
       >
-        <div className="w-full max-w-md space-y-6 rounded-lg border border-red-400/30 bg-bg-elevated p-8">
+        <div className="w-full max-w-md space-y-6 rounded-lg border border-red-fg/30 bg-bg-elevated p-8">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-xs uppercase tracking-widest text-red-400">Void Order</div>
+              <div className="text-xs uppercase tracking-widest text-red-fg">Void Order</div>
               <div className="font-serif text-xl text-text-primary mt-1">{orderNumber}</div>
               <div className="text-xs text-text-secondary mt-1">
                 Total to refund: <Currency amount={total} className="text-text-primary" />
@@ -77,11 +77,11 @@ export function VoidOrderModal({
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="e.g. wrong order, customer cancelled…"
-              className={cn('w-full', reason.trim().length > 0 && reason.trim().length < 3 && 'border-red-400')}
+              className={cn('w-full', reason.trim().length > 0 && reason.trim().length < 3 && 'border-red-fg/30')}
               disabled={isPending}
             />
             {reason.length > 0 && reason.trim().length < 3 && (
-              <div className="mt-1 text-xs text-red-400">Reason must be at least 3 characters</div>
+              <div className="mt-1 text-xs text-red-fg">Reason must be at least 3 characters</div>
             )}
           </div>
 

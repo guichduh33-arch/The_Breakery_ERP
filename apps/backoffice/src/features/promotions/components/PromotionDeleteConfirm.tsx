@@ -52,7 +52,7 @@ export function PromotionDeleteConfirm({ open, row, onClose }: PromotionDeleteCo
           ) : null}
         </DialogDescription>
         {error !== null && (
-          <p className="text-sm text-red" role="alert">
+          <p className="text-sm text-danger" role="alert">
             {error}
           </p>
         )}
@@ -63,7 +63,7 @@ export function PromotionDeleteConfirm({ open, row, onClose }: PromotionDeleteCo
           <Button
             type="button"
             variant="primary"
-            className="bg-red hover:bg-red/80"
+            className="bg-danger hover:bg-danger/80"
             onClick={() => { void handleConfirm(); }}
             disabled={deleteMut.isPending}
           >

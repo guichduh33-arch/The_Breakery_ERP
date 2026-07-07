@@ -71,7 +71,7 @@ export function AddItemForm({ countId }: AddItemFormProps) {
         </Button>
       </div>
       {error !== null && (
-        <div className="text-sm text-rose-600 mt-2">{error}</div>
+        <div className="text-sm text-danger mt-2">{error}</div>
       )}
     </div>
   );

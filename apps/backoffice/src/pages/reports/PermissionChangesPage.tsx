@@ -30,9 +30,9 @@ function actionBadge(action: string): JSX.Element {
   const lower = action.toLowerCase();
   let cls: string;
   if (lower.includes('granted') || lower === 'grant') {
-    cls = 'inline-flex rounded px-1.5 py-0.5 text-xs font-medium bg-green-100 text-green-700';
+    cls = 'inline-flex rounded px-1.5 py-0.5 text-xs font-medium bg-success-soft text-success';
   } else if (lower.includes('revoked') || lower === 'revoke') {
-    cls = 'inline-flex rounded px-1.5 py-0.5 text-xs font-medium bg-red-100 text-red-700';
+    cls = 'inline-flex rounded px-1.5 py-0.5 text-xs font-medium bg-danger-soft text-danger';
   } else {
     cls = 'inline-flex rounded px-1.5 py-0.5 text-xs font-medium bg-surface-raised text-text-secondary';
   }
@@ -74,12 +74,12 @@ export default function PermissionChangesPage() {
     >
       {isLoading && <p className="text-sm text-text-secondary">Loading…</p>}
       {error && (
-        <p className="text-sm text-red-500" role="alert">
+        <p className="text-sm text-danger" role="alert">
           {error.message ?? 'Failed to load report.'}
         </p>
       )}
       {data?.truncated && (
-        <p className="mb-3 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-700" role="status">
+        <p className="mb-3 rounded border border-warning/30 bg-warning-soft px-3 py-2 text-sm text-warning" role="status">
           First 500 rows shown — narrow the date range to see all changes.
         </p>
       )}

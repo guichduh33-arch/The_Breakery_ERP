@@ -57,7 +57,7 @@ import { buildTemplateWorkbook, buildExportWorkbook, downloadWorkbook } from '@/
 import { customersImportDef } from '@/features/customers/import/customersImportDef.js';
 import { useCustomersExport } from '@/features/customers/hooks/useCustomersExport.js';
 
-const TIER_OPTIONS: ReadonlyArray<{ value: CustomersTier; label: string }> = [
+const TIER_OPTIONS: readonly { value: CustomersTier; label: string }[] = [
   { value: 'all',      label: 'Loyalty Tier: All' },
   { value: 'bronze',   label: 'Bronze' },
   { value: 'silver',   label: 'Silver' },
@@ -65,7 +65,7 @@ const TIER_OPTIONS: ReadonlyArray<{ value: CustomersTier; label: string }> = [
   { value: 'platinum', label: 'Platinum' },
 ];
 
-const SORT_OPTIONS: ReadonlyArray<{ value: CustomersSort; label: string }> = [
+const SORT_OPTIONS: readonly { value: CustomersSort; label: string }[] = [
   { value: 'last_visit', label: 'Sort by: Last Visit' },
   { value: 'name',       label: 'Sort by: Name (A→Z)' },
   { value: 'spend',      label: 'Sort by: Total Spent' },
@@ -134,7 +134,7 @@ export default function CustomersListPage(): JSX.Element {
     );
   }
 
-  const columns: ReadonlyArray<DataTableColumn<CustomersListRow>> = [
+  const columns: readonly DataTableColumn<CustomersListRow>[] = [
     {
       id:     'customer',
       header: 'Customer name',
@@ -174,7 +174,7 @@ export default function CustomersListPage(): JSX.Element {
       align:  'center',
       render: (row) =>
         row.customer_type === 'b2b' && row.b2b_current_balance > 0 ? (
-          <span className="inline-flex rounded-md bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-amber-700 dark:text-amber-300">
+          <span className="inline-flex rounded-md bg-warning-soft px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-warning">
             Yes
           </span>
         ) : (
@@ -350,7 +350,7 @@ export default function CustomersListPage(): JSX.Element {
 interface FilterSelectProps {
   label:    string;
   value:    string;
-  options:  ReadonlyArray<{ value: string; label: string }>;
+  options:  readonly { value: string; label: string }[];
   onChange: (next: string) => void;
 }
 

@@ -29,7 +29,7 @@ export function PermissionMatrix(): JSX.Element {
 
   if (matrix.isLoading) return <div className="text-sm text-text-secondary">Loading matrix…</div>;
   if (matrix.error != null) {
-    return <div className="text-sm text-rose-600">Failed: {matrix.error.message}</div>;
+    return <div className="text-sm text-danger">Failed: {matrix.error.message}</div>;
   }
   const data = matrix.data;
   if (!data) return <div className="text-sm text-text-secondary">No data.</div>;
@@ -89,7 +89,7 @@ export function PermissionMatrix(): JSX.Element {
                     return (
                       <td key={r.code} className="py-1.5 px-3 text-center">
                         {granted ? (
-                          <Check className="h-4 w-4 text-emerald-600 inline" aria-label="granted" />
+                          <Check className="h-4 w-4 text-success inline" aria-label="granted" />
                         ) : (
                           <XIcon className="h-3.5 w-3.5 text-text-secondary/40 inline" aria-label="denied" />
                         )}

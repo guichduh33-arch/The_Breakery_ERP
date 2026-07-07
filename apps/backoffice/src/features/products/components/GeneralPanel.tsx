@@ -12,13 +12,13 @@
 
 import { ShoppingCart, Sparkles, TrendingUp } from 'lucide-react';
 import { useEffect, useState, type JSX } from 'react';
-import { Card, Currency, Input, SectionLabel } from '@breakery/ui';
+import { Card, Currency, Input, SectionLabel, Select } from '@breakery/ui';
 import type { CategoryOption, ProductRow } from '../types.js';
 import { ProductImageUploader } from './ProductImageUploader.js';
 
 interface Props {
   product: ProductRow;
-  categories: ReadonlyArray<CategoryOption>;
+  categories: readonly CategoryOption[];
   /** When set, edits are disabled (e.g. user lacks `products.update`). */
   readOnly?: boolean;
   /** Called when any field changes. */
@@ -42,7 +42,7 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
   function update<K extends keyof ProductRow>(key: K, value: ProductRow[K]): void {
     const next = { ...draft, [key]: value };
     setDraft(next);
-    onChange?.({ [key]: value } as Partial<ProductRow>);
+    onChange?.({ [key]: value });
   }
 
   // Spec B-1 Ph2 — toggle a dispatch station in the per-product override array.
@@ -85,16 +85,16 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
               </div>
               <div>
                 <SectionLabel as="div" size="xs">Category</SectionLabel>
-                <select
+                <Select
                   value={draft.category_id}
                   disabled={readOnly}
                   onChange={(e) => update('category_id', e.target.value)}
-                  className="mt-1.5 h-touch-min w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+                  className="mt-1.5"
                 >
                   {categories.map((c) => (
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
-                </select>
+                </Select>
               </div>
             </div>
 
@@ -376,7 +376,7 @@ function SidebarMetric({ icon, label, value, mono = false }: SidebarMetricProps)
   );
 }
 
-const SAMPLE_SECTIONS: ReadonlyArray<{ label: string; kind: string; highlighted: boolean }> = [
+const SAMPLE_SECTIONS: readonly { label: string; kind: string; highlighted: boolean }[] = [
   { label: 'Main Warehouse', kind: 'Warehouse',  highlighted: false },
   { label: 'Pastry',         kind: 'Production', highlighted: false },
   { label: 'Cafe',           kind: 'Sales',      highlighted: false },

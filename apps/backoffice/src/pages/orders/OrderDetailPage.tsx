@@ -14,12 +14,12 @@ import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 function StatusBadge({ status }: { status: string }) {
   const cls =
     status === 'completed' || status === 'paid'
-      ? 'bg-green-100 text-green-800'
+      ? 'bg-success-soft text-success'
       : status === 'voided'
-        ? 'bg-red-100 text-red-800'
+        ? 'bg-danger-soft text-danger'
         : status === 'refunded'
-          ? 'bg-orange-100 text-orange-800'
-          : 'bg-gray-100 text-gray-800';
+          ? 'bg-warning-soft text-warning'
+          : 'bg-surface-2 text-text-secondary';
   return (
     <span className={`px-2 py-0.5 rounded text-xs font-medium ${cls}`}>{status}</span>
   );

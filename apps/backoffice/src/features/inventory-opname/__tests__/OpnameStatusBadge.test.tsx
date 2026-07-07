@@ -26,9 +26,9 @@ describe('OpnameStatusBadge', () => {
     expect(container.firstChild).toHaveClass('text-text-secondary');
 
     rerender(<OpnameStatusBadge status="finalized" />);
-    expect(container.firstChild).toHaveClass('text-emerald-700');
+    expect(container.firstChild).toHaveClass('text-success');
 
     rerender(<OpnameStatusBadge status="cancelled" />);
-    expect(container.firstChild).toHaveClass('text-rose-700');
+    expect(container.firstChild).toHaveClass('text-white');
   });
 });

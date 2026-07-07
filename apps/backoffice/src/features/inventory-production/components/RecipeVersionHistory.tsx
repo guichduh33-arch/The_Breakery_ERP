@@ -100,9 +100,9 @@ function diffVersions(
 
 function kindTone(k: DiffKind): string {
   switch (k) {
-    case 'added':     return 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30';
-    case 'removed':   return 'text-red-600 bg-red-50 dark:bg-red-950/30 line-through';
-    case 'changed':   return 'text-amber-600 bg-amber-50 dark:bg-amber-950/30';
+    case 'added':     return 'text-success bg-success-soft';
+    case 'removed':   return 'text-danger bg-danger-soft line-through';
+    case 'changed':   return 'text-warning bg-warning-soft';
     case 'unchanged': return 'text-text-secondary';
   }
 }
@@ -163,7 +163,7 @@ function VersionEntry({ row, previous }: { row: RecipeVersionRow; previous: Reci
             </span>
           )}
           {previous === null && (
-            <span className="text-[10px] uppercase tracking-widest text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 rounded px-2 py-0.5">
+            <span className="text-[10px] uppercase tracking-widest text-success bg-success-soft rounded px-2 py-0.5">
               Initial
             </span>
           )}
@@ -231,7 +231,7 @@ export function RecipeVersionHistory({ productId }: RecipeVersionHistoryProps): 
   }
   if (versions.error) {
     return (
-      <p role="alert" className="text-sm text-red-500">
+      <p role="alert" className="text-sm text-danger">
         Failed to load version history.
       </p>
     );

@@ -2,7 +2,7 @@
 // Session 13 / Phase 3.C — mid-shift cash in/out recorder.
 
 import { useRef, useState, type JSX } from 'react';
-import { Button, Currency, Numpad, FullScreenModal } from '@breakery/ui';
+import { Button, Currency, Numpad, FullScreenModal, Select } from '@breakery/ui';
 import { toast } from 'sonner';
 import { useCashMovement, type CashMovementReasonCode } from '../hooks/useCashMovement';
 
@@ -115,17 +115,16 @@ export function CashInOutModal({
           <label htmlFor="cash_reason_code" className="text-xs uppercase tracking-wide text-text-secondary">
             Reason Code
           </label>
-          <select
+          <Select
             id="cash_reason_code"
             data-testid="cash-reason-code"
-            className="w-full bg-bg-input border border-border-subtle rounded-md p-3 text-sm focus:outline-none focus:border-gold"
             value={reasonCode}
             onChange={(e) => setReasonCode(e.target.value as CashMovementReasonCode)}
           >
             {REASON_CODE_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
-          </select>
+          </Select>
           {POSTS_JE.has(reasonCode) && (
             <p className="text-xs text-gold">This will post a journal entry.</p>
           )}

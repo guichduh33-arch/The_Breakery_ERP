@@ -7,14 +7,14 @@
 import { useMemo, type JSX } from 'react';
 
 const PALETTE = [
-  'bg-blue-500/80',
-  'bg-emerald-500/80',
-  'bg-amber-500/80',
-  'bg-rose-500/80',
-  'bg-violet-500/80',
-  'bg-cyan-500/80',
-  'bg-fuchsia-500/80',
-  'bg-orange-500/80',
+  'bg-cat-blue/80',
+  'bg-cat-emerald/80',
+  'bg-cat-amber/80',
+  'bg-cat-rose/80',
+  'bg-cat-violet/80',
+  'bg-cat-cyan/80',
+  'bg-cat-indigo/80',
+  'bg-cat-orange/80',
 ];
 
 function hash(str: string): number {

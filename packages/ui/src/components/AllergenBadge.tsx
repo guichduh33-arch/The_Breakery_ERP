@@ -33,7 +33,7 @@ export type AllergenType =
   | 'lupin'
   | 'molluscs';
 
-export const ALLERGEN_TYPES: ReadonlyArray<AllergenType> = [
+export const ALLERGEN_TYPES: readonly AllergenType[] = [
   'gluten', 'crustaceans', 'eggs', 'fish', 'peanuts', 'soy', 'milk',
   'nuts', 'celery', 'mustard', 'sesame', 'sulphites', 'lupin', 'molluscs',
 ] as const;

@@ -69,9 +69,9 @@ export function makePayers(count: number): SplitPayer[] {
 
 /** Tailwind classes per payer color. Used for chip + total color in the UI. */
 export const COLOR_CLASSES: Record<SplitPayer['color'], { text: string; bg: string; border: string; dot: string }> = {
-  blue:   { text: 'text-blue-400',   bg: 'bg-blue-400/10',   border: 'border-blue-400/60',   dot: 'bg-blue-400' },
-  green:  { text: 'text-green',      bg: 'bg-green/10',      border: 'border-green/60',      dot: 'bg-green' },
-  orange: { text: 'text-orange-400', bg: 'bg-orange-400/10', border: 'border-orange-400/60', dot: 'bg-orange-400' },
-  purple: { text: 'text-purple-400', bg: 'bg-purple-400/10', border: 'border-purple-400/60', dot: 'bg-purple-400' },
-  pink:   { text: 'text-pink-400',   bg: 'bg-pink-400/10',   border: 'border-pink-400/60',   dot: 'bg-pink-400' },
+  blue:   { text: 'text-cat-blue',   bg: 'bg-cat-blue/10',   border: 'border-cat-blue/60',   dot: 'bg-cat-blue' },
+  green:  { text: 'text-cat-green',  bg: 'bg-cat-green/10',  border: 'border-cat-green/60',  dot: 'bg-cat-green' },
+  orange: { text: 'text-cat-orange', bg: 'bg-cat-orange/10', border: 'border-cat-orange/60', dot: 'bg-cat-orange' },
+  purple: { text: 'text-cat-violet', bg: 'bg-cat-violet/10', border: 'border-cat-violet/60', dot: 'bg-cat-violet' },
+  pink:   { text: 'text-cat-rose',   bg: 'bg-cat-rose/10',   border: 'border-cat-rose/60',   dot: 'bg-cat-rose' },
 };

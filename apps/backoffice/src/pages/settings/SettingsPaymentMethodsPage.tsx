@@ -99,7 +99,7 @@ export default function SettingsPaymentMethodsPage() {
 
           {empty && <p className="text-red text-sm" role="alert">Au moins une méthode doit rester activée.</p>}
           {error && <p className="text-red text-sm" role="alert">{error}</p>}
-          {savedAt && !dirty && <p className="text-emerald-700 text-xs" role="status">Enregistré à {savedAt}</p>}
+          {savedAt && !dirty && <p className="text-success text-xs" role="status">Enregistré à {savedAt}</p>}
 
           {canUpdate && (
             <Button type="submit" variant="primary" disabled={!dirty || empty || setSetting.isPending}>

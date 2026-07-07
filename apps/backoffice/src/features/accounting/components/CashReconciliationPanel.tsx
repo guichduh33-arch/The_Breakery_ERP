@@ -44,12 +44,12 @@ export function CashReconciliationPanel({ wallet }: { wallet: WalletBalance }) {
         className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
       />
       {counted !== '' && (
-        <div className={`text-sm ${diff === 0 ? 'text-emerald-600' : 'text-amber-600'}`}>
+        <div className={`text-sm ${diff === 0 ? 'text-success' : 'text-warning'}`}>
           Difference: {idr.format(diff)}
         </div>
       )}
       {mut.isError && (
-        <p className="text-sm text-destructive">{(mut.error as Error).message}</p>
+        <p className="text-sm text-destructive">{(mut.error).message}</p>
       )}
       <Button disabled={diff === 0 || mut.isPending || !canAdjust} onClick={book}>
         {diff === 0 ? 'Balanced' : `Book ${diff > 0 ? 'overage' : 'shortage'}`}

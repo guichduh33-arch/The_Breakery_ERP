@@ -219,7 +219,7 @@ export default function ProductionSchedulePage(): JSX.Element {
             {focused.map((s) => (
               <li
                 key={s.id}
-                className={`flex items-center justify-between gap-2 rounded border border-border-subtle bg-bg-input p-2 ${editing?.id === s.id ? 'ring-1 ring-blue-400' : ''}`}
+                className={`flex items-center justify-between gap-2 rounded border border-border-subtle bg-bg-input p-2 ${editing?.id === s.id ? 'ring-1 ring-gold' : ''}`}
               >
                 <div className="flex-1 min-w-0">
                   <div className="truncate font-medium">{s.recipeName ?? '(no recipe)'}</div>

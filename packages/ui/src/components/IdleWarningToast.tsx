@@ -86,7 +86,7 @@ export function IdleWarningToast({ className }: IdleWarningToastProps): JSX.Elem
       data-testid="idle-warning-toast"
       className={
         className ??
-        'fixed top-4 right-4 z-50 flex items-center gap-3 rounded border border-amber-400 bg-amber-50 px-4 py-3 text-sm text-amber-900 shadow-lg'
+        'fixed top-4 right-4 z-50 flex items-center gap-3 rounded border border-warning/40 bg-warning-soft px-4 py-3 text-sm text-warning shadow-lg'
       }
     >
       <span data-testid="idle-countdown">

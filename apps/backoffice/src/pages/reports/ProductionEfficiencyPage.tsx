@@ -30,8 +30,8 @@ function defaultStart(): string {
  *  < -10 → red (underperforming), >= 0 → green, otherwise neutral. */
 function varianceClass(pct: number | null): string {
   if (pct === null) return 'text-text-secondary';
-  if (pct < -10)   return 'text-red-600 font-medium';
-  if (pct >= 0)    return 'text-green-600 font-medium';
+  if (pct < -10)   return 'text-danger font-medium';
+  if (pct >= 0)    return 'text-success font-medium';
   return 'text-text-primary';
 }
 
@@ -76,7 +76,7 @@ export default function ProductionEfficiencyPage() {
     >
       {isLoading && <p className="text-sm text-text-secondary">Loading…</p>}
       {error && (
-        <p className="text-sm text-red-500" role="alert">
+        <p className="text-sm text-danger" role="alert">
           {error.message ?? 'Failed to load report.'}
         </p>
       )}

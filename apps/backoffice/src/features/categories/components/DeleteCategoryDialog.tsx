@@ -35,7 +35,7 @@ export function DeleteCategoryDialog({ category, onClose }: DeleteCategoryDialog
       <DialogContent className="max-w-md" data-testid="delete-category-dialog">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-red" aria-hidden />
+            <AlertTriangle className="h-5 w-5 text-danger" aria-hidden />
             Delete category
           </DialogTitle>
           <DialogDescription>
@@ -46,7 +46,7 @@ export function DeleteCategoryDialog({ category, onClose }: DeleteCategoryDialog
         </DialogHeader>
 
         {error !== null && (
-          <div role="alert" className="rounded-md border border-red/40 bg-red-soft px-3 py-2 text-sm text-red">
+          <div role="alert" className="rounded-md border border-danger/40 bg-danger-soft px-3 py-2 text-sm text-danger">
             {error}
           </div>
         )}

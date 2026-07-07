@@ -69,11 +69,11 @@ export function CountItemRow({ countId, item, readOnly }: CountItemRowProps) {
         {variance === null ? (
           <span className="text-text-secondary">—</span>
         ) : variance === 0 ? (
-          <span className="text-emerald-600">0</span>
+          <span className="text-success">0</span>
         ) : variance > 0 ? (
-          <span className="text-emerald-600">+{variance}</span>
+          <span className="text-success">+{variance}</span>
         ) : (
-          <span className="text-rose-600">{variance}</span>
+          <span className="text-danger">{variance}</span>
         )}
       </td>
       <td className="py-2 px-3 text-sm">
@@ -101,7 +101,7 @@ export function CountItemRow({ countId, item, readOnly }: CountItemRowProps) {
             {setCountMutation.isPending ? '…' : 'Save'}
           </Button>
           {error !== null && (
-            <div className="text-xs text-rose-600 mt-1">{error}</div>
+            <div className="text-xs text-danger mt-1">{error}</div>
           )}
         </td>
       )}

@@ -40,7 +40,7 @@ export function ProductPicker({ onPick }: Props) {
       )}
 
       {isError && (
-        <p className="text-sm text-red-600">Failed to load products.</p>
+        <p className="text-sm text-danger">Failed to load products.</p>
       )}
 
       {!isLoading && !isError && filtered.length === 0 && (
@@ -54,21 +54,21 @@ export function ProductPicker({ onPick }: Props) {
               <button
                 type="button"
                 onClick={() => onPick(p)}
-                className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center justify-between gap-2"
+                className="w-full text-left px-3 py-2 text-sm hover:bg-bg-overlay flex items-center justify-between gap-2"
                 data-testid={`picker-row-${p.id}`}
               >
                 <span className="flex-1 min-w-0 truncate">
                   {p.name}
                   {p.variant_label && (
-                    <span className="ml-1 text-xs text-gray-500">
+                    <span className="ml-1 text-xs text-text-secondary">
                       — {p.variant_label}
                     </span>
                   )}
                 </span>
-                <span className="text-xs text-gray-400 font-mono shrink-0">
+                <span className="text-xs text-text-muted font-mono shrink-0">
                   {p.sku}
                 </span>
-                <span className="text-xs text-gray-600 shrink-0">
+                <span className="text-xs text-text-secondary shrink-0">
                   {p.retail_price.toLocaleString('id-ID')}
                 </span>
               </button>

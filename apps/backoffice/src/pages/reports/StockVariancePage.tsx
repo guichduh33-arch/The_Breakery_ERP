@@ -28,9 +28,9 @@ const csvColumns: CsvColumn<StockVarianceRow>[] = [
 
 function varianceTone(v: number): string {
   if (v === 0) return 'text-text-primary';
-  if (v > 0)   return 'text-emerald-600';      // surplus (positive)
-  if (v < -5)  return 'text-red-600 font-semibold';
-  return 'text-amber-600';                     // small loss
+  if (v > 0)   return 'text-success';      // surplus (positive)
+  if (v < -5)  return 'text-danger font-semibold';
+  return 'text-warning';                     // small loss
 }
 
 export default function StockVariancePage() {
@@ -60,7 +60,7 @@ export default function StockVariancePage() {
     >
       {isLoading && <p className="text-sm text-text-secondary">Loading…</p>}
       {error && (
-        <p className="text-sm text-red-500" role="alert">
+        <p className="text-sm text-danger" role="alert">
           {error.message ?? 'Failed to load report.'}
         </p>
       )}

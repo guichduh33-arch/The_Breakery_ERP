@@ -2,7 +2,7 @@
 //
 // Session 47 — A single configurable group card in the ComboBuilderPage.
 // Contains group metadata + list of ComboOptionRows + "Add Product" picker.
-// Note: @breakery/ui has no Select/RadioGroup — uses native <select>.
+// Note: @breakery/ui has no RadioGroup — uses native <select> (kept for form uniformity).
 
 import { useState, type JSX } from 'react';
 import { ChevronDown, Plus, Trash2 } from 'lucide-react';

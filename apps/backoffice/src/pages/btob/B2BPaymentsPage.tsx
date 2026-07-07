@@ -296,7 +296,7 @@ function OutstandingRow({ client, canRecord, onRecord }: { client: B2bClientRow;
         </div>
       </div>
       <div className="text-right">
-        <div className={['font-mono text-base', overLimit ? 'text-danger' : 'text-amber-500'].join(' ')}>
+        <div className={['font-mono text-base', overLimit ? 'text-danger' : 'text-warning'].join(' ')}>
           {formatIdr(Number(client.b2b_current_balance))}
         </div>
         {overLimit && <div className="text-[10px] uppercase tracking-widest text-danger">Over limit</div>}

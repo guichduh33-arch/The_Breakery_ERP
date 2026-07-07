@@ -61,10 +61,10 @@ export function CancelItemModal({
         aria-label={`Cancel item: ${itemName}`}
         className="flex flex-col items-center justify-center min-h-screen bg-bg-base p-6"
       >
-        <div className="w-full max-w-md space-y-6 rounded-lg border border-red-400/30 bg-bg-elevated p-8">
+        <div className="w-full max-w-md space-y-6 rounded-lg border border-red-fg/30 bg-bg-elevated p-8">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-xs uppercase tracking-widest text-red-400">Cancel Item</div>
+              <div className="text-xs uppercase tracking-widest text-red-fg">Cancel Item</div>
               <div className="font-serif text-xl text-text-primary mt-1">{itemName}</div>
             </div>
             <button
@@ -85,12 +85,12 @@ export function CancelItemModal({
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="e.g. wrong order, customer changed mind…"
-              className={cn('w-full', reason.trim().length > 0 && reason.trim().length < 3 && 'border-red-400')}
+              className={cn('w-full', reason.trim().length > 0 && reason.trim().length < 3 && 'border-red-fg/30')}
               disabled={isPending}
               data-vkp="qwerty"
             />
             {reason.length > 0 && reason.trim().length < 3 && (
-              <div className="mt-1 text-xs text-red-400">Reason must be at least 3 characters</div>
+              <div className="mt-1 text-xs text-red-fg">Reason must be at least 3 characters</div>
             )}
           </div>
 

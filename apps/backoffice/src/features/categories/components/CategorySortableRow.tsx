@@ -8,9 +8,9 @@ import { Button } from '@breakery/ui';
 import type { CategoryRow, CategoryType } from '../hooks/useAllCategories.js';
 
 const TYPE_META: Record<CategoryType, { label: string; cls: string }> = {
-  raw_material:  { label: 'Raw material',  cls: 'bg-amber-100 text-amber-700' },
-  semi_finished: { label: 'Semi-finished', cls: 'bg-sky-100 text-sky-700' },
-  finished:      { label: 'Finished',      cls: 'bg-emerald-100 text-emerald-700' },
+  raw_material:  { label: 'Raw material',  cls: 'bg-cat-amber/15 text-cat-amber' },
+  semi_finished: { label: 'Semi-finished', cls: 'bg-cat-blue/15 text-cat-blue' },
+  finished:      { label: 'Finished',      cls: 'bg-cat-emerald/15 text-cat-emerald' },
 };
 
 export interface CategorySortableRowProps {
@@ -69,7 +69,7 @@ export function CategorySortableRow({
       <td className="px-3 py-2 text-center">
         <span
           className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-xs ${
-            category.show_in_pos ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+            category.show_in_pos ? 'bg-success-soft text-success' : 'bg-danger-soft text-danger'
           }`}
           aria-label={category.show_in_pos ? 'Visible in POS' : 'Hidden from POS'}
           title={category.show_in_pos ? 'Visible in POS' : 'Hidden from POS'}
@@ -80,7 +80,7 @@ export function CategorySortableRow({
       <td className="px-3 py-2 text-center">
         <span
           className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-xs ${
-            category.is_active ? 'bg-green-100 text-green-700' : 'bg-bg-overlay text-text-muted'
+            category.is_active ? 'bg-success-soft text-success' : 'bg-bg-overlay text-text-muted'
           }`}
           aria-label={category.is_active ? 'Active' : 'Inactive'}
         >

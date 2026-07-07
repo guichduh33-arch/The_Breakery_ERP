@@ -4,7 +4,7 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Input } from '@breakery/ui';
+import { Input, selectClassName, cn } from '@breakery/ui';
 import { toLocalDateStr } from '@breakery/domain';
 import { supabase } from '@/lib/supabase.js';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
@@ -28,7 +28,7 @@ function usePromotionOptions() {
         .is('deleted_at', null)
         .order('name', { ascending: true });
       if (error) throw error;
-      return ((data ?? []) as Array<PromotionOption & { is_active: boolean }>)
+      return ((data ?? []) as (PromotionOption & { is_active: boolean })[])
         .map(({ id, name, slug }) => ({ id, name, slug }));
     },
   });
@@ -64,7 +64,7 @@ export default function PromoRoiPage() {
             <select
               value={promoId}
               onChange={(e) => setPromoId(e.target.value)}
-              className="h-9 px-2 rounded-md border border-border-subtle bg-bg-elevated text-sm"
+              className={cn(selectClassName, 'w-56')}
               aria-label="Promotion"
             >
               <option value="">— select promotion —</option>
@@ -108,7 +108,7 @@ export default function PromoRoiPage() {
         <p className="text-sm text-text-secondary">Computing ROI…</p>
       )}
       {error && (
-        <p className="text-sm text-red-500" role="alert">
+        <p className="text-sm text-danger" role="alert">
           {error.message ?? 'Failed to load ROI.'}
         </p>
       )}

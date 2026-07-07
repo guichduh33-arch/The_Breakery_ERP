@@ -188,7 +188,7 @@ export function ThresholdForm({
       </div>
 
       {error !== null && (
-        <p className="text-sm text-red" role="alert">{error}</p>
+        <p className="text-sm text-danger" role="alert">{error}</p>
       )}
 
       <footer className="flex justify-end gap-3 pt-2 border-t border-border-subtle">

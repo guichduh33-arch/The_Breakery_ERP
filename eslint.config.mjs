@@ -44,6 +44,23 @@ export default tseslint.config(
       // outside `packages/ui/**`. Forces consumers through Radix-backed modal
       // primitives that handle focus-trap + Esc + a11y for free.
       'breakery-local/no-raw-modal-overlay': 'error',
+      // Design audit 2026-07-07 (Vague B) — raw NUMBERED Tailwind palette
+      // classes (text-red-500, bg-emerald-100…) are forbidden: they bypass
+      // the token cascade and render wrong under one of the two themes.
+      // Use semantic tokens (text-danger, bg-success-soft…), the categorical
+      // ramp (text-cat-rose…), or Badge variants instead. Enforced PR-by-PR
+      // via the blocking lint-ratchet (changed files only), same semantics
+      // as the S57 ratchet.
+      'no-restricted-syntax': ['error',
+        {
+          selector: 'Literal[value=/\\b(?:bg|text|border|ring|stroke|fill|outline|decoration|divide|accent|caret)-(?:slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-[0-9]{2,3}(?![0-9a-zA-Z-])/]',
+          message: 'Raw Tailwind palette class — use design tokens (text-danger, bg-success-soft, cat-* ramp, Badge variants). See packages/ui/src/tokens/.'
+        },
+        {
+          selector: 'TemplateElement[value.raw=/\\b(?:bg|text|border|ring|stroke|fill|outline|decoration|divide|accent|caret)-(?:slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-[0-9]{2,3}(?![0-9a-zA-Z-])/]',
+          message: 'Raw Tailwind palette class — use design tokens (text-danger, bg-success-soft, cat-* ramp, Badge variants). See packages/ui/src/tokens/.'
+        }
+      ],
       'import/no-restricted-paths': ['error', {
         zones: [
           { target: './packages/domain', from: './packages/ui' },

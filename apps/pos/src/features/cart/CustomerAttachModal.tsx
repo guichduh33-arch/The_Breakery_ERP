@@ -29,6 +29,7 @@ import {
   Input,
   cn,
 } from '@breakery/ui';
+import { avatarTint } from '@/features/customers/avatarTint';
 import type { CustomerWithCategory } from '@/stores/cartStore';
 
 interface CustomerAttachModalProps {
@@ -56,20 +57,6 @@ const TIER_LABEL: Record<LoyaltyTier, string> = {
   gold: 'Gold',
   platinum: 'Platinum',
 };
-
-const AVATAR_TINTS = [
-  'bg-emerald-500',
-  'bg-sky-500',
-  'bg-rose-500',
-  'bg-amber-500',
-  'bg-violet-500',
-] as const;
-
-function avatarTint(seed: string): string {
-  let h = 0;
-  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
-  return AVATAR_TINTS[h % AVATAR_TINTS.length] as string;
-}
 
 function firstInitial(name: string): string {
   const trimmed = name.trim();
@@ -106,7 +93,7 @@ function CustomerRow({
       <span
         className={cn(
           'h-11 w-11 rounded-full inline-flex items-center justify-center shrink-0',
-          'text-white font-semibold text-sm',
+          'font-semibold text-sm',
           tint,
         )}
         aria-hidden
@@ -142,7 +129,7 @@ function CustomerRow({
       <div className="hidden sm:flex flex-col items-center gap-1 shrink-0 pl-2 border-l border-border-subtle">
         <span
           aria-hidden
-          className="h-8 w-8 inline-flex items-center justify-center rounded-md text-text-muted hover:text-rose-400"
+          className="h-8 w-8 inline-flex items-center justify-center rounded-md text-text-muted hover:text-cat-rose"
           title="Favorite"
         >
           <Heart className="h-4 w-4" />

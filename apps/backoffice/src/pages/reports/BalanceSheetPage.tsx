@@ -109,7 +109,7 @@ export default function BalanceSheetPage() {
     >
       {isLoading && <p className="text-sm text-text-secondary">Loading…</p>}
       {error && (
-        <p className="text-sm text-red-500" role="alert">
+        <p className="text-sm text-danger" role="alert">
           {error.message ?? 'Failed to load report.'}
         </p>
       )}
@@ -119,8 +119,8 @@ export default function BalanceSheetPage() {
           <div
             className={
               data.balanced
-                ? 'rounded-md bg-green-50 border border-green-200 text-green-800 px-4 py-2 text-sm'
-                : 'rounded-md bg-red-50 border border-red-200 text-red-800 px-4 py-2 text-sm'
+                ? 'rounded-md bg-success-soft border border-success/30 text-success px-4 py-2 text-sm'
+                : 'rounded-md bg-danger-soft border border-danger/30 text-danger px-4 py-2 text-sm'
             }
             role={data.balanced ? 'status' : 'alert'}
             aria-label="Balanced indicator"

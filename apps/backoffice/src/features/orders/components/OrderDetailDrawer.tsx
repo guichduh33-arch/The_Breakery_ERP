@@ -38,19 +38,19 @@ const TYPE_LABEL: Record<string, string> = {
 };
 
 const STATUS_TONE: Record<string, string> = {
-  completed: 'bg-emerald-100 text-emerald-700',
-  paid: 'bg-emerald-100 text-emerald-700',
-  voided: 'bg-rose-100 text-rose-700',
-  pending_payment: 'bg-amber-100 text-amber-700',
-  b2b_pending: 'bg-amber-100 text-amber-700',
-  draft: 'bg-gray-100 text-gray-600',
+  completed: 'bg-success-soft text-success',
+  paid: 'bg-success-soft text-success',
+  voided: 'bg-danger-soft text-danger',
+  pending_payment: 'bg-warning-soft text-warning',
+  b2b_pending: 'bg-warning-soft text-warning',
+  draft: 'bg-surface-2 text-text-secondary',
 };
 
 const KITCHEN_TONE: Record<string, string> = {
-  new: 'bg-blue-50 text-blue-600 ring-blue-200',
-  preparing: 'bg-amber-50 text-amber-600 ring-amber-200',
-  ready: 'bg-emerald-50 text-emerald-600 ring-emerald-200',
-  served: 'bg-gray-50 text-gray-500 ring-gray-200',
+  new: 'bg-info-soft text-info ring-info/30',
+  preparing: 'bg-warning-soft text-warning ring-warning/30',
+  ready: 'bg-success-soft text-success ring-success/30',
+  served: 'bg-surface-2 text-text-muted ring-border-subtle',
 };
 
 function rp(n: number | null): string {
@@ -101,12 +101,12 @@ function Body({ order }: { order: OrderDetail }): JSX.Element {
   const isPaid = order.payments.length > 0 || order.status === 'paid' || order.status === 'completed';
 
   const activity: { key: string; title: string; at: string; tone: string; icon: typeof Plus; detail?: string }[] = [
-    { key: 'created', title: 'Order created', at: order.created_at, tone: 'text-blue-500 ring-blue-200', icon: Plus },
+    { key: 'created', title: 'Order created', at: order.created_at, tone: 'text-info ring-info/30', icon: Plus },
     ...order.payments.map((p, i) => ({
       key: `pay-${p.id ?? i}`,
       title: 'Payment completed',
       at: p.paid_at,
-      tone: 'text-emerald-500 ring-emerald-200',
+      tone: 'text-success ring-success/30',
       icon: Wallet,
       detail: `Method: ${p.method}`,
     })),
@@ -123,9 +123,9 @@ function Body({ order }: { order: OrderDetail }): JSX.Element {
         <InfoCell icon={PackageOpen} label="Type">{TYPE_LABEL[order.order_type] ?? order.order_type}</InfoCell>
         <InfoCell icon={ReceiptText} label="Payment Status">
           {isPaid ? (
-            <span className="font-medium text-emerald-600">✓ Paid</span>
+            <span className="font-medium text-success">✓ Paid</span>
           ) : (
-            <span className="font-medium text-amber-600">Unpaid</span>
+            <span className="font-medium text-warning">Unpaid</span>
           )}
         </InfoCell>
         <InfoCell icon={CreditCard} label="Payment Method">
@@ -144,7 +144,7 @@ function Body({ order }: { order: OrderDetail }): JSX.Element {
         <ul className="divide-y divide-border-subtle">
           {order.items.map((it) => {
             const ks = (it.kitchen_status ?? '').toLowerCase();
-            const tone = KITCHEN_TONE[ks] ?? 'bg-gray-50 text-gray-500 ring-gray-200';
+            const tone = KITCHEN_TONE[ks] ?? 'bg-surface-2 text-text-muted ring-border-subtle';
             return (
               <li key={it.id} className={`flex items-center gap-3 py-2.5 ${it.is_cancelled ? 'opacity-50 line-through' : ''}`}>
                 <span className="font-mono text-sm text-gold">{it.quantity}x</span>
@@ -231,7 +231,7 @@ export function OrderDetailDrawer({ orderId, onClose }: OrderDetailDrawerProps):
             <Hash className="h-5 w-5 text-gold" aria-hidden />
             Order {data ? `#${data.order_number.replace(/^#+/, '')}` : ''}
             {data && (
-              <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase ${STATUS_TONE[data.status] ?? 'bg-gray-100 text-gray-600'}`}>
+              <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase ${STATUS_TONE[data.status] ?? 'bg-surface-2 text-text-secondary'}`}>
                 {data.status}
               </span>
             )}

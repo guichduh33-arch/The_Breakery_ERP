@@ -20,7 +20,7 @@
 // shape fields populated and the legacy array-shape left empty.
 
 import { useState, type FormEvent, type JSX } from 'react';
-import { Button, Input, type PromotionFormOption, type PromotionFormValues } from '@breakery/ui';
+import { Button, Input, selectClassName, cn, type PromotionFormOption, type PromotionFormValues } from '@breakery/ui';
 import { emptyBogoNewValues } from '../utils/emptyPromotionDefaults';
 
 export interface BogoFormProps {
@@ -71,7 +71,7 @@ export function BogoForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4" aria-labelledby="bogo-form-title">
+    <form onSubmit={(e) => { void handleSubmit(e); }} className="space-y-4" aria-labelledby="bogo-form-title">
       <header className="flex items-center justify-between">
         <h2 id="bogo-form-title" className="text-lg font-semibold text-text-primary">
           {mode === 'create' ? 'New BOGO promotion' : 'Edit BOGO promotion'}
@@ -123,7 +123,7 @@ export function BogoForm({
           <select
             value={values.bogo_get_product_id ?? ''}
             onChange={(e) => update('bogo_get_product_id', e.target.value === '' ? null : e.target.value)}
-            className="h-touch-min w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
+            className={cn(selectClassName)}
           >
             <option value="">— Select —</option>
             {productOptions.map((opt) => (
@@ -134,7 +134,7 @@ export function BogoForm({
       </div>
 
       {error !== null && (
-        <p className="text-sm text-red" role="alert">{error}</p>
+        <p className="text-sm text-danger" role="alert">{error}</p>
       )}
 
       <footer className="flex justify-end gap-3 pt-2 border-t border-border-subtle">

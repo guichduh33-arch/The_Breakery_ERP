@@ -2,6 +2,7 @@
 // S40 Wave B2 — Purchase order line items report with supplier filter + CSV export.
 
 import { useState, useMemo } from 'react';
+import { selectClassName, cn } from '@breakery/ui';
 import { useQuery } from '@tanstack/react-query';
 import {
   Bar,
@@ -127,7 +128,7 @@ export default function PurchaseItemsPage() {
           <label className="flex items-center gap-2 text-sm text-text-secondary">
             <span>Supplier</span>
             <select
-              className="h-9 rounded-md border border-border-subtle bg-surface px-2 text-sm text-text-primary"
+              className={cn(selectClassName, 'h-9 w-auto')}
               value={supplierId}
               onChange={(e) => setSupplierId(e.target.value)}
               aria-label="Filter by supplier"
@@ -148,12 +149,12 @@ export default function PurchaseItemsPage() {
     >
       {isLoading && <p className="text-sm text-text-secondary">Loading…</p>}
       {error && (
-        <p className="text-sm text-red-500" role="alert">
+        <p className="text-sm text-danger" role="alert">
           {error.message ?? 'Failed to load report.'}
         </p>
       )}
       {data?.truncated && (
-        <p className="mb-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+        <p className="mb-3 rounded-md border border-warning/30 bg-warning-soft px-3 py-2 text-sm text-warning">
           First 1000 rows shown — narrow the date range to see all results.
         </p>
       )}

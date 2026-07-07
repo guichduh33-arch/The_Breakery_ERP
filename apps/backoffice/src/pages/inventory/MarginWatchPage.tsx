@@ -60,7 +60,7 @@ function fmtDateTime(iso: string): string {
 
 function deltaToneClass(delta: number): string {
   if (delta <= -10) return 'text-red font-semibold';
-  if (delta <= -5)  return 'text-amber-400';
+  if (delta <= -5)  return 'text-warning';
   return 'text-text-secondary';
 }
 
@@ -193,7 +193,7 @@ export default function MarginWatchPage(): JSX.Element {
                   <td className="px-3 py-2 text-xs text-text-secondary">{fmtDateTime(r.computedAt)}</td>
                   <td className="px-3 py-2 text-xs">
                     {r.acknowledgedAt === null ? (
-                      <span className="text-amber-400">Open</span>
+                      <span className="text-warning">Open</span>
                     ) : (
                       <span className="text-text-secondary">Acked {fmtDateTime(r.acknowledgedAt)}</span>
                     )}

@@ -35,14 +35,14 @@ function paymentMethodTone(method: string | null): {
 } {
   switch (method) {
     case 'cash':
-      return { icon: Coins, color: 'text-green', label: 'Cash' };
+      return { icon: Coins, color: 'text-payment-cash', label: 'Cash' };
     case 'qris':
     case 'ewallet':
-      return { icon: QrCode, color: 'text-blue-info', label: 'QRIS' };
+      return { icon: QrCode, color: 'text-payment-qris', label: 'QRIS' };
     case 'card':
     case 'debit_card':
     case 'credit_card':
-      return { icon: CreditCard, color: 'text-purple-400', label: 'Card' };
+      return { icon: CreditCard, color: 'text-payment-card', label: 'Card' };
     default:
       return { icon: Receipt, color: 'text-text-muted', label: method ?? '—' };
   }

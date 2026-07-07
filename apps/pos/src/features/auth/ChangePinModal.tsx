@@ -201,7 +201,7 @@ export function ChangePinModal({ open, onClose, userId }: ChangePinModalProps): 
             the hint shows if the previously committed PIN was weak. */}
         {step === 'new' && newPin.length === 6 && newStrength.weak && (
           <p
-            className="text-xs italic text-amber-600 text-center"
+            className="text-xs italic text-amber-warn text-center"
             data-testid="pin-weak-hint"
           >
             Weak PIN ({newStrength.reason}). Consider a stronger one.

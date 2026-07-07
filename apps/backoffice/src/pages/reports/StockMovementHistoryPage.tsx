@@ -4,6 +4,7 @@
 // surfaces a truncation banner. PDF intentionally omitted (DEV-S30-4.X-01).
 
 import { useMemo, useState } from 'react';
+import { selectClassName, cn } from '@breakery/ui';
 import { toLocalDateStr } from '@breakery/domain';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
@@ -53,7 +54,7 @@ export default function StockMovementHistoryPage() {
             onEndChange={setEnd}
           />
           <select
-            className="h-9 rounded-md border border-border-subtle bg-surface px-2 text-sm text-text-primary"
+            className={cn(selectClassName, 'h-9 w-auto')}
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
             aria-label="Filter by movement type"
@@ -72,7 +73,7 @@ export default function StockMovementHistoryPage() {
       }
     >
       {query.error && (
-        <p className="text-sm text-red-500" role="alert">
+        <p className="text-sm text-danger" role="alert">
           {query.error.message ?? 'Failed to load report.'}
         </p>
       )}

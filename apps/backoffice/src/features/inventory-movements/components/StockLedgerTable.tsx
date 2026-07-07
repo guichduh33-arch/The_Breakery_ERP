@@ -27,7 +27,7 @@ function fmtTime(iso: string): string { return iso.slice(0, 19).replace('T', ' '
 
 // Slim main columns — keep the page readable. Detail goes in the expandable panel.
 // `sort` marks the columns the user can order by (date / type / product).
-const HEADERS: ReadonlyArray<{ label: string; align: 'left' | 'right'; sort?: SortKey }> = [
+const HEADERS: readonly { label: string; align: 'left' | 'right'; sort?: SortKey }[] = [
   { label: 'date',            align: 'left',  sort: 'date'    },
   { label: 'type',            align: 'left',  sort: 'type'    },
   { label: 'product',         align: 'left',  sort: 'product' },
@@ -86,7 +86,7 @@ export function StockLedgerTable({ rows, truncated, isLoading, rowCap = 5000 }: 
   // Click a sortable header: first click → asc, second → desc, third → back to server order.
   function onSort(key: SortKey): void {
     setSort((prev) => {
-      if (prev === null || prev.key !== key) return { key, dir: 'asc' };
+      if (prev?.key !== key) return { key, dir: 'asc' };
       if (prev.dir === 'asc') return { key, dir: 'desc' };
       return null;
     });
@@ -101,7 +101,7 @@ export function StockLedgerTable({ rows, truncated, isLoading, rowCap = 5000 }: 
   return (
     <div className="space-y-3">
       {truncated && (
-        <div role="alert" className="rounded-md border border-amber-500/40 bg-amber-500/5 px-3 py-2 text-sm text-amber-700">
+        <div role="alert" className="rounded-md border border-warning/40 bg-warning-soft px-3 py-2 text-sm text-warning">
           Showing the first {rowCap.toLocaleString()} rows. Narrow the date range or filters to see the rest.
         </div>
       )}
@@ -112,8 +112,8 @@ export function StockLedgerTable({ rows, truncated, isLoading, rowCap = 5000 }: 
               <th className="w-8 px-2 py-2" aria-label="Expand" />
               {HEADERS.map((h) => {
                 const active = h.sort !== undefined && sort?.key === h.sort;
-                const ariaSort = active ? (sort!.dir === 'asc' ? 'ascending' : 'descending') : (h.sort ? 'none' : undefined);
-                const SortIcon = !active ? ChevronsUpDown : sort!.dir === 'asc' ? ChevronUp : ChevronDown;
+                const ariaSort = active ? (sort.dir === 'asc' ? 'ascending' : 'descending') : (h.sort ? 'none' : undefined);
+                const SortIcon = !active ? ChevronsUpDown : sort.dir === 'asc' ? ChevronUp : ChevronDown;
                 return (
                   <th
                     key={h.label}
