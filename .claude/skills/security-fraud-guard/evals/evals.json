@@ -1,0 +1,61 @@
+{
+  "skill_name": "security-fraud-guard",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Audite la sécurité des refunds et voids au POS. Est-ce qu'un caissier pourrait rembourser une commande payée et empocher le cash sans laisser de trace ? Identifie les failles concrètes et dis-moi quels contrôles manquent.",
+      "expected_output": "An audit of the money/anti-fraud dimension naming real RPC/EF names, the body-PIN debt, manager-PIN second factor, audit actor_id, idempotency replay, and cash reconciliation.",
+      "files": [],
+      "assertions": [
+        "Names the real refund RPC refund_order_rpc_v2 (not a guessed name)",
+        "Identifies the PIN-in-body debt on void-order and/or cancel-item edge functions",
+        "States that reversals require a manager-PIN second factor beyond the cashier permission",
+        "Checks whether the audit actor_id records the approving manager vs the cashier",
+        "Mentions cash reconciliation / Z-report (close_shift / z_reports) as the cash-fraud control",
+        "Cites at least one concrete real file path (e.g. supabase/functions/refund-order or void-order)"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Je veux ajouter une RPC apply_manual_discount_v1 qui applique une remise manuelle (montant ou %) sur une commande ouverte. Implémente-la de façon sécurisée.",
+      "expected_output": "A secure implementation following preventive checklist 5.A with definer+search_path, gate, header PIN, REVOKE pair, audit, idempotency, permission seed + PermissionCode, and pgTAP.",
+      "files": [],
+      "assertions": [
+        "Function is SECURITY DEFINER with an explicit SET search_path",
+        "Calls has_permission(...) and raises P0003 (or 42501) on denial",
+        "Requires a manager PIN sourced from the x-manager-pin HTTP header (not the JSON body)",
+        "Includes the full REVOKE pair: REVOKE FROM PUBLIC + REVOKE FROM anon + ALTER DEFAULT PRIVILEGES",
+        "Writes an audit_logs row with canonical cols (actor_id/action/entity_type/entity_id/metadata)",
+        "Accepts a p_idempotency_key UUID for retry safety",
+        "Seeds a new permission code and adds it to the PermissionCode union in packages/supabase/src/rls/permissions.ts",
+        "Provides a pgTAP test covering happy path + permission-denied + REVOKE-from-anon"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Vérifie qu'aucune donnée client (téléphone, email) ne peut fuiter — via les vues, les materialized views, ou vers le rôle anon. Liste les surfaces à risque et comment les fermer.",
+      "expected_output": "An audit of the data-exposure dimension with anon privilege probes, security_invoker checks, MV caveat, S20 sweep reference, and PII column-grant hardening.",
+      "files": [],
+      "assertions": [
+        "Uses a has_table_privilege('anon', ...) probe to verify anon cannot SELECT customers",
+        "Checks that views exposing PII use security_invoker=on (e.g. view_b2b_invoices / view_ar_aging)",
+        "Flags that materialized views (mv_*) do NOT enforce RLS and must be access-controlled separately",
+        "References the S20 anon/PUBLIC hardening sweep (migrations 20260524000020..031)",
+        "Mentions the customer PII column-grant hardening (write-protected loyalty/spend columns)"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Vérifie l'intégrité du RBAC : est-ce qu'un rôle bas comme CASHIER détient une permission sensible qu'il ne devrait pas (refund, accounting, gestion utilisateurs, RBAC) ? Y a-t-il des overrides de permission GRANT non justifiés qui contourneraient la séparation des tâches ?",
+      "expected_output": "An audit of the identity/access dimension with role_permissions and user_permission_overrides queries, 4-tier precedence, SOD reference, and least-privilege recommendation.",
+      "files": [],
+      "assertions": [
+        "Queries role_permissions (joined to roles/permissions) to find low-role sensitive grants",
+        "Queries user_permission_overrides for standing GRANT overrides that bypass SOD",
+        "References has_permission 4-tier precedence (override DENY > override GRANT > role > false)",
+        "Mentions separation of duties, citing the expense_approvals SOD constraint as the pattern",
+        "Recommends least-privilege (grant to the highest role that needs it, re-justify CASHIER grants)"
+      ]
+    }
+  ]
+}

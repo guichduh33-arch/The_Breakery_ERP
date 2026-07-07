@@ -1,6 +1,6 @@
 ---
 name: pos-design-craft
-description: 'Spécialiste GÉNÉRATIF de la conception visuelle + ergonomique du POS The Breakery (apps/pos) — conçoit et produit écrans, composants, flux, tokens neufs en appliquant l''état de l''art 2025-2026 (Fitts, cibles rush 56-72px, OKLCH, tabular-nums, optimistic UI, View Transitions). Use when : design POS, refonte caisse, nouvel écran POS, maquette/composant caisse, écran de vente, grille produits, ticket/panier, customer display, KDS design, ergonomie POS, plein soleil, rush, thumb zone, design tokens POS, micro-interactions caisse, profils CAISSE/WAITER. NE PAS utiliser pour : audit rétrospectif (→ breakery-design checklist), bug isolé, UI non-POS (→ breakery-ui-kit/breakery-design), migration DB, comptabilité.'
+description: 'Spécialiste GÉNÉRATIF de la conception visuelle + ergonomique du POS The Breakery (apps/pos) — conçoit et produit écrans, composants, flux, tokens neufs en appliquant l''état de l''art 2025-2026 (Fitts, cibles rush 56-72px, OKLCH, tabular-nums, optimistic UI, View Transitions). Use when : design POS, refonte caisse, nouvel écran POS, maquette/composant caisse, écran de vente, grille produits, ticket/panier, customer display, KDS design, ergonomie POS, plein soleil, rush, thumb zone, design tokens POS, micro-interactions caisse, profils CAISSE/WAITER. Frontière (ce skill CRÉE du neuf, from scratch) : pour AUDITER le design POS existant et le comparer au marché → pos-frontend-design-audit (écrit un rapport dans docs/design-audits/) ; pour CODER une reco issue d''un rapport d''audit → pos-frontend-design-implement ; DA/esthétique transverse non-POS (BO ivoire, dashboard) → breakery-design ; faits du design-system (primitifs existants, noms de tokens, fallbacks natifs) → breakery-ui-kit. NE PAS utiliser pour : bug isolé, migration DB, comptabilité.'
 pathPatterns:
   - 'apps/pos/src/**'
 promptSignals:
@@ -12,14 +12,12 @@ promptSignals:
     - 'maquette POS'
     - 'composant caisse'
     - 'écran de vente'
-    - 'grille produits'
     - 'ticket POS'
     - 'panier POS'
     - 'customer display'
     - 'KDS design'
     - 'design KDS'
     - 'ergonomie POS'
-    - 'ergonomie caisse'
     - 'plein soleil'
     - 'rush'
     - 'thumb zone'
