@@ -26,6 +26,7 @@ import {
   SectionLabel,
 } from '@breakery/ui';
 import { formatIdr } from '@breakery/utils';
+import { PageHeader } from '@/components/PageHeader.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import {
   useB2bDashboard,
@@ -56,29 +57,27 @@ export default function B2BDashboardPage(): JSX.Element {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="font-serif text-3xl text-text-primary">B2B Dashboard</h1>
-          <p className="mt-1 text-sm text-text-secondary">
-            Manage your wholesale customers and B2B orders.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button asChild variant="ghost" size="md">
-            <Link to="/backoffice/b2b/payments">
-              <CreditCard className="h-4 w-4" aria-hidden /> Payments
-            </Link>
-          </Button>
-          <Button
-            variant="primary"
-            size="md"
-            disabled={!canCreate}
-            onClick={() => setCreateOpen(true)}
-          >
-            <Plus className="h-4 w-4" aria-hidden /> New B2B Order
-          </Button>
-        </div>
-      </header>
+      <PageHeader
+        title="B2B Dashboard"
+        subtitle="Manage your wholesale customers and B2B orders."
+        actions={
+          <>
+            <Button asChild variant="ghost" size="md">
+              <Link to="/backoffice/b2b/payments">
+                <CreditCard className="h-4 w-4" aria-hidden /> Payments
+              </Link>
+            </Button>
+            <Button
+              variant="primary"
+              size="md"
+              disabled={!canCreate}
+              onClick={() => setCreateOpen(true)}
+            >
+              <Plus className="h-4 w-4" aria-hidden /> New B2B Order
+            </Button>
+          </>
+        }
+      />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
         <KpiTile
@@ -238,7 +237,7 @@ function AgingSummaryCard({ buckets, loading }: AgingSummaryCardProps): JSX.Elem
             <Calendar className="h-3.5 w-3.5" aria-hidden /> Aging summary (AR)
           </span>
         </SectionLabel>
-        <div className="flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-widest">
+        <div className="flex flex-wrap items-center gap-2 text-xs uppercase tracking-widest">
           <Legend tone="text-success"  label="0-30 Days" />
           <Legend tone="text-warning" label="31-60 Days" />
           <Legend tone="text-danger"    label="61-90+ Days" />

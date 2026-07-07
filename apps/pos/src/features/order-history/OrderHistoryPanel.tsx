@@ -69,6 +69,24 @@ function bucketStats(rows: OrderHistoryRow[]): {
   return out;
 }
 
+/** Loading placeholder mirroring a transaction row (number/date left, tender + amount right). */
+function HistoryRowSkeleton(): JSX.Element {
+  return (
+    <li aria-hidden>
+      <div className="w-full rounded-md border border-border-subtle bg-bg-elevated px-4 py-3 flex items-center justify-between motion-safe:animate-pulse">
+        <div className="flex-1 min-w-0 space-y-2">
+          <div className="h-4 w-24 rounded bg-bg-input" />
+          <div className="h-3 w-40 rounded bg-bg-input" />
+        </div>
+        <div className="flex items-center gap-3 shrink-0">
+          <div className="h-3.5 w-12 rounded bg-bg-input" />
+          <div className="h-4 w-20 rounded bg-bg-input" />
+        </div>
+      </div>
+    </li>
+  );
+}
+
 export function OrderHistoryPanel({ open, onClose }: OrderHistoryPanelProps): JSX.Element {
   const history = useOrderHistory();
   // P1-3 : le panel est monté en permanence — sans refetch à l'ouverture, la
@@ -144,14 +162,15 @@ export function OrderHistoryPanel({ open, onClose }: OrderHistoryPanelProps): JS
 
               <SectionLabel size="xs" as="h3">Transactions</SectionLabel>
 
-              {history.isLoading && <div className="text-text-secondary text-sm">Loading…</div>}
               {history.isError && <div className="text-red text-sm">Failed to load order history</div>}
-              {history.data?.length === 0 && (
+              {!history.isLoading && history.data?.length === 0 && (
                 <div className="text-text-secondary text-sm py-12 text-center">
                   No orders in this shift yet.
                 </div>
               )}
               <ul className="space-y-2">
+                {history.isLoading &&
+                  Array.from({ length: 5 }).map((_, i) => <HistoryRowSkeleton key={`history-skeleton-${i}`} />)}
                 {history.data?.map((row) => {
                   const isSelected = selectedId === row.id;
                   const isVoided = row.status === 'voided';

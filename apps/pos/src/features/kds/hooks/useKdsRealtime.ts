@@ -35,7 +35,7 @@
 // effect mounts → channel-name collision. The effect body, by contrast,
 // runs once per effect cycle, so each mount produces its own UUID.
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { supabase } from '@/lib/supabase';
@@ -46,6 +46,11 @@ interface UseKdsRealtimeOptions {
    *  hooks the LAN client here so peer devices (Phase 5.A) can react
    *  to bumps in real time without their own DB subscription. */
   onEvent?: (payload: unknown) => void;
+  /** Design Wave C — reports channel connection health so the board can show a
+   *  "Reconnecting…" banner. `true` once the channel is SUBSCRIBED, `false` on
+   *  CHANNEL_ERROR / TIMED_OUT / CLOSED. Read through a ref so passing an inline
+   *  callback never re-arms the subscription (channel-name uniqueness intact). */
+  onConnectionChange?: (connected: boolean) => void;
 }
 
 export function useKdsRealtime(
@@ -53,7 +58,12 @@ export function useKdsRealtime(
   opts: UseKdsRealtimeOptions = {},
 ): void {
   const qc = useQueryClient();
-  const { onEvent } = opts;
+  const { onEvent, onConnectionChange } = opts;
+
+  // Keep the connection callback in a ref so it is NOT part of the effect deps
+  // (which would restart the subscription and churn channel names).
+  const onConnectionChangeRef = useRef(onConnectionChange);
+  onConnectionChangeRef.current = onConnectionChange;
 
   useEffect(() => {
     const channelName = `kds-${station}-${crypto.randomUUID()}`;
@@ -75,7 +85,11 @@ export function useKdsRealtime(
           if (onEvent !== undefined) onEvent(payload);
         },
       )
-      .subscribe();
+      .subscribe((status: string) => {
+        // 'SUBSCRIBED' means the realtime socket is live; anything else
+        // (CHANNEL_ERROR, TIMED_OUT, CLOSED) means events may be dropping.
+        onConnectionChangeRef.current?.(status === 'SUBSCRIBED');
+      });
 
     return () => {
       void supabase.removeChannel(channel);

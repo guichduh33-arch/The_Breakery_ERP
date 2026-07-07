@@ -23,7 +23,7 @@ import {
   ShoppingBag,
   XCircle,
 } from 'lucide-react';
-import { Button, Card } from '@breakery/ui';
+import { Button, Card, EmptyState } from '@breakery/ui';
 import { useSearchParams } from 'react-router-dom';
 import {
   useOrdersList,
@@ -380,7 +380,12 @@ export default function OrdersListPage(): JSX.Element {
 
         {query.isLoading && <div className="py-12 text-center text-text-secondary">Loading…</div>}
         {!query.isLoading && lines.length === 0 && (
-          <div className="py-12 text-center text-text-muted">No orders matching these filters.</div>
+          <EmptyState
+            size="sm"
+            icon={ShoppingBag}
+            title="No orders"
+            description="No orders matching these filters."
+          />
         )}
 
         <div className="flex items-center justify-between border-t border-border-subtle px-4 py-3 text-sm text-text-secondary">
@@ -420,7 +425,7 @@ function KpiCard({
 }): JSX.Element {
   return (
     <Card variant="default" padding="md">
-      <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest text-text-secondary">
+      <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-text-secondary">
         <Icon className="h-3.5 w-3.5" aria-hidden /> {label}
       </div>
       <div className={`mt-1.5 text-2xl font-semibold tabular-nums ${accent ?? 'text-text-primary'}`}>{value}</div>
@@ -432,7 +437,7 @@ function KpiCard({
 function FilterField({ label, children }: { label: string; children: React.ReactNode }): JSX.Element {
   return (
     <Card variant="default" padding="sm">
-      <div className="text-[10px] font-semibold uppercase tracking-widest text-text-secondary">{label}</div>
+      <div className="text-xs font-semibold uppercase tracking-widest text-text-secondary">{label}</div>
       <div className="mt-0.5">{children}</div>
     </Card>
   );

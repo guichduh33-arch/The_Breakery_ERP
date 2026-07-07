@@ -39,6 +39,7 @@ import {
 } from '@breakery/ui';
 import { tierFromLifetime } from '@breakery/domain';
 import { formatIdr } from '@breakery/utils';
+import { PageHeader } from '@/components/PageHeader.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { CustomerAvatar } from '@/features/customers/components/CustomerAvatar.js';
 import { CustomerCategoryChip } from '@/features/customers/components/CustomerCategoryChip.js';
@@ -174,11 +175,11 @@ export default function CustomersListPage(): JSX.Element {
       align:  'center',
       render: (row) =>
         row.customer_type === 'b2b' && row.b2b_current_balance > 0 ? (
-          <span className="inline-flex rounded-md bg-warning-soft px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-warning">
+          <span className="inline-flex rounded-md bg-warning-soft px-2 py-0.5 text-xs font-semibold uppercase tracking-widest text-warning">
             Yes
           </span>
         ) : (
-          <span className="inline-flex rounded-md bg-bg-overlay px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+          <span className="inline-flex rounded-md bg-bg-overlay px-2 py-0.5 text-xs font-semibold uppercase tracking-widest text-text-muted">
             No
           </span>
         ),
@@ -211,14 +212,11 @@ export default function CustomersListPage(): JSX.Element {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="font-serif text-3xl text-text-primary">Customers</h1>
-          <p className="mt-1 text-sm text-text-secondary">
-            Manage your bakery&apos;s customer relationships and loyalty tiers.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
+      <PageHeader
+        title="Customers"
+        subtitle="Manage your bakery's customer relationships and loyalty tiers."
+        actions={
+          <>
           {canManageCats && (
             <Button asChild variant="ghost" size="md">
               <Link to="/backoffice/customers/categories">
@@ -242,8 +240,9 @@ export default function CustomersListPage(): JSX.Element {
               <Plus className="h-4 w-4" aria-hidden /> New Customer
             </Button>
           )}
-        </div>
-      </header>
+          </>
+        }
+      />
 
       <Card variant="default" padding="sm">
         <div className="flex items-center gap-2 text-text-secondary">

@@ -7,7 +7,7 @@ import { MemoryRouter } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { useCartStore, resetCartAfterCheckout } from '@/stores/cartStore';
 import { ActiveOrderPanel } from '@/features/cart/ActiveOrderPanel';
-import { CartItemRow } from '@/features/cart/CartItemRow';
+import { CartLineRow } from '@/features/cart/CartLineRow';
 import type { Customer } from '@breakery/domain';
 
 const BRONZE_CUSTOMER: Customer = {
@@ -254,16 +254,16 @@ describe('Session 2 golden path — modifiers + send to kitchen', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Session 2 — CartItemRow: toast on locked remove attempt
+// Session 2 — CartLineRow: toast on locked remove attempt
 // ---------------------------------------------------------------------------
 
-describe('CartItemRow — locked item toast (acceptance criterion #14)', () => {
+describe('CartLineRow — locked item toast (acceptance criterion #14)', () => {
   it('fires toast.error when remove is attempted on a locked item', async () => {
     const { toast } = await import('sonner');
     const onRemove = vi.fn();
 
     render(wrapper(
-      <CartItemRow
+      <CartLineRow
         item={{ id: 'l1', product_id: 'p1', name: 'Americano', unit_price: 35000, quantity: 1, modifiers: [] }}
         locked={true}
         onChangeQty={vi.fn()}
@@ -284,7 +284,7 @@ describe('CartItemRow — locked item toast (acceptance criterion #14)', () => {
     const onRemove = vi.fn();
 
     render(wrapper(
-      <CartItemRow
+      <CartLineRow
         item={{ id: 'l1', product_id: 'p1', name: 'Americano', unit_price: 35000, quantity: 1, modifiers: [] }}
         locked={false}
         onChangeQty={vi.fn()}
@@ -292,7 +292,9 @@ describe('CartItemRow — locked item toast (acceptance criterion #14)', () => {
       />
     ));
 
-    const removeBtn = screen.getByRole('button', { name: /remove item/i });
+    // CartLineRow uses a per-item aria-label ("Remove {name}") for the unlocked
+    // remove control (the retired CartItemRow used the generic "Remove item").
+    const removeBtn = screen.getByRole('button', { name: /remove americano/i });
     fireEvent.click(removeBtn);
     expect(onRemove).toHaveBeenCalledTimes(1);
   });

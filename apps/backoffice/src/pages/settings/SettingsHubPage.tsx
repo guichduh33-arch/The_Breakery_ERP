@@ -15,6 +15,7 @@ import {
   Network, History, Map, Grid3x3, type LucideIcon,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, SectionLabel } from '@breakery/ui';
+import { PageHeader } from '@/components/PageHeader.js';
 
 interface SettingTile {
   to?:    string; // omitted = "Soon"
@@ -96,12 +97,10 @@ const SECTIONS: SettingSection[] = [
 export default function SettingsHubPage() {
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="font-serif text-3xl">Settings</h1>
-        <p className="text-text-secondary text-sm mt-1">
-          Configure your business, POS, and system preferences.
-        </p>
-      </div>
+      <PageHeader
+        title="Settings"
+        subtitle="Configure your business, POS, and system preferences."
+      />
 
       {SECTIONS.map((section) => (
         <section key={section.id} className="space-y-3">

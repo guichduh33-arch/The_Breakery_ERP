@@ -11,12 +11,11 @@
 //   - Name + (for B2B-like) "Bali Organic Store" sub-line
 //   - Customer category badge (top, e.g. "Wholesale" green) + tier badge
 //     (bottom, e.g. "Bronze" / "Gold")
-//   - Heart (favorite) + Clock (history) icon buttons on the right
 //
 // Wire-up — the caller hands in `searchFn` and `createFn` so we don't
 // duplicate the supabase query logic that already lives in `Pos.tsx`.
 
-import { Heart, History, QrCode, Search, UserPlus, X } from 'lucide-react';
+import { Heart, QrCode, Search, UserPlus, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type JSX } from 'react';
 import type { Customer, LoyaltyTier } from '@breakery/domain';
 import { tierFromLifetime } from '@breakery/domain';
@@ -126,22 +125,6 @@ function CustomerRow({
           </span>
         </span>
       </div>
-      <div className="hidden sm:flex flex-col items-center gap-1 shrink-0 pl-2 border-l border-border-subtle">
-        <span
-          aria-hidden
-          className="h-8 w-8 inline-flex items-center justify-center rounded-md text-text-muted hover:text-cat-rose"
-          title="Favorite"
-        >
-          <Heart className="h-4 w-4" />
-        </span>
-        <span
-          aria-hidden
-          className="h-8 w-8 inline-flex items-center justify-center rounded-md text-text-muted hover:text-gold"
-          title="Recent"
-        >
-          <History className="h-4 w-4" />
-        </span>
-      </div>
     </button>
   );
 }
@@ -215,12 +198,16 @@ function TabButton({
   icon,
   label,
   variant = 'default',
+  disabled = false,
+  title,
 }: {
   active: boolean;
   onClick: () => void;
   icon: ReactNodeIcon;
   label: string;
   variant?: 'default' | 'primary';
+  disabled?: boolean;
+  title?: string;
 }): JSX.Element {
   const isPrimary = variant === 'primary';
   return (
@@ -228,10 +215,13 @@ function TabButton({
       type="button"
       onClick={onClick}
       aria-pressed={active}
+      disabled={disabled}
+      title={title}
       className={cn(
         'h-11 px-3 inline-flex items-center justify-center gap-2 rounded-md text-xs font-bold uppercase tracking-widest',
         'transition-colors duration-fast motion-reduce:transition-none',
         'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
+        'disabled:opacity-40 disabled:pointer-events-none',
         isPrimary
           ? active
             ? 'bg-success text-white'
@@ -370,6 +360,8 @@ export function CustomerAttachModal({
             onClick={() => setTab('favorites')}
             icon={<Heart className="h-4 w-4" aria-hidden />}
             label="Favorites"
+            disabled
+            title="Coming soon"
           />
           <TabButton
             active={tab === 'qr'}
@@ -437,11 +429,11 @@ export function CustomerAttachModal({
             <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
               <Heart className="h-10 w-10 text-text-muted opacity-40" aria-hidden />
               <p className="font-display italic text-base text-text-primary">
-                No favorites yet
+                Favorites coming soon
               </p>
               <p className="text-xs text-text-muted max-w-sm">
-                Tap the heart on a customer in the search results to pin them
-                here for one-tap recall.
+                One-tap recall of your regulars isn’t available yet. Use Search
+                to find a customer in the meantime.
               </p>
             </div>
           )}

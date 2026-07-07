@@ -13,6 +13,7 @@ import {
 } from 'recharts';
 import { toLocalDateStr } from '@breakery/domain';
 import type { CsvColumn } from '@breakery/domain';
+import { PageHeader } from '@/components/PageHeader.js';
 import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
 import { ChartCard } from '@/features/reports/components/ChartCard.js';
@@ -96,20 +97,18 @@ export default function CostSpendAnalyticsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-serif">Cost &amp; Spend Analytics</h1>
-          <p className="text-sm text-text-secondary">
-            Material purchasing (COGS) and operating expenses for a period.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <DateRangePicker start={start} end={end} onStartChange={setStart} onEndChange={setEnd} />
-          <ExportButtons
-            csv={{ rows: series, columns: csvColumns, filename: `cost-spend-${start}_${end}` }}
-          />
-        </div>
-      </div>
+      <PageHeader
+        title="Cost & Spend Analytics"
+        subtitle="Material purchasing (COGS) and operating expenses for a period."
+        actions={
+          <>
+            <DateRangePicker start={start} end={end} onStartChange={setStart} onEndChange={setEnd} />
+            <ExportButtons
+              csv={{ rows: series, columns: csvColumns, filename: `cost-spend-${start}_${end}` }}
+            />
+          </>
+        }
+      />
 
       {error && (
         <p className="text-sm text-danger" role="alert">
@@ -181,13 +180,13 @@ export default function CostSpendAnalyticsPage() {
       <ChartCard title="Cost structure" subtitle="Share of total spend by cost family">
         <div className="flex h-7 w-full overflow-hidden rounded-md border border-border-subtle">
           {cogsShare > 0 && (
-            <div className="flex items-center justify-center text-[11px] font-medium text-white"
+            <div className="flex items-center justify-center text-xs font-medium text-white"
               style={{ width: `${cogsShare}%`, backgroundColor: COGS_BASE }}>
               {cogsShare >= 12 ? `${cogsShare.toFixed(0)}%` : ''}
             </div>
           )}
           {opexShare > 0 && (
-            <div className="flex items-center justify-center text-[11px] font-medium text-white"
+            <div className="flex items-center justify-center text-xs font-medium text-white"
               style={{ width: `${opexShare}%`, backgroundColor: OPEX_BASE }}>
               {opexShare >= 12 ? `${opexShare.toFixed(0)}%` : ''}
             </div>

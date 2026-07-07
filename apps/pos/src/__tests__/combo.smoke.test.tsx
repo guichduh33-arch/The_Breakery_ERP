@@ -13,7 +13,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { useCartStore } from '@/stores/cartStore';
-import { CartItemRow } from '@/features/cart/CartItemRow';
+import { CartLineRow } from '@/features/cart/CartLineRow';
 import { addComboItem } from '@breakery/domain';
 import type { Cart, CartItem } from '@breakery/domain';
 
@@ -96,8 +96,9 @@ const COMBO_CART_ITEM: CartItem = {
   name: 'Breakfast Set',
   unit_price: 75000,
   quantity: 1,
-  // Session 47 — modifiers carry the chosen options; ComboCartItemRow renders
-  // components from this snapshot rather than from useComboConfig defaults.
+  // Session 47 — modifiers carry the chosen options. The live ComboCartLineRow
+  // renders components from the useComboConfig definition (mocked below with the
+  // same Americano + Croissant options flagged is_default).
   modifiers: [
     { group_name: 'Choose a drink', option_label: 'Americano', price_adjustment: 0 },
     { group_name: 'Choose a pastry', option_label: 'Croissant', price_adjustment: 0 },
@@ -119,9 +120,9 @@ describe('Combo cart display smoke', () => {
     useCartStore.setState({ cart: { items: [], order_type: 'dine_in' }, lockedItemIds: [], attachedCustomer: null });
   });
 
-  it('CartItemRow renders ComboLineRow for combo product_type', () => {
+  it('CartLineRow renders ComboLineRow for combo product_type', () => {
     render(wrapper(
-      <CartItemRow
+      <CartLineRow
         item={COMBO_CART_ITEM}
         locked={false}
         onChangeQty={vi.fn()}
@@ -131,9 +132,9 @@ describe('Combo cart display smoke', () => {
     expect(screen.getByText('Breakfast Set')).toBeInTheDocument();
   });
 
-  it('CartItemRow shows combo components as sub-lines', () => {
+  it('CartLineRow shows combo components as sub-lines', () => {
     render(wrapper(
-      <CartItemRow
+      <CartLineRow
         item={COMBO_CART_ITEM}
         locked={false}
         onChangeQty={vi.fn()}
@@ -147,7 +148,7 @@ describe('Combo cart display smoke', () => {
   it('combo line total = unit_price × quantity', () => {
     const COMBO_QTY2: CartItem = { ...COMBO_CART_ITEM, quantity: 2 };
     render(wrapper(
-      <CartItemRow
+      <CartLineRow
         item={COMBO_QTY2}
         locked={false}
         onChangeQty={vi.fn()}

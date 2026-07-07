@@ -10,6 +10,8 @@
 // Spec ref: docs/superpowers/specs/2026-05-05-session-2-modifiers-kds-spec.md §4.5
 //           docs/workplan/plans/2026-05-14-session-14-INDEX.md §6 (Phase 3.A)
 
+import { useState } from 'react';
+
 import { useKdsStore } from '@/stores/kdsStore';
 import { useKdsRealtime } from '@/features/kds/hooks/useKdsRealtime';
 import { useReconnectInvalidate } from '@/lib/useReconnectInvalidate';
@@ -19,7 +21,10 @@ import { KdsBoard } from '@/features/kds/KdsBoard';
 
 export default function KdsPage() {
   const station = useKdsStore((s) => s.selectedStation);
-  useKdsRealtime(station);
+  // Design Wave C — surface realtime channel health as a board banner. Starts
+  // optimistic (true) so a healthy first subscribe never flashes the warning.
+  const [realtimeConnected, setRealtimeConnected] = useState(true);
+  useKdsRealtime(station, { onConnectionChange: setRealtimeConnected });
   // S57 P2.3 (C-D2) — resync the board after a LAN outage so the kitchen never
   // keeps a stale queue silently (backlog TASK-04-006). Reuses the canonical
   // reconnect net already wired on the other realtime hooks (display, tablet…).
@@ -30,5 +35,5 @@ export default function KdsPage() {
   const deviceCode = usePosSettingsStore((s) => s.deviceCode);
   useLanHeartbeat({ deviceCode, deviceType: 'kds' });
 
-  return <KdsBoard station={station} />;
+  return <KdsBoard station={station} isRealtimeConnected={realtimeConnected} />;
 }

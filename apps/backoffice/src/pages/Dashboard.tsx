@@ -21,6 +21,7 @@ import {
 import {
   Card, KpiTile, SectionLabel, cn,
 } from '@breakery/ui';
+import { PageHeader } from '@/components/PageHeader.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import {
   useDashboardOverview,
@@ -89,27 +90,27 @@ export default function DashboardPage({ data }: DashboardPageProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="font-serif text-3xl text-text-primary">Dashboard</h1>
-          <p className="text-text-secondary text-sm mt-1">{greeting}</p>
-        </div>
-        <div
-          className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-bg-overlay text-xs text-text-secondary"
-          aria-live="polite"
-        >
-          <span className="h-2 w-2 rounded-full bg-success" aria-hidden />
-          <span>Last updated {formatTime(overview?.generated_at)}</span>
-          <button
-            type="button"
-            onClick={refetch}
-            className="ml-1 text-text-secondary hover:text-text-primary"
-            aria-label="Refresh dashboard"
+      <PageHeader
+        title="Dashboard"
+        subtitle={greeting}
+        actions={
+          <div
+            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-bg-overlay text-xs text-text-secondary"
+            aria-live="polite"
           >
-            <RefreshCw className={cn('h-3.5 w-3.5', isLoading && 'animate-spin')} aria-hidden />
-          </button>
-        </div>
-      </div>
+            <span className="h-2 w-2 rounded-full bg-success" aria-hidden />
+            <span>Last updated {formatTime(overview?.generated_at)}</span>
+            <button
+              type="button"
+              onClick={refetch}
+              className="ml-1 text-text-secondary hover:text-text-primary"
+              aria-label="Refresh dashboard"
+            >
+              <RefreshCw className={cn('h-3.5 w-3.5', isLoading && 'animate-spin')} aria-hidden />
+            </button>
+          </div>
+        }
+      />
 
       {restricted ? (
         <Card variant="default" padding="md" data-testid="dashboard-restricted">

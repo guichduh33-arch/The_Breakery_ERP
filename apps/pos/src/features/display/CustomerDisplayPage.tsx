@@ -35,6 +35,12 @@ import { usePosSettingsStore } from '@/stores/posSettingsStore';
 /** Built-in idle footer used when no custom message is configured. */
 const DEFAULT_DISPLAY_FOOTER = 'Open daily · 07:00 — 21:00';
 
+/** Design Wave C — if no cart broadcast lands for this long, the mirror is
+ *  considered stale and the display falls back to the idle/pickup-queue view
+ *  rather than freezing on a cart the cashier abandoned. Each new broadcast
+ *  resets the timer, so an actively-rung cart never trips it. */
+const CART_FRESHNESS_MS = 5 * 60 * 1_000;
+
 export default function CustomerDisplayPage() {
   const auth = useKioskAuth();
   // Per-terminal customer-display copy (POS Settings → KDS & Display).
@@ -75,6 +81,22 @@ export default function CustomerDisplayPage() {
   // Live cart mirror from the POS side (F-007). Safe to read on every render —
   // the view renders its own welcome empty-state when the message is null.
   const cartMessage = useCartBroadcastReceiver();
+
+  // Design Wave C — freshness watchdog. `cartMessage` is a fresh object on
+  // every broadcast, so this effect re-arms the timer each time one lands; if
+  // none arrives within CART_FRESHNESS_MS, the mirror is flagged stale and we
+  // stop rendering the (abandoned) cart. payment_complete auto-reverts in ~8s,
+  // well under this window, so it is never affected.
+  const [cartStale, setCartStale] = useState(false);
+  useEffect(() => {
+    if (!cartMessage) {
+      setCartStale(false);
+      return;
+    }
+    setCartStale(false);
+    const id = setTimeout(() => setCartStale(true), CART_FRESHNESS_MS);
+    return () => clearTimeout(id);
+  }, [cartMessage]);
 
   // ----- Render branches -----
 
@@ -143,7 +165,7 @@ export default function CustomerDisplayPage() {
     );
   }
 
-  if (cartMessage?.type === 'cart_update' && cartMessage.cart.items.length > 0) {
+  if (!cartStale && cartMessage?.type === 'cart_update' && cartMessage.cart.items.length > 0) {
     // The broadcast mirrors the raw CartItem[] — map to the presentational
     // line shape (image_url is not broadcast → BrandMark fallback).
     const lines: CustomerDisplayLine[] = (cartMessage.cart.items as CartItem[]).map(

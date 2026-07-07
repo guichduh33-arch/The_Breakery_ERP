@@ -191,7 +191,9 @@ describe('TabletOrderPage', () => {
       expect(toast.success).toHaveBeenCalledWith('Order sent to kitchen');
     });
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith('/tablet/orders');
+      expect(mockNavigate).toHaveBeenCalledWith('/tablet/orders', {
+        state: { justSentOrderId: 'new-order-uuid' },
+      });
     });
     expect(useTabletCartStore.getState().items).toHaveLength(0);
   });

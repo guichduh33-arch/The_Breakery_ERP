@@ -108,7 +108,9 @@ describe('tablet-send smoke', () => {
     });
 
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith('/tablet/orders');
+      expect(mockNavigate).toHaveBeenCalledWith('/tablet/orders', {
+        state: { justSentOrderId: 'new-order-uuid' },
+      });
     });
 
     expect(useTabletCartStore.getState().items).toHaveLength(0);
