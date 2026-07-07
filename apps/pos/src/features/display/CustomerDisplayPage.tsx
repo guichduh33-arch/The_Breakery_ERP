@@ -20,10 +20,11 @@ import type { CartItem } from '@breakery/domain';
 import { readKioskPairing } from '@/lib/kioskAuth';
 
 import { BrandedLayout } from './components/BrandedLayout';
+import { CDBrandPanel } from './components/CDBrandPanel';
+import { CDPaymentPanel } from './components/CDPaymentPanel';
 import { CurrentOrderCard } from './components/CurrentOrderCard';
 import { OrderQueueTicker } from './components/OrderQueueTicker';
 import { PairDevicePrompt } from './components/PairDevicePrompt';
-import { CDActiveCartView } from './CDActiveCartView';
 import { CustomerDisplayView, type CustomerDisplayLine } from './CustomerDisplayView';
 import { useDisplayOrders } from './hooks/useDisplayOrders';
 import { useDisplayRealtime } from './hooks/useDisplayRealtime';
@@ -154,12 +155,18 @@ export default function CustomerDisplayPage() {
 
   // 4a. Checkout takes the FULL screen (design audit 2026-07-07 B4) — while
   //     a sale is being rung up or just completed, the customer's attention
-  //     stays on their own order/total, never on the pickup queue.
+  //     stays on their own order/total, never on the pickup queue. Split-brand
+  //     redesign: brand panel (left) + payment confirmation detail (right).
   if (cartMessage?.type === 'payment_complete') {
     return (
       <BrandedLayout footer={<span>{idleFooter}</span>}>
-        <div className="h-full flex" data-testid="display-authenticated">
-          <CDActiveCartView message={cartMessage} />
+        <div className="h-full flex gap-10" data-testid="display-authenticated">
+          <div className="flex-1 min-h-0 flex">
+            <CDBrandPanel />
+          </div>
+          <div className="flex-1 min-h-0 flex">
+            <CDPaymentPanel message={cartMessage} />
+          </div>
         </div>
       </BrandedLayout>
     );
@@ -167,18 +174,27 @@ export default function CustomerDisplayPage() {
 
   if (!cartStale && cartMessage?.type === 'cart_update' && cartMessage.cart.items.length > 0) {
     // The broadcast mirrors the raw CartItem[] — map to the presentational
-    // line shape (image_url is not broadcast → BrandMark fallback).
+    // line shape (image_url is not broadcast → BrandMark fallback). The
+    // modifier detail (option label + price delta) travels with each item and
+    // the line total includes the modifier adjustments (calculateTotals parity).
     const lines: CustomerDisplayLine[] = (cartMessage.cart.items as CartItem[]).map(
-      (item) => ({
-        id: item.id,
-        product_id: item.product_id,
-        name: item.name,
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-        line_total: item.unit_price * item.quantity,
-        is_promo_gift: item.is_promo_gift === true,
-        is_cancelled: item.is_cancelled === true,
-      }),
+      (item) => {
+        const adjustment = item.modifiers.reduce((s, m) => s + m.price_adjustment, 0);
+        return {
+          id: item.id,
+          product_id: item.product_id,
+          name: item.name,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          line_total: (item.unit_price + adjustment) * item.quantity,
+          modifiers: item.modifiers.map((m) => ({
+            label: m.option_label,
+            price_adjustment: m.price_adjustment,
+          })),
+          is_promo_gift: item.is_promo_gift === true,
+          is_cancelled: item.is_cancelled === true,
+        };
+      },
     );
     return (
       <CustomerDisplayView
@@ -208,9 +224,9 @@ export default function CustomerDisplayPage() {
         className="h-full flex gap-8"
         data-testid="display-authenticated"
       >
-        {/* Idle welcome (left). */}
+        {/* Brand moment — logo + slogan (left). */}
         <div className="flex-1 min-h-0 flex">
-          <CDActiveCartView message={null} />
+          <CDBrandPanel />
         </div>
         {/* Order queue + featured card (right). */}
         <div className="flex-1 min-h-0 flex flex-col gap-8">

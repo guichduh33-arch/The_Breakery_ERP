@@ -38,9 +38,16 @@ describe('CustomerDisplayView', () => {
   it('renders the branded empty state with a BrandMark when items is empty', () => {
     render(<CustomerDisplayView items={[]} />);
 
-    // Branded shell — header chrome from BrandedLayout.
+    // Branded shell — header chrome from BrandedLayout. The split-brand
+    // redesign adds a second "French Bakery & Pastry" occurrence (the brand
+    // panel slogan), hence getAllByText.
     expect(screen.getByText('The Breakery')).toBeInTheDocument();
-    expect(screen.getByText(/French Bakery/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/French Bakery/i).length).toBeGreaterThanOrEqual(1);
+
+    // Split-brand redesign — the left half is always the brand panel
+    // (logo + slogan).
+    expect(screen.getByTestId('cd-brand-panel')).toBeInTheDocument();
+    expect(screen.getByTestId('cd-brand-slogan')).toHaveTextContent(/French Bakery/i);
 
     // EmptyState v2 (branded tone) — Playfair italic title + BrandMark "B".
     const emptyView = screen.getByTestId('display-view-empty');
@@ -122,6 +129,60 @@ describe('CustomerDisplayView', () => {
 
     // Item count summary.
     expect(within(band).getByText(/3 items/i)).toBeInTheDocument();
+  });
+
+  it('renders the modifier detail (label + price adjustment) under the line', () => {
+    render(
+      <CustomerDisplayView
+        items={[
+          {
+            id: 'line-mod',
+            product_id: 'prod-latte',
+            name: 'Latte',
+            quantity: 1,
+            unit_price: 35_000,
+            line_total: 40_000,
+            image_url: null,
+            modifiers: [
+              { label: 'Extra shot', price_adjustment: 5_000 },
+              { label: 'Oat milk', price_adjustment: 0 },
+            ],
+          },
+        ]}
+        totals={{ subtotal: 40_000, total: 40_000, item_count: 1 }}
+      />,
+    );
+
+    const mods = screen.getAllByTestId('display-line-modifier');
+    expect(mods).toHaveLength(2);
+    // Priced modifier shows its delta; free modifier shows the label alone.
+    expect(mods[0]!).toHaveTextContent('Extra shot');
+    expect(mods[0]!.textContent).toMatch(/5.?000/);
+    expect(mods[1]!).toHaveTextContent('Oat milk');
+    expect(mods[1]!.textContent).not.toMatch(/Rp/);
+  });
+
+  it('renders the "Tax included" line when totals carry a tax_amount', () => {
+    render(
+      <CustomerDisplayView
+        items={SAMPLE_LINES}
+        totals={{ subtotal: 85_000, total: 85_000, tax_amount: 7_727, item_count: 3 }}
+      />,
+    );
+
+    const tax = screen.getByTestId('display-tax-included');
+    expect(tax).toHaveTextContent(/tax included/i);
+    expect(tax.textContent).toMatch(/7.?727/);
+  });
+
+  it('omits the "Tax included" line when tax_amount is absent or zero', () => {
+    render(
+      <CustomerDisplayView
+        items={SAMPLE_LINES}
+        totals={{ subtotal: 85_000, total: 85_000, tax_amount: 0, item_count: 3 }}
+      />,
+    );
+    expect(screen.queryByTestId('display-tax-included')).toBeNull();
   });
 
   it('flags promo-gift and cancelled lines with badges', () => {
