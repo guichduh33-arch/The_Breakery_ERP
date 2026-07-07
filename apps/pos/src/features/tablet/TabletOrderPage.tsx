@@ -34,12 +34,12 @@
 //     `@breakery/domain` — never raw inserts. After success, the cart
 //     is cleared and the host typically navigates to `/tablet/orders`.
 
-import { useState, useCallback, useRef, type JSX, type ReactNode } from 'react';
+import { useState, useCallback, useRef, type JSX } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { ArrowLeft, MapPin } from 'lucide-react';
 import type { RestaurantTable } from '@breakery/domain';
-import { Button, Currency, cn } from '@breakery/ui';
+import { Button, Currency } from '@breakery/ui';
 import { calculatePreview } from '@breakery/domain';
 import { useTabletCartStore } from '@/stores/tabletCartStore';
 import { useAuthStore } from '@/stores/authStore';
@@ -48,6 +48,7 @@ import { useTableOccupancy } from '@/features/tables/hooks/useTableOccupancy';
 import { TabletMenuView } from './components/TabletMenuView';
 import { TabletCartPanel } from './components/TabletCartPanel';
 import { OfflineBanner } from './components/OfflineBanner';
+import { OrderTypeToggle } from './components/OrderTypeToggle';
 import { useTabletOffline } from './hooks/useTabletOffline';
 import { useCreateTabletOrder } from './hooks/useCreateTabletOrder';
 import { FloorPlanView } from './FloorPlanView';
@@ -228,69 +229,6 @@ export function TabletOrderPage({
         </div>
       </div>
     </div>
-  );
-}
-
-function OrderTypeToggle({
-  value,
-  onChange,
-}: {
-  value: 'dine_in' | 'take_out';
-  onChange: (next: 'dine_in' | 'take_out') => void;
-}): JSX.Element {
-  return (
-    <div
-      role="tablist"
-      aria-label="Order type"
-      className="inline-flex rounded-md border border-border-subtle overflow-hidden"
-    >
-      <ToggleTab
-        active={value === 'dine_in'}
-        onClick={() => onChange('dine_in')}
-        testId="tablet-order-type-dine-in"
-      >
-        Dine in
-      </ToggleTab>
-      <ToggleTab
-        active={value === 'take_out'}
-        onClick={() => onChange('take_out')}
-        testId="tablet-order-type-take-out"
-      >
-        Take out
-      </ToggleTab>
-    </div>
-  );
-}
-
-function ToggleTab({
-  active,
-  onClick,
-  children,
-  testId,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: ReactNode;
-  testId: string;
-}): JSX.Element {
-  return (
-    <button
-      type="button"
-      role="tab"
-      aria-selected={active}
-      onClick={onClick}
-      data-testid={testId}
-      className={cn(
-        'min-h-11 px-5 text-sm font-semibold uppercase tracking-wide',
-        'transition-colors duration-fast motion-reduce:transition-none',
-        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold focus-visible:outline-offset-2',
-        active
-          ? 'bg-gold text-bg-base'
-          : 'bg-transparent text-text-secondary hover:text-text-primary hover:bg-bg-overlay',
-      )}
-    >
-      {children}
-    </button>
   );
 }
 

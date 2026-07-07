@@ -242,7 +242,7 @@ function TabButton({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        'h-10 px-3 inline-flex items-center justify-center gap-2 rounded-md text-xs font-bold uppercase tracking-widest',
+        'h-11 px-3 inline-flex items-center justify-center gap-2 rounded-md text-xs font-bold uppercase tracking-widest',
         'transition-colors duration-fast motion-reduce:transition-none',
         'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
         isPrimary
@@ -361,7 +361,7 @@ export function CustomerAttachModal({
             onClick={onClose}
             aria-label="Close"
             className={cn(
-              'h-9 w-9 inline-flex items-center justify-center rounded-md',
+              'h-11 w-11 inline-flex items-center justify-center rounded-md',
               'text-text-secondary hover:text-text-primary hover:bg-bg-overlay',
               'transition-colors duration-fast motion-reduce:transition-none',
               'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',

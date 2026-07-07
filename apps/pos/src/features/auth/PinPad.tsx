@@ -87,7 +87,7 @@ export function PinPad({ userId, onSuccess, onCancel }: PinPadProps) {
       </div>
 
       {uiError && (
-        <p role="alert" className="text-sm text-red-600 text-center">{uiError}</p>
+        <p role="alert" className="text-sm text-red-fg text-center">{uiError}</p>
       )}
 
       <div className="grid grid-cols-3 gap-2 w-full">

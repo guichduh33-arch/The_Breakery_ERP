@@ -55,7 +55,7 @@ export function RecallButton({ orderId, orderNumber, disabled }: RecallButtonPro
       <DialogTrigger asChild>
         <Button
           variant="secondary"
-          size="sm"
+          size="md"
           disabled={disabled}
           aria-label={`Recall served items on order ${orderNumber}`}
         >

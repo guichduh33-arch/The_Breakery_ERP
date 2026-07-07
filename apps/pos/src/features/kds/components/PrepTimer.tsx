@@ -26,7 +26,7 @@ function format(ms: number): string {
 }
 
 function colourClass(ms: number): string {
-  if (ms >= TEN_MIN_MS) return 'text-red font-semibold';
+  if (ms >= TEN_MIN_MS) return 'text-red-fg font-semibold';
   if (ms >= FIVE_MIN_MS) return 'text-amber-warn';
   return 'text-text-secondary';
 }
@@ -37,7 +37,7 @@ export function PrepTimer({ prepStartedAt }: PrepTimerProps) {
   if (!prepStartedAt) {
     return (
       <span
-        className="font-mono text-xs text-text-muted"
+        className="font-mono text-lg text-text-muted"
         aria-label="Prep timer not started"
       >
         --:--
@@ -50,7 +50,7 @@ export function PrepTimer({ prepStartedAt }: PrepTimerProps) {
 
   return (
     <span
-      className={`font-mono text-xs ${colourClass(elapsed)}`}
+      className={`font-mono text-lg ${colourClass(elapsed)}`}
       aria-label={`Prep elapsed ${format(elapsed)}`}
     >
       {format(elapsed)}

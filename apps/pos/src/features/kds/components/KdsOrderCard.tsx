@@ -72,7 +72,7 @@ function ageStyle(ageMs: number): AgeStyle {
   if (ageMs >= URGENT_THRESHOLD_MS) {
     return {
       border: 'border-red animate-pulse',
-      timer: 'text-red font-bold',
+      timer: 'text-red-fg font-bold',
       bandLabel: 'urgent',
     };
   }
@@ -107,7 +107,7 @@ function ItemCta({ item }: { item: KdsItemRow }) {
     return (
       <Button
         variant="primary"
-        size="sm"
+        size="md"
         onClick={() => {
           startTimer.mutate(item.id);
         }}
@@ -126,7 +126,7 @@ function ItemCta({ item }: { item: KdsItemRow }) {
     return (
       <Button
         variant="secondary"
-        size="sm"
+        size="md"
         className="border-green text-green hover:bg-green/10"
         onClick={() => serve.mutate(item.id)}
         disabled={serve.isPending}
@@ -173,7 +173,7 @@ function AllReadyButton({ orderId, items }: { orderId: string; items: KdsItemRow
   return (
     <Button
       variant="gold"
-      size="sm"
+      size="md"
       onClick={handleClick}
       disabled={bumpOrder.isPending}
       aria-label="Bump all items to ready"
@@ -218,8 +218,21 @@ export function KdsOrderCard({ items }: KdsOrderCardProps) {
         </div>
         <div className="flex items-center gap-3 shrink-0">
           <AllReadyButton orderId={head.order_id} items={items} />
+          {/* Non-colour urgency signal (colour-blind + 2-3 m glance): the age
+              band is spelled out once past the warning threshold. */}
+          {style.bandLabel !== 'fresh' && (
+            <span
+              className={`text-sm font-bold uppercase tracking-widest border rounded-md px-2 py-0.5 ${
+                style.bandLabel === 'urgent'
+                  ? 'border-red text-red-fg'
+                  : 'border-amber-warn text-amber-warn'
+              }`}
+            >
+              {style.bandLabel === 'urgent' ? 'Late' : 'Waiting'}
+            </span>
+          )}
           <span
-            className={`font-mono text-sm tabular-nums ${style.timer}`}
+            className={`font-mono text-2xl tabular-nums ${style.timer}`}
             aria-label="Order age"
           >
             {formatAge(ageMs)}
@@ -249,12 +262,12 @@ export function KdsOrderCard({ items }: KdsOrderCardProps) {
               <div className="flex-1 min-w-0">
                 <div className="flex items-baseline gap-2">
                   <span
-                    className={`font-mono text-base font-bold tabular-nums ${cancelled ? 'text-text-muted line-through' : 'text-text-primary'}`}
+                    className={`font-mono text-2xl font-bold tabular-nums ${cancelled ? 'text-text-muted line-through' : 'text-text-primary'}`}
                   >
                     {item.quantity}×
                   </span>
                   <span
-                    className={`text-base truncate ${cancelled ? 'text-text-muted line-through' : 'text-text-primary'}`}
+                    className={`text-2xl font-bold truncate ${cancelled ? 'text-text-muted line-through' : 'text-text-primary'}`}
                   >
                     {item.product_name}
                   </span>
@@ -264,7 +277,7 @@ export function KdsOrderCard({ items }: KdsOrderCardProps) {
                     {item.modifiers.map((mod, idx) => (
                       <li
                         key={`${item.id}-mod-${idx}`}
-                        className={`text-xs ${cancelled ? 'text-text-muted line-through' : 'text-text-secondary'}`}
+                        className={`text-base ${cancelled ? 'text-text-muted line-through' : 'text-text-secondary'}`}
                       >
                         {mod.group_name}: {mod.option_label}
                       </li>
@@ -272,7 +285,7 @@ export function KdsOrderCard({ items }: KdsOrderCardProps) {
                   </ul>
                 ) : null}
                 {cancelled && item.cancelled_reason && (
-                  <div className="mt-1 text-xs uppercase tracking-widest text-red">
+                  <div className="mt-1 text-sm uppercase tracking-widest text-red-fg">
                     Reason: {item.cancelled_reason}
                   </div>
                 )}

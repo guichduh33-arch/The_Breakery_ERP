@@ -45,7 +45,7 @@ export function StationFilter() {
         return (
           <Button
             key={chip.value}
-            size="sm"
+            size="md"
             variant={active ? 'primary' : 'secondary'}
             aria-pressed={active}
             aria-label={chip.aria}

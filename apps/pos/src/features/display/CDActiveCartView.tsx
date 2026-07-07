@@ -14,8 +14,8 @@ export function CDActiveCartView({ message }: { message: CartBroadcastMessage | 
     const showChange = message.method === 'cash' && (message.change ?? 0) > 0;
     return (
       <div className="m-auto text-center space-y-4" data-testid="cd-payment-complete">
-        <h2 className="font-serif text-4xl text-gold">Merci !</h2>
-        <p className="text-text-secondary">Paiement reçu</p>
+        <h2 className="font-serif text-6xl text-gold">Merci !</h2>
+        <p className="text-text-secondary text-2xl">Paiement reçu</p>
         {showChange && (
           <div className="pt-2">
             <div className="text-text-secondary uppercase tracking-widest text-xs mb-1">

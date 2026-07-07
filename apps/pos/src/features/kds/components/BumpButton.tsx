@@ -37,9 +37,9 @@ export function BumpButton({ orderItemId, disabled }: BumpButtonProps) {
     <>
       <Button
         variant="gold"
-        size="sm"
+        size="md"
         onClick={handleClick}
-        disabled={disabled || bump.isPending}
+        disabled={(disabled ?? false) || bump.isPending}
         aria-label="Bump item to ready"
       >
         Bump

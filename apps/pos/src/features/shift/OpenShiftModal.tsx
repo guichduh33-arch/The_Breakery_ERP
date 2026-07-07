@@ -193,7 +193,7 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
                 type="button"
                 aria-label="Close"
                 onClick={handleClose}
-                className="h-8 w-8 grid place-items-center rounded-md border border-border-subtle text-text-secondary hover:text-text-primary hover:border-gold focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold"
+                className="h-11 w-11 grid place-items-center rounded-md border border-border-subtle text-text-secondary hover:text-text-primary hover:border-gold focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold"
               >
                 <X className="h-4 w-4" aria-hidden />
               </button>

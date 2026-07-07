@@ -63,7 +63,7 @@ export function CategoryNav({
           <button
             type="button"
             onClick={onOpenSettings}
-            className="h-10 w-10 inline-flex items-center justify-center rounded-md text-text-muted hover:text-text-primary focus:outline focus:outline-2 focus:outline-gold focus:outline-offset-2 transition-colors motion-reduce:transition-none"
+            className="h-11 w-11 inline-flex items-center justify-center rounded-md text-text-muted hover:text-text-primary focus:outline focus:outline-2 focus:outline-gold focus:outline-offset-2 transition-colors motion-reduce:transition-none"
             aria-label="POS settings"
           >
             <Settings className="h-5 w-5" aria-hidden />

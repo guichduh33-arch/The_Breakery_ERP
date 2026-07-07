@@ -41,6 +41,10 @@
   --gold-strong:  #b8954a;     /* alias of --gold-pressed but explicit name */
   --gold-fg:      #1a1408;     /* foreground when gold is bg (dark brown) */
 
+  /* Foreground when green is bg (mirror of --gold-fg). White on --green-base
+   * is only ~2.5:1 on the POS green — near-black reaches ~8:1. */
+  --green-fg:     #0a0a0c;
+
   /* Text extended (subdued for footnotes). */
   --text-subtle:  #5a5a62;     /* between muted and disabled */
 
@@ -80,6 +84,10 @@
    * mono/data faces (tokens unchanged under .theme-pos). */
   --font-mono: 'IBM Plex Mono', ui-monospace, 'JetBrains Mono', monospace;
   --font-data: var(--font-mono);
+  /* `font-serif` (page titles, CardTitle, modal titles) must NOT inherit the
+   * mono remap above — headings in the Backoffice read in the sans stack,
+   * per the --font-display direction. KPI values keep mono via `font-data`. */
+  --font-serif: var(--font-body);
 
   /* Surfaces — cool neutral, layered for contrast (white cards pop on a
    * light-gray page). */
@@ -122,6 +130,7 @@
   --green-base:    #0f8a5a;
   --green-hover:   #11a06a;
   --green-pressed: #0b6e48;
+  --green-fg:      #ffffff;    /* white holds on the darkened BO green */
   --red-base:      #d32f2f;
   --red-soft:      rgba(211, 47, 47, 0.10);
   --red-fg:        var(--red-base);
