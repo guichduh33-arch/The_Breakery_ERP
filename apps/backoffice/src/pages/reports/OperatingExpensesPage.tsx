@@ -11,6 +11,7 @@ import {
 } from 'recharts';
 import { toLocalDateStr } from '@breakery/domain';
 import type { CsvColumn } from '@breakery/domain';
+import { PageHeader } from '@/components/PageHeader.js';
 import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
 import { ChartCard } from '@/features/reports/components/ChartCard.js';
@@ -67,49 +68,47 @@ export default function OperatingExpensesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-serif">Operating Expenses</h1>
-          <p className="text-sm text-text-secondary">
-            Expense ledger ventilated by category and over time.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <DateRangePicker start={start} end={end} onStartChange={setStart} onEndChange={setEnd} />
-          <label className="flex items-center gap-2 text-sm text-text-secondary">
-            <span>Category</span>
-            <select
-              className={cn(selectClassName, 'h-9 w-auto')}
-              value={categoryId}
-              onChange={(e) => setCategoryId(e.target.value)}
-              aria-label="Filter by expense category"
-            >
-              <option value="">All categories</option>
-              {(categories ?? []).map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
-          </label>
-          <label className="flex items-center gap-2 text-sm text-text-secondary">
-            <span>Status</span>
-            <select
-              className={cn(selectClassName, 'h-9 w-auto')}
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              aria-label="Filter by expense status"
-            >
-              {STATUS_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
-          </label>
-          {data && (
-            <ExportButtons
-              csv={{ rows, columns: csvColumns, filename: `operating-expenses-${start}_${end}` }}
-            />
-          )}
-        </div>
-      </div>
+      <PageHeader
+        title="Operating Expenses"
+        subtitle="Expense ledger ventilated by category and over time."
+        actions={
+          <>
+            <DateRangePicker start={start} end={end} onStartChange={setStart} onEndChange={setEnd} />
+            <label className="flex items-center gap-2 text-sm text-text-secondary">
+              <span>Category</span>
+              <select
+                className={cn(selectClassName, 'h-9 w-auto')}
+                value={categoryId}
+                onChange={(e) => setCategoryId(e.target.value)}
+                aria-label="Filter by expense category"
+              >
+                <option value="">All categories</option>
+                {(categories ?? []).map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </label>
+            <label className="flex items-center gap-2 text-sm text-text-secondary">
+              <span>Status</span>
+              <select
+                className={cn(selectClassName, 'h-9 w-auto')}
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+                aria-label="Filter by expense status"
+              >
+                {STATUS_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+            </label>
+            {data && (
+              <ExportButtons
+                csv={{ rows, columns: csvColumns, filename: `operating-expenses-${start}_${end}` }}
+              />
+            )}
+          </>
+        }
+      />
 
       {error && (
         <p className="text-sm text-danger" role="alert">

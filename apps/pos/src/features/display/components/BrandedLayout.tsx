@@ -28,7 +28,10 @@ export function BrandedLayout({ children, footer }: BrandedLayoutProps) {
   return (
     <div className="h-[100dvh] w-full bg-bg-base text-text-primary flex flex-col font-sans">
       <header className="px-12 py-8 border-b border-border-subtle flex items-baseline justify-between">
-        <h1 className="font-serif text-5xl tracking-tight text-gold">
+        {/* Design Wave C — the wordmark is THE brand moment on the customer
+            display; render it in Playfair (font-display) rather than the data
+            serif so it carries the bakery's identity. */}
+        <h1 className="font-display text-5xl tracking-tight text-gold">
           The Breakery
         </h1>
         <p className="text-sm uppercase tracking-[0.3em] text-text-secondary">

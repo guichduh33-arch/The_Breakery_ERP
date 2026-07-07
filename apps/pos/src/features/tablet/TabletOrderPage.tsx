@@ -112,10 +112,11 @@ export function TabletOrderPage({
   const handleSend = useCallback(async () => {
     if (!userId || isEmpty) return;
     try {
+      let justSentOrderId: string | null = null;
       if (onSendOverride) {
         await onSendOverride(userId);
       } else {
-        await mutation.mutateAsync({
+        justSentOrderId = await mutation.mutateAsync({
           cart: { items, tableNumber, orderType, notes },
           waiterId: userId,
           clientUuid: clientUuidRef.current,
@@ -124,7 +125,7 @@ export function TabletOrderPage({
       toast.success('Order sent to kitchen');
       clearCart();
       clientUuidRef.current = crypto.randomUUID();
-      void navigate(redirectAfterSend);
+      void navigate(redirectAfterSend, { state: { justSentOrderId } });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to send order';
       toast.error(message);

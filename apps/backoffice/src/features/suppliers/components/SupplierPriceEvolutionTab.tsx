@@ -18,14 +18,14 @@ import {
 import { Card, EmptyState, SectionLabel } from '@breakery/ui';
 import { TrendingUp } from 'lucide-react';
 import { formatIdr } from '@breakery/utils';
-import { CHART_GRID_STROKE, CHART_AXIS_STROKE, familyColor } from '@/features/reports/utils/chartColors.js';
+import { CHART_GRID_STROKE, CHART_AXIS_STROKE, CATEGORICAL_SERIES, CHART_SERIES_OFF } from '@/features/reports/utils/chartColors.js';
 import type { SupplierPurchaseItem } from '@/features/suppliers/hooks/useSupplierPurchaseItems.js';
 
 // Per-product qualitative palette (distinguishing arbitrary SKUs, not a cost
 // family) — only the first two slots have a design-system equivalent (gold
 // accent, COGS ramp indigo); the rest have no token match yet and are kept
 // literal — see S59 T7 report.
-const PALETTE = ['var(--gold-base)', familyColor('cogs', 4), '#16a34a', '#dc2626', '#0891b2', '#d946ef'];
+const PALETTE = CATEGORICAL_SERIES;
 
 function fmtDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: '2-digit' });
@@ -107,10 +107,7 @@ export function SupplierPriceEvolutionTab({ items }: SupplierPriceEvolutionTabPr
                 }`}
                 style={on ? { borderColor: color, backgroundColor: `${color}1a` } : undefined}
               >
-                {/* No design-system token maps to this "deselected" chip-dot
-                    gray — semantically distinct from an axis/grid stroke.
-                    Kept literal — see S59 T7 report. */}
-                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: on ? color : '#cbd5e1' }} />
+                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: on ? color : CHART_SERIES_OFF }} />
                 {p.name}
               </button>
             );

@@ -73,10 +73,19 @@ const KITCHEN_PILL_CLASS: Record<KitchenStatus, string> = {
   served: 'bg-bg-overlay text-text-muted line-through',
 };
 
+// Design audit 2026-07-07 (Tablet) — humanized labels for the client-facing
+// kitchen status pills (raw enum values stay unchanged in the data layer).
+const KITCHEN_LABEL: Record<KitchenStatus, string> = {
+  pending: 'In queue',
+  preparing: 'Preparing',
+  ready: 'Ready',
+  served: 'Served',
+};
+
 function KitchenPill({ status }: { status: KitchenStatus }): JSX.Element {
   return (
     <span className={cn('text-xs font-semibold px-2 py-0.5 rounded-full', KITCHEN_PILL_CLASS[status])}>
-      {status}
+      {KITCHEN_LABEL[status]}
     </span>
   );
 }

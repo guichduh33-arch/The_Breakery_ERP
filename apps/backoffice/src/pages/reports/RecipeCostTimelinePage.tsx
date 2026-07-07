@@ -24,7 +24,7 @@ import { supabase } from '@/lib/supabase.js';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
 import { useUrlState } from '@/hooks/useUrlState.js';
-import { CHART_GRID_STROKE } from '@/features/reports/utils/chartColors.js';
+import { CHART_GRID_STROKE, CHART_ACCENT_GOLD } from '@/features/reports/utils/chartColors.js';
 
 interface TimelineRow {
   product_id:     string;
@@ -177,9 +177,7 @@ export function RecipeCostTimelinePage(): JSX.Element {
                 <Line
                   type="monotone"
                   dataKey="cost"
-                  // No design-system token maps to this amber (not COGS/OpEx —
-                  // recipe cost-per-unit line). Kept literal — see S59 T7 report.
-                  stroke="#d4a437"
+                  stroke={CHART_ACCENT_GOLD}
                   strokeWidth={2}
                   dot
                 />

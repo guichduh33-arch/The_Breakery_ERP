@@ -3,7 +3,9 @@
 // Gate route : accounting.coa.read ; toggle gated par accounting.coa.write.
 
 import { useMemo, useState, type JSX } from 'react';
-import { Button, Input } from '@breakery/ui';
+import { Button, EmptyState, Input } from '@breakery/ui';
+import { FileText } from 'lucide-react';
+import { PageHeader } from '@/components/PageHeader.js';
 import {
   useChartOfAccounts,
   type AccountRow,
@@ -51,13 +53,15 @@ export default function ChartOfAccountsPage(): JSX.Element {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-2xl text-text-primary">Chart of Accounts</h1>
-        <p className="text-sm text-text-secondary italic">
-          {filtered.length} of {accounts.data?.length ?? 0} accounts
-          {canWrite ? ' — toggle active inline' : ' — read-only (no write permission)'}
-        </p>
-      </div>
+      <PageHeader
+        title="Chart of Accounts"
+        subtitle={
+          <span className="italic">
+            {filtered.length} of {accounts.data?.length ?? 0} accounts
+            {canWrite ? ' — toggle active inline' : ' — read-only (no write permission)'}
+          </span>
+        }
+      />
 
       <div className="flex flex-wrap items-center gap-3">
         <Input
@@ -97,7 +101,12 @@ export default function ChartOfAccountsPage(): JSX.Element {
       {accounts.isLoading && <p className="text-sm text-text-secondary">Loading…</p>}
 
       {!accounts.isLoading && filtered.length === 0 && (
-        <p className="text-sm text-text-secondary">No accounts match filters.</p>
+        <EmptyState
+          size="sm"
+          icon={FileText}
+          title="No accounts"
+          description="No accounts match filters."
+        />
       )}
 
       {filtered.length > 0 && (

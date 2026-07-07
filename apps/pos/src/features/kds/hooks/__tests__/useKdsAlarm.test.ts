@@ -7,11 +7,20 @@
 // Session 59 review (finding 2) — also covers the suspended→resume autoplay
 // path: a freshly-loaded KDS starts its AudioContext `suspended` (no prior
 // user gesture), so `.start()` alone would be a silent no-op.
+//
+// Design Wave C (2026-07-07) — the new-order beep is now a TWO-note motif
+// (2 oscillators) and a separate periodic TRIPLE-note re-bip nags while an
+// urgent unbumped order lingers. Tone counts below reflect the motif lengths.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook, act, waitFor } from '@testing-library/react';
 
 import type { KdsItemRow } from '../useKdsOrders';
+
+/** New-order motif = 2 tones; urgent re-bip = 3 tones (see useKdsAlarm.ts). */
+const NEW_ORDER_TONES = 2;
+const URGENT_TONES = 3;
+const REBEEP_INTERVAL_MS = 25 * 1_000;
 
 let mockAlarmMuted = false;
 
@@ -98,7 +107,7 @@ describe('useKdsAlarm', () => {
     expect(createOscillatorSpy).not.toHaveBeenCalled();
   });
 
-  it('beeps once when a brand-new order_id arrives', () => {
+  it('plays the new-order motif once when a brand-new order_id arrives', () => {
     const { rerender } = renderHook(({ items }) => useKdsAlarm(items), {
       initialProps: { items: [makeItem({ order_id: 'ord-1' })] },
     });
@@ -110,7 +119,7 @@ describe('useKdsAlarm', () => {
       ],
     });
 
-    expect(createOscillatorSpy).toHaveBeenCalledTimes(1);
+    expect(createOscillatorSpy).toHaveBeenCalledTimes(NEW_ORDER_TONES);
   });
 
   it('does not re-beep for the same order on a later refetch/poll (dedup)', () => {
@@ -124,7 +133,7 @@ describe('useKdsAlarm', () => {
         makeItem({ id: 'oi-2', order_id: 'ord-2', order_number: '#A-002' }),
       ],
     });
-    expect(createOscillatorSpy).toHaveBeenCalledTimes(1);
+    expect(createOscillatorSpy).toHaveBeenCalledTimes(NEW_ORDER_TONES);
 
     // Poll refetch returns the exact same 2 orders — no additional beep.
     rerender({
@@ -133,7 +142,7 @@ describe('useKdsAlarm', () => {
         makeItem({ id: 'oi-2', order_id: 'ord-2', order_number: '#A-002' }),
       ],
     });
-    expect(createOscillatorSpy).toHaveBeenCalledTimes(1);
+    expect(createOscillatorSpy).toHaveBeenCalledTimes(NEW_ORDER_TONES);
   });
 
   it('stays silent while alarmMuted is true, but still marks the order as seen', () => {
@@ -179,7 +188,7 @@ describe('useKdsAlarm', () => {
     // The tone is deferred behind the resume() promise, not emitted synchronously.
     expect(createOscillatorSpy).not.toHaveBeenCalled();
 
-    await waitFor(() => expect(createOscillatorSpy).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(createOscillatorSpy).toHaveBeenCalledTimes(NEW_ORDER_TONES));
   });
 
   it('logs a single console.warn when resume() rejects, and never throws', async () => {
@@ -215,5 +224,96 @@ describe('useKdsAlarm', () => {
     expect(createOscillatorSpy).not.toHaveBeenCalled();
 
     warnSpy.mockRestore();
+  });
+
+  // Design Wave C — periodic urgent re-bip.
+  describe('urgent re-bip', () => {
+    const NOW = new Date('2026-07-07T10:00:00Z');
+    // 12 minutes old → past the 600 s urgent band.
+    const URGENT_SENT = new Date('2026-07-07T09:48:00Z').toISOString();
+
+    it('re-bips every interval while an urgent unbumped order lingers, and stops once bumped', () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(NOW);
+
+      const urgent = makeItem({
+        order_id: 'ord-1',
+        kitchen_status: 'preparing',
+        sent_to_kitchen_at: URGENT_SENT,
+      });
+      const { rerender, unmount } = renderHook(({ items }) => useKdsAlarm(items), {
+        initialProps: { items: [urgent] },
+      });
+
+      // Seeding the board must not fire the new-order motif.
+      expect(createOscillatorSpy).not.toHaveBeenCalled();
+
+      // One interval → one urgent triple.
+      act(() => {
+        vi.advanceTimersByTime(REBEEP_INTERVAL_MS);
+      });
+      expect(createOscillatorSpy).toHaveBeenCalledTimes(URGENT_TONES);
+
+      // Another interval → another triple (it keeps nagging).
+      act(() => {
+        vi.advanceTimersByTime(REBEEP_INTERVAL_MS);
+      });
+      expect(createOscillatorSpy).toHaveBeenCalledTimes(URGENT_TONES * 2);
+
+      // Order is bumped (all items ready) → the re-bip goes quiet.
+      rerender({ items: [makeItem({ order_id: 'ord-1', kitchen_status: 'ready' })] });
+      act(() => {
+        vi.advanceTimersByTime(REBEEP_INTERVAL_MS);
+      });
+      expect(createOscillatorSpy).toHaveBeenCalledTimes(URGENT_TONES * 2);
+
+      unmount();
+      vi.useRealTimers();
+    });
+
+    it('stays silent when muted, even for an urgent order', () => {
+      mockAlarmMuted = true;
+      vi.useFakeTimers();
+      vi.setSystemTime(NOW);
+
+      renderHook(() =>
+        useKdsAlarm([
+          makeItem({
+            order_id: 'ord-1',
+            kitchen_status: 'preparing',
+            sent_to_kitchen_at: URGENT_SENT,
+          }),
+        ]),
+      );
+
+      act(() => {
+        vi.advanceTimersByTime(REBEEP_INTERVAL_MS * 3);
+      });
+      expect(createOscillatorSpy).not.toHaveBeenCalled();
+
+      vi.useRealTimers();
+    });
+
+    it('does not re-bip for a fresh order below the urgent band', () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(NOW);
+
+      renderHook(() =>
+        useKdsAlarm([
+          makeItem({
+            order_id: 'ord-1',
+            kitchen_status: 'preparing',
+            sent_to_kitchen_at: NOW.toISOString(),
+          }),
+        ]),
+      );
+
+      act(() => {
+        vi.advanceTimersByTime(REBEEP_INTERVAL_MS * 3);
+      });
+      expect(createOscillatorSpy).not.toHaveBeenCalled();
+
+      vi.useRealTimers();
+    });
   });
 });

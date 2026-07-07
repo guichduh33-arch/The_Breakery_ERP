@@ -35,7 +35,7 @@
 //     (Map insertion order = first-seen).
 
 import { useMemo } from 'react';
-import { Volume2, VolumeX } from 'lucide-react';
+import { Loader2, Volume2, VolumeX, WifiOff } from 'lucide-react';
 
 import { SectionLabel } from '@breakery/ui';
 
@@ -64,6 +64,11 @@ interface KdsBoardProps {
   /** Optional station override — defaults to the persisted store value.
    *  Useful for embeds that want to pin the board to a specific station. */
   station?: KdsStation;
+  /** Design Wave C — realtime channel health. When `false`, a "Reconnecting…"
+   *  banner warns the kitchen that new tickets may be delayed. The page wrapper
+   *  wires this from `useKdsRealtime({ onConnectionChange })`. Defaults to
+   *  `true` so embeds that don't own the subscription never flash the warning. */
+  isRealtimeConnected?: boolean;
 }
 
 function groupByOrder(items: KdsItemRow[]): KdsItemRow[][] {
@@ -78,7 +83,10 @@ function groupByOrder(items: KdsItemRow[]): KdsItemRow[][] {
   return Array.from(map.values());
 }
 
-export function KdsBoard({ station: stationProp }: KdsBoardProps = {}) {
+export function KdsBoard({
+  station: stationProp,
+  isRealtimeConnected = true,
+}: KdsBoardProps = {}) {
   const storeStation = useKdsStore((s) => s.selectedStation);
   const stationFilter = useKdsStore((s) => s.kdsStationFilter);
   const alarmMuted = useKdsStore((s) => s.alarmMuted);
@@ -130,6 +138,26 @@ export function KdsBoard({ station: stationProp }: KdsBoardProps = {}) {
         <StationFilter />
       </header>
 
+      {/* Design Wave C — realtime reconnection banner. Kept out of the header so
+          it can't shift the station picker; full-width, warning-toned, always
+          legible from across the kitchen. */}
+      {!isRealtimeConnected && (
+        <div
+          role="status"
+          aria-live="polite"
+          data-testid="kds-reconnecting-banner"
+          className="flex items-center justify-center gap-3 bg-warning-soft px-6 py-3 text-warning border-b border-amber-warn/40"
+        >
+          <WifiOff className="h-6 w-6 animate-pulse" aria-hidden />
+          <span className="text-lg font-bold uppercase tracking-widest">
+            Reconnexion en cours…
+          </span>
+          <span className="hidden md:inline text-base font-medium normal-case tracking-normal opacity-90">
+            Les nouveaux tickets peuvent être retardés.
+          </span>
+        </div>
+      )}
+
       <RecentlyServedStrip orders={servedOrders} />
 
       <main
@@ -148,8 +176,16 @@ export function KdsBoard({ station: stationProp }: KdsBoardProps = {}) {
             />
           </div>
         ) : isLoading ? (
-          <div className="col-span-full text-text-secondary text-sm">
-            Loading…
+          <div
+            className="col-span-full h-full grid place-items-center text-text-secondary"
+            data-testid="kds-loading"
+          >
+            <div className="text-center space-y-4">
+              <Loader2 className="h-16 w-16 mx-auto animate-spin text-gold" aria-hidden />
+              <p className="text-2xl font-semibold tracking-wide">
+                Chargement des tickets…
+              </p>
+            </div>
           </div>
         ) : visibleOrders.length === 0 ? (
           <KdsEmptyState message="No active tickets" />

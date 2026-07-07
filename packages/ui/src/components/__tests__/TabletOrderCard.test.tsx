@@ -74,22 +74,22 @@ describe('TabletOrderCard', () => {
     expect(screen.getByText('Latte')).toBeInTheDocument();
   });
 
-  it('renders kitchen_status pending pill', () => {
+  it('renders kitchen_status pending pill (humanized)', () => {
     render(<TabletOrderCard order={makeOrder()} />);
-    expect(screen.getAllByText('pending').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('In queue').length).toBeGreaterThan(0);
   });
 
-  it('renders kitchen_status preparing pill', () => {
+  it('renders kitchen_status preparing pill (humanized)', () => {
     render(<TabletOrderCard order={makeOrder()} />);
-    expect(screen.getByText('preparing')).toBeInTheDocument();
+    expect(screen.getByText('Preparing')).toBeInTheDocument();
   });
 
-  it('renders kitchen_status ready pill', () => {
+  it('renders kitchen_status ready pill (humanized)', () => {
     render(<TabletOrderCard order={makeOrder()} />);
-    expect(screen.getByText('ready')).toBeInTheDocument();
+    expect(screen.getByText('Ready')).toBeInTheDocument();
   });
 
-  it('renders kitchen_status served pill', () => {
+  it('renders kitchen_status served pill (humanized)', () => {
     render(
       <TabletOrderCard
         order={makeOrder({
@@ -97,7 +97,7 @@ describe('TabletOrderCard', () => {
         })}
       />,
     );
-    expect(screen.getByText('served')).toBeInTheDocument();
+    expect(screen.getByText('Served')).toBeInTheDocument();
   });
 
   it('shows Cancel button when status is pending_payment and onCancel provided', () => {

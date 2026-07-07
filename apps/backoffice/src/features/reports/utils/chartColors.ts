@@ -45,6 +45,31 @@ export function familyBase(family: CostFamily): string {
   return family === 'cogs' ? COGS_BASE : OPEX_BASE;
 }
 
+// --- Categorical series (family-agnostic) -----------------------------------
+//
+// Multi-series line / pie charts that don't map to a single cost family
+// (e.g. per-supplier price trends) draw from one shared, mutually-legible
+// hue set instead of ad-hoc per-file hex. Cycles if series exceed length.
+export const CATEGORICAL_SERIES = [
+  'var(--gold-base)', // backoffice accent
+  '#6366f1',          // indigo — familyColor('cogs', 4)
+  '#16a34a',          // green
+  '#dc2626',          // red
+  '#0891b2',          // cyan
+  '#d946ef',          // fuchsia
+] as const;
+
+/** Color for categorical series `i` (cycles). */
+export function categoricalColor(i: number): string {
+  return CATEGORICAL_SERIES[i % CATEGORICAL_SERIES.length]!;
+}
+
+/** Neutral swatch for an "off / disabled" series (legend toggles). */
+export const CHART_SERIES_OFF = '#cbd5e1'; // slate-300
+
+/** Gold accent stroke for a single-series backoffice trend line. */
+export const CHART_ACCENT_GOLD = '#d4a437';
+
 // --- Neutrals (light theme) -------------------------------------------------
 export const CHART_GRID_STROKE = '#e2e7ed'; // --border-muted
 export const CHART_AXIS_STROKE = '#aeb9c6'; // --border-strong

@@ -28,11 +28,11 @@ export function TabletCheckoutButton(): JSX.Element {
         clientUuid: clientUuidRef.current,
       },
       {
-        onSuccess: () => {
+        onSuccess: (orderId) => {
           toast.success('Order sent to kitchen');
           clearCart();
           clientUuidRef.current = crypto.randomUUID();
-          void navigate('/tablet/orders');
+          void navigate('/tablet/orders', { state: { justSentOrderId: orderId } });
         },
         onError: (err) => {
           toast.error(err.message ?? 'Failed to send order');

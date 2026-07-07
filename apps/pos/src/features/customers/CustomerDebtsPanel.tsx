@@ -94,7 +94,8 @@ export default function CustomerDebtsPanel(): JSX.Element {
             </label>
           </div>
           <ul className="flex-1 overflow-y-auto p-2 space-y-1">
-            {isLoading && <li className="text-text-secondary text-sm p-3">Loading…</li>}
+            {isLoading &&
+              Array.from({ length: 5 }).map((_, i) => <DebtSidebarSkeleton key={`debt-skeleton-${i}`} />)}
             {isError && <li className="text-red text-sm p-3">Failed to load debts.</li>}
             {!isLoading && filtered.length === 0 && (
               <li className="p-3">
@@ -138,6 +139,24 @@ export default function CustomerDebtsPanel(): JSX.Element {
         </section>
       </div>
     </div>
+  );
+}
+
+/** Loading placeholder mirroring a debt sidebar item (name + count, amount + age). */
+function DebtSidebarSkeleton(): JSX.Element {
+  return (
+    <li aria-hidden>
+      <div className="w-full rounded-md border border-border-subtle bg-bg-base/40 px-3 py-2.5 motion-safe:animate-pulse">
+        <div className="flex items-center justify-between gap-2">
+          <div className="h-4 w-28 rounded bg-bg-input" />
+          <div className="h-5 w-5 rounded-full bg-bg-input" />
+        </div>
+        <div className="mt-1.5 flex items-center justify-between">
+          <div className="h-3 w-20 rounded bg-bg-input" />
+          <div className="h-3 w-12 rounded bg-bg-input" />
+        </div>
+      </div>
+    </li>
   );
 }
 
