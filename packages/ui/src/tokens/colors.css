@@ -153,7 +153,7 @@
   --red-base:      #d32f2f;
   --red-soft:      rgba(211, 47, 47, 0.10);
   --red-fg:        var(--red-base);
-  --blue-info:     #2d8fe0;     /* lighter sky-blue — distinct from accent */
+  --blue-info:     #1f6fb2;     /* darkened sky-blue → ≈5.3:1 on white (was #2d8fe0 ≈3.4:1, failed AA for text/badge — design audit 2026-07-08, DS B2) */
   --amber-warn:    #b45309;     /* deep amber so it reads on light */
 
   --success:      var(--green-base);

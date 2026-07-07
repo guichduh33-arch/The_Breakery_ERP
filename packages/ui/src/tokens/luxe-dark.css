@@ -13,7 +13,10 @@
   /* Text */
   --text-primary:   #f5f5f7;
   --text-secondary: #a1a1a8;
-  --text-muted:     #6b6b73;
+  /* Raised from #6b6b73 (≈3.75:1, failed AA for text) to clear 4.5:1 on the
+   * card surfaces (bg-base/bg-elevated) while staying distinct from
+   * --text-secondary (design audit 2026-07-08, T2). */
+  --text-muted:     #83838b;
   --text-disabled:  #4a4a52;
 
   /* Accents — --gold-soft/--gold-strong/--gold-fg live in colors.css

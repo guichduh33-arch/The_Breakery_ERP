@@ -7,9 +7,15 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        default: 'border-transparent bg-gold text-bg-base',
-        secondary: 'border-transparent bg-bg-overlay text-text-secondary',
-        destructive: 'border-transparent bg-red text-white',
+        default: 'border-transparent bg-gold text-gold-fg',
+        // Neutral pills use surface-4 (a visible step in BOTH themes) — NOT
+        // bg-overlay, which collapses to #fff on the ivoire card and renders
+        // an invisible white-on-white pill (design audit 2026-07-08, BO F1).
+        secondary: 'border-transparent bg-surface-4 text-text-secondary',
+        // Destructive is tonal like the other semantic chips — white on the
+        // saturated red-base fails AA on the POS (~3.8:1); soft bg + red-fg
+        // passes under both themes (design audit 2026-07-08, DS B1/T1).
+        destructive: 'border-transparent bg-red-soft text-red-fg',
         outline: 'text-text-primary border-border-subtle',
         // Semantic tonal variants (design audit 2026-07-07, DS I-3) — the
         // canonical status chips. Soft token bg + full-strength token text
@@ -18,7 +24,7 @@ const badgeVariants = cva(
         success: 'border-transparent bg-success-soft text-success',
         warning: 'border-transparent bg-warning-soft text-warning',
         info: 'border-transparent bg-info-soft text-info',
-        neutral: 'border-transparent bg-bg-overlay text-text-secondary',
+        neutral: 'border-transparent bg-surface-4 text-text-secondary',
       },
     },
     defaultVariants: { variant: 'default' },
