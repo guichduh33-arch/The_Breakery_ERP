@@ -83,3 +83,36 @@ SELECT ok((SELECT val FROM _r WHERE name='inv1') NOT LIKE 'ERR:%', 'aucune excep
 
 SELECT * FROM finish();
 ROLLBACK;
+
+-- Bloc 3 (Task 3) : backfill idempotent des commandes B2B existantes (ordre + seeding par année).
+BEGIN;
+SELECT plan(4);
+DELETE FROM invoice_sequences WHERE year IN (2025, 2026);
+INSERT INTO orders (order_number, order_type, status, subtotal, tax_amount, total, created_at)
+VALUES
+ ('BF-2026A','b2b','b2b_pending',10000,0,10000,'2026-01-15 10:00+00'),
+ ('BF-2026B','b2b','b2b_pending',20000,0,20000,'2026-06-20 10:00+00'),
+ ('BF-2025A','b2b','b2b_pending',30000,0,30000,'2025-12-10 10:00+00');
+-- Backfill DML (copie exacte de la migration _131)
+DO $$
+DECLARE r RECORD; v_n INTEGER;
+BEGIN
+  FOR r IN SELECT id, EXTRACT(YEAR FROM created_at)::int AS yr
+             FROM orders WHERE order_type='b2b' AND invoice_number IS NULL
+            ORDER BY created_at, id LOOP
+    INSERT INTO invoice_sequences (year, last_number) VALUES (r.yr, 1)
+      ON CONFLICT (year) DO UPDATE SET last_number = invoice_sequences.last_number + 1
+      RETURNING last_number INTO v_n;
+    UPDATE orders SET invoice_number = 'INV/'||r.yr::text||'/'||LPAD(v_n::text,5,'0') WHERE id = r.id;
+  END LOOP;
+END $$;
+SELECT is((SELECT count(*) FROM orders WHERE order_type='b2b' AND invoice_number IS NULL)::int, 0,
+  'aucune commande B2B ne reste sans invoice_number');
+SELECT is((SELECT invoice_number FROM orders WHERE order_number='BF-2025A'), 'INV/2025/00001',
+  'commande 2025 = INV/2025/00001 (seeding par année)');
+SELECT is((SELECT invoice_number FROM orders WHERE order_number='BF-2026A'), 'INV/2026/00001',
+  'commande 2026 la plus ancienne = INV/2026/00001');
+SELECT is((SELECT invoice_number FROM orders WHERE order_number='BF-2026B'), 'INV/2026/00002',
+  'commande 2026 suivante = INV/2026/00002 (ordre created_at)');
+SELECT * FROM finish();
+ROLLBACK;
