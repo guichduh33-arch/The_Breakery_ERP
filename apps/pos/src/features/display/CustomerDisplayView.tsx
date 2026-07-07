@@ -102,10 +102,79 @@ export interface CustomerDisplayViewProps {
   footer?: string;
 }
 
+// ── Density ──────────────────────────────────────────────────────────
+//
+// The order mirror must show the WHOLE order at a glance — a scrollbar on a
+// customer-facing screen is a bug, not a feature. Rows therefore compress as
+// the line count grows so the list keeps fitting the panel height. Four tiers
+// cover every realistic bakery order (a scrollbar remains only as a last-resort
+// safety net for pathological counts — we never clip order lines).
+
+type Density = 'comfortable' | 'cozy' | 'compact' | 'dense';
+
+interface DensityConfig {
+  /** Gap between rows in the list. */
+  listGap: string;
+  /** Row: inner gap + horizontal/vertical padding. */
+  row: string;
+  /** Thumbnail square. */
+  thumb: string;
+  /** Product name text size. */
+  name: string;
+  /** Meta / modifier text size. */
+  meta: string;
+  /** Line-total text size. */
+  total: string;
+}
+
+const DENSITY: Record<Density, DensityConfig> = {
+  comfortable: {
+    listGap: 'gap-3',
+    row: 'gap-5 px-6 py-5',
+    thumb: 'w-20 h-20',
+    name: 'text-2xl',
+    meta: 'text-sm',
+    total: 'text-2xl',
+  },
+  cozy: {
+    listGap: 'gap-2.5',
+    row: 'gap-4 px-5 py-4',
+    thumb: 'w-16 h-16',
+    name: 'text-xl',
+    meta: 'text-sm',
+    total: 'text-xl',
+  },
+  compact: {
+    listGap: 'gap-2',
+    row: 'gap-4 px-4 py-3',
+    thumb: 'w-12 h-12',
+    name: 'text-lg',
+    meta: 'text-xs',
+    total: 'text-lg',
+  },
+  dense: {
+    listGap: 'gap-1.5',
+    row: 'gap-3 px-4 py-2',
+    thumb: 'w-10 h-10',
+    name: 'text-base',
+    meta: 'text-xs',
+    total: 'text-base',
+  },
+};
+
+/** Pick a density tier from the number of order lines. */
+function densityFor(count: number): Density {
+  if (count <= 3) return 'comfortable';
+  if (count <= 6) return 'cozy';
+  if (count <= 10) return 'compact';
+  return 'dense';
+}
+
 // ── Subcomponents ────────────────────────────────────────────────────
 
 interface LineRowProps {
   line: CustomerDisplayLine;
+  density: DensityConfig;
 }
 
 /**
@@ -113,18 +182,24 @@ interface LineRowProps {
  * meta + total. Sized for a SECONDARY MONITOR — base font is up-scaled so a
  * customer standing at the counter can read it from ~1.5m.
  */
-function LineRow({ line }: LineRowProps): JSX.Element {
+function LineRow({ line, density }: LineRowProps): JSX.Element {
   const isCancelled = line.is_cancelled === true;
   const modifiers = line.modifiers ?? [];
   return (
     <li
-      className="flex items-center gap-5 rounded-3xl border border-border-subtle bg-bg-elevated px-6 py-5"
+      className={
+        'flex items-center rounded-3xl border border-border-subtle bg-bg-elevated ' +
+        density.row
+      }
       data-testid="display-line-row"
       data-line-id={line.id}
     >
-      {/* Photo / fallback ─ 80px square */}
+      {/* Photo / fallback ─ scales with density */}
       <div
-        className="flex-none w-20 h-20 rounded-2xl overflow-hidden border border-border-subtle bg-bg-base flex items-center justify-center"
+        className={
+          'flex-none rounded-2xl overflow-hidden border border-border-subtle bg-bg-base flex items-center justify-center ' +
+          density.thumb
+        }
         aria-hidden="true"
       >
         {line.image_url ? (
@@ -144,7 +219,8 @@ function LineRow({ line }: LineRowProps): JSX.Element {
         <div className="flex items-baseline gap-3">
           <h3
             className={
-              'font-display text-2xl text-text-primary truncate' +
+              'font-display text-text-primary truncate ' +
+              density.name +
               (isCancelled ? ' line-through text-text-muted' : '')
             }
             data-testid="display-line-name"
@@ -176,7 +252,8 @@ function LineRow({ line }: LineRowProps): JSX.Element {
               <li
                 key={`${line.id}-mod-${idx}`}
                 className={
-                  'text-sm text-text-secondary' +
+                  density.meta +
+                  ' text-text-secondary' +
                   (isCancelled ? ' line-through text-text-muted' : '')
                 }
                 data-testid="display-line-modifier"
@@ -196,7 +273,7 @@ function LineRow({ line }: LineRowProps): JSX.Element {
             ))}
           </ul>
         )}
-        <p className="text-sm text-text-secondary font-mono">
+        <p className={density.meta + ' text-text-secondary font-mono'}>
           <span data-testid="display-line-qty">{line.quantity}</span>
           <span className="mx-2 text-text-muted">×</span>
           <Currency amount={line.unit_price} className="text-text-secondary" />
@@ -208,7 +285,8 @@ function LineRow({ line }: LineRowProps): JSX.Element {
         <Currency
           amount={line.line_total}
           className={
-            'text-2xl text-text-primary' +
+            density.total +
+            ' text-text-primary' +
             (isCancelled ? ' line-through text-text-muted' : '')
           }
         />
@@ -277,6 +355,8 @@ export function CustomerDisplayView({
   footer,
 }: CustomerDisplayViewProps): JSX.Element {
   const hasItems = items.length > 0;
+  const density = densityFor(items.length);
+  const densityCfg = DENSITY[density];
 
   return (
     <BrandedLayout
@@ -327,12 +407,20 @@ export function CustomerDisplayView({
               </div>
             )}
             <ul
-              className="flex-1 min-h-0 flex flex-col gap-3 overflow-y-auto pr-2"
+              className={
+                'flex-1 min-h-0 flex flex-col pr-2 ' +
+                densityCfg.listGap +
+                // Density keeps realistic orders on-screen; a scrollbar remains
+                // only as a last-resort safety net at the densest tier so we
+                // never clip order lines on a pathological count.
+                (density === 'dense' ? ' overflow-y-auto' : ' overflow-y-hidden')
+              }
               data-testid="display-line-list"
+              data-density={density}
               aria-label="Order items"
             >
               {items.map((line) => (
-                <LineRow key={line.id} line={line} />
+                <LineRow key={line.id} line={line} density={densityCfg} />
               ))}
             </ul>
             {totals !== undefined && <TotalsBand totals={totals} />}
