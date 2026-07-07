@@ -5,8 +5,8 @@ import type { EditableModifierGroup } from '@breakery/domain';
 const mutate = vi.fn();
 const loadData: { current: EditableModifierGroup[] } = { current: [] };
 
-vi.mock('@/features/purchasing/hooks/useAllProductsForPO.js', () => ({
-  useAllProductsForPO: () => ({ data: [], isLoading: false }),
+vi.mock('@/features/products/hooks/useDeductibleIngredientProducts.js', () => ({
+  useDeductibleIngredientProducts: () => ({ data: [], isLoading: false }),
 }));
 vi.mock('../../hooks/useProductModifiersAdmin.js', () => ({
   useProductModifiersAdmin: () => ({ data: loadData.current, isLoading: false }),

@@ -23,11 +23,11 @@ vi.mock('@/features/products/hooks/useProductModifiersAdmin.js', () => ({
   }),
 }));
 
-vi.mock('@/features/purchasing/hooks/useAllProductsForPO.js', () => ({
-  useAllProductsForPO: () => ({
+vi.mock('@/features/products/hooks/useDeductibleIngredientProducts.js', () => ({
+  useDeductibleIngredientProducts: () => ({
     data: [
-      { id: 'milk-fresh', name: 'Fresh Milk', unit: 'ml', cost_price: 20, unitOptions: [{ code: 'ml', factor: 1 }] },
-      { id: 'milk-oat', name: 'Oat Milk', unit: 'ml', cost_price: 50, unitOptions: [{ code: 'ml', factor: 1 }] },
+      { id: 'milk-fresh', name: 'Fresh Milk', unit: 'ml', cost_price: 20, unitOptions: [{ code: 'ml', factor: 1 }], is_semi_finished: false },
+      { id: 'milk-oat', name: 'Oat Milk', unit: 'ml', cost_price: 50, unitOptions: [{ code: 'ml', factor: 1 }], is_semi_finished: false },
     ],
     isLoading: false,
   }),

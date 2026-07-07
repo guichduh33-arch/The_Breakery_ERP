@@ -102,8 +102,8 @@ vi.mock('@/features/products/hooks/useProductModifiersAdmin.js', () => ({
   useProductModifiersAdmin: (_productId: string) => ({ data: [], isLoading: false }),
 }));
 
-vi.mock('@/features/purchasing/hooks/useAllProductsForPO.js', () => ({
-  useAllProductsForPO: () => ({ data: [], isLoading: false }),
+vi.mock('@/features/products/hooks/useDeductibleIngredientProducts.js', () => ({
+  useDeductibleIngredientProducts: () => ({ data: [], isLoading: false }),
 }));
 
 // ── Product fixture ───────────────────────────────────────────────────────────

@@ -2,8 +2,8 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import type { EditableModifierGroup } from '@breakery/domain';
 
-vi.mock('@/features/purchasing/hooks/useAllProductsForPO.js', () => ({
-  useAllProductsForPO: () => ({ data: [], isLoading: false }),
+vi.mock('@/features/products/hooks/useDeductibleIngredientProducts.js', () => ({
+  useDeductibleIngredientProducts: () => ({ data: [], isLoading: false }),
 }));
 
 import { ModifierGroupCard } from '../ModifierGroupCard.js';
