@@ -1,6 +1,15 @@
 ---
 name: accounting
-description: Accounting cockpit expert — COA, journal entries, PB1 (NON-PKP, ADR-003), fiscal periods, general ledger, trial balance. Audit JE balance/mapping/fiscal-guard AND guide accounting changes.
+description: >-
+  Accounting cockpit expert — COA, journal entries, PB1 (NON-PKP, ADR-003), fiscal periods
+  & year close, general ledger, trial balance, P&L, balance sheet, mapping accounts. Audits
+  JE balance/mapping/fiscal-guard AND guides accounting changes. Use this skill whenever the
+  task mentions journal entry / écriture comptable / JE, COA / plan comptable, PB1, PPN, TVA,
+  NON-PKP, fiscal period / période fiscale, clôture annuelle / year close, general ledger /
+  grand livre, trial balance / balance, COGS, retained earnings, mapping account, compta /
+  comptabilité — or touches apps/backoffice accounting features/pages,
+  SettingsAccountingPage, or supabase migrations/tests around journal/fiscal/ledger/pb1.
+  Invoke it BEFORE editing any JE-emitting RPC or accounting report, even for a one-line fix.
 pathPatterns:
   - 'apps/backoffice/src/features/accounting/**'
   - 'apps/backoffice/src/pages/accounting/**'

@@ -67,10 +67,15 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
   const setOrderType = useCartStore((s) => s.setOrderType);
   const appliedPromotions = useCartStore((s) => s.appliedPromotions);
 
+  // Tax estimated at the SERVER rate (useTaxRate) — the money-path RPC charges
+  // this same rate; no hardcoded 0.10 on the encaissement path. Also feeds the
+  // customer-display mirror's "Tax included" line.
+  const taxRate = useTaxRate();
+
   // ── orchestrators anchored here (single source of truth) ─────────────────
   usePromotionsAutoEval();
   usePromotionsRealtime();
-  useCartBroadcast();
+  useCartBroadcast(taxRate);
 
   // ── per-line cancel (tablet pickups) ─────────────────────────────────────
   const [cancelTarget, setCancelTarget] = useState<CartItem | null>(null);
@@ -80,9 +85,6 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
   const lineDiscount = useApplyLineDiscount();
 
   // ── totals (promo applied after base, never negative) ────────────────────
-  // Tax estimated at the SERVER rate (useTaxRate) — the money-path RPC charges
-  // this same rate; no hardcoded 0.10 on the encaissement path.
-  const taxRate = useTaxRate();
   const baseTotals = calculateTotals(cart, taxRate);
   const promotionTotal = appliedPromotions.reduce((s, ap) => s + ap.amount, 0);
   const total = Math.max(0, baseTotals.total - promotionTotal);
@@ -142,10 +144,19 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
           <div className="flex items-center gap-2 text-sm text-text-secondary">
             {cart.order_type === 'dine_in' && (
               <>
-                <span className="flex items-center gap-1">
-                  <MapPin className="h-4 w-4 text-gold" aria-hidden />
-                  {cart.tableNumber ? `Table ${cart.tableNumber}` : 'No table'}
-                </span>
+                {/* Fiche 02 D2.5 — dine-in requires a table: missing state reads
+                    as a warning, not a neutral fact (fire/checkout will block). */}
+                {cart.tableNumber ? (
+                  <span className="flex items-center gap-1">
+                    <MapPin className="h-4 w-4 text-gold" aria-hidden />
+                    Table {cart.tableNumber}
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1 text-amber-warn font-semibold">
+                    <MapPin className="h-4 w-4" aria-hidden />
+                    Table required
+                  </span>
+                )}
                 <span className="text-border-subtle" aria-hidden>•</span>
               </>
             )}

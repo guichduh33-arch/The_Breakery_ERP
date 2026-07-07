@@ -47,7 +47,7 @@
 ## Project Conventions (The Breakery ERP)
 
 ### Critical patterns — don't break these
-- **DB target is Supabase cloud, NOT local Docker** — As of 2026-05-14, Docker / local supabase stack is **retired** on this machine. All migrations, RPCs, pgTAP tests, and types regen run against the V3 dev project on the cloud: **`ikcyvlovptebroadgtvd`** (`the-breakery-v3-dev`, region `ap-southeast-1`, Pro plan $10/mo) — dashboard: <https://supabase.com/dashboard/project/ikcyvlovptebroadgtvd>. Apply migrations via `mcp__plugin_supabase_supabase__apply_migration`, run SQL via `execute_sql`, regen types via `generate_typescript_types`. **DO NOT run** `pnpm db:reset`, `supabase start`, `supabase db reset`, or `bash supabase/tests/run_pgtap.sh` — they require Docker and will fail. Prod (ref `abjabuniwkqpfsenxljp`) is V2 monolith and incompatible with V3 migration lineage.
+- **DB target is Supabase cloud, NOT local Docker** — As of 2026-05-14, Docker / local supabase stack is **retired** on this machine. All migrations, RPCs, pgTAP tests, and types regen run against the V3 dev project on the cloud: **`ikcyvlovptebroadgtvd`** (`the-breakery-v3-dev`, region `ap-southeast-1`, Pro plan $10/mo) — dashboard: <https://supabase.com/dashboard/project/ikcyvlovptebroadgtvd>. Apply migrations via `mcp__claude_ai_Supabase__apply_migration`, run SQL via `execute_sql`, regen types via `generate_typescript_types`. **DO NOT run** `pnpm db:reset`, `supabase start`, `supabase db reset`, or `bash supabase/tests/run_pgtap.sh` — they require Docker and will fail. Prod (ref `abjabuniwkqpfsenxljp`) is V2 monolith and incompatible with V3 migration lineage.
 - **PIN auth fetch wrapper** — the `auth-verify-pin` EF issues HS256 JWTs that GoTrue (ES256) can't validate via the default header. The Supabase client uses a custom fetch wrapper that injects the PIN JWT on every request via `setSupabaseAccessToken` (in `packages/supabase`). Never bypass with raw `Authorization` headers or `auth.setSession`.
 - **Realtime channel names must be unique per mount** — StrictMode double-mounts components and shared channel names collide silently. See `apps/pos/src/features/kds/hooks/useKdsRealtime.ts`.
 - **`packages/domain` is IO-free** — no `fetch`, no Supabase, no React. Pure TS, unit-testable.
@@ -133,7 +133,7 @@ Reach for a multi-agent swarm (3+ agents) on: new features, cross-module refacto
 
 ### Project agents & skills (The Breakery — adaptés au projet)
 
-The repo versions a **specialized team** (PR #55). **Agents** (`.claude/agents/*.md`) are spawnable via the Agent tool ; **skills** (`.claude/skills/<name>/SKILL.md`) auto-trigger by `pathPatterns`/`promptSignals` when you touch their domain. Each points back to this CLAUDE.md as the source of truth and verifies the real schema (migrations/MCP) before asserting a fact.
+The repo versions a **specialized team** (PR #55). **Agents** (`.claude/agents/*.md`) are spawnable via the Agent tool ; **skills** (`.claude/skills/<name>/SKILL.md`) auto-trigger via their frontmatter `description` ONLY (the harness matches the prompt against it — `pathPatterns`/`promptSignals` are inert metadata, kept as documentation ; descriptions rewritten "pushy" with FR+EN trigger phrases 2026-07-07). Each points back to this CLAUDE.md as the source of truth and verifies the real schema (migrations/MCP) before asserting a fact.
 
 **Agents** (`.claude/agents/`) :
 - `pos-specialist` (sonnet) — `apps/pos/`
@@ -153,6 +153,27 @@ The repo versions a **specialized team** (PR #55). **Agents** (`.claude/agents/*
 
 Design : `docs/superpowers/specs/2026-05-31-agents-skills-team-design.md` (spec) + `docs/superpowers/plans/2026-05-31-agents-skills-team.md` (plan). `.gitignore` versions the root `.md` files of `.claude/agents/` ; the ruflo subfolders stay ignored.
 
+### Plugin skill routing (MANDATORY — invoke BEFORE acting)
+
+Plugin skills under-trigger by default. On this project, route these task shapes to their plugin skill **before** any other action (their descriptions live in the plugin cache and can't be tuned — this table is the trigger) :
+
+| Si la tâche est… | Invoque D'ABORD |
+|---|---|
+| Nouvelle feature / « ajoute / crée / construis X » | `superpowers:brainstorming` puis `feature-dev:feature-dev` |
+| Bug, test rouge, comportement inattendu (« ça marche pas », « pourquoi ça fait ça ») | `superpowers:systematic-debugging` |
+| Implémenter une feature/bugfix (après brainstorm/plan) | `superpowers:test-driven-development` |
+| Exécuter un plan daté (`docs/workplan/plans/*.md`) | `superpowers:subagent-driven-development` ou `superpowers:executing-plans` |
+| « C'est fini / ça passe / prêt à merger » — avant toute affirmation de succès | `superpowers:verification-before-completion` puis `superpowers:requesting-code-review` |
+| Branche terminée, décider merge/PR/cleanup | `superpowers:finishing-a-development-branch` |
+| Revue du diff courant / d'une PR | `code-review` intégré (`/code-review`, PR → `/review`) |
+| Simplifier/refactorer du code récent sans changer le comportement | `simplify` intégré (`/simplify`) |
+| Question sur une lib/framework/SDK (React, Supabase, Tailwind…) | `find-docs` (Context7) — jamais de mémoire d'entraînement |
+| Nouvelle UI visuelle (pas POS) | `frontend-design:frontend-design` (POS → `pos-design-craft` local) |
+| CLAUDE.md à auditer/mettre à jour | `claude-md-management:*` |
+| Créer/modifier une skill | `skill-creator:skill-creator` |
+
+Le tableau complète (ne remplace pas) la règle superpowers « 1% de chance qu'une skill s'applique → invoque-la ».
+
 ## Build & Test
 
 - ALWAYS run tests after code changes
@@ -170,10 +191,12 @@ All DB operations target the cloud V3 dev project `ikcyvlovptebroadgtvd`. **Do N
 
 | Operation | MCP tool | Notes |
 |---|---|---|
-| Apply migration | `mcp__plugin_supabase_supabase__apply_migration` | `project_id='ikcyvlovptebroadgtvd'`, `name` in snake_case, body = SQL. Wrapped in transaction. |
-| Run SQL (incl. pgTAP) | `mcp__plugin_supabase_supabase__execute_sql` | Use `BEGIN ... ROLLBACK` envelope for pgTAP. Extension `pgtap` already enabled. |
-| Regen types | `mcp__plugin_supabase_supabase__generate_typescript_types` | Returns `{ types: "..." }` — write to `packages/supabase/src/types.generated.ts` and commit. |
-| Check drift | `mcp__plugin_supabase_supabase__list_migrations` | Compares `supabase_migrations.schema_migrations` to local. |
+> ⚠️ Le serveur MCP Supabase actif est le **connecteur claude.ai** (préfixe `mcp__claude_ai_Supabase__`) — le plugin `supabase@claude-plugins-official` (préfixe `mcp__plugin_supabase_supabase__`) est présent en cache mais **désactivé** (2026-07-07). Si le préfixe change, chercher les outils via ToolSearch("supabase apply migration").
+
+| Apply migration | `mcp__claude_ai_Supabase__apply_migration` | `project_id='ikcyvlovptebroadgtvd'`, `name` in snake_case, body = SQL. Wrapped in transaction. |
+| Run SQL (incl. pgTAP) | `mcp__claude_ai_Supabase__execute_sql` | Use `BEGIN ... ROLLBACK` envelope for pgTAP. Extension `pgtap` already enabled. |
+| Regen types | `mcp__claude_ai_Supabase__generate_typescript_types` | Returns `{ types: "..." }` — write to `packages/supabase/src/types.generated.ts` and commit. |
+| Check drift | `mcp__claude_ai_Supabase__list_migrations` | Compares `supabase_migrations.schema_migrations` to local. |
 | Direct psql (rare) | `postgresql://postgres.ikcyvlovptebroadgtvd:<URL_ENCODED_PWD>@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres` | Always go through the pooler — `db.<ref>.supabase.co` has no DNS A record. |
 
 Dashboard: <https://supabase.com/dashboard/project/ikcyvlovptebroadgtvd>
@@ -185,7 +208,7 @@ pnpm --filter @breakery/backoffice test inventory   # BO smoke + unit
 pnpm --filter @breakery/domain test inventory       # pure-TS unit
 ```
 
-After Supabase schema changes (new migration via MCP `apply_migration`), **always** regen types via `mcp__plugin_supabase_supabase__generate_typescript_types`, write to `packages/supabase/src/types.generated.ts`, and commit. A missing regen is the #1 cause of broken CI on this repo.
+After Supabase schema changes (new migration via MCP `apply_migration`), **always** regen types via `mcp__claude_ai_Supabase__generate_typescript_types`, write to `packages/supabase/src/types.generated.ts`, and commit. A missing regen is the #1 cause of broken CI on this repo.
 
 ### Inventory phase test layout
 - pgTAP (DB): `supabase/tests/inventory.test.sql` (steady-state suite) + `supabase/tests/inventory_phase1_complete.test.sql` (phase 1 acceptance — T1-T15+).

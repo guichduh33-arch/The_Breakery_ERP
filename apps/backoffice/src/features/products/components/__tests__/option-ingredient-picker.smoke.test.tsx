@@ -3,11 +3,12 @@ import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { afterEach } from 'vitest';
 import type { ModifierIngredient } from '@breakery/domain';
 
-vi.mock('@/features/purchasing/hooks/useAllProductsForPO.js', () => ({
-  useAllProductsForPO: () => ({
+vi.mock('../../hooks/useDeductibleIngredientProducts.js', () => ({
+  useDeductibleIngredientProducts: () => ({
     data: [
-      { id: 'oat', name: 'Oat Milk', unit: 'ml', cost_price: 50, unitOptions: [{ code: 'ml', factor: 1 }, { code: 'L', factor: 1000 }] },
-      { id: 'sugar', name: 'Sugar', unit: 'g', cost_price: 10, unitOptions: [{ code: 'g', factor: 1 }] },
+      { id: 'oat', name: 'Oat Milk', unit: 'ml', cost_price: 50, unitOptions: [{ code: 'ml', factor: 1 }, { code: 'L', factor: 1000 }], is_semi_finished: false },
+      { id: 'sugar', name: 'Sugar', unit: 'g', cost_price: 10, unitOptions: [{ code: 'g', factor: 1 }], is_semi_finished: false },
+      { id: 'mozza', name: 'Mozzarella Prep', unit: 'g', cost_price: 120, unitOptions: [{ code: 'g', factor: 1 }], is_semi_finished: true },
     ],
     isLoading: false,
   }),
@@ -20,7 +21,7 @@ afterEach(cleanup);
 describe('OptionIngredientPicker', () => {
   it('renders existing ingredient rows', () => {
     const value: ModifierIngredient[] = [{ product_id: 'oat', qty: 30, unit: 'ml' }];
-    render(<OptionIngredientPicker value={value} onChange={() => {}} />);
+    render(<OptionIngredientPicker value={value} onChange={vi.fn()} />);
     expect(screen.getByDisplayValue('30')).toBeInTheDocument();
   });
 
@@ -47,7 +48,26 @@ describe('OptionIngredientPicker', () => {
       { product_id: 'oat', qty: 30, unit: 'ml' },
       { product_id: 'sugar', qty: 4, unit: 'g' },
     ];
-    render(<OptionIngredientPicker value={value} onChange={() => {}} />);
+    render(<OptionIngredientPicker value={value} onChange={vi.fn()} />);
     expect(screen.getByTestId('option-material-cost').textContent).toContain('1.540');
+  });
+
+  it('groups the select into Raw materials / Semi-finished and offers SFG products', () => {
+    const value: ModifierIngredient[] = [{ product_id: 'oat', qty: 30, unit: 'ml' }];
+    render(<OptionIngredientPicker value={value} onChange={vi.fn()} />);
+    const select = screen.getByRole('combobox', { name: 'Ingredient' });
+    const groups = select.querySelectorAll('optgroup');
+    expect([...groups].map((g) => g.label)).toEqual(['Raw materials', 'Semi-finished']);
+    expect(screen.getByRole('option', { name: 'Mozzarella Prep' })).toBeInTheDocument();
+  });
+
+  it('selecting a semi-finished product updates the row and its material cost (WAC)', () => {
+    const onChange = vi.fn();
+    const value: ModifierIngredient[] = [{ product_id: 'oat', qty: 30, unit: 'ml' }];
+    render(<OptionIngredientPicker value={value} onChange={onChange} />);
+    fireEvent.change(screen.getByRole('combobox', { name: 'Ingredient' }), {
+      target: { value: 'mozza' },
+    });
+    expect(onChange).toHaveBeenCalledWith([{ product_id: 'mozza', qty: 30, unit: 'g' }]);
   });
 });

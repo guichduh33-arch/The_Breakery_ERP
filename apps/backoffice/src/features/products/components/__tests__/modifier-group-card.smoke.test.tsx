@@ -2,8 +2,8 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import type { EditableModifierGroup } from '@breakery/domain';
 
-vi.mock('@/features/purchasing/hooks/useAllProductsForPO.js', () => ({
-  useAllProductsForPO: () => ({ data: [], isLoading: false }),
+vi.mock('@/features/products/hooks/useDeductibleIngredientProducts.js', () => ({
+  useDeductibleIngredientProducts: () => ({ data: [], isLoading: false }),
 }));
 
 import { ModifierGroupCard } from '../ModifierGroupCard.js';
@@ -23,7 +23,7 @@ const GROUP: EditableModifierGroup = {
 
 describe('ModifierGroupCard', () => {
   it('renders the group name and options', () => {
-    render(<ModifierGroupCard group={GROUP} onChange={() => {}} onRemove={() => {}} />);
+    render(<ModifierGroupCard group={GROUP} onChange={vi.fn()} onRemove={vi.fn()} />);
     expect(screen.getByDisplayValue('Milk')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Fresh')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Oat')).toBeInTheDocument();
@@ -31,14 +31,14 @@ describe('ModifierGroupCard', () => {
 
   it('bubbles a group name edit', () => {
     const onChange = vi.fn();
-    render(<ModifierGroupCard group={GROUP} onChange={onChange} onRemove={() => {}} />);
+    render(<ModifierGroupCard group={GROUP} onChange={onChange} onRemove={vi.fn()} />);
     fireEvent.change(screen.getByDisplayValue('Milk'), { target: { value: 'Milk type' } });
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ group_name: 'Milk type' }));
   });
 
   it('adds an option', () => {
     const onChange = vi.fn();
-    render(<ModifierGroupCard group={GROUP} onChange={onChange} onRemove={() => {}} />);
+    render(<ModifierGroupCard group={GROUP} onChange={onChange} onRemove={vi.fn()} />);
     fireEvent.click(screen.getByRole('button', { name: /add option/i }));
     const next = onChange.mock.calls[0]![0] as EditableModifierGroup;
     expect(next.options).toHaveLength(3);
@@ -46,7 +46,7 @@ describe('ModifierGroupCard', () => {
 
   it('switching default in single-select makes exactly one default', () => {
     const onChange = vi.fn();
-    render(<ModifierGroupCard group={GROUP} onChange={onChange} onRemove={() => {}} />);
+    render(<ModifierGroupCard group={GROUP} onChange={onChange} onRemove={vi.fn()} />);
     const radios = screen.getAllByRole('radio');
     fireEvent.click(radios[1]!); // make "Oat" the default
     const next = onChange.mock.calls[0]![0] as EditableModifierGroup;
@@ -55,7 +55,7 @@ describe('ModifierGroupCard', () => {
 
   it('removes the group', () => {
     const onRemove = vi.fn();
-    render(<ModifierGroupCard group={GROUP} onChange={() => {}} onRemove={onRemove} />);
+    render(<ModifierGroupCard group={GROUP} onChange={vi.fn()} onRemove={onRemove} />);
     fireEvent.click(screen.getByRole('button', { name: /remove (variant type|group)/i }));
     expect(onRemove).toHaveBeenCalledTimes(1);
   });

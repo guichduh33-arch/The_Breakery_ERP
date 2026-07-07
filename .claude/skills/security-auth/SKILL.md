@@ -1,6 +1,15 @@
 ---
 name: security-auth
-description: Security & auth expert — RLS, REVOKE/anon defense-in-depth, permission gates, PIN JWT fetch wrapper, durable rate-limit, per-role session timeout. Audit security posture AND guide auth changes.
+description: >-
+  Security & auth expert — RLS, REVOKE/anon defense-in-depth, permission gates, PIN JWT
+  fetch wrapper, durable rate-limit, per-role session timeout. Audits security posture AND
+  guides auth changes. Use this skill whenever the task mentions RLS, REVOKE, GRANT, anon,
+  permission / has_permission / role_permissions / RBAC / PermissionGate, PIN, lockout,
+  JWT, rate limit, session timeout, SECURITY DEFINER, login / connexion, role / rôle,
+  security / sécurité, auth / authentification — or touches apps auth/rbac features,
+  Settings Security pages, supabase functions auth-*, or migrations touching
+  rls/permission/rate_limit. Invoke it BEFORE creating any new RPC gate, granting anything
+  to anon/authenticated, or relaxing RLS — even for a one-line migration.
 pathPatterns:
   - 'apps/*/src/features/auth/**'
   - 'apps/backoffice/src/features/rbac/**'

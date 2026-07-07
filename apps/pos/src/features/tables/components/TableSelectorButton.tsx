@@ -4,13 +4,20 @@
 // circles + status badges) instead of the legacy grid TableSelectorModal.
 // The legacy modal lives in @breakery/ui and is still used by the tablet
 // shell, so it stays — we just switch the POS-shell entry point.
+//
+// Fiche 02 D2.5 — the floor plan now also drives TABLE TRANSFERS: tapping an
+// occupied table offers "Transfer order" → pick a free destination → RPC
+// transfer_order_table_v1 (audited server-side as order.table_transfer).
 
 import { useState, type ComponentProps } from 'react';
 import { MapPin } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@breakery/ui';
 import { useCartStore } from '@/stores/cartStore';
 import { useRestaurantTables } from '../hooks/useRestaurantTables';
 import { useTableOccupancy } from '../hooks/useTableOccupancy';
+import { useTableOrders } from '../hooks/useTableOrders';
+import { useTransferOrderTable } from '../hooks/useTransferOrderTable';
 import { FloorPlanModal } from '@/features/floor-plan/FloorPlanModal';
 
 interface TableSelectorButtonProps {
@@ -25,6 +32,8 @@ export function TableSelectorButton({ className, variant }: TableSelectorButtonP
   const setTableNumber = useCartStore((s) => s.setTableNumber);
   const { data: tables = [] } = useRestaurantTables();
   const occupancy = useTableOccupancy();
+  const { data: tableOrders = {} } = useTableOrders(open);
+  const transfer = useTransferOrderTable();
 
   const label = tableNumber ? `Table: ${tableNumber}` : 'Pick table';
 
@@ -47,6 +56,22 @@ export function TableSelectorButton({ className, variant }: TableSelectorButtonP
         tables={tables}
         occupancy={occupancy}
         initialSelection={tableNumber ?? null}
+        tableOrders={tableOrders}
+        onTransfer={async ({ orderId, orderNumber, fromTable, toTable }) => {
+          try {
+            await transfer.mutateAsync({ orderId, toTable });
+            // Keep the cart in sync when the moved order is the one on-screen
+            // (reopened order whose table the cashier just changed).
+            if (useCartStore.getState().cart.tableNumber === fromTable) {
+              setTableNumber(toTable);
+            }
+            toast.success(`Order ${orderNumber} moved: ${fromTable} → ${toTable}`);
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : 'transfer_failed';
+            toast.error(`Table transfer failed: ${msg}`);
+            throw err;
+          }
+        }}
       />
     </>
   );

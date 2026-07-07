@@ -36,7 +36,7 @@ const { rpcMock } = vi.hoisted(() => ({ rpcMock: vi.fn() }));
 
 vi.mock('@/lib/supabase', () => ({
   supabase: {
-    rpc: (...a: unknown[]) => rpcMock(...a),
+    rpc: (...a: unknown[]): unknown => rpcMock(...a) as unknown,
     auth: { getSession: vi.fn().mockResolvedValue({ data: { session: { access_token: 'tok' } } }) },
   },
   supabaseUrl: 'http://localhost:54321',
@@ -105,6 +105,8 @@ describe('SendToKitchenButton — fire to stations smoke', () => {
           { id: 'line-kitchen', product_id: 'p-kitchen', name: 'Omelette', unit_price: 45_000, quantity: 1, modifiers: [] },
         ],
         order_type: 'dine_in',
+        // Fiche 02 D2.5 — dine-in fires require a table (useDineInTableGuard).
+        tableNumber: 'T-01',
       },
       printedItemIds: [],
       lockedItemIds: [],
@@ -122,7 +124,7 @@ describe('SendToKitchenButton — fire to stations smoke', () => {
       isAuthenticated: true,
       isLoading: false,
       error: null,
-    } as never);
+    });
   });
 
   afterEach(() => {
@@ -140,6 +142,7 @@ describe('SendToKitchenButton — fire to stations smoke', () => {
 
     await act(async () => {
       btn.click();
+      await Promise.resolve();
     });
 
     // Wait for mutation to complete (button returns to non-pending).

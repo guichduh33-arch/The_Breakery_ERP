@@ -1,6 +1,14 @@
 ---
 name: b2b-credit
-description: B2B credit & AR expert — AR aging, b2b_payments ledger, credit-limit gate, B2B orders, FIFO allocation. Audit AR integrity AND guide B2B changes.
+description: >-
+  B2B credit & AR expert — AR aging, b2b_payments ledger + b2b_payment_allocations,
+  credit-limit gate, B2B orders/invoices, FIFO allocation, cancel & reconcile. Audits AR
+  integrity AND guides B2B changes. Use this skill whenever the task mentions B2B, client
+  compte / account customer, facture / invoice B2B, AR / accounts receivable / créances,
+  credit limit / plafond de crédit / encours, b2b_pending, record_b2b_payment,
+  create_b2b_order, allocation FIFO, balance B2B, règlement fournisseur de facture B2B — or
+  touches apps/backoffice features/btob, the POS B2B debts flow, or any supabase
+  migration/test with b2b in the name. Invoke it BEFORE editing any AR/credit RPC.
 pathPatterns:
   - 'apps/backoffice/src/features/btob/**'
   - 'apps/pos/src/features/**/*b2b*'

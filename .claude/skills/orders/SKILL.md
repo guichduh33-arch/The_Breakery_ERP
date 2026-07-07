@@ -1,6 +1,16 @@
 ---
 name: orders
-description: Orders domain expert — order lifecycle, list v2 server-filters, edit-items RPCs, void/refund, realtime. Cross-app business logic (POS writes + BO management). Distinct from pos-specialist (POS UI surface) and backoffice-specialist (BO UI surface).
+description: >-
+  Orders domain expert — order lifecycle, list v2 server-filters, edit-items RPCs,
+  void/refund, realtime. Cross-app business logic (POS writes + BO management); distinct
+  from pos-specialist (POS UI surface) and backoffice-specialist (BO UI surface). Use this
+  skill whenever the task mentions order(s) / commande(s), statut de commande, void /
+  annulation, refund / remboursement, pending_payment, held order / commande en attente,
+  ardoise, complete_order_with_payment, pay_existing_order, fire_counter_order,
+  create_tablet_order, order items / lignes de commande, totaux de commande, orders
+  realtime — or touches apps/backoffice features/orders, POS order-history, or any supabase
+  migration/test with order in the name. Invoke it BEFORE editing any order lifecycle RPC
+  or status transition, even a small one.
 pathPatterns:
   - 'apps/backoffice/src/features/orders/**'
   - 'apps/backoffice/src/pages/**/Order*'

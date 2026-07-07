@@ -7660,6 +7660,10 @@ export type Database = {
       todo_start:
         | { Args: never; Returns: boolean[] }
         | { Args: { "": string }; Returns: boolean[] }
+      transfer_order_table_v1: {
+        Args: { p_order_id: string; p_to_table: string }
+        Returns: Json
+      }
       update_account_active_v1: {
         Args: { p_account_id: string; p_is_active: boolean }
         Returns: Json

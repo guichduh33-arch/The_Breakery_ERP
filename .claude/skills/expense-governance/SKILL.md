@@ -1,6 +1,14 @@
 ---
 name: expense-governance
-description: Expense approval workflow expert — thresholds, SOD, multi-step chain, snapshot-at-submit, cash sync. Audit approval integrity AND guide expense governance changes.
+description: >-
+  Expense approval workflow expert — thresholds, SOD, multi-step chain, snapshot-at-submit,
+  cash sync. Audits approval integrity AND guides expense governance changes. Use this skill
+  whenever the task mentions expense / dépense / note de frais, approval / approbation /
+  validation de dépense, threshold / seuil d'approbation, SOD / separation of duties /
+  séparation des tâches, auto-approve, approval chain / chaîne d'approbation, cash expense /
+  dépense en espèces, receipt / justificatif — or touches apps/backoffice features/expenses,
+  the expense-thresholds settings, or any supabase migration/test with expense in the name.
+  Invoke it BEFORE editing any expense RPC, trigger, or threshold logic.
 pathPatterns:
   - 'apps/backoffice/src/features/expenses/**'
   - 'apps/backoffice/src/features/settings/expense-thresholds/**'

@@ -1,6 +1,14 @@
 ---
 name: breakery-ui-kit
-description: '@breakery/ui conventions — which primitives exist vs not (no Select/SelectItem/RadioGroup exports → native fallbacks), semantic design tokens (luxe-dark + theme-backoffice), Dialog/Sheet/Badge/Card patterns, useIdleTimeout. Use when building any BO/POS component.'
+description: >-
+  '@breakery/ui' conventions — which primitives exist vs not (no
+  Select/SelectItem/RadioGroup exports → native fallbacks), semantic design tokens
+  (luxe-dark + theme-backoffice), Dialog/Sheet/Badge/Card patterns, useIdleTimeout. Use
+  this skill whenever you build or edit ANY React component in apps/pos, apps/backoffice,
+  or packages/ui — forms / formulaires, modals / modales, tables, badges, buttons, selects,
+  drawers, toasts — or when the task mentions @breakery/ui, Dialog, Sheet, Badge, Card,
+  Select, RadioGroup, design token, shadcn, composant UI. Invoke it BEFORE writing JSX so
+  you don't import primitives that don't exist or hardcode hex colors instead of tokens.
 pathPatterns:
   - 'packages/ui/**'
   - 'apps/*/src/**/components/**'

@@ -1,6 +1,7 @@
 // apps/pos/src/features/cart/__tests__/send-to-kitchen-holds.smoke.test.tsx
 /// <reference types="@testing-library/jest-dom" />
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type * as CartStoreModule from '@/stores/cartStore';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
@@ -21,7 +22,7 @@ vi.mock('../hooks/useHoldFiredOrder', () => ({
   useHoldFiredOrder: () => ({ mutateAsync: holdMutate, isPending: false }),
 }));
 vi.mock('@/stores/cartStore', async (orig) => {
-  const mod = await orig<typeof import('@/stores/cartStore')>();
+  const mod = await orig<typeof CartStoreModule>();
   return { ...mod, resetCartAfterCheckout: resetTerminal };
 });
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() } }));
@@ -36,7 +37,7 @@ function wrap(n: React.ReactElement) {
 beforeEach(() => {
   vi.clearAllMocks();
   useCartStore.setState({
-    cart: { items: [{ id: 'l1', product_id: 'p1', name: 'Latte', unit_price: 30000, quantity: 1, modifiers: [] }], order_type: 'dine_in' },
+    cart: { items: [{ id: 'l1', product_id: 'p1', name: 'Latte', unit_price: 30000, quantity: 1, modifiers: [] }], order_type: 'dine_in', tableNumber: 'T-01' },
     lockedItemIds: [], printedItemIds: [], attachedCustomer: null,
     pickedUpOrderId: 'order-99', appliedPromotions: [], dismissedPromotionIds: new Set(), isOffline: false,
   } as never);

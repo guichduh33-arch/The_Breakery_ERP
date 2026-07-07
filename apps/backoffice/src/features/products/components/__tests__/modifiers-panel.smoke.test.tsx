@@ -5,8 +5,8 @@ import type { EditableModifierGroup } from '@breakery/domain';
 const mutate = vi.fn();
 const loadData: { current: EditableModifierGroup[] } = { current: [] };
 
-vi.mock('@/features/purchasing/hooks/useAllProductsForPO.js', () => ({
-  useAllProductsForPO: () => ({ data: [], isLoading: false }),
+vi.mock('@/features/products/hooks/useDeductibleIngredientProducts.js', () => ({
+  useDeductibleIngredientProducts: () => ({ data: [], isLoading: false }),
 }));
 vi.mock('../../hooks/useProductModifiersAdmin.js', () => ({
   useProductModifiersAdmin: () => ({ data: loadData.current, isLoading: false }),
@@ -72,7 +72,7 @@ describe('ModifiersPanel', () => {
     expect(screen.queryByRole('button', { name: /^save/i })).toBeNull();
   });
 
-  it('blocks save and shows an error on a blank group name', async () => {
+  it('blocks save and shows an error on a blank group name', () => {
     loadData.current = [
       {
         group_name: '',
