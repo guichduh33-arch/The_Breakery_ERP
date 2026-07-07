@@ -71,6 +71,12 @@ export function SignZReportModal({ open, zreportId, onOpenChange, onSuccess }: S
   const variance = snapshot?.cash_variance as number | undefined;
   const opened   = snapshot?.opened_at     as string | undefined;
   const closed   = snapshot?.closed_at     as string | undefined;
+  // S67 (12 D2.2/D2.3) — optional three-way reconciliation. Pre-S67
+  // snapshots lack the key entirely: rows below stay hidden (counted == null).
+  const reconciliation = snapshot?.reconciliation as
+    | Record<string, { counted: number | null; variance: number | null }>
+    | null
+    | undefined;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -104,6 +110,18 @@ export function SignZReportModal({ open, zreportId, onOpenChange, onSuccess }: S
               <span className="text-text-secondary">Cash variance: </span>
               Rp {formatIDR(variance)}
             </div>
+            {reconciliation?.qris?.counted != null && (
+              <div data-testid="sign-qris-variance">
+                <span className="text-text-secondary">QRIS variance: </span>
+                Rp {formatIDR(reconciliation.qris.variance)}
+              </div>
+            )}
+            {reconciliation?.card?.counted != null && (
+              <div data-testid="sign-card-variance">
+                <span className="text-text-secondary">Card+EDC variance: </span>
+                Rp {formatIDR(reconciliation.card.variance)}
+              </div>
+            )}
             <DialogFooter className="pt-4">
               <Button variant="ghost" onClick={() => onOpenChange(false)} data-testid="sign-cancel">Cancel</Button>
               <Button onClick={() => setStep(2)} data-testid="sign-continue">Continue</Button>

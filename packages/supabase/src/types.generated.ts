@@ -305,6 +305,7 @@ export type Database = {
           pos_opening_cash_presets: Json
           pos_quick_payment_amounts: Json
           production_yield_variance_threshold_pct: number
+          shift_denomination_count_enabled: boolean
           shift_variance_pin_threshold_abs: number
           shift_variance_pin_threshold_pct: number
           shift_variance_threshold_abs: number
@@ -326,6 +327,7 @@ export type Database = {
           pos_opening_cash_presets?: Json
           pos_quick_payment_amounts?: Json
           production_yield_variance_threshold_pct?: number
+          shift_denomination_count_enabled?: boolean
           shift_variance_pin_threshold_abs?: number
           shift_variance_pin_threshold_pct?: number
           shift_variance_threshold_abs?: number
@@ -347,6 +349,7 @@ export type Database = {
           pos_opening_cash_presets?: Json
           pos_quick_payment_amounts?: Json
           production_yield_variance_threshold_pct?: number
+          shift_denomination_count_enabled?: boolean
           shift_variance_pin_threshold_abs?: number
           shift_variance_pin_threshold_pct?: number
           shift_variance_threshold_abs?: number
@@ -2755,12 +2758,16 @@ export type Database = {
           closed_at: string | null
           closed_by: string | null
           closing_cash: number | null
+          closing_denominations: Json | null
           closing_notes: string | null
+          counted_card: number | null
+          counted_qris: number | null
           expected_cash: number | null
           id: string
           opened_at: string
           opened_by: string
           opening_cash: number
+          opening_denominations: Json | null
           opening_notes: string | null
           status: Database["public"]["Enums"]["shift_status"]
           terminal_id: string | null
@@ -2773,12 +2780,16 @@ export type Database = {
           closed_at?: string | null
           closed_by?: string | null
           closing_cash?: number | null
+          closing_denominations?: Json | null
           closing_notes?: string | null
+          counted_card?: number | null
+          counted_qris?: number | null
           expected_cash?: number | null
           id?: string
           opened_at?: string
           opened_by: string
           opening_cash: number
+          opening_denominations?: Json | null
           opening_notes?: string | null
           status?: Database["public"]["Enums"]["shift_status"]
           terminal_id?: string | null
@@ -2791,12 +2802,16 @@ export type Database = {
           closed_at?: string | null
           closed_by?: string | null
           closing_cash?: number | null
+          closing_denominations?: Json | null
           closing_notes?: string | null
+          counted_card?: number | null
+          counted_qris?: number | null
           expected_cash?: number | null
           id?: string
           opened_at?: string
           opened_by?: string
           opening_cash?: number
+          opening_denominations?: Json | null
           opening_notes?: string | null
           status?: Database["public"]["Enums"]["shift_status"]
           terminal_id?: string | null
@@ -6020,10 +6035,13 @@ export type Database = {
         Args: { p_fiscal_year: number; p_manager_pin: string }
         Returns: Json
       }
-      close_shift_v4: {
+      close_shift_v5: {
         Args: {
           p_approver_id?: string
+          p_counted_card?: number
           p_counted_cash: number
+          p_counted_qris?: number
+          p_denominations?: Json
           p_idempotency_key?: string
           p_manager_pin?: string
           p_notes?: string

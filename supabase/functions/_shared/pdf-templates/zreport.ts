@@ -28,6 +28,14 @@ export interface ZReportSnapshotData {
   expenses_cash_total:    number;
   top_products:           Array<{ product_id: string; product_name: string; qty: number; revenue: number }>;
   generated_at:           string;
+  // S67 (12 D2.2/D2.3) — optional three-way reconciliation + denomination
+  // breakdown. Snapshots created before S67 lack both keys entirely.
+  reconciliation?: Record<'cash' | 'qris' | 'card', {
+    expected: number | null;
+    counted:  number | null;
+    variance: number | null;
+  }> | null;
+  denominations?: Record<string, number> | null;
 }
 
 export interface ZReportEnvelope {
@@ -96,6 +104,40 @@ export async function render(
     for (const [method, total] of methods) labeled(method, Number(total), 1);
   }
   y -= 6;
+
+  // S67 (12 D2.2/D2.3) — three-way reconciliation + denomination grid.
+  // Older snapshots (pre-S67) simply lack the keys: sections are omitted.
+  // Rows are pre-computed BEFORE emitting each section title so that a
+  // reconciliation object with zero counted volets, or an all-zero
+  // denomination grid, never prints an orphan header.
+  const reconRows: Array<{ label: string; value: number }> = [];
+  if (snap.reconciliation) {
+    for (const volet of ['cash', 'qris', 'card'] as const) {
+      const r = snap.reconciliation[volet];
+      if (!r || r.counted === null || r.counted === undefined) continue;
+      reconRows.push({ label: `${volet} counted`,  value: Number(r.counted) });
+      reconRows.push({ label: `${volet} expected`, value: Number(r.expected ?? 0) });
+      reconRows.push({ label: `${volet} variance`, value: Number(r.variance ?? 0) });
+    }
+  }
+  if (reconRows.length > 0) {
+    sectionTitle('Reconciliation (counted vs expected)');
+    for (const row of reconRows) labeled(row.label, row.value, 1);
+    y -= 6;
+  }
+  const denomRows: Array<{ label: string; value: number }> = [];
+  // Big notes first — numeric-like jsonb keys iterate ascending by default,
+  // but the physical count (and the POS grid) go largest-to-smallest.
+  for (const [face, qty] of Object.entries(snap.denominations ?? {})
+    .sort((a, b) => Number(b[0]) - Number(a[0]))) {
+    if (Number(qty) === 0) continue;
+    denomRows.push({ label: `${formatIDR(Number(face))} x ${qty}`, value: Number(face) * Number(qty) });
+  }
+  if (denomRows.length > 0) {
+    sectionTitle('Closing cash by denomination');
+    for (const row of denomRows) labeled(row.label, row.value, 1);
+    y -= 6;
+  }
 
   // Sales summary section
   sectionTitle('Sales summary');
