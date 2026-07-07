@@ -83,6 +83,22 @@ const preset: Partial<Config> = {
           qris:    'var(--payment-qris)',
           voucher: 'var(--payment-voucher)',
         },
+        // Categorical identity hues (design audit 2026-07-07) — RGB-triplet
+        // tokens so alpha modifiers work: bg-cat-amber/15, border-cat-blue/30.
+        cat: {
+          amber:   'rgb(var(--cat-amber) / <alpha-value>)',
+          yellow:  'rgb(var(--cat-yellow) / <alpha-value>)',
+          orange:  'rgb(var(--cat-orange) / <alpha-value>)',
+          lime:    'rgb(var(--cat-lime) / <alpha-value>)',
+          green:   'rgb(var(--cat-green) / <alpha-value>)',
+          emerald: 'rgb(var(--cat-emerald) / <alpha-value>)',
+          cyan:    'rgb(var(--cat-cyan) / <alpha-value>)',
+          blue:    'rgb(var(--cat-blue) / <alpha-value>)',
+          indigo:  'rgb(var(--cat-indigo) / <alpha-value>)',
+          violet:  'rgb(var(--cat-violet) / <alpha-value>)',
+          rose:    'rgb(var(--cat-rose) / <alpha-value>)',
+          red:     'rgb(var(--cat-red) / <alpha-value>)',
+        },
       },
       transitionDuration: {
         fast: 'var(--motion-fast)',

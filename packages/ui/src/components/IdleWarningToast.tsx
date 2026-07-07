@@ -96,7 +96,7 @@ export function IdleWarningToast({ className }: IdleWarningToastProps): JSX.Elem
         type="button"
         onClick={handleStay}
         data-testid="idle-stay-button"
-        className="rounded bg-amber-600 px-3 py-1 text-xs font-semibold text-white hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500"
+        className="rounded bg-gold px-3 py-1 text-xs font-semibold text-gold-fg hover:bg-gold-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
       >
         Stay signed in
       </button>

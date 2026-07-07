@@ -81,21 +81,24 @@ const LABEL: Record<AllergenType, string> = {
 //   soy/lupin         -> green  (legume family)
 //   celery/mustard    -> lime   (vegetable/condiment)
 //   sulphites         -> red    (chemical / preservative)
+// Design audit 2026-07-07 (DS I-2) — migrated from raw Tailwind shades to the
+// theme-aware categorical ramp (`cat-*` tokens): same hue families, but the
+// text shade flips light/dark with the theme instead of being dark-locked.
 const COLOR_CLASSES: Record<AllergenType, string> = {
-  gluten:      'bg-amber-500/15  text-amber-300  border-amber-500/30',
-  crustaceans: 'bg-blue-500/15   text-blue-300   border-blue-500/30',
-  eggs:        'bg-yellow-500/15 text-yellow-300 border-yellow-500/30',
-  fish:        'bg-blue-500/15   text-blue-300   border-blue-500/30',
-  peanuts:     'bg-orange-500/15 text-orange-300 border-orange-500/30',
-  soy:         'bg-green-500/15  text-green-300  border-green-500/30',
-  milk:        'bg-yellow-500/15 text-yellow-300 border-yellow-500/30',
-  nuts:        'bg-orange-500/15 text-orange-300 border-orange-500/30',
-  celery:      'bg-lime-500/15   text-lime-300   border-lime-500/30',
-  mustard:     'bg-lime-500/15   text-lime-300   border-lime-500/30',
-  sesame:      'bg-orange-500/15 text-orange-300 border-orange-500/30',
-  sulphites:   'bg-red-500/15    text-red-300    border-red-500/30',
-  lupin:       'bg-green-500/15  text-green-300  border-green-500/30',
-  molluscs:    'bg-blue-500/15   text-blue-300   border-blue-500/30',
+  gluten:      'bg-cat-amber/15  text-cat-amber  border-cat-amber/30',
+  crustaceans: 'bg-cat-blue/15   text-cat-blue   border-cat-blue/30',
+  eggs:        'bg-cat-yellow/15 text-cat-yellow border-cat-yellow/30',
+  fish:        'bg-cat-blue/15   text-cat-blue   border-cat-blue/30',
+  peanuts:     'bg-cat-orange/15 text-cat-orange border-cat-orange/30',
+  soy:         'bg-cat-green/15  text-cat-green  border-cat-green/30',
+  milk:        'bg-cat-yellow/15 text-cat-yellow border-cat-yellow/30',
+  nuts:        'bg-cat-orange/15 text-cat-orange border-cat-orange/30',
+  celery:      'bg-cat-lime/15   text-cat-lime   border-cat-lime/30',
+  mustard:     'bg-cat-lime/15   text-cat-lime   border-cat-lime/30',
+  sesame:      'bg-cat-orange/15 text-cat-orange border-cat-orange/30',
+  sulphites:   'bg-cat-red/15    text-cat-red    border-cat-red/30',
+  lupin:       'bg-cat-green/15  text-cat-green  border-cat-green/30',
+  molluscs:    'bg-cat-blue/15   text-cat-blue   border-cat-blue/30',
 };
 
 export type AllergenBadgeSize = 'sm' | 'md';

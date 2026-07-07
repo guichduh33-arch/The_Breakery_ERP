@@ -7,11 +7,14 @@ export interface LoyaltyBadgeProps {
   points: number;
 }
 
+// Theme-aware tier tints (design audit 2026-07-07, DS I-2) — the previous
+// light-locked Tailwind pairs (amber-100/slate-200/violet-100) washed out on
+// the POS luxe-dark surfaces. Semantic tokens render under both themes.
 const TIER_CLASSES: Record<LoyaltyTier, string> = {
-  bronze: 'bg-amber-100 text-amber-800',
-  silver: 'bg-slate-200 text-slate-700',
+  bronze: 'bg-warning-soft text-warning',
+  silver: 'bg-bg-overlay text-text-secondary',
   gold: 'bg-gold-soft text-gold',
-  platinum: 'bg-violet-100 text-violet-800',
+  platinum: 'bg-info-soft text-info',
 };
 
 const TIER_LABELS: Record<LoyaltyTier, string> = {

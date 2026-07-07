@@ -44,7 +44,7 @@ const DialogContent = forwardRef<
       {children}
       <DialogPrimitive.Close
         aria-label="Close"
-        className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-bg-base transition-opacity hover:opacity-100 focus:outline focus:outline-2 focus:outline-gold focus:outline-offset-2 disabled:pointer-events-none data-[state=open]:bg-bg-overlay data-[state=open]:text-text-muted motion-reduce:transition-none"
+        className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-bg-base transition-opacity hover:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold focus-visible:outline-offset-2 disabled:pointer-events-none data-[state=open]:bg-bg-overlay data-[state=open]:text-text-muted motion-reduce:transition-none"
       >
         <X className="h-4 w-4" />
         <span className="sr-only">Close</span>
