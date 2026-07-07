@@ -120,7 +120,7 @@ export function useCreateB2bOrder() {
         p_idempotency_key: string;
       } = {
         p_customer_id:     args.customerId,
-        p_items:           args.items as unknown,
+        p_items:           args.items,
         p_idempotency_key: args.idempotencyKey,
       };
       if (args.notes        !== undefined && args.notes.trim() !== '') rpcArgs.p_notes        = args.notes.trim();
