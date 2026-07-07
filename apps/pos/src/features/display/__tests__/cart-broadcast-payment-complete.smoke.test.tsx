@@ -3,6 +3,8 @@
 // S57 P2.3 (C-D4) — the customer display confirms a sale ("Merci" + change to
 // collect on cash) then reverts to the welcome idle state after ~8s. Non-cash
 // tenders never show a change amount.
+// Split-brand redesign — the confirmation panel (CDPaymentPanel) also renders
+// the payment method, the tax included in the total, and the loyalty outcome.
 
 /// <reference types="@testing-library/jest-dom" />
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -11,9 +13,10 @@ import {
   broadcastPaymentComplete,
   PAYMENT_COMPLETE_DISPLAY_MS,
   type CartBroadcastMessage,
+  type PaymentCompleteMessage,
 } from '../hooks/useCartBroadcast';
 import { useCartBroadcastReceiver } from '../hooks/useCartBroadcastReceiver';
-import { CDActiveCartView } from '../CDActiveCartView';
+import { CDPaymentPanel } from '../components/CDPaymentPanel';
 
 // Cross-instance BroadcastChannel fake: postMessage on one instance delivers to
 // every OTHER open instance's onmessage (mirrors the real same-origin channel).
@@ -35,6 +38,22 @@ class FakeBC {
   }
 }
 
+/** Payload builder — anonymous cash sale unless overridden. */
+function paymentComplete(
+  overrides: Partial<Omit<PaymentCompleteMessage, 'type'>> = {},
+): Omit<PaymentCompleteMessage, 'type'> {
+  return {
+    total: 66000,
+    change: 4000,
+    method: 'cash',
+    tax_amount: 6000,
+    customer_name: null,
+    points_earned: null,
+    loyalty_balance_after: null,
+    ...overrides,
+  };
+}
+
 beforeEach(() => {
   instances = [];
   (globalThis as { BroadcastChannel: unknown }).BroadcastChannel = FakeBC;
@@ -51,7 +70,7 @@ describe('useCartBroadcastReceiver — payment_complete (C-D4)', () => {
     expect(result.current).toBeNull();
 
     act(() => {
-      broadcastPaymentComplete({ total: 66000, change: 4000, method: 'cash' });
+      broadcastPaymentComplete(paymentComplete());
     });
     expect(result.current?.type).toBe('payment_complete');
 
@@ -64,14 +83,14 @@ describe('useCartBroadcastReceiver — payment_complete (C-D4)', () => {
   it('a subsequent cart_update cancels the revert and shows the new cart', () => {
     const { result } = renderHook(() => useCartBroadcastReceiver());
     act(() => {
-      broadcastPaymentComplete({ total: 50000, change: null, method: 'card' });
+      broadcastPaymentComplete(paymentComplete({ total: 50000, change: null, method: 'card' }));
     });
     expect(result.current?.type).toBe('payment_complete');
 
     const update: CartBroadcastMessage = {
       type: 'cart_update',
       cart: { items: [{ id: 'l1' }], order_type: 'dine_in' },
-      totals: { subtotal: 10000, total: 10000, item_count: 1 },
+      totals: { subtotal: 10000, total: 10000, tax_amount: 909, item_count: 1 },
       customer: null,
     };
     act(() => {
@@ -90,30 +109,50 @@ describe('useCartBroadcastReceiver — payment_complete (C-D4)', () => {
   });
 });
 
-describe('CDActiveCartView — payment_complete screen (C-D4)', () => {
-  it('shows Merci + the change to collect for a cash sale', () => {
-    const msg: CartBroadcastMessage = {
-      type: 'payment_complete',
-      total: 66000,
-      change: 4000,
-      method: 'cash',
-    };
-    render(<CDActiveCartView message={msg} />);
+describe('CDPaymentPanel — payment confirmation screen', () => {
+  it('shows Merci + method + tax included + the change to collect for a cash sale', () => {
+    const msg: PaymentCompleteMessage = { type: 'payment_complete', ...paymentComplete() };
+    render(<CDPaymentPanel message={msg} />);
     expect(screen.getByTestId('cd-payment-complete')).toBeInTheDocument();
     expect(screen.getByText(/merci/i)).toBeInTheDocument();
+    // Payment method label (shared with the payment grid).
+    expect(screen.getByTestId('cd-payment-method')).toHaveTextContent(/cash/i);
+    // Tax included in the (tax-inclusive) total.
+    expect(screen.getByTestId('cd-payment-tax')).toHaveTextContent(/6.?000/);
     expect(screen.getByText(/monnaie à rendre/i)).toBeInTheDocument();
     expect(screen.getByText(/4.?000/)).toBeInTheDocument();
   });
 
-  it('masks the change amount for a non-cash tender', () => {
-    const msg: CartBroadcastMessage = {
+  it('masks the change amount for a non-cash tender and shows the QRIS label', () => {
+    const msg: PaymentCompleteMessage = {
       type: 'payment_complete',
-      total: 50000,
-      change: 0,
-      method: 'card',
+      ...paymentComplete({ total: 50000, change: 0, method: 'qris', tax_amount: 4545 }),
     };
-    render(<CDActiveCartView message={msg} />);
+    render(<CDPaymentPanel message={msg} />);
     expect(screen.getByText(/merci/i)).toBeInTheDocument();
+    expect(screen.getByTestId('cd-payment-method')).toHaveTextContent(/qris/i);
     expect(screen.queryByText(/monnaie à rendre/i)).toBeNull();
+  });
+
+  it('greets the attached customer and shows the loyalty points earned + balance', () => {
+    const msg: PaymentCompleteMessage = {
+      type: 'payment_complete',
+      ...paymentComplete({
+        customer_name: 'Dewi',
+        points_earned: 66,
+        loyalty_balance_after: 1266,
+      }),
+    };
+    render(<CDPaymentPanel message={msg} />);
+    expect(screen.getByText(/merci, dewi/i)).toBeInTheDocument();
+    const loyalty = screen.getByTestId('cd-payment-loyalty');
+    expect(loyalty).toHaveTextContent('+66 pts');
+    expect(screen.getByTestId('cd-payment-loyalty-balance')).toHaveTextContent('1266');
+  });
+
+  it('omits the loyalty block entirely for anonymous sales', () => {
+    const msg: PaymentCompleteMessage = { type: 'payment_complete', ...paymentComplete() };
+    render(<CDPaymentPanel message={msg} />);
+    expect(screen.queryByTestId('cd-payment-loyalty')).toBeNull();
   });
 });

@@ -16,7 +16,7 @@ import {
   type EditableModifierGroup,
 } from '@breakery/domain';
 import { useProductModifiersAdmin } from '../hooks/useProductModifiersAdmin.js';
-import { useAllProductsForPO } from '@/features/purchasing/hooks/useAllProductsForPO.js';
+import { useDeductibleIngredientProducts } from '../hooks/useDeductibleIngredientProducts.js';
 
 export interface ModifierCostBreakdownProps {
   productId: string;
@@ -38,7 +38,7 @@ export function ModifierCostBreakdown({
   baseCost,
 }: ModifierCostBreakdownProps): JSX.Element | null {
   const { data: groups = [], isLoading: groupsLoading } = useProductModifiersAdmin(productId);
-  const { data: materials = [], isLoading: materialsLoading } = useAllProductsForPO();
+  const { data: materials = [], isLoading: materialsLoading } = useDeductibleIngredientProducts();
 
   const materialsById = useMemo(
     () => new Map<string, ModifierCostMaterial>(materials.map((m) => [m.id, m])),

@@ -67,10 +67,15 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
   const setOrderType = useCartStore((s) => s.setOrderType);
   const appliedPromotions = useCartStore((s) => s.appliedPromotions);
 
+  // Tax estimated at the SERVER rate (useTaxRate) — the money-path RPC charges
+  // this same rate; no hardcoded 0.10 on the encaissement path. Also feeds the
+  // customer-display mirror's "Tax included" line.
+  const taxRate = useTaxRate();
+
   // ── orchestrators anchored here (single source of truth) ─────────────────
   usePromotionsAutoEval();
   usePromotionsRealtime();
-  useCartBroadcast();
+  useCartBroadcast(taxRate);
 
   // ── per-line cancel (tablet pickups) ─────────────────────────────────────
   const [cancelTarget, setCancelTarget] = useState<CartItem | null>(null);
@@ -80,9 +85,6 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
   const lineDiscount = useApplyLineDiscount();
 
   // ── totals (promo applied after base, never negative) ────────────────────
-  // Tax estimated at the SERVER rate (useTaxRate) — the money-path RPC charges
-  // this same rate; no hardcoded 0.10 on the encaissement path.
-  const taxRate = useTaxRate();
   const baseTotals = calculateTotals(cart, taxRate);
   const promotionTotal = appliedPromotions.reduce((s, ap) => s + ap.amount, 0);
   const total = Math.max(0, baseTotals.total - promotionTotal);

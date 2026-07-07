@@ -28,6 +28,7 @@ export interface PosSettingsState {
   defaultOrderType: OrderType; // order type a fresh cart starts on (cartStore)
   // ── Customer display (KDS & Display tab) ────────────────────────────
   displayFooterMessage: string; // '' = built-in "Open daily · 07:00 — 21:00"
+  displaySlogan: string;        // '' = built-in "French Bakery & Pastry" (brand panel)
   // ── Setters ─────────────────────────────────────────────────────────
   setPrinterUrl: (url: string) => void;
   setAutoPrint: (on: boolean) => void;
@@ -35,6 +36,7 @@ export interface PosSettingsState {
   setDeviceCode: (code: string) => void;
   setDefaultOrderType: (t: OrderType) => void;
   setDisplayFooterMessage: (t: string) => void;
+  setDisplaySlogan: (t: string) => void;
   /** Restore every field to its factory default (Advanced → Reset). */
   resetToDefaults: () => void;
 }
@@ -46,6 +48,7 @@ const DEFAULTS = {
   deviceCode: '',
   defaultOrderType: 'take_out' as OrderType,
   displayFooterMessage: '',
+  displaySlogan: '',
 } as const;
 
 export const usePosSettingsStore = create<PosSettingsState>()(
@@ -58,6 +61,7 @@ export const usePosSettingsStore = create<PosSettingsState>()(
       setDeviceCode: (code) => set({ deviceCode: code.trim() }),
       setDefaultOrderType: (t) => set({ defaultOrderType: t }),
       setDisplayFooterMessage: (t) => set({ displayFooterMessage: t }),
+      setDisplaySlogan: (t) => set({ displaySlogan: t }),
       resetToDefaults: () => set({ ...DEFAULTS }),
     }),
     {
@@ -70,6 +74,7 @@ export const usePosSettingsStore = create<PosSettingsState>()(
         deviceCode: s.deviceCode,
         defaultOrderType: s.defaultOrderType,
         displayFooterMessage: s.displayFooterMessage,
+        displaySlogan: s.displaySlogan,
       }),
     },
   ),

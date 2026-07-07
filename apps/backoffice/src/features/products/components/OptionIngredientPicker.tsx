@@ -1,10 +1,12 @@
 // apps/backoffice/src/features/products/components/OptionIngredientPicker.tsx
 //
-// Edits a modifier option's `ingredients_to_deduct` array. Raw materials come
-// from useAllProductsForPO (category_type='raw_material'). Stock deduction at
-// order-time ships in Phase 2 (S49); here we additionally surface the material
-// COST of the option (Σ qty × factor_to_base × cost_price) so the owner can see
-// how the COGS varies per option (e.g. Oat milk vs Fresh) when pricing it.
+// Edits a modifier option's `ingredients_to_deduct` array. Deductible
+// ingredients come from useDeductibleIngredientProducts (raw materials ∪
+// semi-finished products — the server resolver deducts any product_id, see
+// spec 2026-07-07-modifier-extras-sfg-ingredients-design.md). Stock deduction
+// at order-time ships in Phase 2 (S49); here we additionally surface the
+// material COST of the option (Σ qty × factor_to_base × cost_price) so the
+// owner can see how the COGS varies per option (e.g. Oat milk vs Fresh).
 
 import { useMemo, type JSX } from 'react';
 import { Button } from '@breakery/ui';
@@ -15,7 +17,7 @@ import {
   type ModifierIngredient,
   type ModifierCostMaterial,
 } from '@breakery/domain';
-import { useAllProductsForPO } from '@/features/purchasing/hooks/useAllProductsForPO.js';
+import { useDeductibleIngredientProducts } from '../hooks/useDeductibleIngredientProducts.js';
 
 export interface OptionIngredientPickerProps {
   value: ModifierIngredient[];
@@ -30,11 +32,21 @@ export function OptionIngredientPicker({
   value,
   onChange,
 }: OptionIngredientPickerProps): JSX.Element {
-  const { data: materials = [] } = useAllProductsForPO();
+  const { data: materials = [] } = useDeductibleIngredientProducts();
 
-  // PoProductRow is structurally a ModifierCostMaterial (cost_price + unitOptions).
+  // DeductibleIngredientRow is structurally a ModifierCostMaterial
+  // (cost_price + unitOptions).
   const materialsById = useMemo(
     () => new Map<string, ModifierCostMaterial>(materials.map((m) => [m.id, m])),
+    [materials],
+  );
+
+  const rawMaterials = useMemo(
+    () => materials.filter((m) => !m.is_semi_finished),
+    [materials],
+  );
+  const semiFinished = useMemo(
+    () => materials.filter((m) => m.is_semi_finished),
     [materials],
   );
 
@@ -75,7 +87,7 @@ export function OptionIngredientPicker({
         return (
           <div key={idx} className="flex items-center gap-2">
             <select
-              aria-label="Raw material"
+              aria-label="Ingredient"
               className="flex-1 rounded border border-border-subtle bg-bg-input px-2 py-1 text-sm"
               value={row.product_id}
               onChange={(e) => {
@@ -84,10 +96,21 @@ export function OptionIngredientPicker({
                 updateRow(idx, { product_id: pid, unit: units[0] ?? row.unit });
               }}
             >
-              <option value="">— Select material —</option>
-              {materials.map((m) => (
-                <option key={m.id} value={m.id}>{m.name}</option>
-              ))}
+              <option value="">— Select ingredient —</option>
+              {rawMaterials.length > 0 && (
+                <optgroup label="Raw materials">
+                  {rawMaterials.map((m) => (
+                    <option key={m.id} value={m.id}>{m.name}</option>
+                  ))}
+                </optgroup>
+              )}
+              {semiFinished.length > 0 && (
+                <optgroup label="Semi-finished">
+                  {semiFinished.map((m) => (
+                    <option key={m.id} value={m.id}>{m.name}</option>
+                  ))}
+                </optgroup>
+              )}
             </select>
             <input
               aria-label="Quantity"

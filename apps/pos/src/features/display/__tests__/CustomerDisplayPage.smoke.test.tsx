@@ -112,9 +112,10 @@ describe('CustomerDisplayPage — smoke', () => {
       </Wrapper>,
     );
 
-    // Branded layout header (token-only).
+    // Branded layout header (token-only). The split-brand redesign adds a
+    // second "French Bakery & Pastry" occurrence (the brand panel slogan).
     expect(await screen.findByText('The Breakery')).toBeInTheDocument();
-    expect(screen.getByText(/French Bakery/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/French Bakery/i).length).toBeGreaterThanOrEqual(1);
 
     // Wait until the authenticated branch finishes mounting and the
     // current-order card surfaces.
