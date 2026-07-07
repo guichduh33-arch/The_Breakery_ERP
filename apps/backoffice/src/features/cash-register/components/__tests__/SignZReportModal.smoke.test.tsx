@@ -5,13 +5,13 @@ import type { ReactElement } from 'react';
 
 const rpcSpy = vi.fn();
 vi.mock('@/lib/supabase.js', () => ({
-  supabase: { rpc: (...a: unknown[]) => rpcSpy(...a) },
+  supabase: { rpc: (...a: unknown[]): unknown => rpcSpy(...a) },
   supabaseUrl: 'http://test.local',
 }));
 
 // useGenerateZReportPdf now calls the EF via a direct fetch (POS money-path
 // pattern), not supabase.functions.invoke.
-vi.mock('@/lib/accessToken.js', () => ({ getAccessToken: async () => 'test-token' }));
+vi.mock('@/lib/accessToken.js', () => ({ getAccessToken: () => Promise.resolve('test-token') }));
 const fetchMock = vi.fn();
 Object.defineProperty(globalThis, 'fetch', { value: fetchMock, writable: true });
 
@@ -52,7 +52,7 @@ describe('SignZReportModal', () => {
     });
     fetchMock.mockResolvedValue({
       ok: true,
-      json: async () => ({ signed_url: 'https://example.test/zreport', status: 'signed' }),
+      json: () => Promise.resolve({ signed_url: 'https://example.test/zreport', status: 'signed' }),
     });
   });
 
@@ -90,12 +90,12 @@ describe('SignZReportModal', () => {
   });
 
   it('rejects PIN that is not 6 digits', async () => {
-    render(wrap(<SignZReportModal open zreportId="z1" onOpenChange={() => {}} />));
+    render(wrap(<SignZReportModal open zreportId="z1" onOpenChange={vi.fn()} />));
     await waitFor(() => screen.getByTestId('sign-continue'));
     fireEvent.click(screen.getByTestId('sign-continue'));
     await waitFor(() => screen.getByTestId('sign-pin-input'));
     fireEvent.change(screen.getByTestId('sign-pin-input'), { target: { value: '123' } });
-    expect((screen.getByTestId('sign-submit') as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByTestId('sign-submit')).toBeDisabled();
   });
 
   it('shows QRIS/card variance rows only when that volet was counted (S67)', async () => {
@@ -126,7 +126,7 @@ describe('SignZReportModal', () => {
       },
       error: null,
     });
-    render(wrap(<SignZReportModal open zreportId="z1" onOpenChange={() => {}} />));
+    render(wrap(<SignZReportModal open zreportId="z1" onOpenChange={vi.fn()} />));
     await waitFor(() => screen.getByTestId('sign-qris-variance'));
     expect(screen.getByTestId('sign-qris-variance')).toHaveTextContent('1.000');
     expect(screen.queryByTestId('sign-card-variance')).not.toBeInTheDocument();

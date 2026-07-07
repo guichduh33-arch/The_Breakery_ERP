@@ -7,7 +7,7 @@ import { DenominationGrid } from '../DenominationGrid';
 
 describe('DenominationGrid', () => {
   it('renders one row per IDR denomination with the running total', () => {
-    render(<DenominationGrid value={{ '100000': 2, '500': 3 }} onChange={() => {}} />);
+    render(<DenominationGrid value={{ '100000': 2, '500': 3 }} onChange={vi.fn()} />);
     expect(screen.getAllByTestId(/denom-row-/)).toHaveLength(10);
     expect(screen.getByTestId('denom-total')).toHaveTextContent('201.500');
   });
