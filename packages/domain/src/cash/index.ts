@@ -1,1 +1,1 @@
-export * from './denominations';
+export * from './denominations.js';
