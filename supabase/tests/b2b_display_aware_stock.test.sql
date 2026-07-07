@@ -25,7 +25,7 @@ UPDATE business_config SET allow_negative_stock=false;
 
 CREATE TEMP TABLE _r(name text PRIMARY KEY, pass boolean) ON COMMIT DROP;
 DO $d$ DECLARE v jsonb; BEGIN
-  v := create_b2b_order_v3('ccc40001-0000-0000-0000-000000000001',
+  v := create_b2b_order_v4('ccc40001-0000-0000-0000-000000000001',
         jsonb_build_array(jsonb_build_object('product_id','ddd40003-0000-0000-0000-000000000003','quantity',2,'unit_price',10000)),
         NULL, NULL, gen_random_uuid());
   INSERT INTO _r VALUES ('order', (v->>'order_id') IS NOT NULL);
@@ -36,7 +36,7 @@ EXCEPTION WHEN OTHERS THEN
 END $d$;
 
 CREATE TEMP TABLE _cap(l text);
-INSERT INTO _cap SELECT ok((SELECT pass FROM _r WHERE name='order'), 'B2B display order succeeds via create_b2b_order_v3');
+INSERT INTO _cap SELECT ok((SELECT pass FROM _r WHERE name='order'), 'B2B display order succeeds via create_b2b_order_v4');
 INSERT INTO _cap SELECT ok((SELECT pass FROM _r WHERE name='disp'),  'display_stock decremented 5->3 (B2B now display-aware)');
 INSERT INTO _cap SELECT ok((SELECT pass FROM _r WHERE name='mov'),   'one display_movements row for the B2B display sale');
 SELECT count(*) FILTER (WHERE l LIKE 'not ok%') AS failures, count(*) AS total, string_agg(l,' | ') AS lines FROM _cap;
