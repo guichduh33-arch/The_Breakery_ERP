@@ -47,9 +47,9 @@ function defaultStart(): string {
 function deltaTone(d: number | null): string {
   if (d === null) return 'text-text-secondary';
   const abs = Math.abs(d);
-  if (abs > 20) return 'text-red-600 font-semibold';
-  if (abs > 5)  return 'text-amber-600';
-  return 'text-emerald-600';
+  if (abs > 20) return 'text-danger font-semibold';
+  if (abs > 5)  return 'text-warning';
+  return 'text-success';
 }
 
 function round2(n: number): number {
@@ -156,7 +156,7 @@ export function RecipeCostTimelinePage(): JSX.Element {
         <p className="text-sm text-text-secondary">Loading…</p>
       )}
       {q.error && (
-        <p role="alert" className="text-sm text-red-600">
+        <p role="alert" className="text-sm text-danger">
           {(q.error).message}
         </p>
       )}

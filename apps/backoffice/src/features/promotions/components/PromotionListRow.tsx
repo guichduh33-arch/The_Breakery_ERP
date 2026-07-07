@@ -48,7 +48,7 @@ export function PromotionListRow({
           />
           <span
             className={
-              row.is_active ? 'text-green text-xs uppercase' : 'text-text-secondary text-xs uppercase'
+              row.is_active ? 'text-success text-xs uppercase' : 'text-text-secondary text-xs uppercase'
             }
           >
             {row.is_active ? 'Active' : 'Inactive'}

@@ -4,6 +4,7 @@ export { cn } from './lib/cn.js';
 // primitives
 export { Button, buttonVariants, type ButtonProps } from './primitives/Button.js';
 export { Input, type InputProps } from './primitives/Input.js';
+export { Select, selectClassName, type SelectProps } from './primitives/Select.js';
 export {
   Dialog,
   DialogClose,

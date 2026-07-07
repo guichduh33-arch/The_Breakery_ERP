@@ -98,7 +98,7 @@ export default function SettingsPermissionsPage() {
                   {matrix.data?.roles.map((r) => (
                     <td key={r.code} className="px-3 py-2 text-center">
                       {grants.has(`${r.code}::${p.code}`)
-                        ? <span aria-label="granted" className="inline-block w-4 h-4 rounded-full bg-emerald-500" />
+                        ? <span aria-label="granted" className="inline-block w-4 h-4 rounded-full bg-success" />
                         : <span aria-label="not granted" className="inline-block w-4 h-4 rounded-full bg-bg-overlay border border-border-subtle" />}
                     </td>
                   ))}

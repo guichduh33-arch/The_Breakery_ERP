@@ -1,7 +1,8 @@
 // apps/backoffice/src/features/combos/components/GeneralInfoSection.tsx
 //
 // Session 47 — General Information section for the combo builder.
-// Native HTML form controls (@breakery/ui has no Select/Input exports for forms).
+// Native HTML form controls kept for uniformity with this hand-styled form
+// (converting a lone field to the @breakery/ui Select primitive would break its internal rhythm).
 
 import type { JSX } from 'react';
 import type { CategoryRow } from '@/features/categories/hooks/useAllCategories.js';

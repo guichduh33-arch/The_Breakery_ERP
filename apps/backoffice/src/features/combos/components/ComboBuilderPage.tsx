@@ -4,7 +4,7 @@
 // Permissions: combos.create (new) / combos.update (edit) gated at route level.
 // Inside the form: combos.delete gates the Delete button on edit.
 //
-// @breakery/ui has no Select/RadioGroup — uses native form controls.
+// @breakery/ui has no RadioGroup — uses native form controls throughout for uniformity.
 // No direct imports from @breakery/ui needed here (Button only in footer).
 
 import { useState, useEffect, type JSX } from 'react';

@@ -6,7 +6,7 @@
 
 import { useMemo, useState, type JSX } from 'react';
 import {
-  Button, Input,
+  Button, Input, Select,
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@breakery/ui';
 import { formatIdr } from '@breakery/utils';
@@ -71,7 +71,7 @@ export function AnnualCloseModal({ onClose }: { onClose: () => void }): JSX.Elem
         onError:   (e) => setError(
           e instanceof CloseFiscalYearError
             ? (ERROR_COPY[e.code] ?? e.message)
-            : ERROR_COPY['unknown'] as string,
+            : ERROR_COPY.unknown!,
         ),
       },
     );
@@ -115,10 +115,10 @@ export function AnnualCloseModal({ onClose }: { onClose: () => void }): JSX.Elem
           <div className="space-y-4">
             <label className="flex flex-col text-sm">
               Fiscal year
-              <select
+              <Select
                 value={year}
                 onChange={(e) => setYear(e.target.value)}
-                className="mt-1 rounded-md border border-border-subtle bg-bg-elevated px-3 py-2 text-sm"
+                className="mt-1"
                 data-testid="ac-modal-year-select"
               >
                 <option value="">— select a year —</option>
@@ -127,7 +127,7 @@ export function AnnualCloseModal({ onClose }: { onClose: () => void }): JSX.Elem
                     {y} ({s.sealed}/{s.total} periods closed or locked)
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
             <div className="rounded border border-border-subtle bg-bg-overlay px-3 py-2 text-xs space-y-1">
               <div>Preconditions : all 12 periods of the year closed or locked, and no prior annual close.</div>
@@ -138,7 +138,7 @@ export function AnnualCloseModal({ onClose }: { onClose: () => void }): JSX.Elem
 
         {result === null && step === 2 && (
           <div className="space-y-4">
-            <div className="rounded border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+            <div className="rounded border border-warning/30 bg-warning-soft px-3 py-2 text-xs text-warning">
               You are about to <strong>CLOSE fiscal year {year}</strong>. This posts a
               year-close journal entry and cannot be undone via UI.
             </div>

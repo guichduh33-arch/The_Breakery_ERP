@@ -1,6 +1,8 @@
 // apps/backoffice/src/features/accounting/components/RecordCashMovementModal.tsx
 // Cash Wallets module — modal to record a manual cash movement (posts a balanced JE).
-// Uses native <select> — @breakery/ui has no Select/SelectItem export.
+// Native <select> kept (shared `inputCls` with the hand-styled inputs) so every
+// control in this modal stays visually uniform; the @breakery/ui Select primitive
+// would introduce a lone 44px field among them.
 import { useState, useEffect } from 'react';
 import {
   Dialog,
@@ -143,7 +145,7 @@ export function RecordCashMovementModal({
           </label>
 
           {mut.isError && (
-            <p className="text-sm text-destructive">{(mut.error as Error).message}</p>
+            <p className="text-sm text-destructive">{(mut.error).message}</p>
           )}
 
           <div className="flex justify-end gap-2 pt-2">

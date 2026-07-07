@@ -3,7 +3,7 @@
 // Controlled form for creating an expense (draft). Used in NewExpensePage.
 
 import { useState } from 'react';
-import { Button, Input } from '@breakery/ui';
+import { Button, Input, Select } from '@breakery/ui';
 import { CategoryPicker } from './CategoryPicker.js';
 import { ReceiptUploader } from './ReceiptUploader.js';
 
@@ -152,17 +152,17 @@ export function ExpenseForm({
           <label htmlFor="exp-method" className="text-xs uppercase tracking-widest text-text-secondary">
             Payment method <span className="text-red">*</span>
           </label>
-          <select
+          <Select
             id="exp-method"
             value={value.payment_method}
             onChange={(e) => patch({ payment_method: e.target.value as ExpenseFormValues['payment_method'] })}
-            className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
+            className="w-full"
           >
             <option value="cash">Cash</option>
             <option value="transfer">Bank transfer</option>
             <option value="card">Card</option>
             <option value="credit">Credit (pay later)</option>
-          </select>
+          </Select>
         </div>
 
         <div className="space-y-1">

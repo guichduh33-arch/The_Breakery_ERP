@@ -11,6 +11,7 @@ import { useMemo, useState, type JSX } from 'react';
 import {
   Button,
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+  Select,
 } from '@breakery/ui';
 import { useFinishedProducts } from '../hooks/useFinishedProducts.js';
 import {
@@ -111,10 +112,10 @@ export function RecipeDuplicateModal({
             >
               Target product
             </label>
-            <select
+            <Select
               id="duplicate-recipe-target"
               data-testid="duplicate-target-select"
-              className="mt-1 h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm"
+              className="mt-1 w-full"
               value={targetId}
               onChange={(e) => setTargetId(e.target.value)}
               disabled={products.isLoading || duplicate.isPending}
@@ -125,7 +126,7 @@ export function RecipeDuplicateModal({
                   {p.name} ({p.unit})
                 </option>
               ))}
-            </select>
+            </Select>
             {targetOptions.length === 0 && !products.isLoading && (
               <p className="text-xs text-text-secondary" data-testid="no-target-hint">
                 No products without active recipes available.

@@ -132,7 +132,7 @@ export function ItemAssignStep({
                         'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest',
                         exhausted
                           ? activeColors.bg + ' ' + activeColors.border + ' ' + activeColors.text
-                          : 'border-purple-400/60 bg-purple-400/10 text-purple-400',
+                          : 'border-cat-violet/60 bg-cat-violet/10 text-cat-violet',
                       )}
                     >
                       {exhausted ? (

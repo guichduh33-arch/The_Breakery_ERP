@@ -16,11 +16,12 @@
   --text-muted:     #6b6b73;
   --text-disabled:  #4a4a52;
 
-  /* Accents */
+  /* Accents — --gold-soft/--gold-strong/--gold-fg live in colors.css
+   * (single declaration; a stale duplicate here was shadowed and removed,
+   * design audit 2026-07-07 DS P-2). */
   --gold-base:    #c9a557;
   --gold-hover:   #d4b06a;
   --gold-pressed: #b8954a;
-  --gold-soft:    #c9a55720;
 
   --green-base:   #10b981;
   --green-hover:  #14d690;

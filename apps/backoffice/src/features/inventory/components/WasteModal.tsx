@@ -7,7 +7,7 @@
 
 import { useEffect, useId, useState, type FormEvent, type JSX } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Button, Dialog, DialogContent, DialogTitle, DialogDescription, Input } from '@breakery/ui';
+import { Button, Dialog, DialogContent, DialogTitle, DialogDescription, Input, Select } from '@breakery/ui';
 import { validateWaste } from '@breakery/domain';
 import { useWasteStock, WasteStockError } from '../hooks/useWasteStock.js';
 import { STOCK_LEVELS_QUERY_KEY, type StockLevelRow } from '../hooks/useStockLevels.js';
@@ -204,16 +204,16 @@ export function WasteModal({ open, initialProduct, onClose }: WasteModalProps): 
             <label htmlFor={presetId} className="text-xs uppercase tracking-widest text-text-secondary">
               Reason
             </label>
-            <select
+            <Select
               id={presetId}
               value={preset}
               onChange={(e) => setPreset(e.target.value as ReasonPreset)}
-              className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
+              className="w-full"
             >
               {PRESETS.map((p) => (
                 <option key={p} value={p}>{p}</option>
               ))}
-            </select>
+            </Select>
           </div>
 
           {preset === 'Other' && (

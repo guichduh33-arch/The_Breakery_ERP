@@ -7,7 +7,7 @@ import { useEffect, useMemo, useState, type JSX } from 'react';
 import { toast } from 'sonner';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
-  Button, Input,
+  Button, Input, Select,
 } from '@breakery/ui';
 import type { LanDeviceRow, LanDeviceType } from '../hooks/useLanDevices.js';
 import { useUpsertLanDevice } from '../hooks/useUpsertLanDevice.js';
@@ -87,7 +87,6 @@ export function LanDeviceFormModal({ open, onClose, device, prefill, allDevices 
     );
   }
 
-  const selectCls = 'w-full rounded border border-border-subtle bg-bg-overlay px-3 py-2 text-sm';
   const labelCls = 'block font-bold uppercase tracking-widest text-text-muted text-xs mb-1';
 
   return (
@@ -113,10 +112,10 @@ export function LanDeviceFormModal({ open, onClose, device, prefill, allDevices 
           </div>
           <div>
             <label htmlFor="dev-type" className={labelCls}>Device type</label>
-            <select id="dev-type" aria-label="Device type" className={selectCls}
+            <Select id="dev-type" aria-label="Device type" className="w-full"
               value={deviceType} onChange={(e) => setDeviceType(e.target.value as LanDeviceType)}>
               {DEVICE_TYPES.map((t) => <option key={t} value={t}>{t.replace('_', ' ')}</option>)}
-            </select>
+            </Select>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -133,11 +132,11 @@ export function LanDeviceFormModal({ open, onClose, device, prefill, allDevices 
           {deviceType === 'printer' && (
             <div>
               <label htmlFor="dev-station" className={labelCls}>Station</label>
-              <select id="dev-station" aria-label="Station" className={selectCls}
+              <Select id="dev-station" aria-label="Station" className="w-full"
                 value={station} onChange={(e) => setStation(e.target.value)}>
                 <option value="">— none —</option>
                 {STATIONS.map((s) => <option key={s} value={s}>{s}</option>)}
-              </select>
+              </Select>
               {stationConflict !== null && (
                 <p className="text-xs text-warning mt-1">
                   Station "{station}" is already assigned to {stationConflict.code}. Only one active

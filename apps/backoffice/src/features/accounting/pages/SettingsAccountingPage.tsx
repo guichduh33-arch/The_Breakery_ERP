@@ -12,8 +12,8 @@ import { useAuthStore } from '@/stores/authStore.js';
 
 function statusBadgeClass(status: string): string {
   if (status === 'locked') return 'bg-red-soft text-red';
-  if (status === 'closed') return 'bg-amber-100 text-amber-900';
-  return 'bg-green-100 text-green-700';
+  if (status === 'closed') return 'bg-warning-soft text-warning';
+  return 'bg-success-soft text-success';
 }
 
 export default function SettingsAccountingPage(): JSX.Element {

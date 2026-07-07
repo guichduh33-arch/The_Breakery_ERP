@@ -15,7 +15,7 @@
 
 import { useEffect, useId, useRef, useState, type FormEvent, type JSX } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Button, Input } from '@breakery/ui';
+import { Button, Input, Select } from '@breakery/ui';
 import { validateReceive } from '@breakery/domain';
 import {
   useRecordIncomingStock,
@@ -191,18 +191,18 @@ export default function IncomingStockForm({ onSuccess }: IncomingStockFormProps)
         <label htmlFor={supplierId} className="text-xs uppercase tracking-widest text-text-secondary">
           Supplier <span className="normal-case text-text-muted">(optional)</span>
         </label>
-        <select
+        <Select
           id={supplierId}
           value={supplier}
           onChange={(e) => setSupplier(e.target.value)}
-          className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
+          className="w-full"
           disabled={refData.isLoading || recordMut.isPending}
         >
           <option value="">No supplier (free-form receipt)</option>
           {refData.data?.suppliers.map((s) => (
             <option key={s.id} value={s.id}>{s.name} ({s.code})</option>
           ))}
-        </select>
+        </Select>
       </div>
 
       <div className="grid grid-cols-2 gap-3">

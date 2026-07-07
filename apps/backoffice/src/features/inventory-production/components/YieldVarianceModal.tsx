@@ -68,7 +68,7 @@ export function YieldVarianceModal({
             <div className="text-xs uppercase tracking-widest text-text-secondary">Variance</div>
             <div
               data-testid="variance-pct"
-              className={`font-mono font-semibold ${absVariance > thresholdPct ? 'text-red-600' : 'text-amber-600'}`}
+              className={`font-mono font-semibold ${absVariance > thresholdPct ? 'text-danger' : 'text-warning'}`}
             >
               {variancePct > 0 ? '+' : ''}{variancePct.toFixed(1)}%
             </div>

@@ -11,7 +11,7 @@
 
 import { useEffect, useMemo, useState, type FormEvent, type JSX } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Button, Input } from '@breakery/ui';
+import { Button, Input, Select } from '@breakery/ui';
 import { checkFeasibility } from '@breakery/domain';
 import { supabase } from '@/lib/supabase.js';
 import { useFinishedProducts } from '../hooks/useFinishedProducts.js';
@@ -157,7 +157,7 @@ export default function ProductionForm(): JSX.Element {
       if (err instanceof RecordProductionError) {
         const detail = err.missingDetail;
         if (err.code === 'insufficient_stock' && Array.isArray(detail)) {
-          const list = (detail as Array<{ material_name: string; shortfall: number; unit: string }>)
+          const list = (detail as { material_name: string; shortfall: number; unit: string }[])
             .map((d) => `${d.material_name} short ${d.shortfall} ${d.unit}`)
             .join('; ');
           setFormError(`Insufficient stock: ${list}`);
@@ -233,8 +233,8 @@ export default function ProductionForm(): JSX.Element {
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1 col-span-2">
             <label className="text-xs uppercase tracking-widest text-text-secondary">Finished product</label>
-            <select
-              className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm"
+            <Select
+              className="w-full"
               value={productId} onChange={(e) => setProductId(e.target.value)}
               disabled={recordMut.isPending}
             >
@@ -242,7 +242,7 @@ export default function ProductionForm(): JSX.Element {
               {(products.data ?? []).map((p) => (
                 <option key={p.id} value={p.id}>{p.name} ({p.unit}) — stock {p.current_stock}</option>
               ))}
-            </select>
+            </Select>
           </div>
 
           <div className="space-y-1">
@@ -269,7 +269,7 @@ export default function ProductionForm(): JSX.Element {
             {variancePct !== null && (
               <div
                 data-testid="variance-display"
-                className={`text-[11px] font-mono ${exceedsThreshold ? 'text-red-600 font-semibold' : 'text-text-secondary'}`}
+                className={`text-[11px] font-mono ${exceedsThreshold ? 'text-danger font-semibold' : 'text-text-secondary'}`}
               >
                 variance {variancePct > 0 ? '+' : ''}{variancePct.toFixed(1)}%
                 {exceedsThreshold && <> (over ±{thresholdPct.toFixed(1)}%)</>}
@@ -285,8 +285,8 @@ export default function ProductionForm(): JSX.Element {
 
           <div className="space-y-1">
             <label className="text-xs uppercase tracking-widest text-text-secondary">Section</label>
-            <select
-              className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm"
+            <Select
+              className="w-full"
               value={sectionId} onChange={(e) => setSectionId(e.target.value)} disabled={recordMut.isPending}
               required
             >
@@ -294,7 +294,7 @@ export default function ProductionForm(): JSX.Element {
               {(sections.data ?? []).map((s) => (
                 <option key={s.id} value={s.id}>{s.name}</option>
               ))}
-            </select>
+            </Select>
           </div>
           <div className="space-y-1">
             <label className="text-xs uppercase tracking-widest text-text-secondary">Batch number (optional)</label>

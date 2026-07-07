@@ -39,9 +39,9 @@ function marginTone(marginPct: number | null): MarginTone {
 }
 
 const MARGIN_TONE_CLASS: Record<MarginTone, string> = {
-  green: 'bg-emerald-500/15 text-emerald-700 border border-emerald-500/40',
-  amber: 'bg-amber-500/15 text-amber-700 border border-amber-500/40',
-  red:   'bg-red-500/15 text-red-700 border border-red-500/40',
+  green: 'bg-success-soft text-success border border-success/40',
+  amber: 'bg-warning-soft text-warning border border-warning/40',
+  red:   'bg-danger-soft text-danger border border-danger/40',
   muted: 'bg-bg-overlay text-text-secondary border border-border-subtle',
 };
 
@@ -140,8 +140,7 @@ export function RecipeCostPreviewCard({
             </div>
             {recomputeNeeded && (
               <Badge
-                variant="default"
-                className="bg-amber-500/15 text-amber-700 border border-amber-500/40"
+                variant="warning"
                 title={`Stored cost_price (${formatCurrency(storedCost)}) drifts > 5% from current BoM (${formatCurrency(unitMaterialCost)}). Consider refreshing the product cost.`}
                 data-testid="recompute-badge"
               >

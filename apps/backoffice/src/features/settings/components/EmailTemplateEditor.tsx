@@ -123,7 +123,7 @@ export function EmailTemplateEditor({ row, canEdit }: EmailTemplateEditorProps) 
           {draft.variables.length === 0 ? <span className="italic">none</span> : draft.variables.join(', ')}
         </p>
         {serverError && <p className="text-red text-sm" role="alert">{serverError}</p>}
-        {savedAt && <p className="text-emerald-700 text-xs" role="status">Saved at {savedAt}</p>}
+        {savedAt && <p className="text-success text-xs" role="status">Saved at {savedAt}</p>}
         {canEdit && (
           <Button type="button" variant="primary" disabled={!dirty || update.isPending}
             onClick={() => { void handleSave(); }}>

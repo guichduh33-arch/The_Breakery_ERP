@@ -43,7 +43,7 @@ export function ReorderTab() {
       {q.isLoading ? (
         <div className="text-sm text-text-secondary">Loading…</div>
       ) : q.error !== null ? (
-        <div className="text-sm text-rose-600">Failed: {String(q.error)}</div>
+        <div className="text-sm text-danger">Failed: {String(q.error)}</div>
       ) : (q.data ?? []).length === 0 ? (
         <div className="text-sm text-text-secondary">No reorder suggestions in this window.</div>
       ) : (
@@ -72,7 +72,7 @@ export function ReorderTab() {
                 </td>
                 <td className="py-2 px-3 text-right font-mono">{Number(r.current_stock)} {r.unit}</td>
                 <td className="py-2 px-3 text-right font-mono">{Number(r.avg_daily_usage).toFixed(2)}</td>
-                <td className={`py-2 px-3 text-right font-mono ${(r.days_of_stock ?? 999) < 3 ? 'text-rose-600 font-bold' : 'text-text-secondary'}`}>
+                <td className={`py-2 px-3 text-right font-mono ${(r.days_of_stock ?? 999) < 3 ? 'text-danger font-bold' : 'text-text-secondary'}`}>
                   {r.days_of_stock === null ? '—' : Number(r.days_of_stock).toFixed(1)}
                 </td>
                 <td className="py-2 px-3 text-right font-mono font-medium">

@@ -91,7 +91,7 @@ export function VoidZReportModal({ open, zreportId, onOpenChange, onSuccess }: V
               <p className="text-xs text-text-secondary mt-1">{trimmed.length} / 10 characters</p>
             </div>
             {errorMsg !== null && (
-              <p className="text-sm text-red-500" role="alert">{errorMsg}</p>
+              <p className="text-sm text-danger" role="alert">{errorMsg}</p>
             )}
             <DialogFooter className="pt-2">
               <Button variant="ghost" onClick={() => onOpenChange(false)} data-testid="void-cancel">Cancel</Button>
@@ -125,7 +125,7 @@ export function VoidZReportModal({ open, zreportId, onOpenChange, onSuccess }: V
               />
             </div>
             {errorMsg !== null && (
-              <p className="text-sm text-red-500" role="alert">{errorMsg}</p>
+              <p className="text-sm text-danger" role="alert">{errorMsg}</p>
             )}
             <DialogFooter className="pt-2">
               <Button variant="ghost" onClick={() => setStep(1)} data-testid="void-back">Back</Button>

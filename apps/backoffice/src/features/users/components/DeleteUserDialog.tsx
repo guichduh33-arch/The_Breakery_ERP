@@ -80,8 +80,8 @@ export function DeleteUserDialog(
               data-testid={isLastAdmin ? 'last-admin-guard' : 'delete-error'}
               className={`text-xs px-2 py-1.5 rounded ${
                 isLastAdmin
-                  ? 'text-rose-700 bg-rose-50 border border-rose-200 font-medium'
-                  : 'text-rose-600 bg-rose-50'
+                  ? 'text-danger bg-danger-soft border border-danger font-medium'
+                  : 'text-danger bg-danger-soft'
               }`}
             >
               {error}
@@ -96,7 +96,7 @@ export function DeleteUserDialog(
           <Button
             onClick={handleSubmit}
             disabled={del.isPending}
-            className="bg-rose-600 hover:bg-rose-700 text-white"
+            className="bg-danger hover:opacity-90 text-white"
           >
             {del.isPending ? 'Deleting…' : 'Delete user'}
           </Button>

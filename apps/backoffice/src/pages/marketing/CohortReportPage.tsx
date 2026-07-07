@@ -56,7 +56,7 @@ export default function CohortReportPage() {
     >
       {isLoading && <p className="text-sm text-text-secondary">Loading…</p>}
       {error && (
-        <p className="text-sm text-red-500" role="alert">
+        <p className="text-sm text-danger" role="alert">
           {error.message ?? 'Failed to load cohort report.'}
         </p>
       )}

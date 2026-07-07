@@ -150,7 +150,7 @@ export function CustomerDetailPage(): JSX.Element {
               <LoyaltyBadge tier={tier} points={customer.loyalty_points} />
               <span
                 className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                  isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'
+                  isActive ? 'bg-success-soft text-success' : 'bg-bg-overlay text-text-muted'
                 }`}
               >
                 {isActive ? 'Active' : 'Inactive'}

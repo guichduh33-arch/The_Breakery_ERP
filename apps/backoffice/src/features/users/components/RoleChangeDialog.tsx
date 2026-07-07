@@ -6,6 +6,7 @@ import { AlertTriangle } from 'lucide-react';
 import {
   Button,
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+  Select,
 } from '@breakery/ui';
 import { useUpdateUserRole } from '../hooks/useUpdateUserRole.js';
 
@@ -13,7 +14,7 @@ export interface RoleChangeDialogProps {
   userId:      string;
   currentRole: string;
   fullName:    string;
-  roles:       Array<{ code: string; name: string }>;
+  roles:       { code: string; name: string }[];
   onClose:     () => void;
 }
 
@@ -68,16 +69,16 @@ export function RoleChangeDialog(
             <label htmlFor="rch-new" className="block text-xs uppercase tracking-wider text-text-secondary mb-1">
               New role
             </label>
-            <select
+            <Select
               id="rch-new"
               value={newRole}
               onChange={(e) => { setNewRole(e.target.value); }}
-              className="w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded"
+              className="w-full"
             >
               {roles.map((r) => (
                 <option key={r.code} value={r.code}>{r.name} ({r.code})</option>
               ))}
-            </select>
+            </Select>
           </div>
 
           <div>
@@ -97,13 +98,13 @@ export function RoleChangeDialog(
             </p>
           </div>
 
-          <div className="flex items-start gap-2 text-xs text-amber-700 bg-amber-50 px-2 py-1.5 rounded border border-amber-200">
+          <div className="flex items-start gap-2 text-xs text-warning bg-warning-soft px-2 py-1.5 rounded border border-warning">
             <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" aria-hidden />
             <span>Saving will sign this user out of every device immediately.</span>
           </div>
 
           {error !== null && (
-            <div className="text-xs text-rose-600 bg-rose-50 px-2 py-1.5 rounded">{error}</div>
+            <div className="text-xs text-danger bg-danger-soft px-2 py-1.5 rounded">{error}</div>
           )}
         </div>
 

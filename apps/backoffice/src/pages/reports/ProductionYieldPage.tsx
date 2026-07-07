@@ -43,9 +43,9 @@ function defaultStart(): string {
 function varianceTone(frac: number | null): string {
   if (frac === null) return 'text-text-secondary';
   const abs = Math.abs(frac);
-  if (abs > 0.15) return 'text-red-600 font-semibold';
-  if (abs > 0.05) return 'text-amber-600';
-  return 'text-emerald-600';
+  if (abs > 0.15) return 'text-danger font-semibold';
+  if (abs > 0.05) return 'text-warning';
+  return 'text-success';
 }
 
 /** Format a fraction as a signed percent string (`+12.50%` / `-16.67%`). */
@@ -327,7 +327,7 @@ export default function ProductionYieldPage(): JSX.Element {
     >
       {isLoading && <p className="text-sm text-text-secondary">Loading…</p>}
       {error && (
-        <p role="alert" className="text-sm text-red-500">
+        <p role="alert" className="text-sm text-danger">
           {(error).message ?? 'Failed to load report.'}
         </p>
       )}

@@ -5,6 +5,7 @@ import { useState, type JSX } from 'react';
 import {
   Button,
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+  Select,
 } from '@breakery/ui';
 import { useCreateUser } from '../hooks/useCreateUser.js';
 
@@ -100,16 +101,16 @@ export function UserFormDialog({ onClose, onCreated, roles }: UserFormDialogProp
             <label htmlFor="usr-role" className="block text-xs uppercase tracking-wider text-text-secondary mb-1">
               Role
             </label>
-            <select
+            <Select
               id="usr-role"
               value={roleCode}
               onChange={(e) => { setRoleCode(e.target.value); }}
-              className="w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded"
+              className="w-full"
             >
               {roles.map((r) => (
                 <option key={r.code} value={r.code}>{r.name} ({r.code})</option>
               ))}
-            </select>
+            </Select>
           </div>
 
           <div>
@@ -132,7 +133,7 @@ export function UserFormDialog({ onClose, onCreated, roles }: UserFormDialogProp
           </div>
 
           {error !== null && (
-            <div className="text-xs text-rose-600 bg-rose-50 px-2 py-1.5 rounded">{error}</div>
+            <div className="text-xs text-danger bg-danger-soft px-2 py-1.5 rounded">{error}</div>
           )}
         </div>
 

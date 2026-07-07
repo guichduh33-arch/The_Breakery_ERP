@@ -8,10 +8,10 @@ import { Card } from '@breakery/ui';
 import { useCustomerLoyaltyHistory } from '@/features/loyalty/hooks/useCustomerLoyaltyHistory.js';
 
 const TXN_TONE: Record<string, string> = {
-  earn: 'text-emerald-600',
-  refund: 'text-emerald-600',
-  redeem: 'text-rose-600',
-  adjust: 'text-amber-600',
+  earn: 'text-success',
+  refund: 'text-success',
+  redeem: 'text-danger',
+  adjust: 'text-warning',
 };
 
 export function LoyaltyTab({ customerId }: { customerId: string | null }): JSX.Element {
@@ -40,7 +40,7 @@ export function LoyaltyTab({ customerId }: { customerId: string | null }): JSX.E
               <td className="px-4 py-3 text-text-secondary">{new Date(tx.created_at).toLocaleDateString('id-ID')}</td>
               <td className={`px-4 py-3 font-medium capitalize ${TXN_TONE[tx.transaction_type] ?? 'text-text-primary'}`}>{tx.transaction_type}</td>
               <td className="px-4 py-3 text-text-secondary">{tx.description}</td>
-              <td className={`px-4 py-3 text-right tabular-nums font-medium ${tx.points >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+              <td className={`px-4 py-3 text-right tabular-nums font-medium ${tx.points >= 0 ? 'text-success' : 'text-danger'}`}>
                 {tx.points >= 0 ? '+' : ''}{tx.points.toLocaleString()}
               </td>
               <td className="px-4 py-3 text-right tabular-nums text-text-secondary">{tx.points_balance_after.toLocaleString()}</td>

@@ -8,6 +8,7 @@
 // aggregates that don't map 1:1 to a single account).
 
 import { useState } from 'react';
+import { selectClassName, cn } from '@breakery/ui';
 import type { CsvColumn } from '@breakery/domain';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
@@ -51,7 +52,7 @@ export default function Pb1ReportPage() {
           <label className="flex items-center gap-2 text-sm text-text-secondary">
             <span>Month</span>
             <select
-              className="h-9 rounded-md border border-border-subtle bg-surface px-2 text-sm text-text-primary"
+              className={cn(selectClassName, 'h-9 w-auto')}
               value={month}
               onChange={(e) => setMonth(Number(e.target.value))}
               aria-label="Select month"
@@ -90,7 +91,7 @@ export default function Pb1ReportPage() {
     >
       {isLoading && <p className="text-sm text-text-secondary">Loading…</p>}
       {error && (
-        <p className="text-sm text-red-500" role="alert">
+        <p className="text-sm text-danger" role="alert">
           {error.message ?? 'Failed to load report.'}
         </p>
       )}

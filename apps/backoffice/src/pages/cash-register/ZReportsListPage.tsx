@@ -92,8 +92,8 @@ export default function ZReportsListPage(): JSX.Element {
         <CardContent>
           {isLoading && <p className="text-sm text-text-secondary">Loading…</p>}
           {error !== null && error !== undefined && (
-            <p className="text-sm text-red-500" role="alert">
-              {(error as Error).message ?? 'Failed to load Z-Reports.'}
+            <p className="text-sm text-danger" role="alert">
+              {(error).message ?? 'Failed to load Z-Reports.'}
             </p>
           )}
           {!isLoading && rows !== undefined && (

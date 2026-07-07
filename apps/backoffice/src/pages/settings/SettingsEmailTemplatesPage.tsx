@@ -53,7 +53,7 @@ export default function SettingsEmailTemplatesPage() {
                 </div>
                 <span className={`inline-flex items-center px-2 py-0.5 rounded-full border text-xs ${
                   tpl.is_active
-                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                    ? 'bg-success-soft text-success border-success'
                     : 'bg-bg-overlay text-text-secondary border-border-subtle'
                 }`}>
                   {tpl.is_active ? 'Active' : 'Inactive'}

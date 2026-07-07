@@ -3,7 +3,7 @@ import type { HTMLAttributes } from 'react';
 import { cn } from '../lib/cn.js';
 
 const badgeVariants = cva(
-  'inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline focus:outline-2 focus:outline-gold focus:outline-offset-2',
+  'inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold focus-visible:outline-offset-2',
   {
     variants: {
       variant: {
@@ -11,6 +11,14 @@ const badgeVariants = cva(
         secondary: 'border-transparent bg-bg-overlay text-text-secondary',
         destructive: 'border-transparent bg-red text-white',
         outline: 'text-text-primary border-border-subtle',
+        // Semantic tonal variants (design audit 2026-07-07, DS I-3) — the
+        // canonical status chips. Soft token bg + full-strength token text
+        // renders correctly under BOTH themes (luxe-dark and ivoire), so
+        // screens stop re-inventing pills from raw Tailwind palette.
+        success: 'border-transparent bg-success-soft text-success',
+        warning: 'border-transparent bg-warning-soft text-warning',
+        info: 'border-transparent bg-info-soft text-info',
+        neutral: 'border-transparent bg-bg-overlay text-text-secondary',
       },
     },
     defaultVariants: { variant: 'default' },

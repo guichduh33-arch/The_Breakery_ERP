@@ -13,6 +13,7 @@ import {
   DialogFooter,
   DialogTitle,
   Input,
+  Select,
 } from '@breakery/ui';
 import { useUpdateMapping } from '../hooks/useUpdateMapping.js';
 import { usePostableAccounts, type MappingRow } from '../hooks/useMappings.js';
@@ -108,11 +109,11 @@ export function MappingEditDialog({ open, initial, onClose }: MappingEditDialogP
             <label htmlFor="account_code" className="text-xs uppercase tracking-widest text-text-secondary">
               Account
             </label>
-            <select
+            <Select
               id="account_code"
               value={draft.account_code}
               onChange={(e) => setDraft({ ...draft, account_code: e.target.value })}
-              className="w-full h-10 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
+              className="w-full"
               disabled={accounts.isLoading}
             >
               <option value="" disabled>Select an account…</option>
@@ -121,7 +122,7 @@ export function MappingEditDialog({ open, initial, onClose }: MappingEditDialogP
                   {a.code} — {a.name}
                 </option>
               ))}
-            </select>
+            </Select>
             {errors.account_code && (
               <div className="text-xs text-red">{errors.account_code}</div>
             )}

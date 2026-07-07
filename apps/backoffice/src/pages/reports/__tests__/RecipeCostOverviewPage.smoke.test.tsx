@@ -5,12 +5,13 @@
 //   1. Empty state renders the "no movement" message when RPC returns 0 rows.
 //   2. Table renders when RPC returns rows.
 //   3. Row click navigates to /backoffice/reports/recipe-cost/<product_id>.
-//   4. delta_pct > 20 gets text-red-600 class on the delta cell.
+//   4. delta_pct > 20 gets text-danger class on the delta cell.
 //   5. Export CSV button is disabled when 0 rows, enabled when ≥ 1 row.
 //
 // RPC mock pattern mirrors ProductionYieldPage.smoke.test.tsx (S15).
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type * as ReactRouterDom from 'react-router-dom';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
@@ -24,7 +25,7 @@ const OVERVIEW_ROWS = [
     product_name:  'Croissant',
     cost_per_unit: 5.00,
     baseline_cost: 4.00,
-    delta_pct:     25.00,   // > 20 → text-red-600
+    delta_pct:     25.00,   // > 20 → text-danger
     change_count:  3,
     created_at:    '2026-05-10T08:00:00Z',
   },
@@ -33,7 +34,7 @@ const OVERVIEW_ROWS = [
     product_name:  'Baguette',
     cost_per_unit: 2.50,
     baseline_cost: 2.40,
-    delta_pct:     4.17,   // ≤ 5 → text-emerald-600
+    delta_pct:     4.17,   // ≤ 5 → text-success
     change_count:  1,
     created_at:    '2026-05-09T08:00:00Z',
   },
@@ -44,7 +45,7 @@ const OVERVIEW_ROWS = [
 const mockRpc = vi.fn();
 
 vi.mock('@/lib/supabase.js', () => ({
-  supabase: { rpc: (...args: unknown[]) => mockRpc(...args) },
+  supabase: { rpc: (...args: unknown[]) => mockRpc(...args) as unknown },
 }));
 
 // --- React Router mock ---
@@ -52,7 +53,7 @@ vi.mock('@/lib/supabase.js', () => ({
 const mockNavigate = vi.fn();
 
 vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
+  const actual = await vi.importActual<typeof ReactRouterDom>('react-router-dom');
   return { ...actual, useNavigate: () => mockNavigate };
 });
 
@@ -108,8 +109,8 @@ describe('RecipeCostOverviewPage smoke', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/backoffice/reports/recipe-cost/prod-a');
   });
 
-  // 4. delta_pct > 20 gets text-red-600
-  it('applies text-red-600 class on the delta cell when delta_pct > 20', async () => {
+  // 4. delta_pct > 20 gets text-danger
+  it('applies text-danger class on the delta cell when delta_pct > 20', async () => {
     mockRpc.mockResolvedValue({ data: OVERVIEW_ROWS, error: null });
     renderPage();
     await waitFor(() => {
@@ -121,7 +122,7 @@ describe('RecipeCostOverviewPage smoke', () => {
       (td) => td.textContent?.includes('+25.00%'),
     );
     expect(deltaCell).toBeTruthy();
-    expect(deltaCell!.className).toContain('text-red-600');
+    expect(deltaCell!.className).toContain('text-danger');
   });
 
   // 5. CSV button disabled when empty, enabled when rows present

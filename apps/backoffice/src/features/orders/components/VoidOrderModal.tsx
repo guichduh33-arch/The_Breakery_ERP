@@ -52,7 +52,7 @@ export function VoidOrderModal({ open, onClose, orderId, orderNumber }: Props): 
         <DialogDescription className="sr-only">
           Voids the order, restoring inventory to stock. This action cannot be undone.
         </DialogDescription>
-        <p className="rounded bg-red-50 border border-red-200 p-3 text-sm text-red-900">
+        <p className="rounded bg-danger-soft border border-danger/30 p-3 text-sm text-danger">
           This action cannot be undone. Inventory will be restored to stock.
         </p>
         <div>
@@ -65,7 +65,7 @@ export function VoidOrderModal({ open, onClose, orderId, orderNumber }: Props): 
             placeholder="Min. 10 characters…"
             data-testid="void-reason"
           />
-          {!reasonOk && reason.length > 0 && <p className="text-xs text-red-600 mt-1">Min. 10 characters</p>}
+          {!reasonOk && reason.length > 0 && <p className="text-xs text-danger mt-1">Min. 10 characters</p>}
         </div>
         <div>
           <label className="block text-sm font-medium">Manager PIN</label>
@@ -79,13 +79,13 @@ export function VoidOrderModal({ open, onClose, orderId, orderNumber }: Props): 
             data-testid="void-pin"
           />
         </div>
-        {m.error && <p className="text-sm text-red-600" data-testid="void-error">{m.error.message}</p>}
+        {m.error && <p className="text-sm text-danger" data-testid="void-error">{m.error.message}</p>}
         <div className="flex justify-end gap-2">
           <button onClick={handleClose} className="px-4 py-2 text-sm" data-testid="void-cancel">Cancel</button>
           <button
             onClick={() => { void handleSubmit(); }}
             disabled={!canSubmit}
-            className="px-4 py-2 text-sm bg-red-600 text-white rounded disabled:opacity-50"
+            className="px-4 py-2 text-sm bg-danger text-white rounded disabled:opacity-50"
             data-testid="void-submit"
           >
             {m.isPending ? 'Voiding…' : 'Void order'}

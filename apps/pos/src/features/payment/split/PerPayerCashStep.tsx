@@ -88,7 +88,7 @@ export function PerPayerCashStep({
                       <span className={cn('h-2 w-2 rounded-full', colors.dot)} aria-hidden />
                       <span className={cn('text-sm font-semibold', colors.text)}>{p.label}</span>
                       {p.confirmed && (
-                        <span className="text-[10px] uppercase tracking-widest text-green-400">paid</span>
+                        <span className="text-[10px] uppercase tracking-widest text-success">paid</span>
                       )}
                     </div>
                     <Currency amount={sub} className={cn('font-mono text-sm', colors.text)} />
@@ -102,7 +102,7 @@ export function PerPayerCashStep({
         <div className="mt-4 pt-4 border-t border-border-subtle space-y-1.5 text-xs">
           <div className="flex justify-between text-text-secondary">
             <span>Paid</span>
-            <Currency amount={paid} className="text-green-400" />
+            <Currency amount={paid} className="text-success" />
           </div>
           <div className="flex justify-between text-text-secondary">
             <span>Remaining</span>

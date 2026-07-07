@@ -237,7 +237,7 @@ export function CreateManualJEModal({ onClose }: CreateManualJEModalProps): JSX.
                   <td className="px-2 py-2 text-right font-mono">{fmt(totals.credit)}</td>
                   <td className="px-2 py-2 text-xs" data-testid="je-modal-balance-state">
                     {totals.balanced ? (
-                      <span className="text-green-700">✓ Balanced</span>
+                      <span className="text-success">✓ Balanced</span>
                     ) : (
                       <span className="text-red">
                         ✗ Δ {fmt(Math.abs(totals.debit - totals.credit))}

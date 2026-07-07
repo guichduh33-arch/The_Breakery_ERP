@@ -21,8 +21,8 @@ export default function BirthdayPage() {
       {(upLoading || logLoading) && (
         <p className="text-sm text-text-secondary">Loading…</p>
       )}
-      {(upError || logError) && (
-        <p className="text-sm text-red-500" role="alert">
+      {(upError ?? logError) && (
+        <p className="text-sm text-danger" role="alert">
           {(upError ?? logError)?.message ?? 'Failed to load birthday data.'}
         </p>
       )}

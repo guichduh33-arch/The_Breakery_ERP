@@ -157,7 +157,7 @@ export function ReceiptTemplateEditor({ row, canEdit }: ReceiptTemplateEditorPro
           Default template
         </label>
         {serverError && <p className="text-red text-sm" role="alert">{serverError}</p>}
-        {savedAt && <p className="text-emerald-700 text-xs" role="status">Saved at {savedAt}</p>}
+        {savedAt && <p className="text-success text-xs" role="status">Saved at {savedAt}</p>}
         {canEdit && (
           <Button type="button" variant="primary" disabled={!dirty || update.isPending}
             onClick={() => { void handleSave(); }}>

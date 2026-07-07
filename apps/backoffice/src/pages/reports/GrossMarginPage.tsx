@@ -7,6 +7,7 @@
 // (products.cost_price), NOT a snapshot captured at the moment of each sale.
 
 import { useMemo } from 'react';
+import { selectClassName, cn } from '@breakery/ui';
 import { toLocalDateStr } from '@breakery/domain';
 import type { CsvColumn } from '@breakery/domain';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
@@ -84,7 +85,7 @@ export default function GrossMarginPage() {
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
               aria-label="Category filter"
-              className="h-9 rounded-md border border-border-subtle bg-bg-base px-2 text-sm text-foreground"
+              className={cn(selectClassName, 'h-9 w-auto')}
             >
               <option value="">All categories</option>
               {(categories ?? []).map((c) => (
@@ -106,7 +107,7 @@ export default function GrossMarginPage() {
     >
       {isLoading && <p className="text-sm text-text-secondary">Loading…</p>}
       {error && (
-        <p className="text-sm text-red-500" role="alert">
+        <p className="text-sm text-danger" role="alert">
           {error.message ?? 'Failed to load report.'}
         </p>
       )}

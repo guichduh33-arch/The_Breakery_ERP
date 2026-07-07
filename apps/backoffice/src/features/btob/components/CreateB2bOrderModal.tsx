@@ -205,7 +205,7 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
             </div>
           )}
           {creditPayload !== null && (
-            <div role="alert" className="rounded-md border border-amber-500 bg-amber-500/10 p-3 text-xs text-amber-700">
+            <div role="alert" className="rounded-md border border-warning bg-warning-soft p-3 text-xs text-warning">
               <div className="font-semibold">Credit limit exceeded</div>
               <div className="mt-1 space-y-0.5">
                 <div>Current balance:  <span className="font-mono">{formatIdr(creditPayload.current_balance)}</span></div>

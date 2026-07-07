@@ -16,7 +16,7 @@ export function DeltaPct({ current, previous, className }: DeltaPctProps): JSX.E
   if (pct === null) {
     return <span className={`text-xs text-text-secondary ${className ?? ''}`} data-testid="delta-pct">—</span>;
   }
-  const color = sign > 0 ? 'text-green-600' : sign < 0 ? 'text-red-600' : 'text-text-secondary';
+  const color = sign > 0 ? 'text-success' : sign < 0 ? 'text-danger' : 'text-text-secondary';
   const signStr = sign > 0 ? '+' : '';
   return (
     <span className={`text-xs ${color} ${className ?? ''}`} data-testid="delta-pct">

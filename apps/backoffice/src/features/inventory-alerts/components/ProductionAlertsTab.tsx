@@ -82,7 +82,7 @@ export function ProductionAlertsTab() {
             <td className="py-2 px-3 text-right font-mono">{r.days_of_stock === null ? '—' : Number(r.days_of_stock).toFixed(1)}</td>
             <td className="py-2 px-3 text-right font-mono font-medium">{Number(r.suggested_quantity).toFixed(2)}</td>
             <td className="py-2 px-3">
-              <span className={`text-xs font-medium ${r.priority === 'high' ? 'text-rose-600' : r.priority === 'medium' ? 'text-amber-600' : 'text-text-secondary'}`}>
+              <span className={`text-xs font-medium ${r.priority === 'high' ? 'text-danger' : r.priority === 'medium' ? 'text-warning' : 'text-text-secondary'}`}>
                 {r.priority}
               </span>
             </td>

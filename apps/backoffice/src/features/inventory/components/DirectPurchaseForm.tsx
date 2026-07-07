@@ -10,7 +10,7 @@
 // purchase date · payment method (cash/transfer/unpaid) · amount · payment date.
 
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent, type JSX } from 'react';
-import { Button, Input } from '@breakery/ui';
+import { Button, Input, Select } from '@breakery/ui';
 import { formatIdr } from '@breakery/utils';
 import { toLocalDateStr } from '@breakery/domain';
 import { useAllProductsForPO, type PoProductRow } from '@/features/purchasing/hooks/useAllProductsForPO.js';
@@ -215,12 +215,12 @@ export default function DirectPurchaseForm({ onSuccess }: DirectPurchaseFormProp
         </div>
         <div className="space-y-1">
           <label htmlFor={`${rid}-unit`} className="text-xs uppercase tracking-widest text-text-secondary">Purchase unit</label>
-          <select id={`${rid}-unit`} value={unit} onChange={(e) => setUnit(e.target.value)}
-            className={fieldCls} disabled={purchase.isPending || product === null}>
+          <Select id={`${rid}-unit`} value={unit} onChange={(e) => setUnit(e.target.value)}
+            className="w-full" disabled={purchase.isPending || product === null}>
             {product === null ? <option value="">—</option> : product.unitOptions.map((u) => (
               <option key={u.code} value={u.code}>{u.code}{u.factor !== 1 ? ` (×${u.factor} ${product.unit})` : ''}</option>
             ))}
-          </select>
+          </Select>
         </div>
         <div className="space-y-1">
           <label htmlFor={`${rid}-price`} className="text-xs uppercase tracking-widest text-text-secondary">Price / unit</label>
@@ -241,19 +241,19 @@ export default function DirectPurchaseForm({ onSuccess }: DirectPurchaseFormProp
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="space-y-1">
           <label htmlFor={`${rid}-supplier`} className="text-xs uppercase tracking-widest text-text-secondary">Supplier</label>
-          <select id={`${rid}-supplier`} value={supplierId} onChange={(e) => setSupplierId(e.target.value)}
-            className={fieldCls} disabled={refData.isLoading || purchase.isPending}>
+          <Select id={`${rid}-supplier`} value={supplierId} onChange={(e) => setSupplierId(e.target.value)}
+            className="w-full" disabled={refData.isLoading || purchase.isPending}>
             <option value="">Select a supplier…</option>
             {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name} ({s.code})</option>)}
-          </select>
+          </Select>
         </div>
         <div className="space-y-1">
           <label htmlFor={`${rid}-section`} className="text-xs uppercase tracking-widest text-text-secondary">Receive into</label>
-          <select id={`${rid}-section`} value={sectionId} onChange={(e) => setSectionId(e.target.value)}
-            className={fieldCls} disabled={sections.isLoading || purchase.isPending}>
+          <Select id={`${rid}-section`} value={sectionId} onChange={(e) => setSectionId(e.target.value)}
+            className="w-full" disabled={sections.isLoading || purchase.isPending}>
             <option value="">Select a section…</option>
             {(sections.data ?? []).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-          </select>
+          </Select>
         </div>
       </div>
 

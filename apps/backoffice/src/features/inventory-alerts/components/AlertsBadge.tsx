@@ -33,12 +33,12 @@ export function AlertsBadge() {
   return (
     <Link
       to="/backoffice/inventory/alerts"
-      className="relative inline-flex items-center justify-center w-8 h-8 rounded text-amber-600 hover:text-amber-700 hover:bg-bg-overlay"
+      className="relative inline-flex items-center justify-center w-8 h-8 rounded text-warning hover:text-warning hover:bg-bg-overlay"
       aria-label={`${total} active inventory alerts`}
       title={`${low.data?.length ?? 0} low-stock / ${reorder.data?.length ?? 0} reorder`}
     >
       <Bell className="h-4 w-4" aria-hidden />
-      <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 px-1 inline-flex items-center justify-center">
+      <span className="absolute -top-1 -right-1 bg-danger text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 px-1 inline-flex items-center justify-center">
         {total > 99 ? '99+' : total}
       </span>
     </Link>

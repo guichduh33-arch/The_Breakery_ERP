@@ -51,11 +51,12 @@ function formatAge(sentAt: string, now: Date): string {
   return `${m}m ${s}s`;
 }
 
+// Design audit 2026-07-07 (Tablet I-1) — semantic tokens, theme-aware.
 const STATUS_BADGE_CLASS: Record<OrderStatus, string> = {
-  pending_payment: 'border-transparent bg-amber-500/20 text-amber-400',
-  draft: 'border-transparent bg-blue-500/20 text-blue-400',
-  paid: 'border-transparent bg-green-500/20 text-green-400',
-  voided: 'border-transparent bg-red-500/20 text-red-400',
+  pending_payment: 'border-transparent bg-warning-soft text-warning',
+  draft: 'border-transparent bg-info-soft text-info',
+  paid: 'border-transparent bg-success-soft text-success',
+  voided: 'border-transparent bg-danger-soft text-danger',
 };
 
 const STATUS_LABEL: Record<OrderStatus, string> = {
@@ -67,8 +68,8 @@ const STATUS_LABEL: Record<OrderStatus, string> = {
 
 const KITCHEN_PILL_CLASS: Record<KitchenStatus, string> = {
   pending: 'bg-bg-overlay text-text-secondary',
-  preparing: 'bg-amber-500/20 text-amber-400',
-  ready: 'bg-green-500/20 text-green-400',
+  preparing: 'bg-warning-soft text-warning',
+  ready: 'bg-success-soft text-success',
   served: 'bg-bg-overlay text-text-muted line-through',
 };
 

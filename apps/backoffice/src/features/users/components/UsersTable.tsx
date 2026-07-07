@@ -12,11 +12,11 @@ export interface UsersTableProps {
 }
 
 const ROLE_BADGE_CLASS: Record<string, string> = {
-  SUPER_ADMIN: 'bg-rose-100 text-rose-700',
-  ADMIN:       'bg-amber-100 text-amber-700',
-  MANAGER:     'bg-sky-100 text-sky-700',
-  CASHIER:     'bg-emerald-100 text-emerald-700',
-  waiter:      'bg-violet-100 text-violet-700',
+  SUPER_ADMIN: 'bg-cat-rose/15 text-cat-rose border border-cat-rose/30',
+  ADMIN:       'bg-cat-amber/15 text-cat-amber border border-cat-amber/30',
+  MANAGER:     'bg-cat-blue/15 text-cat-blue border border-cat-blue/30',
+  CASHIER:     'bg-cat-emerald/15 text-cat-emerald border border-cat-emerald/30',
+  waiter:      'bg-cat-violet/15 text-cat-violet border border-cat-violet/30',
 };
 
 export function UsersTable({ rows, loading, error }: UsersTableProps): JSX.Element {
@@ -24,7 +24,7 @@ export function UsersTable({ rows, loading, error }: UsersTableProps): JSX.Eleme
     return <div className="text-sm text-text-secondary">Loading users…</div>;
   }
   if (error != null) {
-    return <div className="text-sm text-rose-600">Failed to load users: {error.message}</div>;
+    return <div className="text-sm text-danger">Failed to load users: {error.message}</div>;
   }
   if (rows.length === 0) {
     return <div className="text-sm text-text-secondary">No users yet.</div>;
@@ -57,9 +57,9 @@ export function UsersTable({ rows, loading, error }: UsersTableProps): JSX.Eleme
             </td>
             <td className="py-2 px-3 text-xs">
               {u.deleted_at !== null ? (
-                <span className="text-rose-600">Deleted</span>
+                <span className="text-danger">Deleted</span>
               ) : u.is_active ? (
-                <span className="text-emerald-600">Active</span>
+                <span className="text-success">Active</span>
               ) : (
                 <span className="text-text-secondary">Inactive</span>
               )}

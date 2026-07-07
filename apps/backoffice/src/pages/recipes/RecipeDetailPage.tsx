@@ -6,7 +6,7 @@
 import type { JSX } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { Card, Button } from '@breakery/ui';
+import { Card, Button, Badge } from '@breakery/ui';
 import { formatIdr } from '@breakery/utils';
 import { useRecipeDetail } from '@/features/recipes/hooks/useRecipeDetail.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
@@ -35,9 +35,7 @@ export function RecipeDetailPage(): JSX.Element {
         </Button>
         <h1 className="text-2xl font-semibold font-fraunces">{product.name}</h1>
         {product.is_semi_finished && (
-          <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
-            Semi-finished
-          </span>
+          <Badge variant="info">Semi-finished</Badge>
         )}
         {active_version_number != null && (
           <span className="text-sm text-muted-foreground">

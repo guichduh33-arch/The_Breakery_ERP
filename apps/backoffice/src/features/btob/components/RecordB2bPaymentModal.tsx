@@ -32,7 +32,7 @@ export interface RecordB2bPaymentModalProps {
   onClose: () => void;
 }
 
-const METHODS: ReadonlyArray<{ value: B2bPaymentMethod; label: string }> = [
+const METHODS: readonly { value: B2bPaymentMethod; label: string }[] = [
   { value: 'cash',         label: 'Cash' },
   { value: 'transfer',     label: 'Bank transfer' },
   { value: 'qris',         label: 'QRIS' },
@@ -183,7 +183,7 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
                   <span className="flex items-center gap-2">
                     <span className="font-mono">{formatIdr(a.amount_applied)}</span>
                     {a.fully_settled && (
-                      <span className="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-semibold text-green-700">settled</span>
+                      <span className="rounded-full bg-success-soft px-2 py-0.5 text-[10px] font-semibold text-success">settled</span>
                     )}
                   </span>
                 </li>
@@ -261,7 +261,7 @@ export function RecordB2bPaymentModal({ open, initialCustomerId, initialInvoiceI
                   .filter((r) => selectedIds.includes(r.invoice_id))
                   .reduce((acc, r) => acc + Number(r.outstanding), 0);
                 return numericAmount > sum ? (
-                  <p className="text-[10px] text-amber-500">
+                  <p className="text-[10px] text-warning">
                     Amount exceeds the selected invoices — the excess will be allocated FIFO across the remaining ones.
                   </p>
                 ) : null;

@@ -25,7 +25,7 @@ export function UserPicker({ onSelect }: UserPickerProps) {
     return (
       <div className="space-y-3 w-full max-w-xs text-center" data-testid="user-picker-error">
         <h2 className="text-text-secondary text-sm uppercase tracking-wide">Select user</h2>
-        <p className="text-rose-600 text-sm">Could not load staff list. Check your connection.</p>
+        <p className="text-danger text-sm">Could not load staff list. Check your connection.</p>
         <Button
           variant="secondary"
           size="md"

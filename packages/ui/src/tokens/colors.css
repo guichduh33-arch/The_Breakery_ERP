@@ -35,15 +35,34 @@
   --surface-3: var(--bg-overlay);  /* alias #1c1c20 — popovers */
   --surface-4: #25252a;            /* hover / pressed state */
 
-  /* Gold extended scale. */
+  /* Gold extended scale (--gold-base/hover/pressed live in luxe-dark.css). */
   --gold-soft:    rgba(201, 165, 87, 0.12);
-  --gold-base:    #c9a557;
   --gold-strong:  #b8954a;     /* alias of --gold-pressed but explicit name */
   --gold-fg:      #1a1408;     /* foreground when gold is bg (dark brown) */
 
   /* Foreground when green is bg (mirror of --gold-fg). White on --green-base
    * is only ~2.5:1 on the POS green — near-black reaches ~8:1. */
   --green-fg:     #0a0a0c;
+
+  /* Categorical identity hues (design audit 2026-07-07, DS I-2/chantier 4) —
+   * allergen families, promotion types, and other data-identity palettes
+   * that need MORE hues than the 4 semantic tokens. Stored as raw RGB
+   * triplets so the Tailwind preset can expose alpha modifiers
+   * (bg-cat-amber/15, border-cat-amber/30). Dark theme = Tailwind -300
+   * shades (light text on near-black); the Backoffice overrides with -700
+   * shades (dark text on ivory). */
+  --cat-amber:   252 211 77;
+  --cat-yellow:  253 224 71;
+  --cat-orange:  253 186 116;
+  --cat-lime:    190 242 100;
+  --cat-green:   134 239 172;
+  --cat-emerald: 110 231 183;
+  --cat-cyan:    103 232 249;
+  --cat-blue:    147 197 253;
+  --cat-indigo:  165 180 252;
+  --cat-violet:  196 181 253;
+  --cat-rose:    253 164 175;
+  --cat-red:     252 165 165;
 
   /* Text extended (subdued for footnotes). */
   --text-subtle:  #5a5a62;     /* between muted and disabled */
@@ -145,6 +164,21 @@
   --danger-soft:  var(--red-soft);
   --info:         var(--blue-info);
   --info-soft:    rgba(45, 143, 224, 0.12);
+
+  /* Categorical identity hues — dark -700 shades, readable on the light
+   * surfaces (the :root values are -300 shades tuned for luxe-dark). */
+  --cat-amber:   180 83 9;
+  --cat-yellow:  161 98 7;
+  --cat-orange:  194 65 12;
+  --cat-lime:    77 124 15;
+  --cat-green:   21 128 61;
+  --cat-emerald: 4 120 87;
+  --cat-cyan:    14 116 144;
+  --cat-blue:    29 78 216;
+  --cat-indigo:  67 56 202;
+  --cat-violet:  109 40 217;
+  --cat-rose:    190 18 60;
+  --cat-red:     185 28 28;
 
   /* Backdrop — cool, slightly deeper for modal focus. */
   --backdrop:      rgba(14, 23, 38, 0.50);

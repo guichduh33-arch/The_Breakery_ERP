@@ -199,7 +199,7 @@ export default function SettingsGeneralPage() {
 
           {serverError && <p className="text-red text-sm" role="alert">{serverError}</p>}
           {savedAt && dirtyKeys.length === 0 && (
-            <p className="text-emerald-700 text-xs" role="status">Saved at {savedAt}</p>
+            <p className="text-success text-xs" role="status">Saved at {savedAt}</p>
           )}
 
           {canUpdate && (

@@ -80,7 +80,7 @@ export function CustomAmountsStep({
             <span className="text-text-primary">Remaining</span>
             <Currency
               amount={Math.abs(remaining)}
-              className={remaining < 0 ? 'text-red-400' : remaining > 0 ? 'text-text-primary' : 'text-green-400'}
+              className={remaining < 0 ? 'text-red-fg' : remaining > 0 ? 'text-text-primary' : 'text-success'}
             />
           </div>
         </div>
@@ -157,7 +157,7 @@ export function CustomAmountsStep({
         {/* Amount display */}
         <div className="bg-bg-input border-2 border-gold rounded-md py-6 text-center">
           <span className="font-mono tabular-nums text-3xl text-text-primary">
-            Rp {amountStrs[activeIdx] || '0'}
+            Rp {(amountStrs[activeIdx] ?? '') || '0'}
           </span>
         </div>
 

@@ -8,7 +8,7 @@ export function LowStockTab() {
   const q = useLowStock(null);
 
   if (q.isLoading) return <div className="text-sm text-text-secondary">Loading…</div>;
-  if (q.error !== null) return <div className="text-sm text-rose-600">Failed: {String(q.error)}</div>;
+  if (q.error !== null) return <div className="text-sm text-danger">Failed: {String(q.error)}</div>;
 
   const rows = q.data ?? [];
   if (rows.length === 0) {
@@ -37,7 +37,7 @@ export function LowStockTab() {
               </Link>
               <div className="text-xs text-text-secondary">{r.product_sku}</div>
             </td>
-            <td className="py-2 px-3 text-right font-mono text-rose-600">
+            <td className="py-2 px-3 text-right font-mono text-danger">
               {Number(r.current_qty)} {r.unit}
             </td>
             <td className="py-2 px-3 text-right font-mono">

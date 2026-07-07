@@ -3,17 +3,17 @@ import { render, screen } from '@testing-library/react';
 import { LoyaltyBadge } from '../LoyaltyBadge.js';
 
 describe('LoyaltyBadge', () => {
-  it('renders bronze tier with amber classes and points', () => {
+  it('renders bronze tier with warning tokens and points', () => {
     render(<LoyaltyBadge tier="bronze" points={120} />);
     const badge = screen.getByText('Bronze').parentElement;
-    expect(badge).toHaveClass('bg-amber-100', 'text-amber-800');
+    expect(badge).toHaveClass('bg-warning-soft', 'text-warning');
     expect(screen.getByText(/120/)).toBeInTheDocument();
   });
 
-  it('renders silver tier with slate classes and points', () => {
+  it('renders silver tier with neutral tokens and points', () => {
     render(<LoyaltyBadge tier="silver" points={650} />);
     const badge = screen.getByText('Silver').parentElement;
-    expect(badge).toHaveClass('bg-slate-200', 'text-slate-700');
+    expect(badge).toHaveClass('bg-bg-overlay', 'text-text-secondary');
     expect(screen.getByText(/650/)).toBeInTheDocument();
   });
 
@@ -24,10 +24,10 @@ describe('LoyaltyBadge', () => {
     expect(screen.getByText(/2[,.]?500/)).toBeInTheDocument();
   });
 
-  it('renders platinum tier with violet classes and points', () => {
+  it('renders platinum tier with info tokens and points', () => {
     render(<LoyaltyBadge tier="platinum" points={5100} />);
     const badge = screen.getByText('Platinum').parentElement;
-    expect(badge).toHaveClass('bg-violet-100', 'text-violet-800');
+    expect(badge).toHaveClass('bg-info-soft', 'text-info');
     expect(screen.getByText(/5[,.]?100/)).toBeInTheDocument();
   });
 });

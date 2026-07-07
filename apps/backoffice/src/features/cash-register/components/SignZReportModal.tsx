@@ -66,11 +66,11 @@ export function SignZReportModal({ open, zreportId, onOpenChange, onSuccess }: S
     }
   };
 
-  const snapshot = report?.snapshot as Record<string, unknown> | undefined;
-  const sales    = snapshot?.['sales_total']   as number | undefined;
-  const variance = snapshot?.['cash_variance'] as number | undefined;
-  const opened   = snapshot?.['opened_at']     as string | undefined;
-  const closed   = snapshot?.['closed_at']     as string | undefined;
+  const snapshot = report?.snapshot;
+  const sales    = snapshot?.sales_total   as number | undefined;
+  const variance = snapshot?.cash_variance as number | undefined;
+  const opened   = snapshot?.opened_at     as string | undefined;
+  const closed   = snapshot?.closed_at     as string | undefined;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -129,7 +129,7 @@ export function SignZReportModal({ open, zreportId, onOpenChange, onSuccess }: S
               />
             </div>
             {errorMsg !== null && (
-              <p className="text-sm text-red-500" role="alert">{errorMsg}</p>
+              <p className="text-sm text-danger" role="alert">{errorMsg}</p>
             )}
             <DialogFooter className="pt-2">
               <Button variant="ghost" onClick={() => setStep(1)} data-testid="sign-back">Back</Button>

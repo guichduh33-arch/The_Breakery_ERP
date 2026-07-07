@@ -10,6 +10,7 @@
 // this component dumb makes it trivial to unit-test without a QueryClient.
 
 import { useId, type JSX } from 'react';
+import { Select } from '@breakery/ui';
 import type { Section } from '../hooks/useSections.js';
 
 const NOTES_MAX = 500;
@@ -51,12 +52,12 @@ export function TransferFormFields({
           <label htmlFor={fromId} className="text-xs uppercase tracking-widest text-text-secondary">
             From section
           </label>
-          <select
+          <Select
             id={fromId}
             value={value.fromSectionId}
             onChange={(e) => patch({ fromSectionId: e.target.value })}
             disabled={disabled}
-            className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
+            className="w-full"
           >
             <option value="">— Select source —</option>
             {sections.map((s) => (
@@ -68,19 +69,19 @@ export function TransferFormFields({
                 {s.name} ({s.code})
               </option>
             ))}
-          </select>
+          </Select>
         </div>
 
         <div className="space-y-1">
           <label htmlFor={toId} className="text-xs uppercase tracking-widest text-text-secondary">
             To section
           </label>
-          <select
+          <Select
             id={toId}
             value={value.toSectionId}
             onChange={(e) => patch({ toSectionId: e.target.value })}
             disabled={disabled}
-            className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
+            className="w-full"
           >
             <option value="">— Select destination —</option>
             {sections.map((s) => (
@@ -92,7 +93,7 @@ export function TransferFormFields({
                 {s.name} ({s.code})
               </option>
             ))}
-          </select>
+          </Select>
         </div>
       </div>
 
