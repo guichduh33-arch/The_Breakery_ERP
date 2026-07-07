@@ -1,0 +1,32 @@
+# Session 67 — INDEX (2026-07-07)
+
+> **Branche :** `swarm/session-67` · **Spec :** `docs/superpowers/specs/2026-07-07-s67-close-shift-three-way-denominations-design.md` · **Plan :** `docs/superpowers/plans/2026-07-07-s67-close-shift-three-way-denominations.md`
+> **Livré :** fiche 12 **D2.2** (comptage 3 volets cash/QRIS/carte à la clôture — `close_shift_v4 → v5`, gardes note/PIN en OR sur les volets, zéro JE non-cash) + **D2.3** (grille de coupures IDR opt-in `business_config.shift_denomination_count_enabled`, open + close, enforced serveur au close). Migrations **`20260710000121..124`**. pgTAP **`close_shift_three_way` 15/15 live** · repoints `close_shift_pin_gate` 11/11 · `close_shift_note_enforced` 7/7 · `cash_register` 12/12. **Money-path v17/v11/fire_v4 non modifiée.**
+
+## Déviations
+
+- **DEV-S67-01 — Hook flag dédié.** La spec (§4) propageait `shift_denomination_count_enabled` via `useShiftCloseSummary` ; implémenté en hook dédié **`useDenominationCountEnabled`** (fail-closed `false` — une panne de config ne force jamais la grille), parce que `OpenShiftModal` en a besoin sans session ouverte (pas de summary pré-open). `useShiftCloseSummary` intouché.
+- **DEV-S67-02 — Étape review sans expected non-cash.** La spec (§4) décrivait un tableau review « expected / counted / variance » par volet ; l'expected QRIS/carte pré-close exigerait de dupliquer la formule serveur côté client (requête `order_payments` par méthode). Implémenté : lignes **counted-only** + mention « reconciled server-side at close » ; le serveur reste l'autorité (les gardes remontent via les messages mappés), le snapshot Z affiche le rapprochement complet post-close. Cf. D-7.
+- **DEV-S67-03 — Bug v5 `array || 'literal'` (attrapé par T6).** Le corps initial de `_122` accumulait les volets fautifs via `v_note_volets || 'qris'` — plpgsql résout `text[] || unknown` en concat d'arrays → **22P02 `malformed array literal`** dès qu'une garde se déclenchait. Fix : `array_append(...)` ×6, fonction redéployée live, fichier `_122` amendé **pré-merge** (commit `c7d9330a`). La suite `close_shift_three_way` T3/T4 pin le comportement.
+- **DEV-S67-04 — Signature réelle `set_setting_v1`.** Le plan (T5) écrivait `set_setting_v1(text, jsonb)` ; la signature live est **`(text, jsonb, text)`** (`p_category`). Corps live utilisé (DEV-S57-02), migration `_124` correcte.
+- **DEV-S67-05 — Tâches DB/pgTAP exécutées contrôleur.** Les tâches 2–7 (migrations, suite pgTAP, repoints + runs live) ont été exécutées par le contrôleur de session — les subagents n'ont pas d'accès MCP Supabase — puis **revues par lots** (vague DB 2–5 : 0 Critical/0 Important ; T6/T7 pinés par leurs runs live). Les gros fichiers (>12 KB : `_122`, `_124`, suite T6) sont passés par le runner API-from-file + bookkeeping manuel (versions cloud `20260707170340`, `20260707170822`).
+- **DEV-S67-06 — Fix revue T13 (header orphelin PDF).** La revue a relevé (Important) que les nouvelles sections PDF pouvaient imprimer un titre sans lignes (reconciliation aux 3 volets non comptés — théorique, cash toujours compté ; grille toute à zéro — atteignable). Fix appliqué : les sections ne s'émettent que si au moins une ligne rend.
+
+## Dettes
+
+- **D-1 — Volet carte = `card`+`edc` jamais testé avec de vraies lignes `order_payments`.** Les fixtures pgTAP S67 sont des sessions sans commandes (expected = 0 partout) ; la requête de merge `method IN ('card','edc')` n'est pinée par aucun test avec des paiements réels. Ajouter un cas seedé (ordre payé card + edc) à la prochaine session qui touche la clôture.
+- **D-2 — Chemins d'erreur settings non testés pour la nouvelle clé.** `set_setting_v1('shift_denomination_count_enabled', …)` : les chemins `42501` et `setting_type_invalid` ne sont pinés par aucune suite (la validation existe, miroir `tax_inclusive`).
+- **D-3 — `useDenominationCountEnabled` sans `refetchInterval`.** Un flip du flag BO ne se propage au POS qu'au refocus fenêtre (staleTime 30 s) — pas de polling 60 s contrairement à `useEnabledPaymentMethods`. Effet réel borné : le serveur enforce (`denominations_required`).
+- **D-4 — `DenominationGrid` : quantité sans borne haute.** Saisie libre d'une quantité arbitrairement grande (pas de clamp) — un fat-finger produit un total absurde, visible à la review mais non bloqué.
+- **D-5 — `nonCashIncomplete` absent du `disabled` du bouton Close Shift.** Latent : inatteignable aujourd'hui (la garde bloque à Confirm count), mais un futur edit du flux review pourrait le contourner. Une ligne à ajouter.
+- **D-6 — Vitest `cash-register-close` = 5 skipped en local** (env-gated `SUPABASE_SERVICE_ROLE_KEY`) ; v5 n'est couvert en local que par pgTAP. La nightly CI l'exécute avec secrets.
+- **D-7 — Expected non-cash pré-close non affiché** (choix DEV-S67-02). Si le terrain réclame l'attendu QRIS/carte à l'étape review, ajouter la requête client par méthode (ou un RPC read-only) — attention au blind count.
+- **D-8 — Grille de coupures à l'ouverture : enforcement client-only.** Pas de RPC d'open (insert direct RLS) — un appel direct peut ouvrir sans grille même flag ON. Assumé par la spec (§7) ; à revisiter si l'open passe un jour par RPC (D3.1 fiche 12, passage de relais).
+
+## Preuves de closeout
+
+- pgTAP live : `close_shift_three_way` **15/15** · `close_shift_pin_gate` **11/11** · `close_shift_note_enforced` **7/7** · `cash_register` **12/12** · ancre **`s44_money_gates` 12/12** re-passée post-livraison — **money-path v17/v11/fire_v4 non modifiée**.
+- Vitest live-RPC `cash-register-close` repointé v5 : **5 skipped en local** (env-gated `SUPABASE_SERVICE_ROLE_KEY` — baseline connue, la nightly CI l'exécute avec secrets ; cf. D-6).
+- EF `generate-zreport-pdf` **redéployée** (template + section reconciliation, CLI `--use-api`).
+- Suite monorepo : **typecheck 7/7** (après fix barrel `.js` — le premier run a attrapé la résolution nodenext de print-bridge sur `cash/index.ts`) · **build 3/3** · **test exit 0** — à l'exception d'un flaky **pré-existant** hors périmètre : `ProductionPage.smoke` (inventory-production, fichier intouché depuis #160) timeout 2 s sous charge de suite complète, **5/5 en isolation** ; observation notée, pas une régression S67.
+- Smokes S67 : domain denominations 7/7 · DenominationGrid 3/3 · CloseShiftModal 15/15 (11 pré-existants + 4 nouveaux) · OpenShiftModal.denominations 1/1 · SignZReport 3/3 · useDenominationCountEnabled 2/2.
