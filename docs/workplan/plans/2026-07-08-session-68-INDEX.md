@@ -35,7 +35,7 @@ Types regénérés (`create_b2b_order_v4`, `get_b2b_invoice_v1`, `invoice_sequen
 - **pgTAP `b2b_invoice.test.sql`** (nouvelle) : bloc 1 (helper+schéma) 6/6 · bloc 2 (v4 attribution+continuité) 6/6 · bloc 3 (backfill ordre+seeding) 4/4 · bloc 4 (get_b2b_invoice_v1 shape/tax0/format/lignes/P0003/P0002) 7/7 — **tous live**.
 - **Ancres money-path re-vertes live** : `b2b_settlement` **14/14** (repointée v4, T10 credit-gate P0011) · `b2b_display_aware_stock` **3/3** (repointée v4) · `b2b_order_flag_aware_stock` A/B/C (repointée v4) · **`s44_money_gates` 12/12** (POS, non touché) · `b2b_foundation` + `record-b2b-payment.ts` repointées v4 (renames mécaniques).
 - Smoke BO `b2b-invoices-tab` 20/20 (bouton + n° facture).
-- Suite monorepo : typecheck OK · build + test — voir closeout.
+- **Suite monorepo verte** : typecheck 6/6 · build 3/3 · **`pnpm test` 8/8 tasks exit 0** (12m54s, coverage).
 
 ## Revue DB consolidée (tâches 1-5)
 2 Critical (corrigés) : **#1** ancres B2B appelaient encore `create_b2b_order_v3` (droppée) → repoint v4 dans 4 suites + re-vérif live ; **#2** `invoice_sequences` sans REVOKE `authenticated` → migration `_134`. Minors acceptés/dette (voir ci-dessous).
@@ -53,6 +53,10 @@ Types regénérés (`create_b2b_order_v4`, `get_b2b_invoice_v1`, `invoice_sequen
 - **D-3** — les 3 nouvelles fonctions utilisent `REVOKE ALL ON FUNCTION` là où le bloc canonique récent utilise `REVOKE EXECUTE` (superset, fonctionnellement équivalent — cosmétique).
 - **D-4** — le **rendu live du template `b2b_invoice` via l'EF n'a pas été invoqué end-to-end** (mint d'un PIN-JWT en test = lourd) : vérifié structurellement (miroir byte de `pb1.ts` + contrat de données `get_b2b_invoice_v1` validé). À exercer au premier usage réel (ou test e2e futur).
 - **D-5** — le cas smoke (e) de `b2b-invoices-tab` n'impose pas `canRecord/canCancel=false` (sans impact fonctionnel).
+- **D-6** (revue finale) — `B2bInvoicesTab` a `unpaidOnly` **ON par défaut** : imprimer/envoyer une facture **payée** oblige à décocher « Unpaid only » d'abord. Friction UX seulement (atteignable). Follow-up : défaut « toutes » ou affordance d'impression dédiée. (Aussi noté : Subtotal == Total cosmétiquement redondant puisque taxe toujours 0 — inoffensif.)
+
+## Revue finale de branche
+**Ready to merge** (reviewer opus, 0 Critical/0 Important). Diff byte-à-byte `create_b2b_order_v4` vs v3 confirmé **additif seul** (invoice_number) — TOCTOU credit / JE / stock display-aware / idempotence inchangés ; « pas de trou » confirmé plus fort que l'INDEX (séquence gapless sous lock d'année, tirage après credit-check = belt-and-suspenders). Numérotation/sécurité/NON-PKP/`_134` lockdown tous validés. Les 6 dettes confirmées non bloquantes.
 
 ## Money-path
 `create_b2b_order` bumpée v3→v4 (additif : invoice_number seulement). `complete_order_with_payment_v17` / `pay_existing_order_v11` / `fire_counter_order_v4` **non modifiés**. Ancre `s44_money_gates` 12/12 re-verte en closeout.
