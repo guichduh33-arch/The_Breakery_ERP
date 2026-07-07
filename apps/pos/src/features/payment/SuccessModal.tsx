@@ -172,9 +172,22 @@ export function SuccessModal(props: SuccessModalProps) {
   // S57 C-D4 — confirm the sale on the customer display (thank-you + change to
   // collect). Emitted here so it fires for every tender path (fast-path AND
   // split), since this modal renders after any successful checkout.
+  // Split-brand redesign — also carries tax included, the customer's name and
+  // the loyalty outcome so the display mirrors the receipt's payment details.
   useEffect(() => {
     if (!open) return;
-    broadcastPaymentComplete({ total, change: changeGiven, method: paymentMethod });
+    broadcastPaymentComplete({
+      total,
+      change: changeGiven,
+      method: paymentMethod,
+      // Server-authoritative tax (money-path); falls back to the client
+      // estimate at the server rate, mirroring buildReceiptPayload.
+      tax_amount: props.taxAmount ?? calculateTotals(props.cart, taxRate).tax_amount,
+      customer_name: customerName ?? null,
+      points_earned: pointsEarned !== undefined && pointsEarned > 0 ? pointsEarned : null,
+      loyalty_balance_after: props.loyaltyBalanceAfter ?? null,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fire once per success; the extra fields are frozen success props
   }, [open, total, changeGiven, paymentMethod]);
 
   useEffect(() => {
