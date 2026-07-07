@@ -34,8 +34,8 @@
 // real section_id column. Backwards compatible — if every table is <100,
 // the Interior tab holds them all and Terrace is empty.
 
-import { useMemo, useState } from 'react';
-import { X, Home, Trees, Users } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { X, ArrowRightLeft, Home, Trees, Users } from 'lucide-react';
 import type { JSX } from 'react';
 import type { RestaurantTable } from '@breakery/domain';
 import {
@@ -52,6 +52,12 @@ const SR_ONLY =
 
 export type FloorPlanSection = 'interior' | 'terrace';
 
+/** Active order sitting on a table (fiche 02 D2.5 — transfer mode). */
+export interface FloorPlanTableOrder {
+  id: string;
+  order_number: string;
+}
+
 export interface FloorPlanModalProps {
   open: boolean;
   onClose: () => void;
@@ -62,6 +68,19 @@ export interface FloorPlanModalProps {
   occupancy: Record<string, boolean>;
   /** Pre-selected table name (e.g. cart.tableNumber) so the modal can highlight it. */
   initialSelection?: string | null;
+  /**
+   * Fiche 02 D2.5 — transfer mode (both optional; the modal stays presentational).
+   * tableOrders maps an occupied table to its active order; onTransfer performs
+   * the server move (transfer_order_table_v1 in the host). When both are given,
+   * selecting an occupied table offers "Transfer order" → pick a free destination.
+   */
+  tableOrders?: Record<string, FloorPlanTableOrder>;
+  onTransfer?: (args: {
+    orderId: string;
+    orderNumber: string;
+    fromTable: string;
+    toTable: string;
+  }) => Promise<void> | void;
 }
 
 function bucketTables(tables: RestaurantTable[]): Record<FloorPlanSection, RestaurantTable[]> {
@@ -95,12 +114,26 @@ export function FloorPlanModal({
   tables,
   occupancy,
   initialSelection,
+  tableOrders,
+  onTransfer,
 }: FloorPlanModalProps): JSX.Element {
   const buckets = useMemo(() => bucketTables(tables), [tables]);
   const initialSection: FloorPlanSection =
     buckets.terrace.length > 0 && buckets.interior.length === 0 ? 'terrace' : 'interior';
   const [section, setSection] = useState<FloorPlanSection>(initialSection);
   const [selectedName, setSelectedName] = useState<string | null>(initialSelection ?? null);
+  // Transfer mode (fiche 02 D2.5): source table whose active order is being moved.
+  const [transferSource, setTransferSource] = useState<string | null>(null);
+  const [transferring, setTransferring] = useState(false);
+
+  // Leaving the modal always exits transfer mode — a stale source on reopen
+  // would silently turn a plain table pick into a transfer.
+  useEffect(() => {
+    if (!open) {
+      setTransferSource(null);
+      setTransferring(false);
+    }
+  }, [open]);
 
   const visible = buckets[section];
   const selected = useMemo(
@@ -108,10 +141,44 @@ export function FloorPlanModal({
     [tables, selectedName],
   );
 
+  const sourceOrder = transferSource ? tableOrders?.[transferSource] : undefined;
+  const canOfferTransfer =
+    !transferSource &&
+    onTransfer !== undefined &&
+    selectedName !== null &&
+    occupancy[selectedName] === true &&
+    tableOrders?.[selectedName] !== undefined;
+  // Destination must be a different, FREE table (merging two live orders on one
+  // table stays a deliberate manual flow, not a transfer).
+  const transferTargetValid =
+    transferSource !== null &&
+    selectedName !== null &&
+    selectedName !== transferSource &&
+    occupancy[selectedName] !== true;
+
   function handleConfirm(): void {
     if (!selected) return;
     onSelect(selected.name);
     onClose();
+  }
+
+  async function handleTransferConfirm(): Promise<void> {
+    if (!onTransfer || !transferSource || !sourceOrder || !selectedName || !transferTargetValid) return;
+    setTransferring(true);
+    try {
+      await onTransfer({
+        orderId: sourceOrder.id,
+        orderNumber: sourceOrder.order_number,
+        fromTable: transferSource,
+        toTable: selectedName,
+      });
+      setTransferSource(null);
+      onClose();
+    } catch {
+      // The host surfaced the error (toast); stay in transfer mode for retry.
+    } finally {
+      setTransferring(false);
+    }
   }
 
   function handleTap(table: RestaurantTable): void {
@@ -137,7 +204,9 @@ export function FloorPlanModal({
           <div>
             <h2 className="font-display text-xl tracking-wide">FLOOR PLAN</h2>
             <p className="text-text-secondary text-sm mt-0.5">
-              Select an available table to start a new order or tap an occupied table to restore it.
+              {transferSource && sourceOrder
+                ? `Moving order ${sourceOrder.order_number} from table ${transferSource} — tap a free destination table.`
+                : 'Select an available table to start a new order or tap an occupied table to restore it.'}
             </p>
           </div>
         </div>
@@ -207,16 +276,60 @@ export function FloorPlanModal({
             * Click a <span className="text-gold">gold</span> table to restore or transfer, or an{' '}
             <span className="text-green">available</span> table for a new order.
           </p>
-          <Button
-            variant="gold"
-            size="lg"
-            onClick={handleConfirm}
-            disabled={!selected}
-            aria-label={selected ? `Open table ${selected.name}` : 'Select a table'}
-            data-testid="floor-plan-confirm"
-          >
-            {selected ? `Open Table ${selected.name}` : 'Select a Table'}
-          </Button>
+          {transferSource ? (
+            <>
+              <Button
+                variant="secondary"
+                size="lg"
+                onClick={() => setTransferSource(null)}
+                disabled={transferring}
+                data-testid="floor-plan-transfer-cancel"
+              >
+                Cancel transfer
+              </Button>
+              <Button
+                variant="gold"
+                size="lg"
+                onClick={() => { void handleTransferConfirm(); }}
+                disabled={!transferTargetValid || transferring}
+                data-testid="floor-plan-transfer-confirm"
+              >
+                <ArrowRightLeft className="h-4 w-4" aria-hidden />
+                {transferring
+                  ? 'Moving…'
+                  : transferTargetValid
+                    ? `Move ${sourceOrder?.order_number ?? ''} to ${selectedName}`
+                    : 'Pick a free table'}
+              </Button>
+            </>
+          ) : (
+            <>
+              {canOfferTransfer && (
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  onClick={() => {
+                    setTransferSource(selectedName);
+                    setSelectedName(null);
+                  }}
+                  data-testid="floor-plan-transfer-start"
+                >
+                  <ArrowRightLeft className="h-4 w-4" aria-hidden />
+                  Transfer order {selectedName ? tableOrders?.[selectedName]?.order_number : ''}
+                </Button>
+              )}
+              <Button
+                variant="gold"
+                size="lg"
+                onClick={handleConfirm}
+                disabled={!selected}
+                aria-label={selected ? `Open table ${selected.name}` : 'Select a table'}
+                data-testid="floor-plan-confirm"
+              >
+                {selected ? `Open Table ${selected.name}` : 'Select a Table'}
+              </Button>
+            </>
+          )}
         </div>
       </footer>
     </FullScreenModal>

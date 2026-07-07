@@ -24,7 +24,7 @@ const { rpcMock } = vi.hoisted(() => ({ rpcMock: vi.fn() }));
 
 vi.mock('@/lib/supabase', () => ({
   supabase: {
-    rpc: (...a: unknown[]) => rpcMock(...a),
+    rpc: (...a: unknown[]): unknown => rpcMock(...a) as unknown,
     auth: { getSession: vi.fn().mockResolvedValue({ data: { session: { access_token: 'tok' } } }) },
   },
   supabaseUrl: 'http://localhost:54321',
@@ -72,6 +72,8 @@ describe('SendToKitchenButton — unrouted product warning (LOT 3)', () => {
           { id: 'line-none', product_id: 'p-none', name: 'Croissant', unit_price: 20_000, quantity: 1, modifiers: [] },
         ],
         order_type: 'dine_in',
+        // Fiche 02 D2.5 — dine-in fires require a table (useDineInTableGuard).
+        tableNumber: 'T-01',
       },
       printedItemIds: [],
       lockedItemIds: [],
@@ -89,7 +91,7 @@ describe('SendToKitchenButton — unrouted product warning (LOT 3)', () => {
       isAuthenticated: true,
       isLoading: false,
       error: null,
-    } as never);
+    });
   });
 
   afterEach(() => {
@@ -106,6 +108,7 @@ describe('SendToKitchenButton — unrouted product warning (LOT 3)', () => {
 
     await act(async () => {
       btn.click();
+      await Promise.resolve();
     });
 
     await waitFor(() => {
