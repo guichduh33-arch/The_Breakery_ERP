@@ -15,7 +15,7 @@ import { supabase } from '@/lib/supabase';
 /** Fallbacks when business_config is unreadable under the POS JWT. */
 export const DEFAULT_VARIANCE_THRESHOLD_ABS = 50_000;
 export const DEFAULT_VARIANCE_THRESHOLD_PCT = 0.005;
-// S66 (12 D2.1) — manager-PIN thresholds (server defaults in close_shift_v4).
+// S66 (12 D2.1) — manager-PIN thresholds (server defaults in close_shift_v5).
 export const DEFAULT_VARIANCE_PIN_THRESHOLD_ABS = 200_000;
 export const DEFAULT_VARIANCE_PIN_THRESHOLD_PCT = 0.02;
 

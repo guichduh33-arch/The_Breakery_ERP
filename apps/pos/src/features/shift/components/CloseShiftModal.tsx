@@ -94,7 +94,7 @@ export function CloseShiftModal({
 
   // S66 (12 D2.1): above the higher PIN thresholds, a designated manager must
   // approve. Same predicate shape as the note guard, mirrored server-side in
-  // close_shift_v4 (pin_approval_required) — the UI block is a convenience,
+  // close_shift_v5 (pin_approval_required) — the UI block is a convenience,
   // the RPC is the authority.
   const pinRequired = step === 'review'
     && shouldShowWarning(variance, expectedCash, pinThresholdAbs, pinThresholdPct);
@@ -116,6 +116,10 @@ export function CloseShiftModal({
   async function handleSubmit(): Promise<void> {
     if (cashEmpty) {
       toast.error('Enter the counted cash amount.');
+      return;
+    }
+    if (nonCashIncomplete) {
+      toast.error('Enter every counted volet (0 is allowed).');
       return;
     }
     try {
@@ -141,12 +145,15 @@ export function CloseShiftModal({
       if (cardVisible) payload.counted_card = Number(cardStr || '0');
       if (denomEnabled) payload.denominations = denoms;
       const result = await closeMut.mutateAsync(payload);
+      // Idempotent replay (double-submit race) returns a slim envelope without
+      // `variance` — never dereference it blindly.
+      const resultVariance = result.variance ?? 0;
       toast.success(
-        result.variance === 0
+        resultVariance === 0
           ? 'Shift closed (balanced).'
-          : `Shift closed — variance ${result.variance > 0 ? '+' : ''}${result.variance.toLocaleString('id-ID')} IDR.`,
+          : `Shift closed — variance ${resultVariance > 0 ? '+' : ''}${resultVariance.toLocaleString('id-ID')} IDR.`,
       );
-      onClosed?.(result.variance);
+      onClosed?.(resultVariance);
       onClose();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to close shift');
@@ -374,7 +381,7 @@ export function CloseShiftModal({
               <Button
                 variant="gold"
                 size="lg"
-                disabled={closeMut.isPending || cashEmpty || noteRequired || pinIncomplete}
+                disabled={closeMut.isPending || cashEmpty || nonCashIncomplete || noteRequired || pinIncomplete}
                 onClick={() => { void handleSubmit(); }}
               >
                 {closeMut.isPending ? 'Closing…' : 'Close Shift'}

@@ -126,7 +126,10 @@ export async function render(
     y -= 6;
   }
   const denomRows: Array<{ label: string; value: number }> = [];
-  for (const [face, qty] of Object.entries(snap.denominations ?? {})) {
+  // Big notes first — numeric-like jsonb keys iterate ascending by default,
+  // but the physical count (and the POS grid) go largest-to-smallest.
+  for (const [face, qty] of Object.entries(snap.denominations ?? {})
+    .sort((a, b) => Number(b[0]) - Number(a[0]))) {
     if (Number(qty) === 0) continue;
     denomRows.push({ label: `${formatIDR(Number(face))} x ${qty}`, value: Number(face) * Number(qty) });
   }
