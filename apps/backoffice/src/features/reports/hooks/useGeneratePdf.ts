@@ -12,7 +12,8 @@ export type PdfTemplate =
   | 'recipe_overview' | 'recipe_timeline'
   | 'sales_by_hour' | 'sales_by_category' | 'sales_by_staff'
   | 'stock_variance' | 'production_yield' | 'audit'
-  | 'wastage' | 'payment_by_method' | 'pb1' | 'stock_movements';
+  | 'wastage' | 'payment_by_method' | 'pb1' | 'stock_movements'
+  | 'b2b_invoice';
 
 export interface GeneratePdfArgs {
   template:        PdfTemplate;

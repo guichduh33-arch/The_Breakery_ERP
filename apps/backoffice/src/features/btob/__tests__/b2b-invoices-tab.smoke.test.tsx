@@ -6,6 +6,8 @@
 //       only when canCancel is true.
 //   (c) clicking Cancel opens the modal; reason < 3 chars keeps confirm disabled.
 //   (d) Record payment on an invoices-tab row calls onRecord(customer_id, [invoice_id]).
+// Session 68 — (e) Invoice PDF button: renders invoice_number, calls
+//   get_b2b_invoice_v1 then generate-pdf, opens the signed URL.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -20,22 +22,40 @@ const CUSTOMERS = [
 
 const INVOICES = [
   {
-    invoice_id: 'inv-1', order_number: 'B2B-0001', customer_id: 'b1',
+    invoice_id: 'inv-1', order_number: 'B2B-0001', invoice_number: null, customer_id: 'b1',
     b2b_company_name: 'PT Kuta', customer_name: 'Hotel Kuta',
     invoice_total: 500000, invoice_date: '2026-06-01T00:00:00Z', paid_at: null,
     order_status: 'b2b_pending', age_days: 30, is_unpaid: true,
     amount_paid: 0, outstanding: 500000,
   },
   {
-    invoice_id: 'inv-2', order_number: 'B2B-0002', customer_id: 'b1',
+    invoice_id: 'inv-2', order_number: 'B2B-0002', invoice_number: null, customer_id: 'b1',
     b2b_company_name: 'PT Kuta', customer_name: 'Hotel Kuta',
     invoice_total: 300000, invoice_date: '2026-06-10T00:00:00Z', paid_at: null,
     order_status: 'b2b_pending', age_days: 21, is_unpaid: true,
     amount_paid: 100000, outstanding: 200000,
   },
+  {
+    invoice_id: 'inv-3', order_number: 'B2B-20260708-0001', invoice_number: 'INV/2026/00001', customer_id: 'b1',
+    b2b_company_name: 'PT Kuta', customer_name: 'Hotel Kuta',
+    invoice_total: 50000, invoice_date: '2026-07-08T00:00:00Z', paid_at: '2026-07-08T00:00:00Z',
+    order_status: 'paid', age_days: 0, is_unpaid: false,
+    amount_paid: 50000, outstanding: 0,
+  },
 ];
 
 interface RpcResult { data: unknown; error: { message: string } | null }
+
+const GET_B2B_INVOICE_PAYLOAD = {
+  invoice:  {
+    invoice_number: 'INV/2026/00001', order_number: 'B2B-20260708-0001',
+    invoice_date: '2026-07-08', due_date: '2026-07-15', status: 'b2b_pending',
+    subtotal: 45000, tax_amount: 5000, total: 50000, notes: null,
+  },
+  customer: { company_name: 'PT Kuta', tax_id: null, name: 'Hotel Kuta', phone: null, email: null, payment_terms_days: 7 },
+  lines:    [{ name: 'Croissant', quantity: 10, unit_price: 5000, line_total: 50000 }],
+  payment:  { amount_paid: 0, outstanding: 50000 },
+};
 
 vi.mock('@/lib/supabase.js', () => {
   function tableData(table: string): RpcResult {
@@ -60,11 +80,14 @@ vi.mock('@/lib/supabase.js', () => {
     return chain;
   }
   return {
+    supabaseUrl: 'http://test.local',
     supabase: {
       from: (table: string) => buildChain(table),
       rpc:  (fn: string, args: unknown) => {
         const out = mockRpc(fn, args) as RpcResult | undefined;
-        return Promise.resolve(out ?? {
+        if (out !== undefined) return Promise.resolve(out);
+        if (fn === 'get_b2b_invoice_v1') return Promise.resolve({ data: GET_B2B_INVOICE_PAYLOAD, error: null });
+        return Promise.resolve({
           data: {
             order_id: 'inv-1', order_number: 'B2B-0001',
             reversed_je_id: 'je-1', balance_after: 0, idempotent_replay: false,
@@ -75,6 +98,11 @@ vi.mock('@/lib/supabase.js', () => {
     },
   };
 });
+
+vi.mock('@/lib/accessToken.js', () => ({ getAccessToken: () => Promise.resolve('test-token') }));
+
+const fetchMock = vi.fn();
+Object.defineProperty(globalThis, 'fetch', { value: fetchMock, writable: true });
 
 if (typeof crypto.randomUUID !== 'function') {
   Object.defineProperty(globalThis.crypto, 'randomUUID', {
@@ -102,7 +130,14 @@ function renderTab(props: Partial<{ canRecord: boolean; canCancel: boolean; onRe
 }
 
 describe('B2bInvoicesTab (S56 DEV-S52-03)', () => {
-  beforeEach(() => mockRpc.mockReset());
+  beforeEach(() => {
+    mockRpc.mockReset();
+    fetchMock.mockReset();
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ signed_url: 'https://example.test/invoice.pdf', storage_path: 'b2b-invoices/x', expires_at: 'z' }),
+    });
+  });
 
   it('(a) renders both invoice rows with outstanding + status badges', async () => {
     renderTab();
@@ -147,5 +182,24 @@ describe('B2bInvoicesTab (S56 DEV-S52-03)', () => {
     await waitFor(() => expect(screen.getByTestId('inv-record-B2B-0001')).toBeInTheDocument());
     fireEvent.click(screen.getByTestId('inv-record-B2B-0001'));
     expect(onRecord).toHaveBeenCalledWith('b1', ['inv-1']);
+  });
+
+  it('(e) Invoice PDF button renders invoice_number and downloads via get_b2b_invoice_v1 + generate-pdf', async () => {
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+    renderTab();
+    await waitFor(() => expect(screen.getByTestId('inv-pdf-B2B-20260708-0001')).toBeInTheDocument());
+    expect(screen.getByText('INV/2026/00001')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('inv-pdf-B2B-20260708-0001'));
+
+    await waitFor(() => expect(mockRpc).toHaveBeenCalledWith('get_b2b_invoice_v1', { p_order_id: 'inv-3' }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+      'http://test.local/functions/v1/generate-pdf',
+      expect.objectContaining({ method: 'POST' }),
+    ));
+    const sentBody = JSON.parse((fetchMock.mock.calls[0]?.[1] as { body: string }).body) as Record<string, unknown>;
+    expect(sentBody).toMatchObject({ template: 'b2b_invoice', filename: 'invoice-INV-2026-00001' });
+    await waitFor(() => expect(openSpy).toHaveBeenCalledWith('https://example.test/invoice.pdf', '_blank', 'noopener'));
+    openSpy.mockRestore();
   });
 });

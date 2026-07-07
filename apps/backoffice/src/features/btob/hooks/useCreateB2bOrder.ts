@@ -1,6 +1,7 @@
 // apps/backoffice/src/features/btob/hooks/useCreateB2bOrder.ts
 //
-// Session 24 / Phase 2.A.3 — call create_b2b_order_v3 (S52 migration _069, TOCTOU fix:
+// Session 24 / Phase 2.A.3 — call create_b2b_order_v4 (S68 migration _130: assigns a
+// dedicated annual-continuous invoice_number at creation; S52 TOCTOU fix preserved:
 // credit re-checked after the customer FOR UPDATE lock).
 //
 // The RPC creates a B2B order in status='b2b_pending' with paid_at=NULL,
@@ -67,6 +68,7 @@ export interface CreateB2bOrderArgs {
 export interface CreateB2bOrderResult {
   order_id:          string;
   order_number:      string;
+  invoice_number:    string;
   total:             number;
   credit_after:      number;
   je_id:             string;
@@ -118,14 +120,14 @@ export function useCreateB2bOrder() {
         p_idempotency_key: string;
       } = {
         p_customer_id:     args.customerId,
-        p_items:           args.items as unknown,
+        p_items:           args.items,
         p_idempotency_key: args.idempotencyKey,
       };
       if (args.notes        !== undefined && args.notes.trim() !== '') rpcArgs.p_notes        = args.notes.trim();
       if (args.deliveryDate !== undefined && args.deliveryDate     !== '') rpcArgs.p_delivery_date = args.deliveryDate;
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await supabase.rpc('create_b2b_order_v3', rpcArgs as any);
+      const { data, error } = await supabase.rpc('create_b2b_order_v4', rpcArgs as any);
       if (error) {
         const code = classify(error.message);
         // Supabase exposes Postgres DETAIL on `error.details` (snake_case differs by SDK version);

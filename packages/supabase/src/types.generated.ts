@@ -1841,6 +1841,21 @@ export type Database = {
           },
         ]
       }
+      invoice_sequences: {
+        Row: {
+          last_number: number
+          year: number
+        }
+        Insert: {
+          last_number?: number
+          year: number
+        }
+        Update: {
+          last_number?: number
+          year?: number
+        }
+        Relationships: []
+      }
       journal_entries: {
         Row: {
           created_at: string
@@ -2586,6 +2601,7 @@ export type Database = {
           id: string
           idempotency_key: string | null
           import_reference: string | null
+          invoice_number: string | null
           is_held: boolean
           is_historical_import: boolean
           loyalty_points_earned: number
@@ -2622,6 +2638,7 @@ export type Database = {
           id?: string
           idempotency_key?: string | null
           import_reference?: string | null
+          invoice_number?: string | null
           is_held?: boolean
           is_historical_import?: boolean
           loyalty_points_earned?: number
@@ -2658,6 +2675,7 @@ export type Database = {
           id?: string
           idempotency_key?: string | null
           import_reference?: string | null
+          invoice_number?: string | null
           is_held?: boolean
           is_historical_import?: boolean
           loyalty_points_earned?: number
@@ -5585,6 +5603,7 @@ export type Database = {
           customer_name: string | null
           invoice_date: string | null
           invoice_id: string | null
+          invoice_number: string | null
           invoice_total: number | null
           is_unpaid: boolean | null
           order_number: string | null
@@ -5777,6 +5796,7 @@ export type Database = {
       _get_latest: { Args: { "": string }; Returns: number[] }
       _get_note: { Args: { "": string }; Returns: string }
       _is_verbose: { Args: never; Returns: boolean }
+      _next_b2b_invoice_number_v1: { Args: never; Returns: string }
       _notif_substitute: {
         Args: { p_source: string; p_vars: Json }
         Returns: string
@@ -5994,6 +6014,7 @@ export type Database = {
           id: string
           idempotency_key: string | null
           import_reference: string | null
+          invoice_number: string | null
           is_held: boolean
           is_historical_import: boolean
           loyalty_points_earned: number
@@ -6127,7 +6148,7 @@ export type Database = {
         Args: { p_from_unit: string; p_qty: number; p_to_unit: string }
         Returns: number
       }
-      create_b2b_order_v3: {
+      create_b2b_order_v4: {
         Args: {
           p_customer_id: string
           p_delivery_date?: string
@@ -6393,6 +6414,7 @@ export type Database = {
           metadata: Json
         }[]
       }
+      get_b2b_invoice_v1: { Args: { p_order_id: string }; Returns: Json }
       get_b2b_settings_v1: { Args: never; Returns: Json }
       get_balance_sheet_data: { Args: { p_as_of?: string }; Returns: Json }
       get_balance_sheet_v2: { Args: { p_as_of_date: string }; Returns: Json }
@@ -7188,6 +7210,7 @@ export type Database = {
           id: string
           idempotency_key: string | null
           import_reference: string | null
+          invoice_number: string | null
           is_held: boolean
           is_historical_import: boolean
           loyalty_points_earned: number

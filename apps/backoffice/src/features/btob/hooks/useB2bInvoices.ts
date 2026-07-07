@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase.js';
 export interface B2bInvoiceRow {
   invoice_id:       string;
   order_number:     string;
+  invoice_number:   string | null;
   customer_id:      string;
   b2b_company_name: string | null;
   customer_name:    string | null;
@@ -32,7 +33,7 @@ export function useB2bInvoices(customerId?: string, unpaidOnly = false, enabled 
     queryFn: async () => {
       let q = supabase
         .from('view_b2b_invoices')
-        .select('invoice_id, order_number, customer_id, b2b_company_name, customer_name, invoice_total, invoice_date, paid_at, order_status, age_days, is_unpaid, amount_paid, outstanding')
+        .select('invoice_id, order_number, invoice_number, customer_id, b2b_company_name, customer_name, invoice_total, invoice_date, paid_at, order_status, age_days, is_unpaid, amount_paid, outstanding')
         .order('invoice_date', { ascending: true })
         .limit(500);
       if (customerId !== undefined && customerId !== '') q = q.eq('customer_id', customerId);

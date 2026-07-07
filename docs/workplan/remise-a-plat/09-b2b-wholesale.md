@@ -2,7 +2,9 @@
 
 > **Remise à plat — analyse comparative.** Doc : Description v1.2 (2026-07-03), module 9. Code : commit `5b0fa92` (2026-07-03).
 > **Statut annoncé par la doc :** Opérationnel
-> **Verdict global de l'analyse :** Le socle financier (plafond TOCTOU, allocations par facture, annulation contrepassée, aging POS==BO) est réel et solide, mais la doc surclame trois choses centrales : il n'existe **ni prix négocié**, **ni cycle de livraison** (encore moins partiel), **ni facture PDF** — la « facture » est une commande interne sans document ni série légale.
+> **Verdict global de l'analyse :** Le socle financier (plafond TOCTOU, allocations par facture, annulation contrepassée, aging POS==BO) est réel et solide, mais la doc surclame trois choses centrales : il n'existe **ni prix négocié**, **ni cycle de livraison** (encore moins partiel), ~~**ni facture PDF**~~ — la « facture » est une commande interne sans document ni série légale.
+>
+> **⚠️ Mise à jour S68 (2026-07-08) — B1.4 facture PDF LIVRÉE.** La facture PDF B2B existe désormais : série de numérotation dédiée annuelle continue `INV/YYYY/NNNNN` (`create_b2b_order_v4`, migrations `_129..134`), RPC de lecture `get_b2b_invoice_v1`, template EF `b2b_invoice` (**aucune ligne PB1** — B2B NON-PKP), bouton « Invoice PDF » dans l'onglet Invoices BO. Reste surclamé : **prix négociés** (D3) et **cycle de livraison** (D3). Détail : [`../plans/2026-07-08-session-68-INDEX.md`](../plans/2026-07-08-session-68-INDEX.md).
 
 ## A. Ce qui fonctionne réellement (code vérifié)
 
@@ -41,7 +43,7 @@
 | B1.1 | Prix négocié appliqué automatiquement | **Aucun mécanisme de prix négocié** : le prix unitaire est pré-rempli avec le prix catalogue (`CreateB2bOrderModal.tsx:105-111`) puis **librement éditable**, et le serveur facture le `unit_price` envoyé par le client (`_075` l.115) — aucune table de tarifs client (grep `negotiat|price_list|customer_price` migrations → 0). Contraste notable avec le POS où le prix est canonique serveur (S51) | 🔴 MANQUANT |
 | B1.2 | Plafond vérifié au moment décisif, concurrence-proof | Re-check après `FOR UPDATE` sur la ligne client (`_075` l.164-176), erreur P0011 avec payload | ✅ CONFORME |
 | B1.3 | Cycle confirmée→préparation→prête→livrée + livraisons partielles ; stock déduit à la sortie | **Aucun cycle de livraison** : la commande naît `b2b_pending` et ne connaît que `paid`/`voided`. Pas de statuts intermédiaires, pas de livraisons partielles ; le stock est déduit **à la création**, pas à la livraison ; `p_delivery_date` n'est même pas persistée sur `orders` (seulement dans `audit_logs.metadata`, `_075` l.267). Seule la sous-partie « y compris vitrine » est vraie (v3 display-aware) | 🔴 MANQUANT |
-| B1.4 | Facture officielle PDF, numérotation légale | **Aucun template facture** dans l'EF `generate-pdf` (19 fichiers dans `supabase/functions/_shared/pdf-templates/`, aucun `invoice`) ; le « numéro » est `B2B-YYYYMMDD-NNNN` tiré de `order_sequences`, la **séquence journalière partagée avec les tickets POS** (`_075` l.155-162) — ni série légale continue, ni document | 🔴 MANQUANT |
+| B1.4 | Facture officielle PDF, numérotation légale | ~~Aucun template facture~~ **LIVRÉ S68** : template `b2b_invoice` dans `generate-pdf` (v4) + série dédiée **annuelle continue** `INV/YYYY/NNNNN` (table `invoice_sequences`, `orders.invoice_number`, attribuée à la création par `create_b2b_order_v4`) + RPC lecture `get_b2b_invoice_v1` + bouton BO. **Aucune ligne PB1** (B2B NON-PKP, décision propriétaire). Numérotation continue mais **non fiscale-faktur** (NON-PKP) | ✅ CONFORME (S68) |
 | B1.5 | Paiement facture par facture (coche ordonnée / FIFO) | `record_b2b_payment_v2` + `b2b_payment_allocations` + multi-sélection UI, ordre de coche respecté, FIFO en repli | ✅ CONFORME |
 | B1.6 | Annulation propre protégée (JE+stock contrepassés) | `cancel_b2b_order_v1`, bloqué si allocation, gate `b2b.order.cancel`, motif requis | ✅ CONFORME |
 | B1.7 | Aging 4 buckets, POS == BO | `view_ar_aging` (current/31-60/61-90/90+) ; `get_pos_b2b_debts_v3` dérivé des mêmes allocations | ✅ CONFORME |
@@ -60,7 +62,7 @@
 - **D4 immédiat** : amender la doc (voir D4) — c'est le correctif le plus honnête à court terme pour B1.1/B1.3/B1.4.
 
 ### D2. Chantiers moyens (1 session, plan requis)
-- **Facture PDF B2B** : template `b2b_invoice` dans `_shared/pdf-templates/` + bouton dans `B2bInvoicesTab` ; décision sur la numérotation (à minima exposer le numéro de commande, idéalement série dédiée `invoice_sequences` annuelle continue — la « numérotation légale » penche vers D3 si exigence fiscale réelle).
+- ✅ **Facture PDF B2B — SOLDÉ (S68, 2026-07-08)** : template `b2b_invoice` + bouton dans `B2bInvoicesTab` ; numérotation = série dédiée `invoice_sequences` **annuelle continue** `INV/YYYY/NNNNN`, attribuée à la création (`create_b2b_order_v4`) + backfill. Aucune ligne PB1 (NON-PKP). Cf. [`../plans/2026-07-08-session-68-INDEX.md`](../plans/2026-07-08-session-68-INDEX.md).
 - **Exposer `adjust_b2b_balance_v2`** (modal PIN-gated sur la fiche client B2B) pour les corrections d'encours.
 
 ### D3. Chantiers lourds (spec dédiée avant code)
