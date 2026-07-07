@@ -5,11 +5,12 @@
 // nothing allocated, gate b2b.order.cancel).
 
 import { useMemo, useState, type JSX } from 'react';
-import { FileText, XCircle } from 'lucide-react';
+import { Download, FileText, XCircle } from 'lucide-react';
 import { Button, EmptyState } from '@breakery/ui';
 import { formatIdr } from '@breakery/utils';
 import { useB2bInvoices, type B2bInvoiceRow } from '../hooks/useB2bInvoices.js';
 import { useB2bCustomers } from '../hooks/useB2bCustomers.js';
+import { useDownloadB2bInvoice } from '../hooks/useDownloadB2bInvoice.js';
 import { CancelB2bOrderModal } from './CancelB2bOrderModal.js';
 
 function statusBadge(inv: B2bInvoiceRow): { label: string; cls: string } {
@@ -27,6 +28,7 @@ export interface B2bInvoicesTabProps {
 
 export function B2bInvoicesTab({ search, canRecord, canCancel, onRecord }: B2bInvoicesTabProps): JSX.Element {
   const customers = useB2bCustomers();
+  const invoicePdf = useDownloadB2bInvoice();
   const [customerId, setCustomerId] = useState('');
   const [unpaidOnly, setUnpaidOnly] = useState(true);
   const [cancelTarget, setCancelTarget] = useState<B2bInvoiceRow | null>(null);
@@ -81,12 +83,13 @@ export function B2bInvoicesTab({ search, canRecord, canCancel, onRecord }: B2bIn
               <li key={inv.invoice_id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-text-primary">{inv.order_number}</span>
+                    <span className="font-mono text-text-primary">{inv.invoice_number ?? inv.order_number}</span>
                     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${badge.cls}`}>
                       {badge.label}
                     </span>
                   </div>
                   <div className="text-xs text-text-secondary">
+                    {inv.invoice_number !== null && `${inv.order_number} • `}
                     {inv.b2b_company_name ?? inv.customer_name ?? 'Unknown'}
                     {' • '}{new Date(inv.invoice_date).toLocaleDateString()}
                     {' • '}{inv.age_days}d
@@ -100,6 +103,15 @@ export function B2bInvoicesTab({ search, canRecord, canCancel, onRecord }: B2bIn
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => invoicePdf.download({ orderId: inv.invoice_id, invoiceNumber: inv.invoice_number, orderNumber: inv.order_number })}
+                      disabled={invoicePdf.isPending}
+                      data-testid={`inv-pdf-${inv.order_number}`}
+                    >
+                      <Download className="mr-1 h-3.5 w-3.5" aria-hidden /> Invoice PDF
+                    </Button>
                     {canRecord && Number(inv.outstanding) > 0 && (
                       <Button
                         variant="ghost"
