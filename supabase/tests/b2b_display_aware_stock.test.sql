@@ -1,5 +1,5 @@
 -- b2b_display_aware_stock.test.sql
--- S53 P1.4 — create_b2b_order_v3 is display-aware: a display item (is_display_item) sold via a
+-- S53 P1.4 — create_b2b_order_v4 is display-aware: a display item (is_display_item) sold via a
 -- B2B order now decrements display_stock AND appends a display_movements row (reference_type='order'),
 -- via _record_sale_stock_v1. v2 did NOT touch display tables — this closes that inconsistency.
 --
