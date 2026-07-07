@@ -75,6 +75,7 @@ export function SignZReportModal({ open, zreportId, onOpenChange, onSuccess }: S
   // snapshots lack the key entirely: rows below stay hidden (counted == null).
   const reconciliation = snapshot?.reconciliation as
     | Record<string, { counted: number | null; variance: number | null }>
+    | null
     | undefined;
 
   return (
