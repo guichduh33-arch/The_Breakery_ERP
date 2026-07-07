@@ -13,7 +13,15 @@ import { useMemo, useState, type JSX } from 'react';
 import { Button, Currency, Numpad, FullScreenModal } from '@breakery/ui';
 import { toast } from 'sonner';
 import { useCloseShift } from '../hooks/useCloseShift';
+import { useLoginUsers } from '@/features/auth/hooks/useLoginUsers';
 import { VarianceWarningBadge, shouldShowWarning } from './VarianceWarningBadge';
+
+// S66 (12 D2.1) — role NAMES (list_login_users_v1 exposes roles.name, not the
+// code) whose holders can approve a large variance. Kept in sync with the
+// shift.variance.approve seed (_118: MANAGER/ADMIN/SUPER_ADMIN); the server
+// re-checks the permission regardless, so a drift here only mis-filters the
+// picker, never bypasses the gate.
+const APPROVER_ROLE_NAMES = ['Manager', 'Admin', 'Super Admin'];
 
 export interface CloseShiftModalProps {
   open:               boolean;
@@ -22,6 +30,9 @@ export interface CloseShiftModalProps {
   expectedCash:       number;
   thresholdAbs:       number;
   thresholdPct:       number;
+  /** S66 — manager-PIN thresholds (higher tier than the note thresholds). */
+  pinThresholdAbs:    number;
+  pinThresholdPct:    number;
   onClose:            () => void;
   onClosed?:          (variance: number) => void;
 }
@@ -34,6 +45,8 @@ export function CloseShiftModal({
   expectedCash,
   thresholdAbs,
   thresholdPct,
+  pinThresholdAbs,
+  pinThresholdPct,
   onClose,
   onClosed,
 }: CloseShiftModalProps): JSX.Element {
@@ -42,7 +55,11 @@ export function CloseShiftModal({
   // Blind count: stay on 'count' until the cashier commits their figure; the
   // expected cash and variance are hidden entirely on this step.
   const [step, setStep] = useState<Step>('count');
+  // S66 — manager approval on large variances.
+  const [approverId, setApproverId] = useState('');
+  const [managerPin, setManagerPin] = useState('');
   const closeMut = useCloseShift();
+  const loginUsers = useLoginUsers();
 
   const counted = Number(amountStr || '0');
   const variance = useMemo(() => counted - expectedCash, [counted, expectedCash]);
@@ -52,6 +69,15 @@ export function CloseShiftModal({
   // note requirement kicks in exactly when the badge shows.
   const overThreshold = shouldShowWarning(variance, expectedCash, thresholdAbs, thresholdPct);
   const noteRequired = step === 'review' && overThreshold && notes.trim() === '';
+
+  // S66 (12 D2.1): above the higher PIN thresholds, a designated manager must
+  // approve. Same predicate shape as the note guard, mirrored server-side in
+  // close_shift_v4 (pin_approval_required) — the UI block is a convenience,
+  // the RPC is the authority.
+  const pinRequired = step === 'review'
+    && shouldShowWarning(variance, expectedCash, pinThresholdAbs, pinThresholdPct);
+  const approvers = (loginUsers.data ?? []).filter((u) => APPROVER_ROLE_NAMES.includes(u.role));
+  const pinIncomplete = pinRequired && (approverId === '' || !/^\d{6}$/.test(managerPin));
 
   function handleConfirmCount(): void {
     if (amountStr === '') {
@@ -67,11 +93,21 @@ export function CloseShiftModal({
       return;
     }
     try {
-      const payload: { session_id: string; counted_cash: number; notes?: string } = {
+      const payload: {
+        session_id: string;
+        counted_cash: number;
+        notes?: string;
+        approver_id?: string;
+        manager_pin?: string;
+      } = {
         session_id: sessionId,
         counted_cash: counted,
       };
       if (notes !== '') payload.notes = notes;
+      if (pinRequired) {
+        payload.approver_id = approverId;
+        payload.manager_pin = managerPin;
+      }
       const result = await closeMut.mutateAsync(payload);
       toast.success(
         result.variance === 0
@@ -174,6 +210,46 @@ export function CloseShiftModal({
           </section>
         )}
 
+        {/* S66 (12 D2.1) — large variance: a designated manager approves with
+            their 6-digit PIN. Server-enforced by close_shift_v4; this section
+            just collects approver + PIN. */}
+        {pinRequired && (
+          <section className="space-y-2" data-testid="manager-approval-section">
+            <label htmlFor="approver_select" className="text-xs uppercase tracking-wide text-text-secondary">
+              Manager approval (required — variance above manager threshold)
+            </label>
+            <select
+              id="approver_select"
+              className="w-full min-h-[44px] bg-bg-input border border-border-subtle rounded-md p-3 text-sm focus:outline-none focus:border-gold"
+              value={approverId}
+              onChange={(e) => setApproverId(e.target.value)}
+            >
+              <option value="">Select manager…</option>
+              {approvers.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.display_name} ({u.role})
+                </option>
+              ))}
+            </select>
+            <input
+              id="approver_pin"
+              type="password"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={6}
+              placeholder="Manager PIN (6 digits)"
+              className="w-full min-h-[44px] bg-bg-input border border-border-subtle rounded-md p-3 text-sm font-mono tracking-[0.5em] focus:outline-none focus:border-gold"
+              value={managerPin}
+              onChange={(e) => setManagerPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+            />
+            {pinIncomplete && (
+              <p className="text-xs text-danger" role="alert">
+                Select the approving manager and enter their 6-digit PIN.
+              </p>
+            )}
+          </section>
+        )}
+
         <div className="grid grid-cols-2 gap-3">
           {step === 'count' ? (
             <>
@@ -204,7 +280,7 @@ export function CloseShiftModal({
               <Button
                 variant="gold"
                 size="lg"
-                disabled={closeMut.isPending || amountStr === '' || noteRequired}
+                disabled={closeMut.isPending || amountStr === '' || noteRequired || pinIncomplete}
                 onClick={() => { void handleSubmit(); }}
               >
                 {closeMut.isPending ? 'Closing…' : 'Close Shift'}

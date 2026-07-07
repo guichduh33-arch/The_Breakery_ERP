@@ -58,6 +58,8 @@ describe('CloseShiftModal', () => {
         expectedCash={500_000}
         thresholdAbs={50_000}
         thresholdPct={0.005}
+        pinThresholdAbs={10_000_000}
+        pinThresholdPct={0.5}
         onClose={noop}
       />,
     ));
@@ -78,6 +80,8 @@ describe('CloseShiftModal', () => {
         expectedCash={500_000}
         thresholdAbs={50_000}
         thresholdPct={0.005}
+        pinThresholdAbs={10_000_000}
+        pinThresholdPct={0.5}
         onClose={noop}
       />,
     ));
@@ -96,6 +100,8 @@ describe('CloseShiftModal', () => {
         expectedCash={100_000}
         thresholdAbs={50_000}
         thresholdPct={0.005}
+        pinThresholdAbs={10_000_000}
+        pinThresholdPct={0.5}
         onClose={noop}
       />,
     ));
@@ -110,6 +116,8 @@ describe('CloseShiftModal', () => {
         expectedCash={100_000}
         thresholdAbs={50_000}
         thresholdPct={0.005}
+        pinThresholdAbs={10_000_000}
+        pinThresholdPct={0.5}
         onClose={noop}
       />,
     ));
@@ -125,6 +133,8 @@ describe('CloseShiftModal', () => {
         expectedCash={570_000}
         thresholdAbs={50_000}
         thresholdPct={0.005}
+        pinThresholdAbs={10_000_000}
+        pinThresholdPct={0.5}
         onClose={vi.fn()}
       />,
     ));
@@ -146,6 +156,8 @@ describe('CloseShiftModal', () => {
         expectedCash={100_000}
         thresholdAbs={50_000}
         thresholdPct={0.005}
+        pinThresholdAbs={10_000_000}
+        pinThresholdPct={0.5}
         onClose={vi.fn()}
       />,
     ));
@@ -164,6 +176,8 @@ describe('CloseShiftModal', () => {
         expectedCash={100_000}
         thresholdAbs={50_000}
         thresholdPct={0.005}
+        pinThresholdAbs={10_000_000}
+        pinThresholdPct={0.5}
         onClose={vi.fn()}
       />,
     ));
@@ -174,16 +188,23 @@ describe('CloseShiftModal', () => {
     expect(screen.queryByTestId('variance-preview')).not.toBeInTheDocument();
   });
 
-  it('calls close_shift_v3 with parsed args and chains generate-zreport-pdf EF', async () => {
-    rpcMock.mockResolvedValue({
-      data: {
-        session_id: 's1', status: 'closed', opening_cash: 100_000, cash_sales: 0,
-        cash_in_total: 0, cash_out_total: 0, counted_cash: 105_000,
-        expected_cash: 100_000, variance: 5_000, journal_entry_id: 'je-1',
-        zreport_id: 'zr-1', idempotent_replay: false,
-      },
-      error: null,
-    });
+  it('calls close_shift_v4 with parsed args and chains generate-zreport-pdf EF', async () => {
+    // S66: the modal now also fetches list_login_users_v1 (approver picker) via
+    // the same rpc mock — dispatch by function name so each caller gets a
+    // correctly-shaped payload.
+    rpcMock.mockImplementation((fn: unknown) =>
+      fn === 'list_login_users_v1'
+        ? Promise.resolve({ data: [], error: null })
+        : Promise.resolve({
+            data: {
+              session_id: 's1', status: 'closed', opening_cash: 100_000, cash_sales: 0,
+              cash_in_total: 0, cash_out_total: 0, counted_cash: 105_000,
+              expected_cash: 100_000, variance: 5_000, journal_entry_id: 'je-1',
+              zreport_id: 'zr-1', variance_approved_by: null, idempotent_replay: false,
+            },
+            error: null,
+          }),
+    );
     invokeMock.mockClear();
     const onClose = vi.fn();
     render(withQuery(
@@ -193,6 +214,8 @@ describe('CloseShiftModal', () => {
         expectedCash={100_000}
         thresholdAbs={50_000}
         thresholdPct={0.005}
+        pinThresholdAbs={10_000_000}
+        pinThresholdPct={0.5}
         onClose={onClose}
       />,
     ));
@@ -208,7 +231,7 @@ describe('CloseShiftModal', () => {
     await Promise.resolve();
     await Promise.resolve();
     await Promise.resolve();
-    expect(rpcMock).toHaveBeenCalledWith('close_shift_v3', expect.objectContaining({
+    expect(rpcMock).toHaveBeenCalledWith('close_shift_v4', expect.objectContaining({
       p_session_id: 's1',
       p_counted_cash: 105_000,
     }));
@@ -219,15 +242,19 @@ describe('CloseShiftModal', () => {
   });
 
   it('does not throw when EF generate-zreport-pdf fails (non-blocking)', async () => {
-    rpcMock.mockResolvedValue({
-      data: {
-        session_id: 's1', status: 'closed', opening_cash: 100_000, cash_sales: 0,
-        cash_in_total: 0, cash_out_total: 0, counted_cash: 100_000,
-        expected_cash: 100_000, variance: 0, journal_entry_id: 'je-2',
-        zreport_id: 'zr-2', idempotent_replay: false,
-      },
-      error: null,
-    });
+    rpcMock.mockImplementation((fn: unknown) =>
+      fn === 'list_login_users_v1'
+        ? Promise.resolve({ data: [], error: null })
+        : Promise.resolve({
+            data: {
+              session_id: 's1', status: 'closed', opening_cash: 100_000, cash_sales: 0,
+              cash_in_total: 0, cash_out_total: 0, counted_cash: 100_000,
+              expected_cash: 100_000, variance: 0, journal_entry_id: 'je-2',
+              zreport_id: 'zr-2', variance_approved_by: null, idempotent_replay: false,
+            },
+            error: null,
+          }),
+    );
     invokeMock.mockRejectedValueOnce(new Error('network failure'));
     const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const onClose = vi.fn();
@@ -238,6 +265,8 @@ describe('CloseShiftModal', () => {
         expectedCash={100_000}
         thresholdAbs={50_000}
         thresholdPct={0.005}
+        pinThresholdAbs={10_000_000}
+        pinThresholdPct={0.5}
         onClose={onClose}
       />,
     ));
@@ -249,5 +278,70 @@ describe('CloseShiftModal', () => {
     // Shift still closed (RPC succeeded), EF failure was swallowed (no throw).
     expect(rpcMock).toHaveBeenCalled();
     consoleSpy.mockRestore();
+  });
+
+  // ── S66 (12 D2.1) — manager approval on large variances ────────────────────
+
+  it('requires a designated manager + 6-digit PIN above the PIN threshold (S66)', async () => {
+    rpcMock.mockImplementation((fn: unknown) =>
+      fn === 'list_login_users_v1'
+        ? Promise.resolve({
+            data: [
+              { id: 'mgr-1', display_name: 'Marie Manager', role: 'Manager' },
+              { id: 'csh-1', display_name: 'Carl Cashier', role: 'Cashier' },
+            ],
+            error: null,
+          })
+        : Promise.resolve({ data: null, error: null }),
+    );
+    render(withQuery(
+      <CloseShiftModal
+        open={true}
+        sessionId="s1"
+        expectedCash={570_000}
+        thresholdAbs={50_000}
+        thresholdPct={0.005}
+        pinThresholdAbs={200_000}
+        pinThresholdPct={0.02}
+        onClose={vi.fn()}
+      />,
+    ));
+    // Compte 270 000 → variance -300 000 : au-dessus du seuil note (50k) ET du
+    // seuil PIN (200k) → note + approbation manager exigées.
+    countAndConfirm('270000');
+    expect(await screen.findByTestId('manager-approval-section')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/notes/i), {
+      target: { value: 'large shortage — investigating' },
+    });
+    // Note posée mais pas d'approbateur/PIN → toujours bloqué.
+    expect(screen.getByRole('button', { name: /close shift/i })).toBeDisabled();
+    // Le picker ne liste que les rôles manager (le caissier est filtré).
+    expect(screen.queryByText(/Carl Cashier/)).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/manager approval/i), { target: { value: 'mgr-1' } });
+    fireEvent.change(screen.getByPlaceholderText(/manager pin/i), { target: { value: '123456' } });
+    expect(screen.getByRole('button', { name: /close shift/i })).toBeEnabled();
+  });
+
+  it('does not show the manager approval section below the PIN threshold', () => {
+    render(withQuery(
+      <CloseShiftModal
+        open={true}
+        sessionId="s1"
+        expectedCash={570_000}
+        thresholdAbs={50_000}
+        thresholdPct={0.005}
+        pinThresholdAbs={200_000}
+        pinThresholdPct={0.9}
+        onClose={vi.fn()}
+      />,
+    ));
+    // Compte 500 000 → variance -70 000 : note requise (>50k) mais sous le
+    // seuil PIN abs (200k) et pct (0.9) → pas de section manager.
+    countAndConfirm('500000');
+    expect(screen.queryByTestId('manager-approval-section')).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/notes/i), {
+      target: { value: 'till miscount, recount pending' },
+    });
+    expect(screen.getByRole('button', { name: /close shift/i })).toBeEnabled();
   });
 });

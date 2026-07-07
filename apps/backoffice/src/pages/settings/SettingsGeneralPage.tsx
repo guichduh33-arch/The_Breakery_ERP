@@ -31,6 +31,10 @@ const FIELDS: FieldSpec[] = [
   { key: 'tax_inclusive',  label: 'Tax inclusive',  type: 'boolean', category: 'tax', helper: 'When true, listed prices include tax' },
   { key: 'shift_variance_threshold_pct', label: 'Shift variance % threshold', type: 'number', category: 'pos', helper: 'Decimal 0..1 (0.005 = 0.5%)' },
   { key: 'shift_variance_threshold_abs', label: 'Shift variance abs threshold', type: 'number', category: 'pos', helper: 'IDR' },
+  // S66 (12 D2.1) — above these (higher) thresholds, close_shift_v4 also
+  // requires a designated manager + 6-digit PIN on top of the variance note.
+  { key: 'shift_variance_pin_threshold_pct', label: 'Manager-PIN variance % threshold', type: 'number', category: 'pos', helper: 'Decimal 0..1 (0.02 = 2%) — large variances need a manager PIN at close' },
+  { key: 'shift_variance_pin_threshold_abs', label: 'Manager-PIN variance abs threshold', type: 'number', category: 'pos', helper: 'IDR — large variances need a manager PIN at close' },
 ];
 
 type DraftValue = string | number | boolean | null;
@@ -41,6 +45,7 @@ function valueFromAny(v: unknown): DraftValue {
   if (typeof v === 'number')  return v;
   if (typeof v === 'boolean') return v;
   if (typeof v === 'object')  return JSON.stringify(v);
+  // Unreachable for JSONB-sourced settings (only bigint/symbol/function left).
   return null;
 }
 
