@@ -1,5 +1,7 @@
 # Module 02 — Caisse : panier & commandes
 
+> 🆕 **Exigence propriétaire (2026-07-07, non planifiée — candidate S67+)** : **table obligatoire en dine-in + traçabilité des transferts.** (1) En `dine_in`, le choix d'une table sur le plan de salle devient **bloquant** (recommandation : au fire vers cuisine — c'est là que part le KOT ; à confirmer si aussi au paiement). (2) Le KOT doit porter n° de table + heure + marqueur « new order » vs « adding order » — *déjà couvert par le payload/template actuels* (`StationTicketPayload.table_number/created_at/additional`, `apps/print-bridge/src/render/stationTicket.ts`) **mais** le flag `additional` est dérivé client-only (`useFireToStations.ts:131`, `pickedUpOrderId !== null`) et rien ne sort si aucune table n'est posée. (3) **Migration de commande vers une autre table** possible après coup, avec **trackage vérifiable en backoffice** — inexistant aujourd'hui (le « transfer » du footer `FloorPlanModal.tsx:207` est du texte mort ; `orders.table_number` est un texte libre sans FK ni historique ; le BO n'affiche même pas `table_number`). Voir chantier **D2.5** ci-dessous.
+
 > ⚠️ **Mise à jour S62 (2026-07-06, `swarm/session-62`)** : **D1.2 livré** — bouton « Ardoise » sur les lignes `pending_payment` de `HeldOrdersModal` → picker client → RPC `attach_tab_customer_v1` (attache le client + pose le total provisoire, gate plafond `retail_credit_limit` P0011). L'ardoise nommée apparaît dans `/pos/debts` et s'encaisse via le flux S60. Voir `docs/workplan/plans/2026-07-06-session-62-INDEX.md`.
 
 > ⚠️ **Mise à jour S60 (2026-07-05, `swarm/session-60`)** : **D1.1 livré** — le CTA « Pay » de `/pos/debts` charge la créance dans le panier (`useLoadDebtOrder`, mirror pickup) et l'encaissement route vers `pay_existing_order_v11` ; lignes B2B exclues (hint « settle in Backoffice »). Le B1.7 passe 🟠→✅ pour l'ardoise retail (D1.2 « bouton Ardoise nommé » reste ouvert). Voir `docs/workplan/plans/2026-07-05-session-60-INDEX.md`.
@@ -76,6 +78,13 @@
 2. **Recalcul des prix au changement de client (B2.3)** : re-résoudre `get_customer_product_price` pour chaque ligne non verrouillée à l'attach/detach (aujourd'hui toast « Re-add items » `Pos.tsx:123`).
 3. **Sauvegarde du panier en cours (B2.2)** : persist `cartStore` (zustand persist / IndexedDB) + restauration au boot.
 4. **Vue « tables ouvertes » (B2.5)** : la brique existe (`useTableOccupancy`, `FloorPlanModal`) — il manque un écran service listant les commandes ouvertes par table.
+5. **Table dine-in obligatoire + transfert tracé** (exigence propriétaire 2026-07-07, cf. bandeau 🆕 en tête) :
+   - **POS — garde bloquante** : en `dine_in`, exiger `tableNumber` au fire (ouverture auto du `FloorPlanModal` si absent) ; décision propriétaire due : bloquer aussi au paiement direct sans fire ?
+   - **DB — `transfer_order_table_v1`** : nouveau RPC SECURITY DEFINER (trio S20, gate permission — réutiliser un gate orders existant ou dédié) qui déplace une commande **active** vers une autre table (validation existence/activité dans `restaurant_tables`) et écrit `audit_logs` (`entity_type='order'`, action `order.table_transfer`, metadata `{from, to}`) = la traçabilité BO demandée, lisible via `get_audit_logs_v1/v2` sans nouvelle surface.
+   - **Persistance new/adding** : matérialiser côté serveur le fait « fire additionnel » (aujourd'hui client-only via `pickedUpOrderId`) pour que le marqueur KOT soit un fait DB vérifiable.
+   - **POS — action « Transférer »** réelle depuis le plan de salle sur une commande ouverte (remplace le texte mort du footer).
+   - **BO** : afficher `table_number` dans `OrdersListPage` + `OrderDetailDrawer` (aujourd'hui absent des deux).
+   - Synergie naturelle avec D2.4 (écran tables ouvertes) — même session recommandée.
 
 ### D3. Chantiers lourds (spec dédiée avant code)
 1. **Mode offline (B2.1)** : file d'attente locale des encaissements + resync idempotent (les 2 saveurs d'idempotence existent déjà côté serveur, c'est le client/queue qui manque). Spec obligatoire (conflits, stock, promos).
