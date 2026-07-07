@@ -53,5 +53,7 @@ test-results/
 !.claude/agents/
 !.claude/settings.json
 .claude/agents/*/
+# skill-creator eval/optimize scratch dirs — never commit
+.claude/skills/*-workspace/
 ruvector.db
 *.ruvector.db

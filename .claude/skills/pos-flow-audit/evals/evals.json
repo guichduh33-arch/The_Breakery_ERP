@@ -1,0 +1,23 @@
+{
+  "skill_name": "pos-flow-audit",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Fais un audit du flux POS de prise de commande jusqu'au paiement et donne-moi les principaux trucs à améliorer, classés par impact. On est une boulangerie-café : comptoir takeaway + service à table.",
+      "expected_output": "A ranked (P0→P3) list of product/UX gaps grounded in real files/flows of apps/pos, covering both counter and table paths, with at least a couple of concrete feature proposals. Should distinguish daily-pain from nice-to-have and say how each gap was verified.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Mes serveurs se plaignent que parfois la cuisine ne voit pas une commande envoyée depuis la tablette. Qu'est-ce qui se passe et comment on devrait corriger ça ?",
+      "expected_output": "Traces the tablet→inbox→KDS / send-to-kitchen path in real code, identifies the likely cause (e.g. client-lock-only send v1 with no DB round-trip, or realtime channel uniqueness/mount issue), and proposes a fix that respects idempotency + realtime channel uniqueness + canonical RPC patterns. Recommends a two-device repro.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Est-ce qu'un client peut diviser l'addition d'une table entre plusieurs personnes ? Si non, propose-moi comment l'ajouter.",
+      "expected_output": "Determines whether split-bill (per-guest) exists vs split-tender (multi-payment on pay_existing_order_v6), then writes a feature proposal using the skill's proposal format: gap, who it helps, concrete change (UI+data+RPC), fits existing patterns (extends pay_existing_order_v6, idempotency flavor, perm gate), effort/risk, and how to validate.",
+      "files": []
+    }
+  ]
+}
