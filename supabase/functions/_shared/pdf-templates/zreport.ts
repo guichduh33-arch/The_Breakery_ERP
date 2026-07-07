@@ -28,6 +28,14 @@ export interface ZReportSnapshotData {
   expenses_cash_total:    number;
   top_products:           Array<{ product_id: string; product_name: string; qty: number; revenue: number }>;
   generated_at:           string;
+  // S67 (12 D2.2/D2.3) — optional three-way reconciliation + denomination
+  // breakdown. Snapshots created before S67 lack both keys entirely.
+  reconciliation?: Record<'cash' | 'qris' | 'card', {
+    expected: number | null;
+    counted:  number | null;
+    variance: number | null;
+  }> | null;
+  denominations?: Record<string, number> | null;
 }
 
 export interface ZReportEnvelope {
@@ -96,6 +104,28 @@ export async function render(
     for (const [method, total] of methods) labeled(method, Number(total), 1);
   }
   y -= 6;
+
+  // S67 (12 D2.2/D2.3) — three-way reconciliation + denomination grid.
+  // Older snapshots (pre-S67) simply lack the keys: sections are omitted.
+  if (snap.reconciliation) {
+    sectionTitle('Reconciliation (counted vs expected)');
+    for (const volet of ['cash', 'qris', 'card'] as const) {
+      const r = snap.reconciliation[volet];
+      if (!r || r.counted === null || r.counted === undefined) continue;
+      labeled(`${volet} counted`,  Number(r.counted),  1);
+      labeled(`${volet} expected`, Number(r.expected ?? 0), 1);
+      labeled(`${volet} variance`, Number(r.variance ?? 0), 1);
+    }
+    y -= 6;
+  }
+  if (snap.denominations && Object.keys(snap.denominations).length > 0) {
+    sectionTitle('Closing cash by denomination');
+    for (const [face, qty] of Object.entries(snap.denominations)) {
+      if (Number(qty) === 0) continue;
+      labeled(`${formatIDR(Number(face))} x ${qty}`, Number(face) * Number(qty), 1);
+    }
+    y -= 6;
+  }
 
   // Sales summary section
   sectionTitle('Sales summary');
