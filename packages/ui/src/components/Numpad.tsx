@@ -39,7 +39,6 @@ function NumpadInner({ value, onChange, maxLength, className }: NumpadProps): JS
   return (
     <div className={cn('grid grid-cols-3 gap-3', className)} role="group" aria-label="Numpad">
       {KEYS.map((k) => {
-        const isAction = k.type !== 'digit';
         const ariaLabel = k.type === 'clear' ? 'Clear' : k.type === 'back' ? 'Backspace' : k.label;
         return (
           <button
@@ -48,10 +47,16 @@ function NumpadInner({ value, onChange, maxLength, className }: NumpadProps): JS
             onClick={() => handle(k)}
             aria-label={ariaLabel}
             className={cn(
-              'h-touch-comfy rounded-md text-2xl font-semibold transition-colors active:scale-95',
-              isAction
+              'h-touch-comfy rounded-md text-2xl font-semibold transition-colors active:scale-95 motion-reduce:transition-none motion-reduce:active:scale-100',
+              // Keyboard focus ring on a money-path surface (design audit 2026-07-08, T5).
+              'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
+              // Only Clear ("C") is destructive-red; Backspace is neutral —
+              // a backspace is not a destructive action (design audit 2026-07-08, T14).
+              k.type === 'clear'
                 ? 'bg-red-soft border border-red text-red hover:bg-red/30'
-                : 'bg-bg-input border border-border-subtle text-text-primary hover:bg-bg-overlay',
+                : k.type === 'back'
+                  ? 'bg-bg-overlay border border-border-subtle text-text-secondary hover:bg-surface-4'
+                  : 'bg-bg-input border border-border-subtle text-text-primary hover:bg-bg-overlay',
             )}
           >
             {k.type === 'back' ? <Delete className="h-6 w-6 mx-auto" aria-hidden /> : k.label}

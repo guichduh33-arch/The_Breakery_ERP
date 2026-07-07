@@ -97,7 +97,7 @@ function ItemCta({ item }: { item: KdsItemRow }) {
   // Session 10: cancelled items have no actionable CTA — only the badge.
   if (item.is_cancelled) {
     return (
-      <Badge variant="default" className="bg-red text-white border-transparent">
+      <Badge variant="default" className="bg-red text-bg-base border-transparent">
         Cancelled
       </Badge>
     );
@@ -137,7 +137,7 @@ function ItemCta({ item }: { item: KdsItemRow }) {
   }
 
   return (
-    <Badge variant="default" className="bg-green text-white border-transparent">
+    <Badge variant="default" className="bg-green text-green-fg border-transparent">
       Ready
     </Badge>
   );
@@ -211,7 +211,7 @@ export function KdsOrderCard({ items }: KdsOrderCardProps) {
           </span>
           {/* S43 P2-5b — surfaced so the kitchen knows the ticket is already paid. */}
           {head.order_status === 'paid' && (
-            <Badge variant="default" className="bg-green text-white border-transparent shrink-0">
+            <Badge variant="default" className="bg-green text-green-fg border-transparent shrink-0">
               PAID
             </Badge>
           )}

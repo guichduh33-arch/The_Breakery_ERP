@@ -71,7 +71,7 @@ export function UndoBumpToast({ orderItemId, bumpedAtMs, onClose }: UndoBumpToas
         type="button"
         onClick={handleUndo}
         disabled={undo.isPending}
-        className="rounded-md border border-amber-warn px-3 py-1 text-sm font-semibold text-amber-warn hover:bg-amber-warn hover:text-white"
+        className="rounded-md border border-amber-warn px-3 py-1 text-sm font-semibold text-amber-warn hover:bg-amber-warn hover:text-bg-base"
         aria-label="Undo bump"
       >
         Undo
