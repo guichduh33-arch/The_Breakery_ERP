@@ -49,8 +49,8 @@ export interface DataTableColumn<TRow> {
 }
 
 export interface DataTableProps<TRow> {
-  columns: ReadonlyArray<DataTableColumn<TRow>>;
-  rows: ReadonlyArray<TRow>;
+  columns: readonly DataTableColumn<TRow>[];
+  rows: readonly TRow[];
   /** Row id extractor (used as React key). */
   getRowKey: (row: TRow, index: number) => string | number;
   /** When set, zebra-stripes alternating rows. Default true. */
