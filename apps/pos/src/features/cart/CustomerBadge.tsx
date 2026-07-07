@@ -124,7 +124,7 @@ export function CustomerBadge({ customer, onDetach }: CustomerBadgeProps): JSX.E
         onClick={onDetach}
         aria-label="Detach customer"
         className={cn(
-          'shrink-0 inline-flex items-center justify-center h-8 w-8 rounded-md',
+          'shrink-0 inline-flex items-center justify-center h-11 w-11 rounded-md',
           'text-text-secondary hover:text-text-primary hover:bg-bg-overlay',
           'transition-colors duration-fast motion-reduce:transition-none',
           'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',

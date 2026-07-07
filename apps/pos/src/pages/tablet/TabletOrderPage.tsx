@@ -4,6 +4,7 @@ import { MapPin } from 'lucide-react';
 import { TabletCartPanel } from '@/features/tablet/components/TabletCartPanel';
 import { TabletMenuView } from '@/features/tablet/components/TabletMenuView';
 import { OfflineBanner } from '@/features/tablet/components/OfflineBanner';
+import { OrderTypeToggle } from '@/features/tablet/components/OrderTypeToggle';
 import { useTabletOffline } from '@/features/tablet/hooks/useTabletOffline';
 import { useTabletCartStore } from '@/stores/tabletCartStore';
 import { useRestaurantTables } from '@/features/tables/hooks/useRestaurantTables';
@@ -26,7 +27,7 @@ export default function TabletOrderPage(): JSX.Element {
     <div className="flex items-center gap-3 px-4 py-2 border-b border-border-subtle bg-bg-elevated">
       <Button
         variant="secondary"
-        size="sm"
+        size="md"
         className="gap-2"
         onClick={() => setTableModalOpen(true)}
         disabled={!isOnline}
@@ -34,20 +35,7 @@ export default function TabletOrderPage(): JSX.Element {
         <MapPin className="h-4 w-4 shrink-0" aria-hidden />
         {tableNumber ? `Table: ${tableNumber}` : 'Pick table'}
       </Button>
-      <div className="flex rounded-md border border-border-subtle overflow-hidden text-sm">
-        <button
-          className={`px-3 py-1.5 ${orderType === 'dine_in' ? 'bg-gold text-bg-base font-semibold' : 'text-text-secondary hover:text-text-primary'}`}
-          onClick={() => setOrderType('dine_in')}
-        >
-          Dine in
-        </button>
-        <button
-          className={`px-3 py-1.5 ${orderType === 'take_out' ? 'bg-gold text-bg-base font-semibold' : 'text-text-secondary hover:text-text-primary'}`}
-          onClick={() => setOrderType('take_out')}
-        >
-          Take out
-        </button>
-      </div>
+      <OrderTypeToggle value={orderType} onChange={setOrderType} />
     </div>
   );
 

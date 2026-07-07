@@ -35,7 +35,7 @@ export function QuickPayRow({
           onClick={onProcess}
           disabled={checkoutPending}
           data-testid="pay-cash-exact"
-          className="flex-1 h-14 rounded-md bg-green hover:bg-green-hover active:bg-green-pressed text-white font-bold uppercase tracking-widest text-sm transition-[background-color,transform] duration-fast ease-motion-out active:scale-[0.98] motion-reduce:active:scale-100 disabled:opacity-60"
+          className="flex-1 h-14 rounded-md bg-green hover:bg-green-hover active:bg-green-pressed text-green-fg font-bold uppercase tracking-widest text-sm transition-[background-color,transform] duration-fast ease-motion-out active:scale-[0.98] motion-reduce:active:scale-100 disabled:opacity-60"
         >
           {checkoutPending
             ? 'Processing…'

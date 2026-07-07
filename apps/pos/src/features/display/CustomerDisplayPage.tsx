@@ -15,6 +15,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
+import type { CartItem } from '@breakery/domain';
+
 import { readKioskPairing } from '@/lib/kioskAuth';
 
 import { BrandedLayout } from './components/BrandedLayout';
@@ -22,6 +24,7 @@ import { CurrentOrderCard } from './components/CurrentOrderCard';
 import { OrderQueueTicker } from './components/OrderQueueTicker';
 import { PairDevicePrompt } from './components/PairDevicePrompt';
 import { CDActiveCartView } from './CDActiveCartView';
+import { CustomerDisplayView, type CustomerDisplayLine } from './CustomerDisplayView';
 import { useDisplayOrders } from './hooks/useDisplayOrders';
 import { useDisplayRealtime } from './hooks/useDisplayRealtime';
 import { useReadyOrders } from './hooks/useReadyOrders';
@@ -127,7 +130,44 @@ export default function CustomerDisplayPage() {
     );
   }
 
-  // 4. Happy path — render queue + current order.
+  // 4a. Checkout takes the FULL screen (design audit 2026-07-07 B4) — while
+  //     a sale is being rung up or just completed, the customer's attention
+  //     stays on their own order/total, never on the pickup queue.
+  if (cartMessage?.type === 'payment_complete') {
+    return (
+      <BrandedLayout footer={<span>{idleFooter}</span>}>
+        <div className="h-full flex" data-testid="display-authenticated">
+          <CDActiveCartView message={cartMessage} />
+        </div>
+      </BrandedLayout>
+    );
+  }
+
+  if (cartMessage?.type === 'cart_update' && cartMessage.cart.items.length > 0) {
+    // The broadcast mirrors the raw CartItem[] — map to the presentational
+    // line shape (image_url is not broadcast → BrandMark fallback).
+    const lines: CustomerDisplayLine[] = (cartMessage.cart.items as CartItem[]).map(
+      (item) => ({
+        id: item.id,
+        product_id: item.product_id,
+        name: item.name,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        line_total: item.unit_price * item.quantity,
+        is_promo_gift: item.is_promo_gift === true,
+        is_cancelled: item.is_cancelled === true,
+      }),
+    );
+    return (
+      <CustomerDisplayView
+        items={lines}
+        totals={cartMessage.totals}
+        orderLabel={cartMessage.customer?.name ?? null}
+      />
+    );
+  }
+
+  // 4b. Idle — no active cart: pickup queue + featured "now serving" card.
   const ordersList = orders ?? [];
   const current = ordersList[0] ?? null;
   const tail = ordersList.slice(1);
@@ -146,9 +186,9 @@ export default function CustomerDisplayPage() {
         className="h-full flex gap-8"
         data-testid="display-authenticated"
       >
-        {/* Live cart mirror (left) — reflects the active POS cart (F-007). */}
+        {/* Idle welcome (left). */}
         <div className="flex-1 min-h-0 flex">
-          <CDActiveCartView message={cartMessage} />
+          <CDActiveCartView message={null} />
         </div>
         {/* Order queue + featured card (right). */}
         <div className="flex-1 min-h-0 flex flex-col gap-8">

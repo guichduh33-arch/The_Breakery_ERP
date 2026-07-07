@@ -47,6 +47,7 @@ const preset: Partial<Config> = {
           DEFAULT: 'var(--green-base)',
           hover: 'var(--green-hover)',
           pressed: 'var(--green-pressed)',
+          fg: 'var(--green-fg)',
         },
         red: {
           DEFAULT: 'var(--red-base)',
@@ -96,7 +97,7 @@ const preset: Partial<Config> = {
         // Session 14 D3 — 4 canonical fonts via tokens.
         sans:    ['var(--font-body)'],
         body:    ['var(--font-body)'],
-        serif:   ['var(--font-data)'],
+        serif:   ['var(--font-serif)'],
         data:    ['var(--font-data)'],
         display: ['var(--font-display)'],
         mono:    ['var(--font-mono)'],
