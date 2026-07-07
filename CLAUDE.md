@@ -150,6 +150,7 @@ The repo versions a **specialized team** (PR #55). **Agents** (`.claude/agents/*
 - `reports-exports` — report RPCs/PDF/CSV/Z-report/drill-down · `expense-governance` — thresholds/SOD/multi-step
 - `products-catalog` — products CRUD/variants/categories · `orders` — lifecycle/list v2/edit-items/void/refund
 - `security-auth` — RLS/REVOKE/perms/PIN-JWT/rate-limit · `breakery-ui-kit` — conventions `packages/ui`
+- `db-migrations` — migration/RPC hygiene (versioning monotone/REVOKE trio/types-regen/cloud-MCP, miroir agent `db-engineer`) · `edge-functions` — discipline EF Deno (PIN-header/idempotency 2-saveurs/fetch-wrapper PIN-JWT/hard-cutover, miroir agent `edge-functions-engineer`) — **ajoutés 2026-07-07** pour combler les 2 trous de complémentarité (domaines les plus casse-CI sans skill auto-déclenché)
 
 Design : `docs/superpowers/specs/2026-05-31-agents-skills-team-design.md` (spec) + `docs/superpowers/plans/2026-05-31-agents-skills-team.md` (plan). `.gitignore` versions the root `.md` files of `.claude/agents/` ; the ruflo subfolders stay ignored.
 
