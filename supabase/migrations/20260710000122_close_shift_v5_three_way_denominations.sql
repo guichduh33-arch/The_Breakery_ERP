@@ -208,17 +208,17 @@ BEGIN
   -- thresholds, pct relative to each volet's expected (skipped when 0).
   IF ABS(v_variance) >= COALESCE(v_thr_abs, 50000)
      OR (v_expected > 0 AND ABS(v_variance) / v_expected >= COALESCE(v_thr_pct, 0.005)) THEN
-    v_note_volets := v_note_volets || 'cash';
+    v_note_volets := array_append(v_note_volets, 'cash');
   END IF;
   IF v_qris_variance IS NOT NULL AND (
        ABS(v_qris_variance) >= COALESCE(v_thr_abs, 50000)
        OR (v_qris_expected > 0 AND ABS(v_qris_variance) / v_qris_expected >= COALESCE(v_thr_pct, 0.005)) ) THEN
-    v_note_volets := v_note_volets || 'qris';
+    v_note_volets := array_append(v_note_volets, 'qris');
   END IF;
   IF v_card_variance IS NOT NULL AND (
        ABS(v_card_variance) >= COALESCE(v_thr_abs, 50000)
        OR (v_card_expected > 0 AND ABS(v_card_variance) / v_card_expected >= COALESCE(v_thr_pct, 0.005)) ) THEN
-    v_note_volets := v_note_volets || 'card';
+    v_note_volets := array_append(v_note_volets, 'card');
   END IF;
   IF array_length(v_note_volets, 1) IS NOT NULL
      AND COALESCE(btrim(p_notes), '') = '' THEN
@@ -232,17 +232,17 @@ BEGIN
   -- note guard above.
   IF ABS(v_variance) >= COALESCE(v_pin_thr_abs, 200000)
      OR (v_expected > 0 AND ABS(v_variance) / v_expected >= COALESCE(v_pin_thr_pct, 0.02)) THEN
-    v_pin_volets := v_pin_volets || 'cash';
+    v_pin_volets := array_append(v_pin_volets, 'cash');
   END IF;
   IF v_qris_variance IS NOT NULL AND (
        ABS(v_qris_variance) >= COALESCE(v_pin_thr_abs, 200000)
        OR (v_qris_expected > 0 AND ABS(v_qris_variance) / v_qris_expected >= COALESCE(v_pin_thr_pct, 0.02)) ) THEN
-    v_pin_volets := v_pin_volets || 'qris';
+    v_pin_volets := array_append(v_pin_volets, 'qris');
   END IF;
   IF v_card_variance IS NOT NULL AND (
        ABS(v_card_variance) >= COALESCE(v_pin_thr_abs, 200000)
        OR (v_card_expected > 0 AND ABS(v_card_variance) / v_card_expected >= COALESCE(v_pin_thr_pct, 0.02)) ) THEN
-    v_pin_volets := v_pin_volets || 'card';
+    v_pin_volets := array_append(v_pin_volets, 'card');
   END IF;
   IF array_length(v_pin_volets, 1) IS NOT NULL THEN
     v_pin_required := TRUE;
