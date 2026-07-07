@@ -12,8 +12,12 @@
 import { useMemo, useState, type JSX } from 'react';
 import { Button, Currency, Numpad, FullScreenModal } from '@breakery/ui';
 import { toast } from 'sonner';
+import { sumDenominations } from '@breakery/domain';
 import { useCloseShift } from '../hooks/useCloseShift';
+import { useDenominationCountEnabled } from '../hooks/useDenominationCountEnabled';
+import { DenominationGrid } from './DenominationGrid';
 import { useLoginUsers } from '@/features/auth/hooks/useLoginUsers';
+import { useEnabledPaymentMethods } from '@/features/settings/hooks/useEnabledPaymentMethods';
 import { VarianceWarningBadge, shouldShowWarning } from './VarianceWarningBadge';
 
 // S66 (12 D2.1) — role NAMES (list_login_users_v1 exposes roles.name, not the
@@ -51,6 +55,12 @@ export function CloseShiftModal({
   onClosed,
 }: CloseShiftModalProps): JSX.Element {
   const [amountStr, setAmountStr] = useState('');
+  // S67 (12 D2.2/D2.3) — three-way count: QRIS/card terminal totals, entered
+  // blind alongside cash (no expected shown for any volet on this step).
+  const [qrisStr, setQrisStr] = useState('');
+  const [cardStr, setCardStr] = useState('');
+  // S67 — closing-cash denomination grid, opt-in via business_config flag.
+  const [denoms, setDenoms] = useState<Record<string, number>>({});
   const [notes, setNotes] = useState('');
   // Blind count: stay on 'count' until the cashier commits their figure; the
   // expected cash and variance are hidden entirely on this step.
@@ -60,9 +70,21 @@ export function CloseShiftModal({
   const [managerPin, setManagerPin] = useState('');
   const closeMut = useCloseShift();
   const loginUsers = useLoginUsers();
+  const denomEnabled = useDenominationCountEnabled();
+  const enabledMethods = useEnabledPaymentMethods();
+  const qrisVisible = enabledMethods.has('qris');
+  const cardVisible = enabledMethods.has('card') || enabledMethods.has('edc');
 
-  const counted = Number(amountStr || '0');
+  const counted = denomEnabled ? sumDenominations(denoms) : Number(amountStr || '0');
   const variance = useMemo(() => counted - expectedCash, [counted, expectedCash]);
+
+  // S67 — cash volet is "empty" per the active input mode; the two non-cash
+  // volets (when visible) are required-but-zero-allowed, per the "blind
+  // count" invariant — nothing here reveals an expected amount.
+  const cashEmpty = denomEnabled
+    ? counted <= 0 && Object.keys(denoms).length === 0
+    : amountStr === '';
+  const nonCashIncomplete = (qrisVisible && qrisStr === '') || (cardVisible && cardStr === '');
 
   // P1-2 (S43): above-threshold variance requires an explanatory note before
   // the shift can be closed. Same predicate as the VarianceWarningBadge so the
@@ -80,15 +102,19 @@ export function CloseShiftModal({
   const pinIncomplete = pinRequired && (approverId === '' || !/^\d{6}$/.test(managerPin));
 
   function handleConfirmCount(): void {
-    if (amountStr === '') {
+    if (cashEmpty) {
       toast.error('Enter the counted cash amount.');
+      return;
+    }
+    if (nonCashIncomplete) {
+      toast.error('Enter every counted volet (0 is allowed).');
       return;
     }
     setStep('review');
   }
 
   async function handleSubmit(): Promise<void> {
-    if (amountStr === '') {
+    if (cashEmpty) {
       toast.error('Enter the counted cash amount.');
       return;
     }
@@ -99,6 +125,9 @@ export function CloseShiftModal({
         notes?: string;
         approver_id?: string;
         manager_pin?: string;
+        counted_qris?: number;
+        counted_card?: number;
+        denominations?: Record<string, number>;
       } = {
         session_id: sessionId,
         counted_cash: counted,
@@ -108,6 +137,9 @@ export function CloseShiftModal({
         payload.approver_id = approverId;
         payload.manager_pin = managerPin;
       }
+      if (qrisVisible) payload.counted_qris = Number(qrisStr || '0');
+      if (cardVisible) payload.counted_card = Number(cardStr || '0');
+      if (denomEnabled) payload.denominations = denoms;
       const result = await closeMut.mutateAsync(payload);
       toast.success(
         result.variance === 0
@@ -158,7 +190,7 @@ export function CloseShiftModal({
             label="Counted cash"
             value={
               <span className="font-mono tabular-nums text-text-primary">
-                Rp {amountStr || '0'}
+                Rp {denomEnabled ? counted.toLocaleString('id-ID') : (amountStr || '0')}
               </span>
             }
           />
@@ -181,10 +213,72 @@ export function CloseShiftModal({
               }
             />
           )}
+          {/* S67 — non-cash volets: counted-only on review, no client-side
+              expected/variance (the RPC is the authority; see review-step
+              note below). Cash stays the sole volet with a client-computed
+              variance, since it's the one the note/PIN gates key off. */}
+          {step === 'review' && qrisVisible && (
+            <Row
+              label="QRIS counted"
+              value={<span className="font-mono tabular-nums text-text-primary">Rp {Number(qrisStr || '0').toLocaleString('id-ID')}</span>}
+            />
+          )}
+          {step === 'review' && cardVisible && (
+            <Row
+              label="Card + EDC counted"
+              value={<span className="font-mono tabular-nums text-text-primary">Rp {Number(cardStr || '0').toLocaleString('id-ID')}</span>}
+            />
+          )}
         </section>
 
+        {step === 'review' && (qrisVisible || cardVisible) && (
+          <p className="text-[11px] text-text-secondary">
+            Non-cash volets are reconciled server-side at close; any large variance
+            will ask for a note or manager approval.
+          </p>
+        )}
+
         {step === 'count' && (
-          <Numpad value={amountStr} onChange={setAmountStr} />
+          denomEnabled
+            ? <DenominationGrid value={denoms} onChange={setDenoms} />
+            : <Numpad value={amountStr} onChange={setAmountStr} />
+        )}
+
+        {/* S67 — blind entry for the non-cash volets: no expected shown here
+            either. Required-when-visible (0 accepted) before Confirm count. */}
+        {step === 'count' && qrisVisible && (
+          <section className="space-y-1">
+            <label htmlFor="counted_qris" className="text-xs uppercase tracking-wide text-text-secondary">
+              QRIS total (terminal report)
+            </label>
+            <input
+              id="counted_qris"
+              data-testid="counted-qris-input"
+              type="text"
+              inputMode="numeric"
+              placeholder="0"
+              className="w-full min-h-[44px] bg-bg-input border border-border-subtle rounded-md p-3 text-sm font-mono tabular-nums focus:outline-none focus:border-gold"
+              value={qrisStr}
+              onChange={(e) => setQrisStr(e.target.value.replace(/\D/g, ''))}
+            />
+          </section>
+        )}
+        {step === 'count' && cardVisible && (
+          <section className="space-y-1">
+            <label htmlFor="counted_card" className="text-xs uppercase tracking-wide text-text-secondary">
+              Card + EDC total (terminal report)
+            </label>
+            <input
+              id="counted_card"
+              data-testid="counted-card-input"
+              type="text"
+              inputMode="numeric"
+              placeholder="0"
+              className="w-full min-h-[44px] bg-bg-input border border-border-subtle rounded-md p-3 text-sm font-mono tabular-nums focus:outline-none focus:border-gold"
+              value={cardStr}
+              onChange={(e) => setCardStr(e.target.value.replace(/\D/g, ''))}
+            />
+          </section>
         )}
 
         {step === 'review' && (
@@ -259,7 +353,7 @@ export function CloseShiftModal({
               <Button
                 variant="gold"
                 size="lg"
-                disabled={amountStr === ''}
+                disabled={cashEmpty || nonCashIncomplete}
                 onClick={handleConfirmCount}
               >
                 Confirm count
@@ -280,7 +374,7 @@ export function CloseShiftModal({
               <Button
                 variant="gold"
                 size="lg"
-                disabled={closeMut.isPending || amountStr === '' || noteRequired || pinIncomplete}
+                disabled={closeMut.isPending || cashEmpty || noteRequired || pinIncomplete}
                 onClick={() => { void handleSubmit(); }}
               >
                 {closeMut.isPending ? 'Closing…' : 'Close Shift'}

@@ -6,11 +6,28 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { CloseShiftModal } from '../components/CloseShiftModal';
+import { CloseShiftModal, type CloseShiftModalProps } from '../components/CloseShiftModal';
 
 vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() },
   Toaster: () => null,
+}));
+
+// S67 (12 D2.2/D2.3) — three-way count (QRIS/card volets) + opt-in
+// denomination grid. Stable vi.hoisted refs (project memory: unstable mock
+// data feeding renders can OOM-loop) so individual tests can override with
+// mockReturnValueOnce without fighting module init order. Default enables
+// ALL 4 non-blind-cash-adjacent methods so the "hides volet when disabled"
+// test has something to disable.
+const { mockDenomEnabled, mockEnabledMethods } = vi.hoisted(() => ({
+  mockDenomEnabled: vi.fn(() => false),
+  mockEnabledMethods: vi.fn(() => new Set(['cash', 'card', 'qris', 'edc'])),
+}));
+vi.mock('../hooks/useDenominationCountEnabled', () => ({
+  useDenominationCountEnabled: () => mockDenomEnabled(),
+}));
+vi.mock('@/features/settings/hooks/useEnabledPaymentMethods', () => ({
+  useEnabledPaymentMethods: () => mockEnabledMethods(),
 }));
 
 const rpcMock = vi.fn<(...args: unknown[]) => Promise<{ data: unknown; error: unknown }>>();
@@ -36,11 +53,36 @@ function withQuery(node: React.ReactElement) {
   return <QueryClientProvider client={qc}>{node}</QueryClientProvider>;
 }
 
-/** Type the digits on the numpad then commit the blind count → review step. */
+const DEFAULT_PROPS: CloseShiftModalProps = {
+  open: true,
+  sessionId: 's1',
+  expectedCash: 500_000,
+  thresholdAbs: 50_000,
+  thresholdPct: 0.005,
+  pinThresholdAbs: 10_000_000,
+  pinThresholdPct: 0.5,
+  onClose: noop,
+};
+
+/** S67 helper: render with sane defaults, override per test as needed. */
+function renderModal(overrides: Partial<CloseShiftModalProps> = {}) {
+  return render(withQuery(<CloseShiftModal {...DEFAULT_PROPS} {...overrides} />));
+}
+
+/**
+ * Type the digits on the numpad then commit the blind count → review step.
+ * S67: when the QRIS/card volets are visible (default mock enables all 4
+ * methods) they are required-when-visible before Confirm count unlocks — fill
+ * them with 0 so pre-S67 cash-only assertions in this file stay unaffected.
+ */
 function countAndConfirm(amount: string): void {
   for (const ch of amount) {
     fireEvent.click(screen.getByRole('button', { name: ch }));
   }
+  const qris = screen.queryByTestId('counted-qris-input');
+  if (qris) fireEvent.change(qris, { target: { value: '0' } });
+  const card = screen.queryByTestId('counted-card-input');
+  if (card) fireEvent.change(card, { target: { value: '0' } });
   fireEvent.click(screen.getByRole('button', { name: /confirm count/i }));
 }
 
@@ -48,6 +90,8 @@ describe('CloseShiftModal', () => {
   beforeEach(() => {
     rpcMock.mockReset();
     storeMock.clear.mockReset();
+    mockDenomEnabled.mockReset().mockReturnValue(false);
+    mockEnabledMethods.mockReset().mockReturnValue(new Set(['cash', 'card', 'qris', 'edc']));
   });
 
   it('hides expected cash and variance during the blind count (LOT 4)', () => {
@@ -231,7 +275,11 @@ describe('CloseShiftModal', () => {
     await Promise.resolve();
     await Promise.resolve();
     await Promise.resolve();
-    expect(rpcMock).toHaveBeenCalledWith('close_shift_v4', expect.objectContaining({
+    // NOTE (S67 deviation): this assertion was stale at 'close_shift_v4' —
+    // useCloseShift was already bumped to close_shift_v5 by an earlier S67
+    // task (T8) without updating this test, so it was RED before this task
+    // touched anything. Repointed to v5 as part of this task's TDD baseline.
+    expect(rpcMock).toHaveBeenCalledWith('close_shift_v5', expect.objectContaining({
       p_session_id: 's1',
       p_counted_cash: 105_000,
     }));
@@ -343,5 +391,41 @@ describe('CloseShiftModal', () => {
       target: { value: 'till miscount, recount pending' },
     });
     expect(screen.getByRole('button', { name: /close shift/i })).toBeEnabled();
+  });
+
+  // ── S67 (12 D2.2/D2.3) — three-way count (QRIS/card volets) + opt-in
+  //    denomination grid ────────────────────────────────────────────────────
+
+  it('shows QRIS and card count inputs on the count step (blind: no expected)', () => {
+    renderModal();
+    expect(screen.getByTestId('counted-qris-input')).toBeInTheDocument();
+    expect(screen.getByTestId('counted-card-input')).toBeInTheDocument();
+    // Deviation from the brief's literal /expected/i: the count-step helper
+    // copy ("...stays hidden until you confirm...") legitimately contains the
+    // word "expected" without leaking any figure. Assert the actual invariant
+    // instead — no "Expected cash" row/label and no variance preview.
+    expect(screen.queryByText(/expected cash/i)).not.toBeInTheDocument();
+    expect(screen.queryByTestId('variance-preview')).not.toBeInTheDocument();
+  });
+
+  it('hides the QRIS volet when the method is disabled', () => {
+    mockEnabledMethods.mockReturnValueOnce(new Set(['cash', 'card']));
+    renderModal();
+    expect(screen.queryByTestId('counted-qris-input')).not.toBeInTheDocument();
+  });
+
+  it('replaces the numpad with the denomination grid when the flag is on', () => {
+    mockDenomEnabled.mockReturnValueOnce(true);
+    renderModal();
+    expect(screen.getByTestId('denomination-grid')).toBeInTheDocument();
+  });
+
+  it('blocks Confirm count until visible non-cash volets are filled', () => {
+    renderModal();
+    fireEvent.click(screen.getByRole('button', { name: '1' }));
+    expect(screen.getByRole('button', { name: /confirm count/i })).toBeDisabled();
+    fireEvent.change(screen.getByTestId('counted-qris-input'), { target: { value: '0' } });
+    fireEvent.change(screen.getByTestId('counted-card-input'), { target: { value: '0' } });
+    expect(screen.getByRole('button', { name: /confirm count/i })).toBeEnabled();
   });
 });
