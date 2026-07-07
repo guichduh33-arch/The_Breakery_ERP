@@ -1,5 +1,5 @@
 -- supabase/tests/close_shift_pin_gate.test.sql
--- S66 (12 D2.1) — close_shift_v4 : approbation manager (approbateur désigné +
+-- S66 (12 D2.1) — close_shift_v5 : approbation manager (approbateur désigné +
 -- PIN 6 chiffres) exigée serveur au-delà des seuils
 -- business_config.shift_variance_pin_threshold_abs/pct (défauts 200 000 / 2 %).
 --   T1  : variance dans la bande « note seule » (1 %) + note, sans approbateur -> OK
@@ -95,7 +95,7 @@ END $fixture$;
 -- approbateur -> passe (le seuil PIN par défaut est 200 000 / 2 %).
 -- ===========================================================================
 SELECT lives_ok(
-  $$SELECT close_shift_v4('66c50001-0000-0000-0000-000000000002'::uuid, 10100000, 'over from event float', NULL)$$,
+  $$SELECT close_shift_v5('66c50001-0000-0000-0000-000000000002'::uuid, 10100000, 'over from event float', NULL)$$,
   'T1: note-band variance with a note, no approver -> succeeds'
 );
 
@@ -103,7 +103,7 @@ SELECT lives_ok(
 -- T2 — sur-seuil PIN (+300 000), note fournie mais pas d'approbateur/PIN.
 -- ===========================================================================
 SELECT throws_ok(
-  $$SELECT close_shift_v4('66c50001-0000-0000-0000-000000000001'::uuid, 800000, 'large overage, event cash', NULL)$$,
+  $$SELECT close_shift_v5('66c50001-0000-0000-0000-000000000001'::uuid, 800000, 'large overage, event cash', NULL)$$,
   'P0001', 'pin_approval_required',
   'T2: above-PIN-threshold variance without approver -> pin_approval_required (P0001)'
 );
@@ -113,7 +113,7 @@ SELECT throws_ok(
 -- ===========================================================================
 SELECT throws_ok(
   format(
-    $$SELECT close_shift_v4('66c50001-0000-0000-0000-000000000001'::uuid, 800000, 'large overage, event cash', NULL, %L::uuid, '654321')$$,
+    $$SELECT close_shift_v5('66c50001-0000-0000-0000-000000000001'::uuid, 800000, 'large overage, event cash', NULL, %L::uuid, '654321')$$,
     current_setting('shift66.cashier_prof')
   ),
   'P0003', 'approver_not_authorized',
@@ -125,7 +125,7 @@ SELECT throws_ok(
 -- ===========================================================================
 SELECT throws_ok(
   format(
-    $$SELECT close_shift_v4('66c50001-0000-0000-0000-000000000001'::uuid, 800000, 'large overage, event cash', NULL, %L::uuid, '12ab56')$$,
+    $$SELECT close_shift_v5('66c50001-0000-0000-0000-000000000001'::uuid, 800000, 'large overage, event cash', NULL, %L::uuid, '12ab56')$$,
     current_setting('shift66.appr_prof')
   ),
   'P0003', 'invalid_pin',
@@ -143,7 +143,7 @@ SELECT is(
 -- ===========================================================================
 SELECT throws_ok(
   format(
-    $$SELECT close_shift_v4('66c50001-0000-0000-0000-000000000001'::uuid, 800000, 'large overage, event cash', NULL, %L::uuid, '111111')$$,
+    $$SELECT close_shift_v5('66c50001-0000-0000-0000-000000000001'::uuid, 800000, 'large overage, event cash', NULL, %L::uuid, '111111')$$,
     current_setting('shift66.appr_prof')
   ),
   'P0003', 'invalid_pin',
@@ -165,7 +165,7 @@ SELECT is(
 -- ===========================================================================
 SELECT lives_ok(
   format(
-    $$SELECT close_shift_v4('66c50001-0000-0000-0000-000000000001'::uuid, 800000, 'large overage, event cash', NULL, %L::uuid, '654321')$$,
+    $$SELECT close_shift_v5('66c50001-0000-0000-0000-000000000001'::uuid, 800000, 'large overage, event cash', NULL, %L::uuid, '654321')$$,
     current_setting('shift66.appr_prof')
   ),
   'T6: designated approver with correct PIN -> close succeeds'
@@ -193,7 +193,7 @@ DECLARE
   v_caught BOOLEAN := false;
 BEGIN
   BEGIN
-    v_res := close_shift_v4('66c50001-0000-0000-0000-000000000001'::uuid, 800000, NULL, NULL);
+    v_res := close_shift_v5('66c50001-0000-0000-0000-000000000001'::uuid, 800000, NULL, NULL);
   EXCEPTION WHEN OTHERS THEN
     v_caught := true;
   END;
