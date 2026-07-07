@@ -19,6 +19,8 @@
 
 import type { ReactNode } from 'react';
 
+import { BrandLogo } from '@breakery/ui';
+
 interface BrandedLayoutProps {
   children: ReactNode;
   footer?: ReactNode;
@@ -27,12 +29,15 @@ interface BrandedLayoutProps {
 export function BrandedLayout({ children, footer }: BrandedLayoutProps) {
   return (
     <div className="h-[100dvh] w-full bg-bg-base text-text-primary flex flex-col font-sans">
-      <header className="px-12 py-8 border-b border-border-subtle flex items-baseline justify-between">
-        {/* Design Wave C — the wordmark is THE brand moment on the customer
-            display; render it in Playfair (font-display) rather than the data
-            serif so it carries the bakery's identity. */}
-        <h1 className="font-display text-5xl tracking-tight text-gold">
-          The Breakery
+      <header className="px-12 py-7 border-b border-border-subtle flex items-center justify-between">
+        {/* The real brand logo is THE brand moment on the customer display —
+            present in the header of EVERY state (pairing / loading / idle /
+            active order / payment), so the customer always sees the actual
+            croissant mark, not just a typeset wordmark. The heading semantics
+            are preserved via the sr-only name. */}
+        <h1 className="m-0 flex items-center">
+          <BrandLogo size="md" showTagline={false} />
+          <span className="sr-only">The Breakery</span>
         </h1>
         <p className="text-sm uppercase tracking-[0.3em] text-text-secondary">
           French Bakery &amp; Pastry

@@ -17,7 +17,7 @@ describe('BrandLogo', () => {
   });
 
   it('renders all 4 size variants with the correct rendered height', () => {
-    const cases: Array<[BrandLogoSize, number]> = [
+    const cases: [BrandLogoSize, number][] = [
       ['sm', 52],
       ['md', 84],
       ['lg', 128],
