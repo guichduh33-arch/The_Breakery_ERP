@@ -9,7 +9,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         primary: 'bg-green hover:bg-green-hover text-green-fg uppercase tracking-wide rounded-md',
-        gold: 'bg-gold hover:bg-gold-hover text-bg-base uppercase tracking-wide rounded-md',
+        gold: 'bg-gold hover:bg-gold-hover text-gold-fg uppercase tracking-wide rounded-md',
         secondary: 'bg-bg-overlay border border-border-subtle text-text-primary hover:bg-bg-input rounded-md',
         outlineGold: 'bg-transparent border border-gold text-gold hover:bg-gold-soft uppercase tracking-wide rounded-md',
         ghost: 'bg-transparent text-text-primary hover:bg-bg-overlay rounded-md',

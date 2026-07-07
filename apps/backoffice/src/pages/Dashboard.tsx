@@ -145,11 +145,13 @@ export default function DashboardPage({ data }: DashboardPageProps) {
                   variant="default"
                   padding="md"
                   data-testid="kpi-skeleton"
-                  className="h-32 animate-pulse"
+                  className="h-32 animate-pulse motion-reduce:animate-none"
                 >
-                  <div className="h-9 w-9 rounded-md bg-bg-overlay mb-3" />
-                  <div className="h-3 w-20 bg-bg-overlay rounded mb-2" />
-                  <div className="h-7 w-24 bg-bg-overlay rounded" />
+                  {/* surface-4, not bg-overlay: the latter collapses to #fff on
+                      the ivoire card → invisible skeleton (design audit 2026-07-08, BO F1). */}
+                  <div className="h-9 w-9 rounded-md bg-surface-4 mb-3" />
+                  <div className="h-3 w-20 bg-surface-4 rounded mb-2" />
+                  <div className="h-7 w-24 bg-surface-4 rounded" />
                 </Card>
               ))
             ) : (

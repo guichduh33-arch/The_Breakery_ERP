@@ -49,8 +49,8 @@ export interface DataTableColumn<TRow> {
 }
 
 export interface DataTableProps<TRow> {
-  columns: ReadonlyArray<DataTableColumn<TRow>>;
-  rows: ReadonlyArray<TRow>;
+  columns: readonly DataTableColumn<TRow>[];
+  rows: readonly TRow[];
   /** Row id extractor (used as React key). */
   getRowKey: (row: TRow, index: number) => string | number;
   /** When set, zebra-stripes alternating rows. Default true. */
@@ -182,7 +182,7 @@ export function DataTable<TRow>({
                       key={col.id}
                       className={cn('px-4 py-3', col.cellClassName)}
                     >
-                      <div className="h-4 w-3/4 rounded bg-bg-overlay animate-pulse" />
+                      <div className="h-4 w-3/4 rounded bg-surface-4 animate-pulse motion-reduce:animate-none" />
                     </td>
                   ))}
                 </tr>
@@ -193,8 +193,8 @@ export function DataTable<TRow>({
                   onClick={onRowClick !== undefined ? () => onRowClick(row, index) : undefined}
                   className={cn(
                     'border-t border-border-subtle',
-                    striped && index % 2 === 1 && 'bg-bg-base/30',
-                    onRowClick !== undefined && 'cursor-pointer hover:bg-bg-overlay/60 transition-colors duration-fast',
+                    striped && index % 2 === 1 && 'bg-surface-0',
+                    onRowClick !== undefined && 'cursor-pointer hover:bg-surface-4/60 transition-colors duration-fast',
                   )}
                 >
                   {columns.map((col) => (

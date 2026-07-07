@@ -71,7 +71,7 @@ const SheetContent = forwardRef<ElementRef<typeof DialogPrimitive.Content>, Shee
         {children}
         {showClose && (
           <DialogPrimitive.Close
-            className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-bg-base transition-opacity hover:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold focus-visible:outline-offset-2 disabled:pointer-events-none motion-reduce:transition-none"
+            className="absolute right-2 top-2 flex h-touch-min w-touch-min items-center justify-center rounded-md text-text-muted opacity-70 ring-offset-bg-base transition-opacity hover:bg-surface-4 hover:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold focus-visible:outline-offset-2 disabled:pointer-events-none motion-reduce:transition-none"
             aria-label="Close"
           >
             <X className="h-4 w-4" />
@@ -113,7 +113,7 @@ const SheetTitle = forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Title
     ref={ref}
-    className={cn('font-serif text-xl font-semibold text-text-primary', className)}
+    className={cn('font-display text-xl font-semibold text-text-primary', className)}
     {...props}
   />
 ));
