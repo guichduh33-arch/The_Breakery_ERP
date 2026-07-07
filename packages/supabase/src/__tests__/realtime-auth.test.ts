@@ -17,11 +17,12 @@ describe('realtime auth propagation (P0-2)', () => {
   it('setSupabaseAccessToken forwards the token to realtime.setAuth', () => {
     const client = getSupabaseClient(CONFIG);
     const calls: (string | null | undefined)[] = [];
-    // async pour matcher la vraie signature realtime-js (Promise<void>) —
-    // les call sites chaînent .catch() sur la valeur de retour.
-    client.realtime.setAuth = (async (t?: string | null) => {
+    // Promise.resolve() pour matcher la vraie signature realtime-js
+    // (Promise<void>) — les call sites chaînent .catch() sur la valeur de retour.
+    client.realtime.setAuth = (t?: string | null) => {
       calls.push(t);
-    }) as typeof client.realtime.setAuth;
+      return Promise.resolve();
+    };
 
     setSupabaseAccessToken('pin-jwt-123');
     expect(calls).toEqual(['pin-jwt-123']);
@@ -33,9 +34,10 @@ describe('realtime auth propagation (P0-2)', () => {
   it('setSupabaseKioskAccessToken forwards the kiosk token too', () => {
     const client = getSupabaseClient(CONFIG);
     const calls: (string | null | undefined)[] = [];
-    client.realtime.setAuth = (async (t?: string | null) => {
+    client.realtime.setAuth = (t?: string | null) => {
       calls.push(t);
-    }) as typeof client.realtime.setAuth;
+      return Promise.resolve();
+    };
 
     setSupabaseKioskAccessToken('kiosk-jwt-456');
     expect(calls).toEqual(['kiosk-jwt-456']);

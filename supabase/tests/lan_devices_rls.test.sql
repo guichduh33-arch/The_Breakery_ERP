@@ -49,16 +49,17 @@ EXCEPTION WHEN OTHERS THEN
   INSERT INTO _r VALUES ('t2_update_filtered', SQLSTATE = '42501');
 END $$;
 
--- T3 : SELECT gaté lan.devices.read (DEV-S65 : le plan supposait USING true ;
--- la policy live `lan_devices_select_authenticated` est
--- has_permission(auth.uid(), 'lan.devices.read') — CASHIER ne l'a pas → 0 ligne).
+-- T3 : SELECT visible pour CASHIER (S66, dette D-9 : lan.devices.read est
+-- désormais seedée aux rôles POS par la migration _117 — le chemin
+-- useStationPrinters du POS doit voir les imprimantes ; avant S66 la policy
+-- has_permission(auth.uid(), 'lan.devices.read') renvoyait 0 ligne en silence).
 DO $$
 DECLARE n INT;
 BEGIN
   SELECT count(*) INTO n FROM lan_devices WHERE code = current_setting('breakery.lanrls_code');
-  INSERT INTO _r VALUES ('t3_select_gated', n = 0);
+  INSERT INTO _r VALUES ('t3_cashier_select_visible', n = 1);
 EXCEPTION WHEN OTHERS THEN
-  INSERT INTO _r VALUES ('t3_select_gated', false);
+  INSERT INTO _r VALUES ('t3_cashier_select_visible', false);
 END $$;
 
 RESET ROLE;

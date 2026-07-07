@@ -226,6 +226,8 @@ export default function PosPage() {
           expectedCash={closeSummary.expectedCash}
           thresholdAbs={closeSummary.thresholdAbs}
           thresholdPct={closeSummary.thresholdPct}
+          pinThresholdAbs={closeSummary.pinThresholdAbs}
+          pinThresholdPct={closeSummary.pinThresholdPct}
           onClose={() => setCloseShiftOpen(false)}
         />
       )}
