@@ -1,6 +1,6 @@
 // S67 (fiche 12 D2.3) — grille de coupures IDR pour l'ouverture/clôture de
 // caisse. LISTE CANONIQUE : miroir exact de l'allowlist de close_shift_v5
-// (migration 20260710000122) — toute évolution se fait dans les deux.
+// (migration 20260710000126) — toute évolution se fait dans les deux.
 
 export const IDR_DENOMINATIONS: readonly number[] = [
   100_000, 50_000, 20_000, 10_000, 5_000, 2_000, 1_000, 500, 200, 100,

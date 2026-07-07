@@ -1,4 +1,4 @@
--- 20260710000121_shift_three_way_denominations_columns.sql
+-- 20260710000125_shift_three_way_denominations_columns.sql
 -- S67 (fiche 12 D2.2/D2.3) — colonnes support du comptage 3 volets et de la
 -- grille de coupures :
 --   business_config.shift_denomination_count_enabled : opt-in B2.5 (défaut OFF).

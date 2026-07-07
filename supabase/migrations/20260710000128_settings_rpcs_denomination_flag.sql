@@ -1,4 +1,4 @@
--- 20260710000124_settings_rpcs_denomination_flag.sql
+-- 20260710000128_settings_rpcs_denomination_flag.sql
 -- S67 (12 D2.3) — expose business_config.shift_denomination_count_enabled
 -- (_121) dans le couple settings BO :
 --   - get_settings_by_category_v1 : branche 'pos' +1 clé ;

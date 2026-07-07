@@ -1,4 +1,4 @@
--- 20260710000122_close_shift_v5_three_way_denominations.sql
+-- 20260710000126_close_shift_v5_three_way_denominations.sql
 -- S67 (fiche 12 D2.2/D2.3) — close_shift_v5 : comptage 3 volets + grille coupures.
 --   * p_counted_qris / p_counted_card (DEFAULT NULL = volet non compté) :
 --     expected par volet calculé serveur (miroir du calcul cash — orders paid),

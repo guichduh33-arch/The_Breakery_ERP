@@ -1,4 +1,4 @@
--- 20260710000123_zreport_snapshot_reconciliation.sql
+-- 20260710000127_zreport_snapshot_reconciliation.sql
 -- S67 (12 D2.2/D2.3) — _build_zreport_snapshot in-place : fige le
 -- rapprochement 3 volets et la grille de coupures dans le snapshot Z.
 -- Le RPC close_shift_v5 UPDATE pos_sessions AVANT d'appeler ce helper — les
