@@ -12,6 +12,7 @@
 // (business_config.shift_variance_pin_threshold_abs/pct), the close requires a
 // designated approver (approver_id) + their 6-digit PIN, validated server-side
 // via _verify_pin_with_lockout. New error codes mapped below.
+// S67 (12 D2.2/D2.3) — bumped to close_shift_v5: three-way count (qris/card) + opt-in denomination grid; new error codes mapped below.
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -25,6 +26,12 @@ export interface CloseShiftInput {
   /** S66 — required by the server when |variance| exceeds the PIN threshold. */
   approver_id?:  string;
   manager_pin?:  string;
+  /** S67 — three-way count. Omit a volet when its method is disabled. */
+  counted_qris?:  number;
+  counted_card?:  number;
+  /** S67 — closing-cash denomination grid {"100000": 3, ...}; required by the
+   *  server when business_config.shift_denomination_count_enabled. */
+  denominations?: Record<string, number>;
 }
 
 export interface CloseShiftResult {
@@ -41,6 +48,12 @@ export interface CloseShiftResult {
   zreport_id:       string | null;
   variance_approved_by: string | null;
   idempotent_replay: boolean;
+  counted_qris:  number | null;
+  expected_qris: number | null;
+  variance_qris: number | null;
+  counted_card:  number | null;
+  expected_card: number | null;
+  variance_card: number | null;
 }
 
 export function useCloseShift() {
@@ -56,6 +69,9 @@ export function useCloseShift() {
         p_idempotency_key?: string;
         p_approver_id?:    string;
         p_manager_pin?:    string;
+        p_counted_qris?:   number;
+        p_counted_card?:   number;
+        p_denominations?:  Record<string, number>;
       } = {
         p_session_id:   input.session_id,
         p_counted_cash: input.counted_cash,
@@ -64,7 +80,10 @@ export function useCloseShift() {
       if (input.idempotency_key !== undefined)  args.p_idempotency_key = input.idempotency_key;
       if (input.approver_id !== undefined)      args.p_approver_id = input.approver_id;
       if (input.manager_pin !== undefined)      args.p_manager_pin = input.manager_pin;
-      const { data, error } = await supabase.rpc('close_shift_v4', args);
+      if (input.counted_qris !== undefined)     args.p_counted_qris = input.counted_qris;
+      if (input.counted_card !== undefined)     args.p_counted_card = input.counted_card;
+      if (input.denominations !== undefined)    args.p_denominations = input.denominations;
+      const { data, error } = await supabase.rpc('close_shift_v5', args);
       if (error) {
         // S60 (12 D1.4): the above-threshold variance note is enforced
         // server-side (ERRCODE P0001 variance_note_required). The UI
@@ -86,6 +105,19 @@ export function useCloseShift() {
         }
         if (error.message.includes('account_locked')) {
           throw new Error('Manager account locked after repeated failed PINs — try again in 15 minutes');
+        }
+        // S67 (12 D2.2/D2.3): three-way count + denomination grid (close_shift_v5).
+        if (error.message.includes('denominations_required')) {
+          throw new Error('Denomination count is required: count the drawer by denomination');
+        }
+        if (error.message.includes('denomination_total_mismatch')) {
+          throw new Error('The denomination grid total does not match the counted cash');
+        }
+        if (error.message.includes('invalid_denomination')) {
+          throw new Error('Invalid denomination grid — unknown note/coin or bad quantity');
+        }
+        if (error.message.includes('counted_method_invalid')) {
+          throw new Error('Counted amounts must be zero or positive');
         }
         throw new Error(error.message);
       }
