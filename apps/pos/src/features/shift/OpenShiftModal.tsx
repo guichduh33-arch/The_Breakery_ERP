@@ -35,9 +35,12 @@ import {
   cn,
 } from '@breakery/ui';
 import { todayIsoDate, formatTimeWita } from '@breakery/utils';
+import { sumDenominations } from '@breakery/domain';
 import { toast } from 'sonner';
 import { useOpenShift } from './hooks/useShift';
 import { useLanDevices } from './hooks/useLanDevices';
+import { useDenominationCountEnabled } from './hooks/useDenominationCountEnabled';
+import { DenominationGrid } from './components/DenominationGrid';
 import { usePOSPresets } from '@/features/settings/hooks/usePOSPresets';
 
 type Step = 'pin' | 'cash';
@@ -72,6 +75,9 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
   const [notes, setNotes] = useState('');
   const [pinError, setPinError] = useState<string | null>(null);
   const [pinLoading, setPinLoading] = useState(false);
+  // S67 (12 D2.3) — opt-in denomination grid, mirrors CloseShiftModal.
+  const [denoms, setDenoms] = useState<Record<string, number>>({});
+  const denomEnabled = useDenominationCountEnabled();
 
   const STORAGE_KEY = 'pos:last_terminal_id';
   const [terminalId, setTerminalId] = useState<string | null>(
@@ -83,7 +89,7 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
   const { presets } = usePOSPresets();
   const quickAmounts = presets.openingCashPresets;
 
-  const amount = Number(amountStr || '0');
+  const amount = denomEnabled ? sumDenominations(denoms) : Number(amountStr || '0');
   const headerDate = useMemo(() => formatHeaderDate(new Date()), []);
   const headerTime = useMemo(() => formatTimeWita(new Date()), []);
   // todayIsoDate kept for backwards compat with prior subtitle (no longer rendered)
@@ -124,15 +130,22 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
   async function handleSubmit(): Promise<void> {
     if (amount <= 0) return;
     try {
-      const mutInput: { opening_cash: number; opening_notes?: string; terminal_id?: string | null } = { opening_cash: amount };
+      const mutInput: {
+        opening_cash: number;
+        opening_notes?: string;
+        terminal_id?: string | null;
+        opening_denominations?: Record<string, number>;
+      } = { opening_cash: amount };
       if (notes) mutInput.opening_notes = notes;
       if (terminalId) mutInput.terminal_id = terminalId;
+      if (denomEnabled) mutInput.opening_denominations = denoms;
       await openShift.mutateAsync(mutInput);
       toast.success('Shift opened');
       // Reset internal state for next mount.
       setStep('pin');
       setAmountStr('');
       setNotes('');
+      setDenoms({});
     } catch (err) {
       toast.error('Failed to open shift');
       console.error(err);
@@ -149,6 +162,7 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
       setAmountStr('');
       setNotes('');
       setPinError(null);
+      setDenoms({});
       onClose();
     }
   }
@@ -222,6 +236,16 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
         {/* Step 2 — Cash */}
         {step === 'cash' && (
           <div className="space-y-5">
+            {denomEnabled ? (
+              <section className="space-y-2">
+                <SectionLabel as="div">Opening Cash — count by denomination</SectionLabel>
+                <DenominationGrid value={denoms} onChange={setDenoms} />
+                <div className="text-center pt-1">
+                  <Currency amount={amount} emphasis="gold" className="text-2xl font-display" />
+                </div>
+              </section>
+            ) : (
+            <>
             <section className="space-y-2">
               <SectionLabel as="div">Opening Cash</SectionLabel>
               <div
@@ -267,6 +291,8 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
                 })}
               </div>
             </section>
+            </>
+            )}
 
             <section className="space-y-2">
               <SectionLabel as="div">Terminal (optional)</SectionLabel>

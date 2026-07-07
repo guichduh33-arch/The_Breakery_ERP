@@ -32,7 +32,13 @@ export function useOpenShift() {
   const setCurrent = useShiftStore((s) => s.setCurrent);
 
   return useMutation({
-    mutationFn: async (input: { opening_cash: number; opening_notes?: string; terminal_id?: string | null }) => {
+    mutationFn: async (input: {
+      opening_cash: number;
+      opening_notes?: string;
+      terminal_id?: string | null;
+      /** S67 (12 D2.3) — grille de coupures d'ouverture (flag config ON). */
+      opening_denominations?: Record<string, number> | null;
+    }) => {
       if (!userId) throw new Error('not_authenticated');
       const { data, error } = await supabase
         .from('pos_sessions')
@@ -41,6 +47,7 @@ export function useOpenShift() {
           opening_cash:  input.opening_cash,
           opening_notes: input.opening_notes ?? null,
           terminal_id:   input.terminal_id ?? null,
+          opening_denominations: input.opening_denominations ?? null,
         })
         .select('id, opened_at, opening_cash')
         .single();
