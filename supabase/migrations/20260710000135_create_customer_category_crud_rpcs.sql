@@ -21,13 +21,13 @@ BEGIN
   IF p_slug IS NULL OR btrim(p_slug) = '' THEN
     RAISE EXCEPTION 'slug_required' USING ERRCODE = 'P0001';
   END IF;
-  IF p_discount_percentage < 0 OR p_discount_percentage > 100 THEN
+  IF p_discount_percentage IS NULL OR p_discount_percentage < 0 OR p_discount_percentage > 100 THEN
     RAISE EXCEPTION 'invalid_discount' USING ERRCODE = 'P0001';
   END IF;
-  IF p_points_multiplier < 0 THEN
+  IF p_points_multiplier IS NULL OR p_points_multiplier < 0 THEN
     RAISE EXCEPTION 'invalid_multiplier' USING ERRCODE = 'P0001';
   END IF;
-  IF p_is_default THEN
+  IF COALESCE(p_is_default, false) THEN
     UPDATE customer_categories SET is_default = false WHERE is_default AND deleted_at IS NULL;
   END IF;
   BEGIN
@@ -70,16 +70,16 @@ BEGIN
   IF NOT FOUND THEN
     RAISE EXCEPTION 'category_not_found' USING ERRCODE = 'P0002';
   END IF;
-  IF p_discount_percentage < 0 OR p_discount_percentage > 100 THEN
+  IF p_discount_percentage IS NULL OR p_discount_percentage < 0 OR p_discount_percentage > 100 THEN
     RAISE EXCEPTION 'invalid_discount' USING ERRCODE = 'P0001';
   END IF;
-  IF p_points_multiplier < 0 THEN
+  IF p_points_multiplier IS NULL OR p_points_multiplier < 0 THEN
     RAISE EXCEPTION 'invalid_multiplier' USING ERRCODE = 'P0001';
   END IF;
-  IF v_was_default AND NOT p_is_default THEN
+  IF v_was_default AND COALESCE(p_is_default, false) = false THEN
     RAISE EXCEPTION 'default_required' USING ERRCODE = 'P0001';
   END IF;
-  IF p_is_default AND NOT v_was_default THEN
+  IF COALESCE(p_is_default, false) AND NOT v_was_default THEN
     UPDATE customer_categories SET is_default = false WHERE is_default AND deleted_at IS NULL;
   END IF;
   BEGIN

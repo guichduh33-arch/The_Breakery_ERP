@@ -7,7 +7,7 @@
 BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
-SELECT plan(14);
+SELECT plan(17);
 
 -- Seed an ADMIN identity for the whole transaction (has customer_categories.*).
 DO $seed$
@@ -76,6 +76,18 @@ SELECT isnt((SELECT deleted_at FROM customer_categories WHERE slug='hotels'), NU
 SELECT lives_ok(
   $$SELECT delete_customer_category_v1((SELECT id FROM customer_categories WHERE slug='hotels'))$$,
   're-delete is no-op');
+
+-- regression (reviewer finding 1): NULL p_is_default must not un-default the last default
+SELECT throws_ok(
+  $$SELECT update_customer_category_v1((SELECT id FROM customer_categories WHERE is_default AND deleted_at IS NULL LIMIT 1),'X','newdef','retail',0,1.0,true,null,null,NULL)$$,
+  'P0001', NULL, 'NULL p_is_default on the current default -> default_required');
+SELECT is((SELECT count(*)::int FROM customer_categories WHERE is_default AND deleted_at IS NULL),
+  1, 'still exactly one default after rejected un-default');
+
+-- regression (reviewer finding 3): NULL numeric args are typed P0001, not a raw 23502
+SELECT throws_ok(
+  $$SELECT create_customer_category_v1('NullPct','nullpct','custom',NULL,1.0,true,null,null,false)$$,
+  'P0001', NULL, 'NULL discount -> invalid_discount (typed)');
 
 -- ACL: anon cannot execute
 SELECT is(has_function_privilege('anon',
