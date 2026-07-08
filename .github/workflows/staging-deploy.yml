@@ -57,9 +57,14 @@ jobs:
     timeout-minutes: 30
     # `environment: staging` triggers GitHub's required-reviewer approval gate.
     # Configure reviewers under: Settings → Environments → staging.
+    # NOTE: `environment.url` must NOT reference the `secrets` context — it is
+    # rejected at workflow-compile time ("Unrecognized named-value: 'secrets'"),
+    # which makes GitHub record a 0s startup_failure run against every push to
+    # the default branch (a persistent red ✗ even though the job is dispatch-
+    # only). The staging project ref is fixed and already documented above.
     environment:
       name: staging
-      url: https://${{ secrets.SUPABASE_PROJECT_REF_STAGING }}.supabase.co
+      url: https://ikcyvlovptebroadgtvd.supabase.co
 
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
