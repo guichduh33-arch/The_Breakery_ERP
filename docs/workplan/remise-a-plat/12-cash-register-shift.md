@@ -48,7 +48,7 @@
 | B1.4 | Comptage 3 volets, écart coloré, raison > seuil, **PIN manager gros écarts** | Comptage **espèces uniquement** (`close_shift_v2(p_counted_cash)`) — les totaux mobile/carte sont calculés dans le snapshot Z mais jamais comptés/rapprochés ; écart coloré ✅ ; note > seuil ✅ (client-side only) ; **aucun PIN à la clôture** (ni arg RPC ni step UI) | 🔴 MANQUANT (2 sous-claims sur 4) |
 | B1.5 | Z PDF archivé 10 ans, signé du BO, annulation PIN | PDF uploadé dans le bucket `zreports` (rien ne le supprime, mais **aucune politique de rétention/immutabilité 10 ans** — bucket ni WORM ni versionné) ; signature `sign_zreport_v2` PIN ✅ ; annulation `void_zreport_v2` PIN ✅ | 🟠 PARTIEL (le « dix ans » est une intention, pas un mécanisme) |
 | B1.6 | JE d'écart automatique | `close_shift_v2:107-145` — over/short vers 4910/5910, idempotente | ✅ CONFORME |
-| Scénario | Multi-caissiers même terminal ; manque récurrent par caissier repérable | Sessions par utilisateur + LiveSessions ✅ ; côté BO seule la **liste des Z-reports** existe (`ZReportsListPage`) — **aucun rapport « tendance des écarts par caissier »** | 🟠 PARTIEL |
+| Scénario | Multi-caissiers même terminal ; manque récurrent par caissier repérable | Sessions par utilisateur + LiveSessions ✅ ; rapport BO « écarts par caissier » (`get_cashier_variance_v1` + `CashierVariancePage`, ventilation jour de semaine) ✅ **livré S70** | ✅ CONFORME (S70) |
 
 **Bonus code (le code fait plus que la doc) :**
 - 🔵 **Comptage à l'aveugle** à la clôture (l'attendu est masqué pendant la saisie — anti-fraude plus fort que ce que la doc décrit) (`CloseShiftModal.tsx:5-10`).
@@ -68,7 +68,7 @@
 1. **PIN manager pour gros écarts à la clôture (B1.4)** : bump `close_shift_v3` avec `p_manager_pin` requis quand |variance| > seuil (pattern `_verify_pin_with_lockout` de `void_zreport_v2`) + step PIN dans `CloseShiftModal` ; DROP v2 même migration ; pgTAP.
 2. **Comptage en 3 volets (B1.4)** : étendre la clôture à `p_counted_qris`/`p_counted_card` (ou jsonb par méthode), variance par volet dans le snapshot Z et la JE (compte par méthode) ; UI 3 onglets. Plan requis (touche close_shift, Z-snapshot, PDF, BO).
 3. **Comptage par coupure (B1.1/B2.5)** : grille de coupures IDR à l'open et au close, total auto, stockage jsonb `denominations` sur `pos_sessions` — optionnel via `business_config`.
-4. **Rapport « écarts par caissier » côté BO** : RPC d'agrégation `variance_total` par `closed_by`/jour de semaine + page Reports (répond au scénario « manque récurrent le mardi »).
+4. ✅ **SOLDÉ (S70, 2026-07-08)** — **Rapport « écarts par caissier » côté BO** : RPC lecture pure `get_cashier_variance_v1(start,end)` (migration `_140`, gate `reports.read`) agrège l'écart cash (colonne figée `pos_sessions.variance_total`) + QRIS/carte (metadata `audit_logs` `shift.close`) par **`opened_by`** (propriétaire du tiroir, pas `closed_by` — un shift fermé par un manager reste attribué au caissier) sur 3 volets, avec matrice par jour de semaine (répond au « manque récurrent le mardi ») ; page `CashierVariancePage` (sidebar + tuile, export CSV). pgTAP `cashier_variance` 14/14 · smoke 3/3 · ancre `s44_money_gates` 12/12. Cf. [`../plans/2026-07-08-session-70-INDEX.md`](../plans/2026-07-08-session-70-INDEX.md).
 
 ### D3. Chantiers lourds (spec dédiée avant code)
 1. **Passage de relais sans clôture (B2.1) + fermeture auto des sessions oubliées (B2.2)** : machine à états de session (handover count intermédiaire, propriété du tiroir), cron de fermeture — spec dédiée (impacte gate de vente, Z-report, JE).
