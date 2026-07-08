@@ -32,9 +32,6 @@ function wrap(ui: React.ReactNode) {
   return <QueryClientProvider client={qc}>{ui}</QueryClientProvider>;
 }
 
-type PricesQuery = UseQueryResult<CategoryPriceOverride[], Error>;
-type ProductsQuery = UseQueryResult<OrderEditProduct[], Error>;
-
 function fakeQuery<T>(data: T, overrides: Partial<UseQueryResult<T, Error>> = {}): UseQueryResult<T, Error> {
   return { data, isLoading: false, error: null, ...overrides } as unknown as UseQueryResult<T, Error>;
 }
@@ -107,8 +104,8 @@ describe('PricingTab — editable category overrides', () => {
       'customer_categories.update': true,
     };
 
-    vi.spyOn(pricesMod, 'useCustomerCategoryPrices').mockReturnValue(fakeQuery([OVERRIDE]) as PricesQuery);
-    vi.spyOn(productsMod, 'useProductsForOrderEdit').mockReturnValue(fakeQuery(PRODUCTS) as ProductsQuery);
+    vi.spyOn(pricesMod, 'useCustomerCategoryPrices').mockReturnValue(fakeQuery([OVERRIDE]));
+    vi.spyOn(productsMod, 'useProductsForOrderEdit').mockReturnValue(fakeQuery(PRODUCTS));
 
     upsertMutate = vi.fn();
     deleteMutate = vi.fn();

@@ -63,7 +63,7 @@ export function useUpsertCategoryPrice(categoryId: string | null | undefined) {
       const { error } = await supabase.rpc('upsert_product_category_price_v1', {
         // categoryId is only ever invoked from a UI branch where the category
         // (and thus its id) is known — the RPC arg is non-nullable.
-        p_category_id: categoryId as string,
+        p_category_id: categoryId!,
         p_product_id: v.productId,
         p_price: v.price,
       });
@@ -78,7 +78,7 @@ export function useDeleteCategoryPrice(categoryId: string | null | undefined) {
   return useMutation({
     mutationFn: async (productId: string) => {
       const { error } = await supabase.rpc('delete_product_category_price_v1', {
-        p_category_id: categoryId as string,
+        p_category_id: categoryId!,
         p_product_id: productId,
       });
       if (error) throw error;

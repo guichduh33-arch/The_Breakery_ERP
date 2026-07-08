@@ -198,7 +198,7 @@ function OverrideRow({
         <td className="px-4 py-3 text-right">
           <Button
             type="button"
-            variant="ghost"
+            variant="ghostDestructive"
             size="sm"
             aria-label={`Remove ${override.product_name} override`}
             disabled={saving}
