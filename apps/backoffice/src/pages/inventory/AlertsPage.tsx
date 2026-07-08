@@ -5,7 +5,7 @@
 // shape of attention work at a glance.
 
 import { useMemo, type JSX } from 'react';
-import { AlertTriangle, PackageX, ShoppingCart, Wheat } from 'lucide-react';
+import { AlertTriangle, PackageX, ShoppingCart, SlidersHorizontal, Wheat } from 'lucide-react';
 import {
   KpiTile,
   Tabs,
@@ -17,6 +17,7 @@ import { useLowStock } from '@/features/inventory-alerts/hooks/useLowStock.js';
 import { LowStockTab } from '@/features/inventory-alerts/components/LowStockTab.js';
 import { ReorderTab } from '@/features/inventory-alerts/components/ReorderTab.js';
 import { ProductionAlertsTab } from '@/features/inventory-alerts/components/ProductionAlertsTab.js';
+import { ConfigIssuesTab } from '@/features/inventory-alerts/components/ConfigIssuesTab.js';
 
 export default function AlertsPage(): JSX.Element {
   const lowStock = useLowStock(null);
@@ -81,6 +82,9 @@ export default function AlertsPage(): JSX.Element {
           <TabsTrigger value="production" className="gap-2">
             <Wheat className="h-3.5 w-3.5" aria-hidden /> Production
           </TabsTrigger>
+          <TabsTrigger value="config" className="gap-2">
+            <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden /> Config produit
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="low" className="rounded-lg border border-border-subtle bg-bg-elevated p-4">
@@ -91,6 +95,9 @@ export default function AlertsPage(): JSX.Element {
         </TabsContent>
         <TabsContent value="production" className="rounded-lg border border-border-subtle bg-bg-elevated p-4">
           <ProductionAlertsTab />
+        </TabsContent>
+        <TabsContent value="config" className="rounded-lg border border-border-subtle bg-bg-elevated p-4">
+          <ConfigIssuesTab />
         </TabsContent>
       </Tabs>
     </div>

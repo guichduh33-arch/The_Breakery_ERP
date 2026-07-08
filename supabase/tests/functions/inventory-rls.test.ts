@@ -4,7 +4,7 @@
 // Asserts:
 //   - authenticated users CANNOT INSERT/UPDATE/DELETE stock_movements directly
 //   - authenticated users CAN SELECT stock_movements only via inventory.read
-//   - CASHIER (no inventory.read) gets zero rows from get_stock_levels_v1 (forbidden)
+//   - CASHIER (no inventory.read) gets zero rows from get_stock_levels_v2 (forbidden)
 //   - MANAGER (inventory.read/receive/waste) is allowed reads + receive/waste
 //   - MANAGER is denied adjust_stock_v1 (ADMIN-only)
 //   - ADMIN passes the full matrix
@@ -137,9 +137,9 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory RLS + GRANT m
     expect(error).not.toBeNull();
   });
 
-  it('CASHIER: get_stock_levels_v1 → forbidden', async () => {
+  it('CASHIER: get_stock_levels_v2 → forbidden', async () => {
     const sb = jwtClient(cashierToken);
-    const { error } = await sb.rpc('get_stock_levels_v1', {
+    const { error } = await sb.rpc('get_stock_levels_v2', {
       p_low_stock_only: false, p_limit: 1, p_offset: 0,
     });
     expect(error?.message ?? '').toMatch(/forbidden/);
@@ -176,9 +176,9 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory RLS + GRANT m
     expect(error?.message ?? '').toMatch(/forbidden/);
   });
 
-  it('MANAGER: get_stock_levels_v1 → succeeds', async () => {
+  it('MANAGER: get_stock_levels_v2 → succeeds', async () => {
     const sb = jwtClient(managerToken);
-    const { data, error } = await sb.rpc('get_stock_levels_v1', {
+    const { data, error } = await sb.rpc('get_stock_levels_v2', {
       p_low_stock_only: false, p_limit: 5, p_offset: 0,
     });
     expect(error).toBeNull();
@@ -197,8 +197,8 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory RLS + GRANT m
 
   it('anon CANNOT invoke any inventory RPC', async () => {
     const sb = createClient(SUPABASE_URL, ANON);
-    for (const fn of ['get_stock_levels_v1', 'adjust_stock_v1', 'receive_stock_v1', 'waste_stock_v1']) {
-      const args = fn === 'get_stock_levels_v1'
+    for (const fn of ['get_stock_levels_v2', 'adjust_stock_v1', 'receive_stock_v1', 'waste_stock_v1']) {
+      const args = fn === 'get_stock_levels_v2'
         ? { p_low_stock_only: false, p_limit: 1, p_offset: 0 }
         : { p_product_id: productId, p_quantity: 1, p_reason: 'anon should fail', p_new_qty: 1, p_supplier_id: supplierId };
       const { error } = await sb.rpc(fn, args);
