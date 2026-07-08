@@ -142,6 +142,7 @@ const GROUPS: NavGroup[] = [
           { to: '/backoffice/reports/sales-by-hour', label: 'Sales by Hour', icon: BarChart3, permission: 'reports.sales.read' },
           { to: '/backoffice/reports/sales-by-category', label: 'Sales by Category', icon: PieChart, permission: 'reports.sales.read' },
           { to: '/backoffice/reports/sales-by-staff', label: 'Sales by Staff', icon: Users, permission: 'reports.sales.read' },
+          { to: '/backoffice/reports/cashier-variance', label: 'Cashier Variance', icon: Wallet, permission: 'reports.read' },
           { to: '/backoffice/reports/basket-analysis', label: 'Basket Analysis', icon: Layers3, permission: 'reports.sales.read' },
           { to: '/backoffice/reports/daily-sales', label: 'Daily Sales', icon: Calendar, permission: 'reports.sales.read' },
           { to: '/backoffice/reports/staff-performance', label: 'Staff Performance', icon: Users, permission: 'reports.sales.read' },
