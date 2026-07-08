@@ -4,7 +4,7 @@
 
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
-SELECT plan(7);
+SELECT plan(9);
 
 DO $seed$
 DECLARE v_admin_uid UUID;
@@ -39,6 +39,15 @@ SELECT throws_ok($$SELECT upsert_product_category_price_v1(
 SELECT throws_ok($$SELECT upsert_product_category_price_v1(
   gen_random_uuid(), (SELECT id FROM products WHERE deleted_at IS NULL LIMIT 1), 100)$$,
   'P0002', NULL, 'unknown category rejected');
+
+-- unknown product rejected
+SELECT throws_ok($$SELECT upsert_product_category_price_v1(
+  (SELECT id FROM customer_categories WHERE slug='bulk'), gen_random_uuid(), 100)$$,
+  'P0002', NULL, 'unknown product rejected');
+
+-- ACL: anon cannot execute
+SELECT is(has_function_privilege('anon',
+  'upsert_product_category_price_v1(uuid,uuid,numeric)','EXECUTE'), false, 'anon cannot upsert');
 
 -- delete removes the override (idempotent)
 SELECT lives_ok($$SELECT delete_product_category_price_v1(
