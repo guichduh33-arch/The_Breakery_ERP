@@ -5,7 +5,7 @@
 
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
-SELECT plan(11);
+SELECT plan(12);
 
 -- table exists with expected composite PK
 SELECT has_table('customer_product_prices');
@@ -33,6 +33,13 @@ SELECT lives_ok($$SELECT upsert_customer_product_price_v1(
   (SELECT id FROM products  WHERE deleted_at IS NULL LIMIT 1), 7500)$$, 'upsert negotiated price');
 SELECT is((SELECT price::int FROM customer_product_prices
   WHERE customer_id = (SELECT id FROM customers WHERE deleted_at IS NULL LIMIT 1)), 7500, 'price stored');
+
+-- upsert conflict updates the price in place (ON CONFLICT DO UPDATE branch)
+SELECT upsert_customer_product_price_v1(
+  (SELECT id FROM customers WHERE deleted_at IS NULL LIMIT 1),
+  (SELECT id FROM products  WHERE deleted_at IS NULL LIMIT 1), 6100);
+SELECT is((SELECT price::int FROM customer_product_prices
+  WHERE customer_id = (SELECT id FROM customers WHERE deleted_at IS NULL LIMIT 1)), 6100, 'conflict updated in place');
 
 -- negative rejected (typed)
 SELECT throws_ok($$SELECT upsert_customer_product_price_v1(
