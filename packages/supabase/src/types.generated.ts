@@ -6336,6 +6336,10 @@ export type Database = {
         Args: { p_threshold_id: string }
         Returns: boolean
       }
+      delete_product_category_price_v1: {
+        Args: { p_category_id: string; p_product_id: string }
+        Returns: undefined
+      }
       delete_product_v1: {
         Args: { p_idempotency_key?: string; p_product_id: string }
         Returns: Json
@@ -7852,6 +7856,22 @@ export type Database = {
       upsert_combo_v1: {
         Args: { p_combo: Json; p_idempotency_key?: string }
         Returns: Json
+      }
+      upsert_product_category_price_v1: {
+        Args: { p_category_id: string; p_price: number; p_product_id: string }
+        Returns: {
+          created_at: string
+          customer_category_id: string
+          price: number
+          product_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "product_category_prices"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       upsert_product_modifiers_v1: {
         Args: { p_groups: Json; p_product_id: string }
