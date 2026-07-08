@@ -21,7 +21,7 @@
 | 09 | [Clients pros (B2B)](09-b2b-wholesale.md) | Opérationnel | 5 | 0 | 2 | ~~ni facture PDF~~ **facture PDF livrée (S68)** ; restent surclamés : prix négociés, cycle livraison | Amender la doc ; chantiers prix négociés / cycle livraison (Vague 3) |
 | 10 | [Comptabilité](10-accounting-double-entry.md) | Opérationnel | 4 | 3 | 2 | Socle conforme ; rapprochement bancaire et notes SAK EMKM inexistants | Quick win drill-down JE → opération d'origine |
 | 11 | [Dépenses](11-expenses.md) | Opérationnel | 3 | 1 | 2 | **Sous-vendu** : multi-niveaux + SOD déjà livrés | Mettre la doc à jour ; bouton « Dupliquer » |
-| 12 | [Caisse physique & shifts](12-cash-register-shift.md) | Opérationnel | 1 | 5 | 1 | ~~Surclamé~~ → D1 + D2 ①②③ soldés (S60/S66/S67) : clôture 3 volets + PIN gros écart + coupures opt-in | Restent D2.4 (rapport écarts par caissier) et D3 (relais/fermeture auto, dépôt bancaire, rétention 10 ans) |
+| 12 | [Caisse physique & shifts](12-cash-register-shift.md) | Opérationnel | 1 | 5 | 1 | ~~Surclamé~~ → D1 + D2 ①②③④ soldés (S60/S66/S67/S70) : clôture 3 volets + PIN gros écart + coupures opt-in + rapport écarts par caissier | Reste D3 (relais/fermeture auto, dépôt bancaire, rétention 10 ans) |
 | 13 | [Promotions & remises](13-promotions-discounts.md) | Opérationnel | 4 | 1 | 1 | Le plus fidèle (S57) ; ticket muet sur les promos | Lignes promo nommées sur ticket + détail BO |
 | 14 | [Rapports & analyses](14-reports-analytics.md) | Opérationnel | 5 | 6 | 0 | ~30 pages réelles et gatées ; **Dashboard = stub** | Créer `get_dashboard_overview_v1` (n'existe nulle part) + câbler |
 | 15 | [Production & recettes](15-production-recipes.md) | Opérationnel | 5 | 0 | 0 | Fidèle — module exemplaire | Résorber le doublon suggestions orphelin |

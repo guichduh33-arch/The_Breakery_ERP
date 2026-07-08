@@ -52,6 +52,7 @@ const ReportsIndexPage = lazy(() => import('@/pages/reports/ReportsIndexPage.js'
 const SalesByHourPage = lazy(() => import('@/pages/reports/SalesByHourPage.js'));
 const SalesByCategoryPage = lazy(() => import('@/pages/reports/SalesByCategoryPage.js'));
 const SalesByStaffPage = lazy(() => import('@/pages/reports/SalesByStaffPage.js'));
+const CashierVariancePage = lazy(() => import('@/pages/reports/CashierVariancePage.js'));
 const StockVariancePage = lazy(() => import('@/pages/reports/StockVariancePage.js'));
 const ProductionYieldPage = lazy(() => import('@/pages/reports/ProductionYieldPage.js'));
 const AuditPage = lazy(() => import('@/pages/reports/AuditPage.js'));
@@ -659,6 +660,14 @@ export function AppRoutes() {
           element={
             <PermissionGate required="reports.sales.read">
               <SalesByStaffPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="reports/cashier-variance"
+          element={
+            <PermissionGate required="reports.read">
+              <CashierVariancePage />
             </PermissionGate>
           }
         />

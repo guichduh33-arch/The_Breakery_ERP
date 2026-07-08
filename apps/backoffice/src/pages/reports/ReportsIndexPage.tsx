@@ -40,6 +40,7 @@ const SECTIONS: ReportSection[] = [
       { to: 'sales-by-hour',     title: 'Sales by Hour',     blurb: 'Hourly revenue distribution.',                  icon: Clock },
       { to: 'sales-by-category', title: 'Sales by Category', blurb: 'Revenue + qty per product category.',           icon: PieChart },
       { to: 'sales-by-staff',    title: 'Sales by Staff',    blurb: 'Total / order count / avg basket per staff.',   icon: Users },
+      { to: 'cashier-variance',  title: 'Cashier Variance',  blurb: 'Cash / QRIS / card variance per cashier, by day of week.', icon: Banknote },
       { to: 'basket-analysis',   title: 'Basket Analysis',   blurb: 'Top cross-sell product pairs by lift.',         icon: Layers3 },
       { to: 'daily-sales',       title: 'Daily Sales',       blurb: 'Sales breakdown by day.',                       icon: Calendar },
     ],
