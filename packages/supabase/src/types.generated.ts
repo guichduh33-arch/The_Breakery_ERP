@@ -6159,6 +6159,41 @@ export type Database = {
         Returns: Json
       }
       create_category_v1: { Args: { p_payload: Json }; Returns: Json }
+      create_customer_category_v1: {
+        Args: {
+          p_color: string
+          p_discount_percentage: number
+          p_icon: string
+          p_is_default: boolean
+          p_loyalty_enabled: boolean
+          p_name: string
+          p_points_multiplier: number
+          p_price_modifier_type: Database["public"]["Enums"]["price_modifier_type"]
+          p_slug: string
+        }
+        Returns: {
+          color: string | null
+          created_at: string
+          deleted_at: string | null
+          discount_percentage: number
+          icon: string | null
+          id: string
+          is_active: boolean
+          is_default: boolean
+          loyalty_enabled: boolean
+          name: string
+          points_multiplier: number
+          price_modifier_type: Database["public"]["Enums"]["price_modifier_type"]
+          slug: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "customer_categories"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       create_customer_v2: {
         Args: {
           p_customer_type?: Database["public"]["Enums"]["customer_type"]
@@ -6293,6 +6328,10 @@ export type Database = {
         Returns: Json
       }
       delete_combo_v1: { Args: { p_combo_product_id: string }; Returns: Json }
+      delete_customer_category_v1: {
+        Args: { p_id: string }
+        Returns: undefined
+      }
       delete_expense_threshold_v1: {
         Args: { p_threshold_id: string }
         Returns: boolean
@@ -7713,6 +7752,42 @@ export type Database = {
           p_reason: string
         }
         Returns: Json
+      }
+      update_customer_category_v1: {
+        Args: {
+          p_color: string
+          p_discount_percentage: number
+          p_icon: string
+          p_id: string
+          p_is_default: boolean
+          p_loyalty_enabled: boolean
+          p_name: string
+          p_points_multiplier: number
+          p_price_modifier_type: Database["public"]["Enums"]["price_modifier_type"]
+          p_slug: string
+        }
+        Returns: {
+          color: string | null
+          created_at: string
+          deleted_at: string | null
+          discount_percentage: number
+          icon: string | null
+          id: string
+          is_active: boolean
+          is_default: boolean
+          loyalty_enabled: boolean
+          name: string
+          points_multiplier: number
+          price_modifier_type: Database["public"]["Enums"]["price_modifier_type"]
+          slug: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "customer_categories"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       update_lan_heartbeat_v1: {
         Args: { p_device_code: string }
