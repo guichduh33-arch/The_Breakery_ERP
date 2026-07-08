@@ -6,11 +6,11 @@
 // each card shows the category icon (colored bubble), name, slug, pricing
 // type pill, optional description, and active state badge.
 //
-// SCOPE CUT: no `create_customer_category_v*` / `update_customer_category_v*`
-// RPC currently exists in the V3 schema. Direct table writes are blocked by
-// RLS for non-admins. We render this page READ-ONLY and surface an "Edit"
-// button that is disabled with a tooltip explaining the gap. Spec deviation:
-// D-W6-CUSTCAT-01 to be tracked for Session 15+.
+// S69 Volet A (Task 3) — CRUD activated: create_customer_category_v1 /
+// update_customer_category_v1 / delete_customer_category_v1 (migration
+// 20260710000135) close deviation D-W6-CUSTCAT-01. New/Edit open
+// CategoryFormModal; Delete confirms then mutates, surfacing
+// classifyCategoryError (esp. category_in_use).
 
 import { useState, type JSX } from 'react';
 import { Link } from 'react-router-dom';
@@ -27,12 +27,20 @@ import {
   Briefcase,
   type LucideIcon,
 } from 'lucide-react';
-import { Button, Card, EmptyState } from '@breakery/ui';
+import { Button, Card, EmptyState, Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
 import {
   useCustomerCategories,
   type CustomerCategoryRow,
 } from '@/features/customers/hooks/useCustomerCategories.js';
+import {
+  useCreateCustomerCategory,
+  useUpdateCustomerCategory,
+  useDeleteCustomerCategory,
+  classifyCategoryError,
+  type CategoryInput,
+} from '@/features/customers/hooks/useCustomerCategoryMutations.js';
+import { CategoryFormModal } from '@/features/customers/components/CategoryFormModal.js';
 
 const ICON_BY_SLUG: Record<string, LucideIcon> = {
   retail:    UsersIcon,
@@ -64,16 +72,51 @@ function pricingLabel(cat: CustomerCategoryRow): string {
   }
 }
 
+type EditTarget = 'new' | CustomerCategoryRow;
+
 export default function CustomerCategoriesPage(): JSX.Element {
   const hasPermission = useAuthStore((s) => s.hasPermission);
   const canRead   = hasPermission('customer_categories.read');
-  const canWrite  = hasPermission('customer_categories.update');
-  const [info, setInfo] = useState<string | null>(null);
+  const canCreate = hasPermission('customer_categories.create');
+  const canUpdate = hasPermission('customer_categories.update');
+  const canDelete = hasPermission('customer_categories.delete');
+
+  const [editTarget, setEditTarget] = useState<EditTarget | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<CustomerCategoryRow | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const cats = useCustomerCategories();
+  const createCat = useCreateCustomerCategory();
+  const updateCat = useUpdateCustomerCategory();
+  const deleteCat = useDeleteCustomerCategory();
 
   if (!canRead) {
     return <div className="text-text-secondary">No access to customer categories.</div>;
+  }
+
+  function handleSubmit(input: CategoryInput): void {
+    setFormError(null);
+    if (editTarget === 'new') {
+      createCat.mutate(input, {
+        onSuccess: () => setEditTarget(null),
+        onError: (e) => setFormError(classifyCategoryError(e)),
+      });
+    } else if (editTarget !== null) {
+      updateCat.mutate({ ...input, id: editTarget.id }, {
+        onSuccess: () => setEditTarget(null),
+        onError: (e) => setFormError(classifyCategoryError(e)),
+      });
+    }
+  }
+
+  function handleDelete(): void {
+    if (deleteTarget === null) return;
+    setDeleteError(null);
+    deleteCat.mutate(deleteTarget.id, {
+      onSuccess: () => setDeleteTarget(null),
+      onError: (e) => setDeleteError(classifyCategoryError(e)),
+    });
   }
 
   return (
@@ -95,18 +138,12 @@ export default function CustomerCategoriesPage(): JSX.Element {
         <Button
           variant="primary"
           size="md"
-          disabled
-          onClick={() => setInfo('A backend RPC is required to create categories. Tracked as deviation D-W6-CUSTCAT-01.')}
+          disabled={!canCreate}
+          onClick={() => { setFormError(null); setEditTarget('new'); }}
         >
           <Plus className="h-4 w-4" aria-hidden /> New Category
         </Button>
       </header>
-
-      {info !== null && (
-        <div role="status" className="rounded-md border border-border-subtle bg-bg-overlay p-3 text-xs text-text-secondary">
-          {info}
-        </div>
-      )}
 
       {cats.isLoading ? (
         <div className="text-sm text-text-secondary">Loading categories…</div>
@@ -119,17 +156,67 @@ export default function CustomerCategoriesPage(): JSX.Element {
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
           {(cats.data ?? []).map((cat) => (
-            <CategoryCard key={cat.id} cat={cat} canWrite={canWrite} />
+            <CategoryCard
+              key={cat.id}
+              cat={cat}
+              canUpdate={canUpdate}
+              canDelete={canDelete}
+              onEdit={() => { setFormError(null); setEditTarget(cat); }}
+              onDelete={() => { setDeleteError(null); setDeleteTarget(cat); }}
+            />
           ))}
         </div>
       )}
+
+      <CategoryFormModal
+        open={editTarget !== null}
+        onClose={() => setEditTarget(null)}
+        initial={editTarget !== null && editTarget !== 'new' ? editTarget : undefined}
+        onSubmit={handleSubmit}
+        pending={createCat.isPending || updateCat.isPending}
+        errorText={formError}
+      />
+
+      <Dialog open={deleteTarget !== null} onOpenChange={(o) => { if (!o) setDeleteTarget(null); }}>
+        <DialogContent className="max-w-md" data-testid="delete-category-dialog">
+          <DialogHeader>
+            <DialogTitle>Delete category</DialogTitle>
+            <DialogDescription>
+              Delete <strong className="text-text-primary">{deleteTarget?.name}</strong>? Customers
+              still assigned to this category will block the deletion.
+            </DialogDescription>
+          </DialogHeader>
+          {deleteError !== null && (
+            <div role="alert" className="rounded-md border border-danger/40 bg-danger-soft px-3 py-2 text-sm text-danger">
+              {deleteError}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setDeleteTarget(null)} disabled={deleteCat.isPending}>Cancel</Button>
+            <Button
+              variant="ghostDestructive"
+              onClick={handleDelete}
+              disabled={deleteCat.isPending}
+              data-testid="delete-category-confirm"
+            >
+              {deleteCat.isPending ? 'Deleting…' : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
 function CategoryCard({
-  cat, canWrite,
-}: { cat: CustomerCategoryRow; canWrite: boolean }): JSX.Element {
+  cat, canUpdate, canDelete, onEdit, onDelete,
+}: {
+  cat: CustomerCategoryRow;
+  canUpdate: boolean;
+  canDelete: boolean;
+  onEdit: () => void;
+  onDelete: () => void;
+}): JSX.Element {
   const Icon = ICON_BY_SLUG[cat.slug] ?? UsersIcon;
   const tone = TONE_BY_SLUG[cat.slug] ?? 'bg-text-secondary';
   return (
@@ -142,10 +229,15 @@ function CategoryCard({
           <Icon className="h-5 w-5" />
         </div>
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="sm" disabled={!canWrite} aria-label={`Edit ${cat.name}`}>
+          <Button variant="ghost" size="sm" disabled={!canUpdate} aria-label={`Edit ${cat.name}`} onClick={onEdit}>
             <PenSquare className="h-3.5 w-3.5" aria-hidden />
           </Button>
-          <Button variant="ghost" size="sm" disabled={!canWrite || cat.is_default} aria-label={`Delete ${cat.name}`}>
+          <Button
+            variant="ghost" size="sm"
+            disabled={!canDelete || cat.is_default}
+            aria-label={`Delete ${cat.name}`}
+            onClick={onDelete}
+          >
             <Trash2 className="h-3.5 w-3.5" aria-hidden />
           </Button>
         </div>
