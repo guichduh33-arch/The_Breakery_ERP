@@ -45,6 +45,8 @@ export type PermissionCode =
   | 'customer_categories.create'
   | 'customer_categories.update'
   | 'customer_categories.delete'
+  // S69 Volet B — per-customer negotiated product prices
+  | 'customer_prices.manage'
   | 'tables.read'
   | 'tables.create'
   | 'tables.update'

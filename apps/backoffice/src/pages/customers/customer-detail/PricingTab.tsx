@@ -8,6 +8,11 @@
 // upsert_product_category_price_v1 / delete_product_category_price_v1
 // (Task 2). Read-only fallback (no permission, or non-custom category) is
 // preserved byte-for-byte.
+//
+// S69 Volet B (Task 8) — mounts NegotiatedPricesSection below the category
+// overrides table: per-customer negotiated prices, which take priority over
+// the category rule server-side (create_b2b_order_v5). Rendered for every
+// customer (empty by default) — not gated on category/modifier type.
 
 import { useState, type ChangeEvent, type JSX } from 'react';
 import { Trash2 } from 'lucide-react';
@@ -15,6 +20,7 @@ import { Button, Card, Input, Select } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useProductsForOrderEdit } from '@/features/orders/hooks/useProductsForOrderEdit.js';
 import { CustomerCategoryChip } from '@/features/customers/components/CustomerCategoryChip.js';
+import { NegotiatedPricesSection } from '@/features/customers/components/NegotiatedPricesSection.js';
 import {
   useCustomerCategoryPrices,
   useDeleteCategoryPrice,
@@ -61,7 +67,12 @@ export function PricingTab({ customer }: { customer: CustomerDetailRow }): JSX.E
   }
 
   if (!category) {
-    return <Card variant="default" padding="lg"><p className="text-sm text-text-muted">No category assigned — this customer pays standard retail prices.</p></Card>;
+    return (
+      <div className="space-y-4">
+        <Card variant="default" padding="lg"><p className="text-sm text-text-muted">No category assigned — this customer pays standard retail prices.</p></Card>
+        <NegotiatedPricesSection customerId={customer.id} />
+      </div>
+    );
   }
 
   const modifier = category.price_modifier_type;
@@ -138,6 +149,8 @@ export function PricingTab({ customer }: { customer: CustomerDetailRow }): JSX.E
           )}
         </Card>
       )}
+
+      <NegotiatedPricesSection customerId={customer.id} />
     </div>
   );
 }
