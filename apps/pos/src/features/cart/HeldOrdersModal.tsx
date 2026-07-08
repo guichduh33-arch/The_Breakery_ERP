@@ -12,7 +12,7 @@
 // The summary list rows carry order_number / table_number / notes / total /
 // created_at only (no item breakdown — that lives server-side until restore).
 
-import { Clock, RotateCcw, Trash2, X } from 'lucide-react';
+import { AlertTriangle, Clock, RotateCcw, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useState, type JSX } from 'react';
 import {
@@ -148,7 +148,7 @@ function HeldOrderCard({
 export function HeldOrdersModal({ open, onClose }: HeldOrdersModalProps): JSX.Element {
   useHeldOrdersRealtime();
 
-  const { data, isLoading } = useHeldOrdersQuery();
+  const { data, isLoading, isError, refetch } = useHeldOrdersQuery();
   const allRows = data ?? [];
   const cartHasItems = useCartStore((s) => s.cart.items.length > 0);
   // S44 P1-A — a FIRED counter order is already in the DB (pickedUpOrderId set).
@@ -241,7 +241,39 @@ export function HeldOrdersModal({ open, onClose }: HeldOrdersModalProps): JSX.El
           </header>
 
           <div className="max-h-[60vh] overflow-y-auto px-6 py-5">
-            {isLoading ? (
+            {isError ? (
+              /* Audit esthétique 2026-07-08 (batch 3) — without this branch a
+                 failed fetch fell through to the empty state ("No orders held"),
+                 silently hiding held tabs (incl. fired-unpaid orders) as if none
+                 existed. Surface the error + a manual retry instead. */
+              <div
+                className="flex flex-col items-center justify-center gap-3 py-12 text-center"
+                role="alert"
+                data-testid="held-orders-error"
+              >
+                <AlertTriangle className="h-12 w-12 text-red opacity-80" aria-hidden />
+                <SectionLabel size="sm" className="text-text-primary">
+                  Couldn’t load held orders
+                </SectionLabel>
+                <p className="text-xs text-text-muted max-w-sm">
+                  The list failed to load. Check the connection and try again —
+                  held tabs are safe on the server.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => { void refetch(); }}
+                  className={cn(
+                    'mt-1 h-11 px-5 inline-flex items-center justify-center gap-2 rounded-md',
+                    'bg-gold hover:bg-gold-hover text-bg-base font-bold uppercase tracking-widest text-xs',
+                    'transition-colors duration-fast motion-reduce:transition-none',
+                    'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
+                  )}
+                >
+                  <RotateCcw className="h-4 w-4" aria-hidden />
+                  Retry
+                </button>
+              </div>
+            ) : isLoading ? (
               <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
                 <Clock className="h-12 w-12 text-text-muted opacity-50 animate-pulse" aria-hidden />
                 <SectionLabel size="sm" className="text-text-muted">

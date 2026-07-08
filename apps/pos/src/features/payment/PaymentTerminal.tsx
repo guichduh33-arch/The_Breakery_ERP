@@ -186,9 +186,14 @@ export function PaymentTerminal() {
         <Button variant="secondary" onClick={close}>Cancel</Button>
         {/* GREEN (primary), not gold — intentional. Gold = "go to pay" (the
             Checkout button in BottomActionBar); green = "commit the money"
-            here, the irreversible final action. See BottomActionBar checkout. */}
+            here, the irreversible final action. See BottomActionBar checkout.
+            Audit esthétique 2026-07-08 (batch 3) — when the fast-path "Exact"
+            shortcut is showing (QuickPayRow, also green + also calls
+            handleProcess), TWO green commit CTAs competed on one screen. In that
+            state this footer button demotes to secondary so a single green
+            focal point remains; it stays enabled as the fallback commit. */}
         <Button
-          variant="primary"
+          variant={fastPathReady ? 'secondary' : 'primary'}
           size="lg"
           disabled={!canProcess || checkoutPending}
           onClick={() => { void handleProcess(); }}

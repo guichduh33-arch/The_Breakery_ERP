@@ -123,7 +123,7 @@ export default function DailySalesPage() {
                     {drillUrl ? (
                       <Link
                         to={drillUrl}
-                        className="text-brand hover:underline"
+                        className="text-gold hover:underline"
                       >
                         {r.date}
                       </Link>
