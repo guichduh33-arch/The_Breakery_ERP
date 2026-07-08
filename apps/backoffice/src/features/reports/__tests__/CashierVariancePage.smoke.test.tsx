@@ -11,6 +11,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import CashierVariancePage from '@/pages/reports/CashierVariancePage.js';
 import type { CashierVarianceReport } from '@/features/reports/hooks/useCashierVariance.js';
+import type * as UseCashierVarianceModule from '@/features/reports/hooks/useCashierVariance.js';
 
 const { REPORT, mockState } = vi.hoisted(() => {
   const REPORT: CashierVarianceReport = {
@@ -52,7 +53,7 @@ const { REPORT, mockState } = vi.hoisted(() => {
 });
 
 vi.mock('@/features/reports/hooks/useCashierVariance.js', async (orig) => {
-  const actual = await orig() as Record<string, unknown>;
+  const actual = await orig<typeof UseCashierVarianceModule>();
   return {
     ...actual,
     useCashierVariance: () => mockState,
