@@ -23,7 +23,7 @@
 --   T9  waste_stock_v1: qty > on-hand -> insufficient_stock (P0002)
 --   T10 waste_stock_v1: happy path (current_stock decremented, movement negative)
 --   T11 RLS: direct INSERT into stock_movements blocked for `authenticated`
---   T12 get_stock_levels_v1: low_stock_only filters out rows with threshold = 0
+--   T12 get_stock_levels_v2: low_stock_only filters out rows with threshold = 0
 --   T13 Row-lock serialization: two adjusts on same row sum correctly (no lost update)
 --   T14 void_order_rpc + complete_order regression (sale_void restores stock)
 --   T15 record_stock_movement_v1: REVOKE EXECUTE enforced on `authenticated` role
@@ -33,10 +33,10 @@
 --       current_stock bump + audit row
 --   T19 record_incoming_stock_v1: MANAGER + soft-deleted supplier -> P0002
 --   T20 record_incoming_stock_v1: idempotent replay (same key, identical args)
---   T21 get_stock_levels_v1: pagination — total_count matches non-deleted product count
---   T22 get_stock_levels_v1: search is case-insensitive (ILIKE) — upper/lower both match
---   T23 get_stock_levels_v1: p_category_id filter returns only matching products
---   T24 get_stock_levels_v1: low_stock_only excludes products with current_stock >= threshold (threshold>0)
+--   T21 get_stock_levels_v2: pagination — total_count matches non-deleted product count
+--   T22 get_stock_levels_v2: search is case-insensitive (ILIKE) — upper/lower both match
+--   T23 get_stock_levels_v2: p_category_id filter returns only matching products
+--   T24 get_stock_levels_v2: low_stock_only excludes products with current_stock >= threshold (threshold>0)
 --   T25 adjust_stock_v1: p_new_qty=0 sets stock to 0 and emits negative delta movement
 --   T26 adjust_stock_v1: idempotent replay with different reason still returns original movement_id
 --   T27 waste_stock_v1: reason shorter than 3 chars rejected with reason_required
@@ -403,7 +403,7 @@ SELECT ok(current_setting('breakery.t11_pass')::boolean,
   'T11: direct INSERT into stock_movements is blocked for `authenticated` role');
 
 -- =========================================================================
--- T12 — get_stock_levels_v1 with p_low_stock_only filters correctly
+-- T12 — get_stock_levels_v2 with p_low_stock_only filters correctly
 -- =========================================================================
 DO $t12$
 DECLARE
@@ -414,12 +414,12 @@ BEGIN
   PERFORM pg_temp.set_jwt_uid(v_admin);
 
   SELECT EXISTS (
-    SELECT 1 FROM get_stock_levels_v1(NULL, 'PGTAP-PROD-LOW', true, 100, 0)
+    SELECT 1 FROM get_stock_levels_v2(NULL, 'PGTAP-PROD-LOW', true, 100, 0)
      WHERE sku = 'PGTAP-PROD-LOW'
   ) INTO v_low_only_has_pgtap_low;
 
   SELECT NOT EXISTS (
-    SELECT 1 FROM get_stock_levels_v1(NULL, 'PGTAP-PROD-1', true, 100, 0)
+    SELECT 1 FROM get_stock_levels_v2(NULL, 'PGTAP-PROD-1', true, 100, 0)
      WHERE sku = 'PGTAP-PROD-1'
   ) INTO v_low_only_excludes_threshold_zero;
 
@@ -427,7 +427,7 @@ BEGIN
     (v_low_only_has_pgtap_low AND v_low_only_excludes_threshold_zero)::text, false);
 END $t12$;
 SELECT ok(current_setting('breakery.t12_pass')::boolean,
-  'T12: get_stock_levels_v1 low_stock_only includes (current < threshold > 0) and excludes threshold = 0');
+  'T12: get_stock_levels_v2 low_stock_only includes (current < threshold > 0) and excludes threshold = 0');
 
 -- =========================================================================
 -- T13 — Sequential adjusts on the same row sum correctly via row lock.
@@ -739,7 +739,7 @@ BEGIN
 END $phase3_bootstrap$;
 
 -- =========================================================================
--- T21 — get_stock_levels_v1 pagination: total_count matches the unfiltered
+-- T21 — get_stock_levels_v2 pagination: total_count matches the unfiltered
 -- count of non-deleted products (the RPC filters only on deleted_at IS NULL).
 -- =========================================================================
 DO $t21$
@@ -754,7 +754,7 @@ BEGIN
 
   SELECT total_count, COUNT(*) OVER ()
     INTO v_total_seen, v_row_count
-    FROM get_stock_levels_v1(NULL, NULL, false, 5, 0)
+    FROM get_stock_levels_v2(NULL, NULL, false, 5, 0)
     LIMIT 1;
 
   PERFORM set_config('breakery.t21_pass',
@@ -764,10 +764,10 @@ BEGIN
     THEN 'true' ELSE 'false' END, false);
 END $t21$;
 SELECT ok(current_setting('breakery.t21_pass')::boolean,
-  'T21: get_stock_levels_v1(limit=5) returns total_count matching SELECT COUNT(*) FROM products WHERE deleted_at IS NULL');
+  'T21: get_stock_levels_v2(limit=5) returns total_count matching SELECT COUNT(*) FROM products WHERE deleted_at IS NULL');
 
 -- =========================================================================
--- T22 — get_stock_levels_v1 search is case-insensitive (ILIKE in the RPC).
+-- T22 — get_stock_levels_v2 search is case-insensitive (ILIKE in the RPC).
 -- =========================================================================
 DO $t22$
 DECLARE
@@ -778,12 +778,12 @@ BEGIN
   PERFORM pg_temp.set_jwt_uid(v_admin);
 
   SELECT EXISTS (
-    SELECT 1 FROM get_stock_levels_v1(NULL, 'PGTAP-PROD-1', false, 100, 0)
+    SELECT 1 FROM get_stock_levels_v2(NULL, 'PGTAP-PROD-1', false, 100, 0)
      WHERE sku = 'PGTAP-PROD-1'
   ) INTO v_has_upper;
 
   SELECT EXISTS (
-    SELECT 1 FROM get_stock_levels_v1(NULL, 'pgtap-prod-1', false, 100, 0)
+    SELECT 1 FROM get_stock_levels_v2(NULL, 'pgtap-prod-1', false, 100, 0)
      WHERE sku = 'PGTAP-PROD-1'
   ) INTO v_has_lower;
 
@@ -791,10 +791,10 @@ BEGIN
     (v_has_upper AND v_has_lower)::text, false);
 END $t22$;
 SELECT ok(current_setting('breakery.t22_pass')::boolean,
-  'T22: get_stock_levels_v1 p_search is case-insensitive (ILIKE) — upper/lower both match');
+  'T22: get_stock_levels_v2 p_search is case-insensitive (ILIKE) — upper/lower both match');
 
 -- =========================================================================
--- T23 — get_stock_levels_v1 p_category_id filter returns only matching rows.
+-- T23 — get_stock_levels_v2 p_category_id filter returns only matching rows.
 -- We retarget the three PGTAP fixture products onto category "Sandwiches"
 -- (UUID 44444444-...) so the filter narrows to a known disjoint set.
 -- =========================================================================
@@ -817,12 +817,12 @@ BEGIN
 
   -- Every row returned must have category_id = v_cat (no leakage).
   SELECT COUNT(*) INTO v_other_cnt
-    FROM get_stock_levels_v1(v_cat, NULL, false, 100, 0)
+    FROM get_stock_levels_v2(v_cat, NULL, false, 100, 0)
    WHERE category_id <> v_cat OR category_id IS NULL;
 
   -- The three fixtures must be present in the filtered result.
   SELECT COUNT(*) INTO v_match_cnt
-    FROM get_stock_levels_v1(v_cat, 'PGTAP-PROD', false, 100, 0)
+    FROM get_stock_levels_v2(v_cat, 'PGTAP-PROD', false, 100, 0)
    WHERE sku LIKE 'PGTAP-PROD%';
 
   PERFORM set_config('breakery.t23_pass',
@@ -830,10 +830,10 @@ BEGIN
     THEN 'true' ELSE 'false' END, false);
 END $t23$;
 SELECT ok(current_setting('breakery.t23_pass')::boolean,
-  'T23: get_stock_levels_v1 p_category_id filter returns only matching products (no leakage)');
+  'T23: get_stock_levels_v2 p_category_id filter returns only matching products (no leakage)');
 
 -- =========================================================================
--- T24 — get_stock_levels_v1 low_stock_only excludes rows where
+-- T24 — get_stock_levels_v2 low_stock_only excludes rows where
 -- current_stock >= threshold (here threshold>0 but stock above threshold).
 -- We bump PGTAP-PROD-2 to 100 (threshold=20) → must NOT appear.
 -- =========================================================================
@@ -848,12 +848,12 @@ BEGIN
   UPDATE products SET current_stock = 5   WHERE id = '99999999-aaaa-bbbb-cccc-333333333333'::uuid;
 
   SELECT EXISTS (
-    SELECT 1 FROM get_stock_levels_v1(NULL, 'PGTAP-PROD-2', true, 100, 0)
+    SELECT 1 FROM get_stock_levels_v2(NULL, 'PGTAP-PROD-2', true, 100, 0)
      WHERE sku = 'PGTAP-PROD-2'
   ) INTO v_prod2_in_low;
 
   SELECT EXISTS (
-    SELECT 1 FROM get_stock_levels_v1(NULL, 'PGTAP-PROD-LOW', true, 100, 0)
+    SELECT 1 FROM get_stock_levels_v2(NULL, 'PGTAP-PROD-LOW', true, 100, 0)
      WHERE sku = 'PGTAP-PROD-LOW'
   ) INTO v_prod_low_in_low;
 
@@ -863,7 +863,7 @@ BEGIN
     (NOT v_prod2_in_low AND v_prod_low_in_low)::text, false);
 END $t24$;
 SELECT ok(current_setting('breakery.t24_pass')::boolean,
-  'T24: get_stock_levels_v1 low_stock_only excludes rows where current_stock >= threshold (threshold>0)');
+  'T24: get_stock_levels_v2 low_stock_only excludes rows where current_stock >= threshold (threshold>0)');
 
 -- =========================================================================
 -- T25 — adjust_stock_v1 p_new_qty=0 is allowed (sets stock exactly to 0).

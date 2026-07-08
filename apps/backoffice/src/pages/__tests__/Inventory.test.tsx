@@ -18,6 +18,7 @@ const MOCK_ROWS = [
     category_name: 'Beverage',
     current_stock: 5,
     min_stock_threshold: 10,
+    track_inventory: true,
     last_movement_at: '2026-05-10T10:00:00Z',
     total_count: 2,
   },
@@ -29,6 +30,7 @@ const MOCK_ROWS = [
     category_name: 'Pastry',
     current_stock: 50,
     min_stock_threshold: 5,
+    track_inventory: true,
     last_movement_at: '2026-05-09T10:00:00Z',
     total_count: 2,
   },
@@ -66,7 +68,7 @@ vi.mock('@/lib/supabase.js', () => {
       from: (table: string) => buildChain(table),
       rpc:  (fn: string, args: Record<string, unknown>) => {
         mockRpc(fn, args);
-        if (fn === 'get_stock_levels_v1') {
+        if (fn === 'get_stock_levels_v2') {
           const lowOnly = args.p_low_stock_only === true;
           const filtered = lowOnly
             ? MOCK_ROWS.filter((r) => r.min_stock_threshold > 0 && r.current_stock < r.min_stock_threshold)
@@ -99,7 +101,7 @@ function renderPage() {
 describe('InventoryPage', () => {
   beforeEach(() => { mockRpc.mockReset(); });
 
-  it('renders the stock-level table with rows from get_stock_levels_v1', async () => {
+  it('renders the stock-level table with rows from get_stock_levels_v2', async () => {
     renderPage();
     await waitFor(() => {
       expect(screen.getByText('Americano')).toBeInTheDocument();
@@ -133,7 +135,7 @@ describe('InventoryPage', () => {
 
     fireEvent.click(screen.getByLabelText(/Low stock only/i));
     await waitFor(() => {
-      const lastCall = mockRpc.mock.calls.find(([fn]) => fn === 'get_stock_levels_v1');
+      const lastCall = mockRpc.mock.calls.find(([fn]) => fn === 'get_stock_levels_v2');
       expect(lastCall).toBeDefined();
       expect((lastCall as [string, { p_low_stock_only?: boolean }])[1].p_low_stock_only).toBe(true);
     });
@@ -146,7 +148,7 @@ describe('InventoryPage', () => {
 
     fireEvent.change(screen.getByLabelText(/^Search$/i), { target: { value: 'amer' } });
     await waitFor(() => {
-      const call = mockRpc.mock.calls.find(([fn, args]) => fn === 'get_stock_levels_v1' && (args as { p_search?: string }).p_search === 'amer');
+      const call = mockRpc.mock.calls.find(([fn, args]) => fn === 'get_stock_levels_v2' && (args as { p_search?: string }).p_search === 'amer');
       expect(call).toBeDefined();
       expect((call as [string, { p_offset: number }])[1].p_offset).toBe(0);
     });
@@ -160,7 +162,7 @@ describe('InventoryPage', () => {
     fireEvent.change(screen.getByLabelText(/Category/i), { target: { value: 'c-1' } });
     await waitFor(() => {
       const call = mockRpc.mock.calls.find(([fn, args]) =>
-        fn === 'get_stock_levels_v1' && (args as { p_category_id?: string }).p_category_id === 'c-1');
+        fn === 'get_stock_levels_v2' && (args as { p_category_id?: string }).p_category_id === 'c-1');
       expect(call).toBeDefined();
     });
   });

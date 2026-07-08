@@ -6831,7 +6831,7 @@ export type Database = {
           track_inventory: boolean
         }[]
       }
-      get_stock_levels_v1: {
+      get_stock_levels_v2: {
         Args: {
           p_category_id?: string
           p_limit?: number
@@ -6849,6 +6849,7 @@ export type Database = {
           product_id: string
           sku: string
           total_count: number
+          track_inventory: boolean
         }[]
       }
       get_stock_movement_ledger_v1: {
