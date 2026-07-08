@@ -39,6 +39,7 @@
 //     SectionLabel).
 
 import type { JSX } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 
 import {
   BrandMark,
@@ -102,79 +103,73 @@ export interface CustomerDisplayViewProps {
   footer?: string;
 }
 
-// ── Density ──────────────────────────────────────────────────────────
+// ── Fit-to-panel scaling ─────────────────────────────────────────────
 //
 // The order mirror must show the WHOLE order at a glance — a scrollbar on a
-// customer-facing screen is a bug, not a feature. Rows therefore compress as
-// the line count grows so the list keeps fitting the panel height. Four tiers
-// cover every realistic bakery order (a scrollbar remains only as a last-resort
-// safety net for pathological counts — we never clip order lines).
+// customer-facing screen is a bug, not a feature. Rows keep their generous,
+// readable "counter distance" sizing; when the list would overflow the panel,
+// the whole list is scaled DOWN uniformly (transform) so every line stays on
+// screen. `scrollHeight`/`clientHeight` report the untransformed layout box, so
+// the measurement never feeds back on the applied transform. Width is pre-
+// inflated by 1/scale so the scaled-back list still fills the column.
 
-type Density = 'comfortable' | 'cozy' | 'compact' | 'dense';
-
-interface DensityConfig {
-  /** Gap between rows in the list. */
-  listGap: string;
-  /** Row: inner gap + horizontal/vertical padding. */
-  row: string;
-  /** Thumbnail square. */
-  thumb: string;
-  /** Product name text size. */
-  name: string;
-  /** Meta / modifier text size. */
-  meta: string;
-  /** Line-total text size. */
-  total: string;
+interface FitScale {
+  ref: (node: HTMLElement | null) => void;
+  scale: number;
 }
 
-const DENSITY: Record<Density, DensityConfig> = {
-  comfortable: {
-    listGap: 'gap-3',
-    row: 'gap-5 px-6 py-5',
-    thumb: 'w-20 h-20',
-    name: 'text-2xl',
-    meta: 'text-sm',
-    total: 'text-2xl',
-  },
-  cozy: {
-    listGap: 'gap-2.5',
-    row: 'gap-4 px-5 py-4',
-    thumb: 'w-16 h-16',
-    name: 'text-xl',
-    meta: 'text-sm',
-    total: 'text-xl',
-  },
-  compact: {
-    listGap: 'gap-2',
-    row: 'gap-4 px-4 py-3',
-    thumb: 'w-12 h-12',
-    name: 'text-lg',
-    meta: 'text-xs',
-    total: 'text-lg',
-  },
-  dense: {
-    listGap: 'gap-1.5',
-    row: 'gap-3 px-4 py-2',
-    thumb: 'w-10 h-10',
-    name: 'text-base',
-    meta: 'text-xs',
-    total: 'text-base',
-  },
-};
+/**
+ * Measures the list against its (fixed-height) container and returns a scale
+ * factor in (0, 1]. Re-measures on container resize and whenever `deps` change
+ * (i.e. the order lines). Fails safe to 1 in non-layout environments (jsdom).
+ */
+function useFitScale(deps: unknown): FitScale {
+  const [scale, setScale] = useState(1);
+  const nodeRef = useRef<HTMLElement | null>(null);
+  const roRef = useRef<ResizeObserver | null>(null);
 
-/** Pick a density tier from the number of order lines. */
-function densityFor(count: number): Density {
-  if (count <= 3) return 'comfortable';
-  if (count <= 6) return 'cozy';
-  if (count <= 10) return 'compact';
-  return 'dense';
+  const measure = useCallback(() => {
+    const node = nodeRef.current;
+    const parent = node?.parentElement;
+    if (node === null || node === undefined || parent === null || parent === undefined) return;
+    const available = parent.clientHeight;
+    const natural = node.scrollHeight;
+    if (available <= 0 || natural <= 0) {
+      setScale(1);
+      return;
+    }
+    // Round down slightly to avoid a 1px overflow re-triggering a scrollbar.
+    const next = available >= natural ? 1 : Math.max(0.2, (available - 1) / natural);
+    setScale((prev) => (Math.abs(prev - next) < 0.005 ? prev : next));
+  }, []);
+
+  const ref = useCallback(
+    (node: HTMLElement | null) => {
+      roRef.current?.disconnect();
+      roRef.current = null;
+      nodeRef.current = node;
+      if (node !== null && typeof ResizeObserver !== 'undefined') {
+        const ro = new ResizeObserver(() => measure());
+        if (node.parentElement !== null) ro.observe(node.parentElement);
+        roRef.current = ro;
+      }
+    },
+    [measure],
+  );
+
+  // Re-measure after every commit that changes the order lines.
+  useLayoutEffect(() => {
+    measure();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deps, measure]);
+
+  return { ref, scale };
 }
 
 // ── Subcomponents ────────────────────────────────────────────────────
 
 interface LineRowProps {
   line: CustomerDisplayLine;
-  density: DensityConfig;
 }
 
 /**
@@ -182,24 +177,18 @@ interface LineRowProps {
  * meta + total. Sized for a SECONDARY MONITOR — base font is up-scaled so a
  * customer standing at the counter can read it from ~1.5m.
  */
-function LineRow({ line, density }: LineRowProps): JSX.Element {
+function LineRow({ line }: LineRowProps): JSX.Element {
   const isCancelled = line.is_cancelled === true;
   const modifiers = line.modifiers ?? [];
   return (
     <li
-      className={
-        'flex items-center rounded-3xl border border-border-subtle bg-bg-elevated ' +
-        density.row
-      }
+      className="flex items-center gap-5 rounded-3xl border border-border-subtle bg-bg-elevated px-6 py-5"
       data-testid="display-line-row"
       data-line-id={line.id}
     >
-      {/* Photo / fallback ─ scales with density */}
+      {/* Photo / fallback ─ 80px square */}
       <div
-        className={
-          'flex-none rounded-2xl overflow-hidden border border-border-subtle bg-bg-base flex items-center justify-center ' +
-          density.thumb
-        }
+        className="flex-none w-20 h-20 rounded-2xl overflow-hidden border border-border-subtle bg-bg-base flex items-center justify-center"
         aria-hidden="true"
       >
         {line.image_url ? (
@@ -219,8 +208,7 @@ function LineRow({ line, density }: LineRowProps): JSX.Element {
         <div className="flex items-baseline gap-3">
           <h3
             className={
-              'font-display text-text-primary truncate ' +
-              density.name +
+              'font-display text-2xl text-text-primary truncate' +
               (isCancelled ? ' line-through text-text-muted' : '')
             }
             data-testid="display-line-name"
@@ -252,8 +240,7 @@ function LineRow({ line, density }: LineRowProps): JSX.Element {
               <li
                 key={`${line.id}-mod-${idx}`}
                 className={
-                  density.meta +
-                  ' text-text-secondary' +
+                  'text-sm text-text-secondary' +
                   (isCancelled ? ' line-through text-text-muted' : '')
                 }
                 data-testid="display-line-modifier"
@@ -273,7 +260,7 @@ function LineRow({ line, density }: LineRowProps): JSX.Element {
             ))}
           </ul>
         )}
-        <p className={density.meta + ' text-text-secondary font-mono'}>
+        <p className="text-sm text-text-secondary font-mono">
           <span data-testid="display-line-qty">{line.quantity}</span>
           <span className="mx-2 text-text-muted">×</span>
           <Currency amount={line.unit_price} className="text-text-secondary" />
@@ -285,8 +272,7 @@ function LineRow({ line, density }: LineRowProps): JSX.Element {
         <Currency
           amount={line.line_total}
           className={
-            density.total +
-            ' text-text-primary' +
+            'text-2xl text-text-primary' +
             (isCancelled ? ' line-through text-text-muted' : '')
           }
         />
@@ -355,8 +341,9 @@ export function CustomerDisplayView({
   footer,
 }: CustomerDisplayViewProps): JSX.Element {
   const hasItems = items.length > 0;
-  const density = densityFor(items.length);
-  const densityCfg = DENSITY[density];
+  // Scale the whole list down to fit the panel when it would overflow — the
+  // customer sees the ENTIRE order, never a scrollbar. Re-measures on line count.
+  const fit = useFitScale(items.length);
 
   return (
     <BrandedLayout
@@ -406,23 +393,24 @@ export function CustomerDisplayView({
                 </SectionLabel>
               </div>
             )}
-            <ul
-              className={
-                'flex-1 min-h-0 flex flex-col pr-2 ' +
-                densityCfg.listGap +
-                // Density keeps realistic orders on-screen; a scrollbar remains
-                // only as a last-resort safety net at the densest tier so we
-                // never clip order lines on a pathological count.
-                (density === 'dense' ? ' overflow-y-auto' : ' overflow-y-hidden')
-              }
-              data-testid="display-line-list"
-              data-density={density}
-              aria-label="Order items"
-            >
-              {items.map((line) => (
-                <LineRow key={line.id} line={line} density={densityCfg} />
-              ))}
-            </ul>
+            {/* Fixed-height viewport; the list inside scales to fit it. */}
+            <div className="flex-1 min-h-0 overflow-hidden" data-testid="display-line-viewport">
+              <ul
+                ref={fit.ref}
+                className="flex flex-col gap-3 pr-2 origin-top-left"
+                style={{
+                  transform: fit.scale < 1 ? `scale(${fit.scale})` : undefined,
+                  width: fit.scale < 1 ? `${100 / fit.scale}%` : undefined,
+                }}
+                data-testid="display-line-list"
+                data-fit-scale={fit.scale}
+                aria-label="Order items"
+              >
+                {items.map((line) => (
+                  <LineRow key={line.id} line={line} />
+                ))}
+              </ul>
+            </div>
             {totals !== undefined && <TotalsBand totals={totals} />}
           </div>
         )}

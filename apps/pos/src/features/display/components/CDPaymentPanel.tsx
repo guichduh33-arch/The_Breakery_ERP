@@ -51,10 +51,10 @@ export function CDPaymentPanel({ message }: { message: PaymentCompleteMessage })
       <div data-testid="cd-payment-complete" className="space-y-8">
         <div className="space-y-2">
           <h2 className="font-serif text-6xl text-gold">
-            {message.customer_name ? `Merci, ${message.customer_name} !` : 'Merci !'}
+            {message.customer_name ? `Thank you, ${message.customer_name}!` : 'Thank you!'}
           </h2>
           <p className="text-text-secondary text-2xl" data-testid="cd-payment-method">
-            Paiement reçu · {methodLabel(message.method)}
+            Payment received · {methodLabel(message.method)}
           </p>
         </div>
 
@@ -73,7 +73,7 @@ export function CDPaymentPanel({ message }: { message: PaymentCompleteMessage })
               className="flex items-baseline justify-between gap-6 text-text-secondary"
               data-testid="cd-payment-tax"
             >
-              <span className="uppercase tracking-widest text-xs">Taxes incluses</span>
+              <span className="uppercase tracking-widest text-xs">Tax included</span>
               <Currency amount={message.tax_amount} className="text-lg text-text-secondary" />
             </div>
           )}
@@ -82,7 +82,7 @@ export function CDPaymentPanel({ message }: { message: PaymentCompleteMessage })
         {showChange && (
           <div>
             <div className="text-text-secondary uppercase tracking-widest text-xs mb-1">
-              Monnaie à rendre
+              Change due
             </div>
             {/* Feedback only — the value itself is not animated (money-path). */}
             <Currency
@@ -100,12 +100,12 @@ export function CDPaymentPanel({ message }: { message: PaymentCompleteMessage })
             data-testid="cd-payment-loyalty"
           >
             <div className="text-text-secondary uppercase tracking-widest text-xs">
-              Points fidélité
+              Loyalty points
             </div>
             <div className="font-mono text-gold text-3xl font-semibold">+{points} pts</div>
             {message.loyalty_balance_after !== null && (
               <p className="text-text-secondary text-sm" data-testid="cd-payment-loyalty-balance">
-                Nouveau solde · {message.loyalty_balance_after} pts
+                New balance · {message.loyalty_balance_after} pts
               </p>
             )}
           </div>

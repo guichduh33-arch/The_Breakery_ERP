@@ -35,7 +35,7 @@ export function QuickPayRow({
           onClick={onProcess}
           disabled={checkoutPending}
           data-testid="pay-cash-exact"
-          className="flex-1 h-14 rounded-md bg-green hover:bg-green-hover active:bg-green-pressed text-green-fg font-bold uppercase tracking-widest text-sm transition-[background-color,transform] duration-fast ease-motion-out active:scale-[0.98] motion-reduce:active:scale-100 disabled:opacity-60"
+          className="flex-1 h-14 rounded-md bg-green hover:bg-green-hover active:bg-green-pressed text-green-fg font-bold uppercase tracking-widest text-sm transition-[background-color,transform] duration-fast ease-motion-out active:scale-[0.98] motion-reduce:active:scale-100 disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
         >
           {checkoutPending
             ? 'Processing…'
@@ -51,7 +51,7 @@ export function QuickPayRow({
         onClick={onSplitOpen}
         disabled={cartEmpty || checkoutPending}
         data-testid="pay-split-entry"
-        className="h-14 px-4 rounded-md border border-info/50 bg-info-soft text-info font-bold uppercase tracking-widest text-xs hover:bg-info/15 transition-[background-color,transform] duration-fast ease-motion-out active:scale-[0.97] motion-reduce:active:scale-100 disabled:opacity-40 inline-flex items-center gap-2"
+        className="h-14 px-4 rounded-md border border-info/50 bg-info-soft text-info font-bold uppercase tracking-widest text-xs hover:bg-info/15 transition-[background-color,transform] duration-fast ease-motion-out active:scale-[0.97] motion-reduce:active:scale-100 disabled:opacity-40 inline-flex items-center gap-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
       >
         <Users className="h-3.5 w-3.5" aria-hidden />
         Split by Item

@@ -17,6 +17,7 @@ export interface StockLevelRow {
   category_name:        string | null;
   current_stock:        number;
   min_stock_threshold:  number;
+  track_inventory?:     boolean;
   last_movement_at:     string | null;
   total_count:          number;
 }
@@ -60,7 +61,7 @@ export function useStockLevels(filters: StockLevelsFilters = {}) {
         args.p_search = filters.search.trim();
       }
 
-      const { data, error } = await supabase.rpc('get_stock_levels_v1', args);
+      const { data, error } = await supabase.rpc('get_stock_levels_v2', args);
       if (error) throw error;
       return data ?? [];
     },

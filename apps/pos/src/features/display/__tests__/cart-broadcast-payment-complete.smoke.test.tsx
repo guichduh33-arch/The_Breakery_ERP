@@ -1,7 +1,7 @@
 // apps/pos/src/features/display/__tests__/cart-broadcast-payment-complete.smoke.test.tsx
 //
-// S57 P2.3 (C-D4) — the customer display confirms a sale ("Merci" + change to
-// collect on cash) then reverts to the welcome idle state after ~8s. Non-cash
+// S57 P2.3 (C-D4) — the customer display confirms a sale ("Thank you" + change
+// to collect on cash) then reverts to the welcome idle state after ~8s. Non-cash
 // tenders never show a change amount.
 // Split-brand redesign — the confirmation panel (CDPaymentPanel) also renders
 // the payment method, the tax included in the total, and the loyalty outcome.
@@ -110,16 +110,16 @@ describe('useCartBroadcastReceiver — payment_complete (C-D4)', () => {
 });
 
 describe('CDPaymentPanel — payment confirmation screen', () => {
-  it('shows Merci + method + tax included + the change to collect for a cash sale', () => {
+  it('shows Thank you + method + tax included + the change to collect for a cash sale', () => {
     const msg: PaymentCompleteMessage = { type: 'payment_complete', ...paymentComplete() };
     render(<CDPaymentPanel message={msg} />);
     expect(screen.getByTestId('cd-payment-complete')).toBeInTheDocument();
-    expect(screen.getByText(/merci/i)).toBeInTheDocument();
+    expect(screen.getByText(/thank you/i)).toBeInTheDocument();
     // Payment method label (shared with the payment grid).
     expect(screen.getByTestId('cd-payment-method')).toHaveTextContent(/cash/i);
     // Tax included in the (tax-inclusive) total.
     expect(screen.getByTestId('cd-payment-tax')).toHaveTextContent(/6.?000/);
-    expect(screen.getByText(/monnaie à rendre/i)).toBeInTheDocument();
+    expect(screen.getByText(/change due/i)).toBeInTheDocument();
     expect(screen.getByText(/4.?000/)).toBeInTheDocument();
   });
 
@@ -129,9 +129,9 @@ describe('CDPaymentPanel — payment confirmation screen', () => {
       ...paymentComplete({ total: 50000, change: 0, method: 'qris', tax_amount: 4545 }),
     };
     render(<CDPaymentPanel message={msg} />);
-    expect(screen.getByText(/merci/i)).toBeInTheDocument();
+    expect(screen.getByText(/thank you/i)).toBeInTheDocument();
     expect(screen.getByTestId('cd-payment-method')).toHaveTextContent(/qris/i);
-    expect(screen.queryByText(/monnaie à rendre/i)).toBeNull();
+    expect(screen.queryByText(/change due/i)).toBeNull();
   });
 
   it('greets the attached customer and shows the loyalty points earned + balance', () => {
@@ -144,7 +144,7 @@ describe('CDPaymentPanel — payment confirmation screen', () => {
       }),
     };
     render(<CDPaymentPanel message={msg} />);
-    expect(screen.getByText(/merci, dewi/i)).toBeInTheDocument();
+    expect(screen.getByText(/thank you, dewi/i)).toBeInTheDocument();
     const loyalty = screen.getByTestId('cd-payment-loyalty');
     expect(loyalty).toHaveTextContent('+66 pts');
     expect(screen.getByTestId('cd-payment-loyalty-balance')).toHaveTextContent('1266');

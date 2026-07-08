@@ -68,6 +68,8 @@ export function StockLevelRow({
   }
 
   const hasAnyAction = canAdjust || canReceive || canWaste;
+  // track_inventory absent (fixtures/anciens appels) = considéré suivi ; seul false = non suivi.
+  const tracked = row.track_inventory !== false;
 
   return (
     <tr className="border-b border-border-subtle hover:bg-bg-overlay">
@@ -82,11 +84,17 @@ export function StockLevelRow({
       >
         <div className="flex items-center">
           <span>{row.name}</span>
-          <LowStockBadge currentStock={row.current_stock} minStockThreshold={row.min_stock_threshold} />
+          {tracked && (
+            <LowStockBadge currentStock={row.current_stock} minStockThreshold={row.min_stock_threshold} />
+          )}
         </div>
       </td>
       <td className="px-3 py-2 text-text-secondary">{row.category_name ?? '—'}</td>
-      <td className="px-3 py-2 font-mono text-right">{row.current_stock.toLocaleString()}</td>
+      <td className="px-3 py-2 font-mono text-right">
+        {tracked
+          ? row.current_stock.toLocaleString()
+          : <span className="text-text-muted">Non suivi</span>}
+      </td>
       <td className="px-3 py-2 text-text-secondary">{formatLastMovement(row.last_movement_at)}</td>
       <td className="px-3 py-2 relative text-right">
         <Button

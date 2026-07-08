@@ -17,6 +17,9 @@ interface Props {
 }
 
 export function OverviewPanel({ product }: Props): JSX.Element {
+  // Produit non suivi (track_inventory=false, hors vitrine) = illimité : pas de
+  // stock propre à afficher. Une quantité (souvent 0) induirait "Out of stock".
+  const untracked = !product.track_inventory && !product.is_display_item;
   const stockOk = product.current_stock > 0;
   const margin = product.retail_price > 0 && product.cost_price > 0
     ? Math.round(((product.retail_price - product.cost_price) / product.retail_price) * 100)
@@ -33,7 +36,6 @@ export function OverviewPanel({ product }: Props): JSX.Element {
                 <span className="text-xs uppercase tracking-widest">No photo</span>
               </div>
             ) : (
-              // eslint-disable-next-line @next/next/no-img-element
               <img src={product.image_url} alt={product.name} className="h-full w-full object-cover" />
             )}
           </CardContent>
@@ -42,16 +44,25 @@ export function OverviewPanel({ product }: Props): JSX.Element {
         <MetricCard
           icon={<AlertCircle className="h-4 w-4" aria-hidden />}
           label="Stock"
-          tone={stockOk ? 'gold' : 'danger'}
+          tone={untracked ? 'default' : stockOk ? 'gold' : 'danger'}
         >
-          <div className="font-data text-3xl tabular-nums text-text-primary">
-            {product.current_stock}
-          </div>
-          <div className="text-xs text-text-secondary">{product.unit} available</div>
-          {!stockOk && (
-            <div className="mt-3 text-xs font-semibold uppercase tracking-widest text-red">
-              Out of stock
-            </div>
+          {untracked ? (
+            <>
+              <div className="font-data text-3xl tabular-nums text-text-primary">∞</div>
+              <div className="text-xs text-text-secondary">Non suivi (illimité)</div>
+            </>
+          ) : (
+            <>
+              <div className="font-data text-3xl tabular-nums text-text-primary">
+                {product.current_stock}
+              </div>
+              <div className="text-xs text-text-secondary">{product.unit} available</div>
+              {!stockOk && (
+                <div className="mt-3 text-xs font-semibold uppercase tracking-widest text-red">
+                  Out of stock
+                </div>
+              )}
+            </>
           )}
         </MetricCard>
 

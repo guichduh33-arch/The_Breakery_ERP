@@ -224,7 +224,7 @@ function TabButton({
         'disabled:opacity-40 disabled:pointer-events-none',
         isPrimary
           ? active
-            ? 'bg-success text-white'
+            ? 'bg-success text-green-fg'
             : 'bg-success/15 text-success hover:bg-success/25'
           : active
             ? 'bg-gold-soft text-gold border border-gold'

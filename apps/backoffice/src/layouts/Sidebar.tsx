@@ -329,7 +329,7 @@ function Collapsible({
         onClick={onToggle}
         aria-expanded={isOpen}
         aria-controls={panelId}
-        className="w-full flex items-center justify-between px-6 pt-3 pb-1 text-[10px] uppercase tracking-wider text-text-muted/70 hover:text-text-primary transition-colors"
+        className="w-full flex items-center justify-between px-6 pt-3 pb-1 text-[10px] uppercase tracking-wider text-text-secondary hover:text-text-primary transition-colors"
       >
         <span>{title}</span>
         {chevron('h-3 w-3')}

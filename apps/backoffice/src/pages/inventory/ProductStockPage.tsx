@@ -116,7 +116,11 @@ export default function ProductStockPage(): JSX.Element {
 
       {/* Live stock KPIs — always visible above the tabs */}
       <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4" aria-label="Stock KPIs">
-        <KpiTile label="Current stock" value={`${Number(p.current_stock)} ${p.unit}`} icon={Package} />
+        <KpiTile
+          label="Current stock"
+          value={p.track_inventory || p.is_display_item ? `${Number(p.current_stock)} ${p.unit}` : 'Non suivi'}
+          icon={Package}
+        />
         <KpiTile label="Value at cost" value={valueAtCost} valueFormat="currency" icon={Coins} />
         <KpiTile
           label="Units sold"
