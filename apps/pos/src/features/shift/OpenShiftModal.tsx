@@ -10,10 +10,13 @@
 //                      skipped automatically. The visual step still fires
 //                      for cashiers (D-1 task — security review).
 //   2. CASH (ref 12) — APRIL 29, 2026 header, BrandMark "B", OPENING CASH
-//                      field, QUICK AMOUNTS grid, optional notes.
-//                      NumpadVirtual handles the keystrokes. Layout matches
-//                      the screenshot — empty state "Rp 0" in gold below the
-//                      input box.
+//                      field, a Numpad to type any float, QUICK AMOUNTS grid
+//                      of presets, optional notes. Layout matches the
+//                      screenshot — empty state "Rp 0" in gold below the input
+//                      box. (Audit esthétique 2026-07-08 batch 3 — the Numpad
+//                      was missing: the opening float could only be *picked*
+//                      from a preset, never typed, so any non-preset amount was
+//                      unenterable. Mirrors CloseShiftModal's Numpad entry.)
 //   3. CASH-filled (ref 13) — Same as #2 but with a value bound — the gold
 //                      "OPEN SHIFT" CTA at the bottom is enabled and the
 //                      Open Shift mutation fires.
@@ -29,6 +32,7 @@ import {
   Button,
   Currency,
   FullScreenModal,
+  Numpad,
   NumpadVirtual,
   SectionLabel,
   Select,
@@ -267,6 +271,10 @@ export function OpenShiftModal({ open, verifyPin, onClose }: OpenShiftModalProps
                 />
               </div>
             </section>
+
+            {/* Type any opening float (audit batch 3). Digit-only, IDR has no
+                cents — mirrors CloseShiftModal's controlled Numpad. */}
+            <Numpad value={amountStr} onChange={setAmountStr} />
 
             <section className="space-y-2">
               <SectionLabel as="div">Quick Amounts</SectionLabel>
