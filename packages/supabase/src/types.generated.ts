@@ -6208,7 +6208,8 @@ export type Database = {
         Args: { p_from_unit: string; p_qty: number; p_to_unit: string }
         Returns: number
       }
-      create_b2b_order_v4: {
+      create_category_v1: { Args: { p_payload: Json }; Returns: Json }
+      create_b2b_order_v5: {
         Args: {
           p_customer_id: string
           p_delivery_date?: string
@@ -6218,7 +6219,6 @@ export type Database = {
         }
         Returns: Json
       }
-      create_category_v1: { Args: { p_payload: Json }; Returns: Json }
       create_customer_category_v1: {
         Args: {
           p_color: string
@@ -6880,22 +6880,7 @@ export type Database = {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
-      get_stock_config_issues_v1: {
-        Args: never
-        Returns: {
-          category_name: string
-          current_stock: number
-          deduct_stock: boolean
-          issue_type: string
-          name: string
-          product_id: string
-          recipe_lines: number
-          severity: string
-          sku: string
-          track_inventory: boolean
-        }[]
-      }
-      get_stock_levels_v2: {
+      get_stock_levels_v1: {
         Args: {
           p_category_id?: string
           p_limit?: number
@@ -6913,7 +6898,6 @@ export type Database = {
           product_id: string
           sku: string
           total_count: number
-          track_inventory: boolean
         }[]
       }
       get_stock_movement_ledger_v1: {

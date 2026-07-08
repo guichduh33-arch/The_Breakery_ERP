@@ -10,7 +10,7 @@
 --   T7  : POS == BO — get_pos_b2b_debts_v3 outstanding == view_b2b_invoices outstanding
 --   T8  : cancel unpaid — voided, gone from view, JE reversed balanced, balance + stock restored
 --   T9  : cancel blocked when an allocation exists → order_has_payments (P0011)
---   T10 : create_b2b_order_v4 over credit limit → P0011 (TOCTOU gate fires)
+--   T10 : create_b2b_order_v5 over credit limit → P0011 (TOCTOU gate fires)
 --   T11 : reconcile_b2b_balance_v1 — consistent cache ⇒ has_drift FALSE (before & after settle)
 --   T12 : gate — CASHIER calling record_b2b_payment_v2 → permission_denied (P0003)
 --   T13 : idempotency replay record_b2b_payment_v2 — 1 payment, 1 alloc, replay flag
@@ -71,7 +71,7 @@ CREATE OR REPLACE FUNCTION pg_temp.mk_invoice(p_cust UUID, p_qty NUMERIC, p_pric
 RETURNS UUID LANGUAGE plpgsql AS $$
 DECLARE v_res JSONB; v_id UUID;
 BEGIN
-  v_res := create_b2b_order_v4(
+  v_res := create_b2b_order_v5(
     p_customer_id => p_cust,
     p_items => jsonb_build_array(jsonb_build_object(
       'product_id','b2b52002-0000-0000-0000-000000000001','quantity',p_qty,'unit_price',p_price)));
@@ -266,7 +266,7 @@ SELECT throws_ok(
   'T9: cancel_b2b_order_v1 on an allocated invoice raises P0011 (order_has_payments)');
 
 -- ===========================================================================
--- T10 — create_b2b_order_v4 over credit limit (TOCTOU gate fires)
+-- T10 — create_b2b_order_v5 over credit limit (TOCTOU gate fires)
 -- ===========================================================================
 DO $t10_setup$
 DECLARE v_admin UUID := current_setting('breakery.admin_uid')::uuid;
@@ -275,12 +275,12 @@ BEGIN
   UPDATE customers SET b2b_current_balance=0 WHERE id='b2b52001-0000-0000-0000-000000000008';
 END $t10_setup$;
 SELECT throws_ok(
-  $$ SELECT create_b2b_order_v4(
+  $$ SELECT create_b2b_order_v5(
        p_customer_id=>'b2b52001-0000-0000-0000-000000000008',
        p_items=>jsonb_build_array(jsonb_build_object(
          'product_id','b2b52002-0000-0000-0000-000000000001','quantity',12,'unit_price',50000))) $$,
   'P0011', NULL,
-  'T10: create_b2b_order_v4 over credit limit raises P0011 (re-check after lock)');
+  'T10: create_b2b_order_v5 over credit limit raises P0011 (re-check after lock)');
 
 -- ===========================================================================
 -- T11 — reconcile consistent ⇒ has_drift FALSE (before & after settling)

@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/btob/hooks/useCreateB2bOrder.ts
 //
-// Session 24 / Phase 2.A.3 — call create_b2b_order_v4 (S68 migration _130: assigns a
+// Session 24 / Phase 2.A.3 — call create_b2b_order_v5 (S68 migration _130: assigns a
 // dedicated annual-continuous invoice_number at creation; S52 TOCTOU fix preserved:
 // credit re-checked after the customer FOR UPDATE lock).
 //
@@ -127,7 +127,7 @@ export function useCreateB2bOrder() {
       if (args.deliveryDate !== undefined && args.deliveryDate     !== '') rpcArgs.p_delivery_date = args.deliveryDate;
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await supabase.rpc('create_b2b_order_v4', rpcArgs as any);
+      const { data, error } = await supabase.rpc('create_b2b_order_v5', rpcArgs as any);
       if (error) {
         const code = classify(error.message);
         // Supabase exposes Postgres DETAIL on `error.details` (snake_case differs by SDK version);
