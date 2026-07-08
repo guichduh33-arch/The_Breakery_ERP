@@ -150,5 +150,6 @@ $function$;
 
 REVOKE ALL ON FUNCTION public.get_cashier_variance_v1(date, date) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.get_cashier_variance_v1(date, date) TO authenticated;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;
 COMMENT ON FUNCTION public.get_cashier_variance_v1(date, date) IS
   'S70 fiche 12 D2.4 — read-only cashier cash/QRIS/card variance aggregation by opened_by over a date range; gated reports.read. No writes.';
