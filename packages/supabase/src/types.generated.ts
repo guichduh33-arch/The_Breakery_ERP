@@ -6578,6 +6578,10 @@ export type Database = {
           supplier: string
         }[]
       }
+      get_cashier_variance_v1: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
+      }
       get_current_profile_id: { Args: never; Returns: string }
       get_current_role: { Args: never; Returns: string }
       get_customer_cohort_v1: {
