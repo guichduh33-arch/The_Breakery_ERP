@@ -52,11 +52,12 @@ export function useCreateCustomerCategory() {
           p_discount_percentage: input.discount_percentage,
           p_points_multiplier: input.points_multiplier,
           p_loyalty_enabled: input.loyalty_enabled,
-          p_color: input.color,
-          p_icon: input.icon,
+          // Generated RPC Args type p_color/p_icon as non-nullable string, but the
+          // RPC body + column accept NULL. Scoped cast keeps the other args type-checked.
+          p_color: input.color as unknown as string,
+          p_icon: input.icon as unknown as string,
           p_is_default: input.is_default,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } as any,
+        },
       );
       if (error) throw error;
       return data;
@@ -79,11 +80,10 @@ export function useUpdateCustomerCategory() {
           p_discount_percentage: input.discount_percentage,
           p_points_multiplier: input.points_multiplier,
           p_loyalty_enabled: input.loyalty_enabled,
-          p_color: input.color,
-          p_icon: input.icon,
+          p_color: input.color as unknown as string,
+          p_icon: input.icon as unknown as string,
           p_is_default: input.is_default,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } as any,
+        },
       );
       if (error) throw error;
       return data;
