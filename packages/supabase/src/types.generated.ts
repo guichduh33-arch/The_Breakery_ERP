@@ -730,6 +730,66 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_product_prices: {
+        Row: {
+          created_at: string
+          customer_id: string
+          price: number
+          product_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          price: number
+          product_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          price?: number
+          product_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_product_prices_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_product_prices_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "mv_stock_variance"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "customer_product_prices_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_product_prices_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_product_available_stock"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "customer_product_prices_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "view_recipe_products"
+            referencedColumns: ["product_id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           b2b_company_name: string | null
@@ -6816,7 +6876,22 @@ export type Database = {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
-      get_stock_levels_v1: {
+      get_stock_config_issues_v1: {
+        Args: never
+        Returns: {
+          category_name: string
+          current_stock: number
+          deduct_stock: boolean
+          issue_type: string
+          name: string
+          product_id: string
+          recipe_lines: number
+          severity: string
+          sku: string
+          track_inventory: boolean
+        }[]
+      }
+      get_stock_levels_v2: {
         Args: {
           p_category_id?: string
           p_limit?: number
@@ -6834,6 +6909,7 @@ export type Database = {
           product_id: string
           sku: string
           total_count: number
+          track_inventory: boolean
         }[]
       }
       get_stock_movement_ledger_v1: {
