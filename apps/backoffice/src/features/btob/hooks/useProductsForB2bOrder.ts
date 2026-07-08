@@ -26,13 +26,16 @@ export function useProductsForB2bOrder() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('products')
-        .select('id, sku, name, price, current_stock, unit')
+        // `price` is an alias of the real column retail_price (products has no `price`
+        // column) — used only as the client-side prefill fallback; the server (v5) is
+        // authoritative and resolves negotiated > category > retail regardless.
+        .select('id, sku, name, price:retail_price, current_stock, unit')
         .is('deleted_at', null)
         .eq('is_active', true)
         .order('name', { ascending: true })
         .limit(500);
       if (error) throw error;
-      return (data ?? []) as unknown as B2bOrderProductOption[];
+      return data ?? [];
     },
   });
 }
