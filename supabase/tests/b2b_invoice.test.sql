@@ -33,12 +33,12 @@ SELECT has_index('public', 'orders', 'orders_invoice_number_key',
 SELECT * FROM finish();
 ROLLBACK;
 
--- Bloc 2 (Task 2) : create_b2b_order_v4 attribue l'invoice_number à la création.
+-- Bloc 2 (Task 2) : create_b2b_order_v5 attribue l'invoice_number à la création.
 BEGIN;
 SELECT plan(6);
 
-SELECT has_function('public', 'create_b2b_order_v4',
-  ARRAY['uuid','jsonb','text','date','uuid'], 'create_b2b_order_v4 existe');
+SELECT has_function('public', 'create_b2b_order_v5',
+  ARRAY['uuid','jsonb','text','date','uuid'], 'create_b2b_order_v5 existe');
 SELECT hasnt_function('public', 'create_b2b_order_v3',
   ARRAY['uuid','jsonb','text','date','uuid'], 'create_b2b_order_v3 droppée');
 
@@ -57,10 +57,10 @@ CREATE TEMP TABLE _r(name text PRIMARY KEY, val text) ON COMMIT DROP;
 DO $d$
 DECLARE v1 jsonb; v2 jsonb;
 BEGIN
-  v1 := create_b2b_order_v4('ccc68001-0000-0000-0000-000000000001',
+  v1 := create_b2b_order_v5('ccc68001-0000-0000-0000-000000000001',
         jsonb_build_array(jsonb_build_object('product_id','ddd68001-0000-0000-0000-000000000001','quantity',2,'unit_price',10000)),
         NULL, NULL, gen_random_uuid());
-  v2 := create_b2b_order_v4('ccc68001-0000-0000-0000-000000000001',
+  v2 := create_b2b_order_v5('ccc68001-0000-0000-0000-000000000001',
         jsonb_build_array(jsonb_build_object('product_id','ddd68001-0000-0000-0000-000000000001','quantity',1,'unit_price',10000)),
         NULL, NULL, gen_random_uuid());
   INSERT INTO _r VALUES ('inv1', v1->>'invoice_number');
@@ -131,7 +131,7 @@ VALUES ('ddd68009-0000-0000-0000-000000000009','S68-RD','S68 Read',(SELECT id FR
 ON CONFLICT (id) DO NOTHING;
 CREATE TEMP TABLE _o(oid uuid) ON COMMIT DROP;
 DO $d$ DECLARE v jsonb; BEGIN
-  v := create_b2b_order_v4('ccc68009-0000-0000-0000-000000000009',
+  v := create_b2b_order_v5('ccc68009-0000-0000-0000-000000000009',
         jsonb_build_array(jsonb_build_object('product_id','ddd68009-0000-0000-0000-000000000009','quantity',3,'unit_price',10000)),
         'Merci', NULL, gen_random_uuid());
   INSERT INTO _o VALUES ((v->>'order_id')::uuid);

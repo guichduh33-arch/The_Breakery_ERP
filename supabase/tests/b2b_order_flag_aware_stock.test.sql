@@ -32,7 +32,7 @@ CREATE TEMP TABLE _r(name text PRIMARY KEY, pass boolean) ON COMMIT DROP;
 
 -- A : non-tracké stock 0 → vendable + JE
 DO $a$ DECLARE v jsonb; BEGIN
-  v := create_b2b_order_v4('ccc40001-0000-0000-0000-000000000001',
+  v := create_b2b_order_v5('ccc40001-0000-0000-0000-000000000001',
         jsonb_build_array(jsonb_build_object('product_id','ddd40001-0000-0000-0000-000000000001','quantity',2,'unit_price',10000)),
         NULL, NULL, gen_random_uuid());
   INSERT INTO _r VALUES ('A', (v->>'order_id') IS NOT NULL AND (v->>'je_id') IS NOT NULL);
@@ -41,7 +41,7 @@ EXCEPTION WHEN OTHERS THEN INSERT INTO _r VALUES ('A', false); END $a$;
 -- B : tracké + allow_negative=false + stock 0 → insufficient_stock
 UPDATE business_config SET allow_negative_stock=false;
 DO $b$ BEGIN
-  PERFORM create_b2b_order_v4('ccc40001-0000-0000-0000-000000000001',
+  PERFORM create_b2b_order_v5('ccc40001-0000-0000-0000-000000000001',
         jsonb_build_array(jsonb_build_object('product_id','ddd40002-0000-0000-0000-000000000002','quantity',1,'unit_price',10000)),
         NULL, NULL, gen_random_uuid());
   INSERT INTO _r VALUES ('B', false);
@@ -50,7 +50,7 @@ EXCEPTION WHEN OTHERS THEN INSERT INTO _r VALUES ('B', SQLERRM LIKE '%insufficie
 -- C : tracké + allow_negative=true + stock 0 → vendable
 UPDATE business_config SET allow_negative_stock=true;
 DO $c$ DECLARE v jsonb; BEGIN
-  v := create_b2b_order_v4('ccc40001-0000-0000-0000-000000000001',
+  v := create_b2b_order_v5('ccc40001-0000-0000-0000-000000000001',
         jsonb_build_array(jsonb_build_object('product_id','ddd40002-0000-0000-0000-000000000002','quantity',1,'unit_price',10000)),
         NULL, NULL, gen_random_uuid());
   INSERT INTO _r VALUES ('C', (v->>'order_id') IS NOT NULL);

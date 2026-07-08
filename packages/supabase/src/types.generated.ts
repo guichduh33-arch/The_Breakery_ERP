@@ -730,6 +730,66 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_product_prices: {
+        Row: {
+          created_at: string
+          customer_id: string
+          price: number
+          product_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          price: number
+          product_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          price?: number
+          product_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_product_prices_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_product_prices_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "mv_stock_variance"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "customer_product_prices_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_product_prices_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_product_available_stock"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "customer_product_prices_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "view_recipe_products"
+            referencedColumns: ["product_id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           b2b_company_name: string | null
@@ -5830,6 +5890,10 @@ export type Database = {
         Returns: undefined
       }
       _refine_vol: { Args: { "": string }; Returns: string }
+      _resolve_b2b_line_price_v1: {
+        Args: { p_customer_id: string; p_product_id: string }
+        Returns: number
+      }
       _resolve_combo_price_v1: {
         Args: { p_combo_product_id: string; p_components: Json }
         Returns: number
@@ -6148,7 +6212,7 @@ export type Database = {
         Args: { p_from_unit: string; p_qty: number; p_to_unit: string }
         Returns: number
       }
-      create_b2b_order_v4: {
+      create_b2b_order_v5: {
         Args: {
           p_customer_id: string
           p_delivery_date?: string
@@ -6330,6 +6394,10 @@ export type Database = {
       delete_combo_v1: { Args: { p_combo_product_id: string }; Returns: Json }
       delete_customer_category_v1: {
         Args: { p_id: string }
+        Returns: undefined
+      }
+      delete_customer_product_price_v1: {
+        Args: { p_customer_id: string; p_product_id: string }
         Returns: undefined
       }
       delete_expense_threshold_v1: {
@@ -7872,6 +7940,22 @@ export type Database = {
       upsert_combo_v1: {
         Args: { p_combo: Json; p_idempotency_key?: string }
         Returns: Json
+      }
+      upsert_customer_product_price_v1: {
+        Args: { p_customer_id: string; p_price: number; p_product_id: string }
+        Returns: {
+          created_at: string
+          customer_id: string
+          price: number
+          product_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "customer_product_prices"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       upsert_product_category_price_v1: {
         Args: { p_category_id: string; p_price: number; p_product_id: string }

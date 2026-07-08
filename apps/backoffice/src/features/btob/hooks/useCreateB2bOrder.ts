@@ -1,8 +1,9 @@
 // apps/backoffice/src/features/btob/hooks/useCreateB2bOrder.ts
 //
-// Session 24 / Phase 2.A.3 — call create_b2b_order_v4 (S68 migration _130: assigns a
-// dedicated annual-continuous invoice_number at creation; S52 TOCTOU fix preserved:
-// credit re-checked after the customer FOR UPDATE lock).
+// Session 24 / Phase 2.A.3 — call create_b2b_order_v5 (S69 migration _139: the line
+// price is now resolved server-side — negotiated (customer) > category > retail — and
+// the client-sent unit_price is ignored; S68 dedicated annual-continuous invoice_number
+// at creation; S52 TOCTOU fix preserved: credit re-checked after the customer FOR UPDATE lock).
 //
 // The RPC creates a B2B order in status='b2b_pending' with paid_at=NULL,
 // emits the JE (DR B2B_AR / CR SALE_B2B_REVENUE), decrements stock and
@@ -24,7 +25,7 @@ export type CreateB2bOrderErrorCode =
   | 'product_not_found'
   | 'insufficient_stock'
   | 'invalid_quantity'
-  | 'invalid_unit_price'
+  | 'price_unresolved'
   | 'invalid_total'
   | 'credit_limit_exceeded'
   | 'fiscal_period_closed'
@@ -83,7 +84,7 @@ export function classify(message: string): CreateB2bOrderErrorCode {
   if (message.includes('customer_not_found'))      return 'customer_not_found';
   if (message.includes('items_required'))          return 'items_required';
   if (message.includes('invalid_quantity'))        return 'invalid_quantity';
-  if (message.includes('invalid_unit_price'))      return 'invalid_unit_price';
+  if (message.includes('price_unresolved'))        return 'price_unresolved';
   if (message.includes('invalid_total'))           return 'invalid_total';
   if (message.includes('permission_denied'))       return 'permission_denied';
   if (message.includes('not_authenticated'))       return 'not_authenticated';
@@ -127,7 +128,7 @@ export function useCreateB2bOrder() {
       if (args.deliveryDate !== undefined && args.deliveryDate     !== '') rpcArgs.p_delivery_date = args.deliveryDate;
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await supabase.rpc('create_b2b_order_v4', rpcArgs as any);
+      const { data, error } = await supabase.rpc('create_b2b_order_v5', rpcArgs as any);
       if (error) {
         const code = classify(error.message);
         // Supabase exposes Postgres DETAIL on `error.details` (snake_case differs by SDK version);

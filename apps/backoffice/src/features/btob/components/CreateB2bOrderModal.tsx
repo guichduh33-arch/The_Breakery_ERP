@@ -8,6 +8,14 @@
 //
 // Surfaces credit_limit_exceeded errors with a payload alert showing
 // would_exceed_by so the operator can either adjust the basket or escalate.
+//
+// S69 Volet B (Task 8) — the line unit_price field is a display convenience
+// only: create_b2b_order_v5 resolves the authoritative price server-side
+// (negotiated customer price > category price > retail), ignoring whatever
+// is sent here. To avoid showing a stale retail price for customers with a
+// negotiated deal, prefill from useCustomerNegotiatedPrices(customerId) when
+// a negotiated row exists for the selected product, else fall back to the
+// catalog price as before.
 
 import { useEffect, useId, useMemo, useState, type FormEvent, type JSX } from 'react';
 import { Trash2, Plus } from 'lucide-react';
@@ -27,6 +35,7 @@ import {
 } from '../hooks/useCreateB2bOrder.js';
 import { useB2bCustomers } from '../hooks/useB2bCustomers.js';
 import { useProductsForB2bOrder } from '../hooks/useProductsForB2bOrder.js';
+import { useCustomerNegotiatedPrices } from '@/features/customers/hooks/useCustomerNegotiatedPrices.js';
 
 interface ItemRow {
   rowKey:     string;
@@ -84,6 +93,17 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
     [customers.data, customerId],
   );
 
+  // Display-only prefill: create_b2b_order_v5 re-resolves the authoritative
+  // price server-side (negotiated > category > retail) regardless of what's
+  // sent, but showing a stale retail default when this customer has a
+  // negotiated deal would be confusing for the operator.
+  const negotiatedPrices = useCustomerNegotiatedPrices(customerId || null);
+  const negotiatedByProduct = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const n of negotiatedPrices.data ?? []) m.set(n.product_id, n.negotiated_price);
+    return m;
+  }, [negotiatedPrices.data]);
+
   const productById = useMemo(() => {
     const m = new Map<string, NonNullable<typeof products.data>[number]>();
     for (const p of products.data ?? []) m.set(p.id, p);
@@ -104,9 +124,11 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
 
   function handleProductChange(rowKey: string, productId: string): void {
     const product = productById.get(productId);
+    const negotiated = negotiatedByProduct.get(productId);
+    const prefill = negotiated ?? product?.price;
     updateRow(rowKey, {
       productId,
-      unitPrice: product !== undefined ? String(product.price) : '',
+      unitPrice: prefill !== undefined ? String(prefill) : '',
     });
   }
 
@@ -253,6 +275,9 @@ export function CreateB2bOrderModal({ open, onClose }: CreateB2bOrderModalProps)
                 <Plus className="h-3.5 w-3.5" aria-hidden /> Add line
               </Button>
             </div>
+            <p className="text-[10px] text-text-muted">
+              Final price is set by the server from negotiated/category pricing.
+            </p>
             <div className="space-y-2">
               {items.map((row, idx) => {
                 const product   = row.productId !== '' ? productById.get(row.productId) ?? null : null;

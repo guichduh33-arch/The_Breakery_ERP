@@ -149,7 +149,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('B2B Foundation — reco
       .update({ b2b_current_balance: 0 } as any)
       .eq('id', customerId);
 
-    const { data: orderResult, error: orderErr } = await rpc(sb)('create_b2b_order_v4', {
+    const { data: orderResult, error: orderErr } = await rpc(sb)('create_b2b_order_v5', {
       p_customer_id: customerId,
       p_items: [{ product_id: productId, quantity: 2, unit_price: 25000 }],
     });
@@ -222,7 +222,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('B2B Foundation — reco
       .eq('id', customerId);
 
     // 1) Create order 100K
-    const { data: orderRes, error: orderErr } = await rpc(sb)('create_b2b_order_v4', {
+    const { data: orderRes, error: orderErr } = await rpc(sb)('create_b2b_order_v5', {
       p_customer_id: customerId,
       p_items: [{ product_id: productId, quantity: 4, unit_price: 25000 }],
     });
