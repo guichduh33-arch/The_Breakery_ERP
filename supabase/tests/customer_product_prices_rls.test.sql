@@ -5,7 +5,7 @@
 
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
-SELECT plan(5);
+SELECT plan(11);
 
 -- table exists with expected composite PK
 SELECT has_table('customer_product_prices');
@@ -17,6 +17,41 @@ SELECT is(has_table_privilege('authenticated','customer_product_prices','SELECT'
 
 -- permission seeded (permissions PK is `code`)
 SELECT isnt((SELECT code FROM permissions WHERE code = 'customer_prices.manage'), NULL, 'perm seeded');
+
+-- ── Task 6: write RPCs ────────────────────────────────────────────────────
+DO $seed$
+DECLARE v_admin_uid UUID;
+BEGIN
+  SELECT auth_user_id INTO v_admin_uid FROM user_profiles WHERE employee_code = 'EMP000' LIMIT 1;
+  PERFORM set_config('request.jwt.claims',
+    jsonb_build_object('sub', v_admin_uid, 'role', 'authenticated')::TEXT, true);
+END $seed$;
+
+-- upsert insert + verify stored
+SELECT lives_ok($$SELECT upsert_customer_product_price_v1(
+  (SELECT id FROM customers WHERE deleted_at IS NULL LIMIT 1),
+  (SELECT id FROM products  WHERE deleted_at IS NULL LIMIT 1), 7500)$$, 'upsert negotiated price');
+SELECT is((SELECT price::int FROM customer_product_prices
+  WHERE customer_id = (SELECT id FROM customers WHERE deleted_at IS NULL LIMIT 1)), 7500, 'price stored');
+
+-- negative rejected (typed)
+SELECT throws_ok($$SELECT upsert_customer_product_price_v1(
+  (SELECT id FROM customers WHERE deleted_at IS NULL LIMIT 1),
+  (SELECT id FROM products  WHERE deleted_at IS NULL LIMIT 1), -5)$$, 'P0001', NULL, 'negative rejected');
+
+-- unknown customer rejected
+SELECT throws_ok($$SELECT upsert_customer_product_price_v1(
+  gen_random_uuid(), (SELECT id FROM products WHERE deleted_at IS NULL LIMIT 1), 100)$$,
+  'P0002', NULL, 'unknown customer rejected');
+
+-- delete removes the negotiated price (idempotent)
+SELECT lives_ok($$SELECT delete_customer_product_price_v1(
+  (SELECT id FROM customers WHERE deleted_at IS NULL LIMIT 1),
+  (SELECT id FROM products  WHERE deleted_at IS NULL LIMIT 1))$$, 'delete negotiated price');
+
+-- ACL: anon cannot execute
+SELECT is(has_function_privilege('anon',
+  'upsert_customer_product_price_v1(uuid,uuid,numeric)','EXECUTE'), false, 'anon cannot upsert');
 
 SELECT * FROM finish();
 ROLLBACK;
