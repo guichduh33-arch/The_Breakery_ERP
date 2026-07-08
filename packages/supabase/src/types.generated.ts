@@ -6159,6 +6159,41 @@ export type Database = {
         Returns: Json
       }
       create_category_v1: { Args: { p_payload: Json }; Returns: Json }
+      create_customer_category_v1: {
+        Args: {
+          p_color: string
+          p_discount_percentage: number
+          p_icon: string
+          p_is_default: boolean
+          p_loyalty_enabled: boolean
+          p_name: string
+          p_points_multiplier: number
+          p_price_modifier_type: Database["public"]["Enums"]["price_modifier_type"]
+          p_slug: string
+        }
+        Returns: {
+          color: string | null
+          created_at: string
+          deleted_at: string | null
+          discount_percentage: number
+          icon: string | null
+          id: string
+          is_active: boolean
+          is_default: boolean
+          loyalty_enabled: boolean
+          name: string
+          points_multiplier: number
+          price_modifier_type: Database["public"]["Enums"]["price_modifier_type"]
+          slug: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "customer_categories"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       create_customer_v2: {
         Args: {
           p_customer_type?: Database["public"]["Enums"]["customer_type"]
@@ -6293,9 +6328,17 @@ export type Database = {
         Returns: Json
       }
       delete_combo_v1: { Args: { p_combo_product_id: string }; Returns: Json }
+      delete_customer_category_v1: {
+        Args: { p_id: string }
+        Returns: undefined
+      }
       delete_expense_threshold_v1: {
         Args: { p_threshold_id: string }
         Returns: boolean
+      }
+      delete_product_category_price_v1: {
+        Args: { p_category_id: string; p_product_id: string }
+        Returns: undefined
       }
       delete_product_v1: {
         Args: { p_idempotency_key?: string; p_product_id: string }
@@ -6772,6 +6815,21 @@ export type Database = {
       get_staff_performance_v1: {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
+      }
+      get_stock_config_issues_v1: {
+        Args: never
+        Returns: {
+          category_name: string
+          current_stock: number
+          deduct_stock: boolean
+          issue_type: string
+          name: string
+          product_id: string
+          recipe_lines: number
+          severity: string
+          sku: string
+          track_inventory: boolean
+        }[]
       }
       get_stock_levels_v1: {
         Args: {
@@ -7714,6 +7772,42 @@ export type Database = {
         }
         Returns: Json
       }
+      update_customer_category_v1: {
+        Args: {
+          p_color: string
+          p_discount_percentage: number
+          p_icon: string
+          p_id: string
+          p_is_default: boolean
+          p_loyalty_enabled: boolean
+          p_name: string
+          p_points_multiplier: number
+          p_price_modifier_type: Database["public"]["Enums"]["price_modifier_type"]
+          p_slug: string
+        }
+        Returns: {
+          color: string | null
+          created_at: string
+          deleted_at: string | null
+          discount_percentage: number
+          icon: string | null
+          id: string
+          is_active: boolean
+          is_default: boolean
+          loyalty_enabled: boolean
+          name: string
+          points_multiplier: number
+          price_modifier_type: Database["public"]["Enums"]["price_modifier_type"]
+          slug: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "customer_categories"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       update_lan_heartbeat_v1: {
         Args: { p_device_code: string }
         Returns: {
@@ -7777,6 +7871,22 @@ export type Database = {
       upsert_combo_v1: {
         Args: { p_combo: Json; p_idempotency_key?: string }
         Returns: Json
+      }
+      upsert_product_category_price_v1: {
+        Args: { p_category_id: string; p_price: number; p_product_id: string }
+        Returns: {
+          created_at: string
+          customer_category_id: string
+          price: number
+          product_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "product_category_prices"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       upsert_product_modifiers_v1: {
         Args: { p_groups: Json; p_product_id: string }
