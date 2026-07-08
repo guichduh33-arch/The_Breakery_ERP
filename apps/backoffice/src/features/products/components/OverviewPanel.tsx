@@ -36,7 +36,6 @@ export function OverviewPanel({ product }: Props): JSX.Element {
                 <span className="text-xs uppercase tracking-widest">No photo</span>
               </div>
             ) : (
-              // eslint-disable-next-line @next/next/no-img-element
               <img src={product.image_url} alt={product.name} className="h-full w-full object-cover" />
             )}
           </CardContent>
