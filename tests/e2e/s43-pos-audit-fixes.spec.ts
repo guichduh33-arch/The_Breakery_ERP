@@ -305,7 +305,14 @@ test('T3: Send to Kitchen persists the order → survives reload + visible on KD
   const baristaTab = page.getByRole('tab', { name: 'Barista' });
   await expect(baristaTab).toBeVisible({ timeout: 30_000 }); // lazy chunk cold-compile
   await baristaTab.click();
-  const ticket = page.locator('article').filter({ hasText: fired.order_number });
+  // Match the order number with a trailing non-digit boundary: `hasText` is a
+  // substring match, so a bare "#0007" also matches "#00070".."#00079". On the
+  // shared-staging KDS (fired unpaid orders accumulate across runs) that
+  // collided into a strict-mode violation. Escape + `(?!\d)` → exactly our ticket.
+  const orderNoRe = new RegExp(
+    fired.order_number.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?!\\d)',
+  );
+  const ticket = page.locator('article').filter({ hasText: orderNoRe });
   await expect(ticket).toBeVisible({ timeout: 20_000 });
   await expect(ticket).toContainText('Americano');
   // Not paid yet — the PAID badge (S43 P2-5b) must NOT be on the ticket.
