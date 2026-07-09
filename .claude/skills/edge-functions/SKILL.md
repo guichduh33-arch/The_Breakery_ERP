@@ -46,8 +46,8 @@ promptSignals:
 1. **PIN / secrets in an HTTP header, never in the JSON body.** Any EF consuming a manager PIN or validation secret reads it from a dedicated header (`x-manager-pin`, `x-current-pin`, `x-new-pin`). Bodies get logged (PostgREST, pgaudit, proxies, function logs); headers rarely are. **Hard cutover**: drop the body field in the SAME commit as the header read — no dual-mode. Reference: `refund-order` (S25), `void-order`/`cancel-item` (S34), `auth-change-pin` (S59, EF v8).
 
 2. **Idempotency — pick the right flavor:**
-   - **HTTP `x-idempotency-key`** (retry safety): client makes a `crypto.randomUUID()` in a `useRef`, sends the header; EF reads it via `getIdempotencyKey(req)` from `_shared/idempotency.ts` and forwards it as `p_idempotency_key`. Reference: `refund-order` EF + `refund_order_rpc_v2`.
-   - **RPC arg `p_client_uuid` / `p_idempotency_key`** (intrinsic business idempotence): REQUIRED at the RPC, keyed into a **dedicated** idempotency table, replay returns the first result (or `{ …, idempotent_replay: true }`). Reference: `create_tablet_order_v3`, `record_b2b_payment_v2`.
+   - **HTTP `x-idempotency-key`** (retry safety): client makes a `crypto.randomUUID()` in a `useRef`, sends the header; EF reads it via `getIdempotencyKey(req)` from `_shared/idempotency.ts` and forwards it as `p_idempotency_key`. Reference: `refund-order` EF + `refund_order_rpc`.
+   - **RPC arg `p_client_uuid` / `p_idempotency_key`** (intrinsic business idempotence): REQUIRED at the RPC, keyed into a **dedicated** idempotency table, replay returns the first result (or `{ …, idempotent_replay: true }`). Reference: `create_tablet_order`, `record_b2b_payment_v2`.
 
 3. **The PIN-JWT fetch wrapper is sacred.** `auth-verify-pin` issues HS256 JWTs GoTrue (ES256) can't validate via the default header. The Supabase client injects the PIN JWT on every request via `setSupabaseAccessToken` (in `packages/supabase`). **Never** bypass with a raw `Authorization` header or `auth.setSession`.
 
@@ -57,7 +57,7 @@ promptSignals:
 
 6. **Durable rate-limit** (not in-memory): PIN endpoints and `generate-pdf` (30/min) persist their counters so a restart doesn't reset the window. Secret-header checks (`notification-dispatch`) stay enforced.
 
-7. **The EF calls the current money-path RPC, the POS never does.** `process-payment` → `complete_order_with_payment_v17`; the discount PIN is verified **in-EF** and carried by a `discount_authorizations` nonce (no PIN in SQL args since S55). When the RPC version bumps, repoint the EF and redeploy.
+7. **The EF calls the current money-path RPC, the POS never does.** `process-payment` → `complete_order_with_payment` (versions omises — vérifier `CLAUDE.md` / `supabase/migrations/`); the discount PIN is verified **in-EF** and carried by a `discount_authorizations` nonce (no PIN in SQL args since S55). When the RPC version bumps, repoint the EF and redeploy.
 
 ## Before you ship an EF — checklist
 - [ ] Any PIN/secret read from a header, body field dropped same-commit (hard cutover).

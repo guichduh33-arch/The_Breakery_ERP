@@ -130,7 +130,7 @@ EFs rate-limitées (S19) : `auth-verify-pin`, `kiosk-issue-jwt` (2 buckets), `re
 
 ### 5. Admin client pour RPCs service_role-only
 
-Depuis S34, `refund_order_rpc_v3` est `service_role`-only (PostgREST ne peut pas l'appeler directement). L'EF utilise `getAdminClient()` et passe `p_acting_auth_user_id` (résolu via `getActingAuthUserId(req)`) pour tracer l'acteur réel. Utiliser ce pattern pour toute nouvelle EF appelant un RPC qui ne doit pas être appelable par `authenticated`.
+Depuis S34, `refund_order_rpc` (version `_vN` — vérifier CLAUDE.md/migrations) est `service_role`-only (PostgREST ne peut pas l'appeler directement). L'EF utilise `getAdminClient()` et passe `p_acting_auth_user_id` (résolu via `getActingAuthUserId(req)`) pour tracer l'acteur réel. Utiliser ce pattern pour toute nouvelle EF appelant un RPC qui ne doit pas être appelable par `authenticated`.
 
 ---
 
