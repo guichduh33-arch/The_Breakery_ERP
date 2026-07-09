@@ -12,7 +12,7 @@
 //        the realtime WebSocket; the 30s refetch is only a safety net, so a
 //        <10s update proves the realtime path).
 //   T3 — Persistent counter fire (P0-3): Send to Kitchen persists the order
-//        via fire_counter_order_v1 (pending_payment), survives a POS reload,
+//        via fire_counter_order_v4 (pending_payment), survives a POS reload,
 //        is visible on the KDS, and checkout then pays THAT SAME order via
 //        pay_existing_order_v7 (no second order, no process-payment call).
 //
@@ -275,12 +275,12 @@ test('T3: Send to Kitchen persists the order → survives reload + visible on KD
   // Fire — the RPC is the source of truth (print failures are tolerated:
   // no print bridge in this environment, the toast says "saved to KDS").
   const fireResp = page.waitForResponse(
-    (r) => r.url().includes('/rest/v1/rpc/fire_counter_order_v1'),
+    (r) => r.url().includes('/rest/v1/rpc/fire_counter_order_v4'),
     { timeout: 20_000 },
   );
   await page.getByRole('button', { name: /send to kitchen/i }).click();
   const fire = await fireResp;
-  expect(fire.status(), 'fire_counter_order_v1 must succeed').toBe(200);
+  expect(fire.status(), 'fire_counter_order_v4 must succeed').toBe(200);
   const fired = (await fire.json()) as {
     order_id: string;
     order_number: string;
