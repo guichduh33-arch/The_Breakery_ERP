@@ -3,9 +3,9 @@
 > **Trace historique** : ce fichier documente une session de travail datée. Le fond reste l'enregistrement de cette date. Seules les références de chemin ont été alignées sur la nouvelle structure (voir [`../../README.md`](../../README.md)).
 > **Last refreshed** : 2026-05-13
 
-> **Module concerné** : ce spec correspond au module [Inventory & Stock](../../reference/04-modules/06-inventory-stock.md). Pour la spec consolidée actuelle (Partie I fonctionnel + Partie II technique + Partie III backlog + Partie IV design), aller à la référence canonique.
+> **Module concerné** : ce spec correspond au module [Inventory & Stock](../../../reference/04-modules/06-inventory-stock.md). Pour la spec consolidée actuelle (Partie I fonctionnel + Partie II technique + Partie III backlog + Partie IV design), aller à la référence canonique.
 
-> ⚠️ **STATUT : SUPERSEDED (2026-05-12)** — ce spec MVP couvrait ~15% du périmètre métier décrit aujourd'hui dans la [référence Inventory](../../reference/04-modules/06-inventory-stock.md) (Partie I §1-20). Il est remplacé par :
+> ⚠️ **STATUT : SUPERSEDED (2026-05-12)** — ce spec MVP couvrait ~15% du périmètre métier décrit aujourd'hui dans la [référence Inventory](../../../reference/04-modules/06-inventory-stock.md) (Partie I §1-20). Il est remplacé par :
 > - **Spec complete** : [`./2026-05-12-session-12-inventory-complete-spec.md`](./2026-05-12-session-12-inventory-complete-spec.md)
 > - **Plan-INDEX complete** : [`../plans/2026-05-12-session-12-inventory-complete-INDEX.md`](../../plans/archive/2026-05-12-session-12-inventory-complete-INDEX.md)
 >
@@ -20,7 +20,7 @@
 > **Statut** : ⚠️ Superseded — voir [`./2026-05-12-session-12-inventory-complete-spec.md`](./2026-05-12-session-12-inventory-complete-spec.md)
 > **Cible** : Compléter la couche admin du module Inventory — 4 RPCs (`record_stock_movement_v1` interne + `adjust_stock_v1` + `receive_stock_v1` + `waste_stock_v1`) + 1 RPC read (`get_stock_levels_v1`) + page backoffice (list + 3 modals + history drawer) + domain package pur + 30+ tests. Auto-decrement on sale est **déjà** câblé depuis session 1 ; cette session ferme le gap "admin sans accès DB".
 >
-> **Référence canonique** : [`../../reference/04-modules/06-inventory-stock.md`](../../reference/04-modules/06-inventory-stock.md) — Partie I §1-20 (vue fonctionnelle), Partie II §21-34 (référence technique), Partie III (backlog → [`../backlog-by-module/06-inventory-stock.md`](../backlog-by-module/06-inventory-stock.md)), Partie IV §35-43 (design & UX).
+> **Référence canonique** : [`../../reference/04-modules/06-inventory-stock.md`](../../../reference/04-modules/06-inventory-stock.md) — Partie I §1-20 (vue fonctionnelle), Partie II §21-34 (référence technique), Partie III (backlog → [`../backlog-by-module/06-inventory-stock.md`](../backlog-by-module/06-inventory-stock.md)), Partie IV §35-43 (design & UX).
 
 ---
 

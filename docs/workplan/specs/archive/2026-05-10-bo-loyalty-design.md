@@ -2,7 +2,7 @@
 
 > **Trace historique** : ce fichier documente une session de travail datée. Le fond reste l'enregistrement de cette date. Seules les références de chemin ont été alignées sur la nouvelle structure (voir [`../../README.md`](../../README.md)).
 > **Last refreshed** : 2026-05-13
-> **Module de référence associé** : [`../../reference/04-modules/08-customers-loyalty.md`](../../reference/04-modules/08-customers-loyalty.md).
+> **Module de référence associé** : [`../../reference/04-modules/08-customers-loyalty.md`](../../../reference/04-modules/08-customers-loyalty.md).
 
 **Date:** 2026-05-10
 **Status:** Approved by user (sections 1–3)

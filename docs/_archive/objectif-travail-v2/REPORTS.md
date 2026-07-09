@@ -3,7 +3,7 @@
 > 🗄️ **ARCHIVED / SUPERSEDED (2026-06-04).** This legacy V2 "Objectif métier" brief was folded verbatim into **Partie I — Vue fonctionnelle** of the canonical reference module [`reference/04-modules/14-reports-analytics.md`](../../reference/04-modules/14-reports-analytics.md) (2026-05-13). The reference is the source of truth; this file is kept for history only.
 
 
-> **Statut V2/V3** : décrit la vision business cible (~61 reports en 7 catégories). **V2 jamais déployée**. Implémentation V3 = **partielle — 13 reports livrés sur ~61** (BalanceSheet, ProfitLoss, CashFlow, SalesByCategory, SalesByHour, SalesByStaff, BasketAnalysis, ProductionYield, RecipeCostOverview, RecipeCostTimeline, StockVariance, Audit, ReportsIndexPage). **Reste à livrer ~48 reports — Session S29 Reports Export + Z-Report PDF couvre les priorités**. Voir [`../V2_V3_GLOSSARY.md`](../V2_V3_GLOSSARY.md).
+> **Statut V2/V3** : décrit la vision business cible (~61 reports en 7 catégories). **V2 jamais déployée**. Implémentation V3 = **partielle — 13 reports livrés sur ~61** (BalanceSheet, ProfitLoss, CashFlow, SalesByCategory, SalesByHour, SalesByStaff, BasketAnalysis, ProductionYield, RecipeCostOverview, RecipeCostTimeline, StockVariance, Audit, ReportsIndexPage). **Reste à livrer ~48 reports — Session S29 Reports Export + Z-Report PDF couvre les priorités**. Voir [`../V2_V3_GLOSSARY.md`](../../V2_V3_GLOSSARY.md).
 >
 > **Périmètre fonctionnel** : ce document décrit **ce que le module Reports sert à faire au quotidien** pour The Breakery.
 

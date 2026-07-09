@@ -3,13 +3,13 @@
 > **Trace historique** : ce fichier documente une session de travail datée. Le fond reste l'enregistrement de cette date. Seules les références de chemin ont été alignées sur la nouvelle structure (voir [`../../README.md`](../../README.md)).
 > **Last refreshed** : 2026-05-13
 
-> **Module concerné** : ce spec correspond au module [Inventory & Stock](../../reference/04-modules/06-inventory-stock.md). Pour la spec consolidée actuelle (Partie I fonctionnel + Partie II technique + Partie III backlog + Partie IV design), aller à la référence canonique.
+> **Module concerné** : ce spec correspond au module [Inventory & Stock](../../../reference/04-modules/06-inventory-stock.md). Pour la spec consolidée actuelle (Partie I fonctionnel + Partie II technique + Partie III backlog + Partie IV design), aller à la référence canonique.
 
 > **Date** : 2026-05-12
 > **Auteur** : guichduh33@gmail.com
 > **Statut** : Approuvé pour décomposition en sous-phases (executing-plans / subagent-driven-development)
 > **Remplace** : [`./2026-05-11-session-12-inventory-mvp-spec.md`](./2026-05-11-session-12-inventory-mvp-spec.md) (MVP — couverture ~15% de l'objectif métier)
-> **Source d'objectifs** : [référence Inventory & Stock](../../reference/04-modules/06-inventory-stock.md) — Partie I §1-20 (vue fonctionnelle)
+> **Source d'objectifs** : [référence Inventory & Stock](../../../reference/04-modules/06-inventory-stock.md) — Partie I §1-20 (vue fonctionnelle)
 > **Cible** : Livrer le module Inventory **complet** tel que décrit dans la référence (Partie I §1-20) — les 7 onglets (Stock, Incoming, Transfers, Wastage, Production, Opname, Movements) + Dashboard produit analytique + Panneau d'alertes + Sections / Locations + couplage comptable automatique. Exécution prévue en **8 sous-phases** ; cf. [`../plans/2026-05-12-session-12-inventory-complete-INDEX.md`](../../plans/archive/2026-05-12-session-12-inventory-complete-INDEX.md).
 > **Backlog opérationnel** : [`../backlog-by-module/06-inventory-stock.md`](../backlog-by-module/06-inventory-stock.md).
 
@@ -57,8 +57,8 @@ Cette session livre tout ce périmètre, en réutilisant le squelette MVP comme 
 | **C16** | Alertes | Service `inventoryAlerts.ts` (TS pur, dans `packages/domain/src/inventory/alerts/`) consomme les RPCs ci-dessus. UI : `StockAlertsBadge` (topbar BO) + `InventoryAlertsPanel` (panneau dédié à l'onglet Alertes ou à la sidebar). Sévérité `critical` (current < min_stock_threshold × 0.5) / `warning` (current < min_stock_threshold). Settings : `inventory_config.stock_percentage_critical` (défaut 25%) / `stock_percentage_warning` (50%) / `reorder_lookback_days` (14) / `production_lookback_days` (7). |
 | **C17** | Dashboard produit | Page `/backoffice/inventory/products/:id/dashboard` consomme RPC `get_product_dashboard_v1(p_product_id, p_lookback_days)` qui retourne en un seul appel : KPIs (current, value, rotation), timeline 30/90j, movement breakdown, recipe usage (si raw_material), purchase pattern, purchase price trend, weekly consumption. Charts via Recharts. |
 | **C18** | Sections / Locations | `sections` seedées (5 zones). `stock_locations` optionnel (hiérarchique sous section). UI page `/backoffice/inventory/sections` (CRUD ADMIN+). `stock_movements.from_section_id` / `to_section_id` exigent FK vers `sections`. |
-| **C19** | Pas de FEFO / batch | Conformément à la [référence Inventory](../../reference/04-modules/06-inventory-stock.md) §19 (Limites assumées V2) : pas de `stock_batches`, pas de tracking par DLC individuelle. Péremption gérée manuellement (waste). |
-| **C20** | Pas de prévision ML | Suggestions = règles simples (vitesse récente vs stock courant). Pas de scikit-learn / prophet. Conforme [référence Inventory](../../reference/04-modules/06-inventory-stock.md) §19. |
+| **C19** | Pas de FEFO / batch | Conformément à la [référence Inventory](../../../reference/04-modules/06-inventory-stock.md) §19 (Limites assumées V2) : pas de `stock_batches`, pas de tracking par DLC individuelle. Péremption gérée manuellement (waste). |
+| **C20** | Pas de prévision ML | Suggestions = règles simples (vitesse récente vs stock courant). Pas de scikit-learn / prophet. Conforme [référence Inventory](../../../reference/04-modules/06-inventory-stock.md) §19. |
 | **C21** | Sidebar BO restructurée | Groupe **"Inventory"** dans la sidebar avec 7 sous-entrées (Stock / Incoming / Transfers / Wastage / Production / Opname / Movements). + 2 entrées additionnelles (Sections / Alerts). Cf. §4.1. |
 
 ---
@@ -875,7 +875,7 @@ packages/utils/src/units/
 
 ## 9. Roadmap post-session 12
 
-Cette session livre l'inventory complète conforme à la [référence Inventory](../../reference/04-modules/06-inventory-stock.md). Les évolutions futures :
+Cette session livre l'inventory complète conforme à la [référence Inventory](../../../reference/04-modules/06-inventory-stock.md). Les évolutions futures :
 
 - **Session 13** : Reports module — stock valuation, slow movers, top wasters, on-time delivery, exports XLSX/PDF (Module 14)
 - **Session 14** : Multi-branch — table `branches`, ALTER `stock_movements ADD COLUMN branch_id`, transfer inter-branch

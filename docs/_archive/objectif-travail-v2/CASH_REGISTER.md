@@ -3,7 +3,7 @@
 > 🗄️ **ARCHIVED / SUPERSEDED (2026-06-04).** This legacy V2 "Objectif métier" brief was folded verbatim into **Partie I — Vue fonctionnelle** of the canonical reference module [`reference/04-modules/12-cash-register-shift.md`](../../reference/04-modules/12-cash-register-shift.md) (2026-05-13). The reference is the source of truth; this file is kept for history only.
 
 
-> **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée**. Implémentation V3 = DONE (RPCs `close_shift_rpc`, `record_cash_movement_rpc`, `apps/pos/src/features/shift`). Voir [`../V2_V3_GLOSSARY.md`](../V2_V3_GLOSSARY.md).
+> **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée**. Implémentation V3 = DONE (RPCs `close_shift_rpc`, `record_cash_movement_rpc`, `apps/pos/src/features/shift`). Voir [`../V2_V3_GLOSSARY.md`](../../V2_V3_GLOSSARY.md).
 >
 > **Périmètre fonctionnel** : ce document décrit **ce que le module Cash Register sert à faire au quotidien** pour The Breakery, sans rentrer dans la mécanique technique 
 

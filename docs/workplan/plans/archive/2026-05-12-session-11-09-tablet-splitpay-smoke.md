@@ -3,7 +3,7 @@
 > **Trace historique** : ce fichier documente une session de travail datée. Le fond reste l'enregistrement de cette date. Seules les références de chemin ont été alignées sur la nouvelle structure (voir [`../../README.md`](../../README.md)).
 > **Last refreshed** : 2026-05-13
 >
-> **Modules concernés** : [`17-tablet-ordering`](../../reference/04-modules/17-tablet-ordering.md) · [`03-payments-split`](../../reference/04-modules/03-payments-split.md)
+> **Modules concernés** : [`17-tablet-ordering`](../../../reference/04-modules/17-tablet-ordering.md) · [`03-payments-split`](../../../reference/04-modules/03-payments-split.md)
 
 > **For agentic workers:** REQUIRED SUB-SKILL: superpowers:subagent-driven-development (recommended) or superpowers:executing-plans. Steps use checkbox (`- [ ]`) syntax for tracking.
 

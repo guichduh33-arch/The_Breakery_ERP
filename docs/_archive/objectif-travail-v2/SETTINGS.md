@@ -3,7 +3,7 @@
 > 🗄️ **ARCHIVED / SUPERSEDED (2026-06-04).** This legacy V2 "Objectif métier" brief was folded verbatim into **Partie I — Vue fonctionnelle** of the canonical reference module [`reference/04-modules/19-settings-configuration.md`](../../reference/04-modules/19-settings-configuration.md) (2026-05-13). The reference is the source of truth; this file is kept for history only.
 
 
-> **Statut V2/V3** : décrit la vision business cible (~23 pages en 6 groupes). **V2 jamais déployée**. Implémentation V3 = **partielle** — 6 pages livrées (`SettingsGeneralPage`, `SettingsHubPage`, `SettingsHolidaysPage`, `SettingsEmailTemplatesPage`, `SettingsReceiptTemplatesPage`, `SettingsPermissionsPage`) + sous-dossier `security/` + RPCs (`get_settings_by_category`, `extend_settings_rpcs_for_pos_presets`, `update_role_session_timeout_v1`). Voir [`../V2_V3_GLOSSARY.md`](../V2_V3_GLOSSARY.md).
+> **Statut V2/V3** : décrit la vision business cible (~23 pages en 6 groupes). **V2 jamais déployée**. Implémentation V3 = **partielle** — 6 pages livrées (`SettingsGeneralPage`, `SettingsHubPage`, `SettingsHolidaysPage`, `SettingsEmailTemplatesPage`, `SettingsReceiptTemplatesPage`, `SettingsPermissionsPage`) + sous-dossier `security/` + RPCs (`get_settings_by_category`, `extend_settings_rpcs_for_pos_presets`, `update_role_session_timeout_v1`). Voir [`../V2_V3_GLOSSARY.md`](../../V2_V3_GLOSSARY.md).
 >
 > **Périmètre fonctionnel** : ce document décrit **ce que le module Settings sert à faire au quotidien** pour The Breakery,
 

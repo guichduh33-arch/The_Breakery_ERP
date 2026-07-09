@@ -14,7 +14,7 @@
 
 **Branch:** `swarm/session-32` (créée depuis `master` après merge S31)
 
-**Audit source:** [`../../../audit/2026-05-28-pos-audit.md`](../../../audit/2026-05-28-pos-audit.md)
+**Audit source:** [`../../../audit/archive/2026-05-28-pos-audit.md`](../../../audit/archive/2026-05-28-pos-audit.md)
 
 ---
 

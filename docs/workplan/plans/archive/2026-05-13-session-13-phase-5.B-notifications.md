@@ -5,7 +5,7 @@
 > **Migration block** : `20260517000180` (1 migration)
 > **Complexity** : L (~18-24 h)
 > **Parent INDEX** : [`./2026-05-13-session-13-INDEX.md`](./2026-05-13-session-13-INDEX.md) §Phase 5.B (line 909)
-> **Module ref**  : [`../../reference/04-modules/08-customers-loyalty.md`](../../reference/04-modules/08-customers-loyalty.md) (08-006)
+> **Module ref**  : [`../../reference/04-modules/08-customers-loyalty.md`](../../../reference/04-modules/08-customers-loyalty.md) (08-006)
 
 ## 1. Context (state at startup, verified 2026-05-14)
 

@@ -4,7 +4,7 @@
 > **Branch**     : `swarm/session-13`
 > **Parent INDEX** : [`./2026-05-13-session-13-INDEX.md`](./2026-05-13-session-13-INDEX.md) §Phase 2.A (line ~443)
 > **Spec source**   : [`../specs/2026-05-13-session-13-spec.md`](../../specs/archive/2026-05-13-session-13-spec.md)
-> **Module ref**    : [`../../reference/04-modules/15-production-recipes.md`](../../reference/04-modules/15-production-recipes.md)
+> **Module ref**    : [`../../reference/04-modules/15-production-recipes.md`](../../../reference/04-modules/15-production-recipes.md)
 > **Migration block reserved** : `20260517000060..000066` (7 migrations).
 
 ## 1. Context (state at startup, verified 2026-05-14)

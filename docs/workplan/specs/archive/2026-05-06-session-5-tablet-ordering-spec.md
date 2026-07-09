@@ -4,8 +4,8 @@
 > **Last refreshed** : 2026-05-13
 >
 > **Voir aussi** pour la spec complète (4 parties) :
-> - Tablet ordering → [`../../reference/04-modules/17-tablet-ordering.md`](../../reference/04-modules/17-tablet-ordering.md)
-> - POS pickup / pay_existing_order → [`../../reference/04-modules/02-pos-cart-orders.md`](../../reference/04-modules/02-pos-cart-orders.md)
+> - Tablet ordering → [`../../reference/04-modules/17-tablet-ordering.md`](../../../reference/04-modules/17-tablet-ordering.md)
+> - POS pickup / pay_existing_order → [`../../reference/04-modules/02-pos-cart-orders.md`](../../../reference/04-modules/02-pos-cart-orders.md)
 
 > **Date** : 2026-05-06
 > **Auteur** : guichduh33@gmail.com (via session brainstorming)

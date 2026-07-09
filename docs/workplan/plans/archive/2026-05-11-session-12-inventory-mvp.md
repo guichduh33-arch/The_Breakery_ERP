@@ -3,13 +3,13 @@
 > **Trace historique** : ce fichier documente une session de travail datée. Le fond reste l'enregistrement de cette date. Seules les références de chemin ont été alignées sur la nouvelle structure (voir [`../../README.md`](../../README.md)).
 > **Last refreshed** : 2026-05-13
 
-> **Module concerné** : ce plan correspond au module [Inventory & Stock](../../reference/04-modules/06-inventory-stock.md). Pour la spec consolidée actuelle (Partie I fonctionnel + Partie II technique + Partie III backlog + Partie IV design), aller à la référence canonique.
+> **Module concerné** : ce plan correspond au module [Inventory & Stock](../../../reference/04-modules/06-inventory-stock.md). Pour la spec consolidée actuelle (Partie I fonctionnel + Partie II technique + Partie III backlog + Partie IV design), aller à la référence canonique.
 
 > ⚠️ **STATUT : SUPERSEDED (2026-05-12)** — ce plan MVP est remplacé par le plan-INDEX multi-phases :
 > - **Plan-INDEX complete** : [`./2026-05-12-session-12-inventory-complete-INDEX.md`](./2026-05-12-session-12-inventory-complete-INDEX.md)
 > - **Spec source complete** : [`../specs/2026-05-12-session-12-inventory-complete-spec.md`](../../specs/archive/2026-05-12-session-12-inventory-complete-spec.md)
 >
-> Les Phase 1 + Phase 2 du plan-INDEX implémentent le périmètre décrit ici (foundations + RPCs admin core), puis les phases 3-8 ajoutent Transfers, Production, Opname, Movements, Alertes, Dashboard, et le couplage comptable automatique pour livrer le module **Inventory complete** conforme à la [référence Inventory](../../reference/04-modules/06-inventory-stock.md) (Partie I §1-20).
+> Les Phase 1 + Phase 2 du plan-INDEX implémentent le périmètre décrit ici (foundations + RPCs admin core), puis les phases 3-8 ajoutent Transfers, Production, Opname, Movements, Alertes, Dashboard, et le couplage comptable automatique pour livrer le module **Inventory complete** conforme à la [référence Inventory](../../../reference/04-modules/06-inventory-stock.md) (Partie I §1-20).
 >
 > Le contenu ci-dessous est conservé à titre **historique**.
 
@@ -25,7 +25,7 @@
 
 **Spec source:** [`../specs/2026-05-11-session-12-inventory-mvp-spec.md`](../../specs/archive/2026-05-11-session-12-inventory-mvp-spec.md)
 
-**Référence canonique** : [`../../reference/04-modules/06-inventory-stock.md`](../../reference/04-modules/06-inventory-stock.md) — Partie I §1-20 (vue fonctionnelle), Partie II §21-34 (référence technique), Partie III (backlog → [`../backlog-by-module/06-inventory-stock.md`](../backlog-by-module/06-inventory-stock.md)), Partie IV §35-43 (design & UX).
+**Référence canonique** : [`../../reference/04-modules/06-inventory-stock.md`](../../../reference/04-modules/06-inventory-stock.md) — Partie I §1-20 (vue fonctionnelle), Partie II §21-34 (référence technique), Partie III (backlog → [`../backlog-by-module/06-inventory-stock.md`](../backlog-by-module/06-inventory-stock.md)), Partie IV §35-43 (design & UX).
 
 **Architecture:** 10 migrations additives → domain pur (`packages/domain/src/inventory/`) → feature folder backoffice → wiring routes/sidebar/perms → tests pgTAP + Vitest → docs. Aucun edge function. Aucune modification de `complete_order` / `void_order_rpc` / `refund_order_rpc`. Pattern UI repris de `apps/backoffice/src/features/loyalty/` (adjust-with-reason).
 

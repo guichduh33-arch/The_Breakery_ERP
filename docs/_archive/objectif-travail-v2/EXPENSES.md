@@ -3,7 +3,7 @@
 > 🗄️ **ARCHIVED / SUPERSEDED (2026-06-04).** This legacy V2 "Objectif métier" brief was folded verbatim into **Partie I — Vue fonctionnelle** of the canonical reference module [`reference/04-modules/11-expenses.md`](../../reference/04-modules/11-expenses.md) (2026-05-13). The reference is the source of truth; this file is kept for history only.
 
 
-> **Statut V2/V3** : décrit la vision business cible (4 pages). **V2 jamais déployée**. Implémentation V3 = **partielle** — 2 pages livrées (ExpensesListPage, ExpenseDetailPage) + 5 RPCs (S17 `create_expense_rpcs`) + storage bucket. **ExpenseFormPage et ExpenseCategoriesPage planifiés pour S28 Expense Governance**. Voir [`../V2_V3_GLOSSARY.md`](../V2_V3_GLOSSARY.md).
+> **Statut V2/V3** : décrit la vision business cible (4 pages). **V2 jamais déployée**. Implémentation V3 = **partielle** — 2 pages livrées (ExpensesListPage, ExpenseDetailPage) + 5 RPCs (S17 `create_expense_rpcs`) + storage bucket. **ExpenseFormPage et ExpenseCategoriesPage planifiés pour S28 Expense Governance**. Voir [`../V2_V3_GLOSSARY.md`](../../V2_V3_GLOSSARY.md).
 >
 > **Périmètre fonctionnel** : ce document décrit **ce que le module Expenses (`/expenses`) sert à faire au quotidien** pour The Breakery, 
 

@@ -3,7 +3,7 @@
 > **Trace historique** : ce fichier documente une session de travail datée. Le fond reste l'enregistrement de cette date. Seules les références de chemin ont été alignées sur la nouvelle structure (voir [`../../README.md`](../../README.md)).
 > **Last refreshed** : 2026-05-13
 
-> **Module concerné** : ce plan-INDEX correspond au module [Purchasing & Suppliers](../../reference/04-modules/07-purchasing-suppliers.md). Pour la spec consolidée actuelle (fonctionnel + technique + backlog + design), aller à la référence canonique.
+> **Module concerné** : ce plan-INDEX correspond au module [Purchasing & Suppliers](../../../reference/04-modules/07-purchasing-suppliers.md). Pour la spec consolidée actuelle (fonctionnel + technique + backlog + design), aller à la référence canonique.
 
 > **Date** : 2026-05-12
 > **Statut** : INDEX multi-phases — chaque phase a son propre fichier `2026-05-12-purchasing-XX-<phase>.md` à créer en exécution
@@ -15,7 +15,7 @@
 
 ## Goal global
 
-Livrer le module **Purchasing & Suppliers complete** tel que décrit dans la [référence Purchasing](../../reference/04-modules/07-purchasing-suppliers.md) (Partie I — vue fonctionnelle) :
+Livrer le module **Purchasing & Suppliers complete** tel que décrit dans la [référence Purchasing](../../../reference/04-modules/07-purchasing-suppliers.md) (Partie I — vue fonctionnelle) :
 
 - Suppliers étendus (NPWP, RIB, payment_method enum, catégories)
 - Workflow PO complet : draft → sent → confirmed → partially_received → received (state machine validée)

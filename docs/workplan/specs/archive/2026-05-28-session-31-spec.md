@@ -8,14 +8,14 @@
 > **Effort estimé** : ~3-5 jours wall-time (M)
 > **Status** : draft pour ratification user (avant Wave 0 spec commit)
 > **Predecessor** : [`../2026-05-24-session-30-spec.md`](2026-05-24-session-30-spec.md)
-> **Audit préparatoire** : [`../../../audit/2026-05-28-pos-audit.md`](../../../audit/2026-05-28-pos-audit.md) — 4 Critical + 6 Major scoped S31 (les autres → S32 / backlog).
+> **Audit préparatoire** : [`../../../audit/archive/2026-05-28-pos-audit.md`](../../../audit/archive/2026-05-28-pos-audit.md) — 4 Critical + 6 Major scoped S31 (les autres → S32 / backlog).
 > **Companion spec** : [`./2026-05-28-session-32-spec.md`](./2026-05-28-session-32-spec.md) — S32 enchaîne avec les findings *Major* polish (hold orders DB, VirtualKeypad, customer display, Settings tabs, Lock terminal).
 
 ---
 
 ## 1. Contexte
 
-L'audit POS du 2026-05-28 (`docs/audit/2026-05-28-pos-audit.md`) a identifié **4 Critical + 10 Major + 10 Minor**. Cette session ferme la totalité des Critical (F-001 → F-004) et les Major sécurité/anon (F-006, F-008) + 2 Minor légers (F-017, F-018) qui peuvent être bundlés sans surcharge. Le scope est volontairement étroit pour livrer rapidement le rempart minimal :
+L'audit POS du 2026-05-28 (`docs/audit/archive/2026-05-28-pos-audit.md`) a identifié **4 Critical + 10 Major + 10 Minor**. Cette session ferme la totalité des Critical (F-001 → F-004) et les Major sécurité/anon (F-006, F-008) + 2 Minor légers (F-017, F-018) qui peuvent être bundlés sans surcharge. Le scope est volontairement étroit pour livrer rapidement le rempart minimal :
 
 - **F-001 (🔴)** : `useSendToKitchen` no-op + `complete_order_v9` n'active pas `is_locked` → KDS ne reçoit jamais les commandes POS comptoir. Option A retenue (bump RPC) — Option B (draft orders persistés) reportée backlog.
 - **F-002 (🔴)** : drift `take_away`/`takeaway` vs enum DB `take_out` dans 5 fichiers → dead branches.

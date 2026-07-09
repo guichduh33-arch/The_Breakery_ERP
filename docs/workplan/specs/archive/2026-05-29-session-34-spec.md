@@ -7,7 +7,7 @@
 > **Base** : `master` @ post-merge S33 PR (Orders v2 BO) — S34 dépend de S33 pour le helper `_recalc_order_totals` (réutilisé) et la convention de filtres realtime.
 > **Effort estimé** : ~8-12 jours wall-time (L) — dominé par F-001 Option B (full draft-order flow). Les 5 autres findings sont S/XS et parallélisables.
 > **Status** : draft pour ratification user (avant Wave 0 spec commit)
-> **Source** : [`docs/audit/2026-05-28-pos-audit.md`](../../../audit/2026-05-28-pos-audit.md) — Couche 2 findings F-001, F-002, F-004, F-006, F-008 + minor F-016/F-017/F-018.
+> **Source** : [`docs/audit/archive/2026-05-28-pos-audit.md`](../../../audit/archive/2026-05-28-pos-audit.md) — Couche 2 findings F-001, F-002, F-004, F-006, F-008 + minor F-016/F-017/F-018.
 > **Decisions user (2026-05-29)** : (1) split en S34 Critical + S35 Polish ; (2) F-001 = **Option B** (full draft-order flow, pas le quick v10 bump) ; (3) full plan pour S34, spec-only pour S35.
 
 ---

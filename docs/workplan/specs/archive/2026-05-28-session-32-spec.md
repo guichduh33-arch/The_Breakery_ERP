@@ -8,7 +8,7 @@
 > **Effort estimé** : ~5-8 jours wall-time (L)
 > **Status** : draft pour ratification user
 > **Predecessor** : [`./2026-05-28-session-31-spec.md`](./2026-05-28-session-31-spec.md) — S32 enchaîne les findings *Major polish* après les *Critical fixes* de S31.
-> **Audit source** : [`../../../audit/2026-05-28-pos-audit.md`](../../../audit/2026-05-28-pos-audit.md)
+> **Audit source** : [`../../../audit/archive/2026-05-28-pos-audit.md`](../../../audit/archive/2026-05-28-pos-audit.md)
 
 ---
 

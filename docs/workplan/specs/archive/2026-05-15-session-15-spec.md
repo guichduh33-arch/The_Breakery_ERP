@@ -3,7 +3,7 @@
 **Date:** 2026-05-15
 **Branch:** `swarm/session-15`
 **INDEX:** [`../plans/2026-05-15-session-15-INDEX.md`](../../plans/archive/2026-05-15-session-15-INDEX.md)
-**Module references:** [`docs/reference/04-modules/15-production-recipes.md`](../../reference/04-modules/15-production-recipes.md), [`docs/reference/04-modules/05-products-categories.md`](../../reference/04-modules/05-products-categories.md), [`docs/reference/04-modules/06-inventory-stock.md`](../../reference/04-modules/06-inventory-stock.md)
+**Module references:** [`docs/reference/04-modules/15-production-recipes.md`](../../../reference/04-modules/15-production-recipes.md), [`docs/reference/04-modules/05-products-categories.md`](../../../reference/04-modules/05-products-categories.md), [`docs/reference/04-modules/06-inventory-stock.md`](../../../reference/04-modules/06-inventory-stock.md)
 **Source backlogs:** [`backlog-by-module/15-production-recipes.md`](../backlog-by-module/15-production-recipes.md), [`backlog-by-module/05-products-categories.md`](../backlog-by-module/05-products-categories.md)
 **Migration block:** `20260519000001..210` (Session 15 reserved).
 
