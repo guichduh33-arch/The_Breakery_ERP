@@ -132,12 +132,15 @@ test('T3: opname — create a count, land on detail, cancel it', async () => {
 // ── T4 — Product dashboard renders ───────────────────────────────────────────
 
 test('T4: product dashboard — title renders, no error alert', async () => {
-  // Grab a real product id by clicking the first row of the products table
-  // (rows navigate via onClick — there are no <a> hrefs to harvest).
+  // Grab a real product id by navigating into the first product. Row nav is
+  // via the per-row "View <name>" action button (ProductsTable onView →
+  // navigate(`/backoffice/products/${id}`)); clicking the bare <tr> is
+  // unreliable (header/body are both rowgroups), so click View directly.
   await page.goto('/backoffice/products');
-  const firstRow = page.locator('[data-testid="products-table"] tbody tr').first();
-  await expect(firstRow).toBeVisible({ timeout: 30_000 });
-  await firstRow.click();
+  await expect(page.getByTestId('products-table')).toBeVisible({ timeout: 30_000 });
+  const firstView = page.getByRole('button', { name: /^View / }).first();
+  await expect(firstView).toBeVisible({ timeout: 30_000 });
+  await firstView.click();
   await expect(page).toHaveURL(/\/backoffice\/products\/[0-9a-f-]{36}/, { timeout: 20_000 });
   const match = page.url().match(/\/backoffice\/products\/([0-9a-f-]{36})/);
   expect(match).not.toBeNull();
