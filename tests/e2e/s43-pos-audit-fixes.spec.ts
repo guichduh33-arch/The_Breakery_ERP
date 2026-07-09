@@ -305,17 +305,29 @@ test('T3: Send to Kitchen persists the order → survives reload + visible on KD
   const baristaTab = page.getByRole('tab', { name: 'Barista' });
   await expect(baristaTab).toBeVisible({ timeout: 30_000 }); // lazy chunk cold-compile
   await baristaTab.click();
-  // Match the order number with a trailing non-digit boundary: `hasText` is a
-  // substring match, so a bare "#0007" also matches "#00070".."#00079". On the
-  // shared-staging KDS (fired unpaid orders accumulate across runs) that
-  // collided into a strict-mode violation. Escape + `(?!\d)` → exactly our ticket.
+  // order_number (e.g. "#0013") is a per-shift/day DISPLAY sequence, NOT a
+  // globally-unique id, and fired-unpaid tickets accumulate on the shared KDS
+  // across runs/days — so several <article>s can carry the same "#NNNN" (and a
+  // bare substring "#0007" would also hit "#00070".."#00079"). The KDS card
+  // exposes no order_id in the DOM (adding a testid = app change, frozen). So:
+  // escape + `(?!\d)` boundary on the number, AND narrow to a NON-paid Americano
+  // ticket, then take the first — this proves our fired unpaid order is on the
+  // KDS. Uniqueness of THIS order is asserted elsewhere: the reload check above
+  // matches the `POS-<order_id last4>` header, and the checkout below asserts
+  // pay_existing_order_v11 fires on fired.order_id (not a second order).
   const orderNoRe = new RegExp(
     fired.order_number.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?!\\d)',
   );
-  const ticket = page.locator('article').filter({ hasText: orderNoRe });
+  const ticket = page
+    .locator('article')
+    .filter({ hasText: orderNoRe })
+    .filter({ hasText: 'Americano' })
+    .filter({ hasNotText: 'PAID' })
+    .first();
   await expect(ticket).toBeVisible({ timeout: 20_000 });
   await expect(ticket).toContainText('Americano');
-  // Not paid yet — the PAID badge (S43 P2-5b) must NOT be on the ticket.
+  // Not paid yet — the PAID badge (S43 P2-5b) must NOT be on the ticket
+  // (already excluded by the hasNotText filter; assert explicitly too).
   await expect(ticket.getByText('PAID', { exact: true })).toHaveCount(0);
 
   // Back to the POS — the fired cart re-hydrates from sessionStorage.
