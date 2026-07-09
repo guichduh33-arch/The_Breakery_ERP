@@ -11,10 +11,11 @@
 
 import type { Page } from '@playwright/test';
 
-// Seed user IDs that match SEED_USERS in apps/pos/src/pages/Login.tsx
-// and apps/backoffice/src/features/auth/UserPicker.tsx.
-export const SEED_USER_OWNER   = '00000000-0000-0000-0000-000000000001';
-export const SEED_USER_CASHIER = '00000000-0000-0000-0000-000000000002';
+// Seed user IDs — dedicated E2E accounts (S71, migration 20260710000141).
+// NOT the legacy 000…001/002 demo accounts: E2E users are isolated so nightly
+// PIN resets never touch real staff. PINs are provisioned from CI secrets.
+export const SEED_USER_OWNER   = '0e2e0000-0000-4000-a000-000000000001';
+export const SEED_USER_CASHIER = '0e2e0000-0000-4000-a000-000000000002';
 
 /**
  * loginWithPin — automates the two-step PIN login UI for both POS and BO.
