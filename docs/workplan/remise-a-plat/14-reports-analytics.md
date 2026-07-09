@@ -1,5 +1,7 @@
 # Module 14 — Rapports & analyses
 
+> ⚠️ **Corps figé au `5b0fa92` (2026-07-04) — partiellement périmé.** Le verdict global (§ en tête) et la fin de §C affirment que « le Dashboard d'accueil est un stub à zéros » : c'est dépassé — le dashboard BO réel a été livré en **S63** (`get_dashboard_overview_v1`, lecture pure, gate `reports.read`, 5 panneaux). Le corps/tableau figé ci-dessous n'est PAS réécrit (append-only) ; se fier au présent bandeau, à la MAJ S63 ci-dessous et à CLAUDE.md pour l'état courant.
+
 > **MAJ S63 (2026-07-06)** : Dashboard d'accueil câblé — `get_dashboard_overview_v1` (migrations `_113`+`_114`, gate `reports.read`) + hook `useDashboardOverview` (polling 60 s) + 5 panneaux réels (trend 30 j, donut par type, barres horaires, top produits, paiements). Le constat « stub à zéros » (§C, fin) et **D2.1 sont soldés**. Cf. `../plans/2026-07-06-session-63-INDEX.md`.
 > **Remise à plat — analyse comparative.** Doc : Description v1.2 (2026-07-03), module 14. Code : commit `5b0fa92` (2026-07-03).
 > **Statut annoncé par la doc :** Opérationnel

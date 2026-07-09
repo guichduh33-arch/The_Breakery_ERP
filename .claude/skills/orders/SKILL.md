@@ -52,20 +52,22 @@ Expert on order business logic across POS (writes) and Backoffice (management). 
 ```
 POS create                          BO management
 ──────────                          ─────────────
-complete_order_with_payment_v10     get_orders_list_v2
+complete_order_with_payment         get_orders_list_v2
  ↓ status: paid                      ↓ cursor-paginé, 11 filtres JSONB
-pay_existing_order_v3
+pay_existing_order
  ↓ draft → pending_payment → paid   add/update/remove_order_item_v1
-create_tablet_order_v2               ↓ draft | pending_payment uniquement
+create_tablet_order                  ↓ draft | pending_payment uniquement
  ↓ status: draft                     ↓ _recalc_order_totals atomique
-create_b2b_order_v1
+create_b2b_order
  ↓ status: b2b_pending              void_order_rpc
                                      ↓ status: voided (manager PIN)
-refund_order_rpc_v2
+refund_order_rpc
  ↓ INSERT refunds row               useOrdersRealtime
  ↓ PIN header x-manager-pin          ↓ postgres_changes INSERT+UPDATE
  ↓ idempotency header                ↓ StrictMode-safe via useId
 ```
+
+> Les numéros de version RPC sont volontairement omis dans ce skill (versions omises — vérifier `CLAUDE.md` / `supabase/migrations/`) — ils bumpent presque chaque session ; les mentions d'historique (« Drop v9 », noms de migration) sont conservées.
 
 ### order_status enum — valeurs réelles (vérifiées migrations S5/S24 + corrective S33 `_023`)
 
@@ -102,12 +104,12 @@ dine_in | take_out | delivery | b2b | tablet
 
 | RPC | Fichier migration | Notes |
 |-----|------------------|-------|
-| `complete_order_with_payment_v10` | `20260530190828` | Double déduction `display_stock` + `current_stock` pour `is_display_item`. Drop v9 in same migration. |
-| `pay_existing_order_v3` | `20260507000005` + bumps | `draft → pending_payment → paid` |
-| `create_tablet_order_v2(p_client_uuid UUID)` | `20260602000011` | `p_client_uuid` REQUIRED, idempotency via `tablet_order_idempotency_keys`. |
-| `refund_order_rpc_v2` | `20260517000014` | PIN via header `x-manager-pin`. `p_idempotency_key` propagé par EF `refund-order` v7. |
+| `complete_order_with_payment` | `20260530190828` | Double déduction `display_stock` + `current_stock` pour `is_display_item`. Drop v9 in same migration. |
+| `pay_existing_order` | `20260507000005` + bumps | `draft → pending_payment → paid` |
+| `create_tablet_order(p_client_uuid UUID)` | `20260602000011` | `p_client_uuid` REQUIRED, idempotency via `tablet_order_idempotency_keys`. |
+| `refund_order_rpc` | `20260517000014` | PIN via header `x-manager-pin`. `p_idempotency_key` propagé par EF `refund-order` v7. |
 | `void_order_rpc` | `20260512000009` | Manager PIN gated (`pos.sale.void`). Émet JE-VOID + stock `sale_void` + reverse loyalty. |
-| `create_b2b_order_v1` | `20260601000022` | Gate `validate_b2b_credit_limit_v1`. Status `b2b_pending`. |
+| `create_b2b_order` | `20260601000022` | Gate `validate_b2b_credit_limit_v1`. Status `b2b_pending`. |
 | `mark_item_served` | (S5) | KDS/tablet — marque l'item servi. |
 
 ### List & edit RPCs (S32/S33)
@@ -147,10 +149,10 @@ orders.void       — MANAGER / ADMIN / SUPER_ADMIN (S33 _021)
 2. **Status guard sur edit-items** — `('draft', 'pending_payment')` uniquement. Lever P0002 sinon. Ne pas ajouter `'open'` (valeur inexistante dans l'enum).
 3. **`products.retail_price`** (pas `.price`) — vérifié dans le corrective `_023`. Utiliser `retail_price` pour `unit_price` dans les edit-items RPCs.
 4. **Idempotency keys propres par RPC** — ne pas partager une même `p_idempotency_key` entre deux appels RPC distincts dans `useEditOrderItems`. Générer un UUID par call.
-5. **PIN en header** — `refund_order_rpc_v2` et `void_order_rpc` lisent le PIN via header `x-manager-pin`, jamais dans le body JSON (loggé par PostgREST/pgaudit).
+5. **PIN en header** — `refund_order_rpc` et `void_order_rpc` lisent le PIN via header `x-manager-pin`, jamais dans le body JSON (loggé par PostgREST/pgaudit).
 6. **Realtime StrictMode-safe** — `useOrdersRealtime` utilise `useId()` pour nommer le channel ; pas de channel name statique (collisions StrictMode double-mount).
 7. **`orders.session_id` nullable** — NULL autorisé pour `b2b` ET `tablet` via 2 CHECK distincts. Ne jamais resserrer à NOT NULL global.
-8. **display_stock double-déduction** — `complete_order_with_payment_v10` (v10 seulement) décrémente à la fois `display_stock.quantity` ET `products.current_stock` pour les `is_display_item=true`. Non-display : `current_stock` seulement (comportement v9 inchangé).
+8. **display_stock double-déduction** — `complete_order_with_payment` (comportement introduit en v10) décrémente à la fois `display_stock.quantity` ET `products.current_stock` pour les `is_display_item=true`. Non-display : `current_stock` seulement (comportement v9 inchangé).
 
 ---
 
@@ -217,7 +219,7 @@ Baseline : ~24 BO échecs env-gated (`VITE_SUPABASE_URL Required`) ≠ régressi
 ## When to escalate
 
 - Ajouter une valeur à `order_status` ou `order_type` → confirm business intent, enum ADD VALUE doit vivre dans sa propre TX, puis vérifier tous les guards existants (status IN (…)).
-- Modifier la signature de `complete_order_with_payment_v10` → bump obligatoire (`_v11`), `DROP v10` dans la même migration. Vérifier tous les callers POS/BO.
+- Modifier la signature de `complete_order_with_payment` → bump obligatoire (RPC versioning monotone), `DROP` de l'ancienne version dans la même migration. Vérifier tous les callers POS/BO.
 - Relax ou tighten la contrainte `orders.session_id` → peut casser les flows tablet ou B2B (cf. S25 corrective `_014`).
 - Nouveau filtre `get_orders_list_v2` impliquant un JOIN sur une table sans index → profiler d'abord.
 - Changement du mécanisme PIN (ex. `void-order` EF sweep POST-S30 déféré) → coordonner avec `security-auth` skill.

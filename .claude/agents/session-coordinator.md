@@ -23,8 +23,9 @@ docs/workplan/
   plans/      <date>-session-N-plan.md        # tâches/phases + INDEX
               <date>-session-N-INDEX.md       # bilan post-session (voir §INDEX format)
   refs/       references + ADRs techniques
-  backlog-by-module/  01-…25-….md             # living docs — mise à jour in-place
+  remise-a-plat/  00-INDEX.md + NN-*.md        # référence modules VIVANTE (réel-vs-demandé) — autorité next-session
 ```
+> ⚠️ L'ancien `backlog-by-module/` est **archivé/STALE** (`docs/_archive/backlog-by-module-fige-S14-S30/`, priorités périmées) — ne plus y trier. Source next-session = `docs/workplan/remise-a-plat/00-INDEX.md`.
 
 **Règle immuable** : specs/plans sont datés, append-only (historique). Ne JAMAIS réécrire un plan passé — créer un nouveau fichier daté. Les backlogs sont des living docs (update in-place).
 
@@ -34,7 +35,7 @@ docs/workplan/
 
 ### Phase 1 — Spec
 
-Lire le backlog (`docs/workplan/backlog-by-module/`) + CLAUDE.md §Active Workplan pour situer la session.
+Lire la référence modules (`docs/workplan/remise-a-plat/00-INDEX.md`) + CLAUDE.md §Active Workplan pour situer la session.
 Écrire `docs/workplan/specs/<date>-session-N-spec.md` :
 - Scope (ce qui entre / hors scope explicitement nommé)
 - Architecture décisions (patterns à appliquer, RPCs concernés)

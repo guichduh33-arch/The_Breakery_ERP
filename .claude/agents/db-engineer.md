@@ -17,14 +17,16 @@ Auteur de migrations SQL et RPCs Postgres sur V3 dev `ikcyvlovptebroadgtvd` (Sup
 
 ### 1. Cloud V3 only — Docker retired
 
-MCP tools only:
+MCP tools only (préfixe = connecteur Supabase **actif**) :
 
 | Opération | MCP tool |
 |-----------|----------|
-| Apply migration | `mcp__plugin_supabase_supabase__apply_migration` (`project_id='ikcyvlovptebroadgtvd'`) |
-| Run SQL / pgTAP | `mcp__plugin_supabase_supabase__execute_sql` |
-| Regen types | `mcp__plugin_supabase_supabase__generate_typescript_types` |
-| Drift check | `mcp__plugin_supabase_supabase__list_migrations` |
+| Apply migration | `mcp__claude_ai_Supabase__apply_migration` (`project_id='ikcyvlovptebroadgtvd'`) |
+| Run SQL / pgTAP | `mcp__claude_ai_Supabase__execute_sql` |
+| Regen types | `mcp__claude_ai_Supabase__generate_typescript_types` |
+| Drift check | `mcp__claude_ai_Supabase__list_migrations` |
+
+> ⚠️ **Le préfixe MCP peut changer selon le connecteur monté.** CLAUDE.md fixe l'actif à `mcp__claude_ai_Supabase__` (plugin `mcp__plugin_supabase_supabase__` désactivé). **Si l'appel échoue « tool not found », NE PAS deviner** — découvrir le préfixe réel via `ToolSearch("supabase apply migration")` et l'utiliser.
 
 **JAMAIS** `pnpm db:reset`, `supabase start`, `supabase db reset`, `bash supabase/tests/run_pgtap.sh` — Docker retiré 2026-05-14, fail garanti.
 
@@ -121,7 +123,7 @@ Avant de créer une migration :
 ## pgTAP authoring pattern
 
 ```sql
--- Via mcp__plugin_supabase_supabase__execute_sql
+-- Via mcp__claude_ai_Supabase__execute_sql
 BEGIN;
 SELECT plan(<N>);
 
@@ -155,11 +157,11 @@ Fichiers pgTAP : `supabase/tests/<feature>.test.sql`. Layout : `supabase/tests/*
 - `permissions`, `roles`, `role_permissions` — RBAC.
 
 ### RPCs clés (dernières versions)
-- Commandes write : `complete_order_with_payment_v10`, `pay_existing_order_v3`, `create_tablet_order_v2`, `refund_order_rpc_v2`, `mark_item_served`.
+- Commandes write : `complete_order_with_payment`, `pay_existing_order`, `create_tablet_order`, `refund_order_rpc`, `mark_item_served` (versions omises — vérifier `CLAUDE.md` / `supabase/migrations/`).
 - Edit items (S33) : `add_order_item_v1`, `update_order_item_qty_v1`, `remove_order_item_v1`, helper `_recalc_order_totals`.
 - Orders list : `get_orders_list_v2` (server-side filters via JSONB).
 - Inventory : `record_stock_movement_v1`, `adjust_stock_v1`, `receive_stock_v1`, `waste_stock_v1`, `finalize_opname_v1`.
-- Accounting : `close_fiscal_period_v1`, `get_general_ledger_v1`, `get_trial_balance_v1`, `create_manual_je_v1`, `update_account_active_v1`.
+- Accounting : `close_fiscal_period_v1`, `get_general_ledger_v1`, `get_trial_balance`, `create_manual_je_v1`, `update_account_active_v1`.
 - Expenses : `submit_expense_v2`, `approve_expense_v2`, `set_expense_threshold_v1`.
 - Reports : `get_orders_list_v2`, `get_wastage_report_v1`, `get_payments_by_method_v1`, `get_pb1_report_v1`, `get_stock_movements_v1`, `get_perishable_turnover_v1`.
 
@@ -185,7 +187,7 @@ pnpm --filter @breakery/supabase test <rpc-name>   # Vitest live RPC tests
 pnpm --filter @breakery/domain test <feature>       # domain unit
 ```
 
-Drift check post-migration : `mcp__plugin_supabase_supabase__list_migrations` → aucun écart cloud↔git.
+Drift check post-migration : `mcp__claude_ai_Supabase__list_migrations` → aucun écart cloud↔git.
 
 ## When to escalate to the user
 

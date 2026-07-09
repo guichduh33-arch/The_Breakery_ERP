@@ -64,7 +64,7 @@ Toutes les JE passent par des **triggers** — ne jamais INSERT dans `journal_en
 | `create_sale_journal_entry()` | `AFTER UPDATE ON orders WHERE status IN ('paid','voided')` |
 | `create_purchase_journal_entry()` | Goods receipt (PO) |
 | `tr_20_je_emit` → `tr_stock_movement_je` | INSERT stock_movements type `waste/adjustment_*/opname_*/production_*` |
-| `record_cash_movement_v2` | Shift cash events (raison : `apport_owner`, `bank_transfer`, `replenishment`) |
+| `record_cash_movement` | Shift cash events (raison : `apport_owner`, `bank_transfer`, `replenishment`) |
 
 **Split paiement (S26 `_014`)** : `create_sale_journal_entry` boucle sur `order_payments` → 1 DR par méthode via mapping key :
 - `cash` → `SALE_PAYMENT_CASH` → **1110** Cash on hand
@@ -104,13 +104,13 @@ CR côté vente : `SALE_POS_REVENUE` + `SALE_PB1_TAX` → **2110** PB1 Payable.
 
 ## Cockpit RPCs (S26 + S26b)
 
-Toutes ces RPCs sont `SECURITY DEFINER`, perm-gatées, audit-logged. Voir les migrations `20260603000022..026` + `20260523135820` pour les signatures exactes.
+Toutes ces RPCs sont `SECURITY DEFINER`, perm-gatées, audit-logged. Voir les migrations `20260603000022..026` + `20260523135820` pour les signatures exactes (versions omises — vérifier `CLAUDE.md` / `supabase/migrations/`).
 
 | RPC | Signature | Gate | Notes |
 |-----|-----------|------|-------|
 | `close_fiscal_period_v1` | `(p_period_id UUID, p_manager_pin TEXT, p_lock BOOLEAN DEFAULT FALSE)` | `accounting.period.close` + PIN | Status `closed` ou `locked` |
 | `get_general_ledger_v1` | `(p_account_id UUID, p_date_start DATE, p_date_end DATE, p_limit INT DEFAULT 50, p_cursor JSONB DEFAULT NULL)` | `accounting.gl.read` | SECURITY INVOKER, cursor-paginé, retourne `opening_balance` + `lines` + `next_cursor` |
-| `get_trial_balance_v1` | `(p_date_start DATE, p_date_end DATE)` | `accounting.tb.read` | SECURITY INVOKER, `balanced` flag + tous comptes actifs |
+| `get_trial_balance` | `(p_date_start DATE, p_date_end DATE)` | `accounting.tb.read` | SECURITY INVOKER, `balanced` flag + tous comptes actifs |
 | `create_manual_je_v1` | `(p_description TEXT, p_entry_date DATE, p_lines JSONB, p_manager_pin TEXT)` | `accounting.je.create_manual` + PIN | Validation : lines ≥ 2, Σdebit=Σcredit, debit XOR credit, accounts is_active+is_postable, fiscal guard |
 | `update_account_active_v1` | `(p_account_id UUID, p_is_active BOOLEAN)` | `accounting.coa.write` SUPER_ADMIN only | S26b, audit_log row ; RLS UPDATE non-disponible sur `accounts` |
 | `calculate_pb1_payable_v1` | `(p_period_start DATE, p_period_end DATE)` | — | Rapport mensuel PB1, pb1_payable = pb1_output |
@@ -208,7 +208,7 @@ pnpm --filter @breakery/app-backoffice test accounting
 # Attendu : 15/15 PASS
 
 # Si RPC modifiée → types regen OBLIGATOIRE :
-# mcp__plugin_supabase_supabase__generate_typescript_types
+# mcp__claude_ai_Supabase__generate_typescript_types
 # → packages/supabase/src/types.generated.ts
 ```
 

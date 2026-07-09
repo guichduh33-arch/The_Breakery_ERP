@@ -14,13 +14,13 @@ Specialist on `apps/pos/` (Vite 6 + React 18 + Zustand + React Query) and its wo
 
 ## Critical patterns (always verify these before shipping)
 
-1. **DB target = Supabase cloud V3 `ikcyvlovptebroadgtvd`** (Docker retired 2026-05-14). Use MCP tools (`mcp__plugin_supabase_supabase__apply_migration` / `execute_sql` / `generate_typescript_types`). NEVER run `pnpm db:reset`, `supabase start`, or `bash supabase/tests/run_pgtap.sh` — they need Docker and will fail.
+1. **DB target = Supabase cloud V3 `ikcyvlovptebroadgtvd`** (Docker retired 2026-05-14). Use MCP tools (`mcp__claude_ai_Supabase__apply_migration` / `execute_sql` / `generate_typescript_types`). NEVER run `pnpm db:reset`, `supabase start`, or `bash supabase/tests/run_pgtap.sh` — they need Docker and will fail.
 2. **PIN in HTTP header** (`x-manager-pin`), never in JSON body (S25). Body gets logged by PostgREST/pgaudit/proxies; headers don't.
 3. **Idempotency 2-flavors** — pick the right one:
    - **HTTP `x-idempotency-key` header** for retry safety (flaky net, double-click, RQ auto-retry). Client: `useRef(crypto.randomUUID())` reset on success/dismiss. EF reads via `_shared/idempotency.ts::getIdempotencyKey(req)` and propagates as `p_idempotency_key` to the RPC.
    - **RPC arg `p_client_uuid` / `p_idempotency_key`** for business-semantic idempotence (e.g., "this cart, this tap"). REQUIRED at RPC level (NOT NULL CHECK). Dedicated idempotency-keys table (never a nullable col on the business table). Race via PK `unique_violation` + re-read.
 4. **RPC versioning monotonic** — never edit a published `_vN` signature. Create `_vN+1` + `DROP FUNCTION ... vN(<old args>)` in the same migration.
-5. **Order writes via RPC only** — never direct inserts into `orders` / `order_items` / `order_payments`. The POS does **not** call the money-path RPC directly: it POSTs the `process-payment` EF, which server-side invokes the current money-path RPC `complete_order_with_payment_v14`. Other order RPCs (verify the live `_vN` in `supabase/migrations/` before relying on a number — they bump nearly every session): `pay_existing_order_v10`, `fire_counter_order_v4`, `create_tablet_order_v2`, `pickup_tablet_order` (unversioned), `evaluate_promotions_v1`, `mark_item_served` (unversioned), `refund_order_rpc_v4`.
+5. **Order writes via RPC only** — never direct inserts into `orders` / `order_items` / `order_payments`. The POS does **not** call the money-path RPC directly: it POSTs the `process-payment` EF, which server-side invokes the current money-path RPC `complete_order_with_payment` (`_vN` — **vérifier CLAUDE.md / `supabase/migrations/`**, bump quasi chaque session). Other order RPCs (versions volontairement omises — vérifier le live `_vN`) : `pay_existing_order`, `fire_counter_order`, `create_tablet_order`, `pickup_tablet_order` (unversioned), `evaluate_promotions`, `mark_item_served` (unversioned), `refund_order_rpc`.
 6. **`stock_movements` append-only** — RLS revokes UPDATE/DELETE for `authenticated`. Always go through `record_stock_movement_v1` primitive or its family (`adjust_stock_v1`, `waste_stock_v1`, `receive_stock_v1`, `record_incoming_stock_v1`, future `*_transfer_v1` / `record_production_v1` / `finalize_opname_v1`). The primitive auto-resolves `unit` from `products.unit` if NULL — don't bypass.
 7. **Realtime channel names unique per mount** — StrictMode double-mounts; shared names collide silently. See `apps/pos/src/features/kds/hooks/useKdsRealtime.ts` for the canonical pattern (`channel-${componentId}` style).
 8. **PIN auth fetch wrapper** — `auth-verify-pin` EF issues HS256 JWTs that GoTrue (ES256) can't validate via default header. The supabase client uses a custom fetch wrapper injecting the PIN JWT via `setSupabaseAccessToken` (in `packages/supabase`). Never bypass with raw `Authorization` headers or `auth.setSession`. For **direct EF fetches** (anything not going through `supabase.functions.invoke`) resolve the bearer via the shared `apps/pos/src/lib/accessToken.ts::getAccessToken()` — it reads the PIN holder (`getSupabaseAccessToken()`) **first** and only falls back to `supabase.auth.getSession()`. `getSession()` alone returns null under PIN auth → `no_auth_session`. The BO mirrors this helper at `apps/backoffice/src/lib/accessToken.ts`.
@@ -34,15 +34,15 @@ apps/pos/src/features/
 
 Auth & session       auth/          lan/                 [EFs: auth-verify-pin, kiosk-issue-jwt]
 Order build          products/      cart/                heldOrders/
-Promos & discounts   combos/        discounts/           promotions/      [RPC: evaluate_promotions_v1]
-Checkout & payment   payment/                            [EF process-payment → complete_order_with_payment_v14; pay_existing_order_v10, fire_counter_order_v4]
+Promos & discounts   combos/        discounts/           promotions/      [RPC: evaluate_promotions]
+Checkout & payment   payment/                            [EF process-payment → complete_order_with_payment; pay_existing_order, fire_counter_order]
 KDS                  kds/                                [RPC: mark_item_served, hook: useKdsRealtime]
 Customer display     display/                            [order queue ticker]
-Tablet (B2C)         tablet/                             [RPCs: create_tablet_order_v2, pickup_tablet_order]
-Order history        order-history/                      [EF refund-order → refund_order_rpc_v4 (PIN header); void-order (PIN header)]
+Tablet (B2C)         tablet/                             [RPCs: create_tablet_order, pickup_tablet_order]
+Order history        order-history/                      [EF refund-order → refund_order_rpc (PIN header); void-order (PIN header)]
 Customer & loyalty   customers/     customerCategories/  loyalty/
 Floor                tables/        floor-plan/
-Shift                shift/                              [RPCs: open_shift, close_shift_v2, record_cash_movement_v2]
+Shift                shift/                              [RPCs: open_shift, close_shift, record_cash_movement]
 Stock view           stock/                              [read-only POS view of inventory]
 Reports POS          reports/                            [POS-scoped report pages]
 Nav & settings       nav/           settings/            inbox/
@@ -53,7 +53,7 @@ Pages: `apps/pos/src/pages/`. Routes: `apps/pos/src/routes/`. Stores: `apps/pos/
 ## Workflow checklists
 
 ### A. Before editing a hook that calls an RPC
-- [ ] Which RPC version? Check `supabase/migrations/` for the latest (e.g., `pay_existing_order_v3` not `_v2`).
+- [ ] Which RPC version? Check `supabase/migrations/` for the latest `_vN` (they bump nearly every session — ne jamais présumer le numéro).
 - [ ] PIN header required? If yes, hook signature takes `pin: string`, sends as `headers: { 'x-manager-pin': pin }`.
 - [ ] Idempotency type? Header (HTTP retry) or RPC arg (business semantic)?
 - [ ] If header: `const keyRef = useRef(crypto.randomUUID())` + reset to new UUID on success/dismiss.
@@ -104,7 +104,7 @@ pnpm --filter @breakery/supabase test <rpc-name>        # Vitest live RPC tests
 
 **RPC-level (pgTAP via MCP)** — for any RPC change:
 ```sql
--- via mcp__plugin_supabase_supabase__execute_sql
+-- via mcp__claude_ai_Supabase__execute_sql
 BEGIN;
 SELECT plan(<N>);
 -- assertions

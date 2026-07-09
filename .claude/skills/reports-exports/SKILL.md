@@ -112,7 +112,7 @@ get_orders_list_v2 (S33)        downloadCsv(csv, filename)       generate-zrepor
 
 ### Z-report flow 2 temps (S29)
 
-1. `close_shift_v2` → INSERT draft row `z_reports` (snapshot JSONB figé : orders + payments + refunds + expenses du shift)
+1. `close_shift` → INSERT draft row `z_reports` (snapshot JSONB figé : orders + payments + refunds + expenses du shift) — version omise, vérifier `CLAUDE.md` / `supabase/migrations/`
 2. EF `generate-zreport-pdf` (idempotent `x-idempotency-key`, non-bloquant via pg_net) → PDF → bucket `zreports/` 7 ans (conformité Indonésie)
 3. Manager signe via BO → `sign_zreport_v1(p_zreport_id)` (PIN header `x-manager-pin`, gate `zreports.sign`, audit_log `zreport.signed`, replay idempotent)
 4. Optionnel : `void_zreport_v1(p_zreport_id, p_reason)` (reason ≥ 10 chars, gate `zreports.sign`)
@@ -134,7 +134,7 @@ Perms seedées : `zreports.{read, sign, void}`.
 
 3. **`generate-pdf` rate-limit 30/min durable** (S19 `record_rate_limit_v1`). Bucket `reports-exports/` TTL 30d. Ajout d'un template = ajouter dans le TEMPLATES registry de `index.ts` + permission correspondante.
 
-4. **Z-report non-bloquant** : `close_shift_v2` appelle `generate-zreport-pdf` via `pg_net` en async — si le PDF échoue, le draft row reste en DB pour retry BO. Ne pas rendre le flow POS bloquant.
+4. **Z-report non-bloquant** : `close_shift` appelle `generate-zreport-pdf` via `pg_net` en async — si le PDF échoue, le draft row reste en DB pour retry BO. Ne pas rendre le flow POS bloquant.
 
 5. **PIN Z-report en header** (`x-manager-pin`), jamais en body JSON — pattern S25. Hard cutover appliqué.
 

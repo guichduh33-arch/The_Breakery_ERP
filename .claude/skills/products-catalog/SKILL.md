@@ -127,7 +127,7 @@ Tous gated `products.variants.write` (ADMIN/SUPER_ADMIN). `products.variants.rea
 
 `products.is_display_item BOOLEAN NOT NULL DEFAULT false` (migration `20260530184403`). Dans l'allowlist de `create_product_v1` ET `update_product_v1` (bump `20260530192331`).
 
-- **true** = produit fini exposé en vitrine POS. La vente double-déduit `display_stock` + `products.current_stock` (via `complete_order_with_payment_v10`).
+- **true** = produit fini exposé en vitrine POS. La vente double-déduit `display_stock` + `products.current_stock` (via `complete_order_with_payment` — versions omises, vérifier `CLAUDE.md` / `supabase/migrations/`).
 - **Isolation** : POS `usePOSReceiveStock` → `add_display_stock_v1` (pas `record_incoming_stock_v1`). `record_incoming_stock_v1` réservé au BackOffice.
 - Ne pas toucher `current_stock` depuis les gestes POS vitrine → voir skill `stock-management` + memory `project_pos_display_stock_isolation`.
 

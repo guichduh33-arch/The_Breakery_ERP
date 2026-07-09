@@ -47,7 +47,7 @@ schema reality, and audit checklists that CLAUDE.md doesn't carry.
 ```
 Customer setup               Order creation (AR ↑)        Payment receipt (AR ↓)
 ─────────────────            ─────────────────────        ──────────────────────
-customers.customer_type      create_b2b_order_v1          record_b2b_payment_v1
+customers.customer_type      create_b2b_order             record_b2b_payment
   = 'b2b'                      ↓ validate credit gate        ↓ DR Cash/Bank
 customers.b2b_credit_limit     ↓ INSERT orders (b2b_pending) ↓ CR B2B_AR (1132)
   (NULL = unlimited)           ↓ INSERT order_items          ↓ FIFO snapshot → allocation JSONB
@@ -57,13 +57,15 @@ customers.b2b_current_balance  ↓ stock_movements sale        ↓ balance -= am
 
 Admin adjust                 AR Aging (read-only)
 ────────────────             ────────────────────
-adjust_b2b_balance_v1        view_ar_aging (SECURITY INVOKER)
+adjust_b2b_balance           view_ar_aging (SECURITY INVOKER)
   ↓ no JE emitted              ↓ buckets current/31-60/61-90/90+
   ↓ reason required (≥3)       ↓ keyed on invoice_date (no due_date S24)
   ↓ audit_logs only            ↓ per-customer + per-bucket aggregated
 ```
 
 ---
+
+> Les numéros de version RPC sont volontairement omis dans ce skill (versions omises — vérifier `CLAUDE.md` / `supabase/migrations/`) — ils bumpent presque chaque session ; les mentions d'historique (« Drop v1 », noms de migration) sont conservées.
 
 ## Schema reality (vérifié contre migrations V3 dev 20260601000005..022)
 
@@ -110,22 +112,22 @@ adjust_b2b_balance_v1        view_ar_aging (SECURITY INVOKER)
 
 ## Critical patterns (don't break these)
 
-1. **`b2b_payments` append-only** — never INSERT directly. Seul `record_b2b_payment_v1`
+1. **`b2b_payments` append-only** — never INSERT directly. Seul `record_b2b_payment`
    (SECURITY DEFINER) peut écrire. RLS révoque INSERT/UPDATE/DELETE pour authenticated.
 2. **`b2b_current_balance` write-only via RPCs** — la colonne UPDATE est révoquée pour
    `authenticated`/`anon`/`PUBLIC`. Tout UPDATE direct raise 42501. Les 3 seuls écrivains
-   légitimes : `create_b2b_order_v1` (+=), `record_b2b_payment_v1` (-=),
-   `adjust_b2b_balance_v1` (±=). Bypass légal : SECURITY DEFINER postgres owner.
+   légitimes : `create_b2b_order` (+=), `record_b2b_payment` (-=),
+   `adjust_b2b_balance` (±=). Bypass légal : SECURITY DEFINER postgres owner.
 3. **Credit-limit gate OBLIGATOIRE** avant tout ordre B2B — `validate_b2b_credit_limit_v1`
    doit être appelé dans toute RPC ou EF créant un ordre B2B. `NULL` credit_limit = unlimited
    (gate retourne `allowed: true`). Payload `would_exceed_by` exposé à l'UI.
-4. **Idempotency flavor 2 (RPC arg)** — `record_b2b_payment_v1` + `create_b2b_order_v1` +
-   `adjust_b2b_balance_v1` acceptent `p_idempotency_key UUID`. Replay retourne le résultat
+4. **Idempotency flavor 2 (RPC arg)** — `record_b2b_payment` + `create_b2b_order` +
+   `adjust_b2b_balance` acceptent `p_idempotency_key UUID`. Replay retourne le résultat
    original + `idempotent_replay: true`. Pattern CLAUDE.md §"Idempotency 2-flavors".
-5. **Overpayment guard (P0011)** — `record_b2b_payment_v1` refuse si
-   `balance_before - amount < 0`. `adjust_b2b_balance_v1` refuse si `balance + delta < 0`
+5. **Overpayment guard (P0011)** — `record_b2b_payment` refuse si
+   `balance_before - amount < 0`. `adjust_b2b_balance` refuse si `balance + delta < 0`
    (CHECK `customers_b2b_current_balance_nonneg` double la garde au niveau table).
-6. **Fiscal period guard** — `record_b2b_payment_v1` et `create_b2b_order_v1` appellent
+6. **Fiscal period guard** — `record_b2b_payment` et `create_b2b_order` appellent
    `check_fiscal_period_open()`. Raise P0004 si période fermée.
 7. **Allocation FIFO = metadata only** (S24, D3) — le JSONB `allocation` dans `b2b_payments`
    est un snapshot d'audit, PAS une mise à jour per-invoice. Allocation per-invoice exacte
@@ -146,8 +148,8 @@ Feature folder réel (vérifié) : `apps/backoffice/src/features/btob/`
 | `hooks/useB2bDashboard.ts` | KPI aging — consomme `view_ar_aging` |
 | `hooks/useB2bCustomers.ts` | Liste customers `customer_type='b2b'` |
 | `hooks/useB2bPaymentsReceived.ts` | Historique `b2b_payments` |
-| `hooks/useCreateB2bOrder.ts` | Wrap `create_b2b_order_v1` |
-| `hooks/useRecordB2bPayment.ts` | Wrap `record_b2b_payment_v1` + `useRef(crypto.randomUUID())` idempotency |
+| `hooks/useCreateB2bOrder.ts` | Wrap `create_b2b_order` |
+| `hooks/useRecordB2bPayment.ts` | Wrap `record_b2b_payment` + `useRef(crypto.randomUUID())` idempotency |
 | `hooks/useProductsForB2bOrder.ts` | Produits disponibles pour créer un ordre |
 | `components/CreateB2bOrderModal.tsx` | Modal "+ New B2B Order" — câble credit-limit gate |
 | `components/RecordB2bPaymentModal.tsx` | Modal "Record Payment" — tab "Received" |
@@ -177,10 +179,10 @@ Feature folder réel (vérifié) : `apps/backoffice/src/features/btob/`
   WHERE table_name = 'customers' AND column_name = 'b2b_current_balance' AND privilege_type = 'UPDATE'`
   ne doit PAS inclure `authenticated` ni `anon`.
 - [ ] **Credit-limit gate wired** — tout code path créant un ordre B2B appelle
-  `validate_b2b_credit_limit_v1` avant INSERT orders. Grep `create_b2b_order_v1` pour
+  `validate_b2b_credit_limit_v1` avant INSERT orders. Grep `create_b2b_order` pour
   confirmer l'appel dans toute nouvelle version.
-- [ ] **REVOKE pair sur les 3 RPCs B2B** — `record_b2b_payment_v1`, `adjust_b2b_balance_v1`,
-  `create_b2b_order_v1` ont chacun REVOKE PUBLIC + anon dans leurs migrations respectives.
+- [ ] **REVOKE pair sur les 3 RPCs B2B** — `record_b2b_payment`, `adjust_b2b_balance`,
+  `create_b2b_order` ont chacun REVOKE PUBLIC + anon dans leurs migrations respectives.
 
 ### C. Traçabilité
 
@@ -199,11 +201,11 @@ Feature folder réel (vérifié) : `apps/backoffice/src/features/btob/`
 ### Avant d'ajouter un nouveau method de paiement B2B
 - [ ] Le type `payment_method` enum existe sur V3 dev ? (`SELECT enum_range(NULL::payment_method)`)
 - [ ] Ajouter un mapping `B2B_PAYMENT_<METHOD>` dans `account_mappings` + migration.
-- [ ] Bumper `record_b2b_payment_v1` → `_v2` (RPC versioning monotone, CLAUDE.md). Drop v1 même migration.
+- [ ] Bumper `record_b2b_payment` → version suivante (RPC versioning monotone, CLAUDE.md). Drop de l'ancienne version dans la même migration.
 - [ ] REVOKE pair sur la nouvelle version.
 - [ ] pgTAP couvrant le nouveau method + replay + overpayment guard.
 
-### Avant de bumper `create_b2b_order_v1`
+### Avant de bumper `create_b2b_order`
 - [ ] La gate `validate_b2b_credit_limit_v1` est préservée — toute version `_vN+1` DOIT l'appeler.
 - [ ] `b2b_current_balance` mis à jour dans la même transaction que l'INSERT orders.
 - [ ] stock_movements INSERT toujours présent pour chaque item (décrément stock).

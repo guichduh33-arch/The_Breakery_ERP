@@ -1,5 +1,10 @@
+<!-- STALE-V2 -->
+> ⚠️ **DOC HISTORIQUE — PÉRIMÉE (V2), NE FAIT PLUS FOI.** Ce fichier décrit en grande partie l'architecture **V2** (mono-app AppGrav, npm/Vercel, PWA/Capacitor, projet Supabase `abjabuniwkqpfsenxljp` = **prod incompatible**, versions RPC obsolètes). **Ne jamais l'appliquer tel quel** (migration, config, archi). Sources de vérité actuelles : `CLAUDE.md` (patterns + workplan) et `docs/workplan/remise-a-plat/` (référence modules réel-vs-demandé). Hiérarchie complète : `docs/README.md`. Régénération depuis le code prévue en Phase 3.
+
 # 06 — Local Print Server
 
+> 🟡 **Note V3 (à promouvoir hors référence V2)** : le chemin d'impression courant V3 est le workspace **`apps/print-bridge`** (contrat V2 octet-exact + scan réseau, **S65**) piloté par le CRUD **LAN Devices** (`/lan-devices`, BO). Le station-routing a été livré **S34**. La description ci-dessous (daemon Express port 3001, `send-to-printer` EF) est **V2** — remplacée par print-bridge. `print_queue` a été **droppée S62**.
+>
 > **Last verified**: 2026-05-03
 
 The print server is an **optional** local Express daemon that runs on the POS PC (port 3001) and bridges browser print requests to physical thermal printers. It is the primary path; the `send-to-printer` Edge Function exists as a remote-fallback (limited use).

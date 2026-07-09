@@ -1,5 +1,7 @@
 # Glossaire V2 ↔ V3
 
+> ⚠️ **Colonne « V3 réel » figée à l'ère S25 (2026-05-20).** Les **versions de RPC** et l'état d'implémentation cités ci-dessous sont périmés (le projet est à S71). Pour l'état courant + les versions de RPC vivantes, se référer à **`CLAUDE.md`** (Active Workplan + Critical patterns). Le mapping de vocabulaire V2↔V3 reste valable ; les numéros de version, non.
+>
 > **Last updated** : 2026-05-20
 > **Statut V2** : ⛔ Jamais déployée en production. Conservée comme **cahier des charges métier théorique** dans `docs/reference/` et `docs/_archive/objectif-travail-v2/`.
 > **Statut V3** : ✅ Code vivant — monorepo pnpm + turbo (`apps/pos` + `apps/backoffice` + `packages/*`). Sessions S1→S25+ mergées.
