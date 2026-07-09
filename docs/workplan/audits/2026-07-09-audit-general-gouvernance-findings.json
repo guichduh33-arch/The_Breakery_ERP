@@ -1,0 +1,2106 @@
+[
+ {
+  "file": "docs/DESIGN_POS_AND_BACKOFFICE.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "Toutes les references aux screenshots de design pointent vers docs/Design/ (backoffice/, caissapp/) qui n'existe plus — le dossier a ete deplace en docs/_archive/design-screenshots-pre-code/.",
+  "evidence": "Lignes 3, 84 ('docs/Design/caissapp/04-grid-coffee-cart...'), 217 ('docs/Design/backoffice/Dashboard.jpg'), 553, 587-588. `find` confirme: ./_archive/design-screenshots-pre-code/caissapp existe, docs/Design/ absent.",
+  "recommendation": "Repointer les liens vers docs/_archive/design-screenshots-pre-code/ (ou retirer les refs visuelles), et aligner avec l'arborescence du README qui liste ces screenshots sous _archive."
+ },
+ {
+  "file": "docs/DESIGN_POS_AND_BACKOFFICE.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Section 12 renvoie vers des artefacts BMAD _bmad/output/planning-artifacts/... et un dossier breakery-platform/ qui n'existent pas dans ce repo (vision de planification V2).",
+  "evidence": "Lignes 558, 571-573: '_bmad/output/planning-artifacts/ux-design-specification/...' ; le repo est un monorepo sans _bmad/ ni breakery-platform/.",
+  "recommendation": "Supprimer ou marquer explicitement ces liens comme archives non presentes dans le repo (la note de cadrage ligne 546 le signale deja partiellement)."
+ },
+ {
+  "file": "docs/reference/00-overview/01-product-context.md",
+  "severity": "P1",
+  "category": "contradiction",
+  "issue": "Affirme que V2 est 'production-ready depuis 2026-03-23' et 'reste en exploitation en parallele' — contredit directement la memoire projet v2-not-in-production et CLAUDE.md (seule V3 existe, jamais deployee en prod).",
+  "evidence": "Ligne 65: 'V2 est production-ready depuis 2026-03-23 ... V2 reste en exploitation en parallele pendant la migration'.",
+  "recommendation": "Chapitre STALE a regenerer (Phase 3) ; en attendant, ne pas s'y fier — la verite est V3-only. L'_AVERTISSEMENT du dossier devrait etre renforce sur ce point precis."
+ },
+ {
+  "file": "docs/reference/00-overview/01-product-context.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "Plusieurs liens sortants morts: CURRENT_STATE.md (racine), docs/audit/00-executive-summary.md, et 08-flows-end-to-end/07-loyalty-earn-redeem.md — les trois cibles n'existent plus.",
+  "evidence": "Lignes 70-71 et 50 ; verifie: CURRENT_STATE.md MISSING, audit/00-executive-summary.md MISSING, reference/08-flows-end-to-end MISSING (chapitre supprime 2026-07-04).",
+  "recommendation": "Purger ces liens lors de la regeneration du chapitre ; ils pointent tous vers de la doc V2 supprimee."
+ },
+ {
+  "file": "docs/reference/00-overview/02-business-overview.md",
+  "severity": "P1",
+  "category": "perime",
+  "issue": "Declare la base de donnees comme l'instance Supabase V2 abjabuniwkqpfsenxljp (Singapore) et decrit une SPA mono-app — la cible reelle est le projet V3 dev ikcyvlovptebroadgtvd et un monorepo 2 apps (POS + BO).",
+  "evidence": "Ligne 130: 'Une seule instance Supabase (abjabuniwkqpfsenxljp.supabase.co, region Singapore) heberge toutes les tables'. CLAUDE.md: DB target = ikcyvlovptebroadgtvd (V3 dev), abjabuniwkqpfsenxljp = V2 monolith incompatible.",
+  "recommendation": "Regenerer depuis le code ; ne jamais donner abjabuniwkqpfsenxljp comme reference de travail (risque d'appliquer une migration sur le mauvais projet)."
+ },
+ {
+  "file": "docs/reference/00-overview/03-tech-stack.md",
+  "severity": "P1",
+  "category": "perime",
+  "issue": "Tech-stack entierement V2: npm + package-lock, Vite port 3000, hosting Vercel the-breakery-pos, Supabase abjabuniwkqpfsenxljp, mono-repo src/. Contredit la pile reelle (pnpm 9.15 + turbo monorepo, cloud V3, Docker retire).",
+  "evidence": "Lignes 109-115, 127-135, 168-170 ('npm run dev port 3000', 'Vercel projet the-breakery-pos', 'abjabuniwkqpfsenxljp', 'package-lock.json'). CLAUDE.md Build & Test: pnpm + turbo, cloud V3.",
+  "recommendation": "Chapitre a regenerer integralement depuis package.json/turbo.json du monorepo ; danger fort d'induire des commandes npm/Vercel inexistantes."
+ },
+ {
+  "file": "docs/reference/00-overview/04-repository-structure.md",
+  "severity": "P1",
+  "category": "perime",
+  "issue": "Decrit un monolithe appGrav-v2/ avec src/ (248 composants...) et un sous-dossier breakery-platform/ pour la 'reconstruction V3' — l'arborescence reelle est un monorepo pnpm (apps/{pos,backoffice}, packages/, supabase/).",
+  "evidence": "Lignes 7-51: 'appGrav-v2/ ├── src/ ... ├── breakery-platform/ V3 reconstruction'. CLAUDE.md: code dans apps/{pos,backoffice}/src, packages/, supabase/.",
+  "recommendation": "Regenerer depuis la structure reelle du monorepo ; supprimer la dichotomie V2/V3 devenue caduque."
+ },
+ {
+  "file": "docs/reference/00-overview/05-glossary.md",
+  "severity": "P2",
+  "category": "perime",
+  "issue": "Glossaire cadre 'AppGrav V2 monolith' avec lien mort vers 03-database/08-seed-data.md (chapitre supprime) et codes de comptes potentiellement divergents du reel (1300 Inventory, 2110 'PB1 Collected').",
+  "evidence": "Lignes 12, 52-61 et lien 03-database/08-seed-data.md ; verifie reference/03-database MISSING. ADR-003 emploie 2110 PB1 Payable et INVENTORY_GENERAL 1130.",
+  "recommendation": "Conserver les definitions de termes reutilisables mais regenerer le cadrage V2 et le plan de comptes contre le code ; purger le lien seed-data mort."
+ },
+ {
+  "file": "docs/audit/2026-05-28-pos-audit.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "L'audit reference 'docs/objectif travail/POS.md' comme source lue, or ce fichier a ete archive sous docs/_archive/objectif-travail-v2/POS.md.",
+  "evidence": "Ligne 502 Annexe B: 'docs/objectif travail/POS.md (372 lignes)'. `find` confirme la seule copie en ./_archive/objectif-travail-v2/POS.md.",
+  "recommendation": "Document date (historique) — laisser tel quel ou ajouter une note de renvoi vers l'archive ; ne pas reecrire un audit date."
+ },
+ {
+  "file": "docs/audit/2026-05-28-pos-audit.md",
+  "severity": "P3",
+  "category": "mal-place",
+  "issue": "Deux audits modules anciens (2026-05-28 POS et 2026-06-12 stock) restent a la racine de docs/audit/ alors qu'un audit intermediaire (2026-06-01) est deja passe en docs/audit/archive/ — placement incoherent pour des snapshots superseded.",
+  "evidence": "docs/audit/ contient 2026-05-28-pos-audit.md et 2026-06-12-stock-management-audit.md a la racine ; docs/audit/archive/ contient 2026-06-01-backoffice-integrity-audit.md. README ligne 48: 'l'ancien superseded part en audits/archive/'.",
+  "recommendation": "Uniformiser: archiver les audits modules superseded (05-28, 06-12) sous docs/audit/archive/ si l'on considere qu'ils ne font plus foi, ou documenter pourquoi ils restent a la racine."
+ },
+ {
+  "file": "docs/product/README.md",
+  "severity": "P3",
+  "category": "autre",
+  "issue": "Le README annonce DESCRIPTION.md (v1.3) 'a creer' depuis 2026-07-04 ; le dossier product/ ne contient toujours que README.md — la reference produit canonique promise n'existe pas encore.",
+  "evidence": "product/README ligne 8 ('DESCRIPTION.md (a creer)') ; `ls product/` = README.md uniquement. README racine ligne 24 le cite pourtant comme reference produit vivante.",
+  "recommendation": "Soit produire DESCRIPTION.md, soit noter explicitement dans le README racine que la reference produit n'est pas encore materialisee (eviter de la presenter comme source de verite active)."
+ },
+ {
+  "file": "docs/reference/02-design-system/01-luxe-dark-overview.md",
+  "severity": "P1",
+  "category": "lien-mort",
+  "issue": "L'en-tête déclare « Source of truth: /DESIGN.md (~397 lines) » et pointe vers /src/styles/index.css et /tailwind.config.js, mais le fichier racine DESIGN.md est ABSENT (vérifié) et les chemins src/ sont ceux du mono-app V2 (V3 = packages/ui/src/styles/). Un lecteur ouvrant ce fichier ne voit pas l'_AVERTISSEMENT du dossier.",
+  "evidence": "Ligne 4-5 : « **Source of truth**: [`/DESIGN.md`](../../../DESIGN.md) » — cible inexistante ; ~35 liens /DESIGN.md morts dans le dossier (cf. _AVERTISSEMENT).",
+  "recommendation": "Repointer la source de vérité vers docs/DESIGN_POS_AND_BACKOFFICE.md + packages/ui/src/styles/, ou déplacer le dossier sous docs/_archive/. A minima ajouter le bandeau STALE dans l'en-tête."
+ },
+ {
+  "file": "docs/reference/02-design-system/_AVERTISSEMENT.md",
+  "severity": "P3",
+  "category": "perime",
+  "issue": "L'_AVERTISSEMENT (STALE partiel) n'est présent qu'au niveau du dossier ; chaque fichier 01-07 garde en tête « Last verified 2026-05-03 » + « Source of truth /DESIGN.md », donc le lecteur qui ouvre un fichier directement n'est pas averti et fait confiance à une source morte.",
+  "evidence": "_AVERTISSEMENT ligne 3 : « ~35 liens vers un /DESIGN.md absent sont morts » — mais 02-tokens.md, 03..07 ne référencent pas cet avertissement.",
+  "recommendation": "Propager un bandeau STALE en tête de chaque fichier 01-07 (ou fusionner l'avertissement dans chaque en-tête)."
+ },
+ {
+  "file": "docs/reference/02-design-system/02-tokens.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "Sources déclarées src/styles/index.css (1279 lignes) et tailwind.config.js (327 lignes) : chemins V2 mono-app inexistants en V3 (tokens réels sous packages/ui/src/styles/ luxe-dark.css/colors.css).",
+  "evidence": "Ligne 3-4 : « **Sources**: [`src/styles/index.css`](../../../src/styles/index.css) (1279 lines), [`tailwind.config.js`](../../../tailwind.config.js) »",
+  "recommendation": "Mettre à jour les chemins vers packages/ui ou archiver ; les valeurs de tokens restent utiles donc conserver le contenu."
+ },
+ {
+  "file": "docs/reference/02-design-system/03-shadcn-primitives.md",
+  "severity": "P1",
+  "category": "contradiction",
+  "issue": "Le doc décrit src/components/ui/ (29 fichiers, mono-app V2) et liste Select comme primitive shadcn installée ; le skill breakery-ui-kit (source vivante) affirme au contraire qu'@breakery/ui n'exporte PAS Select/SelectItem/RadioGroup (fallbacks natifs). Contradiction pour quiconque écrit du JSX aujourd'hui.",
+  "evidence": "§1 ligne 16 : « **Select** | select.tsx | @radix-ui/react-select » vs breakery-ui-kit « no Select/SelectItem/RadioGroup exports → native fallbacks ».",
+  "recommendation": "Réconcilier avec l'inventaire réel de packages/ui, ou marquer le fichier périmé et renvoyer vers breakery-ui-kit."
+ },
+ {
+  "file": "docs/reference/02-design-system/04-feature-components.md",
+  "severity": "P2",
+  "category": "mal-place",
+  "issue": "Tous les chemins de composants sont sous src/components/{accounting,pos,kds,...} : arborescence V2 mono-app. En V3 le code est dans apps/{pos,backoffice}/src/features et packages/ui.",
+  "evidence": "Ligne 4 : « **Source folders**: src/components/{accounting,customers,...} » ; tous les liens ../../../src/components/*.",
+  "recommendation": "Régénérer depuis apps/*/src (Phase 3 reference regen) ou archiver."
+ },
+ {
+  "file": "docs/reference/02-design-system/05-layouts.md",
+  "severity": "P2",
+  "category": "perime",
+  "issue": "Décrit 6 layouts avec chemins src/layouts, src/pages (V2) et inclut Tablet/Mobile shells ; l'arborescence et une partie des surfaces (mobile/Capacitor) ne correspondent plus au monorepo V3.",
+  "evidence": "Ligne 4 : sources src/layouts/BackOfficeLayout.tsx, src/pages/pos/POSMainPage.tsx, src/pages/tablet/TabletLayout.tsx.",
+  "recommendation": "Régénérer les chemins vers apps/*/src ou archiver."
+ },
+ {
+  "file": "docs/reference/02-design-system/06-iconography-illustrations.md",
+  "severity": "P1",
+  "category": "perime",
+  "issue": "Documente les icônes/manifest PWA (vite-plugin-pwa, pwa-192/512, maskable, install prompt) et le manifest AppGrav comme état courant, alors que la PWA a été purgée (décision propriétaire 2026-07-06 « PWA purgée » ; MEMORY).",
+  "evidence": "§3 « PWA Icons — Configured in vite.config.ts via vite-plugin-pwa » ; manifest name « AppGrav - The Breakery POS ».",
+  "recommendation": "Marquer périmé/archiver la section PWA ; ne garder que l'usage Lucide + assets marque si encore valides sous packages/ui."
+ },
+ {
+  "file": "docs/reference/02-design-system/07-responsive-mobile.md",
+  "severity": "P1",
+  "category": "perime",
+  "issue": "Décrit Capacitor (native Android), l'install PWA et le mobile shell comme fonctionnalités vivantes ; contredit la purge PWA/mobile actée (MEMORY : « PWA purgée », owner-decisions 2026-07-06).",
+  "evidence": "§4 « Capacitor (Native Android)… npm run android:build » ; §8 « PWA Install Prompt… vite-plugin-pwa registers the service worker ».",
+  "recommendation": "Archiver ou marquer périmé ; conserver seulement les conventions responsive/touch-target encore valides pour POS (Tauri) + BO."
+ },
+ {
+  "file": "docs/reference/04-modules/00-modules-index.md",
+  "severity": "P2",
+  "category": "perime",
+  "issue": "Catalogue V2 (21 modules AppGrav) avec volumes figés (« 211+ migrations, 16 Edge Functions, ~1770 tests Vitest », « 14 stores Zustand ») et un lien « (à créer) » vers 06-lan-architecture/01-overview ; ne reflète plus le monorepo V3.",
+  "evidence": "§Volumes ligne 151-154 ; ligne 118 : « [06-lan-architecture/01-overview](../06-lan-architecture/01-overview.md) (à créer) ».",
+  "recommendation": "Conserver uniquement la carte des dépendances comme historique ; retirer les volumes chiffrés périmés et les liens « à créer »."
+ },
+ {
+  "file": "docs/reference/04-modules/01-auth-permissions.md",
+  "severity": "P1",
+  "category": "contradiction",
+  "issue": "Décrit un PIN « 4 chiffres » (et « 4-8 digits, défaut 4 ») comme mécanique courante ; contredit CLAUDE.md/MEMORY (S58 : « PIN 6 chiffres partout »). Induit en erreur sur la politique d'auth actuelle.",
+  "evidence": "Ligne 9 « un PIN à 4 chiffres », ligne 129 « **PIN** : 4 chiffres », §7.2 « Longueur : 4-8 chiffres… défaut 4 » vs CLAUDE.md « PIN 6 chiffres partout (S58) ».",
+  "recommendation": "Corriger la longueur PIN vers 6 chiffres ou marquer le fichier périmé (référence V2)."
+ },
+ {
+  "file": "docs/reference/04-modules/01-auth-permissions.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "Renvoie les tâches vers docs/workplan/backlog-by-module/01-auth-permissions.md ; ce dossier n'existe plus (archivé sous docs/_archive/backlog-by-module-fige-S14-S30/ selon CLAUDE.md). Nombreux liens « (à créer) » (12-appendices/02-permissions, 03-database, 05-integrations).",
+  "evidence": "Ligne 4 : « voir [`../../workplan/backlog-by-module/01-auth-permissions.md`] » — répertoire absent (vérifié).",
+  "recommendation": "Repointer vers docs/_archive/backlog-by-module-fige-S14-S30/ ou retirer les renvois backlog."
+ },
+ {
+  "file": "docs/reference/04-modules/02-pos-cart-orders.md",
+  "severity": "P1",
+  "category": "contradiction",
+  "issue": "Pose comme invariant que la commande est finalisée par la RPC atomique `complete_order_with_payments` (pluriel) appelée depuis le POS ; contredit CLAUDE.md canonique : le money-path est `complete_order_with_payment_v17` (singulier, versionné) appelé server-side par l'EF process-payment, « le POS never calls it directly ».",
+  "evidence": "§3 invariant 6 : « La RPC complete_order_with_payments crée la commande et tous ses paiements » vs CLAUDE.md « process-payment EF… complete_order_with_payment_v17… POS never calls it directly ».",
+  "recommendation": "Aligner sur le money-path v17 + EF, ou marquer le fichier périmé (référence V2)."
+ },
+ {
+  "file": "docs/reference/04-modules/02b-orders.md",
+  "severity": "P2",
+  "category": "dechet",
+  "issue": "La Partie II (référence technique) est explicitement un stub TODO non vérifié : hooks/services/composants marqués « présumé » / « à confirmer », en-tête reconnaissant que « les chemins exacts… doivent être vérifiés contre le code avant publication ». Jamais complété.",
+  "evidence": "Ligne 349 : « **TODO** : référence technique à rédiger… Cette section est une **stub structurée** » ; §18-25 truffés de « (présumé) » / « TODO ».",
+  "recommendation": "Soit compléter depuis apps/backoffice/src/features/orders, soit archiver la Partie II inachevée pour ne pas laisser croire à une référence vérifiée."
+ },
+ {
+  "file": "docs/reference/04-modules/03-payments-split.md",
+  "severity": "P1",
+  "category": "contradiction",
+  "issue": "Affirme que la RPC `complete_order_with_payments` est SECURITY INVOKER et applique les RLS de l'appelant (POS) ; contredit l'architecture money-path actuelle (RPC versionnée SECURITY DEFINER invoquée server-side par l'EF process-payment, PIN via nonce, cf. CLAUDE.md).",
+  "evidence": "Ligne 130 : « Le RPC complete_order_with_payments est SECURITY INVOKER — applique les RLS du caller » vs CLAUDE.md (money-path SECURITY DEFINER v17 via EF).",
+  "recommendation": "Corriger vers v17/EF ou archiver comme référence V2."
+ },
+ {
+  "file": "docs/reference/04-modules/04-kds-kitchen.md",
+  "severity": "P1",
+  "category": "contradiction",
+  "issue": "Décrit une architecture temps réel « LAN hub/client » (lanHub/lanClient, BroadcastChannel 'appgrav-lan', heartbeat) comme mécanisme vivant ; contredit CLAUDE.md S62 (« mesh LAN mort », purges actées) et l'orientation internet-first (owner-decisions 2026-07-06).",
+  "evidence": "§12 « La caisse principale POS est le hub (lanHub)… chaque appareil KDS est un client (lanClient)… » vs CLAUDE.md S62 « purges actées (mesh LAN mort… ) ».",
+  "recommendation": "Marquer la couche LAN périmée / renvoyer au décommissionnement S62 ; conserver éventuellement la logique item_status/stations si encore valable."
+ },
+ {
+  "file": "docs/reference/04-modules/05-products-categories.md",
+  "severity": "P2",
+  "category": "perime",
+  "issue": "Le pricing B2B est décrit via RPC `get_customer_product_price(product_id, category_slug)` + table `product_category_prices` (retail/wholesale/discount/custom) et un chemin `database.generated.ts:12044` (V2) ; S69 a introduit le prix négocié PAR CLIENT (table `customer_product_prices`, `_resolve_b2b_line_price_v1`, `create_b2b_order_v5`), non reflété ici.",
+  "evidence": "§10.2/§26 : « Le RPC get_customer_product_price… consulte product_category_prices » ; §26 « Implémentation dans database.generated.ts:12044 » vs CLAUDE.md S69.",
+  "recommendation": "Actualiser le modèle de pricing B2B (négocié client > catégorie > retail) ou archiver comme référence V2. Repointer le renvoi backlog-by-module (dossier absent)."
+ },
+ {
+  "file": "docs/reference/04-modules/06-inventory-stock.md",
+  "severity": "P1",
+  "category": "perime",
+  "issue": "Aucune des 14 fiches modules (06-19) ne porte de banniere STALE en-tete ; elles affichent seulement '> Last verified : 2026-05-13' sans pointeur inline vers remise-a-plat. L'avertissement de peremption vit UNIQUEMENT dans le fichier separe _AVERTISSEMENT.md — un lecteur ouvrant une fiche isolee (ex. via lien direct) croit lire une reference a jour.",
+  "evidence": "06 lignes 3-4: '> Last verified : 2026-05-13' + '> Structure : ...' ; aucune mention 'STALE'. La banniere n'existe que dans _AVERTISSEMENT.md ligne 1.",
+  "recommendation": "Injecter en tete de chaque fiche 06-19 un bloc de depreciation identique renvoyant a docs/workplan/remise-a-plat/<meme-numero>.md, ou archiver le dossier entier."
+ },
+ {
+  "file": "docs/reference/04-modules/06-inventory-stock.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "Famille de liens morts '../../workplan/backlog-by-module/*.md' presente dans les 14 fiches (en-tete + Partie III). Le dossier docs/workplan/backlog-by-module/ n'existe pas : il a ete archive sous docs/_archive/backlog-by-module-fige-S14-S30/.",
+  "evidence": "06 l.4 et l.676 pointent vers ../../workplan/backlog-by-module/06-inventory-stock.md ; 'ls docs/workplan/backlog-by-module/' vide, contenu present dans docs/_archive/backlog-by-module-fige-S14-S30/.",
+  "recommendation": "Repointer vers docs/_archive/backlog-by-module-fige-S14-S30/ ou supprimer ces renvois lors de la regeneration (Phase 3)."
+ },
+ {
+  "file": "docs/reference/04-modules/10-accounting-double-entry.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "Famille de liens morts '../08-flows-end-to-end/*.md' : le dossier docs/reference/08-flows-end-to-end/ n'existe pas. Reference par 06,07,08,09,10,11,12,13,14,15,16,17,19 (10 en cite 6).",
+  "evidence": "10 l.5 liste 6 flows ../08-flows-end-to-end/... ; 'ls docs/reference/08-flows-end-to-end/' -> absent.",
+  "recommendation": "Retirer la ligne 'Related E2E flows' ou recreer/repointer le dossier flows si ces docs existent ailleurs."
+ },
+ {
+  "file": "docs/reference/04-modules/06-inventory-stock.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "Lien mort vers les tokens '../../../DESIGN.md' (racine repo) dans la Partie IV des 14 fiches : le fichier DESIGN.md n'existe pas a la racine du depot.",
+  "evidence": "06 l.685 et l.874 '../../../DESIGN.md' ; 'ls DESIGN.md' racine -> MISSING (seul docs/DESIGN_POS_AND_BACKOFFICE.md existe).",
+  "recommendation": "Supprimer le renvoi DESIGN.md ou repointer vers docs/reference/02-design-system/02-tokens.md (qui existe)."
+ },
+ {
+  "file": "docs/reference/04-modules/06-inventory-stock.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "Famille de liens morts '../../ux/assets/screens/...' (screenshots de reference) dans la Partie IV des 14 fiches : le dossier docs/ux/assets/screens/ n'existe pas.",
+  "evidence": "06 l.686/876/877 vers ../../ux/assets/screens/... ; 'ls docs/ux/assets/screens/' -> MISSING.",
+  "recommendation": "Supprimer ces renvois screenshots ou retablir le dossier d'assets s'il a ete deplace."
+ },
+ {
+  "file": "docs/reference/04-modules/18-mobile-shell.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "Section 'Voir aussi' avec liens relatifs malformes pointant hors arborescence : '05-integrations/04-capacitor-native.md' et '05-integrations/05-pwa.md' (resolus sous 04-modules/05-integrations/, inexistant) et '04-modules/01-auth-users.md' (resolu sous 04-modules/04-modules/..., inexistant ; de plus le fichier reel est 01-auth-permissions.md, pas 01-auth-users.md).",
+  "evidence": "18 l.303-306 ; aucun sous-dossier 05-integrations sous 04-modules ; le fichier voisin est 01-auth-permissions.md.",
+  "recommendation": "Corriger les chemins (prefixe ../ manquant) et le nom 01-auth-permissions.md, ou retirer la section lors de la regeneration."
+ },
+ {
+  "file": "docs/reference/04-modules/18-mobile-shell.md",
+  "severity": "P3",
+  "category": "incoherence",
+  "issue": "18-mobile-shell n'a ni l'en-tete '> Last verified' ni le bloc 'Structure/Related E2E flows' commun aux autres fiches (06-17,19), et decrit un shell mobile PWA/Capacitor alors que MEMORY.md indique 'PWA purgee' (decisions proprietaire 2026-07-06) — fiche potentiellement doublement perimee.",
+  "evidence": "18 l.1-5 structure divergente ; MEMORY.md owner-decisions-2026-07-06 : 'PWA purgee'.",
+  "recommendation": "Traiter comme les autres fiches STALE (regenerer depuis remise-a-plat/18) et verifier le statut PWA/mobile reel avant reutilisation."
+ },
+ {
+  "file": "docs/reference/05-integrations/01-supabase.md",
+  "severity": "P1",
+  "category": "perime",
+  "issue": "Le doc presente abjabuniwkqpfsenxljp comme le backend de prod (« primary backend for AppGrav V2 », « The app talks to a single hosted project ») avec un modele mono-app src/lib/supabase.ts et session token x-session-token.",
+  "evidence": "L5 : « Supabase is the primary backend for AppGrav V2 » ; L12 : Project ID `abjabuniwkqpfsenxljp` ; L47/81-83 : session token `x-session-token`.",
+  "recommendation": "Contredit MEMORY (V2 PAS en prod) et CLAUDE.md (cible V3 = ikcyvlovptebroadgtvd ; abjabuniwkqpfsenxljp est le monolithe V2 incompatible ; auth V3 = wrapper PIN-JWT setSupabaseAccessToken). Ajouter un bandeau STALE en tete du chapitre 05-integrations et renvoyer vers la verite V3, ou archiver."
+ },
+ {
+  "file": "docs/reference/05-integrations/01-supabase.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "Liens croises vers des chapitres reference supprimes le 2026-07-04 et vers un fichier LAN inexistant.",
+  "evidence": "L47/215-216 : `07-security/01-authentication.md`, `07-security/02-rls-policies.md` (chapitre 07 supprime) ; L101/218 : `06-lan-architecture/02-hub-client-protocol.md` (le fichier reel est 01-hub-client-model.md / 02 = discovery) ; L161/215 : `08-claude-proxy.md` (absent du dossier).",
+  "recommendation": "Supprimer/rediriger ces liens ; le chapitre 08-claude-proxy n'existe plus dans 05-integrations (numerotation 07 puis 09)."
+ },
+ {
+  "file": "docs/reference/05-integrations/02-edge-functions.md",
+  "severity": "P1",
+  "category": "perime",
+  "issue": "Inventaire de « 15 Edge Functions » V2 (auth-verify-pin body-based, generate-invoice, send-to-printer, claude-proxy, purchase_order_module...) sur chemins src/services et modele x-session-token, sans rapport avec le jeu d'EF V3 (process-payment, generate-pdf, refund/void/cancel...).",
+  "evidence": "L5 : « V2 deploys 15 Supabase Edge Functions » ; L13-27 tableau d'EF ; L199 : header `x-session-token`.",
+  "recommendation": "Marquer STALE/archiver ; la reference EF V3 vit dans le code supabase/functions et CLAUDE.md (money-path via process-payment)."
+ },
+ {
+  "file": "docs/reference/05-integrations/02-edge-functions.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "Cross-refs vers chapitres supprimes et fichier manquant.",
+  "evidence": "L212-216 : `07-security/01-authentication.md`, `07-security/03-permissions.md`, `08-claude-proxy.md`, `06-lan-architecture/02-hub-client-protocol.md`.",
+  "recommendation": "Retirer ces renvois."
+ },
+ {
+  "file": "docs/reference/05-integrations/03-sentry-monitoring.md",
+  "severity": "P1",
+  "category": "perime",
+  "issue": "Decrit la config Sentry de l'app unique V2 (src/lib/sentry.ts, release appgrav-v2@..., trace target abjabuniwkqpfsenxljp) presentee comme « the only monitoring layer in V2 ».",
+  "evidence": "L5-16 : org/projet `appgrav-v2`, `src/lib/sentry.ts` ; L49 : tracePropagationTargets sur abjabuniwkqpfsenxljp.",
+  "recommendation": "Architecture mono-app V2 ; V3 est un monorepo apps/pos + apps/backoffice. Marquer STALE ou archiver."
+ },
+ {
+  "file": "docs/reference/05-integrations/03-sentry-monitoring.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "Cross-refs vers chapitres reference supprimes (01, 07, 10).",
+  "evidence": "L212-214 : `10-deployment-ops/02-vite-build.md`, `01-architecture/03-error-handling.md`, `07-security/01-authentication.md`.",
+  "recommendation": "Chapitres 01/07/10 supprimes le 2026-07-04 — retirer les liens."
+ },
+ {
+  "file": "docs/reference/05-integrations/04-capacitor-native.md",
+  "severity": "P1",
+  "category": "perime",
+  "issue": "Build Capacitor d'une app unique V2 (appId com.thebreakery.appgrav, dossier src/, PWA conditionnelle) ; V3 splitte POS (desktop/Tauri) et tablette waiter, et la PWA est purgee.",
+  "evidence": "L5 : « Capacitor wraps the Vite SPA » ; L100 : `VitePWA` (PWA purgee S62) ; refs src/hooks/useCapacitorInit.ts.",
+  "recommendation": "Marquer STALE/archiver ; verifier la strategie native reelle de V3 dans le code apps/pos avant toute reutilisation."
+ },
+ {
+  "file": "docs/reference/05-integrations/04-capacitor-native.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "Cross-refs vers chapitres supprimes et fichiers LAN mal nommes.",
+  "evidence": "L202-205 : `10-deployment-ops/04-mobile-build.md`, `04-modules/02-pos-terminal.md`, `06-lan-architecture/03-print-routing.md` (reel = 04), `06-lan-architecture/05-discovery.md` (reel = 02).",
+  "recommendation": "Corriger/supprimer ; les numeros de fichiers LAN cites ne correspondent pas au dossier reel."
+ },
+ {
+  "file": "docs/reference/05-integrations/05-pwa.md",
+  "severity": "P1",
+  "category": "perime",
+  "issue": "Chapitre entier consacre a la couche PWA (manifest AppGrav, Workbox, offline.html), fonctionnalite explicitement decommissionnee.",
+  "evidence": "L1-14 : stack vite-plugin-pwa/workbox ; L41 : manifest `name: 'AppGrav - The Breakery POS'`.",
+  "recommendation": "MEMORY et CLAUDE.md (purges S62) actent la PWA purgee — archiver ce fichier."
+ },
+ {
+  "file": "docs/reference/05-integrations/05-pwa.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "Cross-refs vers chapitres supprimes (07, 10).",
+  "evidence": "L203/202 : `07-security/04-cache-policy.md`, `10-deployment-ops/02-vite-build.md`.",
+  "recommendation": "Retirer les liens."
+ },
+ {
+  "file": "docs/reference/05-integrations/06-print-server.md",
+  "severity": "P2",
+  "category": "perime",
+  "issue": "Fichier mixte : la moitie haute (endpoints /print/kitchen|/print/barista par imprimante, routage via hub LAN, hubPrintService) est perimee, alors que les sections V3 en bas (contrat station-routing S34, runbook print-bridge, provisioning lan_devices) sont a jour.",
+  "evidence": "L37-127 : endpoints V2 + « Hub-routed printing » via lanClient ; vs L194+ : « V3 station-routing contract (Session 34 — current code) ».",
+  "recommendation": "Extraire/promouvoir les sections V3 comme reference vivante et elaguer la moitie V2 (routage hub mort S62)."
+ },
+ {
+  "file": "docs/reference/05-integrations/06-print-server.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "Cross-refs LAN mal nommes.",
+  "evidence": "L190-192 : `06-lan-architecture/02-hub-client-protocol.md` (inexistant) et `06-lan-architecture/05-discovery.md` (reel = 02-discovery).",
+  "recommendation": "Corriger vers 01-hub-client-model.md / 02-discovery.md ou supprimer."
+ },
+ {
+  "file": "docs/reference/05-integrations/07-pdf-excel-export.md",
+  "severity": "P1",
+  "category": "perime",
+  "issue": "Export decrit cote client V2 (src/services/reports/pdfExport.ts jsPDF/xlsx) + EF generate-invoice ; V3 genere les PDF via l'EF generate-pdf a templates et les CSV via le helper buildCsv.",
+  "evidence": "L7-9 : jsPDF + generate-invoice ; L50 : `src/services/reports/pdfExport.ts` ; L175-185 : EF generate-invoice.",
+  "recommendation": "Contredit la reference V3 (skill reports-exports : generate-pdf, buildCsv). Marquer STALE/archiver."
+ },
+ {
+  "file": "docs/reference/05-integrations/07-pdf-excel-export.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "Cross-ref vers chapitre supprime.",
+  "evidence": "L238 : `10-deployment-ops/02-vite-build.md`.",
+  "recommendation": "Retirer le lien."
+ },
+ {
+  "file": "docs/reference/05-integrations/09-third-party-libs.md",
+  "severity": "P2",
+  "category": "perime",
+  "issue": "Catalogue de libs cadre sur l'app unique V2 (chemins src/, « 47+ reports », src/lib/utils.ts) ; certaines libs restent valides en V3 mais le cadrage est perime.",
+  "evidence": "L54 : « used in 47+ reports » ; L177 : `src/lib/utils.ts` ; L231-237 chunks vite mono-app.",
+  "recommendation": "Re-generer depuis le code V3 (packages/ui, apps/*) ou marquer STALE."
+ },
+ {
+  "file": "docs/reference/05-integrations/09-third-party-libs.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Cross-refs vers chapitre supprime et artefact _bmad.",
+  "evidence": "L253-255 : `01-architecture/02-lazy-routes.md`, `10-deployment-ops/02-vite-build.md`, `_bmad/output/implementation-artifacts/epic-016b/`.",
+  "recommendation": "Retirer/rediriger."
+ },
+ {
+  "file": "docs/reference/06-lan-architecture/02-discovery.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "Cross-ref vers chapitre securite supprime.",
+  "evidence": "L197 : `07-security/02-edge-function-security.md` (chapitre 07 supprime le 2026-07-04).",
+  "recommendation": "Retirer le lien (contenu couvert par _AVERTISSEMENT pour le reste)."
+ },
+ {
+  "file": "docs/reference/06-lan-architecture/04-print-routing.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "Renvoi vers un fichier EF mal nomme et vers un chapitre securite supprime.",
+  "evidence": "L177 : `05-integrations/01-edge-functions.md` (le doc EF est 02-edge-functions.md ; 01 = supabase) ; L281 : `07-security/02-edge-function-security.md` (supprime).",
+  "recommendation": "Corriger le renvoi EF vers 02-edge-functions.md ; retirer le lien 07-security."
+ },
+ {
+  "file": "docs/reference/06-lan-architecture/01-hub-client-model.md",
+  "severity": "P3",
+  "category": "perime",
+  "issue": "Decrit le mesh hub/client LAN comme systeme reel ; le transport effectif V3 est Supabase Realtime + print-bridge HTTP (mesh acte mort S62). Staleness deja signalee par _AVERTISSEMENT.md.",
+  "evidence": "L5 : « one main terminal (POS) acts as a coordination hub » ; refs src/services/lan/lanHub.ts.",
+  "recommendation": "Conserver seulement si le _AVERTISSEMENT reste en tete du dossier ; sinon archiver le chapitre entier avec la fiche remise-a-plat 21."
+ },
+ {
+  "file": "docs/reference/06-lan-architecture/06-device-types.md",
+  "severity": "P3",
+  "category": "perime",
+  "issue": "Tables et migrations citees sont de la lignee V2 (010_lan_sync_display.sql, 004_sales_orders.sql) incompatible avec la lignee de migrations V3.",
+  "evidence": "L124-128 : migrations `004_sales_orders.sql`, `010_lan_sync_display.sql`, `009_system_settings.sql`.",
+  "recommendation": "Ne pas s'appuyer sur ces numeros de migration ; couvert par _AVERTISSEMENT."
+ },
+ {
+  "file": "docs/reference/12-appendices/06-cross-reference-with-v3.md",
+  "severity": "P1",
+  "category": "perime",
+  "issue": "Le doc decrit l'architecture V3 cible comme 'breakery-platform/' avec apps caissapp/backoffice/kitchen/comptable et packages core/tokens/types/testing — architecture qui n'existe pas. Le monorepo reel est apps/pos + apps/backoffice + packages/{domain,supabase,ui,utils}. Le dossier breakery-platform/ et _bmad/ sont ABSENTS du repo.",
+  "evidence": "Ligne 23-37 arbre 'breakery-platform/' + apps/caissapp,kitchen,comptable ; ligne 169 lien [breakery-platform/CLAUDE.md]. Verif: breakery-platform=MISSING, _bmad=MISSING.",
+  "recommendation": "Supprimer ou remplacer entierement par un mapping V2->V3 reel (apps/pos, apps/backoffice, packages/{domain,supabase,ui,utils}); tel quel il induit gravement en erreur tout dev/agent qui le lit."
+ },
+ {
+  "file": "docs/reference/12-appendices/03-environment-variables.md",
+  "severity": "P1",
+  "category": "contradiction",
+  "issue": "VITE_SUPABASE_URL est documente comme https://abjabuniwkqpfsenxljp.supabase.co, qui est le ref Supabase PROD V2 (monolith incompatible V3 selon CLAUDE.md). Le projet DB actif est le dev V3 ikcyvlovptebroadgtvd. Pointer un dev vers ce ref est dangereux.",
+  "evidence": "Ligne 22 et 25 'abjabuniwkqpfsenxljp' ; CLAUDE.md: 'Prod (ref abjabuniwkqpfsenxljp) is V2 monolith and incompatible with V3'.",
+  "recommendation": "Corriger le ref exemple vers ikcyvlovptebroadgtvd (ou marquer explicitement le doc perime); corriger aussi database.generated.ts -> packages/supabase/src/types.generated.ts."
+ },
+ {
+  "file": "docs/reference/12-appendices/05-known-issues-backlog.md",
+  "severity": "P1",
+  "category": "lien-mort",
+  "issue": "La page se declare index pointant vers ses 'sources de verite' — mais toutes sont absentes: CURRENT_STATE.md (racine), docs/reference/travail/, docs/audit/IMPLEMENTATION_PLAN.md et les 8 rapports d'audit 00-08. Un index sans cibles n'a plus de valeur.",
+  "evidence": "Lignes 13-16, 89, 160-164. Verif: CURRENT_STATE.md=MISSING, docs/reference/travail=MISSING, IMPLEMENTATION_PLAN.md=MISSING.",
+  "recommendation": "Archiver la page ou la reecrire pour pointer vers docs/workplan/remise-a-plat/ et les INDEX de session actuels."
+ },
+ {
+  "file": "docs/runbooks/disaster-recovery.md",
+  "severity": "P1",
+  "category": "perime",
+  "issue": "Le Scenario 6 (print queue jam) fait requeter/retry la table print_queue et cite packages/utils/print-queue-poller et la page /backoffice/print-queue — or print_queue a ete DROPPEE (S62) et ces artefacts n'existent pas. Un runbook d'incident qui envoie l'ops vers une table inexistante est trompeur.",
+  "evidence": "Lignes 352-405 (print_queue SQL, print-queue-poller). Verif: migration 20260710000110_drop_print_queue.sql presente; packages/utils/print-queue-poller=MISSING; page print-queue introuvable. CLAUDE.md S62: 'print_queue droppee, PWA'.",
+  "recommendation": "Retirer le Scenario 6 et le durcissement PWA/IndexedDB du Scenario 5 (PWA purgee S62); corriger l'Appendix A qui alerte sur 'complete_order_v9' (RPC obsolete, actuel v17)."
+ },
+ {
+  "file": "docs/reference/12-appendices/02-file-organization.md",
+  "severity": "P1",
+  "category": "contradiction",
+  "issue": "Limite de taille de fichier documentee a 300 lignes alors que CLAUDE.md impose 500. Le README du dossier exclut d'ailleurs explicitement ce fichier du 'fiable'.",
+  "evidence": "02-file-organization ligne 9 'Taille maximale par fichier — 300 lignes'; CLAUDE.md 'Keep files under 500 lines'; reference/README.md ligne 21 '11-conventions ✅ Fiable (sauf 02-file-organization)'.",
+  "recommendation": "Aligner sur 500 lignes ou marquer perime; toute la structure src/components|pages|hooks|stores decrite est V2."
+ },
+ {
+  "file": "docs/reference/11-conventions/01-coding-conventions.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "Liens vers des chapitres reference supprimes le 2026-07-04.",
+  "evidence": "Ligne 217 [../09-testing/01-test-strategy.md] et ligne 242 [../03-database/02-tables-reference.md]; chapitres 03-database et 09-testing = SUPPRIMES (confirme par README + ls).",
+  "recommendation": "Retirer/rerouter ces liens; regenerer le chapitre depuis le code en Phase 3."
+ },
+ {
+  "file": "docs/reference/11-conventions/03-react-patterns.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "Lien vers un chapitre supprime.",
+  "evidence": "Ligne 294 [../01-architecture/03-state-management.md]; chapitre 01-architecture = SUPPRIME.",
+  "recommendation": "Rerouter vers workplan/remise-a-plat/ ou retirer."
+ },
+ {
+  "file": "docs/reference/11-conventions/04-supabase-patterns.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "Plusieurs liens vers chapitres supprimes (07-security, 03-database) et cite le RPC obsolete complete_order_with_payments.",
+  "evidence": "Lignes 60/131 'complete_order_with_payments' (actuel: complete_order_with_payment_v17 via EF process-payment); liens 304-306 vers 07-security/* et 03-database/* = SUPPRIMES.",
+  "recommendation": "Corriger le nom RPC + retirer les liens morts."
+ },
+ {
+  "file": "docs/reference/11-conventions/05-error-handling.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "Liens vers chapitres supprimes.",
+  "evidence": "Ligne 319 [../09-testing/04-known-failures.md] et 320 [../10-deployment-ops/07-monitoring-runbook.md]; 09-testing et 10-deployment-ops = SUPPRIMES.",
+  "recommendation": "Retirer/rerouter."
+ },
+ {
+  "file": "docs/reference/11-conventions/06-pitfalls.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "Nombreux liens vers chapitres supprimes (04-modules stale, 07-security, 08-flows-end-to-end, 09-testing) et references V2 (/gen-types, database.generated.ts).",
+  "evidence": "Lignes 54/195/407-409 vers 07-security/*, 09-testing/*, 08-flows-end-to-end/* ; 07/08/09 = SUPPRIMES, 04-modules = STALE.",
+  "recommendation": "Retirer les liens morts; migrer les pitfalls encore valides vers la section Critical patterns de CLAUDE.md (deja source de verite citee ligne 411)."
+ },
+ {
+  "file": "docs/reference/12-appendices/01-business-rules.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "Liens vers le fichier soeur 02-permission-codes-matrix (supprime) et vers chapitres supprimes 04-modules/08-flows.",
+  "evidence": "Ligne 247 [./02-permission-codes-matrix.md] (verif MISSING; README note sa suppression), lignes 249-250 vers 04-modules et 08-flows-end-to-end.",
+  "recommendation": "Retirer les liens; noter que les customer pricing modes (section 4) sont anterieurs a S69 (customer_product_prices negocies)."
+ },
+ {
+  "file": "docs/reference/12-appendices/04-keyboard-shortcuts.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "Liens vers chapitre supprime 05-integrations/09 et references src/ V2.",
+  "evidence": "Ligne 152 [../05-integrations/09-third-party-libs.md] (05-integrations existe mais sous-fichiers stale), tous les chemins d'exemple en src/components/... V2.",
+  "recommendation": "Verifier/retirer le sous-lien; requalifier les chemins vers apps/pos|backoffice si le doc est conserve."
+ },
+ {
+  "file": "docs/reference/12-appendices/03-environment-variables.md",
+  "severity": "P2",
+  "category": "perime",
+  "issue": "Nomme le produit 'AppGrav V2' et decrit un deploiement Vercel/npm jamais realise (V2 jamais en prod, monorepo pnpm/turbo).",
+  "evidence": "Ligne 5 'AppGrav V2'; sections 7/9 npm+Vercel; MEMORY: V2 PAS en production, V3 seule existe.",
+  "recommendation": "Renommer/retirer; le workflow reel est cloud MCP Supabase + pnpm/turbo (cf CLAUDE.md)."
+ },
+ {
+  "file": "docs/superpowers/plans/2026-06-25-pos-held-order-lifecycle.md",
+  "severity": "P3",
+  "category": "incoherence",
+  "issue": "Le plan invoque le connecteur MCP `mcp__plugin_supabase_supabase__apply_migration` / `generate_typescript_types` (ex. lignes 21, 76). CLAUDE.md (2026-07-07) indique que ce plugin est DÉSACTIVÉ et que le connecteur actif est `mcp__claude_ai_Supabase__*`.",
+  "evidence": "L.21 : « mcp__plugin_supabase_supabase__generate_typescript_types » ; CLAUDE.md : « Le serveur MCP Supabase actif est le connecteur claude.ai (préfixe mcp__claude_ai_Supabase__) — le plugin ... est désactivé (2026-07-07) ».",
+  "recommendation": "Plan historique déjà exécuté/mergé : ne pas réécrire (règle append-only). Laisser tel quel ; la drift ne concerne qu'une éventuelle ré-exécution, exclue pour une session close."
+ },
+ {
+  "file": "docs/superpowers/plans/2026-07-05-session-61-f2-f5-decommission-peremption.md",
+  "severity": "P3",
+  "category": "incoherence",
+  "issue": "Contrainte globale (L.13) référence `mcp__plugin_supabase_supabase__apply_migration`, connecteur marqué désactivé depuis 2026-07-07 dans CLAUDE.md (actif = `mcp__claude_ai_Supabase__*`).",
+  "evidence": "L.13 : « migrations via `mcp__plugin_supabase_supabase__apply_migration` ... pgTAP via `execute_sql` ».",
+  "recommendation": "Historique append-only — laisser en l'état ; note de perennité seulement."
+ },
+ {
+  "file": "docs/superpowers/plans/2026-07-06-print-bridge-scan-lan-devices-crud.md",
+  "severity": "P3",
+  "category": "incoherence",
+  "issue": "Contrainte globale (L.18) référence `mcp__plugin_supabase_supabase__execute_sql` (connecteur désactivé 2026-07-07 selon CLAUDE.md).",
+  "evidence": "L.18 : « exécutée par le contrôleur via `mcp__plugin_supabase_supabase__execute_sql` (projet ikcyvlovptebroadgtvd) ».",
+  "recommendation": "Historique append-only — laisser en l'état ; note de perennité seulement."
+ },
+ {
+  "file": "docs/superpowers/plans/2026-07-06-s63-dashboard-overview.md",
+  "severity": "P3",
+  "category": "incoherence",
+  "issue": "Contrainte globale (L.15) référence `mcp__plugin_supabase_supabase__apply_migration`, connecteur désactivé 2026-07-07 (actif = `mcp__claude_ai_Supabase__*` selon CLAUDE.md).",
+  "evidence": "L.15 : « migrations via `mcp__plugin_supabase_supabase__apply_migration` (project_id='ikcyvlovptebroadgtvd') ».",
+  "recommendation": "Historique append-only — laisser en l'état ; note de perennité seulement."
+ },
+ {
+  "file": "docs/superpowers/plans/archive/2026-06-23-cash-wallets-tresorerie.md",
+  "severity": "P3",
+  "category": "perime",
+  "issue": "Plan d'implémentation complet et détaillé d'un module « Trésorerie / Cash Wallets » (nouveaux comptes 1117/3110, RPC record_cash_movement_v1, get_cash_wallet_balances_v1/ledger_v1, page CashTreasuryPage) dont aucune trace n'apparaît dans le journal des sessions mergées de CLAUDE.md (S50→S70) ni dans MEMORY.md. Il semble n'avoir jamais été implémenté/mergé.",
+  "evidence": "Titre « Cash Wallets / Trésorerie Implementation Plan » + Task 1-7 complets ; absent de la liste « Merged/Previously merged » de CLAUDE.md.",
+  "recommendation": "Confirmer le statut (abandonné vs différé). S'il est mort, ajouter un en-tête « ABANDONNÉ — jamais implémenté » en tête de fichier pour éviter qu'un futur agent croie que le module existe ; sinon le sortir d'archive/ vers un backlog actif."
+ },
+ {
+  "file": "docs/superpowers/plans/2026-07-08-s70-cashier-variance-report.md",
+  "severity": "P3",
+  "category": "incoherence",
+  "issue": "Le plan utilise le filtre pnpm « @breakery/backoffice » (ex. `pnpm --filter @breakery/backoffice test cashier-variance`), alors que le nom réel du package BO est « @breakery/app-backoffice » — corrigé explicitement dans le plan archivé bulk-import-purchases (« Backoffice package filter is @breakery/app-backoffice (NOT @breakery/backoffice) ») et confirmé par les plans S71 (@breakery/app-pos / @breakery/app-backoffice).",
+  "evidence": "s70 Task 4/5/6 : « pnpm --filter @breakery/backoffice … » vs 2026-06-24-bulk-import-purchases.md L23 : « the Backoffice package filter is @breakery/app-backoffice (NOT @breakery/backoffice) »",
+  "recommendation": "Aligner les commandes du plan S70 sur @breakery/app-backoffice (ou vérifier si un alias existe) ; pour les prochains plans, standardiser sur @breakery/app-backoffice."
+ },
+ {
+  "file": "docs/superpowers/plans/2026-07-09-s71-e2e-nightly-infra.md",
+  "severity": "P3",
+  "category": "incoherence",
+  "issue": "Décompte de specs E2E incohérent : le plan parle de « 13 specs » (Goal, DoD point 1) tandis que le Plan 2 (repair) précise « 13 = 12 fichiers réels ; s44 câblée en Plan 1 ». La cible « 13/13 » du Plan 1 devient « 28 passed (12 fichiers) » au Plan 1→2.",
+  "evidence": "s71-infra Goal : « pass/fail réel des 13 specs » ; s71-repair Self-Review : « (« 13 » = 12 fichiers réels ; s44 câblée en Plan 1.) »",
+  "recommendation": "Uniformiser le vocabulaire (nb de fichiers de spec vs nb de tests) entre les deux plans S71 pour éviter la confusion au closeout."
+ },
+ {
+  "file": "docs/superpowers/specs/2026-07-07-s67-close-shift-three-way-denominations-design.md",
+  "severity": "P3",
+  "category": "incoherence",
+  "issue": "La spec reserve les migrations `_121..124` (section 2), mais CLAUDE.md indique que le NAME-block S67 a ete renumerote en `_125..128` a cause d'une collision avec les PR #162-165 (transfert de table). Les numeros de la spec sont donc perimes par rapport a la realite mergee.",
+  "evidence": "Spec ligne 17: 'DB (migrations `_121..124`, cloud V3 via MCP)' vs CLAUDE.md: 'collision de NAME-block `_121`/`_122` avec S67, resolue en renumerotant S67 en `_125..128` (cf. DEV-S67-07)'.",
+  "recommendation": "Ne PAS reecrire la spec (histoire datee append-only) : la deviation est deja tracee dans l'INDEX S67 (DEV-S67-07) et CLAUDE.md. Aucune action requise ; note documentaire uniquement."
+ },
+ {
+  "file": "docs/superpowers/specs/archive/2026-06-25-pos-p0-hardening.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Le lien vers le plan d'exécution pointe sur docs/superpowers/plans/2026-06-25-pos-p0-hardening.md, mais ce plan a été déplacé dans plans/archive/ (le fichier n'existe plus à ce chemin).",
+  "evidence": "Ligne 6 : '> **Plan d'exécution** : `docs/superpowers/plans/2026-06-25-pos-p0-hardening.md`.' — vérifié : le fichier réel est docs/superpowers/plans/archive/2026-06-25-pos-p0-hardening.md",
+  "recommendation": "Corriger le chemin en plans/archive/ (les deux artefacts sont archivés ensemble), ou laisser tel quel puisque purement historique."
+ },
+ {
+  "file": "docs/superpowers/specs/2026-07-08-b2b-invoice-pdf-design.md",
+  "severity": "P3",
+  "category": "perime",
+  "issue": "Spec S68 (top-level, non archivée) décrivant l'attribution du numéro de facture via create_b2b_order_v4 ; or le RPC live a été bumpé en v5 par S69. Doc daté correct pour son époque, mais placé au niveau racine (non archivé) où un lecteur peut le prendre pour l'état courant.",
+  "evidence": "Lignes 20/81/87 : 'Bump RPC create_b2b_order_v4' / 'create_b2b_order_v3 → v4' — CLAUDE.md indique le live actuel create_b2b_order_v5 (S69 assigns invoice_number).",
+  "recommendation": "Aucune réécriture (spec append-only), mais envisager d'archiver les specs de sessions déjà mergées (S68/S69/S70) vers specs/archive/ comme les specs de juin, ou ajouter un bandeau 'superseded by S69'."
+ },
+ {
+  "file": "docs/workplan/audits/2026-06-27-project-state-and-gaps.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "Le rapport reference son 'socle de curation prealable' via un lien relatif vers 2026-06-27-docs-curation-audit.md, fichier qui n'existe pas dans docs/workplan/audits/ (le fichier de curation reel est date du 2026-06-28).",
+  "evidence": "Ligne 1 : 'Socle de curation prealable : [`2026-06-27-docs-curation-audit.md`](2026-06-27-docs-curation-audit.md)' — ls confirme l'absence du fichier ; seul 2026-06-28-docs-curation-audit.md existe.",
+  "recommendation": "Repointer le lien vers 2026-06-28-docs-curation-audit.md (ou vers le doc de curation reellement contemporain), ou supprimer la reference."
+ },
+ {
+  "file": "docs/V2_V3_GLOSSARY.md",
+  "severity": "P2",
+  "category": "perime",
+  "issue": "Le glossaire est presente comme doc courant (l'audit de curation 2026-06-28 le classe 'current') mais sa colonne 'V3 reel' est figee a l'ere S25 : versions RPC grossierement perimees vs le reel S71 (ex. complete_order v9 alors que le money-path est complete_order_with_payment_v17 ; pay_existing_order v6 vs v11 ; create_tablet_order_v2 vs v3 ; evaluate_promotions_v1 vs v2). Un lecteur cherchant le nom V3 canonique serait induit en erreur.",
+  "evidence": "Section 1 'RPCs critiques' : `complete_order (v9)`, `pay_existing_order (v6)`, `create_tablet_order_v2`, `evaluate_promotions_v1` — contredit CLAUDE.md (money-path v17, pay_existing v11, create_tablet_order_v3).",
+  "recommendation": "Ajouter une banniere de peremption (verifie 2026-05-20) renvoyant vers CLAUDE.md pour les versions RPC vivantes, ou rafraichir la colonne V3 ; a defaut, archiver le glossaire comme snapshot date."
+ },
+ {
+  "file": "docs/V2_V3_GLOSSARY.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "Renvoi vers un chemin backlog qui n'existe plus : le repertoire docs/workplan/backlog-by-module/ a ete archive dans docs/_archive/backlog-by-module-fige-S14-S30/ (cf. CLAUDE.md).",
+  "evidence": "Ligne 88 : 'Voir detail dans `docs/workplan/backlog-by-module/14-reports-analytics.md`.' — ls confirme que docs/workplan/backlog-by-module/ n'existe plus (present sous docs/_archive/).",
+  "recommendation": "Corriger le chemin vers docs/_archive/backlog-by-module-fige-S14-S30/ ou retirer la reference (backlog fige/perime selon CLAUDE.md)."
+ },
+ {
+  "file": "docs/workplan/audits/2026-05-20-audit-integral-V3/00-EXECUTIVE-SUMMARY.md",
+  "severity": "P3",
+  "category": "mal-place",
+  "issue": "L'ensemble de l'audit 2026-05-20 (7 fichiers) est un audit point-in-time resolu (a pilote S26/ADR-003) mais reste dans audits/ hors du sous-dossier archive/. L'audit de curation 2026-06-04 l'avait signale comme candidat a l'archivage, garde live car reference par l'ADR-003 immutable.",
+  "evidence": "docs/workplan/audits/archive/2026-06-04-docs-curation-audit.md §6 : 'B2 2026-05-20-audit-integral-V3/ ... kept live (referenced by the immutable ADR-003)'.",
+  "recommendation": "Laisser en place (decision documentee) mais envisager de deplacer vers audits/archive/ en repointant le lien de l'ADR-003, pour clarifier son statut de point-in-time resolu."
+ },
+ {
+  "file": "docs/workplan/plans/2026-06-27-session-50-INDEX.md",
+  "severity": "P2",
+  "category": "mal-place",
+  "issue": "Les INDEX/plans des sessions S50 à S59 (et jusqu'à S67 environ) restent dans le dossier vivant docs/workplan/plans/ alors que la session courante est S71. La convention du projet archive les sessions mergées : S1-S49 sont déjà dans plans/archive/ (41 INDEX archivés), mais S50-S70 (21 sessions) s'accumulent en zone vivante. Toutes ces sessions sont mergées (PR <=#145 pour S58).",
+  "evidence": "ls docs/workplan/plans/*INDEX*.md -> S50..S70 tous présents en zone vivante ; ls docs/workplan/plans/archive/ -> s'arrête à S49",
+  "recommendation": "Archiver en batch (git mv) les triplets spec/plan/INDEX de S50 jusqu'à ~S67 vers specs/archive/ et plans/archive/, en gardant une fenêtre glissante des 3-4 dernières sessions vivantes. Concerne aussi le plan S50 et le sous-plan vague2a-isolated de ce lot."
+ },
+ {
+  "file": "docs/workplan/audits/archive/2026-06-12-docs-curation-audit.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Le lien d'en-tête pointe vers 'archive/2026-06-04-docs-curation-audit.md' mais le fichier a lui-même été déplacé DANS archive/ ; le lien relatif résout donc vers docs/workplan/audits/archive/archive/2026-06-04-... qui n'existe pas. Le fichier cible réel est le voisin même-dossier 2026-06-04-docs-curation-audit.md.",
+  "evidence": "Ligne 3 : '> Follow-up to [`2026-06-04-docs-curation-audit.md`](archive/2026-06-04-docs-curation-audit.md)' ; ls confirme pas de sous-dossier archive/archive/",
+  "recommendation": "Corriger le lien relatif en './2026-06-04-docs-curation-audit.md' (même dossier). Doc archivée = faible priorité, path-only fix."
+ },
+ {
+  "file": "docs/workplan/plans/2026-07-04-remise-a-plat-master-plan.md",
+  "severity": "P3",
+  "category": "perime",
+  "issue": "Le plan maître (statut 'PROPOSÉ') propose de créer docs/product/DESCRIPTION.md (référence produit) et docs/workplan/BACKLOG-MASTER.md (backlog unique). Aucun des deux n'existe ; la source de vérité next-session réellement adoptée est docs/workplan/remise-a-plat/00-INDEX.md (confirmé par CLAUDE.md). Un lecteur qui suit ce plan cherchera deux artefacts inexistants.",
+  "evidence": "§5 Phase 0.4 'l'adopter comme docs/product/DESCRIPTION.md' et Phase 1.1 'Créer le backlog maître unique (docs/workplan/BACKLOG-MASTER.md)' ; find -> les 2 fichiers MISSING, remise-a-plat/00-INDEX.md présent",
+  "recommendation": "Ajouter une note de tête 'plan partiellement adopté : la référence produit/backlog vit finalement dans docs/workplan/remise-a-plat/00-INDEX.md' — sans réécrire le corps daté."
+ },
+ {
+  "file": "docs/workplan/plans/2026-07-08-session-69-INDEX.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "Le lien du Plan pointe vers un chemin nu résolu depuis docs/workplan/plans/ alors que le plan réel vit dans docs/superpowers/plans/. Href cassé (le texte affiché est correct, mais le href oublie le préfixe ../../superpowers/plans/).",
+  "evidence": "Ligne 4 : `**Plan :** [`docs/superpowers/plans/2026-07-08-s69-customer-categories-negotiated-pricing.md`](2026-07-08-s69-customer-categories-negotiated-pricing.md)` — le fichier existe à docs/superpowers/plans/2026-07-08-s69-customer-categories-negotiated-pricing.md (vérifié), PAS à docs/workplan/plans/.",
+  "recommendation": "Corriger le href en `../../superpowers/plans/2026-07-08-s69-customer-categories-negotiated-pricing.md` (miroir de S68/S70 qui utilisent le bon chemin relatif)."
+ },
+ {
+  "file": "docs/workplan/plans/archive/2026-05-03-breakery-01-foundation.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "La ligne « Spec source » pointe vers docs/workplan/specs/2026-05-03-breakery-split-2apps-design.md sans le segment archive/, alors que le fichier réel est sous specs/archive/. Le doc revendique pourtant avoir aligné ses références de chemin.",
+  "evidence": "Ligne 10 : `Spec source: docs/workplan/specs/2026-05-03-breakery-split-2apps-design.md` — fichier réel : docs/workplan/specs/archive/2026-05-03-breakery-split-2apps-design.md (le template README ligne 1141 pointe lui correctement vers ../../specs/archive/...).",
+  "recommendation": "Ajouter `archive/` au chemin ligne 10 pour cohérence avec la ligne 1141 et l'emplacement réel du fichier (doc archivé, faible urgence)."
+ },
+ {
+  "file": "docs/workplan/plans/2026-07-04-session-59-vague1-lot1-plan.md",
+  "severity": "P3",
+  "category": "perime",
+  "issue": "Le plan instruit d'utiliser le préfixe MCP `mcp__plugin_supabase_supabase__` pour apply_migration/execute_sql/generate_typescript_types, mais CLAUDE.md (2026-07-07) déclare ce connecteur plugin DÉSACTIVÉ et le connecteur actif est `mcp__claude_ai_Supabase__`. Un agent ré-exécutant le plan serait dérouté.",
+  "evidence": "Lignes 16-19 : « `mcp__plugin_supabase_supabase__apply_migration` … `mcp__plugin_supabase_supabase__generate_typescript_types` ». CLAUDE.md : « le connecteur claude.ai (préfixe `mcp__claude_ai_Supabase__`) … le plugin `supabase@claude-plugins-official` … désactivé (2026-07-07) ».",
+  "recommendation": "Plan daté append-only (antérieur au switch) : ne pas réécrire, mais si des dettes S59 sont réactivées, noter le préfixe MCP courant. Même remarque pour le plan S60 (docs/workplan/plans/2026-07-05-session-60-vague1-lot2-plan.md)."
+ },
+ {
+  "file": "docs/workplan/plans/archive/2026-05-12-session-11-05-discount-templates.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "L'en-tête pointe vers `../../README.md` qui, depuis docs/workplan/plans/archive/, résout vers docs/workplan/README.md — fichier inexistant (le README canonique est docs/README.md, soit ../../../README.md).",
+  "evidence": "Ligne 3 : « voir [`../../README.md`](../../README.md) »",
+  "recommendation": "Corriger la cible en `../../../README.md` (docs/README.md) ou supprimer la note ; lien mort partagé par tous les fichiers S11 + INDEX S12."
+ },
+ {
+  "file": "docs/workplan/plans/archive/2026-05-12-session-11-06-products-full-crud.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "En-tête `../../README.md` → docs/workplan/README.md inexistant.",
+  "evidence": "Ligne 3 : « voir [`../../README.md`](../../README.md) »",
+  "recommendation": "Pointer vers `../../../README.md` (docs/README.md)."
+ },
+ {
+  "file": "docs/workplan/plans/archive/2026-05-12-session-11-07-combos.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "En-tête `../../README.md` → docs/workplan/README.md inexistant.",
+  "evidence": "Ligne 3 : « voir [`../../README.md`](../../README.md) »",
+  "recommendation": "Pointer vers `../../../README.md`."
+ },
+ {
+  "file": "docs/workplan/plans/archive/2026-05-12-session-11-08-customers-page.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "En-tête `../../README.md` → docs/workplan/README.md inexistant.",
+  "evidence": "Ligne 3 : « voir [`../../README.md`](../../README.md) »",
+  "recommendation": "Pointer vers `../../../README.md`."
+ },
+ {
+  "file": "docs/workplan/plans/archive/2026-05-12-session-11-09-tablet-splitpay-smoke.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "En-tête `../../README.md` → docs/workplan/README.md inexistant.",
+  "evidence": "Ligne 3 : « voir [`../../README.md`](../../README.md) »",
+  "recommendation": "Pointer vers `../../../README.md`."
+ },
+ {
+  "file": "docs/workplan/plans/archive/2026-05-12-session-11-10-sidebar-grouping.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "En-tête `../../README.md` → docs/workplan/README.md inexistant.",
+  "evidence": "Ligne 3 : « voir [`../../README.md`](../../README.md) »",
+  "recommendation": "Pointer vers `../../../README.md`."
+ },
+ {
+  "file": "docs/workplan/plans/archive/2026-05-12-session-11-11-verification.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "En-tête `../../README.md` → docs/workplan/README.md inexistant.",
+  "evidence": "Ligne 3 : « voir [`../../README.md`](../../README.md) »",
+  "recommendation": "Pointer vers `../../../README.md`."
+ },
+ {
+  "file": "docs/workplan/plans/archive/2026-05-12-session-11-INDEX.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "En-tête `../../README.md` → docs/workplan/README.md inexistant.",
+  "evidence": "Ligne 3 : « voir [`../../README.md`](../../README.md) »",
+  "recommendation": "Pointer vers `../../../README.md`."
+ },
+ {
+  "file": "docs/workplan/plans/archive/2026-05-12-session-11-INDEX.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Le chemin `docs/workplan/specs/2026-05-11-session-11-backoffice-crud-spec.md` (répété comme « Parent spec » dans les 7 fiches de phase) a été déplacé : le fichier réel est sous `docs/workplan/specs/archive/`. Référence en texte brut désormais périmée.",
+  "evidence": "Ligne 22 : « **Spec:** `docs/workplan/specs/2026-05-11-session-11-backoffice-crud-spec.md` »",
+  "recommendation": "Insérer le segment `/archive/` dans le chemin, ou laisser tel quel comme trace historique en notant le déplacement (concerne aussi les fiches 05→11)."
+ },
+ {
+  "file": "docs/workplan/plans/archive/2026-05-12-session-11-INDEX.md",
+  "severity": "P3",
+  "category": "perime",
+  "issue": "Les commandes de vérification (`pnpm db:reset`, `pnpm db:types`, `bash supabase/tests/run_pgtap.sh`, `supabase start`) sont désormais retirées (Docker abandonné 2026-05-14, workflow cloud-MCP only). Valables à la date du plan mais trompeuses si rejouées.",
+  "evidence": "Lignes 188-205 : bloc « Local dev / verification commands » avec `pnpm db:reset`, `supabase start`",
+  "recommendation": "Aucune action requise (archive historique) ; ne pas rejouer ces commandes. Signalé pour cohérence globale."
+ },
+ {
+  "file": "docs/workplan/plans/archive/2026-05-12-session-12-inventory-complete-INDEX.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "En-tête `../../README.md` → docs/workplan/README.md inexistant.",
+  "evidence": "Ligne 3 : « voir [`../../README.md`](../../README.md) »",
+  "recommendation": "Pointer vers `../../../README.md` (docs/README.md)."
+ },
+ {
+  "file": "docs/workplan/plans/archive/2026-05-13-session-13-INDEX.md",
+  "severity": "P3",
+  "category": "incoherence",
+  "issue": "L'INDEX affiche deux comptages de phases contradictoires dans le même document : « Total phases exécutables Session 13 : 22 » puis « Comptage corrigé : 25 phases exécutables ». Incohérence interne non résolue.",
+  "evidence": "Lignes 72 et 74 : « Total phases exécutables Session 13 : 22 » vs « Comptage corrigé : **25 phases exécutables** »",
+  "recommendation": "Trancher un seul chiffre ; sinon marquer explicitement l'un comme obsolète (trace historique)."
+ },
+ {
+  "file": "docs/workplan/plans/archive/2026-05-13-session-13-phase-2.A-production-recipes.md",
+  "severity": "P3",
+  "category": "perime",
+  "issue": "Le plan décrit `audit_log` (singulier) comme VUE compat avec trigger INSTEAD OF routant vers audit_logs — état DB de 2026-05-14. La vue audit_log a depuis été DROPPÉE (S56, audit_logs seule surface). Trompeur hors contexte historique.",
+  "evidence": "Ligne 29 : « Migration `20260517000034_drop_legacy_audit_log_singular` kept `audit_log` as a compat VIEW ... via INSTEAD OF trigger »",
+  "recommendation": "Aucune action (archive) ; la vérité courante est CLAUDE.md (audit_logs uniquement). Signalé pour éviter réutilisation du pattern."
+ },
+ {
+  "file": "docs/workplan/plans/archive/2026-05-13-session-13-phase-5.D-rbac-ui.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Frontmatter 'parents' pointe vers docs/workplan/plans/2026-05-13-session-13-INDEX.md et docs/reference/04-modules/20-users.md : le premier a été déplacé sous plans/archive/, le second n'existe PAS dans docs/reference/04-modules/ (la liste s'arrête à 19-settings-configuration.md).",
+  "evidence": "parents:\\n  - docs/workplan/plans/2026-05-13-session-13-INDEX.md (line 964)\\n  - docs/reference/04-modules/20-users.md",
+  "recommendation": "Repointer vers docs/workplan/plans/archive/2026-05-13-session-13-INDEX.md ; supprimer le renvoi à 20-users.md (inexistant) ou vers l'index modules réel. Purement historique : correction optionnelle."
+ },
+ {
+  "file": "docs/workplan/plans/archive/2026-05-13-session-13-phase-5.D-rbac-ui.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Frontmatter référence docs/workplan/refs/2026-05-13-has_permission-refactor-design.md ; le fichier a été déplacé sous docs/workplan/refs/archive/.",
+  "evidence": "- docs/workplan/refs/2026-05-13-has_permission-refactor-design.md",
+  "recommendation": "Repointer vers docs/workplan/refs/archive/2026-05-13-has_permission-refactor-design.md."
+ },
+ {
+  "file": "docs/workplan/plans/archive/2026-05-13-session-13-phase-2.D-inventory-late.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Renvoie au deviation-log docs/workplan/refs/2026-05-14-session-13-wave-2-deviations.md qui a été déplacé sous refs/archive/ (path actuel: docs/workplan/refs/archive/2026-05-14-session-13-wave-2-deviations.md).",
+  "evidence": "See `docs/workplan/refs/2026-05-14-session-13-wave-2-deviations.md`",
+  "recommendation": "Réécrire les liens deviation vers refs/archive/ (motif partagé par tous les plans du lot), ou laisser tel quel car doc d'archive figée."
+ },
+ {
+  "file": "docs/workplan/plans/archive/2026-05-13-session-13-phase-3.A-purchasing.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Renvoie à docs/workplan/refs/2026-05-14-session-13-wave-3-deviations.md, déplacé sous refs/archive/.",
+  "evidence": "Tracked as `D-W3-3A-NN` in `docs/workplan/refs/2026-05-14-session-13-wave-3-deviations.md`.",
+  "recommendation": "Repointer vers refs/archive/ si l'on tient à la traçabilité ; sinon accepter le drift d'archive."
+ },
+ {
+  "file": "docs/workplan/plans/archive/2026-05-13-session-13-phase-3.A-purchasing.md",
+  "severity": "P3",
+  "category": "perime",
+  "issue": "Affirme que 'audit_log (singular) is the active audit table' — contredit la règle canonique actuelle (CLAUDE.md) : la vue audit_log a été DROPPÉE en S56, seule audit_logs (pluriel) subsiste. Vrai au 2026-05-14, faux aujourd'hui.",
+  "evidence": "`audit_log` (singular) is the active audit table per Phase 2.A pattern. `audit_logs` (plural) also exists for compatibility.",
+  "recommendation": "Aucune action requise (archive daté) ; ne pas se fier à cette ligne pour du code actuel."
+ },
+ {
+  "file": "docs/workplan/plans/archive/2026-05-13-session-13-phase-3.B-expenses.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Renvoie à docs/workplan/refs/2026-05-14-session-13-wave-3-deviations.md (NEW), désormais sous refs/archive/.",
+  "evidence": "See `docs/workplan/refs/2026-05-14-session-13-wave-3-deviations.md` (NEW).",
+  "recommendation": "Repointer vers refs/archive/ ou laisser (archive)."
+ },
+ {
+  "file": "docs/workplan/plans/archive/2026-05-13-session-13-phase-3.C-b2b-core.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Renvoie à docs/workplan/refs/2026-05-14-session-13-wave-3-deviations.md, déplacé sous refs/archive/.",
+  "evidence": "Append deviations to `docs/workplan/refs/2026-05-14-session-13-wave-3-deviations.md`",
+  "recommendation": "Repointer vers refs/archive/ ou laisser (archive)."
+ },
+ {
+  "file": "docs/workplan/plans/archive/2026-05-13-session-13-phase-4.A-pos-ux.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Renvoie à docs/workplan/refs/2026-05-14-session-13-wave-3-deviations.md, déplacé sous refs/archive/.",
+  "evidence": "To be appended to `docs/workplan/refs/2026-05-14-session-13-wave-3-deviations.md`",
+  "recommendation": "Repointer vers refs/archive/ ou laisser (archive)."
+ },
+ {
+  "file": "docs/workplan/plans/archive/2026-05-13-session-13-phase-4.B-kds-ext.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Deux renvois obsolètes : le deviation-log docs/workplan/refs/2026-05-14-session-13-wave-4-deviations.md (maintenant refs/archive/) et le tree docs/reference/04-modules/ (marqué STALE S13, ne fait plus foi).",
+  "evidence": "Module ref: [`../../reference/04-modules/`](../../reference/04-modules/) — module 04 (KDS). … Deviations D-W4-4B-01..05 appended to `docs/workplan/refs/2026-05-14-session-13-wave-4-deviations.md`.",
+  "recommendation": "Repointer deviation vers refs/archive/ ; le renvoi 04-modules reste vers un tree STALE — acceptable pour une archive."
+ },
+ {
+  "file": "docs/workplan/plans/archive/2026-05-13-session-13-phase-4.C-display.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Renvoie au tree STALE docs/reference/04-modules/16-display-customer.md (fichier présent mais tree marqué non-canonique S13).",
+  "evidence": "Module ref: [`../../reference/04-modules/16-display-customer.md`](../../reference/04-modules/16-display-customer.md)",
+  "recommendation": "Aucune action (archive) ; la source modules vivante est docs/workplan/remise-a-plat/."
+ },
+ {
+  "file": "docs/workplan/plans/archive/2026-05-13-session-13-phase-4.D-tablet-polish.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Renvoie à docs/workplan/refs/2026-05-14-session-13-wave-3-deviations.md, déplacé sous refs/archive/.",
+  "evidence": "Update `2026-05-14-session-13-wave-3-deviations.md` with `D-W4-4D-01`.",
+  "recommendation": "Repointer vers refs/archive/ ou laisser (archive)."
+ },
+ {
+  "file": "docs/workplan/plans/archive/2026-05-13-session-13-phase-5.B-notifications.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Renvoie au tree STALE docs/reference/04-modules/08-customers-loyalty.md (présent mais non-canonique). Décrit aussi le pipeline notifications MVP jamais reconduit — contenu historique.",
+  "evidence": "Module ref: [`../../reference/04-modules/08-customers-loyalty.md`](../../reference/04-modules/08-customers-loyalty.md) (08-006)",
+  "recommendation": "Aucune action requise (archive daté)."
+ },
+ {
+  "file": "docs/workplan/plans/archive/2026-05-13-session-13-phase-6.A-reports-cascade.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Renvoie à docs/workplan/refs/2026-05-14-session-13-wave-6-deviations.md, déplacé sous refs/archive/. (Le lien ./2026-05-13-session-13-phase-2.B-reports-infra.md, lui, est valide dans archive/.)",
+  "evidence": "See `docs/workplan/refs/2026-05-14-session-13-wave-6-deviations.md` (created).",
+  "recommendation": "Repointer le lien deviation vers refs/archive/ ; ne rien changer au lien 2.B (résout correctement dans archive/)."
+ },
+ {
+  "file": "docs/workplan/plans/archive/2026-05-13-session-13-phase-6.B-marketing.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Cite docs/workplan/refs/2026-05-14-session-13-wave-6-deviations.md dans le file-map, désormais sous refs/archive/.",
+  "evidence": "docs/workplan/refs/2026-05-14-session-13-wave-6-deviations.md  # append",
+  "recommendation": "Repointer vers refs/archive/ ou laisser (archive)."
+ },
+ {
+  "file": "docs/workplan/plans/archive/2026-05-13-session-13-phase-6.C-polish-ops.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Renvoie à docs/workplan/refs/2026-05-14-session-13-wave-6-deviations.md, déplacé sous refs/archive/.",
+  "evidence": "See `docs/workplan/refs/2026-05-14-session-13-wave-6-deviations.md`.",
+  "recommendation": "Repointer vers refs/archive/ ou laisser (archive)."
+ },
+ {
+  "file": "docs/workplan/plans/archive/2026-05-15-session-15-PR-DRAFT.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Lien markdown vers le backlog par module qui n'existe plus a ce chemin. La cible `docs/workplan/backlog-by-module/15-production-recipes.md` a ete deplacee vers `docs/_archive/backlog-by-module-fige-S14-S30/` (repertoire `docs/workplan/backlog-by-module/` desormais vide) ; de plus le lien relatif `../backlog-by-module/...` depuis `plans/archive/` pointe vers `plans/backlog-by-module/` inexistant meme historiquement.",
+  "evidence": "Ligne 97 : `[docs/workplan/backlog-by-module/15-production-recipes.md](../backlog-by-module/15-production-recipes.md)`",
+  "recommendation": "Doc archive : ne pas corriger le contenu. Optionnellement laisser tel quel ; le backlog-by-module est officiellement archive (cf. CLAUDE.md). Aucune action requise hors perennite."
+ },
+ {
+  "file": "docs/workplan/plans/archive/2026-05-19-S24-to-S30-plan.md",
+  "severity": "P2",
+  "category": "perime",
+  "issue": "Plan previsionnel dont le contenu des sessions S26-S30 ne correspond pas a l'execution reelle (ex. S26 annonce 'Comptable Cockpit' avec create_manual_je_v1/get_trial_balance_v1 pages ; l'historique CLAUDE.md montre une trajectoire differente pour S26+). Document de planification a valeur historique mais trompeur si lu comme etat des lieux.",
+  "evidence": "Sections 3 (S26 Comptable Cockpit, S27 Product CRUD, S29 Reports Export/Z-Report) vs trajectoire reelle post-S25 decrite dans CLAUDE.md.",
+  "recommendation": "Conserver en archive comme snapshot de planification date. S'assurer qu'aucun doc canonique vivant ne le reference comme roadmap active ; il est deja sous plans/archive/."
+ },
+ {
+  "file": "docs/workplan/plans/archive/2026-05-19-S24-to-S30-plan.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Liens markdown vers `../backlog-by-module/` et `../../../CLAUDE.md` non resolvables depuis plans/archive/ : `../backlog-by-module/` = `plans/backlog-by-module/` inexistant (dossier reel vide + archive vers _archive), et `../../../CLAUDE.md` = `docs/CLAUDE.md` inexistant (CLAUDE.md est a la racine du repo).",
+  "evidence": "Lignes 279-282 : `[../backlog-by-module/](../backlog-by-module/)` et `[../../../CLAUDE.md](../../../../CLAUDE.md)`.",
+  "recommendation": "Doc archive : pas de correction requise. Noter la coherence : les autres INDEX utilisent `../../specs/archive/` (correct). Ne rien changer."
+ },
+ {
+  "file": "docs/workplan/plans/archive/2026-05-19-session-23-INDEX.md",
+  "severity": "P3",
+  "category": "incoherence",
+  "issue": "Section 10 'Deviation packs' laissee avec le placeholder '(A remplir apres execution.)' alors que la session a ete executee et mergee (PR referencee dans CLAUDE.md/roadmap). Les deviations de S23 ne sont donc documentees nulle part dans son INDEX, contrairement a S20/S21/S22/S24/S25.",
+  "evidence": "Ligne 478 : `*(A remplir apres execution.)*` sous '## 10. Deviation packs (Session 23 → Session 24+)'.",
+  "recommendation": "Doc archive : laisser tel quel ou, si un suivi de dette est souhaite, ajouter une note 'aucune deviation consignee' pour lever l'ambiguite avec un oubli."
+ },
+ {
+  "file": "docs/workplan/plans/archive/2026-05-16-session-16-plan.md",
+  "severity": "P3",
+  "category": "doublon",
+  "issue": "Fichier plan.md tres detaille (SQL/TS inline, ~2500 lignes) qui redit le contenu de l'INDEX S16 sous forme etendue. Seule session avec a la fois un INDEX ET un plan.md separe ; les autres sessions integrent le detail dans l'INDEX unique.",
+  "evidence": "Coexistence de `2026-05-16-session-16-INDEX.md` et `2026-05-16-session-16-plan.md` couvrant les memes phases 1.A/2.A/2.B/2.C.",
+  "recommendation": "Doc archive : conserver ; aucun impact. Historiquement anormal mais sans consequence sur les docs vivants."
+ },
+ {
+  "file": "docs/workplan/plans/archive/2026-05-19-session-26-INDEX.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "Le lien vers le spec pointe vers `../specs/2026-05-19-session-26-spec.md`, qui depuis `docs/workplan/plans/archive/` resout vers `docs/workplan/plans/specs/2026-05-19-session-26-spec.md` (inexistant). Le fichier reel est `docs/workplan/specs/archive/2026-05-19-session-26-spec.md`. Lien non normalise lors de l'archivage (les autres INDEX du meme dossier utilisent correctement `../../specs/archive/...`).",
+  "evidence": "Ligne 13 : `**Spec :** [`../specs/2026-05-19-session-26-spec.md`](../specs/2026-05-19-session-26-spec.md)`",
+  "recommendation": "Corriger le lien en `../../specs/archive/2026-05-19-session-26-spec.md` (verifie existant)."
+ },
+ {
+  "file": "docs/workplan/plans/archive/2026-05-19-session-26-INDEX.md",
+  "severity": "P3",
+  "category": "mal-place",
+  "issue": "Ce fichier est en realite un PLAN d'implementation complet (2571 lignes : « For agentic workers : REQUIRED SUB-SKILL », waves, sous-phases, SQL integral, checkboxes `- [ ]`) mais est nomme « -INDEX.md ». Le vrai closeout INDEX de S26 est `2026-05-20-session-26-INDEX.md`. Deux fichiers partagent donc le suffixe « session-26-INDEX » avec des roles differents (plan vs closeout), source de confusion.",
+  "evidence": "Ligne 3 : `> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development` ; contenu = plan a executer, pas un recap de session.",
+  "recommendation": "Renommer en `2026-05-19-session-26-plan.md` pour aligner sur la convention plan/INDEX du reste de l'arbo (les autres sessions ont bien `-plan.md` + `-INDEX.md` distincts)."
+ },
+ {
+  "file": "docs/workplan/plans/archive/2026-05-20-audit-integral-V3-plan.md",
+  "severity": "P3",
+  "category": "perime",
+  "issue": "Plan d'audit historique dont le statut affiche encore « READY — a executer en nouvelle fenetre de contexte » alors que l'audit a ete realise depuis longtemps ; il reference des skills qui n'existent plus (`anthropic-skills:db-schema-audit`, `:supabase-best-practices`, `:accounting-audit`, `:security-review`, `:app-design-specialist`) et des chemins peu fiables aujourd'hui (`docs/workplan/backlog-by-module/00-roadmap-globale.md` fige/archive, `docs/reference/04-modules/` marque STALE). Se decrit lui-meme comme etant a `docs/workplan/plans/2026-05-20-audit-integral-V3-plan.md` alors qu'il est desormais dans `plans/archive/`.",
+  "evidence": "Ligne 4 : `> **Status**: READY — a executer en nouvelle fenetre de contexte` ; lignes 112-114 : `Skill anthropic-skills:db-schema-audit`.",
+  "recommendation": "Doc d'archive : soit laisser tel quel comme trace historique, soit ajouter un bandeau « EXECUTE / ARCHIVE » en tete pour eviter qu'un lecteur croie le plan encore actionnable ; ne pas corriger les skills/chemins (histoire figee)."
+ },
+ {
+  "file": "docs/workplan/plans/archive/2026-05-29-session-34-plan.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Le lien Spec (ligne 13) pointe vers `../specs/2026-05-29-session-34-spec.md` (a la fois texte et cible). Depuis docs/workplan/plans/archive/, `../specs/` resout vers docs/workplan/plans/specs/ qui n'existe pas ; le fichier reel est docs/workplan/specs/archive/2026-05-29-session-34-spec.md. Lien casse. Les autres plans du lot utilisent correctement `../../specs/archive/...` comme cible.",
+  "evidence": "ligne 13 : **Spec:** [`../specs/2026-05-29-session-34-spec.md`](../specs/2026-05-29-session-34-spec.md)",
+  "recommendation": "Corriger la cible en `../../specs/archive/2026-05-29-session-34-spec.md` (ou laisser tel quel : draft superseded jamais execute, banniere en tete). Priorite basse."
+ },
+ {
+  "file": "docs/workplan/plans/archive/2026-06-01-pos-print-bridge-deploy-plan.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Lien spec mort ligne 11 : `[...](../specs/2026-06-01-pos-print-bridge-deploy-spec.md)`. Depuis plans/archive/ ce chemin résout vers docs/workplan/plans/specs/ qui n'existe pas (aucun dossier plans/specs). La spec réelle est docs/workplan/specs/archive/2026-06-01-pos-print-bridge-deploy-spec.md.",
+  "evidence": "ligne 11 : `**Spec:** [`../specs/2026-06-01-pos-print-bridge-deploy-spec.md`](../specs/2026-06-01-pos-print-bridge-deploy-spec.md)`",
+  "recommendation": "Corriger la cible en `../../specs/archive/2026-06-01-pos-print-bridge-deploy-spec.md` (lien non mis à jour lors du déplacement du plan dans archive/, contrairement aux 4 autres plans du même lot)."
+ },
+ {
+  "file": "docs/workplan/plans/archive/2026-06-01-pos-print-bridge-deploy-plan.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Lien cross-ref S35 mort ligne 13 : cible `../specs/archive/2026-05-29-session-35-spec.md` résout vers docs/workplan/plans/specs/archive/ inexistant.",
+  "evidence": "ligne 13 : `[...](../specs/archive/2026-05-29-session-35-spec.md) §5 — F-009 Printing tab`",
+  "recommendation": "Remplacer par `../../specs/archive/2026-05-29-session-35-spec.md`."
+ },
+ {
+  "file": "docs/workplan/plans/archive/2026-06-01-pos-double-print-risk-plan.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Liens croisés morts vers le plan print-bridge (lignes 120 et 500) : `[pos-print-bridge-deploy](../2026-06-01-pos-print-bridge-deploy-plan.md)`. Depuis plans/archive/ ce `../` pointe vers docs/workplan/plans/ où le fichier n'existe plus (il est dans plans/archive/).",
+  "evidence": "ligne 120 : `Check the state of [`pos-print-bridge-deploy`](../2026-06-01-pos-print-bridge-deploy-plan.md)` ; ligne 500 idem",
+  "recommendation": "Corriger en `./2026-06-01-pos-print-bridge-deploy-plan.md` (même dossier archive/)."
+ },
+ {
+  "file": "docs/workplan/plans/archive/2026-06-01-pos-double-print-risk-plan.md",
+  "severity": "P3",
+  "category": "orphelin",
+  "issue": "Plan jamais exécuté : aucun INDEX associé (Task 6 devait créer 2026-06-01-pos-double-print-risk-INDEX.md, absent partout) et aucune entrée « merged » dans CLAUDE.md. Idem pour les 5 autres plans standalone 2026-06-01 du lot (paymentterminal-refactor, print-bridge-deploy, realtime-channel-uniqueness, receipt-payment-method, refund-test-investigation) — aucun n'a d'INDEX. Ces travaux ont vraisemblablement été fondus dans S34/S35/S36 (ex. le fix de canal realtime et le F-002/F-021 apparaissent dans l'INDEX S36).",
+  "evidence": "`ls 2026-06-01-pos-*-INDEX.md` → MISSING pour les 6 plans ; Task 6 du plan planifie la création de l'INDEX",
+  "recommendation": "Ajouter en tête de chacun de ces 6 plans une note « superseded/folded into Sxx — non exécuté en standalone » pour éviter qu'un lecteur les prenne pour du travail en attente ; sinon les regrouper sous un sous-dossier archive/spikes-2026-06-01/."
+ },
+ {
+  "file": "docs/workplan/plans/archive/2026-06-01-pos-print-bridge-deploy-plan.md",
+  "severity": "P3",
+  "category": "perime",
+  "issue": "Le plan cite le préfixe MCP `mcp__plugin_supabase_supabase__execute_sql`/`generate_typescript_types` (lignes 340, 462, etc.) comme serveur actif. CLAUDE.md (racine) précise désormais que ce plugin est DÉSACTIVÉ (2026-07-07) et que le connecteur actif est `mcp__claude_ai_Supabase__*`. Périmé mais sans conséquence (doc historique en archive).",
+  "evidence": "ligne 340 : `Run the file contents through MCP `mcp__plugin_supabase_supabase__execute_sql``",
+  "recommendation": "Aucune réécriture d'un plan daté (append-only) ; simplement conscient que les préfixes MCP de tous ces plans 2026-06 sont périmés — ne pas s'en servir comme référence d'outillage courant."
+ },
+ {
+  "file": "docs/workplan/plans/archive/2026-06-12-stock-audit-fixes-plan.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "Le lien relatif vers l'audit source pointe vers ../../audit/2026-06-12-stock-management-audit.md, qui depuis docs/workplan/plans/archive/ resout vers docs/workplan/audit/ (inexistant). Le fichier reel est docs/audit/2026-06-12-stock-management-audit.md. Le lien a casse lors du deplacement du plan dans le sous-dossier archive/ (une profondeur de plus).",
+  "evidence": "Ligne 5 : \"corriger les 22 findings de l'audit [`docs/audit/2026-06-12-stock-management-audit.md`](../../audit/2026-06-12-stock-management-audit.md)\" — glob confirme le fichier a docs/audit/ et pas docs/workplan/audit/",
+  "recommendation": "Corriger la cible relative en ../../../audit/2026-06-12-stock-management-audit.md (le texte affiche docs/audit/... est deja correct)."
+ },
+ {
+  "file": "docs/workplan/plans/archive/2026-06-13-session-44-INDEX.md",
+  "severity": "P3",
+  "category": "incoherence",
+  "issue": "Le texte affiche des liens spec/plan montre un chemin (../specs/...) different de la cible href reelle (../../specs/archive/...). La cible cliquable est correcte mais le libelle visible designe un chemin qui n'existe plus depuis l'archivage. Meme motif dans les INDEX S45 et S46.",
+  "evidence": "Ligne 3 : \"[../specs/2026-06-13-session-44-money-path-hardening-spec.md](../../specs/archive/2026-06-13-session-44-money-path-hardening-spec.md)\"",
+  "recommendation": "Aligner le texte affiche sur la cible reelle (cosmetique, non bloquant car le href resout correctement)."
+ },
+ {
+  "file": "docs/workplan/refs/archive/2026-05-13-decision-pack.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "Le frontmatter `sources:` pointe vers `docs/workplan/specs/2026-05-13-session-13-spec.md §3` et `docs/workplan/specs/2026-05-13-session-13-architecture-audit.md §6`, et D10 renvoie à `docs/workplan/refs/2026-05-13-has_permission-refactor-design.md`. Ces 3 chemins (hors-archive) n'existent plus : les fichiers ont été déplacés sous specs/archive/ et refs/archive/.",
+  "evidence": "frontmatter lignes 6-8 + ligne 140 « See docs/workplan/refs/2026-05-13-has_permission-refactor-design.md » ; `ls docs/workplan/specs/2026-05-13-session-13-spec.md` → No such file (présent seulement sous specs/archive/).",
+  "recommendation": "Réécrire les chemins vers les emplacements archive/ actuels, ou ajouter une note d'en-tête « chemins d'origine pré-archivage » ; ne pas éditer le corps historique verrouillé au-delà des liens."
+ },
+ {
+  "file": "docs/workplan/refs/archive/2026-05-13-kiosk-auth-design.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "L'en-tête référence Spec ref / Plan ref / Audit ref vers `docs/workplan/specs/2026-05-13-session-13-spec.md`, `docs/workplan/plans/2026-05-13-session-13-INDEX.md`, `docs/workplan/specs/2026-05-13-session-13-architecture-audit.md` — tous déplacés sous archive/, donc morts aux chemins cités.",
+  "evidence": "lignes 3-6 du fichier ; les cibles n'existent qu'en `docs/workplan/{specs,plans}/archive/`.",
+  "recommendation": "Corriger les 3 chemins d'en-tête vers archive/ (les fichiers cibles existent bien, seulement déplacés)."
+ },
+ {
+  "file": "docs/workplan/refs/archive/2026-05-13-ui-steward-charter.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "En-tête (Spec/Plan/Audit ref) vers les chemins pré-archive de la spec/plan/audit S13, et §8 renvoie à `docs/workplan/backlog-by-module/22-design-system.md`. Le dossier backlog-by-module a été déplacé vers `docs/_archive/backlog-by-module-fige-S14-S30/`.",
+  "evidence": "lignes 3-6 + ligne 468 ; `ls docs/workplan/backlog-by-module` → No such file ; présent sous docs/_archive/.",
+  "recommendation": "Repointer les liens vers archive/ et docs/_archive/backlog-by-module-fige-S14-S30/."
+ },
+ {
+  "file": "docs/workplan/refs/archive/2026-05-13-v2-v3-path-translation.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "Le frontmatter `sources:` cite `docs/workplan/backlog-by-module/*.md (25 modules)` comme source vivante ; ce dossier n'existe plus (archivé sous docs/_archive/backlog-by-module-fige-S14-S30/).",
+  "evidence": "frontmatter lignes 6-9 ; `ls docs/workplan/backlog-by-module` → No such file.",
+  "recommendation": "Mettre à jour le chemin source vers docs/_archive/backlog-by-module-fige-S14-S30/."
+ },
+ {
+  "file": "docs/workplan/refs/archive/2026-05-13-staging-config.md",
+  "severity": "P2",
+  "category": "perime",
+  "issue": "Décrit un workflow Docker local comme canonique : CI qui `supabase start` + `pnpm db:reset` + `bash supabase/tests/run_pgtap.sh`, et §4 « db:reset sur staging ». CLAUDE.md déclare Docker retiré le 2026-05-14 et interdit explicitement ces commandes (cible = cloud MCP). Doc trompeur si consulté hors contexte.",
+  "evidence": "§6 lignes 205-218 (CI Docker), §3.3 « boots a local Supabase Docker stack », §8 script ci:local ; contredit CLAUDE.md « DO NOT run pnpm db:reset / supabase start ».",
+  "recommendation": "Ajouter un bandeau d'en-tête « SUPERSEDED — workflow Docker retiré 2026-05-14, cf. CLAUDE.md Build & Test cloud MCP » ; conserver comme record."
+ },
+ {
+  "file": "docs/workplan/refs/archive/2026-05-13-staging-config.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "§10 References renvoie à `docs/workplan/plans/2026-05-13-session-13-INDEX.md` (chemin pré-archive) — le fichier est maintenant sous plans/archive/.",
+  "evidence": "ligne 309 ; cible réelle `docs/workplan/plans/archive/2026-05-13-session-13-INDEX.md`.",
+  "recommendation": "Repointer vers plans/archive/."
+ },
+ {
+  "file": "docs/workplan/refs/archive/2026-05-14-session-13-deviation-pack.md",
+  "severity": "P3",
+  "category": "incoherence",
+  "issue": "Nommage incohérent de la série : ce fichier est le pack Wave 1 (titre « Session 13 — Wave 1 Deviation Pack ») mais son nom est le générique `session-13-deviation-pack.md`, alors que les Waves 2 à 6 suivent le patron `session-13-wave-N-deviations.md`. Repérage difficile.",
+  "evidence": "ligne 1 « Wave 1 Deviation Pack » vs nom de fichier sans « wave-1 » ; comparer aux 5 autres `*-wave-N-deviations.md`.",
+  "recommendation": "Renommer en `2026-05-14-session-13-wave-1-deviations.md` pour homogénéiser la série."
+ },
+ {
+  "file": "docs/workplan/refs/archive/2026-05-14-session-13-wave-2-deviations.md",
+  "severity": "P3",
+  "category": "doublon",
+  "issue": "Deux fichiers portent le même titre « Session 13 — Wave 2 deviations » : celui-ci (05-14, phases 2.C/2.D/2.A) et `2026-05-13-session-13-wave-2-deviations.md` (05-13, phase 2.B). Contenus complémentaires mais collision de nom/titre (différenciés seulement par le préfixe de date) — source de confusion.",
+  "evidence": "les deux fichiers ; l'un couvre phase 2.B (reports), l'autre 2.C/2.D/2.A (promotions/opname/production).",
+  "recommendation": "Fusionner les deux journaux Wave 2 en un seul fichier, ou renommer explicitement (ex. `-wave-2b-` vs `-wave-2cda-`) et se lier mutuellement."
+ },
+ {
+  "file": "docs/workplan/refs/archive/2026-05-13-has_permission-refactor-design.md",
+  "severity": "P3",
+  "category": "perime",
+  "issue": "§9 Rollback prescrit `pnpm db:reset` sur staging comme procédure — commande interdite depuis la retraite Docker (CLAUDE.md). Doc de conception archivé, risque faible mais trompeur si suivi.",
+  "evidence": "§9 lignes 527-529 « pnpm db:reset on staging ».",
+  "recommendation": "Aucun changement de corps requis (record historique) ; couvert par le bandeau global à ajouter aux docs S13 Docker-era."
+ },
+ {
+  "file": "docs/workplan/remise-a-plat/09-b2b-wholesale.md",
+  "severity": "P1",
+  "category": "contradiction",
+  "issue": "La fiche declare le prix negocie B2B comme INEXISTANT alors que CLAUDE.md indique que S69 (2026-07-08) a ferme la fiche 09 B1.1 en livrant le prix negocie par client (create_b2b_order_v5 + _resolve_b2b_line_price_v1 + table customer_product_prices). Aucun header de mise a jour S69 n'a ete ajoute ; le header S68 (l.7) affirme meme explicitement 'Reste surclame : prix negocies (D3)', et le verdict C-B1.1 reste code 🔴 MANQUANT.",
+  "evidence": "l.43 : '🔴 MANQUANT ... Aucun mecanisme de prix negocie ... aucune table de tarifs client (grep negotiat|price_list|customer_price migrations -> 0)' ; l.7 header S68 : 'Reste surclame : prix negocies (D3)' ; l.70 D3 : 'Prix negocies par client : table de tarifs ... application cote serveur dans create_b2b_order_v4'.",
+  "recommendation": "Ajouter un header 'Mise a jour S69' en tete de la fiche (miroir du header S68) : B1.1 LIVRE (prix negocie client > categorie > retail via create_b2b_order_v5 / _resolve_b2b_line_price_v1 / customer_product_prices), passer C-B1.1 de 🔴 a ✅ et retirer 'Prix negocies par client' des chantiers D3."
+ },
+ {
+  "file": "docs/workplan/remise-a-plat/08-customers-loyalty.md",
+  "severity": "P1",
+  "category": "contradiction",
+  "issue": "La fiche presente le CRUD des categories tarifaires et l'ecriture des prix negocies comme non livres (read-only, deviation D-W6-CUSTCAT-01 encore ouverte) alors que CLAUDE.md indique que S69 a ferme la fiche 08 D2.1 (CRUD reel create/update/delete_customer_category_v1 + customer_product_prices). Aucun header S69.",
+  "evidence": "l.13 : 'CustomerCategoriesPage ... explicitement READ-ONLY : no create/update RPC exists ... deviation D-W6-CUSTCAT-01' ; l.47 verdict C-B1.2 : '🟠 PARTIEL ... CRUD categories desactive ... aucune UI d ecriture des prix negocies' ; l.69 D2.1 : 'CRUD categories tarifaires + prix negocies (ferme D-W6-CUSTCAT-01, ouvert depuis S14)' liste comme chantier a faire.",
+  "recommendation": "Ajouter un header 'Mise a jour S69' : D2.1 LIVRE (CRUD categories + customer_product_prices, D-W6-CUSTCAT-01 fermee), passer C-B1.2 vers ✅/moins surclame et retirer D2.1 des chantiers moyens."
+ },
+ {
+  "file": "docs/workplan/remise-a-plat/05-products-categories.md",
+  "severity": "P2",
+  "category": "perime",
+  "issue": "La fiche presente les prix negocies comme lecture-seule sans UI d'ecriture, et liste 'UI d ecriture des prix negocies' en chantier D2.1 a faire, alors que S69 (per CLAUDE.md) a livre upsert/delete_product_category_price_v1 + PricingTab editable. Aucun header S69.",
+  "evidence": "l.20 : 'Aucune UI d ecriture : useCustomerCategoryPrices.ts:8 est ... Read-only ... PricingTab du detail client est en lecture seule' ; l.54 C-B1.7 '🟠 PARTIEL ... aucune UI/RPC d ecriture des overrides product_category_prices' ; l.72 D2.1 : 'UI d ecriture des prix negocies : RPC upsert_product_category_price_v1 (+ delete) ...'.",
+  "recommendation": "Ajouter un header 'Mise a jour S69' notant l'ecriture des overrides categorie livree (upsert/delete_product_category_price_v1, PricingTab editable) et retirer/marquer livre D2.1."
+ },
+ {
+  "file": "docs/workplan/remise-a-plat/00-INDEX.md",
+  "severity": "P2",
+  "category": "incoherence",
+  "issue": "L'index a ete partiellement mis a jour pour S70 (ligne module 12) mais pas pour S69 : la Vague 2 liste encore 'CRUD Customer Categories + UI prix negocies' sans coche, la Vague 3 liste 'Prix negocies par client', et la ligne module 09 dit 'restent surclames : prix negocies' — tous livres en S69 selon CLAUDE.md. Mise a jour partielle incoherente.",
+  "evidence": "l.24 (module 12) reference deja S70 : 'D2 ①②③④ soldes (S60/S66/S67/S70)' ; mais l.21 (module 09) : '🔴 restent surclames : prix negocies, cycle livraison' ; l.110 Vague 2 : '- CRUD Customer Categories + UI prix negocies (08/05 ...)' sans ✅ ; l.116 Vague 3 : 'Prix negocies par client : table de tarifs ...'.",
+  "recommendation": "Propager S69 dans l'index : cocher/soldere la ligne Vague 2 'CRUD Customer Categories + UI prix negocies', retirer 'Prix negocies par client' de la Vague 3, et corriger la ligne module 09 (prix negocies plus surclames)."
+ },
+ {
+  "file": "docs/workplan/remise-a-plat/09-b2b-wholesale.md",
+  "severity": "P3",
+  "category": "incoherence",
+  "issue": "La fiche reference create_b2b_order_v3 comme le RPC money-path B2B courant (section A et E), alors que CLAUDE.md indique v4 (S68) puis v5 (S69) comme version vivante. Meme reference v3 residuelle dans fiches 02/03/06/08.",
+  "evidence": "09 l.11 : 'Creation de commande B2B via create_b2b_order_v3 (20260710000075_create_b2b_order_v3.sql)' ; 06 l.93 : '_record_sale_stock_v1 est appele par ... create_b2b_order_v3' ; 08 l.87 : 'plafond de credit ... create_b2b_order_v3'.",
+  "recommendation": "Lors de l'ajout des headers S68/S69, noter que le RPC courant est create_b2b_order_v5 (v3 histori que) pour eviter qu'un lecteur s'appuie sur une version DROPPEE."
+ },
+ {
+  "file": "docs/workplan/remise-a-plat/12-cash-register-shift.md",
+  "severity": "P2",
+  "category": "incoherence",
+  "issue": "Le corps de la fiche (fige au commit 5b0fa92) contredit ses propres headers dates. §A l.18 decrit 'close_shift_v2' et la table §C B1.4 (l.48) verdicte '🔴 MANQUANT (2 sous-claims sur 4)' pour le PIN manager et le comptage 3 volets, alors que les headers S66 (l.5) et S67 (l.3) declarent ces deux fonctionnalites LIVREES (close_shift_v4/v5). Seul D2.4 (l.71) a recu une edition inline ✅ ; D2.1/D2.2/D2.3 restent en '🔴/🟠' dans le corps. Un lecteur du tableau §C sans les headers est induit en erreur.",
+  "evidence": "l.48 : '| B1.4 | ... **PIN manager gros ecarts** | Comptage **especes uniquement** (`close_shift_v2(p_counted_cash)`) ... **aucun PIN a la cloture** | 🔴 MANQUANT (2 sous-claims sur 4) |' vs l.5 header S66 : 'D2.1 livre — close_shift_v3 → v4 ... exige un approbateur designe ... PIN 6 chiffres' et l.3 header S67 : 'D2.2 + D2.3 livres ... comptage 3 volets cash / QRIS / carte'.",
+  "recommendation": "Mettre a jour les verdicts §C (B1.1/B1.4) et §A (version RPC) pour refleter close_shift_v5 et les livraisons S66/S67, ou ajouter un rappel explicite en tete de §C que le tableau est fige au 5b0fa92 et supplante par les headers."
+ },
+ {
+  "file": "docs/workplan/remise-a-plat/14-reports-analytics.md",
+  "severity": "P2",
+  "category": "contradiction",
+  "issue": "Le 'Constat hors-revendication' §C (l.65) affirme que le RPC `get_dashboard_overview_v1` 'n'existe ni dans les migrations ni dans types.generated.ts' et que le Dashboard d'accueil est 'un stub — zeros codes en dur', directement contredit par le header S63 (l.3) et par D2.1 (l.75) qui declarent le dashboard cable et SOLDE (migrations _113/_114, hook useDashboardOverview, pgTAP 14/14). Le header signale bien le solde mais le paragraphe l.65 reste mensonger s'il est lu isolement.",
+  "evidence": "l.65 : 'le RPC get_dashboard_overview_v1 evoque en TODO ... n'existe ni dans les migrations ni dans types.generated.ts (verifie — il n'existe donc pas non plus en DB live) ; aucun hook useDashboardOverview n'existe' vs l.3 : 'Dashboard d'accueil cable — get_dashboard_overview_v1 (migrations _113+_114 ...) + hook useDashboardOverview'.",
+  "recommendation": "Rayer/annoter le paragraphe l.65 comme perime (le dashboard est livre S63), ou le remplacer par un renvoi au header, pour eviter une affirmation frontalement fausse dans le corps."
+ },
+ {
+  "file": "docs/workplan/remise-a-plat/21-lan-architecture.md",
+  "severity": "P2",
+  "category": "perime",
+  "issue": "Le corps §A (l.26-33) decrit comme presents en base la page 'Print Queue', la table `print_queue` + ses 5 RPCs, et tout le code mesh LAN (useLanHub/useLanClient/lanHubMessageHandler), alors que le header S62 (l.3) declare que le mesh LAN a ete PURGE et `print_queue` DROPPEE (migration _110, table + 5 RPCs + page BO supprimes). Le tableau §C B1.2 (l.54) affirme encore 'Table + RPCs avec retry ×3 existent en DB (20260517000170)'. Contenu perime vs la decision internet-first executee.",
+  "evidence": "l.26 : 'Page « Print Queue » (gate print_queue.read) : lecture + cancel de jobs' et l.28-29 : 'Table print_queue + RPCs enqueue_print_job_v1 ...' vs l.3 header S62 : 'print_queue DROPPEE (_110 : table vide + 5 RPCs *_print_job_v1 + permissions + page BO)' et 'mesh LAN purge (lanHub/lanClient/... + domain/src/lan/ entier)'.",
+  "recommendation": "Annoter §A et la ligne §C B1.2 comme superseded par S62 (print_queue et mesh LAN supprimes), ou ajouter un bandeau en tete de §A signalant que l'inventaire du code mort a ete purge."
+ },
+ {
+  "file": "docs/workplan/remise-a-plat/10-accounting-double-entry.md",
+  "severity": "P3",
+  "category": "incoherence",
+  "issue": "Le header S59 (l.3) declare 'D1.1 drill-down JE → origine livre (resolveJeSourceEntity)' et 'C-B1.2 n'est plus 🟠 texte-mort', mais la table §C conserve B1.2 verdicte '🟠 PARTIEL' (l.50) avec le constat 'texte mort ... aucun lien de navigation', et D1 (l.68) liste encore le drill-down comme quick win a faire. Le corps n'a pas ete reconcilie avec son header.",
+  "evidence": "l.3 : 'D1.1 drill-down JE → origine livre (resolveJeSourceEntity, 26 reference_type couverts) ; C-B1.2 n'est plus 🟠 texte-mort' vs l.50 : '| B1.2 | ... | Le drawer affiche Source : <reference_type> en **texte mort** ... aucun lien de navigation ... | 🟠 PARTIEL |'.",
+  "recommendation": "Aligner le verdict §C B1.2 (passer a ✅/livre) et retirer le quick win D1 correspondant, ou preciser que la resolution est livree cote code mais le lien UI reste partiel — actuellement le header et le tableau se contredisent."
+ },
+ {
+  "file": "docs/workplan/specs/2026-06-27-session-50-spec.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "Le fichier reference (ligne 2 en-tete et section References ligne 54) `docs/workplan/audits/2026-06-27-triangulated-audit-synthesis-and-completion-plan.md` qui n'existe pas — le dossier audits/ ne contient que `2026-06-27-audit-integral-par-module.md`, `2026-06-27-project-state-and-gaps.md` et `-findings.md`.",
+  "evidence": "Origin issue: drift #125 + triangulated audit synthesis (`docs/workplan/audits/2026-06-27-triangulated-audit-synthesis-and-completion-plan.md`).",
+  "recommendation": "Corriger le lien vers le fichier d'audit reel (probablement `2026-06-27-project-state-and-gaps.md` ou `audit-integral-par-module.md`) ou supprimer la reference."
+ },
+ {
+  "file": "docs/workplan/specs/2026-06-27-session-50-spec.md",
+  "severity": "P3",
+  "category": "mal-place",
+  "issue": "Spec d'une session mergee depuis longtemps (S50) toujours dans `docs/workplan/specs/` alors que les specs S1–S13 mergees sont regroupees sous `specs/archive/`. Incoherence de rangement.",
+  "evidence": "Chemin actuel: docs/workplan/specs/2026-06-27-session-50-spec.md (hors archive/).",
+  "recommendation": "Deplacer vers `docs/workplan/specs/archive/` pour aligner avec les autres specs de sessions closes (rebaser les liens si besoin)."
+ },
+ {
+  "file": "docs/workplan/specs/archive/2026-05-03-breakery-split-2apps-design.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Le lien relatif `[docs/README.md](../../README.md)` (ligne 3) resout depuis `specs/archive/` vers `docs/workplan/README.md` qui n'existe pas — le fichier a ete descendu d'un niveau (dans archive/) sans rebaser `../../` en `../../../`.",
+  "evidence": "voir [`docs/README.md`](../../README.md)",
+  "recommendation": "Rebaser tous les liens `../../` de ces specs archivees en `../../../` (ou pointer vers les vrais chemins). L'en-tete 'Last refreshed 2026-05-13' est elle-meme perimee depuis le deplacement en archive/."
+ },
+ {
+  "file": "docs/workplan/specs/archive/2026-05-04-session-1-decisions-addendum.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Lien `[docs/README.md](../../README.md)` (ligne 3) resout vers `docs/workplan/README.md` (inexistant) depuis specs/archive/ ; devrait etre `../../../README.md`.",
+  "evidence": "voir [`docs/README.md`](../../README.md)",
+  "recommendation": "Rebaser `../../` en `../../../` pour les fichiers deplaces dans archive/."
+ },
+ {
+  "file": "docs/workplan/specs/archive/2026-05-05-session-2-modifiers-kds-spec.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Liens `../../README.md` et `../../reference/04-modules/*` (lignes 3, 9) resolvent vers `docs/workplan/README.md` et `docs/workplan/reference/` (inexistants) depuis specs/archive/ ; il manque un niveau `../`.",
+  "evidence": "[`../../reference/04-modules/04-kds-kitchen.md`](../../reference/04-modules/04-kds-kitchen.md)",
+  "recommendation": "Rebaser `../../` en `../../../` (les cibles reelles docs/reference/04-modules/*.md existent bien)."
+ },
+ {
+  "file": "docs/workplan/specs/archive/2026-05-05-session-3-customer-loyalty-receipts-spec.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Liens `../../README.md` et `../../reference/04-modules/08-customers-loyalty.md` (lignes 3, 9) resolvent vers des chemins inexistants (`docs/workplan/...`) depuis specs/archive/.",
+  "evidence": "[`../../reference/04-modules/08-customers-loyalty.md`](../../reference/04-modules/08-customers-loyalty.md)",
+  "recommendation": "Rebaser `../../` en `../../../`."
+ },
+ {
+  "file": "docs/workplan/specs/archive/2026-05-06-session-4-held-tables-served-spec.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Liens `../../README.md` et `../../reference/04-modules/*` (lignes 3, 7-8) resolvent vers `docs/workplan/...` (inexistant) depuis specs/archive/.",
+  "evidence": "Held orders → [`../../reference/04-modules/02-pos-cart-orders.md`](../../reference/04-modules/02-pos-cart-orders.md)",
+  "recommendation": "Rebaser `../../` en `../../../`."
+ },
+ {
+  "file": "docs/workplan/specs/archive/2026-05-06-session-5-tablet-ordering-spec.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Liens `../../README.md` et `../../reference/04-modules/*` (lignes 3, 7-8) resolvent vers des chemins inexistants depuis specs/archive/.",
+  "evidence": "Tablet ordering → [`../../reference/04-modules/17-tablet-ordering.md`](../../reference/04-modules/17-tablet-ordering.md)",
+  "recommendation": "Rebaser `../../` en `../../../`."
+ },
+ {
+  "file": "docs/workplan/specs/archive/2026-05-06-session-6-discounts-multi-modifiers-loyalty-mult-spec.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Liens `../../README.md` et `../../reference/04-modules/*` (lignes 3, 7-9) resolvent vers des chemins inexistants depuis specs/archive/.",
+  "evidence": "[`../../reference/04-modules/13-promotions-discounts.md`](../../reference/04-modules/13-promotions-discounts.md)",
+  "recommendation": "Rebaser `../../` en `../../../`."
+ },
+ {
+  "file": "docs/workplan/specs/archive/2026-05-06-session-7-customer-categories-combos-spec.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Liens `../../README.md` et `../../reference/04-modules/*` (lignes 3, 7-9) resolvent vers `docs/workplan/...` (inexistant) depuis specs/archive/.",
+  "evidence": "[`../../reference/04-modules/05-products-categories.md`](../../reference/04-modules/05-products-categories.md)",
+  "recommendation": "Rebaser `../../` en `../../../`."
+ },
+ {
+  "file": "docs/workplan/specs/archive/2026-05-07-session-8-promotions-engine-spec.md",
+  "severity": "P2",
+  "category": "perime",
+  "issue": "Brouillon de moteur promotions superpose a la session 9 : apres l'insertion de la session 8 perf-debt (fichier 2026-05-10-session-8-perf-debt-spec.md, §9), les promotions ex-session 8 ont ete decalees et re-specifiees en session 9 (2026-05-10-session-9-promotions-spec.md). Ce fichier decrit donc un decoupage de sessions qui n'a pas ete execute tel quel.",
+  "evidence": "Titre 'Session 8 Spec : Promotions Engine' (2026-05-07) vs 'ex-session 8 promotions devient session 9' (session-8-perf-debt §9).",
+  "recommendation": "Ajouter un bandeau 'SUPERSEDED par 2026-05-10-session-9-promotions-spec.md (renumerotation)' en tete pour eviter la confusion sur le vrai decoupage livre."
+ },
+ {
+  "file": "docs/workplan/specs/archive/2026-05-07-session-8-promotions-engine-spec.md",
+  "severity": "P3",
+  "category": "incoherence",
+  "issue": "La spec cible `apps/tablet/src/...` (§4.4) comme app separee, alors que l'architecture actee est 2 apps (POS + BackOffice) et que la tablette est une route `/tablet/*` DANS apps/pos (cf. session 5 spec §4.3). Incoherence interne avec la decision d'architecture.",
+  "evidence": "MODIFY: apps/tablet/src/features/cart/TabletCart.tsx (§4.4)",
+  "recommendation": "Historique — noter que la tablette vit sous apps/pos ; ne pas re-utiliser ce chemin comme reference."
+ },
+ {
+  "file": "docs/workplan/specs/archive/2026-05-07-session-8-promotions-engine-spec.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Liens `../../README.md` et `../../reference/04-modules/13-promotions-discounts.md` (lignes 3, 5) resolvent vers des chemins inexistants depuis specs/archive/.",
+  "evidence": "[`../../reference/04-modules/13-promotions-discounts.md`](../../reference/04-modules/13-promotions-discounts.md)",
+  "recommendation": "Rebaser `../../` en `../../../`."
+ },
+ {
+  "file": "docs/workplan/specs/archive/2026-05-10-bo-loyalty-design.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Liens `../../README.md` et `../../reference/04-modules/08-customers-loyalty.md` (lignes 3, 5) resolvent vers `docs/workplan/...` (inexistant) depuis specs/archive/.",
+  "evidence": "Module de reference associe : [`../../reference/04-modules/08-customers-loyalty.md`](../../reference/04-modules/08-customers-loyalty.md).",
+  "recommendation": "Rebaser `../../` en `../../../`."
+ },
+ {
+  "file": "docs/workplan/specs/archive/2026-05-10-session-10-split-payment-void-refund-spec.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "Ligne 5 : 3 liens de reference dont 2 casses et 1 correct, de facon incoherente. `02-pos-cart-orders.md` et `03-payments-split.md` utilisent `../../reference/...` (resout vers docs/workplan/reference/ inexistant) tandis que `02b-orders.md` utilise `../../../reference/...` (correct depuis archive/). Reparation partielle laissee en l'etat.",
+  "evidence": "[`02-pos-cart-orders.md`](../../reference/04-modules/02-pos-cart-orders.md), ..., [`02b-orders.md`](../../../reference/04-modules/02b-orders.md)",
+  "recommendation": "Uniformiser les 3 liens sur `../../../reference/04-modules/*` (le seul qui resout correctement depuis specs/archive/)."
+ },
+ {
+  "file": "docs/workplan/specs/archive/2026-05-10-session-8-perf-debt-spec.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Liens `../../README.md` et `../../reference/04-modules/13-promotions-discounts.md` (lignes 3, 5) resolvent vers des chemins inexistants depuis specs/archive/.",
+  "evidence": "Module de reference associe : [`../../reference/04-modules/13-promotions-discounts.md`](../../reference/04-modules/13-promotions-discounts.md)",
+  "recommendation": "Rebaser `../../` en `../../../`."
+ },
+ {
+  "file": "docs/workplan/specs/archive/2026-05-10-session-9-promotions-spec.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Liens `../../README.md` et `../../reference/04-modules/13-promotions-discounts.md` (lignes 3, 5) resolvent vers des chemins inexistants depuis specs/archive/.",
+  "evidence": "Module de reference associe : [`../../reference/04-modules/13-promotions-discounts.md`](../../reference/04-modules/13-promotions-discounts.md).",
+  "recommendation": "Rebaser `../../` en `../../../`."
+ },
+ {
+  "file": "docs/workplan/specs/archive/2026-05-11-session-12-inventory-mvp-spec.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "Liens vers la reference et le backlog casses depuis le deplacement en archive/ : ligne 6/8/23 pointent `../../reference/04-modules/06-inventory-stock.md` (resout vers docs/workplan/reference/ inexistant — il faudrait `../../../reference/`) et ligne 23 `../backlog-by-module/06-inventory-stock.md` (le dossier docs/workplan/backlog-by-module n'existe plus, archive dans docs/_archive/backlog-by-module-fige-S14-S30/).",
+  "evidence": "ligne 8 : `[référence Inventory](../../reference/04-modules/06-inventory-stock.md)` ; verifie : `docs/workplan/reference` et `docs/workplan/backlog-by-module` n'existent pas",
+  "recommendation": "Corriger la profondeur des liens reference en `../../../reference/04-modules/` et repointer les liens backlog vers `docs/_archive/backlog-by-module-fige-S14-S30/`, ou supprimer ces liens (doc archive)."
+ },
+ {
+  "file": "docs/workplan/specs/archive/2026-05-12-purchasing-complete-spec.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "Meme regression de profondeur : lignes 6/11 `../../reference/04-modules/07-purchasing-suppliers.md` resolvent vers docs/workplan/reference/ (inexistant) ; lignes 14/852 `../backlog-by-module/07-purchasing-suppliers.md` pointent un dossier disparu.",
+  "evidence": "ligne 14 : `[`../backlog-by-module/07-purchasing-suppliers.md`](../backlog-by-module/07-purchasing-suppliers.md)`",
+  "recommendation": "Re-depther en `../../../reference/` et repointer le backlog vers docs/_archive/, ou purger les liens dans ce fichier d'archive."
+ },
+ {
+  "file": "docs/workplan/specs/archive/2026-05-12-session-12-inventory-complete-spec.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "Liens reference (lignes 6/12/13/23 etc. `../../reference/04-modules/06-inventory-stock.md`) et backlog (`../backlog-by-module/06-inventory-stock.md`) casses apres le passage en archive/.",
+  "evidence": "ligne 6 : `[Inventory & Stock](../../reference/04-modules/06-inventory-stock.md)` ; docs/workplan/reference absent",
+  "recommendation": "Corriger profondeur (`../../../reference/`) et repointer backlog vers docs/_archive/backlog-by-module-fige-S14-S30/."
+ },
+ {
+  "file": "docs/workplan/specs/archive/2026-05-11-session-11-backoffice-crud-spec.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "L'en-tete (ligne 6) liste 8 references modules via `../../reference/04-modules/*.md` qui resolvent vers docs/workplan/reference/ inexistant (regression d'un niveau apres archivage).",
+  "evidence": "ligne 6 : `[`07-purchasing-suppliers`](../../reference/04-modules/07-purchasing-suppliers.md)`",
+  "recommendation": "Re-depther en `../../../reference/04-modules/` (les fichiers cible existent bien sous docs/reference/04-modules/)."
+ },
+ {
+  "file": "docs/workplan/specs/archive/2026-05-15-session-15-spec.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "Liens reference (ligne 6 `../../reference/04-modules/15-...`) casses par la profondeur ; liens backlog (ligne 7 `../backlog-by-module/15-production-recipes.md`, ligne 239) vers un dossier disparu.",
+  "evidence": "ligne 6 : `[`docs/reference/04-modules/15-production-recipes.md`](../../reference/04-modules/15-production-recipes.md)` ; docs/workplan/reference et docs/workplan/backlog-by-module absents",
+  "recommendation": "Corriger la profondeur reference et repointer backlog vers docs/_archive/. Verifier aussi que docs/audit/07-product-backlog-audit.md et 02-accounting-business-audit.md (l.240-241) existent toujours."
+ },
+ {
+  "file": "docs/workplan/specs/archive/2026-05-14-session-14-spec.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "La source de verite visuelle centrale du spec — `docs/Design/backoffice/*.jpg` + `docs/Design/caissapp/*.jpg` (122 fichiers, cites D1 et §7) — n'existe pas : le repertoire docs/Design est absent, rendant le spec non-verifiable et ses liens (ligne 14 `../../Design/`, 175-176) morts.",
+  "evidence": "ligne 175 : `docs/Design/backoffice/*.jpg (76 BO) + docs/Design/caissapp/*.jpg (46 POS)` ; `ls -d docs/Design` -> No such file or directory",
+  "recommendation": "Si les screenshots ont ete deplaces/supprimes, ajouter une note en tete du spec pointant vers leur emplacement reel ou acter leur suppression ; sinon le spec renvoie a des assets fantomes."
+ },
+ {
+  "file": "docs/workplan/specs/archive/2026-05-13-session-13-docs-cascade-spec.md",
+  "severity": "P3",
+  "category": "orphelin",
+  "issue": "Le spec s'appuie sur `docs/objectif travail/*.md` (16 fichiers) declares explicitement UNTRACKED (l.185) et absents du repo, et sur `docs/workplan/backlog-by-module/*` (l.166-181) desormais deplace en archive — la tracabilite decrite ne pointe plus vers du contenu present.",
+  "evidence": "ligne 185 : « Le dossier `docs/objectif travail/` reste untracked ... conserve en marge du repo » ; `ls docs/objectif travail/` -> vide",
+  "recommendation": "Doc archive : acceptable en l'etat, mais ajouter une note que objectif travail/ et backlog-by-module/ ne sont plus dans l'arbre (archives / non-suivis)."
+ },
+ {
+  "file": "docs/workplan/specs/archive/2026-05-13-session-13-spec.md",
+  "severity": "P3",
+  "category": "contradiction",
+  "issue": "Le spec (D8 l.103, R3 l.392) affirme « abjabuniwkqpfsenxljp reste prod V2 » / « V3 prod n'est pas en service », framing que MEMORY.md corrige (« V2 n'est PAS en production ; seule V3 existe »). Contradiction avec la source canonique memoire, laissee telle quelle dans l'archive.",
+  "evidence": "ligne 392 : « (a) V3 prod n'est pas en service (incompat avec V2 — MEMORY.md) » vs MEMORY.md : v2-not-in-production",
+  "recommendation": "Aucune reecriture d'archive necessaire, mais garder a l'esprit lors d'audits transverses que ce framing V2=prod est perime ; la verite canonique est MEMORY.md/CLAUDE.md."
+ },
+ {
+  "file": "docs/workplan/specs/archive/2026-05-13-session-13-review.md",
+  "severity": "P3",
+  "category": "incoherence",
+  "issue": "L'inventaire de chemins (l.294-306) et les preuves citent des chemins absolus d'une autre machine `C:\\Users\\MamatCEO\\The_Breakery_ERP\\...` (idem dans wave-0-review l.343-369 et wave-1-review l.421-461), incoherents avec le repo actuel `C:\\Users\\guich\\a trier\\The_Breakery_ERP`.",
+  "evidence": "session-13-review l.294 : `C:\\Users\\MamatCEO\\The_Breakery_ERP\\docs\\workplan\\specs\\2026-05-13-session-13-architecture-audit.md`",
+  "recommendation": "Cosmetique / historique : ne pas corriger l'archive, simplement noter que ces chemins absolus sont des residus d'environnement et non des liens exploitables."
+ },
+ {
+  "file": "docs/workplan/specs/archive/2026-05-19-session-26-spec.md",
+  "severity": "P2",
+  "category": "doublon",
+  "issue": "Deux specs portent le numero de session 26 : cette version (2026-05-19, « Comptable Cockpit read-side », 4 pages CSV-only) et 2026-05-20-session-26-spec.md (revisee « NON-PKP », 5 pages + ADR-003). La version du 2026-05-20 la supplante (le lendemain, avec refactor PPN/ADR-003 et 5 findings audit) et correspond a l'INDEX 2026-05-20-session-26-INDEX.md reellement execute.",
+  "evidence": "2026-05-19 §1 : « 4 pages BO de cockpit comptable » ; 2026-05-20 §2 Wave 3 : « scope reduit grace NON-PKP » + §1 « Combine : Plan S26 d'origine + Fixes audit V3 + ADR-003 NON-PKP ». Les deux INDEX existent (2026-05-19-session-26-INDEX.md ET 2026-05-20-session-26-INDEX.md).",
+  "recommendation": "Marquer explicitement 2026-05-19-session-26-spec.md comme SUPERSEDED par 2026-05-20 (bandeau en tete) pour eviter qu'un lecteur d'archive le prenne pour la source de S26."
+ },
+ {
+  "file": "docs/workplan/specs/archive/2026-05-19-session-26-spec.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "Liens relatifs casses : le fichier a ete deplace dans specs/archive/ sans corriger la profondeur de ses liens (un seul ../ au lieu de deux). Toutes les references vers plans/ et backlog-by-module/ pointent vers des dossiers inexistants (specs/plans/, specs/backlog-by-module/). Verifie : docs/workplan/specs/plans/ n'existe pas.",
+  "evidence": "En-tete : « INDEX : [../plans/2026-05-19-session-26-INDEX.md](../plans/2026-05-19-session-26-INDEX.md) » et §3 « [../plans/2026-05-19-S24-to-S30-plan.md](../plans/...) », §8 « [../backlog-by-module/00-roadmap-globale.md](../backlog-by-module/...) ». Les autres specs archivees (S24, S25) utilisent correctement ../../plans/archive/.",
+  "recommendation": "Reecrire les liens en ../../plans/archive/ et ../../backlog-by-module/ (comme les specs S24/S25 voisines), ou supprimer les liens si l'archive n'a pas vocation a etre navigable."
+ },
+ {
+  "file": "docs/workplan/specs/archive/2026-05-20-session-26-spec.md",
+  "severity": "P3",
+  "category": "contradiction",
+  "issue": "Contredit la spec S26 du 2026-05-19 sur le perimetre (5 pages + PB1/NON-PKP vs 4 pages CSV-only, VAT differee). Contradiction attendue (revision supplantante) mais non signalee entre les deux fichiers, ce qui peut tromper un lecteur d'archive.",
+  "evidence": "2026-05-20 §2 liste ChartOfAccounts/JournalEntries/GeneralLedger/TrialBalance/FiscalPeriod + PB1ManagementPage ; 2026-05-19 D1 : « 4 pages CSV-only (pas VAT, pas PDF) ». Le 2026-05-20 renomme aussi VAT→PB1 (ADR-003) absent du 2026-05-19.",
+  "recommendation": "Ajouter dans le 2026-05-20 une note « remplace 2026-05-19-session-26-spec.md » pour dater la bascule."
+ },
+ {
+  "file": "docs/workplan/specs/archive/2026-05-22-session-31-spec.md",
+  "severity": "P3",
+  "category": "incoherence",
+  "issue": "Incoherence de dates : S31 (dossier date 2026-05-22) declare pour predecesseur la spec S30 datee 2026-05-24, soit posterieure. Le lien resout (le fichier existe) mais la chronologie est impossible (un predecesseur ne peut etre date apres).",
+  "evidence": "En-tete S31 : « Date : 2026-05-22 » et « Predecessor : [./2026-05-24-session-30-spec.md] ». Base : « master apres merge S30 (60a1ff3) ». Fichier 2026-05-24-session-30-spec.md confirme present dans specs/archive/.",
+  "recommendation": "Verifier/corriger la date de l'un des deux fichiers (probable renommage tardif du spec S30) ; sans impact fonctionnel, purement traçabilite d'archive."
+ },
+ {
+  "file": "docs/workplan/specs/archive/2026-05-19-session-25-spec.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Liens de profondeur mixte : les liens INDEX/plan utilisent correctement ../../plans/archive/ mais la section §7 Liens pointe vers ../backlog-by-module/ (un seul ../), qui resout vers specs/backlog-by-module/ inexistant. De plus, CLAUDE.md indique que tout backlog-by-module est desormais archive sous docs/_archive/backlog-by-module-fige-S14-S30/, rendant ces cibles obsoletes.",
+  "evidence": "§7 : « [../backlog-by-module/03-payments-split.md](../backlog-by-module/03-payments-split.md) » et « [../backlog-by-module/17-tablet-ordering.md](...) », alors que l'INDEX en tete utilise ../../plans/archive/.",
+  "recommendation": "Homogeneiser vers ../../ ; accepter par ailleurs l'obsolescence globale des liens backlog-by-module dans toutes les specs archivees (dossier deplace) — a traiter en lot plutot que par fichier."
+ },
+ {
+  "file": "docs/workplan/specs/archive/2026-05-28-session-31-spec.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Le lien Predecessor pointe vers ../2026-05-24-session-30-spec.md ; depuis le dossier archive/ ce chemin resout vers docs/workplan/specs/2026-05-24-session-30-spec.md qui n'existe pas (le fichier reel est dans specs/archive/). Le prefixe relatif '../' n'a pas ete corrige lors de l'archivage.",
+  "evidence": "Ligne 10 : > **Predecessor** : [`../2026-05-24-session-30-spec.md`](2026-05-24-session-30-spec.md)",
+  "recommendation": "Corriger la cible en ./2026-05-24-session-30-spec.md (meme dossier archive)."
+ },
+ {
+  "file": "docs/workplan/specs/archive/2026-05-29-session-35-spec.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Le lien Predecessor pointe vers ./archive/2026-05-29-session-34-spec.md ; depuis specs/archive/ cela resout vers specs/archive/archive/... (double archive) qui n'existe pas. Le fichier session-34 est dans le meme dossier.",
+  "evidence": "Ligne 9 : > **Predecessor** : [`./archive/2026-05-29-session-34-spec.md`](2026-05-29-session-34-spec.md) (draft ... archive 2026-06-12).",
+  "recommendation": "Corriger la cible en ./2026-05-29-session-34-spec.md (meme dossier archive)."
+ },
+ {
+  "file": "docs/workplan/specs/archive/2026-06-04-session-36-spec.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Lien relatif mort vers le plan : ligne 7 pointe `../plans/2026-06-04-session-36-plan.md` qui depuis specs/archive/ résout en docs/workplan/specs/plans/ (dossier inexistant). Le plan réel est docs/workplan/plans/archive/2026-06-04-session-36-plan.md. Le lien est devenu périmé lors du déplacement du spec dans archive/ (le spec S37 voisin utilise correctement `../../plans/archive/`).",
+  "evidence": "Ligne 7 : `voir `../plans/2026-06-04-session-36-plan.md``  — vérifié : `ls specs/plans/` → NO specs/plans dir ; le plan existe sous plans/archive/2026-06-04-session-36-plan.md",
+  "recommendation": "Corriger le chemin en `../../plans/archive/2026-06-04-session-36-plan.md` (aligné sur le spec S37). Impact faible (doc archivée), à traiter lors d'un passage d'harmonisation des liens d'archive."
+ },
+ {
+  "file": "docs/_archive/backlog-by-module-fige-S14-S30/00-README.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Le pointeur 'Sprint progress global : ../../../CURRENT_STATE.md' (ligne 106) est mort : CURRENT_STATE.md n'existe plus a la racine du repo. Le meme fichier est reference dans 00-roadmap-globale.md et dans plusieurs fiches module (03/12 etc. via 'CURRENT_STATE.md F3+F4', 'Sprints 0-2 historiques').",
+  "evidence": "00-README.md L106 : 'Sprint progress global : [../../../CURRENT_STATE.md](../../../CURRENT_STATE.md)' ; `ls CURRENT_STATE.md` -> MISSING",
+  "recommendation": "Aucune action requise sur le contenu fige ; si perennite souhaitee, ajouter en tete du dossier une note 'archive gelee, liens vers artefacts V2 disparus (CURRENT_STATE.md) non maintenus'."
+ },
+ {
+  "file": "docs/_archive/backlog-by-module-fige-S14-S30/01-auth-permissions.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Les 'Audits sources' cites dans les en-tetes de fiches (01-architecture-security-audit.md, 02-accounting-business-audit.md, 03-code-quality-schema-audit.md, 04-reports-testing-audit.md, 05-uiux-design-audit.md, 07-product-backlog-audit.md, 08-operations-lan-audit.md, IMPLEMENTATION_PLAN.md) ne sont plus dans docs/audit/ (deplaces vers docs/audit/archive/). Concerne toutes les fiches 01..12.",
+  "evidence": "docs/audit/ ne contient plus que 2026-05-28-pos-audit.md, 2026-06-12-stock-management-audit.md et archive/ ; les fiches referencent p.ex. 'docs/audit/01-architecture-security-audit.md'",
+  "recommendation": "Aucune reecriture du contenu fige ; a defaut, documenter une fois que les rapports d'audit historiques vivent desormais sous docs/audit/archive/."
+ },
+ {
+  "file": "docs/_archive/backlog-by-module-fige-S14-S30/00-roadmap-globale.md",
+  "severity": "P3",
+  "category": "incoherence",
+  "issue": "Le fichier porte 'Last updated: 2026-06-26' et une section 'Cadence previsionnelle / a venir' au present, alors qu'il est fige dans un dossier '...fige-S14-S30' ; son contenu couvre pourtant jusqu'aux PRs #94-#121 (au-dela de S30). Un lecteur peut le confondre avec une roadmap vivante alors que la verite actuelle est docs/workplan/remise-a-plat/ + CLAUDE.md.",
+  "evidence": "L1 'Last updated: 2026-06-26' ; L205 'Cadence previsionnelle' ; dossier 'backlog-by-module-fige-S14-S30' ; addendum L173-203 liste PRs #94-#121",
+  "recommendation": "Ajouter un bandeau d'entete 'ARCHIVE GELEE — non maintenue, voir docs/workplan/remise-a-plat/ et CLAUDE.md' pour lever l'ambiguite active/fige."
+ },
+ {
+  "file": "docs/_archive/backlog-by-module-fige-S14-S30/06-inventory-stock.md",
+  "severity": "P3",
+  "category": "perime",
+  "issue": "TASK-06-001/002 marquent F1 Expiry date tracking + FIFO + stock_lots comme DONE (S13). Or la peremption/FIFO a ete officiellement ABANDONNEE (decision proprietaire 2026-07-04, cron off + infra stock_lots decommissionnee S61, cf. MEMORY). Contenu historiquement exact mais trompeur hors contexte fige.",
+  "evidence": "06-inventory-stock.md L18-46 'F1 Expiry ... [DONE]' vs MEMORY no-expiry-no-fifo-decision.md 'chantier P3 lots ABANDONNE'",
+  "recommendation": "Ne pas modifier l'archive ; s'assurer que la decision d'abandon reste tracee uniquement dans les sources canoniques (MEMORY, CLAUDE.md) qui font foi sur ce point."
+ },
+ {
+  "file": "docs/_archive/objectif-travail-v2/ACCOUNTING.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "L'en-tête pointe vers `../../reference/V2_V3_GLOSSARY.md` (« Voir V2_V3_GLOSSARY.md ») mais aucun fichier V2_V3_GLOSSARY.md n'existe dans le repo (ni sous docs/reference/ ni sous docs/_archive/).",
+  "evidence": "ligne 6 : « Voir [`../V2_V3_GLOSSARY.md`](../V2_V3_GLOSSARY.md). » — `find`/`ls` ne trouvent aucun V2_V3_GLOSSARY.md",
+  "recommendation": "Fichier archivé : retirer le lien ou le neutraliser en texte simple. Aucune action urgente vu le statut ARCHIVED/SUPERSEDED du doc."
+ },
+ {
+  "file": "docs/_archive/objectif-travail-v2/ACCOUNTING.md",
+  "severity": "P3",
+  "category": "incoherence",
+  "issue": "Le doc désigne reference/04-modules/10-accounting-double-entry.md comme « source of truth », or CLAUDE.md et docs/reference marquent tout le dossier reference/04-modules comme STALE (S13, non-faisant-foi). Le pointeur canonique du doc archivé contredit la hiérarchie de vérité actuelle (remise-a-plat).",
+  "evidence": "ligne 3 : « folded verbatim into Partie I … 10-accounting-double-entry.md … The reference is the source of truth »",
+  "recommendation": "Laisser tel quel (doc archivé) ; ne pas s'y fier. La vérité module actuelle = docs/workplan/remise-a-plat/."
+ },
+ {
+  "file": "docs/_archive/backlog-by-module-fige-S14-S30/25-security.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Nombreux renvois vers des rapports d'audit inexistants : docs/audit/00-executive-summary.md, 01-architecture-security-audit.md, 03-code-quality-schema-audit.md, 08-operations-lan-audit.md — docs/audit/ ne contient plus que 2 fichiers datés + un sous-dossier archive. Problème systémique commun aux fichiers 13→25.",
+  "evidence": "en-tête ligne 5 « Sources d'audit : docs/audit/01-architecture-security-audit.md … » ; `ls docs/audit/` = 2026-05-28-pos-audit.md, 2026-06-12-stock-management-audit.md, archive/",
+  "recommendation": "Aucune correction requise (fichiers archivés, disclaimés par _ARCHIVE-NOTE). Si un jour on purge, purger le lot 13→25 en bloc plutôt que réparer les liens."
+ },
+ {
+  "file": "docs/_archive/backlog-by-module-fige-S14-S30/22-design-system.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Renvoie vers des sous-dossiers reference frères qui ne résolvent plus depuis l'emplacement d'archive (`../02-design-system/`, et pour les autres fichiers du lot `../06-lan-architecture/`, `../07-security/`, `../09-testing/`, `../10-deployment-ops/`). Ces chemins visaient docs/reference/* avant le déplacement en _archive.",
+  "evidence": "ligne 4 : « Référence : [`../02-design-system/`](../02-design-system/) » — résout en docs/_archive/02-design-system/ (absent)",
+  "recommendation": "Non-bloquant (archive disclaimée). Ne pas réparer individuellement ; traiter le dossier comme bloc historique figé."
+ },
+ {
+  "file": "docs/_archive/objectif-travail-v2/B2B.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Le lien de bas d'en-tete vers le glossaire V2/V3 est casse : depuis docs/_archive/objectif-travail-v2/ le chemin `../V2_V3_GLOSSARY.md` pointe vers docs/_archive/V2_V3_GLOSSARY.md qui n'existe pas ; le fichier reel est docs/V2_V3_GLOSSARY.md.",
+  "evidence": "Ligne 6 : `Voir [../V2_V3_GLOSSARY.md](../V2_V3_GLOSSARY.md)` — verifie: `find docs -name V2_V3_GLOSSARY.md` -> uniquement docs/V2_V3_GLOSSARY.md.",
+  "recommendation": "Corriger en `../../V2_V3_GLOSSARY.md` (deux niveaux). Correction identique a appliquer aux 15 fichiers du dossier."
+ },
+ {
+  "file": "docs/_archive/objectif-travail-v2/CASH_REGISTER.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Lien glossaire casse : `../V2_V3_GLOSSARY.md` resout vers docs/_archive/V2_V3_GLOSSARY.md (inexistant) au lieu de docs/V2_V3_GLOSSARY.md.",
+  "evidence": "Ligne 6 : `Voir [../V2_V3_GLOSSARY.md](../V2_V3_GLOSSARY.md)`.",
+  "recommendation": "Remplacer par `../../V2_V3_GLOSSARY.md`."
+ },
+ {
+  "file": "docs/_archive/objectif-travail-v2/CUSTOMERS.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Lien glossaire casse : `../V2_V3_GLOSSARY.md` pointe hors cible (docs/_archive/, inexistant).",
+  "evidence": "Ligne 6 : `Voir [../V2_V3_GLOSSARY.md](../V2_V3_GLOSSARY.md)`.",
+  "recommendation": "Remplacer par `../../V2_V3_GLOSSARY.md`."
+ },
+ {
+  "file": "docs/_archive/objectif-travail-v2/CUSTOMER_DISPLAY.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Lien glossaire casse : `../V2_V3_GLOSSARY.md` inexistant sous docs/_archive/.",
+  "evidence": "Ligne 6 : `Voir [../V2_V3_GLOSSARY.md](../V2_V3_GLOSSARY.md)`.",
+  "recommendation": "Remplacer par `../../V2_V3_GLOSSARY.md`."
+ },
+ {
+  "file": "docs/_archive/objectif-travail-v2/EXPENSES.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Lien glossaire casse : `../V2_V3_GLOSSARY.md` inexistant sous docs/_archive/.",
+  "evidence": "Ligne 6 : `Voir [../V2_V3_GLOSSARY.md](../V2_V3_GLOSSARY.md)`.",
+  "recommendation": "Remplacer par `../../V2_V3_GLOSSARY.md`."
+ },
+ {
+  "file": "docs/_archive/objectif-travail-v2/KDS.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Lien glossaire casse : `../V2_V3_GLOSSARY.md` inexistant sous docs/_archive/.",
+  "evidence": "Ligne 6 : `Voir [../V2_V3_GLOSSARY.md](../V2_V3_GLOSSARY.md)`.",
+  "recommendation": "Remplacer par `../../V2_V3_GLOSSARY.md`."
+ },
+ {
+  "file": "docs/_archive/objectif-travail-v2/ORDERS.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Lien glossaire casse : `../V2_V3_GLOSSARY.md` inexistant sous docs/_archive/.",
+  "evidence": "Ligne 6 : `Voir [../V2_V3_GLOSSARY.md](../V2_V3_GLOSSARY.md) pour les mappings`.",
+  "recommendation": "Remplacer par `../../V2_V3_GLOSSARY.md`."
+ },
+ {
+  "file": "docs/_archive/objectif-travail-v2/POS.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Lien glossaire casse : `../V2_V3_GLOSSARY.md` inexistant sous docs/_archive/.",
+  "evidence": "Ligne 6 : `voir [../V2_V3_GLOSSARY.md](../V2_V3_GLOSSARY.md)`.",
+  "recommendation": "Remplacer par `../../V2_V3_GLOSSARY.md`."
+ },
+ {
+  "file": "docs/_archive/objectif-travail-v2/PRODUCTION.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Aucun lien glossaire dans l'en-tete de ce fichier (il n'en contient pas), mais l'en-tete revoie a reference/04-modules/15 correctement ; RAS lien-mort. Signale pour trace : la section 15 est un snapshot V3 date (S15-S22) desormais possiblement depasse mais coherent avec le statut archive.",
+  "evidence": "Ligne 3 renvoie vers ../../reference/04-modules/15-production-recipes.md (existe).",
+  "recommendation": "Aucune action ; contenu de statut V3 date, acceptable en archive. (Pas de lien glossaire casse ici contrairement aux autres fiches.)"
+ },
+ {
+  "file": "docs/_archive/objectif-travail-v2/PROMOTIONS_AND_COMBOS.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Lien glossaire casse : `../V2_V3_GLOSSARY.md` inexistant sous docs/_archive/.",
+  "evidence": "Ligne 6 : `Voir [../V2_V3_GLOSSARY.md](../V2_V3_GLOSSARY.md)`.",
+  "recommendation": "Remplacer par `../../V2_V3_GLOSSARY.md`."
+ },
+ {
+  "file": "docs/_archive/objectif-travail-v2/PURCHASING_AND_SUPPLIERS.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Lien glossaire casse : `../V2_V3_GLOSSARY.md` inexistant sous docs/_archive/.",
+  "evidence": "Ligne 6 : `Voir [../V2_V3_GLOSSARY.md](../V2_V3_GLOSSARY.md)`.",
+  "recommendation": "Remplacer par `../../V2_V3_GLOSSARY.md`."
+ },
+ {
+  "file": "docs/_archive/objectif-travail-v2/REPORTS.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Lien glossaire casse : `../V2_V3_GLOSSARY.md` inexistant sous docs/_archive/.",
+  "evidence": "Ligne 6 : `Voir [../V2_V3_GLOSSARY.md](../V2_V3_GLOSSARY.md)`.",
+  "recommendation": "Remplacer par `../../V2_V3_GLOSSARY.md`."
+ },
+ {
+  "file": "docs/_archive/objectif-travail-v2/SETTINGS.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Lien glossaire casse : `../V2_V3_GLOSSARY.md` inexistant sous docs/_archive/.",
+  "evidence": "Ligne 6 : `Voir [../V2_V3_GLOSSARY.md](../V2_V3_GLOSSARY.md)`.",
+  "recommendation": "Remplacer par `../../V2_V3_GLOSSARY.md`."
+ },
+ {
+  "file": "docs/_archive/objectif-travail-v2/TABLET_ORDERING.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Lien glossaire casse : `../V2_V3_GLOSSARY.md` inexistant sous docs/_archive/.",
+  "evidence": "Ligne 6 : `Voir [../V2_V3_GLOSSARY.md](../V2_V3_GLOSSARY.md)`.",
+  "recommendation": "Remplacer par `../../V2_V3_GLOSSARY.md`."
+ },
+ {
+  "file": "docs/_archive/objectif-travail-v2/USERS_AND_PERMISSIONS.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Lien glossaire casse : `../V2_V3_GLOSSARY.md` inexistant sous docs/_archive/.",
+  "evidence": "Ligne 6 : `Voir [../V2_V3_GLOSSARY.md](../V2_V3_GLOSSARY.md)`.",
+  "recommendation": "Remplacer par `../../V2_V3_GLOSSARY.md`."
+ },
+ {
+  "file": "README.md",
+  "severity": "P1",
+  "category": "contradiction",
+  "issue": "La section Documentation presente docs/reference/ comme « 12 chapitres + 19 modules metier (la source de verite) », ce qui contredit CLAUDE.md et MEMORY.md.",
+  "evidence": "README l.81 : « Reference canonique : docs/reference/ — 12 chapitres + 19 modules metier (la source de verite) ». CLAUDE.md : « docs/reference/04-modules est STALE (S13) et ne fait plus foi ; hierarchie de verite complete dans docs/README.md » et « Chapitres reference dangereux (01/03/07/08/09/10) supprimes le 2026-07-04 ». Reel : docs/reference/ ne contient que 7 dossiers chapitres (00,02,04,05,06,11,12).",
+  "recommendation": "Reecrire l.81 pour designer docs/workplan/remise-a-plat/ comme reference canonique des modules et marquer docs/reference/ comme partiellement STALE ; corriger « 12 chapitres »."
+ },
+ {
+  "file": "README.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "Le lien « Reference V2 (legacy doc) : v2-reference/ » pointe vers un dossier inexistant.",
+  "evidence": "README l.84 : `[v2-reference/](v2-reference/)`. `ls v2-reference/` → No such file or directory.",
+  "recommendation": "Supprimer le lien ou le repointer vers l'emplacement reel de la reference V2 s'il subsiste."
+ },
+ {
+  "file": "README.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "Le lien « UX screenshots : Ux-reference/ » pointe vers un dossier inexistant.",
+  "evidence": "README l.85 : `[Ux-reference/](Ux-reference/)`. `ls Ux-reference/` → No such file or directory.",
+  "recommendation": "Supprimer le lien ou corriger le chemin vers le dossier de captures UX reel."
+ },
+ {
+  "file": "README.md",
+  "severity": "P3",
+  "category": "incoherence",
+  "issue": "Le lien Spec V3 affiche un chemin (sans archive/) different de sa cible href (avec archive/) ; le chemin affiche n'existe pas.",
+  "evidence": "README l.80 : texte `docs/workplan/specs/2026-05-03-breakery-split-2apps-design.md` mais href `docs/workplan/specs/archive/2026-05-03-breakery-split-2apps-design.md`. Seul le chemin `archive/...` existe sur disque.",
+  "recommendation": "Aligner le texte affiche sur la cible reelle (`.../specs/archive/...`)."
+ },
+ {
+  "file": ".claude/skills/b2b-credit/SKILL.md",
+  "severity": "P1",
+  "category": "perime",
+  "issue": "Tout le modele mental B2B est fige sur les RPC _v1 (S24) alors que CLAUDE.md documente des versions bien plus recentes, et le corps ignore la table b2b_payment_allocations pourtant citee dans sa propre description.",
+  "evidence": "SKILL l.52-54,113-124 : `create_b2b_order_v1`, `record_b2b_payment_v1`, `adjust_b2b_balance_v1`, `validate_b2b_credit_limit_v1`. CLAUDE.md : `create_b2b_order_v5`, `record_b2b_payment_v2`, `adjust_b2b_balance_v2`, + table `b2b_payment_allocations` (S52) et RPC `cancel_b2b_order_v1`/`reconcile_b2b_balance_v1`. Le corps l.130 dit « Allocation per-invoice exacte est backlog S26+ » alors que le frontmatter description liste `b2b_payment_allocations`.",
+  "recommendation": "Actualiser le modele mental vers les _v5/_v2, integrer b2b_payment_allocations (allocation per-invoice reelle) et les RPC cancel/reconcile, ou ajouter un bandeau « verifier la version live » explicite en tete."
+ },
+ {
+  "file": ".claude/agents/session-coordinator.md",
+  "severity": "P2",
+  "category": "lien-mort",
+  "issue": "L'agent instruit de lire `docs/workplan/backlog-by-module/` comme living docs, mais ce dossier n'existe plus (archive et gele).",
+  "evidence": "SKILL l.27,37 : « backlog-by-module/ 01-…25-….md # living docs — mise a jour in-place ». `ls docs/workplan/backlog-by-module/` → No such file or directory ; CLAUDE.md : « L'ancien backlog-by-module est archive (docs/_archive/backlog-by-module-fige-S14-S30/, priorites perimees — ne plus trier dedans) ».",
+  "recommendation": "Repointer vers `docs/workplan/remise-a-plat/00-INDEX.md` (next-session source) et retirer la mention living-docs du backlog-by-module archive."
+ },
+ {
+  "file": ".claude/agents/db-engineer.md",
+  "severity": "P2",
+  "category": "perime",
+  "issue": "La « Surface DB map (etat S33) » liste des versions RPC tres obsoletes presentees comme reference courante.",
+  "evidence": "db-engineer l.158 : `complete_order_with_payment_v10`, `pay_existing_order_v3`, `create_tablet_order_v2`, `refund_order_rpc_v2`. CLAUDE.md (money-path) : v17 / v11 / v3 / refund_order_rpc_v4.",
+  "recommendation": "Soit dater/etiqueter clairement le bloc comme snapshot historique non fiable, soit remplacer par un renvoi a CLAUDE.md/migrations pour la version live."
+ },
+ {
+  "file": ".claude/agents/pos-specialist.md",
+  "severity": "P2",
+  "category": "incoherence",
+  "issue": "Numeros de version RPC concrets obsoletes vs CLAUDE.md, malgre le disclaimer « verify the live _vN ».",
+  "evidence": "pos-specialist l.23,38 : `complete_order_with_payment_v14`, `pay_existing_order_v10`, `create_tablet_order_v2`, `evaluate_promotions_v1`. CLAUDE.md : v17, v11, v3, `evaluate_promotions_v2`.",
+  "recommendation": "Rafraichir les exemples de version ou les remplacer par un placeholder `_vN (voir migrations)` pour eviter d'ancrer des numeros faux."
+ },
+ {
+  "file": ".claude/skills/accounting/SKILL.md",
+  "severity": "P2",
+  "category": "incoherence",
+  "issue": "Versions RPC compta en retard sur CLAUDE.md (trial balance et clot annuelle).",
+  "evidence": "accounting l.112-113 : `get_general_ledger_v1`, `get_trial_balance_v1` ; l.174 « Cloture annuelle (carry-forward 3300->3200) non encore implementee ». CLAUDE.md S54 : « fix leak cumul get_trial_balance_v3 » et « close_fiscal_year_v1 » livre.",
+  "recommendation": "Mettre a jour les signatures vers get_trial_balance_v3 et documenter close_fiscal_year_v1 (cloture annuelle desormais implementee S54)."
+ },
+ {
+  "file": ".claude/agents/db-engineer.md",
+  "severity": "P2",
+  "category": "incoherence",
+  "issue": "L'agent cable en dur le prefixe MCP `mcp__plugin_supabase_supabase__`, qui est le connecteur DESACTIVE d'apres CLAUDE.md (l'actif est `mcp__claude_ai_Supabase__`).",
+  "evidence": "db-engineer l.24-27 tableau MCP. CLAUDE.md : « Le serveur MCP Supabase actif est le connecteur claude.ai (prefixe mcp__claude_ai_Supabase__) — le plugin mcp__plugin_supabase_supabase__ est present en cache mais desactive (2026-07-07) ». Meme prefixe errone dans edge-functions-engineer, pos-specialist, backoffice-specialist, accounting, db-migrations.",
+  "recommendation": "Remplacer le prefixe par `mcp__claude_ai_Supabase__` (ou renvoyer a ToolSearch) dans tous les agents/skills concernes pour eviter d'appeler un outil desactive."
+ },
+ {
+  "file": ".claude/skills/db-migrations/SKILL.md",
+  "severity": "P3",
+  "category": "incoherence",
+  "issue": "Le skill hardcode le prefixe MCP du plugin desactive dans ses 8 regles.",
+  "evidence": "db-migrations l.47-49 : `mcp__plugin_supabase_supabase__apply_migration` / `execute_sql` / `generate_typescript_types`. CLAUDE.md indique le plugin desactive au profit de `mcp__claude_ai_Supabase__`.",
+  "recommendation": "Aligner sur le prefixe du connecteur actif (le reste du contenu, recent et correct, ne demande pas de changement)."
+ },
+ {
+  "file": "C:/Users/guich/a trier/The_Breakery_ERP/.claude/skills/security-fraud-guard/SKILL.md",
+  "severity": "P1",
+  "category": "perime",
+  "issue": "Pattern #3 et checklist A affirment que void-order et cancel-item lisent encore le PIN dans le body JSON ('Known debt: void-order and cancel-item still read the PIN from the body JSON'). CLAUDE.md indique le sweep terminé : void-order + cancel-item durcis S34/PR #53, les trois lisent x-manager-pin en header.",
+  "evidence": "L.101 : 'Known debt: `void-order` and `cancel-item` still read the PIN from the body JSON' vs CLAUDE.md 'Sweep DONE : void-order + cancel-item hardened S34/PR #53 ... all three read x-manager-pin from the header.'",
+  "recommendation": "Mettre à jour Pattern #3 / checklist A pour refléter le durcissement S34/S36 ; ne conserver comme debt que create_manual_je_v1 si réellement encore en body (à re-vérifier)."
+ },
+ {
+  "file": "C:/Users/guich/a trier/The_Breakery_ERP/.claude/skills/security-fraud-guard/SKILL.md",
+  "severity": "P1",
+  "category": "contradiction",
+  "issue": "Le skill présente comme 'verified critical gap (2026-05-31)' plusieurs failles OUVERTES : bypass PIN des RPC de reversal (Pattern #4), customers.read non gaté (checklist D), pin_hash lisible par authenticated, view_b2b_invoices/view_ar_aging sans security_invoker, mv_* SELECT-ables par anon (Pattern #9). MEMORY.md déclare ces 7 failles TOUTES corrigées (re-vérifié live 2026-06-27, dont customers.read désormais gaté).",
+  "evidence": "L.103/119/155/156 'Verified critical/verified gap (2026-05-31)' vs MEMORY.md security-gaps-2026-05-31 : '7 failles ; TOUTES corrigées (re-vérifié live 2026-06-27, dont gap 4 customers.read désormais gaté)'.",
+  "recommendation": "Requalifier ces sections en 'historique / corrigé S50/S56 (re-vérifié 2026-06-27)' ou les retirer ; sinon le skill relance des chantiers déjà soldés et implique faussement une posture non sécurisée."
+ },
+ {
+  "file": "C:/Users/guich/a trier/The_Breakery_ERP/.claude/skills/security-fraud-guard/SKILL.md",
+  "severity": "P1",
+  "category": "perime",
+  "issue": "Pattern #2 et Sources décrivent une table legacy audit_log (singulier) 'still written by many inventory/production/PO/cash RPCs' et invitent à 'check both'. CLAUDE.md (S56) indique la vue compat audit_log et son trigger INSTEAD-OF DROPPÉS (_087/_088), audit_logs étant la seule surface.",
+  "evidence": "L.99 'A legacy `audit_log` (singular) ... is still written by many ... RPCs via a compat path ... check both' vs CLAUDE.md 'la vue compat audit_log (singulier) et son trigger INSTEAD-OF sont droppés (_087/_088)'.",
+  "recommendation": "Supprimer la mention audit_log legacy 'toujours écrit' ; documenter qu'il n'existe plus qu'audit_logs depuis S56."
+ },
+ {
+  "file": "C:/Users/guich/a trier/The_Breakery_ERP/.claude/skills/security-auth/SKILL.md",
+  "severity": "P1",
+  "category": "perime",
+  "issue": "Le skill liste void-order, cancel-item et kiosk-issue-jwt comme 'EFs still requiring sweep (deferred post-S30)' pour la migration PIN body→header. CLAUDE.md indique ce sweep terminé (void-order + cancel-item S34/PR #53, kiosk-issue-jwt compliant S36).",
+  "evidence": "L.123 : 'EFs still requiring sweep (deferred post-S30): `void-order`, `cancel-item`, `kiosk-issue-jwt`' vs CLAUDE.md 'Sweep DONE ... void-order + cancel-item hardened S34/PR #53 ; kiosk-issue-jwt verified compliant S36'.",
+  "recommendation": "Retirer cette ligne ou la marquer résolue S34/S36 ; elle induit une fausse dette de sécurité."
+ },
+ {
+  "file": "C:/Users/guich/a trier/The_Breakery_ERP/.claude/skills/pos-flow-audit/SKILL.md",
+  "severity": "P2",
+  "category": "perime",
+  "issue": "La section 'Sources of truth' présente docs/reference/04-modules/* comme 'read first, canonical'. Ces fiches sont marquées STALE : docs/reference/04-modules/_AVERTISSEMENT.md dit 'FICHES STALE — ne font plus foi (2026-07-04)' et renvoie vers docs/workplan/remise-a-plat/ ; CLAUDE.md le confirme.",
+  "evidence": "L.256-264 'Docs reference (read first, canonical) docs/reference/04-modules/...' vs _AVERTISSEMENT.md 'ne font plus foi ... Font foi à la place : ../../workplan/remise-a-plat/'.",
+  "recommendation": "Repointer les 'sources canoniques' vers docs/workplan/remise-a-plat/ ; retirer le qualificatif 'canonical' des fiches 04-modules."
+ },
+ {
+  "file": "C:/Users/guich/a trier/The_Breakery_ERP/.claude/skills/pos-flow-audit/SKILL.md",
+  "severity": "P2",
+  "category": "perime",
+  "issue": "La carte RPC de référence est fortement en retard sur CLAUDE.md : complete_order_with_payment_v10 (canonique v17), pay_existing_order_v6 (v11), create_tablet_order_v2 (v3), evaluate_promotions_v1 (v2), close_shift_v2 (v5). Le skill s'auto-disclaim ('trust the code'), ce qui atténue mais ne supprime pas le risque.",
+  "evidence": "Table L.82-88 et mental model L.108-116 (v10/v6/v2/v1/v2) vs CLAUDE.md money-path v17, pay_existing_order_v11, create_tablet_order_v3, evaluate_promotions_v2, close_shift_v5.",
+  "recommendation": "Rafraîchir la table de référence ou remplacer les numéros par des placeholders '_vN (vérifier live)' pour éviter d'ancrer des versions mortes."
+ },
+ {
+  "file": "C:/Users/guich/a trier/The_Breakery_ERP/.claude/skills/orders/SKILL.md",
+  "severity": "P2",
+  "category": "perime",
+  "issue": "Le mental model et la table 'Write RPCs' citent des versions périmées : complete_order_with_payment_v10 (v17), pay_existing_order_v3 (v11), create_tablet_order_v2 (v3), void_order_rpc (v4), create_b2b_order_v1 (v5). Auto-disclaim présent ('always verify the live version').",
+  "evidence": "L.55-66 et table L.103-110 vs CLAUDE.md complete_order_with_payment_v17 / pay_existing_order_v11 / create_tablet_order_v3 / void_order_rpc_v4 / create_b2b_order_v5.",
+  "recommendation": "Mettre à jour les numéros de version ou les neutraliser ; au minimum ajouter une note datée de dernière vérification."
+ },
+ {
+  "file": "C:/Users/guich/a trier/The_Breakery_ERP/.claude/skills/report-audit/SKILL.md",
+  "severity": "P2",
+  "category": "incoherence",
+  "issue": "Le skill instruit d'utiliser le préfixe MCP du plugin Supabase (mcp__plugin_supabase_supabase__execute_sql / generate_typescript_types). CLAUDE.md précise que ce plugin est désactivé depuis 2026-07-07 et que le connecteur actif est mcp__claude_ai_Supabase__ — les appels indiqués échoueraient.",
+  "evidence": "L.101 'MCP (...) mcp__plugin_supabase_supabase__execute_sql' et L.224 'regen types via mcp__plugin_supabase_supabase__generate_typescript_types' vs CLAUDE.md 'le plugin supabase@claude-plugins-official (préfixe mcp__plugin_supabase_supabase__) ... désactivé (2026-07-07)'.",
+  "recommendation": "Remplacer le préfixe par mcp__claude_ai_Supabase__ (ou renvoyer vers ToolSearch comme le fait CLAUDE.md)."
+ },
+ {
+  "file": "C:/Users/guich/a trier/The_Breakery_ERP/.claude/skills/products-catalog/SKILL.md",
+  "severity": "P3",
+  "category": "perime",
+  "issue": "La section is_display_item décrit la double-déduction via complete_order_with_payment_v10 ; la version canonique est v17 et la déduction stock passe désormais par le helper unique _record_sale_stock_v1 (S53).",
+  "evidence": "L.130 'La vente double-déduit display_stock + products.current_stock (via complete_order_with_payment_v10)' vs CLAUDE.md v17 + '_record_sale_stock_v1'.",
+  "recommendation": "Actualiser la référence de version et mentionner _record_sale_stock_v1 comme point de déduction unifié."
+ },
+ {
+  "file": "C:/Users/guich/a trier/The_Breakery_ERP/.claude/skills/reports-exports/SKILL.md",
+  "severity": "P3",
+  "category": "perime",
+  "issue": "Le flux Z-report (mental model + section S29) référence close_shift_v2 comme RPC de clôture ; la version canonique CLAUDE.md est close_shift_v5 (S67).",
+  "evidence": "L.115 '1. close_shift_v2 → INSERT draft row z_reports' et L.137 vs CLAUDE.md 'close_shift_v5'.",
+  "recommendation": "Rafraîchir vers close_shift_v5 ou neutraliser le suffixe de version."
+ },
+ {
+  "file": ".claude/skills/stock-management/SKILL.md",
+  "severity": "P1",
+  "category": "perime",
+  "issue": "Le skill reference des versions RPC de money-path perimees : `complete_order_v9` (L.58/60/206) et `complete_order_with_payment_v10` (L.107, chemin de vente double-deduction), alors que la source canonique CLAUDE.md fixe le money-path courant a `complete_order_with_payment_v17`.",
+  "evidence": "L.58 'complete_order_v9' ; L.107 'complete_order_with_payment_v10 decrements BOTH display_stock ... AND products.current_stock' vs CLAUDE.md : 'money-path RPC complete_order_with_payment_v17'.",
+  "recommendation": "Remplacer v9/v10 par v17, ou par une formulation non versionnee ('le money-path RPC courant — verifier CLAUDE.md')."
+ },
+ {
+  "file": ".claude/skills/stock-management/SKILL.md",
+  "severity": "P1",
+  "category": "contradiction",
+  "issue": "La section 'Sources de verite' presente docs/reference/04-modules/{15-production-recipes,14-inventory,16-stock-movements}.md comme 'read first, canonical', alors que CLAUDE.md declare 04-modules STALE (S13) et 'ne fait plus foi', la verite modules etant docs/workplan/remise-a-plat/.",
+  "evidence": "L.228-231 'Docs reference (read first, canonical) docs/reference/04-modules/15-production-recipes.md' vs CLAUDE.md : 'docs/reference/04-modules/ est STALE (S13) et ne fait plus foi'.",
+  "recommendation": "Repointer vers docs/workplan/remise-a-plat/ comme reference modules canonique, ou marquer 04-modules STALE dans le skill."
+ },
+ {
+  "file": ".claude/commands/analysis/COMMAND_COMPLIANCE_REPORT.md",
+  "severity": "P2",
+  "category": "dechet",
+  "issue": "Rapport de conformite auto-genere egare dans un dossier de definitions de slash-commands, contenu perime : declare 'Total files reviewed: 2' alors que analysis/ contient 7 fichiers de commande. Ni commande ni doc de reference.",
+  "evidence": "L.34-38 'Total files reviewed: 2 / Files updated: 1' pour un dossier comptant bottleneck-detect, performance-bottlenecks, performance-report, token-efficiency, token-usage, README + ce rapport.",
+  "recommendation": "Supprimer (artefact temporaire d'un passage de mise en conformite claude-flow)."
+ },
+ {
+  "file": ".claude/commands/analysis/README.md",
+  "severity": "P3",
+  "category": "incoherence",
+  "issue": "L'index ne liste que 3 fichiers (bottleneck-detect, token-usage, performance-report) alors que le dossier en contient 6 autres non references (performance-bottlenecks, token-efficiency, COMMAND_COMPLIANCE_REPORT).",
+  "evidence": "L.7-9 liste 3 entrees ; le dossier contient aussi performance-bottlenecks.md, token-efficiency.md, COMMAND_COMPLIANCE_REPORT.md.",
+  "recommendation": "Regenerer l'index selon le contenu reel, ou purger le lot generique claude-flow non utilise."
+ },
+ {
+  "file": ".claude/commands/automation/README.md",
+  "severity": "P3",
+  "category": "incoherence",
+  "issue": "L'index ne liste que 3 fichiers (auto-agent, smart-spawn, workflow-select) alors que le dossier en contient 4 autres non references (self-healing, session-memory, smart-agents).",
+  "evidence": "L.7-9 liste 3 entrees ; le dossier contient aussi self-healing.md, session-memory.md, smart-agents.md.",
+  "recommendation": "Regenerer l'index ou purger le lot generique."
+ },
+ {
+  "file": ".claude/commands/analysis/bottleneck-detect.md",
+  "severity": "P3",
+  "category": "autre",
+  "issue": "Lot de commandes generiques claude-flow (analysis/ + automation/, 13 fichiers) reference une CLI `npx claude-flow` et des outils `mcp__claude-flow__*` (bottleneck_detect, task_results, token_usage, swarm_init, agent_spawn, memory_usage, neural_patterns) qui ne sont PAS le tooling actif du projet — CLAUDE.md pilote via Agent+SendMessage et le MCP actif est le connecteur claude.ai (mcp__claude_ai_Supabase__*). Scaffolding vendeur non adapte, jamais reference par la doc projet.",
+  "evidence": "bottleneck-detect L.150 'mcp__claude-flow__bottleneck_detect' ; auto-agent L.110 'mcp__claude-flow__auto_agent' ; CLAUDE.md decrit Agent/SendMessage + MCP Supabase claude.ai sans ces commandes.",
+  "recommendation": "Decider en bloc : purger analysis/ + automation/ s'ils ne servent pas, ou les documenter comme scaffolding claude-flow optionnel pour eviter la confusion avec le workflow projet."
+ },
+ {
+  "file": ".claude/commands/claude-flow-help.md",
+  "severity": "P2",
+  "category": "orphelin",
+  "issue": "The entire .claude/commands/ tree (3 claude-flow-* files + 15 github/* files) is generic ruflo-init/claude-flow/ruv-swarm scaffolding that does not reflect this project's actual workflow. CLAUDE.md explicitly states day-to-day work uses the Agent + SendMessage team and project skills, and treats claude-flow as merely 'optional tooling'. These vendored command docs clutter the slash-command palette and can mislead an agent into invoking a CLI (./claude-flow) and MCP tools that are not the project's real toolchain.",
+  "evidence": "claude-flow-help.md l.10 'Claude-Flow is the ultimate multi-terminal orchestration platform'; CLAUDE.md: 'Optional tooling: the claude-flow / ruflo CLI ... are available'.",
+  "recommendation": "Decide explicitly whether the claude-flow command set is used; if not, purge .claude/commands/ (or move to docs/_archive/) to declutter. If kept, add a one-line banner noting it is optional/generic vendored tooling, not the canonical workflow."
+ },
+ {
+  "file": ".claude/commands/github/README.md",
+  "severity": "P3",
+  "category": "incoherence",
+  "issue": "The github commands index is stale/incomplete: it lists only 5 command files (github-swarm, repo-analyze, pr-enhance, issue-triage, code-review) while the directory actually contains 18 (code-review-swarm, github-modes, issue-tracker, multi-repo-swarm, pr-manager, project-board-sync, release-manager, release-swarm, repo-architect, swarm-issue, swarm-pr, sync-coordinator, workflow-automation are all missing from the index).",
+  "evidence": "README.md l.5-11 lists 5 entries; `ls .claude/commands/github/` returns 18 .md files.",
+  "recommendation": "Regenerate the index to match the directory contents, or remove the folder entirely per the P2 orphelin recommendation."
+ },
+ {
+  "file": ".claude/commands/github/release-manager.md",
+  "severity": "P3",
+  "category": "perime",
+  "issue": "Content is hardcoded to an unrelated external repository and release lineage: owner 'ruvnet', repo 'ruv-FANN', package paths claude-code-flow/ruv-swarm, and version v1.0.72. An agent following this verbatim would target the wrong repo. Same pattern (ruvnet/ruv-FANN examples) recurs across issue-tracker.md, pr-manager.md, multi-repo-swarm.md, project-board-sync.md.",
+  "evidence": "release-manager.md l.36-38 'owner: \"ruvnet\", repo: \"ruv-FANN\", branch: \"release/v1.0.72\"'; l.60-73 package.json paths for claude-flow/ruv-swarm.",
+  "recommendation": "Remove these vendored github/* docs, or replace the hardcoded ruvnet/ruv-FANN examples with The Breakery repo context if the workflow is genuinely adopted."
+ },
+ {
+  "file": ".claude/commands/github/pr-manager.md",
+  "severity": "P3",
+  "category": "incoherence",
+  "issue": "Documents MCP tool names that do not match this project's actual MCP servers: it uses mcp__github__* and mcp__claude-flow__* prefixes, whereas the environment exposes mcp__plugin_github_github__* (GitHub plugin) and ruflo/claude-flow coordination tools with different names. Following these calls would fail. Same mismatch in github-modes.md, issue-tracker.md, release-manager.md, code-review-swarm.md.",
+  "evidence": "pr-manager.md l.14-24 lists 'mcp__github__create_pull_request ... mcp__claude-flow__*'; project MCP surface is mcp__plugin_github_github__create_pull_request etc.",
+  "recommendation": "If retained, align tool prefixes to the project's real MCP servers; otherwise purge with the rest of the vendored set."
+ },
+ {
+  "file": ".claude/commands/github/code-review.md",
+  "severity": "P2",
+  "category": "doublon",
+  "issue": "Near-duplicate of code-review-swarm.md: both cover 'automated code review with swarm intelligence' over the same npx claude-flow / ruv-swarm github review flow, one a thin stub and one an expanded version, with no cross-link between them.",
+  "evidence": "code-review.md l.1-3 'Automated code review with swarm intelligence'; code-review-swarm.md l.1 'Code Review Swarm - Automated Code Review with AI Agents'.",
+  "recommendation": "Collapse to a single doc (or remove both if the vendored github command set is purged)."
+ },
+ {
+  "file": ".claude/commands/github/repo-architect.md",
+  "severity": "P2",
+  "category": "mal-place",
+  "issue": "Toute l'arborescence .claude/commands/github + hooks est du boilerplate generique claude-flow/ruv-swarm sans rapport avec The Breakery : elle reference des chemins fictifs (/workspaces/ruv-FANN/claude-code-flow, /workspaces/ruv-FANN/ruv-swarm/npm) et l'org ruvnet, et decrit des outils mcp__claude-flow__* que CLAUDE.md classe comme outillage seulement optionnel. Aucune de ces 15 fiches n'est referencee par une source canonique du projet.",
+  "evidence": "repo-architect.md l.34 : LS(\"/workspaces/ruv-FANN/claude-code-flow/claude-code-flow\") ; l.38-42 mcp__github__search_repositories { query: \"user:ruvnet claude\" }",
+  "recommendation": "Archiver ou supprimer le lot .claude/commands/github + .claude/commands/hooks (vendor boilerplate ruv-swarm) ; s'il faut garder une reference d'outillage, la reduire a un seul pointeur dans CLAUDE.md."
+ },
+ {
+  "file": ".claude/commands/github/repo-analyze.md",
+  "severity": "P3",
+  "category": "incoherence",
+  "issue": "Nom de CLI incoherent a l'interieur du meme docset : repo-analyze.md et repo-architect.md invoquent `npx claude-flow github ...`, tandis que release-swarm.md, swarm-issue.md, swarm-pr.md, workflow-automation.md invoquent `npx ruv-swarm github ...` pour des operations equivalentes.",
+  "evidence": "repo-analyze.md l.7 : `npx claude-flow github repo-analyze [options]` vs release-swarm.md l.20 : `npx ruv-swarm github release-plan`",
+  "recommendation": "Uniformiser le nom de binaire (claude-flow OU ruv-swarm) sur tout le docset, ou supprimer le lot si non utilise."
+ },
+ {
+  "file": ".claude/commands/hooks/README.md",
+  "severity": "P3",
+  "category": "autre",
+  "issue": "Index incomplet : README.md du dossier hooks liste 5 fiches mais omet overview.md et setup.md presents dans le meme repertoire, alors qu'overview.md se presente comme la vue d'ensemble du lot.",
+  "evidence": "README.md l.7-11 liste pre-task/post-task/pre-edit/post-edit/session-end uniquement ; overview.md et setup.md du dossier ne sont pas references.",
+  "recommendation": "Completer l'index (ajouter overview.md, setup.md) ou supprimer le lot hooks avec le reste du boilerplate."
+ },
+ {
+  "file": ".claude/commands/hooks/post-edit.md",
+  "severity": "P2",
+  "category": "perime",
+  "issue": "Affirmation trompeuse : les fiches hooks declarent que ces commandes sont 'automatically called by Claude Code' (auto-format, neural training, memoire). Le harness actif est Claude Code d'Anthropic, qui n'invoque pas `npx claude-flow hook ...` ; aucun de ces hooks n'est cable dans le workflow reel du projet.",
+  "evidence": "post-edit.md l.78 : 'This hook is automatically called by Claude Code when: After Edit tool completes' ; idem pre-edit.md l.78, post-task.md l.77, session-end.md l.78.",
+  "recommendation": "Retirer les mentions 'automatically called by Claude Code' ou supprimer les fiches ; ne pas laisser croire qu'un pipeline de hooks claude-flow est actif."
+ },
+ {
+  "file": ".claude/commands/optimization/parallel-execute.md",
+  "severity": "P2",
+  "category": "doublon",
+  "issue": "parallel-execute.md and parallel-execution.md document the same capability (parallel task execution). One is CLI-flavored (`npx claude-flow optimization parallel-execute`), the other MCP-flavored (`task_orchestrate` strategy:parallel), but they cover identical ground in the same directory.",
+  "evidence": "parallel-execute.md L1 'parallel-execute / Execute tasks in parallel' vs parallel-execution.md L1 'Parallel Task Execution / Execute independent subtasks in parallel'",
+  "recommendation": "Merge into a single command file, or delete one; keep whichever variant matches the actually-invoked tooling."
+ },
+ {
+  "file": ".claude/commands/monitoring/README.md",
+  "severity": "P3",
+  "category": "incoherence",
+  "issue": "Category index is incomplete: it links only swarm-monitor / agent-metrics / real-time-view but the directory also contains agents.md and status.md, which are unreferenced.",
+  "evidence": "README.md L7-9 lists 3 files; directory also has agents.md, status.md",
+  "recommendation": "Add the missing entries or drop the index if the harness auto-discovers commands."
+ },
+ {
+  "file": ".claude/commands/optimization/README.md",
+  "severity": "P3",
+  "category": "incoherence",
+  "issue": "Category index lists only topology-optimize / parallel-execute / cache-manage but the directory also contains auto-topology.md and parallel-execution.md, which are unreferenced.",
+  "evidence": "README.md L7-9 lists 3 files; directory also has auto-topology.md, parallel-execution.md",
+  "recommendation": "Complete the index or remove it."
+ },
+ {
+  "file": ".claude/commands/monitoring/agents.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "'See Also' points to /workflows/ which does not exist in the repository (verified: no workflows/ directory). Same dead reference appears in status.md and is inherited boilerplate.",
+  "evidence": "agents.md L44 'Workflow examples in /workflows/'; Glob workflows/** returned no files",
+  "recommendation": "Remove the /workflows/ reference or create the directory; low priority as it is template placeholder text."
+ },
+ {
+  "file": ".claude/commands/monitoring/agents.md",
+  "severity": "P3",
+  "category": "incoherence",
+  "issue": "File/command name is 'agents' and the MCP tool is agent_list, but the H1 title reads 'List Active Patterns' and the body describes 'cognitive patterns' (all/active/idle/busy) rather than agents — inconsistent vocabulary within the same stub.",
+  "evidence": "agents.md L1 '# List Active Patterns', L18 'View all active cognitive patterns'",
+  "recommendation": "Align the title/body with the actual agent-listing purpose, or drop the file as unused vendor boilerplate."
+ },
+ {
+  "file": ".claude/commands/sparc/analyzer.md",
+  "severity": "P3",
+  "category": "perime",
+  "issue": "All 15 files in this lot are generic claude-flow scaffolding describing an `npx claude-flow` CLI and `mcp__claude-flow__*` MCP tools. Project CLAUDE.md states day-to-day work uses the Agent + SendMessage team and lists claude-flow/ruflo only as OPTIONAL tooling; the `mcp__claude-flow__*` prefix is not the project's active MCP surface. These command stubs are effectively orphaned vendor boilerplate never adapted to The Breakery.",
+  "evidence": "analyzer.md L9-11 uses `mcp__claude-flow__sparc_mode`; CLAUDE.md 'Optional tooling: the claude-flow / ruflo CLI ... available' and 'Day-to-day work uses the Agent + SendMessage team'",
+  "recommendation": "Decide whether the claude-flow command surface is kept; if not used, prune the .claude/commands/ vendor trees (monitoring, optimization, sparc, analysis, automation, github, hooks) to reduce noise. Not urgent."
+ },
+ {
+  "file": ".claude/commands/sparc/mcp.md",
+  "severity": "P3",
+  "category": "incoherence",
+  "issue": "Le fichier definit MCP comme 'Management Control Panel' (ligne 3 et 9) alors que MCP = Model Context Protocol dans tout le reste du projet (CLAUDE.md, outils mcp__claude_ai_Supabase__*). Expansion d'acronyme erronee heritee du boilerplate claude-flow.",
+  "evidence": "description: '♾️ MCP Integration - You are the MCP (Management Control Panel) integration specialist' / 'You are the MCP (Management Control Panel) integration specialist'",
+  "recommendation": "Corriger en 'Model Context Protocol' ou supprimer le fichier si le mode SPARC n'est pas utilise."
+ },
+ {
+  "file": ".claude/commands/sparc/orchestrator.md",
+  "severity": "P3",
+  "category": "orphelin",
+  "issue": "Les 15 fichiers du dossier sparc/ sont du boilerplate vendeur generique claude-flow qui invoque des outils MCP mcp__claude-flow__* (sparc_mode, swarm_init, task_orchestrate) absents des serveurs MCP actifs de cet environnement ; le CLAUDE.md classe claude-flow/ruflo comme outillage OPTIONNEL et le workflow reel passe par Agent + SendMessage. Ces commandes ne sont referencees nulle part dans la doc projet.",
+  "evidence": "mcp__claude-flow__swarm_init { topology: 'hierarchical' ... } — prefixe absent de la liste d'outils ; CLAUDE.md: 'Optional tooling: the claude-flow / ruflo CLI ... are available'",
+  "recommendation": "Verifier si le dossier .claude/commands/sparc/ est encore utilise ; sinon l'archiver ou le supprimer pour reduire le bruit de config non branchee. Pas d'action individuelle par fichier necessaire."
+ },
+ {
+  "file": ".claude/commands/sparc/code.md",
+  "severity": "P3",
+  "category": "incoherence",
+  "issue": "Les fichiers avec frontmatter (code/debug/devops/docs-writer/integration/mcp) referencent des outils fictifs de mode SPARC (new_task, attempt_completion, apply_diff, insert_content, search_and_replace) qui n'existent pas dans le harnais Claude Code de ce projet ; instructions inapplicables telles quelles.",
+  "evidence": "'Use `new_task` for subtasks and finish with `attempt_completion`.' / 'Use `apply_diff` when modifying existing code'",
+  "recommendation": "Traiter globalement avec le dossier sparc/ : conserver comme reference d'outillage optionnel ou purger. Non bloquant."
+ },
+ {
+  "file": ".claude/commands/sparc/supabase-admin.md",
+  "severity": "P1",
+  "category": "contradiction",
+  "issue": "Le fichier code en dur un projet Supabase ETRANGER, sans rapport avec The Breakery. Un agent lisant ce mode ciblerait le mauvais projet.",
+  "evidence": "Ligne 116: {\"id\":\"hgbfbvtujatvwpjgibng\",\"organization_id\":\"wvkxkdydapcjjdbsqkiu\",\"name\":\"permit-place-dashboard-v2\",...} alors que le projet reel est ikcyvlovptebroadgtvd (the-breakery-v3-dev) per CLAUDE.md.",
+  "recommendation": "Supprimer le fichier (ou tout le dossier sparc/ boilerplate) ; a defaut, retirer le bloc 'Current Project' et remplacer par le vrai project_id du projet, ou marquer le fichier non-applicable."
+ },
+ {
+  "file": ".claude/commands/sparc/supabase-admin.md",
+  "severity": "P1",
+  "category": "contradiction",
+  "issue": "Consigne de migration qui contredit frontalement CLAUDE.md : le fichier dit de NE PAS utiliser apply_migration, alors que la regle projet impose apply_migration pour tout DDL.",
+  "evidence": "Ligne 76: \"Create modular SQL migration files. Don't use apply_migration. Use execute_sql where possible.\" vs CLAUDE.md: \"Apply migrations via mcp__claude_ai_Supabase__apply_migration\".",
+  "recommendation": "Supprimer ce boilerplate ; il n'a pas ete adapte au projet et donne une consigne dangereuse (DDL via execute_sql casse le bookkeeping des migrations)."
+ },
+ {
+  "file": ".claude/commands/sparc/sparc-modes.md",
+  "severity": "P2",
+  "category": "mal-place",
+  "issue": "Tout le dossier .claude/commands/sparc/ est du boilerplate claude-flow non adapte : il decrit un outillage (mcp__claude-flow__*, npx claude-flow, new_task/apply_diff/attempt_completion) qui n'est PAS le workflow reel du projet (ruflo + Agent/SendMessage + mcp__claude_ai_Supabase__). Aucun doc projet ne le reference.",
+  "evidence": "sparc-modes.md l.34-81 et tous les fichiers du lot referencent mcp__claude-flow__sparc_mode / npx claude-flow ; CLAUDE.md decrit un workflow entierement different (Agent + SendMessage, ruflo MCP).",
+  "recommendation": "Decider globalement : soit purger le dossier sparc/ (vendor scaffolding orphelin), soit l'isoler dans un _archive/ commande pour eviter qu'un agent le prenne pour la doc de reference."
+ },
+ {
+  "file": ".claude/commands/sparc/supabase-admin.md",
+  "severity": "P3",
+  "category": "lien-mort",
+  "issue": "Reference a un fichier d'instructions qui n'existe pas dans le repo.",
+  "evidence": "Ligne 12: \"Review supabase using @/mcp-instructions.txt.\" — aucun fichier mcp-instructions.txt cote projet.",
+  "recommendation": "Retirer la reference @/mcp-instructions.txt (ou purger le fichier avec le reste du boilerplate)."
+ },
+ {
+  "file": ".claude/settings.json.bak",
+  "severity": "P2",
+  "category": "dechet",
+  "issue": "Fichier de sauvegarde obsolete (untracked, ignore via .gitignore .claude/*). Il duplique la structure de settings.json mais avec un contenu perime : reference le modele 'claude-opus-4-7' (le defaut projet est desormais Opus 4.8) et des chemins Unix absolus '/docs/adr' et '/docs/ddd' invalides sur un projet Windows. Aucun mecanisme ne le regenere ; c'est un residu de manipulation manuelle.",
+  "evidence": "L.191 \"default\": \"claude-opus-4-7\" ; L.270 \"directory\": \"/docs/adr\" ; L.276 \"directory\": \"/docs/ddd\"",
+  "recommendation": "Supprimer le fichier .claude/settings.json.bak (aucune valeur d'archive ; settings.json vivant fait foi)."
+ },
+ {
+  "file": "CLAUDE.md",
+  "severity": "P2",
+  "category": "incoherence",
+  "issue": "Les exemples d'iteration ciblee de CLAUDE.md (§Build & Test) utilisent le nom de package '@breakery/backoffice', mais le vrai nom est '@breakery/app-backoffice' (verifie dans apps/backoffice/package.json, et confirme par launch.json et settings.local.json). Les commandes documentees echouent (pnpm ne trouve pas le filtre).",
+  "evidence": "CLAUDE.md: 'pnpm --filter @breakery/backoffice test inventory' vs apps/backoffice/package.json name=\"@breakery/app-backoffice\" ; launch.json L.13 '@breakery/app-backoffice'",
+  "recommendation": "Corriger CLAUDE.md pour '@breakery/app-backoffice' / '@breakery/app-pos' (le prefixe app-). '@breakery/domain' et '@breakery/supabase' sont deja corrects."
+ },
+ {
+  "file": "package.json",
+  "severity": "P3",
+  "category": "incoherence",
+  "issue": "Le script db:types invoque le CLI supabase (supabase gen types --db-url $SUPABASE_DB_URL) alors que le workflow canonique documente dans CLAUDE.md est la regen de types via MCP generate_typescript_types (Docker/CLI local retires 2026-05-14). Le script n'est pas casse (cible le pooler cloud, sans Docker) mais peut induire en erreur et diverger de la source geree par MCP.",
+  "evidence": "package.json L.26 \"db:types\": \"supabase gen types typescript --db-url \\\"$SUPABASE_DB_URL\\\" ...\"",
+  "recommendation": "Aligner sur la doc : soit annoter le script comme secours cloud-CLI, soit le retirer au profit du seul flux MCP documente."
+ },
+ {
+  "file": ".claude/settings.local.json",
+  "severity": "P3",
+  "category": "autre",
+  "issue": "La regle deny 'Read(./.env.*)' de settings.json bloque aussi la lecture de .env.example, qui est un template sans secret, legitimement committe et souvent consulte par l'outillage/agents. La protection visait les vrais .env de secrets.",
+  "evidence": "settings.json deny: \"Read(./.env.*)\" ; consequence : Read(.env.example) refuse pendant cet audit",
+  "recommendation": "Restreindre la regle deny (ex. 'Read(./.env)' et 'Read(./.env.local)' / 'Read(./.env.*.local)') pour laisser lisible .env.example."
+ },
+ {
+  "file": ".github/workflows/STAGING_SETUP.md",
+  "severity": "P1",
+  "category": "incoherence",
+  "issue": "Le meme document se contredit sur les secrets E2E requis. La section S71 (l.58-60) declare : « Les anciens secrets STAGING_POS_URL / STAGING_BO_URL / E2E_KIOSK_JWT ne sont plus requis. » Mais la table « Where to find each secret value » (l.94-98) les liste toujours comme secrets a provisionner (STAGING_POS_URL, STAGING_BO_URL, E2E_KIOSK_JWT).",
+  "evidence": "l.60 « Les anciens secrets STAGING_POS_URL / STAGING_BO_URL / E2E_KIOSK_JWT ne sont plus requis. » vs l.94-98 entrees table « STAGING_POS_URL | Your Vercel / hosting dashboard… », « E2E_KIOSK_JWT | Call kiosk-issue-jwt EF… »",
+  "recommendation": "Supprimer les 3 lignes STAGING_POS_URL / STAGING_BO_URL / E2E_KIOSK_JWT de la table « Where to find » (l.94-95, 98) puisque le modele build-in-CI S71 ne les utilise plus."
+ },
+ {
+  "file": ".github/workflows/STAGING_SETUP.md",
+  "severity": "P1",
+  "category": "contradiction",
+  "issue": "Contradiction interne sur les UUID des utilisateurs E2E. La section S71 (l.48, 51) reference les nouveaux users E2E `0e2e0000-…-001` (owner) et `0e2e0000-…-002` (cashier), mais la table « Where to find » (l.96-97) reference encore les anciens UUID `00000000-…-002` (cashier) et `00000000-…-001` (admin) pour les memes secrets E2E_PIN_CASHIER / E2E_PIN_ADMIN.",
+  "evidence": "l.48 « user_profiles 0e2e0000-…-001 » / l.51 « 0e2e0000-…-002 » vs l.96 « PIN for user 00000000-0000-0000-0000-000000000002 » / l.97 « 00000000-0000-0000-0000-000000000001 »",
+  "recommendation": "Aligner la table sur les UUID S71 (0e2e0000-…) ou supprimer les lignes redondantes E2E_PIN_* de la table « Where to find » (deja documentees en section S71)."
+ },
+ {
+  "file": ".github/workflows/STAGING_SETUP.md",
+  "severity": "P2",
+  "category": "perime",
+  "issue": "La table « Secrets status (as of Session 21) » (l.62-75) est datee de S21 et n'est pas fiable : elle indique tous les secrets staging + E2E « Not set — needs provisioning ». Le workflow playwright-e2e.yml a evolue en S71 et V3_DEV_PG_POOLER_URL est confirme present (utilise par pgtap-nightly/pgtap-pr/playwright-e2e). Un lecteur ne peut se fier a un statut « as of Session 21 » sur un depot en S71.",
+  "evidence": "l.62 « ## Secrets status (as of Session 21) » suivie d'un tableau ; le commentaire de staging-deploy.yml l.42 traite VITE_SUPABASE_URL comme non-secret et le nightly confirme V3_DEV_PG_POOLER_URL pose (2026-05-16).",
+  "recommendation": "Redater la table (statut reel S71) ou la retirer et pointer vers `gh secret list` comme source de verite, pour eviter un etat de provisioning trompeur."
+ },
+ {
+  "file": ".github/workflows/staging-deploy.yml",
+  "severity": "P3",
+  "category": "incoherence",
+  "issue": "Le commentaire d'en-tete (l.3-4) decrit un trigger « push to any swarm/session-13* branch » alors que les triggers auto sont explicitement desactives plus bas (l.21-34) et que seul workflow_dispatch est actif (l.36-37). Le default du dispatch input pointe sur `swarm/session-21` (l.42), branche historique. Non bloquant mais l'en-tete decrit un comportement inexistant.",
+  "evidence": "l.3-4 « push to any swarm/session-13* branch → request approval, then deploy » vs l.21 « Staging environment provisioning status: NOT SET UP » et l.36-37 `on: workflow_dispatch:`",
+  "recommendation": "Mettre a jour l'en-tete pour refleter que seul le dispatch manuel est actif, et rafraichir le default de l'input `ref` vers une branche courante."
+ }
+]
