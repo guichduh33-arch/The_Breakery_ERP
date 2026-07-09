@@ -9,7 +9,7 @@
 //
 // All selectors use data-testid or aria attributes — no brittle CSS paths.
 
-import type { Page } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
 
 // Seed user IDs — dedicated E2E accounts (S71, migration 20260710000141).
 // NOT the legacy 000…001/002 demo accounts: E2E users are isolated so nightly
@@ -74,4 +74,32 @@ export async function loginPOS(page: Page, pin: string): Promise<void> {
   if (await signInBtn.isEnabled({ timeout: 2_000 }).catch(() => false)) {
     await signInBtn.click();
   }
+}
+
+/**
+ * openPosSession — cold-start-safe POS login for beforeAll/serial specs.
+ * POS renders no user picker (it auto-selects the first login user) and the
+ * numpad is always mounted, so we wait for the numpad group to hydrate (up to
+ * 60s for a cold dev server), then type the PIN. A 6-digit PIN auto-submits.
+ * Caller MUST have set `test.setTimeout(120_000)` in its beforeAll.
+ */
+export async function openPosSession(
+  page: Page,
+  pin: string = process.env.E2E_PIN_CASHIER ?? '424242',
+): Promise<void> {
+  await page.goto('/');
+  await expect(page.getByRole('group', { name: 'PIN numpad' })).toBeVisible({
+    timeout: 60_000,
+  });
+  for (const digit of pin) {
+    await page.getByRole('button', { name: digit, exact: true }).first().click();
+  }
+  // 6-digit PINs auto-submit; click Sign In only if still present/enabled.
+  const signInBtn = page.getByTestId('login-sign-in-btn');
+  if (await signInBtn.isEnabled({ timeout: 2_000 }).catch(() => false)) {
+    await signInBtn.click();
+  }
+  await expect(page.getByRole('group', { name: 'PIN numpad' })).toBeHidden({
+    timeout: 20_000,
+  });
 }

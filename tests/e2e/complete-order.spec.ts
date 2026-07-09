@@ -1,54 +1,85 @@
 // tests/e2e/complete-order.spec.ts
 //
-// Session 13 / Phase 6.C — E2E: cashier opens POS, logs in via PIN, adds 3
-// products to cart, opens cashier panel, pays cash, asserts the receipt
-// renders. JE balance check is verified server-side by `complete_order_v9`
-// (the order would not reach `paid` state if the JE was unbalanced).
+// Session 13 (orig.) / Session 71 (repair) — E2E: cashier opens the POS,
+// logs in via PIN (openPosSession — cold-start-safe, no stale "sign in"
+// heading), adds the same sellable product (Americano, SKU COF-011) THREE
+// times to build a multi-item cart, opens the payment terminal, pays cash
+// exact, and asserts the receipt (SuccessModal, data-testid="receipt-success")
+// renders. JE balance is verified server-side by
+// `complete_order_with_payment_v17` (the order would not reach `paid` state
+// if the JE was unbalanced) — this spec only asserts the client-visible
+// success path plus a negative guard against an "unbalanced" toast.
 //
-// Prereqs: POS dev server on POS_BASE_URL with VITE_SUPABASE_URL pointing at
-// the staging project that has at least one CASHIER user with PIN '1234'
-// (seeded via Phase 0.5 fixtures) + 3 catalog products.
+// Rewritten S71 (DEV-S71-Task2-01): the original S13-era selectors
+// (`product-tile-*`, `/active order/i`, `/checkout|cashier|pay/` generic
+// button, `/confirm|complete/` generic button, `/order #?\w/i`) no longer
+// exist in the current POS DOM. Modeled on the sibling spec
+// `pos-login-order.spec.ts` (single item) and the `addAmericano` guard from
+// `s44-money-path.spec.ts`, extended to a 3x add for a real multi-item cash
+// sale — this spec's distinguishing purpose vs pos-login-order.
+//
+// Project: pos (baseURL = E2E_POS_URL or localhost:5173).
+//
+// Prereqs:
+//   - POS app deployed/running at E2E_POS_URL with Supabase pointing at V3 dev.
+//   - Dedicated E2E cashier seed user (SEED_USER_CASHIER) with PIN matching
+//     E2E_PIN_CASHIER env var, shift already open (Task 1).
+//   - Catalog product "Americano" (SKU COF-011) active and sellable.
 
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
+import { openPosSession } from './fixtures/auth';
 
-const PIN = process.env.E2E_PIN ?? '1234';
+test.use({ baseURL: process.env.E2E_POS_URL });
+
+async function addAmericano(p: Page): Promise<void> {
+  const card = p.getByRole('button', { name: 'Americano — tap to add' }).first();
+  await expect(card).toBeVisible({ timeout: 20_000 });
+  await card.click();
+  // Beverage category modifier groups: confirm the pre-selected defaults.
+  const addToCart = p.getByRole('button', { name: /add to cart/i });
+  if (await addToCart.isVisible().catch(() => false)) {
+    await addToCart.click();
+  }
+  await expect(p.getByTestId('cart-items')).toBeVisible({ timeout: 10_000 });
+}
 
 test.describe('Complete a cash order', () => {
   test('cashier login → add 3 items → pay cash → receipt printed', async ({ page }) => {
-    await page.goto('/');
+    test.setTimeout(120_000);
 
-    // Login: PIN numpad.
-    await expect(page.getByRole('heading', { name: /sign in/i })).toBeVisible();
-    for (const digit of PIN) {
-      await page.getByRole('button', { name: digit, exact: true }).click();
+    // ---- Step 1: PIN login (cold-start-safe helper) ----
+    await openPosSession(page);
+
+    // After successful login the POS main view should be visible.
+    await expect(page.locator('main, [role="main"]').first()).toBeVisible({ timeout: 15_000 });
+
+    // ---- Step 2: add the same product 3x → multi-item cash order ----
+    await addAmericano(page);
+    await addAmericano(page);
+    await addAmericano(page);
+
+    // ---- Step 3: open payment terminal ----
+    await page.getByTestId('checkout-cta').click();
+
+    // ---- Step 4: select Cash payment method (pre-selected on open; explicit) ----
+    await page.getByTestId('pay-method-cash').click();
+
+    // ---- Step 5: set exact amount ----
+    await page.getByRole('button', { name: /^exact/i }).click();
+
+    // ---- Step 6: process payment ----
+    const fastPath = page.getByTestId('pay-cash-exact');
+    const processBtnVisible = await fastPath.isVisible({ timeout: 2_000 }).catch(() => false);
+    if (processBtnVisible) {
+      await fastPath.click();
+    } else {
+      await page.getByRole('button', { name: /process payment/i }).click();
     }
-    await page.getByRole('button', { name: /sign in|enter|login/i }).click();
 
-    // Catalog should now be visible.
-    await expect(page.getByRole('main')).toBeVisible({ timeout: 10_000 });
+    // ---- Step 7: assert receipt visible ----
+    await expect(page.getByTestId('receipt-success')).toBeVisible({ timeout: 15_000 });
 
-    // Click first 3 product tiles.
-    const productTiles = page.getByTestId(/^product-tile-/);
-    await productTiles.nth(0).click();
-    await productTiles.nth(1).click();
-    await productTiles.nth(2).click();
-
-    // Active order panel should show 3 items.
-    await expect(page.getByText(/active order/i)).toBeVisible();
-
-    // Open cashier panel.
-    await page.getByRole('button', { name: /checkout|cashier|pay/i }).click();
-
-    // Pick "Cash" tender.
-    await page.getByRole('button', { name: /cash/i }).click();
-
-    // Confirm.
-    await page.getByRole('button', { name: /confirm|complete/i }).click();
-
-    // Receipt modal should open with order number.
-    await expect(page.getByText(/order #?\w/i)).toBeVisible({ timeout: 10_000 });
-
-    // No JE-unbalanced error toast.
+    // No JE-unbalanced error toast (negative guard).
     await expect(page.getByText(/je_unbalanced|unbalanced/i)).not.toBeVisible();
   });
 });
