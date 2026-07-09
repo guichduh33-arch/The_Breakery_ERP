@@ -166,12 +166,13 @@ test('T1: products page — "Import / Export" tab visible, navigates to 3-zone i
 
   // Wait for the products list to hydrate (the tab strip renders early but
   // we want to ensure React has mounted before clicking).
-  await expect(page.getByRole('tab', { name: 'Products', exact: true })).toBeVisible({
+  const productsNav = page.getByRole('navigation', { name: 'Products sections' });
+  await expect(productsNav.getByRole('link', { name: 'Products', exact: true })).toBeVisible({
     timeout: 30_000,
   });
 
   // The "Import / Export" tab must be visible (gate catalog.import — OWNER is SUPER_ADMIN).
-  const importTab = page.getByRole('tab', { name: 'Import / Export' });
+  const importTab = productsNav.getByRole('link', { name: 'Import / Export' });
   await expect(importTab).toBeVisible({ timeout: 10_000 });
 
   // Click the tab.
