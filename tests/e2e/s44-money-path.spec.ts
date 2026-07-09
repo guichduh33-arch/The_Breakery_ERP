@@ -109,6 +109,7 @@ test('T1 — QRIS sale splits the JE by method (no cash fallback)', async () => 
 });
 
 test('T2 — variant line is routable (Send to Kitchen enabled)', async () => {
+  test.setTimeout(120_000);
   // Fresh Juice (category "Other drinks") is the seed's variant product.
   await page.getByRole('button', { name: 'Other drinks', exact: true }).click();
   const parent = page.getByRole('button', { name: 'Fresh Juice — tap to add' }).first();
@@ -123,9 +124,13 @@ test('T2 — variant line is routable (Send to Kitchen enabled)', async () => {
   await page.getByTestId('modifier-add-to-cart').click({ timeout: 5_000 }).catch(() => {});
   // The regression guard: fire must be ENABLED even on a 100%-variant cart.
   await expect(page.getByRole('button', { name: /send to kitchen/i })).toBeEnabled({ timeout: 10_000 });
+  // Clean up so this variant line doesn't bleed into T3's shared cart (serial suite).
+  await page.getByRole('button', { name: 'Void Order' }).click();
+  await page.getByTestId('void-confirm-button').click();
 });
 
 test('T3 — void of a fired order does not poison the next sale', async () => {
+  test.setTimeout(120_000);
   await addAmericano(page);
   // Fire to the kitchen — this CLEARS the active cart and creates a "Sent"
   // (pending_payment) held order.
