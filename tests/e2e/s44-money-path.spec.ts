@@ -127,12 +127,19 @@ test('T2 — variant line is routable (Send to Kitchen enabled)', async () => {
 
 test('T3 — void of a fired order does not poison the next sale', async () => {
   await addAmericano(page);
-  // Fire to the kitchen (counter order persisted as pending_payment).
+  // Fire to the kitchen — this CLEARS the active cart and creates a "Sent"
+  // (pending_payment) held order.
   await page.getByRole('button', { name: /send to kitchen/i }).click();
   await expect(page.getByText(/sent to kitchen|fired/i)).toBeVisible({ timeout: 15_000 }).catch(() => {});
 
-  // Void the fired order → PinVerificationModal (NumpadPin under
-  // role=group aria-label="Numpad"), never a text input.
+  // Reopen the just-fired order from Held Orders (rows are created_at DESC → ours
+  // is the first row). Reopening sets pickedUpOrderId so the cart goes live.
+  await page.getByRole('button', { name: /held orders/i }).click();
+  const firstHeld = page.locator('[data-held-order-id]').first();
+  await expect(firstHeld).toBeVisible({ timeout: 10_000 });
+  await firstHeld.getByRole('button', { name: /restore/i }).click();
+
+  // Void the reopened (fired) order → manager-PIN NumpadPin modal (not a text input).
   await page.getByRole('button', { name: 'Void Order' }).click();
   const numpad = page.getByRole('group', { name: 'Numpad' });
   await expect(numpad).toBeVisible({ timeout: 10_000 });
@@ -153,6 +160,5 @@ test('T3 — void of a fired order does not poison the next sale', async () => {
     await page.getByRole('button', { name: /process payment/i }).click();
   }
   await expect(page.getByTestId('receipt-success')).toBeVisible({ timeout: 20_000 });
-  // No P0002 surfaced as an error toast.
   await expect(page.getByText(/P0002|not appendable|order not found/i)).toHaveCount(0);
 });
