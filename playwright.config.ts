@@ -1,20 +1,18 @@
 // playwright.config.ts
 //
 // Session 13 / Phase 6.C — Playwright config for cross-app E2E.
-// Session 21 / Phase 1.B.1 — extended with pos + backoffice named projects,
-//   E2E_POS_URL / E2E_BO_URL env vars (used by nightly GHA workflow), and
-//   3 new S21 spec files wired to correct projects.
+// Session 21 — pos + backoffice named projects, E2E_POS_URL / E2E_BO_URL.
+// Session 71 — webServer build+preview in-CI (dev V3 backend), s44 wired.
 //
-// Local note (D-W6-6C-05 / D-S21-1.B.1): the dev servers (`pnpm dev`) + seeded
-// staging DB must be running for `pnpm test:e2e` to succeed end-to-end.
-// `pnpm test:e2e -- --list` works without any server.
-// CI Linux runners install Chromium + run against staging URLs via secrets.
+// CI: the job builds + serves both apps on localhost via `webServer` below,
+// with VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY pointing at the dev V3
+// project. `pnpm exec playwright test --list` works without any server.
 
 import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './tests/e2e',
-  fullyParallel: false, // E2E specs may share staging DB state — run serially.
+  fullyParallel: false, // E2E specs may share dev DB state — run serially.
   forbidOnly: !!process.env.CI,
   retries: 2,
   workers: 1,
@@ -26,10 +24,26 @@ export default defineConfig({
     video: 'retain-on-failure',
     actionTimeout: 10_000,
   },
+  webServer: [
+    {
+      command:
+        'pnpm --filter @breakery/app-pos build && pnpm --filter @breakery/app-pos preview --port 5173 --strictPort',
+      url: 'http://localhost:5173',
+      reuseExistingServer: !process.env.CI,
+      timeout: 180_000,
+    },
+    {
+      command:
+        'pnpm --filter @breakery/app-backoffice build && pnpm --filter @breakery/app-backoffice preview --port 5174 --strictPort',
+      url: 'http://localhost:5174',
+      reuseExistingServer: !process.env.CI,
+      timeout: 180_000,
+    },
+  ],
   projects: [
     {
       name: 'pos',
-      testMatch: /(complete-order|pos-login-order|s43-pos-audit-fixes)\.spec\.ts$/,
+      testMatch: /(complete-order|pos-login-order|s43-pos-audit-fixes|s44-money-path)\.spec\.ts$/,
       use: {
         ...devices['Desktop Chrome'],
         baseURL: process.env.E2E_POS_URL ?? process.env.E2E_BASE_URL ?? 'http://localhost:5173',
