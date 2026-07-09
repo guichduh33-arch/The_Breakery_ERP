@@ -10,9 +10,14 @@ name: Playwright E2E
 #   E2E_PIN_CASHIER          — 6-digit PIN for E2E cashier (0e2e0000-…-002)
 #   V3_DEV_PG_POOLER_URL     — pooler connection string (already set 2026-05-16)
 #
-# Cron is DISABLED until the suite is green (Plan 2 arms `schedule`).
+# Nightly cron armed S71 Plan 2 once all 12 specs proved green in a combined
+# run (26 passed / 2 intentional fixmes / 0 failed). 22:00 UTC daily. The
+# rate-limit-resilient login (fixtures/auth.ts) keeps the bunched-login run
+# green against the auth-verify-pin 3/min/IP limit. Still dispatchable on demand.
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '0 22 * * *'
 
 env:
   VITE_SUPABASE_URL: https://ikcyvlovptebroadgtvd.supabase.co
