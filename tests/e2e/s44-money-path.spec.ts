@@ -153,6 +153,11 @@ test('T3 — void of a fired order does not poison the next sale', async () => {
   }
   await page.getByRole('button', { name: /^verify$/i }).click();
 
+  // The void is fire-and-forget (EF round-trip) — wait for the cart to reset
+  // (pickedUpOrderId cleared) before ringing the next sale, else the fresh item
+  // appends to the stale reopened order and the tender != order-total.
+  await expect(page.getByText(/select products to begin/i)).toBeVisible({ timeout: 15_000 });
+
   // Fresh direct cash sale must succeed WITHOUT reload (pickedUpOrderId cleared).
   await addAmericano(page);
   await page.getByTestId('checkout-cta').click();
