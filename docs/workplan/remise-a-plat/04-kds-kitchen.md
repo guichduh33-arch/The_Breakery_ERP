@@ -1,7 +1,7 @@
 # Module 04 — Écran cuisine (KDS)
 
-> ⚠️ **Mise à jour S60 (2026-07-05, `swarm/session-60`)** : **D1.2 livré** — bouton « All ready » par carte via le nouveau RPC atomique **`kds_bump_order_v1`** (migration `_106` : un UPDATE `pending|preparing → ready`, replay idempotent, gate `kds.operate` ; pas d'undo groupé — l'undo 60 s per-item reste valable). Voir `docs/workplan/plans/2026-07-05-session-60-INDEX.md`.
-> ⚠️ **Mise à jour S59 (2026-07-04, `swarm/session-59`)** : **D1.1/D1.3 livrés** — undo-bump 60 s, recall, prep-timer câblés (RPCs `kds_*_v1`) + alarme sonore WebAudio à la nouvelle commande (dédup + toggle mute persisté). Voir `docs/workplan/plans/2026-07-04-session-59-INDEX.md`.
+> ⚠️ **Mise à jour S60 (2026-07-05, `swarm/session-60`)** : **D1.2 livré** — bouton « All ready » par carte via le nouveau RPC atomique **`kds_bump_order_v1`** (migration `_106` : un UPDATE `pending|preparing → ready`, replay idempotent, gate `kds.operate` ; pas d'undo groupé — l'undo 60 s per-item reste valable). Voir `docs/workplan/plans/archive/2026-07-05-session-60-INDEX.md`.
+> ⚠️ **Mise à jour S59 (2026-07-04, `swarm/session-59`)** : **D1.1/D1.3 livrés** — undo-bump 60 s, recall, prep-timer câblés (RPCs `kds_*_v1`) + alarme sonore WebAudio à la nouvelle commande (dédup + toggle mute persisté). Voir `docs/workplan/plans/archive/2026-07-04-session-59-INDEX.md`.
 
 > **Remise à plat — analyse comparative.** Doc : Description v1.2 (2026-07-03), module 4. Code : commit `5b0fa92` (2026-07-03).
 > **Statut annoncé par la doc :** Opérationnel

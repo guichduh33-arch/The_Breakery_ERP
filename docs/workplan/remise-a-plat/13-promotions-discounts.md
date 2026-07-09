@@ -1,6 +1,6 @@
 # Module 13 — Promotions & remises
 
-> ⚠️ **Mise à jour S60 (2026-07-05, `swarm/session-60`)** : **D1.1 livré** — `ReceiptPayload.promotions[]` + `totals.promotion_total` alimentés depuis `appliedPromotions` snapshoté au succès (⚠️ le **template du print-bridge externe** doit être mis à jour pour rendre le champ — action utilisateur). **D1.2 livré** — `useOrderDetail` embed `promotion_applications(amount, description, promotions(name))`, lignes promo nommées dans `OrderDetailPage` ET `OrderDetailDrawer` (libellé = `description`, snapshot). B1.4 passe 🟠→✅ côté données (ticket papier dépend du bridge). Voir `docs/workplan/plans/2026-07-05-session-60-INDEX.md`.
+> ⚠️ **Mise à jour S60 (2026-07-05, `swarm/session-60`)** : **D1.1 livré** — `ReceiptPayload.promotions[]` + `totals.promotion_total` alimentés depuis `appliedPromotions` snapshoté au succès (⚠️ le **template du print-bridge externe** doit être mis à jour pour rendre le champ — action utilisateur). **D1.2 livré** — `useOrderDetail` embed `promotion_applications(amount, description, promotions(name))`, lignes promo nommées dans `OrderDetailPage` ET `OrderDetailDrawer` (libellé = `description`, snapshot). B1.4 passe 🟠→✅ côté données (ticket papier dépend du bridge). Voir `docs/workplan/plans/archive/2026-07-05-session-60-INDEX.md`.
 
 > **Remise à plat — analyse comparative.** Doc : Description v1.2 (2026-07-03), module 13. Code : commit `5b0fa92` (2026-07-03).
 > **Statut annoncé par la doc :** Opérationnel.

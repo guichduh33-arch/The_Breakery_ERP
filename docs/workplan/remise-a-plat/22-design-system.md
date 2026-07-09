@@ -1,6 +1,6 @@
 # Module 22 — Charte graphique & cohérence visuelle
 
-> ⚠️ **Mise à jour S59 (2026-07-04, `swarm/session-59`)** : **D1.1 (purge hex) livré** — 9 fichiers `apps/*/src` migrés des littéraux hex vers les tokens / `chartColors.ts`. Reliquat documenté : 6 littéraux sans token équivalent restent commentés dans 2 fichiers (B2.1 quasi soldé). Voir `docs/workplan/plans/2026-07-04-session-59-INDEX.md`.
+> ⚠️ **Mise à jour S59 (2026-07-04, `swarm/session-59`)** : **D1.1 (purge hex) livré** — 9 fichiers `apps/*/src` migrés des littéraux hex vers les tokens / `chartColors.ts`. Reliquat documenté : 6 littéraux sans token équivalent restent commentés dans 2 fichiers (B2.1 quasi soldé). Voir `docs/workplan/plans/archive/2026-07-04-session-59-INDEX.md`.
 
 > **Remise à plat — analyse comparative.** Doc : Description v1.2 (2026-07-03), module 22. Code : commit `5b0fa92` (2026-07-03).
 > **Statut annoncé par la doc :** Partiel (fondations solides, finitions en cours)
