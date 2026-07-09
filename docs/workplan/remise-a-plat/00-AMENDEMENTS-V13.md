@@ -56,7 +56,7 @@
 
 ## Module 9 — Clients professionnels (B2B)
 - [ ] **DOC** B1.1 : reformuler « prix proposé au prix catalogue et ajustable manuellement à la commande » (ou déplacer « prix négocié » en À-venir).
-- [ ] **DOC** B1.3 : reformuler « commande créée et stock déduit immédiatement ; le cycle de livraison détaillé (préparation, livraisons partielles) est À venir ».
+- [ ] **DOC** B1.3 : **retirer** la revendication de cycle de livraison B2B (préparation, livraisons partielles) — **hors périmètre, décision propriétaire 2026-07-10 : pas de livraisons B2B**. Formuler « commande B2B créée et stock déduit immédiatement » sans mention de livraison.
 - [ ] **DOC** B1.4 : déplacer intégralement en À-venir (aucun PDF de facture, pas de série de numérotation légale dédiée).
 
 ## Module 10 — Comptabilité en partie double
