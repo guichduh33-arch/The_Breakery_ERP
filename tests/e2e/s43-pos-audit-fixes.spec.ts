@@ -59,16 +59,16 @@ let page: Page;
  * footer "Send to Kitchen" button only renders when the cart is non-empty.
  */
 async function addAmericano(p: Page, surface: 'pos' | 'tablet' = 'pos'): Promise<void> {
+  // The product grid opens on the (empty) "Favorites" tab and selection is
+  // category-scoped, so select the "Coffee" category first for Americano
+  // (COF-011, Coffee) to render. Same ProductGrid on POS and tablet.
+  await p.getByRole('button', { name: 'Coffee', exact: true }).click();
   const card = p.getByRole('button', { name: 'Americano — tap to add' }).first();
   await expect(card).toBeVisible({ timeout: 20_000 });
   await card.click();
-  const customize = p.getByRole('dialog').filter({ hasText: 'Customize Americano' });
-  await customize
-    .getByRole('button', { name: /add to cart/i })
-    .click({ timeout: 7_000 })
-    .catch(() => {
-      // No modifier modal (defensive) — the tap added the item directly.
-    });
+  // Confirm the ModifierModal via its testid if the category has modifier
+  // groups (best-effort: only present when a modal mounts).
+  await p.getByTestId('modifier-add-to-cart').click({ timeout: 8_000 }).catch(() => {});
   if (surface === 'pos') {
     await expect(p.getByTestId('cart-items')).toContainText('Americano', { timeout: 10_000 });
   } else {
