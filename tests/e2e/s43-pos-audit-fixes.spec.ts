@@ -225,8 +225,9 @@ test('T2: tablet order on page B bumps the POS inbox badge on page A without rel
     await expect(pageB).toHaveURL(/\/pos/, { timeout: 30_000 });
 
     await pageB.goto('/tablet/order');
-    // Take-out avoids any table requirement.
-    await pageB.getByRole('button', { name: 'Take out' }).click();
+    // Take-out avoids any table requirement. OrderTypeToggle renders role="tab"
+    // buttons — target the stable testid, not a button role.
+    await pageB.getByTestId('tablet-order-type-take-out').click();
     await addAmericano(pageB, 'tablet');
 
     const createResp = pageB.waitForResponse(
