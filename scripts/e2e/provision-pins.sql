@@ -16,3 +16,14 @@ UPDATE public.user_profiles
        failed_login_attempts = 0,
        locked_until = NULL
  WHERE id = '0e2e0000-0000-4000-a000-000000000002';
+
+-- S71 Plan 2 — ensure an OPEN shift exists for the E2E cashier so POS sale
+-- flows aren't blocked by the "No shift open" dialog. Idempotent: insert only
+-- if the cashier has no open shift. pos_sessions.status defaults to 'open'.
+INSERT INTO public.pos_sessions (opened_by, opening_cash)
+SELECT '0e2e0000-0000-4000-a000-000000000002', 100000
+ WHERE NOT EXISTS (
+   SELECT 1 FROM public.pos_sessions
+    WHERE opened_by = '0e2e0000-0000-4000-a000-000000000002'
+      AND status = 'open'
+ );

@@ -41,7 +41,7 @@ jobs:
       - name: Install Chromium browser
         run: pnpm exec playwright install --with-deps chromium
 
-      - name: Provision E2E user PINs
+      - name: Provision E2E state (PINs + open shift)
         env:
           PGURL: ${{ secrets.V3_DEV_PG_POOLER_URL }}
           E2E_PIN_ADMIN: ${{ secrets.E2E_PIN_ADMIN }}
