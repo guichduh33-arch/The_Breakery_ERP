@@ -55,12 +55,12 @@ Expert on the stock flow from raw materials through semi-finished to finished pr
 ```
 ENTRY                        INTERNAL                       EXIT
 ─────                        ────────                       ────
-receive_stock_v1 (PO)        record_production_v1           complete_order_v9
+receive_stock_v1 (PO)        record_production_v1           complete_order_with_payment
  ↓ stock_movements             ↓ cascade via                  ↓ stock_movements
  ↓ (movement_type=purchase)    ↓ recipe_bom_full_v1           ↓ (movement_type=sale)
  ↓ → WAC update                ↓ (S17 depth-5 walk)           ↓ → JE trigger
  ↓ → JE trigger                ↓ stock_movements             
- ↓ → recipe cascade            ↓ (production_in/out)          refund_order_rpc_v2
+ ↓ → recipe cascade            ↓ (production_in/out)          refund_order_rpc
                                ↓ → JE trigger                  ↓ stock_movements (sale_void/sale_refund)
 record_incoming_stock_v1       transfer_stock_v1
  ↓ (incoming)                  ↓ (from_section_id, to_section_id)
@@ -104,7 +104,7 @@ adjust_stock_v1
 - **Dedicated tables** exist, fully separate from the global ledger: `display_stock` (`product_id`, `quantity`, `updated_at` — the front-counter), `display_movements` (append-only ledger: `movement_type`, `quantity`, `reason`, `reference_type/id`, `created_by`, `idempotency_key`). RLS on both = **SELECT-only** (`display.read`) → writes only via SECURITY DEFINER RPCs.
 - **3 dedicated RPCs** (perm-gated, `anon` revoked): `add_display_stock_v1` / `adjust_display_stock_v1` / `waste_display_stock_v1`.
 - **POS rewired**: `usePOSReceiveStock` now wraps **`add_display_stock_v1`** ("mise en vitrine"), NOT `record_incoming_stock_v1`. `record_incoming_stock_v1` is now called **only from the BackOffice** (`useRecordIncomingStock`) — POS is fully isolated.
-- **Sale path**: `complete_order_with_payment_v10` decrements BOTH `display_stock` (+ writes `display_movements`) AND `products.current_stock` — the documented double-deduction. This is the only place both are touched.
+- **Sale path**: `complete_order_with_payment` (versions omises — vérifier `CLAUDE.md` / `supabase/migrations/`) decrements BOTH `display_stock` (+ writes `display_movements`) AND `products.current_stock` — the documented double-deduction. This is the only place both are touched.
 
 > Historical note: prior to S33 the POS receive routed through `record_incoming_stock_v1` into the **shared** `stock_movements` ledger + global `products.current_stock`, causing BO/POS cross-interference. The `Front Display` section approach was superseded by the dedicated `display_stock`/`display_movements` tables. If an audit still finds POS writing `incoming` rows, that is a regression — flag it.
 
@@ -203,13 +203,13 @@ Run a section when you suspect a gap. Each check is a discrete SQL/code query yo
 - [ ] Types regen via MCP `generate_typescript_types` → write to `packages/supabase/src/types.generated.ts` + commit.
 
 ### 5.C — Before touching a trigger (JE, spoilage, WAC cascade)
-- [ ] Identify every RPC that depends on the trigger. JE trigger is depended on by `record_production_v1`, `complete_order_v9` (sale movements), and all receive RPCs.
+- [ ] Identify every RPC that depends on the trigger. JE trigger is depended on by `record_production_v1`, `complete_order_with_payment` (sale movements), and all receive RPCs.
 - [ ] Write an integration pgTAP test that exercises the full chain entry → production → sale, asserting the trigger fired the expected `journal_entries` row.
 - [ ] Cross-check historical correctives (S15-S17) for known regressions: DEV-S15-2.B-01 (recipe_versions cost reconstruction), DEV-S17-2.A-01 (`expandRecipeCascade` has no consumer in apps).
 - [ ] Additive migration first (new trigger function, attach), then drop the old in the next migration once production is stable.
 
 ### 5.D — Before modifying a CHECK / FK / RLS on stock tables
-- [ ] Identify the invariant the constraint protects (see S25 `_014` / `_015` correctives — relaxing `orders.session_id NOT NULL` and the `refund_order_rpc_v2` RECORD bug surfaced once another change exercised the path).
+- [ ] Identify the invariant the constraint protects (see S25 `_014` / `_015` correctives — relaxing `orders.session_id NOT NULL` and the `refund_order_rpc` RECORD bug surfaced once another change exercised the path).
 - [ ] Check existing rows that would violate the new constraint — data migration must run first if any.
 - [ ] Regression test suite: `inventory*.test.sql` + `recipe_*.test.sql` + `*production*.test.sql` via MCP `execute_sql` BEGIN/ROLLBACK envelope.
 - [ ] RLS on `stock_movements` UPDATE/DELETE is non-negotiable — never relax. Find another mechanism if you need correction (a new `_void_v1` RPC, never UPDATE).
@@ -225,10 +225,10 @@ Run a section when you suspect a gap. Each check is a discrete SQL/code query yo
 ## Sources de vérité (pointers)
 
 ```
-Docs reference (read first, canonical)
-  docs/reference/04-modules/15-production-recipes.md
-  docs/reference/04-modules/14-inventory.md             # if present
-  docs/reference/04-modules/16-stock-movements.md       # if present
+Module reference (read first, canonical — fiches réel-vs-demandé, code-verified)
+  docs/workplan/remise-a-plat/00-INDEX.md               # index vagues + décisions
+  docs/workplan/remise-a-plat/                          # fiches par module (stock / inventory / recipes / production)
+  # ⚠️ docs/reference/04-modules/ est STALE (V2/pré-refactor) — ne fait plus foi
 
 Migrations (chronological order to understand history)
   supabase/migrations/20260516000001..024_*.sql         # S16 stock init + RPCs

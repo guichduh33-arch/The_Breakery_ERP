@@ -30,8 +30,8 @@ Vagues séquentielles ; chaque vague est vérifiée (grep de contrôle) avant la
 ## Vague 1 — P1 (outillage agents & réconciliation)
 
 - [x] **P1-1** — Préfixe MCP `mcp__plugin_supabase_supabase__` → `mcp__claude_ai_Supabase__` (script) dans `.claude/agents/{db-engineer,edge-functions-engineer,pos-specialist,backoffice-specialist}.md` + `.claude/skills/{db-migrations,accounting,report-audit,edge-functions}/SKILL.md`.
-- [ ] **P1-2** — Versions RPC des skills/agents → placeholder `_vN (vérifier CLAUDE.md/migrations)` ou valeur S71. Fichiers : `.claude/skills/{b2b-credit,accounting,stock-management,orders,pos-flow-audit,products-catalog,reports-exports}`, `.claude/agents/{db-engineer,pos-specialist}`.
-- [ ] **P1-3** — Repointer « sources canoniques » `04-modules` → `remise-a-plat/` dans `stock-management`, `pos-flow-audit`, `session-coordinator` (backlog → `remise-a-plat/00-INDEX.md`).
+- [x] **P1-2** — Versions RPC des skills/agents → placeholder `_vN (vérifier CLAUDE.md/migrations)` ou valeur S71. Fichiers : `.claude/skills/{b2b-credit,accounting,stock-management,orders,pos-flow-audit,products-catalog,reports-exports}`, `.claude/agents/{db-engineer,pos-specialist}`.
+- [x] **P1-3** — Repointer « sources canoniques » `04-modules` → `remise-a-plat/` dans `stock-management`, `pos-flow-audit`, `session-coordinator` (backlog → `remise-a-plat/00-INDEX.md`).
 - [ ] **P1-4** — Réconcilier `remise-a-plat/{08,09,05,00-INDEX}.md` avec S69 : header « Mise à jour S69 », verdicts C-B1.1/B1.2/B1.7 → ✅, `customer_product_prices` + `create_b2b_order_v5` notés, Vague 2/3 dans 00-INDEX.
 - [ ] **P1-5** — Annoter corps figés vs headers dans `remise-a-plat/{12,14,21,10}.md` (« tableau figé au 5b0fa92, supplanté par le header »).
 

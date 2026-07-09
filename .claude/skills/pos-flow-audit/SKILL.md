@@ -75,17 +75,17 @@ Grep  \.rpc\(['"](complete_order|pay_existing_order|create_tablet_order|evaluate
 
 That's the whole rule: verify the specific thing you're about to assert, the instant you assert it. Do **not** open with a "verify every RPC version" pass or rebuild the table below before looking at feature code — that burns budget and narrows your search before you've seen anything. Likewise, a "what's already correct (verified)" section is optional polish, not a required deliverable; one or two lines at most. The reference below is a convenience map to know where to look — confirm a row only when a finding depends on it.
 
-Reference map (V3 dev `ikcyvlovptebroadgtvd`, 2026-05-31) — convenience only, re-confirm per finding:
+Reference map (V3 dev `ikcyvlovptebroadgtvd`, 2026-05-31) — convenience only, re-confirm per finding (versions omises volontairement — vérifier `CLAUDE.md` / `supabase/migrations/`, bump quasi chaque session) :
 
 | RPC / EF | Caller (file:line) | Role |
 |---|---|---|
-| `complete_order_with_payment_v10` | EF `supabase/functions/process-payment/index.ts:149` (called by `useCheckout.ts:124`) | New cart → order + items + payments + sale JE, atomic. Decrements `display_stock` AND `products.current_stock` (documented double-deduction). |
-| `pay_existing_order_v6` | `apps/pos/src/features/payment/hooks/useCheckout.ts:93` | Pay off an already-created (tablet) order. Multi-tender (S11). |
-| `create_tablet_order_v2` | `apps/pos/src/features/tablet/hooks/useCreateTabletOrder.ts:19` | Waiter submits a table order. Idempotent via `p_client_uuid` (S25). |
+| `complete_order_with_payment` | EF `supabase/functions/process-payment/index.ts:149` (called by `useCheckout.ts:124`) | New cart → order + items + payments + sale JE, atomic. Decrements `display_stock` AND `products.current_stock` (documented double-deduction). |
+| `pay_existing_order` | `apps/pos/src/features/payment/hooks/useCheckout.ts:93` | Pay off an already-created (tablet) order. Multi-tender (S11). |
+| `create_tablet_order` | `apps/pos/src/features/tablet/hooks/useCreateTabletOrder.ts:19` | Waiter submits a table order. Idempotent via `p_client_uuid` (S25). |
 | `pickup_tablet_order` | `apps/pos/src/features/inbox/hooks/usePickupTabletOrder.ts:43` | POS claims a tablet order from the inbox. |
-| `evaluate_promotions_v1` | `apps/pos/src/features/promotions/hooks/useEvaluatePromotions.ts:166` | Returns applied promos + free items. Pure-TS fallback in `packages/domain/src/promotions`. |
+| `evaluate_promotions` | `apps/pos/src/features/promotions/hooks/useEvaluatePromotions.ts:166` | Returns applied promos + free items. Pure-TS fallback in `packages/domain/src/promotions`. |
 | `mark_item_served` | `apps/pos/src/features/kds/hooks/useMarkItemServed.ts:14` | KDS bumps an item ready/served (no version suffix). |
-| `close_shift_v2` | `apps/pos/src/features/shift/hooks/useCloseShift.ts:51` | Closes the session, inserts a `z_reports` draft, fires non-blocking PDF EF (S29). |
+| `close_shift` | `apps/pos/src/features/shift/hooks/useCloseShift.ts:51` | Closes the session, inserts a `z_reports` draft, fires non-blocking PDF EF (S29). |
 
 If the version you find ≠ the table above, **trust the code** and note the drift — the skill is out of date, not the codebase.
 
@@ -95,8 +95,8 @@ If the version you find ≠ the table above, **trust the code** and note the dri
 COUNTER PATH (takeaway, speed-first)            TABLE PATH (café, coordination-first)
 ────────────────────────────────────           ─────────────────────────────────────
 POS terminal: build cart                         Waiter tablet: build cart at table
- │  add items + modifiers (cartStore)             │  create_tablet_order_v2 (idempotent)
- │  evaluate_promotions_v1                         │        │
+ │  add items + modifiers (cartStore)             │  create_tablet_order (idempotent)
+ │  evaluate_promotions                             │        │
  │  [optional] hold/recall (useHoldOrder)          ▼        ▼
  │        │                              tablet:new_orders ──► POS inbox (usePickupTabletOrder)
  │        ▼                                                         │
@@ -105,15 +105,15 @@ POS terminal: build cart                         Waiter tablet: build cart at ta
  │                                             ▼                    │
  │                                    order ready ──► display       │
  ▼                                                                  ▼
-PAYMENT (useCheckout)                                    PAYMENT (pickup → pay_existing_order_v6)
- │  process-payment EF → complete_order_with_payment_v10
+PAYMENT (useCheckout)                                    PAYMENT (pickup → pay_existing_order)
+ │  process-payment EF → complete_order_with_payment
  │  split tender / loyalty redeem / discount (manager PIN)
  │  display:{station} ◄── running total + "paid" broadcast (LAN realtime)
  ▼
 receipt print + cash drawer + customer display confirm
  │
  ▼
-SHIFT CLOSE (close_shift_v2) → z_report draft → signed in BackOffice
+SHIFT CLOSE (close_shift) → z_report draft → signed in BackOffice
 ```
 
 ### Actors & devices
@@ -191,7 +191,7 @@ Run the stages relevant to the question. Each item is a concrete thing to look f
 - [ ] **Tablet table binding (`features/tables`, `floor-plan`)** — is the table picked before items? Can a waiter move an order to another table? Merge/split tables?
 
 ### B. Promotions & loyalty at the right moment
-- [ ] **Promo visibility** — does `evaluate_promotions_v1` show the customer/cashier *why* a discount applied, and what's one item away from a threshold? A silent promo is a missed upsell. Do applied promos survive a tab reload?
+- [ ] **Promo visibility** — does `evaluate_promotions` show the customer/cashier *why* a discount applied, and what's one item away from a threshold? A silent promo is a missed upsell. Do applied promos survive a tab reload?
 - [ ] **Loyalty at payment** — is point redemption offered at the natural moment, or buried? Is the customer's tier/balance visible during the order, not just at checkout?
 - [ ] **Manager-PIN discounts (`features/discounts`)** — friction vs control: how many manager interruptions per shift? Is there a per-cashier discount ceiling instead of a PIN every time?
 
@@ -209,14 +209,14 @@ Run the stages relevant to the question. Each item is a concrete thing to look f
 
 ### E. Payment & checkout
 - [ ] **Method speed** — cash / card (EDC) / QRIS / store credit: how many taps to the most common method? Is the likely method pre-selected? Does the receipt record the *real* tender (not a hardcoded 'cash')?
-- [ ] **Split tender & split bill** — `pay_existing_order_v6` is multi-tender (split *payment*). Is there a split-*bill* (per-guest) path for a shared table? Is the split flow reachable on the table path, and does the per-payer breakdown survive (or is it discarded)?
+- [ ] **Split tender & split bill** — `pay_existing_order` is multi-tender (split *payment*). Is there a split-*bill* (per-guest) path for a shared table? Is the split flow reachable on the table path, and does the per-payer breakdown survive (or is it discarded)?
 - [ ] **Change & rounding** — `calculateChange` correct for IDR? Quick-cash buttons (exact, next 5k/10k/50k)? Does the drawer open only for cash?
 - [ ] **Declined / retry** — card decline or network blip mid-payment: clean retry without losing the cart or double-charging (idempotency — see technical checklist)?
 - [ ] **Receipt options** — print / no-print / digital? Reprint from `order-history`? Are totals/tax taken from the server, not recomputed client-side?
 
 ### F. Post-payment & shift
 - [ ] **Refund / void path (`order-history`)** — how many steps, manager-gated, and does it reach the kitchen/inventory correctly?
-- [ ] **Shift close clarity (`close_shift_v2`)** — does the cashier see expected vs counted cash and the variance reason before committing? Is a reason *required* above a variance threshold? Blind count (expected hidden) to deter fraud? Is the modal actually wired in prod?
+- [ ] **Shift close clarity (`close_shift`)** — does the cashier see expected vs counted cash and the variance reason before committing? Is a reason *required* above a variance threshold? Blind count (expected hidden) to deter fraud? Is the modal actually wired in prod?
 - [ ] **Z-report handoff** — draft → manager-signed in BackOffice. Is the manager-PIN on signing actually validated, and is author attribution (`closed_by`/`signed_by`) the real profile id?
 - [ ] **Mid-shift visibility** — `useLiveSessions`: can a manager see live sales/cash without closing?
 
@@ -224,7 +224,7 @@ Run the stages relevant to the question. Each item is a concrete thing to look f
 
 A feature proposal that touches a write path MUST respect these or it's not shippable. Cross-reference CLAUDE.md "Critical patterns".
 
-- [ ] **Order writes go through RPCs, never raw inserts.** `complete_order_with_payment_v10`, `pay_existing_order_v6`, `create_tablet_order_v2`, `pickup_tablet_order` handle JE triggers, loyalty, promotions, table state, and the `display_stock`/`products.current_stock` double-deduction atomically. A new write path must reuse or extend these, not bypass them.
+- [ ] **Order writes go through RPCs, never raw inserts.** `complete_order_with_payment`, `pay_existing_order`, `create_tablet_order`, `pickup_tablet_order` handle JE triggers, loyalty, promotions, table state, and the `display_stock`/`products.current_stock` double-deduction atomically. A new write path must reuse or extend these, not bypass them.
 - [ ] **Idempotency, 2 flavors (S25).** Retry-safe HTTP via `x-idempotency-key` header (client `useRef(crypto.randomUUID())`), propagated to the RPC; OR business-semantic via a required RPC arg (`p_client_uuid`) keyed in a dedicated idempotency table (`tablet_order_idempotency_keys`). Any new "tap = money/order" action needs one. A double-tap that creates two orders is a P0 bug, not a polish item.
 - [ ] **PIN / secrets in HTTP header, never body JSON (S25).** Manager PIN → `x-manager-pin` header. Bodies get logged by PostgREST/pgaudit/proxies. Refund/void/discount overrides all follow this. (`auth-verify-pin` still takes the PIN in the body — candidate finding.)
 - [ ] **RPC versioning monotonic.** Never edit a published `_vN`. Create `_vN+1` + `DROP FUNCTION ... vN(<old args>)` in the same migration, then bump every caller (Grep the name across `apps/pos`). Regen types.
@@ -253,15 +253,15 @@ Keep proposals grounded: tie each to a real file or flow you read. Prefer extend
 ## Sources of truth (verified pointers)
 
 ```
-Docs reference (read first, canonical)
-  docs/reference/04-modules/02-pos-cart-orders.md      # full POS lifecycle, invariants, hooks/stores
-  docs/reference/04-modules/02b-orders.md
-  docs/reference/04-modules/03-payments-split.md        # payment modal, split, methods, paymentStore
-  docs/reference/04-modules/04-kds-kitchen.md           # KDS, mark-served, recall, stations, channels
-  docs/reference/04-modules/12-cash-register-shift.md   # session open/close, variance, z-reports
-  docs/reference/04-modules/13-promotions-discounts.md  # promo eval (RPC + fallback), BOGO, threshold
-  docs/reference/04-modules/16-display-customer.md       # customer display, realtime broadcast
-  docs/reference/04-modules/17-tablet-ordering.md        # tablet app, create/pickup, waiter flow
+Module reference (read first, canonical — fiches réel-vs-demandé, docs/reference/04-modules/ est STALE V2)
+  docs/workplan/remise-a-plat/02-pos-cart-orders.md      # full POS lifecycle, invariants, hooks/stores
+  docs/workplan/remise-a-plat/02b-orders-page.md
+  docs/workplan/remise-a-plat/03-payments-split.md        # payment modal, split, methods, paymentStore
+  docs/workplan/remise-a-plat/04-kds-kitchen.md           # KDS, mark-served, recall, stations, channels
+  docs/workplan/remise-a-plat/12-cash-register-shift.md   # session open/close, variance, z-reports
+  docs/workplan/remise-a-plat/13-promotions-discounts.md  # promo eval (RPC + fallback), BOGO, threshold
+  docs/workplan/remise-a-plat/16-display-customer.md       # customer display, realtime broadcast
+  docs/workplan/remise-a-plat/17-tablet-ordering.md        # tablet app, create/pickup, waiter flow
 
 POS features (thin UI wiring — the journey)
   apps/pos/src/features/{cart,payment,kds,tablet,inbox,display,promotions,discounts,shift,heldOrders,tables,floor-plan,order-history,lan,loyalty,combos}/
@@ -274,7 +274,7 @@ Domain (pure TS — business logic, IO-free, unit-testable)
   packages/domain/src/{kitchen,tables,loyalty}/
 
 Write paths
-  supabase/functions/process-payment/index.ts           # → complete_order_with_payment_v10
+  supabase/functions/process-payment/index.ts           # → complete_order_with_payment
   supabase/migrations/*order*.sql / *payment*.sql / *shift*.sql / *tablet*.sql
 
 Patterns canon
