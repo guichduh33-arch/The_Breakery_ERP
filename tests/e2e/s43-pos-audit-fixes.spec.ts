@@ -34,7 +34,7 @@
 // RPC response envelopes (fire order_id === pay order_id).
 
 import { test, expect, type BrowserContext, type Page } from '@playwright/test';
-import { loginPOS } from './fixtures/auth';
+import { loginPOS, openPosSession } from './fixtures/auth';
 
 test.use({ baseURL: process.env.E2E_POS_URL ?? 'http://localhost:5173' });
 test.describe.configure({ mode: 'serial' });
@@ -50,15 +50,9 @@ let page: Page;
 // ── Shared helpers ───────────────────────────────────────────────────────────
 
 /**
- * Adds the sellable Americano (BEV-AMER, dispatch_station=barista) to the cart.
- * The accessible name of a sellable card is "<name> — tap to add"; the twin
- * BEV-001 Americano has stock 0 and renders disabled with a sold-out label, so
- * the name filter targets the right card.
- *
- * Beverage products carry CATEGORY-level modifier groups (Temperature required
- * + Milk), so the tap opens the "Customize Americano" ModifierModal — defaults
- * are pre-selected, we just confirm with "Add to Cart". The modal only mounts
- * once the modifiers query resolves, hence the generous click timeout.
+ * Adds the sellable "Americano" (SKU COF-011, Coffee) to the cart. The card's
+ * accessible name is `${product.name} — tap to add` (ProductCard aria-label).
+ * There is exactly one active Americano in the dev catalog.
  *
  * `surface` drives the post-add assertion: the POS ActiveOrderPanel exposes
  * data-testid="cart-items"; the tablet TabletCartPanel has no testid — its
@@ -138,8 +132,7 @@ test.beforeAll(async ({ browser }) => {
   test.setTimeout(120_000);
   context = await browser.newContext();
   page = await context.newPage();
-  await page.goto('/');
-  await loginPOS(page, PIN);
+  await openPosSession(page);
   await expect(page).toHaveURL(/\/pos/, { timeout: 30_000 });
 });
 
