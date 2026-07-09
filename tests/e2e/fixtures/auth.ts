@@ -103,3 +103,30 @@ export async function openPosSession(
     timeout: 20_000,
   });
 }
+
+/**
+ * openBackofficeSession — cold-start-safe BO login. BO is a hard two-step gate:
+ * the numpad only mounts AFTER a user-picker button is clicked. We pre-wait up
+ * to 60s for the picker (list_login_users_v1 RPC round-trip on a cold server),
+ * click the target user, type the PIN, and assert we reached /backoffice.
+ * Caller MUST have set `test.setTimeout(120_000)` in its beforeAll.
+ */
+export async function openBackofficeSession(
+  page: Page,
+  opts: { pin?: string; userId?: string } = {},
+): Promise<void> {
+  const userId = opts.userId ?? SEED_USER_OWNER;
+  const pin = opts.pin ?? process.env.E2E_PIN_ADMIN ?? '424242';
+  await page.goto('/');
+  const pickerBtn = page.getByTestId(`user-picker-${userId}`);
+  await expect(pickerBtn).toBeVisible({ timeout: 60_000 });
+  await pickerBtn.click();
+  for (const digit of pin) {
+    await page.getByRole('button', { name: digit, exact: true }).first().click();
+  }
+  const verifyBtn = page.getByRole('button', { name: /verify|sign in/i });
+  if (await verifyBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
+    await verifyBtn.click();
+  }
+  await expect(page).toHaveURL(/\/backoffice/, { timeout: 20_000 });
+}
