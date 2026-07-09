@@ -51,14 +51,13 @@ test.describe('Kiosk display: page loads', () => {
     //   "display-authenticating"— JWT auth in progress (transient)
     //   "display-authenticated" — happy path
     //   PairDevicePrompt        — no pairing, shows "Pair device" heading
-    const knownEl = page.locator([
-      '[data-testid="display-loading"]',
-      '[data-testid="display-authenticating"]',
-      '[data-testid="display-authenticated"]',
-      'text=Pair device',
-      '[data-testid="display-queue-list"]',
-      '[data-testid="display-queue-empty"]',
-    ].join(', '));
+    const knownEl = page
+      .getByTestId('display-loading')
+      .or(page.getByTestId('display-authenticating'))
+      .or(page.getByTestId('display-authenticated'))
+      .or(page.getByTestId('display-pair-prompt'))
+      .or(page.getByTestId('display-queue-list'))
+      .or(page.getByTestId('display-queue-empty'));
 
     await expect(knownEl.first()).toBeVisible({ timeout: 15_000 });
 
