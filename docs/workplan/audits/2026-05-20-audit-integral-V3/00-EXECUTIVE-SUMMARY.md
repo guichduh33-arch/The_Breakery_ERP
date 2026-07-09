@@ -285,7 +285,7 @@ Liste à entériner :
 | 5 | UX/UI BackOffice Audit | [`05-ux-design-audit.md`](05-ux-design-audit.md) | ~45 min | ✅ |
 | 6 | Complétude V3 vs Vision V2 | [`06-completeness-audit.md`](06-completeness-audit.md) | ~75 min | ✅ |
 
-**Plan d'audit source** : [`docs/workplan/plans/2026-05-20-audit-integral-V3-plan.md`](../../plans/2026-05-20-audit-integral-V3-plan.md)
+**Plan d'audit source** : [`docs/workplan/plans/archive/2026-05-20-audit-integral-V3-plan.md`](../../plans/archive/2026-05-20-audit-integral-V3-plan.md)
 **Glossaire V2↔V3** : [`docs/V2_V3_GLOSSARY.md`](../../../V2_V3_GLOSSARY.md)
 **Mémoire projet** : `~\.claude\projects\C--Users-guich-a-trier-The-Breakery-ERP\memory\`
 
