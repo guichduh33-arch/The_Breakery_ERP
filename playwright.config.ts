@@ -30,14 +30,16 @@ export default defineConfig({
         'pnpm --filter @breakery/app-pos build && pnpm --filter @breakery/app-pos preview --port 5173 --strictPort',
       url: 'http://localhost:5173',
       reuseExistingServer: !process.env.CI,
-      timeout: 180_000,
+      // 5 min: the two servers' cold `tsc -b && vite build` run concurrently on
+      // a 2-core CI runner; 180s risked a webServer timeout → whole-suite fail.
+      timeout: 300_000,
     },
     {
       command:
         'pnpm --filter @breakery/app-backoffice build && pnpm --filter @breakery/app-backoffice preview --port 5174 --strictPort',
       url: 'http://localhost:5174',
       reuseExistingServer: !process.env.CI,
-      timeout: 180_000,
+      timeout: 300_000,
     },
   ],
   projects: [
