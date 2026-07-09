@@ -14,7 +14,7 @@
 //   T3 — Persistent counter fire (P0-3): Send to Kitchen persists the order
 //        via fire_counter_order_v4 (pending_payment), survives a POS reload,
 //        is visible on the KDS, and checkout then pays THAT SAME order via
-//        pay_existing_order_v7 (no second order, no process-payment call).
+//        pay_existing_order_v11 (no second order, no process-payment call).
 //
 // Project: pos (baseURL = E2E_POS_URL).
 //
@@ -315,19 +315,19 @@ test('T3: Send to Kitchen persists the order → survives reload + visible on KD
   await gotoPosReady(page);
   await expect(page.getByTestId('cart-items')).toContainText('Americano', { timeout: 15_000 });
 
-  // Checkout — must pay the EXISTING order via pay_existing_order_v7,
+  // Checkout — must pay the EXISTING order via pay_existing_order_v11,
   // never mint a second one via process-payment.
   let processPaymentCalls = 0;
   page.on('request', (r) => {
     if (r.url().includes('/functions/v1/process-payment')) processPaymentCalls += 1;
   });
   const payResp = page.waitForResponse(
-    (r) => r.url().includes('/rest/v1/rpc/pay_existing_order_v7'),
+    (r) => r.url().includes('/rest/v1/rpc/pay_existing_order_v11'),
     { timeout: 30_000 },
   );
   await payCashExact(page);
   const pay = await payResp;
-  expect(pay.status(), 'pay_existing_order_v7 must succeed').toBe(200);
+  expect(pay.status(), 'pay_existing_order_v11 must succeed').toBe(200);
   const envelope = (await pay.json()) as { order_id?: string };
   // Single paid order: the payment targets the exact order the fire created.
   expect(envelope.order_id ?? fired.order_id).toBe(fired.order_id);
