@@ -33,19 +33,17 @@ test.use({ baseURL: process.env.E2E_POS_URL });
 
 async function addAmericano(p: Page): Promise<void> {
   // The grid opens on the (often empty) "Favorites" category and its product
-  // search is category-scoped (ProductGrid filter ANDs category + query), so
-  // switch to "Coffee" where Americano (COF-011, track_inventory=false → always
-  // sellable regardless of stock) lives, then tap its card. Selecting the
-  // category each call is idempotent.
+  // search is category-scoped, so switch to "Coffee" where Americano (COF-011,
+  // track_inventory=false → always sellable) lives, then tap its card.
   await p.getByRole('button', { name: 'Coffee', exact: true }).click();
   const card = p.getByRole('button', { name: 'Americano — tap to add' }).first();
   await expect(card).toBeVisible({ timeout: 20_000 });
   await card.click();
-  // A modifier modal may appear — confirm the pre-selected defaults.
-  const addToCart = p.getByRole('button', { name: /add to cart/i });
-  if (await addToCart.isVisible().catch(() => false)) {
-    await addToCart.click();
-  }
+  // Tapping a product with modifier groups opens the ModifierModal (full-screen
+  // radix dialog); confirm the pre-selected defaults via its testid. If the
+  // product has no modifiers the tap auto-adds and no modal appears, so this
+  // click is best-effort (waits up to 8s, then no-ops).
+  await p.getByTestId('modifier-add-to-cart').click({ timeout: 8_000 }).catch(() => {});
   await expect(p.getByTestId('cart-items')).toBeVisible({ timeout: 10_000 });
 }
 
