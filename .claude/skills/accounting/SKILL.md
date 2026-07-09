@@ -208,7 +208,7 @@ pnpm --filter @breakery/app-backoffice test accounting
 # Attendu : 15/15 PASS
 
 # Si RPC modifiée → types regen OBLIGATOIRE :
-# mcp__plugin_supabase_supabase__generate_typescript_types
+# mcp__claude_ai_Supabase__generate_typescript_types
 # → packages/supabase/src/types.generated.ts
 ```
 

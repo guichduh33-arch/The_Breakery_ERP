@@ -14,7 +14,7 @@ Specialist on `apps/pos/` (Vite 6 + React 18 + Zustand + React Query) and its wo
 
 ## Critical patterns (always verify these before shipping)
 
-1. **DB target = Supabase cloud V3 `ikcyvlovptebroadgtvd`** (Docker retired 2026-05-14). Use MCP tools (`mcp__plugin_supabase_supabase__apply_migration` / `execute_sql` / `generate_typescript_types`). NEVER run `pnpm db:reset`, `supabase start`, or `bash supabase/tests/run_pgtap.sh` — they need Docker and will fail.
+1. **DB target = Supabase cloud V3 `ikcyvlovptebroadgtvd`** (Docker retired 2026-05-14). Use MCP tools (`mcp__claude_ai_Supabase__apply_migration` / `execute_sql` / `generate_typescript_types`). NEVER run `pnpm db:reset`, `supabase start`, or `bash supabase/tests/run_pgtap.sh` — they need Docker and will fail.
 2. **PIN in HTTP header** (`x-manager-pin`), never in JSON body (S25). Body gets logged by PostgREST/pgaudit/proxies; headers don't.
 3. **Idempotency 2-flavors** — pick the right one:
    - **HTTP `x-idempotency-key` header** for retry safety (flaky net, double-click, RQ auto-retry). Client: `useRef(crypto.randomUUID())` reset on success/dismiss. EF reads via `_shared/idempotency.ts::getIdempotencyKey(req)` and propagates as `p_idempotency_key` to the RPC.
@@ -104,7 +104,7 @@ pnpm --filter @breakery/supabase test <rpc-name>        # Vitest live RPC tests
 
 **RPC-level (pgTAP via MCP)** — for any RPC change:
 ```sql
--- via mcp__plugin_supabase_supabase__execute_sql
+-- via mcp__claude_ai_Supabase__execute_sql
 BEGIN;
 SELECT plan(<N>);
 -- assertions

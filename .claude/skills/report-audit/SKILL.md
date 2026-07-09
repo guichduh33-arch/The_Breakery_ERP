@@ -98,7 +98,7 @@ Supabase RPC (SECURITY DEFINER, _vN, REVOKE pair S25)
 - **No i18n.** No `useTranslation` / i18next. BO UI strings are hardcoded (French UI, English/French in code). Don't flag missing `t()`.
 - **`select('*')` is mostly N/A** at the hook layer — report data comes from RPCs. The equivalent check lives **inside the RPC's SQL** and in any page that queries a table directly (e.g. an audit/log page). Flag `select('*')` only where a component/RPC actually does a raw select.
 - **Permissions are route-level** via `<PermissionGate required="reports.<domain>.read">` in `routes/index.tsx` (codes: `reports.read`, `reports.sales.read`, `reports.inventory.read`, `reports.financial.read`, `reports.audit.read`). There is **no `useReportPermissions` hook**.
-- **Build/test is pnpm + turbo**, never `npm`. This is a Vite+React SPA (no Next.js). DB targets Supabase **cloud** V3 dev `ikcyvlovptebroadgtvd` via MCP (Docker retired) — verify RPC/view existence by reading `supabase/migrations/` or `mcp__plugin_supabase_supabase__execute_sql`, **never** `supabase db reset`.
+- **Build/test is pnpm + turbo**, never `npm`. This is a Vite+React SPA (no Next.js). DB targets Supabase **cloud** V3 dev `ikcyvlovptebroadgtvd` via MCP (Docker retired) — verify RPC/view existence by reading `supabase/migrations/` or `mcp__claude_ai_Supabase__execute_sql`, **never** `supabase db reset`.
 
 ## Audit Process
 
@@ -221,7 +221,7 @@ Most "it looks wrong" bugs live here. For every component using Recharts:
    pnpm --filter @breakery/app-backoffice test reports
    pnpm --filter @breakery/domain test reports
    ```
-5. If a fix changed a report **RPC**, regen types via `mcp__plugin_supabase_supabase__generate_typescript_types` → write to `packages/supabase/src/types.generated.ts`, and consider running `pattern-guardian` on the diff (REVOKE pair, versioning).
+5. If a fix changed a report **RPC**, regen types via `mcp__claude_ai_Supabase__generate_typescript_types` → write to `packages/supabase/src/types.generated.ts`, and consider running `pattern-guardian` on the diff (REVOKE pair, versioning).
 6. Summarize all changes.
 
 The user is always in control — they can skip, modify, or stop at any point.

@@ -17,14 +17,16 @@ Auteur de migrations SQL et RPCs Postgres sur V3 dev `ikcyvlovptebroadgtvd` (Sup
 
 ### 1. Cloud V3 only — Docker retired
 
-MCP tools only:
+MCP tools only (préfixe = connecteur Supabase **actif**) :
 
 | Opération | MCP tool |
 |-----------|----------|
-| Apply migration | `mcp__plugin_supabase_supabase__apply_migration` (`project_id='ikcyvlovptebroadgtvd'`) |
-| Run SQL / pgTAP | `mcp__plugin_supabase_supabase__execute_sql` |
-| Regen types | `mcp__plugin_supabase_supabase__generate_typescript_types` |
-| Drift check | `mcp__plugin_supabase_supabase__list_migrations` |
+| Apply migration | `mcp__claude_ai_Supabase__apply_migration` (`project_id='ikcyvlovptebroadgtvd'`) |
+| Run SQL / pgTAP | `mcp__claude_ai_Supabase__execute_sql` |
+| Regen types | `mcp__claude_ai_Supabase__generate_typescript_types` |
+| Drift check | `mcp__claude_ai_Supabase__list_migrations` |
+
+> ⚠️ **Le préfixe MCP peut changer selon le connecteur monté.** CLAUDE.md fixe l'actif à `mcp__claude_ai_Supabase__` (plugin `mcp__plugin_supabase_supabase__` désactivé). **Si l'appel échoue « tool not found », NE PAS deviner** — découvrir le préfixe réel via `ToolSearch("supabase apply migration")` et l'utiliser.
 
 **JAMAIS** `pnpm db:reset`, `supabase start`, `supabase db reset`, `bash supabase/tests/run_pgtap.sh` — Docker retiré 2026-05-14, fail garanti.
 
@@ -121,7 +123,7 @@ Avant de créer une migration :
 ## pgTAP authoring pattern
 
 ```sql
--- Via mcp__plugin_supabase_supabase__execute_sql
+-- Via mcp__claude_ai_Supabase__execute_sql
 BEGIN;
 SELECT plan(<N>);
 
@@ -185,7 +187,7 @@ pnpm --filter @breakery/supabase test <rpc-name>   # Vitest live RPC tests
 pnpm --filter @breakery/domain test <feature>       # domain unit
 ```
 
-Drift check post-migration : `mcp__plugin_supabase_supabase__list_migrations` → aucun écart cloud↔git.
+Drift check post-migration : `mcp__claude_ai_Supabase__list_migrations` → aucun écart cloud↔git.
 
 ## When to escalate to the user
 
