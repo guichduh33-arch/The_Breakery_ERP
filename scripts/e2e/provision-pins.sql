@@ -27,17 +27,3 @@ SELECT '0e2e0000-0000-4000-a000-000000000002', 100000
     WHERE opened_by = '0e2e0000-0000-4000-a000-000000000002'
       AND status = 'open'
  );
-
--- S71 Plan 2 — grant the E2E cashier the `sales.create` permission via a
--- user-level override so it can reach /tablet/order (TabletLayout gates on
--- role_code='waiter' OR sales.create; the E2E seed has no waiter). Needed by
--- s43 T2 (tablet order → POS inbox realtime). Idempotent upsert on the PK.
-INSERT INTO public.user_permission_overrides
-  (user_profile_id, permission_code, is_granted, reason)
-VALUES
-  ('0e2e0000-0000-4000-a000-000000000002', 'sales.create', TRUE,
-   'E2E: enable /tablet/order for s43 T2 tablet-order flow (S71)')
-ON CONFLICT (user_profile_id, permission_code)
-  DO UPDATE SET is_granted = EXCLUDED.is_granted,
-                reason     = EXCLUDED.reason,
-                expires_at = NULL;

@@ -201,7 +201,21 @@ test('T1: 10% discount → manager PIN modal → cash checkout → process-payme
 
 // ── T2 — Realtime tablet → POS inbox (P0-2) ─────────────────────────────────
 
-test('T2: tablet order on page B bumps the POS inbox badge on page A without reload', async ({ browser }) => {
+// S71 Plan 2 — FIXME (app limitation, money-path/EF frozen = out of scope):
+// this test places a tablet order, which requires reaching /tablet/order.
+// TabletLayout gates access on `role_code === 'waiter'` OR a CLIENT-side
+// `permissions` list containing `sales.create`. The dedicated E2E seed has no
+// waiter, and the cashier (…002) lacks sales.create. Granting it per-user via
+// `user_permission_overrides` does NOT help: the `auth-verify-pin` EF's
+// `computePermissionsForRole` (supabase/functions/_shared/permissions.ts)
+// queries that table with the STALE columns `user_id` / `override_type`, while
+// the live schema is `user_profile_id` / `is_granted` — so the override query
+// errors and is silently dropped from the login permission list (the DB-side
+// has_permission() reads the correct columns, so the drift is EF-only). Fixing
+// the EF or adding a waiter seed is outside this test-only plan. Surface to the
+// owner: (1) auth-verify-pin permission-override schema drift; (2) no waiter in
+// the E2E seed for tablet-flow coverage.
+test.fixme('T2: tablet order on page B bumps the POS inbox badge on page A without reload', async ({ browser }) => {
   test.setTimeout(120_000);
 
   // Page A — POS, logged in (shared session). Wait for the initial
