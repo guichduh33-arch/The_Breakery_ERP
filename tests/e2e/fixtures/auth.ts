@@ -28,7 +28,10 @@ export const SEED_USER_CASHIER = '0e2e0000-0000-4000-a000-000000000002';
 // header when present) and retries with a fresh page load. This keeps a
 // combined run green without weakening any app-side gate.
 const AUTH_VERIFY_PIN_PATH = '/functions/v1/auth-verify-pin';
-const LOGIN_MAX_ATTEMPTS = 3;
+// One retry only: a single full-window wait (Retry-After, else 62s) clears the
+// serial nightly's 60s rate window, and two 62s waits would overrun the 120s
+// beforeAll timeout. The green combined run never needed more than one retry.
+const LOGIN_MAX_ATTEMPTS = 2;
 const RATE_WINDOW_FALLBACK_MS = 62_000;
 
 interface AuthAttemptResult {
@@ -73,8 +76,10 @@ async function loginWithRateLimitRetry(
   attempt: () => Promise<AuthAttemptResult>,
   success: () => Promise<boolean>,
 ): Promise<void> {
+  let lastStatus: number | null = null;
   for (let i = 1; i <= LOGIN_MAX_ATTEMPTS; i++) {
     const { status, retryAfterSec } = await attempt();
+    lastStatus = status;
     if (await success()) return;
     if (i >= LOGIN_MAX_ATTEMPTS) break;
     if (status === 429) {
@@ -83,6 +88,12 @@ async function loginWithRateLimitRetry(
     }
     // Non-429 failures fall through and retry immediately with a fresh load.
   }
+  // Never silently return on failure — a caller without its own re-assertion
+  // would otherwise treat a throttled/rejected login as success.
+  throw new Error(
+    `E2E login did not complete after ${LOGIN_MAX_ATTEMPTS} attempt(s) ` +
+      `(last auth-verify-pin status: ${lastStatus ?? 'none observed'})`,
+  );
 }
 
 /**
