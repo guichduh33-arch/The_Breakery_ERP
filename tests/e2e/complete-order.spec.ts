@@ -32,12 +32,12 @@ import { openPosSession } from './fixtures/auth';
 test.use({ baseURL: process.env.E2E_POS_URL });
 
 async function addAmericano(p: Page): Promise<void> {
-  // The grid defaults to the "Favorites" category (empty on dev), so filter by
-  // name via the search box to surface the Americano card regardless of the
-  // selected category. Americano = SKU COF-011, Coffee category.
-  const search = p.getByRole('searchbox', { name: 'Search products' });
-  await expect(search).toBeVisible({ timeout: 20_000 });
-  await search.fill('Americano');
+  // The grid opens on the (often empty) "Favorites" category and its product
+  // search is category-scoped (ProductGrid filter ANDs category + query), so
+  // switch to "Coffee" where Americano (COF-011, track_inventory=false → always
+  // sellable regardless of stock) lives, then tap its card. Selecting the
+  // category each call is idempotent.
+  await p.getByRole('button', { name: 'Coffee', exact: true }).click();
   const card = p.getByRole('button', { name: 'Americano — tap to add' }).first();
   await expect(card).toBeVisible({ timeout: 20_000 });
   await card.click();
