@@ -4,6 +4,8 @@
 
 > ⚠️ **Mise à jour S59 (2026-07-04, `swarm/session-59`)** : **D1.1 livré** — `visible_on_pos` est désormais respecté au POS (`useProducts` **et** `useProductVariants`), un produit masqué en BO disparaît de la grille caisse et du sélecteur de variantes ; C-B1.2 n'est plus 🟠. Dette connexe : le cache offline tablette 24 h peut encore servir un produit masqué (INDEX S59). Voir `docs/workplan/plans/2026-07-04-session-59-INDEX.md`.
 
+> ✅ **Mise à jour S69 (2026-07-08, `worktree-session-69`)** : **D2.1 SOLDÉ — overrides de prix par catégorie client éditables + prix négocié par client.** Les overrides `product_category_prices` (type `custom`) sont désormais éditables depuis le BO (RPCs `upsert/delete_product_category_price_v1`, gate `customer_categories.update`, `PricingTab` du détail client) — plus de config SQL-seule. En complément, le prix négocié **par client** existe (table `customer_product_prices` + perm `customer_prices.manage`, résolution serveur `_resolve_b2b_line_price_v1` dans `create_b2b_order_v5`, côté B2B). Le verdict C-B1.7 passe de 🟠 PARTIEL à ✅ CONFORME (S69). Voir [`../plans/2026-07-08-session-69-INDEX.md`](../plans/2026-07-08-session-69-INDEX.md). — corps figé ci-dessous NON réécrit (`5b0fa92`).
+
 > **Remise à plat — analyse comparative.** Doc : Description v1.2 (2026-07-03), module 5. Code : commit `5b0fa92` (2026-07-03).
 > **Statut annoncé par la doc :** Opérationnel à la vente ; partiel sur certains outils d'administration.
 > **Verdict global de l'analyse :** Largement fidèle sur le cœur (fiche produit, modifiers, combos, import Excel), mais trois surclames notables : le toggle « visible en caisse » n'a **aucun effet** au POS, la « couleur » des familles n'est pas configurable, et les **prix négociés n'ont aucune UI de saisie** (lecture seule de bout en bout).
@@ -51,7 +53,7 @@
 | B1.4 | Unités multiples achat/stock/vente | Achat→base + contextes recette/opname ✓ ; **vente en unité alternative non câblée** (`sales_unit` jamais lu par le POS ; « vendre le sachet de 100 g » passe par un produit distinct) | 🟠 PARTIEL |
 | B1.5 | Combos vérifiés et pricés serveur | `_resolve_combo_price_v1` + v17 (composition + surcharges facturées) | ✅ CONFORME |
 | B1.6 | Promotions avec plafonds, auto en caisse | Vrai — analysé en détail au module 13 (verdicts ✅/🟠 là-bas) | ✅ CONFORME |
-| B1.7 | Prix négociés par client professionnel, appliqués automatiquement | Application automatique ✓ (POS + autorité serveur `_resolve_line_price_v1:45`) ; **mais** la granularité est par **catégorie tarifaire** (pas par client individuel), et **aucune UI/RPC d'écriture** des overrides `product_category_prices` — le scénario « le responsable B2B enregistre le tarif produit par produit » est impossible depuis l'application | 🟠 PARTIEL |
+| B1.7 | Prix négociés par client professionnel, appliqués automatiquement | Application automatique ✓ (POS + autorité serveur `_resolve_line_price_v1:45`) ; ~~granularité par catégorie tarifaire seulement + aucune UI/RPC d'écriture~~ **LIVRÉ S69** : prix négocié **par client** (`customer_product_prices` + perm `customer_prices.manage`, résolution serveur `_resolve_b2b_line_price_v1` négocié > catégorie > retail dans `create_b2b_order_v5`, côté B2B) **et** overrides catégorie éditables (`upsert/delete_product_category_price_v1`) — le scénario « le responsable B2B enregistre le tarif produit par produit » passe en vrai. *(Constat figé `5b0fa92` : par catégorie seulement, non éditable — corrigé S69.)* | ✅ CONFORME (S69) |
 | B1.8 | Import Excel + marge brute par produit | `import_catalog_v1` 6 feuilles + `GrossMarginPage`/`get_gross_margin_by_product_v1` | ✅ CONFORME |
 
 **Bonus code (le code fait plus que la doc) :**
@@ -69,7 +71,7 @@
 2. **Amender la doc** (voir D4) pour couleur/vente au poids si le code ne bouge pas.
 
 ### D2. Chantiers moyens (1 session, plan requis)
-1. **UI d'écriture des prix négociés** : RPC `upsert_product_category_price_v1` (+ delete) gatée (nouvelle perm ou `customer_categories.update`), édition dans `PricingTab` du client et/ou dans la fiche produit. Dépend du CRUD catégories clients (module 8, D-W6-CUSTCAT-01). Done = créer/modifier/supprimer un override depuis le BO, reflété au POS via `get_customer_product_price`.
+1. ✅ **UI d'écriture des prix négociés — SOLDÉ (S69, 2026-07-08)** : RPCs `upsert/delete_product_category_price_v1` gatés `customer_categories.update`, édition dans `PricingTab` du client ; CRUD catégories clients livré en parallèle (module 8, ferme D-W6-CUSTCAT-01). **En plus** : prix négocié par client (`customer_product_prices` + perm `customer_prices.manage`, résolution serveur dans `create_b2b_order_v5`). Créer/modifier/supprimer un override depuis le BO est reflété au POS via `get_customer_product_price`. Cf. [`../plans/2026-07-08-session-69-INDEX.md`](../plans/2026-07-08-session-69-INDEX.md).
 2. **Couleur de catégorie configurable** : colonne `categories.color`, form BO, consommation POS (`categoryTints.ts` devient fallback). Done = couleur choisie en BO visible sur le rail POS.
 3. **Aperçu « ce client paiera X »** (B2.3) : le RPC `get_customer_product_price` existe déjà — il manque juste un simulateur UI (fiche produit ou fiche client).
 

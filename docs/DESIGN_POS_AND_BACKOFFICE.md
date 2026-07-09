@@ -1,6 +1,6 @@
 # Design actuel — POS & Backoffice
 
-> **Périmètre fonctionnel** : ce document décrit le **langage de design visuel et l'ergonomie** des deux applications POS et Backoffice du monorepo **V3** — issu de la vision originale V2 (AppGrav, jamais déployée) et repris tel quel dans V3. Pour les **tokens techniques canoniques** (Luxe Dark, variables CSS, scales, classes Tailwind), la source de vérité est [`reference/02-design-system/`](reference/02-design-system/) ; les **screenshots de référence** vivent dans [`docs/Design/`](Design/) (`backoffice/`, `caissapp/`).
+> **Périmètre fonctionnel** : ce document décrit le **langage de design visuel et l'ergonomie** des deux applications POS et Backoffice du monorepo **V3** — issu de la vision originale V2 (AppGrav, jamais déployée) et repris tel quel dans V3. Pour les **tokens techniques canoniques** (Luxe Dark, variables CSS, scales, classes Tailwind), la source de vérité est le **code** `packages/ui/src/styles/` + le preset Tailwind (⚠️ `reference/02-design-system/` est **STALE V2**, bandeau en tête) ; les **screenshots de référence** ont été archivés dans [`docs/_archive/design-screenshots-pre-code/`](_archive/design-screenshots-pre-code/) (ancien `docs/Design/`, `backoffice/` + `caissapp/`). Les artefacts `_bmad/` et `breakery-platform/` cités plus bas **n'existent pas** dans V3.
 
 ---
 

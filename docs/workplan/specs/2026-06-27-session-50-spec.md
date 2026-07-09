@@ -1,7 +1,7 @@
 # Session 50 — Spec — Vague 1 « cutover sain » (sécurité + drift + CI)
 
 > Date: 2026-06-27 · Branch: `swarm/session-50` · Origin issue: drift #125 + triangulated audit synthesis
-> (`docs/workplan/audits/2026-06-27-triangulated-audit-synthesis-and-completion-plan.md`).
+> (`docs/workplan/audits/2026-06-27-project-state-and-gaps.md`).
 > **Read-only after write — la spec est le contrat.**
 
 ## Scope (ce qui entre)
@@ -51,7 +51,7 @@ Le brief paraphrase les objets ; les **vrais objets source** (vérifiés dans `s
 
 ## Références
 
-- Audit synthèse : `docs/workplan/audits/2026-06-27-triangulated-audit-synthesis-and-completion-plan.md`
+- Audit synthèse : `docs/workplan/audits/2026-06-27-project-state-and-gaps.md`
 - Findings bruts : `docs/workplan/audits/2026-06-27-project-state-and-gaps-findings.md`
 - Drift source : `supabase/migrations/20260710000030..043_*.sql`
 - Patterns : CLAUDE.md §Critical patterns (anon defense-in-depth S20, RPC versioning, S25 PIN/idempotency).
