@@ -1,7 +1,7 @@
 # Session 69 — INDEX : CRUD Customer Categories + Prix négocié par client B2B (Vague 2)
 
 > **Date :** 2026-07-08 · **Branche :** `worktree-session-69` (base `7b1f6a10` = master post-#171 + spec/plan S69)
-> **Spec :** [`docs/superpowers/specs/2026-07-08-s69-customer-categories-negotiated-pricing-design.md`](../../superpowers/specs/2026-07-08-s69-customer-categories-negotiated-pricing-design.md) · **Plan :** [`docs/superpowers/plans/2026-07-08-s69-customer-categories-negotiated-pricing.md`](2026-07-08-s69-customer-categories-negotiated-pricing.md)
+> **Spec :** [`docs/superpowers/specs/2026-07-08-s69-customer-categories-negotiated-pricing-design.md`](../../superpowers/specs/2026-07-08-s69-customer-categories-negotiated-pricing-design.md) · **Plan :** [`docs/superpowers/plans/2026-07-08-s69-customer-categories-negotiated-pricing.md`](../../superpowers/plans/2026-07-08-s69-customer-categories-negotiated-pricing.md)
 > **Ferme :** fiche **08 D2.1** (CRUD catégories client — la page BO était read-only, dette D-W6-CUSTCAT-01) et fiche **09 B1.1** (« prix négocié par client » B2B).
 
 ## Résumé livré

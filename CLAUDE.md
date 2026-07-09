@@ -56,6 +56,23 @@
 - Branches: `swarm/session-N` for ongoing session work, `feat/<scope>` or `fix/<scope>` for focused PRs. For phased plans, prefer `swarm/session-N` and squash-merge per phase.
 - Commits: conventional commits (`feat(scope): …`, `fix(scope): …`, `test(scope): …`, `docs(scope): …`, `refactor(scope): …`). Co-author Claude when AI-assisted.
 
+### Garde-fou anti-dérive documentaire (checklist fin de session)
+> Issu de l'audit de gouvernance 2026-07-09 (`docs/workplan/audits/2026-07-09-audit-general-gouvernance.md`). But : qu'un lecteur (humain ou agent) ouvrant un fichier isolé sache en 1 seconde s'il fait foi.
+```
+FIN DE SESSION Sxx — avant merge :
+□ CLAUDE.md « In flight » / « Merged (latest) » mis à jour (nouvelle session).
+□ remise-a-plat : bandeau « Mise à jour Sxx » ajouté aux fiches touchées
+   (verdicts C-Bx.x réconciliés avec le bandeau, pas seulement le header).
+□ Aucune version RPC EN DUR ajoutée dans un skill/agent — nom non-versionné
+   + « vérifier CLAUDE.md/migrations » (les money-path bumpent quasi chaque session).
+□ Préfixe MCP écrit = mcp__claude_ai_Supabase__ (jamais le plugin désactivé).
+□ Nouveau lien inter-doc = chemin RELATIF vérifié depuis l'emplacement final.
+□ Aucun fichier « à créer » cité comme source vivante s'il n'existe pas.
+□ Types regen commit si migration (cause #1 de CI cassée).
+□ Fichier > 500 lignes ? scinder.
+```
+**Contrôle trimestriel** (grep de dérive V2, hors `_archive/` et docs datées) : `abjabuniwkqpfsenxljp`, `AppGrav`, `breakery-platform`, `vite-plugin-pwa`, `Capacitor`, `complete_order_with_payments` (pluriel), `PIN à 4`, `audit_log ` (singulier), `mcp__plugin_supabase` → toute occurrence = à corriger. Linkcheck `docs/**/*.md` (hors `_archive/`) : 0 lien mort en zone vivante.
+
 ## Agent Comms (SendMessage-First Coordination)
 
 Named agents coordinate via `SendMessage`, not polling or shared state.
