@@ -36,26 +36,28 @@ gh secret set SUPABASE_ANON_KEY_STAGING --body "<anon-key>"
 gh secret set SUPABASE_SERVICE_ROLE_STAGING --body "<service-role-key>"
 ```
 
-## Secrets required by `playwright-e2e.yml`
+## Secrets required by `playwright-e2e.yml` (S71 build-in-CI model)
+
+Le nightly build + sert POS/BO en localhost dans le job (pas d'URL hébergée).
+Il ne reste que 3 secrets à poser (le 4e est déjà là) :
 
 ```bash
-# URL where the POS app is deployed to staging
-gh secret set STAGING_POS_URL --body "https://pos.staging.thebreakery.id"
+# Dev V3 anon (publishable) key — Dashboard → Settings → API → anon (public)
+gh secret set VITE_SUPABASE_ANON_KEY --body "<anon-key>"
 
-# URL where the Backoffice app is deployed to staging
-gh secret set STAGING_BO_URL --body "https://backoffice.staging.thebreakery.id"
+# 6-digit PIN de l'utilisateur E2E owner  (user_profiles 0e2e0000-…-001)
+gh secret set E2E_PIN_ADMIN --body "<6-digit-pin>"
 
-# 6-digit PIN for the seed cashier user (SEED_USER_CASHIER = 00000000-0000-0000-0000-000000000002)
-gh secret set E2E_PIN_CASHIER --body "<cashier-pin>"
+# 6-digit PIN de l'utilisateur E2E cashier (user_profiles 0e2e0000-…-002)
+gh secret set E2E_PIN_CASHIER --body "<6-digit-pin>"
 
-# 6-digit PIN for the seed admin/owner user (SEED_USER_OWNER = 00000000-0000-0000-0000-000000000001)
-gh secret set E2E_PIN_ADMIN --body "<admin-pin>"
-
-# (Optional) Kiosk JWT to bypass pair-device prompt on /display.
-# Obtain by calling the kiosk-issue-jwt Edge Function with a valid kiosk code.
-# If absent, the kiosk display test asserts only the pair-prompt is visible.
-gh secret set E2E_KIOSK_JWT --body "<kiosk-jwt>"
+# Déjà posé (2026-05-16) — connexion pooler pour le provisioning des PINs :
+#   V3_DEV_PG_POOLER_URL
 ```
+
+`VITE_SUPABASE_URL` est public (`https://ikcyvlovptebroadgtvd.supabase.co`) et
+codé en clair dans le workflow — pas un secret. Les anciens secrets
+`STAGING_POS_URL` / `STAGING_BO_URL` / `E2E_KIOSK_JWT` ne sont plus requis.
 
 ## Secrets status (as of Session 21)
 
@@ -68,11 +70,9 @@ gh secret set E2E_KIOSK_JWT --body "<kiosk-jwt>"
 | `SUPABASE_URL_STAGING` | Not set — needs provisioning |
 | `SUPABASE_ANON_KEY_STAGING` | Not set — needs provisioning |
 | `SUPABASE_SERVICE_ROLE_STAGING` | Not set — needs provisioning |
-| `STAGING_POS_URL` | Not set — needs provisioning |
-| `STAGING_BO_URL` | Not set — needs provisioning |
+| `VITE_SUPABASE_ANON_KEY` | Not set — needs provisioning |
 | `E2E_PIN_CASHIER` | Not set — needs provisioning |
 | `E2E_PIN_ADMIN` | Not set — needs provisioning |
-| `E2E_KIOSK_JWT` | Not set — optional |
 
 ## GitHub Environment: `staging`
 
