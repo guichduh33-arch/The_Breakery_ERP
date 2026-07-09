@@ -6,10 +6,15 @@
 **staging** project `ikcyvlovptebroadgtvd` ; production project `<ref>`
 to be substituted at cutover.
 
-This runbook documents the six most-likely incident classes the
+This runbook documents the most-likely incident classes the
 operations team needs to drill before the V3 cutover. Each scenario
 follows the standard layout: **symptoms → impact → mitigation →
 recovery → post-mortem template**.
+
+> ⚠️ **Fraîcheur partielle (revu 2026-07-09).** Deux évolutions S62/S65 rendent des passages obsolètes, corrigés ci-dessous :
+> - **`print_queue` a été DROPPÉE (S62, migration `20260710000110`)** et la PWA purgée — le **Scénario 6** est neutralisé (l'impression passe désormais par `apps/print-bridge`, S65).
+> - Les scénarios mentionnant la **persistance PWA / IndexedDB** (Scénario 5 « Hardening ») sont caducs (PWA retirée S62).
+> - La money-path RPC courante est **`complete_order_with_payment_v17`** (pas `complete_order_v9`) — cf. Appendix A.
 
 > Quick links
 > - Supabase dashboard: <https://supabase.com/dashboard/project/ikcyvlovptebroadgtvd>
@@ -330,8 +335,9 @@ Action items :
 
 ### Hardening (preventative)
 
-- Configure POS PWA to write the cart to IndexedDB every 5s (Wave 7
-  candidate — not yet shipped).
+- ~~Configure POS PWA to write the cart to IndexedDB every 5s~~ **Caduc :
+  la PWA a été purgée S62** (décision propriétaire internet-first). Une
+  persistance locale du panier reste un candidat, mais **hors PWA**.
 - Pair every front-of-house device with a "buddy" device so staff can
   swap mid-shift.
 
@@ -349,58 +355,47 @@ Action items :
 
 ---
 
-## Scenario 6 — Print queue jam / printer outage
+## Scenario 6 — Printer outage *(⚠️ RÉVISÉ S62/S65 — `print_queue` supprimée)*
+
+> **Ce scénario a changé de modèle.** La table `print_queue`, la page BO `/print-queue`, le poller `print-queue-poller` et la RPC `requeue_print_job_v1` **n'existent plus** (droppés S62, migration `20260710000110`). L'impression passe désormais par le **service local `apps/print-bridge`** (contrat V2 octet-exact + scan réseau, S65) et les **LAN Devices** (`/lan-devices`, BO CRUD). Ne pas requêter `print_queue`.
 
 ### Symptoms
 
 - KDS bumps are received but no kitchen ticket prints.
-- `print_queue` table has rows stuck at `status = 'pending'` for >2 min.
-- `print-queue` BO page (`/backoffice/print-queue`) shows the backlog.
 - POS receipt printer prints partial / blank / garbled text.
+- `apps/print-bridge` (poste local) hors ligne / non joignable.
 
 ### Impact
 
 - Kitchen still sees orders on KDS (digital path is independent).
 - Customers may walk out without a receipt.
-- B2B orders that require an emailed PDF are blocked if the print
-  service is the bottleneck (rare).
 
 ### Mitigation (immediate)
 
 1. **Verify printer status** — paper, ribbon, USB cable, LAN.
-2. **Check `print_queue` rows**:
-   ```sql
-   SELECT id, target_kind, target_id, status, attempts, last_error
-     FROM print_queue
-     WHERE status IN ('pending', 'failed')
-     ORDER BY created_at DESC
-     LIMIT 50;
-   ```
-3. **Manual re-enqueue** of failed rows (via BO `/print-queue`):
-   - Select the row → "Retry" button → it sets `status='pending'`
-     and `attempts=0` (Phase 5.A RPC `requeue_print_job_v1`).
+2. **Verify the print-bridge host** — le poste qui héberge `apps/print-bridge`
+   est-il allumé, joignable sur le LAN, le service tourne-t-il ?
+3. **Check LAN device registration** — BO `/lan-devices` : l'imprimante /
+   station est-elle enregistrée et « online » ?
 4. **Bypass**: KDS supports manual write-up mode — pre-printed
    ticket forms in the kitchen.
 
 ### Recovery
 
-1. Once the printer is healthy, the print queue daemon
-   (`packages/utils/print-queue-poller`) drains the backlog within
-   30 seconds.
-2. Failed rows older than 1 hour: review per row; either retry or
-   mark as `'cancelled'` with reason.
-3. If a printer was permanently lost: re-provision via BO `/lan-devices`
-   (Phase 5.A) and re-assign affected stations.
+1. Redémarrer `apps/print-bridge` sur le poste local ; il re-scanne le
+   réseau et reprend les jobs.
+2. If a printer was permanently lost: re-provision via BO `/lan-devices`
+   and re-assign affected stations.
 
 ### Post-mortem template
 
 ```
 Incident date / start / end :
 Printer asset (model / location) :
-Queue depth at peak :
+print-bridge host / version :
 Tickets manually written :
 Action items :
-  - [ ] (e.g. monitor pending-queue depth via Sentry)
+  - [ ] (e.g. superviser la disponibilité du poste print-bridge)
   - [ ] (e.g. add second printer fallback per station)
 ```
 
@@ -411,15 +406,15 @@ Action items :
 | Trigger | Threshold | Target |
 |---|---|---|
 | WebSocket close (1006) | >10 events / 5 min | on-call |
-| `complete_order_v9` 5xx | >3 events / 5 min | on-call |
+| `complete_order_with_payment_v17` 5xx (via EF `process-payment`) | >3 events / 5 min | on-call |
 | `auth-verify-pin` 5xx | >5 events / 5 min | on-call |
 | `je_unbalanced` (custom) | any | on-call + accounting lead |
-| Print queue pending >5 min | any row | floor manager |
+| `apps/print-bridge` host unreachable | >2 min | floor manager |
 
 ## Appendix B — Daily ops checklist
 
 - [ ] Sentry: 0 unresolved P0 / P1 alerts.
-- [ ] `print_queue` backlog: 0 rows older than 10 min.
+- [ ] `apps/print-bridge` host online et joignable sur le LAN.
 - [ ] `stock_movements` integrity (`unit IS NOT NULL`): 100 % rows.
 - [ ] `journal_entries` balance (`verify_journal_entry_balance`): 0 errors.
 - [ ] Realtime channel `kds:station-*` subscriber count == #stations.

@@ -1,3 +1,6 @@
+<!-- STALE-V2 -->
+> ⚠️ **DOC HISTORIQUE — PÉRIMÉE (V2), NE FAIT PLUS FOI.** Ce fichier décrit en grande partie l'architecture **V2** (mono-app AppGrav, npm/Vercel, PWA/Capacitor, projet Supabase `abjabuniwkqpfsenxljp` = **prod incompatible**, versions RPC obsolètes). **Ne jamais l'appliquer tel quel** (migration, config, archi). Sources de vérité actuelles : `CLAUDE.md` (patterns + workplan) et `docs/workplan/remise-a-plat/` (référence modules réel-vs-demandé). Hiérarchie complète : `docs/README.md`. Régénération depuis le code prévue en Phase 3.
+
 # 03 — Environment variables
 
 > **Last verified**: 2026-05-03
@@ -19,10 +22,10 @@ Toutes les variables d'environnement utilisées par AppGrav V2 (frontend Vite + 
 
 | Nom | Type | Required | Exemple / Source | Description |
 |---|---|---|---|---|
-| `VITE_SUPABASE_URL` | public client | ✅ | `https://abjabuniwkqpfsenxljp.supabase.co` | URL projet Supabase. Région `ap-southeast-1` (Singapore). |
+| `VITE_SUPABASE_URL` | public client | ✅ | `https://ikcyvlovptebroadgtvd.supabase.co` | URL du projet **V3 dev** (cible unique, cf. CLAUDE.md). Région `ap-southeast-1`. ⚠️ **Ne JAMAIS pointer `abjabuniwkqpfsenxljp`** = V2 prod, lignée de migrations incompatible. |
 | `VITE_SUPABASE_ANON_KEY` | public client | ✅ | Get from Supabase dashboard → Settings → API | Clé anon publique. RLS protège les données. |
 
-Récupérer les valeurs : `https://supabase.com/dashboard/project/abjabuniwkqpfsenxljp/settings/api`.
+Récupérer les valeurs : `https://supabase.com/dashboard/project/ikcyvlovptebroadgtvd/settings/api`.
 
 ---
 
@@ -98,7 +101,7 @@ Le hook `protect-files.sh` (`.claude/hooks/`) bloque toute modification via Edit
 - `.env.android`
 - `.env.local`
 - `package-lock.json`, `pnpm-lock.yaml`
-- `database.generated.ts`
+- `packages/supabase/src/types.generated.ts` (régénéré via MCP `generate_typescript_types`)
 
 **Workflow correct** :
 

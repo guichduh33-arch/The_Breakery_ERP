@@ -151,7 +151,7 @@ pnpm --filter @breakery/supabase test <rpc-name>        # Vitest live RPC
 
 **RPC-level (pgTAP via MCP)**:
 ```sql
--- mcp__plugin_supabase_supabase__execute_sql, project_id='ikcyvlovptebroadgtvd'
+-- mcp__claude_ai_Supabase__execute_sql, project_id='ikcyvlovptebroadgtvd'
 BEGIN;
 SELECT plan(<N>);
 -- assertions

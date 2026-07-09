@@ -44,9 +44,9 @@ promptSignals:
 ## The 8 rules you must not break
 
 1. **Cloud V3 only — Docker is retired.** Apply/query/regen via MCP against `ikcyvlovptebroadgtvd`:
-   - `mcp__plugin_supabase_supabase__apply_migration` (name snake_case, body = SQL)
-   - `mcp__plugin_supabase_supabase__execute_sql` (pgTAP inside a `BEGIN … ROLLBACK` envelope)
-   - `mcp__plugin_supabase_supabase__generate_typescript_types`
+   - `mcp__claude_ai_Supabase__apply_migration` (name snake_case, body = SQL)
+   - `mcp__claude_ai_Supabase__execute_sql` (pgTAP inside a `BEGIN … ROLLBACK` envelope)
+   - `mcp__claude_ai_Supabase__generate_typescript_types`
    - **NEVER** `pnpm db:reset`, `supabase start/db reset`, `bash supabase/tests/run_pgtap.sh` — they need Docker and fail.
 
 2. **Never edit a published `_vN` signature.** Create `_vN+1` **and** `DROP FUNCTION public.<name>_vN(<exact old args>)` in the **same** migration. Bump nearly every session — always check the highest live version + the call-site first.

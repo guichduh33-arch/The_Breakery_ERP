@@ -77,12 +77,11 @@ Couverture : 90% domain, 85% utils, 70% ui, smoke tests apps.
 
 ## Documentation
 
-- **Spec V3** : [`docs/workplan/specs/2026-05-03-breakery-split-2apps-design.md`](docs/workplan/specs/archive/2026-05-03-breakery-split-2apps-design.md)
-- **Référence canonique** : [`docs/reference/`](docs/reference/) — 12 chapitres + 19 modules métier (la source de vérité)
-- **Workplan (plans/specs datés + backlog)** : [`docs/workplan/`](docs/workplan/)
-- **État courant + conventions** : [`CLAUDE.md`](CLAUDE.md) → *Active Workplan*
-- **Référence V2** (legacy doc) : [`v2-reference/`](v2-reference/)
-- **UX screenshots** : [`Ux-reference/`](Ux-reference/)
+- **État courant + conventions + patterns critiques** : [`CLAUDE.md`](CLAUDE.md) → *Active Workplan* (**source de vérité**)
+- **Référence modules (réel-vs-demandé)** : [`docs/workplan/remise-a-plat/`](docs/workplan/remise-a-plat/) — autorité actuelle par module (Phase 3 = régénération depuis le code)
+- **Spec V3 (split 2 apps)** : [`docs/workplan/specs/archive/2026-05-03-breakery-split-2apps-design.md`](docs/workplan/specs/archive/2026-05-03-breakery-split-2apps-design.md)
+- **Workplan (plans/specs datés)** : [`docs/workplan/`](docs/workplan/)
+- **Référence historique** : [`docs/reference/`](docs/reference/) — ⚠️ **majoritairement V2/périmée** (bandeau STALE en tête de chaque fichier) ; ne fait plus foi, cf. `docs/README.md` pour la hiérarchie de vérité.
 
 ## Conventions
 
