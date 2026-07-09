@@ -1,38 +1,30 @@
 name: Playwright E2E
 
-# Nightly smoke suite + on-demand trigger. Does NOT gate PRs so flaky first-run
-# selector issues don't block developer flow. Run manually via workflow_dispatch
-# after adding/updating data-testid selectors.
+# Build-and-serve-in-CI model (S71). The job builds both apps and serves them
+# on localhost via Playwright's webServer, pointing at the dev V3 backend.
+# No hosted staging URLs, no Vercel.
 #
-# Required secrets (create via: gh secret set <NAME>):
-#   STAGING_POS_URL     — e.g. https://pos.staging.thebreakery.id
-#   STAGING_BO_URL      — e.g. https://backoffice.staging.thebreakery.id
-#   E2E_PIN_CASHIER     — 6-digit PIN for the seed cashier user
-#   E2E_PIN_ADMIN       — 6-digit PIN for the seed admin/owner user
-#   E2E_KIOSK_JWT       — (optional) kiosk JWT to bypass pair-device prompt
+# Required secrets:
+#   VITE_SUPABASE_ANON_KEY   — dev V3 anon (publishable) key (build-time)
+#   E2E_PIN_ADMIN            — 6-digit PIN for E2E owner  (0e2e0000-…-001)
+#   E2E_PIN_CASHIER          — 6-digit PIN for E2E cashier (0e2e0000-…-002)
+#   V3_DEV_PG_POOLER_URL     — pooler connection string (already set 2026-05-16)
 #
-# See .github/workflows/STAGING_SETUP.md for provisioning steps.
-
-# Staging environment provisioning status: NOT SET UP
-# ────────────────────────────────────────────────────────────────────────────
-# Automatic nightly runs (cron 22:00 UTC) are DISABLED because:
-#  1. Staging frontend URLs (STAGING_POS_URL, STAGING_BO_URL) are not set
-#  2. Required E2E secrets (E2E_PIN_CASHIER, E2E_PIN_ADMIN, E2E_KIOSK_JWT) are not provisioned
-#
-# To reactivate:
-#  1. Follow the provisioning checklist in .github/workflows/STAGING_SETUP.md
-#  2. Ensure STAGING_POS_URL and STAGING_BO_URL are hosted and accessible
-#  3. Restore the 'schedule' trigger below with the cron expression
-#
-# Until then, workflow_dispatch (manual trigger) remains enabled for testing.
-# ────────────────────────────────────────────────────────────────────────────
-
+# Nightly cron armed S71 Plan 2 once all 12 specs proved green in a combined
+# run (26 passed / 2 intentional fixmes / 0 failed). 22:00 UTC daily. The
+# rate-limit-resilient login (fixtures/auth.ts) keeps the bunched-login run
+# green against the auth-verify-pin 3/min/IP limit. Still dispatchable on demand.
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '0 22 * * *'
+
+env:
+  VITE_SUPABASE_URL: https://ikcyvlovptebroadgtvd.supabase.co
 
 jobs:
   e2e:
-    name: Playwright smoke tests
+    name: Playwright E2E (build + serve in-CI)
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -54,20 +46,30 @@ jobs:
       - name: Install Chromium browser
         run: pnpm exec playwright install --with-deps chromium
 
+      - name: Provision E2E state (PINs + open shift)
+        env:
+          PGURL: ${{ secrets.V3_DEV_PG_POOLER_URL }}
+          E2E_PIN_ADMIN: ${{ secrets.E2E_PIN_ADMIN }}
+          E2E_PIN_CASHIER: ${{ secrets.E2E_PIN_CASHIER }}
+        run: |
+          psql "$PGURL" -v ON_ERROR_STOP=1 \
+            -v adminpin="$E2E_PIN_ADMIN" -v cashpin="$E2E_PIN_CASHIER" \
+            -f scripts/e2e/provision-pins.sql
+
       - name: Run Playwright tests
         run: pnpm exec playwright test
         env:
           CI: 'true'
-          E2E_POS_URL: ${{ secrets.STAGING_POS_URL }}
-          E2E_BO_URL: ${{ secrets.STAGING_BO_URL }}
-          E2E_PIN_CASHIER: ${{ secrets.E2E_PIN_CASHIER }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          E2E_POS_URL: http://localhost:5173
+          E2E_BO_URL: http://localhost:5174
           E2E_PIN_ADMIN: ${{ secrets.E2E_PIN_ADMIN }}
-          E2E_KIOSK_JWT: ${{ secrets.E2E_KIOSK_JWT }}
+          E2E_PIN_CASHIER: ${{ secrets.E2E_PIN_CASHIER }}
 
       - name: Upload Playwright report
-        if: failure()
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
           path: playwright-report/
-          retention-days: 7
+          retention-days: 14

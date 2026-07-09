@@ -243,7 +243,7 @@ test('T3: Costing panel — KPIs render, cost correction + restore via dialog', 
 
 test('T4: orders list — ProductPicker filters and stages a pending add', async () => {
   await page.goto('/backoffice/orders');
-  await expect(page.getByTestId('orders-filters-bar')).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByTestId('status-pills')).toBeVisible({ timeout: 20_000 });
 
   // Surface editable orders (edit action exists only on draft/pending_payment).
   // Try the unfiltered list first; the row-edit testid is status-gated.
