@@ -5,7 +5,7 @@
 > **Migration block** : `20260517000160` (optional — display_screens registry)
 > **Complexity** : M (~16-20 h)
 > **Parent INDEX** : [`./2026-05-13-session-13-INDEX.md`](./2026-05-13-session-13-INDEX.md) §Phase 4.C (line 822)
-> **Module ref**  : [`../../reference/04-modules/16-display-customer.md`](../../reference/04-modules/16-display-customer.md)
+> **Module ref**  : [`../../reference/04-modules/16-display-customer.md`](../../../reference/04-modules/16-display-customer.md)
 
 ## 1. Context (state at startup, verified 2026-05-14)
 

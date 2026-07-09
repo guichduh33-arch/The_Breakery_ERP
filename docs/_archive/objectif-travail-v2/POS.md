@@ -3,7 +3,7 @@
 > 🗄️ **ARCHIVED / SUPERSEDED (2026-06-04).** This legacy V2 "Objectif métier" brief was folded verbatim into **Partie I — Vue fonctionnelle** of the canonical reference module [`reference/04-modules/02-pos-cart-orders.md`](../../reference/04-modules/02-pos-cart-orders.md) (2026-05-13). The reference is the source of truth; this file is kept for history only.
 
 
-> **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée en prod**. Implémentation réelle = V3 monorepo (`apps/pos`). Pour les renommages de symboles V2↔V3 (`complete_order_with_payments` → `complete_order`, etc.), voir [`../V2_V3_GLOSSARY.md`](../V2_V3_GLOSSARY.md).
+> **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée en prod**. Implémentation réelle = V3 monorepo (`apps/pos`). Pour les renommages de symboles V2↔V3 (`complete_order_with_payments` → `complete_order`, etc.), voir [`../V2_V3_GLOSSARY.md`](../../V2_V3_GLOSSARY.md).
 >
 > **Périmètre fonctionnel** : ce document décrit **ce que l'App POS sert à faire au quotidien** pour The Breakery,
 

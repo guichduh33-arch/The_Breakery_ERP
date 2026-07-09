@@ -4,9 +4,9 @@
 > **Last refreshed** : 2026-05-13
 >
 > **Voir aussi** pour la spec complète (4 parties) :
-> - Discounts (manuels + engine) → [`../../reference/04-modules/13-promotions-discounts.md`](../../reference/04-modules/13-promotions-discounts.md)
-> - Loyalty multipliers & tiers → [`../../reference/04-modules/08-customers-loyalty.md`](../../reference/04-modules/08-customers-loyalty.md)
-> - Multi-select modifiers → [`../../reference/04-modules/05-products-categories.md`](../../reference/04-modules/05-products-categories.md)
+> - Discounts (manuels + engine) → [`../../reference/04-modules/13-promotions-discounts.md`](../../../reference/04-modules/13-promotions-discounts.md)
+> - Loyalty multipliers & tiers → [`../../reference/04-modules/08-customers-loyalty.md`](../../../reference/04-modules/08-customers-loyalty.md)
+> - Multi-select modifiers → [`../../reference/04-modules/05-products-categories.md`](../../../reference/04-modules/05-products-categories.md)
 
 > **Date** : 2026-05-06
 > **Auteur** : guichduh33@gmail.com (via session brainstorming)

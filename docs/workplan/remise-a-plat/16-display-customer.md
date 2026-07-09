@@ -1,6 +1,6 @@
 # Module 16 — Écran côté client
 
-> ⚠️ **Mise à jour S59 (2026-07-04, `swarm/session-59`)** : **D1.2 livré** — le ticker de l'écran client a désormais une section « Prêt à retirer » branchée sur les items réellement `ready` (`useReadyOrders`, plafond 5, tri urgence) ; un bump KDS y fait apparaître la commande sans paiement préalable. C-B1.3 n'est plus 🟠. Voir `docs/workplan/plans/2026-07-04-session-59-INDEX.md`.
+> ⚠️ **Mise à jour S59 (2026-07-04, `swarm/session-59`)** : **D1.2 livré** — le ticker de l'écran client a désormais une section « Prêt à retirer » branchée sur les items réellement `ready` (`useReadyOrders`, plafond 5, tri urgence) ; un bump KDS y fait apparaître la commande sans paiement préalable. C-B1.3 n'est plus 🟠. Voir `docs/workplan/plans/archive/2026-07-04-session-59-INDEX.md`.
 
 > **Remise à plat — analyse comparative.** Doc : Description v1.2 (2026-07-03), module 16. Code : commit `5b0fa92` (2026-07-03).
 > **Statut annoncé par la doc :** Partiel

@@ -3,7 +3,7 @@
 > 🗄️ **ARCHIVED / SUPERSEDED (2026-06-04).** This legacy V2 "Objectif métier" brief was folded verbatim into **Partie I — Vue fonctionnelle** of the canonical reference module [`reference/04-modules/01-auth-permissions.md`](../../reference/04-modules/01-auth-permissions.md) (2026-05-13). The reference is the source of truth; this file is kept for history only.
 
 
-> **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée**. Implémentation V3 = DONE (`create_user_rpcs` S17 — 6 RPCs, `apps/backoffice/src/features/users`, `SettingsPermissionsPage`, RBAC matrix). Améliorations V3 : `record_rate_limit_v1` durable Postgres S19, GRANT hardening S20, `update_role_session_timeout_v1` S23. Voir [`../V2_V3_GLOSSARY.md`](../V2_V3_GLOSSARY.md).
+> **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée**. Implémentation V3 = DONE (`create_user_rpcs` S17 — 6 RPCs, `apps/backoffice/src/features/users`, `SettingsPermissionsPage`, RBAC matrix). Améliorations V3 : `record_rate_limit_v1` durable Postgres S19, GRANT hardening S20, `update_role_session_timeout_v1` S23. Voir [`../V2_V3_GLOSSARY.md`](../../V2_V3_GLOSSARY.md).
 >
 > **Périmètre fonctionnel** : ce document décrit **ce que le module Users & Permissions sert à faire au quotidien** pour The Breakery,
 

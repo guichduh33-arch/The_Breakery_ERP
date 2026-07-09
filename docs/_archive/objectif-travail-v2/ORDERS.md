@@ -3,7 +3,7 @@
 > 🗄️ **ARCHIVED / SUPERSEDED (2026-06-04).** This legacy V2 "Objectif métier" brief was folded verbatim into **Partie I — Vue fonctionnelle** of the canonical reference module [`reference/04-modules/02b-orders.md`](../../reference/04-modules/02b-orders.md) (2026-05-13). The reference is the source of truth; this file is kept for history only.
 
 
-> **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée**. Implémentation réelle = V3 monorepo (`apps/backoffice`). Voir [`../V2_V3_GLOSSARY.md`](../V2_V3_GLOSSARY.md) pour les mappings.
+> **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée**. Implémentation réelle = V3 monorepo (`apps/backoffice`). Voir [`../V2_V3_GLOSSARY.md`](../../V2_V3_GLOSSARY.md) pour les mappings.
 >
 > **Périmètre fonctionnel** : ce document décrit **ce que la page Orders (`/orders`) sert à faire au quotidien** pour The Breakery, .
 

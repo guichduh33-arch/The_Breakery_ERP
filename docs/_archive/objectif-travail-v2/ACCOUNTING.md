@@ -3,7 +3,7 @@
 > 🗄️ **ARCHIVED / SUPERSEDED (2026-06-04).** This legacy V2 "Objectif métier" brief was folded verbatim into **Partie I — Vue fonctionnelle** of the canonical reference module [`reference/04-modules/10-accounting-double-entry.md`](../../reference/04-modules/10-accounting-double-entry.md) (2026-05-13). The reference is the source of truth; this file is kept for history only.
 
 
-> **Statut V2/V3** : décrit la vision business cible (11 pages). **V2 jamais déployée**. Implémentation V3 actuelle = **partielle** — 1 page accounting (`MappingsPage`) + 3 pages financières sous `/reports` (Balance Sheet, ProfitLoss, Cash Flow). Les 7 autres pages sont **planifiées pour la Session S26 Comptable Cockpit**. DB excellente (triggers JE, mappings, fiscal periods, VAT, view_ar_aging tous présents). Voir [`../V2_V3_GLOSSARY.md`](../V2_V3_GLOSSARY.md).
+> **Statut V2/V3** : décrit la vision business cible (11 pages). **V2 jamais déployée**. Implémentation V3 actuelle = **partielle** — 1 page accounting (`MappingsPage`) + 3 pages financières sous `/reports` (Balance Sheet, ProfitLoss, Cash Flow). Les 7 autres pages sont **planifiées pour la Session S26 Comptable Cockpit**. DB excellente (triggers JE, mappings, fiscal periods, VAT, view_ar_aging tous présents). Voir [`../V2_V3_GLOSSARY.md`](../../V2_V3_GLOSSARY.md).
 >
 > **Périmètre fonctionnel** : ce document décrit **ce que le module Accounting (`/accounting`) sert à faire au quotidien** pour The Breakery,
 

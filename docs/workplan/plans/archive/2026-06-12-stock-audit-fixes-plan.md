@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal :** corriger les 22 findings de l'audit [`docs/audit/2026-06-12-stock-management-audit.md`](../../audit/2026-06-12-stock-management-audit.md) — 4 critiques (pages mortes, 2 crons en échec silencieux, production sans section), 7 majeurs, 11 mineurs — en 4 waves committables indépendamment.
+**Goal :** corriger les 22 findings de l'audit [`docs/audit/archive/2026-06-12-stock-management-audit.md`](../../audit/archive/2026-06-12-stock-management-audit.md) — 4 critiques (pages mortes, 2 crons en échec silencieux, production sans section), 7 majeurs, 11 mineurs — en 4 waves committables indépendamment.
 
 **Architecture :** Wave A = hotfixes front purs (résurrection immédiate des 4 pages mortes, zéro DB). Wave B = correctives DB (NAME-block `20260626000010..016`, pattern corrective S25/S38 : `CREATE OR REPLACE` sans bump quand la signature ne change pas). Wave C = navigation + config. Wave D = data cleanup + docs + E2E de régression. Branche : `swarm/stock-audit-fixes` (ou `fix/stock-audit` si hors session swarm).
 

@@ -4,8 +4,8 @@
 > **Last refreshed** : 2026-05-13
 >
 > **Voir aussi** pour la spec complète (4 parties) :
-> - Held orders → [`../../reference/04-modules/02-pos-cart-orders.md`](../../reference/04-modules/02-pos-cart-orders.md)
-> - Item served / KDS lifecycle → [`../../reference/04-modules/04-kds-kitchen.md`](../../reference/04-modules/04-kds-kitchen.md)
+> - Held orders → [`../../reference/04-modules/02-pos-cart-orders.md`](../../../reference/04-modules/02-pos-cart-orders.md)
+> - Item served / KDS lifecycle → [`../../reference/04-modules/04-kds-kitchen.md`](../../../reference/04-modules/04-kds-kitchen.md)
 
 > **Date** : 2026-05-06
 > **Auteur** : guichduh33@gmail.com (via session brainstorming)

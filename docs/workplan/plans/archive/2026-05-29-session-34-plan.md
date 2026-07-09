@@ -12,7 +12,7 @@
 
 **Spec:** [`../specs/2026-05-29-session-34-spec.md`](../specs/2026-05-29-session-34-spec.md)
 
-**Source audit:** [`docs/audit/2026-05-28-pos-audit.md`](../../../audit/2026-05-28-pos-audit.md)
+**Source audit:** [`docs/audit/archive/2026-05-28-pos-audit.md`](../../../audit/archive/2026-05-28-pos-audit.md)
 
 **Branch:** `swarm/session-34` (créée depuis `master` post-merge S33)
 

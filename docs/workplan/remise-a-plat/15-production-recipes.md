@@ -1,6 +1,6 @@
 # Module 15 — Production & recettes
 
-> ⚠️ **Mise à jour S59 (2026-07-04, `swarm/session-59`)** : **D1.1 (doublon suggestions) résorbé** — l'UI orpheline `ProductionSuggestions.tsx` + `useProductionSuggestions.ts` est purgée. Le RPC `get_production_suggestions_v1` est **conservé** (2ᵉ consommateur actif découvert : `ProductionAlertsTab`) — pas de DROP. Voir `docs/workplan/plans/2026-07-04-session-59-INDEX.md`.
+> ⚠️ **Mise à jour S59 (2026-07-04, `swarm/session-59`)** : **D1.1 (doublon suggestions) résorbé** — l'UI orpheline `ProductionSuggestions.tsx` + `useProductionSuggestions.ts` est purgée. Le RPC `get_production_suggestions_v1` est **conservé** (2ᵉ consommateur actif découvert : `ProductionAlertsTab`) — pas de DROP. Voir `docs/workplan/plans/archive/2026-07-04-session-59-INDEX.md`.
 
 > **Remise à plat — analyse comparative.** Doc : Description v1.2 (2026-07-03), module 15. Code : commit `5b0fa92` (2026-07-03).
 > **Statut annoncé par la doc :** Opérationnel

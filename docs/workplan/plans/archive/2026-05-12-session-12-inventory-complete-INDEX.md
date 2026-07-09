@@ -3,7 +3,7 @@
 > **Trace historique** : ce fichier documente une session de travail datée. Le fond reste l'enregistrement de cette date. Seules les références de chemin ont été alignées sur la nouvelle structure (voir [`../../README.md`](../../README.md)).
 > **Last refreshed** : 2026-05-13
 
-> **Module concerné** : ce plan-INDEX correspond au module [Inventory & Stock](../../reference/04-modules/06-inventory-stock.md). Pour la spec consolidée actuelle (Partie I fonctionnel + Partie II technique + Partie III backlog + Partie IV design), aller à la référence canonique.
+> **Module concerné** : ce plan-INDEX correspond au module [Inventory & Stock](../../../reference/04-modules/06-inventory-stock.md). Pour la spec consolidée actuelle (Partie I fonctionnel + Partie II technique + Partie III backlog + Partie IV design), aller à la référence canonique.
 
 > **Date** : 2026-05-12
 > **Statut** : INDEX multi-phases — chaque phase a son propre fichier `2026-05-12-session-12-inv-XX-<phase>.md` à créer en exécution
@@ -15,7 +15,7 @@
 
 ## Goal global
 
-Livrer le module **Inventory complete** tel que décrit dans la [référence Inventory](../../reference/04-modules/06-inventory-stock.md) (Partie I §1-20 vue fonctionnelle) :
+Livrer le module **Inventory complete** tel que décrit dans la [référence Inventory](../../../reference/04-modules/06-inventory-stock.md) (Partie I §1-20 vue fonctionnelle) :
 
 - 7 onglets fonctionnels (Stock, Incoming, Transfers, Wastage, Production, Opname, Movements)
 - Dashboard analytique par produit

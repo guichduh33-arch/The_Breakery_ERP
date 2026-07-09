@@ -1,12 +1,12 @@
 # The Breakery — Session 2 Spec : Modifiers + Send to Kitchen + KDS
 
-> **Trace historique** : ce fichier documente une session de travail datée. Le contenu de fond reste l'enregistrement de cette date. Seules les références de chemin ont été alignées sur la nouvelle structure documentaire (voir [`docs/README.md`](../../README.md)).
+> **Trace historique** : ce fichier documente une session de travail datée. Le contenu de fond reste l'enregistrement de cette date. Seules les références de chemin ont été alignées sur la nouvelle structure documentaire (voir [`docs/README.md`](../../../README.md)).
 > **Last refreshed** : 2026-05-13
 
 > **Date** : 2026-05-05
 > **Auteur** : guichduh33@gmail.com (via session brainstorming)
 > **Statut** : Approuvé pour implémentation
-> **Cible** : ajouter le support des modifiers produit, l'envoi à la cuisine, et un Kitchen Display System (KDS) intégré dans `apps/pos`. → Voir [`../../reference/04-modules/04-kds-kitchen.md`](../../reference/04-modules/04-kds-kitchen.md) et [`../../reference/04-modules/05-products-categories.md`](../../reference/04-modules/05-products-categories.md) pour la spec complète (4 parties : Fonctionnel / Technique / Backlog / Design).
+> **Cible** : ajouter le support des modifiers produit, l'envoi à la cuisine, et un Kitchen Display System (KDS) intégré dans `apps/pos`. → Voir [`../../reference/04-modules/04-kds-kitchen.md`](../../../reference/04-modules/04-kds-kitchen.md) et [`../../reference/04-modules/05-products-categories.md`](../../../reference/04-modules/05-products-categories.md) pour la spec complète (4 parties : Fonctionnel / Technique / Backlog / Design).
 
 ---
 

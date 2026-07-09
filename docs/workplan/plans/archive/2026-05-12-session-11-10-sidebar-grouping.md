@@ -3,7 +3,7 @@
 > **Trace historique** : ce fichier documente une session de travail datée. Le fond reste l'enregistrement de cette date. Seules les références de chemin ont été alignées sur la nouvelle structure (voir [`../../README.md`](../../README.md)).
 > **Last refreshed** : 2026-05-13
 >
-> **Module concerné** : [`19-settings-configuration`](../../reference/04-modules/19-settings-configuration.md) (navigation Backoffice)
+> **Module concerné** : [`19-settings-configuration`](../../../reference/04-modules/19-settings-configuration.md) (navigation Backoffice)
 
 > **For agentic workers:** REQUIRED SUB-SKILL: superpowers:subagent-driven-development (recommended) or superpowers:executing-plans. Steps use checkbox (`- [ ]`) syntax for tracking.
 

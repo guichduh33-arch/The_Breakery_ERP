@@ -5,7 +5,7 @@
 > **Migration block** : `20260517000150..000151`
 > **Complexity** : M (~14-18 h)
 > **Parent INDEX** : [`./2026-05-13-session-13-INDEX.md`](./2026-05-13-session-13-INDEX.md) §Phase 4.B (line ~793)
-> **Module ref**  : [`../../reference/04-modules/`](../../reference/04-modules/) — module 04 (KDS).
+> **Module ref**  : [`../../reference/04-modules/`](../../../reference/04-modules/) — module 04 (KDS).
 
 ## 1. Context (state at startup, verified 2026-05-14)
 

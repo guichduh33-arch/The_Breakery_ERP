@@ -1,6 +1,6 @@
 # Session 1 — Décisions arbitrées (addendum à la spec)
 
-> **Trace historique** : ce fichier documente une session de travail datée. Le contenu de fond reste l'enregistrement de cette date. Seules les références de chemin ont été alignées sur la nouvelle structure documentaire (voir [`docs/README.md`](../../README.md)).
+> **Trace historique** : ce fichier documente une session de travail datée. Le contenu de fond reste l'enregistrement de cette date. Seules les références de chemin ont été alignées sur la nouvelle structure documentaire (voir [`docs/README.md`](../../../README.md)).
 > **Last refreshed** : 2026-05-13
 
 > **Date** : 2026-05-04

@@ -3,12 +3,12 @@
 > **Trace historique** : ce fichier documente une session de travail datée. Le fond reste l'enregistrement de cette date. Seules les références de chemin ont été alignées sur la nouvelle structure (voir [`../../README.md`](../../README.md)).
 > **Last refreshed** : 2026-05-13
 
-> **Module concerné** : ce spec correspond au module [Purchasing & Suppliers](../../reference/04-modules/07-purchasing-suppliers.md). Pour la spec consolidée actuelle (Partie I fonctionnel + Partie II technique + Partie III backlog + Partie IV design), aller à la référence canonique.
+> **Module concerné** : ce spec correspond au module [Purchasing & Suppliers](../../../reference/04-modules/07-purchasing-suppliers.md). Pour la spec consolidée actuelle (Partie I fonctionnel + Partie II technique + Partie III backlog + Partie IV design), aller à la référence canonique.
 
 > **Date** : 2026-05-12
 > **Auteur** : guichduh33@gmail.com
 > **Statut** : Approuvé pour décomposition en sous-phases (executing-plans / subagent-driven-development)
-> **Source d'objectifs** : [référence Purchasing & Suppliers](../../reference/04-modules/07-purchasing-suppliers.md) — Partie I (vue fonctionnelle)
+> **Source d'objectifs** : [référence Purchasing & Suppliers](../../../reference/04-modules/07-purchasing-suppliers.md) — Partie I (vue fonctionnelle)
 > **Couvre** : workflow PO complet (draft → sent → confirmed → partially_received → received), QC par ligne, réception partielle, retours fournisseur, paiements (cash/virement/carte), pièces jointes, écritures comptables auto (réception, paiement, retour), suppliers étendus (NPWP, RIB, catégories, payment terms), imports/exports XLSX, reports (top supplier, PO aging, dépense par catégorie, on-time delivery, prix d'achat trend).
 > **Imbrication** : `receive_stock_v1` du spec Inventory complete reçoit en paramètre `p_purchase_order_id` optionnel. La réception PO appelle un wrapper qui orchestre items + supplier + receive_stock pour chaque ligne. Voir §3.6.
 > **Backlog opérationnel** : [`../backlog-by-module/07-purchasing-suppliers.md`](../backlog-by-module/07-purchasing-suppliers.md).
@@ -24,7 +24,7 @@
 - Page CRUD `/backoffice/suppliers` opérationnelle (session 11 phase 01).
 - **AUCUNE** notion de Purchase Order, état workflow, QC, retours, paiements, attachments, écritures comptables auto.
 
-### 0.2 État cible V3 (cf. [référence Purchasing & Suppliers](../../reference/04-modules/07-purchasing-suppliers.md))
+### 0.2 État cible V3 (cf. [référence Purchasing & Suppliers](../../../reference/04-modules/07-purchasing-suppliers.md))
 
 Workflow complet "from order to cash" :
 
@@ -42,7 +42,7 @@ Workflow complet "from order to cash" :
    - **Retour** : Dr Accounts Payable / Cr Inventory.
 10. Reports : top supplier, PO aging, dépense par catégorie, on-time delivery rate, prix d'achat trend.
 
-### 0.3 Hors scope V3 (limites assumées — cf. [référence Purchasing](../../reference/04-modules/07-purchasing-suppliers.md))
+### 0.3 Hors scope V3 (limites assumées — cf. [référence Purchasing](../../../reference/04-modules/07-purchasing-suppliers.md))
 
 - Pas d'envoi email automatique au fournisseur.
 - Pas de génération PDF du PO (déféré V3 ultérieure).

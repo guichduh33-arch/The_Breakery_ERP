@@ -3,7 +3,7 @@
 > 🗄️ **ARCHIVED / SUPERSEDED (2026-06-04).** This legacy V2 "Objectif métier" brief was folded verbatim into **Partie I — Vue fonctionnelle** of the canonical reference module [`reference/04-modules/04-kds-kitchen.md`](../../reference/04-modules/04-kds-kitchen.md) (2026-05-13). The reference is the source of truth; this file is kept for history only.
 
 
-> **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée**. Implémentation réelle = V3 monorepo (`apps/pos/src/features/kds`). Voir [`../V2_V3_GLOSSARY.md`](../V2_V3_GLOSSARY.md).
+> **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée**. Implémentation réelle = V3 monorepo (`apps/pos/src/features/kds`). Voir [`../V2_V3_GLOSSARY.md`](../../V2_V3_GLOSSARY.md).
 >
 > **Périmètre fonctionnel** : ce document décrit **ce que le module KDS (`/kds`, `/kds/:station`) sert à faire au quotidien** pour The Breakery,
 

@@ -2,7 +2,7 @@
 
 > **Trace historique** : ce fichier documente une session de travail datée. Le fond reste l'enregistrement de cette date. Seules les références de chemin ont été alignées sur la nouvelle structure (voir [`../../README.md`](../../README.md)).
 > **Last refreshed** : 2026-05-13
-> **Modules de référence associés** : [`../../reference/04-modules/13-promotions-discounts.md`](../../reference/04-modules/13-promotions-discounts.md), [`../../reference/04-modules/02-pos-cart-orders.md`](../../reference/04-modules/02-pos-cart-orders.md).
+> **Modules de référence associés** : [`../../reference/04-modules/13-promotions-discounts.md`](../../../reference/04-modules/13-promotions-discounts.md), [`../../reference/04-modules/02-pos-cart-orders.md`](../../../reference/04-modules/02-pos-cart-orders.md).
 
 > **STATUS — 2026-05-10 :** Implementation **COMPLETED** on branch `swarm/session-8`.
 > - All 31 tasks across 6 phases shipped (commits `0f29ad6` → `ce5fecc`).

@@ -2,7 +2,7 @@
 
 - **Date** : 2026-06-12
 - **Branche** : `swarm/session-40` (base `master` @ `e3ec866`, post-merge S39 PR #72)
-- **Sources** : CLAUDE.md §Active Workplan (« Hors scope S40+ » de S30/S38/S39 — BO-21), `docs/audit/2026-05-28-pos-audit.md` (sans objet ici), hub `apps/backoffice/src/pages/reports/ReportsIndexPage.tsx` (9 cards « Soon » restantes).
+- **Sources** : CLAUDE.md §Active Workplan (« Hors scope S40+ » de S30/S38/S39 — BO-21), `docs/audit/archive/2026-05-28-pos-audit.md` (sans objet ici), hub `apps/backoffice/src/pages/reports/ReportsIndexPage.tsx` (9 cards « Soon » restantes).
 - **Décisions de cadrage (brainstorming 2026-06-12)** :
   1. Périmètre = **les 9 cards « Soon »**, BO-08 (CF account drill) re-déféré (refactor accounting d'une autre nature).
   2. **CSV-only** cette session — EF `generate-pdf` **intouchée** (PDF des 9 reports déféré S41+).

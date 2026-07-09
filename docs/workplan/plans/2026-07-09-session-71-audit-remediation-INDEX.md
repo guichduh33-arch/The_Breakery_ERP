@@ -1,6 +1,6 @@
 # INDEX — Remédiation de gouvernance documentaire (S71)
 
-> Date : 2026-07-09 · Session : S71 · Statut : **LIVRÉ (P0 + P1 + P2-sûr)** · Branche : `worktree-audit-gouvernance-s71`
+> Date : 2026-07-09 · Session : S71 · Statut : **LIVRÉ (P0 + P1 + P2-sûr + P2-1 + P3-liens)** · Branches : `worktree-audit-gouvernance-s71` (travail) + `docs/s71-audit-remediation` (PR #180)
 > Spec : [`../specs/2026-07-09-session-71-audit-remediation-spec.md`](../specs/2026-07-09-session-71-audit-remediation-spec.md)
 > Plan : [`2026-07-09-session-71-audit-remediation-plan.md`](2026-07-09-session-71-audit-remediation-plan.md)
 > Audit source : [`../audits/2026-07-09-audit-general-gouvernance.md`](../audits/2026-07-09-audit-general-gouvernance.md)
@@ -33,11 +33,18 @@ Remédiation des findings **P0 (danger immédiat) + P1 (outillage agents) + P2 (
 - **DEV-S71R-04** — Correction post-review adversariale : attribution des fixes vues/MV = migrations `20260619000020/021` (audit 2026-05-31), **pas S50** (fuite distincte) ; reversal = régression récurrente `_030`→`20260709000010`→`_084`, pas « corrigé S55 ». Skill re-sourcé sur migrations.
 - **DEV-S71R-05** — Faits S69/S66/S67/S63/S62/S59 des fiches vérifiés à la source (S59 drill-down confirmé : `resolveJeSourceEntity.ts` + bandeau préexistant).
 
-## Reste-à-faire (NON exécuté — aval propriétaire requis)
+## 2ᵉ vague — décisions propriétaire 2026-07-09 (exécutées)
 
-- **P2-1** — archivage batch de ~21 triplets spec/plan/INDEX S50→~S67 (réorganisation structurelle).
-- **P2-2** — sort de `.claude/commands/` (88 fichiers scaffolding claude-flow/sparc) : **décision propriétaire** (purger / archiver / bannière). Déchet évident : `COMMAND_COMPLIANCE_REPORT.md` + repo hardcodé `ruvnet/ruv-FANN`.
-- **P3** — rebase en lot des profondeurs de liens d'archive (L-5/L-6), bandeaux SUPERSEDED.
+- **DEV-S71R-03 tranché** : on **garde le connecteur** `mcp__claude_ai_Supabase__` comme canon (aucune inversion).
+- **P2-1 exécuté** (DEV-S71R-06) : archivage S50→S67 (fenêtre = 4 sessions vivantes S68→S71), 23 fichiers `git mv` + chemins vivants réparés (21 fiches `remise-a-plat`), 0 chemin vivant résiduel.
+- **P3 partiel** (DEV-S71R-07) : rebase de liens d'archive **194→81 liens morts (−58 %), 0 régression** (mesuré). Bandeaux SUPERSEDED/renommages **non faits** (audit avec chemins erronés + affirmation cash-wallets contredite par un smoke test).
+- **P2-2 = no-op dépôt** (DEV-S71R-08) : `.claude/commands/` est **gitignored** — rien à purger côté versioning.
+
+## Reste-à-faire (NON exécuté)
+
+- **P3 queue longue** — 81 liens morts résiduels en zone archive tolérée (dont 30 `README` auto-référentiels), fichier-dépendants ; bandeaux SUPERSEDED à re-sourcer.
+- **P2-2 local** — suppression physique de `.claude/commands/` si souhaitée (hors dépôt, non confirmée).
+- **Finding cash-wallets** — contradiction audit (« jamais implémenté ») vs smoke test existant → à investiguer.
 - **Axe E** — cohérence doc↔schéma **live** (`ikcyvlovptebroadgtvd`) — exclu par le choix docs-only.
 
 ## Commits (branche `worktree-audit-gouvernance-s71`)
