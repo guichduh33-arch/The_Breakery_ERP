@@ -51,7 +51,9 @@ test.describe('BO: admin resets a cashier PIN', () => {
     await openBackofficeSession(page, { pin: ADMIN_PIN, userId: SEED_USER_OWNER });
 
     // ---- Step 2: navigate to Users ----
-    await page.getByRole('link', { name: /users/i }).click();
+    // "Users" lives under the collapsed "Settings" sidebar accordion — expand it first.
+    await page.getByRole('button', { name: 'Settings', exact: true }).click();
+    await page.getByRole('link', { name: 'Users', exact: true }).click();
     await expect(page).toHaveURL(/\/backoffice\/users/, { timeout: 10_000 });
 
     // ---- Step 3: open a user detail page ----
