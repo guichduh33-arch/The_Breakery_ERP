@@ -15,32 +15,34 @@
 //   T2 — Variante routée (P0-B) : tap a product with variants → pick a variant
 //        → Send to Kitchen. The button must be ENABLED (firableCount > 0 even
 //        on a 100%-variant cart, because useStationMap drops the
-//        parent_product_id filter) and the fire must succeed.
+//        parent_product_id filter) and the fire must succeed. Pinned to the
+//        seed's only variant parent — "Fresh Juice" (category "Other drinks").
 //
-//   T3 — Hygiène void (P1-A) : fire a counter order, void it (manager PIN), then
-//        ring a fresh direct sale. The new sale must succeed WITHOUT a reload
-//        and WITHOUT a P0002 (voidOrder clears pickedUpOrderId, so the next
-//        cart no longer routes append/pay to the voided order).
+//   T3 — Hygiène void (P1-A) : fire a counter order, void it (manager PIN via
+//        the Numpad PinVerificationModal), then ring a fresh direct sale. The
+//        new sale must succeed WITHOUT a reload and WITHOUT a P0002
+//        (voidOrder clears pickedUpOrderId, so the next cart no longer routes
+//        append/pay to the voided order).
 //
 // Project: pos (baseURL = E2E_POS_URL).
 //
 // IMPORTANT — login budget: auth-verify-pin is rate-limited 3/min/IP, so the
-// suite is serial and logs in ONCE in beforeAll on a shared context. The
-// manager PIN (T3 void) is entered ONCE and never retried (shared per-IP fail
-// bucket 5/15min with void/cancel/refund).
+// suite is serial and logs in ONCE in beforeAll on a shared context via
+// openPosSession (cold-start-safe: waits up to 60s for the numpad to hydrate).
+// The manager PIN (T3 void) is entered ONCE and never retried (shared per-IP
+// fail bucket 5/15min with void/cancel/refund).
 //
 // DB notes: T1/T3 append real paid/voided orders on the dev DB (accepted — same
 // as the S43 spec). No service-role key is wired into the harness by default, so
 // the T1 JE probe is env-gated.
 
 import { test, expect, type BrowserContext, type Page } from '@playwright/test';
-import { loginPOS } from './fixtures/auth';
+import { openPosSession } from './fixtures/auth';
 
 test.use({ baseURL: process.env.E2E_POS_URL ?? 'http://localhost:5173' });
 test.describe.configure({ mode: 'serial' });
 
-const PIN = process.env.E2E_PIN_CASHIER ?? '123456';
-const MANAGER_PIN = process.env.E2E_PIN_ADMIN ?? '123456';
+const MANAGER_PIN = process.env.E2E_PIN_ADMIN ?? '424242';
 
 let context: BrowserContext;
 let page: Page;
@@ -49,25 +51,29 @@ let page: Page;
 // (S43/Stock-audit guard) — these mask a broken page that still renders.
 const consoleErrors: string[] = [];
 
+// Adds one Americano (COF-011, category "Coffee", track_inventory=false →
+// always sellable) to the cart. The product grid opens on an empty
+// "Favorites" tab; search/selection is category-scoped, so the category chip
+// must be clicked first. Tapping the card opens a ModifierModal whose confirm
+// button is data-testid="modifier-add-to-cart" (best-effort: only present when
+// the category has modifier groups).
 async function addAmericano(p: Page): Promise<void> {
+  await p.getByRole('button', { name: 'Coffee', exact: true }).click();
   const card = p.getByRole('button', { name: 'Americano — tap to add' }).first();
   await expect(card).toBeVisible({ timeout: 20_000 });
   await card.click();
-  // Beverage category modifier groups: confirm the pre-selected defaults.
-  const addToCart = p.getByRole('button', { name: /add to cart/i });
-  if (await addToCart.isVisible().catch(() => false)) {
-    await addToCart.click();
-  }
+  await p.getByTestId('modifier-add-to-cart').click({ timeout: 8_000 }).catch(() => {});
   await expect(p.getByTestId('cart-items')).toBeVisible({ timeout: 10_000 });
 }
 
 test.beforeAll(async ({ browser }) => {
+  test.setTimeout(120_000);
   context = await browser.newContext();
   page = await context.newPage();
   page.on('console', (m) => {
     if (m.type() === 'error') consoleErrors.push(m.text());
   });
-  await loginPOS(page, PIN);
+  await openPosSession(page);
 });
 
 test.afterAll(async () => {
@@ -81,11 +87,16 @@ test.afterEach(() => {
 
 test('T1 — QRIS sale splits the JE by method (no cash fallback)', async () => {
   await addAmericano(page);
-  await page.getByRole('button', { name: /charge|pay|checkout/i }).first().click();
-  // Pick QRIS as the tender.
-  await page.getByRole('button', { name: /qris/i }).first().click();
-  await page.getByRole('button', { name: /^(process|pay|confirm)/i }).first().click();
-  await expect(page.getByText(/payment (successful|complete)|order #/i)).toBeVisible({ timeout: 20_000 });
+  await page.getByTestId('checkout-cta').click();
+  await page.getByTestId('pay-method-qris').click();
+  await page.getByRole('button', { name: /^exact/i }).click(); // "Exact (Rp X)" preset → sets amount
+  const qrisFast = page.getByTestId('pay-cash-exact'); // shared fast-path testid; label reads "QRIS Exact — Rp X"
+  if (await qrisFast.isVisible({ timeout: 2_000 }).catch(() => false)) {
+    await qrisFast.click();
+  } else {
+    await page.getByRole('button', { name: /process payment/i }).click();
+  }
+  await expect(page.getByTestId('receipt-success')).toBeVisible({ timeout: 20_000 });
 
   // DB probe is env-gated — only runs when a service-role helper is wired.
   test.info().annotations.push({
@@ -94,25 +105,22 @@ test('T1 — QRIS sale splits the JE by method (no cash fallback)', async () => 
       'JE-by-method DB assertion covered by pgTAP s44_je_by_method (7/7) + s44_money_gates T8/T11 ; '
       + 'wire E2E_SERVICE_ROLE to assert the live JE here.',
   });
-  await page.getByRole('button', { name: /new order/i }).first().click();
+  await page.getByRole('button', { name: /new order/i }).click();
 });
 
 test('T2 — variant line is routable (Send to Kitchen enabled)', async () => {
-  // Tap a product that has variants → the VariantSelectModal opens.
-  const parent = page.getByRole('button', { name: /tap to add|select variant/i });
-  // Best-effort: this requires a seed product with variants. If none exists in
-  // the seed, the test is skipped rather than failing the suite.
-  const hasVariantProduct = await parent.first().isVisible().catch(() => false);
-  test.skip(!hasVariantProduct, 'no variant product in the current seed');
-
-  // (When a variant product exists) pick the first variant, then assert the fire
-  // button is enabled — the regression this guards is firableCount===0 on a
-  // 100%-variant cart.
-  await parent.first().click();
-  const variantOption = page.getByRole('button', { name: /add/i }).first();
-  await variantOption.click();
-  const fireBtn = page.getByRole('button', { name: /send to kitchen/i });
-  await expect(fireBtn).toBeEnabled({ timeout: 10_000 });
+  // Fresh Juice (category "Other drinks") is the seed's variant product.
+  await page.getByRole('button', { name: 'Other drinks', exact: true }).click();
+  const parent = page.getByRole('button', { name: 'Fresh Juice — tap to add' }).first();
+  const hasVariantProduct = await parent.isVisible({ timeout: 10_000 }).catch(() => false);
+  test.skip(!hasVariantProduct, 'no variant product (Fresh Juice) in the current seed');
+  await parent.click();
+  // VariantSelectModal: clicking a variant tile BOTH picks AND closes (no separate Add).
+  await page.getByTestId(/^variant-tile-/).first().click();
+  // A ModifierModal may follow if the variant's category has modifier groups.
+  await page.getByTestId('modifier-add-to-cart').click({ timeout: 5_000 }).catch(() => {});
+  // The regression guard: fire must be ENABLED even on a 100%-variant cart.
+  await expect(page.getByRole('button', { name: /send to kitchen/i })).toBeEnabled({ timeout: 10_000 });
 });
 
 test('T3 — void of a fired order does not poison the next sale', async () => {
@@ -121,20 +129,28 @@ test('T3 — void of a fired order does not poison the next sale', async () => {
   await page.getByRole('button', { name: /send to kitchen/i }).click();
   await expect(page.getByText(/sent to kitchen|fired/i)).toBeVisible({ timeout: 15_000 }).catch(() => {});
 
-  // Void the order (manager PIN — entered once, never retried).
-  await page.getByRole('button', { name: /void/i }).first().click();
-  const pin = page.getByRole('textbox', { name: /pin/i }).or(page.locator('input[type="password"]'));
-  if (await pin.first().isVisible().catch(() => false)) {
-    await pin.first().fill(MANAGER_PIN);
-    await page.getByRole('button', { name: /confirm|void|authorize/i }).first().click();
+  // Void the fired order → PinVerificationModal (NumpadPin under
+  // role=group aria-label="Numpad"), never a text input.
+  await page.getByRole('button', { name: 'Void Order' }).click();
+  const numpad = page.getByRole('group', { name: 'Numpad' });
+  await expect(numpad).toBeVisible({ timeout: 10_000 });
+  for (const digit of MANAGER_PIN) {
+    await numpad.getByRole('button', { name: digit, exact: true }).click();
   }
+  await page.getByRole('button', { name: /^verify$/i }).click();
 
-  // Fresh direct sale must succeed WITHOUT reload (pickedUpOrderId was cleared).
+  // Fresh direct cash sale must succeed WITHOUT reload (pickedUpOrderId cleared).
   await addAmericano(page);
-  await page.getByRole('button', { name: /charge|pay|checkout/i }).first().click();
-  await page.getByRole('button', { name: /cash/i }).first().click();
-  await page.getByRole('button', { name: /exact|^(process|pay|confirm)/i }).first().click();
-  await expect(page.getByText(/payment (successful|complete)|order #/i)).toBeVisible({ timeout: 20_000 });
+  await page.getByTestId('checkout-cta').click();
+  await page.getByTestId('pay-method-cash').click();
+  await page.getByRole('button', { name: /^exact/i }).click();
+  const cashFast = page.getByTestId('pay-cash-exact');
+  if (await cashFast.isVisible({ timeout: 2_000 }).catch(() => false)) {
+    await cashFast.click();
+  } else {
+    await page.getByRole('button', { name: /process payment/i }).click();
+  }
+  await expect(page.getByTestId('receipt-success')).toBeVisible({ timeout: 20_000 });
   // No P0002 surfaced as an error toast.
   await expect(page.getByText(/P0002|not appendable|order not found/i)).toHaveCount(0);
 });
