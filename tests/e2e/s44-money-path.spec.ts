@@ -116,7 +116,9 @@ test('T2 — variant line is routable (Send to Kitchen enabled)', async () => {
   test.skip(!hasVariantProduct, 'no variant product (Fresh Juice) in the current seed');
   await parent.click();
   // VariantSelectModal: clicking a variant tile BOTH picks AND closes (no separate Add).
-  await page.getByTestId(/^variant-tile-/).first().click();
+  // Some variants are out-of-stock (deduct_stock + 0 stock) and render disabled;
+  // pick the first ENABLED tile so the click actually lands.
+  await page.locator('[data-testid^="variant-tile-"]:not([disabled])').first().click();
   // A ModifierModal may follow if the variant's category has modifier groups.
   await page.getByTestId('modifier-add-to-cart').click({ timeout: 5_000 }).catch(() => {});
   // The regression guard: fire must be ENABLED even on a 100%-variant cart.
