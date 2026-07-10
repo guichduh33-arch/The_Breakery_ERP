@@ -194,20 +194,21 @@ export function SuccessModal(props: SuccessModalProps) {
     mountedRef.current = true;
     if (!open) return;
     void (async () => {
-      // Only attempt (and therefore only warn about) the drawer when the
-      // autoOpenDrawer setting is on. Card/QRIS still wouldn't warn because of
-      // the method gate below, but a disabled setting must also skip the pop.
-      const drawerTask = autoOpenDrawer
+      // S72 audit P1: only physically open the drawer when cash is actually
+      // involved — a pure card/QRIS payment must NOT pop the till (open drawer =
+      // theft window + needless wear). changeGiven > 0 also catches a split that
+      // includes a cash tender even when paymentMethod (first tender only) isn't
+      // 'cash'. Previously the call was gated solely on the autoOpenDrawer
+      // setting, so every card/QRIS sale opened the drawer.
+      const needsDrawer = props.paymentMethod === 'cash' || (props.changeGiven ?? 0) > 0;
+      const drawerTask = autoOpenDrawer && needsDrawer
         ? openCashDrawer()
         : Promise.resolve({ success: true } as const);
       const printTask = autoPrint ? handlePrint() : Promise.resolve();
       const [drawer] = await Promise.all([drawerTask, printTask]);
       if (!mountedRef.current) return;
-      // Cash-gated at the call-site: openCashDrawer() takes no argument and
-      // cannot know the method, so card/QRIS would otherwise produce a false
-      // "drawer didn't open" warning. Only cash payments expect a drawer pop,
-      // and only when autoOpenDrawer actually attempted to open it.
-      if (autoOpenDrawer && props.paymentMethod === 'cash' && !drawer.success) {
+      // Only warn when we actually attempted to open it for a cash sale.
+      if (autoOpenDrawer && needsDrawer && !drawer.success) {
         toast.warning('Cash drawer did not open — please open it manually');
       }
     })();

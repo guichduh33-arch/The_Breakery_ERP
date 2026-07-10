@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { earnPointsFor, earnPointsForCustomer } from '../earnPoints';
+import { earnPointsFor, earnPointsForCustomer, resolveLoyaltyMultiplier } from '../earnPoints';
 
 describe('earnPointsFor', () => {
   it('returns 0 for amount below 1000', () => {
@@ -87,5 +87,32 @@ describe('earnPointsForCustomer', () => {
 
   it('uses Platinum multiplier (1.2) for 5000 lifetime points', () => {
     expect(earnPointsForCustomer(35000, 5000)).toBe(42);
+  });
+});
+
+describe('resolveLoyaltyMultiplier (S72 — tier × category)', () => {
+  it('tier only when no category multiplier given', () => {
+    expect(resolveLoyaltyMultiplier(0)).toBe(1.0);       // bronze
+    expect(resolveLoyaltyMultiplier(500)).toBeCloseTo(1.05); // silver
+    expect(resolveLoyaltyMultiplier(5000)).toBeCloseTo(1.2); // platinum
+  });
+
+  it('multiplies tier by category', () => {
+    // gold 1.1 × category 2.0 = 2.2
+    expect(resolveLoyaltyMultiplier(2000, 2.0)).toBeCloseTo(2.2);
+    // silver 1.05 × category 1.5 = 1.575
+    expect(resolveLoyaltyMultiplier(500, 1.5)).toBeCloseTo(1.575);
+  });
+
+  it('falls back to tier-only for an invalid category multiplier', () => {
+    expect(resolveLoyaltyMultiplier(2000, 0)).toBeCloseTo(1.1);
+    expect(resolveLoyaltyMultiplier(2000, -1)).toBeCloseTo(1.1);
+    expect(resolveLoyaltyMultiplier(2000, NaN)).toBeCloseTo(1.1);
+  });
+
+  it('feeds earnPointsFor identically to the cart line and payment summary', () => {
+    // gold 1.1 × category 2.0, 35000 IDR -> floor(35000 * 2.2 / 1000) = 77
+    const mult = resolveLoyaltyMultiplier(2000, 2.0);
+    expect(earnPointsFor(35000, mult)).toBe(77);
   });
 });

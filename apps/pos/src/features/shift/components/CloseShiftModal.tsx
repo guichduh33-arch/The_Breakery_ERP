@@ -68,6 +68,13 @@ export function CloseShiftModal({
   // S66 — manager approval on large variances.
   const [approverId, setApproverId] = useState('');
   const [managerPin, setManagerPin] = useState('');
+  // S72 audit P1: the blind count hides the non-cash expected amounts, so the
+  // client cannot replicate the server's 3-volet OR for the note/PIN gates
+  // (close_shift_v6). When a QRIS/card-only variance trips a server gate, reveal
+  // the matching section from the server's rejection instead of dead-locking on
+  // a toast with no field to fill.
+  const [serverPinRequired, setServerPinRequired] = useState(false);
+  const [serverNoteRequired, setServerNoteRequired] = useState(false);
   const closeMut = useCloseShift();
   const loginUsers = useLoginUsers();
   const denomEnabled = useDenominationCountEnabled();
@@ -90,14 +97,17 @@ export function CloseShiftModal({
   // the shift can be closed. Same predicate as the VarianceWarningBadge so the
   // note requirement kicks in exactly when the badge shows.
   const overThreshold = shouldShowWarning(variance, expectedCash, thresholdAbs, thresholdPct);
-  const noteRequired = step === 'review' && overThreshold && notes.trim() === '';
+  // A note is required when the cash variance trips the local threshold OR the
+  // server rejected a prior submit for a non-cash volet variance (S72).
+  const noteRequired = step === 'review' && (overThreshold || serverNoteRequired) && notes.trim() === '';
 
   // S66 (12 D2.1): above the higher PIN thresholds, a designated manager must
   // approve. Same predicate shape as the note guard, mirrored server-side in
-  // close_shift_v5 (pin_approval_required) — the UI block is a convenience,
-  // the RPC is the authority.
+  // close_shift_v6 (pin_approval_required) — the UI block is a convenience,
+  // the RPC is the authority. S72: also honoured when the server rejected a
+  // prior submit (a QRIS/card-only variance the blind client can't see).
   const pinRequired = step === 'review'
-    && shouldShowWarning(variance, expectedCash, pinThresholdAbs, pinThresholdPct);
+    && (shouldShowWarning(variance, expectedCash, pinThresholdAbs, pinThresholdPct) || serverPinRequired);
   const approvers = (loginUsers.data ?? []).filter((u) => APPROVER_ROLE_NAMES.includes(u.role));
   const pinIncomplete = pinRequired && (approverId === '' || !/^\d{6}$/.test(managerPin));
 
@@ -156,7 +166,13 @@ export function CloseShiftModal({
       onClosed?.(resultVariance);
       onClose();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to close shift');
+      const msg = err instanceof Error ? err.message : 'Failed to close shift';
+      // S72 audit P1: a non-cash volet variance the blind client couldn't see
+      // trips a server gate — reveal the matching field so the cashier can
+      // resubmit instead of looping on a toast.
+      if (msg.includes('Manager approval is required')) setServerPinRequired(true);
+      if (msg.includes('A note is required')) setServerNoteRequired(true);
+      toast.error(msg);
     }
   }
 
@@ -291,7 +307,7 @@ export function CloseShiftModal({
         {step === 'review' && (
           <section className="space-y-2">
             <label htmlFor="close_notes" className="text-xs uppercase tracking-wide text-text-secondary">
-              Notes {overThreshold
+              Notes {overThreshold || serverNoteRequired
                 ? '(required — variance above threshold)'
                 : '(optional — variance reason, manager override)'}
             </label>

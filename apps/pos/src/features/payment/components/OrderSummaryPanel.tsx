@@ -3,7 +3,7 @@
 // Pure render. Loyalty multiplier math stays inline (was already inline in PT).
 
 import { Currency, LoyaltyBadge, PromotionLineRow } from '@breakery/ui';
-import { tierFromLifetime, TIERS } from '@breakery/domain';
+import { tierFromLifetime, resolveLoyaltyMultiplier, earnPointsFor } from '@breakery/domain';
 import type { Cart, AppliedPromotion, CartTotals } from '@breakery/domain';
 import type { CustomerWithCategory } from '@/stores/cartStore';
 
@@ -58,10 +58,13 @@ export function OrderSummaryPanel({
       <div className="mt-6 space-y-1 text-sm">
         {attachedCustomer && (() => {
           const tier = tierFromLifetime(attachedCustomer.lifetime_points);
-          const tierMultiplier = TIERS.find((t) => t.tier === tier)?.points_multiplier ?? 1.0;
-          const categoryMultiplier = attachedCustomer.category?.points_multiplier ?? 1.0;
-          const cumulMultiplier = tierMultiplier * categoryMultiplier;
-          const ptsToEarn = Math.floor((totals.total * cumulMultiplier) / 1000);
+          // S72: shared multiplier + points helpers (single source of truth,
+          // identical to the cart line's LoyaltyPointsLine).
+          const cumulMultiplier = resolveLoyaltyMultiplier(
+            attachedCustomer.lifetime_points,
+            attachedCustomer.category?.points_multiplier ?? 1.0,
+          );
+          const ptsToEarn = earnPointsFor(totals.total, cumulMultiplier);
           return (
             <div className="flex items-center justify-between mb-3 pb-3 border-b border-border-subtle">
               <LoyaltyBadge tier={tier} points={attachedCustomer.loyalty_points} />
