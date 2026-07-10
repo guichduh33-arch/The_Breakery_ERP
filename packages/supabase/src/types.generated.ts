@@ -6352,7 +6352,7 @@ export type Database = {
         }
         Returns: Json
       }
-      create_tablet_order_v3: {
+      create_tablet_order_v4: {
         Args: {
           p_client_uuid: string
           p_items: Json

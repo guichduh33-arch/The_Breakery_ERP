@@ -43,6 +43,14 @@ export function usePickupTabletOrder(onClose: () => void) {
     mutationFn: async (orderId: string) => {
       if (!sessionId) throw new Error('no_open_shift');
 
+      // S72 audit P1: picking up restores (overwrites) the whole POS cart. Refuse
+      // when a walk-in is being composed (unlocked lines) or another tablet order
+      // is already loaded — otherwise that in-progress work is silently wiped.
+      const cart = useCartStore.getState();
+      if (cart.unlockedItemIds().length > 0 || cart.pickedUpOrderId !== null) {
+        throw new Error('cart_in_progress');
+      }
+
       const { data: orderData, error: pickupError } = await supabase.rpc('pickup_tablet_order', {
         p_order_id: orderId,
         p_session_id: sessionId,
@@ -74,7 +82,9 @@ export function usePickupTabletOrder(onClose: () => void) {
     },
     onError: (err) => {
       const msg = err.message ?? 'pickup_failed';
-      if (msg.includes('P0012') || msg.includes('already picked up')) {
+      if (msg.includes('cart_in_progress')) {
+        toast.error('Finish or clear the current order before picking up a tablet order');
+      } else if (msg.includes('P0012') || msg.includes('already picked up')) {
         toast.error('Already picked up by another cashier');
       } else {
         toast.error(msg);
