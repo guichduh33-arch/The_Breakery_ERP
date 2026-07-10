@@ -56,23 +56,23 @@ export function AdjustDisplayModal({
     <CenterModal
       open={open}
       onOpenChange={onOpenChange}
-      title={`Ajuster la vitrine — ${productName}`}
+      title={`Adjust display — ${productName}`}
       className="w-[min(440px,92vw)]"
       data-testid="adjust-display-modal"
     >
       <div className="p-6 space-y-5">
         <header className="flex items-center gap-2">
           <SlidersHorizontal className="h-5 w-5 text-gold" aria-hidden />
-          <h2 className="font-serif text-xl">Corriger le comptage</h2>
+          <h2 className="font-serif text-xl">Correct the count</h2>
         </header>
 
         <p className="text-sm text-text-secondary">
-          <span className="text-text-primary font-semibold">{productName}</span> — vitrine actuelle :{' '}
-          <span className="text-text-primary tabular-nums">{currentQty}</span> {unit}. N’affecte pas l’inventaire BO.
+          <span className="text-text-primary font-semibold">{productName}</span> — current display:{' '}
+          <span className="text-text-primary tabular-nums">{currentQty}</span> {unit}. Does not affect BO inventory.
         </p>
 
         <section className="space-y-2">
-          <label className="text-xs uppercase tracking-wide text-text-secondary">Nouvelle quantité ({unit})</label>
+          <label className="text-xs uppercase tracking-wide text-text-secondary">New quantity ({unit})</label>
           <div className="flex items-center gap-1.5">
             <button
               type="button"
@@ -89,7 +89,7 @@ export function AdjustDisplayModal({
               min={0}
               value={newQty}
               onChange={(e) => setNewQty(Math.max(0, Number(e.target.value) || 0))}
-              aria-label="Nouvelle quantité"
+              aria-label="New quantity"
               className="h-touch-comfy flex-1 min-w-0 rounded-md border border-border-subtle bg-bg-input px-2 text-center text-lg tabular-nums focus:outline focus:outline-2 focus:outline-gold"
             />
             <button
@@ -104,28 +104,28 @@ export function AdjustDisplayModal({
           </div>
           {!unchanged && (
             <p className="text-xs text-text-muted tabular-nums">
-              Écart : {delta > 0 ? `+${delta}` : delta} {unit}
+              Delta: {delta > 0 ? `+${delta}` : delta} {unit}
             </p>
           )}
         </section>
 
         <section className="space-y-2">
           <label htmlFor="adjust_reason" className="text-xs uppercase tracking-wide text-text-secondary">
-            Raison (min. {MIN_REASON} caractères)
+            Reason (min. {MIN_REASON} characters)
           </label>
           <input
             id="adjust_reason"
             type="text"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            placeholder="Ex. recomptage physique, erreur de saisie…"
+            placeholder="e.g. physical recount, data-entry error…"
             className="w-full bg-bg-input border border-border-subtle rounded-md p-3 text-sm focus:outline-none focus:border-gold"
           />
         </section>
 
         <div className="grid grid-cols-2 gap-3">
           <Button variant="secondary" size="lg" onClick={() => onOpenChange(false)} disabled={isPending}>
-            Annuler
+            Cancel
           </Button>
           <Button
             variant="gold"
@@ -134,7 +134,7 @@ export function AdjustDisplayModal({
             disabled={!canConfirm}
             data-testid="adjust-display-confirm"
           >
-            {isPending ? 'Enregistrement…' : `Ajuster à ${newQty}`}
+            {isPending ? 'Saving…' : `Adjust to ${newQty}`}
           </Button>
         </div>
       </div>
