@@ -98,7 +98,10 @@ describe('Loyalty smoke — customer attach + earn display', () => {
     });
     render(wrapper(<ActiveOrderPanel onOpenCustomerSearch={vi.fn()} />));
     expect(screen.getByText(/points to earn/i)).toBeInTheDocument();
-    expect(screen.getByText('35 pts')).toBeInTheDocument();
+    // S72 audit fix: the cart line now applies the tier multiplier (Gold ×1.1),
+    // matching the payment screen — floor(35000 × 1.1 / 1000) = 38 (was a
+    // bronze-rate 35 while a Gold customer was attached).
+    expect(screen.getByText('38 pts')).toBeInTheDocument();
   });
 
   it('shows redemption discount line when points redeemed', () => {

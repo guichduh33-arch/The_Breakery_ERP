@@ -18,7 +18,7 @@ import { useState, type JSX } from 'react';
 import { MapPin, ShoppingBag, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { DiscountModal, PinVerificationModal, SectionLabel, cn } from '@breakery/ui';
-import { calculateTotals } from '@breakery/domain';
+import { calculateTotals, resolveLoyaltyMultiplier } from '@breakery/domain';
 import type { CartItem, OrderType } from '@breakery/domain';
 import { useCartStore } from '@/stores/cartStore';
 import { useTaxRate } from '@/features/settings/hooks/useTaxRate';
@@ -190,7 +190,15 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
       {/* Totals footer — no buttons ──────────────────────────────────────── */}
       {!isEmpty && (
         <footer className="px-4 py-3 border-t border-border-subtle space-y-1 bg-bg-elevated">
-          {attachedCustomer && <LoyaltyPointsLine total={total} />}
+          {attachedCustomer && (
+            <LoyaltyPointsLine
+              total={total}
+              multiplier={resolveLoyaltyMultiplier(
+                attachedCustomer.lifetime_points,
+                attachedCustomer.category?.points_multiplier ?? 1.0,
+              )}
+            />
+          )}
 
           <div className="flex items-center justify-between text-[11px] text-text-muted">
             <span className="uppercase tracking-wide">Subtotal</span>
