@@ -60,9 +60,9 @@ describe('table-selector smoke', () => {
     });
   });
 
-  it('shows "Pick table" CTA when no table selected', () => {
+  it('shows the "Table" CTA when no table selected', () => {
     render(wrapper(<TableSelectorButton />));
-    expect(screen.getByText(/pick table/i)).toBeInTheDocument();
+    expect(screen.getByText('Table')).toBeInTheDocument();
   });
 
   it('shows table name after selection', () => {
@@ -71,7 +71,7 @@ describe('table-selector smoke', () => {
       cart: { ...s.cart, tableNumber: 'T-03' },
     }));
     render(wrapper(<TableSelectorButton />));
-    expect(screen.getByText(/Table: T-03/i)).toBeInTheDocument();
+    expect(screen.getByText(/Table T-03/i)).toBeInTheDocument();
   });
 
   it('setTableNumber updates cart store', () => {

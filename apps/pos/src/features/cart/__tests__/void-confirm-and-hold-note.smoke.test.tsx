@@ -67,30 +67,28 @@ beforeEach(() => {
   });
 });
 
-describe('P2-1 — local void requires confirmation', () => {
-  it('shows an alertdialog on Void tap and does NOT wipe the cart yet', () => {
-    render(wrapper(<BottomActionBar />));
-    fireEvent.click(screen.getByRole('button', { name: /void order/i }));
+describe('Void — under More, always reason + manager PIN', () => {
+  function openVoid(): void {
+    fireEvent.click(screen.getByRole('button', { name: /^more$/i }));
+    fireEvent.click(screen.getByRole('menuitem', { name: /void order/i }));
+  }
 
-    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
-    // Accessible title present.
-    expect(screen.getByRole('alertdialog')).toHaveAccessibleName();
-    // Cart intact until confirmed.
+  it('opens a reason+PIN alertdialog and does NOT wipe the cart yet', () => {
+    render(wrapper(<BottomActionBar />));
+    openVoid();
+
+    const dialog = screen.getByRole('alertdialog');
+    expect(dialog).toBeInTheDocument();
+    expect(dialog).toHaveAccessibleName();
+    expect(screen.getByLabelText(/void reason/i)).toBeInTheDocument();
+    // Cart intact until reason + PIN are satisfied.
     expect(useCartStore.getState().cart.items).toHaveLength(1);
-  });
-
-  it('Confirm wipes the cart', () => {
-    render(wrapper(<BottomActionBar />));
-    fireEvent.click(screen.getByRole('button', { name: /void order/i }));
-    fireEvent.click(screen.getByRole('button', { name: /confirm void/i }));
-
-    expect(useCartStore.getState().cart.items).toHaveLength(0);
   });
 
   it('Cancel keeps the cart and closes the dialog', () => {
     render(wrapper(<BottomActionBar />));
-    fireEvent.click(screen.getByRole('button', { name: /void order/i }));
-    fireEvent.click(screen.getByRole('button', { name: /^cancel$/i }));
+    openVoid();
+    fireEvent.click(screen.getByTestId('void-modal-cancel'));
 
     expect(useCartStore.getState().cart.items).toHaveLength(1);
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();

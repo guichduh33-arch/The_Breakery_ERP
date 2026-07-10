@@ -83,3 +83,48 @@ describe('CartLineRow — per-line discount control', () => {
     expect(screen.queryByRole('button', { name: /discount on croissant/i })).toBeNull();
   });
 });
+
+describe('CartLineRow — quantity chip (cart redesign v2)', () => {
+  it('renders an editable qty chip that opens the Numpad via onEditQty', () => {
+    const onEditQty = vi.fn();
+    render(
+      <CartLineRow
+        item={makeItem(2)}
+        locked={false}
+        onChangeQty={vi.fn()}
+        onRemove={vi.fn()}
+        onEditQty={onEditQty}
+      />,
+    );
+    const chip = screen.getByRole('button', { name: /edit quantity for croissant/i });
+    fireEvent.click(chip);
+    expect(onEditQty).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders a NON-interactive qty display on a locked line (no numpad access)', () => {
+    render(
+      <CartLineRow
+        item={makeItem(3)}
+        locked
+        onChangeQty={vi.fn()}
+        onRemove={vi.fn()}
+        onEditQty={vi.fn()}
+      />,
+    );
+    expect(screen.queryByRole('button', { name: /edit quantity/i })).toBeNull();
+  });
+
+  it('shows the per-unit price when quantity > 1 (line total alone is not verifiable)', () => {
+    render(
+      <CartLineRow
+        item={makeItem(2)}
+        locked={false}
+        onChangeQty={vi.fn()}
+        onRemove={vi.fn()}
+      />,
+    );
+    // unit each = 25,000 rendered alongside the Rp 50,000 line total.
+    expect(screen.getByText(/@/)).toBeInTheDocument();
+    expect(screen.getByText(/Rp\s*25,000/)).toBeInTheDocument();
+  });
+});

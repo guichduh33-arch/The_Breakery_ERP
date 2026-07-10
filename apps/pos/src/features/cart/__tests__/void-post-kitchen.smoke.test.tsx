@@ -29,34 +29,35 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import type { ReactNode } from 'react';
-import type * as BreakeryUi from '@breakery/ui';
 import { useCartStore } from '@/stores/cartStore';
 import { BottomActionBar } from '../BottomActionBar';
 
-// Mock PinVerificationModal so we can trigger onVerified without digit input.
-// The test is about void routing, not the PIN modal UI.
-vi.mock('@breakery/ui', async (importOriginal) => {
-  const mod = await importOriginal<typeof BreakeryUi>();
-  return {
-    ...mod,
-    PinVerificationModal: ({
-      open,
-      onVerified,
-      onClose,
-    }: {
-      open: boolean;
-      onVerified: (userId: string) => void;
-      onClose?: () => void;
-    }) =>
-      open ? (
-        <div>
-          <span>PIN modal open</span>
-          <button onClick={() => onVerified('manager-1')}>Mock Verify</button>
-          <button onClick={() => onClose?.()}>Cancel</button>
-        </div>
-      ) : null,
-  };
-});
+// Void now uses VoidOrderModal (reason + NumpadPin). Mock it so we can drive
+// onSubmit directly and assert the ROUTING, not the PIN UI.
+vi.mock('../VoidOrderModal', () => ({
+  VoidOrderModal: ({
+    open,
+    onSubmit,
+  }: {
+    open: boolean;
+    onSubmit: (a: { reason: string; managerPin: string; idempotencyKey: string }) => void | Promise<void>;
+  }) =>
+    open ? (
+      <div>
+        <span>Void modal open</span>
+        <button
+          onClick={() => void onSubmit({ reason: 'test reason', managerPin: '123456', idempotencyKey: 'idem-1' })}
+        >
+          Mock void submit
+        </button>
+      </div>
+    ) : null,
+}));
+
+// The never-fired path verifies the PIN client-side — mock it to resolve.
+vi.mock('@/features/discounts/hooks/useVerifyManagerPin', () => ({
+  useVerifyManagerPin: () => () => Promise.resolve('manager-1'),
+}));
 
 vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() },
@@ -120,37 +121,37 @@ describe('BottomActionBar — Void Order post-kitchen routing (POS-06)', () => {
     });
   });
 
-  it('(b) counter cart after kitchen send: client-only void, no server call', () => {
-    // pickedUpOrderId is null → counter cart
+  function openVoid(): void {
+    fireEvent.click(screen.getByRole('button', { name: /^more$/i }));
+    fireEvent.click(screen.getByRole('menuitem', { name: /void order/i }));
+  }
+
+  it('(b) counter cart with no server row: client-only void, no server call', async () => {
+    // pickedUpOrderId is null → nothing persisted server-side.
     useCartStore.setState({ pickedUpOrderId: null });
 
     render(wrapper(<BottomActionBar />));
-    fireEvent.click(screen.getByRole('button', { name: /void order/i }));
+    openVoid();
+    fireEvent.click(screen.getByRole('button', { name: /mock void submit/i }));
 
-    // PIN modal appears (items are locked) — the mock renders "PIN modal open"
-    expect(screen.getByText('PIN modal open')).toBeInTheDocument();
-    // The server void hook must NOT be called at this point
+    // PIN verified client-side → local wipe; the server void hook is NOT called.
+    await waitFor(() => expect(useCartStore.getState().cart.items).toHaveLength(0));
     expect(mockVoidMutateAsync).not.toHaveBeenCalled();
-    // Order still intact
-    expect(useCartStore.getState().cart.items).toHaveLength(1);
   });
 
-  it('(a) tablet pickup after kitchen send: server void called before local reset', async () => {
-    // pickedUpOrderId set → server order exists
+  it('(a) tablet pickup / fired order: server void called with reason before local reset', async () => {
+    // pickedUpOrderId set → server order exists.
     useCartStore.setState({ pickedUpOrderId: 'order-123' });
 
     render(wrapper(<BottomActionBar />));
-    fireEvent.click(screen.getByRole('button', { name: /void order/i }));
+    openVoid();
+    fireEvent.click(screen.getByRole('button', { name: /mock void submit/i }));
 
-    // PIN modal appears — click the mock verify button to trigger onVerified
-    const mockVerifyBtn = screen.getByRole('button', { name: /mock verify/i });
-    fireEvent.click(mockVerifyBtn);
-
-    // After PIN verification, the server void should be called
+    // The server void runs with the order id AND the cashier's reason.
     await waitFor(() => expect(mockVoidMutateAsync).toHaveBeenCalledWith(
-      expect.objectContaining({ orderId: 'order-123' }),
+      expect.objectContaining({ orderId: 'order-123', reason: 'test reason' }),
     ));
-    // On success, local cart is reset
+    // On success, local cart is reset.
     await waitFor(() => expect(useCartStore.getState().cart.items).toHaveLength(0));
   });
 });
@@ -168,14 +169,15 @@ describe('BottomActionBar — Hold gating on fired orders (Spec A re-hold)', () 
     });
   });
 
+  // HOLD is a first-class button in the bottom bar (moved out of "More ▾",
+  // owner decision 2026-07-10) — target it directly, no submenu to open.
   it('(c) reopened fired order, nothing changed: Hold is enabled (re-park)', () => {
     // All lines locked (reopened, none added) → no unfired items → re-park OK.
     useCartStore.setState({ pickedUpOrderId: 'order-123' });
 
     render(wrapper(<BottomActionBar />));
-    fireEvent.click(screen.getByRole('button', { name: /^more$/i }));
 
-    expect(screen.getByRole('menuitem', { name: /^hold$/i })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /^hold$/i })).toBeEnabled();
   });
 
   it('(c) reopened fired order with a new unfired line: Hold is disabled', () => {
@@ -187,16 +189,14 @@ describe('BottomActionBar — Hold gating on fired orders (Spec A re-hold)', () 
     });
 
     render(wrapper(<BottomActionBar />));
-    fireEvent.click(screen.getByRole('button', { name: /^more$/i }));
 
-    const hold = screen.getByRole('menuitem', { name: /^hold$/i });
+    const hold = screen.getByRole('button', { name: /^hold$/i });
     expect(hold).toBeDisabled();
     expect(hold).toHaveAttribute('title', 'Send the new items to the kitchen first');
   });
 
   it('(c) never-fired cart: Hold stays enabled (draft hold)', () => {
     render(wrapper(<BottomActionBar />));
-    fireEvent.click(screen.getByRole('button', { name: /^more$/i }));
 
     expect(screen.getByRole('button', { name: /^hold$/i })).toBeEnabled();
   });
