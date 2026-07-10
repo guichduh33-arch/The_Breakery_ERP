@@ -13,7 +13,7 @@ import { Settings } from 'lucide-react';
 import type { CSSProperties, JSX } from 'react';
 import { cn } from '@breakery/ui';
 import { useCategories } from './hooks/useCategories';
-import { categoryStyle } from './categoryTints';
+import { categoryStyle, categoryMonogram } from './categoryTints';
 
 export interface CategoryNavProps {
   selectedSlug: string | null;
@@ -32,7 +32,7 @@ export function CategoryNav({
   return (
     <aside
       aria-label="Product categories"
-      className="w-[104px] shrink-0 bg-bg-elevated border-r border-border-subtle flex flex-col max-md:w-full max-md:border-r-0 max-md:border-b max-md:flex-row"
+      className="w-[116px] shrink-0 bg-bg-elevated border-r border-border-subtle flex flex-col max-md:w-full max-md:border-r-0 max-md:border-b max-md:flex-row"
     >
       {/* Below md the vertical rail becomes a horizontal swipe strip. */}
       <nav className="flex-1 overflow-y-auto scrollbar-none p-2 max-md:overflow-y-hidden max-md:overflow-x-auto max-md:flex max-md:items-stretch max-md:gap-1.5">
@@ -97,10 +97,10 @@ function CategoryItem({ slug, label, active, onSelect }: CategoryItemProps): JSX
       data-testid={`category-nav-item-${slug}`}
       style={cssVars}
       className={cn(
-        'cat-btn relative w-full mb-1.5 py-3 px-1 rounded-lg',
-        'max-md:w-[88px] max-md:shrink-0 max-md:mb-0',
-        'flex flex-col items-center justify-center gap-1.5',
-        'text-[10px] uppercase tracking-wide font-semibold',
+        'cat-btn relative w-full mb-1.5 py-2.5 px-1 rounded-lg',
+        'max-md:w-[92px] max-md:shrink-0 max-md:mb-0',
+        'flex flex-col items-center justify-center gap-1',
+        'text-[11px] uppercase tracking-wide font-semibold leading-[1.15]',
         'transition-all duration-fast ease-motion-out active:scale-95 motion-reduce:transition-none motion-reduce:active:scale-100',
         'focus:outline focus:outline-2 focus:outline-gold focus:outline-offset-[-2px]',
       )}
@@ -112,8 +112,21 @@ function CategoryItem({ slug, label, active, onSelect }: CategoryItemProps): JSX
           style={{ backgroundColor: style.accent }}
         />
       )}
-      <Icon className="h-6 w-6" strokeWidth={1.8} aria-hidden />
-      <span className="leading-tight text-center break-words max-w-[80px]">{label}</span>
+      {/* Matched category → its glyph. Unmatched → a coloured monogram (the
+          initial), so compound DB names stay visually distinct instead of all
+          collapsing to a single grid icon. */}
+      {Icon ? (
+        <Icon className="h-6 w-6" strokeWidth={1.8} aria-hidden />
+      ) : (
+        <span
+          aria-hidden
+          className="h-6 w-6 grid place-items-center rounded-md text-[15px] font-bold leading-none"
+          style={{ color: style.accent, backgroundColor: `rgba(${style.tint},0.16)` }}
+        >
+          {categoryMonogram(label)}
+        </span>
+      )}
+      <span className="text-center break-words max-w-[100px] line-clamp-2">{label}</span>
     </button>
   );
 }

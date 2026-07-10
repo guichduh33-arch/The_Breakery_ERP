@@ -28,14 +28,14 @@ export function useVoidServerOrder() {
   const voidOrderMutation = useVoidOrder();
   const voidLocal = useCartStore((s) => s.voidOrder);
 
-  return async (managerPin: string, idempotencyKey?: string): Promise<void> => {
+  return async (managerPin: string, reason: string, idempotencyKey?: string): Promise<void> => {
     const { pickedUpOrderId } = useCartStore.getState();
 
     if (pickedUpOrderId) {
       // Server row exists (tablet pickup OR fired counter order) → void it first.
       await voidOrderMutation.mutateAsync({
         orderId: pickedUpOrderId,
-        reason: 'Voided by manager at POS',
+        reason,
         managerPin,
         // exactOptionalPropertyTypes: omit the key entirely when absent rather
         // than passing `undefined` into the optional VoidArgs.idempotencyKey.

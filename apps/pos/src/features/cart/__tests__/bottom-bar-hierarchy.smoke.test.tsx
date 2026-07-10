@@ -56,16 +56,16 @@ describe('BottomActionBar — touch hierarchy (LOT 7)', () => {
     });
   });
 
-  it('Checkout is the tallest CTA (h-14), dominating Void (h-12)', () => {
+  it('Checkout is the tallest CTA (h-14), dominating Send to Kitchen (h-12)', () => {
     render(wrapper(<BottomActionBar />));
     const checkout = screen.getByTestId('checkout-cta');
-    const voidBtn = screen.getByRole('button', { name: /void order/i });
+    const send = screen.getByRole('button', { name: /send to kitchen/i });
 
     expect(checkout.className).toContain('h-14');
-    expect(voidBtn.className).toContain('h-12');
+    expect(send.className).toContain('h-12');
     // Checkout must not be smaller than the secondary actions.
     expect(checkout.className).not.toContain('h-11');
-    expect(voidBtn.className).not.toContain('h-11');
+    expect(send.className).not.toContain('h-11');
   });
 
   it('left-hand management buttons stay at the ghost size (h-11)', () => {

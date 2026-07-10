@@ -1,9 +1,10 @@
 // apps/pos/src/features/cart/__tests__/void-order.smoke.test.tsx
 //
-// Session 36 — "Void Order" in the bottom bar:
-//   - before any kitchen send → confirm dialog (S43 P2-1), then voids.
-//   - after items were sent to kitchen (locked) → requires a manager PIN first
-//     (the order is NOT wiped until the PIN modal is satisfied).
+// "Void order" in the bottom bar (owner decision 2026-07-10 — under "More",
+// always manager-PIN + a mandatory reason, whether or not anything was fired):
+//   - the action lives in the More menu, not on the main bar;
+//   - opening it shows a reason + PIN modal and does NOT wipe the order until
+//     both are satisfied — for both the never-fired and the fired cases.
 
 /// <reference types="@testing-library/jest-dom" />
 import { describe, it, expect, beforeEach, vi } from 'vitest';
@@ -56,27 +57,38 @@ describe('BottomActionBar — Void Order', () => {
     });
   });
 
-  it('voids after confirmation when nothing has been sent to the kitchen', () => {
+  function openVoid(): void {
+    fireEvent.click(screen.getByRole('button', { name: /^more$/i }));
+    fireEvent.click(screen.getByRole('menuitem', { name: /void order/i }));
+  }
+
+  it('lives under "More" and opens a reason+PIN modal without wiping the cart', () => {
     render(wrapper(<BottomActionBar />));
-    fireEvent.click(screen.getByRole('button', { name: /void order/i }));
-    // S43 P2-1 — a confirm dialog appears first; nothing is wiped yet.
-    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+    // Void is NOT a top-level bar button — it lives in the More menu.
+    expect(screen.queryByRole('button', { name: /void order/i })).toBeNull();
+
+    openVoid();
+
+    const dialog = screen.getByRole('alertdialog', { name: /void order/i });
+    expect(dialog).toBeInTheDocument();
+    // Mandatory reason + manager PIN are both present.
+    expect(screen.getByLabelText(/void reason/i)).toBeInTheDocument();
+    expect(screen.getByText(/manager pin/i)).toBeInTheDocument();
+    // Nothing wiped until reason + PIN are satisfied.
     expect(useCartStore.getState().cart.items).toHaveLength(1);
-    fireEvent.click(screen.getByRole('button', { name: /confirm void/i }));
-    expect(useCartStore.getState().cart.items).toHaveLength(0);
   });
 
-  it('requires a manager PIN once items were sent (does not wipe yet)', () => {
+  it('still requires reason+PIN once items were sent to the kitchen', () => {
     useCartStore.setState({
       cart: { items: [ITEM], order_type: 'dine_in' },
       lockedItemIds: ['l1'],
       printedItemIds: ['l1'],
     });
     render(wrapper(<BottomActionBar />));
-    fireEvent.click(screen.getByRole('button', { name: /void order/i }));
-    // PIN modal appears…
-    expect(screen.getByRole('button', { name: /verify/i })).toBeInTheDocument();
-    // …and the order is still intact until the PIN is satisfied.
+    openVoid();
+
+    expect(screen.getByRole('alertdialog', { name: /void order/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/void reason/i)).toBeInTheDocument();
     expect(useCartStore.getState().cart.items).toHaveLength(1);
   });
 });

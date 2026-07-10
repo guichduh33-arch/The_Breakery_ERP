@@ -116,6 +116,13 @@ interface CartState {
   ) => void;
   update: (lineId: string, quantity: number) => void;
   remove: (lineId: string) => void;
+  /**
+   * Cart redesign v2 — re-insert a line that was just removed, at its former
+   * index. Backs the 5s "undo" toast on the delete gesture (no blocking
+   * confirm on a frequent action). No-op if a line with the same id already
+   * exists (double-undo / race safety).
+   */
+  restoreLine: (item: CartItem, index: number) => void;
   clear: () => void;
   /**
    * Session 36 — full order void. Unlike {@link clear} (which keeps locked /
@@ -269,6 +276,15 @@ export const useCartStore = create<CartState>()(
             };
           }
           return { cart: removeItem(s.cart, id) };
+        }),
+
+      restoreLine: (item, index) =>
+        set((s) => {
+          if (s.cart.items.some((i) => i.id === item.id)) return s; // already back
+          const items = [...s.cart.items];
+          const at = Math.max(0, Math.min(index, items.length));
+          items.splice(at, 0, item);
+          return { cart: { ...s.cart, items } };
         }),
 
       clear: () =>
