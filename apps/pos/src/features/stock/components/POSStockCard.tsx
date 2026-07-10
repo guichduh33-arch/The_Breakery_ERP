@@ -1,27 +1,24 @@
 // apps/pos/src/features/stock/components/POSStockCard.tsx
 //
-// Session 14 — Phase 2.D — Single product card in the POS cafe-stock grid.
-//
-// Visual refs:
-//   - 70-cafe-stock-grid-all.jpg          (out-of-stock + low-stock states)
-//   - 71-cafe-stock-classic-breads-filtered.jpg
-//   - 72-cafe-stock-item-received-5.jpg   (inline RECEIVE button)
+// Session 14 — Phase 2.D — Single product card in the POS "Stock vitrine" grid.
+// Session 72 — audit fixes: 56px touch targets, unit-derived quick-add chips,
+//   full FR copy, readable threshold label. Shared logic in useStockQuickEntry.
 //
 // Card states:
 //   - normal     → grey border, stock number in white
-//   - low_stock  → amber accent + "Low stock" banner
-//   - out        → red accent + "OUT OF STOCK — sales blocked" banner
+//   - low_stock  → amber accent + "Stock bas" banner
+//   - out        → red accent + "RUPTURE — vente bloquée" banner
 //
-// Quick entry: stepper (- / +) + numeric input + +5/+10/+20 chips.
+// Quick entry: stepper (- / +) + numeric input + unit-aware +N chips.
 // Submits via the parent's onReceive callback. The card itself only knows
-// about local pending qty and triggers the mutation upward.
+// about local pending qty (via useStockQuickEntry) and triggers upward.
 
-import { useState, type JSX } from 'react';
+import { type JSX } from 'react';
 import { Bell, Minus, Plus } from 'lucide-react';
 import { cn, Button } from '@breakery/ui';
 import type { POSStockProductRow } from '../hooks/usePOSStockProducts';
-import { WasteDisplayModal } from './WasteDisplayModal';
-import { AdjustDisplayModal } from './AdjustDisplayModal';
+import { useStockQuickEntry } from '../hooks/useStockQuickEntry';
+import { StockGestureModals } from './StockGestureModals';
 
 export interface POSStockCardProps {
   product: POSStockProductRow;
@@ -41,15 +38,8 @@ export function POSStockCard({
   onWaste,
   onAdjust,
 }: POSStockCardProps): JSX.Element {
-  const [qty, setQty] = useState<number>(0);
-  const [wasteOpen, setWasteOpen] = useState<boolean>(false);
-  const [adjustOpen, setAdjustOpen] = useState<boolean>(false);
-
-  const isOut = product.display_stock <= 0;
-  const isLow =
-    !isOut &&
-    product.min_stock_threshold > 0 &&
-    product.display_stock <= product.min_stock_threshold;
+  const entry = useStockQuickEntry(product, { onReceive, onReturnToKitchen, onWaste, onAdjust });
+  const { isOut, isLow, qty, increments } = entry;
 
   const borderTone = isOut
     ? 'border-red/40'
@@ -59,39 +49,7 @@ export function POSStockCard({
 
   const stockTextTone = isOut ? 'text-red' : isLow ? 'text-amber-warn' : 'text-text-primary';
 
-  const handleBump = (delta: number): void => {
-    setQty((q) => Math.max(0, q + delta));
-  };
-
-  const handlePreset = (preset: number): void => {
-    setQty(preset);
-    onReceive(preset);
-    setQty(0);
-  };
-
-  const handleConfirm = (): void => {
-    if (qty <= 0) return;
-    onReceive(qty);
-    setQty(0);
-  };
-
-  const handleReturnToKitchen = (): void => {
-    if (qty <= 0 || !onReturnToKitchen) return;
-    onReturnToKitchen(qty);
-    setQty(0);
-  };
-
-  const handleWasteConfirm = (wasteQty: number, reason: string): void => {
-    if (!onWaste) return;
-    onWaste(wasteQty, reason);
-    setQty(0);
-  };
-
-  const handleAdjustConfirm = (newQty: number, reason: string): void => {
-    if (!onAdjust) return;
-    onAdjust(newQty, reason);
-    setQty(0);
-  };
+  const hasClosure = Boolean(onReturnToKitchen || onWaste || onAdjust);
 
   return (
     <div
@@ -125,12 +83,12 @@ export function POSStockCard({
         </div>
       </div>
 
-      {/* Stock label */}
-      <div className="flex items-center justify-between text-[10px] uppercase tracking-widest text-text-muted">
-        <span className="inline-flex items-center gap-1">
-          STOCK <Bell className="h-3 w-3" aria-hidden /> {product.min_stock_threshold}
+      {/* Threshold + unit label */}
+      <div className="flex items-center justify-between text-xs text-text-secondary">
+        <span className="tabular-nums">
+          Alert {product.min_stock_threshold > 0 ? product.min_stock_threshold : '—'}
         </span>
-        <span className="text-text-secondary text-xs normal-case tracking-normal">{product.unit}</span>
+        <span>{product.unit}</span>
       </div>
 
       {/* Status banner */}
@@ -145,111 +103,105 @@ export function POSStockCard({
         </div>
       )}
 
-      {/* Numpad / steppers */}
-      <div className="flex items-center gap-1.5">
+      {/* Stepper row — 56px touch targets (h-touch-comfy) */}
+      <div className="flex items-center gap-2">
         <button
           type="button"
           aria-label="Decrease"
-          onClick={() => handleBump(-1)}
+          onClick={() => entry.bump(-1)}
           disabled={isReceiving}
-          className="h-9 w-9 inline-flex items-center justify-center rounded-md border border-border-subtle hover:bg-bg-overlay disabled:opacity-50 transition-colors"
+          className="h-touch-comfy w-touch-comfy shrink-0 inline-flex items-center justify-center rounded-md border border-border-subtle hover:bg-bg-overlay disabled:opacity-50 transition-colors"
         >
-          <Minus className="h-4 w-4" aria-hidden />
+          <Minus className="h-5 w-5" aria-hidden />
         </button>
         <input
           type="number"
           inputMode="numeric"
           min={0}
           value={qty}
-          onChange={(e) => setQty(Math.max(0, Number(e.target.value) || 0))}
+          onChange={(e) => entry.setQty(Number(e.target.value) || 0)}
           aria-label={`Enter quantity for ${product.name}`}
-          className="h-9 flex-1 min-w-0 rounded-md border border-border-subtle bg-bg-base px-2 text-center text-sm tabular-nums focus:outline focus:outline-2 focus:outline-gold"
+          className="h-touch-comfy flex-1 min-w-0 rounded-md border border-border-subtle bg-bg-base px-2 text-center text-lg tabular-nums focus:outline focus:outline-2 focus:outline-gold"
         />
         <button
           type="button"
           aria-label="Increase"
-          onClick={() => handleBump(1)}
+          onClick={() => entry.bump(1)}
           disabled={isReceiving}
-          className="h-9 w-9 inline-flex items-center justify-center rounded-md border border-border-subtle hover:bg-bg-overlay disabled:opacity-50 transition-colors"
+          className="h-touch-comfy w-touch-comfy shrink-0 inline-flex items-center justify-center rounded-md border border-border-subtle hover:bg-bg-overlay disabled:opacity-50 transition-colors"
         >
-          <Plus className="h-4 w-4" aria-hidden />
+          <Plus className="h-5 w-5" aria-hidden />
         </button>
-        <PresetChip label="+5" onClick={() => handlePreset(5)} disabled={isReceiving} />
-        <PresetChip label="+10" onClick={() => handlePreset(10)} disabled={isReceiving} />
-        <PresetChip label="+20" onClick={() => handlePreset(20)} disabled={isReceiving} />
+      </div>
+
+      {/* Unit-aware quick-add chips — own row, 44px targets */}
+      <div className="flex items-center gap-2">
+        {increments.map((n) => (
+          <PresetChip
+            key={n}
+            label={`+${n}`}
+            onClick={() => entry.submitPreset(n)}
+            disabled={isReceiving}
+          />
+        ))}
       </div>
 
       {qty > 0 ? (
-        <Button variant="gold" size="sm" onClick={handleConfirm} disabled={isReceiving} className="w-full">
+        <Button variant="gold" size="md" onClick={entry.submitReceive} disabled={isReceiving} className="w-full">
           Receive +{qty}
         </Button>
       ) : (
-        <div className="h-9 inline-flex items-center justify-center rounded-md border border-border-subtle text-text-muted text-xs">
+        <div className="h-touch-comfy inline-flex items-center justify-center rounded-md border border-border-subtle text-text-muted text-xs">
           Enter quantity
         </div>
       )}
 
       {/* Closure gestures (display-stock isolation) — only rendered when wired by the view. */}
-      {(onReturnToKitchen || onWaste || onAdjust) && (
-        <div className="flex items-center gap-1.5">
+      {hasClosure && (
+        <div className="flex items-center gap-2">
           {onReturnToKitchen && (
             <Button
               variant="secondary"
-              size="sm"
-              onClick={handleReturnToKitchen}
+              size="md"
+              onClick={entry.submitReturn}
               disabled={isReceiving || qty <= 0}
               className="flex-1"
             >
-              Retour cuisine
+              Return to kitchen
             </Button>
           )}
           {onWaste && (
             <Button
               variant="ghostDestructive"
-              size="sm"
-              onClick={() => setWasteOpen(true)}
+              size="md"
+              onClick={() => entry.setWasteOpen(true)}
               disabled={isReceiving}
               className="flex-1"
             >
-              Perte
+              Waste
             </Button>
           )}
           {onAdjust && (
             <Button
               variant="ghost"
-              size="sm"
-              onClick={() => setAdjustOpen(true)}
+              size="md"
+              onClick={() => entry.setAdjustOpen(true)}
               disabled={isReceiving}
               className="flex-1"
             >
-              Ajuster
+              Adjust
             </Button>
           )}
         </div>
       )}
 
-      {onWaste && (
-        <WasteDisplayModal
-          open={wasteOpen}
-          onOpenChange={setWasteOpen}
-          productName={product.name}
-          unit={product.unit}
-          defaultQty={qty}
-          isPending={isReceiving}
-          onConfirm={handleWasteConfirm}
-        />
-      )}
-      {onAdjust && (
-        <AdjustDisplayModal
-          open={adjustOpen}
-          onOpenChange={setAdjustOpen}
-          productName={product.name}
-          unit={product.unit}
-          currentQty={product.display_stock}
-          isPending={isReceiving}
-          onConfirm={handleAdjustConfirm}
-        />
-      )}
+      <StockGestureModals
+        product={product}
+        entry={entry}
+        isPending={isReceiving}
+        hasWaste={Boolean(onWaste)}
+        hasAdjust={Boolean(onAdjust)}
+      />
     </div>
   );
 }
@@ -268,7 +220,7 @@ function PresetChip({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="h-9 px-2 inline-flex items-center justify-center rounded-md border border-border-subtle text-xs text-text-secondary hover:bg-bg-overlay hover:text-text-primary disabled:opacity-50 transition-colors"
+      className="h-11 flex-1 min-w-0 inline-flex items-center justify-center rounded-md border border-border-subtle text-sm font-semibold text-text-secondary hover:bg-bg-overlay hover:text-text-primary disabled:opacity-50 transition-colors"
     >
       {label}
     </button>

@@ -40,6 +40,7 @@ export { validateReceive } from './validateReceive.js';
 export { validateWaste } from './validateWaste.js';
 export { computeStockDelta } from './computeStockDelta.js';
 export { lowStockFilter, type LowStockCandidate } from './lowStockFilter.js';
+export { deriveStockIncrements } from './deriveStockIncrements.js';
 export {
   validateTransferInput,
   validateTransferReceive,
