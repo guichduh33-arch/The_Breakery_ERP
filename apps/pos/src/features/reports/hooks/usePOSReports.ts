@@ -15,50 +15,62 @@ import { supabase } from '@/lib/supabase';
 import type { ReportsPeriod } from './useReportsPeriod';
 
 // ─── Overview ─────────────────────────────────────────────────────────────
+//
+// Source of truth: server RPC `get_pos_sales_overview_v1(p_start_date, p_end_date)`
+// (shared with the back-office). The RPC does all WITA-timezone date + hour
+// bucketing, excludes B2B / historical imports / test-product orders, and
+// includes paid + completed retail orders. Revenue is TTC; tax reported apart.
+
+export interface POSReportsSalesHour {
+  hour: number;
+  /** Revenue (TTC) rung up in this WITA hour. */
+  revenue: number;
+  /** Number of tickets (orders) in this WITA hour. */
+  tickets: number;
+}
 
 export interface POSReportsOverview {
+  /** Revenue TTC (tax-inclusive). */
   revenue: number;
   orders: number;
   tax: number;
   avgBasket: number;
-  salesByHour: { hour: number; total: number }[];
+  salesByHour: POSReportsSalesHour[];
+  timezone: string;
 }
 
-interface OverviewRow {
-  total: number;
-  tax_amount: number;
-  paid_at: string | null;
+interface OverviewPayload {
+  revenue: number | string;
+  orders: number | string;
+  tax: number | string;
+  avg_basket: number | string;
+  timezone: string;
+  sales_by_hour: { hour: number; revenue: number | string; tickets: number | string }[];
 }
 
 export function usePOSReportsOverview(period: ReportsPeriod) {
   return useQuery<POSReportsOverview>({
-    queryKey: ['pos-reports-overview', period.start, period.end],
+    // Keyed on the WITA business dates the RPC actually consumes.
+    queryKey: ['pos-reports-overview', period.startDate, period.endDate],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('orders')
-        .select('total, tax_amount, paid_at')
-        .eq('status', 'paid')
-        .gte('paid_at', period.start)
-        .lt('paid_at', period.end);
+      const { data, error } = await supabase.rpc('get_pos_sales_overview_v1', {
+        p_start_date: period.startDate,
+        p_end_date: period.endDate,
+      });
       if (error) throw new Error(error.message);
-      const rows = (data ?? []) as unknown as OverviewRow[];
-      const revenue = rows.reduce((s, r) => s + Number(r.total), 0);
-      const tax = rows.reduce((s, r) => s + Number(r.tax_amount), 0);
-      const orders = rows.length;
-      const avgBasket = orders > 0 ? revenue / orders : 0;
-
-      const byHour = new Map<number, number>();
-      for (let h = 6; h <= 23; h++) byHour.set(h, 0);
-      for (const r of rows) {
-        if (!r.paid_at) continue;
-        const h = new Date(r.paid_at).getHours();
-        byHour.set(h, (byHour.get(h) ?? 0) + Number(r.total));
-      }
-      const salesByHour = Array.from(byHour.entries())
-        .sort(([a], [b]) => a - b)
-        .map(([hour, total]) => ({ hour, total }));
-
-      return { revenue, orders, tax, avgBasket, salesByHour };
+      const p = data as unknown as OverviewPayload;
+      return {
+        revenue: Number(p.revenue),
+        orders: Number(p.orders),
+        tax: Number(p.tax),
+        avgBasket: Number(p.avg_basket),
+        timezone: p.timezone,
+        salesByHour: (p.sales_by_hour ?? []).map((h) => ({
+          hour: h.hour,
+          revenue: Number(h.revenue),
+          tickets: Number(h.tickets),
+        })),
+      };
     },
     staleTime: 30_000,
   });

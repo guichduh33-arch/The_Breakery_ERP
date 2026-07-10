@@ -13,6 +13,7 @@ import { Currency, KpiTile, SectionLabel, cn } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore';
 import { POSReportsLayout } from './components/POSReportsLayout';
 import { usePOSReportsOverview } from './hooks/usePOSReports';
+import type { ReportsPeriod } from './hooks/useReportsPeriod';
 import { ReportsForbidden } from './components/ReportsForbidden';
 
 export default function POSReportsOverviewPage(): JSX.Element {
@@ -26,8 +27,8 @@ export default function POSReportsOverviewPage(): JSX.Element {
   );
 }
 
-function Overview({ period }: { period: { start: string; end: string; label: string } }): JSX.Element {
-  const { data, isLoading, isError } = usePOSReportsOverview(period as Parameters<typeof usePOSReportsOverview>[0]);
+function Overview({ period }: { period: ReportsPeriod }): JSX.Element {
+  const { data, isLoading, isError } = usePOSReportsOverview(period);
 
   if (isLoading) {
     return <p className="text-text-secondary text-sm">Loading overview…</p>;
@@ -36,16 +37,17 @@ function Overview({ period }: { period: { start: string; end: string; label: str
     return <p className="text-red text-sm">Failed to load overview.</p>;
   }
 
-  const maxHour = Math.max(...data.salesByHour.map((s) => s.total), 1);
+  const maxHour = Math.max(...data.salesByHour.map((s) => s.revenue), 1);
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <KpiTile
-          label="Revenue"
+          label="Revenue (incl. tax)"
           value={data.revenue}
           valueFormat="currency"
           icon={Receipt}
+          footer={<>of which tax: <Currency amount={data.tax} className="font-mono" /></>}
         />
         <KpiTile
           label="Orders"
@@ -58,27 +60,30 @@ function Overview({ period }: { period: { start: string; end: string; label: str
           value={data.avgBasket}
           valueFormat="currency"
           icon={Coins}
-          footer={<>Tax: <Currency amount={data.tax} className="font-mono" /></>}
         />
       </div>
 
       <section className="rounded-lg border border-border-subtle bg-bg-elevated p-5">
-        <SectionLabel size="xs" as="h2">Sales by hour</SectionLabel>
+        <div className="flex items-baseline justify-between">
+          <SectionLabel size="xs" as="h2">Sales by hour</SectionLabel>
+          <span className="text-[10px] text-text-muted">{data.timezone}</span>
+        </div>
         <div className="mt-4 h-48 flex items-end gap-1 border-b border-border-subtle pb-1">
           {data.salesByHour.map((s) => {
-            const heightPct = (s.total / maxHour) * 100;
+            const heightPct = (s.revenue / maxHour) * 100;
             return (
               <div
                 key={s.hour}
                 className="flex-1 flex flex-col items-center justify-end gap-1 min-w-0"
-                aria-label={`${s.hour}h: ${s.total}`}
+                aria-label={`${s.hour}h: ${s.revenue} across ${s.tickets} ticket(s)`}
+                title={`${s.hour}:00 — ${s.tickets} ticket(s)`}
               >
                 <div
                   className={cn(
                     'w-full rounded-t-md transition-all',
-                    s.total > 0 ? 'bg-gold' : 'bg-bg-overlay/60',
+                    s.revenue > 0 ? 'bg-gold' : 'bg-bg-overlay/60',
                   )}
-                  style={{ height: `${Math.max(heightPct, s.total > 0 ? 4 : 0)}%` }}
+                  style={{ height: `${Math.max(heightPct, s.revenue > 0 ? 4 : 0)}%` }}
                   data-testid={`sales-by-hour-bar-${s.hour}`}
                 />
               </div>
