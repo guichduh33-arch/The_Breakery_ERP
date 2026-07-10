@@ -155,6 +155,6 @@ export function categoryStyle(slugOrName: string, name?: string): CategoryStyle 
 
 /** First alphanumeric character of a label, uppercased — for the monogram. */
 export function categoryMonogram(label: string): string {
-  const m = label.trim().match(/[a-z0-9]/i);
+  const m = /[a-z0-9]/i.exec(label.trim());
   return (m?.[0] ?? '?').toUpperCase();
 }

@@ -43,7 +43,7 @@ export interface ProductCardProps {
   /** Low-stock indicator (ref 06 — "LOW STOCK · 2 LEFT"). */
   lowStockLabel?: string | null;
   /** Resolved allergens (own + cascade) — Session 15 Phase 5.C. */
-  allergens?: ReadonlyArray<AllergenType>;
+  allergens?: readonly AllergenType[];
   /** Quantity of this product currently in the ticket (0 = not added). */
   cartQty?: number;
   /** Click handler (skipped when disabled). */
