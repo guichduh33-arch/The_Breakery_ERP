@@ -16,7 +16,7 @@ export function useCreateTabletOrder() {
   return useMutation({
     mutationFn: async ({ cart, waiterId, clientUuid }: CreateTabletOrderArgs) => {
       const payload = buildSubmitPayload(cart, waiterId);
-      const { data, error } = await supabase.rpc('create_tablet_order_v3', {
+      const { data, error } = await supabase.rpc('create_tablet_order_v4', {
         p_client_uuid: clientUuid,
         p_waiter_id: payload.p_waiter_id,
         p_table_number: payload.p_table_number ?? '',

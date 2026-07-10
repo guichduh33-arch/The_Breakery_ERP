@@ -6120,7 +6120,7 @@ export type Database = {
         Args: { p_fiscal_year: number; p_manager_pin: string }
         Returns: Json
       }
-      close_shift_v5: {
+      close_shift_v6: {
         Args: {
           p_approver_id?: string
           p_counted_card?: number
@@ -6352,7 +6352,7 @@ export type Database = {
         }
         Returns: Json
       }
-      create_tablet_order_v3: {
+      create_tablet_order_v4: {
         Args: {
           p_client_uuid: string
           p_items: Json
