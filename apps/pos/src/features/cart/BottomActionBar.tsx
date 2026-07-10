@@ -40,7 +40,6 @@ import {
   DiscountModal,
   PinVerificationModal,
   RedeemPointsModal,
-  cn,
 } from '@breakery/ui';
 import { calculateTotals } from '@breakery/domain';
 import { useCartStore, resetCartAfterCheckout } from '@/stores/cartStore';
@@ -165,7 +164,6 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
 
   async function handleReholdFired(): Promise<void> {
     if (!pickedUpOrderId) return;
-    setMoreOpen(false);
     try {
       await holdFired.mutateAsync(pickedUpOrderId);
       resetCartAfterCheckout();
@@ -220,6 +218,31 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
         )}
       </button>
 
+      {/* HOLD — first-class button (moved OUT of the "More ▾" menu, owner
+          decision 2026-07-10: a cashier who reopens an order to check it must be
+          able to re-park it without hunting through a submenu). Dispatches by
+          state:
+            - reopened FIRED order (pickedUpOrderId set) → hold_fired_order_v1
+              re-parks it and frees the terminal, even with nothing added.
+              Disabled while there are unfired new lines — those go through Send
+              to Kitchen first (it fires + parks).
+            - fresh cart → draft hold via HoldOrderButton (hold_order_v1 + note
+              modal), which disables itself on an empty cart. */}
+      {hasFiredOrderOpen ? (
+        <button
+          type="button"
+          className={GHOST_BTN}
+          disabled={hasUnfiredItems || holdFired.isPending}
+          {...(hasUnfiredItems ? { title: 'Send the new items to the kitchen first' } : {})}
+          onClick={() => { void handleReholdFired(); }}
+        >
+          <PauseCircle className="h-4 w-4 text-gold" aria-hidden />
+          <span>Hold</span>
+        </button>
+      ) : (
+        <HoldOrderButton variant="ghost" className={GHOST_BTN} />
+      )}
+
       <TabletInboxButton className={GHOST_BTN} />
 
       <button type="button" className={GHOST_BTN} onClick={() => onOpenCustomerSearch?.()}>
@@ -254,33 +277,6 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
             role="menu"
             className="absolute bottom-full left-0 mb-2 w-56 p-1 rounded-md bg-bg-elevated border border-border-subtle shadow-lg z-50"
           >
-            {/* Hold. A fresh cart → draft hold (HoldOrderButton, hold_order_v1).
-                A reopened FIRED order (pickedUpOrderId set) already has a live DB
-                row, so the draft path would orphan it — instead re-park it via
-                hold_fired_order_v1. New unfired lines must be fired first (Send
-                to Kitchen fires + parks), so re-hold is gated on hasUnfiredItems. */}
-            {hasFiredOrderOpen ? (
-              <button
-                type="button"
-                role="menuitem"
-                className={cn(MENU_ITEM, 'justify-start')}
-                disabled={hasUnfiredItems || holdFired.isPending}
-                {...(hasUnfiredItems
-                  ? { title: 'Send the new items to the kitchen first' }
-                  : {})}
-                onClick={() => { void handleReholdFired(); }}
-              >
-                <PauseCircle className="h-4 w-4 text-gold" aria-hidden />
-                <span>Hold</span>
-              </button>
-            ) : (
-              <div role="menuitem">
-                <HoldOrderButton
-                  variant="ghost"
-                  className={cn(MENU_ITEM, 'justify-start')}
-                />
-              </div>
-            )}
             <button
               type="button"
               role="menuitem"

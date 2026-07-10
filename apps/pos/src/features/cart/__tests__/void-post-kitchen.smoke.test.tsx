@@ -168,14 +168,15 @@ describe('BottomActionBar — Hold gating on fired orders (Spec A re-hold)', () 
     });
   });
 
+  // HOLD is a first-class button in the bottom bar (moved out of "More ▾",
+  // owner decision 2026-07-10) — target it directly, no submenu to open.
   it('(c) reopened fired order, nothing changed: Hold is enabled (re-park)', () => {
     // All lines locked (reopened, none added) → no unfired items → re-park OK.
     useCartStore.setState({ pickedUpOrderId: 'order-123' });
 
     render(wrapper(<BottomActionBar />));
-    fireEvent.click(screen.getByRole('button', { name: /^more$/i }));
 
-    expect(screen.getByRole('menuitem', { name: /^hold$/i })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /^hold$/i })).toBeEnabled();
   });
 
   it('(c) reopened fired order with a new unfired line: Hold is disabled', () => {
@@ -187,16 +188,14 @@ describe('BottomActionBar — Hold gating on fired orders (Spec A re-hold)', () 
     });
 
     render(wrapper(<BottomActionBar />));
-    fireEvent.click(screen.getByRole('button', { name: /^more$/i }));
 
-    const hold = screen.getByRole('menuitem', { name: /^hold$/i });
+    const hold = screen.getByRole('button', { name: /^hold$/i });
     expect(hold).toBeDisabled();
     expect(hold).toHaveAttribute('title', 'Send the new items to the kitchen first');
   });
 
   it('(c) never-fired cart: Hold stays enabled (draft hold)', () => {
     render(wrapper(<BottomActionBar />));
-    fireEvent.click(screen.getByRole('button', { name: /^more$/i }));
 
     expect(screen.getByRole('button', { name: /^hold$/i })).toBeEnabled();
   });

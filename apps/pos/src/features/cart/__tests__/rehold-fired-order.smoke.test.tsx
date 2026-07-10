@@ -1,10 +1,11 @@
 /// <reference types="@testing-library/jest-dom" />
-// Spec A fix — a reopened FIRED order ("addition ouverte") can be put back on
-// hold with no changes. After reopen the order sits on the terminal
-// (pickedUpOrderId set, all lines locked); the draft Hold path is wrong (it
-// would orphan the live DB row) and Send-to-Kitchen is a no-op with nothing new
-// to fire. The "Hold" menu item must re-park it via hold_fired_order_v1, and be
-// disabled while there are unfired new lines (Send to Kitchen fires + parks).
+// A reopened FIRED order ("addition ouverte") can be put back on hold with no
+// changes. After reopen the order sits on the terminal (pickedUpOrderId set, all
+// lines locked); the draft Hold path is wrong (it would orphan the live DB row)
+// and Send-to-Kitchen is a no-op with nothing new to fire. HOLD is now a
+// first-class button in the bottom bar (moved OUT of the "More ▾" menu, owner
+// decision 2026-07-10): it re-parks via hold_fired_order_v1 and is disabled while
+// there are unfired new lines (Send to Kitchen fires + parks first).
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -85,12 +86,12 @@ function seedReopenedFiredOrder(extraUnfired = false) {
 }
 
 describe('BottomActionBar — re-hold a reopened fired order', () => {
-  it('re-parks the fired order via hold_fired_order_v1 when nothing changed', async () => {
+  it('re-parks the fired order via hold_fired_order_v1 from the first-class HOLD button', async () => {
     seedReopenedFiredOrder();
     render(wrap(<BottomActionBar />));
 
-    fireEvent.click(screen.getByRole('button', { name: /more/i }));
-    const hold = screen.getByRole('menuitem', { name: /hold/i });
+    // First-class button — no "More ▾" needed.
+    const hold = screen.getByRole('button', { name: /^hold$/i });
     expect(hold).not.toBeDisabled();
     fireEvent.click(hold);
 
@@ -99,11 +100,18 @@ describe('BottomActionBar — re-hold a reopened fired order', () => {
     expect(useCartStore.getState().pickedUpOrderId).toBeNull();
   });
 
-  it('disables re-hold while there are unfired new lines (Send to Kitchen first)', () => {
+  it('disables the HOLD button while there are unfired new lines (Send to Kitchen first)', () => {
     seedReopenedFiredOrder(true);
     render(wrap(<BottomActionBar />));
 
+    expect(screen.getByRole('button', { name: /^hold$/i })).toBeDisabled();
+  });
+
+  it('no longer lists Hold inside the "More ▾" menu', () => {
+    seedReopenedFiredOrder();
+    render(wrap(<BottomActionBar />));
+
     fireEvent.click(screen.getByRole('button', { name: /more/i }));
-    expect(screen.getByRole('menuitem', { name: /hold/i })).toBeDisabled();
+    expect(screen.queryByRole('menuitem', { name: /hold/i })).toBeNull();
   });
 });
