@@ -13,19 +13,22 @@
 
 import { type JSX, type ReactNode } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { X, BarChart3, Activity, Package, type LucideIcon } from 'lucide-react';
+import { X, BarChart3, Activity, Package, Wallet, type LucideIcon } from 'lucide-react';
 import { Button, cn } from '@breakery/ui';
 import { useReportsPeriod, type ReportsPeriod } from '../hooks/useReportsPeriod';
 
+type POSReportsTab = 'overview' | 'payments' | 'products' | 'activity';
+
 export interface POSReportsLayoutProps {
   /** Active tab; controlled by the route currently rendered. */
-  activeTab: 'overview' | 'products' | 'activity';
+  activeTab: POSReportsTab;
   /** Renders the period-scoped content. */
   children: (period: ReportsPeriod) => ReactNode;
 }
 
-const TABS: { id: 'overview' | 'products' | 'activity'; label: string; path: string; icon: LucideIcon }[] = [
+const TABS: { id: POSReportsTab; label: string; path: string; icon: LucideIcon }[] = [
   { id: 'overview', label: 'Overview', path: '/pos/reports', icon: BarChart3 },
+  { id: 'payments', label: 'Payments', path: '/pos/reports/payments', icon: Wallet },
   { id: 'products', label: 'Products', path: '/pos/reports/products', icon: Package },
   { id: 'activity', label: 'Activity', path: '/pos/reports/activity', icon: Activity },
 ];

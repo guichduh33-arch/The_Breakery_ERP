@@ -76,6 +76,77 @@ export function usePOSReportsOverview(period: ReportsPeriod) {
   });
 }
 
+// ─── Payments ─────────────────────────────────────────────────────────────
+//
+// Source of truth: server RPC `get_pos_payment_breakdown_v1(p_start_date,
+// p_end_date)`. Same order scope as the Overview (paid + completed retail,
+// non-B2B, non-historical, no test-product line, WITA date bucketing), so the
+// tendered total reconciles with Overview revenue — except for outstanding
+// `completed` orders, where tenders < order total (this reports the real
+// amount cashed in, not recognised revenue).
+
+export interface POSReportsPaymentMethod {
+  /** Payment tender code: cash / card / qris / edc / transfer / store_credit / … */
+  method: string;
+  /** Amount tendered via this method (net of change given). */
+  amount: number;
+  /** Number of tenders (payment rows) — an order may split across methods. */
+  tenders: number;
+  /** Share of the tendered total, 0–100. */
+  share_pct: number;
+}
+
+export interface POSReportsPayments {
+  /** Total amount actually tendered across all methods. */
+  totalAmount: number;
+  /** Distinct orders in scope. */
+  totalOrders: number;
+  /** Total tender rows (≥ orders when split tenders exist). */
+  totalTenders: number;
+  byMethod: POSReportsPaymentMethod[];
+  timezone: string;
+}
+
+interface PaymentsPayload {
+  total_amount: number | string;
+  total_orders: number | string;
+  total_tenders: number | string;
+  timezone: string;
+  by_method: {
+    method: string;
+    amount: number | string;
+    tenders: number | string;
+    share_pct: number | string;
+  }[];
+}
+
+export function usePOSReportsPayments(period: ReportsPeriod) {
+  return useQuery<POSReportsPayments>({
+    queryKey: ['pos-reports-payments', period.startDate, period.endDate],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_pos_payment_breakdown_v1', {
+        p_start_date: period.startDate,
+        p_end_date: period.endDate,
+      });
+      if (error) throw new Error(error.message);
+      const p = data as unknown as PaymentsPayload;
+      return {
+        totalAmount: Number(p.total_amount),
+        totalOrders: Number(p.total_orders),
+        totalTenders: Number(p.total_tenders),
+        timezone: p.timezone,
+        byMethod: (p.by_method ?? []).map((m) => ({
+          method: m.method,
+          amount: Number(m.amount),
+          tenders: Number(m.tenders),
+          share_pct: Number(m.share_pct),
+        })),
+      };
+    },
+    staleTime: 30_000,
+  });
+}
+
 // ─── Products ─────────────────────────────────────────────────────────────
 
 export interface POSReportsTopProduct {
