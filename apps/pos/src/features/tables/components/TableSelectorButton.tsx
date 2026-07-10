@@ -35,7 +35,7 @@ export function TableSelectorButton({ className, variant }: TableSelectorButtonP
   const { data: tableOrders = {} } = useTableOrders(open);
   const transfer = useTransferOrderTable();
 
-  const label = tableNumber ? `Table: ${tableNumber}` : 'Pick table';
+  const label = tableNumber ? `Table ${tableNumber}` : 'Table';
 
   return (
     <>
