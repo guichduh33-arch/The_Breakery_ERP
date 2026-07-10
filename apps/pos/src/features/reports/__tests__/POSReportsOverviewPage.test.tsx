@@ -42,7 +42,12 @@ function makeOverview(): POSReportsOverview {
     orders: 25,
     tax: 150_000,
     avgBasket: 60_000,
-    salesByHour: Array.from({ length: 18 }, (_, i) => ({ hour: 6 + i, total: i % 3 === 0 ? 100_000 : 0 })),
+    timezone: 'Asia/Makassar',
+    salesByHour: Array.from({ length: 24 }, (_, h) => ({
+      hour: h,
+      revenue: h % 3 === 0 ? 100_000 : 0,
+      tickets: h % 3 === 0 ? 2 : 0,
+    })),
   };
 }
 
@@ -74,11 +79,14 @@ describe('POSReportsOverviewPage', () => {
   it('renders the KPI tiles + sales-by-hour chart on happy path', () => {
     overviewState.current = { data: makeOverview(), isLoading: false, isError: false };
     renderPage();
-    expect(screen.getByText('Revenue')).toBeInTheDocument();
+    expect(screen.getByText(/revenue \(incl\. tax\)/i)).toBeInTheDocument();
     expect(screen.getByText('Orders')).toBeInTheDocument();
     expect(screen.getByText('Avg Basket')).toBeInTheDocument();
     expect(screen.getByText(/sales by hour/i)).toBeInTheDocument();
     expect(screen.getByTestId('sales-by-hour-bar-6')).toBeInTheDocument();
+    // full 0..23 axis now surfaces late-night sales the old 6→23 seed dropped
+    expect(screen.getByTestId('sales-by-hour-bar-0')).toBeInTheDocument();
+    expect(screen.getByTestId('sales-by-hour-bar-23')).toBeInTheDocument();
   });
 
   it('renders the report layout chrome (period chips + tab nav)', () => {
