@@ -36,7 +36,7 @@ export function POSStockRow({
 
   const stockTextTone = isOut ? 'text-red' : isLow ? 'text-amber-warn' : 'text-text-primary';
   const leftBorder = isOut ? 'border-l-red' : isLow ? 'border-l-amber-warn' : 'border-l-transparent';
-  const hasClosure = Boolean(onReturnToKitchen || onWaste || onAdjust);
+  const hasClosure = Boolean(onReturnToKitchen ?? onWaste ?? onAdjust);
 
   return (
     <div

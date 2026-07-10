@@ -296,7 +296,7 @@ export default function POSStockView(): JSX.Element {
               <p className="text-text-secondary text-sm">
                 Could not load display stock. Check the connection and try again.
               </p>
-              <Button variant="primary" onClick={() => products.refetch()}>
+              <Button variant="primary" onClick={() => void products.refetch()}>
                 Retry
               </Button>
             </div>

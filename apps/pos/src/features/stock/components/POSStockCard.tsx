@@ -49,7 +49,7 @@ export function POSStockCard({
 
   const stockTextTone = isOut ? 'text-red' : isLow ? 'text-amber-warn' : 'text-text-primary';
 
-  const hasClosure = Boolean(onReturnToKitchen || onWaste || onAdjust);
+  const hasClosure = Boolean(onReturnToKitchen ?? onWaste ?? onAdjust);
 
   return (
     <div
