@@ -83,7 +83,7 @@ export function useCloseShift() {
       if (input.counted_qris !== undefined)     args.p_counted_qris = input.counted_qris;
       if (input.counted_card !== undefined)     args.p_counted_card = input.counted_card;
       if (input.denominations !== undefined)    args.p_denominations = input.denominations;
-      const { data, error } = await supabase.rpc('close_shift_v5', args);
+      const { data, error } = await supabase.rpc('close_shift_v6', args);
       if (error) {
         // S60 (12 D1.4): the above-threshold variance note is enforced
         // server-side (ERRCODE P0001 variance_note_required). The UI
