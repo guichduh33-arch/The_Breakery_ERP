@@ -9,7 +9,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { printReceipt } from '@/services/print/printService';
-import { usePosSettingsStore } from '@/stores/posSettingsStore';
+import { useOrgDisplaySettings } from '@/features/settings/hooks/useOrgDisplaySettings';
 import { SuccessModal, type SuccessModalProps } from '../SuccessModal';
 
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() }, Toaster: () => null }));
@@ -20,6 +20,15 @@ vi.mock('@/services/print/printService', () => ({
   openCashDrawer: vi.fn().mockResolvedValue({ success: true }), // used via auto-open, kept for completeness
   getMockPrintBuffer: () => [],
   clearMockPrintBuffer: () => undefined,
+}));
+vi.mock('@/features/settings/hooks/useOrgDisplaySettings', () => ({
+  useOrgDisplaySettings: vi.fn(() => ({
+    displayFooterMessage: '',
+    displaySlogan: '',
+    autoPrint: true,
+    autoOpenDrawer: false,
+    isLoading: false,
+  })),
 }));
 
 const printMock = vi.mocked(printReceipt);
@@ -49,7 +58,13 @@ function wrap(n: React.ReactElement) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  usePosSettingsStore.setState({ printerUrl: '', autoPrint: true, autoOpenDrawer: false });
+  vi.mocked(useOrgDisplaySettings).mockReturnValue({
+    displayFooterMessage: '',
+    displaySlogan: '',
+    autoPrint: true,
+    autoOpenDrawer: false,
+    isLoading: false,
+  });
 });
 
 describe('SuccessModal — loyalty balance (POS-04)', () => {

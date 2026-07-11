@@ -56,6 +56,17 @@ vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 
+vi.mock('../hooks/useOrgDisplaySettings', () => ({
+  useOrgDisplaySettings: vi.fn(() => ({
+    displayFooterMessage: '',
+    displaySlogan: '',
+    autoPrint: true,
+    autoOpenDrawer: true,
+    isLoading: false,
+  })),
+  useSetOrgDisplaySetting: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
+}));
+
 function renderPage() {
   return render(
     <MemoryRouter>

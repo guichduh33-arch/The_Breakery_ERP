@@ -6,12 +6,26 @@
 // and asserts the two render branches.
 
 import { render, screen, within } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 
 import {
   CustomerDisplayView,
   type CustomerDisplayLine,
 } from '../CustomerDisplayView';
+
+// S73 Lot 2 — CDBrandPanel (rendered by every branch below) reads its slogan
+// via useOrgDisplaySettings (react-query + supabase). Mocked to the built-in
+// default so this view stays "pure presentational, no Supabase" as documented
+// above — no QueryClientProvider needed in this file.
+vi.mock('@/features/settings/hooks/useOrgDisplaySettings', () => ({
+  useOrgDisplaySettings: vi.fn(() => ({
+    displayFooterMessage: '',
+    displaySlogan: '',
+    autoPrint: true,
+    autoOpenDrawer: true,
+    isLoading: false,
+  })),
+}));
 
 const SAMPLE_LINES: CustomerDisplayLine[] = [
   {
