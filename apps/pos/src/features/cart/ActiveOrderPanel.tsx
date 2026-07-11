@@ -22,6 +22,7 @@ import { calculateTotals, resolveLoyaltyMultiplier } from '@breakery/domain';
 import type { CartItem, OrderType } from '@breakery/domain';
 import { useCartStore } from '@/stores/cartStore';
 import { useTaxRate } from '@/features/settings/hooks/useTaxRate';
+import { usePOSPresets } from '@/features/settings/hooks/usePOSPresets';
 import { useApplyLineDiscount, lineDiscountBase } from '@/features/discounts/hooks/useApplyLineDiscount';
 import { LoyaltyPointsLine } from '@/features/loyalty/components/LoyaltyPointsLine';
 import { usePromotionsAutoEval } from '@/features/promotions/hooks/usePromotionsAutoEval';
@@ -112,6 +113,7 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
 
   // ── per-line discount (manager-PIN gated above threshold) ────────────────
   const lineDiscount = useApplyLineDiscount();
+  const { presets: posPresets } = usePOSPresets();
 
   // ── totals (promo applied after base, never negative) ────────────────────
   const baseTotals = calculateTotals(cart, taxRate);
@@ -325,6 +327,7 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
           onConfirm={lineDiscount.onConfirm}
           base={lineDiscountBase(lineDiscount.targetItem)}
           onRequireAuthorization={lineDiscount.onRequireAuthorization}
+          presets={posPresets.discountPresets}
         />
       )}
       <PinVerificationModal

@@ -463,7 +463,7 @@ function DiscountPresetsGroup({
           Named discount buttons shown in the POS discount modal.
         </p>
         <p className="text-text-muted text-xs mt-1 italic">
-          Currently displayed in this Settings page only — discount modal consumers wiring lands in a follow-up.
+          Shown as one-tap presets in the POS discount modal (cart & line).
         </p>
       </div>
       <ul className="space-y-1">
