@@ -7,7 +7,7 @@ import type { AppliedPromotion, Cart, PaymentMethod, PaymentResultLine } from '@
 import { useTaxRate } from '@/features/settings/hooks/useTaxRate';
 import { printReceipt, openCashDrawer, type ReceiptPayload } from '@/services/print/printService';
 import { useStationPrinters } from '@/features/cart/hooks/useStationPrinters';
-import { usePosSettingsStore } from '@/stores/posSettingsStore';
+import { useOrgDisplaySettings } from '@/features/settings/hooks/useOrgDisplaySettings';
 import { broadcastPaymentComplete } from '@/features/display/hooks/useCartBroadcast';
 import { emitPosEvent } from '@/features/audit/emitPosEvent';
 import { toast } from 'sonner';
@@ -161,8 +161,7 @@ export function SuccessModal(props: SuccessModalProps) {
   const printedOnceRef = useRef(false);
   const { data: printers } = useStationPrinters();
   const cashierPrinter = printers?.get('cashier');
-  const autoPrint = usePosSettingsStore((s) => s.autoPrint);
-  const autoOpenDrawer = usePosSettingsStore((s) => s.autoOpenDrawer);
+  const { autoPrint, autoOpenDrawer } = useOrgDisplaySettings();
 
   async function handlePrint() {
     setIsPrinting(true);

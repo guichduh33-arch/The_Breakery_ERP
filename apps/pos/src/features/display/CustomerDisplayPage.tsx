@@ -31,7 +31,7 @@ import { useDisplayRealtime } from './hooks/useDisplayRealtime';
 import { useReadyOrders } from './hooks/useReadyOrders';
 import { useCartBroadcastReceiver } from './hooks/useCartBroadcastReceiver';
 import { useKioskAuth } from './hooks/useKioskAuth';
-import { usePosSettingsStore } from '@/stores/posSettingsStore';
+import { useOrgDisplaySettings } from '@/features/settings/hooks/useOrgDisplaySettings';
 
 /** Built-in idle footer used when no custom message is configured. */
 const DEFAULT_DISPLAY_FOOTER = 'Open daily · 07:00 — 21:00';
@@ -44,9 +44,9 @@ const CART_FRESHNESS_MS = 5 * 60 * 1_000;
 
 export default function CustomerDisplayPage() {
   const auth = useKioskAuth();
-  // Per-terminal customer-display copy (POS Settings → KDS & Display).
-  const idleFooter =
-    usePosSettingsStore((s) => s.displayFooterMessage) || DEFAULT_DISPLAY_FOOTER;
+  // Org-level customer-display copy (S73 Lot 2 — POS Settings → Customer Display).
+  const { displayFooterMessage } = useOrgDisplaySettings();
+  const idleFooter = displayFooterMessage || DEFAULT_DISPLAY_FOOTER;
   const [pairedCode, setPairedCode] = useState<string | null>(null);
   const [pairingChecked, setPairingChecked] = useState(false);
 
