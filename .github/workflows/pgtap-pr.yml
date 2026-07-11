@@ -27,6 +27,10 @@ concurrency:
 
 jobs:
   pgtap-smoke:
+    # Dependabot-triggered runs read from the separate "Dependabot secrets"
+    # store, so V3_DEV_PG_POOLER_URL is empty there and the secret guard below
+    # hard-fails. Dependency bumps can't break the DB schema — skip instead.
+    if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     # S50: flipped to false — V3_DEV_PG_POOLER_URL confirmed present (same as
