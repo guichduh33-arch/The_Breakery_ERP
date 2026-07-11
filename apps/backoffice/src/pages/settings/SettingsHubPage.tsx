@@ -57,7 +57,7 @@ const SECTIONS: SettingSection[] = [
       { title: 'Product Categories', blurb: 'Category tree + colours. (Soon)',           icon: Tag },
       { title: 'Product Types',      blurb: 'Raw / Semi-finished / Finished. (Soon)',     icon: Layers },
       { title: 'KDS Configuration',  blurb: 'Stations, routing, prep times. (Soon)',      icon: Monitor },
-      { title: 'Customer Display',   blurb: 'CFD branding, idle messages. (Soon)',        icon: Monitor },
+      { to: '/backoffice/settings/customer-display', title: 'Customer Display', blurb: 'Idle footer + brand slogan (all displays).', icon: Monitor },
     ],
   },
   {
@@ -71,7 +71,7 @@ const SECTIONS: SettingSection[] = [
     id: 'system',
     title: 'System',
     tiles: [
-      { title: 'Printing',                 blurb: 'Receipt + KDS printer config. (Soon)',                   icon: Printer },
+      { to: '/backoffice/settings/printing', title: 'Printing', blurb: 'Auto-print + drawer automation (org-wide).', icon: Printer },
       { title: 'Notifications',            blurb: 'Email + push notification preferences. (Soon)',          icon: Bell },
       { to: '/backoffice/settings/security', title: 'Security & PIN', blurb: 'PIN policies, session timeout, 2FA placeholder.', icon: ShieldCheck },
       { to: '/backoffice/settings/accounting', title: 'Financial / Accounting', blurb: 'Fiscal periods, year-end close.', icon: FileText },
