@@ -168,4 +168,29 @@ describe('Activity — Journal view (S72 Lot 4)', () => {
     openJournal();
     expect(screen.getByText('No journal events')).toBeInTheDocument();
   });
+
+  it('renders a server-derived void as hot with the server badge (S72 Lot 5)', () => {
+    journal.current.data = {
+      pages: [page([
+        evt({
+          id: 'e-5',
+          event_type: 'order_voided',
+          order_number: '#0007',
+          amount: 120_000,
+          reason: 'wrong order',
+          device_label: 'Server (money-path)',
+          device_kind: 'server',
+          payload: { source: 'server' },
+        }),
+      ])],
+    };
+    renderPage();
+    openJournal();
+
+    const row = screen.getByTestId('journal-e-5');
+    expect(within(row).getByText('Order VOIDED')).toBeInTheDocument();
+    expect(row.className).toContain('border-red'); // hot control signal
+    expect(within(row).getByText('server')).toBeInTheDocument(); // derived badge
+    expect(within(row).getByText(/Server \(money-path\)/)).toBeInTheDocument();
+  });
 });

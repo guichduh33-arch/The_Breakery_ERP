@@ -54,6 +54,9 @@ const FAMILY_TYPES: Record<Family, string[]> = {
     'item_removed_pre_fire', 'item_voided_post_fire', 'discount_applied', 'discount_removed',
     'payment_failed', 'receipt_reprinted', 'refund_issued', 'cash_drawer_opened',
     'manager_pin_used', 'paid_in', 'paid_out',
+    // S72 Lot 5 — synthetic server-derived type (orders.voided_at); exists only
+    // in the unified reader, never in the client enum.
+    'order_voided',
   ],
   session: ['session_opened', 'session_closed', 'login', 'logout', 'device_switch'],
 };
@@ -84,6 +87,7 @@ const TYPE_LABELS: Record<string, string> = {
   session_closed: 'Session closed', cash_drawer_opened: 'Cash drawer opened',
   paid_in: 'Paid in', paid_out: 'Paid out', manager_pin_used: 'Manager PIN used',
   login: 'Login', logout: 'Logout', device_switch: 'Device switch',
+  order_voided: 'Order VOIDED',
 };
 
 function familyOf(type: string): Family {
@@ -96,7 +100,7 @@ function familyOf(type: string): Family {
 /** Control signals that warrant a hard visual flag (the fraud read). */
 const HOT_TYPES = new Set([
   'payment_failed', 'receipt_reprinted', 'item_voided_post_fire',
-  'refund_issued', 'manager_pin_used', 'paid_out',
+  'refund_issued', 'manager_pin_used', 'paid_out', 'order_voided',
 ]);
 
 function toneOf(e: PosJournalEvent): { bg: string; fg: string; icon: LucideIcon } {
@@ -333,6 +337,13 @@ function JournalRow({
           <span className={cn('font-bold uppercase tracking-wider', tone.fg)}>
             {TYPE_LABELS[e.event_type] ?? e.event_type}
           </span>
+          {(e.payload as { source?: string }).source === 'server' ? (
+            // S72 Lot 5 — outcome derived from the money tables (authoritative),
+            // as opposed to a best-effort client gesture.
+            <span className="px-1.5 rounded border border-border-subtle text-[10px] uppercase tracking-wider text-text-muted">
+              server
+            </span>
+          ) : null}
           {e.order_number ? (
             <button
               type="button"
