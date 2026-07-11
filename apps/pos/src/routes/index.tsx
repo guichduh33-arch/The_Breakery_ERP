@@ -20,6 +20,9 @@ const CustomerDisplayPage = lazy(
 const POSStockView = lazy(() => import('@/features/stock/POSStockView'));
 const POSReportsOverviewPage = lazy(() => import('@/features/reports/POSReportsOverviewPage'));
 const POSPaymentsReportPage = lazy(() => import('@/features/reports/POSPaymentsReportPage'));
+const POSVoidsReportPage = lazy(() => import('@/features/reports/POSVoidsReportPage'));
+const POSSessionsReportPage = lazy(() => import('@/features/reports/POSSessionsReportPage'));
+const POSMixReportPage = lazy(() => import('@/features/reports/POSMixReportPage'));
 const POSProductsReportPage = lazy(() => import('@/features/reports/POSProductsReportPage'));
 const POSActivityReportPage = lazy(() => import('@/features/reports/POSActivityReportPage'));
 const POSSettingsPage = lazy(() => import('@/features/settings/POSSettingsPage'));
@@ -65,6 +68,9 @@ export function AppRoutes() {
       <Route path="/pos/stock" element={<ProtectedLazy><POSStockView /></ProtectedLazy>} />
       <Route path="/pos/reports" element={<ProtectedLazy><POSReportsOverviewPage /></ProtectedLazy>} />
       <Route path="/pos/reports/payments" element={<ProtectedLazy><POSPaymentsReportPage /></ProtectedLazy>} />
+      <Route path="/pos/reports/voids" element={<ProtectedLazy><POSVoidsReportPage /></ProtectedLazy>} />
+      <Route path="/pos/reports/sessions" element={<ProtectedLazy><POSSessionsReportPage /></ProtectedLazy>} />
+      <Route path="/pos/reports/mix" element={<ProtectedLazy><POSMixReportPage /></ProtectedLazy>} />
       <Route path="/pos/reports/products" element={<ProtectedLazy><POSProductsReportPage /></ProtectedLazy>} />
       <Route path="/pos/reports/activity" element={<ProtectedLazy><POSActivityReportPage /></ProtectedLazy>} />
       <Route path="/pos/settings" element={<ProtectedLazy><POSSettingsPage /></ProtectedLazy>} />

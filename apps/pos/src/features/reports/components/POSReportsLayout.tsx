@@ -13,11 +13,11 @@
 
 import { type JSX, type ReactNode } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { X, BarChart3, Activity, Package, Wallet, type LucideIcon } from 'lucide-react';
+import { X, BarChart3, Activity, Package, Wallet, Ban, Layers, PieChart, type LucideIcon } from 'lucide-react';
 import { Button, cn } from '@breakery/ui';
 import { useReportsPeriod, type ReportsPeriod } from '../hooks/useReportsPeriod';
 
-type POSReportsTab = 'overview' | 'payments' | 'products' | 'activity';
+type POSReportsTab = 'overview' | 'payments' | 'voids' | 'sessions' | 'mix' | 'products' | 'activity';
 
 export interface POSReportsLayoutProps {
   /** Active tab; controlled by the route currently rendered. */
@@ -29,6 +29,9 @@ export interface POSReportsLayoutProps {
 const TABS: { id: POSReportsTab; label: string; path: string; icon: LucideIcon }[] = [
   { id: 'overview', label: 'Overview', path: '/pos/reports', icon: BarChart3 },
   { id: 'payments', label: 'Payments', path: '/pos/reports/payments', icon: Wallet },
+  { id: 'voids', label: 'Voids', path: '/pos/reports/voids', icon: Ban },
+  { id: 'sessions', label: 'Sessions', path: '/pos/reports/sessions', icon: Layers },
+  { id: 'mix', label: 'Mix', path: '/pos/reports/mix', icon: PieChart },
   { id: 'products', label: 'Products', path: '/pos/reports/products', icon: Package },
   { id: 'activity', label: 'Activity', path: '/pos/reports/activity', icon: Activity },
 ];
