@@ -43,7 +43,7 @@ function openDb(): Promise<IDBDatabase> {
       }
     };
     req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
+    req.onerror = () => reject(req.error ?? new Error('indexeddb_open_failed'));
   });
   return dbPromise;
 }
@@ -55,7 +55,7 @@ function idbTx<T>(mode: IDBTransactionMode, fn: (store: IDBObjectStore) => IDBRe
         const tx = db.transaction(STORE, mode);
         const req = fn(tx.objectStore(STORE));
         req.onsuccess = () => resolve(req.result);
-        req.onerror = () => reject(req.error);
+        req.onerror = () => reject(req.error ?? new Error('indexeddb_tx_failed'));
       }),
   );
 }
@@ -98,7 +98,9 @@ export async function enqueueEvent(event: PosEventEnvelope): Promise<void> {
 
 /** Read every pending record, oldest first (by device_seq then occurred_at). */
 export async function getPendingEvents(limit = 500): Promise<OutboxRecord[]> {
-  const all = hasIDB ? await idbTx<OutboxRecord[]>('readonly', (s) => s.getAll()) : lsRead();
+  const all = hasIDB
+    ? await idbTx<OutboxRecord[]>('readonly', (s) => s.getAll() as IDBRequest<OutboxRecord[]>)
+    : lsRead();
   all.sort((a, b) => {
     const sa = a.event.device_seq ?? 0;
     const sb = b.event.device_seq ?? 0;

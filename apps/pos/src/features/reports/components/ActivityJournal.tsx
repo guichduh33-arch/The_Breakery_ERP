@@ -192,8 +192,8 @@ export function ActivityJournal({ period }: { period: ReportsPeriod }): JSX.Elem
 
   if (q.isLoading) return <p className="text-text-secondary text-sm">Loading journal…</p>;
   if (q.isError) {
-    const denied = (q.error as Error).message.includes('42501')
-      || (q.error as Error).message.toLowerCase().includes('permission');
+    const denied = q.error.message.includes('42501')
+      || q.error.message.toLowerCase().includes('permission');
     return (
       <p className="text-red text-sm">
         {denied ? 'You do not have permission to read the audit journal (reports.audit.read).' : 'Failed to load the journal.'}
