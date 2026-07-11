@@ -1,6 +1,6 @@
 # Audit des modules Settings — POS + Backoffice (Phase 0)
 
-> **Date** : 2026-07-11 · **Statut** : ✅ **VALIDÉ + EXÉCUTÉ S73 (branche swarm/session-73-settings)** (décisions ci-dessous, exécutées lots 1→3 ; voir aussi [`docs/reference/settings-authority-model.md`](../../reference/settings-authority-model.md)).
+> **Date** : 2026-07-11 · **Statut** : ✅ **VALIDÉ + EXÉCUTÉ S73 — MERGÉ master 2026-07-12 (PRs #204/#205/#206, empilées ; tout a atterri via le squash #204 `ee4cf31f`)** (décisions ci-dessous, exécutées lots 1→3 ; voir aussi [`docs/reference/settings-authority-model.md`](../../reference/settings-authority-model.md)).
 > **Méthode** : audit-first / validate-before-code. Code vérifié sur `master` (29eb284d) ; DB vérifiée
 > live sur le projet cloud V3 dev `ikcyvlovptebroadgtvd` via MCP `execute_sql`.
 > **Sources** : lecture directe des fichiers pivots + 2 agents d'exploration (POS / BO), constats

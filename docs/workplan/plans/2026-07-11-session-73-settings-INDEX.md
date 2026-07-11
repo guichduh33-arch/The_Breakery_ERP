@@ -65,7 +65,20 @@ KDS Config en session dédiée avec tuiles marquées « Planned »).
   scindé en `import type` + ré-export séparé dans `useSettings.ts` (fix TS standard,
   validé en revue).
 - **DEV-S73-03** (T15) : statut de l'audit doc écrit « branche `swarm/session-73-settings` »
-  sans numéros de PR (inexistants au moment du commit) — à compléter au merge.
+  sans numéros de PR (inexistants au moment du commit) — ✅ complété au merge (2026-07-12) :
+  PRs **#204** (Lot 1 → master) / **#205** (Lot 2 → lot1) / **#206** (Lot 3 → lot1). #205 et
+  #206 ont été squash-mergées dans la branche lot1 AVANT le merge de #204 → tout S73 a
+  atterri sur master via le seul squash `ee4cf31f` (#204), arbre vérifié byte-identique au
+  tip revu `942d68c4`.
+- **DEV-S73-05** (post-PR) : régression Lot 2 attrapée par la CI seulement —
+  `print.smoke.test.tsx` rendait `SuccessModal` sans mocker `useOrgDisplaySettings`
+  (mock supabase sans `.from` → retry ~1 s du hook → auto-print après le timeout
+  `waitFor`) ; fixé en mockant le hook (pattern auto-toggles). Leçon : les runs ciblés
+  par nom (`SuccessModal payment`) ne matchent pas ce fichier — penser au run par
+  chemin de dossier quand un composant partagé change de dépendances.
+- **DEV-S73-06** (post-PR) : le job CI `lint-ratchet` (bloquant, fichiers modifiés de la
+  PR) exige zéro erreur lint y compris préexistante dans tout fichier touché — 21 erreurs
+  soldées sur lot1 avant le vert (`ab5edf18`, `2ad558dd`, `f48f1a09`).
 - **DEV-S73-04** (T11/T12/T13) : les tuiles hub `settings/pos` et `settings/notifications`
   ont pointé vers des routes livrées dans des commits ultérieurs de la même PR (gap
   sanctionné, PR atomique).
