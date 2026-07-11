@@ -12,7 +12,6 @@
 
 import { logger } from '@breakery/utils';
 import type { Database } from '@breakery/supabase';
-import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 import { getDeviceToken, nextDeviceSeq } from './deviceIdentity';
 import { enqueueEvent, getPendingEvents, removeEvents } from './outbox';
@@ -116,6 +115,11 @@ export async function flushPosEvents(): Promise<number> {
     const pending = await getPendingEvents();
     if (pending.length === 0) return 0;
 
+    // Lazy-load the (heavy) supabase client only when we actually ship a batch,
+    // so importing emitPosEvent (from cartStore, paymentStore, hot handlers)
+    // does NOT pull the client into every module's static graph. vi.mock still
+    // intercepts this dynamic import in tests.
+    const { supabase } = await import('@/lib/supabase');
     const { error } = await supabase.rpc('record_pos_events_v1', {
       p_device_token: getDeviceToken(),
       p_events: pending.map((r) => r.event) as unknown as Database['public']['Functions']['record_pos_events_v1']['Args']['p_events'],

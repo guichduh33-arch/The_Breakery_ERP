@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Json } from '@breakery/supabase';
 import { supabase } from '@/lib/supabase';
+import { emitPosEvent } from '@/features/audit/emitPosEvent';
 
 export interface HoldOrderArgs {
   cartPayload: { order_type: string; customerId: string | null; items: unknown[] };
@@ -34,6 +35,11 @@ export function useHoldOrder() {
 
       const { data, error } = await supabase.rpc('hold_order_v1', args);
       if (error) throw error;
+      // S72 audit — the ticket was parked (held) for later.
+      emitPosEvent('order_held', {
+        order_id: data as string,
+        payload: { items: cartPayload.items.length, table: tableNumber },
+      });
       return data as string;
     },
     onSuccess: () => {

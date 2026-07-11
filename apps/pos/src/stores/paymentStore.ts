@@ -12,6 +12,7 @@
 
 import { create } from 'zustand';
 import type { PaymentMethod, Tender } from '@breakery/domain';
+import { emitPosEvent } from '@/features/audit/emitPosEvent';
 
 interface PaymentState {
   isOpen: boolean;
@@ -58,7 +59,11 @@ export const usePaymentStore = create<PaymentState>((set) => ({
       // Regenerate so re-opening without an explicit reset still starts a fresh attempt
       idempotencyKey: crypto.randomUUID(),
     }),
-  selectMethod: (m) => set({ selectedMethod: m, cashReceivedStr: '' }),
+  selectMethod: (m) => {
+    set({ selectedMethod: m, cashReceivedStr: '' });
+    // S72 audit — the cashier picked a tender method for the next tender.
+    emitPosEvent('payment_method_selected', { payload: { method: m } });
+  },
   setCashReceivedStr: (v) => set({ cashReceivedStr: v }),
   addTender: (t) =>
     set((s) => ({

@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useCartStore } from '@/stores/cartStore';
+import { emitPosEvent } from '@/features/audit/emitPosEvent';
 import type { ReopenOrderPayload } from '@/stores/cartStore';
 import type { CustomerWithCategory } from '@/features/customers/hooks/useCustomerSearch';
 
@@ -21,6 +22,12 @@ export function useReopenHeldOrder() {
       const payload = data as unknown as ReopenOrderPayload;
 
       useCartStore.getState().reopenOrder(payload);
+
+      // S72 audit — a held FIRED order was reopened onto this terminal.
+      emitPosEvent('order_resumed', {
+        order_id: payload.order_id,
+        payload: { kind: 'reopen_fired', items: payload.items.length },
+      });
 
       // Best-effort customer badge restore (mirrors useRestoreHeldOrder): pricing
       // runs off cart.customerId (already set by reopenOrder), so a lookup miss

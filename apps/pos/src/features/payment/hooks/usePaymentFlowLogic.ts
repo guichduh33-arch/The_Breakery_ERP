@@ -175,6 +175,12 @@ export function usePaymentFlowLogic() {
   async function dispatchCheckout(tendersToShip: Tender[]): Promise<void> {
     setLastError(null);
     setLastTendersShipped(tendersToShip);
+    // S72 audit — a charge attempt begins (pairs with payment_completed /
+    // payment_failed so the journal shows every attempt, not just outcomes).
+    emitPosEvent('payment_started', {
+      amount: total,
+      payload: { tenders: tendersToShip.length, method: tendersToShip[0]?.method ?? null },
+    });
     try {
       const result = await checkout.mutateAsync({ cart, payment: tendersToShip });
 
@@ -212,6 +218,12 @@ export function usePaymentFlowLogic() {
         customerName: attachedCustomer?.name ?? undefined,
         paymentMethod: tendersToShip[0]!.method,
         ...(appliedPromotions.length > 0 ? { appliedPromotions } : {}),
+      });
+      // S72 audit — the charge succeeded (order now exists server-side).
+      emitPosEvent('payment_completed', {
+        order_number_snap: result.order_number,
+        amount: result.total,
+        payload: { method: tendersToShip[0]!.method, change_given: result.change_given },
       });
     } catch (err: unknown) {
       const classified = classifyCheckoutError(err);

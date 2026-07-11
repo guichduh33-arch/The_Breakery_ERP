@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Cart, CartItem, OrderType, SelectedModifiers } from '@breakery/domain';
 import { supabase } from '@/lib/supabase';
 import { useCartStore } from '@/stores/cartStore';
+import { emitPosEvent } from '@/features/audit/emitPosEvent';
 import type { CustomerWithCategory } from '@/features/customers/hooks/useCustomerSearch';
 
 /**
@@ -60,6 +61,12 @@ export function useRestoreHeldOrder() {
       }
 
       useCartStore.getState().restoreCart(cart);
+
+      // S72 audit — a held DRAFT was restored into the live cart.
+      emitPosEvent('order_resumed', {
+        order_id: payload.order_id,
+        payload: { kind: 'restore_draft', items: items.length },
+      });
 
       // DEV-S35-C-05 — restore_held_order_v1 returns only customerId, and
       // restoreCart resets attachedCustomer to null. Re-fetch the full customer

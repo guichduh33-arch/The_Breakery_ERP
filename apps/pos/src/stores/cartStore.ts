@@ -38,6 +38,7 @@ import type {
   SelectedModifiers,
 } from '@breakery/domain';
 import { usePosSettingsStore } from './posSettingsStore';
+import { emitPosEvent } from '@/features/audit/emitPosEvent';
 
 export type CustomerWithCategory = Customer & { category?: CustomerCategory | null };
 
@@ -234,7 +235,11 @@ export const useCartStore = create<CartState>()(
           ? !navigator.onLine
           : false,
 
-      add: (product, modifiers = [], unitPriceOverride) =>
+      add: (product, modifiers = [], unitPriceOverride) => {
+        // S72 audit — a fresh cart's first line is the operational start of a
+        // ticket. Detected BEFORE the set so an empty→non-empty transition maps
+        // to order_opened exactly once.
+        const wasEmpty = get().cart.items.length === 0;
         set((s) => {
           // Offline guard — pre-checkout edits are allowed (the cart is local
           // state and we want the cashier to keep ringing items up) but the
@@ -244,21 +249,32 @@ export const useCartStore = create<CartState>()(
           // connectivity is back. We do NOT short-circuit add() here ; the
           // ProcessPayment button reads `isOffline` and disables itself.
           return { cart: addItem(s.cart, product, modifiers, 1, unitPriceOverride) };
-        }),
+        });
+        if (wasEmpty) emitPosEvent('order_opened', { payload: { order_type: get().cart.order_type } });
+        emitPosEvent('item_added', { payload: { product_id: product.id, name: product.name } });
+      },
 
       // Session 47 — add a configured combo line after ComboConfigModal confirms.
-      addCombo: (product, modifiers, components, unitPrice) =>
-        set((s) => ({ cart: addComboItem(s.cart, product, modifiers, components, 1, unitPrice) })),
+      addCombo: (product, modifiers, components, unitPrice) => {
+        const wasEmpty = get().cart.items.length === 0;
+        set((s) => ({ cart: addComboItem(s.cart, product, modifiers, components, 1, unitPrice) }));
+        if (wasEmpty) emitPosEvent('order_opened', { payload: { order_type: get().cart.order_type } });
+        emitPosEvent('item_added', {
+          amount: unitPrice,
+          payload: { product_id: product.id, name: product.name, combo: true },
+        });
+      },
 
-      update: (id, qty) =>
-        set((s) => {
-          if (!get().canEdit(id)) return s; // no-op if locked
-          return { cart: updateQuantity(s.cart, id, qty) };
-        }),
+      update: (id, qty) => {
+        if (!get().canEdit(id)) return; // no-op if locked — no state change, no event
+        set((s) => ({ cart: updateQuantity(s.cart, id, qty) }));
+        emitPosEvent('item_qty_changed', { order_item_id: id, payload: { qty } });
+      },
 
-      remove: (id) =>
+      remove: (id) => {
+        if (!get().canEdit(id)) return; // no-op if locked — no state change, no event
+        const removedItem = get().cart.items.find((i) => i.id === id);
         set((s) => {
-          if (!get().canEdit(id)) return s; // no-op if locked
           // Session 9 — manual gift removal: dismiss the corresponding promo so
           // the next eval doesn't immediately re-add it (anti-loop). Also drop
           // the promo from `appliedPromotions` to keep the cart panel in sync
@@ -276,7 +292,14 @@ export const useCartStore = create<CartState>()(
             };
           }
           return { cart: removeItem(s.cart, id) };
-        }),
+        });
+        // S72 audit — a pre-fire line removal (remove() only touches editable,
+        // i.e. un-fired lines; post-fire voids go through markCancelled).
+        emitPosEvent('item_removed_pre_fire', {
+          order_item_id: id,
+          ...(removedItem ? { payload: { product_id: removedItem.product_id, name: removedItem.name } } : {}),
+        });
+      },
 
       restoreLine: (item, index) =>
         set((s) => {
@@ -328,14 +351,24 @@ export const useCartStore = create<CartState>()(
           };
         }),
 
-      setOrderType: (type) => set((s) => ({ cart: setOrderType(s.cart, type) })),
+      setOrderType: (type) => {
+        const prev = get().cart.order_type;
+        set((s) => ({ cart: setOrderType(s.cart, type) }));
+        if (prev !== type) emitPosEvent('order_type_changed', { payload: { from: prev, to: type } });
+      },
 
-      setTableNumber: (name) =>
+      setTableNumber: (name) => {
+        const prev = get().cart.tableNumber ?? null;
         set((s) => {
           const { tableNumber: _t, ...rest } = s.cart;
           if (name) return { cart: { ...rest, tableNumber: name } };
           return { cart: rest };
-        }),
+        });
+        // S72 audit — table assignment / reassignment / clear on the ticket.
+        if (prev !== (name ?? null)) {
+          emitPosEvent('table_assigned', { payload: { from: prev, to: name ?? null } });
+        }
+      },
 
       attachCustomer: (customer) =>
         set((s) => ({ cart: domainAttachCustomer(s.cart, customer.id), attachedCustomer: customer })),
@@ -389,7 +422,8 @@ export const useCartStore = create<CartState>()(
       // is_cancelled=true after cancel_order_item_rpc). The line stays in the
       // cart so it can render with a strikethrough + badge ; calculateTotals and
       // the checkout payload exclude is_cancelled lines.
-      markCancelled: (lineId) =>
+      markCancelled: (lineId) => {
+        const cancelled = get().cart.items.find((i) => i.id === lineId);
         set((s) => ({
           cart: {
             ...s.cart,
@@ -397,7 +431,14 @@ export const useCartStore = create<CartState>()(
               it.id === lineId ? { ...it, is_cancelled: true } : it,
             ),
           },
-        })),
+        }));
+        // S72 audit — a fired line voided after it reached the kitchen (mirrors
+        // the server's cancel_order_item_rpc round-trip that precedes this).
+        emitPosEvent('item_voided_post_fire', {
+          order_item_id: lineId,
+          ...(cancelled ? { payload: { product_id: cancelled.product_id, name: cancelled.name } } : {}),
+        });
+      },
 
       restoreCart: (restoredCart) =>
         set((s) => ({
@@ -442,14 +483,21 @@ export const useCartStore = create<CartState>()(
 
       setPickedUpOrderId: (id) => set({ pickedUpOrderId: id }),
 
-      setCartDiscount: (d) =>
+      setCartDiscount: (d) => {
         set((s) => ({
           cart: d
             ? { ...s.cart, cartDiscount: d }
             : (() => { const { cartDiscount: _cd, ...rest } = s.cart; return rest; })(),
-        })),
+        }));
+        // S72 audit — order-level discount applied / removed (fraud signal:
+        // unauthorized or repeated discounting).
+        emitPosEvent(d ? 'discount_applied' : 'discount_removed', {
+          ...(d ? { amount: d.amount, reason: d.authorized_by ? 'authorized' : null } : {}),
+          payload: { scope: 'order' },
+        });
+      },
 
-      setLineDiscount: (itemId, d) =>
+      setLineDiscount: (itemId, d) => {
         set((s) => ({
           cart: {
             ...s.cart,
@@ -462,7 +510,13 @@ export const useCartStore = create<CartState>()(
               return { ...item, discount: d };
             }),
           },
-        })),
+        }));
+        emitPosEvent(d ? 'discount_applied' : 'discount_removed', {
+          order_item_id: itemId,
+          ...(d ? { amount: d.amount, reason: d.authorized_by ? 'authorized' : null } : {}),
+          payload: { scope: 'line' },
+        });
+      },
 
       // Session 9 — promotions
       setAppliedPromotions: (next, productLookup = {}) => {
