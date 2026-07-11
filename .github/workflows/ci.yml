@@ -9,7 +9,9 @@ on:
 jobs:
   lint-typecheck-test-build:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # 25 (was 15): the suite runs 11-13 min on a healthy runner, so a slow
+    # runner day cancelled green runs mid-Build/mid-tests (2× on 2026-07-11).
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
         with:
