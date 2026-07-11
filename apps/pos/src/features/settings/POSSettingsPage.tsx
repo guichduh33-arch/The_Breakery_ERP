@@ -219,7 +219,7 @@ function GeneralTab({ readOnly }: { readOnly: boolean }): JSX.Element {
         onChange={(next) => {
           mutateQuickPayments.mutate(next, {
             onSuccess: () => toast.success('Quick payment amounts saved'),
-            onError: (e) => toast.error(`Save failed: ${(e as Error).message}`),
+            onError: (e) => toast.error(`Save failed: ${e.message}`),
           });
         }}
       />
@@ -232,7 +232,7 @@ function GeneralTab({ readOnly }: { readOnly: boolean }): JSX.Element {
         onChange={(next) => {
           mutateOpeningCash.mutate(next, {
             onSuccess: () => toast.success('Opening cash presets saved'),
-            onError: (e) => toast.error(`Save failed: ${(e as Error).message}`),
+            onError: (e) => toast.error(`Save failed: ${e.message}`),
           });
         }}
       />
@@ -243,7 +243,7 @@ function GeneralTab({ readOnly }: { readOnly: boolean }): JSX.Element {
         onChange={(next) => {
           mutateDiscountPresets.mutate(next, {
             onSuccess: () => toast.success('Discount presets saved'),
-            onError: (e) => toast.error(`Save failed: ${(e as Error).message}`),
+            onError: (e) => toast.error(`Save failed: ${e.message}`),
           });
         }}
       />

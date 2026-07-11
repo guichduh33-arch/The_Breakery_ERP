@@ -26,7 +26,8 @@ export function AdvancedSettingsTab({ readOnly }: { readOnly: boolean }): JSX.El
   const [confirmReset, setConfirmReset] = useState(false);
 
   const resolvedPrintUrl =
-    printerUrl || (import.meta.env.VITE_PRINT_SERVER_URL ?? 'http://localhost:3001');
+    printerUrl ||
+    ((import.meta.env.VITE_PRINT_SERVER_URL as string | undefined) ?? 'http://localhost:3001');
   const version = (import.meta.env.VITE_APP_VERSION as string | undefined) ?? 'dev';
   const online = typeof navigator !== 'undefined' ? navigator.onLine : true;
 
@@ -48,7 +49,7 @@ export function AdvancedSettingsTab({ readOnly }: { readOnly: boolean }): JSX.El
         </SectionLabel>
         <div>
           <DiagRow label="App version" value={version} />
-          <DiagRow label="Environment" value={import.meta.env.MODE} />
+          <DiagRow label="Environment" value={String(import.meta.env.MODE)} />
           <DiagRow label="Print server" value={resolvedPrintUrl} />
           <DiagRow label="Network" value={online ? 'Online' : 'Offline'} />
         </div>
