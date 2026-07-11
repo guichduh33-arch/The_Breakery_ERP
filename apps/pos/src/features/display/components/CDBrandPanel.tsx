@@ -4,23 +4,23 @@
 // customer display: hero BrandLogo + slogan. The right half carries the state
 // content (live cart / payment confirmation / pickup queue).
 //
-// The slogan is per-terminal copy (posSettingsStore.displaySlogan, POS
-// Settings → KDS & Display); blank falls back to the brand tagline. The
-// BrandLogo's own SVG tagline is disabled so the configurable slogan is the
-// single line under the croissant (never two competing taglines).
+// The slogan is org-level copy (S73 Lot 2 — business_config.display_slogan,
+// POS Settings → Customer Display); blank falls back to the brand tagline.
+// The BrandLogo's own SVG tagline is disabled so the configurable slogan is
+// the single line under the croissant (never two competing taglines).
 
 import type { JSX } from 'react';
 
 import { BrandLogo } from '@breakery/ui';
 
-import { usePosSettingsStore } from '@/stores/posSettingsStore';
+import { useOrgDisplaySettings } from '@/features/settings/hooks/useOrgDisplaySettings';
 
-/** Built-in slogan when no per-terminal override is configured. */
+/** Built-in slogan when no org-level override is configured. */
 export const DEFAULT_DISPLAY_SLOGAN = 'French Bakery & Pastry';
 
 export function CDBrandPanel(): JSX.Element {
-  const slogan =
-    usePosSettingsStore((s) => s.displaySlogan) || DEFAULT_DISPLAY_SLOGAN;
+  const { displaySlogan } = useOrgDisplaySettings();
+  const slogan = displaySlogan || DEFAULT_DISPLAY_SLOGAN;
 
   return (
     <section

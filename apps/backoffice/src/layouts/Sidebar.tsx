@@ -30,7 +30,7 @@ import {
   LineChart, Sparkles, Megaphone, Cake,
   ClipboardCheck, TrendingUp, Signature, ShoppingBag, Wallet,
   Calendar, ShoppingCart, Truck, ListChecks,
-  PackagePlus, ArrowLeftRight,
+  PackagePlus, ArrowLeftRight, CreditCard,
   ChevronRight,
   type LucideIcon,
 } from 'lucide-react';
@@ -210,6 +210,7 @@ const GROUPS: NavGroup[] = [
           { to: '/backoffice/settings', label: 'General settings', icon: Settings, permission: 'settings.read', end: true },
           { to: '/backoffice/settings/inventory', label: 'Inventory settings', icon: Settings, permission: 'settings.read' },
           { to: '/backoffice/settings/holidays', label: 'Holidays', icon: CalendarDays, permission: 'settings.read' },
+          { to: '/backoffice/settings/payment-methods', label: 'Payment Methods', icon: CreditCard, permission: 'settings.read' },
           { to: '/backoffice/settings/templates/email', label: 'Email Templates', icon: Mail, permission: 'settings.read' },
           { to: '/backoffice/settings/templates/receipt', label: 'Receipt Templates', icon: FileText, permission: 'settings.read' },
           { to: '/backoffice/settings/permissions', label: 'Permissions Matrix (read-only)', icon: ShieldCheck, permission: 'settings.read' },

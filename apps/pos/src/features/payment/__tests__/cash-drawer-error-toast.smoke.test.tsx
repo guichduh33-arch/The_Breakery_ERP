@@ -42,6 +42,19 @@ vi.mock('@/features/cart/hooks/useStationPrinters', () => ({
   }),
 }));
 
+// S73 Lot 2 — the auto toggles are org-level (business_config) now; mock them
+// resolved-on so the gated mount effect fires immediately (the supabase mock
+// above has no .from, the real query would stall the effect past waitFor).
+vi.mock('@/features/settings/hooks/useOrgDisplaySettings', () => ({
+  useOrgDisplaySettings: () => ({
+    displayFooterMessage: '',
+    displaySlogan: '',
+    autoPrint: true,
+    autoOpenDrawer: true,
+    isLoading: false,
+  }),
+}));
+
 // Module-mock the print service: printReceipt always succeeds (isolate drawer),
 // openCashDrawer is a vi.fn we drive per-test. Mock buffer fns are no-op
 // passthroughs so any other importer stays happy.

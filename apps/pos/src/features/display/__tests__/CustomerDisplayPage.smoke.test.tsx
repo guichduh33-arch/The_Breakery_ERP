@@ -59,6 +59,17 @@ function readyOrdersBuilder(rows: unknown[]) {
   return { select };
 }
 
+// S73 Lot 2 — mimics the `business_config` chain used by
+// `useOrgDisplaySettings` : .select().limit().maybeSingle(). The hook is a
+// top-level unconditional call in CustomerDisplayPage/CDBrandPanel, so every
+// render branch of this test needs a working builder for it.
+function businessConfigBuilder() {
+  const maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+  const limit = vi.fn(() => ({ maybeSingle }));
+  const select = vi.fn(() => ({ limit }));
+  return { select };
+}
+
 function withProviders() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return ({ children }: { children: React.ReactNode }) => (
@@ -71,6 +82,10 @@ describe('CustomerDisplayPage — smoke', () => {
     useKioskAuthMock.mockReset();
     readKioskPairingMock.mockReset();
     fromMock.mockReset();
+    // S73 Lot 2 — useOrgDisplaySettings is called unconditionally on every
+    // render branch; default every table to the business_config shape unless
+    // a test overrides it for `order_items`/orders.
+    fromMock.mockImplementation(() => businessConfigBuilder());
   });
 
   it('renders branded layout + current card + queue when authenticated', async () => {
@@ -90,6 +105,9 @@ describe('CustomerDisplayPage — smoke', () => {
             orders: { order_number: '1002', order_type: 'take_out', table_number: null },
           },
         ]);
+      }
+      if (table === 'business_config') {
+        return businessConfigBuilder();
       }
       return ordersBuilder([
         {

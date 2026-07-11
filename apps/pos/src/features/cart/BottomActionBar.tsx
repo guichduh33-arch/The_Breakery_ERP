@@ -44,6 +44,7 @@ import { calculateTotals } from '@breakery/domain';
 import { useCartStore, resetCartAfterCheckout } from '@/stores/cartStore';
 import { usePaymentStore } from '@/stores/paymentStore';
 import { useTaxRate } from '@/features/settings/hooks/useTaxRate';
+import { usePOSPresets } from '@/features/settings/hooks/usePOSPresets';
 import { useHeldOrdersQuery } from '@/features/heldOrders/hooks/useHeldOrdersQuery';
 import { HoldOrderButton } from '@/features/heldOrders/components/HoldOrderButton';
 import { useHoldFiredOrder } from './hooks/useHoldFiredOrder';
@@ -92,6 +93,7 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
   // checkout CTA carries the same mandatory-table guard as Send to Kitchen.
   const checkoutTableGuard = useDineInTableGuard({ onSelected: () => openPayment() });
   const discount = useApplyCartDiscount();
+  const { presets: posPresets } = usePOSPresets();
   const verifyManagerPin = useVerifyManagerPin();
   const voidServerOrder = useVoidServerOrder();
   const pendingTablet = usePendingTabletOrders().data?.length ?? 0;
@@ -390,6 +392,7 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
         onConfirm={discount.onConfirm}
         base={discount.base}
         onRequireAuthorization={discount.onRequireAuthorization}
+        presets={posPresets.discountPresets}
       />
       <PinVerificationModal
         open={discount.pinModalOpen}

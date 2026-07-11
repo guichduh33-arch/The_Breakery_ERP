@@ -1,24 +1,48 @@
 // apps/pos/src/features/settings/components/DisplaySettingsTab.tsx
 //
-// POS Settings → KDS & Display. Per-terminal customer-display copy. The idle
+// POS Settings → Customer Display. Org-level customer-display copy (S73 Lot
+// 2 — business_config.display_footer_message / display_slogan). The idle
 // footer message is read by CustomerDisplayPage (route `/display`) and shown
 // when no orders are active. Blank → the built-in "Open daily · 07:00 — 21:00".
-import type { JSX } from 'react';
+import { useEffect, useState, type JSX } from 'react';
 import { Monitor, ExternalLink } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button, Card, Input, SectionLabel } from '@breakery/ui';
-import { usePosSettingsStore } from '@/stores/posSettingsStore';
+import { useOrgDisplaySettings, useSetOrgDisplaySetting } from '../hooks/useOrgDisplaySettings';
+import { ScopeBadge } from './ScopeBadge';
 
 const DEFAULT_DISPLAY_FOOTER = 'Open daily · 07:00 — 21:00';
 const DEFAULT_DISPLAY_SLOGAN = 'French Bakery & Pastry';
 
 export function DisplaySettingsTab({ readOnly }: { readOnly: boolean }): JSX.Element {
-  const displayFooterMessage = usePosSettingsStore((s) => s.displayFooterMessage);
-  const setDisplayFooterMessage = usePosSettingsStore((s) => s.setDisplayFooterMessage);
-  const displaySlogan = usePosSettingsStore((s) => s.displaySlogan);
-  const setDisplaySlogan = usePosSettingsStore((s) => s.setDisplaySlogan);
+  const { displayFooterMessage, displaySlogan } = useOrgDisplaySettings();
+  const mutation = useSetOrgDisplaySetting();
+
+  const [footerDraft, setFooterDraft] = useState(displayFooterMessage);
+  const [sloganDraft, setSloganDraft] = useState(displaySlogan);
+
+  // Keep drafts in sync once the org value has loaded / changes remotely —
+  // does not clobber in-flight edits since the query rarely refetches
+  // (staleTime 5 min) and this mirrors the GeneralTab presets pattern.
+  useEffect(() => setFooterDraft(displayFooterMessage), [displayFooterMessage]);
+  useEffect(() => setSloganDraft(displaySlogan), [displaySlogan]);
+
+  function save(key: 'display_footer_message' | 'display_slogan', value: string): void {
+    mutation.mutate(
+      { key, value, category: 'customer_display' },
+      {
+        onSuccess: () => toast.success('Saved'),
+        onError: (e) => toast.error(`Save failed: ${e.message}`),
+      },
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-lg">
+      <div className="flex items-center gap-2">
+        <ScopeBadge scope="org" />
+        <span className="text-xs text-text-muted">Réglage partagé par tous les terminaux.</span>
+      </div>
       <Card variant="default" padding="md" className="space-y-3">
         <SectionLabel size="sm" as="h3" className="text-text-primary normal-case tracking-normal font-serif text-base">
           Customer display
@@ -30,14 +54,25 @@ export function DisplaySettingsTab({ readOnly }: { readOnly: boolean }): JSX.Ele
           >
             Idle footer message
           </label>
-          <Input
-            id="display-footer-msg"
-            aria-label="Customer display idle footer message"
-            placeholder={DEFAULT_DISPLAY_FOOTER}
-            value={displayFooterMessage}
-            disabled={readOnly}
-            onChange={(e) => setDisplayFooterMessage(e.target.value)}
-          />
+          <div className="flex gap-2">
+            <Input
+              id="display-footer-msg"
+              aria-label="Customer display idle footer message"
+              placeholder={DEFAULT_DISPLAY_FOOTER}
+              value={footerDraft}
+              disabled={readOnly || mutation.isPending}
+              onChange={(e) => setFooterDraft(e.target.value)}
+              className="flex-1"
+            />
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={readOnly || mutation.isPending || footerDraft === displayFooterMessage}
+              onClick={() => save('display_footer_message', footerDraft)}
+            >
+              Save
+            </Button>
+          </div>
           <p className="text-xs text-text-muted">
             Shown on the customer-facing display when no orders are active. Leave
             blank for the default ({DEFAULT_DISPLAY_FOOTER}).
@@ -50,14 +85,25 @@ export function DisplaySettingsTab({ readOnly }: { readOnly: boolean }): JSX.Ele
           >
             Brand slogan
           </label>
-          <Input
-            id="display-slogan"
-            aria-label="Customer display brand slogan"
-            placeholder={DEFAULT_DISPLAY_SLOGAN}
-            value={displaySlogan}
-            disabled={readOnly}
-            onChange={(e) => setDisplaySlogan(e.target.value)}
-          />
+          <div className="flex gap-2">
+            <Input
+              id="display-slogan"
+              aria-label="Customer display brand slogan"
+              placeholder={DEFAULT_DISPLAY_SLOGAN}
+              value={sloganDraft}
+              disabled={readOnly || mutation.isPending}
+              onChange={(e) => setSloganDraft(e.target.value)}
+              className="flex-1"
+            />
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={readOnly || mutation.isPending || sloganDraft === displaySlogan}
+              onClick={() => save('display_slogan', sloganDraft)}
+            >
+              Save
+            </Button>
+          </div>
           <p className="text-xs text-text-muted">
             Shown under the logo on the customer-facing display. Leave blank for
             the default ({DEFAULT_DISPLAY_SLOGAN}).

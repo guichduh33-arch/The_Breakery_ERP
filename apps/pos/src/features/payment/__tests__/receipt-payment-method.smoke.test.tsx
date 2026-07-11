@@ -40,6 +40,19 @@ vi.mock('@/features/cart/hooks/useStationPrinters', () => ({
   }),
 }));
 
+// S73 Lot 2 — the auto toggles are org-level (business_config) now; mock them
+// resolved-on so the gated mount effect fires immediately (the supabase mock
+// above has no .from, the real query would stall the effect past waitFor).
+vi.mock('@/features/settings/hooks/useOrgDisplaySettings', () => ({
+  useOrgDisplaySettings: () => ({
+    displayFooterMessage: '',
+    displaySlogan: '',
+    autoPrint: true,
+    autoOpenDrawer: true,
+    isLoading: false,
+  }),
+}));
+
 const originalFetch = globalThis.fetch;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -90,7 +103,7 @@ describe('SuccessModal — receipt reflects the real payment method', () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({}),
-    }) as unknown as typeof fetch;
+    });
 
     useCartStore.setState({
       cart: { items: [], order_type: 'dine_in' },
@@ -110,7 +123,7 @@ describe('SuccessModal — receipt reflects the real payment method', () => {
       isAuthenticated: true,
       isLoading: false,
       error: null,
-    } as never);
+    });
   });
 
   afterEach(() => {

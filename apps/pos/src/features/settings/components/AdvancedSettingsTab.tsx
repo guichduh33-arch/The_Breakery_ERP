@@ -9,6 +9,7 @@ import { RotateCcw, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button, Card, SectionLabel } from '@breakery/ui';
 import { usePosSettingsStore } from '@/stores/posSettingsStore';
+import { ScopeBadge } from './ScopeBadge';
 
 function DiagRow({ label, value }: { label: string; value: string }): JSX.Element {
   return (
@@ -25,7 +26,8 @@ export function AdvancedSettingsTab({ readOnly }: { readOnly: boolean }): JSX.El
   const [confirmReset, setConfirmReset] = useState(false);
 
   const resolvedPrintUrl =
-    printerUrl || (import.meta.env.VITE_PRINT_SERVER_URL ?? 'http://localhost:3001');
+    printerUrl ||
+    ((import.meta.env.VITE_PRINT_SERVER_URL as string | undefined) ?? 'http://localhost:3001');
   const version = (import.meta.env.VITE_APP_VERSION as string | undefined) ?? 'dev';
   const online = typeof navigator !== 'undefined' ? navigator.onLine : true;
 
@@ -37,13 +39,17 @@ export function AdvancedSettingsTab({ readOnly }: { readOnly: boolean }): JSX.El
 
   return (
     <div className="space-y-6 max-w-lg">
+      <div className="flex items-center gap-2">
+        <ScopeBadge scope="terminal" />
+        <span className="text-xs text-text-muted">Réglages de ce terminal uniquement.</span>
+      </div>
       <Card variant="default" padding="md" className="space-y-2">
         <SectionLabel size="sm" as="h3" className="text-text-primary normal-case tracking-normal font-serif text-base">
           Diagnostics
         </SectionLabel>
         <div>
           <DiagRow label="App version" value={version} />
-          <DiagRow label="Environment" value={import.meta.env.MODE} />
+          <DiagRow label="Environment" value={String(import.meta.env.MODE)} />
           <DiagRow label="Print server" value={resolvedPrintUrl} />
           <DiagRow label="Network" value={online ? 'Online' : 'Offline'} />
         </div>

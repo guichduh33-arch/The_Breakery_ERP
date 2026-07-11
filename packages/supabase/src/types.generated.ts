@@ -297,10 +297,14 @@ export type Database = {
           allow_negative_stock: boolean
           created_at: string
           currency: string
+          display_footer_message: string
+          display_slogan: string
           enabled_payment_methods: Json
           fiscal_address: string | null
           id: number
           name: string
+          pos_auto_open_drawer: boolean
+          pos_auto_print_receipt: boolean
           pos_discount_presets: Json
           pos_opening_cash_presets: Json
           pos_quick_payment_amounts: Json
@@ -319,10 +323,14 @@ export type Database = {
           allow_negative_stock?: boolean
           created_at?: string
           currency?: string
+          display_footer_message?: string
+          display_slogan?: string
           enabled_payment_methods?: Json
           fiscal_address?: string | null
           id?: number
           name?: string
+          pos_auto_open_drawer?: boolean
+          pos_auto_print_receipt?: boolean
           pos_discount_presets?: Json
           pos_opening_cash_presets?: Json
           pos_quick_payment_amounts?: Json
@@ -341,10 +349,14 @@ export type Database = {
           allow_negative_stock?: boolean
           created_at?: string
           currency?: string
+          display_footer_message?: string
+          display_slogan?: string
           enabled_payment_methods?: Json
           fiscal_address?: string | null
           id?: number
           name?: string
+          pos_auto_open_drawer?: boolean
+          pos_auto_print_receipt?: boolean
           pos_discount_presets?: Json
           pos_opening_cash_presets?: Json
           pos_quick_payment_amounts?: Json

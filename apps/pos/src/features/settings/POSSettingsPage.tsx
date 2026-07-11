@@ -24,7 +24,6 @@ import {
   ArrowUp,
   ArrowDown,
   ShoppingCart,
-  Zap,
   Tag,
   ShieldCheck,
   type LucideIcon,
@@ -33,15 +32,15 @@ import { formatIdr } from '@breakery/utils';
 import { Button, SectionLabel, Card, cn } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore';
 import { usePOSPresets, type DiscountPreset } from './hooks/usePOSPresets';
+import { ScopeBadge } from './components/ScopeBadge';
 import { PrintingSettingsTab } from './components/PrintingSettingsTab';
 import { BehaviorSettingsTab } from './components/BehaviorSettingsTab';
-import { AutomationSettingsTab } from './components/AutomationSettingsTab';
 import { AdvancedSettingsTab } from './components/AdvancedSettingsTab';
 import { DevicesSettingsTab } from './components/DevicesSettingsTab';
 import { DisplaySettingsTab } from './components/DisplaySettingsTab';
 
 type TopTab = 'pos' | 'printing' | 'kds' | 'devices';
-type ConfigTab = 'general' | 'automation' | 'advanced' | 'behavior';
+type ConfigTab = 'general' | 'advanced' | 'behavior';
 
 export default function POSSettingsPage(): JSX.Element {
   const navigate = useNavigate();
@@ -75,13 +74,13 @@ export default function POSSettingsPage(): JSX.Element {
       >
         <TopTabButton icon={Cog} label="POS" active={topTab === 'pos'} onClick={() => setTopTab('pos')} />
         <TopTabButton icon={Printer} label="Printing" active={topTab === 'printing'} onClick={() => setTopTab('printing')} />
-        <TopTabButton icon={Monitor} label="KDS & Display" active={topTab === 'kds'} onClick={() => setTopTab('kds')} />
+        <TopTabButton icon={Monitor} label="Customer Display" active={topTab === 'kds'} onClick={() => setTopTab('kds')} />
         <TopTabButton icon={ShoppingCart} label="Devices" active={topTab === 'devices'} onClick={() => setTopTab('devices')} />
       </nav>
 
       <main className="flex-1 overflow-y-auto p-6">
         {topTab === 'pos' && <PosConfigSection readOnly={!canEdit} />}
-        {topTab === 'printing' && <PrintingSettingsTab />}
+        {topTab === 'printing' && <PrintingSettingsTab readOnly={!canEdit} />}
         {topTab === 'kds' && <DisplaySettingsTab readOnly={!canEdit} />}
         {topTab === 'devices' && <DevicesSettingsTab readOnly={!canEdit} />}
       </main>
@@ -136,13 +135,11 @@ function PosConfigSection({ readOnly }: { readOnly: boolean }): JSX.Element {
 
       <div className="inline-flex items-center gap-1 rounded-md border border-border-subtle bg-bg-elevated p-1">
         <SubTabButton icon={Cog} label="General" active={tab === 'general'} onClick={() => setTab('general')} />
-        <SubTabButton icon={Zap} label="Automation" active={tab === 'automation'} onClick={() => setTab('automation')} />
         <SubTabButton icon={ShoppingCart} label="Advanced" active={tab === 'advanced'} onClick={() => setTab('advanced')} />
         <SubTabButton icon={Tag} label="Behavior" active={tab === 'behavior'} onClick={() => setTab('behavior')} />
       </div>
 
       {tab === 'general' && <GeneralTab readOnly={readOnly} />}
-      {tab === 'automation' && <AutomationSettingsTab readOnly={readOnly} />}
       {tab === 'advanced' && <AdvancedSettingsTab readOnly={readOnly} />}
       {tab === 'behavior' && <BehaviorSettingsTab readOnly={readOnly} />}
     </div>
@@ -209,6 +206,10 @@ function GeneralTab({ readOnly }: { readOnly: boolean }): JSX.Element {
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center gap-2">
+        <ScopeBadge scope="org" />
+        <span className="text-xs text-text-muted">Presets partagés par tous les terminaux.</span>
+      </div>
       <NumericPresetGroup
         title="Quick Payment Amounts"
         description="Buttons displayed in the payment terminal cash entry step."
@@ -218,7 +219,7 @@ function GeneralTab({ readOnly }: { readOnly: boolean }): JSX.Element {
         onChange={(next) => {
           mutateQuickPayments.mutate(next, {
             onSuccess: () => toast.success('Quick payment amounts saved'),
-            onError: (e) => toast.error(`Save failed: ${(e as Error).message}`),
+            onError: (e) => toast.error(`Save failed: ${e.message}`),
           });
         }}
       />
@@ -231,7 +232,7 @@ function GeneralTab({ readOnly }: { readOnly: boolean }): JSX.Element {
         onChange={(next) => {
           mutateOpeningCash.mutate(next, {
             onSuccess: () => toast.success('Opening cash presets saved'),
-            onError: (e) => toast.error(`Save failed: ${(e as Error).message}`),
+            onError: (e) => toast.error(`Save failed: ${e.message}`),
           });
         }}
       />
@@ -242,7 +243,7 @@ function GeneralTab({ readOnly }: { readOnly: boolean }): JSX.Element {
         onChange={(next) => {
           mutateDiscountPresets.mutate(next, {
             onSuccess: () => toast.success('Discount presets saved'),
-            onError: (e) => toast.error(`Save failed: ${(e as Error).message}`),
+            onError: (e) => toast.error(`Save failed: ${e.message}`),
           });
         }}
       />
@@ -462,7 +463,7 @@ function DiscountPresetsGroup({
           Named discount buttons shown in the POS discount modal.
         </p>
         <p className="text-text-muted text-xs mt-1 italic">
-          Currently displayed in this Settings page only — discount modal consumers wiring lands in a follow-up.
+          Shown as one-tap presets in the POS discount modal (cart & line).
         </p>
       </div>
       <ul className="space-y-1">

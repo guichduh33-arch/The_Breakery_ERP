@@ -35,6 +35,8 @@ export interface DiscountModalProps {
    * Returns userId of the authorizing manager, or null if cancelled.
    */
   onRequireAuthorization: () => Promise<string | null>;
+  /** Optional quick presets (POS Settings → General → Quick Discount Presets). */
+  presets?: readonly { value: number; name: string }[];
 }
 
 type DiscountType = 'percentage' | 'fixed_amount';
@@ -51,6 +53,7 @@ export function DiscountModal({
   onConfirm,
   base,
   onRequireAuthorization,
+  presets,
 }: DiscountModalProps): JSX.Element {
   const [type, setType] = useState<DiscountType>('percentage');
   const [raw, setRaw] = useState('');
@@ -140,6 +143,31 @@ export function DiscountModal({
               ))}
             </div>
           </div>
+
+          {/* Preset chips */}
+          {presets && presets.length > 0 && (
+            <div className="flex flex-wrap justify-center gap-2" data-testid="discount-presets">
+              {presets.map((p, i) => (
+                <button
+                  key={`${p.name}-${i}`}
+                  type="button"
+                  aria-label={p.name}
+                  onClick={() => {
+                    setType('percentage');
+                    setRaw(String(p.value));
+                    setReason(`Preset — ${p.name}`);
+                  }}
+                  className={cn(
+                    'inline-flex items-center gap-1 rounded-full border border-border-subtle bg-bg-input px-3 h-9 text-sm font-semibold',
+                    'hover:border-gold hover:text-gold transition-colors',
+                  )}
+                >
+                  {p.name}
+                  <span className="text-text-muted font-normal">{p.value}%</span>
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* Value display */}
           <div className="text-center">

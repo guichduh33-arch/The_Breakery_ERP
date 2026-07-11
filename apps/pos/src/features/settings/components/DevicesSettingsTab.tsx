@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { Button, Card, Input, SectionLabel } from '@breakery/ui';
 import { usePosSettingsStore } from '@/stores/posSettingsStore';
 import { emitPosEvent } from '@/features/audit/emitPosEvent';
+import { ScopeBadge } from './ScopeBadge';
 import {
   checkPrintServer,
   printReceipt,
@@ -36,7 +37,6 @@ const TEST_RECEIPT: ReceiptPayload = {
 
 export function DevicesSettingsTab({ readOnly }: { readOnly: boolean }): JSX.Element {
   const printerUrl = usePosSettingsStore((s) => s.printerUrl);
-  const setPrinterUrl = usePosSettingsStore((s) => s.setPrinterUrl);
   const deviceCode = usePosSettingsStore((s) => s.deviceCode);
   const setDeviceCode = usePosSettingsStore((s) => s.setDeviceCode);
 
@@ -44,8 +44,6 @@ export function DevicesSettingsTab({ readOnly }: { readOnly: boolean }): JSX.Ele
   const [printBusy, setPrintBusy] = useState(false);
   const [drawerBusy, setDrawerBusy] = useState(false);
 
-  const envPrintUrl = import.meta.env.VITE_PRINT_SERVER_URL as string | undefined;
-  const resolvedUrl = printerUrl || (envPrintUrl ?? 'http://localhost:3001');
 
   async function runProbe(): Promise<void> {
     setProbe('busy');
@@ -75,29 +73,22 @@ export function DevicesSettingsTab({ readOnly }: { readOnly: boolean }): JSX.Ele
 
   return (
     <div className="space-y-6 max-w-lg">
+      <div className="flex items-center gap-2">
+        <ScopeBadge scope="terminal" />
+        <span className="text-xs text-text-muted">Réglages de ce terminal uniquement.</span>
+      </div>
       <Card variant="default" padding="md" className="space-y-3">
         <SectionLabel size="sm" as="h3" className="text-text-primary normal-case tracking-normal font-serif text-base">
           Print server
         </SectionLabel>
-        <div className="space-y-2">
-          <label
-            htmlFor="devices-print-url"
-            className="block font-bold uppercase tracking-widest text-text-muted text-xs"
-          >
+        <div className="space-y-1">
+          <span className="block font-bold uppercase tracking-widest text-text-muted text-xs">
             Print server URL
-          </label>
-          <Input
-            id="devices-print-url"
-            aria-label="Print server URL"
-            placeholder="http://localhost:3001"
-            value={printerUrl}
-            disabled={readOnly}
-            onChange={(e) => setPrinterUrl(e.target.value)}
-          />
-          <p className="text-xs text-text-muted">
-            Resolved: <span className="font-mono text-text-secondary">{resolvedUrl}</span>
-            {' · '}leave blank to use the build default.
+          </span>
+          <p className="text-sm font-mono text-text-secondary">
+            {printerUrl || 'default (VITE_PRINT_SERVER_URL → localhost:3001)'}
           </p>
+          <p className="text-xs text-text-muted">Edit it on the Printing tab.</p>
         </div>
         <div className="flex items-center gap-2 pt-1">
           <Button variant="secondary" size="sm" onClick={() => void runProbe()} disabled={probe === 'busy'}>

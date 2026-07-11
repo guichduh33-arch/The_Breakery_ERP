@@ -1,8 +1,9 @@
 // apps/pos/src/features/settings/components/PrintingSettingsTab.tsx
 //
 // Session 35 (F-009) — POS Settings → Printing tab. Lets a manager edit the
-// print-server URL and toggle auto-print / auto-open-drawer. Reads + writes
-// `usePosSettingsStore` (per-terminal localStorage). Consumed by
+// print-server URL (per-terminal, `usePosSettingsStore`) and toggle
+// auto-print / auto-open-drawer (S73 Lot 2 — org-level, `business_config`
+// via `useOrgDisplaySettings`/`useSetOrgDisplaySetting`). Consumed by
 // printService (URL) + SuccessModal (auto-toggles).
 //
 // Note: `@breakery/ui`'s SectionLabel only supports as=div|h2|h3|span|p (no
@@ -10,54 +11,60 @@
 // Input also carries aria-label="Print server URL" for redundant a11y.
 
 import type { JSX } from 'react';
+import { toast } from 'sonner';
 import { Input } from '@breakery/ui';
 import { usePosSettingsStore } from '@/stores/posSettingsStore';
+import { useOrgDisplaySettings, useSetOrgDisplaySetting } from '../hooks/useOrgDisplaySettings';
+import { SettingToggle } from './SettingToggle';
+import { ScopeBadge } from './ScopeBadge';
 
-function Toggle({
-  label,
-  checked,
-  onChange,
-}: {
-  label: string;
-  checked: boolean;
-  onChange: (v: boolean) => void;
-}): JSX.Element {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      aria-label={label}
-      onClick={() => onChange(!checked)}
-      className="flex items-center justify-between w-full py-3 border-b border-border-subtle"
-    >
-      <span className="text-sm text-text-primary">{label}</span>
-      <span
-        className={`h-6 w-11 rounded-full transition-colors ${checked ? 'bg-gold' : 'bg-bg-overlay'} relative`}
-      >
-        <span
-          className={`absolute top-0.5 h-5 w-5 rounded-full bg-text-primary transition-transform ${
-            checked ? 'translate-x-5' : 'translate-x-0.5'
-          }`}
-        />
-      </span>
-    </button>
-  );
-}
+export function PrintingSettingsTab({ readOnly }: { readOnly: boolean }): JSX.Element {
+  const { printerUrl, setPrinterUrl } = usePosSettingsStore();
+  const { autoPrint, autoOpenDrawer } = useOrgDisplaySettings();
+  const mutation = useSetOrgDisplaySetting();
 
-export function PrintingSettingsTab(): JSX.Element {
-  const {
-    printerUrl,
-    autoPrint,
-    autoOpenDrawer,
-    setPrinterUrl,
-    setAutoPrint,
-    setAutoOpenDrawer,
-  } = usePosSettingsStore();
+  function setAutoPrint(value: boolean): void {
+    mutation.mutate(
+      { key: 'pos_auto_print_receipt', value, category: 'printing' },
+      { onError: (e) => toast.error(`Save failed: ${e.message}`) },
+    );
+  }
+  function setAutoOpenDrawer(value: boolean): void {
+    mutation.mutate(
+      { key: 'pos_auto_open_drawer', value, category: 'printing' },
+      { onError: (e) => toast.error(`Save failed: ${e.message}`) },
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-lg">
+      <div>
+        <div className="flex items-center gap-2">
+          <ScopeBadge scope="org" />
+          <span className="text-xs text-text-muted">Réglage partagé par tous les terminaux.</span>
+        </div>
+        <div className="mt-4">
+          <SettingToggle
+            label="Auto-print receipt on payment"
+            description="Send the receipt to the print server without tapping Print."
+            checked={autoPrint}
+            onChange={setAutoPrint}
+            disabled={readOnly || mutation.isPending}
+          />
+          <SettingToggle
+            label="Auto-open cash drawer (cash)"
+            description="Pop the drawer when the tender is cash."
+            checked={autoOpenDrawer}
+            onChange={setAutoOpenDrawer}
+            disabled={readOnly || mutation.isPending}
+          />
+        </div>
+      </div>
       <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <ScopeBadge scope="terminal" />
+          <span className="text-xs text-text-muted">Réglage de ce terminal uniquement.</span>
+        </div>
         <label
           htmlFor="print-server-url"
           className="block font-bold uppercase tracking-widest text-text-muted text-xs"
@@ -70,18 +77,11 @@ export function PrintingSettingsTab(): JSX.Element {
           placeholder="http://localhost:3001"
           value={printerUrl}
           onChange={(e) => setPrinterUrl(e.target.value)}
+          disabled={readOnly}
         />
         <p className="text-xs text-text-muted">
           Leave blank to use the build default (VITE_PRINT_SERVER_URL → localhost:3001).
         </p>
-      </div>
-      <div>
-        <Toggle label="Auto-print receipt on payment" checked={autoPrint} onChange={setAutoPrint} />
-        <Toggle
-          label="Auto-open cash drawer (cash)"
-          checked={autoOpenDrawer}
-          onChange={setAutoOpenDrawer}
-        />
       </div>
     </div>
   );

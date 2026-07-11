@@ -11,6 +11,7 @@ import { Card, SectionLabel, cn } from '@breakery/ui';
 import { orderTypeLabel, type OrderType } from '@breakery/domain';
 import { usePosSettingsStore } from '@/stores/posSettingsStore';
 import { useCartStore } from '@/stores/cartStore';
+import { ScopeBadge } from './ScopeBadge';
 
 const ORDER_TYPES: readonly OrderType[] = ['dine_in', 'take_out', 'delivery'];
 
@@ -29,6 +30,10 @@ export function BehaviorSettingsTab({ readOnly }: { readOnly: boolean }): JSX.El
 
   return (
     <div className="space-y-6 max-w-lg">
+      <div className="flex items-center gap-2">
+        <ScopeBadge scope="terminal" />
+        <span className="text-xs text-text-muted">Réglages de ce terminal uniquement.</span>
+      </div>
       <Card variant="default" padding="md" className="space-y-3">
         <div>
           <SectionLabel size="sm" as="h3" className="text-text-primary normal-case tracking-normal font-serif text-base">

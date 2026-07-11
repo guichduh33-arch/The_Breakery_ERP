@@ -9,11 +9,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import type * as ReactRouterDom from 'react-router-dom';
 import POSSettingsPage from '../POSSettingsPage';
 
 const navigateMock = vi.fn();
 vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
+  const actual = await vi.importActual<typeof ReactRouterDom>('react-router-dom');
   return { ...actual, useNavigate: () => navigateMock };
 });
 
@@ -56,6 +57,17 @@ vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 
+vi.mock('../hooks/useOrgDisplaySettings', () => ({
+  useOrgDisplaySettings: vi.fn(() => ({
+    displayFooterMessage: '',
+    displaySlogan: '',
+    autoPrint: true,
+    autoOpenDrawer: true,
+    isLoading: false,
+  })),
+  useSetOrgDisplaySetting: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
+}));
+
 function renderPage() {
   return render(
     <MemoryRouter>
@@ -80,7 +92,7 @@ describe('POSSettingsPage', () => {
     expect(screen.getByRole('heading', { name: /pos settings/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^pos$/i, pressed: true })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /printing/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /kds & display/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /customer display/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /devices/i })).toBeInTheDocument();
     expect(screen.getByText(/pos configuration/i)).toBeInTheDocument();
     expect(screen.getByText(/quick payment amounts/i)).toBeInTheDocument();
@@ -99,11 +111,24 @@ describe('POSSettingsPage', () => {
     expect(screen.getByLabelText(/print server url/i)).toBeInTheDocument();
   });
 
-  it('switches between Configuration sub-tabs (General → Automation)', () => {
+  it('has no Automation sub-tab (S73 A4 — toggles live on Printing)', () => {
+    renderPage();
+    expect(screen.queryByRole('button', { name: /automation/i })).not.toBeInTheDocument();
+  });
+
+  it('labels the display top-tab "Customer Display" and scopes General as org', () => {
+    renderPage();
+    expect(screen.getByRole('button', { name: /customer display/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /kds/i })).not.toBeInTheDocument();
+    expect(screen.getAllByText('Établissement').length).toBeGreaterThan(0);
+  });
+
+  it('switches between Configuration sub-tabs (General → Advanced)', () => {
     renderPage();
     expect(screen.getByText(/quick payment amounts/i)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /^automation$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^advanced$/i }));
     expect(screen.queryByText(/quick payment amounts/i)).toBeNull();
+    expect(screen.getByRole('button', { name: /reset terminal settings/i })).toBeInTheDocument();
   });
 
   it('navigates back to /pos when the back button is clicked', () => {
@@ -145,7 +170,7 @@ describe('POSSettingsPage', () => {
     const removeButtons = screen.getAllByRole('button', { name: 'Remove' });
     fireEvent.click(removeButtons[0]!);
     expect(presetState.mutateQuickPayments).toHaveBeenCalledTimes(1);
-    const arg = presetState.mutateQuickPayments.mock.calls[0]![0];
+    const arg: unknown = presetState.mutateQuickPayments.mock.calls[0]![0];
     expect(arg).toEqual([100_000, 150_000]);
   });
 
@@ -154,20 +179,20 @@ describe('POSSettingsPage', () => {
     const moveDownButtons = screen.getAllByRole('button', { name: 'Move down' });
     fireEvent.click(moveDownButtons[0]!);
     expect(presetState.mutateQuickPayments).toHaveBeenCalledTimes(1);
-    const arg = presetState.mutateQuickPayments.mock.calls[0]![0];
+    const arg: unknown = presetState.mutateQuickPayments.mock.calls[0]![0];
     expect(arg).toEqual([100_000, 50_000, 150_000]);
   });
 
   it('adds a new opening-cash preset when the Add button is clicked with a valid amount', () => {
     renderPage();
-    const input = screen.getByLabelText('New Shift Opening Cash Presets preset') as HTMLInputElement;
+    const input = screen.getByLabelText('New Shift Opening Cash Presets preset');
     fireEvent.change(input, { target: { value: '500000' } });
     // The "Add" button in the opening-cash section (second one on the page).
     const addButtons = screen.getAllByRole('button', { name: /add/i });
     // Quick Payments Add is index 0, Opening Cash Add is index 1, Discount Add is index 2.
     fireEvent.click(addButtons[1]!);
     expect(presetState.mutateOpeningCash).toHaveBeenCalledTimes(1);
-    const arg = presetState.mutateOpeningCash.mock.calls[0]![0];
+    const arg: unknown = presetState.mutateOpeningCash.mock.calls[0]![0];
     expect(arg).toEqual([200_000, 300_000, 500_000]);
   });
 
@@ -176,7 +201,7 @@ describe('POSSettingsPage', () => {
     const removeButton = screen.getByRole('button', { name: 'Remove Tens' });
     fireEvent.click(removeButton);
     expect(presetState.mutateDiscountPresets).toHaveBeenCalledTimes(1);
-    const arg = presetState.mutateDiscountPresets.mock.calls[0]![0];
+    const arg: unknown = presetState.mutateDiscountPresets.mock.calls[0]![0];
     expect(arg).toEqual([{ value: 5, name: '5%' }]);
   });
 });

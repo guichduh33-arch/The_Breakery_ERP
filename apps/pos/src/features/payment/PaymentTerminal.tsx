@@ -20,6 +20,7 @@ import {
 } from '@breakery/domain';
 import { SuccessModal } from './SuccessModal';
 import { SplitPaymentFlow } from './split/SplitPaymentFlow';
+import { useOrgDisplaySettings } from '@/features/settings/hooks/useOrgDisplaySettings';
 import { usePaymentFlowLogic } from './hooks/usePaymentFlowLogic';
 import { RetryBanner } from './components/RetryBanner';
 import { PaymentMethodGrid } from './components/PaymentMethodGrid';
@@ -28,6 +29,8 @@ import { QuickPayRow } from './components/QuickPayRow';
 import { OrderSummaryPanel } from './components/OrderSummaryPanel';
 
 export function PaymentTerminal() {
+  // warm org config so SuccessModal's fire-once effect sees resolved values
+  useOrgDisplaySettings();
   const {
     isOpen, close,
     user, cart, attachedCustomer, appliedPromotions, totals, tenderedSum,
