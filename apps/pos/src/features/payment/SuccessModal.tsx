@@ -161,7 +161,17 @@ export function SuccessModal(props: SuccessModalProps) {
   const printedOnceRef = useRef(false);
   const { data: printers } = useStationPrinters();
   const cashierPrinter = printers?.get('cashier');
-  const { autoPrint, autoOpenDrawer } = useOrgDisplaySettings();
+  const { autoPrint, autoOpenDrawer, isLoading: orgSettingsLoading } = useOrgDisplaySettings();
+  // S73 Lot 2 review fix — the org toggles are now an ASYNC read (they were a
+  // synchronous localStorage read before). This modal mounts fresh right after
+  // a sale, so on the first sale of a session the query may still be loading;
+  // firing the effect at that instant would use the built-in DEFAULTS
+  // (true/true) and ignore an org that disabled auto-open-drawer as a fraud
+  // control. Gate the fire-once effect on resolution instead: wait for
+  // `isLoading` to clear (resolved OR errored — an error also clears it, so a
+  // dead config read still degrades to DEFAULTS and never blocks the
+  // encaissement), then fire exactly once.
+  const firedRef = useRef(false);
 
   async function handlePrint() {
     setIsPrinting(true);
@@ -203,7 +213,10 @@ export function SuccessModal(props: SuccessModalProps) {
 
   useEffect(() => {
     mountedRef.current = true;
-    if (!open) return;
+    if (!open || orgSettingsLoading || firedRef.current) {
+      return () => { mountedRef.current = false; };
+    }
+    firedRef.current = true;
     void (async () => {
       // S72 audit P1: only physically open the drawer when cash is actually
       // involved — a pure card/QRIS payment must NOT pop the till (open drawer =
@@ -234,7 +247,7 @@ export function SuccessModal(props: SuccessModalProps) {
       }
     })();
     return () => { mountedRef.current = false; };
-  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open, orgSettingsLoading, autoPrint, autoOpenDrawer]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <FullScreenModal open={open} onOpenChange={() => { /* must click action */ }} accessibleTitle="Payment successful">

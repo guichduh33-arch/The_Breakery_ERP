@@ -68,4 +68,36 @@ describe('SuccessModal auto toggles', () => {
     await waitFor(() => expect(printMock).toHaveBeenCalled());
     expect(drawerMock).not.toHaveBeenCalled();
   });
+
+  // S73 Lot 2 review fix — the effect must WAIT for the org config to resolve.
+  // Firing while isLoading would use the built-in DEFAULTS (true/true) and
+  // ignore an org that disabled auto-open-drawer as a fraud control.
+  it('waits for org config to resolve, then fires once respecting autoOpenDrawer=false', async () => {
+    useOrgDisplaySettingsMock.mockReturnValue({
+      displayFooterMessage: '',
+      displaySlogan: '',
+      autoPrint: true,
+      autoOpenDrawer: false,
+      isLoading: true,
+    });
+    const { rerender } = render(wrap(<SuccessModal {...props()} />));
+    // Gated: nothing fires while the config is still loading — if the gate
+    // were missing, the effect would already have fired at mount.
+    await new Promise((r) => setTimeout(r, 50));
+    expect(printMock).not.toHaveBeenCalled();
+    expect(drawerMock).not.toHaveBeenCalled();
+
+    // Config resolves → the effect fires exactly once with the REAL values:
+    // print yes (autoPrint true), drawer NO (org disabled it).
+    useOrgDisplaySettingsMock.mockReturnValue({
+      displayFooterMessage: '',
+      displaySlogan: '',
+      autoPrint: true,
+      autoOpenDrawer: false,
+      isLoading: false,
+    });
+    rerender(wrap(<SuccessModal {...props()} />));
+    await waitFor(() => expect(printMock).toHaveBeenCalledTimes(1));
+    expect(drawerMock).not.toHaveBeenCalled();
+  });
 });

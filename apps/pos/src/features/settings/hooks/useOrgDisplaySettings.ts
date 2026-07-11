@@ -29,6 +29,11 @@ export function useOrgDisplaySettings(): OrgDisplaySettings & { isLoading: boole
   const { data, isLoading } = useQuery({
     queryKey: QUERY_KEY,
     staleTime: 5 * 60_000,
+    // Bound the offline wait: SuccessModal's fire-once effect is gated on
+    // isLoading, so react-query's default 3-retry exponential backoff would
+    // stall the drawer/print for tens of seconds when the network is down.
+    // One retry, then settle (error clears isLoading → DEFAULTS apply).
+    retry: 1,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('business_config')
