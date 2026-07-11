@@ -10,6 +10,7 @@ import { Plug, Printer, Inbox, Loader2, CheckCircle2, XCircle } from 'lucide-rea
 import { toast } from 'sonner';
 import { Button, Card, Input, SectionLabel } from '@breakery/ui';
 import { usePosSettingsStore } from '@/stores/posSettingsStore';
+import { emitPosEvent } from '@/features/audit/emitPosEvent';
 import {
   checkPrintServer,
   printReceipt,
@@ -64,6 +65,10 @@ export function DevicesSettingsTab({ readOnly }: { readOnly: boolean }): JSX.Ele
     setDrawerBusy(true);
     const res = await openCashDrawer();
     setDrawerBusy(false);
+    // S72 audit — a manual till kick has no sale attached; a prime fraud signal.
+    emitPosEvent('cash_drawer_opened', {
+      payload: { trigger: 'manual', opened: res.success },
+    });
     if (res.success) toast.success('Cash drawer opened');
     else toast.error(`Could not open drawer: ${res.error ?? 'unknown'}`);
   }

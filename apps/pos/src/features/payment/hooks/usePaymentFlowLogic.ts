@@ -20,6 +20,7 @@ import { resetCartAfterCheckout, useCartStore } from '@/stores/cartStore';
 import { usePaymentStore } from '@/stores/paymentStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useCheckout } from './useCheckout';
+import { emitPosEvent } from '@/features/audit/emitPosEvent';
 import { useTaxRate } from '@/features/settings/hooks/useTaxRate';
 import { useEnabledPaymentMethods } from '@/features/settings/hooks/useEnabledPaymentMethods';
 import { usePOSPresets } from '@/features/settings/hooks/usePOSPresets';
@@ -215,6 +216,14 @@ export function usePaymentFlowLogic() {
     } catch (err: unknown) {
       const classified = classifyCheckoutError(err);
       setLastError(classified);
+      // S72 audit — journal the failed charge (fraud/ops signal: repeated
+      // failures, or a "failed" payment that actually went through). No order_id:
+      // the order isn't created on the failure path.
+      emitPosEvent('payment_failed', {
+        amount: total,
+        reason: err instanceof Error ? err.message : String(err),
+        payload: { kind: classified.kind, method: tendersToShip[0]?.method ?? null },
+      });
       if (classified.kind === 'fatal') {
         toast.error(classified.userMessage);
       }

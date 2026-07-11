@@ -7,6 +7,7 @@ import { queryClient } from './lib/queryClient';
 import { AppRoutes } from './routes';
 import { ErrorState } from './components/ErrorState';
 import { IdleTimeoutMount } from './components/IdleTimeoutMount';
+import { PosEventOutboxMount } from './features/audit/PosEventOutboxMount';
 import { useAuthStore } from './stores/authStore';
 
 /** Full-viewport spinner shown while a persisted PIN session rehydrates. */
@@ -60,6 +61,8 @@ export default function App() {
         {/* a11y: keyboard users tab here first to jump past nav chrome. */}
         <SkipToContent />
         <IdleTimeoutMount />
+        {/* S72 Lot 2 — audit-journal outbox flusher (all POS routes). */}
+        <PosEventOutboxMount />
         {/* S21 / 1.C.2 — idle warning overlay (DEV-S19-3.A-01) */}
         <IdleWarningToast />
         <BootGate>
