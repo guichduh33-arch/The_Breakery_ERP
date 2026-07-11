@@ -6862,6 +6862,19 @@ export type Database = {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json
       }
+      get_pos_events_v1: {
+        Args: {
+          p_start_date: string
+          p_end_date: string
+          p_event_types?: string[]
+          p_device_id?: string
+          p_actor_id?: string
+          p_order_id?: string
+          p_limit?: number
+          p_cursor?: string
+        }
+        Returns: Json
+      }
       get_pos_order_type_category_mix_v1: {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json
