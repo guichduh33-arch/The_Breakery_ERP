@@ -24,7 +24,6 @@ import {
   ArrowUp,
   ArrowDown,
   ShoppingCart,
-  Zap,
   Tag,
   ShieldCheck,
   type LucideIcon,
@@ -35,13 +34,12 @@ import { useAuthStore } from '@/stores/authStore';
 import { usePOSPresets, type DiscountPreset } from './hooks/usePOSPresets';
 import { PrintingSettingsTab } from './components/PrintingSettingsTab';
 import { BehaviorSettingsTab } from './components/BehaviorSettingsTab';
-import { AutomationSettingsTab } from './components/AutomationSettingsTab';
 import { AdvancedSettingsTab } from './components/AdvancedSettingsTab';
 import { DevicesSettingsTab } from './components/DevicesSettingsTab';
 import { DisplaySettingsTab } from './components/DisplaySettingsTab';
 
 type TopTab = 'pos' | 'printing' | 'kds' | 'devices';
-type ConfigTab = 'general' | 'automation' | 'advanced' | 'behavior';
+type ConfigTab = 'general' | 'advanced' | 'behavior';
 
 export default function POSSettingsPage(): JSX.Element {
   const navigate = useNavigate();
@@ -136,13 +134,11 @@ function PosConfigSection({ readOnly }: { readOnly: boolean }): JSX.Element {
 
       <div className="inline-flex items-center gap-1 rounded-md border border-border-subtle bg-bg-elevated p-1">
         <SubTabButton icon={Cog} label="General" active={tab === 'general'} onClick={() => setTab('general')} />
-        <SubTabButton icon={Zap} label="Automation" active={tab === 'automation'} onClick={() => setTab('automation')} />
         <SubTabButton icon={ShoppingCart} label="Advanced" active={tab === 'advanced'} onClick={() => setTab('advanced')} />
         <SubTabButton icon={Tag} label="Behavior" active={tab === 'behavior'} onClick={() => setTab('behavior')} />
       </div>
 
       {tab === 'general' && <GeneralTab readOnly={readOnly} />}
-      {tab === 'automation' && <AutomationSettingsTab readOnly={readOnly} />}
       {tab === 'advanced' && <AdvancedSettingsTab readOnly={readOnly} />}
       {tab === 'behavior' && <BehaviorSettingsTab readOnly={readOnly} />}
     </div>

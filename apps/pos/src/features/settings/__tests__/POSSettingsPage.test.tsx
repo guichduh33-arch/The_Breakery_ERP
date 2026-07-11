@@ -99,11 +99,9 @@ describe('POSSettingsPage', () => {
     expect(screen.getByLabelText(/print server url/i)).toBeInTheDocument();
   });
 
-  it('switches between Configuration sub-tabs (General → Automation)', () => {
+  it('has no Automation sub-tab (S73 A4 — toggles live on Printing)', () => {
     renderPage();
-    expect(screen.getByText(/quick payment amounts/i)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /^automation$/i }));
-    expect(screen.queryByText(/quick payment amounts/i)).toBeNull();
+    expect(screen.queryByRole('button', { name: /automation/i })).not.toBeInTheDocument();
   });
 
   it('navigates back to /pos when the back button is clicked', () => {
