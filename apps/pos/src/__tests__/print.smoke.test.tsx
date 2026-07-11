@@ -21,6 +21,20 @@ vi.mock('@/lib/supabase', () => ({
   supabaseUrl: 'http://localhost:54321',
 }));
 
+// S73 Lot 2 — SuccessModal's fire-once effect is gated on the org-config
+// query resolving (useOrgDisplaySettings). The supabase mock above has no
+// .from(), so the real hook would error + retry (~1 s) and push auto-print
+// past waitFor's timeout. Mock it resolved, like the auto-toggles smoke.
+vi.mock('@/features/settings/hooks/useOrgDisplaySettings', () => ({
+  useOrgDisplaySettings: vi.fn(() => ({
+    displayFooterMessage: '',
+    displaySlogan: '',
+    autoPrint: true,
+    autoOpenDrawer: true,
+    isLoading: false,
+  })),
+}));
+
 function wrapper(children: ReactNode) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return (
