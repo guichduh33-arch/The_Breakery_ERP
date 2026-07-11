@@ -117,6 +117,12 @@ même périmètre canonique → réconciliation par construction (**assertée en
   `one_open_session_per_user` interdit un 2ᵉ tiroir ouvert pour l'owner (shift E2E ouvert sur le dev).
 - **DEV-S72-08** — `order_voided` = type **synthétique reader-only**, volontairement PAS ajouté à
   l'enum `pos_event_type` (jamais émis client ; l'ajouter serait un ALTER TYPE irréversible sans usage).
+- **DEV-S72-09** (note INFO pattern-guardian, revue de branche) — l'idempotence de
+  `record_pos_events_v1` dévie du pattern canonique « table `*_idempotency_keys` dédiée »
+  (CLAUDE.md, saveur 2) : la clé est `client_event_id NOT NULL` **sur le ledger lui-même**
+  (`UNIQUE (client_event_id, occurred_at)` + `ON CONFLICT DO NOTHING`). Architecturalement voulu —
+  `pos_events` EST le ledger, la clé n'est pas nullable et ne pollue aucune table métrique — mais à
+  connaître pour un audit ultérieur des patterns d'idempotence.
 
 ## Dettes (D-1..)
 - **D-1** — types enum non émis côté client : `note_added`, `table_transferred`, `kitchen_recalled`,
