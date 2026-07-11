@@ -3573,6 +3573,7 @@ export type Database = {
           is_display_item: boolean
           is_favorite: boolean
           is_semi_finished: boolean
+          is_test: boolean
           min_stock_threshold: number
           name: string
           parent_product_id: string | null
@@ -3612,6 +3613,7 @@ export type Database = {
           is_display_item?: boolean
           is_favorite?: boolean
           is_semi_finished?: boolean
+          is_test?: boolean
           min_stock_threshold?: number
           name: string
           parent_product_id?: string | null
@@ -3651,6 +3653,7 @@ export type Database = {
           is_display_item?: boolean
           is_favorite?: boolean
           is_semi_finished?: boolean
+          is_test?: boolean
           min_stock_threshold?: number
           name?: string
           parent_product_id?: string | null
@@ -6754,6 +6757,26 @@ export type Database = {
           paid: number
           total: number
         }[]
+      }
+      get_pos_payment_breakdown_v1: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
+      }
+      get_pos_order_type_category_mix_v1: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
+      }
+      get_pos_sales_overview_v1: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
+      }
+      get_pos_sessions_report_v1: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
+      }
+      get_pos_voids_refunds_v1: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
       }
       get_price_changes_v1: {
         Args: {

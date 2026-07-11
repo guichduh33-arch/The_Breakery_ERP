@@ -34,14 +34,14 @@ Le **socle transactionnel serveur est solide** (money-path v17 autoritaire : tot
 ### 5. Tablette : pickup partiel piège la commande en `draft` — ⏳ **FOLLOW-UP**
 `usePickupTabletOrder.ts:46-59` : le claim RPC (`pending_payment → draft`) réussit, puis un `select` séparé des lignes ; si ce fetch échoue, la commande a quitté l'inbox, panier non restauré, **irrécupérable**. Fix propre = `pickup_tablet_order` retourne `order + items` atomiquement (reshape RPC + parsing client ; implications RLS à valider) → hors périmètre de cette PR.
 
-### 6. Clôture : deadlock d'approbation si seul un volet non-cash dépasse le seuil PIN — ⏳ **FOLLOW-UP**
-`CloseShiftModal.tsx:99-102` calcule `pinRequired` sur le **cash seul** ; le serveur (`close_shift`) déclenche `pin_approval_required` sur les 3 volets → si carte/QRIS dépasse, la section approbateur ne s'affiche jamais → boucle de toast, clôture impossible. Fix = répliquer l'OR 3-volets côté client (ou afficher l'approbateur dès le renvoi serveur `pin_approval_required`).
+### 6. Clôture : deadlock d'approbation si seul un volet non-cash dépasse le seuil PIN — ✅ **CORRIGÉ S72**
+`CloseShiftModal.tsx` calculait `pinRequired`/`noteRequired` sur le **cash seul** ; le serveur (`close_shift_v6`) déclenche `pin_approval_required`/`variance_note_required` sur les 3 volets. Le **comptage aveugle** cache l'expected QRIS/carte au client → impossible de répliquer l'OR. Fix : le `catch` du submit arme `serverPinRequired`/`serverNoteRequired` sur le renvoi serveur → révèle la section approbateur/note pour un resubmit, au lieu de boucler sur un toast.
 
-### 7. Paiement : le tiroir-caisse s'ouvre pour tout paiement carte/QRIS — ⏳ **FOLLOW-UP**
-`SuccessModal.tsx:200-201` : `openCashDrawer()` gardé par le seul réglage `autoOpenDrawer`, pas par la méthode. Fix = dériver `needsDrawer` des tenders réels (cash ou monnaie rendue).
+### 7. Paiement : le tiroir-caisse s'ouvre pour tout paiement carte/QRIS — ✅ **CORRIGÉ S72**
+`SuccessModal.tsx` : `openCashDrawer()` était gardé par le seul réglage `autoOpenDrawer`. Fix : `needsDrawer = paymentMethod === 'cash' || changeGiven > 0` gate désormais **l'appel** (couvre un split avec cash) — une vente carte/QRIS pure ne pope plus le tiroir.
 
-### 8. Panier : multiplicateur de fidélité en branche morte — ⏳ **FOLLOW-UP**
-`LoyaltyPointsLine.tsx:10` appelle `earnPointsFor(total)` sans multiplicateur → points affichés toujours au taux bronze quel que soit le palier, ET ≠ de l'écran de paiement (`OrderSummaryPanel.tsx:60-64` qui, lui, est correct). Fix = helper partagé `resolveLoyaltyMultiplier(customer)` (tier × catégorie).
+### 8. Panier : multiplicateur de fidélité en branche morte — ✅ **CORRIGÉ S72**
+Nouveau helper domaine partagé **`resolveLoyaltyMultiplier(lifetime_points, categoryMultiplier)`** (tier × catégorie, source unique) ; `LoyaltyPointsLine` reçoit le multiplicateur (via `ActiveOrderPanel`) et `OrderSummaryPanel` est dédupé sur le même helper → le panier affiche enfin les points au bon palier, identiques à l'écran de paiement. Tests domaine + smoke mis à jour (Gold ×1.1 : 35→38 pts).
 
 ## 🟡 P2 — À corriger (toutes ⏳ FOLLOW-UP)
 
@@ -72,11 +72,14 @@ Money-path v17 autoritaire · idempotence order UNIQUE + pré-check · PIN refun
 - **P1-2** `mark_item_served` (FK served_by + gate `kds.operate` + REVOKE) · migration `_143` + pgTAP 4/4.
 - **P1-3** dine-in table obligatoire tablette : garde UI + `create_tablet_order_v4` · migration `_144` + pgTAP 4/4.
 - **P1-4** pickup n'écrase plus le panier en cours (garde client).
-- Callers bumpés (`close_shift_v6`, `create_tablet_order_v4`) + types regen + tests POS mis à jour (76/76).
+- **P1-6** deadlock approbation clôture 3-volets (révélation section sur renvoi serveur).
+- **P1-7** tiroir conditionnel à la méthode/monnaie.
+- **P1-8** multiplicateur fidélité panier (helper domaine `resolveLoyaltyMultiplier`).
+- Callers bumpés (`close_shift_v6`, `create_tablet_order_v4`) + types regen + tests POS/domaine mis à jour (238 POS + 22 domaine loyalty).
 
 ## Reste-à-faire priorisé (follow-ups)
-1. **P1-6** deadlock approbation clôture 3-volets (client) — quick win, aucune migration.
-2. **P1-7** tiroir conditionnel à la méthode (client) — quick win.
-3. **P1-8** multiplicateur fidélité panier (helper partagé) — quick win.
-4. **P1-5** pickup atomique (reshape `pickup_tablet_order` retournant les items) — migration + RLS.
-5. **P2** lot reçu/split (9,10,17), KDS multi-station realtime (13,14), reprint/historique (15,19,20), customer-display transport (21).
+1. **P1-5** pickup atomique (reshape `pickup_tablet_order` retournant les items) — migration + RLS.
+2. **P2** lot reçu/split (9,10,12,17), KDS multi-station realtime (13,14), reprint/historique (15,19,20), customer-display transport (21).
+3. **P3** — voir §P3 (dont : le champ mort `cart.promotionTotal` #11, constantes fidélité hardcodées, refetch KDS au reconnect).
+
+> **P1 tous traités** hormis le pickup atomique (#5) qui exige un reshape RPC. Les 7 P1 de l'audit : 4 corrigés dans le 1ᵉʳ lot (P0 close_shift, mark_item_served, dine-in table, pickup-cart) + 3 quick-wins client corrigés dans le 2ᵉ lot (deadlock clôture, tiroir, fidélité panier).

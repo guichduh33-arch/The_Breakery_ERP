@@ -18,7 +18,7 @@ import { useState, type JSX } from 'react';
 import { MapPin, ShoppingBag, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { DiscountModal, PinVerificationModal, SectionLabel, cn } from '@breakery/ui';
-import { calculateTotals } from '@breakery/domain';
+import { calculateTotals, resolveLoyaltyMultiplier } from '@breakery/domain';
 import type { CartItem, OrderType } from '@breakery/domain';
 import { useCartStore } from '@/stores/cartStore';
 import { useTaxRate } from '@/features/settings/hooks/useTaxRate';
@@ -31,6 +31,7 @@ import { useCartBroadcast } from '@/features/display/hooks/useCartBroadcast';
 import { CartLineRow } from './CartLineRow';
 import { CustomerBadge } from './CustomerBadge';
 import { CancelItemModal } from './CancelItemModal';
+import { QtyEditModal } from './QtyEditModal';
 import { useCancelOrderItem } from './hooks/useCancelOrderItem';
 
 const CurrencyFmt = new Intl.NumberFormat('en-US');
@@ -64,6 +65,7 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
   const detachCustomer = useCartStore((s) => s.detachCustomer);
   const update = useCartStore((s) => s.update);
   const remove = useCartStore((s) => s.remove);
+  const restoreLine = useCartStore((s) => s.restoreLine);
   const setOrderType = useCartStore((s) => s.setOrderType);
   const appliedPromotions = useCartStore((s) => s.appliedPromotions);
 
@@ -80,6 +82,33 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
   // ── per-line cancel (tablet pickups) ─────────────────────────────────────
   const [cancelTarget, setCancelTarget] = useState<CartItem | null>(null);
   const cancelMutation = useCancelOrderItem();
+
+  // ── per-line quantity edit (Numpad) ──────────────────────────────────────
+  const [qtyTarget, setQtyTarget] = useState<CartItem | null>(null);
+
+  // Remove with a 5s undo toast — no blocking confirm on this frequent gesture
+  // (cart redesign v2, point #5). Snapshots the line + its index so "Annuler"
+  // re-inserts it exactly where it was.
+  function removeWithUndo(target: CartItem): void {
+    const index = cart.items.findIndex((i) => i.id === target.id);
+    remove(target.id);
+    toast(`${target.name} retiré`, {
+      duration: 5000,
+      action: {
+        label: 'Annuler',
+        onClick: () => restoreLine(target, index < 0 ? 0 : index),
+      },
+    });
+  }
+
+  // Apply a Numpad-entered quantity; 0 routes to the same undo-safe removal.
+  function applyQty(target: CartItem, qty: number): void {
+    if (qty <= 0) {
+      removeWithUndo(target);
+      return;
+    }
+    update(target.id, qty);
+  }
 
   // ── per-line discount (manager-PIN gated above threshold) ────────────────
   const lineDiscount = useApplyLineDiscount();
@@ -179,7 +208,8 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
               item={item}
               locked={lockedIds.includes(item.id)}
               onChangeQty={(q) => update(item.id, q)}
-              onRemove={() => remove(item.id)}
+              onEditQty={(it) => setQtyTarget(it)}
+              onRemove={() => removeWithUndo(item)}
               onApplyLineDiscount={lineDiscount.openForItem}
               {...(pickedUp ? { onRequestCancel: (it) => setCancelTarget(it) } : {})}
             />
@@ -190,7 +220,15 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
       {/* Totals footer — no buttons ──────────────────────────────────────── */}
       {!isEmpty && (
         <footer className="px-4 py-3 border-t border-border-subtle space-y-1 bg-bg-elevated">
-          {attachedCustomer && <LoyaltyPointsLine total={total} />}
+          {attachedCustomer && (
+            <LoyaltyPointsLine
+              total={total}
+              multiplier={resolveLoyaltyMultiplier(
+                attachedCustomer.lifetime_points,
+                attachedCustomer.category?.points_multiplier ?? 1.0,
+              )}
+            />
+          )}
 
           <div className="flex items-center justify-between text-[11px] text-text-muted">
             <span className="uppercase tracking-wide">Subtotal</span>
@@ -265,6 +303,17 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
               throw err;
             }
           }}
+        />
+      )}
+
+      {/* Per-line quantity edit (triggered from the qty chip on each row) ─── */}
+      {qtyTarget && (
+        <QtyEditModal
+          open={Boolean(qtyTarget)}
+          itemName={qtyTarget.name}
+          currentQty={qtyTarget.quantity}
+          onClose={() => setQtyTarget(null)}
+          onConfirm={(qty) => applyQty(qtyTarget, qty)}
         />
       )}
 

@@ -21,3 +21,16 @@ export function earnPointsForCustomer(amount: number, lifetime_points: number): 
   const tierData = TIERS.find((t) => t.tier === tier)!;
   return earnPointsFor(amount, tierData.points_multiplier);
 }
+
+/**
+ * The full points multiplier for a customer: tier multiplier × category
+ * multiplier. Single source of truth so every surface (cart line, payment
+ * summary) computes points identically instead of drifting (S72 audit).
+ * A missing/invalid category multiplier falls back to 1.0 (tier only).
+ */
+export function resolveLoyaltyMultiplier(lifetime_points: number, categoryMultiplier = 1.0): number {
+  const tier = tierFromLifetime(lifetime_points);
+  const tierData = TIERS.find((t) => t.tier === tier)!;
+  const catMult = Number.isFinite(categoryMultiplier) && categoryMultiplier > 0 ? categoryMultiplier : 1.0;
+  return tierData.points_multiplier * catMult;
+}

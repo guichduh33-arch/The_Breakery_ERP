@@ -43,7 +43,9 @@ export interface ProductCardProps {
   /** Low-stock indicator (ref 06 — "LOW STOCK · 2 LEFT"). */
   lowStockLabel?: string | null;
   /** Resolved allergens (own + cascade) — Session 15 Phase 5.C. */
-  allergens?: ReadonlyArray<AllergenType>;
+  allergens?: readonly AllergenType[];
+  /** Quantity of this product currently in the ticket (0 = not added). */
+  cartQty?: number;
   /** Click handler (skipped when disabled). */
   onSelect: (product: Product) => void;
   /** Optional extra slot rendered top-left ABOVE the image (e.g. ComboBadge). */
@@ -57,10 +59,12 @@ export function ProductCard({
   promoActive = false,
   lowStockLabel = null,
   allergens,
+  cartQty = 0,
   onSelect,
   topLeftSlot,
 }: ProductCardProps): JSX.Element {
   const allergenList = allergens ?? [];
+  const inCart = cartQty > 0 && !disabled;
   // P1 #6 — fall back to the BrandMark placeholder when image_url is absent OR
   // fails to load (broken/404 URL), instead of showing a broken-image icon.
   const [imgError, setImgError] = useState(false);
@@ -73,16 +77,19 @@ export function ProductCard({
       data-testid={`product-card-${product.id}`}
       aria-label={`${product.name} — ${disabled && overlayLabel ? overlayLabel : 'tap to add'}`}
       className={cn(
-        'group relative bg-bg-elevated rounded-lg overflow-hidden border border-border-subtle text-left will-change-transform',
+        'group relative bg-bg-elevated rounded-lg overflow-hidden border text-left will-change-transform',
         'transition-[transform,box-shadow,border-color,background-color] duration-fast ease-motion-out',
         'motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:active:scale-100',
         'focus:outline focus:outline-2 focus:outline-gold focus:outline-offset-2',
+        // In-cart signal (#9): a gold ring so the cashier sees at a glance the
+        // item is already on the ticket — cuts the rush double-add.
+        inCart ? 'border-gold ring-1 ring-gold/50' : 'border-border-subtle',
         disabled
           ? 'opacity-50 cursor-not-allowed'
           : 'cursor-pointer hover:-translate-y-0.5 hover:border-border-strong hover:bg-bg-overlay hover:shadow-lg active:scale-[0.97] active:translate-y-0 active:shadow-md',
       )}
     >
-      <div className="relative aspect-square bg-bg-input overflow-hidden">
+      <div className="relative aspect-[4/3] bg-bg-input overflow-hidden">
         {showImage ? (
           <img
             src={product.image_url ?? undefined}
@@ -100,34 +107,38 @@ export function ProductCard({
           </div>
         )}
 
-        {/* Top-left slot — promo badge, combo badge, etc. */}
-        {(promoActive || topLeftSlot) && (
-          <div className="absolute top-2 left-2 flex items-center gap-1.5 z-10">
+        {/* Top-left cluster — in-cart count (most important), then promo/combo. */}
+        {(inCart || promoActive || topLeftSlot) && (
+          <div className="absolute top-2 left-2 flex flex-col items-start gap-1.5 z-10">
+            {inCart && (
+              <span
+                className="inline-flex items-center justify-center min-w-6 h-6 px-1.5 rounded-full bg-gold text-bg-base text-xs font-bold tabular-nums shadow-md"
+                aria-label={`${cartQty} in cart`}
+              >
+                {cartQty}
+              </span>
+            )}
             {promoActive && <PromoBadge />}
             {topLeftSlot}
           </div>
         )}
 
-        {/* Favorite star top-right */}
-        <span
-          aria-hidden
-          className={cn(
-            'absolute top-2 right-2 inline-flex items-center justify-center h-7 w-7 rounded-full bg-bg-base/40 backdrop-blur-sm z-10',
-          )}
-        >
-          <Star
-            className={cn(
-              'h-4 w-4',
-              product.is_favorite ? 'fill-gold text-gold' : 'text-text-muted',
-            )}
-            aria-hidden
-          />
-        </span>
+        {/* Favorite star — shown ONLY when favourite (a meaningful pin), gold
+            and legible. Favourites are set in the backoffice; this is a display
+            indicator, not a toggle. */}
+        {product.is_favorite && !overlayLabel && (
+          <span
+            aria-label="Favourite"
+            className="absolute top-2 right-2 inline-flex items-center justify-center h-7 w-7 rounded-full bg-bg-base/55 backdrop-blur-sm z-10"
+          >
+            <Star className="h-4 w-4 fill-gold text-gold" aria-hidden />
+          </span>
+        )}
 
-        {/* Out-of-stock / disabled overlay */}
+        {/* Out-of-stock / disabled overlay — explicit and unmistakable. */}
         {overlayLabel && (
-          <div className="absolute inset-0 grid place-items-center bg-bg-base/55 z-20">
-            <span className="rotate-[-12deg] bg-bg-base/85 px-3 py-1 rounded-sm text-text-muted text-xs font-bold uppercase tracking-widest border border-border-strong">
+          <div className="absolute inset-0 grid place-items-center bg-bg-base/72 z-20">
+            <span className="rotate-[-8deg] bg-bg-base px-3 py-1.5 rounded text-red-fg text-sm font-extrabold uppercase tracking-widest border-2 border-red-fg/60 shadow-lg">
               {overlayLabel}
             </span>
           </div>
@@ -153,15 +164,22 @@ export function ProductCard({
         )}
       </div>
 
-      <div className="px-3 py-2.5 space-y-0.5">
-        <div className="text-sm text-text-primary truncate" title={product.name}>
+      <div className="px-2.5 py-2 space-y-0.5">
+        <div
+          className="text-[13px] leading-tight font-medium text-text-primary line-clamp-2 min-h-[2.4em]"
+          title={product.name}
+        >
           {product.name}
         </div>
-        <Currency
-          amount={product.retail_price}
-          emphasis="gold"
-          className="text-xs font-mono"
-        />
+        {/* Price is the read-aloud, verified value (#8): at least as large as the
+            name and bolder. Hidden on sold-out cards (they aren't priceable). */}
+        {!disabled && (
+          <Currency
+            amount={product.retail_price}
+            emphasis="gold"
+            className="text-[15px] font-mono font-bold tabular-nums"
+          />
+        )}
       </div>
     </button>
   );

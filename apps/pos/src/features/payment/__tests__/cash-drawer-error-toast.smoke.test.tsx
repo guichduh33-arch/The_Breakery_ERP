@@ -113,15 +113,18 @@ describe('SuccessModal — cash drawer error toast', () => {
     });
   });
 
-  it('T2: card payment + drawer failure does NOT raise a drawer toast', async () => {
+  it('T2: card payment does NOT open the drawer (no pop, no toast)', async () => {
     openCashDrawerMock.mockResolvedValue({ success: false, error: 'HTTP 503' });
 
-    render(withQuery(<SuccessModal {...buildProps({ paymentMethod: 'card' })} />));
+    // A real card payment gives no change (changeGiven: 0) — so the drawer has
+    // no reason to open.
+    render(withQuery(<SuccessModal {...buildProps({ paymentMethod: 'card', changeGiven: 0 })} />));
 
-    // Give the mount effect a chance to run, then assert no drawer toast.
-    await waitFor(() => {
-      expect(openCashDrawerMock).toHaveBeenCalled();
-    });
+    // S72 audit fix: a card payment must never physically pop the till. Let the
+    // mount effect settle (receipt renders), then assert the drawer was neither
+    // opened nor warned about.
+    expect(await screen.findByTestId('receipt-success')).toBeInTheDocument();
+    expect(openCashDrawerMock).not.toHaveBeenCalled();
     expect(toastWarningMock).not.toHaveBeenCalledWith(DRAWER_TOAST);
   });
 

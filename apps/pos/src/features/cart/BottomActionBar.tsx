@@ -21,21 +21,19 @@
 
 import { useEffect, useRef, useState, type JSX } from 'react';
 import {
-  ChevronUp,
   Clock,
   CreditCard,
   MoreHorizontal,
   PauseCircle,
   Percent,
   Star,
+  Trash2,
   User,
   UserPlus,
-  XCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Button,
-  CenterModal,
   Currency,
   DiscountModal,
   PinVerificationModal,
@@ -55,9 +53,11 @@ import { useVoidServerOrder } from './hooks/useVoidServerOrder';
 import { TableSelectorButton } from '@/features/tables/components/TableSelectorButton';
 import { useDineInTableGuard } from '@/features/tables/hooks/useDineInTableGuard';
 import { TabletInboxButton } from '@/features/inbox/components/TabletInboxButton';
+import { usePendingTabletOrders } from '@/features/inbox/hooks/usePendingTabletOrders';
 import { SendToKitchenButton } from './SendToKitchenButton';
 import { PrintBillButton } from './PrintBillButton';
 import { HeldOrdersModal } from './HeldOrdersModal';
+import { VoidOrderModal } from './VoidOrderModal';
 
 /** Shared "ghost" management-button styling (left group). */
 const GHOST_BTN =
@@ -92,31 +92,15 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
   // checkout CTA carries the same mandatory-table guard as Send to Kitchen.
   const checkoutTableGuard = useDineInTableGuard({ onSelected: () => openPayment() });
   const discount = useApplyCartDiscount();
-  const rawVoidVerifyFn = useVerifyManagerPin();
+  const verifyManagerPin = useVerifyManagerPin();
   const voidServerOrder = useVoidServerOrder();
-
-  // Capture the PIN entered during the void flow so we can forward it to the
-  // void-order EF (which requires x-manager-pin). The PIN is available in the
-  // verifyFn call but onVerified only carries userId.
-  const voidPinRef = useRef<string>('');
-
-  // S55 — one x-idempotency-key per void-PIN-modal opening. Regenerated each time
-  // the modal opens (handleVoid, fired-order branch) so reopen rotates the key,
-  // yet it stays stable across PIN retries within the same open and across any
-  // React-Query auto-retry inside a single voidServerOrder call.
-  const voidIdempotencyKeyRef = useRef<string>(crypto.randomUUID());
-
-  // Wrap the raw verifyFn to intercept the PIN before it's consumed.
-  const voidVerifyFn = async (pin: string) => {
-    voidPinRef.current = pin;
-    return rawVoidVerifyFn(pin);
-  };
+  const pendingTablet = usePendingTabletOrders().data?.length ?? 0;
 
   const [heldOpen, setHeldOpen] = useState(false);
   const [redeemOpen, setRedeemOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
-  const [voidPinOpen, setVoidPinOpen] = useState(false);
-  const [voidConfirmOpen, setVoidConfirmOpen] = useState(false);
+  const [voidOpen, setVoidOpen] = useState(false);
+  const [voidPending, setVoidPending] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
 
   // Close the More popover on outside click + Escape.
@@ -165,7 +149,6 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
 
   async function handleReholdFired(): Promise<void> {
     if (!pickedUpOrderId) return;
-    setMoreOpen(false);
     try {
       await holdFired.mutateAsync(pickedUpOrderId);
       resetCartAfterCheckout();
@@ -175,165 +158,183 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
     }
   }
 
-  // Void Order — once anything has been fired to the kitchen, require a manager
-  // PIN before wiping the order (waste / fraud control). Before any send, the
-  // cashier confirms via an alertdialog (S43 P2-1 — no more one-tap wipe).
-  function handleVoid(): void {
-    if (!hasItems) return;
-    if (hasSentItems) {
-      // Fresh idempotency key for this void attempt (server-void path).
-      voidIdempotencyKeyRef.current = crypto.randomUUID();
-      setVoidPinOpen(true);
-      return;
+  // Void Order (owner decision 2026-07-10) — lives under "More" and ALWAYS
+  // requires a manager PIN + a mandatory reason, whether or not anything was
+  // fired. Accidental voids become impossible and every void is attributable.
+  //   - fired (server row exists) → void-order EF verifies the PIN + records the
+  //     reason server-side (useVoidServerOrder).
+  //   - never fired → verify the PIN client-side, then wipe the local cart.
+  // Throws propagate so VoidOrderModal keeps the modal open + clears the PIN.
+  async function handleVoidSubmit({
+    reason,
+    managerPin,
+    idempotencyKey,
+  }: {
+    reason: string;
+    managerPin: string;
+    idempotencyKey: string;
+  }): Promise<void> {
+    setVoidPending(true);
+    try {
+      if (pickedUpOrderId) {
+        // Server row exists (tablet pickup OR fired counter order) → the
+        // void-order EF verifies the PIN + records the reason server-side.
+        await voidServerOrder(managerPin, reason, idempotencyKey);
+        toast.success('Order voided (manager approved)');
+      } else {
+        // No server row → verify the PIN client-side, then wipe locally.
+        await verifyManagerPin(managerPin); // throws on invalid PIN
+        voidOrder();
+        toast.info(`Order voided — ${reason}`);
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'void_failed';
+      toast.error(`Void failed: ${msg}`);
+      throw err;
+    } finally {
+      setVoidPending(false);
     }
-    setVoidConfirmOpen(true);
-  }
-
-  function handleVoidConfirmed(): void {
-    setVoidConfirmOpen(false);
-    voidOrder();
-    toast.info('Order voided');
   }
 
   return (
     <div
-      className="shrink-0 bg-bg-elevated border-t border-border-subtle px-4 py-2.5 flex max-md:flex-wrap items-center gap-2 shadow-[0_-4px_16px_rgba(0,0,0,0.25)] z-50"
+      className="shrink-0 bg-bg-elevated border-t border-border-subtle px-4 py-2.5 flex items-center gap-2 max-md:flex-wrap shadow-[0_-4px_16px_rgba(0,0,0,0.25)] z-50"
       role="toolbar"
       aria-label="Order actions"
     >
-      {/* ── Left group : management ─────────────────────────────────────── */}
-      <button
-        type="button"
-        className={GHOST_BTN}
-        onClick={() => setHeldOpen(true)}
-        disabled={heldCount === 0}
-      >
-        <Clock className="h-4 w-4 text-gold" aria-hidden />
-        <span>Held Orders</span>
-        {heldCount > 0 && (
-          <span
-            className="ml-0.5 inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-gold text-bg-base text-[10px] font-bold"
-            aria-label={`${heldCount} held order${heldCount === 1 ? '' : 's'}`}
-          >
-            {heldCount}
-          </span>
-        )}
-      </button>
-
-      <TabletInboxButton className={GHOST_BTN} />
-
-      <button type="button" className={GHOST_BTN} onClick={() => onOpenCustomerSearch?.()}>
-        {attachedCustomer ? (
-          <User className="h-4 w-4 text-gold" aria-hidden />
-        ) : (
-          <UserPlus className="h-4 w-4 text-gold" aria-hidden />
-        )}
-        <span className="max-w-[140px] truncate">
-          {attachedCustomer ? attachedCustomer.name : 'Customer'}
-        </span>
-      </button>
-
-      <TableSelectorButton variant="secondary" className={GHOST_BTN} />
-
-      <PrintBillButton variant="secondary" className={GHOST_BTN} />
-
-      {/* More popover */}
-      <div className="relative" ref={moreRef}>
+      {/* ── Left group : management ─────────────────────────────────────────
+          Wraps to a second row before it can push the validation pair off the
+          right edge — this is what fixes the Checkout/total truncation (#14):
+          the group is `min-w-0 flex-wrap`, the validation pair is `shrink-0`. */}
+      <div className="flex flex-wrap items-center gap-2 min-w-0 max-md:w-full">
         <button
           type="button"
           className={GHOST_BTN}
-          aria-haspopup="menu"
-          aria-expanded={moreOpen}
-          onClick={() => setMoreOpen((o) => !o)}
+          onClick={() => setHeldOpen(true)}
+          disabled={heldCount === 0}
         >
-          <MoreHorizontal className="h-4 w-4 text-gold" aria-hidden />
-          <span>More</span>
-        </button>
-        {moreOpen && (
-          <div
-            role="menu"
-            className="absolute bottom-full left-0 mb-2 w-56 p-1 rounded-md bg-bg-elevated border border-border-subtle shadow-lg z-50"
-          >
-            {/* Hold. A fresh cart → draft hold (HoldOrderButton, hold_order_v1).
-                A reopened FIRED order (pickedUpOrderId set) already has a live DB
-                row, so the draft path would orphan it — instead re-park it via
-                hold_fired_order_v1. New unfired lines must be fired first (Send
-                to Kitchen fires + parks), so re-hold is gated on hasUnfiredItems. */}
-            {hasFiredOrderOpen ? (
-              <button
-                type="button"
-                role="menuitem"
-                className={cn(MENU_ITEM, 'justify-start')}
-                disabled={hasUnfiredItems || holdFired.isPending}
-                {...(hasUnfiredItems
-                  ? { title: 'Send the new items to the kitchen first' }
-                  : {})}
-                onClick={() => { void handleReholdFired(); }}
-              >
-                <PauseCircle className="h-4 w-4 text-gold" aria-hidden />
-                <span>Hold</span>
-              </button>
-            ) : (
-              <div role="menuitem">
-                <HoldOrderButton
-                  variant="ghost"
-                  className={cn(MENU_ITEM, 'justify-start')}
-                />
-              </div>
-            )}
-            <button
-              type="button"
-              role="menuitem"
-              className={MENU_ITEM}
-              disabled={!hasItems}
-              onClick={() => {
-                setMoreOpen(false);
-                discount.openDiscountModal();
-              }}
+          <Clock className="h-4 w-4 text-gold" aria-hidden />
+          <span>Held Orders</span>
+          {heldCount > 0 && (
+            <span
+              className="ml-0.5 inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-gold text-bg-base text-[10px] font-bold"
+              aria-label={`${heldCount} held order${heldCount === 1 ? '' : 's'}`}
             >
-              <Percent className="h-4 w-4 text-gold" aria-hidden />
-              <span>Apply discount</span>
-            </button>
-            {attachedCustomer && (
+              {heldCount}
+            </span>
+          )}
+        </button>
+
+        {/* HOLD — first-class (owner decision 2026-07-10: a cashier who reopens
+            an order to check it must be able to re-park it without hunting a
+            submenu). Reopened FIRED order → hold_fired_order_v1; fresh cart →
+            draft hold via HoldOrderButton. */}
+        {hasFiredOrderOpen ? (
+          <button
+            type="button"
+            className={GHOST_BTN}
+            disabled={hasUnfiredItems || holdFired.isPending}
+            {...(hasUnfiredItems ? { title: 'Send the new items to the kitchen first' } : {})}
+            onClick={() => { void handleReholdFired(); }}
+          >
+            <PauseCircle className="h-4 w-4 text-gold" aria-hidden />
+            <span>Hold</span>
+          </button>
+        ) : (
+          <HoldOrderButton variant="ghost" className={GHOST_BTN} />
+        )}
+
+        <button type="button" className={GHOST_BTN} onClick={() => onOpenCustomerSearch?.()}>
+          {attachedCustomer ? (
+            <User className="h-4 w-4 text-gold" aria-hidden />
+          ) : (
+            <UserPlus className="h-4 w-4 text-gold" aria-hidden />
+          )}
+          <span className="max-w-[140px] truncate">
+            {attachedCustomer ? attachedCustomer.name : 'Customer'}
+          </span>
+        </button>
+
+        <TableSelectorButton variant="secondary" className={GHOST_BTN} />
+
+        {/* More — lower-frequency + destructive actions consolidated here so the
+            bar stays scannable and never overflows (#13/#14). A badge surfaces
+            pending tablet orders so the signal isn't lost inside the menu. */}
+        <div className="relative" ref={moreRef}>
+          <button
+            type="button"
+            className={GHOST_BTN}
+            aria-haspopup="menu"
+            aria-expanded={moreOpen}
+            onClick={() => setMoreOpen((o) => !o)}
+          >
+            <MoreHorizontal className="h-4 w-4 text-gold" aria-hidden />
+            <span>More</span>
+            {pendingTablet > 0 && (
+              <span
+                className="ml-0.5 inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-gold text-bg-base text-[10px] font-bold"
+                aria-label={`${pendingTablet} pending tablet order${pendingTablet === 1 ? '' : 's'}`}
+              >
+                {pendingTablet}
+              </span>
+            )}
+          </button>
+          {moreOpen && (
+            <div
+              role="menu"
+              className="absolute bottom-full left-0 mb-2 w-60 p-1 rounded-md bg-bg-elevated border border-border-subtle shadow-lg z-50"
+            >
+              {/* Self-contained buttons restyled as menu rows (own their modals). */}
+              <TabletInboxButton className={MENU_ITEM} />
+              <PrintBillButton variant="ghost" className={cn(MENU_ITEM, 'justify-start')} />
               <button
                 type="button"
                 role="menuitem"
                 className={MENU_ITEM}
+                disabled={!hasItems}
                 onClick={() => {
                   setMoreOpen(false);
-                  setRedeemOpen(true);
+                  discount.openDiscountModal();
                 }}
               >
-                <Star className="h-4 w-4 text-gold" aria-hidden />
-                <span>Redeem points</span>
+                <Percent className="h-4 w-4 text-gold" aria-hidden />
+                <span>Apply discount</span>
               </button>
-            )}
-            <div className="px-3 py-1.5 text-[10px] uppercase tracking-wide text-text-muted flex items-center gap-1">
-              <ChevronUp className="h-3 w-3" aria-hidden />
-              More options
+              {attachedCustomer && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  className={MENU_ITEM}
+                  onClick={() => {
+                    setMoreOpen(false);
+                    setRedeemOpen(true);
+                  }}
+                >
+                  <Star className="h-4 w-4 text-gold" aria-hidden />
+                  <span>Redeem points</span>
+                </button>
+              )}
+              <div className="my-1 border-t border-border-subtle" aria-hidden />
+              {/* Void order — destructive, under More, always PIN + reason. */}
+              <button
+                type="button"
+                role="menuitem"
+                className={cn(MENU_ITEM, 'text-red-fg hover:bg-red-soft')}
+                disabled={!hasItems}
+                onClick={() => {
+                  setMoreOpen(false);
+                  setVoidOpen(true);
+                }}
+              >
+                <Trash2 className="h-4 w-4" aria-hidden />
+                <span>Void order</span>
+              </button>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
-      {/* Void Order — destructive: kept in the LEFT (management) group, the
-          full flex-1 spacer away from Send/Checkout. It used to sit 8px from
-          Send to Kitchen (the most-tapped rush button) — one greasy mis-tap
-          from wiping the order. Destructive actions stay out of the reflex
-          zone (pos-design-craft P1, 2026-07-06). */}
-      <Button
-        variant="ghostDestructive"
-        className="h-12 px-3.5 gap-2 text-[13px] text-red-fg border border-red-fg/30"
-        onClick={handleVoid}
-        disabled={!hasItems}
-        title={hasSentItems ? 'Already sent to kitchen — manager PIN required' : undefined}
-      >
-        <XCircle className="h-4 w-4" aria-hidden />
-        <span>Void Order</span>
-      </Button>
-
-      {/* min-w guarantees ≥24px between the destructive Void and the
-          validation pair even on a crowded bar (spacing floor, rush). */}
+      {/* Spacer — collapses first; the left group wraps before Checkout clips. */}
       <div className="flex-1 min-w-[24px] max-md:hidden" />
 
       {/* ── Right group : validation ────────────────────────────────────── */}
@@ -357,7 +358,7 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
         <Button
           variant="gold"
           size="lg"
-          className="h-14 shrink-0 px-7 gap-2.5 text-base font-bold active:bg-gold-pressed max-md:px-4"
+          className="h-14 shrink-0 px-7 gap-2.5 text-base font-bold uppercase tracking-wide active:bg-gold-pressed max-md:px-4"
           onClick={() => { if (checkoutTableGuard.ensureTable()) openPayment(); }}
           disabled={!hasItems}
           data-testid="checkout-cta"
@@ -372,41 +373,16 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
       {checkoutTableGuard.modal}
       <HeldOrdersModal open={heldOpen} onClose={() => setHeldOpen(false)} />
 
-      {/* Void Order — local confirmation (cart not yet fired). S43 P2-1:
-          a one-tap Void wiped the whole cart with no way back — confirm first. */}
-      <CenterModal
-        open={voidConfirmOpen}
-        onOpenChange={setVoidConfirmOpen}
-        title="Void order"
-        className="w-[min(420px,92vw)]"
-        data-testid="void-confirm-modal"
-      >
-        <div role="alertdialog" aria-labelledby="void-confirm-title" className="p-6 space-y-5">
-          <header className="flex items-center gap-2">
-            <XCircle className="h-5 w-5 text-red-fg" aria-hidden />
-            <h2 id="void-confirm-title" className="font-serif text-xl text-text-primary">
-              Void this order?
-            </h2>
-          </header>
-          <p className="text-sm text-text-secondary">
-            All items in the current cart will be removed. This cannot be undone.
-          </p>
-          <div className="grid grid-cols-2 gap-3">
-            <Button variant="secondary" size="lg" onClick={() => setVoidConfirmOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              variant="ghostDestructive"
-              size="lg"
-              className="border border-red-fg/30"
-              onClick={handleVoidConfirmed}
-              data-testid="void-confirm-button"
-            >
-              Confirm Void
-            </Button>
-          </div>
-        </div>
-      </CenterModal>
+      {/* Void Order — single reason+PIN gate for BOTH paths (owner decision
+          2026-07-10). Fired → void-order EF (server-side PIN + reason). Never
+          fired → PIN verified client-side then local wipe. */}
+      <VoidOrderModal
+        open={voidOpen}
+        onClose={() => setVoidOpen(false)}
+        fired={hasSentItems}
+        isPending={voidPending}
+        onSubmit={handleVoidSubmit}
+      />
 
       <DiscountModal
         open={discount.discountModalOpen}
@@ -420,31 +396,6 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
         onClose={discount.onPinClose}
         onVerified={discount.onPinVerified}
         verifyFn={discount.verifyFn}
-      />
-
-      {/* Void Order — manager PIN once items were sent to the kitchen.
-          Session 37 B4: if this is a tablet pickup order (pickedUpOrderId set),
-          the server row is voided via the void-order EF before local reset. */}
-      <PinVerificationModal
-        open={voidPinOpen}
-        onClose={() => { setVoidPinOpen(false); voidPinRef.current = ''; }}
-        onVerified={() => {
-          const pin = voidPinRef.current;
-          voidPinRef.current = '';
-          const idempotencyKey = voidIdempotencyKeyRef.current;
-          setVoidPinOpen(false);
-          // Fire-and-forget with toast feedback; voidServerOrder handles routing:
-          // tablet pickup → EF void-order (server first); counter → client only.
-          void voidServerOrder(pin, idempotencyKey)
-            .then(() => {
-              toast.success('Order voided (manager approved)');
-            })
-            .catch((err: unknown) => {
-              const msg = err instanceof Error ? err.message : 'void_failed';
-              toast.error(`Void failed: ${msg}`);
-            });
-        }}
-        verifyFn={voidVerifyFn}
       />
 
       {attachedCustomer && (

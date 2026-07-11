@@ -29,7 +29,7 @@ export function TabletInboxButton({ className }: TabletInboxButtonProps = {}): J
         data-testid="tablet-inbox-button"
       >
         <TabletSmartphone className="h-4 w-4 text-gold" aria-hidden />
-        <span>Tablet</span>
+        <span>Tablet orders</span>
         {count > 0 && (
           <span
             className="ml-0.5 inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-gold text-bg-base text-[10px] font-bold"

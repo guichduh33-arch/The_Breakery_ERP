@@ -54,23 +54,23 @@ export function WasteDisplayModal({
     <CenterModal
       open={open}
       onOpenChange={onOpenChange}
-      title={`Perte vitrine — ${productName}`}
+      title={`Display waste — ${productName}`}
       className="w-[min(440px,92vw)]"
       data-testid="waste-display-modal"
     >
       <div className="p-6 space-y-5">
         <header className="flex items-center gap-2">
           <Trash2 className="h-5 w-5 text-red" aria-hidden />
-          <h2 className="font-serif text-xl">Déclarer une perte</h2>
+          <h2 className="font-serif text-xl">Record waste</h2>
         </header>
 
         <p className="text-sm text-text-secondary">
-          <span className="text-text-primary font-semibold">{productName}</span> — déduit la vitrine{' '}
-          <span className="text-text-primary">et</span> l’inventaire (mouvement de perte comptabilisé).
+          <span className="text-text-primary font-semibold">{productName}</span> — deducts the display{' '}
+          <span className="text-text-primary">and</span> inventory (a waste movement is recorded).
         </p>
 
         <section className="space-y-2">
-          <label className="text-xs uppercase tracking-wide text-text-secondary">Quantité perdue ({unit})</label>
+          <label className="text-xs uppercase tracking-wide text-text-secondary">Wasted quantity ({unit})</label>
           <div className="flex items-center gap-1.5">
             <button
               type="button"
@@ -87,7 +87,7 @@ export function WasteDisplayModal({
               min={1}
               value={qty}
               onChange={(e) => setQty(Math.max(1, Number(e.target.value) || 1))}
-              aria-label="Quantité perdue"
+              aria-label="Wasted quantity"
               className="h-touch-comfy flex-1 min-w-0 rounded-md border border-border-subtle bg-bg-input px-2 text-center text-lg tabular-nums focus:outline focus:outline-2 focus:outline-gold"
             />
             <button
@@ -104,21 +104,21 @@ export function WasteDisplayModal({
 
         <section className="space-y-2">
           <label htmlFor="waste_reason" className="text-xs uppercase tracking-wide text-text-secondary">
-            Raison (min. {MIN_REASON} caractères)
+            Reason (min. {MIN_REASON} characters)
           </label>
           <input
             id="waste_reason"
             type="text"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            placeholder="Ex. invendu fin de journée, abîmé…"
+            placeholder="e.g. end-of-day unsold, damaged…"
             className="w-full bg-bg-input border border-border-subtle rounded-md p-3 text-sm focus:outline-none focus:border-gold"
           />
         </section>
 
         <div className="grid grid-cols-2 gap-3">
           <Button variant="secondary" size="lg" onClick={() => onOpenChange(false)} disabled={isPending}>
-            Annuler
+            Cancel
           </Button>
           <Button
             variant="gold"
@@ -127,7 +127,7 @@ export function WasteDisplayModal({
             disabled={!canConfirm}
             data-testid="waste-display-confirm"
           >
-            {isPending ? 'Enregistrement…' : `Perte −${qty}`}
+            {isPending ? 'Saving…' : `Waste −${qty}`}
           </Button>
         </div>
       </div>

@@ -27,6 +27,7 @@ import { allLotsExpiredOrConsumed } from '@breakery/domain';
 import { EmptyState, Input } from '@breakery/ui';
 import { ErrorState } from '@/components/ErrorState';
 import { ComboBadge } from '@/features/combos/components/ComboBadge';
+import { useCartStore } from '@/stores/cartStore';
 import { ProductCard } from './ProductCard';
 import { useProducts } from './hooks/useProducts';
 import { useCategories } from './hooks/useCategories';
@@ -38,12 +39,28 @@ export interface ProductGridProps {
   onSelect: (product: Product) => void;
 }
 
+/** Stable identity for the empty-cart fallback (avoids selector re-render loops). */
+const EMPTY_ITEMS: never[] = [];
+
 export function ProductGrid({ selectedSlug, onSelect }: ProductGridProps): JSX.Element {
   const { data: products = [], isLoading, isError, refetch } = useProducts();
   const { data: categories = [] } = useCategories();
   const { data: lotsByProduct } = useActiveLotsByProduct();
   const { data: allergensByProduct } = useProductAllergensMap();
+  // Stable empty fallback so a partially-mocked store (tests) can't crash here
+  // and the selector never returns a fresh array identity.
+  const cartItems = useCartStore((s) => s.cart?.items ?? EMPTY_ITEMS);
   const [query, setQuery] = useState('');
+
+  // Per-product quantity currently on the ticket → the in-cart badge (#9).
+  const qtyByProduct = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const it of cartItems) {
+      if (it.is_cancelled) continue;
+      m.set(it.product_id, (m.get(it.product_id) ?? 0) + it.quantity);
+    }
+    return m;
+  }, [cartItems]);
 
   const selectedCat = categories.find((c) => c.slug === selectedSlug);
   const title = selectedSlug === 'favorites'
@@ -72,8 +89,15 @@ export function ProductGrid({ selectedSlug, onSelect }: ProductGridProps): JSX.E
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <div className="px-6 py-4 flex items-center justify-between gap-4 border-b border-border-subtle">
-        <h1 className="font-display text-xl text-text-primary capitalize">
-          {title}
+        {/* Functional title (not the decorative serif that duplicated the rail
+            active state, #11): plain heading + live item count. */}
+        <h1 className="flex items-baseline gap-2 min-w-0">
+          <span className="text-lg font-semibold text-text-primary truncate">{title}</span>
+          {!isLoading && !isError && (
+            <span className="shrink-0 font-mono tabular-nums text-sm text-text-muted">
+              {filtered.length}
+            </span>
+          )}
         </h1>
         <div className="relative w-72">
           <Search
@@ -99,8 +123,12 @@ export function ProductGrid({ selectedSlug, onSelect }: ProductGridProps): JSX.E
             onRetry={() => void refetch()}
           />
         ) : isLoading ? (
-          <div className="grid grid-cols-4 gap-4" aria-busy="true" aria-label="Loading products">
-            {Array.from({ length: 8 }).map((_, i) => (
+          <div
+            className="grid grid-cols-[repeat(auto-fill,minmax(148px,1fr))] gap-3"
+            aria-busy="true"
+            aria-label="Loading products"
+          >
+            {Array.from({ length: 12 }).map((_, i) => (
               <ProductCardSkeleton key={i} />
             ))}
           </div>
@@ -118,7 +146,7 @@ export function ProductGrid({ selectedSlug, onSelect }: ProductGridProps): JSX.E
             size="md"
           />
         ) : (
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(148px,1fr))] gap-3">
             {filtered.map((p) => {
               // S43 (P1-1) — sold-out is derived in useProducts via the domain
               // isSellable rule (track_inventory + display_stock-first).
@@ -148,6 +176,7 @@ export function ProductGrid({ selectedSlug, onSelect }: ProductGridProps): JSX.E
                   overlayLabel={overlayLabel}
                   lowStockLabel={lowStockLabel}
                   allergens={allergens}
+                  cartQty={qtyByProduct.get(p.id) ?? 0}
                   onSelect={onSelect}
                   topLeftSlot={
                     p.product_type === 'combo' ? <ComboBadge /> : undefined
@@ -169,10 +198,10 @@ function ProductCardSkeleton(): JSX.Element {
       aria-hidden
       className="rounded-lg overflow-hidden border border-border-subtle bg-bg-elevated motion-safe:animate-pulse"
     >
-      <div className="aspect-square bg-bg-input" />
-      <div className="px-3 py-2.5 space-y-2">
+      <div className="aspect-[4/3] bg-bg-input" />
+      <div className="px-2.5 py-2 space-y-2">
         <div className="h-3.5 w-3/4 rounded bg-bg-input" />
-        <div className="h-3 w-1/3 rounded bg-bg-input" />
+        <div className="h-3.5 w-1/3 rounded bg-bg-input" />
       </div>
     </div>
   );

@@ -7,12 +7,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import type * as ReactRouterDom from 'react-router-dom';
 import POSStockView from '../POSStockView';
 import type { POSStockProductRow } from '../hooks/usePOSStockProducts';
 
 const navigateMock = vi.fn();
 vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
+  const actual = await vi.importActual<typeof ReactRouterDom>('react-router-dom');
   return { ...actual, useNavigate: () => navigateMock };
 });
 
@@ -96,9 +97,9 @@ describe('POSStockView', () => {
     productsState.current = { data: [], isLoading: false, isError: false };
   });
 
-  it('renders the Cafe Stock header and KPI chips with zero state', () => {
+  it('renders the Display Stock header and KPI chips with zero state', () => {
     renderView();
-    expect(screen.getByRole('heading', { name: /cafe stock/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /display stock/i })).toBeInTheDocument();
     expect(screen.getByText(/0 out/i)).toBeInTheDocument();
     expect(screen.getByText(/0 low/i)).toBeInTheDocument();
     expect(screen.getByText(/0 products/i)).toBeInTheDocument();
@@ -106,7 +107,7 @@ describe('POSStockView', () => {
 
   it('renders the empty state when no products match', () => {
     renderView();
-    expect(screen.getByText(/no products match/i)).toBeInTheDocument();
+    expect(screen.getByText(/no products in this category/i)).toBeInTheDocument();
   });
 
   it('shows a loading message while products are fetching', () => {
@@ -137,7 +138,7 @@ describe('POSStockView', () => {
     expect(navigateMock).toHaveBeenCalledWith('/pos');
   });
 
-  it('invokes the return-to-kitchen mutation when "Retour cuisine" is tapped', () => {
+  it('invokes the return-to-kitchen mutation when "Return to kitchen" is tapped', () => {
     productsState.current = {
       data: [row({ id: 'p1', name: 'Croissant', display_stock: 5 })],
       isLoading: false,
@@ -148,7 +149,7 @@ describe('POSStockView', () => {
     // Bump the card's local qty stepper so the closure buttons enable.
     fireEvent.click(screen.getByLabelText('Increase'));
 
-    fireEvent.click(screen.getByRole('button', { name: /retour cuisine/i }));
+    fireEvent.click(screen.getByRole('button', { name: /return to kitchen/i }));
 
     expect(returnToKitchenMutate).toHaveBeenCalledTimes(1);
     expect(returnToKitchenMutate.mock.calls[0]?.[0]).toMatchObject({
@@ -165,15 +166,15 @@ describe('POSStockView', () => {
     };
     renderView();
 
-    // "Perte" opens the modal (no window.prompt anymore).
-    fireEvent.click(screen.getByRole('button', { name: /perte/i }));
+    // "Waste" opens the modal (no window.prompt anymore).
+    fireEvent.click(screen.getByRole('button', { name: /waste/i }));
     expect(screen.getByTestId('waste-display-modal')).toBeInTheDocument();
 
     // Confirm is disabled until a reason (>= 3 chars) is entered.
     const confirm = screen.getByTestId('waste-display-confirm');
     expect(confirm).toBeDisabled();
 
-    fireEvent.change(screen.getByLabelText(/raison/i), { target: { value: 'invendu' } });
+    fireEvent.change(screen.getByLabelText(/reason/i), { target: { value: 'unsold' } });
     expect(confirm).not.toBeDisabled();
     fireEvent.click(confirm);
 
@@ -181,7 +182,7 @@ describe('POSStockView', () => {
     expect(wasteMutate.mock.calls[0]?.[0]).toMatchObject({
       productId: 'p1',
       quantity: 1,
-      reason: 'invendu',
+      reason: 'unsold',
     });
   });
 });
