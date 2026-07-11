@@ -104,6 +104,14 @@ describe('POSSettingsPage', () => {
     expect(screen.queryByRole('button', { name: /automation/i })).not.toBeInTheDocument();
   });
 
+  it('switches between Configuration sub-tabs (General → Advanced)', () => {
+    renderPage();
+    expect(screen.getByText(/quick payment amounts/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /^advanced$/i }));
+    expect(screen.queryByText(/quick payment amounts/i)).toBeNull();
+    expect(screen.getByRole('button', { name: /reset terminal settings/i })).toBeInTheDocument();
+  });
+
   it('navigates back to /pos when the back button is clicked', () => {
     renderPage();
     fireEvent.click(screen.getByTestId('pos-settings-back'));
