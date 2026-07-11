@@ -13,6 +13,7 @@
 // no migration; flagged in the session report as a fast-follow).
 
 import { Fragment, useState, type JSX } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { Button } from '@breakery/ui';
 import type { CsvColumn } from '@breakery/domain';
@@ -43,7 +44,13 @@ function formatMetadata(metadata: unknown): string {
 }
 
 export default function AuditPage(): JSX.Element {
-  const [filters, setFilters] = useState<AuditLogFilterValues>(EMPTY_AUDIT_LOG_FILTERS);
+  const [searchParams] = useSearchParams();
+  // Settings hub deep-links here with `?action=setting.update` (S73) so the
+  // "Settings History" tile lands pre-filtered instead of the full firehose.
+  const [filters, setFilters] = useState<AuditLogFilterValues>(() => ({
+    ...EMPTY_AUDIT_LOG_FILTERS,
+    action: searchParams.get('action') ?? '',
+  }));
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
   // exactOptionalPropertyTypes: only set a key when the filter is non-empty —
