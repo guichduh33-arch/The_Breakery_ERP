@@ -15,13 +15,13 @@ interface RestoredHeldOrder {
   customerId: string | null;
   tableNumber: string | null;
   notes: string | null;
-  items: Array<{
+  items: {
     product_id: string;
     name: string;
     quantity: number;
     unit_price: number;
     modifiers: unknown;
-  }>;
+  }[];
 }
 
 /**

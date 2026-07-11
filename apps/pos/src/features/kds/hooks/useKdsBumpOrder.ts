@@ -47,7 +47,7 @@ export function useKdsBumpOrder() {
       // S72 audit — kitchen marked the order ready/served (bumped off the KDS).
       emitPosEvent('kitchen_bumped', {
         order_id: orderId,
-        payload: { bumped_count: (data as number) ?? 0 },
+        payload: { bumped_count: data ?? 0 },
       });
       return { bumpedCount: (data as number) ?? 0, idempotencyKey: key };
     },

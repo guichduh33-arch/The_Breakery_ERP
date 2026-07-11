@@ -10,7 +10,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, within, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import POSActivityReportPage from '../POSActivityReportPage';
-import type { PosJournalEvent } from '../hooks/usePosEventsJournal';
+import type { PosJournalEvent, PosJournalFilters } from '../hooks/usePosEventsJournal';
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
@@ -29,11 +29,11 @@ const journal = vi.hoisted(() => ({
     isFetchingNextPage: false,
     fetchNextPage: vi.fn(),
   },
-  lastFilters: null as unknown,
+  lastFilters: null as PosJournalFilters | null,
 }));
 vi.mock('../hooks/usePosEventsJournal', () => ({
   EMPTY_JOURNAL_FILTERS: { eventTypes: null, deviceId: null, actorId: null, orderId: null },
-  usePosEventsJournal: (_period: unknown, filters: unknown) => {
+  usePosEventsJournal: (_period: unknown, filters: PosJournalFilters) => {
     journal.lastFilters = filters;
     return journal.current;
   },
@@ -146,7 +146,7 @@ describe('Activity — Journal view (S72 Lot 4)', () => {
     openJournal();
 
     fireEvent.click(screen.getByRole('button', { name: '#0042' }));
-    expect((journal.lastFilters as { orderId: string | null }).orderId).toBe('ord-9');
+    expect(journal.lastFilters?.orderId).toBe('ord-9');
     // The clearable ticket chip appears.
     expect(screen.getByRole('button', { name: /Ticket #0042/ })).toBeInTheDocument();
   });

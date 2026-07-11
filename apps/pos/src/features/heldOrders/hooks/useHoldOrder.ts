@@ -37,10 +37,10 @@ export function useHoldOrder() {
       if (error) throw error;
       // S72 audit — the ticket was parked (held) for later.
       emitPosEvent('order_held', {
-        order_id: data as string,
+        order_id: data,
         payload: { items: cartPayload.items.length, table: tableNumber },
       });
-      return data as string;
+      return data;
     },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['held-orders'] });

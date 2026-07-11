@@ -93,10 +93,11 @@ describe('flushPosEvents', () => {
 
     const acked = await flushPosEvents();
 
-    expect(rpc).toHaveBeenCalledWith('record_pos_events_v1', expect.objectContaining({
-      p_device_token: expect.any(String),
-      p_events: expect.arrayContaining([expect.objectContaining({ event_type: 'session_opened' })]),
-    }));
+    const calls = rpc.mock.calls as [string, { p_device_token: string; p_events: { event_type: string }[] }][];
+    expect(calls).toHaveLength(1);
+    expect(calls[0]![0]).toBe('record_pos_events_v1');
+    expect(calls[0]![1].p_device_token.length).toBeGreaterThanOrEqual(8);
+    expect(calls[0]![1].p_events.map((e) => e.event_type)).toContain('session_opened');
     expect(acked).toBe(1);
     expect(await pendingCount()).toBe(0);
   });
