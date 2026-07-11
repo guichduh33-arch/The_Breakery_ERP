@@ -4,17 +4,14 @@
 //
 // Visual ref: 84-pos-reports-activity-month.jpg.
 //
-// Layout: filter chips (All / Sales / Session Open / Session Close), then
-// total event count, then a timeline of cards. Each card: type label in
-// color, reference id, friendly label, timestamp; sale rows also show the
-// amount in gold.
+// Sales-event timeline for the period: total count, then a timeline of cards
+// (type label, reference id, friendly label, timestamp, amount in gold).
+// Session open/close events moved to the dedicated Sessions tab in Lot D.
 
 import { useMemo, useState, type JSX } from 'react';
 import {
   Activity,
   Clock,
-  LogIn,
-  LogOut,
   ShoppingCart,
   type LucideIcon,
 } from 'lucide-react';
@@ -33,8 +30,6 @@ type Filter = 'all' | POSReportsEventKind;
 const FILTER_LABELS: Record<Filter, string> = {
   all: 'All',
   sale: 'Sales',
-  session_open: 'Session Open',
-  session_close: 'Session Close',
 };
 
 export default function POSActivityReportPage(): JSX.Element {
@@ -57,7 +52,7 @@ function ActivityList({
   const [filter, setFilter] = useState<Filter>('all');
 
   const counts = useMemo(() => {
-    const c: Record<Filter, number> = { all: 0, sale: 0, session_open: 0, session_close: 0 };
+    const c: Record<Filter, number> = { all: 0, sale: 0 };
     for (const e of data ?? []) {
       c.all++;
       c[e.kind]++;
@@ -116,20 +111,15 @@ function ActivityList({
   );
 }
 
-function eventTone(kind: POSReportsEventKind): {
+function eventTone(_kind: POSReportsEventKind): {
   bg: string;
   fg: string;
   icon: LucideIcon;
   label: string;
 } {
-  switch (kind) {
-    case 'sale':
-      return { bg: 'bg-green/15', fg: 'text-green', icon: ShoppingCart, label: 'SALE' };
-    case 'session_open':
-      return { bg: 'bg-blue-info/15', fg: 'text-blue-info', icon: LogIn, label: 'SESSION OPEN' };
-    case 'session_close':
-      return { bg: 'bg-text-muted/15', fg: 'text-text-muted', icon: LogOut, label: 'SESSION CLOSE' };
-  }
+  // Single event kind since Lot D (sales only); session events live in the
+  // Sessions tab.
+  return { bg: 'bg-green/15', fg: 'text-green', icon: ShoppingCart, label: 'SALE' };
 }
 
 function EventRow({ event }: { event: POSReportsEvent }): JSX.Element {
