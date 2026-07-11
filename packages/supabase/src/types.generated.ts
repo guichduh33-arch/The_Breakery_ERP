@@ -2829,6 +2829,102 @@ export type Database = {
         }
         Relationships: []
       }
+      pos_devices: {
+        Row: {
+          device_token: string
+          first_seen_at: string
+          id: string
+          is_active: boolean
+          is_registered: boolean
+          kind: string
+          label: string
+          last_seen_at: string
+          registered_at: string | null
+          registered_by: string | null
+        }
+        Insert: {
+          device_token: string
+          first_seen_at?: string
+          id?: string
+          is_active?: boolean
+          is_registered?: boolean
+          kind?: string
+          label: string
+          last_seen_at?: string
+          registered_at?: string | null
+          registered_by?: string | null
+        }
+        Update: {
+          device_token?: string
+          first_seen_at?: string
+          id?: string
+          is_active?: boolean
+          is_registered?: boolean
+          kind?: string
+          label?: string
+          last_seen_at?: string
+          registered_at?: string | null
+          registered_by?: string | null
+        }
+        Relationships: []
+      }
+      pos_events: {
+        Row: {
+          actor_id: string | null
+          amount: number | null
+          client_event_id: string
+          device_id: string
+          device_seq: number | null
+          event_type: Database["public"]["Enums"]["pos_event_type"]
+          id: string
+          occurred_at: string
+          order_id: string | null
+          order_item_id: string | null
+          order_number_snap: string | null
+          payload: Json
+          reason: string | null
+          recorded_at: string
+          session_id: string | null
+          synced_by: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          amount?: number | null
+          client_event_id: string
+          device_id: string
+          device_seq?: number | null
+          event_type: Database["public"]["Enums"]["pos_event_type"]
+          id?: string
+          occurred_at: string
+          order_id?: string | null
+          order_item_id?: string | null
+          order_number_snap?: string | null
+          payload?: Json
+          reason?: string | null
+          recorded_at?: string
+          session_id?: string | null
+          synced_by?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          amount?: number | null
+          client_event_id?: string
+          device_id?: string
+          device_seq?: number | null
+          event_type?: Database["public"]["Enums"]["pos_event_type"]
+          id?: string
+          occurred_at?: string
+          order_id?: string | null
+          order_item_id?: string | null
+          order_number_snap?: string | null
+          payload?: Json
+          reason?: string | null
+          recorded_at?: string
+          session_id?: string | null
+          synced_by?: string | null
+        }
+        Relationships: []
+      }
       pos_sessions: {
         Row: {
           cash_in_total: number
@@ -6766,6 +6862,19 @@ export type Database = {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json
       }
+      get_pos_events_v1: {
+        Args: {
+          p_start_date: string
+          p_end_date: string
+          p_event_types?: string[]
+          p_device_id?: string
+          p_actor_id?: string
+          p_order_id?: string
+          p_limit?: number
+          p_cursor?: string
+        }
+        Returns: Json
+      }
       get_pos_order_type_category_mix_v1: {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json
@@ -7562,6 +7671,10 @@ export type Database = {
         }
         Returns: Json
       }
+      record_pos_events_v1: {
+        Args: { p_device_token: string; p_events: Json }
+        Returns: Json
+      }
       record_production_v1: {
         Args: {
           p_actual_yield_qty?: number
@@ -7624,6 +7737,10 @@ export type Database = {
           p_tenders: Json
         }
         Returns: Json
+      }
+      register_pos_device_v1: {
+        Args: { p_device_token: string; p_kind: string; p_label: string }
+        Returns: string
       }
       reject_expense_v1: {
         Args: { p_expense_id: string; p_reason: string }
@@ -8128,6 +8245,41 @@ export type Database = {
         | "edc"
         | "transfer"
         | "store_credit"
+      pos_event_type:
+        | "order_opened"
+        | "order_type_changed"
+        | "table_assigned"
+        | "table_transferred"
+        | "item_added"
+        | "item_qty_changed"
+        | "item_removed_pre_fire"
+        | "item_voided_post_fire"
+        | "discount_applied"
+        | "discount_removed"
+        | "note_added"
+        | "sent_to_kitchen"
+        | "kitchen_bumped"
+        | "kitchen_recalled"
+        | "order_held"
+        | "order_resumed"
+        | "payment_started"
+        | "payment_method_selected"
+        | "payment_completed"
+        | "payment_failed"
+        | "change_given"
+        | "receipt_printed"
+        | "receipt_reprinted"
+        | "refund_issued"
+        | "sale_completed"
+        | "session_opened"
+        | "session_closed"
+        | "cash_drawer_opened"
+        | "paid_in"
+        | "paid_out"
+        | "manager_pin_used"
+        | "login"
+        | "logout"
+        | "device_switch"
       price_modifier_type:
         | "retail"
         | "wholesale"
@@ -8338,6 +8490,42 @@ export const Constants = {
         "edc",
         "transfer",
         "store_credit",
+      ],
+      pos_event_type: [
+        "order_opened",
+        "order_type_changed",
+        "table_assigned",
+        "table_transferred",
+        "item_added",
+        "item_qty_changed",
+        "item_removed_pre_fire",
+        "item_voided_post_fire",
+        "discount_applied",
+        "discount_removed",
+        "note_added",
+        "sent_to_kitchen",
+        "kitchen_bumped",
+        "kitchen_recalled",
+        "order_held",
+        "order_resumed",
+        "payment_started",
+        "payment_method_selected",
+        "payment_completed",
+        "payment_failed",
+        "change_given",
+        "receipt_printed",
+        "receipt_reprinted",
+        "refund_issued",
+        "sale_completed",
+        "session_opened",
+        "session_closed",
+        "cash_drawer_opened",
+        "paid_in",
+        "paid_out",
+        "manager_pin_used",
+        "login",
+        "logout",
+        "device_switch",
       ],
       price_modifier_type: [
         "retail",

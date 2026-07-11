@@ -6,6 +6,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
+import { emitPosEvent } from '@/features/audit/emitPosEvent';
 
 interface RpcError {
   code?: string;
@@ -43,6 +44,11 @@ export function useKdsBumpOrder() {
         const err = Object.assign(new Error(error.message), { code: error.code });
         throw err;
       }
+      // S72 audit — kitchen marked the order ready/served (bumped off the KDS).
+      emitPosEvent('kitchen_bumped', {
+        order_id: orderId,
+        payload: { bumped_count: (data as number) ?? 0 },
+      });
       return { bumpedCount: (data as number) ?? 0, idempotencyKey: key };
     },
     onSuccess: () => {

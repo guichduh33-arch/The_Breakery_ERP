@@ -2,6 +2,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
+import { emitPosEvent } from '@/features/audit/emitPosEvent';
 import { useShiftStore, type ActiveShift } from '@/stores/shiftStore';
 
 export function useCurrentShift() {
@@ -56,6 +57,13 @@ export function useOpenShift() {
     },
     onSuccess: (shift) => {
       setCurrent(shift);
+      // S72 audit — journal the drawer opening (declared opening float is a
+      // fraud signal). The pos_sessions row stays authoritative; this is the
+      // immutable journal entry mirroring it.
+      emitPosEvent('session_opened', {
+        session_id: shift.id,
+        amount: shift.opening_cash,
+      });
       void queryClient.invalidateQueries({ queryKey: ['pos_sessions'] });
     },
   });

@@ -20,6 +20,7 @@ import { resetCartAfterCheckout, useCartStore } from '@/stores/cartStore';
 import { usePaymentStore } from '@/stores/paymentStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useCheckout } from './useCheckout';
+import { emitPosEvent } from '@/features/audit/emitPosEvent';
 import { useTaxRate } from '@/features/settings/hooks/useTaxRate';
 import { useEnabledPaymentMethods } from '@/features/settings/hooks/useEnabledPaymentMethods';
 import { usePOSPresets } from '@/features/settings/hooks/usePOSPresets';
@@ -174,6 +175,12 @@ export function usePaymentFlowLogic() {
   async function dispatchCheckout(tendersToShip: Tender[]): Promise<void> {
     setLastError(null);
     setLastTendersShipped(tendersToShip);
+    // S72 audit — a charge attempt begins (pairs with payment_completed /
+    // payment_failed so the journal shows every attempt, not just outcomes).
+    emitPosEvent('payment_started', {
+      amount: total,
+      payload: { tenders: tendersToShip.length, method: tendersToShip[0]?.method ?? null },
+    });
     try {
       const result = await checkout.mutateAsync({ cart, payment: tendersToShip });
 
@@ -212,9 +219,23 @@ export function usePaymentFlowLogic() {
         paymentMethod: tendersToShip[0]!.method,
         ...(appliedPromotions.length > 0 ? { appliedPromotions } : {}),
       });
+      // S72 audit — the charge succeeded (order now exists server-side).
+      emitPosEvent('payment_completed', {
+        order_number_snap: result.order_number,
+        amount: result.total,
+        payload: { method: tendersToShip[0]!.method, change_given: result.change_given },
+      });
     } catch (err: unknown) {
       const classified = classifyCheckoutError(err);
       setLastError(classified);
+      // S72 audit — journal the failed charge (fraud/ops signal: repeated
+      // failures, or a "failed" payment that actually went through). No order_id:
+      // the order isn't created on the failure path.
+      emitPosEvent('payment_failed', {
+        amount: total,
+        reason: err instanceof Error ? err.message : String(err),
+        payload: { kind: classified.kind, method: tendersToShip[0]?.method ?? null },
+      });
       if (classified.kind === 'fatal') {
         toast.error(classified.userMessage);
       }

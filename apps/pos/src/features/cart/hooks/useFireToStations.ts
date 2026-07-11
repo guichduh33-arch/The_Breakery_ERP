@@ -15,6 +15,7 @@ import type { StationTicketPayload } from '@/services/print/printService';
 import { useCartStore } from '@/stores/cartStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useShiftStore } from '@/stores/shiftStore';
+import { emitPosEvent } from '@/features/audit/emitPosEvent';
 import { useStationPrinters } from './useStationPrinters';
 import { useStationMap, getStationMap } from './useStationMap';
 
@@ -206,6 +207,14 @@ export function useFireToStations(): UseFireToStationsResult {
       const allIds = unprinted.map((i) => i.id);
       useCartStore.getState().markLocked(allIds);
       useCartStore.getState().markPrinted(allIds);
+
+      // S72 audit — the definitive "sent to kitchen" moment: these lines are now
+      // sealed (locked + printed) and, unless printOnly, persisted on the DB
+      // order. Emitted once per fire; already-printed lines returned early above.
+      emitPosEvent('sent_to_kitchen', {
+        order_number_snap: orderNumber ?? persistedOrderNumber ?? null,
+        payload: { items: allIds.length, print_only: printOnly, additional: isAdditional },
+      });
 
       // 4. Build stationByProductId from the live station-map cache (NOT the
       //    render closure) so routing reflects products fetched by fire time.

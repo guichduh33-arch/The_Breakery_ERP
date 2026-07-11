@@ -1,12 +1,15 @@
 // apps/pos/src/features/reports/POSActivityReportPage.tsx
 //
 // Session 14 — Phase 2.D — POS Reports / Activity tab.
+// S72 Lot 4 — split into two views:
+//   * Sales   — the Lot G sales-event timeline (get_pos_activity_v1), gated
+//               reports.sales.read like the rest of the reports.
+//   * Journal — the full operational audit journal (pos_events via
+//               get_pos_events_v1): every operator manipulation on every
+//               terminal, filterable, infinite-scroll, CSV. Gated
+//               reports.audit.read — the toggle only shows with that perm.
 //
 // Visual ref: 84-pos-reports-activity-month.jpg.
-//
-// Sales-event timeline for the period: total count, then a timeline of cards
-// (type label, reference id, friendly label, timestamp, amount in gold).
-// Session open/close events moved to the dedicated Sessions tab in Lot D.
 
 import { useMemo, useState, type JSX } from 'react';
 import {
@@ -18,6 +21,7 @@ import {
 import { Currency, EmptyState, cn } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore';
 import { POSReportsLayout } from './components/POSReportsLayout';
+import { ActivityJournal } from './components/ActivityJournal';
 import {
   usePOSReportsActivity,
   type POSReportsEvent,
@@ -35,11 +39,40 @@ const FILTER_LABELS: Record<Filter, string> = {
 
 export default function POSActivityReportPage(): JSX.Element {
   const canRead = useAuthStore((s) => s.hasPermission('reports.sales.read'));
+  const canAudit = useAuthStore((s) => s.hasPermission('reports.audit.read'));
+  const [view, setView] = useState<'sales' | 'journal'>('sales');
   if (!canRead) return <ReportsForbidden />;
 
   return (
     <POSReportsLayout activeTab="activity">
-      {(period) => <ActivityList period={period} />}
+      {(period) => (
+        <div className="space-y-4">
+          {canAudit ? (
+            <div role="tablist" aria-label="Activity view" className="inline-flex rounded-lg border border-border-subtle bg-bg-elevated p-0.5">
+              {(['sales', 'journal'] as const).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  role="tab"
+                  aria-selected={view === v}
+                  onClick={() => setView(v)}
+                  className={cn(
+                    'px-4 h-8 rounded-md text-xs font-semibold uppercase tracking-wider',
+                    'transition-colors motion-reduce:transition-none',
+                    view === v ? 'bg-gold-soft text-gold' : 'text-text-secondary hover:text-text-primary',
+                  )}
+                  data-testid={`activity-view-${v}`}
+                >
+                  {v === 'sales' ? 'Sales' : 'Journal'}
+                </button>
+              ))}
+            </div>
+          ) : null}
+          {view === 'journal' && canAudit
+            ? <ActivityJournal period={period} />
+            : <ActivityList period={period} />}
+        </div>
+      )}
     </POSReportsLayout>
   );
 }

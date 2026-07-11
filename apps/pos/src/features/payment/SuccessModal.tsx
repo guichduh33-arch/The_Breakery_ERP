@@ -9,6 +9,7 @@ import { printReceipt, openCashDrawer, type ReceiptPayload } from '@/services/pr
 import { useStationPrinters } from '@/features/cart/hooks/useStationPrinters';
 import { usePosSettingsStore } from '@/stores/posSettingsStore';
 import { broadcastPaymentComplete } from '@/features/display/hooks/useCartBroadcast';
+import { emitPosEvent } from '@/features/audit/emitPosEvent';
 import { toast } from 'sonner';
 
 const BUSINESS = {
@@ -154,6 +155,10 @@ export function SuccessModal(props: SuccessModalProps) {
   // bridge responds. Firing a toast on a dead component is wrong in prod and
   // also leaks across test boundaries under load.
   const mountedRef = useRef(true);
+  // S72 audit — first receipt print vs. subsequent reprints. The auto-print
+  // effect and the manual Print button both call handlePrint; the first pass is
+  // `receipt_printed`, every later pass `receipt_reprinted`.
+  const printedOnceRef = useRef(false);
   const { data: printers } = useStationPrinters();
   const cashierPrinter = printers?.get('cashier');
   const autoPrint = usePosSettingsStore((s) => s.autoPrint);
@@ -161,8 +166,15 @@ export function SuccessModal(props: SuccessModalProps) {
 
   async function handlePrint() {
     setIsPrinting(true);
+    const isReprint = printedOnceRef.current;
+    printedOnceRef.current = true;
     const payload = buildReceiptPayload(props, taxRate);
     const result = await printReceipt(payload, cashierPrinter);
+    // S72 audit — journal every receipt print (reprints are a fraud signal).
+    emitPosEvent(isReprint ? 'receipt_reprinted' : 'receipt_printed', {
+      order_number_snap: orderNumber,
+      payload: { printed: result.success },
+    });
     if (!result.success) {
       toast.warning('Print server unreachable — receipt not printed');
     }
@@ -206,6 +218,16 @@ export function SuccessModal(props: SuccessModalProps) {
         : Promise.resolve({ success: true } as const);
       const printTask = autoPrint ? handlePrint() : Promise.resolve();
       const [drawer] = await Promise.all([drawerTask, printTask]);
+      // S72 audit — journal the till kick on a sale (fraud signal: a cash sale
+      // that opens the drawer). Emitted for the attempt; `opened` records whether
+      // the hardware confirmed. Fire-and-forget, never blocks the flow.
+      if (autoOpenDrawer && needsDrawer) {
+        emitPosEvent('cash_drawer_opened', {
+          order_number_snap: orderNumber,
+          amount: changeGiven ?? 0,
+          payload: { trigger: 'sale', method: paymentMethod, opened: drawer.success },
+        });
+      }
       if (!mountedRef.current) return;
       // Only warn when we actually attempted to open it for a cash sale.
       if (autoOpenDrawer && needsDrawer && !drawer.success) {
