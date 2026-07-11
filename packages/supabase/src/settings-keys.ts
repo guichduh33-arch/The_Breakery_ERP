@@ -1,0 +1,23 @@
+// S73 Phase 3 — single typed dictionary of business_config setting keys and
+// symbolic categories (server truth: set_setting_v1 / get_settings_by_category_v1,
+// migration 20260711000159). Add a key here ONLY together with its RPC branch.
+export const SETTINGS_CATEGORIES = [
+  'business', 'localization', 'tax', 'pos', 'pos_presets',
+  'inventory', 'payments', 'customer_display', 'printing',
+] as const;
+export type SettingsCategory = (typeof SETTINGS_CATEGORIES)[number];
+
+export const SETTING_KEYS = {
+  business:         ['name', 'fiscal_address'],
+  localization:     ['currency', 'timezone'],
+  tax:              ['tax_rate', 'tax_inclusive'],
+  pos:              ['shift_variance_threshold_pct', 'shift_variance_threshold_abs',
+                     'shift_variance_pin_threshold_pct', 'shift_variance_pin_threshold_abs',
+                     'shift_denomination_count_enabled'],
+  pos_presets:      ['pos_quick_payment_amounts', 'pos_opening_cash_presets', 'pos_discount_presets'],
+  inventory:        ['allow_negative_stock'],
+  payments:         ['enabled_payment_methods'],
+  customer_display: ['display_footer_message', 'display_slogan'],
+  printing:         ['pos_auto_print_receipt', 'pos_auto_open_drawer'],
+} as const satisfies Record<SettingsCategory, readonly string[]>;
+export type SettingKey = (typeof SETTING_KEYS)[SettingsCategory][number];
