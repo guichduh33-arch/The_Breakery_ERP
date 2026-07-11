@@ -6758,6 +6758,10 @@ export type Database = {
           total: number
         }[]
       }
+      get_pos_payment_breakdown_v1: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
+      }
       get_pos_sales_overview_v1: {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json
