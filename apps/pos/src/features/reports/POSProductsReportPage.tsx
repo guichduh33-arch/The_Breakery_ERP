@@ -13,6 +13,7 @@ import { Currency, SectionLabel, EmptyState, cn } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore';
 import { POSReportsLayout } from './components/POSReportsLayout';
 import { usePOSReportsTopProducts, type POSReportsTopProduct } from './hooks/usePOSReports';
+import type { ReportsPeriod } from './hooks/useReportsPeriod';
 import { ReportsForbidden } from './components/ReportsForbidden';
 
 export default function POSProductsReportPage(): JSX.Element {
@@ -26,12 +27,8 @@ export default function POSProductsReportPage(): JSX.Element {
   );
 }
 
-function ProductsList({
-  period,
-}: {
-  period: { start: string; end: string; label: string };
-}): JSX.Element {
-  const { data, isLoading, isError } = usePOSReportsTopProducts(period as Parameters<typeof usePOSReportsTopProducts>[0]);
+function ProductsList({ period }: { period: ReportsPeriod }): JSX.Element {
+  const { data, isLoading, isError } = usePOSReportsTopProducts(period);
 
   if (isLoading) return <p className="text-text-secondary text-sm">Loading top products…</p>;
   if (isError) return <p className="text-red text-sm">Failed to load top products.</p>;
