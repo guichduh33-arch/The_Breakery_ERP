@@ -20,7 +20,7 @@ const settingsByCategory: Record<string, Record<string, unknown>> = {
   pos: { shift_variance_threshold_pct: 0.005, shift_variance_threshold_abs: 50000 },
 };
 
-const rpcCalls: Array<{ fn: string; args: Record<string, unknown> }> = [];
+const rpcCalls: { fn: string; args: Record<string, unknown> }[] = [];
 
 vi.mock('@/lib/supabase.js', () => ({
   supabase: {
@@ -61,12 +61,12 @@ describe('SettingsGeneralPage', () => {
   it('renders fields populated from the four category RPCs', async () => {
     renderPage();
     await waitFor(() => {
-      expect((screen.getByLabelText(/Business name/i) as HTMLInputElement).value).toBe('The Breakery');
+      expect(screen.getByLabelText(/Business name/i)).toHaveValue('The Breakery');
     });
-    expect((screen.getByLabelText(/Currency code/i) as HTMLSelectElement).value).toBe('IDR');
-    expect((screen.getByLabelText(/Timezone/i) as HTMLSelectElement).value).toBe('Asia/Makassar');
+    expect(screen.getByLabelText(/Currency code/i)).toHaveValue('IDR');
+    expect(screen.getByLabelText(/Timezone/i)).toHaveValue('Asia/Makassar');
     // DB decimal 0.1 renders as percent 10.
-    expect((screen.getByLabelText(/^Tax rate$/i) as HTMLInputElement).value).toBe('10');
+    expect(screen.getByLabelText(/^Tax rate$/i)).toHaveValue(10);
   });
 
   it('currency and timezone are selects, tax rate is a percent input', async () => {

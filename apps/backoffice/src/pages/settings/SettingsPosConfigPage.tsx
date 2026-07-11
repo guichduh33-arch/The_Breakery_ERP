@@ -73,9 +73,9 @@ export default function SettingsPosConfigPage() {
   const setSetting = useSetSetting();
   const [discountDraft, setDiscountDraft] = useState<{ name: string; pct: string }>({ name: '', pct: '' });
 
-  const quick    = asNumberArray(data?.settings['pos_quick_payment_amounts']);
-  const opening  = asNumberArray(data?.settings['pos_opening_cash_presets']);
-  const discounts = asDiscountArray(data?.settings['pos_discount_presets']);
+  const quick    = asNumberArray(data?.settings.pos_quick_payment_amounts);
+  const opening  = asNumberArray(data?.settings.pos_opening_cash_presets);
+  const discounts = asDiscountArray(data?.settings.pos_discount_presets);
 
   const save = (key: string, value: unknown) =>
     setSetting.mutate({ key, value, category: 'pos_presets' });
