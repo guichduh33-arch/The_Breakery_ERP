@@ -6762,6 +6762,10 @@ export type Database = {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json
       }
+      get_pos_order_type_category_mix_v1: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
+      }
       get_pos_sales_overview_v1: {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json

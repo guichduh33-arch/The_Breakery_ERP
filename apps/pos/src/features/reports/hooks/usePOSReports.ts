@@ -481,6 +481,96 @@ export function usePOSReportsSessions(period: ReportsPeriod) {
   });
 }
 
+// ─── Order-type mix + category performance ──────────────────────────────────
+//
+// Source of truth: server RPC `get_pos_order_type_category_mix_v1(p_start_date,
+// p_end_date)`. Same order scope as the Overview, so the order-type revenue
+// sums back to Overview revenue exactly. Two breakdowns:
+//   * byOrderType — order-level (dine_in / take_out / delivery): revenue TTC,
+//     order count, avg basket, revenue share.
+//   * byCategory  — line-level per product category (excl. cancelled / promo-
+//     gift lines): revenue, qty, share of category revenue.
+
+export interface POSReportsOrderTypeRow {
+  orderType: string;
+  revenue: number;
+  orderCount: number;
+  avgBasket: number;
+  sharePct: number;
+}
+
+export interface POSReportsCategoryRow {
+  categoryId: string | null;
+  categoryName: string;
+  revenue: number;
+  qty: number;
+  sharePct: number;
+}
+
+export interface POSReportsMix {
+  totals: { revenue: number; orders: number };
+  byOrderType: POSReportsOrderTypeRow[];
+  byCategory: POSReportsCategoryRow[];
+  timezone: string;
+}
+
+interface RawOrderTypeRow {
+  order_type: string;
+  revenue: number | string;
+  order_count: number | string;
+  avg_basket: number | string;
+  share_pct: number | string;
+}
+interface RawCategoryRow {
+  category_id: string | null;
+  category_name: string;
+  revenue: number | string;
+  qty: number | string;
+  share_pct: number | string;
+}
+interface MixPayload {
+  timezone: string;
+  totals: { revenue: number | string; orders: number | string };
+  by_order_type: RawOrderTypeRow[];
+  by_category: RawCategoryRow[];
+}
+
+export function usePOSReportsMix(period: ReportsPeriod) {
+  return useQuery<POSReportsMix>({
+    queryKey: ['pos-reports-mix', period.startDate, period.endDate],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_pos_order_type_category_mix_v1', {
+        p_start_date: period.startDate,
+        p_end_date: period.endDate,
+      });
+      if (error) throw new Error(error.message);
+      const p = data as unknown as MixPayload;
+      return {
+        timezone: p.timezone,
+        totals: {
+          revenue: Number(p.totals?.revenue ?? 0),
+          orders: Number(p.totals?.orders ?? 0),
+        },
+        byOrderType: (p.by_order_type ?? []).map((r) => ({
+          orderType: r.order_type,
+          revenue: Number(r.revenue),
+          orderCount: Number(r.order_count),
+          avgBasket: Number(r.avg_basket),
+          sharePct: Number(r.share_pct),
+        })),
+        byCategory: (p.by_category ?? []).map((r) => ({
+          categoryId: r.category_id,
+          categoryName: r.category_name,
+          revenue: Number(r.revenue),
+          qty: Number(r.qty),
+          sharePct: Number(r.share_pct),
+        })),
+      };
+    },
+    staleTime: 30_000,
+  });
+}
+
 // ─── Products ─────────────────────────────────────────────────────────────
 
 export interface POSReportsTopProduct {
