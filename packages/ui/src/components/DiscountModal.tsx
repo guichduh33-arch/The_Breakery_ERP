@@ -36,7 +36,7 @@ export interface DiscountModalProps {
    */
   onRequireAuthorization: () => Promise<string | null>;
   /** Optional quick presets (POS Settings → General → Quick Discount Presets). */
-  presets?: ReadonlyArray<{ value: number; name: string }>;
+  presets?: readonly { value: number; name: string }[];
 }
 
 type DiscountType = 'percentage' | 'fixed_amount';

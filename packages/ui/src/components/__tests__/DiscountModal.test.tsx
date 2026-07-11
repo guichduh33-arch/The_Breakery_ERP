@@ -184,15 +184,15 @@ describe('DiscountModal', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('preset chip fills percentage, value and reason', async () => {
+  it('preset chip fills percentage, value and reason', () => {
     const onConfirm = vi.fn();
     render(
       <DiscountModal
         open
-        onClose={() => {}}
+        onClose={vi.fn()}
         onConfirm={onConfirm}
         base={100_000}
-        onRequireAuthorization={async () => 'mgr-1'}
+        onRequireAuthorization={() => Promise.resolve('mgr-1')}
         presets={[{ value: 10, name: '10%' }, { value: 50, name: 'Staff Meal' }]}
       />,
     );
@@ -202,8 +202,8 @@ describe('DiscountModal', () => {
   });
 
   it('renders no preset row when the prop is absent', () => {
-    render(<DiscountModal open onClose={() => {}} onConfirm={vi.fn()} base={100_000}
-      onRequireAuthorization={async () => null} />);
+    render(<DiscountModal open onClose={vi.fn()} onConfirm={vi.fn()} base={100_000}
+      onRequireAuthorization={() => Promise.resolve(null)} />);
     expect(screen.queryByTestId('discount-presets')).not.toBeInTheDocument();
   });
 });
