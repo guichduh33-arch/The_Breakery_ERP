@@ -4,6 +4,11 @@
 // symbolic categories of business_config (business / localization / tax / pos)
 // in a single flat form. Each "Save" calls set_setting_v1 per dirty key so the
 // audit trail captures one row per field change.
+//
+// S73 B4 — currency/timezone become ISO-4217/IANA <select> pickers, tax_rate
+// and the two `_pct` thresholds render as percent inputs (DB stays decimal
+// [0,1] — only the display multiplies/divides by 100), and fields split into
+// an Identity/Cash section layout.
 
 import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@breakery/ui';
@@ -11,33 +16,46 @@ import { useAuthStore } from '@/stores/authStore.js';
 import { useSettings, type SettingsCategory } from '@/features/settings/hooks/useSettings.js';
 import { useSetSetting } from '@/features/settings/hooks/useSetSetting.js';
 
-type FieldType = 'text' | 'number' | 'boolean';
+type FieldType = 'text' | 'number' | 'boolean' | 'select' | 'percent';
 
 interface FieldSpec {
   key:       string;
   label:     string;
   type:      FieldType;
   category:  SettingsCategory;
+  section:   'identity' | 'cash';
   nullable?: boolean;
   helper?:   string;
+  options?:  readonly string[];
 }
 
+const CURRENCIES = ['IDR', 'USD', 'EUR', 'SGD', 'MYR', 'AUD', 'JPY', 'CNY', 'GBP'] as const;
+const TIMEZONES: readonly string[] =
+  typeof Intl.supportedValuesOf === 'function'
+    ? Intl.supportedValuesOf('timeZone')
+    : ['Asia/Makassar', 'Asia/Jakarta', 'UTC'];
+
+const SECTIONS = [
+  ['identity', 'Identity & locale'],
+  ['cash', 'Caisse — shift controls'],
+] as const;
+
 const FIELDS: FieldSpec[] = [
-  { key: 'name',           label: 'Business name',  type: 'text',    category: 'business'     },
-  { key: 'fiscal_address', label: 'Fiscal address', type: 'text',    category: 'business', nullable: true },
-  { key: 'currency',       label: 'Currency code',  type: 'text',    category: 'localization', helper: 'ISO-4217 (e.g. IDR, USD)' },
-  { key: 'timezone',       label: 'Timezone',       type: 'text',    category: 'localization', helper: 'IANA zone (e.g. Asia/Makassar)' },
-  { key: 'tax_rate',       label: 'Tax rate',       type: 'number',  category: 'tax', helper: 'Decimal 0..1 (0.10 = 10%)' },
-  { key: 'tax_inclusive',  label: 'Tax inclusive',  type: 'boolean', category: 'tax', helper: 'When true, listed prices include tax' },
-  { key: 'shift_variance_threshold_pct', label: 'Shift variance % threshold', type: 'number', category: 'pos', helper: 'Decimal 0..1 (0.005 = 0.5%)' },
-  { key: 'shift_variance_threshold_abs', label: 'Shift variance abs threshold', type: 'number', category: 'pos', helper: 'IDR' },
+  { key: 'name',           label: 'Business name',  type: 'text',    category: 'business',     section: 'identity' },
+  { key: 'fiscal_address', label: 'Fiscal address', type: 'text',    category: 'business',     section: 'identity', nullable: true },
+  { key: 'currency',       label: 'Currency code',  type: 'select',  category: 'localization', section: 'identity', options: CURRENCIES, helper: 'ISO-4217 (e.g. IDR, USD)' },
+  { key: 'timezone',       label: 'Timezone',       type: 'select',  category: 'localization', section: 'identity', options: TIMEZONES, helper: 'IANA zone (e.g. Asia/Makassar)' },
+  { key: 'tax_rate',       label: 'Tax rate',       type: 'percent', category: 'tax',          section: 'identity', helper: 'Percent — e.g. 10 for 10%' },
+  { key: 'tax_inclusive',  label: 'Tax inclusive',  type: 'boolean', category: 'tax',          section: 'identity', helper: 'When true, listed prices include tax' },
+  { key: 'shift_variance_threshold_pct', label: 'Shift variance % threshold', type: 'percent', category: 'pos', section: 'cash', helper: 'Percent — e.g. 0.5 for 0.5%' },
+  { key: 'shift_variance_threshold_abs', label: 'Shift variance abs threshold', type: 'number', category: 'pos', section: 'cash', helper: 'IDR' },
   // S66 (12 D2.1) — above these (higher) thresholds, close_shift_v5 also
   // requires a designated manager + 6-digit PIN on top of the variance note.
-  { key: 'shift_variance_pin_threshold_pct', label: 'Manager-PIN variance % threshold', type: 'number', category: 'pos', helper: 'Decimal 0..1 (0.02 = 2%) — large variances need a manager PIN at close' },
-  { key: 'shift_variance_pin_threshold_abs', label: 'Manager-PIN variance abs threshold', type: 'number', category: 'pos', helper: 'IDR — large variances need a manager PIN at close' },
+  { key: 'shift_variance_pin_threshold_pct', label: 'Manager-PIN variance % threshold', type: 'percent', category: 'pos', section: 'cash', helper: 'Percent — e.g. 2 for 2% — large variances need a manager PIN at close' },
+  { key: 'shift_variance_pin_threshold_abs', label: 'Manager-PIN variance abs threshold', type: 'number', category: 'pos', section: 'cash', helper: 'IDR — large variances need a manager PIN at close' },
   // S67 (12 D2.3) — when true the POS forces the cash count (open & close)
   // through the IDR denomination grid; close_shift_v5 enforces it server-side.
-  { key: 'shift_denomination_count_enabled', label: 'Denomination count required', type: 'boolean', category: 'pos', helper: 'When on, opening/closing cash must be counted note-by-note (grid)' },
+  { key: 'shift_denomination_count_enabled', label: 'Denomination count required', type: 'boolean', category: 'pos', section: 'cash', helper: 'When on, opening/closing cash must be counted note-by-note (grid)' },
 ];
 
 type DraftValue = string | number | boolean | null;
@@ -50,6 +68,16 @@ function valueFromAny(v: unknown): DraftValue {
   if (typeof v === 'object')  return JSON.stringify(v);
   // Unreachable for JSONB-sourced settings (only bigint/symbol/function left).
   return null;
+}
+
+// `percent` fields are stored in the DB as a [0,1] decimal but displayed as
+// a [0,100] percent — this is the ONLY place the conversion happens on read.
+function hydrateValue(f: FieldSpec, raw: unknown): DraftValue {
+  const v = valueFromAny(raw);
+  if (f.type !== 'percent' || v === null) return v;
+  const n = typeof v === 'number' ? v : Number(v);
+  // Round to avoid float artifacts like 10.000000000000002.
+  return Math.round(n * 100 * 10000) / 10000;
 }
 
 export default function SettingsGeneralPage() {
@@ -78,7 +106,7 @@ export default function SettingsGeneralPage() {
         f.category === 'localization' ? localization.data :
         f.category === 'tax'          ? tax.data :
         pos.data;
-      next[f.key] = valueFromAny(cat.settings[f.key]);
+      next[f.key] = hydrateValue(f, cat.settings[f.key]);
     }
     setDraft(next);
   }, [business.data, localization.data, tax.data, pos.data]);
@@ -91,7 +119,7 @@ export default function SettingsGeneralPage() {
         f.category === 'localization' ? localization.data :
         f.category === 'tax'          ? tax.data :
         pos.data;
-      next[f.key] = cat ? valueFromAny(cat.settings[f.key]) : null;
+      next[f.key] = cat ? hydrateValue(f, cat.settings[f.key]) : null;
     }
     return next;
   }, [business.data, localization.data, tax.data, pos.data]);
@@ -120,7 +148,7 @@ export default function SettingsGeneralPage() {
         const v = draft[k];
         // Coerce per field type to match the RPC's strict jsonb_typeof checks.
         let payload: unknown;
-        if (f.type === 'number') {
+        if (f.type === 'number' || f.type === 'percent') {
           if (v === '' || v === null) {
             setServerError(`${f.label} cannot be empty`);
             return;
@@ -130,11 +158,20 @@ export default function SettingsGeneralPage() {
             setServerError(`${f.label} must be a number`);
             return;
           }
-          payload = n;
+          if (f.type === 'percent') {
+            if (n < 0 || n > 100) {
+              setServerError(`${f.label} must be between 0 and 100`);
+              return;
+            }
+            // Display is percent [0,100] — the RPC/DB stay decimal [0,1].
+            payload = n / 100;
+          } else {
+            payload = n;
+          }
         } else if (f.type === 'boolean') {
           payload = Boolean(v);
         } else {
-          // text
+          // text / select
           if (v === null || v === '') {
             if (f.nullable === true) {
               payload = null;
@@ -167,38 +204,58 @@ export default function SettingsGeneralPage() {
       {loadError && <div className="text-red">Failed to load: {loadError.message}</div>}
 
       {!isLoading && !loadError && (
-        <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); void handleSave(); }}>
-          {FIELDS.map((f) => {
-            const v = draft[f.key];
-            const inputId = `setting-${f.key}`;
-            return (
-              <div key={f.key} className="grid grid-cols-1 md:grid-cols-3 gap-3 items-start">
-                <label htmlFor={inputId} className="text-sm font-medium pt-2">
-                  {f.label}
-                </label>
-                <div className="md:col-span-2 space-y-1">
-                  {f.type === 'boolean' ? (
-                    <label className="inline-flex items-center gap-2 text-sm pt-2">
-                      <input id={inputId} type="checkbox" checked={Boolean(v)} disabled={!canUpdate}
-                        onChange={(e) => setDraft((d) => ({ ...d, [f.key]: e.target.checked }))} />
-                      <span>{Boolean(v) ? 'Yes' : 'No'}</span>
+        <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); void handleSave(); }}>
+          {SECTIONS.map(([section, sectionLabel]) => (
+            <div key={section} className="space-y-5">
+              <h2 className="font-serif text-xl pt-2">{sectionLabel}</h2>
+              {FIELDS.filter((f) => f.section === section).map((f) => {
+                const v = draft[f.key];
+                const inputId = `setting-${f.key}`;
+                return (
+                  <div key={f.key} className="grid grid-cols-1 md:grid-cols-3 gap-3 items-start">
+                    <label htmlFor={inputId} className="text-sm font-medium pt-2">
+                      {f.label}
                     </label>
-                  ) : f.type === 'number' ? (
-                    <input id={inputId} type="number" step="any" disabled={!canUpdate}
-                      value={v === null ? '' : String(v)}
-                      onChange={(e) => setDraft((d) => ({ ...d, [f.key]: e.target.value }))}
-                      className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary disabled:opacity-50" />
-                  ) : (
-                    <input id={inputId} type="text" disabled={!canUpdate} maxLength={500}
-                      value={v === null ? '' : String(v)}
-                      onChange={(e) => setDraft((d) => ({ ...d, [f.key]: e.target.value }))}
-                      className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary disabled:opacity-50" />
-                  )}
-                  {f.helper && <p className="text-xs text-text-secondary">{f.helper}</p>}
-                </div>
-              </div>
-            );
-          })}
+                    <div className="md:col-span-2 space-y-1">
+                      {f.type === 'boolean' ? (
+                        <label className="inline-flex items-center gap-2 text-sm pt-2">
+                          <input id={inputId} type="checkbox" checked={Boolean(v)} disabled={!canUpdate}
+                            onChange={(e) => setDraft((d) => ({ ...d, [f.key]: e.target.checked }))} />
+                          <span>{Boolean(v) ? 'Yes' : 'No'}</span>
+                        </label>
+                      ) : f.type === 'select' ? (
+                        <select id={inputId} disabled={!canUpdate}
+                          value={v === null ? '' : String(v)}
+                          onChange={(e) => setDraft((d) => ({ ...d, [f.key]: e.target.value }))}
+                          className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary disabled:opacity-50">
+                          {(f.options ?? []).map((o) => <option key={o}>{o}</option>)}
+                        </select>
+                      ) : f.type === 'percent' ? (
+                        <div className="flex items-center gap-2">
+                          <input id={inputId} type="number" min={0} max={100} step="any" disabled={!canUpdate}
+                            value={v === null ? '' : String(v)}
+                            onChange={(e) => setDraft((d) => ({ ...d, [f.key]: e.target.value }))}
+                            className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary disabled:opacity-50" />
+                          <span className="text-sm text-text-secondary">%</span>
+                        </div>
+                      ) : f.type === 'number' ? (
+                        <input id={inputId} type="number" step="any" disabled={!canUpdate}
+                          value={v === null ? '' : String(v)}
+                          onChange={(e) => setDraft((d) => ({ ...d, [f.key]: e.target.value }))}
+                          className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary disabled:opacity-50" />
+                      ) : (
+                        <input id={inputId} type="text" disabled={!canUpdate} maxLength={500}
+                          value={v === null ? '' : String(v)}
+                          onChange={(e) => setDraft((d) => ({ ...d, [f.key]: e.target.value }))}
+                          className="h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary disabled:opacity-50" />
+                      )}
+                      {f.helper && <p className="text-xs text-text-secondary">{f.helper}</p>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
 
           {serverError && <p className="text-red text-sm" role="alert">{serverError}</p>}
           {savedAt && dirtyKeys.length === 0 && (

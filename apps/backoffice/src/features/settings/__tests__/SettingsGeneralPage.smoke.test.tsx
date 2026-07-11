@@ -63,9 +63,20 @@ describe('SettingsGeneralPage', () => {
     await waitFor(() => {
       expect((screen.getByLabelText(/Business name/i) as HTMLInputElement).value).toBe('The Breakery');
     });
-    expect((screen.getByLabelText(/Currency code/i) as HTMLInputElement).value).toBe('IDR');
-    expect((screen.getByLabelText(/Timezone/i) as HTMLInputElement).value).toBe('Asia/Makassar');
-    expect((screen.getByLabelText(/^Tax rate$/i) as HTMLInputElement).value).toBe('0.1');
+    expect((screen.getByLabelText(/Currency code/i) as HTMLSelectElement).value).toBe('IDR');
+    expect((screen.getByLabelText(/Timezone/i) as HTMLSelectElement).value).toBe('Asia/Makassar');
+    // DB decimal 0.1 renders as percent 10.
+    expect((screen.getByLabelText(/^Tax rate$/i) as HTMLInputElement).value).toBe('10');
+  });
+
+  it('currency and timezone are selects, tax rate is a percent input', async () => {
+    renderPage();
+    await waitFor(() => screen.getByLabelText(/Business name/i));
+    expect(screen.getByLabelText('Currency code').tagName).toBe('SELECT');
+    expect(screen.getByLabelText('Timezone').tagName).toBe('SELECT');
+    expect(screen.getByLabelText(/tax rate/i)).toHaveAttribute('type', 'number');
+    // valeur DB 0.10 rendue 10 (%)
+    expect(screen.getByLabelText(/tax rate/i)).toHaveValue(10);
   });
 
   it('shows "No changes" while the form is clean', async () => {
@@ -88,6 +99,24 @@ describe('SettingsGeneralPage', () => {
       expect(setCalls[0]?.args.p_key).toBe('name');
       expect(setCalls[0]?.args.p_value).toBe('New Bakery');
       expect(setCalls[0]?.args.p_category).toBe('business');
+    });
+  });
+
+  it('saving a percent field writes the decimal to the RPC (money-path guard)', async () => {
+    renderPage();
+    await waitFor(() => screen.getByLabelText(/^Tax rate$/i));
+    rpcCalls.length = 0;
+
+    // Displayed 10 (%) -> edited to 25 (%) -> must write 0.25, never 25.
+    fireEvent.change(screen.getByLabelText(/^Tax rate$/i), { target: { value: '25' } });
+    fireEvent.click(screen.getByRole('button', { name: /Save 1 change/i }));
+
+    await waitFor(() => {
+      const setCalls = rpcCalls.filter((c) => c.fn === 'set_setting_v1');
+      expect(setCalls).toHaveLength(1);
+      expect(setCalls[0]?.args.p_key).toBe('tax_rate');
+      expect(setCalls[0]?.args.p_value).toBe(0.25);
+      expect(setCalls[0]?.args.p_category).toBe('tax');
     });
   });
 
