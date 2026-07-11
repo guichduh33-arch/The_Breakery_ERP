@@ -6766,6 +6766,10 @@ export type Database = {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json
       }
+      get_pos_voids_refunds_v1: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
+      }
       get_price_changes_v1: {
         Args: {
           p_date_end: string
