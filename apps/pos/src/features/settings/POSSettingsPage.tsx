@@ -32,6 +32,7 @@ import { formatIdr } from '@breakery/utils';
 import { Button, SectionLabel, Card, cn } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore';
 import { usePOSPresets, type DiscountPreset } from './hooks/usePOSPresets';
+import { ScopeBadge } from './components/ScopeBadge';
 import { PrintingSettingsTab } from './components/PrintingSettingsTab';
 import { BehaviorSettingsTab } from './components/BehaviorSettingsTab';
 import { AdvancedSettingsTab } from './components/AdvancedSettingsTab';
@@ -73,7 +74,7 @@ export default function POSSettingsPage(): JSX.Element {
       >
         <TopTabButton icon={Cog} label="POS" active={topTab === 'pos'} onClick={() => setTopTab('pos')} />
         <TopTabButton icon={Printer} label="Printing" active={topTab === 'printing'} onClick={() => setTopTab('printing')} />
-        <TopTabButton icon={Monitor} label="KDS & Display" active={topTab === 'kds'} onClick={() => setTopTab('kds')} />
+        <TopTabButton icon={Monitor} label="Customer Display" active={topTab === 'kds'} onClick={() => setTopTab('kds')} />
         <TopTabButton icon={ShoppingCart} label="Devices" active={topTab === 'devices'} onClick={() => setTopTab('devices')} />
       </nav>
 
@@ -205,6 +206,10 @@ function GeneralTab({ readOnly }: { readOnly: boolean }): JSX.Element {
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center gap-2">
+        <ScopeBadge scope="org" />
+        <span className="text-xs text-text-muted">Presets partagés par tous les terminaux.</span>
+      </div>
       <NumericPresetGroup
         title="Quick Payment Amounts"
         description="Buttons displayed in the payment terminal cash entry step."

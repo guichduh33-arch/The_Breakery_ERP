@@ -13,6 +13,7 @@ import type { JSX } from 'react';
 import { Input } from '@breakery/ui';
 import { usePosSettingsStore } from '@/stores/posSettingsStore';
 import { SettingToggle } from './SettingToggle';
+import { ScopeBadge } from './ScopeBadge';
 
 export function PrintingSettingsTab({ readOnly }: { readOnly: boolean }): JSX.Element {
   const {
@@ -26,6 +27,10 @@ export function PrintingSettingsTab({ readOnly }: { readOnly: boolean }): JSX.El
 
   return (
     <div className="space-y-6 max-w-lg">
+      <div className="flex items-center gap-2">
+        <ScopeBadge scope="terminal" />
+        <span className="text-xs text-text-muted">Réglages de ce terminal uniquement.</span>
+      </div>
       <div className="space-y-2">
         <label
           htmlFor="print-server-url"

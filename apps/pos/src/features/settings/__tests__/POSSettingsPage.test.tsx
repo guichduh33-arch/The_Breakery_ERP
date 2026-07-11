@@ -80,7 +80,7 @@ describe('POSSettingsPage', () => {
     expect(screen.getByRole('heading', { name: /pos settings/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^pos$/i, pressed: true })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /printing/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /kds & display/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /customer display/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /devices/i })).toBeInTheDocument();
     expect(screen.getByText(/pos configuration/i)).toBeInTheDocument();
     expect(screen.getByText(/quick payment amounts/i)).toBeInTheDocument();
@@ -102,6 +102,13 @@ describe('POSSettingsPage', () => {
   it('has no Automation sub-tab (S73 A4 — toggles live on Printing)', () => {
     renderPage();
     expect(screen.queryByRole('button', { name: /automation/i })).not.toBeInTheDocument();
+  });
+
+  it('labels the display top-tab "Customer Display" and scopes General as org', () => {
+    renderPage();
+    expect(screen.getByRole('button', { name: /customer display/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /kds/i })).not.toBeInTheDocument();
+    expect(screen.getAllByText('Établissement').length).toBeGreaterThan(0);
   });
 
   it('switches between Configuration sub-tabs (General → Advanced)', () => {
