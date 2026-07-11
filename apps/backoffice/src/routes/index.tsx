@@ -84,8 +84,10 @@ const SettingsInventoryPage = lazy(() => import('@/pages/settings/SettingsInvent
 const SettingsPaymentMethodsPage = lazy(() => import('@/pages/settings/SettingsPaymentMethodsPage.js'));
 const SettingsCustomerDisplayPage = lazy(() => import('@/pages/settings/SettingsCustomerDisplayPage.js'));
 const SettingsPrintingPage = lazy(() => import('@/pages/settings/SettingsPrintingPage.js'));
+const SettingsPosConfigPage = lazy(() => import('@/pages/settings/SettingsPosConfigPage.js'));
 const SettingsHolidaysPage = lazy(() => import('@/pages/settings/SettingsHolidaysPage.js'));
 const SettingsEmailTemplatesPage = lazy(() => import('@/pages/settings/SettingsEmailTemplatesPage.js'));
+const SettingsNotificationsPage = lazy(() => import('@/pages/settings/SettingsNotificationsPage.js'));
 const SettingsReceiptTemplatesPage = lazy(() => import('@/pages/settings/SettingsReceiptTemplatesPage.js'));
 const SettingsPermissionsPage = lazy(() => import('@/pages/settings/SettingsPermissionsPage.js'));
 const SecuritySettingsPage = lazy(() => import('@/pages/settings/security/SecuritySettingsPage.js'));
@@ -922,6 +924,14 @@ export function AppRoutes() {
           }
         />
         <Route
+          path="settings/pos"
+          element={
+            <PermissionGate required="settings.read">
+              <SettingsPosConfigPage />
+            </PermissionGate>
+          }
+        />
+        <Route
           path="settings/holidays"
           element={
             <PermissionGate required="settings.read">
@@ -934,6 +944,14 @@ export function AppRoutes() {
           element={
             <PermissionGate required="settings.read">
               <SettingsEmailTemplatesPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="settings/notifications"
+          element={
+            <PermissionGate required="settings.read">
+              <SettingsNotificationsPage />
             </PermissionGate>
           }
         />

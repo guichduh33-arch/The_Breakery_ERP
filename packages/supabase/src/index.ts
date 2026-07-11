@@ -24,3 +24,5 @@ export type {
   KioskIssueResponse,
   KioskIssueError,
 } from './auth/kioskAuth.js';
+export { SETTINGS_CATEGORIES, SETTING_KEYS } from './settings-keys.js';
+export type { SettingsCategory, SettingKey } from './settings-keys.js';

@@ -76,6 +76,16 @@ describe('AuditPage — filters + before/after (S59 Task 6c)', () => {
     expect(screen.getByTestId('audit-row-2')).toBeInTheDocument();
   });
 
+  it('pre-fills the action filter from ?action= (S73 Settings History deep-link)', () => {
+    render(
+      <MemoryRouter initialEntries={['/reports/audit?action=setting.update']}>
+        <AuditPage />
+      </MemoryRouter>,
+    );
+    expect(mockUseAuditLogs).toHaveBeenCalledWith({ action: 'setting.update' });
+    expect(screen.getByTestId('audit-filter-action')).toHaveValue('setting.update');
+  });
+
   it('actor (select) filter reaches useAuditLogs immediately, no debounce', () => {
     renderPage();
     expect(mockUseAuditLogs).toHaveBeenCalledWith({});

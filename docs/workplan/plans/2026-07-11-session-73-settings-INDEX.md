@@ -54,4 +54,30 @@ KDS Config en session dédiée avec tuiles marquées « Planned »).
 - **Session dédiée « Floor Plan BO + KDS Configuration »** (aucun backend KDS-config à ce
   jour) — à spécifier avant d'ouvrir.
 - **B5 reporté** : NPWP / identité fiscale indonésienne (migration + templates PDF).
-- Déviations DEV-S73-xx et dettes D-x : à consigner ici en fin de session.
+
+## Déviations (closeout 2026-07-12)
+
+- **DEV-S73-01** : session coupée en pleine Task 13 (page Notifications) — fichiers complets
+  retrouvés sur disque, validés (tests 4/4 + typecheck) et commités par le contrôleur à la
+  reprise ; revue de tâche passée après coup (Approved + spec ✅).
+- **DEV-S73-02** (T15) : le `export type { SettingsCategory } from '@breakery/supabase'`
+  littéral du plan ne lie pas le type dans le scope local sous `verbatimModuleSyntax` —
+  scindé en `import type` + ré-export séparé dans `useSettings.ts` (fix TS standard,
+  validé en revue).
+- **DEV-S73-03** (T15) : statut de l'audit doc écrit « branche `swarm/session-73-settings` »
+  sans numéros de PR (inexistants au moment du commit) — à compléter au merge.
+- **DEV-S73-04** (T11/T12/T13) : les tuiles hub `settings/pos` et `settings/notifications`
+  ont pointé vers des routes livrées dans des commits ultérieurs de la même PR (gap
+  sanctionné, PR atomique).
+
+## Dettes (candidates suivi, non bloquantes — issues des revues de tâche)
+
+- **D-1** : reset du draft des cards sœurs à l'invalidation de la liste
+  (`SettingsNotificationsPage` — hérité du pattern `EmailTemplateEditor` : sauver une card
+  refetch la liste et écrase les brouillons non sauvés des autres cards).
+- **D-2** : `SettingsGeneralPage` selects — une valeur DB hors liste (currency/timezone
+  legacy) s'affiche vide (pas de corruption au save : le dirty-check la garde intacte).
+- **D-3** : `TIMEZONES` via `Intl.supportedValuesOf` = 300+ entrées dans un `<select>` natif
+  sans recherche (UX).
+- **D-4** : flakiness pré-existante `SettingsPaymentMethodsPage.smoke` sous charge parallèle
+  (tinypool worker crash, passe en isolation — même famille que D-5 S72).

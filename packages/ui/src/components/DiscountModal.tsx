@@ -147,9 +147,9 @@ export function DiscountModal({
           {/* Preset chips */}
           {presets && presets.length > 0 && (
             <div className="flex flex-wrap justify-center gap-2" data-testid="discount-presets">
-              {presets.map((p) => (
+              {presets.map((p, i) => (
                 <button
-                  key={p.name}
+                  key={`${p.name}-${i}`}
                   type="button"
                   aria-label={p.name}
                   onClick={() => {

@@ -5,11 +5,13 @@
 // Keys per category are documented in the migration.
 
 import { useQuery } from '@tanstack/react-query';
+import type { SettingsCategory } from '@breakery/supabase';
 import { supabase } from '@/lib/supabase.js';
 
-export type SettingsCategory =
-  | 'business' | 'localization' | 'tax' | 'pos' | 'inventory' | 'payments'
-  | 'pos_presets' | 'customer_display' | 'printing';
+// S73 Phase 3 — category union now lives in the shared dictionary
+// (packages/supabase/src/settings-keys.ts), re-exported here so existing
+// call sites importing `SettingsCategory` from this hook keep working.
+export type { SettingsCategory };
 
 export interface SettingsPayload {
   category: string;
