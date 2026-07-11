@@ -33,13 +33,26 @@ export interface POSReportsSalesHour {
   tickets: number;
 }
 
+export interface POSReportsSalesDay {
+  /** WITA business date, `YYYY-MM-DD`. */
+  date: string;
+  /** Revenue (TTC) rung up on this day. */
+  revenue: number;
+  /** Number of tickets (orders) on this day. */
+  tickets: number;
+}
+
 export interface POSReportsOverview {
   /** Revenue TTC (tax-inclusive). */
   revenue: number;
   orders: number;
   tax: number;
+  /** Total units sold (line-level, excl. cancelled / promo-gift). */
+  itemsSold: number;
   avgBasket: number;
   salesByHour: POSReportsSalesHour[];
+  /** Contiguous per-day series over the range (zero-filled gaps). */
+  byDay: POSReportsSalesDay[];
   timezone: string;
 }
 
@@ -47,9 +60,11 @@ interface OverviewPayload {
   revenue: number | string;
   orders: number | string;
   tax: number | string;
+  items_sold: number | string;
   avg_basket: number | string;
   timezone: string;
   sales_by_hour: { hour: number; revenue: number | string; tickets: number | string }[];
+  by_day: { date: string; revenue: number | string; tickets: number | string }[];
 }
 
 export function usePOSReportsOverview(period: ReportsPeriod) {
@@ -67,12 +82,18 @@ export function usePOSReportsOverview(period: ReportsPeriod) {
         revenue: Number(p.revenue),
         orders: Number(p.orders),
         tax: Number(p.tax),
+        itemsSold: Number(p.items_sold ?? 0),
         avgBasket: Number(p.avg_basket),
         timezone: p.timezone,
         salesByHour: (p.sales_by_hour ?? []).map((h) => ({
           hour: h.hour,
           revenue: Number(h.revenue),
           tickets: Number(h.tickets),
+        })),
+        byDay: (p.by_day ?? []).map((d) => ({
+          date: d.date,
+          revenue: Number(d.revenue),
+          tickets: Number(d.tickets),
         })),
       };
     },
