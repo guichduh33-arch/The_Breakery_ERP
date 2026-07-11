@@ -314,6 +314,173 @@ export function usePOSReportsVoidsRefunds(period: ReportsPeriod) {
   });
 }
 
+// ─── Sessions / Z-report ────────────────────────────────────────────────────
+//
+// Source of truth: server RPC `get_pos_sessions_report_v1(p_start_date,
+// p_end_date)`. One row per pos_session (drawer lifecycle), anchored on its
+// WITA opening day — this REPLACES the Activity tab's confusing "Session Open N
+// ≠ Session Close M" counters with a single lifecycle count. Each row carries:
+//   * live drawer aggregates (sales / order_count / refunds / voids)
+//   * the FROZEN 3-way reconciliation (cash / QRIS / card, expected·counted·
+//     variance) read from the shift.close audit metadata — same stable source
+//     as the BO cashier-variance report. Open sessions expose null volets
+//     (reconciliation pending); pre-S67 sessions may lack QRIS/card (null).
+
+export interface POSReportsReconVolet {
+  /** Expected amount for this tender at close (null until the volet is counted). */
+  expected: number | null;
+  /** Counted amount at close (null while the drawer is open / not counted). */
+  counted: number | null;
+  /** counted − expected (null while open / not counted). */
+  variance: number | null;
+}
+
+export interface POSReportsSession {
+  sessionId: string;
+  status: 'open' | 'closed';
+  cashierId: string | null;
+  cashierName: string;
+  closedById: string | null;
+  closedByName: string | null;
+  openedAt: string;
+  closedAt: string | null;
+  openingCash: number;
+  salesTotal: number;
+  orderCount: number;
+  refundsTotal: number;
+  voidsTotal: number;
+  cash: POSReportsReconVolet;
+  qris: POSReportsReconVolet;
+  card: POSReportsReconVolet;
+  openingNotes: string | null;
+  closingNotes: string | null;
+  /** A manager PIN-approved the (large) closing variance. */
+  varianceApproved: boolean;
+}
+
+export interface POSReportsSessionsSummary {
+  totalSessions: number;
+  openCount: number;
+  closedCount: number;
+  salesTotal: number;
+  voidsTotal: number;
+  cashVarianceTotal: number;
+  cashShortCount: number;
+  cashOverCount: number;
+}
+
+export interface POSReportsSessions {
+  summary: POSReportsSessionsSummary;
+  sessions: POSReportsSession[];
+  timezone: string;
+}
+
+interface RawVolet {
+  expected: number | string | null;
+  counted: number | string | null;
+  variance: number | string | null;
+}
+
+interface RawSession {
+  session_id: string;
+  status: 'open' | 'closed';
+  cashier_id: string | null;
+  cashier_name: string;
+  closed_by_id: string | null;
+  closed_by_name: string | null;
+  opened_at: string;
+  closed_at: string | null;
+  opening_cash: number | string;
+  sales_total: number | string;
+  order_count: number | string;
+  refunds_total: number | string;
+  voids_total: number | string;
+  cash: RawVolet;
+  qris: RawVolet;
+  card: RawVolet;
+  opening_notes: string | null;
+  closing_notes: string | null;
+  variance_approved: boolean;
+}
+
+interface SessionsPayload {
+  timezone: string;
+  summary: {
+    total_sessions: number | string;
+    open_count: number | string;
+    closed_count: number | string;
+    sales_total: number | string;
+    voids_total: number | string;
+    cash_variance_total: number | string;
+    cash_short_count: number | string;
+    cash_over_count: number | string;
+  };
+  sessions: RawSession[];
+}
+
+/** Coerce to number, preserving null (Number(null) === 0 would corrupt nulls). */
+function numOrNull(v: number | string | null): number | null {
+  return v === null ? null : Number(v);
+}
+
+function mapVolet(v: RawVolet): POSReportsReconVolet {
+  return {
+    expected: numOrNull(v.expected),
+    counted: numOrNull(v.counted),
+    variance: numOrNull(v.variance),
+  };
+}
+
+export function usePOSReportsSessions(period: ReportsPeriod) {
+  return useQuery<POSReportsSessions>({
+    queryKey: ['pos-reports-sessions', period.startDate, period.endDate],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_pos_sessions_report_v1', {
+        p_start_date: period.startDate,
+        p_end_date: period.endDate,
+      });
+      if (error) throw new Error(error.message);
+      const p = data as unknown as SessionsPayload;
+      const s = p.summary;
+      return {
+        timezone: p.timezone,
+        summary: {
+          totalSessions: Number(s.total_sessions),
+          openCount: Number(s.open_count),
+          closedCount: Number(s.closed_count),
+          salesTotal: Number(s.sales_total),
+          voidsTotal: Number(s.voids_total),
+          cashVarianceTotal: Number(s.cash_variance_total),
+          cashShortCount: Number(s.cash_short_count),
+          cashOverCount: Number(s.cash_over_count),
+        },
+        sessions: (p.sessions ?? []).map((r) => ({
+          sessionId: r.session_id,
+          status: r.status,
+          cashierId: r.cashier_id,
+          cashierName: r.cashier_name,
+          closedById: r.closed_by_id,
+          closedByName: r.closed_by_name,
+          openedAt: r.opened_at,
+          closedAt: r.closed_at,
+          openingCash: Number(r.opening_cash),
+          salesTotal: Number(r.sales_total),
+          orderCount: Number(r.order_count),
+          refundsTotal: Number(r.refunds_total),
+          voidsTotal: Number(r.voids_total),
+          cash: mapVolet(r.cash),
+          qris: mapVolet(r.qris),
+          card: mapVolet(r.card),
+          openingNotes: r.opening_notes,
+          closingNotes: r.closing_notes,
+          varianceApproved: r.variance_approved,
+        })),
+      };
+    },
+    staleTime: 30_000,
+  });
+}
+
 // ─── Products ─────────────────────────────────────────────────────────────
 
 export interface POSReportsTopProduct {
@@ -371,8 +538,13 @@ export function usePOSReportsTopProducts(period: ReportsPeriod, limit = 25) {
 }
 
 // ─── Activity ─────────────────────────────────────────────────────────────
+//
+// Sales-event timeline for the period. Session open/close events were REMOVED
+// here in Lot D — counting them as two separate events produced the misleading
+// "Session Open N ≠ Session Close M" chips. The drawer lifecycle now has a
+// dedicated, reconciled home in the Sessions tab (get_pos_sessions_report_v1).
 
-export type POSReportsEventKind = 'sale' | 'session_open' | 'session_close';
+export type POSReportsEventKind = 'sale';
 
 export interface POSReportsEvent {
   id: string;
@@ -390,39 +562,17 @@ interface OrderActivityRow {
   paid_at: string | null;
 }
 
-interface SessionActivityRow {
-  id: string;
-  opened_at: string;
-  closed_at: string | null;
-}
-
 export function usePOSReportsActivity(period: ReportsPeriod) {
   return useQuery<POSReportsEvent[]>({
     queryKey: ['pos-reports-activity', period.start, period.end],
     queryFn: async () => {
-      const [{ data: orderRows, error: orderErr }, { data: openSessions, error: openErr }, { data: closeSessions, error: closeErr }] =
-        await Promise.all([
-          supabase
-            .from('orders')
-            .select('id, order_number, total, paid_at')
-            .eq('status', 'paid')
-            .gte('paid_at', period.start)
-            .lt('paid_at', period.end),
-          supabase
-            .from('pos_sessions')
-            .select('id, opened_at, closed_at')
-            .gte('opened_at', period.start)
-            .lt('opened_at', period.end),
-          supabase
-            .from('pos_sessions')
-            .select('id, opened_at, closed_at')
-            .not('closed_at', 'is', null)
-            .gte('closed_at', period.start)
-            .lt('closed_at', period.end),
-        ]);
+      const { data: orderRows, error: orderErr } = await supabase
+        .from('orders')
+        .select('id, order_number, total, paid_at')
+        .eq('status', 'paid')
+        .gte('paid_at', period.start)
+        .lt('paid_at', period.end);
       if (orderErr) throw new Error(orderErr.message);
-      if (openErr) throw new Error(openErr.message);
-      if (closeErr) throw new Error(closeErr.message);
 
       const events: POSReportsEvent[] = [];
       for (const r of (orderRows ?? []) as unknown as OrderActivityRow[]) {
@@ -434,27 +584,6 @@ export function usePOSReportsActivity(period: ReportsPeriod) {
           amount: Number(r.total),
           at: r.paid_at,
           label: 'Sale completed',
-        });
-      }
-      for (const r of (openSessions ?? []) as unknown as SessionActivityRow[]) {
-        events.push({
-          id: `open-${r.id}`,
-          kind: 'session_open',
-          reference: `SHF-${r.id.slice(0, 6).toUpperCase()}`,
-          amount: null,
-          at: r.opened_at,
-          label: 'Session opened',
-        });
-      }
-      for (const r of (closeSessions ?? []) as unknown as SessionActivityRow[]) {
-        if (!r.closed_at) continue;
-        events.push({
-          id: `close-${r.id}`,
-          kind: 'session_close',
-          reference: `SHF-${r.id.slice(0, 6).toUpperCase()}`,
-          amount: null,
-          at: r.closed_at,
-          label: 'Session closed',
         });
       }
       events.sort((a, b) => (a.at < b.at ? 1 : -1));
