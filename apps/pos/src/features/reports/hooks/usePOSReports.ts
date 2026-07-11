@@ -2,13 +2,17 @@
 //
 // Session 14 — Phase 2.D — Aggregate POS reports for a period.
 //
-// One hook per surface to keep query keys narrow and avoid over-fetching:
-//   - usePOSReportsOverview  → revenue, orders, avg basket, tax, sales-by-hour
-//   - usePOSReportsProducts  → top products
-//   - usePOSReportsActivity  → event timeline (sales + session opens/closes)
-//
-// All queries use Supabase via the existing `supabase` client. No new
-// migrations or RPCs needed — these are read-only against existing tables.
+// One hook per surface to keep query keys narrow and avoid over-fetching.
+// Every surface is now backed by a dedicated read-only server RPC
+// (`get_pos_*_v1`) that does its own WITA-timezone date bucketing and shares
+// one canonical order scope, so the tabs reconcile with each other:
+//   - usePOSReportsOverview      → get_pos_sales_overview_v1
+//   - usePOSReportsPayments      → get_pos_payment_breakdown_v1
+//   - usePOSReportsVoidsRefunds  → get_pos_voids_refunds_v1
+//   - usePOSReportsSessions      → get_pos_sessions_report_v1
+//   - usePOSReportsMix           → get_pos_order_type_category_mix_v1
+//   - usePOSReportsTopProducts   → get_pos_top_products_v1
+//   - usePOSReportsActivity      → get_pos_activity_v1
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -572,6 +576,13 @@ export function usePOSReportsMix(period: ReportsPeriod) {
 }
 
 // ─── Products ─────────────────────────────────────────────────────────────
+//
+// Source of truth: server RPC `get_pos_top_products_v1(p_start_date, p_end_date)`.
+// Line-level aggregation over the SAME order scope as the Overview / Mix
+// (paid + completed retail, non-B2B, non-historical, no test-product line, WITA
+// date bucketing; excludes cancelled + promo-gift lines), so the product
+// revenue reconciles with the Mix by-category revenue. The RPC returns all
+// products sorted by revenue DESC; the caller slices the top-N it wants.
 
 export interface POSReportsTopProduct {
   product_id: string;
@@ -580,47 +591,36 @@ export interface POSReportsTopProduct {
   revenue: number;
 }
 
-interface ProductRow {
+interface TopProductRaw {
   product_id: string;
-  name_snapshot: string;
-  quantity: number;
-  line_total: number;
-  is_cancelled: boolean;
-  order: { status: 'paid' | 'voided' | 'draft'; paid_at: string | null } | null;
+  product_name: string;
+  qty: number | string;
+  revenue: number | string;
+  share_pct: number | string;
+}
+interface TopProductsPayload {
+  timezone: string;
+  total_revenue: number | string;
+  products: TopProductRaw[];
 }
 
 export function usePOSReportsTopProducts(period: ReportsPeriod, limit = 25) {
   return useQuery<POSReportsTopProduct[]>({
-    queryKey: ['pos-reports-top-products', period.start, period.end, limit],
+    queryKey: ['pos-reports-top-products', period.startDate, period.endDate, limit],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('order_items')
-        .select(
-          'product_id, name_snapshot, quantity, line_total, is_cancelled, order:orders!inner(status, paid_at)',
-        )
-        .eq('is_cancelled', false)
-        .eq('order.status', 'paid')
-        .gte('order.paid_at', period.start)
-        .lt('order.paid_at', period.end);
+      const { data, error } = await supabase.rpc('get_pos_top_products_v1', {
+        p_start_date: period.startDate,
+        p_end_date: period.endDate,
+      });
       if (error) throw new Error(error.message);
-      const rows = (data ?? []) as unknown as ProductRow[];
-      const agg = new Map<string, POSReportsTopProduct>();
-      for (const r of rows) {
-        const existing = agg.get(r.product_id);
-        if (existing) {
-          existing.qty += Number(r.quantity);
-          existing.revenue += Number(r.line_total);
-        } else {
-          agg.set(r.product_id, {
-            product_id: r.product_id,
-            product_name: r.name_snapshot,
-            qty: Number(r.quantity),
-            revenue: Number(r.line_total),
-          });
-        }
-      }
-      return Array.from(agg.values())
-        .sort((a, b) => b.revenue - a.revenue)
+      const p = data as unknown as TopProductsPayload;
+      return (p.products ?? [])
+        .map((r) => ({
+          product_id: r.product_id,
+          product_name: r.product_name,
+          qty: Number(r.qty),
+          revenue: Number(r.revenue),
+        }))
         .slice(0, limit);
     },
     staleTime: 30_000,
@@ -629,10 +629,12 @@ export function usePOSReportsTopProducts(period: ReportsPeriod, limit = 25) {
 
 // ─── Activity ─────────────────────────────────────────────────────────────
 //
-// Sales-event timeline for the period. Session open/close events were REMOVED
-// here in Lot D — counting them as two separate events produced the misleading
-// "Session Open N ≠ Session Close M" chips. The drawer lifecycle now has a
-// dedicated, reconciled home in the Sessions tab (get_pos_sessions_report_v1).
+// Source of truth: server RPC `get_pos_activity_v1(p_start_date, p_end_date)`.
+// One 'sale' event per in-scope order (same order scope as the Overview),
+// newest first, capped server-side at the 500 most-recent events. Session
+// open/close events were REMOVED here in Lot D — counting them as two separate
+// events produced the misleading "Session Open N ≠ Session Close M" chips. The
+// drawer lifecycle now has a dedicated home in the Sessions tab.
 
 export type POSReportsEventKind = 'sale';
 
@@ -645,39 +647,39 @@ export interface POSReportsEvent {
   label: string;
 }
 
-interface OrderActivityRow {
+interface ActivityEventRaw {
   id: string;
-  order_number: string;
-  total: number;
-  paid_at: string | null;
+  kind: POSReportsEventKind;
+  reference: string;
+  amount: number | string | null;
+  at: string;
+  label: string;
+}
+interface ActivityPayload {
+  timezone: string;
+  total_events: number | string;
+  truncated: boolean;
+  events: ActivityEventRaw[];
 }
 
 export function usePOSReportsActivity(period: ReportsPeriod) {
   return useQuery<POSReportsEvent[]>({
-    queryKey: ['pos-reports-activity', period.start, period.end],
+    queryKey: ['pos-reports-activity', period.startDate, period.endDate],
     queryFn: async () => {
-      const { data: orderRows, error: orderErr } = await supabase
-        .from('orders')
-        .select('id, order_number, total, paid_at')
-        .eq('status', 'paid')
-        .gte('paid_at', period.start)
-        .lt('paid_at', period.end);
-      if (orderErr) throw new Error(orderErr.message);
-
-      const events: POSReportsEvent[] = [];
-      for (const r of (orderRows ?? []) as unknown as OrderActivityRow[]) {
-        if (!r.paid_at) continue;
-        events.push({
-          id: `order-${r.id}`,
-          kind: 'sale',
-          reference: r.order_number,
-          amount: Number(r.total),
-          at: r.paid_at,
-          label: 'Sale completed',
-        });
-      }
-      events.sort((a, b) => (a.at < b.at ? 1 : -1));
-      return events;
+      const { data, error } = await supabase.rpc('get_pos_activity_v1', {
+        p_start_date: period.startDate,
+        p_end_date: period.endDate,
+      });
+      if (error) throw new Error(error.message);
+      const p = data as unknown as ActivityPayload;
+      return (p.events ?? []).map((e) => ({
+        id: e.id,
+        kind: e.kind,
+        reference: e.reference,
+        amount: e.amount == null ? null : Number(e.amount),
+        at: e.at,
+        label: e.label,
+      }));
     },
     staleTime: 30_000,
   });

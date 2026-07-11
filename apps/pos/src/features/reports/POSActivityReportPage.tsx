@@ -23,6 +23,7 @@ import {
   type POSReportsEvent,
   type POSReportsEventKind,
 } from './hooks/usePOSReports';
+import type { ReportsPeriod } from './hooks/useReportsPeriod';
 import { ReportsForbidden } from './components/ReportsForbidden';
 
 type Filter = 'all' | POSReportsEventKind;
@@ -43,12 +44,8 @@ export default function POSActivityReportPage(): JSX.Element {
   );
 }
 
-function ActivityList({
-  period,
-}: {
-  period: { start: string; end: string; label: string };
-}): JSX.Element {
-  const { data, isLoading, isError } = usePOSReportsActivity(period as Parameters<typeof usePOSReportsActivity>[0]);
+function ActivityList({ period }: { period: ReportsPeriod }): JSX.Element {
+  const { data, isLoading, isError } = usePOSReportsActivity(period);
   const [filter, setFilter] = useState<Filter>('all');
 
   const counts = useMemo(() => {
