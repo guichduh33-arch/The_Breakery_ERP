@@ -147,6 +147,173 @@ export function usePOSReportsPayments(period: ReportsPeriod) {
   });
 }
 
+// ─── Voids / Refunds / Discounts ────────────────────────────────────────────
+//
+// Source of truth: server RPC `get_pos_voids_refunds_v1(p_start_date,
+// p_end_date)`. Same order scope as the Overview (non-B2B, non-historical, no
+// test-product line, WITA date bucketing). Two blocks:
+//   * reversals   — full voids + partial refunds (refunds table) + pre-payment
+//     item cancellations, split by reason / operator / authorizing manager and
+//     tagged before/after kitchen (sent_to_kitchen_at).
+//   * discounts   — applied discounts (orders.discount_*) by type & authorizing
+//     operator; a "comp" is a 100% discount (percentage ≥ 100).
+
+export interface POSReportsBreakdownRow {
+  operator_id: string | null;
+  operator_name: string | null;
+  count: number;
+  amount: number;
+}
+
+export interface POSReportsReasonRow {
+  reason: string;
+  count: number;
+  amount: number;
+}
+
+export interface POSReportsReversals {
+  voids: {
+    count: number;
+    amount: number;
+    taxRefunded: number;
+    afterKitchenCount: number;
+    beforeKitchenCount: number;
+  };
+  refunds: { count: number; amount: number; taxRefunded: number };
+  itemCancellations: {
+    count: number;
+    afterKitchenCount: number;
+    beforeKitchenCount: number;
+  };
+  byReason: POSReportsReasonRow[];
+  byOperator: POSReportsBreakdownRow[];
+  byAuthorizer: POSReportsBreakdownRow[];
+}
+
+export interface POSReportsDiscountTypeRow {
+  type: string;
+  count: number;
+  amount: number;
+}
+
+export interface POSReportsDiscounts {
+  totalAmount: number;
+  orderCount: number;
+  compCount: number;
+  byType: POSReportsDiscountTypeRow[];
+  byOperator: POSReportsBreakdownRow[];
+}
+
+export interface POSReportsVoidsRefunds {
+  reversals: POSReportsReversals;
+  discounts: POSReportsDiscounts;
+  timezone: string;
+}
+
+interface RawBreakdownRow {
+  operator_id: string | null;
+  operator_name: string | null;
+  count: number | string;
+  amount: number | string;
+}
+interface RawReasonRow { reason: string; count: number | string; amount: number | string }
+interface RawDiscountTypeRow { type: string; count: number | string; amount: number | string }
+
+interface VoidsRefundsPayload {
+  timezone: string;
+  reversals: {
+    voids: {
+      count: number | string;
+      amount: number | string;
+      tax_refunded: number | string;
+      after_kitchen_count: number | string;
+      before_kitchen_count: number | string;
+    };
+    refunds: { count: number | string; amount: number | string; tax_refunded: number | string };
+    item_cancellations: {
+      count: number | string;
+      after_kitchen_count: number | string;
+      before_kitchen_count: number | string;
+    };
+    by_reason: RawReasonRow[];
+    by_operator: RawBreakdownRow[];
+    by_authorizer: RawBreakdownRow[];
+  };
+  discounts: {
+    total_amount: number | string;
+    order_count: number | string;
+    comp_count: number | string;
+    by_type: RawDiscountTypeRow[];
+    by_operator: RawBreakdownRow[];
+  };
+}
+
+function mapBreakdown(rows: RawBreakdownRow[] | undefined): POSReportsBreakdownRow[] {
+  return (rows ?? []).map((r) => ({
+    operator_id: r.operator_id,
+    operator_name: r.operator_name,
+    count: Number(r.count),
+    amount: Number(r.amount),
+  }));
+}
+
+export function usePOSReportsVoidsRefunds(period: ReportsPeriod) {
+  return useQuery<POSReportsVoidsRefunds>({
+    queryKey: ['pos-reports-voids-refunds', period.startDate, period.endDate],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_pos_voids_refunds_v1', {
+        p_start_date: period.startDate,
+        p_end_date: period.endDate,
+      });
+      if (error) throw new Error(error.message);
+      const p = data as unknown as VoidsRefundsPayload;
+      const rv = p.reversals;
+      const ds = p.discounts;
+      return {
+        timezone: p.timezone,
+        reversals: {
+          voids: {
+            count: Number(rv.voids.count),
+            amount: Number(rv.voids.amount),
+            taxRefunded: Number(rv.voids.tax_refunded),
+            afterKitchenCount: Number(rv.voids.after_kitchen_count),
+            beforeKitchenCount: Number(rv.voids.before_kitchen_count),
+          },
+          refunds: {
+            count: Number(rv.refunds.count),
+            amount: Number(rv.refunds.amount),
+            taxRefunded: Number(rv.refunds.tax_refunded),
+          },
+          itemCancellations: {
+            count: Number(rv.item_cancellations.count),
+            afterKitchenCount: Number(rv.item_cancellations.after_kitchen_count),
+            beforeKitchenCount: Number(rv.item_cancellations.before_kitchen_count),
+          },
+          byReason: (rv.by_reason ?? []).map((r) => ({
+            reason: r.reason,
+            count: Number(r.count),
+            amount: Number(r.amount),
+          })),
+          byOperator: mapBreakdown(rv.by_operator),
+          byAuthorizer: mapBreakdown(rv.by_authorizer),
+        },
+        discounts: {
+          totalAmount: Number(ds.total_amount),
+          orderCount: Number(ds.order_count),
+          compCount: Number(ds.comp_count),
+          byType: (ds.by_type ?? []).map((r) => ({
+            type: r.type,
+            count: Number(r.count),
+            amount: Number(r.amount),
+          })),
+          byOperator: mapBreakdown(ds.by_operator),
+        },
+      };
+    },
+    staleTime: 30_000,
+  });
+}
+
 // ─── Products ─────────────────────────────────────────────────────────────
 
 export interface POSReportsTopProduct {
