@@ -81,7 +81,7 @@ export default function POSSettingsPage(): JSX.Element {
 
       <main className="flex-1 overflow-y-auto p-6">
         {topTab === 'pos' && <PosConfigSection readOnly={!canEdit} />}
-        {topTab === 'printing' && <PrintingSettingsTab />}
+        {topTab === 'printing' && <PrintingSettingsTab readOnly={!canEdit} />}
         {topTab === 'kds' && <DisplaySettingsTab readOnly={!canEdit} />}
         {topTab === 'devices' && <DevicesSettingsTab readOnly={!canEdit} />}
       </main>

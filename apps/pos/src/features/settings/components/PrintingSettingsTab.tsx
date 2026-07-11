@@ -12,40 +12,9 @@
 import type { JSX } from 'react';
 import { Input } from '@breakery/ui';
 import { usePosSettingsStore } from '@/stores/posSettingsStore';
+import { SettingToggle } from './SettingToggle';
 
-function Toggle({
-  label,
-  checked,
-  onChange,
-}: {
-  label: string;
-  checked: boolean;
-  onChange: (v: boolean) => void;
-}): JSX.Element {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      aria-label={label}
-      onClick={() => onChange(!checked)}
-      className="flex items-center justify-between w-full py-3 border-b border-border-subtle"
-    >
-      <span className="text-sm text-text-primary">{label}</span>
-      <span
-        className={`h-6 w-11 rounded-full transition-colors ${checked ? 'bg-gold' : 'bg-bg-overlay'} relative`}
-      >
-        <span
-          className={`absolute top-0.5 h-5 w-5 rounded-full bg-text-primary transition-transform ${
-            checked ? 'translate-x-5' : 'translate-x-0.5'
-          }`}
-        />
-      </span>
-    </button>
-  );
-}
-
-export function PrintingSettingsTab(): JSX.Element {
+export function PrintingSettingsTab({ readOnly }: { readOnly: boolean }): JSX.Element {
   const {
     printerUrl,
     autoPrint,
@@ -70,17 +39,26 @@ export function PrintingSettingsTab(): JSX.Element {
           placeholder="http://localhost:3001"
           value={printerUrl}
           onChange={(e) => setPrinterUrl(e.target.value)}
+          disabled={readOnly}
         />
         <p className="text-xs text-text-muted">
           Leave blank to use the build default (VITE_PRINT_SERVER_URL → localhost:3001).
         </p>
       </div>
       <div>
-        <Toggle label="Auto-print receipt on payment" checked={autoPrint} onChange={setAutoPrint} />
-        <Toggle
+        <SettingToggle
+          label="Auto-print receipt on payment"
+          description="Send the receipt to the print server without tapping Print."
+          checked={autoPrint}
+          onChange={setAutoPrint}
+          disabled={readOnly}
+        />
+        <SettingToggle
           label="Auto-open cash drawer (cash)"
+          description="Pop the drawer when the tender is cash."
           checked={autoOpenDrawer}
           onChange={setAutoOpenDrawer}
+          disabled={readOnly}
         />
       </div>
     </div>
