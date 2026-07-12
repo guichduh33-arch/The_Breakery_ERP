@@ -6887,6 +6887,10 @@ export type Database = {
         }
         Returns: Json
       }
+      get_pos_margin_v1: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
+      }
       get_pos_order_type_category_mix_v1: {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json

@@ -13,11 +13,13 @@
 
 import { type JSX, type ReactNode } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { X, BarChart3, Activity, Package, Wallet, Ban, Layers, PieChart, type LucideIcon } from 'lucide-react';
+import { X, BarChart3, Activity, Package, Wallet, Ban, Layers, PieChart, TrendingUp, type LucideIcon } from 'lucide-react';
 import { Button, cn } from '@breakery/ui';
+import type { PermissionCode } from '@breakery/supabase';
+import { useAuthStore } from '@/stores/authStore';
 import { useReportsPeriod, type ReportsPeriod } from '../hooks/useReportsPeriod';
 
-type POSReportsTab = 'overview' | 'payments' | 'voids' | 'sessions' | 'mix' | 'products' | 'activity';
+type POSReportsTab = 'overview' | 'payments' | 'voids' | 'sessions' | 'mix' | 'products' | 'activity' | 'margin';
 
 export interface POSReportsLayoutProps {
   /** Active tab; controlled by the route currently rendered. */
@@ -26,20 +28,25 @@ export interface POSReportsLayoutProps {
   children: (period: ReportsPeriod) => ReactNode;
 }
 
-const TABS: { id: POSReportsTab; label: string; path: string; icon: LucideIcon }[] = [
+// `permission`: tab hidden unless the caller holds it (Margin = financial data,
+// not for every sales reader — mirrors the RPC gate).
+const TABS: { id: POSReportsTab; label: string; path: string; icon: LucideIcon; permission?: PermissionCode }[] = [
   { id: 'overview', label: 'Overview', path: '/pos/reports', icon: BarChart3 },
   { id: 'payments', label: 'Payments', path: '/pos/reports/payments', icon: Wallet },
   { id: 'voids', label: 'Voids', path: '/pos/reports/voids', icon: Ban },
   { id: 'sessions', label: 'Sessions', path: '/pos/reports/sessions', icon: Layers },
   { id: 'mix', label: 'Mix', path: '/pos/reports/mix', icon: PieChart },
   { id: 'products', label: 'Products', path: '/pos/reports/products', icon: Package },
+  { id: 'margin', label: 'Margin', path: '/pos/reports/margin', icon: TrendingUp, permission: 'reports.financial.read' },
   { id: 'activity', label: 'Activity', path: '/pos/reports/activity', icon: Activity },
 ];
 
 export function POSReportsLayout({ activeTab, children }: POSReportsLayoutProps): JSX.Element {
   const navigate = useNavigate();
   const location = useLocation();
+  const hasPermission = useAuthStore((s) => s.hasPermission);
   const { period, setPreset, presets, labelOf } = useReportsPeriod('today');
+  const visibleTabs = TABS.filter((t) => !t.permission || hasPermission(t.permission));
 
   return (
     <div className="h-screen flex flex-col bg-bg-base text-text-primary">
@@ -82,7 +89,7 @@ export function POSReportsLayout({ activeTab, children }: POSReportsLayoutProps)
         aria-label="Reports tabs"
         className="px-6 flex items-center gap-1 border-b border-border-subtle"
       >
-        {TABS.map((t) => {
+        {visibleTabs.map((t) => {
           const Icon = t.icon;
           const isActive = location.pathname === t.path || activeTab === t.id;
           return (
