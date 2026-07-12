@@ -38,11 +38,8 @@
 import { useEffect, useRef } from 'react';
 
 import { useKdsStore } from '@/stores/kdsStore';
+import { useKdsConfig } from './useKdsConfig';
 import type { KdsItemRow } from './useKdsOrders';
-
-/** Mirrors `KdsOrderCard` URGENT_THRESHOLD_MS (kds configue.jpg — 600 s). An
- *  order older than this with a live item is what the re-bip nags about. */
-const URGENT_THRESHOLD_MS = 600 * 1_000;
 
 /** How often the urgent re-bip fires while an unbumped urgent order lingers.
  *  Short enough to stay noticed during a rush, long enough not to be torture. */
@@ -140,7 +137,7 @@ function playMotif(motif: ToneSpec[], peakGain: number): void {
 
 /** True when at least one order is past the urgent age band AND still has a
  *  live (non-cancelled, pending/preparing) item — i.e. not yet bumped. */
-function hasUrgentUnbumpedOrder(items: KdsItemRow[], now: number): boolean {
+function hasUrgentUnbumpedOrder(items: KdsItemRow[], now: number, urgentMs: number): boolean {
   const oldestByOrder = new Map<string, number>();
   const liveByOrder = new Map<string, boolean>();
 
@@ -157,7 +154,7 @@ function hasUrgentUnbumpedOrder(items: KdsItemRow[], now: number): boolean {
   }
 
   for (const [orderId, oldest] of oldestByOrder) {
-    if (liveByOrder.get(orderId) && now - oldest >= URGENT_THRESHOLD_MS) {
+    if (liveByOrder.get(orderId) && now - oldest >= urgentMs) {
       return true;
     }
   }
@@ -166,13 +163,16 @@ function hasUrgentUnbumpedOrder(items: KdsItemRow[], now: number): boolean {
 
 export function useKdsAlarm(items: KdsItemRow[]): void {
   const muted = useKdsStore((s) => s.alarmMuted);
+  const { urgentMs } = useKdsConfig();
   const seenOrderIdsRef = useRef<Set<string> | null>(null);
 
   // Latest snapshots read by the interval below without re-arming it.
   const itemsRef = useRef(items);
   const mutedRef = useRef(muted);
+  const urgentMsRef = useRef(urgentMs);
   itemsRef.current = items;
   mutedRef.current = muted;
+  urgentMsRef.current = urgentMs;
 
   // Channel 1 — one motif per newly-arrived order (deduped by order_id).
   useEffect(() => {
@@ -203,7 +203,7 @@ export function useKdsAlarm(items: KdsItemRow[]): void {
   useEffect(() => {
     const id = setInterval(() => {
       if (mutedRef.current) return;
-      if (hasUrgentUnbumpedOrder(itemsRef.current, Date.now())) {
+      if (hasUrgentUnbumpedOrder(itemsRef.current, Date.now(), urgentMsRef.current)) {
         playMotif(URGENT_MOTIF, URGENT_GAIN);
       }
     }, REBEEP_INTERVAL_MS);

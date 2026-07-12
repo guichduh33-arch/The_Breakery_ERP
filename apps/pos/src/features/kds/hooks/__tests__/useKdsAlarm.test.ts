@@ -29,6 +29,14 @@ vi.mock('@/stores/kdsStore', () => ({
     selector({ alarmMuted: mockAlarmMuted }),
 }));
 
+// S75 (task 6) — useKdsAlarm now reads urgentMs via useKdsConfig() (a
+// useQuery hook, which would otherwise need a QueryClientProvider wrapper
+// here). Mocked to the same 600s default the old URGENT_THRESHOLD_MS
+// constant used, so URGENT_SENT (12min ago) below stays past the band.
+vi.mock('../useKdsConfig', () => ({
+  useKdsConfig: () => ({ warningMs: 300_000, urgentMs: 600_000, archiveMs: 300_000 }),
+}));
+
 import { useKdsAlarm } from '../useKdsAlarm';
 
 function makeItem(overrides: Partial<KdsItemRow> = {}): KdsItemRow {
