@@ -88,18 +88,28 @@ describe('useKdsConfig', () => {
     await waitFor(() => expect(result.current).toEqual(KDS_CONFIG_DEFAULTS));
   });
 
-  it('falls back to KDS_CONFIG_DEFAULTS when the row has NULL columns (legacy row)', async () => {
+  it('treats SQL NULL columns as missing and falls back per-field to defaults (legacy row)', async () => {
+    // Mixed row: one real value (urgent=8min → 480_000ms, a NON-default sentinel)
+    // and two literal SQL NULLs. The sentinel lets us wait for the query to
+    // genuinely SETTLE (480_000 ≠ the 600_000 pre-settle default) instead of
+    // vacuously matching the default value before the fetch resolves — so this
+    // test truly exercises the resolved NULL path and FAILS against a `toMs`
+    // that does `Number(null) === 0 >= 0 → 0ms`.
     mockBusinessConfig({
       data: {
         kds_warning_threshold_minutes: null,
-        kds_urgent_threshold_minutes: null,
+        kds_urgent_threshold_minutes: 8,
         kds_auto_archive_minutes: null,
       },
       error: null,
     });
 
     const { result } = renderHook(() => useKdsConfig(), { wrapper });
-    await waitFor(() => expect(result.current).toEqual(KDS_CONFIG_DEFAULTS));
+    // Only true AFTER the query settles (480_000 is not the pre-settle default).
+    await waitFor(() => expect(result.current.urgentMs).toBe(480_000));
+    // NULL columns must fall back to defaults, NOT to 0ms.
+    expect(result.current.warningMs).toBe(KDS_CONFIG_DEFAULTS.warningMs);
+    expect(result.current.archiveMs).toBe(KDS_CONFIG_DEFAULTS.archiveMs);
   });
 
   it('falls back to KDS_CONFIG_DEFAULTS when there is no row at all', async () => {

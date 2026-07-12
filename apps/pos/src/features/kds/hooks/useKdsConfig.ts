@@ -33,6 +33,10 @@ export const KDS_CONFIG_DEFAULTS: KdsConfig = {
 const QUERY_KEY = ['kds_config'] as const;
 
 function toMs(minutes: unknown, fallbackMs: number): number {
+  // A literal SQL NULL (legacy row) arrives as `null` — treat it as missing.
+  // Crucially, `Number(null) === 0` would otherwise pass the `>= 0` guard and
+  // yield 0ms (every ticket instantly urgent), so guard nullish FIRST.
+  if (minutes == null) return fallbackMs;
   const n = Number(minutes);
   return Number.isFinite(n) && n >= 0 ? n * 60_000 : fallbackMs;
 }
