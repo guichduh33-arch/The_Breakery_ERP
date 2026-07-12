@@ -11,7 +11,7 @@
 | 1 | Ambition Floor Plan | **CRUD + sections** — pas d'éditeur visuel x/y. Le POS garde sa grille auto (flex wrap) ; seul le groupement change. L'éditeur visuel reste un chantier ultérieur distinct (le schéma l'accueillera par simple ajout de colonnes x/y nullables). |
 | 2 | Modèle des sections | **Table `table_sections` + FK** (pas de texte libre, pas d'enum fixe). CRUD sections intégré à la même page BO. |
 | 3 | Périmètre KDS Config | Seuils warning/urgent org + délai d'auto-archivage + édition `kds_station` des catégories (ce qui implique de **câbler les chips StationFilter**, sinon réglage mort). **Tempo par article (prep times) exclu** — chantier lourd D3.1 fiche 04, spec dédiée. |
-| 4 | Permission Floor Plan | **Nouvelle `floor_plan.manage`** seedée SUPER_ADMIN, ADMIN, MANAGER (style `customer_prices.manage`). Un manager réorganise la salle sans détenir `settings.update`. |
+| 4 | Permission Floor Plan | ~~Nouvelle `floor_plan.manage`~~ → **RÉVISÉ (plan, 2026-07-12)** : la famille **`tables.read/create/update/delete` existe déjà** (seed S11 `20260513000004`, MANAGER a read/create/update, delete = ADMIN+ ; déjà dans le type `PermissionCode`). Créer `floor_plan.manage` dupliquerait une permission existante (anti-pattern purgé en S62 avec `rbac.update`). **On réutilise `tables.*`** — l'intention propriétaire (manager gère la salle sans `settings.update`) est déjà satisfaite. |
 
 ## 2. État de l'existant (vérifié code + migrations, 2026-07-12)
 
@@ -36,15 +36,15 @@
 - **`table_sections`** : `id UUID PK`, `name TEXT NOT NULL UNIQUE`, `sort_order INT NOT NULL DEFAULT 0`, `is_active BOOL NOT NULL DEFAULT true`, `created_at/updated_at/deleted_at`. RLS `auth_read` (SELECT authentifié) ; **aucune policy write** — écriture via RPC SECURITY DEFINER uniquement. REVOKE anon (défaut projet S20 déjà en place via default privileges ; REVOKE explicite par défense en profondeur).
 - **`restaurant_tables.section_id UUID NULL REFERENCES table_sections(id)`**.
 - **Seed + backfill** : sections `Interior` (sort 0) et `Terrace` (sort 100) ; backfill `section_id` depuis le hack (`sort_order < 100` → Interior, `>= 100` → Terrace).
-- **Permission `floor_plan.manage`** seedée SUPER_ADMIN, ADMIN, MANAGER (`role_permissions`, ON CONFLICT idempotent).
-- **6 RPCs** SECURITY DEFINER, gate `has_permission('floor_plan.manage')`, REVOKE EXECUTE FROM PUBLIC + anon, GRANT authenticated :
+- **Permissions : réutilisation de `tables.*`** (décision 4 révisée — déjà seedées S11/S13). **DROP des policies RLS d'écriture directe** `perm_create`/`perm_update` sur `restaurant_tables` (posées par `20260513000005`, zéro consommateur vérifié) : un write direct contournerait les gardes nom-occupé et l'audit — écriture RPC-only désormais.
+- **6 RPCs** SECURITY DEFINER, gates `has_permission()` : `tables.create` (creates), `tables.update` (updates), `tables.delete` (deletes) ; REVOKE EXECUTE FROM PUBLIC + anon, GRANT authenticated :
   - `create_table_section_v1(p_name, p_sort_order)` · `update_table_section_v1(p_id, p_name, p_sort_order, p_is_active)` · `delete_table_section_v1(p_id)` — delete = soft (`is_active=false, deleted_at=now()`), **bloqué (P0001) si la section contient des tables actives**.
   - `create_restaurant_table_v1(p_name, p_seats, p_section_id, p_sort_order)` · `update_restaurant_table_v1(p_id, …)` · `delete_restaurant_table_v1(p_id)` — delete = soft ; CHECK `seats` 1..20 conservé ; unicité `name` remontée en erreur propre.
   - **Garde nom-occupé (P0001)** : `orders.table_number` étant un nom TEXT, le **rename** et la **désactivation** d'une table sont refusés si une commande active (`table_number = name AND status NOT IN ('completed','voided')`) la référence.
-  - **Audit** : chaque mutation écrit `audit_logs` (`action='floor_plan.update'`, `entity_type='restaurant_table'|'table_section'`, `entity_id`, `metadata` = before/after) — jamais d'INSERT direct app-side, conformément au pattern S56.
+  - **Audit** : chaque mutation écrit `audit_logs` (actions par verbe `table.created/updated/deleted` et `table_section.created/updated/deleted`, `entity_type='restaurant_tables'|'table_sections'`, `entity_id`, `metadata` = before/after) — pattern miroir des RPCs S69 `customer_category_*`, jamais d'INSERT direct app-side (S56).
 
 ### BO
-- **`SettingsFloorPlanPage`** — route `/backoffice/settings/floor-plan`, gate route + tuile `floor_plan.manage`. Liste groupée par section (ordre `table_sections.sort_order`), par section : tables (name, seats, sort_order, actif), dialogs create/edit, désactivation avec confirmation, réordonnancement (`sort_order`). CRUD sections inline (ajouter/renommer/réordonner/désactiver). Erreurs serveur (P0001 nom-occupé, section non vide, nom dupliqué) affichées en clair.
+- **`SettingsFloorPlanPage`** — route `/backoffice/settings/floor-plan`, gate route + tuile **`tables.update`** (alignés, leçon S73 1.2.3). Liste groupée par section (ordre `table_sections.sort_order`), par section : tables (name, seats, sort_order, actif), dialogs create/edit, désactivation avec confirmation, réordonnancement (`sort_order`). CRUD sections inline (ajouter/renommer/réordonner/désactiver). Erreurs serveur (P0001 nom-occupé, section non vide, nom dupliqué) affichées en clair.
 - Hub : tuile **Floor Plan** passe de `planned: true` à `to: '/backoffice/settings/floor-plan'`.
 - Hooks : query admin (tables + sections, y compris inactives) + mutations RPC, invalidation `['restaurant_tables']` partagée.
 
@@ -58,7 +58,7 @@
 ### DB — migration `_162`
 - 3 colonnes `business_config` : `kds_warning_threshold_minutes INT NOT NULL DEFAULT 5`, `kds_urgent_threshold_minutes INT NOT NULL DEFAULT 10`, `kds_auto_archive_minutes INT NOT NULL DEFAULT 5`.
 - `get_settings_by_category_v1` + `set_setting_v1` : **CREATE OR REPLACE depuis le corps live (`pg_get_functiondef`), jamais depuis le fichier de migration d'origine (leçon DEV-S57-02)**. Nouvelle catégorie **`kds`** (3 clés) ; whitelist `set_setting_v1` : bornes 1..120 min par clé + **cohérence inter-clés validée au set** (`warning < urgent`, en lisant l'autre valeur courante). Gates inchangés (`settings.read` / `settings.update`) ; l'audit `setting.update` existant couvre les nouvelles clés gratuitement.
-- **RPCs catégorie** : `create_category_v1` / `update_category_v1` étendues **depuis le corps live** (version live à vérifier au moment du plan — règle CLAUDE.md) avec `p_kds_station TEXT DEFAULT NULL` validé contre hot/cold/bar/prep/expo.
+- **RPCs catégorie : AUCUN bump nécessaire** (vérifié au plan) — `create_category_v1`/`update_category_v1` acceptent déjà `kds_station` via leur payload/patch JSONB allowlisté (`20260630000016/17`).
 
 ### POS
 - **`useKdsConfig`** : hook lecture seule façon `useTaxRate` (SELECT direct `business_config`, fallback silencieux sur les défauts actuels 5/10/5, staleTime ~60 s). Consommé par :
@@ -69,7 +69,7 @@
 
 ### BO
 - **`SettingsKdsConfigPage`** — moule S73 (`useSettings('kds')` + `useSetSetting`, pattern draft/dirty/save, gate édition `settings.update`, lecture `settings.read`). Saisie **en minutes** (stockage = minutes aussi, pas de conversion), validation front warning < urgent en miroir du serveur.
-- **`CategoryFormDialog`** : select `kds_station` (hot/cold/bar/prep/expo, libellés lisibles) branché sur les RPCs catégorie étendues.
+- **`CategoryFormDialog`** : le select `kds_station` **existe déjà** mais avec une liste de valeurs INVALIDE (`'expo','kitchen','bar','pastry','bakery'` — `kitchen`/`pastry`/`bakery` violent le CHECK DB hot/cold/bar/prep/expo : sauvegarder ces valeurs échoue en check_violation). **Fix** : corriger `KDS_STATIONS` vers les 5 valeurs du CHECK avec libellés lisibles.
 - Hub : tuile **KDS Configuration** liée (`to: '/backoffice/settings/kds'`), `planned: true` retiré. Le commentaire d'en-tête de `SettingsHubPage.tsx` (« only KDS Configuration + Floor Plan ») est mis à jour — plus aucune tuile `planned`.
 
 ## 5. Tests & garde-fous
