@@ -1,8 +1,10 @@
 // apps/pos/src/features/reports/__tests__/POSReportsOverviewPage.test.tsx
 //
-// Session 14 — Phase 2.D smoke for the POS Reports Overview page. Validates
-// the role-gate (ReportsForbidden splash), loading + error branches, and the
-// happy-path KPI tiles. Mocks usePOSReportsOverview + useAuthStore.
+// Smoke for the POS Reports Overview dashboard. Validates the role-gate
+// (ReportsForbidden splash), loading + error branches, the KPI tiles, and the
+// sales trend chart — by-hour for a single day, by-day for a multi-day range.
+// Mocks usePOSReportsOverview / usePOSReportsPayments / usePOSReportsTopProducts
+// + useAuthStore.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
@@ -20,6 +22,9 @@ const overviewState = {
 
 vi.mock('../hooks/usePOSReports', () => ({
   usePOSReportsOverview: () => overviewState.current,
+  // The dashboard's mini-widgets — kept empty so they render their empty state.
+  usePOSReportsPayments: () => ({ data: { byMethod: [] }, isLoading: false, isError: false }),
+  usePOSReportsTopProducts: () => ({ data: [], isLoading: false, isError: false }),
 }));
 
 const authState = { current: { canRead: true } };
@@ -36,11 +41,13 @@ function renderPage() {
   );
 }
 
+// Single-day range (byDay length 1) → hourly trend chart.
 function makeOverview(): POSReportsOverview {
   return {
     revenue: 1_500_000,
     orders: 25,
     tax: 150_000,
+    itemsSold: 60,
     avgBasket: 60_000,
     timezone: 'Asia/Makassar',
     salesByHour: Array.from({ length: 24 }, (_, h) => ({
@@ -48,6 +55,7 @@ function makeOverview(): POSReportsOverview {
       revenue: h % 3 === 0 ? 100_000 : 0,
       tickets: h % 3 === 0 ? 2 : 0,
     })),
+    byDay: [{ date: '2026-07-11', revenue: 1_500_000, tickets: 25 }],
   };
 }
 
@@ -76,17 +84,36 @@ describe('POSReportsOverviewPage', () => {
     expect(screen.getByText(/failed to load overview/i)).toBeInTheDocument();
   });
 
-  it('renders the KPI tiles + sales-by-hour chart on happy path', () => {
+  it('renders the KPI tiles + hourly trend on a single-day range', () => {
     overviewState.current = { data: makeOverview(), isLoading: false, isError: false };
     renderPage();
     expect(screen.getByText(/revenue \(incl\. tax\)/i)).toBeInTheDocument();
     expect(screen.getByText('Orders')).toBeInTheDocument();
+    expect(screen.getByText('Items sold')).toBeInTheDocument();
     expect(screen.getByText('Avg Basket')).toBeInTheDocument();
     expect(screen.getByText(/sales by hour/i)).toBeInTheDocument();
-    expect(screen.getByTestId('sales-by-hour-bar-6')).toBeInTheDocument();
-    // full 0..23 axis now surfaces late-night sales the old 6→23 seed dropped
-    expect(screen.getByTestId('sales-by-hour-bar-0')).toBeInTheDocument();
-    expect(screen.getByTestId('sales-by-hour-bar-23')).toBeInTheDocument();
+    // Bars render across the full 0..23 axis with definite-height columns.
+    expect(screen.getByTestId('trend-bar-0')).toBeInTheDocument();
+    expect(screen.getByTestId('trend-bar-6')).toBeInTheDocument();
+    expect(screen.getByTestId('trend-bar-23')).toBeInTheDocument();
+  });
+
+  it('renders a daily trend when the range spans multiple days', () => {
+    overviewState.current = {
+      data: {
+        ...makeOverview(),
+        byDay: [
+          { date: '2026-07-10', revenue: 800_000, tickets: 12 },
+          { date: '2026-07-11', revenue: 700_000, tickets: 13 },
+        ],
+      },
+      isLoading: false,
+      isError: false,
+    };
+    renderPage();
+    expect(screen.getByText(/sales by day/i)).toBeInTheDocument();
+    expect(screen.getByTestId('trend-bar-2026-07-10')).toBeInTheDocument();
+    expect(screen.getByTestId('trend-bar-2026-07-11')).toBeInTheDocument();
   });
 
   it('renders the report layout chrome (period chips + tab nav)', () => {
