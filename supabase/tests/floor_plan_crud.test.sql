@@ -14,7 +14,7 @@
 BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
-SELECT plan(17);
+SELECT plan(22);
 
 -- Seed an ADMIN identity for the whole transaction.
 DO $seed$
@@ -49,9 +49,32 @@ SELECT lives_ok(
   $$SELECT create_restaurant_table_v1('T-99', 4, (SELECT id FROM table_sections WHERE name = 'Bar Corner'), 1)$$,
   'create table T-99 in Bar Corner');
 
+-- 5a: update nonexistent section -> P0002 section_not_found
+SELECT throws_ok(
+  $$SELECT update_table_section_v1(gen_random_uuid(), 'Bar Corner', 5, true)$$,
+  'P0002', NULL, 'nonexistent section rejected');
+
+-- 5b: update with empty name -> P0001 name_required
+SELECT throws_ok(
+  $$SELECT update_table_section_v1((SELECT id FROM table_sections WHERE name = 'Bar Corner'), '', 5, true)$$,
+  'P0001', NULL, 'empty section name rejected');
+
+-- 5c: deactivate section holding active table -> P0001 section_in_use
+SELECT throws_ok(
+  $$SELECT update_table_section_v1((SELECT id FROM table_sections WHERE name = 'Bar Corner'), 'Bar Corner', 5, false)$$,
+  'P0001', NULL, 'deactivate section with active table rejected');
+
+-- 5d: rename section -> lives_ok, then verify persistence
+SELECT lives_ok(
+  $$SELECT update_table_section_v1((SELECT id FROM table_sections WHERE name = 'Bar Corner'), 'Bar Corner 2', 5, true)$$,
+  'rename section Bar Corner to Bar Corner 2');
+SELECT is(
+  (SELECT name FROM table_sections WHERE name = 'Bar Corner 2'),
+  'Bar Corner 2', 'section rename persisted');
+
 -- 6: invalid seats -> P0001 invalid_seats
 SELECT throws_ok(
-  $$SELECT create_restaurant_table_v1('T-98', 0, (SELECT id FROM table_sections WHERE name = 'Bar Corner'), 1)$$,
+  $$SELECT create_restaurant_table_v1('T-98', 0, (SELECT id FROM table_sections WHERE name = 'Bar Corner 2'), 1)$$,
   'P0001', NULL, 'seats=0 rejected');
 
 -- 7: nonexistent section -> P0001 section_not_found
@@ -73,13 +96,13 @@ END $seed_order$;
 
 SELECT throws_ok(
   $$SELECT update_restaurant_table_v1((SELECT id FROM restaurant_tables WHERE name = 'T-99'),
-      'T-99-renamed', 4, (SELECT id FROM table_sections WHERE name = 'Bar Corner'), 1, true)$$,
+      'T-99-renamed', 4, (SELECT id FROM table_sections WHERE name = 'Bar Corner 2'), 1, true)$$,
   'P0001', NULL, 'rename of occupied table rejected');
 
 -- 9: deactivate occupied table -> P0001 table_occupied
 SELECT throws_ok(
   $$SELECT update_restaurant_table_v1((SELECT id FROM restaurant_tables WHERE name = 'T-99'),
-      'T-99', 4, (SELECT id FROM table_sections WHERE name = 'Bar Corner'), 1, false)$$,
+      'T-99', 4, (SELECT id FROM table_sections WHERE name = 'Bar Corner 2'), 1, false)$$,
   'P0001', NULL, 'deactivate of occupied table rejected');
 
 -- 10: complete the order, then rename succeeds
@@ -87,12 +110,12 @@ UPDATE orders SET status = 'completed' WHERE table_number = 'T-99' AND order_num
 
 SELECT lives_ok(
   $$SELECT update_restaurant_table_v1((SELECT id FROM restaurant_tables WHERE name = 'T-99'),
-      'T-99-renamed', 4, (SELECT id FROM table_sections WHERE name = 'Bar Corner'), 1, true)$$,
+      'T-99-renamed', 4, (SELECT id FROM table_sections WHERE name = 'Bar Corner 2'), 1, true)$$,
   'rename succeeds once order is completed');
 
 -- 11: delete section holding an active table -> P0001 section_in_use
 SELECT throws_ok(
-  $$SELECT delete_table_section_v1((SELECT id FROM table_sections WHERE name = 'Bar Corner'))$$,
+  $$SELECT delete_table_section_v1((SELECT id FROM table_sections WHERE name = 'Bar Corner 2'))$$,
   'P0001', NULL, 'delete section in use rejected');
 
 -- 12: soft-delete the table (no live order references its current name).
