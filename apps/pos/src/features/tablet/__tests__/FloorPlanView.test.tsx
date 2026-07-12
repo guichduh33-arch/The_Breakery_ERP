@@ -17,10 +17,26 @@ import type { RestaurantTable } from '@breakery/domain';
 import { FloorPlanView } from '../FloorPlanView';
 
 const TABLES: RestaurantTable[] = [
-  { id: 't1', name: 'T1', seats: 2, sort_order: 1, is_active: true },
-  { id: 't2', name: 'T2', seats: 4, sort_order: 2, is_active: true },
-  { id: 't10', name: 'T10', seats: 4, sort_order: 110, is_active: true },
-  { id: 't12', name: 'T12', seats: 4, sort_order: 112, is_active: true },
+  { id: 't1', name: 'T1', seats: 2, sort_order: 1, is_active: true, section_id: null },
+  { id: 't2', name: 'T2', seats: 4, sort_order: 2, is_active: true, section_id: null },
+  {
+    id: 't10',
+    name: 'T10',
+    seats: 4,
+    sort_order: 110,
+    is_active: true,
+    section_id: 'sec-terrace',
+    table_sections: { name: 'Terrace', sort_order: 100 },
+  },
+  {
+    id: 't12',
+    name: 'T12',
+    seats: 4,
+    sort_order: 112,
+    is_active: true,
+    section_id: 'sec-terrace',
+    table_sections: { name: 'Terrace', sort_order: 100 },
+  },
 ];
 
 describe('FloorPlanView', () => {
@@ -91,16 +107,14 @@ describe('FloorPlanView', () => {
     expect(screen.getByTestId('floor-plan-cell-T12')).toBeInTheDocument();
   });
 
-  it('renders an empty-section message when the active bucket has no tables', () => {
-    const interiorOnly: RestaurantTable[] = TABLES.filter((t) => t.sort_order < 100);
+  it('renders an empty-section message when there are no tables at all', () => {
     render(
       <FloorPlanView
-        tables={interiorOnly}
+        tables={[]}
         occupancy={{}}
         onTableSelect={() => {}}
       />,
     );
-    fireEvent.click(screen.getByTestId('tablet-floor-plan-section-terrace'));
     expect(screen.getByText(/no tables configured/i)).toBeInTheDocument();
   });
 });

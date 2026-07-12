@@ -13,9 +13,9 @@ vi.mock('sonner', () => ({
 }));
 
 const TABLES: RestaurantTable[] = [
-  { id: 't1', name: 'T-01', seats: 2, sort_order: 1, is_active: true },
-  { id: 't2', name: 'T-02', seats: 2, sort_order: 2, is_active: true },
-  { id: 't3', name: 'T-03', seats: 4, sort_order: 3, is_active: true },
+  { id: 't1', name: 'T-01', seats: 2, sort_order: 1, is_active: true, section_id: null },
+  { id: 't2', name: 'T-02', seats: 2, sort_order: 2, is_active: true, section_id: null },
+  { id: 't3', name: 'T-03', seats: 4, sort_order: 3, is_active: true, section_id: null },
 ];
 
 const fromMock = vi.fn((_table: string) => ({

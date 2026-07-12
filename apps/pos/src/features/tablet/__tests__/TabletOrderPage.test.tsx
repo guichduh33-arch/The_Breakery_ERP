@@ -99,8 +99,8 @@ function wrap(node: ReactNode): ReactNode {
 }
 
 const TABLES: RestaurantTable[] = [
-  { id: 't1', name: 'T1', seats: 2, sort_order: 1, is_active: true },
-  { id: 't12', name: 'T12', seats: 4, sort_order: 112, is_active: true },
+  { id: 't1', name: 'T1', seats: 2, sort_order: 1, is_active: true, section_id: null },
+  { id: 't12', name: 'T12', seats: 4, sort_order: 112, is_active: true, section_id: null },
 ];
 
 // ── Tests ────────────────────────────────────────────────────────────

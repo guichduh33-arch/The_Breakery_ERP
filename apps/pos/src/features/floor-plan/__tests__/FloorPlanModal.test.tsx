@@ -10,9 +10,17 @@ import { FloorPlanModal } from '../FloorPlanModal';
 import type { RestaurantTable } from '@breakery/domain';
 
 const TABLES: RestaurantTable[] = [
-  { id: 't1', name: 'T1', seats: 2, sort_order: 1, is_active: true },
-  { id: 't2', name: 'T2', seats: 4, sort_order: 2, is_active: true },
-  { id: 't100', name: 'T100', seats: 4, sort_order: 100, is_active: true },
+  { id: 't1', name: 'T1', seats: 2, sort_order: 1, is_active: true, section_id: null },
+  { id: 't2', name: 'T2', seats: 4, sort_order: 2, is_active: true, section_id: null },
+  {
+    id: 't100',
+    name: 'T100',
+    seats: 4,
+    sort_order: 100,
+    is_active: true,
+    section_id: 'sec-terrace',
+    table_sections: { name: 'Terrace', sort_order: 100 },
+  },
 ];
 
 describe('FloorPlanModal', () => {
@@ -45,20 +53,16 @@ describe('FloorPlanModal', () => {
     expect(screen.queryByRole('heading', { name: /floor plan/i })).toBeNull();
   });
 
-  it('shows empty section copy when the active bucket has no tables', () => {
-    const interiorOnly: RestaurantTable[] = [
-      { id: 't1', name: 'T1', seats: 2, sort_order: 1, is_active: true },
-    ];
+  it('shows empty section copy when there are no tables at all', () => {
     render(
       <FloorPlanModal
         open
         onClose={() => {}}
         onSelect={() => {}}
-        tables={interiorOnly}
+        tables={[]}
         occupancy={{}}
       />,
     );
-    fireEvent.click(screen.getByTestId('floor-plan-section-terrace'));
     expect(screen.getByText(/no tables configured/i)).toBeInTheDocument();
   });
 
