@@ -12,7 +12,11 @@
 //     (label "Interior") sorted first (sortOrder -1).
 //   - Table order within a bucket follows input order (the server already
 //     sorts by `sort_order`); NULL-section tables merged into a real
-//     Interior bucket are appended after that section's own tables.
+//     Interior bucket are appended after that section's own tables — a
+//     known, accepted limitation: a NULL table whose server position
+//     interleaves with Interior's own tables loses its relative slot.
+//     Backfill migration _161 assigned section_id to every existing row,
+//     so NULL rows are rare/transient (fresh BO-created tables only).
 
 import type { RestaurantTable } from '@breakery/domain';
 
