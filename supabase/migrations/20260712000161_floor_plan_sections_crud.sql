@@ -21,7 +21,8 @@ ALTER TABLE restaurant_tables ADD COLUMN section_id UUID REFERENCES table_sectio
 -- Seed + backfill from the legacy front hack (sort_order >= 100 = Terrace).
 INSERT INTO table_sections (name, sort_order) VALUES ('Interior', 0), ('Terrace', 100);
 UPDATE restaurant_tables SET section_id =
-  (SELECT id FROM table_sections WHERE name = CASE WHEN sort_order >= 100 THEN 'Terrace' ELSE 'Interior' END);
+  (SELECT id FROM table_sections
+   WHERE name = CASE WHEN restaurant_tables.sort_order >= 100 THEN 'Terrace' ELSE 'Interior' END);
 
 -- S11 direct-write policies bypass the occupied-guard + audit below → RPC-only now.
 DROP POLICY IF EXISTS perm_create ON restaurant_tables;
