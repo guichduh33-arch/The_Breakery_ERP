@@ -3,11 +3,9 @@
 // RPCs are Task 1 (20260712000161_floor_plan_sections_crud.sql), types Task 2.
 //
 // Reads intentionally do NOT filter `is_active` client-side (admins manage
-// inactive tables/sections too — Inactive badge + reactivate flow). NOTE:
-// `restaurant_tables`'s `auth_read` RLS policy (`is_authenticated() AND
-// deleted_at IS NULL AND is_active`) still hides inactive tables at the row
-// level regardless of this query — a pre-existing RLS gap flagged in the
-// Task 3 report, not fixed here (out of scope, needs a migration).
+// inactive tables/sections too — Inactive badge + reactivate flow). Row-level
+// visibility comes from migration _162: auth_read shows inactive-but-not-
+// deleted rows on both tables, so no deleted_at filter is needed here either.
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
 import type { RestaurantTable, TableSection } from '@breakery/domain';

@@ -14,7 +14,7 @@
 BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
-SELECT plan(22);
+SELECT plan(24);
 
 -- Seed an ADMIN identity for the whole transaction.
 DO $seed$
@@ -147,6 +147,19 @@ SELECT is(
 SELECT is(
   has_function_privilege('anon', 'create_restaurant_table_v1(text,int,uuid,int)', 'EXECUTE'),
   false, 'anon cannot create table');
+
+-- 17/18: read-RLS shape (DEV-S75-01, migration _162) — inactive tables stay
+-- readable (BO Inactive badge), soft-deleted sections are hidden at row level.
+SELECT ok(
+  (SELECT qual FROM pg_policies
+     WHERE schemaname = 'public' AND tablename = 'restaurant_tables'
+       AND policyname = 'auth_read') NOT LIKE '%is_active%',
+  'restaurant_tables auth_read no longer filters is_active');
+SELECT ok(
+  (SELECT qual FROM pg_policies
+     WHERE schemaname = 'public' AND tablename = 'table_sections'
+       AND policyname = 'auth_read') LIKE '%deleted_at%',
+  'table_sections auth_read hides soft-deleted rows');
 
 SELECT * FROM finish();
 ROLLBACK;
