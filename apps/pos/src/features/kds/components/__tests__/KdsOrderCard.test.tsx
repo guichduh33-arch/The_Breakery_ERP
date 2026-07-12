@@ -38,6 +38,12 @@ vi.mock('../../hooks/useKdsUndoBump', () => ({
 vi.mock('../../hooks/useMarkItemServed', () => ({
   useMarkItemServed: () => ({ mutate: vi.fn(), isPending: false }),
 }));
+// S75 (task 6) — thresholds now come from useKdsConfig(); mock to the same
+// defaults (5min warning / 10min urgent) the pre-S75 constants used, so the
+// threshold assertions below stay valid unchanged.
+vi.mock('../../hooks/useKdsConfig', () => ({
+  useKdsConfig: () => ({ warningMs: 300_000, urgentMs: 600_000, archiveMs: 300_000 }),
+}));
 
 function wrap(node: ReactNode) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -57,6 +63,7 @@ function makeItem(overrides: Partial<KdsItemRow> = {}): KdsItemRow {
     kitchen_status: 'pending',
     dispatch_station: 'kitchen',
     dispatch_stations: null,
+    kds_station: null,
     sent_to_kitchen_at: new Date('2026-05-14T12:00:00.000Z').toISOString(),
     ready_at: null,
     prep_started_at: null,

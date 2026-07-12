@@ -3,7 +3,7 @@
 // migration 20260711000159). Add a key here ONLY together with its RPC branch.
 export const SETTINGS_CATEGORIES = [
   'business', 'localization', 'tax', 'pos', 'pos_presets',
-  'inventory', 'payments', 'customer_display', 'printing',
+  'inventory', 'payments', 'customer_display', 'printing', 'kds',
 ] as const;
 export type SettingsCategory = (typeof SETTINGS_CATEGORIES)[number];
 
@@ -19,5 +19,8 @@ export const SETTING_KEYS = {
   payments:         ['enabled_payment_methods'],
   customer_display: ['display_footer_message', 'display_slogan'],
   printing:         ['pos_auto_print_receipt', 'pos_auto_open_drawer'],
+  // S75 (Task 5): KDS ticket-age color-band thresholds + auto-archive delay.
+  kds:              ['kds_warning_threshold_minutes', 'kds_urgent_threshold_minutes',
+                     'kds_auto_archive_minutes'],
 } as const satisfies Record<SettingsCategory, readonly string[]>;
 export type SettingKey = (typeof SETTING_KEYS)[SettingsCategory][number];

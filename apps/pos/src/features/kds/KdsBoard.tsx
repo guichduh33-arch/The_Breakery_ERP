@@ -31,8 +31,8 @@
 //     in `KdsEmptyState`. Loading is a single muted line — KDS users care
 //     about throughput, not skeleton sophistication.
 //   - File <500 lines (currently ~140). Logic kept tight: groupByOrder + the
-//     5-minute auto-archive of `ready` items. Grouping is FIFO-stable
-//     (Map insertion order = first-seen).
+//     configurable auto-archive of `ready` items (org setting via useKdsConfig,
+//     default 5 min). Grouping is FIFO-stable (Map insertion order = first-seen).
 
 import { useMemo } from 'react';
 import { Loader2, Volume2, VolumeX, WifiOff } from 'lucide-react';
@@ -45,15 +45,12 @@ import { useKdsOrders, type KdsItemRow } from './hooks/useKdsOrders';
 import { useKdsServedOrders } from './hooks/useKdsServedOrders';
 import { useAgeTimer } from './hooks/useAgeTimer';
 import { useKdsAlarm } from './hooks/useKdsAlarm';
+import { useKdsConfig } from './hooks/useKdsConfig';
 import { KdsStationSelector } from './components/KdsStationSelector';
 import { KdsOrderCard } from './components/KdsOrderCard';
 import { KdsEmptyState } from './components/KdsEmptyState';
 import { StationFilter } from './components/StationFilter';
 import { RecentlyServedStrip } from './components/RecentlyServedStrip';
-
-/** Ready items are kept on screen for 5 minutes so the cashier sees the
- *  green badge before they disappear (D9 — auto-archive client-side). */
-const ARCHIVE_AFTER_MS = 5 * 60 * 1_000;
 
 /** Realtime tick is cheap (no network, just `setNow`). 15s is enough to
  *  drop archived tiles without thrashing React. The cards have their own
@@ -96,15 +93,19 @@ export function KdsBoard({
   const { data: items = [], isLoading, isError, refetch } = useKdsOrders(station);
   const { data: servedOrders = [] } = useKdsServedOrders(station);
   const now = useAgeTimer(ARCHIVE_TICK_MS);
+  // S75 (task 6) — ready-item auto-archive delay from business_config
+  // (kds_auto_archive_minutes), configurable from the BO KDS Configuration
+  // panel. Default (5min) mirrors the old hardcoded ARCHIVE_AFTER_MS.
+  const { archiveMs } = useKdsConfig();
 
   // Session 59 (04 D1.3) — one beep per newly-arrived order, deduped by
   // order_id and gated on the persisted mute toggle below.
   useKdsAlarm(items);
 
   const visibleOrders = useMemo(() => {
-    const visible = items.filter((item) => filterAndArchive(item, stationFilter, now));
+    const visible = items.filter((item) => filterAndArchive(item, stationFilter, now, archiveMs));
     return groupByOrder(visible);
-  }, [items, stationFilter, now]);
+  }, [items, stationFilter, now, archiveMs]);
 
   return (
     <div className="h-[100dvh] flex flex-col bg-bg-base text-text-primary">
@@ -201,29 +202,29 @@ export function KdsBoard({
   );
 }
 
-/** Combine the station-filter chip narrow with the 5-minute ready archive.
- *  Pulled out for testability — the predicate is tiny but covered by tests. */
-function filterAndArchive(
+/** Combine the station-filter chip narrow with the configurable ready archive.
+ *  Exported for testability — the predicate is tiny but covered by tests. */
+export function filterAndArchive(
   item: KdsItemRow,
   stationFilter: KdsStationFilter,
   now: number,
+  archiveMs: number,
 ): boolean {
-  // 1) Drop ready items that have been ready for > ARCHIVE_AFTER_MS (D9).
+  // 1) Drop ready items that have been ready for > archiveMs (D9, S75 task 6
+  //    made this BO-configurable via kds_auto_archive_minutes).
   if (item.kitchen_status === 'ready' && item.ready_at) {
     const readyAt = new Date(item.ready_at).getTime();
-    if (Number.isFinite(readyAt) && now - readyAt >= ARCHIVE_AFTER_MS) {
+    if (Number.isFinite(readyAt) && now - readyAt >= archiveMs) {
       return false;
     }
   }
 
-  // 2) Apply the granular station-filter chip ('all' is a passthrough).
-  //    The server query already narrows by `dispatch_station`. The chip
-  //    further narrows on `categories.kds_station` if that column ever
-  //    surfaces on KdsItemRow. Until then we only enforce 'all' (and let
-  //    the future field hook in here without a refactor).
-  if (stationFilter !== 'all') {
-    const chip = (item as KdsItemRow & { kds_station?: string }).kds_station;
-    if (chip && chip !== stationFilter) return false;
+  // 2) Apply the granular station-filter chip ('all' is a passthrough) on
+  //    `categories.kds_station` (S75 task 7 — resolved via useKdsOrders'
+  //    products → categories join). A NULL kds_station (un-configured
+  //    category) passes ALL chips so items never silently vanish.
+  if (stationFilter !== 'all' && item.kds_station !== null && item.kds_station !== stationFilter) {
+    return false;
   }
 
   return true;

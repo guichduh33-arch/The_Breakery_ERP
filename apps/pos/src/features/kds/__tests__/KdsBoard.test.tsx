@@ -44,6 +44,14 @@ vi.mock('../hooks/useKdsAlarm', () => ({
   useKdsAlarm: () => undefined,
 }));
 
+// S75 (task 6) — thresholds/auto-archive now come from useKdsConfig(); mock
+// to the same defaults (5min warning / 10min urgent / 5min archive) the
+// pre-S75 constants used, so the archive-window assertion below (10min ago
+// dropped, 1min ago kept) stays valid unchanged.
+vi.mock('../hooks/useKdsConfig', () => ({
+  useKdsConfig: () => ({ warningMs: 300_000, urgentMs: 600_000, archiveMs: 300_000 }),
+}));
+
 // Don't tick — the board rerender loop is irrelevant for these assertions.
 vi.mock('../hooks/useAgeTimer', () => ({
   useAgeTimer: () => Date.parse('2026-05-14T12:00:00.000Z'),
@@ -100,6 +108,7 @@ function makeItem(overrides: Partial<KdsItemRow> = {}): KdsItemRow {
     kitchen_status: 'pending',
     dispatch_station: 'kitchen',
     dispatch_stations: null,
+    kds_station: null,
     sent_to_kitchen_at: new Date('2026-05-14T11:59:00.000Z').toISOString(),
     ready_at: null,
     prep_started_at: null,
