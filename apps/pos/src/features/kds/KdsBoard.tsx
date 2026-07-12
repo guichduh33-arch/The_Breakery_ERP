@@ -31,8 +31,8 @@
 //     in `KdsEmptyState`. Loading is a single muted line — KDS users care
 //     about throughput, not skeleton sophistication.
 //   - File <500 lines (currently ~140). Logic kept tight: groupByOrder + the
-//     5-minute auto-archive of `ready` items. Grouping is FIFO-stable
-//     (Map insertion order = first-seen).
+//     configurable auto-archive of `ready` items (org setting via useKdsConfig,
+//     default 5 min). Grouping is FIFO-stable (Map insertion order = first-seen).
 
 import { useMemo } from 'react';
 import { Loader2, Volume2, VolumeX, WifiOff } from 'lucide-react';
@@ -202,7 +202,7 @@ export function KdsBoard({
   );
 }
 
-/** Combine the station-filter chip narrow with the 5-minute ready archive.
+/** Combine the station-filter chip narrow with the configurable ready archive.
  *  Exported for testability — the predicate is tiny but covered by tests. */
 export function filterAndArchive(
   item: KdsItemRow,

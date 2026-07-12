@@ -11,6 +11,7 @@
 | `20260712000161` | `floor_plan_sections_crud` | `table_sections` + `restaurant_tables.section_id` + backfill (hack `sort_order>=100`) + 6 RPCs CRUD gatées `tables.*` + DROP policies S11 `perm_create`/`perm_update` |
 | `20260712000162` | `floor_plan_read_rls_fix` | DEV-S75-01 — `restaurant_tables.auth_read` ne filtre plus `is_active` ; `table_sections.auth_read` masque les soft-deleted |
 | `20260712000163` | `settings_kds_thresholds` | 3 colonnes `business_config.kds_*` + catégorie RPC `kds` (regreffage corps live, DEV-S57-02) — appliquée via runner API-from-file (22 Ko > limite MCP), bookkeeping cloud `20260712203438` |
+| `20260712000164` | `floor_plan_grants_consistency` | Findings pattern-guardian MEDIUM #1/#2 — ligne `ALTER DEFAULT PRIVILEGES` du trio REVOKE + REVOKE write explicite sur `table_sections` |
 
 pgTAP : `floor_plan_crud.test.sql` **24/24** · `settings_kds.test.sql` **13/13** (re-verts au closeout).
 
