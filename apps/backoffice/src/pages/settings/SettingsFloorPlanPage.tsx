@@ -6,13 +6,14 @@
 // longer active) fall under a catch-all "Interior" group — merged into a
 // real "Interior" section if one exists, else rendered as a synthetic group.
 import { useMemo, useState, type JSX } from 'react';
-import { Plus, Pencil, Ban } from 'lucide-react';
+import { Plus, Pencil, Ban, RotateCcw, Trash2 } from 'lucide-react';
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from '@breakery/ui';
 import type { RestaurantTable, TableSection } from '@breakery/domain';
 import { PageHeader } from '@/components/PageHeader.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import {
   useFloorPlanTables, useTableSections,
+  useUpdateTable, useUpdateSection,
   useDeleteTable, useDeleteSection,
   mapFloorPlanError,
 } from '@/features/floor-plan/hooks/useFloorPlanAdmin.js';
@@ -31,17 +32,19 @@ interface TableGroup {
 }
 
 function buildGroups(tables: RestaurantTable[], sections: TableSection[]): TableGroup[] {
-  const activeSections = sections
-    .filter((s) => s.is_active)
+  // Include inactive sections too — they render with an Inactive badge + a
+  // Reactivate button (post-_162 they're no longer hidden by RLS, and a
+  // deactivated section must stay reachable to be flipped back on).
+  const allSections = sections
     .slice()
     .sort((a, b) => a.sort_order - b.sort_order);
 
   const groups = new Map<string, TableGroup>();
-  for (const s of activeSections) {
+  for (const s of allSections) {
     groups.set(s.id, { key: s.id, label: s.name, sortOrder: s.sort_order, section: s, tables: [] });
   }
 
-  const interiorSection = activeSections.find((s) => s.name.trim().toLowerCase() === INTERIOR_LABEL.toLowerCase());
+  const interiorSection = allSections.find((s) => s.is_active && s.name.trim().toLowerCase() === INTERIOR_LABEL.toLowerCase());
 
   function fallbackGroup(): TableGroup {
     if (interiorSection) return groups.get(interiorSection.id)!;
@@ -73,6 +76,8 @@ export default function SettingsFloorPlanPage(): JSX.Element {
   const { data: tables, isLoading: tablesLoading, error: tablesError } = useFloorPlanTables();
   const { data: sections, isLoading: sectionsLoading, error: sectionsError } = useTableSections();
 
+  const updateTable = useUpdateTable();
+  const updateSection = useUpdateSection();
   const deleteTable = useDeleteTable();
   const deleteSection = useDeleteSection();
   const [rowError, setRowError] = useState<string | null>(null);
@@ -85,18 +90,45 @@ export default function SettingsFloorPlanPage(): JSX.Element {
     [tables, sections],
   );
 
-  function handleDeactivateTable(table: RestaurantTable) {
+  // Deactivate/Reactivate flip `is_active` via the UPDATE RPC WITHOUT touching
+  // deleted_at (so the row stays visible + reversible, and the table_occupied /
+  // section_in_use guards fire). Delete is the soft-DELETE RPC (deleted_at set →
+  // row disappears from the BO), hence the distinct, more explicit label.
+  function handleSetTableActive(table: RestaurantTable, isActive: boolean) {
     setRowError(null);
-    const confirmed = window.confirm(`Deactivate table "${table.name}"?`);
+    updateTable.mutate(
+      {
+        id: table.id,
+        name: table.name,
+        seats: table.seats,
+        section_id: table.section_id,
+        sort_order: table.sort_order,
+        is_active: isActive,
+      },
+      { onError: (e) => setRowError(mapFloorPlanError(e.message)) },
+    );
+  }
+
+  function handleDeleteTable(table: RestaurantTable) {
+    setRowError(null);
+    const confirmed = window.confirm(`Delete table "${table.name}"? This removes it from the back office.`);
     if (!confirmed) return;
     deleteTable.mutate(table.id, {
       onError: (e) => setRowError(mapFloorPlanError(e.message)),
     });
   }
 
-  function handleDeactivateSection(section: TableSection) {
+  function handleSetSectionActive(section: TableSection, isActive: boolean) {
     setRowError(null);
-    const confirmed = window.confirm(`Deactivate section "${section.name}"?`);
+    updateSection.mutate(
+      { id: section.id, name: section.name, sort_order: section.sort_order, is_active: isActive },
+      { onError: (e) => setRowError(mapFloorPlanError(e.message)) },
+    );
+  }
+
+  function handleDeleteSection(section: TableSection) {
+    setRowError(null);
+    const confirmed = window.confirm(`Delete section "${section.name}"? This removes it from the back office.`);
     if (!confirmed) return;
     deleteSection.mutate(section.id, {
       onError: (e) => setRowError(mapFloorPlanError(e.message)),
@@ -138,25 +170,49 @@ export default function SettingsFloorPlanPage(): JSX.Element {
           {groups.map((group) => (
             <Card key={group.key}>
               <CardHeader className="flex flex-row items-center justify-between gap-2">
-                <CardTitle className="text-base">{group.label}</CardTitle>
-                {group.section && canUpdate && (
+                <div className="flex items-center gap-2">
+                  <CardTitle className="text-base">{group.label}</CardTitle>
+                  {group.section && !group.section.is_active && <Badge variant="neutral">Inactive</Badge>}
+                </div>
+                {group.section && (canUpdate || canDelete) && (
                   <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setSectionDialog({ mode: 'edit', section: group.section })}
-                      aria-label={`Edit section ${group.label}`}
-                    >
-                      <Pencil className="h-3.5 w-3.5" aria-hidden />
-                    </Button>
+                    {canUpdate && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSectionDialog({ mode: 'edit', section: group.section })}
+                        aria-label={`Edit section ${group.label}`}
+                      >
+                        <Pencil className="h-3.5 w-3.5" aria-hidden />
+                      </Button>
+                    )}
+                    {canUpdate && (group.section.is_active ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleSetSectionActive(group.section!, false)}
+                        aria-label={`Deactivate section ${group.label}`}
+                      >
+                        <Ban className="h-3.5 w-3.5" aria-hidden />
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleSetSectionActive(group.section!, true)}
+                        aria-label={`Reactivate section ${group.label}`}
+                      >
+                        <RotateCcw className="h-3.5 w-3.5" aria-hidden />
+                      </Button>
+                    ))}
                     {canDelete && (
                       <Button
                         variant="ghostDestructive"
                         size="sm"
-                        onClick={() => handleDeactivateSection(group.section!)}
-                        aria-label={`Deactivate section ${group.label}`}
+                        onClick={() => handleDeleteSection(group.section!)}
+                        aria-label={`Delete section ${group.label}`}
                       >
-                        <Ban className="h-3.5 w-3.5" aria-hidden />
+                        <Trash2 className="h-3.5 w-3.5" aria-hidden />
                       </Button>
                     )}
                   </div>
@@ -177,24 +233,45 @@ export default function SettingsFloorPlanPage(): JSX.Element {
                             <span className="text-xs text-text-secondary">{t.seats} seats</span>
                             {!t.is_active && <Badge variant="neutral">Inactive</Badge>}
                           </div>
-                          {canUpdate && (
+                          {(canUpdate || canDelete) && (
                             <div className="flex items-center gap-1">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setTableDialog({ mode: 'edit', table: t })}
-                                aria-label={`Edit table ${t.name}`}
-                              >
-                                <Pencil className="h-3.5 w-3.5" aria-hidden />
-                              </Button>
+                              {canUpdate && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setTableDialog({ mode: 'edit', table: t })}
+                                  aria-label={`Edit table ${t.name}`}
+                                >
+                                  <Pencil className="h-3.5 w-3.5" aria-hidden />
+                                </Button>
+                              )}
+                              {canUpdate && (t.is_active ? (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleSetTableActive(t, false)}
+                                  aria-label={`Deactivate table ${t.name}`}
+                                >
+                                  <Ban className="h-3.5 w-3.5" aria-hidden />
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleSetTableActive(t, true)}
+                                  aria-label={`Reactivate table ${t.name}`}
+                                >
+                                  <RotateCcw className="h-3.5 w-3.5" aria-hidden />
+                                </Button>
+                              ))}
                               {canDelete && (
                                 <Button
                                   variant="ghostDestructive"
                                   size="sm"
-                                  onClick={() => handleDeactivateTable(t)}
-                                  aria-label={`Deactivate table ${t.name}`}
+                                  onClick={() => handleDeleteTable(t)}
+                                  aria-label={`Delete table ${t.name}`}
                                 >
-                                  <Ban className="h-3.5 w-3.5" aria-hidden />
+                                  <Trash2 className="h-3.5 w-3.5" aria-hidden />
                                 </Button>
                               )}
                             </div>
