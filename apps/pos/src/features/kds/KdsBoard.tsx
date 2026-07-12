@@ -203,8 +203,8 @@ export function KdsBoard({
 }
 
 /** Combine the station-filter chip narrow with the 5-minute ready archive.
- *  Pulled out for testability — the predicate is tiny but covered by tests. */
-function filterAndArchive(
+ *  Exported for testability — the predicate is tiny but covered by tests. */
+export function filterAndArchive(
   item: KdsItemRow,
   stationFilter: KdsStationFilter,
   now: number,
@@ -219,14 +219,12 @@ function filterAndArchive(
     }
   }
 
-  // 2) Apply the granular station-filter chip ('all' is a passthrough).
-  //    The server query already narrows by `dispatch_station`. The chip
-  //    further narrows on `categories.kds_station` if that column ever
-  //    surfaces on KdsItemRow. Until then we only enforce 'all' (and let
-  //    the future field hook in here without a refactor).
-  if (stationFilter !== 'all') {
-    const chip = (item as KdsItemRow & { kds_station?: string }).kds_station;
-    if (chip && chip !== stationFilter) return false;
+  // 2) Apply the granular station-filter chip ('all' is a passthrough) on
+  //    `categories.kds_station` (S75 task 7 — resolved via useKdsOrders'
+  //    products → categories join). A NULL kds_station (un-configured
+  //    category) passes ALL chips so items never silently vanish.
+  if (stationFilter !== 'all' && item.kds_station !== null && item.kds_station !== stationFilter) {
+    return false;
   }
 
   return true;

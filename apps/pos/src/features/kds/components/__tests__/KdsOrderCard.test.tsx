@@ -63,6 +63,7 @@ function makeItem(overrides: Partial<KdsItemRow> = {}): KdsItemRow {
     kitchen_status: 'pending',
     dispatch_station: 'kitchen',
     dispatch_stations: null,
+    kds_station: null,
     sent_to_kitchen_at: new Date('2026-05-14T12:00:00.000Z').toISOString(),
     ready_at: null,
     prep_started_at: null,
