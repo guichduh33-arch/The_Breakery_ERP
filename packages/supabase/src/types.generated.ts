@@ -4688,6 +4688,7 @@ export type Database = {
           is_active: boolean
           name: string
           seats: number
+          section_id: string | null
           sort_order: number
           updated_at: string
         }
@@ -4698,6 +4699,7 @@ export type Database = {
           is_active?: boolean
           name: string
           seats?: number
+          section_id?: string | null
           sort_order?: number
           updated_at?: string
         }
@@ -4708,10 +4710,19 @@ export type Database = {
           is_active?: boolean
           name?: string
           seats?: number
+          section_id?: string | null
           sort_order?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "restaurant_tables_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "table_sections"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       role_permissions: {
         Row: {
@@ -5278,6 +5289,36 @@ export type Database = {
           name?: string
           notes?: string | null
           payment_terms_days?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      table_sections: {
+        Row: {
+          created_at: string
+          deleted_at: string | null
+          id: string
+          is_active: boolean
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          sort_order?: number
           updated_at?: string
         }
         Relationships: []
@@ -6450,6 +6491,31 @@ export type Database = {
         }
         Returns: Json
       }
+      create_restaurant_table_v1: {
+        Args: {
+          p_name: string
+          p_seats: number
+          p_section_id: string
+          p_sort_order: number
+        }
+        Returns: {
+          created_at: string
+          deleted_at: string | null
+          id: string
+          is_active: boolean
+          name: string
+          seats: number
+          section_id: string | null
+          sort_order: number
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "restaurant_tables"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       create_stock_lot_v1: {
         Args: {
           p_batch_number?: string
@@ -6462,6 +6528,24 @@ export type Database = {
           p_unit?: string
         }
         Returns: Json
+      }
+      create_table_section_v1: {
+        Args: { p_name: string; p_sort_order: number }
+        Returns: {
+          created_at: string
+          deleted_at: string | null
+          id: string
+          is_active: boolean
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "table_sections"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       create_tablet_order_v4: {
         Args: {
@@ -6523,6 +6607,8 @@ export type Database = {
         Args: { p_idempotency_key?: string; p_product_id: string }
         Returns: Json
       }
+      delete_restaurant_table_v1: { Args: { p_id: string }; Returns: undefined }
+      delete_table_section_v1: { Args: { p_id: string }; Returns: undefined }
       delete_user_v1: {
         Args: { p_reason: string; p_user_id: string }
         Returns: Json
@@ -8085,9 +8171,59 @@ export type Database = {
         Args: { p_patch: Json; p_po_id: string }
         Returns: Json
       }
+      update_restaurant_table_v1: {
+        Args: {
+          p_id: string
+          p_is_active: boolean
+          p_name: string
+          p_seats: number
+          p_section_id: string
+          p_sort_order: number
+        }
+        Returns: {
+          created_at: string
+          deleted_at: string | null
+          id: string
+          is_active: boolean
+          name: string
+          seats: number
+          section_id: string | null
+          sort_order: number
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "restaurant_tables"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       update_role_session_timeout_v1: {
         Args: { p_minutes: number; p_role_code: string }
         Returns: boolean
+      }
+      update_table_section_v1: {
+        Args: {
+          p_id: string
+          p_is_active: boolean
+          p_name: string
+          p_sort_order: number
+        }
+        Returns: {
+          created_at: string
+          deleted_at: string | null
+          id: string
+          is_active: boolean
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "table_sections"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       update_user_profile_v1: {
         Args: {
