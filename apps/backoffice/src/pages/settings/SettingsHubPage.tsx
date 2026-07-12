@@ -5,9 +5,12 @@
 //
 // S73 Lot 3 (Task 11) — zero dead-end tiles: every tile is either linked to
 // a real route, or explicitly `planned: true` (a surface actively deferred
-// to a dedicated future session — currently only KDS Configuration + Floor
-// Plan). Tiles pointing at a permission-gated route carry a `permission`
-// so operators who can't open the route don't see the tile at all.
+// to a dedicated future session). Tiles pointing at a permission-gated route
+// carry a `permission` so operators who can't open the route don't see the
+// tile at all.
+//
+// S75 Task 3 — Floor Plan shipped (real CRUD route below); only KDS
+// Configuration remains `planned: true`.
 //
 // Route-level permission gating still applies too — clicking a visible tile
 // routes through the matching <PermissionGate> in src/routes/index.tsx.
@@ -95,7 +98,7 @@ const SECTIONS: SettingSection[] = [
     id: 'layout',
     title: 'Layout',
     tiles: [
-      { planned: true, title: 'Floor Plan', blurb: 'Tables, sections, walking paths. (Planned — dedicated session)', icon: Map },
+      { to: '/backoffice/settings/floor-plan', permission: 'tables.update', title: 'Floor Plan', blurb: 'Tables + room sections (POS floor plan).', icon: Map },
       { to: '/backoffice/inventory/sections', title: 'Sections', blurb: 'Inventory section topology.', icon: Grid3x3 },
     ],
   },
