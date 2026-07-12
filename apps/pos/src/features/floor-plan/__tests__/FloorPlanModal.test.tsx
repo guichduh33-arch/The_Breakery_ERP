@@ -28,8 +28,8 @@ describe('FloorPlanModal', () => {
     render(
       <FloorPlanModal
         open
-        onClose={() => {}}
-        onSelect={() => {}}
+        onClose={vi.fn()}
+        onSelect={vi.fn()}
         tables={TABLES}
         occupancy={{}}
       />,
@@ -44,8 +44,8 @@ describe('FloorPlanModal', () => {
     render(
       <FloorPlanModal
         open={false}
-        onClose={() => {}}
-        onSelect={() => {}}
+        onClose={vi.fn()}
+        onSelect={vi.fn()}
         tables={TABLES}
         occupancy={{}}
       />,
@@ -57,8 +57,8 @@ describe('FloorPlanModal', () => {
     render(
       <FloorPlanModal
         open
-        onClose={() => {}}
-        onSelect={() => {}}
+        onClose={vi.fn()}
+        onSelect={vi.fn()}
         tables={[]}
         occupancy={{}}
       />,
@@ -78,7 +78,7 @@ describe('FloorPlanModal', () => {
         occupancy={{ T2: true }}
       />,
     );
-    const cta = screen.getByTestId('floor-plan-confirm') as HTMLButtonElement;
+    const cta = screen.getByTestId<HTMLButtonElement>('floor-plan-confirm');
     expect(cta.disabled).toBe(true);
 
     fireEvent.click(screen.getByRole('button', { name: /table t1/i }));
@@ -92,8 +92,8 @@ describe('FloorPlanModal', () => {
     render(
       <FloorPlanModal
         open
-        onClose={() => {}}
-        onSelect={() => {}}
+        onClose={vi.fn()}
+        onSelect={vi.fn()}
         tables={TABLES}
         occupancy={{}}
         initialSelection="T2"

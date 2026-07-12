@@ -45,7 +45,7 @@ describe('FloorPlanView', () => {
       <FloorPlanView
         tables={TABLES}
         occupancy={{}}
-        onTableSelect={() => {}}
+        onTableSelect={vi.fn()}
       />,
     );
     expect(screen.getByText('FLOOR PLAN')).toBeInTheDocument();
@@ -94,7 +94,7 @@ describe('FloorPlanView', () => {
       <FloorPlanView
         tables={TABLES}
         occupancy={{}}
-        onTableSelect={() => {}}
+        onTableSelect={vi.fn()}
       />,
     );
     // Default = interior (T1, T2 visible; T10, T12 hidden).
@@ -112,7 +112,7 @@ describe('FloorPlanView', () => {
       <FloorPlanView
         tables={[]}
         occupancy={{}}
-        onTableSelect={() => {}}
+        onTableSelect={vi.fn()}
       />,
     );
     expect(screen.getByText(/no tables configured/i)).toBeInTheDocument();

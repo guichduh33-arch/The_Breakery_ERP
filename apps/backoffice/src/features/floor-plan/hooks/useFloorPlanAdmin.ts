@@ -31,8 +31,7 @@ export function useFloorPlanTables() {
         .select('id,name,seats,sort_order,is_active,section_id, table_sections(name,sort_order)')
         .order('sort_order', { ascending: true });
       if (error !== null) throw new Error(error.message);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return (data ?? []) as any as RestaurantTable[];
+      return data ?? [];
     },
   });
 }
@@ -46,7 +45,7 @@ export function useTableSections() {
         .select('id,name,sort_order,is_active')
         .order('sort_order', { ascending: true });
       if (error !== null) throw new Error(error.message);
-      return (data ?? []) as TableSection[];
+      return (data ?? []);
     },
   });
 }

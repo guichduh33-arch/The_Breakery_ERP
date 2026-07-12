@@ -34,7 +34,7 @@ describe('CategoryFormDialog — smoke (S75 task 7)', () => {
   it('renders exactly the 5 CHECK-valid KDS station options', () => {
     renderDialog();
 
-    const select = screen.getByLabelText(/kds station/i) as HTMLSelectElement;
+    const select = screen.getByLabelText<HTMLSelectElement>(/kds station/i);
     const options = Array.from(select.options).map((o) => ({ value: o.value, label: o.text }));
 
     expect(options).toEqual([
@@ -54,7 +54,7 @@ describe('CategoryFormDialog — smoke (S75 task 7)', () => {
 
   it('defaults the KDS station select to "expo" on create', () => {
     renderDialog();
-    const select = screen.getByLabelText(/kds station/i) as HTMLSelectElement;
+    const select = screen.getByLabelText<HTMLSelectElement>(/kds station/i);
     expect(select.value).toBe('expo');
   });
 });
