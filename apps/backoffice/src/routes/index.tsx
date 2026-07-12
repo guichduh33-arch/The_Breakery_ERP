@@ -83,6 +83,7 @@ const SettingsGeneralPage = lazy(() => import('@/pages/settings/SettingsGeneralP
 const SettingsInventoryPage = lazy(() => import('@/pages/settings/SettingsInventoryPage.js'));
 const SettingsPaymentMethodsPage = lazy(() => import('@/pages/settings/SettingsPaymentMethodsPage.js'));
 const SettingsCustomerDisplayPage = lazy(() => import('@/pages/settings/SettingsCustomerDisplayPage.js'));
+const SettingsKdsConfigPage = lazy(() => import('@/pages/settings/SettingsKdsConfigPage.js'));
 const SettingsFloorPlanPage = lazy(() => import('@/pages/settings/SettingsFloorPlanPage.js'));
 const SettingsPrintingPage = lazy(() => import('@/pages/settings/SettingsPrintingPage.js'));
 const SettingsPosConfigPage = lazy(() => import('@/pages/settings/SettingsPosConfigPage.js'));
@@ -913,6 +914,14 @@ export function AppRoutes() {
           element={
             <PermissionGate required="settings.read">
               <SettingsCustomerDisplayPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="settings/kds"
+          element={
+            <PermissionGate required="settings.read">
+              <SettingsKdsConfigPage />
             </PermissionGate>
           }
         />
