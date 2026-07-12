@@ -95,18 +95,20 @@ SELECT is(
     'kds_auto_archive_minutes',      30),
   'final kds settings reflect the converged round-trip (12/15/30)');
 
+-- NOTE: every set_setting_v1 call above shares this transaction's now(), so
+-- audit rows are NOT orderable by created_at here — match the warning=12 row
+-- by its content instead of "latest".
 DO $audit$ DECLARE v_md JSONB; BEGIN
   SELECT metadata INTO v_md
     FROM audit_logs
    WHERE action = 'setting.update'
      AND metadata->>'key' = 'kds_warning_threshold_minutes'
-   ORDER BY created_at DESC
+     AND metadata->>'new' = '12'
    LIMIT 1;
   PERFORM set_config('breakery.t_audit_pass',
     (v_md IS NOT NULL
      AND v_md->>'category' = 'kds'
-     AND v_md ? 'old'
-     AND v_md->>'new' = '12')::TEXT, true);
+     AND v_md ? 'old')::TEXT, true);
 END $audit$;
 SELECT ok(current_setting('breakery.t_audit_pass')::BOOLEAN,
   'audit_logs setting.update row for kds_warning_threshold_minutes has key/old/new/category');

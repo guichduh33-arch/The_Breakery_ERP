@@ -302,6 +302,9 @@ export type Database = {
           enabled_payment_methods: Json
           fiscal_address: string | null
           id: number
+          kds_auto_archive_minutes: number
+          kds_urgent_threshold_minutes: number
+          kds_warning_threshold_minutes: number
           name: string
           pos_auto_open_drawer: boolean
           pos_auto_print_receipt: boolean
@@ -328,6 +331,9 @@ export type Database = {
           enabled_payment_methods?: Json
           fiscal_address?: string | null
           id?: number
+          kds_auto_archive_minutes?: number
+          kds_urgent_threshold_minutes?: number
+          kds_warning_threshold_minutes?: number
           name?: string
           pos_auto_open_drawer?: boolean
           pos_auto_print_receipt?: boolean
@@ -354,6 +360,9 @@ export type Database = {
           enabled_payment_methods?: Json
           fiscal_address?: string | null
           id?: number
+          kds_auto_archive_minutes?: number
+          kds_urgent_threshold_minutes?: number
+          kds_warning_threshold_minutes?: number
           name?: string
           pos_auto_open_drawer?: boolean
           pos_auto_print_receipt?: boolean
