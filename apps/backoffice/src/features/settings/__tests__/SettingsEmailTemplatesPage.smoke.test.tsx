@@ -77,4 +77,9 @@ describe('SettingsEmailTemplatesPage', () => {
     // The preview shows "Welcome, [customer_name]" once vars are substituted.
     expect(screen.getByText(/Welcome, \[customer_name\]/i)).toBeInTheDocument();
   });
+
+  it('shows the "not wired yet" banner (S76 T5 — no email is sent by the system yet)', async () => {
+    renderPage();
+    expect(await screen.findByTestId('templates-not-wired-banner')).toBeInTheDocument();
+  });
 });

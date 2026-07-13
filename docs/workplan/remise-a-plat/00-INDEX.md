@@ -62,24 +62,26 @@ Le « prêt mais débranché » : composants jamais importés, RPCs sans call-si
 | 2 | Recall commande servie (`RecallButton` + `kds_recall_order_v1`) | Composant + RPC live | 04 | ✅ **Câblé S59** (T4) |
 | 3 | Prep-timer serveur (`PrepTimer` + `kds_start_prep_timer_v1` + `order_items.prep_started_at`) | Composant + RPC + colonne | 04 | ✅ **Câblé S59** (T4) |
 | 4 | Chips `StationFilter` hot/cold/bar (prédicat inerte, champ jamais sélectionné) | UI câblée mais no-op | 04 | ✅ **Câblé S75** (D1.4 — `useKdsOrders` résout `kds_station` via `products → categories.kds_station`) |
-| 5 | Auth kiosque KDS (`features/kds/hooks/useKioskAuth.ts`) | Hook sans consommateur | 04 | Purger ou spécifier (appareils non-staff) |
-| 6 | Auth kiosque tablette (`features/tablet/hooks/useKioskAuth.ts`) | Hook sans consommateur | 17 | Idem #5 (trancher ensemble) |
+| 5 | Auth kiosque KDS (`features/kds/hooks/useKioskAuth.ts`) | Hook sans consommateur | 04 | ✅ **Purgés S76** (décision propriétaire 2026-07-13 — core lib/kioskAuth.ts + variante display conservés) |
+| 6 | Auth kiosque tablette (`features/tablet/hooks/useKioskAuth.ts`) | Hook sans consommateur | 17 | ✅ **Purgés S76** (décision propriétaire 2026-07-13 — core lib/kioskAuth.ts + variante display conservés) |
 | 7 | Mesh LAN hybride complet (`useLanHub`/`useLanClient`/`MessageDedup`, S13 Phase 5.A) — bug topics suspecté `lan-hub-*` vs `lan-client-*` | Feature entière morte | 21 | ✅ **Purgé S62** (T1 — décision 2 internet-first ; heartbeats S59 conservés) |
 | 8 | Heartbeats appareils (`useLanHeartbeat` + `update_lan_heartbeat_v1`) → page BO « LAN Devices » affiche tout « stale » | Hook + RPC orphelins, UI aux données mortes | 21 | ✅ **Câblé S59** (T9 — deviceCode Settings requis par terminal) |
 | 9 | File d'impression DB (`print_queue` + 5 RPCs `*_print_job_v1`, migration `20260517000170`) — ni producteur ni consommateur | Infra DB orpheline | 21 | ✅ **Purgée S62** (T2, `_110` — statuée DROPPÉE : table vide, le vrai print POST directement au bridge) |
-| 10 | `CustomerDisplayView` (vue riche : photos produits, badges promo/annulé) | Composant jamais importé | 16 | Câbler (enrichit B1.1 gratuitement) |
+| 10 | `CustomerDisplayView` (vue riche : photos produits, badges promo/annulé) | Composant jamais importé | 16 | ✅ **Câblé** (CustomerDisplayPage l'importe — constaté S76, livré avec le split customer display S67) |
 | 11 | `ProductionSuggestions.tsx` + `useProductionSuggestions` + `get_production_suggestions_v1` (doublon de la page Planning) | Composant + RPC orphelins | 15 | ✅ **Purgé S59** (T7 — RPC gardé, consommé par ProductionAlertsTab) |
-| 12 | `reconcile_b2b_balance_v1` (alerte drift cache↔ledger, gate `b2b.read`) | RPC sans call-site UI | 09 | Câbler (panneau admin B2B) |
-| 13 | `adjust_b2b_balance_v2` (JE + PIN) | RPC sans call-site UI | 09 | Câbler (action admin B2B) |
-| 14 | `RedeemButton.tsx` (le redeem passe par `BottomActionBar`) | Composant orphelin | 08 | Purger (D_nettoyage) |
-| 15 | Historique des réglages : tracé avant/après en DB (`set_setting_v1` → `audit_logs`) sans UI (tuile « Settings History (Soon) ») | Données sans écran | 19 | Câbler (D1.3) |
-| 16 | Templates e-mails (`email_templates`) : éditeur + aperçu réels, aucune EF n'envoie | Feature sans consommateur | 19 | Câbler (infra notifications) ou re-statuer |
-| 17 | Templates tickets (`receipt_templates`) : l'impression POS ne les lit pas | Feature sans consommateur | 19/21 | Câbler côté printService |
-| 18 | `pos_presets` (prêts côté serveur, aucune UI) | Tables/RPC sans UI | 19 | Câbler ou purger |
+| 12 | `reconcile_b2b_balance_v1` (alerte drift cache↔ledger, gate `b2b.read`) | RPC sans call-site UI | 09 | ✅ **Câblé S76** (hook useB2bBalanceDrift + bandeau drift B2B Dashboard) |
+| 13 | `adjust_b2b_balance_v2` (JE + PIN) | RPC sans call-site UI | 09 | ✅ **Câblé S76** (AdjustB2bBalanceModal PIN-gated, fiche client) |
+| 14 | `RedeemButton.tsx` (le redeem passe par `BottomActionBar`) | Composant orphelin | 08 | ✅ **Purgé S76** |
+| 15 | Historique des réglages : tracé avant/après en DB (`set_setting_v1` → `audit_logs`) sans UI (tuile « Settings History (Soon) ») | Données sans écran | 19 | ✅ **Câblé S73** (tuile Settings History → /backoffice/reports/audit?action=setting.update) |
+| 16 | Templates e-mails (`email_templates`) : éditeur + aperçu réels, aucune EF n'envoie | Feature sans consommateur | 19 | 🟡 **Re-statués S76** (décision propriétaire 2026-07-13 : bandeau « not wired yet », câblage → Vague 3 notifications / print-bridge) |
+| 17 | Templates tickets (`receipt_templates`) : l'impression POS ne les lit pas | Feature sans consommateur | 19/21 | 🟡 **Re-statués S76** (décision propriétaire 2026-07-13 : bandeau « not wired yet », câblage → Vague 3 notifications / print-bridge) |
+| 18 | `pos_presets` (prêts côté serveur, aucune UI) | Tables/RPC sans UI | 19 | ✅ **Câblé S73** (page BO POS Configuration) |
 | 19 | Permission `rbac.update` seedée, consommée nulle part | Permission orpheline | 20 | ✅ **Purgée S62** (T3, `_111` — décision 1 lecture seule) |
 | 20 | `vite-plugin-pwa@^1.0.0` déclaré, jamais importé (`vite.config.ts`) | Dépendance morte | 18 | ✅ **Purgée S62** (T3 — décision 5, arbre workbox évacué du lockfile) |
 | 21 | Toggle `visible_on_pos` (BO) sans effet au POS (`useProducts` filtre `is_active` seulement) | Réglage sans effet | 05 | ✅ **Câblé S59** (T3 — useProducts + variantes) |
 | 22 | JE des cash in/out : `record_cash_movement_v2` sait émettre la JE, `CashInOutModal` n'expose pas `reason_code` | Capacité RPC non exposée | 12 | ✅ **Câblé S60** (T2 — select reason_code + montage du modal, qui était de surcroît orphelin) |
+
+**Footnote S76 (§2.3 #12/#13)** : en câblant `adjust_b2b_balance_v2` (#13) sur la fiche client, une **nouvelle entrée ⚫ a été découverte et purgée dans la foulée** — `B2BFieldsSection.tsx` (fiche 09/08, la « carte B2B » de la fiche client) n'avait **aucun importeur en production** (`InfoTab` porte sa propre carte B2B inline) ; composant purgé le 2026-07-13 (décision propriétaire, commit `b55b276b`). Ni le nombre total d'entrées ni la numérotation §2.3 n'ont été retouchés (découverte hors inventaire initial `5b0fa92`).
 
 ### 2.4 Modules par fidélité — rappel de lecture
 Le tableau §1 se lit avec le §2.3 : un module « fidèle » peut cacher du non-câblé (15, 16, 17), et un module surclamé peut n'avoir besoin que de câblage (04, 21-heartbeats) plutôt que de développement neuf.
@@ -149,7 +151,7 @@ La checklist consolidée, générée depuis les 25 sections D4 et étiquetée **
 ## 5. Critères de sortie de la remise à plat
 La remise à plat est **terminée** quand les cinq conditions sont réunies :
 1. **Nightly pgTAP vert** (ou liste d'exclusions datée et motivée, revue à chaque session).
-2. **Zéro tuile/label mensonger** dans les deux apps (RBAC Editor, tuiles « Soon » pointant vers de l'existant, chips no-op, page LAN Devices aux données mortes).
-3. **Description v1.3 publiée** avec les ~70 amendements de `00-AMENDEMENTS-V13.md` intégrés (dans les deux sens : surclaims retirés, sous-ventes ajoutées).
+2. ✅ **Zéro tuile/label mensonger S76** dans les deux apps (RBAC renommé S58, tuiles Soon soldées S73/S75, chips câblés S75, heartbeats S59 ; dernières surfaces — pages templates e-mails/tickets — bannées « not applied yet » S76).
+3. ✅ **Description v1.3 publiée S76** (`docs/product/DESCRIPTION.md`, 2026-07-13) — les 90 items de la checklist `00-AMENDEMENTS-V13.md` réconciliée intégrés (dans les deux sens : surclaims retirés, sous-ventes ajoutées).
 4. ✅ **Les 7 décisions actées** — fait : péremption/FIFO le 2026-07-04, les 6 restantes le 2026-07-06 (tableau §3).
-5. **Inventaire ⚫ (§2.3) soldé** : chaque entrée câblée ou purgée — plus aucun code mort ambigu.
+5. ✅ **Inventaire ⚫ soldé S76** (les items #16/#17 sont re-statués « À venir » par décision propriétaire — plus aucun code mort ambigu).

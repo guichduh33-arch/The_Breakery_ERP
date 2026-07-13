@@ -1,6 +1,7 @@
 # Module 17 — Commande sur tablette
 
 > ⚠️ **Mise à jour S59 (2026-07-04, `swarm/session-59`)** : **D1.1 (note par commande) livré** — `create_tablet_order_v3(+ p_notes)` (DROP v2, trio S20, idempotence préservée) ; textarea `TabletCartPanel` → `orders.notes`, affichée sur le KDS et au pickup caisse ; C-B1.1 n'est plus 🟠 sur la note. La **note par ligne** (D2.1) reste un chantier moyen. Voir `docs/workplan/plans/archive/2026-07-04-session-59-INDEX.md`.
+> ✅ **Mise à jour S76 (2026-07-13)** : **D1.3 soldé par PURGE** — `features/tablet/hooks/useKioskAuth.ts` (⚫#6, code mort trompeur listé en §A) purgé conjointement avec la variante KDS (⚫#5, fiche 04), décision propriétaire 2026-07-13 ; la tablette continue d'utiliser la session PIN, pas le JWT kiosque. Le core partagé `lib/kioskAuth.ts` et la variante display sont conservés. Commit `c091b5dc`. Détail : [`../plans/2026-07-13-session-76-plan.md`](../plans/2026-07-13-session-76-plan.md).
 
 > **Remise à plat — analyse comparative.** Doc : Description v1.2 (2026-07-03), module 17. Code : commit `5b0fa92` (2026-07-03).
 > **Statut annoncé par la doc :** Opérationnel pour le service courant
@@ -20,7 +21,7 @@
 - **Menu consultable hors-ligne** : cache localStorage 24 h des catégories+produits, écrit en write-through sur chaque fetch réussi, lu par la grille quand le réseau est mort — `hooks/useTabletMenuCache.ts` (branché dans `TabletMenuView.tsx:26-41`). [UI câblée]
 - **Historique « My Orders »** : commandes du serveur connecté (`waiter_id` + `created_via='tablet'`), items avec `kitchen_status` par ligne, statut commande, **annulation** par bouton (RPC `cancel_tablet_order`, migration `20260507000006`) — `pages/tablet/TabletOrdersPage.tsx`, `hooks/useMyTabletOrders.ts`, `useCancelTabletOrder.ts`. ⚠️ Non borné au jour (toutes les commandes du serveur, tri décroissant). [UI câblée]
 - **Notification « item prêt »** : toast temps réel quand un item passe `ready`, **dédupliqué** (Set borné 1000 clés — replays realtime absorbés) + resync sur reconnexion — `hooks/useTabletOrderStatusListener.ts` (monté par `TabletOrdersPage`). [UI câblée]
-- Sur le disque mais sans consommateur : `features/tablet/hooks/useKioskAuth.ts` (scope kiosque tablette) — la tablette utilise la session PIN, pas le JWT kiosque. [⚫ NON-CÂBLÉ]
+- ~~Sur le disque mais sans consommateur : `features/tablet/hooks/useKioskAuth.ts` (scope kiosque tablette) — la tablette utilise la session PIN, pas le JWT kiosque. [⚫ NON-CÂBLÉ]~~ **Purgé S76** (décision propriétaire 2026-07-13, commit `c091b5dc`).
 
 ## B. Ce que la doc demande
 
@@ -61,7 +62,7 @@
 ### D1. Quick wins (< 1 session, pas de spec)
 1. **Notes de commande** (le vrai manquant de B1.1) : champ note libre au niveau commande — textarea dans `TabletCartPanel`, propager dans `buildSubmitPayload` (+ arg `p_notes` sur un bump `create_tablet_order_v3`, écrire `orders.notes` qui existe déjà), afficher sur le KDS et le pickup caisse. Fichiers : `tabletCartStore.ts`, `TabletCartPanel.tsx`, `packages/domain/src/tablet/*`, migration `create_tablet_order_v3` (+ DROP v2), `useCreateTabletOrder.ts`, `KdsOrderCard.tsx`. Done : « sans gluten » saisi tablette, visible cuisine. (Note par ligne = D2.)
 2. **Borner l'historique au jour** : filtre `sent_to_kitchen_at >= début de journée (tz magasin)` dans `useMyTabletOrders`. Done : la liste correspond au titre « du jour ».
-3. **Supprimer ou câbler `features/tablet/hooks/useKioskAuth.ts`** (code mort trompeur).
+3. ✅ **Supprimer ou câbler `features/tablet/hooks/useKioskAuth.ts`** (code mort trompeur) — **SOLDÉ S76 par purge** (commit `c091b5dc`).
 
 ### D2. Chantiers moyens (1 session, plan requis)
 1. **Notes par ligne** (« sans lait » sur UN cappuccino) : nouvelle colonne `order_items.note` + payload item + rendu KDS/tickets — coordonner avec le module 4 (affichage) et les templates d'impression.

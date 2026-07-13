@@ -45,6 +45,20 @@ vi.mock('@/lib/supabase.js', () => {
         if (table === 'view_ar_aging') return make(aging);
         return make(clients);
       },
+      rpc: (fn: string) => {
+        if (fn === 'reconcile_b2b_balance_v1') {
+          return Promise.resolve({
+            data: [
+              { customer_id: 'b1', customer_name: 'Hotel Kuta', cached_balance: 250000,
+                derived_balance: 200000, drift: 50000, has_drift: true },
+              { customer_id: 'b2', customer_name: 'Bali Organic', cached_balance: 0,
+                derived_balance: 0, drift: 0, has_drift: false },
+            ],
+            error: null,
+          });
+        }
+        return Promise.resolve({ data: null, error: null });
+      },
     },
   };
 });
@@ -53,7 +67,7 @@ vi.mock('@/stores/authStore.js', () => ({
   useAuthStore: (sel: (s: { hasPermission: (p: string) => boolean }) => unknown) =>
     sel({
       hasPermission: (p: string) =>
-        p === 'customers.read' || p === 'pos.sale.create' || p === 'customers.update',
+        p === 'customers.read' || p === 'pos.sale.create' || p === 'customers.update' || p === 'b2b.read',
     }),
 }));
 
@@ -93,5 +107,13 @@ describe('B2BDashboardPage', () => {
     renderPage();
     const btn = await screen.findByRole('button', { name: /new b2b order/i });
     expect(btn).toBeEnabled();
+  });
+
+  it('shows a balance-drift warning banner when reconcile reports drift', async () => {
+    renderPage();
+    expect(await screen.findByTestId('b2b-drift-banner')).toBeInTheDocument();
+    expect(screen.getByTestId('b2b-drift-banner')).toHaveTextContent('Hotel Kuta');
+    // le client sans drift n'apparaît pas dans le bandeau
+    expect(screen.getByTestId('b2b-drift-banner')).not.toHaveTextContent('Bali Organic');
   });
 });

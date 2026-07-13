@@ -4,6 +4,7 @@
 
 > ⚠️ **Mise à jour S60 (2026-07-05, `swarm/session-60`)** : **D1.2 livré** — bouton « All ready » par carte via le nouveau RPC atomique **`kds_bump_order_v1`** (migration `_106` : un UPDATE `pending|preparing → ready`, replay idempotent, gate `kds.operate` ; pas d'undo groupé — l'undo 60 s per-item reste valable). Voir `docs/workplan/plans/archive/2026-07-05-session-60-INDEX.md`.
 > ⚠️ **Mise à jour S59 (2026-07-04, `swarm/session-59`)** : **D1.1/D1.3 livrés** — undo-bump 60 s, recall, prep-timer câblés (RPCs `kds_*_v1`) + alarme sonore WebAudio à la nouvelle commande (dédup + toggle mute persisté). Voir `docs/workplan/plans/archive/2026-07-04-session-59-INDEX.md`.
+> ✅ **Mise à jour S76 (2026-07-13)** : **⚫#5 purgé** — `features/kds/hooks/useKioskAuth.ts` (auth kiosque KDS, hook sans consommateur) purgé conjointement avec la variante tablette (⚫#6, fiche 17), décision propriétaire 2026-07-13 ; le core partagé `lib/kioskAuth.ts` et la variante display (`features/display/hooks/useKioskAuth.ts`, consommée par `/display`) sont conservés — la route `/kds` reste sur la session PIN staff, inchangée. Commit `c091b5dc`. Détail : [`../plans/2026-07-13-session-76-plan.md`](../plans/2026-07-13-session-76-plan.md).
 
 > **Remise à plat — analyse comparative.** Doc : Description v1.2 (2026-07-03), module 4. Code : commit `5b0fa92` (2026-07-03).
 > **Statut annoncé par la doc :** Opérationnel
@@ -28,7 +29,7 @@
 - **Undo-bump 60 s** : `components/BumpButton.tsx` + `UndoBumpToast.tsx` + RPCs `kds_bump_item_v1`/`kds_undo_bump_v1` (migration `20260517000151`).
 - **Recall d'une commande servie** (dialog + raison) : `components/RecallButton.tsx` + RPC `kds_recall_order_v1` (`20260517000151`).
 - **Prep timer serveur** : `components/PrepTimer.tsx` + RPC `kds_start_prep_timer_v1` + colonne `order_items.prep_started_at` (`20260517000150-151`).
-- **Auth kiosque KDS** : `features/kds/hooks/useKioskAuth.ts` (scope 'kds') — aucun consommateur ; la route `/kds` exige une session PIN staff.
+- ~~**Auth kiosque KDS** : `features/kds/hooks/useKioskAuth.ts` (scope 'kds') — aucun consommateur ; la route `/kds` exige une session PIN staff.~~ **Purgé S76** (décision propriétaire 2026-07-13, commit `c091b5dc`).
 
 ## B. Ce que la doc demande
 
