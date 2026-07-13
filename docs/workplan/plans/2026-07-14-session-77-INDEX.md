@@ -1,0 +1,38 @@
+# Session 77 — INDEX (nightly vert, critère de sortie n°1)
+
+> **Date :** 2026-07-14 · **Branche :** `swarm/session-77` · **Plan :** [`2026-07-14-session-77-nightly-plan.md`](2026-07-14-session-77-nightly-plan.md)
+> **Périmètre :** CI/tests uniquement — money-path intouché, **aucune migration**, aucun RPC créé/bumpé. Le seul write cloud de la session est nul (tous les runs pgTAP en BEGIN…ROLLBACK).
+
+## Livré
+
+| Lot | Contenu | Vérification |
+|---|---|---|
+| D | `types.generated.ts` = **regen MCP verbatim** (partitions `pos_events_2026_*` incluses, ordre canonique, `__InternalSupabase` conservé) — le drift kds_* vu par le nightly du 12/07 était déjà résolu par les merges S75/S76 du 13/07 ; restaient le non-alphabétisé et l'exclusion des partitions de la greffe, qui rendaient le check **structurellement rouge à jamais** | typecheck racine 7/7 |
+| A1 | 5 fichiers pgTAP hard-fail réparés : `close_shift_{three_way,pin_gate,note_enforced}` + `cash_register` (v5→**close_shift_v6**, `_142`) · `idempotency_hardening` (v3→**create_tablet_order_v4**, `_144`) · `combo_fire_pay`/`pay_existing_flag_aware` (+`p_table_number`, garde `table_required_for_dine_in` `_122`) · `users` (neutralisation transactionnelle des autres admins actifs — E2E001 depuis `_141` cassait la chaîne LAST_ADMIN_PROTECTED → l'admin de fixture se faisait réellement soft-deleter) | les 8 suites re-passées vertes live via MCP (12+7+11+15+8+3+29+10, `num_failed()=0`) |
+| A2 | 10 suites à `not ok` **silencieux** triées : marketing (cron renommé `birthday-daily-ef` 02:00 UTC) · recipe_cascade_snapshot (WHEN = ANY purchase+production_in) · batch_production (pin `allow_negative_stock=false`, décision 6 l'a passé ON live) · settings (« exactement 1 template défaut » → « au plus 1 », donnée vivante) · pos_voids_refunds (seed daté DANS la fenêtre statique figée) · reports_pnl_bs_cf (T5..T7 absolus → **deltas**, miroir réparation S58 CYE) · inventory_phase1_complete T13 (`inventory.recipes.update` accordée à MANAGER **délibérément** depuis `20260517000060`) · po_payments T8b (JOIN je↔pp manquant → produit cartésien, scopé `je.reference_id = pp.id`) · product_variants T5 (23505 → `sku_taken` P0004, pré-check M8) · **combo_migration → `_quarantine/`** (acceptance one-shot S47 sur comptes exacts du catalogue : 7/18 à l'époque, 9/36 live) | expressions chirurgicales vérifiées live ; run complet au dispatch de closeout |
+| B | `pgtap-nightly.yml` : un fichier échoue désormais sur erreur SQL **OU** tout `not ok` dans l'output (le « filet troué » fiche 23 : les assertions pgTAP ne flippent jamais l'exit code psql — 15 suites rouges invisibles dans un job « vert ») + `drift-checks` compare des sorties **normalisées** (strip du bloc `__InternalSupabase`, seul delta structurel CLI-vs-MCP) ; miroir dans `pgtap-pr.yml` | YAML validé ; dispatch de closeout |
+| C·vague 1 | `supabase/tests/functions/_helpers/auth.ts` : login **via l'API admin GoTrue** (`generateLink` magiclink + `verifyOtp`, service key) + cache de tokens (Map + fichier tmp, TTL 40 min) — remplace ~90 logins séquentiels contre l'EF `auth-verify-pin` (~3/min/IP, cause de la tempête `rate_limited`) ; **48 fichiers migrés** ; fallback anon = **vraie clé publishable** du projet (publique par design — l'ancien fallback hardcodé était celui du stack Docker local, cause des 401 anon-path ; le secret repo `SUPABASE_ANON_KEY` devient optionnel, solde le Deferred S51) ; renames v6/v4 dans les fichiers vitest ; les 8 fichiers PIN-path (auth-*, rate-limit-*, kiosk, role-session-timeout) volontairement non migrés | collection vitest 0 erreur (61 fichiers) ; verdict live au dispatch de closeout |
+| C·vague 2 | **RPCs droppés que la tempête masquait** (12 noms morts confrontés à `pg_proc` live) : 4 fichiers **réparés** — reports-financials (P&L/bilan v1→v2), reports-sales (`get_sales_by_hour_v2`), purchasing-po (`receive_purchase_order_v2` + clé d'idempotence), expenses (`submit_expense_v2` + `approve_expense_v3` PIN manager, swap créateur/approbateur pour la SOD, JE retrouvé par `reference_id`) — et 6 fichiers **quarantainés** `functions/_quarantine/` (en-têtes datés + exclude vitest) : complete-order-v7, discount-flow, accounting-sale-je, pay-existing-order-v4, tablet-flow, accounting-refund-je — tous ciblent des générations money-path droppées (`complete_order_with_payment` v1/v9, `create_tablet_order` v1, `pay_existing_order` v1, `refund_order_rpc` v1/v2) ; couverture actuelle citée par fichier (ancres pgTAP + process-payment EF) | collection 55 fichiers, 0 erreur ; quarantainés absents du run |
+
+## Déviations
+
+- **DEV-S77-01** — La convention de greffe de types S74 (« partitions `pos_events_2026_*` exclues ») est **RETIRÉE** : le fichier commité est désormais le regen MCP verbatim. Toute création de partition cloud (mensuelle, D-2 S72) fera dériver le check → regen MCP + commit, signal voulu.
+- **DEV-S77-02** — `users.test.sql` ne suppose plus que le seed SUPER_ADMIN est le dernier admin actif : la base dev vivante en porte d'autres (E2E001) ; neutralisation transactionnelle.
+- **DEV-S77-03** — Le login vitest ne passe plus par l'EF PIN (sauf suites qui la testent) : l'argument `pin` de `loginAs` est ignoré. Les PIN dans les call-sites sont conservés pour un diff minimal.
+- **DEV-S77-04** — `expenses.test.ts` : `approve_expense_v3` vérifie le PIN **de l'appelant** + SOD (créateur ≠ approbateur) et ne renvoie plus `je_id` → rôles inversés (créateur EMP000, approbateur EMP003 dont le PIN est connu) et JE retrouvé par `reference_type='expense', reference_id` — seule réparation vague 2 au-delà d'un rename mécanique.
+- **DEV-S77-05** — Durcissement miroir de `pgtap-pr.yml` (le smoke PR avait le même trou silencieux) — vérifié sans risque : aucun des 9 fichiers smoke n'était en `not ok`.
+
+## Findings
+
+- **F-1 (produit)** — 1 combo vivant a `combo_base_price NULL` (créé via le CRUD BO) : le pré-requis de pricing serveur (`_resolve_combo_price_v1`) n'est pas gardé à la création. À exposer propriétaire — candidat garde BO/RPC.
+- **F-2 (données)** — Le PIN d'**EMP000** a dérivé : aucun des PIN historiques des tests (123456/111111/654321/285741…) ne vérifie. Probablement changé par un humain via l'app — ne PAS reset sans décision propriétaire. Les suites pgTAP mockent `pin_hash` en transaction (non affectées) ; vitest n'en dépend plus (magiclink), sauf fichiers PIN-path exclus.
+
+## Dettes
+
+- **D-1** — Nouvelles partitions `pos_events` (2026_10+, création manuelle D-2 S72) → drift types voulu ; regen MCP + commit à chaque partition.
+- **D-2 (action utilisateur, héritée D-8 S76)** — Les 3 secrets repo E2E (`VITE_SUPABASE_ANON_KEY`, `E2E_PIN_ADMIN`, `E2E_PIN_CASHIER`) toujours absents — le nightly Playwright meurt en ~10 s. Hors critère n°1, même famille.
+- **D-3** — EMP000 PIN inconnu (F-2) : décision propriétaire (confirmer le changement, ou reset). Concrètement : `auth-verify-pin.test.ts` et `auth-verify-pin-rate-limit.test.ts` (les 2 seuls fichiers PIN-path qui POSTent le PIN d'EMP000 à l'EF — c'est l'objet du test) resteront rouges d'ici là.
+- **D-4** — La fenêtre statique de `pos_voids_refunds` (2026-05-14→2026-07-11, figée dans le passé) reste sensible à un backdate de données ; suffisant tant que personne ne rétro-date des refunds.
+- **D-5** — 6 specs vitest en quarantaine (`functions/_quarantine/`) : candidat session de réécriture contre v17 (EF process-payment) / `create_tablet_order_v4` / `pay_existing_order_v11` / `refund_order_rpc_v4` — surtout accounting-sale-je + accounting-refund-je (les JE de vente/refund n'ont plus de spec vitest dédiée ; `accounting.test.sql` couvre le socle).
+
+<!-- CLOSEOUT_RESULTS -->
