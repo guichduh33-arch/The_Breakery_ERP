@@ -118,6 +118,11 @@ DECLARE
   v_fl  UUID := current_setting('breakery.t_prod_flour',    true)::uuid;
   v_dup_count INT;
 BEGIN
+  -- S77 : la base dev vivante peut déjà porter cette paire (les suites vitest
+  -- live tournent SANS rollback et peuvent la laisser) — purge transactionnelle
+  -- d'abord, annulée par le ROLLBACK final : la ligne vivante survit au run.
+  DELETE FROM recipes WHERE product_id = v_bag AND material_id = v_fl;
+
   -- Insert a fresh row (bypass RLS via DEFINER context : we're running as the migration test owner).
   INSERT INTO recipes (product_id, material_id, quantity, unit, is_active)
     VALUES (v_bag, v_fl, 0.250, 'kg', true);
