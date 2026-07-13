@@ -51,4 +51,28 @@ describe('AdjustB2bBalanceModal', () => {
     renderModal();
     expect(screen.getByRole('button', { name: /adjust balance/i })).toBeDisabled();
   });
+
+  it('clears delta/reason/PIN when reopened after a cancel (open-keyed reset)', () => {
+    // The modal stays mounted with only `open` toggling — typed values
+    // (including the manager PIN) must not survive a Cancel/reopen cycle.
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const tree = (open: boolean) => (
+      <QueryClientProvider client={qc}>
+        <AdjustB2bBalanceModal customerId="b1" customerName="Hotel Kuta" open={open} onClose={vi.fn()} />
+      </QueryClientProvider>
+    );
+    const { rerender } = render(tree(true));
+    fireEvent.change(screen.getByLabelText(/delta/i), { target: { value: '-50000' } });
+    fireEvent.change(screen.getByLabelText(/reason/i), { target: { value: 'write-off drift' } });
+    fireEvent.change(screen.getByLabelText(/manager pin/i), { target: { value: '123456' } });
+    expect(screen.getByLabelText(/manager pin/i)).toHaveValue('123456');
+
+    rerender(tree(false)); // cancel/close — component stays mounted
+    rerender(tree(true));  // reopen
+
+    expect(screen.getByLabelText(/delta/i)).toHaveValue(null);
+    expect(screen.getByLabelText(/reason/i)).toHaveValue('');
+    expect(screen.getByLabelText(/manager pin/i)).toHaveValue('');
+    expect(screen.getByRole('button', { name: /adjust balance/i })).toBeDisabled();
+  });
 });

@@ -4,7 +4,7 @@
 // Mirrors the RecordB2bPaymentModal structure (single-screen Dialog form,
 // useId-scoped labels, inline alert on error).
 
-import { useId, useState, type JSX } from 'react';
+import { useEffect, useId, useState, type JSX } from 'react';
 import {
   Button,
   Dialog,
@@ -34,6 +34,20 @@ export function AdjustB2bBalanceModal({
   const [reason,   setReason]   = useState('');
   const [pin,      setPin]      = useState('');
   const adjust = useAdjustB2bBalance(customerId);
+  const resetMutation = adjust.reset;
+
+  // Open-keyed reset (mirrors RecordB2bPaymentModal) — the modal stays
+  // mounted with only `open` toggling, so without this the typed PIN /
+  // delta / reason (and any stale error) would survive Cancel and
+  // reappear on reopen.
+  useEffect(() => {
+    if (open) {
+      setDeltaRaw('');
+      setReason('');
+      setPin('');
+      resetMutation();
+    }
+  }, [open, resetMutation]);
 
   const delta = Number(deltaRaw);
   const valid = deltaRaw.trim() !== ''
