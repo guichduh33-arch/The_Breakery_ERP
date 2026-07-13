@@ -69,17 +69,21 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('internal-transfer RPCs 
 
     const admin = createClient(SUPABASE_URL, SERVICE);
 
-    // Resolve seeded sections by code.
+    // Resolve two distinct ACTIVE sections. S77: PRODUCTION_KITCHEN was
+    // deactivated on the living dev DB (BO usage) and the transfer RPCs raise
+    // section_not_found for inactive sections — prefer MAIN_WAREHOUSE as the
+    // source, take any other active section as the destination.
     const { data: sections, error: secErr } = await admin
       .from('sections')
       .select('id, code')
-      .in('code', ['MAIN_WAREHOUSE', 'PRODUCTION_KITCHEN']);
+      .eq('is_active', true)
+      .is('deleted_at', null);
     if (secErr) throw secErr;
-    if (!sections || sections.length !== 2) {
-      throw new Error(`Seeded sections missing: got ${JSON.stringify(sections)}`);
+    if (!sections || sections.length < 2) {
+      throw new Error(`Need >=2 active sections: got ${JSON.stringify(sections)}`);
     }
-    fromSectionId = sections.find(s => s.code === 'MAIN_WAREHOUSE')!.id;
-    toSectionId   = sections.find(s => s.code === 'PRODUCTION_KITCHEN')!.id;
+    fromSectionId = (sections.find(s => s.code === 'MAIN_WAREHOUSE') ?? sections[0]).id;
+    toSectionId   = sections.find(s => s.id !== fromSectionId)!.id;
 
     // Resolve primary product (BEV-AMER) — pattern from receive-stock.test.ts.
     const { data: pA } = await admin.from('products')

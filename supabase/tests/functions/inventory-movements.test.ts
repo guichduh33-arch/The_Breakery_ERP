@@ -12,7 +12,7 @@ import { loginAs, jwtClient } from './_helpers/auth';
 
 function rpc(sb: SupabaseClient) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return sb.rpc as unknown as (fn: string, args?: Record<string, unknown>) => Promise<{ data: any; error: { message: string } | null }>;
+  return sb.rpc.bind(sb) as unknown as (fn: string, args?: Record<string, unknown>) => Promise<{ data: any; error: { message: string } | null }>;
 }
 
 describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory movements — get_stock_movements_v1 + aggregates', () => {

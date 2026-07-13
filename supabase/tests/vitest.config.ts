@@ -4,7 +4,9 @@ export default defineConfig({
   test: {
     environment: 'node',
     testTimeout: 30000,
-    hookTimeout: 30000,
+    // S77: 90s — loginAsViaPinEF may sit out one full auth-verify-pin
+    // rate-limit window (62s) inside a beforeAll.
+    hookTimeout: 90000,
     // S77 nightly triage — functions/_quarantine/ holds specs that call DROPped
     // RPCs (old money-path versions). Excluded from the run until rewritten in a
     // dedicated session; each file carries a dated OBSOLETE header explaining

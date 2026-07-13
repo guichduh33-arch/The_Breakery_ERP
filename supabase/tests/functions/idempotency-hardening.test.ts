@@ -34,7 +34,7 @@
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { loginAsFull, jwtClient } from './_helpers/auth';
+import { loginAsFull, loginAsViaPinEF, jwtClient } from './_helpers/auth';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL
   ?? process.env.SUPABASE_URL
@@ -95,8 +95,11 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('S25 idempotency hardeni
     const admin = createClient(SUPABASE_URL, SERVICE);
 
     // 1a) Cashier login (refund EF tests TS3/TS4/TS5 — caller just needs to be authenticated).
+    // S77: the refund-order EF validates the CUSTOM PIN-JWT (HS256) and rejects
+    // GoTrue session tokens ('not_authenticated') — this token must come from
+    // the auth-verify-pin EF itself.
+    cashierToken = await loginAsViaPinEF(CASHIER_EMPLOYEE, CASHIER_PIN);
     const cashier = await loginAs(CASHIER_EMPLOYEE, CASHIER_PIN);
-    cashierToken   = cashier.accessToken;
     cashierProfile = cashier.profileId;
 
     // 1b) Waiter login (tablet RPC tests TS1/TS2 — waiter has sales.create perm, CASHIER does not).

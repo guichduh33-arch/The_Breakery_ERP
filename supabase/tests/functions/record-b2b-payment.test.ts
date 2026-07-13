@@ -27,7 +27,7 @@ const SERVICE      = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 // Type-erased rpc helper (generated types may lag behind staging migrations).
 function rpc(sb: SupabaseClient) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return sb.rpc as unknown as (fn: string, args?: Record<string, unknown>) => Promise<{ data: any; error: { message: string; code?: string } | null }>;
+  return sb.rpc.bind(sb) as unknown as (fn: string, args?: Record<string, unknown>) => Promise<{ data: any; error: { message: string; code?: string } | null }>;
 }
 
 describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('B2B Foundation — record_b2b_payment_v1 + create_b2b_order_v1 + adjust', () => {

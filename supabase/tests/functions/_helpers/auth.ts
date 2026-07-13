@@ -198,3 +198,86 @@ export async function loginAs(employeeCode: string, _pin?: string): Promise<stri
   const { token } = await loginAsFull(employeeCode, _pin);
   return token;
 }
+
+// ── PIN-EF login (for specs that CALL Edge Functions) ───────────────────────
+// Several EFs validate the custom PIN-JWT issued by auth-verify-pin (HS256)
+// and reject GoTrue session tokens ('invalid_auth' / 'not_authenticated').
+// Specs that POST those EFs must log in through the EF itself. The PIN must
+// be real here (EMP001=567890, EMP002=567800, EMP003=111111 — EMP000's PIN
+// has drifted and is unknown, finding F-2 S77). Cached like loginAs, and
+// resilient to the EF's ~3/min/IP rate limit (honours retry_after_sec,
+// mirror of tests/e2e/fixtures/auth.ts, S71).
+
+const PIN_EF_URL = () => `${SUPABASE_URL}/functions/v1/auth-verify-pin`;
+const PIN_EF_MAX_ATTEMPTS = 3;
+const PIN_EF_FALLBACK_WAIT_MS = 62_000;
+
+export async function loginAsViaPinEF(employeeCode: string, pin: string): Promise<string> {
+  const key = `ef:${cacheKey(employeeCode)}`;
+
+  const mem = memCache.get(key);
+  if (isFresh(mem)) return mem.token;
+  const onDisk = readFileCache()[key];
+  if (isFresh(onDisk)) {
+    memCache.set(key, onDisk);
+    return onDisk.token;
+  }
+
+  if (!SERVICE_KEY) {
+    throw new Error(`loginAsViaPinEF(${employeeCode}): SUPABASE_SERVICE_ROLE_KEY is not set.`);
+  }
+  const admin = adminClient();
+  const { data: profile, error: profileErr } = await admin
+    .from('user_profiles')
+    .select('id, auth_user_id')
+    .eq('employee_code', employeeCode)
+    .is('deleted_at', null)
+    .single();
+  if (profileErr || !profile) {
+    throw new Error(
+      `loginAsViaPinEF(${employeeCode}): user_profiles lookup failed — ${profileErr?.message ?? 'no row'}`,
+    );
+  }
+  // Clean counters so a prior wrong-PIN storm can't lock the seed account out.
+  await admin
+    .from('user_profiles')
+    .update({ failed_login_attempts: 0, locked_until: null })
+    .eq('id', profile.id);
+
+  let lastBody = '';
+  for (let attempt = 1; attempt <= PIN_EF_MAX_ATTEMPTS; attempt++) {
+    const res = await fetch(PIN_EF_URL(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', apikey: ANON_KEY },
+      body: JSON.stringify({ user_id: profile.id, pin, device_type: 'pos' }),
+    });
+    const body = (await res.json()) as {
+      auth?: { access_token?: string };
+      error?: string;
+      retry_after_sec?: number;
+    };
+    const token = body.auth?.access_token;
+    if (token) {
+      const entry: CachedToken = {
+        token,
+        profileId: profile.id as string,
+        authUserId: profile.auth_user_id as string,
+        at: Date.now(),
+      };
+      memCache.set(key, entry);
+      writeFileCache(entry, key);
+      return token;
+    }
+    lastBody = JSON.stringify(body);
+    if (body.error === 'rate_limited' && attempt < PIN_EF_MAX_ATTEMPTS) {
+      const waitMs = Math.min(
+        (body.retry_after_sec ?? 0) * 1000 || PIN_EF_FALLBACK_WAIT_MS,
+        PIN_EF_FALLBACK_WAIT_MS,
+      );
+      await new Promise((r) => setTimeout(r, waitMs));
+      continue;
+    }
+    break;
+  }
+  throw new Error(`loginAsViaPinEF(${employeeCode}): EF login failed — ${lastBody}`);
+}

@@ -15,9 +15,15 @@
 // 000040-045 without 000020, the FIFO-via-record-stock-movement assertions
 // will fail — that's the dependency signal.
 
+// ⚠️ OBSOLETE — exclusion datée 2026-07-14 (S77, triage nightly live-rpc-vitest).
+// Motif : spec de l'infra lots/péremption, DÉCOMMISSIONNÉE légèrement en S61
+// (décision propriétaire 2026-07-04 : pas de péremption/FIFO stock ; cron off,
+// pages purgées, `stock_lots` dormante). La suite crash d'ailleurs au seed
+// (« Could not find the 'slug' column of 'products' » — colonne d'une autre
+// époque). Si les lots reviennent un jour, réécrire contre le schéma du moment.
 import { describe, it, expect, beforeAll } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
-import { loginAs, jwtClient } from './_helpers/auth';
+import { loginAs, jwtClient } from '../_helpers/auth';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? 'http://127.0.0.1:54321';
 const SERVICE      = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';

@@ -1,6 +1,13 @@
+// ⚠️ OBSOLETE — exclusion datée 2026-07-14 (S77, triage nightly live-rpc-vitest).
+// Motif : spec « v3 » du process-payment EF — les 7 appels reçoivent 422 du
+// contrat ACTUEL (payload v3-era vs exigences v17 : combos pricés serveur,
+// nonce discount, caps promo…). En prime le login utilisait EMP000 dont le PIN
+// a dérivé (F-2). Réécriture contre le contrat v17 = session dédiée.
+// Couverture actuelle : process-payment.test.ts (contrat courant) + ancres
+// pgTAP s44_money_gates / canonical_line_price / combo_sale.
 import { describe, it, expect, beforeAll } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
-import { loginAs } from './_helpers/auth';
+import { loginAs } from '../_helpers/auth';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? 'http://127.0.0.1:54321';
 const SERVICE      = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';

@@ -9,7 +9,12 @@ const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 
 const FN_URL = `${SUPABASE_URL}/functions/v1/auth-verify-pin`;
 
-describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('auth-verify-pin', () => {
+// ⚠️ EXCLUSION DATÉE 2026-07-14 (S77, D-3) : cette suite POSTe le PIN d'EMP000
+// à l'EF — c'est l'objet du test — mais le PIN d'EMP000 a DÉRIVÉ sur la base
+// dev vivante (aucun PIN historique ne vérifie ; probablement changé par un
+// humain via l'app — finding F-2, INDEX S77). Ne PAS reset sans décision
+// propriétaire. Ré-armer ce describe dès que le PIN est connu/décidé.
+describe.skip('auth-verify-pin', () => {
   let adminUserId: string;
 
   beforeAll(async () => {

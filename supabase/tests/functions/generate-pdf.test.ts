@@ -63,6 +63,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)(
         },
         body: JSON.stringify({
           template: 'pnl',
+          filename: 'pgtap-gp1-pnl.pdf', // S77: filename now REQUIRED by the EF
           params: { start_date: monthAgo, end_date: today },
         }),
       });
@@ -76,7 +77,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)(
     // =========================================================================
     // GP2 : invalid template name → 400 { error: 'unknown_template' }
     // =========================================================================
-    it('GP2: unknown template → 400 unknown_template', async () => {
+    it('GP2: unknown template → 400 invalid_template', async () => {
       const res = await fetch(PDF_FN_URL, {
         method: 'POST',
         headers: {
@@ -88,7 +89,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)(
 
       expect(res.status).toBe(400);
       const body = await res.json();
-      expect(body.error).toBe('unknown_template');
+      expect(body.error).toBe('invalid_template'); // S77: EF says invalid_template
     });
 
     // =========================================================================
@@ -110,6 +111,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)(
         },
         body: JSON.stringify({
           template: 'audit',
+          filename: 'pgtap-gp3-audit.pdf', // S77: filename now REQUIRED by the EF
           params: { start_date: today, end_date: today },
         }),
       });
@@ -139,6 +141,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)(
         },
         body: JSON.stringify({
           template: 'pnl',
+          filename: 'pgtap-gp4-pnl.pdf', // S77: filename now REQUIRED by the EF
           params: { start_date: today, end_date: today },
         }),
       });
@@ -159,6 +162,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)(
 
       const payload = JSON.stringify({
         template: 'pnl',
+        filename: 'pgtap-gp5-pnl.pdf', // S77: filename now REQUIRED by the EF
         params: { start_date: monthAgo, end_date: today },
       });
       const headers = {

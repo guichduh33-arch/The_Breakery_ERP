@@ -25,13 +25,15 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { loginAsFull } from './_helpers/auth';
 
+// S77: `||` (not `??`) — in CI an unset secret materializes as an EMPTY-STRING
+// env var, which `??` lets through ("supabaseKey is required").
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL
-  ?? process.env.SUPABASE_URL
-  ?? 'http://127.0.0.1:54321';
-const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
+  || process.env.SUPABASE_URL
+  || 'http://127.0.0.1:54321';
+const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const ANON = process.env.SUPABASE_ANON_KEY
-  ?? process.env.VITE_SUPABASE_ANON_KEY
-  ?? 'sb_publishable_bJehhsPF6Hbg5nJKFCQWWw_Npz7gt1Z';
+  || process.env.VITE_SUPABASE_ANON_KEY
+  || 'sb_publishable_bJehhsPF6Hbg5nJKFCQWWw_Npz7gt1Z';
 
 const PIN_FN_URL = `${SUPABASE_URL}/functions/v1/auth-verify-pin`;
 
