@@ -9,7 +9,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AdjustB2bBalanceModal } from '../components/AdjustB2bBalanceModal.js';
 
-const rpcMock = vi.fn(async () => ({
+const rpcMock = vi.fn(() => Promise.resolve({
   data: {
     customer_id: 'b1', balance_before: 250000, balance_after: 200000,
     delta: -50000, je_id: 'je-1', audit_log_id: 'al-1', idempotent_replay: false,

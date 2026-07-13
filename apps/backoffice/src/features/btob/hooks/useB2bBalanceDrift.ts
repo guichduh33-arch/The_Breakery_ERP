@@ -27,7 +27,7 @@ export function useB2bBalanceDrift(enabled: boolean) {
     queryFn: async (): Promise<B2bBalanceDriftRow[]> => {
       const { data, error } = await supabase.rpc('reconcile_b2b_balance_v1');
       if (error) throw error;
-      return (data ?? []) as B2bBalanceDriftRow[];
+      return data ?? [];
     },
   });
 }

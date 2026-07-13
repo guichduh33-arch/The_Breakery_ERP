@@ -45,9 +45,9 @@ vi.mock('@/lib/supabase.js', () => {
         if (table === 'view_ar_aging') return make(aging);
         return make(clients);
       },
-      rpc: async (fn: string) => {
+      rpc: (fn: string) => {
         if (fn === 'reconcile_b2b_balance_v1') {
-          return {
+          return Promise.resolve({
             data: [
               { customer_id: 'b1', customer_name: 'Hotel Kuta', cached_balance: 250000,
                 derived_balance: 200000, drift: 50000, has_drift: true },
@@ -55,9 +55,9 @@ vi.mock('@/lib/supabase.js', () => {
                 derived_balance: 0, drift: 0, has_drift: false },
             ],
             error: null,
-          };
+          });
         }
-        return { data: null, error: null };
+        return Promise.resolve({ data: null, error: null });
       },
     },
   };

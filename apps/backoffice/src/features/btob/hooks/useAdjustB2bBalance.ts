@@ -43,8 +43,8 @@ export function useAdjustB2bBalance(customerId: string) {
     },
     onSuccess: () => {
       keyRef.current = crypto.randomUUID(); // prochaine intention = nouvelle clé
-      qc.invalidateQueries({ queryKey: ['customer-detail', customerId] });
-      qc.invalidateQueries({ queryKey: B2B_DRIFT_QK });
+      void qc.invalidateQueries({ queryKey: ['customer-detail', customerId] });
+      void qc.invalidateQueries({ queryKey: B2B_DRIFT_QK });
     },
   });
 }
