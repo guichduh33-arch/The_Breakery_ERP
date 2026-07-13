@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
+import { loginAs, ANON_KEY } from './_helpers/auth';
 
 // Session 9 — RLS policies on `promotions` and `promotion_applications`.
 // Spec §3.5 — auth_read, perm_create, perm_update, perm_delete.
@@ -20,10 +21,7 @@ import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? 'http://127.0.0.1:54321';
 const SERVICE      = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
-const ANON         = process.env.SUPABASE_ANON_KEY
-  ?? process.env.VITE_SUPABASE_ANON_KEY
-  ?? 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH';
-const PIN_FN_URL   = `${SUPABASE_URL}/functions/v1/auth-verify-pin`;
+const ANON         = ANON_KEY;
 
 describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('promotions RLS — role matrix', () => {
   let admin: ReturnType<typeof createClient>;
@@ -35,26 +33,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('promotions RLS — role
   // A pre-existing promo row inserted via service-role for read/update tests.
   let seedPromoId: string;
 
-  const login = async (employeeCode: string, pin: string) => {
-    await admin.from('user_profiles')
-      .update({ failed_login_attempts: 0, locked_until: null })
-      .eq('employee_code', employeeCode);
-
-    const { data: profile } = await admin.from('user_profiles')
-      .select('id').eq('employee_code', employeeCode).single();
-    if (!profile) throw new Error(`Profile not found: ${employeeCode}`);
-
-    const res = await fetch(PIN_FN_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: profile.id, pin, device_type: 'pos' }),
-    });
-    const body = await res.json();
-    if (!body.auth?.access_token) {
-      throw new Error(`Login failed for ${employeeCode}: ${JSON.stringify(body)}`);
-    }
-    return body.auth.access_token as string;
-  };
+  const login = async (employeeCode: string, _pin: string) => loginAs(employeeCode);
 
   beforeAll(async () => {
     admin = createClient(SUPABASE_URL, SERVICE);

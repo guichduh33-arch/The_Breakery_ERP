@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
+import { loginAs } from './_helpers/auth';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? 'http://127.0.0.1:54321';
-const ANON = process.env.VITE_SUPABASE_ANON_KEY ?? '';
 const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 const FN_URL = `${SUPABASE_URL}/functions/v1/process-payment`;
 
@@ -26,17 +26,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('process-payment', () =>
       .single();
     if (!profile) throw new Error('Seed not loaded — run supabase db reset');
 
-    // Login admin via auth-verify-pin
-    const loginRes = await fetch(`${SUPABASE_URL}/functions/v1/auth-verify-pin`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: profile.id, pin: '1234', device_type: 'pos' }),
-    });
-    const loginBody = await loginRes.json();
-    if (!loginBody.auth?.access_token) {
-      throw new Error(`Login failed: ${JSON.stringify(loginBody)}`);
-    }
-    accessToken = loginBody.auth.access_token;
+    accessToken = await loginAs('EMP000', '1234');
 
     // Close any existing open session for admin
     await admin

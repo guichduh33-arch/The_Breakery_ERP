@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
+import { loginAs } from './_helpers/auth';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? 'http://127.0.0.1:54321';
 const SERVICE      = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
@@ -21,16 +22,9 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('mark_item_served RPC', 
       .select('id').eq('employee_code', 'EMP000').single();
     if (!profile) throw new Error('Seed not loaded — run supabase db reset');
 
-    const loginRes = await fetch(`${SUPABASE_URL}/functions/v1/auth-verify-pin`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: profile.id, pin: '1234', device_type: 'pos' }),
-    });
-    const loginBody = await loginRes.json();
-    if (!loginBody.auth?.access_token) throw new Error(`Login failed: ${JSON.stringify(loginBody)}`);
-
+    const token = await loginAs('EMP000', '1234');
     authedClient = createClient(SUPABASE_URL, SERVICE, {
-      global: { headers: { Authorization: `Bearer ${loginBody.auth.access_token}` } },
+      global: { headers: { Authorization: `Bearer ${token}` } },
     });
 
     await admin.from('pos_sessions')

@@ -13,38 +13,10 @@
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { loginAs, jwtClient } from './_helpers/auth';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? 'http://127.0.0.1:54321';
 const SERVICE      = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
-const ANON         = process.env.SUPABASE_ANON_KEY
-  ?? process.env.VITE_SUPABASE_ANON_KEY
-  ?? 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH';
-const PIN_FN_URL = `${SUPABASE_URL}/functions/v1/auth-verify-pin`;
-
-async function loginAs(employeeCode: string, pin: string): Promise<string> {
-  const admin = createClient(SUPABASE_URL, SERVICE);
-  await admin.from('user_profiles')
-    .update({ failed_login_attempts: 0, locked_until: null })
-    .eq('employee_code', employeeCode);
-  const { data: profile } = await admin.from('user_profiles')
-    .select('id').eq('employee_code', employeeCode).single();
-  if (!profile) throw new Error(`No profile for ${employeeCode}`);
-
-  const res = await fetch(PIN_FN_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ user_id: profile.id, pin, device_type: 'pos' }),
-  });
-  const body = await res.json();
-  if (!body.auth?.access_token) throw new Error(`Login failed: ${JSON.stringify(body)}`);
-  return body.auth.access_token as string;
-}
-
-function jwtClient(token: string): SupabaseClient {
-  return createClient(SUPABASE_URL, ANON, {
-    global: { headers: { Authorization: `Bearer ${token}` } },
-  });
-}
 
 // Type-erased rpc helper (generated types may lag behind staging migrations).
 function rpc(sb: SupabaseClient) {

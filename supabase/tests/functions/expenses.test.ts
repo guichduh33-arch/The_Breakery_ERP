@@ -10,38 +10,10 @@
 
 import { describe, it, expect, beforeAll } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
+import { loginAs, jwtClient } from './_helpers/auth';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? 'http://127.0.0.1:54321';
 const SERVICE      = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
-const ANON         = process.env.SUPABASE_ANON_KEY
-  ?? process.env.VITE_SUPABASE_ANON_KEY
-  ?? 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH';
-const PIN_FN_URL = `${SUPABASE_URL}/functions/v1/auth-verify-pin`;
-
-async function loginAs(employeeCode: string, pin: string): Promise<string> {
-  const admin = createClient(SUPABASE_URL, SERVICE);
-  await admin.from('user_profiles')
-    .update({ failed_login_attempts: 0, locked_until: null })
-    .eq('employee_code', employeeCode);
-  const { data: profile } = await admin.from('user_profiles')
-    .select('id').eq('employee_code', employeeCode).single();
-  if (!profile) throw new Error(`No profile for ${employeeCode}`);
-
-  const res = await fetch(PIN_FN_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ user_id: profile.id, pin, device_type: 'pos' }),
-  });
-  const body = await res.json();
-  if (!body.auth?.access_token) throw new Error(`Login failed: ${JSON.stringify(body)}`);
-  return body.auth.access_token as string;
-}
-
-function jwtClient(token: string) {
-  return createClient(SUPABASE_URL, ANON, {
-    global: { headers: { Authorization: `Bearer ${token}` } },
-  });
-}
 
 interface JeRow { id: string; total_debit: number; total_credit: number }
 
@@ -79,10 +51,14 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('expenses — RPC cycle 
     const admin = createClient(SUPABASE_URL, SERVICE);
     const today = new Date().toISOString().slice(0, 10);
 
-    // 1. Create (manager).
+    // 1. Create (admin EMP000). approve_expense_v3 verifies the CALLER's own PIN and
+    //    blocks the creator from approving, so the creator must differ from the
+    //    approver (EMP003, the only account whose PIN is known live). EMP000 is
+    //    SUPER_ADMIN and has expenses.create.
+    const sbAdm = jwtClient(adminToken);
     const sbMgr = jwtClient(managerToken);
     const idemKey = crypto.randomUUID();
-    const { data: createId, error: cErr } = await sbMgr.rpc('create_expense_v1', {
+    const { data: createId, error: cErr } = await sbAdm.rpc('create_expense_v1', {
       p_category_id:    utilitiesCategoryId,
       p_amount:         850000,
       p_payment_method: 'cash',
@@ -96,7 +72,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('expenses — RPC cycle 
     const expenseId = createId as unknown as string;
 
     // 2. Idempotency : same key returns same id.
-    const { data: replayId } = await sbMgr.rpc('create_expense_v1', {
+    const { data: replayId } = await sbAdm.rpc('create_expense_v1', {
       p_category_id:    utilitiesCategoryId,
       p_amount:         999,
       p_payment_method: 'cash',
@@ -106,30 +82,30 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('expenses — RPC cycle 
     });
     expect(replayId).toBe(expenseId);
 
-    // 3. Submit.
-    const { error: sErr } = await sbMgr.rpc('submit_expense_v1', { p_expense_id: expenseId });
+    // 3. Submit (admin). submit_expense_v2 — p_idempotency_key is optional.
+    const { error: sErr } = await sbAdm.rpc('submit_expense_v2', { p_expense_id: expenseId });
     expect(sErr).toBeNull();
 
-    // 4. Approve (admin).
-    const sbAdm = jwtClient(adminToken);
-    const { data: approveData, error: aErr } = await sbAdm.rpc('approve_expense_v1', {
-      p_expense_id:     expenseId,
-      p_approval_notes: 'looks good',
+    // 4. Approve (manager EMP003 — approve_expense_v3 verifies the caller's own PIN).
+    const { data: approveData, error: aErr } = await sbMgr.rpc('approve_expense_v3', {
+      p_expense_id:  expenseId,
+      p_manager_pin: '111111',
     });
     expect(aErr).toBeNull();
     expect(approveData).toBeTruthy();
 
-    const result = approveData as unknown as { je_id: string; entry_number: string; status: string };
+    const result = approveData as unknown as { status: string };
     expect(result.status).toBe('approved');
 
-    // 5. Assert JE balanced.
+    // 5. Assert JE balanced. approve_expense_v3 no longer returns je_id, so look the
+    //    entry up by its reference (reference_type='expense', reference_id=expense id).
     const { data: jeRow } = await admin.from('journal_entries').select('id, total_debit, total_credit')
-      .eq('id', result.je_id).single();
+      .eq('reference_type', 'expense').eq('reference_id', expenseId).single();
     const je = jeRow as unknown as JeRow;
     expect(Number(je.total_debit)).toBe(Number(je.total_credit));
 
     const { data: lines } = await admin.from('journal_entry_lines')
-      .select('account_id, debit, credit').eq('journal_entry_id', result.je_id);
+      .select('account_id, debit, credit').eq('journal_entry_id', je.id);
     expect(lines?.length).toBe(2);  // cash path : 2 lines.
 
     // 6. Pay (no extra JE since not credit).
@@ -147,8 +123,10 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('expenses — RPC cycle 
     const admin = createClient(SUPABASE_URL, SERVICE);
     const today = new Date().toISOString().slice(0, 10);
 
+    // Creator (EMP000) must differ from the approver (EMP003) — see SOD note above.
+    const sbAdm = jwtClient(adminToken);
     const sbMgr = jwtClient(managerToken);
-    const { data: createId } = await sbMgr.rpc('create_expense_v1', {
+    const { data: createId } = await sbAdm.rpc('create_expense_v1', {
       p_category_id:    utilitiesCategoryId,
       p_amount:         1100000,
       p_vat_amount:     100000,
@@ -158,16 +136,21 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('expenses — RPC cycle 
     });
     const expenseId = createId as unknown as string;
 
-    await sbMgr.rpc('submit_expense_v1', { p_expense_id: expenseId });
+    await sbAdm.rpc('submit_expense_v2', { p_expense_id: expenseId });
 
-    const sbAdm = jwtClient(adminToken);
-    const { data: approveData } = await sbAdm.rpc('approve_expense_v1', {
-      p_expense_id: expenseId,
+    const { data: approveData } = await sbMgr.rpc('approve_expense_v3', {
+      p_expense_id:  expenseId,
+      p_manager_pin: '111111',
     });
-    const result = approveData as unknown as { je_id: string };
+    expect(approveData).toBeTruthy();
+
+    // approve_expense_v3 no longer returns je_id — look it up by reference.
+    const { data: jeRow } = await admin.from('journal_entries').select('id')
+      .eq('reference_type', 'expense').eq('reference_id', expenseId).single();
+    const jeId = (jeRow as { id: string }).id;
 
     const { data: lines } = await admin.from('journal_entry_lines')
-      .select('debit, credit').eq('journal_entry_id', result.je_id);
+      .select('debit, credit').eq('journal_entry_id', jeId);
     expect(lines?.length).toBe(3);
 
     const totalDebit  = (lines ?? []).reduce((s, l) => s + Number(l.debit),  0);

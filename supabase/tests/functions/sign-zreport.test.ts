@@ -23,6 +23,7 @@
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { loginAsFull } from './_helpers/auth';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL
   ?? process.env.SUPABASE_URL
@@ -42,28 +43,12 @@ const MANAGER_PIN_WRONG = '999999';
 const TEST_SESSION_ID  = 'feedca50-0000-0000-0000-000000002911';
 const TEST_ZREPORT_ID  = 'feedca50-0000-0000-0000-000000002912';
 
-async function loginAs(employeeCode: string, pin: string): Promise<{
+async function loginAs(employeeCode: string, _pin: string): Promise<{
   accessToken: string;
   profileId: string;
 }> {
-  const admin = createClient(SUPABASE_URL, SERVICE);
-  await admin.from('user_profiles')
-    .update({ failed_login_attempts: 0, locked_until: null })
-    .eq('employee_code', employeeCode);
-  const { data: profile } = await admin.from('user_profiles')
-    .select('id').eq('employee_code', employeeCode).single();
-  if (!profile) throw new Error(`Profile not found for ${employeeCode}`);
-
-  const res = await fetch(PIN_FN_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ user_id: profile.id, pin, device_type: 'pos' }),
-  });
-  const body = await res.json();
-  if (!body.auth?.access_token) {
-    throw new Error(`Login failed for ${employeeCode}: ${JSON.stringify(body)}`);
-  }
-  return { accessToken: body.auth.access_token as string, profileId: profile.id as string };
+  const r = await loginAsFull(employeeCode);
+  return { accessToken: r.token, profileId: r.profileId };
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
