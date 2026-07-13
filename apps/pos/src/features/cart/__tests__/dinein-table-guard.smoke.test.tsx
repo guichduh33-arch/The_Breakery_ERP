@@ -48,8 +48,8 @@ vi.mock('@/features/cart/hooks/useStationPrinters', () => ({
 vi.mock('@/features/tables/hooks/useRestaurantTables', () => ({
   useRestaurantTables: () => ({
     data: [
-      { id: 't1', name: 'T-01', seats: 2, sort_order: 1, is_active: true },
-      { id: 't2', name: 'T-02', seats: 4, sort_order: 2, is_active: true },
+      { id: 't1', name: 'T-01', seats: 2, sort_order: 1, is_active: true, section_id: null },
+      { id: 't2', name: 'T-02', seats: 4, sort_order: 2, is_active: true, section_id: null },
     ],
   }),
 }));

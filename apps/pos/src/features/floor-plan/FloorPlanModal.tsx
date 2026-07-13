@@ -28,14 +28,14 @@
 // TableSelectorButton wrapper) supplies the tables and occupancy and
 // receives the selected table-name back via onSelect.
 //
-// Sections strategy (no schema change in Session 14): tables are bucketed
-// into "Interior" vs "Terrace" using sort_order < 100 / >= 100. This is a
-// purely visual partition until the BO floor plan editor (Phase 5+) adds a
-// real section_id column. Backwards compatible — if every table is <100,
-// the Interior tab holds them all and Terrace is empty.
+// Sections strategy (S75 lot 1): tables are grouped by their real joined
+// `table_sections` row (see ./sections.ts, `bucketTablesBySection`),
+// ordered by `table_sections.sort_order`. Legacy tables with a NULL
+// `section_id` fall back under an "Interior" bucket. This replaces the
+// S14 `sort_order >= 100` heuristic.
 
 import { useEffect, useMemo, useState } from 'react';
-import { X, ArrowRightLeft, Home, Trees, Users } from 'lucide-react';
+import { X, ArrowRightLeft, Home, Trees, MapPin, Users } from 'lucide-react';
 import type { JSX } from 'react';
 import type { RestaurantTable } from '@breakery/domain';
 import {
@@ -46,11 +46,16 @@ import {
   cn,
 } from '@breakery/ui';
 import { TableCell, type FloorPlanTable, type TableStatus } from './TableCell';
+import { bucketTablesBySection } from './sections';
 
 const SR_ONLY =
   'absolute -m-px h-px w-px overflow-hidden whitespace-nowrap border-0 p-0';
 
-export type FloorPlanSection = 'interior' | 'terrace';
+function sectionIcon(label: string): JSX.Element {
+  if (label === 'Interior') return <Home className="h-4 w-4" aria-hidden />;
+  if (label === 'Terrace') return <Trees className="h-4 w-4" aria-hidden />;
+  return <MapPin className="h-4 w-4" aria-hidden />;
+}
 
 /** Active order sitting on a table (fiche 02 D2.5 — transfer mode). */
 export interface FloorPlanTableOrder {
@@ -83,16 +88,6 @@ export interface FloorPlanModalProps {
   }) => Promise<void> | void;
 }
 
-function bucketTables(tables: RestaurantTable[]): Record<FloorPlanSection, RestaurantTable[]> {
-  const interior: RestaurantTable[] = [];
-  const terrace: RestaurantTable[] = [];
-  for (const t of tables) {
-    if (t.sort_order >= 100) terrace.push(t);
-    else interior.push(t);
-  }
-  return { interior, terrace };
-}
-
 function toFloorPlanTable(
   t: RestaurantTable,
   occupancy: Record<string, boolean>,
@@ -117,10 +112,8 @@ export function FloorPlanModal({
   tableOrders,
   onTransfer,
 }: FloorPlanModalProps): JSX.Element {
-  const buckets = useMemo(() => bucketTables(tables), [tables]);
-  const initialSection: FloorPlanSection =
-    buckets.terrace.length > 0 && buckets.interior.length === 0 ? 'terrace' : 'interior';
-  const [section, setSection] = useState<FloorPlanSection>(initialSection);
+  const sections = useMemo(() => bucketTablesBySection(tables), [tables]);
+  const [sectionKey, setSectionKey] = useState<string | null>(null);
   const [selectedName, setSelectedName] = useState<string | null>(initialSelection ?? null);
   // Transfer mode (fiche 02 D2.5): source table whose active order is being moved.
   const [transferSource, setTransferSource] = useState<string | null>(null);
@@ -135,7 +128,8 @@ export function FloorPlanModal({
     }
   }, [open]);
 
-  const visible = buckets[section];
+  const visibleSection = sections.find((s) => s.key === sectionKey) ?? sections[0];
+  const visible = visibleSection?.tables ?? [];
   const selected = useMemo(
     () => tables.find((t) => t.name === selectedName) ?? null,
     [tables, selectedName],
@@ -217,27 +211,23 @@ export function FloorPlanModal({
 
       {/* Section tabs */}
       <div className="px-6 py-4 flex items-center gap-3 border-b border-border-subtle">
-        <SectionTab
-          icon={<Home className="h-4 w-4" aria-hidden />}
-          label="Interior"
-          count={buckets.interior.length}
-          active={section === 'interior'}
-          onClick={() => setSection('interior')}
-        />
-        <SectionTab
-          icon={<Trees className="h-4 w-4" aria-hidden />}
-          label="Terrace"
-          count={buckets.terrace.length}
-          active={section === 'terrace'}
-          onClick={() => setSection('terrace')}
-        />
+        {sections.map((s) => (
+          <SectionTab
+            key={s.key}
+            icon={sectionIcon(s.label)}
+            label={s.label}
+            count={s.tables.length}
+            active={s.key === (visibleSection?.key ?? null)}
+            onClick={() => setSectionKey(s.key)}
+          />
+        ))}
       </div>
 
       {/* Floor canvas */}
       <main
         className="flex-1 overflow-auto p-6"
         data-testid="floor-plan-canvas"
-        aria-label={`Floor plan — ${section}`}
+        aria-label={`Floor plan — ${visibleSection?.label ?? ''}`}
       >
         <div
           className={cn(

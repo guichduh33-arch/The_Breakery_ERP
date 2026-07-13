@@ -72,6 +72,11 @@ export interface KdsItemRow {
   is_cancelled: boolean;
   cancelled_at: string | null;
   cancelled_reason: string | null;
+  /** S75 (task 7) — resolved via `products → categories.kds_station`. NULL
+   *  when the product's category has no station set; the StationFilter chip
+   *  predicate treats NULL as "passes every chip" so nothing vanishes
+   *  silently for un-configured categories. */
+  kds_station: string | null;
 }
 
 interface RawRow {
@@ -94,7 +99,10 @@ interface RawRow {
   cancelled_reason: string | null;
   // Supabase nested selects can return either a single row or an array
   // depending on the FK cardinality — normalise both shapes below.
-  products: { name: string } | { name: string }[] | null;
+  products:
+    | { name: string; categories: { kds_station: string | null } | { kds_station: string | null }[] | null }
+    | { name: string; categories: { kds_station: string | null } | { kds_station: string | null }[] | null }[]
+    | null;
   orders:
     | { order_number: string; status: string; notes: string | null }
     | { order_number: string; status: string; notes: string | null }[]
@@ -122,7 +130,7 @@ export function useKdsOrders(station: KdsStation) {
           dispatch_stations,
           sent_to_kitchen_at, ready_at, prep_started_at,
           is_cancelled, cancelled_at, cancelled_reason,
-          products(name),
+          products(name, categories(kds_station)),
           orders(order_number, status, notes)
         `,
         )
@@ -164,6 +172,7 @@ export function useKdsOrders(station: KdsStation) {
           is_cancelled: row.is_cancelled === true,
           cancelled_at: row.cancelled_at,
           cancelled_reason: row.cancelled_reason,
+          kds_station: pickFirst(product?.categories ?? null)?.kds_station ?? null,
         };
       });
     },

@@ -39,6 +39,7 @@ import { Button, Badge } from '@breakery/ui';
 import { toast } from 'sonner';
 
 import { useAgeTimer } from '../hooks/useAgeTimer';
+import { useKdsConfig, type KdsConfig } from '../hooks/useKdsConfig';
 import { useKdsStartPrepTimer } from '../hooks/useKdsStartPrepTimer';
 import { useMarkItemServed } from '../hooks/useMarkItemServed';
 import { useKdsBumpOrder } from '../hooks/useKdsBumpOrder';
@@ -50,10 +51,10 @@ interface KdsOrderCardProps {
   items: KdsItemRow[];
 }
 
-// Thresholds match the BO `KDS Configuration` panel (kds configue.jpg).
-// Warning (amber) at 300s ; Urgent (red, pulse) at 600s.
-const WARNING_THRESHOLD_MS = 300 * 1_000;
-const URGENT_THRESHOLD_MS  = 600 * 1_000;
+// S75 (task 6) — thresholds now flow from `useKdsConfig()` (business_config
+// kds_warning_threshold_minutes / kds_urgent_threshold_minutes), configurable
+// from the BO `KDS Configuration` panel. Defaults (5min / 10min) mirror the
+// old hardcoded 300s/600s constants.
 
 interface AgeStyle {
   border: string;
@@ -68,15 +69,15 @@ function formatAge(ms: number): string {
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
-function ageStyle(ageMs: number): AgeStyle {
-  if (ageMs >= URGENT_THRESHOLD_MS) {
+function ageStyle(ageMs: number, cfg: KdsConfig): AgeStyle {
+  if (ageMs >= cfg.urgentMs) {
     return {
       border: 'border-red animate-pulse',
       timer: 'text-red-fg font-bold',
       bandLabel: 'urgent',
     };
   }
-  if (ageMs >= WARNING_THRESHOLD_MS) {
+  if (ageMs >= cfg.warningMs) {
     return {
       border: 'border-amber-warn',
       timer: 'text-amber-warn font-semibold',
@@ -185,6 +186,7 @@ function AllReadyButton({ orderId, items }: { orderId: string; items: KdsItemRow
 
 export function KdsOrderCard({ items }: KdsOrderCardProps) {
   const now = useAgeTimer();
+  const cfg = useKdsConfig();
   const head = items[0];
   if (!head) return null;
 
@@ -195,7 +197,7 @@ export function KdsOrderCard({ items }: KdsOrderCardProps) {
   }, Number.POSITIVE_INFINITY);
   const ageMs = Number.isFinite(earliestSent) ? now - earliestSent : 0;
 
-  const style = ageStyle(ageMs);
+  const style = ageStyle(ageMs, cfg);
 
   return (
     <article

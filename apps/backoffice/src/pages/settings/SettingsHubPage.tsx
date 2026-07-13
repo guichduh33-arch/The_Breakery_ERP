@@ -5,9 +5,15 @@
 //
 // S73 Lot 3 (Task 11) — zero dead-end tiles: every tile is either linked to
 // a real route, or explicitly `planned: true` (a surface actively deferred
-// to a dedicated future session — currently only KDS Configuration + Floor
-// Plan). Tiles pointing at a permission-gated route carry a `permission`
-// so operators who can't open the route don't see the tile at all.
+// to a dedicated future session). Tiles pointing at a permission-gated route
+// carry a `permission` so operators who can't open the route don't see the
+// tile at all.
+//
+// S75 Task 3 — Floor Plan shipped (real CRUD route below).
+// S75 Task 8 — KDS Configuration shipped (real settings route below); the
+// hub now carries ZERO `planned: true` tiles. The `planned` field on
+// `SettingTile` is left in place as a guard rail for any future deferred
+// surface — it must never linger as a permanent dead end again.
 //
 // Route-level permission gating still applies too — clicking a visible tile
 // routes through the matching <PermissionGate> in src/routes/index.tsx.
@@ -63,7 +69,7 @@ const SECTIONS: SettingSection[] = [
       { to: '/backoffice/settings/inventory', title: 'Inventory Config', blurb: 'Default thresholds, opname cadence.', icon: Boxes },
       { to: '/backoffice/categories', title: 'Product Categories', blurb: 'Category tree + colours.', icon: Tag },
       { to: '/backoffice/products',   title: 'Product Types',      blurb: 'Raw / Semi-finished / Finished — set per product.', icon: Layers },
-      { planned: true, title: 'KDS Configuration', blurb: 'Stations, routing, prep times. (Planned — dedicated session)', icon: Monitor },
+      { to: '/backoffice/settings/kds', title: 'KDS Configuration', blurb: 'Warning/urgent thresholds + ready auto-archive.', icon: Monitor },
       { to: '/backoffice/settings/customer-display', title: 'Customer Display', blurb: 'Idle footer + brand slogan (all displays).', icon: Monitor },
     ],
   },
@@ -95,7 +101,7 @@ const SECTIONS: SettingSection[] = [
     id: 'layout',
     title: 'Layout',
     tiles: [
-      { planned: true, title: 'Floor Plan', blurb: 'Tables, sections, walking paths. (Planned — dedicated session)', icon: Map },
+      { to: '/backoffice/settings/floor-plan', permission: 'tables.update', title: 'Floor Plan', blurb: 'Tables + room sections (POS floor plan).', icon: Map },
       { to: '/backoffice/inventory/sections', title: 'Sections', blurb: 'Inventory section topology.', icon: Grid3x3 },
     ],
   },
