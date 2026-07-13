@@ -73,4 +73,9 @@ describe('SettingsReceiptTemplatesPage', () => {
       expect(screen.getByText('Default')).toBeInTheDocument();
     });
   });
+
+  it('shows the "not wired yet" banner (S76 T5 — receipt printing does not read them yet)', async () => {
+    renderPage();
+    expect(await screen.findByTestId('templates-not-wired-banner')).toBeInTheDocument();
+  });
 });

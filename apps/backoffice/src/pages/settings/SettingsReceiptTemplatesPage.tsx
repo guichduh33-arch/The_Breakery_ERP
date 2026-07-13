@@ -28,6 +28,14 @@ export default function SettingsReceiptTemplatesPage() {
         </p>
       </div>
 
+      <div
+        data-testid="templates-not-wired-banner"
+        className="rounded-lg border border-border-subtle bg-bg-overlay p-3 text-sm text-text-secondary"
+      >
+        ⚠︎ Editing is live, but these templates are <strong>not applied yet</strong> — receipt printing
+        does not read them yet. Wiring is planned (Vague 3 — notifications / versioned print-bridge).
+      </div>
+
       {list.isLoading && <div className="text-text-secondary">Loading…</div>}
       {list.error && <div className="text-red">Failed to load: {list.error.message}</div>}
 
