@@ -1,10 +1,11 @@
 // apps/backoffice/src/features/customers/components/RetailCreditLimitSection.tsx
 //
 // Session 62 Task 6 — editable "plafond ardoise" (tab credit ceiling) card
-// for retail customers. Pure presentational, mirrors the props shape of
-// B2BFieldsSection (values/canEdit/onChange contract) but owns a small local
-// draft + Save affordance since this field is genuinely persisted (unlike
-// B2BFieldsSection, which is not wired to any mutation in production).
+// for retail customers. Pure presentational, follows the values/canEdit/
+// onChange contract style of the customer-detail cards, but owns a small
+// local draft + Save affordance since this field is genuinely persisted.
+// (Its former sibling B2BFieldsSection was a dead, never-wired component,
+// superseded by InfoTab's inline B2B card — purged S76.)
 
 import { useEffect, useState, type ChangeEvent, type JSX } from 'react';
 import { Button, Card, Input } from '@breakery/ui';
