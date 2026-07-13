@@ -91,9 +91,15 @@ jobs:
               continue
             fi
             echo "=== Running $f ==="
-            if ! psql "$PGURL" -v ON_ERROR_STOP=1 -f "$f"; then
+            # S77: fail on psql error OR any TAP 'not ok' line (assertion
+            # failures never flip psql's exit code — mirror of pgtap-nightly).
+            out=$(psql "$PGURL" -v ON_ERROR_STOP=1 -f "$f" 2>&1)
+            rc=$?
+            printf '%s\n' "$out"
+            not_ok=$(printf '%s\n' "$out" | grep -cE '^[[:space:]]*not ok [0-9]' || true)
+            if [ "$rc" -ne 0 ] || [ "$not_ok" -gt 0 ]; then
               fail_count=$((fail_count+1))
-              fail_list="${fail_list}\n - ${f}"
+              fail_list="${fail_list}\n - ${f} (exit=${rc}, not_ok=${not_ok})"
             fi
           done
           if [ "$fail_count" -gt 0 ]; then
