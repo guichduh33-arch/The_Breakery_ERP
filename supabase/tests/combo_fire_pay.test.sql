@@ -27,7 +27,8 @@ BEGIN
        "combo_components":[{"product_id":"00000000-0000-0000-0000-0000000fc001","quantity":1},
                            {"product_id":"00000000-0000-0000-0000-0000000fc002","quantity":1}]}
     ]$items$::jsonb,
-    p_order_type := 'dine_in'::order_type
+    p_order_type := 'dine_in'::order_type,
+    p_table_number := 'CFP-T1'  -- S77: garde table_required_for_dine_in (_122)
   );
   PERFORM set_config('combo.fp_order_id', r->>'order_id', false);
 END $$;
