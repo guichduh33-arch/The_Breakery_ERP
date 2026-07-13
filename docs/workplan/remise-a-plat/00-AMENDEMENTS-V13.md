@@ -4,146 +4,148 @@
 > **DOC** = corriger la Description maintenant (le code fait foi) · **DOC⇄CODE** = deux issues possibles — corriger la doc OU livrer le chantier D référencé, à trancher item par item · **DOC+** = ajouter à la doc une capacité réelle non documentée (sous-vente).
 > Quand un item est corrigé « tant que D_n n'est pas livré », la livraison ultérieure du chantier ré-ouvre la phrase d'origine.
 
+> **Réconciliation S76 (2026-07-13)** : chaque item annoté contre l'état réel post-S75/S76 avant rédaction de la v1.3 (sessions S59→S76 ; les fiches NN-*.md à bandeaux S76 font foi). Convention : `- [x] … — **résolu par code SNN**` = la branche CODE du DOC⇄CODE a été livrée, v1.3 la décrit **au présent** ; ` — toujours valable (v1.3: …)` = amendement DOC encore dû ; ` — recadré SNN : …` = la prémisse a bougé (feature livrée OU annulée par décision propriétaire → décrire/retirer, pas déplacer en À-venir).
+
 ## Transverse — Partie 1, « Risques assumés », « En résumé » et glossaire
-- [ ] **DOC** Retirer « la gestion fine des lots et dates de péremption (sortir le plus ancien d'abord, alertes avant péremption) » de la liste des prochains chantiers (Partie 1 « Où en est le projet » **et** « En résumé ») — **chantier abandonné, décision propriétaire 2026-07-04**.
-- [ ] **DOC** « Risques et limites assumés » : reformuler « Pas de gestion des dates de péremption … est le prochain grand chantier » en fonctionnement **retenu** : « le stock est suivi en quantité globale par produit ; la péremption se gère par déclaration de perte — c'est le modèle choisi, pas une limite temporaire ».
-- [ ] **DOC** Retirer l'entrée **FEFO** du glossaire.
+- [ ] **DOC** Retirer « la gestion fine des lots et dates de péremption (sortir le plus ancien d'abord, alertes avant péremption) » de la liste des prochains chantiers (Partie 1 « Où en est le projet » **et** « En résumé ») — **chantier abandonné, décision propriétaire 2026-07-04**. — toujours valable (v1.3: retirer la mention ; le décommissionnement léger a été **exécuté S61** — cron `mark_expired_lots_hourly` désactivé, pages `/inventory/expiring` + rapport perishable-turnover purgés, `stock_lots` conservé dormant — cf. ADR-004 ; le modèle « quantité globale + perte déclarée » est le fonctionnement retenu).
+- [ ] **DOC** « Risques et limites assumés » : reformuler « Pas de gestion des dates de péremption … est le prochain grand chantier » en fonctionnement **retenu** : « le stock est suivi en quantité globale par produit ; la péremption se gère par déclaration de perte — c'est le modèle choisi, pas une limite temporaire ». — toujours valable (v1.3: reformuler en fonctionnement assumé).
+- [ ] **DOC** Retirer l'entrée **FEFO** du glossaire. — toujours valable (v1.3: retirer FEFO).
 
 ## Module 1 — Connexion & droits d'accès
-- [ ] **DOC** « Code secret à 4 chiffres » → **6 chiffres**.
-- [ ] **DOC** « 7 rôles prédéfinis » → 5 rôles réels ; retirer cuisine/comptable/magasinier (ou les déclarer À-venir).
-- [ ] **DOC** « ~70 droits » → 147 permissions / 35 domaines.
-- [ ] **DOC** Retirer « réglage fin case par case » du présent (→ À venir, cf. module 20) et le scénario « duplique le rôle Caissier » (aucune duplication de rôle n'existe).
-- [ ] **DOC** Nuancer l'À-venir « prise d'effet immédiate » : les gates serveur sont déjà immédiats ; ce qui reste stale = UI client + JWT ≤ 1 h.
+- [ ] **DOC** « Code secret à 4 chiffres » → **6 chiffres**. — toujours valable (v1.3: écrire 6 chiffres ; le code impose exactement 6 partout depuis **S58** `_100`).
+- [ ] **DOC** « 7 rôles prédéfinis » → 5 rôles réels ; retirer cuisine/comptable/magasinier (ou les déclarer À-venir). — toujours valable (v1.3: 5 rôles réels).
+- [ ] **DOC** « ~70 droits » → 147 permissions / 35 domaines. — toujours valable (v1.3: 147 permissions / 35 domaines).
+- [ ] **DOC** Retirer « réglage fin case par case » du présent (→ À venir, cf. module 20) et le scénario « duplique le rôle Caissier » (aucune duplication de rôle n'existe). — toujours valable (v1.3: retirer ; lié **décision 1** « RBAC lecture seule actée » — `rbac.update` purgée S62, cf. module 20).
+- [ ] **DOC** Nuancer l'À-venir « prise d'effet immédiate » : les gates serveur sont déjà immédiats ; ce qui reste stale = UI client + JWT ≤ 1 h. — toujours valable (v1.3: nuancer — gates serveur immédiats, latence résiduelle UI/JWT ≤ 1 h).
 
 ## Module 2 — Caisse : panier & commandes
-- [ ] **DOC+** B1.5 : écrire « toute remise exige validation manager + motif » (le code est plus strict que « au-delà du seuil »).
-- [ ] **DOC⇄CODE** B1.7 (ardoise) : reformuler en « laisser une commande envoyée en attente de paiement, suivie dans l'écran Créances » et retirer « en dix secondes » — ou livrer 02-D1.1/D1.2 d'abord.
+- [ ] **DOC+** B1.5 : écrire « toute remise exige validation manager + motif » (le code est plus strict que « au-delà du seuil »). — toujours valable (v1.3: ajouter que toute remise exige validation manager + motif).
+- [x] **DOC⇄CODE** B1.7 (ardoise) : reformuler en « laisser une commande envoyée en attente de paiement, suivie dans l'écran Créances » et retirer « en dix secondes » — ou livrer 02-D1.1/D1.2 d'abord. — **résolu par code S60/S62** : l'ardoise retail existe — bouton « Ardoise » nommé sur une commande `pending_payment` (`attach_tab_customer_v1`, S62), suivie dans l'écran Créances `/pos/debts` et encaissée via `pay_existing_order_v11` (S60) ; v1.3 la décrit au présent, sans « dix secondes ».
 
 ## Module 3 — Encaissement & paiements
-- [ ] **DOC** B1.1 : retirer « crédit client professionnel » des moyens de paiement POS (c'est un flux BO) ; reformuler l'ardoise (cf. module 2).
-- [ ] **DOC⇄CODE** B1.4 : supprimer « si son plafond de crédit le permet » — ou livrer 03-D2.1 (gate serveur du plafond).
-- [ ] **DOC+** Mentionner `store_credit` et EDC dans les moyens disponibles.
+- [ ] **DOC** B1.1 : retirer « crédit client professionnel » des moyens de paiement POS (c'est un flux BO) ; reformuler l'ardoise (cf. module 2). — toujours valable (v1.3: retirer le tender « crédit pro » du POS ; ardoise reformulée cf. module 2).
+- [x] **DOC⇄CODE** B1.4 : supprimer « si son plafond de crédit le permet » — ou livrer 03-D2.1 (gate serveur du plafond). — **résolu par code S62** : le plafond de crédit ardoise retail est contrôlé serveur (`customers.retail_credit_limit`, gate `attach_tab_customer_v1` P0011 `credit_limit_exceeded`, anti-TOCTOU) — **décision 4** ; v1.3 garde « si son plafond le permet » au présent (le gate joue à l'attache, pas au re-paiement — dette D-7 S62).
+- [ ] **DOC+** Mentionner `store_credit` et EDC dans les moyens disponibles. — toujours valable (v1.3: ajouter `store_credit` et EDC ; noter que la liste est filtrée par `enabled_payment_methods`, S64).
 
 ## Module 4 — Écran cuisine
-- [ ] **DOC** B1.7 : décrire le réel — « le KDS passe par internet (Supabase Realtime) avec rattrapage automatique ≤ 30 s ; il n'y a pas de canal local » (ou garder la promesse et pointer le chantier module 21 D3).
-- [ ] **DOC⇄CODE** B1.3 : corriger « plus de 12 minutes » → 5 min (orange) / 10 min (rouge) — ou livrer 04-D2.1 (seuils réglables).
-- [ ] **DOC** Retirer du présent : tempo par article, vue serveur, compteur du jour, réglages par poste, « Tout prêt », alarme sonore, notes allergie (→ À venir).
-- [ ] **DOC+** Mentionner : badge PAID, lignes annulées visibles, undo/recall (une fois câblés — 04-D1.3).
+- [x] **DOC** B1.7 : décrire le réel — « le KDS passe par internet (Supabase Realtime) avec rattrapage automatique ≤ 30 s ; il n'y a pas de canal local » (ou garder la promesse et pointer le chantier module 21 D3). — **recadré S62** : le mesh LAN (le « canal local » promis) a été **purgé** (`domain/src/lan/` entier + hooks, migration `_110`) ; l'option « garder la promesse » disparaît — v1.3 décrit l'internet comme canal nominal, sans mention de canal de secours local.
+- [x] **DOC⇄CODE** B1.3 : corriger « plus de 12 minutes » → 5 min (orange) / 10 min (rouge) — ou livrer 04-D2.1 (seuils réglables). — **résolu par code S75** : les seuils warning/urgent (défauts 5/10 min) + auto-archive sont **réglables au niveau organisation** (`business_config.kds_*_minutes`, page BO `/backoffice/settings/kds`, consommés par `useKdsConfig`) ; v1.3 décrit des seuils configurables org (le réglage par poste reste hors périmètre).
+- [x] **DOC** Retirer du présent : tempo par article, vue serveur, compteur du jour, réglages par poste, « Tout prêt », alarme sonore, notes allergie (→ À venir). — **recadré S59/S60/S75** : plusieurs sont désormais livrés — **tempo/prep-timer** + **alarme sonore** (S59), **« All ready » par carte** (`kds_bump_order_v1`, S60), **réglages org** (seuils, S75) → à décrire au présent ; restent À-venir : **vue serveur agrégée**, **compteur du jour**, **réglage par poste** (police/disposition/mute), **notes allergie**.
+- [x] **DOC+** Mentionner : badge PAID, lignes annulées visibles, undo/recall (une fois câblés — 04-D1.3). — **résolu par code S59** : undo-bump 60 s + recall câblés (`kds_*_v1`) ; v1.3 mentionne au présent badge PAID, lignes annulées et undo/recall.
 
 ## Module 5 — Catalogue produits & catégories
-- [ ] **DOC** B1.1 : remplacer « avec couleur » par « avec code couleur automatique en caisse » (ou retirer).
-- [ ] **DOC⇄CODE** B1.2 : « visible ou non en caisse » est faux tant que 05-D1.1 (filtre `visible_on_pos` au POS) n'est pas livré — quick win : livrer le code plutôt que corriger la doc.
-- [ ] **DOC** B1.4 : préciser que les conversions couvrent achat/stock/recette ; la vente en unité alternative n'existe pas (le sachet 100 g = produit distinct).
-- [ ] **DOC** B1.7 : reformuler « prix négociés par **catégorie de client**, consultables mais non éditables depuis l'application aujourd'hui ».
+- [ ] **DOC** B1.1 : remplacer « avec couleur » par « avec code couleur automatique en caisse » (ou retirer). — toujours valable (v1.3: reformuler « code couleur automatique en caisse »).
+- [x] **DOC⇄CODE** B1.2 : « visible ou non en caisse » est faux tant que 05-D1.1 (filtre `visible_on_pos` au POS) n'est pas livré — quick win : livrer le code plutôt que corriger la doc. — **résolu par code S59** : `visible_on_pos` est respecté au POS (`useProducts` **et** `useProductVariants`) — un produit masqué en BO disparaît de la grille caisse et du sélecteur de variantes ; v1.3 décrit « visible ou non en caisse » au présent (dette : cache offline tablette 24 h).
+- [ ] **DOC** B1.4 : préciser que les conversions couvrent achat/stock/recette ; la vente en unité alternative n'existe pas (le sachet 100 g = produit distinct). — toujours valable (v1.3: préciser le périmètre des conversions ; pas de vente en unité alternative).
+- [x] **DOC** B1.7 : reformuler « prix négociés par **catégorie de client**, consultables mais non éditables depuis l'application aujourd'hui ». — **recadré S69** : les prix négociés sont désormais **éditables dans l'application** — CRUD catégories client + overrides de prix par catégorie (`upsert/delete_product_category_price_v1`, `PricingTab`) **et** prix négocié par **client** (`customer_product_prices`, `NegotiatedPricesSection`) ; v1.3 retire « non éditables » et décrit l'édition au présent.
 
 ## Module 6 — Stock & inventaire
-- [ ] **DOC** B1.8 : affirmer le modèle **retenu** (décision 2026-07-04) — suivi en quantité globale, péremption par déclaration de perte — comme fonctionnement assumé ; **retirer B2.1 (lots/FEFO « étude dédiée prévue ») des « À venir »**.
-- [ ] **DOC+** B2.5 : retirer « seuils réglables produit par produit » des À-venir (déjà livré — `products.min_stock_threshold`).
-- [ ] **DOC** B2.3 : préciser que le réglage technique `allow_negative_stock` existe (toggle Settings) — il ne reste que la décision d'exploitation.
-- [ ] **DOC⇄CODE** B1.1 : corriger en « alerte visuelle sous le seuil » (mono-niveau) — ou livrer 06-D1.1 (deux niveaux BO).
+- [ ] **DOC** B1.8 : affirmer le modèle **retenu** (décision 2026-07-04) — suivi en quantité globale, péremption par déclaration de perte — comme fonctionnement assumé ; **retirer B2.1 (lots/FEFO « étude dédiée prévue ») des « À venir »**. — toujours valable (v1.3: affirmer le modèle retenu ; décommissionnement léger péremption **exécuté S61**, `stock_lots` dormant conservé).
+- [ ] **DOC+** B2.5 : retirer « seuils réglables produit par produit » des À-venir (déjà livré — `products.min_stock_threshold`). — toujours valable (v1.3: déplacer au présent — seuils par produit déjà livrés).
+- [ ] **DOC** B2.3 : préciser que le réglage technique `allow_negative_stock` existe (toggle Settings) — il ne reste que la décision d'exploitation. — toujours valable (v1.3: préciser le toggle ; **décision 6** « stock négatif ON » actée — la garde est flag-aware, P0002 `insufficient_stock` quand OFF, S61).
+- [ ] **DOC⇄CODE** B1.1 : corriger en « alerte visuelle sous le seuil » (mono-niveau) — ou livrer 06-D1.1 (deux niveaux BO). — toujours valable (v1.3: corriger en mono-niveau ; 06-D1.1 « deux niveaux BO » **non livré** — l'orange/rouge n'existe qu'au POS vitrine).
 
 ## Module 7 — Achats & fournisseurs
-- [ ] **DOC** Retirer du présent : contrôle qualité + retour fournisseur (→ À venir), remises/frais de livraison sur PO, pièces jointes, catégories fournisseurs, identifiant fiscal.
-- [ ] **DOC** Reformuler le cycle : « commandé (pending) → reçu partiellement → reçu », annulation possible ; brouillon/envoyé/confirmé n'existent pas.
-- [ ] **DOC** Corriger le scénario du sac abîmé (le refus au QC est aujourd'hui impossible ; litige hors système).
-- [ ] **DOC⇄CODE** « alerte ⇒ PO pré-rempli » au futur — ou livrer 07-D1.1.
+- [ ] **DOC** Retirer du présent : contrôle qualité + retour fournisseur (→ À venir), remises/frais de livraison sur PO, pièces jointes, catégories fournisseurs, identifiant fiscal. — toujours valable (v1.3: retirer ; QC réception reste **Vague 3 REPORTÉE**, rien livré depuis `5b0fa92`).
+- [ ] **DOC** Reformuler le cycle : « commandé (pending) → reçu partiellement → reçu », annulation possible ; brouillon/envoyé/confirmé n'existent pas. — toujours valable (v1.3: reformuler le cycle réel `pending → partial → received`).
+- [ ] **DOC** Corriger le scénario du sac abîmé (le refus au QC est aujourd'hui impossible ; litige hors système). — toujours valable (v1.3: corriger le scénario QC).
+- [ ] **DOC⇄CODE** « alerte ⇒ PO pré-rempli » au futur — ou livrer 07-D1.1. — toujours valable (v1.3: mettre au futur ; 07-D1.1 non livré).
 
 ## Module 8 — Clients & fidélité
-- [ ] **DOC** B1.1 : retirer « numéro de membre et QR code » du présent (→ À venir) — la reconnaissance réelle = recherche nom/téléphone + favoris.
-- [ ] **DOC** B1.2 : préciser « catégories tarifaires **préconfigurées** (la création/édition depuis l'écran arrive) ».
-- [ ] **DOC⇄CODE** B1.3 : remplacer « remises croissantes » par « multiplicateur de points croissant » — ou trancher la **décision 3** (activer les remises de palier 5/8/10 %).
+- [ ] **DOC** B1.1 : retirer « numéro de membre et QR code » du présent (→ À venir) — la reconnaissance réelle = recherche nom/téléphone + favoris. — toujours valable (v1.3: retirer numéro de membre/QR du présent).
+- [x] **DOC** B1.2 : préciser « catégories tarifaires **préconfigurées** (la création/édition depuis l'écran arrive) ». — **recadré S69** : la création/édition **est arrivée** — `CustomerCategoriesPage` est un vrai CRUD (`create/update/delete_customer_category_v1`, `CategoryFormModal`, ferme D-W6-CUSTCAT-01) ; v1.3 décrit un CRUD complet des catégories tarifaires, sans « arrive ».
+- [x] **DOC⇄CODE** B1.3 : remplacer « remises croissantes » par « multiplicateur de points croissant » — ou trancher la **décision 3** (activer les remises de palier 5/8/10 %). — **recadré S62 (décision 3)** : les remises de palier ont été **purgées** (le champ `discount` des TIERS retiré du domaine) — décision propriétaire ; il ne reste que le `points_multiplier` ; v1.3 écrit « multiplicateur de points croissant » (le besoin de remise passe par une promotion par catégorie client).
 
 ## Module 9 — Clients professionnels (B2B)
-- [ ] **DOC** B1.1 : reformuler « prix proposé au prix catalogue et ajustable manuellement à la commande » (ou déplacer « prix négocié » en À-venir).
-- [ ] **DOC** B1.3 : **retirer** la revendication de cycle de livraison B2B (préparation, livraisons partielles) — **hors périmètre, décision propriétaire 2026-07-10 : pas de livraison motorisée B2B — les clients pros retirent leur commande sur place**. Formuler « commande B2B créée et stock déduit immédiatement ; retrait sur place par le client » sans mention de livraison/expédition.
-- [ ] **DOC** B1.4 : déplacer intégralement en À-venir (aucun PDF de facture, pas de série de numérotation légale dédiée).
+- [x] **DOC** B1.1 : reformuler « prix proposé au prix catalogue et ajustable manuellement à la commande » (ou déplacer « prix négocié » en À-venir). — **résolu par code S69** : le prix négocié B2B **par client** existe (`customer_product_prices`, perm `customer_prices.manage`, résolution serveur `_resolve_b2b_line_price_v1` négocié > catégorie > retail dans `create_b2b_order_v5`, le `unit_price` client ignoré) ; v1.3 décrit le prix négocié au présent au lieu de le déplacer en À-venir.
+- [x] **DOC** B1.3 : **retirer** la revendication de cycle de livraison B2B (préparation, livraisons partielles) — **hors périmètre, décision propriétaire 2026-07-10 : pas de livraison motorisée B2B — les clients pros retirent leur commande sur place**. Formuler « commande B2B créée et stock déduit immédiatement ; retrait sur place par le client » sans mention de livraison/expédition. — **recadré 2026-07-10** : cycle de livraison + livraisons partielles + avoirs officiels dépendants **ANNULÉS** (décision propriétaire) ; v1.3 **retire** la revendication entièrement (ne pas déplacer en À-venir) — modèle retenu : commande créée, stock déduit à la création, retrait sur place.
+- [x] **DOC** B1.4 : déplacer intégralement en À-venir (aucun PDF de facture, pas de série de numérotation légale dédiée). — **résolu par code S68** : la facture PDF B2B existe — série annuelle continue `INV/YYYY/NNNNN` (`orders.invoice_number`, `create_b2b_order_v4`), RPC `get_b2b_invoice_v1`, template EF `b2b_invoice` (aucune ligne PB1, NON-PKP), bouton « Invoice PDF » BO ; v1.3 la décrit au présent au lieu de la déplacer en À-venir.
 
 ## Module 10 — Comptabilité en partie double
-- [ ] **DOC** B1.6 (rapprochement bancaire) et B1.7 (notes annexes SAK EMKM) : déplacer intégralement en À-venir (rien n'existe).
-- [ ] **DOC** B1.4 : reformuler « rapport PB1 mensuel exportable en un clic (CSV/PDF) ; le marquage “déclarée” et le gel automatique restent manuels ».
-- [ ] **DOC⇄CODE** B1.2 (drill-down GL) : préciser « la source de chaque écriture est identifiée (type + référence) » — ou livrer 10-D1 (lien cliquable vers l'opération d'origine).
-- [ ] **DOC+** Ajouter la trésorerie cash (wallets/petty cash) au périmètre décrit.
+- [ ] **DOC** B1.6 (rapprochement bancaire) et B1.7 (notes annexes SAK EMKM) : déplacer intégralement en À-venir (rien n'existe). — toujours valable (v1.3: déplacer en À-venir ; toujours inexistants).
+- [ ] **DOC** B1.4 : reformuler « rapport PB1 mensuel exportable en un clic (CSV/PDF) ; le marquage “déclarée” et le gel automatique restent manuels ». — toujours valable (v1.3: reformuler PB1 en rapport exportable, pas workflow déclaratif).
+- [x] **DOC⇄CODE** B1.2 (drill-down GL) : préciser « la source de chaque écriture est identifiée (type + référence) » — ou livrer 10-D1 (lien cliquable vers l'opération d'origine). — **résolu par code S59** : le drill-down JE → origine est livré (`resolveJeSourceEntity`, 26 `reference_type` couverts) ; v1.3 décrit le lien cliquable au présent (caveat permanent : `reference_id` de `sale_refund`/`refund` pointe `refunds.id` pas `orders.id` → fallback texte volontaire).
+- [ ] **DOC+** Ajouter la trésorerie cash (wallets/petty cash) au périmètre décrit. — toujours valable (v1.3: ajouter la trésorerie cash au périmètre).
 
 ## Module 11 — Dépenses
-- [ ] **DOC** B1.6 : réécrire « une dépense en espèces sort du **Petty Cash** (coffre), pas du tiroir de caisse — le comptage du soir n'est pas impacté » (décision 2026-07-06, migration `20260706000019`) ; retirer « fournisseurs partagés » tant que 11-D2 n'est pas fait.
-- [ ] **DOC+** B2.1 : **déplacer d'À-venir vers le présent** — seuils multi-niveaux, auto-approbation sous seuil et interdiction de s'auto-approuver sont livrés.
-- [ ] **DOC+** Mentionner le statut brouillon et la vérification PIN à l'approbation.
+- [ ] **DOC** B1.6 : réécrire « une dépense en espèces sort du **Petty Cash** (coffre), pas du tiroir de caisse — le comptage du soir n'est pas impacté » (décision 2026-07-06, migration `20260706000019`) ; retirer « fournisseurs partagés » tant que 11-D2 n'est pas fait. — toujours valable (v1.3: réécrire le lien caisse en Petty Cash ; retirer « fournisseurs partagés »).
+- [ ] **DOC+** B2.1 : **déplacer d'À-venir vers le présent** — seuils multi-niveaux, auto-approbation sous seuil et interdiction de s'auto-approuver sont livrés. — toujours valable (v1.3: déplacer la validation multi-niveaux au présent).
+- [ ] **DOC+** Mentionner le statut brouillon et la vérification PIN à l'approbation. — toujours valable (v1.3: ajouter statut brouillon + PIN à l'approbation ; « Dupliquer » aussi livré S59).
 
 ## Module 12 — Caisse physique & shifts
-- [ ] **DOC** B1.1 : retirer « (détail par coupure possible) » — contradictoire avec B2.5 et absent du code.
-- [ ] **DOC⇄CODE** B1.4 : reformuler « comptage des espèces (totaux carte/mobile rapportés automatiquement dans le Z) » et retirer « validation manager par PIN » — ou livrer 12-D2.1/D2.2.
-- [ ] **DOC⇄CODE** B1.3 : retirer « une alerte prévient… avant même la clôture » — ou livrer 12-D1.2.
-- [ ] **DOC** B1.5 : **ne pas adoucir le « dix ans »** (obligation légale indonésienne). Écrire : « archivé en PDF ; le mécanisme d'immutabilité garantissant les 10 ans légaux reste à outiller » et garder 12-D3.3 comme chantier.
-- [ ] **DOC+** Ajouter le **comptage à l'aveugle** (vrai point fort anti-fraude non documenté).
+- [x] **DOC** B1.1 : retirer « (détail par coupure possible) » — contradictoire avec B2.5 et absent du code. — **recadré S67** : le **comptage par coupure** existe désormais (opt-in `business_config.shift_denomination_count_enabled`, grille IDR à l'open + close, enforced serveur, persisté `opening/closing_denominations`) ; v1.3 conserve « détail par coupure » et le décrit comme option activable (plus contradictoire).
+- [x] **DOC⇄CODE** B1.4 : reformuler « comptage des espèces (totaux carte/mobile rapportés automatiquement dans le Z) » et retirer « validation manager par PIN » — ou livrer 12-D2.1/D2.2. — **résolu par code S66/S67** : PIN manager sur gros écart livré (`close_shift_v4`, seuils `business_config.shift_variance_pin_threshold_abs/pct`, perm `shift.variance.approve`, S66) + comptage **3 volets** cash/QRIS/carte (`close_shift_v5`, expected par volet, figé au snapshot Z `reconciliation`, S67) ; v1.3 décrit les 3 volets ET la validation manager par PIN au présent.
+- [ ] **DOC⇄CODE** B1.3 : retirer « une alerte prévient… avant même la clôture » — ou livrer 12-D1.2. — toujours valable (v1.3: retirer l'alerte pré-clôture ; 12-D1.2 non livré — le comptage à l'aveugle interdit une alerte d'écart avant clôture).
+- [ ] **DOC** B1.5 : **ne pas adoucir le « dix ans »** (obligation légale indonésienne). Écrire : « archivé en PDF ; le mécanisme d'immutabilité garantissant les 10 ans légaux reste à outiller » et garder 12-D3.3 comme chantier. — toujours valable (v1.3: garder le « dix ans » ; immutabilité 10 ans reste à outiller).
+- [ ] **DOC+** Ajouter le **comptage à l'aveugle** (vrai point fort anti-fraude non documenté). — toujours valable (v1.3: ajouter le comptage à l'aveugle comme point fort anti-fraude).
 
 ## Module 13 — Promotions & remises
-- [ ] **DOC⇄CODE** B1.4 : écrire « remise nommée à l'écran et tracée en base ; le détail sur ticket imprimé et dans l'historique arrive » — ou livrer 13-D1.1/D1.2 (quick win recommandé).
-- [ ] **DOC** Liens : retirer « promos réservées à un niveau de fidélité » (→ À-venir) — seul le ciblage par catégorie client fonctionne (`customer_tier_ids` vestigial).
-- [ ] **DOC+** B2.2 : les promos à créneau horaire **existent** (jours + heures) ; le manque éventuel = UI simplifiée.
-- [ ] **DOC+** B2.4 : les règles de cumul sont implémentées (priorité + flags) ; le besoin réel est leur **explication** à l'utilisateur.
+- [x] **DOC⇄CODE** B1.4 : écrire « remise nommée à l'écran et tracée en base ; le détail sur ticket imprimé et dans l'historique arrive » — ou livrer 13-D1.1/D1.2 (quick win recommandé). — **résolu par code S60** : lignes promo nommées dans l'historique BO (`OrderDetailPage`/`OrderDetailDrawer`, snapshot `promotion_applications.description`) + `ReceiptPayload.promotions[]`/`totals.promotion_total` alimentés ; v1.3 décrit la remise nommée au présent (caveat : le rendu sur ticket **papier** dépend d'une mise à jour du template print-bridge externe).
+- [ ] **DOC** Liens : retirer « promos réservées à un niveau de fidélité » (→ À-venir) — seul le ciblage par catégorie client fonctionne (`customer_tier_ids` vestigial). — toujours valable (v1.3: retirer les promos par palier fidélité, vestigial).
+- [ ] **DOC+** B2.2 : les promos à créneau horaire **existent** (jours + heures) ; le manque éventuel = UI simplifiée. — toujours valable (v1.3: acter les promos à créneau horaire au présent).
+- [ ] **DOC+** B2.4 : les règles de cumul sont implémentées (priorité + flags) ; le besoin réel est leur **explication** à l'utilisateur. — toujours valable (v1.3: expliquer les règles de cumul).
 
 ## Module 14 — Rapports & analyses
-- [ ] **DOC** B1.1 : retirer « valorisation » et « dormants » de la liste stock (→ À-venir) ; préciser rotation = périssables seulement ; impayés consultés dans le module B2B.
-- [ ] **DOC** « tendance des écarts de caisse » → « écart par clôture de caisse » (la tendance n'existe pas).
-- [ ] **DOC** Comparaison période précédente : préciser « sur P&L, ventes par catégorie et trésorerie » (3 pages sur ~30).
-- [ ] **DOC** Ajouter aux À-venir : câblage du tableau de bord d'accueil (aujourd'hui vide), rapports ventes par produit / par client dédiés.
+- [ ] **DOC** B1.1 : retirer « valorisation » et « dormants » de la liste stock (→ À-venir) ; préciser rotation = périssables seulement ; impayés consultés dans le module B2B. — toujours valable (v1.3: retirer valorisation/dormants).
+- [ ] **DOC** « tendance des écarts de caisse » → « écart par clôture de caisse » (la tendance n'existe pas). — toujours valable (v1.3: « écart par clôture » ; **S70** a ajouté un rapport BO « écarts par caissier » `get_cashier_variance_v1` — le mentionner, mais la *tendance* n'existe toujours pas).
+- [ ] **DOC** Comparaison période précédente : préciser « sur P&L, ventes par catégorie et trésorerie » (3 pages sur ~30). — toujours valable (v1.3: préciser le périmètre de la comparaison).
+- [x] **DOC** Ajouter aux À-venir : câblage du tableau de bord d'accueil (aujourd'hui vide), rapports ventes par produit / par client dédiés. — **recadré S63/S72/S74** : le **dashboard d'accueil est câblé** (`get_dashboard_overview_v1`, 5 panneaux réels, S63) — retirer de À-venir, décrire au présent ; côté **POS Reports** la refonte est soldée (Overview/Payments/Voids/Sessions/Mix/**Products**/Activity puis **Margin** WAC, S74) + le nouveau **journal d'audit POS** (onglet Activity scindé **Sales | Journal**, `pos_events`, S72) — à intégrer en v1.3.
 
 ## Module 15 — Production & recettes
-- [ ] **DOC** B2.1 : **retirer « la gestion des lots et des dates de péremption … le prochain grand chantier annoncé » des « À venir »** (abandonné — décision 2026-07-04) ; garder « le coût figé au moment de la vente » comme chantier autonome.
-- [ ] **DOC+** B2.4 : allergènes « déjà visibles sur la grille POS ; reste ticket + écran client ».
-- [ ] **DOC+** Ajouter au présent : planning de production (calendrier), annulation d'une fournée (revert), rapports rendement/efficacité.
-- [ ] **DOC** B1.3 : nuancer « avec raison » → « raison obligatoire au-delà d'un seuil d'écart configurable ».
+- [ ] **DOC** B2.1 : **retirer « la gestion des lots et des dates de péremption … le prochain grand chantier annoncé » des « À venir »** (abandonné — décision 2026-07-04) ; garder « le coût figé au moment de la vente » comme chantier autonome. — toujours valable (v1.3: retirer lots/péremption des À-venir ; snapshot COGS reste chantier **Vague 3** autonome).
+- [ ] **DOC+** B2.4 : allergènes « déjà visibles sur la grille POS ; reste ticket + écran client ». — toujours valable (v1.3: acter allergènes visibles grille POS ; ticket/écran client = wontfix propriétaire, cf. MEMORY).
+- [ ] **DOC+** Ajouter au présent : planning de production (calendrier), annulation d'une fournée (revert), rapports rendement/efficacité. — toujours valable (v1.3: ajouter planning/revert/rapports rendement au présent).
+- [ ] **DOC** B1.3 : nuancer « avec raison » → « raison obligatoire au-delà d'un seuil d'écart configurable ». — toujours valable (v1.3: nuancer la raison au-delà d'un seuil).
 
 ## Module 16 — Écran côté client
-- [ ] **DOC⇄CODE** B1.3 : écrire « fil des dernières commandes **payées** » — ou livrer 16-D1.2 (brancher sur `kitchen_status`) ; réserver « commandes prêtes » à l'À-venir.
-- [ ] **DOC** B1.1 : préciser que remises et points fidélité ne sont pas affichés en lignes, et que l'écran doit être **une fenêtre du poste caisse** (contrainte BroadcastChannel actuelle).
-- [ ] **DOC+** Ajouter l'appairage kiosque (code + JWT) — vrai flux opérateur de première installation.
+- [x] **DOC⇄CODE** B1.3 : écrire « fil des dernières commandes **payées** » — ou livrer 16-D1.2 (brancher sur `kitchen_status`) ; réserver « commandes prêtes » à l'À-venir. — **résolu par code S59** : l'écran client a une section « Prêt à retirer » branchée sur les items réellement `ready` (`useReadyOrders`, plafond 5, tri urgence) — un bump KDS y fait apparaître la commande sans paiement préalable ; v1.3 décrit un vrai fil « commandes prêtes » au présent.
+- [ ] **DOC** B1.1 : préciser que remises et points fidélité ne sont pas affichés en lignes, et que l'écran doit être **une fenêtre du poste caisse** (contrainte BroadcastChannel actuelle). — toujours valable (v1.3: préciser remises/points non affichés en lignes + contrainte fenêtre du poste).
+- [ ] **DOC+** Ajouter l'appairage kiosque (code + JWT) — vrai flux opérateur de première installation. — toujours valable (v1.3: ajouter l'appairage kiosque ; noter que l'auth kiosque n'est conservée que pour la variante **display** — les hooks kiosque KDS/tablette purgés S76, cf. modules 04/17).
 
 ## Module 17 — Commande sur tablette
-- [ ] **DOC+** Corriger le cadrage : « la commande part **simultanément** en cuisine (KDS) et vers la caisse ; le caissier encaisse ensuite » — et retirer B2.2 de l'À-venir (c'est déjà le comportement).
-- [ ] **DOC⇄CODE** Retirer « ajoute des notes (allergie) » du présent — ou livrer 17-D1.1 (note par commande, quick win) puis 17-D2.1 (note par ligne).
-- [ ] **DOC⇄CODE** « Historique du jour » → « historique de ses commandes » — ou livrer 17-D1.2 (borne jour).
-- [ ] **DOC+** Mentionner l'annulation par le serveur et l'alerte « item prêt ».
+- [ ] **DOC+** Corriger le cadrage : « la commande part **simultanément** en cuisine (KDS) et vers la caisse ; le caissier encaisse ensuite » — et retirer B2.2 de l'À-venir (c'est déjà le comportement). — toujours valable (v1.3: corriger le cadrage — envoi simultané cuisine+caisse, déjà le comportement).
+- [x] **DOC⇄CODE** Retirer « ajoute des notes (allergie) » du présent — ou livrer 17-D1.1 (note par commande, quick win) puis 17-D2.1 (note par ligne). — **résolu par code S59** (note par commande) : `create_tablet_order_v3(+ p_notes)`, textarea `TabletCartPanel` → `orders.notes`, affichée KDS + pickup ; v1.3 décrit la note par commande au présent ; la **note par ligne** (17-D2.1) reste un chantier — la mentionner en À-venir.
+- [ ] **DOC⇄CODE** « Historique du jour » → « historique de ses commandes » — ou livrer 17-D1.2 (borne jour). — toujours valable (v1.3: « historique de ses commandes » ; 17-D1.2 non livré).
+- [ ] **DOC+** Mentionner l'annulation par le serveur et l'alerte « item prêt ». — toujours valable (v1.3: ajouter annulation par serveur + alerte item prêt).
 
 ## Module 18 — Application mobile
-- [ ] **DOC+** (optionnel) Mentionner les préparatifs techniques existants (stockage Capacitor-ready) pour crédibiliser le « reporté » — sinon aucun amendement : module exactement aligné.
+- [ ] **DOC+** (optionnel) Mentionner les préparatifs techniques existants (stockage Capacitor-ready) pour crédibiliser le « reporté » — sinon aucun amendement : module exactement aligné. — toujours valable (v1.3: optionnel — mentionner Capacitor-ready ; module aligné).
 
 ## Module 19 — Réglages & configuration
-- [ ] **DOC** B1.1 : retirer du présent « logo », « identifiant fiscal », « quels moyens de paiement sont acceptés », « comment marche la fidélité », « quelles imprimantes servent à quoi » (→ À-venir) tant que 19-D1.2/D2.1 ne sont pas livrés.
-- [ ] **DOC⇄CODE** B1.2 : préciser « réglages généraux et délais de session tracés avec avant/après ; consultation via le journal d'audit ; écran dédié à venir » ; retirer le scénario « retrouve dans l'historique » — ou livrer 19-D1.3.
-- [ ] **DOC⇄CODE** B1.7 : supprimer le scénario « désactive la carte bancaire » — ou livrer 19-D2.1 (`enabled_payment_methods`, chantier Vague 2).
-- [ ] **DOC** B1.4 : mentionner que les modèles e-mails/tickets ne sont pas encore appliqués aux impressions ni à des envois.
-- [ ] **DOC** Statut du module → « Partiel ».
+- [x] **DOC** B1.1 : retirer du présent « logo », « identifiant fiscal », « quels moyens de paiement sont acceptés », « comment marche la fidélité », « quelles imprimantes servent à quoi » (→ À-venir) tant que 19-D1.2/D2.1 ne sont pas livrés. — **recadré S64/S73** : « quels moyens de paiement acceptés » livré (`enabled_payment_methods`, page Payment Methods, S64) et « quelles imprimantes » livré (Printing org DB, S73) → à décrire au présent ; restent À-venir : **logo** et **identifiant fiscal (NPWP, B5 reporté)**. La fidélité est configurable via Loyalty (tuile liée S58).
+- [x] **DOC⇄CODE** B1.2 : préciser « réglages généraux et délais de session tracés avec avant/après ; consultation via le journal d'audit ; écran dédié à venir » ; retirer le scénario « retrouve dans l'historique » — ou livrer 19-D1.3. — **résolu par code S73** : tuile **Settings History** → `/backoffice/reports/audit?action=setting.update` (l'AuditPage lit `?action=`) ; v1.3 décrit la consultation de l'historique des réglages via ce lien au présent.
+- [x] **DOC⇄CODE** B1.7 : supprimer le scénario « désactive la carte bancaire » — ou livrer 19-D2.1 (`enabled_payment_methods`, chantier Vague 2). — **résolu par code S64** : `business_config.enabled_payment_methods` (page BO Payment Methods, effet POS ≤ 60 s, hook fail-open) ; v1.3 garde le scénario « désactiver la carte en un clic » au présent (enforcement UI v1 — l'EF accepte encore les 6, dette D-1 S64).
+- [ ] **DOC** B1.4 : mentionner que les modèles e-mails/tickets ne sont pas encore appliqués aux impressions ni à des envois. — toujours valable (v1.3: mentionner templates non appliqués) — **recadré S76** : les pages `settings/templates/email` + `/receipt` affichent désormais un bandeau honnête « pas encore câblé » (`templates-not-wired-banner`) ; le vrai câblage (envoi e-mail réel, impression lisant `receipt_templates`) rejoint la **Vague 3** ; le verdict C-B1.4 (🟠 PARTIEL) est inchangé.
+- [x] **DOC** Statut du module → « Partiel ». — **recadré S73/S75** : le hub Settings BO est désormais **100 % câblé (zéro tuile Soon/Planned)** — pages POS Configuration (`pos_presets`), Notifications, Customer Display, Printing, General durci, Floor Plan (S75), KDS Configuration (S75) ; v1.3 relève le statut (p.ex. « Opérationnel, partiel sur templates/logo/NPWP ») plutôt que « Partiel » sec.
 
 ## Module 20 — Gestion des employés & droits
-- [ ] **DOC** B1.1 : remplacer « cases à cocher… ajuster » par « grille de **consultation** des droits ; la modification passe par le changement de rôle d'un employé » — ou déplacer l'édition en À-venir (liée à la **décision 1**).
-- [ ] **DOC+** B1.3 : la coupure de session est déjà effective sur changement de rôle et suppression ; ce qui manque = bouton autonome + invalidation JWT ≤ 1 h.
-- [ ] **DOC** Mentionner l'absence de réactivation d'un compte supprimé (soft-delete définitif côté UI).
+- [x] **DOC** B1.1 : remplacer « cases à cocher… ajuster » par « grille de **consultation** des droits ; la modification passe par le changement de rôle d'un employé » — ou déplacer l'édition en À-venir (liée à la **décision 1**). — **recadré S58/S62 (décision 1)** : **RBAC lecture seule acté** — sidebar « RBAC Editor » → « Permissions (read-only) » (S58), permission `rbac.update` purgée (S62) ; v1.3 écrit « grille de consultation des droits ; la modification passe par le changement de rôle » (pas d'édition case par case).
+- [ ] **DOC+** B1.3 : la coupure de session est déjà effective sur changement de rôle et suppression ; ce qui manque = bouton autonome + invalidation JWT ≤ 1 h. — toujours valable (v1.3: acter la coupure de session ; reste bouton autonome + latence JWT ≤ 1 h).
+- [ ] **DOC** Mentionner l'absence de réactivation d'un compte supprimé (soft-delete définitif côté UI). — toujours valable (v1.3: mentionner l'absence de réactivation).
 
 ## Module 21 — Réseau local
-- [ ] **DOC** Réécrire le statut : « Opérationnel » ne tient que pour l'impression directe + le transport internet ; B1.1/B1.2 → À-venir (ou reformuler : « les tickets non imprimés restent visibles au KDS et la commande n'est jamais perdue »).
-- [ ] **DOC** Corriger le scénario imprimante : un blocage de 5 min = tickets papier perdus (pas de file active) — la protection réelle est le persist-first DB/KDS.
-- [ ] **DOC⇄CODE** Corriger le scénario gérant (« signe de vie ») — ou livrer 21-D1.1 (heartbeats).
-- [ ] **DOC** Documenter la dépendance au **print-bridge externe** (process séparé, URL configurable, `/health`) — invisible dans la doc actuelle.
+- [x] **DOC** Réécrire le statut : « Opérationnel » ne tient que pour l'impression directe + le transport internet ; B1.1/B1.2 → À-venir (ou reformuler : « les tickets non imprimés restent visibles au KDS et la commande n'est jamais perdue »). — **recadré S62** : **internet-first exécuté (décision 2)** — mesh LAN purgé + `print_queue` DROPPÉE (`_110`) ; il n'y a plus de « file d'impression » ni de canal local à promettre ; v1.3 réécrit le statut autour de l'impression directe + persist-first DB/KDS.
+- [ ] **DOC** Corriger le scénario imprimante : un blocage de 5 min = tickets papier perdus (pas de file active) — la protection réelle est le persist-first DB/KDS. — toujours valable (v1.3: corriger le scénario imprimante — protection = persist-first, pas de file).
+- [x] **DOC⇄CODE** Corriger le scénario gérant (« signe de vie ») — ou livrer 21-D1.1 (heartbeats). — **résolu par code S59** : heartbeats livrés (`useLanHeartbeat` monté POS/KDS/tablette, tick 10 s, `update_lan_heartbeat_v1`, page BO « LAN Devices » online/stale) ; v1.3 décrit le « signe de vie » au présent (dettes : erreurs RPC avalées en silence, pas de flux d'enregistrement d'appareil).
+- [ ] **DOC** Documenter la dépendance au **print-bridge externe** (process séparé, URL configurable, `/health`) — invisible dans la doc actuelle. — toujours valable (v1.3: documenter le print-bridge ; désormais **versionné dans le repo** `apps/print-bridge` + contrat V2 octet-exact, S65).
 
 ## Module 22 — Charte graphique
-- [ ] **DOC** B1.3 : préciser que le garde-fou automatique couvre **les fenêtres/overlays** ; l'a11y générale n'a pas de lint dédié.
-- [ ] **DOC** B1.5 : reformuler « agrandies à la norme » en « normées via tokens sur les primitives et les écrans audités (S57) » tant que l'audit systématique (22-D2) n'est pas fait.
+- [ ] **DOC** B1.3 : préciser que le garde-fou automatique couvre **les fenêtres/overlays** ; l'a11y générale n'a pas de lint dédié. — toujours valable (v1.3: préciser le périmètre du garde-fou).
+- [ ] **DOC** B1.5 : reformuler « agrandies à la norme » en « normées via tokens sur les primitives et les écrans audités (S57) » tant que l'audit systématique (22-D2) n'est pas fait. — toujours valable (v1.3: reformuler ; purge hex S59 quasi soldée mais audit systématique 22-D2 non fait).
 
 ## Module 23 — Qualité & tests
-- [ ] **DOC** B1.3 : remplacer « tournent chaque nuit dans un vrai navigateur » par « suite E2E écrite (12 parcours) et planifiée, en attente de l'environnement d'essai hébergé » — le dispositif n'a jamais produit un run vert.
-- [ ] **DOC** B1.2 : nuancer « plus d'une centaine de suites, dont un noyau sécurité/money-path vert et bloquant à chaque PR ; le passage complet nocturne est en cours de stabilisation » (33/131 rouges au 2026-07-02).
+- [x] **DOC** B1.3 : remplacer « tournent chaque nuit dans un vrai navigateur » par « suite E2E écrite (12 parcours) et planifiée, en attente de l'environnement d'essai hébergé » — le dispositif n'a jamais produit un run vert. — **recadré S71** : l'E2E nightly Playwright est **livré** — 12 specs vertes en run combiné (26 passed/2 fixmes/0 failed), cron `0 22 * * *` armé, users E2E dédiés, login résilient au rate-limit ; v1.3 décrit une suite E2E nocturne opérationnelle (action utilisateur résiduelle : poser 3 secrets repo).
+- [x] **DOC** B1.2 : nuancer « plus d'une centaine de suites, dont un noyau sécurité/money-path vert et bloquant à chaque PR ; le passage complet nocturne est en cours de stabilisation » (33/131 rouges au 2026-07-02). — **recadré S58/S59** : le chiffre « 33/131 rouges » est périmé — S58 a re-verti 28/33 suites (16 réparées, 3 quarantaines datées) et S59 a soldé les 2 derniers tripwires (`users` 29/29, `expenses` 19/19) ; v1.3 ajuste le chiffre (noyau money-path vert bloquant, quasi-totalité verte).
 
 ## Module 24 — Mises à jour & exploitation
-- [ ] **DOC** Requalifier le cœur : l'environnement d'essai n'est pas provisionné (workflow en échec 0 s à chaque push, environnement GitHub `staging` jamais créé) et il n'existe pas de production V3 — **statut du module → « Partiel »**.
-- [ ] **DOC** B1.4 : conditionner — « la remontée automatique des erreurs est intégrée au logiciel et s'active dès que le compte de surveillance est configuré » (Sentry sans DSN aujourd'hui).
-- [ ] **DOC** B2.5 : noter que le CHANGELOG est volontairement figé, l'historique par session en tient lieu.
+- [x] **DOC** Requalifier le cœur : l'environnement d'essai n'est pas provisionné (workflow en échec 0 s à chaque push, environnement GitHub `staging` jamais créé) et il n'existe pas de production V3 — **statut du module → « Partiel »**. — **recadré S58 / décision 7** : les workflows en échec automatique sont **désarmés** (`staging-deploy.yml`/`playwright-e2e.yml` sur `workflow_dispatch` seul, S58) et **décision 7** acte « staging = l'environnement dev V3 actuel » ; v1.3 requalifie sans le « échec 0 s à chaque push » (reste : environnement GitHub `staging` D1.2 + pas de prod V3).
+- [ ] **DOC** B1.4 : conditionner — « la remontée automatique des erreurs est intégrée au logiciel et s'active dès que le compte de surveillance est configuré » (Sentry sans DSN aujourd'hui). — toujours valable (v1.3: conditionner Sentry ; DSN D1.3 non posé).
+- [ ] **DOC** B2.5 : noter que le CHANGELOG est volontairement figé, l'historique par session en tient lieu. — toujours valable (v1.3: noter le CHANGELOG figé, historique par session).
 
 ## Module 25 — Sécurité
-- [ ] **DOC⇄CODE** B1.3 : préciser « les PINs de validation manager transitent en en-tête ; le PIN de connexion transite chiffré (HTTPS) dans le corps » — ou livrer 25-D1.1 (`auth-change-pin` en headers, quick win recommandé) et garder la phrase.
-- [ ] **DOC** B1.5 : préciser que la consultation du journal est réservée aux administrateurs (le manager n'y a pas accès aujourd'hui).
-- [ ] **DOC** Ajouter aux À-venir l'invalidation immédiate des jetons (≤ 1 h de latence résiduelle après révocation).
+- [x] **DOC⇄CODE** B1.3 : préciser « les PINs de validation manager transitent en en-tête ; le PIN de connexion transite chiffré (HTTPS) dans le corps » — ou livrer 25-D1.1 (`auth-change-pin` en headers, quick win recommandé) et garder la phrase. — **résolu par code S59** : `auth-change-pin` lit les PINs depuis les headers `x-current-pin`/`x-new-pin` (hard cutover, EF v8 ACTIVE) ; v1.3 garde la phrase — manager-PINs + rotation en en-tête ; **reste** le PIN de login `auth-verify-pin` en body (à documenter comme chiffré HTTPS).
+- [ ] **DOC** B1.5 : préciser que la consultation du journal est réservée aux administrateurs (le manager n'y a pas accès aujourd'hui). — toujours valable (v1.3: préciser lecture journal réservée ADMIN/SUPER_ADMIN).
+- [ ] **DOC** Ajouter aux À-venir l'invalidation immédiate des jetons (≤ 1 h de latence résiduelle après révocation). — toujours valable (v1.3: ajouter l'invalidation immédiate des jetons en À-venir).
 
 ## Hors Description v1.2
-- [ ] **DOC+** La **page Orders du back-office** (liste, filtres, détail 360°, void/refund BO) n'apparaît dans aucun des 25 modules de la Description — l'ajouter en v1.3 (sous-section du module 2 ou 14), en s'appuyant sur la fiche `02b-orders-page.md`.
+- [ ] **DOC+** La **page Orders du back-office** (liste, filtres, détail 360°, void/refund BO) n'apparaît dans aucun des 25 modules de la Description — l'ajouter en v1.3 (sous-section du module 2 ou 14), en s'appuyant sur la fiche `02b-orders-page.md`. — toujours valable (v1.3: ajouter la page Orders BO ; void BO envoie `x-idempotency-key` depuis S60, cf. fiche 02b).
