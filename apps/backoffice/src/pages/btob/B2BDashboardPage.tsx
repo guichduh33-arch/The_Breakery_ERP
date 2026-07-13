@@ -7,6 +7,7 @@
 import { Link } from 'react-router-dom';
 import { useState, type JSX } from 'react';
 import {
+  AlertTriangle,
   ArrowRight,
   Building2,
   Calendar,
@@ -34,6 +35,7 @@ import {
   type B2bClientRow,
   type B2bRecentOrder,
 } from '@/features/btob/hooks/useB2bDashboard.js';
+import { useB2bBalanceDrift } from '@/features/btob/hooks/useB2bBalanceDrift.js';
 import { CreateB2bOrderModal } from '@/features/btob/components/CreateB2bOrderModal.js';
 
 const AGING_TONES: Record<string, string> = {
@@ -50,6 +52,10 @@ export default function B2BDashboardPage(): JSX.Element {
   const [createOpen, setCreateOpen] = useState<boolean>(false);
 
   const dash = useB2bDashboard();
+
+  const canReconcile = hasPermission('b2b.read');
+  const driftQuery   = useB2bBalanceDrift(canReconcile);
+  const drifted      = (driftQuery.data ?? []).filter((r) => r.has_drift);
 
   if (!canRead) {
     return <div className="text-text-secondary">No access to B2B Wholesale.</div>;
@@ -78,6 +84,27 @@ export default function B2BDashboardPage(): JSX.Element {
           </>
         }
       />
+
+      {drifted.length > 0 ? (
+        <div
+          data-testid="b2b-drift-banner"
+          role="alert"
+          className="rounded-lg border border-warning/40 bg-warning/10 p-4 space-y-1"
+        >
+          <div className="flex items-center gap-2 font-medium text-warning">
+            <AlertTriangle className="h-4 w-4" aria-hidden />
+            Balance drift detected (cache ≠ ledger) — {drifted.length} client{drifted.length > 1 ? 's' : ''}
+          </div>
+          <ul className="text-sm text-text-secondary">
+            {drifted.map((r) => (
+              <li key={r.customer_id}>
+                {r.customer_name} : cached {formatIdr(r.cached_balance)} vs derived{' '}
+                {formatIdr(r.derived_balance)} (drift {formatIdr(r.drift)})
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
         <KpiTile
