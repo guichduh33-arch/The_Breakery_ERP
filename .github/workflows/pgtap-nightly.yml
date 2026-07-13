@@ -20,6 +20,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y postgresql-client-16
 
+      # S77: a file now fails on EITHER a psql error OR any `not ok` assertion in
+      # its TAP output. Before this, pgTAP assertion failures never flipped psql's
+      # exit code, so suites failed silently for weeks (fiche 23 "filet troué" —
+      # 15 files / ~34 red assertions invisible in a "green-looking" job).
       - name: Run pgTAP suite via pooler
         id: pgtap
         env:
@@ -35,9 +39,13 @@ jobs:
           shopt -s nullglob
           for f in supabase/tests/*.test.sql; do
             echo "=== Running $f ==="
-            if ! psql "$PGURL" -v ON_ERROR_STOP=1 -f "$f"; then
+            out=$(psql "$PGURL" -v ON_ERROR_STOP=1 -f "$f" 2>&1)
+            rc=$?
+            printf '%s\n' "$out"
+            not_ok=$(printf '%s\n' "$out" | grep -cE '^[[:space:]]*not ok [0-9]' || true)
+            if [ "$rc" -ne 0 ] || [ "$not_ok" -gt 0 ]; then
               fail_count=$((fail_count+1))
-              fail_list="${fail_list}\n - ${f}"
+              fail_list="${fail_list}\n - ${f} (exit=${rc}, not_ok=${not_ok})"
             fi
           done
           if [ "$fail_count" -gt 0 ]; then
@@ -74,11 +82,11 @@ jobs:
   # fallback to http://127.0.0.1:54321 (retired local Docker stack). Exporting
   # only SUPABASE_URL left them dialing localhost — the real cause of the
   # nightly "TypeError: fetch failed / ECONNREFUSED 127.0.0.1:54321".
-  # VITE_SUPABASE_ANON_KEY / SUPABASE_ANON_KEY (publishable key) are wired to
-  # the optional SUPABASE_ANON_KEY secret — set it once via
-  #   gh secret set SUPABASE_ANON_KEY --body "<anon key: dashboard > API>"
-  # to unlock the ~45 anon-path tests (while absent they fail with 401s,
-  # not fetch errors).
+  # S77: the SUPABASE_ANON_KEY secret is now OPTIONAL — the shared test helper
+  # (supabase/tests/functions/_helpers/auth.ts) falls back to the project's
+  # real publishable key (public by design). Logins are minted via the GoTrue
+  # admin API with a run-level token cache instead of hammering the rate-limited
+  # auth-verify-pin EF (~3/min/IP — the cause of the nightly rate_limited storm).
   live-rpc-vitest:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -143,6 +151,12 @@ jobs:
       # via the MCP tool, whose output covers ONLY the public schema, while the
       # bare CLI also emits a graphql_public section. Without --schema public the
       # step flagged a permanent structural pseudo-drift (see run 28680835452).
+      # S77: compare NORMALIZED outputs. The committed file is the MCP generator's
+      # verbatim output (project convention — Docker retired, regen via MCP); the
+      # CLI's only structural delta vs MCP is the `__InternalSupabase` metadata
+      # block (MCP emits it, the CLI does not). Strip it from both sides plus
+      # trailing whitespace, then compare. Everything else (tables, partitions,
+      # functions, ordering) must match byte-for-byte or the check fails.
       - name: Check types.generated.ts drift
         env:
           PGURL: ${{ secrets.V3_DEV_PG_POOLER_URL }}
@@ -153,10 +167,16 @@ jobs:
             exit 0
           fi
           supabase gen types typescript --db-url "$PGURL" --schema public \
-            > packages/supabase/src/types.generated.ts
-          if ! git diff --exit-code -- packages/supabase/src/types.generated.ts; then
+            > /tmp/types_regen_cli.ts
+          normalize() {
+            sed '/^  \/\/ Allows to automatically instantiate/,/^  }$/d' "$1" \
+              | sed -e 's/[[:space:]]*$//' | awk 'NF {p=1} p' | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}'
+          }
+          normalize packages/supabase/src/types.generated.ts > /tmp/types_committed.norm
+          normalize /tmp/types_regen_cli.ts                  > /tmp/types_regen.norm
+          if ! diff -u /tmp/types_committed.norm /tmp/types_regen.norm; then
             echo "::error::types.generated.ts is stale relative to the live DB schema."
-            echo "Run generate_typescript_types via MCP and commit the result."
+            echo "Run generate_typescript_types via MCP, write to packages/supabase/src/types.generated.ts verbatim, and commit."
             exit 1
           fi
           echo "types.generated.ts is up to date with the live schema."
