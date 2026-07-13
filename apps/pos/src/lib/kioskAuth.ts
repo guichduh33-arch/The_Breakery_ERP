@@ -1,7 +1,8 @@
 // apps/pos/src/lib/kioskAuth.ts
 // Session 13 / Phase 1.B — D18 + K7 (degraded mode).
 //
-// Shared kiosk auth core used by useKioskAuth hooks in display/, kds/, tablet/.
+// Shared kiosk auth core used by the display/ useKioskAuth hook (kds/tablet
+// variants purged S76 — décision propriétaire 2026-07-13, re-spécifier si besoin).
 // Per K7 (lead decision): if `kiosk-issue-jwt` is down, kiosk surfaces fall
 // back to the staff PIN flow (existing useAuthStore.login). The hook surfaces
 // that state so the UI can prompt for a PIN as a degraded escape hatch.
