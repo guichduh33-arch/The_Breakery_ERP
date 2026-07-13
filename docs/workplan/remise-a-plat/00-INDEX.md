@@ -151,7 +151,7 @@ La checklist consolidée, générée depuis les 25 sections D4 et étiquetée **
 ## 5. Critères de sortie de la remise à plat
 La remise à plat est **terminée** quand les cinq conditions sont réunies :
 1. **Nightly pgTAP vert** (ou liste d'exclusions datée et motivée, revue à chaque session).
-2. **Zéro tuile/label mensonger** dans les deux apps (RBAC Editor, tuiles « Soon » pointant vers de l'existant, chips no-op, page LAN Devices aux données mortes).
-3. **Description v1.3 publiée** avec les ~70 amendements de `00-AMENDEMENTS-V13.md` intégrés (dans les deux sens : surclaims retirés, sous-ventes ajoutées).
+2. ✅ **Zéro tuile/label mensonger S76** dans les deux apps (RBAC renommé S58, tuiles Soon soldées S73/S75, chips câblés S75, heartbeats S59 ; dernières surfaces — pages templates e-mails/tickets — bannées « not applied yet » S76).
+3. ✅ **Description v1.3 publiée S76** (`docs/product/DESCRIPTION.md`, 2026-07-13) — les 90 items de la checklist `00-AMENDEMENTS-V13.md` réconciliée intégrés (dans les deux sens : surclaims retirés, sous-ventes ajoutées).
 4. ✅ **Les 7 décisions actées** — fait : péremption/FIFO le 2026-07-04, les 6 restantes le 2026-07-06 (tableau §3).
 5. ✅ **Inventaire ⚫ soldé S76** (les items #16/#17 sont re-statués « À venir » par décision propriétaire — plus aucun code mort ambigu).
