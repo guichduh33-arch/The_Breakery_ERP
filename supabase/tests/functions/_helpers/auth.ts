@@ -23,19 +23,23 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
+// `||` (not `??`) everywhere: in CI an unset secret still materializes as an
+// EMPTY-STRING env var (`FOO: ${{ secrets.FOO }}`), which `??` lets through —
+// that fed createClient an empty key ("supabaseKey is required", run
+// 29276314961) across ~34 files.
 export const SUPABASE_URL =
-  process.env.VITE_SUPABASE_URL ?? process.env.SUPABASE_URL ?? 'http://127.0.0.1:54321';
+  process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || 'http://127.0.0.1:54321';
 
 // V3 dev publishable key (project `ikcyvlovptebroadgtvd`). Public by design,
 // committable. The old `sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH` fallback
 // scattered across the suite was the LOCAL Docker stack key — invalid against
 // cloud, which is what produced the anon-path 401s.
 export const ANON_KEY =
-  process.env.SUPABASE_ANON_KEY ??
-  process.env.VITE_SUPABASE_ANON_KEY ??
+  process.env.SUPABASE_ANON_KEY ||
+  process.env.VITE_SUPABASE_ANON_KEY ||
   'sb_publishable_bJehhsPF6Hbg5nJKFCQWWw_Npz7gt1Z';
 
-export const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
+export const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
 /** Anon client carrying a user access token as Bearer — the RLS-scoped client. */
 export function jwtClient(token: string) {

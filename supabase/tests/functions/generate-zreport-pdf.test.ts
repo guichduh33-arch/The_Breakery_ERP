@@ -27,13 +27,15 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
 
+// S77: `||` (not `??`) — in CI an unset secret materializes as an EMPTY-STRING
+// env var, which `??` lets through (empty apikey -> UNAUTHORIZED_NO_AUTH_HEADER).
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL
-  ?? process.env.SUPABASE_URL
-  ?? 'http://127.0.0.1:54321';
-const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
+  || process.env.SUPABASE_URL
+  || 'http://127.0.0.1:54321';
+const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const ANON = process.env.SUPABASE_ANON_KEY
-  ?? process.env.VITE_SUPABASE_ANON_KEY
-  ?? 'sb_publishable_bJehhsPF6Hbg5nJKFCQWWw_Npz7gt1Z';
+  || process.env.VITE_SUPABASE_ANON_KEY
+  || 'sb_publishable_bJehhsPF6Hbg5nJKFCQWWw_Npz7gt1Z';
 
 const ZREPORT_PDF_FN_URL = `${SUPABASE_URL}/functions/v1/generate-zreport-pdf`;
 

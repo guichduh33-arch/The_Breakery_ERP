@@ -1,7 +1,7 @@
 # Session 77 — INDEX (nightly vert, critère de sortie n°1)
 
 > **Date :** 2026-07-14 · **Branche :** `swarm/session-77` · **Plan :** [`2026-07-14-session-77-nightly-plan.md`](2026-07-14-session-77-nightly-plan.md)
-> **Périmètre :** CI/tests uniquement — money-path intouché, **aucune migration**, aucun RPC créé/bumpé. Le seul write cloud de la session est nul (tous les runs pgTAP en BEGIN…ROLLBACK).
+> **Périmètre :** CI/tests — money-path intouché, aucun RPC créé/bumpé. **Une seule migration** (`_165`, déviation DEV-S77-06 : resserrage d'une CHECK promotions trouée découverte par le triage — F-3) ; tous les runs pgTAP en BEGIN…ROLLBACK.
 
 ## Livré
 
@@ -21,11 +21,16 @@
 - **DEV-S77-03** — Le login vitest ne passe plus par l'EF PIN (sauf suites qui la testent) : l'argument `pin` de `loginAs` est ignoré. Les PIN dans les call-sites sont conservés pour un diff minimal.
 - **DEV-S77-04** — `expenses.test.ts` : `approve_expense_v3` vérifie le PIN **de l'appelant** + SOD (créateur ≠ approbateur) et ne renvoie plus `je_id` → rôles inversés (créateur EMP000, approbateur EMP003 dont le PIN est connu) et JE retrouvé par `reference_type='expense', reference_id` — seule réparation vague 2 au-delà d'un rename mécanique.
 - **DEV-S77-05** — Durcissement miroir de `pgtap-pr.yml` (le smoke PR avait le même trou silencieux) — vérifié sans risque : aucun des 9 fichiers smoke n'était en `not ok`.
+- **DEV-S77-06** — **Migration `_165`** (hors périmètre annoncé « zéro migration », assumée) : `chk_promotion_type_fields` avait un **trou de sémantique NULL** (F-3) — `array_length('{}',1)` = NULL → CHECK NULL → **acceptée**. Un bogo à tableaux vides et un bundle à tableau vide passaient. Fix `COALESCE(array_length(...),0)` sur les 3 comparaisons + **purge de 24 lignes fantômes** « Bad bogo… » (fuites de `promotions-check-constraints.test.ts` : le test attendait le rejet, ne nettoyait donc jamais — 2 fuites/run ; 0 référence order_items/promotion_applications vérifiée avant purge). Repro rejeté post-fix (bogo ET bundle) ; ancre `promotions_bogo` re-passée **10/10** live. Pas de regen types (contrainte seulement).
+- **DEV-S77-07** — Jobs `pgtap` et `live-rpc-vitest` **sérialisés** (`needs: pgtap` + `if: always()`) : les deux frappent la même DB dev partagée ; la tempête de login masquait la concurrence inter-jobs (lignes chaudes `invoice_sequences`/`order_sequences`/`business_config`).
+- **DEV-S77-08** — `b2b_invoice.test.sql` bloc 3 : le replay du backfill `_131` repartait de 1 sur l'**année courante** et collisionnait avec la vraie série live dès la 1ʳᵉ facture réelle 2026 (créée le 2026-07-13 — le test ne pouvait pas le savoir à S68). Fixtures déplacées sur années synthétiques 2001/2002 (DML year-générique, sémantique inchangée) ; re-passé 4/4 live.
 
 ## Findings
 
 - **F-1 (produit)** — 1 combo vivant a `combo_base_price NULL` (créé via le CRUD BO) : le pré-requis de pricing serveur (`_resolve_combo_price_v1`) n'est pas gardé à la création. À exposer propriétaire — candidat garde BO/RPC.
 - **F-2 (données)** — Le PIN d'**EMP000** a dérivé : aucun des PIN historiques des tests (123456/111111/654321/285741…) ne vérifie. Probablement changé par un humain via l'app — ne PAS reset sans décision propriétaire. Les suites pgTAP mockent `pin_hash` en transaction (non affectées) ; vitest n'en dépend plus (magiclink), sauf fichiers PIN-path exclus.
+- **F-3 (produit, ✅ fixée en session — migration `_165`)** — Trou de sémantique NULL dans `chk_promotion_type_fields` : bogo/bundle à tableaux vides acceptés par la CHECK (cf. DEV-S77-06). Découverte via `promotions-check-constraints.test.ts` dont les 2 « échecs » étaient en réalité le bug produit.
+- **F-4 (CI/vitest, ✅ fixée)** — Dans GitHub Actions, un secret absent matérialise une env **chaîne vide** que `??` laisse passer → `createClient(url, '')` sur ~34 fichiers (« supabaseKey is required »). Tous les fallbacks de la suite passés à `||`.
 
 ## Dettes
 

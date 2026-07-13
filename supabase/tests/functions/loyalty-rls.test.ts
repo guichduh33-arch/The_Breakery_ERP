@@ -1,10 +1,9 @@
 // supabase/tests/functions/loyalty-rls.test.ts
 import { describe, it, expect, beforeAll } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
-import { loginAs } from './_helpers/auth';
+import { loginAs, ANON_KEY as ANON } from './_helpers/auth';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? 'http://127.0.0.1:54321';
-const ANON         = process.env.VITE_SUPABASE_ANON_KEY ?? '';
 const SERVICE      = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 
 describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('customers RLS — column GRANTs', () => {

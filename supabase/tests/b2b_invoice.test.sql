@@ -85,14 +85,19 @@ SELECT * FROM finish();
 ROLLBACK;
 
 -- Bloc 3 (Task 3) : backfill idempotent des commandes B2B existantes (ordre + seeding par année).
+-- S77 : fixtures déplacées sur des années SYNTHÉTIQUES passées (2001/2002) — la
+-- version 2025/2026 rejouait le backfill sur l'année courante en repartant de 1
+-- et collisionnait avec la vraie série live (INV/2026/00001 attribué à une
+-- commande réelle le 2026-07-13). Le DML testé est year-générique ; la
+-- sémantique (seeding par année + ordre created_at) est inchangée.
 BEGIN;
 SELECT plan(4);
-DELETE FROM invoice_sequences WHERE year IN (2025, 2026);
+DELETE FROM invoice_sequences WHERE year IN (2001, 2002);
 INSERT INTO orders (order_number, order_type, status, subtotal, tax_amount, total, created_at)
 VALUES
- ('BF-2026A','b2b','b2b_pending',10000,0,10000,'2026-01-15 10:00+00'),
- ('BF-2026B','b2b','b2b_pending',20000,0,20000,'2026-06-20 10:00+00'),
- ('BF-2025A','b2b','b2b_pending',30000,0,30000,'2025-12-10 10:00+00');
+ ('BF-2002A','b2b','b2b_pending',10000,0,10000,'2002-01-15 10:00+00'),
+ ('BF-2002B','b2b','b2b_pending',20000,0,20000,'2002-06-20 10:00+00'),
+ ('BF-2001A','b2b','b2b_pending',30000,0,30000,'2001-12-10 10:00+00');
 -- Backfill DML (copie exacte de la migration _131)
 DO $$
 DECLARE r RECORD; v_n INTEGER;
@@ -108,12 +113,12 @@ BEGIN
 END $$;
 SELECT is((SELECT count(*) FROM orders WHERE order_type='b2b' AND invoice_number IS NULL)::int, 0,
   'aucune commande B2B ne reste sans invoice_number');
-SELECT is((SELECT invoice_number FROM orders WHERE order_number='BF-2025A'), 'INV/2025/00001',
-  'commande 2025 = INV/2025/00001 (seeding par année)');
-SELECT is((SELECT invoice_number FROM orders WHERE order_number='BF-2026A'), 'INV/2026/00001',
-  'commande 2026 la plus ancienne = INV/2026/00001');
-SELECT is((SELECT invoice_number FROM orders WHERE order_number='BF-2026B'), 'INV/2026/00002',
-  'commande 2026 suivante = INV/2026/00002 (ordre created_at)');
+SELECT is((SELECT invoice_number FROM orders WHERE order_number='BF-2001A'), 'INV/2001/00001',
+  'commande 2001 = INV/2001/00001 (seeding par année)');
+SELECT is((SELECT invoice_number FROM orders WHERE order_number='BF-2002A'), 'INV/2002/00001',
+  'commande 2002 la plus ancienne = INV/2002/00001');
+SELECT is((SELECT invoice_number FROM orders WHERE order_number='BF-2002B'), 'INV/2002/00002',
+  'commande 2002 suivante = INV/2002/00002 (ordre created_at)');
 SELECT * FROM finish();
 ROLLBACK;
 

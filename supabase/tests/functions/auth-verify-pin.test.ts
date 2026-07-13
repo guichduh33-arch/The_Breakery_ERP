@@ -1,8 +1,10 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
+// S77: anon key from the shared helper (real publishable fallback) — the
+// `?? ''` form fed an empty key in CI where the unset secret is "".
+import { ANON_KEY as ANON } from './_helpers/auth';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? 'http://127.0.0.1:54321';
-const ANON = process.env.VITE_SUPABASE_ANON_KEY ?? '';
 const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 
 const FN_URL = `${SUPABASE_URL}/functions/v1/auth-verify-pin`;
