@@ -20,9 +20,11 @@ export interface B2BFieldsSectionProps {
   values:   B2BFieldValues;
   canEdit:  boolean;
   onChange: (next: B2BFieldValues) => void;
+  /** S76 — present only when the caller has `b2b.balance.adjust`. */
+  onAdjustBalance?: () => void;
 }
 
-export function B2BFieldsSection({ values, canEdit, onChange }: B2BFieldsSectionProps): JSX.Element {
+export function B2BFieldsSection({ values, canEdit, onChange, onAdjustBalance }: B2BFieldsSectionProps): JSX.Element {
   function update<K extends keyof B2BFieldValues>(key: K, raw: string): void {
     let next: B2BFieldValues[K];
     if (key === 'b2b_payment_terms_days' || key === 'b2b_credit_limit') {
@@ -91,7 +93,18 @@ export function B2BFieldsSection({ values, canEdit, onChange }: B2BFieldsSection
 
       <div className="flex items-center justify-between border-t border-border-subtle pt-3 text-sm">
         <span className="text-text-secondary">Outstanding AR</span>
-        <span className="font-mono text-text-primary" data-testid="b2b-balance">{balanceDisplay}</span>
+        <span className="flex items-center gap-3">
+          <span className="font-mono text-text-primary" data-testid="b2b-balance">{balanceDisplay}</span>
+          {onAdjustBalance ? (
+            <button
+              type="button"
+              onClick={onAdjustBalance}
+              className="text-xs uppercase tracking-wide text-gold hover:underline"
+            >
+              Adjust…
+            </button>
+          ) : null}
+        </span>
       </div>
     </section>
   );

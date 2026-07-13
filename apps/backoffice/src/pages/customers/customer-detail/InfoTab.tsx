@@ -3,16 +3,21 @@
 // "Info" tab of the customer detail page: contact card + optional B2B account
 // card. Co-located split (S57 E-D4) — behaviour unchanged.
 
-import type { JSX } from 'react';
+import { useState, type JSX } from 'react';
 import { Mail, Phone } from 'lucide-react';
 import { Card } from '@breakery/ui';
 import type { CustomerDetailRow } from '@/features/customers/hooks/useCustomerDetail.js';
 import { useUpdateRetailCreditLimit } from '@/features/customers/hooks/useUpdateRetailCreditLimit.js';
 import { RetailCreditLimitSection } from '@/features/customers/components/RetailCreditLimitSection.js';
+import { useAuthStore } from '@/stores/authStore.js';
+import { AdjustB2bBalanceModal } from '@/features/btob/components/AdjustB2bBalanceModal.js';
 import { rp } from './shared.js';
 
 export function InfoTab({ customer, canEdit }: { customer: CustomerDetailRow; canEdit: boolean }): JSX.Element {
   const updateCreditLimit = useUpdateRetailCreditLimit(customer.id);
+  const hasPermission = useAuthStore((s) => s.hasPermission);
+  const canAdjustBalance = customer.customer_type === 'b2b' && hasPermission('b2b.balance.adjust');
+  const [adjustOpen, setAdjustOpen] = useState(false);
 
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -47,11 +52,31 @@ export function InfoTab({ customer, canEdit }: { customer: CustomerDetailRow; ca
             <div className="text-sm text-text-primary">Tax ID (NPWP): {customer.b2b_tax_id}</div>
           )}
           <div className="text-sm text-text-primary">Credit limit: <strong>{rp(customer.b2b_credit_limit)}</strong></div>
-          <div className="text-sm text-text-primary">Current balance: <strong>{rp(customer.b2b_current_balance)}</strong></div>
+          <div className="flex items-center justify-between text-sm text-text-primary">
+            <span>Current balance: <strong>{rp(customer.b2b_current_balance)}</strong></span>
+            {canAdjustBalance && (
+              <button
+                type="button"
+                onClick={() => setAdjustOpen(true)}
+                className="text-xs uppercase tracking-wide text-gold hover:underline"
+              >
+                Adjust…
+              </button>
+            )}
+          </div>
           {customer.b2b_payment_terms_days != null && (
             <div className="text-xs text-text-muted">Payment terms: {customer.b2b_payment_terms_days} days net</div>
           )}
         </Card>
+      )}
+
+      {customer.customer_type === 'b2b' && (
+        <AdjustB2bBalanceModal
+          customerId={customer.id}
+          customerName={customer.b2b_company_name ?? customer.name}
+          open={adjustOpen}
+          onClose={() => setAdjustOpen(false)}
+        />
       )}
 
       {customer.customer_type === 'retail' && (
