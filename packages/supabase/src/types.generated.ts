@@ -2946,6 +2946,234 @@ export type Database = {
         }
         Relationships: []
       }
+      pos_events_2026_07: {
+        Row: {
+          actor_id: string | null
+          amount: number | null
+          client_event_id: string
+          device_id: string
+          device_seq: number | null
+          event_type: Database["public"]["Enums"]["pos_event_type"]
+          id: string
+          occurred_at: string
+          order_id: string | null
+          order_item_id: string | null
+          order_number_snap: string | null
+          payload: Json
+          reason: string | null
+          recorded_at: string
+          session_id: string | null
+          synced_by: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          amount?: number | null
+          client_event_id: string
+          device_id: string
+          device_seq?: number | null
+          event_type: Database["public"]["Enums"]["pos_event_type"]
+          id?: string
+          occurred_at: string
+          order_id?: string | null
+          order_item_id?: string | null
+          order_number_snap?: string | null
+          payload?: Json
+          reason?: string | null
+          recorded_at?: string
+          session_id?: string | null
+          synced_by?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          amount?: number | null
+          client_event_id?: string
+          device_id?: string
+          device_seq?: number | null
+          event_type?: Database["public"]["Enums"]["pos_event_type"]
+          id?: string
+          occurred_at?: string
+          order_id?: string | null
+          order_item_id?: string | null
+          order_number_snap?: string | null
+          payload?: Json
+          reason?: string | null
+          recorded_at?: string
+          session_id?: string | null
+          synced_by?: string | null
+        }
+        Relationships: []
+      }
+      pos_events_2026_08: {
+        Row: {
+          actor_id: string | null
+          amount: number | null
+          client_event_id: string
+          device_id: string
+          device_seq: number | null
+          event_type: Database["public"]["Enums"]["pos_event_type"]
+          id: string
+          occurred_at: string
+          order_id: string | null
+          order_item_id: string | null
+          order_number_snap: string | null
+          payload: Json
+          reason: string | null
+          recorded_at: string
+          session_id: string | null
+          synced_by: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          amount?: number | null
+          client_event_id: string
+          device_id: string
+          device_seq?: number | null
+          event_type: Database["public"]["Enums"]["pos_event_type"]
+          id?: string
+          occurred_at: string
+          order_id?: string | null
+          order_item_id?: string | null
+          order_number_snap?: string | null
+          payload?: Json
+          reason?: string | null
+          recorded_at?: string
+          session_id?: string | null
+          synced_by?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          amount?: number | null
+          client_event_id?: string
+          device_id?: string
+          device_seq?: number | null
+          event_type?: Database["public"]["Enums"]["pos_event_type"]
+          id?: string
+          occurred_at?: string
+          order_id?: string | null
+          order_item_id?: string | null
+          order_number_snap?: string | null
+          payload?: Json
+          reason?: string | null
+          recorded_at?: string
+          session_id?: string | null
+          synced_by?: string | null
+        }
+        Relationships: []
+      }
+      pos_events_2026_09: {
+        Row: {
+          actor_id: string | null
+          amount: number | null
+          client_event_id: string
+          device_id: string
+          device_seq: number | null
+          event_type: Database["public"]["Enums"]["pos_event_type"]
+          id: string
+          occurred_at: string
+          order_id: string | null
+          order_item_id: string | null
+          order_number_snap: string | null
+          payload: Json
+          reason: string | null
+          recorded_at: string
+          session_id: string | null
+          synced_by: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          amount?: number | null
+          client_event_id: string
+          device_id: string
+          device_seq?: number | null
+          event_type: Database["public"]["Enums"]["pos_event_type"]
+          id?: string
+          occurred_at: string
+          order_id?: string | null
+          order_item_id?: string | null
+          order_number_snap?: string | null
+          payload?: Json
+          reason?: string | null
+          recorded_at?: string
+          session_id?: string | null
+          synced_by?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          amount?: number | null
+          client_event_id?: string
+          device_id?: string
+          device_seq?: number | null
+          event_type?: Database["public"]["Enums"]["pos_event_type"]
+          id?: string
+          occurred_at?: string
+          order_id?: string | null
+          order_item_id?: string | null
+          order_number_snap?: string | null
+          payload?: Json
+          reason?: string | null
+          recorded_at?: string
+          session_id?: string | null
+          synced_by?: string | null
+        }
+        Relationships: []
+      }
+      pos_events_default: {
+        Row: {
+          actor_id: string | null
+          amount: number | null
+          client_event_id: string
+          device_id: string
+          device_seq: number | null
+          event_type: Database["public"]["Enums"]["pos_event_type"]
+          id: string
+          occurred_at: string
+          order_id: string | null
+          order_item_id: string | null
+          order_number_snap: string | null
+          payload: Json
+          reason: string | null
+          recorded_at: string
+          session_id: string | null
+          synced_by: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          amount?: number | null
+          client_event_id: string
+          device_id: string
+          device_seq?: number | null
+          event_type: Database["public"]["Enums"]["pos_event_type"]
+          id?: string
+          occurred_at: string
+          order_id?: string | null
+          order_item_id?: string | null
+          order_number_snap?: string | null
+          payload?: Json
+          reason?: string | null
+          recorded_at?: string
+          session_id?: string | null
+          synced_by?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          amount?: number | null
+          client_event_id?: string
+          device_id?: string
+          device_seq?: number | null
+          event_type?: Database["public"]["Enums"]["pos_event_type"]
+          id?: string
+          occurred_at?: string
+          order_id?: string | null
+          order_item_id?: string | null
+          order_number_snap?: string | null
+          payload?: Json
+          reason?: string | null
+          recorded_at?: string
+          session_id?: string | null
+          synced_by?: string | null
+        }
+        Relationships: []
+      }
       pos_sessions: {
         Row: {
           cash_in_total: number
@@ -6944,6 +7172,10 @@ export type Database = {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
+      get_pos_activity_v1: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
+      }
       get_pos_b2b_debts_v3: {
         Args: { p_customer_id?: string; p_lookback_days?: number }
         Returns: {
@@ -6961,24 +7193,16 @@ export type Database = {
           total: number
         }[]
       }
-      get_pos_payment_breakdown_v1: {
-        Args: { p_end_date: string; p_start_date: string }
-        Returns: Json
-      }
-      get_pos_activity_v1: {
-        Args: { p_end_date: string; p_start_date: string }
-        Returns: Json
-      }
       get_pos_events_v1: {
         Args: {
-          p_start_date: string
+          p_actor_id?: string
+          p_cursor?: string
+          p_device_id?: string
           p_end_date: string
           p_event_types?: string[]
-          p_device_id?: string
-          p_actor_id?: string
-          p_order_id?: string
           p_limit?: number
-          p_cursor?: string
+          p_order_id?: string
+          p_start_date: string
         }
         Returns: Json
       }
@@ -6990,7 +7214,7 @@ export type Database = {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json
       }
-      get_pos_top_products_v1: {
+      get_pos_payment_breakdown_v1: {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json
       }
@@ -6999,6 +7223,10 @@ export type Database = {
         Returns: Json
       }
       get_pos_sessions_report_v1: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: Json
+      }
+      get_pos_top_products_v1: {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json
       }
