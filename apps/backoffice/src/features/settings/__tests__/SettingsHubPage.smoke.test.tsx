@@ -1,17 +1,21 @@
 // apps/backoffice/src/features/settings/__tests__/SettingsHubPage.smoke.test.tsx
 // Session 14 / Phase 6.A — verifies the rebuilt categorized settings hub.
 //
-// S73 Lot 3 (Task 11) — hub cleanup: no more dead-end "(Soon)" tiles, the 2
-// remaining `planned` tiles (KDS Configuration, Floor Plan) still render
-// disabled, and permission-gated tiles (Security) hide when the user lacks
-// the route's permission.
+// S73 Lot 3 (Task 11) — hub cleanup: no more dead-end "(Soon)" tiles, and
+// permission-gated tiles (Security) hide when the user lacks the route's
+// permission.
+//
+// S75 Task 3 — Floor Plan shipped as a real linked+permission-gated tile
+// (was `planned: true`).
+// S75 Task 8 — KDS Configuration shipped as a real linked tile (was the
+// last `planned: true` tile) — the hub now has ZERO planned tiles.
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import SettingsHubPage from '@/pages/settings/SettingsHubPage.js';
 
-let currentPerms = new Set<string>(['settings.security.manage', 'accounting.period.close', 'expenses.thresholds.read']);
+let currentPerms = new Set<string>(['settings.security.manage', 'accounting.period.close', 'expenses.thresholds.read', 'tables.update']);
 
 vi.mock('@/stores/authStore.js', () => ({
   useAuthStore: (sel: (s: { hasPermission: (p: string) => boolean }) => unknown) =>
@@ -29,7 +33,7 @@ function renderPage() {
 describe('SettingsHubPage', () => {
   beforeEach(() => {
     cleanup();
-    currentPerms = new Set(['settings.security.manage', 'accounting.period.close', 'expenses.thresholds.read']);
+    currentPerms = new Set(['settings.security.manage', 'accounting.period.close', 'expenses.thresholds.read', 'tables.update']);
   });
 
   it('renders the Settings title with subtitle from the screenshot', () => {
@@ -60,16 +64,22 @@ describe('SettingsHubPage', () => {
     expect(screen.queryByText(/\(Soon\)/i)).not.toBeInTheDocument();
   });
 
-  it('renders the 2 planned tiles (KDS Configuration, Floor Plan) as disabled', () => {
+  it('renders zero planned (dead-end) tiles — KDS Configuration is now linked', () => {
     renderPage();
 
-    const kds = screen.getByText(/^KDS Configuration$/i).closest('div[aria-disabled="true"]');
-    expect(kds).not.toBeNull();
-    expect(kds?.textContent).toMatch(/Planned — dedicated session/i);
+    expect(screen.queryByText(/Planned — dedicated session/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/^KDS Configuration$/i).closest('a')?.getAttribute('href')).toBe('/backoffice/settings/kds');
+  });
 
-    const floorPlan = screen.getByText(/^Floor Plan$/i).closest('div[aria-disabled="true"]');
-    expect(floorPlan).not.toBeNull();
-    expect(floorPlan?.textContent).toMatch(/Planned — dedicated session/i);
+  it('Floor Plan is linked and permission-gated (tables.update) — S75 Task 3', () => {
+    renderPage();
+    expect(screen.getByText(/^Floor Plan$/i).closest('a')?.getAttribute('href')).toBe('/backoffice/settings/floor-plan');
+  });
+
+  it('hides the Floor Plan tile when the user lacks tables.update', () => {
+    currentPerms = new Set();
+    renderPage();
+    expect(screen.queryByText(/^Floor Plan$/i)).not.toBeInTheDocument();
   });
 
   it('POS Configuration, Product Categories, Product Types, Notifications, and Settings History are all linked (no more Soon)', () => {

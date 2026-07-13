@@ -35,18 +35,25 @@
 //   - Canvas grid: gap-8 between cells (generous spacing).
 //   - All interactive elements meet 44px minimum.
 //
-// Sections strategy: same as POS modal — sort_order < 100 = Interior,
-// >= 100 = Terrace. Backwards-compatible (interior holds everything if
-// no table has sort_order ≥ 100).
+// Sections strategy (S75 lot 1): same as the POS modal — tables are
+// grouped by their real joined `table_sections` row (see
+// ../floor-plan/sections.ts, `bucketTablesBySection`), ordered by
+// `table_sections.sort_order`. Legacy NULL-section tables fall back under
+// an "Interior" bucket. Replaces the S14 `sort_order >= 100` heuristic.
 
 import { useMemo, useState, useCallback } from 'react';
-import { Home, Trees, Users } from 'lucide-react';
+import { Home, Trees, MapPin, Users } from 'lucide-react';
 import type { JSX } from 'react';
 import type { RestaurantTable } from '@breakery/domain';
 import { cn } from '@breakery/ui';
 import { TableCell, type FloorPlanTable, type TableStatus } from '../floor-plan/TableCell';
+import { bucketTablesBySection } from '../floor-plan/sections';
 
-export type FloorPlanSection = 'interior' | 'terrace';
+function sectionIcon(label: string): JSX.Element {
+  if (label === 'Interior') return <Home className="h-5 w-5" aria-hidden />;
+  if (label === 'Terrace') return <Trees className="h-5 w-5" aria-hidden />;
+  return <MapPin className="h-5 w-5" aria-hidden />;
+}
 
 export interface FloorPlanViewProps {
   tables: RestaurantTable[];
@@ -58,18 +65,6 @@ export interface FloorPlanViewProps {
   onTableSelect: (tableName: string) => void;
   /** Optional: header subtitle override. */
   subtitle?: string;
-}
-
-function bucketTables(
-  tables: RestaurantTable[],
-): Record<FloorPlanSection, RestaurantTable[]> {
-  const interior: RestaurantTable[] = [];
-  const terrace: RestaurantTable[] = [];
-  for (const t of tables) {
-    if (t.sort_order >= 100) terrace.push(t);
-    else interior.push(t);
-  }
-  return { interior, terrace };
 }
 
 function toFloorPlanTable(
@@ -93,13 +88,10 @@ export function FloorPlanView({
   onTableSelect,
   subtitle,
 }: FloorPlanViewProps): JSX.Element {
-  const buckets = useMemo(() => bucketTables(tables), [tables]);
-  // Default to whichever section actually has tables; prefer interior if both.
-  const initialSection: FloorPlanSection =
-    buckets.interior.length === 0 && buckets.terrace.length > 0 ? 'terrace' : 'interior';
-  const [section, setSection] = useState<FloorPlanSection>(initialSection);
-
-  const visible = buckets[section];
+  const sections = useMemo(() => bucketTablesBySection(tables), [tables]);
+  const [sectionKey, setSectionKey] = useState<string | null>(null);
+  const visibleSection = sections.find((s) => s.key === sectionKey) ?? sections[0];
+  const visible = visibleSection?.tables ?? [];
 
   const handleTap = useCallback(
     (table: RestaurantTable): void => {
@@ -137,27 +129,23 @@ export function FloorPlanView({
         className="px-6 py-4 flex items-center gap-3 border-b border-border-subtle bg-bg-elevated"
         aria-label="Floor sections"
       >
-        <SectionTab
-          icon={<Home className="h-5 w-5" aria-hidden />}
-          label="Interior"
-          count={buckets.interior.length}
-          active={section === 'interior'}
-          onClick={() => setSection('interior')}
-        />
-        <SectionTab
-          icon={<Trees className="h-5 w-5" aria-hidden />}
-          label="Terrace"
-          count={buckets.terrace.length}
-          active={section === 'terrace'}
-          onClick={() => setSection('terrace')}
-        />
+        {sections.map((s) => (
+          <SectionTab
+            key={s.key}
+            icon={sectionIcon(s.label)}
+            label={s.label}
+            count={s.tables.length}
+            active={s.key === (visibleSection?.key ?? null)}
+            onClick={() => setSectionKey(s.key)}
+          />
+        ))}
       </nav>
 
       {/* Floor canvas */}
       <main
         className="flex-1 overflow-auto p-6"
         data-testid="tablet-floor-plan-canvas"
-        aria-label={`Floor plan — ${section}`}
+        aria-label={`Floor plan — ${visibleSection?.label ?? ''}`}
       >
         <div
           className={cn(

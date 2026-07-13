@@ -17,7 +17,17 @@ const CATEGORY_TYPES: readonly { value: CategoryType; label: string }[] = [
 ];
 
 const DISPATCH_STATIONS = ['none', 'kitchen', 'barista', 'display'] as const;
-const KDS_STATIONS = ['expo', 'kitchen', 'bar', 'pastry', 'bakery'] as const;
+// S75 (task 7) — mirrors the DB CHECK on categories.kds_station (migration
+// 20260517000150_add_categories_kds_station.sql): hot|cold|bar|prep|expo.
+// The previous list ('kitchen'/'pastry'/'bakery') violated the constraint —
+// a latent bug fixed here.
+const KDS_STATIONS = [
+  { value: 'hot',  label: 'Hot kitchen' },
+  { value: 'cold', label: 'Cold prep' },
+  { value: 'bar',  label: 'Bar' },
+  { value: 'prep', label: 'Prep / Bakery' },
+  { value: 'expo', label: 'Expo / Pickup' },
+] as const;
 
 export interface CategoryFormDialogProps {
   mode:      'create' | 'edit';
@@ -147,7 +157,7 @@ export function CategoryFormDialog({ mode, category, onClose }: CategoryFormDial
                 onChange={(e) => { setKds(e.target.value); }}
                 className={cn(selectClassName)}
               >
-                {KDS_STATIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+                {KDS_STATIONS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
               </select>
             </div>
           </div>

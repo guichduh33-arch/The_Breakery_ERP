@@ -40,6 +40,7 @@ function makeItem(overrides: Partial<KdsItemRow>): KdsItemRow {
     kitchen_status: 'pending',
     dispatch_station: 'kitchen',
     dispatch_stations: null,
+    kds_station: null,
     order_number: '#B-1',
     order_status: 'draft',
     order_notes: null,

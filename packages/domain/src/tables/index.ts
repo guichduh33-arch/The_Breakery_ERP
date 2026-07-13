@@ -1,1 +1,1 @@
-export type { RestaurantTable } from './types.js';
+export type { RestaurantTable, TableSection } from './types.js';
