@@ -92,6 +92,13 @@ jobs:
   live-rpc-vitest:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # S77: run AFTER the pgtap job, not in parallel with it — both hit the SAME
+    # shared dev DB, and the vitest flows contend with pgTAP suites on hot rows
+    # (invoice_sequences, order_sequences, business_config id=1 pins) → deadlocks.
+    # This was invisible before S77 only because the login rate-limit storm
+    # killed the vitest job within ~2 min, leaving pgtap alone on the DB.
+    needs: pgtap
+    if: ${{ always() }}
     env:
       SUPABASE_URL: https://ikcyvlovptebroadgtvd.supabase.co
       VITE_SUPABASE_URL: https://ikcyvlovptebroadgtvd.supabase.co
