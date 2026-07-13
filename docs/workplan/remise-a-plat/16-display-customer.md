@@ -1,6 +1,7 @@
 # Module 16 — Écran côté client
 
 > ⚠️ **Mise à jour S59 (2026-07-04, `swarm/session-59`)** : **D1.2 livré** — le ticker de l'écran client a désormais une section « Prêt à retirer » branchée sur les items réellement `ready` (`useReadyOrders`, plafond 5, tri urgence) ; un bump KDS y fait apparaître la commande sans paiement préalable. C-B1.3 n'est plus 🟠. Voir `docs/workplan/plans/archive/2026-07-04-session-59-INDEX.md`.
+> ✅ **Mise à jour S76 (2026-07-13)** : **⚫#10 constaté câblé, pas du code neuf cette session** — `CustomerDisplayView.tsx` **est bien importée** par `CustomerDisplayPage.tsx` (le rendu du miroir panier l'utilise réellement, `l.28,200`) : le constat « jamais importée hors tests » de l'inventaire `5b0fa92` était **périmé**, livré avec le split customer display de S67. §A et le bonus §« Bonus code » ci-dessous sont réconciliés. Voir [`../plans/2026-07-13-session-76-plan.md`](../plans/2026-07-13-session-76-plan.md).
 
 > **Remise à plat — analyse comparative.** Doc : Description v1.2 (2026-07-03), module 16. Code : commit `5b0fa92` (2026-07-03).
 > **Statut annoncé par la doc :** Partiel
@@ -14,7 +15,7 @@
 - **« Now Serving » + fil des commandes** : carte héro de la dernière commande payée + ticker des 5 commandes `paid`/`completed` des 15 dernières minutes (n° commande, pill statut, Table N / Pickup) — `features/display/hooks/useDisplayOrders.ts` (limit 5, fenêtre 15 min), `components/CurrentOrderCard.tsx`, `components/OrderQueueTicker.tsx`. Rafraîchi < 1 s par realtime `orders` + resync reconnexion — `hooks/useDisplayRealtime.ts:26-50` (`useReconnectInvalidate`). [UI câblée]
 - **Mode accueil / identité de marque** : header « The Breakery — French Bakery & Pastry », état vide « Welcome to The Breakery », footer configurable **par terminal** (POS Settings → message d'accueil, `posSettingsStore.displayFooterMessage`, défaut « Open daily · 07:00 — 21:00 ») — `components/BrandedLayout.tsx:28-43`, `CustomerDisplayPage.tsx:31-38`. [UI câblée]
 - **Purement récepteur** : aucune écriture DB depuis `/display` (lectures `orders` + réception broadcasts) — conforme au principe de la doc. [vérifié]
-- Existe aussi sur le disque : `CustomerDisplayView.tsx` (vue riche avec photos produits, badges promo/annulé, bande de totaux) — **jamais importée hors tests** ; la page utilise `CDActiveCartView`, plus sommaire. [⚫ NON-CÂBLÉ]
+- ~~Existe aussi sur le disque : `CustomerDisplayView.tsx` (vue riche avec photos produits, badges promo/annulé, bande de totaux) — **jamais importée hors tests** ; la page utilise `CDActiveCartView`, plus sommaire. [⚫ NON-CÂBLÉ]~~ **Constaté câblé S76** : `CustomerDisplayPage.tsx` importe et rend bien `CustomerDisplayView` (`l.28,200`) — le constat `5b0fa92` était périmé, livré avec le split S67.
 
 ## B. Ce que la doc demande
 
@@ -44,7 +45,7 @@
 - 🔵 Appairage kiosque sécurisé complet (code d'appairage `display_screens` + JWT kiosque via EF + refresh auto + fallback ré-appairage) — la doc ne le mentionne pas.
 - 🔵 Message d'accueil du footer déjà personnalisable par terminal (petit début de B2.2).
 - 🔵 Nom du client fidèle attaché affiché sur le panier.
-- 🔵 `CustomerDisplayView` (photos produits, badges promo/annulé) prêt mais non branché (⚫) — candidat gratuit pour enrichir B1.1.
+- 🔵 ~~`CustomerDisplayView` (photos produits, badges promo/annulé) prêt mais non branché (⚫) — candidat gratuit pour enrichir B1.1.~~ **Constaté câblé S76** — déjà consommé par `CustomerDisplayPage.tsx` (livré S67, constat `5b0fa92` périmé).
 
 ## D. Plan de correction du module
 

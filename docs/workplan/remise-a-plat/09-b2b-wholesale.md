@@ -8,6 +8,8 @@
 >
 > **✅ Mise à jour S69 (2026-07-08) — B1.1 PRIX NÉGOCIÉ B2B LIVRÉ.** Le prix négocié B2B **par client** existe désormais : nouvelle table **`customer_product_prices`** (client × produit × prix), permission dédiée **`customer_prices.manage`**, RPCs `upsert/delete_customer_product_price_v1`. La résolution du prix est **serveur** via le helper interne `_resolve_b2b_line_price_v1` (**négocié client > prix catégorie > retail**), câblée dans **`create_b2b_order_v4 → v5`** — le `unit_price` envoyé par le client est **ignoré** (credit-check et facturation sur le prix résolu), pattern S51 « prix canonique serveur ». BO : `NegotiatedPricesSection` sur la fiche client + prefill du modal B2B. Le verdict C-B1.1 ci-dessous passe donc de 🔴 MANQUANT à ✅ CONFORME (S69). Reste seul surclamé : **cycle de livraison** (D3.1). Détail : [`../plans/2026-07-08-session-69-INDEX.md`](../plans/2026-07-08-session-69-INDEX.md). — corps figé ci-dessous NON réécrit (`5b0fa92`).
 > **🚫 Mise à jour 2026-07-10 — CYCLE DE LIVRAISON B2B HORS PÉRIMÈTRE (décision propriétaire).** Pas de **livraison motorisée** B2B : les clients pros **viennent récupérer leur commande sur place** (retrait, pas d'expédition ni de tournée). Le verdict 🔴 MANQUANT de **B1.3** (cycle confirmée→préparation→prête→livrée + livraisons partielles) et le chantier **D3.1 (cycle de livraison)** sont donc **ANNULÉS** — le modèle actuel (commande `b2b_pending` → `paid`/`voided`, **stock déduit à la création**) est le comportement retenu, pas une lacune. L'item dépendant **D-B2.4 (avoirs officiels)** tombe également. Côté doc v1.3 : **retirer** la revendication de livraison (module 09-B1.3) au lieu de la reformuler « À venir ». Le fait générateur de la JE AR (module 10) reste « à la création ». Corps figé ci-dessous NON réécrit.
+>
+> **✅ Mise à jour S76 (2026-07-13)** : les 2 RPCs « bonus non exposés » (§C) sont **câblés**. **⚫#12** : hook `useB2bBalanceDrift` + bandeau de warning drift solde cache↔ledger sur `B2BDashboardPage`, gate `b2b.read` (commit `78b24fc4`). **⚫#13** : `AdjustB2bBalanceModal` (PIN-gated, idempotency-keyed) + `useAdjustB2bBalance`, action câblée sur la carte B2B inline de **`InfoTab`** (fiche client, module 08) — **pas** `B2BFieldsSection` (commits `90fb92ed`/`d51a17aa`). **Découverte S76** : en câblant #13, `B2BFieldsSection.tsx` (référencé en §A « Fiche client B2B », l.21) s'est révélé **sans aucun importeur en production** (`InfoTab` porte sa propre carte B2B inline) — **purgé** (décision propriétaire 2026-07-13, commit `b55b276b`) ; `RetailCreditLimitSection.tsx` reformulé en conséquence. Les bullets « bonus non exposé » de la section C (ex-l.55-56) et les items D1/D2 correspondants sont réconciliés ci-dessous. Détail : [`../plans/2026-07-13-session-76-plan.md`](../plans/2026-07-13-session-76-plan.md).
 
 ## A. Ce qui fonctionne réellement (code vérifié)
 
@@ -52,8 +54,8 @@
 | B1.7 | Aging 4 buckets, POS == BO | `view_ar_aging` (current/31-60/61-90/90+) ; `get_pos_b2b_debts_v3` dérivé des mêmes allocations | ✅ CONFORME |
 
 **Bonus code (le code fait plus que la doc) :**
-- 🔵 `reconcile_b2b_balance_v1` (détection de drift solde cache ↔ ledger) — mais non exposé en UI.
-- 🔵 `adjust_b2b_balance_v2` (ajustement manuel avec JE + PIN manager) — non exposé en UI.
+- 🔵 ~~`reconcile_b2b_balance_v1` (détection de drift solde cache ↔ ledger) — mais non exposé en UI.~~ **Câblé S76** : bandeau de warning drift sur `B2BDashboardPage` (`useB2bBalanceDrift`, commit `78b24fc4`).
+- 🔵 ~~`adjust_b2b_balance_v2` (ajustement manuel avec JE + PIN manager) — non exposé en UI.~~ **Câblé S76** : `AdjustB2bBalanceModal` PIN-gated sur la carte B2B inline de la fiche client (`InfoTab`), commit `90fb92ed`.
 - 🔵 Page B2B Settings (`update_b2b_settings_v1`) non mentionnée par la doc.
 - 🔵 Idempotence complète (création, paiement, annulation).
 
@@ -61,12 +63,12 @@
 
 ### D1. Quick wins (< 1 session, pas de spec)
 - **Persister `delivery_date` sur `orders`** (colonne + affichage dans B2bInvoicesTab) au lieu du seul audit metadata. Fichiers : nouvelle migration, `useCreateB2bOrder.ts`, `B2bInvoicesTab.tsx`. Done = la date saisie au modal est visible sur la facture listée.
-- **Câbler `reconcile_b2b_balance_v1`** en bandeau d'alerte sur le B2B Dashboard (drift ≠ 0 → warning). Fichiers : nouveau hook + `B2BDashboardPage.tsx`. Done = drift visible sans SQL.
+- ✅ **Câbler `reconcile_b2b_balance_v1`** en bandeau d'alerte sur le B2B Dashboard (drift ≠ 0 → warning) — **SOLDÉ S76** (`useB2bBalanceDrift` + `B2BDashboardPage.tsx`, commit `78b24fc4`).
 - **D4 immédiat** : amender la doc (voir D4) — c'est le correctif le plus honnête à court terme pour B1.1/B1.3/B1.4.
 
 ### D2. Chantiers moyens (1 session, plan requis)
 - ✅ **Facture PDF B2B — SOLDÉ (S68, 2026-07-08)** : template `b2b_invoice` + bouton dans `B2bInvoicesTab` ; numérotation = série dédiée `invoice_sequences` **annuelle continue** `INV/YYYY/NNNNN`, attribuée à la création (`create_b2b_order_v4`) + backfill. Aucune ligne PB1 (NON-PKP). Cf. [`../plans/2026-07-08-session-68-INDEX.md`](../plans/2026-07-08-session-68-INDEX.md).
-- **Exposer `adjust_b2b_balance_v2`** (modal PIN-gated sur la fiche client B2B) pour les corrections d'encours.
+- ✅ **Exposer `adjust_b2b_balance_v2`** (modal PIN-gated sur la fiche client B2B) pour les corrections d'encours — **SOLDÉ S76** (`AdjustB2bBalanceModal` + `useAdjustB2bBalance` sur `InfoTab`, commits `90fb92ed`/`d51a17aa`).
 
 ### D3. Chantiers lourds (spec dédiée avant code)
 - **Cycle de livraison + livraisons partielles** : statuts de commande B2B, bons de livraison, déduction stock **à la livraison** (et non à la création) — impacte le stock, la compta (moment de reconnaissance du revenu/AR) et l'annulation. Spec obligatoire.
