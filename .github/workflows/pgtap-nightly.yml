@@ -39,8 +39,10 @@ jobs:
           shopt -s nullglob
           for f in supabase/tests/*.test.sql; do
             echo "=== Running $f ==="
-            out=$(psql "$PGURL" -v ON_ERROR_STOP=1 -f "$f" 2>&1)
-            rc=$?
+            # `|| rc=$?` keeps the runner's implicit `bash -e` from killing the
+            # whole loop on the first failing file (a bare assignment would).
+            rc=0
+            out=$(psql "$PGURL" -v ON_ERROR_STOP=1 -f "$f" 2>&1) || rc=$?
             printf '%s\n' "$out"
             not_ok=$(printf '%s\n' "$out" | grep -cE '^[[:space:]]*not ok [0-9]' || true)
             if [ "$rc" -ne 0 ] || [ "$not_ok" -gt 0 ]; then

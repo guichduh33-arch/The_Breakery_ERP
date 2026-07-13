@@ -93,8 +93,10 @@ jobs:
             echo "=== Running $f ==="
             # S77: fail on psql error OR any TAP 'not ok' line (assertion
             # failures never flip psql's exit code — mirror of pgtap-nightly).
-            out=$(psql "$PGURL" -v ON_ERROR_STOP=1 -f "$f" 2>&1)
-            rc=$?
+            # `|| rc=$?` keeps the runner's implicit `bash -e` from killing
+            # the loop on the first failing file.
+            rc=0
+            out=$(psql "$PGURL" -v ON_ERROR_STOP=1 -f "$f" 2>&1) || rc=$?
             printf '%s\n' "$out"
             not_ok=$(printf '%s\n' "$out" | grep -cE '^[[:space:]]*not ok [0-9]' || true)
             if [ "$rc" -ne 0 ] || [ "$not_ok" -gt 0 ]; then
