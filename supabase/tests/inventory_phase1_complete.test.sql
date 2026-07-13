@@ -183,7 +183,10 @@ SELECT ok(
 
 -- ---------------------------------------------------------------------------
 -- T13 — has_permission v8 : MANAGER N'A PAS opname.finalize / production.delete /
---       recipes.update / sections.update (réservées ADMIN+)
+--       sections.update (réservées ADMIN+).
+-- S77 : inventory.recipes.update RETIRÉE de la liste — la spec recettes
+-- (S13 Phase 2.A, migration 20260517000060) l'accorde DÉLIBÉRÉMENT à MANAGER
+-- (« manager+ INSERT/UPDATE ») ; l'assertion Phase 1 était antérieure à ce grant.
 -- ---------------------------------------------------------------------------
 DO $$
 DECLARE v_uid UUID;
@@ -194,14 +197,14 @@ BEGIN
     (
       NOT has_permission(v_uid, 'inventory.opname.finalize') AND
       NOT has_permission(v_uid, 'inventory.production.delete') AND
-      NOT has_permission(v_uid, 'inventory.recipes.update')   AND
+      has_permission(v_uid, 'inventory.recipes.update')       AND
       NOT has_permission(v_uid, 'inventory.sections.update')
     )::text, true);
 END $$;
 
 SELECT ok(
   current_setting('breakery.t13_pass', true)::BOOLEAN,
-  'T13: MANAGER N''A PAS les 4 perms ADMIN+ Phase 1 (opname.finalize, production.delete, recipes.update, sections.update)'
+  'T13: MANAGER sans les 3 perms ADMIN+ Phase 1 (opname.finalize, production.delete, sections.update) mais AVEC recipes.update (manager+, S13 2.A)'
 );
 
 -- ---------------------------------------------------------------------------

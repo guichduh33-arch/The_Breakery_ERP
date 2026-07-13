@@ -9,11 +9,16 @@ BEGIN;
 SELECT plan(10);
 
 -- ── Seed a full-void refund on an in-scope order (as owner, before role switch) ─
+-- S77 : created_at épinglé DANS la fenêtre statique 2026-05-14..2026-07-11 (le
+-- RPC filtre sur r.created_at en WITA, _148) — le default now() sortait de la
+-- fenêtre dès le 2026-07-12 et cassait les 2 assertions reversals.voids. La
+-- fenêtre étant entièrement passée, son contenu est figé (stable au nightly).
 INSERT INTO refunds (refund_number, order_id, session_id, total, tax_refunded,
-                     reason, refunded_by, authorized_by, is_full_void)
+                     reason, refunded_by, authorized_by, is_full_void, created_at)
 SELECT 'R-PGTAP-9999', o.id, o.session_id, 12345, 1111,
        'pgtap seeded void', '00000000-0000-0000-0000-000000000001',
-       '00000000-0000-0000-0000-000000000001', true
+       '00000000-0000-0000-0000-000000000001', true,
+       '2026-07-10 12:00:00+08'::timestamptz
 FROM orders o
 WHERE o.order_type <> 'b2b'
   AND o.is_historical_import = false

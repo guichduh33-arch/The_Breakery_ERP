@@ -508,12 +508,14 @@ SELECT ok(
 -- TEST 22: trigger attached to stock_movements with WHEN (purchase) clause
 -- ============================================================================
 SELECT ok(
-  (SELECT pg_get_triggerdef(t.oid) LIKE '%WHEN ((new.movement_type = ''purchase''%'
+  -- S77 : le WHEN est devenu un ANY-array quand production_in a été ajouté au
+  -- recalcul WAC — l'assertion suit la forme live (purchase + production_in).
+  (SELECT pg_get_triggerdef(t.oid) LIKE '%new.movement_type = ANY%''purchase''%''production_in''%'
    FROM pg_trigger t
    JOIN pg_class c ON c.oid = t.tgrelid
    WHERE c.relname = 'stock_movements'
      AND t.tgname = 'tr_update_product_cost_on_purchase'),
-  'trigger tr_update_product_cost_on_purchase has WHEN (movement_type = ''purchase'') clause'
+  'trigger tr_update_product_cost_on_purchase has WHEN (movement_type IN purchase, production_in) clause'
 );
 
 -- ============================================================================
