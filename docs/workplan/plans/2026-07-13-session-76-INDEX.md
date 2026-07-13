@@ -33,6 +33,7 @@ Tests : nouvelles suites `adjust-b2b-balance-modal` 3/3 · `btob-dashboard` 4/4 
 - **DEV-S76-03** : les commandes du plan disaient `@breakery/pos`/`@breakery/backoffice` ; les vrais noms de packages sont `@breakery/app-pos`/`@breakery/app-backoffice`.
 - **DEV-S76-04** : T6 a réconcilié (strikethrough) des bullets périmés des fiches 04/08/16/17 au-delà des lignes nommées par le plan — vérifiés exacts en revue.
 - **DEV-S76-05** : fix post-revue T4 — le reset des champs (dont le PIN) au reopen du modal manquait vs le miroir `RecordB2bPaymentModal` ; corrigé + test reopen-after-cancel.
+- **DEV-S76-06** : 1ᵉʳ run CI de la PR #211 rouge au **lint-ratchet** — 5 erreurs eslint dans le code neuf T3/T4/T5 (`require-await` sur les mocks `rpc` async sans await ×2, `no-floating-promises` sur les 2 `invalidateQueries` d'`onSuccess`, `no-unnecessary-type-assertion` sur le retour du RPC drift) ; fixées `0088a925`, eslint 0 + btob 24/24 + typecheck re-verts. Leçon : les briefs d'implémentation n'imposaient pas de passe `pnpm exec eslint <fichiers>` avant commit — la CI est le seul filet lint (ratchet = fichiers touchés) ; à intégrer aux prochains plans.
 
 ## Dettes
 
