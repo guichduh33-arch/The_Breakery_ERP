@@ -47,6 +47,12 @@ BEGIN
   PERFORM set_config('bp.section_id',    v_section_id::text,    false);
   PERFORM set_config('bp.category_id',   v_category_id::text,   false);
   PERFORM set_config('request.jwt.claim.sub', v_admin_uid::text, false);
+
+  -- S77 : la base dev vivante porte allow_negative_stock=true (décision
+  -- propriétaire n°6, 2026-07-06) — T2/T5 asservent la sémantique BLOQUANTE
+  -- d'origine (insufficient_stock levé). On épingle le flag à false pour la
+  -- durée de la transaction (rollback final = sans trace).
+  UPDATE business_config SET allow_negative_stock = false WHERE id = 1;
 END $boot$;
 
 -- Helper : create a finished product with stock.

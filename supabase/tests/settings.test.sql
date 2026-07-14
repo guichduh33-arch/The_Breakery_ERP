@@ -47,10 +47,14 @@ SELECT has_table('public', 'receipt_templates', 'receipt_templates table exists'
 SELECT col_not_null('public', 'receipt_templates', 'name',       'receipt_templates.name NOT NULL');
 SELECT col_not_null('public', 'receipt_templates', 'paper_size', 'receipt_templates.paper_size NOT NULL');
 
+-- S77 : « exactement un défaut » était une assertion sur des DONNÉES vivantes
+-- (0 défaut constaté le 2026-07-14 — l'édition BO S73 permet de le déposer, et
+-- les templates tickets sont re-statués « À venir » S76, ⚫#17). Aucune
+-- contrainte DB n'impose un défaut ; l'invariant défendable est « au plus un ».
 SELECT cmp_ok(
   (SELECT COUNT(*) FROM receipt_templates WHERE is_default = true)::INT,
-  '=', 1,
-  'exactly one default receipt template exists'
+  '<=', 1,
+  'at most one default receipt template exists (0 tolerated — templates not wired, S76)'
 );
 
 -- --------------------------------------------------------------

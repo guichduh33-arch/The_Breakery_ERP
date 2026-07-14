@@ -21,36 +21,16 @@
 
 import { describe, it, expect, beforeAll } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
+import { loginAsFull, jwtClient } from './_helpers/auth';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? 'http://127.0.0.1:54321';
 const SERVICE      = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
-const ANON         = process.env.SUPABASE_ANON_KEY
-  ?? process.env.VITE_SUPABASE_ANON_KEY
-  ?? 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH';
-const PIN_FN_URL = `${SUPABASE_URL}/functions/v1/auth-verify-pin`;
 
-async function loginAs(employeeCode: string, pin: string): Promise<{ token: string; profileId: string }> {
-  const admin = createClient(SUPABASE_URL, SERVICE);
-  await admin.from('user_profiles')
-    .update({ failed_login_attempts: 0, locked_until: null })
-    .eq('employee_code', employeeCode);
-  const { data: profile } = await admin.from('user_profiles')
-    .select('id, auth_user_id').eq('employee_code', employeeCode).single();
-  if (!profile) throw new Error(`No profile for ${employeeCode}`);
-  const res = await fetch(PIN_FN_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ user_id: profile.id, pin, device_type: 'pos' }),
-  });
-  const body = await res.json();
-  if (!body.auth?.access_token) throw new Error(`Login failed: ${JSON.stringify(body)}`);
-  return { token: body.auth.access_token as string, profileId: profile.auth_user_id as string };
-}
-
-function jwtClient(token: string) {
-  return createClient(SUPABASE_URL, ANON, {
-    global: { headers: { Authorization: `Bearer ${token}` } },
-  });
+// Historically returned the auth user id (not the profile id) as `profileId`;
+// that field is unused by the call-sites but preserved for fidelity.
+async function loginAs(employeeCode: string, _pin: string): Promise<{ token: string; profileId: string }> {
+  const r = await loginAsFull(employeeCode);
+  return { token: r.token, profileId: r.authUserId };
 }
 
 async function openShift(token: string, openingCash: number): Promise<string> {
@@ -104,7 +84,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('cash register — close
     const sb = jwtClient(managerToken);
     const sessionId = await openShift(managerToken, 1_000_000);
 
-    const { data: close, error } = await sb.rpc('close_shift_v5', {
+    const { data: close, error } = await sb.rpc('close_shift_v6', {
       p_session_id: sessionId,
       p_counted_cash: 1_000_000,
       p_notes: 'zero variance smoke',
@@ -128,7 +108,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('cash register — close
     const sessionId = await openShift(managerToken, 2_000_000);
 
     const counted = 2_030_000; // +30k over (1.5% — note band, below the 2% PIN threshold)
-    const { data: close, error } = await sb.rpc('close_shift_v5', {
+    const { data: close, error } = await sb.rpc('close_shift_v6', {
       p_session_id: sessionId,
       p_counted_cash: counted,
       p_notes: 'positive variance smoke',
@@ -163,7 +143,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('cash register — close
     const sessionId = await openShift(managerToken, 2_000_000);
 
     const counted = 1_980_000; // -20k short (1% — note band, below the 2% PIN threshold)
-    const { data: close, error } = await sb.rpc('close_shift_v5', {
+    const { data: close, error } = await sb.rpc('close_shift_v6', {
       p_session_id: sessionId,
       p_counted_cash: counted,
       p_notes: 'negative variance smoke',
@@ -184,10 +164,10 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('cash register — close
   it('close_shift_v5 idempotent on an already-closed session', async () => {
     const sb = jwtClient(managerToken);
     const sessionId = await openShift(managerToken, 100_000);
-    await sb.rpc('close_shift_v5', {
+    await sb.rpc('close_shift_v6', {
       p_session_id: sessionId, p_counted_cash: 100_000,
     });
-    const { data: replay, error } = await sb.rpc('close_shift_v5', {
+    const { data: replay, error } = await sb.rpc('close_shift_v6', {
       p_session_id: sessionId, p_counted_cash: 100_000,
     });
     expect(error).toBeNull();

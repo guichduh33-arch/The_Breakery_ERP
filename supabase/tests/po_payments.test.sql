@@ -300,6 +300,10 @@ SELECT is(
 );
 
 -- The auto-payment JE credit side should target the PURCHASE_CASH_OUT account.
+-- S77 : le JOIN je↔pp manquait (produit cartésien avec la ligne pp) — le COUNT
+-- balayait TOUTES les JE purchase_payment historiques créditant 1110 et a
+-- dépassé 1 avec l'usage réel de la base dev. Scopé sur la JE du paiement seedé
+-- via je.reference_id = pp.id (linkage _record_po_payment_internal).
 SELECT is(
   (SELECT COUNT(*)::int
    FROM journal_entry_lines jel
@@ -308,6 +312,7 @@ SELECT is(
      (SELECT id::text FROM goods_receipt_notes WHERE po_id = current_setting('t46p.po_cash', true)::uuid LIMIT 1))::uuid
    JOIN accounts a            ON a.id = jel.account_id
    WHERE je.reference_type = 'purchase_payment'
+     AND je.reference_id = pp.id
      AND jel.credit > 0
      AND a.code = '1110'),
   1,

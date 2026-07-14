@@ -1,26 +1,10 @@
 // supabase/tests/functions/loyalty-rls.test.ts
 import { describe, it, expect, beforeAll } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
+import { loginAs, ANON_KEY as ANON } from './_helpers/auth';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? 'http://127.0.0.1:54321';
-const ANON         = process.env.VITE_SUPABASE_ANON_KEY ?? '';
 const SERVICE      = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
-
-async function loginAs(employeeCode: string, pin: string): Promise<string> {
-  const admin = createClient(SUPABASE_URL, SERVICE);
-  await admin.from('user_profiles')
-    .update({ failed_login_attempts: 0, locked_until: null })
-    .eq('employee_code', employeeCode);
-  const { data: profile } = await admin.from('user_profiles')
-    .select('id').eq('employee_code', employeeCode).single();
-  const res = await fetch(`${SUPABASE_URL}/functions/v1/auth-verify-pin`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ user_id: profile!.id, pin, device_type: 'pos' }),
-  });
-  const body = await res.json();
-  return body.auth.access_token;
-}
 
 describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('customers RLS — column GRANTs', () => {
   let token: string;

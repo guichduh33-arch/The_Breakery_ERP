@@ -1,5 +1,11 @@
+// ⚠️ OBSOLETE — exclusion datée 2026-07-14 (S77, triage nightly live-rpc-vitest).
+// Motif : appelle create_tablet_order + pay_existing_order (v1 nus, DROPPÉS live) — courants v4 / v11 (pickup_tablet_order + cancel_tablet_order existent toujours).
+// Réécriture = session dédiée (hors périmètre S77). Exclu du run via vitest.config.ts (**/_quarantine/**).
+// Couverture actuelle : ancres pgTAP s44_money_gates / canonical_line_price / combo_fire_pay.
+//
 import { describe, it, expect, beforeAll } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
+import { loginAsFull } from '../_helpers/auth';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? 'http://127.0.0.1:54321';
 const SERVICE      = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
@@ -15,23 +21,9 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('tablet flow — create 
   let productPrice: number;
   let goldCustomerId: string;
 
-  const login = async (employeeCode: string, pin: string) => {
-    const { data: profile } = await admin.from('user_profiles')
-      .select('id').eq('employee_code', employeeCode).single();
-    if (!profile) throw new Error(`Profile not found: ${employeeCode}`);
-
-    await admin.from('user_profiles')
-      .update({ failed_login_attempts: 0, locked_until: null })
-      .eq('employee_code', employeeCode);
-
-    const res = await fetch(`${SUPABASE_URL}/functions/v1/auth-verify-pin`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: profile.id, pin, device_type: 'pos' }),
-    });
-    const body = await res.json();
-    if (!body.auth?.access_token) throw new Error(`Login failed for ${employeeCode}: ${JSON.stringify(body)}`);
-    return { profileId: profile.id, accessToken: body.auth.access_token };
+  const login = async (employeeCode: string, _pin: string) => {
+    const r = await loginAsFull(employeeCode);
+    return { profileId: r.profileId, accessToken: r.token };
   };
 
   beforeAll(async () => {

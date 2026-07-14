@@ -20,10 +20,12 @@
 //        not required for these calls (rate-limit triggers before auth).
 
 import { describe, it, expect } from 'vitest';
+// S77: anon key from the shared helper (real publishable fallback) — the
+// `?? ''` form fed an empty key in CI where the unset secret is "".
+import { ANON_KEY } from './_helpers/auth';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? 'http://127.0.0.1:54321';
 const FN_BASE = `${SUPABASE_URL}/functions/v1`;
-const ANON_KEY = process.env.SUPABASE_ANON_KEY ?? '';
 
 /**
  * Burst a function with `count` requests pinned to a single IP. Returns the

@@ -1,5 +1,13 @@
+// ⚠️ OBSOLETE — exclusion datée 2026-07-14 (S77, triage nightly live-rpc-vitest).
+// Motif : spec « v3 » du process-payment EF — les 7 appels reçoivent 422 du
+// contrat ACTUEL (payload v3-era vs exigences v17 : combos pricés serveur,
+// nonce discount, caps promo…). En prime le login utilisait EMP000 dont le PIN
+// a dérivé (F-2). Réécriture contre le contrat v17 = session dédiée.
+// Couverture actuelle : process-payment.test.ts (contrat courant) + ancres
+// pgTAP s44_money_gates / canonical_line_price / combo_sale.
 import { describe, it, expect, beforeAll } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
+import { loginAs } from '../_helpers/auth';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? 'http://127.0.0.1:54321';
 const SERVICE      = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
@@ -24,14 +32,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('complete_order_with_pay
       .select('id').eq('employee_code', 'EMP000').single();
     if (!profile) throw new Error('Seed not loaded');
 
-    const loginRes = await fetch(`${SUPABASE_URL}/functions/v1/auth-verify-pin`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: profile.id, pin: '1234', device_type: 'pos' }),
-    });
-    const loginBody = await loginRes.json();
-    if (!loginBody.auth?.access_token) throw new Error(`Login failed: ${JSON.stringify(loginBody)}`);
-    accessToken = loginBody.auth.access_token;
+    accessToken = await loginAs('EMP000', '1234');
 
     await admin.from('pos_sessions')
       .update({ status: 'closed', closed_at: new Date().toISOString(), closed_by: profile.id })

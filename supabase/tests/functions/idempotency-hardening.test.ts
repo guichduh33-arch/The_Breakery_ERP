@@ -34,20 +34,13 @@
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { loginAsFull, loginAsViaPinEF, jwtClient } from './_helpers/auth';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL
   ?? process.env.SUPABASE_URL
   ?? 'http://127.0.0.1:54321';
 const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
-// Fallback = V3 dev publishable key (project `ikcyvlovptebroadgtvd`).
-// Fetched via MCP `get_publishable_keys` — safe to inline because it's the
-// public anon-tier key, not a secret. Lead exports SUPABASE_ANON_KEY locally
-// only when targeting a different project.
-const ANON    = process.env.SUPABASE_ANON_KEY
-  ?? process.env.VITE_SUPABASE_ANON_KEY
-  ?? 'sb_publishable_bJehhsPF6Hbg5nJKFCQWWw_Npz7gt1Z';
 
-const PIN_FN_URL    = `${SUPABASE_URL}/functions/v1/auth-verify-pin`;
 const REFUND_FN_URL = `${SUPABASE_URL}/functions/v1/refund-order`;
 
 // Deterministic test IDs (cloud-safe : prefixed so cleanup can target them only).
@@ -72,34 +65,12 @@ const createdClientUuids: string[] = [];
 // Track refund idempotency keys created during TS3/TS4 so afterAll can purge audit_logs.
 const createdRefundIdempKeys: string[] = [];
 
-async function loginAs(employeeCode: string, pin: string): Promise<{
+async function loginAs(employeeCode: string, _pin: string): Promise<{
   accessToken: string;
   profileId:   string;
 }> {
-  const admin = createClient(SUPABASE_URL, SERVICE);
-  await admin.from('user_profiles')
-    .update({ failed_login_attempts: 0, locked_until: null })
-    .eq('employee_code', employeeCode);
-  const { data: profile } = await admin.from('user_profiles')
-    .select('id').eq('employee_code', employeeCode).single();
-  if (!profile) throw new Error(`Profile not found for ${employeeCode}`);
-
-  const res = await fetch(PIN_FN_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ user_id: profile.id, pin, device_type: 'pos' }),
-  });
-  const body = await res.json();
-  if (!body.auth?.access_token) {
-    throw new Error(`Login failed for ${employeeCode}: ${JSON.stringify(body)}`);
-  }
-  return { accessToken: body.auth.access_token as string, profileId: profile.id };
-}
-
-function jwtClient(token: string): SupabaseClient {
-  return createClient(SUPABASE_URL, ANON, {
-    global: { headers: { Authorization: `Bearer ${token}` } },
-  });
+  const r = await loginAsFull(employeeCode);
+  return { accessToken: r.token, profileId: r.profileId };
 }
 
 // Type-erased rpc helper (generated types may lag staging).
@@ -124,8 +95,11 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('S25 idempotency hardeni
     const admin = createClient(SUPABASE_URL, SERVICE);
 
     // 1a) Cashier login (refund EF tests TS3/TS4/TS5 — caller just needs to be authenticated).
+    // S77: the refund-order EF validates the CUSTOM PIN-JWT (HS256) and rejects
+    // GoTrue session tokens ('not_authenticated') — this token must come from
+    // the auth-verify-pin EF itself.
+    cashierToken = await loginAsViaPinEF(CASHIER_EMPLOYEE, CASHIER_PIN);
     const cashier = await loginAs(CASHIER_EMPLOYEE, CASHIER_PIN);
-    cashierToken   = cashier.accessToken;
     cashierProfile = cashier.profileId;
 
     // 1b) Waiter login (tablet RPC tests TS1/TS2 — waiter has sales.create perm, CASHIER does not).
@@ -219,7 +193,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('S25 idempotency hardeni
     const clientUuid = crypto.randomUUID();
     createdClientUuids.push(clientUuid);
 
-    const { data, error } = await rpc(sb)('create_tablet_order_v3', {
+    const { data, error } = await rpc(sb)('create_tablet_order_v4', {
       p_client_uuid:  clientUuid,
       p_waiter_id:    waiterProfile,
       p_table_number: 'TS1',
@@ -259,12 +233,12 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('S25 idempotency hardeni
       }],
     };
 
-    const first  = await rpc(sb)('create_tablet_order_v3', args);
+    const first  = await rpc(sb)('create_tablet_order_v4', args);
     expect(first.error).toBeNull();
     expect(typeof first.data).toBe('string');
 
     // Replay : different args on purpose (table_number changed) — replay must ignore.
-    const second = await rpc(sb)('create_tablet_order_v3', {
+    const second = await rpc(sb)('create_tablet_order_v4', {
       ...args,
       p_table_number: 'TS2-REPLAY',
       p_items: [{

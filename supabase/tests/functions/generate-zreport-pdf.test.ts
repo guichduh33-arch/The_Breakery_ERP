@@ -26,14 +26,17 @@
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
+import { loginAsViaPinEF } from './_helpers/auth';
 
+// S77: `||` (not `??`) — in CI an unset secret materializes as an EMPTY-STRING
+// env var, which `??` lets through (empty apikey -> UNAUTHORIZED_NO_AUTH_HEADER).
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL
-  ?? process.env.SUPABASE_URL
-  ?? 'http://127.0.0.1:54321';
-const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
+  || process.env.SUPABASE_URL
+  || 'http://127.0.0.1:54321';
+const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const ANON = process.env.SUPABASE_ANON_KEY
-  ?? process.env.VITE_SUPABASE_ANON_KEY
-  ?? 'sb_publishable_bJehhsPF6Hbg5nJKFCQWWw_Npz7gt1Z';
+  || process.env.VITE_SUPABASE_ANON_KEY
+  || 'sb_publishable_bJehhsPF6Hbg5nJKFCQWWw_Npz7gt1Z';
 
 const ZREPORT_PDF_FN_URL = `${SUPABASE_URL}/functions/v1/generate-zreport-pdf`;
 
@@ -47,9 +50,14 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)(
     let adminClient: ReturnType<typeof createClient>;
     // Track the idempotency key used in ZP1 so ZP2 can replay it.
     let zp1IdempKey: string;
+    // S77: the EF (and the platform gateway) now require an Authorization
+    // header — the historical "JWT optional" comment no longer holds
+    // (UNAUTHORIZED_NO_AUTH_HEADER / invalid_auth otherwise). Manager PIN-JWT.
+    let managerToken: string;
 
     beforeAll(async () => {
       adminClient = createClient(SUPABASE_URL, SERVICE);
+      managerToken = await loginAsViaPinEF('EMP003', '111111');
 
       // Pre-clean in case a previous run left rows.
       await adminClient.from('z_reports').delete().eq('id', TEST_ZREPORT_ID);
@@ -112,6 +120,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)(
         method: 'POST',
         headers: {
           'Content-Type':      'application/json',
+          Authorization:       `Bearer ${managerToken}`,
           'x-idempotency-key': zp1IdempKey,
           // EF uses service_role internally — JWT is optional (called from close_shift flow
           // and from BO retry button). Accept either anon or no-auth for this test.
@@ -141,6 +150,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)(
         method: 'POST',
         headers: {
           'Content-Type':      'application/json',
+          Authorization:       `Bearer ${managerToken}`,
           'x-idempotency-key': zp1IdempKey,
         },
         body: JSON.stringify({ zreport_id: TEST_ZREPORT_ID }),
@@ -160,6 +170,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)(
         method: 'POST',
         headers: {
           'Content-Type':      'application/json',
+          Authorization:       `Bearer ${managerToken}`,
           'x-idempotency-key': crypto.randomUUID(),
         },
         body: JSON.stringify({ zreport_id: crypto.randomUUID() }),

@@ -1,8 +1,16 @@
+// ⚠️ OBSOLETE — exclusion datée 2026-07-14 (S77, triage nightly live-rpc-vitest).
+// Motif : appelle complete_order_with_payment + create_tablet_order + pay_existing_order (v1 nus, tous DROPPÉS live) — courants v17 (EF-only) / v4 / v11.
+// Réécriture = session dédiée (hors périmètre S77). Exclu du run via vitest.config.ts (**/_quarantine/**).
+// Couverture actuelle : ancres pgTAP s44_money_gates / canonical_line_price / combo_sale / reversal_idempotency + vitest process-payment.test.ts (EF).
+//
 import { describe, it, expect, beforeAll } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
+import { loginAsFull } from '../_helpers/auth';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? 'http://127.0.0.1:54321';
 const SERVICE      = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
+// Kept for the `auth-verify-pin — required_permission extension` block below,
+// which exercises the EF directly (that EF's gate IS the test subject).
 const PIN_FN_URL   = `${SUPABASE_URL}/functions/v1/auth-verify-pin`;
 
 describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('session 6 — discount flow + loyalty multiplier', () => {
@@ -16,23 +24,9 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('session 6 — discount 
   let walkinId:     string;
   let goldId:       string;
 
-  const login = async (employeeCode: string, pin: string) => {
-    await admin.from('user_profiles')
-      .update({ failed_login_attempts: 0, locked_until: null })
-      .eq('employee_code', employeeCode);
-
-    const { data: profile } = await admin.from('user_profiles')
-      .select('id').eq('employee_code', employeeCode).single();
-    if (!profile) throw new Error(`Profile not found: ${employeeCode}`);
-
-    const res = await fetch(PIN_FN_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: profile.id, pin, device_type: 'pos' }),
-    });
-    const body = await res.json();
-    if (!body.auth?.access_token) throw new Error(`Login failed for ${employeeCode}: ${JSON.stringify(body)}`);
-    return { profileId: profile.id, accessToken: body.auth.access_token };
+  const login = async (employeeCode: string, _pin: string) => {
+    const r = await loginAsFull(employeeCode);
+    return { profileId: r.profileId, accessToken: r.token };
   };
 
   beforeAll(async () => {

@@ -23,14 +23,17 @@
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { loginAsFull } from './_helpers/auth';
 
+// S77: `||` (not `??`) — in CI an unset secret materializes as an EMPTY-STRING
+// env var, which `??` lets through ("supabaseKey is required").
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL
-  ?? process.env.SUPABASE_URL
-  ?? 'http://127.0.0.1:54321';
-const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
+  || process.env.SUPABASE_URL
+  || 'http://127.0.0.1:54321';
+const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const ANON = process.env.SUPABASE_ANON_KEY
-  ?? process.env.VITE_SUPABASE_ANON_KEY
-  ?? 'sb_publishable_bJehhsPF6Hbg5nJKFCQWWw_Npz7gt1Z';
+  || process.env.VITE_SUPABASE_ANON_KEY
+  || 'sb_publishable_bJehhsPF6Hbg5nJKFCQWWw_Npz7gt1Z';
 
 const PIN_FN_URL = `${SUPABASE_URL}/functions/v1/auth-verify-pin`;
 
@@ -42,28 +45,12 @@ const MANAGER_PIN_WRONG = '999999';
 const TEST_SESSION_ID  = 'feedca50-0000-0000-0000-000000002911';
 const TEST_ZREPORT_ID  = 'feedca50-0000-0000-0000-000000002912';
 
-async function loginAs(employeeCode: string, pin: string): Promise<{
+async function loginAs(employeeCode: string, _pin: string): Promise<{
   accessToken: string;
   profileId: string;
 }> {
-  const admin = createClient(SUPABASE_URL, SERVICE);
-  await admin.from('user_profiles')
-    .update({ failed_login_attempts: 0, locked_until: null })
-    .eq('employee_code', employeeCode);
-  const { data: profile } = await admin.from('user_profiles')
-    .select('id').eq('employee_code', employeeCode).single();
-  if (!profile) throw new Error(`Profile not found for ${employeeCode}`);
-
-  const res = await fetch(PIN_FN_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ user_id: profile.id, pin, device_type: 'pos' }),
-  });
-  const body = await res.json();
-  if (!body.auth?.access_token) {
-    throw new Error(`Login failed for ${employeeCode}: ${JSON.stringify(body)}`);
-  }
-  return { accessToken: body.auth.access_token as string, profileId: profile.id as string };
+  const r = await loginAsFull(employeeCode);
+  return { accessToken: r.token, profileId: r.profileId };
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -284,6 +284,19 @@ SELECT ok(
 -- T_USR_07 : delete_user_v1 LAST_ADMIN_PROTECTED
 -- =============================================================================
 
+-- S77 : la base dev vivante porte d'autres admins actifs (E2E001 depuis S71,
+-- migration _141) — la garde LAST_ADMIN_PROTECTED ne déclenche que si l'admin
+-- de fixture est le DERNIER actif. Sans cette neutralisation, T_USR_07/T_USR_11
+-- ne lèvent pas ET l'admin de fixture se fait réellement soft-deleter, ce qui
+-- fait échouer T_USR_08 en 'missing permission users.create'. Désactivation
+-- pour la durée de la transaction (rollback final = sans trace).
+UPDATE user_profiles
+   SET is_active = false
+ WHERE role_code IN ('ADMIN','SUPER_ADMIN')
+   AND is_active = true
+   AND deleted_at IS NULL
+   AND id <> (SELECT admin_prof FROM _usr_ctx);
+
 SELECT throws_ok(
   format($f$SELECT delete_user_v1(%L::UUID, 'attempt to remove last admin')$f$,
          (SELECT admin_prof FROM _usr_ctx)),

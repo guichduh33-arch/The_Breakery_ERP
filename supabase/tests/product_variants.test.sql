@@ -215,7 +215,9 @@ SELECT ok(
 );
 
 -- ────────────────────────────────────────────────────────────────────────────
--- T5 : SKU duplicate raises 23505.
+-- T5 : SKU duplicate raises sku_taken (P0004).
+-- S77 : le fix audit M8 a ajouté un pré-check SKU dans create_variant_v1 —
+-- 'sku_taken' P0004 propre remplace le 23505 brut de la contrainte.
 -- ────────────────────────────────────────────────────────────────────────────
 
 SELECT throws_ok(
@@ -223,9 +225,9 @@ SELECT throws_ok(
     $q$SELECT create_variant_v1(%L::UUID, 'Choco', 'PGTAPAMD', 1300)$q$,
     current_setting('breakery.s27c_parent_id')
   ),
-  '23505',
+  'P0004',
   NULL,
-  'T5  create_variant_v1 rejects duplicate SKU (23505 unique_violation)'
+  'T5  create_variant_v1 rejects duplicate SKU (sku_taken, P0004 — pre-check M8)'
 );
 
 -- ────────────────────────────────────────────────────────────────────────────

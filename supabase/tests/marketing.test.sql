@@ -61,15 +61,18 @@ SELECT has_function('public', 'notify_birthday_customers_v1',
 -- T_MKT_03 : cron job
 -- ---------------------------------------------------------------------------
 
+-- S77 : le job SQL 'birthday-notify-daily' a été remplacé par 'birthday-daily-ef'
+-- (migration 20260525000011 — pg_net → EF notifications-dispatch, 02:00 UTC =
+-- 10:00 WITA). Assertions repointées sur le job réellement schedulé.
 SELECT ok(
-  (SELECT COUNT(*)::INT FROM cron.job WHERE jobname='birthday-notify-daily') = 1,
-  'T_MKT_03a birthday-notify-daily cron job exists'
+  (SELECT COUNT(*)::INT FROM cron.job WHERE jobname='birthday-daily-ef') = 1,
+  'T_MKT_03a birthday-daily-ef cron job exists'
 );
 
 SELECT is(
-  (SELECT schedule FROM cron.job WHERE jobname='birthday-notify-daily'),
-  '0 9 * * *',
-  'T_MKT_03b birthday-notify-daily runs at 09:00 daily (UTC)'
+  (SELECT schedule FROM cron.job WHERE jobname='birthday-daily-ef'),
+  '0 2 * * *',
+  'T_MKT_03b birthday-daily-ef runs at 02:00 daily (UTC, 10:00 WITA)'
 );
 
 -- ---------------------------------------------------------------------------

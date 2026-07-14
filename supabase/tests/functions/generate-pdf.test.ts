@@ -23,44 +23,18 @@
 //   - EF handles its own Storage cleanup; no DB rows to purge here.
 
 import { describe, it, expect, beforeAll } from 'vitest';
-import { createClient } from '@supabase/supabase-js';
+import { loginAs } from './_helpers/auth';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL
   ?? process.env.SUPABASE_URL
   ?? 'http://127.0.0.1:54321';
-const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
-const ANON = process.env.SUPABASE_ANON_KEY
-  ?? process.env.VITE_SUPABASE_ANON_KEY
-  ?? 'sb_publishable_bJehhsPF6Hbg5nJKFCQWWw_Npz7gt1Z';
 
 const PDF_FN_URL = `${SUPABASE_URL}/functions/v1/generate-pdf`;
-const PIN_FN_URL = `${SUPABASE_URL}/functions/v1/auth-verify-pin`;
 
 const MANAGER_EMPLOYEE = 'EMP003';
 const MANAGER_PIN = '111111';
 const CASHIER_EMPLOYEE = 'EMP001';
 const CASHIER_PIN = '567890';
-
-async function loginAs(employeeCode: string, pin: string): Promise<string> {
-  const admin = createClient(SUPABASE_URL, SERVICE);
-  await admin.from('user_profiles')
-    .update({ failed_login_attempts: 0, locked_until: null })
-    .eq('employee_code', employeeCode);
-  const { data: profile } = await admin.from('user_profiles')
-    .select('id').eq('employee_code', employeeCode).single();
-  if (!profile) throw new Error(`Profile not found for ${employeeCode}`);
-
-  const res = await fetch(PIN_FN_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ user_id: profile.id, pin, device_type: 'pos' }),
-  });
-  const body = await res.json();
-  if (!body.auth?.access_token) {
-    throw new Error(`Login failed for ${employeeCode}: ${JSON.stringify(body)}`);
-  }
-  return body.auth.access_token as string;
-}
 
 describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)(
   'S29 generate-pdf EF — Vitest live',
@@ -89,6 +63,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)(
         },
         body: JSON.stringify({
           template: 'pnl',
+          filename: 'pgtap-gp1-pnl.pdf', // S77: filename now REQUIRED by the EF
           params: { start_date: monthAgo, end_date: today },
         }),
       });
@@ -102,7 +77,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)(
     // =========================================================================
     // GP2 : invalid template name → 400 { error: 'unknown_template' }
     // =========================================================================
-    it('GP2: unknown template → 400 unknown_template', async () => {
+    it('GP2: unknown template → 400 invalid_template', async () => {
       const res = await fetch(PDF_FN_URL, {
         method: 'POST',
         headers: {
@@ -114,7 +89,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)(
 
       expect(res.status).toBe(400);
       const body = await res.json();
-      expect(body.error).toBe('unknown_template');
+      expect(body.error).toBe('invalid_template'); // S77: EF says invalid_template
     });
 
     // =========================================================================
@@ -136,6 +111,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)(
         },
         body: JSON.stringify({
           template: 'audit',
+          filename: 'pgtap-gp3-audit.pdf', // S77: filename now REQUIRED by the EF
           params: { start_date: today, end_date: today },
         }),
       });
@@ -165,6 +141,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)(
         },
         body: JSON.stringify({
           template: 'pnl',
+          filename: 'pgtap-gp4-pnl.pdf', // S77: filename now REQUIRED by the EF
           params: { start_date: today, end_date: today },
         }),
       });
@@ -185,6 +162,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)(
 
       const payload = JSON.stringify({
         template: 'pnl',
+        filename: 'pgtap-gp5-pnl.pdf', // S77: filename now REQUIRED by the EF
         params: { start_date: monthAgo, end_date: today },
       });
       const headers = {

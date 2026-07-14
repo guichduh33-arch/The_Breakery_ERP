@@ -20,7 +20,8 @@ BEGIN
     p_client_uuid := '00000000-0000-0000-0000-0000000cfbbb'::uuid,
     p_session_id := '00000000-0000-0000-0000-0000000cf002',
     p_items := '[{"product_id":"00000000-0000-0000-0000-0000000fd001","quantity":1,"unit_price":5000,"modifiers":[]}]'::jsonb,
-    p_order_type := 'dine_in'::order_type
+    p_order_type := 'dine_in'::order_type,
+    p_table_number := 'PFA-T1'  -- S77: garde table_required_for_dine_in (_122)
   );
   PERFORM set_config('fa.order_id', r->>'order_id', false);
 END $$;

@@ -1,5 +1,5 @@
 -- supabase/tests/close_shift_three_way.test.sql
--- S67 (12 D2.2/D2.3) — close_shift_v5 : comptage 3 volets + grille coupures.
+-- S67 (12 D2.2/D2.3) — close_shift_v6 : comptage 3 volets + grille coupures.
 --   T1  : nouveaux args NULL + flag OFF -> comportement v4 (non-régression)
 --   T2  : counted qris/card fournis -> persist + variances dans le retour…
 --   T2b : … et section reconciliation + denominations dans le snapshot Z
@@ -88,7 +88,7 @@ END $fixture$;
 
 -- T1 — non-régression : nouveaux args absents, flag OFF, variance 0.
 SELECT lives_ok(
-  $$SELECT close_shift_v5('67c50001-0000-0000-0000-000000000001'::uuid, 500000)$$,
+  $$SELECT close_shift_v6('67c50001-0000-0000-0000-000000000001'::uuid, 500000)$$,
   'T1: v4-shaped call (no new args, flag off) still closes'
 );
 
@@ -96,7 +96,7 @@ SELECT lives_ok(
 DO $t2$
 DECLARE v_res JSONB;
 BEGIN
-  v_res := close_shift_v5('67c50001-0000-0000-0000-000000000002'::uuid, 500000,
+  v_res := close_shift_v6('67c50001-0000-0000-0000-000000000002'::uuid, 500000,
                           NULL, NULL, NULL, NULL, 30000, 20000, NULL);
   -- NUMERIC(14,2) sérialise 30000.00 — comparer en numeric, pas en texte.
   PERFORM set_config('s67.t2',
@@ -119,7 +119,7 @@ SELECT is(
 
 -- T3 — écart QRIS seul >= 50 000 (abs), cash équilibré, PAS de note.
 SELECT throws_ok(
-  $$SELECT close_shift_v5('67c50001-0000-0000-0000-000000000003'::uuid, 500000,
+  $$SELECT close_shift_v6('67c50001-0000-0000-0000-000000000003'::uuid, 500000,
                           NULL, NULL, NULL, NULL, 60000, NULL, NULL)$$,
   'P0001', 'variance_note_required',
   'T3: QRIS-only variance above note threshold without a note -> variance_note_required'
@@ -127,7 +127,7 @@ SELECT throws_ok(
 
 -- T4 — écart carte seul >= 200 000 (abs), note fournie, pas d'approbateur.
 SELECT throws_ok(
-  $$SELECT close_shift_v5('67c50001-0000-0000-0000-000000000003'::uuid, 500000,
+  $$SELECT close_shift_v6('67c50001-0000-0000-0000-000000000003'::uuid, 500000,
                           'terminal settlement missing a batch', NULL, NULL, NULL, NULL, 250000, NULL)$$,
   'P0001', 'pin_approval_required',
   'T4: card-only variance above PIN threshold -> pin_approval_required'
@@ -138,14 +138,14 @@ UPDATE business_config SET shift_denomination_count_enabled = TRUE WHERE id = 1;
 
 -- T5 — flag ON sans grille.
 SELECT throws_ok(
-  $$SELECT close_shift_v5('67c50001-0000-0000-0000-000000000004'::uuid, 352000)$$,
+  $$SELECT close_shift_v6('67c50001-0000-0000-0000-000000000004'::uuid, 352000)$$,
   'P0001', 'denominations_required',
   'T5: flag on without a grid -> denominations_required'
 );
 
 -- T6 — total de grille != counted_cash.
 SELECT throws_ok(
-  $$SELECT close_shift_v5('67c50001-0000-0000-0000-000000000004'::uuid, 352000,
+  $$SELECT close_shift_v6('67c50001-0000-0000-0000-000000000004'::uuid, 352000,
                           NULL, NULL, NULL, NULL, NULL, NULL,
                           '{"100000": 3, "50000": 1}'::jsonb)$$,
   'P0001', 'denomination_total_mismatch',
@@ -154,7 +154,7 @@ SELECT throws_ok(
 
 -- T7 — coupure inconnue.
 SELECT throws_ok(
-  $$SELECT close_shift_v5('67c50001-0000-0000-0000-000000000004'::uuid, 352000,
+  $$SELECT close_shift_v6('67c50001-0000-0000-0000-000000000004'::uuid, 352000,
                           NULL, NULL, NULL, NULL, NULL, NULL,
                           '{"75000": 4, "50000": 1, "500": 4}'::jsonb)$$,
   'P0001', 'invalid_denomination',
@@ -163,7 +163,7 @@ SELECT throws_ok(
 
 -- T7b — quantité fractionnaire.
 SELECT throws_ok(
-  $$SELECT close_shift_v5('67c50001-0000-0000-0000-000000000004'::uuid, 352000,
+  $$SELECT close_shift_v6('67c50001-0000-0000-0000-000000000004'::uuid, 352000,
                           NULL, NULL, NULL, NULL, NULL, NULL,
                           '{"100000": 3.5, "2000": 1}'::jsonb)$$,
   'P0001', 'invalid_denomination',
@@ -172,7 +172,7 @@ SELECT throws_ok(
 
 -- T7c — payload non-objet.
 SELECT throws_ok(
-  $$SELECT close_shift_v5('67c50001-0000-0000-0000-000000000004'::uuid, 352000,
+  $$SELECT close_shift_v6('67c50001-0000-0000-0000-000000000004'::uuid, 352000,
                           NULL, NULL, NULL, NULL, NULL, NULL,
                           '[100000, 50000]'::jsonb)$$,
   'P0001', 'invalid_denomination',
@@ -181,7 +181,7 @@ SELECT throws_ok(
 
 -- T8 — comptage négatif.
 SELECT throws_ok(
-  $$SELECT close_shift_v5('67c50001-0000-0000-0000-000000000004'::uuid, 352000,
+  $$SELECT close_shift_v6('67c50001-0000-0000-0000-000000000004'::uuid, 352000,
                           NULL, NULL, NULL, NULL, -1, NULL, NULL)$$,
   'P0001', 'counted_method_invalid',
   'T8: negative counted qris -> counted_method_invalid'
@@ -189,7 +189,7 @@ SELECT throws_ok(
 
 -- T9 — happy path grille valide (352 000 = 3×100k + 1×50k + 4×500).
 SELECT lives_ok(
-  $$SELECT close_shift_v5('67c50001-0000-0000-0000-000000000004'::uuid, 352000,
+  $$SELECT close_shift_v6('67c50001-0000-0000-0000-000000000004'::uuid, 352000,
                           NULL, NULL, NULL, NULL, NULL, NULL,
                           '{"100000": 3, "50000": 1, "500": 4}'::jsonb)$$,
   'T9: flag on with a valid grid -> close succeeds'
@@ -219,7 +219,7 @@ DO $t10$
 DECLARE v_res JSONB; v_caught BOOLEAN := false;
 BEGIN
   BEGIN
-    v_res := close_shift_v5('67c50001-0000-0000-0000-000000000004'::uuid, 352000);
+    v_res := close_shift_v6('67c50001-0000-0000-0000-000000000004'::uuid, 352000);
   EXCEPTION WHEN OTHERS THEN
     v_caught := true;
   END;

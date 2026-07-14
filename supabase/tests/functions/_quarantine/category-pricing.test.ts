@@ -1,3 +1,12 @@
+// ⚠️ OBSOLETE — exclusion datée 2026-07-14 (S77, triage nightly live-rpc-vitest).
+// Motif : spec « session 7 » — la moitié du fichier teste le trigger
+// enforce_combo_parent_type de la table combo_items, DROPPÉE par la refonte
+// choice-groups S47 (M4) ; l'autre moitié (get_customer_product_price) échoue
+// en P0002 sur les seeds de la même époque, antérieurs à l'architecture prix
+// S69 (customer_product_prices + résolution négocié > catégorie > retail).
+// Réécriture = session dédiée. Couverture actuelle : pgTAP
+// product_category_prices / b2b_negotiated_price / customer_product_prices_rls
+// + combo_crud / combo_server_pricing pour la composition combo.
 import { describe, it, expect, beforeAll } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
 
