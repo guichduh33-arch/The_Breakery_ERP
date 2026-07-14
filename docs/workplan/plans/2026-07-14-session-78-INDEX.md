@@ -11,7 +11,8 @@
 | Base (S77, run 29279963950) | 204 | 36 (15 fichiers) | queue D-6 figée |
 | Lot 1 (29322600180) | 234 | 6 (5 fichiers) | 30 tests réparés |
 | Lot 2 (29323719581) | 249 | 3 (1 fichier : transfers P0002) | +2 EF bugs réels fixés |
-| Lot 2b (transfers ciblé) | cf. section closeout | 0 attendu | seed `current_stock` |
+| Lot 2b (transfers ciblé, 29324735785) | 7 | 0 | seed `current_stock` (P0002 après la couche section) |
+| **Closeout (suite complète, 29324826674)** | **252** | **0** | **40 fichiers verts / 12 skippés (env-gated + quarantaine S77 + skips D-3 datés) — queue D-6 SOLDÉE** |
 
 ## Livré
 
