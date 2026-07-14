@@ -25,13 +25,25 @@ SELECT plan(12);
 -- ===== Setup : create a draft order + 1 line via direct INSERT =====
 DO $$
 DECLARE
-  v_manager  UUID := (SELECT id FROM user_profiles WHERE role_code='MANAGER' LIMIT 1);
-  v_cashier  UUID := (SELECT id FROM user_profiles WHERE role_code='CASHIER' LIMIT 1);
+  -- S77 (classe F-5) : claim.sub doit porter auth_user_id (pas user_profiles.id) —
+  -- has_permission/auth.uid() lisent l'auth uid. LIMIT 1 sans ORDER BY tombait
+  -- par chance sur des comptes seed (id == auth_user_id) ; sélection déterministe.
+  v_manager_auth UUID;
+  v_cashier      UUID;
+  v_cashier_auth UUID;
   v_session  UUID;
   v_order    UUID;
   v_item     UUID;
   v_product  UUID := (SELECT id FROM products WHERE is_active=true LIMIT 1);
 BEGIN
+  SELECT auth_user_id INTO v_manager_auth
+    FROM user_profiles
+   WHERE role_code='MANAGER' AND deleted_at IS NULL AND auth_user_id IS NOT NULL
+   ORDER BY created_at LIMIT 1;
+  SELECT id, auth_user_id INTO v_cashier, v_cashier_auth
+    FROM user_profiles
+   WHERE role_code='CASHIER' AND deleted_at IS NULL AND auth_user_id IS NOT NULL
+   ORDER BY created_at LIMIT 1;
   -- S77 (D-7) : clôture transactionnelle d'une éventuelle session ouverte
   -- fuitée pour ce profil (annulée par le ROLLBACK final).
   UPDATE pos_sessions SET status='closed', closed_at=now(), closed_by=v_cashier, closing_cash=0
@@ -49,8 +61,8 @@ BEGIN
   PERFORM set_config('breakery.test_order',   v_order::text,   true);
   PERFORM set_config('breakery.test_item',    v_item::text,    true);
   PERFORM set_config('breakery.test_product', v_product::text, true);
-  PERFORM set_config('breakery.test_manager', v_manager::text, true);
-  PERFORM set_config('breakery.test_cashier', v_cashier::text, true);
+  PERFORM set_config('breakery.test_manager', v_manager_auth::text, true);
+  PERFORM set_config('breakery.test_cashier', v_cashier_auth::text, true);
 END $$;
 
 -- ===== T1 : add_order_item happy (MANAGER) =====
