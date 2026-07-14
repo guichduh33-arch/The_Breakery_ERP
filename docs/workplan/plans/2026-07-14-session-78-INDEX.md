@@ -57,6 +57,14 @@
 - **D-4** : 9 specs quarantainées S77 (`functions/_quarantine/`) toujours à réécrire (générations money-path v1/v9).
 - **D-5** : 12 fichiers skippés env-gated dans le run (recipe-*, settings-inventory, etc.) — skippés aussi en CI ? à auditer (certains `describe.skipIf` sur des variables jamais posées).
 
+## Post-merge (2026-07-14, commits master directs)
+
+**Skip daté S77 D-3 SOLDÉ** — décision propriétaire actée : le PIN d'EMP000 (« Mamat (Owner) ») a été **changé volontairement par le propriétaire et reste privé** — pas de reset. Les 2 specs `auth-verify-pin*` sont **ré-armées et vertes 6/6** (run 29329371189), repointées sur EMP003 (la mécanique testée n'est liée à aucun compte). Deux découvertes au ré-armement :
+- **La gateway Supabase n'honore plus le spoof `x-forwarded-for`** — tout tombe dans le bucket rate-limit 3/min de l'IP réelle du runner ; les anciens buckets par IP falsifiée sont morts. Redesign : tests fonctionnels en retry-on-429 (honore `retry_after_sec`), tests de rate-limit chacun dans une fenêtre propre (65 s) — le fichier prend ~4 min, prix accepté au nightly.
+- **L'UUID « inexistant » `…999` du spec est devenu RÉEL** (compte système SYS-CRON, inactif) → 403 `user_inactive` au lieu de 401 : UUID aléatoire désormais. Même classe que BEV-AMER : une fixture qui suppose un état de la DB vivante finit toujours par mentir.
+
+Le combo `combo_base_price NULL` (F-1 S77) est **résolu en données** — plus aucun combo vivant sans prix de base (vérifié live 2026-07-14) ; plus rien à décider.
+
 ## Rappels décisions propriétaire (héritées S77)
-- **PIN EMP000 dérivé** (F-2 S77/D-3) : confirmer le changement ou reset → ré-armer les 2 specs `auth-verify-pin*` skippées.
-- **Combo vivant `combo_base_price NULL`** (F-1 S77) : corriger la donnée ou garder la garde serveur.
+- ~~PIN EMP000~~ ✅ actée (changé volontairement, privé — specs ré-armées sur EMP003, cf. Post-merge).
+- ~~Combo `combo_base_price NULL`~~ ✅ résolu en données (vérifié live, cf. Post-merge).
