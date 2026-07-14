@@ -82,8 +82,11 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('auth-verify-pin rate-li
     // Fenêtre propre après le burst du test précédent.
     await freshWindow();
 
+    // S78 : l'ancien UUID « inexistant » ...999 est devenu RÉEL (compte système
+    // SYS-CRON, inactif → 403 user_inactive). Un UUID aléatoire ne peut pas
+    // entrer en collision.
     const res = await postPinRaw({
-      user_id: '00000000-0000-0000-0000-000000000999',
+      user_id: crypto.randomUUID(),
       pin: '123456',
       device_type: 'pos',
     });
