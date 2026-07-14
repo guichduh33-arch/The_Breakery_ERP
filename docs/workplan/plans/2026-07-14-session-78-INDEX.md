@@ -52,7 +52,7 @@
 
 ## Dettes
 - **D-1** : specs encore verts mais dépendant de seeds mutables (`BEV-AMER` référencé par adjust-stock, inventory-concurrent, receive-stock, waste-stock, promotions-check-constraints, inventory-opname legacy) — migrer vers `ensureTestProduct` à la prochaine casse.
-- **D-2** : commandes géantes (~2,2 Mds IDR) créées dans les données dev par les anciens runs process-payment — polluent les rapports revenue dev ; décision propriétaire : void RPC ou purge data.
+- ~~**D-2** : commandes géantes créées dans les données dev par les anciens runs process-payment~~ ✅ **SOLDÉE post-merge (2026-07-14, purge confirmée propriétaire)** : la pollution se réduisait à UNE commande `#0021` (3 499 965 000 IDR, 99999 × Matcha Powder, paid). Void officiel impossible (session fermée → interdiction cross-shift v4, et le restore +99999 aurait re-pollué le stock déjà re-seedé à 100) → purge chirurgicale one-shot en 1 transaction : commande + 1 paiement + 1 item + JE (3 lignes) + mouvement de stock −99999 (sa suppression RESTAURE la cohérence ledger↔stock). Ligne `audit_logs` d'origine conservée comme trace. Vérifié post-purge : 0 commande ≥ 10 M, max total = 490 k, stock Matcha = 100.
 - **D-3** : `cash-register-close` + `mark-item-served` ouvrent des sessions sans afterAll (passent aujourd'hui) — même traitement D-7 à la prochaine casse.
 - **D-4** : 9 specs quarantainées S77 (`functions/_quarantine/`) toujours à réécrire (générations money-path v1/v9).
 - **D-5** : 12 fichiers skippés env-gated dans le run (recipe-*, settings-inventory, etc.) — skippés aussi en CI ? à auditer (certains `describe.skipIf` sur des variables jamais posées).
