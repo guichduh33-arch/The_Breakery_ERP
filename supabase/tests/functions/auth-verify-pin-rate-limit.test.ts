@@ -4,7 +4,7 @@
 // Verifies the per-IP rate-limit on auth-verify-pin is 3/min (tightened from
 // 20/min in v8). The 4th request within 60s from the same IP must 429.
 
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? 'http://127.0.0.1:54321';
@@ -12,18 +12,27 @@ const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 
 const FN_URL = `${SUPABASE_URL}/functions/v1/auth-verify-pin`;
 
-// ⚠️ EXCLUSION DATÉE 2026-07-14 (S77, D-3) : cette suite loge EMP000 par PIN
-// via l'EF — le PIN d'EMP000 a DÉRIVÉ sur la base dev vivante (finding F-2,
-// INDEX S77). Ne PAS reset sans décision propriétaire. Ré-armer ce describe
-// dès que le PIN est connu/décidé.
-describe.skip('auth-verify-pin rate-limit', () => {
+// S78 (ré-armé — solde le skip daté S77 D-3) : la suite ne teste QUE des PINs
+// faux (rate-limit par IP) — elle n'a jamais eu besoin du vrai PIN. Le PIN
+// d'EMP000 a été changé par le propriétaire (décision 2026-07-14 : privé, pas
+// de reset) : repointée sur EMP003 pour ne plus matraquer le compteur d'échecs
+// du compte owner. afterAll remet le compteur à zéro (D-7).
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('auth-verify-pin rate-limit', () => {
   let adminUserId: string;
 
   beforeAll(async () => {
     const admin = createClient(SUPABASE_URL, SERVICE);
-    const { data } = await admin.from('user_profiles').select('id').eq('employee_code', 'EMP000').single();
-    if (!data) throw new Error('Seed not loaded — run supabase db reset');
+    const { data } = await admin.from('user_profiles').select('id').eq('employee_code', 'EMP003').single();
+    if (!data) throw new Error('Seed not loaded — EMP003 missing');
     adminUserId = data.id;
+    await admin
+      .from('user_profiles')
+      .update({ failed_login_attempts: 0, locked_until: null })
+      .eq('id', adminUserId);
+  });
+
+  afterAll(async () => {
+    const admin = createClient(SUPABASE_URL, SERVICE);
     await admin
       .from('user_profiles')
       .update({ failed_login_attempts: 0, locked_until: null })
