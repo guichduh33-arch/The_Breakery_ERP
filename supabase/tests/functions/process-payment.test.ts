@@ -112,22 +112,41 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('process-payment', () =>
   });
 
   it('rejects on insufficient stock', async () => {
-    const res = await fetch(FN_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify({
-        session_id: sessionId,
-        order_type: 'dine_in',
-        items: [{ product_id: productIds[0], quantity: 99999, unit_price: priceA }],
-        payment: { method: 'cash', amount: priceA * 99999, cash_received: priceA * 99999 },
-      }),
-    });
-    expect(res.status).toBe(409);
-    const body = await res.json();
-    expect(body.error).toBe('insufficient_stock');
+    // S78 (D-6) : allow_negative_stock est TRUE sur la DB dev vivante — la
+    // vente à 99999 passait alors LÉGITIMEMENT (et créait une commande de
+    // ~2 Mds IDR dans les données dev !). Flag forcé à false le temps du
+    // test, restauré dans finally (exécution sérielle).
+    const admin = createClient(SUPABASE_URL, SERVICE);
+    const { data: cfg } = await admin.from('business_config')
+      .select('id, allow_negative_stock').limit(1).single();
+    const hadNegative = cfg?.allow_negative_stock === true;
+    if (hadNegative) {
+      await admin.from('business_config')
+        .update({ allow_negative_stock: false }).eq('id', cfg!.id);
+    }
+    try {
+      const res = await fetch(FN_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          session_id: sessionId,
+          order_type: 'dine_in',
+          items: [{ product_id: productIds[0], quantity: 99999, unit_price: priceA }],
+          payment: { method: 'cash', amount: priceA * 99999, cash_received: priceA * 99999 },
+        }),
+      });
+      expect(res.status).toBe(409);
+      const body = await res.json();
+      expect(body.error).toBe('insufficient_stock');
+    } finally {
+      if (hadNegative) {
+        await admin.from('business_config')
+          .update({ allow_negative_stock: true }).eq('id', cfg!.id);
+      }
+    }
   });
 
   it('returns existing order on duplicate idempotency_key (D8)', async () => {

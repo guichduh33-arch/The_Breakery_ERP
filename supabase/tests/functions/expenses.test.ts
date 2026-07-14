@@ -119,7 +119,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('expenses — RPC cycle 
     expect(payRes.was_credit).toBe(false);
   });
 
-  it('credit + VAT path emits 3-line JE and pay produces a 2nd JE', async () => {
+  it('credit + VAT path emits a folded 2-line JE (S59 F-4, NON-PKP) and pay produces a 2nd JE', async () => {
     const admin = createClient(SUPABASE_URL, SERVICE);
     const today = new Date().toISOString().slice(0, 10);
 
@@ -160,7 +160,10 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('expenses — RPC cycle 
 
     const { data: lines } = await admin.from('journal_entry_lines')
       .select('debit, credit').eq('journal_entry_id', jeId);
-    expect(lines?.length).toBe(3);
+    // S78 : depuis S59 (fix F-4), la TVA d'achat est FOLDÉE dans la ligne de
+    // charge (NON-PKP : pas de crédit de TVA déductible) — le JE credit+VAT
+    // fait 2 lignes (charge TTC / AP), plus jamais 3.
+    expect(lines?.length).toBe(2);
 
     const totalDebit  = (lines ?? []).reduce((s, l) => s + Number(l.debit),  0);
     const totalCredit = (lines ?? []).reduce((s, l) => s + Number(l.credit), 0);

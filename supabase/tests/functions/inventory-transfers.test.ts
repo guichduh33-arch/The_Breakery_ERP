@@ -102,6 +102,16 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('internal-transfer RPCs 
     }
     productAId = prods[0]!.id;
     productBId = prods[1]!.id;
+
+    // S78 : les RPCs transfer vérifient section_stock du from-section
+    // (insufficient_section_stock P0001) — seed 500 pour les 2 produits.
+    for (const pid of [productAId, productBId]) {
+      const { error: ssErr } = await admin.from('section_stock').upsert(
+        { section_id: fromSectionId, product_id: pid, quantity: 500, unit: 'pcs' },
+        { onConflict: 'section_id,product_id' },
+      );
+      if (ssErr) throw new Error(`section_stock seed: ${JSON.stringify(ssErr)}`);
+    }
   });
 
   // ───────────────────────────────────────────────────────────────────────────
