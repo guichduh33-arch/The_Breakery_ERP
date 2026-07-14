@@ -6844,6 +6844,7 @@ export type Database = {
         Args: { p_idempotency_key?: string; p_product_id: string }
         Returns: Json
       }
+      delete_promotion_v1: { Args: { p_promotion_id: string }; Returns: Json }
       delete_restaurant_table_v1: { Args: { p_id: string }; Returns: undefined }
       delete_table_section_v1: { Args: { p_id: string }; Returns: undefined }
       delete_user_v1: {

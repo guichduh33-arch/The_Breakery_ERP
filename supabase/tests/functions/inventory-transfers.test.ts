@@ -60,8 +60,8 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('internal-transfer RPCs 
   let fromSectionId: string; // MAIN_WAREHOUSE
   let toSectionId:   string; // PRODUCTION_KITCHEN
 
-  let productAId: string; // BEV-AMER (primary product for all scenarios)
-  let productBId: string; // a second product (any active product distinct from BEV-AMER)
+  let productAId: string; // premier produit track_inventory actif (S78)
+  let productBId: string; // second produit track_inventory actif (S78)
 
   beforeAll(async () => {
     adminToken   = await loginAs('EMP000', '123456');
@@ -85,22 +85,23 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('internal-transfer RPCs 
     fromSectionId = (sections.find(s => s.code === 'MAIN_WAREHOUSE') ?? sections[0]).id;
     toSectionId   = sections.find(s => s.id !== fromSectionId)!.id;
 
-    // Resolve primary product (BEV-AMER) — pattern from receive-stock.test.ts.
-    const { data: pA } = await admin.from('products')
-      .select('id').eq('sku', 'BEV-AMER').single();
-    productAId = pA!.id;
-
-    // Pick a second active, non-deleted product distinct from BEV-AMER.
-    const { data: others } = await admin.from('products')
+    // S78 (D-6) : BEV-AMER est soft-deleted sur la DB dev vivante, et
+    // create_internal_transfer_v1 exige track_inventory=true + deleted_at NULL
+    // (sinon P0002 product_not_found). Sélection filtrée + déterministe,
+    // plus de dépendance à un sku seed.
+    const { data: prods, error: prodsErr } = await admin.from('products')
       .select('id, sku')
-      .neq('id', productAId)
       .eq('is_active', true)
       .is('deleted_at', null)
-      .limit(1);
-    if (!others || others.length === 0) {
-      throw new Error('Need at least two active products in seed for transfer tests');
+      .eq('track_inventory', true)
+      .order('created_at', { ascending: true })
+      .limit(2);
+    if (prodsErr) throw prodsErr;
+    if (!prods || prods.length < 2) {
+      throw new Error('Need at least two active track_inventory products for transfer tests');
     }
-    productBId = others[0]!.id;
+    productAId = prods[0]!.id;
+    productBId = prods[1]!.id;
   });
 
   // ───────────────────────────────────────────────────────────────────────────

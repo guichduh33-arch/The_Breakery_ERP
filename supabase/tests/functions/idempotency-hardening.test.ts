@@ -286,7 +286,9 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('S25 idempotency hardeni
     const body = await res.json();
     expect(res.status, `body=${JSON.stringify(body)}`).toBe(200);
     expect(body.refund_id).toBeTruthy();
-    expect(body.idempotent_replay).toBe(false);
+    // S78 (D-6) : refund_order_rpc_v4 n'émet idempotent_replay QUE sur le
+    // replay (convention projet : premier appel = enveloppe sans le flag).
+    expect(body.idempotent_replay).not.toBe(true);
   });
 
   // ===========================================================================
@@ -315,7 +317,8 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('S25 idempotency hardeni
     const first = await fetch(REFUND_FN_URL, { method: 'POST', headers, body: payload });
     const firstBody = await first.json();
     expect(first.status, `body=${JSON.stringify(firstBody)}`).toBe(200);
-    expect(firstBody.idempotent_replay).toBe(false);
+    // S78 : cf. TS3 — le flag n'apparaît que sur replay.
+    expect(firstBody.idempotent_replay).not.toBe(true);
 
     // Second call : same idempotency key → replay envelope.
     const second = await fetch(REFUND_FN_URL, { method: 'POST', headers, body: payload });

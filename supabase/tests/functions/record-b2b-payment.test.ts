@@ -20,6 +20,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { loginAs, jwtClient } from './_helpers/auth';
+import { ensureTestProduct } from './_helpers/fixtures';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? process.env.SUPABASE_URL ?? 'http://127.0.0.1:54321';
 const SERVICE      = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
@@ -71,23 +72,13 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('B2B Foundation — reco
       customerId = c!.id;
     }
 
-    // Reuse stable test product (provisioned by inventory live tests)
-    const { data: p } = await admin.from('products')
-      .select('id').eq('sku', 'BEV-AMER').maybeSingle();
-    if (!p) {
-      // Fallback : use any product with stock
-      const { data: any_p } = await admin.from('products')
-        .select('id').gte('current_stock', 10).limit(1).single();
-      if (!any_p) throw new Error('No product with stock available for B2B live test');
-      productId = any_p.id;
-    } else {
-      productId = p.id;
-    }
-    // Bump stock to ensure we don't run out
-    await admin.from('products')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .update({ current_stock: 1000 } as any)
-      .eq('id', productId);
+    // S78 (D-6) : BEV-AMER est soft-deleted — create_b2b_order_v5 le refusait
+    // (résolution de prix S69 : no_data_found/P0002 sur produit soft-deleted,
+    // dette S69 D-4 démasquée). Produit dédié avec retail_price garanti.
+    productId = await ensureTestProduct(admin, {
+      sku: 'ZZ-TEST-B2B', name: '[TEST] B2B live spec',
+      retail_price: 25000, current_stock: 1000,
+    });
   });
 
   afterAll(async () => {

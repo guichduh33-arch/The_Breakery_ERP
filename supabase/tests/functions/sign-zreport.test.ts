@@ -1,6 +1,10 @@
 // supabase/tests/functions/sign-zreport.test.ts
-// Session 29 / Wave 3.C — Vitest live tests for the sign_zreport_v1 RPC
+// Session 29 / Wave 3.C — Vitest live tests for the sign_zreport RPC
 // exercised via supabase-js client (not an EF — the RPC is called directly).
+// S78 (D-6) : repointé v1 (DROPPÉE) -> sign_zreport_v2(p_zreport_id,
+// p_manager_pin) — depuis S37 le PIN est validé DANS la RPC
+// (_verify_pin_with_lockout, P0001/P0003) et l'action d'audit est
+// 'zreport.sign' (pas 'zreport.signed').
 //
 // 3 scénarios :
 //   SZ1 : PIN-en-header valid — manager JWT + x-manager-pin → signs report → status='signed'
@@ -59,7 +63,7 @@ function rpc(sb: SupabaseClient): (fn: string, args?: Record<string, unknown>) =
 }
 
 describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)(
-  'S29 sign_zreport_v1 RPC — Vitest live',
+  'S29 sign_zreport_v2 RPC — Vitest live',
   () => {
     let adminClient: ReturnType<typeof createClient>;
     let managerToken: string;
@@ -118,19 +122,20 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)(
       await adminClient.from('pos_sessions').delete().eq('id', TEST_SESSION_ID);
       // Clean up any audit rows created.
       await adminClient.from('audit_logs').delete()
-        .eq('action', 'zreport.signed').eq('entity_id', TEST_ZREPORT_ID);
+        .eq('action', 'zreport.sign').eq('entity_id', TEST_ZREPORT_ID);
     });
 
     // =========================================================================
     // SZ1 : valid manager JWT + sign_zreport_v1 → status='signed'
     // =========================================================================
-    it('SZ1: manager JWT calls sign_zreport_v1 → status=signed + idempotent_replay=false', async () => {
+    it('SZ1: manager JWT calls sign_zreport_v2 → status=signed + idempotent_replay=false', async () => {
       const managerClient = createClient(SUPABASE_URL, ANON, {
         global: { headers: { Authorization: `Bearer ${managerToken}` } },
       });
 
-      const { data, error } = await rpc(managerClient)('sign_zreport_v1', {
-        p_zreport_id: TEST_ZREPORT_ID,
+      const { data, error } = await rpc(managerClient)('sign_zreport_v2', {
+        p_zreport_id:  TEST_ZREPORT_ID,
+        p_manager_pin: MANAGER_PIN_VALID, // S78: v2 valide le PIN in-RPC
       });
 
       expect(error, `RPC error: ${JSON.stringify(error)}`).toBeNull();
@@ -172,18 +177,18 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)(
     // =========================================================================
     // SZ3 : audit row created — after SZ1, audit_logs has zreport.signed action
     // =========================================================================
-    it('SZ3: audit_logs row with action=zreport.signed exists after SZ1', async () => {
-      // Give the DB a moment for the row to propagate (audit INSERT in sign_zreport_v1 is synchronous).
+    it('SZ3: audit_logs row with action=zreport.sign exists after SZ1', async () => {
+      // S78: l'action canonique de sign_zreport_v2 est 'zreport.sign'.
       const { data: rows } = await adminClient.from('audit_logs')
         .select('action, entity_id, actor_id')
-        .eq('action', 'zreport.signed')
+        .eq('action', 'zreport.sign')
         .eq('entity_id', TEST_ZREPORT_ID);
 
       expect(rows).toBeTruthy();
       expect(rows!.length).toBeGreaterThanOrEqual(1);
 
       const auditRow = rows![0] as { action: string; entity_id: string; actor_id: string };
-      expect(auditRow.action).toBe('zreport.signed');
+      expect(auditRow.action).toBe('zreport.sign');
       expect(auditRow.entity_id).toBe(TEST_ZREPORT_ID);
       // actor_id should match the manager who called sign_zreport_v1.
       expect(auditRow.actor_id).toBe(managerProfileId);

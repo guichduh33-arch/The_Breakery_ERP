@@ -12,6 +12,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
 import { loginAs, jwtClient } from './_helpers/auth';
+import { ensureTestProduct } from './_helpers/fixtures';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? 'http://127.0.0.1:54321';
 const SERVICE      = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
@@ -25,11 +26,11 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('stock_reservations RPCs
     cashierToken = await loginAs('EMP002', '111111');
 
     const admin = createClient(SUPABASE_URL, SERVICE);
-    const { data: p } = await admin.from('products')
-      .select('id').eq('sku', 'BEV-AMER').single();
-    productId = p!.id;
-    // Bump stock so we don't conflict with other suites.
-    await admin.from('products').update({ current_stock: 100 }).eq('id', productId);
+    // S78 (D-6) : BEV-AMER est soft-deleted — invisible dans
+    // v_product_available_stock (=> null.available_quantity). Produit dédié.
+    productId = await ensureTestProduct(admin, {
+      sku: 'ZZ-TEST-RESV', name: '[TEST] Reservations live spec', current_stock: 100,
+    });
   });
 
   it('hold reduces available_quantity', async () => {

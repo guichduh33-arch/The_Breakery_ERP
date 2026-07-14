@@ -64,14 +64,15 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('evaluate_promotions_v2 
       .eq('is_active', true);
 
     // Insert a temp category + 4 products with known prices.
-    const { data: cat } = await admin
+    const { data: cat, error: catErr } = await admin
       .from('categories')
       .insert({ name: 'PHASE2C-LIVE', slug: 'phase-2c-live' })
       .select('id')
       .single();
+    if (catErr) throw new Error(`category insert: ${JSON.stringify(catErr)}`);
     const catId = cat!.id;
 
-    const { data: prods } = await admin
+    const { data: prods, error: prodsErr } = await admin
       .from('products')
       .insert([
         { sku: 'P2C-A', name: 'Phase2C A 15k', retail_price: 15000, category_id: catId, unit: 'unit' },
@@ -80,45 +81,54 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('evaluate_promotions_v2 
         { sku: 'P2C-D', name: 'Phase2C D 25k', retail_price: 25000, category_id: catId, unit: 'unit' },
       ])
       .select('id, sku');
+    if (prodsErr) throw new Error(`products insert: ${JSON.stringify(prodsErr)}`);
     productAId = prods!.find((p) => p.sku === 'P2C-A')!.id;
     productBId = prods!.find((p) => p.sku === 'P2C-B')!.id;
     productCId = prods!.find((p) => p.sku === 'P2C-C')!.id;
     productDId = prods!.find((p) => p.sku === 'P2C-D')!.id;
 
     // Insert three test promotions, only one active at a time.
-    await admin.from('promotions').insert([
-      {
-        name: 'Live BOGO 2+1 Baguette',
-        slug: 'live-bogo-2-1-baguette',
-        type: 'bogo',
-        bogo_buy_quantity: 2,
-        bogo_get_quantity: 1,
-        bogo_get_product_id: productAId,
-        bogo_trigger_product_ids: [productAId],
-        priority: 100,
-        is_active: false,
-      },
-      {
-        name: 'Live Threshold 100k @ 10%',
-        slug: 'live-threshold-100k-10',
-        type: 'threshold',
-        threshold_amount: 100000,
-        threshold_type: 'subtotal',
-        discount_value: 10,
-        max_discount_amount: 50000,
-        priority: 80,
-        is_active: false,
-      },
-      {
-        name: 'Live Bundle B+C+D 50k',
-        slug: 'live-bundle-bcd-50k',
-        type: 'bundle',
-        bundle_product_ids: [productBId, productCId, productDId],
-        bundle_price: 50000,
-        priority: 60,
-        is_active: false,
-      },
-    ]);
+    // S78 (D-6) : PostgREST REFUSE un insert batch dont les objets n'ont pas
+    // les mêmes clés (PGRST102 « All object keys must match ») — l'ancien
+    // .insert([3 shapes hétérogènes]) échouait EN SILENCE (erreur jamais
+    // testée) et les 3 évals tournaient sans aucune promo → []. Un insert
+    // par shape + assertion d'erreur.
+    const { error: bogoErr } = await admin.from('promotions').insert({
+      name: 'Live BOGO 2+1 Baguette',
+      slug: 'live-bogo-2-1-baguette',
+      type: 'bogo',
+      bogo_buy_quantity: 2,
+      bogo_get_quantity: 1,
+      bogo_get_product_id: productAId,
+      bogo_trigger_product_ids: [productAId],
+      priority: 100,
+      is_active: false,
+    });
+    if (bogoErr) throw new Error(`bogo insert: ${JSON.stringify(bogoErr)}`);
+
+    const { error: thrErr } = await admin.from('promotions').insert({
+      name: 'Live Threshold 100k @ 10%',
+      slug: 'live-threshold-100k-10',
+      type: 'threshold',
+      threshold_amount: 100000,
+      threshold_type: 'subtotal',
+      discount_value: 10,
+      max_discount_amount: 50000,
+      priority: 80,
+      is_active: false,
+    });
+    if (thrErr) throw new Error(`threshold insert: ${JSON.stringify(thrErr)}`);
+
+    const { error: bunErr } = await admin.from('promotions').insert({
+      name: 'Live Bundle B+C+D 50k',
+      slug: 'live-bundle-bcd-50k',
+      type: 'bundle',
+      bundle_product_ids: [productBId, productCId, productDId],
+      bundle_price: 50000,
+      priority: 60,
+      is_active: false,
+    });
+    if (bunErr) throw new Error(`bundle insert: ${JSON.stringify(bunErr)}`);
   }, 30_000);
 
   afterAll(async () => {

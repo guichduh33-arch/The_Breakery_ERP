@@ -1,8 +1,11 @@
 // apps/backoffice/src/features/promotions/hooks/useDeletePromotion.ts
 //
-// Mutation: SOFT-DELETE a promotion (UPDATE deleted_at = now()). Hard DELETE
-// is forbidden because promotion_applications.promotion_id references this
-// row with ON DELETE RESTRICT (preserves audit trail).
+// Mutation: SOFT-DELETE a promotion via the delete_promotion_v1 RPC (S78,
+// migration _167). L'UPDATE direct de deleted_at est impossible sous RLS :
+// la policy SELECT auth_read (deleted_at IS NULL) s'applique au NEW row et
+// rejette l'écriture (42501) — la RPC SECURITY DEFINER gatée
+// `promotions.delete` est la seule voie. Hard DELETE reste interdit
+// (promotion_applications.promotion_id ON DELETE RESTRICT, audit trail).
 //
 // Spec ref: docs/superpowers/specs/2026-05-10-session-9-promotions-spec.md §3.5, §7
 
@@ -14,10 +17,9 @@ export function useDeletePromotion() {
   const qc = useQueryClient();
   return useMutation<void, Error, string>({
     mutationFn: async (id) => {
-      const { error } = await supabase
-        .from('promotions')
-        .update({ deleted_at: new Date().toISOString(), is_active: false })
-        .eq('id', id);
+      const { error } = await supabase.rpc('delete_promotion_v1', {
+        p_promotion_id: id,
+      });
       if (error) throw error;
     },
     onSuccess: async () => {
