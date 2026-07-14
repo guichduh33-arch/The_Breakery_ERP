@@ -17,6 +17,11 @@ DECLARE
   v_session UUID;
   v_order   UUID;
 BEGIN
+  -- S77 (D-7) : clôture transactionnelle d'une éventuelle session ouverte
+  -- fuitée pour ce profil (annulée par le ROLLBACK final).
+  UPDATE pos_sessions SET status='closed', closed_at=now(), closed_by=v_cashier, closing_cash=0
+   WHERE opened_by = v_cashier AND status='open';
+
   INSERT INTO pos_sessions (opened_by, opening_cash)
   VALUES (v_cashier, 100000) RETURNING id INTO v_session;
 

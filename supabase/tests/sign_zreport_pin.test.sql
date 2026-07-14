@@ -19,6 +19,11 @@ BEGIN
   UPDATE user_profiles SET pin_hash = extensions.crypt('424242', extensions.gen_salt('bf'))
    WHERE id = v_prof;
 
+  -- S77 (D-7) : clôture transactionnelle d'une éventuelle session ouverte
+  -- fuitée pour ce profil (annulée par le ROLLBACK final).
+  UPDATE pos_sessions SET status='closed', closed_at=now(), closed_by=v_prof, closing_cash=0
+   WHERE opened_by = v_prof AND status='open';
+
   INSERT INTO pos_sessions (opened_by, opening_cash, status)
     VALUES (v_prof, 0, 'open') RETURNING id INTO v_sess;
   INSERT INTO z_reports (shift_id, snapshot) VALUES (v_sess, '{}'::jsonb) RETURNING id INTO v_zr;

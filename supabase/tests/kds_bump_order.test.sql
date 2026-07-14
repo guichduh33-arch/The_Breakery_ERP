@@ -38,6 +38,12 @@ BEGIN
   VALUES (v_prod, 'PGTAP-S60-KBO', 'pgTAP S60 KDS Bump Order Product', v_cat, 15000, 100.000, false, false)
   ON CONFLICT (id) DO UPDATE SET current_stock = 100.000;
 
+  -- S77 (D-7) : la base dev vivante peut porter une session OUVERTE fuitée
+  -- pour ce profil (specs vitest/E2E sans rollback) — clôture transactionnelle
+  -- préalable, annulée par le ROLLBACK final (la session vivante survit au run).
+  UPDATE pos_sessions SET status='closed', closed_at=now(), closed_by=v_prof, closing_cash=0
+   WHERE opened_by = v_prof AND status='open';
+
   -- POS orders require a session_id (chk orders_session_id_required_for_pos).
   INSERT INTO pos_sessions (opened_by, opened_at, opening_cash, status)
   VALUES (v_prof, NOW(), 0, 'open')

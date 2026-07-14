@@ -16,6 +16,10 @@
 --
 -- Auth simulated via set_config('request.jwt.claim.sub', '<uuid>', true)
 -- as is the project convention (see orders_list_v1.test.sql).
+-- S77 : claim.sub doit porter l'AUTH_USER_ID, pas user_profiles.id — le
+-- LIMIT 1 non trié tombait sur un employé embauché (id <> auth_user_id)
+-- et has_permission ne trouvait rien ('Permission denied: orders.read').
+-- Résolution déterministe : plus ancien profil actif du rôle (les seeds).
 
 BEGIN;
 SELECT plan(10);
@@ -23,7 +27,7 @@ SELECT plan(10);
 -- ===== T1 : CASHIER without orders.read → 42501 =====
 DO $$
 DECLARE
-  v_cashier_id UUID := (SELECT id FROM user_profiles WHERE role_code='CASHIER' LIMIT 1);
+  v_cashier_id UUID := (SELECT auth_user_id FROM user_profiles WHERE role_code='CASHIER' AND deleted_at IS NULL AND auth_user_id IS NOT NULL ORDER BY created_at LIMIT 1);
   v_status TEXT := 'fail_no_raise';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_cashier_id::text, true);
@@ -41,7 +45,7 @@ SELECT ok(
 
 -- Establish MANAGER context for T2..T10
 DO $$
-DECLARE v_mgr UUID := (SELECT id FROM user_profiles WHERE role_code='MANAGER' LIMIT 1);
+DECLARE v_mgr UUID := (SELECT auth_user_id FROM user_profiles WHERE role_code='MANAGER' AND deleted_at IS NULL AND auth_user_id IS NOT NULL ORDER BY created_at LIMIT 1);
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
 END $$;
@@ -49,7 +53,7 @@ END $$;
 -- ===== T2 : refund_status='none' filter runs =====
 DO $$
 DECLARE
-  v_mgr UUID := (SELECT id FROM user_profiles WHERE role_code='MANAGER' LIMIT 1);
+  v_mgr UUID := (SELECT auth_user_id FROM user_profiles WHERE role_code='MANAGER' AND deleted_at IS NULL AND auth_user_id IS NOT NULL ORDER BY created_at LIMIT 1);
   v_status TEXT := 'fail_raised';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
@@ -70,7 +74,7 @@ SELECT ok(
 -- ===== T3 : refund_status='partial' filter runs =====
 DO $$
 DECLARE
-  v_mgr UUID := (SELECT id FROM user_profiles WHERE role_code='MANAGER' LIMIT 1);
+  v_mgr UUID := (SELECT auth_user_id FROM user_profiles WHERE role_code='MANAGER' AND deleted_at IS NULL AND auth_user_id IS NOT NULL ORDER BY created_at LIMIT 1);
   v_status TEXT := 'fail_raised';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
@@ -91,7 +95,7 @@ SELECT ok(
 -- ===== T4 : refund_status='full' filter runs =====
 DO $$
 DECLARE
-  v_mgr UUID := (SELECT id FROM user_profiles WHERE role_code='MANAGER' LIMIT 1);
+  v_mgr UUID := (SELECT auth_user_id FROM user_profiles WHERE role_code='MANAGER' AND deleted_at IS NULL AND auth_user_id IS NOT NULL ORDER BY created_at LIMIT 1);
   v_status TEXT := 'fail_raised';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
@@ -112,7 +116,7 @@ SELECT ok(
 -- ===== T5 : hour filter (Asia/Makassar) =====
 DO $$
 DECLARE
-  v_mgr UUID := (SELECT id FROM user_profiles WHERE role_code='MANAGER' LIMIT 1);
+  v_mgr UUID := (SELECT auth_user_id FROM user_profiles WHERE role_code='MANAGER' AND deleted_at IS NULL AND auth_user_id IS NOT NULL ORDER BY created_at LIMIT 1);
   v_status TEXT := 'fail_raised';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
@@ -133,7 +137,7 @@ SELECT ok(
 -- ===== T6 : terminal_id filter with valid UUID =====
 DO $$
 DECLARE
-  v_mgr UUID := (SELECT id FROM user_profiles WHERE role_code='MANAGER' LIMIT 1);
+  v_mgr UUID := (SELECT auth_user_id FROM user_profiles WHERE role_code='MANAGER' AND deleted_at IS NULL AND auth_user_id IS NOT NULL ORDER BY created_at LIMIT 1);
   v_terminal UUID := (SELECT id FROM lan_devices WHERE device_type='pos' AND is_active=true LIMIT 1);
   v_status TEXT := 'fail_raised';
 BEGIN
@@ -155,7 +159,7 @@ SELECT ok(
 -- ===== T7 : combo filters =====
 DO $$
 DECLARE
-  v_mgr UUID := (SELECT id FROM user_profiles WHERE role_code='MANAGER' LIMIT 1);
+  v_mgr UUID := (SELECT auth_user_id FROM user_profiles WHERE role_code='MANAGER' AND deleted_at IS NULL AND auth_user_id IS NOT NULL ORDER BY created_at LIMIT 1);
   v_status TEXT := 'fail_raised';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
@@ -177,7 +181,7 @@ SELECT ok(
 -- ===== T8 : limit clamp 500 → ≤ 200 =====
 DO $$
 DECLARE
-  v_mgr UUID := (SELECT id FROM user_profiles WHERE role_code='MANAGER' LIMIT 1);
+  v_mgr UUID := (SELECT auth_user_id FROM user_profiles WHERE role_code='MANAGER' AND deleted_at IS NULL AND auth_user_id IS NOT NULL ORDER BY created_at LIMIT 1);
   v_result JSONB;
   v_count INT;
 BEGIN
@@ -196,7 +200,7 @@ SELECT ok(
 -- ===== T9 : output line shape includes terminal_id key =====
 DO $$
 DECLARE
-  v_mgr UUID := (SELECT id FROM user_profiles WHERE role_code='MANAGER' LIMIT 1);
+  v_mgr UUID := (SELECT auth_user_id FROM user_profiles WHERE role_code='MANAGER' AND deleted_at IS NULL AND auth_user_id IS NOT NULL ORDER BY created_at LIMIT 1);
   v_result JSONB;
   v_count INT;
   v_has_key BOOLEAN;
@@ -221,7 +225,7 @@ SELECT ok(
 -- ===== T10 : unknown filter silently ignored =====
 DO $$
 DECLARE
-  v_mgr UUID := (SELECT id FROM user_profiles WHERE role_code='MANAGER' LIMIT 1);
+  v_mgr UUID := (SELECT auth_user_id FROM user_profiles WHERE role_code='MANAGER' AND deleted_at IS NULL AND auth_user_id IS NOT NULL ORDER BY created_at LIMIT 1);
   v_status TEXT := 'fail_raised';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
