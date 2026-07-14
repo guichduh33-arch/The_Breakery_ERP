@@ -31,9 +31,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # S77 post-merge: no `version:` — the action reads package.json's
+      # packageManager (pnpm@9.15.0). Pinning `9.15` here conflicted with it
+      # ("Multiple versions of pnpm specified") and killed every nightly E2E
+      # run in ~10s — the D-8 S76 "missing secrets" theory was stale, the 3
+      # E2E secrets have existed since 2026-07-09.
       - uses: pnpm/action-setup@v4
-        with:
-          version: 9.15
 
       - uses: actions/setup-node@v4
         with:
