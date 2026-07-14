@@ -1,0 +1,45 @@
+# S78 — dispatch ciblé du seul job vitest live-RPC (itération rapide sans la
+# sérialisation pgtap du nightly). Manuel uniquement ; le verdict nightly
+# officiel reste pgtap-nightly.yml. Ne PAS dispatcher pendant les crons
+# (19:00/22:00 UTC) — même DB dev partagée.
+name: Vitest Live (targeted)
+
+on:
+  workflow_dispatch:
+    inputs:
+      filter:
+        description: 'Fichiers/patterns vitest (espace-séparés), vide = suite complète'
+        required: false
+        default: ''
+
+jobs:
+  vitest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SUPABASE_URL: https://ikcyvlovptebroadgtvd.supabase.co
+      VITE_SUPABASE_URL: https://ikcyvlovptebroadgtvd.supabase.co
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Run live-RPC Vitest suite (targeted)
+        run: |
+          set -uo pipefail
+          if [ -z "${SUPABASE_SERVICE_ROLE_KEY:-}" ]; then
+            echo "::error::SUPABASE_SERVICE_ROLE_KEY secret is not set." >&2
+            exit 1
+          fi
+          # shellcheck disable=SC2086 — filter est volontairement splitté
+          pnpm --filter @breakery/supabase-tests test ${{ github.event.inputs.filter }}
