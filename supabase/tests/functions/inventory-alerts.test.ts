@@ -9,6 +9,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { loginAs, jwtClient } from './_helpers/auth';
+import { ensureTestProduct } from './_helpers/fixtures';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? 'http://127.0.0.1:54321';
 const SERVICE      = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
@@ -26,14 +27,12 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory alerts + prod
     managerToken = await loginAs('EMP003', '111111');
 
     const admin = createClient(SUPABASE_URL, SERVICE);
-    // Force a product into low-stock state so get_low_stock_v1 has a row to return.
-    const { data: p } = await admin.from('products')
-      .select('id').eq('sku', 'BEV-AMER').single();
-    lowStockProductId = p!.id;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await admin.from('products').update({
-      min_stock_threshold: 1_000_000, // huge threshold so current_stock < threshold
-    } as any).eq('id', lowStockProductId);
+    // S78 (D-6) : BEV-AMER est soft-deleted sur la DB vivante. Produit de
+    // test dédié, upsert-restauré, seuil énorme => toujours low-stock.
+    lowStockProductId = await ensureTestProduct(admin, {
+      sku: 'ZZ-TEST-ALERTS', name: '[TEST] Alerts live spec',
+      current_stock: 10, min_stock_threshold: 1_000_000,
+    });
   });
 
   it('T_ALERT_LIVE_01: get_low_stock_v1 includes the seeded low-stock product', async () => {

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
 import { loginAs } from './_helpers/auth';
 
@@ -10,6 +10,11 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('process-payment', () =>
   let accessToken: string;
   let sessionId: string;
   let productIds: string[] = [];
+  // S78 (D-6) : le prix ligne est canonique SERVEUR depuis S50
+  // (_resolve_line_price_v1) — les unit_price client sont ignorés. Les
+  // assertions de montants se calculent depuis les retail_price réels.
+  let priceA = 0;
+  let priceB = 0;
 
   beforeAll(async () => {
     const admin = createClient(SUPABASE_URL, SERVICE);
@@ -46,16 +51,40 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('process-payment', () =>
     }
     sessionId = session.id;
 
-    // Get two products for testing
-    const { data: products } = await admin.from('products').select('id').limit(2);
+    // S78 : LIMIT 2 sans filtre tombait sur des produits display/inactifs/
+    // stock 0 → 409 insufficient_stock. Sélection filtrée + déterministe.
+    const { data: products } = await admin.from('products')
+      .select('id, retail_price')
+      .eq('is_active', true)
+      .is('deleted_at', null)
+      .eq('is_display_item', false)
+      .eq('is_test', false)
+      .gt('retail_price', 0)
+      .order('created_at', { ascending: true })
+      .limit(2);
     productIds = (products ?? []).map((p: { id: string }) => p.id);
-    if (productIds.length < 2) throw new Error('Need at least 2 products in seed');
+    if (productIds.length < 2) throw new Error('Need at least 2 eligible products in seed');
+    priceA = Number((products![0] as { retail_price: number }).retail_price);
+    priceB = Number((products![1] as { retail_price: number }).retail_price);
 
     // Reset stock to ensure tests pass
     await admin
       .from('products')
       .update({ current_stock: 50 })
       .in('id', productIds);
+  });
+
+  // S78 (D-7) : la session ouverte au beforeAll n'était JAMAIS refermée —
+  // fuite durable qui cassait les fixtures pgTAP one_open_session_per_user
+  // du run suivant (pollution inter-runs documentée S77).
+  afterAll(async () => {
+    if (!sessionId) return;
+    const admin = createClient(SUPABASE_URL, SERVICE);
+    await admin
+      .from('pos_sessions')
+      .update({ status: 'closed', closed_at: new Date().toISOString() })
+      .eq('id', sessionId)
+      .eq('status', 'open');
   });
 
   it('creates an order on valid payload', async () => {
@@ -69,36 +98,55 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('process-payment', () =>
         session_id: sessionId,
         order_type: 'dine_in',
         items: [
-          { product_id: productIds[0], quantity: 1, unit_price: 35000 },
-          { product_id: productIds[1], quantity: 1, unit_price: 45000 },
+          { product_id: productIds[0], quantity: 1, unit_price: priceA },
+          { product_id: productIds[1], quantity: 1, unit_price: priceB },
         ],
-        payment: { method: 'cash', amount: 80000, cash_received: 100000, change_given: 20000 },
+        payment: { method: 'cash', amount: priceA + priceB, cash_received: priceA + priceB + 20000, change_given: 20000 },
       }),
     });
-    expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.order_number).toMatch(/^#\d{4}$/);
-    expect(body.subtotal).toBe(80000);
-    expect(body.change_given).toBe(20000);
+    expect(res.status, `body=${JSON.stringify(body)}`).toBe(200);
+    expect(String(body.order_number)).toMatch(/^#/);
+    expect(Number(body.subtotal)).toBe(priceA + priceB);
+    expect(Number(body.change_given)).toBe(20000);
   });
 
   it('rejects on insufficient stock', async () => {
-    const res = await fetch(FN_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify({
-        session_id: sessionId,
-        order_type: 'dine_in',
-        items: [{ product_id: productIds[0], quantity: 99999, unit_price: 35000 }],
-        payment: { method: 'cash', amount: 35000 * 99999, cash_received: 35000 * 99999 },
-      }),
-    });
-    expect(res.status).toBe(409);
-    const body = await res.json();
-    expect(body.error).toBe('insufficient_stock');
+    // S78 (D-6) : allow_negative_stock est TRUE sur la DB dev vivante — la
+    // vente à 99999 passait alors LÉGITIMEMENT (et créait une commande de
+    // ~2 Mds IDR dans les données dev !). Flag forcé à false le temps du
+    // test, restauré dans finally (exécution sérielle).
+    const admin = createClient(SUPABASE_URL, SERVICE);
+    const { data: cfg } = await admin.from('business_config')
+      .select('id, allow_negative_stock').limit(1).single();
+    const hadNegative = cfg?.allow_negative_stock === true;
+    if (hadNegative) {
+      await admin.from('business_config')
+        .update({ allow_negative_stock: false }).eq('id', cfg!.id);
+    }
+    try {
+      const res = await fetch(FN_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          session_id: sessionId,
+          order_type: 'dine_in',
+          items: [{ product_id: productIds[0], quantity: 99999, unit_price: priceA }],
+          payment: { method: 'cash', amount: priceA * 99999, cash_received: priceA * 99999 },
+        }),
+      });
+      expect(res.status).toBe(409);
+      const body = await res.json();
+      expect(body.error).toBe('insufficient_stock');
+    } finally {
+      if (hadNegative) {
+        await admin.from('business_config')
+          .update({ allow_negative_stock: true }).eq('id', cfg!.id);
+      }
+    }
   });
 
   it('returns existing order on duplicate idempotency_key (D8)', async () => {
@@ -107,10 +155,10 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('process-payment', () =>
       session_id: sessionId,
       order_type: 'dine_in' as const,
       items: [
-        { product_id: productIds[0], quantity: 1, unit_price: 35000 },
-        { product_id: productIds[1], quantity: 1, unit_price: 45000 },
+        { product_id: productIds[0], quantity: 1, unit_price: priceA },
+        { product_id: productIds[1], quantity: 1, unit_price: priceB },
       ],
-      payment: { method: 'cash' as const, amount: 80000, cash_received: 100000, change_given: 20000 },
+      payment: { method: 'cash' as const, amount: priceA + priceB, cash_received: priceA + priceB + 20000, change_given: 20000 },
       idempotency_key: idempotencyKey,
     };
 
@@ -121,8 +169,8 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('process-payment', () =>
 
     // 1st POST — should create the order
     const first = await fetch(FN_URL, { method: 'POST', headers, body: JSON.stringify(payload) });
-    expect(first.status).toBe(200);
     const firstBody = await first.json();
+    expect(first.status, `body=${JSON.stringify(firstBody)}`).toBe(200);
     expect(firstBody.order_id).toBeTruthy();
 
     // 2nd POST — same key, same payload → must return the same order_id (replay)
@@ -144,8 +192,8 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('process-payment', () =>
       body: JSON.stringify({
         session_id: sessionId,
         order_type: 'dine_in',
-        items: [{ product_id: productIds[0], quantity: 1, unit_price: 35000 }],
-        payment: { method: 'cash', amount: 35000, cash_received: 35000 },
+        items: [{ product_id: productIds[0], quantity: 1, unit_price: priceA }],
+        payment: { method: 'cash', amount: priceA, cash_received: priceA },
         idempotency_key: 'not-a-uuid',
       }),
     });
@@ -172,8 +220,8 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('process-payment', () =>
       body: JSON.stringify({
         session_id: sessionId,
         order_type: 'dine_in',
-        items: [{ product_id: productIds[0], quantity: 1, unit_price: 35000 }],
-        payment: { method: 'cash', amount: 30000, cash_received: 30000 },
+        items: [{ product_id: productIds[0], quantity: 1, unit_price: priceA }],
+        payment: { method: 'cash', amount: priceA, cash_received: priceA },
         customer_id: customer.id,
         loyalty_points_redeemed: 500,
       }),

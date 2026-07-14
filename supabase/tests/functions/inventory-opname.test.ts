@@ -14,6 +14,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { loginAs, jwtClient } from './_helpers/auth';
+import { ensureTestProduct } from './_helpers/fixtures';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? 'http://127.0.0.1:54321';
 const SERVICE      = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
@@ -40,12 +41,11 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory opname — fu
       .select('id').eq('code', 'MAIN_WAREHOUSE').single();
     sectionId = s!.id;
 
-    // Use a stable test product. Bump cost_price so JE valuation > 0.
-    const { data: p } = await admin.from('products')
-      .select('id').eq('sku', 'BEV-AMER').single();
-    productId = p!.id;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await admin.from('products').update({ cost_price: 5000 } as any).eq('id', productId);
+    // S78 (D-6) : BEV-AMER est soft-deleted sur la DB vivante (P0002 dans les
+    // RPCs opname). Produit de test dédié, upsert-restauré par sku fixe.
+    productId = await ensureTestProduct(admin, {
+      sku: 'ZZ-TEST-OPNAME', name: '[TEST] Opname live spec', cost_price: 5000,
+    });
 
     // Seed section_stock = 100 so expected_qty auto-load works.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

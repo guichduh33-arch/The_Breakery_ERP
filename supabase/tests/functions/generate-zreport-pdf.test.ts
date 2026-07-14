@@ -86,18 +86,28 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)(
       const { error: zrErr } = await (adminClient as any).from('z_reports').insert({
         id:       TEST_ZREPORT_ID,
         shift_id: TEST_SESSION_ID,
+        // S78 (D-6) : le template zreport.ts lit snap.opened_at.slice(...) —
+        // un snapshot sans opened_at crashait le rendu (generation_failed
+        // "reading 'slice'"). Shape alignée sur ZReportSnapshotData
+        // (_shared/pdf-templates/zreport.ts), comme close_shift le produit.
         snapshot: {
-          shift_id:      TEST_SESSION_ID,
-          generated_at:  new Date().toISOString(),
-          opening_cash:  500000,
-          closing_cash:  1200000,
-          expected_cash: 1200000,
-          variance:      0,
-          orders:        [],
-          payments_by_method: [],
-          expenses:      [],
-          refunds:       [],
-          cashier_name:  'Test Cashier',
+          shift_id:              TEST_SESSION_ID,
+          generated_at:          new Date().toISOString(),
+          opened_at:             new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
+          closed_at:             new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+          opening_cash:          500000,
+          closing_cash_expected: 1200000,
+          closing_cash_counted:  1200000,
+          cash_variance:         0,
+          cash_in_total:         0,
+          cash_out_total:        0,
+          totals_by_payment_method: {},
+          sales_total:           700000,
+          refunds_total:         0,
+          voids_total:           0,
+          expenses_cash_total:   0,
+          top_products:          [],
+          cashier_name:          'Test Cashier',
         },
         status: 'draft',
       });
@@ -130,8 +140,10 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)(
 
       const body = await res.json();
       expect(res.status, `body=${JSON.stringify(body)}`).toBe(200);
-      expect(typeof body.pdf_storage_path).toBe('string');
-      expect(body.pdf_storage_path).toMatch(/zreports\//);
+      // S78 : l'enveloppe EF est { storage_path, signed_url, ... } — le champ
+      // pdf_storage_path n'existe que sur la ROW z_reports (vérifiée ci-dessous).
+      expect(typeof body.storage_path).toBe('string');
+      expect(body.storage_path).toMatch(/zreports\//);
 
       // Verify z_reports row updated with pdf_storage_path.
       const { data: zr } = await adminClient.from('z_reports')
@@ -159,7 +171,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)(
       const body = await res.json();
       expect(res.status, `body=${JSON.stringify(body)}`).toBe(200);
       expect(body.idempotent_replay).toBe(true);
-      expect(body.pdf_storage_path).toBeTruthy();
+      expect(body.storage_path).toBeTruthy();
     });
 
     // =========================================================================
@@ -192,9 +204,11 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)(
       });
 
       // EF requires x-idempotency-key (idempotency flavor 1, S25 pattern).
+      // S78 : sans Authorization, c'est la gateway (verify_jwt) qui répond 401
+      // avec une enveloppe { msg | message | code } — pas notre { error }.
       expect([400, 401]).toContain(res.status);
       const body = await res.json();
-      expect(body.error).toBeTruthy();
+      expect(body.error ?? body.message ?? body.msg ?? body.code).toBeTruthy();
     });
   }
 );

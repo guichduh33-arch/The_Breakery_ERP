@@ -183,11 +183,30 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('record_production_v1 + 
     const admin = createClient(SUPABASE_URL, SERVICE);
     await admin.from('products').update({ current_stock: 0.5 }).eq('id', flour.id);
     const sb = jwtClient(managerToken);
-    const { error } = await sb.rpc('record_production_v1', {
-      p_product_id: baguette.id, p_quantity_produced: 50, p_section_id: sectionId,
-      p_batch_number: null, p_quantity_waste: 0, p_notes: null, p_idempotency_key: null,
-    });
-    expect(error?.message ?? '').toMatch(/insufficient_stock/);
+
+    // S78 (D-6) : business_config.allow_negative_stock est TRUE sur la DB dev
+    // vivante — la RPC accepte alors légitimement le stock négatif et aucun
+    // insufficient_stock ne sort. On force le flag à false LE TEMPS DU TEST
+    // et on restaure dans finally (exécution sérielle, cf. vitest.config).
+    const { data: cfg } = await admin.from('business_config')
+      .select('id, allow_negative_stock').limit(1).single();
+    const hadNegative = cfg?.allow_negative_stock === true;
+    if (hadNegative) {
+      await admin.from('business_config')
+        .update({ allow_negative_stock: false }).eq('id', cfg!.id);
+    }
+    try {
+      const { error } = await sb.rpc('record_production_v1', {
+        p_product_id: baguette.id, p_quantity_produced: 50, p_section_id: sectionId,
+        p_batch_number: null, p_quantity_waste: 0, p_notes: null, p_idempotency_key: null,
+      });
+      expect(error?.message ?? '').toMatch(/insufficient_stock/);
+    } finally {
+      if (hadNegative) {
+        await admin.from('business_config')
+          .update({ allow_negative_stock: true }).eq('id', cfg!.id);
+      }
+    }
   });
 
   it('cashier role: record_production_v1 raises forbidden', async () => {

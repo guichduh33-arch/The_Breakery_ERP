@@ -36,6 +36,24 @@ const MANAGER_PIN = '111111';
 const CASHIER_EMPLOYEE = 'EMP001';
 const CASHIER_PIN = '567890';
 
+// S78 (D-6) : l'EF generate-pdf ne fetch RIEN — le body porte `data` (shape
+// template-specific, cf. PnlData dans _shared/pdf-templates/pnl.ts) et
+// l'enveloppe de réponse est { storage_path, signed_url, expires_at } —
+// PAS de pdf_url ni de replay serveur (la clé d'idempotence est validée
+// en format mais le path est déterministe par filename).
+const PNL_DATA = {
+  revenue: { sales: 1000000, discounts: 50000, adjustments: 0, total: 950000 },
+  cogs: { production: 300000, waste: 20000, other: 0, total: 320000 },
+  gross_profit: 630000,
+  opex: {
+    salary: 200000, rent: 100000, utilities: 50000, supplies: 30000,
+    marketing: 20000, maintenance: 10000, other: 0, total: 410000,
+  },
+  operating_profit: 220000,
+  net_profit: 220000,
+  lines: [],
+};
+
 describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)(
   'S29 generate-pdf EF — Vitest live',
   () => {
@@ -63,15 +81,16 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)(
         },
         body: JSON.stringify({
           template: 'pnl',
-          filename: 'pgtap-gp1-pnl.pdf', // S77: filename now REQUIRED by the EF
-          params: { start_date: monthAgo, end_date: today },
+          filename: 'pgtap-gp1-pnl', // S77: filename now REQUIRED by the EF
+          data: PNL_DATA, // S78: the EF renders body.data — it fetches nothing
+          period: { start: monthAgo, end: today },
         }),
       });
 
       const body = await res.json();
       expect(res.status, `body=${JSON.stringify(body)}`).toBe(200);
-      expect(typeof body.pdf_url).toBe('string');
-      expect(body.pdf_url).toMatch(/reports-exports/);
+      expect(typeof body.signed_url).toBe('string');
+      expect(body.storage_path).toMatch(/reports-exports/);
     });
 
     // =========================================================================
@@ -110,9 +129,10 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)(
           Authorization: `Bearer ${managerToken}`,
         },
         body: JSON.stringify({
-          template: 'audit',
-          filename: 'pgtap-gp3-audit.pdf', // S77: filename now REQUIRED by the EF
-          params: { start_date: today, end_date: today },
+          template: 'pnl',
+          filename: 'pgtap-gp3-pnl', // S77: filename now REQUIRED by the EF
+          data: PNL_DATA, // S78: real EF contract (cf. GP1)
+          period: { start: today, end: today },
         }),
       });
 
@@ -141,8 +161,9 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)(
         },
         body: JSON.stringify({
           template: 'pnl',
-          filename: 'pgtap-gp4-pnl.pdf', // S77: filename now REQUIRED by the EF
-          params: { start_date: today, end_date: today },
+          filename: 'pgtap-gp4-pnl', // S77: filename now REQUIRED by the EF
+          data: PNL_DATA,
+          period: { start: today, end: today },
         }),
       });
 
@@ -162,8 +183,9 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)(
 
       const payload = JSON.stringify({
         template: 'pnl',
-        filename: 'pgtap-gp5-pnl.pdf', // S77: filename now REQUIRED by the EF
-        params: { start_date: monthAgo, end_date: today },
+        filename: 'pgtap-gp5-pnl', // S77: filename now REQUIRED by the EF
+        data: PNL_DATA, // S78: real EF contract (cf. GP1)
+        period: { start: monthAgo, end: today },
       });
       const headers = {
         'Content-Type': 'application/json',
@@ -174,13 +196,15 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)(
       const first = await fetch(PDF_FN_URL, { method: 'POST', headers, body: payload });
       const firstBody = await first.json();
       expect(first.status, `first body=${JSON.stringify(firstBody)}`).toBe(200);
-      expect(firstBody.pdf_url).toBeTruthy();
+      expect(firstBody.storage_path).toBeTruthy();
 
       const second = await fetch(PDF_FN_URL, { method: 'POST', headers, body: payload });
       const secondBody = await second.json();
       expect(second.status, `second body=${JSON.stringify(secondBody)}`).toBe(200);
-      // Idempotent replay — same storage path returned.
-      expect(secondBody.pdf_url).toBe(firstBody.pdf_url);
+      // S78: pas de replay serveur — le path est déterministe (même filename,
+      // upsert:true) ; les signed_url diffèrent (nouveau token à chaque appel).
+      expect(secondBody.storage_path).toBe(firstBody.storage_path);
+      expect(secondBody.signed_url).toBeTruthy();
     });
   }
 );

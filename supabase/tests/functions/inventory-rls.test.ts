@@ -13,6 +13,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
 import { loginAs, jwtClient, ANON_KEY as ANON } from './_helpers/auth';
+import { ensureTestProduct } from './_helpers/fixtures';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? 'http://127.0.0.1:54321';
 const SERVICE      = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
@@ -31,27 +32,39 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory RLS + GRANT m
     cashierToken = await loginAs('EMP001', '567890');
 
     const admin = createClient(SUPABASE_URL, SERVICE);
-    const { data: p } = await admin.from('products')
-      .select('id').eq('sku', 'BEV-AMER').single();
-    productId = p!.id;
+    // S78 (D-6) : BEV-AMER est soft-deleted sur la DB vivante — produit dédié.
+    productId = await ensureTestProduct(admin, {
+      sku: 'ZZ-TEST-INVRLS', name: '[TEST] Inventory RLS live spec',
+    });
 
     // Service-role bypasses RLS — seed a movement we can SELECT against.
     const code = `INV-RLS-${Date.now()}`;
-    const { data: sup } = await admin.from('suppliers')
+    const { data: sup, error: supErr } = await admin.from('suppliers')
       .insert({ code, name: 'RLS test supplier', is_active: true })
       .select('id').single();
+    if (supErr) throw new Error(`supplier insert: ${JSON.stringify(supErr)}`);
     supplierId = sup!.id;
 
     const { data: adminProfile } = await admin.from('user_profiles')
       .select('id').eq('employee_code', 'EMP000').single();
-    const { data: mvt } = await admin.from('stock_movements').insert({
+    // S78 : l'insert direct violait DEUX contraintes du ledger — unit NOT NULL
+    // (migration _019) et la contrainte de section movement-type-aware
+    // (`adjustment` exige au moins une section, _020). Seed conforme.
+    const { data: sec, error: secErr } = await admin.from('sections')
+      .select('id').eq('is_active', true).is('deleted_at', null)
+      .order('created_at', { ascending: true }).limit(1).single();
+    if (secErr || !sec) throw new Error(`no active section: ${JSON.stringify(secErr)}`);
+    const { data: mvt, error: mvtErr } = await admin.from('stock_movements').insert({
       product_id: productId,
       movement_type: 'adjustment',
       quantity: 1,
+      unit: 'pcs',
+      to_section_id: sec.id,
       reason: 'RLS seed movement',
       reference_type: 'admin_action',
       created_by: adminProfile!.id,
     }).select('id').single();
+    if (mvtErr) throw new Error(`movement seed insert: ${JSON.stringify(mvtErr)}`);
     seedMovementId = mvt!.id;
   });
 

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
 import { loginAs, ANON_KEY } from './_helpers/auth';
 
@@ -66,15 +66,23 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('promotions RLS — role
     seedPromoId = data!.id;
   });
 
+  // S78 (D-7) : le seed n'était jamais nettoyé — chaque run laissait une ligne
+  // « RLS Seed » de plus dans la table partagée.
+  afterAll(async () => {
+    if (seedPromoId) await admin.from('promotions').delete().eq('id', seedPromoId);
+  });
+
   // ---------------------------------------------------------------------------
   // 1. Anonymous (no JWT) — auth_read requires is_authenticated() so denied.
   // ---------------------------------------------------------------------------
   describe('anonymous (no JWT)', () => {
-    it('SELECT denied (RLS returns empty result, no error from PostgREST)', async () => {
+    it('SELECT denied (S20: REVOKE anon — 42501 grants-level, avant même la RLS)', async () => {
       const { data, error } = await anonClient.from('promotions').select('id').limit(5);
-      // PostgREST returns an empty array (200) when RLS filters everything out.
-      expect(error).toBeNull();
-      expect(data).toEqual([]);
+      // S78 : depuis le durcissement S20 (REVOKE ALL FROM anon sur public.*),
+      // anon est bloqué au niveau GRANTS (42501) — plus de « RLS-empty ».
+      expect(error).not.toBeNull();
+      expect(error!.code).toBe('42501');
+      expect(data).toBeNull();
     });
 
     it('INSERT denied (no perm_create policy match)', async () => {
@@ -176,14 +184,13 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('promotions RLS — role
       await admin.from('promotions').update({ is_active: true }).eq('id', seedPromoId);
     });
 
-    // ATTENTION : Spec §3.5 says delete reserved to SUPER_ADMIN. Migration
-    // implements that as a SECOND UPDATE policy ("perm_delete") that OR-merges
-    // with perm_update. Since MANAGER has promotions.update, the perm_update
-    // USING clause already returns true for the row → UPDATE goes through
-    // regardless of column. So in practice MANAGER CAN soft-delete. The test
-    // documents the OBSERVED behaviour. Flag for user review.
-    it('UPDATE deleted_at: OBSERVED behaviour — migration allows it (see test header)', async () => {
-      // Use a dedicated row so we don't break the suite's seedPromoId.
+    // S78 : l'ancien finding « OR-merge laisse MANAGER soft-deleter » est mort —
+    // le moteur applique la policy SELECT auth_read (deleted_at IS NULL) au NEW
+    // row de l'UPDATE : un soft-delete direct est rejeté 42501 pour TOUT LE
+    // MONDE. La voie légitime est la RPC delete_promotion_v1 (_167), gatée
+    // `promotions.delete` (ADMIN/SUPER_ADMIN) — l'intention du spec §3.5 est
+    // enfin appliquée : MANAGER en est exclu.
+    it('UPDATE deleted_at direct: rejeté par le moteur (42501) + RPC refusée à MANAGER', async () => {
       const { data: tmp } = await admin.from('promotions').insert({
         name: 'Manager-soft-del-target', slug: `mgr-softdel-${Date.now()}`,
         type: 'percentage', scope: 'cart', discount_value: 5, is_active: true,
@@ -192,15 +199,19 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('promotions RLS — role
       const { error } = await managerClient.from('promotions')
         .update({ deleted_at: new Date().toISOString(), is_active: false })
         .eq('id', tmp!.id);
-      expect(error).toBeNull();
+      expect(error).not.toBeNull();
+      expect(error!.code).toBe('42501');
+
+      // La RPC est gatée promotions.delete — MANAGER ne l'a pas.
+      const { error: rpcErr } = await managerClient.rpc('delete_promotion_v1', {
+        p_promotion_id: tmp!.id,
+      });
+      expect(rpcErr).not.toBeNull();
+      expect(rpcErr!.code).toBe('42501');
 
       const { data: row } = await admin.from('promotions')
         .select('deleted_at').eq('id', tmp!.id).single();
-      // Migration's OR-merge means MANAGER can soft-delete. If the spec intent
-      // is "delete-only-by-SUPER_ADMIN", the policy structure must change
-      // (e.g. perm_update USING clause should also exclude rows where the new
-      // value of deleted_at differs from old). Documented in test header.
-      expect(row!.deleted_at).not.toBeNull();
+      expect(row!.deleted_at).toBeNull();
 
       await admin.from('promotions').delete().eq('id', tmp!.id);
     });
@@ -226,9 +237,11 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('promotions RLS — role
         .update({ name: newName }).eq('id', id);
       expect(upErr).toBeNull();
 
-      // Soft-delete
-      const { error: delErr } = await superAdminClient.from('promotions')
-        .update({ deleted_at: new Date().toISOString(), is_active: false }).eq('id', id);
+      // Soft-delete — S78 : via la RPC delete_promotion_v1 (l'UPDATE direct de
+      // deleted_at est rejeté par le moteur pour tous, cf. bloc MANAGER).
+      const { error: delErr } = await superAdminClient.rpc('delete_promotion_v1', {
+        p_promotion_id: id,
+      });
       expect(delErr).toBeNull();
 
       // Verify deleted (admin bypass to confirm).

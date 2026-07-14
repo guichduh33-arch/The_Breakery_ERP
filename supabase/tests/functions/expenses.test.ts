@@ -119,17 +119,23 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('expenses — RPC cycle 
     expect(payRes.was_credit).toBe(false);
   });
 
-  it('credit + VAT path emits 3-line JE and pay produces a 2nd JE', async () => {
+  it('credit + VAT path emits a folded 2-line JE (S59 F-4, NON-PKP) and pay produces a 2nd JE', async () => {
     const admin = createClient(SUPABASE_URL, SERVICE);
     const today = new Date().toISOString().slice(0, 10);
 
     // Creator (EMP000) must differ from the approver (EMP003) — see SOD note above.
     const sbAdm = jwtClient(adminToken);
     const sbMgr = jwtClient(managerToken);
+    // S78 (D-6) : 1 100 000 tombait dans la bande expense_approval_thresholds
+    // >= 1M = DEUX étapes (Manager puis Owner ADMIN/SUPER_ADMIN) — la 1ʳᵉ
+    // approbation seule ne crée PAS de JE et le test cherchait un JE
+    // inexistant. Le sujet ici est le JE 3-lignes credit+VAT : on reste dans
+    // la bande 100k..1M (1 étape Manager). Le multi-étapes appartient à la
+    // couverture expense-governance.
     const { data: createId } = await sbAdm.rpc('create_expense_v1', {
       p_category_id:    utilitiesCategoryId,
-      p_amount:         1100000,
-      p_vat_amount:     100000,
+      p_amount:         550000,
+      p_vat_amount:     50000,
       p_payment_method: 'credit',
       p_description:    'live test credit + VAT',
       p_expense_date:   today,
@@ -143,6 +149,9 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('expenses — RPC cycle 
       p_manager_pin: '111111',
     });
     expect(approveData).toBeTruthy();
+    // S78 : asserter le statut final — un « pending next step » silencieux
+    // rendait l'échec illisible (null.id au lookup JE).
+    expect((approveData as unknown as { status: string }).status).toBe('approved');
 
     // approve_expense_v3 no longer returns je_id — look it up by reference.
     const { data: jeRow } = await admin.from('journal_entries').select('id')
@@ -151,7 +160,10 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('expenses — RPC cycle 
 
     const { data: lines } = await admin.from('journal_entry_lines')
       .select('debit, credit').eq('journal_entry_id', jeId);
-    expect(lines?.length).toBe(3);
+    // S78 : depuis S59 (fix F-4), la TVA d'achat est FOLDÉE dans la ligne de
+    // charge (NON-PKP : pas de crédit de TVA déductible) — le JE credit+VAT
+    // fait 2 lignes (charge TTC / AP), plus jamais 3.
+    expect(lines?.length).toBe(2);
 
     const totalDebit  = (lines ?? []).reduce((s, l) => s + Number(l.debit),  0);
     const totalCredit = (lines ?? []).reduce((s, l) => s + Number(l.credit), 0);

@@ -119,12 +119,17 @@ serve(async (req) => {
   }
 
   // Upload to reports-exports/<user_id>/yyyy/mm/<filename>.pdf
+  // S78 : upload via service role (miroir generate-zreport-pdf) — l'upsert
+  // d'un path existant est un UPDATE storage.objects que la RLS user refuse
+  // (« new row violates row-level security ») : tout re-export du même
+  // filename répondait 500 upload_failed. La permission du caller est déjà
+  // vérifiée plus haut (has_permission), le path reste scoped par user_id.
   const now = new Date();
   const yyyy = String(now.getUTCFullYear());
   const mm   = String(now.getUTCMonth() + 1).padStart(2, '0');
   const path = `${userData.user.id}/${yyyy}/${mm}/${body.filename}.pdf`;
 
-  const { error: uploadErr } = await userClient.storage
+  const { error: uploadErr } = await admin.storage
     .from('reports-exports')
     .upload(path, pdfBytes, { contentType: 'application/pdf', upsert: true });
   if (uploadErr) {
@@ -132,7 +137,7 @@ serve(async (req) => {
     return jsonResponse({ error: 'upload_failed', detail: uploadErr.message }, 500);
   }
 
-  const { data: signed, error: signErr } = await userClient.storage
+  const { data: signed, error: signErr } = await admin.storage
     .from('reports-exports')
     .createSignedUrl(path, 3600);
   if (signErr || !signed?.signedUrl) {
