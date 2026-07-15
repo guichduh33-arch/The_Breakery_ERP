@@ -1,0 +1,502 @@
+PILE;suggestion;path;title;lines;last_commit;age_days;commits;authors;refs;code_refs;orphan;stale;dup
+;archive;docs\workplan\audits\2026-05-20-audit-integral-V3\02-supabase-best-practices.md;Vague 2 — Audit Supabase Best Practices;280;2026-05-20;56;1;1;2;0;non;non;non
+;archive;docs\workplan\audits\2026-05-20-audit-integral-V3\03-accounting-audit.md;Vague 3 — Audit Comptable (JE Matrix + SAK EMKM);340;2026-05-20;56;1;1;3;0;non;non;non
+;archive;docs\workplan\audits\2026-05-20-audit-integral-V3\04-security-review.md;Vague 4 — Security Review (RBAC + RLS + Auth + EFs);392;2026-05-20;56;1;1;2;0;non;non;non
+;archive;docs\workplan\audits\2026-05-20-audit-integral-V3\05-ux-design-audit.md;Vague 5 — UX/UI Backoffice Audit;348;2026-05-20;56;1;1;2;0;non;non;non
+;archive;docs\workplan\audits\2026-05-20-audit-integral-V3\06-completeness-audit.md;Vague 6 — Complétude Fonctionnelle V3 vs Vision V2;1029;2026-05-20;56;1;1;2;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-05-12-session-12-inv-02-rpcs-core.md;Session 12 — Phase 2 sub-plan : RPCs core (closing the gap);127;2026-06-04;41;1;1;1;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-05-12-session-12-inv-03-transfers.md;Session 12 — Phase 3 sub-plan : Transfers (inter-section);465;2026-06-04;41;1;1;1;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-05-13-session-13-phase-2.C-promotions-bogo.md;Phase 2.C — Promotions BOGO + threshold engine (sub-plan);157;2026-06-04;41;1;1;0;0;oui;non;non
+;archive;docs\workplan\plans\archive\2026-05-13-session-13-phase-5.A-lan-port.md;Session 13 — Phase 5.A — LAN architecture port (sub-plan);109;2026-06-04;41;1;1;0;0;oui;non;non
+;archive;docs\workplan\plans\archive\2026-05-13-session-13-phase-5.C-settings-ui.md;Session 13 — Phase 5.C — Settings UI + holidays/templates;172;2026-06-04;41;1;1;0;0;oui;non;non
+;archive;docs\workplan\plans\archive\2026-05-15-session-15-INDEX.md;Session 15 — INDEX (Bakery Production : F6 + F5 + Recipe pro);424;2026-06-04;41;1;1;3;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-05-17-session-17-INDEX.md;Session 17 — INDEX (Full Price Chain : PO → Cost → Recipe Cascade → Snapshot History);1324;2026-06-04;41;1;1;1;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-05-17-session-18-INDEX.md;Session 18 — INDEX (Recipe Cost History Report);1090;2026-06-04;41;1;1;1;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-05-17-session-19-INDEX.md;Session 19 — INDEX (Hardening polish: durable rate-limit + session timeout per role + PIN strength warn);2404;2026-06-04;41;1;1;3;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-05-17-session-20-INDEX.md;Session 20 — INDEX (Defense-in-depth GRANT hardening);1075;2026-06-04;41;1;1;1;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-05-18-session-21-INDEX.md;Session 21 — INDEX (Polish hardening reliquat);474;2026-06-04;41;1;1;1;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-05-18-session-22-INDEX.md;Session 22 — INDEX (Focus-trap lock-in + dette technique ciblée);474;2026-06-04;41;1;1;2;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-05-19-session-25-INDEX.md;Session 25 — INDEX (Hardening Idempotency Cross-EF);1059;2026-06-04;41;1;1;5;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-05-20-session-27-INDEX.md;Session 27 — INDEX (Product CRUD : update flow MVP);105;2026-06-04;41;1;1;2;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-05-20-session-27b-INDEX.md;Session 27b — INDEX (Product CRUD : create + categories management);103;2026-06-04;41;1;1;2;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-05-22-session-31-INDEX.md;Session 31 — Reports Drill-Down + 3 detail pages — INDEX;183;2026-06-04;41;1;1;3;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-05-22-session-31-plan.md;Session 31 — Reports Drill-Down + 3 detail pages Implementation Plan;1611;2026-06-04;41;1;1;1;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-05-23-session-26b-INDEX.md;Session 26b — INDEX (Comptable Cockpit UI core);174;2026-06-04;41;1;1;1;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-05-24-session-27c-INDEX.md;Session 27c — INDEX (Product Variants);299;2026-06-04;41;1;1;2;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-05-24-session-27c-plan.md;Session 27c — Product Variants Implementation Plan;3381;2026-06-04;41;1;1;1;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-05-24-session-28-INDEX.md;Session 28 — INDEX (Expense Governance);289;2026-06-04;41;1;1;1;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-05-24-session-28-plan.md;Session 28 — Expense Governance Implementation Plan;2518;2026-06-04;41;1;1;1;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-05-24-session-29-INDEX.md;Session 29 — Reports Export + Z-Report PDF (Vague A) — INDEX;368;2026-06-04;41;1;1;1;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-05-24-session-29-plan.md;Session 29 — Reports Export + Z-Report PDF (Vague A) Implementation Plan;2505;2026-06-04;41;1;1;1;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-05-24-session-30-INDEX.md;Session 30 — Vague B : 5 bakery reports — INDEX;294;2026-06-04;41;1;1;1;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-05-24-session-30-plan.md;Session 30 — Vague B : 5 reports métier bakery Implementation Plan;333;2026-06-04;41;1;1;1;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-05-26-session-32-INDEX.md;Session 32 — Reports Vague C close-out drill-down + /backoffice/orders list — INDEX;218;2026-06-04;41;1;1;3;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-05-26-session-32-plan.md;Session 32 — Reports Vague C close-out drill-down + /backoffice/orders list Implementation Plan;2715;2026-06-04;41;1;1;1;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-05-29-session-33-INDEX.md;Session 33 — Orders v2 : server-side filters + realtime + void + edit-items — INDEX;209;2026-06-04;41;1;1;2;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-05-29-session-33-plan.md;Session 33 — Orders v2 Implementation Plan;2595;2026-06-04;41;1;1;3;0;non;non;non
+;archive;CHANGELOG.md;Changelog;75;2026-06-12;33;2;2;9;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-05-19-session-24-INDEX.md;Session 24 — INDEX (B2B Foundation);470;2026-06-12;33;2;1;3;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-05-27-backoffice-menu-reorg-addendum-collapsible.md;Backoffice Menu Reorg — Addendum : Collapsible Subgroups;150;2026-06-12;33;1;1;0;0;oui;non;non
+;archive;docs\workplan\plans\archive\2026-05-27-backoffice-menu-reorg-plan.md;Backoffice Menu Reorg — Implementation Plan;797;2026-06-12;33;1;1;1;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-05-29-session-35-INDEX.md;Session 35 — POS Service Polish — INDEX;72;2026-06-12;33;1;1;2;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-05-29-session-35-plan.md;Session 35 — POS Service Polish — Implementation Plan;2045;2026-06-12;33;1;1;3;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-05-30-pos-display-stock-isolation-plan.md;Isolation du stock vitrine POS — Implementation Plan;2106;2026-06-12;33;1;1;0;0;oui;non;non
+;archive;docs\workplan\plans\archive\2026-06-01-pos-cash-drawer-error-toast-plan.md;POS Cash Drawer Error Toast Implementation Plan;466;2026-06-12;33;1;1;0;0;oui;non;non
+;archive;docs\workplan\plans\archive\2026-06-01-pos-claudemd-doc-sync-plan.md;CLAUDE.md doc sync (stale RPC versions) Implementation Plan;300;2026-06-12;33;1;1;0;0;oui;non;non
+;archive;docs\workplan\plans\archive\2026-06-01-pos-paymentterminal-refactor-plan.md;POS PaymentTerminal Refactor Implementation Plan;1540;2026-06-12;33;1;1;0;0;oui;non;non
+;archive;docs\workplan\plans\archive\2026-06-01-pos-realtime-channel-uniqueness-fix-plan.md;POS Realtime Channel Uniqueness Fix Implementation Plan;709;2026-06-12;33;1;1;0;0;oui;non;non
+;archive;docs\workplan\plans\archive\2026-06-01-pos-receipt-payment-method-fix-plan.md;POS Receipt Payment Method Fix Implementation Plan;437;2026-06-12;33;1;1;0;0;oui;non;non
+;archive;docs\workplan\plans\archive\2026-06-01-pos-refund-test-investigation-plan.md;POS Refund Modal C2 Timeout Investigation Implementation Plan;614;2026-06-12;33;1;1;0;0;oui;non;non
+;archive;docs\workplan\plans\archive\2026-06-01-session-34-station-printing-INDEX.md;Session 34 — Station Ticket Printing — INDEX;169;2026-06-12;33;1;1;1;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-06-01-session-34-station-printing-plan.md;Session 34 — Station Ticket Printing Implementation Plan;118;2026-06-12;33;1;1;1;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-06-04-session-36-INDEX.md;Session 36 — POS Correctness & Security Close-out — INDEX;139;2026-06-12;33;1;1;2;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-06-11-session-37-INDEX.md;Session 37 — Fraud Hardening & Correctness Close-out — INDEX;158;2026-06-12;33;1;1;2;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-06-11-session-37-plan.md;Session 37 — Fraud Hardening & Correctness Close-out — Implementation Plan;357;2026-06-12;33;1;1;2;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-06-11-session-38-INDEX.md;Session 38 — INDEX (close-out);117;2026-06-12;33;1;1;1;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-06-11-session-38-plan.md;Session 38 Implementation Plan — PIN Lockout + Split-Bill étendu + Tests E2E;453;2026-06-12;33;1;1;1;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-06-11-session-39-INDEX.md;Session 39 — INDEX : Backoffice Completion Bundle (BO-04 / BO-09 / BO-10 / BO-15);64;2026-06-12;33;1;1;1;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-06-11-session-39-plan.md;Session 39 Implementation Plan — Backoffice Completion Bundle (BO-04 / BO-09 / BO-10 / BO-15);660;2026-06-12;33;1;1;1;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-06-12-session-40-INDEX.md;Session 40 — INDEX : Reports close-out — les 9 cards « Soon » du hub;85;2026-06-12;33;1;1;2;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-06-12-session-40-plan.md;Session 40 — Plan : Reports close-out — les 9 cards « Soon » du hub;516;2026-06-12;33;1;1;1;0;non;non;non
+;archive;docs\workplan\refs\archive\2026-05-14-session-13-wave-5-deviations.md;Session 13 — Wave 5 Deviation Pack;904;2026-06-12;33;1;1;1;0;non;non;non
+;archive;docs\workplan\refs\archive\2026-05-19-session-25-preflight.md;Session 25 — Phase 1.A.0 — Pre-flight DB introspection (2026-05-19);328;2026-06-12;33;1;1;1;0;non;non;non
+;archive;docs\workplan\2026-06-26-claude-md-workplan-archive.md;CLAUDE.md « Active Workplan » — archive des bullets mergés (au 2026-06-26);27;2026-06-26;19;1;1;2;0;non;non;non
+;archive;docs\workplan\audits\2026-06-27-project-state-and-gaps-findings.md;Annexe — findings bruts par domaine (audit 2026-06-27);432;2026-06-27;18;1;1;1;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-06-12-session-41-INDEX.md;Session 41 — INDEX : Import / Export du catalogue (produits + recettes);66;2026-06-27;18;1;1;1;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-06-12-session-41-plan.md;Session 41 — Plan : Import / Export du catalogue (produits + recettes);1992;2026-06-27;18;1;1;1;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-06-12-session-42-catalog-import-minors-plan.md;Session 42 — Plan : Catalog Import/Export polish (8 Minors S41 Wave B);520;2026-06-27;18;1;1;0;0;oui;non;non
+;archive;docs\workplan\plans\archive\2026-06-12-session-43-pos-audit-fixes-plan.md;Session 43 — POS Live Audit Fixes — Implementation Plan;1495;2026-06-27;18;1;1;0;0;oui;non;non
+;archive;docs\workplan\plans\archive\2026-06-13-session-44-money-path-hardening-plan.md;Session 44 — Money-Path Hardening — Implementation Plan;1078;2026-06-27;18;1;1;1;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-06-13-session-45-INDEX.md;Session 45 — INDEX : Products page — finir les actions catalogue (boutons morts);51;2026-06-27;18;1;1;1;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-06-13-session-45-products-actions-plan.md;Session 45 — Plan : Products page — finir les actions catalogue;133;2026-06-27;18;1;1;1;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-06-18-session-46-INDEX.md;Session 46 — INDEX : Purchasing Hardening (page Backoffice Achats);127;2026-06-27;18;1;1;1;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-06-18-session-46-purchasing-hardening-plan.md;Session 46 — Plan : Purchasing Hardening (page Backoffice Achats);162;2026-06-27;18;1;1;1;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-06-19-session-47-configurable-combos-plan.md;Configurable Combos Implementation Plan;619;2026-06-27;18;1;1;1;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-06-19-session-47-INDEX.md;Session 47 — Configurable Combos — INDEX;84;2026-06-27;18;1;1;1;0;non;non;non
+;archive;docs\superpowers\plans\archive\2026-06-19-product-modifiers-editor-plan.md;Product Modifiers Editor (Backoffice) — Implementation Plan;1661;2026-06-28;17;1;1;0;0;oui;non;non
+;archive;docs\superpowers\plans\archive\2026-06-20-product-modifiers-phase2-stock-deduction-plan.md;Product Modifiers Phase 2 — Order-time Ingredient Stock Deduction — Implementation Plan;641;2026-06-28;17;1;1;0;0;oui;non;non
+;archive;docs\superpowers\plans\archive\2026-06-21-unify-recipe-editor-into-product-tab-plan.md;Unify Recipe Editor into the Product Recipe Tab — Implementation Plan;1101;2026-06-28;17;1;1;0;0;oui;non;non
+;archive;docs\superpowers\plans\archive\2026-06-23-bulk-import-master-data.md;Bulk Import — Master Data (Suppliers + Customers) Implementation Plan;1683;2026-06-28;17;1;1;1;0;non;non;non
+;archive;docs\superpowers\plans\archive\2026-06-26-stock-tracking-deduct-flags.md;Câblage `track_inventory` / `deduct_stock` + réglage global « stock négatif » — Implementation Plan;1323;2026-06-28;17;1;1;0;0;oui;non;non
+;archive;docs\superpowers\plans\2026-07-02-session-55-ef-hardening-p15.md;S55 — P1.5 (T7) Durcissement EF restant : plan d'implémentation;457;2026-07-03;12;1;1;1;0;non;non;non
+;archive;docs\superpowers\plans\2026-07-03-session-56-deferred-ui-audit-consolidation.md;S56 — UI déférées + consolidation audit : plan d'implémentation;1088;2026-07-03;12;1;1;1;0;non;non;non
+;archive;docs\superpowers\plans\2026-07-03-session-57-p2-governance-ux.md;Session 57 — Plan d'exécution : P2 restant (gouvernance promos/combos, UX POS/BO, outillage, marge brute);99;2026-07-03;12;1;1;1;0;non;non;non
+;archive;docs\_archive\backlog-by-module-fige-S14-S30\11-expenses.md;Travail — Expenses;228;2026-07-04;11;1;1;13;0;non;non;non
+;archive;docs\_archive\backlog-by-module-fige-S14-S30\20-users-rbac.md;Travail — Users & RBAC;271;2026-07-04;11;1;1;7;0;non;non;non
+;archive;docs\_archive\backlog-by-module-fige-S14-S30\23-tests.md;Travail — Tests;189;2026-07-04;11;1;1;5;0;non;non;non
+;archive;docs\_archive\backlog-by-module-fige-S14-S30\24-deployment-ops.md;Travail — Deployment & Operations;191;2026-07-04;11;1;1;2;0;non;non;non
+;archive;docs\_archive\backlog-by-module-fige-S14-S30\_ARCHIVE-NOTE.md;🗄️ Archivé le 2026-07-04 (remise à plat);6;2026-07-04;11;1;1;0;0;oui;non;non
+;archive;docs\design-audits\POS-payment-caisse-2026-06-25.md;Audit design POS — payment (CAISSE) — 2026-06-25;126;2026-07-04;11;1;1;1;0;non;non;non
+;archive;docs\superpowers\plans\2026-07-06-session-62-purges-actees-plafond-ardoise.md;Session 62 — Purges actées + plafond ardoise serveur : Implementation Plan;245;2026-07-06;9;1;1;1;0;non;non;non
+;archive;docs\workplan\plans\2026-07-08-session-68-INDEX.md;Session 68 — INDEX : Facture PDF B2B (Vague 2, fiche 09 D2);63;2026-07-08;7;1;1;4;0;non;non;non
+;archive;docs\workplan\audits\2026-07-09-audit-general-gouvernance.md;Audit général de gouvernance — documentation, config projet & config Claude;252;2026-07-09;6;1;1;4;0;non;non;non
+;archive;docs\workplan\plans\2026-07-08-session-70-INDEX.md;Session 70 — Rapport des écarts de caisse par caissier (fiche 12 D2.4) — INDEX;50;2026-07-09;6;1;1;4;0;non;non;non
+;archive;docs\audit\2026-07-10-pos-flow-audit.md;Audit du parcours POS commande→paiement — 2026-07-10 (S72);86;2026-07-10;5;2;1;0;0;oui;non;non
+;archive;docs\workplan\plans\2026-07-09-session-71-audit-remediation-INDEX.md;INDEX — Remédiation de gouvernance documentaire (S71);56;2026-07-10;5;2;1;0;0;oui;non;non
+;archive;docs\workplan\plans\2026-07-09-session-71-audit-remediation-plan.md;Plan — Remédiation de gouvernance documentaire (S71);82;2026-07-10;5;2;1;2;0;non;non;non
+;archive;docs\workplan\plans\2026-07-09-session-71-e2e-triage.md;S71 — Rapport de triage E2E (matrice pass/fail réelle);73;2026-07-10;5;1;1;2;0;non;non;non
+;archive;docs\workplan\plans\2026-07-09-session-71-INDEX.md;Session 71 — INDEX (E2E nightly : infra + réparation spec-par-spec + armement cron);68;2026-07-10;5;1;1;3;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-05-03-breakery-02-database.md;Phase 2 — Database (Supabase migrations + RPC + seed);1193;2026-07-10;5;2;1;2;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-05-03-breakery-03-edge-functions.md;Phase 3 — Edge Functions Deno;1051;2026-07-10;5;2;1;2;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-05-03-breakery-04-shared-packages.md;Phase 4 — Shared Packages (utils, domain, ui, supabase);1983;2026-07-10;5;2;1;2;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-05-03-breakery-05-app-pos.md;Phase 5 — App POS (Auth + Shift + Cart + Payment);1665;2026-07-10;5;2;1;2;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-05-03-breakery-06-app-backoffice.md;Phase 6 — App Backoffice (Login + Layout + Products List);664;2026-07-10;5;2;1;2;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-05-03-breakery-07-ci-finalize.md;Phase 7 — CI + Finalisation;538;2026-07-10;5;2;1;2;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-05-03-breakery-bootstrap-pos-vertical-INDEX.md;Breakery Bootstrap + POS Vertical — Master Plan (Index);72;2026-07-10;5;2;1;0;0;oui;non;non
+;archive;docs\workplan\plans\archive\2026-05-07-session-8-promotions-engine.md;Session 8 — Promotions Engine Implementation Plan;3038;2026-07-10;5;2;1;0;0;oui;non;non
+;archive;docs\workplan\plans\archive\2026-05-11-bo-loyalty.md;BO Loyalty Management Implementation Plan;2172;2026-07-10;5;2;1;0;0;oui;non;non
+;archive;docs\workplan\plans\archive\2026-05-11-session-12-inventory-mvp.md;Session 12 — Inventory MVP Implementation Plan — **SUPERSEDED**;861;2026-07-10;5;2;1;2;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-05-12-purchasing-complete-INDEX.md;Purchasing & Suppliers **Complete** — Implementation Plan INDEX;397;2026-07-10;5;2;1;1;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-05-12-session-11-01-suppliers.md;Session 11 — Phase 01 — Suppliers CRUD Implementation Plan;881;2026-07-10;5;2;1;1;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-05-12-session-11-02-restaurant-tables.md;Session 11 — Phase 02 — Restaurant Tables CRUD Implementation Plan;807;2026-07-10;5;2;1;1;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-05-12-session-11-03-customer-categories.md;Session 11 — Phase 03 — Customer Categories CRUD Implementation Plan;1002;2026-07-10;5;2;1;1;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-05-12-session-11-04-categories.md;Session 11 — Phase 04 — Categories CRUD Implementation Plan;923;2026-07-10;5;2;1;1;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-05-28-session-31-plan.md;Session 31 — POS Critical Fixes Implementation Plan;380;2026-07-10;5;2;1;0;0;oui;non;non
+;archive;docs\workplan\plans\archive\2026-05-28-session-32-plan.md;Session 32 — POS Service Polish Implementation Plan;416;2026-07-10;5;2;1;0;0;oui;non;non
+;archive;docs\workplan\plans\archive\2026-06-27-session-50-plan.md;Session 50 — Plan — Vague 1 (waves + ownership);67;2026-07-10;5;1;1;1;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-06-27-session-50-vague2a-isolated-plan.md;Session 50 — Vague 2a (tranche isolée) — Plan d'exécution;57;2026-07-10;5;1;1;1;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-06-28-session-51-INDEX.md;Session 51 — INDEX — Vague 2a money-path « prix-ligne canonique serveur »;97;2026-07-10;5;1;1;2;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-06-29-session-52-INDEX.md;Session 52 — INDEX — B2B per-invoice settlement (P1.2);124;2026-07-10;5;1;1;2;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-07-02-session-53-INDEX.md;Session 53 — INDEX : P1.4 « Unification de la déduction stock à la vente »;67;2026-07-10;5;1;1;1;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-07-02-session-54-INDEX.md;Session 54 — INDEX : P1.3 « Correctness compta (T6/C10) »;52;2026-07-10;5;1;1;1;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-07-02-session-55-INDEX.md;Session 55 — INDEX : P1.5 « Durcissement EF restant (T7) »;59;2026-07-10;5;1;1;1;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-07-03-session-56-INDEX.md;Session 56 — INDEX : UI déférées (DEV-S54-01, DEV-S52-03) + consolidation audit (P2.2);65;2026-07-10;5;1;1;1;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-07-03-session-57-INDEX.md;Session 57 — INDEX : P2 restant (gouvernance promos/combos, UX POS/BO, outillage, marge brute);90;2026-07-10;5;1;1;1;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-07-04-session-58-INDEX.md;Session 58 — INDEX — Remise à plat Vague 0 : réparer ce qui trompe l'exploitant;56;2026-07-10;5;1;1;2;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-07-04-session-59-INDEX.md;Session 59 — INDEX — Remise à plat Vague 1, lot 1 : réparer les 2 findings S58 + quick wins de câblage « UI pures »;90;2026-07-10;5;1;1;15;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-07-05-session-60-INDEX.md;Session 60 — INDEX — Remise à plat Vague 1, lot 2 : les 6 quick wins « sous règle money-path »;73;2026-07-10;5;1;1;7;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-07-05-session-61-INDEX.md;Session 61 — INDEX (2026-07-05);42;2026-07-10;5;1;1;4;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-07-06-session-62-INDEX.md;Session 62 — INDEX (2026-07-06);58;2026-07-10;5;1;1;6;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-07-06-session-63-INDEX.md;Session 63 — INDEX (2026-07-06);60;2026-07-10;5;1;1;4;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-07-06-session-64-INDEX.md;Session 64 — INDEX (2026-07-06);51;2026-07-10;5;1;1;4;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-07-06-session-65-INDEX.md;Session 65 — INDEX : Print-bridge versionné + scan réseau + CRUD LAN Devices;48;2026-07-10;5;1;1;1;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-07-07-session-66-INDEX.md;Session 66 — INDEX (2026-07-07);46;2026-07-10;5;1;1;2;0;non;non;non
+;archive;docs\workplan\plans\archive\2026-07-07-session-67-INDEX.md;Session 67 — INDEX (2026-07-07);34;2026-07-10;5;1;1;3;0;non;non;non
+;archive;docs\design-audits\POS-stock-vitrine-2026-07-11.md;Audit design POS — Stock Vitrine (`/pos/stock`) — 2026-07-11;140;2026-07-11;4;1;1;0;0;oui;non;non
+;archive;docs\workplan\plans\2026-07-11-session-72-INDEX.md;Session 72 — Journal d'audit opérationnel POS (5 lots) — INDEX;155;2026-07-11;4;1;1;2;0;non;non;non
+;archive;docs\workplan\plans\2026-07-11-session-72-pos-audit-journal-plan.md;S72 — Journal d'audit opérationnel POS (plan);47;2026-07-11;4;1;1;1;0;non;non;non
+;archive;docs\workplan\plans\2026-07-11-session-73-settings-INDEX.md;Session 73 — Refonte modules Settings (POS + BO) — INDEX;97;2026-07-12;3;2;2;2;0;non;non;non
+;archive;docs\workplan\plans\2026-07-11-session-73-settings-plan-bo.md;S73 Lot 3 — BO hub, pages & cross-app Implementation Plan;475;2026-07-12;3;1;1;1;0;non;non;non
+;archive;docs\workplan\plans\2026-07-11-session-73-settings-plan-org-db.md;S73 Lot 2 — Promotion org (Customer Display + Printing) Implementation Plan;466;2026-07-12;3;1;1;1;0;non;non;non
+;archive;docs\workplan\plans\2026-07-11-session-73-settings-plan-pos.md;S73 Lot 1 — POS Settings fixes Implementation Plan;339;2026-07-12;3;1;1;1;0;non;non;non
+;archive;docs\workplan\plans\2026-07-12-session-74-margin-plan.md;S74 — POS Reports Margin Tab Implementation Plan;1168;2026-07-12;3;1;1;2;0;non;non;non
+;archive;docs\workplan\plans\2026-07-12-session-75-floorplan-kds-plan.md;S75 — Floor Plan BO + KDS Configuration — Implementation Plan;534;2026-07-12;3;1;1;1;0;non;non;non
+;archive;docs\workplan\plans\2026-07-12-session-75-INDEX.md;S75 — Floor Plan BO + KDS Configuration — INDEX de session (2026-07-12);51;2026-07-13;2;1;1;4;0;non;non;non
+;archive;docs\workplan\plans\2026-07-13-session-76-INDEX.md;Session 76 — INDEX (2026-07-13);52;2026-07-13;2;1;1;2;0;non;non;non
+;archive;docs\workplan\plans\2026-07-13-session-76-plan.md;Session 76 — Solder l'inventaire ⚫ résiduel + Description v1.3 — Implementation Plan;664;2026-07-13;2;1;1;7;0;non;non;non
+;archive;docs\workplan\plans\2026-07-14-session-77-INDEX.md;Session 77 — INDEX (nightly vert, critère de sortie n°1);58;2026-07-14;1;4;2;2;0;non;non;non
+;archive;docs\workplan\plans\2026-07-14-session-77-nightly-plan.md;Session 77 — Nightly vert (critère de sortie n°1 de la remise à plat);40;2026-07-14;1;1;1;1;0;non;non;non
+;archive;docs\workplan\plans\2026-07-14-session-78-INDEX.md;Session 78 — INDEX (queue vitest D-6 soldée);71;2026-07-14;1;3;2;1;0;non;non;non
+;archive;docs\workplan\plans\2026-07-14-session-79-pos-flow-p1-plan.md;Session 79 — Fixes P1 de l'audit POS flow (lot A intégrité money · lot B service en salle);552;2026-07-15;0;1;1;0;0;oui;non;non
+;keep-normative;docs\adr\003-pkp-status-non-pkp.md;ADR-003 — Statut PKP The Breakery : NON-PKP;127;2026-05-22;54;1;1;6;0;non;non;non
+;keep-normative;docs\superpowers\specs\2026-05-31-agents-skills-team-design.md;Design — Équipe d'agents + skills projet (The Breakery ERP);109;2026-05-31;45;1;1;2;0;non;non;non
+;keep-normative;docs\_archive\objectif-travail-v2\PRODUCTION.md;Module Production & Recipes — Objectif métier;299;2026-06-04;41;1;1;5;1;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-13-session-13-architecture-audit.md;Session 13 — Architecture Audit (V3 monorepo vs. 25 module backlogs);561;2026-06-04;41;1;1;8;1;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-13-session-13-docs-cascade-spec.md;Session 13 — Cascade docs : objectif travail → reference → backlog;192;2026-06-04;41;1;1;2;1;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-13-session-13-review.md;Session 13 — QA Review (Audit + Spec + Plan);310;2026-06-04;41;1;1;2;1;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-13-session-13-spec.md;The Breakery — Session 13 Spec : Foundation Hardening + Module-Wide Backlog Burn-Down;574;2026-06-04;41;1;1;12;3;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-13-session-13-wave-1-review.md;Session 13 — Wave 1 Sync-Gate Review;470;2026-06-04;41;1;1;1;0;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-14-session-14-spec.md;Session 14 — UX Completion Spec;183;2026-06-04;41;1;1;4;1;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-16-session-16-spec.md;Session 16 — Spec (CI revival + S15 follow-ups);237;2026-06-04;41;1;1;2;0;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-17-session-17-spec.md;Session 17 — Spec (Full Price Chain : PO → Cost → Recipe Cascade → Snapshot History);276;2026-06-04;41;1;1;1;0;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-17-session-18-spec.md;Session 18 — Spec (Recipe Cost History Report);269;2026-06-04;41;1;1;1;0;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-17-session-19-spec.md;Session 19 — Spec (Hardening polish: durable rate-limit + session timeout per role + PIN strength warn);417;2026-06-04;41;1;1;1;0;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-17-session-20-spec.md;Session 20 — Defense-in-depth GRANT hardening — Spec;346;2026-06-04;41;1;1;1;0;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-18-session-21-spec.md;Session 21 — Polish hardening reliquat — Spec;212;2026-06-04;41;1;1;1;0;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-18-session-22-spec.md;Session 22 — Focus-trap lock-in + dette technique ciblée — Spec;183;2026-06-04;41;1;1;2;0;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-19-session-23-spec.md;Session 23 — Spec : Landed cost (shipping pro-rata) + sample/promo opt-out;351;2026-06-04;41;1;1;3;0;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-19-session-24-spec.md;Session 24 — Spec : B2B Foundation (backend du dashboard déjà shippé);419;2026-06-04;41;1;1;3;0;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-19-session-25-spec.md;Session 25 — Spec : Hardening Idempotency Cross-EF;405;2026-06-04;41;1;1;5;1;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-20-session-26-spec.md;Session 26 — Comptable Cockpit (NON-PKP);225;2026-06-04;41;1;1;3;1;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-20-session-27-spec.md;Session 27 — spec (Product CRUD : update flow MVP);178;2026-06-04;41;1;1;2;0;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-20-session-27b-spec.md;Session 27b — spec (Product CRUD : create + categories management);123;2026-06-04;41;1;1;2;0;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-22-session-31-spec.md;Session 31 — Reports Drill-Down transverse + 3 detail pages (Spec);359;2026-06-04;41;1;1;4;1;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-23-session-26b-spec.md;Session 26b — Comptable Cockpit (UI core);202;2026-06-04;41;1;1;1;0;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-24-session-27c-spec.md;Session 27c — Product Variants (Spec);468;2026-06-04;41;1;1;3;0;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-24-session-28-spec.md;Session 28 — Expense Governance (Spec);316;2026-06-04;41;1;1;3;0;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-24-session-29-spec.md;Session 29 — Reports Export + Z-Report PDF (Vague A) (Spec);512;2026-06-04;41;1;1;3;0;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-24-session-30-spec.md;Session 30 — Vague B : 5 nouveaux reports métier bakery (Spec);354;2026-06-04;41;1;1;5;1;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-26-session-32-spec.md;Session 32 — Reports Vague C close-out drill-down + /backoffice/orders list (Spec);570;2026-06-04;41;1;1;3;0;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-29-session-33-spec.md;Session 33 — Orders v2 : server-side filters + realtime + void + edit-items (Spec);433;2026-06-04;41;1;1;3;0;non;non;non
+;keep-normative;docs\workplan\refs\archive\2026-05-13-decision-pack.md;Session 13 Decision Pack — locked 2026-05-14;469;2026-06-12;33;1;1;8;2;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-13-session-13-wave-0-review.md;Session 13 — Wave 0 Sync-Gate Review;374;2026-06-12;33;2;1;1;0;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-27-backoffice-menu-reorg-spec.md;Backoffice Menu Reorg — Spec;374;2026-06-12;33;1;1;2;0;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-30-pos-display-stock-isolation-spec.md;Spec — Isolation du stock vitrine POS (V1);187;2026-06-12;33;1;1;1;0;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-06-01-pos-cash-drawer-error-toast-spec.md;Spec — POS cash drawer error toast (échec d'ouverture tiroir surfacé) (V1);81;2026-06-12;33;1;1;1;0;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-06-01-pos-claudemd-doc-sync-spec.md;Spec — CLAUDE.md doc sync (versions RPC périmées) (V1);75;2026-06-12;33;1;1;1;0;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-06-01-pos-double-print-risk-spec.md;Spec — POS double-print risk (path legacy print-queue vs bridge S34) (V1);76;2026-06-12;33;1;1;1;0;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-06-01-pos-paymentterminal-refactor-spec.md;Spec — POS PaymentTerminal refactor (sous la barre des 500 lignes) (V1);84;2026-06-12;33;1;1;1;0;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-06-01-pos-realtime-channel-uniqueness-fix-spec.md;Spec — POS realtime channel uniqueness fix (3 hooks) (V1);101;2026-06-12;33;1;1;1;0;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-06-01-pos-receipt-payment-method-fix-spec.md;Spec — POS receipt payment method fix (reçu reflète la vraie méthode) (V1);88;2026-06-12;33;1;1;1;0;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-06-01-pos-refund-test-investigation-spec.md;Spec — POS refund modal test investigation (C2 timeout) (V1);92;2026-06-12;33;1;1;1;0;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-06-01-session-34-station-printing-spec.md;Session 34 — Station Ticket Printing (routage tickets imprimantes de poste) (Spec);161;2026-06-12;33;1;1;2;0;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-06-11-session-37-spec.md;Session 37 — Fraud Hardening & Correctness Close-out (Spec);394;2026-06-12;33;1;1;1;0;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-06-11-session-38-spec.md;Session 38 — Spec : PIN Lockout Hardening + Split-Bill étendu + Suites de tests E2E;160;2026-06-12;33;1;1;2;0;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-06-11-session-39-spec.md;Session 39 — Spec : Backoffice Completion Bundle (BO-04 / BO-09 / BO-10 / BO-15);146;2026-06-12;33;1;1;2;0;non;non;non
+;keep-normative;docs\superpowers\plans\2026-06-26-pos-spec-b1-dispatch-routing.md;Spec B-1 — Dispatch/Print Routing Implementation Plan;793;2026-06-26;19;1;1;0;0;oui;non;non
+;keep-normative;docs\superpowers\specs\2026-06-26-pos-spec-b1-dispatch-routing-design.md;Spec B-1 — POS dispatch/print routing (display station, mapping complet, ticket waiter, multi-station produit);146;2026-06-26;19;1;1;0;0;oui;non;non
+;keep-normative;docs\workplan\specs\archive\2026-06-12-session-41-catalog-import-spec.md;Session 41 — Spec : Import / Export du catalogue (produits + recettes);184;2026-06-27;18;1;1;2;0;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-06-12-session-42-catalog-import-minors-spec.md;Session 42 — Spec : Catalog Import/Export polish (8 Minors revue S41 Wave B);136;2026-06-27;18;1;1;1;0;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-06-12-session-43-pos-audit-fixes-spec.md;Session 43 — POS Live Audit Fixes — Spec;101;2026-06-27;18;1;1;1;0;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-06-13-session-44-money-path-hardening-spec.md;Session 44 — Money-Path Hardening (JE par méthode, variantes/stations, montants server-trusted, hygiène cartStore, symétrie display_stock) — Spec;102;2026-06-27;18;1;1;3;1;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-06-13-session-45-products-actions-spec.md;Session 45 — Spec : Products page — finir les actions catalogue (boutons morts);104;2026-06-27;18;1;1;2;0;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-06-18-session-46-purchasing-hardening-spec.md;Session 46 — Spec : Purchasing Hardening (page Backoffice Achats);101;2026-06-27;18;1;1;2;0;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-06-19-session-47-configurable-combos-spec.md;Session 47 — Configurable Combos (choice groups);216;2026-06-27;18;1;1;1;0;non;non;non
+;keep-normative;docs\superpowers\specs\2026-06-28-pos-canonical-server-line-price-design.md;Spec — Résolution canonique du prix de ligne côté serveur (`_resolve_line_price_v1` + money-path `v14 → v15`);151;2026-06-28;17;1;1;1;0;non;non;non
+;keep-normative;docs\superpowers\specs\archive\2026-06-18-stock-card-ledger-layout-design.md;Stock-card ledger layout + CSV export — design;95;2026-06-28;17;1;1;0;0;oui;non;non
+;keep-normative;docs\superpowers\specs\archive\2026-06-19-product-modifiers-editor-design.md;Product Modifiers Editor (Backoffice) — Design Spec;239;2026-06-28;17;1;1;1;0;non;non;non
+;keep-normative;docs\superpowers\specs\archive\2026-06-20-product-modifiers-phase2-stock-deduction-design.md;Product Modifiers — Phase 2: order-time ingredient stock deduction — Design Spec;208;2026-06-28;17;1;1;0;0;oui;non;non
+;keep-normative;docs\superpowers\specs\archive\2026-06-20-units-registry-design.md;Central Units Registry + Recipe Unit Picker Fix + Modifier Cost Display;100;2026-06-28;17;1;1;0;0;oui;non;non
+;keep-normative;docs\superpowers\specs\archive\2026-06-21-unify-recipe-editor-into-product-tab-design.md;Design — Unifier les recettes sur l'onglet Recipe de la fiche produit;134;2026-06-28;17;1;1;0;0;oui;non;non
+;keep-normative;docs\superpowers\specs\archive\2026-06-23-bulk-import-master-data-design.md;Bulk import — master data (Suppliers + Customers) — Design;219;2026-06-28;17;1;1;0;0;oui;non;non
+;keep-normative;docs\superpowers\specs\archive\2026-06-23-cash-wallets-tresorerie-design.md;Cash Wallets / Trésorerie — 3-Wallet Cash Tracking in Accounting;227;2026-06-28;17;1;1;0;0;oui;non;non
+;keep-normative;docs\superpowers\specs\archive\2026-06-24-bulk-import-purchases-design.md;Phase 2a — Historical Purchases Bulk Import (reports-only) — Design;174;2026-06-28;17;1;1;0;0;oui;non;non
+;keep-normative;docs\superpowers\specs\archive\2026-06-25-pos-held-order-lifecycle-design.md;Spec A — POS held-order lifecycle (addition ouverte);116;2026-06-28;17;1;1;1;0;non;non;non
+;keep-normative;docs\superpowers\specs\archive\2026-06-25-pos-p0-hardening.md;Spec — POS P0 Hardening (vague 1);84;2026-06-28;17;1;1;3;3;non;non;non
+;keep-normative;docs\superpowers\specs\archive\2026-06-26-stock-tracking-deduct-flags-negative-stock-design.md;Spec — Câblage `track_inventory` / `deduct_stock` + réglage global « stock négatif »;127;2026-06-28;17;1;1;0;0;oui;non;non
+;keep-normative;docs\superpowers\specs\2026-06-29-b2b-per-invoice-settlement-design.md;Design — B2B per-invoice settlement (P1.2);222;2026-06-29;16;1;1;2;0;non;non;non
+;keep-normative;docs\superpowers\specs\2026-07-02-fiscal-correctness-design.md;S54 — P1.3 (T6) Correctness compta : garde fiscale fail-closed + clôture annuelle;71;2026-07-02;13;1;1;2;0;non;non;non
+;keep-normative;docs\superpowers\specs\2026-07-02-sale-stock-unification-design.md;S53 — P1.4 : Unification de la déduction stock à la vente (`_record_sale_stock_v1`);177;2026-07-02;13;1;1;2;0;non;non;non
+;keep-normative;docs\superpowers\specs\2026-07-02-ef-hardening-p15-design.md;S55 — P1.5 (T7) Durcissement EF restant : design;145;2026-07-03;12;1;1;2;0;non;non;non
+;keep-normative;docs\superpowers\specs\2026-07-03-s56-deferred-ui-audit-consolidation-design.md;S56 — UI déférées + reliquat B2B/compta : design;134;2026-07-03;12;1;1;2;0;non;non;non
+;keep-normative;docs\superpowers\specs\2026-07-03-s57-p2-governance-ux-design.md;S57 — P2 restant : gouvernance promos/combos, UX POS/BO, outillage, marge brute (design);101;2026-07-03;12;1;1;4;2;non;non;non
+;keep-normative;docs\adr\004-pas-de-peremption-ni-fifo-stock.md;ADR-004 — Pas de gestion de péremption/expiration ni de FIFO stock;22;2026-07-04;11;1;1;2;0;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-19-session-26-spec.md;Session 26 — Spec : Comptable Cockpit (read-side);859;2026-07-04;11;1;1;3;1;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-06-01-pos-print-bridge-deploy-spec.md;Spec — POS print-bridge deploy + runtime config (V1);90;2026-07-04;11;1;1;2;1;non;non;non
+;keep-normative;docs\superpowers\specs\2026-07-06-breakery-design-skill-design.md;Spec — Skill projet `breakery-design` (direction artistique + ergonomie);45;2026-07-06;9;1;1;0;0;oui;non;non
+;keep-normative;docs\superpowers\specs\2026-07-06-print-bridge-scan-lan-devices-crud-design.md;Spec — Print-bridge versionné + scan réseau imprimantes + CRUD LAN Devices;196;2026-07-06;9;1;1;2;0;non;non;non
+;keep-normative;docs\superpowers\specs\2026-07-06-s63-dashboard-overview-design.md;S63 — Dashboard BO réel : `get_dashboard_overview_v1` + câblage de la page d'accueil;126;2026-07-06;9;1;1;2;0;non;non;non
+;keep-normative;docs\superpowers\specs\2026-07-06-s64-configurable-payment-methods-design.md;S64 — Moyens de paiement configurables + fix I-1 voids même-jour (design);49;2026-07-06;9;1;1;2;0;non;non;non
+;keep-normative;docs\superpowers\specs\2026-07-07-customer-display-split-brand-order-design.md;Customer Display — split marque / commande (design);69;2026-07-07;8;1;1;0;0;oui;non;non
+;keep-normative;docs\superpowers\specs\2026-07-07-modifier-extras-sfg-ingredients-design.md;Modifier extras — semi-finished products in the ingredient picker;64;2026-07-07;8;1;1;2;2;non;non;non
+;keep-normative;docs\superpowers\specs\2026-07-07-pos-design-audit-remediation-design.md;Audit design POS 2026-07-07 — spec de correction (vagues A/B/C);132;2026-07-07;8;1;1;0;0;oui;non;non
+;keep-normative;docs\superpowers\specs\2026-07-07-s66-close-shift-pin-gate-design.md;S66 — Clôture de caisse ① : PIN manager sur gros écart (+ dette D-9 station-printers);54;2026-07-07;8;1;1;1;0;non;non;non
+;keep-normative;docs\superpowers\specs\2026-07-07-s67-close-shift-three-way-denominations-design.md;S67 — Clôture de caisse ②③ : comptage 3 volets + comptage par coupure;77;2026-07-07;8;1;1;3;1;non;non;non
+;keep-normative;docs\superpowers\specs\2026-07-08-b2b-invoice-pdf-design.md;Spec — Facture PDF B2B (S68, Vague 2);149;2026-07-08;7;1;1;2;1;non;non;non
+;keep-normative;docs\superpowers\specs\2026-07-08-s69-customer-categories-negotiated-pricing-design.md;S69 — CRUD Customer Categories + Prix négocié par client (B2B) — Design;131;2026-07-08;7;1;1;1;0;non;non;non
+;keep-normative;docs\superpowers\specs\2026-07-08-s70-cashier-variance-report-design.md;S70 — Rapport des écarts de caisse par caissier (fiche 12 D2.4);144;2026-07-09;6;1;1;2;0;non;non;non
+;keep-normative;docs\workplan\specs\2026-07-09-session-71-audit-remediation-spec.md;Spec — Remédiation de gouvernance documentaire (S71);64;2026-07-09;6;1;1;2;0;non;non;non
+;keep-normative;docs\_archive\objectif-travail-v2\ACCOUNTING.md;Module Accounting — Objectif métier;357;2026-07-10;5;2;1;5;1;non;non;non
+;keep-normative;docs\_archive\objectif-travail-v2\B2B.md;Module B2B — Objectif métier;374;2026-07-10;5;2;1;5;1;non;non;non
+;keep-normative;docs\_archive\objectif-travail-v2\CASH_REGISTER.md;Module Cash Register (Sessions de caisse) — Objectif métier;293;2026-07-10;5;2;1;5;1;non;non;non
+;keep-normative;docs\_archive\objectif-travail-v2\CUSTOMER_DISPLAY.md;Module Customer Display — Objectif métier;256;2026-07-10;5;2;1;5;1;non;non;non
+;keep-normative;docs\_archive\objectif-travail-v2\CUSTOMERS.md;Module Customers — Objectif métier;312;2026-07-10;5;2;1;5;1;non;non;non
+;keep-normative;docs\_archive\objectif-travail-v2\EXPENSES.md;Module Expenses — Objectif métier;337;2026-07-10;5;2;1;5;1;non;non;non
+;keep-normative;docs\_archive\objectif-travail-v2\KDS.md;Module KDS (Kitchen Display System) — Objectif métier;290;2026-07-10;5;2;1;5;1;non;non;non
+;keep-normative;docs\_archive\objectif-travail-v2\ORDERS.md;Module Orders — Objectif métier;308;2026-07-10;5;2;1;6;1;non;non;non
+;keep-normative;docs\_archive\objectif-travail-v2\POS.md;Module POS — Objectif métier;376;2026-07-10;5;2;1;14;1;non;non;non
+;keep-normative;docs\_archive\objectif-travail-v2\PROMOTIONS_AND_COMBOS.md;Module Promotions & Combos — Objectif métier;309;2026-07-10;5;2;1;4;1;non;non;non
+;keep-normative;docs\_archive\objectif-travail-v2\PURCHASING_AND_SUPPLIERS.md;Module Purchasing & Suppliers — Objectif métier;161;2026-07-10;5;2;1;4;1;non;non;non
+;keep-normative;docs\_archive\objectif-travail-v2\REPORTS.md;Module Reports — Objectif métier;322;2026-07-10;5;2;1;4;1;non;non;non
+;keep-normative;docs\_archive\objectif-travail-v2\SETTINGS.md;Module Settings — Objectif métier;434;2026-07-10;5;2;1;4;1;non;non;non
+;keep-normative;docs\_archive\objectif-travail-v2\TABLET_ORDERING.md;Module Tablet Ordering — Objectif métier;243;2026-07-10;5;2;1;4;1;non;non;non
+;keep-normative;docs\_archive\objectif-travail-v2\USERS_AND_PERMISSIONS.md;Module Users & Permissions — Objectif métier;329;2026-07-10;5;2;1;4;1;non;non;non
+;keep-normative;docs\superpowers\specs\2026-07-09-s71-e2e-nightly-design.md;S71 — E2E nightly (Playwright) : re-dégeler et fiabiliser la suite;175;2026-07-10;5;1;1;0;0;oui;non;non
+;keep-normative;docs\superpowers\specs\2026-07-10-pos-first-class-hold-button-design.md;Design — Bouton HOLD de premier niveau au POS (caisse);82;2026-07-10;5;1;1;0;0;oui;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-03-breakery-split-2apps-design.md;The Breakery — Split 2-Apps Design Spec;862;2026-07-10;5;2;1;13;2;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-04-session-1-decisions-addendum.md;Session 1 — Décisions arbitrées (addendum à la spec);101;2026-07-10;5;2;1;1;1;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-05-session-2-modifiers-kds-spec.md;The Breakery — Session 2 Spec : Modifiers + Send to Kitchen + KDS;356;2026-07-10;5;2;1;6;6;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-05-session-3-customer-loyalty-receipts-spec.md;The Breakery — Session 3 Spec : Customer + Loyalty + Receipts;471;2026-07-10;5;2;1;1;1;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-06-session-4-held-tables-served-spec.md;The Breakery — Session 4 Spec : Held Orders + Floor Plan + Item Served;353;2026-07-10;5;2;1;1;1;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-06-session-5-tablet-ordering-spec.md;The Breakery — Session 5 Spec : Tablet Ordering;434;2026-07-10;5;2;1;1;1;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-06-session-6-discounts-multi-modifiers-loyalty-mult-spec.md;The Breakery — Session 6 Spec : Discounts + Multi-select Modifiers + Loyalty Multipliers;404;2026-07-10;5;2;1;5;5;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-06-session-7-customer-categories-combos-spec.md;The Breakery — Session 7 Spec : Customer Categories + Combos;427;2026-07-10;5;2;1;4;4;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-07-session-8-promotions-engine-spec.md;The Breakery — Session 8 Spec : Promotions Engine;777;2026-07-10;5;2;1;2;1;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-10-bo-loyalty-design.md;BO Loyalty Management — Design Spec;216;2026-07-10;5;2;1;2;1;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-10-session-10-split-payment-void-refund-spec.md;The Breakery — Session 10 Spec : Split Payment + Item-Cancel-After-Send + Post-Checkout Void/Refund;1281;2026-07-10;5;2;1;1;1;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-10-session-8-perf-debt-spec.md;The Breakery — Session 8 Spec : Perf-Debt (DB N+1, RLS subqueries, EF caching, React memo, utils caching);729;2026-07-10;5;2;1;1;1;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-10-session-9-promotions-spec.md;The Breakery — Session 9 Spec : Promotions Engine (auto-évaluées) + Backoffice CRUD;575;2026-07-10;5;2;1;27;27;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-11-session-11-backoffice-crud-spec.md;The Breakery — Session 11 Spec : Backoffice CRUD étendu + tablet split-pay v5;281;2026-07-10;5;2;1;13;1;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-11-session-12-inventory-mvp-spec.md;The Breakery — Session 12 Spec : Inventory MVP (admin write path) — **SUPERSEDED**;538;2026-07-10;5;2;1;7;5;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-12-purchasing-complete-spec.md;The Breakery — Spec : Purchasing & Suppliers **Complete**;855;2026-07-10;5;2;1;2;1;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-12-session-12-inventory-complete-spec.md;The Breakery — Session 12 Spec : Inventory **Complete** (les 7 onglets + Dashboard + Alertes);910;2026-07-10;5;2;1;9;1;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-15-session-15-spec.md;Session 15 — Bakery Production (F6 + F5 + Recipe pro features) — SPEC;249;2026-07-10;5;2;1;7;6;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-28-session-31-spec.md;Session 31 — POS Critical Fixes (Spec);462;2026-07-10;5;2;1;3;1;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-28-session-32-spec.md;Session 32 — POS Service Polish (Spec);494;2026-07-10;5;2;1;2;0;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-29-session-34-spec.md;Session 34 — POS Critical Fixes (Spec);353;2026-07-10;5;2;1;3;1;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-05-29-session-35-spec.md;Session 35 — POS Service Polish (Spec);183;2026-07-10;5;2;1;9;1;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-06-04-session-36-spec.md;Session 36 — POS Correctness & Security Close-out (Spec);228;2026-07-10;5;2;1;3;1;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-06-12-session-40-spec.md;Session 40 — Spec : Reports close-out — les 9 cards « Soon » du hub;103;2026-07-10;5;2;1;2;0;non;non;non
+;keep-normative;docs\workplan\specs\archive\2026-06-27-session-50-spec.md;Session 50 — Spec — Vague 1 « cutover sain » (sécurité + drift + CI);58;2026-07-10;5;1;1;5;1;non;non;non
+;keep-normative;docs\superpowers\specs\2026-07-12-s74-pos-margin-cogs-design.md;S74 — Onglet Margin (Reports POS) : marge/COGS WAC courant, lecture pure;107;2026-07-12;3;1;1;1;0;non;non;non
+;keep-normative;docs\superpowers\specs\2026-07-12-s75-floorplan-kds-design.md;S75 — Floor Plan BO + KDS Configuration — Design;89;2026-07-12;3;2;1;2;0;non;non;non
+;keep-normative;CLAUDE.md;Ruflo — Claude Code Configuration;228;2026-07-14;1;114;4;362;34;non;non;non
+;keep-normative (cité par le code);packages\supabase\README.md;`@breakery/supabase`;290;2026-05-10;66;1;1;130;1;non;oui;non
+;keep-normative (cité par le code);tests\e2e\README.md;E2E Tests — The Breakery ERP;96;2026-05-18;58;1;1;130;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\plans\archive\2026-05-13-session-13-INDEX.md;Session 13 — Foundation Hardening + Module-Wide Backlog Burn-Down — Implementation Plan INDEX;1239;2026-06-04;41;1;1;24;7;non;non;non
+;keep-normative (cité par le code);docs\workplan\plans\archive\2026-05-13-session-13-phase-2.B-reports-infra.md;Phase 2.B — Reports infra + 5 first reports (sub-plan);158;2026-06-04;41;1;1;9;8;non;non;non
+;keep-normative (cité par le code);docs\workplan\plans\archive\2026-05-13-session-13-phase-2.D-inventory-late.md;Session 13 — Phase 2.D — Inventory late (Opname + Movements + Alerts/Dashboard);162;2026-06-04;41;1;1;1;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\plans\archive\2026-05-13-session-13-phase-3.A-purchasing.md;Session 13 — Phase 3.A — Purchasing PO Workflow;98;2026-06-04;41;1;1;1;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\plans\archive\2026-05-13-session-13-phase-3.B-expenses.md;Session 13 — Phase 3.B — Expenses module — Sub-plan;125;2026-06-04;41;1;1;2;2;non;non;non
+;keep-normative (cité par le code);docs\workplan\plans\archive\2026-05-13-session-13-phase-3.C-b2b-core.md;Session 13 — Phase 3.C — B2B core + stock reservations + Cash-Register variance + shift JE;109;2026-06-04;41;1;1;1;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\plans\archive\2026-05-13-session-13-phase-4.A-pos-ux.md;Session 13 — Phase 4.A — POS UX + 03 polish;117;2026-06-04;41;1;1;1;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\plans\archive\2026-05-13-session-13-phase-4.D-tablet-polish.md;Session 13 — Phase 4.D — Tablet polish + ui-steward batch 2;178;2026-06-04;41;1;1;1;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\plans\archive\2026-05-13-session-13-phase-5.D-rbac-ui.md;Phase 5.D — RBAC UI + audit pairing + last-admin protection;278;2026-06-04;41;1;1;1;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\plans\archive\2026-05-13-session-13-phase-6.A-reports-cascade.md;Session 13 — Phase 6.A — Reports cascade (P&L + BS + Cash Flow + basket);89;2026-06-04;41;1;1;5;5;non;non;non
+;keep-normative (cité par le code);docs\workplan\plans\archive\2026-05-13-session-13-phase-6.B-marketing.md;Session 13 — Phase 6.B — Marketing cascade (segments + birthday + promo ROI);147;2026-06-04;41;1;1;1;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\plans\archive\2026-05-13-session-13-phase-6.C-polish-ops.md;Phase 6.C — Polish ops sub-plan;91;2026-06-04;41;1;1;1;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\plans\archive\2026-05-15-session-15-PR-DRAFT.md;Session 15 — PR DRAFT (do not auto-open);102;2026-06-04;41;1;1;1;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\plans\archive\2026-05-16-session-16-INDEX.md;Session 16 — INDEX (CI revival + S15 follow-ups);323;2026-06-04;41;1;1;3;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\plans\archive\2026-05-16-session-16-plan.md;Session 16 Implementation Plan — CI revival + S15 follow-ups;2487;2026-06-04;41;1;1;1;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\plans\archive\2026-05-19-S24-to-S30-plan.md;Plan multi-sessions S24-S30 — The Breakery ERP;283;2026-06-04;41;1;1;23;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\plans\archive\2026-05-19-session-23-INDEX.md;Session 23 — INDEX (Landed cost + sample/promo opt-out);494;2026-06-04;41;1;1;2;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\plans\archive\2026-05-20-session-26-INDEX.md;Session 26 — Comptable Cockpit (Wave 1 DB hardening) — INDEX;203;2026-06-04;41;1;1;4;1;non;non;non
+;keep-normative (cité par le code);docs\audit\archive\2026-06-01-backoffice-integrity-audit.md;Back-Office — Audit d'intégrité métier;152;2026-06-12;33;1;1;3;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\audits\archive\2026-06-04-docs-curation-audit.md;Docs Curation Audit — 2026-06-04;129;2026-06-12;33;1;1;2;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\plans\archive\2026-05-14-session-14-INDEX.md;Session 14 — INDEX (UX Completion);543;2026-06-12;33;2;1;5;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\plans\archive\2026-06-01-pos-double-print-risk-plan.md;POS Double-Print Risk — Typed LAN Client + Gated Legacy-Chit Deprecation Implementation Plan;903;2026-06-12;33;1;1;1;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\plans\archive\2026-06-04-session-36-plan.md;Session 36 — POS Correctness & Security Close-out — Implementation Plan;531;2026-06-12;33;1;1;3;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\refs\archive\2026-05-13-has_permission-refactor-design.md;`has_permission()` Refactor — Design & Migration Plan;546;2026-06-12;33;1;1;8;3;non;non;non
+;keep-normative (cité par le code);docs\workplan\refs\archive\2026-05-13-kiosk-auth-design.md;Kiosk-mode Auth Design — `kiosk-issue-jwt`;851;2026-06-12;33;1;1;7;4;non;non;non
+;keep-normative (cité par le code);docs\workplan\refs\archive\2026-05-13-session-13-wave-2-deviations.md;Session 13 — Wave 2 deviations log;24;2026-06-12;33;1;1;4;2;non;non;non
+;keep-normative (cité par le code);docs\workplan\refs\archive\2026-05-13-staging-config.md;Staging configuration — Session 13;315;2026-06-12;33;1;1;3;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\refs\archive\2026-05-13-ui-steward-charter.md;`ui-steward` Charter — `packages/ui` Single-Owner Governance;486;2026-06-12;33;1;1;5;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\refs\archive\2026-05-13-v2-v3-path-translation.md;V2 → V3 Path Translation Table;625;2026-06-12;33;1;1;8;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\refs\archive\2026-05-14-session-13-deviation-pack.md;Session 13 — Wave 1 Deviation Pack;85;2026-06-12;33;1;1;2;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\refs\archive\2026-05-14-session-13-wave-2-deviations.md;Session 13 — Wave 2 Deviation Pack;332;2026-06-12;33;1;1;6;3;non;non;non
+;keep-normative (cité par le code);docs\workplan\refs\archive\2026-05-14-session-13-wave-3-deviations.md;Session 13 — Wave 3 Deviation Pack;369;2026-06-12;33;1;1;7;2;non;non;non
+;keep-normative (cité par le code);docs\workplan\refs\archive\2026-05-14-session-13-wave-4-deviations.md;Session 13 — Wave 4 Deviation Pack;492;2026-06-12;33;1;1;2;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\refs\archive\2026-05-14-session-13-wave-6-deviations.md;Session 13 — Wave 6 Deviation Pack;604;2026-06-12;33;1;1;5;2;non;non;non
+;keep-normative (cité par le code);docs\workplan\refs\archive\2026-05-14-session-14-screenshot-audit.md;Session 14 — Screenshot audit (122 refs → React files);297;2026-06-12;33;1;1;3;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\refs\archive\2026-05-14-session-14-seed-plan.md;Session 14 — Seed plan The Breakery démo;289;2026-06-12;33;1;1;3;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\refs\archive\2026-05-19-session-24-preflight.md;Session 24 — Pre-flight DB introspection;71;2026-06-12;33;1;1;2;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\audits\2026-06-27-audit-integral-par-module.md;Audit intégral par module — The Breakery V3 ERP;294;2026-06-27;18;1;1;13;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\plans\archive\2026-06-13-session-44-INDEX.md;Session 44 — Money-Path Hardening — INDEX;58;2026-06-27;18;1;1;2;1;non;non;non
+;keep-normative (cité par le code);docs\superpowers\plans\archive\2026-06-23-cash-wallets-tresorerie.md;Cash Wallets / Trésorerie Implementation Plan;1500;2026-06-28;17;1;1;2;1;non;non;non
+;keep-normative (cité par le code);docs\superpowers\plans\archive\2026-06-24-bulk-import-purchases.md;Historical Purchases Bulk Import (Phase 2a) Implementation Plan;760;2026-06-28;17;1;1;2;1;non;non;non
+;keep-normative (cité par le code);docs\superpowers\plans\archive\2026-06-25-pos-p0-hardening.md;POS P0 Hardening — Implementation Plan;108;2026-06-28;17;1;1;4;3;non;non;non
+;keep-normative (cité par le code);docs\workplan\audits\2026-06-28-docs-curation-audit.md;Docs Curation Audit — 2026-06-28;97;2026-06-28;17;1;1;2;1;non;non;non
+;keep-normative (cité par le code);docs\superpowers\plans\2026-06-25-pos-held-order-lifecycle.md;POS Held-Order Lifecycle (addition ouverte) — Implementation Plan;1300;2026-07-03;12;1;1;2;1;non;non;non
+;keep-normative (cité par le code);docs\_archive\backlog-by-module-fige-S14-S30\00-README.md;Travail — Backlog opérationnel AppGrav V2;108;2026-07-04;11;1;1;5;1;non;non;non
+;keep-normative (cité par le code);docs\_archive\backlog-by-module-fige-S14-S30\00-roadmap-globale.md;Roadmap globale — The Breakery ERP (V3 monorepo);283;2026-07-04;11;1;1;22;1;non;non;non
+;keep-normative (cité par le code);docs\_archive\backlog-by-module-fige-S14-S30\01-auth-permissions.md;Travail — Auth & Permissions;169;2026-07-04;11;1;1;20;1;non;non;non
+;keep-normative (cité par le code);docs\_archive\backlog-by-module-fige-S14-S30\02-pos-cart-orders.md;Travail — POS / Cart / Orders;428;2026-07-04;11;1;1;38;1;non;non;non
+;keep-normative (cité par le code);docs\_archive\backlog-by-module-fige-S14-S30\03-payments-split.md;Travail — Payments & Split;139;2026-07-04;11;1;1;22;1;non;non;non
+;keep-normative (cité par le code);docs\_archive\backlog-by-module-fige-S14-S30\04-kds-kitchen.md;Travail — KDS / Kitchen;272;2026-07-04;11;1;1;22;1;non;non;non
+;keep-normative (cité par le code);docs\_archive\backlog-by-module-fige-S14-S30\05-products-categories.md;Travail — Products & Categories;139;2026-07-04;11;1;1;26;1;non;non;non
+;keep-normative (cité par le code);docs\_archive\backlog-by-module-fige-S14-S30\06-inventory-stock.md;Travail — Inventory & Stock;168;2026-07-04;11;1;1;31;4;non;non;non
+;keep-normative (cité par le code);docs\_archive\backlog-by-module-fige-S14-S30\07-purchasing-suppliers.md;Travail — Purchasing & Suppliers;233;2026-07-04;11;1;1;21;1;non;non;non
+;keep-normative (cité par le code);docs\_archive\backlog-by-module-fige-S14-S30\08-customers-loyalty.md;Travail — Customers & Loyalty;214;2026-07-04;11;1;1;34;1;non;non;non
+;keep-normative (cité par le code);docs\_archive\backlog-by-module-fige-S14-S30\09-b2b-wholesale.md;Travail — B2B / Wholesale;341;2026-07-04;11;1;1;21;1;non;non;non
+;keep-normative (cité par le code);docs\_archive\backlog-by-module-fige-S14-S30\10-accounting-double-entry.md;Travail — Accounting (Double-Entry);351;2026-07-04;11;1;1;30;1;non;non;non
+;keep-normative (cité par le code);docs\_archive\backlog-by-module-fige-S14-S30\12-cash-register-shift.md;Travail — Cash Register & Shift;249;2026-07-04;11;1;1;16;1;non;non;non
+;keep-normative (cité par le code);docs\_archive\backlog-by-module-fige-S14-S30\13-promotions-discounts.md;Travail — Promotions & Discounts;249;2026-07-04;11;1;1;25;1;non;non;non
+;keep-normative (cité par le code);docs\_archive\backlog-by-module-fige-S14-S30\14-reports-analytics.md;Travail — Reports & Analytics;324;2026-07-04;11;1;1;26;3;non;non;non
+;keep-normative (cité par le code);docs\_archive\backlog-by-module-fige-S14-S30\15-production-recipes.md;Travail — Production & Recipes;273;2026-07-04;11;1;1;19;1;non;non;non
+;keep-normative (cité par le code);docs\_archive\backlog-by-module-fige-S14-S30\16-display-customer.md;Travail — Customer Display;271;2026-07-04;11;1;1;14;1;non;non;non
+;keep-normative (cité par le code);docs\_archive\backlog-by-module-fige-S14-S30\17-tablet-ordering.md;Travail — Tablet Ordering;295;2026-07-04;11;1;1;20;1;non;non;non
+;keep-normative (cité par le code);docs\_archive\backlog-by-module-fige-S14-S30\18-mobile-shell.md;Travail — Mobile Shell;175;2026-07-04;11;1;1;9;1;non;non;non
+;keep-normative (cité par le code);docs\_archive\backlog-by-module-fige-S14-S30\19-settings-configuration.md;Travail — Settings & Configuration;235;2026-07-04;11;1;1;21;1;non;non;non
+;keep-normative (cité par le code);docs\_archive\backlog-by-module-fige-S14-S30\21-lan-architecture.md;Travail — LAN Architecture;185;2026-07-04;11;1;1;6;1;non;non;non
+;keep-normative (cité par le code);docs\_archive\backlog-by-module-fige-S14-S30\22-design-system.md;"Travail — Design System (""Luxe Dark"")";212;2026-07-04;11;1;1;8;1;non;non;non
+;keep-normative (cité par le code);docs\_archive\backlog-by-module-fige-S14-S30\25-security.md;Travail — Security;276;2026-07-04;11;1;1;6;1;non;non;non
+;keep-normative (cité par le code);docs\product\README.md;Référence produit — The Breakery ERP/POS;16;2026-07-04;11;1;1;130;1;non;non;non
+;keep-normative (cité par le code);docs\README.md;📚 The Breakery ERP — Documentation;56;2026-07-04;11;7;3;129;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\audits\archive\2026-06-12-docs-curation-audit.md;Docs Curation Audit — 2026-06-12;135;2026-07-04;11;1;1;1;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\audits\archive\2026-06-27-docs-curation-audit.md;Docs Curation Audit — 2026-06-27;106;2026-07-04;11;1;1;1;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\plans\2026-07-04-remise-a-plat-master-plan.md;Remise à plat totale — plan maître;170;2026-07-04;11;1;1;2;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\plans\archive\2026-05-19-session-26-INDEX.md;Session 26 — INDEX (Comptable Cockpit);2571;2026-07-04;11;1;1;3;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\plans\archive\2026-05-20-audit-integral-V3-plan.md;Plan d'audit intégral V3 — The Breakery ERP;709;2026-07-04;11;1;1;4;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\plans\archive\2026-06-01-pos-print-bridge-deploy-plan.md;POS Print-Bridge Deploy + Runtime Config Implementation Plan;680;2026-07-04;11;1;1;2;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\remise-a-plat\07-purchasing-suppliers.md;Module 07 — Achats & fournisseurs;87;2026-07-04;11;1;1;22;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\remise-a-plat\18-mobile-shell.md;Module 18 — Application mobile (téléphone);58;2026-07-04;11;1;1;10;1;non;non;non
+;keep-normative (cité par le code);apps\print-bridge\README.md;@breakery/print-bridge;27;2026-07-06;9;1;1;130;1;non;non;non
+;keep-normative (cité par le code);docs\superpowers\plans\2026-07-05-session-61-f2-f5-decommission-peremption.md;S61 — Findings S58 F-2 + F-5 + décommissionnement péremption — Implementation Plan;366;2026-07-06;9;1;1;2;1;non;non;non
+;keep-normative (cité par le code);docs\superpowers\plans\2026-07-06-print-bridge-scan-lan-devices-crud.md;Print-bridge versionné + scan réseau + CRUD LAN Devices — Implementation Plan;2716;2026-07-06;9;1;1;2;1;non;non;non
+;keep-normative (cité par le code);docs\superpowers\plans\2026-07-06-s63-dashboard-overview.md;S63 — Dashboard BO réel : plan d'implémentation;1345;2026-07-06;9;1;1;2;1;non;non;non
+;keep-normative (cité par le code);docs\superpowers\plans\2026-07-08-s69-customer-categories-negotiated-pricing.md;S69 — CRUD Customer Categories + Prix négocié par client (B2B) — Implementation Plan;995;2026-07-08;7;1;1;2;1;non;non;non
+;keep-normative (cité par le code);docs\audit\archive\2026-05-28-pos-audit.md;Audit POS café-boulangerie — The Breakery;539;2026-07-09;6;1;1;17;1;non;non;non
+;keep-normative (cité par le code);docs\audit\archive\2026-06-12-stock-management-audit.md;Audit module Stock Management — Backoffice;136;2026-07-09;6;1;1;9;1;non;non;non
+;keep-normative (cité par le code);docs\DESIGN_POS_AND_BACKOFFICE.md;Design actuel — POS & Backoffice;596;2026-07-09;6;3;2;34;1;non;non;non
+;keep-normative (cité par le code);docs\runbooks\disaster-recovery.md;Disaster Recovery Runbook — The Breakery ERP;436;2026-07-09;6;2;1;12;1;non;non;non
+;keep-normative (cité par le code);docs\superpowers\plans\2026-07-08-s70-cashier-variance-report.md;S70 — Rapport écarts de caisse par caissier — Implementation Plan;722;2026-07-09;6;1;1;2;1;non;non;non
+;keep-normative (cité par le code);docs\V2_V3_GLOSSARY.md;Glossaire V2 ↔ V3;160;2026-07-09;6;4;2;31;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\audits\2026-06-27-project-state-and-gaps.md;Audit état projet & lacunes — The Breakery V3 (2026-06-27);366;2026-07-09;6;2;1;6;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\plans\2026-07-08-session-69-INDEX.md;Session 69 — INDEX : CRUD Customer Categories + Prix négocié par client B2B (Vague 2);62;2026-07-09;6;2;1;9;1;non;non;non
+;keep-normative (cité par le code);README.md;The Breakery — ERP/POS Monorepo;110;2026-07-09;6;3;2;129;1;non;non;non
+;keep-normative (cité par le code);docs\superpowers\plans\2026-07-09-s71-e2e-nightly-infra.md;S71 — E2E nightly : Infra + suite runnable + triage — Implementation Plan;508;2026-07-10;5;1;1;2;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\audits\2026-05-20-audit-integral-V3\00-EXECUTIVE-SUMMARY.md;Audit intégral V3 — Synthèse exécutive;297;2026-07-10;5;4;2;4;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\plans\archive\2026-05-03-breakery-01-foundation.md;Phase 1 — Foundation (Monorepo Bootstrap);1166;2026-07-10;5;2;1;2;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\plans\archive\2026-05-12-session-11-05-discount-templates.md;Session 11 — Phase 05 — Discount Templates CRUD Implementation Plan;848;2026-07-10;5;2;1;2;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\plans\archive\2026-05-12-session-11-06-products-full-crud.md;Session 11 — Phase 06 — Products full CRUD Implementation Plan;1041;2026-07-10;5;2;1;2;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\plans\archive\2026-05-12-session-11-07-combos.md;Session 11 — Phase 07 — Combos CRUD Implementation Plan;1502;2026-07-10;5;2;1;2;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\plans\archive\2026-05-12-session-11-08-customers-page.md;Session 11 — Phase 08 — Customers Page Implementation Plan;451;2026-07-10;5;2;1;2;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\plans\archive\2026-05-12-session-11-09-tablet-splitpay-smoke.md;Session 11 — Phase 09 — Tablet Split-Pay v5 Smoke Test Implementation Plan;258;2026-07-10;5;2;1;2;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\plans\archive\2026-05-12-session-11-10-sidebar-grouping.md;Session 11 — Phase 10 — Sidebar Grouping Implementation Plan;339;2026-07-10;5;2;1;2;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\plans\archive\2026-05-12-session-11-11-verification.md;Session 11 — Phase 11 — Final Verification Implementation Plan;359;2026-07-10;5;2;1;2;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\plans\archive\2026-05-12-session-11-INDEX.md;Session 11 — Backoffice CRUD étendu + Tablet split-pay smoke — INDEX;253;2026-07-10;5;2;1;12;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\plans\archive\2026-05-12-session-12-inventory-complete-INDEX.md;Session 12 — Inventory **Complete** — Implementation Plan INDEX;322;2026-07-10;5;2;1;8;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\plans\archive\2026-05-13-session-13-phase-2.A-production-recipes.md;Session 13 — Phase 2.A sub-plan : Production + Recipes;350;2026-07-10;5;2;1;2;2;non;non;non
+;keep-normative (cité par le code);docs\workplan\plans\archive\2026-05-13-session-13-phase-4.B-kds-ext.md;Session 13 — Phase 4.B — KDS extensions — Sub-plan;166;2026-07-10;5;2;1;4;4;non;non;non
+;keep-normative (cité par le code);docs\workplan\plans\archive\2026-05-13-session-13-phase-4.C-display.md;Session 13 — Phase 4.C — Customer Display build-from-scratch — Sub-plan;175;2026-07-10;5;2;1;1;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\plans\archive\2026-05-13-session-13-phase-5.B-notifications.md;Session 13 — Phase 5.B — Notifications pipeline (MVP email-only) — Sub-plan;111;2026-07-10;5;2;1;1;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\plans\archive\2026-05-29-session-34-plan.md;Session 34 — POS Critical Fixes Implementation Plan;1133;2026-07-10;5;2;1;2;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\plans\archive\2026-06-12-stock-audit-fixes-plan.md;Stock Management Audit Fixes — Implementation Plan;849;2026-07-10;5;2;1;3;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\plans\archive\2026-06-27-session-50-INDEX.md;Session 50 — INDEX — Vague 1 « cutover sain »;97;2026-07-10;5;1;1;2;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\plans\archive\2026-07-04-session-59-vague1-lot1-plan.md;Session 59 — Plan d'exécution — Remise à plat Vague 1, lot 1;316;2026-07-10;5;1;1;3;2;non;non;non
+;keep-normative (cité par le code);docs\workplan\plans\archive\2026-07-05-session-60-vague1-lot2-plan.md;Session 60 — Remise à plat Vague 1, lot 2 : quick wins sous règle money-path — Implementation Plan;424;2026-07-10;5;1;1;2;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\remise-a-plat\01-auth-permissions.md;Module 01 — Connexion & droits d'accès;89;2026-07-10;5;4;1;21;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\remise-a-plat\02-pos-cart-orders.md;Module 02 — Caisse : panier & commandes;100;2026-07-10;5;6;1;39;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\remise-a-plat\03-payments-split.md;Module 03 — Encaissement & paiements;86;2026-07-10;5;4;1;23;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\remise-a-plat\05-products-categories.md;Module 05 — Catalogue produits & catégories;95;2026-07-10;5;5;1;27;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\remise-a-plat\06-inventory-stock.md;Module 06 — Stock & inventaire;96;2026-07-10;5;3;1;32;4;non;non;non
+;keep-normative (cité par le code);docs\workplan\remise-a-plat\10-accounting-double-entry.md;Module 10 — Comptabilité en partie double;95;2026-07-10;5;4;1;31;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\remise-a-plat\12-cash-register-shift.md;Module 12 — Caisse physique & shifts;93;2026-07-10;5;7;1;17;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\remise-a-plat\13-promotions-discounts.md;Module 13 — Promotions & remises;84;2026-07-10;5;3;1;26;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\remise-a-plat\15-production-recipes.md;Module 15 — Production & recettes;82;2026-07-10;5;3;1;20;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\remise-a-plat\21-lan-architecture.md;Module 21 — Réseau local (postes, imprimantes);96;2026-07-10;5;5;1;6;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\remise-a-plat\22-design-system.md;Module 22 — Charte graphique & cohérence visuelle;75;2026-07-10;5;3;1;8;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\remise-a-plat\25-security.md;Module 25 — Sécurité;86;2026-07-10;5;3;1;6;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\audits\settings-pos-bo-audit.md;Audit des modules Settings — POS + Backoffice (Phase 0);226;2026-07-12;3;2;2;8;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\remise-a-plat\14-reports-analytics.md;Module 14 — Rapports & analyses;101;2026-07-12;3;5;2;27;3;non;non;non
+;keep-normative (cité par le code);docs\product\DESCRIPTION.md;The Breakery — Description du produit (v1.3);577;2026-07-13;2;1;1;9;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\remise-a-plat\00-INDEX.md;Remise à plat — Index des analyses module par module;158;2026-07-13;2;18;1;26;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\remise-a-plat\04-kds-kitchen.md;Module 04 — Écran cuisine (KDS);101;2026-07-13;2;6;1;23;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\remise-a-plat\08-customers-loyalty.md;Module 08 — Clients & fidélité;95;2026-07-13;2;5;1;35;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\remise-a-plat\09-b2b-wholesale.md;Module 9 — Clients professionnels (B2B);89;2026-07-13;2;5;1;22;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\remise-a-plat\16-display-customer.md;Module 16 — Écran côté client;76;2026-07-13;2;4;1;15;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\remise-a-plat\17-tablet-ordering.md;Module 17 — Commande sur tablette;87;2026-07-13;2;4;1;21;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\remise-a-plat\19-settings-configuration.md;Module 19 — Réglages & configuration;106;2026-07-13;2;7;1;21;1;non;non;non
+;keep-normative (cité par le code);docs\workplan\plans\2026-07-14-session-78-vitest-d6-plan.md;Session 78 — Queue vitest D-6 : solder les 36 rouges du job `live-rpc-vitest`;43;2026-07-14;1;1;1;2;1;non;non;non
+;keep-normative (cité par le code);.claude\helpers\README.md;Claude Flow V3 Helpers;97;untracked;;0;0;130;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\workplan\audits\2026-05-20-audit-integral-V3\01-db-schema-audit.md;Vague 1 — Audit Drift Schema DB ↔ Code TypeScript;307;2026-05-20;56;1;1;2;0;non;non;non
+;reference (régénérable → supprimer du versionné);docs\workplan\audits\2026-07-03-modules-reference-divergence-audit.md;Audit de divergence — `docs/reference/04-modules/` vs état réel du projet (S57);382;2026-07-03;12;1;1;2;0;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\00-overview\01-product-context.md;01 — Product Context;75;2026-07-09;6;2;2;4;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\00-overview\02-business-overview.md;AppGrav — Vue d'ensemble métier (POS + Backoffice);378;2026-07-09;6;2;2;3;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\00-overview\03-tech-stack.md;02 — Tech Stack;155;2026-07-09;6;2;2;2;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\00-overview\04-repository-structure.md;03 — Repository Structure;187;2026-07-09;6;3;2;3;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\00-overview\05-glossary.md;04 — Glossary;139;2026-07-09;6;2;2;2;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\00-overview\_AVERTISSEMENT.md;⚠️ STALE partiel (2026-07-04);7;2026-07-09;6;2;1;2;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\02-design-system\01-luxe-dark-overview.md;01 — Luxe Dark Overview;106;2026-07-09;6;2;2;5;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\02-design-system\02-tokens.md;02 — Design Tokens;358;2026-07-09;6;2;2;7;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\02-design-system\03-shadcn-primitives.md;03 — shadcn/ui Primitives;175;2026-07-09;6;2;2;10;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\02-design-system\04-feature-components.md;04 — Feature Components;202;2026-07-09;6;2;2;18;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\02-design-system\05-layouts.md;05 — Layouts;236;2026-07-09;6;2;2;6;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\02-design-system\06-iconography-illustrations.md;06 — Iconography & Illustrations;211;2026-07-09;6;2;2;3;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\02-design-system\07-responsive-mobile.md;07 — Responsive & Mobile;203;2026-07-09;6;2;2;5;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\02-design-system\_AVERTISSEMENT.md;⚠️ STALE partiel (2026-07-04);7;2026-07-09;6;2;1;2;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\04-modules\00-modules-index.md;00 — Modules Index;172;2026-07-09;6;3;2;7;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\04-modules\01-auth-permissions.md;01 — Auth, Users & Permissions (RBAC);954;2026-07-09;6;2;2;20;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\04-modules\02-pos-cart-orders.md;02 — POS Cart & Orders;855;2026-07-09;6;2;2;38;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\04-modules\02b-orders.md;02b — Orders (inspection & history);731;2026-07-09;6;2;2;11;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\04-modules\03-payments-split.md;03 — Payments & Split;177;2026-07-09;6;2;2;23;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\04-modules\04-kds-kitchen.md;04 — KDS Kitchen;702;2026-07-09;6;2;2;22;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\04-modules\05-products-categories.md;05 — Products & Categories;945;2026-07-09;6;2;2;26;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\04-modules\06-inventory-stock.md;06 — Inventory & Stock;901;2026-07-09;6;2;2;31;4;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\04-modules\07-purchasing-suppliers.md;07 — Purchasing & Suppliers;679;2026-07-09;6;2;2;21;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\04-modules\08-customers-loyalty.md;08 — Customers & Loyalty;873;2026-07-09;6;2;2;34;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\04-modules\09-b2b-wholesale.md;09 — B2B / Wholesale;942;2026-07-09;6;2;2;21;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\04-modules\10-accounting-double-entry.md;10 — Accounting (Double-Entry);918;2026-07-09;6;2;2;30;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\04-modules\11-expenses.md;11 — Expenses;811;2026-07-09;6;2;2;13;0;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\04-modules\12-cash-register-shift.md;12 — Cash Register & Shift;807;2026-07-09;6;2;2;16;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\04-modules\13-promotions-discounts.md;13 — Promotions & Combos;880;2026-07-09;6;2;2;25;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\04-modules\14-reports-analytics.md;14 — Reports & Analytics;927;2026-07-09;6;2;2;26;3;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\04-modules\15-production-recipes.md;15 — Production & Recipes;847;2026-07-09;6;2;2;19;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\04-modules\16-display-customer.md;16 — Customer Display;694;2026-07-09;6;2;2;14;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\04-modules\17-tablet-ordering.md;17 — Tablet Ordering (Waiter Tablets);684;2026-07-09;6;2;2;20;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\04-modules\18-mobile-shell.md;Module 18 — Mobile Shell;310;2026-07-09;6;2;2;10;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\04-modules\19-settings-configuration.md;19 — Settings & Configuration;1008;2026-07-09;6;2;2;20;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\04-modules\_AVERTISSEMENT.md;⚠️ FICHES STALE — ne font plus foi (2026-07-04);11;2026-07-09;6;2;1;2;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\05-integrations\01-supabase.md;01 — Supabase;223;2026-07-09;6;2;2;4;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\05-integrations\02-edge-functions.md;02 — Edge Functions;220;2026-07-09;6;2;2;11;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\05-integrations\03-sentry-monitoring.md;03 — Sentry Monitoring;218;2026-07-09;6;2;2;5;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\05-integrations\04-capacitor-native.md;04 — Capacitor Native Builds;209;2026-07-09;6;3;2;3;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\05-integrations\05-pwa.md;05 — Progressive Web App (PWA);207;2026-07-09;6;2;2;3;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\05-integrations\06-print-server.md;06 — Local Print Server;322;2026-07-09;6;3;2;12;2;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\05-integrations\07-pdf-excel-export.md;07 — PDF & Excel Export;243;2026-07-09;6;2;2;2;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\05-integrations\09-third-party-libs.md;09 — Third-Party Libraries;259;2026-07-09;6;2;2;2;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\06-lan-architecture\01-hub-client-model.md;01 — Hub / Client Model;206;2026-07-09;6;2;2;9;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\06-lan-architecture\02-discovery.md;02 — Network Discovery;201;2026-07-09;6;2;2;6;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\06-lan-architecture\03-heartbeat-and-state.md;03 — Heartbeat & Device State;226;2026-07-09;6;2;2;5;0;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\06-lan-architecture\04-print-routing.md;04 — Print Routing via the Hub;295;2026-07-09;6;2;2;5;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\06-lan-architecture\05-message-protocol.md;05 — LAN Message Protocol;381;2026-07-09;6;2;2;4;0;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\06-lan-architecture\06-device-types.md;06 — Device Types & Configuration;286;2026-07-09;6;2;2;5;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\06-lan-architecture\_AVERTISSEMENT.md;⚠️ STALE — décrit du code NON MONTÉ (2026-07-04);9;2026-07-09;6;2;1;2;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\11-conventions\01-coding-conventions.md;01 — Coding conventions;246;2026-07-09;6;2;2;5;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\11-conventions\02-file-organization.md;02 — File organization;210;2026-07-09;6;2;2;5;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\11-conventions\03-react-patterns.md;03 — React patterns;299;2026-07-09;6;2;2;6;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\11-conventions\04-supabase-patterns.md;04 — Supabase patterns;311;2026-07-09;6;2;2;6;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\11-conventions\05-error-handling.md;05 — Error handling;324;2026-07-09;6;2;2;4;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\11-conventions\06-pitfalls.md;06 — Pitfalls;414;2026-07-09;6;2;2;7;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\11-conventions\07-context7-library-ids.md;07 — Context7 pinned library IDs;50;2026-07-09;6;2;1;0;0;oui;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\12-appendices\01-business-rules.md;01 — Business rules;255;2026-07-09;6;2;2;2;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\12-appendices\03-environment-variables.md;03 — Environment variables;162;2026-07-09;6;2;2;3;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\12-appendices\04-keyboard-shortcuts.md;04 — Keyboard shortcuts;156;2026-07-09;6;2;2;1;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\12-appendices\05-known-issues-backlog.md;05 — Known issues & backlog;169;2026-07-09;6;4;3;2;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\12-appendices\06-cross-reference-with-v3.md;06 — Cross-reference V2 → V3;190;2026-07-09;6;2;2;2;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\README.md;The Breakery ERP — Documentation de référence technique;31;2026-07-09;6;6;3;129;1;non;non;non
+;reference (régénérable → supprimer du versionné);docs\reference\settings-authority-model.md;Settings authority model;95;2026-07-12;3;1;1;4;0;non;non;non
+;à trancher;docs\superpowers\plans\2026-05-31-agents-skills-team.md;Équipe agents + skills projet — Implementation Plan;721;2026-05-31;45;1;1;1;0;non;non;non
+;à trancher;docs\superpowers\plans\2026-06-29-b2b-per-invoice-settlement.md;B2B Per-Invoice Settlement (P1.2) — Implementation Plan;786;2026-06-29;16;1;1;1;0;non;non;non
+;à trancher;docs\superpowers\plans\2026-07-02-fiscal-correctness.md;S54 — P1.3 (T6) Fiscal Correctness Implementation Plan;575;2026-07-02;13;1;1;1;0;non;non;non
+;à trancher;docs\superpowers\plans\2026-07-02-sale-stock-unification.md;Sale-Stock Unification (`_record_sale_stock_v1`) — Implementation Plan;599;2026-07-02;13;1;1;1;0;non;non;non
+;à trancher;docs\workplan\remise-a-plat\24-deployment-ops.md;Module 24 — Mises à jour & exploitation;74;2026-07-05;10;2;1;2;0;non;non;non
+;à trancher;docs\superpowers\plans\2026-07-06-s64-configurable-payment-methods.md;S64 — Moyens de paiement configurables + fix I-1 — Implementation Plan;396;2026-07-06;9;1;1;1;0;non;non;non
+;à trancher;docs\superpowers\plans\2026-07-07-s67-close-shift-three-way-denominations.md;S67 — Clôture 3 volets + comptage par coupure — Implementation Plan;1842;2026-07-07;8;1;1;1;0;non;non;non
+;à trancher;docs\superpowers\plans\2026-07-08-b2b-invoice-pdf.md;Facture PDF B2B — Implementation Plan (S68);778;2026-07-08;7;1;1;1;0;non;non;non
+;à trancher;docs\superpowers\plans\2026-07-09-s71-e2e-nightly-repair.md;S71 — E2E nightly : réparation spec-par-spec + armement cron — Implementation Plan (Plan 2);638;2026-07-10;5;1;1;1;0;non;non;non
+;à trancher;docs\workplan\remise-a-plat\02b-orders-page.md;Module 02b — Orders (page BO — suivi des commandes);124;2026-07-10;5;3;1;3;0;non;non;non
+;à trancher;docs\workplan\remise-a-plat\11-expenses.md;Module 11 — Dépenses;83;2026-07-10;5;3;1;14;0;non;non;non
+;à trancher;docs\workplan\remise-a-plat\20-users-rbac.md;Module 20 — Gestion des employés & droits;79;2026-07-10;5;4;1;7;0;non;non;non
+;à trancher;docs\workplan\remise-a-plat\23-tests.md;Module 23 — Qualité & tests;76;2026-07-10;5;4;1;5;0;non;non;non
+;à trancher;docs\workplan\remise-a-plat\00-AMENDEMENTS-V13.md;Checklist consolidée — Description v1.2 → v1.3;152;2026-07-13;2;3;1;7;0;non;non;non
