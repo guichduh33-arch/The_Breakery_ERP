@@ -184,6 +184,19 @@ describe('B2bInvoicesTab (S56 DEV-S52-03)', () => {
     expect(onRecord).toHaveBeenCalledWith('b1', ['inv-1']);
   });
 
+  it('(f) an in-flight PDF export only disables its own row button', async () => {
+    // Keep the generate-pdf fetch pending forever so inv-1's export stays in flight.
+    fetchMock.mockImplementation(() => new Promise(() => { /* never resolves */ }));
+    renderTab();
+    await waitFor(() => expect(screen.getByTestId('inv-pdf-B2B-0001')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByTestId('inv-pdf-B2B-0001'));
+
+    await waitFor(() => expect(screen.getByTestId('inv-pdf-B2B-0001')).toBeDisabled());
+    expect(screen.getByTestId('inv-pdf-B2B-0002')).toBeEnabled();
+    expect(screen.getByTestId('inv-pdf-B2B-20260708-0001')).toBeEnabled();
+  });
+
   it('(e) Invoice PDF button renders invoice_number and downloads via get_b2b_invoice_v1 + generate-pdf', async () => {
     const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
     renderTab();

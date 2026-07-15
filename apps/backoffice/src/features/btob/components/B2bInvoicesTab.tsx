@@ -26,9 +26,82 @@ export interface B2bInvoicesTabProps {
   onRecord:  (customerId: string, invoiceIds?: string[]) => void;
 }
 
+interface InvoiceRowProps {
+  inv:       B2bInvoiceRow;
+  canRecord: boolean;
+  canCancel: boolean;
+  onRecord:  (customerId: string, invoiceIds?: string[]) => void;
+  onCancel:  (inv: B2bInvoiceRow) => void;
+}
+
+// Own useDownloadB2bInvoice per row: isPending only tracks this row's export,
+// so an in-flight PDF never disables the other rows' buttons.
+function InvoiceRow({ inv, canRecord, canCancel, onRecord, onCancel }: InvoiceRowProps): JSX.Element {
+  const invoicePdf = useDownloadB2bInvoice();
+  const badge = statusBadge(inv);
+  const cancellable = inv.order_status === 'b2b_pending' && Number(inv.amount_paid) === 0;
+  return (
+    <li className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm">
+      <div>
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-text-primary">{inv.invoice_number ?? inv.order_number}</span>
+          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${badge.cls}`}>
+            {badge.label}
+          </span>
+        </div>
+        <div className="text-xs text-text-secondary">
+          {inv.invoice_number !== null && `${inv.order_number} • `}
+          {inv.b2b_company_name ?? inv.customer_name ?? 'Unknown'}
+          {' • '}{new Date(inv.invoice_date).toLocaleDateString()}
+          {' • '}{inv.age_days}d
+        </div>
+      </div>
+      <div className="flex items-center gap-4">
+        <div className="text-right text-xs">
+          <div className="font-mono text-base text-text-primary">{formatIdr(Number(inv.outstanding))}</div>
+          <div className="text-text-muted">
+            of {formatIdr(Number(inv.invoice_total))} • paid {formatIdr(Number(inv.amount_paid))}
+          </div>
+        </div>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => invoicePdf.download({ orderId: inv.invoice_id, invoiceNumber: inv.invoice_number, orderNumber: inv.order_number })}
+            disabled={invoicePdf.isPending}
+            data-testid={`inv-pdf-${inv.order_number}`}
+          >
+            <Download className="mr-1 h-3.5 w-3.5" aria-hidden /> Invoice PDF
+          </Button>
+          {canRecord && Number(inv.outstanding) > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onRecord(inv.customer_id, [inv.invoice_id])}
+              data-testid={`inv-record-${inv.order_number}`}
+            >
+              Record payment
+            </Button>
+          )}
+          {canCancel && cancellable && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onCancel(inv)}
+              className="text-red"
+              data-testid={`inv-cancel-${inv.order_number}`}
+            >
+              <XCircle className="mr-1 h-3.5 w-3.5" aria-hidden /> Cancel
+            </Button>
+          )}
+        </div>
+      </div>
+    </li>
+  );
+}
+
 export function B2bInvoicesTab({ search, canRecord, canCancel, onRecord }: B2bInvoicesTabProps): JSX.Element {
   const customers = useB2bCustomers();
-  const invoicePdf = useDownloadB2bInvoice();
   const [customerId, setCustomerId] = useState('');
   const [unpaidOnly, setUnpaidOnly] = useState(true);
   const [cancelTarget, setCancelTarget] = useState<B2bInvoiceRow | null>(null);
@@ -76,68 +149,16 @@ export function B2bInvoicesTab({ search, canRecord, canCancel, onRecord }: B2bIn
         <EmptyState icon={FileText} title="No invoices" description="B2B invoices will appear here." size="md" />
       ) : (
         <ul className="divide-y divide-border-subtle" data-testid="inv-list">
-          {rows.map((inv) => {
-            const badge = statusBadge(inv);
-            const cancellable = inv.order_status === 'b2b_pending' && Number(inv.amount_paid) === 0;
-            return (
-              <li key={inv.invoice_id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-text-primary">{inv.invoice_number ?? inv.order_number}</span>
-                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${badge.cls}`}>
-                      {badge.label}
-                    </span>
-                  </div>
-                  <div className="text-xs text-text-secondary">
-                    {inv.invoice_number !== null && `${inv.order_number} • `}
-                    {inv.b2b_company_name ?? inv.customer_name ?? 'Unknown'}
-                    {' • '}{new Date(inv.invoice_date).toLocaleDateString()}
-                    {' • '}{inv.age_days}d
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-right text-xs">
-                    <div className="font-mono text-base text-text-primary">{formatIdr(Number(inv.outstanding))}</div>
-                    <div className="text-text-muted">
-                      of {formatIdr(Number(inv.invoice_total))} • paid {formatIdr(Number(inv.amount_paid))}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => invoicePdf.download({ orderId: inv.invoice_id, invoiceNumber: inv.invoice_number, orderNumber: inv.order_number })}
-                      disabled={invoicePdf.isPending}
-                      data-testid={`inv-pdf-${inv.order_number}`}
-                    >
-                      <Download className="mr-1 h-3.5 w-3.5" aria-hidden /> Invoice PDF
-                    </Button>
-                    {canRecord && Number(inv.outstanding) > 0 && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onRecord(inv.customer_id, [inv.invoice_id])}
-                        data-testid={`inv-record-${inv.order_number}`}
-                      >
-                        Record payment
-                      </Button>
-                    )}
-                    {canCancel && cancellable && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setCancelTarget(inv)}
-                        className="text-red"
-                        data-testid={`inv-cancel-${inv.order_number}`}
-                      >
-                        <XCircle className="mr-1 h-3.5 w-3.5" aria-hidden /> Cancel
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </li>
-            );
-          })}
+          {rows.map((inv) => (
+            <InvoiceRow
+              key={inv.invoice_id}
+              inv={inv}
+              canRecord={canRecord}
+              canCancel={canCancel}
+              onRecord={onRecord}
+              onCancel={setCancelTarget}
+            />
+          ))}
         </ul>
       )}
 
