@@ -57,3 +57,6 @@ test-results/
 .claude/skills/*-workspace/
 ruvector.db
 *.ruvector.db
+
+outputs/
+test-results/
