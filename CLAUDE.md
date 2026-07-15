@@ -106,6 +106,9 @@ Si un document contredit le code, le document a tort : **signale-le, ne corrige 
   (Le préfixe `swarm/` est aboli avec le mode multi-session.)
 - Commits conventionnels (`feat(scope): …`). Co-author Claude si assisté.
 - **Un commit `docs(...)` par un agent = violation de la règle 2.**
+- **Jamais de commit direct sur master.** Tout changement passe par une branche
+  (`feat/`, `fix/`, `chore/`) puis une PR — même un fix d'une ligne. Si la session
+  démarre sur master, créer la branche AVANT le premier commit.
 
 ## MCP
 
