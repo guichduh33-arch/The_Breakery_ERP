@@ -1,5 +1,5 @@
 -- supabase/tests/retail_tab_credit_gate.test.sql
--- S62 — attach_tab_customer_v1 (customers.retail_credit_limit gate).
+-- S62 — attach_tab_customer_v2 (customers.retail_credit_limit gate).
 -- Run via MCP execute_sql (BEGIN..ROLLBACK envelope carried by this file).
 BEGIN;
 
@@ -104,7 +104,7 @@ END $$;
 
 -- T1: attach OK under the cap -> customer_id + total posted on the order.
 DO $$ DECLARE v_res JSONB; BEGIN
-  v_res := attach_tab_customer_v1(current_setting('s62.o1')::uuid, current_setting('s62.c1')::uuid);
+  v_res := attach_tab_customer_v2(current_setting('s62.o1')::uuid, current_setting('s62.c1')::uuid);
   INSERT INTO _r VALUES ('t1_total',      (v_res->>'total')::numeric = 50000);
   INSERT INTO _r VALUES ('t1_outstanding',(v_res->>'outstanding_before')::numeric = 0);
   INSERT INTO _r VALUES ('t1_order_row',  (SELECT customer_id FROM orders WHERE id = current_setting('s62.o1')::uuid) = current_setting('s62.c1')::uuid
@@ -117,7 +117,7 @@ END $$;
 
 -- T2: attach blocked beyond the cap -> P0011 credit_limit_exceeded.
 DO $$ BEGIN
-  PERFORM attach_tab_customer_v1(current_setting('s62.o2')::uuid, current_setting('s62.c2')::uuid);
+  PERFORM attach_tab_customer_v2(current_setting('s62.o2')::uuid, current_setting('s62.c2')::uuid);
   INSERT INTO _r VALUES ('t2_blocked', false);
 EXCEPTION WHEN SQLSTATE 'P0011' THEN
   INSERT INTO _r VALUES ('t2_blocked', SQLERRM LIKE 'credit_limit_exceeded%');
@@ -127,7 +127,7 @@ END $$;
 
 -- T3: NULL cap = unlimited -> attach succeeds even with a huge order.
 DO $$ DECLARE v_res JSONB; BEGIN
-  v_res := attach_tab_customer_v1(current_setting('s62.o3')::uuid, current_setting('s62.c3')::uuid);
+  v_res := attach_tab_customer_v2(current_setting('s62.o3')::uuid, current_setting('s62.c3')::uuid);
   INSERT INTO _r VALUES ('t3_unlimited', (v_res->>'credit_limit') IS NULL AND (v_res->>'total')::numeric = 5000000000);
 EXCEPTION WHEN OTHERS THEN
   INSERT INTO _r VALUES ('t3_unlimited', false);
@@ -135,7 +135,7 @@ END $$;
 
 -- T4: existing 60 000 tab + a new 50 000 order, cap 100 000 -> blocked.
 DO $$ BEGIN
-  PERFORM attach_tab_customer_v1(current_setting('s62.o4b')::uuid, current_setting('s62.c4')::uuid);
+  PERFORM attach_tab_customer_v2(current_setting('s62.o4b')::uuid, current_setting('s62.c4')::uuid);
   INSERT INTO _r VALUES ('t4_outstanding_counted', false);
 EXCEPTION WHEN SQLSTATE 'P0011' THEN
   INSERT INTO _r VALUES ('t4_outstanding_counted', SQLERRM LIKE '%credit_limit_exceeded%');
@@ -145,7 +145,7 @@ END $$;
 
 -- T5: order already paid -> P0001 order_not_attachable.
 DO $$ BEGIN
-  PERFORM attach_tab_customer_v1(current_setting('s62.o5')::uuid, current_setting('s62.c5')::uuid);
+  PERFORM attach_tab_customer_v2(current_setting('s62.o5')::uuid, current_setting('s62.c5')::uuid);
   INSERT INTO _r VALUES ('t5_not_attachable', false);
 EXCEPTION WHEN SQLSTATE 'P0001' THEN
   INSERT INTO _r VALUES ('t5_not_attachable', SQLERRM LIKE 'order_not_attachable%');
@@ -155,7 +155,7 @@ END $$;
 
 -- T6: soft-deleted customer -> P0002 customer_not_found_or_inactive.
 DO $$ BEGIN
-  PERFORM attach_tab_customer_v1(current_setting('s62.o6')::uuid, current_setting('s62.c6')::uuid);
+  PERFORM attach_tab_customer_v2(current_setting('s62.o6')::uuid, current_setting('s62.c6')::uuid);
   INSERT INTO _r VALUES ('t6_inactive', false);
 EXCEPTION WHEN SQLSTATE 'P0002' THEN
   INSERT INTO _r VALUES ('t6_inactive', SQLERRM = 'customer_not_found_or_inactive');
@@ -175,7 +175,7 @@ END $$;
 
 -- T8: re-attach the same customer to order 1 -> idempotent, same values, no error.
 DO $$ DECLARE v_res JSONB; BEGIN
-  v_res := attach_tab_customer_v1(current_setting('s62.o1')::uuid, current_setting('s62.c1')::uuid);
+  v_res := attach_tab_customer_v2(current_setting('s62.o1')::uuid, current_setting('s62.c1')::uuid);
   INSERT INTO _r VALUES ('t8_reattach', (v_res->>'total')::numeric = 50000
                                      AND (v_res->>'customer_id')::uuid = current_setting('s62.c1')::uuid);
 EXCEPTION WHEN OTHERS THEN

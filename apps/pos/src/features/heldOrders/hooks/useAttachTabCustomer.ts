@@ -1,7 +1,7 @@
 // apps/pos/src/features/heldOrders/hooks/useAttachTabCustomer.ts
 //
 // Session 62 — Task 5 — attach a named customer to a fired counter order
-// ("ardoise nommée") via `attach_tab_customer_v1` (Task 4, migration
+// ("ardoise nommée") via `attach_tab_customer_v2` (Task 4, migration
 // `20260710000112_retail_tab_credit_gate.sql`). Not yet in
 // `types.generated.ts` (types regen deferred to closeout) — the call goes
 // through a narrow `LooseSupabase` cast, mirroring `useKdsBumpOrder.ts`.
@@ -101,7 +101,7 @@ export function useAttachTabCustomer() {
 
   return useMutation<AttachTabCustomerResult, Error, AttachTabCustomerInput>({
     mutationFn: async ({ orderId, customerId }) => {
-      const { data, error } = await sb.rpc('attach_tab_customer_v1', {
+      const { data, error } = await sb.rpc('attach_tab_customer_v2', {
         p_order_id: orderId,
         p_customer_id: customerId,
       });

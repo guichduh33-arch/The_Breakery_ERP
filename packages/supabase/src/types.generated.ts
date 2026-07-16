@@ -6443,7 +6443,7 @@ export type Database = {
         Args: { p_expense_id: string; p_manager_pin: string }
         Returns: Json
       }
-      attach_tab_customer_v1: {
+      attach_tab_customer_v2: {
         Args: { p_customer_id: string; p_order_id: string }
         Returns: Json
       }
