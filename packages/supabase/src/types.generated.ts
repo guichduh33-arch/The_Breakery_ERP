@@ -6255,6 +6255,15 @@ export type Database = {
       _currtest: { Args: never; Returns: number }
       _db_privs: { Args: never; Returns: unknown[] }
       _emit_expense_je: { Args: { p_expense_id: string }; Returns: string }
+      _enqueue_notification_system_v1: {
+        Args: {
+          p_idempotency_key?: string
+          p_recipient: string
+          p_template_code: string
+          p_variables?: Json
+        }
+        Returns: string
+      }
       _extensions: { Args: never; Returns: unknown[] }
       _get: { Args: { "": string }; Returns: number }
       _get_latest: { Args: { "": string }; Returns: number[] }
@@ -6264,6 +6273,14 @@ export type Database = {
       _notif_substitute: {
         Args: { p_source: string; p_vars: Json }
         Returns: string
+      }
+      _pb1_split_v1: {
+        Args: { p_items_total: number }
+        Returns: {
+          subtotal: number
+          tax_amount: number
+          total: number
+        }[]
       }
       _prokind: { Args: { p_oid: unknown }; Returns: unknown }
       _query: { Args: { "": string }; Returns: string }
