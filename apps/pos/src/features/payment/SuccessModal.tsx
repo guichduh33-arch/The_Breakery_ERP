@@ -9,6 +9,7 @@ import { printReceipt, openCashDrawer, type ReceiptPayload } from '@/services/pr
 import { useStationPrinters } from '@/features/cart/hooks/useStationPrinters';
 import { useOrgDisplaySettings } from '@/features/settings/hooks/useOrgDisplaySettings';
 import { useBusinessIdentity, type BusinessIdentity } from '@/features/settings/hooks/useBusinessIdentity';
+import { useReceiptTemplate, type ReceiptTemplate } from '@/features/settings/hooks/useReceiptTemplate';
 import { broadcastPaymentComplete } from '@/features/display/hooks/useCartBroadcast';
 import { emitPosEvent } from '@/features/audit/emitPosEvent';
 import { toast } from 'sonner';
@@ -54,7 +55,12 @@ export interface SuccessModalProps {
   appliedPromotions?: AppliedPromotion[];
 }
 
-function buildReceiptPayload(props: SuccessModalProps, taxRate: number, business: BusinessIdentity): ReceiptPayload {
+function buildReceiptPayload(
+  props: SuccessModalProps,
+  taxRate: number,
+  business: BusinessIdentity,
+  template: ReceiptTemplate | null,
+): ReceiptPayload {
   // S51 — the CHARGED total, tax and per-line money come from the server (v15);
   // `calculateTotals` is used ONLY for the tax-independent informational lines
   // (subtotal fallback + loyalty redemption). It runs at the SERVER tax rate so
@@ -144,7 +150,17 @@ function buildReceiptPayload(props: SuccessModalProps, taxRate: number, business
           : {}),
       },
     } : {}),
-    footer: 'Thank you!',
+    // Settings §6.A — footer/header/QR come from the default receipt template
+    // (receipt_templates, edited in BO Settings); built-in fallback preserved.
+    footer: template?.footer || 'Thank you!',
+    ...(template && (template.header || template.show_qr)
+      ? {
+          template: {
+            ...(template.header ? { header: template.header } : {}),
+            ...(template.show_qr ? { show_qr: true } : {}),
+          },
+        }
+      : {}),
   };
 }
 
@@ -167,6 +183,8 @@ export function SuccessModal(props: SuccessModalProps) {
   // Identity for the receipt header — degrades to the built-in default while
   // loading / on error, mirroring the org toggles above (never blocks printing).
   const { isLoading: identityLoading, ...businessIdentity } = useBusinessIdentity();
+  // Default receipt template (header/footer/QR) — same degradation contract.
+  const { template: receiptTemplate, isLoading: templateLoading } = useReceiptTemplate();
   // S73 Lot 2 review fix — the org toggles are now an ASYNC read (they were a
   // synchronous localStorage read before). This modal mounts fresh right after
   // a sale, so on the first sale of a session the query may still be loading;
@@ -182,7 +200,7 @@ export function SuccessModal(props: SuccessModalProps) {
     setIsPrinting(true);
     const isReprint = printedOnceRef.current;
     printedOnceRef.current = true;
-    const payload = buildReceiptPayload(props, taxRate, businessIdentity);
+    const payload = buildReceiptPayload(props, taxRate, businessIdentity, receiptTemplate);
     const result = await printReceipt(payload, cashierPrinter);
     // S72 audit — journal every receipt print (reprints are a fraud signal).
     emitPosEvent(isReprint ? 'receipt_reprinted' : 'receipt_printed', {
@@ -222,7 +240,7 @@ export function SuccessModal(props: SuccessModalProps) {
     // before the identity resolves would stamp the fallback header on the first
     // receipt of the session. Both queries settle on error too (retry: 1), so a
     // dead config read still degrades to defaults and never blocks the drawer.
-    if (!open || orgSettingsLoading || identityLoading || firedRef.current) {
+    if (!open || orgSettingsLoading || identityLoading || templateLoading || firedRef.current) {
       return () => { mountedRef.current = false; };
     }
     firedRef.current = true;
@@ -256,7 +274,7 @@ export function SuccessModal(props: SuccessModalProps) {
       }
     })();
     return () => { mountedRef.current = false; };
-  }, [open, orgSettingsLoading, identityLoading, autoPrint, autoOpenDrawer]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open, orgSettingsLoading, identityLoading, templateLoading, autoPrint, autoOpenDrawer]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <FullScreenModal open={open} onOpenChange={() => { /* must click action */ }} accessibleTitle="Payment successful">

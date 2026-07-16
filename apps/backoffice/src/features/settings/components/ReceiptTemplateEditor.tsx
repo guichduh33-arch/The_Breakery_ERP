@@ -144,13 +144,9 @@ export function ReceiptTemplateEditor({ row, canEdit }: ReceiptTemplateEditorPro
             onChange={(e) => setDraft((d) => ({ ...d, footer: e.target.value }))}
             className="w-full rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-sm font-mono text-text-primary disabled:opacity-50" />
         </div>
-        <div>
-          <label htmlFor={`rec-css-${row.id}`} className="text-xs uppercase tracking-widest text-text-secondary">Custom CSS (optional)</label>
-          <textarea id={`rec-css-${row.id}`} rows={3} value={draft.custom_css} disabled={!canEdit}
-            onChange={(e) => setDraft((d) => ({ ...d, custom_css: e.target.value }))}
-            placeholder="e.g. body { font-family: monospace; }"
-            className="w-full rounded-md border border-border-subtle bg-bg-input px-3 py-2 text-xs font-mono text-text-primary disabled:opacity-50" />
-        </div>
+        {/* custom_css hidden — meaningless on the ESC/POS thermal path; the
+            column stays in DB for a potential A4/HTML renderer. Existing
+            values are preserved untouched by the save (draft keeps them). */}
         <label className="inline-flex items-center gap-2 text-sm">
           <input type="checkbox" checked={draft.is_default} disabled={!canEdit}
             onChange={(e) => setDraft((d) => ({ ...d, is_default: e.target.checked }))} />

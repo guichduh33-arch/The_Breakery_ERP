@@ -11,6 +11,9 @@ vi.mock('@/lib/supabase', () => ({ supabase: { auth: { getSession: vi.fn().mockR
 vi.mock('@/features/cart/hooks/useStationPrinters', () => ({ useStationPrinters: () => ({ data: new Map([['cashier', { ip_address: '1.1.1.1', port: 9100, name: 'C' }]]) }) }));
 vi.mock('@/services/print/printService', () => ({ printReceipt: vi.fn().mockResolvedValue({ success: true }), openCashDrawer: vi.fn().mockResolvedValue({ success: true }), getMockPrintBuffer: () => [], clearMockPrintBuffer: () => undefined }));
 // Settings 6.A - identity is an async business_config read now; mock it resolved
+vi.mock('@/features/settings/hooks/useReceiptTemplate', () => ({
+  useReceiptTemplate: () => ({ template: null, isLoading: false }),
+}));
 vi.mock('@/features/settings/hooks/useBusinessIdentity', () => ({
   useBusinessIdentity: () => ({ name: 'The Breakery', address: 'Jl. Test No. 1', isLoading: false }),
 }));

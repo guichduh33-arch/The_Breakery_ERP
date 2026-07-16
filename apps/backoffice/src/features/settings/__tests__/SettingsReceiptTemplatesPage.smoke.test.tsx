@@ -74,8 +74,11 @@ describe('SettingsReceiptTemplatesPage', () => {
     });
   });
 
-  it('shows the "not wired yet" banner (S76 T5 — receipt printing does not read them yet)', async () => {
+  it('no longer shows the "not wired" banner — printing reads the default template now', async () => {
     renderPage();
-    expect(await screen.findByTestId('templates-not-wired-banner')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /Default 80mm/i })).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId('templates-not-wired-banner')).not.toBeInTheDocument();
   });
 });
