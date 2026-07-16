@@ -41,6 +41,7 @@ const MOCK_TEMPLATES = [
 interface RpcResult { data: unknown; error: { message: string } | null }
 
 const updateCalls: { table: string; values: unknown; id: unknown }[] = [];
+const rpcCalls: { fn: string; args: unknown }[] = [];
 
 interface MockChain {
   select: () => MockChain;
@@ -68,7 +69,19 @@ vi.mock('@/lib/supabase.js', () => {
     return chain;
   }
   return {
-    supabase: { from: () => buildChain() },
+    supabase: {
+      from: () => buildChain(),
+      rpc: (fn: string, args: unknown) => {
+        rpcCalls.push({ fn, args });
+        if (fn === 'get_settings_by_category_v2') {
+          return Promise.resolve({
+            data: { category: 'business', settings: { alert_email: 'ops@breakery.id' } },
+            error: null,
+          });
+        }
+        return Promise.resolve({ data: null, error: null }); // set_setting_v2
+      },
+    },
   };
 });
 
@@ -87,6 +100,7 @@ describe('SettingsNotificationsPage', () => {
     currentPerms.add('settings.read');
     currentPerms.add('notifications.send');
     updateCalls.length = 0;
+    rpcCalls.length = 0;
   });
 
   it('renders the heading and one card per template', async () => {
@@ -117,6 +131,28 @@ describe('SettingsNotificationsPage', () => {
       expect(toggle).toBeDisabled();
     }
     expect(screen.queryByRole('button', { name: /save changes/i })).not.toBeInTheDocument();
+  });
+
+  // Settings §6.A — internal alert recipient (business_config.alert_email).
+  it('renders the alert email card hydrated from the business category', async () => {
+    renderPage();
+    const input = await screen.findByLabelText<HTMLInputElement>('Alert email');
+    await waitFor(() => expect(input.value).toBe('ops@breakery.id'));
+    // Editing is gated settings.update, absent here → no Save button in the card.
+    expect(screen.getByTestId('alert-email-card').querySelector('button')).toBeNull();
+  });
+
+  it('saves alert_email via set_setting_v2 (business category) with settings.update', async () => {
+    currentPerms.add('settings.update');
+    renderPage();
+    const input = await screen.findByLabelText<HTMLInputElement>('Alert email');
+    await waitFor(() => expect(input.value).toBe('ops@breakery.id'));
+    fireEvent.change(input, { target: { value: 'alerts@breakery.id' } });
+    fireEvent.click(screen.getAllByRole('button', { name: /^save$/i })[0]!);
+    await waitFor(() => {
+      const call = rpcCalls.find((c) => c.fn === 'set_setting_v2');
+      expect(call?.args).toEqual({ p_key: 'alert_email', p_value: 'alerts@breakery.id', p_category: 'business' });
+    });
   });
 
   it('calls notification_templates.update when a dirty template is saved', async () => {
