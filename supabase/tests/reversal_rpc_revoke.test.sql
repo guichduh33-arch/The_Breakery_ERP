@@ -8,7 +8,7 @@
 -- 20260709000010 and 20260710000084), or this test fails.
 --
 -- S55 T7: void_order_rpc_v3(uuid,text,uuid,uuid) was DROPped by 20260710000082 —
--- repointed to void_order_rpc_v4 (5-arg) and added cancel_order_item_rpc_v3 coverage.
+-- repointed to void_order_rpc_v4 (5-arg) and added cancel_order_item_rpc_v4 coverage.
 --
 -- Run via MCP execute_sql (Docker retired): paste the body between BEGIN/ROLLBACK.
 
@@ -31,14 +31,14 @@ SELECT is(has_function_privilege('public', 'public.void_order_rpc_v4(uuid,text,u
 SELECT is(has_function_privilege('service_role', 'public.void_order_rpc_v4(uuid,text,uuid,uuid,uuid)', 'EXECUTE'),
           true, 'void_order_rpc_v4 executable by service_role');
 
-SELECT is(has_function_privilege('authenticated', 'public.cancel_order_item_rpc_v3(uuid,text,uuid,uuid,uuid)', 'EXECUTE'),
-          false, 'cancel_order_item_rpc_v3 NOT executable by authenticated');
-SELECT is(has_function_privilege('anon', 'public.cancel_order_item_rpc_v3(uuid,text,uuid,uuid,uuid)', 'EXECUTE'),
-          false, 'cancel_order_item_rpc_v3 NOT executable by anon');
-SELECT is(has_function_privilege('public', 'public.cancel_order_item_rpc_v3(uuid,text,uuid,uuid,uuid)', 'EXECUTE'),
-          false, 'cancel_order_item_rpc_v3 NOT executable by PUBLIC');
-SELECT is(has_function_privilege('service_role', 'public.cancel_order_item_rpc_v3(uuid,text,uuid,uuid,uuid)', 'EXECUTE'),
-          true, 'cancel_order_item_rpc_v3 executable by service_role');
+SELECT is(has_function_privilege('authenticated', 'public.cancel_order_item_rpc_v4(uuid,text,uuid,uuid,uuid)', 'EXECUTE'),
+          false, 'cancel_order_item_rpc_v4 NOT executable by authenticated');
+SELECT is(has_function_privilege('anon', 'public.cancel_order_item_rpc_v4(uuid,text,uuid,uuid,uuid)', 'EXECUTE'),
+          false, 'cancel_order_item_rpc_v4 NOT executable by anon');
+SELECT is(has_function_privilege('public', 'public.cancel_order_item_rpc_v4(uuid,text,uuid,uuid,uuid)', 'EXECUTE'),
+          false, 'cancel_order_item_rpc_v4 NOT executable by PUBLIC');
+SELECT is(has_function_privilege('service_role', 'public.cancel_order_item_rpc_v4(uuid,text,uuid,uuid,uuid)', 'EXECUTE'),
+          true, 'cancel_order_item_rpc_v4 executable by service_role');
 
 SELECT * FROM finish();
 ROLLBACK;

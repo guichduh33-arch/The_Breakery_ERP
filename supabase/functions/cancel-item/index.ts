@@ -6,7 +6,7 @@
 //     client with the cashier's verified auth.uid as p_acting_auth_user_id. The
 //     old cancel_order_item_rpc was directly callable via PostgREST, bypassing
 //     this PIN check.
-// S55 — idempotency: reads `x-idempotency-key` header, relays to cancel_order_item_rpc_v3.
+// S55 — idempotency: reads `x-idempotency-key` header, relays to cancel_order_item_rpc_v4.
 //
 // Headers:
 //   x-manager-pin:     string (6 digits) — REQUIRED
@@ -104,7 +104,7 @@ serve(async (req) => {
 
   // service_role admin client — the only role allowed to EXECUTE the v3 RPC.
   const admin = getAdminClient();
-  const { data, error } = await admin.rpc('cancel_order_item_rpc_v3', {
+  const { data, error } = await admin.rpc('cancel_order_item_rpc_v4', {
     p_order_item_id:       body.order_item_id,
     p_reason:              body.reason,
     p_authorized_by:       mgr.manager_profile_id,
