@@ -448,8 +448,8 @@ comme actif a un **effet réel vérifié** dans l'application.
 - **Réglages saisissables mais encore sans effet** (l'écran le dit honnêtement ou le champ attend son branchement) : le **nom et l'adresse de la boutique** ne s'affichent encore sur aucun ticket ni facture ; les **modèles d'e-mails et de tickets** s'éditent avec aperçu mais ne pilotent encore ni envoi ni impression ; les **jours fériés** se gèrent entièrement mais aucun automatisme ne les exploite ; l'option globale « taxe incluse » est sans effet (le mode se règle produit par produit).
 
 **À venir :**
-- **Brancher ce qui écrit dans le vide** (priorité du module) : identité boutique sur les tickets et factures, modèles de tickets sur l'impression, modèles d'e-mails sur un envoi réel (ou fusion avec les modèles de notifications — un seul système), jours fériés exploités par les rapports ou la caisse.
-- **Logo** et **identifiant fiscal (NPWP)** dans la fiche identité.
+- **Brancher ce qui écrit dans le vide** (priorité du module) : identité boutique sur les tickets et factures, modèles de tickets sur l'impression, modèles d'e-mails branchés sur un envoi réel (décision : ils sont conservés, pas fusionnés avec les modèles de notifications), jours fériés exploités par les rapports ou la caisse.
+- **Logo** et **identifiant fiscal (NPWP)** ajoutés à la fiche identité et affichés sur les documents et e-mails (décision du 2026-07-16).
 - Corrections de cohérence : l'écran d'impression peut afficher un état différent du comportement réel de la caisse tant qu'aucune valeur n'a été enregistrée ; les droits d'accès de la page sécurité doivent être harmonisés ; son titre annonce une gestion des codes PIN qui n'existe pas encore.
 - **Propagation en temps réel des réglages** (décision ADR-006) : un changement s'appliquera aux caisses et écrans en quelques secondes, sans attendre leur prochain rafraîchissement.
 - **Option globale « taxe incluse » rendue effective** (décision ADR-006) : un réglage boutique définira le comportement par défaut, articulé avec le réglage existant produit par produit — précaution particulière car le calcul des ventes est concerné.
