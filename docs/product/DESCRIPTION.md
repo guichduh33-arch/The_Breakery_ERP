@@ -1,9 +1,10 @@
-# The Breakery — Description du produit (v1.3)
+# The Breakery — Description du produit (v1.3.1)
 
 > **LA référence produit.** Ce document décrit, pour un lecteur non technique (propriétaire, investisseurs, nouveaux employés), ce que fait aujourd'hui le logiciel de The Breakery et ce qui reste à venir. Il fait foi sur le périmètre fonctionnel.
 
 ## Historique des versions
 
+- **v1.3.1 (2026-07-16)** — Module 19 (Réglages & configuration) réécrit d'après l'audit code intégral du module Settings (17 routes vérifiées page par page). Distinction explicite entre réglages à effet réel vérifié et réglages saisissables sans effet ; « à venir » recentré sur le branchement des surfaces mortes et enrichi des décisions du propriétaire (ADR-006) : propagation temps réel des réglages, pages réseau local avec système hub pour la continuité des communications entre appareils en cas de coupure internet (également reflété au Module 21), option globale « taxe incluse » rendue effective, réorganisation des réglages par fonctionnalité en sous-menus, et six réglages retenus du backlog (horaires d'ouverture, politique PIN, moyens de paiement enrichis, comportement cuisine, historique des réglages, plan de salle visuel).
 - **v1.3 (2026-07-13)** — Reconstruite lors de la « remise à plat » de juillet 2026 : chaque module a été réécrit à partir des fiches d'analyse réel-vs-demandé (comparaison indépendante entre le code réellement livré et la description précédente), puis corrigé par une checklist d'amendements réconciliée avec l'état du code au moment de la publication. Le document source de la version précédente (v1.2, 2026-07-03) n'étant plus disponible, la comparaison mot à mot v1.2 → v1.3 n'est pas auditable ; cette limite est actée comme une dette documentaire. Principaux changements : surventes retirées (fonctions annoncées mais absentes), sous-ventes ajoutées (fonctions livrées mais non documentées), et intégration des décisions du propriétaire — notamment l'abandon définitif de la gestion de péremption/lots (le stock est suivi en quantité globale, la péremption se gère par déclaration de perte) et l'abandon de la livraison motorisée pour les clients professionnels (retrait sur place).
 - **v1.2 (2026-07-03)** — Version précédente, 25 modules (non disponible dans le dépôt).
 
@@ -436,22 +437,25 @@ La prise de commande en salle par le personnel.
 
 ## Module 19 — Réglages & configuration
 
-Le centre de paramétrage du logiciel.
+Le centre de paramétrage du logiciel. Audit code intégral réalisé le 2026-07-16
+(voir ADR-006 pour les choix structurels actés) : chaque réglage listé ci-dessous
+comme actif a un **effet réel vérifié** dans l'application.
 
 **Aujourd'hui :**
-- Un **espace réglages central** regroupe toutes les pages utiles (identité boutique, taxes, moyens de paiement, présentation caisse, jours fériés, modèles de tickets et d'e-mails, sécurité, comptabilité, plan de salle, écran cuisine…) — **plus aucune page qui bloque en cul-de-sac**.
-- **Nom, adresse fiscale, devise, fuseau horaire, taux de taxe et seuils d'écart de caisse** modifiables et vérifiés avant enregistrement.
-- **Moyens de paiement acceptés activables / désactivables**, avec effet sur les caisses en moins d'une minute et sans redémarrage.
-- **Gestion complète des jours fériés** (nationaux, religieux, entreprise).
-- **Modèles d'e-mails et de tickets** personnalisables avec aperçu — ils affichent aujourd'hui **honnêtement qu'ils ne sont pas encore réellement utilisés** pour l'envoi ou l'impression.
-- **Délai de déconnexion automatique réglable par rôle** ; chaque modification des réglages généraux est **tracée** (qui, quoi, avant / après), consultable via le journal.
-- **Configuration du plan de salle** (tables et sections) et des **seuils de l'écran cuisine** disponibles.
+- Un **espace réglages central** regroupe toutes les pages utiles (identité boutique, taxes, moyens de paiement, présentation caisse, jours fériés, modèles de tickets et d'e-mails, sécurité, comptabilité, plan de salle, écran cuisine, seuils d'approbation des dépenses, conditions B2B) — **plus aucune page qui bloque en cul-de-sac**.
+- Réglages **à effet immédiat vérifié** : taux de taxe (alimente chaque vente et la déclaration PB1), fuseau horaire (rapports), seuils d'écart de caisse (clôture de session), stock négatif autorisé ou non, moyens de paiement activables/désactivables, montants rapides et fonds de caisse proposés à l'encaissement, seuils de couleur et d'archivage de l'écran cuisine, message et slogan de l'écran client, impression automatique du ticket et ouverture du tiroir, délai de déconnexion réglable par rôle, modèles de notifications (réellement utilisés par l'envoi), plan de salle complet (tables et sections, zones activables/désactivables).
+- **Chaque modification est tracée** (qui, quoi, avant / après) et consultable via le journal d'audit.
+- **Réglages saisissables mais encore sans effet** (l'écran le dit honnêtement ou le champ attend son branchement) : le **nom et l'adresse de la boutique** ne s'affichent encore sur aucun ticket ni facture ; les **modèles d'e-mails et de tickets** s'éditent avec aperçu mais ne pilotent encore ni envoi ni impression ; les **jours fériés** se gèrent entièrement mais aucun automatisme ne les exploite ; l'option globale « taxe incluse » est sans effet (le mode se règle produit par produit).
 
 **À venir :**
+- **Brancher ce qui écrit dans le vide** (priorité du module) : identité boutique sur les tickets et factures, modèles de tickets sur l'impression, modèles d'e-mails sur un envoi réel (ou fusion avec les modèles de notifications — un seul système), jours fériés exploités par les rapports ou la caisse.
 - **Logo** et **identifiant fiscal (NPWP)** dans la fiche identité.
-- **Branchement réel** des modèles d'e-mails et de tickets sur l'envoi et l'impression.
-- Export / import de la configuration, recherche dans les réglages, assistant d'installation guidé.
-- Écran dédié pour consulter facilement l'historique des modifications de réglages.
+- Corrections de cohérence : l'écran d'impression peut afficher un état différent du comportement réel de la caisse tant qu'aucune valeur n'a été enregistrée ; les droits d'accès de la page sécurité doivent être harmonisés ; son titre annonce une gestion des codes PIN qui n'existe pas encore.
+- **Propagation en temps réel des réglages** (décision ADR-006) : un changement s'appliquera aux caisses et écrans en quelques secondes, sans attendre leur prochain rafraîchissement.
+- **Option globale « taxe incluse » rendue effective** (décision ADR-006) : un réglage boutique définira le comportement par défaut, articulé avec le réglage existant produit par produit — précaution particulière car le calcul des ventes est concerné.
+- **Réglages réorganisés par fonctionnalité en sous-menus** (décision ADR-006) : chaque module (caisse, cuisine, paiements, impression…) aura son groupe de réglages clairement identifié dans le menu.
+- **Pages « réseau local » et « appareils réseau »** (décision ADR-006) : enregistrement de chaque appareil (caisse, écran cuisine, écran client, tablette, imprimante) avec signe de vie, et un **système hub local** pour que les appareils continuent de communiquer entre eux même si internet tombe — chantier d'architecture majeur, à spécifier avant développement.
+- **Six réglages retenus** (décision ADR-006) : horaires d'ouverture (pour repérer les ventes hors horaire dans les rapports), politique des codes PIN réglable (blocage/expiration déjà actifs, à exposer dans les réglages), moyens de paiement enrichis (ordre, portefeuilles électroniques individuels, frais), comportement cuisine réglable (envoi automatique à l'écran cuisine, impression du ticket cuisine, verrouillage des articles envoyés), écran dédié à l'historique des modifications de réglages, et plan de salle visuel (glisser-déposer des tables).
 
 ---
 
@@ -493,7 +497,7 @@ La façon dont les appareils communiquent et impriment.
 - Bouton pour **relancer manuellement** un ticket qui n'a pas pu s'imprimer.
 - Tableau de bord de diagnostic réseau et test d'impression par imprimante.
 - Correction d'une fausse alerte « appareil hors ligne ».
-- Reprise après coupure **internet** (aujourd'hui, sans internet, les appareils ne communiquent plus entre eux ; seule l'impression directe continue).
+- **Système hub + réseau local** (décision ADR-006) : les appareils du magasin continueront de **communiquer entre eux même sans internet** (aujourd'hui, sans internet, seule l'impression directe continue), avec resynchronisation vers le cloud au retour de la connexion. Les pages de gestion correspondantes (appareils enregistrés, signe de vie, diagnostic) vivront dans les réglages (voir Module 19).
 
 ---
 

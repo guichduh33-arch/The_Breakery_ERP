@@ -1,7 +1,7 @@
 # ADR-003 — Statut PKP The Breakery : NON-PKP
 
 > **Date** : 2026-05-20
-> **Statut** : ✅ **Accepted**
+> **Statut** : remplacé par ADR-005 (juridiction fiscale corrigée : Lombok/NTB, PBJT municipale — le cœur NON-PKP est repris tel quel)
 > **Décideurs** : propriétaire The Breakery (guichduh33)
 > **Contexte** : audit intégral V3 (F-S26-AC-08), ouverture session S26 Comptable Cockpit
 > **Supersedes** : —
