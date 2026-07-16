@@ -19,7 +19,7 @@
 1. **Socle unique `business_config`.** Tous les réglages org-wide scalaires vivent
    dans la table `business_config`, partitionnée en catégories symboliques
    (dictionnaire typé `packages/supabase/src/settings-keys.ts`). Accès exclusif via
-   les RPCs `get_settings_by_category_v1` (lecture) et `set_setting_v1` (écriture,
+   les RPCs `get_settings_by_category_v2` (lecture) et `set_setting_v2` (écriture,
    validation par clé). Ajouter une clé = ajouter sa branche RPC + le dictionnaire,
    dans la même migration.
 2. **Tables dédiées seulement pour le structuré.** Les réglages non scalaires
@@ -27,7 +27,7 @@
    `notification_templates`, `receipt_templates`/`email_templates`,
    `expense_approval_thresholds`, `restaurant_tables`/`table_sections`,
    `roles.session_timeout_minutes`, `holidays`). Pas de troisième mécanisme.
-3. **Traçabilité via `audit_logs` uniquement.** Chaque écriture `set_setting_v1`
+3. **Traçabilité via `audit_logs` uniquement.** Chaque écriture `set_setting_v2`
    est audit-loguée (auteur, clé, ancienne → nouvelle valeur, horodatage). La table
    `settings_history` de la vision V2 **ne sera pas créée** ; une vue dédiée de
    consultation, si elle arrive un jour, sera un filtre d'`audit_logs`.
