@@ -103,10 +103,12 @@ describe('SecuritySettingsPage', () => {
     expect(screen.getByTestId('timeout-save-CASHIER')).toBeDisabled();
   });
 
-  it('hides the page entirely when settings.read is missing', () => {
+  it('still renders read-only content without settings.read (route gate owns access)', async () => {
     currentPerms.clear();
     renderPage();
-    expect(screen.getByText(/do not have permission/i)).toBeInTheDocument();
+    expect(screen.getByText(/session timeouts/i)).toBeInTheDocument();
+    const input = await screen.findByTestId('timeout-input-CASHIER');
+    expect(input).toBeDisabled();
   });
 
   it('calls update_role_session_timeout_v1 with correct args when save is clicked', async () => {

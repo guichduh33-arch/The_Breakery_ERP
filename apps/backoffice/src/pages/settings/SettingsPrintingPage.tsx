@@ -26,18 +26,20 @@ export default function SettingsPrintingPage() {
   useEffect(() => {
     if (!data) return;
     setDraft({
-      pos_auto_print_receipt: Boolean(data.settings.pos_auto_print_receipt ?? false),
-      pos_auto_open_drawer: Boolean(data.settings.pos_auto_open_drawer ?? false),
+      // DB columns are NOT NULL DEFAULT true and the POS falls back to true —
+      // mirror that here so a missing key never renders as OFF while POS runs ON.
+      pos_auto_print_receipt: Boolean(data.settings.pos_auto_print_receipt ?? true),
+      pos_auto_open_drawer: Boolean(data.settings.pos_auto_open_drawer ?? true),
     });
   }, [data]);
 
-  const dirty = FIELDS.filter((f) => draft[f.key] !== Boolean(data?.settings[f.key] ?? false));
+  const dirty = FIELDS.filter((f) => draft[f.key] !== Boolean(data?.settings[f.key] ?? true));
 
   async function handleSave() {
     setServerError(null);
     try {
       for (const f of dirty) {
-        await setSetting.mutateAsync({ key: f.key, value: draft[f.key] ?? false, category: 'printing' });
+        await setSetting.mutateAsync({ key: f.key, value: draft[f.key] ?? true, category: 'printing' });
       }
     } catch (e) {
       setServerError(e instanceof Error ? e.message : 'Save failed');
@@ -60,7 +62,7 @@ export default function SettingsPrintingPage() {
             <div key={f.key} className="space-y-1">
               <label htmlFor={f.key} className="flex items-center gap-3 text-sm font-medium">
                 <input id={f.key} type="checkbox" disabled={!canUpdate}
-                  checked={draft[f.key] ?? false}
+                  checked={draft[f.key] ?? true}
                   onChange={(e) => setDraft((d) => ({ ...d, [f.key]: e.target.checked }))} />
                 {f.label}
               </label>

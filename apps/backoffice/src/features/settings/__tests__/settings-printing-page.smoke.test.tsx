@@ -7,16 +7,14 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import SettingsPrintingPage from '@/pages/settings/SettingsPrintingPage.js';
 
 const rpcCalls: { fn: string; args: unknown }[] = [];
+let mockSettings: Record<string, boolean> = {};
 vi.mock('@/lib/supabase.js', () => ({
   supabase: {
     rpc: (fn: string, args: unknown) => {
       rpcCalls.push({ fn, args });
       if (fn === 'get_settings_by_category_v1') {
         return Promise.resolve({
-          data: {
-            category: 'printing',
-            settings: { pos_auto_print_receipt: true, pos_auto_open_drawer: false },
-          },
+          data: { category: 'printing', settings: mockSettings },
           error: null,
         });
       }
@@ -39,6 +37,7 @@ function wrap(ui: React.ReactNode) {
 describe('SettingsPrintingPage', () => {
   it('renders checked/unchecked state from the RPC', async () => {
     canUpdate = true;
+    mockSettings = { pos_auto_print_receipt: true, pos_auto_open_drawer: false };
     render(wrap(<SettingsPrintingPage />));
     await waitFor(() => expect(screen.getByLabelText(/auto-print receipt/i)).toBeInTheDocument());
 
@@ -46,8 +45,20 @@ describe('SettingsPrintingPage', () => {
     expect(screen.getByLabelText<HTMLInputElement>(/auto-open cash drawer/i).checked).toBe(false);
   });
 
+  it('defaults missing keys to ON, matching the DB default and the POS fallback', async () => {
+    canUpdate = true;
+    mockSettings = {}; // config row absent → RPC returns empty settings
+    render(wrap(<SettingsPrintingPage />));
+    await waitFor(() => expect(screen.getByLabelText(/auto-print receipt/i)).toBeInTheDocument());
+
+    expect(screen.getByLabelText<HTMLInputElement>(/auto-print receipt/i).checked).toBe(true);
+    expect(screen.getByLabelText<HTMLInputElement>(/auto-open cash drawer/i).checked).toBe(true);
+    expect(screen.getByRole('button', { name: /no changes/i })).toBeDisabled();
+  });
+
   it('disables the checkboxes and hides Save without settings.update', async () => {
     canUpdate = false;
+    mockSettings = { pos_auto_print_receipt: true, pos_auto_open_drawer: false };
     render(wrap(<SettingsPrintingPage />));
     await waitFor(() => expect(screen.getByLabelText(/auto-print receipt/i)).toBeInTheDocument());
 
@@ -57,6 +68,7 @@ describe('SettingsPrintingPage', () => {
 
   it('calls set_setting_v1 with the printing category on save', async () => {
     canUpdate = true;
+    mockSettings = { pos_auto_print_receipt: true, pos_auto_open_drawer: false };
     rpcCalls.length = 0;
     render(wrap(<SettingsPrintingPage />));
     await waitFor(() => screen.getByLabelText(/auto-open cash drawer/i));
