@@ -9,6 +9,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Badge, Button } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
+import { useSettings } from '@/features/settings/hooks/useSettings.js';
+import { useSetSetting } from '@/features/settings/hooks/useSetSetting.js';
 import {
   useNotificationTemplatesList,
   useUpdateNotificationTemplate,
@@ -172,6 +174,71 @@ function NotificationTemplateCard({ row, canEdit }: NotificationTemplateCardProp
   );
 }
 
+// Settings §6.A — recipient of the INTERNAL operational alerts fired by the
+// DB triggers (low_stock_alert / po_received / expense_approved). Stored as
+// business_config.alert_email (key gated settings.update, unlike the template
+// cards below which are gated notifications.send). NULL = alerts disabled.
+function AlertEmailCard() {
+  const hasPermission = useAuthStore((s) => s.hasPermission);
+  const canUpdate = hasPermission('settings.update');
+  const { data, isLoading } = useSettings('business');
+  const setSetting = useSetSetting();
+  const [draft, setDraft] = useState('');
+  const [serverError, setServerError] = useState<string | null>(null);
+  const [savedAt, setSavedAt] = useState<string | null>(null);
+
+  const original = typeof data?.settings.alert_email === 'string' ? data.settings.alert_email : '';
+  useEffect(() => { setDraft(original); }, [original]);
+  const dirty = draft.trim() !== original;
+
+  async function handleSave() {
+    setServerError(null);
+    try {
+      await setSetting.mutateAsync({
+        key: 'alert_email',
+        value: draft.trim() === '' ? null : draft.trim(),
+        category: 'business',
+      });
+      setSavedAt(new Date().toLocaleTimeString());
+    } catch (e) {
+      setServerError(e instanceof Error ? e.message : 'Failed to save alert email');
+    }
+  }
+
+  return (
+    <section className="space-y-2 bg-bg-elevated rounded-lg border border-border-subtle p-5" data-testid="alert-email-card">
+      <h2 className="text-lg font-semibold">Operational alert recipient</h2>
+      <p className="text-xs text-text-secondary">
+        Internal alerts (low stock, PO received, expense approved) are emailed to this address.
+        Leave empty to disable internal alerts. Customer emails (order complete, payment received)
+        go to the customer on file.
+      </p>
+      {!isLoading && (
+        <div className="flex items-center gap-2 pt-1">
+          <input
+            type="email"
+            aria-label="Alert email"
+            value={draft}
+            disabled={!canUpdate}
+            placeholder="ops@example.com"
+            onChange={(e) => setDraft(e.target.value)}
+            className="h-9 w-full max-w-sm rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary disabled:opacity-50"
+          />
+          {canUpdate && (
+            <Button type="button" variant="primary" size="sm"
+              disabled={!dirty || setSetting.isPending}
+              onClick={() => { void handleSave(); }}>
+              {setSetting.isPending ? 'Saving…' : 'Save'}
+            </Button>
+          )}
+        </div>
+      )}
+      {serverError && <p className="text-red text-sm" role="alert">{serverError}</p>}
+      {savedAt && !dirty && <p className="text-success text-xs" role="status">Saved at {savedAt}</p>}
+    </section>
+  );
+}
+
 export default function SettingsNotificationsPage() {
   const hasPermission = useAuthStore((s) => s.hasPermission);
   const canEdit = hasPermission('notifications.send');
@@ -183,11 +250,14 @@ export default function SettingsNotificationsPage() {
       <div>
         <h1 className="font-serif text-3xl">Notifications</h1>
         <p className="text-text-secondary text-sm mt-1">
-          System notification templates consumed by enqueue_notification_v1 (order ready, payment
-          received, low stock…). Codes are system events — no create/delete from here. Customer-facing
-          emails live in Email templates.
+          System notification templates consumed by enqueue_notification_v2 (order complete, payment
+          received, low stock…). Codes are system events — no create/delete from here. Deactivating a
+          template silences its event. An active Email template with the same code upgrades the send
+          to branded HTML.
         </p>
       </div>
+
+      <AlertEmailCard />
 
       {list.isLoading && <div className="text-text-secondary">Loading…</div>}
       {list.error && <div className="text-red">Failed to load: {list.error.message}</div>}
