@@ -16,13 +16,15 @@
 import { useMemo } from 'react';
 import {
   DollarSign, ShoppingBag, Box, TrendingUp, Users as UsersIcon,
-  RefreshCw, Lock,
+  RefreshCw, Lock, CalendarHeart,
 } from 'lucide-react';
 import {
   Card, KpiTile, SectionLabel, cn,
 } from '@breakery/ui';
+import { toLocalDateStr } from '@breakery/domain';
 import { PageHeader } from '@/components/PageHeader.js';
 import { useAuthStore } from '@/stores/authStore.js';
+import { useHolidaysList, holidayNameFor } from '@/features/settings/hooks/useHolidays.js';
 import {
   useDashboardOverview,
   classifyDashboardError,
@@ -88,6 +90,11 @@ export default function DashboardPage({ data }: DashboardPageProps) {
 
   const greeting = useMemo(() => formatGreeting(user?.full_name), [user?.full_name]);
 
+  // Settings §6.A — holidays consumer: surface today's holiday so an unusual
+  // revenue day reads as explained context, not an anomaly.
+  const holidays = useHolidaysList();
+  const todayHoliday = holidayNameFor(holidays.data, toLocalDateStr(new Date()));
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -111,6 +118,18 @@ export default function DashboardPage({ data }: DashboardPageProps) {
           </div>
         }
       />
+
+      {todayHoliday !== null && (
+        <div
+          data-testid="holiday-banner"
+          className="flex items-center gap-2 rounded-lg border border-gold/30 bg-gold-soft px-4 py-2.5 text-sm text-text-primary"
+        >
+          <CalendarHeart className="h-4 w-4 text-gold" aria-hidden />
+          <span>
+            Public holiday today: <strong>{todayHoliday}</strong> — expect unusual traffic patterns.
+          </span>
+        </div>
+      )}
 
       {restricted ? (
         <Card variant="default" padding="md" data-testid="dashboard-restricted">

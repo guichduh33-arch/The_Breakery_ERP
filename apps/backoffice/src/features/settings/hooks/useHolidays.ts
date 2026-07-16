@@ -30,6 +30,23 @@ export function useHolidaysList() {
   });
 }
 
+// Settings §6.A — read-side matcher for the holiday consumers (dashboard
+// banner + daily sales annotation). Fixed-date holidays match the exact ISO
+// date; recurring ones (is_recurring) match month+day every year.
+export function holidayNameFor(
+  holidays: readonly HolidayRow[] | undefined,
+  isoDate: string,
+): string | null {
+  if (!holidays || isoDate.length < 10) return null;
+  const monthDay = isoDate.slice(5, 10);
+  for (const h of holidays) {
+    if (h.is_recurring ? h.date.slice(5) === monthDay : h.date === isoDate) {
+      return h.name;
+    }
+  }
+  return null;
+}
+
 export function useCreateHoliday() {
   const qc = useQueryClient();
   return useMutation<HolidayRow, Error, HolidayInsert>({

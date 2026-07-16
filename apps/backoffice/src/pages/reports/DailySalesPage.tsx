@@ -1,6 +1,9 @@
 // apps/backoffice/src/pages/reports/DailySalesPage.tsx
 // S40 Wave B1 — Per-day gross/refunds/net/AOV with summary KPI cards + drill-down.
+// Settings §6.A — holiday days are annotated (badge + CSV column) so an
+// out-of-pattern day reads as explained context.
 
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { toLocalDateStr } from '@breakery/domain';
 import type { CsvColumn } from '@breakery/domain';
@@ -13,10 +16,14 @@ import {
   useDailySales,
   type DailySalesRow,
 } from '@/features/reports/hooks/useDailySales.js';
+import { useHolidaysList, holidayNameFor } from '@/features/settings/hooks/useHolidays.js';
 import { useUrlState } from '@/hooks/useUrlState.js';
 
-const csvColumns: CsvColumn<DailySalesRow>[] = [
+type AnnotatedRow = DailySalesRow & { holiday: string | null };
+
+const csvColumns: CsvColumn<AnnotatedRow>[] = [
   { header: 'Date',        accessor: (r) => r.date,        format: 'text' },
+  { header: 'Holiday',     accessor: (r) => r.holiday ?? '', format: 'text' },
   { header: 'Orders',      accessor: (r) => r.order_count, format: 'number' },
   { header: 'Gross (IDR)', accessor: (r) => r.gross,       format: 'idr-round100' },
   { header: 'Refunds (IDR)', accessor: (r) => r.refunds,   format: 'idr-round100' },
@@ -36,8 +43,12 @@ export default function DailySalesPage() {
   const [end,   setEnd]   = useUrlState('end', toLocalDateStr(new Date()));
 
   const { data, isLoading, error } = useDailySales({ start, end });
+  const holidays = useHolidaysList();
 
-  const byDay    = data?.by_day  ?? [];
+  const byDay = useMemo<AnnotatedRow[]>(
+    () => (data?.by_day ?? []).map((r) => ({ ...r, holiday: holidayNameFor(holidays.data, r.date) })),
+    [data?.by_day, holidays.data],
+  );
   const summary  = data?.summary;
 
   return (
@@ -129,6 +140,15 @@ export default function DailySalesPage() {
                       </Link>
                     ) : (
                       r.date
+                    )}
+                    {r.holiday !== null && (
+                      <span
+                        title={r.holiday}
+                        data-testid={`holiday-badge-${r.date}`}
+                        className="ml-2 inline-flex items-center rounded-full border border-gold/30 bg-gold-soft px-2 py-0.5 text-xs text-gold"
+                      >
+                        {r.holiday}
+                      </span>
                     )}
                   </td>
                   <td className="py-2 text-right tabular-nums">{r.order_count}</td>
