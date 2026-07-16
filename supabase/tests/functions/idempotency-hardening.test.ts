@@ -286,7 +286,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('S25 idempotency hardeni
     const body = await res.json();
     expect(res.status, `body=${JSON.stringify(body)}`).toBe(200);
     expect(body.refund_id).toBeTruthy();
-    // S78 (D-6) : refund_order_rpc_v4 n'émet idempotent_replay QUE sur le
+    // S78 (D-6) : refund_order_rpc_v5 n'émet idempotent_replay QUE sur le
     // replay (convention projet : premier appel = enveloppe sans le flag).
     expect(body.idempotent_replay).not.toBe(true);
   });

@@ -34,7 +34,7 @@ BEGIN
     p_items := '[{"product_id":"00000000-0000-0000-0000-0000000cb010","quantity":1,"unit_price":50000,"modifiers":[],"combo_components":[{"product_id":"00000000-0000-0000-0000-0000000fb010","quantity":1},{"product_id":"00000000-0000-0000-0000-0000000fb011","quantity":1}]}]'::jsonb,
     p_payment := '{"method":"cash","amount":50000,"cash_received":50000,"change_given":0}'::jsonb);
   SELECT id INTO oi FROM order_items WHERE order_id = (r->>'order_id')::uuid LIMIT 1;
-  PERFORM refund_order_rpc_v4((r->>'order_id')::uuid,
+  PERFORM refund_order_rpc_v5((r->>'order_id')::uuid,
     ('[{"order_item_id":"'||oi||'","qty":1}]')::jsonb,
     '[{"method":"cash","amount":50000}]'::jsonb,
     'combo refund test', '00000000-0000-0000-0000-000000000004', gen_random_uuid(), '00000000-0000-0000-0000-000000000002');
