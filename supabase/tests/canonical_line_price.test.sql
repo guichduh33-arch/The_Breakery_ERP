@@ -4,7 +4,7 @@
 --   A2 : modificateur actif -> price_adjustment serveur (ignore client) dans total + modifiers_resolved
 --   A3 : modificateur inconnu/inactif -> check_violation (23514)
 --   A4 : ligne cadeau (is_gift=true) -> unit_price=0, modifiers_total=0
---   T9 : anon EXECUTE revoque sur complete_order_with_payment_v17
+--   T9 : anon EXECUTE revoque sur complete_order_with_payment_v18
 --   T10-12 : smoke v15 — total + lines[] refletent le prix serveur (ignore unit_price client)
 --   T13 : v14 droppee
 --
@@ -64,7 +64,7 @@ END $$;
 DO $$
 DECLARE r JSONB;
 BEGIN
-  r := complete_order_with_payment_v17(
+  r := complete_order_with_payment_v18(
     p_session_id := current_setting('w1.sess')::uuid,
     p_order_type := 'take_out'::order_type,
     p_items      := jsonb_build_array(jsonb_build_object(
@@ -122,7 +122,7 @@ SELECT ok(
 -- Gate anon
 SELECT ok(
   NOT has_function_privilege('anon',
-    'complete_order_with_payment_v17(uuid,order_type,jsonb,jsonb,uuid,uuid,integer,text,numeric,text,numeric,text,uuid,jsonb,jsonb,uuid)',
+    'complete_order_with_payment_v18(uuid,order_type,jsonb,jsonb,uuid,uuid,integer,text,numeric,text,numeric,text,uuid,jsonb,jsonb,uuid)',
     'EXECUTE'),
   'T9 anon EXECUTE revoque sur v17');
 
