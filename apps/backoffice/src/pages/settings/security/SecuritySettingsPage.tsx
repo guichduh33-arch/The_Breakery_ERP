@@ -1,10 +1,11 @@
 // apps/backoffice/src/pages/settings/security/SecuritySettingsPage.tsx
 // Session 19 / Phase 3.A — Per-role session timeout editor (Thread B).
 //
-// Gated by settings.update for write. Lists every role with an editable
-// idle timeout (5..480 min, enforced server-side by the CHECK constraint
-// and by `update_role_session_timeout_v1`). Each save is audit-logged
-// server-side.
+// Route access is gated by settings.security.manage (routes/index.tsx);
+// editing is gated by settings.update (mirrors the RPC gate). Lists every
+// role with an editable idle timeout (5..480 min, enforced server-side by
+// the CHECK constraint and by `update_role_session_timeout_v1`). Each save
+// is audit-logged server-side.
 //
 // Decision refs : D7 (hook lives in @breakery/ui), D8 (per-role authoritative),
 // D9 (audit logs on every change), D17 (auth-get-session returns timeout).
@@ -26,7 +27,6 @@ const ROLES_QUERY_KEY = ['admin', 'roles', 'timeouts'] as const;
 
 export default function SecuritySettingsPage(): JSX.Element {
   const hasPermission = useAuthStore((s) => s.hasPermission);
-  const canRead = hasPermission('settings.read');
   const canEdit = hasPermission('settings.update');
 
   const qc = useQueryClient();
@@ -38,7 +38,7 @@ export default function SecuritySettingsPage(): JSX.Element {
         .select('code, name, session_timeout_minutes')
         .order('session_timeout_minutes', { ascending: true });
       if (error) throw new Error(error.message);
-      return (data ?? []) as RoleRow[];
+      return (data ?? []);
     },
   });
 
@@ -60,14 +60,10 @@ export default function SecuritySettingsPage(): JSX.Element {
     },
   });
 
-  if (!canRead) {
-    return <div className="text-text-secondary">You do not have permission to view settings.</div>;
-  }
-
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-serif text-3xl">Security &amp; PIN</h1>
+        <h1 className="font-serif text-3xl">Session Timeouts</h1>
         <p className="text-text-secondary text-sm mt-1">
           Idle session timeout per role. Operators are signed out after this
           many minutes of inactivity. Bounds 5–480 minutes ; changes are

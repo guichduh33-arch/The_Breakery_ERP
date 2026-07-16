@@ -91,14 +91,14 @@ describe('SettingsHubPage', () => {
     expect(screen.getByText(/^Settings History$/i).closest('a')?.getAttribute('href')).toBe('/backoffice/reports/audit?action=setting.update');
   });
 
-  it('hides the Security & PIN tile when the user lacks settings.security.manage', () => {
+  it('hides the Session Timeouts tile when the user lacks settings.security.manage', () => {
     currentPerms = new Set(); // no permissions granted
     renderPage();
-    expect(screen.queryByText(/^Security & PIN$/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Session Timeouts$/i)).not.toBeInTheDocument();
   });
 
-  it('shows the Security & PIN tile when the user has settings.security.manage', () => {
+  it('shows the Session Timeouts tile when the user has settings.security.manage', () => {
     renderPage();
-    expect(screen.getByText(/^Security & PIN$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^Session Timeouts$/i)).toBeInTheDocument();
   });
 });

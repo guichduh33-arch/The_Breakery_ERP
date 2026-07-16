@@ -86,7 +86,7 @@ const SECTIONS: SettingSection[] = [
     tiles: [
       { to: '/backoffice/settings/printing', title: 'Printing', blurb: 'Auto-print + drawer automation (org-wide).', icon: Printer },
       { to: '/backoffice/settings/notifications', title: 'Notifications', blurb: 'System notification templates.', icon: Bell },
-      { to: '/backoffice/settings/security', title: 'Security & PIN', blurb: 'Per-role session timeout.', icon: ShieldCheck, permission: 'settings.security.manage' },
+      { to: '/backoffice/settings/security', title: 'Session Timeouts', blurb: 'Per-role session timeout.', icon: ShieldCheck, permission: 'settings.security.manage' },
       { to: '/backoffice/settings/accounting', title: 'Financial / Accounting', blurb: 'Fiscal periods, year-end close.', icon: FileText, permission: 'accounting.period.close' },
       { to: '/backoffice/settings/permissions', title: 'Roles & Permissions', blurb: 'View the role/permission matrix.', icon: ShieldCheck },
       { to: '/backoffice/settings/templates/email',   title: 'Email Templates',   blurb: 'Order confirmations, receipts, reset PIN.', icon: Mail },
