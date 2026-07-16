@@ -26,9 +26,12 @@
    l'ancienne « PB1 / pajak restoran ». C'est une taxe de niveau **kabupaten/kota
    (municipal)**, perçue par le **Badan Pendapatan Daerah (Bapenda)** de la commune,
    et **non** par la province ni par une « Perda Provinsi Bali ».
-3. **Commune de rattachement** : [À COMPLÉTER par Mamat — Kota Mataram / Kab. Lombok
-   Barat / Tengah / Timur / Utara]. Le taux exact (≤ 10 %) et l'éventuel seuil d'omzet
-   sont fixés par la **Perda [numéro/année] du kabupaten/kota** correspondant.
+3. **Commune de rattachement** *(complété par Mamat le 2026-07-16)* : **Kuta,
+   Kabupaten Lombok Tengah**. Autorité de perception : **Bapenda Lombok Tengah**.
+   Taux appliqué : **10 %**. Aucune référence de Perda spécifique n'est retenue
+   dans cet ADR (pas de numéro/année cité) ; si une Perda Lombok Tengah venant
+   modifier le taux ou introduire un seuil d'omzet est identifiée un jour, elle
+   déclenchera la clause de révision (§4).
 
 ## 3. Impact code
 

@@ -140,8 +140,8 @@ par personne est un réglage mort — c'est le critère n°1 de ce document.
 | Réglage | Ce qui manque |
 |---|---|
 | **Templates de reçu** | Faire lire `receipt_templates` par l'impression POS (header/footer/QR/logo). L'éditeur existe déjà. |
-| **Identité entreprise sur les documents** | Rendre `name`/`fiscal_address` sur tickets et factures B2B (+ décider : logo ? NPWP ?). Les champs existent déjà. |
-| **Unification templates email** | Trancher : brancher `email_templates` sur un envoi réel, ou supprimer la page au profit de `/settings/notifications` (un seul système). |
+| **Identité entreprise sur les documents** | **Décidé (2026-07-16)** : rendre `name`/`fiscal_address` sur tickets et factures B2B, et **ajouter logo + NPWP** (champs à créer dans la fiche identité). |
+| **Templates email** | **Décidé (2026-07-16)** : conserver `email_templates` et les **brancher sur un envoi réel** (pas de fusion avec `/settings/notifications`) ; les templates porteront le **logo et le NPWP**. |
 | **Holidays** | Donner un consommateur à la table `holidays` (signal rapport ? bannière POS ?) — ou retirer la page. |
 | **Déclencheurs de notifications** | Brancher les producteurs des templates seedés : `low_stock_alert` (les seuils `min_stock_threshold` par produit existent et alimentent déjà les écrans BO — il manque l'enqueue), `po_received`, `expense_approved`, `order_complete`, `payment_received`. Seul l'anniversaire client émet aujourd'hui. |
 | **`tax_inclusive` global** | **Décidé (ADR-006 déc. 7)** : rendre le réglage effectif comme défaut boutique. Articulation avec le flag par produit (précédence, création produit, migration) à spécifier — money-path concerné. |
