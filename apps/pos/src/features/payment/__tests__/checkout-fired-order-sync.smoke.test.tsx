@@ -29,7 +29,7 @@ import { usePaymentStore } from '@/stores/paymentStore';
 const { rpcMock } = vi.hoisted(() => ({ rpcMock: vi.fn() }));
 
 vi.mock('@/lib/supabase', () => ({
-  supabase: { rpc: (...a: unknown[]) => rpcMock(...a) },
+  supabase: { rpc: (...a: unknown[]): unknown => rpcMock(...a) },
   supabaseUrl: 'http://sb.test',
 }));
 
@@ -119,7 +119,7 @@ describe('useCheckout — fired counter order syncs unfired items before paying 
   it('appends the unsynced items (fire append mode) BEFORE pay_existing_order_v12', async () => {
     await runCheckout();
 
-    expect(rpcMock.mock.calls.map((c) => c[0])).toEqual([
+    expect(rpcMock.mock.calls.map((c: unknown[]) => c[0])).toEqual([
       'fire_counter_order_v4',
       'pay_existing_order_v12',
     ]);
@@ -149,7 +149,7 @@ describe('useCheckout — fired counter order syncs unfired items before paying 
 
     await runCheckout();
 
-    expect(rpcMock.mock.calls.map((c) => c[0])).toEqual(['pay_existing_order_v12']);
+    expect(rpcMock.mock.calls.map((c: unknown[]) => c[0])).toEqual(['pay_existing_order_v12']);
   });
 
   it('tablet pickup (printedItemIds empty): never appends — all items already live in DB', async () => {
@@ -159,7 +159,7 @@ describe('useCheckout — fired counter order syncs unfired items before paying 
 
     await runCheckout();
 
-    expect(rpcMock.mock.calls.map((c) => c[0])).toEqual(['pay_existing_order_v12']);
+    expect(rpcMock.mock.calls.map((c: unknown[]) => c[0])).toEqual(['pay_existing_order_v12']);
   });
 
   it('retry after an append FAILURE replays the SAME p_client_uuid (nothing was locked)', async () => {

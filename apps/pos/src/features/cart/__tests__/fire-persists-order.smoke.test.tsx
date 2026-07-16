@@ -27,12 +27,12 @@ const { rpcMock, printStationTicketMock } = vi.hoisted(() => ({
 }));
 
 vi.mock('@/lib/supabase', () => ({
-  supabase: { rpc: (...a: unknown[]) => rpcMock(...a) },
+  supabase: { rpc: (...a: unknown[]): unknown => rpcMock(...a) },
   supabaseUrl: 'http://sb.test',
 }));
 
 vi.mock('@/services/print/printService', () => ({
-  printStationTicket: (...a: unknown[]) => printStationTicketMock(...a),
+  printStationTicket: (...a: unknown[]): unknown => printStationTicketMock(...a),
 }));
 
 const PRINTERS_MAP = new Map([
