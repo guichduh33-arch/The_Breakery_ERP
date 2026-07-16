@@ -5,7 +5,7 @@
 //
 // Mirror of `usePickupTabletOrder` (apps/pos/src/features/inbox/hooks/
 // usePickupTabletOrder.ts): loads the persisted order_items into the cart and
-// sets `pickedUpOrderId`, which routes `useCheckout` to `pay_existing_order_v11`.
+// sets `pickedUpOrderId`, which routes `useCheckout` to `pay_existing_order_v12`.
 // Unlike the tablet pickup, this order was already counter-fired (fully
 // printed) — every line is marked BOTH locked AND printed so useCheckout's
 // append guard (`isCounterFired && unsynced.length > 0`) sees zero unsynced

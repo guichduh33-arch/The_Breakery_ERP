@@ -41,7 +41,7 @@ export interface PaymentResult {
   tax_amount: number;
   change_given: number | null;
   // S51 — server-resolved subtotal + per-line breakdown (money-path v15). Optional
-  // because the pickup path (pay_existing_order_v11) is not part of the v15 bump and
+  // because the pickup path (pay_existing_order_v12) is not part of the v15 bump and
   // may omit `lines`; consumers fall back to the client cart when absent.
   subtotal?: number;
   lines?: PaymentResultLine[];

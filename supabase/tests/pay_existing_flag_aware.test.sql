@@ -1,5 +1,5 @@
 -- pay_existing_flag_aware.test.sql
--- S53 P1.4 — pay_existing_order_v11 is flag-aware: it now respects
+-- S53 P1.4 — pay_existing_order_v12 is flag-aware: it now respects
 -- business_config.allow_negative_stock (v10 rejected oversell unconditionally).
 -- Deduction routes through _record_sale_stock_v1, whose guard honours the flag.
 --
@@ -31,7 +31,7 @@ CREATE TEMP TABLE _r(name text PRIMARY KEY, pass boolean) ON COMMIT DROP;
 -- allow_negative = false -> pay must reject (insufficient); order stays unpaid.
 UPDATE business_config SET allow_negative_stock=false WHERE id=1;
 DO $$ DECLARE r jsonb; BEGIN
-  r := pay_existing_order_v11(p_order_id := current_setting('fa.order_id')::uuid,
+  r := pay_existing_order_v12(p_order_id := current_setting('fa.order_id')::uuid,
         p_payment := '{"method":"cash","amount":5000,"cash_received":5000,"change_given":0}'::jsonb);
   INSERT INTO _r VALUES ('blocked', false);
 EXCEPTION WHEN OTHERS THEN INSERT INTO _r VALUES ('blocked', true); END $$;
@@ -40,7 +40,7 @@ INSERT INTO _r VALUES ('still_unpaid', (SELECT status::text FROM orders WHERE id
 -- allow_negative = true -> pay succeeds, stock goes to -1.
 UPDATE business_config SET allow_negative_stock=true WHERE id=1;
 DO $$ DECLARE r jsonb; BEGIN
-  r := pay_existing_order_v11(p_order_id := current_setting('fa.order_id')::uuid,
+  r := pay_existing_order_v12(p_order_id := current_setting('fa.order_id')::uuid,
         p_payment := '{"method":"cash","amount":5000,"cash_received":5000,"change_given":0}'::jsonb);
   INSERT INTO _r VALUES ('paid_neg', (SELECT status::text FROM orders WHERE id=current_setting('fa.order_id')::uuid)='paid'
                                      AND (SELECT current_stock FROM products WHERE id='00000000-0000-0000-0000-0000000fd001')=-1);

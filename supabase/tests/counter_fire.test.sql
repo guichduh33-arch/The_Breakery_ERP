@@ -142,7 +142,7 @@ DO $$
 DECLARE v_msg TEXT := '';
 BEGIN
   BEGIN
-    PERFORM pay_existing_order_v11(
+    PERFORM pay_existing_order_v12(
       p_order_id := (SELECT order_id FROM counter_fire_idempotency_keys
                      WHERE client_uuid = '11111111-1111-1111-1111-111111111111'),
       p_payment  := jsonb_build_object('method', 'cash', 'amount', 1, 'cash_received', 1)
