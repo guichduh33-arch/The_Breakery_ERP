@@ -38,7 +38,7 @@ export default function SecuritySettingsPage(): JSX.Element {
         .select('code, name, session_timeout_minutes')
         .order('session_timeout_minutes', { ascending: true });
       if (error) throw new Error(error.message);
-      return (data ?? []) as RoleRow[];
+      return (data ?? []);
     },
   });
 

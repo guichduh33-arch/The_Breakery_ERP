@@ -71,9 +71,9 @@ describe('SecuritySettingsPage', () => {
     expect(await screen.findByText('CASHIER')).toBeInTheDocument();
     expect(screen.getByText('ADMIN')).toBeInTheDocument();
     await waitFor(() => {
-      const cashierInput = screen.getByTestId('timeout-input-CASHIER') as HTMLInputElement;
+      const cashierInput = screen.getByTestId<HTMLInputElement>('timeout-input-CASHIER');
       expect(cashierInput.value).toBe('30');
-      const adminInput = screen.getByTestId('timeout-input-ADMIN') as HTMLInputElement;
+      const adminInput = screen.getByTestId<HTMLInputElement>('timeout-input-ADMIN');
       expect(adminInput.value).toBe('120');
     });
   });
@@ -112,6 +112,7 @@ describe('SecuritySettingsPage', () => {
   });
 
   it('calls update_role_session_timeout_v1 with correct args when save is clicked', async () => {
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- vi.fn() mock, no `this` to lose
     const rpcSpy = vi.mocked(supabase.rpc);
     rpcSpy.mockResolvedValueOnce({ data: true, error: null } as never);
     renderPage();
