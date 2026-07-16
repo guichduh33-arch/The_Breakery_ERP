@@ -22,6 +22,8 @@ export interface SendEmailInput {
   to: string;
   subject: string;
   body: string;
+  /** Optional HTML alternative (email_templates rendering). Text stays the fallback part. */
+  html?: string;
   from?: string;
 }
 
@@ -60,6 +62,7 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
       from,
       subject: input.subject,
       bodyPreview: input.body.slice(0, 200),
+      hasHtml: input.html !== undefined,
     }));
     return { ok: true, providerMessageId: stubId, mode: 'console' };
   }
@@ -76,6 +79,7 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
         to:      [input.to],
         subject: input.subject,
         text:    input.body,
+        ...(input.html ? { html: input.html } : {}),
       }),
     });
 
