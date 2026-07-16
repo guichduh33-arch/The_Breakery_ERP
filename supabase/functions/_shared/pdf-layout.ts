@@ -2,12 +2,13 @@
 //
 // S29 Wave 3.A.1 — header/footer + IDR formatter commun à tous les PDF templates.
 
-import { PDFDocument, PDFFont, PDFPage, StandardFonts, rgb } from 'https://esm.sh/pdf-lib@1.17.1';
+import { PDFDocument, PDFFont, PDFImage, PDFPage, StandardFonts, rgb } from 'https://esm.sh/pdf-lib@1.17.1';
 
 export interface BusinessInfo {
   name:     string;
   npwp?:    string;
   address?: string;
+  logoUrl?: string;
 }
 
 export interface LayoutContext {
@@ -15,13 +16,35 @@ export interface LayoutContext {
   font:     PDFFont;
   fontBold: PDFFont;
   business: BusinessInfo;
+  logo?:    PDFImage;
 }
 
 export async function initLayout(business: BusinessInfo): Promise<LayoutContext> {
   const doc      = await PDFDocument.create();
   const font     = await doc.embedFont(StandardFonts.Helvetica);
   const fontBold = await doc.embedFont(StandardFonts.HelveticaBold);
-  return { doc, font, fontBold, business };
+
+  // Brand logo (business_config.logo_url, bucket `branding`) — best-effort:
+  // a missing/unreachable/unsupported logo must never break PDF generation.
+  let logo: PDFImage | undefined;
+  if (business.logoUrl) {
+    try {
+      const res = await fetch(business.logoUrl);
+      if (res.ok) {
+        const bytes = new Uint8Array(await res.arrayBuffer());
+        // Magic bytes: PNG = 89 50 4E 47, JPEG = FF D8.
+        if (bytes[0] === 0x89 && bytes[1] === 0x50) {
+          logo = await doc.embedPng(bytes);
+        } else if (bytes[0] === 0xff && bytes[1] === 0xd8) {
+          logo = await doc.embedJpg(bytes);
+        }
+      }
+    } catch (err) {
+      console.warn('[pdf-layout] logo fetch/embed failed, rendering text-only header', err);
+    }
+  }
+
+  return { doc, font, fontBold, business, logo };
 }
 
 /**
@@ -36,13 +59,22 @@ export function drawHeader(
 ): number {
   const { width, height } = page.getSize();
 
-  // Business name — top-left
+  // Brand logo — top-left, capped at 30pt tall; text block shifts right of it.
+  let textX = 40;
+  if (ctx.logo) {
+    const scale = 30 / ctx.logo.height;
+    const w = ctx.logo.width * scale;
+    page.drawImage(ctx.logo, { x: 40, y: height - 68, width: w, height: 30 });
+    textX = 40 + w + 10;
+  }
+
+  // Business name — top-left (right of the logo when present)
   page.drawText(ctx.business.name, {
-    x: 40, y: height - 50, size: 14, font: ctx.fontBold, color: rgb(0.1, 0.1, 0.1),
+    x: textX, y: height - 50, size: 14, font: ctx.fontBold, color: rgb(0.1, 0.1, 0.1),
   });
   if (ctx.business.npwp) {
     page.drawText(`NPWP: ${ctx.business.npwp}`, {
-      x: 40, y: height - 65, size: 8, font: ctx.font, color: rgb(0.3, 0.3, 0.3),
+      x: textX, y: height - 65, size: 8, font: ctx.font, color: rgb(0.3, 0.3, 0.3),
     });
   }
 

@@ -2,7 +2,7 @@
 //
 // Session 13 / Phase 5.C — General settings page. Surfaces the four
 // symbolic categories of business_config (business / localization / tax / pos)
-// in a single flat form. Each "Save" calls set_setting_v1 per dirty key so the
+// in a single flat form. Each "Save" calls set_setting_v2 per dirty key so the
 // audit trail captures one row per field change.
 //
 // S73 B4 — currency/timezone become ISO-4217/IANA <select> pickers, tax_rate
@@ -13,10 +13,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
+import { BrandLogoUploader } from '@/features/settings/components/BrandLogoUploader.js';
 import { useSettings, type SettingsCategory } from '@/features/settings/hooks/useSettings.js';
 import { useSetSetting } from '@/features/settings/hooks/useSetSetting.js';
 
-type FieldType = 'text' | 'number' | 'boolean' | 'select' | 'percent';
+type FieldType = 'text' | 'number' | 'boolean' | 'select' | 'percent' | 'logo';
 
 interface FieldSpec {
   key:       string;
@@ -43,6 +44,11 @@ const SECTIONS = [
 const FIELDS: FieldSpec[] = [
   { key: 'name',           label: 'Business name',  type: 'text',    category: 'business',     section: 'identity' },
   { key: 'fiscal_address', label: 'Fiscal address', type: 'text',    category: 'business',     section: 'identity', nullable: true },
+  // 2026-07-16 (Settings §6.A) — identity rendered on documents: NPWP + phone
+  // on the POS receipt header and PDF headers, logo embedded in PDFs/emails.
+  { key: 'npwp',           label: 'NPWP (tax ID)',  type: 'text',    category: 'business',     section: 'identity', nullable: true, helper: 'The bakery’s own NPWP — printed on receipts and B2B invoices when set' },
+  { key: 'phone',          label: 'Business phone', type: 'text',    category: 'business',     section: 'identity', nullable: true, helper: 'Printed on the POS receipt header when set' },
+  { key: 'logo_url',       label: 'Brand logo',     type: 'logo',    category: 'business',     section: 'identity', nullable: true, helper: 'PNG or JPEG, 1 MB max — embedded in PDF headers and emails' },
   { key: 'currency',       label: 'Currency code',  type: 'select',  category: 'localization', section: 'identity', options: CURRENCIES, helper: 'ISO-4217 (e.g. IDR, USD)' },
   { key: 'timezone',       label: 'Timezone',       type: 'select',  category: 'localization', section: 'identity', options: TIMEZONES, helper: 'IANA zone (e.g. Asia/Makassar)' },
   { key: 'tax_rate',       label: 'Tax rate',       type: 'percent', category: 'tax',          section: 'identity', helper: 'Percent — e.g. 10 for 10%' },
@@ -217,7 +223,13 @@ export default function SettingsGeneralPage() {
                       {f.label}
                     </label>
                     <div className="md:col-span-2 space-y-1">
-                      {f.type === 'boolean' ? (
+                      {f.type === 'logo' ? (
+                        <BrandLogoUploader
+                          logoUrl={v === null ? null : String(v)}
+                          readOnly={!canUpdate}
+                          onChange={(url) => setDraft((d) => ({ ...d, [f.key]: url }))}
+                        />
+                      ) : f.type === 'boolean' ? (
                         <label className="inline-flex items-center gap-2 text-sm pt-2">
                           <input id={inputId} type="checkbox" checked={Boolean(v)} disabled={!canUpdate}
                             onChange={(e) => setDraft((d) => ({ ...d, [f.key]: e.target.checked }))} />

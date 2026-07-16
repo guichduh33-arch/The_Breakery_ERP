@@ -26,14 +26,14 @@ vi.mock('@/lib/supabase.js', () => ({
   supabase: {
     rpc: (fn: string, args: Record<string, unknown>) => {
       rpcCalls.push({ fn, args });
-      if (fn === 'get_settings_by_category_v1') {
+      if (fn === 'get_settings_by_category_v2') {
         const category = String(args.p_category);
         return Promise.resolve({
           data: { category, settings: settingsByCategory[category] ?? {} },
           error: null,
         });
       }
-      if (fn === 'set_setting_v1') {
+      if (fn === 'set_setting_v2') {
         return Promise.resolve({ data: null, error: null });
       }
       return Promise.resolve({ data: null, error: null });
@@ -85,7 +85,7 @@ describe('SettingsGeneralPage', () => {
     expect(screen.getByRole('button', { name: /No changes/i })).toBeInTheDocument();
   });
 
-  it('calls set_setting_v1 once per dirty key on submit', async () => {
+  it('calls set_setting_v2 once per dirty key on submit', async () => {
     renderPage();
     await waitFor(() => screen.getByLabelText(/Business name/i));
     rpcCalls.length = 0;
@@ -94,7 +94,7 @@ describe('SettingsGeneralPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /Save 1 change/i }));
 
     await waitFor(() => {
-      const setCalls = rpcCalls.filter((c) => c.fn === 'set_setting_v1');
+      const setCalls = rpcCalls.filter((c) => c.fn === 'set_setting_v2');
       expect(setCalls).toHaveLength(1);
       expect(setCalls[0]?.args.p_key).toBe('name');
       expect(setCalls[0]?.args.p_value).toBe('New Bakery');
@@ -112,7 +112,7 @@ describe('SettingsGeneralPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /Save 1 change/i }));
 
     await waitFor(() => {
-      const setCalls = rpcCalls.filter((c) => c.fn === 'set_setting_v1');
+      const setCalls = rpcCalls.filter((c) => c.fn === 'set_setting_v2');
       expect(setCalls).toHaveLength(1);
       expect(setCalls[0]?.args.p_key).toBe('tax_rate');
       expect(setCalls[0]?.args.p_value).toBe(0.25);

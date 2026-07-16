@@ -1,6 +1,7 @@
 // S73 Phase 3 — single typed dictionary of business_config setting keys and
-// symbolic categories (server truth: set_setting_v1 / get_settings_by_category_v1,
-// migration 20260711000159). Add a key here ONLY together with its RPC branch.
+// symbolic categories (server truth: set_setting_v2 / get_settings_by_category_v2,
+// migrations 20260711000159 + 20260716000168). Add a key here ONLY together
+// with its RPC branch.
 export const SETTINGS_CATEGORIES = [
   'business', 'localization', 'tax', 'pos', 'pos_presets',
   'inventory', 'payments', 'customer_display', 'printing', 'kds',
@@ -8,7 +9,9 @@ export const SETTINGS_CATEGORIES = [
 export type SettingsCategory = (typeof SETTINGS_CATEGORIES)[number];
 
 export const SETTING_KEYS = {
-  business:         ['name', 'fiscal_address'],
+  // 2026-07-16 (Settings §6.A): identity on documents (npwp/phone/logo_url)
+  // + internal alert recipient (alert_email), migration 20260716000168.
+  business:         ['name', 'fiscal_address', 'npwp', 'phone', 'logo_url', 'alert_email'],
   localization:     ['currency', 'timezone'],
   tax:              ['tax_rate', 'tax_inclusive'],
   pos:              ['shift_variance_threshold_pct', 'shift_variance_threshold_abs',

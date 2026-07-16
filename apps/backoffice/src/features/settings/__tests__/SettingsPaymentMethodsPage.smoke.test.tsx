@@ -8,13 +8,13 @@ vi.mock('@/lib/supabase.js', () => ({
   supabase: {
     rpc: (fn: string, args: unknown) => {
       rpcCalls.push({ fn, args });
-      if (fn === 'get_settings_by_category_v1') {
+      if (fn === 'get_settings_by_category_v2') {
         return Promise.resolve({
           data: { category: 'payments', settings: { enabled_payment_methods: ['cash', 'card'] } },
           error: null,
         });
       }
-      return Promise.resolve({ data: null, error: null }); // set_setting_v1
+      return Promise.resolve({ data: null, error: null }); // set_setting_v2
     },
   },
 }));
@@ -51,7 +51,7 @@ describe('SettingsPaymentMethodsPage', () => {
     expect(screen.getByRole('button', { name: /enregistrer/i })).toBeDisabled();
   });
 
-  it('calls set_setting_v1 with the remaining methods on save', async () => {
+  it('calls set_setting_v2 with the remaining methods on save', async () => {
     rpcCalls.length = 0;
     render(wrap(<SettingsPaymentMethodsPage />));
     await waitFor(() => screen.getByLabelText(/^cash$/i));
@@ -60,9 +60,9 @@ describe('SettingsPaymentMethodsPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /enregistrer/i }));
 
     await waitFor(() =>
-      expect(rpcCalls.some((c) => c.fn === 'set_setting_v1')).toBe(true));
+      expect(rpcCalls.some((c) => c.fn === 'set_setting_v2')).toBe(true));
 
-    const call = rpcCalls.find((c) => c.fn === 'set_setting_v1');
+    const call = rpcCalls.find((c) => c.fn === 'set_setting_v2');
     expect(call?.args).toEqual({
       p_key: 'enabled_payment_methods',
       p_value: ['cash'],
