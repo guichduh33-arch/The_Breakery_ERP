@@ -1,7 +1,7 @@
 ---
 name: accounting
 description: >-
-  Accounting cockpit expert — COA, journal entries, PB1 (NON-PKP, ADR-003), fiscal periods
+  Accounting cockpit expert — COA, journal entries, PB1/PBJT (NON-PKP, ADR-005), fiscal periods
   & year close, general ledger, trial balance, P&L, balance sheet, mapping accounts. Audits
   JE balance/mapping/fiscal-guard AND guides accounting changes. Use this skill whenever the
   task mentions journal entry / écriture comptable / JE, COA / plan comptable, PB1, PPN, TVA,
@@ -44,12 +44,12 @@ Expert on the accounting cockpit: chart of accounts, journal entries, PB1 fiscal
 
 ---
 
-## Mental model NON-PKP (ADR-003, ratifié 2026-05-20)
+## Mental model NON-PKP (ADR-003 ratifié 2026-05-20, juridiction corrigée par ADR-005 le 2026-07-16)
 
-**The Breakery est NON-PKP.** Décision irrévocable — re-read `docs/adr/003-pkp-status-non-pkp.md` before any fiscal change.
+**The Breakery est NON-PKP.** Décision irrévocable — re-read `docs/adr/005-juridiction-fiscale-lombok-pbjt.md` (supersedes ADR-003) before any fiscal change.
 
-- **Output tax** : **PB1 10%** (PEMDA Bali, Perda Bali F&B). Pas de PPN sortant, pas d'e-Faktur, pas d'export DJP.
-- **Input tax** : PPN 11% fournisseurs PKP est **non-récupérable** → **folded dans le coût d'acquisition** (`INVENTORY_GENERAL` 1130). Le compte `1151 VAT Input` est **désactivé** (`is_active=false`, `name='VAT Input — RESERVED (NON-PKP, see ADR-003)'`). Ne jamais le réactiver sans créer ADR-005.
+- **Output tax** : **taxe F&B locale 10%** — **PBJT Makanan dan Minuman** (UU HKPD 1/2022), niveau **kabupaten/kota**, perçue par le **Bapenda** de la commune (The Breakery est à **Lombok, NTB** — pas Bali, cf. ADR-005). « PB1 » reste le label usuel dans le code. Pas de PPN sortant, pas d'e-Faktur, pas d'export DJP.
+- **Input tax** : PPN 11% fournisseurs PKP est **non-récupérable** → **folded dans le coût d'acquisition** (`INVENTORY_GENERAL` 1130). Le compte `1151 VAT Input` est **désactivé** (`is_active=false`, `name='VAT Input — RESERVED (NON-PKP, see ADR-003)'`). Ne jamais le réactiver sans un nouvel ADR supersedant ADR-005.
 - **`current_pb1_rate()`** : helper stable lit `business_config.tax_rate` (migration `20260603000010`). Toujours utiliser ce helper — pas de hardcode `10/110`.
 - **`calculate_pb1_payable_v1(p_period_start DATE, p_period_end DATE)`** : formule simplifiée `pb1_payable = pb1_output` (pas de soustraction `vat_input`). Remplace l'ancien `calculate_vat_payable` (droppé migration `20260603000013`).
 
@@ -92,8 +92,8 @@ CR côté vente : `SALE_POS_REVENUE` + `SALE_PB1_TAX` → **2110** PB1 Payable.
 | **1115** | QRIS Clearing | 1 asset | Mapping `SALE_PAYMENT_QRIS` |
 | **1116** | Card Clearing | 1 asset | Mapping `SALE_PAYMENT_DEBIT/CREDIT` |
 | **1130** | Inventory General | 1 asset | Reçoit PPN supplier (folded, NON-PKP) |
-| **1151** | VAT Input | 1 asset | **DÉSACTIVÉ NON-PKP** (ADR-003) |
-| **2110** | PB1 Payable | 2 liability | Sortie PEMDA Bali mensuelle |
+| **1151** | VAT Input | 1 asset | **DÉSACTIVÉ NON-PKP** (ADR-003/ADR-005) |
+| **2110** | PB1 Payable | 2 liability | Sortie mensuelle Bapenda kabupaten/kota (Lombok, ADR-005) |
 | **3100** | Owner Capital | 3 equity | Mapping `CASH_MOVEMENT_OWNER_CAPITAL` |
 | **3200** | Retained Earnings | 3 equity | Seeded `_019` ; alimenté lors de la clôture annuelle |
 | **5910** | Cash Variance Loss | 6 opex | Reclassé classe 5→6 (`_020`) ; renommer to 6910 différé |
@@ -148,7 +148,7 @@ Pages + hooks dans `apps/backoffice/src/features/accounting/` (vérifiés) :
 - [ ] **JE balanced** — pour tout `journal_entries` row : `Σ journal_entry_lines.debit_amount = Σ credit_amount`. Toute divergence = trigger bogué ou INSERT direct.
 - [ ] **Mapping account existe + postable** — `resolve_mapping_account(key)` lève P0002 si la key est absente OU si le compte est `is_active=false`. Vérifier avant d'ajouter un nouveau mapping key.
 - [ ] **Fiscal guard actif** — `check_fiscal_period_open(date)` doit exister et être appelé par chaque trigger JE. `SELECT proname FROM pg_proc WHERE proname = 'check_fiscal_period_open'`.
-- [ ] **Compte 1151 reste inactif** — `SELECT is_active FROM accounts WHERE code='1151'` doit retourner `false`. Toute réactivation = violation ADR-003.
+- [ ] **Compte 1151 reste inactif** — `SELECT is_active FROM accounts WHERE code='1151'` doit retourner `false`. Toute réactivation = violation ADR-005.
 - [ ] **Dedupe sale_void/sale_refund** — `get_profit_loss_v1` et `get_balance_sheet_v1` excluent `sale_void` quand un refund existe pour le même `order_id` (S26 `_017`/`_018`). Vérifier que les bumps futurs préservent cette logique.
 - [ ] **VAT trap** — si un `expense.vat_amount > 0` passe dans `_emit_expense_je`, cela lève P0002 (compte 1151 inactif). Non-régression S28 : ne jamais activer 1151 comme contournement.
 - [ ] **REVOKE pair complet** sur toute nouvelle RPC accounting — 3 lignes : `REVOKE FROM PUBLIC` + `FROM anon` + `ALTER DEFAULT PRIVILEGES FOR ROLE postgres REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC`.
@@ -180,7 +180,8 @@ Pages + hooks dans `apps/backoffice/src/features/accounting/` (vérifiés) :
 
 ```
 ADR (lire en premier pour contexte fiscal)
-  docs/adr/003-pkp-status-non-pkp.md            # NON-PKP rationale + conséquences
+  docs/adr/005-juridiction-fiscale-lombok-pbjt.md  # ACTUEL — Lombok/NTB, PBJT municipale (supersedes ADR-003)
+  docs/adr/003-pkp-status-non-pkp.md               # historique — NON-PKP rationale + conséquences
 
 Migrations S26 (bloc chronologique)
   supabase/migrations/20260603000010..026_*.sql  # S26 DB hardening 17 migrations
@@ -219,7 +220,7 @@ pnpm --filter @breakery/app-backoffice test accounting
 ## When to escalate
 
 - **Toucher le taux PB1** (`business_config.tax_rate`) → impact sur toutes les JE futures et les rapports `calculate_pb1_payable_v1` — flag, décision business owner.
-- **Réactiver le compte 1151** → violation ADR-003, nécessite ADR-005 + plan de migration PKP complet.
+- **Réactiver le compte 1151** → violation ADR-005, nécessite un nouvel ADR supersedant + plan de migration PKP complet.
 - **Verrouiller (`locked`) une période fiscale** → irréversible sans RPC SUPER_ADMIN dédié (pas encore implémenté). Confirmer avec owner.
 - **Ajouter un nouveau mapping key** qui route vers 1151 → bloqué par `is_active=false` dans `resolve_mapping_account`, mais la migration elle-même ne serait pas refusée — double-check explicitement.
 - **Bump majeur d'une RPC cockpit** (`_vN+1`) → drop `_vN` dans la même migration (RPC versioning monotone CLAUDE.md), + REVOKE pair + types regen + pgTAP.

@@ -257,4 +257,4 @@ Toujours cibler V3 dev cloud `ikcyvlovptebroadgtvd` via MCP. Jamais `pnpm db:res
 - `validate_b2b_credit_limit_v1` call removed from any order-creation flow — immediate flag.
 - Audit finds `b2b_current_balance` drift > 0 on any customer — investigate manual UPDATE
   (column REVOKE should prevent it; if drift exists, the REVOKE was bypassed).
-- B2B PB1/tax change — confirm PKP status (ADR-003, NON-PKP, currently no PB1 on B2B orders).
+- B2B PB1/tax change — confirm PKP status (ADR-005 supersedes ADR-003 : NON-PKP, PBJT municipale Lombok/NTB, currently no PB1 on B2B orders).
