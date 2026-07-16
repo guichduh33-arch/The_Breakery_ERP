@@ -61,4 +61,12 @@ export interface ReceiptPayload {
   /** S60 — lignes promo nommées, snapshot cartStore au succès checkout. */
   promotions?: { name: string; amount: number }[];
   footer?: string;
+  /**
+   * Settings §6.A — receipt template (receipt_templates.is_default) applied by
+   * the POS. `header` = extra centered lines printed under the identity block
+   * (multi-line via '\n'); `show_qr` prints a QR of the order number before the
+   * cut. The effective footer travels in the existing `footer` field. Absent →
+   * the bridge renders exactly as before (older POS builds stay compatible).
+   */
+  template?: { header?: string; show_qr?: boolean };
 }

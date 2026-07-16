@@ -21,6 +21,11 @@ export function renderReceipt(p: PrinterLike, r: ReceiptPayload): void {
   p.println(r.business.address);
   if (r.business.phone) p.println(r.business.phone);
   if (r.business.tax_id) p.println(`NPWP ${r.business.tax_id}`);
+  // Settings §6.A — template header: extra centered lines under the identity
+  // block (receipt_templates.header, multi-line via '\n').
+  if (r.template?.header) {
+    for (const line of r.template.header.split('\n')) p.println(line);
+  }
   p.drawLine();
 
   p.alignLeft();
@@ -62,7 +67,14 @@ export function renderReceipt(p: PrinterLike, r: ReceiptPayload): void {
   if (r.footer) {
     p.newLine();
     p.alignCenter();
-    p.println(r.footer);
+    for (const line of r.footer.split('\n')) p.println(line);
+  }
+  // Settings §6.A — QR of the order number (receipt_templates.show_qr).
+  // printQR is optional on PrinterLike; skip silently when unsupported.
+  if (r.template?.show_qr && typeof p.printQR === 'function') {
+    p.newLine();
+    p.alignCenter();
+    p.printQR(r.order.order_number);
   }
   p.newLine();
   p.cut();

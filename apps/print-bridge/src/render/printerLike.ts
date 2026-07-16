@@ -11,4 +11,7 @@ export interface PrinterLike {
   drawLine(): void;
   leftRight(left: string, right: string): void;
   cut(): void;
+  /** Optionnel (présent sur ThermalPrinter) — QR du numéro de commande quand
+   *  le template de reçu active show_qr. Les mocks sans QR restent valides. */
+  printQR?(data: string): void;
 }

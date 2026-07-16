@@ -44,6 +44,9 @@ vi.mock('@/features/cart/hooks/useStationPrinters', () => ({
 // resolved-on so the gated mount effect fires immediately (the supabase mock
 // above has no .from, the real query would stall the effect past waitFor).
 // Settings 6.A - identity is an async business_config read now; mock it resolved
+vi.mock('@/features/settings/hooks/useReceiptTemplate', () => ({
+  useReceiptTemplate: () => ({ template: null, isLoading: false }),
+}));
 vi.mock('@/features/settings/hooks/useBusinessIdentity', () => ({
   useBusinessIdentity: () => ({ name: 'The Breakery', address: 'Jl. Test No. 1', isLoading: false }),
 }));

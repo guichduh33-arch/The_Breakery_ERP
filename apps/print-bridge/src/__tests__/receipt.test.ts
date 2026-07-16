@@ -71,4 +71,36 @@ describe('renderReceipt', () => {
     expect(flat).not.toContain('Promotions |');
     expect(flat).not.toContain('Points');
   });
+
+  // Settings §6.A — receipt template applied by the POS (header/footer/QR).
+  it('renders template header lines under the identity block and multi-line footer', () => {
+    const { p, log } = makeFake();
+    renderReceipt(p, {
+      ...BASE,
+      footer: 'Thank you!\nSee you tomorrow',
+      template: { header: 'Lombok, Indonesia\nOpen 7am — 7pm' },
+    });
+    const flat = log.join('\n');
+    const headerIdx = log.indexOf('Lombok, Indonesia');
+    expect(headerIdx).toBeGreaterThan(log.indexOf('The Breakery'));
+    expect(headerIdx).toBeLessThan(log.indexOf('--------'));
+    expect(flat).toContain('Open 7am — 7pm');
+    expect(flat).toContain('Thank you!');
+    expect(flat).toContain('See you tomorrow');
+  });
+
+  it('prints a QR of the order number when template.show_qr is on and the printer supports it', () => {
+    const { p, log } = makeFake();
+    const qr: string[] = [];
+    p.printQR = (data: string) => qr.push(data);
+    renderReceipt(p, { ...BASE, template: { show_qr: true } });
+    expect(qr).toEqual(['A-042']);
+    expect(log[log.length - 1]).toBe('<cut>');
+  });
+
+  it('skips the QR silently when the printer has no printQR (older mocks/hardware)', () => {
+    const { p, log } = makeFake();
+    renderReceipt(p, { ...BASE, template: { show_qr: true } });
+    expect(log[log.length - 1]).toBe('<cut>');
+  });
 });

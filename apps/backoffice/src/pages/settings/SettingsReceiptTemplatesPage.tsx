@@ -25,15 +25,8 @@ export default function SettingsReceiptTemplatesPage() {
         <h1 className="font-serif text-3xl">Receipt templates</h1>
         <p className="text-text-secondary text-sm mt-1">
           POS receipt layout for thermal printers (58mm, 80mm) and A4 invoices. Exactly one default at a time.
+          The POS applies the <strong>default</strong> template's header, footer and QR toggle on every printed receipt.
         </p>
-      </div>
-
-      <div
-        data-testid="templates-not-wired-banner"
-        className="rounded-lg border border-border-subtle bg-bg-overlay p-3 text-sm text-text-secondary"
-      >
-        ⚠︎ Editing is live, but these templates are <strong>not applied yet</strong> — receipt printing
-        does not read them yet. Wiring is planned (Vague 3 — notifications / versioned print-bridge).
       </div>
 
       {list.isLoading && <div className="text-text-secondary">Loading…</div>}
