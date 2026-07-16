@@ -28,7 +28,7 @@ describe('SettingsInventoryPage', () => {
   it('renders the allow_negative_stock toggle from the RPC', async () => {
     render(wrap(<SettingsInventoryPage />));
     await waitFor(() => expect(screen.getByLabelText(/stock négatif/i)).toBeInTheDocument());
-    expect((screen.getByLabelText(/stock négatif/i) as HTMLInputElement).checked).toBe(true);
+    expect(screen.getByLabelText<HTMLInputElement>(/stock négatif/i).checked).toBe(true);
   });
 
   it('calls set_setting_v2 on save', async () => {

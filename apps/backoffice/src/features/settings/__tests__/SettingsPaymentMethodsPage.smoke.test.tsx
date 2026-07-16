@@ -32,12 +32,12 @@ describe('SettingsPaymentMethodsPage', () => {
     render(wrap(<SettingsPaymentMethodsPage />));
     await waitFor(() => expect(screen.getByLabelText(/^cash$/i)).toBeInTheDocument());
 
-    expect((screen.getByLabelText(/^cash$/i) as HTMLInputElement).checked).toBe(true);
-    expect((screen.getByLabelText(/^card$/i) as HTMLInputElement).checked).toBe(true);
-    expect((screen.getByLabelText(/^qris$/i) as HTMLInputElement).checked).toBe(false);
-    expect((screen.getByLabelText(/^edc$/i) as HTMLInputElement).checked).toBe(false);
-    expect((screen.getByLabelText(/^transfer$/i) as HTMLInputElement).checked).toBe(false);
-    expect((screen.getByLabelText(/^store credit$/i) as HTMLInputElement).checked).toBe(false);
+    expect(screen.getByLabelText<HTMLInputElement>(/^cash$/i).checked).toBe(true);
+    expect(screen.getByLabelText<HTMLInputElement>(/^card$/i).checked).toBe(true);
+    expect(screen.getByLabelText<HTMLInputElement>(/^qris$/i).checked).toBe(false);
+    expect(screen.getByLabelText<HTMLInputElement>(/^edc$/i).checked).toBe(false);
+    expect(screen.getByLabelText<HTMLInputElement>(/^transfer$/i).checked).toBe(false);
+    expect(screen.getByLabelText<HTMLInputElement>(/^store credit$/i).checked).toBe(false);
   });
 
   it('disables save and shows a warning when every method is unchecked', async () => {
