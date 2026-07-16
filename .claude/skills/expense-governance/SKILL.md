@@ -233,5 +233,5 @@ Baseline pré-existante : ~24 échecs BO env-gated (`VITE_SUPABASE_URL Required`
 
 - Relax d'une contrainte SOD (UNIQUE `expense_approvals` ou `created_by` guard) → flag systématique, brise l'invariant d'audit.
 - Ajout d'un `payment_method` cash-like qui doit aussi déclencher le trigger cash-sync → étendre le WHEN du trigger dans une migration dédiée.
-- Activation de VAT input (si The Breakery devient PKP) → `_emit_expense_je` doit être réécrit, compte 1151 réactivé, ADR-003 mis à jour.
+- Activation de VAT input (si The Breakery devient PKP) → `_emit_expense_je` doit être réécrit, compte 1151 réactivé, nouvel ADR supersedant ADR-005 requis (un ADR ne se modifie jamais).
 - Override admin d'une approval chain en cours → scope déféré, pas d'implémentation existante.
