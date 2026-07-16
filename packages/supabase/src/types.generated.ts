@@ -294,6 +294,7 @@ export type Database = {
       }
       business_config: {
         Row: {
+          alert_email: string | null
           allow_negative_stock: boolean
           created_at: string
           currency: string
@@ -305,7 +306,10 @@ export type Database = {
           kds_auto_archive_minutes: number
           kds_urgent_threshold_minutes: number
           kds_warning_threshold_minutes: number
+          logo_url: string | null
           name: string
+          npwp: string | null
+          phone: string | null
           pos_auto_open_drawer: boolean
           pos_auto_print_receipt: boolean
           pos_discount_presets: Json
@@ -323,6 +327,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          alert_email?: string | null
           allow_negative_stock?: boolean
           created_at?: string
           currency?: string
@@ -334,7 +339,10 @@ export type Database = {
           kds_auto_archive_minutes?: number
           kds_urgent_threshold_minutes?: number
           kds_warning_threshold_minutes?: number
+          logo_url?: string | null
           name?: string
+          npwp?: string | null
+          phone?: string | null
           pos_auto_open_drawer?: boolean
           pos_auto_print_receipt?: boolean
           pos_discount_presets?: Json
@@ -352,6 +360,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          alert_email?: string | null
           allow_negative_stock?: boolean
           created_at?: string
           currency?: string
@@ -363,7 +372,10 @@ export type Database = {
           kds_auto_archive_minutes?: number
           kds_urgent_threshold_minutes?: number
           kds_warning_threshold_minutes?: number
+          logo_url?: string | null
           name?: string
+          npwp?: string | null
+          phone?: string | null
           pos_auto_open_drawer?: boolean
           pos_auto_print_receipt?: boolean
           pos_discount_presets?: Json
@@ -7360,7 +7372,7 @@ export type Database = {
           total: number
         }[]
       }
-      get_settings_by_category_v1: {
+      get_settings_by_category_v2: {
         Args: { p_category: string }
         Returns: Json
       }
@@ -8266,7 +8278,7 @@ export type Database = {
         Args: { p_alts: Json; p_contexts: Json; p_product_id: string }
         Returns: Json
       }
-      set_setting_v1: {
+      set_setting_v2: {
         Args: { p_category: string; p_key: string; p_value: Json }
         Returns: undefined
       }

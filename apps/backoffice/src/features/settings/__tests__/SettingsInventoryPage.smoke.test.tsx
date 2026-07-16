@@ -8,10 +8,10 @@ vi.mock('@/lib/supabase.js', () => ({
   supabase: {
     rpc: (fn: string, args: unknown) => {
       rpcCalls.push({ fn, args });
-      if (fn === 'get_settings_by_category_v1') {
+      if (fn === 'get_settings_by_category_v2') {
         return Promise.resolve({ data: { category: 'inventory', settings: { allow_negative_stock: true } }, error: null });
       }
-      return Promise.resolve({ data: null, error: null }); // set_setting_v1
+      return Promise.resolve({ data: null, error: null }); // set_setting_v2
     },
   },
 }));
@@ -28,16 +28,16 @@ describe('SettingsInventoryPage', () => {
   it('renders the allow_negative_stock toggle from the RPC', async () => {
     render(wrap(<SettingsInventoryPage />));
     await waitFor(() => expect(screen.getByLabelText(/stock négatif/i)).toBeInTheDocument());
-    expect((screen.getByLabelText(/stock négatif/i) as HTMLInputElement).checked).toBe(true);
+    expect(screen.getByLabelText<HTMLInputElement>(/stock négatif/i).checked).toBe(true);
   });
 
-  it('calls set_setting_v1 on save', async () => {
+  it('calls set_setting_v2 on save', async () => {
     rpcCalls.length = 0;
     render(wrap(<SettingsInventoryPage />));
     await waitFor(() => screen.getByLabelText(/stock négatif/i));
     fireEvent.click(screen.getByLabelText(/stock négatif/i));
     fireEvent.click(screen.getByRole('button', { name: /save|enregistrer/i }));
     await waitFor(() =>
-      expect(rpcCalls.some((c) => c.fn === 'set_setting_v1')).toBe(true));
+      expect(rpcCalls.some((c) => c.fn === 'set_setting_v2')).toBe(true));
   });
 });

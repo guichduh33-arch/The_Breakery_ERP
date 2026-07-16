@@ -12,13 +12,13 @@ vi.mock('@/lib/supabase.js', () => ({
   supabase: {
     rpc: (fn: string, args: unknown) => {
       rpcCalls.push({ fn, args });
-      if (fn === 'get_settings_by_category_v1') {
+      if (fn === 'get_settings_by_category_v2') {
         return Promise.resolve({
           data: { category: 'printing', settings: mockSettings },
           error: null,
         });
       }
-      return Promise.resolve({ data: null, error: null }); // set_setting_v1
+      return Promise.resolve({ data: null, error: null }); // set_setting_v2
     },
   },
 }));
@@ -66,7 +66,7 @@ describe('SettingsPrintingPage', () => {
     expect(screen.queryByRole('button', { name: /save/i })).not.toBeInTheDocument();
   });
 
-  it('calls set_setting_v1 with the printing category on save', async () => {
+  it('calls set_setting_v2 with the printing category on save', async () => {
     canUpdate = true;
     mockSettings = { pos_auto_print_receipt: true, pos_auto_open_drawer: false };
     rpcCalls.length = 0;
@@ -76,9 +76,9 @@ describe('SettingsPrintingPage', () => {
     fireEvent.click(screen.getByLabelText(/auto-open cash drawer/i));
     fireEvent.click(screen.getByRole('button', { name: /save 1 change/i }));
 
-    await waitFor(() => expect(rpcCalls.some((c) => c.fn === 'set_setting_v1')).toBe(true));
+    await waitFor(() => expect(rpcCalls.some((c) => c.fn === 'set_setting_v2')).toBe(true));
 
-    const call = rpcCalls.find((c) => c.fn === 'set_setting_v1');
+    const call = rpcCalls.find((c) => c.fn === 'set_setting_v2');
     expect(call?.args).toEqual({
       p_key: 'pos_auto_open_drawer',
       p_value: true,

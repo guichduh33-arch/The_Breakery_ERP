@@ -8,13 +8,13 @@ vi.mock('@/lib/supabase.js', () => ({
   supabase: {
     rpc: (fn: string, args: unknown) => {
       rpcCalls.push({ fn, args });
-      if (fn === 'get_settings_by_category_v1') {
+      if (fn === 'get_settings_by_category_v2') {
         return Promise.resolve({
           data: { category: 'payments', settings: { enabled_payment_methods: ['cash', 'card'] } },
           error: null,
         });
       }
-      return Promise.resolve({ data: null, error: null }); // set_setting_v1
+      return Promise.resolve({ data: null, error: null }); // set_setting_v2
     },
   },
 }));
@@ -32,12 +32,12 @@ describe('SettingsPaymentMethodsPage', () => {
     render(wrap(<SettingsPaymentMethodsPage />));
     await waitFor(() => expect(screen.getByLabelText(/^cash$/i)).toBeInTheDocument());
 
-    expect((screen.getByLabelText(/^cash$/i) as HTMLInputElement).checked).toBe(true);
-    expect((screen.getByLabelText(/^card$/i) as HTMLInputElement).checked).toBe(true);
-    expect((screen.getByLabelText(/^qris$/i) as HTMLInputElement).checked).toBe(false);
-    expect((screen.getByLabelText(/^edc$/i) as HTMLInputElement).checked).toBe(false);
-    expect((screen.getByLabelText(/^transfer$/i) as HTMLInputElement).checked).toBe(false);
-    expect((screen.getByLabelText(/^store credit$/i) as HTMLInputElement).checked).toBe(false);
+    expect(screen.getByLabelText<HTMLInputElement>(/^cash$/i).checked).toBe(true);
+    expect(screen.getByLabelText<HTMLInputElement>(/^card$/i).checked).toBe(true);
+    expect(screen.getByLabelText<HTMLInputElement>(/^qris$/i).checked).toBe(false);
+    expect(screen.getByLabelText<HTMLInputElement>(/^edc$/i).checked).toBe(false);
+    expect(screen.getByLabelText<HTMLInputElement>(/^transfer$/i).checked).toBe(false);
+    expect(screen.getByLabelText<HTMLInputElement>(/^store credit$/i).checked).toBe(false);
   });
 
   it('disables save and shows a warning when every method is unchecked', async () => {
@@ -51,7 +51,7 @@ describe('SettingsPaymentMethodsPage', () => {
     expect(screen.getByRole('button', { name: /enregistrer/i })).toBeDisabled();
   });
 
-  it('calls set_setting_v1 with the remaining methods on save', async () => {
+  it('calls set_setting_v2 with the remaining methods on save', async () => {
     rpcCalls.length = 0;
     render(wrap(<SettingsPaymentMethodsPage />));
     await waitFor(() => screen.getByLabelText(/^cash$/i));
@@ -60,9 +60,9 @@ describe('SettingsPaymentMethodsPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /enregistrer/i }));
 
     await waitFor(() =>
-      expect(rpcCalls.some((c) => c.fn === 'set_setting_v1')).toBe(true));
+      expect(rpcCalls.some((c) => c.fn === 'set_setting_v2')).toBe(true));
 
-    const call = rpcCalls.find((c) => c.fn === 'set_setting_v1');
+    const call = rpcCalls.find((c) => c.fn === 'set_setting_v2');
     expect(call?.args).toEqual({
       p_key: 'enabled_payment_methods',
       p_value: ['cash'],

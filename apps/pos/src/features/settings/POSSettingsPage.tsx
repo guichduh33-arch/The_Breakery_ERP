@@ -3,8 +3,8 @@
 // Session 14 — Phase 2.D — POS-side settings page.
 //
 // Reviewer follow-up #18 — preset groups now persist via the
-// pos_presets symbolic category on get_settings_by_category_v1 /
-// set_setting_v1 (see usePOSPresets hook + migrations
+// pos_presets symbolic category on get_settings_by_category_v2 /
+// set_setting_v2 (see usePOSPresets hook + migrations
 // 20260518000002 / 20260518000003).
 //
 // Visual ref: 88-…-modal.jpg (note: the screenshot is mis-named — it is

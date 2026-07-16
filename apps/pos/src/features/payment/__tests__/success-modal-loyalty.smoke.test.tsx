@@ -21,6 +21,10 @@ vi.mock('@/services/print/printService', () => ({
   getMockPrintBuffer: () => [],
   clearMockPrintBuffer: () => undefined,
 }));
+// Settings 6.A - identity is an async business_config read now; mock it resolved
+vi.mock('@/features/settings/hooks/useBusinessIdentity', () => ({
+  useBusinessIdentity: () => ({ name: 'The Breakery', address: 'Jl. Test No. 1', isLoading: false }),
+}));
 vi.mock('@/features/settings/hooks/useOrgDisplaySettings', () => ({
   useOrgDisplaySettings: vi.fn(() => ({
     displayFooterMessage: '',

@@ -90,17 +90,20 @@ serve(async (req) => {
   if (permErr) return jsonResponse({ error: 'permission_check_failed', detail: permErr.message }, 500);
   if (!hasPerm) return jsonResponse({ error: 'permission_denied', required: tplReg.permission }, 403);
 
-  // Business info (for header)
+  // Business info (for header) — real business_config columns (the historical
+  // select referenced phantom business_name/address columns and always fell
+  // back to the hardcoded defaults; fixed with migration 20260716000168).
   const admin = getAdminClient();
   const { data: biz } = await admin
     .from('business_config')
-    .select('business_name, npwp, address')
+    .select('name, fiscal_address, npwp, logo_url')
     .limit(1)
     .maybeSingle();
   const business: BusinessInfo = {
-    name:    biz?.business_name || 'The Breakery',
+    name:    biz?.name || 'The Breakery',
     npwp:    biz?.npwp || undefined,
-    address: biz?.address || undefined,
+    address: biz?.fiscal_address || undefined,
+    logoUrl: biz?.logo_url || undefined,
   };
 
   // Build PDF

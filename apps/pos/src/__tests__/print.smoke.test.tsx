@@ -25,6 +25,10 @@ vi.mock('@/lib/supabase', () => ({
 // query resolving (useOrgDisplaySettings). The supabase mock above has no
 // .from(), so the real hook would error + retry (~1 s) and push auto-print
 // past waitFor's timeout. Mock it resolved, like the auto-toggles smoke.
+// Settings §6.A — same gating applies to the business identity read.
+vi.mock('@/features/settings/hooks/useBusinessIdentity', () => ({
+  useBusinessIdentity: () => ({ name: 'The Breakery', address: 'Jl. Test No. 1', isLoading: false }),
+}));
 vi.mock('@/features/settings/hooks/useOrgDisplaySettings', () => ({
   useOrgDisplaySettings: vi.fn(() => ({
     displayFooterMessage: '',

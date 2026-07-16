@@ -104,16 +104,18 @@ serve(async (req) => {
     });
   }
 
-  // Build PDF
+  // Build PDF — real business_config columns (the historical select referenced
+  // phantom business_name/address columns; fixed with migration 20260716000168).
   const { data: biz } = await admin
     .from('business_config')
-    .select('business_name, npwp, address')
+    .select('name, fiscal_address, npwp, logo_url')
     .limit(1)
     .maybeSingle();
   const business: BusinessInfo = {
-    name:    biz?.business_name || 'The Breakery',
+    name:    biz?.name || 'The Breakery',
     npwp:    biz?.npwp || undefined,
-    address: biz?.address || undefined,
+    address: biz?.fiscal_address || undefined,
+    logoUrl: biz?.logo_url || undefined,
   };
 
   const envelope = snapData as ZReportEnvelope;

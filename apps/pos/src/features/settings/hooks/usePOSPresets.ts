@@ -3,7 +3,7 @@
 // Session 14 / Phase 2.D — Reviewer follow-up #18.
 //
 // Reads/writes the three pos_presets keys via the existing
-// get_settings_by_category_v1 / set_setting_v1 RPC pair (extended in
+// get_settings_by_category_v2 / set_setting_v2 RPC pair (extended in
 // migration 20260518000003 to support a `pos_presets` symbolic category).
 //
 // Read shape :
@@ -91,7 +91,7 @@ export function usePOSPresets() {
     queryKey: QUERY_KEY,
     staleTime: 60_000,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_settings_by_category_v1', {
+      const { data, error } = await supabase.rpc('get_settings_by_category_v2', {
         p_category: 'pos_presets',
       });
       if (error) throw error;
@@ -118,7 +118,7 @@ export function usePOSPresets() {
 
   const mutateQuickPayments = useMutation({
     mutationFn: async (next: number[]) => {
-      const { error } = await supabase.rpc('set_setting_v1', {
+      const { error } = await supabase.rpc('set_setting_v2', {
         p_key: 'pos_quick_payment_amounts',
         p_value: next as unknown as Json,
         p_category: 'pos_presets',
@@ -132,7 +132,7 @@ export function usePOSPresets() {
 
   const mutateOpeningCash = useMutation({
     mutationFn: async (next: number[]) => {
-      const { error } = await supabase.rpc('set_setting_v1', {
+      const { error } = await supabase.rpc('set_setting_v2', {
         p_key: 'pos_opening_cash_presets',
         p_value: next as unknown as Json,
         p_category: 'pos_presets',
@@ -146,7 +146,7 @@ export function usePOSPresets() {
 
   const mutateDiscountPresets = useMutation({
     mutationFn: async (next: DiscountPreset[]) => {
-      const { error } = await supabase.rpc('set_setting_v1', {
+      const { error } = await supabase.rpc('set_setting_v2', {
         p_key: 'pos_discount_presets',
         p_value: next as unknown as Json,
         p_category: 'pos_presets',
