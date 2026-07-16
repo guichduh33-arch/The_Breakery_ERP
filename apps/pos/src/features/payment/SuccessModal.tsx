@@ -152,7 +152,8 @@ function buildReceiptPayload(
     } : {}),
     // Settings §6.A — footer/header/QR come from the default receipt template
     // (receipt_templates, edited in BO Settings); built-in fallback preserved.
-    footer: template?.footer || 'Thank you!',
+    // (The editor normalizes an emptied footer to null, so ?? covers it.)
+    footer: template?.footer ?? 'Thank you!',
     ...(template && (template.header || template.show_qr)
       ? {
           template: {

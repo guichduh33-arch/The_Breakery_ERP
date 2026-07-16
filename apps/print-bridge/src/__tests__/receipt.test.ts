@@ -92,7 +92,7 @@ describe('renderReceipt', () => {
   it('prints a QR of the order number when template.show_qr is on and the printer supports it', () => {
     const { p, log } = makeFake();
     const qr: string[] = [];
-    (p as PrinterLike).printQR = (data: string) => qr.push(data);
+    p.printQR = (data: string) => qr.push(data);
     renderReceipt(p, { ...BASE, template: { show_qr: true } });
     expect(qr).toEqual(['A-042']);
     expect(log[log.length - 1]).toBe('<cut>');
