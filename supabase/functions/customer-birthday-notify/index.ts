@@ -3,7 +3,7 @@
 //
 // Triggered daily at 02:00 UTC (09:00 ICT) by pg_cron via net.http_post.
 // For each opted-in customer whose birth_date matches today (Asia/Jakarta),
-// enqueues one notification_outbox row via enqueue_notification_v1 RPC.
+// enqueues one notification_outbox row via enqueue_notification_v2 RPC.
 //
 // Auth: verify_jwt=false. Requests must include header
 //   x-cron-secret: <BIRTHDAY_CRON_SECRET env var>
@@ -122,7 +122,7 @@ serve(async (req: Request) => {
     // so if both paths run on the same day, the outbox deduplicates.
     // We use a deterministic UUID-like key via a hash pattern.
     // Since we can't call uuid_generate_v5 from Deno, we compute a stable
-    // string-based key and let enqueue_notification_v1 handle dedup via
+    // string-based key and let enqueue_notification_v2 handle dedup via
     // the UNIQUE index on idempotency_key.
     const idemStr = `birthday-ef-${cust.id}-${todayStr}`;
     // Truncate to UUID shape using a simple hash (crypto.subtle SHA-256 → UUID v4-ish)
@@ -142,7 +142,7 @@ serve(async (req: Request) => {
       hex.slice(20, 32),
     ].join('-');
 
-    const { error: enqErr } = await admin.rpc('enqueue_notification_v1', {
+    const { error: enqErr } = await admin.rpc('enqueue_notification_v2', {
       p_template_code:   'customer_birthday',
       p_recipient:       cust.email,
       p_variables:       { customer_name: cust.name ?? 'friend', bonus_points: 50 },

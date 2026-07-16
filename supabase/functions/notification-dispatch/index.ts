@@ -30,6 +30,12 @@ import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { handleCors, jsonResponse } from '../_shared/cors.ts';
 import { getAdminClient } from '../_shared/supabase-admin.ts';
 import { sendEmail, type SendEmailResult } from '../_shared/email-provider.ts';
+import {
+  substituteVars,
+  substituteVarsHtml,
+  wrapBrandedEmail,
+  type EmailBranding,
+} from '../_shared/email-html.ts';
 
 const MAX_BATCH = 50;
 const MAX_RETRIES = 3;
@@ -44,6 +50,82 @@ interface OutboxRow {
   status: string;
   retries: number;
   scheduled_for: string;
+  /** Raw substitution map (enqueue_notification_v2) — null on legacy rows. */
+  variables: Record<string, unknown> | null;
+}
+
+interface EmailTemplateRow {
+  code: string;
+  subject: string;
+  body_html: string | null;
+}
+
+/**
+ * Settings §6.A — per-invocation HTML rendering context. email_templates is
+ * the presentation layer of the pipeline: when an ACTIVE row matches the
+ * notification's template_code, the message is re-rendered as branded HTML
+ * (subject from email_templates, body_html + variables, identity shell).
+ * Rows without a match (or without persisted variables) stay text-only.
+ */
+class HtmlRenderer {
+  private branding: EmailBranding = { name: 'The Breakery' };
+  private templates = new Map<string, EmailTemplateRow | null>();
+  private loadedBranding = false;
+
+  // deno-lint-ignore no-explicit-any
+  constructor(private admin: any) {}
+
+  private async loadBranding(): Promise<void> {
+    if (this.loadedBranding) return;
+    this.loadedBranding = true;
+    try {
+      const { data } = await this.admin
+        .from('business_config')
+        .select('name, npwp, logo_url')
+        .limit(1)
+        .maybeSingle();
+      if (data?.name) {
+        this.branding = {
+          name: data.name,
+          npwp: data.npwp ?? undefined,
+          logoUrl: data.logo_url ?? undefined,
+        };
+      }
+    } catch {
+      // Branding is cosmetic — never fail a dispatch over it.
+    }
+  }
+
+  private async loadTemplate(code: string): Promise<EmailTemplateRow | null> {
+    if (this.templates.has(code)) return this.templates.get(code) ?? null;
+    let row: EmailTemplateRow | null = null;
+    try {
+      const { data } = await this.admin
+        .from('email_templates')
+        .select('code, subject, body_html')
+        .eq('code', code)
+        .eq('is_active', true)
+        .maybeSingle();
+      row = (data as EmailTemplateRow | null) ?? null;
+    } catch {
+      row = null;
+    }
+    this.templates.set(code, row);
+    return row;
+  }
+
+  /** Returns { subject, html } when an active email template applies, else null. */
+  async render(row: OutboxRow): Promise<{ subject: string; html: string } | null> {
+    if (row.variables === null) return null;
+    const tpl = await this.loadTemplate(row.template_code);
+    if (!tpl || !tpl.body_html) return null;
+    await this.loadBranding();
+    const vars = row.variables;
+    return {
+      subject: substituteVars(tpl.subject, vars),
+      html: wrapBrandedEmail(substituteVarsHtml(tpl.body_html, vars), this.branding),
+    };
+  }
 }
 
 interface DispatchSummary {
@@ -95,7 +177,7 @@ async function authorize(req: Request): Promise<{ ok: boolean; reason?: string }
   return { ok: true };
 }
 
-async function processRow(row: OutboxRow): Promise<{
+async function processRow(row: OutboxRow, renderer: HtmlRenderer): Promise<{
   newStatus: 'sent' | 'failed' | 'retry';
   errorMessage: string | null;
   providerMessageId: string | null;
@@ -110,12 +192,23 @@ async function processRow(row: OutboxRow): Promise<{
     };
   }
 
+  // Settings §6.A — HTML layer: an active email_templates row with the same
+  // code upgrades the send to branded HTML (text body kept as the alt part).
+  // Rendering is best-effort: any failure falls back to the text-only send.
+  let rendered: { subject: string; html: string } | null = null;
+  try {
+    rendered = await renderer.render(row);
+  } catch {
+    rendered = null;
+  }
+
   let result: SendEmailResult;
   try {
     result = await sendEmail({
       to:      row.recipient,
-      subject: row.subject ?? '',
+      subject: rendered?.subject || (row.subject ?? ''),
       body:    row.body,
+      ...(rendered ? { html: rendered.html } : {}),
     });
   } catch (err) {
     result = {
@@ -171,7 +264,7 @@ serve(async (req) => {
   //    the rows are marked 'sending' in a single transaction, avoiding
   //    races between concurrent dispatcher invocations.
   const { data: claimed, error: claimErr } = await admin.rpc(
-    'pick_notifications_batch_v1',
+    'pick_notifications_batch_v2',
     { p_limit: MAX_BATCH },
   );
 
@@ -192,10 +285,11 @@ serve(async (req) => {
 
   const summary: DispatchSummary = { processed: 0, sent: 0, failed: 0, retried: 0, mode: 'console' };
   const modes = new Set<'resend' | 'console'>();
+  const renderer = new HtmlRenderer(admin);
 
   for (const row of rows) {
     summary.processed++;
-    const outcome = await processRow(row);
+    const outcome = await processRow(row, renderer);
 
     if (outcome.mode === 'resend' || outcome.mode === 'console') {
       modes.add(outcome.mode);
@@ -230,13 +324,13 @@ serve(async (req) => {
 });
 
 async function fallbackDispatch(_req: Request): Promise<Response> {
-  // Two-step fallback when `pick_notifications_batch_v1` does not exist.
+  // Two-step fallback when `pick_notifications_batch_v2` does not exist.
   // Not race-safe ; only used during the bootstrap window before the
   // RPC ships.
   const admin = getAdminClient();
   const { data: rows, error } = await admin
     .from('notification_outbox')
-    .select('id, template_code, channel, recipient, subject, body, status, retries, scheduled_for')
+    .select('id, template_code, channel, recipient, subject, body, status, retries, scheduled_for, variables')
     .in('status', ['queued', 'retry'])
     .lte('scheduled_for', new Date().toISOString())
     .order('scheduled_for', { ascending: true })
@@ -248,13 +342,14 @@ async function fallbackDispatch(_req: Request): Promise<Response> {
 
   const summary: DispatchSummary = { processed: 0, sent: 0, failed: 0, retried: 0, mode: 'console' };
   const modes = new Set<'resend' | 'console'>();
+  const renderer = new HtmlRenderer(admin);
 
   for (const row of (rows ?? []) as OutboxRow[]) {
     // Mark sending.
     await admin.from('notification_outbox').update({ status: 'sending' }).eq('id', row.id);
 
     summary.processed++;
-    const outcome = await processRow(row);
+    const outcome = await processRow(row, renderer);
     if (outcome.mode === 'resend' || outcome.mode === 'console') modes.add(outcome.mode);
 
     const update: Record<string, unknown> = {

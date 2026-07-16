@@ -2328,6 +2328,7 @@ export type Database = {
           status: string
           subject: string | null
           template_code: string
+          variables: Json | null
         }
         Insert: {
           body: string
@@ -2344,6 +2345,7 @@ export type Database = {
           status?: string
           subject?: string | null
           template_code: string
+          variables?: Json | null
         }
         Update: {
           body?: string
@@ -2360,6 +2362,7 @@ export type Database = {
           status?: string
           subject?: string | null
           template_code?: string
+          variables?: Json | null
         }
         Relationships: [
           {
@@ -6893,7 +6896,7 @@ export type Database = {
         }
         Returns: Json
       }
-      enqueue_notification_v1: {
+      enqueue_notification_v2: {
         Args: {
           p_channel?: string
           p_idempotency_key?: string
@@ -7775,7 +7778,7 @@ export type Database = {
       next_journal_entry_number: { Args: { p_date: string }; Returns: string }
       next_transfer_number: { Args: never; Returns: string }
       no_plan: { Args: never; Returns: boolean[] }
-      notify_birthday_customers_v1: { Args: never; Returns: number }
+      notify_birthday_customers_v2: { Args: never; Returns: number }
       num_failed: { Args: never; Returns: number }
       os_name: { Args: never; Returns: string }
       pass:
@@ -7805,7 +7808,7 @@ export type Database = {
       pg_version: { Args: never; Returns: string }
       pg_version_num: { Args: never; Returns: number }
       pgtap_version: { Args: never; Returns: number }
-      pick_notifications_batch_v1: {
+      pick_notifications_batch_v2: {
         Args: { p_limit?: number }
         Returns: {
           body: string
@@ -7817,6 +7820,7 @@ export type Database = {
           status: string
           subject: string
           template_code: string
+          variables: Json
         }[]
       }
       pickup_tablet_order: {
