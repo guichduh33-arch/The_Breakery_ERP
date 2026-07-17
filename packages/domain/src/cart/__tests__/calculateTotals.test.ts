@@ -343,6 +343,55 @@ describe('calculateTotals — spec example §6 JE balance', () => {
   });
 });
 
+describe('calculateTotals — mode exclusif (Lot 6b, miroir _pb1_split_v1)', () => {
+  it('defaults to inclusive when taxInclusive is omitted (non-régression)', () => {
+    const cart: Cart = {
+      items: [{ id: 'l1', product_id: 'p1', name: 'Americano', unit_price: 35000, quantity: 1, modifiers: [] }],
+      order_type: 'dine_in',
+    };
+    expect(calculateTotals(cart, TAX_RATE)).toEqual(calculateTotals(cart, TAX_RATE, true));
+  });
+
+  it('adds tax on top in exclusive mode: tax = round(total * r), total += tax', () => {
+    const cart: Cart = {
+      items: [{ id: 'l1', product_id: 'p1', name: 'Americano', unit_price: 35000, quantity: 1, modifiers: [] }],
+      order_type: 'dine_in',
+    };
+    const t = calculateTotals(cart, TAX_RATE, false);
+    expect(t.subtotal).toBe(35000);
+    // 35000 * 0.1 = 3500 (part AJOUTÉE, pas extraite)
+    expect(t.tax_amount).toBe(3500);
+    expect(t.total).toBe(38500);
+  });
+
+  it('exclusive: tax computed on the post-discount total, then added', () => {
+    // items 40000, redemption 5000, cart fixed 3000 → base 32000
+    // tax = 32000 * 0.1 = 3200 → total = 35200
+    const cart: Cart = {
+      items: [{ id: 'l1', product_id: 'p1', name: 'Item', unit_price: 40000, quantity: 1, modifiers: [] }],
+      order_type: 'dine_in',
+      loyaltyPointsToRedeem: 500,
+      cartDiscount: { type: 'fixed_amount', value: 3000, amount: 3000, reason: 'manager approved' },
+    };
+    const t = calculateTotals(cart, TAX_RATE, false);
+    expect(t.subtotal).toBe(40000);
+    expect(t.redemption_amount).toBe(5000);
+    expect(t.tax_amount).toBe(3200);
+    expect(t.total).toBe(35200);
+  });
+
+  it('exclusive: empty cart stays all-zero', () => {
+    const cart: Cart = { items: [], order_type: 'dine_in' };
+    expect(calculateTotals(cart, TAX_RATE, false)).toEqual({
+      subtotal: 0,
+      tax_amount: 0,
+      total: 0,
+      item_count: 0,
+      redemption_amount: 0,
+    });
+  });
+});
+
 describe('calculateTotals — promo (session 8)', () => {
   it('subtracts promotionTotal between subtotal and redemption', () => {
     const cart: Cart = {
