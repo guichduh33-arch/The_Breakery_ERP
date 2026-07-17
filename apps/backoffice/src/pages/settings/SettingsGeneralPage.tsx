@@ -11,7 +11,10 @@
 // an Identity/Cash section layout.
 
 import { useEffect, useMemo, useState } from 'react';
-import { Button } from '@breakery/ui';
+import {
+  Button,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
 import { BrandLogoUploader } from '@/features/settings/components/BrandLogoUploader.js';
 import { useSettings, type SettingsCategory } from '@/features/settings/hooks/useSettings.js';
@@ -101,6 +104,12 @@ export default function SettingsGeneralPage() {
   const [draft, setDraft]             = useState<Record<string, DraftValue>>({});
   const [serverError, setServerError] = useState<string | null>(null);
   const [savedAt, setSavedAt]         = useState<string | null>(null);
+  // Lot 6b — the tax-mode switch is a money-path decision: it changes how
+  // retail_price is interpreted (tax-inclusive vs tax-exclusive) WITHOUT
+  // converting any price, and the server (set_setting_v3) refuses it while
+  // open orders exist. Saving a changed `tax_inclusive` goes through an
+  // explicit confirmation dialog first.
+  const [taxSwitchConfirmOpen, setTaxSwitchConfirmOpen] = useState(false);
 
   // Hydrate the draft once all four categories load.
   useEffect(() => {
@@ -145,7 +154,16 @@ export default function SettingsGeneralPage() {
     return <div className="text-text-secondary">You do not have permission to view settings.</div>;
   }
 
-  async function handleSave() {
+  function handleSave() {
+    // Intercept a changed tax mode: confirm before writing anything.
+    if (dirtyKeys.includes('tax_inclusive')) {
+      setTaxSwitchConfirmOpen(true);
+      return;
+    }
+    void performSave();
+  }
+
+  async function performSave() {
     setServerError(null);
     try {
       for (const k of dirtyKeys) {
@@ -193,12 +211,66 @@ export default function SettingsGeneralPage() {
       }
       setSavedAt(new Date().toLocaleTimeString());
     } catch (e) {
-      setServerError(e instanceof Error ? e.message : 'Failed to save settings');
+      // useSetSetting rethrows the PostgrestError as-is — read `message`
+      // structurally rather than via instanceof Error.
+      const msg = (typeof e === 'object' && e !== null && 'message' in e && typeof e.message === 'string')
+        ? e.message
+        : 'Failed to save settings';
+      // set_setting_v3 (Lot 6b) refuses the tax-mode switch while open orders
+      // exist — surface an actionable message instead of the raw error code.
+      setServerError(msg === 'tax_mode_switch_blocked'
+        ? 'Tax mode switch refused — some orders are still open (draft or pending payment). Settle or void them, then save again.'
+        : msg);
     }
   }
 
+  const taxSwitchTargetInclusive = Boolean(draft['tax_inclusive']);
+
   return (
     <div className="space-y-6 max-w-3xl">
+      <Dialog open={taxSwitchConfirmOpen} onOpenChange={setTaxSwitchConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Switch the tax mode?</DialogTitle>
+            <DialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>
+                  You are switching the shop to{' '}
+                  <strong>
+                    {taxSwitchTargetInclusive
+                      ? 'tax-inclusive prices (PB1 embedded in listed prices)'
+                      : 'tax-exclusive prices (PB1 added on top at checkout)'}
+                  </strong>.
+                </p>
+                <p>
+                  Listed prices are <strong>not converted</strong> — this setting only changes
+                  how every price is interpreted. A product listed at Rp 35,000 will charge the
+                  customer {taxSwitchTargetInclusive ? 'Rp 35,000 (tax included)' : 'Rp 35,000 + PB1'}.
+                </p>
+                <p>
+                  The switch is refused while open orders exist (draft or pending payment) —
+                  settle or void them first.
+                </p>
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setTaxSwitchConfirmOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={() => {
+                setTaxSwitchConfirmOpen(false);
+                void performSave();
+              }}
+            >
+              Switch tax mode
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <div>
         <h1 className="font-serif text-3xl">General settings</h1>
         <p className="text-text-secondary text-sm mt-1">

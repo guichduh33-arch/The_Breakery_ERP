@@ -21,6 +21,9 @@ const settingsByCategory: Record<string, Record<string, unknown>> = {
 };
 
 const rpcCalls: { fn: string; args: Record<string, unknown> }[] = [];
+// Lot 6b — set to true to make the next set_setting_v3('tax_inclusive') fail
+// with the server gate error (open orders present).
+let failNextTaxSwitch = false;
 
 vi.mock('@/lib/supabase.js', () => ({
   supabase: {
@@ -34,6 +37,10 @@ vi.mock('@/lib/supabase.js', () => ({
         });
       }
       if (fn === 'set_setting_v3') {
+        if (failNextTaxSwitch && args.p_key === 'tax_inclusive') {
+          failNextTaxSwitch = false;
+          return Promise.resolve({ data: null, error: { message: 'tax_mode_switch_blocked' } });
+        }
         return Promise.resolve({ data: null, error: null });
       }
       return Promise.resolve({ data: null, error: null });
@@ -53,6 +60,7 @@ function renderPage() {
 describe('SettingsGeneralPage', () => {
   beforeEach(() => {
     rpcCalls.length = 0;
+    failNextTaxSwitch = false;
     currentPerms.clear();
     currentPerms.add('settings.read');
     currentPerms.add('settings.update');
@@ -118,6 +126,58 @@ describe('SettingsGeneralPage', () => {
       expect(setCalls[0]?.args.p_value).toBe(0.25);
       expect(setCalls[0]?.args.p_category).toBe('tax');
     });
+  });
+
+  // Lot 6b — the tax-mode switch goes through a confirmation dialog and the
+  // server error tax_mode_switch_blocked surfaces as an actionable message.
+  it('changing tax_inclusive opens the confirmation dialog before any write', async () => {
+    renderPage();
+    await waitFor(() => screen.getByLabelText(/Tax inclusive/i));
+    rpcCalls.length = 0;
+
+    fireEvent.click(screen.getByLabelText(/Tax inclusive/i));
+    fireEvent.click(screen.getByRole('button', { name: /Save 1 change/i }));
+
+    // Dialog shown, nothing written yet.
+    expect(await screen.findByText(/Switch the tax mode\?/i)).toBeInTheDocument();
+    expect(rpcCalls.filter((c) => c.fn === 'set_setting_v3')).toHaveLength(0);
+
+    // Confirming performs the write.
+    fireEvent.click(screen.getByRole('button', { name: /Switch tax mode/i }));
+    await waitFor(() => {
+      const setCalls = rpcCalls.filter((c) => c.fn === 'set_setting_v3');
+      expect(setCalls).toHaveLength(1);
+      expect(setCalls[0]?.args.p_key).toBe('tax_inclusive');
+      expect(setCalls[0]?.args.p_value).toBe(false);
+    });
+  });
+
+  it('cancelling the tax-mode dialog writes nothing', async () => {
+    renderPage();
+    await waitFor(() => screen.getByLabelText(/Tax inclusive/i));
+    rpcCalls.length = 0;
+
+    fireEvent.click(screen.getByLabelText(/Tax inclusive/i));
+    fireEvent.click(screen.getByRole('button', { name: /Save 1 change/i }));
+    expect(await screen.findByText(/Switch the tax mode\?/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /^Cancel$/i }));
+    await waitFor(() => {
+      expect(screen.queryByText(/Switch the tax mode\?/i)).not.toBeInTheDocument();
+    });
+    expect(rpcCalls.filter((c) => c.fn === 'set_setting_v3')).toHaveLength(0);
+  });
+
+  it('maps tax_mode_switch_blocked to an actionable error message', async () => {
+    failNextTaxSwitch = true;
+    renderPage();
+    await waitFor(() => screen.getByLabelText(/Tax inclusive/i));
+
+    fireEvent.click(screen.getByLabelText(/Tax inclusive/i));
+    fireEvent.click(screen.getByRole('button', { name: /Save 1 change/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /Switch tax mode/i }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/orders are still open/i);
   });
 
   it('disables save when settings.update is missing', async () => {
