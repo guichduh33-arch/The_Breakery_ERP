@@ -110,7 +110,7 @@ ON CONFLICT DO NOTHING;
 DO $$
 DECLARE r jsonb;
 BEGIN
-  r := complete_order_with_payment_v17(
+  r := complete_order_with_payment_v18(
     p_session_id := '00000000-0000-0000-0000-00000000e201', p_order_type := 'take_out'::order_type,
     p_items := $i$[{"product_id":"00000000-0000-0000-0000-0000000000b1","quantity":1,"unit_price":30000,"modifiers":[{"group_name":"Milk","option_label":"Oat","price_adjustment":10000}]}]$i$::jsonb,
     p_payment := '{"method":"cash","amount":40000,"cash_received":40000,"change_given":0}'::jsonb);
@@ -119,7 +119,7 @@ END $$;
 DO $$
 DECLARE r jsonb;
 BEGIN
-  r := complete_order_with_payment_v17(
+  r := complete_order_with_payment_v18(
     p_session_id := '00000000-0000-0000-0000-00000000e201', p_order_type := 'take_out'::order_type,
     p_items := $i$[{"product_id":"00000000-0000-0000-0000-0000000000b1","quantity":1,"unit_price":30000,"modifiers":[]}]$i$::jsonb,
     p_payment := '{"method":"cash","amount":30000,"cash_received":30000,"change_given":0}'::jsonb);
@@ -155,7 +155,7 @@ END $$;
 DO $$
 DECLARE r jsonb;
 BEGIN
-  r := pay_existing_order_v11(
+  r := pay_existing_order_v12(
     p_order_id := current_setting('p2.fire1')::uuid,
     p_payment := '{"method":"cash","amount":40000,"cash_received":40000,"change_given":0}'::jsonb,
     p_idempotency_key := '00000000-0000-0000-0000-0000000000a9'::uuid);
@@ -164,7 +164,7 @@ END $$;
 DO $$
 DECLARE r jsonb;
 BEGIN
-  r := pay_existing_order_v11(
+  r := pay_existing_order_v12(
     p_order_id := current_setting('p2.fire1')::uuid,
     p_payment := '{"method":"cash","amount":40000,"cash_received":40000,"change_given":0}'::jsonb,
     p_idempotency_key := '00000000-0000-0000-0000-0000000000a9'::uuid);
@@ -174,7 +174,7 @@ END $$;
 DO $$
 DECLARE r jsonb;
 BEGIN
-  r := complete_order_with_payment_v17(
+  r := complete_order_with_payment_v18(
     p_session_id := '00000000-0000-0000-0000-00000000e201', p_order_type := 'take_out'::order_type,
     p_items := $i$[{"product_id":"00000000-0000-0000-0000-0000000000b3","quantity":1,"unit_price":30000,"modifiers":[{"group_name":"Milk","option_label":"Oat","price_adjustment":10000}]}]$i$::jsonb,
     p_payment := '{"method":"cash","amount":40000,"cash_received":40000,"change_given":0}'::jsonb);
@@ -185,12 +185,12 @@ END $$;
 DO $$
 DECLARE r jsonb; oi uuid;
 BEGIN
-  r := complete_order_with_payment_v17(
+  r := complete_order_with_payment_v18(
     p_session_id := '00000000-0000-0000-0000-00000000e201', p_order_type := 'take_out'::order_type,
     p_items := $i$[{"product_id":"00000000-0000-0000-0000-0000000000b4","quantity":2,"unit_price":30000,"modifiers":[{"group_name":"Milk","option_label":"Oat","price_adjustment":10000}]}]$i$::jsonb,
     p_payment := '{"method":"cash","amount":80000,"cash_received":80000,"change_given":0}'::jsonb);
   SELECT id INTO oi FROM order_items WHERE order_id = (r->>'order_id')::uuid LIMIT 1;
-  PERFORM refund_order_rpc_v4((r->>'order_id')::uuid,
+  PERFORM refund_order_rpc_v5((r->>'order_id')::uuid,
     ('[{"order_item_id":"'||oi||'","qty":1}]')::jsonb,
     '[{"method":"cash","amount":40000}]'::jsonb,
     'modifier refund test', '00000000-0000-0000-0000-000000000004', gen_random_uuid(), '00000000-0000-0000-0000-000000000002');
@@ -200,7 +200,7 @@ END $$;
 DO $$
 DECLARE r jsonb;
 BEGIN
-  r := complete_order_with_payment_v17(
+  r := complete_order_with_payment_v18(
     p_session_id := '00000000-0000-0000-0000-00000000e201', p_order_type := 'take_out'::order_type,
     p_items := $i$[{"product_id":"00000000-0000-0000-0000-0000000000b5","quantity":1,"unit_price":30000,"modifiers":[{"group_name":"Milk","option_label":"Oat","price_adjustment":10000}]}]$i$::jsonb,
     p_payment := '{"method":"cash","amount":40000,"cash_received":40000,"change_given":0}'::jsonb);
@@ -212,7 +212,7 @@ END $$;
 DO $$
 DECLARE r jsonb;
 BEGIN
-  r := complete_order_with_payment_v17(
+  r := complete_order_with_payment_v18(
     p_session_id := '00000000-0000-0000-0000-00000000e201', p_order_type := 'take_out'::order_type,
     p_items := $i$[{"product_id":"00000000-0000-0000-0000-0000000000b6","quantity":1,"unit_price":30000,"modifiers":[{"group_name":"Milk","option_label":"Oat","price_adjustment":0},{"group_name":"Syrup","option_label":"Vanilla","price_adjustment":0}]}]$i$::jsonb,
     p_payment := '{"method":"cash","amount":30000,"cash_received":30000,"change_given":0}'::jsonb);
@@ -242,7 +242,7 @@ SELECT ok(
      FROM order_items WHERE order_id = current_setting('p2.order2')::uuid),
   'T4: no-modifier line -> NULL snapshot');
 SELECT throws_ok($q$
-  SELECT complete_order_with_payment_v17(
+  SELECT complete_order_with_payment_v18(
     p_session_id := '00000000-0000-0000-0000-00000000e201', p_order_type := 'take_out'::order_type,
     p_items := '[{"product_id":"00000000-0000-0000-0000-0000000000b1","quantity":200,"unit_price":30000,"modifiers":[{"group_name":"Milk","option_label":"Oat","price_adjustment":10000}]}]'::jsonb,
     p_payment := '{"method":"cash","amount":8000000,"cash_received":8000000,"change_given":0}'::jsonb)
@@ -309,7 +309,7 @@ SELECT is((SELECT current_stock FROM products WHERE id='00000000-0000-0000-0000-
 
 -- Section G assertions (mid-multi-line oversell rejected before any write -> atomic)
 SELECT throws_ok($q$
-  SELECT complete_order_with_payment_v17(
+  SELECT complete_order_with_payment_v18(
     p_session_id := '00000000-0000-0000-0000-00000000e201', p_order_type := 'take_out'::order_type,
     p_items := '[{"product_id":"00000000-0000-0000-0000-0000000000b7","quantity":1,"unit_price":30000,"modifiers":[{"group_name":"Milk","option_label":"Oat","price_adjustment":0}]},{"product_id":"00000000-0000-0000-0000-0000000000e7","quantity":1,"unit_price":30000,"modifiers":[{"group_name":"Milk","option_label":"Oat","price_adjustment":0}]}]'::jsonb,
     p_payment := '{"method":"cash","amount":60000,"cash_received":60000,"change_given":0}'::jsonb)

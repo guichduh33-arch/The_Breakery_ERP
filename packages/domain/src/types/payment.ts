@@ -18,7 +18,7 @@ export type Tender = PaymentInput;
 
 /**
  * S51 — server-authoritative per-line price breakdown returned by the money-path
- * RPC `complete_order_with_payment_v17` (forwarded verbatim by the process-payment
+ * RPC `complete_order_with_payment_v18` (forwarded verbatim by the process-payment
  * EF). Every money value is server-computed (IDR integers). The receipt and the
  * customer display consume these instead of recomputing client-side.
  */
@@ -41,7 +41,7 @@ export interface PaymentResult {
   tax_amount: number;
   change_given: number | null;
   // S51 — server-resolved subtotal + per-line breakdown (money-path v15). Optional
-  // because the pickup path (pay_existing_order_v11) is not part of the v15 bump and
+  // because the pickup path (pay_existing_order_v12) is not part of the v15 bump and
   // may omit `lines`; consumers fall back to the client cart when absent.
   subtotal?: number;
   lines?: PaymentResultLine[];

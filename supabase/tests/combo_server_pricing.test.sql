@@ -1,6 +1,6 @@
 -- supabase/tests/combo_server_pricing.test.sql
 -- S57 P2.1 (Chantier A, A-D1/A-D2) — server-side combo pricing + validation via
--- _resolve_combo_price_v1, exercised through complete_order_with_payment_v17.
+-- _resolve_combo_price_v1, exercised through complete_order_with_payment_v18.
 --
 -- T1 : surcharge billed in the order total (revenue leak A-D1 closed).
 -- T2 : component outside the combo's groups -> combo_invalid_component.
@@ -50,7 +50,7 @@ INSERT INTO combo_group_options (group_id, component_product_id, surcharge, is_d
 DO $$
 DECLARE r jsonb;
 BEGIN
-  r := complete_order_with_payment_v17(
+  r := complete_order_with_payment_v18(
     p_session_id := current_setting('csp.sess')::uuid,
     p_order_type := 'take_out'::order_type,
     p_items := '[{"product_id":"00000000-0000-0000-0000-0000000cb001","quantity":1,"unit_price":40000,"modifiers":[],
@@ -67,7 +67,7 @@ DO $$
 DECLARE r jsonb; p numeric;
 BEGIN
   p := get_customer_product_price('00000000-0000-0000-0000-0000000fb004', NULL);
-  r := complete_order_with_payment_v17(
+  r := complete_order_with_payment_v18(
     p_session_id := current_setting('csp.sess')::uuid,
     p_order_type := 'take_out'::order_type,
     p_items := ('[{"product_id":"00000000-0000-0000-0000-0000000fb004","quantity":1,"unit_price":'||p||',"modifiers":[]}]')::jsonb,
@@ -84,7 +84,7 @@ SELECT is((SELECT line_total::int FROM order_items WHERE order_id=current_settin
 -- numeric first (value-preserving; a wrong total still fails the assert).
 SELECT is(current_setting('csp.total1')::numeric::int, 48000, 'T1b order total reflects the surcharge-inclusive combo price');
 
-SELECT throws_ok($q$ SELECT complete_order_with_payment_v17(
+SELECT throws_ok($q$ SELECT complete_order_with_payment_v18(
     p_session_id := current_setting('csp.sess')::uuid, p_order_type := 'take_out'::order_type,
     p_items := '[{"product_id":"00000000-0000-0000-0000-0000000cb001","quantity":1,"unit_price":40000,"modifiers":[],
                   "combo_components":[{"product_id":"00000000-0000-0000-0000-0000000fb099","quantity":1},
@@ -92,7 +92,7 @@ SELECT throws_ok($q$ SELECT complete_order_with_payment_v17(
     p_payment := '{"method":"cash","amount":40000,"cash_received":40000,"change_given":0}'::jsonb) $q$,
   '23514', NULL, 'T2 component outside the combo groups -> combo_invalid_component (check_violation)');
 
-SELECT throws_ok($q$ SELECT complete_order_with_payment_v17(
+SELECT throws_ok($q$ SELECT complete_order_with_payment_v18(
     p_session_id := current_setting('csp.sess')::uuid, p_order_type := 'take_out'::order_type,
     p_items := '[{"product_id":"00000000-0000-0000-0000-0000000cb001","quantity":1,"unit_price":40000,"modifiers":[],
                   "combo_components":[{"product_id":"00000000-0000-0000-0000-0000000fb003","quantity":1}]}]'::jsonb,

@@ -167,7 +167,7 @@ function friendlyFatalMessage(code: string, message?: string): string {
       // S57 P2.1 — v17 hard-gates promotion usage caps atomically.
       return 'Le plafond d’utilisation de cette promotion est atteint. Retirez la promotion et réessayez.';
     case 'credit_limit_exceeded':
-      // S62 D4 — attach_tab_customer_v1 gates the retail ardoise against
+      // S62 D4 — attach_tab_customer_v2 gates the retail ardoise against
       // customers.retail_credit_limit.
       return 'Le plafond de crédit ardoise de ce client est dépassé. Réduisez l’encours ou choisissez un autre mode de paiement.';
     case '':

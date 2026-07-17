@@ -218,7 +218,7 @@ serve(async (req) => {
   // S55 T7 — le PIN discount est vérifié ICI (parité void/cancel/refund) et ne
   // descend plus jamais dans un arg SQL de la money-path. Un nonce single-use
   // (discount_authorizations, service-role only) transporte l'autorisation
-  // jusqu'à complete_order_with_payment_v17, qui le consomme atomiquement.
+  // jusqu'à complete_order_with_payment_v18, qui le consomme atomiquement.
   const managerPin = req.headers.get('x-manager-pin');
   const hasDiscount = (typeof body.discount_amount === 'number' && body.discount_amount > 0)
     || body.items.some((i) => typeof (i as { discount_amount?: number }).discount_amount === 'number'
@@ -262,7 +262,7 @@ serve(async (req) => {
     discountAuthId = nonce.id;
   }
 
-  const { data, error } = await userClient.rpc('complete_order_with_payment_v17', {
+  const { data, error } = await userClient.rpc('complete_order_with_payment_v18', {
     p_session_id: body.session_id,
     p_order_type: body.order_type,
     p_items: body.items,

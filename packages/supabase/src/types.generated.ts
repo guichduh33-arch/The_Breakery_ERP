@@ -6255,6 +6255,15 @@ export type Database = {
       _currtest: { Args: never; Returns: number }
       _db_privs: { Args: never; Returns: unknown[] }
       _emit_expense_je: { Args: { p_expense_id: string }; Returns: string }
+      _enqueue_notification_system_v1: {
+        Args: {
+          p_idempotency_key?: string
+          p_recipient: string
+          p_template_code: string
+          p_variables?: Json
+        }
+        Returns: string
+      }
       _extensions: { Args: never; Returns: unknown[] }
       _get: { Args: { "": string }; Returns: number }
       _get_latest: { Args: { "": string }; Returns: number[] }
@@ -6264,6 +6273,14 @@ export type Database = {
       _notif_substitute: {
         Args: { p_source: string; p_vars: Json }
         Returns: string
+      }
+      _pb1_split_v1: {
+        Args: { p_items_total: number }
+        Returns: {
+          subtotal: number
+          tax_amount: number
+          total: number
+        }[]
       }
       _prokind: { Args: { p_oid: unknown }; Returns: unknown }
       _query: { Args: { "": string }; Returns: string }
@@ -6426,7 +6443,7 @@ export type Database = {
         Args: { p_expense_id: string; p_manager_pin: string }
         Returns: Json
       }
-      attach_tab_customer_v1: {
+      attach_tab_customer_v2: {
         Args: { p_customer_id: string; p_order_id: string }
         Returns: Json
       }
@@ -6454,7 +6471,7 @@ export type Database = {
         Args: { p_count_id: string; p_reason: string }
         Returns: Json
       }
-      cancel_order_item_rpc_v3: {
+      cancel_order_item_rpc_v4: {
         Args: {
           p_acting_auth_user_id: string
           p_authorized_by: string
@@ -6574,7 +6591,7 @@ export type Database = {
             }
             Returns: string
           }
-      complete_order_with_payment_v17: {
+      complete_order_with_payment_v18: {
         Args: {
           p_customer_id?: string
           p_discount_amount?: number
@@ -7784,7 +7801,7 @@ export type Database = {
       pass:
         | { Args: never; Returns: string }
         | { Args: { "": string }; Returns: string }
-      pay_existing_order_v11: {
+      pay_existing_order_v12: {
         Args: {
           p_customer_id?: string
           p_discount_amount?: number
@@ -8082,7 +8099,7 @@ export type Database = {
       refresh_mv_pl_monthly: { Args: never; Returns: undefined }
       refresh_mv_sales_daily: { Args: never; Returns: undefined }
       refresh_mv_stock_variance: { Args: never; Returns: undefined }
-      refund_order_rpc_v4: {
+      refund_order_rpc_v5: {
         Args: {
           p_acting_auth_user_id: string
           p_authorized_by: string

@@ -1,7 +1,7 @@
 // apps/backoffice/src/features/customers/hooks/useUpdateRetailCreditLimit.ts
 //
 // Session 62 Task 6 — persists customers.retail_credit_limit (server-gated
-// tab ceiling for retail customers, `attach_tab_customer_v1` P0011). Direct
+// tab ceiling for retail customers, `attach_tab_customer_v2` P0011). Direct
 // table update — mirrors the persistence path of useUpdateCustomer (no RPC
 // involved for this field).
 

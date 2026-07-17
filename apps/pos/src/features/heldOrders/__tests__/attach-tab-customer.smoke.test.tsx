@@ -3,7 +3,7 @@
 //
 // Session 62 — Task 5 — "Ardoise" action on a fired counter order in
 // HeldOrdersModal. Verifies: the button only renders for pending_payment
-// rows, selecting a customer calls attach_tab_customer_v1 with the right
+// rows, selecting a customer calls attach_tab_customer_v2 with the right
 // args, success shows the named-total toast, and a P0011
 // credit_limit_exceeded reply surfaces the plafond breakdown in French
 // (mock rpc — no live DB).
@@ -113,7 +113,7 @@ describe('AttachTabCustomerButton (via HeldOrdersModal)', () => {
     expect(screen.getAllByLabelText(/attach a named customer to this tab/i)).toHaveLength(1);
   });
 
-  it('calls attach_tab_customer_v1 with the selected customer and shows the named-total toast', async () => {
+  it('calls attach_tab_customer_v2 with the selected customer and shows the named-total toast', async () => {
     rpc.mockResolvedValue({
       data: {
         order_id: 'order-5',
@@ -131,7 +131,7 @@ describe('AttachTabCustomerButton (via HeldOrdersModal)', () => {
     fireEvent.click(screen.getByText('pick-jean-test'));
 
     await waitFor(() =>
-      expect(rpc).toHaveBeenCalledWith('attach_tab_customer_v1', {
+      expect(rpc).toHaveBeenCalledWith('attach_tab_customer_v2', {
         p_order_id: 'order-5',
         p_customer_id: 'cust-1',
       }),

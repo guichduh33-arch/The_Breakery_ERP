@@ -27,12 +27,12 @@ const { rpcMock, printStationTicketMock } = vi.hoisted(() => ({
 }));
 
 vi.mock('@/lib/supabase', () => ({
-  supabase: { rpc: (...a: unknown[]) => rpcMock(...a) },
+  supabase: { rpc: (...a: unknown[]): unknown => rpcMock(...a) },
   supabaseUrl: 'http://sb.test',
 }));
 
 vi.mock('@/services/print/printService', () => ({
-  printStationTicket: (...a: unknown[]) => printStationTicketMock(...a),
+  printStationTicket: (...a: unknown[]): unknown => printStationTicketMock(...a),
 }));
 
 const PRINTERS_MAP = new Map([
@@ -261,7 +261,7 @@ describe('useFireToStations persists before printing (P0-3)', () => {
 
   it('printOnly (post-payment auto-fire): RPC is NOT called, items still seal and print', async () => {
     // Post-payment, the order already exists in DB (created by v11 / paid via
-    // pay_existing_order_v11) — persisting here would mint an orphan order
+    // pay_existing_order_v12) — persisting here would mint an orphan order
     // (direct pay) or append against a PAID order (pickup) → P0002.
     printStationTicketMock.mockResolvedValue({ success: true });
 

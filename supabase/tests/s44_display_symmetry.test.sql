@@ -1,5 +1,5 @@
 -- supabase/tests/s44_display_symmetry.test.sql
--- S44 Wave B/D — pay_existing_order_v11 : display_stock parity (P1-C), JE split
+-- S44 Wave B/D — pay_existing_order_v12 : display_stock parity (P1-C), JE split
 -- par méthode (P0-A), change gate / promo recompute / multiplier (P0-C),
 -- replay honnête (OPP-1) + (Wave D) reversal display_stock void.
 -- Exécuter via MCP execute_sql (BEGIN..ROLLBACK). Pattern jwt-claims + GUC S25.
@@ -71,7 +71,7 @@ END $$;
 DO $$ DECLARE v_oid UUID; v_q INT; v_dm INT; v_sm INT;
 BEGIN
   v_oid := pg_temp._mk_order(current_setting('s44.disp')::uuid, 20000, 2, '#SYM1');
-  PERFORM pay_existing_order_v11(p_order_id := v_oid, p_payment := jsonb_build_object('method','cash','amount',40000,'cash_received',40000,'change_given',0));
+  PERFORM pay_existing_order_v12(p_order_id := v_oid, p_payment := jsonb_build_object('method','cash','amount',40000,'cash_received',40000,'change_given',0));
   SELECT quantity::int INTO v_q FROM display_stock WHERE product_id=current_setting('s44.disp')::uuid;
   SELECT count(*) INTO v_dm FROM display_movements WHERE reference_id=v_oid AND movement_type='sale' AND product_id=current_setting('s44.disp')::uuid;
   SELECT count(*) INTO v_sm FROM stock_movements WHERE reference_id=v_oid AND movement_type='sale' AND product_id=current_setting('s44.disp')::uuid;
@@ -83,7 +83,7 @@ SELECT ok(current_setting('s44.t1')::boolean, 'T1 v8 display sale: display_stock
 DO $$ DECLARE v_oid UUID; v_dm INT;
 BEGIN
   v_oid := pg_temp._mk_order(current_setting('s44.norm')::uuid, 35000, 1, '#SYM2');
-  PERFORM pay_existing_order_v11(p_order_id := v_oid, p_payment := jsonb_build_object('method','cash','amount',35000,'cash_received',35000,'change_given',0));
+  PERFORM pay_existing_order_v12(p_order_id := v_oid, p_payment := jsonb_build_object('method','cash','amount',35000,'cash_received',35000,'change_given',0));
   SELECT count(*) INTO v_dm FROM display_movements WHERE reference_id=v_oid;
   PERFORM set_config('s44.t2', (v_dm=0)::text, true);
 END $$;
@@ -93,7 +93,7 @@ SELECT ok(current_setting('s44.t2')::boolean, 'T2 v8 non-display sale: no phanto
 DO $$ DECLARE v_oid UUID; v_qris UUID; v_n INT; v_fb INT;
 BEGIN
   v_oid := pg_temp._mk_order(current_setting('s44.norm')::uuid, 35000, 1, '#SYM3');
-  PERFORM pay_existing_order_v11(p_order_id := v_oid, p_payment := jsonb_build_object('method','qris','amount',35000));
+  PERFORM pay_existing_order_v12(p_order_id := v_oid, p_payment := jsonb_build_object('method','qris','amount',35000));
   v_qris := resolve_mapping_account('SALE_PAYMENT_QRIS');
   SELECT count(*) INTO v_n FROM journal_entry_lines jel JOIN journal_entries je ON je.id=jel.journal_entry_id
     WHERE je.reference_type='sale' AND je.reference_id=v_oid AND jel.account_id=v_qris AND jel.debit=35000;
@@ -107,7 +107,7 @@ SELECT ok(current_setting('s44.t3')::boolean, 'T3 v8 qris sale: JE debits QRIS, 
 DO $$ DECLARE v_oid UUID; v_msg TEXT := '';
 BEGIN
   v_oid := pg_temp._mk_order(current_setting('s44.norm')::uuid, 35000, 1, '#SYM4');
-  BEGIN PERFORM pay_existing_order_v11(p_order_id := v_oid, p_payment := jsonb_build_object('method','cash','amount',35000,'cash_received',50000,'change_given',20000));
+  BEGIN PERFORM pay_existing_order_v12(p_order_id := v_oid, p_payment := jsonb_build_object('method','cash','amount',35000,'cash_received',50000,'change_given',20000));
   EXCEPTION WHEN OTHERS THEN v_msg := SQLERRM; END;
   PERFORM set_config('s44.t4', (v_msg ILIKE '%Invalid change amount%')::text, true);
 END $$;
@@ -117,7 +117,7 @@ SELECT ok(current_setting('s44.t4')::boolean, 'T4 v8 forged cash change rejected
 DO $$ DECLARE v_oid UUID; v_msg TEXT := '';
 BEGIN
   v_oid := pg_temp._mk_order(current_setting('s44.norm')::uuid, 35000, 1, '#SYM5');
-  BEGIN PERFORM pay_existing_order_v11(p_order_id := v_oid,
+  BEGIN PERFORM pay_existing_order_v12(p_order_id := v_oid,
     p_payment := jsonb_build_object('method','cash','amount',25000,'cash_received',25000,'change_given',0),
     p_promotions := jsonb_build_array(jsonb_build_object('promotion_id', current_setting('s44.promo')::uuid, 'amount', 10000)));
   EXCEPTION WHEN OTHERS THEN v_msg := SQLERRM; END;
@@ -129,7 +129,7 @@ SELECT ok(current_setting('s44.t5')::boolean, 'T5 v8 forged promo rejected');
 DO $$ DECLARE v_oid UUID; v_env JSONB; v_pts INT;
 BEGIN
   v_oid := pg_temp._mk_order(current_setting('s44.norm')::uuid, 35000, 1, '#SYM6');
-  v_env := pay_existing_order_v11(p_order_id := v_oid,
+  v_env := pay_existing_order_v12(p_order_id := v_oid,
     p_payment := jsonb_build_object('method','cash','amount',35000,'cash_received',35000,'change_given',0),
     p_customer_id := current_setting('s44.cust')::uuid);
   SELECT loyalty_points_earned INTO v_pts FROM orders WHERE id=v_oid;
@@ -141,9 +141,9 @@ SELECT ok(current_setting('s44.t6')::boolean, 'T6 v8 loyalty multiplier server-s
 DO $$ DECLARE v_oid UUID; v_key UUID := gen_random_uuid(); v_e1 JSONB; v_e2 JSONB;
 BEGIN
   v_oid := pg_temp._mk_order(current_setting('s44.norm')::uuid, 35000, 1, '#SYM7');
-  v_e1 := pay_existing_order_v11(p_order_id := v_oid,
+  v_e1 := pay_existing_order_v12(p_order_id := v_oid,
     p_payment := jsonb_build_object('method','cash','amount',35000,'cash_received',50000,'change_given',15000), p_idempotency_key := v_key);
-  v_e2 := pay_existing_order_v11(p_order_id := v_oid,
+  v_e2 := pay_existing_order_v12(p_order_id := v_oid,
     p_payment := jsonb_build_object('method','cash','amount',35000,'cash_received',50000,'change_given',15000), p_idempotency_key := v_key);
   PERFORM set_config('s44.t7', ((v_e2->>'idempotent_replay')='true' AND (v_e2->>'change_given')::numeric=15000)::text, true);
 END $$;
@@ -153,7 +153,7 @@ SELECT ok(current_setting('s44.t7')::boolean, 'T7 v8 replay envelope honest');
 DO $$ DECLARE v_oid UUID; v_q0 INT; v_q1 INT; v_vm INT;
 BEGIN
   v_oid := pg_temp._mk_order(current_setting('s44.disp')::uuid, 20000, 1, '#SYM8');
-  PERFORM pay_existing_order_v11(p_order_id := v_oid, p_payment := jsonb_build_object('method','cash','amount',20000,'cash_received',20000,'change_given',0));
+  PERFORM pay_existing_order_v12(p_order_id := v_oid, p_payment := jsonb_build_object('method','cash','amount',20000,'cash_received',20000,'change_given',0));
   SELECT quantity::int INTO v_q0 FROM display_stock WHERE product_id=current_setting('s44.disp')::uuid;
   PERFORM void_order_rpc_v4(v_oid, 's44 void test', current_setting('s44.voider')::uuid, current_setting('s44.auth')::uuid);
   SELECT quantity::int INTO v_q1 FROM display_stock WHERE product_id=current_setting('s44.disp')::uuid;

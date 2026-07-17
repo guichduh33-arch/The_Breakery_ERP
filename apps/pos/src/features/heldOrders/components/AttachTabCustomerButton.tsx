@@ -4,7 +4,7 @@
 // HeldOrdersModal. Opens the same customer picker the cart uses
 // (`CustomerAttachModal`, search-only here — this flow expects an existing
 // customer to gate credit against, no quick-create) and attaches it via
-// `attach_tab_customer_v1` (Task 4). Extracted out of HeldOrdersModal.tsx to
+// `attach_tab_customer_v2` (Task 4). Extracted out of HeldOrdersModal.tsx to
 // keep that file under the 500-line budget.
 
 import { CreditCard } from 'lucide-react';

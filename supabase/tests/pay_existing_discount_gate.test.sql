@@ -1,5 +1,5 @@
 -- supabase/tests/pay_existing_discount_gate.test.sql
--- S37 Wave A Task A2 (SEC-01 + POS-01) — pay_existing_order_v11 :
+-- S37 Wave A Task A2 (SEC-01 + POS-01) — pay_existing_order_v12 :
 --   discount gate permission-only (DEV-S37-A2-01) + envelope jsonb.
 -- Exécuter via MCP execute_sql (BEGIN..ROLLBACK).
 BEGIN;
@@ -54,7 +54,7 @@ END $$;
 
 -- T1 : discount > 0 sans authorized_by → P0001
 SELECT throws_ok(
-  $$ SELECT pay_existing_order_v11(
+  $$ SELECT pay_existing_order_v12(
        p_order_id := current_setting('breakery.v_o1')::uuid,
        p_payment := jsonb_build_object('method','cash','amount',17000,'cash_received',17000),
        p_discount_amount := 3000) $$,
@@ -62,7 +62,7 @@ SELECT throws_ok(
 
 -- T2 : authorized_by sans sales.discount → P0003
 SELECT throws_ok(
-  $$ SELECT pay_existing_order_v11(
+  $$ SELECT pay_existing_order_v12(
        p_order_id := current_setting('breakery.v_o2')::uuid,
        p_payment := jsonb_build_object('method','cash','amount',17000,'cash_received',17000),
        p_discount_amount := 3000,
@@ -72,7 +72,7 @@ SELECT throws_ok(
 -- T3 : authorizer valide (permission-only, pas de PIN) → succès + envelope + audit
 DO $$ DECLARE v_res JSONB; v_audit INT;
 BEGIN
-  v_res := pay_existing_order_v11(
+  v_res := pay_existing_order_v12(
     p_order_id := current_setting('breakery.v_o3')::uuid,
     p_payment := jsonb_build_object('method','cash','amount',17000,'cash_received',20000,'change_given',3000),
     p_discount_amount := 3000,
