@@ -24,8 +24,7 @@ interface Response { order_totals: { subtotal: number; tax_amount: number; total
 export function useUpdateOrderItemQty() {
   return useMutation<Response, Error, Args>({
     mutationFn: async (args) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase as any).rpc('update_order_item_qty_v2', {
+      const { data, error } = await supabase.rpc('update_order_item_qty_v2', {
         p_order_item_id:   args.orderItemId,
         p_qty:             args.qty,
         p_idempotency_key: args.idempotencyKey,
@@ -34,7 +33,7 @@ export function useUpdateOrderItemQty() {
         ...(args.wasteReason !== undefined ? { p_waste_reason: args.wasteReason } : {}),
       });
       if (error) throw error;
-      return data as Response;
+      return data as unknown as Response;
     },
   });
 }

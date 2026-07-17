@@ -12,13 +12,12 @@ interface Response { order_totals: { subtotal: number; tax_amount: number; total
 export function useRemoveOrderItem() {
   return useMutation<Response, Error, Args>({
     mutationFn: async (args) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase as any).rpc('remove_order_item_v2', {
+      const { data, error } = await supabase.rpc('remove_order_item_v2', {
         p_order_item_id:   args.orderItemId,
         p_idempotency_key: args.idempotencyKey,
       });
       if (error) throw error;
-      return data as Response;
+      return data as unknown as Response;
     },
   });
 }

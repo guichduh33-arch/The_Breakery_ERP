@@ -5,8 +5,8 @@
 
 export interface OrderEditDiff {
   removes: string[];                                          // order_item_ids
-  updates: Array<{ order_item_id: string; qty: number; is_locked?: boolean }>;
-  adds:    Array<{ product_id: string; qty: number; modifiers?: unknown }>;
+  updates: { order_item_id: string; qty: number; is_locked?: boolean }[];
+  adds:    { product_id: string; qty: number; modifiers?: unknown }[];
 }
 
 export interface OrderItemEdit {
