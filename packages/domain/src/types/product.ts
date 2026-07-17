@@ -11,7 +11,8 @@ export interface Product {
   retail_price: number;
   wholesale_price: number | null;
   product_type: ProductType;
-  tax_inclusive: boolean;
+  // Lot 6b — `tax_inclusive` retiré : le flag par produit est déprécié, le
+  // mode fiscal est global (`business_config.tax_inclusive`, useTaxConfig).
   image_url: string | null;
   current_stock: number;
   is_active: boolean;

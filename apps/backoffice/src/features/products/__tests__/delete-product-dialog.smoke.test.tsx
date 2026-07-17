@@ -54,7 +54,6 @@ const MOCK_PRODUCT: ProductRow = {
   wholesale_price:          null,
   cost_price:               8_000,
   product_type:             'finished',
-  tax_inclusive:            true,
   image_url:                null,
   current_stock:            10,
   min_stock_threshold:      5,

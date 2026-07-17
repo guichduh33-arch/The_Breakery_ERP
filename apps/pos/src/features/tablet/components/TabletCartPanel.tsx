@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type JSX } from 'react';
 import { ChevronRight, ShoppingBag } from 'lucide-react';
 import { cn, Currency } from '@breakery/ui';
 import { calculatePreview } from '@breakery/domain';
-import { useTaxRate } from '@/features/settings/hooks/useTaxRate';
+import { useTaxConfig } from '@/features/settings/hooks/useTaxConfig';
 import { useTabletCartStore } from '@/stores/tabletCartStore';
 import { TabletCheckoutButton } from './TabletCheckoutButton';
 
@@ -15,10 +15,11 @@ export function TabletCartPanel(): JSX.Element {
   const updateQuantity = useTabletCartStore((s) => s.updateQuantity);
   const removeItem = useTabletCartStore((s) => s.removeItem);
 
-  // Tax estimated at the SERVER rate (business_config.tax_rate) — the money-path
-  // RPC charges this same rate. Display-only: the server stays pricing authority.
-  const taxRate = useTaxRate();
-  const preview = calculatePreview({ items, tableNumber, orderType }, taxRate);
+  // Tax estimated at the SERVER config (business_config.tax_rate +
+  // tax_inclusive) — the money-path RPC charges this same split. Display-only:
+  // the server stays pricing authority.
+  const { taxRate, taxInclusive } = useTaxConfig();
+  const preview = calculatePreview({ items, tableNumber, orderType }, taxRate, taxInclusive);
   const taxPercentLabel = `${Math.round(taxRate * 100)}%`;
   const isEmpty = items.length === 0;
   const itemCount = useMemo(() => items.reduce((sum, i) => sum + i.quantity, 0), [items]);
@@ -79,7 +80,7 @@ export function TabletCartPanel(): JSX.Element {
           <ShoppingBag className="h-6 w-6" aria-hidden />
           {countBadge}
           {!isEmpty && (
-            <Currency amount={preview.items_total} className="text-[11px] tabular-nums text-center leading-tight" />
+            <Currency amount={preview.total} className="text-[11px] tabular-nums text-center leading-tight" />
           )}
         </button>
       )}
@@ -173,12 +174,12 @@ export function TabletCartPanel(): JSX.Element {
                 <Currency amount={preview.items_total} />
               </div>
               <div className="flex justify-between text-text-secondary">
-                <span>Tax incl. ({taxPercentLabel})</span>
+                <span>{taxInclusive ? 'Tax incl.' : 'Tax'} ({taxPercentLabel})</span>
                 <Currency amount={preview.tax_amount} />
               </div>
               <div className="flex justify-between pt-2 border-t border-border-subtle">
                 <span className="uppercase tracking-wide font-semibold">Est. Total</span>
-                <Currency amount={preview.items_total} emphasis="gold" className="text-lg" />
+                <Currency amount={preview.total} emphasis="gold" className="text-lg" />
               </div>
             </div>
             {/* Session 59 (17 D1.1) — order-level note (allergy, "no gluten"...). */}

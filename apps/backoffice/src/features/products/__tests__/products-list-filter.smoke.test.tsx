@@ -23,7 +23,7 @@ import { ProductsGrid } from '../components/ProductsGrid.js';
 import { ProductsFilters } from '../components/ProductsFilters.js';
 import type { ProductRow, CategoryOption } from '../types.js';
 
-const mockProducts: ReadonlyArray<ProductRow> = [
+const mockProducts: readonly ProductRow[] = [
   {
     id: 'p1',
     name: 'Croissant',
@@ -41,7 +41,6 @@ const mockProducts: ReadonlyArray<ProductRow> = [
     is_favorite: false,
     image_url: null,
     product_type: 'finished',
-    tax_inclusive: true,
     allergens: [],
     description: null,
     visible_on_pos: true,
@@ -75,7 +74,6 @@ const mockProducts: ReadonlyArray<ProductRow> = [
     is_favorite: false,
     image_url: null,
     product_type: 'finished',
-    tax_inclusive: true,
     allergens: [],
     description: null,
     visible_on_pos: true,
@@ -109,7 +107,6 @@ const mockProducts: ReadonlyArray<ProductRow> = [
     is_favorite: false,
     image_url: null,
     product_type: 'finished',
-    tax_inclusive: true,
     allergens: [],
     description: null,
     visible_on_pos: true,
@@ -128,7 +125,7 @@ const mockProducts: ReadonlyArray<ProductRow> = [
   },
 ];
 
-const categories: ReadonlyArray<CategoryOption> = [];
+const categories: readonly CategoryOption[] = [];
 
 describe('Products list — filter + variant badge [S27c W6.E]', () => {
   it('shows variant badge on variant rows in ProductsGrid', () => {
@@ -150,12 +147,12 @@ describe('Products list — filter + variant badge [S27c W6.E]', () => {
     render(
       <ProductsFilters
         search=""
-        onSearch={() => {}}
+        onSearch={() => { /* noop */ }}
         categoryId="all"
-        onCategory={() => {}}
+        onCategory={() => { /* noop */ }}
         categories={categories}
         view="list"
-        onViewChange={() => {}}
+        onViewChange={() => { /* noop */ }}
         variantFilter="all"
         onVariantFilter={onVariantFilter}
       />,

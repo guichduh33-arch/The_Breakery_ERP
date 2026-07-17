@@ -16,7 +16,6 @@ interface ProductRowDb {
   wholesale_price:  number | null;
   cost_price:       number;
   product_type:     string;
-  tax_inclusive:    boolean;
   image_url:        string | null;
   current_stock:    number;
   min_stock_threshold: number;
@@ -55,7 +54,7 @@ export function useProductDetail(productId: string | null) {
         .select(`
           id, sku, name, category_id,
           retail_price, wholesale_price, cost_price,
-          product_type, tax_inclusive, image_url,
+          product_type, image_url,
           current_stock, min_stock_threshold, unit,
           is_active, is_favorite, allergens,
           description, visible_on_pos, available_for_sale,
@@ -82,8 +81,7 @@ export function useProductDetail(productId: string | null) {
         retail_price:        Number(r.retail_price),
         wholesale_price:     r.wholesale_price === null ? null : Number(r.wholesale_price),
         cost_price:          Number(r.cost_price),
-        product_type:        (r.product_type === 'combo' ? 'combo' : 'finished') as ProductRow['product_type'],
-        tax_inclusive:       r.tax_inclusive,
+        product_type:        (r.product_type === 'combo' ? 'combo' : 'finished'),
         image_url:           r.image_url,
         current_stock:       Number(r.current_stock),
         min_stock_threshold: Number(r.min_stock_threshold),

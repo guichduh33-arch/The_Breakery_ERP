@@ -101,6 +101,26 @@ describe('calculatePreview', () => {
     expect(result.tax_amount).toBe(Math.round(10000000 * 10 / 110));
   });
 
+  it('total mirrors items_total in inclusive mode', () => {
+    const cart: TabletCart = {
+      ...emptyCart,
+      items: [{ id: 'l1', product_id: 'p1', name: 'Americano', unit_price: 35000, quantity: 1, modifiers: [] }],
+    };
+    const result = calculatePreview(cart);
+    expect(result.total).toBe(result.items_total);
+  });
+
+  it('exclusive mode (Lot 6b) adds the tax on top: tax = round_idr(items_total * r)', () => {
+    const cart: TabletCart = {
+      ...emptyCart,
+      items: [{ id: 'l1', product_id: 'p1', name: 'Americano', unit_price: 35000, quantity: 1, modifiers: [] }],
+    };
+    const result = calculatePreview(cart, 0.10, false);
+    expect(result.items_total).toBe(35000);
+    expect(result.tax_amount).toBe(3500);
+    expect(result.total).toBe(38500);
+  });
+
   it('modifier with zero price_adjustment does not change total', () => {
     const cart: TabletCart = {
       ...emptyCart,

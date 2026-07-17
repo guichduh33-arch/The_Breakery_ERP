@@ -89,7 +89,6 @@ const AMERICANO_PRODUCT = {
   retail_price: 35000,
   wholesale_price: null,
   product_type: 'finished' as const,
-  tax_inclusive: true,
   image_url: null,
   current_stock: 10,
   is_active: true,

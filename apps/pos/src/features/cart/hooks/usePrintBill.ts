@@ -3,13 +3,12 @@
 // The bill shows the whole order with totals, pre-payment, re-printable at will.
 import { useMutation } from '@tanstack/react-query';
 import { calculateTotals } from '@breakery/domain';
-import type { PrinterRole } from '@breakery/domain';
 import { printStationTicket } from '@/services/print/printService';
 import type { StationTicketPayload } from '@/services/print/printService';
 import { useCartStore } from '@/stores/cartStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useStationPrinters } from './useStationPrinters';
-import { useTaxRate } from '@/features/settings/hooks/useTaxRate';
+import { useTaxConfig } from '@/features/settings/hooks/useTaxConfig';
 
 
 export interface PrintBillInput {
@@ -22,13 +21,13 @@ export function usePrintBill() {
   const serverName = useAuthStore((s) => s.user?.full_name ?? 'Staff');
   // D1 (S51) — the bill is printed BEFORE the order exists, so there is no v15
   // server response yet. It stays a client-side computation, but at the SERVER
-  // tax rate (useTaxRate) instead of the hardcoded DEFAULT_TAX_RATE.
-  const taxRate = useTaxRate();
+  // tax config (useTaxConfig: rate + inclusive mode, mirror of _pb1_split_v1).
+  const { taxRate, taxInclusive } = useTaxConfig();
 
   return useMutation<void, Error, PrintBillInput>({
     mutationFn: async ({ role }) => {
       // 1. Resolve the target printer from the live map.
-      const printer = printersMap?.get(role as PrinterRole);
+      const printer = printersMap?.get(role);
       if (!printer) {
         throw new Error(`no_${role}_printer`);
       }
@@ -46,8 +45,8 @@ export function usePrintBill() {
           modifiers: item.modifiers.map((m) => m.option_label),
         }));
 
-      // 4. Compute totals (includes tax extraction, discounts, loyalty).
-      const t = calculateTotals(cart, taxRate);
+      // 4. Compute totals (mode-aware PB1 split, discounts, loyalty).
+      const t = calculateTotals(cart, taxRate, taxInclusive);
 
       // 5. Build a human-readable order label.
       //    A real order_number isn't available pre-payment; use table / walk-in
@@ -56,7 +55,7 @@ export function usePrintBill() {
 
       const payload: StationTicketPayload = {
         kind: 'bill',
-        role: role as PrinterRole,
+        role: role,
         order_number: orderLabel,
         ...(tableNumber != null ? { table_number: tableNumber } : {}),
         created_at: new Date().toISOString(),

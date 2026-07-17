@@ -54,7 +54,6 @@ const VISIBLE_PRODUCT = {
   retail_price: 25_000,
   wholesale_price: null,
   product_type: 'finished',
-  tax_inclusive: false,
   image_url: null,
   current_stock: 10,
   is_active: true,

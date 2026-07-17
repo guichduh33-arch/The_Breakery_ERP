@@ -11,7 +11,7 @@ import ProductDetailPage from '@/pages/products/ProductDetailPage.js';
 const MOCK_PRODUCT = {
   id: 'p-1', sku: 'SFG-012', name: 'Aioli Sauce', category_id: 'c-sfg',
   retail_price: 0, wholesale_price: null, cost_price: 60452,
-  product_type: 'finished', tax_inclusive: true, image_url: null,
+  product_type: 'finished', image_url: null,
   current_stock: 0, min_stock_threshold: 5, unit: 'kg',
   is_active: true, is_favorite: false,
   categories: { name: 'SFG' },

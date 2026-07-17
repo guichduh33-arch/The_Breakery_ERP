@@ -1,13 +1,16 @@
--- supabase/tests/update_product_v1.test.sql
--- Session 27 / Phase 3 — pgTAP suite for update_product_v1.
+-- supabase/tests/update_product_v2.test.sql
+-- Session 27 / Phase 3 — pgTAP suite for update_product (v1) ;
+-- Lot 6b — bump v2 (migration 20260717000180) : tax_inclusive retiré de
+-- l'allowlist (flag produit déprécié, mode fiscal global via business_config).
 --
--- Coverage (5 asserts) :
+-- Coverage (6 asserts) :
 --   T1  MANAGER happy path : name + retail_price patch mutates products row
 --   T2  CASHIER (no products.update perm) raises 42501 permission_denied
 --   T3  Unknown product_id raises P0002 product_not_found
 --   T4  cost_price in patch is silently ignored : ignored_fields contains
 --       'cost_price' AND cost_price NOT mutated
 --   T5  audit_logs row emitted with action='product.update' + payload
+--   T6  tax_inclusive in patch is ignored (Lot 6b) AND column NOT mutated
 --
 -- Run via MCP execute_sql wrap BEGIN/ROLLBACK ; pgtap extension is pre-created
 -- on V3 dev.
@@ -16,7 +19,7 @@ BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-SELECT plan(5);
+SELECT plan(6);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures
@@ -68,7 +71,7 @@ BEGIN
   PERFORM set_config('request.jwt.claims',
     jsonb_build_object('sub', v_uid::TEXT, 'role', 'authenticated')::TEXT, true);
 
-  v_result := update_product_v1(
+  v_result := update_product_v2(
     v_pid,
     '{"name": "S27 pgTAP T1 BEV-AMER", "retail_price": 42424}'::JSONB
   );
@@ -112,11 +115,11 @@ BEGIN
 END $$;
 
 SELECT throws_ok(
-  format($q$SELECT update_product_v1(%L::UUID, '{"name":"nope"}'::JSONB)$q$,
+  format($q$SELECT update_product_v2(%L::UUID, '{"name":"nope"}'::JSONB)$q$,
          current_setting('breakery.s27_product_id')),
   '42501',
   'permission_denied',
-  'T2 CASHIER cannot call update_product_v1 (42501 permission_denied)'
+  'T2 CASHIER cannot call update_product_v2 (42501 permission_denied)'
 );
 
 -- =============================================================================
@@ -132,7 +135,7 @@ BEGIN
 END $$;
 
 SELECT throws_ok(
-  $q$SELECT update_product_v1(
+  $q$SELECT update_product_v2(
        '00000000-0000-0000-0000-deadbeefdead'::UUID,
        '{"name":"ghost"}'::JSONB
      )$q$,
@@ -154,7 +157,7 @@ DECLARE
   v_result JSONB;
   v_ignored JSONB;
 BEGIN
-  v_result := update_product_v1(
+  v_result := update_product_v2(
     v_pid,
     '{"name": "S27 pgTAP T4 BEV-AMER", "cost_price": 999999}'::JSONB
   );
@@ -184,6 +187,35 @@ SELECT is(
       AND created_at > now() - interval '1 minute'),
   2,
   'T5 audit_logs has 2 product.update rows from T1+T4'
+);
+
+-- =============================================================================
+-- T6 (Lot 6b) : tax_inclusive est hors allowlist v2 — patch renvoyé en
+-- ignored_fields, colonne non mutée (flag produit déprécié).
+-- =============================================================================
+
+DO $t6$
+DECLARE
+  v_pid UUID := current_setting('breakery.s27_product_id')::UUID;
+  v_baseline BOOLEAN := (SELECT tax_inclusive FROM products
+                          WHERE id = current_setting('breakery.s27_product_id')::UUID);
+  v_result JSONB;
+BEGIN
+  v_result := update_product_v2(
+    v_pid,
+    '{"tax_inclusive": false}'::JSONB
+  );
+  PERFORM set_config('breakery.s27_t6_ignored', (v_result->'ignored_fields')::TEXT, false);
+  PERFORM set_config('breakery.s27_t6_flag',
+    (SELECT tax_inclusive::TEXT FROM products WHERE id = v_pid), false);
+  PERFORM set_config('breakery.s27_t6_baseline', v_baseline::TEXT, false);
+END $t6$;
+
+SELECT ok(
+  current_setting('breakery.s27_t6_ignored')::JSONB ? 'tax_inclusive'
+  AND current_setting('breakery.s27_t6_flag')::BOOLEAN
+      = current_setting('breakery.s27_t6_baseline')::BOOLEAN,
+  'T6 tax_inclusive in patch is reported as ignored AND not mutated (Lot 6b)'
 );
 
 SELECT * FROM finish();

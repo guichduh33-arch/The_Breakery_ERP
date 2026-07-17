@@ -1,5 +1,5 @@
 // apps/backoffice/src/features/products/hooks/useCreateProduct.ts
-// Session 27b — Wraps create_product_v1 RPC.
+// Session 27b — Wraps create_product_v2 RPC.
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
@@ -18,16 +18,15 @@ export interface CreateProductPayload {
 
 export interface CreateProductResult {
   product:        { id: string; sku: string; name: string } & Record<string, unknown>;
-  ignored_fields: ReadonlyArray<string>;
+  ignored_fields: readonly string[];
 }
 
 export function useCreateProduct() {
   const qc = useQueryClient();
   return useMutation<CreateProductResult, Error, CreateProductPayload>({
     mutationFn: async (payload) => {
-      const { data, error } = await supabase.rpc('create_product_v1', {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        p_payload: payload as any,
+      const { data, error } = await supabase.rpc('create_product_v2', {
+        p_payload: payload as unknown as never,
       });
       if (error !== null) throw new Error(error.message);
       const result = data as unknown as CreateProductResult;

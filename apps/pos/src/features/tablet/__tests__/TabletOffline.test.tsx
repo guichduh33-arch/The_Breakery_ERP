@@ -31,7 +31,7 @@ const fetchMock = vi.fn();
 beforeEach(() => {
   fetchMock.mockReset();
   fetchMock.mockResolvedValue({ ok: true, status: 200 });
-  globalThis.fetch = fetchMock as unknown as typeof fetch;
+  globalThis.fetch = fetchMock;
   window.localStorage.clear();
 });
 
@@ -94,7 +94,7 @@ describe('useTabletMenuCache', () => {
     expect(result.current.cachedProducts).toEqual([]);
   });
 
-  it('writer persists a snapshot when both queries land', async () => {
+  it('writer persists a snapshot when both queries land', () => {
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
     // Seed the queries first (no React rendering needed) — then mount the
@@ -105,7 +105,7 @@ describe('useTabletMenuCache', () => {
     qc.setQueryData(['products'], [
       { id: 'p-1', sku: 'SKU', name: 'Espresso', category_id: 'c-1',
         retail_price: 25000, wholesale_price: 25000, product_type: 'simple',
-        tax_inclusive: false, image_url: null, current_stock: 10,
+        image_url: null, current_stock: 10,
         is_active: true, is_favorite: false },
     ]);
 
@@ -114,7 +114,9 @@ describe('useTabletMenuCache', () => {
     // The writer reads existing query data on mount and persists.
     const raw = window.localStorage.getItem('tablet-menu-cache-v1');
     expect(raw).not.toBeNull();
-    const parsed = JSON.parse(raw ?? '{}');
+    const parsed = JSON.parse(raw ?? '{}') as {
+      version: number; products: unknown[]; categories: unknown[];
+    };
     expect(parsed.version).toBe(1);
     expect(parsed.products).toHaveLength(1);
     expect(parsed.categories).toHaveLength(1);

@@ -1,7 +1,7 @@
 // apps/pos/src/features/settings/hooks/useEnabledPaymentMethods.ts
 //
 // S64 (fiche 19 D2.1) — méthodes de paiement activées par le BO.
-// Miroir du pattern useTaxRate : SELECT direct business_config sous le JWT PIN,
+// Miroir du pattern useTaxConfig : SELECT direct business_config sous le JWT PIN,
 // FAIL-OPEN (les 6 méthodes) pendant le chargement ou sur erreur/valeur invalide —
 // une panne de config ne bloque JAMAIS un encaissement.
 // « Effet immédiat » v1 : staleTime 30 s + refetchInterval 60 s + refetch on focus.

@@ -16,7 +16,6 @@ function makeProduct(overrides: Partial<Product> = {}): Product {
     retail_price: 70_000,
     wholesale_price: null,
     product_type: 'finished',
-    tax_inclusive: true,
     image_url: 'https://example.com/bagel.jpg',
     current_stock: 5,
     is_active: true,
@@ -28,7 +27,7 @@ function makeProduct(overrides: Partial<Product> = {}): Product {
 describe('ProductCard', () => {
   it('renders name + price + image', () => {
     const { container } = render(
-      <ProductCard product={makeProduct()} onSelect={() => {}} />,
+      <ProductCard product={makeProduct()} onSelect={() => { /* noop */ }} />,
     );
     expect(screen.getByText('American Bagel')).toBeInTheDocument();
     expect(screen.getByText(/70[,.]?000/)).toBeInTheDocument();
@@ -66,7 +65,7 @@ describe('ProductCard', () => {
       <ProductCard
         product={makeProduct()}
         promoActive
-        onSelect={() => {}}
+        onSelect={() => { /* noop */ }}
       />,
     );
     expect(screen.getByTestId('product-card-promo-badge')).toBeInTheDocument();
@@ -77,7 +76,7 @@ describe('ProductCard', () => {
       <ProductCard
         product={makeProduct({ current_stock: 2 })}
         lowStockLabel="Low stock · 2 left"
-        onSelect={() => {}}
+        onSelect={() => { /* noop */ }}
       />,
     );
     expect(screen.getByText('Low stock · 2 left')).toBeInTheDocument();
@@ -89,7 +88,7 @@ describe('ProductCard', () => {
       <ProductCard
         product={p}
         allergens={['gluten', 'milk']}
-        onSelect={() => {}}
+        onSelect={() => { /* noop */ }}
       />,
     );
     expect(screen.getByTestId(`product-card-allergens-${p.id}`)).toBeInTheDocument();
@@ -100,10 +99,10 @@ describe('ProductCard', () => {
   it('omits the allergen overlay when the allergens array is empty or missing', () => {
     const p = makeProduct();
     const { rerender } = render(
-      <ProductCard product={p} allergens={[]} onSelect={() => {}} />,
+      <ProductCard product={p} allergens={[]} onSelect={() => { /* noop */ }} />,
     );
     expect(screen.queryByTestId(`product-card-allergens-${p.id}`)).toBeNull();
-    rerender(<ProductCard product={p} onSelect={() => {}} />);
+    rerender(<ProductCard product={p} onSelect={() => { /* noop */ }} />);
     expect(screen.queryByTestId(`product-card-allergens-${p.id}`)).toBeNull();
   });
 });

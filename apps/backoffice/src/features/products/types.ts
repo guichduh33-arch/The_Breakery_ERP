@@ -27,8 +27,8 @@ export interface ProductRow extends Product {
    */
   category_type: string | null;
   /** Self-declared allergens (Session 15 Phase 5.C — `products.allergens`). */
-  allergens: ReadonlyArray<AllergenType>;
-  // Session 27 — editable fields surfaced by update_product_v1
+  allergens: readonly AllergenType[];
+  // Session 27 — editable fields surfaced by update_product_v2
   description: string | null;
   visible_on_pos: boolean;
   available_for_sale: boolean;
@@ -50,7 +50,7 @@ export interface ProductRow extends Product {
   variant_sort_order: number;
   // Spec B-1 Ph2 — per-product dispatch override. NULL = inherit from category.
   // Non-null = explicit list ⊆ {kitchen,barista,display} (CHECK on DB side).
-  dispatch_stations: ReadonlyArray<string> | null;
+  dispatch_stations: readonly string[] | null;
 }
 
 export interface CategoryOption {
@@ -65,7 +65,7 @@ export type ProductView = 'grid' | 'list';
 
 export interface ProductsFilterState {
   search:     string;
-  categoryId: string | 'all';
+  categoryId: string; // 'all' = pas de filtre catégorie
   type:       ProductTypeFilter;
   view:       ProductView;
 }

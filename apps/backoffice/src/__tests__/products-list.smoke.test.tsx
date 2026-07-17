@@ -12,7 +12,7 @@ const MOCK_PRODUCTS = [
   {
     id: '1', sku: 'COF-001', name: 'Affogato', category_id: 'c-coffee',
     retail_price: 40000, wholesale_price: null, cost_price: 9661,
-    product_type: 'finished', tax_inclusive: true, image_url: null,
+    product_type: 'finished', image_url: null,
     current_stock: 50, min_stock_threshold: 5, unit: 'pcs',
     is_active: true, is_favorite: true,
     categories: { name: 'Coffee' },
@@ -20,7 +20,7 @@ const MOCK_PRODUCTS = [
   {
     id: '2', sku: 'SFG-012', name: 'Aioli Sauce', category_id: 'c-sfg',
     retail_price: 0, wholesale_price: null, cost_price: 60452,
-    product_type: 'finished', tax_inclusive: true, image_url: null,
+    product_type: 'finished', image_url: null,
     current_stock: 0, min_stock_threshold: 0, unit: 'kg',
     is_active: true, is_favorite: false,
     categories: { name: 'SFG' },

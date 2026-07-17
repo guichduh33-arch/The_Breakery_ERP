@@ -41,8 +41,7 @@ export function ProductTapHandler({ selectedSlug }: ProductTapHandlerProps) {
   const [pending, setPending] = useState<Product | null>(null);
   // Session 27c — variant picker state. The parent product is preserved so
   // we can synthesise the chosen variant into a Product-shaped object that
-  // inherits the parent's category_id (for modifier resolution), image_url,
-  // tax_inclusive, etc.
+  // inherits the parent's category_id (for modifier resolution), image_url, etc.
   const [variantParent, setVariantParent] = useState<Product | null>(null);
   // Session 47 — combo picker state. Combos bypass the modifier pipeline.
   const [comboPending, setComboPending] = useState<Product | null>(null);
@@ -93,7 +92,6 @@ export function ProductTapHandler({ selectedSlug }: ProductTapHandlerProps) {
       retail_price: variant.retail_price,
       wholesale_price: variantParent.wholesale_price,
       product_type: 'finished',
-      tax_inclusive: variantParent.tax_inclusive,
       image_url: variantParent.image_url,
       current_stock: variant.current_stock ?? 0,
       is_active: variant.is_active,

@@ -33,7 +33,6 @@ const PARENT: Product = {
   retail_price: 0,
   wholesale_price: null,
   product_type: 'finished',
-  tax_inclusive: false,
   image_url: null,
   current_stock: 10,
   is_active: true,
@@ -50,7 +49,6 @@ const STANDALONE: Product = {
   retail_price: 35_000,
   wholesale_price: null,
   product_type: 'finished',
-  tax_inclusive: false,
   image_url: null,
   current_stock: 5,
   is_active: true,
@@ -103,7 +101,7 @@ vi.mock('@/stores/cartStore', () => ({
 }));
 
 vi.mock('@/features/customerCategories/hooks/useCustomerProductPrice', () => ({
-  useCustomerProductPrice: () => async () => undefined,
+  useCustomerProductPrice: () => () => Promise.resolve(undefined),
 }));
 
 vi.mock('@/features/products/hooks/useProductModifiers', () => ({
@@ -131,7 +129,7 @@ function wrapper(children: React.ReactNode) {
 describe('POS grid filters variants', () => {
   it('T1: renders parents + standalones, never variants', async () => {
     const { ProductGrid } = await import('../ProductGrid');
-    render(wrapper(<ProductGrid selectedSlug={null} onSelect={() => {}} />));
+    render(wrapper(<ProductGrid selectedSlug={null} onSelect={() => { /* noop */ }} />));
 
     // Parent + standalone both render — the variant row 'Croissant Amande'
     // is *not* in the useProducts mock (parents only by contract), so it

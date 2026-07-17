@@ -22,7 +22,6 @@ const CROISSANT: Product = {
   retail_price: 25000,
   wholesale_price: null,
   product_type: 'finished',
-  tax_inclusive: false,
   image_url: null,
   current_stock: 10,
   is_active: true,
@@ -55,7 +54,7 @@ vi.mock('@/stores/cartStore', () => ({
     selector({ add: addSpy, attachedCustomer: null }),
 }));
 vi.mock('@/features/customerCategories/hooks/useCustomerProductPrice', () => ({
-  useCustomerProductPrice: () => async () => undefined,
+  useCustomerProductPrice: () => () => Promise.resolve(undefined),
 }));
 vi.mock('@/features/products/hooks/useProductModifiers', () => ({
   useProductModifiers: () => ({ data: [], isLoading: false, isSuccess: true }),

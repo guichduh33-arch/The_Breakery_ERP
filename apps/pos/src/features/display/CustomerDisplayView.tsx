@@ -87,9 +87,11 @@ export interface CustomerDisplayLine {
 export interface CustomerDisplayTotals {
   subtotal: number;
   total: number;
-  /** PB1 tax extracted from `total` — rendered as "Tax included". */
+  /** PB1 share of `total` — rendered as "Tax included" / "Tax" (mode-aware). */
   tax_amount?: number;
   item_count: number;
+  /** Global tax mode (Lot 6b) — absent treated as inclusive (legacy senders). */
+  tax_inclusive?: boolean;
 }
 
 export interface CustomerDisplayViewProps {
@@ -311,7 +313,7 @@ function TotalsBand({ totals }: TotalsBandProps): JSX.Element {
             className="text-xs uppercase tracking-widest text-text-muted"
             data-testid="display-tax-included"
           >
-            Tax included ·{' '}
+            {(totals.tax_inclusive ?? true) ? 'Tax included' : 'Tax'} ·{' '}
             <Currency amount={totals.tax_amount} className="text-text-muted" />
           </p>
         )}

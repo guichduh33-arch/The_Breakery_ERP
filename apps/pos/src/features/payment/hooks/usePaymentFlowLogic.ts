@@ -9,7 +9,7 @@
 
 import { useEffect, useState } from 'react';
 import {
-  calculateTotals, earnPointsForCustomer,
+  calculateTotals, splitPb1, earnPointsForCustomer,
   validateTenders, sumTenders, computeRemaining,
   classifyCheckoutError, type RetryClassification,
   type Tender,
@@ -21,7 +21,7 @@ import { usePaymentStore } from '@/stores/paymentStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useCheckout } from './useCheckout';
 import { emitPosEvent } from '@/features/audit/emitPosEvent';
-import { useTaxRate } from '@/features/settings/hooks/useTaxRate';
+import { useTaxConfig } from '@/features/settings/hooks/useTaxConfig';
 import { useEnabledPaymentMethods } from '@/features/settings/hooks/useEnabledPaymentMethods';
 import { usePOSPresets } from '@/features/settings/hooks/usePOSPresets';
 import { useFireToStations } from '@/features/cart/hooks/useFireToStations';
@@ -66,7 +66,7 @@ export function usePaymentFlowLogic() {
   const appliedPromotions = useCartStore((s) => s.appliedPromotions);
   const user = useAuthStore((s) => s.user);
   const checkout = useCheckout();
-  const taxRate = useTaxRate();
+  const { taxRate, taxInclusive } = useTaxConfig();
   const enabledMethods = useEnabledPaymentMethods();
   // S64 — si la méthode draft vient d'être désactivée au BO (ou si le défaut
   // 'cash' posé par open() est désactivé), on désélectionne. paymentStore.
@@ -80,13 +80,16 @@ export function usePaymentFlowLogic() {
   const { presets } = usePOSPresets();
   const quickAmounts = presets.quickPayments;
 
-  // Pre-payment estimate shown in the terminal — uses the SERVER tax rate
-  // (useTaxRate) so it matches what the money-path RPC will charge. The receipt
+  // Pre-payment estimate shown in the terminal — uses the SERVER tax config
+  // (useTaxConfig: rate + inclusive mode) so it matches what the money-path RPC
+  // will charge: pre-tax base (calculateTotals inclusive default) minus promos,
+  // then ONE PB1 split via splitPb1 (mirror of _pb1_split_v1). The receipt
   // (post-payment) consumes the server `tax_amount`/`total` directly below.
   const baseTotals = calculateTotals(cart, taxRate);
   const promotionTotal = appliedPromotions.reduce((s, ap) => s + ap.amount, 0);
-  const total = Math.max(0, baseTotals.total - promotionTotal);
-  const tax_amount = Math.round((total * taxRate) / (1 + taxRate));
+  const { tax_amount, total } = splitPb1(
+    Math.max(0, baseTotals.total - promotionTotal), taxRate, taxInclusive,
+  );
   const totals = { ...baseTotals, total, tax_amount };
 
   const tenderedSum = sumTenders(tenders);

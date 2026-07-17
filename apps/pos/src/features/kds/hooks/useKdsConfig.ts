@@ -8,7 +8,7 @@
 // (useKdsAlarm) and the ready-item auto-archive (KdsBoard) all read the same
 // BO-configurable numbers instead of the hardcoded 300s/600s/5min constants.
 //
-// Mirrors `useTaxRate` / `useEnabledPaymentMethods`: a config read must never
+// Mirrors `useTaxConfig` / `useEnabledPaymentMethods`: a config read must never
 // block the KDS from rendering, so this hook NEVER returns `undefined` —
 // while the query is loading, on a network/permission error, or when a
 // legacy row still has NULL columns, it falls back silently to

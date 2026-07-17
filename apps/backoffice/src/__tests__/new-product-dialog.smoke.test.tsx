@@ -1,6 +1,6 @@
 // apps/backoffice/src/__tests__/new-product-dialog.smoke.test.tsx
 //
-// Session 27b — Smoke test for NewProductDialog (create_product_v1 wiring).
+// Session 27b — Smoke test for NewProductDialog (create_product_v2 wiring).
 
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
@@ -59,7 +59,7 @@ describe('NewProductDialog — create flow (S27b)', () => {
     expect(rpcSpy).not.toHaveBeenCalled();
   });
 
-  it('calls create_product_v1 with normalized payload on valid submit', async () => {
+  it('calls create_product_v2 with normalized payload on valid submit', async () => {
     rpcSpy.mockClear();
     const onCreated = vi.fn();
     const onClose = vi.fn();
@@ -71,14 +71,14 @@ describe('NewProductDialog — create flow (S27b)', () => {
 
     await waitFor(() => {
       expect(rpcSpy).toHaveBeenCalledWith(
-        'create_product_v1',
+        'create_product_v2',
         expect.objectContaining({
           p_payload: expect.objectContaining({
             name: 'Latte',
             sku: 'COF-002',
             category_id: 'c-coffee',
             unit: 'pcs',
-          }),
+          }) as unknown,
         }),
       );
     });
@@ -101,9 +101,9 @@ describe('NewProductDialog — create flow (S27b)', () => {
 
     await waitFor(() => {
       expect(rpcSpy).toHaveBeenCalledWith(
-        'create_product_v1',
+        'create_product_v2',
         expect.objectContaining({
-          p_payload: expect.objectContaining({ is_display_item: true }),
+          p_payload: expect.objectContaining({ is_display_item: true }) as unknown,
         }),
       );
     });

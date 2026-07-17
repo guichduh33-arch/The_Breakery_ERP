@@ -1,7 +1,7 @@
 // supabase/tests/functions/settings-inventory.test.ts
 // Task 1 — live integration tests for the inventory settings category.
 // Verifies: get_settings_by_category_v2('inventory') returns allow_negative_stock
-// and set_setting_v2('allow_negative_stock', ...) round-trips correctly.
+// and set_setting_v3('allow_negative_stock', ...) round-trips correctly.
 //
 // Pattern mirrors adjust-stock.test.ts / users.test.ts: PIN-login → JWT client → rpc().
 
@@ -29,9 +29,9 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory settings — 
     expect(typeof data.settings.allow_negative_stock).toBe('boolean');
   });
 
-  it('round-trips a write through set_setting_v2', async () => {
+  it('round-trips a write through set_setting_v3', async () => {
     const sb = jwtClient(adminToken);
-    const { error: setErr } = await sb.rpc('set_setting_v2', {
+    const { error: setErr } = await sb.rpc('set_setting_v3', {
       p_key: 'allow_negative_stock',
       p_value: false,
       p_category: 'inventory',
@@ -43,7 +43,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory settings — 
     expect(after.settings.allow_negative_stock).toBe(false);
 
     // restore default
-    await sb.rpc('set_setting_v2', {
+    await sb.rpc('set_setting_v3', {
       p_key: 'allow_negative_stock',
       p_value: true,
       p_category: 'inventory',
@@ -52,7 +52,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory settings — 
 
   it('rejects a non-boolean value', async () => {
     const sb = jwtClient(adminToken);
-    const { error } = await sb.rpc('set_setting_v2', {
+    const { error } = await sb.rpc('set_setting_v3', {
       p_key: 'allow_negative_stock',
       p_value: 'yes',
       p_category: 'inventory',

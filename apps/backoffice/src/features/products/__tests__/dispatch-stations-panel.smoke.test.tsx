@@ -33,7 +33,6 @@ const BASE_PRODUCT: ProductRow = {
   is_favorite:               false,
   image_url:                 null,
   product_type:              'finished',
-  tax_inclusive:             true,
   allergens:                 [],
   description:               null,
   visible_on_pos:            true,
@@ -51,7 +50,7 @@ const BASE_PRODUCT: ProductRow = {
   dispatch_stations:         null,
 };
 
-const CATEGORIES: ReadonlyArray<CategoryOption> = [
+const CATEGORIES: readonly CategoryOption[] = [
   { id: 'c1', name: 'Sandwichs', slug: 'sandwichs', is_active: true, sort_order: 1 },
 ];
 
@@ -79,9 +78,9 @@ describe('GeneralPanel — dispatch-station override [Spec B-1 Ph2 / Task 11]', 
   it('T1: null → les 3 cases sont décochées et le label inherit est visible', () => {
     renderPanel(BASE_PRODUCT);
 
-    const kitchenCb = screen.getByTestId('dispatch-station-kitchen') as HTMLInputElement;
-    const baristaCb = screen.getByTestId('dispatch-station-barista') as HTMLInputElement;
-    const displayCb = screen.getByTestId('dispatch-station-display') as HTMLInputElement;
+    const kitchenCb = screen.getByTestId<HTMLInputElement>('dispatch-station-kitchen');
+    const baristaCb = screen.getByTestId<HTMLInputElement>('dispatch-station-barista');
+    const displayCb = screen.getByTestId<HTMLInputElement>('dispatch-station-display');
 
     expect(kitchenCb.checked).toBe(false);
     expect(baristaCb.checked).toBe(false);
@@ -94,7 +93,7 @@ describe('GeneralPanel — dispatch-station override [Spec B-1 Ph2 / Task 11]', 
   it('T2: cocher kitchen → onChange({ dispatch_stations: ["kitchen"] })', () => {
     const { onChange } = renderPanel(BASE_PRODUCT);
 
-    const kitchenCb = screen.getByTestId('dispatch-station-kitchen');
+    const kitchenCb = screen.getByTestId<HTMLInputElement>('dispatch-station-kitchen');
     fireEvent.click(kitchenCb);
 
     expect(onChange).toHaveBeenCalledWith({ dispatch_stations: ['kitchen'] });
@@ -103,8 +102,8 @@ describe('GeneralPanel — dispatch-station override [Spec B-1 Ph2 / Task 11]', 
   it('T3: cocher kitchen puis display → dernier onChange contient les deux stations', async () => {
     const { onChange } = renderPanel(BASE_PRODUCT);
 
-    const kitchenCb = screen.getByTestId('dispatch-station-kitchen');
-    const displayCb = screen.getByTestId('dispatch-station-display');
+    const kitchenCb = screen.getByTestId<HTMLInputElement>('dispatch-station-kitchen');
+    const displayCb = screen.getByTestId<HTMLInputElement>('dispatch-station-display');
 
     fireEvent.click(kitchenCb);
 
@@ -126,8 +125,8 @@ describe('GeneralPanel — dispatch-station override [Spec B-1 Ph2 / Task 11]', 
     const product: ProductRow = { ...BASE_PRODUCT, dispatch_stations: ['kitchen', 'display'] };
     const { onChange } = renderPanel(product);
 
-    const kitchenCb = screen.getByTestId('dispatch-station-kitchen') as HTMLInputElement;
-    const displayCb = screen.getByTestId('dispatch-station-display') as HTMLInputElement;
+    const kitchenCb = screen.getByTestId<HTMLInputElement>('dispatch-station-kitchen');
+    const displayCb = screen.getByTestId<HTMLInputElement>('dispatch-station-display');
 
     // Vérifier l'état initial prépopulé.
     expect(kitchenCb.checked).toBe(true);
@@ -140,7 +139,7 @@ describe('GeneralPanel — dispatch-station override [Spec B-1 Ph2 / Task 11]', 
 
     fireEvent.click(displayCb);
     await waitFor(() => {
-      const lastCall = onChange.mock.calls.at(-1)![0];
+      const lastCall: unknown = onChange.mock.calls.at(-1)![0];
       expect(lastCall).toEqual({ dispatch_stations: null });
     });
   });

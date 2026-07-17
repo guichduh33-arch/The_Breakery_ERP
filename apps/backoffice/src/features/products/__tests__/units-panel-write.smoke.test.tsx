@@ -85,7 +85,6 @@ const PRODUCT: ProductRow = {
   is_favorite:          false,
   image_url:            null,
   product_type:         'finished',
-  tax_inclusive:        true,
   allergens:            [],
   description:          null,
   visible_on_pos:       true,
@@ -169,15 +168,15 @@ describe('UnitsPanel — write-mode [S39 WB1]', () => {
     const [callPayload] = mutateMock.mock.calls[0] as [{ alts: unknown[]; contexts: unknown }];
 
     // REPLACE semantics: ALL alts sent (2 rows)
-    expect((callPayload.alts as unknown[]).length).toBe(2);
+    expect((callPayload.alts).length).toBe(2);
 
     // First alt has the updated factor
-    const firstAlt = (callPayload.alts as Array<{ code: string; factor_to_base: number }>)[0]!;
+    const firstAlt = (callPayload.alts as { code: string; factor_to_base: number }[])[0]!;
     expect(firstAlt.code).toBe('kg');
     expect(firstAlt.factor_to_base).toBe(1.5);
 
     // Second alt unchanged
-    const secondAlt = (callPayload.alts as Array<{ code: string; factor_to_base: number }>)[1]!;
+    const secondAlt = (callPayload.alts as { code: string; factor_to_base: number }[])[1]!;
     expect(secondAlt.code).toBe('g');
     expect(secondAlt.factor_to_base).toBe(0.001);
 

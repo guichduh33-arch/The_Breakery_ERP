@@ -3,8 +3,8 @@
 // S73 Lot 2 — org-level customer-display copy + payment auto-toggles, read
 // straight off business_config (RLS auth_read; kiosk JWT on the paired
 // display). Degrades to the built-in defaults while loading / on error — a
-// config read must never block an encaissement (pattern: useTaxRate).
-// Writes go through set_setting_v2 (settings.update gate, audit-logged).
+// config read must never block an encaissement (pattern: useTaxConfig).
+// Writes go through set_setting_v3 (settings.update gate, audit-logged).
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Json } from '@breakery/supabase';
 import { supabase } from '@/lib/supabase';
@@ -61,7 +61,7 @@ export function useSetOrgDisplaySetting() {
       value: string | boolean;
       category: 'customer_display' | 'printing';
     }) => {
-      const { error } = await supabase.rpc('set_setting_v2', {
+      const { error } = await supabase.rpc('set_setting_v3', {
         p_key: key,
         p_value: value as unknown as Json,
         p_category: category,

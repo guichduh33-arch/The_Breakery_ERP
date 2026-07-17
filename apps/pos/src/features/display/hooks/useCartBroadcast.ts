@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { useCartStore } from '@/stores/cartStore';
-import { calculateTotals, DEFAULT_TAX_RATE } from '@breakery/domain';
-import { roundIdr } from '@breakery/utils';
+import { calculateTotals, splitPb1, DEFAULT_TAX_RATE } from '@breakery/domain';
 export const CART_CHANNEL = 'breakery-cart';
 
 /** S57 C-D4 — how long the customer display shows the "Merci" / change screen
@@ -12,9 +11,10 @@ export const PAYMENT_COMPLETE_DISPLAY_MS = 8_000;
 export interface CartUpdateMessage {
   type: 'cart_update';
   cart: { items: unknown[]; order_type: string };
-  /** `tax_amount` is the PB1 tax extracted from the (post-promo) total at the
-   *  server rate — informational "Tax included" line on the display. */
-  totals: { subtotal: number; total: number; tax_amount: number; item_count: number };
+  /** `tax_amount` is the PB1 share of the (post-promo) total at the server
+   *  config — informational tax line on the display. `tax_inclusive` mirrors
+   *  business_config (Lot 6b) so the display labels it correctly. */
+  totals: { subtotal: number; total: number; tax_amount: number; item_count: number; tax_inclusive: boolean };
   customer: { name: string } | null;
 }
 
@@ -26,8 +26,10 @@ export interface PaymentCompleteMessage {
   /** Change to hand back; null / 0 for non-cash tenders (masked on screen). */
   change: number | null;
   method: string;
-  /** Server-authoritative tax included in `total` (receipt parity). */
+  /** Server-authoritative PB1 share of `total` (receipt parity). */
   tax_amount: number;
+  /** Global tax mode at checkout time — labels the display's tax line (Lot 6b). */
+  tax_inclusive: boolean;
   /** Attached customer's name; null for anonymous sales. */
   customer_name: string | null;
   /** Loyalty points earned on this sale; null when no customer / no points. */
@@ -52,29 +54,38 @@ export function broadcastPaymentComplete(
 /**
  * Mount on the POS side: mirrors the live cart to /display via BroadcastChannel.
  *
- * `taxRate` is the server rate from `useTaxRate()` — passed as a parameter
+ * `taxRate` / `taxInclusive` come from `useTaxConfig()` — passed as parameters
  * (rather than read via useQuery here) so the hook stays mountable without a
- * QueryClient in tests. It only feeds the informational `tax_amount` line;
- * every broadcast money figure is tax-INCLUSIVE and rate-independent.
+ * QueryClient in tests. They feed the informational tax line and its label;
+ * the split mirrors `_pb1_split_v1` on the amount actually due.
  */
-export function useCartBroadcast(taxRate: number = DEFAULT_TAX_RATE): void {
+export function useCartBroadcast(
+  taxRate: number = DEFAULT_TAX_RATE,
+  taxInclusive = true,
+): void {
   useEffect(() => {
     const bc = new BroadcastChannel(CART_CHANNEL);
     const publish = (): void => {
       const { cart, attachedCustomer, appliedPromotions } = useCartStore.getState();
+      // calculateTotals runs inclusive (default) so `total` stays the pre-tax
+      // base whatever the mode; promos are deducted on top (mirror of
+      // usePaymentFlowLogic, source of truth for what the customer owes), then
+      // the PB1 split is applied ONCE via splitPb1.
       const baseTotals = calculateTotals(cart, taxRate);
-      // Mirror the amount-due computation from usePaymentFlowLogic (source of truth
-      // for what the customer owes): deduct applied promotions on top of what
-      // calculateTotals already handles (cartDiscount, line discounts, redemption).
       const promotionTotal = appliedPromotions.reduce((s, ap) => s + ap.amount, 0);
-      const total = Math.max(0, baseTotals.total - promotionTotal);
-      // PB1 — tax is extracted FROM the (promo-adjusted) total, not added on
-      // top; same formula as calculateTotals but on the amount actually due.
-      const tax_amount = roundIdr((total * taxRate) / (1 + taxRate));
+      const { tax_amount, total } = splitPb1(
+        Math.max(0, baseTotals.total - promotionTotal), taxRate, taxInclusive,
+      );
       const msg: CartBroadcastMessage = {
         type: 'cart_update',
         cart: { items: cart.items, order_type: cart.order_type },
-        totals: { subtotal: baseTotals.subtotal, total, tax_amount, item_count: baseTotals.item_count },
+        totals: {
+          subtotal: baseTotals.subtotal,
+          total,
+          tax_amount,
+          item_count: baseTotals.item_count,
+          tax_inclusive: taxInclusive,
+        },
         customer: attachedCustomer ? { name: attachedCustomer.name } : null,
       };
       bc.postMessage(msg);
@@ -85,5 +96,5 @@ export function useCartBroadcast(taxRate: number = DEFAULT_TAX_RATE): void {
       unsub();
       bc.close();
     };
-  }, [taxRate]);
+  }, [taxRate, taxInclusive]);
 }

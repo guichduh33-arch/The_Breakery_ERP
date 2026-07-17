@@ -32,7 +32,7 @@ export function useProducts() {
       const productsRes = await supabase
         .from('products')
         .select(
-          'id, sku, name, category_id, retail_price, wholesale_price, product_type, tax_inclusive, image_url, current_stock, is_active, is_favorite, parent_product_id, track_inventory, categories(dispatch_station), display_stock(quantity)',
+          'id, sku, name, category_id, retail_price, wholesale_price, product_type, image_url, current_stock, is_active, is_favorite, parent_product_id, track_inventory, categories(dispatch_station), display_stock(quantity)',
         )
         .is('parent_product_id', null)
         .eq('is_active', true)

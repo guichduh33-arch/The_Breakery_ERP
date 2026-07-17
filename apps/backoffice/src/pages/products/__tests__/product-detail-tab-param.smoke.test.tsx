@@ -19,7 +19,7 @@ const { MOCK_PRODUCT } = vi.hoisted(() => ({
   MOCK_PRODUCT: {
     id: 'p-tab-test', sku: 'SFG-099', name: 'Tab Param Product', category_id: 'c-sfg',
     retail_price: 25_000, wholesale_price: null, cost_price: 8_000,
-    product_type: 'finished', tax_inclusive: true, image_url: null,
+    product_type: 'finished', image_url: null,
     current_stock: 10, min_stock_threshold: 2, unit: 'pcs',
     is_active: true, is_favorite: false,
     categories: { name: 'SFG' },
