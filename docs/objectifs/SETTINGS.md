@@ -1,8 +1,9 @@
 # Module Settings — Objectif métier
 
-> **Version** : 2026-07-17 (rév. 2) — mise à jour après les lots 1 à 6b
-> (PR #218 → #225) : le chantier §6.A « brancher l'existant + fixes » est soldé,
-> chaque point revérifié dans le code et sur la base V3 dev.
+> **Version** : 2026-07-17 (rév. 3) — chantier §6.A « brancher l'existant +
+> fixes » soldé (lots 1 à 6b, PR #218 → #225) ; §6.C entamé : propagation
+> Realtime des settings livrée (PR #230). Chaque point revérifié dans le code
+> et sur la base V3 dev.
 > Base initiale : audit code V3 du 2026-07-16 (17 routes settings auditées page par
 > page, câblage RPC/tables/consommateurs vérifié).
 > Remplace le brief V2 archivé (~23 pages en 6 groupes, jamais déployé).
@@ -103,10 +104,13 @@ par personne est un réglage mort — c'est le critère n°1 de ce document.
    `tables.update/delete` (floor-plan). Les gates UI correspondent aux RLS.
 4. **Defaults sûrs** — tout consommateur POS a un fallback codé si la clé manque
    (à condition de corriger la divergence printing, cf. §2.4).
-5. **Propagation : temps réel voulu, refetch en attendant** (ADR-006 décision 4).
-   Cible : un changement de réglage se propage en push < 2 s aux appareils
-   connectés. État actuel : refetch TanStack Query — écart à résorber. Le refetch
-   + fallbacks codés reste le filet de sécurité du canal temps réel.
+5. **Propagation temps réel LIVRÉE, refetch en filet** (ADR-006 décision 4,
+   PR #230). Un changement de `business_config` ou `receipt_templates` se propage
+   en push aux surfaces POS (caisse, KDS, customer display, tablette) via
+   postgres_changes + invalidation TanStack (`useSettingsRealtime`, rattrapage
+   des événements manqués à la reconnexion). Le refetch (staleTime) + fallbacks
+   codés restent le filet de sécurité quand le canal tombe. La mesure réelle du
+   < 2 s en exploitation reste à valider à la main.
 
 ---
 
@@ -164,7 +168,7 @@ réalignés, page renommée « Session Timeouts ». Le volet PIN reste au backlo
 
 | Priorité | Réglage | Bénéfice attendu |
 |---|---|---|
-| **Décidé (ADR-006 déc. 4)** | **Propagation Realtime des settings** | Un changement de réglage se propage en push < 2 s aux caisses/KDS/displays, refetch en fallback. |
+| ✅ **Livré (PR #230, 2026-07-17)** | **Propagation Realtime des settings** | Push < 2 s aux caisses/KDS/displays (migration `_181` : publication `business_config` + `receipt_templates` ; hook `useSettingsRealtime`), refetch en fallback (cf. invariant §3.5). Mesure réelle du < 2 s à valider en exploitation. |
 | **Décidé (ADR-006 déc. 5)** | **LAN Network / Network Devices + hub local** | Enregistrement et heartbeat de chaque appareil, système hub + communication locale garantissant la **continuité des échanges entre appareils en cas de coupure internet**. Chantier d'architecture transverse (POS/KDS/displays) — spec dédiée requise avant dev. |
 | **Décidé (ADR-006 déc. 8)** | **Hub réorganisé en sous-menus par feature** | Chaque fonctionnalité a sa catégorie de réglages et sa page, groupées en sous-menus (esprit des groupes V2 appliqué à la surface réelle V3). Navigation seulement — le stockage reste le socle des décisions 1-2. |
 | **Décidé (ADR-006 déc. 9)** | **Business hours** | Marquer les ventes hors-horaire dans les rapports d'audit (signal fraude). |
