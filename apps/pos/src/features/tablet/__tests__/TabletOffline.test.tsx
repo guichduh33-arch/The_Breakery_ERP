@@ -105,7 +105,7 @@ describe('useTabletMenuCache', () => {
     qc.setQueryData(['products'], [
       { id: 'p-1', sku: 'SKU', name: 'Espresso', category_id: 'c-1',
         retail_price: 25000, wholesale_price: 25000, product_type: 'simple',
-        tax_inclusive: false, image_url: null, current_stock: 10,
+        image_url: null, current_stock: 10,
         is_active: true, is_favorite: false },
     ]);
 

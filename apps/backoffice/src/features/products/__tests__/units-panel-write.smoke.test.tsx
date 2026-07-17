@@ -85,7 +85,6 @@ const PRODUCT: ProductRow = {
   is_favorite:          false,
   image_url:            null,
   product_type:         'finished',
-  tax_inclusive:        true,
   allergens:            [],
   description:          null,
   visible_on_pos:       true,

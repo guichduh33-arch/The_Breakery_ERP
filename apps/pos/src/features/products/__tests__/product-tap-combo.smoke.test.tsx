@@ -33,7 +33,6 @@ const mocks = vi.hoisted(() => {
     retail_price: 75000,
     wholesale_price: null as null,
     product_type: 'combo' as const,
-    tax_inclusive: true,
     image_url: null as null,
     current_stock: 99,
     is_active: true,

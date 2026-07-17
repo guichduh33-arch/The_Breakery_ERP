@@ -19,7 +19,6 @@ const MOCK_PRODUCT = {
   wholesale_price: null,
   cost_price: 9661,
   product_type: 'finished',
-  tax_inclusive: true,
   image_url: null,
   current_stock: 50,
   min_stock_threshold: 5,

@@ -16,7 +16,6 @@ function makeProduct(overrides: Partial<Product> = {}): Product {
     retail_price: 70_000,
     wholesale_price: null,
     product_type: 'finished',
-    tax_inclusive: true,
     image_url: 'https://example.com/bagel.jpg',
     current_stock: 5,
     is_active: true,
