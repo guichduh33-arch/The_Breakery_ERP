@@ -12,7 +12,7 @@
     "build": "turbo run build",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
-    "test": "turbo run test --concurrency=1",
+    "test": "turbo run test",
     "test:watch": "turbo run test:watch",
     "e2e": "playwright test",
     "e2e:list": "playwright test --list",

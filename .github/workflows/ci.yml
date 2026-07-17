@@ -6,12 +6,23 @@ on:
   pull_request:
     branches: [master, main]
 
+# CI-speedup — each new push to a PR cancels the obsolete run of the same
+# ref; master pushes are never cancelled (each one must produce its full
+# verdict + artifacts).
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   lint-typecheck-test-build:
     runs-on: ubuntu-latest
     # 25 (was 15): the suite runs 11-13 min on a healthy runner, so a slow
     # runner day cancelled green runs mid-Build/mid-tests (2× on 2026-07-11).
     timeout-minutes: 25
+    env:
+      # CI-speedup — explicit turbo cache location (matches the 2.x default)
+      # so the "Turbo cache" actions/cache step always captures the artifacts.
+      TURBO_CACHE_DIR: .turbo/cache
     steps:
       - uses: actions/checkout@v4
         with:
@@ -27,6 +38,19 @@ jobs:
           cache: 'pnpm'
 
       - run: pnpm install --frozen-lockfile
+
+      # CI-speedup — persist the turbo local cache across runs. Task outputs
+      # are declared in turbo.json and the VITE_* stubs below are stable, so
+      # unchanged packages replay from cache instead of re-running.
+      # `restore-keys` falls back to the most recent cache from any branch;
+      # the sha-suffixed key stores this run's updated cache.
+      - name: Turbo cache
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            turbo-${{ runner.os }}-
 
       # W1-C4 — Session 13 D10/Audit R14 guard:
       # has_permission() was locked as a pure-lookup function (signature
@@ -148,8 +172,16 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
-      - name: Unit tests
-        run: pnpm test
+      # CI-speedup — on PRs, only the packages affected since the merge-base
+      # with the target branch run (plus their dependents, via the `...`
+      # prefix). The FULL suite still runs on every push to master (step
+      # below) and stays the nightly's responsibility — no coverage is lost,
+      # it is deferred to post-merge.
+      - name: Unit tests (PR — affected packages only)
+        if: github.base_ref != ''
+        run: |
+          git fetch origin "${{ github.base_ref }}" --depth=1 || true
+          pnpm exec turbo run test --filter="...[origin/${{ github.base_ref }}]"
         env:
           # Tests qui requièrent la stack Supabase ne sont pas lancés ici
           # (ils sont taggés via test config et exécutés séparément).
@@ -161,6 +193,18 @@ jobs:
           # use `Date#getHours()` / `getDay()` (local time). CI runners default
           # to UTC, which shifts Mon 18:30 +07 into Mon 11:30 UTC and breaks
           # Happy Hour window tests. Pin the runner TZ to match prod.
+          TZ: Asia/Jakarta
+
+      - name: Unit tests (full suite — push to master)
+        if: github.base_ref == ''
+        run: pnpm test
+        env:
+          # Tests qui requièrent la stack Supabase ne sont pas lancés ici
+          # (ils sont taggés via test config et exécutés séparément).
+          VITE_SUPABASE_URL: http://stub-not-used.local
+          VITE_SUPABASE_ANON_KEY: stub
+          VITE_SENTRY_DSN_POS: ''
+          VITE_SENTRY_DSN_BACKOFFICE: ''
           TZ: Asia/Jakarta
 
       - name: Build

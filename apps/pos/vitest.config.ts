@@ -16,8 +16,12 @@ export default defineConfig({
     // pulled into ActiveOrderPanel, PaymentTerminal, useCheckout). Under heavy
     // parallel load the larger collect/setup cost pushes some smoke tests past
     // the 5s default. Bump globally; assertion-level timeouts are unaffected.
-    testTimeout: 15000,
-    hookTimeout: 15000,
+    // CI-speedup — 30s (was 15s): turbo now runs the 8 packages' suites in
+    // parallel, and the CPU contention 3-4×es a slow jsdom test —
+    // void-idempotency-header.smoke (4.5s alone) overran 15s under full
+    // parallel load. Timeout headroom only, no coverage change.
+    testTimeout: 30000,
+    hookTimeout: 30000,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],
