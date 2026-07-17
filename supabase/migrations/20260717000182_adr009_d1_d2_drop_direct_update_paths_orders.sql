@@ -1,4 +1,4 @@
--- 20260717000181_adr009_d1_d2_drop_direct_update_paths_orders.sql
+-- 20260717000182_adr009_d1_d2_drop_direct_update_paths_orders.sql
 -- ADR-009 déc. 1 & 2 — fermeture des deux chemins d'écriture directe hors RPC
 -- sur orders / order_items (audit Orders 2026-07-17).
 --
