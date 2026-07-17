@@ -24,7 +24,7 @@ export const BASKET_ANALYSIS_QK = ['reports', 'basket-analysis'] as const;
 export function useBasketAnalysis(
   dateStart: string,
   dateEnd:   string,
-  topN:      number = 10,
+  topN       = 10,
 ) {
   return useQuery<BasketPair[]>({
     queryKey: [...BASKET_ANALYSIS_QK, dateStart, dateEnd, topN] as const,

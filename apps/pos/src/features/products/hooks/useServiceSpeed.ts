@@ -73,7 +73,7 @@ function todayLocalISO(): string {
  *                  current user lacks `reports.read` ; the query stays cold
  *                  and no network roundtrip is made.
  */
-export function useServiceSpeed(enabled: boolean = true) {
+export function useServiceSpeed(enabled = true) {
   return useQuery<ServiceSpeedSnapshot>({
     queryKey: ['service-speed', todayLocalISO(), new Date().getHours()],
     queryFn: async (): Promise<ServiceSpeedSnapshot> => {

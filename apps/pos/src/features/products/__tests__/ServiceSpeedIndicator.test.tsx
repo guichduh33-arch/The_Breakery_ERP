@@ -22,8 +22,8 @@ const { rpcMock, fromMock, authState } = vi.hoisted(() => ({
 
 vi.mock('@/lib/supabase', () => ({
   supabase: {
-    rpc: (...args: unknown[]) => rpcMock(...args),
-    from: (table: string) => fromMock(table),
+    rpc: (...args: unknown[]) => rpcMock(...args) as unknown,
+    from: (table: string) => fromMock(table) as unknown,
   },
 }));
 
@@ -88,7 +88,7 @@ describe('ServiceSpeedIndicator', () => {
       expect(screen.getByTestId('service-speed-indicator').getAttribute('data-tone')).toBe('idle');
     });
     expect(rpcMock).toHaveBeenCalledWith('get_sales_by_hour_v3', expect.objectContaining({
-      p_date: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+      p_date: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/) as unknown,
     }));
     void hour;
   });
