@@ -10,6 +10,13 @@
 //
 // addedMeta: preview-enrichment only (name + price for pending adds).
 // The diff shape and orchestrator are not aware of addedMeta.
+//
+// ADR-010 — lignes verrouillées (is_locked, KOT émis) : 🔒, pas de bouton ×
+// (le retrait passe par le flux cancel POS, perte obligatoire), la quantité ne
+// peut que BAISSER. Une baisse verrouillée pendante exige le PIN manager + une
+// raison de perte (section dédiée avant Apply) — l'orchestrateur mint un nonce
+// single-use par ligne (verify-manager-pin, scope 'order_item_edit') et
+// update_order_item_qty_v2 déduit la perte sur le delta.
 
 import { useState, useMemo } from 'react';
 import { CenterModal } from '@breakery/ui';
@@ -31,9 +38,12 @@ interface PreviewLine {
   product_id:    string;
   name_snapshot: string;
   qty:           number;
+  /** ADR-010 — original qty (locked lines can only decrease below it). */
+  originalQty:   number;
   unit_price:    number;
   line_total:    number;
   isPending?:    boolean;
+  isLocked?:     boolean;
 }
 
 const EMPTY_DIFF: OrderEditDiff = { removes: [], updates: [], adds: [] };
@@ -43,6 +53,9 @@ export function EditOrderItemsModal({ open, onClose, orderId, orderNumber, curre
   // Preview-only metadata for pending adds (name / price from the picker).
   // Not sent to the server — the RPC resolves the real price from the DB.
   const [addedMeta, setAddedMeta] = useState<Record<string, { name: string; retail_price: number }>>({});
+  // ADR-010 — manager authorization context for pending locked decreases.
+  const [managerPin, setManagerPin] = useState('');
+  const [wasteReason, setWasteReason] = useState('');
   const m = useEditOrderItems();
 
   const previewLines = useMemo<PreviewLine[]>(() => {
@@ -56,8 +69,10 @@ export function EditOrderItemsModal({ open, onClose, orderId, orderNumber, curre
           product_id:    it.product_id,
           name_snapshot: it.name_snapshot,
           qty,
+          originalQty:   it.qty,
           unit_price:    it.unit_price,
           line_total:    it.unit_price * qty,
+          isLocked:      it.is_locked,
         };
       });
     const pending: PreviewLine[] = diff.adds.map((a, idx) => {
@@ -68,6 +83,7 @@ export function EditOrderItemsModal({ open, onClose, orderId, orderNumber, curre
         product_id:    a.product_id,
         name_snapshot: meta?.name ?? '(new item)',
         qty:           a.qty,
+        originalQty:   a.qty,
         unit_price,
         line_total:    unit_price * a.qty,
         isPending:     true,
@@ -78,15 +94,23 @@ export function EditOrderItemsModal({ open, onClose, orderId, orderNumber, curre
 
   const previewSubtotal = previewLines.reduce((s, l) => s + l.line_total, 0);
   const pendingCount = diff.removes.length + diff.updates.length + diff.adds.length;
+  const hasLockedUpdate = diff.updates.some((u) => u.is_locked);
+  const lockedAuthMissing = hasLockedUpdate && (managerPin.trim().length < 6 || wasteReason.trim().length < 3);
 
   const resetState = () => {
     setDiff(EMPTY_DIFF);
     setAddedMeta({});
+    setManagerPin('');
+    setWasteReason('');
   };
 
   const handleApply = async () => {
     try {
-      await m.mutateAsync({ orderId, diff });
+      await m.mutateAsync({
+        orderId,
+        diff,
+        ...(hasLockedUpdate ? { lockedAuth: { managerPin: managerPin.trim(), wasteReason: wasteReason.trim() } } : {}),
+      });
       resetState();
       onClose();
     } catch {
@@ -118,21 +142,24 @@ export function EditOrderItemsModal({ open, onClose, orderId, orderNumber, curre
 
   // For existing items: write to diff.updates.
   // For pending adds: write to diff.adds qty.
-  const handleUpdateQty = (lineId: string, productId: string, qty: number, isPending: boolean) => {
-    if (isPending) {
+  // ADR-010 — locked lines: decrease only (increase = add a new line); a value
+  // back at the original qty simply drops the pending update.
+  const handleUpdateQty = (line: PreviewLine, qty: number) => {
+    if (line.isPending) {
       setDiff((d) => ({
         ...d,
-        adds: d.adds.map((a) => a.product_id === productId ? { ...a, qty } : a),
+        adds: d.adds.map((a) => a.product_id === line.product_id ? { ...a, qty } : a),
       }));
-    } else {
-      setDiff((d) => ({
-        ...d,
-        updates: [
-          ...d.updates.filter((u) => u.order_item_id !== lineId),
-          { order_item_id: lineId, qty },
-        ],
-      }));
+      return;
     }
+    const clamped = line.isLocked ? Math.min(qty, line.originalQty) : qty;
+    setDiff((d) => ({
+      ...d,
+      updates: [
+        ...d.updates.filter((u) => u.order_item_id !== line.id),
+        ...(clamped === line.originalQty ? [] : [{ order_item_id: line.id, qty: clamped, ...(line.isLocked ? { is_locked: true } : {}) }]),
+      ],
+    }));
   };
 
   return (
@@ -158,13 +185,19 @@ export function EditOrderItemsModal({ open, onClose, orderId, orderNumber, curre
                   <span className="flex-1">
                     {l.name_snapshot}
                     {l.isPending && <span className="ml-1 text-xs text-info">(new)</span>}
+                    {l.isLocked && (
+                      <span className="ml-1 text-xs text-muted-foreground" title="Sent to kitchen — decrease only, removal via POS cancel flow">
+                        🔒
+                      </span>
+                    )}
                   </span>
                   <input
                     type="number"
                     min={1}
+                    {...(l.isLocked ? { max: l.originalQty } : {})}
                     value={l.qty}
                     onChange={(e) =>
-                      handleUpdateQty(l.id, l.product_id, Math.max(1, Number(e.target.value) || 1), !!l.isPending)
+                      handleUpdateQty(l, Math.max(1, Number(e.target.value) || 1))
                     }
                     className="w-16 border rounded px-1 py-0.5 text-sm"
                     data-testid={`qty-${l.id}`}
@@ -180,6 +213,14 @@ export function EditOrderItemsModal({ open, onClose, orderId, orderNumber, curre
                     >
                       ×
                     </button>
+                  ) : l.isLocked ? (
+                    <span
+                      className="text-xs text-muted-foreground"
+                      data-testid={`locked-${l.id}`}
+                      title="Removal forbidden on a kitchen-sent line — use the POS cancel flow (mandatory waste declaration)"
+                    >
+                      —
+                    </span>
                   ) : (
                     <button
                       type="button"
@@ -200,6 +241,36 @@ export function EditOrderItemsModal({ open, onClose, orderId, orderNumber, curre
             <p className="text-xs text-muted-foreground">Tax + total recalculated server-side at apply.</p>
           </div>
         </div>
+        {hasLockedUpdate && (
+          <div className="mt-3 border rounded p-3 space-y-2" data-testid="locked-auth-section">
+            <p className="text-sm font-medium">
+              🔒 Locked line decrease — manager authorization &amp; mandatory waste (ADR-010)
+            </p>
+            <div className="flex gap-2">
+              <input
+                type="password"
+                inputMode="numeric"
+                maxLength={6}
+                placeholder="Manager PIN (6 digits)"
+                value={managerPin}
+                onChange={(e) => setManagerPin(e.target.value.replace(/\D/g, ''))}
+                className="border rounded px-2 py-1 text-sm w-44"
+                data-testid="locked-manager-pin"
+              />
+              <input
+                type="text"
+                placeholder="Waste reason (e.g. plat raté, client parti…)"
+                value={wasteReason}
+                onChange={(e) => setWasteReason(e.target.value)}
+                className="border rounded px-2 py-1 text-sm flex-1"
+                data-testid="locked-waste-reason"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              The removed delta is declared as waste and deducted through the recipe-aware waste circuit.
+            </p>
+          </div>
+        )}
         {m.error && <p className="mt-3 text-sm text-danger">{m.error.message}</p>}
         <div className="mt-4 flex items-center justify-between border-t pt-3">
           <span className="text-sm text-muted-foreground">{pendingCount} changes pending</span>
@@ -207,7 +278,7 @@ export function EditOrderItemsModal({ open, onClose, orderId, orderNumber, curre
             <button onClick={handleCancel} className="px-4 py-2 text-sm">Cancel</button>
             <button
               onClick={() => { void handleApply(); }}
-              disabled={pendingCount === 0 || m.isPending}
+              disabled={pendingCount === 0 || m.isPending || lockedAuthMissing}
               className="px-4 py-2 text-sm bg-info text-white rounded disabled:opacity-50"
               data-testid="apply-changes"
             >

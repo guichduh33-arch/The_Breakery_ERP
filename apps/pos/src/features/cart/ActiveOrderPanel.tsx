@@ -291,15 +291,18 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
         <CancelItemModal
           open={Boolean(cancelTarget)}
           itemName={cancelTarget.name}
+          itemQty={cancelTarget.quantity}
+          locked={lockedIds.includes(cancelTarget.id)}
           onClose={() => setCancelTarget(null)}
           isPending={cancelMutation.isPending}
-          onSubmit={async ({ reason, managerPin, idempotencyKey }) => {
+          onSubmit={async ({ reason, managerPin, idempotencyKey, wasteQty }) => {
             try {
               await cancelMutation.mutateAsync({
                 orderItemId: cancelTarget.id,
                 reason,
                 managerPin,
                 idempotencyKey,
+                ...(wasteQty !== undefined ? { wasteQty } : {}),
               });
               toast.success(`${cancelTarget.name} cancelled`);
             } catch (err: unknown) {

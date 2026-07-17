@@ -7,13 +7,17 @@
 //     old cancel_order_item_rpc was directly callable via PostgREST, bypassing
 //     this PIN check.
 // S55 — idempotency: reads `x-idempotency-key` header, relays to the cancel RPC.
-// ADR-009 déc. 3 — calls cancel_order_item_rpc_v5: cancel is allowed on draft
-// AND pending_payment orders (fired-but-unpaid counter orders), item not served.
+// ADR-009 déc. 3 — cancel is allowed on draft AND pending_payment orders
+// (fired-but-unpaid counter orders), item not served.
+// ADR-010 D4 — calls cancel_order_item_rpc_v6: cancelling a kitchen-sent item
+// (is_locked = true) requires a waste declaration — `waste_qty` (0..line qty,
+// authorizer's judgment) travels in the body and is forwarded as p_waste_qty;
+// the RPC refuses a locked cancel without it. Unlocked items: ignored.
 //
 // Headers:
 //   x-manager-pin:     string (6 digits) — REQUIRED
 //   x-idempotency-key: UUID v4 — OPTIONAL (enables replay-safe retries)
-// Body: { order_item_id: UUID, reason: string (>=3) }
+// Body: { order_item_id: UUID, reason: string (>=3), waste_qty?: number (>=0) }
 
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { handleCors, jsonResponse } from '../_shared/cors.ts';
@@ -29,6 +33,8 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
 interface CancelItemPayload {
   order_item_id: string;
   reason: string;
+  /** ADR-010 D4 — mandatory when the item is kitchen-sent (is_locked). */
+  waste_qty?: number;
 }
 
 serve(async (req) => {
@@ -87,6 +93,10 @@ serve(async (req) => {
   if (!body.reason || body.reason.trim().length < 3) {
     return jsonResponse({ error: 'reason_too_short' }, 400);
   }
+  if (body.waste_qty !== undefined
+      && (typeof body.waste_qty !== 'number' || !Number.isFinite(body.waste_qty) || body.waste_qty < 0)) {
+    return jsonResponse({ error: 'invalid_waste_qty' }, 400);
+  }
 
   // SEC-07 — check fail bucket before attempting PIN verification.
   if (await isManagerPinBlocked(ip)) {
@@ -106,12 +116,13 @@ serve(async (req) => {
 
   // service_role admin client — the only role allowed to EXECUTE the v3 RPC.
   const admin = getAdminClient();
-  const { data, error } = await admin.rpc('cancel_order_item_rpc_v5', {
+  const { data, error } = await admin.rpc('cancel_order_item_rpc_v6', {
     p_order_item_id:       body.order_item_id,
     p_reason:              body.reason,
     p_authorized_by:       mgr.manager_profile_id,
     p_acting_auth_user_id: actingAuthUserId,
     p_idempotency_key:     idempotencyKey,
+    p_waste_qty:           body.waste_qty ?? null,
   });
 
   if (error) {

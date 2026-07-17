@@ -17,6 +17,12 @@ interface CancelItemArgs {
   managerPin: string;
   /** S55 — stable per-modal-open UUID for HTTP retry-safe idempotency. */
   idempotencyKey?: string;
+  /**
+   * ADR-010 D4 — mandatory waste declaration for a kitchen-sent (locked) item:
+   * 0..line qty, authorizer's judgment (0 = nothing was produced). The RPC
+   * refuses a locked cancel without it; ignored on unlocked items.
+   */
+  wasteQty?: number;
 }
 
 interface CancelItemResponse {
@@ -28,6 +34,8 @@ interface CancelItemResponse {
   new_subtotal: number;
   new_tax_amount: number;
   new_total: number;
+  /** ADR-010 D4 — echoed waste declaration (null on unlocked items). */
+  waste_qty?: number | null;
   manager: { id: string; full_name: string; role_code: string };
   error?: string;
   message?: string;
@@ -38,7 +46,7 @@ export function useCancelOrderItem() {
   const markCancelled = useCartStore((s) => s.markCancelled);
 
   return useMutation({
-    mutationFn: async ({ orderItemId, reason, managerPin, idempotencyKey }: CancelItemArgs): Promise<CancelItemResponse> => {
+    mutationFn: async ({ orderItemId, reason, managerPin, idempotencyKey, wasteQty }: CancelItemArgs): Promise<CancelItemResponse> => {
       const accessToken = await getAccessToken();
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
@@ -46,7 +54,7 @@ export function useCancelOrderItem() {
         // S34: manager PIN in header, never the body (security-fraud-guard gap 2).
         'x-manager-pin': managerPin,
       };
-      // S55: HTTP retry-safe idempotency — the EF forwards this to cancel_order_item_rpc_v5.
+      // S55: HTTP retry-safe idempotency — the EF forwards this to cancel_order_item_rpc_v6.
       if (idempotencyKey) headers['x-idempotency-key'] = idempotencyKey;
 
       const res = await fetch(`${supabaseUrl}/functions/v1/cancel-item`, {
@@ -55,6 +63,8 @@ export function useCancelOrderItem() {
         body: JSON.stringify({
           order_item_id: orderItemId,
           reason,
+          // ADR-010 D4 — forwarded as p_waste_qty (required by the RPC when locked).
+          ...(wasteQty !== undefined ? { waste_qty: wasteQty } : {}),
         }),
       });
       if (!res.ok) {

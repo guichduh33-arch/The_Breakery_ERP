@@ -6285,6 +6285,30 @@ export type Database = {
       _prokind: { Args: { p_oid: unknown }; Returns: unknown }
       _query: { Args: { "": string }; Returns: string }
       _recalc_order_totals: { Args: { p_order_id: string }; Returns: undefined }
+      _record_cancel_waste_stock_v1: {
+        Args: {
+          p_created_by: string
+          p_order_id: string
+          p_order_item_id: string
+          p_product_id: string
+          p_quantity: number
+          p_reason: string
+          p_unit?: string
+        }
+        Returns: undefined
+      }
+      _record_order_item_waste_v1: {
+        Args: {
+          p_combo_components: Json
+          p_created_by: string
+          p_order_id: string
+          p_order_item_id: string
+          p_product_id: string
+          p_reason: string
+          p_waste_qty: number
+        }
+        Returns: undefined
+      }
       _record_po_payment_internal: {
         Args: {
           p_actor: string
@@ -6475,13 +6499,14 @@ export type Database = {
         Args: { p_count_id: string; p_reason: string }
         Returns: Json
       }
-      cancel_order_item_rpc_v5: {
+      cancel_order_item_rpc_v6: {
         Args: {
           p_acting_auth_user_id: string
           p_authorized_by: string
           p_idempotency_key?: string
           p_order_item_id: string
           p_reason: string
+          p_waste_qty?: number
         }
         Returns: Json
       }
@@ -8124,7 +8149,7 @@ export type Database = {
         Returns: undefined
       }
       release_expired_reservations: { Args: never; Returns: number }
-      remove_order_item_v1: {
+      remove_order_item_v2: {
         Args: { p_idempotency_key: string; p_order_item_id: string }
         Returns: Json
       }
@@ -8430,11 +8455,14 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      update_order_item_qty_v1: {
+      update_order_item_qty_v2: {
         Args: {
+          p_auth_id?: string
           p_idempotency_key: string
           p_order_item_id: string
           p_qty: number
+          p_waste_qty?: number
+          p_waste_reason?: string
         }
         Returns: Json
       }
