@@ -42,14 +42,30 @@ describe('SettingsHubPage', () => {
     expect(screen.getByText(/Configure your business, POS, and system preferences/i)).toBeInTheDocument();
   });
 
-  it('renders all 6 section labels', () => {
+  it('renders all 7 feature-group section labels (ADR-006 décision 8)', () => {
     renderPage();
-    expect(screen.getByRole('heading', { level: 2, name: /^General$/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 2, name: /Sales/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 2, name: /^Operations$/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 2, name: /Commerce/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 2, name: /^System$/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 2, name: /Layout/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: /^Business$/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: /^POS & Sales$/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: /^Inventory$/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: /^Notifications & Templates$/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: /^Finance$/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: /^Security & Access$/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: /^Network$/i })).toBeInTheDocument();
+  });
+
+  it('carries no off-module tiles — those live in their own modules (ADR-006 décision 8)', () => {
+    renderPage();
+    expect(screen.queryByText(/^Loyalty Program$/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Product Categories$/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Product Types$/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Audit Log$/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Sections$/i)).not.toBeInTheDocument();
+  });
+
+  it('Holidays tile links to the holidays page (no more misleading "Business Hours" label)', () => {
+    renderPage();
+    expect(screen.queryByText(/^Business Hours$/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/^Holidays$/i).closest('a')?.getAttribute('href')).toBe('/backoffice/settings/holidays');
   });
 
   it('Company tile links to the General settings page', () => {
@@ -82,11 +98,9 @@ describe('SettingsHubPage', () => {
     expect(screen.queryByText(/^Floor Plan$/i)).not.toBeInTheDocument();
   });
 
-  it('POS Configuration, Product Categories, Product Types, Notifications, and Settings History are all linked (no more Soon)', () => {
+  it('POS Configuration, Notifications, and Settings History are all linked (no more Soon)', () => {
     renderPage();
     expect(screen.getByText(/^POS Configuration$/i).closest('a')?.getAttribute('href')).toBe('/backoffice/settings/pos');
-    expect(screen.getByText(/^Product Categories$/i).closest('a')?.getAttribute('href')).toBe('/backoffice/categories');
-    expect(screen.getByText(/^Product Types$/i).closest('a')?.getAttribute('href')).toBe('/backoffice/products');
     expect(screen.getByText(/^Notifications$/i).closest('a')?.getAttribute('href')).toBe('/backoffice/settings/notifications');
     expect(screen.getByText(/^Settings History$/i).closest('a')?.getAttribute('href')).toBe('/backoffice/reports/audit?action=setting.update');
   });

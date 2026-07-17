@@ -3,26 +3,24 @@
 // Session 14 / Phase 6.A — root /settings page. Categorized hub matching
 // `setting page.jpg`. Tiles link to the implemented sub-routes.
 //
-// S73 Lot 3 (Task 11) — zero dead-end tiles: every tile is either linked to
-// a real route, or explicitly `planned: true` (a surface actively deferred
-// to a dedicated future session). Tiles pointing at a permission-gated route
-// carry a `permission` so operators who can't open the route don't see the
-// tile at all.
+// ADR-006 décision 8 — hub reorganized by FEATURE (7 groups mirrored by the
+// sidebar Settings submenus). Off-module links (Loyalty, Product Categories,
+// Product Types, Audit Log, inventory Sections) were removed: those surfaces
+// live in their own modules' navigation, the hub only carries settings pages.
 //
-// S75 Task 3 — Floor Plan shipped (real CRUD route below).
-// S75 Task 8 — KDS Configuration shipped (real settings route below); the
-// hub now carries ZERO `planned: true` tiles. The `planned` field on
-// `SettingTile` is left in place as a guard rail for any future deferred
-// surface — it must never linger as a permanent dead end again.
+// Zero dead-end tiles (S73 Lot 3): every tile links to a real route, or is
+// explicitly `planned: true` (a surface actively deferred to a dedicated
+// future session). Tiles pointing at a permission-gated route carry a
+// `permission` so operators who can't open the route don't see the tile.
 //
 // Route-level permission gating still applies too — clicking a visible tile
 // routes through the matching <PermissionGate> in src/routes/index.tsx.
 
 import { Link } from 'react-router-dom';
 import {
-  Building2, Clock, Receipt, Coffee, CreditCard, Heart, Boxes, Tag, Layers,
+  Building2, Clock, Receipt, Coffee, CreditCard, Boxes,
   Monitor, Briefcase, Printer, Bell, ShieldCheck, FileText, Mail, Wifi,
-  History, Map, Grid3x3, type LucideIcon,
+  History, Map, Calculator, type LucideIcon,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, SectionLabel } from '@breakery/ui';
 import type { PermissionCode } from '@breakery/supabase';
@@ -46,63 +44,64 @@ interface SettingSection {
 
 const SECTIONS: SettingSection[] = [
   {
-    id: 'general',
-    title: 'General',
+    id: 'business',
+    title: 'Business',
     tiles: [
-      { to: '/backoffice/settings/general',  title: 'Company',        blurb: 'Business identity, currency, tax, address.', icon: Building2 },
-      { to: '/backoffice/settings/holidays', title: 'Business Hours', blurb: 'Holidays + recurring closures.',             icon: Clock },
+      { to: '/backoffice/settings/general',  title: 'Company',  blurb: 'Business identity, currency, tax, address.', icon: Building2 },
+      { to: '/backoffice/settings/holidays', title: 'Holidays', blurb: 'Holidays + recurring closures.',             icon: Clock },
     ],
   },
   {
-    id: 'sales',
-    title: 'Sales & POS',
+    id: 'pos-sales',
+    title: 'POS & Sales',
     tiles: [
       { to: '/backoffice/settings/pos', title: 'POS Configuration', blurb: 'Quick payment amounts, opening cash, discount presets.', icon: Coffee },
       { to: '/backoffice/settings/payment-methods', title: 'Payment Methods', blurb: 'Enable or disable POS payment methods.', icon: CreditCard },
-      { to: '/backoffice/loyalty', title: 'Loyalty Program', blurb: 'Points earn rules, tiers, redemption.', icon: Heart },
-    ],
-  },
-  {
-    id: 'operations',
-    title: 'Operations',
-    tiles: [
-      { to: '/backoffice/settings/inventory', title: 'Inventory Config', blurb: 'Default thresholds, opname cadence.', icon: Boxes },
-      { to: '/backoffice/categories', title: 'Product Categories', blurb: 'Category tree + colours.', icon: Tag },
-      { to: '/backoffice/products',   title: 'Product Types',      blurb: 'Raw / Semi-finished / Finished — set per product.', icon: Layers },
+      { to: '/backoffice/settings/printing', title: 'Printing', blurb: 'Auto-print + drawer automation (org-wide).', icon: Printer },
+      { to: '/backoffice/settings/floor-plan', permission: 'tables.update', title: 'Floor Plan', blurb: 'Tables + room sections (POS floor plan).', icon: Map },
       { to: '/backoffice/settings/kds', title: 'KDS Configuration', blurb: 'Warning/urgent thresholds + ready auto-archive.', icon: Monitor },
       { to: '/backoffice/settings/customer-display', title: 'Customer Display', blurb: 'Idle footer + brand slogan (all displays).', icon: Monitor },
     ],
   },
   {
-    id: 'commerce',
-    title: 'Commerce',
+    id: 'inventory',
+    title: 'Inventory',
     tiles: [
+      { to: '/backoffice/settings/inventory', title: 'Inventory Config', blurb: 'Default thresholds, opname cadence.', icon: Boxes },
+    ],
+  },
+  {
+    id: 'notifications-templates',
+    title: 'Notifications & Templates',
+    tiles: [
+      { to: '/backoffice/settings/notifications', title: 'Notifications', blurb: 'System notification templates.', icon: Bell },
+      { to: '/backoffice/settings/templates/email',   title: 'Email Templates',   blurb: 'Order confirmations, receipts, reset PIN.', icon: Mail },
+      { to: '/backoffice/settings/templates/receipt', title: 'Receipt Templates', blurb: 'Header, footer, logo.',                       icon: Receipt },
+    ],
+  },
+  {
+    id: 'finance',
+    title: 'Finance',
+    tiles: [
+      { to: '/backoffice/settings/accounting', title: 'Financial / Accounting', blurb: 'Fiscal periods, year-end close.', icon: Calculator, permission: 'accounting.period.close' },
+      { to: '/backoffice/settings/expense-thresholds', title: 'Expense Thresholds', blurb: 'Approval thresholds + SOD.', icon: FileText, permission: 'expenses.thresholds.read' },
       { to: '/backoffice/b2b/settings', title: 'B2B Settings', blurb: 'Wholesale pricing, payment terms, credit limits.', icon: Briefcase },
     ],
   },
   {
-    id: 'system',
-    title: 'System',
+    id: 'security-access',
+    title: 'Security & Access',
     tiles: [
-      { to: '/backoffice/settings/printing', title: 'Printing', blurb: 'Auto-print + drawer automation (org-wide).', icon: Printer },
-      { to: '/backoffice/settings/notifications', title: 'Notifications', blurb: 'System notification templates.', icon: Bell },
       { to: '/backoffice/settings/security', title: 'Session Timeouts', blurb: 'Per-role session timeout.', icon: ShieldCheck, permission: 'settings.security.manage' },
-      { to: '/backoffice/settings/accounting', title: 'Financial / Accounting', blurb: 'Fiscal periods, year-end close.', icon: FileText, permission: 'accounting.period.close' },
       { to: '/backoffice/settings/permissions', title: 'Roles & Permissions', blurb: 'View the role/permission matrix.', icon: ShieldCheck },
-      { to: '/backoffice/settings/templates/email',   title: 'Email Templates',   blurb: 'Order confirmations, receipts, reset PIN.', icon: Mail },
-      { to: '/backoffice/settings/templates/receipt', title: 'Receipt Templates', blurb: 'Header, footer, logo.',                       icon: Receipt },
-      { to: '/backoffice/reports/audit', title: 'Audit Log', blurb: 'System-wide audit trail.', icon: History },
-      { to: '/backoffice/lan-devices', title: 'Network Devices (LAN)', blurb: 'Devices participating in the on-site mesh.', icon: Wifi },
       { to: '/backoffice/reports/audit?action=setting.update', title: 'Settings History', blurb: 'Audit trail of every setting change.', icon: History },
-      { to: '/backoffice/settings/expense-thresholds', title: 'Expense Thresholds', blurb: 'Approval thresholds + SOD.', icon: FileText, permission: 'expenses.thresholds.read' },
     ],
   },
   {
-    id: 'layout',
-    title: 'Layout',
+    id: 'network',
+    title: 'Network',
     tiles: [
-      { to: '/backoffice/settings/floor-plan', permission: 'tables.update', title: 'Floor Plan', blurb: 'Tables + room sections (POS floor plan).', icon: Map },
-      { to: '/backoffice/inventory/sections', title: 'Sections', blurb: 'Inventory section topology.', icon: Grid3x3 },
+      { to: '/backoffice/lan-devices', title: 'Network Devices (LAN)', blurb: 'Devices participating in the on-site mesh.', icon: Wifi },
     ],
   },
 ];

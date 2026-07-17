@@ -1,6 +1,7 @@
 // apps/backoffice/src/layouts/__tests__/Sidebar.test.tsx
 //
-// Sidebar smoke tests — covers the 7-group reorg (2026-05-27).
+// Sidebar smoke tests — covers the 7-group reorg (2026-05-27) and the
+// Settings feature submenus (ADR-006 décision 8, 2026-07-18).
 //
 // Verifies:
 //   - All 7 group labels render (Operations / Sales / Purchase / Stock Management /
@@ -44,7 +45,13 @@ const ALL_NAMED_SUBGROUPS = [
   'Reports::Financial reports',
   'Reports::Marketing reports',
   'Reports::Audit',
-  'Settings::Devices',
+  'Settings::Business',
+  'Settings::POS & Sales',
+  'Settings::Inventory',
+  'Settings::Notifications & Templates',
+  'Settings::Finance',
+  'Settings::Security & Access',
+  'Settings::Network',
   'Settings::Users & Access',
 ];
 
@@ -146,7 +153,15 @@ describe('Sidebar', () => {
     expect(screen.getByRole('button', { name: /^Financial reports/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^Marketing reports/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^Audit/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^Devices/i })).toBeInTheDocument();
+    // Settings feature submenus (ADR-006 décision 8)
+    expect(screen.getByRole('button', { name: /^Business$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^POS & Sales$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Inventory$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Notifications & Templates$/i })).toBeInTheDocument();
+    // "Finance" exists twice: top-level group + Settings submenu.
+    expect(screen.getAllByRole('button', { name: /^Finance$/i })).toHaveLength(2);
+    expect(screen.getByRole('button', { name: /^Security & Access$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Network$/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^Users & Access/i })).toBeInTheDocument();
   });
 
@@ -199,19 +214,21 @@ describe('Sidebar', () => {
     );
   });
 
-  it('renders the Security link under Settings gated on settings.security.manage (S57 D-D2)', () => {
+  it('renders the Session Timeouts link under Settings gated on settings.security.manage (S57 D-D2)', () => {
     openAllTopGroups();
+    localStorage.setItem(SUBGROUP_STORAGE_KEY, JSON.stringify(ALL_NAMED_SUBGROUPS));
     setAuthState(ALL_PERMS);
     renderWith(<Sidebar />);
-    const security = screen.getByRole('link', { name: /^Security$/i });
+    const security = screen.getByRole('link', { name: /^Session Timeouts$/i });
     expect(security).toHaveAttribute('href', '/backoffice/settings/security');
   });
 
-  it('hides the Security link when settings.security.manage is missing (S57 D-D2)', () => {
+  it('hides the Session Timeouts link when settings.security.manage is missing (S57 D-D2)', () => {
     openAllTopGroups();
+    localStorage.setItem(SUBGROUP_STORAGE_KEY, JSON.stringify(ALL_NAMED_SUBGROUPS));
     setAuthState(ALL_PERMS.filter((p) => p !== 'settings.security.manage'));
     renderWith(<Sidebar />);
-    expect(screen.queryByRole('link', { name: /^Security$/i })).toBeNull();
+    expect(screen.queryByRole('link', { name: /^Session Timeouts$/i })).toBeNull();
   });
 
   it('renders Incoming / Transfers links under Stock Management (audit M6)', () => {
@@ -274,28 +291,28 @@ describe('Sidebar', () => {
     expect(screen.queryByRole('link', { name: /^Profit & Loss$/i })).toBeNull();
     expect(screen.queryByRole('link', { name: /^Expense Thresholds$/i })).toBeNull();
     expect(screen.queryByRole('link', { name: /^Permissions \(read-only\)$/i })).toBeNull();
+    expect(screen.queryByRole('link', { name: /Permissions Matrix/i })).toBeNull();
     // The toggle button itself reports aria-expanded=false.
     expect(screen.getByRole('button', { name: /^Expenses/i })).toHaveAttribute('aria-expanded', 'false');
-    // Items inside unnamed subgroups (Reports Hub line, General settings line) stay visible.
+    // Items inside unnamed subgroups (Reports Hub line, Settings Hub line) stay visible.
     expect(screen.getByRole('link', { name: /Reports Hub/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /General settings/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Permissions Matrix/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Settings Hub/i })).toBeInTheDocument();
   });
 
   it('toggles a subgroup open on click — items appear and aria-expanded flips', () => {
     openAllTopGroups();
     setAuthState(ALL_PERMS);
     renderWith(<Sidebar />);
-    const expensesBtn = screen.getByRole('button', { name: /^Expenses/i });
-    expect(expensesBtn).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.queryByRole('link', { name: /^Expense Thresholds$/i })).toBeNull();
-    fireEvent.click(expensesBtn);
-    expect(expensesBtn).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByRole('link', { name: /^Expense Thresholds$/i })).toBeInTheDocument();
+    const accountingBtn = screen.getByRole('button', { name: /^Accounting/i });
+    expect(accountingBtn).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('link', { name: /^Chart of Accounts$/i })).toBeNull();
+    fireEvent.click(accountingBtn);
+    expect(accountingBtn).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('link', { name: /^Chart of Accounts$/i })).toBeInTheDocument();
     // Toggling back collapses it again.
-    fireEvent.click(expensesBtn);
-    expect(expensesBtn).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.queryByRole('link', { name: /^Expense Thresholds$/i })).toBeNull();
+    fireEvent.click(accountingBtn);
+    expect(accountingBtn).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('link', { name: /^Chart of Accounts$/i })).toBeNull();
   });
 
   it('restores subgroup state from localStorage on mount', () => {
@@ -315,11 +332,11 @@ describe('Sidebar', () => {
     openAllTopGroups();
     setAuthState(ALL_PERMS);
     renderWith(<Sidebar />);
-    fireEvent.click(screen.getByRole('button', { name: /^Devices/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^Network$/i }));
     const raw = localStorage.getItem(SUBGROUP_STORAGE_KEY);
     expect(raw).not.toBeNull();
     const stored = JSON.parse(raw!) as string[];
-    expect(stored).toContain('Settings::Devices');
+    expect(stored).toContain('Settings::Network');
   });
 
   // ---- Top-level category collapsibility (collapsible accordion) ----

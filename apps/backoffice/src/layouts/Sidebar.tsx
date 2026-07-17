@@ -31,6 +31,7 @@ import {
   ClipboardCheck, TrendingUp, Signature, ShoppingBag, Wallet,
   Calendar, ShoppingCart, Truck, ListChecks,
   PackagePlus, ArrowLeftRight, CreditCard,
+  Coffee, Printer, Monitor,
   ChevronRight,
   type LucideIcon,
 } from 'lucide-react';
@@ -73,7 +74,6 @@ const GROUPS: NavGroup[] = [
       { to: '/backoffice/customers/categories', label: 'Customer Categories', icon: Tag, permission: 'customer_categories.read', indent: 1 },
       { to: '/backoffice/b2b', label: 'B2B Wholesale', icon: Building2, permission: 'b2b.read', end: true },
       { to: '/backoffice/b2b/payments', label: 'Payments', icon: Banknote, permission: 'b2b.read', indent: 1 },
-      { to: '/backoffice/b2b/settings', label: 'B2B Credit Settings', icon: Settings, permission: 'settings.read', indent: 1 },
       { to: '/backoffice/promotions', label: 'Promotions', icon: Megaphone, permission: 'promotions.read' },
       { to: '/backoffice/loyalty', label: 'Loyalty', icon: Heart, permission: 'loyalty.read' },
     ],
@@ -109,7 +109,6 @@ const GROUPS: NavGroup[] = [
         label: 'Expenses',
         items: [
           { to: '/backoffice/expenses', label: 'Expenses', icon: Receipt, permission: 'expenses.read' },
-          { to: '/backoffice/settings/expense-thresholds', label: 'Expense Thresholds', icon: Scale, permission: 'expenses.thresholds.read' },
         ],
       },
       {
@@ -121,7 +120,6 @@ const GROUPS: NavGroup[] = [
           { to: '/backoffice/accounting/cash', label: 'Cash Treasury', icon: Wallet, permission: 'accounting.cash.read' },
           { to: '/backoffice/accounting/trial-balance', label: 'Trial Balance', icon: Scale, permission: 'accounting.tb.read' },
           { to: '/backoffice/accounting/mappings', label: 'Account Mappings', icon: GitCommitHorizontal, permission: 'accounting.read' },
-          { to: '/backoffice/settings/accounting', label: 'Fiscal Periods', icon: Calculator, permission: 'accounting.period.close' },
           { to: '/backoffice/cash-register/zreports', label: 'Cash Closing (Z-Reports)', icon: Signature, permission: 'zreports.read' },
         ],
       },
@@ -202,23 +200,67 @@ const GROUPS: NavGroup[] = [
     ],
   },
   {
+    // ADR-006 décision 8 — Settings organized by FEATURE in named submenus,
+    // mirroring the /settings hub sections. Settings pages live ONLY here
+    // (Fiscal Periods / Expense Thresholds / B2B Credit Settings no longer
+    // appear in the Finance and Sales groups).
     label: 'Settings',
     subgroups: [
       {
         label: '',
         items: [
-          { to: '/backoffice/settings', label: 'General settings', icon: Settings, permission: 'settings.read', end: true },
-          { to: '/backoffice/settings/inventory', label: 'Inventory settings', icon: Settings, permission: 'settings.read' },
-          { to: '/backoffice/settings/holidays', label: 'Holidays', icon: CalendarDays, permission: 'settings.read' },
-          { to: '/backoffice/settings/payment-methods', label: 'Payment Methods', icon: CreditCard, permission: 'settings.read' },
-          { to: '/backoffice/settings/templates/email', label: 'Email Templates', icon: Mail, permission: 'settings.read' },
-          { to: '/backoffice/settings/templates/receipt', label: 'Receipt Templates', icon: FileText, permission: 'settings.read' },
-          { to: '/backoffice/settings/permissions', label: 'Permissions Matrix (read-only)', icon: ShieldCheck, permission: 'settings.read' },
-          { to: '/backoffice/settings/security', label: 'Security', icon: Shield, permission: 'settings.security.manage' },
+          { to: '/backoffice/settings', label: 'Settings Hub', icon: Settings, permission: 'settings.read', end: true },
         ],
       },
       {
-        label: 'Devices',
+        label: 'Business',
+        items: [
+          { to: '/backoffice/settings/general', label: 'Company', icon: Building2, permission: 'settings.read' },
+          { to: '/backoffice/settings/holidays', label: 'Holidays', icon: CalendarDays, permission: 'settings.read' },
+        ],
+      },
+      {
+        label: 'POS & Sales',
+        items: [
+          { to: '/backoffice/settings/pos', label: 'POS Configuration', icon: Coffee, permission: 'settings.read' },
+          { to: '/backoffice/settings/payment-methods', label: 'Payment Methods', icon: CreditCard, permission: 'settings.read' },
+          { to: '/backoffice/settings/printing', label: 'Printing', icon: Printer, permission: 'settings.read' },
+          { to: '/backoffice/settings/floor-plan', label: 'Floor Plan', icon: MapPin, permission: 'tables.update' },
+          { to: '/backoffice/settings/kds', label: 'KDS Configuration', icon: Monitor, permission: 'settings.read' },
+          { to: '/backoffice/settings/customer-display', label: 'Customer Display', icon: Monitor, permission: 'settings.read' },
+        ],
+      },
+      {
+        label: 'Inventory',
+        items: [
+          { to: '/backoffice/settings/inventory', label: 'Inventory Config', icon: Boxes, permission: 'settings.read' },
+        ],
+      },
+      {
+        label: 'Notifications & Templates',
+        items: [
+          { to: '/backoffice/settings/notifications', label: 'Notifications', icon: BellRing, permission: 'settings.read' },
+          { to: '/backoffice/settings/templates/email', label: 'Email Templates', icon: Mail, permission: 'settings.read' },
+          { to: '/backoffice/settings/templates/receipt', label: 'Receipt Templates', icon: FileText, permission: 'settings.read' },
+        ],
+      },
+      {
+        label: 'Finance',
+        items: [
+          { to: '/backoffice/settings/accounting', label: 'Fiscal Periods', icon: Calculator, permission: 'accounting.period.close' },
+          { to: '/backoffice/settings/expense-thresholds', label: 'Expense Thresholds', icon: Scale, permission: 'expenses.thresholds.read' },
+          { to: '/backoffice/b2b/settings', label: 'B2B Credit Settings', icon: Settings, permission: 'settings.read' },
+        ],
+      },
+      {
+        label: 'Security & Access',
+        items: [
+          { to: '/backoffice/settings/security', label: 'Session Timeouts', icon: Shield, permission: 'settings.security.manage' },
+          { to: '/backoffice/settings/permissions', label: 'Permissions Matrix (read-only)', icon: ShieldCheck, permission: 'settings.read' },
+        ],
+      },
+      {
+        label: 'Network',
         items: [
           { to: '/backoffice/lan-devices', label: 'LAN Devices', icon: Network, permission: 'lan.devices.read' },
         ],
