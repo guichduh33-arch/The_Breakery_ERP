@@ -18,10 +18,10 @@ import { useState, type JSX } from 'react';
 import { MapPin, ShoppingBag, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { DiscountModal, PinVerificationModal, SectionLabel, cn } from '@breakery/ui';
-import { calculateTotals, resolveLoyaltyMultiplier } from '@breakery/domain';
+import { calculateTotals, resolveLoyaltyMultiplier, splitPb1 } from '@breakery/domain';
 import type { CartItem, OrderType } from '@breakery/domain';
 import { useCartStore } from '@/stores/cartStore';
-import { useTaxRate } from '@/features/settings/hooks/useTaxRate';
+import { useTaxConfig } from '@/features/settings/hooks/useTaxConfig';
 import { usePOSPresets } from '@/features/settings/hooks/usePOSPresets';
 import { useApplyLineDiscount, lineDiscountBase } from '@/features/discounts/hooks/useApplyLineDiscount';
 import { LoyaltyPointsLine } from '@/features/loyalty/components/LoyaltyPointsLine';
@@ -70,15 +70,15 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
   const setOrderType = useCartStore((s) => s.setOrderType);
   const appliedPromotions = useCartStore((s) => s.appliedPromotions);
 
-  // Tax estimated at the SERVER rate (useTaxRate) — the money-path RPC charges
-  // this same rate; no hardcoded 0.10 on the encaissement path. Also feeds the
-  // customer-display mirror's "Tax included" line.
-  const taxRate = useTaxRate();
+  // Tax estimated at the SERVER config (useTaxConfig: rate + inclusive mode) —
+  // the money-path RPC charges this same split; no hardcoded 0.10 on the
+  // encaissement path. Also feeds the customer-display mirror's tax line.
+  const { taxRate, taxInclusive } = useTaxConfig();
 
   // ── orchestrators anchored here (single source of truth) ─────────────────
   usePromotionsAutoEval();
   usePromotionsRealtime();
-  useCartBroadcast(taxRate);
+  useCartBroadcast(taxRate, taxInclusive);
 
   // ── per-line cancel (tablet pickups) ─────────────────────────────────────
   const [cancelTarget, setCancelTarget] = useState<CartItem | null>(null);
@@ -116,10 +116,14 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
   const { presets: posPresets } = usePOSPresets();
 
   // ── totals (promo applied after base, never negative) ────────────────────
+  // calculateTotals runs inclusive (default) so `total` stays the pre-tax base
+  // whatever the mode; the PB1 split is applied ONCE, after promos, via
+  // splitPb1 (client mirror of _pb1_split_v1).
   const baseTotals = calculateTotals(cart, taxRate);
   const promotionTotal = appliedPromotions.reduce((s, ap) => s + ap.amount, 0);
-  const total = Math.max(0, baseTotals.total - promotionTotal);
-  const tax_amount = Math.round((total * taxRate) / (1 + taxRate));
+  const { tax_amount, total } = splitPb1(
+    Math.max(0, baseTotals.total - promotionTotal), taxRate, taxInclusive,
+  );
 
   const isEmpty = cart.items.length === 0;
   const pickedUp = Boolean(pickedUpOrderId);
@@ -262,7 +266,9 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
           )}
 
           <div className="flex items-center justify-between text-[11px] text-text-muted">
-            <span className="uppercase tracking-wide">Tax Included ({Math.round(taxRate * 100)}%)</span>
+            <span className="uppercase tracking-wide">
+              {taxInclusive ? 'Tax Included' : 'Tax'} ({Math.round(taxRate * 100)}%)
+            </span>
             <span className="font-mono tabular-nums">{rp(tax_amount)}</span>
           </div>
 

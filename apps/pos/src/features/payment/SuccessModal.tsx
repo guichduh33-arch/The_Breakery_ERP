@@ -4,7 +4,7 @@ import { Check, Printer, RotateCw } from 'lucide-react';
 import { Button, Currency, FullScreenModal } from '@breakery/ui';
 import { calculateTotals } from '@breakery/domain';
 import type { AppliedPromotion, Cart, PaymentMethod, PaymentResultLine } from '@breakery/domain';
-import { useTaxRate } from '@/features/settings/hooks/useTaxRate';
+import { useTaxConfig } from '@/features/settings/hooks/useTaxConfig';
 import { printReceipt, openCashDrawer, type ReceiptPayload } from '@/services/print/printService';
 import { useStationPrinters } from '@/features/cart/hooks/useStationPrinters';
 import { useOrgDisplaySettings } from '@/features/settings/hooks/useOrgDisplaySettings';
@@ -58,14 +58,15 @@ export interface SuccessModalProps {
 function buildReceiptPayload(
   props: SuccessModalProps,
   taxRate: number,
+  taxInclusive: boolean,
   business: BusinessIdentity,
   template: ReceiptTemplate | null,
 ): ReceiptPayload {
   // S51 — the CHARGED total, tax and per-line money come from the server (v15);
   // `calculateTotals` is used ONLY for the tax-independent informational lines
-  // (subtotal fallback + loyalty redemption). It runs at the SERVER tax rate so
-  // there is no hardcoded 0.10 left on this path.
-  const derived = calculateTotals(props.cart, taxRate);
+  // (subtotal fallback + loyalty redemption) and the tax fallback. It runs at
+  // the SERVER tax config so there is no hardcoded 0.10 left on this path.
+  const derived = calculateTotals(props.cart, taxRate, taxInclusive);
 
   // Align the server line breakdown to the non-cancelled cart lines by index —
   // the money-path processes buildOrderPayload's items (cancelled filtered) in
@@ -167,7 +168,7 @@ function buildReceiptPayload(
 
 export function SuccessModal(props: SuccessModalProps) {
   const { open, orderNumber, total, changeGiven, pointsEarned, customerName, onNewOrder, paymentMethod } = props;
-  const taxRate = useTaxRate();
+  const { taxRate, taxInclusive } = useTaxConfig();
   const [isPrinting, setIsPrinting] = useState(false);
   // Guards the mount-effect side effects (toast) against firing after the modal
   // has unmounted — e.g. the cashier hits "New Order" before the print/drawer
@@ -201,7 +202,7 @@ export function SuccessModal(props: SuccessModalProps) {
     setIsPrinting(true);
     const isReprint = printedOnceRef.current;
     printedOnceRef.current = true;
-    const payload = buildReceiptPayload(props, taxRate, businessIdentity, receiptTemplate);
+    const payload = buildReceiptPayload(props, taxRate, taxInclusive, businessIdentity, receiptTemplate);
     const result = await printReceipt(payload, cashierPrinter);
     // S72 audit — journal every receipt print (reprints are a fraud signal).
     emitPosEvent(isReprint ? 'receipt_reprinted' : 'receipt_printed', {
@@ -226,8 +227,9 @@ export function SuccessModal(props: SuccessModalProps) {
       change: changeGiven,
       method: paymentMethod,
       // Server-authoritative tax (money-path); falls back to the client
-      // estimate at the server rate, mirroring buildReceiptPayload.
-      tax_amount: props.taxAmount ?? calculateTotals(props.cart, taxRate).tax_amount,
+      // estimate at the server config, mirroring buildReceiptPayload.
+      tax_amount: props.taxAmount ?? calculateTotals(props.cart, taxRate, taxInclusive).tax_amount,
+      tax_inclusive: taxInclusive,
       customer_name: customerName ?? null,
       points_earned: pointsEarned !== undefined && pointsEarned > 0 ? pointsEarned : null,
       loyalty_balance_after: props.loyaltyBalanceAfter ?? null,

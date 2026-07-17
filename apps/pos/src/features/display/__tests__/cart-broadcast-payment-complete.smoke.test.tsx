@@ -47,6 +47,7 @@ function paymentComplete(
     change: 4000,
     method: 'cash',
     tax_amount: 6000,
+    tax_inclusive: true,
     customer_name: null,
     points_earned: null,
     loyalty_balance_after: null,
@@ -90,7 +91,7 @@ describe('useCartBroadcastReceiver — payment_complete (C-D4)', () => {
     const update: CartBroadcastMessage = {
       type: 'cart_update',
       cart: { items: [{ id: 'l1' }], order_type: 'dine_in' },
-      totals: { subtotal: 10000, total: 10000, tax_amount: 909, item_count: 1 },
+      totals: { subtotal: 10000, total: 10000, tax_amount: 909, item_count: 1, tax_inclusive: true },
       customer: null,
     };
     act(() => {

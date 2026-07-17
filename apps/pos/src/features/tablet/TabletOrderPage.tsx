@@ -41,6 +41,7 @@ import { ArrowLeft, MapPin } from 'lucide-react';
 import type { RestaurantTable } from '@breakery/domain';
 import { Button, Currency } from '@breakery/ui';
 import { calculatePreview } from '@breakery/domain';
+import { useTaxConfig } from '@/features/settings/hooks/useTaxConfig';
 import { useTabletCartStore } from '@/stores/tabletCartStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useRestaurantTables } from '@/features/tables/hooks/useRestaurantTables';
@@ -96,7 +97,10 @@ export function TabletOrderPage({
   const mutation = useCreateTabletOrder();
   const clientUuidRef = useRef<string>(crypto.randomUUID());
 
-  const preview = calculatePreview({ items, tableNumber, orderType });
+  // Server tax config (rate + inclusive mode) — the header total must match
+  // the amount the money-path will charge (mirror of _pb1_split_v1).
+  const { taxRate, taxInclusive } = useTaxConfig();
+  const preview = calculatePreview({ items, tableNumber, orderType }, taxRate, taxInclusive);
   const isEmpty = items.length === 0;
   const isSending = mutation.isPending;
 
@@ -205,7 +209,7 @@ export function TabletOrderPage({
 
       <div className="ml-auto flex items-center gap-3" aria-label="Cart total">
         <span className="text-xs uppercase tracking-widest text-text-muted">Total</span>
-        <Currency amount={preview.items_total} emphasis="gold" className="text-xl" />
+        <Currency amount={preview.total} emphasis="gold" className="text-xl" />
       </div>
     </div>
   );

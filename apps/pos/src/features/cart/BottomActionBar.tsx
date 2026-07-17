@@ -40,10 +40,10 @@ import {
   RedeemPointsModal,
   cn,
 } from '@breakery/ui';
-import { calculateTotals } from '@breakery/domain';
+import { calculateTotals, splitPb1 } from '@breakery/domain';
 import { useCartStore, resetCartAfterCheckout } from '@/stores/cartStore';
 import { usePaymentStore } from '@/stores/paymentStore';
-import { useTaxRate } from '@/features/settings/hooks/useTaxRate';
+import { useTaxConfig } from '@/features/settings/hooks/useTaxConfig';
 import { usePOSPresets } from '@/features/settings/hooks/usePOSPresets';
 import { useHeldOrdersQuery } from '@/features/heldOrders/hooks/useHeldOrdersQuery';
 import { HoldOrderButton } from '@/features/heldOrders/components/HoldOrderButton';
@@ -127,12 +127,15 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
     };
   }, [moreOpen]);
 
-  // total is tax-inclusive (rate-independent); pass the SERVER rate so no
-  // hardcoded 0.10 remains on the checkout bar.
-  const taxRate = useTaxRate();
+  // Amount due on the checkout bar — pre-tax base (calculateTotals inclusive
+  // default) minus promos, then ONE PB1 split at the server config (mirror of
+  // _pb1_split_v1); no hardcoded 0.10 remains on this path.
+  const { taxRate, taxInclusive } = useTaxConfig();
   const baseTotals = calculateTotals(cart, taxRate);
   const promotionTotal = appliedPromotions.reduce((s, ap) => s + ap.amount, 0);
-  const total = Math.max(0, baseTotals.total - promotionTotal);
+  const { total } = splitPb1(
+    Math.max(0, baseTotals.total - promotionTotal), taxRate, taxInclusive,
+  );
 
   const hasItems = cart.items.some((i) => !i.is_cancelled);
   const hasSentItems = lockedItemIds.length > 0;

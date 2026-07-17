@@ -73,7 +73,9 @@ export function CDPaymentPanel({ message }: { message: PaymentCompleteMessage })
               className="flex items-baseline justify-between gap-6 text-text-secondary"
               data-testid="cd-payment-tax"
             >
-              <span className="uppercase tracking-widest text-xs">Tax included</span>
+              <span className="uppercase tracking-widest text-xs">
+                {(message.tax_inclusive ?? true) ? 'Tax included' : 'Tax'}
+              </span>
               <Currency amount={message.tax_amount} className="text-lg text-text-secondary" />
             </div>
           )}

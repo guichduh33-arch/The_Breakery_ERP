@@ -4,6 +4,7 @@ import type { Cart, CartTotals } from '../types/index.js';
 import { calculatePriceAdjustment } from '../modifiers/calculatePriceAdjustment.js';
 import { pointsToValue } from '../loyalty/redeemValue.js';
 import { calculateDiscountAmount } from '../discounts/calculateDiscountAmount.js';
+import { splitPb1 } from '../orders/taxRate.js';
 
 export class RedemptionExceedsTotalError extends Error {
   constructor() {
@@ -74,10 +75,6 @@ export function calculateTotals(cart: Cart, taxRate: number, taxInclusive: boole
     throw new DiscountExceedsTotalError();
   }
 
-  if (taxInclusive) {
-    const tax_amount = roundIdr((total * taxRate) / (1 + taxRate));
-    return { subtotal: items_total, tax_amount, total, item_count, redemption_amount };
-  }
-  const tax_amount = roundIdr(total * taxRate);
-  return { subtotal: items_total, tax_amount, total: total + tax_amount, item_count, redemption_amount };
+  const split = splitPb1(total, taxRate, taxInclusive);
+  return { subtotal: items_total, tax_amount: split.tax_amount, total: split.total, item_count, redemption_amount };
 }
