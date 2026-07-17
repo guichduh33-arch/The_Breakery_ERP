@@ -126,7 +126,7 @@ pending → preparing → ready → served
 | **preparing** | Cuisinier tape "Start" (optionnel) | L'item est en cours de préparation. Active le timer "en cours". |
 | **ready** | Cuisinier tape "Ready" | Plus de travail à faire — à servir / remettre. |
 | **served** | Auto via Waiter ou auto-remove timer | L'item est sorti de la cuisine vers le client. Auto-archive de la carte. |
-| **cancelled** | Cashier voide la commande | L'item est rayé visuellement, retiré de la file. |
+| **cancelled** | Cashier voide la commande, ou annulation de ligne autorisée par un manager (PIN + perte obligatoire, ADR-010) | L'item est rayé visuellement, retiré de la file — en temps réel, le cuisinier arrête de le produire. |
 
 La **commande globale** passe à `ready` quand **tous ses items** sont `ready`. C'est ce statut qui déclenche le **son de notification côté POS** ("order ready") qu'on entend depuis la caisse.
 
@@ -209,6 +209,12 @@ Le module `useKdsOrderActions` expose un nombre **volontairement restreint** d'a
 | **Bouton refresh global** | Recharge la queue depuis Supabase (en cas de doute). |
 
 Pas de modification d'item, pas d'annulation, pas de remise en file. Le KDS **ne défait pas** ce que la caisse a fait — il l'exécute.
+
+La réciproque est vraie aussi : quand la caisse annule ou réduit une ligne
+verrouillée (flux manager ADR-010), le KDS le reflète immédiatement via
+realtime — l'item apparaît barré ou sa quantité baisse sur le ticket. Ce que
+la cuisine avait déjà produit est déclaré en perte côté caisse ; le KDS n'a
+rien à saisir.
 
 Bénéfice métier : **le cuisinier reste dans son geste métier**. Pas de clavier, pas de menu, pas de risque d'opération destructrice. Un tap, c'est fini.
 

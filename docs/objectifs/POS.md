@@ -46,7 +46,14 @@ Quel que soit le moment d'utilisation, le POS garantit toujours :
 
 1. **Une session de caisse ouverte avant toute transaction**. Pas de session = pas de vente possible. Force la discipline de fond de caisse et de réconciliation.
 2. **Touch-first, sans dépendance au clavier**. Tous les boutons sont dimensionnés pour le doigt, le Virtual Keypad gère les saisies textuelles.
-3. **Cart locké après envoi cuisine**. Les items envoyés au KDS deviennent verrouillés. Toute modification exige un PIN manager — traçabilité anti-fraude.
+3. **Cart locké après envoi cuisine** (ADR-010). Les items envoyés au KDS
+   deviennent verrouillés — et la garde est **serveur**, pas seulement UI :
+   l'annulation d'une ligne verrouillée exige le PIN manager **et une
+   déclaration de perte obligatoire** (quantité pré-remplie, ajustable par
+   l'autorisateur, déduite via le circuit waste recette-aware et rattachée à
+   la commande) ; la baisse de quantité exige une autorisation manager à usage
+   unique + la perte sur le delta ; la suppression est refusée. La hausse de
+   quantité passe par l'ajout d'une nouvelle ligne, jamais par la retouche.
 4. **Auto-évaluation des promotions** à chaque changement de panier via `useCartPromotions`. Le caissier ne calcule jamais : le système applique automatiquement les bonnes remises.
 5. **Tax PB1 10% incluse dans tous les prix**. Le client voit toujours le prix total ; le système isole la taxe (`tax = total × 10/110`) pour la comptabilité.
 6. **Une commande atomique : items + paiements en une seule transaction**. La RPC `complete_order_with_payments` crée la commande et tous ses paiements dans une transaction Postgres unique — pas de risque de paiement orphelin si la connexion saute.
@@ -123,14 +130,26 @@ Bénéfice métier : **transformer chaque vente anonyme en vente nominative** qu
 
 Bouton **Send to Kitchen** → les items sont envoyés au KDS, **et le panier passe en mode locked** :
 
-- Chaque item envoyé est marqué `locked: true`.
+- Chaque item envoyé est marqué `is_locked = true` (posé par `send_items_rpc`
+  à l'émission du KOT).
 - L'icône d'un cadenas apparaît sur la ligne.
-- Toute tentative de modifier ou retirer un item locked déclenche `PinVerificationModal` (PIN manager).
-- L'annulation d'un item locked passe par `useLockedItemCancellation` qui trace dans l'audit log.
+- L'annulation d'une ligne verrouillée passe par `CancelItemModal` : raison +
+  PIN manager (header, vérifié par l'EF `cancel-item`) + **quantité de perte**
+  pré-remplie à la quantité de la ligne, ajustable 0..qty (0 = rien n'était
+  encore produit — la déclaration reste obligatoire et tracée). La RPC
+  `cancel_order_item_rpc` refuse un cancel verrouillé sans déclaration.
+- La perte est déduite en stock via le circuit waste recette-aware (produit
+  fini, composants de combo ou ingrédients de recette selon le produit) et
+  rattachée à la commande — visible dans les mouvements de stock et l'audit.
 
 Pourquoi ce verrouillage : **un item envoyé en cuisine consomme un coût** (le boulanger commence à faire le sandwich). Le retirer sans contrôle = fraude potentielle (encaisser, annuler, empocher).
 
 Le caissier peut **continuer à ajouter** des items au panier après envoi cuisine (le client commande encore un café) : les nouveaux items ne sont pas locked tant qu'ils n'ont pas été envoyés à leur tour. C'est une **commande à items mixtes** locked + non-locked.
+
+Verrouillé veut dire verrouillé partout : le Backoffice (page Orders) applique
+les mêmes règles — baisse seule sous autorisation manager avec perte sur le
+delta, suppression refusée. Il n'existe aucun chemin d'édition silencieuse
+d'un item parti en cuisine (ADR-010).
 
 ---
 

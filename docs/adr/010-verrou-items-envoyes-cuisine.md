@@ -1,7 +1,7 @@
 # ADR-010 — Items envoyés en cuisine : verrouillage, autorisation manager, perte obligatoire
 
 > **Date** : 2026-07-17
-> **Statut** : 🟡 BROUILLON — à relire et passer en ✅ Accepted par le propriétaire
+> **Statut** : ✅ Accepted par le propriétaire
 > **Décideurs** : propriétaire The Breakery (guichduh33)
 > **Supersedes** : — (complète ADR-009 ; formalise l'intention d'origine de
 >   `is_locked`, migration _003/_004 : « cancel/edit interdit »)
