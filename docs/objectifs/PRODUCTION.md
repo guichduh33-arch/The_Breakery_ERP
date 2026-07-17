@@ -1,6 +1,13 @@
 # Module Production & Recipes — Objectif métier
 
-> 🗄️ **ARCHIVED / SUPERSEDED (2026-06-04).** This legacy V2 "Objectif métier" brief was folded verbatim into **Partie I — Vue fonctionnelle** of the canonical reference module [`reference/04-modules/15-production-recipes.md`](../../reference/04-modules/15-production-recipes.md) (2026-05-13). The reference is the source of truth; this file is kept for history only.
+> **Statut (2026-07-17)** : cette fiche avait été archivée au profit du module
+> de référence `reference/04-modules/15-production-recipes.md` — ce fichier
+> n'existe plus dans l'arborescence vivante. Elle redevient donc **la doc
+> fonctionnelle du module**, remise à jour le 2026-07-17 pour refléter les
+> décisions de l'[ADR-008](../adr/008-production-recettes-arbitrages.md)
+> (✅ accepté) : D1 unités des sous-recettes, D2 waste en charge, D3 raisons
+> catégorisées, D4 blocage stock insuffisant, D5 profondeur de recette,
+> D6 deduct_stock, D7/D8 revert, D9 dette technique.
 
 
 > **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée**. Implémentation réelle = V3 monorepo. **Le statut V3 dépasse cette fiche sur plusieurs points** (voir §15 corrigé : sub-recipes, versioning, baker's percentages, yield tracking, margin alerts — tous livrés en V3 S15→S22).
@@ -39,7 +46,7 @@ Recipes = **le savoir-faire codifié**. Production Records = **l'usage quotidien
 Quelle que soit la situation, le module garantit :
 
 1. **Une recette = des proportions invariantes**. La recette dit "1 baguette = 250 g de farine". Que je produise 1 ou 1000 baguettes, le ratio est fixe.
-2. **Conversion d'unités automatique**. La recette peut être en grammes, le stock matière en kilos — le système convertit (`getUnitConversionFactor`). 50 baguettes × 250 g = 12 500 g → −12,5 kg du stock farine.
+2. **Conversion d'unités automatique**. La recette peut être en grammes, le stock matière en kilos — le système convertit (`getUnitConversionFactor`). 50 baguettes × 250 g = 12 500 g → −12,5 kg du stock farine. **Exception actée (ADR-008 D1)** : une ligne de recette qui pointe vers un semi-fini (un produit ayant lui-même une recette) doit être saisie dans l'unité de stockage de ce semi-fini — la conversion automatique ne s'applique qu'aux ingrédients « feuilles ».
 3. **Production atomique**. Saisir une production déclenche en une transaction : déduction matières, incrémentation produit fini, gestion waste, écriture comptable, mouvements ledger. Tout ou rien.
 4. **Waste géré séparément**. Sur 52 baguettes pétries, 50 vont en vente et 2 sont ratées (`quantity_waste`). Les ratés sont déduits du stock matière (la farine a quand même été consommée) mais n'entrent **pas** en stock vendable.
 5. **Recettes versionnées dans le temps**. Modifier une recette ne change pas les coûts historiques. Une production passée garde le coût de la recette au moment où elle a été enregistrée.
@@ -105,7 +112,8 @@ Page `StockProductionPage` — pensée pour le boulanger ou le chef de productio
 
 ### 5.2 La chaîne déclenchée
 
-À la validation, la mutation `useProduction.create` exécute :
+À la validation, la RPC `record_production_v1` (V3 — la fiche datait de la
+mutation client V2) exécute :
 
 1. Insertion d'un `production_records` avec `production_id` séquentiel.
 2. Lookup de la recette du produit fini.
@@ -132,7 +140,7 @@ Le module distingue :
 | **quantity_produced** | Stock produit fini, vendable |
 | **quantity_waste** | Sortie matière effective (le pain *a* été pétri) mais pas de stock vendable |
 
-Chaque waste est saisi avec une **raison catégorisée** (mal cuit, mal levé, esthétique, démonstration, test recette, dégustation client) → alimente le report `production_efficiency` qui suit le taux de waste par produit dans le temps.
+Chaque waste est saisi avec une **raison catégorisée** (mal cuit, mal levé, esthétique, démonstration, test recette, dégustation client) → alimente le report `production_efficiency` qui suit le taux de waste par produit dans le temps. **Acté (ADR-008 D3)** : la raison devient un enum Postgres + menu déroulant dans l'UI (aujourd'hui : notes libres — chantier à lancer). **Acté aussi (ADR-008 D2)** : le coût de la part ratée passe en charge comptable (Dr Waste Expense) au lieu d'être absorbé dans le coût du stock produits finis.
 
 Bénéfice métier : **chiffrer le coût des ratés** sans culpabiliser l'artisan. Le boulanger déclare ses 2 baguettes ratées, le système calcule que ça représente 4 % de waste sur la fournée et 12 000 IDR de matière perdue. Sur un mois c'est 360 000 IDR — assez pour justifier une formation ou un ajustement de recette.
 
@@ -144,7 +152,7 @@ Bénéfice métier : **chiffrer le coût des ratés** sans culpabiliser l'artisa
 
 - Liste des productions saisies aujourd'hui.
 - Pour chaque entrée : produit, quantité produite, quantité waste, staff, heure.
-- **Suppression** possible (avec PIN manager + recompensation automatique des mouvements).
+- **Suppression** possible dans une fenêtre de 24 h, protégée par la permission `inventory.production.delete` (ADMIN et plus) — **pas de PIN manager**, acté ADR-008 D8. Le revert est **refusé si le lot a déjà bougé** depuis la production (vente, transfert…) — acté ADR-008 D7 ; le correctif passe alors par un inventaire ou un ajustement.
 - **Navigation par date** : revenir au passé pour consulter les fournées des jours précédents.
 
 Bénéfice métier : **la mémoire de la production**. Le manager voit en début d'après-midi qu'il y a déjà 80 baguettes saisies ce matin, donc inutile d'en relancer.
@@ -211,7 +219,7 @@ Avant de valider une saisie de production, le système peut **alerter** si une r
 - Calcul à blanc des consommations attendues.
 - Vérification que chaque matière a un stock suffisant.
 - Si insuffisant → alerte visuelle avec le détail "il manque 2,5 kg de farine et 50 g de levure pour produire les 100 baguettes prévues".
-- L'utilisateur peut quand même forcer la saisie (avec `inventory.adjust` et un warning compta), ou réduire la quantité.
+- **Acté (ADR-008 D4)** : le blocage est le comportement **par défaut**. Forcer la production malgré un stock insuffisant est un acte explicite — réglage global assumé ou forçage protégé par une permission dédiée, avec avertissement.
 
 Bénéfice métier : **avant de pétrir, le système sait si on peut pétrir**. Évite de découvrir en pleine production qu'il manque un ingrédient.
 
@@ -274,6 +282,8 @@ Réciproquement, le module Inventory **utilise** Production :
 - ~~Le module **ne fait pas de versioning explicite** des recettes~~ → **V3 livre `recipe_versions` + snapshot avec cost** (`snapshot_recipe_version_helper`, `tr_snapshot_on_product_cost_change`, `bump_recipe_version_snapshot_with_cost`). ✅ LIVRÉ V3 S20+S21.
 - Le module **n'intègre pas d'allergènes** structurés (gluten, lactose, fruits à coque). Les notes libres sur le produit s'en chargent en attendant. *(Toujours vrai V3 — P3 backlog)*
 - ~~Le module **ne supporte pas les recettes en pourcentage de boulanger**~~ → **V3 supporte les baker's percentages** (`extend_recipes_baker_percentage`, `bump_upsert_recipe_v1_baker`). ✅ LIVRÉ V3 S19.
+- Le module **refuse une recette de plus de 5 niveaux d'imbrication** : au-delà, la production échoue avec une erreur franche au lieu de consommer partiellement en silence. *(Acté ADR-008 D5.)*
+- Le module **refuse de produire un produit marqué « ne suit pas le stock »** (`deduct_stock = false`) — produire sans consommer de matières n'a pas de sens métier. *(Acté ADR-008 D6.)*
 
 ---
 
@@ -281,11 +291,12 @@ Réciproquement, le module Inventory **utilise** Production :
 
 | Priorité | Évolution | Bénéfice attendu |
 |---|---|---|
-| 🔴 | **Sous-recettes / semi-finis** | Pâte feuilletée comme semi-fini consommé par croissants ET pains au chocolat ET chaussons. |
-| 🔴 | **Versioning explicite des recettes** | Garder l'historique des changements de recette avec date, raison, auteur — pour analyser l'impact prix. |
+| ✅ | ~~**Sous-recettes / semi-finis**~~ | Livré V3 (S15→S21) — pâte feuilletée comme semi-fini consommé par plusieurs produits. |
+| ✅ | ~~**Versioning explicite des recettes**~~ | Livré V3 (S20+S21) — `recipe_versions` + snapshot avec coût. |
+| ✅ | ~~**Boulanger's percentages**~~ | Livré V3 (S19). |
+| ✅ | ~~**Allergènes structurés**~~ | Livré — propagation par recettes (`view_product_allergens_resolved`), affichés BO et POS. |
+| 🔴 | **Chantiers ADR-008** : D1 unités sous-recettes, D2 waste en charge, D3 enum raisons, D4 blocage stock, D5 erreur profondeur, D6 deduct_stock, D7 garde+refactor revert, D9 dette technique | Corriger les huit écarts constatés par l'audit du 2026-07-17. |
 | 🟠 | **Plan de production hebdomadaire** | Définir un planning type "lundi: 100 baguettes, 50 viennoiseries…" et l'instancier en 1 clic chaque semaine. |
-| 🟠 | **Boulanger's percentages** | Saisir les recettes en % de farine pour les boulangers traditionnels. |
-| 🟠 | **Allergènes structurés** | Tracer gluten, lactose, fruits à coque sur chaque ingrédient → affichage automatique sur fiche produit + ticket. |
 | 🟡 | **Mode mobile saisie** | Le boulanger en cuisine saisit sur tablette / téléphone sans devoir aller au PC. |
 | 🟡 | **Intégration IoT four** | Sondes connectées qui auto-déclenchent une production à la sortie du four. |
 | 🟢 | **Coût-marge en temps réel par recette** | Alerte automatique quand un changement de prix matière fait passer une recette sous le seuil de marge cible. |

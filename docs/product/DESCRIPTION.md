@@ -1,9 +1,10 @@
-# The Breakery — Description du produit (v1.3.1)
+# The Breakery — Description du produit (v1.3.2)
 
 > **LA référence produit.** Ce document décrit, pour un lecteur non technique (propriétaire, investisseurs, nouveaux employés), ce que fait aujourd'hui le logiciel de The Breakery et ce qui reste à venir. Il fait foi sur le périmètre fonctionnel.
 
 ## Historique des versions
 
+- **v1.3.2 (2026-07-17)** — Modules 5 (Catalogue) et 15 (Production & recettes) : « à venir » enrichis des décisions du propriétaire actées dans les ADR-007 et ADR-008 (audits code du 2026-07-17). Catalogue : refus d'encaisser un produit désactivé, marquage « produit de test » depuis la fiche, retrait de la fenêtre horaire des formules au profit des promotions. Production : coût des ratés passé en charge comptable visible, raisons de ratés en liste fixe, fournée bloquée par défaut à stock insuffisant (forçage explicite), annulation refusée si le lot est entamé, unité de stockage imposée pour les semi-finis en recette.
 - **v1.3.1 (2026-07-16)** — Module 19 (Réglages & configuration) réécrit d'après l'audit code intégral du module Settings (17 routes vérifiées page par page). Distinction explicite entre réglages à effet réel vérifié et réglages saisissables sans effet ; « à venir » recentré sur le branchement des surfaces mortes et enrichi des décisions du propriétaire (ADR-006) : propagation temps réel des réglages, pages réseau local avec système hub pour la continuité des communications entre appareils en cas de coupure internet (également reflété au Module 21), option globale « taxe incluse » rendue effective, réorganisation des réglages par fonctionnalité en sous-menus, et six réglages retenus du backlog (horaires d'ouverture, politique PIN, moyens de paiement enrichis, comportement cuisine, historique des réglages, plan de salle visuel).
 - **v1.3 (2026-07-13)** — Reconstruite lors de la « remise à plat » de juillet 2026 : chaque module a été réécrit à partir des fiches d'analyse réel-vs-demandé (comparaison indépendante entre le code réellement livré et la description précédente), puis corrigé par une checklist d'amendements réconciliée avec l'état du code au moment de la publication. Le document source de la version précédente (v1.2, 2026-07-03) n'étant plus disponible, la comparaison mot à mot v1.2 → v1.3 n'est pas auditable ; cette limite est actée comme une dette documentaire. Principaux changements : surventes retirées (fonctions annoncées mais absentes), sous-ventes ajoutées (fonctions livrées mais non documentées), et intégration des décisions du propriétaire — notamment l'abandon définitif de la gestion de péremption/lots (le stock est suivi en quantité globale, la péremption se gère par déclaration de perte) et l'abandon de la livraison motorisée pour les clients professionnels (retrait sur place).
 - **v1.2 (2026-07-03)** — Version précédente, 25 modules (non disponible dans le dépôt).
@@ -156,6 +157,9 @@ Le référentiel de tout ce qui se vend et se fabrique.
 - **Unités multiples** pour l'achat et le stock (acheter en sac, stocker au gramme, convertir automatiquement en recette).
 
 **À venir :**
+- Un produit désactivé ne pourra plus être encaissé, même s'il est déjà dans le panier : le paiement sera refusé avec un message clair au caissier (un produit simplement masqué de la caisse reste vendable).
+- Marquage « produit de test » activable directement depuis la fiche produit (réservé aux administrateurs), pour exclure les essais des rapports de vente.
+- La fenêtre horaire des formules sera retirée : la disponibilité par horaire passe uniquement par les promotions (happy hour).
 - Couleur de catégorie personnalisable.
 - Vente en sous-unité (par exemple un sachet de 100 g prélevé sur un sac) et vente au poids avec balance connectée.
 - Modification de plusieurs prix en une seule opération.
@@ -372,6 +376,11 @@ La fabrication maison : recettes, fournées, rendement.
 - **Rapports de rendement et d'efficacité** de production.
 
 **À venir :**
+- Le coût des ratés apparaîtra comme une charge visible dans la comptabilité, au lieu d'être fondu dans le coût du stock de produits finis.
+- La raison d'un raté se choisira dans une liste fixe (mal cuit, mal levé, esthétique, démonstration, test recette, dégustation) pour suivre les causes de perte par produit.
+- Une fournée sera bloquée par défaut si le stock d'ingrédients est insuffisant ; forcer restera possible mais deviendra un acte volontaire, protégé et tracé.
+- L'annulation d'une fournée sera refusée si le lot a déjà été entamé (vendu ou transféré) — la correction passera alors par un inventaire ou un ajustement.
+- Les lignes de recette utilisant un semi-fini devront être saisies dans l'unité de stockage de ce semi-fini, pour éliminer tout risque d'erreur de conversion.
 - Saisie des fournées directement sur tablette en cuisine.
 - Coût figé au moment de la vente (plutôt que le coût moyen courant).
 - Prévision de production selon les tendances.
