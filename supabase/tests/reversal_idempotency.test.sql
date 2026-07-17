@@ -1,7 +1,7 @@
 -- supabase/tests/reversal_idempotency.test.sql
 -- S55 P1.5 (audit T7) — EF-retry-safety idempotency on reversal RPCs.
 --   VOID   : void_order_rpc_v4 — idempotency_key replay via refunds.idempotency_key.
---   CANCEL : cancel_order_item_rpc_v4 (Task 2, appended below).
+--   CANCEL : cancel_order_item_rpc_v5 (Task 2, appended below).
 -- Run via MCP execute_sql (BEGIN/ROLLBACK envelope). pgtap pre-installed on V3 dev.
 
 BEGIN;
@@ -128,7 +128,7 @@ SELECT ok(current_setting('s55.void_t2')::boolean,
 
 -- ===========================================================================
 -- CANCEL fixture — manager with pos.sale.cancel_item ; draft order + one
--- non-served order_item (cancel_order_item_rpc_v4 requires status='draft'
+-- non-served order_item (cancel_order_item_rpc_v5 requires status IN ('draft','pending_payment') — ADR-009 déc. 3
 -- and kitchen_status <> 'served'). Direct INSERT lifted from
 -- order_edit_items.test.sql (pre-existing pgTAP convention for draft seeding).
 -- ===========================================================================
@@ -159,7 +159,7 @@ BEGIN
 END $cancel_fixture$;
 
 -- ===========================================================================
--- CANCEL T3 — first cancel_order_item_rpc_v4 call with key K succeeds :
+-- CANCEL T3 — first cancel_order_item_rpc_v5 call with key K succeeds :
 -- item cancelled, envelope carries the recomputed order totals.
 -- ===========================================================================
 DO $cancel_t3$
@@ -171,7 +171,7 @@ DECLARE
   v_res JSONB; v_is_cancelled BOOLEAN;
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_cashier_auth::text, true);
-  v_res := cancel_order_item_rpc_v4(v_item, 'S55 idempotency cancel test', v_manager_prof, v_cashier_auth, v_key);
+  v_res := cancel_order_item_rpc_v5(v_item, 'S55 idempotency cancel test', v_manager_prof, v_cashier_auth, v_key);
 
   SELECT is_cancelled INTO v_is_cancelled FROM order_items WHERE id = v_item;
 
@@ -187,7 +187,7 @@ SELECT ok(current_setting('s55.cancel_t3')::boolean,
   'CANCEL T3: first v3 call (key K) succeeds — item cancelled, envelope has order totals');
 
 -- ===========================================================================
--- CANCEL T4 — second cancel_order_item_rpc_v4 call with the SAME key K
+-- CANCEL T4 — second cancel_order_item_rpc_v5 call with the SAME key K
 -- replays : idempotent_replay=true, no error, same order_item_id.
 -- ===========================================================================
 DO $cancel_t4$
@@ -199,7 +199,7 @@ DECLARE
   v_res2 JSONB;
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_cashier_auth::text, true);
-  v_res2 := cancel_order_item_rpc_v4(v_item, 'S55 idempotency cancel test replay', v_manager_prof, v_cashier_auth, v_key);
+  v_res2 := cancel_order_item_rpc_v5(v_item, 'S55 idempotency cancel test replay', v_manager_prof, v_cashier_auth, v_key);
 
   PERFORM set_config('s55.cancel_t4', CASE WHEN
     (v_res2->>'idempotent_replay')::boolean = true
@@ -224,7 +224,7 @@ DECLARE
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_cashier_auth::text, true);
   BEGIN
-    PERFORM cancel_order_item_rpc_v4(v_item, 'S55 idempotency cancel test K2', v_manager_prof, v_cashier_auth, v_key2);
+    PERFORM cancel_order_item_rpc_v5(v_item, 'S55 idempotency cancel test K2', v_manager_prof, v_cashier_auth, v_key2);
   EXCEPTION WHEN SQLSTATE '23514' THEN
     v_caught := true;
   END;

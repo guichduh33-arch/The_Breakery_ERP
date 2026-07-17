@@ -6471,7 +6471,7 @@ export type Database = {
         Args: { p_count_id: string; p_reason: string }
         Returns: Json
       }
-      cancel_order_item_rpc_v4: {
+      cancel_order_item_rpc_v5: {
         Args: {
           p_acting_auth_user_id: string
           p_authorized_by: string
