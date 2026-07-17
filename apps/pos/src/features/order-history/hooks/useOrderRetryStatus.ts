@@ -17,7 +17,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 
 export interface OrderRetryStatus {
-  /** True when status='paid' AND no sale journal_entries row exists. */
+  /** True when status paid|completed AND no sale journal_entries row exists. */
   needsRetry: boolean;
   /**
    * Raw count of journal_entries rows referencing this order. >=1 means the
@@ -55,7 +55,7 @@ const sb = supabase as unknown as LooseSupabase;
  */
 export function useOrderRetryStatus(
   orderId: string | null,
-  status: 'paid' | 'voided' | 'draft' | null,
+  status: 'paid' | 'completed' | 'voided' | 'draft' | null,
 ) {
   return useQuery<OrderRetryStatus>({
     queryKey: ['order-retry-status', orderId],
@@ -75,9 +75,10 @@ export function useOrderRetryStatus(
         journalEntryCount: count,
       };
     },
-    // Only run when we have a paid order to inspect. Voided / draft orders
-    // don't expect a JE and shouldn't trigger the banner.
-    enabled: Boolean(orderId) && status === 'paid',
+    // Only run when we have a paid|completed order to inspect (ADR-009 déc. 4 :
+    // completed reste porteur d'une JE vente). Voided / draft orders don't
+    // expect a JE and shouldn't trigger the banner.
+    enabled: Boolean(orderId) && (status === 'paid' || status === 'completed'),
     // Trigger fires synchronously inside the order RPC, so a stale-time of 30s
     // is safe ; banner manual-refetches on retry success.
     staleTime: 30_000,

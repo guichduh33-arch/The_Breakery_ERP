@@ -8171,7 +8171,7 @@ export type Database = {
         Returns: string
       }
       restore_held_order_v1: { Args: { p_order_id: string }; Returns: Json }
-      retry_sale_journal_entry_v1: {
+      retry_sale_journal_entry_v2: {
         Args: { p_order_id: string }
         Returns: Json
       }

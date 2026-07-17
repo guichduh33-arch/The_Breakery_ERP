@@ -1,7 +1,7 @@
 // apps/pos/src/features/order-history/__tests__/OrderRetryBanner.test.tsx
 //
 // Session 13 / Phase 4.A — banner surfaces only when JE missing on a paid
-// order, and one-click retry invokes retry_sale_journal_entry_v1.
+// order, and one-click retry invokes retry_sale_journal_entry_v2.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
@@ -47,7 +47,7 @@ vi.mock('@/lib/supabase', () => {
       from: (_table: string) => ({
         select: (_cols: string, _opts?: unknown) => makeBuilder(),
       }),
-      rpc: (...args: unknown[]) => rpcMock(...args),
+      rpc: (...args: unknown[]) => rpcMock(...args) as unknown,
     },
   };
 });
@@ -89,7 +89,7 @@ describe('OrderRetryBanner', () => {
     expect(screen.queryByTestId('order-retry-banner')).toBeNull();
   });
 
-  it('calls retry_sale_journal_entry_v1 on click and shows success toast', async () => {
+  it('calls retry_sale_journal_entry_v2 on click and shows success toast', async () => {
     probeState.current = { count: 0, error: null };
     rpcMock.mockResolvedValue({
       data: {
@@ -106,7 +106,7 @@ describe('OrderRetryBanner', () => {
     fireEvent.click(btn);
 
     await waitFor(() => {
-      expect(rpcMock).toHaveBeenCalledWith('retry_sale_journal_entry_v1', { p_order_id: 'o1' });
+      expect(rpcMock).toHaveBeenCalledWith('retry_sale_journal_entry_v2', { p_order_id: 'o1' });
     });
     await waitFor(() => {
       expect(toastMock.success).toHaveBeenCalled();
