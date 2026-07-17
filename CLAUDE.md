@@ -60,6 +60,18 @@ Si un document contredit le code, le document a tort : **signale-le, ne corrige 
   citent fichier:ligne. La review ne remplace jamais les tests exécutés.
   L'orchestrateur coordonne, il ne décide pas. session-coordinator est aboli.
 
+## Commandes
+
+- Apps : les packages sont `@breakery/app-pos` / `@breakery/app-backoffice`
+  (PAS `@breakery/pos`). Dev : `pnpm --filter @breakery/app-pos dev`.
+- Tests JS : `pnpm --filter <pkg> test` (vitest). Les filtres vitest matchent le
+  NOM DE FICHIER, pas le describe. Suite POS complète = timeout en local ;
+  la CI est le seul filet full-suite. Le lint-ratchet CI bloque aussi sur les
+  erreurs préexistantes des fichiers touchés par la PR.
+- pgTAP : via MCP `execute_sql` (BEGIN/ROLLBACK), pas de runner local. SQL
+  >~12 KB : POST le fichier sur l'API `database/query` (troncature inline MCP).
+- Env : Vite lit `.env` à la RACINE du repo ; vitest lit `apps/<app>/.env.local`
+  (copier les deux dans un worktree).
 
 ## Critical patterns — don't break these
 
@@ -124,6 +136,9 @@ Si un document contredit le code, le document a tort : **signale-le, ne corrige 
 - **Jamais de commit direct sur master.** Tout changement passe par une branche
   (`feat/`, `fix/`, `chore/`) puis une PR — même un fix d'une ligne. Si la session
   démarre sur master, créer la branche AVANT le premier commit.
+- Windows : des fichiers 0-byte apparaissent à la racine (redirections ratées :
+  `0`, `5`, `limite`…). `git status` avant chaque commit, suppression par chemin
+  exact — JAMAIS `git clean -f` (risque d'emporter du travail non tracké).
 
 ## MCP
 
