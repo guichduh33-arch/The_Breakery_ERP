@@ -1,8 +1,8 @@
 // apps/pos/src/features/shift/hooks/__tests__/useShiftCloseSummary.test.tsx
 //
 // POS audit 2026-06-12 lot 3 — locks the expected-cash preview formula to the
-// close_shift_v2 server formula (20260606000015):
-//   expected = opening_cash + cash_sales(paid, method=cash) + cash_in - cash_out
+// close_shift server formula (v7 depuis ADR-009 déc. 4) :
+//   expected = opening_cash + cash_sales(paid|completed, method=cash) + cash_in - cash_out
 // and the threshold fallback when business_config is unreadable.
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
@@ -51,10 +51,11 @@ function mockTables(opts: {
       };
     }
     if (table === 'order_payments') {
+      // Chaîne réelle du hook : .eq(session_id).in(status paid|completed).eq(method).
       return {
         select: () => ({
           eq: () => ({
-            eq: () => ({
+            in: () => ({
               eq: () => Promise.resolve({ data: opts.cashPayments, error: null }),
             }),
           }),
