@@ -3,6 +3,10 @@
 // Session 10 — single-step modal that captures (a) a free-text reason and
 // (b) the manager 6-digit PIN, then submits to the cancel-item EF.
 // Reuses the NumpadPin primitive for consistent PIN entry UX.
+// ADR-010 D4 — a locked (kitchen-sent) item requires a waste declaration:
+// quantity prefilled to the line qty, adjustable 0..qty by the authorizing
+// manager (0 = nothing was produced; the declaration itself stays mandatory
+// and is enforced server-side by cancel_order_item_rpc_v6).
 
 import { useRef, useState, type JSX } from 'react';
 import { X } from 'lucide-react';
@@ -13,8 +17,12 @@ export interface CancelItemModalProps {
   open: boolean;
   onClose: () => void;
   itemName: string;
+  /** ADR-010 — line quantity; prefills the mandatory waste declaration. */
+  itemQty: number;
+  /** ADR-010 — true when the line was sent to kitchen (is_locked). */
+  locked: boolean;
   /** Called once the cashier has provided BOTH a valid reason AND PIN. */
-  onSubmit: (args: { reason: string; managerPin: string; idempotencyKey: string }) => Promise<void> | void;
+  onSubmit: (args: { reason: string; managerPin: string; idempotencyKey: string; wasteQty?: number }) => Promise<void> | void;
   isPending?: boolean;
 }
 
@@ -22,10 +30,13 @@ export function CancelItemModal({
   open,
   onClose,
   itemName,
+  itemQty,
+  locked,
   onSubmit,
   isPending = false,
 }: CancelItemModalProps): JSX.Element {
   const [reason, setReason] = useState('');
+  const [wasteQty, setWasteQty] = useState<number>(itemQty);
   const [pinKey, setPinKey] = useState(0);
   // S55 — one UUID per "modal open session", sticky across re-renders and retries
   // (never regenerated inside onSubmit, so RQ auto-retries reuse it). Rotated on
@@ -34,6 +45,7 @@ export function CancelItemModal({
 
   function handleClose(): void {
     setReason('');
+    setWasteQty(itemQty);
     setPinKey((k) => k + 1);
     idempotencyKeyRef.current = crypto.randomUUID();
     onClose();
@@ -45,8 +57,18 @@ export function CancelItemModal({
       setPinKey((k) => k + 1);
       return;
     }
+    if (locked && (Number.isNaN(wasteQty) || wasteQty < 0 || wasteQty > itemQty)) {
+      toast.error(`Waste quantity must be between 0 and ${itemQty}`);
+      setPinKey((k) => k + 1);
+      return;
+    }
     try {
-      await onSubmit({ reason: reason.trim(), managerPin: pin, idempotencyKey: idempotencyKeyRef.current });
+      await onSubmit({
+        reason: reason.trim(),
+        managerPin: pin,
+        idempotencyKey: idempotencyKeyRef.current,
+        ...(locked ? { wasteQty } : {}),
+      });
       handleClose();
     } catch {
       // The mutation surface its own toast ; clear PIN to allow retry.
@@ -93,6 +115,27 @@ export function CancelItemModal({
               <div className="mt-1 text-xs text-red-fg">Reason must be at least 3 characters</div>
             )}
           </div>
+
+          {locked && (
+            <div>
+              <label className="text-xs uppercase tracking-widest text-text-secondary mb-2 block">
+                Waste quantity (0–{itemQty})
+              </label>
+              <Input
+                type="number"
+                min={0}
+                max={itemQty}
+                value={Number.isNaN(wasteQty) ? '' : wasteQty}
+                onChange={(e) => setWasteQty(e.target.value === '' ? NaN : Number(e.target.value))}
+                className={cn('w-full', (Number.isNaN(wasteQty) || wasteQty < 0 || wasteQty > itemQty) && 'border-red-fg/30')}
+                disabled={isPending}
+                data-testid="waste-qty-input"
+              />
+              <div className="mt-1 text-xs text-text-secondary">
+                Item was sent to kitchen — declared quantity is deducted as waste (0 if nothing was produced).
+              </div>
+            </div>
+          )}
 
           <div>
             <div className="text-xs uppercase tracking-widest text-text-secondary mb-2">

@@ -20,11 +20,20 @@
 // void-order whose success necessarily writes a void, this EF would otherwise
 // confirm a guessed PIN silently (new oracle).
 //
+// ADR-010 D3 — optional single-use authorization nonce minting: with
+// `mint_scope: 'order_item_edit'` in the body, a successful verification also
+// inserts a `discount_authorizations` row (service-role only, 60 s TTL) whose
+// scope-mapped permission is enforced SERVER-SIDE (the client's
+// `required_permission` is never trusted for minting). The returned
+// `authorization_id` is consumed atomically by update_order_item_qty_v2 —
+// same single-use vehicle as the S55 discount nonce.
+//
 // Headers:
 //   x-manager-pin: string (6 digits) — REQUIRED
 //   Authorization: Bearer <cashier JWT> — REQUIRED
-// Body: { required_permission?: string } (e.g. 'sales.discount'; empty body OK)
-// 200 → { verified_user_id }
+// Body: { required_permission?: string, mint_scope?: 'order_item_edit' }
+//       (e.g. 'sales.discount'; empty body OK)
+// 200 → { verified_user_id, authorization_id? }
 
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { handleCors, jsonResponse } from '../_shared/cors.ts';
@@ -37,7 +46,16 @@ import { getAdminClient } from '../_shared/supabase-admin.ts';
 
 interface VerifyManagerPinPayload {
   required_permission?: string;
+  /** ADR-010 D3 — mint a single-use authorization nonce for this scope. */
+  mint_scope?: string;
 }
+
+// ADR-010 D3 — allowlist of mintable scopes and the authorizer permission each
+// one enforces (editing a kitchen-sent line is a partial cancel: same authority
+// as the cancel flow). Server-side mapping — the client body is never trusted.
+const MINT_SCOPES: Record<string, string> = {
+  order_item_edit: 'pos.sale.cancel_item',
+};
 
 serve(async (req) => {
   const cors = handleCors(req);
@@ -78,6 +96,12 @@ serve(async (req) => {
   const requiredPermission = typeof body.required_permission === 'string' && body.required_permission.length > 0
     ? body.required_permission
     : null;
+  const mintScope = typeof body.mint_scope === 'string' && body.mint_scope.length > 0
+    ? body.mint_scope
+    : null;
+  if (mintScope && !(mintScope in MINT_SCOPES)) {
+    return jsonResponse({ error: 'invalid_mint_scope' }, 400);
+  }
 
   // SEC-07 — check fail bucket before attempting PIN verification.
   if (await isManagerPinBlocked(ip)) {
@@ -100,6 +124,31 @@ serve(async (req) => {
     if (!allowed) return jsonResponse({ error: 'permission_missing' }, 403);
   }
 
+  // ADR-010 D3 — the scope-mapped permission is enforced regardless of what the
+  // client sent (or omitted) as required_permission.
+  if (mintScope) {
+    const scopePermission = MINT_SCOPES[mintScope];
+    if (scopePermission !== requiredPermission) {
+      const allowed = await checkPermissionForRole(mgr.role_code, scopePermission, mgr.manager_profile_id);
+      if (!allowed) return jsonResponse({ error: 'permission_missing' }, 403);
+    }
+  }
+
+  let authorizationId: string | null = null;
+  if (mintScope) {
+    const admin = getAdminClient();
+    const { data: nonce, error: nonceErr } = await admin
+      .from('discount_authorizations')
+      .insert({ manager_profile_id: mgr.manager_profile_id, scope: mintScope })
+      .select('id')
+      .single();
+    if (nonceErr || !nonce) {
+      console.error('[verify-manager-pin] authorization nonce mint failed', nonceErr);
+      return jsonResponse({ error: 'internal' }, 500);
+    }
+    authorizationId = nonce.id;
+  }
+
   // Audit the successful verification (non-fatal on error) — without this row a
   // guessed PIN would be confirmed silently, unlike void-order whose success
   // necessarily writes a void. supabase-js does not throw on DB errors — check
@@ -111,7 +160,7 @@ serve(async (req) => {
       action:      'manager_pin.verified',
       entity_type: 'edge_function',
       entity_id:   null,
-      metadata:    { ip, function: 'verify-manager-pin', required_permission: requiredPermission },
+      metadata:    { ip, function: 'verify-manager-pin', required_permission: requiredPermission, mint_scope: mintScope },
     });
     if (auditErr) console.warn('[verify-manager-pin] audit_logs insert failed', auditErr);
   } catch (auditErr) {
@@ -119,6 +168,10 @@ serve(async (req) => {
   }
 
   // Tightened response — full_name/role_code would be gratuitous PIN→identity
-  // disclosure; the client only needs the verified profile id.
-  return jsonResponse({ verified_user_id: mgr.manager_profile_id });
+  // disclosure; the client only needs the verified profile id (and the nonce
+  // id when a mint was requested).
+  return jsonResponse({
+    verified_user_id: mgr.manager_profile_id,
+    ...(authorizationId ? { authorization_id: authorizationId } : {}),
+  });
 });

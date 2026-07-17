@@ -3,17 +3,24 @@
 // Sequence: removes first, then updates, then adds. Each call has its own
 // idempotency key. Errors abort (no rollback cross-RPC — each is atomic
 // DB-side). Returns onProgress for UI progress bar.
+// ADR-010 — updates flagged is_locked require `lockedAuth` (manager PIN +
+// waste reason): one single-use nonce is minted per locked update via
+// verify-manager-pin (mint_scope 'order_item_edit') and consumed by
+// update_order_item_qty_v2, which records the mandatory waste on the delta.
 
 import { useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAddOrderItem } from './useAddOrderItem';
 import { useUpdateOrderItemQty } from './useUpdateOrderItemQty';
 import { useRemoveOrderItem } from './useRemoveOrderItem';
+import { mintEditAuthorization } from './useMintEditAuthorization';
 import type { OrderEditDiff } from '../types';
 
 interface ApplyArgs {
   orderId: string;
   diff:    OrderEditDiff;
+  /** ADR-010 — required when diff.updates contains a locked line. */
+  lockedAuth?: { managerPin: string; wasteReason: string };
 }
 
 interface ApplyProgress {
@@ -41,9 +48,16 @@ export function useEditOrderItems(opts?: { onProgress?: (p: ApplyProgress) => vo
   }
 
   return useMutation<void, Error, ApplyArgs>({
-    mutationFn: async ({ orderId, diff }) => {
+    mutationFn: async ({ orderId, diff, lockedAuth }) => {
       const total = diff.removes.length + diff.updates.length + diff.adds.length;
       let idx = 0;
+
+      // ADR-010 — fail fast BEFORE mutating anything: a locked update without
+      // the manager authorization context would abort mid-sequence otherwise.
+      const hasLockedUpdate = diff.updates.some((u) => u.is_locked);
+      if (hasLockedUpdate && (!lockedAuth || lockedAuth.wasteReason.trim().length < 3)) {
+        throw new Error('Locked lines require the manager PIN and a waste reason (≥ 3 chars)');
+      }
 
       for (const orderItemId of diff.removes) {
         opts?.onProgress?.({ step: 'removes', index: idx++, total });
@@ -52,7 +66,19 @@ export function useEditOrderItems(opts?: { onProgress?: (p: ApplyProgress) => vo
 
       for (const u of diff.updates) {
         opts?.onProgress?.({ step: 'updates', index: idx++, total });
-        await updM.mutateAsync({ orderItemId: u.order_item_id, qty: u.qty, idempotencyKey: keyFor(`update:${u.order_item_id}:${u.qty}`) });
+        if (u.is_locked && lockedAuth) {
+          // One single-use nonce per locked RPC call (60 s TTL, consumed atomically).
+          const authId = await mintEditAuthorization(lockedAuth.managerPin);
+          await updM.mutateAsync({
+            orderItemId:    u.order_item_id,
+            qty:            u.qty,
+            idempotencyKey: keyFor(`update:${u.order_item_id}:${u.qty}`),
+            authId,
+            wasteReason:    lockedAuth.wasteReason.trim(),
+          });
+        } else {
+          await updM.mutateAsync({ orderItemId: u.order_item_id, qty: u.qty, idempotencyKey: keyFor(`update:${u.order_item_id}:${u.qty}`) });
+        }
       }
 
       for (const [addIdx, a] of diff.adds.entries()) {

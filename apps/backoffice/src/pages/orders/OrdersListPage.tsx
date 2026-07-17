@@ -187,7 +187,7 @@ export default function OrdersListPage(): JSX.Element {
   async function loadItemsAndOpenEdit(row: OrdersListLine): Promise<void> {
     const { data, error } = await supabase
       .from('order_items')
-      .select('id, product_id, name_snapshot, quantity, unit_price, line_total, modifiers')
+      .select('id, product_id, name_snapshot, quantity, unit_price, line_total, modifiers, is_locked')
       .eq('order_id', row.id);
     if (error) {
       toast.error(`Failed to load order items: ${(error as { message?: string }).message ?? 'unknown error'}`);
@@ -196,6 +196,7 @@ export default function OrdersListPage(): JSX.Element {
     const items: OrderItemEdit[] = (data ?? []).map((it: {
       id: string; product_id: string; name_snapshot: string;
       quantity: number; unit_price: number; line_total: number; modifiers: unknown;
+      is_locked: boolean;
     }) => ({
       id: it.id,
       product_id: it.product_id,
@@ -204,6 +205,7 @@ export default function OrdersListPage(): JSX.Element {
       unit_price: Number(it.unit_price),
       line_total: Number(it.line_total),
       modifiers: Array.isArray(it.modifiers) ? it.modifiers : [],
+      is_locked: Boolean(it.is_locked),
     }));
     setEditTarget({ id: row.id, number: row.order_number, items });
   }

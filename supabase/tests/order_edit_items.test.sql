@@ -157,7 +157,7 @@ DECLARE v_status TEXT := 'fail_raised';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('breakery.test_manager'), true);
   BEGIN
-    PERFORM update_order_item_qty_v1(
+    PERFORM update_order_item_qty_v2(
       current_setting('breakery.test_item')::uuid,
       5, gen_random_uuid());
     v_status := 'pass';
@@ -173,7 +173,7 @@ DECLARE v_status TEXT := 'fail_no_raise';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('breakery.test_manager'), true);
   BEGIN
-    PERFORM update_order_item_qty_v1(
+    PERFORM update_order_item_qty_v2(
       current_setting('breakery.test_item')::uuid,
       0, gen_random_uuid());
   EXCEPTION WHEN SQLSTATE '22023' THEN v_status := 'pass';
@@ -190,7 +190,7 @@ BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('breakery.test_manager'), true);
   UPDATE orders SET status='completed' WHERE id = current_setting('breakery.test_order')::uuid;
   BEGIN
-    PERFORM update_order_item_qty_v1(
+    PERFORM update_order_item_qty_v2(
       current_setting('breakery.test_item')::uuid,
       3, gen_random_uuid());
   EXCEPTION WHEN SQLSTATE 'P0002' THEN v_status := 'pass';
@@ -205,7 +205,7 @@ SELECT ok(current_setting('breakery.t8_pass') = 'pass', 'T8: update_qty on compl
 DO $$
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('breakery.test_manager'), true);
-  PERFORM update_order_item_qty_v1(
+  PERFORM update_order_item_qty_v2(
     current_setting('breakery.test_item')::uuid, 7, gen_random_uuid());
 END $$;
 SELECT cmp_ok(
@@ -220,7 +220,7 @@ DECLARE v_status TEXT := 'fail_raised';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('breakery.test_manager'), true);
   BEGIN
-    PERFORM remove_order_item_v1(
+    PERFORM remove_order_item_v2(
       current_setting('breakery.test_item')::uuid,
       gen_random_uuid());
     v_status := 'pass';
@@ -236,7 +236,7 @@ DECLARE v_status TEXT := 'fail_no_raise';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('breakery.test_manager'), true);
   BEGIN
-    PERFORM remove_order_item_v1(gen_random_uuid(), gen_random_uuid());
+    PERFORM remove_order_item_v2(gen_random_uuid(), gen_random_uuid());
   EXCEPTION WHEN SQLSTATE 'P0002' THEN v_status := 'pass';
                 WHEN OTHERS THEN v_status := 'fail_' || SQLSTATE;
   END;
