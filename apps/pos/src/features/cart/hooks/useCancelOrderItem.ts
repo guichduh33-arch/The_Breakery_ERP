@@ -46,7 +46,7 @@ export function useCancelOrderItem() {
         // S34: manager PIN in header, never the body (security-fraud-guard gap 2).
         'x-manager-pin': managerPin,
       };
-      // S55: HTTP retry-safe idempotency — the EF forwards this to cancel_order_item_rpc_v4.
+      // S55: HTTP retry-safe idempotency — the EF forwards this to cancel_order_item_rpc_v5.
       if (idempotencyKey) headers['x-idempotency-key'] = idempotencyKey;
 
       const res = await fetch(`${supabaseUrl}/functions/v1/cancel-item`, {
