@@ -36,7 +36,7 @@ Une **modale de détail** se superpose à la liste quand on clique sur une comma
 
 ---
 
-## 3. Les 5 invariants de la page
+## 3. Les 6 invariants de la page
 
 Quel que soit le contexte d'utilisation, la page garantit toujours les mêmes mécaniques :
 
@@ -45,6 +45,14 @@ Quel que soit le contexte d'utilisation, la page garantit toujours les mêmes m�
 3. **Filtre par défaut : aujourd'hui**. À l'ouverture, la page n'affiche que les commandes du jour — c'est 95 % du cas d'usage et ça évite de noyer l'utilisateur dans l'historique.
 4. **Une seule source de vérité**. Les statuts affichés (`status`, `payment_status`, `item_status`) sont ceux de la base — pas de cache local divergent. Une commande payée à la caisse apparaît payée sur la page Orders à la seconde suivante.
 5. **Read-mostly**. La page est principalement de la consultation. Les actions destructives (annulation, refund, modification) passent par la modale détail et exigent un PIN manager — pas de bouton "delete" sur la ligne.
+6. **Item envoyé en cuisine = intouchable** (ADR-010). Dès l'émission du KOT
+   (`is_locked`), une ligne ne peut plus être ni supprimée ni augmentée depuis
+   la page Orders : la quantité ne peut que **baisser**, sous autorisation
+   manager (PIN, nonce single-use vérifié serveur) et avec **déclaration de
+   perte obligatoire sur le delta retiré** — la perte est déduite via le
+   circuit waste recette-aware et rattachée à la commande. La suppression
+   renvoie vers le flux cancel du POS. Ce qui est parti en cuisine a coûté de
+   la matière : ça s'annule avec une trace, jamais avec un delete.
 
 ---
 
@@ -198,6 +206,10 @@ Selon le statut et les permissions :
 - **Imprimer ticket cuisine** (re-print kitchen ticket).
 - **Annuler la commande** (exige PIN manager + raison obligatoire).
 - **Refund partiel ou total** (exige PIN manager + raison).
+- **Modifier les items** (commandes `draft` / `pending_payment` uniquement) :
+  ajouter une ligne est libre ; sur une ligne verrouillée 🔒 (envoyée en
+  cuisine), seule la baisse de quantité est possible — PIN manager + raison de
+  perte exigés dans la modale, la perte est déclarée sur le delta (ADR-010).
 - **Marquer payée** (pour les ardoises encaissées plus tard).
 - **Modifier le client** (rattacher une commande anonyme à un client après coup).
 
@@ -278,7 +290,11 @@ Bénéfice métier : **le manager n'a pas besoin de fixer la page**. Il vaque à
 ## 13. Ce que la page ne fait **pas** (par design)
 
 - La page **ne crée pas de commande**. La création se fait au POS, jamais ici.
-- La page **ne modifie pas les items** d'une commande (ajouter / retirer un produit). Pour ajouter un item, il faut retourner au POS sur la commande ouverte.
+- La page **ne modifie pas librement une commande envoyée en cuisine**.
+  L'édition d'items existe (commandes non payées), mais une ligne verrouillée
+  (KOT émis) ne peut que baisser sous autorisation manager avec perte
+  obligatoire — et sa suppression est refusée au profit du flux cancel POS
+  (ADR-010). Jamais d'édition silencieuse de ce que la cuisine a produit.
 - La page **n'imprime pas en masse**. L'impression est ticket par ticket via la modale.
 - La page **ne fait pas d'analytics avancée**. Pas de graphique, pas de comparaison période — c'est le rôle du module Reports.
 - La page **ne change pas l'item status en direct**. Le KDS est la seule interface qui pilote `item_status` côté cuisine.
@@ -295,7 +311,7 @@ Bénéfice métier : **le manager n'a pas besoin de fixer la page**. Il vaque à
 | 🟠 | **Heatmap visuelle des commandes en cours** | Vue compacte montrant l'âge de chaque commande (vert / orange / rouge selon attente). |
 | 🟠 | **Filtre rapide "Mes commandes"** | Pour un serveur, ne voir que les commandes qu'il a saisies. |
 | 🟠 | **Notification toast riche** | À chaque commande qui passe en `ready`, afficher un toast cliquable qui ouvre la modale détail. |
-| 🟡 | **Édition de la commande après coup** | Ajouter / retirer un item avec PIN manager + audit, sans devoir voider et recréer. |
+| ✅ | **Édition de la commande après coup** | Livré : edit-items S33 + verrou ADR-010 (baisse sous PIN manager, perte obligatoire, audit). |
 | 🟡 | **Vue calendrier des commandes différées** | Pour les pré-commandes / réservations, voir le planning visuel des prochains jours. |
 | 🟢 | **Export PDF par commande** | Re-générer le ticket en PDF pour envoi par e-mail au client. |
 | 🟢 | **Lien direct vers le KDS** | Un bouton "voir au KDS" qui ouvre la station correspondante avec l'item surligné. |

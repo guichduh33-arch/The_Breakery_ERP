@@ -141,6 +141,11 @@ Si erreur :
 
 Bénéfice métier : **garantie de réception**. Pas de commande perdue dans le tuyau — l'ACK est la confirmation explicite.
 
+L'envoi est aussi un **point de non-retour par ligne** : une fois la commande
+tirée en cuisine côté POS, ses lignes sont verrouillées (ADR-010) — toute
+annulation ou réduction passe alors par le flux manager du POS (PIN + perte
+obligatoire), jamais par la tablette.
+
 ---
 
 ## 8. Du côté du POS — La réception
@@ -218,6 +223,10 @@ Bénéfice métier : **sécurité cohérente avec le POS**. La tablette n'ouvre 
 - La tablette **ne supporte pas l'offline complet**. Si LAN down, envoi bloqué. Pas de queue locale.
 - La tablette **ne déclenche pas l'envoi cuisine elle-même**. C'est le caissier qui décide quand envoyer en cuisine (souvent à l'acceptation).
 - La tablette **ne consulte pas le KDS** ni les stocks détaillés — juste l'indicateur "rupture" sur les produits.
+- La tablette **ne modifie jamais une commande déjà envoyée**. Son panier est
+  local et pré-envoi ; après "Send to POS", corriger une ligne partie en
+  cuisine est un geste manager au POS (verrou ADR-010 : PIN + déclaration de
+  perte). La tablette n'a ni le droit ni les écrans pour le faire.
 
 ---
 
