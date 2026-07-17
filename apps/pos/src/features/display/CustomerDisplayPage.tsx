@@ -32,6 +32,7 @@ import { useReadyOrders } from './hooks/useReadyOrders';
 import { useCartBroadcastReceiver } from './hooks/useCartBroadcastReceiver';
 import { useKioskAuth } from './hooks/useKioskAuth';
 import { useOrgDisplaySettings } from '@/features/settings/hooks/useOrgDisplaySettings';
+import { useSettingsRealtime } from '@/features/settings/hooks/useSettingsRealtime';
 
 /** Built-in idle footer used when no custom message is configured. */
 const DEFAULT_DISPLAY_FOOTER = 'Open daily · 07:00 — 21:00';
@@ -44,6 +45,10 @@ const CART_FRESHNESS_MS = 5 * 60 * 1_000;
 
 export default function CustomerDisplayPage() {
   const auth = useKioskAuth();
+  // Settings §6.C — push settings propagation for the kiosk surface. The App
+  // shell mount is gated on the PIN session, which the display doesn't have;
+  // this one re-arms once the kiosk JWT lands (realtime joins with that token).
+  useSettingsRealtime(auth.status === 'authenticated');
   // Org-level customer-display copy (S73 Lot 2 — POS Settings → Customer Display).
   const { displayFooterMessage } = useOrgDisplaySettings();
   const idleFooter = displayFooterMessage || DEFAULT_DISPLAY_FOOTER;
