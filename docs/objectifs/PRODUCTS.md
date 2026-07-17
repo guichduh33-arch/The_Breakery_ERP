@@ -8,8 +8,8 @@
 > (pas de FIFO/péremption), [ADR-005](../adr/005-juridiction-fiscale-lombok-pbjt.md)
 > (fiscalité), [ADR-006](../adr/006-settings-socle-business-config-perimetre.md)
 > (périmètre Settings), [ADR-007](../adr/007-domaine-produits-catalogue.md)
-> (périmètre et décisions du domaine — ⚠️ tant qu'ADR-007 est en brouillon, les
-> sections marquées [ADR-007] de cette fiche sont conditionnelles).
+> (périmètre et décisions du domaine — ✅ accepté le 2026-07-17 : toutes les
+> décisions citées dans cette fiche sont actées).
 
 ---
 
@@ -58,8 +58,9 @@ stock au ledger.
 
 1. **Le serveur est seul juge de la vendabilité et du prix.** Aucune donnée
    catalogue transmise par le client (prix, flags, composition) ne fait foi —
-   le money-path résout tout côté serveur. [Renforcé par ADR-007 déc. 2 si
-   Option A.]
+   le money-path résout tout côté serveur. [Renforcé par ADR-007 déc. 2 :
+   un produit inactif est invendable — refus strict au paiement, même si le
+   produit était déjà au panier ; `visible_on_pos` reste un filtre d'affichage.]
 2. **Toute écriture catalogue passe par une RPC versionnée et auditée.** Aucune
    écriture directe de table depuis l'UI. [Sections à rapatrier — déc. 5.]
 3. **Un seul mécanisme par concept.** Fenêtres horaires → promotions ;
@@ -85,15 +86,16 @@ mapping comptable (→ Accounting).
 
 ## 5. Backlog du module — à prioriser par le propriétaire
 
-> ⚠️ Issu de l'audit du 2026-07-17. Les items marqués [ADR-007] attendent la
-> décision correspondante ; les autres se décident au fil de l'eau.
+> Issu de l'audit du 2026-07-17. Les décisions ADR-007 sont actées
+> (2026-07-17) — les items marqués [ADR-007] sont des chantiers à lancer ;
+> les autres se décident au fil de l'eau.
 
 | Prio | Item | Note |
 |---|---|---|
-| ⬜ | Garde-fou money-path produits inactifs | [ADR-007 déc. 2] — RPC vN+1 + pgTAP |
+| ⬜ | Garde-fou money-path produits inactifs (refus strict) | [ADR-007 déc. 2] — RPC vN+1 + pgTAP |
 | ⬜ | Rapatrier Sections sous RPC auditée | [déc. 5] |
 | ⬜ | DROP `products.tax_inclusive` | [déc. 4] — migration + regen types |
-| ⬜ | Fenêtre horaire combos : retirer ou appliquer | [déc. 3] |
+| ⬜ | Fenêtre horaire combos : retirer de l'UI + déprécier les colonnes | [déc. 3] — un seul mécanisme horaire : les promotions |
 | ⬜ | Toggle UI `is_test` (permission admin) | [déc. 6] |
 | ⬜ | `combo_display_order` : appliquer le tri ou retirer le champ | micro |
 | ⬜ | POS : cesser de sélectionner `wholesale_price` | micro, perf/clarté |

@@ -1,235 +1,193 @@
 # ADR-008 — Module Production & Recipes : arbitrages issus de l'audit croisé code × objectifs
 
 > **Date** : 2026-07-17
-> **Statut** : 🟡 Proposé — décisions à trancher par le propriétaire
+> **Statut** : ✅ Accepted (2026-07-17)
 > **Décideurs** : propriétaire The Breakery (guichduh33)
 > **Supersedes** : —
-> **Contexte** : audit à l'aveugle du module Production (2026-07-17, code
->   uniquement : lignée complète des migrations `production_records` /
->   `production_batches` / `recipes`, corps live vs fichiers, `packages/domain/
->   src/production`, hooks BO `inventory-production`), puis croisement avec la
->   fiche `docs/objectifs/PRODUCTION.md` (archivée — la référence canonique
->   `docs/reference/04-modules/15-production-recipes.md` qu'elle désigne
->   n'existe plus dans l'arborescence vivante). L'audit confirme les acquis V3
->   (sous-recettes, versioning, baker's %, yield, marge-cible, batch atomique,
->   idempotence UI, valorisation FG au coût matières réel, defense-in-depth
->   PUBLIC de juillet) et identifie huit points où le code contredit soit un
->   invariant affiché du module, soit l'intention métier écrite, soit un
->   pattern projet. Cet ADR liste les décisions ; aucune n'est actée tant que
->   la case « Décision » n'est pas remplie.
 
-## D1 — Conversion d'unités dans la cascade sous-recettes 🔴
+## Contexte
 
-**État du code** : le CTE récursif de `record_production_v1` (corps live,
-`20260710000024`) multiplie la quantité du parent — exprimée dans l'unité libre
-de la ligne recette — par la quantité de la recette enfant (« par 1 unité de
-produit »), **sans convertir vers l'unité de stockage de l'intermédiaire**.
-`convert_quantity` n'est appliquée qu'au niveau feuille. Une ligne « 500 g » d'un
-semi-fini stocké en kg expanse sa recette ×500 au lieu de ×0,5 (facteur 1000).
-Rien ne contraint `recipes.unit` (texte libre 1-16 chars, `upsert_recipe_v1` ne
-valide que non-vide). Le miroir client documente le trou (D7 « identity
-conversion », `expandRecipeCascade.ts`) et renvoie au serveur comme source de
-vérité — qui a le même angle mort.
+Le 2026-07-17, un audit « à l'aveugle » du module Production a été mené sur le
+code uniquement : toute la lignée des migrations `production_records`,
+`production_batches` et `recipes`, la comparaison des corps de fonctions en
+production avec les fichiers de migration, le code partagé
+`packages/domain/src/production`, et les hooks du back-office
+`inventory-production`. Le résultat a ensuite été croisé avec la fiche
+`docs/objectifs/PRODUCTION.md` (aujourd'hui archivée — le document de
+référence qu'elle désigne comme canonique n'existe plus).
 
-**Intention doc** : invariant n°2 de la fiche objectifs (« Conversion d'unités
-automatique… le système convertit »), étendu de fait aux sous-recettes livrées
-en V3.
+L'audit confirme que les acquis de la V3 sont solides : sous-recettes,
+versioning des recettes, baker's %, rendement, marge-cible, production par
+lot atomique, idempotence côté interface, valorisation des produits finis au
+coût matières réel, et le durcissement des droits PUBLIC de juillet.
 
-**Options** :
-- **(a)** Contraindre à l'écriture : toute ligne recette dont le `material_id`
-  est lui-même un produit à recette DOIT utiliser l'unité de stockage de ce
-  produit (validation dans `upsert_recipe_v1` + audit/backfill des lignes
-  existantes). Simple, vérifiable, zéro ambiguïté runtime.
-- **(b)** Convertir entre niveaux dans le CTE : à chaque descente, convertir la
-  quantité du parent (`recipe_unit`) vers `products.unit` de l'intermédiaire
-  avant multiplication. Plus souple, mais complexifie un CTE déjà dense et le
-  miroir client doit suivre.
-- **(c)** a court terme + b comme cible.
+En revanche, il identifie huit points où le code contredit soit un invariant
+affiché du module, soit l'intention métier écrite, soit un pattern du projet.
+Cet ADR tranche ces huit points, plus un lot de dette technique.
 
-**Recommandation** : (a) — avec un audit SQL préalable des lignes existantes
-pour mesurer l'exposition réelle.
+## D1 🔴 — Conversion d'unités dans les sous-recettes : contrainte à l'écriture
 
-**Décision** : ☐
+**Le problème** : quand une recette utilise un semi-fini, le calcul de
+production ne convertit pas les unités entre les niveaux. Exemple concret :
+une ligne « 500 g » d'un semi-fini stocké en kilogrammes fait exploser la
+recette du semi-fini ×500 au lieu de ×0,5 — un facteur d'erreur de 1000.
+Rien ne contraint l'unité saisie dans une ligne de recette (texte libre).
+Le code côté client documente le trou et renvoie au serveur comme source de
+vérité… qui a exactement le même angle mort.
 
-## D2 — Comptabilisation du waste : capitalisé ou passé en charge 🔴
+**La décision** : on impose une règle simple à la sauvegarde de la recette :
+toute ligne qui pointe vers un produit ayant lui-même une recette DOIT
+utiliser l'unité de stockage de ce produit. La validation se fait dans
+`upsert_recipe_v1`, et un audit SQL des lignes existantes sera mené d'abord
+pour mesurer l'exposition réelle et corriger ce qui doit l'être.
 
-**État du code** : aucun mouvement `production_waste`, aucune écriture
-5210 Waste Expense. Le coût matières de la portion ratée est capitalisé dans le
-stock produits finis (`production_in.unit_cost = coût_matières_total /
-actual_yield`, le total incluant le waste). Le stock FG est survalorisé du coût
-des ratés, invisible au P&L jusqu'à la vente.
+La conversion automatique entre niveaux n'est pas retenue : elle
+complexifierait un calcul déjà dense, côté serveur comme côté client.
 
-**Intention doc** : §5.2 et §12 promettent un mouvement waste dédié et
-Dr 5210 Production Waste Expense — le coût des ratés passe directement en
-charge et alimente le chiffrage « coût des ratés » (§6).
+## D2 🔴 — Le coût des ratés passe en charge comptable
 
-**Options** :
-- **(a)** Statu quo assumé (IAS 2 : le rebut *normal* est absorbé dans le coût
-  de production) — mettre à jour la doc, renoncer au report « coût des ratés »
-  comptable (il resterait calculable en analytique via `quantity_waste`).
-- **(b)** Aligner sur la doc : jambe JE séparée pour la part waste
-  (Dr Waste Expense / Cr Raw Materials au prorata `waste/(produced+waste)`), le
-  reste seul capitalisé dans FG.
-- **(c)** Hybride seuil : waste ≤ seuil % capitalisé (normal), au-delà passé en
-  charge (anormal).
+**Le problème** : aujourd'hui, le coût des portions ratées (waste) est
+absorbé silencieusement dans le coût du stock de produits finis. Le stock
+est donc survalorisé du coût des ratés, et ce coût est invisible au compte
+de résultat jusqu'à la vente. La doc métier promettait un mouvement de
+stock dédié et une charge comptable visible (compte 5210 Production Waste
+Expense).
 
-**Recommandation** : (b) — c'est l'intention métier écrite et ça rend le coût
-des ratés pilotable ; (c) si le bruit comptable inquiète.
+**La décision** : on aligne le code sur l'intention métier. La part ratée
+d'une production génère sa propre écriture comptable (débit Waste Expense /
+crédit Matières premières, au prorata `waste / (produit + waste)`). Seul le
+coût de ce qui est réellement produit est capitalisé dans le stock de
+produits finis. Le coût des ratés devient visible et pilotable.
 
-**Décision** : ☐
+## D3 🟠 — La raison des ratés devient une catégorie structurée
 
-## D3 — Raison de waste structurée 🟠
+**Le problème** : la seule information sur un raté est un champ de notes en
+texte libre. Impossible d'en faire des statistiques.
 
-**État du code** : `production_records` n'a que `notes` libre.
-`yield_variance_reason` concerne le rendement, pas les ratés.
+**La décision** : on crée un enum Postgres `waste_reason` (mal cuit, mal
+levé, esthétique, démonstration, test recette, dégustation), une colonne
+dédiée sur `production_records`, et un menu déroulant dans l'interface.
+Coût faible, forte valeur analytique : on pourra suivre le taux de ratés
+par produit ET par cause. La source unique de l'enum est Postgres, comme
+partout dans le projet.
 
-**Intention doc** : §6 — raison catégorisée (mal cuit, mal levé, esthétique,
-démonstration, test recette, dégustation) alimentant un suivi du taux de waste
-par produit.
+## D4 🔴 — Production à stock insuffisant : blocage par défaut
 
-**Options** : (a) enum Postgres `waste_reason` + colonne (+ UI select) ;
-(b) statu quo notes libres, doc mise à jour.
+**Le problème** : le garde-fou « stock insuffisant » est neutralisé dès que
+le réglage `allow_negative_stock` vaut vrai — et en l'absence de réglage, le
+défaut vaut « vrai » (deux fois dans le code). Autrement dit : sans
+configuration explicite, toute production passe silencieusement en stock
+négatif. La doc voulait l'inverse : blocage par défaut, forçage explicite.
 
-**Recommandation** : (a) — faible coût, forte valeur analytique ; source unique
-enum côté Postgres (pattern projet).
+**La décision** : le défaut devient « bloquer ». Forcer une production
+malgré un stock insuffisant redevient un acte volontaire : soit via le
+réglage global assumé, soit via un paramètre de forçage protégé par une
+permission dédiée, avec avertissement à l'utilisateur.
 
-**Décision** : ☐
+## D5 🔴 — Recette trop profonde : erreur franche au lieu du silence
 
-## D4 — Production à stock insuffisant : forçage explicite ou laisser-passer par défaut 🔴
+**Le problème** : le calcul de production s'arrête à 5 niveaux
+d'imbrication. Un arbre de 6 niveaux est constructible, et dans ce cas le
+semi-fini non déplié au niveau 5 est simplement **exclu de la
+consommation** — le stock est sous-consommé en silence. Pendant ce temps,
+le client affiche une erreur : la prévisualisation et le serveur divergent.
+L'erreur `recipe_depth_exceeded` prévue dans la RPC est du code mort,
+inatteignable.
 
-**État du code** : le gate `insufficient_stock` est neutralisé dès que
-`business_config.allow_negative_stock` est vrai — et le défaut est
-`COALESCE(..., true)` (deux fois) : sans ligne de config, tout passe
-silencieusement en stock négatif.
+**La décision** : si un semi-fini non déplié subsiste à la profondeur
+maximale, la production échoue avec l'erreur `recipe_depth_exceeded`. Une
+production qui consomme partiellement en silence est pire qu'une erreur
+franche. Le serveur et le client redeviennent cohérents.
 
-**Intention doc** : §11 — blocage par défaut, forçage **explicite** par
-l'utilisateur (permission dédiée + warning).
+## D6 🟠 — Produire un produit qui ne suit pas le stock : interdit
 
-**Options** :
-- **(a)** Défaut `false` (blocage) + le forçage redevient un acte : soit le
-  réglage global assumé, soit un paramètre `p_force` gated par une permission.
-- **(b)** Statu quo assumé (boulangerie : la production ne doit jamais être
-  bloquée par un stock théorique faux) — doc mise à jour, mais alors corriger au
-  moins le double COALESCE pour que l'absence de config ne vaille pas « oui ».
+**Le problème** : si le produit fini est marqué `deduct_stock = false`
+(« ne suit pas le stock »), la production saute la consommation des
+matières mais crée quand même une entrée de stock valorisée. Résultat : une
+écriture comptable déséquilibrée — débit Produits finis / crédit
+PRODUCTION_COGS sans contre-partie, laissant un solde orphelin.
 
-**Recommandation** : (a) pour l'intégrité du stock ; si (b), seeder
-explicitement `allow_negative_stock` et documenter.
+**La décision** : `record_production` refuse un produit fini marqué
+`deduct_stock = false`, avec une erreur claire. Produire sans consommer de
+matières n'a pas de sens métier. Si un vrai cas d'usage apparaît un jour,
+il fera l'objet d'un nouvel ADR.
 
-**Décision** : ☐
+## D7 🔴 — Revert d'une production entamée : refus + retour au helper standard
 
-## D5 — Comportement au débordement de profondeur de cascade 🔴
+**Le problème** : l'annulation d'une production (`revert_production_v1`) a
+deux défauts graves. D'abord, elle ne vérifie pas si le lot a déjà bougé :
+produire 10, en vendre 4, puis annuler dans les 24 h retire 10 du stock au
+lieu de 6 — le stock ET la comptabilité deviennent faux. Ensuite, elle
+contourne le helper standard des mouvements de stock (INSERT directs,
+mises à jour manuelles des quantités, contre-écritures comptables sans
+vérification de période fiscale ouverte).
 
-**État du code** : la récursion s'arrête à `depth < 5`, donc le
-`RAISE recipe_depth_exceeded` de la RPC est inatteignable (code mort). Un arbre
-de 6 niveaux est constructible (le trigger anti-cycle ne compte la profondeur
-que SOUS l'arête insérée) : l'intermédiaire non expansé en profondeur 5 est
-**exclu de la consommation** (filtre `is_intermediate = FALSE`) →
-sous-consommation silencieuse. Le client, lui, throw `RecipeDepthExceededError`
-(divergence préview/serveur).
+**La décision** : deux corrections.
 
-**Options** :
-- **(a)** Échec franc : dans la RPC, si un intermédiaire non expansé subsiste à
-  la profondeur max → `RAISE recipe_depth_exceeded`. Aligne serveur et client.
-- **(b)** Prévention à l'écriture : renforcer le trigger pour rejeter toute
-  arête créant un chemin > 5 depuis n'importe quelle racine (plus coûteux à
-  l'écriture, marginal en pratique).
-- **(c)** a + b.
+1. Le revert est **refusé** si le lot (ou le stock du produit) a bougé
+   depuis la production (erreur `already_consumed`). Dans ce cas, le
+   correctif passe par un inventaire ou un ajustement de stock.
+2. Le revert est **réécrit** pour passer par le helper standard
+   `record_stock_movement_v1` au lieu de le contourner, et les
+   contre-écritures comptables passent sous la garde de période fiscale.
+   Ce retour au primitive élimine toute une classe de dérives futures.
 
-**Recommandation** : (a) minimum immédiat — une production qui consomme
-partiellement en silence est pire qu'une erreur.
+## D8 🟡 — Autorisation du revert : la permission suffit, pas de PIN
 
-**Décision** : ☐
+**Le problème** : la vieille doc parlait d'un « PIN manager » pour
+supprimer une production. Le code actuel exige la permission
+`inventory.production.delete` (ADMIN et plus) dans une fenêtre de 24 h,
+sans PIN.
 
-## D6 — Sémantique `deduct_stock` en production et JE asymétrique 🟠
+**La décision** : le statu quo est acté. Le revert est une opération
+back-office rare, déjà restreinte aux admins et tracée dans l'audit. Le PIN
+n'apporterait presque rien ici. La doc sera mise à jour.
 
-**État du code** (Task 5, juillet) : si le produit FINI a `deduct_stock=false`,
-la consommation matières est sautée mais `production_in` est quand même émise
-et valorisée au coût matières calculé → Dr Finished Goods / Cr PRODUCTION_COGS
-sans la contre-jambe → solde créditeur orphelin sur PRODUCTION_COGS.
+## D9 🟡 — Lot de dette technique : GO
 
-**Intention doc** : §12 — transfert équilibré matières → produits finis. Le
-flag `deduct_stock` n'existe pas dans la vision métier.
+Les quatre corrections suivantes sont acceptées en bloc, comme un seul
+chantier, sans redesign :
 
-**Options** :
-- **(a)** Si `deduct_stock=false` : `production_in` valorisée à 0 ou à
-  `cost_price` (pas de JE de transfert du tout — cohérent avec « ce produit ne
-  suit pas le stock »).
-- **(b)** Interdire `record_production` sur un produit `deduct_stock=false`
-  (une production sans consommation n'a pas de sens métier).
-- **(c)** Statu quo assumé et documenté (accepter le solde transitoire).
-
-**Recommandation** : (b), sauf cas d'usage réel identifié pour produire sans
-consommer — alors (a).
-
-**Décision** : ☐
-
-## D7 — Revert d'une production dont le lot est déjà entamé + bypass du primitive 🔴
-
-**État du code** : `revert_production_v1` fait des INSERT directs dans
-`stock_movements` et des hand-updates de `products.current_stock` /
-`section_stock` (duplication de la logique de `record_stock_movement_v1`,
-UPDATE `section_stock` silencieux si la ligne n'existe pas), insère les
-contre-JE sans `check_fiscal_period_open`, et **ne garde pas le cas du lot
-partiellement vendu** : produire 10, vendre 4, revert < 24 h → contre-mouvement
-−10 (au lieu de −6), lot forcé à 0, contre-JE sur la valeur totale → stock et
-compta faux.
-
-**Options** :
-- **(a)** Refuser le revert si le lot (ou le stock produit) a bougé depuis la
-  production (`already_consumed`) — le correctif passe alors par opname/ajustement.
-- **(b)** Revert au prorata du restant (complexe, valeur douteuse).
-- **(c)** a + refactor du revert pour passer par `record_stock_movement_v1`
-  (paramètre skip-JE ou flag metadata) au lieu du bypass, + fiscal guard sur les
-  contre-JE.
-
-**Recommandation** : (c) — la garde (a) est le minimum ; le retour au primitive
-élimine une classe entière de drift futur.
-
-**Décision** : ☐
-
-## D8 — Autorisation du revert : PIN manager ou permission 🟡
-
-**État du code** : gate `inventory.production.delete` (ADMIN+), fenêtre 24 h,
-pas de PIN. **Intention doc** (§7) : « suppression avec PIN manager ». Le
-pattern projet PIN-in-header existe (discounts POS).
-
-**Options** : (a) statu quo (permission + fenêtre 24 h), doc mise à jour ;
-(b) ajouter le PIN manager in-header en plus de la permission.
-
-**Recommandation** : (a) — le revert est une opération BO rare, ADMIN+, déjà
-tracée ; le PIN apporte peu ici.
-
-**Décision** : ☐
-
-## D9 — Lot de dette technique production (à lotir tel quel) 🟡
-
-Un seul GO/NO-GO pour le paquet, pas de redesign :
-1. Idempotence RPC : catch `unique_violation` + re-read (pattern projet) dans
-   `record_production_v1` et le batch (aujourd'hui : SELECT-then-INSERT, la
-   course renvoie une erreur brute classée `unknown`).
-2. Supprimer les `COALESCE(convert_quantity(...), qty)` morts et trompeurs
-   (`convert_quantity` raise, ne renvoie jamais NULL) ; mapper
-   `unit_conversion_missing` et `section_required` dans les `classify()` des
-   hooks (le code d'erreur `unit_conversion_failed` est mort depuis la v1
-   d'origine).
-3. `DROP TABLE IF EXISTS pg_temp._bom_flatten/_leaf_consumption` défensif DANS
-   `record_production_v1` (aujourd'hui seul le batch nettoie les temp tables de
-   son callee — couplage par nom, et le commentaire de `_103` prétend à tort que
-   le fix est dans `_006`).
-4. Révoquer l'EXECUTE client de `record_batch_production_v1` (v2 wrapper est
-   l'entrée canonique ; v1 reste l'implémentation interne).
-
-**Décision** : ☐
+1. **Vraie idempotence des RPCs production** : remplacer le
+   SELECT-puis-INSERT actuel (qui laisse passer une course et renvoie une
+   erreur brute) par le pattern projet : catch `unique_violation` + relecture.
+2. **Nettoyage du code mort et trompeur** : supprimer les
+   `COALESCE(convert_quantity(...), qty)` inutiles (`convert_quantity` lève
+   une erreur, elle ne renvoie jamais NULL), et mapper les codes d'erreur
+   `unit_conversion_missing` et `section_required` dans les hooks pour que
+   l'utilisateur voie un message compréhensible.
+3. **Nettoyage défensif des tables temporaires** dans
+   `record_production_v1` elle-même (aujourd'hui seul le batch nettoie les
+   tables temporaires de la fonction qu'il appelle — un couplage fragile).
+4. **Révoquer l'accès client direct à `record_batch_production_v1`** : le
+   wrapper v2 est l'entrée canonique ; la v1 reste une implémentation
+   interne.
 
 ## Constats sans décision (signalements)
 
-- **Fichiers de migration ≠ corps live** : tous les corps production dans
-  `supabase/migrations/` contiennent encore `INSERT INTO audit_log` (vue
-  droppée en `_088` ; corps live réécrits par le sweep `_087`). Le garde-fou
-  CLAUDE.md « tout bump part du corps live `pg_get_functiondef` » est la seule
-  protection — vigilance sur tout futur bump production.
-- **Lien documentaire cassé** : `docs/objectifs/PRODUCTION.md` (archivé) désigne
-  `docs/reference/04-modules/15-production-recipes.md` comme canonique — ce
-  fichier n'existe plus dans l'arborescence vivante. La fiche objectifs est de
-  fait la seule doc fonctionnelle du module ; nommage des mouvements
-  (`ingredient`/`production_waste`) et §7 y sont datés V2.
+- **Les fichiers de migration ne reflètent plus les fonctions en
+  production** : tous les corps production dans `supabase/migrations/`
+  contiennent encore `INSERT INTO audit_log` (une vue supprimée depuis ;
+  les corps live ont été réécrits par un sweep ultérieur). La règle
+  CLAUDE.md « tout bump part du corps live `pg_get_functiondef` » est la
+  seule protection — vigilance absolue sur tout futur bump d'une RPC
+  production.
+- **Lien documentaire cassé** : la fiche `docs/objectifs/PRODUCTION.md`
+  (archivée) désigne comme canonique un document de référence qui n'existe
+  plus. La fiche objectifs est de fait la seule doc fonctionnelle du
+  module, et certaines sections y sont datées V2.
+
+## Conséquences
+
+- Les décisions D1, D2, D4, D5, D6 et D7 touchent des RPCs publiées : chaque
+  correction passe par une nouvelle version (`_vN+1`) créée à partir du corps
+  live, avec tests pgTAP et régénération des types.
+- D2 et D7 touchent la comptabilité : les écritures passent sous la garde de
+  période fiscale et doivent rester équilibrées.
+- D3 ajoute un enum + une colonne (migration + UI).
+- D9 est un lot unique de mise en conformité, sans changement de
+  comportement métier.
+
+## Révision
+
+Ces décisions ne se rouvrent que par un nouvel ADR.
