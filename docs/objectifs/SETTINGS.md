@@ -1,8 +1,8 @@
 # Module Settings — Objectif métier
 
-> **Version** : 2026-07-17 — mise à jour après les lots 1 à 5 (PR #218 → #223) et
-> le Lot 6a (PR #224, socle `tax_inclusive`), chaque point revérifié dans le code
-> et sur la base V3 dev.
+> **Version** : 2026-07-17 (rév. 2) — mise à jour après les lots 1 à 6b
+> (PR #218 → #225) : le chantier §6.A « brancher l'existant + fixes » est soldé,
+> chaque point revérifié dans le code et sur la base V3 dev.
 > Base initiale : audit code V3 du 2026-07-16 (17 routes settings auditées page par
 > page, câblage RPC/tables/consommateurs vérifié).
 > Remplace le brief V2 archivé (~23 pages en 6 groupes, jamais déployé).
@@ -34,9 +34,9 @@ par personne est un réglage mort — c'est le critère n°1 de ce document.
   (`business`, `localization`, `tax`, `pos`, `pos_presets`, `inventory`, `payments`,
   `customer_display`, `printing`, `kds`), dictionnaire typé
   `packages/supabase/src/settings-keys.ts`.
-- Lecture `get_settings_by_category_v2`, écriture `set_setting_v2` (validation par
+- Lecture `get_settings_by_category_v2`, écriture `set_setting_v3` (validation par
   clé, **audit-log automatique** dans `audit_logs` : qui/quoi/quand/ancienne/nouvelle
-  valeur).
+  valeur ; v2 droppée — la v3 ajoute le gate de bascule `tax_inclusive`, Lot 6b).
 - Pages hors-socle avec leurs propres tables/RPCs : floor-plan, notifications,
   templates, security, accounting, expense-thresholds, B2B.
 - **Aucun binding mort** : toute RPC/table référencée par l'UI existe en migration.
@@ -46,7 +46,7 @@ par personne est un réglage mort — c'est le critère n°1 de ce document.
 | Route | Consommateur réel |
 |---|---|
 | `/settings` (hub) | Navigation, tuiles gatées par permission |
-| `/settings/general` (partiel) | `tax_rate` → money-path (`current_pb1_rate()`) ; `timezone` → rapports ; identité `name`/`fiscal_address`/`npwp`/`phone`/`logo_url` → tickets POS (`SuccessModal`), PDF (`generate-pdf`, `generate-zreport-pdf`, `_shared/pdf-layout`) et emails (`_shared/email-html`) — Lot 2 ; seuils de variance shift → `close_shift_v4/v5` + POS |
+| `/settings/general` (partiel) | `tax_rate` + `tax_inclusive` → formule PB1 (`_pb1_split_v1`, unique porteur — Lots 6a/6b) et surfaces HT/TTC POS (panier, checkout, reçu, customer display, tablette) ; bascule `tax_inclusive` gatée (`set_setting_v3` : refus si commandes ouvertes, dialog de confirmation BO) ; `timezone` → rapports ; identité `name`/`fiscal_address`/`npwp`/`phone`/`logo_url` → tickets POS (`SuccessModal`), PDF (`generate-pdf`, `generate-zreport-pdf`, `_shared/pdf-layout`) et emails (`_shared/email-html`) — Lot 2 ; seuils de variance shift → `close_shift_v4/v5` + POS |
 | `/settings/inventory` | `allow_negative_stock` → `record_stock_movement_v1`, `complete_order_with_payment_v18`, RPCs production |
 | `/settings/templates/receipt` | `receipt_templates` → impression POS (`SuccessModal`) — Lot 3 |
 | `/settings/templates/email` | `email_templates` → couche HTML (`_shared/email-html`) du chemin d'envoi (`notification-dispatch`) — Lot 4 |
@@ -66,32 +66,14 @@ par personne est un réglage mort — c'est le critère n°1 de ce document.
 
 ### 2.3 Ce qui est livré mais MORT en aval (UI réelle, effet nul)
 
-> Les quatre autres surfaces mortes de l'audit du 2026-07-16 (templates de reçu,
-> templates email, holidays, déclencheurs de notifications) ont été branchées par les
-> lots 3, 4, 4b et 5 — voir §2.2. **`tax_inclusive` était la dernière — son socle
-> est livré par le Lot 6a (PR #224).**
+> Les six surfaces mortes de l'audit du 2026-07-16 (templates de reçu, templates
+> email, identité entreprise, holidays, déclencheurs de notifications,
+> `tax_inclusive`) sont **toutes branchées** par les lots 2 à 6b — voir §2.2 et
+> §6.A. Ne reste ici que `currency` et une réserve d'exploitation.
 
-1. **`tax_inclusive` (global) — socle livré, bascule restante.** L'audit du
-   2026-07-16 avait constaté un réglage écrit-jamais-lu ; l'instruction du Lot 6
-   (2026-07-17) a révélé pire : le flag par produit `products.tax_inclusive` était
-   mort lui aussi (sélectionné, typé, éditable — jamais consommé ; 441/441 produits
-   à `true`), et le mode effectif était **codé en dur, inclusif, recopié dans
-   7 fonctions**. Le Lot 6a (PR #224, migrations `_171`→`_178`) a réduit la formule
-   à un seul porteur : `_pb1_split_v1`, qui lit `business_config`
-   (`tax_rate` + `tax_inclusive`). Appellent le helper :
-   `complete_order_with_payment_v18`, `pay_existing_order_v12`,
-   `cancel_order_item_rpc_v4`, `refund_order_rpc_v5`, `attach_tab_customer_v2`,
-   `_recalc_order_totals` (et par ricochet `add/remove/update_order_item_v1`,
-   `hold_order_v1`) ; `create_sale_journal_entry` lit `orders.tax_amount`.
-   **Le réglage est désormais lu — effectif par construction.** Reste le Lot 6b :
-   avertissement UI avant bascule, refus si commandes ouvertes (`set_setting_v3`),
-   affichage HT/TTC, dépréciation UI+RPC du flag produit (arbitrages actés :
-   aucune conversion auto des prix, colonne conservée). `currency` reste
-   écrit-jamais-lu (hors périmètre du Lot 6).
-   Au passage, le Lot 6a a corrigé un défaut fiscal : le trigger JE fabriquait du
-   PB1 sur les ventes B2B (`tax_amount = 0`, hors champ PBJT) — 81 600 IDR
-   sur-déclarés. Avenir corrigé ; la reprise des 10 JE historiques est un sujet
-   comptable séparé, non traité.
+1. **`currency` — écrit-jamais-lu.** Toujours stocké et éditable dans
+   `/settings/general`, consommé par personne (hors périmètre du Lot 6, délibéré :
+   la facturation est en IDR uniquement, multi-devise rejeté par ADR-006 déc. 10).
 2. **Déclencheurs de notifications — livré, une réserve.** Les 5 producteurs métier
    existent (Lot 4b) : triggers `trg_notify_order_complete_insert/_update`,
    `trg_notify_b2b_payment`, `trg_notify_expense_approved`, `trg_notify_po_received`,
@@ -112,7 +94,7 @@ par personne est un réglage mort — c'est le critère n°1 de ce document.
 ## 3. Les invariants du module (constatés tenus, à préserver)
 
 1. **Sauvegarde explicite** — rien ne s'applique sans clic « Save ».
-2. **Trace systématique** — chaque `set_setting_v2` écrit dans `audit_logs`
+2. **Trace systématique** — chaque `set_setting_v3` écrit dans `audit_logs`
    (ancienne → nouvelle valeur, auteur, horodatage). Pas de table `settings_history`
    séparée : `audit_logs` est LE journal.
 3. **Permissions réelles** : `settings.read` (lecture), `settings.update` (écriture),
@@ -164,7 +146,14 @@ par personne est un réglage mort — c'est le critère n°1 de ce document.
 | **Templates email** | — | ✅ Livré — Lot 4 (#221), couche HTML `_shared/email-html` |
 | **Holidays** | — | ✅ Livré — Lot 5 (#223), bandeau dashboard + signal rapport ventes |
 | **Déclencheurs de notifications** | — | ✅ Livré — Lot 4b (#222), 5 déclencheurs exception-safe |
-| **`tax_inclusive` global** | **Décidé (ADR-006 déc. 7)** : rendre le réglage effectif comme défaut boutique. Arbitrages du 2026-07-17 : le global devient l'unique vérité, `products.tax_inclusive` est déprécié (441/441 à `true`, jamais consommé) ; aucune conversion automatique des prix (le réglage change l'interprétation de `retail_price`) ; bascule refusée s'il reste des commandes ouvertes ; B2B et imports historiques restent hors champ PB1 (délibéré). **Lot 6a livré (PR #224)** : `_pb1_split_v1` unique porteur de la formule, réglage lu par construction, comportement constant prouvé (pgTAP + s44 12/12). **Reste Lot 6b** : bascule effective (`set_setting_v3` + avertissement UI), affichage HT/TTC, dépréciation UI+RPC du flag produit. | 🔶 6a livré (PR #224) — 6b restant |
+| **`tax_inclusive` global** | — | ✅ Livré — Lot 6a (#224, socle `_pb1_split_v1`) + Lot 6b (#225 : bascule gatée `set_setting_v3` + dialog BO, surfaces HT/TTC POS via `splitPb1`/`useTaxConfig`, flag produit déprécié UI+RPC, colonne conservée) |
+
+> **Chantier §A soldé le 2026-07-17 (lots 1 → 6b, PR #218 → #225).** Restes actés
+> du Lot 6, hors périmètre : (1) reprise des 10 JE historiques avec PB1 fantôme
+> sur ventes B2B (81 600 IDR sur-déclarés — sujet comptable séparé, avenir corrigé
+> par le Lot 6a) ; (2) un refund/cancel post-bascule sur une commande payée AVANT
+> recalcule sous le nouveau mode — le gate ne couvre que les commandes ouvertes
+> (limitation actée) ; (3) `currency` reste écrit-jamais-lu (cf. §2.3).
 
 ### B. Corriger les anomalies constatées
 
@@ -195,12 +184,11 @@ réalignés, page renommée « Session Timeouts ». Le volet PIN reste au backlo
 ## 7. En une phrase
 
 Le module Settings V3 est **réel et honnête dans son câblage** — chaque page vivante
-est consommée, chaque changement est tracé. Des six surfaces qui écrivaient dans le
+est consommée, chaque changement est tracé. Les six surfaces qui écrivaient dans le
 vide au 2026-07-16 (reçus, emails, identité entreprise, jours fériés, déclencheurs de
-notifications, `tax_inclusive`), **cinq ont été branchées par les lots 2 à 5**, et la
-dernière — `tax_inclusive`, dont le Lot 6 a révélé qu'elle était morte des deux côtés
-à la fois, le mode taxe étant codé en dur dans 7 fonctions — a reçu son socle au
-Lot 6a (PR #224) : la formule n'a plus qu'un porteur, `_pb1_split_v1`, et le réglage
-est lu par construction. Reste le Lot 6b pour rendre la bascule utilisable
-(avertissement, refus si commandes ouvertes, affichage HT/TTC, dépréciation du flag
-produit).
+notifications, `tax_inclusive`) sont **toutes branchées** : lots 2 à 5 pour les cinq
+premières, lots 6a + 6b (PR #224/#225) pour `tax_inclusive` — la formule PB1 n'a plus
+qu'un porteur (`_pb1_split_v1`), la bascule est gatée (`set_setting_v3`, refus si
+commandes ouvertes) et les surfaces POS affichent HT/TTC selon le mode. Le chantier
+§6.A est soldé ; la suite du module vit au backlog §6.C (Realtime, hub LAN,
+sous-menus, business hours…).
