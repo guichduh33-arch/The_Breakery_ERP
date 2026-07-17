@@ -1,9 +1,10 @@
 // apps/pos/src/features/order-history/components/OrderRetryBanner.tsx
 //
 // Session 13 / Phase 4.A — banner shown inside OrderDetailDrawer when the
-// order is `status='paid'` but no `journal_entries` row exists (rare race :
-// sale JE trigger failed e.g. missing account mapping / fiscal period flip
-// mid-tx). One-click button calls `retry_sale_journal_entry_v1`.
+// order is `status='paid'` (or `completed`, ADR-009 déc. 4) but no
+// `journal_entries` row exists (rare race : sale JE trigger failed e.g.
+// missing account mapping / fiscal period flip mid-tx). One-click button
+// calls `retry_sale_journal_entry_v2`.
 
 import type { JSX } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
@@ -14,18 +15,18 @@ import { useRetryOrderJournal } from '../hooks/useRetryOrderJournal';
 
 export interface OrderRetryBannerProps {
   orderId: string;
-  /** Filtered upstream — banner only renders the probe for paid orders. */
-  status: 'paid' | 'voided' | 'draft';
+  /** Filtered upstream — banner only renders the probe for paid|completed orders. */
+  status: 'paid' | 'completed' | 'voided' | 'draft';
 }
 
 export function OrderRetryBanner({ orderId, status }: OrderRetryBannerProps): JSX.Element | null {
   const probe = useOrderRetryStatus(orderId, status);
   const retry = useRetryOrderJournal();
 
-  // The probe is gated on status === 'paid' inside the hook ; this branch keeps
-  // the early-return explicit so the component is trivially tree-shakable when
-  // status is non-paid.
-  if (status !== 'paid') return null;
+  // The probe is gated on status paid|completed inside the hook ; this branch
+  // keeps the early-return explicit so the component is trivially tree-shakable
+  // for the other statuses.
+  if (status !== 'paid' && status !== 'completed') return null;
   if (probe.isLoading || probe.isError) return null;
   if (!probe.data?.needsRetry) return null;
 

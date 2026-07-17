@@ -44,7 +44,9 @@ export function useShiftCloseSummary(sessionId: string | null) {
         .from('order_payments')
         .select('amount, orders!inner(session_id, status)')
         .eq('orders.session_id', sessionId!)
-        .eq('orders.status', 'paid')
+        // ADR-009 déc. 4 : miroir de close_shift_v7 — une commande servie passe
+        // paid→completed, ses paiements comptent toujours dans le tiroir.
+        .in('orders.status', ['paid', 'completed'])
         .eq('method', 'cash');
       if (payErr) throw new Error(payErr.message);
       const cashSales = (payments ?? []).reduce(

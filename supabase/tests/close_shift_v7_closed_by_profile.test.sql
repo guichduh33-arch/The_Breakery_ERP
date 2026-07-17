@@ -1,4 +1,4 @@
--- supabase/tests/close_shift_v6_closed_by_profile.test.sql
+-- supabase/tests/close_shift_v7_closed_by_profile.test.sql
 -- S72 — POS audit P0 regression: close_shift wrote auth.uid() into the
 -- pos_sessions.closed_by and audit_logs.actor_id FK columns (both -> user_profiles.id).
 -- For any employee created via the real hiring chain (create_user_v1), profile.id
@@ -40,7 +40,7 @@ BEGIN
 END $fixture$;
 
 SELECT lives_ok(
-  $$SELECT close_shift_v6('c5720000-0000-0000-0000-0000000000c1'::uuid, 500000)$$,
+  $$SELECT close_shift_v7('c5720000-0000-0000-0000-0000000000c1'::uuid, 500000)$$,
   'T1: user with profile.id <> auth_user_id can close shift (P0 regression)'
 );
 

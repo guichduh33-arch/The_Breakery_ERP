@@ -27,7 +27,7 @@ export interface OrderDetailPayment {
 export interface OrderDetail {
   id: string;
   order_number: string;
-  status: 'paid' | 'voided' | 'draft';
+  status: 'paid' | 'completed' | 'voided' | 'draft';
   total: number;
   tax_amount: number;
   customer_id: string | null;
@@ -62,7 +62,7 @@ const sb = supabase as unknown as LooseSupabase;
 interface RawDetail {
   id: string;
   order_number: string;
-  status: 'paid' | 'voided' | 'draft';
+  status: 'paid' | 'completed' | 'voided' | 'draft';
   total: number;
   tax_amount: number;
   customer_id: string | null;

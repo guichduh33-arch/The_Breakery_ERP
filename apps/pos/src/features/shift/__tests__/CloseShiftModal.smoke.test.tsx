@@ -275,11 +275,8 @@ describe('CloseShiftModal', () => {
     await Promise.resolve();
     await Promise.resolve();
     await Promise.resolve();
-    // NOTE (S67 deviation): this assertion was stale at 'close_shift_v4' —
-    // useCloseShift was already bumped to close_shift_v6 by an earlier S67
-    // task (T8) without updating this test, so it was RED before this task
-    // touched anything. Repointed to v5 as part of this task's TDD baseline.
-    expect(rpcMock).toHaveBeenCalledWith('close_shift_v6', expect.objectContaining({
+    // ADR-009 déc. 4 — close_shift bumped to v7 (paid|completed readers).
+    expect(rpcMock).toHaveBeenCalledWith('close_shift_v7', expect.objectContaining({
       p_session_id: 's1',
       p_counted_cash: 105_000,
     }));

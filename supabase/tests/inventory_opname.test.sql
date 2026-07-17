@@ -16,7 +16,7 @@
 --             needed since we test the schema-level state machine).
 --   T_OPN_11 — opname_in + opname_out enum values present.
 --   T_OPN_12 — view_section_stock_details exists with security_invoker.
---   T_OPN_13 — get_low_stock_v1 + get_reorder_suggestions_v1 + get_product_dashboard_v1
+--   T_OPN_13 — get_low_stock_v1 + get_reorder_suggestions_v1 + get_product_dashboard_v2
 --             execute without crash for an admin user.
 
 BEGIN;
@@ -140,7 +140,7 @@ SELECT is(
   (SELECT COUNT(*)::INT FROM pg_proc
     WHERE proname IN (
       'get_stock_movements_v1','get_movement_aggregates_v1',
-      'get_low_stock_v1','get_reorder_suggestions_v1','get_product_dashboard_v1'
+      'get_low_stock_v1','get_reorder_suggestions_v1','get_product_dashboard_v2'
     )),
   5,
   'T_OPN_13: 5 query RPCs (movements/aggregates/low_stock/reorder/dashboard) exist'

@@ -13,6 +13,7 @@
 // designated approver (approver_id) + their 6-digit PIN, validated server-side
 // via _verify_pin_with_lockout. New error codes mapped below.
 // S67 (12 D2.2/D2.3) — bumped to close_shift_v5: three-way count (qris/card) + opt-in denomination grid; new error codes mapped below.
+// ADR-009 déc. 4 — bumped to close_shift_v7: sales aggregates read status IN (paid, completed).
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -83,7 +84,7 @@ export function useCloseShift() {
       if (input.counted_qris !== undefined)     args.p_counted_qris = input.counted_qris;
       if (input.counted_card !== undefined)     args.p_counted_card = input.counted_card;
       if (input.denominations !== undefined)    args.p_denominations = input.denominations;
-      const { data, error } = await supabase.rpc('close_shift_v6', args);
+      const { data, error } = await supabase.rpc('close_shift_v7', args);
       if (error) {
         // S60 (12 D1.4): the above-threshold variance note is enforced
         // server-side (ERRCODE P0001 variance_note_required). The UI

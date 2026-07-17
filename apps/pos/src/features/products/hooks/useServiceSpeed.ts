@@ -5,12 +5,12 @@
 // Computes a coarse "kitchen rhythm" signal for the current local hour:
 //   - average fulfillment time = avg(paid_at - created_at) for paid orders
 //     completed in the current hour (local timezone)
-//   - order count this hour (already exposed by get_sales_by_hour_v1)
+//   - order count this hour (already exposed by get_sales_by_hour_v3)
 //
 // The indicator does NOT promise SLA accuracy ; it's a glance signal that
 // helps a cashier-manager decide whether to call extra hands. Therefore we
 // accept the cheaper query path:
-//   - read order_count from get_sales_by_hour_v1
+//   - read order_count from get_sales_by_hour_v3
 //   - read avg(paid_at - created_at) via a lightweight inline query against
 //     `orders` for today, this hour. RLS already constrains visibility.
 
@@ -43,6 +43,7 @@ interface QueryResult<T> {
 }
 interface SelectBuilder {
   eq: (col: string, val: unknown) => SelectBuilder;
+  in: (col: string, vals: readonly unknown[]) => SelectBuilder;
   gte: (col: string, val: unknown) => SelectBuilder;
   not: (col: string, op: string, val: unknown) => SelectBuilder;
   then: <R>(fn: (qr: QueryResult<FulfillmentRow[]>) => R) => Promise<R>;
@@ -57,7 +58,7 @@ interface LooseSupabase {
 
 /**
  * Local-date stamp YYYY-MM-DD in the device timezone — passed to
- * `get_sales_by_hour_v1` which internally normalises to business_config.timezone.
+ * `get_sales_by_hour_v3` which internally normalises to business_config.timezone.
  */
 function todayLocalISO(): string {
   const d = new Date();
@@ -72,7 +73,7 @@ function todayLocalISO(): string {
  *                  current user lacks `reports.read` ; the query stays cold
  *                  and no network roundtrip is made.
  */
-export function useServiceSpeed(enabled: boolean = true) {
+export function useServiceSpeed(enabled = true) {
   return useQuery<ServiceSpeedSnapshot>({
     queryKey: ['service-speed', todayLocalISO(), new Date().getHours()],
     queryFn: async (): Promise<ServiceSpeedSnapshot> => {
@@ -81,7 +82,8 @@ export function useServiceSpeed(enabled: boolean = true) {
       const hour = now.getHours();
 
       // ── Pull hourly counts via the existing reports RPC (Phase 2.B). ──────
-      const { data: rows, error: rpcErr } = await sb.rpc('get_sales_by_hour_v1', {
+      // ADR-009 déc. 4 : repointé v1 (droppée depuis S50) → v3 (paid|completed).
+      const { data: rows, error: rpcErr } = await sb.rpc('get_sales_by_hour_v3', {
         p_date: todayLocalISO(),
       });
       if (rpcErr) throw new Error(rpcErr.message);
@@ -101,7 +103,7 @@ export function useServiceSpeed(enabled: boolean = true) {
       const builder = sb
         .from('orders')
         .select('created_at, paid_at')
-        .eq('status', 'paid')
+        .in('status', ['paid', 'completed'])
         .gte('paid_at', hourStart.toISOString())
         .not('paid_at', 'is', null);
       const result = await (builder as unknown as Promise<QueryResult<FulfillmentRow[]>>);

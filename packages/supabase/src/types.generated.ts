@@ -6367,6 +6367,10 @@ export type Database = {
       _table_privs: { Args: never; Returns: unknown[] }
       _temptypes: { Args: { "": string }; Returns: string }
       _todo: { Args: never; Returns: string }
+      _try_complete_order_v1: {
+        Args: { p_order_id: string }
+        Returns: undefined
+      }
       _try_convert_quantity: {
         Args: { p_from: string; p_qty: number; p_to: string }
         Returns: number
@@ -6541,7 +6545,7 @@ export type Database = {
         Args: { p_fiscal_year: number; p_manager_pin: string }
         Returns: Json
       }
-      close_shift_v6: {
+      close_shift_v7: {
         Args: {
           p_approver_id?: string
           p_counted_card?: number
@@ -6996,7 +7000,7 @@ export type Database = {
       get_b2b_settings_v1: { Args: never; Returns: Json }
       get_balance_sheet_data: { Args: { p_as_of?: string }; Returns: Json }
       get_balance_sheet_v2: { Args: { p_as_of_date: string }; Returns: Json }
-      get_basket_analysis_v1: {
+      get_basket_analysis_v2: {
         Args: { p_date_end: string; p_date_start: string; p_top_n?: number }
         Returns: {
           co_occurrence_count: number
@@ -7279,7 +7283,7 @@ export type Database = {
         Args: { p_days?: number; p_product_id: string }
         Returns: Json
       }
-      get_product_dashboard_v1: {
+      get_product_dashboard_v2: {
         Args: { p_days?: number; p_product_id: string }
         Returns: Json
       }
@@ -7365,7 +7369,7 @@ export type Database = {
           unit: string
         }[]
       }
-      get_sales_by_category_v1: {
+      get_sales_by_category_v2: {
         Args: { p_date_end: string; p_date_start: string }
         Returns: {
           category_id: string
@@ -7374,7 +7378,7 @@ export type Database = {
           total: number
         }[]
       }
-      get_sales_by_hour_v2: {
+      get_sales_by_hour_v3: {
         Args: { p_date: string }
         Returns: {
           hour: number
@@ -7382,7 +7386,7 @@ export type Database = {
           total: number
         }[]
       }
-      get_sales_by_staff_v1: {
+      get_sales_by_staff_v2: {
         Args: { p_date_end: string; p_date_start: string }
         Returns: {
           avg_basket: number
@@ -8099,7 +8103,7 @@ export type Database = {
       refresh_mv_pl_monthly: { Args: never; Returns: undefined }
       refresh_mv_sales_daily: { Args: never; Returns: undefined }
       refresh_mv_stock_variance: { Args: never; Returns: undefined }
-      refund_order_rpc_v5: {
+      refund_order_rpc_v6: {
         Args: {
           p_acting_auth_user_id: string
           p_authorized_by: string
@@ -8167,7 +8171,7 @@ export type Database = {
         Returns: string
       }
       restore_held_order_v1: { Args: { p_order_id: string }; Returns: Json }
-      retry_sale_journal_entry_v1: {
+      retry_sale_journal_entry_v2: {
         Args: { p_order_id: string }
         Returns: Json
       }
@@ -8573,7 +8577,7 @@ export type Database = {
         Args: { p_pin: string; p_user_id: string }
         Returns: boolean
       }
-      void_order_rpc_v4: {
+      void_order_rpc_v5: {
         Args: {
           p_acting_auth_user_id: string
           p_authorized_by: string

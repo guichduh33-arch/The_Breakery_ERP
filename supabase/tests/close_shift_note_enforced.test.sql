@@ -5,7 +5,7 @@
 -- 100 000/10 000 000 (1 %) pour rester dans la bande « note seule » : au-dessus
 -- du seuil note abs (50 000), sous les seuils PIN (200 000 abs / 2 %). Le gate
 -- PIN a sa propre suite (close_shift_pin_gate.test.sql).
---   T1a : close_shift_v6(uuid,numeric,text,uuid,uuid,text) exists
+--   T1a : close_shift_v7(uuid,numeric,text,uuid,uuid,text) exists
 --   T1b : close_shift_v3 dropped (bump v3 -> v4)
 --   T2  : over-note-threshold variance (100000 >= abs 50000, 1% < 2% PIN), no note -> variance_note_required (P0001)
 --   T3  : same close WITH a note -> succeeds (no PIN needed below PIN thresholds)
@@ -62,8 +62,8 @@ END $fixture$;
 -- ===========================================================================
 -- T1 — v5 exists, v4 dropped.
 -- ===========================================================================
-SELECT has_function('public', 'close_shift_v6', ARRAY['uuid', 'numeric', 'text', 'uuid', 'uuid', 'text', 'numeric', 'numeric', 'jsonb'],
-  'T1a: close_shift_v6(uuid,numeric,text,uuid,uuid,text,numeric,numeric,jsonb) exists');
+SELECT has_function('public', 'close_shift_v7', ARRAY['uuid', 'numeric', 'text', 'uuid', 'uuid', 'text', 'numeric', 'numeric', 'jsonb'],
+  'T1a: close_shift_v7(uuid,numeric,text,uuid,uuid,text,numeric,numeric,jsonb) exists');
 SELECT hasnt_function('public', 'close_shift_v4', ARRAY['uuid', 'numeric', 'text', 'uuid', 'uuid', 'text'],
   'T1b: close_shift_v4 dropped (bump v4 -> v5)');
 
@@ -72,7 +72,7 @@ SELECT hasnt_function('public', 'close_shift_v4', ARRAY['uuid', 'numeric', 'text
 -- note -> variance_note_required (P0001). No side effect: session stays open.
 -- ===========================================================================
 SELECT throws_ok(
-  $$SELECT close_shift_v6('60c50001-0000-0000-0000-000000000001'::uuid, 10100000, NULL, NULL)$$,
+  $$SELECT close_shift_v7('60c50001-0000-0000-0000-000000000001'::uuid, 10100000, NULL, NULL)$$,
   'P0001', NULL,
   'T2: over-threshold variance with no note -> variance_note_required (P0001)'
 );
@@ -81,7 +81,7 @@ SELECT throws_ok(
 -- T3 — same close, WITH a note -> succeeds.
 -- ===========================================================================
 SELECT lives_ok(
-  format($$SELECT close_shift_v6('60c50001-0000-0000-0000-000000000001'::uuid, 10100000, %L, NULL)$$,
+  format($$SELECT close_shift_v7('60c50001-0000-0000-0000-000000000001'::uuid, 10100000, %L, NULL)$$,
     'till was over, cash from event'),
   'T3: over-threshold variance WITH a note -> succeeds'
 );
@@ -103,7 +103,7 @@ SELECT ok(current_setting('shift60.t3b')::boolean,
 -- T4 — zero-variance close (counted == expected), no note -> succeeds.
 -- ===========================================================================
 SELECT lives_ok(
-  $$SELECT close_shift_v6('60c50001-0000-0000-0000-000000000002'::uuid, 300000, NULL, NULL)$$,
+  $$SELECT close_shift_v7('60c50001-0000-0000-0000-000000000002'::uuid, 300000, NULL, NULL)$$,
   'T4: zero-variance close, no note -> succeeds (note not required)'
 );
 
@@ -117,7 +117,7 @@ DECLARE
   v_caught BOOLEAN := false;
 BEGIN
   BEGIN
-    v_res := close_shift_v6('60c50001-0000-0000-0000-000000000001'::uuid, 10100000, NULL, NULL);
+    v_res := close_shift_v7('60c50001-0000-0000-0000-000000000001'::uuid, 10100000, NULL, NULL);
   EXCEPTION WHEN OTHERS THEN
     v_caught := true;
   END;

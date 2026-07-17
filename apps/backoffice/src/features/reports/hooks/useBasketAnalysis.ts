@@ -1,6 +1,7 @@
 // apps/backoffice/src/features/reports/hooks/useBasketAnalysis.ts
 //
-// Wraps `get_basket_analysis_v1(p_date_start, p_date_end, p_top_n)`.
+// Wraps `get_basket_analysis_v2(p_date_start, p_date_end, p_top_n)`.
+// ADR-009 déc. 4 — bumped v1 → v2 (status IN paid, completed).
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
@@ -23,13 +24,13 @@ export const BASKET_ANALYSIS_QK = ['reports', 'basket-analysis'] as const;
 export function useBasketAnalysis(
   dateStart: string,
   dateEnd:   string,
-  topN:      number = 10,
+  topN       = 10,
 ) {
   return useQuery<BasketPair[]>({
     queryKey: [...BASKET_ANALYSIS_QK, dateStart, dateEnd, topN] as const,
     staleTime: 60_000,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_basket_analysis_v1', {
+      const { data, error } = await supabase.rpc('get_basket_analysis_v2', {
         p_date_start: dateStart,
         p_date_end:   dateEnd,
         p_top_n:      topN,

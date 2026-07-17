@@ -1,5 +1,6 @@
 // apps/backoffice/src/features/inventory-dashboard/hooks/useProductDashboard.ts
-// Session 13 / Phase 2.D — get_product_dashboard_v1 wrapper.
+// Session 13 / Phase 2.D — get_product_dashboard wrapper.
+// ADR-009 déc. 4 — bumped v1 → v2 (status IN paid, completed).
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
@@ -22,15 +23,15 @@ export interface ProductDashboardData {
     avg_daily_units: number;
     last_movement_at: string | null;
   };
-  stock_by_section: Array<{
+  stock_by_section: {
     section_id: string;
     section_code: string;
     section_name: string;
     quantity: number;
     unit: string;
     value_at_cost: number;
-  }>;
-  recent_movements: Array<{
+  }[];
+  recent_movements: {
     id: string;
     movement_type: string;
     quantity: number;
@@ -39,12 +40,12 @@ export interface ProductDashboardData {
     from_section_code: string | null;
     to_section_code: string | null;
     created_at: string;
-  }>;
-  sales_velocity_daily: Array<{
+  }[];
+  sales_velocity_daily: {
     day: string;
     units_sold: number;
-  }>;
-  expiring_lots: Array<{
+  }[];
+  expiring_lots: {
     id: string;
     quantity: number;
     unit: string;
@@ -52,13 +53,13 @@ export interface ProductDashboardData {
     batch_number: string | null;
     status: string;
     hours_until_expiry: number;
-  }>;
-  top_customers: Array<{
+  }[];
+  top_customers: {
     customer_id: string;
     customer_name: string;
     units_bought: number;
     spend_total: number;
-  }>;
+  }[];
 }
 
 type RpcFn = (
@@ -73,7 +74,7 @@ export function useProductDashboard(productId: string | null, days = 30) {
     queryFn: async () => {
       if (productId === null) return null;
       const rpc = supabase.rpc.bind(supabase) as unknown as RpcFn;
-      const { data, error } = await rpc('get_product_dashboard_v1', {
+      const { data, error } = await rpc('get_product_dashboard_v2', {
         p_product_id: productId, p_days: days,
       });
       if (error !== null) throw new Error(error.message);

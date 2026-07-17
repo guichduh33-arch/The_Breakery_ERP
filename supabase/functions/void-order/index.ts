@@ -7,7 +7,7 @@
 //     passing the cashier's verified auth.uid as p_acting_auth_user_id. The old
 //     void_order_rpc was directly callable via PostgREST by any authenticated
 //     cashier, bypassing this PIN check entirely.
-// S55 — idempotency: reads `x-idempotency-key` header, relays to void_order_rpc_v4.
+// S55 — idempotency: reads `x-idempotency-key` header, relays to void_order_rpc_v5.
 //
 // Headers:
 //   x-manager-pin:     string (6 digits) — REQUIRED
@@ -103,9 +103,9 @@ serve(async (req) => {
     return jsonResponse({ error: 'internal' }, 500);
   }
 
-  // service_role admin client — the only role allowed to EXECUTE the v4 RPC.
+  // service_role admin client — the only role allowed to EXECUTE the v5 RPC.
   const admin = getAdminClient();
-  const { data, error } = await admin.rpc('void_order_rpc_v4', {
+  const { data, error } = await admin.rpc('void_order_rpc_v5', {
     p_order_id:            body.order_id,
     p_reason:              body.reason,
     p_authorized_by:       mgr.manager_profile_id,

@@ -1,6 +1,7 @@
 // apps/backoffice/src/features/reports/hooks/useSalesByCategory.ts
 //
-// Wraps `get_sales_by_category_v1(p_date_start, p_date_end)`.
+// Wraps `get_sales_by_category_v2(p_date_start, p_date_end)`.
+// ADR-009 déc. 4 — bumped v1 → v2 (status IN paid, completed).
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
@@ -19,7 +20,7 @@ export function useSalesByCategory(dateStart: string, dateEnd: string) {
     queryKey: [...SALES_BY_CATEGORY_QK, dateStart, dateEnd] as const,
     staleTime: 60_000,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_sales_by_category_v1', {
+      const { data, error } = await supabase.rpc('get_sales_by_category_v2', {
         p_date_start: dateStart,
         p_date_end:   dateEnd,
       });
