@@ -80,7 +80,7 @@ export default function ProductDetailPage(): JSX.Element {
   if (product.error !== null && product.error !== undefined) {
     return (
       <div className="rounded-lg border border-red bg-red-soft p-4 text-sm text-red" role="alert">
-        Failed to load product: {(product.error as Error).message}
+        Failed to load product: {(product.error).message}
       </div>
     );
   }

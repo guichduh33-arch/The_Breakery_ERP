@@ -12,7 +12,7 @@ import type { CategoryOption } from '../types.js';
 export interface NewProductDialogProps {
   onClose:    () => void;
   onCreated?: (newId: string) => void;
-  categories: ReadonlyArray<CategoryOption>;
+  categories: readonly CategoryOption[];
 }
 
 const UNITS = ['pcs', 'kg', 'g', 'L', 'ml', 'box', 'pack'] as const;

@@ -18,7 +18,7 @@ export interface CreateProductPayload {
 
 export interface CreateProductResult {
   product:        { id: string; sku: string; name: string } & Record<string, unknown>;
-  ignored_fields: ReadonlyArray<string>;
+  ignored_fields: readonly string[];
 }
 
 export function useCreateProduct() {
@@ -26,8 +26,7 @@ export function useCreateProduct() {
   return useMutation<CreateProductResult, Error, CreateProductPayload>({
     mutationFn: async (payload) => {
       const { data, error } = await supabase.rpc('create_product_v2', {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        p_payload: payload as any,
+        p_payload: payload as unknown as never,
       });
       if (error !== null) throw new Error(error.message);
       const result = data as unknown as CreateProductResult;

@@ -31,13 +31,13 @@ const mocks = vi.hoisted(() => {
     name: 'Tap Breakfast Set',
     category_id: 'cat-bev',
     retail_price: 75000,
-    wholesale_price: null as null,
+    wholesale_price: null,
     product_type: 'combo' as const,
-    image_url: null as null,
+    image_url: null,
     current_stock: 99,
     is_active: true,
     is_favorite: false,
-    parent_product_id: null as null,
+    parent_product_id: null,
     has_variants: false,
   };
 
@@ -114,7 +114,7 @@ vi.mock('@/features/products/hooks/useProductModifiers', () => ({
 }));
 
 vi.mock('@/features/customerCategories/hooks/useCustomerProductPrice', () => ({
-  useCustomerProductPrice: () => async () => undefined,
+  useCustomerProductPrice: () => () => Promise.resolve(undefined),
 }));
 
 vi.mock('sonner', () => ({

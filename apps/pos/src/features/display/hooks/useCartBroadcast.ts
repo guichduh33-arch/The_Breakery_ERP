@@ -61,7 +61,7 @@ export function broadcastPaymentComplete(
  */
 export function useCartBroadcast(
   taxRate: number = DEFAULT_TAX_RATE,
-  taxInclusive: boolean = true,
+  taxInclusive = true,
 ): void {
   useEffect(() => {
     const bc = new BroadcastChannel(CART_CHANNEL);

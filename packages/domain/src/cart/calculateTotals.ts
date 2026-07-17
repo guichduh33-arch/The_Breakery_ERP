@@ -38,7 +38,7 @@ export class DiscountExceedsTotalError extends Error {
  *   inclusive : tax_amount = round(total * taxRate / (1 + taxRate))
  *   exclusive : tax_amount = round(total * taxRate) ; total += tax_amount
  */
-export function calculateTotals(cart: Cart, taxRate: number, taxInclusive: boolean = true): CartTotals {
+export function calculateTotals(cart: Cart, taxRate: number, taxInclusive = true): CartTotals {
   let items_total = 0;
   let item_count = 0;
 

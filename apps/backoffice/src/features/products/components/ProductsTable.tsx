@@ -22,10 +22,10 @@ import { ProductTypeBadge } from './ProductTypeBadge.js';
 import { classifyProduct, type ProductRow } from '../types.js';
 
 interface Props {
-  rows: ReadonlyArray<ProductRow>;
+  rows: readonly ProductRow[];
   isLoading?: boolean;
   /** Map<product_id, resolved-allergens> from `view_product_allergens_resolved`. */
-  resolvedAllergens?: ReadonlyMap<string, ReadonlyArray<AllergenType>>;
+  resolvedAllergens?: ReadonlyMap<string, readonly AllergenType[]>;
   /** Session 27c — set of product ids that are parents (i.e. have variants). */
   parentIds?: ReadonlySet<string>;
   onRowClick?: (row: ProductRow) => void;
@@ -44,7 +44,7 @@ export function ProductsTable({
   onPricing,
   onDelete,
 }: Props): JSX.Element {
-  const columns: ReadonlyArray<DataTableColumn<ProductRow>> = [
+  const columns: readonly DataTableColumn<ProductRow>[] = [
     {
       id: 'product',
       header: 'Product',

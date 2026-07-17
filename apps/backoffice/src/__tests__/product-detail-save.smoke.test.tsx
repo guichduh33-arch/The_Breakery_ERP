@@ -122,7 +122,7 @@ describe('ProductDetailPage — save flow (S27)', () => {
         'update_product_v2',
         expect.objectContaining({
           p_product_id: 'p-1',
-          p_patch: expect.objectContaining({ min_stock_threshold: 12 }),
+          p_patch: expect.objectContaining({ min_stock_threshold: 12 }) as unknown,
         }),
       );
     });
@@ -149,7 +149,7 @@ describe('ProductDetailPage — save flow (S27)', () => {
         'update_product_v2',
         expect.objectContaining({
           p_product_id: 'p-1',
-          p_patch: expect.objectContaining({ name: 'Affogato Deluxe' }),
+          p_patch: expect.objectContaining({ name: 'Affogato Deluxe' }) as unknown,
         }),
       );
     });

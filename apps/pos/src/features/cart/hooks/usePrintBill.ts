@@ -3,7 +3,6 @@
 // The bill shows the whole order with totals, pre-payment, re-printable at will.
 import { useMutation } from '@tanstack/react-query';
 import { calculateTotals } from '@breakery/domain';
-import type { PrinterRole } from '@breakery/domain';
 import { printStationTicket } from '@/services/print/printService';
 import type { StationTicketPayload } from '@/services/print/printService';
 import { useCartStore } from '@/stores/cartStore';
@@ -28,7 +27,7 @@ export function usePrintBill() {
   return useMutation<void, Error, PrintBillInput>({
     mutationFn: async ({ role }) => {
       // 1. Resolve the target printer from the live map.
-      const printer = printersMap?.get(role as PrinterRole);
+      const printer = printersMap?.get(role);
       if (!printer) {
         throw new Error(`no_${role}_printer`);
       }
@@ -56,7 +55,7 @@ export function usePrintBill() {
 
       const payload: StationTicketPayload = {
         kind: 'bill',
-        role: role as PrinterRole,
+        role: role,
         order_number: orderLabel,
         ...(tableNumber != null ? { table_number: tableNumber } : {}),
         created_at: new Date().toISOString(),

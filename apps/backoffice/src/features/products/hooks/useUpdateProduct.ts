@@ -42,7 +42,7 @@ export interface UpdateProductArgs {
 
 export interface UpdateProductResult {
   product:        unknown;
-  ignored_fields: ReadonlyArray<string>;
+  ignored_fields: readonly string[];
 }
 
 export function useUpdateProduct() {
@@ -53,8 +53,7 @@ export function useUpdateProduct() {
       // is structurally compatible (primitives + null) but TS can't prove it.
       const { data, error } = await supabase.rpc('update_product_v2', {
         p_product_id: productId,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        p_patch:      patch as any,
+        p_patch:      patch as unknown as never,
       });
       if (error !== null) throw new Error(error.message);
       const result = data as unknown as UpdateProductResult;

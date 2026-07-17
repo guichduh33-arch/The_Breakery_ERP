@@ -81,7 +81,7 @@ export function useProducts() {
           retail_price:        Number(r.retail_price),
           wholesale_price:     r.wholesale_price === null ? null : Number(r.wholesale_price),
           cost_price:          Number(r.cost_price),
-          product_type:        (r.product_type === 'combo' ? 'combo' : 'finished') as ProductRow['product_type'],
+          product_type:        (r.product_type === 'combo' ? 'combo' : 'finished'),
           image_url:           r.image_url,
           current_stock:       Number(r.current_stock),
           min_stock_threshold: Number(r.min_stock_threshold),

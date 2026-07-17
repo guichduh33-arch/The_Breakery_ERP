@@ -54,7 +54,7 @@ vi.mock('@/stores/cartStore', () => ({
     selector({ add: addSpy, attachedCustomer: null }),
 }));
 vi.mock('@/features/customerCategories/hooks/useCustomerProductPrice', () => ({
-  useCustomerProductPrice: () => async () => undefined,
+  useCustomerProductPrice: () => () => Promise.resolve(undefined),
 }));
 vi.mock('@/features/products/hooks/useProductModifiers', () => ({
   useProductModifiers: () => ({ data: [], isLoading: false, isSuccess: true }),

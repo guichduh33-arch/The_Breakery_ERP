@@ -78,7 +78,7 @@ describe('NewProductDialog — create flow (S27b)', () => {
             sku: 'COF-002',
             category_id: 'c-coffee',
             unit: 'pcs',
-          }),
+          }) as unknown,
         }),
       );
     });
@@ -103,7 +103,7 @@ describe('NewProductDialog — create flow (S27b)', () => {
       expect(rpcSpy).toHaveBeenCalledWith(
         'create_product_v2',
         expect.objectContaining({
-          p_payload: expect.objectContaining({ is_display_item: true }),
+          p_payload: expect.objectContaining({ is_display_item: true }) as unknown,
         }),
       );
     });

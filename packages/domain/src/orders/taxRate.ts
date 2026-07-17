@@ -30,7 +30,7 @@ export interface Pb1Split {
  *   exclusive — tax = round_idr(base * r),           total = base + tax
  * Display-only: the server RPC remains the pricing authority.
  */
-export function splitPb1(base: number, taxRate: number, taxInclusive: boolean = true): Pb1Split {
+export function splitPb1(base: number, taxRate: number, taxInclusive = true): Pb1Split {
   if (taxInclusive) {
     return { tax_amount: roundIdr((base * taxRate) / (1 + taxRate)), total: base };
   }

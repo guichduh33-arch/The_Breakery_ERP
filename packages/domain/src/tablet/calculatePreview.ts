@@ -23,7 +23,7 @@ export interface TabletPreview {
 export function calculatePreview(
   cart: TabletCart,
   taxRate: number = DEFAULT_TAX_RATE,
-  taxInclusive: boolean = true,
+  taxInclusive = true,
 ): TabletPreview {
   let items_total = 0;
   for (const item of cart.items) {

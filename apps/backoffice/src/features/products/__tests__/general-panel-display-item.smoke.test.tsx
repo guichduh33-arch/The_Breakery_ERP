@@ -45,7 +45,7 @@ const product: ProductRow = {
   dispatch_stations: null,
 };
 
-const categories: ReadonlyArray<CategoryOption> = [
+const categories: readonly CategoryOption[] = [
   { id: 'c1', name: 'Pastry', slug: 'pastry', is_active: true, sort_order: 10 },
 ];
 

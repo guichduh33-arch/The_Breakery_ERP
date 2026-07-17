@@ -129,7 +129,6 @@ export function ProductImageUploader({ productId, imageUrl, readOnly = false, on
         } ${readOnly ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:border-gold'}`}
       >
         {imageUrl !== null && imageUrl !== '' ? (
-          // eslint-disable-next-line @next/next/no-img-element
           <img src={imageUrl} alt="Product" className="h-full w-full object-cover" />
         ) : (
           <div className="flex flex-col items-center gap-2 text-center">
