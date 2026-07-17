@@ -25,13 +25,19 @@ Si un document contredit le code, le document a tort : **signale-le, ne corrige 
 3. **Les plans de session vivent dans la conversation** (mode plan), jamais en
    fichier. Ce qui mérite de survivre à une session devient un ADR — écrit et
    commité par Mamat — ou disparaît avec le contexte.
-4. **Un ADR ne se modifie jamais.** Changement d'avis = nouvel ADR numéroté qui
+4. **Specs d'exécution (`docs/specs/`)** : uniquement quand un ADR l'exige
+   explicitement pour un chantier lourd. Nom : `<ADR>x-<sujet>.md`. Contenu
+   proposé par l'agent en conversation, relu et commité par Mamat (règles 1-2
+   inchangées). Une spec meurt à la livraison du chantier : supprimée, son
+   résiduel éventuel noté dans l'ADR. Jamais plus de 3 specs vivantes.
+   Tout autre plan/spec/compte-rendu reste interdit de fichier.
+5. **Un ADR ne se modifie jamais.** Changement d'avis = nouvel ADR numéroté qui
    supersede l'ancien (`Statut: remplacé par ADR-00XX`).
-5. **Information manquante → tu t'arrêtes et tu demandes.** Tu n'inventes pas,
+6. **Information manquante → tu t'arrêtes et tu demandes.** Tu n'inventes pas,
    tu ne déduis pas « ce qui semble logique », tu ne vas pas fouiller la quarantaine.
-6. **Aucune décision autonome** : architecture, renommage, suppression, choix de
+7. **Aucune décision autonome** : architecture, renommage, suppression, choix de
    librairie, changement de comportement → accord explicite de Mamat AVANT l'action.
-7. **Périmètre strict** : tu touches les fichiers nécessaires à la tâche, rien d'autre.
+8. **Périmètre strict** : tu touches les fichiers nécessaires à la tâche, rien d'autre.
 
 ## Règles générales
 
@@ -43,8 +49,17 @@ Si un document contredit le code, le document a tort : **signale-le, ne corrige 
 - Monorepo pnpm/turbo : code dans `apps/{pos,backoffice}/src`,
   `packages/{domain,supabase,ui,utils}/src`, `supabase/{functions,migrations,tests}`.
   Tests co-localisés dans `__tests__/`.
-- **Une seule session Claude Code à la fois sur ce repo.** Pas de swarm,
-  pas d'agents nommés qui s'auto-coordonnent, pas de sessions parallèles.
+- **Sous-agents (Task tool) : autorisés dans une session, sous régime strict.**
+  Le plan est approuvé par Mamat AVANT tout dispatch ; les sous-agents exécutent
+  ce plan, toute déviation remonte à Mamat (jamais arbitrée en interne).
+  Sous-agents lecture-seule : libres. Écrivain : UN à la fois, périmètre de
+  fichiers déclaré. Reviewer : contexte vierge, reçoit le diff + la spec + les
+  invariants (jamais le résumé de l'implémenteur), findings montrés à Mamat ;
+  boucle implémentation↔review plafonnée à 1 correction, au-delà on s'arrête.
+  Les consignes aux sous-agents citent fichiers/ADR précis ; leurs rapports
+  citent fichier:ligne. La review ne remplace jamais les tests exécutés.
+  L'orchestrateur coordonne, il ne décide pas. session-coordinator est aboli.
+
 
 ## Critical patterns — don't break these
 
