@@ -8299,7 +8299,7 @@ export type Database = {
         Args: { p_alts: Json; p_contexts: Json; p_product_id: string }
         Returns: Json
       }
-      set_setting_v2: {
+      set_setting_v3: {
         Args: { p_category: string; p_key: string; p_value: Json }
         Returns: undefined
       }

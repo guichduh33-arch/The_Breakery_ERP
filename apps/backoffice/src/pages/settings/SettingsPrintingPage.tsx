@@ -1,7 +1,7 @@
 // apps/backoffice/src/pages/settings/SettingsPrintingPage.tsx
 //
 // S73 Lot 2 — org-level payment automation flags (business_config via
-// get_settings_by_category_v2('printing') / set_setting_v2).
+// get_settings_by_category_v2('printing') / set_setting_v3).
 // The print-server URL itself stays per-terminal (POS Settings, localStorage).
 import { useEffect, useState } from 'react';
 import { Button } from '@breakery/ui';

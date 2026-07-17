@@ -1,6 +1,6 @@
 // apps/backoffice/src/pages/settings/SettingsPaymentMethodsPage.tsx
 // S64 (fiche 19 D2.1) — active/désactive les moyens de paiement présentés au POS.
-// Écrit business_config.enabled_payment_methods via set_setting_v2 (audité old/new).
+// Écrit business_config.enabled_payment_methods via set_setting_v3 (audité old/new).
 
 import { useEffect, useState } from 'react';
 import { Button } from '@breakery/ui';

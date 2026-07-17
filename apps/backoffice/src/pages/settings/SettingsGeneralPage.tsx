@@ -2,7 +2,7 @@
 //
 // Session 13 / Phase 5.C — General settings page. Surfaces the four
 // symbolic categories of business_config (business / localization / tax / pos)
-// in a single flat form. Each "Save" calls set_setting_v2 per dirty key so the
+// in a single flat form. Each "Save" calls set_setting_v3 per dirty key so the
 // audit trail captures one row per field change.
 //
 // S73 B4 — currency/timezone become ISO-4217/IANA <select> pickers, tax_rate
