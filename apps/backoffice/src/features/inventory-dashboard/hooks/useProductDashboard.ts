@@ -1,5 +1,6 @@
 // apps/backoffice/src/features/inventory-dashboard/hooks/useProductDashboard.ts
-// Session 13 / Phase 2.D — get_product_dashboard_v1 wrapper.
+// Session 13 / Phase 2.D — get_product_dashboard wrapper.
+// ADR-009 déc. 4 — bumped v1 → v2 (status IN paid, completed).
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
@@ -73,7 +74,7 @@ export function useProductDashboard(productId: string | null, days = 30) {
     queryFn: async () => {
       if (productId === null) return null;
       const rpc = supabase.rpc.bind(supabase) as unknown as RpcFn;
-      const { data, error } = await rpc('get_product_dashboard_v1', {
+      const { data, error } = await rpc('get_product_dashboard_v2', {
         p_product_id: productId, p_days: days,
       });
       if (error !== null) throw new Error(error.message);

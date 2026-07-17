@@ -38,7 +38,7 @@ export function useVoidOrder() {
         Authorization: `Bearer ${accessToken}`,
         'x-manager-pin': managerPin,
       };
-      // S55 parity: HTTP retry-safe idempotency — the EF forwards this to void_order_rpc_v4.
+      // S55 parity: HTTP retry-safe idempotency — the EF forwards this to void_order_rpc_v5.
       if (idempotencyKey) headers['x-idempotency-key'] = idempotencyKey;
 
       const res = await fetch(`${supabaseUrl}/functions/v1/void-order`, {

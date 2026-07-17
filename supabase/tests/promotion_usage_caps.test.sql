@@ -225,7 +225,7 @@ BEGIN
   SELECT up.id, up.auth_user_id INTO v_mgr_prof, v_mgr_auth FROM user_profiles up
    WHERE up.deleted_at IS NULL AND up.auth_user_id IS NOT NULL
      AND has_permission(up.auth_user_id, 'pos.sale.void') LIMIT 1;
-  PERFORM void_order_rpc_v4(current_setting('cap.t4_order')::uuid, 'S57 promo cap void-frees test', v_mgr_prof, current_setting('request.jwt.claim.sub')::uuid);
+  PERFORM void_order_rpc_v5(current_setting('cap.t4_order')::uuid, 'S57 promo cap void-frees test', v_mgr_prof, current_setting('request.jwt.claim.sub')::uuid);
 END $$;
 
 SELECT is(

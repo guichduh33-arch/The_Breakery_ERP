@@ -84,7 +84,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('cash register — close
     const sb = jwtClient(managerToken);
     const sessionId = await openShift(managerToken, 1_000_000);
 
-    const { data: close, error } = await sb.rpc('close_shift_v6', {
+    const { data: close, error } = await sb.rpc('close_shift_v7', {
       p_session_id: sessionId,
       p_counted_cash: 1_000_000,
       p_notes: 'zero variance smoke',
@@ -108,7 +108,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('cash register — close
     const sessionId = await openShift(managerToken, 2_000_000);
 
     const counted = 2_030_000; // +30k over (1.5% — note band, below the 2% PIN threshold)
-    const { data: close, error } = await sb.rpc('close_shift_v6', {
+    const { data: close, error } = await sb.rpc('close_shift_v7', {
       p_session_id: sessionId,
       p_counted_cash: counted,
       p_notes: 'positive variance smoke',
@@ -143,7 +143,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('cash register — close
     const sessionId = await openShift(managerToken, 2_000_000);
 
     const counted = 1_980_000; // -20k short (1% — note band, below the 2% PIN threshold)
-    const { data: close, error } = await sb.rpc('close_shift_v6', {
+    const { data: close, error } = await sb.rpc('close_shift_v7', {
       p_session_id: sessionId,
       p_counted_cash: counted,
       p_notes: 'negative variance smoke',
@@ -164,10 +164,10 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('cash register — close
   it('close_shift_v5 idempotent on an already-closed session', async () => {
     const sb = jwtClient(managerToken);
     const sessionId = await openShift(managerToken, 100_000);
-    await sb.rpc('close_shift_v6', {
+    await sb.rpc('close_shift_v7', {
       p_session_id: sessionId, p_counted_cash: 100_000,
     });
-    const { data: replay, error } = await sb.rpc('close_shift_v6', {
+    const { data: replay, error } = await sb.rpc('close_shift_v7', {
       p_session_id: sessionId, p_counted_cash: 100_000,
     });
     expect(error).toBeNull();

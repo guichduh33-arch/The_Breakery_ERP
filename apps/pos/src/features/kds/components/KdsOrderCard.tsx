@@ -212,7 +212,7 @@ export function KdsOrderCard({ items }: KdsOrderCardProps) {
             {head.order_number}
           </span>
           {/* S43 P2-5b — surfaced so the kitchen knows the ticket is already paid. */}
-          {head.order_status === 'paid' && (
+          {(head.order_status === 'paid' || head.order_status === 'completed') && (
             <Badge variant="default" className="bg-green text-green-fg border-transparent shrink-0">
               PAID
             </Badge>

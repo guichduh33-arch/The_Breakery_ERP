@@ -237,7 +237,7 @@ DECLARE
 BEGIN
   PERFORM pg_temp.set_jwt_uid(v_cashier_uid);
 
-  v_result := refund_order_rpc_v5(
+  v_result := refund_order_rpc_v6(
     p_order_id            => v_order_id,
     p_lines               => jsonb_build_array(jsonb_build_object(
       'order_item_id', v_oi_id,
@@ -293,7 +293,7 @@ BEGIN
 
   -- Replay : same idempotency_key, identical args (the RPC short-circuits before
   -- touching refunds / refund_lines / stock_movements).
-  v_result := refund_order_rpc_v5(
+  v_result := refund_order_rpc_v6(
     p_order_id            => v_order_id,
     p_lines               => jsonb_build_array(jsonb_build_object(
       'order_item_id', v_oi_id,

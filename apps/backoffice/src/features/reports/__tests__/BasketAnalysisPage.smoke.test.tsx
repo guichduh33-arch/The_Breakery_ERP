@@ -13,7 +13,7 @@ vi.mock('@/lib/supabase.js', () => ({
   supabase: {
     rpc: (fn: string, args: Record<string, unknown>) => {
       mockRpc(fn, args);
-      if (fn === 'get_basket_analysis_v1') {
+      if (fn === 'get_basket_analysis_v2') {
         return Promise.resolve({
           data: [
             {
@@ -71,7 +71,7 @@ describe('BasketAnalysisPage (smoke)', () => {
     expect(await screen.findByText('Croissant')).toBeInTheDocument();
     expect(screen.getByText('Latte')).toBeInTheDocument();
     await waitFor(() => {
-      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_basket_analysis_v1');
+      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_basket_analysis_v2');
       expect(call).toBeDefined();
       const args = (call as [string, { p_date_start: string; p_date_end: string; p_top_n: number }])[1];
       expect(args.p_top_n).toBeGreaterThan(0);

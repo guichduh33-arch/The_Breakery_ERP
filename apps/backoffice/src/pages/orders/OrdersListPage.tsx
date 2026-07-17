@@ -357,7 +357,7 @@ export default function OrdersListPage(): JSX.Element {
                         <Edit3 size={16} />
                       </button>
                     )}
-                    {hasVoid && o.status === 'paid' && (
+                    {hasVoid && (o.status === 'paid' || o.status === 'completed') && (
                       <button type="button" title="Void" onClick={() => setVoidTarget({ id: o.id, number: o.order_number })} data-testid={`row-void-${o.id}`} className="mr-1 text-danger hover:text-danger/80" aria-label={`Void ${o.order_number}`}>
                         <XCircle size={16} />
                       </button>

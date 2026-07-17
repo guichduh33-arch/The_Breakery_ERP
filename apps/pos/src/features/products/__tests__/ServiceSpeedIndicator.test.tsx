@@ -5,7 +5,7 @@
 //  - badge renders 'idle' tone when orderCount=0
 //  - badge renders 'good' tone for fast avg
 //  - badge renders 'slow' tone for very slow avg
-//  - hook hits get_sales_by_hour_v1 RPC and the orders table
+//  - hook hits get_sales_by_hour_v3 RPC and the orders table
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
@@ -46,11 +46,13 @@ function withQuery(node: React.ReactElement) {
 function buildOrdersBuilder(rows: { created_at: string; paid_at: string | null }[]) {
   const builder: {
     eq: (col: string, val: unknown) => typeof builder;
+    in: (col: string, vals: readonly unknown[]) => typeof builder;
     gte: (col: string, val: unknown) => typeof builder;
     not: (col: string, op: string, val: unknown) => typeof builder;
     then: <R>(fn: (qr: { data: typeof rows; error: null }) => R) => Promise<R>;
   } = {
     eq: () => builder,
+    in: () => builder,
     gte: () => builder,
     not: () => builder,
     then: (fn) => Promise.resolve(fn({ data: rows, error: null })),
@@ -85,7 +87,7 @@ describe('ServiceSpeedIndicator', () => {
     await waitFor(() => {
       expect(screen.getByTestId('service-speed-indicator').getAttribute('data-tone')).toBe('idle');
     });
-    expect(rpcMock).toHaveBeenCalledWith('get_sales_by_hour_v1', expect.objectContaining({
+    expect(rpcMock).toHaveBeenCalledWith('get_sales_by_hour_v3', expect.objectContaining({
       p_date: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
     }));
     void hour;

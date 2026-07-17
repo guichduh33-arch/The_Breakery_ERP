@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/reports/__tests__/SalesByHourPage.smoke.test.tsx
 // Smoke test: renders the page, asserts heading + a RPC call to
-// get_sales_by_hour_v2 happens with the right shape.
+// get_sales_by_hour_v3 happens with the right shape.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
@@ -14,7 +14,7 @@ vi.mock('@/lib/supabase.js', () => ({
   supabase: {
     rpc: (fn: string, args: Record<string, unknown>) => {
       mockRpc(fn, args);
-      if (fn === 'get_sales_by_hour_v2') {
+      if (fn === 'get_sales_by_hour_v3') {
         // 24-bucket zero-filled response shape
         const data = Array.from({ length: 24 }, (_, hour) => ({
           hour,
@@ -52,12 +52,12 @@ function renderPage() {
 describe('SalesByHourPage (smoke)', () => {
   beforeEach(() => { mockRpc.mockReset(); });
 
-  it('renders the heading and queries get_sales_by_hour_v2 with today YYYY-MM-DD', async () => {
+  it('renders the heading and queries get_sales_by_hour_v3 with today YYYY-MM-DD', async () => {
     renderPage();
     expect(screen.getByRole('heading', { name: 'Sales by Hour', level: 1 })).toBeInTheDocument();
 
     await waitFor(() => {
-      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_sales_by_hour_v2');
+      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_sales_by_hour_v3');
       expect(call).toBeDefined();
       const args = (call as [string, { p_date: string }])[1];
       expect(args.p_date).toMatch(/^\d{4}-\d{2}-\d{2}$/);

@@ -65,7 +65,7 @@ BEGIN
     (v_daily_1->'summary'->>'net')::numeric - (v_daily_b->'summary'->>'net')::numeric = 60000;
 
   -- ── Étape 2 : void MÊME-JOUR de o1 ────────────────────────────────────
-  -- Miroir void_order_rpc_v4 : status='voided' (+ colonnes de consistance)
+  -- Miroir void_order_rpc_v5 : status='voided' (+ colonnes de consistance)
   -- ET refund is_full_void=true du montant total.
   -- AVANT le fix _116 : le refund était soustrait alors que la commande
   -- sortait déjà du brut -> delta net = -60 000 (double pénalité).

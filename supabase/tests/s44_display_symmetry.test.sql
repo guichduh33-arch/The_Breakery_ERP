@@ -155,7 +155,7 @@ BEGIN
   v_oid := pg_temp._mk_order(current_setting('s44.disp')::uuid, 20000, 1, '#SYM8');
   PERFORM pay_existing_order_v12(p_order_id := v_oid, p_payment := jsonb_build_object('method','cash','amount',20000,'cash_received',20000,'change_given',0));
   SELECT quantity::int INTO v_q0 FROM display_stock WHERE product_id=current_setting('s44.disp')::uuid;
-  PERFORM void_order_rpc_v4(v_oid, 's44 void test', current_setting('s44.voider')::uuid, current_setting('s44.auth')::uuid);
+  PERFORM void_order_rpc_v5(v_oid, 's44 void test', current_setting('s44.voider')::uuid, current_setting('s44.auth')::uuid);
   SELECT quantity::int INTO v_q1 FROM display_stock WHERE product_id=current_setting('s44.disp')::uuid;
   SELECT count(*) INTO v_vm FROM display_movements WHERE reference_id=v_oid AND movement_type='adjustment' AND product_id=current_setting('s44.disp')::uuid;
   PERFORM set_config('s44.t8', (v_q1 = v_q0 + 1 AND v_vm = 1)::text, true);

@@ -42,8 +42,8 @@ SELECT has_function(
   'T_RPT_FIN_03 — get_cash_flow_v1 exists'
 );
 SELECT has_function(
-  'public', 'get_basket_analysis_v1', ARRAY['date','date','integer'],
-  'T_RPT_FIN_04 — get_basket_analysis_v1 exists'
+  'public', 'get_basket_analysis_v2', ARRAY['date','date','integer'],
+  'T_RPT_FIN_04 — get_basket_analysis_v2 exists'
 );
 
 -- ============================================================
@@ -162,8 +162,8 @@ SELECT is(
 -- T_RPT_FIN_12 — Basket analysis runs on empty window
 -- ============================================================
 SELECT lives_ok(
-  $$SELECT * FROM public.get_basket_analysis_v1(CURRENT_DATE, CURRENT_DATE, 10)$$,
-  'T_RPT_FIN_12 — get_basket_analysis_v1 runs without error on empty window'
+  $$SELECT * FROM public.get_basket_analysis_v2(CURRENT_DATE, CURRENT_DATE, 10)$$,
+  'T_RPT_FIN_12 — get_basket_analysis_v2 runs without error on empty window'
 );
 
 SELECT * FROM finish();

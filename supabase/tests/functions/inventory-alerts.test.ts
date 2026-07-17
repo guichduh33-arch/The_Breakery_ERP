@@ -4,7 +4,7 @@
 // Covers :
 //   - get_low_stock_v1 returns products below min_stock_threshold.
 //   - get_reorder_suggestions_v1 returns a sorted list with derived columns.
-//   - get_product_dashboard_v1 returns a complete JSONB document.
+//   - get_product_dashboard_v2 returns a complete JSONB document.
 
 import { describe, it, expect, beforeAll } from 'vitest';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
@@ -58,9 +58,9 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory alerts + prod
     }
   });
 
-  it('T_ALERT_LIVE_03: get_product_dashboard_v1 returns the JSONB document', async () => {
+  it('T_ALERT_LIVE_03: get_product_dashboard_v2 returns the JSONB document', async () => {
     const sb = jwtClient(managerToken);
-    const { data, error } = await rpc(sb)('get_product_dashboard_v1', {
+    const { data, error } = await rpc(sb)('get_product_dashboard_v2', {
       p_product_id: lowStockProductId, p_days: 30,
     });
     expect(error).toBeNull();
@@ -77,9 +77,9 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory alerts + prod
     expect(data.sales_velocity_daily.length).toBeLessThanOrEqual(32);
   });
 
-  it('T_ALERT_LIVE_04: get_product_dashboard_v1 raises on missing product', async () => {
+  it('T_ALERT_LIVE_04: get_product_dashboard_v2 raises on missing product', async () => {
     const sb = jwtClient(managerToken);
-    const { error } = await rpc(sb)('get_product_dashboard_v1', {
+    const { error } = await rpc(sb)('get_product_dashboard_v2', {
       p_product_id: '00000000-0000-0000-0000-000000000000',
     });
     expect(error?.message ?? '').toMatch(/product_not_found/);

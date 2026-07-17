@@ -75,10 +75,10 @@ SELECT ok(
     SELECT 1 FROM pg_proc p
     JOIN pg_namespace n ON n.oid = p.pronamespace
     WHERE n.nspname = 'public'
-      AND p.proname = 'get_sales_by_hour_v2'
+      AND p.proname = 'get_sales_by_hour_v3'
       AND p.prosecdef = true
   ),
-  'T5 — get_sales_by_hour_v2 existe et SECURITY DEFINER'
+  'T5 — get_sales_by_hour_v3 existe et SECURITY DEFINER'
 );
 
 -- ============================================================
