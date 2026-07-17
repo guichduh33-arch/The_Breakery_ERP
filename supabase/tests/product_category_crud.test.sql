@@ -1,10 +1,10 @@
 -- supabase/tests/product_category_crud.test.sql
--- Session 27b — pgTAP suite for create_product_v1 + categories CRUD.
+-- Session 27b — pgTAP suite for create_product_v2 + categories CRUD.
 --
 -- Coverage (10 asserts) :
---   T1   MANAGER create_product_v1 happy path : products row created
+--   T1   MANAGER create_product_v2 happy path : products row created
 --   T1b  product_unit_contexts seeded with base unit on create
---   T2   CASHIER cannot create_product_v1 (42501)
+--   T2   CASHIER cannot create_product_v2 (42501)
 --   T3   missing sku raises 22023 missing_required_fields
 --   T4   duplicate sku raises 23505 sku_taken
 --   T5   create_category_v1 auto-slugify produces lowercase hyphenated slug
@@ -47,7 +47,7 @@ BEGIN
   PERFORM set_config('request.jwt.claims',
     jsonb_build_object('sub', current_setting('breakery.s27b_admin_uid'),
                        'role', 'authenticated')::TEXT, true);
-  v_result := create_product_v1(jsonb_build_object(
+  v_result := create_product_v2(jsonb_build_object(
     'name', 'S27B pgTAP T1 Product',
     'sku', v_new_sku,
     'category_id', current_setting('breakery.s27b_cat_id'),
@@ -62,7 +62,7 @@ INSERT INTO pgtap_results(line)
   SELECT is(
     (SELECT sku FROM products WHERE id = current_setting('breakery.s27b_t1_id')::UUID),
     current_setting('breakery.s27b_t1_sku'),
-    'T1 MANAGER create_product_v1 happy path : products row created with matching sku'
+    'T1 MANAGER create_product_v2 happy path : products row created with matching sku'
   );
 
 INSERT INTO pgtap_results(line)
@@ -86,14 +86,14 @@ END $$;
 INSERT INTO pgtap_results(line)
   SELECT throws_ok(
     format(
-      $q$SELECT create_product_v1(jsonb_build_object(
+      $q$SELECT create_product_v2(jsonb_build_object(
         'name','x','sku','S27B-T2-FAIL','category_id',%L::TEXT
       ))$q$,
       current_setting('breakery.s27b_cat_id')
     ),
     '42501',
     'permission_denied',
-    'T2 CASHIER cannot create_product_v1 (42501)'
+    'T2 CASHIER cannot create_product_v2 (42501)'
   );
 
 -- T3 + T4 (admin impersonation again)
@@ -107,7 +107,7 @@ END $$;
 INSERT INTO pgtap_results(line)
   SELECT throws_ok(
     format(
-      $q$SELECT create_product_v1(jsonb_build_object(
+      $q$SELECT create_product_v2(jsonb_build_object(
         'name','no-sku','category_id',%L::TEXT
       ))$q$,
       current_setting('breakery.s27b_cat_id')
@@ -120,7 +120,7 @@ INSERT INTO pgtap_results(line)
 INSERT INTO pgtap_results(line)
   SELECT throws_ok(
     format(
-      $q$SELECT create_product_v1(jsonb_build_object(
+      $q$SELECT create_product_v2(jsonb_build_object(
         'name','dup','sku',%L,'category_id',%L::TEXT
       ))$q$,
       current_setting('breakery.s27b_t1_sku'),

@@ -28,7 +28,7 @@ export interface ProductRow extends Product {
   category_type: string | null;
   /** Self-declared allergens (Session 15 Phase 5.C — `products.allergens`). */
   allergens: ReadonlyArray<AllergenType>;
-  // Session 27 — editable fields surfaced by update_product_v1
+  // Session 27 — editable fields surfaced by update_product_v2
   description: string | null;
   visible_on_pos: boolean;
   available_for_sale: boolean;

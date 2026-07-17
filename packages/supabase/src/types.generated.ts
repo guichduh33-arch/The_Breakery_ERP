@@ -6746,7 +6746,7 @@ export type Database = {
         }
         Returns: Json
       }
-      create_product_v1: { Args: { p_payload: Json }; Returns: Json }
+      create_product_v2: { Args: { p_payload: Json }; Returns: Json }
       create_purchase_order_v2: {
         Args: {
           p_expected_date?: string
@@ -8434,7 +8434,7 @@ export type Database = {
         }
         Returns: Json
       }
-      update_product_v1: {
+      update_product_v2: {
         Args: { p_patch: Json; p_product_id: string }
         Returns: Json
       }

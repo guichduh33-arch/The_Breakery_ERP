@@ -1,5 +1,5 @@
 // apps/backoffice/src/features/products/hooks/useUpdateProduct.ts
-// Session 27 — Wave 2 — Wraps update_product_v1 RPC (JSONB patch, 18-col allowlist).
+// Session 27 — Wave 2 — Wraps update_product_v2 RPC (JSONB patch, 18-col allowlist).
 //
 // The RPC returns { product, ignored_fields }. We surface ignored_fields back
 // so the UI can warn the user if they tried to update something outside the
@@ -9,7 +9,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
 import type { ProductRow } from '../types.js';
 
-/** Subset of ProductRow that update_product_v1 can write. */
+/** Subset of ProductRow that update_product_v2 can write. */
 export type ProductUpdatePatch = Partial<Pick<ProductRow,
   | 'name'
   | 'sku'
@@ -17,7 +17,6 @@ export type ProductUpdatePatch = Partial<Pick<ProductRow,
   | 'description'
   | 'retail_price'
   | 'wholesale_price'
-  | 'tax_inclusive'
   | 'image_url'
   | 'is_active'
   | 'is_favorite'
@@ -31,7 +30,7 @@ export type ProductUpdatePatch = Partial<Pick<ProductRow,
   | 'target_gross_margin_pct'
   | 'default_shelf_life_hours'
   // Spec B-1 Ph2 — override dispatch stations per product (NULL = inherit from category).
-  // Persisted via update_product_v1 allowlist (migration 20260710000043); an explicit
+  // Persisted via update_product_v2 allowlist (migration 20260710000043); an explicit
   // null clears the override (inherit), an absent key preserves it.
   | 'dispatch_stations'
 >>;
@@ -52,7 +51,7 @@ export function useUpdateProduct() {
     mutationFn: async ({ productId, patch }) => {
       // The generated Database type narrows p_patch to Json; ProductUpdatePatch
       // is structurally compatible (primitives + null) but TS can't prove it.
-      const { data, error } = await supabase.rpc('update_product_v1', {
+      const { data, error } = await supabase.rpc('update_product_v2', {
         p_product_id: productId,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         p_patch:      patch as any,

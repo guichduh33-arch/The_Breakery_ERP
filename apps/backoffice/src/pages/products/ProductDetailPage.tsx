@@ -1,7 +1,7 @@
 // apps/backoffice/src/pages/products/ProductDetailPage.tsx
 //
 // Session 14 / Phase 4.B — Product detail page (read-only baseline).
-// Session 27 — Wave 2 — Wired the Save button to update_product_v1 RPC. The
+// Session 27 — Wave 2 — Wired the Save button to update_product_v2 RPC. The
 // General tab now tracks a controlled draft + dirty flag; clicking Save fires
 // the JSONB patch and the page refetches on success.
 //

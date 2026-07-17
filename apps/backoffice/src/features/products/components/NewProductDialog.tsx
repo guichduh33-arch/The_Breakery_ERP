@@ -1,5 +1,5 @@
 // apps/backoffice/src/features/products/components/NewProductDialog.tsx
-// Session 27b — Modal form to create a new product via create_product_v1 RPC.
+// Session 27b — Modal form to create a new product via create_product_v2 RPC.
 
 import { useState, type JSX } from 'react';
 import {

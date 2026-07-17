@@ -4,7 +4,7 @@
 // Click-to-pick OR drag-and-drop a single image, uploaded to the public
 // Supabase Storage bucket `product-images` at products/{productId}/{file}.
 // On success it lifts the resulting public URL via onChange so the page-level
-// Save (update_product_v1, image_url allowlisted) persists it.
+// Save (update_product_v2, image_url allowlisted) persists it.
 //
 // Writes are gated server-side by RLS (has_permission products.update) — this
 // component additionally respects the readOnly prop (UI PermissionGate).
