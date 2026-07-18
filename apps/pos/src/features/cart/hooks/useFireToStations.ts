@@ -16,6 +16,7 @@ import { useCartStore } from '@/stores/cartStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useShiftStore } from '@/stores/shiftStore';
 import { emitPosEvent } from '@/features/audit/emitPosEvent';
+import { getKotCopies } from '@/features/settings/hooks/useKotCopies';
 import { useStationPrinters } from './useStationPrinters';
 import { useStationMap, getStationMap } from './useStationMap';
 
@@ -229,12 +230,25 @@ export function useFireToStations(): UseFireToStationsResult {
       const entries = Object.entries(grouped) as [PrepStation, typeof unprinted][];
       if (entries.length === 0) return [];
 
+      // Chantier KOT copies (_195) — copies papier par station, org-wide
+      // (Settings → Printing). Lu du cache live comme la station map ;
+      // injoignable → 1 copie par station (comportement historique).
+      const kotCopies = await getKotCopies(queryClient);
+
       // 6. Print all station buckets concurrently (best effort — a print
       //    failure does NOT invalidate the persisted order).
       const results = await Promise.all(
         entries.map(async ([station, items]): Promise<StationFireResult> => {
           const itemIds = items.map((i) => i.id);
           const role: PrinterRole = station;
+
+          // 0 copie = station volontairement sans papier (le KDS écran a déjà
+          // reçu via la DB) — skip AVANT la résolution imprimante, pour ne pas
+          // remonter un faux 'no_printer' sur une station paperless.
+          const copies = kotCopies[station] ?? 1;
+          if (copies === 0) {
+            return { role: station, ok: true, itemIds };
+          }
 
           // Resolve printer for this station.
           const printer = printersMap?.get(role);
@@ -262,11 +276,21 @@ export function useFireToStations(): UseFireToStationsResult {
             ...(isAdditional ? { additional: true } : {}),
           };
 
-          const { success, error } = await printStationTicket(printer, payload);
+          // N copies séquentielles sur la même imprimante (une imprimante
+          // thermique n'aime pas les jobs concurrents) ; on s'arrête à la
+          // première erreur — ok = toutes les copies sont sorties.
+          let failure: string | undefined;
+          for (let copy = 0; copy < copies; copy++) {
+            const { success, error } = await printStationTicket(printer, payload);
+            if (!success) {
+              failure = error ?? 'print_failed';
+              break;
+            }
+          }
           return {
             role: station,
-            ok: success,
-            ...(error !== undefined ? { error } : {}),
+            ok: failure === undefined,
+            ...(failure !== undefined ? { error: failure } : {}),
             itemIds,
           };
         }),

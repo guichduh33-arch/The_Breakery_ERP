@@ -1,7 +1,7 @@
 // S73 Phase 3 — single typed dictionary of business_config setting keys and
-// symbolic categories (server truth: set_setting_v3 / get_settings_by_category_v2,
-// migrations 20260711000159 + 20260716000168). Add a key here ONLY together
-// with its RPC branch.
+// symbolic categories (server truth: set_setting_v4 / get_settings_by_category_v3,
+// migrations 20260711000159 + 20260716000168 + 20260718000195). Add a key here
+// ONLY together with its RPC branch.
 export const SETTINGS_CATEGORIES = [
   'business', 'localization', 'tax', 'pos', 'pos_presets',
   'inventory', 'payments', 'customer_display', 'printing', 'kds',
@@ -21,7 +21,10 @@ export const SETTING_KEYS = {
   inventory:        ['allow_negative_stock'],
   payments:         ['enabled_payment_methods'],
   customer_display: ['display_footer_message', 'display_slogan'],
-  printing:         ['pos_auto_print_receipt', 'pos_auto_open_drawer'],
+  // Chantier KOT copies (2026-07-18): paper kitchen-ticket copies per station
+  // at fire time; 0 = no paper for that station (KDS screen still receives).
+  printing:         ['pos_auto_print_receipt', 'pos_auto_open_drawer',
+                     'kot_copies_barista', 'kot_copies_kitchen', 'kot_copies_display'],
   // S75 (Task 5): KDS ticket-age color-band thresholds + auto-archive delay.
   kds:              ['kds_warning_threshold_minutes', 'kds_urgent_threshold_minutes',
                      'kds_auto_archive_minutes'],

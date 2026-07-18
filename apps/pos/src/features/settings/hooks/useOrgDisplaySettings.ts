@@ -4,7 +4,7 @@
 // straight off business_config (RLS auth_read; kiosk JWT on the paired
 // display). Degrades to the built-in defaults while loading / on error — a
 // config read must never block an encaissement (pattern: useTaxConfig).
-// Writes go through set_setting_v3 (settings.update gate, audit-logged).
+// Writes go through set_setting_v4 (settings.update gate, audit-logged).
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Json } from '@breakery/supabase';
 import { supabase } from '@/lib/supabase';
@@ -57,17 +57,20 @@ export function useSetOrgDisplaySetting() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ key, value, category }: {
-      key: 'display_footer_message' | 'display_slogan' | 'pos_auto_print_receipt' | 'pos_auto_open_drawer';
-      value: string | boolean;
+      key: 'display_footer_message' | 'display_slogan' | 'pos_auto_print_receipt' | 'pos_auto_open_drawer'
+        | 'kot_copies_barista' | 'kot_copies_kitchen' | 'kot_copies_display';
+      value: string | boolean | number;
       category: 'customer_display' | 'printing';
     }) => {
-      const { error } = await supabase.rpc('set_setting_v3', {
+      const { error } = await supabase.rpc('set_setting_v4', {
         p_key: key,
         p_value: value as unknown as Json,
         p_category: category,
       });
       if (error) throw error;
     },
-    onSuccess: () => void qc.invalidateQueries({ queryKey: QUERY_KEY }),
+    // Invalidate the shared business_config prefix: covers this hook's key AND
+    // useKotCopies (['business-config', 'kot-copies']) in one shot.
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['business-config'] }),
   });
 }

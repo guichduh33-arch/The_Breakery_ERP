@@ -73,13 +73,13 @@ vi.mock('@/lib/supabase.js', () => {
       from: () => buildChain(),
       rpc: (fn: string, args: unknown) => {
         rpcCalls.push({ fn, args });
-        if (fn === 'get_settings_by_category_v2') {
+        if (fn === 'get_settings_by_category_v3') {
           return Promise.resolve({
             data: { category: 'business', settings: { alert_email: 'ops@breakery.id' } },
             error: null,
           });
         }
-        return Promise.resolve({ data: null, error: null }); // set_setting_v3
+        return Promise.resolve({ data: null, error: null }); // set_setting_v4
       },
     },
   };
@@ -142,7 +142,7 @@ describe('SettingsNotificationsPage', () => {
     expect(screen.getByTestId('alert-email-card').querySelector('button')).toBeNull();
   });
 
-  it('saves alert_email via set_setting_v3 (business category) with settings.update', async () => {
+  it('saves alert_email via set_setting_v4 (business category) with settings.update', async () => {
     currentPerms.add('settings.update');
     renderPage();
     const input = await screen.findByLabelText<HTMLInputElement>('Alert email');
@@ -150,7 +150,7 @@ describe('SettingsNotificationsPage', () => {
     fireEvent.change(input, { target: { value: 'alerts@breakery.id' } });
     fireEvent.click(screen.getAllByRole('button', { name: /^save$/i })[0]!);
     await waitFor(() => {
-      const call = rpcCalls.find((c) => c.fn === 'set_setting_v3');
+      const call = rpcCalls.find((c) => c.fn === 'set_setting_v4');
       expect(call?.args).toEqual({ p_key: 'alert_email', p_value: 'alerts@breakery.id', p_category: 'business' });
     });
   });

@@ -19,6 +19,13 @@ vi.mock('../hooks/useOrgDisplaySettings', () => ({
   useSetOrgDisplaySetting: vi.fn(() => ({ mutate: mutateMock, isPending: false })),
 }));
 
+// Chantier KOT copies — mock module (the real hook needs a QueryClientProvider).
+vi.mock('../hooks/useKotCopies', () => ({
+  KOT_COPIES_DEFAULTS: { barista: 1, kitchen: 1, display: 1 },
+  useKotCopies: vi.fn(() => ({ data: { barista: 1, kitchen: 2, display: 0 } })),
+  getKotCopies: vi.fn(() => Promise.resolve({ barista: 1, kitchen: 2, display: 0 })),
+}));
+
 beforeEach(() => {
   localStorage.clear();
   mutateMock.mockReset();
@@ -60,6 +67,24 @@ describe('PrintingSettingsTab', () => {
       { key: 'pos_auto_open_drawer', value: false, category: 'printing' },
       expect.anything(),
     );
+  });
+
+  it('KOT stepper increment calls the org mutation with the station key', () => {
+    render(<PrintingSettingsTab readOnly={false} />);
+    // Steppers render in KOT_STATIONS order: kitchen (2), barista (1), display (0).
+    const increases = screen.getAllByRole('button', { name: 'Increase' });
+    fireEvent.click(increases[0]!); // kitchen 2 → 3
+    expect(mutateMock).toHaveBeenCalledWith(
+      { key: 'kot_copies_kitchen', value: 3, category: 'printing' },
+      expect.anything(),
+    );
+  });
+
+  it('KOT stepper decrement stops at 0 (paper off), no negative write', () => {
+    render(<PrintingSettingsTab readOnly={false} />);
+    const decreases = screen.getAllByRole('button', { name: 'Decrease' });
+    // display is at 0 → its Decrease button is disabled (min reached).
+    expect(decreases[2]).toBeDisabled();
   });
 
   it('readOnly disables the URL input and both toggles', () => {

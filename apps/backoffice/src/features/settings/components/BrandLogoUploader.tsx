@@ -5,7 +5,7 @@
 // those two formats in PDF headers), uploaded to the public Storage bucket
 // `branding` at logo/{timestamp}-{file}. On success it lifts the public URL
 // via onChange into the page draft — the explicit page-level Save persists it
-// through set_setting_v3('logo_url'), keeping the module's explicit-save
+// through set_setting_v4('logo_url'), keeping the module's explicit-save
 // invariant (an uploaded-but-unsaved file is just an orphan object).
 //
 // Writes are gated server-side by RLS (has_permission settings.update).
