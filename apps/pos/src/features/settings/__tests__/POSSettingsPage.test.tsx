@@ -68,6 +68,14 @@ vi.mock('../hooks/useOrgDisplaySettings', () => ({
   useSetOrgDisplaySetting: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
 }));
 
+// Chantier KOT copies (_195) — mock module : le vrai useKotCopies est un
+// useQuery et la page est rendue sans QueryClientProvider.
+vi.mock('../hooks/useKotCopies', () => ({
+  KOT_COPIES_DEFAULTS: { barista: 1, kitchen: 1, display: 1 },
+  useKotCopies: vi.fn(() => ({ data: { barista: 1, kitchen: 1, display: 1 } })),
+  getKotCopies: vi.fn(() => Promise.resolve({ barista: 1, kitchen: 1, display: 1 })),
+}));
+
 function renderPage() {
   return render(
     <MemoryRouter>

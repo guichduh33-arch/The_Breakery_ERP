@@ -30,6 +30,16 @@ vi.mock('@/lib/supabase', () => ({
   supabaseUrl: 'http://localhost:54321',
 }));
 
+// Chantier KOT copies (_195) — mock module : le vrai getKotCopies lit
+// supabase.from (absent du mock supabase ci-dessus) ; son échec + retry
+// retarderait la mutation assez pour que le flush pos_events (400 ms)
+// ajoute un 3ᵉ appel rpc avant les assertions.
+vi.mock('@/features/settings/hooks/useKotCopies', () => ({
+  KOT_COPIES_DEFAULTS: { barista: 1, kitchen: 1, display: 1 },
+  useKotCopies: () => ({ data: { barista: 1, kitchen: 1, display: 1 } }),
+  getKotCopies: () => Promise.resolve({ barista: 1, kitchen: 1, display: 1 }),
+}));
+
 const BARISTA_PRINTER = { ip_address: '192.168.1.11', port: 9100, name: 'Barista' };
 const PRINTERS_MAP = new Map([['barista', BARISTA_PRINTER]]);
 
