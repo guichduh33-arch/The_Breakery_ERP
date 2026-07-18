@@ -1,7 +1,7 @@
 // apps/backoffice/src/pages/settings/SettingsInventoryPage.tsx
 //
 // Réglages Inventory — toggle global "autoriser le stock négatif" (vente +
-// production). Écrit business_config.allow_negative_stock via set_setting_v3.
+// production). Écrit business_config.allow_negative_stock via set_setting_v4.
 
 import { useEffect, useState } from 'react';
 import { Button } from '@breakery/ui';

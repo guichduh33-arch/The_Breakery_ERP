@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/settings/__tests__/SettingsKdsConfigPage.test.tsx
 // S75 Task 8 — smoke test for the org-level KDS Configuration settings page.
-// Server-side (set_setting_v3, migration 20260712000163) enforces
+// Server-side (set_setting_v4, migration 20260712000163) enforces
 // warning < urgent against the OTHER key's CURRENTLY STORED value — a
 // same-request bump of both keys in the wrong order 22023s. The client
 // mirrors that with an inline validation message + disabled Save, and saves
@@ -17,7 +17,7 @@ vi.mock('@/lib/supabase.js', () => ({
   supabase: {
     rpc: (fn: string, args: unknown) => {
       rpcCalls.push({ fn, args });
-      if (fn === 'get_settings_by_category_v2') {
+      if (fn === 'get_settings_by_category_v3') {
         return Promise.resolve({
           data: {
             category: 'kds',
@@ -30,7 +30,7 @@ vi.mock('@/lib/supabase.js', () => ({
           error: null,
         });
       }
-      return Promise.resolve({ data: null, error: null }); // set_setting_v3
+      return Promise.resolve({ data: null, error: null }); // set_setting_v4
     },
   },
 }));
@@ -100,9 +100,9 @@ describe('SettingsKdsConfigPage', () => {
     fireEvent.change(screen.getByLabelText(/urgent threshold/i), { target: { value: '9' } });
     fireEvent.click(screen.getByRole('button', { name: /save 2 changes/i }));
 
-    await waitFor(() => expect(rpcCalls.filter((c) => c.fn === 'set_setting_v3')).toHaveLength(2));
+    await waitFor(() => expect(rpcCalls.filter((c) => c.fn === 'set_setting_v4')).toHaveLength(2));
 
-    const sets = rpcCalls.filter((c) => c.fn === 'set_setting_v3');
+    const sets = rpcCalls.filter((c) => c.fn === 'set_setting_v4');
     expect(sets[0]?.args).toEqual({ p_key: 'kds_warning_threshold_minutes', p_value: 8, p_category: 'kds' });
     expect(sets[1]?.args).toEqual({ p_key: 'kds_urgent_threshold_minutes', p_value: 9, p_category: 'kds' });
   });
@@ -119,9 +119,9 @@ describe('SettingsKdsConfigPage', () => {
     fireEvent.change(screen.getByLabelText(/warning threshold/i), { target: { value: '11' } });
     fireEvent.click(screen.getByRole('button', { name: /save 2 changes/i }));
 
-    await waitFor(() => expect(rpcCalls.filter((c) => c.fn === 'set_setting_v3')).toHaveLength(2));
+    await waitFor(() => expect(rpcCalls.filter((c) => c.fn === 'set_setting_v4')).toHaveLength(2));
 
-    const sets = rpcCalls.filter((c) => c.fn === 'set_setting_v3');
+    const sets = rpcCalls.filter((c) => c.fn === 'set_setting_v4');
     expect(sets[0]?.args).toEqual({ p_key: 'kds_urgent_threshold_minutes', p_value: 15, p_category: 'kds' });
     expect(sets[1]?.args).toEqual({ p_key: 'kds_warning_threshold_minutes', p_value: 11, p_category: 'kds' });
   });
@@ -137,9 +137,9 @@ describe('SettingsKdsConfigPage', () => {
     fireEvent.change(screen.getByLabelText(/ready auto-archive/i), { target: { value: '7' } });
     fireEvent.click(screen.getByRole('button', { name: /save 3 changes/i }));
 
-    await waitFor(() => expect(rpcCalls.filter((c) => c.fn === 'set_setting_v3')).toHaveLength(3));
+    await waitFor(() => expect(rpcCalls.filter((c) => c.fn === 'set_setting_v4')).toHaveLength(3));
 
-    const sets = rpcCalls.filter((c) => c.fn === 'set_setting_v3');
+    const sets = rpcCalls.filter((c) => c.fn === 'set_setting_v4');
     expect(sets[2]?.args).toEqual({ p_key: 'kds_auto_archive_minutes', p_value: 7, p_category: 'kds' });
   });
 });

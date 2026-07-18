@@ -1,21 +1,18 @@
-// apps/pos/src/features/cart/__tests__/fire-to-stations.smoke.test.tsx
+// apps/pos/src/features/cart/__tests__/fire-kot-copies.smoke.test.tsx
 //
-// Session 34 / W4 — smoke test for SendToKitchenButton → useFireToStations.
-// Updated (branch feat/bulk-import-purchases) to reflect park+clear-on-send:
-//   after a successful manual fire, hold_fired_order_v1 is called and the
-//   terminal is cleared (cart items emptied, pickedUpOrderId null, printedItemIds []).
-//
-// Scenario: cart with one barista item + one kitchen item.
-// Both stations have printers in the map.
-// After clicking "Send to Kitchen":
-//   • getMockPrintBuffer() has two 'prep' entries (one per station).
-//   • fire_counter_order_v4 is called first, then hold_fired_order_v1.
-//   • Terminal is cleared: cart.items=[], pickedUpOrderId=null, printedItemIds=[].
+// Chantier KOT copies (migration _195) — useFireToStations honore les copies
+// papier par station lues de business_config (Settings → Printing) :
+//   • kitchen = 2 → deux entrées 'prep' kitchen dans le buffer d'impression ;
+//   • barista = 0 → station sautée AVANT la résolution imprimante (aucune
+//     entrée, aucun toast d'erreur — le KDS écran a déjà reçu via la DB) ;
+//   • le ticket waiter consolidé n'est PAS couvert par le réglage (inchangé).
+// Structure calquée sur fire-to-stations.smoke.test.tsx.
 
 /// <reference types="@testing-library/jest-dom" />
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { useCartStore } from '@/stores/cartStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useShiftStore } from '@/stores/shiftStore';
@@ -31,7 +28,6 @@ vi.mock('sonner', () => ({
   Toaster: () => null,
 }));
 
-// Session 43 / P0-3 — the fire now persists via fire_counter_order_v4 first.
 const { rpcMock } = vi.hoisted(() => ({ rpcMock: vi.fn() }));
 
 vi.mock('@/lib/supabase', () => ({
@@ -42,14 +38,11 @@ vi.mock('@/lib/supabase', () => ({
   supabaseUrl: 'http://localhost:54321',
 }));
 
-// Chantier KOT copies (_195) — mock module : le vrai getKotCopies lit
-// supabase.from (absent du mock supabase ci-dessus) ; son échec + retry
-// retarderait la mutation assez pour que le flush pos_events (400 ms)
-// ajoute un 3ᵉ appel rpc avant les assertions.
+// Copies par station : kitchen 2, barista 0 (paperless), display 1.
 vi.mock('@/features/settings/hooks/useKotCopies', () => ({
   KOT_COPIES_DEFAULTS: { barista: 1, kitchen: 1, display: 1 },
-  useKotCopies: () => ({ data: { barista: 1, kitchen: 1, display: 1 } }),
-  getKotCopies: () => Promise.resolve({ barista: 1, kitchen: 1, display: 1 }),
+  useKotCopies: () => ({ data: { barista: 0, kitchen: 2, display: 1 } }),
+  getKotCopies: () => Promise.resolve({ barista: 0, kitchen: 2, display: 1 }),
 }));
 
 const BARISTA_PRINTER = { ip_address: '192.168.1.11', port: 9100, name: 'Barista' };
@@ -73,32 +66,30 @@ vi.mock('@/features/products/hooks/useProducts', () => ({
   useProducts: () => ({ data: PRODUCTS }),
 }));
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function withQuery(node: React.ReactElement) {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  // Pre-seed products cache so useFireToStations mutationFn reads it.
-  qc.setQueryData(['products'], PRODUCTS);
-  return <QueryClientProvider client={qc}>{node}</QueryClientProvider>;
-}
-
-// ── Tests ─────────────────────────────────────────────────────────────────────
-
 vi.mock('@/features/cart/hooks/useStationMap', () => {
-  // S44 P0-B — useFireToStations now reads the station map (variant-aware) for
-  // firableCount (render) and routing (getStationMap, fire path). Mock both so
-  // the test never hits supabase.from.
-  const STATION_MAP: Record<string, string[]> = { 'p-barista': ['barista'], 'p-kitchen': ['kitchen'], 'p-none': [] };
+  const STATION_MAP: Record<string, string[]> = { 'p-barista': ['barista'], 'p-kitchen': ['kitchen'] };
   return {
     useStationMap: () => ({ data: STATION_MAP }),
     getStationMap: () => Promise.resolve(STATION_MAP),
   };
 });
 
-describe('SendToKitchenButton — fire to stations smoke', () => {
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function withQuery(node: React.ReactElement) {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  qc.setQueryData(['products'], PRODUCTS);
+  return <QueryClientProvider client={qc}>{node}</QueryClientProvider>;
+}
+
+// ── Tests ─────────────────────────────────────────────────────────────────────
+
+describe('SendToKitchenButton — KOT copies per station', () => {
   beforeEach(() => {
     vi.stubEnv('VITE_PRINT_MOCK', '1');
     clearMockPrintBuffer();
+    vi.mocked(toast.success).mockClear();
+    vi.mocked(toast.error).mockClear();
 
     rpcMock.mockReset();
     rpcMock.mockResolvedValue({
@@ -107,7 +98,6 @@ describe('SendToKitchenButton — fire to stations smoke', () => {
     });
     useShiftStore.setState({ current: { id: 'sess-1', opened_at: '', opening_cash: 0 } });
 
-    // Cart: one barista item + one kitchen item, both unprinted.
     useCartStore.setState({
       cart: {
         items: [
@@ -115,7 +105,6 @@ describe('SendToKitchenButton — fire to stations smoke', () => {
           { id: 'line-kitchen', product_id: 'p-kitchen', name: 'Omelette', unit_price: 45_000, quantity: 1, modifiers: [] },
         ],
         order_type: 'dine_in',
-        // Fiche 02 D2.5 — dine-in fires require a table (useDineInTableGuard).
         tableNumber: 'T-01',
       },
       printedItemIds: [],
@@ -141,8 +130,7 @@ describe('SendToKitchenButton — fire to stations smoke', () => {
     vi.unstubAllEnvs();
   });
 
-  it('prints prep tickets to both stations, then parks the order and clears the terminal', async () => {
-    // Lazy import so vi.stubEnv + mocks are in place first.
+  it('prints 2 kitchen copies, skips the paperless barista without an error', async () => {
     const { SendToKitchenButton } = await import('../SendToKitchenButton');
 
     render(withQuery(<SendToKitchenButton />));
@@ -155,36 +143,23 @@ describe('SendToKitchenButton — fire to stations smoke', () => {
       await Promise.resolve();
     });
 
-    // Wait for mutation to complete (button returns to non-pending).
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /send to kitchen/i })).toBeInTheDocument();
     });
 
     const buf = getMockPrintBuffer();
     const prepEntries = buf.filter((e) => e.kind === 'prep');
+    const roles = prepEntries.map((e) => (e.payload as { role: string }).role);
 
-    // One prep entry per station.
-    expect(prepEntries).toHaveLength(2);
+    // kitchen = 2 copies, barista = 0 (skipped before printer resolution).
+    expect(roles.filter((r) => r === 'kitchen')).toHaveLength(2);
+    expect(roles.filter((r) => r === 'barista')).toHaveLength(0);
 
-    const stationRoles = prepEntries.map((e) => (e.payload as { role: string }).role);
-    expect(stationRoles).toContain('barista');
-    expect(stationRoles).toContain('kitchen');
-
-    // Both entries are kind 'prep'.
-    for (const entry of prepEntries) {
-      expect(entry.kind).toBe('prep');
-    }
-
-    // Session 43 / P0-3 — the order was persisted BEFORE printing.
-    // After fire+print, hold_fired_order_v1 parks the order and clears the terminal.
-    expect(rpcMock).toHaveBeenCalledTimes(2);
-    expect(rpcMock.mock.calls[0]![0]).toBe('fire_counter_order_v4');
-    expect(rpcMock.mock.calls[1]![0]).toBe('hold_fired_order_v1');
-    expect(rpcMock.mock.calls[1]![1]).toEqual({ p_order_id: 'order-db-1' });
-
-    // Terminal is cleared after park.
-    expect(useCartStore.getState().printedItemIds).toEqual([]);
-    expect(useCartStore.getState().pickedUpOrderId).toBeNull();
-    expect(useCartStore.getState().cart.items).toHaveLength(0);
+    // Both stations report success (barista is paperless-by-config, not a
+    // failure — its items reached the KDS via the DB persist).
+    expect(toast.error).not.toHaveBeenCalled();
+    const successMessages = vi.mocked(toast.success).mock.calls.map((c) => c[0] as string);
+    expect(successMessages.some((m) => /barista/i.test(m))).toBe(true);
+    expect(successMessages.some((m) => /kitchen/i.test(m))).toBe(true);
   });
 });

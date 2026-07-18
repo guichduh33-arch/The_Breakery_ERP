@@ -1,4 +1,4 @@
--- supabase/tests/set_setting_v3_tax_switch_gate.test.sql
+-- supabase/tests/set_setting_v4_tax_switch_gate.test.sql
 -- Lot 6b (migration 20260717000179) — la bascule du réglage `tax_inclusive`
 -- est refusée tant que des commandes ouvertes (draft/pending_payment)
 -- existent ; un write no-op reste permis ; b2b_pending n'entre pas dans le
@@ -36,7 +36,7 @@ DO $$ BEGIN
     (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
       WHERE n.nspname = 'public' AND p.proname = 'set_setting_v2') = 0
     AND (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
-      WHERE n.nspname = 'public' AND p.proname = 'set_setting_v3'
+      WHERE n.nspname = 'public' AND p.proname = 'set_setting_v4'
         AND p.proacl::text NOT LIKE '%anon%'
         AND p.proacl::text NOT LIKE '{=X%') = 1);
 EXCEPTION WHEN OTHERS THEN
@@ -61,7 +61,7 @@ END $$;
 --     (P0001 tax_mode_switch_blocked) et le mode reste inchangé.
 DO $$ DECLARE v_ok BOOLEAN := false; BEGIN
   BEGIN
-    PERFORM set_setting_v3('tax_inclusive', 'false'::jsonb, 'tax');
+    PERFORM set_setting_v4('tax_inclusive', 'false'::jsonb, 'tax');
   EXCEPTION WHEN SQLSTATE 'P0001' THEN
     v_ok := SQLERRM = 'tax_mode_switch_blocked';
   END;
@@ -73,7 +73,7 @@ END $$;
 
 -- T3: le write no-op (même valeur) reste permis malgré la commande ouverte.
 DO $$ BEGIN
-  PERFORM set_setting_v3('tax_inclusive', 'true'::jsonb, 'tax');
+  PERFORM set_setting_v4('tax_inclusive', 'true'::jsonb, 'tax');
   INSERT INTO _r VALUES ('t3_noop_allowed',
     (SELECT tax_inclusive FROM business_config WHERE id = 1) = true);
 EXCEPTION WHEN OTHERS THEN
@@ -92,7 +92,7 @@ BEGIN
      SET status = 'voided', voided_at = now(), voided_by = v_voider,
          void_reason = 'test — settle open orders for tax switch'
    WHERE status IN ('draft', 'pending_payment');
-  PERFORM set_setting_v3('tax_inclusive', 'false'::jsonb, 'tax');
+  PERFORM set_setting_v4('tax_inclusive', 'false'::jsonb, 'tax');
   INSERT INTO _r VALUES ('t4_flip_allowed',
     (SELECT tax_inclusive FROM business_config WHERE id = 1) = false);
 EXCEPTION WHEN OTHERS THEN

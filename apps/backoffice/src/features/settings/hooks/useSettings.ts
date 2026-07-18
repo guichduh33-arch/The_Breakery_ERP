@@ -1,7 +1,7 @@
 // apps/backoffice/src/features/settings/hooks/useSettings.ts
 //
 // Session 13 / Phase 5.C — Reads a partition of business_config via
-// get_settings_by_category_v2. The RPC returns `{ category, settings: { key: value, ... } }`.
+// get_settings_by_category_v3. The RPC returns `{ category, settings: { key: value, ... } }`.
 // Keys per category are documented in the migration.
 
 import { useQuery } from '@tanstack/react-query';
@@ -24,7 +24,7 @@ export function useSettings(category: SettingsCategory) {
   return useQuery<SettingsPayload>({
     queryKey: [...SETTINGS_QUERY_KEY, category] as const,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_settings_by_category_v2', {
+      const { data, error } = await supabase.rpc('get_settings_by_category_v3', {
         p_category: category,
       });
       if (error) throw error;

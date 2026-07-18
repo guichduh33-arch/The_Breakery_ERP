@@ -21,7 +21,7 @@ const settingsByCategory: Record<string, Record<string, unknown>> = {
 };
 
 const rpcCalls: { fn: string; args: Record<string, unknown> }[] = [];
-// Lot 6b — set to true to make the next set_setting_v3('tax_inclusive') fail
+// Lot 6b — set to true to make the next set_setting_v4('tax_inclusive') fail
 // with the server gate error (open orders present).
 let failNextTaxSwitch = false;
 
@@ -29,14 +29,14 @@ vi.mock('@/lib/supabase.js', () => ({
   supabase: {
     rpc: (fn: string, args: Record<string, unknown>) => {
       rpcCalls.push({ fn, args });
-      if (fn === 'get_settings_by_category_v2') {
+      if (fn === 'get_settings_by_category_v3') {
         const category = String(args.p_category);
         return Promise.resolve({
           data: { category, settings: settingsByCategory[category] ?? {} },
           error: null,
         });
       }
-      if (fn === 'set_setting_v3') {
+      if (fn === 'set_setting_v4') {
         if (failNextTaxSwitch && args.p_key === 'tax_inclusive') {
           failNextTaxSwitch = false;
           return Promise.resolve({ data: null, error: { message: 'tax_mode_switch_blocked' } });
@@ -93,7 +93,7 @@ describe('SettingsGeneralPage', () => {
     expect(screen.getByRole('button', { name: /No changes/i })).toBeInTheDocument();
   });
 
-  it('calls set_setting_v3 once per dirty key on submit', async () => {
+  it('calls set_setting_v4 once per dirty key on submit', async () => {
     renderPage();
     await waitFor(() => screen.getByLabelText(/Business name/i));
     rpcCalls.length = 0;
@@ -102,7 +102,7 @@ describe('SettingsGeneralPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /Save 1 change/i }));
 
     await waitFor(() => {
-      const setCalls = rpcCalls.filter((c) => c.fn === 'set_setting_v3');
+      const setCalls = rpcCalls.filter((c) => c.fn === 'set_setting_v4');
       expect(setCalls).toHaveLength(1);
       expect(setCalls[0]?.args.p_key).toBe('name');
       expect(setCalls[0]?.args.p_value).toBe('New Bakery');
@@ -120,7 +120,7 @@ describe('SettingsGeneralPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /Save 1 change/i }));
 
     await waitFor(() => {
-      const setCalls = rpcCalls.filter((c) => c.fn === 'set_setting_v3');
+      const setCalls = rpcCalls.filter((c) => c.fn === 'set_setting_v4');
       expect(setCalls).toHaveLength(1);
       expect(setCalls[0]?.args.p_key).toBe('tax_rate');
       expect(setCalls[0]?.args.p_value).toBe(0.25);
@@ -140,12 +140,12 @@ describe('SettingsGeneralPage', () => {
 
     // Dialog shown, nothing written yet.
     expect(await screen.findByText(/Switch the tax mode\?/i)).toBeInTheDocument();
-    expect(rpcCalls.filter((c) => c.fn === 'set_setting_v3')).toHaveLength(0);
+    expect(rpcCalls.filter((c) => c.fn === 'set_setting_v4')).toHaveLength(0);
 
     // Confirming performs the write.
     fireEvent.click(screen.getByRole('button', { name: /Switch tax mode/i }));
     await waitFor(() => {
-      const setCalls = rpcCalls.filter((c) => c.fn === 'set_setting_v3');
+      const setCalls = rpcCalls.filter((c) => c.fn === 'set_setting_v4');
       expect(setCalls).toHaveLength(1);
       expect(setCalls[0]?.args.p_key).toBe('tax_inclusive');
       expect(setCalls[0]?.args.p_value).toBe(false);
@@ -165,7 +165,7 @@ describe('SettingsGeneralPage', () => {
     await waitFor(() => {
       expect(screen.queryByText(/Switch the tax mode\?/i)).not.toBeInTheDocument();
     });
-    expect(rpcCalls.filter((c) => c.fn === 'set_setting_v3')).toHaveLength(0);
+    expect(rpcCalls.filter((c) => c.fn === 'set_setting_v4')).toHaveLength(0);
   });
 
   it('maps tax_mode_switch_blocked to an actionable error message', async () => {

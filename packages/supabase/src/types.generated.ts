@@ -306,6 +306,9 @@ export type Database = {
           kds_auto_archive_minutes: number
           kds_urgent_threshold_minutes: number
           kds_warning_threshold_minutes: number
+          kot_copies_barista: number
+          kot_copies_display: number
+          kot_copies_kitchen: number
           logo_url: string | null
           name: string
           npwp: string | null
@@ -339,6 +342,9 @@ export type Database = {
           kds_auto_archive_minutes?: number
           kds_urgent_threshold_minutes?: number
           kds_warning_threshold_minutes?: number
+          kot_copies_barista?: number
+          kot_copies_display?: number
+          kot_copies_kitchen?: number
           logo_url?: string | null
           name?: string
           npwp?: string | null
@@ -372,6 +378,9 @@ export type Database = {
           kds_auto_archive_minutes?: number
           kds_urgent_threshold_minutes?: number
           kds_warning_threshold_minutes?: number
+          kot_copies_barista?: number
+          kot_copies_display?: number
+          kot_copies_kitchen?: number
           logo_url?: string | null
           name?: string
           npwp?: string | null
@@ -7421,7 +7430,7 @@ export type Database = {
           total: number
         }[]
       }
-      get_settings_by_category_v2: {
+      get_settings_by_category_v3: {
         Args: { p_category: string }
         Returns: Json
       }
@@ -8328,7 +8337,7 @@ export type Database = {
         Args: { p_alts: Json; p_contexts: Json; p_product_id: string }
         Returns: Json
       }
-      set_setting_v3: {
+      set_setting_v4: {
         Args: { p_category: string; p_key: string; p_value: Json }
         Returns: undefined
       }
