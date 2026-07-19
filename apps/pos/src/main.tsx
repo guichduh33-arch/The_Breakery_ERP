@@ -1,3 +1,5 @@
+// Contexte non sécurisé (LAN http) : DOIT rester le premier import.
+import './lib/secureContextPolyfill';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
