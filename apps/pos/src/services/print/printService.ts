@@ -10,6 +10,15 @@ export type {
 } from '@breakery/domain';
 
 /**
+ * Un printerUrl saisi sans schéma (« 192.168.40.66:3001 ») devenait une URL
+ * RELATIVE pour fetch (404 vite) et une URL WebSocket invalide pour le hub —
+ * double échec silencieux (vu en boutique, 2026-07-19). On normalise.
+ */
+function withHttpScheme(url: string): string {
+  return /^https?:\/\//i.test(url) ? url : `http://${url}`;
+}
+
+/**
  * Print-bridge base URL, resolved at CALL TIME (F-015) so a settings change
  * takes effect immediately without a reload.
  * Resolution order: store `printerUrl` override > VITE_PRINT_SERVER_URL > fallback.
@@ -18,8 +27,9 @@ export type {
  */
 export function getPrintServerUrl(): string {
   const override = usePosSettingsStore.getState().printerUrl;
-  if (override) return override;
-  return (import.meta.env.VITE_PRINT_SERVER_URL as string | undefined) ?? 'http://localhost:3001';
+  if (override) return withHttpScheme(override);
+  const env = import.meta.env.VITE_PRINT_SERVER_URL as string | undefined;
+  return env !== undefined && env !== '' ? withHttpScheme(env) : 'http://localhost:3001';
 }
 
 // ---------------------------------------------------------------------------
