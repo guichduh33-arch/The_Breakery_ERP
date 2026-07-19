@@ -16,6 +16,15 @@ export interface HubDevicePresence {
   last_seen_at: string;
 }
 export interface HubBufferStats { count: number; oldest_ts: string | null; newest_ts: string | null; }
+// Spec 006x lot 2 — état du push heartbeat agrégé hub → cloud.
+export interface HubCloudSyncStatus {
+  enabled: boolean;
+  last_push_at: string | null;
+  last_result: 'ok' | 'error' | null;
+  last_error: string | null;
+  last_pushed: string[];
+  last_unknown: string[];
+}
 export type HubStatusResponse =
   | { enabled: false }
   | {
@@ -25,6 +34,8 @@ export type HubStatusResponse =
       token_required: boolean;
       devices: HubDevicePresence[];
       buffer: HubBufferStats;
+      /** Absent sur un bridge lot 1 — traiter comme désactivé. */
+      cloud_sync?: HubCloudSyncStatus;
     };
 
 async function bridgeFetch(url: string, init?: RequestInit): Promise<Response> {

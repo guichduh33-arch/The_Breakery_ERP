@@ -5,11 +5,13 @@
 // un heartbeat sur le bus toutes les 10 s ; reconnexion en backoff exponentiel.
 // Aucun flux métier ne passe par le bus en lot 1 — ce hook sert à valider la
 // connectivité (mixed-content compris) et à alimenter le panneau BO « Hub ».
-// Monté à côté de useLanHeartbeat (qui reste l'écrivain cloud jusqu'au lot 2).
+// Lot 2 : publie l'état de connexion dans useHubConnectionStore (welcome →
+// connected) — useLanHeartbeat se tait tant que le hub est l'écrivain cloud.
 
 import { useEffect } from 'react';
 import { usePosSettingsStore } from '@/stores/posSettingsStore';
 import { getPrintServerUrl } from '@/services/print/printService';
+import { useHubConnectionStore } from '../hubConnectionStore';
 
 const HEARTBEAT_INTERVAL_MS = 10_000;
 const RECONNECT_MIN_MS = 1_000;
@@ -75,6 +77,15 @@ export function useHubPresence({ deviceCode, deviceType, enabled = true }: UseHu
           device_type: deviceType,
           ...(hubToken !== '' ? { token: hubToken } : {}),
         }));
+        socket.onmessage = (event: MessageEvent<string>) => {
+          // `connected` ne bascule qu'au welcome (hello accepté), pas à
+          // l'open : un hello refusé (4003) ne doit jamais couper le
+          // fallback heartbeat direct de useLanHeartbeat.
+          try {
+            const msg = JSON.parse(event.data) as { type?: string };
+            if (msg.type === 'welcome') useHubConnectionStore.getState().setConnected(true);
+          } catch { /* messages non-JSON ignorés */ }
+        };
         heartbeatHandle = window.setInterval(() => {
           if (socket.readyState === WebSocket.OPEN) {
             socket.send(JSON.stringify({
@@ -90,6 +101,7 @@ export function useHubPresence({ deviceCode, deviceType, enabled = true }: UseHu
       };
 
       socket.onclose = () => {
+        useHubConnectionStore.getState().setConnected(false);
         clearHeartbeat();
         scheduleReconnect();
       };
@@ -103,6 +115,7 @@ export function useHubPresence({ deviceCode, deviceType, enabled = true }: UseHu
       clearHeartbeat();
       if (reconnectHandle !== null) window.clearTimeout(reconnectHandle);
       ws?.close();
+      useHubConnectionStore.getState().setConnected(false);
     };
   }, [deviceCode, deviceType, enabled, hubToken]);
 }

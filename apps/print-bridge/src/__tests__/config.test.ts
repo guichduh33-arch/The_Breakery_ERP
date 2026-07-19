@@ -31,4 +31,17 @@ describe('loadConfig', () => {
     expect(loadConfig({ HUB_TOKEN: '   ' }).hubToken).toBeNull();
     expect(loadConfig({ HUB_BUFFER_FILE: 'C:/hub/buf.jsonl' }).hubBufferFile).toBe('C:/hub/buf.jsonl');
   });
+
+  it('cloud-sync defaults to null; reads HUB_CLOUD_URL + HUB_CLOUD_SECRET, trimming (lot 2)', () => {
+    const c = loadConfig({});
+    expect(c.hubCloudUrl).toBeNull();
+    expect(c.hubCloudSecret).toBeNull();
+    const set = loadConfig({
+      HUB_CLOUD_URL: ' https://x.supabase.co/functions/v1/lan-heartbeat-batch ',
+      HUB_CLOUD_SECRET: ' s3cret ',
+    });
+    expect(set.hubCloudUrl).toBe('https://x.supabase.co/functions/v1/lan-heartbeat-batch');
+    expect(set.hubCloudSecret).toBe('s3cret');
+    expect(loadConfig({ HUB_CLOUD_SECRET: '   ' }).hubCloudSecret).toBeNull();
+  });
 });

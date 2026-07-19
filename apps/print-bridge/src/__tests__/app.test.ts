@@ -17,7 +17,10 @@ const scan = vi.fn().mockResolvedValue([{ ip: '192.168.1.60', port: 9100, latenc
 
 function app(receiptPrinter: PrinterTarget | null = { ip_address: '192.168.1.50', port: 9100 }) {
   return createApp({
-    config: { port: 3001, receiptPrinter, hubToken: null, hubBufferFile: 'hub-buffer.jsonl' },
+    config: {
+      port: 3001, receiptPrinter, hubToken: null, hubBufferFile: 'hub-buffer.jsonl',
+      hubCloudUrl: null, hubCloudSecret: null,
+    },
     send, kick, probe, scan,
   });
 }
@@ -68,7 +71,10 @@ describe('GET /hub/status', () => {
       tokenRequired: true,
     };
     const res = await request(createApp({
-      config: { port: 3001, receiptPrinter: null, hubToken: 's', hubBufferFile: 'b.jsonl' },
+      config: {
+        port: 3001, receiptPrinter: null, hubToken: 's', hubBufferFile: 'b.jsonl',
+        hubCloudUrl: null, hubCloudSecret: null,
+      },
       send, kick, probe, scan, hub,
     })).get('/hub/status');
     expect(res.status).toBe(200);
@@ -77,6 +83,34 @@ describe('GET /hub/status', () => {
     expect(b.token_required).toBe(true);
     expect((b.devices as unknown[]).length).toBe(1);
     expect(b.buffer).toEqual({ count: 3, oldest_ts: 'a', newest_ts: 'b' });
+    // Lot 2 — sans cloud-sync attaché, le statut est explicitement désactivé.
+    expect((b.cloud_sync as { enabled: boolean }).enabled).toBe(false);
+  });
+
+  it('surfaces the cloud-sync status when attached (lot 2)', async () => {
+    const hub = {
+      presence: () => [],
+      bufferStats: () => ({ count: 0, oldest_ts: null, newest_ts: null }),
+      tokenRequired: false,
+    };
+    const cloudSync = {
+      status: () => ({
+        enabled: true, last_push_at: '2026-07-19T10:00:00Z', last_result: 'ok' as const,
+        last_error: null, last_pushed: ['POS-1'], last_unknown: [],
+      }),
+    };
+    const res = await request(createApp({
+      config: {
+        port: 3001, receiptPrinter: null, hubToken: null, hubBufferFile: 'b.jsonl',
+        hubCloudUrl: 'https://x.supabase.co/functions/v1/lan-heartbeat-batch', hubCloudSecret: 's',
+      },
+      send, kick, probe, scan, hub, cloudSync,
+    })).get('/hub/status');
+    expect(res.status).toBe(200);
+    expect(body(res).cloud_sync).toEqual({
+      enabled: true, last_push_at: '2026-07-19T10:00:00Z', last_result: 'ok',
+      last_error: null, last_pushed: ['POS-1'], last_unknown: [],
+    });
   });
 });
 

@@ -197,8 +197,8 @@ describe('KDS smoke', () => {
     render(wrapper(<KdsPage />));
 
     await waitFor(() => {
-      expect(rpcMock).toHaveBeenCalledWith('update_lan_heartbeat_v1', {
-        p_device_code: 'KDS-KITCHEN-01',
+      expect(rpcMock).toHaveBeenCalledWith('update_lan_heartbeat_v2', {
+        p_device_codes: ['KDS-KITCHEN-01'],
       });
     });
   });
@@ -208,7 +208,7 @@ describe('KDS smoke', () => {
     await screen.findByText(/no active tickets/i);
 
     expect(rpcMock).not.toHaveBeenCalledWith(
-      'update_lan_heartbeat_v1',
+      'update_lan_heartbeat_v2',
       expect.anything(),
     );
   });
