@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { scanPrinters, probePrinter, sendTestTicket } from '../api/bridgeApi.js';
+import { scanPrinters, probePrinter, sendTestTicket, getHubStatus } from '../api/bridgeApi.js';
 import { isPrivatePrefix } from '../utils/ipGuard.js';
 
 afterEach(() => vi.restoreAllMocks());
@@ -25,6 +25,22 @@ describe('scanPrinters', () => {
   it('throws bridge_unreachable on network error', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('fetch failed')));
     await expect(scanPrinters('http://localhost:3001', '192.168.1')).rejects.toThrow('bridge_unreachable');
+  });
+});
+
+describe('getHubStatus', () => {
+  it('GETs /hub/status and returns the parsed body', async () => {
+    const body = {
+      enabled: true, version: '0.1.0', uptime_s: 120, token_required: true,
+      devices: [], buffer: { count: 0, oldest_ts: null, newest_ts: null },
+    };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify(body), { status: 200 })));
+    expect(await getHubStatus('http://localhost:3001')).toEqual(body);
+    expect(fetch).toHaveBeenCalledWith('http://localhost:3001/hub/status', expect.objectContaining({ method: 'GET' }));
+  });
+  it('throws bridge_unreachable on network error', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('fetch failed')));
+    await expect(getHubStatus('http://localhost:3001')).rejects.toThrow('bridge_unreachable');
   });
 });
 

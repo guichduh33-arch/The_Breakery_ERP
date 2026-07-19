@@ -13,8 +13,10 @@ export type {
  * Print-bridge base URL, resolved at CALL TIME (F-015) so a settings change
  * takes effect immediately without a reload.
  * Resolution order: store `printerUrl` override > VITE_PRINT_SERVER_URL > fallback.
+ * Exported for the hub LAN client (spec 006x §4.1 — hub URL defaults to the
+ * print-bridge origin, same process since lot 1).
  */
-function getServerUrl(): string {
+export function getPrintServerUrl(): string {
   const override = usePosSettingsStore.getState().printerUrl;
   if (override) return override;
   return (import.meta.env.VITE_PRINT_SERVER_URL as string | undefined) ?? 'http://localhost:3001';
@@ -52,7 +54,7 @@ export async function checkPrintServer(): Promise<boolean> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 2000);
   try {
-    const res = await fetch(`${getServerUrl()}/health`, { signal: controller.signal });
+    const res = await fetch(`${getPrintServerUrl()}/health`, { signal: controller.signal });
     return res.ok;
   } catch {
     return false;
@@ -83,7 +85,7 @@ export async function printReceipt(
     const body = printer
       ? JSON.stringify({ ...payload, printer })
       : JSON.stringify(payload);
-    const res = await fetch(`${getServerUrl()}/print/receipt`, {
+    const res = await fetch(`${getPrintServerUrl()}/print/receipt`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body,
@@ -105,7 +107,7 @@ export async function openCashDrawer(): Promise<{ success: boolean; error?: stri
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 2000);
   try {
-    const res = await fetch(`${getServerUrl()}/drawer/open`, {
+    const res = await fetch(`${getPrintServerUrl()}/drawer/open`, {
       method: 'POST',
       signal: controller.signal,
     });
@@ -138,7 +140,7 @@ export async function printStationTicket(
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 5000);
   try {
-    const res = await fetch(`${getServerUrl()}/print/ticket`, {
+    const res = await fetch(`${getPrintServerUrl()}/print/ticket`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ printer, ...payload }),

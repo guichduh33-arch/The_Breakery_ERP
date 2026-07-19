@@ -16,7 +16,10 @@ const probe = vi.fn().mockResolvedValue(12);
 const scan = vi.fn().mockResolvedValue([{ ip: '192.168.1.60', port: 9100, latencyMs: 8 }]);
 
 function app(receiptPrinter: PrinterTarget | null = { ip_address: '192.168.1.50', port: 9100 }) {
-  return createApp({ config: { port: 3001, receiptPrinter }, send, kick, probe, scan });
+  return createApp({
+    config: { port: 3001, receiptPrinter, hubToken: null, hubBufferFile: 'hub-buffer.jsonl' },
+    send, kick, probe, scan,
+  });
 }
 
 // supertest's Response.body is `any` — narrow it once here instead of
@@ -45,6 +48,35 @@ describe('GET /health', () => {
     const res = await request(app()).get('/health');
     expect(res.status).toBe(200);
     expect(body(res).status).toBe('ok');
+  });
+});
+
+describe('GET /hub/status', () => {
+  it('enabled:false when no hub is attached', async () => {
+    const res = await request(app()).get('/hub/status');
+    expect(res.status).toBe(200);
+    expect(body(res)).toEqual({ enabled: false });
+  });
+
+  it('reports presence and buffer stats from the hub', async () => {
+    const hub = {
+      presence: () => [{
+        device_code: 'POS-1', device_type: 'pos', ip: '192.168.1.10',
+        connected_at: '2026-07-19T10:00:00Z', last_seen_at: '2026-07-19T10:00:05Z',
+      }],
+      bufferStats: () => ({ count: 3, oldest_ts: 'a', newest_ts: 'b' }),
+      tokenRequired: true,
+    };
+    const res = await request(createApp({
+      config: { port: 3001, receiptPrinter: null, hubToken: 's', hubBufferFile: 'b.jsonl' },
+      send, kick, probe, scan, hub,
+    })).get('/hub/status');
+    expect(res.status).toBe(200);
+    const b = body(res);
+    expect(b.enabled).toBe(true);
+    expect(b.token_required).toBe(true);
+    expect((b.devices as unknown[]).length).toBe(1);
+    expect(b.buffer).toEqual({ count: 3, oldest_ts: 'a', newest_ts: 'b' });
   });
 });
 

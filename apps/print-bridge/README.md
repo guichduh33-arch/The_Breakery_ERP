@@ -11,6 +11,16 @@ et le BO (page LAN Devices : scan réseau + tests d'impression).
 - `POST /drawer/open` — pulse tiroir vers l'imprimante caisse (.env)
 - `GET  /scan/printers?prefix=192.168.1&timeout=500` — sweep TCP 9100 (plages privées only)
 - `GET  /status/probe?ip=&port=` — sonde une IP
+- `GET  /hub/status` — état du hub LAN (presence + ring-buffer) — spec 006x lot 1
+- `WS   /ws` — bus LAN du hub (hello `{type,device_code,device_type,token?}`,
+  enveloppes `{v,msg_id,device_code,ts,topic,payload}`, catchup). IP privées only.
+
+## Hub LAN (spec 006x)
+- `HUB_TOKEN` (.env) — secret partagé boutique, vérifié dans le hello WS.
+  Sans lui le bus accepte tout appareil du LAN (warning au boot). Le token
+  se saisit côté terminal dans POS → Settings → Devices → Hub token.
+- `HUB_BUFFER_FILE` (.env, défaut `hub-buffer.jsonl`) — journal JSONL du
+  ring-buffer (rattrapage des appareils qui rejoignent le bus).
 
 ## Installation (Windows, PC boutique)
 1. `pnpm install && pnpm --filter @breakery/print-bridge build` → `apps/print-bridge/dist/server.js`

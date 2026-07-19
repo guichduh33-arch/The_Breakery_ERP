@@ -10,6 +10,10 @@ import { probeTcp as realProbe, scanHosts as realScan, hostsForPrefix } from './
 import { renderReceipt } from './render/receipt.js';
 import { renderStationTicket } from './render/stationTicket.js';
 import type { sendToPrinter, kickDrawer } from './transport.js';
+import type { HubHandle } from './hub/hubServer.js';
+
+/** Sous-ensemble de HubHandle consommé par /hub/status (testable sans WS). */
+export type HubStatusSource = Pick<HubHandle, 'presence' | 'bufferStats' | 'tokenRequired'>;
 
 export interface AppDeps {
   config: BridgeConfig;
@@ -17,6 +21,7 @@ export interface AppDeps {
   kick: typeof kickDrawer;
   probe?: typeof realProbe;
   scan?: typeof realScan;
+  hub?: HubStatusSource;
 }
 
 function isTarget(x: unknown): x is PrinterTarget {
@@ -33,13 +38,29 @@ function isValidPrinterTarget(target: PrinterTarget): boolean {
     && Number.isInteger(target.port) && target.port > 0 && target.port <= 65535;
 }
 
-export function createApp({ config, send, kick, probe = realProbe, scan = realScan }: AppDeps): express.Express {
+export function createApp({ config, send, kick, probe = realProbe, scan = realScan, hub }: AppDeps): express.Express {
   const app = express();
   app.use(cors({ origin: true }));
   app.use(express.json({ limit: '1mb' }));
 
   app.get('/health', (_req, res) => {
     res.json({ status: 'ok', version: process.env.npm_package_version ?? 'dev' });
+  });
+
+  // Spec 006x lot 1 — état du hub pour le panneau BO « Hub » (LanDevicesPage).
+  app.get('/hub/status', (_req, res) => {
+    if (hub === undefined) {
+      res.json({ enabled: false });
+      return;
+    }
+    res.json({
+      enabled: true,
+      version: process.env.npm_package_version ?? 'dev',
+      uptime_s: Math.round(process.uptime()),
+      token_required: hub.tokenRequired,
+      devices: hub.presence(),
+      buffer: hub.bufferStats(),
+    });
   });
 
   app.post('/print/receipt', (req, res) => {

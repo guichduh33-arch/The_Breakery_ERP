@@ -7,6 +7,7 @@ import { Wifi, CheckCircle2, AlertTriangle, Printer, Plus } from 'lucide-react';
 import { Button, Card, KpiTile, SectionLabel } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
 import { LanDevicesTable } from '@/features/lan-devices/components/LanDevicesTable.js';
+import { HubPanel } from '@/features/lan-devices/components/HubPanel.js';
 import { ScanPanel } from '@/features/lan-devices/components/ScanPanel.js';
 import { LanDeviceFormModal } from '@/features/lan-devices/components/LanDeviceFormModal.js';
 import { useLanDevices, type LanDeviceRow } from '@/features/lan-devices/hooks/useLanDevices.js';
@@ -66,6 +67,11 @@ export default function LanDevicesPage() {
         <KpiTile label="Stale"         value={kpis.stale}    icon={AlertTriangle}  footer="No recent heartbeat" />
         <KpiTile label="Printers"      value={kpis.printers} icon={Printer}        footer="ESC/POS printers in mesh" />
       </div>
+
+      <Card padding="md" className="space-y-3">
+        <SectionLabel size="sm" as="h2">Hub</SectionLabel>
+        <HubPanel />
+      </Card>
 
       {canManage && (
         <Card padding="md" className="space-y-3">

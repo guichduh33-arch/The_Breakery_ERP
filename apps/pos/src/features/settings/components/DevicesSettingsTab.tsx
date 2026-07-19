@@ -39,6 +39,8 @@ export function DevicesSettingsTab({ readOnly }: { readOnly: boolean }): JSX.Ele
   const printerUrl = usePosSettingsStore((s) => s.printerUrl);
   const deviceCode = usePosSettingsStore((s) => s.deviceCode);
   const setDeviceCode = usePosSettingsStore((s) => s.setDeviceCode);
+  const hubToken = usePosSettingsStore((s) => s.hubToken);
+  const setHubToken = usePosSettingsStore((s) => s.setHubToken);
 
   const [probe, setProbe] = useState<Probe>('idle');
   const [printBusy, setPrintBusy] = useState(false);
@@ -134,6 +136,27 @@ export function DevicesSettingsTab({ readOnly }: { readOnly: boolean }): JSX.Ele
           <p className="text-xs text-text-muted">
             Must match a code registered in BO &raquo; LAN Devices. Leave blank to
             skip heartbeats on this terminal.
+          </p>
+        </div>
+        <div className="space-y-2">
+          <label
+            htmlFor="devices-hub-token"
+            className="block font-bold uppercase tracking-widest text-text-muted text-xs"
+          >
+            Hub token
+          </label>
+          <Input
+            id="devices-hub-token"
+            aria-label="Hub token"
+            type="password"
+            placeholder="Shared LAN hub secret"
+            value={hubToken}
+            disabled={readOnly}
+            onChange={(e) => setHubToken(e.target.value)}
+          />
+          <p className="text-xs text-text-muted">
+            Must match the bridge&apos;s HUB_TOKEN. Leave blank if the hub runs
+            without a token.
           </p>
         </div>
       </Card>
