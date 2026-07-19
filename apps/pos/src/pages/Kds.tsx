@@ -16,6 +16,7 @@ import { useKdsStore } from '@/stores/kdsStore';
 import { useKdsRealtime } from '@/features/kds/hooks/useKdsRealtime';
 import { useReconnectInvalidate } from '@/lib/useReconnectInvalidate';
 import { useLanHeartbeat } from '@/features/lan/hooks/useLanHeartbeat';
+import { useHubPresence } from '@/features/lan/hooks/useHubPresence';
 import { usePosSettingsStore } from '@/stores/posSettingsStore';
 import { KdsBoard } from '@/features/kds/KdsBoard';
 
@@ -31,9 +32,10 @@ export default function KdsPage() {
   useReconnectInvalidate([['kds', station]]);
   // Session 59 (21 D1.1) — heartbeat so BO "LAN Devices" reflects this screen
   // as online. No-ops until an operator sets a device code in POS Settings →
-  // Devices (mesh hub/client stay unmounted — decision 2 pending).
+  // Devices. Spec 006x lot 1 — also join the LAN hub bus (presence only).
   const deviceCode = usePosSettingsStore((s) => s.deviceCode);
   useLanHeartbeat({ deviceCode, deviceType: 'kds' });
+  useHubPresence({ deviceCode, deviceType: 'kds' });
 
   return <KdsBoard station={station} isRealtimeConnected={realtimeConnected} />;
 }

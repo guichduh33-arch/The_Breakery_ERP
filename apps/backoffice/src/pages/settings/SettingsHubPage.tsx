@@ -101,7 +101,7 @@ const SECTIONS: SettingSection[] = [
     id: 'network',
     title: 'Network',
     tiles: [
-      { to: '/backoffice/lan-devices', title: 'Network Devices (LAN)', blurb: 'Devices participating in the on-site mesh.', icon: Wifi },
+      { to: '/backoffice/lan-devices', title: 'Network Devices (LAN)', blurb: 'Devices participating in the on-site mesh.', icon: Wifi, permission: 'lan.devices.read' },
     ],
   },
 ];

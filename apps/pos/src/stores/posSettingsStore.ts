@@ -26,11 +26,15 @@ export interface PosSettingsState {
   // "POS-FRONT-01"), pre-registered by an operator. '' = unregistered:
   // useLanHeartbeat no-ops rather than emit against an unknown code.
   deviceCode: string;
+  // Spec 006x lot 1 — shared secret of the LAN hub bus (bridge HUB_TOKEN).
+  // '' = hub without token check. Sent in the WS hello, never in the URL.
+  hubToken: string;
   // ── Behavior ────────────────────────────────────────────────────────
   defaultOrderType: OrderType; // order type a fresh cart starts on (cartStore)
   // ── Setters ─────────────────────────────────────────────────────────
   setPrinterUrl: (url: string) => void;
   setDeviceCode: (code: string) => void;
+  setHubToken: (token: string) => void;
   setDefaultOrderType: (t: OrderType) => void;
   /** Restore every field to its factory default (Advanced → Reset). */
   resetToDefaults: () => void;
@@ -39,6 +43,7 @@ export interface PosSettingsState {
 const DEFAULTS = {
   printerUrl: '',
   deviceCode: '',
+  hubToken: '',
   defaultOrderType: 'take_out' as OrderType,
 } as const;
 
@@ -48,6 +53,7 @@ export const usePosSettingsStore = create<PosSettingsState>()(
       ...DEFAULTS,
       setPrinterUrl: (url) => set({ printerUrl: url.trim() }),
       setDeviceCode: (code) => set({ deviceCode: code.trim() }),
+      setHubToken: (token) => set({ hubToken: token.trim() }),
       setDefaultOrderType: (t) => set({ defaultOrderType: t }),
       resetToDefaults: () => set({ ...DEFAULTS }),
     }),
@@ -57,6 +63,7 @@ export const usePosSettingsStore = create<PosSettingsState>()(
       partialize: (s) => ({
         printerUrl: s.printerUrl,
         deviceCode: s.deviceCode,
+        hubToken: s.hubToken,
         defaultOrderType: s.defaultOrderType,
       }),
     },

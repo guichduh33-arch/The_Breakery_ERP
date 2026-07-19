@@ -19,4 +19,16 @@ describe('loadConfig', () => {
     const c = loadConfig({ RECEIPT_PRINTER_IP: '10.0.0.9', RECEIPT_PRINTER_PORT: 'abc' });
     expect(c.receiptPrinter).toEqual({ ip_address: '10.0.0.9', port: 9100 });
   });
+
+  it('hub defaults: no token, hub-buffer.jsonl', () => {
+    const c = loadConfig({});
+    expect(c.hubToken).toBeNull();
+    expect(c.hubBufferFile).toBe('hub-buffer.jsonl');
+  });
+
+  it('reads HUB_TOKEN and HUB_BUFFER_FILE, trimming; blank token stays null', () => {
+    expect(loadConfig({ HUB_TOKEN: '  s3cret ' }).hubToken).toBe('s3cret');
+    expect(loadConfig({ HUB_TOKEN: '   ' }).hubToken).toBeNull();
+    expect(loadConfig({ HUB_BUFFER_FILE: 'C:/hub/buf.jsonl' }).hubBufferFile).toBe('C:/hub/buf.jsonl');
+  });
 });

@@ -1,16 +1,28 @@
 // apps/print-bridge/src/server.ts — point d'entrée production.
+// Spec 006x lot 1 : le même process porte le HTTP print-bridge ET le hub LAN
+// WebSocket (ws://<hub>:PORT/ws) — arbitrage A2 (hub = print-bridge étendu).
+import http from 'node:http';
 import { loadConfig } from './config.js';
 import { createApp } from './app.js';
 import { sendToPrinter, kickDrawer } from './transport.js';
+import { createHub } from './hub/hubServer.js';
+import { HubRingBuffer } from './hub/ringBuffer.js';
 
 const config = loadConfig();
-const app = createApp({ config, send: sendToPrinter, kick: kickDrawer });
+const hub = createHub({
+  token: config.hubToken,
+  buffer: new HubRingBuffer(config.hubBufferFile),
+});
+const app = createApp({ config, send: sendToPrinter, kick: kickDrawer, hub });
 
-app.listen(config.port, () => {
+const server = http.createServer(app);
+server.on('upgrade', hub.handleUpgrade);
+
+server.listen(config.port, () => {
   // eslint-disable-next-line no-console
   console.log(
     `[print-bridge] listening on :${config.port} — receipt printer: ${
       config.receiptPrinter ? `${config.receiptPrinter.ip_address}:${config.receiptPrinter.port}` : 'NOT CONFIGURED'
-    }`,
+    } — hub /ws: token ${config.hubToken !== null ? 'required' : 'DISABLED (set HUB_TOKEN)'}`,
   );
 });

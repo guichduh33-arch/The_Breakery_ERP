@@ -7,6 +7,26 @@ export interface ScanResponse { devices: ScanDeviceHit[]; hostsScanned: number; 
 export interface ProbeResponse { reachable: boolean; latencyMs?: number; }
 export interface BridgePrinterTarget { ip_address: string; port: number; }
 
+// Spec 006x lot 1 — GET /hub/status (panneau « Hub » de LanDevicesPage).
+export interface HubDevicePresence {
+  device_code: string;
+  device_type: string;
+  ip: string;
+  connected_at: string;
+  last_seen_at: string;
+}
+export interface HubBufferStats { count: number; oldest_ts: string | null; newest_ts: string | null; }
+export type HubStatusResponse =
+  | { enabled: false }
+  | {
+      enabled: true;
+      version: string;
+      uptime_s: number;
+      token_required: boolean;
+      devices: HubDevicePresence[];
+      buffer: HubBufferStats;
+    };
+
 async function bridgeFetch(url: string, init?: RequestInit): Promise<Response> {
   let res: Response;
   try {
@@ -19,6 +39,11 @@ async function bridgeFetch(url: string, init?: RequestInit): Promise<Response> {
     throw new Error(body?.error ?? `bridge_http_${res.status}`);
   }
   return res;
+}
+
+export async function getHubStatus(bridgeUrl: string): Promise<HubStatusResponse> {
+  const res = await bridgeFetch(`${bridgeUrl}/hub/status`, { method: 'GET' });
+  return (await res.json()) as HubStatusResponse;
 }
 
 export async function scanPrinters(bridgeUrl: string, prefix: string, signal?: AbortSignal): Promise<ScanResponse> {
