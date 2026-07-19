@@ -1,9 +1,12 @@
 # Module Settings — Objectif métier
 
-> **Version** : 2026-07-17 (rév. 3) — chantier §6.A « brancher l'existant +
-> fixes » soldé (lots 1 à 6b, PR #218 → #225) ; §6.C entamé : propagation
-> Realtime des settings livrée (PR #230). Chaque point revérifié dans le code
-> et sur la base V3 dev.
+> **Version** : 2026-07-18 (rév. 4) — §6.C avancé : sous-menus du hub livrés
+> (PR #237, ADR-006 déc. 8) ; « toggles workflow cuisine » (déc. 9) soldé en
+> périmètre réduit (décision propriétaire 2026-07-18) : lock des items envoyés
+> couvert par ADR-010 (PR #235), copies KOT par station par la PR #239
+> (migration _195) ; l'auto-send tablette est SORTI du chantier.
+> Rév. 3 (2026-07-17) : §6.A soldé (lots 1 à 6b, PR #218 → #225) + Realtime
+> settings (PR #230). Chaque point revérifié dans le code et sur la base V3 dev.
 > Base initiale : audit code V3 du 2026-07-16 (17 routes settings auditées page par
 > page, câblage RPC/tables/consommateurs vérifié).
 > Remplace le brief V2 archivé (~23 pages en 6 groupes, jamais déployé).
@@ -35,9 +38,10 @@ par personne est un réglage mort — c'est le critère n°1 de ce document.
   (`business`, `localization`, `tax`, `pos`, `pos_presets`, `inventory`, `payments`,
   `customer_display`, `printing`, `kds`), dictionnaire typé
   `packages/supabase/src/settings-keys.ts`.
-- Lecture `get_settings_by_category_v2`, écriture `set_setting_v3` (validation par
+- Lecture `get_settings_by_category_v3`, écriture `set_setting_v4` (validation par
   clé, **audit-log automatique** dans `audit_logs` : qui/quoi/quand/ancienne/nouvelle
-  valeur ; v2 droppée — la v3 ajoute le gate de bascule `tax_inclusive`, Lot 6b).
+  valeur). v3/v2 droppées — la v3→v4 ajoute les clés `kot_copies_*` (PR #239),
+  la v2→v3 le gate de bascule `tax_inclusive` (Lot 6b).
 - Pages hors-socle avec leurs propres tables/RPCs : floor-plan, notifications,
   templates, security, accounting, expense-thresholds, B2B.
 - **Aucun binding mort** : toute RPC/table référencée par l'UI existe en migration.
@@ -46,7 +50,7 @@ par personne est un réglage mort — c'est le critère n°1 de ce document.
 
 | Route | Consommateur réel |
 |---|---|
-| `/settings` (hub) | Navigation, tuiles gatées par permission |
+| `/settings` (hub) | Navigation en **sous-menus par feature** (PR #237, ADR-006 déc. 8), tuiles gatées par permission ; sidebar BO réorganisée en miroir |
 | `/settings/general` (partiel) | `tax_rate` + `tax_inclusive` → formule PB1 (`_pb1_split_v1`, unique porteur — Lots 6a/6b) et surfaces HT/TTC POS (panier, checkout, reçu, customer display, tablette) ; bascule `tax_inclusive` gatée (`set_setting_v3` : refus si commandes ouvertes, dialog de confirmation BO) ; `timezone` → rapports ; identité `name`/`fiscal_address`/`npwp`/`phone`/`logo_url` → tickets POS (`SuccessModal`), PDF (`generate-pdf`, `generate-zreport-pdf`, `_shared/pdf-layout`) et emails (`_shared/email-html`) — Lot 2 ; seuils de variance shift → `close_shift_v4/v5` + POS |
 | `/settings/inventory` | `allow_negative_stock` → `record_stock_movement_v1`, `complete_order_with_payment_v18`, RPCs production |
 | `/settings/templates/receipt` | `receipt_templates` → impression POS (`SuccessModal`) — Lot 3 |
@@ -56,7 +60,7 @@ par personne est un réglage mort — c'est le critère n°1 de ce document.
 | `/settings/customer-display` | footer/slogan → écran client |
 | `/settings/kds` | seuils warning/urgent/auto-archive → KDS (couleurs, alarme, archivage) |
 | `/settings/floor-plan` | CRUD tables + sections (6 RPCs), soft-delete, sections actives/inactives |
-| `/settings/printing` | auto-print / auto-drawer → `SuccessModal` POS |
+| `/settings/printing` | auto-print / auto-drawer → `SuccessModal` POS ; **copies KOT par station** (`kot_copies_{kitchen,barista,display}`, [0,5], 0 = station paperless — le KDS écran reçoit toujours) → `useFireToStations` imprime N copies séquentielles au fire (PR #239) ; steppers miroir dans l'onglet Printing du POS |
 | `/settings/pos` | presets paiement / fond de caisse / remises → POS |
 | `/settings/notifications` | templates → `enqueue_notification_v2` → outbox (toggle `is_active` effectif) |
 | `/settings/permissions` | matrice read-only (édition dans `/backoffice/users/permissions`) |
@@ -95,7 +99,7 @@ par personne est un réglage mort — c'est le critère n°1 de ce document.
 ## 3. Les invariants du module (constatés tenus, à préserver)
 
 1. **Sauvegarde explicite** — rien ne s'applique sans clic « Save ».
-2. **Trace systématique** — chaque `set_setting_v3` écrit dans `audit_logs`
+2. **Trace systématique** — chaque `set_setting_v4` écrit dans `audit_logs`
    (ancienne → nouvelle valeur, auteur, horodatage). Pas de table `settings_history`
    séparée : `audit_logs` est LE journal.
 3. **Permissions réelles** : `settings.read` (lecture), `settings.update` (écriture),
@@ -170,11 +174,11 @@ réalignés, page renommée « Session Timeouts ». Le volet PIN reste au backlo
 |---|---|---|
 | ✅ **Livré (PR #230, 2026-07-17)** | **Propagation Realtime des settings** | Push < 2 s aux caisses/KDS/displays (migration `_181` : publication `business_config` + `receipt_templates` ; hook `useSettingsRealtime`), refetch en fallback (cf. invariant §3.5). Mesure réelle du < 2 s à valider en exploitation. |
 | **Décidé (ADR-006 déc. 5)** | **LAN Network / Network Devices + hub local** | Enregistrement et heartbeat de chaque appareil, système hub + communication locale garantissant la **continuité des échanges entre appareils en cas de coupure internet**. Chantier d'architecture transverse (POS/KDS/displays) — spec dédiée requise avant dev. |
-| **Décidé (ADR-006 déc. 8)** | **Hub réorganisé en sous-menus par feature** | Chaque fonctionnalité a sa catégorie de réglages et sa page, groupées en sous-menus (esprit des groupes V2 appliqué à la surface réelle V3). Navigation seulement — le stockage reste le socle des décisions 1-2. |
+| ✅ **Livré (PR #237, 2026-07-18)** | **Hub réorganisé en sous-menus par feature** | Chaque fonctionnalité a sa catégorie et sa page, groupées en sous-menus + sidebar alignée. Navigation seulement — le stockage reste le socle des décisions 1-2. |
 | **Décidé (ADR-006 déc. 9)** | **Business hours** | Marquer les ventes hors-horaire dans les rapports d'audit (signal fraude). |
 | **Décidé (ADR-006 déc. 9)** | **Politique PIN configurable** | Exposer dans Settings le lockout/expiration déjà implémentés côté edge functions. |
 | **Décidé (ADR-006 déc. 9)** | **Payment methods enrichis** | Ordre d'affichage, e-wallets individuels (GoPay/OVO/DANA), frais par méthode. |
-| **Décidé (ADR-006 déc. 9)** | **Toggles workflow cuisine** | Auto-send KDS, print kitchen ticket, lock des items envoyés. |
+| ✅ **Soldé en périmètre réduit (2026-07-18)** | **Toggles workflow cuisine** | Périmètre arbitré par le propriétaire : (1) lock des items envoyés → couvert par **ADR-010** (PR #235, autorisation manager + perte obligatoire) ; (2) copies KOT papier par station → **PR #239** (migration _195, `set_setting_v4`, 0 = paperless) ; (3) auto-send KDS tablette → **sorti du chantier**, ne pas re-proposer sans nouvelle décision. |
 | **Décidé (ADR-006 déc. 9)** | **Vue « Settings History »** | Filtre dédié de `audit_logs` sur les changements de settings (la donnée existe déjà). |
 | **Décidé (ADR-006 déc. 9)** | **Floor plan visuel** | Drag & drop + positions ; le CRUD listes couvre déjà le besoin fonctionnel de base. |
 | **Rejeté (ADR-006 déc. 10)** | **Affectation serveur → section** | Décision propriétaire — ne pas re-proposer. |
@@ -194,5 +198,7 @@ notifications, `tax_inclusive`) sont **toutes branchées** : lots 2 à 5 pour le
 premières, lots 6a + 6b (PR #224/#225) pour `tax_inclusive` — la formule PB1 n'a plus
 qu'un porteur (`_pb1_split_v1`), la bascule est gatée (`set_setting_v3`, refus si
 commandes ouvertes) et les surfaces POS affichent HT/TTC selon le mode. Le chantier
-§6.A est soldé ; la suite du module vit au backlog §6.C (Realtime, hub LAN,
-sous-menus, business hours…).
+§6.A est soldé ; au §6.C, le Realtime, les sous-menus du hub et les toggles
+cuisine (périmètre réduit) sont livrés — restent hub LAN (spec dédiée requise),
+business hours, politique PIN, payment methods enrichis, Settings History et
+floor plan visuel.
