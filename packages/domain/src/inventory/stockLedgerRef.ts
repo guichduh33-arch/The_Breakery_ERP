@@ -115,7 +115,7 @@ export interface LedgerLineForRef {
  *
  * Returns a Map keyed by line id → ref_no.
  */
-export function assignRefNos(lines: ReadonlyArray<LedgerLineForRef>): Map<string, string> {
+export function assignRefNos(lines: readonly LedgerLineForRef[]): Map<string, string> {
   const out            = new Map<string, string>();
   const perPrefixCount = new Map<string, number>(); // prefix -> last seq assigned
   const groupCode      = new Map<string, string>(); // groupKey -> ref_no

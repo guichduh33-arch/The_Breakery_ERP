@@ -176,9 +176,9 @@ export interface TransferRpcResult {
   transfer_number: string;
   status: TransferStatus;
   idempotent_replay: boolean;
-  movements?: Array<{
+  movements?: {
     item_id: string;
     transfer_out_movement_id: string;
     transfer_in_movement_id: string;
-  }>;
+  }[];
 }
