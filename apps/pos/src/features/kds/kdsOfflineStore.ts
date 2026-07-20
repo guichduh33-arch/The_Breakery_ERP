@@ -68,7 +68,7 @@ export const useKdsOfflineStore = create<KdsOfflineState>((set) => ({
       for (const item of payload.items) {
         // Idempotent : un fired rejoué (catchup) n'écrase pas une ligne dont
         // le statut a déjà avancé localement.
-        if (rows[item.id] === undefined) rows[item.id] = toKdsRow(payload, item);
+        rows[item.id] ??= toKdsRow(payload, item);
       }
       const orders = {
         ...state.orders,

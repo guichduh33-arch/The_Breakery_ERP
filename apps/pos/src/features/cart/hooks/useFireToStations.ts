@@ -177,7 +177,7 @@ export function useFireToStations(): UseFireToStationsResult {
           // vit sur le KDS + le ticket papier, et le cash offline est fermé.
           if (isOfflineMode() && existingOrderId === null) {
             const stationByProductId = await getStationMap(queryClient).catch(
-              () => ({} as Record<string, string[]>),
+              (): Record<string, string[]> => ({}),
             );
             const localNumber = nextLocalOrderNumber();
             const firedPayload: OrderFiredPayload = {
