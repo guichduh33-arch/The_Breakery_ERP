@@ -5,6 +5,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
+import { tryLocalItemStatus } from '../offlineItemStatus';
 
 interface RpcError {
   code?: string;
@@ -27,6 +28,8 @@ export function useKdsStartPrepTimer() {
 
   return useMutation({
     mutationFn: async (orderItemId: string) => {
+      // Spec 006x lot 3 — ligne locale (bus LAN) : statut local, pas de RPC.
+      if (tryLocalItemStatus(orderItemId, 'preparing')) return;
       const { error } = await sb.rpc('kds_start_prep_timer_v1', {
         p_order_item_id: orderItemId,
       });

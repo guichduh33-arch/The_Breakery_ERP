@@ -17,6 +17,10 @@ import { useAuthStore } from '@/stores/authStore';
 import { useShiftStore } from '@/stores/shiftStore';
 import { emitPosEvent } from '@/features/audit/emitPosEvent';
 import { getKotCopies } from '@/features/settings/hooks/useKotCopies';
+import { isOfflineMode } from '@/features/lan/offlineMode';
+import { hubBus } from '@/features/lan/hubBusClient';
+import { nextLocalOrderNumber } from '@/features/lan/localOrderNumber';
+import type { OrderFiredPayload } from '@/features/lan/busTopics';
 import { useStationPrinters } from './useStationPrinters';
 import { useStationMap, getStationMap } from './useStationMap';
 
@@ -163,39 +167,80 @@ export function useFireToStations(): UseFireToStationsResult {
 
           fireClientUuidRef.current ??= crypto.randomUUID();
           const existingOrderId = useCartStore.getState().pickedUpOrderId;
-          // S44 P0-C(3) — fire_counter_order_v4 gates any line discount on an
-          // authorizing manager. Hoist the first discounted line's authorizer.
-          const fireAuthorizer = toPersist.find((i) => i.discount?.authorized_by)?.discount?.authorized_by;
-          const { data, error } = await supabase.rpc('fire_counter_order_v4', {
-            p_client_uuid: fireClientUuidRef.current,
-            p_session_id: sessionId,
-            p_items: toPersist.map((i) => ({
-              product_id: i.product_id,
-              quantity: i.quantity,
-              unit_price: i.unit_price,
-              modifiers: i.modifiers,
-              // S47 — combo lines persist their components so pay_existing_order_v12
-              // deducts each component's stock at payment (the fire only persists).
-              ...(i.combo_components ? { combo_components: i.combo_components } : {}),
-              ...(i.discount ? { discount_amount: i.discount.amount } : {}),
-            })) as unknown as Json,
-            ...(existingOrderId ? { p_order_id: existingOrderId } : {}),
-            ...(tableNo !== undefined ? { p_table_number: tableNo } : {}),
-            p_order_type: useCartStore.getState().cart.order_type,
-            ...(fireAuthorizer ? { p_discount_authorized_by: fireAuthorizer } : {}),
-          });
-          if (error) throw Object.assign(new Error(error.message), { details: error });
-          const env = data as unknown as {
-            order_id: string;
-            order_number: string;
-            idempotent_replay: boolean;
-          };
-          persistedOrderNumber = env.order_number;
 
-          // Success → next fire gets a fresh uuid.
-          fireClientUuidRef.current = null;
-          if (!existingOrderId) {
-            useCartStore.getState().setPickedUpOrderId(env.order_id);
+          // Spec 006x lot 3 — MODE OFFLINE (internet down + hub joignable) :
+          // la commande part en cuisine par le BUS LAN (order.fired), le KOT
+          // s'imprime en direct comme toujours (bridge local). Uniquement les
+          // fires NEUFS : un append sur une commande cloud existante reste
+          // online-only (il cible un order_id DB). Le replay cloud de ce fire
+          // (même client_uuid) est le travail du lot 4 — d'ici là, la commande
+          // vit sur le KDS + le ticket papier, et le cash offline est fermé.
+          if (isOfflineMode() && existingOrderId === null) {
+            const stationByProductId = await getStationMap(queryClient).catch(
+              () => ({} as Record<string, string[]>),
+            );
+            const localNumber = nextLocalOrderNumber();
+            const firedPayload: OrderFiredPayload = {
+              client_uuid: fireClientUuidRef.current,
+              order_number: localNumber,
+              order_type: useCartStore.getState().cart.order_type,
+              table_number: tableNo ?? null,
+              notes: null,
+              fired_at: new Date().toISOString(),
+              items: toPersist.map((i) => ({
+                id: i.id,
+                product_id: i.product_id,
+                product_name: i.name,
+                quantity: i.quantity,
+                unit_price: i.unit_price,
+                modifiers: i.modifiers,
+                dispatch_stations: stationByProductId[i.product_id] ?? [],
+              })),
+            };
+            if (!hubBus.publish('order.fired', firedPayload)) {
+              // Bus injoignable au moment T : on ne scelle RIEN — le fire est
+              // re-tentable, comme un échec RPC online.
+              throw new Error('offline_no_hub');
+            }
+            persistedOrderNumber = localNumber;
+            // Lot 4 : le client_uuid devra survivre dans l'outbox durable pour
+            // le replay. En lot 3 rien n'est rejoué — uuid frais au prochain fire.
+            fireClientUuidRef.current = null;
+          } else {
+            // S44 P0-C(3) — fire_counter_order_v4 gates any line discount on an
+            // authorizing manager. Hoist the first discounted line's authorizer.
+            const fireAuthorizer = toPersist.find((i) => i.discount?.authorized_by)?.discount?.authorized_by;
+            const { data, error } = await supabase.rpc('fire_counter_order_v4', {
+              p_client_uuid: fireClientUuidRef.current,
+              p_session_id: sessionId,
+              p_items: toPersist.map((i) => ({
+                product_id: i.product_id,
+                quantity: i.quantity,
+                unit_price: i.unit_price,
+                modifiers: i.modifiers,
+                // S47 — combo lines persist their components so pay_existing_order_v12
+                // deducts each component's stock at payment (the fire only persists).
+                ...(i.combo_components ? { combo_components: i.combo_components } : {}),
+                ...(i.discount ? { discount_amount: i.discount.amount } : {}),
+              })) as unknown as Json,
+              ...(existingOrderId ? { p_order_id: existingOrderId } : {}),
+              ...(tableNo !== undefined ? { p_table_number: tableNo } : {}),
+              p_order_type: useCartStore.getState().cart.order_type,
+              ...(fireAuthorizer ? { p_discount_authorized_by: fireAuthorizer } : {}),
+            });
+            if (error) throw Object.assign(new Error(error.message), { details: error });
+            const env = data as unknown as {
+              order_id: string;
+              order_number: string;
+              idempotent_replay: boolean;
+            };
+            persistedOrderNumber = env.order_number;
+
+            // Success → next fire gets a fresh uuid.
+            fireClientUuidRef.current = null;
+            if (!existingOrderId) {
+              useCartStore.getState().setPickedUpOrderId(env.order_id);
+            }
           }
         }
       }
@@ -214,7 +259,15 @@ export function useFireToStations(): UseFireToStationsResult {
       // order. Emitted once per fire; already-printed lines returned early above.
       emitPosEvent('sent_to_kitchen', {
         order_number_snap: orderNumber ?? persistedOrderNumber ?? null,
-        payload: { items: allIds.length, print_only: printOnly, additional: isAdditional },
+        payload: {
+          items: allIds.length,
+          print_only: printOnly,
+          additional: isAdditional,
+          // Spec 006x lot 3 — fire parti par le bus LAN (numéro local L-…).
+          // L'outbox d'audit est déjà durable : l'événement atteindra le cloud
+          // au retour d'internet.
+          ...(persistedOrderNumber?.startsWith('L-') === true ? { offline: true } : {}),
+        },
       });
 
       // 4. Build stationByProductId from the live station-map cache (NOT the

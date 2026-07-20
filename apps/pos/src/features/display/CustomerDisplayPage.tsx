@@ -33,6 +33,11 @@ import { useCartBroadcastReceiver } from './hooks/useCartBroadcastReceiver';
 import { useKioskAuth } from './hooks/useKioskAuth';
 import { useOrgDisplaySettings } from '@/features/settings/hooks/useOrgDisplaySettings';
 import { useSettingsRealtime } from '@/features/settings/hooks/useSettingsRealtime';
+import { useHubPresence } from '@/features/lan/hooks/useHubPresence';
+import { useCloudPing } from '@/features/lan/hooks/useCloudPing';
+import { useKdsOfflineBus } from '@/features/kds/hooks/useKdsOfflineBus';
+import { useKdsOfflineStore, selectOfflineReadyOrders } from '@/features/kds/kdsOfflineStore';
+import { usePosSettingsStore } from '@/stores/posSettingsStore';
 
 /** Built-in idle footer used when no custom message is configured. */
 const DEFAULT_DISPLAY_FOOTER = 'Open daily · 07:00 — 21:00';
@@ -83,6 +88,27 @@ export default function CustomerDisplayPage() {
   const { data: orders } = useDisplayOrders(ordersEnabled);
   // Session 59 (16 D1.2) — kitchen-ready feed, independent of payment status.
   const { data: readyOrders } = useReadyOrders(ordersEnabled);
+
+  // Spec 006x lot 3 — le display rejoint le bus LAN : les commandes fired
+  // hors-ligne alimentent la file « ready » sans cloud. Device code = réglage
+  // terminal s'il existe, sinon le code kiosk (lan_devices kiosk_display ↔
+  // display_screens.code, migration _171).
+  const settingsDeviceCode = usePosSettingsStore((s) => s.deviceCode);
+  const busDeviceCode = settingsDeviceCode !== '' ? settingsDeviceCode : (pairedCode ?? '');
+  useHubPresence({ deviceCode: busDeviceCode, deviceType: 'kiosk_display' });
+  useCloudPing();
+  useKdsOfflineBus();
+  const offlineRows = useKdsOfflineStore((s) => s.rows);
+  const offlineOrderMeta = useKdsOfflineStore((s) => s.orders);
+  const offlineReady = useMemo(
+    () => selectOfflineReadyOrders(offlineRows, offlineOrderMeta),
+    [offlineRows, offlineOrderMeta],
+  );
+  const mergedReadyOrders = useMemo(() => {
+    const merged = [...(readyOrders ?? []), ...offlineReady];
+    merged.sort((a, b) => (a.ready_at ?? '').localeCompare(b.ready_at ?? ''));
+    return merged.slice(0, 5);
+  }, [readyOrders, offlineReady]);
 
   // Live cart mirror from the POS side (F-007). Safe to read on every render —
   // the view renders its own welcome empty-state when the message is null.
@@ -237,7 +263,7 @@ export default function CustomerDisplayPage() {
         <div className="flex-1 min-h-0 flex flex-col gap-8">
           <CurrentOrderCard order={current} />
           <div className="flex-1 min-h-0">
-            <OrderQueueTicker orders={tail} readyOrders={readyOrders ?? []} />
+            <OrderQueueTicker orders={tail} readyOrders={mergedReadyOrders} />
           </div>
         </div>
       </div>

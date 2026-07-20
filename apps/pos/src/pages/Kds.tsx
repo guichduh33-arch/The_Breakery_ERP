@@ -17,6 +17,8 @@ import { useKdsRealtime } from '@/features/kds/hooks/useKdsRealtime';
 import { useReconnectInvalidate } from '@/lib/useReconnectInvalidate';
 import { useLanHeartbeat } from '@/features/lan/hooks/useLanHeartbeat';
 import { useHubPresence } from '@/features/lan/hooks/useHubPresence';
+import { useCloudPing } from '@/features/lan/hooks/useCloudPing';
+import { useKdsOfflineBus } from '@/features/kds/hooks/useKdsOfflineBus';
 import { usePosSettingsStore } from '@/stores/posSettingsStore';
 import { KdsBoard } from '@/features/kds/KdsBoard';
 
@@ -36,6 +38,10 @@ export default function KdsPage() {
   const deviceCode = usePosSettingsStore((s) => s.deviceCode);
   useLanHeartbeat({ deviceCode, deviceType: 'kds' });
   useHubPresence({ deviceCode, deviceType: 'kds' });
+  // Spec 006x lot 3 — détection de coupure internet + tickets par le bus LAN
+  // (order.fired / order.item_status, catchup au join).
+  useCloudPing();
+  useKdsOfflineBus();
 
   return <KdsBoard station={station} isRealtimeConnected={realtimeConnected} />;
 }
