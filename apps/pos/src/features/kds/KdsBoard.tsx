@@ -41,6 +41,8 @@ import { SectionLabel } from '@breakery/ui';
 
 import { ErrorState } from '@/components/ErrorState';
 import { useKdsStore, type KdsStation, type KdsStationFilter } from '@/stores/kdsStore';
+import { useOfflineMode } from '@/features/lan/offlineMode';
+import { useKdsOfflineStore, selectOfflineRowsForStation } from './kdsOfflineStore';
 import { useKdsOrders, type KdsItemRow } from './hooks/useKdsOrders';
 import { useKdsServedOrders } from './hooks/useKdsServedOrders';
 import { useAgeTimer } from './hooks/useAgeTimer';
@@ -98,14 +100,26 @@ export function KdsBoard({
   // panel. Default (5min) mirrors the old hardcoded ARCHIVE_AFTER_MS.
   const { archiveMs } = useKdsConfig();
 
+  // Spec 006x lot 3 — tickets locaux reçus par le bus LAN (commandes fired
+  // hors-ligne, inconnues de la DB jusqu'au replay lot 4). Toujours fusionnés :
+  // ils n'existent que là, online comme offline.
+  const offlineMode = useOfflineMode();
+  const offlineRowsMap = useKdsOfflineStore((s) => s.rows);
+  const offlineRows = useMemo(
+    () => selectOfflineRowsForStation(offlineRowsMap, station),
+    [offlineRowsMap, station],
+  );
+
+  const allItems = useMemo(() => [...items, ...offlineRows], [items, offlineRows]);
+
   // Session 59 (04 D1.3) — one beep per newly-arrived order, deduped by
   // order_id and gated on the persisted mute toggle below.
-  useKdsAlarm(items);
+  useKdsAlarm(allItems);
 
   const visibleOrders = useMemo(() => {
-    const visible = items.filter((item) => filterAndArchive(item, stationFilter, now, archiveMs));
+    const visible = allItems.filter((item) => filterAndArchive(item, stationFilter, now, archiveMs));
     return groupByOrder(visible);
-  }, [items, stationFilter, now, archiveMs]);
+  }, [allItems, stationFilter, now, archiveMs]);
 
   return (
     <div className="h-[100dvh] flex flex-col bg-bg-base text-text-primary">
@@ -139,10 +153,30 @@ export function KdsBoard({
         <StationFilter />
       </header>
 
+      {/* Spec 006x lot 3 — mode OFFLINE : internet down mais bus LAN vivant.
+          Les tickets arrivent par le hub, les statuts repartent par le hub. */}
+      {offlineMode && (
+        <div
+          role="status"
+          aria-live="polite"
+          data-testid="kds-offline-banner"
+          className="flex items-center justify-center gap-3 bg-warning-soft px-6 py-3 text-warning border-b border-amber-warn/40"
+        >
+          <WifiOff className="h-6 w-6" aria-hidden />
+          <span className="text-lg font-bold uppercase tracking-widest">
+            Mode hors-ligne — bus local actif
+          </span>
+          <span className="hidden md:inline text-base font-medium normal-case tracking-normal opacity-90">
+            Les commandes circulent par le hub boutique ; resynchronisation au retour d&apos;internet.
+          </span>
+        </div>
+      )}
+
       {/* Design Wave C — realtime reconnection banner. Kept out of the header so
           it can't shift the station picker; full-width, warning-toned, always
-          legible from across the kitchen. */}
-      {!isRealtimeConnected && (
+          legible from across the kitchen. Masquée en mode offline (le banner
+          offline dit déjà pourquoi le realtime est coupé). */}
+      {!isRealtimeConnected && !offlineMode && (
         <div
           role="status"
           aria-live="polite"
@@ -166,9 +200,11 @@ export function KdsBoard({
         tabIndex={-1}
         className="flex-1 overflow-auto p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 auto-rows-min"
       >
-        {isError ? (
+        {isError && !offlineMode ? (
           // Never fall through to "No active tickets" on a fetch error — the
-          // kitchen would wrongly believe the queue is empty (C-D1).
+          // kitchen would wrongly believe the queue is empty (C-D1). En mode
+          // OFFLINE, la query cloud échoue PAR DESIGN : on rend le board (cache
+          // cloud + tickets bus), le banner offline explique la situation.
           <div className="col-span-full">
             <ErrorState
               title="Connexion au KDS perdue"

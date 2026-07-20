@@ -5,6 +5,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useHubPresence, hubWsUrl } from '../hooks/useHubPresence';
+import { hubBus } from '../hubBusClient';
 import { useHubConnectionStore } from '../hubConnectionStore';
 import { usePosSettingsStore } from '@/stores/posSettingsStore';
 
@@ -45,6 +46,8 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  // Lot 3 — le socket vit dans le singleton hubBusClient : purge entre tests.
+  hubBus._resetForTests();
   vi.unstubAllGlobals();
   vi.useRealTimers();
 });

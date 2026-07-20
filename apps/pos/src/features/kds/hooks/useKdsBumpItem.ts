@@ -5,6 +5,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
+import { tryLocalItemStatus } from '../offlineItemStatus';
 
 interface RpcError {
   code?: string;
@@ -34,6 +35,11 @@ export function useKdsBumpItem() {
   return useMutation({
     mutationFn: async ({ orderItemId, idempotencyKey }: KdsBumpItemInput) => {
       const key = idempotencyKey ?? crypto.randomUUID();
+      // Spec 006x lot 3 — ligne locale (fired via le bus, pas d'id DB) :
+      // statut local + bus, jamais la RPC.
+      if (tryLocalItemStatus(orderItemId, 'ready')) {
+        return { idempotencyKey: key };
+      }
       const { error } = await sb.rpc('kds_bump_item_v1', {
         p_order_item_id:   orderItemId,
         p_idempotency_key: key,

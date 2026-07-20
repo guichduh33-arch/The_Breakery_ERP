@@ -7,6 +7,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { emitPosEvent } from '@/features/audit/emitPosEvent';
+import { tryLocalOrderStatus } from '../offlineItemStatus';
 
 interface RpcError {
   code?: string;
@@ -36,6 +37,12 @@ export function useKdsBumpOrder() {
   return useMutation({
     mutationFn: async ({ orderId, idempotencyKey }: KdsBumpOrderInput) => {
       const key = idempotencyKey ?? crypto.randomUUID();
+      // Spec 006x lot 3 — ordre local (fired via le bus) : toutes ses lignes
+      // actives passent ready localement + sur le bus, pas de RPC.
+      const localCount = tryLocalOrderStatus(orderId, 'ready');
+      if (localCount !== null) {
+        return { bumpedCount: localCount, idempotencyKey: key };
+      }
       const { data, error } = await sb.rpc('kds_bump_order_v1', {
         p_order_id:        orderId,
         p_idempotency_key: key,

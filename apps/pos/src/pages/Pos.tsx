@@ -47,6 +47,7 @@ import { useCartStore } from '@/stores/cartStore';
 import { usePosSettingsStore } from '@/stores/posSettingsStore';
 import { useLanHeartbeat } from '@/features/lan/hooks/useLanHeartbeat';
 import { useHubPresence } from '@/features/lan/hooks/useHubPresence';
+import { useCloudPing } from '@/features/lan/hooks/useCloudPing';
 import { supabase } from '@/lib/supabase';
 import type { Customer } from '@breakery/domain';
 import type { CustomerWithCategory } from '@/stores/cartStore';
@@ -95,6 +96,8 @@ export default function PosPage() {
   const deviceCode = usePosSettingsStore((s) => s.deviceCode);
   useLanHeartbeat({ deviceCode, deviceType: 'pos' });
   useHubPresence({ deviceCode, deviceType: 'pos' });
+  // Spec 006x lot 3 — détection internet down (le fire bascule sur le bus LAN).
+  useCloudPing();
 
   async function handleLogout() {
     await logout();

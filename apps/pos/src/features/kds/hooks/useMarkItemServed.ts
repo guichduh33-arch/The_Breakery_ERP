@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
+import { tryLocalItemStatus } from '../offlineItemStatus';
 
 const P0011 = 'P0011';
 
@@ -9,6 +10,8 @@ export function useMarkItemServed() {
 
   return useMutation({
     mutationFn: async (itemId: string) => {
+      // Spec 006x lot 3 — ligne locale (bus LAN) : statut local, pas de RPC.
+      if (tryLocalItemStatus(itemId, 'served')) return;
       const { error } = await (supabase as unknown as {
         rpc: (fn: string, args: Record<string, unknown>) => Promise<{ error: { code?: string; message: string } | null }>;
       }).rpc('mark_item_served', { p_item_id: itemId });

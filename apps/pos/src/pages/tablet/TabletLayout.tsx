@@ -8,6 +8,7 @@ import { useTabletOffline } from '@/features/tablet/hooks/useTabletOffline';
 import { useMyTabletOrders } from '@/features/tablet/hooks/useMyTabletOrders';
 import { useLanHeartbeat } from '@/features/lan/hooks/useLanHeartbeat';
 import { useHubPresence } from '@/features/lan/hooks/useHubPresence';
+import { useCloudPing } from '@/features/lan/hooks/useCloudPing';
 
 export default function TabletLayout(): JSX.Element {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -20,6 +21,8 @@ export default function TabletLayout(): JSX.Element {
   const deviceCode = usePosSettingsStore((s) => s.deviceCode);
   useLanHeartbeat({ deviceCode, deviceType: 'tablet' });
   useHubPresence({ deviceCode, deviceType: 'tablet' });
+  // Spec 006x lot 3 — détection internet down (mode offline du bus LAN).
+  useCloudPing();
 
   // LOT 6 (audit 2026-06-25) — header context: active table, a persistent
   // online/offline pill, and a live order count. These hooks are cheap (cached
