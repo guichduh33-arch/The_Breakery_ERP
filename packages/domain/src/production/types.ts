@@ -40,12 +40,12 @@ export interface BomCostResult {
 
 export interface FeasibilityResult {
   feasible: boolean;
-  missing: Array<{
+  missing: {
     material_id: string;
     material_name: string;
     required: number;
     available: number;
     shortfall: number;
     unit: string;
-  }>;
+  }[];
 }

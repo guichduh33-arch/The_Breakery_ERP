@@ -7,6 +7,7 @@ import {
   tryCalculateRecipeCost,
   RecipeCycleError,
   RecipeDepthExceededError,
+  type RecipeCostBreakdownItem,
   type RecipeGraph,
   type RecipeGraphProduct,
   type RecipeGraphRow,
@@ -158,8 +159,7 @@ describe('calculateRecipeCost — 5-level chain', () => {
     expect(result.has_cycle).toBe(false);
 
     // Spot-check the deepest sub_breakdown chain.
-    let cursor: import('../recipeCostCalculator.js').RecipeCostBreakdownItem =
-      result.breakdown[0]!;
+    let cursor: RecipeCostBreakdownItem = result.breakdown[0]!;
     let depth = 0;
     while (cursor.sub_breakdown && cursor.sub_breakdown.length > 0) {
       cursor = cursor.sub_breakdown[0]!;

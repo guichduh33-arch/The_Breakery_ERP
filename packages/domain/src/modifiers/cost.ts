@@ -27,7 +27,7 @@ export function modifierIngredientLineCost(
   ingredient: ModifierIngredient,
   material: ModifierCostMaterial | undefined,
 ): number | null {
-  if (!material || material.cost_price == null) return null;
+  if (material?.cost_price == null) return null;
   const factor =
     material.unitOptions.find((u) => u.code === ingredient.unit)?.factor ?? 1;
   return ingredient.qty * factor * material.cost_price;

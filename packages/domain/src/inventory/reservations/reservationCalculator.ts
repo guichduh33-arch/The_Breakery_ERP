@@ -22,7 +22,7 @@ export interface ActiveReservation {
  * Negative quantities are ignored (defensive — RPC enforces > 0 already).
  */
 export function activeHeldQuantity(
-  reservations: ReadonlyArray<ActiveReservation>,
+  reservations: readonly ActiveReservation[],
   now: Date = new Date(),
 ): number {
   if (!reservations || reservations.length === 0) return 0;
@@ -46,7 +46,7 @@ export function activeHeldQuantity(
  */
 export function availableQuantity(
   currentStock: number,
-  reservations: ReadonlyArray<ActiveReservation>,
+  reservations: readonly ActiveReservation[],
   now: Date = new Date(),
 ): number {
   const held = activeHeldQuantity(reservations, now);
@@ -64,7 +64,7 @@ export function availableQuantity(
 export function canHoldQuantity(
   requested: number,
   currentStock: number,
-  reservations: ReadonlyArray<ActiveReservation>,
+  reservations: readonly ActiveReservation[],
   now: Date = new Date(),
 ): boolean {
   if (requested <= 0) return false;
