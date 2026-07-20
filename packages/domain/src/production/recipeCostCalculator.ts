@@ -16,16 +16,16 @@
 // - Hard `maxDepth = 5` mirrors the DB hard cap to keep parity with
 //   `calculate_recipe_cost_v1` and the anti-cycle trigger.
 
-export type RecipeGraphProduct = {
+export interface RecipeGraphProduct {
   id: string;
   name: string;
   /** Stock unit for `cost_price` (e.g. 'kg', 'pcs', 'L'). */
   unit: string;
   /** Cost per 1 unit of the product (leaf). DECIMAL(14,2) on DB side. */
   cost_price: number;
-};
+}
 
-export type RecipeGraphRow = {
+export interface RecipeGraphRow {
   /** Product whose recipe this row belongs to. */
   product_id: string;
   /** Material consumed by the recipe row (may itself be a recipe product). */
@@ -34,16 +34,16 @@ export type RecipeGraphRow = {
   quantity: number;
   /** Free-form recipe unit (e.g. 'g', 'kg', 'mL'). */
   unit: string;
-};
+}
 
-export type RecipeGraph = {
+export interface RecipeGraph {
   /** All products keyed by id. Materials referenced by `recipes` MUST exist here. */
   products: Record<string, RecipeGraphProduct>;
   /** ALL active recipe rows. The calculator filters by `product_id`. */
   recipes: RecipeGraphRow[];
-};
+}
 
-export type RecipeCostBreakdownItem = {
+export interface RecipeCostBreakdownItem {
   material_id: string;
   material_name: string;
   /** `true` iff `material_id` itself has at least one row in `graph.recipes`. */
@@ -56,9 +56,9 @@ export type RecipeCostBreakdownItem = {
   subtotal: number;
   /** Present iff `is_recipe === true`. */
   sub_breakdown?: RecipeCostBreakdownItem[];
-};
+}
 
-export type RecipeCostBreakdown = {
+export interface RecipeCostBreakdown {
   product_id: string;
   cost_per_unit: number;
   breakdown: RecipeCostBreakdownItem[];
@@ -70,9 +70,9 @@ export type RecipeCostBreakdown = {
    * flagged result (e.g. {@link tryCalculateRecipeCost}).
    */
   has_cycle: boolean;
-};
+}
 
-export type CalculateRecipeCostOptions = {
+export interface CalculateRecipeCostOptions {
   /** Hard cap on recursion depth. Defaults to 5 (matches DB RPC). */
   maxDepth?: number;
   /**
@@ -82,7 +82,7 @@ export type CalculateRecipeCostOptions = {
    * coverage is needed in the preview.
    */
   convertUnit?: (qty: number, from: string, to: string) => number;
-};
+}
 
 export class RecipeCycleError extends Error {
   constructor(public path: string[]) {
@@ -121,19 +121,19 @@ function indexRowsByProduct(
   return map;
 }
 
-type WalkContext = {
+interface WalkContext {
   products: Record<string, RecipeGraphProduct>;
   rowsByProduct: Map<string, RecipeGraphRow[]>;
   maxDepth: number;
   convertUnit: (qty: number, from: string, to: string) => number;
   /** Running max of `depth_reached` across the walk. */
   maxObservedDepth: number;
-};
+}
 
-type WalkResult = {
+interface WalkResult {
   cost_per_unit: number;
   breakdown: RecipeCostBreakdownItem[];
-};
+}
 
 /**
  * Recursive worker. `ancestors` is a Set for O(1) cycle membership ; `path`

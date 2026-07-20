@@ -117,9 +117,9 @@ describe('serializeModifierGroups', () => {
         ],
       },
     ];
-    const out = serializeModifierGroups(groups) as Array<Record<string, unknown>>;
+    const out = serializeModifierGroups(groups) as Record<string, unknown>[];
     expect(out[0]!.group_sort_order).toBe(0);
-    const opts = out[0]!.options as Array<Record<string, unknown>>;
+    const opts = out[0]!.options as Record<string, unknown>[];
     expect(opts[0]!.option_sort_order).toBe(0);
     expect(opts[1]!.option_sort_order).toBe(1);
     expect(opts[1]!.ingredients_to_deduct).toEqual([{ product_id: 'oat', qty: 30, unit: 'ml' }]);
