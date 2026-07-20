@@ -49,7 +49,7 @@ describe('HubPanel', () => {
     await waitFor(() => expect(screen.getByText(/hub unreachable/i)).toBeInTheDocument());
   });
 
-  it('flags a token-less hub', async () => {
+  it('flags a token-less hub and a cloud-sync left off (lot 1 bridge)', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
       enabled: true, version: '0.1.0', uptime_s: 60, token_required: false,
       devices: [], buffer: { count: 0, oldest_ts: null, newest_ts: null },
@@ -57,5 +57,33 @@ describe('HubPanel', () => {
     renderPanel();
     await waitFor(() => expect(screen.getByText(/no token/i)).toBeInTheDocument());
     expect(screen.getByText(/no device connected/i)).toBeInTheDocument();
+    // cloud_sync absent (bridge lot 1) → traité comme désactivé.
+    expect(screen.getByText(/cloud sync off/i)).toBeInTheDocument();
+  });
+
+  it('shows the last cloud push when the hub is the cloud writer (lot 2)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      enabled: true, version: '0.2.0', uptime_s: 60, token_required: true,
+      devices: [], buffer: { count: 0, oldest_ts: null, newest_ts: null },
+      cloud_sync: {
+        enabled: true, last_push_at: '2026-07-19T10:00:00Z', last_result: 'ok',
+        last_error: null, last_pushed: ['POS-FRONT-01'], last_unknown: [],
+      },
+    }), { status: 200 })));
+    renderPanel();
+    await waitFor(() => expect(screen.getByText(/cloud sync \d/i)).toBeInTheDocument());
+  });
+
+  it('surfaces a failing cloud sync', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      enabled: true, version: '0.2.0', uptime_s: 60, token_required: true,
+      devices: [], buffer: { count: 0, oldest_ts: null, newest_ts: null },
+      cloud_sync: {
+        enabled: true, last_push_at: null, last_result: 'error',
+        last_error: 'http_401', last_pushed: [], last_unknown: [],
+      },
+    }), { status: 200 })));
+    renderPanel();
+    await waitFor(() => expect(screen.getByText(/cloud sync failing \(http_401\)/i)).toBeInTheDocument());
   });
 });

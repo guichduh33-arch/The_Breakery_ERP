@@ -86,8 +86,8 @@ describe('TabletLayout header (LOT 6)', () => {
     render(wrap(<TabletLayout />));
 
     await waitFor(() => {
-      expect(rpcMock).toHaveBeenCalledWith('update_lan_heartbeat_v1', {
-        p_device_code: 'TABLET-01',
+      expect(rpcMock).toHaveBeenCalledWith('update_lan_heartbeat_v2', {
+        p_device_codes: ['TABLET-01'],
       });
     });
   });
@@ -98,7 +98,7 @@ describe('TabletLayout header (LOT 6)', () => {
     expect(screen.getByTestId('tablet-active-table')).toBeInTheDocument();
 
     expect(rpcMock).not.toHaveBeenCalledWith(
-      'update_lan_heartbeat_v1',
+      'update_lan_heartbeat_v2',
       expect.anything(),
     );
   });

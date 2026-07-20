@@ -9,6 +9,14 @@ export interface BridgeConfig {
   hubToken: string | null;
   /** Fichier JSONL du ring-buffer du hub (spec 006x §4.2). */
   hubBufferFile: string;
+  /** URL de l'EF lan-heartbeat-batch (spec 006x lot 2). null = pas de push cloud. */
+  hubCloudUrl: string | null;
+  /** Secret partagé avec l'EF (== LAN_HEARTBEAT_SECRET côté EF). */
+  hubCloudSecret: string | null;
+}
+
+function trimmedOrNull(value: string | undefined): string | null {
+  return value !== undefined && value.trim() !== '' ? value.trim() : null;
 }
 
 export function loadConfig(env: Record<string, string | undefined> = process.env): BridgeConfig {
@@ -19,9 +27,9 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     receiptPrinter: env.RECEIPT_PRINTER_IP
       ? { ip_address: env.RECEIPT_PRINTER_IP, port: Number.isInteger(rpPort) && rpPort > 0 ? rpPort : 9100 }
       : null,
-    hubToken: env.HUB_TOKEN !== undefined && env.HUB_TOKEN.trim() !== '' ? env.HUB_TOKEN.trim() : null,
-    hubBufferFile: env.HUB_BUFFER_FILE !== undefined && env.HUB_BUFFER_FILE.trim() !== ''
-      ? env.HUB_BUFFER_FILE.trim()
-      : 'hub-buffer.jsonl',
+    hubToken: trimmedOrNull(env.HUB_TOKEN),
+    hubBufferFile: trimmedOrNull(env.HUB_BUFFER_FILE) ?? 'hub-buffer.jsonl',
+    hubCloudUrl: trimmedOrNull(env.HUB_CLOUD_URL),
+    hubCloudSecret: trimmedOrNull(env.HUB_CLOUD_SECRET),
   };
 }

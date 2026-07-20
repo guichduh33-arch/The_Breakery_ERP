@@ -5,6 +5,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useHubPresence, hubWsUrl } from '../hooks/useHubPresence';
+import { useHubConnectionStore } from '../hubConnectionStore';
 import { usePosSettingsStore } from '@/stores/posSettingsStore';
 
 class MockWebSocket {
@@ -16,6 +17,7 @@ class MockWebSocket {
   onopen: (() => void) | null = null;
   onclose: (() => void) | null = null;
   onerror: (() => void) | null = null;
+  onmessage: ((event: { data: string }) => void) | null = null;
   constructor(url: string) {
     this.url = url;
     MockWebSocket.instances.push(this);
@@ -29,6 +31,9 @@ class MockWebSocket {
     this.readyState = MockWebSocket.OPEN;
     this.onopen?.();
   }
+  simulateMessage(msg: unknown): void {
+    this.onmessage?.({ data: JSON.stringify(msg) });
+  }
 }
 
 beforeEach(() => {
@@ -36,6 +41,7 @@ beforeEach(() => {
   MockWebSocket.instances = [];
   vi.stubGlobal('WebSocket', MockWebSocket);
   usePosSettingsStore.setState({ printerUrl: 'http://192.168.1.20:3001', hubToken: '' });
+  useHubConnectionStore.setState({ connected: false });
 });
 
 afterEach(() => {
@@ -98,6 +104,29 @@ describe('useHubPresence', () => {
     first.close();
     vi.advanceTimersByTime(1_000);
     expect(MockWebSocket.instances).toHaveLength(2);
+  });
+
+  it('flips the connection store on welcome, resets it on close (lot 2)', () => {
+    renderHook(() => useHubPresence({ deviceCode: 'POS-1', deviceType: 'pos' }));
+    const ws = MockWebSocket.instances[0]!;
+    ws.simulateOpen();
+    // L'open seul ne suffit pas : un hello refusé ne doit pas couper le
+    // fallback heartbeat direct.
+    expect(useHubConnectionStore.getState().connected).toBe(false);
+    ws.simulateMessage({ type: 'welcome', buffer: { count: 0 } });
+    expect(useHubConnectionStore.getState().connected).toBe(true);
+    ws.close();
+    expect(useHubConnectionStore.getState().connected).toBe(false);
+  });
+
+  it('resets the connection store on unmount', () => {
+    const { unmount } = renderHook(() => useHubPresence({ deviceCode: 'POS-1', deviceType: 'pos' }));
+    const ws = MockWebSocket.instances[0]!;
+    ws.simulateOpen();
+    ws.simulateMessage({ type: 'welcome', buffer: { count: 0 } });
+    expect(useHubConnectionStore.getState().connected).toBe(true);
+    unmount();
+    expect(useHubConnectionStore.getState().connected).toBe(false);
   });
 
   it('closes the socket and stops timers on unmount', () => {

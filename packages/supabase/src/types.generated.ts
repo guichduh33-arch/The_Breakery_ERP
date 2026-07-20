@@ -8440,29 +8440,11 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      update_lan_heartbeat_v1: {
-        Args: { p_device_code: string }
+      update_lan_heartbeat_v2: {
+        Args: { p_device_codes: string[] }
         Returns: {
-          capabilities: Json
           code: string
-          created_at: string
-          deleted_at: string | null
-          device_type: string
-          id: string
-          ip_address: unknown
-          is_active: boolean
-          last_heartbeat_at: string | null
-          location: string | null
-          name: string
-          port: number | null
-          updated_at: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "lan_devices"
-          isOneToOne: true
-          isSetofReturn: false
-        }
+        }[]
       }
       update_order_item_qty_v2: {
         Args: {

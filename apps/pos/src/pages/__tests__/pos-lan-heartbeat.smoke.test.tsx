@@ -80,8 +80,8 @@ describe('POS shell — LAN heartbeat wiring (session 59, 21 D1.1)', () => {
     render(wrapper(<PosPage />));
 
     await waitFor(() => {
-      expect(rpcMock).toHaveBeenCalledWith('update_lan_heartbeat_v1', {
-        p_device_code: 'POS-FRONT-01',
+      expect(rpcMock).toHaveBeenCalledWith('update_lan_heartbeat_v2', {
+        p_device_codes: ['POS-FRONT-01'],
       });
     });
   });
@@ -89,7 +89,7 @@ describe('POS shell — LAN heartbeat wiring (session 59, 21 D1.1)', () => {
   it('does not emit a heartbeat when no device code is configured', () => {
     render(wrapper(<PosPage />));
     expect(rpcMock).not.toHaveBeenCalledWith(
-      'update_lan_heartbeat_v1',
+      'update_lan_heartbeat_v2',
       expect.anything(),
     );
   });

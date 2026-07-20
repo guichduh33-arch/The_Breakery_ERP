@@ -11,9 +11,12 @@ import { renderReceipt } from './render/receipt.js';
 import { renderStationTicket } from './render/stationTicket.js';
 import type { sendToPrinter, kickDrawer } from './transport.js';
 import type { HubHandle } from './hub/hubServer.js';
+import { DISABLED_CLOUD_SYNC_STATUS, type CloudSyncHandle } from './hub/cloudSync.js';
 
 /** Sous-ensemble de HubHandle consommé par /hub/status (testable sans WS). */
 export type HubStatusSource = Pick<HubHandle, 'presence' | 'bufferStats' | 'tokenRequired'>;
+/** Sous-ensemble de CloudSyncHandle consommé par /hub/status. */
+export type CloudSyncStatusSource = Pick<CloudSyncHandle, 'status'>;
 
 export interface AppDeps {
   config: BridgeConfig;
@@ -22,6 +25,7 @@ export interface AppDeps {
   probe?: typeof realProbe;
   scan?: typeof realScan;
   hub?: HubStatusSource;
+  cloudSync?: CloudSyncStatusSource;
 }
 
 function isTarget(x: unknown): x is PrinterTarget {
@@ -38,7 +42,7 @@ function isValidPrinterTarget(target: PrinterTarget): boolean {
     && Number.isInteger(target.port) && target.port > 0 && target.port <= 65535;
 }
 
-export function createApp({ config, send, kick, probe = realProbe, scan = realScan, hub }: AppDeps): express.Express {
+export function createApp({ config, send, kick, probe = realProbe, scan = realScan, hub, cloudSync }: AppDeps): express.Express {
   const app = express();
   app.use(cors({ origin: true }));
   app.use(express.json({ limit: '1mb' }));
@@ -60,6 +64,8 @@ export function createApp({ config, send, kick, probe = realProbe, scan = realSc
       token_required: hub.tokenRequired,
       devices: hub.presence(),
       buffer: hub.bufferStats(),
+      // Spec 006x lot 2 — état du push heartbeat agrégé vers le cloud.
+      cloud_sync: cloudSync !== undefined ? cloudSync.status() : DISABLED_CLOUD_SYNC_STATUS,
     });
   });
 

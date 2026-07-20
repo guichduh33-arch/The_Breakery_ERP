@@ -21,6 +21,16 @@ et le BO (page LAN Devices : scan réseau + tests d'impression).
   se saisit côté terminal dans POS → Settings → Devices → Hub token.
 - `HUB_BUFFER_FILE` (.env, défaut `hub-buffer.jsonl`) — journal JSONL du
   ring-buffer (rattrapage des appareils qui rejoignent le bus).
+- **Heartbeat cloud agrégé (lot 2)** — le hub pousse toutes les 10 s les
+  device codes présents sur le bus vers l'EF `lan-heartbeat-batch` : un seul
+  écrivain cloud pour `lan_devices` (les terminaux se taisent tant qu'ils sont
+  sur le bus, et repassent en heartbeat direct si le hub tombe).
+  - `HUB_CLOUD_URL` (.env) — `https://<projet>.supabase.co/functions/v1/lan-heartbeat-batch`
+  - `HUB_CLOUD_SECRET` (.env) — même valeur que `LAN_HEARTBEAT_SECRET` côté EF
+    (header `x-hub-secret`, jamais en query/body).
+  Les deux absents = push désactivé (log au boot, `cloud_sync` dans `/hub/status`).
+- ⚠️ Le bridge ne charge PAS de dotenv : les variables viennent du lanceur
+  (shell `$env:` en dev, `nssm set ... AppEnvironmentExtra` en service).
 
 ## Installation (Windows, PC boutique)
 1. `pnpm install && pnpm --filter @breakery/print-bridge build` → `apps/print-bridge/dist/server.js`

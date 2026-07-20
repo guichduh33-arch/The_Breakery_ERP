@@ -4,7 +4,7 @@
 // heartbeat cloud de la table lan_devices), stats du ring-buffer, token.
 import type { JSX } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Radio, ShieldCheck, ShieldOff } from 'lucide-react';
+import { CloudOff, CloudUpload, Radio, ShieldCheck, ShieldOff } from 'lucide-react';
 import { resolveBridgeUrl } from '@/stores/bridgeSettingsStore.js';
 import { getHubStatus } from '../api/bridgeApi.js';
 
@@ -62,6 +62,25 @@ export function HubPanel(): JSX.Element {
         <span>
           Buffer: {data.buffer.count} message{data.buffer.count === 1 ? '' : 's'}
         </span>
+        {/* Spec 006x lot 2 — le hub est l'écrivain cloud du heartbeat. */}
+        {data.cloud_sync?.enabled === true ? (
+          <span className="inline-flex items-center gap-1">
+            <CloudUpload
+              className={`h-4 w-4 ${data.cloud_sync.last_result === 'error' ? 'text-warning' : 'text-success'}`}
+              aria-hidden
+            />
+            {data.cloud_sync.last_result === 'error'
+              ? `Cloud sync failing (${data.cloud_sync.last_error ?? 'unknown'})`
+              : data.cloud_sync.last_push_at !== null
+                ? `Cloud sync ${new Date(data.cloud_sync.last_push_at).toLocaleTimeString()}`
+                : 'Cloud sync idle'}
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1">
+            <CloudOff className="h-4 w-4 text-warning" aria-hidden />
+            Cloud sync off (set HUB_CLOUD_URL + HUB_CLOUD_SECRET)
+          </span>
+        )}
       </div>
 
       {data.devices.length === 0 ? (

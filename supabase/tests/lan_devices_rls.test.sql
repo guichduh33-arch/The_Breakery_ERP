@@ -105,15 +105,18 @@ END $$;
 
 RESET ROLE;
 
--- T6 : update_lan_heartbeat_v1 — P0002 sur un code soft-deleted (le fixture
--- vient d'être soft-deleted en T5 : le heartbeat ne doit plus le voir).
+-- T6 : update_lan_heartbeat_v2 — un code soft-deleted est IGNORÉ (le fixture
+-- vient d'être soft-deleted en T5 : le batch ne doit plus le toucher — spec
+-- 006x lot 2, plus de P0002 : un code mort ne fait pas échouer le batch).
 DO $$ BEGIN
-  PERFORM update_lan_heartbeat_v1(current_setting('breakery.lanrls_code'));
-  INSERT INTO _r VALUES ('t6_heartbeat_deleted_p0002', false);
-EXCEPTION WHEN SQLSTATE 'P0002' THEN
-  INSERT INTO _r VALUES ('t6_heartbeat_deleted_p0002', true);
-WHEN OTHERS THEN
-  INSERT INTO _r VALUES ('t6_heartbeat_deleted_p0002', false);
+  INSERT INTO _r
+  SELECT 't6_heartbeat_deleted_ignored',
+         NOT EXISTS (
+           SELECT 1 FROM update_lan_heartbeat_v2(
+             ARRAY[current_setting('breakery.lanrls_code')])
+         );
+EXCEPTION WHEN OTHERS THEN
+  INSERT INTO _r VALUES ('t6_heartbeat_deleted_ignored', false);
 END $$;
 
 SELECT format('lan_devices_rls: %s/%s pass', count(*) FILTER (WHERE pass), count(*)) AS result,
