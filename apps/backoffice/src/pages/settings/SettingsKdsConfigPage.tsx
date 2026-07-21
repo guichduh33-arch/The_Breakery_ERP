@@ -1,11 +1,11 @@
 // apps/backoffice/src/pages/settings/SettingsKdsConfigPage.tsx
 //
 // S75 Task 8 — org-level KDS ticket-age thresholds (business_config via
-// get_settings_by_category_v3('kds') / set_setting_v4, migration
+// get_settings_by_category_v4('kds') / set_setting_v5, migration
 // 20260712000163). Warning/urgent color-band minutes + auto-archive delay
 // for served/bumped tickets, read by every kitchen display terminal.
 //
-// Anti-P0001 save order: set_setting_v4 validates warning < urgent against
+// Anti-P0001 save order: set_setting_v5 validates warning < urgent against
 // the OTHER key's CURRENTLY STORED value on each call, so saving both keys
 // in the wrong order 22023s (e.g. old 5/10 -> new 11/15: saving warning=11
 // first compares against the still-stored urgent=10 and fails). We save

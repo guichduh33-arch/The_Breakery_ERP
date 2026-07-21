@@ -126,18 +126,27 @@ export function TabletOrderPage({
     }
     try {
       let justSentOrderId: string | null = null;
+      let offlineLocalNumber: string | null = null;
       if (onSendOverride) {
         await onSendOverride(userId);
       } else {
-        justSentOrderId = await mutation.mutateAsync({
+        const result = await mutation.mutateAsync({
           cart: { items, tableNumber, orderType, notes },
           waiterId: userId,
           clientUuid: clientUuidRef.current,
         });
+        justSentOrderId = result.orderId;
+        offlineLocalNumber = result.localNumber;
       }
-      toast.success('Order sent to kitchen');
       clearCart();
       clientUuidRef.current = crypto.randomUUID();
+      // Spec 006x lot 4 — envoi parti par le bus LAN : pas de commande cloud
+      // à afficher dans la liste, on reste sur la prise de commande.
+      if (offlineLocalNumber !== null) {
+        toast.success(`Commande ${offlineLocalNumber} envoyée en cuisine (hors-ligne)`);
+        return;
+      }
+      toast.success('Order sent to kitchen');
       void navigate(redirectAfterSend, { state: { justSentOrderId } });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to send order';

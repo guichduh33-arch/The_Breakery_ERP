@@ -8,6 +8,7 @@ import { Button, Card, KpiTile, SectionLabel } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
 import { LanDevicesTable } from '@/features/lan-devices/components/LanDevicesTable.js';
 import { HubPanel } from '@/features/lan-devices/components/HubPanel.js';
+import { OfflineSettingsPanel } from '@/features/lan-devices/components/OfflineSettingsPanel.js';
 import { ScanPanel } from '@/features/lan-devices/components/ScanPanel.js';
 import { LanDeviceFormModal } from '@/features/lan-devices/components/LanDeviceFormModal.js';
 import { useLanDevices, type LanDeviceRow } from '@/features/lan-devices/hooks/useLanDevices.js';
@@ -71,6 +72,12 @@ export default function LanDevicesPage() {
       <Card padding="md" className="space-y-3">
         <SectionLabel size="sm" as="h2">Hub</SectionLabel>
         <HubPanel />
+      </Card>
+
+      {/* Spec 006x lot 4 — cash différé + fenêtre offline (catégorie network). */}
+      <Card padding="md" className="space-y-3">
+        <SectionLabel size="sm" as="h2">Mode hors-ligne</SectionLabel>
+        <OfflineSettingsPanel />
       </Card>
 
       {canManage && (

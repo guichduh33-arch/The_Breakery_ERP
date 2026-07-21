@@ -20,7 +20,7 @@ import { useKotCopies, KOT_COPIES_DEFAULTS } from '../hooks/useKotCopies';
 import { SettingToggle } from './SettingToggle';
 import { ScopeBadge } from './ScopeBadge';
 
-// Copies du KOT papier par station prep (org-wide, [0,5] — set_setting_v4).
+// Copies du KOT papier par station prep (org-wide, [0,5] — set_setting_v5).
 const KOT_STATIONS: readonly { station: PrepStation; key: `kot_copies_${PrepStation}`; label: string }[] = [
   { station: 'kitchen', key: 'kot_copies_kitchen', label: 'Kitchen' },
   { station: 'barista', key: 'kot_copies_barista', label: 'Barista' },

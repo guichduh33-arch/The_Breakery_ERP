@@ -12,13 +12,13 @@ vi.mock('@/lib/supabase.js', () => ({
   supabase: {
     rpc: (fn: string, args: unknown) => {
       rpcCalls.push({ fn, args });
-      if (fn === 'get_settings_by_category_v3') {
+      if (fn === 'get_settings_by_category_v4') {
         return Promise.resolve({
           data: { category: 'printing', settings: mockSettings },
           error: null,
         });
       }
-      return Promise.resolve({ data: null, error: null }); // set_setting_v4
+      return Promise.resolve({ data: null, error: null }); // set_setting_v5
     },
   },
 }));
@@ -77,7 +77,7 @@ describe('SettingsPrintingPage', () => {
     expect(screen.getByLabelText<HTMLInputElement>(/display \(vitrine\)/i).value).toBe('1');
   });
 
-  it('saves a KOT copies change as a number via set_setting_v4', async () => {
+  it('saves a KOT copies change as a number via set_setting_v5', async () => {
     canUpdate = true;
     mockSettings = { kot_copies_kitchen: 1 };
     rpcCalls.length = 0;
@@ -87,8 +87,8 @@ describe('SettingsPrintingPage', () => {
     fireEvent.change(screen.getByLabelText(/^kitchen$/i), { target: { value: '3' } });
     fireEvent.click(screen.getByRole('button', { name: /save 1 change/i }));
 
-    await waitFor(() => expect(rpcCalls.some((c) => c.fn === 'set_setting_v4')).toBe(true));
-    const call = rpcCalls.find((c) => c.fn === 'set_setting_v4');
+    await waitFor(() => expect(rpcCalls.some((c) => c.fn === 'set_setting_v5')).toBe(true));
+    const call = rpcCalls.find((c) => c.fn === 'set_setting_v5');
     expect(call?.args).toEqual({
       p_key: 'kot_copies_kitchen',
       p_value: 3,
@@ -96,7 +96,7 @@ describe('SettingsPrintingPage', () => {
     });
   });
 
-  it('calls set_setting_v4 with the printing category on save', async () => {
+  it('calls set_setting_v5 with the printing category on save', async () => {
     canUpdate = true;
     mockSettings = { pos_auto_print_receipt: true, pos_auto_open_drawer: false };
     rpcCalls.length = 0;
@@ -106,9 +106,9 @@ describe('SettingsPrintingPage', () => {
     fireEvent.click(screen.getByLabelText(/auto-open cash drawer/i));
     fireEvent.click(screen.getByRole('button', { name: /save 1 change/i }));
 
-    await waitFor(() => expect(rpcCalls.some((c) => c.fn === 'set_setting_v4')).toBe(true));
+    await waitFor(() => expect(rpcCalls.some((c) => c.fn === 'set_setting_v5')).toBe(true));
 
-    const call = rpcCalls.find((c) => c.fn === 'set_setting_v4');
+    const call = rpcCalls.find((c) => c.fn === 'set_setting_v5');
     expect(call?.args).toEqual({
       p_key: 'pos_auto_open_drawer',
       p_value: true,

@@ -81,6 +81,16 @@ interface CartState {
   /** Set when a tablet order is picked up; directs checkout to pay_existing_order RPC. */
   pickedUpOrderId: string | null;
   /**
+   * Spec 006x lot 4 — identité de la commande LOCALE quand le cart a été firé
+   * en mode OFFLINE (bus LAN) : client_uuid racine (idempotence du fire au
+   * replay) + numéro local `L-<seq>`. Miroir offline de `pickedUpOrderId` :
+   * un re-fire APPEND au lieu de minter une 2ᵉ commande locale, et le cash
+   * offline sait quelle commande il encaisse. Persisté (sessionStorage) pour
+   * survivre à un reload en pleine coupure. Effacé quand le replay raccorde
+   * la commande au cloud (setPickedUpOrderId prend le relais).
+   */
+  offlineOrder: { clientUuid: string; localNumber: string } | null;
+  /**
    * Session 13 / Phase 4.A — true when the device has lost network. Drives
    * read-only graceful degradation in the UI (browse cached products,
    * disable order completion). Updated via {@link initNetworkListener}.
@@ -180,6 +190,9 @@ interface CartState {
   // Tablet pickup (session 5)
   setPickedUpOrderId: (id: string | null) => void;
 
+  // Commande locale offline (spec 006x lot 4)
+  setOfflineOrder: (o: { clientUuid: string; localNumber: string } | null) => void;
+
   // Discounts (session 6)
   setCartDiscount: (d: Discount | null) => void;
   setLineDiscount: (itemId: string, d: Discount | null) => void;
@@ -225,6 +238,7 @@ export const useCartStore = create<CartState>()(
       printedItemIds: [],
       attachedCustomer: null,
       pickedUpOrderId: null,
+      offlineOrder: null,
       appliedPromotions: [],
       dismissedPromotionIds: new Set<string>(),
       // Initialise pessimistically from navigator.onLine when available so
@@ -348,6 +362,18 @@ export const useCartStore = create<CartState>()(
             // routing append/pay to the voided order (P0002 loop, persisted in
             // sessionStorage → reload inoperant). The DB order is gone.
             pickedUpOrderId: null,
+            // Lot 4 — void d'une commande locale offline : purge aussi ses
+            // intents de l'outbox (rien ne doit être rejoué en DB). Le ticket
+            // KDS déjà affiché reste (pas de topic cancel en lot 4).
+            offlineOrder: (() => {
+              const root = s.offlineOrder?.clientUuid;
+              if (root !== undefined) {
+                void import('@/features/lan/offlineOutbox')
+                  .then((m) => m.removeIntentsByRoot(root))
+                  .catch(() => undefined);
+              }
+              return null;
+            })(),
           };
         }),
 
@@ -447,6 +473,10 @@ export const useCartStore = create<CartState>()(
           printedItemIds: [],
           attachedCustomer: null,
           pickedUpOrderId: s.pickedUpOrderId,
+          // Lot 4 — un restore installe un AUTRE contexte de commande : ne
+          // jamais laisser le lien offline de l'ancien cart encaisser le
+          // nouveau (le hold offline n'est pas un flux supporté, A1).
+          offlineOrder: null,
           // Session 9 — restoring a held / picked-up order resets the
           // promotions slate ; the orchestrator will recompute on next mount.
           appliedPromotions: [],
@@ -476,12 +506,16 @@ export const useCartStore = create<CartState>()(
             printedItemIds: lockedIds,
             attachedCustomer: null,
             pickedUpOrderId: payload.order_id,
+            // Lot 4 — une commande cloud réouverte remplace tout lien local.
+            offlineOrder: null,
             appliedPromotions: [],
             dismissedPromotionIds: new Set<string>(),
           };
         }),
 
       setPickedUpOrderId: (id) => set({ pickedUpOrderId: id }),
+
+      setOfflineOrder: (o) => set({ offlineOrder: o }),
 
       setCartDiscount: (d) => {
         set((s) => ({
@@ -600,6 +634,8 @@ export const useCartStore = create<CartState>()(
         printedItemIds: state.printedItemIds,
         attachedCustomer: state.attachedCustomer,
         pickedUpOrderId: state.pickedUpOrderId,
+        // Lot 4 — la commande locale offline survit à un reload en coupure.
+        offlineOrder: state.offlineOrder,
       }),
     },
   ),
@@ -643,6 +679,9 @@ export function resetCartAfterCheckout(): void {
       printedItemIds: [],
       attachedCustomer: null,
       pickedUpOrderId: null,
+      // Lot 4 — la commande locale est soldée (cash offline encaissé) ; son
+      // devenir cloud appartient à l'outbox, plus au cart.
+      offlineOrder: null,
       // Session 9 — wipe promotion state on checkout completion.
       appliedPromotions: [],
       dismissedPromotionIds: new Set<string>(),

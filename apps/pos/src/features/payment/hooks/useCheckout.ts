@@ -5,7 +5,7 @@ import type { Cart, PaymentInput, PaymentResult, PaymentResultLine } from '@brea
 import { buildOrderPayload } from '@breakery/domain';
 import type { Database, Json } from '@breakery/supabase';
 
-type PayExistingOrderArgs = Database['public']['Functions']['pay_existing_order_v12']['Args'];
+type PayExistingOrderArgs = Database['public']['Functions']['pay_existing_order_v13']['Args'];
 
 /** Wire-format row sent as `p_promotions` to RPC v7 / v4 (§3.6). */
 interface PromotionWirePayload {
@@ -69,7 +69,7 @@ export function useCheckout() {
       const { pickedUpOrderId, appliedPromotions } = cartState;
 
       // S44 P0-C(2) — the loyalty multiplier is resolved server-side now
-      // (complete_order_with_payment_v13 / pay_existing_order_v12). The client no
+      // (complete_order_with_payment_v13 / pay_existing_order_v13). The client no
       // longer computes or forwards it.
 
       // Session 9 — both branches forward applied promotions to the server,
@@ -121,7 +121,7 @@ export function useCheckout() {
               quantity: i.quantity,
               unit_price: i.unit_price,
               modifiers: i.modifiers,
-              // S47 — combo lines persist their components so pay_existing_order_v12
+              // S47 — combo lines persist their components so pay_existing_order_v13
               // deducts each component's stock at payment.
               ...(i.combo_components ? { combo_components: i.combo_components } : {}),
               ...(i.discount ? { discount_amount: i.discount.amount } : {}),
@@ -166,7 +166,7 @@ export function useCheckout() {
         }
         // S37 — v8 returns a jsonb envelope: the POS finally shows the REAL
         // pickup total instead of the hardcoded 0 (POS-01).
-        const { error, data } = await supabase.rpc('pay_existing_order_v12', args as PayExistingOrderArgs);
+        const { error, data } = await supabase.rpc('pay_existing_order_v13', args as PayExistingOrderArgs);
         if (error) throw Object.assign(new Error(error.message), { details: error });
         const envelope = data as unknown as {
           order_id: string;
@@ -176,7 +176,7 @@ export function useCheckout() {
           total: number;
           change_given: number | null;
           // S51 — present when the pickup RPC exposes the per-line breakdown;
-          // omitted otherwise (pay_existing_order_v12 is not part of the v15 bump).
+          // omitted otherwise (pay_existing_order_v13 is not part of the v15 bump).
           lines?: PaymentResultLine[];
           loyalty_points_earned?: number;
           idempotent_replay: boolean;

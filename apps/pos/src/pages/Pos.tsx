@@ -48,6 +48,8 @@ import { usePosSettingsStore } from '@/stores/posSettingsStore';
 import { useLanHeartbeat } from '@/features/lan/hooks/useLanHeartbeat';
 import { useHubPresence } from '@/features/lan/hooks/useHubPresence';
 import { useCloudPing } from '@/features/lan/hooks/useCloudPing';
+import { useOfflineReplay } from '@/features/lan/hooks/useOfflineReplay';
+import { useOfflineCashGate } from '@/features/lan/hooks/useOfflineCashGate';
 import { supabase } from '@/lib/supabase';
 import type { Customer } from '@breakery/domain';
 import type { CustomerWithCategory } from '@/stores/cartStore';
@@ -98,6 +100,10 @@ export default function PosPage() {
   useHubPresence({ deviceCode, deviceType: 'pos' });
   // Spec 006x lot 3 — détection internet down (le fire bascule sur le bus LAN).
   useCloudPing();
+  // Spec 006x lot 4 — replay de l'outbox offline au retour du cloud, et gate
+  // cash (bannière rouge A5 quand la fenêtre offline est dépassée).
+  useOfflineReplay();
+  const offlineGate = useOfflineCashGate();
 
   async function handleLogout() {
     await logout();
@@ -139,6 +145,16 @@ export default function PosPage() {
 
   return (
     <div className="h-screen flex flex-col bg-bg-base text-text-primary">
+      {/* Spec 006x lot 4 (A5) — fenêtre offline dépassée : bannière ROUGE
+          persistante, les nouveaux encaissements cash sont bloqués. */}
+      {offlineGate.offlineMode && offlineGate.blockedReason === 'window_expired' && (
+        <div
+          data-testid="offline-window-expired-banner"
+          className="px-4 py-2 text-sm font-semibold text-center bg-red-fg/15 text-red-fg border-b border-red-fg/40"
+        >
+          Mode hors-ligne au-delà de la limite autorisée — encaissements bloqués jusqu&apos;au retour du cloud
+        </div>
+      )}
       <header className="h-14 px-4 flex items-center justify-between border-b border-border-subtle bg-bg-elevated">
         <div className="flex items-center gap-3">
           <Button

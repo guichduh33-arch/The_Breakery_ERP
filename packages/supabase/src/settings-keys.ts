@@ -1,10 +1,10 @@
 // S73 Phase 3 — single typed dictionary of business_config setting keys and
-// symbolic categories (server truth: set_setting_v4 / get_settings_by_category_v3,
-// migrations 20260711000159 + 20260716000168 + 20260718000195). Add a key here
-// ONLY together with its RPC branch.
+// symbolic categories (server truth: set_setting_v5 / get_settings_by_category_v4,
+// migrations 20260711000159 + 20260716000168 + 20260718000195 + 20260721000197).
+// Add a key here ONLY together with its RPC branch.
 export const SETTINGS_CATEGORIES = [
   'business', 'localization', 'tax', 'pos', 'pos_presets',
-  'inventory', 'payments', 'customer_display', 'printing', 'kds',
+  'inventory', 'payments', 'customer_display', 'printing', 'kds', 'network',
 ] as const;
 export type SettingsCategory = (typeof SETTINGS_CATEGORIES)[number];
 
@@ -28,5 +28,8 @@ export const SETTING_KEYS = {
   // S75 (Task 5): KDS ticket-age color-band thresholds + auto-archive delay.
   kds:              ['kds_warning_threshold_minutes', 'kds_urgent_threshold_minutes',
                      'kds_auto_archive_minutes'],
+  // Spec 006x lot 4 (hub LAN) : cash hors-ligne différé — activation explicite
+  // (défaut false) + fenêtre offline maximale en heures (défaut 4, arbitrage A5).
+  network:          ['offline_cash_enabled', 'offline_max_hours'],
 } as const satisfies Record<SettingsCategory, readonly string[]>;
 export type SettingKey = (typeof SETTING_KEYS)[SettingsCategory][number];

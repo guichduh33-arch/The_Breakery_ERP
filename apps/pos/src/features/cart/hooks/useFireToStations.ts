@@ -20,6 +20,7 @@ import { getKotCopies } from '@/features/settings/hooks/useKotCopies';
 import { isOfflineMode } from '@/features/lan/offlineMode';
 import { hubBus } from '@/features/lan/hubBusClient';
 import { nextLocalOrderNumber } from '@/features/lan/localOrderNumber';
+import { enqueueIntent, nextIntentSeq } from '@/features/lan/offlineOutbox';
 import type { OrderFiredPayload } from '@/features/lan/busTopics';
 import { useStationPrinters } from './useStationPrinters';
 import { useStationMap, getStationMap } from './useStationMap';
@@ -168,20 +169,53 @@ export function useFireToStations(): UseFireToStationsResult {
           fireClientUuidRef.current ??= crypto.randomUUID();
           const existingOrderId = useCartStore.getState().pickedUpOrderId;
 
-          // Spec 006x lot 3 — MODE OFFLINE (internet down + hub joignable) :
+          // Spec 006x lots 3+4 — MODE OFFLINE (internet down + hub joignable) :
           // la commande part en cuisine par le BUS LAN (order.fired), le KOT
           // s'imprime en direct comme toujours (bridge local). Uniquement les
-          // fires NEUFS : un append sur une commande cloud existante reste
-          // online-only (il cible un order_id DB). Le replay cloud de ce fire
-          // (même client_uuid) est le travail du lot 4 — d'ici là, la commande
-          // vit sur le KDS + le ticket papier, et le cash offline est fermé.
+          // fires NEUFS côté cloud : un append sur une commande CLOUD existante
+          // reste online-only (il cible un order_id DB). Lot 4 : l'intention
+          // est écrite dans l'outbox durable AVANT le publish (§4.3) — le
+          // replay rejouera fire_counter_order_v4 avec le MÊME client_uuid au
+          // retour d'internet. Un re-fire sur la même commande LOCALE devient
+          // un APPEND : même identité bus (root_client_uuid + numéro L-),
+          // intent séparé (sa propre clé d'idempotence RPC).
           if (isOfflineMode() && existingOrderId === null) {
             const stationByProductId = await getStationMap(queryClient).catch(
               (): Record<string, string[]> => ({}),
             );
-            const localNumber = nextLocalOrderNumber();
+            const offlineOrder = useCartStore.getState().offlineOrder;
+            const intentUuid = fireClientUuidRef.current;
+            const rootUuid = offlineOrder?.clientUuid ?? intentUuid;
+            const localNumber = offlineOrder?.localNumber ?? nextLocalOrderNumber();
+            const fireAuthorizer = toPersist.find((i) => i.discount?.authorized_by)?.discount?.authorized_by;
+
+            // 1. Outbox durable D'ABORD — si l'écriture échoue, rien n'est
+            //    scellé et le fire reste re-tentable (comme un échec RPC).
+            await enqueueIntent({
+              kind: 'fire',
+              id: intentUuid,
+              root_client_uuid: rootUuid,
+              seq: nextIntentSeq(),
+              created_at: new Date().toISOString(),
+              local_number: localNumber,
+              session_id: sessionId,
+              order_type: useCartStore.getState().cart.order_type,
+              table_number: tableNo ?? null,
+              items: toPersist.map((i) => ({
+                product_id: i.product_id,
+                quantity: i.quantity,
+                unit_price: i.unit_price,
+                modifiers: i.modifiers,
+                ...(i.combo_components ? { combo_components: i.combo_components } : {}),
+                ...(i.discount ? { discount_amount: i.discount.amount } : {}),
+              })),
+              ...(fireAuthorizer ? { discount_authorized_by: fireAuthorizer } : {}),
+            });
+
+            // 2. Publish bus (best effort — l'intent est durable ; un hub qui
+            //    vient de tomber prive le KDS de l'écran, pas le replay).
             const firedPayload: OrderFiredPayload = {
-              client_uuid: fireClientUuidRef.current,
+              client_uuid: rootUuid,
               order_number: localNumber,
               order_type: useCartStore.getState().cart.order_type,
               table_number: tableNo ?? null,
@@ -197,14 +231,12 @@ export function useFireToStations(): UseFireToStationsResult {
                 dispatch_stations: stationByProductId[i.product_id] ?? [],
               })),
             };
-            if (!hubBus.publish('order.fired', firedPayload)) {
-              // Bus injoignable au moment T : on ne scelle RIEN — le fire est
-              // re-tentable, comme un échec RPC online.
-              throw new Error('offline_no_hub');
-            }
+            hubBus.publish('order.fired', firedPayload);
+
+            // 3. Lien cart ↔ commande locale : le prochain fire appendra, le
+            //    cash offline saura quoi encaisser, le replay raccordera.
+            useCartStore.getState().setOfflineOrder({ clientUuid: rootUuid, localNumber });
             persistedOrderNumber = localNumber;
-            // Lot 4 : le client_uuid devra survivre dans l'outbox durable pour
-            // le replay. En lot 3 rien n'est rejoué — uuid frais au prochain fire.
             fireClientUuidRef.current = null;
           } else {
             // S44 P0-C(3) — fire_counter_order_v4 gates any line discount on an
@@ -218,7 +250,7 @@ export function useFireToStations(): UseFireToStationsResult {
                 quantity: i.quantity,
                 unit_price: i.unit_price,
                 modifiers: i.modifiers,
-                // S47 — combo lines persist their components so pay_existing_order_v12
+                // S47 — combo lines persist their components so pay_existing_order_v13
                 // deducts each component's stock at payment (the fire only persists).
                 ...(i.combo_components ? { combo_components: i.combo_components } : {}),
                 ...(i.discount ? { discount_amount: i.discount.amount } : {}),
