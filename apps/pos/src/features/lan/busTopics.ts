@@ -51,6 +51,21 @@ export interface OrderItemStatusPayload {
   table_number: string | null;
 }
 
+/** `order.paid_offline` — un encaissement CASH a eu lieu hors-ligne (lot 4).
+ *  Publié pour le JOURNAL du hub (traçabilité + catchup) ; aucun consommateur
+ *  ne change d'état dessus en lot 4 — le replay cloud porte la vérité. */
+export interface OrderPaidOfflinePayload {
+  /** == OrderFiredPayload.client_uuid (racine de la commande locale). */
+  order_id: string;
+  order_number: string;
+  /** Clé d'idempotence du paiement — rejouée vers pay_existing_order_v13. */
+  idempotency_key: string;
+  amount: number;
+  cash_received: number;
+  change_given: number;
+  paid_at: string;
+}
+
 function isRecord(x: unknown): x is Record<string, unknown> {
   return typeof x === 'object' && x !== null;
 }

@@ -25,6 +25,10 @@ import { useTaxConfig } from '@/features/settings/hooks/useTaxConfig';
 import { useEnabledPaymentMethods } from '@/features/settings/hooks/useEnabledPaymentMethods';
 import { usePOSPresets } from '@/features/settings/hooks/usePOSPresets';
 import { useFireToStations } from '@/features/cart/hooks/useFireToStations';
+import { useOfflineCashGate } from '@/features/lan/hooks/useOfflineCashGate';
+import { hubBus } from '@/features/lan/hubBusClient';
+import { enqueueIntent, nextIntentSeq } from '@/features/lan/offlineOutbox';
+import type { OrderPaidOfflinePayload } from '@/features/lan/busTopics';
 import { toast } from 'sonner';
 import type { PaymentMethod } from '@breakery/domain';
 
@@ -51,6 +55,9 @@ export interface PaymentSuccessState {
 
 export function usePaymentFlowLogic() {
   const isOpen = usePaymentStore((s) => s.isOpen);
+  // Lot 4 — clé d'idempotence de la tentative (même cycle de vie que l'EF
+  // x-idempotency-key) : c'est elle qui identifie l'encaissement offline.
+  const idempotencyKey = usePaymentStore((s) => s.idempotencyKey);
   const closeStore = usePaymentStore((s) => s.close);
   const reset = usePaymentStore((s) => s.reset);
   const selectedMethod = usePaymentStore((s) => s.selectedMethod);
@@ -77,6 +84,8 @@ export function usePaymentFlowLogic() {
     }
   }, [selectedMethod, enabledMethods]);
   const { mutation: fireToStations } = useFireToStations();
+  // Spec 006x lot 4 — gate cash offline (mode + setting + fenêtre A5).
+  const offlineGate = useOfflineCashGate();
   const { presets } = usePOSPresets();
   const quickAmounts = presets.quickPayments;
 
@@ -175,7 +184,108 @@ export function usePaymentFlowLogic() {
     await dispatchCheckout(tendersToShip);
   }
 
+  // Spec 006x lot 4 — encaissement CASH en mode OFFLINE (A1b) : la vente est
+  // journalisée dans l'outbox durable (clé = idempotencyKey de la tentative)
+  // et rejouée vers pay_existing_order_v13 au retour du cloud. Aucun montant
+  // n'est validé serveur ici : cash exact/rendu calculés client, totaux au
+  // tarif catalogue — les flux online-only (promos, remise commande, points)
+  // sont refusés proprement en amont.
+  async function dispatchOfflineCash(tendersToShip: Tender[]): Promise<void> {
+    if (!offlineGate.cashAllowed) {
+      toast.error(
+        offlineGate.blockedReason === 'window_expired'
+          ? 'Fenêtre hors-ligne dépassée — encaissements bloqués jusqu\'au retour du cloud'
+          : 'Encaissement hors-ligne désactivé (Settings → Network)',
+      );
+      return;
+    }
+    const tender = tendersToShip[0];
+    if (tendersToShip.length !== 1 || tender?.method !== 'cash') {
+      toast.error('Hors-ligne : paiement CASH en un seul règlement uniquement');
+      return;
+    }
+    const cartState = useCartStore.getState();
+    if (cartState.pickedUpOrderId !== null) {
+      toast.error('Commande cloud — paiement indisponible hors-ligne');
+      return;
+    }
+    if (appliedPromotions.length > 0 || cart.cartDiscount !== undefined) {
+      toast.error('Promotions et remises commande indisponibles hors-ligne — retirer avant d\'encaisser');
+      return;
+    }
+    if ((cart.loyaltyPointsToRedeem ?? 0) > 0) {
+      toast.error('Échange de points indisponible hors-ligne');
+      return;
+    }
+
+    // La commande locale doit exister sur le bus/KDS avant l'encaissement :
+    // fire offline maintenant si le panier n'a pas encore été envoyé (vente
+    // comptoir directe — items 'none' inclus, aucun KOT superflu).
+    if (cartState.offlineOrder === null) {
+      await fireToStations.mutateAsync({});
+    }
+    const offlineOrder = useCartStore.getState().offlineOrder;
+    if (offlineOrder === null) {
+      toast.error('Envoi hors-ligne impossible — rien à encaisser');
+      return;
+    }
+
+    const cashReceived = tender.cash_received ?? total;
+    const changeGiven = Math.max(0, cashReceived - total);
+    const paidAt = new Date().toISOString();
+
+    emitPosEvent('payment_started', {
+      amount: total,
+      order_number_snap: offlineOrder.localNumber,
+      payload: { tenders: 1, method: 'cash', offline: true },
+    });
+
+    // 1. Outbox durable D'ABORD (spec §4.3) — la vente survit à un crash.
+    await enqueueIntent({
+      kind: 'cash_payment',
+      id: idempotencyKey,
+      root_client_uuid: offlineOrder.clientUuid,
+      seq: nextIntentSeq(),
+      created_at: paidAt,
+      local_number: offlineOrder.localNumber,
+      payment: { method: 'cash', amount: total, cash_received: cashReceived, change_given: changeGiven },
+      ...(cart.customerId !== undefined ? { customer_id: cart.customerId } : {}),
+    });
+
+    // 2. Journal hub (traçabilité — aucun consommateur n'agit dessus en lot 4).
+    const paidPayload: OrderPaidOfflinePayload = {
+      order_id: offlineOrder.clientUuid,
+      order_number: offlineOrder.localNumber,
+      idempotency_key: idempotencyKey,
+      amount: total,
+      cash_received: cashReceived,
+      change_given: changeGiven,
+      paid_at: paidAt,
+    };
+    hubBus.publish('order.paid_offline', paidPayload);
+
+    emitPosEvent('payment_completed', {
+      order_number_snap: offlineOrder.localNumber,
+      amount: total,
+      payload: { method: 'cash', change_given: changeGiven, offline: true },
+    });
+
+    setSuccess({
+      orderNumber: offlineOrder.localNumber,
+      total,
+      taxAmount: tax_amount,
+      changeGiven,
+      pointsEarned: 0,
+      customerName: attachedCustomer?.name ?? undefined,
+      paymentMethod: 'cash',
+    });
+  }
+
   async function dispatchCheckout(tendersToShip: Tender[]): Promise<void> {
+    if (offlineGate.offlineMode) {
+      await dispatchOfflineCash(tendersToShip);
+      return;
+    }
     setLastError(null);
     setLastTendersShipped(tendersToShip);
     // S72 audit — a charge attempt begins (pairs with payment_completed /
@@ -286,6 +396,8 @@ export function usePaymentFlowLogic() {
     // flow flags
     total, remaining, fastPathReady, canProcess,
     checkoutPending: checkout.isPending,
+    // spec 006x lot 4 — mode offline + gate cash (bannières terminal)
+    offlineGate,
     // ui state
     success, lastError, splitOpen, setSplitOpen,
     // handlers

@@ -28,10 +28,17 @@ export function TabletCheckoutButton(): JSX.Element {
         clientUuid: clientUuidRef.current,
       },
       {
-        onSuccess: (orderId) => {
-          toast.success('Order sent to kitchen');
+        onSuccess: ({ orderId, localNumber }) => {
           clearCart();
           clientUuidRef.current = crypto.randomUUID();
+          // Spec 006x lot 4 — envoi parti par le bus LAN : la commande n'existe
+          // pas encore en cloud, la liste des commandes ne la montrera pas.
+          // On reste sur la prise de commande, numéro local en confirmation.
+          if (orderId === null) {
+            toast.success(`Commande ${localNumber ?? ''} envoyée en cuisine (hors-ligne)`);
+            return;
+          }
+          toast.success('Order sent to kitchen');
           void navigate('/tablet/orders', { state: { justSentOrderId: orderId } });
         },
         onError: (err) => {

@@ -1,7 +1,7 @@
 // apps/pos/src/features/payment/__tests__/checkout-fired-order-sync.smoke.test.tsx
 //
 // Session 43 / Wave C — P0-3 : checkout d'un ordre comptoir FIRED.
-// pay_existing_order_v12 paie les order_items PERSISTÉS, pas le panier local —
+// pay_existing_order_v13 paie les order_items PERSISTÉS, pas le panier local —
 // les items ajoutés APRÈS le dernier fire doivent être appendés à l'ordre DB
 // (fire_counter_order_v4 append mode) AVANT le paiement, sinon le client paie
 // un total partiel.
@@ -116,12 +116,12 @@ describe('useCheckout — fired counter order syncs unfired items before paying 
     seedFiredCounterCart();
   });
 
-  it('appends the unsynced items (fire append mode) BEFORE pay_existing_order_v12', async () => {
+  it('appends the unsynced items (fire append mode) BEFORE pay_existing_order_v13', async () => {
     await runCheckout();
 
     expect(rpcMock.mock.calls.map((c: unknown[]) => c[0])).toEqual([
       'fire_counter_order_v4',
-      'pay_existing_order_v12',
+      'pay_existing_order_v13',
     ]);
 
     const appendArgs = rpcMock.mock.calls[0]![1] as Record<string, unknown>;
@@ -149,7 +149,7 @@ describe('useCheckout — fired counter order syncs unfired items before paying 
 
     await runCheckout();
 
-    expect(rpcMock.mock.calls.map((c: unknown[]) => c[0])).toEqual(['pay_existing_order_v12']);
+    expect(rpcMock.mock.calls.map((c: unknown[]) => c[0])).toEqual(['pay_existing_order_v13']);
   });
 
   it('tablet pickup (printedItemIds empty): never appends — all items already live in DB', async () => {
@@ -159,7 +159,7 @@ describe('useCheckout — fired counter order syncs unfired items before paying 
 
     await runCheckout();
 
-    expect(rpcMock.mock.calls.map((c: unknown[]) => c[0])).toEqual(['pay_existing_order_v12']);
+    expect(rpcMock.mock.calls.map((c: unknown[]) => c[0])).toEqual(['pay_existing_order_v13']);
   });
 
   it('retry after an append FAILURE replays the SAME p_client_uuid (nothing was locked)', async () => {

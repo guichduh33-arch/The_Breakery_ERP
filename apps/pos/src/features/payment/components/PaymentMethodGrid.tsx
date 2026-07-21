@@ -6,6 +6,7 @@ import { SectionLabel, cn } from '@breakery/ui';
 import type { PaymentMethod } from '@breakery/domain';
 import { METHODS } from './paymentMethods';
 import { useEnabledPaymentMethods } from '@/features/settings/hooks/useEnabledPaymentMethods';
+import { useOfflineMode } from '@/features/lan/offlineMode';
 
 export interface PaymentMethodGridProps {
   selectedMethod: PaymentMethod | null;
@@ -15,11 +16,14 @@ export interface PaymentMethodGridProps {
 export function PaymentMethodGrid({ selectedMethod, onSelect }: PaymentMethodGridProps) {
   // S64 — only methods enabled in BO Settings render (fail-open = all 6).
   const enabled = useEnabledPaymentMethods();
+  // Spec 006x lot 4 (A1) — hors-ligne, seul le CASH est encaissable ; les
+  // flux non-cash sont online-only et disparaissent proprement de la grille.
+  const offline = useOfflineMode();
   return (
     <>
       <SectionLabel as="div" className="mb-2">Select Payment Method</SectionLabel>
       <div className="grid grid-cols-3 gap-3 mb-6">
-        {METHODS.filter((m) => enabled.has(m.value)).map((m) => {
+        {METHODS.filter((m) => enabled.has(m.value) && (!offline || m.value === 'cash')).map((m) => {
           const Icon = m.icon;
           const active = selectedMethod === m.value;
           return (

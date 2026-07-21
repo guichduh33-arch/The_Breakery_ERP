@@ -11,7 +11,7 @@
 // Routed at `/pos/debts`. Session 60 (fiche 02 D1.1) — the "Pay" CTA loads
 // the order's persisted items into the cart via `useLoadDebtOrder` (mirror of
 // the tablet pickup pattern) and sets `pickedUpOrderId`, which routes
-// `useCheckout` to `pay_existing_order_v12` — no navigation to order history
+// `useCheckout` to `pay_existing_order_v13` — no navigation to order history
 // needed, the cashier settles it from the standard payment terminal. B2B
 // orders never get a Pay button here: the server guard rejects them, and B2B
 // settlement is per-invoice allocation, done in Backoffice.

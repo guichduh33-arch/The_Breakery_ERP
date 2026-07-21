@@ -312,6 +312,8 @@ export type Database = {
           logo_url: string | null
           name: string
           npwp: string | null
+          offline_cash_enabled: boolean
+          offline_max_hours: number
           phone: string | null
           pos_auto_open_drawer: boolean
           pos_auto_print_receipt: boolean
@@ -348,6 +350,8 @@ export type Database = {
           logo_url?: string | null
           name?: string
           npwp?: string | null
+          offline_cash_enabled?: boolean
+          offline_max_hours?: number
           phone?: string | null
           pos_auto_open_drawer?: boolean
           pos_auto_print_receipt?: boolean
@@ -384,6 +388,8 @@ export type Database = {
           logo_url?: string | null
           name?: string
           npwp?: string | null
+          offline_cash_enabled?: boolean
+          offline_max_hours?: number
           phone?: string | null
           pos_auto_open_drawer?: boolean
           pos_auto_print_receipt?: boolean
@@ -7430,7 +7436,7 @@ export type Database = {
           total: number
         }[]
       }
-      get_settings_by_category_v3: {
+      get_settings_by_category_v4: {
         Args: { p_category: string }
         Returns: Json
       }
@@ -7839,7 +7845,7 @@ export type Database = {
       pass:
         | { Args: never; Returns: string }
         | { Args: { "": string }; Returns: string }
-      pay_existing_order_v12: {
+      pay_existing_order_v13: {
         Args: {
           p_customer_id?: string
           p_discount_amount?: number
@@ -7849,6 +7855,7 @@ export type Database = {
           p_discount_value?: number
           p_idempotency_key?: string
           p_loyalty_points_redeemed?: number
+          p_offline_replay?: boolean
           p_order_id: string
           p_payment?: Json
           p_payments?: Json
@@ -8337,7 +8344,7 @@ export type Database = {
         Args: { p_alts: Json; p_contexts: Json; p_product_id: string }
         Returns: Json
       }
-      set_setting_v4: {
+      set_setting_v5: {
         Args: { p_category: string; p_key: string; p_value: Json }
         Returns: undefined
       }

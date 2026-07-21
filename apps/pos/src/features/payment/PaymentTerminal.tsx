@@ -13,8 +13,9 @@
 import { ArrowLeft, CheckCircle2, X } from 'lucide-react';
 import {
   Button, Currency, FullScreenModal,
-  SectionLabel, TenderListBuilder,
+  SectionLabel, TenderListBuilder, cn,
 } from '@breakery/ui';
+import { toast } from 'sonner';
 import {
   calculateChange,
 } from '@breakery/domain';
@@ -37,7 +38,7 @@ export function PaymentTerminal() {
     selectedMethod, selectMethod, cashReceivedStr, setCashReceivedStr,
     quickAmounts, draftAmount, isCashDraft, draftTenderAmount, cashChange, draftValid,
     tenders, removeTender,
-    total, remaining, fastPathReady, canProcess, checkoutPending,
+    total, remaining, fastPathReady, canProcess, checkoutPending, offlineGate,
     success, lastError, splitOpen, setSplitOpen,
     handleAddTender, handleProcess, handleRetry,
     handleDismissAlreadyPaid, handleNewOrder, handleSplitComplete,
@@ -108,6 +109,24 @@ export function PaymentTerminal() {
 
         {/* RIGHT — payment controls */}
         <section className="bg-bg-base p-6 overflow-y-auto">
+          {/* Spec 006x lot 4 — état hors-ligne : cash seul, ou blocage (A5). */}
+          {offlineGate.offlineMode && (
+            <div
+              data-testid="offline-cash-banner"
+              className={cn(
+                'mb-4 rounded-md border px-4 py-3 text-sm',
+                offlineGate.cashAllowed
+                  ? 'border-gold/60 bg-gold-soft text-gold'
+                  : 'border-red-fg/60 bg-red-fg/10 text-red-fg',
+              )}
+            >
+              {offlineGate.cashAllowed
+                ? 'Mode hors-ligne — encaissement CASH uniquement, resynchronisé au retour du cloud'
+                : offlineGate.blockedReason === 'window_expired'
+                  ? 'Fenêtre hors-ligne dépassée — encaissements bloqués jusqu\'au retour du cloud'
+                  : 'Encaissement hors-ligne désactivé — activer offline_cash_enabled (Settings → Network)'}
+            </div>
+          )}
           <div className="space-y-1 mb-4">
             <SectionLabel as="div">Total Amount</SectionLabel>
             <Currency amount={totals.total} emphasis="gold" className="text-4xl block" />
@@ -158,7 +177,15 @@ export function PaymentTerminal() {
               checkoutPending={checkoutPending}
               cartEmpty={cart.items.length === 0}
               onProcess={() => { void handleProcess(); }}
-              onSplitOpen={() => setSplitOpen(true)}
+              onSplitOpen={() => {
+                // Lot 4 — le split multi-tender est online-only (le replay
+                // offline ne porte qu'UN règlement cash).
+                if (offlineGate.offlineMode) {
+                  toast.error('Partage de l\'addition indisponible hors-ligne');
+                  return;
+                }
+                setSplitOpen(true);
+              }}
             />
           )}
 
