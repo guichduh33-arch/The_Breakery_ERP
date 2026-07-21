@@ -45,6 +45,10 @@ test-results/
 # Sentry
 .sentryclirc
 
+# Print-bridge hub ring-buffer (spec 006x lot 1) — journal JSONL runtime,
+# nom par défaut de HUB_BUFFER_FILE (config.ts)
+apps/print-bridge/hub-buffer.jsonl
+
 # Ruflo / claude-flow swarm runtime
 .claude-flow/
 .swarm/
