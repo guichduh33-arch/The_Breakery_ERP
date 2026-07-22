@@ -6625,7 +6625,7 @@ export type Database = {
             }
             Returns: string
           }
-      complete_order_with_payment_v18: {
+      complete_order_with_payment_v19: {
         Args: {
           p_customer_id?: string
           p_discount_amount?: number

@@ -13,7 +13,7 @@
 //      bogo new / threshold / bundle / free_product). Session 57 (A-D5): v2
 //      additionally filters out promotions that have hit their usage cap
 //      (max_uses / max_uses_per_customer) — advisory only, the atomic hard
-//      gate lives in complete_order_with_payment_v18. The TS fallback below
+//      gate lives in complete_order_with_payment_v19. The TS fallback below
 //      has NO knowledge of usage caps (A-D10 — server is the reference).
 //   2. On RPC error (network / RLS / function missing in older envs),
 //      fall back to the pure-TS `evaluatePromotionsFallback`.

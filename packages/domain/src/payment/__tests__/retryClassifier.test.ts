@@ -138,6 +138,28 @@ describe('classifyCheckoutError', () => {
       expect(result.userMessage).not.toContain('promo_cap_exceeded');
     });
 
+    it('maps product_inactive to friendly FR copy (ADR-011 déc. 2)', () => {
+      const err = Object.assign(new Error('product_inactive'), {
+        details: { error: 'product_inactive', message: 'product_inactive: Croissant est desactive' },
+        status: 409,
+      });
+      const result = classifyCheckoutError(err);
+      expect(result.kind).toBe('fatal');
+      expect(result.userMessage).toMatch(/désactivé/i);
+      expect(result.userMessage).not.toContain('product_inactive');
+    });
+
+    it('maps product_is_parent to friendly FR copy (ADR-011 déc. 2)', () => {
+      const err = Object.assign(new Error('product_is_parent'), {
+        details: { error: 'product_is_parent', message: 'product_is_parent: Croissant est un groupe de variantes' },
+        status: 409,
+      });
+      const result = classifyCheckoutError(err);
+      expect(result.kind).toBe('fatal');
+      expect(result.userMessage).toMatch(/variante/i);
+      expect(result.userMessage).not.toContain('product_is_parent');
+    });
+
     it('maps credit_limit_exceeded to friendly FR copy (S62 D4)', () => {
       const err = Object.assign(new Error('credit_limit_exceeded'), {
         details: { error: 'credit_limit_exceeded', message: 'credit_limit_exceeded: {"allowed":false}' },
