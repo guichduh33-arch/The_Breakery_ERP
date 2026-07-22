@@ -27,19 +27,31 @@ export interface UpdateCategoryPatch {
 
 const CATEGORIES_KEY = ['categories', 'all'] as const;
 
+// ADR-011 §3 — the product-side category dropdowns (features/products
+// useCategories) cache under a different key with a 5 min staleTime; without
+// this second invalidation they kept serving a renamed/deleted category for
+// up to 5 minutes after a mutation here.
+const PRODUCTS_CATEGORIES_KEY = ['products', 'categories'] as const;
+
+async function invalidateCategoryCaches(qc: ReturnType<typeof useQueryClient>): Promise<void> {
+  await Promise.all([
+    qc.invalidateQueries({ queryKey: CATEGORIES_KEY }),
+    qc.invalidateQueries({ queryKey: PRODUCTS_CATEGORIES_KEY }),
+  ]);
+}
+
 export function useCreateCategory() {
   const qc = useQueryClient();
   return useMutation<unknown, Error, CreateCategoryPayload>({
     mutationFn: async (payload) => {
       const { data, error } = await supabase.rpc('create_category_v1', {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        p_payload: payload as any,
+        p_payload: payload as unknown as never,
       });
       if (error !== null) throw new Error(error.message);
       return data;
     },
     onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: CATEGORIES_KEY });
+      await invalidateCategoryCaches(qc);
     },
   });
 }
@@ -50,14 +62,13 @@ export function useUpdateCategory() {
     mutationFn: async ({ categoryId, patch }) => {
       const { data, error } = await supabase.rpc('update_category_v1', {
         p_category_id: categoryId,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        p_patch:       patch as any,
+        p_patch:       patch as unknown as never,
       });
       if (error !== null) throw new Error(error.message);
       return data;
     },
     onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: CATEGORIES_KEY });
+      await invalidateCategoryCaches(qc);
     },
   });
 }
@@ -73,7 +84,7 @@ export function useReorderCategories() {
       return data;
     },
     onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: CATEGORIES_KEY });
+      await invalidateCategoryCaches(qc);
     },
   });
 }

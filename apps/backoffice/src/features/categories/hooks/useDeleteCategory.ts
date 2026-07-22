@@ -53,6 +53,10 @@ export function useDeleteCategory() {
     onSuccess: async () => {
       idempotencyKeyRef.current = crypto.randomUUID();
       await qc.invalidateQueries({ queryKey: CATEGORIES_ALL_KEY });
+      // ADR-011 §3 — product-side dropdowns cache under their own key
+      // (5 min staleTime) ; sans cette invalidation ils continuent de
+      // proposer la catégorie supprimée.
+      await qc.invalidateQueries({ queryKey: ['products', 'categories'] });
     },
   });
 }
