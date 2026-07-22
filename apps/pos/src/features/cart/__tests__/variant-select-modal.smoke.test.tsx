@@ -75,9 +75,9 @@ describe('VariantSelectModal', () => {
       <Wrapper>
         <VariantSelectModal
           open={true}
-          onOpenChange={() => {}}
+          onOpenChange={vi.fn()}
           parent={{ id: 'p1', name: 'Croissant' }}
-          onPick={() => {}}
+          onPick={vi.fn()}
         />
       </Wrapper>,
     );
