@@ -3955,7 +3955,6 @@ export type Database = {
           retail_price: number
           sku: string
           target_gross_margin_pct: number | null
-          tax_inclusive: boolean
           track_inventory: boolean
           unit: string
           updated_at: string
@@ -3994,7 +3993,6 @@ export type Database = {
           retail_price: number
           sku: string
           target_gross_margin_pct?: number | null
-          tax_inclusive?: boolean
           track_inventory?: boolean
           unit?: string
           updated_at?: string
@@ -4033,7 +4031,6 @@ export type Database = {
           retail_price?: number
           sku?: string
           target_gross_margin_pct?: number | null
-          tax_inclusive?: boolean
           track_inventory?: boolean
           unit?: string
           updated_at?: string
