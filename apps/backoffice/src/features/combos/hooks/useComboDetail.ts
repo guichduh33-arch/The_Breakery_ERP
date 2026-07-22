@@ -16,8 +16,6 @@ export interface ComboDetailMeta {
   category_id: string | null;
   base_price: number;
   display_order: number;
-  available_from: string | null;
-  available_to: string | null;
   is_active: boolean;
   visible_on_pos: boolean;
   definition: ComboDefinition;
@@ -52,8 +50,6 @@ interface ComboDetailRow {
   combo_base_price: number | null;
   retail_price: number;
   combo_display_order: number | null;
-  combo_available_from: string | null;
-  combo_available_to: string | null;
   is_active: boolean;
   visible_on_pos: boolean;
   combo_groups: GroupRow[] | null;
@@ -75,7 +71,7 @@ export function useComboDetail(comboId: string | undefined) {
         .from('products')
         .select(
           'id, sku, name, description, image_url, category_id, combo_base_price, retail_price, ' +
-            'combo_display_order, combo_available_from, combo_available_to, is_active, visible_on_pos, ' +
+            'combo_display_order, is_active, visible_on_pos, ' +
             'combo_groups ( id, name, group_type, is_required, min_select, max_select, sort_order, ' +
             'combo_group_options ( component_product_id, surcharge, is_default, sort_order, component:products!component_product_id ( name ) ) )',
         )
@@ -127,8 +123,6 @@ export function useComboDetail(comboId: string | undefined) {
         category_id: row.category_id,
         base_price: basePrice,
         display_order: row.combo_display_order ?? 0,
-        available_from: row.combo_available_from,
-        available_to: row.combo_available_to,
         is_active: row.is_active,
         visible_on_pos: row.visible_on_pos,
         definition,

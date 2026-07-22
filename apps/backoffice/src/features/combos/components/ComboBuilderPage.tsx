@@ -37,8 +37,6 @@ const defaultGeneralInfo = (): GeneralInfoDraft => ({
   base_price: 0,
   display_order: 0,
   image_url: '',
-  available_from: '',
-  available_to: '',
   is_active: true,
   visible_on_pos: true,
 });
@@ -69,8 +67,6 @@ export default function ComboBuilderPage({ mode }: Props): JSX.Element {
         base_price: d.base_price,
         display_order: d.display_order,
         image_url: d.image_url ?? '',
-        available_from: d.available_from ?? '',
-        available_to: d.available_to ?? '',
         is_active: d.is_active,
         visible_on_pos: d.visible_on_pos,
       });
@@ -149,8 +145,10 @@ export default function ComboBuilderPage({ mode }: Props): JSX.Element {
         category_id: generalInfo.category_id,
         base_price: generalInfo.base_price,
         display_order: generalInfo.display_order,
-        available_from: generalInfo.available_from || null,
-        available_to: generalInfo.available_to || null,
+        // ADR-007 déc. 3 — fenêtre horaire dépréciée : le RPC accepte encore
+        // les clés, on envoie null (les colonnes ne sont plus jamais lues).
+        available_from: null,
+        available_to: null,
         is_active: generalInfo.is_active,
         visible_on_pos: generalInfo.visible_on_pos,
         groups: groups.map((g, gIdx) => ({
