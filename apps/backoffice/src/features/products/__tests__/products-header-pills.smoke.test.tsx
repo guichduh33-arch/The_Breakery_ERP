@@ -17,6 +17,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import type * as ReactRouterDom from 'react-router-dom';
 import { ProductsHeader } from '../components/ProductsHeader.js';
 
 // ---------------------------------------------------------------------------
@@ -88,7 +89,7 @@ const { mockNavigate } = vi.hoisted(() => {
 });
 
 vi.mock('react-router-dom', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('react-router-dom')>();
+  const actual = await importOriginal<typeof ReactRouterDom>();
   return { ...actual, useNavigate: () => mockNavigate };
 });
 

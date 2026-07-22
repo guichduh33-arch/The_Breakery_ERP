@@ -38,7 +38,7 @@ export default function ProductsPage(): JSX.Element {
   const canImport      = useAuthStore((s) => s.hasPermission('catalog.import'));
 
   const [search, setSearch] = useState('');
-  const [categoryId, setCategoryId] = useState<string | 'all'>('all');
+  const [categoryId, setCategoryId] = useState<string>('all');
   const [view, setView] = useState<ProductView>('list');
   const [variantFilter, setVariantFilter] = useState<ProductVariantFilter>('all');
   const [showNew, setShowNew] = useState(false);
@@ -96,7 +96,7 @@ export default function ProductsPage(): JSX.Element {
   if (products.error !== null && products.error !== undefined) {
     return (
       <div className="rounded-lg border border-red bg-red-soft p-4 text-sm text-red" role="alert">
-        Failed to load products: {(products.error as Error).message}
+        Failed to load products: {products.error.message}
       </div>
     );
   }
