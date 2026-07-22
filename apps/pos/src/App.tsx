@@ -9,6 +9,7 @@ import { ErrorState } from './components/ErrorState';
 import { IdleTimeoutMount } from './components/IdleTimeoutMount';
 import { PosEventOutboxMount } from './features/audit/PosEventOutboxMount';
 import { SettingsRealtimeMount } from './components/SettingsRealtimeMount';
+import { CatalogRealtimeMount } from './components/CatalogRealtimeMount';
 import { useAuthStore } from './stores/authStore';
 
 /** Full-viewport spinner shown while a persisted PIN session rehydrates. */
@@ -67,6 +68,9 @@ export default function App() {
         {/* Settings §6.C — push < 2 s des réglages BO vers les surfaces PIN
             (ADR-006 déc. 4) ; la surface kiosk display a son propre mount. */}
         <SettingsRealtimeMount />
+        {/* ADR-011 déc. 3 — push < 2 s des changements catalogue BO
+            (products/categories) vers comptoir + tablette. */}
+        <CatalogRealtimeMount />
         {/* S21 / 1.C.2 — idle warning overlay (DEV-S19-3.A-01) */}
         <IdleWarningToast />
         <BootGate>
