@@ -2,7 +2,11 @@ name: pgTAP Nightly
 
 on:
   schedule:
-    - cron: '0 19 * * *'  # 02:00 Asia/Jakarta = 19:00 UTC previous day
+    # Quota 2026-07 — 3×/semaine au lieu de quotidien (~-500 min/mois).
+    # 19:00 UTC dim/mar/jeu = 02:00 Asia/Jakarta lun/mer/ven. Le smoke PR
+    # (pgtap-pr.yml) reste le filet à chaque PR touchant la DB ; dispatch
+    # manuel toujours possible entre deux crons.
+    - cron: '0 19 * * 0,2,4'
   workflow_dispatch:
 
 jobs:
@@ -12,13 +16,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install psql 16
+      # Quota 2026-07 — le runner ubuntu-latest embarque déjà un client psql
+      # (le job E2E l'utilise tel quel depuis S71). L'ajout du dépôt pgdg +
+      # apt update coûtait ~1-2 min/job pour la même major.
+      - name: Ensure psql is available
         run: |
-          sudo install -d /usr/share/postgresql-common/pgdg
-          sudo curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
-          sudo sh -c 'echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(. /etc/os-release && echo $VERSION_CODENAME)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
-          sudo apt-get update
-          sudo apt-get install -y postgresql-client-16
+          if ! command -v psql >/dev/null 2>&1; then
+            sudo apt-get update -q && sudo apt-get install -y postgresql-client
+          fi
+          psql --version
 
       # S77: a file now fails on EITHER a psql error OR any `not ok` assertion in
       # its TAP output. Before this, pgTAP assertion failures never flipped psql's
@@ -135,17 +141,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install psql 16 and Supabase CLI
+      # Quota 2026-07 — psql préinstallé sur le runner (voir job pgtap) ;
+      # seule la CLI supabase reste à télécharger.
+      - name: Ensure psql + install Supabase CLI
         run: |
-          # psql — same version as pgtap job
-          sudo install -d /usr/share/postgresql-common/pgdg
-          sudo curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
-            -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
-          sudo sh -c 'echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] \
-            https://apt.postgresql.org/pub/repos/apt $(. /etc/os-release && echo $VERSION_CODENAME)-pgdg main" \
-            > /etc/apt/sources.list.d/pgdg.list'
-          sudo apt-get update -q
-          sudo apt-get install -y postgresql-client-16
+          if ! command -v psql >/dev/null 2>&1; then
+            sudo apt-get update -q && sudo apt-get install -y postgresql-client
+          fi
+          psql --version
           # supabase CLI (latest release)
           curl -fsSL \
             https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz \
