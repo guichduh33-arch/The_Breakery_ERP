@@ -39,6 +39,11 @@
 // helper — same signature, no EF change beyond the RPC name. New check_violation
 // codes surface: `combo_invalid_component`, `combo_group_violation`,
 // `promo_cap_exceeded` (promotion usage caps, hard-gated atomically in v17).
+//
+// ADR-011 déc. 2 (2026-07-22): RPC bumped v18 → v19. Refus strict au paiement
+// des produits inactifs, soft-deleted et produits-PARENTS (groupes de
+// variantes, jamais vendables) — couvre la fenêtre de cache stale POS. New
+// check_violation codes: `product_inactive`, `product_is_parent`.
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.47.10';
 import { handleCors, jsonResponse } from '../_shared/cors.ts';
@@ -218,7 +223,7 @@ serve(async (req) => {
   // S55 T7 — le PIN discount est vérifié ICI (parité void/cancel/refund) et ne
   // descend plus jamais dans un arg SQL de la money-path. Un nonce single-use
   // (discount_authorizations, service-role only) transporte l'autorisation
-  // jusqu'à complete_order_with_payment_v18, qui le consomme atomiquement.
+  // jusqu'à complete_order_with_payment_v19, qui le consomme atomiquement.
   const managerPin = req.headers.get('x-manager-pin');
   const hasDiscount = (typeof body.discount_amount === 'number' && body.discount_amount > 0)
     || body.items.some((i) => typeof (i as { discount_amount?: number }).discount_amount === 'number'
@@ -262,7 +267,7 @@ serve(async (req) => {
     discountAuthId = nonce.id;
   }
 
-  const { data, error } = await userClient.rpc('complete_order_with_payment_v18', {
+  const { data, error } = await userClient.rpc('complete_order_with_payment_v19', {
     p_session_id: body.session_id,
     p_order_type: body.order_type,
     p_items: body.items,
@@ -329,6 +334,14 @@ serve(async (req) => {
       }
       if (msg.includes('promo_cap_exceeded')) {
         return jsonResponse({ error: 'promo_cap_exceeded', message: msg }, 409);
+      }
+      // ADR-011 déc. 2 — v19 refuse produits inactifs et produits-parents au
+      // paiement ; codes dédiés (classifier POS → FR copy).
+      if (msg.includes('product_inactive')) {
+        return jsonResponse({ error: 'product_inactive', message: msg }, 409);
+      }
+      if (msg.includes('product_is_parent')) {
+        return jsonResponse({ error: 'product_is_parent', message: msg }, 409);
       }
       return jsonResponse({ error: 'check_violation', message: error.message }, 422);
     }

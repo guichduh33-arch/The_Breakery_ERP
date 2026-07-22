@@ -166,6 +166,14 @@ function friendlyFatalMessage(code: string, message?: string): string {
     case 'promo_cap_exceeded':
       // S57 P2.1 — v17 hard-gates promotion usage caps atomically.
       return 'Le plafond d’utilisation de cette promotion est atteint. Retirez la promotion et réessayez.';
+    case 'product_inactive':
+      // ADR-011 déc. 2 — v19 refuse un produit désactivé au paiement, même
+      // déjà présent au panier (refus strict, pas de tolérance).
+      return 'Un produit du panier a été désactivé. Retirez-le et réessayez.';
+    case 'product_is_parent':
+      // ADR-011 déc. 2 — v19 refuse un produit-groupe de variantes (jamais
+      // vendable) ; le POS a servi un catalogue périmé.
+      return 'Ce produit est un groupe de variantes — sélectionnez une variante précise.';
     case 'credit_limit_exceeded':
       // S62 D4 — attach_tab_customer_v2 gates the retail ardoise against
       // customers.retail_credit_limit.
