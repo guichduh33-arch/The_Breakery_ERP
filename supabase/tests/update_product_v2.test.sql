@@ -10,7 +10,9 @@
 --   T4  cost_price in patch is silently ignored : ignored_fields contains
 --       'cost_price' AND cost_price NOT mutated
 --   T5  audit_logs row emitted with action='product.update' + payload
---   T6  tax_inclusive in patch is ignored (Lot 6b) AND column NOT mutated
+--   T6  tax_inclusive in patch is ignored (Lot 6b) ; la colonne n'existe
+--       plus (DROP ADR-007 déc. 4, migration _204) — on ne vérifie que
+--       ignored_fields.
 --
 -- Run via MCP execute_sql wrap BEGIN/ROLLBACK ; pgtap extension is pre-created
 -- on V3 dev.
@@ -191,14 +193,13 @@ SELECT is(
 
 -- =============================================================================
 -- T6 (Lot 6b) : tax_inclusive est hors allowlist v2 — patch renvoyé en
--- ignored_fields, colonne non mutée (flag produit déprécié).
+-- ignored_fields. La colonne products.tax_inclusive est droppée (ADR-007
+-- déc. 4, migration _204) : plus de vérification de non-mutation possible.
 -- =============================================================================
 
 DO $t6$
 DECLARE
   v_pid UUID := current_setting('breakery.s27_product_id')::UUID;
-  v_baseline BOOLEAN := (SELECT tax_inclusive FROM products
-                          WHERE id = current_setting('breakery.s27_product_id')::UUID);
   v_result JSONB;
 BEGIN
   v_result := update_product_v2(
@@ -206,16 +207,11 @@ BEGIN
     '{"tax_inclusive": false}'::JSONB
   );
   PERFORM set_config('breakery.s27_t6_ignored', (v_result->'ignored_fields')::TEXT, false);
-  PERFORM set_config('breakery.s27_t6_flag',
-    (SELECT tax_inclusive::TEXT FROM products WHERE id = v_pid), false);
-  PERFORM set_config('breakery.s27_t6_baseline', v_baseline::TEXT, false);
 END $t6$;
 
 SELECT ok(
-  current_setting('breakery.s27_t6_ignored')::JSONB ? 'tax_inclusive'
-  AND current_setting('breakery.s27_t6_flag')::BOOLEAN
-      = current_setting('breakery.s27_t6_baseline')::BOOLEAN,
-  'T6 tax_inclusive in patch is reported as ignored AND not mutated (Lot 6b)'
+  current_setting('breakery.s27_t6_ignored')::JSONB ? 'tax_inclusive',
+  'T6 tax_inclusive in patch is reported as ignored (Lot 6b, colonne droppée ADR-007)'
 );
 
 SELECT * FROM finish();
