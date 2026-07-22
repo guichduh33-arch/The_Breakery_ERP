@@ -32,16 +32,16 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # S77 post-merge: no `version:` — the action reads package.json's
       # packageManager (pnpm@9.15.0). Pinning `9.15` here conflicted with it
       # ("Multiple versions of pnpm specified") and killed every nightly E2E
       # run in ~10s — the D-8 S76 "missing secrets" theory was stale, the 3
       # E2E secrets have existed since 2026-07-09.
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 20
           cache: 'pnpm'
@@ -74,7 +74,7 @@ jobs:
 
       - name: Upload Playwright report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report
           path: playwright-report/

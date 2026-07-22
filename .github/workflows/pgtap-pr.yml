@@ -38,7 +38,7 @@ jobs:
     # becomes unavailable for fork PRs (rare on this private repo).
     continue-on-error: false
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Same psql approach as pgtap-nightly.yml — keep the two in sync.
       # Quota 2026-07 — psql préinstallé sur le runner ubuntu-latest ; on

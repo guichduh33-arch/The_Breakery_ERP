@@ -24,15 +24,15 @@ jobs:
       # so the "Turbo cache" actions/cache step always captures the artifacts.
       TURBO_CACHE_DIR: .turbo/cache
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # Need the merge-base with the PR target so the has_permission
           # guard can scan only newly-introduced migrations.
           fetch-depth: 0
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: 'pnpm'
@@ -45,7 +45,7 @@ jobs:
       # `restore-keys` falls back to the most recent cache from any branch;
       # the sha-suffixed key stores this run's updated cache.
       - name: Turbo cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: .turbo
           key: turbo-${{ runner.os }}-${{ github.sha }}
@@ -219,7 +219,7 @@ jobs:
       # stockage Actions à lui seul). Personne ne consomme un coverage vieux
       # de plus de quelques jours.
       - name: Upload coverage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: coverage
@@ -230,7 +230,7 @@ jobs:
       # Quota 2026-07 — dist uploadé UNIQUEMENT sur push master (le dist d'une
       # PR n'a aucun consommateur), retention 7 j au lieu du défaut 90 j.
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: github.event_name == 'push'
         with:
           name: dist
