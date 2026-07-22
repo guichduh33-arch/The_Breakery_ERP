@@ -155,7 +155,7 @@ END $$;
 DO $$
 DECLARE r jsonb;
 BEGIN
-  r := pay_existing_order_v12(
+  r := pay_existing_order_v13(
     p_order_id := current_setting('p2.fire1')::uuid,
     p_payment := '{"method":"cash","amount":40000,"cash_received":40000,"change_given":0}'::jsonb,
     p_idempotency_key := '00000000-0000-0000-0000-0000000000a9'::uuid);
@@ -164,7 +164,7 @@ END $$;
 DO $$
 DECLARE r jsonb;
 BEGIN
-  r := pay_existing_order_v12(
+  r := pay_existing_order_v13(
     p_order_id := current_setting('p2.fire1')::uuid,
     p_payment := '{"method":"cash","amount":40000,"cash_received":40000,"change_given":0}'::jsonb,
     p_idempotency_key := '00000000-0000-0000-0000-0000000000a9'::uuid);
