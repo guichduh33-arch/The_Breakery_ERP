@@ -1,6 +1,7 @@
 // apps/print-bridge/src/app.ts
 // Les 6 routes du contrat (spec §4). CORS ouvert (D7 — LAN de confiance, pas de
 // credentials) ; les transports sont injectés pour la testabilité.
+import path from 'node:path';
 import express from 'express';
 import cors from 'cors';
 import type { PrinterTarget, ReceiptPayload, StationTicketPayload } from '@breakery/domain';
@@ -158,6 +159,23 @@ export function createApp({ config, send, kick, probe = realProbe, scan = realSc
       }
     })();
   });
+
+  // Spec 006x §4.1 (décision 2026-07-22) — SPA POS servie en LAN depuis le hub.
+  // Enregistré APRÈS les routes API : elles gardent la priorité. Fallback SPA
+  // sur tout GET restant (routing client React Router) ; l'upgrade /ws ne passe
+  // pas par Express. Gaté par POS_DIST_DIR : absent = comportement historique.
+  if (config.posDistDir !== null) {
+    const distDir = path.resolve(config.posDistDir);
+    const indexHtml = path.join(distDir, 'index.html');
+    app.use(express.static(distDir));
+    app.get('*', (_req, res) => {
+      res.sendFile(indexHtml, (err) => {
+        if (err !== undefined && !res.headersSent) {
+          res.status(404).json({ error: 'spa_index_not_found' });
+        }
+      });
+    });
+  }
 
   return app;
 }

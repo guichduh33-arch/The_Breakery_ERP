@@ -143,6 +143,68 @@ describe('replayOfflineOutbox', () => {
     expect((await getPendingIntents()).length).toBe(2);
   });
 
+  // ── Lot 5 — chaos « double replay » et reprise après interruption (§7.5) ──
+
+  it('chaos: two concurrent replays — the module lock makes the second a no-op', async () => {
+    let releaseFire: (() => void) | undefined;
+    rpcMock.mockImplementation((fn: string) => {
+      if (fn === 'fire_counter_order_v4') {
+        // Fire suspendu tant que le test ne libère pas — le 2ᵉ replay démarre
+        // pendant que le 1ᵉʳ draine encore.
+        return new Promise((resolve) => {
+          releaseFire = () => resolve({ data: { order_id: 'db-1', order_number: '#0042', idempotent_replay: false }, error: null });
+        });
+      }
+      return Promise.resolve({ data: { order_id: 'db-1' }, error: null });
+    });
+
+    await seedFireAndPay();
+    const first = replayOfflineOutbox();
+    const second = await replayOfflineOutbox(); // verrou → retour immédiat
+    expect(second).toEqual({ replayed: 0, failed: 0 });
+
+    releaseFire!();
+    const res = await first;
+    expect(res).toEqual({ replayed: 2, failed: 0 });
+    // Chaque intent n'a été rejoué qu'UNE fois malgré les deux appels.
+    expect(rpcMock.mock.calls.filter(([fn]) => fn === 'fire_counter_order_v4')).toHaveLength(1);
+    expect(rpcMock.mock.calls.filter(([fn]) => fn === 'pay_existing_order_v13')).toHaveLength(1);
+    expect(await getPendingIntents()).toEqual([]);
+  });
+
+  it('chaos: drain interrupted mid-run (payment fails) — the retry resumes with the SAME keys', async () => {
+    // Run 1 : fire OK, paiement KO (coupure re-tombée en plein replay).
+    rpcMock.mockImplementation((fn: string) => {
+      if (fn === 'fire_counter_order_v4') {
+        return Promise.resolve({ data: { order_id: 'db-1', order_number: '#0042', idempotent_replay: false }, error: null });
+      }
+      return Promise.resolve({ data: null, error: { message: 'network_down' } });
+    });
+    await seedFireAndPay();
+    const run1 = await replayOfflineOutbox();
+    expect(run1).toMatchObject({ replayed: 1, failed: 1, error: 'network_down' });
+    // Le fire ack'é est sorti de la file, le paiement y reste.
+    const left = await getPendingIntents();
+    expect(left.map((i) => i.id)).toEqual(['idem-1']);
+
+    // Run 2 : le cloud revient. Le paiement orphelin retrouve son order_id via
+    // le fire idempotent (même client_uuid racine) et rejoue la MÊME clé.
+    rpcMock.mockClear();
+    rpcMock.mockImplementation((fn: string) => {
+      if (fn === 'fire_counter_order_v4') {
+        return Promise.resolve({ data: { order_id: 'db-1', order_number: '#0042', idempotent_replay: true }, error: null });
+      }
+      return Promise.resolve({ data: { order_id: 'db-1' }, error: null });
+    });
+    const run2 = await replayOfflineOutbox();
+    expect(run2).toEqual({ replayed: 1, failed: 0 });
+    expect(rpcMock.mock.calls[0]![1]).toMatchObject({ p_client_uuid: 'root-1', p_items: [] });
+    expect(rpcMock.mock.calls[1]![1]).toMatchObject({
+      p_order_id: 'db-1', p_idempotency_key: 'idem-1', p_offline_replay: true,
+    });
+    expect(await getPendingIntents()).toEqual([]);
+  });
+
   it('replays a tablet order with the original client_uuid', async () => {
     rpcMock.mockResolvedValue({ data: 'tab-order-1', error: null });
 
