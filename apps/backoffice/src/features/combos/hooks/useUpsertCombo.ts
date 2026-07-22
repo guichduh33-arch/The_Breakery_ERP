@@ -23,24 +23,26 @@ export interface UpsertComboPayload {
   category_id: string;
   base_price: number;
   display_order: number;
+  /** ADR-007 déc. 3 — fenêtre horaire dépréciée. Le RPC upsert_combo_v1
+   *  accepte encore ces clés ; les appelants envoient toujours null. */
   available_from: string | null;
   available_to: string | null;
   is_active: boolean;
   visible_on_pos: boolean;
-  groups: Array<{
+  groups: {
     name: string;
     group_type: 'single' | 'multi';
     is_required: boolean;
     min_select: number;
     max_select: number;
     sort_order: number;
-    options: Array<{
+    options: {
       component_product_id: string;
       surcharge: number;
       is_default: boolean;
       sort_order: number;
-    }>;
-  }>;
+    }[];
+  }[];
 }
 
 export interface UpsertComboResult {

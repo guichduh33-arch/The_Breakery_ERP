@@ -14,8 +14,6 @@ export interface GeneralInfoDraft {
   base_price: number;
   display_order: number;
   image_url: string;
-  available_from: string;
-  available_to: string;
   is_active: boolean;
   visible_on_pos: boolean;
 }
@@ -138,33 +136,9 @@ export function GeneralInfoSection({ draft, categories, onChange }: Props): JSX.
           />
         </div>
 
-        <div>
-          <label htmlFor="combo-available-from" className={labelCls}>
-            Available From
-          </label>
-          <input
-            id="combo-available-from"
-            type="time"
-            value={draft.available_from}
-            onChange={(e) => { onChange({ available_from: e.target.value }); }}
-            className={inputCls}
-            data-testid="combo-available-from"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="combo-available-to" className={labelCls}>
-            Available To
-          </label>
-          <input
-            id="combo-available-to"
-            type="time"
-            value={draft.available_to}
-            onChange={(e) => { onChange({ available_to: e.target.value }); }}
-            className={inputCls}
-            data-testid="combo-available-to"
-          />
-        </div>
+        {/* ADR-007 déc. 3 — les champs Available From/To sont retirés :
+            fenêtre horaire fantôme (jamais lue), le besoin happy-hour est
+            couvert par les promotions (ADR-006 déc. 10). */}
 
         <div className="flex flex-wrap gap-6 sm:col-span-2">
           <label className="flex items-center gap-2 cursor-pointer">
