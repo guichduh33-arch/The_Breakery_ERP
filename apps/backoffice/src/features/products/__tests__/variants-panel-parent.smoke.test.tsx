@@ -6,6 +6,8 @@
 //   1. The variants table renders all variants (badge + label per row).
 //   2. Clicking "+ Add variant" opens AddVariantDialog.
 //   3. Dissolve CTA is hidden when 2+ active variants exist.
+//   4. Delete goes through DeleteVariantDialog (ADR-011 §3): the row button
+//      opens the confirm dialog, only Confirm fires delete_variant_v1.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
@@ -58,8 +60,9 @@ const reorderMock = vi.fn().mockResolvedValue(2);
 vi.mock('@/features/products/hooks/useReorderVariants.js', () => ({
   useReorderVariants: () => ({ mutateAsync: reorderMock, isPending: false }),
 }));
+const deleteMock = vi.fn().mockResolvedValue('v1');
 vi.mock('@/features/products/hooks/useDeleteVariant.js', () => ({
-  useDeleteVariant: () => ({ mutate: vi.fn(), isPending: false }),
+  useDeleteVariant: () => ({ mutateAsync: deleteMock, isPending: false }),
 }));
 vi.mock('@/features/products/hooks/useCreateVariant.js', () => ({
   useCreateVariant: () => ({ mutateAsync: vi.fn(), isPending: false }),
@@ -113,5 +116,22 @@ describe('VariantsPanel — Case 2 (parent) [S27c W6.B]', () => {
   it('does not show dissolve CTA when 2+ active variants exist', () => {
     renderPanel();
     expect(screen.queryByTestId('dissolve-parent-cta')).not.toBeInTheDocument();
+  });
+
+  it('delete requires confirmation through DeleteVariantDialog (ADR-011 §3)', async () => {
+    renderPanel();
+
+    fireEvent.click(screen.getByTestId('variant-delete-v1'));
+    // The click alone must NOT delete — the confirm dialog opens instead.
+    expect(deleteMock).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(screen.getByTestId('delete-variant-dialog')).toBeInTheDocument();
+    });
+    expect(screen.getByText(/delete "amande"/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('delete-variant-confirm'));
+    await waitFor(() => {
+      expect(deleteMock).toHaveBeenCalledWith('v1');
+    });
   });
 });

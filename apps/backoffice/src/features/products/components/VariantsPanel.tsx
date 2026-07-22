@@ -34,11 +34,11 @@ import { useAuthStore } from '@/stores/authStore.js';
 import { useProductVariants, type VariantRow } from '../hooks/useProductVariants.js';
 import { useProductParent } from '../hooks/useProductParent.js';
 import { useReorderVariants } from '../hooks/useReorderVariants.js';
-import { useDeleteVariant } from '../hooks/useDeleteVariant.js';
 import { VariantRowSortable } from './VariantRowSortable.js';
 import { ConvertToParentDialog } from './ConvertToParentDialog.js';
 import { AddVariantDialog } from './AddVariantDialog.js';
 import { DissolveParentDialog } from './DissolveParentDialog.js';
+import { DeleteVariantDialog } from './DeleteVariantDialog.js';
 
 export interface VariantsPanelProduct {
   id:                 string;
@@ -62,13 +62,15 @@ export function VariantsPanel({ product }: VariantsPanelProps): JSX.Element {
   const variantsQuery = useProductVariants(isVariant ? null : product.id);
   const parentQuery   = useProductParent(product.parent_product_id);
   const reorderMut    = useReorderVariants();
-  const deleteMut     = useDeleteVariant();
 
   const [convertOpen,  setConvertOpen]  = useState(false);
   const [addOpen,      setAddOpen]      = useState(false);
   const [dissolveOpen, setDissolveOpen] = useState(false);
+  // ADR-011 §3 — delete goes through a confirm dialog (DeleteVariantDialog
+  // owns the mutation + error surface) instead of firing on a single click.
+  const [deleteTarget, setDeleteTarget] = useState<VariantRow | null>(null);
 
-  const variants: ReadonlyArray<VariantRow> = variantsQuery.data ?? [];
+  const variants: readonly VariantRow[] = variantsQuery.data ?? [];
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -215,8 +217,8 @@ export function VariantsPanel({ product }: VariantsPanelProps): JSX.Element {
                     key={v.id}
                     variant={v}
                     canWrite={canWrite}
-                    onDelete={(va) => deleteMut.mutate(va.id)}
-                    deletePending={deleteMut.isPending}
+                    onDelete={(va) => setDeleteTarget(va)}
+                    deletePending={false}
                   />
                 ))}
               </SortableContext>
@@ -252,6 +254,10 @@ export function VariantsPanel({ product }: VariantsPanelProps): JSX.Element {
             parentId={product.id}
             parentName={product.name}
             lastVariantName={activeVariants[0]?.variant_label ?? null}
+          />
+          <DeleteVariantDialog
+            variant={deleteTarget}
+            onOpenChange={(o) => { if (!o) setDeleteTarget(null); }}
           />
         </>
       )}
