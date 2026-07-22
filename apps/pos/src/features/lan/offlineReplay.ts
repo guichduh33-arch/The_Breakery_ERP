@@ -132,6 +132,9 @@ export async function replayOfflineOutbox(): Promise<ReplayResult> {
     if (pending.length === 0) return { replayed: 0, failed: 0 };
 
     logger.info('offline_replay.start', { pending: pending.length });
+    // Lot 5 — mesure du rattrapage (spec §7.5) : durée du drain loggée pour
+    // chiffrer la resynchronisation en boutique.
+    const startedAt = performance.now();
     const orderIdByRoot = new Map<string, string>();
     let replayed = 0;
 
@@ -151,13 +154,21 @@ export async function replayOfflineOutbox(): Promise<ReplayResult> {
             payload: { offline_replay: true, idempotency_key: intent.id },
           });
         }
+        logger.warn('offline_replay.aborted', {
+          replayed,
+          failed: pending.length - replayed,
+          duration_ms: Math.round(performance.now() - startedAt),
+        });
         return { replayed, failed: pending.length - replayed, error: message };
       }
       await removeIntents([intent.id]);
       replayed += 1;
     }
 
-    logger.info('offline_replay.done', { replayed });
+    logger.info('offline_replay.done', {
+      replayed,
+      duration_ms: Math.round(performance.now() - startedAt),
+    });
     return { replayed, failed: 0 };
   } finally {
     replaying = false;

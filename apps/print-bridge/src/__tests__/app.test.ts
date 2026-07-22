@@ -1,4 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import request from 'supertest';
 import type { PrinterTarget, ReceiptPayload, StationTicketPayload } from '@breakery/domain';
 import { createApp } from '../app.js';
@@ -19,7 +22,7 @@ function app(receiptPrinter: PrinterTarget | null = { ip_address: '192.168.1.50'
   return createApp({
     config: {
       port: 3001, receiptPrinter, hubToken: null, hubBufferFile: 'hub-buffer.jsonl',
-      hubCloudUrl: null, hubCloudSecret: null,
+      hubCloudUrl: null, hubCloudSecret: null, posDistDir: null,
     },
     send, kick, probe, scan,
   });
@@ -73,7 +76,7 @@ describe('GET /hub/status', () => {
     const res = await request(createApp({
       config: {
         port: 3001, receiptPrinter: null, hubToken: 's', hubBufferFile: 'b.jsonl',
-        hubCloudUrl: null, hubCloudSecret: null,
+        hubCloudUrl: null, hubCloudSecret: null, posDistDir: null,
       },
       send, kick, probe, scan, hub,
     })).get('/hub/status');
@@ -103,6 +106,7 @@ describe('GET /hub/status', () => {
       config: {
         port: 3001, receiptPrinter: null, hubToken: null, hubBufferFile: 'b.jsonl',
         hubCloudUrl: 'https://x.supabase.co/functions/v1/lan-heartbeat-batch', hubCloudSecret: 's',
+        posDistDir: null,
       },
       send, kick, probe, scan, hub, cloudSync,
     })).get('/hub/status');
@@ -228,5 +232,62 @@ describe('GET /status/probe', () => {
     const res = await request(app()).get('/status/probe?ip=192.168.1.62');
     expect(res.status).toBe(502);
     expect(body(res).error).toBe('probe_failed');
+  });
+});
+
+// Spec 006x §4.1 (lot 5) — SPA POS servie en LAN depuis le hub, gatée par
+// POS_DIST_DIR. Les routes API gardent la priorité ; tout GET inconnu retombe
+// sur index.html (routing client React Router).
+describe('POS SPA serving (POS_DIST_DIR)', () => {
+  let distDir: string;
+
+  beforeEach(() => {
+    distDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pos-dist-'));
+    fs.writeFileSync(path.join(distDir, 'index.html'), '<html>POS SPA</html>', 'utf8');
+    fs.mkdirSync(path.join(distDir, 'assets'));
+    fs.writeFileSync(path.join(distDir, 'assets', 'app.js'), 'console.log("pos")', 'utf8');
+  });
+  afterEach(() => { fs.rmSync(distDir, { recursive: true, force: true }); });
+
+  function spaApp(dir: string | null = null) {
+    return createApp({
+      config: {
+        port: 3001, receiptPrinter: null, hubToken: null, hubBufferFile: 'b.jsonl',
+        hubCloudUrl: null, hubCloudSecret: null, posDistDir: dir ?? distDir,
+      },
+      send, kick, probe, scan,
+    });
+  }
+
+  it('serves index.html at / and static assets', async () => {
+    const root = await request(spaApp()).get('/');
+    expect(root.status).toBe(200);
+    expect(root.text).toContain('POS SPA');
+    const asset = await request(spaApp()).get('/assets/app.js');
+    expect(asset.status).toBe(200);
+  });
+
+  it('falls back to index.html on unknown GET routes (client routing)', async () => {
+    const res = await request(spaApp()).get('/pos/checkout');
+    expect(res.status).toBe(200);
+    expect(res.text).toContain('POS SPA');
+  });
+
+  it('API routes keep priority over the SPA fallback', async () => {
+    const res = await request(spaApp()).get('/health');
+    expect(res.status).toBe(200);
+    expect(body(res).status).toBe('ok');
+  });
+
+  it('404 spa_index_not_found when the dist dir has no index.html', async () => {
+    fs.rmSync(path.join(distDir, 'index.html'));
+    const res = await request(spaApp()).get('/anything');
+    expect(res.status).toBe(404);
+    expect(body(res).error).toBe('spa_index_not_found');
+  });
+
+  it('without POS_DIST_DIR, unknown GETs stay 404 (historic behaviour)', async () => {
+    const res = await request(app()).get('/pos/checkout');
+    expect(res.status).toBe(404);
   });
 });

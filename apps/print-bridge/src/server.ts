@@ -38,6 +38,6 @@ server.listen(config.port, () => {
       config.receiptPrinter ? `${config.receiptPrinter.ip_address}:${config.receiptPrinter.port}` : 'NOT CONFIGURED'
     } — hub /ws: token ${config.hubToken !== null ? 'required' : 'DISABLED (set HUB_TOKEN)'} — cloud-sync: ${
       cloudSync !== undefined ? 'enabled' : 'DISABLED (set HUB_CLOUD_URL + HUB_CLOUD_SECRET)'
-    }`,
+    } — POS SPA: ${config.posDistDir ?? 'not served (set POS_DIST_DIR)'}`,
   );
 });

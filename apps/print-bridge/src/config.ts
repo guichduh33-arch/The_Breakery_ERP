@@ -13,6 +13,10 @@ export interface BridgeConfig {
   hubCloudUrl: string | null;
   /** Secret partagé avec l'EF (== LAN_HEARTBEAT_SECRET côté EF). */
   hubCloudSecret: string | null;
+  /** Dossier dist de la SPA POS servie en LAN (spec 006x §4.1, décision
+   *  2026-07-22 : SPA servies depuis le hub — plus de mixed-content HTTPS→ws).
+   *  null = pas de service statique (comportement historique). */
+  posDistDir: string | null;
 }
 
 function trimmedOrNull(value: string | undefined): string | null {
@@ -31,5 +35,6 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     hubBufferFile: trimmedOrNull(env.HUB_BUFFER_FILE) ?? 'hub-buffer.jsonl',
     hubCloudUrl: trimmedOrNull(env.HUB_CLOUD_URL),
     hubCloudSecret: trimmedOrNull(env.HUB_CLOUD_SECRET),
+    posDistDir: trimmedOrNull(env.POS_DIST_DIR),
   };
 }

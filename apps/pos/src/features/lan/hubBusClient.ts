@@ -16,6 +16,7 @@
 //
 // Aucun secret métier ne transite sur le bus (spec §6).
 
+import { logger } from '@breakery/utils';
 import { useHubConnectionStore } from './hubConnectionStore';
 
 export const HUB_BUS_PROTOCOL_VERSION = 1;
@@ -64,6 +65,8 @@ interface ClientState {
   welcomed: boolean;
   listeners: Map<HubBusTopic, Set<Listener>>;
   seen: Set<string>;
+  /** performance.now() de la dernière demande de catchup (mesure lot 5). */
+  catchupRequestedAt: number | null;
 }
 
 const state: ClientState = {
@@ -76,6 +79,7 @@ const state: ClientState = {
   welcomed: false,
   listeners: new Map(),
   seen: new Set(),
+  catchupRequestedAt: null,
 };
 
 function markSeen(msgId: string): void {
@@ -182,12 +186,25 @@ function connect(): void {
     }
     if (type === 'catchup_result') {
       const messages = (msg as { messages?: unknown[] }).messages ?? [];
+      // Lot 5 — mesure du rattrapage (spec §7.5) : volume reçu vs réellement
+      // dispatché (le dedup écarte les déjà-vus) + latence depuis la demande.
+      let fresh = 0;
       for (const m of messages) {
         const env = parseIncomingEnvelope(m);
         // Ses propres messages reviennent dans le catchup (le hub journalise
         // tout) — le dedup par msg_id les écarte, publish() les marque vus.
-        if (env !== null) dispatch(env);
+        if (env === null) continue;
+        if (!state.seen.has(env.msg_id)) fresh += 1;
+        dispatch(env);
       }
+      logger.info('hub_bus.catchup', {
+        received: messages.length,
+        fresh,
+        ...(state.catchupRequestedAt !== null
+          ? { duration_ms: Math.round(performance.now() - state.catchupRequestedAt) }
+          : {}),
+      });
+      state.catchupRequestedAt = null;
       return;
     }
     const env = parseIncomingEnvelope(msg);
@@ -275,6 +292,7 @@ export const hubBus = {
   /** Demande le rattrapage du ring-buffer (messages strictement > since_ts). */
   requestCatchup(sinceTs?: string): boolean {
     if (!this.isConnected() || state.ws === null) return false;
+    state.catchupRequestedAt = performance.now();
     state.ws.send(JSON.stringify({ type: 'catchup', ...(sinceTs !== undefined ? { since_ts: sinceTs } : {}) }));
     return true;
   },
@@ -290,6 +308,7 @@ export const hubBus = {
     state.backoffMs = RECONNECT_MIN_MS;
     state.listeners.clear();
     state.seen.clear();
+    state.catchupRequestedAt = null;
     useHubConnectionStore.getState().setConnected(false);
   },
 };

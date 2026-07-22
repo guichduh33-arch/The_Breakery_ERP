@@ -32,6 +32,12 @@ describe('loadConfig', () => {
     expect(loadConfig({ HUB_BUFFER_FILE: 'C:/hub/buf.jsonl' }).hubBufferFile).toBe('C:/hub/buf.jsonl');
   });
 
+  it('POS SPA dir defaults to null; reads POS_DIST_DIR, trimming (lot 5)', () => {
+    expect(loadConfig({}).posDistDir).toBeNull();
+    expect(loadConfig({ POS_DIST_DIR: ' C:/breakery/pos-dist ' }).posDistDir).toBe('C:/breakery/pos-dist');
+    expect(loadConfig({ POS_DIST_DIR: '   ' }).posDistDir).toBeNull();
+  });
+
   it('cloud-sync defaults to null; reads HUB_CLOUD_URL + HUB_CLOUD_SECRET, trimming (lot 2)', () => {
     const c = loadConfig({});
     expect(c.hubCloudUrl).toBeNull();
