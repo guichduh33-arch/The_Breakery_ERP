@@ -127,28 +127,9 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
           />
         </Card>
 
-        <Card padding="md">
-          <h2 className="mb-4 font-display text-xl text-text-primary">Usage Sections</h2>
-          <p className="mb-4 text-xs uppercase tracking-widest text-text-secondary">
-            Departmental availability & routing
-          </p>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
-            {SAMPLE_SECTIONS.map((s) => (
-              <div
-                key={s.label}
-                className={`rounded-lg border ${s.highlighted ? 'border-gold bg-gold-soft' : 'border-border-subtle bg-bg-elevated'} px-3 py-4 text-center`}
-              >
-                <div className="text-[10px] uppercase tracking-widest text-text-secondary">{s.label}</div>
-                <div className="mt-1 text-[10px] uppercase tracking-widest text-text-muted">{s.kind}</div>
-                {s.highlighted && (
-                  <div className="mt-2 text-[9px] font-semibold uppercase tracking-widest text-gold">
-                    Primary route
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </Card>
+        {/* ADR-011 §3 — la carte "Usage Sections" affichait un mock
+            (SAMPLE_SECTIONS) comme des données réelles. Retirée en attendant
+            le vrai câblage sections (set_product_sections_v1, ADR-007 déc. 5). */}
       </div>
 
       {/* ───────────── Right column ───────────── */}
@@ -375,13 +356,4 @@ function SidebarMetric({ icon, label, value, mono = false }: SidebarMetricProps)
     </div>
   );
 }
-
-const SAMPLE_SECTIONS: readonly { label: string; kind: string; highlighted: boolean }[] = [
-  { label: 'Main Warehouse', kind: 'Warehouse',  highlighted: false },
-  { label: 'Pastry',         kind: 'Production', highlighted: false },
-  { label: 'Cafe',           kind: 'Sales',      highlighted: false },
-  { label: 'Hot Kitchen',    kind: 'Production', highlighted: true  },
-  { label: 'Viennoiserie',   kind: 'Production', highlighted: false },
-  { label: 'Bakery',         kind: 'Production', highlighted: false },
-];
 
