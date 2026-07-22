@@ -13,6 +13,11 @@
 // Disabled state: a tile is disabled when the variant is inactive OR (it
 // tracks stock AND current_stock ≤ 0). Mirrors the soft-out behaviour of
 // `ProductCard` for the main grid.
+//
+// ADR-011 §3 — the auto-pick shortcut is gated on the SAME sellability check
+// as the tiles: a lone sold-out variant used to be auto-added to the cart,
+// silently bypassing the disabled state. It now keeps the modal open so the
+// cashier sees the greyed-out tile (stock 0) instead.
 
 import { useEffect, type JSX } from 'react';
 import {
@@ -36,6 +41,10 @@ export interface VariantSelectModalProps {
   onPick: (variant: POSVariantRow) => void;
 }
 
+function isVariantDisabled(v: POSVariantRow): boolean {
+  return !v.is_active || (v.deduct_stock && (v.current_stock ?? 0) <= 0);
+}
+
 export function VariantSelectModal({
   open,
   onOpenChange,
@@ -44,9 +53,9 @@ export function VariantSelectModal({
 }: VariantSelectModalProps): JSX.Element | null {
   const { data: variants = [] } = useProductVariants(parent?.id);
 
-  // UX shortcut : if parent has exactly 1 active variant, auto-pick.
+  // UX shortcut : if parent has exactly 1 active SELLABLE variant, auto-pick.
   useEffect(() => {
-    if (open && variants.length === 1) {
+    if (open && variants.length === 1 && !isVariantDisabled(variants[0]!)) {
       onPick(variants[0]!);
       onOpenChange(false);
     }
@@ -70,8 +79,7 @@ export function VariantSelectModal({
 
         <div className="grid grid-cols-3 gap-3">
           {variants.map((v) => {
-            const disabled =
-              !v.is_active || (v.deduct_stock && (v.current_stock ?? 0) <= 0);
+            const disabled = isVariantDisabled(v);
             return (
               <button
                 key={v.id}

@@ -29,8 +29,11 @@ import { useAuthStore } from '@/stores/authStore.js';
 import type { ProductDetailTab, ProductRow } from '@/features/products/types.js';
 import { RecipeBuilder } from '@/features/recipes/index.js';
 
+// ADR-011 §3 — 'modifiers' manquait : un deep-link ?tab=modifiers retombait
+// silencieusement sur overview. ('analytics' reste exclu : le type le déclare
+// mais la page ne rend aucun panel pour cet onglet.)
 const VALID_TABS: ReadonlySet<ProductDetailTab> = new Set([
-  'overview', 'general', 'units', 'recipe', 'variants', 'costing', 'purchase', 'stations', 'history',
+  'overview', 'general', 'units', 'recipe', 'variants', 'modifiers', 'costing', 'purchase', 'stations', 'history',
 ]);
 
 export default function ProductDetailPage(): JSX.Element {
