@@ -1,0 +1,31 @@
+# Quota Actions 2026-07 — updates hebdomadaires et GROUPÉS : 1 PR npm + 1 PR
+# actions par semaine au lieu d'une PR par dépendance (chaque PR bot déclenche
+# un run CI complet). Les alertes de sécurité restent immédiates — Dependabot
+# security updates est un mécanisme séparé, non affecté par ce schedule.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "03:00"
+      timezone: Asia/Jakarta
+    open-pull-requests-limit: 3
+    groups:
+      npm-all:
+        patterns:
+          - "*"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "03:00"
+      timezone: Asia/Jakarta
+    open-pull-requests-limit: 2
+    groups:
+      actions-all:
+        patterns:
+          - "*"

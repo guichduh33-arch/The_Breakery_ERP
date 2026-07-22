@@ -40,14 +40,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Same psql install as pgtap-nightly.yml — keep the two in sync.
-      - name: Install psql 16
+      # Same psql approach as pgtap-nightly.yml — keep the two in sync.
+      # Quota 2026-07 — psql préinstallé sur le runner ubuntu-latest ; on
+      # n'ajoute plus le dépôt pgdg (~1-2 min économisées par run).
+      - name: Ensure psql is available
         run: |
-          sudo install -d /usr/share/postgresql-common/pgdg
-          sudo curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
-          sudo sh -c 'echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(. /etc/os-release && echo $VERSION_CODENAME)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
-          sudo apt-get update
-          sudo apt-get install -y postgresql-client-16
+          if ! command -v psql >/dev/null 2>&1; then
+            sudo apt-get update -q && sudo apt-get install -y postgresql-client
+          fi
+          psql --version
 
       # Smoke subset — critical REVOKE / permission / money-flow guards,
       # chosen for speed (smallest files) and blast-radius coverage:
