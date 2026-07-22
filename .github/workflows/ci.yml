@@ -215,6 +215,9 @@ jobs:
           VITE_SENTRY_DSN_POS: ''
           VITE_SENTRY_DSN_BACKOFFICE: ''
 
+      # Quota 2026-07 — retention 3 j (défaut 90 j remplissait les 2 Go de
+      # stockage Actions à lui seul). Personne ne consomme un coverage vieux
+      # de plus de quelques jours.
       - name: Upload coverage
         uses: actions/upload-artifact@v4
         if: always()
@@ -222,10 +225,15 @@ jobs:
           name: coverage
           path: '**/coverage/**'
           if-no-files-found: ignore
+          retention-days: 3
 
+      # Quota 2026-07 — dist uploadé UNIQUEMENT sur push master (le dist d'une
+      # PR n'a aucun consommateur), retention 7 j au lieu du défaut 90 j.
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
+        if: github.event_name == 'push'
         with:
           name: dist
           path: 'apps/*/dist/**'
           if-no-files-found: error
+          retention-days: 7
