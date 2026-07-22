@@ -1,5 +1,10 @@
 // apps/backoffice/src/features/sections/hooks/useSectionsList.ts
 // Session 13 / Phase 2.D — full sections list (active + inactive) for CRUD page.
+//
+// ADR-007 déc. 5 (migration _206) — les mutations passent par les RPCs
+// upsert_section_v1 / delete_section_v1 (SECURITY DEFINER, gate
+// inventory.sections.update, audit_logs). Les policies RLS d'écriture
+// directe sur la table sont droppées : plus aucun .update()/.insert() brut.
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
@@ -47,25 +52,16 @@ export function useUpsertSection() {
   const qc = useQueryClient();
   return useMutation<unknown, Error, UpsertSectionArgs>({
     mutationFn: async (args) => {
-      if (args.id !== undefined && args.id !== '') {
-        const { error } = await supabase
-          .from('sections')
-          .update({
-            code: args.code, name: args.name, kind: args.kind,
-            is_active: args.is_active, display_order: args.display_order,
-          })
-          .eq('id', args.id);
-        if (error !== null) throw new Error(error.message);
-      } else {
-        const { error } = await supabase
-          .from('sections')
-          .insert({
-            code: args.code, name: args.name, kind: args.kind,
-            is_active: args.is_active, display_order: args.display_order,
-          });
-        if (error !== null) throw new Error(error.message);
-      }
-      return null;
+      // id présent = update (code immuable, ignoré par la RPC), absent = create.
+      const { data, error } = await supabase.rpc('upsert_section_v1', {
+        p_payload: {
+          ...(args.id !== undefined && args.id !== '' ? { id: args.id } : {}),
+          code: args.code, name: args.name, kind: args.kind,
+          is_active: args.is_active, display_order: args.display_order,
+        },
+      });
+      if (error !== null) throw new Error(error.message);
+      return data;
     },
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: SECTIONS_FULL_KEY });
@@ -78,12 +74,11 @@ export function useSoftDeleteSection() {
   const qc = useQueryClient();
   return useMutation<unknown, Error, { id: string }>({
     mutationFn: async ({ id }) => {
-      const { error } = await supabase
-        .from('sections')
-        .update({ deleted_at: new Date().toISOString(), is_active: false })
-        .eq('id', id);
+      const { data, error } = await supabase.rpc('delete_section_v1', {
+        p_section_id: id,
+      });
       if (error !== null) throw new Error(error.message);
-      return null;
+      return data;
     },
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: SECTIONS_FULL_KEY });
