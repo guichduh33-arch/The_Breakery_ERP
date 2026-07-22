@@ -133,3 +133,47 @@ Les décisions 4 et 5 seront précisées par leurs specs dédiées (transport lo
 topologie hub, resynchronisation) sans nécessiter de nouvel ADR, sauf remise en
 cause du principe lui-même. Les rejets de la décision 10 (serveur → section,
 multi-devise, multi-boutique) ne se rouvrent que par un nouvel ADR du propriétaire.
+
+## 5. Addendum (2026-07-21) — décision 5 précisée par la spec 006x, livrée en lots 1-4
+
+Conformément au §4, la décision 5 a été précisée sans nouvel ADR par la spec
+dédiée `docs/specs/006x-hub-lan.md`, **actée par le propriétaire le 2026-07-19**
+(PR #241). La spec mourant à la livraison du chantier (règle documentaire n°4),
+ses arbitrages propriétaire sont consignés ici :
+
+- **A1 — Périmètre offline (option b)** : prise de commande + envoi en cuisine +
+  impression KOT + encaissement **cash différé**. Restent online-only :
+  paiements non-cash, remises PIN (nonce serveur), B2B (prix résolus serveur),
+  promotions à plafond (advisory lock) et toute écriture stock — l'UI les
+  désactive proprement hors-ligne.
+- **A2 — Hôte du hub** : extension du print-bridge existant (même process
+  Node :3001, même supervision). Pas de second service.
+- **A3 — Topologie** : hub fixe unique (le PC boutique). Élection dynamique
+  rejetée. Hub down = mode dégradé actuel.
+- **A4 — Politique de replay : ACCEPTER + TRACER.** Au retour d'internet, le
+  serveur accepte le replay d'une vente encaissée même s'il viole un plafond
+  promo ou passe un stock en négatif (jamais de rejet silencieux) et marque
+  l'écart dans `audit_logs` (metadata `offline_replay: true`). Réalisation :
+  l'INSERT direct dans `audit_logs` étant interdit côté app, le marquage est
+  porté par le bump versionné `pay_existing_order_v13` (arg `p_offline_replay`,
+  migration `_198`) ; `fire_counter_order_v4` et `create_tablet_order_v4` sont
+  rejouées inchangées avec leurs clés d'idempotence d'origine.
+- **A5 — Fenêtre offline maximale : 4 heures.** Au-delà, blocage des nouveaux
+  encaissements cash offline avec bannière rouge, jusqu'au retour du cloud.
+  Réglage `offline_max_hours` (défaut 4, bornes [1,24]) + activation explicite
+  `offline_cash_enabled` (défaut false), catégorie `business_config` `network`
+  (migration `_197`).
+
+**État de livraison au 2026-07-21** : lots 1 → 4 mergés — PR #242 (hub WS +
+presence + ring-buffer, validé boutique), #245 (heartbeat batch
+`update_lan_heartbeat_v2` + EF `lan-heartbeat-batch`), #246 (mode OFFLINE,
+fire `L-x` sur le bus, KDS/display fusion cloud + bus, validé boutique),
+#248 (outbox durable, cash différé, replay idempotent, gates UI, settings
+`network`). Déviation actée : le token hub transite dans le hello WS, pas en
+header (limitation navigateur sur l'upgrade WebSocket).
+
+**Résiduels ouverts à la clôture du chantier** : lot 5 (durcissement — chaos
+tests, runbook), validation boutique de l'encaissement cash hors-ligne complet,
+verdict mixed-content HTTPS→ws:// (§4.1 de la spec — la CSP Vercel ne permet
+pas ws:// vers le hub, la voie « SPA servies en LAN » reste à trancher),
+`HUB_TOKEN` à poser en prod.
