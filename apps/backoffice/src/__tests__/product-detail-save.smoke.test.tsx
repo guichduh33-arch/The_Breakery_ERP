@@ -25,7 +25,6 @@ const MOCK_PRODUCT = {
   unit: 'pcs',
   is_active: true,
   is_favorite: true,
-  allergens: [],
   description: 'Vanilla ice cream drowned in espresso.',
   visible_on_pos: true,
   available_for_sale: true,

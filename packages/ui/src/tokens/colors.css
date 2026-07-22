@@ -45,7 +45,7 @@
   --green-fg:     #0a0a0c;
 
   /* Categorical identity hues (design audit 2026-07-07, DS I-2/chantier 4) —
-   * allergen families, promotion types, and other data-identity palettes
+   * promotion types and other data-identity palettes
    * that need MORE hues than the 4 semantic tokens. Stored as raw RGB
    * triplets so the Tailwind preset can expose alpha modifiers
    * (bg-cat-amber/15, border-cat-amber/30). Dark theme = Tailwind -300

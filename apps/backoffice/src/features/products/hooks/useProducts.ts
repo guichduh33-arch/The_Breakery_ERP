@@ -6,7 +6,6 @@
 // product CRUD RPCs land in a future session.
 
 import { useQuery } from '@tanstack/react-query';
-import type { AllergenType } from '@breakery/ui';
 import { supabase } from '@/lib/supabase.js';
 import type { ProductRow } from '../types.js';
 
@@ -25,7 +24,6 @@ interface ProductRowDb {
   unit:             string;
   is_active:        boolean;
   is_favorite:      boolean;
-  allergens:        AllergenType[] | null;
   description:                string | null;
   visible_on_pos:             boolean;
   available_for_sale:         boolean;
@@ -57,7 +55,7 @@ export function useProducts() {
           retail_price, wholesale_price, cost_price,
           product_type, image_url,
           current_stock, min_stock_threshold, unit,
-          is_active, is_favorite, allergens,
+          is_active, is_favorite,
           description, visible_on_pos, available_for_sale,
           track_inventory, deduct_stock, is_semi_finished,
           target_gross_margin_pct, default_shelf_life_hours, is_display_item,
@@ -88,7 +86,6 @@ export function useProducts() {
           unit:                r.unit,
           is_active:           r.is_active,
           is_favorite:         r.is_favorite,
-          allergens:           r.allergens ?? [],
           description:               r.description,
           visible_on_pos:            r.visible_on_pos,
           available_for_sale:        r.available_for_sale,

@@ -19,7 +19,6 @@ import { NewProductDialog } from '@/features/products/components/NewProductDialo
 import { DeleteProductDialog } from '@/features/products/components/DeleteProductDialog.js';
 import { useProducts } from '@/features/products/hooks/useProducts.js';
 import { useCategories } from '@/features/products/hooks/useCategories.js';
-import { useResolvedAllergensMap } from '@/features/products/hooks/useResolvedAllergensMap.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import {
   classifyProduct,
@@ -33,7 +32,6 @@ export default function ProductsPage(): JSX.Element {
   const navigate = useNavigate();
   const products = useProducts();
   const categories = useCategories();
-  const resolvedAllergens = useResolvedAllergensMap();
   const canCreate      = useAuthStore((s) => s.hasPermission('products.create'));
   const canDelete      = useAuthStore((s) => s.hasPermission('products.delete'));
   const canEditPricing = useAuthStore((s) => s.hasPermission('products.update'));
@@ -143,7 +141,6 @@ export default function ProductsPage(): JSX.Element {
         <ProductsTable
           rows={filtered}
           isLoading={products.isLoading}
-          resolvedAllergens={resolvedAllergens.data ?? new Map()}
           parentIds={parentIds}
           onRowClick={openProduct}
           onView={openProduct}

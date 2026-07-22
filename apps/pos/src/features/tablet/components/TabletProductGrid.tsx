@@ -19,7 +19,6 @@ import { ProductCard } from '@/features/products/ProductCard';
 import { useProducts } from '@/features/products/hooks/useProducts';
 import { useCategories } from '@/features/products/hooks/useCategories';
 import { useActiveLotsByProduct } from '@/features/products/hooks/useActiveLotsByProduct';
-import { useProductAllergensMap } from '@/features/products/hooks/useProductAllergens';
 import { useProductModifiers } from '@/features/products/hooks/useProductModifiers';
 import { useTabletCartStore } from '@/stores/tabletCartStore';
 
@@ -32,7 +31,6 @@ export function TabletProductGrid({ selectedSlug }: TabletProductGridProps): JSX
   const { data: products = [], isLoading, isError, refetch } = useProducts();
   const { data: categories = [] } = useCategories();
   const { data: lotsByProduct } = useActiveLotsByProduct();
-  const { data: allergensByProduct } = useProductAllergensMap();
   const [query, setQuery] = useState('');
   const [pending, setPending] = useState<Product | null>(null);
 
@@ -164,7 +162,6 @@ export function TabletProductGrid({ selectedSlug }: TabletProductGridProps): JSX
                 !disabled && p.current_stock > 0 && p.current_stock <= 3
                   ? `Low stock · ${p.current_stock} left`
                   : null;
-              const allergens = allergensByProduct?.get(p.id) ?? [];
 
               return (
                 <ProductCard
@@ -173,7 +170,6 @@ export function TabletProductGrid({ selectedSlug }: TabletProductGridProps): JSX
                   disabled={disabled}
                   overlayLabel={overlayLabel}
                   lowStockLabel={lowStockLabel}
-                  allergens={allergens}
                   onSelect={handleSelect}
                   topLeftSlot={p.product_type === 'combo' ? <ComboBadge /> : undefined}
                 />

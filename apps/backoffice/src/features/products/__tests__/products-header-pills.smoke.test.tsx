@@ -110,9 +110,6 @@ vi.mock('@/features/products/hooks/useProducts.js', () => ({
 vi.mock('@/features/products/hooks/useCategories.js', () => ({
   useCategories: () => ({ data: [] }),
 }));
-vi.mock('@/features/products/hooks/useResolvedAllergensMap.js', () => ({
-  useResolvedAllergensMap: () => ({ data: new Map() }),
-}));
 vi.mock('@/features/products/components/ProductsPageTabs.js', () => ({
   ProductsPageTabs: () => null,
 }));

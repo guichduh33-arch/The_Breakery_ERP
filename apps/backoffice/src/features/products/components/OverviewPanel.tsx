@@ -9,7 +9,6 @@
 import { Activity, AlertCircle, BarChart3, ImageOff, Settings2, TrendingUp } from 'lucide-react';
 import type { JSX } from 'react';
 import { Card, CardContent, Currency, SectionLabel } from '@breakery/ui';
-import { AllergensPanel } from './AllergensPanel.js';
 import type { ProductRow } from '../types.js';
 
 interface Props {
@@ -124,11 +123,6 @@ export function OverviewPanel({ product }: Props): JSX.Element {
           </div>
         </Card>
       </div>
-
-      <AllergensPanel
-        productId={product.id}
-        initialOwn={product.allergens}
-      />
     </div>
   );
 }

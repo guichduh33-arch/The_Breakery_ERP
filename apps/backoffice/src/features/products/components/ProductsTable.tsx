@@ -10,11 +10,9 @@
 import { Box, DollarSign, Eye, Trash2 } from 'lucide-react';
 import type { JSX } from 'react';
 import {
-  AllergenBadge,
   Badge,
   Currency,
   DataTable,
-  type AllergenType,
   type DataTableColumn,
 } from '@breakery/ui';
 import { CategoryChip } from './CategoryChip.js';
@@ -24,8 +22,6 @@ import { classifyProduct, type ProductRow } from '../types.js';
 interface Props {
   rows: readonly ProductRow[];
   isLoading?: boolean;
-  /** Map<product_id, resolved-allergens> from `view_product_allergens_resolved`. */
-  resolvedAllergens?: ReadonlyMap<string, readonly AllergenType[]>;
   /** Session 27c — set of product ids that are parents (i.e. have variants). */
   parentIds?: ReadonlySet<string>;
   onRowClick?: (row: ProductRow) => void;
@@ -37,7 +33,6 @@ interface Props {
 export function ProductsTable({
   rows,
   isLoading = false,
-  resolvedAllergens,
   parentIds,
   onRowClick,
   onView,
@@ -121,24 +116,6 @@ export function ProductsTable({
           {r.is_active ? 'Active' : 'Inactive'}
         </span>
       ),
-    },
-    {
-      id: 'allergens',
-      header: 'Allergens',
-      align: 'left',
-      render: (r) => {
-        const resolved = resolvedAllergens?.get(r.id) ?? [];
-        if (resolved.length === 0) {
-          return <span className="text-text-muted">—</span>;
-        }
-        return (
-          <div className="flex flex-wrap gap-0.5" data-testid={`products-table-allergens-${r.id}`}>
-            {resolved.map((a) => (
-              <AllergenBadge key={a} allergen={a} size="sm" />
-            ))}
-          </div>
-        );
-      },
     },
     {
       id: 'actions',

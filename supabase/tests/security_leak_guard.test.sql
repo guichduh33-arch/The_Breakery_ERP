@@ -4,7 +4,8 @@
 -- Couvre :
 --   T1–T3  : MVs inaccessibles à authenticated (W1.5) — throws_ok 4-arg + RESET ROLE
 --   T4     : audit_log security_invoker=true (W1.5) — seule vue appliquée
---   T5–T6  : v_product_available_stock + view_product_allergens_resolved → DEFERRED V2
+--   T5–T6  : v_product_available_stock (+ ex-view_product_allergens_resolved,
+--            droppée avec la suppression allergènes 2026-07-22) → DEFERRED V2
 --   T7     : get_customer_product_price search_path (W1.6) — SECURITY DEFINER
 --   T8–T9  : enforce_margin_alerts_ack_only + next_expense_number search_path (W1.6)
 --            — SECURITY INVOKER (proconfig uniquement, pas prosecdef)

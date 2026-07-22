@@ -8,7 +8,6 @@
 // `useProducts` / `useProductDetail`.
 
 import type { Product } from '@breakery/domain';
-import type { AllergenType } from '@breakery/ui';
 
 export type ProductTypeFilter = 'all' | 'finished' | 'semi-finished' | 'raw' | 'combo';
 
@@ -26,8 +25,6 @@ export interface ProductRow extends Product {
    * the old SKU-prefix heuristic was unreliable (only RAW/CON/HAS/SFG matched).
    */
   category_type: string | null;
-  /** Self-declared allergens (Session 15 Phase 5.C — `products.allergens`). */
-  allergens: readonly AllergenType[];
   // Session 27 — editable fields surfaced by update_product_v2
   description: string | null;
   visible_on_pos: boolean;
