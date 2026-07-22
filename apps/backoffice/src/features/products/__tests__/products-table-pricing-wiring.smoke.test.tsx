@@ -31,7 +31,6 @@ const MOCK_ROW: ProductRow = {
   unit:                     'pcs',
   is_active:                true,
   is_favorite:              false,
-  allergens:                [],
   description:              null,
   visible_on_pos:           true,
   available_for_sale:       true,

@@ -3927,7 +3927,6 @@ export type Database = {
       }
       products: {
         Row: {
-          allergens: Database["public"]["Enums"]["allergen_type"][]
           available_for_sale: boolean
           category_id: string
           combo_available_from: string | null
@@ -3967,7 +3966,6 @@ export type Database = {
           wholesale_price: number | null
         }
         Insert: {
-          allergens?: Database["public"]["Enums"]["allergen_type"][]
           available_for_sale?: boolean
           category_id: string
           combo_available_from?: string | null
@@ -4007,7 +4005,6 @@ export type Database = {
           wholesale_price?: number | null
         }
         Update: {
-          allergens?: Database["public"]["Enums"]["allergen_type"][]
           available_for_sale?: boolean
           category_id?: string
           combo_available_from?: string | null
@@ -6099,13 +6096,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      view_product_allergens_resolved: {
-        Row: {
-          allergens: Database["public"]["Enums"]["allergen_type"][] | null
-          product_id: string | null
-        }
-        Relationships: []
       }
       view_product_recipes: {
         Row: {
@@ -8637,21 +8627,6 @@ export type Database = {
       }
     }
     Enums: {
-      allergen_type:
-        | "gluten"
-        | "crustaceans"
-        | "eggs"
-        | "fish"
-        | "peanuts"
-        | "soy"
-        | "milk"
-        | "nuts"
-        | "celery"
-        | "mustard"
-        | "sesame"
-        | "sulphites"
-        | "lupin"
-        | "molluscs"
       cash_flow_section: "operating" | "investing" | "financing" | "none"
       customer_type: "retail" | "b2b"
       discount_template_type: "percentage" | "fixed_amount"
@@ -8878,22 +8853,6 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      allergen_type: [
-        "gluten",
-        "crustaceans",
-        "eggs",
-        "fish",
-        "peanuts",
-        "soy",
-        "milk",
-        "nuts",
-        "celery",
-        "mustard",
-        "sesame",
-        "sulphites",
-        "lupin",
-        "molluscs",
-      ],
       cash_flow_section: ["operating", "investing", "financing", "none"],
       customer_type: ["retail", "b2b"],
       discount_template_type: ["percentage", "fixed_amount"],

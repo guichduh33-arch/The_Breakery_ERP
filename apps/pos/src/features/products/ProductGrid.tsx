@@ -32,7 +32,6 @@ import { ProductCard } from './ProductCard';
 import { useProducts } from './hooks/useProducts';
 import { useCategories } from './hooks/useCategories';
 import { useActiveLotsByProduct } from './hooks/useActiveLotsByProduct';
-import { useProductAllergensMap } from './hooks/useProductAllergens';
 
 export interface ProductGridProps {
   selectedSlug: string | null;
@@ -46,7 +45,6 @@ export function ProductGrid({ selectedSlug, onSelect }: ProductGridProps): JSX.E
   const { data: products = [], isLoading, isError, refetch } = useProducts();
   const { data: categories = [] } = useCategories();
   const { data: lotsByProduct } = useActiveLotsByProduct();
-  const { data: allergensByProduct } = useProductAllergensMap();
   // Stable empty fallback so a partially-mocked store (tests) can't crash here
   // and the selector never returns a fresh array identity.
   const cartItems = useCartStore((s) => s.cart?.items ?? EMPTY_ITEMS);
@@ -166,8 +164,6 @@ export function ProductGrid({ selectedSlug, onSelect }: ProductGridProps): JSX.E
                   ? `Low stock · ${p.current_stock} left`
                   : null;
 
-              const allergens = allergensByProduct?.get(p.id) ?? [];
-
               return (
                 <ProductCard
                   key={p.id}
@@ -175,7 +171,6 @@ export function ProductGrid({ selectedSlug, onSelect }: ProductGridProps): JSX.E
                   disabled={disabled}
                   overlayLabel={overlayLabel}
                   lowStockLabel={lowStockLabel}
-                  allergens={allergens}
                   cartQty={qtyByProduct.get(p.id) ?? 0}
                   onSelect={onSelect}
                   topLeftSlot={

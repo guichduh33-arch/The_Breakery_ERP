@@ -28,7 +28,6 @@ const product: ProductRow = {
   is_favorite: false,
   image_url: null,
   product_type: 'finished',
-  allergens: [],
   description: null,
   visible_on_pos: true,
   available_for_sale: true,
