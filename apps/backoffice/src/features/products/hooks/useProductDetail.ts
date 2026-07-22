@@ -30,6 +30,8 @@ interface ProductRowDb {
   target_gross_margin_pct:    number | null;
   default_shelf_life_hours:   number | null;
   is_display_item:            boolean;
+  // ADR-007 déc. 6 — flag données de test (exclu des rapports)
+  is_test:                    boolean;
   // Session 27c — variant grouping
   parent_product_id:          string | null;
   variant_label:              string | null;
@@ -57,7 +59,7 @@ export function useProductDetail(productId: string | null) {
           is_active, is_favorite,
           description, visible_on_pos, available_for_sale,
           track_inventory, deduct_stock, is_semi_finished,
-          target_gross_margin_pct, default_shelf_life_hours, is_display_item,
+          target_gross_margin_pct, default_shelf_life_hours, is_display_item, is_test,
           parent_product_id, variant_label, variant_axis, variant_sort_order,
           dispatch_stations,
           categories:categories ( name, category_type )
@@ -95,6 +97,7 @@ export function useProductDetail(productId: string | null) {
         target_gross_margin_pct:   r.target_gross_margin_pct === null ? null : Number(r.target_gross_margin_pct),
         default_shelf_life_hours:  r.default_shelf_life_hours,
         is_display_item:           r.is_display_item ?? false,
+        is_test:                   r.is_test ?? false,
         parent_product_id:         r.parent_product_id,
         variant_label:             r.variant_label,
         variant_axis:              r.variant_axis,

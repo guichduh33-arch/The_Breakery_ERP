@@ -30,6 +30,8 @@ export type PermissionCode =
   // Session 27c — product variants (parent/child)
   | 'products.variants.read'
   | 'products.variants.write'
+  // ADR-007 déc. 6 — test-data flag (ADMIN+)
+  | 'products.test_flag.update'
   // Session 41 — catalog import/export
   | 'catalog.import'
   | 'catalog.export'

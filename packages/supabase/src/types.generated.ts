@@ -8330,6 +8330,10 @@ export type Database = {
         }
         Returns: Json
       }
+      set_product_is_test_v1: {
+        Args: { p_is_test: boolean; p_product_id: string }
+        Returns: Json
+      }
       set_product_units_v1: {
         Args: { p_alts: Json; p_contexts: Json; p_product_id: string }
         Returns: Json
