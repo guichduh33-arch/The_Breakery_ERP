@@ -4,8 +4,9 @@
 /** `orders.order_type` — channel from which the order originated. */
 export const ORDER_TYPES = ['dine_in', 'take_out', 'delivery'] as const;
 
-/** `order_payments.payment_method` — tender accepted at the POS. */
-export const PAYMENT_METHODS = ['cash', 'card', 'qris', 'edc', 'transfer', 'store_credit'] as const;
+/** `order_payments.payment_method` — tender accepted at the POS.
+ *  gopay/ovo/dana (lot B ADR-006 déc. 9) settle like QRIS. */
+export const PAYMENT_METHODS = ['cash', 'card', 'qris', 'edc', 'transfer', 'store_credit', 'gopay', 'ovo', 'dana'] as const;
 
 /** `pos_sessions.status` — open shifts accept sales; closed shifts are read-only. */
 export const SHIFT_STATUSES = ['open', 'closed'] as const;

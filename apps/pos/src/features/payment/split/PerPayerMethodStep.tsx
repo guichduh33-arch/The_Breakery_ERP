@@ -15,6 +15,7 @@ import type { JSX } from 'react';
 import {
   ArrowRightLeft,
   Banknote,
+  CircleDollarSign,
   CreditCard,
   QrCode,
   Smartphone,
@@ -48,6 +49,10 @@ const METHODS: SplitMethodMeta[] = [
   { value: 'edc',          label: 'EDC',      icon: Smartphone },
   { value: 'transfer',     label: 'Transfer', icon: ArrowRightLeft },
   { value: 'store_credit', label: 'Store',    icon: Wallet },
+  // Lot B (ADR-006 déc. 9) — e-wallets individuels, settlement type QRIS.
+  { value: 'gopay',        label: 'GoPay',    icon: CircleDollarSign },
+  { value: 'ovo',          label: 'OVO',      icon: CircleDollarSign },
+  { value: 'dana',         label: 'DANA',     icon: CircleDollarSign },
 ];
 
 const METHODS_BY_VALUE = new Map(METHODS.map((m) => [m.value, m]));

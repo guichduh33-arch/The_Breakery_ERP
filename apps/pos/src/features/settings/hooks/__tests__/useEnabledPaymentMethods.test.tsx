@@ -16,7 +16,7 @@ vi.mock('@/lib/supabase', () => ({
   supabase: { from: mocks.from },
 }));
 
-import { useEnabledPaymentMethods, ALL_PAYMENT_METHODS } from '../useEnabledPaymentMethods';
+import { useEnabledPaymentMethods, FAIL_OPEN_PAYMENT_METHODS } from '../useEnabledPaymentMethods';
 
 function wrapper({ children }: { children: ReactNode }) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -54,6 +54,19 @@ describe('useEnabledPaymentMethods', () => {
     expect(result.current.has('card')).toBe(false);
   });
 
+  // Lot B — e-wallets are VALID configured values (they must survive the
+  // validity filter) even though they are excluded from the fail-open default.
+  it('accepts configured e-wallets (gopay/ovo/dana)', async () => {
+    mockBusinessConfig({ data: { enabled_payment_methods: ['cash', 'gopay', 'ovo', 'dana'] }, error: null });
+
+    const { result } = renderHook(() => useEnabledPaymentMethods(), { wrapper });
+    await waitFor(() => expect(result.current.size).toBe(4));
+
+    expect(result.current.has('gopay')).toBe(true);
+    expect(result.current.has('ovo')).toBe(true);
+    expect(result.current.has('dana')).toBe(true);
+  });
+
   // ADR-006 déc. 9 lot A — the config array order is contractual (POS display
   // order) and must survive as the Set's insertion order.
   it('preserves the configured order in the returned Set', async () => {
@@ -70,22 +83,22 @@ describe('useEnabledPaymentMethods', () => {
 
     const { result } = renderHook(() => useEnabledPaymentMethods(), { wrapper });
     // Immediately (before the query settles) it's already the fail-open default.
-    expect(result.current.size).toBe(ALL_PAYMENT_METHODS.length);
-    await waitFor(() => expect(result.current.size).toBe(ALL_PAYMENT_METHODS.length));
-    for (const m of ALL_PAYMENT_METHODS) expect(result.current.has(m)).toBe(true);
+    expect(result.current.size).toBe(FAIL_OPEN_PAYMENT_METHODS.length);
+    await waitFor(() => expect(result.current.size).toBe(FAIL_OPEN_PAYMENT_METHODS.length));
+    for (const m of FAIL_OPEN_PAYMENT_METHODS) expect(result.current.has(m)).toBe(true);
   });
 
   it('fails open to the 6 methods when the column is not an array', async () => {
     mockBusinessConfig({ data: { enabled_payment_methods: 'not-an-array' }, error: null });
 
     const { result } = renderHook(() => useEnabledPaymentMethods(), { wrapper });
-    await waitFor(() => expect(result.current.size).toBe(ALL_PAYMENT_METHODS.length));
+    await waitFor(() => expect(result.current.size).toBe(FAIL_OPEN_PAYMENT_METHODS.length));
   });
 
   it('fails open to the 6 methods when the array is empty', async () => {
     mockBusinessConfig({ data: { enabled_payment_methods: [] }, error: null });
 
     const { result } = renderHook(() => useEnabledPaymentMethods(), { wrapper });
-    await waitFor(() => expect(result.current.size).toBe(ALL_PAYMENT_METHODS.length));
+    await waitFor(() => expect(result.current.size).toBe(FAIL_OPEN_PAYMENT_METHODS.length));
   });
 });

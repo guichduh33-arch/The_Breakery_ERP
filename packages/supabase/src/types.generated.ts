@@ -6572,7 +6572,7 @@ export type Database = {
         Args: { p_fiscal_year: number; p_manager_pin: string }
         Returns: Json
       }
-      close_shift_v7: {
+      close_shift_v8: {
         Args: {
           p_approver_id?: string
           p_counted_card?: number
@@ -8200,7 +8200,7 @@ export type Database = {
         Returns: string
       }
       restore_held_order_v1: { Args: { p_order_id: string }; Returns: Json }
-      retry_sale_journal_entry_v2: {
+      retry_sale_journal_entry_v3: {
         Args: { p_order_id: string }
         Returns: Json
       }
@@ -8336,7 +8336,7 @@ export type Database = {
         Args: { p_alts: Json; p_contexts: Json; p_product_id: string }
         Returns: Json
       }
-      set_setting_v5: {
+      set_setting_v6: {
         Args: { p_category: string; p_key: string; p_value: Json }
         Returns: undefined
       }
@@ -8676,6 +8676,9 @@ export type Database = {
         | "edc"
         | "transfer"
         | "store_credit"
+        | "gopay"
+        | "ovo"
+        | "dana"
       pos_event_type:
         | "order_opened"
         | "order_type_changed"
@@ -8905,6 +8908,9 @@ export const Constants = {
         "edc",
         "transfer",
         "store_credit",
+        "gopay",
+        "ovo",
+        "dana",
       ],
       pos_event_type: [
         "order_opened",

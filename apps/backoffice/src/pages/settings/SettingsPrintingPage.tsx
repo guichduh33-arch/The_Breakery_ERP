@@ -1,7 +1,7 @@
 // apps/backoffice/src/pages/settings/SettingsPrintingPage.tsx
 //
 // S73 Lot 2 — org-level payment automation flags (business_config via
-// get_settings_by_category_v4('printing') / set_setting_v5).
+// get_settings_by_category_v4('printing') / set_setting_v6).
 // Chantier KOT copies (2026-07-18) — + copies du ticket cuisine papier par
 // station à l'envoi (0 = pas de papier, le KDS écran reçoit toujours).
 // The print-server URL itself stays per-terminal (POS Settings, localStorage).
@@ -18,7 +18,7 @@ const FIELDS = [
     helper: 'Automatically kick the cash drawer open on cash payments.' },
 ] as const;
 
-// Copies du KOT papier par station prep, [0, 5] (validation set_setting_v5).
+// Copies du KOT papier par station prep, [0, 5] (validation set_setting_v6).
 const KOT_FIELDS = [
   { key: 'kot_copies_kitchen', label: 'Kitchen' },
   { key: 'kot_copies_barista', label: 'Barista' },

@@ -29,7 +29,8 @@ import { getActingAuthUserId } from '../_shared/acting-user.ts';
 import { getAdminClient } from '../_shared/supabase-admin.ts';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const VALID_METHODS = ['cash', 'card', 'qris', 'edc', 'transfer', 'store_credit'];
+// gopay/ovo/dana : lot B ADR-006 déc. 9 (enum _207) — settlement type QRIS.
+const VALID_METHODS = ['cash', 'card', 'qris', 'edc', 'transfer', 'store_credit', 'gopay', 'ovo', 'dana'];
 
 interface RefundOrderPayload {
   order_id: string;

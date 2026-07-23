@@ -1,5 +1,5 @@
 // S73 Phase 3 — single typed dictionary of business_config setting keys and
-// symbolic categories (server truth: set_setting_v5 / get_settings_by_category_v4,
+// symbolic categories (server truth: set_setting_v6 / get_settings_by_category_v4,
 // migrations 20260711000159 + 20260716000168 + 20260718000195 + 20260721000197).
 // Add a key here ONLY together with its RPC branch.
 export const SETTINGS_CATEGORIES = [

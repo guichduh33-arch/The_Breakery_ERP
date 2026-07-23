@@ -4,7 +4,7 @@
 // Used by TenderListBuilder inside PaymentTerminal RIGHT panel. The tender object
 // is the same Tender type used by the cart store; this component is purely visual.
 
-import { Banknote, CreditCard, QrCode, Smartphone, ArrowRightLeft, Wallet, X } from 'lucide-react';
+import { Banknote, CircleDollarSign, CreditCard, QrCode, Smartphone, ArrowRightLeft, Wallet, X } from 'lucide-react';
 import type { JSX, ForwardRefExoticComponent, RefAttributes } from 'react';
 import type { LucideProps } from 'lucide-react';
 import { Currency } from './Currency.js';
@@ -12,7 +12,10 @@ import { cn } from '../lib/cn.js';
 
 type IconComponent = ForwardRefExoticComponent<Omit<LucideProps, 'ref'> & RefAttributes<SVGSVGElement>>;
 
-export type TenderRowMethod = 'cash' | 'card' | 'qris' | 'edc' | 'transfer' | 'store_credit';
+// gopay/ovo/dana : e-wallets individuels (ADR-006 déc. 9 lot B) — miroir de
+// l'enum Postgres payment_method.
+export type TenderRowMethod =
+  'cash' | 'card' | 'qris' | 'edc' | 'transfer' | 'store_credit' | 'gopay' | 'ovo' | 'dana';
 
 const METHOD_META: Record<TenderRowMethod, { label: string; icon: IconComponent }> = {
   cash:         { label: 'Cash',         icon: Banknote },
@@ -21,6 +24,9 @@ const METHOD_META: Record<TenderRowMethod, { label: string; icon: IconComponent 
   edc:          { label: 'EDC',          icon: Smartphone },
   transfer:     { label: 'Transfer',     icon: ArrowRightLeft },
   store_credit: { label: 'Store Credit', icon: Wallet },
+  gopay:        { label: 'GoPay',        icon: CircleDollarSign },
+  ovo:          { label: 'OVO',          icon: CircleDollarSign },
+  dana:         { label: 'DANA',         icon: CircleDollarSign },
 };
 
 export interface TenderRowProps {

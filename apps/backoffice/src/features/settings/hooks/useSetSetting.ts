@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/settings/hooks/useSetSetting.ts
 //
-// Session 13 / Phase 5.C — Wraps set_setting_v5. ADMIN+ via settings.update.
+// Session 13 / Phase 5.C — Wraps set_setting_v6. ADMIN+ via settings.update.
 // One mutation per (key, value) pair ; the page commits each row in
 // sequence so the audit trail captures one entry per field change.
 
@@ -18,7 +18,7 @@ export function useSetSetting() {
   const qc = useQueryClient();
   return useMutation<void, Error, SetSettingArgs>({
     mutationFn: async ({ key, value, category }) => {
-      const { error } = await supabase.rpc('set_setting_v5', {
+      const { error } = await supabase.rpc('set_setting_v6', {
         p_key: key,
         // RPC validates JSONB type per key — pass the raw value, supabase-js
         // will JSON-encode it.

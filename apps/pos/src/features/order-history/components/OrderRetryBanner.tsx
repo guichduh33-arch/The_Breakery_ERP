@@ -4,7 +4,7 @@
 // order is `status='paid'` (or `completed`, ADR-009 déc. 4) but no
 // `journal_entries` row exists (rare race : sale JE trigger failed e.g.
 // missing account mapping / fiscal period flip mid-tx). One-click button
-// calls `retry_sale_journal_entry_v2`.
+// calls `retry_sale_journal_entry_v3`.
 
 import type { JSX } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';

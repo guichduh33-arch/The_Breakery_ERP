@@ -15,10 +15,18 @@ import { useQuery } from '@tanstack/react-query';
 import type { PaymentMethod } from '@breakery/domain';
 import { supabase } from '@/lib/supabase';
 
+// Lot B (ADR-006 déc. 9) : les e-wallets sont des valeurs VALIDES mais restent
+// HORS du fail-open — en panne de config on ne propose jamais un tender que la
+// boutique n'a peut-être pas (encaisser un GoPay sans compte GoPay = perte
+// sèche) ; les 6 méthodes historiques suffisent à ne jamais bloquer la caisse.
 export const ALL_PAYMENT_METHODS: readonly PaymentMethod[] = [
+  'cash', 'card', 'qris', 'edc', 'transfer', 'store_credit', 'gopay', 'ovo', 'dana',
+];
+const VALID_SET: ReadonlySet<PaymentMethod> = new Set(ALL_PAYMENT_METHODS);
+export const FAIL_OPEN_PAYMENT_METHODS: readonly PaymentMethod[] = [
   'cash', 'card', 'qris', 'edc', 'transfer', 'store_credit',
 ];
-const ALL_SET: ReadonlySet<PaymentMethod> = new Set(ALL_PAYMENT_METHODS);
+const FAIL_OPEN_SET: ReadonlySet<PaymentMethod> = new Set(FAIL_OPEN_PAYMENT_METHODS);
 const QUERY_KEY = ['business-config', 'enabled-payment-methods'] as const;
 
 export function useEnabledPaymentMethods(): ReadonlySet<PaymentMethod> {
@@ -35,12 +43,12 @@ export function useEnabledPaymentMethods(): ReadonlySet<PaymentMethod> {
         .maybeSingle();
       if (error) throw new Error(error.message);
       const raw = data?.enabled_payment_methods;
-      if (!Array.isArray(raw)) return [...ALL_PAYMENT_METHODS];
+      if (!Array.isArray(raw)) return [...FAIL_OPEN_PAYMENT_METHODS];
       const valid = raw.filter(
-        (m): m is PaymentMethod => typeof m === 'string' && (ALL_SET as Set<string>).has(m),
+        (m): m is PaymentMethod => typeof m === 'string' && (VALID_SET as Set<string>).has(m),
       );
-      return valid.length > 0 ? valid : [...ALL_PAYMENT_METHODS];
+      return valid.length > 0 ? valid : [...FAIL_OPEN_PAYMENT_METHODS];
     },
   });
-  return useMemo(() => (data ? new Set<PaymentMethod>(data) : ALL_SET), [data]);
+  return useMemo(() => (data ? new Set<PaymentMethod>(data) : FAIL_OPEN_SET), [data]);
 }

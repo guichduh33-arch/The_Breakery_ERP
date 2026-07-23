@@ -70,7 +70,7 @@ export function CloseShiftModal({
   const [managerPin, setManagerPin] = useState('');
   // S72 audit P1: the blind count hides the non-cash expected amounts, so the
   // client cannot replicate the server's 3-volet OR for the note/PIN gates
-  // (close_shift_v7). When a QRIS/card-only variance trips a server gate, reveal
+  // (close_shift_v8). When a QRIS/card-only variance trips a server gate, reveal
   // the matching section from the server's rejection instead of dead-locking on
   // a toast with no field to fill.
   const [serverPinRequired, setServerPinRequired] = useState(false);
@@ -79,7 +79,11 @@ export function CloseShiftModal({
   const loginUsers = useLoginUsers();
   const denomEnabled = useDenominationCountEnabled();
   const enabledMethods = useEnabledPaymentMethods();
-  const qrisVisible = enabledMethods.has('qris');
+  // Lot B (ADR-006 déc. 9) — le volet QRIS agrège aussi les e-wallets
+  // (bucket serveur close_shift_v8) : le champ de comptage doit apparaître
+  // dès qu'un tender du bucket est activé, même si 'qris' seul ne l'est pas.
+  const qrisVisible = enabledMethods.has('qris') || enabledMethods.has('gopay')
+    || enabledMethods.has('ovo') || enabledMethods.has('dana');
   const cardVisible = enabledMethods.has('card') || enabledMethods.has('edc');
 
   const counted = denomEnabled ? sumDenominations(denoms) : Number(amountStr || '0');
@@ -103,7 +107,7 @@ export function CloseShiftModal({
 
   // S66 (12 D2.1): above the higher PIN thresholds, a designated manager must
   // approve. Same predicate shape as the note guard, mirrored server-side in
-  // close_shift_v7 (pin_approval_required) — the UI block is a convenience,
+  // close_shift_v8 (pin_approval_required) — the UI block is a convenience,
   // the RPC is the authority. S72: also honoured when the server rejected a
   // prior submit (a QRIS/card-only variance the blind client can't see).
   const pinRequired = step === 'review'
@@ -242,7 +246,7 @@ export function CloseShiftModal({
               variance, since it's the one the note/PIN gates key off. */}
           {step === 'review' && qrisVisible && (
             <Row
-              label="QRIS counted"
+              label="QRIS + e-wallets counted"
               value={<span className="font-mono tabular-nums text-text-primary">Rp {Number(qrisStr || '0').toLocaleString('id-ID')}</span>}
             />
           )}
@@ -272,7 +276,7 @@ export function CloseShiftModal({
         {step === 'count' && qrisVisible && (
           <section className="space-y-1">
             <label htmlFor="counted_qris" className="text-xs uppercase tracking-wide text-text-secondary">
-              QRIS total (terminal report)
+              QRIS + e-wallets total (terminal report)
             </label>
             <input
               id="counted_qris"
