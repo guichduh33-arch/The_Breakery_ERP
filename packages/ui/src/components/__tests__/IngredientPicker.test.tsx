@@ -169,7 +169,7 @@ describe('IngredientPicker', () => {
         searchFn={searchFn}
       />,
     );
-    const input = screen.getByPlaceholderText('Search ingredient or sub-recipe…') as HTMLInputElement;
+    const input = screen.getByPlaceholderText<HTMLInputElement>('Search ingredient or sub-recipe…');
     fireEvent.focus(input);
     fireEvent.change(input, { target: { value: 'fl' } });
     await act(async () => {

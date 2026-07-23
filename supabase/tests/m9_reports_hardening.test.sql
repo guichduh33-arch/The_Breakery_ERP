@@ -2,7 +2,7 @@
 -- pgTAP — M9 audit fix (2026-06-01 §Medium) :
 --   T1 get_stock_movements_v2 keyset cursor — rows sharing one created_at paginate
 --      with no drop/dupe (the created_at-only v1 cursor dropped them).
---   T2 get_payments_by_method_v2 by_day reconciles — 6 named methods + other = total.
+--   T2 get_payments_by_method_v3 by_day reconciles — 9 named methods + other = total.
 -- S57 B-D4 : repointed v1 -> v2 (v1 dropped, 20260710000094).
 -- Run via MCP execute_sql (BEGIN..ROLLBACK).
 BEGIN;
@@ -57,23 +57,28 @@ BEGIN
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_auth)::text, true);
 
   INSERT INTO orders (order_number, status, subtotal, tax_amount, total, created_via)
-  VALUES ('M9B-TEST-1', 'paid', 180, 0, 180, 'tablet') RETURNING id INTO v_ord;
+  VALUES ('M9B-TEST-1', 'paid', 200, 0, 200, 'tablet') RETURNING id INTO v_ord;
+  -- Lot C (ADR-006 déc. 9) : gopay a sa propre colonne by_day (sortie du `other`).
   INSERT INTO order_payments (order_id, method, amount, paid_at) VALUES
     (v_ord, 'cash', 100, '2026-06-02 09:00:00+00'),
     (v_ord, 'card', 50,  '2026-06-02 09:05:00+00'),
-    (v_ord, 'qris', 30,  '2026-06-02 09:10:00+00');
+    (v_ord, 'qris', 30,  '2026-06-02 09:10:00+00'),
+    (v_ord, 'gopay', 20, '2026-06-02 09:15:00+00');
 
-  v_res := get_payments_by_method_v2('2026-06-02','2026-06-02');
+  v_res := get_payments_by_method_v3('2026-06-02','2026-06-02');
   v_day := v_res->'by_day'->0;
   v_recon := (v_day->>'cash')::numeric + (v_day->>'card')::numeric + (v_day->>'qris')::numeric
            + (v_day->>'edc')::numeric + (v_day->>'transfer')::numeric
-           + (v_day->>'store_credit')::numeric + (v_day->>'other')::numeric;
+           + (v_day->>'store_credit')::numeric
+           + (v_day->>'gopay')::numeric + (v_day->>'ovo')::numeric + (v_day->>'dana')::numeric
+           + (v_day->>'other')::numeric;
   v_total := (v_day->>'total')::numeric;
   PERFORM set_config('breakery.m9_t2',
-    ((v_day ? 'other') AND v_recon = v_total AND v_total = 180)::text, false);
+    ((v_day ? 'other') AND (v_day->>'gopay')::numeric = 20 AND (v_day->>'other')::numeric = 0
+     AND v_recon = v_total AND v_total = 200)::text, false);
 END $$;
 SELECT ok(current_setting('breakery.m9_t2')::boolean,
-  'T2: get_payments_by_method_v2 by_day reconciles — cash+card+qris+edc+transfer+store_credit+other = total');
+  'T2: get_payments_by_method_v3 by_day reconciles — 9 named methods (incl. gopay column) + other = total');
 
 SELECT * FROM finish();
 ROLLBACK;

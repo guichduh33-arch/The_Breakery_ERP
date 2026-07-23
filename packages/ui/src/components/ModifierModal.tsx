@@ -308,7 +308,6 @@ function ProductThumb({
       className="h-12 w-12 rounded-md overflow-hidden flex-shrink-0 bg-gradient-to-br from-bg-input to-bg-base border border-border-subtle grid place-items-center"
     >
       {imageUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={imageUrl}
           alt=""

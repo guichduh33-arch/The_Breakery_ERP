@@ -2,7 +2,7 @@
 //
 // Session 13 / Phase 5.C — General settings page. Surfaces the four
 // symbolic categories of business_config (business / localization / tax / pos)
-// in a single flat form. Each "Save" calls set_setting_v6 per dirty key so the
+// in a single flat form. Each "Save" calls set_setting_v7 per dirty key so the
 // audit trail captures one row per field change.
 //
 // S73 B4 — currency/timezone become ISO-4217/IANA <select> pickers, tax_rate
@@ -106,7 +106,7 @@ export default function SettingsGeneralPage() {
   const [savedAt, setSavedAt]         = useState<string | null>(null);
   // Lot 6b — the tax-mode switch is a money-path decision: it changes how
   // retail_price is interpreted (tax-inclusive vs tax-exclusive) WITHOUT
-  // converting any price, and the server (set_setting_v6) refuses it while
+  // converting any price, and the server (set_setting_v7) refuses it while
   // open orders exist. Saving a changed `tax_inclusive` goes through an
   // explicit confirmation dialog first.
   const [taxSwitchConfirmOpen, setTaxSwitchConfirmOpen] = useState(false);
@@ -216,7 +216,7 @@ export default function SettingsGeneralPage() {
       const msg = (typeof e === 'object' && e !== null && 'message' in e && typeof e.message === 'string')
         ? e.message
         : 'Failed to save settings';
-      // set_setting_v6 (Lot 6b) refuses the tax-mode switch while open orders
+      // set_setting_v7 (Lot 6b) refuses the tax-mode switch while open orders
       // exist — surface an actionable message instead of the raw error code.
       setServerError(msg === 'tax_mode_switch_blocked'
         ? 'Tax mode switch refused — some orders are still open (draft or pending payment). Settle or void them, then save again.'

@@ -53,8 +53,8 @@ export function RefundTenderSplitter({
     <div data-testid="refund-tender-splitter" className={cn('space-y-3', className)}>
       <div className="flex items-center justify-between text-xs uppercase tracking-widest text-text-secondary">
         <span>Refund tenders</span>
-        <span className={cn(balanced ? 'text-text-primary' : 'text-red-400')}>
-          <Currency amount={sum} className={balanced ? 'text-text-primary' : 'text-red-400'} />
+        <span className={cn(balanced ? 'text-text-primary' : 'text-danger')}>
+          <Currency amount={sum} className={balanced ? 'text-text-primary' : 'text-danger'} />
           {' / '}
           <Currency amount={refundTotal} className="text-text-secondary" />
         </span>

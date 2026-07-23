@@ -24,7 +24,7 @@ import {
 } from '../Dialog.js';
 
 function Harness({
-  onOpenChange = (): void => {},
+  onOpenChange = (): void => { /* noop */ },
 }: {
   onOpenChange?: (open: boolean) => void;
 }) {

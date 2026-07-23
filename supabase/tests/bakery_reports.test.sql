@@ -5,9 +5,9 @@
 --   T1  : get_wastage_report_v1 MANAGER happy path — 4-key JSONB
 --   T2  : get_wastage_report_v1 CASHIER denied (42501)
 --   T3  : get_wastage_report_v1 empty period returns 0 totals
---   T4  : get_payments_by_method_v2 MANAGER happy path — 4-key JSONB
---   T5  : get_payments_by_method_v2 CASHIER denied (42501)
---   T6  : get_payments_by_method_v2 by_day pivots 6 methods + total + day
+--   T4  : get_payments_by_method_v3 MANAGER happy path — 4-key JSONB
+--   T5  : get_payments_by_method_v3 CASHIER denied (42501)
+--   T6  : get_payments_by_method_v3 by_day pivots 9 methods + other + total + day
 --
 -- S57 B-D4 : repointed v1 -> v2 (v1 dropped, 20260710000094 — UTC bucketing
 -- fixed to business_config.timezone, no assertion here depends on the tz fix).
@@ -112,7 +112,7 @@ DECLARE
   v_ok     BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_result := get_payments_by_method_v2('2026-01-01', '2026-12-31');
+  v_result := get_payments_by_method_v3('2026-01-01', '2026-12-31');
   v_ok := (v_result ? 'period')
       AND (v_result ? 'summary')
       AND (v_result ? 'by_method')
@@ -122,7 +122,7 @@ END
 $$;
 SELECT ok(
   current_setting('breakery.t4_pass')::boolean,
-  'T4: get_payments_by_method_v2 MANAGER happy path returns 4-key JSONB'
+  'T4: get_payments_by_method_v3 MANAGER happy path returns 4-key JSONB'
 );
 
 -- T5 CASHIER perm denied → 42501
@@ -132,7 +132,7 @@ DECLARE
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000002"}';
   BEGIN
-    PERFORM get_payments_by_method_v2('2026-01-01', '2026-12-31');
+    PERFORM get_payments_by_method_v3('2026-01-01', '2026-12-31');
   EXCEPTION WHEN insufficient_privilege THEN
     v_caught := true;
   END;
@@ -141,7 +141,7 @@ END
 $$;
 SELECT ok(
   current_setting('breakery.t5_pass')::boolean,
-  'T5: get_payments_by_method_v2 CASHIER raises 42501'
+  'T5: get_payments_by_method_v3 CASHIER raises 42501'
 );
 
 -- T6 by_day shape : if non-empty, each entry has required keys
@@ -152,7 +152,7 @@ DECLARE
   v_ok     BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_result := get_payments_by_method_v2('2026-01-01', '2026-12-31');
+  v_result := get_payments_by_method_v3('2026-01-01', '2026-12-31');
   v_by_day := v_result->'by_day';
   -- If empty array, shape test passes vacuously
   v_ok := (jsonb_array_length(v_by_day) = 0)
@@ -163,6 +163,9 @@ BEGIN
         AND (v_by_day->0 ? 'edc')
         AND (v_by_day->0 ? 'transfer')
         AND (v_by_day->0 ? 'store_credit')
+        AND (v_by_day->0 ? 'gopay')  -- lot C: e-wallet columns out of `other`
+        AND (v_by_day->0 ? 'ovo')
+        AND (v_by_day->0 ? 'dana')
         AND (v_by_day->0 ? 'other')  -- M9(b) catch-all
         AND (v_by_day->0 ? 'total')
         AND (v_by_day->0 ? 'day')
@@ -172,7 +175,7 @@ END
 $$;
 SELECT ok(
   current_setting('breakery.t6_pass')::boolean,
-  'T6: get_payments_by_method_v2 by_day pivots 6 methods + other + total + day'
+  'T6: get_payments_by_method_v3 by_day pivots 9 methods + other + total + day'
 );
 
 -- ============================================================

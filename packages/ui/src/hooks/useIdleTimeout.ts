@@ -17,7 +17,7 @@
 
 import { useEffect, useRef } from 'react';
 
-const DEFAULT_EVENTS: ReadonlyArray<string> = [
+const DEFAULT_EVENTS: readonly string[] = [
   'mousedown', 'keydown', 'touchstart', 'scroll',
 ];
 
@@ -27,7 +27,7 @@ export const IDLE_WARNING_LEAD_MS = 30_000;
 export interface UseIdleTimeoutArgs {
   timeoutMinutes: number;
   onTimeout: () => void;
-  events?: ReadonlyArray<string>;
+  events?: readonly string[];
 }
 
 /**

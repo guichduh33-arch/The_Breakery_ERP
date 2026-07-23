@@ -16,12 +16,21 @@ import {
   type PaymentByMethodLine,
 } from '@/features/reports/hooks/usePaymentsByMethod.js';
 
+// Lot C (ADR-006 déc. 9) — frais informatifs par méthode : fee_pct vient de
+// business_config.payment_method_fees, fee_est/net_est sont calculés serveur.
 const csvColumns: CsvColumn<PaymentByMethodLine>[] = [
-  { header: 'Method',       accessor: (r) => r.method,           format: 'text' },
-  { header: 'Amount (IDR)', accessor: (r) => r.amount,           format: 'idr-round100' },
-  { header: 'Count',        accessor: (r) => r.count,            format: 'number' },
-  { header: 'Share (%)',    accessor: (r) => r.share_pct / 100,  format: 'percent' },
+  { header: 'Method',         accessor: (r) => r.method,           format: 'text' },
+  { header: 'Amount (IDR)',   accessor: (r) => r.amount,           format: 'idr-round100' },
+  { header: 'Count',          accessor: (r) => r.count,            format: 'number' },
+  { header: 'Share (%)',      accessor: (r) => r.share_pct / 100,  format: 'percent' },
+  { header: 'Fee (%)',        accessor: (r) => r.fee_pct / 100,    format: 'percent' },
+  { header: 'Fee est. (IDR)', accessor: (r) => r.fee_est,          format: 'idr-round100' },
+  { header: 'Net est. (IDR)', accessor: (r) => r.net_est,          format: 'idr-round100' },
 ];
+
+function idr(n: number): string {
+  return n.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 });
+}
 
 function defaultStart(): string {
   return toLocalDateStr(new Date(Date.now() - 29 * 86_400_000));
@@ -80,6 +89,9 @@ export default function PaymentByMethodPage() {
               <th className="py-2 text-right">Amount (IDR)</th>
               <th className="py-2 text-right">Count</th>
               <th className="py-2 text-right">Share</th>
+              <th className="py-2 text-right">Fee</th>
+              <th className="py-2 text-right">Fee est.</th>
+              <th className="py-2 text-right">Net est.</th>
             </tr>
           </thead>
           <tbody>
@@ -94,11 +106,12 @@ export default function PaymentByMethodPage() {
                     icon={false}
                   />
                 </td>
-                <td className="py-2 text-right tabular-nums">
-                  {r.amount.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })}
-                </td>
+                <td className="py-2 text-right tabular-nums">{idr(r.amount)}</td>
                 <td className="py-2 text-right tabular-nums">{r.count}</td>
                 <td className="py-2 text-right tabular-nums">{r.share_pct.toFixed(1)}%</td>
+                <td className="py-2 text-right tabular-nums">{r.fee_pct > 0 ? `${r.fee_pct}%` : '—'}</td>
+                <td className="py-2 text-right tabular-nums">{idr(r.fee_est)}</td>
+                <td className="py-2 text-right tabular-nums">{idr(r.net_est)}</td>
               </tr>
             ))}
           </tbody>
@@ -106,13 +119,14 @@ export default function PaymentByMethodPage() {
             <tfoot>
               <tr className="border-t border-border-subtle font-semibold">
                 <td className="py-2">Total</td>
-                <td className="py-2 text-right tabular-nums">
-                  {(data.total ?? 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })}
-                </td>
+                <td className="py-2 text-right tabular-nums">{idr(data.total ?? 0)}</td>
                 <td className="py-2 text-right tabular-nums">
                   {lines.reduce((sum, r) => sum + r.count, 0)}
                 </td>
                 <td className="py-2 text-right tabular-nums">100%</td>
+                <td className="py-2" />
+                <td className="py-2 text-right tabular-nums">{idr(data.totalFees ?? 0)}</td>
+                <td className="py-2 text-right tabular-nums">{idr(data.totalNet ?? 0)}</td>
               </tr>
             </tfoot>
           )}

@@ -31,7 +31,7 @@ export function VirtualKeypadProvider({ children }: { children: ReactNode }) {
 
   const openFor = useCallback((el: VkpTarget, l: VkpLayout) => {
     targetRef.current = el;
-    setPortalEl((el.closest('[role="dialog"]') as HTMLElement | null) ?? null);
+    setPortalEl(el.closest<HTMLElement>('[role="dialog"]') ?? null);
     setLayout(l);
   }, []);
   const close = useCallback(() => {

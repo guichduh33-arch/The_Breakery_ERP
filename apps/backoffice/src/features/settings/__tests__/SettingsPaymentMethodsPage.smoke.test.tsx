@@ -8,13 +8,20 @@ vi.mock('@/lib/supabase.js', () => ({
   supabase: {
     rpc: (fn: string, args: unknown) => {
       rpcCalls.push({ fn, args });
-      if (fn === 'get_settings_by_category_v4') {
+      if (fn === 'get_settings_by_category_v5') {
         return Promise.resolve({
-          data: { category: 'payments', settings: { enabled_payment_methods: ['cash', 'card'] } },
+          data: {
+            category: 'payments',
+            settings: {
+              enabled_payment_methods: ['cash', 'card'],
+              // Lot C — frais informatifs par méthode (% seul).
+              payment_method_fees: { qris: 0.7 },
+            },
+          },
           error: null,
         });
       }
-      return Promise.resolve({ data: null, error: null }); // set_setting_v6
+      return Promise.resolve({ data: null, error: null }); // set_setting_v7
     },
   },
 }));
@@ -62,8 +69,8 @@ describe('SettingsPaymentMethodsPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /enregistrer/i }));
 
     await waitFor(() =>
-      expect(rpcCalls.some((c) => c.fn === 'set_setting_v6')).toBe(true));
-    const call = rpcCalls.find((c) => c.fn === 'set_setting_v6');
+      expect(rpcCalls.some((c) => c.fn === 'set_setting_v7')).toBe(true));
+    const call = rpcCalls.find((c) => c.fn === 'set_setting_v7');
     expect(call?.args).toEqual({
       p_key: 'enabled_payment_methods',
       p_value: ['card', 'cash'],
@@ -81,7 +88,40 @@ describe('SettingsPaymentMethodsPage', () => {
     expect(screen.queryByTestId('pm-up-qris')).not.toBeInTheDocument();
   });
 
-  it('calls set_setting_v6 with the remaining methods on save', async () => {
+  // ADR-006 déc. 9 lot C — frais informatifs par méthode (% seul).
+  it('renders the stored fee percentage and saves an edited fee via payment_method_fees', async () => {
+    rpcCalls.length = 0;
+    render(wrap(<SettingsPaymentMethodsPage />));
+    await waitFor(() => screen.getByTestId('pm-fee-qris'));
+
+    expect(screen.getByTestId<HTMLInputElement>('pm-fee-qris').value).toBe('0.7');
+    expect(screen.getByTestId<HTMLInputElement>('pm-fee-cash').value).toBe('');
+
+    fireEvent.change(screen.getByTestId('pm-fee-gopay'), { target: { value: '2' } });
+    fireEvent.click(screen.getByRole('button', { name: /enregistrer/i }));
+
+    await waitFor(() =>
+      expect(rpcCalls.some((c) => c.fn === 'set_setting_v7')).toBe(true));
+    const call = rpcCalls.find((c) => c.fn === 'set_setting_v7');
+    expect(call?.args).toEqual({
+      p_key: 'payment_method_fees',
+      p_value: { qris: 0.7, gopay: 2 },
+      p_category: 'payments',
+    });
+  });
+
+  it('blocks save and warns when a fee is out of [0, 100]', async () => {
+    render(wrap(<SettingsPaymentMethodsPage />));
+    await waitFor(() => screen.getByTestId('pm-fee-cash'));
+
+    fireEvent.change(screen.getByTestId('pm-fee-cash'), { target: { value: '150' } });
+
+    expect(screen.getByText(/entre 0 et 100/i)).toBeInTheDocument();
+    // Frais invalide → feesDirty false → le bouton retombe sur « Aucun changement », désactivé.
+    expect(screen.getByRole('button', { name: /aucun changement/i })).toBeDisabled();
+  });
+
+  it('calls set_setting_v7 with the remaining methods on save', async () => {
     rpcCalls.length = 0;
     render(wrap(<SettingsPaymentMethodsPage />));
     await waitFor(() => screen.getByLabelText(/^cash$/i));
@@ -90,9 +130,9 @@ describe('SettingsPaymentMethodsPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /enregistrer/i }));
 
     await waitFor(() =>
-      expect(rpcCalls.some((c) => c.fn === 'set_setting_v6')).toBe(true));
+      expect(rpcCalls.some((c) => c.fn === 'set_setting_v7')).toBe(true));
 
-    const call = rpcCalls.find((c) => c.fn === 'set_setting_v6');
+    const call = rpcCalls.find((c) => c.fn === 'set_setting_v7');
     expect(call?.args).toEqual({
       p_key: 'enabled_payment_methods',
       p_value: ['cash'],
