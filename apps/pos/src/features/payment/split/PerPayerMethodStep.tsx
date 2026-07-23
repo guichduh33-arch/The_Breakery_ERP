@@ -39,7 +39,9 @@ function effectiveSubtotal(payer: SplitPayer, cartItems: readonly CartItem[]): n
 
 type IconComponent = ForwardRefExoticComponent<Omit<LucideProps, 'ref'> & RefAttributes<SVGSVGElement>>;
 
-const METHODS: { value: PaymentMethod; label: string; icon: IconComponent }[] = [
+interface SplitMethodMeta { value: PaymentMethod; label: string; icon: IconComponent }
+
+const METHODS: SplitMethodMeta[] = [
   { value: 'cash',         label: 'Cash',     icon: Banknote },
   { value: 'card',         label: 'Card',     icon: CreditCard },
   { value: 'qris',         label: 'QRIS',     icon: QrCode },
@@ -47,6 +49,8 @@ const METHODS: { value: PaymentMethod; label: string; icon: IconComponent }[] = 
   { value: 'transfer',     label: 'Transfer', icon: ArrowRightLeft },
   { value: 'store_credit', label: 'Store',    icon: Wallet },
 ];
+
+const METHODS_BY_VALUE = new Map(METHODS.map((m) => [m.value, m]));
 
 export interface PerPayerMethodStepProps {
   payers: SplitPayer[];
@@ -169,7 +173,11 @@ export function PerPayerMethodStep({
         </h3>
 
         <div className="grid grid-cols-2 gap-3 mb-6">
-          {METHODS.filter((m) => enabledMethods.has(m.value)).map((m) => {
+          {/* ADR-006 déc. 9 lot A — BO-configured order (Set insertion order). */}
+          {[...enabledMethods]
+            .map((v) => METHODS_BY_VALUE.get(v))
+            .filter((m): m is SplitMethodMeta => m !== undefined)
+            .map((m) => {
             const Icon = m.icon;
             const selected = activePayer.method === m.value;
             return (

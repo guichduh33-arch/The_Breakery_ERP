@@ -5,6 +5,10 @@
 // FAIL-OPEN (les 6 méthodes) pendant le chargement ou sur erreur/valeur invalide —
 // une panne de config ne bloque JAMAIS un encaissement.
 // « Effet immédiat » v1 : staleTime 30 s + refetchInterval 60 s + refetch on focus.
+//
+// ADR-006 déc. 9 (lot A) — l'ORDRE de l'array configuré est contractuel : c'est
+// l'ordre d'affichage des grilles POS. Le Set retourné préserve l'ordre
+// d'insertion (garantie JS) ; ne pas re-trier ici.
 
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';

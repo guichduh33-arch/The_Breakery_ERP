@@ -4,7 +4,7 @@
 
 import { SectionLabel, cn } from '@breakery/ui';
 import type { PaymentMethod } from '@breakery/domain';
-import { METHODS } from './paymentMethods';
+import { METHODS_BY_VALUE, type MethodMeta } from './paymentMethods';
 import { useEnabledPaymentMethods } from '@/features/settings/hooks/useEnabledPaymentMethods';
 import { useOfflineMode } from '@/features/lan/offlineMode';
 
@@ -23,7 +23,13 @@ export function PaymentMethodGrid({ selectedMethod, onSelect }: PaymentMethodGri
     <>
       <SectionLabel as="div" className="mb-2">Select Payment Method</SectionLabel>
       <div className="grid grid-cols-3 gap-3 mb-6">
-        {METHODS.filter((m) => enabled.has(m.value) && (!offline || m.value === 'cash')).map((m) => {
+        {/* ADR-006 déc. 9 lot A — iterate the enabled set (BO-configured
+            order, Set preserves insertion order) instead of the constant. */}
+        {[...enabled]
+          .filter((v) => !offline || v === 'cash')
+          .map((v) => METHODS_BY_VALUE.get(v))
+          .filter((m): m is MethodMeta => m !== undefined)
+          .map((m) => {
           const Icon = m.icon;
           const active = selectedMethod === m.value;
           return (
