@@ -3,7 +3,7 @@
 --   * customers.birth_date / marketing_consent schema additions
 --   * 3 RPCs (get_customer_cohort_v1, get_customer_segments_v1,
 --             get_promo_roi_v1)
---   * notify_birthday_customers_v1() wrapper
+--   * notify_birthday_customers_v2() wrapper
 --   * pg_cron job `birthday-notify-daily`
 --
 -- Coverage T_MKT_01..08 :
@@ -54,8 +54,8 @@ SELECT has_function('public', 'get_customer_segments_v1', ARRAY['text'],
   'T_MKT_02b get_customer_segments_v1 exists');
 SELECT has_function('public', 'get_promo_roi_v1', ARRAY['uuid','date','date'],
   'T_MKT_02c get_promo_roi_v1 exists');
-SELECT has_function('public', 'notify_birthday_customers_v1',
-  'T_MKT_02d notify_birthday_customers_v1 exists');
+SELECT has_function('public', 'notify_birthday_customers_v2',
+  'T_MKT_02d notify_birthday_customers_v2 exists');
 
 -- ---------------------------------------------------------------------------
 -- T_MKT_03 : cron job
@@ -102,7 +102,7 @@ VALUES
 
 -- First invocation : exactly 1 row enqueued (Cust A).
 SELECT is(
-  (SELECT public.notify_birthday_customers_v1()),
+  (SELECT public.notify_birthday_customers_v2()),
   1,
   'T_MKT_04 wrapper enqueues exactly 1 customer (only Cust A qualifies)'
 );
@@ -133,7 +133,7 @@ SELECT is(
 -- T_MKT_08 : idempotency — same idempotency_key, same row, no duplicate insert.
 -- ---------------------------------------------------------------------------
 
-SELECT public.notify_birthday_customers_v1();  -- re-run
+SELECT public.notify_birthday_customers_v2();  -- re-run
 
 SELECT is(
   (SELECT COUNT(*)::INT FROM public.notification_outbox
