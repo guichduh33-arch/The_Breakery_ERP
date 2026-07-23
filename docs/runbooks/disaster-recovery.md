@@ -14,7 +14,7 @@ recovery → post-mortem template**.
 > ⚠️ **Fraîcheur partielle (revu 2026-07-09).** Deux évolutions S62/S65 rendent des passages obsolètes, corrigés ci-dessous :
 > - **`print_queue` a été DROPPÉE (S62, migration `20260710000110`)** et la PWA purgée — le **Scénario 6** est neutralisé (l'impression passe désormais par `apps/print-bridge`, S65).
 > - Les scénarios mentionnant la **persistance PWA / IndexedDB** (Scénario 5 « Hardening ») sont caducs (PWA retirée S62).
-> - La money-path RPC courante est **`complete_order_with_payment_v17`** (pas `complete_order_v9`) — cf. Appendix A.
+> - La money-path RPC courante est **`complete_order_with_payment_v19`** (revu 2026-07-23 — v19 refuse inactifs/parents, ADR-011 déc. 2 ; pas `complete_order_v9`) — cf. Appendix A. **Rappel : toujours vérifier la version live (`pg_get_functiondef`) avant toute manœuvre, les bumps sont fréquents.**
 
 > Quick links
 > - Supabase dashboard: <https://supabase.com/dashboard/project/ikcyvlovptebroadgtvd>
@@ -406,7 +406,7 @@ Action items :
 | Trigger | Threshold | Target |
 |---|---|---|
 | WebSocket close (1006) | >10 events / 5 min | on-call |
-| `complete_order_with_payment_v17` 5xx (via EF `process-payment`) | >3 events / 5 min | on-call |
+| `complete_order_with_payment_v19` 5xx (via EF `process-payment`) | >3 events / 5 min | on-call |
 | `auth-verify-pin` 5xx | >5 events / 5 min | on-call |
 | `je_unbalanced` (custom) | any | on-call + accounting lead |
 | `apps/print-bridge` host unreachable | >2 min | floor manager |
