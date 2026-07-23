@@ -6,7 +6,7 @@
 // longer active) fall under a catch-all "Interior" group — merged into a
 // real "Interior" section if one exists, else rendered as a synthetic group.
 import { useMemo, useState, type JSX } from 'react';
-import { Plus, Pencil, Ban, RotateCcw, Trash2 } from 'lucide-react';
+import { Plus, Pencil, Ban, RotateCcw, Trash2, List, LayoutGrid } from 'lucide-react';
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from '@breakery/ui';
 import type { RestaurantTable, TableSection } from '@breakery/domain';
 import { PageHeader } from '@/components/PageHeader.js';
@@ -15,10 +15,12 @@ import {
   useFloorPlanTables, useTableSections,
   useUpdateTable, useUpdateSection,
   useDeleteTable, useDeleteSection,
+  useSetTablePosition,
   mapFloorPlanError,
 } from '@/features/floor-plan/hooks/useFloorPlanAdmin.js';
 import { TableFormDialog } from '@/features/floor-plan/components/TableFormDialog.js';
 import { SectionFormDialog } from '@/features/floor-plan/components/SectionFormDialog.js';
+import { SectionGridEditor } from '@/features/floor-plan/components/SectionGridEditor.js';
 
 const INTERIOR_FALLBACK_KEY = '__interior_fallback__';
 const INTERIOR_LABEL = 'Interior';
@@ -80,7 +82,10 @@ export default function SettingsFloorPlanPage(): JSX.Element {
   const updateSection = useUpdateSection();
   const deleteTable = useDeleteTable();
   const deleteSection = useDeleteSection();
+  const setPosition = useSetTablePosition();
   const [rowError, setRowError] = useState<string | null>(null);
+  // ADR-006 déc. 9 lot A — vue Plan (drag & drop) à côté de la vue Liste (CRUD).
+  const [view, setView] = useState<'list' | 'plan'>('list');
 
   const [tableDialog, setTableDialog] = useState<{ mode: 'create' | 'edit'; table?: RestaurantTable | undefined } | null>(null);
   const [sectionDialog, setSectionDialog] = useState<{ mode: 'create' | 'edit'; section?: TableSection | undefined } | null>(null);
@@ -126,6 +131,14 @@ export default function SettingsFloorPlanPage(): JSX.Element {
     );
   }
 
+  function handleMoveTable(tableId: string, gridX: number | null, gridY: number | null) {
+    setRowError(null);
+    setPosition.mutate(
+      { id: tableId, grid_x: gridX, grid_y: gridY },
+      { onError: (e) => setRowError(mapFloorPlanError(e.message)) },
+    );
+  }
+
   function handleDeleteSection(section: TableSection) {
     setRowError(null);
     const confirmed = window.confirm(`Delete section "${section.name}"? This removes it from the back office.`);
@@ -145,6 +158,24 @@ export default function SettingsFloorPlanPage(): JSX.Element {
         subtitle="Tables and room sections used by the POS floor plan."
         actions={
           <>
+            <Button
+              variant={view === 'list' ? 'primary' : 'secondary'}
+              onClick={() => setView('list')}
+              aria-pressed={view === 'list'}
+              data-testid="fp-view-list"
+            >
+              <List className="h-4 w-4" aria-hidden />
+              List
+            </Button>
+            <Button
+              variant={view === 'plan' ? 'primary' : 'secondary'}
+              onClick={() => setView('plan')}
+              aria-pressed={view === 'plan'}
+              data-testid="fp-view-plan"
+            >
+              <LayoutGrid className="h-4 w-4" aria-hidden />
+              Plan
+            </Button>
             <Button variant="secondary" onClick={() => setSectionDialog({ mode: 'create' })} disabled={!canUpdate}>
               <Plus className="h-4 w-4" aria-hidden />
               Add section
@@ -219,7 +250,14 @@ export default function SettingsFloorPlanPage(): JSX.Element {
                 )}
               </CardHeader>
               <CardContent>
-                {group.tables.length === 0 ? (
+                {view === 'plan' ? (
+                  <SectionGridEditor
+                    tables={group.tables}
+                    canUpdate={canUpdate}
+                    pending={setPosition.isPending}
+                    onMove={handleMoveTable}
+                  />
+                ) : group.tables.length === 0 ? (
                   <p className="text-sm text-text-secondary">No tables in this section yet.</p>
                 ) : (
                   <ul className="divide-y divide-border-subtle">

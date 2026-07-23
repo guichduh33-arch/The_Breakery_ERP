@@ -21,7 +21,7 @@ export function useRestaurantTables() {
         };
       })
         .from('restaurant_tables')
-        .select('id, name, seats, sort_order, is_active, section_id, table_sections(name, sort_order)')
+        .select('id, name, seats, sort_order, is_active, section_id, grid_x, grid_y, table_sections(name, sort_order)')
         .eq('is_active', true)
         .order('sort_order', { ascending: true });
 

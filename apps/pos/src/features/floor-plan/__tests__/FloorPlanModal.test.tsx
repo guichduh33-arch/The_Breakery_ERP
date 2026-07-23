@@ -10,14 +10,14 @@ import { FloorPlanModal } from '../FloorPlanModal';
 import type { RestaurantTable } from '@breakery/domain';
 
 const TABLES: RestaurantTable[] = [
-  { id: 't1', name: 'T1', seats: 2, sort_order: 1, is_active: true, section_id: null },
-  { id: 't2', name: 'T2', seats: 4, sort_order: 2, is_active: true, section_id: null },
+  { id: 't1', name: 'T1', seats: 2, sort_order: 1, is_active: true, grid_x: null, grid_y: null, section_id: null },
+  { id: 't2', name: 'T2', seats: 4, sort_order: 2, is_active: true, grid_x: null, grid_y: null, section_id: null },
   {
     id: 't100',
     name: 'T100',
     seats: 4,
     sort_order: 100,
-    is_active: true,
+    is_active: true, grid_x: null, grid_y: null,
     section_id: 'sec-terrace',
     table_sections: { name: 'Terrace', sort_order: 100 },
   },

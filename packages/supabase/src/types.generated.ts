@@ -4948,6 +4948,8 @@ export type Database = {
         Row: {
           created_at: string
           deleted_at: string | null
+          grid_x: number | null
+          grid_y: number | null
           id: string
           is_active: boolean
           name: string
@@ -4959,6 +4961,8 @@ export type Database = {
         Insert: {
           created_at?: string
           deleted_at?: string | null
+          grid_x?: number | null
+          grid_y?: number | null
           id?: string
           is_active?: boolean
           name: string
@@ -4970,6 +4974,8 @@ export type Database = {
         Update: {
           created_at?: string
           deleted_at?: string | null
+          grid_x?: number | null
+          grid_y?: number | null
           id?: string
           is_active?: boolean
           name?: string
@@ -6804,6 +6810,8 @@ export type Database = {
         Returns: {
           created_at: string
           deleted_at: string | null
+          grid_x: number | null
+          grid_y: number | null
           id: string
           is_active: boolean
           name: string
@@ -8343,6 +8351,28 @@ export type Database = {
         Args: { p_category: string; p_key: string; p_value: Json }
         Returns: undefined
       }
+      set_table_position_v1: {
+        Args: { p_grid_x: number; p_grid_y: number; p_id: string }
+        Returns: {
+          created_at: string
+          deleted_at: string | null
+          grid_x: number | null
+          grid_y: number | null
+          id: string
+          is_active: boolean
+          name: string
+          seats: number
+          section_id: string | null
+          sort_order: number
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "restaurant_tables"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
       sign_zreport_v2: {
@@ -8479,6 +8509,8 @@ export type Database = {
         Returns: {
           created_at: string
           deleted_at: string | null
+          grid_x: number | null
+          grid_y: number | null
           id: string
           is_active: boolean
           name: string

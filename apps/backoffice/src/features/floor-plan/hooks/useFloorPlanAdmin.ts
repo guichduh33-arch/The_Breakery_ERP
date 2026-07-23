@@ -28,7 +28,7 @@ export function useFloorPlanTables() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('restaurant_tables')
-        .select('id,name,seats,sort_order,is_active,section_id, table_sections(name,sort_order)')
+        .select('id,name,seats,sort_order,is_active,section_id,grid_x,grid_y, table_sections(name,sort_order)')
         .order('sort_order', { ascending: true });
       if (error !== null) throw new Error(error.message);
       return data ?? [];
@@ -117,6 +117,32 @@ export function useDeleteTable() {
   });
 }
 
+// Lot A floor plan visuel (ADR-006 déc. 9) — drag & drop : ne sauve QUE la
+// position (RPC dédiée _216), x/y null = retirer du plan.
+export interface SetTablePositionPayload {
+  id:     string;
+  grid_x: number | null;
+  grid_y: number | null;
+}
+
+export function useSetTablePosition() {
+  const qc = useQueryClient();
+  return useMutation<unknown, Error, SetTablePositionPayload>({
+    mutationFn: async (payload) => {
+      const { data, error } = await supabase.rpc('set_table_position_v1', {
+        p_id: payload.id,
+        // Generated Args are non-nullable but the RPC accepts NULL/NULL
+        // (unplace) at runtime — same caveat as p_section_id above.
+        p_grid_x: payload.grid_x as unknown as number,
+        p_grid_y: payload.grid_y as unknown as number,
+      });
+      if (error !== null) throw new Error(error.message);
+      return data;
+    },
+    onSuccess: async () => { await invalidateFloorPlan(qc); },
+  });
+}
+
 export interface CreateSectionPayload {
   name:       string;
   sort_order: number;
@@ -169,6 +195,9 @@ export function mapFloorPlanError(message: string): string {
   if (message.includes('name_required')) return 'Name is required.';
   if (message.includes('invalid_seats')) return 'Seats must be between 1 and 20.';
   if (message.includes('section_not_found')) return 'That section no longer exists.';
+  if (message.includes('cell_occupied')) return 'Another table already sits on that cell.';
+  if (message.includes('invalid_position')) return 'Position is outside the floor grid.';
+  if (message.includes('table_not_found')) return 'That table no longer exists.';
   return message;
 }
 
