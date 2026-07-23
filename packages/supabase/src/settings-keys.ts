@@ -1,5 +1,5 @@
 // S73 Phase 3 — single typed dictionary of business_config setting keys and
-// symbolic categories (server truth: set_setting_v6 / get_settings_by_category_v4,
+// symbolic categories (server truth: set_setting_v7 / get_settings_by_category_v5,
 // migrations 20260711000159 + 20260716000168 + 20260718000195 + 20260721000197).
 // Add a key here ONLY together with its RPC branch.
 export const SETTINGS_CATEGORIES = [
@@ -19,7 +19,9 @@ export const SETTING_KEYS = {
                      'shift_denomination_count_enabled'],
   pos_presets:      ['pos_quick_payment_amounts', 'pos_opening_cash_presets', 'pos_discount_presets'],
   inventory:        ['allow_negative_stock'],
-  payments:         ['enabled_payment_methods'],
+  // Lot C (ADR-006 déc. 9) : payment_method_fees — % de frais informatifs par
+  // méthode ({"qris": 0.7, ...}), migration 20260723000213. Aucun JE automatique.
+  payments:         ['enabled_payment_methods', 'payment_method_fees'],
   customer_display: ['display_footer_message', 'display_slogan'],
   // Chantier KOT copies (2026-07-18): paper kitchen-ticket copies per station
   // at fire time; 0 = no paper for that station (KDS screen still receives).
