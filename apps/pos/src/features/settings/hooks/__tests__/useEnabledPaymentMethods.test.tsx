@@ -54,6 +54,17 @@ describe('useEnabledPaymentMethods', () => {
     expect(result.current.has('card')).toBe(false);
   });
 
+  // ADR-006 déc. 9 lot A — the config array order is contractual (POS display
+  // order) and must survive as the Set's insertion order.
+  it('preserves the configured order in the returned Set', async () => {
+    mockBusinessConfig({ data: { enabled_payment_methods: ['qris', 'store_credit', 'cash'] }, error: null });
+
+    const { result } = renderHook(() => useEnabledPaymentMethods(), { wrapper });
+    await waitFor(() => expect(result.current.size).toBe(3));
+
+    expect([...result.current]).toEqual(['qris', 'store_credit', 'cash']);
+  });
+
   it('fails open to the 6 methods on a supabase error', async () => {
     mockBusinessConfig({ data: null, error: { message: 'permission denied' } });
 

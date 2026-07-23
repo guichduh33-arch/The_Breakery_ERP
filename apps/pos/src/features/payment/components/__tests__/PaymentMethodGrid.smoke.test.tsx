@@ -47,6 +47,17 @@ describe('PaymentMethodGrid', () => {
     expect(label?.className).not.toContain('text-xs');
   });
 
+  // ADR-006 déc. 9 lot A — the BO-configured order (Set insertion order)
+  // drives the tile order, not the METHODS constant.
+  it('renders tiles in the enabled-set order', () => {
+    enabledMock.current = new Set<PaymentMethod>(['qris', 'cash', 'card']);
+    render(<PaymentMethodGrid selectedMethod={null} onSelect={vi.fn()} />, { wrapper });
+    const tiles = screen.getAllByTestId(/^pay-method-/);
+    expect(tiles.map((t) => t.getAttribute('data-testid'))).toEqual([
+      'pay-method-qris', 'pay-method-cash', 'pay-method-card',
+    ]);
+  });
+
   // S64 (fiche 19 D2.1) — the grid must only render BO-enabled methods.
   it('hides disabled methods and keeps enabled ones (S64)', () => {
     enabledMock.current = new Set<PaymentMethod>(['cash', 'card']);

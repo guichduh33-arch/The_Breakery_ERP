@@ -51,6 +51,36 @@ describe('SettingsPaymentMethodsPage', () => {
     expect(screen.getByRole('button', { name: /enregistrer/i })).toBeDisabled();
   });
 
+  // ADR-006 déc. 9 lot A — the array order IS the POS display order.
+  it('reordering with the arrows marks dirty and saves the new order', async () => {
+    rpcCalls.length = 0;
+    render(wrap(<SettingsPaymentMethodsPage />));
+    await waitFor(() => screen.getByTestId('pm-row-cash'));
+
+    // ['cash', 'card'] → move cash down → ['card', 'cash']
+    fireEvent.click(screen.getByTestId('pm-down-cash'));
+    fireEvent.click(screen.getByRole('button', { name: /enregistrer/i }));
+
+    await waitFor(() =>
+      expect(rpcCalls.some((c) => c.fn === 'set_setting_v5')).toBe(true));
+    const call = rpcCalls.find((c) => c.fn === 'set_setting_v5');
+    expect(call?.args).toEqual({
+      p_key: 'enabled_payment_methods',
+      p_value: ['card', 'cash'],
+      p_category: 'payments',
+    });
+  });
+
+  it('renders enabled methods in the configured order, disabled ones below', async () => {
+    render(wrap(<SettingsPaymentMethodsPage />));
+    await waitFor(() => screen.getByTestId('pm-row-cash'));
+
+    const rows = screen.getAllByTestId(/^pm-row-/);
+    expect(rows.map((r) => r.getAttribute('data-testid'))).toEqual(['pm-row-cash', 'pm-row-card']);
+    // Disabled methods have no reorder arrows.
+    expect(screen.queryByTestId('pm-up-qris')).not.toBeInTheDocument();
+  });
+
   it('calls set_setting_v5 with the remaining methods on save', async () => {
     rpcCalls.length = 0;
     render(wrap(<SettingsPaymentMethodsPage />));
