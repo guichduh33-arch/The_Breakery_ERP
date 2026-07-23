@@ -93,6 +93,7 @@ const SettingsNotificationsPage = lazy(() => import('@/pages/settings/SettingsNo
 const SettingsReceiptTemplatesPage = lazy(() => import('@/pages/settings/SettingsReceiptTemplatesPage.js'));
 const SettingsPermissionsPage = lazy(() => import('@/pages/settings/SettingsPermissionsPage.js'));
 const SecuritySettingsPage = lazy(() => import('@/pages/settings/security/SecuritySettingsPage.js'));
+const SettingsHistoryPage = lazy(() => import('@/pages/settings/SettingsHistoryPage.js'));
 const LanDevicesPage = lazy(() => import('@/pages/lan-devices/LanDevicesPage.js'));
 const CohortReportPage = lazy(() => import('@/pages/marketing/CohortReportPage.js'));
 const SegmentsPage = lazy(() => import('@/pages/marketing/SegmentsPage.js'));
@@ -148,6 +149,19 @@ function PermissionGate({
     if (!has) toast.error("Accès refusé : vous n'avez pas la permission requise pour cette page.");
   }, [has]);
   return has ? <>{children}</> : <Navigate to="/backoffice" replace />;
+}
+
+// Settings History (ADR-006 déc. 9) is admin-only STRICT — role-gated, not
+// permission-gated: `reports.audit.read` also covers MANAGER, but audit_logs'
+// admin_read RLS only serves ADMIN/SUPER_ADMIN, so anyone else would land on
+// a page that can never show data. Hide the surface for them instead.
+function AdminGate({ children }: { children: React.ReactNode }) {
+  const roleCode = useAuthStore((s) => s.user?.role_code);
+  const isAdmin = roleCode === 'ADMIN' || roleCode === 'SUPER_ADMIN';
+  useEffect(() => {
+    if (!isAdmin) toast.error("Accès refusé : cette page est réservée aux administrateurs.");
+  }, [isAdmin]);
+  return isAdmin ? <>{children}</> : <Navigate to="/backoffice" replace />;
 }
 
 export function AppRoutes() {
@@ -995,6 +1009,14 @@ export function AppRoutes() {
             <PermissionGate required="settings.security.manage">
               <SecuritySettingsPage />
             </PermissionGate>
+          }
+        />
+        <Route
+          path="settings/history"
+          element={
+            <AdminGate>
+              <SettingsHistoryPage />
+            </AdminGate>
           }
         />
         <Route

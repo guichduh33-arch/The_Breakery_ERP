@@ -31,6 +31,7 @@ interface SettingTile {
   to?:         string;         // omitted + planned=false → should no longer exist
   planned?:    boolean;        // true = surface actively deferred to a dedicated session
   permission?: PermissionCode; // hides the tile if the user lacks the route's permission
+  adminOnly?:  boolean;        // hides the tile for non-ADMIN/SUPER_ADMIN (role, not permission)
   title:  string;
   blurb:  string;
   icon:   LucideIcon;
@@ -94,7 +95,9 @@ const SECTIONS: SettingSection[] = [
     tiles: [
       { to: '/backoffice/settings/security', title: 'Session Timeouts', blurb: 'Per-role session timeout.', icon: ShieldCheck, permission: 'settings.security.manage' },
       { to: '/backoffice/settings/permissions', title: 'Roles & Permissions', blurb: 'View the role/permission matrix.', icon: ShieldCheck },
-      { to: '/backoffice/reports/audit?action=setting.update', title: 'Settings History', blurb: 'Audit trail of every setting change.', icon: History },
+      // Admin-only strict (role, not permission): audit_logs' admin_read RLS
+      // only serves ADMIN/SUPER_ADMIN — don't show the tile to anyone else.
+      { to: '/backoffice/settings/history', adminOnly: true, title: 'Settings History', blurb: 'Audit trail of every setting change.', icon: History },
     ],
   },
   {
@@ -108,6 +111,8 @@ const SECTIONS: SettingSection[] = [
 
 export default function SettingsHubPage() {
   const hasPermission = useAuthStore((s) => s.hasPermission);
+  const roleCode = useAuthStore((s) => s.user?.role_code);
+  const isAdmin = roleCode === 'ADMIN' || roleCode === 'SUPER_ADMIN';
 
   return (
     <div className="space-y-8">
@@ -122,6 +127,7 @@ export default function SettingsHubPage() {
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {section.tiles.map((t) => {
               if (t.permission !== undefined && !hasPermission(t.permission)) return null;
+              if (t.adminOnly === true && !isAdmin) return null;
               const Icon = t.icon;
               const cardInner = (
                 <Card className={`h-full ${t.to !== undefined ? 'hover:bg-bg-overlay transition-colors' : 'opacity-60'}`}>
