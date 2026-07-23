@@ -16,10 +16,11 @@ import { MemoryRouter } from 'react-router-dom';
 import SettingsHubPage from '@/pages/settings/SettingsHubPage.js';
 
 let currentPerms = new Set<string>(['settings.security.manage', 'accounting.period.close', 'expenses.thresholds.read', 'tables.update']);
+let currentRole = 'ADMIN';
 
 vi.mock('@/stores/authStore.js', () => ({
-  useAuthStore: (sel: (s: { hasPermission: (p: string) => boolean }) => unknown) =>
-    sel({ hasPermission: (p: string) => currentPerms.has(p) }),
+  useAuthStore: (sel: (s: { hasPermission: (p: string) => boolean; user: { role_code: string } }) => unknown) =>
+    sel({ hasPermission: (p: string) => currentPerms.has(p), user: { role_code: currentRole } }),
 }));
 
 function renderPage() {
@@ -34,6 +35,7 @@ describe('SettingsHubPage', () => {
   beforeEach(() => {
     cleanup();
     currentPerms = new Set(['settings.security.manage', 'accounting.period.close', 'expenses.thresholds.read', 'tables.update']);
+    currentRole = 'ADMIN';
   });
 
   it('renders the Settings title with subtitle from the screenshot', () => {
@@ -102,7 +104,20 @@ describe('SettingsHubPage', () => {
     renderPage();
     expect(screen.getByText(/^POS Configuration$/i).closest('a')?.getAttribute('href')).toBe('/backoffice/settings/pos');
     expect(screen.getByText(/^Notifications$/i).closest('a')?.getAttribute('href')).toBe('/backoffice/settings/notifications');
-    expect(screen.getByText(/^Settings History$/i).closest('a')?.getAttribute('href')).toBe('/backoffice/reports/audit?action=setting.update');
+    // ADR-006 déc. 9 — dedicated page, no longer the pre-filtered AuditPage deep-link.
+    expect(screen.getByText(/^Settings History$/i).closest('a')?.getAttribute('href')).toBe('/backoffice/settings/history');
+  });
+
+  it('hides the Settings History tile for non-admin roles (admin-only strict)', () => {
+    currentRole = 'MANAGER';
+    renderPage();
+    expect(screen.queryByText(/^Settings History$/i)).not.toBeInTheDocument();
+  });
+
+  it('shows the Settings History tile for SUPER_ADMIN', () => {
+    currentRole = 'SUPER_ADMIN';
+    renderPage();
+    expect(screen.getByText(/^Settings History$/i)).toBeInTheDocument();
   });
 
   it('hides the Session Timeouts tile when the user lacks settings.security.manage', () => {
