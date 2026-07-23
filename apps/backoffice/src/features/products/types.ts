@@ -37,6 +37,11 @@ export interface ProductRow extends Product {
   // POS display-stock isolation (Wave 6) — when true, the product is sold off
   // a separate "vitrine" counter (display_stock), not the BO global inventory.
   is_display_item: boolean;
+  // ADR-007 déc. 6 — test-data flag (excluded from reports). NOT in the
+  // update_product allowlist : written only via set_product_is_test_v1
+  // (gate products.test_flag.update, ADMIN+). Optional : seul le hook
+  // détail (useProductDetail) le sélectionne, pas les hooks de liste.
+  is_test?: boolean;
   // Session 27c — variant grouping (parent / variant / standalone).
   // `parent_product_id` is null on parents and standalones, set on variants.
   // `variant_label`, `variant_axis`, `variant_sort_order` are null on

@@ -13,8 +13,10 @@
 import { ShoppingCart, Sparkles, TrendingUp } from 'lucide-react';
 import { useEffect, useState, type JSX } from 'react';
 import { Card, Currency, Input, SectionLabel, Select } from '@breakery/ui';
+import { useAuthStore } from '@/stores/authStore.js';
 import type { CategoryOption, ProductRow } from '../types.js';
 import { ProductImageUploader } from './ProductImageUploader.js';
+import { useSetProductTestFlag } from '../hooks/useSetProductTestFlag.js';
 
 interface Props {
   product: ProductRow;
@@ -33,6 +35,11 @@ interface Props {
 
 export function GeneralPanel({ product, categories, readOnly = true, onChange, displayStockQty }: Props): JSX.Element {
   const [draft, setDraft] = useState<ProductRow>(product);
+  // ADR-007 déc. 6 — le flag is_test s'écrit IMMÉDIATEMENT via sa RPC dédiée
+  // (hors draft/Save : hors allowlist update_product_v2). ADMIN+ uniquement.
+  // Le hook de mutation vit dans TestFlagToggle, monté seulement avec la
+  // permission (les smokes rendent GeneralPanel sans QueryClientProvider).
+  const canSetTestFlag = useAuthStore((s) => s.hasPermission('products.test_flag.update'));
 
   // Re-sync draft when the saved product changes (post-mutation refetch).
   useEffect(() => {
@@ -212,6 +219,9 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
               disabled={readOnly}
               onChange={(v) => update('is_display_item', v)}
             />
+            {canSetTestFlag && (
+              <TestFlagToggle productId={product.id} isTest={product.is_test ?? false} />
+            )}
             {draft.is_display_item === true && (displayStockQty ?? 0) <= 0 && (
               <div
                 role="alert"
@@ -299,6 +309,29 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
         </Card>
       </div>
     </div>
+  );
+}
+
+// ADR-007 déc. 6 — écriture immédiate du flag test via set_product_is_test_v1.
+// Composant séparé pour que le hook de mutation ne s'exécute qu'avec la
+// permission products.test_flag.update (ADMIN+).
+function TestFlagToggle({ productId, isTest }: { productId: string; isTest: boolean }): JSX.Element {
+  const setTestFlag = useSetProductTestFlag();
+  return (
+    <>
+      <ToggleRow
+        label="Test product"
+        sub="Exclu des rapports — écrit immédiatement (ADMIN+, ADR-007 déc. 6)"
+        enabled={isTest}
+        disabled={setTestFlag.isPending}
+        onChange={(v) => setTestFlag.mutate({ productId, isTest: v })}
+      />
+      {setTestFlag.error !== null && (
+        <div role="alert" data-testid="test-flag-error" className="rounded-md border border-red bg-red-soft px-3 py-2 text-xs text-red">
+          Échec du changement de flag test : {setTestFlag.error.message}
+        </div>
+      )}
+    </>
   );
 }
 
