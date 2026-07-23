@@ -6914,6 +6914,7 @@ export type Database = {
         Args: { p_reason: string; p_user_id: string }
         Returns: Json
       }
+      delete_section_v1: { Args: { p_section_id: string }; Returns: Json }
       delete_variant_v1: { Args: { p_variant_id: string }; Returns: string }
       diag:
         | {
@@ -8537,6 +8538,7 @@ export type Database = {
         Args: { p_combo: Json; p_idempotency_key?: string }
         Returns: Json
       }
+      upsert_section_v1: { Args: { p_payload: Json }; Returns: Json }
       upsert_customer_product_price_v1: {
         Args: { p_customer_id: string; p_price: number; p_product_id: string }
         Returns: {
