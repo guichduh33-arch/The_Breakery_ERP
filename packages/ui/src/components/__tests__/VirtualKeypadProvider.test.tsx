@@ -42,7 +42,7 @@ describe('VirtualKeypadProvider', () => {
 
   it('typing a key writes into the focused input', () => {
     render(<Harness />);
-    const input = screen.getByLabelText('name') as HTMLInputElement;
+    const input = screen.getByLabelText<HTMLInputElement>('name');
     fireEvent.focus(input);
     fireEvent.click(screen.getByRole('button', { name: 'q' }));
     expect(input.value).toBe('q');

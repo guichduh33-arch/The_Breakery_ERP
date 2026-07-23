@@ -39,9 +39,9 @@ export function RefundReceiptModal({
   return (
     <FullScreenModal open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
       <div className="flex flex-col items-center justify-center min-h-screen bg-bg-base">
-        <div className="flex flex-col items-center gap-4 rounded-lg border border-red-400/30 bg-bg-elevated px-12 py-10">
-          <div className="rounded-full bg-red-500/10 p-3">
-            <CheckCircle2 className="h-12 w-12 text-red-400" aria-hidden />
+        <div className="flex flex-col items-center gap-4 rounded-lg border border-danger-soft bg-bg-elevated px-12 py-10">
+          <div className="rounded-full bg-danger-soft p-3">
+            <CheckCircle2 className="h-12 w-12 text-danger" aria-hidden />
           </div>
           <div className="text-xs uppercase tracking-widest text-text-secondary">
             {isFullVoid ? 'Order Voided' : 'Refund Issued'}

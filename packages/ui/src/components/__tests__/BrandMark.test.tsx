@@ -13,10 +13,10 @@ describe('BrandMark', () => {
   });
 
   it('renders all 4 sizes with correct dimensions', () => {
-    const cases: Array<[
+    const cases: [
       'sm' | 'md' | 'lg' | 'xl',
       number,
-    ]> = [['sm', 32], ['md', 40], ['lg', 64], ['xl', 96]];
+    ][] = [['sm', 32], ['md', 40], ['lg', 64], ['xl', 96]];
     for (const [size, px] of cases) {
       const { unmount } = render(<BrandMark size={size} />);
       const el = screen.getByRole('img', { name: 'The Breakery' });

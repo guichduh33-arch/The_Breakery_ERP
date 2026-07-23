@@ -32,9 +32,9 @@ export function PromotionLineRow({ applied, className }: PromotionLineRowProps):
     >
       <span className="truncate pr-2">{applied.name}</span>
       {isGift ? (
-        <span className="font-mono text-rose-300">free gift</span>
+        <span className="font-mono text-danger">free gift</span>
       ) : (
-        <span className="font-mono text-red-400">
+        <span className="font-mono text-danger">
           -<Currency amount={applied.amount} />
         </span>
       )}

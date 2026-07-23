@@ -58,7 +58,7 @@ interface KeyDef {
   className?: string;
 }
 
-const DIGIT_ROWS: ReadonlyArray<ReadonlyArray<KeyDef>> = [
+const DIGIT_ROWS: readonly (readonly KeyDef[])[] = [
   [
     { label: '1', type: 'digit' },
     { label: '2', type: 'digit' },
