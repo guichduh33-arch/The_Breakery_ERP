@@ -1,5 +1,8 @@
 // packages/domain/src/types/payment.ts
-export type PaymentMethod = 'cash' | 'card' | 'qris' | 'edc' | 'transfer' | 'store_credit';
+// gopay/ovo/dana : e-wallets individuels (ADR-006 déc. 9 lot B, migration _207) —
+// settlement identique au QRIS (mapping comptable + bucket de réconciliation).
+export type PaymentMethod =
+  'cash' | 'card' | 'qris' | 'edc' | 'transfer' | 'store_credit' | 'gopay' | 'ovo' | 'dana';
 
 export interface PaymentInput {
   method: PaymentMethod;

@@ -1,6 +1,6 @@
 // apps/pos/src/features/payment/components/paymentMethods.ts
 import {
-  ArrowRightLeft, Banknote, CreditCard, QrCode, Smartphone, Wallet,
+  ArrowRightLeft, Banknote, CircleDollarSign, CreditCard, QrCode, Smartphone, Wallet,
 } from 'lucide-react';
 import type { LucideProps } from 'lucide-react';
 import type { ForwardRefExoticComponent, RefAttributes } from 'react';
@@ -23,6 +23,10 @@ export const METHODS: MethodMeta[] = [
   { value: 'edc',          label: 'EDC',          icon: Smartphone },
   { value: 'transfer',     label: 'Transfer',     icon: ArrowRightLeft },
   { value: 'store_credit', label: 'Store Credit', icon: Wallet },
+  // Lot B (ADR-006 déc. 9) — e-wallets individuels, settlement type QRIS.
+  { value: 'gopay',        label: 'GoPay',        icon: CircleDollarSign },
+  { value: 'ovo',          label: 'OVO',          icon: CircleDollarSign },
+  { value: 'dana',         label: 'DANA',         icon: CircleDollarSign },
 ];
 
 // ADR-006 déc. 9 (payment methods enrichis, lot A) — the BO-configured order

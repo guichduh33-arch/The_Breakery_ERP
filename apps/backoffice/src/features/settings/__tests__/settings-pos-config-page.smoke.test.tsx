@@ -27,7 +27,7 @@ vi.mock('@/lib/supabase.js', () => ({
           error: null,
         });
       }
-      return Promise.resolve({ data: null, error: null }); // set_setting_v5
+      return Promise.resolve({ data: null, error: null }); // set_setting_v6
     },
   },
 }));
@@ -63,7 +63,7 @@ describe('SettingsPosConfigPage', () => {
     expect(screen.queryAllByLabelText(/remove/i)).toHaveLength(0);
   });
 
-  it('calls set_setting_v5 with category pos_presets on save', async () => {
+  it('calls set_setting_v6 with category pos_presets on save', async () => {
     canUpdate = true;
     rpcCalls.length = 0;
     render(wrap(<SettingsPosConfigPage />));
@@ -75,9 +75,9 @@ describe('SettingsPosConfigPage', () => {
       fireEvent.click(addButtons[0]!);
     }
 
-    await waitFor(() => expect(rpcCalls.some((c) => c.fn === 'set_setting_v5')).toBe(true));
+    await waitFor(() => expect(rpcCalls.some((c) => c.fn === 'set_setting_v6')).toBe(true));
 
-    const call = rpcCalls.find((c) => c.fn === 'set_setting_v5');
+    const call = rpcCalls.find((c) => c.fn === 'set_setting_v6');
     expect(call?.args).toEqual({
       p_key: 'pos_quick_payment_amounts',
       p_value: [50000, 100000, 200000, 300000],

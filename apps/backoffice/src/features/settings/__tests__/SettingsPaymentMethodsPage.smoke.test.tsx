@@ -14,7 +14,7 @@ vi.mock('@/lib/supabase.js', () => ({
           error: null,
         });
       }
-      return Promise.resolve({ data: null, error: null }); // set_setting_v5
+      return Promise.resolve({ data: null, error: null }); // set_setting_v6
     },
   },
 }));
@@ -62,8 +62,8 @@ describe('SettingsPaymentMethodsPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /enregistrer/i }));
 
     await waitFor(() =>
-      expect(rpcCalls.some((c) => c.fn === 'set_setting_v5')).toBe(true));
-    const call = rpcCalls.find((c) => c.fn === 'set_setting_v5');
+      expect(rpcCalls.some((c) => c.fn === 'set_setting_v6')).toBe(true));
+    const call = rpcCalls.find((c) => c.fn === 'set_setting_v6');
     expect(call?.args).toEqual({
       p_key: 'enabled_payment_methods',
       p_value: ['card', 'cash'],
@@ -81,7 +81,7 @@ describe('SettingsPaymentMethodsPage', () => {
     expect(screen.queryByTestId('pm-up-qris')).not.toBeInTheDocument();
   });
 
-  it('calls set_setting_v5 with the remaining methods on save', async () => {
+  it('calls set_setting_v6 with the remaining methods on save', async () => {
     rpcCalls.length = 0;
     render(wrap(<SettingsPaymentMethodsPage />));
     await waitFor(() => screen.getByLabelText(/^cash$/i));
@@ -90,9 +90,9 @@ describe('SettingsPaymentMethodsPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /enregistrer/i }));
 
     await waitFor(() =>
-      expect(rpcCalls.some((c) => c.fn === 'set_setting_v5')).toBe(true));
+      expect(rpcCalls.some((c) => c.fn === 'set_setting_v6')).toBe(true));
 
-    const call = rpcCalls.find((c) => c.fn === 'set_setting_v5');
+    const call = rpcCalls.find((c) => c.fn === 'set_setting_v6');
     expect(call?.args).toEqual({
       p_key: 'enabled_payment_methods',
       p_value: ['cash'],

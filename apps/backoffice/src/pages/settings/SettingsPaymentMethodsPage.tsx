@@ -1,6 +1,6 @@
 // apps/backoffice/src/pages/settings/SettingsPaymentMethodsPage.tsx
 // S64 (fiche 19 D2.1) — active/désactive les moyens de paiement présentés au POS.
-// Écrit business_config.enabled_payment_methods via set_setting_v5 (audité old/new).
+// Écrit business_config.enabled_payment_methods via set_setting_v6 (audité old/new).
 //
 // ADR-006 déc. 9 (lot A) — l'ORDRE de l'array est désormais contractuel : c'est
 // l'ordre d'affichage des grilles POS. Flèches monter/descendre sur les méthodes
@@ -20,6 +20,11 @@ const ALL_METHODS = [
   { value: 'edc',          label: 'EDC' },
   { value: 'transfer',     label: 'Transfer' },
   { value: 'store_credit', label: 'Store Credit' },
+  // Lot B (ADR-006 déc. 9) — e-wallets individuels, settlement type QRIS
+  // (mapping comptable + bucket de réconciliation shift).
+  { value: 'gopay',        label: 'GoPay' },
+  { value: 'ovo',          label: 'OVO' },
+  { value: 'dana',         label: 'DANA' },
 ] as const;
 
 const LABELS = new Map<string, string>(ALL_METHODS.map((m) => [m.value, m.label]));

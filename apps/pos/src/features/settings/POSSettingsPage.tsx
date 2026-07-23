@@ -4,7 +4,7 @@
 //
 // Reviewer follow-up #18 — preset groups now persist via the
 // pos_presets symbolic category on get_settings_by_category_v4 /
-// set_setting_v5 (see usePOSPresets hook + migrations
+// set_setting_v6 (see usePOSPresets hook + migrations
 // 20260518000002 / 20260518000003).
 //
 // Visual ref: 88-…-modal.jpg (note: the screenshot is mis-named — it is

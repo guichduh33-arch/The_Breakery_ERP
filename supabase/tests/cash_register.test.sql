@@ -7,7 +7,7 @@
 --
 -- T_SHIFT_01: pos_sessions has cash_in_total/cash_out_total/variance_total/closing_notes columns
 -- T_SHIFT_02: cash_movements table exists
--- T_SHIFT_03: record_cash_movement_v2 + close_shift_v7 functions exist
+-- T_SHIFT_03: record_cash_movement_v2 + close_shift_v8 functions exist
 -- T_SHIFT_04: shift close with zero variance emits NO JE
 -- T_SHIFT_05: shift close with positive variance (over) emits balanced JE via mappings
 -- T_SHIFT_06: shift close with negative variance (short) emits balanced JE via mappings
@@ -33,9 +33,9 @@ SELECT has_table('public', 'cash_movements', 'T_SHIFT_02: cash_movements table e
 SELECT has_function('public', 'record_cash_movement_v2',
   ARRAY['uuid','text','numeric','text','uuid','text'],
   'T_SHIFT_03a: record_cash_movement_v2');
-SELECT has_function('public', 'close_shift_v7',
+SELECT has_function('public', 'close_shift_v8',
   ARRAY['uuid','numeric','text','uuid','uuid','text','numeric','numeric','jsonb'],
-  'T_SHIFT_03b: close_shift_v7');
+  'T_SHIFT_03b: close_shift_v8');
 
 -- T_SHIFT_08
 SELECT has_column('public', 'business_config', 'shift_variance_threshold_pct',
