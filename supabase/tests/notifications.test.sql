@@ -5,7 +5,7 @@
 --   T_NOTIF_01 : schema (tables, columns, indexes, triggers)
 --   T_NOTIF_02 : 6 seed templates are present + active
 --   T_NOTIF_03 : RLS enabled on notification_templates + notification_outbox
---   T_NOTIF_04 : enqueue_notification_v1 happy path — row inserted, subject/body
+--   T_NOTIF_04 : enqueue_notification_v2 happy path — row inserted, subject/body
 --                composed, status='queued'
 --   T_NOTIF_05 : idempotency replay returns same id
 --   T_NOTIF_06 : missing template raises P0002
@@ -89,7 +89,7 @@ DECLARE
   v_id     UUID;
   v_row    notification_outbox%ROWTYPE;
 BEGIN
-  v_id := enqueue_notification_v1(
+  v_id := enqueue_notification_v2(
     'order_complete',
     'pgtap@example.com',
     '{"order_number":"ORD-PGT-01","customer_name":"PgTap Tester","total":"42000"}'::jsonb,
@@ -129,13 +129,13 @@ DECLARE
   v_id1 UUID;
   v_id2 UUID;
 BEGIN
-  v_id1 := enqueue_notification_v1(
+  v_id1 := enqueue_notification_v2(
     'payment_received',
     'idem@example.com',
     '{"order_number":"ORD-IDEM","customer_name":"X","amount":"1000","payment_method":"cash"}'::jsonb,
     NULL, NULL, v_key
   );
-  v_id2 := enqueue_notification_v1(
+  v_id2 := enqueue_notification_v2(
     'payment_received',
     'idem@example.com',
     '{"order_number":"ORD-IDEM","customer_name":"X","amount":"1000","payment_method":"cash"}'::jsonb,
@@ -163,7 +163,7 @@ SELECT is(
 -- ---------------------------------------------------------------------------
 
 SELECT throws_ok(
-  $$ SELECT enqueue_notification_v1('does_not_exist','x@y.z','{}'::jsonb,NULL,NULL,NULL) $$,
+  $$ SELECT enqueue_notification_v2('does_not_exist','x@y.z','{}'::jsonb,NULL,NULL,NULL) $$,
   'P0002',
   NULL,
   'T_NOTIF_06 missing template raises P0002'
