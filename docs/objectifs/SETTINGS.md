@@ -1,15 +1,27 @@
 # Module Settings — Objectif métier
 
-> **Version** : 2026-07-21 (rév. 5) — §6.C : chantier **hub LAN** (ADR-006
-> déc. 5, spec `006x-hub-lan.md` actée le 2026-07-19, PR #241) livré en
-> **lots 1 → 4** (PR #242, #245, #246, #248) : hub WS dans le print-bridge +
-> presence, heartbeat batch via le hub, KDS/display offline sur le bus,
-> outbox durable + cash différé + replay idempotent (arbitrages A4/A5),
-> nouvelle catégorie `network` (migrations _197/_198, `set_setting_v5` /
-> `get_settings_by_category_v4` / `pay_existing_order_v13`). Validation
-> boutique : mode offline, fire `L-x`, replay et idempotence vérifiés ;
-> l'encaissement cash hors-ligne complet reste à exercer. Reste le lot 5
-> (durcissement).
+> **Version** : 2026-07-24 (rév. 6) — **§6.C soldé côté code.** Depuis la rév. 5 :
+> hub LAN **lot 5** durcissement (PR #252 : chaos tests, mesure du rattrapage,
+> SPA POS servie en LAN — spec 006x §7.5 + §4.1) + nightly pgTAP réparée
+> (PR #254, #267) ; vue **Settings History** admin-only (PR #268,
+> `/settings/history` — filtre dédié d'`audit_logs`) ; **payment methods
+> enrichis** en 3 lots (ordre d'affichage #270 ; e-wallets GoPay/OVO/DANA +
+> settlement QRIS #271 — `close_shift_v8`, `retry_sale_je_v3` ; frais
+> informatifs par méthode + colonnes e-wallets du rapport Payments #272 —
+> `payment_method_fees`, `get_payments_by_method_v3`) ; **floor plan visuel**
+> (éditeur drag & drop grille 12×8 BO #273 — migration _216,
+> `set_table_position_v1` ; rendu positionné POS + tablette #274) ;
+> **business hours** + rapport Off-Hours Sales (PR #275 — migrations
+> _217-_219, `get_off_hours_sales_v1`, page `/settings/business-hours`) ;
+> **politique PIN configurable** (PR #276 — migration _220, catégorie
+> `security`, EF `auth-verify-pin` v14, page Security). Socle courant :
+> `set_setting_v9` / `get_settings_by_category_v7`. Restent hors-code :
+> validation boutique de l'encaissement cash hors-ligne (toggle défaut OFF),
+> `RESEND_API_KEY` console, `HUB_TOKEN` prod, runbook hub à commiter.
+> Rév. 5 (2026-07-21) : hub LAN lots 1 → 4 (PR #242, #245, #246, #248) —
+> hub WS print-bridge + presence, heartbeat batch, KDS/display offline sur le
+> bus, outbox durable + cash différé + replay idempotent (A4/A5), catégorie
+> `network` (migrations _197/_198) ; validation boutique offline/fire/replay OK.
 > Rév. 4 (2026-07-18) : sous-menus du hub (PR #237, ADR-006 déc. 8) ;
 > « toggles workflow cuisine » (déc. 9) soldé en périmètre réduit : lock des
 > items envoyés couvert par ADR-010 (PR #235), copies KOT par station par la
@@ -43,15 +55,18 @@ par personne est un réglage mort — c'est le critère n°1 de ce document.
 
 ### 2.1 Architecture livrée — saine
 
-- Socle unique : table `business_config` partitionnée en **11 catégories**
+- Socle unique : table `business_config` partitionnée en **12 catégories**
   (`business`, `localization`, `tax`, `pos`, `pos_presets`, `inventory`, `payments`,
-  `customer_display`, `printing`, `kds`, `network`), dictionnaire typé
+  `customer_display`, `printing`, `kds`, `network`, `security`), dictionnaire typé
   `packages/supabase/src/settings-keys.ts`.
-- Lecture `get_settings_by_category_v4`, écriture `set_setting_v5` (validation par
+- Lecture `get_settings_by_category_v7`, écriture `set_setting_v9` (validation par
   clé, **audit-log automatique** dans `audit_logs` : qui/quoi/quand/ancienne/nouvelle
-  valeur). Versions antérieures droppées (versioning monotone) — la v4→v5 ajoute
-  les clés `network` (migration _197, PR #248), la v3→v4 les clés `kot_copies_*`
-  (PR #239), la v2→v3 le gate de bascule `tax_inclusive` (Lot 6b).
+  valeur). Versions antérieures droppées (versioning monotone) — lignée `set_setting` :
+  v5→v6 allowlist e-wallets (#271), v7 `payment_method_fees` (#272), v8
+  `business_hours` (#275), v9 clés `security` PIN (#276) ; côté lecture, la
+  v4→v5/v6/v7 suit les mêmes lots. Historique antérieur : v4→v5 clés `network`
+  (migration _197, PR #248), v3→v4 clés `kot_copies_*` (PR #239), v2→v3 gate de
+  bascule `tax_inclusive` (Lot 6b).
 - Pages hors-socle avec leurs propres tables/RPCs : floor-plan, notifications,
   templates, security, accounting, expense-thresholds, B2B.
 - **Aucun binding mort** : toute RPC/table référencée par l'UI existe en migration.
@@ -66,15 +81,17 @@ par personne est un réglage mort — c'est le critère n°1 de ce document.
 | `/settings/templates/receipt` | `receipt_templates` → impression POS (`SuccessModal`) — Lot 3 |
 | `/settings/templates/email` | `email_templates` → couche HTML (`_shared/email-html`) du chemin d'envoi (`notification-dispatch`) — Lot 4 |
 | `/settings/holidays` | `holidays` → bandeau dashboard (`Dashboard.tsx`) + signal du rapport de ventes (`DailySalesPage.tsx`) — Lot 5 |
-| `/settings/payment-methods` | `enabled_payment_methods` → POS |
+| `/settings/payment-methods` | `enabled_payment_methods` (ordre d'affichage inclus, lot A #270) + e-wallets individuels GoPay/OVO/DANA avec settlement QRIS agrégé au close shift (`close_shift_v8`, lot B #271) + `payment_method_fees` (% informatif par méthode, lot C #272) → grille POS + rapport Payments by Method (`get_payments_by_method_v3` : colonnes e-wallets + frais) |
+| `/settings/business-hours` | `business_hours` (créneau open/close par jour de semaine) → rapport **Off-Hours Sales** (`get_off_hours_sales_v1`, signal fraude vente hors-horaire) — PR #275 |
 | `/settings/customer-display` | footer/slogan → écran client |
 | `/settings/kds` | seuils warning/urgent/auto-archive → KDS (couleurs, alarme, archivage) |
-| `/settings/floor-plan` | CRUD tables + sections (6 RPCs), soft-delete, sections actives/inactives |
+| `/settings/floor-plan` | CRUD tables + sections (6 RPCs), soft-delete, sections actives/inactives ; **éditeur visuel drag & drop** grille 12×8 (`set_table_position_v1`, migration _216, lot A #273) → rendu positionné consommé par le POS (sélection de table) et la tablette (`FloorCanvas`, lot B #274) |
 | `/settings/printing` | auto-print / auto-drawer → `SuccessModal` POS ; **copies KOT par station** (`kot_copies_{kitchen,barista,display}`, [0,5], 0 = station paperless — le KDS écran reçoit toujours) → `useFireToStations` imprime N copies séquentielles au fire (PR #239) ; steppers miroir dans l'onglet Printing du POS |
 | `/settings/pos` | presets paiement / fond de caisse / remises → POS |
 | `/settings/notifications` | templates → `enqueue_notification_v2` → outbox (toggle `is_active` effectif) |
 | `/settings/permissions` | matrice read-only (édition dans `/backoffice/users/permissions`) |
-| `/settings/security` | timeout de session par rôle → `update_role_session_timeout_v1` |
+| `/settings/security` | timeout de session par rôle → `update_role_session_timeout_v1` ; **politique PIN** (`pin_max_failed`, `pin_lockout_minutes`, catégorie `security`) → lockout login lu par l'EF `auth-verify-pin` v14 (PR #276) |
+| `/settings/history` (admin-only) | Vue **Settings History** : filtre dédié d'`audit_logs` sur les changements de settings (PR #268) — aucune table nouvelle |
 | `/settings/accounting` | périodes fiscales, clôture période + clôture annuelle |
 | `/settings/expense-thresholds` | seuils → chaîne d'approbation `submit_expense_v2` |
 | `/b2b/settings` | `get/update_b2b_settings_v1` + table dédiée |
@@ -110,9 +127,10 @@ par personne est un réglage mort — c'est le critère n°1 de ce document.
 ## 3. Les invariants du module (constatés tenus, à préserver)
 
 1. **Sauvegarde explicite** — rien ne s'applique sans clic « Save ».
-2. **Trace systématique** — chaque `set_setting_v5` écrit dans `audit_logs`
+2. **Trace systématique** — chaque `set_setting_v9` écrit dans `audit_logs`
    (ancienne → nouvelle valeur, auteur, horodatage). Pas de table `settings_history`
-   séparée : `audit_logs` est LE journal.
+   séparée : `audit_logs` est LE journal — la vue Settings History (PR #268) n'est
+   qu'un filtre dédié dessus.
 3. **Permissions réelles** : `settings.read` (lecture), `settings.update` (écriture),
    `settings.security.manage`, `notifications.send` (templates notifications),
    `expenses.thresholds.read/write`, `accounting.period.close` / `accounting.year.close`,
@@ -184,14 +202,14 @@ réalignés, page renommée « Session Timeouts ». Le volet PIN reste au backlo
 | Priorité | Réglage | Bénéfice attendu |
 |---|---|---|
 | ✅ **Livré (PR #230, 2026-07-17)** | **Propagation Realtime des settings** | Push < 2 s aux caisses/KDS/displays (migration `_181` : publication `business_config` + `receipt_templates` ; hook `useSettingsRealtime`), refetch en fallback (cf. invariant §3.5). Mesure réelle du < 2 s à valider en exploitation. |
-| 🚧 **Lots 1-4 livrés** (ADR-006 déc. 5, spec `006x-hub-lan.md` actée 2026-07-19 — PR #241) | **LAN Network / hub local — continuité offline** | Lot 1 (PR #242, validé boutique en LAN-http) : hub WS `/ws` dans le print-bridge, presence, ring-buffer, panneau Hub BO. Lot 2 (PR #245) : heartbeat batch via le hub (`update_lan_heartbeat_v2`, EF `lan-heartbeat-batch`). Lot 3 (PR #246, validé boutique) : mode OFFLINE (ping cloud + hub), fire caisse `L-x` sur le bus, KDS/display fusionnent cloud + bus. Lot 4 (PR #248) : outbox durable POS/tablette, **cash différé** gaté (`offline_cash_enabled` défaut false, fenêtre A5 `offline_max_hours` défaut 4 h), replay idempotent avec clés d'origine, A4 tracé par `pay_existing_order_v13` (`p_offline_replay` → `audit_logs`), migrations _197/_198, pgTAP 14/14. **Reste** : lot 5 durcissement (chaos tests, runbook), validation boutique de l'encaissement cash hors-ligne, verdict mixed-content HTTPS→ws:// (§4.1 spec), `HUB_TOKEN` prod. |
+| ✅ **Livré — lots 1-5** (ADR-006 déc. 5, spec `006x-hub-lan.md` actée 2026-07-19 — PR #241) | **LAN Network / hub local — continuité offline** | Lot 1 (PR #242, validé boutique en LAN-http) : hub WS `/ws` dans le print-bridge, presence, ring-buffer, panneau Hub BO. Lot 2 (PR #245) : heartbeat batch via le hub (`update_lan_heartbeat_v2`, EF `lan-heartbeat-batch`). Lot 3 (PR #246, validé boutique) : mode OFFLINE (ping cloud + hub), fire caisse `L-x` sur le bus, KDS/display fusionnent cloud + bus. Lot 4 (PR #248) : outbox durable POS/tablette, **cash différé** gaté (`offline_cash_enabled` défaut false, fenêtre A5 `offline_max_hours` défaut 4 h), replay idempotent avec clés d'origine, A4 tracé par `pay_existing_order_v13` (`p_offline_replay` → `audit_logs`), migrations _197/_198, pgTAP 14/14. Lot 5 (PR #252) : durcissement — chaos tests, mesure du rattrapage, **SPA POS servie en LAN** (règle le mixed-content §4.1) ; nightly pgTAP réparée (PR #254, #267). **Reste (exploitation)** : validation boutique de l'encaissement cash hors-ligne (toggle défaut OFF), `HUB_TOKEN` prod, runbook hub à commiter (Mamat). |
 | ✅ **Livré (PR #237, 2026-07-18)** | **Hub réorganisé en sous-menus par feature** | Chaque fonctionnalité a sa catégorie et sa page, groupées en sous-menus + sidebar alignée. Navigation seulement — le stockage reste le socle des décisions 1-2. |
-| **Décidé (ADR-006 déc. 9)** | **Business hours** | Marquer les ventes hors-horaire dans les rapports d'audit (signal fraude). |
-| **Décidé (ADR-006 déc. 9)** | **Politique PIN configurable** | Exposer dans Settings le lockout/expiration déjà implémentés côté edge functions. |
-| **Décidé (ADR-006 déc. 9)** | **Payment methods enrichis** | Ordre d'affichage, e-wallets individuels (GoPay/OVO/DANA), frais par méthode. |
+| ✅ **Livré (PR #275, 2026-07-24)** | **Business hours** | Créneau open/close par jour (`business_hours`, page dédiée) + rapport **Off-Hours Sales** (`get_off_hours_sales_v1`) marquant les ventes hors-horaire (signal fraude). Migrations _217-_219. |
+| ✅ **Livré (PR #276, 2026-07-24)** | **Politique PIN configurable** | `pin_max_failed` / `pin_lockout_minutes` (catégorie `security`, migration _220, `set_setting_v9`/`get_settings_by_category_v7`) exposés dans la page Security et lus par l'EF `auth-verify-pin` v14 (lockout login). |
+| ✅ **Livré (PR #270/#271/#272, 2026-07-23)** | **Payment methods enrichis** | Lot A : ordre d'affichage. Lot B : e-wallets individuels GoPay/OVO/DANA, settlement type QRIS (`close_shift_v8`, `retry_sale_je_v3`). Lot C : frais informatifs par méthode (`payment_method_fees`) + colonnes e-wallets/frais du rapport Payments (`get_payments_by_method_v3`). Migrations _209-_215. |
 | ✅ **Soldé en périmètre réduit (2026-07-18)** | **Toggles workflow cuisine** | Périmètre arbitré par le propriétaire : (1) lock des items envoyés → couvert par **ADR-010** (PR #235, autorisation manager + perte obligatoire) ; (2) copies KOT papier par station → **PR #239** (migration _195, `set_setting_v4`, 0 = paperless) ; (3) auto-send KDS tablette → **sorti du chantier**, ne pas re-proposer sans nouvelle décision. |
-| **Décidé (ADR-006 déc. 9)** | **Vue « Settings History »** | Filtre dédié de `audit_logs` sur les changements de settings (la donnée existe déjà). |
-| **Décidé (ADR-006 déc. 9)** | **Floor plan visuel** | Drag & drop + positions ; le CRUD listes couvre déjà le besoin fonctionnel de base. |
+| ✅ **Livré (PR #268, 2026-07-23)** | **Vue « Settings History »** | `/settings/history`, admin-only — filtre dédié de `audit_logs` sur les changements de settings, aucune table nouvelle. |
+| ✅ **Livré (PR #273/#274, 2026-07-24)** | **Floor plan visuel** | Lot A : positions grille 12×8 + éditeur drag & drop BO (`set_table_position_v1`, migration _216). Lot B : rendu positionné POS (sélection de table) + tablette (`FloorCanvas`). |
 | **Rejeté (ADR-006 déc. 10)** | **Affectation serveur → section** | Décision propriétaire — ne pas re-proposer. |
 | **Rejeté (ADR-006 déc. 10)** | **Multi-devise** | Décision propriétaire — la facturation reste en IDR uniquement. |
 | **Hors périmètre (ADR-006 déc. 10)** | **Happy hour** | **Déjà livré** par le module Promotions & Combos : fenêtres jours/horaires natives (`day_of_week_mask`, `start_hour`/`end_hour`, appliquées par `evaluate_promotions_v2`). Rien à créer côté Settings. |
@@ -203,14 +221,12 @@ réalignés, page renommée « Session Timeouts ». Le volet PIN reste au backlo
 ## 7. En une phrase
 
 Le module Settings V3 est **réel et honnête dans son câblage** — chaque page vivante
-est consommée, chaque changement est tracé. Les six surfaces qui écrivaient dans le
-vide au 2026-07-16 (reçus, emails, identité entreprise, jours fériés, déclencheurs de
-notifications, `tax_inclusive`) sont **toutes branchées** : lots 2 à 5 pour les cinq
-premières, lots 6a + 6b (PR #224/#225) pour `tax_inclusive` — la formule PB1 n'a plus
-qu'un porteur (`_pb1_split_v1`), la bascule est gatée (`set_setting_v3`, refus si
-commandes ouvertes) et les surfaces POS affichent HT/TTC selon le mode. Le chantier
-§6.A est soldé ; au §6.C, le Realtime, les sous-menus du hub, les toggles
-cuisine (périmètre réduit) et les **lots 1-4 du hub LAN** (offline commande +
-cuisine + impression + cash différé, replay idempotent tracé) sont livrés —
-restent le lot 5 du hub LAN (durcissement), business hours, politique PIN,
-payment methods enrichis, Settings History et floor plan visuel.
+est consommée, chaque changement est tracé. Les chantiers **§6.A ET §6.C sont
+soldés côté code** (2026-07-24) : Realtime, sous-menus du hub, toggles cuisine
+(périmètre réduit), hub LAN lots 1-5 (offline commande + cuisine + impression +
+cash différé + durcissement), Settings History, payment methods enrichis
+(ordre / e-wallets / frais), floor plan visuel (éditeur + rendu positionné),
+business hours + Off-Hours Sales, et politique PIN configurable (lockout login).
+Restent des actions d'exploitation, pas de code : validation boutique de
+l'encaissement cash hors-ligne (toggle défaut OFF), `RESEND_API_KEY` et
+`HUB_TOKEN` en console, runbook hub à commiter (Mamat).
