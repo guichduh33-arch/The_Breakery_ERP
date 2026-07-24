@@ -20,7 +20,7 @@ import { Link } from 'react-router-dom';
 import {
   Building2, Clock, Receipt, Coffee, CreditCard, Boxes,
   Monitor, Briefcase, Printer, Bell, ShieldCheck, FileText, Mail, Wifi,
-  History, Map, Calculator, type LucideIcon,
+  History, Map, Calculator, CalendarClock, type LucideIcon,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, SectionLabel } from '@breakery/ui';
 import type { PermissionCode } from '@breakery/supabase';
@@ -49,6 +49,7 @@ const SECTIONS: SettingSection[] = [
     title: 'Business',
     tiles: [
       { to: '/backoffice/settings/general',  title: 'Company',  blurb: 'Business identity, currency, tax, address.', icon: Building2 },
+      { to: '/backoffice/settings/business-hours', title: 'Business Hours', blurb: 'Opening window per weekday (off-hours sales flag).', icon: CalendarClock },
       { to: '/backoffice/settings/holidays', title: 'Holidays', blurb: 'Holidays + recurring closures.',             icon: Clock },
     ],
   },

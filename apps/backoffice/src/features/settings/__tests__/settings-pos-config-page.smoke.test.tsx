@@ -11,7 +11,7 @@ vi.mock('@/lib/supabase.js', () => ({
   supabase: {
     rpc: (fn: string, args: unknown) => {
       rpcCalls.push({ fn, args });
-      if (fn === 'get_settings_by_category_v5') {
+      if (fn === 'get_settings_by_category_v6') {
         return Promise.resolve({
           data: {
             category: 'pos_presets',
@@ -27,7 +27,7 @@ vi.mock('@/lib/supabase.js', () => ({
           error: null,
         });
       }
-      return Promise.resolve({ data: null, error: null }); // set_setting_v7
+      return Promise.resolve({ data: null, error: null }); // set_setting_v8
     },
   },
 }));
@@ -63,7 +63,7 @@ describe('SettingsPosConfigPage', () => {
     expect(screen.queryAllByLabelText(/remove/i)).toHaveLength(0);
   });
 
-  it('calls set_setting_v7 with category pos_presets on save', async () => {
+  it('calls set_setting_v8 with category pos_presets on save', async () => {
     canUpdate = true;
     rpcCalls.length = 0;
     render(wrap(<SettingsPosConfigPage />));
@@ -75,9 +75,9 @@ describe('SettingsPosConfigPage', () => {
       fireEvent.click(addButtons[0]!);
     }
 
-    await waitFor(() => expect(rpcCalls.some((c) => c.fn === 'set_setting_v7')).toBe(true));
+    await waitFor(() => expect(rpcCalls.some((c) => c.fn === 'set_setting_v8')).toBe(true));
 
-    const call = rpcCalls.find((c) => c.fn === 'set_setting_v7');
+    const call = rpcCalls.find((c) => c.fn === 'set_setting_v8');
     expect(call?.args).toEqual({
       p_key: 'pos_quick_payment_amounts',
       p_value: [50000, 100000, 200000, 300000],

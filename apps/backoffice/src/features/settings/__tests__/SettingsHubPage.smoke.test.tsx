@@ -64,9 +64,12 @@ describe('SettingsHubPage', () => {
     expect(screen.queryByText(/^Sections$/i)).not.toBeInTheDocument();
   });
 
-  it('Holidays tile links to the holidays page (no more misleading "Business Hours" label)', () => {
+  // ADR-006 déc. 9 : « Business Hours » est désormais une VRAIE tuile dédiée
+  // (créneaux par jour), distincte de Holidays — l'ancien label trompeur sur la
+  // tuile Holidays reste interdit : chacune pointe sa propre route.
+  it('Holidays and Business Hours are two distinct tiles with their own routes', () => {
     renderPage();
-    expect(screen.queryByText(/^Business Hours$/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/^Business Hours$/i).closest('a')?.getAttribute('href')).toBe('/backoffice/settings/business-hours');
     expect(screen.getByText(/^Holidays$/i).closest('a')?.getAttribute('href')).toBe('/backoffice/settings/holidays');
   });
 

@@ -8,7 +8,7 @@ vi.mock('@/lib/supabase.js', () => ({
   supabase: {
     rpc: (fn: string, args: unknown) => {
       rpcCalls.push({ fn, args });
-      if (fn === 'get_settings_by_category_v5') {
+      if (fn === 'get_settings_by_category_v6') {
         return Promise.resolve({
           data: {
             category: 'payments',
@@ -21,7 +21,7 @@ vi.mock('@/lib/supabase.js', () => ({
           error: null,
         });
       }
-      return Promise.resolve({ data: null, error: null }); // set_setting_v7
+      return Promise.resolve({ data: null, error: null }); // set_setting_v8
     },
   },
 }));
@@ -69,8 +69,8 @@ describe('SettingsPaymentMethodsPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /enregistrer/i }));
 
     await waitFor(() =>
-      expect(rpcCalls.some((c) => c.fn === 'set_setting_v7')).toBe(true));
-    const call = rpcCalls.find((c) => c.fn === 'set_setting_v7');
+      expect(rpcCalls.some((c) => c.fn === 'set_setting_v8')).toBe(true));
+    const call = rpcCalls.find((c) => c.fn === 'set_setting_v8');
     expect(call?.args).toEqual({
       p_key: 'enabled_payment_methods',
       p_value: ['card', 'cash'],
@@ -101,8 +101,8 @@ describe('SettingsPaymentMethodsPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /enregistrer/i }));
 
     await waitFor(() =>
-      expect(rpcCalls.some((c) => c.fn === 'set_setting_v7')).toBe(true));
-    const call = rpcCalls.find((c) => c.fn === 'set_setting_v7');
+      expect(rpcCalls.some((c) => c.fn === 'set_setting_v8')).toBe(true));
+    const call = rpcCalls.find((c) => c.fn === 'set_setting_v8');
     expect(call?.args).toEqual({
       p_key: 'payment_method_fees',
       p_value: { qris: 0.7, gopay: 2 },
@@ -121,7 +121,7 @@ describe('SettingsPaymentMethodsPage', () => {
     expect(screen.getByRole('button', { name: /aucun changement/i })).toBeDisabled();
   });
 
-  it('calls set_setting_v7 with the remaining methods on save', async () => {
+  it('calls set_setting_v8 with the remaining methods on save', async () => {
     rpcCalls.length = 0;
     render(wrap(<SettingsPaymentMethodsPage />));
     await waitFor(() => screen.getByLabelText(/^cash$/i));
@@ -130,9 +130,9 @@ describe('SettingsPaymentMethodsPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /enregistrer/i }));
 
     await waitFor(() =>
-      expect(rpcCalls.some((c) => c.fn === 'set_setting_v7')).toBe(true));
+      expect(rpcCalls.some((c) => c.fn === 'set_setting_v8')).toBe(true));
 
-    const call = rpcCalls.find((c) => c.fn === 'set_setting_v7');
+    const call = rpcCalls.find((c) => c.fn === 'set_setting_v8');
     expect(call?.args).toEqual({
       p_key: 'enabled_payment_methods',
       p_value: ['cash'],

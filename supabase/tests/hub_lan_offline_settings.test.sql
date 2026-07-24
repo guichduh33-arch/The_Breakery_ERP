@@ -1,7 +1,7 @@
 -- supabase/tests/hub_lan_offline_settings.test.sql
 -- Spec 006x lot 4 (migrations 20260721000197 + 20260721000198) —
 -- business_config offline_cash_enabled / offline_max_hours, branches
--- set_setting_v5 + catégorie 'network' de get_settings_by_category_v5, et
+-- set_setting_v5 + catégorie 'network' de get_settings_by_category_v6, et
 -- pay_existing_order_v13 (p_offline_replay, arbitrage A4). Auth pattern :
 -- EMP000 (ADMIN) porte settings.update + settings.read (mirror
 -- settings_kot_copies.test.sql).
@@ -38,7 +38,7 @@ SELECT ok(
 
 -- 3: la catégorie network expose exactement les 2 clés aux défauts.
 SELECT is(
-  get_settings_by_category_v5('network')->'settings',
+  get_settings_by_category_v6('network')->'settings',
   jsonb_build_object('offline_cash_enabled', false, 'offline_max_hours', 4),
   'network category returns the 2 offline keys at defaults');
 
@@ -74,7 +74,7 @@ SELECT throws_ok(
 
 -- 10: round-trip — l'état final reflète les écritures (true / 8).
 SELECT is(
-  get_settings_by_category_v5('network')->'settings',
+  get_settings_by_category_v6('network')->'settings',
   jsonb_build_object('offline_cash_enabled', true, 'offline_max_hours', 8),
   'final network settings reflect the round-trip (true/8)');
 
@@ -115,8 +115,8 @@ SELECT ok(
   (SELECT bool_and(NOT has_function_privilege('anon', p.oid, 'EXECUTE'))
    FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
    WHERE n.nspname = 'public'
-     AND p.proname IN ('set_setting_v5', 'get_settings_by_category_v5', 'pay_existing_order_v13')),
-  'anon has no EXECUTE on set_setting_v5 / get_settings_by_category_v5 / pay_existing_order_v13');
+     AND p.proname IN ('set_setting_v5', 'get_settings_by_category_v6', 'pay_existing_order_v13')),
+  'anon has no EXECUTE on set_setting_v5 / get_settings_by_category_v6 / pay_existing_order_v13');
 
 SELECT * FROM finish();
 ROLLBACK;
