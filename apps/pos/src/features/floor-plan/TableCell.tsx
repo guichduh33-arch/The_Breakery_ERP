@@ -31,6 +31,11 @@ export interface TableCellProps {
   table: FloorPlanTable;
   selected: boolean;
   onTap: () => void;
+  /**
+   * Lot B (ADR-006 déc. 9) — positioned mode: fill the parent grid cell
+   * instead of the fixed circle/pill shape (FloorCanvas 12×8).
+   */
+  fit?: boolean;
 }
 
 const STATUS_COPY: Record<TableStatus, string> = {
@@ -39,7 +44,7 @@ const STATUS_COPY: Record<TableStatus, string> = {
   reserved: 'Reserved',
 };
 
-export function TableCell({ table, selected, onTap }: TableCellProps): JSX.Element {
+export function TableCell({ table, selected, onTap, fit = false }: TableCellProps): JSX.Element {
   const shape = table.shape ?? (table.seats >= 4 ? 'pill' : 'circle');
 
   const surface =
@@ -69,12 +74,16 @@ export function TableCell({ table, selected, onTap }: TableCellProps): JSX.Eleme
         'hover:brightness-110 active:scale-[0.98]',
         surface,
         ring,
-        shape === 'circle'
-          ? 'h-28 w-28 rounded-full'
-          : 'h-24 w-44 rounded-[3rem]',
+        fit
+          ? 'h-full w-full min-h-14 rounded-xl'
+          : shape === 'circle'
+            ? 'h-28 w-28 rounded-full'
+            : 'h-24 w-44 rounded-[3rem]',
       )}
     >
-      <span className="font-bold text-2xl text-text-primary leading-none">{table.name}</span>
+      <span className={cn('font-bold text-text-primary leading-none', fit ? 'text-base' : 'text-2xl')}>
+        {table.name}
+      </span>
       <span className="mt-1 inline-flex items-center gap-1 text-text-secondary text-xs">
         <Users className="h-3 w-3" aria-hidden />
         <span>{table.seats}</span>

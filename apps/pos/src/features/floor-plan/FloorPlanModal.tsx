@@ -46,6 +46,7 @@ import {
   cn,
 } from '@breakery/ui';
 import { TableCell, type FloorPlanTable, type TableStatus } from './TableCell';
+import { FloorCanvas } from './FloorCanvas';
 import { bucketTablesBySection } from './sections';
 
 const SR_ONLY =
@@ -240,16 +241,19 @@ export function FloorPlanModal({
               No tables configured for this section.
             </div>
           ) : (
-            <div className="flex flex-wrap gap-6 justify-center items-center">
-              {visible.map((t) => (
+            <FloorCanvas
+              tables={visible}
+              gapClass="gap-6"
+              renderTable={(t, fit) => (
                 <TableCell
                   key={t.id}
                   table={toFloorPlanTable(t, occupancy)}
                   selected={selectedName === t.name}
                   onTap={() => handleTap(t)}
+                  fit={fit}
                 />
-              ))}
-            </div>
+              )}
+            />
           )}
         </div>
       </main>
