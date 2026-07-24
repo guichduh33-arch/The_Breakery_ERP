@@ -88,6 +88,47 @@ describe('FloorPlanModal', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
+  // ADR-006 déc. 9 lot B — rendu positionné.
+  it('renders positioned tables on the 12×8 grid and the rest under Unplaced', () => {
+    const positioned: RestaurantTable[] = [
+      { ...TABLES[0]!, grid_x: 2, grid_y: 1 },
+      TABLES[1]!, // T2 reste non placée
+    ];
+    const onSelect = vi.fn();
+    render(
+      <FloorPlanModal
+        open
+        onClose={vi.fn()}
+        onSelect={onSelect}
+        tables={positioned}
+        occupancy={{}}
+      />,
+    );
+    expect(screen.getByTestId('floor-grid')).toBeInTheDocument();
+    expect(screen.getByTestId('floor-pos-2-1').textContent).toContain('T1');
+    expect(screen.getByTestId('floor-unplaced').textContent).toContain('T2');
+
+    // Une table positionnée reste sélectionnable comme avant.
+    fireEvent.click(screen.getByTestId('floor-plan-cell-T1'));
+    fireEvent.click(screen.getByTestId('floor-plan-confirm'));
+    expect(onSelect).toHaveBeenCalledWith('T1');
+  });
+
+  it('keeps the historical flow layout when no table of the section is placed', () => {
+    render(
+      <FloorPlanModal
+        open
+        onClose={vi.fn()}
+        onSelect={vi.fn()}
+        tables={TABLES}
+        occupancy={{}}
+      />,
+    );
+    expect(screen.queryByTestId('floor-grid')).toBeNull();
+    expect(screen.queryByTestId('floor-unplaced')).toBeNull();
+    expect(screen.getByTestId('floor-plan-cell-T1')).toBeInTheDocument();
+  });
+
   it('honours initialSelection by pre-selecting the matching table name', () => {
     render(
       <FloorPlanModal

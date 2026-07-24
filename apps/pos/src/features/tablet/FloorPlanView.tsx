@@ -47,6 +47,7 @@ import type { JSX } from 'react';
 import type { RestaurantTable } from '@breakery/domain';
 import { cn } from '@breakery/ui';
 import { TableCell, type FloorPlanTable, type TableStatus } from '../floor-plan/TableCell';
+import { FloorCanvas } from '../floor-plan/FloorCanvas';
 import { bucketTablesBySection } from '../floor-plan/sections';
 
 function sectionIcon(label: string): JSX.Element {
@@ -158,16 +159,19 @@ export function FloorPlanView({
               No tables configured for this section.
             </div>
           ) : (
-            <div className="flex flex-wrap gap-8 justify-center items-center">
-              {visible.map((t) => (
+            <FloorCanvas
+              tables={visible}
+              gapClass="gap-8"
+              renderTable={(t, fit) => (
                 <TableCell
                   key={t.id}
                   table={toFloorPlanTable(t, occupancy)}
                   selected={selectedTable === t.name}
                   onTap={() => handleTap(t)}
+                  fit={fit}
                 />
-              ))}
-            </div>
+              )}
+            />
           )}
         </div>
       </main>

@@ -107,6 +107,34 @@ describe('FloorPlanView', () => {
     expect(screen.getByTestId('floor-plan-cell-T12')).toBeInTheDocument();
   });
 
+  // ADR-006 déc. 9 lot B — rendu positionné.
+  it('renders positioned tables on the 12×8 grid, unplaced ones below, taps intact', () => {
+    const onTableSelect = vi.fn();
+    const positioned: RestaurantTable[] = [
+      TABLES[0]!,
+      TABLES[1]!,
+      { ...TABLES[2]!, grid_x: 5, grid_y: 3 }, // T10 placée
+      TABLES[3]!, // T12 non placée
+    ];
+    render(
+      <FloorPlanView
+        tables={positioned}
+        occupancy={{}}
+        onTableSelect={onTableSelect}
+      />,
+    );
+    // Interior (aucune position) garde le flux historique.
+    expect(screen.queryByTestId('floor-grid')).toBeNull();
+
+    fireEvent.click(screen.getByTestId('tablet-floor-plan-section-terrace'));
+    expect(screen.getByTestId('floor-grid')).toBeInTheDocument();
+    expect(screen.getByTestId('floor-pos-5-3').textContent).toContain('T10');
+    expect(screen.getByTestId('floor-unplaced').textContent).toContain('T12');
+
+    fireEvent.click(screen.getByTestId('floor-plan-cell-T10'));
+    expect(onTableSelect).toHaveBeenCalledWith('T10');
+  });
+
   it('renders an empty-section message when there are no tables at all', () => {
     render(
       <FloorPlanView
