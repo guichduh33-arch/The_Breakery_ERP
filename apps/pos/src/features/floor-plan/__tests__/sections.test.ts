@@ -4,7 +4,7 @@ import { bucketTablesBySection } from '../sections';
 import type { RestaurantTable } from '@breakery/domain';
 
 const t = (name: string, section: { name: string; sort_order: number } | null, id = name): RestaurantTable => ({
-  id, name, seats: 4, sort_order: 0, is_active: true,
+  id, name, seats: 4, sort_order: 0, is_active: true, grid_x: null, grid_y: null,
   section_id: section ? section.name : null, table_sections: section,
 });
 

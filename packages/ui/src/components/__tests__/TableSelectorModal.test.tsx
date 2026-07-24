@@ -7,9 +7,9 @@ vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn(), warning: v
 import { toast } from 'sonner';
 
 const tables: RestaurantTable[] = [
-  { id: 't1', name: 'T-01', seats: 2, sort_order: 1, is_active: true, section_id: null },
-  { id: 't2', name: 'T-02', seats: 4, sort_order: 2, is_active: true, section_id: null },
-  { id: 't3', name: 'T-03', seats: 6, sort_order: 3, is_active: true, section_id: null },
+  { id: 't1', name: 'T-01', seats: 2, sort_order: 1, is_active: true, grid_x: null, grid_y: null, section_id: null },
+  { id: 't2', name: 'T-02', seats: 4, sort_order: 2, is_active: true, grid_x: null, grid_y: null, section_id: null },
+  { id: 't3', name: 'T-03', seats: 6, sort_order: 3, is_active: true, grid_x: null, grid_y: null, section_id: null },
 ];
 
 const occupancy: Record<string, boolean> = { 'T-01': false, 'T-02': true, 'T-03': false };

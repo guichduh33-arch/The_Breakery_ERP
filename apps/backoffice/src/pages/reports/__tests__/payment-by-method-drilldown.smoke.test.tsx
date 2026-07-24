@@ -14,8 +14,8 @@ vi.mock('@/features/reports/hooks/usePaymentsByMethod.js', () => ({
   usePaymentsByMethod: () => ({
     data: {
       lines: [
-        { method: 'cash', amount: 500_000, count: 5, share_pct: 50 },
-        { method: 'qris', amount: 500_000, count: 5, share_pct: 50 },
+        { method: 'cash', amount: 500_000, count: 5, share_pct: 50, fee_pct: 0, fee_est: 0, net_est: 500_000 },
+        { method: 'qris', amount: 500_000, count: 5, share_pct: 50, fee_pct: 0.7, fee_est: 3_500, net_est: 496_500 },
       ],
       total: 1_000_000,
       by_day: [],
