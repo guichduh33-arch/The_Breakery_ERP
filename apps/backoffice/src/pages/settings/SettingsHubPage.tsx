@@ -94,7 +94,7 @@ const SECTIONS: SettingSection[] = [
     id: 'security-access',
     title: 'Security & Access',
     tiles: [
-      { to: '/backoffice/settings/security', title: 'Session Timeouts', blurb: 'Per-role session timeout.', icon: ShieldCheck, permission: 'settings.security.manage' },
+      { to: '/backoffice/settings/security', title: 'Security', blurb: 'Per-role session timeout + PIN lockout policy.', icon: ShieldCheck, permission: 'settings.security.manage' },
       { to: '/backoffice/settings/permissions', title: 'Roles & Permissions', blurb: 'View the role/permission matrix.', icon: ShieldCheck },
       // Admin-only strict (role, not permission): audit_logs' admin_read RLS
       // only serves ADMIN/SUPER_ADMIN — don't show the tile to anyone else.

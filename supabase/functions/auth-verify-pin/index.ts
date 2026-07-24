@@ -9,6 +9,9 @@ import { signJwt, getJwtSecret } from '../_shared/jwt.ts';
 import { logAndRedact, redactError } from '../_shared/error-redact.ts';
 
 const PIN_REGEX = /^\d{6}$/;
+// PIN policy (ADR-006 déc. 9) — défauts historiques, utilisés en fallback si
+// la lecture de business_config échoue ; les valeurs vives viennent de
+// Settings > Security (pin_max_failed / pin_lockout_minutes, set_setting_v9).
 const MAX_FAILED = 5;
 const LOCKOUT_MIN = 15;
 // Session 13 (25-002) — tightened from 20/min to 3/min (≈ 12/hour) on the
@@ -63,6 +66,17 @@ serve(async (req) => {
 
   const admin = getAdminClient();
 
+  // 0. PIN policy configurable (catégorie security) — fallback 5/15.
+  let maxFailed = MAX_FAILED;
+  let lockoutMin = LOCKOUT_MIN;
+  const { data: policy } = await admin
+    .from('business_config')
+    .select('pin_max_failed, pin_lockout_minutes')
+    .eq('id', 1)
+    .maybeSingle();
+  if (typeof policy?.pin_max_failed === 'number') maxFailed = policy.pin_max_failed;
+  if (typeof policy?.pin_lockout_minutes === 'number') lockoutMin = policy.pin_lockout_minutes;
+
   // 1. Fetch profile
   const { data: profile, error: profileErr } = await admin
     .from('user_profiles')
@@ -98,8 +112,8 @@ serve(async (req) => {
   if (!pinValid) {
     const newAttempts = (profile.failed_login_attempts ?? 0) + 1;
     const updates: Record<string, unknown> = { failed_login_attempts: newAttempts };
-    if (newAttempts >= MAX_FAILED) {
-      updates.locked_until = new Date(Date.now() + LOCKOUT_MIN * 60_000).toISOString();
+    if (newAttempts >= maxFailed) {
+      updates.locked_until = new Date(Date.now() + lockoutMin * 60_000).toISOString();
     }
     await admin.from('user_profiles').update(updates).eq('id', user_id);
     await admin.from('audit_logs').insert({
@@ -110,7 +124,7 @@ serve(async (req) => {
       metadata: { attempts: newAttempts, ip },
     });
     return jsonResponse(
-      redactError('invalid_pin', { attempts_remaining: Math.max(0, MAX_FAILED - newAttempts) }),
+      redactError('invalid_pin', { attempts_remaining: Math.max(0, maxFailed - newAttempts) }),
       401,
     );
   }

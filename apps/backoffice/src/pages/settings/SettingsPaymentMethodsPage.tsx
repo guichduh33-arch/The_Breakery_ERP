@@ -1,6 +1,6 @@
 // apps/backoffice/src/pages/settings/SettingsPaymentMethodsPage.tsx
 // S64 (fiche 19 D2.1) — active/désactive les moyens de paiement présentés au POS.
-// Écrit business_config.enabled_payment_methods via set_setting_v8 (audité old/new).
+// Écrit business_config.enabled_payment_methods via set_setting_v9 (audité old/new).
 //
 // ADR-006 déc. 9 (lot A) — l'ORDRE de l'array est désormais contractuel : c'est
 // l'ordre d'affichage des grilles POS. Flèches monter/descendre sur les méthodes

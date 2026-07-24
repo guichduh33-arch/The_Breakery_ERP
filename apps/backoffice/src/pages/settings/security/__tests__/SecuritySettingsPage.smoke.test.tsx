@@ -42,7 +42,16 @@ vi.mock('@/lib/supabase.js', () => {
   return {
     supabase: {
       from: () => buildChain(),
-      rpc: vi.fn().mockResolvedValue({ data: true, error: null }),
+      // ADR-006 déc. 9 : la page charge aussi la catégorie security (PIN policy).
+      rpc: vi.fn().mockImplementation((fn: string) => {
+        if (fn === 'get_settings_by_category_v7') {
+          return Promise.resolve({
+            data: { category: 'security', settings: { pin_max_failed: 5, pin_lockout_minutes: 15 } },
+            error: null,
+          });
+        }
+        return Promise.resolve({ data: true, error: null });
+      }),
     },
   };
 });
@@ -114,7 +123,6 @@ describe('SecuritySettingsPage', () => {
   it('calls update_role_session_timeout_v1 with correct args when save is clicked', async () => {
     // eslint-disable-next-line @typescript-eslint/unbound-method -- vi.fn() mock, no `this` to lose
     const rpcSpy = vi.mocked(supabase.rpc);
-    rpcSpy.mockResolvedValueOnce({ data: true, error: null } as never);
     renderPage();
     const input = await screen.findByTestId('timeout-input-CASHIER');
     fireEvent.change(input, { target: { value: '45' } });
@@ -125,5 +133,45 @@ describe('SecuritySettingsPage', () => {
         p_minutes: 45,
       });
     });
+  });
+
+  // ADR-006 déc. 9 — PIN policy (lockout login configurable).
+  it('renders the PIN policy card populated from the security category', async () => {
+    renderPage();
+    const maxInput = await screen.findByTestId<HTMLInputElement>('pin-input-pin_max_failed');
+    expect(maxInput.value).toBe('5');
+    expect(screen.getByTestId<HTMLInputElement>('pin-input-pin_lockout_minutes').value).toBe('15');
+    expect(screen.getByTestId('pin-policy-save')).toBeDisabled(); // clean
+  });
+
+  it('blocks the PIN save for out-of-bounds values', async () => {
+    renderPage();
+    const maxInput = await screen.findByTestId('pin-input-pin_max_failed');
+    // Attendre l'init du draft (l'input reste disabled tant que la catégorie charge).
+    await waitFor(() => expect(maxInput).not.toBeDisabled());
+    fireEvent.change(maxInput, { target: { value: '11' } });
+    expect(screen.getByTestId('pin-invalid-pin_max_failed')).toBeInTheDocument();
+    expect(screen.getByTestId('pin-policy-save')).toBeDisabled();
+  });
+
+  it('saving a dirty PIN field calls set_setting_v9 with the security category', async () => {
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- vi.fn() mock, no `this` to lose
+    const rpcSpy = vi.mocked(supabase.rpc);
+    renderPage();
+    const lockInput = await screen.findByTestId('pin-input-pin_lockout_minutes');
+    await waitFor(() => expect(lockInput).not.toBeDisabled());
+    fireEvent.change(lockInput, { target: { value: '30' } });
+    fireEvent.click(screen.getByTestId('pin-policy-save'));
+    await waitFor(() => {
+      expect(rpcSpy).toHaveBeenCalledWith('set_setting_v9', {
+        p_key: 'pin_lockout_minutes',
+        p_value: 30,
+        p_category: 'security',
+      });
+    });
+    // La clé propre (pin_max_failed) n'est pas réécrite.
+    expect(rpcSpy).not.toHaveBeenCalledWith('set_setting_v9', expect.objectContaining({
+      p_key: 'pin_max_failed',
+    }));
   });
 });
