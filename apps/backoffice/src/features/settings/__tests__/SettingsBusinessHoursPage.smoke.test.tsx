@@ -1,5 +1,5 @@
 // ADR-006 déc. 9 — business hours : rendu depuis la catégorie business,
-// validation open < close, save = les 7 jours explicites via set_setting_v8.
+// validation open < close, save = les 7 jours explicites via set_setting_v9.
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -10,7 +10,7 @@ vi.mock('@/lib/supabase.js', () => ({
   supabase: {
     rpc: (fn: string, args: unknown) => {
       rpcCalls.push({ fn, args });
-      if (fn === 'get_settings_by_category_v6') {
+      if (fn === 'get_settings_by_category_v7') {
         return Promise.resolve({
           data: {
             category: 'business',
@@ -23,7 +23,7 @@ vi.mock('@/lib/supabase.js', () => ({
           error: null,
         });
       }
-      return Promise.resolve({ data: null, error: null }); // set_setting_v8
+      return Promise.resolve({ data: null, error: null }); // set_setting_v9
     },
   },
 }));
@@ -60,7 +60,7 @@ describe('SettingsBusinessHoursPage', () => {
     expect(screen.getByTestId('bh-save')).toBeDisabled();
   });
 
-  it('saving writes all 7 explicit days through set_setting_v8', async () => {
+  it('saving writes all 7 explicit days through set_setting_v9', async () => {
     rpcCalls.length = 0;
     render(wrap(<SettingsBusinessHoursPage />));
     await waitFor(() => screen.getByTestId('bh-open-sun'));
@@ -69,8 +69,8 @@ describe('SettingsBusinessHoursPage', () => {
     fireEvent.click(screen.getByTestId('bh-save'));
 
     await waitFor(() =>
-      expect(rpcCalls.some((c) => c.fn === 'set_setting_v8')).toBe(true));
-    const call = rpcCalls.find((c) => c.fn === 'set_setting_v8');
+      expect(rpcCalls.some((c) => c.fn === 'set_setting_v9')).toBe(true));
+    const call = rpcCalls.find((c) => c.fn === 'set_setting_v9');
     expect(call?.args).toEqual({
       p_key: 'business_hours',
       p_value: {

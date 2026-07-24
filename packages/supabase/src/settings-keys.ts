@@ -1,10 +1,11 @@
 // S73 Phase 3 — single typed dictionary of business_config setting keys and
-// symbolic categories (server truth: set_setting_v8 / get_settings_by_category_v6,
+// symbolic categories (server truth: set_setting_v9 / get_settings_by_category_v7,
 // migrations 20260711000159 + 20260716000168 + 20260718000195 + 20260721000197
-// + 20260724000217). Add a key here ONLY together with its RPC branch.
+// + 20260724000217 + 20260724000220). Add a key here ONLY together with its RPC branch.
 export const SETTINGS_CATEGORIES = [
   'business', 'localization', 'tax', 'pos', 'pos_presets',
   'inventory', 'payments', 'customer_display', 'printing', 'kds', 'network',
+  'security',
 ] as const;
 export type SettingsCategory = (typeof SETTINGS_CATEGORIES)[number];
 
@@ -36,5 +37,8 @@ export const SETTING_KEYS = {
   // Spec 006x lot 4 (hub LAN) : cash hors-ligne différé — activation explicite
   // (défaut false) + fenêtre offline maximale en heures (défaut 4, arbitrage A5).
   network:          ['offline_cash_enabled', 'offline_max_hours'],
+  // ADR-006 déc. 9 : PIN policy — lockout login configurable (lu par l'EF
+  // auth-verify-pin, fallback 5/15). Migration 20260724000220.
+  security:         ['pin_max_failed', 'pin_lockout_minutes'],
 } as const satisfies Record<SettingsCategory, readonly string[]>;
 export type SettingKey = (typeof SETTING_KEYS)[SettingsCategory][number];

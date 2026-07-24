@@ -317,6 +317,8 @@ export type Database = {
           offline_max_hours: number
           payment_method_fees: Json
           phone: string | null
+          pin_lockout_minutes: number
+          pin_max_failed: number
           pos_auto_open_drawer: boolean
           pos_auto_print_receipt: boolean
           pos_discount_presets: Json
@@ -357,6 +359,8 @@ export type Database = {
           offline_max_hours?: number
           payment_method_fees?: Json
           phone?: string | null
+          pin_lockout_minutes?: number
+          pin_max_failed?: number
           pos_auto_open_drawer?: boolean
           pos_auto_print_receipt?: boolean
           pos_discount_presets?: Json
@@ -397,6 +401,8 @@ export type Database = {
           offline_max_hours?: number
           payment_method_fees?: Json
           phone?: string | null
+          pin_lockout_minutes?: number
+          pin_max_failed?: number
           pos_auto_open_drawer?: boolean
           pos_auto_print_receipt?: boolean
           pos_discount_presets?: Json
@@ -7445,7 +7451,7 @@ export type Database = {
           total: number
         }[]
       }
-      get_settings_by_category_v6: {
+      get_settings_by_category_v7: {
         Args: { p_category: string }
         Returns: Json
       }
@@ -8357,7 +8363,7 @@ export type Database = {
         Args: { p_alts: Json; p_contexts: Json; p_product_id: string }
         Returns: Json
       }
-      set_setting_v8: {
+      set_setting_v9: {
         Args: { p_category: string; p_key: string; p_value: Json }
         Returns: undefined
       }

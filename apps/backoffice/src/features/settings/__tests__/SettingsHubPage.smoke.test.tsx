@@ -123,14 +123,15 @@ describe('SettingsHubPage', () => {
     expect(screen.getByText(/^Settings History$/i)).toBeInTheDocument();
   });
 
-  it('hides the Session Timeouts tile when the user lacks settings.security.manage', () => {
+  // ADR-006 déc. 9 (PIN policy) : la tuile s'appelle désormais « Security ».
+  it('hides the Security tile when the user lacks settings.security.manage', () => {
     currentPerms = new Set(); // no permissions granted
     renderPage();
-    expect(screen.queryByText(/^Session Timeouts$/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Security$/i)).not.toBeInTheDocument();
   });
 
-  it('shows the Session Timeouts tile when the user has settings.security.manage', () => {
+  it('shows the Security tile when the user has settings.security.manage', () => {
     renderPage();
-    expect(screen.getByText(/^Session Timeouts$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^Security$/i)).toBeInTheDocument();
   });
 });

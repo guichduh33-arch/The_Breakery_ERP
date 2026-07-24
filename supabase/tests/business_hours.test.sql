@@ -1,7 +1,7 @@
 -- supabase/tests/business_hours.test.sql
 -- ADR-006 déc. 9 — business hours (migrations _217-_219) :
---   set_setting_v8 'business_hours' (validation forme + bornes),
---   get_settings_by_category_v6('business') (readback),
+--   set_setting_v9 'business_hours' (validation forme + bornes),
+--   get_settings_by_category_v7('business') (readback),
 --   get_off_hours_sales_v1 (paiements hors créneau, jour fermé, jour absent).
 -- Run via MCP execute_sql (BEGIN..ROLLBACK envelope carried by this file).
 BEGIN;
@@ -26,9 +26,9 @@ END $$;
 
 -- T1: set valide (mon ouvert, tue fermé, autres jours absents) -> readback.
 DO $$ DECLARE v JSONB; BEGIN
-  PERFORM set_setting_v8('business_hours',
+  PERFORM set_setting_v9('business_hours',
     '{"mon": {"open": "07:00", "close": "22:00"}, "tue": null}'::jsonb, 'business');
-  v := get_settings_by_category_v6('business')->'settings'->'business_hours';
+  v := get_settings_by_category_v7('business')->'settings'->'business_hours';
   INSERT INTO _r VALUES ('t1_set_readback',
     v = '{"mon": {"open": "07:00", "close": "22:00"}, "tue": null}'::jsonb);
 EXCEPTION WHEN OTHERS THEN
@@ -37,7 +37,7 @@ END $$;
 
 -- T2: clé de jour inconnue rejetée.
 DO $$ BEGIN
-  PERFORM set_setting_v8('business_hours', '{"monday": {"open": "07:00", "close": "22:00"}}'::jsonb, 'business');
+  PERFORM set_setting_v9('business_hours', '{"monday": {"open": "07:00", "close": "22:00"}}'::jsonb, 'business');
   INSERT INTO _r VALUES ('t2_unknown_day', false);
 EXCEPTION WHEN SQLSTATE '22023' THEN
   INSERT INTO _r VALUES ('t2_unknown_day', SQLERRM = 'setting_value_invalid');
@@ -47,7 +47,7 @@ END $$;
 
 -- T3: format non-HH:MM rejeté.
 DO $$ BEGIN
-  PERFORM set_setting_v8('business_hours', '{"mon": {"open": "7h00", "close": "22:00"}}'::jsonb, 'business');
+  PERFORM set_setting_v9('business_hours', '{"mon": {"open": "7h00", "close": "22:00"}}'::jsonb, 'business');
   INSERT INTO _r VALUES ('t3_bad_format', false);
 EXCEPTION WHEN SQLSTATE '22023' THEN
   INSERT INTO _r VALUES ('t3_bad_format', SQLERRM = 'setting_value_invalid');
@@ -57,7 +57,7 @@ END $$;
 
 -- T4: open >= close rejeté.
 DO $$ BEGIN
-  PERFORM set_setting_v8('business_hours', '{"mon": {"open": "22:00", "close": "07:00"}}'::jsonb, 'business');
+  PERFORM set_setting_v9('business_hours', '{"mon": {"open": "22:00", "close": "07:00"}}'::jsonb, 'business');
   INSERT INTO _r VALUES ('t4_inverted', false);
 EXCEPTION WHEN SQLSTATE '22023' THEN
   INSERT INTO _r VALUES ('t4_inverted', SQLERRM = 'setting_value_invalid');
@@ -68,11 +68,11 @@ END $$;
 -- T5: valeur de jour ni null ni {open, close} rejetée.
 DO $$ DECLARE v_ok BOOLEAN := true; BEGIN
   BEGIN
-    PERFORM set_setting_v8('business_hours', '{"mon": 5}'::jsonb, 'business');
+    PERFORM set_setting_v9('business_hours', '{"mon": 5}'::jsonb, 'business');
     v_ok := false;
   EXCEPTION WHEN SQLSTATE '22023' THEN NULL; END;
   BEGIN
-    PERFORM set_setting_v8('business_hours', '{"mon": {"open": "07:00"}}'::jsonb, 'business');
+    PERFORM set_setting_v9('business_hours', '{"mon": {"open": "07:00"}}'::jsonb, 'business');
     v_ok := false;
   EXCEPTION WHEN SQLSTATE '22023' THEN NULL; END;
   INSERT INTO _r VALUES ('t5_bad_shape', v_ok);
@@ -152,8 +152,8 @@ END $$;
 -- T10: ACL — anon n'a EXECUTE sur aucune des 3 fonctions.
 DO $$ BEGIN
   INSERT INTO _r VALUES ('t10_acl_anon',
-    NOT has_function_privilege('anon', 'public.set_setting_v8(text,jsonb,text)', 'EXECUTE')
-    AND NOT has_function_privilege('anon', 'public.get_settings_by_category_v6(text)', 'EXECUTE')
+    NOT has_function_privilege('anon', 'public.set_setting_v9(text,jsonb,text)', 'EXECUTE')
+    AND NOT has_function_privilege('anon', 'public.get_settings_by_category_v7(text)', 'EXECUTE')
     AND NOT has_function_privilege('anon', 'public.get_off_hours_sales_v1(text,text)', 'EXECUTE'));
 EXCEPTION WHEN OTHERS THEN
   INSERT INTO _r VALUES ('t10_acl_anon', false);

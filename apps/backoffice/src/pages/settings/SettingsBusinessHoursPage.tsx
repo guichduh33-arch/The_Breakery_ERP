@@ -1,6 +1,6 @@
 // apps/backoffice/src/pages/settings/SettingsBusinessHoursPage.tsx
 // ADR-006 déc. 9 — horaires d'ouverture par jour de semaine. Écrit
-// business_config.business_hours via set_setting_v8 (audité old/new) :
+// business_config.business_hours via set_setting_v9 (audité old/new) :
 // { "mon": {"open":"07:00","close":"22:00"}, ..., "sun": null }.
 // null = jour fermé ; clé absente = jour jamais configuré (le rapport
 // Off-Hours Sales ne marque alors rien pour ce jour). Le premier Save

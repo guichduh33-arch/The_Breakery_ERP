@@ -1,6 +1,6 @@
 -- supabase/tests/payment_methods_config.test.sql
 -- S64 — enabled_payment_methods (migration 20260710000115) : validation
--- set_setting_v8, lecture get_settings_by_category_v6('payments'), audit, ACLs.
+-- set_setting_v9, lecture get_settings_by_category_v7('payments'), audit, ACLs.
 -- Repointée 2026-07-23 (lot B ADR-006 déc. 9) : v1→v6/v4 + T12 e-wallets ;
 -- lot C : v6→v7 / v4→v5 + T13/T14 payment_method_fees (frais informatifs).
 -- Run via MCP execute_sql / API-from-file (BEGIN..ROLLBACK envelope carried by this file).
@@ -26,7 +26,7 @@ END $$;
 
 -- T1: défaut post-_115 = les 6 méthodes canoniques, lisibles via la catégorie 'payments'.
 DO $$ DECLARE v JSONB; BEGIN
-  v := get_settings_by_category_v6('payments')->'settings'->'enabled_payment_methods';
+  v := get_settings_by_category_v7('payments')->'settings'->'enabled_payment_methods';
   INSERT INTO _r VALUES ('t1_default',
     jsonb_typeof(v) = 'array'
     AND v @> '["cash","card","qris","edc","transfer","store_credit"]'::jsonb
@@ -37,8 +37,8 @@ END $$;
 
 -- T2: set d'un sous-ensemble valide -> relecture à l'identique.
 DO $$ DECLARE v JSONB; BEGIN
-  PERFORM set_setting_v8('enabled_payment_methods', '["cash","qris"]'::jsonb, 'payments');
-  v := get_settings_by_category_v6('payments')->'settings'->'enabled_payment_methods';
+  PERFORM set_setting_v9('enabled_payment_methods', '["cash","qris"]'::jsonb, 'payments');
+  v := get_settings_by_category_v7('payments')->'settings'->'enabled_payment_methods';
   INSERT INTO _r VALUES ('t2_set_valid', v = '["cash","qris"]'::jsonb);
 EXCEPTION WHEN OTHERS THEN
   INSERT INTO _r VALUES ('t2_set_valid', false);
@@ -46,7 +46,7 @@ END $$;
 
 -- T3: array vide rejeté (on ne peut pas tout désactiver).
 DO $$ BEGIN
-  PERFORM set_setting_v8('enabled_payment_methods', '[]'::jsonb, 'payments');
+  PERFORM set_setting_v9('enabled_payment_methods', '[]'::jsonb, 'payments');
   INSERT INTO _r VALUES ('t3_empty', false);
 EXCEPTION WHEN SQLSTATE '22023' THEN
   INSERT INTO _r VALUES ('t3_empty', SQLERRM = 'setting_value_invalid');
@@ -56,7 +56,7 @@ END $$;
 
 -- T4: méthode inconnue rejetée.
 DO $$ BEGIN
-  PERFORM set_setting_v8('enabled_payment_methods', '["cash","bitcoin"]'::jsonb, 'payments');
+  PERFORM set_setting_v9('enabled_payment_methods', '["cash","bitcoin"]'::jsonb, 'payments');
   INSERT INTO _r VALUES ('t4_unknown', false);
 EXCEPTION WHEN SQLSTATE '22023' THEN
   INSERT INTO _r VALUES ('t4_unknown', SQLERRM = 'setting_value_invalid');
@@ -66,7 +66,7 @@ END $$;
 
 -- T5: non-array rejeté (setting_type_invalid).
 DO $$ BEGIN
-  PERFORM set_setting_v8('enabled_payment_methods', '"cash"'::jsonb, 'payments');
+  PERFORM set_setting_v9('enabled_payment_methods', '"cash"'::jsonb, 'payments');
   INSERT INTO _r VALUES ('t5_nonarray', false);
 EXCEPTION WHEN SQLSTATE '22023' THEN
   INSERT INTO _r VALUES ('t5_nonarray', SQLERRM = 'setting_type_invalid');
@@ -76,7 +76,7 @@ END $$;
 
 -- T6: doublon rejeté.
 DO $$ BEGIN
-  PERFORM set_setting_v8('enabled_payment_methods', '["cash","cash"]'::jsonb, 'payments');
+  PERFORM set_setting_v9('enabled_payment_methods', '["cash","cash"]'::jsonb, 'payments');
   INSERT INTO _r VALUES ('t6_duplicate', false);
 EXCEPTION WHEN SQLSTATE '22023' THEN
   INSERT INTO _r VALUES ('t6_duplicate', SQLERRM = 'setting_value_invalid');
@@ -86,7 +86,7 @@ END $$;
 
 -- T7: élément non-string rejeté.
 DO $$ BEGIN
-  PERFORM set_setting_v8('enabled_payment_methods', '[1]'::jsonb, 'payments');
+  PERFORM set_setting_v9('enabled_payment_methods', '[1]'::jsonb, 'payments');
   INSERT INTO _r VALUES ('t7_nonstring', false);
 EXCEPTION WHEN SQLSTATE '22023' THEN
   INSERT INTO _r VALUES ('t7_nonstring', SQLERRM = 'setting_value_invalid');
@@ -116,7 +116,7 @@ DO $$ DECLARE v_rand UUID := gen_random_uuid(); BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_rand::text, true);
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_rand)::text, true);
   BEGIN
-    PERFORM set_setting_v8('enabled_payment_methods', '["cash"]'::jsonb, 'payments');
+    PERFORM set_setting_v9('enabled_payment_methods', '["cash"]'::jsonb, 'payments');
     INSERT INTO _r VALUES ('t9_perm', false);
   EXCEPTION WHEN SQLSTATE '42501' THEN
     INSERT INTO _r VALUES ('t9_perm', SQLERRM = 'permission_denied');
@@ -131,8 +131,8 @@ END $$;
 -- T10: ACL — anon n'a pas EXECUTE sur les 2 RPCs settings (S20).
 DO $$ BEGIN
   INSERT INTO _r VALUES ('t10_acl_anon',
-    NOT has_function_privilege('anon', 'public.set_setting_v8(text,jsonb,text)', 'EXECUTE')
-    AND NOT has_function_privilege('anon', 'public.get_settings_by_category_v6(text)', 'EXECUTE'));
+    NOT has_function_privilege('anon', 'public.set_setting_v9(text,jsonb,text)', 'EXECUTE')
+    AND NOT has_function_privilege('anon', 'public.get_settings_by_category_v7(text)', 'EXECUTE'));
 EXCEPTION WHEN OTHERS THEN
   INSERT INTO _r VALUES ('t10_acl_anon', false);
 END $$;
@@ -140,8 +140,8 @@ END $$;
 -- T12 (lot B, ADR-006 déc. 9): les e-wallets gopay/ovo/dana passent
 -- l'allowlist v6 et se relisent à l'identique (ordre compris).
 DO $$ DECLARE v JSONB; BEGIN
-  PERFORM set_setting_v8('enabled_payment_methods', '["cash","gopay","ovo","dana"]'::jsonb, 'payments');
-  v := get_settings_by_category_v6('payments')->'settings'->'enabled_payment_methods';
+  PERFORM set_setting_v9('enabled_payment_methods', '["cash","gopay","ovo","dana"]'::jsonb, 'payments');
+  v := get_settings_by_category_v7('payments')->'settings'->'enabled_payment_methods';
   INSERT INTO _r VALUES ('t12_ewallets', v = '["cash","gopay","ovo","dana"]'::jsonb);
 EXCEPTION WHEN OTHERS THEN
   INSERT INTO _r VALUES ('t12_ewallets', false);
@@ -150,8 +150,8 @@ END $$;
 -- T13 (lot C, ADR-006 déc. 9): payment_method_fees — objet {méthode: %} accepté,
 -- relu via la catégorie payments.
 DO $$ DECLARE v JSONB; BEGIN
-  PERFORM set_setting_v8('payment_method_fees', '{"qris": 0.7, "gopay": 2}'::jsonb, 'payments');
-  v := get_settings_by_category_v6('payments')->'settings'->'payment_method_fees';
+  PERFORM set_setting_v9('payment_method_fees', '{"qris": 0.7, "gopay": 2}'::jsonb, 'payments');
+  v := get_settings_by_category_v7('payments')->'settings'->'payment_method_fees';
   INSERT INTO _r VALUES ('t13_fees', v = '{"qris": 0.7, "gopay": 2}'::jsonb);
 EXCEPTION WHEN OTHERS THEN
   INSERT INTO _r VALUES ('t13_fees', false);
@@ -160,15 +160,15 @@ END $$;
 -- T14 (lot C): rejets — clé inconnue, valeur non numérique, hors [0,100].
 DO $$ DECLARE v_ok BOOLEAN := true; BEGIN
   BEGIN
-    PERFORM set_setting_v8('payment_method_fees', '{"bitcoin": 1}'::jsonb, 'payments');
+    PERFORM set_setting_v9('payment_method_fees', '{"bitcoin": 1}'::jsonb, 'payments');
     v_ok := false;
   EXCEPTION WHEN SQLSTATE '22023' THEN NULL; END;
   BEGIN
-    PERFORM set_setting_v8('payment_method_fees', '{"qris": "0.7"}'::jsonb, 'payments');
+    PERFORM set_setting_v9('payment_method_fees', '{"qris": "0.7"}'::jsonb, 'payments');
     v_ok := false;
   EXCEPTION WHEN SQLSTATE '22023' THEN NULL; END;
   BEGIN
-    PERFORM set_setting_v8('payment_method_fees', '{"qris": 101}'::jsonb, 'payments');
+    PERFORM set_setting_v9('payment_method_fees', '{"qris": 101}'::jsonb, 'payments');
     v_ok := false;
   EXCEPTION WHEN SQLSTATE '22023' THEN NULL; END;
   INSERT INTO _r VALUES ('t14_fees_invalid', v_ok);

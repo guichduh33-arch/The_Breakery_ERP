@@ -11,7 +11,7 @@ vi.mock('@/lib/supabase.js', () => ({
   supabase: {
     rpc: (fn: string, args: unknown) => {
       rpcCalls.push({ fn, args });
-      if (fn === 'get_settings_by_category_v6') {
+      if (fn === 'get_settings_by_category_v7') {
         return Promise.resolve({
           data: {
             category: 'customer_display',
@@ -20,7 +20,7 @@ vi.mock('@/lib/supabase.js', () => ({
           error: null,
         });
       }
-      return Promise.resolve({ data: null, error: null }); // set_setting_v8
+      return Promise.resolve({ data: null, error: null }); // set_setting_v9
     },
   },
 }));
@@ -55,7 +55,7 @@ describe('SettingsCustomerDisplayPage', () => {
     expect(screen.queryByRole('button', { name: /save/i })).not.toBeInTheDocument();
   });
 
-  it('calls set_setting_v8 with the customer_display category on save', async () => {
+  it('calls set_setting_v9 with the customer_display category on save', async () => {
     canUpdate = true;
     rpcCalls.length = 0;
     render(wrap(<SettingsCustomerDisplayPage />));
@@ -64,9 +64,9 @@ describe('SettingsCustomerDisplayPage', () => {
     fireEvent.change(screen.getByLabelText(/brand slogan/i), { target: { value: 'French Bakery' } });
     fireEvent.click(screen.getByRole('button', { name: /save 1 change/i }));
 
-    await waitFor(() => expect(rpcCalls.some((c) => c.fn === 'set_setting_v8')).toBe(true));
+    await waitFor(() => expect(rpcCalls.some((c) => c.fn === 'set_setting_v9')).toBe(true));
 
-    const call = rpcCalls.find((c) => c.fn === 'set_setting_v8');
+    const call = rpcCalls.find((c) => c.fn === 'set_setting_v9');
     expect(call?.args).toEqual({
       p_key: 'display_slogan',
       p_value: 'French Bakery',
