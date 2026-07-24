@@ -56,6 +56,7 @@ const CashierVariancePage = lazy(() => import('@/pages/reports/CashierVariancePa
 const StockVariancePage = lazy(() => import('@/pages/reports/StockVariancePage.js'));
 const ProductionYieldPage = lazy(() => import('@/pages/reports/ProductionYieldPage.js'));
 const AuditPage = lazy(() => import('@/pages/reports/AuditPage.js'));
+const OffHoursSalesPage = lazy(() => import('@/pages/reports/OffHoursSalesPage.js'));
 const ProfitLossPage = lazy(() => import('@/pages/reports/ProfitLossPage.js'));
 const GrossMarginPage = lazy(() => import('@/pages/reports/GrossMarginPage.js'));
 const BalanceSheetPage = lazy(() => import('@/pages/reports/BalanceSheetPage.js'));
@@ -88,6 +89,7 @@ const SettingsFloorPlanPage = lazy(() => import('@/pages/settings/SettingsFloorP
 const SettingsPrintingPage = lazy(() => import('@/pages/settings/SettingsPrintingPage.js'));
 const SettingsPosConfigPage = lazy(() => import('@/pages/settings/SettingsPosConfigPage.js'));
 const SettingsHolidaysPage = lazy(() => import('@/pages/settings/SettingsHolidaysPage.js'));
+const SettingsBusinessHoursPage = lazy(() => import('@/pages/settings/SettingsBusinessHoursPage.js'));
 const SettingsEmailTemplatesPage = lazy(() => import('@/pages/settings/SettingsEmailTemplatesPage.js'));
 const SettingsNotificationsPage = lazy(() => import('@/pages/settings/SettingsNotificationsPage.js'));
 const SettingsReceiptTemplatesPage = lazy(() => import('@/pages/settings/SettingsReceiptTemplatesPage.js'));
@@ -716,6 +718,14 @@ export function AppRoutes() {
           }
         />
         <Route
+          path="reports/off-hours-sales"
+          element={
+            <PermissionGate required="reports.audit.read">
+              <OffHoursSalesPage />
+            </PermissionGate>
+          }
+        />
+        <Route
           path="reports/profit-loss"
           element={
             <PermissionGate required="reports.financial.read">
@@ -904,6 +914,14 @@ export function AppRoutes() {
           element={
             <PermissionGate required="settings.read">
               <SettingsGeneralPage />
+            </PermissionGate>
+          }
+        />
+        <Route
+          path="settings/business-hours"
+          element={
+            <PermissionGate required="settings.read">
+              <SettingsBusinessHoursPage />
             </PermissionGate>
           }
         />

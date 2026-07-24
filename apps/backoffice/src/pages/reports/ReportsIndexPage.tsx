@@ -104,6 +104,7 @@ const SECTIONS: ReportSection[] = [
     title: 'Logs & Audit',
     cards: [
       { to: 'audit',                 title: 'Audit Log',         blurb: 'System-wide audit trail.',         icon: Shield },
+      { to: 'off-hours-sales',       title: 'Off-Hours Sales',   blurb: 'Payments taken outside business hours (fraud signal).', icon: Clock },
       { to: 'price-changes',         title: 'Price Changes',     blurb: 'History of product price updates.', icon: ListChecks },
       { to: 'permission-changes',    title: 'Permission Change Log', blurb: 'Role & permission modifications.',  icon: Shield },
     ],

@@ -296,6 +296,7 @@ export type Database = {
         Row: {
           alert_email: string | null
           allow_negative_stock: boolean
+          business_hours: Json
           created_at: string
           currency: string
           display_footer_message: string
@@ -335,6 +336,7 @@ export type Database = {
         Insert: {
           alert_email?: string | null
           allow_negative_stock?: boolean
+          business_hours?: Json
           created_at?: string
           currency?: string
           display_footer_message?: string
@@ -374,6 +376,7 @@ export type Database = {
         Update: {
           alert_email?: string | null
           allow_negative_stock?: boolean
+          business_hours?: Json
           created_at?: string
           currency?: string
           display_footer_message?: string
@@ -7232,6 +7235,13 @@ export type Database = {
         }
         Returns: Json
       }
+      get_off_hours_sales_v1: {
+        Args: {
+          p_date_end: string
+          p_date_start: string
+        }
+        Returns: Json
+      }
       get_payments_by_method_v3: {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
@@ -7435,7 +7445,7 @@ export type Database = {
           total: number
         }[]
       }
-      get_settings_by_category_v5: {
+      get_settings_by_category_v6: {
         Args: { p_category: string }
         Returns: Json
       }
@@ -8347,7 +8357,7 @@ export type Database = {
         Args: { p_alts: Json; p_contexts: Json; p_product_id: string }
         Returns: Json
       }
-      set_setting_v7: {
+      set_setting_v8: {
         Args: { p_category: string; p_key: string; p_value: Json }
         Returns: undefined
       }

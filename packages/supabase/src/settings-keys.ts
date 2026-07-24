@@ -1,7 +1,7 @@
 // S73 Phase 3 — single typed dictionary of business_config setting keys and
-// symbolic categories (server truth: set_setting_v7 / get_settings_by_category_v5,
-// migrations 20260711000159 + 20260716000168 + 20260718000195 + 20260721000197).
-// Add a key here ONLY together with its RPC branch.
+// symbolic categories (server truth: set_setting_v8 / get_settings_by_category_v6,
+// migrations 20260711000159 + 20260716000168 + 20260718000195 + 20260721000197
+// + 20260724000217). Add a key here ONLY together with its RPC branch.
 export const SETTINGS_CATEGORIES = [
   'business', 'localization', 'tax', 'pos', 'pos_presets',
   'inventory', 'payments', 'customer_display', 'printing', 'kds', 'network',
@@ -11,7 +11,10 @@ export type SettingsCategory = (typeof SETTINGS_CATEGORIES)[number];
 export const SETTING_KEYS = {
   // 2026-07-16 (Settings §6.A): identity on documents (npwp/phone/logo_url)
   // + internal alert recipient (alert_email), migration 20260716000168.
-  business:         ['name', 'fiscal_address', 'npwp', 'phone', 'logo_url', 'alert_email'],
+  // ADR-006 déc. 9 : business_hours — créneau {open, close} HH:MM par jour de
+  // semaine (mon..sun), null = fermé, clé absente = non configuré.
+  business:         ['name', 'fiscal_address', 'npwp', 'phone', 'logo_url', 'alert_email',
+                     'business_hours'],
   localization:     ['currency', 'timezone'],
   tax:              ['tax_rate', 'tax_inclusive'],
   pos:              ['shift_variance_threshold_pct', 'shift_variance_threshold_abs',
