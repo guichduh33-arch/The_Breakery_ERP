@@ -17,18 +17,22 @@ Si un document contredit le code, le document a tort : **signale-le, ne corrige 
 
 ## Règles documentaires — non négociables
 
-1. **Tu ne crées JAMAIS de fichier `.md`, `.txt`, rapport, plan, spec, INDEX,
-   compte-rendu ou résumé de session.** Si un document te semble nécessaire,
-   propose son contenu dans ta réponse ; Mamat seul décide de l'écrire.
-2. **Tu ne commites JAMAIS un fichier de `docs/`.** Même modifié sur demande,
-   le commit de doc est réservé à Mamat.
+1. **Par défaut tu ne crées pas de fichier `.md`, `.txt`, rapport, plan, spec,
+   INDEX, compte-rendu ou résumé de session** : tu proposes son contenu dans ta
+   réponse. **Exception : sur validation explicite de Mamat en séance**, tu crées
+   le fichier avec le contenu validé. Sans feu vert explicite, tu restes en mode
+   proposition.
+2. **Par défaut le commit de doc est réservé à Mamat. Exception : sur validation
+   explicite de Mamat**, tu peux commiter un fichier de doc — sur une branche
+   dédiée (`docs/…`, `feat/…`, `fix/…`, **jamais `master`**), sans push sans
+   demander. Pas de validation explicite = pas de commit de doc.
 3. **Les plans de session vivent dans la conversation** (mode plan), jamais en
    fichier. Ce qui mérite de survivre à une session devient un ADR — écrit et
    commité par Mamat — ou disparaît avec le contexte.
 4. **Specs d'exécution (`docs/specs/`)** : uniquement quand un ADR l'exige
    explicitement pour un chantier lourd. Nom : `<ADR>x-<sujet>.md`. Contenu
-   proposé par l'agent en conversation, relu et commité par Mamat (règles 1-2
-   inchangées). Une spec meurt à la livraison du chantier : supprimée, son
+   proposé par l'agent en conversation, relu et validé par Mamat (création/commit
+   selon règles 1-2). Une spec meurt à la livraison du chantier : supprimée, son
    résiduel éventuel noté dans l'ADR. Jamais plus de 3 specs vivantes.
    Tout autre plan/spec/compte-rendu reste interdit de fichier.
 5. **Un ADR ne se modifie jamais.** Changement d'avis = nouvel ADR numéroté qui
