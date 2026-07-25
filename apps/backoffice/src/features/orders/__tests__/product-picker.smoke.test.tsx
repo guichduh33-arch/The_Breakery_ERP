@@ -26,7 +26,7 @@ const PRODUCTS_RAW = [
 ];
 
 // ── supabase mock (from().select chain) ───────────────────────────────────────
-const rpcMock = vi.fn();
+const rpcMock = vi.fn<(...args: unknown[]) => Promise<unknown>>();
 
 vi.mock('@/lib/supabase.js', () => {
   function buildChain(result: { data: unknown; error: null }) {
@@ -165,7 +165,7 @@ describe('ProductPicker smoke [S39-W-C1]', () => {
 
     // The qty input for the single pending row should show 2
     await waitFor(() => {
-      const qtyInput = screen.getByTestId('qty-__pending-0') as HTMLInputElement;
+      const qtyInput: HTMLInputElement = screen.getByTestId('qty-__pending-0');
       expect(qtyInput.value).toBe('2');
     });
 
@@ -197,7 +197,7 @@ describe('ProductPicker smoke [S39-W-C1]', () => {
     fireEvent.click(screen.getByTestId('picker-row-prod-standalone'));
 
     await waitFor(() => {
-      const qtyInput = screen.getByTestId('qty-__pending-0') as HTMLInputElement;
+      const qtyInput: HTMLInputElement = screen.getByTestId('qty-__pending-0');
       expect(qtyInput.value).toBe('2');
     });
 
