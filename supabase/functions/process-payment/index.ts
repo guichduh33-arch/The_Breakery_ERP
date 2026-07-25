@@ -116,7 +116,9 @@ interface ProcessPaymentPayload {
   discount_type?: string;
   discount_value?: number;
   discount_reason?: string;
-  discount_authorized_by?: string;
+  // ADR-013 D10 (2026-07-26) — `discount_authorized_by` retiré du contrat : plus
+  // aucun money-path ne lit une identité d'autorisateur depuis le body JSON.
+  // L'autorisateur est DÉRIVÉ du PIN vérifié in-EF (verifyManagerPin ci-dessous).
 }
 
 function isValidPaymentEntry(p: PaymentEntry | undefined): p is PaymentEntry {
@@ -290,9 +292,9 @@ serve(async (req) => {
           ...(body.discount_reason ? { p_discount_reason: body.discount_reason } : {}),
         }
       : {}),
-    ...(discountAuthorizedBy
-      ? { p_discount_authorized_by: discountAuthorizedBy }
-      : (body.discount_authorized_by ? { p_discount_authorized_by: body.discount_authorized_by } : {})),
+    // ADR-013 D10 — l'autorisateur est UNIQUEMENT celui dérivé du PIN vérifié
+    // (verifyManagerPin) ; plus de fallback sur une identité lue du body JSON.
+    ...(discountAuthorizedBy ? { p_discount_authorized_by: discountAuthorizedBy } : {}),
     ...(discountAuthId ? { p_discount_auth_id: discountAuthId } : {}),
   });
 

@@ -31,7 +31,7 @@
 // Headers:
 //   x-manager-pin: string (6 digits) — REQUIRED
 //   Authorization: Bearer <cashier JWT> — REQUIRED
-// Body: { required_permission?: string, mint_scope?: 'order_item_edit' }
+// Body: { required_permission?: string, mint_scope?: 'order_item_edit' | 'discount' }
 //       (e.g. 'sales.discount'; empty body OK)
 // 200 → { verified_user_id, authorization_id? }
 
@@ -53,8 +53,12 @@ interface VerifyManagerPinPayload {
 // ADR-010 D3 — allowlist of mintable scopes and the authorizer permission each
 // one enforces (editing a kitchen-sent line is a partial cancel: same authority
 // as the cancel flow). Server-side mapping — the client body is never trusted.
+// ADR-013 D9 — `discount` mints the discount nonce consumed by
+// pay_existing_order_v14 (pickup path); authorizer needs 'sales.discount'. The
+// scope value 'discount' matches the discount_authorizations.scope default.
 const MINT_SCOPES: Record<string, string> = {
   order_item_edit: 'pos.sale.cancel_item',
+  discount:        'sales.discount',
 };
 
 serve(async (req) => {

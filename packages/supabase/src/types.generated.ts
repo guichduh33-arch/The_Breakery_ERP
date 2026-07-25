@@ -7860,10 +7860,11 @@ export type Database = {
       pass:
         | { Args: never; Returns: string }
         | { Args: { "": string }; Returns: string }
-      pay_existing_order_v13: {
+      pay_existing_order_v14: {
         Args: {
           p_customer_id?: string
           p_discount_amount?: number
+          p_discount_auth_id?: string
           p_discount_authorized_by?: string
           p_discount_reason?: string
           p_discount_type?: string
