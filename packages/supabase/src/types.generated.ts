@@ -8159,7 +8159,7 @@ export type Database = {
       refresh_mv_pl_monthly: { Args: never; Returns: undefined }
       refresh_mv_sales_daily: { Args: never; Returns: undefined }
       refresh_mv_stock_variance: { Args: never; Returns: undefined }
-      refund_order_rpc_v6: {
+      refund_order_rpc_v7: {
         Args: {
           p_acting_auth_user_id: string
           p_authorized_by: string
