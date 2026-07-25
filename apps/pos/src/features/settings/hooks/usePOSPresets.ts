@@ -2,9 +2,12 @@
 //
 // Session 14 / Phase 2.D — Reviewer follow-up #18.
 //
-// Reads/writes the three pos_presets keys via the existing
-// get_settings_by_category_v7 / set_setting_v9 RPC pair (extended in
-// migration 20260518000003 to support a `pos_presets` symbolic category).
+// READ: direct business_config select (RLS auth_read) — NOT the
+// get_settings_by_category_v7 RPC, whose settings.read gate rejects
+// CASHIER/waiter (42501 → 403) and silently forced the hardcoded fallbacks
+// for the exact audience the presets are configured for. Same pattern as
+// useEnabledPaymentMethods.
+// WRITE: still set_setting_v9 (POSSettingsPage is manager-gated).
 //
 // Read shape :
 //   { quickPayments: number[]; openingCashPresets: number[];
@@ -44,15 +47,6 @@ export const FALLBACK_PRESETS: POSPresets = {
 
 const QUERY_KEY = ['pos-presets'] as const;
 
-interface RawSettingsPayload {
-  category?: string;
-  settings?: {
-    pos_quick_payment_amounts?: unknown;
-    pos_opening_cash_presets?: unknown;
-    pos_discount_presets?: unknown;
-  } | null;
-}
-
 function coerceNumberArray(input: unknown, fallback: number[]): number[] {
   if (!Array.isArray(input)) return fallback;
   const out: number[] = [];
@@ -91,23 +85,23 @@ export function usePOSPresets() {
     queryKey: QUERY_KEY,
     staleTime: 60_000,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_settings_by_category_v7', {
-        p_category: 'pos_presets',
-      });
-      if (error) throw error;
-      const payload = (data ?? null) as RawSettingsPayload | null;
-      const settings = payload?.settings ?? null;
+      const { data, error } = await supabase
+        .from('business_config')
+        .select('pos_quick_payment_amounts, pos_opening_cash_presets, pos_discount_presets')
+        .limit(1)
+        .maybeSingle();
+      if (error) throw new Error(error.message);
       return {
         quickPayments: coerceNumberArray(
-          settings?.pos_quick_payment_amounts,
+          data?.pos_quick_payment_amounts,
           FALLBACK_PRESETS.quickPayments,
         ),
         openingCashPresets: coerceNumberArray(
-          settings?.pos_opening_cash_presets,
+          data?.pos_opening_cash_presets,
           FALLBACK_PRESETS.openingCashPresets,
         ),
         discountPresets: coerceDiscountArray(
-          settings?.pos_discount_presets,
+          data?.pos_discount_presets,
           FALLBACK_PRESETS.discountPresets,
         ),
       };
