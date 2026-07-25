@@ -71,7 +71,7 @@ function BootGate({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <BrowserRouter>
         {/* a11y: keyboard users tab here first to jump past nav chrome. */}
         <SkipToContent />
         <IdleTimeoutMount />
