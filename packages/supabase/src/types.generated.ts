@@ -8647,7 +8647,7 @@ export type Database = {
         Args: { p_pin: string; p_user_id: string }
         Returns: boolean
       }
-      void_order_rpc_v5: {
+      void_order_rpc_v6: {
         Args: {
           p_acting_auth_user_id: string
           p_authorized_by: string
