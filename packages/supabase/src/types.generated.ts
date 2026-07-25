@@ -6441,7 +6441,7 @@ export type Database = {
         }
         Returns: Json
       }
-      add_order_item_v1: {
+      add_order_item_v2: {
         Args: {
           p_idempotency_key: string
           p_modifiers: Json
@@ -8159,7 +8159,7 @@ export type Database = {
       refresh_mv_pl_monthly: { Args: never; Returns: undefined }
       refresh_mv_sales_daily: { Args: never; Returns: undefined }
       refresh_mv_stock_variance: { Args: never; Returns: undefined }
-      refund_order_rpc_v6: {
+      refund_order_rpc_v7: {
         Args: {
           p_acting_auth_user_id: string
           p_authorized_by: string
@@ -8180,7 +8180,7 @@ export type Database = {
         Returns: undefined
       }
       release_expired_reservations: { Args: never; Returns: number }
-      remove_order_item_v2: {
+      remove_order_item_v3: {
         Args: { p_idempotency_key: string; p_order_item_id: string }
         Returns: Json
       }
@@ -8494,7 +8494,7 @@ export type Database = {
           code: string
         }[]
       }
-      update_order_item_qty_v2: {
+      update_order_item_qty_v3: {
         Args: {
           p_auth_id?: string
           p_idempotency_key: string
@@ -8647,7 +8647,7 @@ export type Database = {
         Args: { p_pin: string; p_user_id: string }
         Returns: boolean
       }
-      void_order_rpc_v5: {
+      void_order_rpc_v6: {
         Args: {
           p_acting_auth_user_id: string
           p_authorized_by: string

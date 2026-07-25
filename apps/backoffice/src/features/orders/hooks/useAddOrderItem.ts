@@ -1,6 +1,7 @@
 // apps/backoffice/src/features/orders/hooks/useAddOrderItem.ts
-// Session 33 / Wave 2.6 — call add_order_item_v1 RPC.
+// Session 33 / Wave 2.6 — call add_order_item_v2 RPC.
 import { useMutation } from '@tanstack/react-query';
+import type { Json } from '@breakery/supabase';
 import { supabase } from '@/lib/supabase.js';
 
 interface Args {
@@ -19,16 +20,15 @@ interface Response {
 export function useAddOrderItem() {
   return useMutation<Response, Error, Args>({
     mutationFn: async (args) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase as any).rpc('add_order_item_v1', {
+      const { data, error } = await supabase.rpc('add_order_item_v2', {
         p_order_id:        args.orderId,
         p_product_id:      args.productId,
         p_qty:             args.qty,
-        p_modifiers:       args.modifiers ?? [],
+        p_modifiers:       (args.modifiers ?? []) as Json[],
         p_idempotency_key: args.idempotencyKey,
       });
       if (error) throw error;
-      return data as Response;
+      return data as unknown as Response;
     },
   });
 }

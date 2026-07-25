@@ -6,7 +6,7 @@
 // ADR-010 — updates flagged is_locked require `lockedAuth` (manager PIN +
 // waste reason): one single-use nonce is minted per locked update via
 // verify-manager-pin (mint_scope 'order_item_edit') and consumed by
-// update_order_item_qty_v2, which records the mandatory waste on the delta.
+// update_order_item_qty_v3, which records the mandatory waste on the delta.
 
 import { useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';

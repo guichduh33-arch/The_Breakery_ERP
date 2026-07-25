@@ -25,7 +25,7 @@
 // inserts a `discount_authorizations` row (service-role only, 60 s TTL) whose
 // scope-mapped permission is enforced SERVER-SIDE (the client's
 // `required_permission` is never trusted for minting). The returned
-// `authorization_id` is consumed atomically by update_order_item_qty_v2 —
+// `authorization_id` is consumed atomically by update_order_item_qty_v3 —
 // same single-use vehicle as the S55 discount nonce.
 //
 // Headers:
