@@ -16,6 +16,12 @@ updates:
       npm-all:
         patterns:
           - "*"
+    # Majeures exclues du bump auto : une seule majeure cassante (TS 7, eslint 10…)
+    # rougit toute la PR groupée. Les majeures se traitent en chantier dédié.
+    # Les security updates ne sont PAS affectées (mécanisme séparé).
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /
