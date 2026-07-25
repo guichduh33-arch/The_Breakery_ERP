@@ -174,3 +174,42 @@ COMMENT D3 devient effectif ; les décisions restent inchangées.
   (CREATE OR REPLACE de la fonction — trigger function, pas RPC versionné — +
   conversion du trigger) et test `reversal_je_single_and_method_mapping.test.sql`
   (8/8, vérifié live via MCP). Commit `e5aab329` sur `fix/refund-je-reversal-lot1`.
+
+## Addendum 2026-07-26 — Livraison Lot 2 (D9 + D10)
+
+Clôture du périmètre serveur du Lot 2. Cet addendum documente la livraison ;
+il ne révise aucune décision D1–D16.
+
+### D9 — nonce discount sur `pay_existing_order` (E1 clos)
+- `pay_existing_order` bumpé **v13 → v14** : consommation atomique d'un
+  `discount_authorizations` (`p_discount_auth_id`), miroir exact de
+  `complete_order_with_payment_v19`. Un autorisateur sans nonce valide → `P0003`.
+- **Découverte structurante** : contrairement à `complete_order` (nonce minté par
+  l'EF `process-payment`), `pay_existing_order` est appelé **en RPC direct depuis
+  le navigateur** — aucun minteur service-role côté serveur. D9 n'est donc pas un
+  simple bump RPC : il exige un minteur de confiance en amont.
+- **Décision (2026-07-26)** : le nonce est minté par l'EF **`verify-manager-pin`**
+  (nouveau `mint_scope: 'discount'` → permission `sales.discount`), **au checkout**,
+  piloté par le PIN manager déjà porté depuis la saisie (`managerPinHolder`). Mint
+  et consommation dans la même fenêtre → TTL 60 s de `discount_authorizations`
+  respecté (le mint « au panier » aurait expiré).
+- **Décision offline** : un replay hors-ligne (`p_offline_replay = true`)
+  **bypasse** la garde nonce — la remise a été autorisée en ligne à la saisie, le
+  replay ne fait que la rejouer. Tracé `pin_gated=false, offline_replay=true`.
+
+### D10 — fin du dual-mode autorisateur
+- `process-payment` ne lit plus `body.discount_authorized_by` : l'autorisateur de
+  remise est **uniquement** celui dérivé du PIN vérifié in-EF. Champ retiré du
+  contrat `ProcessPaymentPayload`. Clôt M4.
+
+### Portée live (cloud dev `ikcyvlovptebroadgtvd`)
+- Migration `20260726000225_pay_existing_order_v14_d9_discount_nonce.sql`.
+- EF `verify-manager-pin` v12 · `process-payment` v24.
+- pgTAP : `pay_existing_discount_gate` 7/7 · `pay_existing_flag_aware` 3/3 ; typecheck
+  POS + smoke POS 19/19. Commits sur `fix/lot2-d9-d10-discount-nonce` (PR #288).
+
+### Résiduel
+- `p_offline_replay` est un arg client : un appel RPC brut `offline_replay=true`
+  contourne le nonce — **même frontière de confiance que le bypass stock offline
+  existant** (hub LAN). Accepté, cohérent avec le modèle offline.
+- Hors périmètre serveur : front **D13** (stabilité de la clé d'idempotence).
