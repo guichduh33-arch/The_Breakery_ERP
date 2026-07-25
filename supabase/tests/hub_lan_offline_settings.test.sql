@@ -2,7 +2,7 @@
 -- Spec 006x lot 4 (migrations 20260721000197 + 20260721000198) —
 -- business_config offline_cash_enabled / offline_max_hours, branches
 -- set_setting_v5 + catégorie 'network' de get_settings_by_category_v7, et
--- pay_existing_order_v13 (p_offline_replay, arbitrage A4). Auth pattern :
+-- pay_existing_order_v14 (p_offline_replay, arbitrage A4). Auth pattern :
 -- EMP000 (ADMIN) porte settings.update + settings.read (mirror
 -- settings_kot_copies.test.sql).
 --
@@ -94,12 +94,12 @@ END $audit$;
 SELECT ok(current_setting('breakery.t_audit_pass')::BOOLEAN,
   'audit_logs setting.update row for offline_max_hours has key/old/new/category');
 
--- 12: pay_existing_order_v13 porte p_offline_replay boolean (A4).
+-- 12: pay_existing_order_v14 porte p_offline_replay boolean (A4).
 SELECT ok(
   (SELECT pg_get_function_identity_arguments(p.oid) LIKE '%p_offline_replay boolean%'
    FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
-   WHERE n.nspname = 'public' AND p.proname = 'pay_existing_order_v13'),
-  'pay_existing_order_v13 signature carries p_offline_replay boolean');
+   WHERE n.nspname = 'public' AND p.proname = 'pay_existing_order_v14'),
+  'pay_existing_order_v14 signature carries p_offline_replay boolean');
 
 -- 13: la branche A4 force allow_negative et trace offline_replay dans l'audit.
 SELECT ok(
@@ -107,7 +107,7 @@ SELECT ok(
       AND prosrc LIKE '%v_allow_negative := true%'
       AND prosrc LIKE '%''offline_replay'',  p_offline_replay%'
    FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
-   WHERE n.nspname = 'public' AND p.proname = 'pay_existing_order_v13'),
+   WHERE n.nspname = 'public' AND p.proname = 'pay_existing_order_v14'),
   'v13 body forces allow_negative under replay and stamps offline_replay in audit metadata');
 
 -- 14: defense-in-depth — anon n'exécute AUCUNE des 3 nouvelles fonctions.
@@ -115,8 +115,8 @@ SELECT ok(
   (SELECT bool_and(NOT has_function_privilege('anon', p.oid, 'EXECUTE'))
    FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
    WHERE n.nspname = 'public'
-     AND p.proname IN ('set_setting_v5', 'get_settings_by_category_v7', 'pay_existing_order_v13')),
-  'anon has no EXECUTE on set_setting_v5 / get_settings_by_category_v7 / pay_existing_order_v13');
+     AND p.proname IN ('set_setting_v5', 'get_settings_by_category_v7', 'pay_existing_order_v14')),
+  'anon has no EXECUTE on set_setting_v5 / get_settings_by_category_v7 / pay_existing_order_v14');
 
 SELECT * FROM finish();
 ROLLBACK;

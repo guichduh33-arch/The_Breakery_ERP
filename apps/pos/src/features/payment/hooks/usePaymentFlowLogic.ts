@@ -186,7 +186,7 @@ export function usePaymentFlowLogic() {
 
   // Spec 006x lot 4 — encaissement CASH en mode OFFLINE (A1b) : la vente est
   // journalisée dans l'outbox durable (clé = idempotencyKey de la tentative)
-  // et rejouée vers pay_existing_order_v13 au retour du cloud. Aucun montant
+  // et rejouée vers pay_existing_order_v14 au retour du cloud. Aucun montant
   // n'est validé serveur ici : cash exact/rendu calculés client, totaux au
   // tarif catalogue — les flux online-only (promos, remise commande, points)
   // sont refusés proprement en amont.

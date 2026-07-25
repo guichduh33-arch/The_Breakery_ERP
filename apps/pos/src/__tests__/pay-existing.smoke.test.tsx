@@ -38,8 +38,11 @@ function wrapper(children: ReactNode) {
 }
 
 describe('pay-existing smoke', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+    // ADR-013 D9 — le nonce discount est piloté par le PIN porté ; on repart PIN vide.
+    const { clearManagerPin } = await import('@/features/discounts/managerPinHolder');
+    clearManagerPin();
     mocks.rpc.mockResolvedValue({ data: { order_number: '#T001' }, error: null });
     useCartStore.setState({
       cart: {
@@ -80,10 +83,50 @@ describe('pay-existing smoke', () => {
       });
     });
 
-    expect(mocks.rpc).toHaveBeenCalledWith('pay_existing_order_v13', expect.objectContaining({
+    expect(mocks.rpc).toHaveBeenCalledWith('pay_existing_order_v14', expect.objectContaining({
       p_order_id: 'order-tablet-1',
     }));
     expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  // ADR-013 D9 — remise sur commande reprise : le nonce est minté via
+  // verify-manager-pin (piloté par le PIN porté) puis transporté au RPC.
+  it('mints the discount nonce via verify-manager-pin and forwards p_discount_auth_id', async () => {
+    const { setManagerPin } = await import('@/features/discounts/managerPinHolder');
+    setManagerPin('123456');
+    useCartStore.setState((s) => ({
+      cart: { ...s.cart, cartDiscount: { amount: 3000, type: 'fixed_amount', value: 3000, reason: 'test', authorized_by: 'mgr-1' } },
+    }));
+    // 1ᵉ fetch = mint verify-manager-pin → renvoie le nonce.
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ verified_user_id: 'mgr-1', authorization_id: 'nonce-1' }),
+    });
+
+    const { useCheckout } = await import('@/features/payment/hooks/useCheckout');
+    const { result } = renderHook(() => useCheckout(), {
+      wrapper: ({ children }) => wrapper(children),
+    });
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        cart: useCartStore.getState().cart,
+        payment: { method: 'cash', amount: 32000, cash_received: 32000, change_given: 0 },
+      });
+    });
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.stringContaining('verify-manager-pin'),
+      expect.objectContaining({
+        headers: expect.objectContaining({ 'x-manager-pin': '123456' }),
+        body: expect.stringContaining('discount'),
+      }),
+    );
+    expect(mocks.rpc).toHaveBeenCalledWith('pay_existing_order_v14', expect.objectContaining({
+      p_discount_amount: 3000,
+      p_discount_auth_id: 'nonce-1',
+    }));
   });
 
   it('does NOT call pay_existing_order when pickedUpOrderId is null (standard POS flow)', async () => {
@@ -111,7 +154,7 @@ describe('pay-existing smoke', () => {
       });
     });
 
-    expect(mocks.rpc).not.toHaveBeenCalledWith('pay_existing_order_v13', expect.anything());
+    expect(mocks.rpc).not.toHaveBeenCalledWith('pay_existing_order_v14', expect.anything());
     expect(mockFetch).toHaveBeenCalledWith(
       expect.stringContaining('process-payment'),
       expect.anything(),

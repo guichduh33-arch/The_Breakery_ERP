@@ -5,7 +5,7 @@ import type { Cart, PaymentInput, PaymentResult, PaymentResultLine } from '@brea
 import { buildOrderPayload } from '@breakery/domain';
 import type { Database, Json } from '@breakery/supabase';
 
-type PayExistingOrderArgs = Database['public']['Functions']['pay_existing_order_v13']['Args'];
+type PayExistingOrderArgs = Database['public']['Functions']['pay_existing_order_v14']['Args'];
 
 /** Wire-format row sent as `p_promotions` to RPC v7 / v4 (§3.6). */
 interface PromotionWirePayload {
@@ -69,7 +69,7 @@ export function useCheckout() {
       const { pickedUpOrderId, appliedPromotions } = cartState;
 
       // S44 P0-C(2) — the loyalty multiplier is resolved server-side now
-      // (complete_order_with_payment_v13 / pay_existing_order_v13). The client no
+      // (complete_order_with_payment_v13 / pay_existing_order_v14). The client no
       // longer computes or forwards it.
 
       // Session 9 — both branches forward applied promotions to the server,
@@ -121,7 +121,7 @@ export function useCheckout() {
               quantity: i.quantity,
               unit_price: i.unit_price,
               modifiers: i.modifiers,
-              // S47 — combo lines persist their components so pay_existing_order_v13
+              // S47 — combo lines persist their components so pay_existing_order_v14
               // deducts each component's stock at payment.
               ...(i.combo_components ? { combo_components: i.combo_components } : {}),
               ...(i.discount ? { discount_amount: i.discount.amount } : {}),
@@ -164,9 +164,46 @@ export function useCheckout() {
         if (promotionPayload.length > 0) {
           args.p_promotions = promotionPayload;
         }
+
+        // ADR-013 D9 — remise sur commande reprise : pay_existing_order_v14 exige
+        // un nonce discount_authorizations à usage unique. Le RPC étant appelé en
+        // DIRECT depuis le navigateur (contrairement à complete_order qui passe
+        // par process-payment), le mint service-role ne peut se faire dans le RPC.
+        // On le mint ICI via verify-manager-pin, piloté par le PIN manager déjà
+        // porté jusqu'au checkout par managerPinHolder — même PIN, même vérif
+        // qu'au panier. Sans nonce valide → la remise est refusée (E1 clos).
+        const pickupHasDiscount = (cartDiscount?.amount ?? 0) > 0;
+        if (pickupHasDiscount) {
+          const pickupManagerPin = getManagerPin();
+          if (!pickupManagerPin) {
+            throw Object.assign(new Error('discount_requires_authorizer'), {
+              details: { error: 'discount_requires_authorizer' }, status: 403,
+            });
+          }
+          const mintToken = await getAccessToken();
+          const mintRes = await fetch(`${supabaseUrl}/functions/v1/verify-manager-pin`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${mintToken}`,
+              // S25 — PIN en header, jamais dans le body.
+              'x-manager-pin': pickupManagerPin,
+            },
+            body: JSON.stringify({ required_permission: 'sales.discount', mint_scope: 'discount' }),
+          });
+          const mintBody = await mintRes.json().catch(() => ({})) as { authorization_id?: string; error?: string };
+          if (!mintRes.ok || !mintBody.authorization_id) {
+            const code = mintRes.status === 429 ? 'account_locked'
+              : mintRes.status === 403 ? 'permission_missing'
+              : mintBody.error ?? 'wrong_pin';
+            throw Object.assign(new Error(code), { details: { error: code }, status: mintRes.status });
+          }
+          args.p_discount_auth_id = mintBody.authorization_id;
+        }
+
         // S37 — v8 returns a jsonb envelope: the POS finally shows the REAL
         // pickup total instead of the hardcoded 0 (POS-01).
-        const { error, data } = await supabase.rpc('pay_existing_order_v13', args as PayExistingOrderArgs);
+        const { error, data } = await supabase.rpc('pay_existing_order_v14', args as PayExistingOrderArgs);
         if (error) throw Object.assign(new Error(error.message), { details: error });
         const envelope = data as unknown as {
           order_id: string;
@@ -176,7 +213,7 @@ export function useCheckout() {
           total: number;
           change_given: number | null;
           // S51 — present when the pickup RPC exposes the per-line breakdown;
-          // omitted otherwise (pay_existing_order_v13 is not part of the v15 bump).
+          // omitted otherwise (pay_existing_order_v14 is not part of the v15 bump).
           lines?: PaymentResultLine[];
           loyalty_points_earned?: number;
           idempotent_replay: boolean;
