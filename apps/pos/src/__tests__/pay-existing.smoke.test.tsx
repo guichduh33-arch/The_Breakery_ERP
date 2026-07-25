@@ -116,13 +116,11 @@ describe('pay-existing smoke', () => {
       });
     });
 
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining('verify-manager-pin'),
-      expect.objectContaining({
-        headers: expect.objectContaining({ 'x-manager-pin': '123456' }),
-        body: expect.stringContaining('discount'),
-      }),
-    );
+    const [mintUrl, mintInit] = mockFetch.mock.calls[0] as [string, RequestInit];
+    expect(mintUrl).toContain('verify-manager-pin');
+    const mintHeaders = mintInit.headers as Record<string, string>;
+    expect(mintHeaders['x-manager-pin']).toBe('123456');
+    expect(mintInit.body as string).toContain('discount');
     expect(mocks.rpc).toHaveBeenCalledWith('pay_existing_order_v14', expect.objectContaining({
       p_discount_amount: 3000,
       p_discount_auth_id: 'nonce-1',
