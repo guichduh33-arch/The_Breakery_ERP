@@ -139,3 +139,38 @@ l'intégrité void/refund/remise ET crée le suivi d'avoir client.
   replay concurrent renvoie l'enveloppe (D12).
 - Hors périmètre (déjà tracé) : refund/cancel post-bascule tax_inclusive
   (SETTINGS.md:190-193), reprise JE historiques PB1 fantôme.
+
+## Addendum 2026-07-25 — Livraison Lot 1 (ne révise aucune décision D1-D16)
+
+Journal de mise en œuvre du Lot 1 (D2 + D3a). Découverte live qui précise
+COMMENT D3 devient effectif ; les décisions restent inchangées.
+
+- **D3a n'est pas qu'un problème de mapping, c'est un problème de TIMING.**
+  Le CASE fautif (`debit_card`/`credit_card`) était en réalité du **code mort** :
+  `trg_create_je_for_refund` était `AFTER INSERT ON refunds` (non déférable), or
+  `refund_order_rpc` insère la ligne `refunds` PUIS les `refund_payments`
+  (FK `refund_payments.refund_id → refunds.id` interdit l'ordre inverse). Au tir
+  du trigger, `refund_payments` était vide → branche fallback
+  `SALE_PAYMENT_CASH` systématique. **Preuve : 76/76 JE `sale_refund`
+  historiques crédités `1110 Cash on Hand`, tous canaux confondus** — le CASE
+  par tender n'avait jamais tourné.
+- **Fix retenu (Option 1, validée par Mamat) :** trigger converti en
+  `CONSTRAINT TRIGGER DEFERRABLE INITIALLY DEFERRED`. Il tire au COMMIT, quand
+  `refund_payments` est peuplé → le mapping par canal devient effectif. Aligne
+  les refunds sur les ventes (dont le trigger, immédiat, voyait déjà ses
+  `order_payments` car insérés avant le passage `paid`).
+- **Helper partagé vente/reversal (D3, « même helper pour ne plus diverger »)
+  NON réalisé au Lot 1** : extraire le mapping toucherait `create_sale_journal_entry`
+  (money-path de vente, blast radius). Au Lot 1, le CASE du reversal a été
+  **réaligné à l'identique** sur celui de la vente. L'unification en un helper
+  unique reste un résiduel (à faire quand le Lot 4 repointera `store_credit`
+  vers 2220 des DEUX côtés — moment naturel pour factoriser).
+- **`store_credit` reste imputé Caisse** jusqu'au Lot 4 (D4 : compte 2220).
+- **Reprise historique élargie** : les 76 JE mal imputés ne concernent pas que
+  `store_credit` mais **tous les refunds non-cash** (card/qris/transfer). Volume
+  par canal à mesurer au **Lot 5** (le point « Reprise historique » ci-dessus
+  s'entend donc au sens large, pas seulement store_credit).
+- **Livré :** migration `20260725000221_fix_refund_je_d2_fullvoid_d3a_method_mapping.sql`
+  (CREATE OR REPLACE de la fonction — trigger function, pas RPC versionné — +
+  conversion du trigger) et test `reversal_je_single_and_method_mapping.test.sql`
+  (8/8, vérifié live via MCP). Commit `e5aab329` sur `fix/refund-je-reversal-lot1`.
