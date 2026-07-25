@@ -5,6 +5,10 @@ export default defineConfig({
     environment: 'jsdom',
     passWithNoTests: true,
     setupFiles: ['./vitest.setup.ts'],
+    // Vitest 3 (pool forks) : sous charge parallèle + coverage, le rendu jsdom
+    // des modales Radix dépasse les 5 s par défaut — même remède que apps/pos.
+    testTimeout: 30000,
+    hookTimeout: 30000,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov', 'html'],
