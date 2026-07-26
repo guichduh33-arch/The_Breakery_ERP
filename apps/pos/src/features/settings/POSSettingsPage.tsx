@@ -54,7 +54,7 @@ export default function POSSettingsPage(): JSX.Element {
           variant="ghost"
           size="icon"
           aria-label="Back"
-          onClick={() => navigate('/pos')}
+          onClick={() => { void navigate('/pos'); }}
           data-testid="pos-settings-back"
         >
           <ArrowLeft className="h-5 w-5" aria-hidden />
