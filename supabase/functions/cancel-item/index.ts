@@ -13,6 +13,8 @@
 // (is_locked = true) requires a waste declaration — `waste_qty` (0..line qty,
 // authorizer's judgment) travels in the body and is forwarded as p_waste_qty;
 // the RPC refuses a locked cancel without it. Unlocked items: ignored.
+// ADR-013 Lot 3 (D15/M5) — redaction : plus aucun `message` Postgres brut dans
+// les réponses ; fallthrough 500 via logAndRedact.
 //
 // Headers:
 //   x-manager-pin:     string (6 digits) — REQUIRED
@@ -27,6 +29,7 @@ import { verifyManagerPin, isManagerPinBlocked, recordManagerPinFailure, MANAGER
 import { getIdempotencyKey, InvalidIdempotencyKeyError } from '../_shared/idempotency.ts';
 import { getActingAuthUserId } from '../_shared/acting-user.ts';
 import { getAdminClient } from '../_shared/supabase-admin.ts';
+import { logAndRedact } from '../_shared/error-redact.ts';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -111,10 +114,12 @@ serve(async (req) => {
       if (blocked) return rateLimitedResponse(retryAfterSec);
       return jsonResponse({ error: 'wrong_pin' }, 401);
     }
-    return jsonResponse({ error: 'internal' }, 500);
+    return jsonResponse({ error: 'internal_error' }, 500);
   }
 
-  // service_role admin client — the only role allowed to EXECUTE the v3 RPC.
+  // service_role admin client — the only role allowed to EXECUTE the RPC
+  // (version courante = le call-site .rpc() ci-dessous, les commentaires
+  // historiques mentent).
   const admin = getAdminClient();
   const { data, error } = await admin.rpc('cancel_order_item_rpc_v6', {
     p_order_item_id:       body.order_item_id,
@@ -126,12 +131,13 @@ serve(async (req) => {
   });
 
   if (error) {
+    // Log serveur complet ; réponses client sans message brut (ADR-013 D15/M5).
     console.error('[cancel-item] rpc error', error);
-    if (error.code === 'P0001') return jsonResponse({ error: 'not_authenticated', message: error.message }, 401);
-    if (error.code === 'P0002') return jsonResponse({ error: 'not_found', message: error.message }, 404);
-    if (error.code === 'P0003') return jsonResponse({ error: 'permission_denied', message: error.message }, 403);
-    if (error.code === '23514') return jsonResponse({ error: 'check_violation', message: error.message }, 422);
-    return jsonResponse({ error: 'internal', message: error.message }, 500);
+    if (error.code === 'P0001') return jsonResponse({ error: 'not_authenticated' }, 401);
+    if (error.code === 'P0002') return jsonResponse({ error: 'not_found' }, 404);
+    if (error.code === 'P0003') return jsonResponse({ error: 'permission_denied' }, 403);
+    if (error.code === '23514') return jsonResponse({ error: 'check_violation' }, 422);
+    return jsonResponse(logAndRedact('cancel-item', error.message ?? error), 500);
   }
 
   return jsonResponse({
