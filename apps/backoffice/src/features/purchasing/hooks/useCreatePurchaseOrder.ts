@@ -44,6 +44,7 @@ export interface CreatePOArgs {
   paymentTerms?:  'cash' | 'credit';
   vatRate?:       number;  // 0..1, default 0.11
   notes?:         string;
+  idempotencyKey: string;  // UUID v4, stable across retries (caller owns it)
 }
 
 export interface CreatePOResult {
@@ -76,7 +77,6 @@ export function useCreatePurchaseOrder() {
   const qc = useQueryClient();
   return useMutation<CreatePOResult, CreatePOError, CreatePOArgs>({
     mutationFn: async (args) => {
-      const idempotencyKey = crypto.randomUUID();
       const rpcArgs: Record<string, unknown> = {
         p_supplier_id:     args.supplierId,
         p_items: args.items.map((it) => ({
@@ -89,7 +89,7 @@ export function useCreatePurchaseOrder() {
         })),
         p_payment_terms:   args.paymentTerms ?? 'credit',
         p_vat_rate:        args.vatRate      ?? 0.11,
-        p_idempotency_key: idempotencyKey,
+        p_idempotency_key: args.idempotencyKey,
       };
       if (args.expectedDate !== undefined && args.expectedDate !== '') {
         rpcArgs['p_expected_date'] = args.expectedDate;

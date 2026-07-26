@@ -145,13 +145,15 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
   async function handleReceive(args: {
     sectionId: string;
     items: { poItemId: string; receivedQuantity: number }[];
+    idempotencyKey: string;
   }): Promise<void> {
     setReceiveError(undefined);
     try {
       await receive.mutateAsync({
-        poId:       po!.id,
-        sectionId:  args.sectionId,
-        items:      args.items,
+        poId:           po!.id,
+        sectionId:      args.sectionId,
+        items:          args.items,
+        idempotencyKey: args.idempotencyKey,
       });
       setShowReceive(false);
     } catch (e) {

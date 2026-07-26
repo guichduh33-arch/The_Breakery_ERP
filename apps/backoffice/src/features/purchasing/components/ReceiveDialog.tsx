@@ -6,7 +6,7 @@
 //
 // Phase 4.D — migrated from ad-hoc <div> overlay to @breakery/ui Radix Dialog.
 
-import { useId, useMemo, useState, type JSX } from 'react';
+import { useId, useMemo, useRef, useState, type JSX } from 'react';
 import {
   Button,
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
@@ -23,7 +23,11 @@ export interface ReceiveDialogProps {
   po:        PurchaseOrderDetail;
   sections:  Section[];
   onCancel:  () => void;
-  onConfirm: (args: { sectionId: string; items: { poItemId: string; receivedQuantity: number }[] }) => Promise<void>;
+  onConfirm: (args: {
+    sectionId: string;
+    items: { poItemId: string; receivedQuantity: number }[];
+    idempotencyKey: string;
+  }) => Promise<void>;
   submitting?: boolean;
   error?:    string;
 }
@@ -33,6 +37,9 @@ export function ReceiveDialog({
   submitting = false, error,
 }: ReceiveDialogProps): JSX.Element {
   const reactId = useId();
+  // Stable idempotency key for this dialog session (survives retries / re-renders).
+  // A lost response + re-click replays the same GRN server-side instead of doubling it.
+  const idempotencyKey = useRef<string>(crypto.randomUUID());
   const [sectionId, setSectionId] = useState<string>('');
   const [qtyByItem, setQtyByItem] = useState<Record<string, number>>(() => {
     const m: Record<string, number> = {};
@@ -62,7 +69,7 @@ export function ReceiveDialog({
 
   async function handleConfirm(): Promise<void> {
     if (!canSubmit) return;
-    await onConfirm({ sectionId, items: itemsWithQty });
+    await onConfirm({ sectionId, items: itemsWithQty, idempotencyKey: idempotencyKey.current });
   }
 
   return (
