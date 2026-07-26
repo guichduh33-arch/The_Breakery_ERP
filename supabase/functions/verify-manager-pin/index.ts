@@ -54,11 +54,14 @@ interface VerifyManagerPinPayload {
 // one enforces (editing a kitchen-sent line is a partial cancel: same authority
 // as the cancel flow). Server-side mapping — the client body is never trusted.
 // ADR-013 D9 — `discount` mints the discount nonce consumed by
-// pay_existing_order_v15 (pickup path); authorizer needs 'sales.discount'. The
+// pay_existing_order_v16 (pickup path); authorizer needs 'sales.discount'. The
 // scope value 'discount' matches the discount_authorizations.scope default.
 const MINT_SCOPES: Record<string, string> = {
-  order_item_edit: 'pos.sale.cancel_item',
-  discount:        'sales.discount',
+  order_item_edit:    'pos.sale.cancel_item',
+  discount:           'sales.discount',
+  // ADR-013 Lot 4 (D6) — nonce du grant manuel d'avoir client (BO),
+  // consommé par grant_store_credit_v1.
+  store_credit_grant: 'customers.store_credit.grant',
 };
 
 serve(async (req) => {

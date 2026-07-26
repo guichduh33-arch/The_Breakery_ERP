@@ -109,7 +109,7 @@ serve(async (req) => {
 
   // service_role admin client — the only role allowed to EXECUTE the v7 RPC.
   const admin = getAdminClient();
-  const { data, error } = await admin.rpc('void_order_rpc_v7', {
+  const { data, error } = await admin.rpc('void_order_rpc_v8', {
     p_order_id:            body.order_id,
     p_reason:              body.reason,
     p_authorized_by:       mgr.manager_profile_id,
