@@ -29,6 +29,7 @@
 import { X } from 'lucide-react';
 import type { JSX } from 'react';
 import { cn } from '@breakery/ui';
+import { formatIdr } from '@breakery/utils';
 import { tierFromLifetime } from '@breakery/domain';
 import type { LoyaltyTier } from '@breakery/domain';
 import { avatarTint } from '@/features/customers/avatarTint';
@@ -99,6 +100,19 @@ export function CustomerBadge({ customer, onDetach }: CustomerBadgeProps): JSX.E
             </span>
           )}
         </p>
+        {/* ADR-013 Lot 4 — solde d'avoir (snapshot search_customers_v4 ;
+            optionnel : absent des snapshots persistés pré-v4). */}
+        {(customer.store_credit_balance ?? 0) > 0 && (
+          <p
+            className="text-[10px] font-bold uppercase tracking-widest text-gold"
+            data-testid="customer-store-credit"
+          >
+            Avoir
+            <span className="ml-2 font-mono text-text-muted normal-case tracking-normal">
+              {formatIdr(customer.store_credit_balance ?? 0)}
+            </span>
+          </p>
+        )}
       </div>
       <button
         type="button"

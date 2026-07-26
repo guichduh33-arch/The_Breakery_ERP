@@ -84,6 +84,14 @@ export function usePaymentFlowLogic() {
       usePaymentStore.setState({ selectedMethod: null, cashReceivedStr: '' });
     }
   }, [selectedMethod, enabledMethods]);
+  // ADR-013 Lot 4 (D8) — store_credit exige un client rattaché (gate serveur
+  // P0015) : si le client est détaché après sélection, on désélectionne
+  // (la tuile a déjà disparu de la grille — miroir du guard S64 ci-dessus).
+  useEffect(() => {
+    if (selectedMethod === 'store_credit' && !attachedCustomer) {
+      usePaymentStore.setState({ selectedMethod: null, cashReceivedStr: '' });
+    }
+  }, [selectedMethod, attachedCustomer]);
   const { mutation: fireToStations } = useFireToStations();
   // Spec 006x lot 4 — gate cash offline (mode + setting + fenêtre A5).
   const offlineGate = useOfflineCashGate();

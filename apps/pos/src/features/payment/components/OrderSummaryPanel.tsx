@@ -66,11 +66,25 @@ export function OrderSummaryPanel({
           );
           const ptsToEarn = earnPointsFor(totals.total, cumulMultiplier);
           return (
-            <div className="flex items-center justify-between mb-3 pb-3 border-b border-border-subtle">
-              <LoyaltyBadge tier={tier} points={attachedCustomer.loyalty_points} />
-              <span className="text-xs text-text-secondary">
-                +{ptsToEarn} pts to earn ({cumulMultiplier.toFixed(2)}x)
-              </span>
+            <div className="mb-3 pb-3 border-b border-border-subtle">
+              <div className="flex items-center justify-between">
+                <LoyaltyBadge tier={tier} points={attachedCustomer.loyalty_points} />
+                <span className="text-xs text-text-secondary">
+                  +{ptsToEarn} pts to earn ({cumulMultiplier.toFixed(2)}x)
+                </span>
+              </div>
+              {/* ADR-013 Lot 4 — solde d'avoir (snapshot v4, optionnel). */}
+              {(attachedCustomer.store_credit_balance ?? 0) > 0 && (
+                <div
+                  className="mt-1.5 flex items-center justify-between text-xs"
+                  data-testid="summary-store-credit"
+                >
+                  <span className="text-text-secondary">Avoir disponible</span>
+                  <span className="font-mono text-gold">
+                    <Currency amount={attachedCustomer.store_credit_balance ?? 0} />
+                  </span>
+                </div>
+              )}
             </div>
           );
         })()}

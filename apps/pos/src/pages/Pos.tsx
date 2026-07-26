@@ -107,15 +107,17 @@ export default function PosPage() {
 
   async function handleLogout() {
     await logout();
-    navigate('/login', { replace: true });
+    // react-router v7 : navigate() renvoie une Promise (lint ratchet).
+    void navigate('/login', { replace: true });
   }
 
   // S37 C5 (SEC-03) — search/create go through the SECURITY DEFINER customer
   // RPCs v3 so they survive the customers.read SELECT gate (PII cutover).
   // S50 W1.4 — bumped v2 → v3 (dual gate: customers.read OR pos.sale.create).
+  // ADR-013 Lot 4 — v3 → v4 (+ store_credit_balance).
   async function searchCustomers(query: string): Promise<CustomerWithCategory[]> {
     if (query.trim().length < 2) return [];
-    const { data } = await supabase.rpc('search_customers_v3', {
+    const { data } = await supabase.rpc('search_customers_v4', {
       p_query: query,
       p_limit: 10,
     });
@@ -194,7 +196,7 @@ export default function PosPage() {
         <CategoryNav
           selectedSlug={selectedSlug}
           onSelect={setSelectedSlug}
-          onOpenSettings={() => navigate('/pos/settings')}
+          onOpenSettings={() => { void navigate('/pos/settings'); }}
         />
         <main id="main-content" tabIndex={-1} className="flex-1 flex flex-col overflow-hidden">
           <ProductTapHandler selectedSlug={selectedSlug} />

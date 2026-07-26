@@ -171,6 +171,49 @@ describe('classifyCheckoutError', () => {
       expect(result.userMessage).not.toContain('credit_limit_exceeded');
     });
 
+    // ADR-013 Lot 4 (D8) — chemin EF : codes nommés par process-payment.
+    it('maps store_credit_requires_customer to friendly FR copy (ADR-013 Lot 4)', () => {
+      const err = Object.assign(new Error('store_credit_requires_customer'), {
+        details: { error: 'store_credit_requires_customer' },
+        status: 409,
+      });
+      const result = classifyCheckoutError(err);
+      expect(result.kind).toBe('fatal');
+      expect(result.userMessage).toMatch(/avoir.*client rattaché/i);
+    });
+
+    it('maps insufficient_store_credit to friendly FR copy (ADR-013 Lot 4)', () => {
+      const err = Object.assign(new Error('insufficient_store_credit'), {
+        details: { error: 'insufficient_store_credit' },
+        status: 409,
+      });
+      const result = classifyCheckoutError(err);
+      expect(result.kind).toBe('fatal');
+      expect(result.userMessage).toMatch(/Solde d’avoir insuffisant/);
+    });
+
+    // ADR-013 Lot 4 — chemin ardoise : pay_existing_order_v16 appelé en direct,
+    // le PostgrestError expose le SQLSTATE brut dans details.code (pas d'EF).
+    it('maps raw SQLSTATE P0015 (pickup path) to the same FR copy', () => {
+      const err = Object.assign(new Error('Store credit payment requires a customer'), {
+        details: { code: 'P0015', message: 'Store credit payment requires a customer' },
+      });
+      const result = classifyCheckoutError(err);
+      expect(result.kind).toBe('fatal');
+      expect(result.userMessage).toMatch(/avoir.*client rattaché/i);
+      expect(result.userMessage).not.toContain('p0015');
+    });
+
+    it('maps raw SQLSTATE P0016 (pickup path) to the same FR copy', () => {
+      const err = Object.assign(new Error('Insufficient store credit (balance: 10000)'), {
+        details: { code: 'P0016', message: 'Insufficient store credit (balance: 10000)' },
+      });
+      const result = classifyCheckoutError(err);
+      expect(result.kind).toBe('fatal');
+      expect(result.userMessage).toMatch(/Solde d’avoir insuffisant/);
+      expect(result.userMessage).not.toContain('p0016');
+    });
+
     it('falls back to message for unknown codes', () => {
       const err = Object.assign(new Error('weird unknown thing'), {
         details: { error: 'mysterious_error' },

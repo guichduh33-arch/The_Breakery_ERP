@@ -22,10 +22,10 @@ import {
 } from '../hooks/useAttachTabCustomer';
 
 // Same RPC + shape as the walk-in search wired in Pos.tsx's own
-// CustomerAttachModal instance (search_customers_v3, S50 W1.4 dual gate).
+// CustomerAttachModal instance (search_customers_v4, ADR-013 Lot 4).
 async function searchCustomers(query: string): Promise<CustomerWithCategory[]> {
   if (query.trim().length < 2) return [];
-  const { data } = await supabase.rpc('search_customers_v3', {
+  const { data } = await supabase.rpc('search_customers_v4', {
     p_query: query,
     p_limit: 10,
   });
