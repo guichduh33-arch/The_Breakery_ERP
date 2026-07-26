@@ -4,6 +4,9 @@
 // Session 37 — B2: customer display must broadcast the post-promotion total.
 // The previous implementation called calculateTotals() only, ignoring
 // appliedPromotions and cartDiscount.
+// ADR-013 D11 — la promo entre dans le cart via setAppliedPromotions (qui
+// écrit cart.promotionTotal, source unique) : les tests passent par ce chemin
+// de production, plus par un setState brut de appliedPromotions.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
@@ -46,11 +49,11 @@ describe('useCartBroadcast — post-promo total (POS-02)', () => {
           items: [ITEM],
           order_type: 'dine_in',
         },
-        // A promotion worth 5 000 off the order
-        appliedPromotions: [
-          { promotion_id: 'promo-1', amount: 5000, description: '5k off', scope_line_id: undefined },
-        ],
       } as never);
+      // A promotion worth 5 000 off the order — production path (D11).
+      useCartStore.getState().setAppliedPromotions([
+        { promotion_id: 'promo-1', amount: 5000, description: '5k off' } as never,
+      ]);
     });
 
     const last = posted.at(-1) as CartUpdateMessage;
@@ -74,10 +77,10 @@ describe('useCartBroadcast — post-promo total (POS-02)', () => {
           order_type: 'dine_in',
           cartDiscount: { amount: 3000, type: 'fixed', value: 3000, reason: 'test' },
         },
-        appliedPromotions: [
-          { promotion_id: 'promo-1', amount: 5000, description: '5k off', scope_line_id: undefined },
-        ],
       } as never);
+      useCartStore.getState().setAppliedPromotions([
+        { promotion_id: 'promo-1', amount: 5000, description: '5k off' } as never,
+      ]);
     });
 
     const last = posted.at(-1) as CartUpdateMessage;
@@ -94,10 +97,12 @@ describe('useCartBroadcast — post-promo total (POS-02)', () => {
           items: [{ id: 'l1', product_id: 'p1', name: 'X', unit_price: 1000, quantity: 1, modifiers: [] }],
           order_type: 'dine_in',
         },
-        appliedPromotions: [
-          { promotion_id: 'promo-1', amount: 99999, description: 'massive off', scope_line_id: undefined },
-        ],
       } as never);
+      // D11 — le store clampe promotionTotal aux items : jamais d'état
+      // au-dessous de zéro (et jamais de throw DiscountExceedsTotalError au render).
+      useCartStore.getState().setAppliedPromotions([
+        { promotion_id: 'promo-1', amount: 99999, description: 'massive off' } as never,
+      ]);
     });
 
     const last = posted.at(-1) as CartUpdateMessage;

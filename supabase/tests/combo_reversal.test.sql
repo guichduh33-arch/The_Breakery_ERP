@@ -20,16 +20,16 @@ INSERT INTO combo_group_options (group_id, component_product_id, surcharge, is_d
 DO $$
 DECLARE r jsonb;
 BEGIN
-  r := complete_order_with_payment_v19(
+  r := complete_order_with_payment_v20(
     p_session_id := '00000000-0000-0000-0000-0000000ce002', p_order_type := 'take_out'::order_type,
     p_items := '[{"product_id":"00000000-0000-0000-0000-0000000cb010","quantity":1,"unit_price":50000,"modifiers":[],"combo_components":[{"product_id":"00000000-0000-0000-0000-0000000fb010","quantity":1},{"product_id":"00000000-0000-0000-0000-0000000fb011","quantity":1}]}]'::jsonb,
     p_payment := '{"method":"cash","amount":50000,"cash_received":50000,"change_given":0}'::jsonb);
-  PERFORM void_order_rpc_v6((r->>'order_id')::uuid, 'combo void test', '00000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000002');
+  PERFORM void_order_rpc_v7((r->>'order_id')::uuid, 'combo void test', '00000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000002');
 END $$;
 DO $$
 DECLARE r jsonb; oi uuid;
 BEGIN
-  r := complete_order_with_payment_v19(
+  r := complete_order_with_payment_v20(
     p_session_id := '00000000-0000-0000-0000-0000000ce002', p_order_type := 'take_out'::order_type,
     p_items := '[{"product_id":"00000000-0000-0000-0000-0000000cb010","quantity":1,"unit_price":50000,"modifiers":[],"combo_components":[{"product_id":"00000000-0000-0000-0000-0000000fb010","quantity":1},{"product_id":"00000000-0000-0000-0000-0000000fb011","quantity":1}]}]'::jsonb,
     p_payment := '{"method":"cash","amount":50000,"cash_received":50000,"change_given":0}'::jsonb);

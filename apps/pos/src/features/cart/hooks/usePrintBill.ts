@@ -46,6 +46,9 @@ export function usePrintBill() {
         }));
 
       // 4. Compute totals (mode-aware PB1 split, discounts, loyalty).
+      //    ADR-013 D11 — `cart.promotionTotal` est désormais renseigné par le
+      //    store : l'addition imprimée inclut les promotions (avant, elles
+      //    étaient ignorées ici → total imprimé > total encaissé).
       const t = calculateTotals(cart, taxRate, taxInclusive);
 
       // 5. Build a human-readable order label.

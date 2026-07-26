@@ -44,6 +44,15 @@
 // des produits inactifs, soft-deleted et produits-PARENTS (groupes de
 // variantes, jamais vendables) — couvre la fenêtre de cache stale POS. New
 // check_violation codes: `product_inactive`, `product_is_parent`.
+//
+// ADR-013 Lot 3 (2026-07-26): RPC bumped v19 → v20 (gardes étagées D11,
+// search_path durci, ERRCODE P0014 dédié au gate autorisateur — le match
+// substring 'authorizing manager' est supprimé). D15 : (a) barrière
+// d'idempotence AVANT le mint du nonce discount — un retry HTTP d'un paiement
+// déjà finalisé ne re-vérifie plus le PIN et ne mint plus de nonce orphelin ;
+// (b) redaction M5 — plus aucun `message` Postgres brut dans les réponses (le
+// classifier POS classe sur `error`), fallthrough via logAndRedact ;
+// (c) oracle PIN harmonisé sur void/refund/cancel (`wrong_pin` nu).
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.47.10';
 import { handleCors, jsonResponse } from '../_shared/cors.ts';
@@ -52,6 +61,7 @@ import { checkRateLimitDurable, getClientIp } from '../_shared/rate-limit.ts';
 import { verifyManagerPin, isManagerPinBlocked, recordManagerPinFailure, MANAGER_PIN_FAIL_WINDOW_SEC } from '../_shared/manager-pin.ts';
 import { checkPermissionForRole } from '../_shared/permissions.ts';
 import { getAdminClient } from '../_shared/supabase-admin.ts';
+import { logAndRedact } from '../_shared/error-redact.ts';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 // gopay/ovo/dana : lot B ADR-006 déc. 9 (enum _207) — settlement type QRIS.
@@ -227,17 +237,33 @@ serve(async (req) => {
   // S55 T7 — le PIN discount est vérifié ICI (parité void/cancel/refund) et ne
   // descend plus jamais dans un arg SQL de la money-path. Un nonce single-use
   // (discount_authorizations, service-role only) transporte l'autorisation
-  // jusqu'à complete_order_with_payment_v19, qui le consomme atomiquement.
+  // jusqu'à complete_order_with_payment_v20, qui le consomme atomiquement.
   const managerPin = req.headers.get('x-manager-pin');
   const hasDiscount = (typeof body.discount_amount === 'number' && body.discount_amount > 0)
     || body.items.some((i) => typeof (i as { discount_amount?: number }).discount_amount === 'number'
         && ((i as { discount_amount?: number }).discount_amount ?? 0) > 0);
 
+  // ADR-013 D15 — barrière d'idempotence AVANT le mint : si la clé a déjà
+  // produit un ordre, ce retry HTTP est un replay — on saute la vérif PIN et
+  // le mint (le RPC court-circuite sur la clé AVANT son gate discount et
+  // renvoie l'enveloppe de la 1ʳᵉ exécution). Race résiduelle : un ordre créé
+  // entre ce SELECT et l'appel RPC laisse un nonce orphelin non consommé —
+  // exposition identique à l'existant (TTL 60 s), purge hors périmètre.
+  let isIdempotentReplay = false;
+  if (body.idempotency_key) {
+    const { data: existingOrder } = await getAdminClient()
+      .from('orders')
+      .select('id')
+      .eq('idempotency_key', body.idempotency_key)
+      .maybeSingle();
+    isIdempotentReplay = !!existingOrder;
+  }
+
   let discountAuthId: string | null = null;
   let discountAuthorizedBy: string | null = null;
-  if (hasDiscount) {
+  if (hasDiscount && !isIdempotentReplay) {
     if (!managerPin || managerPin.trim().length === 0) {
-      return jsonResponse({ error: 'permission_denied', message: 'Discount requires the manager PIN (x-manager-pin header)' }, 403);
+      return jsonResponse({ error: 'missing_manager_pin' }, 400);
     }
     if (await isManagerPinBlocked(ip)) {
       return rateLimitedResponse(MANAGER_PIN_FAIL_WINDOW_SEC);
@@ -248,13 +274,14 @@ serve(async (req) => {
       if (mgr.reason === 'no_match') {
         const { blocked, retryAfterSec } = await recordManagerPinFailure(ip, 'process-payment');
         if (blocked) return rateLimitedResponse(retryAfterSec);
-        return jsonResponse({ error: 'permission_denied', message: 'Invalid manager PIN for discount authorization' }, 403);
+        // Oracle harmonisé void/refund/cancel — aucun détail sur le gate.
+        return jsonResponse({ error: 'wrong_pin' }, 401);
       }
-      return jsonResponse({ error: 'internal' }, 500);
+      return jsonResponse({ error: 'internal_error' }, 500);
     }
     const allowed = await checkPermissionForRole(mgr.role_code, 'sales.discount', mgr.manager_profile_id);
     if (!allowed) {
-      return jsonResponse({ error: 'permission_denied', message: 'Permission denied: sales.discount (authorizer)' }, 403);
+      return jsonResponse({ error: 'permission_denied' }, 403);
     }
     // L'autorisation est DÉRIVÉE du PIN vérifié — le body client n'est plus cru.
     discountAuthorizedBy = mgr.manager_profile_id;
@@ -265,13 +292,12 @@ serve(async (req) => {
       .select('id')
       .single();
     if (nonceErr || !nonce) {
-      console.error('[process-payment] discount nonce mint failed', nonceErr);
-      return jsonResponse({ error: 'internal' }, 500);
+      return jsonResponse(logAndRedact('process-payment:nonce-mint', nonceErr), 500);
     }
     discountAuthId = nonce.id;
   }
 
-  const { data, error } = await userClient.rpc('complete_order_with_payment_v19', {
+  const { data, error } = await userClient.rpc('complete_order_with_payment_v20', {
     p_session_id: body.session_id,
     p_order_type: body.order_type,
     p_items: body.items,
@@ -299,57 +325,46 @@ serve(async (req) => {
   });
 
   if (error) {
+    // Log serveur complet ; les réponses client ne portent QUE le code
+    // structuré (ADR-013 D15/M5 — le message Postgres brut ne sort plus).
     console.error('complete_order_with_payment error', error);
-    // Map Postgres error codes
-    if (error.code === 'P0001') {
-      const msg = String(error.message ?? '');
-      // v11 lève P0001 pour plusieurs gates distincts — différencie le gate
-      // discount (audit 2026-06-12 P0-1) des autres P0001 (mappés no_open_session).
-      // Contrat substring : matche le RAISE 'Discount requires an authorizing
-      // manager (p_discount_authorized_by)' de 20260621000010 — garder en sync
-      // à tout bump vN. TODO(v12): ERRCODE dédié et supprimer ce match.
-      if (msg.includes('authorizing manager')) {
-        return jsonResponse({ error: 'discount_requires_authorizer', message: msg }, 409);
-      }
-      return jsonResponse({ error: 'no_open_session', message: msg }, 409);
-    }
-    if (error.code === 'P0002') return jsonResponse({ error: 'insufficient_stock', message: error.message }, 409);
-    if (error.code === 'P0003') return jsonResponse({ error: 'permission_denied', message: error.message }, 403);
+    // ADR-013 Lot 3 — v20 lève P0014 (ERRCODE dédié) sur le gate autorisateur ;
+    // le match substring 'authorizing manager' est supprimé.
+    if (error.code === 'P0014') return jsonResponse({ error: 'discount_requires_authorizer' }, 409);
+    if (error.code === 'P0001') return jsonResponse({ error: 'no_open_session' }, 409);
+    if (error.code === 'P0002') return jsonResponse({ error: 'insufficient_stock' }, 409);
+    if (error.code === 'P0003') return jsonResponse({ error: 'permission_denied' }, 403);
     // S38 SEC-06 — manager account locked (5 failed PINs / 15 min).
-    if (error.code === 'P0004') return jsonResponse({ error: 'account_locked', message: error.message }, 403);
-    if (error.code === 'P0010') return jsonResponse({ error: 'insufficient_loyalty_points', message: error.message }, 409);
+    if (error.code === 'P0004') return jsonResponse({ error: 'account_locked' }, 403);
+    if (error.code === 'P0010') return jsonResponse({ error: 'insufficient_loyalty_points' }, 409);
     if (error.code === '23514') {
+      // Le matching sur le texte du RAISE reste INTERNE à l'EF — seul le code
+      // dédié sort (classifier POS → FR copy).
       const msg = String(error.message ?? '');
-      // S44 P0-C — v12 raises check_violation for the recomputed-promo and
-      // change-amount gates ; surface dedicated codes (classifier → FR copy).
       if (msg.includes('Promotion amount mismatch')) {
-        return jsonResponse({ error: 'promo_amount_mismatch', message: msg }, 409);
+        return jsonResponse({ error: 'promo_amount_mismatch' }, 409);
       }
       if (msg.includes('Invalid change amount')) {
-        return jsonResponse({ error: 'invalid_change', message: msg }, 409);
+        return jsonResponse({ error: 'invalid_change' }, 409);
       }
-      // S57 P2.1 — v17 raises check_violation for combo composition and promo
-      // usage-cap gates ; surface dedicated codes (classifier → FR copy, C-D5).
       if (msg.includes('combo_invalid_component')) {
-        return jsonResponse({ error: 'combo_invalid_component', message: msg }, 409);
+        return jsonResponse({ error: 'combo_invalid_component' }, 409);
       }
       if (msg.includes('combo_group_violation')) {
-        return jsonResponse({ error: 'combo_group_violation', message: msg }, 409);
+        return jsonResponse({ error: 'combo_group_violation' }, 409);
       }
       if (msg.includes('promo_cap_exceeded')) {
-        return jsonResponse({ error: 'promo_cap_exceeded', message: msg }, 409);
+        return jsonResponse({ error: 'promo_cap_exceeded' }, 409);
       }
-      // ADR-011 déc. 2 — v19 refuse produits inactifs et produits-parents au
-      // paiement ; codes dédiés (classifier POS → FR copy).
       if (msg.includes('product_inactive')) {
-        return jsonResponse({ error: 'product_inactive', message: msg }, 409);
+        return jsonResponse({ error: 'product_inactive' }, 409);
       }
       if (msg.includes('product_is_parent')) {
-        return jsonResponse({ error: 'product_is_parent', message: msg }, 409);
+        return jsonResponse({ error: 'product_is_parent' }, 409);
       }
-      return jsonResponse({ error: 'check_violation', message: error.message }, 422);
+      return jsonResponse({ error: 'check_violation' }, 422);
     }
-    return jsonResponse({ error: 'internal', message: error.message }, 500);
+    return jsonResponse(logAndRedact('process-payment', error.message ?? error), 500);
   }
 
   return jsonResponse(data);

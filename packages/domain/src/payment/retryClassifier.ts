@@ -178,6 +178,16 @@ function friendlyFatalMessage(code: string, message?: string): string {
       // S62 D4 — attach_tab_customer_v2 gates the retail ardoise against
       // customers.retail_credit_limit.
       return 'Le plafond de crédit ardoise de ce client est dépassé. Réduisez l’encours ou choisissez un autre mode de paiement.';
+    case 'wrong_pin':
+      // ADR-013 Lot 3 (D15/M5) — process-payment renvoie désormais le même
+      // `wrong_pin` nu que void/refund/cancel (oracle PIN harmonisé).
+      return 'PIN manager incorrect. Vérifiez le PIN et réessayez.';
+    case 'missing_manager_pin':
+      return 'Cette remise exige le PIN manager. Ré-appliquez la remise et saisissez le PIN.';
+    case 'internal_error':
+      // ADR-013 Lot 3 (D15/M5) — les EF money-path ne renvoient plus le
+      // message Postgres brut ; le détail vit dans les logs serveur.
+      return 'Erreur serveur pendant le paiement. Réessayez ; si le problème persiste, contactez le support.';
     case '':
       return message ?? 'Payment failed for an unknown reason. Try again or contact support.';
     default:

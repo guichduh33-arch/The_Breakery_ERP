@@ -1,8 +1,9 @@
 -- supabase/tests/order_edit_items.test.sql
 -- Session 33 / Wave 4.2 — add / update_qty / remove order_item RPC coverage.
+-- ADR-013 Lot 3 (D15/M2) — bumps v3/v4 : pricing serveur via _resolve_line_price_v1.
 -- Runs via MCP execute_sql with BEGIN ... ROLLBACK envelope.
 --
--- Coverage (12 cases) :
+-- Coverage (15 cases) :
 --   T1  add_order_item happy (MANAGER, status='open')
 --   T2  CASHIER → 42501 (no orders.edit_open perm)
 --   T3  add on completed order → P0002
@@ -11,16 +12,19 @@
 --   T6  update_order_item_qty happy
 --   T7  qty=0 → 22023
 --   T8  update_qty on completed → P0002
---   T9  line_total = unit_price * new_qty after update
+--   T9  line_total = unit_price * new_qty after update (unit_price persisté, hybride)
 --   T10 remove_order_item happy
 --   T11 remove non-existent → P0002
 --   T12 order subtotal >= 0 after remove
+--   T13 add avec modificateur : price_adjustment SERVEUR (client menti ignoré)
+--   T14 add d'un produit combo → refusé (23514)
+--   T15 update_qty : unit_price persisté conservé + modificateurs re-tarifés
 --
 -- Auth simulated via set_config('request.jwt.claim.sub', '<uuid>', true).
 -- Helper RPC : auth.uid() reads request.jwt.claim.sub OR request.jwt.claims JSON.
 
 BEGIN;
-SELECT plan(12);
+SELECT plan(15);
 
 -- ===== Setup : create a draft order + 1 line via direct INSERT =====
 DO $$
@@ -34,7 +38,12 @@ DECLARE
   v_session  UUID;
   v_order    UUID;
   v_item     UUID;
-  v_product  UUID := (SELECT id FROM products WHERE is_active=true LIMIT 1);
+  -- ADR-013 M2 : jamais un combo (add_order_item_v3 les refuse) ni un parent.
+  v_product  UUID := (SELECT id FROM products
+                       WHERE is_active=true
+                         AND product_type IS DISTINCT FROM 'combo'
+                         AND retail_price > 0
+                       ORDER BY created_at LIMIT 1);
 BEGIN
   SELECT auth_user_id INTO v_manager_auth
     FROM user_profiles
@@ -71,7 +80,7 @@ DECLARE v_status TEXT := 'fail_raised';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('breakery.test_manager'), true);
   BEGIN
-    PERFORM add_order_item_v2(
+    PERFORM add_order_item_v3(
       current_setting('breakery.test_order')::uuid,
       current_setting('breakery.test_product')::uuid,
       2, '[]'::jsonb, gen_random_uuid());
@@ -88,7 +97,7 @@ DECLARE v_status TEXT := 'fail_no_raise';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('breakery.test_cashier'), true);
   BEGIN
-    PERFORM add_order_item_v2(
+    PERFORM add_order_item_v3(
       current_setting('breakery.test_order')::uuid,
       current_setting('breakery.test_product')::uuid,
       1, '[]'::jsonb, gen_random_uuid());
@@ -106,7 +115,7 @@ BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('breakery.test_manager'), true);
   UPDATE orders SET status='completed' WHERE id = current_setting('breakery.test_order')::uuid;
   BEGIN
-    PERFORM add_order_item_v2(
+    PERFORM add_order_item_v3(
       current_setting('breakery.test_order')::uuid,
       current_setting('breakery.test_product')::uuid,
       1, '[]'::jsonb, gen_random_uuid());
@@ -129,11 +138,11 @@ DECLARE
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('breakery.test_manager'), true);
   BEGIN
-    SELECT add_order_item_v2(
+    SELECT add_order_item_v3(
       current_setting('breakery.test_order')::uuid,
       current_setting('breakery.test_product')::uuid,
       1, '[]'::jsonb, v_key) INTO v_first;
-    SELECT add_order_item_v2(
+    SELECT add_order_item_v3(
       current_setting('breakery.test_order')::uuid,
       current_setting('breakery.test_product')::uuid,
       1, '[]'::jsonb, v_key) INTO v_second;
@@ -157,7 +166,7 @@ DECLARE v_status TEXT := 'fail_raised';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('breakery.test_manager'), true);
   BEGIN
-    PERFORM update_order_item_qty_v3(
+    PERFORM update_order_item_qty_v4(
       current_setting('breakery.test_item')::uuid,
       5, gen_random_uuid());
     v_status := 'pass';
@@ -173,7 +182,7 @@ DECLARE v_status TEXT := 'fail_no_raise';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('breakery.test_manager'), true);
   BEGIN
-    PERFORM update_order_item_qty_v3(
+    PERFORM update_order_item_qty_v4(
       current_setting('breakery.test_item')::uuid,
       0, gen_random_uuid());
   EXCEPTION WHEN SQLSTATE '22023' THEN v_status := 'pass';
@@ -190,7 +199,7 @@ BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('breakery.test_manager'), true);
   UPDATE orders SET status='completed' WHERE id = current_setting('breakery.test_order')::uuid;
   BEGIN
-    PERFORM update_order_item_qty_v3(
+    PERFORM update_order_item_qty_v4(
       current_setting('breakery.test_item')::uuid,
       3, gen_random_uuid());
   EXCEPTION WHEN SQLSTATE 'P0002' THEN v_status := 'pass';
@@ -205,7 +214,7 @@ SELECT ok(current_setting('breakery.t8_pass') = 'pass', 'T8: update_qty on compl
 DO $$
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('breakery.test_manager'), true);
-  PERFORM update_order_item_qty_v3(
+  PERFORM update_order_item_qty_v4(
     current_setting('breakery.test_item')::uuid, 7, gen_random_uuid());
 END $$;
 SELECT cmp_ok(
@@ -250,6 +259,98 @@ SELECT cmp_ok(
   '>=', 0::numeric,
   'T12: order subtotal >= 0 after T10 remove'
 );
+
+-- ===== T13 : add avec modificateur — price_adjustment SERVEUR, client menti ignoré =====
+DO $$
+DECLARE
+  v_product UUID := current_setting('breakery.test_product')::uuid;
+  v_retail  NUMERIC;
+  v_result  JSONB;
+  v_line    RECORD;
+  v_status  TEXT := 'fail_raised';
+BEGIN
+  PERFORM set_config('request.jwt.claim.sub', current_setting('breakery.test_manager'), true);
+  SELECT retail_price INTO v_retail FROM products WHERE id = v_product;
+  INSERT INTO product_modifiers (product_id, group_name, option_label, price_adjustment, is_active)
+  VALUES (v_product, 'T13Grp', 'T13Opt', 2000, true);
+  BEGIN
+    SELECT add_order_item_v3(
+      current_setting('breakery.test_order')::uuid,
+      v_product, 2,
+      -- price_adjustment client MENTI (999999) : le resolveur doit imposer 2000.
+      '[{"group_name":"T13Grp","option_label":"T13Opt","price_adjustment":999999}]'::jsonb,
+      gen_random_uuid()) INTO v_result;
+    SELECT unit_price, line_total, modifiers_total, modifiers INTO v_line
+      FROM order_items WHERE id = (v_result->>'order_item_id')::uuid;
+    IF v_line.line_total = round_idr((v_retail + 2000) * 2)
+       AND v_line.modifiers_total = 4000
+       AND (v_line.modifiers->0->>'price_adjustment')::numeric = 2000 THEN
+      v_status := 'pass';
+    ELSE
+      v_status := 'fail_pricing_' || v_line.line_total::text || '_' || COALESCE(v_line.modifiers_total::text, 'null');
+    END IF;
+    PERFORM set_config('breakery.t13_item', v_result->>'order_item_id', false);
+    PERFORM set_config('breakery.t13_retail', v_retail::text, false);
+  EXCEPTION WHEN OTHERS THEN v_status := 'fail_' || SQLSTATE;
+  END;
+  PERFORM set_config('breakery.t13_pass', v_status, false);
+END $$;
+SELECT ok(current_setting('breakery.t13_pass') = 'pass', 'T13: add prices modifiers server-side (client adjustment ignored)');
+
+-- ===== T14 : add d'un produit combo → 23514 =====
+DO $$
+DECLARE
+  v_status TEXT := 'fail_no_raise';
+  v_orig   products.product_type%TYPE;
+BEGIN
+  PERFORM set_config('request.jwt.claim.sub', current_setting('breakery.test_manager'), true);
+  SELECT product_type INTO v_orig FROM products WHERE id = current_setting('breakery.test_product')::uuid;
+  UPDATE products SET product_type='combo' WHERE id = current_setting('breakery.test_product')::uuid;
+  BEGIN
+    PERFORM add_order_item_v3(
+      current_setting('breakery.test_order')::uuid,
+      current_setting('breakery.test_product')::uuid,
+      1, '[]'::jsonb, gen_random_uuid());
+  EXCEPTION WHEN SQLSTATE '23514' THEN v_status := 'pass';
+                WHEN OTHERS THEN v_status := 'fail_' || SQLSTATE;
+  END;
+  UPDATE products SET product_type = v_orig WHERE id = current_setting('breakery.test_product')::uuid;
+  PERFORM set_config('breakery.t14_pass', v_status, false);
+END $$;
+SELECT ok(current_setting('breakery.t14_pass') = 'pass', 'T14: add of a combo product is refused (23514)');
+
+-- ===== T15 : update_qty hybride — unit_price persisté conservé, modificateurs re-tarifés =====
+DO $$
+DECLARE
+  v_item   UUID := current_setting('breakery.t13_item')::uuid;
+  v_retail NUMERIC := current_setting('breakery.t13_retail')::numeric;
+  v_before NUMERIC;
+  v_line   RECORD;
+  v_status TEXT := 'fail_raised';
+BEGIN
+  PERFORM set_config('request.jwt.claim.sub', current_setting('breakery.test_manager'), true);
+  SELECT unit_price INTO v_before FROM order_items WHERE id = v_item;
+  -- Le catalogue bouge entre-temps : le prix de base persisté ne doit PAS suivre.
+  UPDATE products SET retail_price = retail_price + 7777
+   WHERE id = current_setting('breakery.test_product')::uuid;
+  BEGIN
+    PERFORM update_order_item_qty_v4(v_item, 3, gen_random_uuid());
+    SELECT unit_price, line_total, modifiers_total INTO v_line
+      FROM order_items WHERE id = v_item;
+    IF v_line.unit_price = v_before
+       AND v_line.line_total = round_idr((v_before + 2000) * 3)
+       AND v_line.modifiers_total = 6000 THEN
+      v_status := 'pass';
+    ELSE
+      v_status := 'fail_' || v_line.unit_price::text || '_' || v_line.line_total::text;
+    END IF;
+  EXCEPTION WHEN OTHERS THEN v_status := 'fail_' || SQLSTATE;
+  END;
+  UPDATE products SET retail_price = retail_price - 7777
+   WHERE id = current_setting('breakery.test_product')::uuid;
+  PERFORM set_config('breakery.t15_pass', v_status, false);
+END $$;
+SELECT ok(current_setting('breakery.t15_pass') = 'pass', 'T15: update_qty keeps persisted unit_price and re-prices modifiers');
 
 SELECT * FROM finish();
 ROLLBACK;

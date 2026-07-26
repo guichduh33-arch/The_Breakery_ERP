@@ -51,7 +51,7 @@ export interface OfflineFireIntent extends OfflineIntentBase {
   discount_authorized_by?: string;
 }
 
-/** Encaissement CASH offline — rejoué vers pay_existing_order_v14
+/** Encaissement CASH offline — rejoué vers pay_existing_order_v15
  *  (p_idempotency_key d'origine + p_offline_replay, arbitrage A4). */
 export interface OfflineCashPaymentIntent extends OfflineIntentBase {
   kind: 'cash_payment';

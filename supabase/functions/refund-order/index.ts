@@ -1,12 +1,14 @@
 // supabase/functions/refund-order/index.ts
-// Session 10 — manager-PIN-gated partial line refund. Calls refund_order_rpc.
+// Session 10 — manager-PIN-gated partial line refund. Calls refund_order_rpc
+// (version courante : voir le call-site .rpc() ci-dessous — les commentaires
+// historiques mentent, le call-site fait foi).
 // Session 25 — PIN sent via `x-manager-pin` header (hard cutover, no body field).
 //              `x-idempotency-key` header propagated to RPC for replay safety.
 // S34 security hardening (security-fraud-guard gap 1):
-//   - calls refund_order_rpc_v3 (service_role-only) via the admin client, passing
-//     the cashier's verified auth.uid as p_acting_auth_user_id. The previous
-//     refund_order_rpc_v2 was GRANT'd to authenticated and directly callable via
-//     PostgREST, bypassing this EF's PIN verification.
+//   - service_role-only RPC called via the admin client, passing the cashier's
+//     verified auth.uid as p_acting_auth_user_id (direct PostgREST bypass closed).
+// ADR-013 Lot 3 (D15/M5) — redaction : plus aucun `message` brut (Postgres ou
+// echo d'input) dans les réponses ; fallthrough 500 via logAndRedact.
 //
 // Headers:
 //   x-manager-pin:     string (6 digits) — REQUIRED
@@ -27,6 +29,7 @@ import { verifyManagerPin, isManagerPinBlocked, recordManagerPinFailure, MANAGER
 import { getIdempotencyKey, InvalidIdempotencyKeyError } from '../_shared/idempotency.ts';
 import { getActingAuthUserId } from '../_shared/acting-user.ts';
 import { getAdminClient } from '../_shared/supabase-admin.ts';
+import { logAndRedact } from '../_shared/error-redact.ts';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 // gopay/ovo/dana : lot B ADR-006 déc. 9 (enum _207) — settlement type QRIS.
@@ -95,17 +98,19 @@ serve(async (req) => {
   if (!Array.isArray(body.lines) || body.lines.length === 0) {
     return jsonResponse({ error: 'no_lines' }, 400);
   }
-  for (const ln of body.lines) {
+  for (let i = 0; i < body.lines.length; i++) {
+    const ln = body.lines[i]!;
     if (!UUID_REGEX.test(ln.order_item_id) || typeof ln.qty !== 'number' || ln.qty <= 0) {
-      return jsonResponse({ error: 'invalid_line', message: JSON.stringify(ln) }, 400);
+      return jsonResponse({ error: 'invalid_line', index: i }, 400);
     }
   }
   if (!Array.isArray(body.tenders) || body.tenders.length === 0) {
     return jsonResponse({ error: 'no_tenders' }, 400);
   }
-  for (const t of body.tenders) {
+  for (let i = 0; i < body.tenders.length; i++) {
+    const t = body.tenders[i]!;
     if (!VALID_METHODS.includes(t.method) || typeof t.amount !== 'number' || t.amount <= 0) {
-      return jsonResponse({ error: 'invalid_tender', message: JSON.stringify(t) }, 400);
+      return jsonResponse({ error: 'invalid_tender', index: i }, 400);
     }
   }
   if (!body.reason || body.reason.trim().length < 3) {
@@ -125,10 +130,10 @@ serve(async (req) => {
       if (blocked) return rateLimitedResponse(retryAfterSec);
       return jsonResponse({ error: 'wrong_pin' }, 401);
     }
-    return jsonResponse({ error: 'internal' }, 500);
+    return jsonResponse({ error: 'internal_error' }, 500);
   }
 
-  // service_role admin client — the only role allowed to EXECUTE the v6 RPC.
+  // service_role admin client — the only role allowed to EXECUTE the RPC.
   const admin = getAdminClient();
   const { data, error } = await admin.rpc('refund_order_rpc_v7', {
     p_order_id:            body.order_id,
@@ -141,13 +146,14 @@ serve(async (req) => {
   });
 
   if (error) {
+    // Log serveur complet ; réponses client sans message brut (ADR-013 D15/M5).
     console.error('[refund-order] rpc error', error);
-    if (error.code === 'P0001') return jsonResponse({ error: 'not_authenticated', message: error.message }, 401);
-    if (error.code === 'P0002') return jsonResponse({ error: 'not_found', message: error.message }, 404);
-    if (error.code === 'P0003') return jsonResponse({ error: 'permission_denied', message: error.message }, 403);
-    if (error.code === 'P0011') return jsonResponse({ error: 'cross_shift_not_allowed', message: error.message }, 422);
-    if (error.code === '23514') return jsonResponse({ error: 'check_violation', message: error.message }, 422);
-    return jsonResponse({ error: 'internal', message: error.message }, 500);
+    if (error.code === 'P0001') return jsonResponse({ error: 'not_authenticated' }, 401);
+    if (error.code === 'P0002') return jsonResponse({ error: 'not_found' }, 404);
+    if (error.code === 'P0003') return jsonResponse({ error: 'permission_denied' }, 403);
+    if (error.code === 'P0011') return jsonResponse({ error: 'cross_shift_not_allowed' }, 422);
+    if (error.code === '23514') return jsonResponse({ error: 'check_violation' }, 422);
+    return jsonResponse(logAndRedact('refund-order', error.message ?? error), 500);
   }
 
   if (data?.idempotent_replay === true) {

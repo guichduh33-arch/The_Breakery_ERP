@@ -1,8 +1,9 @@
 // apps/pos/src/features/discounts/hooks/useApplyCartDiscount.ts
 import { useState } from 'react';
-import { calculateTotals, pointsToValue, DEFAULT_TAX_RATE } from '@breakery/domain';
+import { calculateTotals, pointsToValue } from '@breakery/domain';
 import type { Discount } from '@breakery/domain';
 import { useCartStore } from '@/stores/cartStore';
+import { useTaxConfig } from '@/features/settings/hooks/useTaxConfig';
 import { useVerifyManagerPin } from './useVerifyManagerPin';
 
 export interface ApplyCartDiscountState {
@@ -27,9 +28,13 @@ export function useApplyCartDiscount(): ApplyCartDiscountState {
   const [pinModalOpen, setPinModalOpen] = useState(false);
   const [pinResolver, setPinResolver] = useState<((id: string | null) => void) | null>(null);
 
-  const totals = calculateTotals(cart, DEFAULT_TAX_RATE);
+  // ADR-013 D11 — base de la remise panier = items − promo − redemption
+  // (ordre canonique du domaine : la remise s'applique sur le post-redemption).
+  // Taux serveur (useTaxConfig), plus de DEFAULT_TAX_RATE hardcodé.
+  const { taxRate } = useTaxConfig();
+  const totals = calculateTotals(cart, taxRate);
   const redemption = pointsToValue(cart.loyaltyPointsToRedeem ?? 0);
-  const base = totals.subtotal - redemption;
+  const base = Math.max(0, totals.subtotal - (cart.promotionTotal ?? 0) - redemption);
 
   function openDiscountModal() { setDiscountModalOpen(true); }
   function closeDiscountModal() { setDiscountModalOpen(false); }

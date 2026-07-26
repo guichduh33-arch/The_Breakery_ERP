@@ -41,6 +41,14 @@ function withQuery(node: React.ReactElement) {
   return <QueryClientProvider client={qc}>{node}</QueryClientProvider>;
 }
 
+/** Click wrapped in async act so the handler's promise chain flushes. */
+async function clickAndFlush(el: HTMLElement) {
+  await act(async () => {
+    fireEvent.click(el);
+    await Promise.resolve();
+  });
+}
+
 function setupHappyEnvironment(): void {
   // Cart : one cheap item so totals.total > 0 and fastPathReady can fire.
   useCartStore.setState({
@@ -52,7 +60,7 @@ function setupHappyEnvironment(): void {
         unit_price: 25_000,
         quantity: 1,
         modifiers: [],
-      } as never],
+      }],
       order_type: 'dine_in',
     },
     lockedItemIds: [],
@@ -69,7 +77,7 @@ function setupHappyEnvironment(): void {
     isAuthenticated: true,
     isLoading: false,
     error: null,
-  } as never);
+  });
   useShiftStore.setState({ current: { id: 's1', opened_at: '', opening_cash: 0 } });
   // Open the modal in cash-fastpath state.
   usePaymentStore.setState({
@@ -78,6 +86,7 @@ function setupHappyEnvironment(): void {
     cashReceivedStr: '27500', // total = 25_000 + 10% tax/PB1 incl — pay exact path triggers via cash >= total
     tenders: [],
     idempotencyKey: 'idem-fixed-test-uuid',
+    attemptUnsettled: false,
   });
 }
 
@@ -107,7 +116,7 @@ describe('PaymentTerminal — idempotency UX', () => {
 
     // Click "Process Payment" footer button — triggers handleProcess.
     const processBtn = screen.getAllByRole('button', { name: /Process Payment/i })[0]!;
-    await act(async () => { fireEvent.click(processBtn); });
+    await clickAndFlush(processBtn);
 
     // Retry banner should appear.
     await waitFor(() => {
@@ -117,17 +126,17 @@ describe('PaymentTerminal — idempotency UX', () => {
 
     // Capture the tenders array sent on the first attempt.
     expect(mutateAsyncMock).toHaveBeenCalledTimes(1);
-    const firstCallArgs = mutateAsyncMock.mock.calls[0]![0];
+    const firstCallArgs = mutateAsyncMock.mock.calls[0]![0] as { payment: unknown };
     const firstTenders = firstCallArgs.payment;
 
     // Click Retry — same payload should be resent.
     const retryBtn = screen.getByTestId('payment-retry-button');
-    await act(async () => { fireEvent.click(retryBtn); });
+    await clickAndFlush(retryBtn);
 
     await waitFor(() => {
       expect(mutateAsyncMock).toHaveBeenCalledTimes(2);
     });
-    expect(mutateAsyncMock.mock.calls[1]![0].payment).toEqual(firstTenders);
+    expect((mutateAsyncMock.mock.calls[1]![0] as { payment: unknown }).payment).toEqual(firstTenders);
     // Idempotency key unchanged in the store across the two attempts.
     expect(usePaymentStore.getState().idempotencyKey).toBe('idem-fixed-test-uuid');
   });
@@ -139,7 +148,7 @@ describe('PaymentTerminal — idempotency UX', () => {
 
     render(withQuery(<PaymentTerminal />));
     const processBtn = screen.getAllByRole('button', { name: /Process Payment/i })[0]!;
-    await act(async () => { fireEvent.click(processBtn); });
+    await clickAndFlush(processBtn);
 
     await waitFor(() => {
       expect(screen.getByTestId('payment-already-paid-banner')).toBeInTheDocument();
@@ -154,7 +163,7 @@ describe('PaymentTerminal — idempotency UX', () => {
 
     render(withQuery(<PaymentTerminal />));
     const processBtn = screen.getAllByRole('button', { name: /Process Payment/i })[0]!;
-    await act(async () => { fireEvent.click(processBtn); });
+    await clickAndFlush(processBtn);
 
     await waitFor(() => {
       expect(toastMock.error).toHaveBeenCalled();
@@ -165,16 +174,66 @@ describe('PaymentTerminal — idempotency UX', () => {
     expect(screen.queryByTestId('payment-already-paid-banner')).toBeNull();
   });
 
+  // ADR-013 D13 — la clé d'idempotence reste stable tant que la tentative
+  // retryable n'est pas soldée : close()/open() du modal ne régénèrent pas.
+  it('D13: close→reopen keeps the idempotency key while a retryable attempt is unsettled', async () => {
+    mutateAsyncMock
+      .mockRejectedValueOnce(Object.assign(new Error('Failed to fetch')))
+      .mockResolvedValueOnce({
+        ok: true, order_id: 'o1', order_number: 'ORD-002',
+        total: 25_000, tax_amount: 2_273, change_given: 0,
+      });
+
+    render(withQuery(<PaymentTerminal />));
+    const processBtn = screen.getAllByRole('button', { name: /Process Payment/i })[0]!;
+    await clickAndFlush(processBtn);
+    await waitFor(() => {
+      expect(screen.getByTestId('payment-retry-banner')).toBeInTheDocument();
+    });
+    expect(usePaymentStore.getState().attemptUnsettled).toBe(true);
+
+    // Le caissier ferme puis rouvre le modal : la clé DOIT survivre.
+    act(() => { usePaymentStore.getState().close(); });
+    expect(usePaymentStore.getState().idempotencyKey).toBe('idem-fixed-test-uuid');
+    act(() => { usePaymentStore.getState().open(); });
+    expect(usePaymentStore.getState().idempotencyKey).toBe('idem-fixed-test-uuid');
+
+    // Retry (même clé) → succès → la tentative est soldée.
+    const retryBtn = screen.getByTestId('payment-retry-button');
+    await clickAndFlush(retryBtn);
+    await waitFor(() => { expect(mutateAsyncMock).toHaveBeenCalledTimes(2); });
+    expect(usePaymentStore.getState().attemptUnsettled).toBe(false);
+
+    // Tentative soldée : le prochain close régénère (nouvelle vente = nouvelle clé).
+    act(() => { usePaymentStore.getState().close(); });
+    expect(usePaymentStore.getState().idempotencyKey).not.toBe('idem-fixed-test-uuid');
+  });
+
+  it('D13: a fatal error settles the attempt — close regenerates the key', async () => {
+    mutateAsyncMock.mockRejectedValueOnce(
+      Object.assign(new Error('boom'), { details: { error: 'session_closed' } }),
+    );
+
+    render(withQuery(<PaymentTerminal />));
+    const processBtn = screen.getAllByRole('button', { name: /Process Payment/i })[0]!;
+    await clickAndFlush(processBtn);
+    await waitFor(() => { expect(toastMock.error).toHaveBeenCalled(); });
+
+    expect(usePaymentStore.getState().attemptUnsettled).toBe(false);
+    act(() => { usePaymentStore.getState().close(); });
+    expect(usePaymentStore.getState().idempotencyKey).not.toBe('idem-fixed-test-uuid');
+  });
+
   it('disables the Retry button while the mutation is in flight', async () => {
     // Make the first call hang so we can observe the disabled state pre-resolution.
-    let resolveSecond: (v: unknown) => void = () => {};
+    let resolveSecond: (v: unknown) => void = () => undefined;
     mutateAsyncMock
       .mockRejectedValueOnce(Object.assign(new Error('Failed to fetch')))
       .mockReturnValueOnce(new Promise((res) => { resolveSecond = res; }));
 
     render(withQuery(<PaymentTerminal />));
     const processBtn = screen.getAllByRole('button', { name: /Process Payment/i })[0]!;
-    await act(async () => { fireEvent.click(processBtn); });
+    await clickAndFlush(processBtn);
 
     const retryBtn = await screen.findByTestId('payment-retry-button');
     expect(retryBtn).not.toBeDisabled();

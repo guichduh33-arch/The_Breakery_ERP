@@ -7,8 +7,10 @@
 //     passing the cashier's verified auth.uid as p_acting_auth_user_id. The old
 //     void_order_rpc was directly callable via PostgREST by any authenticated
 //     cashier, bypassing this PIN check entirely.
-// S55 — idempotency: reads `x-idempotency-key` header, relays to void_order_rpc_v6.
-// ADR-013 Lot 2 D1 — v6 refuse le void si un refund partiel existe (23514 -> 422).
+// S55 — idempotency: reads `x-idempotency-key` header, relays to the RPC.
+// ADR-013 Lot 2 D1 — refuse le void si un refund partiel existe (23514 -> 422).
+// ADR-013 Lot 3 — RPC bump v6 -> v7 (search_path durci) ; D15/M5 redaction :
+// plus aucun `message` Postgres brut dans les réponses, fallthrough logAndRedact.
 //
 // Headers:
 //   x-manager-pin:     string (6 digits) — REQUIRED
@@ -23,6 +25,7 @@ import { verifyManagerPin, isManagerPinBlocked, recordManagerPinFailure, MANAGER
 import { getIdempotencyKey, InvalidIdempotencyKeyError } from '../_shared/idempotency.ts';
 import { getActingAuthUserId } from '../_shared/acting-user.ts';
 import { getAdminClient } from '../_shared/supabase-admin.ts';
+import { logAndRedact } from '../_shared/error-redact.ts';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -101,12 +104,12 @@ serve(async (req) => {
       if (blocked) return rateLimitedResponse(retryAfterSec);
       return jsonResponse({ error: 'wrong_pin' }, 401);
     }
-    return jsonResponse({ error: 'internal' }, 500);
+    return jsonResponse({ error: 'internal_error' }, 500);
   }
 
-  // service_role admin client — the only role allowed to EXECUTE the v6 RPC.
+  // service_role admin client — the only role allowed to EXECUTE the v7 RPC.
   const admin = getAdminClient();
-  const { data, error } = await admin.rpc('void_order_rpc_v6', {
+  const { data, error } = await admin.rpc('void_order_rpc_v7', {
     p_order_id:            body.order_id,
     p_reason:              body.reason,
     p_authorized_by:       mgr.manager_profile_id,
@@ -115,13 +118,14 @@ serve(async (req) => {
   });
 
   if (error) {
+    // Log serveur complet ; réponses client sans message brut (ADR-013 D15/M5).
     console.error('[void-order] rpc error', error);
-    if (error.code === 'P0001') return jsonResponse({ error: 'not_authenticated', message: error.message }, 401);
-    if (error.code === 'P0002') return jsonResponse({ error: 'not_found', message: error.message }, 404);
-    if (error.code === 'P0003') return jsonResponse({ error: 'permission_denied', message: error.message }, 403);
-    if (error.code === 'P0011') return jsonResponse({ error: 'cross_shift_not_allowed', message: error.message }, 422);
-    if (error.code === '23514') return jsonResponse({ error: 'check_violation', message: error.message }, 422);
-    return jsonResponse({ error: 'internal', message: error.message }, 500);
+    if (error.code === 'P0001') return jsonResponse({ error: 'not_authenticated' }, 401);
+    if (error.code === 'P0002') return jsonResponse({ error: 'not_found' }, 404);
+    if (error.code === 'P0003') return jsonResponse({ error: 'permission_denied' }, 403);
+    if (error.code === 'P0011') return jsonResponse({ error: 'cross_shift_not_allowed' }, 422);
+    if (error.code === '23514') return jsonResponse({ error: 'check_violation' }, 422);
+    return jsonResponse(logAndRedact('void-order', error.message ?? error), 500);
   }
 
   return jsonResponse({

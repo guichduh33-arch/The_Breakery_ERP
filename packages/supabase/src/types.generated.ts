@@ -6441,7 +6441,7 @@ export type Database = {
         }
         Returns: Json
       }
-      add_order_item_v2: {
+      add_order_item_v3: {
         Args: {
           p_idempotency_key: string
           p_modifiers: Json
@@ -6640,7 +6640,7 @@ export type Database = {
             }
             Returns: string
           }
-      complete_order_with_payment_v19: {
+      complete_order_with_payment_v20: {
         Args: {
           p_customer_id?: string
           p_discount_amount?: number
@@ -7860,7 +7860,7 @@ export type Database = {
       pass:
         | { Args: never; Returns: string }
         | { Args: { "": string }; Returns: string }
-      pay_existing_order_v14: {
+      pay_existing_order_v15: {
         Args: {
           p_customer_id?: string
           p_discount_amount?: number
@@ -8495,7 +8495,7 @@ export type Database = {
           code: string
         }[]
       }
-      update_order_item_qty_v3: {
+      update_order_item_qty_v4: {
         Args: {
           p_auth_id?: string
           p_idempotency_key: string
@@ -8648,7 +8648,7 @@ export type Database = {
         Args: { p_pin: string; p_user_id: string }
         Returns: boolean
       }
-      void_order_rpc_v6: {
+      void_order_rpc_v7: {
         Args: {
           p_acting_auth_user_id: string
           p_authorized_by: string

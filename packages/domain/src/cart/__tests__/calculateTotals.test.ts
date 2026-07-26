@@ -425,4 +425,24 @@ describe('calculateTotals — promo (session 8)', () => {
     // post_promotion = 500, redemption = 1000 > 500 → RedemptionExceedsTotalError
     expect(() => calculateTotals(cart, 0.1)).toThrow(/Redemption|Discounts exceed/);
   });
+  // ADR-013 D11 — les 2 gardes restantes du pipeline étagé (miroir serveur v20).
+  it('throws DiscountExceedsTotalError when promotionTotal alone exceeds items_total', () => {
+    const cart: Cart = {
+      items: [{ id: '1', product_id: 'P', name: 'X', unit_price: 1000, quantity: 1, modifiers: [] }],
+      order_type: 'dine_in',
+      promotionTotal: 1500,
+    };
+    expect(() => calculateTotals(cart, 0.1)).toThrow(/Discounts exceed/);
+  });
+  it('exclusive mode applies the promo BEFORE the PB1 split (parity with inclusive)', () => {
+    const cart: Cart = {
+      items: [{ id: '1', product_id: 'P', name: 'X', unit_price: 50000, quantity: 1, modifiers: [] }],
+      order_type: 'dine_in',
+      promotionTotal: 5000,
+    };
+    const t = calculateTotals(cart, 0.1, false);
+    // base post-promo = 45000 ; exclusif : tax = 4500, total = 49500.
+    expect(t.tax_amount).toBe(4500);
+    expect(t.total).toBe(49500);
+  });
 });

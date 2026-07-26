@@ -25,6 +25,7 @@ import {
   detachCustomer as domainDetachCustomer,
   setRedeemPoints as domainSetRedeemPoints,
   pointsToValue,
+  calculateTotals,
 } from '@breakery/domain';
 import type {
   AppliedPromotion,
@@ -297,12 +298,28 @@ export const useCartStore = create<CartState>()(
           if (removed?.is_promo_gift && removed.promotion_id) {
             const next = new Set(s.dismissedPromotionIds);
             next.add(removed.promotion_id);
+            const nextApplied = s.appliedPromotions.filter(
+              (ap) => ap.promotion_id !== removed.promotion_id,
+            );
+            // ADR-013 D11 — recompute synchrone : `promotionTotal` doit suivre
+            // `appliedPromotions` dans le même set (pas de fenêtre où le total
+            // affiché porte encore la promo retirée, l'éval débouncée arrive
+            // 200ms+RPC plus tard). Même clamp aux items que setAppliedPromotions.
+            const cartAfterRemove = removeItem(s.cart, id);
+            const remainingItemsTotal = calculateTotals(
+              { items: cartAfterRemove.items, order_type: cartAfterRemove.order_type },
+              0,
+            ).subtotal;
             return {
-              cart: removeItem(s.cart, id),
+              cart: {
+                ...cartAfterRemove,
+                promotionTotal: Math.min(
+                  nextApplied.reduce((sum, ap) => sum + ap.amount, 0),
+                  remainingItemsTotal,
+                ),
+              },
               dismissedPromotionIds: next,
-              appliedPromotions: s.appliedPromotions.filter(
-                (ap) => ap.promotion_id !== removed.promotion_id,
-              ),
+              appliedPromotions: nextApplied,
             };
           }
           return { cart: removeItem(s.cart, id) };
@@ -335,9 +352,11 @@ export const useCartStore = create<CartState>()(
           // must leave with the cart. Otherwise the NEXT sale credits points and
           // category pricing to the previous customer (Hold → "empty" cart → sale).
           // With locked lines (same fired order still in flight), keep the context.
-          const { customerId: _c, tableNumber: _t, ...restCart } = s.cart;
+          // ADR-013 D11 — `promotionTotal` suit `appliedPromotions` (vidé ici).
+          const { promotionTotal: _pt, ...cartNoPromo } = s.cart;
+          const { customerId: _c, tableNumber: _t, ...restCart } = cartNoPromo;
           return {
-            cart: { ...(hasLocked ? s.cart : restCart), items: lockedItems },
+            cart: { ...(hasLocked ? cartNoPromo : restCart), items: lockedItems },
             // Session 9 — wipe promotion state too so a fresh ring-up starts clean.
             appliedPromotions: [],
             dismissedPromotionIds: new Set<string>(),
@@ -351,7 +370,8 @@ export const useCartStore = create<CartState>()(
         set((s) => {
           // Drop order-specific monetary state ; keep order_type / customer /
           // table so the cashier can immediately re-ring if needed.
-          const { cartDiscount: _cd, loyaltyPointsToRedeem: _l, ...rest } = s.cart;
+          // ADR-013 D11 — `promotionTotal` est monétaire, il part aussi.
+          const { cartDiscount: _cd, loyaltyPointsToRedeem: _l, promotionTotal: _pt, ...rest } = s.cart;
           return {
             cart: { ...rest, items: [] },
             lockedItemIds: [],
@@ -468,7 +488,13 @@ export const useCartStore = create<CartState>()(
 
       restoreCart: (restoredCart) =>
         set((s) => ({
-          cart: restoredCart,
+          // ADR-013 D11 — un cart restauré (hold) repart sans promotionTotal :
+          // `appliedPromotions` est remis à zéro juste en dessous, l'orchestrateur
+          // recalculera les deux ensemble au prochain mount.
+          cart: (() => {
+            const { promotionTotal: _pt, ...restored } = restoredCart;
+            return restored;
+          })(),
           lockedItemIds: [],
           printedItemIds: [],
           attachedCustomer: null,
@@ -597,16 +623,57 @@ export const useCartStore = create<CartState>()(
           addedGifts.push({ name: giftName, promotion_id: ap.promotion_id });
         }
 
-        // Session 36 / Bug 1 fix — idempotent reconcile. When no gift line was
-        // added or removed, `nextItems` is content-identical to the current
-        // cart (only a fresh array instance). Preserve the EXISTING `cart`
-        // reference in that case so `usePromotionsAutoEval` (whose effect
-        // depends on `cart`) does NOT re-fire and re-call `evaluate_promotions_v2`
-        // on a 200ms loop. `appliedPromotions` is not in that effect's deps, so
-        // refreshing it is safe and keeps the totals display in sync.
+        // ADR-013 D11 — la promo entre dans le pipeline canonique du domaine :
+        // `cart.promotionTotal` est écrit ICI (source unique), les call-sites
+        // appellent `calculateTotals` sans post-traitement. Clamp du rachat de
+        // points dans le MÊME set : l'éval promo est asynchrone (debounce +
+        // RPC), un rachat validé avant l'arrivée d'une promo peut dépasser le
+        // post-promo — on le réduit au max valide pour que les gardes du
+        // domaine (RedemptionExceedsTotalError) restent un filet jamais touché.
+        // items_total exact du domaine (lignes annulées exclues, remises
+        // ligne déduites) sur un cart nu — aucune garde ne peut throw ici.
+        const itemsTotal = calculateTotals(
+          { items: nextItems, order_type: state.cart.order_type },
+          0,
+        ).subtotal;
+        // Promo clampée aux items : un montant évalué > items_total (petit
+        // panier + fixed_amount généreux) ne doit jamais mettre le cart dans
+        // un état où DiscountExceedsTotalError throw au render.
+        const promoTotal = Math.min(
+          next.reduce((sum, ap) => sum + ap.amount, 0),
+          itemsTotal,
+        );
+        const promoChanged = (state.cart.promotionTotal ?? 0) !== promoTotal;
+
+        const currentPoints = state.cart.loyaltyPointsToRedeem ?? 0;
+        let clampedPoints = currentPoints;
+        if (currentPoints > 0) {
+          const postPromo = itemsTotal - promoTotal;
+          const maxPoints = Math.floor(postPromo / pointsToValue(1));
+          clampedPoints = Math.min(currentPoints, maxPoints);
+        }
+        const pointsChanged = clampedPoints !== currentPoints;
+
+        // Session 36 / Bug 1 fix — idempotent reconcile. When nothing changed,
+        // `nextItems` is content-identical to the current cart (only a fresh
+        // array instance). Preserve the EXISTING `cart` reference in that case
+        // so `usePromotionsAutoEval` (whose effect depends on `cart`) does NOT
+        // re-fire and re-call `evaluate_promotions_v2` on a 200ms loop.
+        // `appliedPromotions` is not in that effect's deps, so refreshing it is
+        // safe. Quand seul `promotionTotal` change, la nouvelle référence cart
+        // déclenche UNE éval supplémentaire qui converge (2ᵉ passage : montant
+        // identique → référence préservée).
         const giftsChanged = addedGifts.length > 0 || removedGifts.length > 0;
+        const cartChanged = giftsChanged || promoChanged || pointsChanged;
         set({
-          cart: giftsChanged ? { ...state.cart, items: nextItems } : state.cart,
+          cart: cartChanged
+            ? {
+                ...state.cart,
+                items: nextItems,
+                promotionTotal: promoTotal,
+                ...(pointsChanged ? { loyaltyPointsToRedeem: clampedPoints } : {}),
+              }
+            : state.cart,
           appliedPromotions: next,
         });
         return { addedGifts, removedGifts };
@@ -629,7 +696,13 @@ export const useCartStore = create<CartState>()(
       // edits. `isOffline` is intentionally NOT persisted — it is recomputed
       // from `navigator.onLine` on rehydrate (and live-updated by the listener).
       partialize: (state) => ({
-        cart: state.cart,
+        // ADR-013 D11 — `promotionTotal` est exclu du persist : il est dérivé
+        // de `appliedPromotions` (mémoire seule) et serait STALE au rehydrate
+        // (un tab frais repart promo à zéro jusqu'au premier auto-eval).
+        cart: (() => {
+          const { promotionTotal: _pt, ...cartPersisted } = state.cart;
+          return cartPersisted;
+        })(),
         lockedItemIds: state.lockedItemIds,
         printedItemIds: state.printedItemIds,
         attachedCustomer: state.attachedCustomer,
@@ -672,7 +745,7 @@ export function initNetworkListener(): () => void {
 export function resetCartAfterCheckout(): void {
   useCartStore.setState((s) => {
     const cleared = clearCart(s.cart);
-    const { customerId: _c, loyaltyPointsToRedeem: _l, tableNumber: _t, cartDiscount: _cd, ...rest } = cleared;
+    const { customerId: _c, loyaltyPointsToRedeem: _l, tableNumber: _t, cartDiscount: _cd, promotionTotal: _pt, ...rest } = cleared;
     return {
       cart: { ...rest, items: rest.items.map(({ discount: _d, ...i }) => i) },
       lockedItemIds: [],
