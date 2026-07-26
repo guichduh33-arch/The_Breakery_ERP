@@ -330,6 +330,7 @@ export type Database = {
           shift_variance_pin_threshold_pct: number
           shift_variance_threshold_abs: number
           shift_variance_threshold_pct: number
+          store_credit_expiry_months: number
           tax_inclusive: boolean
           tax_rate: number
           timezone: string
@@ -372,6 +373,7 @@ export type Database = {
           shift_variance_pin_threshold_pct?: number
           shift_variance_threshold_abs?: number
           shift_variance_threshold_pct?: number
+          store_credit_expiry_months?: number
           tax_inclusive?: boolean
           tax_rate?: number
           timezone?: string
@@ -414,6 +416,7 @@ export type Database = {
           shift_variance_pin_threshold_pct?: number
           shift_variance_threshold_abs?: number
           shift_variance_threshold_pct?: number
+          store_credit_expiry_months?: number
           tax_inclusive?: boolean
           tax_rate?: number
           timezone?: string
@@ -850,6 +853,63 @@ export type Database = {
           },
         ]
       }
+      customer_store_credit_ledger: {
+        Row: {
+          balance_after: number
+          created_at: string
+          created_by: string | null
+          customer_id: string
+          delta: number
+          expires_at: string | null
+          id: string
+          idempotency_key: string | null
+          reference_id: string | null
+          reference_type: string | null
+          source: string
+        }
+        Insert: {
+          balance_after: number
+          created_at?: string
+          created_by?: string | null
+          customer_id: string
+          delta: number
+          expires_at?: string | null
+          id?: string
+          idempotency_key?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
+          source: string
+        }
+        Update: {
+          balance_after?: number
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string
+          delta?: number
+          expires_at?: string | null
+          id?: string
+          idempotency_key?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_store_credit_ledger_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_store_credit_ledger_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           b2b_company_name: string | null
@@ -871,6 +931,7 @@ export type Database = {
           name: string
           phone: string | null
           retail_credit_limit: number | null
+          store_credit_balance: number
           total_spent: number
           total_visits: number
           updated_at: string
@@ -895,6 +956,7 @@ export type Database = {
           name: string
           phone?: string | null
           retail_credit_limit?: number | null
+          store_credit_balance?: number
           total_spent?: number
           total_visits?: number
           updated_at?: string
@@ -919,6 +981,7 @@ export type Database = {
           name?: string
           phone?: string | null
           retail_credit_limit?: number | null
+          store_credit_balance?: number
           total_spent?: number
           total_visits?: number
           updated_at?: string
@@ -6260,6 +6323,22 @@ export type Database = {
       }
     }
     Functions: {
+      _apply_store_credit_v1: {
+        Args: {
+          p_created_by: string
+          p_customer_id: string
+          p_delta: number
+          p_expires_at: string
+          p_idempotency_key?: string
+          p_reference_id: string
+          p_reference_type: string
+          p_source: string
+        }
+        Returns: {
+          balance_after: number
+          ledger_id: string
+        }[]
+      }
       _build_zreport_snapshot: { Args: { p_shift_id: string }; Returns: Json }
       _calculate_recipe_cost_walk: {
         Args: {
@@ -6403,6 +6482,10 @@ export type Database = {
       _revoke_user_sessions_v1: {
         Args: { p_profile_id: string }
         Returns: number
+      }
+      _sale_payment_mapping_key_v1: {
+        Args: { p_method: string }
+        Returns: string
       }
       _snapshot_recipe_version: {
         Args: { p_change_note: string; p_product_id: string; p_profile: string }
@@ -6640,7 +6723,7 @@ export type Database = {
             }
             Returns: string
           }
-      complete_order_with_payment_v20: {
+      complete_order_with_payment_v21: {
         Args: {
           p_customer_id?: string
           p_discount_amount?: number
@@ -6663,6 +6746,14 @@ export type Database = {
       }
       convert_baker_recipe_to_absolute_v1: {
         Args: { p_product_id: string; p_target_flour_qty: number }
+        Returns: Json
+      }
+      convert_loyalty_to_store_credit_v1: {
+        Args: {
+          p_customer_id: string
+          p_idempotency_key?: string
+          p_points: number
+        }
         Returns: Json
       }
       convert_parent_to_standalone_v1: {
@@ -6929,12 +7020,12 @@ export type Database = {
       }
       delete_promotion_v1: { Args: { p_promotion_id: string }; Returns: Json }
       delete_restaurant_table_v1: { Args: { p_id: string }; Returns: undefined }
+      delete_section_v1: { Args: { p_section_id: string }; Returns: Json }
       delete_table_section_v1: { Args: { p_id: string }; Returns: undefined }
       delete_user_v1: {
         Args: { p_reason: string; p_user_id: string }
         Returns: Json
       }
-      delete_section_v1: { Args: { p_section_id: string }; Returns: Json }
       delete_variant_v1: { Args: { p_variant_id: string }; Returns: string }
       diag:
         | {
@@ -6984,6 +7075,7 @@ export type Database = {
         }
         Returns: Json
       }
+      expire_store_credit_v1: { Args: never; Returns: number }
       export_catalog_v1: { Args: never; Returns: Json }
       fail:
         | { Args: never; Returns: string }
@@ -7231,6 +7323,10 @@ export type Database = {
         }
         Returns: Json
       }
+      get_off_hours_sales_v1: {
+        Args: { p_date_end: string; p_date_start: string }
+        Returns: Json
+      }
       get_orders_list_v2: {
         Args: {
           p_cursor?: string
@@ -7238,13 +7334,6 @@ export type Database = {
           p_filters?: Json
           p_limit?: number
           p_start: string
-        }
-        Returns: Json
-      }
-      get_off_hours_sales_v1: {
-        Args: {
-          p_date_end: string
-          p_date_start: string
         }
         Returns: Json
       }
@@ -7451,7 +7540,7 @@ export type Database = {
           total: number
         }[]
       }
-      get_settings_by_category_v7: {
+      get_settings_by_category_v8: {
         Args: { p_category: string }
         Returns: Json
       }
@@ -7581,6 +7670,16 @@ export type Database = {
         Returns: Json
       }
       get_zreport_snapshot_v1: { Args: { p_zreport_id: string }; Returns: Json }
+      grant_store_credit_v1: {
+        Args: {
+          p_amount: number
+          p_authorization_id: string
+          p_customer_id: string
+          p_idempotency_key?: string
+          p_reason: string
+        }
+        Returns: Json
+      }
       has_kiosk_jwt: { Args: { p_required_scope?: string }; Returns: boolean }
       has_permission: {
         Args: { p_perm: string; p_uid: string }
@@ -7860,7 +7959,7 @@ export type Database = {
       pass:
         | { Args: never; Returns: string }
         | { Args: { "": string }; Returns: string }
-      pay_existing_order_v15: {
+      pay_existing_order_v16: {
         Args: {
           p_customer_id?: string
           p_discount_amount?: number
@@ -8160,7 +8259,7 @@ export type Database = {
       refresh_mv_pl_monthly: { Args: never; Returns: undefined }
       refresh_mv_sales_daily: { Args: never; Returns: undefined }
       refresh_mv_stock_variance: { Args: never; Returns: undefined }
-      refund_order_rpc_v7: {
+      refund_order_rpc_v8: {
         Args: {
           p_acting_auth_user_id: string
           p_authorized_by: string
@@ -8228,7 +8327,7 @@ export type Database = {
         Returns: string
       }
       restore_held_order_v1: { Args: { p_order_id: string }; Returns: Json }
-      retry_sale_journal_entry_v3: {
+      retry_sale_journal_entry_v4: {
         Args: { p_order_id: string }
         Returns: Json
       }
@@ -8348,6 +8447,10 @@ export type Database = {
         Args: { p_new_unit: string; p_product_id: string }
         Returns: Json
       }
+      set_product_is_test_v1: {
+        Args: { p_is_test: boolean; p_product_id: string }
+        Returns: Json
+      }
       set_product_sections_v1: {
         Args: {
           p_primary_section_id: string
@@ -8356,15 +8459,11 @@ export type Database = {
         }
         Returns: Json
       }
-      set_product_is_test_v1: {
-        Args: { p_is_test: boolean; p_product_id: string }
-        Returns: Json
-      }
       set_product_units_v1: {
         Args: { p_alts: Json; p_contexts: Json; p_product_id: string }
         Returns: Json
       }
-      set_setting_v9: {
+      set_setting_v10: {
         Args: { p_category: string; p_key: string; p_value: Json }
         Returns: undefined
       }
@@ -8590,7 +8689,6 @@ export type Database = {
         Args: { p_combo: Json; p_idempotency_key?: string }
         Returns: Json
       }
-      upsert_section_v1: { Args: { p_payload: Json }; Returns: Json }
       upsert_customer_product_price_v1: {
         Args: { p_customer_id: string; p_price: number; p_product_id: string }
         Returns: {
@@ -8639,6 +8737,7 @@ export type Database = {
         }
         Returns: string
       }
+      upsert_section_v1: { Args: { p_payload: Json }; Returns: Json }
       validate_b2b_credit_limit_v1: {
         Args: { p_customer_id: string; p_order_amount: number }
         Returns: Json
@@ -8648,7 +8747,7 @@ export type Database = {
         Args: { p_pin: string; p_user_id: string }
         Returns: boolean
       }
-      void_order_rpc_v7: {
+      void_order_rpc_v8: {
         Args: {
           p_acting_auth_user_id: string
           p_authorized_by: string

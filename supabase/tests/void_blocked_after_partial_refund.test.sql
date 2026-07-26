@@ -1,5 +1,5 @@
 -- supabase/tests/void_blocked_after_partial_refund.test.sql
--- ADR-013 Lot 2 D1 — void_order_rpc_v7 refuse le void si un refund partiel
+-- ADR-013 Lot 2 D1 — void_order_rpc_v8 refuse le void si un refund partiel
 -- (non-`is_full_void`) existe déjà pour l'ordre. Non-régression : sans refund,
 -- le void réussit toujours.
 -- Run via MCP execute_sql (BEGIN/ROLLBACK envelope). Fixtures : motif lifté de
@@ -56,7 +56,7 @@ DECLARE
   v_order JSONB; v_order_id UUID; v_caught BOOLEAN := false;
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_cashier_auth::text, true);
-  v_order := complete_order_with_payment_v20(
+  v_order := complete_order_with_payment_v21(
     p_session_id := v_sess, p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(jsonb_build_object(
       'product_id', v_prod, 'quantity', 2, 'unit_price', 25000, 'modifiers', '[]'::jsonb)),
@@ -68,7 +68,7 @@ BEGIN
   VALUES ('R-D1-PARTIAL', v_order_id, v_sess, 10000, 909, 'partial refund test', v_cashier_prof, v_manager_prof, false);
 
   BEGIN
-    PERFORM void_order_rpc_v7(v_order_id, 'D1 void after partial refund', v_manager_prof, v_cashier_auth, NULL);
+    PERFORM void_order_rpc_v8(v_order_id, 'D1 void after partial refund', v_manager_prof, v_cashier_auth, NULL);
   EXCEPTION WHEN SQLSTATE '23514' THEN
     v_caught := true;
   END;
@@ -92,14 +92,14 @@ DECLARE
   v_order JSONB; v_order_id UUID; v_res JSONB; v_full INT;
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_cashier_auth::text, true);
-  v_order := complete_order_with_payment_v20(
+  v_order := complete_order_with_payment_v21(
     p_session_id := v_sess, p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(jsonb_build_object(
       'product_id', v_prod, 'quantity', 1, 'unit_price', 25000, 'modifiers', '[]'::jsonb)),
     p_payment := jsonb_build_object('method','cash','amount',25000,'cash_received',25000,'change_given',0));
   v_order_id := (v_order->>'order_id')::uuid;
 
-  v_res := void_order_rpc_v7(v_order_id, 'D1 clean void', v_manager_prof, v_cashier_auth, NULL);
+  v_res := void_order_rpc_v8(v_order_id, 'D1 clean void', v_manager_prof, v_cashier_auth, NULL);
   SELECT count(*) INTO v_full FROM refunds WHERE order_id=v_order_id AND is_full_void=true;
 
   PERFORM set_config('d1.t2', CASE WHEN

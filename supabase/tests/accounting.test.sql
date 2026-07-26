@@ -560,20 +560,20 @@ SELECT ok(
 -- ---------------------------------------------------------------------------
 SELECT ok(
   NOT EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'refund_order_rpc' AND pronamespace = 'public'::regnamespace)
-  AND EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'refund_order_rpc_v7'),
-  'T33: refund_order_rpc dropped ; refund_order_rpc_v7 exists'
+  AND EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'refund_order_rpc_v8'),
+  'T33: refund_order_rpc dropped ; refund_order_rpc_v8 exists'
 );
 
 SELECT ok(
   NOT EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'complete_order_with_payment' AND pronamespace = 'public'::regnamespace)
-  AND EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'complete_order_with_payment_v20'),
-  'T34: complete_order_with_payment dropped ; complete_order_with_payment_v20 exists'
+  AND EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'complete_order_with_payment_v21'),
+  'T34: complete_order_with_payment dropped ; complete_order_with_payment_v21 exists'
 );
 
 SELECT ok(
   NOT EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'pay_existing_order' AND pronamespace = 'public'::regnamespace)
-  AND EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'pay_existing_order_v15'),
-  'T35: pay_existing_order dropped ; pay_existing_order_v15 exists'
+  AND EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'pay_existing_order_v16'),
+  'T35: pay_existing_order dropped ; pay_existing_order_v16 exists'
 );
 
 -- ---------------------------------------------------------------------------

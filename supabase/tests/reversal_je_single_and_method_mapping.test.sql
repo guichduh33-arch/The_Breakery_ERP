@@ -79,9 +79,9 @@ BEGIN
   SELECT count(*) INTO v_n FROM journal_entry_lines WHERE journal_entry_id=v_je AND account_id=resolve_mapping_account('SALE_PAYMENT_QRIS') AND credit=3300;
   PERFORM set_config('rje.t3', (v_n=1)::text, true);
 
-  -- T4 : store_credit -> 1110 (temporaire, Lot 4 -> 2220)
+  -- T4 : store_credit -> 2220 Customer Store Credit Payable (ADR-013 Lot 4, D4/D3b)
   SELECT id INTO v_je FROM journal_entries WHERE reference_type='sale_refund' AND reference_id=r_sc;
-  SELECT count(*) INTO v_n FROM journal_entry_lines WHERE journal_entry_id=v_je AND account_id=resolve_mapping_account('SALE_PAYMENT_CASH') AND credit=2200;
+  SELECT count(*) INTO v_n FROM journal_entry_lines WHERE journal_entry_id=v_je AND account_id=resolve_mapping_account('SALE_PAYMENT_STORE_CREDIT') AND credit=2200;
   PERFORM set_config('rje.t4', (v_n=1)::text, true);
 
   -- T5 : is_full_void -> 0 JE (D2)
@@ -104,7 +104,7 @@ END $$;
 SELECT ok(current_setting('rje.t1')::boolean, 'T1 refund card credite Card Clearing (1116), pas de fallback');
 SELECT ok(current_setting('rje.t2')::boolean, 'T2 refund transfer credite Bank Operating (1112)');
 SELECT ok(current_setting('rje.t3')::boolean, 'T3 refund qris credite QRIS Clearing (1115)');
-SELECT ok(current_setting('rje.t4')::boolean, 'T4 refund store_credit reste sur Cash (1110) jusqu''au Lot 4');
+SELECT ok(current_setting('rje.t4')::boolean, 'T4 refund store_credit credite 2220 Customer Store Credit Payable (Lot 4)');
 SELECT ok(current_setting('rje.t5')::boolean, 'T5 refund is_full_void ne cree AUCUN JE sale_refund (D2)');
 SELECT ok(current_setting('rje.t6')::boolean, 'T6 un seul JE sale_refund, equilibre debit=credit=total');
 SELECT ok(current_setting('rje.t7')::boolean, 'T7 refund sans tender -> fallback cash (1110) present');

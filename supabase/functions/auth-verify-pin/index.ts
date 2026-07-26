@@ -11,7 +11,7 @@ import { logAndRedact, redactError } from '../_shared/error-redact.ts';
 const PIN_REGEX = /^\d{6}$/;
 // PIN policy (ADR-006 déc. 9) — défauts historiques, utilisés en fallback si
 // la lecture de business_config échoue ; les valeurs vives viennent de
-// Settings > Security (pin_max_failed / pin_lockout_minutes, set_setting_v9).
+// Settings > Security (pin_max_failed / pin_lockout_minutes, set_setting_v10).
 const MAX_FAILED = 5;
 const LOCKOUT_MIN = 15;
 // Session 13 (25-002) — tightened from 20/min to 3/min (≈ 12/hour) on the

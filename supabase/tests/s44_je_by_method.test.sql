@@ -3,7 +3,7 @@
 -- Le trigger calcule la JE depuis NEW.total (pas les items) → pas besoin de products/items.
 -- Exécuter via MCP execute_sql (BEGIN..ROLLBACK). GUC pass-flag pattern S25 (DEV-S25-2.A-03).
 BEGIN;
-SELECT plan(7);
+SELECT plan(8);
 
 -- Fixture : un served_by (profile) + une session POS open (orders.session_id NOT NULL pour pos).
 DO $$
@@ -160,6 +160,30 @@ BEGIN
   PERFORM set_config('s44.t7_pass', (v_n = 1)::text, true);
 END $$;
 SELECT ok(current_setting('s44.t7_pass')::boolean, 'T7 void splits reversal by method (qris credit)');
+
+-- T8 (ADR-013 Lot 4, D4) : method 'store_credit' ⇒ DR 2220 Customer Store
+-- Credit Payable (extinction de la dette d'avoir), zéro fallback cash.
+DO $$
+DECLARE v_order_id UUID; v_acc UUID; v_n INT; v_fb INT;
+BEGIN
+  INSERT INTO orders (order_number, session_id, served_by, order_type, status, subtotal, tax_amount, total, created_via)
+    VALUES ('#T8JE', current_setting('s44.session_id')::uuid, current_setting('s44.profile_id')::uuid,
+            'take_out', 'pending_payment', 15000, 1364, 15000, 'pos')
+    RETURNING id INTO v_order_id;
+  INSERT INTO order_payments (order_id, method, amount) VALUES (v_order_id, 'store_credit', 15000);
+  UPDATE orders SET status='paid', paid_at=now() WHERE id = v_order_id;
+  v_acc := resolve_mapping_account('SALE_PAYMENT_STORE_CREDIT');
+  SELECT count(*) INTO v_n FROM journal_entry_lines jel
+    JOIN journal_entries je ON je.id = jel.journal_entry_id
+    WHERE je.reference_type='sale' AND je.reference_id=v_order_id
+      AND jel.account_id = v_acc AND jel.debit = 15000;
+  SELECT count(*) INTO v_fb FROM journal_entry_lines jel
+    JOIN journal_entries je ON je.id = jel.journal_entry_id
+    WHERE je.reference_type='sale' AND je.reference_id=v_order_id
+      AND jel.description ILIKE '%fallback to cash%';
+  PERFORM set_config('s44.t8_pass', (v_n = 1 AND v_fb = 0)::text, true);
+END $$;
+SELECT ok(current_setting('s44.t8_pass')::boolean, 'T8 store_credit sale debits 2220 Customer Store Credit Payable (Lot 4)');
 
 SELECT * FROM finish();
 ROLLBACK;

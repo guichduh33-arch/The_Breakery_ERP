@@ -1,6 +1,6 @@
 -- supabase/tests/reversal_idempotency.test.sql
 -- S55 P1.5 (audit T7) — EF-retry-safety idempotency on reversal RPCs.
---   VOID   : void_order_rpc_v7 — idempotency_key replay via refunds.idempotency_key.
+--   VOID   : void_order_rpc_v8 — idempotency_key replay via refunds.idempotency_key.
 --   CANCEL : cancel_order_item_rpc_v6 (Task 2, appended below).
 -- Run via MCP execute_sql (BEGIN/ROLLBACK envelope). pgtap pre-installed on V3 dev.
 
@@ -53,7 +53,7 @@ BEGIN
 END $fixture$;
 
 -- ===========================================================================
--- VOID T1 — first void_order_rpc_v7 call with key K succeeds : order voided,
+-- VOID T1 — first void_order_rpc_v8 call with key K succeeds : order voided,
 -- refund row created, exactly 1 sale_void stock movement written.
 -- ===========================================================================
 DO $void_t1$
@@ -66,14 +66,14 @@ DECLARE
   v_res JSONB; v_void_count INT; v_refund_count INT;
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_cashier_auth::text, true);
-  v_order := complete_order_with_payment_v20(
+  v_order := complete_order_with_payment_v21(
     p_session_id := v_sess, p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(jsonb_build_object(
       'product_id', v_prod, 'quantity', 2, 'unit_price', 25000, 'modifiers', '[]'::jsonb)),
     p_payment := jsonb_build_object('method','cash','amount',50000,'cash_received',50000,'change_given',0));
   v_order_id := (v_order->>'order_id')::uuid;
 
-  v_res := void_order_rpc_v7(v_order_id, 'S55 idempotency void test', v_manager_prof, v_cashier_auth, v_key);
+  v_res := void_order_rpc_v8(v_order_id, 'S55 idempotency void test', v_manager_prof, v_cashier_auth, v_key);
 
   SELECT COUNT(*) INTO v_void_count FROM stock_movements
     WHERE product_id = v_prod AND movement_type = 'sale_void' AND reference_type = 'orders' AND reference_id = v_order_id;
@@ -94,7 +94,7 @@ SELECT ok(current_setting('s55.void_t1')::boolean,
   'VOID T1: first v4 call (key K) succeeds — order voided, refund created, 1 sale_void movement');
 
 -- ===========================================================================
--- VOID T2 — second void_order_rpc_v7 call with the SAME key K replays :
+-- VOID T2 — second void_order_rpc_v8 call with the SAME key K replays :
 -- idempotent_replay=true, same refund_id, sale_void count unchanged, refunds
 -- count for the order stays 1 (no double refund/stock-restore).
 -- ===========================================================================
@@ -108,7 +108,7 @@ DECLARE
   v_res2 JSONB; v_void_count INT; v_refund_count INT;
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_cashier_auth::text, true);
-  v_res2 := void_order_rpc_v7(v_order_id, 'S55 idempotency void test replay', v_manager_prof, v_cashier_auth, v_key);
+  v_res2 := void_order_rpc_v8(v_order_id, 'S55 idempotency void test replay', v_manager_prof, v_cashier_auth, v_key);
 
   SELECT COUNT(*) INTO v_void_count FROM stock_movements
     WHERE product_id = v_prod AND movement_type = 'sale_void' AND reference_type = 'orders' AND reference_id = v_order_id;
