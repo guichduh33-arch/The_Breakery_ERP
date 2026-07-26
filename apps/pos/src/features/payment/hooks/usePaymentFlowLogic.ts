@@ -9,7 +9,7 @@
 
 import { useEffect, useState } from 'react';
 import {
-  calculateTotals, splitPb1, earnPointsForCustomer,
+  calculateTotals, earnPointsForCustomer,
   validateTenders, sumTenders, computeRemaining,
   classifyCheckoutError, type RetryClassification,
   type Tender,
@@ -60,6 +60,7 @@ export function usePaymentFlowLogic() {
   const idempotencyKey = usePaymentStore((s) => s.idempotencyKey);
   const closeStore = usePaymentStore((s) => s.close);
   const reset = usePaymentStore((s) => s.reset);
+  const markAttemptUnsettled = usePaymentStore((s) => s.markAttemptUnsettled);
   const selectedMethod = usePaymentStore((s) => s.selectedMethod);
   const selectMethod = usePaymentStore((s) => s.selectMethod);
   const cashReceivedStr = usePaymentStore((s) => s.cashReceivedStr);
@@ -91,15 +92,13 @@ export function usePaymentFlowLogic() {
 
   // Pre-payment estimate shown in the terminal — uses the SERVER tax config
   // (useTaxConfig: rate + inclusive mode) so it matches what the money-path RPC
-  // will charge: pre-tax base (calculateTotals inclusive default) minus promos,
-  // then ONE PB1 split via splitPb1 (mirror of _pb1_split_v1). The receipt
-  // (post-payment) consumes the server `tax_amount`/`total` directly below.
-  const baseTotals = calculateTotals(cart, taxRate);
-  const promotionTotal = appliedPromotions.reduce((s, ap) => s + ap.amount, 0);
-  const { tax_amount, total } = splitPb1(
-    Math.max(0, baseTotals.total - promotionTotal), taxRate, taxInclusive,
-  );
-  const totals = { ...baseTotals, total, tax_amount };
+  // will charge. ADR-013 D11 : la promo vit dans `cart.promotionTotal` (écrit
+  // par setAppliedPromotions) — calculateTotals applique l'ordre canonique
+  // items → promo → redemption → remise panier → taxe, plus aucun
+  // post-traitement ici. The receipt (post-payment) consumes the server
+  // `tax_amount`/`total` directly below.
+  const totals = calculateTotals(cart, taxRate, taxInclusive);
+  const { tax_amount, total } = totals;
 
   const tenderedSum = sumTenders(tenders);
   const remaining = computeRemaining(total, tenders);
@@ -186,7 +185,7 @@ export function usePaymentFlowLogic() {
 
   // Spec 006x lot 4 — encaissement CASH en mode OFFLINE (A1b) : la vente est
   // journalisée dans l'outbox durable (clé = idempotencyKey de la tentative)
-  // et rejouée vers pay_existing_order_v14 au retour du cloud. Aucun montant
+  // et rejouée vers pay_existing_order_v15 au retour du cloud. Aucun montant
   // n'est validé serveur ici : cash exact/rendu calculés client, totaux au
   // tarif catalogue — les flux online-only (promos, remise commande, points)
   // sont refusés proprement en amont.
@@ -264,6 +263,11 @@ export function usePaymentFlowLogic() {
     };
     hubBus.publish('order.paid_offline', paidPayload);
 
+    // ADR-013 D13 — l'encaissement offline solde la tentative (l'intent est
+    // durable dans l'outbox ; une clé stabilisée par un échec retryable
+    // antérieur ne doit pas coller à la vente suivante).
+    markAttemptUnsettled(false);
+
     emitPosEvent('payment_completed', {
       order_number_snap: offlineOrder.localNumber,
       amount: total,
@@ -296,6 +300,9 @@ export function usePaymentFlowLogic() {
     });
     try {
       const result = await checkout.mutateAsync({ cart, payment: tendersToShip });
+      // ADR-013 D13 — la tentative est soldée (un retry réussi lève le flag
+      // posé par l'échec retryable précédent) ; reset() régénérera la clé.
+      markAttemptUnsettled(false);
 
       // S43 P0-3 — printOnly: the order already exists in the DB (created by
       // complete_order_with_payment_v11 / paid via pay_existing_order_v7).
@@ -341,6 +348,12 @@ export function usePaymentFlowLogic() {
     } catch (err: unknown) {
       const classified = classifyCheckoutError(err);
       setLastError(classified);
+      // ADR-013 D13 — un échec RETRYABLE laisse la tentative en suspens : la
+      // clé d'idempotence survit à close()/open() tant que la bannière Retry
+      // est vivante (pas de double charge, pas de double intent offline). Un
+      // échec fatal ou already_paid SOLDE la tentative (clé régénérée au
+      // prochain open/reset, comportement historique conservé).
+      markAttemptUnsettled(classified.kind === 'retryable');
       // S72 audit — journal the failed charge (fraud/ops signal: repeated
       // failures, or a "failed" payment that actually went through). No order_id:
       // the order isn't created on the failure path.

@@ -212,7 +212,7 @@ DECLARE v_status TEXT := 'fail_no_raise';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('brk.mgr_auth'), true);
   BEGIN
-    PERFORM update_order_item_qty_v3(
+    PERFORM update_order_item_qty_v4(
       current_setting('brk.i3')::uuid, 7, gen_random_uuid(), NULL, NULL, NULL);
   EXCEPTION WHEN SQLSTATE '23514' THEN v_status := 'pass';
                 WHEN OTHERS THEN v_status := 'fail_' || SQLSTATE;
@@ -227,7 +227,7 @@ DECLARE v_status TEXT := 'fail_no_raise';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('brk.mgr_auth'), true);
   BEGIN
-    PERFORM update_order_item_qty_v3(
+    PERFORM update_order_item_qty_v4(
       current_setting('brk.i3')::uuid, 3, gen_random_uuid(), NULL, NULL, 'ADR10 T6');
   EXCEPTION WHEN SQLSTATE 'P0003' THEN v_status := 'pass';
                 WHEN OTHERS THEN v_status := 'fail_' || SQLSTATE;
@@ -242,7 +242,7 @@ DECLARE v_status TEXT := 'fail_no_raise';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('brk.mgr_auth'), true);
   BEGIN
-    PERFORM update_order_item_qty_v3(
+    PERFORM update_order_item_qty_v4(
       current_setting('brk.i3')::uuid, 3, gen_random_uuid(),
       current_setting('brk.nonce_bad')::uuid, NULL, 'ADR10 T7');
   EXCEPTION WHEN SQLSTATE 'P0003' THEN v_status := 'pass';
@@ -258,7 +258,7 @@ DECLARE v_status TEXT := 'fail_raised';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('brk.mgr_auth'), true);
   BEGIN
-    PERFORM update_order_item_qty_v3(
+    PERFORM update_order_item_qty_v4(
       current_setting('brk.i3')::uuid, 3, gen_random_uuid(),
       current_setting('brk.nonce_ok')::uuid, NULL, 'ADR10 T8 delta waste');
     v_status := 'pass';
@@ -294,7 +294,7 @@ DECLARE v_status TEXT := 'fail_no_raise';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('brk.mgr_auth'), true);
   BEGIN
-    PERFORM update_order_item_qty_v3(
+    PERFORM update_order_item_qty_v4(
       current_setting('brk.i4')::uuid, 1, gen_random_uuid(),
       current_setting('brk.nonce_ok')::uuid, NULL, 'ADR10 T9 reuse');
   EXCEPTION WHEN SQLSTATE 'P0003' THEN v_status := 'pass';

@@ -1,6 +1,6 @@
 -- supabase/tests/hub_lan_offline_replay.test.sql
 -- Spec 006x lot 5 — chaos « double replay » côté serveur (§7.5) : rejouer
--- fire_counter_order_v4 / pay_existing_order_v14 avec les clés d'idempotence
+-- fire_counter_order_v4 / pay_existing_order_v15 avec les clés d'idempotence
 -- D'ORIGINE est un no-op strict (une seule commande, un seul encaissement),
 -- le cash différé est accepté même rejoué (A4) et tracé offline_replay:true
 -- dans audit_logs. Fixture jwt-claims pattern counter_fire.test.sql.
@@ -61,7 +61,7 @@ UPDATE _fx SET order_id = (SELECT k.order_id FROM counter_fire_idempotency_keys 
 -- T2 : cash différé rejoué (A4) — v13 accepte avec p_offline_replay. Montant =
 -- SUM(line_total) : orders.total vaut encore 0 au fire (recalcul au paiement).
 SELECT lives_ok($$
-  SELECT pay_existing_order_v14(
+  SELECT pay_existing_order_v15(
     p_order_id := (SELECT order_id FROM _fx),
     p_payment := (SELECT jsonb_build_object(
         'method', 'cash', 'amount', s.amt, 'cash_received', s.amt, 'change_given', 0)
@@ -86,7 +86,7 @@ SELECT is(
 
 -- T5 : DOUBLE REPLAY paiement — même clé ⇒ enveloppe idempotent_replay, pas de 2e écriture.
 SELECT is(
-  ((SELECT pay_existing_order_v14(
+  ((SELECT pay_existing_order_v15(
     p_order_id := (SELECT order_id FROM _fx),
     p_payment := (SELECT jsonb_build_object(
         'method', 'cash', 'amount', s.amt, 'cash_received', s.amt, 'change_given', 0)
@@ -116,12 +116,13 @@ SELECT is(
     WHERE k.client_uuid = '5a000000-0000-4000-8000-000000000001'),
   1, 'T8: a single order for the original fire key');
 
--- T9 : anon n'a pas EXECUTE sur v13 (REVOKE pair _198).
+-- T9 : anon n'a pas EXECUTE (REVOKE pair). Signature 14 args depuis v14
+-- (D9 : + p_discount_auth_id) — était périmée (13 args).
 SELECT is(
   has_function_privilege('anon',
-    'public.pay_existing_order_v14(uuid,jsonb,uuid,integer,uuid,numeric,text,numeric,text,uuid,jsonb,jsonb,boolean)',
+    'public.pay_existing_order_v15(uuid,jsonb,uuid,integer,uuid,numeric,text,numeric,text,uuid,uuid,jsonb,jsonb,boolean)',
     'EXECUTE'),
-  false, 'T9: anon revoked on pay_existing_order_v14');
+  false, 'T9: anon revoked on pay_existing_order_v15');
 
 SELECT * FROM finish();
 ROLLBACK;

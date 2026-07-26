@@ -40,7 +40,7 @@ import {
   RedeemPointsModal,
   cn,
 } from '@breakery/ui';
-import { calculateTotals, splitPb1 } from '@breakery/domain';
+import { calculateTotals } from '@breakery/domain';
 import { useCartStore, resetCartAfterCheckout } from '@/stores/cartStore';
 import { usePaymentStore } from '@/stores/paymentStore';
 import { useTaxConfig } from '@/features/settings/hooks/useTaxConfig';
@@ -82,7 +82,6 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
   const lockedItemIds = useCartStore((s) => s.lockedItemIds);
   const pickedUpOrderId = useCartStore((s) => s.pickedUpOrderId);
   const attachedCustomer = useCartStore((s) => s.attachedCustomer);
-  const appliedPromotions = useCartStore((s) => s.appliedPromotions);
   const setRedeemPoints = useCartStore((s) => s.setRedeemPoints);
   const voidOrder = useCartStore((s) => s.voidOrder);
   const openPayment = usePaymentStore((s) => s.open);
@@ -127,15 +126,13 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
     };
   }, [moreOpen]);
 
-  // Amount due on the checkout bar — pre-tax base (calculateTotals inclusive
-  // default) minus promos, then ONE PB1 split at the server config (mirror of
-  // _pb1_split_v1); no hardcoded 0.10 remains on this path.
+  // Amount due on the checkout bar — ADR-013 D11 : la promo vit dans
+  // `cart.promotionTotal`, calculateTotals applique l'ordre canonique
+  // items → promo → redemption → remise → taxe (split PB1 unique, config
+  // serveur) ; plus aucun post-traitement ici.
   const { taxRate, taxInclusive } = useTaxConfig();
-  const baseTotals = calculateTotals(cart, taxRate);
-  const promotionTotal = appliedPromotions.reduce((s, ap) => s + ap.amount, 0);
-  const { total } = splitPb1(
-    Math.max(0, baseTotals.total - promotionTotal), taxRate, taxInclusive,
-  );
+  const baseTotals = calculateTotals(cart, taxRate, taxInclusive);
+  const { total } = baseTotals;
 
   const hasItems = cart.items.some((i) => !i.is_cancelled);
   const hasSentItems = lockedItemIds.length > 0;
@@ -413,7 +410,9 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
             setRedeemOpen(false);
           }}
           customerBalance={attachedCustomer.loyalty_points}
-          itemsTotal={baseTotals.subtotal}
+          // ADR-013 D11 — plafond de rachat POST-PROMO (règle canonique :
+          // redemption ≤ items − promotions), plus le subtotal brut.
+          itemsTotal={Math.max(0, baseTotals.subtotal - (cart.promotionTotal ?? 0))}
         />
       )}
     </div>

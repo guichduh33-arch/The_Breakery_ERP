@@ -7,8 +7,14 @@
 //   - a single-element array [draft] (legacy cash-exact / single-method flow)
 //     when tenders is empty
 //
-// `idempotencyKey` is regenerated on open/close/reset so each user-visible
-// checkout attempt gets a fresh UUID (decision D8 of session-1 addendum).
+// `idempotencyKey` — ADR-013 D13 (remplace la décision D8 du session-1
+// addendum) : la clé reste STABLE tant qu'une tentative retryable n'est pas
+// soldée. open()/close() ne régénèrent que si `attemptUnsettled` est false ;
+// un échec retryable pose le flag (via markAttemptUnsettled), et seul un
+// solde explicite — reset() (succès / dismiss already_paid) ou un échec
+// fatal — le lève. Sans ça, close→reopen du modal pendant une bannière
+// retryable mintait une nouvelle clé : risque de double charge au retry et
+// de double intent cash offline (la clé sert d'id d'intent).
 
 import { create } from 'zustand';
 import type { PaymentMethod, Tender } from '@breakery/domain';
@@ -24,9 +30,16 @@ interface PaymentState {
   tenders: Tender[];
   /**
    * Idempotency key for the current checkout attempt (UUID v4). One UUID = one
-   * user-visible checkout attempt (D8). Server treats a replayed key as a duplicate.
+   * checkout attempt ; le serveur rejoue l'enveloppe sur une clé répétée.
+   * ADR-013 D13 : stable tant que `attemptUnsettled` est true.
    */
   idempotencyKey: string;
+  /**
+   * ADR-013 D13 — true quand la dernière tentative a échoué en RETRYABLE et
+   * n'est pas encore soldée (bannière Retry affichée). Bloque la régénération
+   * de la clé sur open()/close().
+   */
+  attemptUnsettled: boolean;
   open: () => void;
   close: () => void;
   selectMethod: (m: PaymentMethod) => void;
@@ -35,6 +48,8 @@ interface PaymentState {
   addTender: (t: Tender) => void;
   removeTender: (idx: number) => void;
   clearTenders: () => void;
+  /** ADR-013 D13 — posé par usePaymentFlowLogic selon la classification de l'échec. */
+  markAttemptUnsettled: (unsettled: boolean) => void;
   reset: () => void;
 }
 
@@ -44,21 +59,24 @@ export const usePaymentStore = create<PaymentState>((set) => ({
   cashReceivedStr: '',
   tenders: [],
   idempotencyKey: crypto.randomUUID(),
+  attemptUnsettled: false,
   open: () =>
-    set({
+    set((s) => ({
       isOpen: true,
       selectedMethod: 'cash',
       cashReceivedStr: '',
       tenders: [],
-      // New attempt → new key
-      idempotencyKey: crypto.randomUUID(),
-    }),
+      // D13 — nouvelle tentative → nouvelle clé, SAUF si une tentative
+      // retryable est en suspens (le retry doit rejouer la même clé).
+      ...(s.attemptUnsettled ? {} : { idempotencyKey: crypto.randomUUID() }),
+    })),
   close: () =>
-    set({
+    set((s) => ({
       isOpen: false,
-      // Regenerate so re-opening without an explicit reset still starts a fresh attempt
-      idempotencyKey: crypto.randomUUID(),
-    }),
+      // D13 — fermer le modal ne solde pas une tentative retryable : la clé
+      // survit au close→reopen tant que la bannière Retry est vivante.
+      ...(s.attemptUnsettled ? {} : { idempotencyKey: crypto.randomUUID() }),
+    })),
   selectMethod: (m) => {
     set({ selectedMethod: m, cashReceivedStr: '' });
     // S72 audit — the cashier picked a tender method for the next tender.
@@ -76,13 +94,16 @@ export const usePaymentStore = create<PaymentState>((set) => ({
       tenders: s.tenders.filter((_, i) => i !== idx),
     })),
   clearTenders: () => set({ tenders: [] }),
+  markAttemptUnsettled: (unsettled) => set({ attemptUnsettled: unsettled }),
   reset: () =>
     set({
       isOpen: false,
       selectedMethod: null,
       cashReceivedStr: '',
       tenders: [],
-      // Prepare next attempt
+      // reset() SOLDE la tentative (succès / dismiss already_paid) —
+      // régénération inconditionnelle + flag levé.
       idempotencyKey: crypto.randomUUID(),
+      attemptUnsettled: false,
     }),
 }));

@@ -78,6 +78,7 @@ function setupHappyEnvironment(): void {
     cashReceivedStr: '27500', // total = 25_000 + 10% tax/PB1 incl — pay exact path triggers via cash >= total
     tenders: [],
     idempotencyKey: 'idem-fixed-test-uuid',
+    attemptUnsettled: false,
   });
 }
 
@@ -163,6 +164,56 @@ describe('PaymentTerminal — idempotency UX', () => {
     // (cashier opens new shift / contacts manager).
     expect(screen.queryByTestId('payment-retry-banner')).toBeNull();
     expect(screen.queryByTestId('payment-already-paid-banner')).toBeNull();
+  });
+
+  // ADR-013 D13 — la clé d'idempotence reste stable tant que la tentative
+  // retryable n'est pas soldée : close()/open() du modal ne régénèrent pas.
+  it('D13: close→reopen keeps the idempotency key while a retryable attempt is unsettled', async () => {
+    mutateAsyncMock
+      .mockRejectedValueOnce(Object.assign(new Error('Failed to fetch')))
+      .mockResolvedValueOnce({
+        ok: true, order_id: 'o1', order_number: 'ORD-002',
+        total: 25_000, tax_amount: 2_273, change_given: 0,
+      });
+
+    render(withQuery(<PaymentTerminal />));
+    const processBtn = screen.getAllByRole('button', { name: /Process Payment/i })[0]!;
+    await act(async () => { fireEvent.click(processBtn); });
+    await waitFor(() => {
+      expect(screen.getByTestId('payment-retry-banner')).toBeInTheDocument();
+    });
+    expect(usePaymentStore.getState().attemptUnsettled).toBe(true);
+
+    // Le caissier ferme puis rouvre le modal : la clé DOIT survivre.
+    act(() => { usePaymentStore.getState().close(); });
+    expect(usePaymentStore.getState().idempotencyKey).toBe('idem-fixed-test-uuid');
+    act(() => { usePaymentStore.getState().open(); });
+    expect(usePaymentStore.getState().idempotencyKey).toBe('idem-fixed-test-uuid');
+
+    // Retry (même clé) → succès → la tentative est soldée.
+    const retryBtn = screen.getByTestId('payment-retry-button');
+    await act(async () => { fireEvent.click(retryBtn); });
+    await waitFor(() => { expect(mutateAsyncMock).toHaveBeenCalledTimes(2); });
+    expect(usePaymentStore.getState().attemptUnsettled).toBe(false);
+
+    // Tentative soldée : le prochain close régénère (nouvelle vente = nouvelle clé).
+    act(() => { usePaymentStore.getState().close(); });
+    expect(usePaymentStore.getState().idempotencyKey).not.toBe('idem-fixed-test-uuid');
+  });
+
+  it('D13: a fatal error settles the attempt — close regenerates the key', async () => {
+    mutateAsyncMock.mockRejectedValueOnce(
+      Object.assign(new Error('boom'), { details: { error: 'session_closed' } }),
+    );
+
+    render(withQuery(<PaymentTerminal />));
+    const processBtn = screen.getAllByRole('button', { name: /Process Payment/i })[0]!;
+    await act(async () => { fireEvent.click(processBtn); });
+    await waitFor(() => { expect(toastMock.error).toHaveBeenCalled(); });
+
+    expect(usePaymentStore.getState().attemptUnsettled).toBe(false);
+    act(() => { usePaymentStore.getState().close(); });
+    expect(usePaymentStore.getState().idempotencyKey).not.toBe('idem-fixed-test-uuid');
   });
 
   it('disables the Retry button while the mutation is in flight', async () => {

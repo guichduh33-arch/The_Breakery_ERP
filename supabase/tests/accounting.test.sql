@@ -566,14 +566,14 @@ SELECT ok(
 
 SELECT ok(
   NOT EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'complete_order_with_payment' AND pronamespace = 'public'::regnamespace)
-  AND EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'complete_order_with_payment_v19'),
-  'T34: complete_order_with_payment dropped ; complete_order_with_payment_v19 exists'
+  AND EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'complete_order_with_payment_v20'),
+  'T34: complete_order_with_payment dropped ; complete_order_with_payment_v20 exists'
 );
 
 SELECT ok(
   NOT EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'pay_existing_order' AND pronamespace = 'public'::regnamespace)
-  AND EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'pay_existing_order_v14'),
-  'T35: pay_existing_order dropped ; pay_existing_order_v14 exists'
+  AND EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'pay_existing_order_v15'),
+  'T35: pay_existing_order dropped ; pay_existing_order_v15 exists'
 );
 
 -- ---------------------------------------------------------------------------

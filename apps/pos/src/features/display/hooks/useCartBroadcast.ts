@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useCartStore } from '@/stores/cartStore';
-import { calculateTotals, splitPb1, DEFAULT_TAX_RATE } from '@breakery/domain';
+import { calculateTotals, DEFAULT_TAX_RATE } from '@breakery/domain';
 export const CART_CHANNEL = 'breakery-cart';
 
 /** S57 C-D4 — how long the customer display shows the "Merci" / change screen
@@ -66,16 +66,13 @@ export function useCartBroadcast(
   useEffect(() => {
     const bc = new BroadcastChannel(CART_CHANNEL);
     const publish = (): void => {
-      const { cart, attachedCustomer, appliedPromotions } = useCartStore.getState();
-      // calculateTotals runs inclusive (default) so `total` stays the pre-tax
-      // base whatever the mode; promos are deducted on top (mirror of
-      // usePaymentFlowLogic, source of truth for what the customer owes), then
-      // the PB1 split is applied ONCE via splitPb1.
-      const baseTotals = calculateTotals(cart, taxRate);
-      const promotionTotal = appliedPromotions.reduce((s, ap) => s + ap.amount, 0);
-      const { tax_amount, total } = splitPb1(
-        Math.max(0, baseTotals.total - promotionTotal), taxRate, taxInclusive,
-      );
+      const { cart, attachedCustomer } = useCartStore.getState();
+      // ADR-013 D11 — la promo vit dans `cart.promotionTotal` (écrit par
+      // setAppliedPromotions) : calculateTotals applique l'ordre canonique
+      // items → promo → redemption → remise → taxe (split PB1 unique), miroir
+      // de usePaymentFlowLogic, source of truth for what the customer owes.
+      const baseTotals = calculateTotals(cart, taxRate, taxInclusive);
+      const { tax_amount, total } = baseTotals;
       const msg: CartBroadcastMessage = {
         type: 'cart_update',
         cart: { items: cart.items, order_type: cart.order_type },

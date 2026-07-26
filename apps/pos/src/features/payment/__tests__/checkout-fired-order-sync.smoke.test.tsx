@@ -1,7 +1,7 @@
 // apps/pos/src/features/payment/__tests__/checkout-fired-order-sync.smoke.test.tsx
 //
 // Session 43 / Wave C — P0-3 : checkout d'un ordre comptoir FIRED.
-// pay_existing_order_v14 paie les order_items PERSISTÉS, pas le panier local —
+// pay_existing_order_v15 paie les order_items PERSISTÉS, pas le panier local —
 // les items ajoutés APRÈS le dernier fire doivent être appendés à l'ordre DB
 // (fire_counter_order_v4 append mode) AVANT le paiement, sinon le client paie
 // un total partiel.
@@ -116,12 +116,12 @@ describe('useCheckout — fired counter order syncs unfired items before paying 
     seedFiredCounterCart();
   });
 
-  it('appends the unsynced items (fire append mode) BEFORE pay_existing_order_v14', async () => {
+  it('appends the unsynced items (fire append mode) BEFORE pay_existing_order_v15', async () => {
     await runCheckout();
 
     expect(rpcMock.mock.calls.map((c: unknown[]) => c[0])).toEqual([
       'fire_counter_order_v4',
-      'pay_existing_order_v14',
+      'pay_existing_order_v15',
     ]);
 
     const appendArgs = rpcMock.mock.calls[0]![1] as Record<string, unknown>;
@@ -149,7 +149,7 @@ describe('useCheckout — fired counter order syncs unfired items before paying 
 
     await runCheckout();
 
-    expect(rpcMock.mock.calls.map((c: unknown[]) => c[0])).toEqual(['pay_existing_order_v14']);
+    expect(rpcMock.mock.calls.map((c: unknown[]) => c[0])).toEqual(['pay_existing_order_v15']);
   });
 
   it('tablet pickup (printedItemIds empty): never appends — all items already live in DB', async () => {
@@ -159,7 +159,7 @@ describe('useCheckout — fired counter order syncs unfired items before paying 
 
     await runCheckout();
 
-    expect(rpcMock.mock.calls.map((c: unknown[]) => c[0])).toEqual(['pay_existing_order_v14']);
+    expect(rpcMock.mock.calls.map((c: unknown[]) => c[0])).toEqual(['pay_existing_order_v15']);
   });
 
   it('retry after an append FAILURE replays the SAME p_client_uuid (nothing was locked)', async () => {
@@ -239,11 +239,14 @@ describe('useCheckout — fired counter order syncs unfired items before paying 
     expect(fireCalls).toHaveLength(1);
   });
 
-  it('close/reopen (new idempotencyKey) after append success + pay failure: NO double append', async () => {
-    // Regression: the close/reopen of the payment modal regenerates
-    // paymentStore.idempotencyKey → a fresh append p_client_uuid. The uuid
+  it('new idempotencyKey after append success + pay failure: NO double append', async () => {
+    // Regression: a fresh attempt key → a fresh append p_client_uuid. The uuid
     // replay alone can't prevent a duplicate — the LOCK on the appended
     // lines is what keeps them out of the unsynced set.
+    // NB ADR-013 D13 : close()/open() ne régénèrent PLUS la clé tant qu'une
+    // tentative retryable est en suspens — on force donc la clé à la main ici
+    // pour simuler une nouvelle tentative SOLDÉE (le lock doit protéger même
+    // dans ce cas).
     rpcMock.mockImplementation((fn: unknown) =>
       Promise.resolve(
         fn === 'fire_counter_order_v4' ? FIRE_OK : { data: null, error: { message: 'network' } },
@@ -262,7 +265,7 @@ describe('useCheckout — fired counter order syncs unfired items before paying 
       ).rejects.toThrow('network');
     });
 
-    // Cashier closes then reopens the terminal → fresh attempt key.
+    // Nouvelle tentative SOLDÉE (clé forcée — cf. NB D13 ci-dessus).
     act(() => {
       usePaymentStore.setState({ idempotencyKey: 'attempt-2' });
     });

@@ -18,7 +18,7 @@ import { useState, type JSX } from 'react';
 import { MapPin, ShoppingBag, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { DiscountModal, PinVerificationModal, SectionLabel, cn } from '@breakery/ui';
-import { calculateTotals, resolveLoyaltyMultiplier, splitPb1 } from '@breakery/domain';
+import { calculateTotals, resolveLoyaltyMultiplier } from '@breakery/domain';
 import type { CartItem, OrderType } from '@breakery/domain';
 import { useCartStore } from '@/stores/cartStore';
 import { useTaxConfig } from '@/features/settings/hooks/useTaxConfig';
@@ -115,15 +115,12 @@ export function ActiveOrderPanel({ onDetachCustomer }: ActiveOrderPanelProps): J
   const lineDiscount = useApplyLineDiscount();
   const { presets: posPresets } = usePOSPresets();
 
-  // ── totals (promo applied after base, never negative) ────────────────────
-  // calculateTotals runs inclusive (default) so `total` stays the pre-tax base
-  // whatever the mode; the PB1 split is applied ONCE, after promos, via
-  // splitPb1 (client mirror of _pb1_split_v1).
-  const baseTotals = calculateTotals(cart, taxRate);
-  const promotionTotal = appliedPromotions.reduce((s, ap) => s + ap.amount, 0);
-  const { tax_amount, total } = splitPb1(
-    Math.max(0, baseTotals.total - promotionTotal), taxRate, taxInclusive,
-  );
+  // ── totals — ADR-013 D11 : ordre canonique dans le domaine ───────────────
+  // La promo vit dans `cart.promotionTotal` (écrit par setAppliedPromotions) ;
+  // calculateTotals applique items → promo → redemption → remise → taxe et le
+  // split PB1 une seule fois. Plus aucun post-traitement ici.
+  const baseTotals = calculateTotals(cart, taxRate, taxInclusive);
+  const { tax_amount, total } = baseTotals;
 
   const isEmpty = cart.items.length === 0;
   const pickedUp = Boolean(pickedUpOrderId);
