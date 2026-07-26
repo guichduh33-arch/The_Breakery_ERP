@@ -83,7 +83,7 @@ describe('pay-existing smoke', () => {
       });
     });
 
-    expect(mocks.rpc).toHaveBeenCalledWith('pay_existing_order_v15', expect.objectContaining({
+    expect(mocks.rpc).toHaveBeenCalledWith('pay_existing_order_v16', expect.objectContaining({
       p_order_id: 'order-tablet-1',
     }));
     expect(mockFetch).not.toHaveBeenCalled();
@@ -121,7 +121,7 @@ describe('pay-existing smoke', () => {
     const mintHeaders = mintInit.headers as Record<string, string>;
     expect(mintHeaders['x-manager-pin']).toBe('123456');
     expect(mintInit.body as string).toContain('discount');
-    expect(mocks.rpc).toHaveBeenCalledWith('pay_existing_order_v15', expect.objectContaining({
+    expect(mocks.rpc).toHaveBeenCalledWith('pay_existing_order_v16', expect.objectContaining({
       p_discount_amount: 3000,
       p_discount_auth_id: 'nonce-1',
     }));
@@ -152,7 +152,7 @@ describe('pay-existing smoke', () => {
       });
     });
 
-    expect(mocks.rpc).not.toHaveBeenCalledWith('pay_existing_order_v15', expect.anything());
+    expect(mocks.rpc).not.toHaveBeenCalledWith('pay_existing_order_v16', expect.anything());
     expect(mockFetch).toHaveBeenCalledWith(
       expect.stringContaining('process-payment'),
       expect.anything(),

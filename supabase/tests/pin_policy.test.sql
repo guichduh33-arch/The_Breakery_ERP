@@ -1,7 +1,7 @@
 -- supabase/tests/pin_policy.test.sql
--- ADR-006 déc. 9 — PIN policy (migration _220) : set_setting_v9 clés
+-- ADR-006 déc. 9 — PIN policy (migration _220) : set_setting_v10 clés
 -- pin_max_failed [3,10] / pin_lockout_minutes [5,120], readback catégorie
--- security via get_settings_by_category_v7, CHECKs table, audit, ACL.
+-- security via get_settings_by_category_v8, CHECKs table, audit, ACL.
 -- (Le comportement de l'EF auth-verify-pin n'est pas testable en pgTAP.)
 -- Run via MCP execute_sql (BEGIN..ROLLBACK envelope carried by this file).
 BEGIN;
@@ -24,7 +24,7 @@ END $$;
 
 -- T1: défauts post-_220 lisibles via la catégorie security (5 / 15).
 DO $$ DECLARE v JSONB; BEGIN
-  v := get_settings_by_category_v7('security')->'settings';
+  v := get_settings_by_category_v8('security')->'settings';
   INSERT INTO _r VALUES ('t1_defaults',
     (v->>'pin_max_failed')::int = 5 AND (v->>'pin_lockout_minutes')::int = 15);
 EXCEPTION WHEN OTHERS THEN
@@ -33,9 +33,9 @@ END $$;
 
 -- T2: set des deux clés -> readback.
 DO $$ DECLARE v JSONB; BEGIN
-  PERFORM set_setting_v9('pin_max_failed', '3'::jsonb, 'security');
-  PERFORM set_setting_v9('pin_lockout_minutes', '30'::jsonb, 'security');
-  v := get_settings_by_category_v7('security')->'settings';
+  PERFORM set_setting_v10('pin_max_failed', '3'::jsonb, 'security');
+  PERFORM set_setting_v10('pin_lockout_minutes', '30'::jsonb, 'security');
+  v := get_settings_by_category_v8('security')->'settings';
   INSERT INTO _r VALUES ('t2_set_readback',
     (v->>'pin_max_failed')::int = 3 AND (v->>'pin_lockout_minutes')::int = 30);
 EXCEPTION WHEN OTHERS THEN
@@ -44,7 +44,7 @@ END $$;
 
 -- T3: type non numérique rejeté (setting_type_invalid).
 DO $$ BEGIN
-  PERFORM set_setting_v9('pin_max_failed', '"5"'::jsonb, 'security');
+  PERFORM set_setting_v10('pin_max_failed', '"5"'::jsonb, 'security');
   INSERT INTO _r VALUES ('t3_nonnumber', false);
 EXCEPTION WHEN SQLSTATE '22023' THEN
   INSERT INTO _r VALUES ('t3_nonnumber', SQLERRM = 'setting_type_invalid');
@@ -55,23 +55,23 @@ END $$;
 -- T4: bornes + entier strict rejetés (setting_value_invalid).
 DO $$ DECLARE v_ok BOOLEAN := true; BEGIN
   BEGIN
-    PERFORM set_setting_v9('pin_max_failed', '2'::jsonb, 'security');
+    PERFORM set_setting_v10('pin_max_failed', '2'::jsonb, 'security');
     v_ok := false;
   EXCEPTION WHEN SQLSTATE '22023' THEN NULL; END;
   BEGIN
-    PERFORM set_setting_v9('pin_max_failed', '11'::jsonb, 'security');
+    PERFORM set_setting_v10('pin_max_failed', '11'::jsonb, 'security');
     v_ok := false;
   EXCEPTION WHEN SQLSTATE '22023' THEN NULL; END;
   BEGIN
-    PERFORM set_setting_v9('pin_max_failed', '5.5'::jsonb, 'security');
+    PERFORM set_setting_v10('pin_max_failed', '5.5'::jsonb, 'security');
     v_ok := false;
   EXCEPTION WHEN SQLSTATE '22023' THEN NULL; END;
   BEGIN
-    PERFORM set_setting_v9('pin_lockout_minutes', '121'::jsonb, 'security');
+    PERFORM set_setting_v10('pin_lockout_minutes', '121'::jsonb, 'security');
     v_ok := false;
   EXCEPTION WHEN SQLSTATE '22023' THEN NULL; END;
   BEGIN
-    PERFORM set_setting_v9('pin_lockout_minutes', '4'::jsonb, 'security');
+    PERFORM set_setting_v10('pin_lockout_minutes', '4'::jsonb, 'security');
     v_ok := false;
   EXCEPTION WHEN SQLSTATE '22023' THEN NULL; END;
   INSERT INTO _r VALUES ('t4_bounds', v_ok);
@@ -108,8 +108,8 @@ END $$;
 -- T7: ACL — anon n'a EXECUTE sur aucune des 2 fonctions bumpées.
 DO $$ BEGIN
   INSERT INTO _r VALUES ('t7_acl_anon',
-    NOT has_function_privilege('anon', 'public.set_setting_v9(text,jsonb,text)', 'EXECUTE')
-    AND NOT has_function_privilege('anon', 'public.get_settings_by_category_v7(text)', 'EXECUTE'));
+    NOT has_function_privilege('anon', 'public.set_setting_v10(text,jsonb,text)', 'EXECUTE')
+    AND NOT has_function_privilege('anon', 'public.get_settings_by_category_v8(text)', 'EXECUTE'));
 EXCEPTION WHEN OTHERS THEN
   INSERT INTO _r VALUES ('t7_acl_anon', false);
 END $$;

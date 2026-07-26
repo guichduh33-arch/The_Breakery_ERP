@@ -184,6 +184,14 @@ function friendlyFatalMessage(code: string, message?: string): string {
       return 'PIN manager incorrect. Vérifiez le PIN et réessayez.';
     case 'missing_manager_pin':
       return 'Cette remise exige le PIN manager. Ré-appliquez la remise et saisissez le PIN.';
+    case 'store_credit_requires_customer':
+      // ADR-013 Lot 4 (D8) — v21/v16 refusent un tender store_credit sans
+      // client rattaché (P0015).
+      return 'Le paiement par avoir exige un client rattaché à la vente. Attachez le client et réessayez.';
+    case 'insufficient_store_credit':
+      // ADR-013 Lot 4 (D8) — solde d'avoir insuffisant, vérifié sous verrou
+      // serveur (P0016).
+      return 'Solde d’avoir insuffisant pour ce montant. Réduisez la part payée en avoir.';
     case 'internal_error':
       // ADR-013 Lot 3 (D15/M5) — les EF money-path ne renvoient plus le
       // message Postgres brut ; le détail vit dans les logs serveur.
