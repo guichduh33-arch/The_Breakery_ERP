@@ -1,5 +1,5 @@
 -- supabase/tests/void_blocked_after_partial_refund.test.sql
--- ADR-013 Lot 2 D1 — void_order_rpc_v8 refuse le void si un refund partiel
+-- ADR-013 Lot 2 D1 — void_order_rpc_v9 refuse le void si un refund partiel
 -- (non-`is_full_void`) existe déjà pour l'ordre. Non-régression : sans refund,
 -- le void réussit toujours.
 -- Run via MCP execute_sql (BEGIN/ROLLBACK envelope). Fixtures : motif lifté de
@@ -68,7 +68,7 @@ BEGIN
   VALUES ('R-D1-PARTIAL', v_order_id, v_sess, 10000, 909, 'partial refund test', v_cashier_prof, v_manager_prof, false);
 
   BEGIN
-    PERFORM void_order_rpc_v8(v_order_id, 'D1 void after partial refund', v_manager_prof, v_cashier_auth, NULL);
+    PERFORM void_order_rpc_v9(v_order_id, 'D1 void after partial refund', v_manager_prof, v_cashier_auth, NULL);
   EXCEPTION WHEN SQLSTATE '23514' THEN
     v_caught := true;
   END;
@@ -99,7 +99,7 @@ BEGIN
     p_payment := jsonb_build_object('method','cash','amount',25000,'cash_received',25000,'change_given',0));
   v_order_id := (v_order->>'order_id')::uuid;
 
-  v_res := void_order_rpc_v8(v_order_id, 'D1 clean void', v_manager_prof, v_cashier_auth, NULL);
+  v_res := void_order_rpc_v9(v_order_id, 'D1 clean void', v_manager_prof, v_cashier_auth, NULL);
   SELECT count(*) INTO v_full FROM refunds WHERE order_id=v_order_id AND is_full_void=true;
 
   PERFORM set_config('d1.t2', CASE WHEN
