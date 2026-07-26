@@ -49,6 +49,8 @@ export interface CustomerDetailRow {
   // S62 Task 6 — retail-only tab credit ceiling (attach_tab_customer_v2 P0011
   // gate). Not yet in types.generated.ts (closeout regen pending, mig. _112).
   retail_credit_limit: number | null;
+  // ADR-013 Lot 4 — solde d'avoir (cache dénormalisé, ledger = vérité).
+  store_credit_balance: number;
   created_at: string;
 }
 
@@ -89,7 +91,7 @@ export function useCustomerDetail(id: string | undefined) {
       const { data: customer, error } = await sb
         .from('customers')
         .select(
-          'id, name, customer_type, email, phone, category_id, loyalty_points, lifetime_points, total_spent, total_visits, last_visit_at, birth_date, marketing_consent, deleted_at, b2b_company_name, b2b_tax_id, b2b_payment_terms_days, b2b_credit_limit, b2b_current_balance, retail_credit_limit, created_at, ' +
+          'id, name, customer_type, email, phone, category_id, loyalty_points, lifetime_points, total_spent, total_visits, last_visit_at, birth_date, marketing_consent, deleted_at, b2b_company_name, b2b_tax_id, b2b_payment_terms_days, b2b_credit_limit, b2b_current_balance, retail_credit_limit, store_credit_balance, created_at, ' +
             'category:customer_categories(id, name, slug, price_modifier_type, discount_percentage, points_multiplier, loyalty_enabled)',
         )
         .eq('id', id)

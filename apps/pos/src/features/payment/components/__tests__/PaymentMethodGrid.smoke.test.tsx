@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
@@ -13,8 +13,25 @@ vi.mock('@/features/settings/hooks/useEnabledPaymentMethods', () => ({
 }));
 
 import { PaymentMethodGrid } from '../PaymentMethodGrid';
+import { useCartStore, type CustomerWithCategory } from '@/stores/cartStore';
 
 const ALL_SIX: PaymentMethod[] = ['cash', 'card', 'qris', 'edc', 'transfer', 'store_credit'];
+
+// ADR-013 Lot 4 (D8) — la tuile store_credit exige un client rattaché.
+const FAKE_CUSTOMER = {
+  id: 'cust-1',
+  name: 'Budi',
+  phone: null,
+  email: null,
+  customer_type: 'retail',
+  loyalty_points: 0,
+  lifetime_points: 0,
+  total_spent: 0,
+  total_visits: 0,
+  last_visit_at: null,
+  store_credit_balance: 50_000,
+  category: null,
+} as unknown as CustomerWithCategory;
 
 function wrapper({ children }: { children: ReactNode }) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -22,12 +39,27 @@ function wrapper({ children }: { children: ReactNode }) {
 }
 
 describe('PaymentMethodGrid', () => {
-  it('renders all 6 method tiles with their testids (all enabled)', () => {
+  beforeEach(() => {
+    useCartStore.setState({ attachedCustomer: null });
+  });
+
+  it('renders all 6 method tiles with their testids (all enabled, customer attached)', () => {
     enabledMock.current = new Set(ALL_SIX);
+    useCartStore.setState({ attachedCustomer: FAKE_CUSTOMER });
     render(<PaymentMethodGrid selectedMethod={null} onSelect={vi.fn()} />, { wrapper });
     for (const value of ALL_SIX) {
       expect(screen.getByTestId(`pay-method-${value}`)).toBeInTheDocument();
     }
+  });
+
+  // ADR-013 Lot 4 (D8) — sans client rattaché, store_credit disparaît de la
+  // grille (gate serveur P0015 ; même pattern que l'exclusion offline).
+  it('hides store_credit when no customer is attached (ADR-013 Lot 4)', () => {
+    enabledMock.current = new Set(ALL_SIX);
+    render(<PaymentMethodGrid selectedMethod={null} onSelect={vi.fn()} />, { wrapper });
+    expect(screen.queryByTestId('pay-method-store_credit')).not.toBeInTheDocument();
+    expect(screen.getByTestId('pay-method-cash')).toBeInTheDocument();
+    expect(screen.getByTestId('pay-method-transfer')).toBeInTheDocument();
   });
 
   it('calls onSelect with the tapped method', () => {

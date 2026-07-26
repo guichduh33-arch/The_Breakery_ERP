@@ -8348,7 +8348,7 @@ export type Database = {
       runtests:
         | { Args: never; Returns: string[] }
         | { Args: { "": string }; Returns: string[] }
-      search_customers_v3: {
+      search_customers_v4: {
         Args: { p_limit?: number; p_query: string }
         Returns: {
           category: Json
@@ -8363,6 +8363,7 @@ export type Database = {
           loyalty_points: number
           name: string
           phone: string
+          store_credit_balance: number
           total_spent: number
           total_visits: number
           updated_at: string

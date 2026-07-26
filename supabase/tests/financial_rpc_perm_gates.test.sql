@@ -114,10 +114,10 @@ SELECT ok(
     SELECT 1 FROM pg_proc p
     JOIN pg_namespace n ON n.oid = p.pronamespace
     WHERE n.nspname = 'public'
-      AND p.proname = 'search_customers_v3'
+      AND p.proname = 'search_customers_v4'
       AND p.prosecdef = true
   ),
-  'T8 — search_customers_v3 existe et SECURITY DEFINER'
+  'T8 — search_customers_v4 existe et SECURITY DEFINER'
 );
 
 SELECT ok(
@@ -140,9 +140,9 @@ SELECT ok(
     SELECT 1 FROM pg_proc p
     JOIN pg_namespace n ON n.oid = p.pronamespace
     WHERE n.nspname = 'public'
-      AND p.proname = 'search_customers_v2'
+      AND p.proname IN ('search_customers_v2', 'search_customers_v3')
   ),
-  'T10 — search_customers_v2 droppé'
+  'T10 — search_customers_v2 et _v3 droppés (versioning monotone, _242)'
 );
 
 SELECT ok(

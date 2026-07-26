@@ -33,6 +33,7 @@ import {
   Star,
   TrendingUp,
   User as UserIcon,
+  Wallet,
 } from 'lucide-react';
 import { Button, Card, LoyaltyBadge } from '@breakery/ui';
 import { TIERS, tierFromLifetime } from '@breakery/domain';
@@ -44,14 +45,17 @@ import { useCustomerLoyaltyHistory } from '@/features/loyalty/hooks/useCustomerL
 import { CustomerFormModal } from '@/features/loyalty/components/CustomerFormModal.js';
 import { LoyaltyAdjustModal } from '@/features/loyalty/components/LoyaltyAdjustModal.js';
 import type { CustomerListRow } from '@/features/loyalty/hooks/useLoyaltyCustomersList.js';
+import { GrantStoreCreditModal } from '@/features/customers/components/GrantStoreCreditModal.js';
+import { ConvertLoyaltyModal } from '@/features/customers/components/ConvertLoyaltyModal.js';
 import { rp } from './customer-detail/shared.js';
 import { InfoTab } from './customer-detail/InfoTab.js';
 import { OrdersTab } from './customer-detail/OrdersTab.js';
 import { LoyaltyTab } from './customer-detail/LoyaltyTab.js';
+import { StoreCreditTab } from './customer-detail/StoreCreditTab.js';
 import { AnalyticsTab } from './customer-detail/AnalyticsTab.js';
 import { PricingTab } from './customer-detail/PricingTab.js';
 
-type TabId = 'info' | 'orders' | 'loyalty' | 'analytics' | 'pricing';
+type TabId = 'info' | 'orders' | 'loyalty' | 'store-credit' | 'analytics' | 'pricing';
 
 export function CustomerDetailPage(): JSX.Element {
   const { id } = useParams<{ id: string }>();
@@ -59,6 +63,9 @@ export function CustomerDetailPage(): JSX.Element {
   const hasPermission = useAuthStore((s) => s.hasPermission);
   const canUpdate = hasPermission('customers.update');
   const canAdjust = hasPermission('loyalty.adjust');
+  // ADR-013 Lot 4 — avoir client (seeds _235 : MANAGER+).
+  const canGrant = hasPermission('customers.store_credit.grant');
+  const canConvert = hasPermission('customers.store_credit.convert');
 
   const { data, isLoading } = useCustomerDetail(id);
   const history = useCustomerLoyaltyHistory(id ?? null);
@@ -66,6 +73,8 @@ export function CustomerDetailPage(): JSX.Element {
   const [tab, setTab] = useState<TabId>('info');
   const [editing, setEditing] = useState(false);
   const [adjusting, setAdjusting] = useState(false);
+  const [granting, setGranting] = useState(false);
+  const [converting, setConverting] = useState(false);
 
   const customer = data?.customer;
 
@@ -110,6 +119,7 @@ export function CustomerDetailPage(): JSX.Element {
   const refreshCustomer = (): void => {
     void qc.invalidateQueries({ queryKey: ['customer-detail', id] });
     void qc.invalidateQueries({ queryKey: ['loyalty-history', id] });
+    void qc.invalidateQueries({ queryKey: ['store-credit-history', id] });
   };
 
   const isActive = customer.deleted_at === null;
@@ -120,6 +130,7 @@ export function CustomerDetailPage(): JSX.Element {
     { id: 'info', label: 'Info', icon: UserIcon },
     { id: 'orders', label: 'Orders', icon: ShoppingBag, count: data?.orders_count ?? 0 },
     { id: 'loyalty', label: 'Loyalty', icon: Star, count: history.data?.length ?? 0 },
+    { id: 'store-credit', label: 'Store credit', icon: Wallet },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'pricing', label: 'Pricing', icon: DollarSign },
   ];
@@ -185,6 +196,12 @@ export function CustomerDetailPage(): JSX.Element {
             </div>
             <div className="text-xs uppercase tracking-widest text-text-secondary">Lifetime points</div>
           </div>
+          <div>
+            <div className="font-serif text-4xl text-gold tabular-nums" data-testid="store-credit-balance">
+              {rp(customer.store_credit_balance)}
+            </div>
+            <div className="text-xs uppercase tracking-widest text-text-secondary">Store credit</div>
+          </div>
         </div>
 
         <div className="mt-5">
@@ -200,19 +217,44 @@ export function CustomerDetailPage(): JSX.Element {
           </div>
         </div>
 
-        {canAdjust && (
+        {(canAdjust || canGrant || canConvert) && (
           <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Button variant="secondary" size="lg" onClick={() => setAdjusting(true)}>
-              <Plus className="h-4 w-4" aria-hidden /> Add points
-            </Button>
-            <Button
-              variant="ghost"
-              size="lg"
-              disabled={customer.loyalty_points <= 0}
-              onClick={() => setAdjusting(true)}
-            >
-              <Gift className="h-4 w-4" aria-hidden /> Redeem points
-            </Button>
+            {canAdjust && (
+              <>
+                <Button variant="secondary" size="lg" onClick={() => setAdjusting(true)}>
+                  <Plus className="h-4 w-4" aria-hidden /> Add points
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="lg"
+                  disabled={customer.loyalty_points <= 0}
+                  onClick={() => setAdjusting(true)}
+                >
+                  <Gift className="h-4 w-4" aria-hidden /> Redeem points
+                </Button>
+              </>
+            )}
+            {canGrant && (
+              <Button
+                variant="secondary"
+                size="lg"
+                onClick={() => setGranting(true)}
+                data-testid="grant-store-credit"
+              >
+                <Wallet className="h-4 w-4" aria-hidden /> Grant store credit
+              </Button>
+            )}
+            {canConvert && (
+              <Button
+                variant="ghost"
+                size="lg"
+                disabled={customer.loyalty_points < 100}
+                onClick={() => setConverting(true)}
+                data-testid="convert-store-credit"
+              >
+                <Star className="h-4 w-4" aria-hidden /> Convert points to credit
+              </Button>
+            )}
           </div>
         )}
       </Card>
@@ -265,6 +307,7 @@ export function CustomerDetailPage(): JSX.Element {
       {tab === 'info' && <InfoTab customer={customer} canEdit={canUpdate} />}
       {tab === 'orders' && <OrdersTab data={data} />}
       {tab === 'loyalty' && <LoyaltyTab customerId={id ?? null} />}
+      {tab === 'store-credit' && <StoreCreditTab customerId={id ?? null} />}
       {tab === 'analytics' && <AnalyticsTab customerId={id ?? null} />}
       {tab === 'pricing' && <PricingTab customer={customer} />}
 
@@ -282,6 +325,25 @@ export function CustomerDetailPage(): JSX.Element {
         customer={adjusting ? modalRow : undefined}
         onClose={() => {
           setAdjusting(false);
+          refreshCustomer();
+        }}
+      />
+      <GrantStoreCreditModal
+        open={granting}
+        customerId={customer.id}
+        customerName={customer.name}
+        onClose={() => {
+          setGranting(false);
+          refreshCustomer();
+        }}
+      />
+      <ConvertLoyaltyModal
+        open={converting}
+        customerId={customer.id}
+        customerName={customer.name}
+        loyaltyPoints={customer.loyalty_points}
+        onClose={() => {
+          setConverting(false);
           refreshCustomer();
         }}
       />

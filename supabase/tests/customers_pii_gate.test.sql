@@ -5,7 +5,7 @@
 -- tant que _018 n'est pas appliquée, T6 est attendu FAIL (documenté INDEX S37).
 -- Exécuter via MCP execute_sql (BEGIN..ROLLBACK).
 BEGIN;
-SELECT plan(7);
+SELECT plan(8);
 
 DO $$
 DECLARE
@@ -33,13 +33,13 @@ END $$;
 -- T1 : search_customers_v2 trouve le client et embed la catégorie
 DO $$ DECLARE v_row RECORD;
 BEGIN
-  SELECT * INTO v_row FROM search_customers_v3('S37 PII Gate', 20) LIMIT 1;
+  SELECT * INTO v_row FROM search_customers_v4('S37 PII Gate', 20) LIMIT 1;
   PERFORM set_config('breakery.t1_ok',
     (v_row.id IS NOT NULL AND v_row.category IS NOT NULL
      AND (v_row.category->>'id')::uuid = current_setting('breakery.v_catg')::uuid
      AND v_row.category ? 'points_multiplier' AND v_row.category ? 'price_modifier_type')::text, true);
 END $$;
-SELECT is(current_setting('breakery.t1_ok'), 'true', 'T1 search_customers_v3 embeds the full category');
+SELECT is(current_setting('breakery.t1_ok'), 'true', 'T1 search_customers_v4 embeds the full category');
 
 -- T2 : get_customer_v2 retourne la même shape
 DO $$ DECLARE v_row RECORD;
@@ -71,9 +71,9 @@ SELECT is(
       AND pronamespace = 'public'::regnamespace),
   0, 'T4 v1 customer RPCs dropped');
 
--- T5 : anon n'a pas EXECUTE sur les RPCs customer live (search/get bumpés v3, create resté v2)
+-- T5 : anon n'a pas EXECUTE sur les RPCs customer live (search bumpé v4, get v3, create resté v2)
 SELECT is(
-  has_function_privilege('anon', 'public.search_customers_v3(text, int)', 'EXECUTE')
+  has_function_privilege('anon', 'public.search_customers_v4(text, int)', 'EXECUTE')
   OR has_function_privilege('anon', 'public.get_customer_v3(uuid)', 'EXECUTE')
   OR has_function_privilege('anon', 'public.create_customer_v2(text, text, text, customer_type)', 'EXECUTE'),
   false, 'T5 anon cannot execute the live customer RPCs');
@@ -93,6 +93,13 @@ SELECT is(
      FROM pg_policy WHERE polname = 'auth_read'
       AND polrelid = 'public.customers'::regclass),
   true, 'T6 customers SELECT policy gated behind customers.read (FAILS until _018 applied — expected)');
+
+-- T8 (ADR-013 Lot 4 UI, _243) : la lecture du ledger d'avoir exige customers.read
+SELECT is(
+  (SELECT pg_get_expr(polqual, polrelid) ILIKE '%customers.read%'
+     FROM pg_policy WHERE polname = 'scl_auth_read'
+      AND polrelid = 'public.customer_store_credit_ledger'::regclass),
+  true, 'T8 store-credit ledger SELECT policy gated behind customers.read (_243)');
 
 SELECT * FROM finish();
 ROLLBACK;

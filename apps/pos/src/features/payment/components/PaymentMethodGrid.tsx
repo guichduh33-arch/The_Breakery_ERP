@@ -7,6 +7,7 @@ import type { PaymentMethod } from '@breakery/domain';
 import { METHODS_BY_VALUE, type MethodMeta } from './paymentMethods';
 import { useEnabledPaymentMethods } from '@/features/settings/hooks/useEnabledPaymentMethods';
 import { useOfflineMode } from '@/features/lan/offlineMode';
+import { useCartStore } from '@/stores/cartStore';
 
 export interface PaymentMethodGridProps {
   selectedMethod: PaymentMethod | null;
@@ -19,6 +20,10 @@ export function PaymentMethodGrid({ selectedMethod, onSelect }: PaymentMethodGri
   // Spec 006x lot 4 (A1) — hors-ligne, seul le CASH est encaissable ; les
   // flux non-cash sont online-only et disparaissent proprement de la grille.
   const offline = useOfflineMode();
+  // ADR-013 Lot 4 (D8) — le tender store_credit exige un client rattaché
+  // (gate serveur P0015) : sans client, la tuile disparaît (même pattern
+  // que l'exclusion offline).
+  const attachedCustomer = useCartStore((s) => s.attachedCustomer);
   return (
     <>
       <SectionLabel as="div" className="mb-2">Select Payment Method</SectionLabel>
@@ -27,6 +32,7 @@ export function PaymentMethodGrid({ selectedMethod, onSelect }: PaymentMethodGri
             order, Set preserves insertion order) instead of the constant. */}
         {[...enabled]
           .filter((v) => !offline || v === 'cash')
+          .filter((v) => v !== 'store_credit' || attachedCustomer !== null)
           .map((v) => METHODS_BY_VALUE.get(v))
           .filter((m): m is MethodMeta => m !== undefined)
           .map((m) => {
