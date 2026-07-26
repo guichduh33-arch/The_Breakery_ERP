@@ -560,8 +560,8 @@ SELECT ok(
 -- ---------------------------------------------------------------------------
 SELECT ok(
   NOT EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'refund_order_rpc' AND pronamespace = 'public'::regnamespace)
-  AND EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'refund_order_rpc_v8'),
-  'T33: refund_order_rpc dropped ; refund_order_rpc_v8 exists'
+  AND EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'refund_order_rpc_v9'),
+  'T33: refund_order_rpc dropped ; refund_order_rpc_v9 exists'
 );
 
 SELECT ok(
