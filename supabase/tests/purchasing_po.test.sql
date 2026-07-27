@@ -201,7 +201,7 @@ BEGIN
     jsonb_build_object('po_item_id', v_item_a_id, 'received_quantity', 5)
   );
 
-  v_result := receive_purchase_order_v2(
+  v_result := receive_purchase_order_v3(
     p_po_id          := v_po_id,
     p_section_id     := current_setting('breakery.t_po_section', true)::uuid,
     p_received_items := v_received
@@ -275,7 +275,7 @@ BEGIN
     jsonb_build_object('po_item_id', v_item_b_id, 'received_quantity', 20)
   );
 
-  PERFORM receive_purchase_order_v2(
+  PERFORM receive_purchase_order_v3(
     p_po_id          := v_po_id,
     p_section_id     := current_setting('breakery.t_po_section', true)::uuid,
     p_received_items := v_received

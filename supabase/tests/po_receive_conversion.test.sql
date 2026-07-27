@@ -1,5 +1,5 @@
 -- supabase/tests/po_receive_conversion.test.sql
--- Session 46 / Wave A3 — pgTAP suite for receive_purchase_order_v2.
+-- Session 46 / Wave A3 — pgTAP suite for receive_purchase_order_v3.
 --
 -- Tests:
 --   T1  — Unit factor = 1 (base unit): stock increments by received_qty (unchanged behaviour)
@@ -7,7 +7,7 @@
 --   T3  — received_quantity on PO line tracked in PO-line unit (NOT base qty)
 --   T4  — Idempotency: replay returns same grn_id, no duplicate movement
 --   T5  — Permission gate: non-manager (CASHIER) raises P0003
---   T6  — REVOKE: anon cannot execute receive_purchase_order_v2
+--   T6  — REVOKE: anon cannot execute receive_purchase_order_v3
 --   T7  — Partial receipt leaves PO status='partial'
 --   T8  — Full receipt leaves PO status='received'
 --   T2c — unit_cost on the stock movement converted to per-base-unit (1200/box ÷ 12 = 100/pcs)
@@ -170,7 +170,7 @@ BEGIN
 
   SELECT id INTO v_item_id FROM purchase_order_items WHERE po_id = v_po_id LIMIT 1;
 
-  v_result := receive_purchase_order_v2(
+  v_result := receive_purchase_order_v3(
     p_po_id          := v_po_id,
     p_section_id     := current_setting('t46.section', true)::uuid,
     p_received_items := jsonb_build_array(
@@ -212,7 +212,7 @@ BEGIN
 
   SELECT id INTO v_item_id FROM purchase_order_items WHERE po_id = v_po_id LIMIT 1;
 
-  v_result := receive_purchase_order_v2(
+  v_result := receive_purchase_order_v3(
     p_po_id          := v_po_id,
     p_section_id     := current_setting('t46.section', true)::uuid,
     p_received_items := jsonb_build_array(
@@ -285,7 +285,7 @@ BEGIN
   SELECT id INTO v_item_id FROM purchase_order_items WHERE po_id = v_po_id LIMIT 1;
 
   -- Second call with same idempotency_key.
-  v_r2 := receive_purchase_order_v2(
+  v_r2 := receive_purchase_order_v3(
     p_po_id          := v_po_id,
     p_section_id     := current_setting('t46.section', true)::uuid,
     p_received_items := jsonb_build_array(
@@ -331,7 +331,7 @@ SELECT throws_ok(
       PERFORM set_config('request.jwt.claims',
         json_build_object('sub', v_uid::text, 'role','authenticated')::text, true);
       SELECT id INTO v_item_id FROM purchase_order_items WHERE po_id = v_po_id LIMIT 1;
-      PERFORM receive_purchase_order_v2(
+      PERFORM receive_purchase_order_v3(
         p_po_id          := v_po_id,
         p_section_id     := current_setting('t46.section', true)::uuid,
         p_received_items := jsonb_build_array(
@@ -342,15 +342,15 @@ SELECT throws_ok(
   $gate$,
   'P0003',
   NULL,
-  'T5: CASHIER forbidden (P0003) on receive_purchase_order_v2'
+  'T5: CASHIER forbidden (P0003) on receive_purchase_order_v3'
 );
 
 -- ─── T6: REVOKE — anon cannot execute ────────────────────────────────────────
 SELECT is(
   (SELECT has_function_privilege('anon',
-     'receive_purchase_order_v2(uuid,uuid,jsonb,uuid)', 'execute')),
+     'receive_purchase_order_v3(uuid,uuid,jsonb,uuid)', 'execute')),
   false,
-  'T6: anon does not have EXECUTE on receive_purchase_order_v2'
+  'T6: anon does not have EXECUTE on receive_purchase_order_v3'
 );
 
 -- ─── T7 + T8: Partial → Full receipt status ──────────────────────────────────
@@ -373,7 +373,7 @@ BEGIN
   PERFORM set_config('request.jwt.claims',
     json_build_object('sub', v_uid::text, 'role','authenticated')::text, true);
   SELECT id INTO v_item_id FROM purchase_order_items WHERE po_id = v_po_id LIMIT 1;
-  PERFORM receive_purchase_order_v2(
+  PERFORM receive_purchase_order_v3(
     p_po_id          := v_po_id,
     p_section_id     := current_setting('t46.section', true)::uuid,
     p_received_items := jsonb_build_array(
@@ -411,7 +411,7 @@ BEGIN
   PERFORM set_config('request.jwt.claims',
     json_build_object('sub', v_uid::text, 'role','authenticated')::text, true);
   SELECT id INTO v_item_id FROM purchase_order_items WHERE po_id = v_po_id LIMIT 1;
-  PERFORM receive_purchase_order_v2(
+  PERFORM receive_purchase_order_v3(
     p_po_id          := v_po_id,
     p_section_id     := current_setting('t46.section', true)::uuid,
     p_received_items := jsonb_build_array(

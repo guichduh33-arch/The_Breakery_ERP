@@ -5,14 +5,11 @@
 // `display.read`. Pure read — movements are recorded from the POS side only.
 
 import { useQuery } from '@tanstack/react-query';
+import type { Database } from '@breakery/supabase';
 import { supabase } from '@/lib/supabase.js';
 
-export type DisplayMovementType =
-  | 'stock_in'
-  | 'sale'
-  | 'return_to_kitchen'
-  | 'waste'
-  | 'adjustment';
+// Source unique de l'enum = Postgres (pas de littéral TS dérivé à la main).
+export type DisplayMovementType = Database['public']['Enums']['display_movement_type'];
 
 export interface DisplayMovementRow {
   id:             string;

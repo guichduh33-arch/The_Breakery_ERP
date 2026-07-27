@@ -117,7 +117,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('purchasing PO full cycl
     const itemA = (items as { id: string; product_id: string }[]).find(it => it.product_id === prodA.id)!;
     const itemB = (items as { id: string; product_id: string }[]).find(it => it.product_id === prodB.id)!;
 
-    const { data: rcv1, error: rcv1Err } = await sb.rpc('receive_purchase_order_v2', {
+    const { data: rcv1, error: rcv1Err } = await sb.rpc('receive_purchase_order_v3', {
       p_po_id:          po.po_id,
       p_section_id:     sectionId,
       p_received_items: [{ po_item_id: itemA.id, received_quantity: 5 }],
@@ -154,7 +154,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('purchasing PO full cycl
     expect(purchaseMovs.length).toBeGreaterThanOrEqual(1);
 
     // 6. Full receipt of remainder — 5 more of A and 20 of B.
-    const { data: rcv2, error: rcv2Err } = await sb.rpc('receive_purchase_order_v2', {
+    const { data: rcv2, error: rcv2Err } = await sb.rpc('receive_purchase_order_v3', {
       p_po_id:          po.po_id,
       p_section_id:     sectionId,
       p_received_items: [

@@ -88,8 +88,10 @@ export function useReceivePurchaseOrder() {
         args: Record<string, unknown>,
       ) => Promise<{ data: unknown; error: { message: string } | null }>)(
         // Session 46 — bumped to v2 (base-unit conversion via unit_factor_to_base).
+        // Audit stock 2026-07-27 — bumped to v3 : le rejeu idempotent comptait les
+        // mouvements sur un reference_type jamais stampé et renvoyait toujours 0.
         // Signature is identical (p_po_id, p_section_id, p_received_items, p_idempotency_key).
-        'receive_purchase_order_v2',
+        'receive_purchase_order_v3',
         rpcArgs,
       );
 
