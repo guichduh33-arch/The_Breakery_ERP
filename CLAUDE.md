@@ -112,6 +112,13 @@ Si un document contredit le code, le document a tort : **signale-le, ne corrige 
   `p_client_uuid`/`p_idempotency_key` pour l'idempotence métier (table dédiée,
   race gérée par catch `unique_violation` + re-read). Replay renvoie le résultat
   de la 1ʳᵉ exécution.
+- **Outbox offline = formats append-only.** Un `kind` d'intent publié
+  (`offlineOutbox.ts`) ne se supprime JAMAIS sans purge prouvée des terminaux :
+  un poste mis à jour avec des ventes en file rejouerait dans le vide, et ces
+  enregistrements sont de l'argent déjà encaissé. On ajoute un kind, on garde
+  l'ancien en LECTURE (`offlineReplay.ts`). Corollaire : ne mettre en file que
+  ce dont le replay ne peut pas être refusé serveur — un intent rejeté bloque
+  tout le drain derrière lui (ADR-015, exclusion de `store_credit`).
 - **RPC versioning monotone** — jamais éditer une `_vN` publiée. Créer `_vN+1` et
   DROP l'ancienne dans la même migration.
 - **Tout bump/copie de RPC part du corps live `pg_get_functiondef`, jamais du

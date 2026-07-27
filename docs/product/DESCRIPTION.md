@@ -24,7 +24,7 @@ Autour de la caisse gravitent trois écrans secondaires :
 - **La tablette de salle** — permet au serveur de prendre la commande directement à table.
 - **L'écran client** — face au client au comptoir, il montre le panier en direct et remercie après paiement.
 
-**Le logiciel fonctionne via internet.** Tous les échanges entre appareils (tablette → caisse, caisse → cuisine, caisse → écran client) passent par la connexion internet du magasin ; il n'y a pas de réseau strictement local de secours. La seule communication qui reste directe est l'impression des tickets. Une connexion internet fiable est donc requise pour le fonctionnement normal ; le mode hors-ligne fait partie des chantiers annoncés.
+**Le logiciel fonctionne via internet, avec un filet local.** En temps normal, tous les échanges entre appareils (tablette → caisse, caisse → cuisine, caisse → écran client) passent par la connexion internet du magasin. Quand elle tombe, un **hub local** installé en boutique prend le relais : les appareils continuent de se parler sur le Wi-Fi du magasin, la caisse continue de prendre les commandes **et d'encaisser** — espèces, carte, QRIS, EDC, virement et e-wallets —, et tout se resynchronise au retour d'internet, sans limite de durée de coupure. Le terminal de carte a sa propre connexion mobile et ne dépend pas du Wi-Fi de la boutique ; la caisse ne fait qu'enregistrer le règlement. Seul le paiement par **avoir client** reste impossible hors connexion, son solde ne pouvant être vérifié que par le serveur. Ce mode se **désactive par défaut** et doit être activé volontairement dans les réglages.
 
 **Modèle de stock retenu.** Le stock est suivi en **quantité globale par produit**. La péremption et les pertes se gèrent par **déclaration de perte** (produit périmé, cassé, abîmé). C'est le modèle choisi et assumé, pas une limite temporaire : la gestion fine des lots et des dates de péremption (sortir le plus ancien d'abord, alertes avant péremption) n'est pas au programme.
 
@@ -72,8 +72,9 @@ Le cœur de la vente au comptoir : composer un panier, l'envoyer en cuisine, enc
 - **Réception des commandes tablette** et **clôture de journée** avec comptage, écart calculé et récapitulatif.
 - Le **panier est reflété en direct sur l'écran client**.
 
+- **Mode hors-ligne** : en cas de coupure internet, la prise de commande et l'encaissement continuent via le hub local, tous moyens de paiement sauf l'avoir client, sans limite de durée. Les ventes remontent automatiquement au retour du réseau. Désactivé par défaut, à activer dans les réglages — et **pas encore éprouvé en conditions réelles de boutique**.
+
 **À venir :**
-- **Mode hors-ligne** : encaisser malgré une coupure internet (aujourd'hui la vente est bloquée sans connexion). C'est le chantier n°1 annoncé.
 - Sauvegarde de secours du panier en cours de saisie.
 - Recalcul automatique des prix quand on rattache un client en cours de panier.
 - Réservations avec acompte.
