@@ -3,6 +3,10 @@
 > **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée**. Implémentation V3 = DONE + amélioré (famille `create_tablet_order` + table `idempotency_keys`, `useCreateTabletOrder` + client_uuid lifecycle, `useTabletOffline`, PIN auth, ACK hub).
 >
 > **Périmètre fonctionnel** : ce document décrit **ce que le module Tablet Ordering (`/tablet`) sert à faire au quotidien** pour The Breakery,.
+>
+> **Convention** : aucune version d'objet DB (`_vN`) dans cette fiche — on cite la
+> famille (`close_shift`, `complete_order_with_payment`). La version vivante se
+> vérifie dans `supabase/migrations/` et au call-site, jamais ici.
 
 ---
 

@@ -3,6 +3,10 @@
 > **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée**. Implémentation réelle = V3 monorepo (`apps/backoffice`).
 >
 > **Périmètre fonctionnel** : ce document décrit **ce que la page Orders (`/orders`) sert à faire au quotidien** pour The Breakery, .
+>
+> **Convention** : aucune version d'objet DB (`_vN`) dans cette fiche — on cite la
+> famille (`close_shift`, `complete_order_with_payment`). La version vivante se
+> vérifie dans `supabase/migrations/` et au call-site, jamais ici.
 
 ---
 
@@ -308,7 +312,7 @@ Bénéfice métier : **le manager n'a pas besoin de fixer la page**. Il vaque à
 | 🟠 | **Heatmap visuelle des commandes en cours** | Vue compacte montrant l'âge de chaque commande (vert / orange / rouge selon attente). |
 | 🟠 | **Filtre rapide "Mes commandes"** | Pour un serveur, ne voir que les commandes qu'il a saisies. |
 | 🟠 | **Notification toast riche** | À chaque commande qui passe en `ready`, afficher un toast cliquable qui ouvre la modale détail. |
-| ✅ | **Édition de la commande après coup** | Livré : edit-items S33 + verrou ADR-010 (baisse sous PIN manager, perte obligatoire, audit). |
+| ✅ | **Édition de la commande après coup** | Livré : edit-items + verrou ADR-010 (baisse sous PIN manager, perte obligatoire, audit). |
 | 🟡 | **Vue calendrier des commandes différées** | Pour les pré-commandes / réservations, voir le planning visuel des prochains jours. |
 | 🟢 | **Export PDF par commande** | Re-générer le ticket en PDF pour envoi par e-mail au client. |
 | 🟢 | **Lien direct vers le KDS** | Un bouton "voir au KDS" qui ouvre la station correspondante avec l'item surligné. |

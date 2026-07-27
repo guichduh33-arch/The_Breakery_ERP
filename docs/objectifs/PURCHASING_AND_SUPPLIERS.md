@@ -3,6 +3,10 @@
 > **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée**. Implémentation V3 = DONE + amélioré (RPCs des familles `create_purchase_order`, `receive_purchase_order`, `cancel_purchase_order` + landed cost shipping pro-rata + WAC famille `update_cost_price` avec replay envelope).
 >
 > **Périmètre fonctionnel** : ce document décrit **ce que le module sert à faire au quotidien** pour The Breakery,
+>
+> **Convention** : aucune version d'objet DB (`_vN`) dans cette fiche — on cite la
+> famille (`close_shift`, `complete_order_with_payment`). La version vivante se
+> vérifie dans `supabase/migrations/` et au call-site, jamais ici.
 
 ---
 

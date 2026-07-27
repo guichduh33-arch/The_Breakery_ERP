@@ -3,6 +3,10 @@
 > **Statut V2/V3** : décrit la vision business cible (4 pages). **V2 jamais déployée**. Implémentation V3 = **partielle** — **au 2026-07-28 : 3 pages livrées** (ExpensesListPage, ExpenseDetailPage, NewExpensePage) + les RPCs de dépense + storage bucket. **La page de catégories de dépense reste à livrer** 🟠.
 >
 > **Périmètre fonctionnel** : ce document décrit **ce que le module Expenses (`/expenses`) sert à faire au quotidien** pour The Breakery, 
+>
+> **Convention** : aucune version d'objet DB (`_vN`) dans cette fiche — on cite la
+> famille (`close_shift`, `complete_order_with_payment`). La version vivante se
+> vérifie dans `supabase/migrations/` et au call-site, jamais ici.
 
 ---
 

@@ -18,6 +18,10 @@
 > [ADR-012](../adr/012-produits-residuels-garde-money-path-coherence-pos.md)
 > (résiduels post-audit 2026-07-23 : refus parent étendu aux composants de
 > combo, parité sold-out modale variantes, badge parent POS).
+>
+> **Convention** : aucune version d'objet DB (`_vN`) dans cette fiche — on cite la
+> famille (`close_shift`, `complete_order_with_payment`). La version vivante se
+> vérifie dans `supabase/migrations/` et au call-site, jamais ici.
 
 ---
 

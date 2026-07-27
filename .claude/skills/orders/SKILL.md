@@ -194,10 +194,10 @@ Migrations (historique chronologique)
   supabase/migrations/20260618000023_fix_edit_items_rpc_status_enum.sql — corrective 'open'→'pending_payment'
 
 Tests (vérité comportementale)
-  supabase/tests/orders_read_perm.test.sql           — S31 perm gate
-  supabase/tests/orders_list_v1.test.sql             — S32 (remplacé par v2)
-  supabase/tests/orders_list_v2.test.sql             — S33, 10/10 PASS
-  supabase/tests/order_edit_items.test.sql           — S33, 12/12 PASS
+  supabase/tests/orders_read_perm.test.sql           — perm gate
+  supabase/tests/orders_list_v1.test.sql             — remplacé par orders_list_v2
+  supabase/tests/orders_list_v2.test.sql             — liste serveur
+  supabase/tests/order_edit_items.test.sql           — édition d'items
   supabase/tests/complete_order_v10_display.test.sql — display-stock double-déduction
 
 Intention & décisions

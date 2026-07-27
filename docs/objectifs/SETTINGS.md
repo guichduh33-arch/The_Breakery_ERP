@@ -23,6 +23,10 @@
 > Rév. 4 (2026-07-18) : sous-menus du hub (PR #237, ADR-006 déc. 8) ;
 > « toggles workflow cuisine » (déc. 9) soldé en périmètre réduit : lock des
 > items envoyés couvert par ADR-010 (PR #235), copies KOT par station par la
+>
+> **Convention** : aucune version d'objet DB (`_vN`) dans cette fiche — on cite la
+> famille (`close_shift`, `complete_order_with_payment`). La version vivante se
+> vérifie dans `supabase/migrations/` et au call-site, jamais ici.
 > PR #239 ; l'auto-send tablette est SORTI du chantier.
 > Rév. 3 (2026-07-17) : §6.A soldé (lots 1 à 6b, PR #218 → #225) + Realtime
 > settings (PR #230). Chaque point revérifié dans le code et sur la base V3 dev.

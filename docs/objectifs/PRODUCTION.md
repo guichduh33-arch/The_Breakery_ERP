@@ -7,9 +7,13 @@
 > **Révision** : 2026-07-28.
 
 
-> **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée**. Implémentation réelle = V3 monorepo. **Le statut V3 dépasse cette fiche sur plusieurs points** (voir §15 corrigé : sub-recipes, versioning, baker's percentages, yield tracking, margin alerts — tous livrés en V3 S15→S22).
+> **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée**. Implémentation réelle = V3 monorepo. **Le statut V3 dépasse cette fiche sur plusieurs points** (voir §15 corrigé : sub-recipes, versioning, baker's percentages, yield tracking, margin alerts — tous livrés en V3).
 >
 > **Périmètre fonctionnel** : ce document décrit **ce que le module Production & Recipes sert à faire au quotidien** pour The Breakery, sans rentrer dans la mécanique technique
+>
+> **Convention** : aucune version d'objet DB (`_vN`) dans cette fiche — on cite la
+> famille (`close_shift`, `complete_order_with_payment`). La version vivante se
+> vérifie dans `supabase/migrations/` et au call-site, jamais ici.
 
 ---
 
@@ -276,7 +280,7 @@ Réciproquement, le module Inventory **utilise** Production :
 - Le module **ne planifie pas la production** automatiquement — V3 a livré `suggest_production_schedule` et `production_schedules`. ✅ DÉPASSÉ V3.
 - Le module **ne suit pas le temps de pétrissage / cuisson** au four. Pas de minuteur intégré, pas de capteur IoT. *(Toujours vrai V3)*
 - ~~Le module **ne supporte pas les sous-recettes**~~ → **V3 supporte les sous-recettes** avec anti-cycle 5-niveaux (`validate_recipe_no_cycle`, `recipe_bom_full`, `tr_recompute_is_semi_finished`, `record_batch_production`). ✅ LIVRÉ V3.
-- ~~Le module **ne fait pas de versioning explicite** des recettes~~ → **V3 livre `recipe_versions` + snapshot avec cost** (`snapshot_recipe_version_helper`, `tr_snapshot_on_product_cost_change`, `bump_recipe_version_snapshot_with_cost`). ✅ LIVRÉ V3 S20+S21.
+- ~~Le module **ne fait pas de versioning explicite** des recettes~~ → **V3 livre `recipe_versions` + snapshot avec cost** (`snapshot_recipe_version_helper`, `tr_snapshot_on_product_cost_change`, `bump_recipe_version_snapshot_with_cost`). ✅ LIVRÉ V3.
 - Le module **n'intègre pas d'allergènes** structurés (gluten, lactose, fruits à coque). Les notes libres s'en chargent. *(Acté définitif 2026-07-22 : la feature allergènes catalogue a été entièrement supprimée — ADR-011 §2, PR #251. Plus un backlog : wontfix.)*
 - ~~Le module **ne supporte pas les recettes en pourcentage de boulanger**~~ → **V3 supporte les baker's percentages** (colonnes de recette dédiées + prise en charge dans `upsert_recipe`). ✅ LIVRÉ V3.
 - Le module **refuse une recette de plus de 5 niveaux d'imbrication** : au-delà, la production échoue avec une erreur franche au lieu de consommer partiellement en silence. *(Acté ADR-008 D5.)*
@@ -288,9 +292,9 @@ Réciproquement, le module Inventory **utilise** Production :
 
 | Priorité | Évolution | Bénéfice attendu |
 |---|---|---|
-| ✅ | ~~**Sous-recettes / semi-finis**~~ | Livré V3 (S15→S21) — pâte feuilletée comme semi-fini consommé par plusieurs produits. |
-| ✅ | ~~**Versioning explicite des recettes**~~ | Livré V3 (S20+S21) — `recipe_versions` + snapshot avec coût. |
-| ✅ | ~~**Boulanger's percentages**~~ | Livré V3 (S19). |
+| ✅ | ~~**Sous-recettes / semi-finis**~~ | Livré V3 — pâte feuilletée comme semi-fini consommé par plusieurs produits. |
+| ✅ | ~~**Versioning explicite des recettes**~~ | Livré V3 — `recipe_versions` + snapshot avec coût. |
+| ✅ | ~~**Boulanger's percentages**~~ | Livré V3. |
 | ✅ | ~~**Allergènes structurés**~~ | Livré — propagation par recettes (`view_product_allergens_resolved`), affichés BO et POS. |
 | 🔴 | **Chantiers ADR-008** : D1 unités sous-recettes, D2 waste en charge, D3 enum raisons, D4 blocage stock, D5 erreur profondeur, D6 deduct_stock, D7 garde+refactor revert, D9 dette technique | Corriger les huit écarts constatés par l'audit du 2026-07-17. |
 | 🟠 | **Plan de production hebdomadaire** | Définir un planning type "lundi: 100 baguettes, 50 viennoiseries…" et l'instancier en 1 clic chaque semaine. |

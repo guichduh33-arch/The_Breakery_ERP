@@ -3,6 +3,10 @@
 > **Statut V2/V3** : décrit la vision business cible (11 pages). **V2 jamais déployée**. Implémentation V3 actuelle = **avancée** — **au 2026-07-28 : 8 pages accounting livrées** (index, plan de comptes, écritures, grand livre, balance, trésorerie, mappings, réglages compta) sur **7 routes `accounting/*`** + les 3 pages financières sous `/reports` (Balance Sheet, ProfitLoss, Cash Flow). DB excellente (triggers JE, mappings, fiscal periods, VAT, view_ar_aging tous présents).
 >
 > **Périmètre fonctionnel** : ce document décrit **ce que le module Accounting (`/accounting`) sert à faire au quotidien** pour The Breakery,
+>
+> **Convention** : aucune version d'objet DB (`_vN`) dans cette fiche — on cite la
+> famille (`close_shift`, `complete_order_with_payment`). La version vivante se
+> vérifie dans `supabase/migrations/` et au call-site, jamais ici.
 
 ---
 
