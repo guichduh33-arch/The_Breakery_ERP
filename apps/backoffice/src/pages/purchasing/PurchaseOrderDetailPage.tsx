@@ -48,6 +48,7 @@ import { useRecordPoPayment } from '@/features/purchasing/hooks/useRecordPoPayme
 import {
   useUpdatePurchaseOrder,
   updatePoErrorMessage,
+  type UpdatePOErrorCode,
   type UpdatePOItemArg,
 } from '@/features/purchasing/hooks/useUpdatePurchaseOrder.js';
 import { useAllProductsForPO } from '@/features/purchasing/hooks/useAllProductsForPO.js';
@@ -233,7 +234,7 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
       setShowEdit(false);
       setEditValue(null);
     } catch (e) {
-      const code = (e as { code?: import('@/features/purchasing/hooks/useUpdatePurchaseOrder.js').UpdatePOErrorCode }).code;
+      const code = (e as { code?: UpdatePOErrorCode }).code;
       setEditError(code !== undefined ? updatePoErrorMessage(code) : (e instanceof Error ? e.message : 'Unknown error'));
     }
   }
@@ -296,7 +297,7 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
 
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <Button type="button" variant="ghost" size="sm" onClick={() => navigate('/backoffice/purchasing/purchase-orders')}>
+          <Button type="button" variant="ghost" size="sm" onClick={() => { void navigate('/backoffice/purchasing/purchase-orders'); }}>
             <ArrowLeft className="h-4 w-4" aria-hidden /> Back
           </Button>
           <div className="mt-2 flex items-center gap-3">

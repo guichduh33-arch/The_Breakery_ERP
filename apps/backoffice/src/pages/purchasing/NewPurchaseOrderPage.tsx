@@ -51,7 +51,7 @@ export default function NewPurchaseOrderPage(): JSX.Element {
         ...(value.notes.trim() !== '' ? { notes: value.notes.trim() } : {}),
         idempotencyKey: idempotencyKey.current,
       });
-      navigate(`/backoffice/purchasing/purchase-orders/${res.po_id}`);
+      void navigate(`/backoffice/purchasing/purchase-orders/${res.po_id}`);
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Unknown error';
       setError(msg);

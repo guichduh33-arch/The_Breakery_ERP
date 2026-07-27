@@ -215,7 +215,7 @@ export default function POSStockView(): JSX.Element {
           variant="ghost"
           size="icon"
           aria-label="Back"
-          onClick={() => navigate('/pos')}
+          onClick={() => { void navigate('/pos'); }}
           data-testid="pos-stock-back"
         >
           <ArrowLeft className="h-5 w-5" aria-hidden />

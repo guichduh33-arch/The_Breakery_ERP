@@ -92,13 +92,13 @@ export function useCreatePurchaseOrder() {
         p_idempotency_key: args.idempotencyKey,
       };
       if (args.expectedDate !== undefined && args.expectedDate !== '') {
-        rpcArgs['p_expected_date'] = args.expectedDate;
+        rpcArgs.p_expected_date = args.expectedDate;
       }
       if (args.orderDate !== undefined && args.orderDate !== '') {
-        rpcArgs['p_order_date'] = args.orderDate;
+        rpcArgs.p_order_date = args.orderDate;
       }
       if (args.notes !== undefined && args.notes.trim() !== '') {
-        rpcArgs['p_notes'] = args.notes.trim();
+        rpcArgs.p_notes = args.notes.trim();
       }
 
       // Session 46 — bumped to v2 (raw_material guard + unit_factor_to_base persist).
