@@ -2,15 +2,18 @@
 -- Spec 006x lot 5 — chaos « double replay » côté serveur (§7.5) : rejouer
 -- fire_counter_order_v4 / pay_existing_order_v16 avec les clés d'idempotence
 -- D'ORIGINE est un no-op strict (une seule commande, un seul encaissement),
--- le cash différé est accepté même rejoué (A4) et tracé offline_replay:true
--- dans audit_logs. Fixture jwt-claims pattern counter_fire.test.sql.
+-- l'encaissement différé est accepté même rejoué (A4) et tracé
+-- offline_replay:true dans audit_logs. Fixture jwt-claims pattern
+-- counter_fire.test.sql.
+-- ADR-015 (spec 015x lot 4) — T11/T12 : le hors-ligne n'est plus cash-only,
+-- un SPLIT non-cash rejoué via p_payments écrit bien ses n lignes.
 --
 -- Run via MCP execute_sql wrapped BEGIN/ROLLBACK (ou API-from-file).
 
 BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
-SELECT plan(10);
+SELECT plan(12);
 
 -- Fixture : caller avec pos.sale.create + payments.process, session open,
 -- produit seed (BEV-AMER canonique, fallback premier produit actif).
@@ -58,7 +61,7 @@ $$, 'T1: offline fire replay creates the order');
 UPDATE _fx SET order_id = (SELECT k.order_id FROM counter_fire_idempotency_keys k
   WHERE k.client_uuid = '5a000000-0000-4000-8000-000000000001');
 
--- T2 : cash différé rejoué (A4) — v13 accepte avec p_offline_replay. Montant =
+-- T2 : cash différé rejoué (A4) — v16 accepte avec p_offline_replay. Montant =
 -- SUM(line_total) : orders.total vaut encore 0 au fire (recalcul au paiement).
 SELECT lives_ok($$
   SELECT pay_existing_order_v16(
@@ -147,6 +150,39 @@ SELECT throws_ok($$
     p_offline_replay := true)
 $$, 'P0015', NULL,
   'T10: offline replay does NOT bypass the D8 store-credit gate (P0015)');
+
+-- T11-T12 (ADR-015, spec 015x lot 4) : le SPLIT hors-ligne rejoué. Deux
+-- règlements NON-CASH (l'EDC carte et le QRIS encaissent par leur propre canal,
+-- le POS ne fait qu'enregistrer) passent par p_payments avec p_offline_replay,
+-- et produisent DEUX lignes order_payments — preuve d'exécution, là où la suite
+-- settings ne prouvait que la présence du paramètre.
+DO $$
+DECLARE v_ord UUID;
+BEGIN
+  v_ord := (SELECT (fire_counter_order_v4(
+    '5a000000-0000-4000-8000-000000000005'::uuid,
+    (SELECT session_id FROM _fx),
+    jsonb_build_array(jsonb_build_object(
+      'product_id', (SELECT product_id FROM _fx), 'quantity', 2, 'unit_price', 35000, 'modifiers', '[]'::jsonb))))->>'order_id')::uuid;
+  PERFORM set_config('hlr.order_split', v_ord::text, true);
+END $$;
+
+SELECT lives_ok($$
+  SELECT pay_existing_order_v16(
+    p_order_id := current_setting('hlr.order_split')::uuid,
+    p_payments := (SELECT jsonb_build_array(
+        jsonb_build_object('method', 'card', 'amount', s.amt / 2),
+        jsonb_build_object('method', 'qris', 'amount', s.amt - s.amt / 2))
+      FROM (SELECT SUM(oi.line_total) AS amt FROM order_items oi
+             WHERE oi.order_id = current_setting('hlr.order_split')::uuid) s),
+    p_idempotency_key := '5b000000-0000-4000-8000-000000000006'::uuid,
+    p_offline_replay := true)
+$$, 'T11: offline replay accepts a two-tender non-cash split (p_payments)');
+
+SELECT is(
+  (SELECT count(*)::int FROM order_payments
+    WHERE order_id = current_setting('hlr.order_split')::uuid),
+  2, 'T12: the split replay writes exactly two order_payments rows');
 
 SELECT * FROM finish();
 ROLLBACK;

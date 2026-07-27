@@ -37,7 +37,7 @@ const SETTING_ENTRY: SettingsHistoryEntry = {
   createdAt: '2026-07-22T10:00:00Z',
   actorId: 'actor-1',
   category: 'network',
-  changes: [{ field: 'offline_cash_enabled', oldValue: true, newValue: false }],
+  changes: [{ field: 'offline_payments_enabled', oldValue: true, newValue: false }],
 };
 
 const B2B_ENTRY: SettingsHistoryEntry = {
@@ -60,7 +60,7 @@ describe('SettingsHistoryPage', () => {
   it('renders one row per entry with the key, category badge and old → new', () => {
     render(<SettingsHistoryPage />);
     const settingRow = screen.getByTestId('settings-history-row-11');
-    expect(within(settingRow).getByText('offline_cash_enabled')).toBeInTheDocument();
+    expect(within(settingRow).getByText('offline_payments_enabled')).toBeInTheDocument();
     expect(within(settingRow).getByText('network')).toBeInTheDocument(); // category badge
     expect(settingRow).toHaveTextContent('true→false');
     expect(screen.getByTestId('settings-history-row-12')).toHaveTextContent('30→35');

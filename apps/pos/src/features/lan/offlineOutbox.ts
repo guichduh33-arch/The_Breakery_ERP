@@ -1,7 +1,8 @@
 // apps/pos/src/features/lan/offlineOutbox.ts
 //
 // Spec 006x lot 4 — outbox durable des INTENTIONS métier prises en mode
-// OFFLINE (fire caisse, envoi tablette, encaissement cash différé). Modèle
+// OFFLINE (fire caisse, envoi tablette, encaissement différé — toutes méthodes
+// sauf l'avoir depuis ADR-015). Modèle
 // répliqué de l'outbox d'audit (features/audit/outbox.ts) : write-first,
 // IndexedDB en prod / localStorage en fallback (jsdom, hôtes exotiques),
 // même API async des deux côtés.
