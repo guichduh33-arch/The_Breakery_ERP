@@ -2,9 +2,11 @@
 //
 // Backoffice inventory page — Stock & Inventory hub matching screenshot
 // `09-stock-list.jpg`. KPI strip (Total / Raw / Finished / Critical alerts)
-// plus the filterable stock-level list + 3 modals (Adjust / Receive / Waste)
-// + movement history drawer. RLS handles auth at the DB layer; toolbar
-// buttons are gated UX-only. Session 14 / Phase 6.A — closeout rebuild.
+// plus the filterable stock-level list + 2 modals (Adjust / Waste) + movement
+// history drawer. RLS handles auth at the DB layer; toolbar buttons are gated
+// UX-only. Session 14 / Phase 6.A — closeout rebuild. Q3 audit 2026-07-27 :
+// le bouton Receive navigue vers l'achat direct compté (/inventory/incoming),
+// receive_stock_v1 et son modal free-form sont retirés.
 
 import { Plus, Truck, Trash2, Boxes, Package, Coffee, AlertTriangle } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -12,7 +14,6 @@ import { useNavigate } from 'react-router-dom';
 import { Button, KpiTile, SectionLabel } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
 import { AdjustModal } from '@/features/inventory/components/AdjustModal.js';
-import { ReceiveModal } from '@/features/inventory/components/ReceiveModal.js';
 import { WasteModal } from '@/features/inventory/components/WasteModal.js';
 import { StockLevelRow } from '@/features/inventory/components/StockLevelRow.js';
 import {
@@ -27,7 +28,6 @@ const PAGE_SIZE = 50;
 type ModalState =
   | { kind: 'none' }
   | { kind: 'adjust';  product?: Row }
-  | { kind: 'receive'; product?: Row }
   | { kind: 'waste';   product?: Row };
 
 export default function InventoryPage() {
@@ -35,7 +35,9 @@ export default function InventoryPage() {
   const hasPermission = useAuthStore((s) => s.hasPermission);
   const canRead    = hasPermission('inventory.read');
   const canAdjust  = hasPermission('inventory.adjust');
-  const canReceive = hasPermission('inventory.receive');
+  // Q3 (audit 2026-07-27) : receive_stock_v1 droppée — la réception valorisée
+  // passe par le flux achat compté (/inventory/incoming, gate purchasing.po.create).
+  const canReceive = hasPermission('purchasing.po.create');
   const canWaste   = hasPermission('inventory.waste');
 
   const [search,        setSearch       ] = useState<string>('');
@@ -91,7 +93,7 @@ export default function InventoryPage() {
             </Button>
           )}
           {canReceive && (
-            <Button type="button" variant="primary" onClick={() => setModal({ kind: 'receive' })}>
+            <Button type="button" variant="primary" onClick={() => { void navigate('/backoffice/inventory/incoming'); }}>
               <Truck className="h-4 w-4" aria-hidden /> Receive
             </Button>
           )}
@@ -188,11 +190,9 @@ export default function InventoryPage() {
                   key={row.product_id}
                   row={row}
                   canAdjust={canAdjust}
-                  canReceive={canReceive}
                   canWaste={canWaste}
-                  onView={(r) => navigate(`/backoffice/inventory/${r.product_id}`)}
+                  onView={(r) => { void navigate(`/backoffice/inventory/${r.product_id}`); }}
                   onAdjust={(r) => setModal({ kind: 'adjust', product: r })}
-                  onReceive={(r) => setModal({ kind: 'receive', product: r })}
                   onWaste={(r) => setModal({ kind: 'waste', product: r })}
                 />
               ))}
@@ -231,11 +231,6 @@ export default function InventoryPage() {
       <AdjustModal
         open={modal.kind === 'adjust'}
         {...(modal.kind === 'adjust' && modal.product !== undefined ? { initialProduct: modal.product } : {})}
-        onClose={closeModal}
-      />
-      <ReceiveModal
-        open={modal.kind === 'receive'}
-        {...(modal.kind === 'receive' && modal.product !== undefined ? { initialProduct: modal.product } : {})}
         onClose={closeModal}
       />
       <WasteModal

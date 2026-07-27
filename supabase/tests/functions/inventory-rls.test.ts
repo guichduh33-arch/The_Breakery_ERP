@@ -140,15 +140,16 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory RLS + GRANT m
     expect(error?.message ?? '').toMatch(/forbidden/);
   });
 
-  it('CASHIER: receive_stock_v1 → forbidden', async () => {
-    const sb = jwtClient(cashierToken);
+  it('receive_stock_v1 est droppée (Q3 audit 2026-07-27) — tout appel échoue', async () => {
+    const sb = jwtClient(managerToken);
     const { error } = await sb.rpc('receive_stock_v1', {
       p_product_id: productId,
       p_quantity:   1,
       p_supplier_id: supplierId,
-      p_reason:     'Cashier attempting receive',
+      p_reason:     'Should not exist anymore',
     });
-    expect(error?.message ?? '').toMatch(/forbidden/);
+    // PostgREST : fonction absente du schéma → erreur (404 schema cache).
+    expect(error).not.toBeNull();
   });
 
   it('CASHIER: waste_stock_v1 → forbidden', async () => {
@@ -182,7 +183,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory RLS + GRANT m
 
   it('anon CANNOT invoke any inventory RPC', async () => {
     const sb = createClient(SUPABASE_URL, ANON);
-    for (const fn of ['get_stock_levels_v2', 'adjust_stock_v1', 'receive_stock_v1', 'waste_stock_v1']) {
+    for (const fn of ['get_stock_levels_v2', 'adjust_stock_v1', 'record_incoming_stock_v1', 'waste_stock_v1']) {
       const args = fn === 'get_stock_levels_v2'
         ? { p_low_stock_only: false, p_limit: 1, p_offset: 0 }
         : { p_product_id: productId, p_quantity: 1, p_reason: 'anon should fail', p_new_qty: 1, p_supplier_id: supplierId };

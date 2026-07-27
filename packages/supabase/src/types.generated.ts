@@ -8063,17 +8063,6 @@ export type Database = {
         }
         Returns: Json
       }
-      receive_stock_v1: {
-        Args: {
-          p_idempotency_key?: string
-          p_product_id: string
-          p_quantity: number
-          p_reason?: string
-          p_supplier_id: string
-          p_unit_cost?: number
-        }
-        Returns: Json
-      }
       recipe_bom_full_v1: {
         Args: { p_max_depth?: number; p_product_id: string }
         Returns: {

@@ -1,8 +1,9 @@
 // apps/backoffice/src/features/inventory/components/StockLevelRow.tsx
 //
 // One row in the inventory list. Click anywhere on the SKU/name to open
-// the product stock detail page. Action menu offers Adjust / Receive /
-// Waste — each gated by the matching permission.
+// the product stock detail page. Action menu offers Adjust / Waste — each
+// gated by the matching permission. (Receive retiré — Q3 audit 2026-07-27 :
+// la réception valorisée passe par l'achat direct compté /inventory/incoming.)
 
 import { useEffect, useRef, useState, type JSX, type KeyboardEvent } from 'react';
 import { MoreHorizontal } from 'lucide-react';
@@ -13,11 +14,9 @@ import type { StockLevelRow as Row } from '../hooks/useStockLevels.js';
 export interface StockLevelRowProps {
   row:        Row;
   canAdjust:  boolean;
-  canReceive: boolean;
   canWaste:   boolean;
   onView:     (r: Row) => void;
   onAdjust:   (r: Row) => void;
-  onReceive:  (r: Row) => void;
   onWaste:    (r: Row) => void;
 }
 
@@ -30,7 +29,7 @@ function formatLastMovement(iso: string | null): string {
 }
 
 export function StockLevelRow({
-  row, canAdjust, canReceive, canWaste, onView, onAdjust, onReceive, onWaste,
+  row, canAdjust, canWaste, onView, onAdjust, onWaste,
 }: StockLevelRowProps): JSX.Element {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef    = useRef<HTMLDivElement | null>(null);
@@ -67,7 +66,7 @@ export function StockLevelRow({
     }
   }
 
-  const hasAnyAction = canAdjust || canReceive || canWaste;
+  const hasAnyAction = canAdjust || canWaste;
   // track_inventory absent (fixtures/anciens appels) = considéré suivi ; seul false = non suivi.
   const tracked = row.track_inventory !== false;
 
@@ -131,16 +130,6 @@ export function StockLevelRow({
                 onClick={() => { setMenuOpen(false); onAdjust(row); }}
               >
                 Adjust stock
-              </button>
-            )}
-            {canReceive && (
-              <button
-                type="button"
-                role="menuitem"
-                className="block w-full text-left px-3 py-2 text-sm hover:bg-bg-overlay focus:bg-bg-overlay focus:outline-none"
-                onClick={() => { setMenuOpen(false); onReceive(row); }}
-              >
-                Receive stock
               </button>
             )}
             {canWaste && (
