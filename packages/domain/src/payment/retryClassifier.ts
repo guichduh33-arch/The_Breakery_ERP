@@ -184,10 +184,14 @@ function friendlyFatalMessage(code: string, message?: string): string {
       return 'PIN manager incorrect. Vérifiez le PIN et réessayez.';
     case 'missing_manager_pin':
       return 'Cette remise exige le PIN manager. Ré-appliquez la remise et saisissez le PIN.';
+    case 'p0015': // chemin ardoise : pay_existing_order_v16 appelé en direct,
+                  // le PostgrestError expose le SQLSTATE brut (pas de mapping EF).
+                  // NB : P0010 (loyalty) a le même gap — hors périmètre Lot 4 UI.
     case 'store_credit_requires_customer':
       // ADR-013 Lot 4 (D8) — v21/v16 refusent un tender store_credit sans
       // client rattaché (P0015).
       return 'Le paiement par avoir exige un client rattaché à la vente. Attachez le client et réessayez.';
+    case 'p0016': // idem — SQLSTATE brut sur le chemin ardoise.
     case 'insufficient_store_credit':
       // ADR-013 Lot 4 (D8) — solde d'avoir insuffisant, vérifié sous verrou
       // serveur (P0016).

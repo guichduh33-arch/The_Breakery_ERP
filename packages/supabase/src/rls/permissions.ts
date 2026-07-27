@@ -43,6 +43,9 @@ export type PermissionCode =
   | 'customers.create'
   | 'customers.update'
   | 'customers.delete'
+  // ADR-013 Lot 4 — avoir client (seeds _235 : SUPER_ADMIN/ADMIN/MANAGER)
+  | 'customers.store_credit.grant'
+  | 'customers.store_credit.convert'
   | 'customer_categories.read'
   | 'customer_categories.create'
   | 'customer_categories.update'

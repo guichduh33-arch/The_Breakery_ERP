@@ -67,10 +67,11 @@ export default function SettingsPaymentMethodsPage() {
   const payments   = useSettings('payments');
   const setSetting = useSetSetting();
 
-  const [draft, setDraft]         = useState<string[] | null>(null);
-  const [feesDraft, setFeesDraft] = useState<Record<string, string> | null>(null);
-  const [error, setError]         = useState<string | null>(null);
-  const [savedAt, setSaved]       = useState<string | null>(null);
+  const [draft, setDraft]             = useState<string[] | null>(null);
+  const [feesDraft, setFeesDraft]     = useState<Record<string, string> | null>(null);
+  const [expiryDraft, setExpiryDraft] = useState<string | null>(null);
+  const [error, setError]             = useState<string | null>(null);
+  const [savedAt, setSaved]           = useState<string | null>(null);
 
   useEffect(() => {
     if (!payments.data) return;
@@ -80,6 +81,9 @@ export default function SettingsPaymentMethodsPage() {
     setFeesDraft(Object.fromEntries(
       ALL_METHODS.map((m) => [m.value, fees[m.value] !== undefined ? String(fees[m.value]) : '']),
     ));
+    // ADR-013 Lot 4 (D7) — expiration des avoirs en mois (0 = jamais).
+    const rawExpiry = payments.data.settings.store_credit_expiry_months;
+    setExpiryDraft(typeof rawExpiry === 'number' ? String(rawExpiry) : '0');
   }, [payments.data]);
 
   if (!canRead) {
@@ -107,7 +111,16 @@ export default function SettingsPaymentMethodsPage() {
   const feesDirty = feesDraft !== null && !feeInvalid
     && !sameFees(feesFromDraft(feesDraft), originalFees);
 
-  const dirty = methodsDirty || feesDirty;
+  // ADR-013 Lot 4 (D7) — entier 0-120 (CHECK business_config), 0 = jamais.
+  const originalExpiry = typeof payments.data?.settings.store_credit_expiry_months === 'number'
+    ? payments.data.settings.store_credit_expiry_months
+    : 0;
+  const expiryNum = expiryDraft !== null ? Number(expiryDraft.trim() === '' ? 'NaN' : expiryDraft) : originalExpiry;
+  const expiryInvalid = expiryDraft !== null
+    && (!Number.isInteger(expiryNum) || expiryNum < 0 || expiryNum > 120);
+  const expiryDirty = expiryDraft !== null && !expiryInvalid && expiryNum !== originalExpiry;
+
+  const dirty = methodsDirty || feesDirty || expiryDirty;
 
   const disabledMethods = ALL_METHODS.filter((m) => draft !== null && !draft.includes(m.value));
 
@@ -156,7 +169,7 @@ export default function SettingsPaymentMethodsPage() {
   }
 
   async function handleSave() {
-    if (draft === null || draft.length === 0 || feesDraft === null || feeInvalid) return;
+    if (draft === null || draft.length === 0 || feesDraft === null || feeInvalid || expiryInvalid) return;
     setError(null);
     try {
       if (methodsDirty) {
@@ -165,6 +178,9 @@ export default function SettingsPaymentMethodsPage() {
       }
       if (feesDirty) {
         await setSetting.mutateAsync({ key: 'payment_method_fees', value: feesFromDraft(feesDraft), category: 'payments' });
+      }
+      if (expiryDirty) {
+        await setSetting.mutateAsync({ key: 'store_credit_expiry_months', value: expiryNum, category: 'payments' });
       }
       setSaved(new Date().toLocaleTimeString());
     } catch (e) {
@@ -250,13 +266,37 @@ export default function SettingsPaymentMethodsPage() {
             )}
           </div>
 
+          {/* ADR-013 Lot 4 (D7) — expiration des avoirs clients. */}
+          <div className="border-t border-border-subtle pt-4">
+            <label className="flex items-center gap-3 text-sm">
+              <span>Expiration des avoirs (mois)</span>
+              <input
+                type="number"
+                min={0}
+                max={120}
+                step={1}
+                value={expiryDraft ?? ''}
+                disabled={!canUpdate}
+                aria-label="Expiration des avoirs en mois (0 = jamais)"
+                data-testid="store-credit-expiry-months"
+                onChange={(e) => setExpiryDraft(e.target.value)}
+                className="w-20 rounded border border-border-subtle bg-bg-input px-2 py-1 text-right text-sm"
+              />
+            </label>
+            <p className="mt-1 text-xs text-text-secondary">
+              0 = jamais (défaut). Appliqué aux nouveaux avoirs (accord manager, conversion points,
+              remboursement en avoir) ; la reprise en produit court chaque nuit à 02:15.
+            </p>
+          </div>
+
           {empty && <p className="text-red text-sm" role="alert">Au moins une méthode doit rester activée.</p>}
           {feeInvalid && <p className="text-red text-sm" role="alert">Les frais doivent être un pourcentage entre 0 et 100.</p>}
+          {expiryInvalid && <p className="text-red text-sm" role="alert">L&apos;expiration doit être un entier entre 0 et 120 mois.</p>}
           {error && <p className="text-red text-sm" role="alert">{error}</p>}
           {savedAt && !dirty && <p className="text-success text-xs" role="status">Enregistré à {savedAt}</p>}
 
           {canUpdate && (
-            <Button type="submit" variant="primary" disabled={!dirty || empty || feeInvalid || setSetting.isPending}>
+            <Button type="submit" variant="primary" disabled={!dirty || empty || feeInvalid || expiryInvalid || setSetting.isPending}>
               {setSetting.isPending ? 'Enregistrement…' : dirty ? 'Enregistrer' : 'Aucun changement'}
             </Button>
           )}

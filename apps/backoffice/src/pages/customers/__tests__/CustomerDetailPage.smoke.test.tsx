@@ -33,11 +33,25 @@ const baseCustomer = {
   b2b_credit_limit: 10_000_000,
   b2b_current_balance: 2_500_000,
   retail_credit_limit: null as number | null,
+  store_credit_balance: 150_000,
   created_at: '2026-01-01',
 };
 
 let mockCustomerType: 'b2b' | 'retail' = 'b2b';
 let mockRetailCreditLimit: number | null = null;
+// ADR-013 Lot 4 — permissions simulées (défaut : aucune, comme le store réel
+// sans session ; les tests historiques restent iso-comportement).
+let mockPerms: string[] = [];
+
+vi.mock('@/stores/authStore.js', () => ({
+  useAuthStore: (selector: (s: { hasPermission: (c: string) => boolean }) => unknown) =>
+    selector({ hasPermission: (c: string) => mockPerms.includes(c) }),
+}));
+
+vi.mock('@/features/customers/hooks/useStoreCreditHistory.js', () => ({
+  storeCreditHistoryKey: (id: string) => ['store-credit-history', id],
+  useStoreCreditHistory: () => ({ isLoading: false, data: [] }),
+}));
 
 vi.mock('@/features/customers/hooks/useCustomerDetail.js', () => ({
   useCustomerDetail: (id: string) => ({
@@ -91,6 +105,7 @@ describe('CustomerDetailPage', () => {
   beforeEach(() => {
     mockCustomerType = 'b2b';
     mockRetailCreditLimit = null;
+    mockPerms = [];
   });
 
   it('renders header with name, category chip and active badge', async () => {
@@ -136,5 +151,43 @@ describe('CustomerDetailPage', () => {
       expect(screen.getByRole('heading', { name: 'Café Bali' })).toBeInTheDocument(),
     );
     expect(screen.getByLabelText(/plafond ardoise/i)).toHaveValue('750000');
+  });
+
+  // ADR-013 Lot 4 — avoir client (solde + onglet + boutons gatés).
+  it('shows the store-credit balance in the loyalty hero', async () => {
+    renderAt('/backoffice/customers/c-1');
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Café Bali' })).toBeInTheDocument(),
+    );
+    expect(screen.getByTestId('store-credit-balance').textContent).toMatch(/150\.000|150,000/);
+  });
+
+  it('opens the Store credit tab (empty history)', async () => {
+    renderAt('/backoffice/customers/c-1');
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Café Bali' })).toBeInTheDocument(),
+    );
+    fireEvent.click(screen.getByRole('tab', { name: /Store credit/ }));
+    expect(screen.getByText('No store-credit activity yet.')).toBeInTheDocument();
+  });
+
+  it('hides grant/convert buttons without the store_credit permissions', async () => {
+    renderAt('/backoffice/customers/c-1');
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Café Bali' })).toBeInTheDocument(),
+    );
+    expect(screen.queryByTestId('grant-store-credit')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('convert-store-credit')).not.toBeInTheDocument();
+  });
+
+  it('shows grant/convert buttons with the store_credit permissions', async () => {
+    mockPerms = ['customers.store_credit.grant', 'customers.store_credit.convert'];
+    renderAt('/backoffice/customers/c-1');
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Café Bali' })).toBeInTheDocument(),
+    );
+    expect(screen.getByTestId('grant-store-credit')).toBeInTheDocument();
+    // loyalty_points = 100 : conversion possible (>= 100).
+    expect(screen.getByTestId('convert-store-credit')).not.toBeDisabled();
   });
 });

@@ -10,6 +10,8 @@ export type CustomerWithCategory = Customer & { category: CustomerCategory | nul
  * `search_customers_v3` (embed `category` JSONB) instead of a direct
  * customers table read, so it survives the `customers.read` SELECT gate.
  * S50 W1.4 — bumped v2 → v3 (dual gate: customers.read OR pos.sale.create).
+ * ADR-013 Lot 4 — bumped v3 → v4 (+ store_credit_balance, seul chemin de
+ * lecture du solde d'avoir pour un cashier).
  * The RPC row shape mirrors the old CUSTOMER_SELECT projection exactly.
  */
 export function useCustomerSearch(query: string) {
@@ -17,7 +19,7 @@ export function useCustomerSearch(query: string) {
     queryKey: ['customers', 'search', query],
     queryFn: async () => {
       if (query.trim().length < 2) return [];
-      const { data, error } = await supabase.rpc('search_customers_v3', {
+      const { data, error } = await supabase.rpc('search_customers_v4', {
         p_query: query,
         p_limit: 10,
       });

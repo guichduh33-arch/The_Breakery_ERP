@@ -79,6 +79,7 @@ const CUSTOMER: CustomerDetailRow = {
   b2b_credit_limit: null,
   b2b_current_balance: 0,
   retail_credit_limit: null,
+  store_credit_balance: 0,
   created_at: '2026-01-01T00:00:00Z',
 };
 

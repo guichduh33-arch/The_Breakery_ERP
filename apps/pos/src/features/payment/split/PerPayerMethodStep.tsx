@@ -28,6 +28,7 @@ import type { ForwardRefExoticComponent, RefAttributes } from 'react';
 import { COLOR_CLASSES, type SplitMode, type SplitPayer } from './types';
 import { payerSubtotal } from './ItemAssignStep';
 import { useEnabledPaymentMethods } from '@/features/settings/hooks/useEnabledPaymentMethods';
+import { useCartStore } from '@/stores/cartStore';
 
 /**
  * Effective subtotal for a payer: uses assignedAmount for equal/custom modes,
@@ -83,6 +84,9 @@ export function PerPayerMethodStep({
 }: PerPayerMethodStepProps): JSX.Element {
   // S64 — only methods enabled in BO Settings render (fail-open = all 6).
   const enabledMethods = useEnabledPaymentMethods();
+  // ADR-013 Lot 4 (D8) — store_credit exige un client rattaché (gate serveur
+  // P0015) : même prédicat que PaymentMethodGrid.
+  const attachedCustomer = useCartStore((s) => s.attachedCustomer);
   const activePayer = payers.find((p) => p.id === activePayerId) ?? payers[0]!;
   const activeColors = COLOR_CLASSES[activePayer.color];
   const activeTotal = effectiveSubtotal(activePayer, cartItems);
@@ -180,6 +184,7 @@ export function PerPayerMethodStep({
         <div className="grid grid-cols-2 gap-3 mb-6">
           {/* ADR-006 déc. 9 lot A — BO-configured order (Set insertion order). */}
           {[...enabledMethods]
+            .filter((v) => v !== 'store_credit' || attachedCustomer !== null)
             .map((v) => METHODS_BY_VALUE.get(v))
             .filter((m): m is SplitMethodMeta => m !== undefined)
             .map((m) => {
