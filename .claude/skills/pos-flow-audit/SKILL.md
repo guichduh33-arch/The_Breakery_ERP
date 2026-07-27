@@ -54,14 +54,25 @@ promptSignals:
 
 # POS Flow Audit — The Breakery (bakery-café, multi-device)
 
+> **ADR applicables : ADR-009** (cycle de vie : écritures via RPC uniquement ; transition
+> `paid → completed`) · **ADR-010** (item verrouillé en cuisine : autorisation manager
+> serveur + perte obligatoire ; cadenas visuel POS/tablette, KDS en realtime) ·
+> **ADR-013** (intégrité void/refund · nonce PIN manager sur toute remise · fin du
+> dual-mode · ordre canonique des totaux · contrat d'idempotence) · **ADR-015**
+> (hors-ligne : tous moyens de paiement **sauf l'avoir** ; un intent rejeté bloquerait tout
+> le drain de l'outbox). Ils font loi : une proposition qui les contredit se **signale**,
+> elle ne s'implémente pas.
+> **Convention** : aucune version d'objet DB (`_vN`) dans ce fichier — on cite la **famille**.
+> La version vivante se vérifie dans `supabase/migrations/` et au call-site, jamais ici.
+
 Expert on the complete **order-to-payment journey** across every device and actor of a counter+table-service bakery-café. Two jobs, in priority order:
 
 1. **Discover product/UX gaps and propose features.** Scan the end-to-end flow, find friction, unmet needs, and missing capabilities, then propose concrete improvements **ranked by impact**. This is the primary purpose.
 2. **Verify technical correctness** (secondary, but never skip it for a proposal you'd actually ship): idempotency, RPC versioning, PIN-in-header, realtime races, RLS/REVOKE. A great UX idea that breaks an invariant is not a good proposal.
 
-**The bar: be more thorough than a careful first read, not more ceremonial.** This codebase is well-documented (rich `CLAUDE.md`, docs/reference), so a smart reader already finds the obvious gaps. The skill earns its keep only by catching what a quick pass misses — the *silent failures* where the code looks fine and even tells the user it succeeded, but doesn't. Spend your budget hunting those (see "The silent-failure sweep" below), not on rituals. Verification of versions/patterns is a means to ground a finding, never the deliverable. If you find yourself rebuilding a reference table instead of reading feature code, stop and go read the flow.
+**The bar: be more thorough than a careful first read, not more ceremonial.** This codebase is well-documented (rich `CLAUDE.md`, `docs/adr/`, `docs/objectifs/`), so a smart reader already finds the obvious gaps. The skill earns its keep only by catching what a quick pass misses — the *silent failures* where the code looks fine and even tells the user it succeeded, but doesn't. Spend your budget hunting those (see "The silent-failure sweep" below), not on rituals. Verification of versions/patterns is a means to ground a finding, never the deliverable. If you find yourself rebuilding a reference table instead of reading feature code, stop and go read the flow.
 
-**`CLAUDE.md` is the source of truth** for project-wide patterns and the active workplan. This skill adds the POS-flow mental model, the discovery method, the silent-failure sweep, audit checklists, and a proposal format that CLAUDE.md doesn't carry.
+**`CLAUDE.md` is the source of truth** for project-wide patterns; **`docs/adr/`** carries the binding decisions. This skill adds the POS-flow mental model, the discovery method, the silent-failure sweep, audit checklists, and a proposal format that CLAUDE.md doesn't carry.
 
 **Service context (owner, 2026-05):** comptoir + sur place mixte — counter takeaway (bakery) AND table service (café) coexist. The counter path optimizes for *encaissement speed*; the table path optimizes for *kitchen↔floor coordination*. A proposal that helps one path must not slow the other.
 
@@ -253,15 +264,17 @@ Keep proposals grounded: tie each to a real file or flow you read. Prefer extend
 ## Sources of truth (verified pointers)
 
 ```
-Module reference (read first, canonical — fiches réel-vs-demandé, docs/reference/04-modules/ est STALE V2)
-  docs/workplan/remise-a-plat/02-pos-cart-orders.md      # full POS lifecycle, invariants, hooks/stores
-  docs/workplan/remise-a-plat/02b-orders-page.md
-  docs/workplan/remise-a-plat/03-payments-split.md        # payment modal, split, methods, paymentStore
-  docs/workplan/remise-a-plat/04-kds-kitchen.md           # KDS, mark-served, recall, stations, channels
-  docs/workplan/remise-a-plat/12-cash-register-shift.md   # session open/close, variance, z-reports
-  docs/workplan/remise-a-plat/13-promotions-discounts.md  # promo eval (RPC + fallback), BOGO, threshold
-  docs/workplan/remise-a-plat/16-display-customer.md       # customer display, realtime broadcast
-  docs/workplan/remise-a-plat/17-tablet-ordering.md        # tablet app, create/pickup, waiter flow
+Intention métier (read first — ce qui est VOULU ; le code dit ce qui EST)
+  docs/objectifs/POS.md
+  docs/objectifs/ORDERS.md
+  docs/objectifs/CASH_REGISTER.md
+  docs/objectifs/KDS.md
+  docs/objectifs/CUSTOMER_DISPLAY.md
+  docs/objectifs/TABLET_ORDERING.md
+  docs/objectifs/PROMOTIONS_AND_COMBOS.md
+
+Décisions (immuables, font loi — une proposition qui les contredit se signale, elle ne s'implémente pas)
+  docs/adr/
 
 POS features (thin UI wiring — the journey)
   apps/pos/src/features/{cart,payment,kds,tablet,inbox,display,promotions,discounts,shift,heldOrders,tables,floor-plan,order-history,lan,loyalty,combos}/

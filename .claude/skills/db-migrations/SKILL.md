@@ -39,7 +39,7 @@ promptSignals:
 
 # DB Migrations & RPC Hygiene — The Breakery ERP
 
-**`CLAUDE.md` (Critical patterns + Active Workplan) is the source of truth.** This skill is the always-on guardrail that fires when you touch `supabase/migrations/**`; the deep procedures live in the **`db-engineer`** agent. Verify the live schema (MCP `list_tables` / `pg_get_functiondef`) before asserting a fact — cloud drifts from the migration files.
+**`CLAUDE.md` (Critical patterns) is the source of truth.** This skill is the always-on guardrail that fires when you touch `supabase/migrations/**`; the deep procedures live in the **`db-engineer`** agent. Verify the live schema (MCP `list_tables` / `pg_get_functiondef`) before asserting a fact — cloud drifts from the migration files.
 
 ## The 8 rules you must not break
 

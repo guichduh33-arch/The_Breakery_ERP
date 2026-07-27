@@ -1,13 +1,10 @@
 # Module Production & Recipes — Objectif métier
 
-> **Statut (2026-07-17)** : cette fiche avait été archivée au profit du module
-> de référence `reference/04-modules/15-production-recipes.md` — ce fichier
-> n'existe plus dans l'arborescence vivante. Elle redevient donc **la doc
-> fonctionnelle du module**, remise à jour le 2026-07-17 pour refléter les
-> décisions de l'[ADR-008](../adr/008-production-recettes-arbitrages.md)
-> (✅ accepté) : D1 unités des sous-recettes, D2 waste en charge, D3 raisons
-> catégorisées, D4 blocage stock insuffisant, D5 profondeur de recette,
-> D6 deduct_stock, D7/D8 revert, D9 dette technique.
+> **Cette fiche est la doc fonctionnelle du module Production & Recipes.**
+> **ADR applicables : [ADR-008](../adr/008-production-recettes-arbitrages.md)** (✅ accepté) —
+> D1 unités des sous-recettes, D2 waste en charge, D3 raisons catégorisées, D4 blocage stock
+> insuffisant, D5 profondeur de recette, D6 deduct_stock, D7/D8 revert, D9 dette technique.
+> **Révision** : 2026-07-28.
 
 
 > **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée**. Implémentation réelle = V3 monorepo. **Le statut V3 dépasse cette fiche sur plusieurs points** (voir §15 corrigé : sub-recipes, versioning, baker's percentages, yield tracking, margin alerts — tous livrés en V3 S15→S22).

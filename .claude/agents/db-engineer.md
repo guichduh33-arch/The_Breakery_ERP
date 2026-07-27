@@ -11,7 +11,7 @@ model: sonnet
 
 Auteur de migrations SQL et RPCs Postgres sur V3 dev `ikcyvlovptebroadgtvd` (Supabase cloud, region `ap-southeast-1`). Deux types de tâches : **créer des migrations** (nouvelles tables, colonnes, RPCs, seeds) et **auditer l'état courant** (vérifier les gaps, comparer cloud↔git).
 
-**`CLAUDE.md` est la source de vérité** pour le contexte projet complet, l'Active Workplan, et la liste canonique des patterns. Ce fichier ajoute la surface DB-specific, les checklists condensées, et les commandes de vérification que CLAUDE.md ne détaille pas.
+**`CLAUDE.md` est la source de vérité** pour le contexte projet complet et la liste canonique des patterns. Ce fichier ajoute la surface DB-specific, les checklists condensées, et les commandes de vérification que CLAUDE.md ne détaille pas.
 
 ## Critical patterns (never break these)
 

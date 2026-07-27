@@ -66,18 +66,18 @@ Expert on the stock flow from raw materials through semi-finished to finished pr
 ```
 ENTRY                        INTERNAL                       EXIT
 ─────                        ────────                       ────
-receive_stock_v1 (PO)        record_production_v1           complete_order_with_payment
+receive_stock (PO)           record_production              complete_order_with_payment
  ↓ stock_movements             ↓ cascade via                  ↓ stock_movements
- ↓ (movement_type=purchase)    ↓ recipe_bom_full_v1           ↓ (movement_type=sale)
+ ↓ (movement_type=purchase)    ↓ recipe_bom_full              ↓ (movement_type=sale)
  ↓ → WAC update                ↓ (S17 depth-5 walk)           ↓ → JE trigger
  ↓ → JE trigger                ↓ stock_movements             
  ↓ → recipe cascade            ↓ (production_in/out)          refund_order_rpc
                                ↓ → JE trigger                  ↓ stock_movements (sale_void/sale_refund)
-record_incoming_stock_v1       transfer_stock_v1
+record_incoming_stock          transfer_stock
  ↓ (incoming)                  ↓ (from_section_id, to_section_id)
                                ↓ stock_movements (transfer_in/out)
-adjust_stock_v1
- ↓ (adjustment)                waste_stock_v1 / spoilage trigger
+adjust_stock
+ ↓ (adjustment)                waste_stock / spoilage trigger
                                ↓ stock_movements (waste / spoilage)
 ```
 
@@ -100,11 +100,11 @@ adjust_stock_v1
 
 ### Cost backbone
 
-- `movement_type='purchase'` (PO receipt via `receive_po_v1`) AND `movement_type='production_in'` (since `20260626000015`) update `products.cost_price` (WAC) via trigger `tr_update_product_cost_on_purchase`
+- `movement_type='purchase'` (PO receipt via `receive_po`) AND `movement_type='production_in'` (since `20260626000015`) update `products.cost_price` (WAC) via trigger `tr_update_product_cost_on_purchase`
 - `production_in` is valued at the **actual consumed cost** (`SUM(total_consumed × material_cost)` from the BOM walk ÷ actual yield), NOT at stale `products.cost_price` (audit 2026-06-12 M5, `20260626000015`) — the production JE pair (DR 1135 finished goods / CR 5110) is balanced against the `production_out` legs by construction
-- `movement_type='incoming'` (free-form / `record_incoming_stock_v1` / POS quick-receive) does **NOT** touch `cost_price` — a product received only this way stays at its prior cost (often 0). Manual fix path: `update_cost_price_v1` (S22, movement_type=`cost_price_correction`, quantity=0).
+- `movement_type='incoming'` (free-form / `record_incoming_stock` / POS quick-receive) does **NOT** touch `cost_price` — a product received only this way stays at its prior cost (often 0). Manual fix path: `update_cost_price` (movement_type=`cost_price_correction`, quantity=0).
 - A `cost_price` change fires `tr_snapshot_on_product_cost_change` → re-snapshots ancestor `recipe_versions.snapshot`
-- Full cascade resolved via `recipe_bom_full_v1` (S17, depth-5)
+- Full cascade resolved via `recipe_bom_full` (depth-5)
 - `product_cost_at_version` carries the per-version cost
 
 ### POS display-stock vs BO stock — RESOLVED (isolation shipped, re-verified 2026-05-31)
@@ -113,22 +113,22 @@ adjust_stock_v1
 
 **Implementation status — ISOLATION DELIVERED (S33 display-stock, on `master`).** The 2026-05-30 "gap" described below is now CLOSED. Verified state on V3 dev `ikcyvlovptebroadgtvd` (2026-05-31):
 - **Dedicated tables** exist, fully separate from the global ledger: `display_stock` (`product_id`, `quantity`, `updated_at` — the front-counter), `display_movements` (append-only ledger: `movement_type`, `quantity`, `reason`, `reference_type/id`, `created_by`, `idempotency_key`). RLS on both = **SELECT-only** (`display.read`) → writes only via SECURITY DEFINER RPCs.
-- **3 dedicated RPCs** (perm-gated, `anon` revoked): `add_display_stock_v1` / `adjust_display_stock_v1` / `waste_display_stock_v1`.
-- **POS rewired**: `usePOSReceiveStock` now wraps **`add_display_stock_v1`** ("mise en vitrine"), NOT `record_incoming_stock_v1`. `record_incoming_stock_v1` is now called **only from the BackOffice** (`useRecordIncomingStock`) — POS is fully isolated.
+- **3 dedicated RPCs** (perm-gated, `anon` revoked): `add_display_stock` / `adjust_display_stock` / `waste_display_stock`.
+- **POS rewired**: `usePOSReceiveStock` now wraps **`add_display_stock`** ("mise en vitrine"), NOT `record_incoming_stock`. `record_incoming_stock` is now called **only from the BackOffice** (`useRecordIncomingStock`) — POS is fully isolated.
 - **Sale path**: `complete_order_with_payment` (versions omises — vérifier `CLAUDE.md` / `supabase/migrations/`) decrements BOTH `display_stock` (+ writes `display_movements`) AND `products.current_stock` — the documented double-deduction. This is the only place both are touched.
 
-> Historical note: prior to S33 the POS receive routed through `record_incoming_stock_v1` into the **shared** `stock_movements` ledger + global `products.current_stock`, causing BO/POS cross-interference. The `Front Display` section approach was superseded by the dedicated `display_stock`/`display_movements` tables. If an audit still finds POS writing `incoming` rows, that is a regression — flag it.
+> Historical note: prior to S33 the POS receive routed through `record_incoming_stock` into the **shared** `stock_movements` ledger + global `products.current_stock`, causing BO/POS cross-interference. The `Front Display` section approach was superseded by the dedicated `display_stock`/`display_movements` tables. If an audit still finds POS writing `incoming` rows, that is a regression — flag it.
 
 ## Audit 2026-06-12 — fixes shipped + ledger conventions
 
 Migrations `20260626000010..016`.
 
 **Fixes shipped (don't re-flag these as gaps):**
-- **C2 réparé** (`_010`) — `record_stock_movement_v1` accepte le contexte cron : profil SYSTEM `00000000-0000-0000-0000-000000000999` (`SYS-CRON`, pin_hash non-bcrypt, is_active=false) utilisé quand `auth.uid() IS NULL AND session_user = 'postgres'`. ⚠️ Si le pooler / l'utilisateur d'exécution des crons change, re-vérifier la condition `session_user='postgres'`.
+- **C2 réparé** (`_010`) — `record_stock_movement` accepte le contexte cron : profil SYSTEM `00000000-0000-0000-0000-000000000999` (`SYS-CRON`, pin_hash non-bcrypt, is_active=false) utilisé quand `auth.uid() IS NULL AND session_user = 'postgres'`. ⚠️ Si le pooler / l'utilisateur d'exécution des crons change, re-vérifier la condition `session_user='postgres'`.
 - **C3 réparé** (`_011`) — `margin_alerts.{expected_margin_pct, target_margin_pct, delta_pct}` élargis en NUMERIC(7,2) (le calcul est en 7,2 ; un produit cost élevé / prix faible donne des marges < -999.99 %).
-- **C4 réparé** (`_012`) — `record_production_v1` + `record_batch_production_v1` raisent `section_required` (P0001) au lieu de violer le CHECK 23514 ; le front exige la section (single + batch).
-- **M2 réparé** (`_013`) — gate de solde par section dans `create_internal_transfer_v1` (branche `send_directly`) et `receive_internal_transfer_v1` : `insufficient_section_stock` (P0001, DETAIL JSON) avant émission des mouvements. 7 lignes `section_stock` négatives remises à 0 (trace `audit_logs` action `section_stock.negative_reset`). **Pas de CHECK `quantity >= 0`** — décision actée : les flux production_out/waste/adjustment légitimes décrémentent des sections jamais seedées (cache, pas ledger).
-- **M1 côté DB** (`_014`) — `create_internal_transfer_v1` valide les items sur `track_inventory` (plus `is_active`) : les ingrédients sont transférables. Doctrine : `is_active` = vendable au POS ; le gate stock est `track_inventory`.
+- **C4 réparé** (`_012`) — `record_production` + `record_batch_production` raisent `section_required` (P0001) au lieu de violer le CHECK 23514 ; le front exige la section (single + batch).
+- **M2 réparé** (`_013`) — gate de solde par section dans `create_internal_transfer` (branche `send_directly`) et `receive_internal_transfer` : `insufficient_section_stock` (P0001, DETAIL JSON) avant émission des mouvements. 7 lignes `section_stock` négatives remises à 0 (trace `audit_logs` action `section_stock.negative_reset`). **Pas de CHECK `quantity >= 0`** — décision actée : les flux production_out/waste/adjustment légitimes décrémentent des sections jamais seedées (cache, pas ledger).
+- **M1 côté DB** (`_014`) — `create_internal_transfer` valide les items sur `track_inventory` (plus `is_active`) : les ingrédients sont transférables. Doctrine : `is_active` = vendable au POS ; le gate stock est `track_inventory`.
 - **M5 réparé** (`_015`) — voir Cost backbone ci-dessus (production_in au coût réel + WAC).
 - **m1 réparé** (`_016`) — REVOKE TRUNCATE/TRIGGER/REFERENCES sur les 5 tables stock (`stock_movements`, `stock_lots`, `section_stock`, `display_stock`, `display_movements`) FROM authenticated, anon.
 
@@ -142,8 +142,8 @@ Migrations `20260626000010..016`.
 
 ## Critical patterns (always verify before shipping)
 
-1. **`stock_movements` append-only** — RLS revokes UPDATE/DELETE for `authenticated`. Never INSERT directly from app/test/RPC. Always go through `record_stock_movement_v1` or its family (`adjust_stock_v1`, `receive_stock_v1`, `record_incoming_stock_v1`, `waste_stock_v1`, `transfer_stock_v1`, `record_production_v1`, `finalize_opname_v1`).
-2. **Primitive auto-resolves `unit`** — passing `unit = NULL` to `record_stock_movement_v1` makes it read `products.unit`. For NEW RPCs, populate `unit` explicitly — don't rely on auto-resolve (see migration `20260516000019_fix_record_stock_movement_v1_unit.sql`).
+1. **`stock_movements` append-only** — RLS revokes UPDATE/DELETE for `authenticated`. Never INSERT directly from app/test/RPC. Always go through `record_stock_movement` or its family (`adjust_stock`, `receive_stock`, `record_incoming_stock`, `waste_stock`, `transfer_stock`, `record_production`, `finalize_opname`).
+2. **Primitive auto-resolves `unit`** — passing `unit = NULL` to `record_stock_movement` makes it read `products.unit`. For NEW RPCs, populate `unit` explicitly — don't rely on auto-resolve (see migration `20260516000019_fix_record_stock_movement_v1_unit.sql`).
 3. **Section constraint movement-type-aware** (S16 `_020`, relaxed again S22 `_026000012`) — `transfer_in/out` require BOTH `from_section_id` AND `to_section_id`. The exempt list (section optional) is `purchase`, `incoming`, `sale`, `sale_void`, `purchase_return`, `adjustment`, `waste`, `cost_price_correction`; everything else (`adjustment_*`, `opname_*`, `production_*`) requires AT LEAST ONE.
 4. **`p_idempotency_key UUID`** on every retry-safe flow — replay returns the existing row instead of doubling. Always pass one from the client on retryable mutations. The primitive resolves it via a UNIQUE constraint and catches `unique_violation` to re-read.
 5. **WAC garbage-in if `current_stock` is stale** (DEV-S17-1.C-02, informational). Manual `UPDATE products.cost_price` bypasses WAC AND emits no `stock_movements` audit row (DEV-S17-1.B-01). If the audit finds drift between recomputed WAC and stored cost_price, look for manual UPDATEs in git history.
@@ -157,7 +157,7 @@ Migrations `20260626000010..016`.
    `REVOKE FROM anon` alone is insufficient — anon inherits via PUBLIC.
 8. **`tr_20_je_emit` trigger** (S17 `_022/_023`, function `tr_stock_movement_je`) emits a `journal_entry` on INSERT — but ONLY for `waste / adjustment_* / opname_* / production_*` (it early-returns for incoming/purchase/sale/transfer/reservation, and skips zero-value postings). It is idempotent (UNIQUE index `journal_entries_je_idempotency_uniq`) and fiscal-guarded (`check_fiscal_period_open`). If you add a new `movement_type` that needs accounting impact, add its DR/CR mapping in the CASE block or it silently emits nothing (no P0002 unless you add it to the handled set without a mapping key).
 9. **`lot_id` / `stock_lots` — infra dormante (ADR-004)** — aucun RPC de consommation n'est tenu de respecter FIFO. **Ne pas ajouter de logique FIFO** à un RPC ; ne pas traiter un `lot_id` absent comme un bug. La table est conservée pour réversibilité, pas pour usage.
-10. **Recipe cascade immutable** (S15 + S17) — `recipe_versions.snapshot` is append-only. No retroactive mutation. `record_production_v1` reads the version at time T for cost calculation (not the current version). When changing a recipe, the trigger creates a new `recipe_versions` row — never UPDATE existing snapshots.
+10. **Recipe cascade immutable** (S15 + S17) — `recipe_versions.snapshot` is append-only. No retroactive mutation. `record_production` reads the version at time T for cost calculation (not the current version). When changing a recipe, the trigger creates a new `recipe_versions` row — never UPDATE existing snapshots.
 
 ## Audit checklist (combo: précision / automatisation / sécurité / traçabilité)
 
@@ -166,7 +166,7 @@ Run a section when you suspect a gap. Each check is a discrete SQL/code query yo
 ### A. Précision (computed matches stored)
 
 - [ ] **Opname diff** — for every product, `current_stock - SUM(quantity) FROM stock_movements GROUP BY product_id` must equal 0 (column is `quantity`, signed — NOT `quantity_delta`). Caveat: only holds if ALL initial stock entered via the ledger; on a seeded dev DB most products have `current_stock` set without movements, so restrict to products that HAVE movements (`JOIN stock_movements`).
-- [ ] **WAC validity** — recompute weighted average cost from `stock_movements` `purchase` rows carrying a `unit_cost` (NOT `incoming` — those rarely have unit_cost and don't feed WAC) and compare to `products.cost_price`. Drift > 0.01 IDR = audit (likely manual UPDATE or `update_cost_price_v1`, see Pattern #5).
+- [ ] **WAC validity** — recompute weighted average cost from `stock_movements` `purchase` rows carrying a `unit_cost` (NOT `incoming` — those rarely have unit_cost and don't feed WAC) and compare to `products.cost_price`. Drift au-delà de 0.01 IDR = audit (likely manual UPDATE or `update_cost_price`, see Pattern #5).
 - [ ] **Recipe yield** — for every `production_records` row, compare `quantity_produced` to `recipes.yield_quantity * batch_count`. Recurring discrepancy = recipe definition drift or production input was approximated.
 - [ ] **Negative stock** — `SELECT * FROM products WHERE current_stock < 0` should return zero rows. Anything else means a sale was allowed without a stock gate, OR a non-sequenced movement.
 - [ ] **Orphan lot_id** *(infra dormante, hors périmètre ADR-004)* — intégrité FK résiduelle : `stock_movements.lot_id NOT NULL AND lot_id NOT IN (SELECT id FROM stock_lots)` doit rester vide. Aucune conséquence métier — plus aucun chantier n'alimente `stock_lots`.
@@ -176,7 +176,7 @@ Run a section when you suspect a gap. Each check is a discrete SQL/code query yo
 - [ ] **JE trigger attached** — `SELECT * FROM pg_trigger WHERE tgname = 'tr_20_je_emit'` confirms attachment (S17 `_023`). (Also expect `tr_update_product_cost_on_purchase` = the WAC trigger.)
 - [ ] **Cron `mark_expired_lots_hourly` — DÉSACTIVÉ, et c'est voulu.** Vérifié live sur `ikcyvlovptebroadgtvd` le **2026-07-27** : `cron.job` → schedule `7 * * * *`, **`active = false`**. C'est l'application de la **conséquence 2 d'ADR-004**, pas une panne. **Ne pas le réactiver.** S'il repasse à `active = true`, c'est une régression à signaler.
 - [ ] **WAC cascade on receive** — only `purchase` (PO) feeds WAC → fires `tr_snapshot_on_product_cost_change` → ancestor `recipe_versions` re-snapshot. `incoming` does NOT (voir **Cost backbone** ci-dessus). Run pgTAP `recipe_cascade_snapshot.test.sql`.
-- [ ] **Low_stock alerts cron** — ❌ confirmed ABSENT (2026-05-30). Only on-demand RPC `get_low_stock_v1` (`_094`) exists; no proactive cron. Alerts are reactive only.
+- [ ] **Low_stock alerts cron** — ❌ confirmed ABSENT (2026-05-30). Only on-demand RPC `get_low_stock` exists; no proactive cron. Alerts are reactive only.
 - [ ] **Recipe re-snapshot trigger** — `AFTER UPDATE ON recipes` creates a new `recipe_versions` row? Manual snapshots = drift risk.
 
 ### C. Sécurité
@@ -186,7 +186,7 @@ Run a section when you suspect a gap. Each check is a discrete SQL/code query yo
 - [ ] **Perm gate** — every stock RPC checks `has_permission(auth.uid(), 'inventory.<scope>.<action>')`. Grep for any `SECURITY DEFINER` function without a `has_permission` call.
 - [ ] **audit_logs row** — every mutation produces an audit_log row with canonical cols `actor_id / action / entity_type / entity_id / metadata`. Missing rows = silent operations.
 - [ ] **Idempotency key validation** — UUID v4 enforced via regex or CHECK? Cross-RPC replay tracked in audit_logs as `*.replay` action?
-- [ ] **CHECK constraints intact** — `unit IS NOT NULL` (post-S16 `_016`), `reason ≥ 3` except sale/sale_void (`chk_stock_movements_reason_required`), `unit_cost >= 0`, `idempotency_key UNIQUE`, section constraint (S16 `_020` / S22 `_026000012`), `lot_id` FK (post-S17 `_042`). Note: nonzero-quantity is enforced by the `record_stock_movement_v1` primitive (`quantity_must_be_nonzero`), NOT a table CHECK — `cost_price_correction` legitimately writes `quantity=0` by bypassing the primitive.
+- [ ] **CHECK constraints intact** — `unit IS NOT NULL` (post-S16 `_016`), `reason ≥ 3` except sale/sale_void (`chk_stock_movements_reason_required`), `unit_cost >= 0`, `idempotency_key UNIQUE`, section constraint (S16 `_020` / S22 `_026000012`), `lot_id` FK (post-S17 `_042`). Note: nonzero-quantity is enforced by the `record_stock_movement` primitive (`quantity_must_be_nonzero`), NOT a table CHECK — `cost_price_correction` legitimately writes `quantity=0` by bypassing the primitive.
 
 ### D. Traçabilité
 
@@ -207,14 +207,14 @@ Run a section when you suspect a gap. Each check is a discrete SQL/code query yo
 ### 5.B — Before creating a new stock RPC
 - [ ] `SECURITY DEFINER` with explicit `has_permission(auth.uid(), 'inventory.<scope>.<action>')` gate.
 - [ ] `p_idempotency_key UUID` arg if retry-safe (it usually is).
-- [ ] Calls `record_stock_movement_v1` primitive — never direct `INSERT INTO stock_movements`.
+- [ ] Calls `record_stock_movement` primitive — never direct `INSERT INTO stock_movements`.
 - [ ] `audit_logs` insert with canonical cols.
 - [ ] REVOKE pair S25 (3 lines, see Pattern #7).
 - [ ] pgTAP coverage: happy path + perm denied + replay returns existing + edge cases (idempotent FK violation re-read).
 - [ ] Types regen via MCP `generate_typescript_types` → write to `packages/supabase/src/types.generated.ts` + commit.
 
 ### 5.C — Before touching a trigger (JE, spoilage, WAC cascade)
-- [ ] Identify every RPC that depends on the trigger. JE trigger is depended on by `record_production_v1`, `complete_order_with_payment` (sale movements), and all receive RPCs.
+- [ ] Identify every RPC that depends on the trigger. JE trigger is depended on by `record_production`, `complete_order_with_payment` (sale movements), and all receive RPCs.
 - [ ] Write an integration pgTAP test that exercises the full chain entry → production → sale, asserting the trigger fired the expected `journal_entries` row.
 - [ ] Cross-check historical correctives (S15-S17) for known regressions: DEV-S15-2.B-01 (recipe_versions cost reconstruction), DEV-S17-2.A-01 (`expandRecipeCascade` has no consumer in apps).
 - [ ] Additive migration first (new trigger function, attach), then drop the old in the next migration once production is stable.
@@ -223,7 +223,7 @@ Run a section when you suspect a gap. Each check is a discrete SQL/code query yo
 - [ ] Identify the invariant the constraint protects (see S25 `_014` / `_015` correctives — relaxing `orders.session_id NOT NULL` and the `refund_order_rpc` RECORD bug surfaced once another change exercised the path).
 - [ ] Check existing rows that would violate the new constraint — data migration must run first if any.
 - [ ] Regression test suite: `inventory*.test.sql` + `recipe_*.test.sql` + `*production*.test.sql` via MCP `execute_sql` BEGIN/ROLLBACK envelope.
-- [ ] RLS on `stock_movements` UPDATE/DELETE is non-negotiable — never relax. Find another mechanism if you need correction (a new `_void_v1` RPC, never UPDATE).
+- [ ] RLS on `stock_movements` UPDATE/DELETE is non-negotiable — never relax. Find another mechanism if you need correction (a new `_void` RPC, never UPDATE).
 
 ### 5.E — Before bumping an existing RPC `_vN` → `_vN+1`
 - [ ] New signature lives in a new migration file with a forward timestamp.

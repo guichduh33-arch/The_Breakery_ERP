@@ -36,6 +36,18 @@ promptSignals:
 
 # Orders — The Breakery ERP
 
+> **ADR applicables : ADR-009** (cycle de vie : aucune écriture sur `orders`/`order_items`
+> hors RPC ; transition `paid → completed` par trigger ; le void est la seule sortie de
+> `completed`) · **ADR-010** (un item verrouillé en cuisine est intouchable — annulation,
+> baisse de quantité, suppression : autorisation manager vérifiée serveur **et** perte
+> obligatoire) · **ADR-013** (void interdit après refund partiel · exactement une
+> contre-passation · nonce PIN manager sur toute remise · contrat d'idempotence
+> contraignant sur money-path et edit-items). Ils font loi : une proposition qui les
+> contredit se **signale**, elle ne s'implémente pas.
+> **Convention** : aucune version d'objet DB (`_vN`) dans ce fichier — on cite la **famille**
+> (`complete_order_with_payment`, `cancel_order_item`). La version vivante se vérifie dans
+> `supabase/migrations/` et au call-site, jamais ici.
+
 Expert on order business logic across POS (writes) and Backoffice (management). Two use-cases:
 
 1. **Guide** changes to the order lifecycle — new status transitions, edit-items flows, new filters.
@@ -188,10 +200,11 @@ Tests (vérité comportementale)
   supabase/tests/order_edit_items.test.sql           — S33, 12/12 PASS
   supabase/tests/complete_order_v10_display.test.sql — display-stock double-déduction
 
-Docs / workplan
-  CLAUDE.md — §S32 (get_orders_list_v1, schema discoveries) + §S33 (v2 server-filters, edit-items, realtime, void)
-  docs/workplan/specs/2026-05-29-session-33-spec.md
-  docs/workplan/plans/2026-05-29-session-33-plan.md
+Intention & décisions
+  docs/objectifs/ORDERS.md   — l'intention métier du module (ce qui est VOULU)
+  docs/adr/009-cycle-de-vie-ordres.md
+  docs/adr/010-verrou-items-envoyes-cuisine.md
+  docs/adr/013-comptabilite-integrite-void-refund-remise.md
 ```
 
 ---
