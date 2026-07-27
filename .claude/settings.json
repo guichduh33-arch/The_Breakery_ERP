@@ -265,16 +265,6 @@
         "longTerm": "30d"
       }
     },
-    "adr": {
-      "autoGenerate": true,
-      "directory": "/docs/adr",
-      "template": "madr"
-    },
-    "ddd": {
-      "trackDomains": true,
-      "validateBoundedContexts": true,
-      "directory": "/docs/ddd"
-    },
     "security": {
       "autoScan": true,
       "scanOnEdit": true,

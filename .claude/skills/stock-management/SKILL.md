@@ -43,6 +43,17 @@ promptSignals:
 
 # Stock Management — The Breakery ERP
 
+> **ADR applicables : ADR-004** (2026-07-04, ACTÉ) — **ni dates de péremption, ni expiration
+> automatique, ni consommation FIFO.** Décision propriétaire : chantier abandonné,
+> **ne pas re-proposer** (ADR-004 conséq. 1). Le modèle retenu est le suivi en **quantité
+> globale par produit** ; la péremption se gère opérationnellement par déclaration de perte
+> (`waste_stock`, raison `Expired`).
+> `stock_lots` est **conservée dormante** (pas de DROP — réversibilité, conséq. 2).
+> Partout ci-dessous, une mention de lot / `lot_id` / FIFO décrit une **infra dormante**,
+> jamais une consigne à appliquer ni un défaut à corriger.
+> Hors périmètre (homonymes, conséq. 5) : le FIFO d'allocation des paiements B2B et
+> l'expiration des points de fidélité.
+
 Expert on the stock flow from raw materials through semi-finished to finished products. Two use cases:
 
 1. **Audit** the existing flow against 4 dimensions: precision, automation, security, traceability.
@@ -76,12 +87,12 @@ adjust_stock_v1
 - **Ledger actor is `created_by`** (FK user_profiles). There is NO `actor_id` on `stock_movements` (`actor_id` is the `audit_logs` column).
 - **Free-text reason column is `reason`** (TEXT, ≥3 chars except sale/sale_void via CHECK `chk_stock_movements_reason_required`). There is NO `reason_code`.
 - **JE trigger is `tr_20_je_emit`** (the trigger name); the *function* it calls is `tr_stock_movement_je`. Query `pg_trigger` by `tr_20_je_emit`.
-- **WAC trigger is `tr_update_product_cost_on_purchase`** — `AFTER INSERT … WHEN (movement_type IN ('purchase','production_in'))` since the 2026-06-12 audit fix (`20260626000015`). WAC lives in a trigger, NOT inside `receive_stock_v1`, and it does **NOT** fire on `movement_type='incoming'` (see "Known gap: incoming bypasses WAC+FIFO" below).
+- **WAC trigger is `tr_update_product_cost_on_purchase`** — `AFTER INSERT … WHEN (movement_type IN ('purchase','production_in'))` since the 2026-06-12 audit fix (`20260626000015`). WAC lives in a trigger, NOT inside `receive_stock`, and it does **NOT** fire on `movement_type='incoming'` (voir **Cost backbone** ci-dessous).
 
 ### Traceability backbone
 
 - `stock_movements` append-only ledger (RLS revokes UPDATE/DELETE for `authenticated`)
-- `lot_id` (S17 FIFO) propagated on every consumption — **but `incoming`/`pos_quick_receive` rows carry `lot_id = NULL`** (no lot created → outside FIFO + spoilage)
+- `lot_id` — **infra dormante, hors périmètre ADR-004.** Propagation partielle et non garantie ; `incoming`/`pos_quick_receive` portent `lot_id = NULL`. **Ce n'est pas un défaut à corriger** : la traçabilité par lot n'est pas un objectif du produit.
 - `reason`, `from_section_id`, `to_section_id` (see schema-reality note above)
 - `p_idempotency_key` UUID → `stock_movements.idempotency_key UUID UNIQUE` (replay-safe)
 - trigger `tr_20_je_emit` (function `tr_stock_movement_je`) → `journal_entries` automatic, **only** for `waste / adjustment_* / opname_* / production_*` (incoming/purchase/sale/transfer/reservation emit NO JE here — sale/purchase JEs come from order/GRN triggers)
@@ -110,7 +121,7 @@ adjust_stock_v1
 
 ## Audit 2026-06-12 — fixes shipped + ledger conventions
 
-Plan : `docs/workplan/plans/2026-06-12-stock-audit-fixes-plan.md` ; audit : `docs/audit/2026-06-12-stock-management-audit.md`. Migrations `20260626000010..016`.
+Migrations `20260626000010..016`.
 
 **Fixes shipped (don't re-flag these as gaps):**
 - **C2 réparé** (`_010`) — `record_stock_movement_v1` accepte le contexte cron : profil SYSTEM `00000000-0000-0000-0000-000000000999` (`SYS-CRON`, pin_hash non-bcrypt, is_active=false) utilisé quand `auth.uid() IS NULL AND session_user = 'postgres'`. ⚠️ Si le pooler / l'utilisateur d'exécution des crons change, re-vérifier la condition `session_user='postgres'`.
@@ -121,7 +132,7 @@ Plan : `docs/workplan/plans/2026-06-12-stock-audit-fixes-plan.md` ; audit : `doc
 - **M5 réparé** (`_015`) — voir Cost backbone ci-dessus (production_in au coût réel + WAC).
 - **m1 réparé** (`_016`) — REVOKE TRUNCATE/TRIGGER/REFERENCES sur les 5 tables stock (`stock_movements`, `stock_lots`, `section_stock`, `display_stock`, `display_movements`) FROM authenticated, anon.
 
-**Statut M3 — FIFO non câblé (fausse assurance) :** les lots existent et le spoilage cron tourne, mais la consommation (sale/production_out/waste/transfer_out) ne décrémente qu'au mieux UN lot heuristique dans la primitive. Spec dédiée requise avant tout code (`docs/workplan/specs/2026-06-XX-fifo-consumption-spec.md`) — un fix partiel ferait auto-waster du stock déjà vendu maintenant que le cron C2 est réparé.
+**Statut M3 — FIFO non câblé : CLOS PAR ADR-004, ce n'est pas un gap.** Les lots existent en base mais la consommation (sale/production_out/waste/transfer_out) ne les décrémente pas, et le cron d'expiration est désactivé. **Infra dormante, hors périmètre ADR-004** : aucune spec, aucun développement, ne pas re-proposer. Ne pas re-flaguer comme dette technique.
 
 **Conventions ledger (actées, pas des bugs) :**
 - **m9** — l'audit `stock.movement` a pour `subject_id` l'**id du mouvement** ; le produit est dans `payload`/metadata. Ne pas "corriger" vers product_id.
@@ -145,7 +156,7 @@ Plan : `docs/workplan/plans/2026-06-12-stock-audit-fixes-plan.md` ; audit : `doc
    ```
    `REVOKE FROM anon` alone is insufficient — anon inherits via PUBLIC.
 8. **`tr_20_je_emit` trigger** (S17 `_022/_023`, function `tr_stock_movement_je`) emits a `journal_entry` on INSERT — but ONLY for `waste / adjustment_* / opname_* / production_*` (it early-returns for incoming/purchase/sale/transfer/reservation, and skips zero-value postings). It is idempotent (UNIQUE index `journal_entries_je_idempotency_uniq`) and fiscal-guarded (`check_fiscal_period_open`). If you add a new `movement_type` that needs accounting impact, add its DR/CR mapping in the CASE block or it silently emits nothing (no P0002 unless you add it to the handled set without a mapping key).
-9. **Lot_id propagation (S17)** — FIFO on `stock_lots`. Every RPC that consumes stock (sale, production_out, waste, transfer_out) MUST respect FIFO or opt out with a documented business reason.
+9. **`lot_id` / `stock_lots` — infra dormante (ADR-004)** — aucun RPC de consommation n'est tenu de respecter FIFO. **Ne pas ajouter de logique FIFO** à un RPC ; ne pas traiter un `lot_id` absent comme un bug. La table est conservée pour réversibilité, pas pour usage.
 10. **Recipe cascade immutable** (S15 + S17) — `recipe_versions.snapshot` is append-only. No retroactive mutation. `record_production_v1` reads the version at time T for cost calculation (not the current version). When changing a recipe, the trigger creates a new `recipe_versions` row — never UPDATE existing snapshots.
 
 ## Audit checklist (combo: précision / automatisation / sécurité / traçabilité)
@@ -158,13 +169,13 @@ Run a section when you suspect a gap. Each check is a discrete SQL/code query yo
 - [ ] **WAC validity** — recompute weighted average cost from `stock_movements` `purchase` rows carrying a `unit_cost` (NOT `incoming` — those rarely have unit_cost and don't feed WAC) and compare to `products.cost_price`. Drift > 0.01 IDR = audit (likely manual UPDATE or `update_cost_price_v1`, see Pattern #5).
 - [ ] **Recipe yield** — for every `production_records` row, compare `quantity_produced` to `recipes.yield_quantity * batch_count`. Recurring discrepancy = recipe definition drift or production input was approximated.
 - [ ] **Negative stock** — `SELECT * FROM products WHERE current_stock < 0` should return zero rows. Anything else means a sale was allowed without a stock gate, OR a non-sequenced movement.
-- [ ] **Orphan lot_id** — `stock_movements.lot_id NOT NULL AND lot_id NOT IN (SELECT id FROM stock_lots)` should be empty. If not, the FK was relaxed somewhere (check `supabase/migrations/`).
+- [ ] **Orphan lot_id** *(infra dormante, hors périmètre ADR-004)* — intégrité FK résiduelle : `stock_movements.lot_id NOT NULL AND lot_id NOT IN (SELECT id FROM stock_lots)` doit rester vide. Aucune conséquence métier — plus aucun chantier n'alimente `stock_lots`.
 
 ### B. Automatisation (triggers + crons active)
 
 - [ ] **JE trigger attached** — `SELECT * FROM pg_trigger WHERE tgname = 'tr_20_je_emit'` confirms attachment (S17 `_023`). (Also expect `tr_update_product_cost_on_purchase` = the WAC trigger.)
-- [ ] **Spoilage trigger / cron** — confirmed: `mark_expired_lots_hourly` runs `7 * * * *` (flips `stock_lots`→expired + auto-waste). `SELECT * FROM cron.job`. ⚠️ only catches stock that HAS a lot — `incoming` rows have none.
-- [ ] **WAC cascade on receive** — only `purchase` (PO) feeds WAC → fires `tr_snapshot_on_product_cost_change` → ancestor `recipe_versions` re-snapshot. `incoming` does NOT (see "Known gap" above). Run pgTAP `recipe_cascade_snapshot.test.sql`.
+- [ ] **Cron `mark_expired_lots_hourly` — DÉSACTIVÉ, et c'est voulu.** Vérifié live sur `ikcyvlovptebroadgtvd` le **2026-07-27** : `cron.job` → schedule `7 * * * *`, **`active = false`**. C'est l'application de la **conséquence 2 d'ADR-004**, pas une panne. **Ne pas le réactiver.** S'il repasse à `active = true`, c'est une régression à signaler.
+- [ ] **WAC cascade on receive** — only `purchase` (PO) feeds WAC → fires `tr_snapshot_on_product_cost_change` → ancestor `recipe_versions` re-snapshot. `incoming` does NOT (voir **Cost backbone** ci-dessus). Run pgTAP `recipe_cascade_snapshot.test.sql`.
 - [ ] **Low_stock alerts cron** — ❌ confirmed ABSENT (2026-05-30). Only on-demand RPC `get_low_stock_v1` (`_094`) exists; no proactive cron. Alerts are reactive only.
 - [ ] **Recipe re-snapshot trigger** — `AFTER UPDATE ON recipes` creates a new `recipe_versions` row? Manual snapshots = drift risk.
 
@@ -180,10 +191,10 @@ Run a section when you suspect a gap. Each check is a discrete SQL/code query yo
 ### D. Traçabilité
 
 - [ ] **Ledger continuity** — no gap in `stock_movements` sequence integrity. If the sequence is bumped without inserts, investigate.
-- [ ] **Lot_id on consumption** — `sale`, `production_out`, `waste`, `transfer_out` movements must always reference a specific `lot_id`. Rows with `lot_id IS NULL` for these types = traceability gap.
+- [ ] **Lot_id on consumption — SANS OBJET (ADR-004).** Un `lot_id IS NULL` sur `sale` / `production_out` / `waste` / `transfer_out` **n'est pas** un défaut de traçabilité : la traçabilité par lot n'est pas un objectif. Infra dormante — ne pas ouvrir de ticket là-dessus.
 - [ ] **`reason` populated** — for `adjustment*`, `waste`, never NULL/blank (column is `reason`, NOT `reason_code`). Use `SELECT * FROM stock_movements WHERE movement_type IN ('adjustment','adjustment_in','adjustment_out','waste') AND (reason IS NULL OR length(trim(reason)) < 3)`.
 - [ ] **Idempotency replay distinguished** — audit_logs distinguishes `*.created` vs `*.replay` to spot retries. If the same action appears N times without `.replay` suffix, the idempotency layer was bypassed.
-- [ ] **Chain entry → exit** — for any product, you can trace at least one row of type `purchase`/`incoming` → `production_in/out` → `sale` via `lot_id` propagation. If chains break, FIFO was bypassed or rows were forced via direct INSERT.
+- [ ] **Chain entry → exit** — pour un produit, on doit pouvoir tracer `purchase`/`incoming` → `production_in/out` → `sale` **dans le ledger** (`stock_movements`, `reference_type`/`reference_id`, `reason`). **Ne pas s'appuyer sur `lot_id`** (infra dormante, ADR-004). Une chaîne rompue signale des lignes forcées par INSERT direct.
 
 ## Preventive checklists (5 concrete cases)
 
@@ -225,10 +236,9 @@ Run a section when you suspect a gap. Each check is a discrete SQL/code query yo
 ## Sources de vérité (pointers)
 
 ```
-Module reference (read first, canonical — fiches réel-vs-demandé, code-verified)
-  docs/workplan/remise-a-plat/00-INDEX.md               # index vagues + décisions
-  docs/workplan/remise-a-plat/                          # fiches par module (stock / inventory / recipes / production)
-  # ⚠️ docs/reference/04-modules/ est STALE (V2/pré-refactor) — ne fait plus foi
+Décisions & intentions (lire en premier — hiérarchie de vérité, cf. CLAUDE.md)
+  docs/adr/                                            # décisions actées, immuables — ADR-004 gouverne ce domaine
+  docs/objectifs/                                      # ce qui est voulu, écrit par le propriétaire
 
 Migrations (chronological order to understand history)
   supabase/migrations/20260516000001..024_*.sql         # S16 stock init + RPCs
