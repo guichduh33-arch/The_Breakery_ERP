@@ -296,8 +296,9 @@ Le hook `useTabletOrderReceiver` écoute en continu les commandes envoyées depu
 
 - Un serveur prend une commande à table avec sa tablette.
 - La commande arrive en notification dans `TabletOrdersPanel` côté caisse.
-- la commande s'enregistre automatiquement dans les commande on hold.
-- puis la commande  suit le flux normal (envoi cuisine → encaissement).
+- La commande s'enregistre automatiquement dans les commandes on-hold.
+- Puis elle suit le flux normal (envoi cuisine → encaissement).
+
 Bénéfice métier : **dispatcher la prise de commande entre la salle et le comptoir** sans ressaisie.
 
 ---
@@ -371,7 +372,7 @@ Bénéfice métier : **clôture rigoureuse en 5 minutes** avec preuves chiffrée
 
 | Priorité | Évolution | Bénéfice attendu |
 |---|---|---|
-| 🔴 | **Mode dégradé offline** | Continuer à encaisser pendant une coupure courte (queue local synchronisée au retour). |
+| 🔴 | **Offline complet — tous moyens de paiement** | Pendant une coupure : prise de commande **et** encaissement quel que soit le moyen — l'EDC carte/QRIS a sa propre connexion SIM, indépendante du Wi-Fi boutique, le POS ne fait qu'enregistrer le règlement. **Sans limite de durée**, **partage d'addition compris**. File locale rejouée au retour du réseau. Résiduels techniques : le replay ne porte aujourd'hui qu'un seul règlement cash (à étendre aux autres méthodes et au multi-tender), la fenêtre `offline_max_hours` (4 h) est à retirer, le split est bloqué offline. Contrôle : rapprocher les tickets EDC aux règlements non-cash rejoués. |
 | 🔴 | **Pre-authorization cartes** | Pour les commandes dine-in, pré-autoriser la carte à l'arrivée et finaliser au départ. |
 | 🟠 | **Réservation / pré-commande client** | Prendre une commande à retirer plus tard (anniversaire, gâteau sur mesure) avec acompte. |
 | 🟠 | **Tableau "Tables ouvertes" en vue principale** | Vue dédiée pour le dine-in avec statut de chaque table (vide / commandée / servie / à encaisser). |
