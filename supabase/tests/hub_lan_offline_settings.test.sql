@@ -1,10 +1,15 @@
 -- supabase/tests/hub_lan_offline_settings.test.sql
--- Spec 006x lot 4 (migrations 20260721000197 + 20260721000198) —
--- business_config offline_cash_enabled / offline_max_hours, branches
--- set_setting_v5 + catégorie 'network' de get_settings_by_category_v8, et
--- pay_existing_order_v16 (p_offline_replay, arbitrage A4). Auth pattern :
--- EMP000 (ADMIN) porte settings.update + settings.read (mirror
--- settings_kot_copies.test.sql).
+-- ADR-015 (migration 20260727000252) — encaissement hors-ligne LAN étendu à
+-- tous les moyens de paiement sauf l'avoir :
+--   * business_config.offline_payments_enabled (ex offline_cash_enabled) ;
+--   * offline_max_hours SUPPRIMÉE (plus de fenêtre de blocage) ;
+--   * set_setting_v11 / get_settings_by_category_v9 ;
+--   * pay_existing_order_v16 : p_payments multi-règlements + p_offline_replay,
+--     qui ne bypasse PAS le gate store_credit.
+--
+-- Remplace la suite spec 006x lot 4, devenue caduque (elle appelait
+-- set_setting_v5, droppée depuis). Auth : EMP000 (ADMIN) porte
+-- settings.update + settings.read.
 --
 -- Run via MCP execute_sql wrapped BEGIN/ROLLBACK (ou API-from-file).
 
@@ -23,68 +28,65 @@ BEGIN
     jsonb_build_object('sub', v_admin_uid, 'role', 'authenticated')::TEXT, true);
 END $seed$;
 
--- 1: colonnes présentes aux défauts spec (false / 4 h).
+-- 1: la colonne renommée existe, défaut false INCHANGÉ (activation explicite).
 SELECT ok(
-  (SELECT offline_cash_enabled = false AND offline_max_hours = 4
-   FROM business_config WHERE id = 1),
-  'business_config offline_* columns exist with defaults false/4');
+  (SELECT offline_payments_enabled = false FROM business_config WHERE id = 1),
+  'business_config.offline_payments_enabled exists, defaults to false');
 
--- 2: versioning monotone — v4/v3/v12 droppées dans _197/_198.
+-- 2: les deux anciennes colonnes ont disparu.
+SELECT ok(
+  NOT EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'business_config'
+                AND column_name IN ('offline_cash_enabled', 'offline_max_hours')),
+  'offline_cash_enabled and offline_max_hours columns are gone');
+
+-- 3: versioning monotone — les versions précédentes sont droppées.
 SELECT ok(
   NOT EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
               WHERE n.nspname = 'public'
-                AND p.proname IN ('set_setting_v4', 'get_settings_by_category_v3', 'pay_existing_order_v12')),
-  'set_setting_v4, get_settings_by_category_v3 and pay_existing_order_v12 are dropped');
+                AND p.proname IN ('set_setting_v10', 'get_settings_by_category_v8')),
+  'set_setting_v10 and get_settings_by_category_v8 are dropped');
 
--- 3: la catégorie network expose exactement les 2 clés aux défauts.
+-- 4: la catégorie network expose EXACTEMENT une clé.
 SELECT is(
-  get_settings_by_category_v8('network')->'settings',
-  jsonb_build_object('offline_cash_enabled', false, 'offline_max_hours', 4),
-  'network category returns the 2 offline keys at defaults');
+  get_settings_by_category_v9('network')->'settings',
+  jsonb_build_object('offline_payments_enabled', false),
+  'network category returns exactly the single offline key at default');
 
--- 4: activation explicite du cash offline.
+-- 5: activation explicite du hors-ligne.
 SELECT lives_ok(
-  $$SELECT set_setting_v5('offline_cash_enabled', 'true'::jsonb, 'network')$$,
-  'set offline_cash_enabled=true succeeds');
+  $$SELECT set_setting_v11('offline_payments_enabled', 'true'::jsonb, 'network')$$,
+  'set offline_payments_enabled=true succeeds');
 
--- 5: fenêtre élargie légale.
-SELECT lives_ok(
-  $$SELECT set_setting_v5('offline_max_hours', '8'::jsonb, 'network')$$,
-  'set offline_max_hours=8 succeeds');
-
--- 6: zéro -> rejeté (borne basse 1).
+-- 6: mauvais type -> rejeté.
 SELECT throws_ok(
-  $$SELECT set_setting_v5('offline_max_hours', '0'::jsonb, 'network')$$,
-  '22023', NULL, 'offline_max_hours=0 rejected (out of [1,24])');
+  $$SELECT set_setting_v11('offline_payments_enabled', '"yes"'::jsonb, 'network')$$,
+  '22023', NULL, 'offline_payments_enabled="yes" rejected (expects boolean)');
 
--- 7: au-delà de 24 h -> rejeté.
+-- 7: la clé supprimée est désormais INCONNUE (et non plus validée).
 SELECT throws_ok(
-  $$SELECT set_setting_v5('offline_max_hours', '25'::jsonb, 'network')$$,
-  '22023', NULL, 'offline_max_hours=25 rejected (out of [1,24])');
+  $$SELECT set_setting_v11('offline_max_hours', '8'::jsonb, 'network')$$,
+  '22023', NULL, 'offline_max_hours is now an unknown setting key');
 
--- 8: non-entier -> rejeté.
-SELECT throws_ok(
-  $$SELECT set_setting_v5('offline_max_hours', '2.5'::jsonb, 'network')$$,
-  '22023', NULL, 'offline_max_hours=2.5 rejected (not an integer)');
-
--- 9: mauvais type -> rejeté.
-SELECT throws_ok(
-  $$SELECT set_setting_v5('offline_cash_enabled', '"yes"'::jsonb, 'network')$$,
-  '22023', NULL, 'offline_cash_enabled="yes" rejected (expects boolean)');
-
--- 10: round-trip — l'état final reflète les écritures (true / 8).
+-- 8: round-trip — l'état final reflète l'écriture.
 SELECT is(
-  get_settings_by_category_v8('network')->'settings',
-  jsonb_build_object('offline_cash_enabled', true, 'offline_max_hours', 8),
-  'final network settings reflect the round-trip (true/8)');
+  get_settings_by_category_v9('network')->'settings',
+  jsonb_build_object('offline_payments_enabled', true),
+  'final network settings reflect the round-trip (true)');
 
--- 11: audit row (chemin mutualisé set_setting) avec key/old/new/category.
+-- 9: une branche SANS RAPPORT survit à la dérivation v10 -> v11 (garde-fou
+--    contre une découpe qui aurait emporté une partie du CASE).
+SELECT lives_ok(
+  $$SELECT set_setting_v11('allow_negative_stock', 'true'::jsonb, 'inventory')$$,
+  'an unrelated setting branch still works after the v11 derivation');
+
+-- 10: audit row (chemin mutualisé set_setting) avec key/old/new/category.
 DO $audit$ DECLARE v_md JSONB; BEGIN
   SELECT metadata INTO v_md
     FROM audit_logs
    WHERE action = 'setting.update'
-     AND metadata->>'key' = 'offline_max_hours'
-     AND metadata->>'new' = '8'
+     AND metadata->>'key' = 'offline_payments_enabled'
+     AND metadata->>'new' = 'true'
    LIMIT 1;
   PERFORM set_config('breakery.t_audit_pass',
     (v_md IS NOT NULL
@@ -92,31 +94,41 @@ DO $audit$ DECLARE v_md JSONB; BEGIN
      AND v_md ? 'old')::TEXT, true);
 END $audit$;
 SELECT ok(current_setting('breakery.t_audit_pass')::BOOLEAN,
-  'audit_logs setting.update row for offline_max_hours has key/old/new/category');
+  'audit_logs setting.update row for offline_payments_enabled has key/old/new/category');
 
--- 12: pay_existing_order_v16 porte p_offline_replay boolean (A4).
+-- 11: pay_existing_order_v16 porte p_payments ET p_offline_replay.
 SELECT ok(
-  (SELECT pg_get_function_identity_arguments(p.oid) LIKE '%p_offline_replay boolean%'
+  (SELECT pg_get_function_identity_arguments(p.oid) LIKE '%p_payments jsonb%'
+      AND pg_get_function_identity_arguments(p.oid) LIKE '%p_offline_replay boolean%'
    FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
    WHERE n.nspname = 'public' AND p.proname = 'pay_existing_order_v16'),
-  'pay_existing_order_v16 signature carries p_offline_replay boolean');
+  'pay_existing_order_v16 carries p_payments and p_offline_replay');
 
--- 13: la branche A4 force allow_negative et trace offline_replay dans l'audit.
+-- 12: le multi-règlements est borné 1..5 côté serveur (ADR-015 : le split
+--     hors-ligne s'appuie dessus, il ne le contourne pas).
+SELECT ok(
+  (SELECT prosrc LIKE '%Invalid tender count%'
+   FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+   WHERE n.nspname = 'public' AND p.proname = 'pay_existing_order_v16'),
+  'pay_existing_order_v16 enforces the 1..5 tender bound');
+
+-- 13: p_offline_replay force allow_negative MAIS ne bypasse PAS le gate
+--     store_credit — c'est ce qui justifie l'exclusion de l'avoir (ADR-015).
 SELECT ok(
   (SELECT prosrc LIKE '%IF p_offline_replay THEN%'
       AND prosrc LIKE '%v_allow_negative := true%'
-      AND prosrc LIKE '%''offline_replay'',  p_offline_replay%'
+      AND prosrc LIKE '%Insufficient store credit%'
    FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
    WHERE n.nspname = 'public' AND p.proname = 'pay_existing_order_v16'),
-  'v13 body forces allow_negative under replay and stamps offline_replay in audit metadata');
+  'offline replay forces allow_negative but the store-credit gate still fires');
 
--- 14: defense-in-depth — anon n'exécute AUCUNE des 3 nouvelles fonctions.
+-- 14: defense-in-depth — anon n'exécute aucune des 3 fonctions.
 SELECT ok(
   (SELECT bool_and(NOT has_function_privilege('anon', p.oid, 'EXECUTE'))
    FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
    WHERE n.nspname = 'public'
-     AND p.proname IN ('set_setting_v5', 'get_settings_by_category_v8', 'pay_existing_order_v16')),
-  'anon has no EXECUTE on set_setting_v5 / get_settings_by_category_v8 / pay_existing_order_v16');
+     AND p.proname IN ('set_setting_v11', 'get_settings_by_category_v9', 'pay_existing_order_v16')),
+  'anon has no EXECUTE on set_setting_v11 / get_settings_by_category_v9 / pay_existing_order_v16');
 
 SELECT * FROM finish();
 ROLLBACK;

@@ -7,6 +7,11 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 const rpcMock = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/supabase', () => ({ supabase: { rpc: rpcMock } }));
 
+// ADR-015 — la trace d'un replay de paiement en échec est un signal comptable :
+// elle doit porter le montant TOTAL de la vente, pas celui du 1ᵉʳ règlement.
+const emitPosEventMock = vi.hoisted(() => vi.fn());
+vi.mock('@/features/audit/emitPosEvent', () => ({ emitPosEvent: emitPosEventMock }));
+
 import { replayOfflineOutbox } from '../offlineReplay';
 import { enqueueIntent, getPendingIntents } from '../offlineOutbox';
 import { useAuthStore } from '@/stores/authStore';
@@ -19,6 +24,7 @@ function seedAuth(): void {
 beforeEach(() => {
   localStorage.clear();
   rpcMock.mockReset();
+  emitPosEventMock.mockReset();
   seedAuth();
   useCartStore.setState({ pickedUpOrderId: null, offlineOrder: null });
 });
@@ -203,6 +209,89 @@ describe('replayOfflineOutbox', () => {
       p_order_id: 'db-1', p_idempotency_key: 'idem-1', p_offline_replay: true,
     });
     expect(await getPendingIntents()).toEqual([]);
+  });
+
+  // ── ADR-015 — multi-règlements toutes méthodes (p_payments) ────────────────
+  //
+  // NB : tous les cas ci-dessus utilisent le kind legacy `cash_payment`. Ils
+  // valent désormais couverture de non-régression du format historique — un
+  // terminal mis à jour avec des ventes en file ne doit rien perdre.
+
+  it('replays a multi-tender payment via p_payments (never p_payment)', async () => {
+    rpcMock.mockImplementation((fn: string) => {
+      if (fn === 'fire_counter_order_v4') {
+        return Promise.resolve({ data: { order_id: 'db-9', order_number: '#0099', idempotent_replay: false }, error: null });
+      }
+      return Promise.resolve({ data: { order_id: 'db-9' }, error: null });
+    });
+
+    await enqueueIntent({
+      kind: 'fire', id: 'root-9', root_client_uuid: 'root-9', seq: 1,
+      created_at: '2026-07-27T09:00:00.000Z', local_number: 'L-9',
+      session_id: 'sess-9', order_type: 'take_out', table_number: null,
+      items: [{ product_id: 'p1', quantity: 1, unit_price: 25000, modifiers: [] }],
+    });
+    await enqueueIntent({
+      kind: 'payment', id: 'idem-9', root_client_uuid: 'root-9', seq: 2,
+      created_at: '2026-07-27T09:01:00.000Z', local_number: 'L-9',
+      payments: [
+        { method: 'card', amount: 15000 },
+        { method: 'cash', amount: 10000, cash_received: 20000, change_given: 10000 },
+      ],
+    });
+    const res = await replayOfflineOutbox();
+
+    expect(res).toEqual({ replayed: 2, failed: 0 });
+    const payArgs = rpcMock.mock.calls[1]![1] as Record<string, unknown>;
+    expect(payArgs).toMatchObject({
+      p_order_id: 'db-9',
+      p_idempotency_key: 'idem-9',
+      p_offline_replay: true,
+      p_payments: [
+        { method: 'card', amount: 15000 },
+        { method: 'cash', amount: 10000, cash_received: 20000, change_given: 10000 },
+      ],
+    });
+    // La RPC rejette explicitement p_payment ET p_payments ensemble.
+    expect(payArgs).not.toHaveProperty('p_payment');
+    expect(await getPendingIntents()).toEqual([]);
+  });
+
+  it('replays a single non-cash tender via p_payments as well', async () => {
+    rpcMock.mockImplementation((fn: string) =>
+      fn === 'fire_counter_order_v4'
+        ? Promise.resolve({ data: { order_id: 'db-8', order_number: '#0088', idempotent_replay: true }, error: null })
+        : Promise.resolve({ data: {}, error: null }));
+
+    await enqueueIntent({
+      kind: 'payment', id: 'idem-8', root_client_uuid: 'root-8', seq: 1,
+      created_at: '2026-07-27T09:05:00.000Z', local_number: 'L-8',
+      payments: [{ method: 'qris', amount: 30000 }],
+    });
+    const res = await replayOfflineOutbox();
+
+    expect(res.replayed).toBe(1);
+    expect(rpcMock.mock.calls[1]![1]).toMatchObject({
+      p_order_id: 'db-8', p_payments: [{ method: 'qris', amount: 30000 }], p_offline_replay: true,
+    });
+  });
+
+  it('a failed multi-tender replay traces the TOTAL amount, not the first tender', async () => {
+    rpcMock.mockImplementation((fn: string) =>
+      fn === 'fire_counter_order_v4'
+        ? Promise.resolve({ data: { order_id: 'db-6', order_number: '#0066', idempotent_replay: true }, error: null })
+        : Promise.resolve({ data: null, error: { message: 'boom' } }));
+
+    await enqueueIntent({
+      kind: 'payment', id: 'idem-6', root_client_uuid: 'root-6', seq: 1,
+      created_at: '2026-07-27T09:10:00.000Z', local_number: 'L-6',
+      payments: [{ method: 'edc', amount: 40000 }, { method: 'cash', amount: 10000 }],
+    });
+    const res = await replayOfflineOutbox();
+
+    expect(res).toMatchObject({ replayed: 0, failed: 1, error: 'boom' });
+    expect(emitPosEventMock).toHaveBeenCalledWith('payment_failed', expect.objectContaining({ amount: 50000 }));
+    expect((await getPendingIntents()).length).toBe(1);
   });
 
   it('replays a tablet order with the original client_uuid', async () => {

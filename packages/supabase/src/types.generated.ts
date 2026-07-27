@@ -313,8 +313,7 @@ export type Database = {
           logo_url: string | null
           name: string
           npwp: string | null
-          offline_cash_enabled: boolean
-          offline_max_hours: number
+          offline_payments_enabled: boolean
           payment_method_fees: Json
           phone: string | null
           pin_lockout_minutes: number
@@ -356,8 +355,7 @@ export type Database = {
           logo_url?: string | null
           name?: string
           npwp?: string | null
-          offline_cash_enabled?: boolean
-          offline_max_hours?: number
+          offline_payments_enabled?: boolean
           payment_method_fees?: Json
           phone?: string | null
           pin_lockout_minutes?: number
@@ -399,8 +397,7 @@ export type Database = {
           logo_url?: string | null
           name?: string
           npwp?: string | null
-          offline_cash_enabled?: boolean
-          offline_max_hours?: number
+          offline_payments_enabled?: boolean
           payment_method_fees?: Json
           phone?: string | null
           pin_lockout_minutes?: number
@@ -7540,7 +7537,7 @@ export type Database = {
           total: number
         }[]
       }
-      get_settings_by_category_v8: {
+      get_settings_by_category_v9: {
         Args: { p_category: string }
         Returns: Json
       }
@@ -8454,7 +8451,7 @@ export type Database = {
         Args: { p_alts: Json; p_contexts: Json; p_product_id: string }
         Returns: Json
       }
-      set_setting_v10: {
+      set_setting_v11: {
         Args: { p_category: string; p_key: string; p_value: Json }
         Returns: undefined
       }
