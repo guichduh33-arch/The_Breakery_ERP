@@ -1,7 +1,7 @@
 // apps/pos/src/features/settings/hooks/__tests__/usePOSPresets.test.tsx
 //
 // Fix 403 cashier — the presets READ must go through business_config directly
-// (RLS auth_read), never through get_settings_by_category_v8 whose
+// (RLS auth_read), never through get_settings_by_category_v9 whose
 // settings.read gate rejects CASHIER/waiter (42501 → 403) and silently forced
 // the hardcoded fallbacks for the exact audience the presets are made for.
 // Mirrors the useEnabledPaymentMethods.test.tsx harness.

@@ -1,7 +1,7 @@
 // apps/backoffice/src/pages/settings/SettingsCustomerDisplayPage.tsx
 //
 // S73 Lot 2 — org-level customer display copy (business_config via
-// get_settings_by_category_v8('customer_display') / set_setting_v10).
+// get_settings_by_category_v9('customer_display') / set_setting_v11).
 // The POS display reads the same keys; '' = built-in default.
 import { useEffect, useState } from 'react';
 import { Button } from '@breakery/ui';

@@ -25,7 +25,7 @@ import { useTaxConfig } from '@/features/settings/hooks/useTaxConfig';
 import { useEnabledPaymentMethods } from '@/features/settings/hooks/useEnabledPaymentMethods';
 import { usePOSPresets } from '@/features/settings/hooks/usePOSPresets';
 import { useFireToStations } from '@/features/cart/hooks/useFireToStations';
-import { useOfflineCashGate } from '@/features/lan/hooks/useOfflineCashGate';
+import { useOfflinePaymentGate } from '@/features/lan/hooks/useOfflinePaymentGate';
 import { hubBus } from '@/features/lan/hubBusClient';
 import { enqueueIntent, nextIntentSeq } from '@/features/lan/offlineOutbox';
 import type { OrderPaidOfflinePayload } from '@/features/lan/busTopics';
@@ -94,7 +94,7 @@ export function usePaymentFlowLogic() {
   }, [selectedMethod, attachedCustomer]);
   const { mutation: fireToStations } = useFireToStations();
   // Spec 006x lot 4 — gate cash offline (mode + setting + fenêtre A5).
-  const offlineGate = useOfflineCashGate();
+  const offlineGate = useOfflinePaymentGate();
   const { presets } = usePOSPresets();
   const quickAmounts = presets.quickPayments;
 
@@ -191,24 +191,28 @@ export function usePaymentFlowLogic() {
     await dispatchCheckout(tendersToShip);
   }
 
-  // Spec 006x lot 4 — encaissement CASH en mode OFFLINE (A1b) : la vente est
-  // journalisée dans l'outbox durable (clé = idempotencyKey de la tentative)
-  // et rejouée vers pay_existing_order_v16 au retour du cloud. Aucun montant
-  // n'est validé serveur ici : cash exact/rendu calculés client, totaux au
-  // tarif catalogue — les flux online-only (promos, remise commande, points)
-  // sont refusés proprement en amont.
-  async function dispatchOfflineCash(tendersToShip: Tender[]): Promise<void> {
-    if (!offlineGate.cashAllowed) {
-      toast.error(
-        offlineGate.blockedReason === 'window_expired'
-          ? 'Fenêtre hors-ligne dépassée — encaissements bloqués jusqu\'au retour du cloud'
-          : 'Encaissement hors-ligne désactivé (Settings → Network)',
-      );
+  // ADR-015 — encaissement en mode OFFLINE : la vente est journalisée dans
+  // l'outbox durable (clé = idempotencyKey de la tentative) et rejouée vers
+  // pay_existing_order_v16 au retour du cloud. Aucun montant n'est validé
+  // serveur ici : cash exact/rendu calculés client, totaux au tarif catalogue —
+  // les flux online-only (promos, remise commande, points) sont refusés
+  // proprement en amont.
+  //
+  // Toutes les méthodes sont acceptées SAUF store_credit : l'EDC carte/QRIS
+  // encaisse par sa propre SIM et le POS ne fait qu'enregistrer, tandis que le
+  // solde d'un avoir se vérifie serveur sous verrou — un intent d'avoir rejeté
+  // au replay bloquerait tout le drain derrière lui.
+  async function dispatchOfflinePayment(tendersToShip: Tender[]): Promise<void> {
+    if (!offlineGate.paymentsAllowed) {
+      toast.error('Encaissement hors-ligne désactivé (Settings → Network)');
       return;
     }
-    const tender = tendersToShip[0];
-    if (tendersToShip.length !== 1 || tender?.method !== 'cash') {
-      toast.error('Hors-ligne : paiement CASH en un seul règlement uniquement');
+    if (tendersToShip.length < 1 || tendersToShip.length > 5) {
+      toast.error('Hors-ligne : 1 à 5 règlements par vente');
+      return;
+    }
+    if (tendersToShip.some((t) => t.method === 'store_credit')) {
+      toast.error('Avoir indisponible hors-ligne — retirer ce règlement');
       return;
     }
     const cartState = useCartStore.getState();
@@ -237,25 +241,30 @@ export function usePaymentFlowLogic() {
       return;
     }
 
-    const cashReceived = tender.cash_received ?? total;
-    const changeGiven = Math.max(0, cashReceived - total);
+    // Le rendu monnaie ne concerne que le volet espèces d'un split : les autres
+    // règlements sont encaissés au centime par leur propre canal.
+    const cashTenders = tendersToShip.filter((t) => t.method === 'cash');
+    const cashDue = cashTenders.reduce((sum, t) => sum + t.amount, 0);
+    const cashReceived = cashTenders.reduce((sum, t) => sum + (t.cash_received ?? t.amount), 0);
+    const changeGiven = Math.max(0, cashReceived - cashDue);
+    const methods = tendersToShip.map((t) => t.method);
     const paidAt = new Date().toISOString();
 
     emitPosEvent('payment_started', {
       amount: total,
       order_number_snap: offlineOrder.localNumber,
-      payload: { tenders: 1, method: 'cash', offline: true },
+      payload: { tenders: tendersToShip.length, methods, offline: true },
     });
 
     // 1. Outbox durable D'ABORD (spec §4.3) — la vente survit à un crash.
     await enqueueIntent({
-      kind: 'cash_payment',
+      kind: 'payment',
       id: idempotencyKey,
       root_client_uuid: offlineOrder.clientUuid,
       seq: nextIntentSeq(),
       created_at: paidAt,
       local_number: offlineOrder.localNumber,
-      payment: { method: 'cash', amount: total, cash_received: cashReceived, change_given: changeGiven },
+      payments: tendersToShip,
       ...(cart.customerId !== undefined ? { customer_id: cart.customerId } : {}),
     });
 
@@ -279,7 +288,7 @@ export function usePaymentFlowLogic() {
     emitPosEvent('payment_completed', {
       order_number_snap: offlineOrder.localNumber,
       amount: total,
-      payload: { method: 'cash', change_given: changeGiven, offline: true },
+      payload: { methods, change_given: changeGiven, offline: true },
     });
 
     setSuccess({
@@ -289,13 +298,15 @@ export function usePaymentFlowLogic() {
       changeGiven,
       pointsEarned: 0,
       customerName: attachedCustomer?.name ?? undefined,
-      paymentMethod: 'cash',
+      // Sur un split, la méthode « principale » affichée est celle du plus gros
+      // règlement — le ticket, lui, porte le détail complet.
+      paymentMethod: [...tendersToShip].sort((a, b) => b.amount - a.amount)[0]!.method,
     });
   }
 
   async function dispatchCheckout(tendersToShip: Tender[]): Promise<void> {
     if (offlineGate.offlineMode) {
-      await dispatchOfflineCash(tendersToShip);
+      await dispatchOfflinePayment(tendersToShip);
       return;
     }
     setLastError(null);

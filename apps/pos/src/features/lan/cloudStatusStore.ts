@@ -5,9 +5,9 @@
 // simple démarrage — il faut un échec de ping constaté.
 //
 // Lot 4 — offlineSince : horodatage de l'ENTRÉE en cloud-down (posé sur la
-// transition true→false, conservé pendant toute la coupure). Porte la fenêtre
-// offline maximale (arbitrage A5) : au-delà de offline_max_hours, le POS
-// bloque les nouveaux encaissements cash.
+// transition true→false, conservé pendant toute la coupure).
+// ADR-015 : ce timestamp ne pilote PLUS aucun blocage — la fenêtre de durée
+// maximale est supprimée. Il ne sert qu'à afficher depuis quand la coupure dure.
 
 import { create } from 'zustand';
 

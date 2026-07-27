@@ -1,25 +1,26 @@
 // apps/pos/src/features/settings/hooks/useOfflineNetworkConfig.ts
 //
-// Spec 006x lot 4 — réglages org de la catégorie `network` (migration _197)
-// côté POS. Miroir du pattern useEnabledPaymentMethods : SELECT direct
-// business_config sous le JWT PIN (pas de gate settings.read), staleTime court.
+// ADR-015 — réglages org de la catégorie `network` (migration _252) côté POS.
+// Miroir du pattern useEnabledPaymentMethods : SELECT direct business_config
+// sous le JWT PIN (pas de gate settings.read), staleTime court.
 //
-// FAIL-CLOSED sur offline_cash_enabled (défaut false — l'activation du cash
-// offline est explicite, arbitrage A1b) ; défaut 4 h sur la fenêtre (A5).
-// En coupure cloud, TanStack sert la dernière valeur cachée : la config lue
-// AVANT la coupure fait foi pendant la coupure — comportement voulu.
+// FAIL-CLOSED sur offline_payments_enabled (défaut false — l'activation du
+// hors-ligne est explicite). En coupure cloud, TanStack sert la dernière valeur
+// cachée : la config lue AVANT la coupure fait foi pendant la coupure —
+// comportement voulu.
+//
+// La fenêtre offline_max_hours a été supprimée par ADR-015 : une coupure longue
+// ne bloque plus les encaissements.
 
 import { useQuery, type QueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 
 export interface OfflineNetworkConfig {
-  offlineCashEnabled: boolean;
-  offlineMaxHours: number;
+  offlinePaymentsEnabled: boolean;
 }
 
 export const OFFLINE_NETWORK_DEFAULTS: OfflineNetworkConfig = {
-  offlineCashEnabled: false,
-  offlineMaxHours: 4,
+  offlinePaymentsEnabled: false,
 };
 
 const QUERY_KEY = ['business-config', 'offline-network'] as const;
@@ -27,17 +28,11 @@ const QUERY_KEY = ['business-config', 'offline-network'] as const;
 async function fetchConfig(): Promise<OfflineNetworkConfig> {
   const { data, error } = await supabase
     .from('business_config')
-    .select('offline_cash_enabled, offline_max_hours')
+    .select('offline_payments_enabled')
     .limit(1)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  return {
-    offlineCashEnabled: data?.offline_cash_enabled === true,
-    offlineMaxHours:
-      typeof data?.offline_max_hours === 'number' && data.offline_max_hours >= 1
-        ? data.offline_max_hours
-        : OFFLINE_NETWORK_DEFAULTS.offlineMaxHours,
-  };
+  return { offlinePaymentsEnabled: data?.offline_payments_enabled === true };
 }
 
 export function useOfflineNetworkConfig(): OfflineNetworkConfig {

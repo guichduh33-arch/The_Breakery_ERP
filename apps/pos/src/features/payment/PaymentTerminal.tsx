@@ -15,7 +15,6 @@ import {
   Button, Currency, FullScreenModal,
   SectionLabel, TenderListBuilder, cn,
 } from '@breakery/ui';
-import { toast } from 'sonner';
 import {
   calculateChange,
 } from '@breakery/domain';
@@ -109,22 +108,20 @@ export function PaymentTerminal() {
 
         {/* RIGHT — payment controls */}
         <section className="bg-bg-base p-6 overflow-y-auto">
-          {/* Spec 006x lot 4 — état hors-ligne : cash seul, ou blocage (A5). */}
+          {/* ADR-015 — état hors-ligne : tous moyens sauf l'avoir, ou blocage. */}
           {offlineGate.offlineMode && (
             <div
               data-testid="offline-cash-banner"
               className={cn(
                 'mb-4 rounded-md border px-4 py-3 text-sm',
-                offlineGate.cashAllowed
+                offlineGate.paymentsAllowed
                   ? 'border-gold/60 bg-gold-soft text-gold'
                   : 'border-red-fg/60 bg-red-fg/10 text-red-fg',
               )}
             >
-              {offlineGate.cashAllowed
-                ? 'Mode hors-ligne — encaissement CASH uniquement, resynchronisé au retour du cloud'
-                : offlineGate.blockedReason === 'window_expired'
-                  ? 'Fenêtre hors-ligne dépassée — encaissements bloqués jusqu\'au retour du cloud'
-                  : 'Encaissement hors-ligne désactivé — activer offline_cash_enabled (Settings → Network)'}
+              {offlineGate.paymentsAllowed
+                ? 'Mode hors-ligne — encaissement possible (avoir exclu), resynchronisé au retour du cloud'
+                : 'Encaissement hors-ligne désactivé — activer offline_payments_enabled (Settings → Network)'}
             </div>
           )}
           <div className="space-y-1 mb-4">
@@ -177,15 +174,10 @@ export function PaymentTerminal() {
               checkoutPending={checkoutPending}
               cartEmpty={cart.items.length === 0}
               onProcess={() => { void handleProcess(); }}
-              onSplitOpen={() => {
-                // Lot 4 — le split multi-tender est online-only (le replay
-                // offline ne porte qu'UN règlement cash).
-                if (offlineGate.offlineMode) {
-                  toast.error('Partage de l\'addition indisponible hors-ligne');
-                  return;
-                }
-                setSplitOpen(true);
-              }}
+              // ADR-015 — le split est désormais disponible hors-ligne :
+              // l'outbox porte un tableau de règlements et pay_existing_order_v16
+              // les rejoue via p_payments (1..5).
+              onSplitOpen={() => { setSplitOpen(true); }}
             />
           )}
 
