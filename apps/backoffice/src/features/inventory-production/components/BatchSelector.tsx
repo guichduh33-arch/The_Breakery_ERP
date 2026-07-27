@@ -50,16 +50,16 @@ async function searchProductsWithRecipeFn(
     if (error) return [];
     return (data ?? [])
       .map((r) => ({
-        product_id:    r.product_id as string,
-        sku:           r.sku as string,
-        name:          r.name as string,
-        unit:          r.unit as string,
+        product_id:    r.product_id,
+        sku:           r.sku,
+        name:          r.name,
+        unit:          r.unit,
         cost_price:    Number(r.cost_price),
         current_stock: Number(r.current_stock),
         kind:          r.kind as IngredientSearchResult['kind'],
         has_recipe:    Boolean(r.has_recipe),
       }))
-      // Only surface rows with an active recipe — record_batch_production_v1
+      // Only surface rows with an active recipe — record_batch_production_v3
       // RAISEs `recipe_not_found` otherwise.
       .filter((r) => r.has_recipe);
   } catch {

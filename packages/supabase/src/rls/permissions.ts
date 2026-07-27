@@ -96,6 +96,8 @@ export type PermissionCode =
   // Session 15 / Phase 4.A — Batch production
   | 'inventory.production.create'
   | 'inventory.production.delete'
+  // ADR-008 D4 — forcer une production malgré un stock insuffisant (ADMIN+)
+  | 'inventory.production.force_negative'
   // Session 15 / Phase 4.B — Production scheduling
   | 'inventory.production.schedule'
   | 'reports.read'

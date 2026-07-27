@@ -1,6 +1,6 @@
 // supabase/tests/functions/record-production-cascade.test.ts
 // Session 15 / Phase 1.C — Live integration tests for
-// record_production_v1's sub-recipe cascade (p_recurse_subrecipes=TRUE).
+// record_production_v2's sub-recipe cascade (p_recurse_subrecipes=TRUE).
 //
 // Coverage :
 //   - 2-level cascade (FIN := INT + leaves) with recurse=TRUE :
@@ -72,7 +72,7 @@ async function cleanupAll(admin: SupabaseClient) {
   await admin.from('products').delete().in('id', ids);
 }
 
-describeLive('record_production_v1 sub-recipe cascade — live integration', () => {
+describeLive('record_production_v2 sub-recipe cascade — live integration', () => {
   let managerToken: string;
   let admin: SupabaseClient;
   let sectionId: string;
@@ -110,7 +110,7 @@ describeLive('record_production_v1 sub-recipe cascade — live integration', () 
       p_product_id: fin.id, p_material_id: int.id, p_quantity: 1, p_unit: 'pcs', p_notes: null,
     })).error).toBeNull();
 
-    const { data, error } = await mgr.rpc('record_production_v1', {
+    const { data, error } = await mgr.rpc('record_production_v2', {
       p_product_id: fin.id,
       p_quantity_produced: 5,
       p_section_id: sectionId,
@@ -169,7 +169,7 @@ describeLive('record_production_v1 sub-recipe cascade — live integration', () 
     })).error).toBeNull();
 
     const key = crypto.randomUUID();
-    const r1 = await mgr.rpc('record_production_v1', {
+    const r1 = await mgr.rpc('record_production_v2', {
       p_product_id: fin.id, p_quantity_produced: 2, p_section_id: sectionId,
       p_batch_number: 'IDEM', p_quantity_waste: 0, p_notes: null,
       p_idempotency_key: key, p_recurse_subrecipes: true,
@@ -178,7 +178,7 @@ describeLive('record_production_v1 sub-recipe cascade — live integration', () 
     const r1d = r1.data as { production_id: string; idempotent_replay: boolean };
     expect(r1d.idempotent_replay).toBe(false);
 
-    const r2 = await mgr.rpc('record_production_v1', {
+    const r2 = await mgr.rpc('record_production_v2', {
       p_product_id: fin.id, p_quantity_produced: 2, p_section_id: sectionId,
       p_batch_number: 'IDEM', p_quantity_waste: 0, p_notes: null,
       p_idempotency_key: key, p_recurse_subrecipes: true,
@@ -210,7 +210,7 @@ describeLive('record_production_v1 sub-recipe cascade — live integration', () 
       p_product_id: fin.id, p_material_id: int.id, p_quantity: 1, p_unit: 'pcs', p_notes: null,
     })).error).toBeNull();
 
-    const { data, error } = await mgr.rpc('record_production_v1', {
+    const { data, error } = await mgr.rpc('record_production_v2', {
       p_product_id: fin.id, p_quantity_produced: 3, p_section_id: sectionId,
       p_batch_number: 'FLAT', p_quantity_waste: 0, p_notes: null,
       p_idempotency_key: null, p_recurse_subrecipes: false,

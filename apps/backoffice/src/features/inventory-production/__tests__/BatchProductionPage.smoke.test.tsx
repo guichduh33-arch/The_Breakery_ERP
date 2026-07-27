@@ -18,9 +18,18 @@ vi.mock('@/stores/authStore.js', () => ({
 interface RpcResult { data: unknown; error: { message: string; details?: string } | null }
 interface ChainResult { data: unknown; error: unknown }
 
+interface QueryChain {
+  select: () => QueryChain;
+  eq:     () => QueryChain;
+  is:     () => QueryChain;
+  order:  () => QueryChain;
+  in:     () => Promise<ChainResult>;
+  limit:  () => Promise<ChainResult>;
+}
+
 vi.mock('@/lib/supabase.js', () => {
-  function buildChain(table: string) {
-    const chain: any = {
+  function buildChain(table: string): QueryChain {
+    const chain: QueryChain = {
       select: () => chain,
       eq:     () => chain,
       is:     () => chain,
@@ -72,7 +81,7 @@ describe('BatchProductionPage smoke', () => {
     });
   });
 
-  it('renders header + initial item row + Add recipe button', async () => {
+  it('renders header + initial item row + Add recipe button', () => {
     renderPage();
     expect(screen.getByRole('heading', { name: /Batch production/i })).toBeInTheDocument();
     expect(screen.getByText(/Plan multiple recipes/i)).toBeInTheDocument();
@@ -106,10 +115,10 @@ describe('BatchProductionPage smoke', () => {
       .toBeInTheDocument();
   });
 
-  it('renders shortage list when the server returns insufficient_stock', async () => {
+  it('renders shortage list when the server returns insufficient_stock', () => {
     // Stub: the RPC rejects with insufficient_stock + DETAIL list.
     mockRpc.mockImplementation((fn: string) => {
-      if (fn === 'record_batch_production_v1') {
+      if (fn === 'record_batch_production_v4') {
         return {
           data: null,
           error: {

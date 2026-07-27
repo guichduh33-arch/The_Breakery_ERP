@@ -3,7 +3,7 @@
 // Session 15 — Phase 2.B — yield variance reason modal. Opens from
 // ProductionForm when `|variance_pct| > production_yield_variance_threshold_pct`.
 // Requires a reason of ≥ 5 chars before confirming, mirroring the server-side
-// `variance_reason_too_short` check in record_production_v1.
+// `variance_reason_too_short` check in record_production_v2.
 
 import { useState, type FormEvent, type JSX } from 'react';
 import {

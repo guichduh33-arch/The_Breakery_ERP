@@ -1,7 +1,12 @@
 // apps/backoffice/src/features/inventory-production/hooks/useRecordProduction.ts
 //
-// Calls `record_production_v1` atomic RPC. Server emits 1 + N stock_movements
+// Calls `record_production_v2` atomic RPC. Server emits 1 + N stock_movements
 // + N+1 journal_entries via the tr_20_je_emit trigger.
+//
+// ADR-008 D4 — la production BLOQUE en stock insuffisant. Le réglage global
+// `allow_negative_stock` ne gouverne plus que la vente. `forceNegative` est la
+// seule échappatoire : le serveur exige la permission
+// `inventory.production.force_negative` (sinon `force_negative_forbidden`).
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
@@ -15,6 +20,7 @@ export type RecordProductionErrorCode =
   | 'section_required'
   | 'recipe_not_found'
   | 'insufficient_stock'
+  | 'force_negative_forbidden'
   | 'unit_conversion_failed'
   | 'expected_yield_must_be_positive'
   | 'actual_yield_must_be_non_negative'
@@ -49,6 +55,17 @@ export interface RecordProductionArgs {
   actualYieldQty?:   number;
   /** Required when |variance| > threshold (server-enforced ≥5 chars). */
   yieldVarianceReason?: string;
+  /** ADR-008 D4 — produce despite insufficient stock (permission-gated server-side). */
+  forceNegative?: boolean;
+}
+
+export interface ProductionShortage {
+  material_id:   string;
+  material_name: string;
+  required:      number;
+  available:     number;
+  shortfall:     number;
+  unit:          string;
 }
 
 export interface RecordProductionResult {
@@ -58,9 +75,15 @@ export interface RecordProductionResult {
   movements_count: number;
   je_count: number;
   idempotent_replay: boolean;
+  /** True when the production was forced through despite shortages. */
+  forced_negative?: boolean;
+  /** Shortages the force bypassed (empty unless forced). */
+  shortages?: ProductionShortage[];
 }
 
 function classify(message: string): RecordProductionErrorCode {
+  // Doit précéder le test générique : 'force_negative_forbidden' contient 'forbidden'.
+  if (message.includes('force_negative_forbidden'))        return 'force_negative_forbidden';
   if (message.includes('forbidden'))                       return 'forbidden';
   if (message.includes('quantity_must_be_positive'))       return 'quantity_must_be_positive';
   if (message.includes('waste_must_be_non_negative'))      return 'waste_must_be_non_negative';
@@ -95,6 +118,7 @@ export function useRecordProduction() {
         p_expected_yield_qty?:    number;
         p_actual_yield_qty?:      number;
         p_yield_variance_reason?: string;
+        p_force_negative?:        boolean;
       } = {
         p_product_id:        args.productId,
         p_quantity_produced: args.quantityProduced,
@@ -102,12 +126,13 @@ export function useRecordProduction() {
         p_quantity_waste:    args.quantityWaste ?? 0,
         p_idempotency_key:   args.idempotencyKey,
       };
+      if (args.forceNegative === true) rpcArgs.p_force_negative = true;
       if (args.batchNumber          !== undefined) rpcArgs.p_batch_number          = args.batchNumber;
       if (args.notes                !== undefined) rpcArgs.p_notes                 = args.notes;
       if (args.expectedYieldQty     !== undefined) rpcArgs.p_expected_yield_qty    = args.expectedYieldQty;
       if (args.actualYieldQty       !== undefined) rpcArgs.p_actual_yield_qty      = args.actualYieldQty;
       if (args.yieldVarianceReason  !== undefined) rpcArgs.p_yield_variance_reason = args.yieldVarianceReason;
-      const { data, error } = await supabase.rpc('record_production_v1', rpcArgs);
+      const { data, error } = await supabase.rpc('record_production_v2', rpcArgs);
       if (error) {
         const detail = (error as unknown as { details?: string }).details;
         let parsed: unknown;

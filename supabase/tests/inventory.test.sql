@@ -275,7 +275,7 @@ SELECT throws_ok(
 -- =========================================================================
 -- T7 — receive_stock_v1 est droppée (Q3 audit 2026-07-27) : la réception
 -- valorisée passe exclusivement par le flux PO / achat direct
--- (receive_purchase_order_v2), seule voie qui aligne stock + WAC + JE.
+-- (receive_purchase_order_v3), seule voie qui aligne stock + WAC + JE.
 -- =========================================================================
 SELECT ok(
   NOT EXISTS (

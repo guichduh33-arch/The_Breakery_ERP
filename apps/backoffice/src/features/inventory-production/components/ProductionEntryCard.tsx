@@ -3,7 +3,7 @@
 // Left card of the redesigned Production page. Multi-row production entry for a
 // single station (section). Each row = a producible product (strictly filtered
 // to the station via product_sections) + quantity in a chosen unit + waste +
-// note. Submit is atomic via record_batch_production_v2 — any insufficient
+// note. Submit is atomic via record_batch_production_v4 — any insufficient
 // stock rolls the whole batch back.
 //
 // Logic kept from the legacy form: required section, idempotency key, atomic
@@ -12,11 +12,17 @@
 //
 // Per-row notes are persisted at batch level (the RPC has no per-item note
 // field): non-empty notes are combined into the batch notes as "Product: note".
+//
+// ADR-008 D4 — un stock insuffisant BLOQUE le lot. L'échappatoire (forçage) ne
+// s'affiche qu'après un refus, et seulement pour un utilisateur porteur de
+// `inventory.production.force_negative` : forcer reste un acte volontaire et
+// tracé, jamais un réglage laissé coché par défaut.
 
-import { Plus, Search, Trash2 } from 'lucide-react';
+import { AlertTriangle, Plus, Search, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type JSX } from 'react';
 import { toast } from 'sonner';
 import { Card, SectionLabel } from '@breakery/ui';
+import { useAuthStore } from '@/stores/authStore.js';
 import {
   useProducibleProductsBySection,
   type ProducibleProduct,
@@ -55,14 +61,16 @@ function toDatetimeLocal(d: Date): string {
 export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Props): JSX.Element {
   const products = useProducibleProductsBySection(sectionId);
   const recordMut = useRecordBatchProduction();
+  const canForceNegative = useAuthStore((s) => s.hasPermission)('inventory.production.force_negative');
 
   const [rows, setRows] = useState<EntryRow[]>([]);
   const [query, setQuery] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
   const [productionAt, setProductionAt] = useState<string>(() => toDatetimeLocal(selectedDate));
   const [idempotencyKey, setIdempotencyKey] = useState<string>(() => crypto.randomUUID());
-  const [shortages, setShortages] = useState<Array<{ material_name: string; shortfall: number; unit: string }> | null>(null);
+  const [shortages, setShortages] = useState<{ material_name: string; shortfall: number; unit: string }[] | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [forceNegative, setForceNegative] = useState(false);
   const blurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // When the viewed day changes, re-seed the entry date/time to that day (keep
@@ -80,6 +88,7 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
     setQuery('');
     setShortages(null);
     setFormError(null);
+    setForceNegative(false);
   }, [sectionId]);
 
   const chosenIds = useMemo(() => new Set(rows.map((r) => r.product.id)), [rows]);
@@ -115,6 +124,7 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
     setQuery('');
     setShortages(null);
     setFormError(null);
+    setForceNegative(false);
   }
 
   /** Build the RPC items (quantities converted to the product base unit). */
@@ -140,7 +150,9 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
   function handleSubmit(): void {
     if (!canSubmit) return;
     setFormError(null);
-    setShortages(null);
+    // Les pénuries affichées restent visibles tant que le forçage est armé :
+    // l'utilisateur doit voir ce qu'il s'apprête à passer en négatif.
+    if (!forceNegative) setShortages(null);
 
     const combinedNotes = rows
       .filter((r) => r.note.trim() !== '')
@@ -154,18 +166,26 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
       productionDate: new Date(productionAt).toISOString(),
     };
     if (combinedNotes !== '') args.notes = combinedNotes;
+    if (forceNegative) args.forceNegative = true;
 
     recordMut.mutate(args, {
       onSuccess: (res) => {
-        toast.success(`Recorded ${res.batch_number} (${res.production_records.length} item(s)).`);
+        if (res.forced_negative === true) {
+          toast.warning(`Recorded ${res.batch_number} — forced below stock (traced in the audit log).`);
+        } else {
+          toast.success(`Recorded ${res.batch_number} (${res.production_records.length} item(s)).`);
+        }
         reset();
         setIdempotencyKey(crypto.randomUUID());
       },
       onError: (err) => {
         if (err instanceof RecordBatchProductionError) {
           if (err.code === 'insufficient_stock' && Array.isArray(err.missingDetail)) {
-            setShortages(err.missingDetail as Array<{ material_name: string; shortfall: number; unit: string }>);
+            setShortages(err.missingDetail as { material_name: string; shortfall: number; unit: string }[]);
             setFormError('Insufficient stock for one or more ingredients.');
+          } else if (err.code === 'force_negative_forbidden') {
+            setForceNegative(false);
+            setFormError('You are not allowed to force a production below stock.');
           } else if (err.code === 'invalid_production_date') {
             setFormError('Invalid production date/time.');
           } else if (err.code === 'recipe_not_found') {
@@ -238,6 +258,27 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
                 <li key={i}>{s.material_name} short {s.shortfall} {s.unit}</li>
               ))}
             </ul>
+          )}
+          {shortages !== null && canForceNegative && (
+            <label className="mt-3 flex items-start gap-2 border-t border-red/30 pt-2 text-text-secondary">
+              <input
+                type="checkbox"
+                checked={forceNegative}
+                onChange={(e) => setForceNegative(e.target.checked)}
+                data-testid="force-negative-toggle"
+                className="mt-0.5"
+              />
+              <span>
+                <span className="inline-flex items-center gap-1 font-semibold text-red">
+                  <AlertTriangle className="h-3.5 w-3.5" aria-hidden />
+                  Force this production below stock
+                </span>
+                <span className="block">
+                  Raw material stock will go negative and the override is recorded in
+                  the audit log. Submit again to confirm.
+                </span>
+              </span>
+            </label>
           )}
         </div>
       )}
@@ -364,7 +405,9 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
             className="inline-flex items-center gap-2 rounded-full bg-gold px-6 py-2.5 text-xs font-semibold uppercase tracking-widest text-bg-base disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Plus className="h-4 w-4" aria-hidden />
-            {recordMut.isPending ? 'Submitting…' : 'Submit Production'}
+            {recordMut.isPending
+              ? 'Submitting…'
+              : forceNegative ? 'Force & Submit' : 'Submit Production'}
           </button>
         </div>
       </div>

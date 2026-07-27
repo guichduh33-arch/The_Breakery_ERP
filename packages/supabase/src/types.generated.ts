@@ -8054,7 +8054,7 @@ export type Database = {
         }
         Returns: Json
       }
-      receive_purchase_order_v2: {
+      receive_purchase_order_v3: {
         Args: {
           p_idempotency_key?: string
           p_po_id: string
@@ -8138,11 +8138,11 @@ export type Database = {
         }
         Returns: Json
       }
-      record_batch_production_v1: {
+      record_batch_production_v3: {
         Args: { p_batch: Json; p_items: Json }
         Returns: Json
       }
-      record_batch_production_v2: {
+      record_batch_production_v4: {
         Args: { p_batch: Json; p_items: Json }
         Returns: Json
       }
@@ -8197,11 +8197,12 @@ export type Database = {
         Args: { p_device_token: string; p_events: Json }
         Returns: Json
       }
-      record_production_v1: {
+      record_production_v2: {
         Args: {
           p_actual_yield_qty?: number
           p_batch_number?: string
           p_expected_yield_qty?: number
+          p_force_negative?: boolean
           p_idempotency_key?: string
           p_notes?: string
           p_product_id: string

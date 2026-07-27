@@ -2,7 +2,7 @@
 //
 // Session 13 / Phase 6.C — E2E: create a Purchase Order, receive it. Asserts
 // the PO's own status badge flips draft→pending→received and no JE-error
-// text appears (the `receive_purchase_order_v2` RPC posts stock + JE
+// text appears (the `receive_purchase_order_v3` RPC posts stock + JE
 // atomically — see PurchaseOrderDetailPage.tsx).
 //
 // Rewritten S71 — the original spec used inline `/login` + digit-button
@@ -89,7 +89,7 @@ test.describe('PO create + receive', () => {
     // ---- Step 6: this PO's own status badge reaches "Received" ----
     await expect(page.locator('[data-status="received"]')).toBeVisible({ timeout: 20_000 });
 
-    // No JE error surfaced (receive_purchase_order_v2 posts stock + JE atomically).
+    // No JE error surfaced (receive_purchase_order_v3 posts stock + JE atomically).
     await expect(page.getByText(/je_unbalanced|trigger_failed/i)).not.toBeVisible();
   });
 });

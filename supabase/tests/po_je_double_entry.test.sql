@@ -100,7 +100,7 @@ BEGIN
   SELECT id INTO v_item_c_id FROM purchase_order_items WHERE po_id = v_po_credit LIMIT 1;
   SELECT id INTO v_item_k_id FROM purchase_order_items WHERE po_id = v_po_cash   LIMIT 1;
 
-  v_r_credit := receive_purchase_order_v2(
+  v_r_credit := receive_purchase_order_v3(
     p_po_id          := v_po_credit,
     p_section_id     := current_setting('t46je.section', true)::uuid,
     p_received_items := jsonb_build_array(
@@ -109,7 +109,7 @@ BEGIN
     p_idempotency_key := 'd1d1d1d1-0000-0000-0000-000000000001'::uuid
   );
 
-  v_r_cash := receive_purchase_order_v2(
+  v_r_cash := receive_purchase_order_v3(
     p_po_id          := v_po_cash,
     p_section_id     := current_setting('t46je.section', true)::uuid,
     p_received_items := jsonb_build_array(
@@ -246,7 +246,7 @@ BEGIN
   SELECT id INTO v_item_c_id FROM purchase_order_items WHERE po_id = v_po_credit LIMIT 1;
 
   -- Replay same idempotency_key → returns existing GRN, trigger NOT re-fired.
-  PERFORM receive_purchase_order_v2(
+  PERFORM receive_purchase_order_v3(
     p_po_id          := v_po_credit,
     p_section_id     := current_setting('t46je.section', true)::uuid,
     p_received_items := jsonb_build_array(
