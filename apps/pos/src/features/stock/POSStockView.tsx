@@ -21,7 +21,7 @@
 //
 // Reachable at `/pos/stock`. Triggered from SideMenuDrawer "Cafe Stock".
 
-import { useMemo, useState, type JSX } from 'react';
+import { useMemo, useRef, useState, type JSX } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Bell, LayoutGrid, List, Search, Settings, Package } from 'lucide-react';
 import { toast } from 'sonner';
@@ -48,6 +48,23 @@ export default function POSStockView(): JSX.Element {
   const adjustDisplay = useAdjustDisplay();
   const hasDisplayManage = useAuthStore((s) => s.hasPermission('display.manage'));
   const hasInventoryManage = useAuthStore((s) => s.hasPermission('settings.update'));
+
+  // Idempotency keys, one per (gesture, product), stable until the gesture
+  // succeeds. A lost response + re-tap replays the same server operation
+  // instead of doubling it; the key rotates only once the server confirmed.
+  const gestureKeys = useRef(new Map<string, string>());
+  function gestureKey(kind: string, productId: string): string {
+    const mapKey = `${kind}:${productId}`;
+    let key = gestureKeys.current.get(mapKey);
+    if (key === undefined) {
+      key = crypto.randomUUID();
+      gestureKeys.current.set(mapKey, key);
+    }
+    return key;
+  }
+  function rotateGestureKey(kind: string, productId: string): void {
+    gestureKeys.current.delete(`${kind}:${productId}`);
+  }
 
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('all');
@@ -114,9 +131,10 @@ export default function POSStockView(): JSX.Element {
     }
     if (qty <= 0) return;
     receive.mutate(
-      { productId: product.id, quantity: qty, idempotencyKey: crypto.randomUUID(), reason: 'pos_mise_en_vitrine' },
+      { productId: product.id, quantity: qty, idempotencyKey: gestureKey('receive', product.id), reason: 'pos_mise_en_vitrine' },
       {
         onSuccess: () => {
+          rotateGestureKey('receive', product.id);
           toast.success(`${product.name}: +${qty} ${product.unit} to display`);
         },
         onError: (err: unknown) => {
@@ -134,9 +152,10 @@ export default function POSStockView(): JSX.Element {
     }
     if (qty <= 0) return;
     returnToKitchen.mutate(
-      { productId: product.id, quantity: qty, idempotencyKey: crypto.randomUUID(), reason: 'pos_retour_cuisine' },
+      { productId: product.id, quantity: qty, idempotencyKey: gestureKey('return', product.id), reason: 'pos_retour_cuisine' },
       {
         onSuccess: () => {
+          rotateGestureKey('return', product.id);
           toast.success(`${product.name}: −${qty} ${product.unit} returned to kitchen`);
         },
         onError: (err: unknown) => {
@@ -154,9 +173,10 @@ export default function POSStockView(): JSX.Element {
     }
     if (qty <= 0) return;
     wasteDisplay.mutate(
-      { productId: product.id, quantity: qty, idempotencyKey: crypto.randomUUID(), reason },
+      { productId: product.id, quantity: qty, idempotencyKey: gestureKey('waste', product.id), reason },
       {
         onSuccess: () => {
+          rotateGestureKey('waste', product.id);
           toast.success(`${product.name}: −${qty} ${product.unit} waste`);
         },
         onError: (err: unknown) => {
@@ -173,9 +193,10 @@ export default function POSStockView(): JSX.Element {
       return;
     }
     adjustDisplay.mutate(
-      { productId: product.id, newQty, reason, idempotencyKey: crypto.randomUUID() },
+      { productId: product.id, newQty, reason, idempotencyKey: gestureKey('adjust', product.id) },
       {
         onSuccess: () => {
+          rotateGestureKey('adjust', product.id);
           toast.success(`${product.name}: display adjusted to ${newQty} ${product.unit}`);
         },
         onError: (err: unknown) => {
@@ -194,7 +215,7 @@ export default function POSStockView(): JSX.Element {
           variant="ghost"
           size="icon"
           aria-label="Back"
-          onClick={() => navigate('/pos')}
+          onClick={() => { void navigate('/pos'); }}
           data-testid="pos-stock-back"
         >
           <ArrowLeft className="h-5 w-5" aria-hidden />

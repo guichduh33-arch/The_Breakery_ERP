@@ -4,7 +4,7 @@
 // purchasing surfaces (breadcrumb + Fraunces heading). Form behaviour
 // unchanged — POFormDraft still owns line items + validation.
 
-import { useState, type JSX } from 'react';
+import { useRef, useState, type JSX } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore.js';
@@ -26,6 +26,8 @@ export default function NewPurchaseOrderPage(): JSX.Element {
 
   const [value, setValue]     = useState<POFormDraftValue>(emptyPOFormDraftValue);
   const [error, setError]     = useState<string | undefined>(undefined);
+  // Stable idempotency key for this form session (survives retries / re-renders).
+  const idempotencyKey        = useRef<string>(crypto.randomUUID());
   const create                = useCreatePurchaseOrder();
   const suppliers             = useSuppliersList({ active: 'active' });
   const products              = useAllProductsForPO();
@@ -47,8 +49,9 @@ export default function NewPurchaseOrderPage(): JSX.Element {
         paymentTerms:  value.paymentTerms,
         vatRate:       value.vatRate,
         ...(value.notes.trim() !== '' ? { notes: value.notes.trim() } : {}),
+        idempotencyKey: idempotencyKey.current,
       });
-      navigate(`/backoffice/purchasing/purchase-orders/${res.po_id}`);
+      void navigate(`/backoffice/purchasing/purchase-orders/${res.po_id}`);
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Unknown error';
       setError(msg);

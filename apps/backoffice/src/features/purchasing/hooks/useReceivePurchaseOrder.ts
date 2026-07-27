@@ -38,6 +38,7 @@ export interface ReceivePOArgs {
   poId:           string;
   sectionId:      string;
   items:          ReceivePOLineArgs[];
+  idempotencyKey: string;   // UUID v4, stable across retries (caller owns it)
 }
 
 export interface ReceivePOResult {
@@ -72,7 +73,6 @@ export function useReceivePurchaseOrder() {
   const qc = useQueryClient();
   return useMutation<ReceivePOResult, ReceivePOError, ReceivePOArgs>({
     mutationFn: async (args) => {
-      const idempotencyKey = crypto.randomUUID();
       const rpcArgs: Record<string, unknown> = {
         p_po_id:           args.poId,
         p_section_id:      args.sectionId,
@@ -80,7 +80,7 @@ export function useReceivePurchaseOrder() {
           po_item_id:        it.poItemId,
           received_quantity: it.receivedQuantity,
         })),
-        p_idempotency_key: idempotencyKey,
+        p_idempotency_key: args.idempotencyKey,
       };
 
       const { data, error } = await (supabase.rpc as unknown as (
