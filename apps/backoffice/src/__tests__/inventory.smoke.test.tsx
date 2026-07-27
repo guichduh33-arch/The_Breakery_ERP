@@ -3,8 +3,10 @@
 //
 // Strategy: we mock @/lib/supabase to simulate the Postgres responses and
 // drive the page through the same component tree the user sees:
-//   1. MANAGER role → list rendered, Adjust hidden, Receive + Waste visible
-//   2. Open Receive → fill form → submit → receive_stock_v1 RPC called
+//   1. MANAGER role → list rendered, Adjust hidden, Waste visible ; Receive
+//      absent sans purchasing.po.create (Q3 audit 2026-07-27 : receive_stock_v1
+//      droppée, la réception passe par l'achat direct compté /inventory/incoming)
+//   2. Row action menu n'offre plus « Receive stock »
 //   3. Open Waste → fill form → submit → waste_stock_v1 RPC called
 //   4. ADMIN role (re-render with elevated perms) → Adjust visible →
 //      open modal → submit → adjust_stock_v1 RPC called
@@ -128,7 +130,7 @@ describe('Inventory smoke E2E', () => {
     cleanup();
   });
 
-  it('MANAGER flow: list + low-stock badge visible, Adjust hidden, Receive + Waste shown', { timeout: 40_000 }, async () => {
+  it('MANAGER flow: list + low-stock badge visible, Adjust hidden, Waste shown, Receive absent sans purchasing.po.create', { timeout: 40_000 }, async () => {
     const r = await renderAs(['inventory.read', 'inventory.receive', 'inventory.waste']);
     const w = within(r.container);
     // First test in the file pays the vite transformer cold-start (~15-20s under
@@ -143,39 +145,26 @@ describe('Inventory smoke E2E', () => {
     const croissantRow = w.getByText('Croissant').closest('tr')!;
     expect(within(croissantRow).queryByText(/low/i)).not.toBeInTheDocument();
 
-    // Toolbar perms: Adjust hidden, Receive + Waste shown.
+    // Toolbar perms: Adjust hidden ; Receive gated by purchasing.po.create (Q3) ;
+    // Waste shown.
     expect(w.queryByRole('button', { name: /^Adjust$/i })).not.toBeInTheDocument();
-    expect(w.getByRole('button', { name: /Receive/i })).toBeInTheDocument();
+    expect(w.queryByRole('button', { name: /Receive/i })).not.toBeInTheDocument();
     expect(w.getByRole('button', { name: /Waste/i  })).toBeInTheDocument();
   });
 
-  it('MANAGER flow: open Receive from row → submit → receive_stock_v1 RPC fired with correct args', { timeout: 20_000 }, async () => {
-    const r = await renderAs(['inventory.read', 'inventory.receive', 'inventory.waste']);
+  it('Q3: toolbar Receive visible avec purchasing.po.create ; row menu sans « Receive stock »', { timeout: 20_000 }, async () => {
+    const r = await renderAs(['inventory.read', 'purchasing.po.create', 'inventory.waste']);
     const w = within(r.container);
     await waitFor(() => w.getByText('Americano'), { timeout: 15_000 });
 
-    // Open via the row's action menu (locked-product path — bypasses the typeahead).
+    // Toolbar : Receive présent (navigue vers /backoffice/inventory/incoming).
+    expect(w.getByRole('button', { name: /Receive/i })).toBeInTheDocument();
+
+    // Row action menu : plus d'entrée « Receive stock » (receive_stock_v1 droppée).
     const americanoRow = w.getByText('Americano').closest('tr')!;
     fireEvent.click(within(americanoRow).getByRole('button', { name: /Actions for Americano/i }));
-    fireEvent.click(w.getByRole('menuitem', { name: /Receive stock/i }));
-
-    // Modal content is rendered via Radix Portal — query the global screen.
-    await waitFor(() => screen.getByText(/^Receive stock$/i));
-    fireEvent.change(screen.getByLabelText(/Supplier/i), { target: { value: 's-1' } });
-    fireEvent.change(screen.getByLabelText(/Quantity received/i), { target: { value: '20' } });
-
-    mockRpc.mockClear();
-    fireEvent.click(screen.getByRole('button', { name: /^Receive$|Receiving/i }));
-
-    await waitFor(() => {
-      const call = mockRpc.mock.calls.find(([fn]) => fn === 'receive_stock_v1');
-      expect(call).toBeDefined();
-      expect((call as [string, Record<string, unknown>])[1]).toMatchObject({
-        p_product_id:  'p-1',
-        p_quantity:    20,
-        p_supplier_id: 's-1',
-      });
-    });
+    expect(w.queryByRole('menuitem', { name: /Receive stock/i })).not.toBeInTheDocument();
+    expect(w.getByRole('menuitem', { name: /Record waste/i })).toBeInTheDocument();
   });
 
   it('MANAGER flow: open Waste from row → submit → waste_stock_v1 RPC fired', { timeout: 20_000 }, async () => {

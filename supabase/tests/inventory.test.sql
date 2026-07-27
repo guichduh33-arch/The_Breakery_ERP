@@ -18,8 +18,9 @@
 --   T4  adjust_stock_v1: idempotent replay (same idempotency_key)
 --   T5  adjust_stock_v1: MANAGER lacking inventory.adjust -> forbidden (P0003)
 --   T6  adjust_stock_v1: p_new_qty < 0 rejected
---   T7  receive_stock_v1: happy path + supplier_id link + purchase movement_type
---   T8  receive_stock_v1: inactive supplier -> supplier_not_found_or_inactive
+--   T7  receive_stock_v1 est DROPPÉE (Q3 audit 2026-07-27 — réception valorisée
+--       via le flux PO/achat direct uniquement)
+--   T8  record_incoming_stock_v1 existe toujours (entrées non-achat conservées)
 --   T9  waste_stock_v1: qty > on-hand -> insufficient_stock (P0002)
 --   T10 waste_stock_v1: happy path (current_stock decremented, movement negative)
 --   T11 RLS: direct INSERT into stock_movements blocked for `authenticated`
@@ -272,54 +273,29 @@ SELECT throws_ok(
 );
 
 -- =========================================================================
--- T7 — receive_stock_v1 happy path
+-- T7 — receive_stock_v1 est droppée (Q3 audit 2026-07-27) : la réception
+-- valorisée passe exclusivement par le flux PO / achat direct
+-- (receive_purchase_order_v2), seule voie qui aligne stock + WAC + JE.
 -- =========================================================================
-DO $t7$
-DECLARE
-  v_admin UUID := current_setting('breakery.admin_uid')::uuid;
-  v_result JSONB;
-  v_mvt_id UUID;
-  v_mvt RECORD;
-BEGIN
-  PERFORM pg_temp.set_jwt_uid(v_admin);
-  UPDATE products SET current_stock = 10
-    WHERE id = '99999999-aaaa-bbbb-cccc-111111111111'::uuid;
-
-  SELECT receive_stock_v1(
-    '99999999-aaaa-bbbb-cccc-111111111111'::uuid,
-    25.000,
-    '11111111-2222-3333-4444-555555555555'::uuid,
-    NULL,
-    'T7 receive'
-  ) INTO v_result;
-  v_mvt_id := (v_result->>'movement_id')::uuid;
-  SELECT quantity, supplier_id, movement_type
-    INTO v_mvt FROM stock_movements WHERE id = v_mvt_id;
-
-  PERFORM set_config('breakery.t7_pass',
-    CASE WHEN
-      v_mvt.quantity = 25.000
-      AND v_mvt.supplier_id = '11111111-2222-3333-4444-555555555555'::uuid
-      AND v_mvt.movement_type = 'purchase'::movement_type
-    THEN 'true' ELSE 'false' END, false);
-END $t7$;
-SELECT ok(current_setting('breakery.t7_pass')::boolean,
-  'T7: receive_stock_v1 inserts purchase movement with supplier_id');
+SELECT ok(
+  NOT EXISTS (
+    SELECT 1 FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public' AND p.proname = 'receive_stock_v1'
+  ),
+  'T7: receive_stock_v1 is dropped (valued receipts go through the PO flow)');
 
 -- =========================================================================
--- T8 — receive_stock_v1 with inactive supplier -> P0002
+-- T8 — record_incoming_stock_v1 existe toujours (entrées non-achat : stock
+-- initial d'un site migré, etc. — conservée par décision Q3).
 -- =========================================================================
-SELECT throws_ok(
-  $$ SELECT receive_stock_v1(
-       '99999999-aaaa-bbbb-cccc-111111111111'::uuid,
-       10.000,
-       '11111111-2222-3333-4444-666666666666'::uuid,
-       NULL, 'T8 inactive supplier'
-     ) $$,
-  'P0002',
-  'supplier_not_found_or_inactive',
-  'T8: receive_stock_v1 rejects inactive supplier with P0002'
-);
+SELECT ok(
+  EXISTS (
+    SELECT 1 FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public' AND p.proname = 'record_incoming_stock_v1'
+  ),
+  'T8: record_incoming_stock_v1 still exists (non-purchase entries kept)');
 
 -- =========================================================================
 -- T9 — waste_stock_v1 with qty > on-hand -> insufficient_stock P0002

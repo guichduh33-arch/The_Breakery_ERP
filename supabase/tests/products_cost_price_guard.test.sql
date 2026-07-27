@@ -7,8 +7,10 @@
 --   T2.   update_cost_price_v1 as SUPER_ADMIN happy path : returns movement_id +
 --         cost_price actually mutated (lives_ok).
 --   T2.b  products.cost_price actually mutated to 12.50.
---   T3.   receive_stock_v1 still updates cost_price via the WAC trigger
---         (regression guard — REVOKE column UPDATE must not break this path).
+--   T3.   Un mouvement `purchase` met toujours à jour cost_price via le trigger
+--         WAC (regression guard — REVOKE column UPDATE must not break this path).
+--         (receive_stock_v1 droppée par Q3 audit 2026-07-27 — le mouvement est
+--         inséré direct en superuser, même convention que accounting.test.sql.)
 --   T4.   The cost_price_correction audit row was emitted with the expected payload.
 --   T5.   Idempotent-replay envelope parity (fix _014) : second call with same
 --         p_idempotency_key returns identical jsonb shape including `old_cost`.
@@ -94,26 +96,34 @@ SELECT is(
 );
 
 -- =============================================================================
--- T3 : receive_stock_v1 still updates cost_price via WAC (REVOKE doesn't break
--- the trigger path — trigger runs as postgres owner inheriting RPC privileges).
+-- T3 : le trigger WAC (tr_update_product_cost_on_purchase) met toujours à jour
+-- cost_price sur un mouvement `purchase` (REVOKE column UPDATE ne casse pas ce
+-- chemin — le trigger tourne en owner postgres). receive_stock_v1 étant droppée
+-- (Q3), le mouvement est inséré direct en superuser.
 --
--- Combined into T2's assert count via a single regression check : we receive
--- 10 units at 20.00 unit_cost on BEV-AMER (current_stock=50, cost=12.50 post-T2).
+-- 10 unités à 20.00 sur la fixture (current_stock=50, cost=12.50 post-T2).
 -- WAC = round((50*12.50 + 10*20.00) / 60, 2) = round(13.7500, 2) = 13.75.
 -- =============================================================================
 
-SELECT receive_stock_v1(
-  (SELECT id FROM products WHERE id = current_setting('breakery.costguard_pid')::uuid),
+INSERT INTO stock_movements (
+  product_id, movement_type, quantity, unit, reason, unit_cost,
+  supplier_id, created_by, reference_type
+) VALUES (
+  current_setting('breakery.costguard_pid')::uuid,
+  'purchase',
   10::DECIMAL(10,3),
-  (SELECT id FROM suppliers WHERE is_active = true AND deleted_at IS NULL LIMIT 1),
+  'pcs',
+  'S22 pgTAP T3 — WAC regression smoke',
   20.00::DECIMAL(14,2),
-  'S22 pgTAP T3 — WAC regression smoke'
+  (SELECT id FROM suppliers WHERE is_active = true AND deleted_at IS NULL LIMIT 1),
+  (SELECT id FROM user_profiles WHERE deleted_at IS NULL AND role_code = 'MANAGER' LIMIT 1),
+  'admin_action'
 );
 
 SELECT is(
   (SELECT cost_price FROM products WHERE id = current_setting('breakery.costguard_pid')::uuid),
   13.75::DECIMAL(14,2),
-  'T3 receive_stock_v1 WAC path still updates cost_price (13.75 = round((50*12.50+10*20)/60,2))'
+  'T3 purchase movement WAC path still updates cost_price (13.75 = round((50*12.50+10*20)/60,2))'
 );
 
 -- =============================================================================
