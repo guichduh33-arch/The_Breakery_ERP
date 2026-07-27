@@ -109,8 +109,8 @@ Page `StockProductionPage` — pensée pour le boulanger ou le chef de productio
 
 ### 5.2 La chaîne déclenchée
 
-À la validation, la RPC `record_production_v1` (V3 — la fiche datait de la
-mutation client V2) exécute :
+À la validation, la RPC de la famille `record_production` (V3 — la fiche datait
+de la mutation client V2) exécute :
 
 1. Insertion d'un `production_records` avec `production_id` séquentiel.
 2. Lookup de la recette du produit fini.
@@ -273,12 +273,12 @@ Réciproquement, le module Inventory **utilise** Production :
 
 > ⚠️ **V3 dépasse plusieurs limites listées historiquement** (V2 cible). Items corrigés ci-dessous.
 
-- Le module **ne planifie pas la production** automatiquement — V3 a livré `suggest_production_schedule_v1` et `production_schedules` (S19). ✅ DÉPASSÉ V3.
+- Le module **ne planifie pas la production** automatiquement — V3 a livré `suggest_production_schedule` et `production_schedules`. ✅ DÉPASSÉ V3.
 - Le module **ne suit pas le temps de pétrissage / cuisson** au four. Pas de minuteur intégré, pas de capteur IoT. *(Toujours vrai V3)*
-- ~~Le module **ne supporte pas les sous-recettes**~~ → **V3 supporte les sous-recettes** avec anti-cycle 5-niveaux (`validate_recipe_no_cycle`, `recipe_bom_full_v1`, `tr_recompute_is_semi_finished`, `record_batch_production_v1`). ✅ LIVRÉ V3 S15+S17+S19+S21.
+- ~~Le module **ne supporte pas les sous-recettes**~~ → **V3 supporte les sous-recettes** avec anti-cycle 5-niveaux (`validate_recipe_no_cycle`, `recipe_bom_full`, `tr_recompute_is_semi_finished`, `record_batch_production`). ✅ LIVRÉ V3.
 - ~~Le module **ne fait pas de versioning explicite** des recettes~~ → **V3 livre `recipe_versions` + snapshot avec cost** (`snapshot_recipe_version_helper`, `tr_snapshot_on_product_cost_change`, `bump_recipe_version_snapshot_with_cost`). ✅ LIVRÉ V3 S20+S21.
 - Le module **n'intègre pas d'allergènes** structurés (gluten, lactose, fruits à coque). Les notes libres s'en chargent. *(Acté définitif 2026-07-22 : la feature allergènes catalogue a été entièrement supprimée — ADR-011 §2, PR #251. Plus un backlog : wontfix.)*
-- ~~Le module **ne supporte pas les recettes en pourcentage de boulanger**~~ → **V3 supporte les baker's percentages** (`extend_recipes_baker_percentage`, `bump_upsert_recipe_v1_baker`). ✅ LIVRÉ V3 S19.
+- ~~Le module **ne supporte pas les recettes en pourcentage de boulanger**~~ → **V3 supporte les baker's percentages** (colonnes de recette dédiées + prise en charge dans `upsert_recipe`). ✅ LIVRÉ V3.
 - Le module **refuse une recette de plus de 5 niveaux d'imbrication** : au-delà, la production échoue avec une erreur franche au lieu de consommer partiellement en silence. *(Acté ADR-008 D5.)*
 - Le module **refuse de produire un produit marqué « ne suit pas le stock »** (`deduct_stock = false`) — produire sans consommer de matières n'a pas de sens métier. *(Acté ADR-008 D6.)*
 

@@ -1,6 +1,6 @@
 # Module Expenses — Objectif métier
 
-> **Statut V2/V3** : décrit la vision business cible (4 pages). **V2 jamais déployée**. Implémentation V3 = **partielle** — 2 pages livrées (ExpensesListPage, ExpenseDetailPage) + 5 RPCs (S17 `create_expense_rpcs`) + storage bucket. **ExpenseFormPage et ExpenseCategoriesPage planifiés pour S28 Expense Governance**. Voir [`../V2_V3_GLOSSARY.md`](../V2_V3_GLOSSARY.md).
+> **Statut V2/V3** : décrit la vision business cible (4 pages). **V2 jamais déployée**. Implémentation V3 = **partielle** — **au 2026-07-28 : 3 pages livrées** (ExpensesListPage, ExpenseDetailPage, NewExpensePage) + les RPCs de dépense + storage bucket. **La page de catégories de dépense reste à livrer** 🟠. Voir [`../V2_V3_GLOSSARY.md`](../V2_V3_GLOSSARY.md).
 >
 > **Périmètre fonctionnel** : ce document décrit **ce que le module Expenses (`/expenses`) sert à faire au quotidien** pour The Breakery, 
 
