@@ -15,8 +15,9 @@
 > _217-_219, `get_off_hours_sales_v1`, page `/settings/business-hours`) ;
 > **politique PIN configurable** (PR #276 — migration _220, catégorie
 > `security`, EF `auth-verify-pin` v14, page Security). Socle courant :
-> `set_setting_v9` / `get_settings_by_category_v7`. Restent hors-code :
-> validation boutique de l'encaissement cash hors-ligne (toggle défaut OFF),
+> `set_setting_v11` / `get_settings_by_category_v9`. Restent hors-code :
+> validation boutique de l'encaissement hors-ligne — toutes méthodes sauf
+> l'avoir depuis ADR-015 (toggle défaut OFF),
 > `RESEND_API_KEY` console, `HUB_TOKEN` prod, runbook hub à commiter.
 > Rév. 5 (2026-07-21) : hub LAN lots 1 → 4 (PR #242, #245, #246, #248) —
 > hub WS print-bridge + presence, heartbeat batch, KDS/display offline sur le
@@ -95,7 +96,7 @@ par personne est un réglage mort — c'est le critère n°1 de ce document.
 | `/settings/accounting` | périodes fiscales, clôture période + clôture annuelle |
 | `/settings/expense-thresholds` | seuils → chaîne d'approbation `submit_expense_v2` |
 | `/b2b/settings` | `get/update_b2b_settings_v1` + table dédiée |
-| `/backoffice/lan-devices` (groupe Network de la sidebar, hors hub `/settings`) | Registre `lan_devices` + heartbeat batch via le hub (EF `lan-heartbeat-batch`, PR #245) ; panneau **Hub** (état du bus LAN) ; carte **« Mode hors-ligne »** → `offline_cash_enabled` / `offline_max_hours` (catégorie `network`, migration _197) → POS : gate cash offline `useOfflineCashGate` (fenêtre A5), grille de paiement cash-only, bannières offline (PR #248) |
+| `/backoffice/lan-devices` (groupe Network de la sidebar, hors hub `/settings`) | Registre `lan_devices` + heartbeat batch via le hub (EF `lan-heartbeat-batch`, PR #245) ; panneau **Hub** (état du bus LAN) ; carte **« Mode hors-ligne »** → `offline_payments_enabled`, clé unique (catégorie `network`, migrations _197 puis _252) → POS : gate `useOfflinePaymentGate`, encaissement hors-ligne **toutes méthodes sauf l'avoir**, split débloqué, bannières offline (PR #248, ADR-015 PR #303) |
 
 ### 2.3 Ce qui est livré mais MORT en aval (UI réelle, effet nul)
 
@@ -202,7 +203,7 @@ réalignés, page renommée « Session Timeouts ». Le volet PIN reste au backlo
 | Priorité | Réglage | Bénéfice attendu |
 |---|---|---|
 | ✅ **Livré (PR #230, 2026-07-17)** | **Propagation Realtime des settings** | Push < 2 s aux caisses/KDS/displays (migration `_181` : publication `business_config` + `receipt_templates` ; hook `useSettingsRealtime`), refetch en fallback (cf. invariant §3.5). Mesure réelle du < 2 s à valider en exploitation. |
-| ✅ **Livré — lots 1-5** (ADR-006 déc. 5, spec `006x-hub-lan.md` actée 2026-07-19 — PR #241) | **LAN Network / hub local — continuité offline** | Lot 1 (PR #242, validé boutique en LAN-http) : hub WS `/ws` dans le print-bridge, presence, ring-buffer, panneau Hub BO. Lot 2 (PR #245) : heartbeat batch via le hub (`update_lan_heartbeat_v2`, EF `lan-heartbeat-batch`). Lot 3 (PR #246, validé boutique) : mode OFFLINE (ping cloud + hub), fire caisse `L-x` sur le bus, KDS/display fusionnent cloud + bus. Lot 4 (PR #248) : outbox durable POS/tablette, **cash différé** gaté (`offline_cash_enabled` défaut false, fenêtre A5 `offline_max_hours` défaut 4 h), replay idempotent avec clés d'origine, A4 tracé par `pay_existing_order_v13` (`p_offline_replay` → `audit_logs`), migrations _197/_198, pgTAP 14/14. Lot 5 (PR #252) : durcissement — chaos tests, mesure du rattrapage, **SPA POS servie en LAN** (règle le mixed-content §4.1) ; nightly pgTAP réparée (PR #254, #267). **Reste (exploitation)** : validation boutique de l'encaissement cash hors-ligne (toggle défaut OFF), `HUB_TOKEN` prod, runbook hub à commiter (Mamat). |
+| ✅ **Livré — lots 1-5** (ADR-006 déc. 5, spec `006x-hub-lan.md` actée 2026-07-19 — PR #241) | **LAN Network / hub local — continuité offline** | Lot 1 (PR #242, validé boutique en LAN-http) : hub WS `/ws` dans le print-bridge, presence, ring-buffer, panneau Hub BO. Lot 2 (PR #245) : heartbeat batch via le hub (`update_lan_heartbeat_v2`, EF `lan-heartbeat-batch`). Lot 3 (PR #246, validé boutique) : mode OFFLINE (ping cloud + hub), fire caisse `L-x` sur le bus, KDS/display fusionnent cloud + bus. Lot 4 (PR #248) : outbox durable POS/tablette, **cash différé** gaté (`offline_cash_enabled` défaut false, fenêtre A5 `offline_max_hours` défaut 4 h), replay idempotent avec clés d'origine, A4 tracé par `pay_existing_order_v13` (`p_offline_replay` → `audit_logs`), migrations _197/_198, pgTAP 14/14. Lot 5 (PR #252) : durcissement — chaos tests, mesure du rattrapage, **SPA POS servie en LAN** (règle le mixed-content §4.1) ; nightly pgTAP réparée (PR #254, #267). **ADR-015 (PR #303)** : le hors-ligne n'est plus cash-only — toutes les méthodes de l'enum sauf l'avoir, en simple ou en split, et la fenêtre `offline_max_hours` est supprimée (`offline_payments_enabled` reste le seul verrou, défaut OFF ; migration _252). **Reste (exploitation)** : validation boutique de l'encaissement hors-ligne (toggle défaut OFF), `HUB_TOKEN` prod, runbook hub à commiter (Mamat). |
 | ✅ **Livré (PR #237, 2026-07-18)** | **Hub réorganisé en sous-menus par feature** | Chaque fonctionnalité a sa catégorie et sa page, groupées en sous-menus + sidebar alignée. Navigation seulement — le stockage reste le socle des décisions 1-2. |
 | ✅ **Livré (PR #275, 2026-07-24)** | **Business hours** | Créneau open/close par jour (`business_hours`, page dédiée) + rapport **Off-Hours Sales** (`get_off_hours_sales_v1`) marquant les ventes hors-horaire (signal fraude). Migrations _217-_219. |
 | ✅ **Livré (PR #276, 2026-07-24)** | **Politique PIN configurable** | `pin_max_failed` / `pin_lockout_minutes` (catégorie `security`, migration _220, `set_setting_v9`/`get_settings_by_category_v7`) exposés dans la page Security et lus par l'EF `auth-verify-pin` v14 (lockout login). |
@@ -228,5 +229,6 @@ cash différé + durcissement), Settings History, payment methods enrichis
 (ordre / e-wallets / frais), floor plan visuel (éditeur + rendu positionné),
 business hours + Off-Hours Sales, et politique PIN configurable (lockout login).
 Restent des actions d'exploitation, pas de code : validation boutique de
-l'encaissement cash hors-ligne (toggle défaut OFF), `RESEND_API_KEY` et
+l'encaissement hors-ligne — toutes méthodes sauf l'avoir depuis ADR-015
+(toggle défaut OFF), `RESEND_API_KEY` et
 `HUB_TOKEN` en console, runbook hub à commiter (Mamat).
