@@ -1,5 +1,7 @@
 # The Breakery — Description du produit (v1.3.2)
 
+> **Révision** : 2026-07-28 · **Version** : v1.3.2
+
 > **LA référence produit.** Ce document décrit, pour un lecteur non technique (propriétaire, investisseurs, nouveaux employés), ce que fait aujourd'hui le logiciel de The Breakery et ce qui reste à venir. Il fait foi sur le périmètre fonctionnel.
 
 ## Historique des versions
@@ -11,7 +13,7 @@
 
 ## Introduction
 
-**The Breakery** est une boulangerie-café à Bali. Ce logiciel est son système de gestion complet : il couvre la vente au comptoir et en salle, la cuisine, les stocks, les achats, la comptabilité, les clients et les rapports — de la commande d'un croissant jusqu'au bilan de fin d'année.
+**The Breakery** est une boulangerie-café à Lombok (Nusa Tenggara Barat, Indonésie). Ce logiciel est son système de gestion complet : il couvre la vente au comptoir et en salle, la cuisine, les stocks, les achats, la comptabilité, les clients et les rapports — de la commande d'un croissant jusqu'au bilan de fin d'année.
 
 Le logiciel se compose de **deux applications** :
 

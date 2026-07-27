@@ -20,7 +20,7 @@ Monorepo Turborepo + pnpm. 2 apps spécialisées par persona, 4 packages partag�
 - Node.js >= 22.12.0
 - pnpm >= 9.0
 
-> **DB target is Supabase cloud, not local Docker.** As of 2026-05-14 the local Docker / `supabase start` stack is **retired**. All DB work (migrations, RPCs, pgTAP, types regen) runs against the **cloud V3 dev** project `ikcyvlovptebroadgtvd` (`the-breakery-v3-dev`, `ap-southeast-1`) via the Supabase MCP tools. **Do NOT run** `supabase start`, `supabase db reset`, or `pnpm db:reset` — they need Docker and will fail. See `CLAUDE.md` → *Critical patterns* and *Build & Test* for the full workflow.
+> **DB target is Supabase cloud, not local Docker.** As of 2026-05-14 the local Docker / `supabase start` stack is **retired**. All DB work (migrations, RPCs, pgTAP, types regen) runs against the **cloud V3 dev** project `ikcyvlovptebroadgtvd` (`the-breakery-v3-dev`, `ap-southeast-1`) via the Supabase MCP tools. **Do NOT run** `supabase start`, `supabase db reset`, or `pnpm db:reset` — they need Docker and will fail. See `CLAUDE.md` → *Critical patterns* and *Commandes* for the full workflow.
 
 ## Quick start
 
@@ -28,9 +28,12 @@ Monorepo Turborepo + pnpm. 2 apps spécialisées par persona, 4 packages partag�
 # 1. Install deps
 pnpm install
 
-# 2. Configure env — create apps/pos/.env.local AND apps/backoffice/.env.local
-#    with VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY pointing at the cloud V3 dev project.
-#    (Vite envDir is unset, so the repo-root .env.example is not auto-loaded.)
+# 2. Configure env — create a repo-ROOT .env from .env.example, with
+#    VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY pointing at the cloud V3 dev project.
+#    Both apps set envDir to the repo root (apps/*/vite.config.ts), so Vite reads THAT
+#    file — an apps/<app>/.env is NOT loaded.
+#    Vitest reads apps/<app>/.env.local instead — copy the same values there to run
+#    the live-RPC tests.
 
 # 3. Start the apps (they connect to the cloud DB directly)
 pnpm dev
@@ -77,11 +80,12 @@ Couverture : 90% domain, 85% utils, 70% ui, smoke tests apps.
 
 ## Documentation
 
-- **État courant + conventions + patterns critiques** : [`CLAUDE.md`](CLAUDE.md) → *Active Workplan* (**source de vérité**)
-- **Référence modules (réel-vs-demandé)** : [`docs/workplan/remise-a-plat/`](docs/workplan/remise-a-plat/) — autorité actuelle par module (Phase 3 = régénération depuis le code)
-- **Spec V3 (split 2 apps)** : [`docs/workplan/specs/archive/2026-05-03-breakery-split-2apps-design.md`](docs/workplan/specs/archive/2026-05-03-breakery-split-2apps-design.md)
-- **Workplan (plans/specs datés)** : [`docs/workplan/`](docs/workplan/)
-- **Référence historique** : [`docs/reference/`](docs/reference/) — ⚠️ **majoritairement V2/périmée** (bandeau STALE en tête de chaque fichier) ; ne fait plus foi, cf. `docs/README.md` pour la hiérarchie de vérité.
+- **Loi du dépôt — conventions et patterns critiques** : [`CLAUDE.md`](CLAUDE.md) (**source de vérité**)
+- **Décisions arbitrées, immuables** : [`docs/adr/`](docs/adr/)
+- **Objectif métier par module** : [`docs/objectifs/`](docs/objectifs/)
+- **Référence produit** : [`docs/product/DESCRIPTION.md`](docs/product/DESCRIPTION.md)
+- **Procédures opérationnelles** : [`docs/runbooks/`](docs/runbooks/)
+- **Carte de la documentation + hiérarchie de vérité** : [`docs/README.md`](docs/README.md)
 
 ## Conventions
 
@@ -91,7 +95,7 @@ Couverture : 90% domain, 85% utils, 70% ui, smoke tests apps.
 | Hooks | `useCamelCase.ts` |
 | Stores | `camelCaseStore.ts` |
 | Tables DB | `snake_case_plural` |
-| Migrations | `YYYYMMDDHHMMSS_snake_case.sql` |
+| Migrations | `<YYYYMMDD><compteur 6 chiffres>_snake_case.sql` — numérotation **NAME-block monotone**, pas un horodatage : vérifier le numéro le plus haut de `supabase/migrations/` avant de choisir (cf. `CLAUDE.md` → *Critical patterns*) |
 | Permissions | `module.action` (e.g. `pos.sale.create`) |
 | Money | `DECIMAL(12,2)` IDR, `roundIdr()` à la centaine |
 | Timezone | DB + apps en `Asia/Makassar` (WITA, UTC+8) |

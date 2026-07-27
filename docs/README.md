@@ -26,7 +26,7 @@ Si un document contredit le code, le document a tort : on le signale, on ne
 docs/
 ├── README.md            ← tu es ici (carte + hiérarchie de vérité)
 ├── V2_V3_GLOSSARY.md    ← pont V2→V3 (renommages)
-├── adr/                 ← décisions numérotées, append-only (ADR-003 → ADR-012)
+├── adr/                 ← décisions numérotées, append-only, immuables
 ├── objectifs/           ← fiches module « objectif métier » (une par module)
 ├── specs/               ← specs d'exécution exigées par un ADR (≤ 3 vivantes,
 │                          nom <ADR>x-<sujet>.md ; une spec meurt à la livraison)
@@ -37,8 +37,10 @@ docs/
 
 ## 📐 Règles documentaires (rappel — détail dans CLAUDE.md)
 
-- **Aucun agent ne crée de fichier `.md`** ni ne commite un fichier de `docs/` :
-  contenu proposé en conversation, écrit et commité par Mamat seul.
+- **Par défaut un agent ne crée ni ne commite un fichier de `docs/`** : il propose le
+  contenu en conversation. **Exception, sur validation explicite de Mamat en séance** :
+  il crée le fichier, et peut le commiter sur une branche dédiée (`docs/…`, `feat/…`,
+  `fix/…`, **jamais `master`**), sans push sans demander. Détail : `CLAUDE.md` règles 1-2.
 - Un ADR ne se modifie jamais ; les plans de session vivent en conversation.
 - Documents évergreen (fiches objectifs, README) : date de dernière révision en
   tête, mise à jour en place. Langue : français pour la doc, anglais pour les
