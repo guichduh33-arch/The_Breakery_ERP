@@ -3,10 +3,13 @@
 // Session 15 / Phase 4.A — Batch production at /backoffice/inventory/production/batch.
 //
 // Plan multiple recipes in a single atomic transaction via
-// record_batch_production_v1. Any failure (insufficient stock on any item,
+// record_batch_production_v4. Any failure (insufficient stock on any item,
 // invalid input, permission denied) rolls back the whole batch — no partial
 // production_records. Permission-gated by `inventory.production.create` at
 // the route level.
+//
+// ADR-008 D4 — le stock insuffisant bloque. Le forçage n'apparaît qu'après un
+// refus, et seulement pour `inventory.production.force_negative`.
 
 import { useMemo, useState, type FormEvent, type JSX } from 'react';
 import { Button } from '@breakery/ui';
@@ -34,6 +37,7 @@ function emptyRow(): BatchItem {
 export default function BatchProductionPage(): JSX.Element {
   const hasPermission = useAuthStore((s) => s.hasPermission);
   const canCreate     = hasPermission('inventory.production.create');
+  const canForceNeg   = hasPermission('inventory.production.force_negative');
 
   const sections = useSections();
   const recordMut = useRecordBatchProduction();
@@ -43,11 +47,12 @@ export default function BatchProductionPage(): JSX.Element {
   const [notes, setNotes]                 = useState<string>('');
   const [idempotencyKey, setIdempotencyKey] = useState<string>(() => crypto.randomUUID());
   const [formError, setFormError]         = useState<string | null>(null);
-  const [shortages, setShortages]         = useState<Array<{ material_name: string; shortfall: number; unit: string }> | null>(null);
+  const [shortages, setShortages]         = useState<{ material_name: string; shortfall: number; unit: string }[] | null>(null);
   const [successMsg, setSuccessMsg]       = useState<string | null>(null);
+  const [forceNegative, setForceNegative] = useState(false);
 
   const excludeIdsByRow = useMemo(() => {
-    const allChosen = items.filter((it) => it.productId !== null).map((it) => it.productId as string);
+    const allChosen = items.filter((it) => it.productId !== null).map((it) => it.productId!);
     return items.map((it) => {
       // For a given row, exclude every OTHER row's chosen product so two rows
       // can't pick the same finished product. (D10 — keep batch composition
@@ -67,7 +72,7 @@ export default function BatchProductionPage(): JSX.Element {
         const q   = Number.parseFloat(it.quantityProduced);
         const w   = Number.parseFloat(it.quantityWaste) || 0;
         const out: BatchItemInput = {
-          productId:        it.productId as string,
+          productId:        it.productId!,
           quantityProduced: q,
         };
         if (w > 0) out.quantityWaste = w;
@@ -93,29 +98,41 @@ export default function BatchProductionPage(): JSX.Element {
     e.preventDefault();
     if (!canSubmit) return;
     setFormError(null);
-    setShortages(null);
+    // Les pénuries restent affichées tant que le forçage est armé.
+    if (!forceNegative) setShortages(null);
     try {
       const args: {
         idempotencyKey: string;
         items: BatchItemInput[];
         notes?: string;
         sectionId?: string;
+        forceNegative?: boolean;
       } = { idempotencyKey, items: submittableItems };
       const trimmedNotes = notes.trim();
       if (trimmedNotes !== '') args.notes = trimmedNotes;
       // sectionId is required (canSubmit gates on sectionId !== '').
       args.sectionId = sectionId;
+      if (forceNegative) args.forceNegative = true;
       const result = await recordMut.mutateAsync(args);
-      setSuccessMsg(`Recorded ${result.batch_number} (${result.production_records.length} items)`);
+      setSuccessMsg(
+        result.forced_negative === true
+          ? `Recorded ${result.batch_number} — forced below stock (traced in the audit log)`
+          : `Recorded ${result.batch_number} (${result.production_records.length} items)`,
+      );
       setItems([emptyRow()]);
       setNotes('');
+      setShortages(null);
+      setForceNegative(false);
       setIdempotencyKey(crypto.randomUUID());
     } catch (err) {
       if (err instanceof RecordBatchProductionError) {
         if (err.code === 'insufficient_stock' && Array.isArray(err.missingDetail)) {
-          const list = err.missingDetail as Array<{ material_name: string; shortfall: number; unit: string }>;
+          const list = err.missingDetail as { material_name: string; shortfall: number; unit: string }[];
           setShortages(list);
           setFormError('Insufficient stock for one or more ingredients.');
+        } else if (err.code === 'force_negative_forbidden') {
+          setForceNegative(false);
+          setFormError('You are not allowed to force a production below stock.');
         } else if (err.code === 'forbidden') {
           setFormError('You do not have permission to create production batches.');
         } else if (err.code === 'recipe_not_found') {
@@ -167,6 +184,26 @@ export default function BatchProductionPage(): JSX.Element {
                   </li>
                 ))}
               </ul>
+            )}
+            {shortages !== null && canForceNeg && (
+              <label className="mt-3 flex items-start gap-2 border-t border-red/30 pt-2 text-text-secondary">
+                <input
+                  type="checkbox"
+                  checked={forceNegative}
+                  onChange={(e) => setForceNegative(e.target.checked)}
+                  data-testid="force-negative-toggle"
+                  className="mt-0.5"
+                />
+                <span>
+                  <span className="block font-semibold text-red">
+                    Force this batch below stock
+                  </span>
+                  <span className="block">
+                    Raw material stock will go negative and the override is recorded
+                    in the audit log. Submit again to confirm.
+                  </span>
+                </span>
+              </label>
             )}
           </div>
         )}
@@ -236,7 +273,9 @@ export default function BatchProductionPage(): JSX.Element {
 
         <div className="flex justify-end pt-2">
           <Button type="submit" variant="primary" disabled={!canSubmit}>
-            {recordMut.isPending ? 'Submitting…' : 'Record batch'}
+            {recordMut.isPending
+              ? 'Submitting…'
+              : forceNegative ? 'Force & record batch' : 'Record batch'}
           </Button>
         </div>
       </form>

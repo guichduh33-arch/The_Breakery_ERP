@@ -1,15 +1,19 @@
 // apps/backoffice/src/features/inventory-production/hooks/useRecordBatchProduction.ts
 //
-// Session 15 / Phase 4.A — Wraps `record_batch_production_v2` atomic RPC.
+// Session 15 / Phase 4.A — Wraps `record_batch_production_v4` atomic RPC.
 //
-// v2 == v1 plus an optional, backdatable p_batch.production_date. When absent
-// the behaviour is identical to v1 (production_date defaults to now()), so the
-// pre-existing BatchProductionPage caller is unaffected. Only the production
-// page's date navigator sets it (the financial ledger/JEs stay at now() —
-// v2 only patches production_records.production_date).
+// v4 is the canonical entry point: it parses the optional, backdatable
+// p_batch.production_date then delegates to the internal v3 implementation.
+// When production_date is absent the ledger/JEs stay at now() — the wrapper
+// only patches production_records.production_date.
+//
+// ADR-008 D4 — le lot BLOQUE en stock insuffisant (le réglage global
+// `allow_negative_stock` ne gouverne plus que la vente). `forceNegative` est la
+// seule échappatoire, gatée serveur par `inventory.production.force_negative`.
 //
 // Server contract :
-//   p_batch = { notes?, section_id?, idempotency_key?, production_date? }
+//   p_batch = { notes?, section_id?, idempotency_key?, production_date?,
+//               force_negative? }
 //   p_items = [{
 //     product_id, quantity_produced,
 //     quantity_waste?, expected_yield_qty?, actual_yield_qty?,
@@ -33,6 +37,8 @@ export type RecordBatchProductionErrorCode =
   | 'waste_must_be_non_negative'
   | 'recipe_not_found'
   | 'insufficient_stock'
+  | 'force_negative_forbidden'
+  | 'invalid_force_negative'
   | 'invalid_production_date'
   | 'unknown';
 
@@ -64,6 +70,8 @@ export interface RecordBatchProductionArgs {
   items:           BatchItemInput[];
   /** ISO-8601 timestamp. Backdates production_records.production_date only. */
   productionDate?: string;
+  /** ADR-008 D4 — produce despite insufficient stock (permission-gated server-side). */
+  forceNegative?: boolean;
 }
 
 export interface BatchProductionRecord {
@@ -82,9 +90,16 @@ export interface RecordBatchProductionResult {
   status:              'open' | 'completed' | 'cancelled';
   production_records:  BatchProductionRecord[];
   idempotent_replay:   boolean;
+  /** True when the batch was forced through despite shortages (ADR-008 D4). */
+  forced_negative?:    boolean;
+  /** Shortages the force bypassed (empty unless forced). */
+  shortages?:          { material_name: string; shortfall: number; unit: string }[];
 }
 
 function classify(message: string): RecordBatchProductionErrorCode {
+  // Doit précéder le test générique : 'force_negative_forbidden' contient 'forbidden'.
+  if (message.includes('force_negative_forbidden'))        return 'force_negative_forbidden';
+  if (message.includes('invalid_force_negative'))          return 'invalid_force_negative';
   if (message.includes('forbidden'))                       return 'forbidden';
   if (message.includes('invalid_batch_envelope'))          return 'invalid_batch_envelope';
   if (message.includes('items_must_be_non_empty_array'))   return 'items_must_be_non_empty_array';
@@ -123,10 +138,12 @@ export function useRecordBatchProduction() {
       if (args.productionDate !== undefined && args.productionDate !== '') {
         batchPayload.production_date = args.productionDate;
       }
+      // Le serveur exige un booléen JSON strict (invalid_force_negative sinon).
+      if (args.forceNegative === true) batchPayload.force_negative = true;
 
       const itemsPayload = args.items.map(buildItemPayload);
 
-      const { data, error } = await supabase.rpc('record_batch_production_v2', {
+      const { data, error } = await supabase.rpc('record_batch_production_v4', {
         p_batch: batchPayload as unknown as never,
         p_items: itemsPayload as unknown as never,
       });

@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/inventory-production/components/ProductionForm.tsx
 //
-// Records a production batch via record_production_v1. Live feasibility
+// Records a production batch via record_production_v2. Live feasibility
 // preview powered by @breakery/domain's checkFeasibility() against the
 // currently-fetched recipe + per-material current_stock from useFinishedProducts.
 //

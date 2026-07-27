@@ -4,7 +4,7 @@
 -- Covers migrations 20260519000100..000102 :
 --   - production_batches table + RLS lockdown
 --   - production_records.batch_id FK
---   - record_batch_production_v1 RPC (atomic multi-recipe orchestrator)
+--   - record_batch_production_v3 RPC (atomic multi-recipe orchestrator)
 --
 -- Coverage matrix :
 --   T1 — Happy path : 3-item batch -> 1 production_batches row + 3 production_records linked.
@@ -48,10 +48,11 @@ BEGIN
   PERFORM set_config('bp.category_id',   v_category_id::text,   false);
   PERFORM set_config('request.jwt.claim.sub', v_admin_uid::text, false);
 
-  -- S77 : la base dev vivante porte allow_negative_stock=true (décision
-  -- propriétaire n°6, 2026-07-06) — T2/T5 asservent la sémantique BLOQUANTE
-  -- d'origine (insufficient_stock levé). On épingle le flag à false pour la
-  -- durée de la transaction (rollback final = sans trace).
+  -- ADR-008 D4 : la sémantique BLOQUANTE asservie par T2/T5 est désormais le
+  -- DÉFAUT du lot, quel que soit allow_negative_stock (ce réglage ne gouverne
+  -- plus que la vente). On épingle quand même le flag à false pour la durée de
+  -- la transaction, afin que la suite reste neutre vis-à-vis de l'état de la
+  -- base (rollback final = sans trace).
   UPDATE business_config SET allow_negative_stock = false WHERE id = 1;
 END $boot$;
 
@@ -110,7 +111,7 @@ DECLARE
   v_pr_count INT;
   v_pr_match INT;
 BEGIN
-  v_payload := record_batch_production_v1(
+  v_payload := record_batch_production_v3(
     jsonb_build_object(
       'notes',      'T1 happy path',
       'section_id', current_setting('bp.section_id')
@@ -153,7 +154,7 @@ BEGIN
   SELECT COUNT(*) INTO v_batches_before FROM production_batches;
 
   BEGIN
-    PERFORM record_batch_production_v1(
+    PERFORM record_batch_production_v3(
       jsonb_build_object('section_id', current_setting('bp.section_id')),
       jsonb_build_array(
         jsonb_build_object('product_id', current_setting('bp.fa'), 'quantity_produced', 1),
@@ -191,7 +192,7 @@ DECLARE
   v_replay JSONB;
   v_batches INT;
 BEGIN
-  v_first := record_batch_production_v1(
+  v_first := record_batch_production_v3(
     jsonb_build_object(
       'section_id',      current_setting('bp.section_id'),
       'idempotency_key', v_key::text
@@ -200,7 +201,7 @@ BEGIN
       jsonb_build_object('product_id', current_setting('bp.fc'), 'quantity_produced', 1)
     )
   );
-  v_replay := record_batch_production_v1(
+  v_replay := record_batch_production_v3(
     jsonb_build_object(
       'section_id',      current_setting('bp.section_id'),
       'idempotency_key', v_key::text
@@ -243,7 +244,7 @@ BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_cashier_uid::text, false);
   PERFORM set_config('role', 'authenticated', false);
   BEGIN
-    PERFORM record_batch_production_v1(
+    PERFORM record_batch_production_v3(
       jsonb_build_object('section_id', current_setting('bp.section_id')),
       jsonb_build_array(
         jsonb_build_object('product_id', current_setting('bp.fa'), 'quantity_produced', 1)
@@ -273,7 +274,7 @@ DECLARE
 BEGIN
   UPDATE products SET current_stock = 4 WHERE id = current_setting('bp.mx')::uuid;
   BEGIN
-    PERFORM record_batch_production_v1(
+    PERFORM record_batch_production_v3(
       jsonb_build_object('section_id', current_setting('bp.section_id')),
       jsonb_build_array(
         jsonb_build_object('product_id', current_setting('bp.fa'), 'quantity_produced', 1),
@@ -302,7 +303,7 @@ DO $t6$
 DECLARE v_err TEXT := '';
 BEGIN
   BEGIN
-    PERFORM record_batch_production_v1(
+    PERFORM record_batch_production_v3(
       jsonb_build_object('section_id', current_setting('bp.section_id')),
       '[]'::jsonb
     );
@@ -328,7 +329,7 @@ DECLARE
 BEGIN
   SELECT COUNT(*) INTO v_batches_before FROM production_batches;
   BEGIN
-    PERFORM record_batch_production_v1(
+    PERFORM record_batch_production_v3(
       jsonb_build_object('section_id', current_setting('bp.section_id')),
       jsonb_build_array(
         jsonb_build_object('product_id', current_setting('bp.fa'), 'quantity_produced', 1),
@@ -351,8 +352,8 @@ SELECT is(
 );
 
 -- ---------------------------------------------------------------------------
--- T8 — production_records.batch_id correctly populated by record_batch_production_v1
---      and NULL on standalone record_production_v1 calls.
+-- T8 — production_records.batch_id correctly populated by record_batch_production_v3
+--      and NULL on standalone record_production_v2 calls.
 -- ---------------------------------------------------------------------------
 DO $t8$
 DECLARE
