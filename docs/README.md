@@ -25,7 +25,6 @@ Si un document contredit le code, le document a tort : on le signale, on ne
 ```
 docs/
 ├── README.md            ← tu es ici (carte + hiérarchie de vérité)
-├── V2_V3_GLOSSARY.md    ← pont V2→V3 (renommages)
 ├── adr/                 ← décisions numérotées, append-only, immuables
 ├── objectifs/           ← fiches module « objectif métier » (une par module)
 ├── specs/               ← specs d'exécution exigées par un ADR (≤ 3 vivantes,

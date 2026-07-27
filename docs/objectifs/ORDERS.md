@@ -1,6 +1,6 @@
 # Module Orders — Objectif métier
 
-> **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée**. Implémentation réelle = V3 monorepo (`apps/backoffice`). Voir [`../V2_V3_GLOSSARY.md`](../V2_V3_GLOSSARY.md) pour les mappings.
+> **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée**. Implémentation réelle = V3 monorepo (`apps/backoffice`).
 >
 > **Périmètre fonctionnel** : ce document décrit **ce que la page Orders (`/orders`) sert à faire au quotidien** pour The Breakery, .
 

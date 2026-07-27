@@ -1,6 +1,6 @@
 # Module Reports — Objectif métier
 
-> **Statut V2/V3** : décrit la vision business cible (~61 reports en 7 catégories). **V2 jamais déployée**. Implémentation V3 = **partielle**. **Au 2026-07-28 : 31 pages sous `apps/backoffice/src/pages/reports/` et 4 sous `pages/marketing/`, exposées par 30 routes `reports/*`.** Le reliquat du catalogue cible et l'export Z-Report restent à livrer 🔴. Voir [`../V2_V3_GLOSSARY.md`](../V2_V3_GLOSSARY.md).
+> **Statut V2/V3** : décrit la vision business cible (~61 reports en 7 catégories). **V2 jamais déployée**. Implémentation V3 = **partielle**. **Au 2026-07-28 : 31 pages sous `apps/backoffice/src/pages/reports/` et 4 sous `pages/marketing/`, exposées par 30 routes `reports/*`.** Le reliquat du catalogue cible et l'export Z-Report restent à livrer 🔴.
 >
 > **Périmètre fonctionnel** : ce document décrit **ce que le module Reports sert à faire au quotidien** pour The Breakery.
 
