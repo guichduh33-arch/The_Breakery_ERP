@@ -1,6 +1,6 @@
 # Module Cash Register (Sessions de caisse) — Objectif métier
 
-> **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée**. Implémentation V3 = DONE (RPCs `close_shift_rpc`, `record_cash_movement_rpc`, `apps/pos/src/features/shift`). Voir [`../V2_V3_GLOSSARY.md`](../V2_V3_GLOSSARY.md).
+> **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée**. Implémentation V3 = DONE (RPCs des familles `close_shift`, `record_cash_movement`, `apps/pos/src/features/shift`). Voir [`../V2_V3_GLOSSARY.md`](../V2_V3_GLOSSARY.md).
 >
 > **Périmètre fonctionnel** : ce document décrit **ce que le module Cash Register sert à faire au quotidien** pour The Breakery, sans rentrer dans la mécanique technique 
 
@@ -40,7 +40,7 @@ Le cycle est **strictement linéaire** : on ne peut pas re-compter une session f
 
 Quelles que soient les circonstances, le module garantit :
 
-1. **Une session par utilisateur par terminal**. Impossible d'avoir deux sessions ouvertes simultanément sur le même couple `(user, terminal)`. La RPC `open_shift` refuse.
+1. **Une session par utilisateur par terminal**. Impossible d'avoir deux sessions ouvertes simultanément sur le même couple `(user, terminal)`. Le garde-fou livré est une **contrainte d'exclusion** en base (`one_open_session_per_user`), qui refuse une seconde session ouverte **pour le même utilisateur**.
 2. **Pas de vente sans session ouverte**. Le POS refuse toute transaction tant qu'aucune session `status = 'open'` n'existe pour le cashier connecté.
 3. **Comptage cash chiffré obligatoire**. Ouverture comme fermeture exigent une saisie numérique — on ne peut pas "estimer". Pas de session sans nombre.
 4. **Écart calculé, jamais inventé**. À la clôture, `expected_cash = opening_cash + cash_sales − cash_refunds`. Le système calcule, le cashier ne triche pas en arrière.
@@ -57,7 +57,7 @@ Avant la première vente, le cashier qui prend son poste déclenche `OpenShiftMo
 - **Sélection du terminal** : sur quel poste physique on ouvre (Terminal 1 caisse principale, Terminal 2 comptoir café…).
 - **Comptage du fond de caisse** : saisie du montant total de l'`opening_cash`.
 - **Détail facultatif par coupure** (`opening_cash_details` JSONB) : combien de 100k, combien de 50k, combien de 20k, etc. — pour audit fin.
-- **Validation** → la RPC `open_shift` crée la session avec un numéro séquentiel `SHF-YYYYMMDD-NN`.
+- **Validation** → la session est créée dans `pos_sessions`. Le **numéro de session lisible** (`SHF-YYYYMMDD-NN`) n'est **pas livré** : la table ne porte aucune colonne de numérotation.
 
 ### 4.2 Les contrôles automatiques
 
@@ -262,7 +262,7 @@ Bénéfice métier : **cloisonner les responsabilités cash**. Un cashier peut o
 
 - Le module **ne gère pas le coffre-fort**. Le dépôt en banque du cash est une opération externe (à venir : module Cash Management).
 - Le module **ne fait pas de mouvement intermédiaire** (cash-in / cash-out pendant la session). Pour ajouter du fond en cours, il faut fermer la session puis en ouvrir une nouvelle. *Cf. backlog.*
-- Le module **ne supporte pas les sessions multi-journée**. Une session ne peut pas durer plus de 24h — au-delà, fermeture forcée par script.
+- Le module **ne supporte pas les sessions multi-journée**. Une session ne devrait pas durer plus de 24 h — mais **aucune fermeture automatique n'est livrée** : il n'existe aucun script ni tâche planifiée sur les sessions, et ce qui doit se passer au-delà de 24 h n'est pas décidé.
 - Le module **ne calcule pas la TVA / PB1**. Ce calcul est fait au niveau de chaque commande (tax inclusive 10/110).
 - Le module **ne signe pas électroniquement** (KSeF, fiscal certification). Pas de certification fiscale Indonésie obligatoire en V2.
 

@@ -53,7 +53,7 @@ Quel que soit le moment d'utilisation, le POS garantit toujours :
    quantité passe par l'ajout d'une nouvelle ligne, jamais par la retouche.
 4. **Auto-évaluation des promotions** à chaque changement de panier via `useCartPromotions`. Le caissier ne calcule jamais : le système applique automatiquement les bonnes remises.
 5. **Tax PB1 10% incluse dans tous les prix**. Le client voit toujours le prix total ; le système isole la taxe (`tax = total × 10/110`) pour la comptabilité.
-6. **Une commande atomique : items + paiements en une seule transaction**. La RPC `complete_order_with_payments` crée la commande et tous ses paiements dans une transaction Postgres unique — pas de risque de paiement orphelin si la connexion saute.
+6. **Une commande atomique : items + paiements en une seule transaction**. Le POS poste l'Edge Function `process-payment`, qui appelle côté serveur la RPC money-path courante (famille `complete_order_with_payment`) : celle-ci crée la commande et tous ses paiements dans une transaction Postgres unique — pas de risque de paiement orphelin si la connexion saute. Le POS n'appelle jamais la RPC directement.
 
 ---
 
@@ -189,9 +189,9 @@ Le client peut payer **moitié cash + moitié carte**. La modale supporte plusie
 
 Cas dine-in où 4 amis veulent payer chacun **ce qu'ils ont consommé** :
 
-- `SplitByItemModal` affiche les items du panier.
-- Chaque personne sélectionne ses items via `SplitItemAssignment`.
-- Le système calcule son total individuel + sa quote-part de taxe.
+- Le flux de split (`SplitPaymentFlow`) propose trois modes : **par items**, parts égales, montants libres.
+- En mode « par items », l'étape d'assignation affiche les lignes du panier et le caissier attribue les unités à chaque payeur.
+- Le système calcule son total individuel. La **quote-part de taxe par payeur** n'est **pas livrée** : le total d'un payeur est la somme de ses lignes.
 - Chaque sous-paiement crée son propre paiement dans la même commande.
 
 ### 8.5 Paiement différé (ardoise)
@@ -204,7 +204,7 @@ Si la méthode "POS Outstanding" est choisie, la commande passe en statut `unpai
 
 ### 8.6 Validation finale
 
-À la validation, la RPC `complete_order_with_payments` exécute **atomiquement** :
+À la validation, le POS poste l'Edge Function `process-payment`, qui appelle côté serveur la RPC money-path courante (famille `complete_order_with_payment`) dans une transaction unique. Le POS n'appelle jamais la RPC directement — c'est l'EF qui porte l'idempotence de retry (`x-idempotency-key`) et la vérification du PIN de remise. La RPC exécute **atomiquement** :
 
 1. Création de la commande en base avec items et modificateurs.
 2. Création de tous les paiements liés.
@@ -248,7 +248,7 @@ Bénéfice métier : **un client mécontent est traité en 30 secondes**, sans b
 
 ## 10. Vue **Outstanding** — Les ardoises POS
 
-`/pos/outstanding` (page séparée du POS principal mais dans le même module) :
+`/pos/debts` (page séparée du POS principal mais dans le même module) :
 
 - Liste de toutes les commandes en statut `unpaid` (ardoises).
 - Par client : combien dépend depuis quand.

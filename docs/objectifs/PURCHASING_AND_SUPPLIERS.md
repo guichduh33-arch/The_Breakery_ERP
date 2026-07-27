@@ -1,6 +1,6 @@
 # Module Purchasing & Suppliers — Objectif métier
 
-> **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée**. Implémentation V3 = DONE + amélioré (RPCs `create_po`, `receive_po`, `cancel_po` + landed cost shipping pro-rata S23 + WAC `update_cost_price_v1` avec replay envelope S26). Voir [`../V2_V3_GLOSSARY.md`](../V2_V3_GLOSSARY.md).
+> **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée**. Implémentation V3 = DONE + amélioré (RPCs des familles `create_purchase_order`, `receive_purchase_order`, `cancel_purchase_order` + landed cost shipping pro-rata + WAC famille `update_cost_price` avec replay envelope). Voir [`../V2_V3_GLOSSARY.md`](../V2_V3_GLOSSARY.md).
 >
 > **Périmètre fonctionnel** : ce document décrit **ce que le module sert à faire au quotidien** pour The Breakery,
 

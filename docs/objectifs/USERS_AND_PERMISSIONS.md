@@ -29,10 +29,10 @@ Les deux faces convergent sur **une mécanique d'authentification par PIN** rapi
 |---|---|---|
 | **Users** (`/users`) | Créer / modifier / activer / désactiver les fiches employés, attribuer leurs rôles, gérer leur PIN | `users.view`, `users.create` |
 | **Permissions Matrix** (`/users/permissions`) | Définir qui-peut-quoi via une grille rôles × permissions | `users.roles` |
-| **Roles** (`/settings/roles`) | Créer / cloner / renommer / supprimer des rôles métier | `users.roles` |
-| **Audit Log** (`/settings/audit`) | Tracer toutes les actions sensibles attribuées à un utilisateur | `users.roles` (ou admin) |
+| **Roles** (**non livré** — aucune page de gestion des rôles n'existe) | Créer / cloner / renommer / supprimer des rôles métier | `users.roles` |
+| **Audit Log** (`/reports/audit`) | Tracer toutes les actions sensibles attribuées à un utilisateur | `reports.audit.read` |
 
-Le module est complété par le sous-système **PIN** (`auth-verify-pin`, `auth-change-pin`, `set-user-pin` Edge Functions) qui fournit le mécanisme d'authentification rapide à la caisse, sans clavier ni mot de passe long.
+Le module est complété par le sous-système **PIN** (Edge Functions `auth-verify-pin`, `auth-change-pin`, `verify-manager-pin`) qui fournit le mécanisme d'authentification rapide à la caisse, sans clavier ni mot de passe long.
 
 ---
 
@@ -164,7 +164,7 @@ Bénéfice métier : **chaque permission est un curseur risque/productivité**. 
 
 ## 6. Vue **Roles** — Définir les profils métier
 
-Avant de remplir la matrice, il faut **créer les rôles**. La page Roles (dans `/settings/roles`) permet de :
+Avant de remplir la matrice, il faut **créer les rôles**. La page Roles est **non livrée** — aucune route ne l'expose aujourd'hui. Elle doit permettre de :
 
 ### 6.1 Créer un rôle
 
@@ -232,7 +232,7 @@ Bénéfice métier : **rapidité caisse compatible avec sécurité staff**. Un c
 
 ## 8. Audit Log — La trace écrite
 
-Le module s'accompagne d'un **journal d'audit** (page `/settings/audit`) qui trace toutes les actions sensibles attribuées à un utilisateur.
+Le module s'accompagne d'un **journal d'audit** (page `/reports/audit`) qui trace toutes les actions sensibles attribuées à un utilisateur.
 
 ### 8.1 Événements tracés
 
@@ -281,7 +281,7 @@ Bénéfice : **un utilisateur ne voit même pas ce qu'il ne peut pas faire**. Pa
 Toutes les permissions sont vérifiées **deux fois** :
 
 1. **Côté frontend** (PermissionGuard) — pour la fluidité UX.
-2. **Côté Supabase** (RLS policies + `user_has_permission()` SECURITY DEFINER) — pour la sécurité réelle.
+2. **Côté Supabase** (RLS policies + `has_permission()` SECURITY DEFINER) — pour la sécurité réelle.
 
 Bénéfice : **un utilisateur qui contournerait le frontend** (via un appel API direct, un curl, un client compromis) tombe immédiatement sur le mur RLS côté base. La sécurité ne dépend jamais du browser.
 

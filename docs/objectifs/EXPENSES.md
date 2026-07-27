@@ -39,7 +39,7 @@ Quel que soit le contexte d'utilisation, le module garantit :
 
 1. **Catégorie obligatoire**. Aucune dépense ne se valide sans catégorie — c'est elle qui pilote le compte comptable destinataire.
 2. **Workflow Draft → Approved → Paid**. Trois statuts. Une dépense passe par un cycle de validation explicite avant de toucher la compta.
-3. **Écriture comptable automatique à l'approbation**. La RPC `approve_expense_with_journal` génère l'écriture journal en même temps que la validation — pas de saisie compta double.
+3. **Écriture comptable automatique à l'approbation**. La RPC de la famille `approve_expense` génère l'écriture journal en même temps que la validation — pas de saisie compta double.
 4. **Traçabilité auteur**. `created_by` (qui a saisi) et `approved_by` (qui a validé) sont obligatoires et différents pour les montants élevés (séparation des tâches).
 5. **Justificatif rattachable**. Chaque dépense peut porter une pièce jointe (photo de facture, scan de ticket) — preuve archivable.
 
@@ -151,7 +151,7 @@ Draft → (review) → Approved → (payment) → Paid
 
 - Le créateur soumet la dépense → statut `pending_approval` (ou directement `approved` si l'auteur a la permission `expenses.approve`).
 - Un manager / owner consulte, peut **approuver** ou **rejeter avec raison**.
-- À l'approbation, la RPC `approve_expense_with_journal` :
+- À l'approbation, la RPC de la famille `approve_expense` :
   - Bascule le statut en `approved`.
   - Enregistre `approved_by = user_id` et `approved_at = now()`.
   - **Génère automatiquement l'écriture comptable** : DR Compte de charge (selon catégorie) / CR Cash ou Bank ou AP selon la méthode de paiement.
@@ -218,7 +218,7 @@ Chaque catégorie a :
 
 Le module Expenses est **fortement intégré** au module Accounting :
 
-- Chaque approbation déclenche `approve_expense_with_journal` qui écrit dans `journal_entries`.
+- Chaque approbation déclenche la RPC famille `approve_expense`, qui écrit dans `journal_entries`.
 - L'écriture est immédiatement visible dans le grand livre (`GeneralLedgerPage`).
 - Le report **Expenses by Category** (module Reports) lit `expenses` directement.
 - Le **P&L Monthly Trend** consolide les expenses dans la section "Charges d'exploitation".
@@ -292,7 +292,7 @@ Bénéfice métier : **cloisonner les responsabilités**. Un cashier peut saisir
 
 | Module | Relation |
 |---|---|
-| **Accounting** | Écriture journal automatique à l'approbation via `approve_expense_with_journal`. |
+| **Accounting** | Écriture journal automatique à l'approbation via la RPC famille `approve_expense`. |
 | **Reports** | `expenses` (par date), `expense_by_category` (backlog), `pl_monthly_trend` consomment les données. |
 | **Settings** | Catégories par défaut, seuils d'approbation, compte comptable par catégorie. |
 | **Users & Permissions** | Permissions `expenses.*` cloisonnent les droits. |

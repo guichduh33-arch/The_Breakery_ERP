@@ -27,7 +27,7 @@ Les deux faces partagent le même moteur d'évaluation et le même invariant : *
 
 | Famille | Quoi | Saisie | Application |
 |---|---|---|---|
-| **Promotions** | Règles de remise conditionnelles | Page `/products/promotions` (un seul écran de configuration) | Auto-évaluées à chaque changement de panier |
+| **Promotions** | Règles de remise conditionnelles | Page `/promotions` (un seul écran de configuration) | Auto-évaluées à chaque changement de panier |
 | **Combos** | Produits composés vendus comme un seul SKU à prix groupé | Page `/products/combos` (création de combos + groupes) | Sélectionnés explicitement au POS via `ComboSelectorModal` |
 
 Les deux résident administrativement dans le module **Products** (page parente) mais constituent un domaine métier autonome avec ses propres règles.
@@ -135,7 +135,7 @@ Bénéfice métier : **le caissier voit la promo se déclencher en direct** dès
 
 ## 7. La création / édition d'une promo
 
-Page **Promotions list** (`/products/promotions`) :
+Page **Promotions list** (`/promotions`) :
 
 - Liste de toutes les promos (actives, planifiées, expirées).
 - Cards (`PromotionCard`) avec : nom, type, période, conditions résumées, statut, compteur d'utilisations.

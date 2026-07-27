@@ -93,7 +93,7 @@ Page `JournalEntriesPage` : la liste des **écritures comptables** générées e
 | **Paiement fournisseur** | Auto | Débit 2100 AP 500k / Crédit 1120 Bank 500k |
 | **Production** | Auto | Débit 1300 Finished Goods / Crédit 1300 Raw Materials |
 | **Casse / Wastage** | Auto | Débit 5200 Wastage / Crédit 1300 Inventory |
-| **Dépense** | Auto (via approve_expense_with_journal RPC) | Débit 5200 Operating Expense / Crédit 1110 Cash ou 2100 AP |
+| **Dépense** | Auto (à l'approbation, famille `approve_expense`) | Débit 5200 Operating Expense / Crédit 1110 Cash ou 2100 AP |
 | **Écart de caisse** | Auto à la clôture session | Débit/Crédit 4900/5900 selon signe |
 | **Ajustement manuel** | Manuel (`JournalEntryForm`) | Toute écriture saisie à la main par le comptable |
 
@@ -200,7 +200,7 @@ Page `VATManagementPage` : la gestion spécifique de la **PB1** (Pajak Restoran 
 ### 10.2 Fonctionnalités
 
 - **VATSummaryCard** : carte synthétique mois par mois (PB1 collectée, à reverser).
-- **Calculer la PB1 du mois** via RPC `calculate_vat_payable(year, month)`.
+- **Calculer la PB1 du mois** via la RPC de la famille `calculate_pb1_payable` (année, mois).
 - **Filings** (`useVatFilings`) : historique des déclarations passées.
 - **Génération de la déclaration mensuelle** : PDF imprimable conforme au format attendu par le service fiscal local.
 - **Marquage "déclaré + payé"** une fois la déclaration faite (verrouille la période).
@@ -298,7 +298,7 @@ Toute la **valeur quotidienne** du module vient de l'**automatisation**. Les tri
 | Paiement fournisseur | Trigger paiement | DR AP / CR Cash/Bank |
 | Casse / Wastage | Trigger | DR Wastage Expense / CR Inventory |
 | Production | Trigger | DR Finished Goods / CR Raw Materials |
-| Dépense approuvée | RPC `approve_expense_with_journal` | DR Operating Expense / CR Cash/Bank or AP |
+| Dépense approuvée | RPC famille `approve_expense` | DR Operating Expense / CR Cash/Bank or AP |
 | Écart de caisse session | Trigger fermeture | DR/CR Exceptional / CR/DR Cash |
 | Refund | Trigger void/refund | Contre-passation de la vente d'origine |
 
@@ -315,7 +315,7 @@ Bénéfice métier : **le comptable n'est plus la goulot d'étranglement**. Il c
 | **Inventory** | Chaque production / casse / opname adjustment écrit en compta. |
 | **Purchasing** | Chaque réception PO et chaque paiement fournisseur écrit en compta. |
 | **Cash Register** | Chaque clôture session écrit un éventuel écart de caisse. |
-| **Expenses** | Chaque dépense approuvée passe par `approve_expense_with_journal`. |
+| **Expenses** | Chaque dépense approuvée passe par la RPC famille `approve_expense`. |
 | **Reports** | P&L Monthly Trend, VAT Report, Receivables, Expenses by Category lisent les tables compta. |
 | **Settings** | Plan comptable de référence, numérotation écritures, date de clôture exercice configurés dans Settings → Financial. |
 

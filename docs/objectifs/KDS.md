@@ -2,7 +2,7 @@
 
 > **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée**. Implémentation réelle = V3 monorepo (`apps/pos/src/features/kds`). Voir [`../V2_V3_GLOSSARY.md`](../V2_V3_GLOSSARY.md).
 >
-> **Périmètre fonctionnel** : ce document décrit **ce que le module KDS (`/kds`, `/kds/:station`) sert à faire au quotidien** pour The Breakery,
+> **Périmètre fonctionnel** : ce document décrit **ce que le module KDS (`/kds`) sert à faire au quotidien** pour The Breakery,
 
 ---
 
@@ -65,7 +65,7 @@ Bénéfice métier : **un appareil = un poste**. La tablette posée sur le plan 
 
 ## 5. La grille de commandes — Le cœur opérationnel
 
-Page `KDSMainPage` (`/kds/:station`) — l'écran de travail à plein temps.
+Page `KdsPage` (`/kds`) — l'écran de travail à plein temps. La station n'est pas un segment de route : elle se choisit dans l'écran.
 
 ### 5.1 Structure
 
