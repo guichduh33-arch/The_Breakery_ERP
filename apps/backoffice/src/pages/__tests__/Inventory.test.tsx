@@ -85,7 +85,9 @@ vi.mock('@/stores/authStore.js', () => ({
   useAuthStore: (sel: (s: { hasPermission: (p: string) => boolean }) => unknown) =>
     sel({
       hasPermission: (p: string) =>
-        ['inventory.read', 'inventory.adjust', 'inventory.receive', 'inventory.waste'].includes(p),
+        // Q3 audit 2026-07-27 : le bouton Receive est gaté purchasing.po.create
+        // (navigation vers l'achat direct compté), plus inventory.receive.
+        ['inventory.read', 'inventory.adjust', 'purchasing.po.create', 'inventory.waste'].includes(p),
     }),
 }));
 
