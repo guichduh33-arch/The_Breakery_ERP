@@ -93,7 +93,7 @@ export default function InventoryPage() {
             </Button>
           )}
           {canReceive && (
-            <Button type="button" variant="primary" onClick={() => navigate('/backoffice/inventory/incoming')}>
+            <Button type="button" variant="primary" onClick={() => { void navigate('/backoffice/inventory/incoming'); }}>
               <Truck className="h-4 w-4" aria-hidden /> Receive
             </Button>
           )}
@@ -191,7 +191,7 @@ export default function InventoryPage() {
                   row={row}
                   canAdjust={canAdjust}
                   canWaste={canWaste}
-                  onView={(r) => navigate(`/backoffice/inventory/${r.product_id}`)}
+                  onView={(r) => { void navigate(`/backoffice/inventory/${r.product_id}`); }}
                   onAdjust={(r) => setModal({ kind: 'adjust', product: r })}
                   onWaste={(r) => setModal({ kind: 'waste', product: r })}
                 />
