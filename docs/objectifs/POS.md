@@ -89,7 +89,6 @@ Le type pilote ensuite la logique de paiement (différé acceptable pour dine-in
 Trois mécanismes complémentaires :
 
 - **Clic produit dans la grille** → ajout direct au panier.
-- **Scan QR / code-barres** via `QRScanArea` (caméra) → ajout par identification.
 - **Combo selector** → un combo (ex: "petit-déjeuner") déclenche un `ComboSelectorModal` qui permet de choisir les composants (croissant **ou** pain au chocolat + café **ou** thé).
 
 ### 5.3 Modificateurs et variantes
@@ -297,10 +296,10 @@ Le hook `useTabletOrderReceiver` écoute en continu les commandes envoyées depu
 
 - Un serveur prend une commande à table avec sa tablette.
 - La commande arrive en notification dans `TabletOrdersPanel` côté caisse.
-- Le caissier peut la valider, l'ajouter au panier en cours, ou la rejeter.
-- Une fois acceptée, elle suit le flux normal (envoi cuisine → encaissement).
+- La commande s'enregistre automatiquement dans les commandes on-hold.
+- Puis elle suit le flux normal (envoi cuisine → encaissement).
 
-Bénéfice métier : **dispatcher la prise de commande entre la salle et le comptoir** sans ressaisie. Le serveur saisit, le caissier valide et encaisse.
+Bénéfice métier : **dispatcher la prise de commande entre la salle et le comptoir** sans ressaisie.
 
 ---
 
@@ -365,7 +364,6 @@ Bénéfice métier : **clôture rigoureuse en 5 minutes** avec preuves chiffrée
 - Le POS **ne fait pas de promotion manuelle complexe**. L'engine promo est dans le module Promotions, le POS ne fait que l'appliquer.
 - Le POS **ne crée pas de commande B2B**. Le canal wholesale a son propre flux dans le module B2B.
 - Le POS **ne valide pas de stock impossible** sauf si le toggle "allow oversell" est activé dans Settings.
-- Le POS **ne supporte pas le mode offline complet**. Une coupure réseau bloque les transactions — choix de design pour garantir la cohérence comptable.
 - Le POS **ne pilote pas l'item status** côté cuisine (preparing → ready → served). C'est le KDS qui le fait.
 
 ---
@@ -374,7 +372,7 @@ Bénéfice métier : **clôture rigoureuse en 5 minutes** avec preuves chiffrée
 
 | Priorité | Évolution | Bénéfice attendu |
 |---|---|---|
-| 🔴 | **Mode dégradé offline** | Continuer à encaisser pendant une coupure courte (queue local synchronisée au retour). |
+| 🔴 | **Offline complet — tous moyens de paiement** | Pendant une coupure : prise de commande **et** encaissement quel que soit le moyen — l'EDC carte/QRIS a sa propre connexion SIM, indépendante du Wi-Fi boutique, le POS ne fait qu'enregistrer le règlement. **Sans limite de durée**, **partage d'addition compris**. File locale rejouée au retour du réseau. Résiduels techniques : le replay ne porte aujourd'hui qu'un seul règlement cash (à étendre aux autres méthodes et au multi-tender), la fenêtre `offline_max_hours` (4 h) est à retirer, le split est bloqué offline. Contrôle : rapprocher les tickets EDC aux règlements non-cash rejoués. |
 | 🔴 | **Pre-authorization cartes** | Pour les commandes dine-in, pré-autoriser la carte à l'arrivée et finaliser au départ. |
 | 🟠 | **Réservation / pré-commande client** | Prendre une commande à retirer plus tard (anniversaire, gâteau sur mesure) avec acompte. |
 | 🟠 | **Tableau "Tables ouvertes" en vue principale** | Vue dédiée pour le dine-in avec statut de chaque table (vide / commandée / servie / à encaisser). |
@@ -382,7 +380,6 @@ Bénéfice métier : **clôture rigoureuse en 5 minutes** avec preuves chiffrée
 | 🟡 | **Voice search** | Recherche client / produit à la voix dans le rush. |
 | 🟡 | **Suggested upsell** | Proposer "voulez-vous un café avec ?" basé sur l'analyse basket. |
 | 🟢 | **Customer-facing payment QR** | QR généré à la volée pour paiement direct par l'app banque client. |
-| 🟢 | **Multi-currency** | Encaisser un touriste en USD avec conversion auto (hors scope V2). |
 
 ---
 
