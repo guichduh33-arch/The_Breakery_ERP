@@ -6,7 +6,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
   enqueueIntent, getPendingIntents, removeIntents, removeIntentsByRoot,
   pendingIntentCount, nextIntentSeq,
-  type OfflineFireIntent, type OfflineCashPaymentIntent,
+  type OfflineFireIntent, type OfflineCashPaymentIntent, type OfflinePaymentIntent,
 } from '../offlineOutbox';
 
 function fireIntent(overrides: Partial<OfflineFireIntent> = {}): OfflineFireIntent {
@@ -34,6 +34,23 @@ function cashIntent(overrides: Partial<OfflineCashPaymentIntent> = {}): OfflineC
     created_at: '2026-07-21T10:01:00.000Z',
     local_number: 'L-1',
     payment: { method: 'cash', amount: 25000, cash_received: 50000, change_given: 25000 },
+    ...overrides,
+  };
+}
+
+/** ADR-015 — format COURANT : n règlements, toutes méthodes sauf store_credit. */
+function paymentIntent(overrides: Partial<OfflinePaymentIntent> = {}): OfflinePaymentIntent {
+  return {
+    kind: 'payment',
+    id: 'pay-1',
+    root_client_uuid: 'fire-1',
+    seq: 2,
+    created_at: '2026-07-21T10:01:00.000Z',
+    local_number: 'L-1',
+    payments: [
+      { method: 'card', amount: 15000 },
+      { method: 'cash', amount: 10000, cash_received: 20000, change_given: 10000 },
+    ],
     ...overrides,
   };
 }
@@ -72,6 +89,38 @@ describe('offlineOutbox (localStorage backend)', () => {
     await removeIntentsByRoot('fire-1');
     const pending = await getPendingIntents();
     expect(pending.map((i) => i.id)).toEqual(['fire-2']);
+  });
+
+  // ── ADR-015 — intent multi-règlements + cohabitation avec le format legacy ──
+
+  it('enqueues a multi-tender payment intent and reads its tenders back', async () => {
+    await enqueueIntent(fireIntent());
+    await enqueueIntent(paymentIntent());
+    const pending = await getPendingIntents();
+    expect(pending.map((i) => i.kind)).toEqual(['fire', 'payment']);
+    const pay = pending[1] as OfflinePaymentIntent;
+    expect(pay.payments).toHaveLength(2);
+    expect(pay.payments.map((t) => t.method)).toEqual(['card', 'cash']);
+  });
+
+  it('removeIntentsByRoot purges the CURRENT payment kind too', async () => {
+    await enqueueIntent(fireIntent());
+    await enqueueIntent(paymentIntent());
+    await enqueueIntent(fireIntent({ id: 'fire-2', root_client_uuid: 'fire-2', seq: 3, local_number: 'L-2' }));
+    await removeIntentsByRoot('fire-1');
+    expect((await getPendingIntents()).map((i) => i.id)).toEqual(['fire-2']);
+  });
+
+  it('legacy cash_payment records survive alongside the current format', async () => {
+    // Un terminal mis à jour avec des ventes déjà en file : les deux formes
+    // cohabitent dans l'outbox et sortent dans l'ordre de seq (invariant 1).
+    await enqueueIntent(cashIntent({ id: 'legacy-1', seq: 1 }));
+    await enqueueIntent(paymentIntent({ id: 'current-1', seq: 2 }));
+    const pending = await getPendingIntents();
+    expect(pending.map((i) => [i.id, i.kind])).toEqual([
+      ['legacy-1', 'cash_payment'],
+      ['current-1', 'payment'],
+    ]);
   });
 
   it('nextIntentSeq is monotonic and survives a broken storage', () => {

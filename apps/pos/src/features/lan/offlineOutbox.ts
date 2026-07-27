@@ -12,6 +12,7 @@
 // Un record n'est supprimé qu'après l'ack serveur : « no loss, no duplicate ».
 
 import { logger } from '@breakery/utils';
+import type { Tender } from '@breakery/domain';
 import type { BusModifierLine } from './busTopics';
 
 /** Ligne d'items au format attendu par fire_counter_order_v4 p_items. */
@@ -51,16 +52,33 @@ export interface OfflineFireIntent extends OfflineIntentBase {
   discount_authorized_by?: string;
 }
 
-/** Encaissement CASH offline — rejoué vers pay_existing_order_v16
- *  (p_idempotency_key d'origine + p_offline_replay, arbitrage A4). */
-export interface OfflineCashPaymentIntent extends OfflineIntentBase {
-  kind: 'cash_payment';
+/** Encaissement offline — rejoué vers pay_existing_order_v16 (p_payments,
+ *  p_idempotency_key d'origine + p_offline_replay, arbitrage A4).
+ *
+ *  ADR-015 : 1 à 5 règlements, TOUTE méthode de l'enum SAUF `store_credit` —
+ *  l'avoir se vérifie serveur sous verrou et son replay peut être refusé, ce
+ *  qui bloquerait tout le drain. L'exclusion est appliquée à l'ENQUEUE
+ *  (usePaymentFlowLogic), pas ici : un intent en file est réputé rejouable. */
+export interface OfflinePaymentIntent extends OfflineIntentBase {
+  kind: 'payment';
   /** Racine de la commande locale à payer (fire intent). */
   root_client_uuid: string;
   local_number: string;
-  payment: { method: 'cash'; amount: number; cash_received: number; change_given: number };
+  payments: Tender[];
   /** Client attaché AVANT la coupure — p_customer_id au replay (les points
    *  fidélité sont résolus serveur, jamais calculés offline). */
+  customer_id?: string;
+}
+
+/** LEGACY (pré-ADR-015) — encaissement cash mono-règlement, rejoué via
+ *  p_payment. Plus jamais ÉMIS, mais toujours LU : un terminal peut recevoir
+ *  la mise à jour avec des ventes en file, et ces enregistrements sont de
+ *  l'argent déjà encaissé. Ne pas retirer de l'union sans purge prouvée. */
+export interface OfflineCashPaymentIntent extends OfflineIntentBase {
+  kind: 'cash_payment';
+  root_client_uuid: string;
+  local_number: string;
+  payment: { method: 'cash'; amount: number; cash_received: number; change_given: number };
   customer_id?: string;
 }
 
@@ -75,7 +93,11 @@ export interface OfflineTabletOrderIntent extends OfflineIntentBase {
   items: unknown[]; // buildSubmitPayload().p_items — format wire de la RPC.
 }
 
-export type OfflineIntent = OfflineFireIntent | OfflineCashPaymentIntent | OfflineTabletOrderIntent;
+export type OfflineIntent =
+  | OfflineFireIntent
+  | OfflinePaymentIntent
+  | OfflineCashPaymentIntent
+  | OfflineTabletOrderIntent;
 
 const DB_NAME = 'breakery-pos-offline';
 const STORE = 'outbox';

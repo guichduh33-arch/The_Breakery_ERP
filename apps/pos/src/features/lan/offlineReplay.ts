@@ -78,7 +78,7 @@ async function replayOne(intent: OfflineIntent, orderIdByRoot: Map<string, strin
     return;
   }
 
-  if (intent.kind === 'cash_payment') {
+  if (intent.kind === 'payment' || intent.kind === 'cash_payment') {
     let orderId = orderIdByRoot.get(intent.root_client_uuid);
     if (orderId === undefined) {
       // Fire rejoué dans un run précédent — replay idempotent pour retrouver
@@ -96,9 +96,16 @@ async function replayOne(intent: OfflineIntent, orderIdByRoot: Map<string, strin
       orderIdByRoot.set(intent.root_client_uuid, orderId);
     }
 
+    // p_payments (ADR-015) pour le format courant, p_payment pour le legacy :
+    // la RPC rejette explicitement les deux ensemble (check_violation).
+    const tenderArgs =
+      intent.kind === 'payment'
+        ? { p_payments: intent.payments as unknown as Json }
+        : { p_payment: intent.payment as unknown as Json };
+
     const { error } = await supabase.rpc('pay_existing_order_v16', {
       p_order_id: orderId,
-      p_payment: intent.payment as unknown as Json,
+      ...tenderArgs,
       p_idempotency_key: intent.id,
       p_offline_replay: true,
       ...(intent.customer_id !== undefined ? { p_customer_id: intent.customer_id } : {}),
@@ -146,12 +153,20 @@ export async function replayOfflineOutbox(): Promise<ReplayResult> {
         logger.warn('offline_replay.intent_failed', { kind: intent.kind, id: intent.id, err: message });
         // Trace opérationnelle : une vente encaissée qui ne se resynchronise
         // pas est un signal comptable — jamais silencieux (A4).
-        if (intent.kind === 'cash_payment') {
+        if (intent.kind === 'payment' || intent.kind === 'cash_payment') {
+          const amount =
+            intent.kind === 'payment'
+              ? intent.payments.reduce((sum, t) => sum + t.amount, 0)
+              : intent.payment.amount;
+          const methods =
+            intent.kind === 'payment'
+              ? intent.payments.map((t) => t.method)
+              : [intent.payment.method];
           emitPosEvent('payment_failed', {
-            amount: intent.payment.amount,
+            amount,
             reason: message,
             order_number_snap: intent.local_number,
-            payload: { offline_replay: true, idempotency_key: intent.id },
+            payload: { offline_replay: true, idempotency_key: intent.id, methods },
           });
         }
         logger.warn('offline_replay.aborted', {
