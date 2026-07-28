@@ -63,11 +63,11 @@ export function IngredientAggregatePreview({ items }: IngredientAggregatePreview
       staleTime: 30_000,
       queryFn: async (): Promise<BomLeafRow[]> => {
         const { data, error } = await supabase.rpc('recipe_bom_full_v2', {
-          p_product_id: row.productId as string,
+          p_product_id: row.productId!,
           p_max_depth:  5,
         });
         if (error) throw new Error(error.message);
-        return (data ?? []) as unknown as BomLeafRow[];
+        return data ?? [];
       },
     })),
   });

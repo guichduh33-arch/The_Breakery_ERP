@@ -81,7 +81,7 @@ export function useRecipeDetail(productId: string | undefined) {
       const total_cost = bom.reduce((sum, r) => sum + r.line_cost, 0);
 
       return {
-        product: product as RecipeProduct,
+        product: product,
         active_version_number: versions?.[0]?.version_number ?? null,
         version_count: versions?.length ?? 0,
         bom,

@@ -11,7 +11,9 @@ const mockRpc = vi.fn();
 
 vi.mock('@/lib/supabase.js', () => ({
   supabase: {
-    rpc: (fn: string, args: unknown) => mockRpc(fn, args),
+    // `vi.fn()` renvoie `any` : on le ramène à `unknown` pour ne pas propager
+    // un `any` dans le mock (@typescript-eslint/no-unsafe-return).
+    rpc: (fn: string, args: unknown) => mockRpc(fn, args) as unknown,
   },
 }));
 
