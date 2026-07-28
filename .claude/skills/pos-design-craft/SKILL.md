@@ -1,6 +1,6 @@
 ---
 name: pos-design-craft
-description: 'Spécialiste GÉNÉRATIF de la conception visuelle + ergonomique du POS The Breakery (apps/pos) — conçoit et produit écrans, composants, flux, tokens neufs en appliquant l''état de l''art 2025-2026 (Fitts, cibles rush 56-72px, OKLCH, tabular-nums, optimistic UI, View Transitions). Use when : design POS, refonte caisse, nouvel écran POS, maquette/composant caisse, écran de vente, grille produits, ticket/panier, customer display, KDS design, ergonomie POS, plein soleil, rush, thumb zone, design tokens POS, micro-interactions caisse, profils CAISSE/WAITER. Frontière (ce skill CRÉE du neuf, from scratch) : pour AUDITER le design POS existant et le comparer au marché → pos-frontend-design-audit (écrit un rapport dans docs/design-audits/) ; pour CODER une reco issue d''un rapport d''audit → pos-frontend-design-implement ; DA/esthétique transverse non-POS (BO ivoire, dashboard) → breakery-design ; faits du design-system (primitifs existants, noms de tokens, fallbacks natifs) → breakery-ui-kit. NE PAS utiliser pour : bug isolé, migration DB, comptabilité.'
+description: 'Spécialiste GÉNÉRATIF de la conception visuelle + ergonomique du POS The Breakery (apps/pos) — conçoit et produit écrans, composants, flux, tokens neufs en appliquant l''état de l''art 2025-2026 (Fitts, cibles rush 56-72px, OKLCH, tabular-nums, optimistic UI, View Transitions). Use when : design POS, refonte caisse, nouvel écran POS, maquette/composant caisse, écran de vente, grille produits, ticket/panier, customer display, KDS design, ergonomie POS, plein soleil, rush, thumb zone, design tokens POS, micro-interactions caisse, profils CAISSE/WAITER. Frontière (ce skill CRÉE du neuf, from scratch) : pour AUDITER le design POS existant et le comparer au marché → pos-frontend-design-audit (rend un rapport en conversation) ; pour CODER une reco issue d''un rapport d''audit → pos-frontend-design-implement ; DA/esthétique transverse non-POS (BO ivoire, dashboard) → breakery-design ; faits du design-system (primitifs existants, noms de tokens, fallbacks natifs) → breakery-ui-kit. NE PAS utiliser pour : bug isolé, migration DB, comptabilité.'
 pathPatterns:
   - 'apps/pos/src/**'
 promptSignals:
@@ -45,7 +45,7 @@ node -e "const p=require('./apps/pos/package.json');console.log(p.dependencies,p
 
 Même réflexe pour les **composants** : avant de spécifier un composant neuf, vérifier l'existant (`grep "export" packages/ui/src/index.ts` — ex. `QuantityStepper`, `Numpad`, `OrderTypeTabs` existent déjà) et le skill `breakery-ui-kit`. On améliore/étend l'existant avant de doublonner.
 
-Croiser aussi, **s'ils existent** (vérifier par Glob, ne pas supposer) : `docs/objectif travail/POS.md`, `docs/Design/caissapp/`, et l'état de l'art des POS de référence (Square, Toast, Storyous, Lightspeed) via WebSearch si la décision est structurante.
+Croiser aussi l'**intention métier** — `docs/objectifs/POS.md` et les ADR applicables — et l'état de l'art des POS de référence (Square, Toast, Storyous, Lightspeed) via WebSearch si la décision est structurante.
 
 ---
 
@@ -81,7 +81,7 @@ Chaque règle est chiffrée ; toute déviation se justifie par écrit.
 | Tokens | Custom props CSS dans la cascade `@breakery/ui/tokens.css` (valeurs OKLCH OK dès maintenant) | Tailwind v4 `@theme` + `size-*` |
 | Toasts | `sonner` (déjà en place — ne pas réintroduire un autre toast) | idem |
 | Transitions d'écran | `document.startViewTransition` **guardé** (`if (!document.startViewTransition) fallback`) — progressive enhancement grille↔ticket↔paiement | View Transitions API pleinement |
-| Offline / réseau dégradé | Le mode hors-ligne est un chantier Vague 3 du workplan — en attendant, **designer les états** : indicateur de sync visible, boutons désactivés avec raison, jamais d'UI muette sur `fetch` échoué | Offline-first (queue locale + sync) : états pending/synced/failed visibles par ligne |
+| Offline / réseau dégradé | **Livré** — file d'attente locale + rejeu, tous moyens de paiement sauf l'avoir (ADR-015). **Designer les états** : indicateur de sync visible, boutons désactivés avec raison, jamais d'UI muette sur `fetch` échoué | États `pending`/`synced`/`failed` visibles **par ligne** de file |
 
 Règle : proposer le pattern cible en commentaire/note quand pertinent, implémenter le pattern actuel. Une PR de design ne migre pas React ni Tailwind en passant.
 

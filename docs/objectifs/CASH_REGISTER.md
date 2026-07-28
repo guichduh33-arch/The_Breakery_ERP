@@ -1,8 +1,15 @@
 # Module Cash Register (Sessions de caisse) — Objectif métier
 
-> **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée**. Implémentation V3 = DONE (RPCs `close_shift_rpc`, `record_cash_movement_rpc`, `apps/pos/src/features/shift`). Voir [`../V2_V3_GLOSSARY.md`](../V2_V3_GLOSSARY.md).
+> **Héritage V2** : décrit la vision business cible. **V2 jamais déployée**. Implémentation V3 = DONE (RPCs des familles `close_shift`, `record_cash_movement`, `apps/pos/src/features/shift`).
 >
 > **Périmètre fonctionnel** : ce document décrit **ce que le module Cash Register sert à faire au quotidien** pour The Breakery, sans rentrer dans la mécanique technique 
+>
+> **Révision** : 2026-07-28 · **Statut** : Livré
+> **ADR applicables** : ADR-015 (encaissement hors-ligne : tous les moyens de paiement sauf l'avoir)
+>
+> **Convention** : aucune version d'objet DB (`_vN`) dans cette fiche — on cite la
+> famille (`close_shift`, `complete_order_with_payment`). La version vivante se
+> vérifie dans `supabase/migrations/` et au call-site, jamais ici.
 
 ---
 
@@ -26,11 +33,11 @@ Le module est piloté par **5 modales** correspondant aux 5 moments-clés d'une 
 
 | Modal | Quand | Job-to-be-done |
 |---|---|---|
-| **OpenShiftModal** | Début de service | Ouvrir une session avec comptage du fond de caisse |
-| **CloseShiftModal** | Fin de service | Initier la clôture |
-| **ShiftReconciliationModal** | Pendant la clôture | Compter le tiroir et constater l'écart |
-| **ShiftStatsModal** | Pendant la clôture | Consulter les stats de session avant signature |
-| **ShiftHistoryModal** | À tout moment | Revoir les sessions passées avec leurs écarts |
+| **Ouverture de session** | Début de service | Ouvrir une session avec comptage du fond de caisse |
+| **Clôture de session** | Fin de service | Initier la clôture |
+| **Réconciliation du tiroir** | Pendant la clôture | Compter le tiroir et constater l'écart |
+| **Stats de session** | Pendant la clôture | Consulter les stats de session avant signature |
+| **Historique des sessions** | À tout moment | Revoir les sessions passées avec leurs écarts |
 
 Le cycle est **strictement linéaire** : on ne peut pas re-compter une session fermée, on ne peut pas ouvrir si une autre est déjà ouverte sur le même terminal, on ne peut pas vendre sans session.
 
@@ -40,7 +47,7 @@ Le cycle est **strictement linéaire** : on ne peut pas re-compter une session f
 
 Quelles que soient les circonstances, le module garantit :
 
-1. **Une session par utilisateur par terminal**. Impossible d'avoir deux sessions ouvertes simultanément sur le même couple `(user, terminal)`. La RPC `open_shift` refuse.
+1. **Une session par utilisateur par terminal**. Impossible d'avoir deux sessions ouvertes simultanément sur le même couple `(user, terminal)`. Le garde-fou livré est une **contrainte d'exclusion** en base (`one_open_session_per_user`), qui refuse une seconde session ouverte **pour le même utilisateur**.
 2. **Pas de vente sans session ouverte**. Le POS refuse toute transaction tant qu'aucune session `status = 'open'` n'existe pour le cashier connecté.
 3. **Comptage cash chiffré obligatoire**. Ouverture comme fermeture exigent une saisie numérique — on ne peut pas "estimer". Pas de session sans nombre.
 4. **Écart calculé, jamais inventé**. À la clôture, `expected_cash = opening_cash + cash_sales − cash_refunds`. Le système calcule, le cashier ne triche pas en arrière.
@@ -52,12 +59,12 @@ Quelles que soient les circonstances, le module garantit :
 
 ### 4.1 Le geste
 
-Avant la première vente, le cashier qui prend son poste déclenche `OpenShiftModal` :
+Avant la première vente, le cashier qui prend son poste ouvre la session :
 
 - **Sélection du terminal** : sur quel poste physique on ouvre (Terminal 1 caisse principale, Terminal 2 comptoir café…).
 - **Comptage du fond de caisse** : saisie du montant total de l'`opening_cash`.
-- **Détail facultatif par coupure** (`opening_cash_details` JSONB) : combien de 100k, combien de 50k, combien de 20k, etc. — pour audit fin.
-- **Validation** → la RPC `open_shift` crée la session avec un numéro séquentiel `SHF-YYYYMMDD-NN`.
+- **Détail facultatif par coupure** (`opening_denominations` JSONB) : combien de 100k, combien de 50k, combien de 20k, etc. — pour audit fin.
+- **Validation** → la session est créée dans `pos_sessions`. Le **numéro de session lisible** (`SHF-YYYYMMDD-NN`) n'est **pas livré** : la table ne porte aucune colonne de numérotation.
 
 ### 4.2 Les contrôles automatiques
 
@@ -79,7 +86,7 @@ Tant que la session est ouverte, le POS l'utilise comme contexte transparent :
 - Chaque refund cash alimente le **total cash sorti**.
 - Les autres méthodes de paiement (carte, QRIS, e-wallet) sont également agrégées par session — pour la réconciliation par méthode.
 
-Vue rapide pendant la session : `CashierAnalyticsModal` (accessible depuis le POS) affiche en direct :
+Vue rapide pendant la session, accessible depuis le POS, qui affiche en direct :
 
 - Nombre de commandes encaissées par ce cashier sur cette session.
 - CA total, panier moyen.
@@ -94,12 +101,12 @@ Bénéfice métier : **le cashier voit où il en est** pendant la journée, sans
 
 ### 6.1 Initiation
 
-`CloseShiftModal` est déclenché par le cashier ou le manager à la fin du service. La modale propose le parcours guidé :
+La clôture est déclenchée par le cashier ou le manager à la fin du service. La modale propose le parcours guidé :
 
 1. Affichage rappel du fond d'ouverture.
-2. Bouton "Compter le tiroir" → ouvre `ShiftReconciliationModal`.
+2. Bouton "Compter le tiroir" → ouvre l'écran de réconciliation.
 
-### 6.2 La réconciliation — `ShiftReconciliationModal`
+### 6.2 La réconciliation
 
 C'est **le cœur du module**. La modale demande au cashier :
 
@@ -121,7 +128,7 @@ Si écart > seuil configuré, le système **exige une raison écrite obligatoire
 
 Bénéfice métier : **la vérité chiffrée s'impose en 5 secondes**. Pas de bricolage Excel, pas de "à peu près" — le tiroir colle ou ne colle pas, et le système le dit.
 
-### 6.3 Les stats — `ShiftStatsModal`
+### 6.3 Les stats de session
 
 Avant signature finale, le cashier ou le manager consulte le récap complet :
 
@@ -173,7 +180,7 @@ Bénéfice métier : **tolérer l'erreur humaine** sans permettre la triche. Le 
 
 ---
 
-## 8. Historique des sessions — `ShiftHistoryModal`
+## 8. Historique des sessions
 
 Une vue accessible à tout moment qui liste :
 
@@ -190,7 +197,7 @@ Bénéfice métier : **mémoire chiffrée de la performance cash** sur la durée
 
 The Breakery peut avoir **plusieurs terminaux POS** ouverts en même temps sur le même LAN (caisse principale + comptoir café + caisse mobile événement). Chaque terminal ouvre **sa propre session**, indépendante des autres.
 
-La modale `LiveSessionsModal` (côté POS) permet à un manager de voir :
+La modale des sessions actives (côté POS) permet à un manager de voir :
 
 - Toutes les sessions actuellement ouvertes.
 - Sur quel terminal, par qui, depuis quand.
@@ -261,8 +268,8 @@ Bénéfice métier : **cloisonner les responsabilités cash**. Un cashier peut o
 ## 14. Ce que le module ne fait **pas** (par design)
 
 - Le module **ne gère pas le coffre-fort**. Le dépôt en banque du cash est une opération externe (à venir : module Cash Management).
-- Le module **ne fait pas de mouvement intermédiaire** (cash-in / cash-out pendant la session). Pour ajouter du fond en cours, il faut fermer la session puis en ouvrir une nouvelle. *Cf. backlog.*
-- Le module **ne supporte pas les sessions multi-journée**. Une session ne peut pas durer plus de 24h — au-delà, fermeture forcée par script.
+- ~~Le module **ne fait pas de mouvement intermédiaire**~~ → **livré** : les entrées et sorties de caisse en cours de session passent par la modale dédiée du POS et la famille `record_cash_movement`, avec trace nominative.
+- Le module **ne supporte pas les sessions multi-journée**. Une session ne devrait pas durer plus de 24 h — mais **aucune fermeture automatique n'est livrée** : il n'existe aucun script ni tâche planifiée sur les sessions, et ce qui doit se passer au-delà de 24 h n'est pas décidé.
 - Le module **ne calcule pas la TVA / PB1**. Ce calcul est fait au niveau de chaque commande (tax inclusive 10/110).
 - Le module **ne signe pas électroniquement** (KSeF, fiscal certification). Pas de certification fiscale Indonésie obligatoire en V2.
 
@@ -272,7 +279,8 @@ Bénéfice métier : **cloisonner les responsabilités cash**. Un cashier peut o
 
 | Priorité | Évolution | Bénéfice attendu |
 |---|---|---|
-| 🔴 | **Cash-in / Cash-out en cours de session** | Permettre au cashier d'ajouter du fond ou de sortir un excédent en milieu de service avec trace nominative. |
+| 🔴 | **Unicité de session : par utilisateur ou par terminal ?** | L'invariant 1 vise le couple `(user, terminal)` ; le garde-fou livré porte sur le **seul utilisateur** (`one_open_session_per_user`). Un même employé ne peut donc pas tenir deux postes en parallèle, et deux employés peuvent ouvrir sur le même terminal. Écart non arbitré. |
+| 🔴 | **Numéro de session lisible** | `SHF-YYYYMMDD-NN` est décrit au §4 mais n'existe pas : la table ne porte aucune colonne de numérotation. Une session ne se désigne aujourd'hui que par son UUID. |
 | 🔴 | **Validation à deux mains pour gros écarts** | Au-delà d'un seuil critique, exiger PIN cashier + PIN manager en double-authentification. |
 | 🟠 | **Dépôt bancaire intégré** | Saisir une remise bancaire en fin de journée avec photo du bordereau, lien automatique vers la compta. |
 | 🟠 | **Compte des coupures obligatoire** | Forcer le détail par coupure (5k, 10k, 20k, 50k, 100k) pour audit fin et détection vol partiel. |

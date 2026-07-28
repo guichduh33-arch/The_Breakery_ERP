@@ -1,8 +1,15 @@
 # Module Users & Permissions — Objectif métier
 
-> **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée**. Implémentation V3 = DONE (`create_user_rpcs` S17 — 6 RPCs, `apps/backoffice/src/features/users`, `SettingsPermissionsPage`, RBAC matrix). Améliorations V3 : `record_rate_limit_v1` durable Postgres S19, GRANT hardening S20, `update_role_session_timeout_v1` S23. Voir [`../V2_V3_GLOSSARY.md`](../V2_V3_GLOSSARY.md).
+> **Héritage V2** : décrit la vision business cible. **V2 jamais déployée**. Implémentation V3 = DONE (RPCs de gestion des utilisateurs, `apps/backoffice/src/features/users`, page de permissions, matrice RBAC). Améliorations V3 : `record_rate_limit` durable Postgres, GRANT hardening, `update_role_session_timeout`.
 >
 > **Périmètre fonctionnel** : ce document décrit **ce que le module Users & Permissions sert à faire au quotidien** pour The Breakery,
+>
+> **Révision** : 2026-07-28 · **Statut** : Partiel
+> **ADR applicables** : ADR-010 (le déblocage d'un item exige une autorisation manager vérifiée serveur), ADR-011 déc. 1 (l'import catalogue est ADMIN+ : un MANAGER ne contourne pas le périmètre des variantes par un fichier)
+>
+> **Convention** : aucune version d'objet DB (`_vN`) dans cette fiche — on cite la
+> famille (`close_shift`, `complete_order_with_payment`). La version vivante se
+> vérifie dans `supabase/migrations/` et au call-site, jamais ici.
 
 ---
 
@@ -29,10 +36,10 @@ Les deux faces convergent sur **une mécanique d'authentification par PIN** rapi
 |---|---|---|
 | **Users** (`/users`) | Créer / modifier / activer / désactiver les fiches employés, attribuer leurs rôles, gérer leur PIN | `users.view`, `users.create` |
 | **Permissions Matrix** (`/users/permissions`) | Définir qui-peut-quoi via une grille rôles × permissions | `users.roles` |
-| **Roles** (`/settings/roles`) | Créer / cloner / renommer / supprimer des rôles métier | `users.roles` |
-| **Audit Log** (`/settings/audit`) | Tracer toutes les actions sensibles attribuées à un utilisateur | `users.roles` (ou admin) |
+| **Roles** (**non livré** — aucune page de gestion des rôles n'existe) | Créer / cloner / renommer / supprimer des rôles métier | `users.roles` |
+| **Audit Log** (`/reports/audit`) | Tracer toutes les actions sensibles attribuées à un utilisateur | `reports.audit.read` |
 
-Le module est complété par le sous-système **PIN** (`auth-verify-pin`, `auth-change-pin`, `set-user-pin` Edge Functions) qui fournit le mécanisme d'authentification rapide à la caisse, sans clavier ni mot de passe long.
+Le module est complété par le sous-système **PIN** (Edge Functions `auth-verify-pin`, `auth-change-pin`, `verify-manager-pin`) qui fournit le mécanisme d'authentification rapide à la caisse, sans clavier ni mot de passe long.
 
 ---
 
@@ -164,7 +171,7 @@ Bénéfice métier : **chaque permission est un curseur risque/productivité**. 
 
 ## 6. Vue **Roles** — Définir les profils métier
 
-Avant de remplir la matrice, il faut **créer les rôles**. La page Roles (dans `/settings/roles`) permet de :
+Avant de remplir la matrice, il faut **créer les rôles**. La page Roles est **non livrée** — aucune route ne l'expose aujourd'hui. Elle doit permettre de :
 
 ### 6.1 Créer un rôle
 
@@ -232,7 +239,7 @@ Bénéfice métier : **rapidité caisse compatible avec sécurité staff**. Un c
 
 ## 8. Audit Log — La trace écrite
 
-Le module s'accompagne d'un **journal d'audit** (page `/settings/audit`) qui trace toutes les actions sensibles attribuées à un utilisateur.
+Le module s'accompagne d'un **journal d'audit** (page `/reports/audit`) qui trace toutes les actions sensibles attribuées à un utilisateur.
 
 ### 8.1 Événements tracés
 
@@ -281,7 +288,7 @@ Bénéfice : **un utilisateur ne voit même pas ce qu'il ne peut pas faire**. Pa
 Toutes les permissions sont vérifiées **deux fois** :
 
 1. **Côté frontend** (PermissionGuard) — pour la fluidité UX.
-2. **Côté Supabase** (RLS policies + `user_has_permission()` SECURITY DEFINER) — pour la sécurité réelle.
+2. **Côté Supabase** (RLS policies + `has_permission()` SECURITY DEFINER) — pour la sécurité réelle.
 
 Bénéfice : **un utilisateur qui contournerait le frontend** (via un appel API direct, un curl, un client compromis) tombe immédiatement sur le mur RLS côté base. La sécurité ne dépend jamais du browser.
 
@@ -310,6 +317,7 @@ Bénéfice : **un utilisateur qui contournerait le frontend** (via un appel API 
 |---|---|---|
 | 🔴 | **Détection auto d'escalade de privilèges** | Alerte temps réel si un utilisateur modifie ses propres permissions ou celles d'un complice. |
 | 🔴 | **Approval workflow pour permissions sensibles** | Donner `accounting.manage` à un nouvel utilisateur exige une double validation (deux managers ou owner + manager). |
+| 🟠 | **Gestion des rôles : aucune interface** | Créer, cloner, renommer ou supprimer un rôle n'est possible par aucun écran. La matrice livrée est en **lecture seule** : accorder ou révoquer une permission se fait aujourd'hui **par migration**. Contrainte d'exploitation jamais décidée comme telle. |
 | 🟠 | **Permissions à seuil** | `sales.discount` jusqu'à 5% seul, 10% avec validation manager — au-delà refusé. Aujourd'hui binaire (a / a pas). |
 | 🟠 | **Sessions multiples par utilisateur** | Voir et fermer à distance les sessions actives d'un employé (utile en cas de départ). |
 | 🟠 | **Two-factor authentication (2FA)** | Pour les rôles à fort pouvoir (Owner, Manager, Accountant) — SMS ou app TOTP. |

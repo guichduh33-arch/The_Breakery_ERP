@@ -1,8 +1,15 @@
 # Module B2B — Objectif métier
 
-> **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée**. Implémentation V3 = **B2B Foundation livrée S24** (RPCs `validate_b2b_credit_limit_v1`, `record_b2b_payment_v1`, `adjust_b2b_balance_v1`, `b2b_order_v1` + B2BDashboardPage + modales). Reste à livrer : devis, abonnements, relances auto, portal client. Voir [`../V2_V3_GLOSSARY.md`](../V2_V3_GLOSSARY.md).
+> **Héritage V2** : décrit la vision business cible. **V2 jamais déployée**. Implémentation V3 = **B2B Foundation livrée** (RPCs des familles `validate_b2b_credit_limit`, `record_b2b_payment`, `adjust_b2b_balance`, `create_b2b_order` + tableau de bord B2B et ses modales). Reste à livrer : devis, abonnements, relances auto, portal client.
 >
 > **Périmètre fonctionnel** : ce document décrit **ce que le module B2B sert à faire au quotidien** pour The Breakery,
+>
+> **Révision** : 2026-07-28 · **Statut** : Partiel
+> **ADR applicables** : ADR-005 (taxe de sortie 10 % détaillée sur la facture)
+>
+> **Convention** : aucune version d'objet DB (`_vN`) dans cette fiche — on cite la
+> famille (`close_shift`, `complete_order_with_payment`). La version vivante se
+> vérifie dans `supabase/migrations/` et au call-site, jamais ici.
 
 ---
 
@@ -306,9 +313,9 @@ Chaque commande B2B confirmée peut générer une **facture officielle** :
 
 - **Numérotation séquentielle** non réutilisable (préfixe + année + séquence, configurable dans Settings).
 - **Mentions légales** complètes : raison sociale, NPWP de The Breakery, NPWP du client, conditions de paiement, date d'échéance, taxe PB1 détaillée.
-- **PDF généré** via l'Edge Function `generate-invoice`, archivé dans Supabase Storage.
+- **PDF généré** via l'Edge Function `generate-pdf` (template `b2b_invoice`), archivé dans Supabase Storage.
 - **Téléchargeable** depuis le détail commande ou la liste des commandes.
-- **Envoi par e-mail** au client (configurable, utilise `send-test-email` côté serveur).
+- **Envoi par e-mail** au client (configurable) — **non livré** : aucune Edge Function d'envoi d'e-mail n'existe à ce jour.
 
 Bénéfice métier : **un document standardisé, légal et infalsifiable** sortant en 2 secondes, sans risque d'erreur de calcul ou d'oubli de mention.
 

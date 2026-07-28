@@ -1,8 +1,15 @@
 # Module Customer Display — Objectif métier
 
-> **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée**. Implémentation V3 = PARTIELLE (feature `apps/pos/src/features/display` existe — à vérifier en détail : table `display_promotions`, animations fidélité, ORDER_READY notification KDS). Voir [`../V2_V3_GLOSSARY.md`](../V2_V3_GLOSSARY.md).
+> **Héritage V2** : décrit la vision business cible. **V2 jamais déployée**. Implémentation V3 = PARTIELLE (feature `apps/pos/src/features/display` existe — à vérifier en détail : table `display_promotions`, animations fidélité, ORDER_READY notification KDS).
 >
 > **Périmètre fonctionnel** : ce document décrit **ce que le module Customer Display (`/display`) sert à faire au quotidien** pour The Breakery
+>
+> **Révision** : 2026-07-28 · **Statut** : Partiel
+> **ADR applicables** : ADR-006 (les réglages de l'écran client vivent dans le socle `business_config`)
+>
+> **Convention** : aucune version d'objet DB (`_vN`) dans cette fiche — on cite la
+> famille (`close_shift`, `complete_order_with_payment`). La version vivante se
+> vérifie dans `supabase/migrations/` et au call-site, jamais ici.
 
 ---
 
@@ -27,8 +34,8 @@ Le tout sans la moindre interaction de la part du client — l'écran est **pure
 
 | Vue | Quand | Quoi |
 |---|---|---|
-| **CDActiveCartView** | Pendant une commande en cours | Cart live, totaux, remises, points fidélité gagnés, statut envoi cuisine |
-| **CDIdleView** | Aucune activité caisse | Logo The Breakery, promos rotatives, message d'accueil, ambiance visuelle |
+| **Mode Actif** | Pendant une commande en cours | Cart live, totaux, remises, points fidélité gagnés, statut envoi cuisine |
+| **Mode Idle** | Aucune activité caisse | Logo The Breakery, promos rotatives, message d'accueil, ambiance visuelle |
 
 La bascule entre les deux est **automatique** : dès que le caissier met un produit au panier, l'écran passe en mode Active ; après N secondes sans activité, il retourne en Idle.
 
@@ -46,7 +53,7 @@ Quel que soit le mode, le module garantit :
 
 ---
 
-## 4. Le mode Active — `CDActiveCartView`
+## 4. Le mode Active
 
 Activé dès qu'un item entre dans le cart caisse.
 
@@ -80,7 +87,7 @@ Bénéfice métier : **la transparence transformée en confiance**. Le client vo
 
 ---
 
-## 5. Le mode Idle — `CDIdleView`
+## 5. Le mode Idle
 
 Activé quand aucune activité caisse n'est détectée pendant le `idleTimeoutSeconds` configurable (typiquement 60s).
 
@@ -215,7 +222,7 @@ L'écran est entièrement **piloté par cet état** — pas de fetch direct, pas
 | **Customers** | Affichage du nom + palier fidélité quand un client est lié au cart. |
 | **Settings** | Configuration centralisée dans Settings → Display. |
 | **LAN** | Client LAN sans écriture (réception uniquement). |
-| **Branding** | `BreakeryLogo` et styles (`customerDisplayStyles`) cohérents avec la signature visuelle The Breakery. |
+| **Branding** | Logo et styles cohérents avec la signature visuelle The Breakery. |
 
 ---
 

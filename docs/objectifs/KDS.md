@@ -1,8 +1,15 @@
 # Module KDS (Kitchen Display System) — Objectif métier
 
-> **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée**. Implémentation réelle = V3 monorepo (`apps/pos/src/features/kds`). Voir [`../V2_V3_GLOSSARY.md`](../V2_V3_GLOSSARY.md).
+> **Héritage V2** : décrit la vision business cible. **V2 jamais déployée**. Implémentation réelle = V3 monorepo (`apps/pos/src/features/kds`).
 >
-> **Périmètre fonctionnel** : ce document décrit **ce que le module KDS (`/kds`, `/kds/:station`) sert à faire au quotidien** pour The Breakery,
+> **Périmètre fonctionnel** : ce document décrit **ce que le module KDS (`/kds`) sert à faire au quotidien** pour The Breakery,
+>
+> **Révision** : 2026-07-28 · **Statut** : Livré
+> **ADR applicables** : ADR-010 (un item envoyé en cuisine est intouchable ; tout retrait déclenche une déclaration de perte), ADR-006 déc. 9 (copies KOT par station, 0 = station paperless)
+>
+> **Convention** : aucune version d'objet DB (`_vN`) dans cette fiche — on cite la
+> famille (`close_shift`, `complete_order_with_payment`). La version vivante se
+> vérifie dans `supabase/migrations/` et au call-site, jamais ici.
 
 ---
 
@@ -49,7 +56,7 @@ Quelle que soit la station, le module garantit toujours :
 
 ## 4. Le sélecteur de station — La porte d'entrée
 
-Page `KDSStationSelector` (`/kds`) : la première vue au démarrage d'un écran KDS.
+L'écran de sélection de station (`/kds`) : la première vue au démarrage d'un écran KDS.
 
 Affiche **4 grosses cartes** (Hot Kitchen / Barista / Display / Waiter) avec leur icône et leur couleur. Le membre d'équipe choisit son poste d'un seul tap.
 
@@ -65,21 +72,21 @@ Bénéfice métier : **un appareil = un poste**. La tablette posée sur le plan 
 
 ## 5. La grille de commandes — Le cœur opérationnel
 
-Page `KDSMainPage` (`/kds/:station`) — l'écran de travail à plein temps.
+L'écran de travail (`/kds`) — occupé à plein temps. La station n'est pas un segment de route : elle se choisit dans l'écran.
 
 ### 5.1 Structure
 
-- **Header** (`KDSHeader`) en haut : nom de la station, compteur de commandes en cours, accès All-Day Count, bouton refresh.
-- **All Day Count** (`KDSAllDayCount`) optionnel : compteur cumulé d'items préparés sur la journée par produit (utile pour la communication entre équipes).
-- **Order Grid** (`KDSOrderGrid`) : grille de cartes commandes, scrollable horizontalement ou verticalement selon réglage.
+- **Bandeau** en haut : nom de la station, compteur de commandes en cours, accès All-Day Count, bouton refresh.
+- **All Day Count** optionnel : compteur cumulé d'items préparés sur la journée par produit (utile pour la communication entre équipes).
+- **Grille de commandes** : cartes scrollables horizontalement ou verticalement selon réglage.
 
-### 5.2 Une carte commande (`KDSOrderCard`)
+### 5.2 Une carte commande
 
 Chaque commande est une **carte** affichant :
 
 - **Numéro de commande** + table (si dine-in) ou nom client (si pris).
 - **Type** : badge Dine-in / Takeaway / Delivery / B2B.
-- **Heure de réception** + **timer** (countdown bar `KDSCountdownBar`).
+- **Heure de réception** + **timer** (barre de décompte).
 - **Liste des items routés à cette station uniquement** (les autres items sont invisibles ici).
 - Pour chaque item :
   - Nom du produit + quantité.
@@ -87,7 +94,7 @@ Chaque commande est une **carte** affichant :
   - Notes spéciales (allergie, préparation).
   - Bouton **Ready** individuel par item.
   - Badge `item_status` (pending → preparing → ready → served).
-- **Progress bar** (`OrderProgressBar`) : pourcentage d'items ready sur le total.
+- **Barre de progression** : pourcentage d'items ready sur le total.
 - **Bouton "All Ready"** quand tous les items sont prêts → signale au comptoir.
 
 ### 5.3 Comportement visuel

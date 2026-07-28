@@ -2,16 +2,16 @@
 name: pos-frontend-design-implement
 description: >-
   Développeur des propositions de design POS produites par le skill pos-frontend-design-audit.
-  Lit un rapport d'audit dans docs/design-audits/, sélectionne un (ou plusieurs) ticket(s) de
-  proposition, et l'IMPLÉMENTE dans apps/pos/ — composants React/TypeScript + Tailwind + primitifs
+  Reçoit un rapport d'audit rendu en conversation par pos-frontend-design-audit, sélectionne
+  un (ou plusieurs) ticket(s) de proposition, et l'IMPLÉMENTE dans apps/pos/ — composants React/TypeScript + Tailwind + primitifs
   @breakery/ui — en respectant le design-system (tokens, typo canonique, fallbacks natifs), les deux
   profils CAISSE (desktop/Tauri) et WAITER (tablette/mobile Capacitor), et les patterns critiques du
   projet (CLAUDE.md). Vérifie le rendu, les cibles tactiles, les états (loading/empty/erreur/offline)
   et lance les tests avant de conclure. À utiliser DÈS QUE l'utilisateur veut PASSER À L'ACTION sur le
   design POS : "implémente la proposition", "développe le ticket d'audit", "code le redesign POS",
   "applique les recos design POS", "agrandis les boutons de paiement", "refais la grille produits",
-  "rends l'écran waiter plus ergonomique", "applique le quick-win du rapport". Si aucun rapport
-  d'audit n'existe encore ou si la demande est "trouve les problèmes de design", c'est l'autre skill
+  "rends l'écran waiter plus ergonomique", "applique le quick-win du rapport". Si aucune proposition
+  n'est présente dans la session ou si la demande est "trouve les problèmes de design", c'est l'autre skill
   (pos-frontend-design-audit) qui s'exécute d'abord. DÉFÉRER : l'ajout d'un nouveau primitif PARTAGÉ
   → packages/ui + breakery-ui-kit ; la logique du parcours commande→paiement et la correction
   fonctionnelle (RPC, idempotence, realtime) → pos-flow-audit ; RBAC/permissions → security-fraud-guard ;
@@ -20,7 +20,6 @@ description: >-
 pathPatterns:
   - 'apps/pos/src/**/*.tsx'
   - 'apps/pos/src/**/*.css'
-  - 'docs/design-audits/**'
 promptSignals:
   phrases:
     - 'implémente la proposition'
@@ -39,7 +38,7 @@ promptSignals:
 
 # POS Frontend Design Implement — The Breakery
 
-Bras armé de **`pos-frontend-design-audit`** : prend une proposition de design **déjà formulée** (dans un rapport `docs/design-audits/`, ou donnée inline par l'utilisateur) et la **transforme en code POS qui tient en production**. L'audit décide *quoi* et *pourquoi* ; ce skill fait *comment*, proprement.
+Bras armé de **`pos-frontend-design-audit`** : prend une proposition de design **déjà formulée** (rapport rendu en conversation par l'audit, ou donnée directement par l'utilisateur) et la **transforme en code POS qui tient en production**. L'audit décide *quoi* et *pourquoi* ; ce skill fait *comment*, proprement.
 
 **`CLAUDE.md` est la source de vérité** des patterns du projet. **`breakery-ui-kit`** est la source de vérité des primitifs/tokens. Ce skill ajoute la méthode d'implémentation design et les garde-fous d'exécution.
 
@@ -47,13 +46,13 @@ Bras armé de **`pos-frontend-design-audit`** : prend une proposition de design 
 
 - « Trouve les problèmes / audite / compare au marché » → **pas ici**, c'est `pos-frontend-design-audit`.
 - « Implémente / développe / applique / code / agrandis / refais » une proposition → **ici**.
-- Si on te demande d'implémenter mais qu'**aucun rapport n'existe et que la proposition n'est pas claire**, ne devine pas le design : lance d'abord l'audit (ou demande à l'utilisateur de pointer le ticket précis).
+- Si on te demande d'implémenter mais qu'**aucune proposition n'est présente dans la session et que la demande n'est pas claire**, ne devine pas le design : lance d'abord l'audit (ou demande à l'utilisateur de pointer le ticket précis).
 
 ## Méthode — 6 étapes
 
 ### Étape 1 — Récupérer la proposition
-- **Cas rapport fichier** (par défaut) : lis le rapport le plus récent dans `docs/design-audits/` (`Glob docs/design-audits/*.md`). Identifie le(s) ticket(s) à développer — l'utilisateur en nomme un, sinon propose les P0/quick-wins et confirme avant de coder.
-- **Cas inline** : la proposition est dans la conversation. Reformule-la en une phrase (« j'implémente : <X> pour <profil> sur <écran> ») et avance.
+- **Cas conversation** (par défaut, et seul cas normal) : la proposition est dans la session — rapport rendu par `pos-frontend-design-audit`, ou demande directe de l'utilisateur. Identifie le(s) ticket(s) à développer : l'utilisateur en nomme un, sinon propose les P0/quick-wins et confirme avant de coder. Reformule en une phrase (« j'implémente : <X> pour <profil> sur <écran> ») et avance.
+- **Aucune proposition en session** : ne devine pas le design. Lance `pos-frontend-design-audit` sur la zone concernée, ou demande le ticket précis. **Il n'y a rien à rattraper sur disque** — un audit non consommé dans sa session se refait.
 
 ### Étape 2 — Lire le code cible avant de toucher
 Va au composant via le `fichier:ligne` du ticket (ou via `pos-frontend-design-audit/references/screen-map.md`). **Lis-le en entier.** Repère : tokens et classes actuels, primitifs `@breakery/ui` déjà utilisés, gestion d'états existante, et si le composant est **partagé entre CAISSE et WAITER** (ex. `ProductGrid` réutilisé en tablette) — auquel cas un changement doit valoir pour les deux profils ou être conditionné.

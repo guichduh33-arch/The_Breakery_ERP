@@ -18,6 +18,13 @@
 > [ADR-012](../adr/012-produits-residuels-garde-money-path-coherence-pos.md)
 > (résiduels post-audit 2026-07-23 : refus parent étendu aux composants de
 > combo, parité sold-out modale variantes, badge parent POS).
+>
+> **Révision** : 2026-07-28 · **Statut** : Livré
+> **ADR applicables** : ADR-007 (périmètre du domaine, refus des produits inactifs au money-path, fenêtre horaire combos supprimée, `tax_inclusive` droppée, Sections sous RPC, `is_test` posable), ADR-011 (import ADMIN+, refus des produits-parents, Realtime catalogue, bump RPC systématique), ADR-012 (refus étendu aux composants de combo, parité sold-out, badge Variantes)
+>
+> **Convention** : aucune version d'objet DB (`_vN`) dans cette fiche — on cite la
+> famille (`close_shift`, `complete_order_with_payment`). La version vivante se
+> vérifie dans `supabase/migrations/` et au call-site, jamais ici.
 
 ---
 
@@ -36,25 +43,25 @@ stock au ledger.
 ## 2. État réel (audits 2026-07-17 et 2026-07-22, chantiers livrés 2026-07-22/23) — synthèse
 
 ### 2.1 Sain et confirmé
-- Socle CRUD par RPCs versionnées (`create/update_product_v2`, 6 RPCs variantes,
-  `upsert_product_modifiers_v1`, `upsert_recipe_v1`, `upsert/delete_section_v1`,
-  `set_product_is_test_v1`…), permissions par onglet.
-- Import/export catalogue : `import_catalog_v1` avec **dry-run + commit +
-  idempotence** ; `export_catalog_v1`. Réservé **ADMIN+** depuis ADR-011 déc. 1
+- Socle CRUD par RPCs versionnées (`create/update_product`, les RPCs de
+  variantes, `upsert_product_modifiers`, `upsert_recipe`, `upsert/delete_section`,
+  `set_product_is_test`…), permissions par onglet.
+- Import/export catalogue : `import_catalog` avec **dry-run + commit +
+  idempotence** ; `export_catalog`. Réservé **ADMIN+** depuis ADR-011 déc. 1
   (le payload d'import sait créer des variantes, gate aligné sur
   `products.variants.write`).
-- **Money-path** : `complete_order_with_payment_v19` refuse strictement les
-  produits inactifs, soft-deleted et les **parents de variantes** — ADR-007
-  déc. 2 + ADR-011 déc. 2, erreurs propagées jusqu'au message caissier.
-  Les **composants de combo** ne sont contrôlés qu'en inactif/soft-deleted ;
-  l'extension du refus *parent* aux composants est actée (ADR-012 déc. 1,
-  chantier v20 à livrer).
+- **Money-path** : la RPC de la famille `complete_order_with_payment` refuse
+  strictement les produits inactifs, soft-deleted et les **parents de
+  variantes** — ADR-007 déc. 2 + ADR-011 déc. 2, erreurs propagées jusqu'au
+  message caissier. Les **composants de combo** ne sont contrôlés qu'en
+  inactif/soft-deleted ; l'extension du refus *parent* aux composants est
+  actée (ADR-012 déc. 1), à livrer au prochain bump du money-path.
 - **Fraîcheur POS** : souscription Realtime sur `products`/`categories`
   (`useCatalogRealtime`, ADR-011 déc. 3) — un changement BO se propage en
-  push < 2 s ; la garde serveur v19 reste le seul filet opposable.
+  push < 2 s ; la garde serveur du money-path reste le seul filet opposable.
 - **Snapshots de vente** : les commandes vivent sur `order_items.name_snapshot`
   (etc.) — l'historique est insensible aux renommages/suppressions du catalogue.
-- Routage cuisine : `dispatch_stations` → `_resolve_dispatch_stations_v1`
+- Routage cuisine : `dispatch_stations` → `_resolve_dispatch_stations`
   (snapshot KOT).
 - Marge : `target_gross_margin_pct` + cron d'alertes ; caveat connu — la marge
   est valorisée au **WAC courant**, pas au coût du moment de la vente.
@@ -62,17 +69,16 @@ stock au ledger.
   cohérence display-stock, anti-nesting — 0 anomalie.
 
 ### 2.2 Écarts identifiés par les audits — tous soldés
-- ✅ Money-path aveugle à `is_active` → **v19 livré** (PR #255, migration `_201`).
-- ✅ Écran Sections hors pattern RPC → **`upsert/delete_section_v1` + policies
-  d'écriture directe droppées** (PR #265, migration `_206`) — la RPC est
-  l'unique chemin d'écriture.
+- ✅ Money-path aveugle à `is_active` → **bump livré** (PR #255).
+- ✅ Écran Sections hors pattern RPC → **`upsert/delete_section` + policies
+  d'écriture directe droppées** (PR #265) — la RPC est l'unique chemin
+  d'écriture.
 - ✅ Fenêtre horaire combos fantôme → **retirée du formulaire, colonnes
-  `COMMENT DEPRECATED`** (PR #262, `_203`) ; DROP différé au prochain bump
+  `COMMENT DEPRECATED`** (PR #262) ; DROP différé au prochain bump
   fonctionnel d'`upsert_combo` (qui les écrit encore à null).
-- ✅ `products.tax_inclusive` colonne morte → **DROP** (PR #263, `_204`).
+- ✅ `products.tax_inclusive` colonne morte → **DROP** (PR #263).
 - ✅ `is_test` lu-jamais-écrivable → **toggle fiche produit ADMIN+** via
-  `set_product_is_test_v1` + permission `products.test_flag.update`
-  (PR #264, `_205`).
+  `set_product_is_test` + permission `products.test_flag.update` (PR #264).
 - ✅ Allergènes → **feature entièrement supprimée** (ADR-011 §2, PR #251,
   `_199`) — voir §6.
 - ✅ Micro-fixes ADR-011 §3 (PR #260) : auto-pick d'un variant épuisé bloqué,
@@ -83,7 +89,7 @@ stock au ledger.
 
 1. **Le serveur est seul juge de la vendabilité et du prix.** Aucune donnée
    catalogue transmise par le client (prix, flags, composition) ne fait foi —
-   le money-path résout tout côté serveur. [Livré : v19 refuse inactifs,
+   le money-path résout tout côté serveur. [Livré : le money-path refuse inactifs,
    soft-deleted ET parents de variantes (ADR-007 déc. 2 + ADR-011 déc. 2) ;
    `visible_on_pos` reste un filtre d'affichage ; le stock épuisé reste toléré
    serveur (vente offline / replay). La fraîcheur Realtime du POS est un
@@ -103,10 +109,10 @@ stock au ledger.
 
 **Dans le module** : produits (36 colonnes depuis les DROPs `allergens` et
 `tax_inclusive`, cycle de vie, soft-delete), catégories
-(CRUD + réordonnancement), variantes (parent/enfant, 6 RPCs), modifiers par
-produit, combos (builder, pricing serveur `_resolve_combo_price_v1`), recettes &
+(CRUD + réordonnancement), variantes (parent/enfant, RPCs dédiées), modifiers par
+produit, combos (builder, pricing serveur `_resolve_combo_price`), recettes &
 SFG (versions, duplication, conversion baker→absolu, `is_semi_finished` calculé
-par trigger), costing (`update_cost_price_v1`, WAC, cible de marge),
+par trigger), costing (`update_cost_price`, WAC, cible de marge),
 import/export, dashboard produit.
 
 **Hors module** : quantités et mouvements de stock (→ INVENTORY), prix négociés
@@ -129,13 +135,13 @@ mapping comptable (→ Accounting).
 | ⬜ | Snapshot du coût à la vente (marge exacte vs WAC courant) | lourd — à ne rouvrir que si le besoin rapport l'exige |
 | ⬜ | Validation boutique : Realtime catalogue + toggle `is_test` en conditions réelles | ferme la boucle des livraisons 2026-07-22/23 |
 | ⬜ | pgTAP `catalog_import.test.sql` : cas MANAGER → 42501 + assertion du refus | ADR-012 §2 — correction de tests, petit, immédiat |
-| ⬜ | Money-path v20 : refus `product_is_parent` étendu aux composants de combo | ADR-012 déc. 1 — lourd, prioritaire ; + refus d'un parent comme option au prochain bump d'`upsert_combo` (qui DROPpe aussi `combo_available_*`) |
+| ⬜ | Money-path, au prochain bump : refus `product_is_parent` étendu aux composants de combo | ADR-012 déc. 1 — lourd, prioritaire ; + refus d'un parent comme option au prochain bump d'`upsert_combo` (qui DROPpe aussi `combo_available_*`) |
 | ⬜ | Parité sold-out modale variantes ↔ grille (`isSellable`) | ADR-012 déc. 2 — petit |
 | ⬜ | Badge « Variantes » sur les tuiles parents POS | ADR-012 déc. 3 — petit |
 | ⬜ | Surfaces mortes : zéros en dur (Overview/Perf 30d), `StubPanel.tsx`, onglet `analytics` fantôme | ADR-012 §2 — brancher ou retirer, fil de l'eau |
 
 Livrés depuis la rev. 1 (référence, ne plus prioriser) : garde money-path
-inactifs+parents [déc. 2, v19], Sections sous RPC [déc. 5], DROP `tax_inclusive`
+inactifs+parents [déc. 2], Sections sous RPC [déc. 5], DROP `tax_inclusive`
 [déc. 4], retrait fenêtre combos [déc. 3], toggle `is_test` [déc. 6], onglet
 Modifiers deep-linkable, suppression allergènes [ADR-011 §2].
 

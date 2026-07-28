@@ -72,7 +72,7 @@ Cross-cutting security authority. The mission, in the owner's words: make **frau
 1. **Audit** — hunt for fraud/manipulation/leak gaps against 5 dimensions (see checklists). Every check is an executable SQL query (via MCP `execute_sql` against V3 dev `ikcyvlovptebroadgtvd`) or a `Grep`.
 2. **Intervene** — add the missing controls correctly: new permission + role grant, REVOKE pair, audit_log write, manager-PIN-in-header gate, idempotency, SOD constraint, append-only REVOKE, pgTAP coverage.
 
-**`CLAUDE.md` is the source of truth** for project-wide patterns and the active workplan. This skill adds the *security mental model*, the *threat model* (how an employee would actually cheat), audit checklists, and preventive guidance.
+**`CLAUDE.md` is the source of truth** for project-wide patterns. This skill adds the *security mental model*, the *threat model* (how an employee would actually cheat), audit checklists, and preventive guidance.
 
 ## Boundaries — don't duplicate sibling skills
 

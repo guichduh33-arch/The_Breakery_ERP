@@ -43,6 +43,45 @@ Si un document contredit le code, le document a tort : **signale-le, ne corrige 
    librairie, changement de comportement → accord explicite de Mamat AVANT l'action.
 8. **Périmètre strict** : tu touches les fichiers nécessaires à la tâche, rien d'autre.
 
+## Règles d'écriture des documents de gouvernance
+
+- **Séparer les registres.** Un énoncé **factuel** (nom d'objet, chemin, comptage, statut
+  de livraison) se corrige contre le code. Un énoncé **intentionnel** (« le caissier doit
+  pouvoir… ») ne se corrige **jamais** pour coller au code : l'écart est du backlog. En cas
+  de doute sur le registre d'une ligne, on ne touche pas et on demande.
+- **Aucun `_vN` hors ADR.** Une fiche, une skill, un agent citent la **famille**
+  (`close_shift`), jamais la version. Le test porte sur le SENS : métavariable, fait
+  historique daté et version fixée par un ADR sont légitimes ; un `_vN` présenté comme le
+  pointeur de l'objet **vivant** ne l'est pas.
+- **Aucun `Sxx` de plan.** Même test : « planifié pour S28 » est mort et se retire ; un
+  identifiant (`DEV-S25-2.A-01`) ou un fait daté (« droppés S56 ») est un nom propre ou un
+  événement — on garde.
+- **Aucun composant de code dans une fiche `docs/objectifs/`.** Un identifiant PascalCase y
+  est une affirmation sur le code : il pourrit au premier renommage et contraint
+  l'implémentation sans y être autorisé. On désigne l'écran, la fonction, le parcours. Les
+  **routes** et les **familles de RPC** restent citables ; un **nom de fichier** est un fait.
+- **Aucun compteur vivant, aucun numéro de ligne dans un document évergreen.** Un compte est
+  soit retiré (le système de fichiers compte mieux), soit **daté**. On désigne par ancre
+  stable — titre de section, nom de pattern, texte cité — jamais par `fichier:ligne`.
+- **Une ligne réécrite sort conforme** aux règles en vigueur et **vraie**. Le mandat d'un lot
+  borne les lignes touchées, pas la conformité de celles produites — et le rayon d'action
+  inclut les lignes que l'édition rend fausses.
+- **On ne déclare pas un ADR applicable sans avoir lu son corps.** Un titre n'est pas un
+  périmètre ; un bandeau trop large trompe autant qu'un bandeau faux.
+- **Un archivage invalide toute promesse de réversibilité qui en dépendait.** Toute
+  affirmation de réversibilité nomme la liste complète des gestes de retour et se vérifie
+  après le dernier déplacement.
+- **Le contenu ne transite jamais par un shell** (`echo`, heredoc) : un `>` de citation y
+  devient une redirection. `Write`/`Edit` le garantissent, un script qui lit et écrit des
+  fichiers côté langage aussi. L'automatisation est permise ; le shell comme véhicule de
+  contenu ne l'est pas.
+- **On cible ce qui vit, on n'exclut pas ce qui est mort.** Une commande de relevé énumère
+  les zones vivantes : une exclusion pointe un chemin qui peut disparaître, et une exclusion
+  oubliée est silencieuse.
+- **Un commit de merge ne contient jamais une réécriture.** Résoudre un conflit, c'est
+  choisir entre deux versions existantes ; toute transformation se fait dans un commit
+  suivant, relisable seul.
+
 ## Règles générales
 
 - Do what has been asked; nothing more, nothing less.

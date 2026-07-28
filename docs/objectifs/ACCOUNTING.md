@@ -1,8 +1,15 @@
 # Module Accounting — Objectif métier
 
-> **Statut V2/V3** : décrit la vision business cible (11 pages). **V2 jamais déployée**. Implémentation V3 actuelle = **partielle** — 1 page accounting (`MappingsPage`) + 3 pages financières sous `/reports` (Balance Sheet, ProfitLoss, Cash Flow). Les 7 autres pages sont **planifiées pour la Session S26 Comptable Cockpit**. DB excellente (triggers JE, mappings, fiscal periods, VAT, view_ar_aging tous présents). Voir [`../V2_V3_GLOSSARY.md`](../V2_V3_GLOSSARY.md).
+> **Héritage V2** : décrit la vision business cible (11 pages). **V2 jamais déployée**. Implémentation V3 actuelle = **avancée** — **au 2026-07-28 : 8 pages accounting livrées** (index, plan de comptes, écritures, grand livre, balance, trésorerie, mappings, réglages compta) sur **7 routes `accounting/*`** + les 3 pages financières sous `/reports` (Balance Sheet, ProfitLoss, Cash Flow). DB excellente (triggers JE, mappings, fiscal periods, VAT, view_ar_aging tous présents).
 >
 > **Périmètre fonctionnel** : ce document décrit **ce que le module Accounting (`/accounting`) sert à faire au quotidien** pour The Breakery,
+>
+> **Révision** : 2026-07-28 · **Statut** : Partiel
+> **ADR applicables** : ADR-005 (juridiction fiscale, taxe de sortie 10 %, PPN input non récupérable), ADR-013 (intégrité void/refund, mapping méthode→compte piloté par l'enum), ADR-014 (pas de JE de réévaluation ; le GL inventaire reste basé transactions)
+>
+> **Convention** : aucune version d'objet DB (`_vN`) dans cette fiche — on cite la
+> famille (`close_shift`, `complete_order_with_payment`). La version vivante se
+> vérifie dans `supabase/migrations/` et au call-site, jamais ici.
 
 ---
 
@@ -55,7 +62,7 @@ Quelle que soit la page consultée, le module garantit toujours :
 
 ## 4. Le Chart of Accounts — Le plan comptable
 
-Page `ChartOfAccountsPage` : le **squelette** de la comptabilité. Affiche l'arbre hiérarchique du plan comptable :
+La page du plan comptable : le **squelette** de la comptabilité. Affiche l'arbre hiérarchique du plan comptable :
 
 ### 4.1 Structure du plan
 
@@ -71,10 +78,10 @@ Codification à 4-5 chiffres, organisée par classe (norme SAK EMKM) :
 
 ### 4.2 Actions disponibles
 
-- **Visualisation en arbre** (`AccountTree`) avec tri par code.
-- **Création / édition** d'un compte via `AccountModal` (code, libellé, type, parent, accepte les écritures directes ou pas).
+- **Visualisation en arbre** avec tri par code.
+- **Création / édition** d'un compte via une modale dédiée (code, libellé, type, parent, accepte les écritures directes ou pas).
 - **Désactivation** d'un compte sans écriture associée (soft delete).
-- **AccountPicker** réutilisable dans les modales d'écriture.
+- **Sélecteur de compte** réutilisable dans les modales d'écriture.
 
 Bénéfice métier : **un plan comptable lisible et adapté à la boulangerie**, qu'on n'a pas à reconstruire à chaque déclaration. Le système est livré pré-rempli pour SAK EMKM ; le comptable ajoute ses sous-comptes si besoin.
 
@@ -82,7 +89,7 @@ Bénéfice métier : **un plan comptable lisible et adapté à la boulangerie**,
 
 ## 5. Les Journal Entries — Le journal des écritures
 
-Page `JournalEntriesPage` : la liste des **écritures comptables** générées et saisies.
+La page des écritures : la liste des **écritures comptables** générées et saisies.
 
 ### 5.1 Types d'écritures
 
@@ -93,18 +100,18 @@ Page `JournalEntriesPage` : la liste des **écritures comptables** générées e
 | **Paiement fournisseur** | Auto | Débit 2100 AP 500k / Crédit 1120 Bank 500k |
 | **Production** | Auto | Débit 1300 Finished Goods / Crédit 1300 Raw Materials |
 | **Casse / Wastage** | Auto | Débit 5200 Wastage / Crédit 1300 Inventory |
-| **Dépense** | Auto (via approve_expense_with_journal RPC) | Débit 5200 Operating Expense / Crédit 1110 Cash ou 2100 AP |
+| **Dépense** | Auto (à l'approbation, famille `approve_expense`) | Débit 5200 Operating Expense / Crédit 1110 Cash ou 2100 AP |
 | **Écart de caisse** | Auto à la clôture session | Débit/Crédit 4900/5900 selon signe |
-| **Ajustement manuel** | Manuel (`JournalEntryForm`) | Toute écriture saisie à la main par le comptable |
+| **Ajustement manuel** | Manuel (formulaire d'écriture) | Toute écriture saisie à la main par le comptable |
 
 ### 5.2 Le formulaire d'écriture manuelle
 
-`JournalEntryForm` permet au comptable de :
+Le formulaire d'écriture manuelle permet au comptable de :
 
 - Saisir une **date** (refusée si la période est clôturée).
 - Choisir un **journal** (général, ventes, achats, banque, OD — opérations diverses).
 - Saisir une **description** + référence externe.
-- Ajouter des **lignes** (`JournalLineTable`) : compte, débit ou crédit, libellé.
+- Ajouter des **lignes** : compte, débit ou crédit, libellé.
 - Vérification temps réel : total débit = total crédit. Bloquant si différent.
 - Validation → création de l'écriture en base, avec auteur et timestamp.
 
@@ -124,7 +131,7 @@ Bénéfice métier : **impossible de saisir une écriture incohérente**. Le sys
 
 ## 6. Le General Ledger — Le grand livre
 
-Page `GeneralLedgerPage` : pour un **compte donné**, l'historique complet des mouvements sur une période :
+La page du grand livre : pour un **compte donné**, l'historique complet des mouvements sur une période :
 
 - Soldes d'ouverture, mouvements détaillés, solde de clôture.
 - Pour chaque ligne : date, journal source, libellé, débit, crédit, solde courant.
@@ -138,7 +145,7 @@ Bénéfice métier : **auditer un compte en 30 secondes**. Le comptable demande 
 
 ## 7. La Trial Balance — La balance
 
-Page `TrialBalancePage` : à une **date donnée**, l'état des soldes de tous les comptes :
+La page de balance : à une **date donnée**, l'état des soldes de tous les comptes :
 
 - Une ligne par compte avec : code, libellé, total débit période, total crédit période, solde.
 - Totaux en bas : total débit = total crédit (sinon erreur grave dans la base).
@@ -152,13 +159,13 @@ Bénéfice métier : **vérifier la cohérence globale** avant de produire le bi
 
 ## 8. Le Balance Sheet — Le bilan
 
-Page `BalanceSheetPage` : le **bilan** à une date donnée, structure SAK EMKM :
+La page de bilan : l'**actif et le passif** à une date donnée, structure SAK EMKM :
 
 - **Actif** : courant (cash, banque, AR, inventory), non courant (immobilisations, dépôts).
 - **Passif** : courant (AP, PB1 payable, salaires à payer), non courant (emprunts).
 - **Capitaux propres** : capital, réserves, résultat de l'exercice.
 - Égalité Actif = Passif + Capitaux propres affichée en pied.
-- **Format `FinancialStatementTable`** lisible avec hiérarchie pliable.
+- **Format tabulaire** lisible, avec hiérarchie pliable.
 - **Export** PDF officiel pour banque / investisseur / contrôleur.
 
 Bénéfice métier : **un bilan en 5 secondes**, prêt à imprimer, conforme à la norme indonésienne, sans avoir à attendre la clôture mensuelle du comptable externe.
@@ -167,7 +174,7 @@ Bénéfice métier : **un bilan en 5 secondes**, prêt à imprimer, conforme à 
 
 ## 9. L'Income Statement — Le compte de résultat
 
-Page `IncomeStatementPage` : le **P&L** sur une période, structure SAK EMKM :
+La page du compte de résultat : le **P&L** sur une période, structure SAK EMKM :
 
 - **Revenus** : ventes retail, B2B, exceptionnel.
 - **COGS** : coût des matières premières consommées (via production et ventes directes).
@@ -179,7 +186,7 @@ Page `IncomeStatementPage` : le **P&L** sur une période, structure SAK EMKM :
 - **Impôt sur les sociétés** (si applicable).
 - **Résultat net**.
 
-Affichage tabulaire (`IncomeStatementTable`) avec comparaison période-vs-période optionnelle.
+Affichage tabulaire avec comparaison période-vs-période optionnelle.
 
 Bénéfice métier : **connaître son résultat à J+1**. Le gérant n'attend plus la fin de mois pour savoir s'il est rentable — il regarde son P&L tous les soirs s'il veut.
 
@@ -187,7 +194,7 @@ Bénéfice métier : **connaître son résultat à J+1**. Le gérant n'attend pl
 
 ## 10. La VAT Management — La PB1 (taxe restaurant)
 
-Page `VATManagementPage` : la gestion spécifique de la **PB1** (Pajak Restoran — taxe restaurant locale).
+La page fiscale : la gestion spécifique de la **PB1** (Pajak Restoran — taxe restaurant locale).
 
 ### 10.1 Spécificités PB1
 
@@ -199,8 +206,8 @@ Page `VATManagementPage` : la gestion spécifique de la **PB1** (Pajak Restoran 
 
 ### 10.2 Fonctionnalités
 
-- **VATSummaryCard** : carte synthétique mois par mois (PB1 collectée, à reverser).
-- **Calculer la PB1 du mois** via RPC `calculate_vat_payable(year, month)`.
+- **Carte de synthèse fiscale** : récapitulatif mois par mois (PB1 collectée, à reverser).
+- **Calculer la PB1 du mois** via la RPC de la famille `calculate_pb1_payable` (année, mois).
 - **Filings** (`useVatFilings`) : historique des déclarations passées.
 - **Génération de la déclaration mensuelle** : PDF imprimable conforme au format attendu par le service fiscal local.
 - **Marquage "déclaré + payé"** une fois la déclaration faite (verrouille la période).
@@ -211,7 +218,7 @@ Bénéfice métier : **conformité PB1 sans erreur ni oubli**. Le 10 de chaque m
 
 ## 11. L'AR Aging — Les créances clients
 
-Page `ARAgingPage` : le **vieillissement des comptes à recevoir** (Accounts Receivable).
+La page de vieillissement des créances : le **suivi des comptes à recevoir** (Accounts Receivable).
 
 - Liste de tous les clients avec encours > 0 (essentiellement B2B + ardoises POS).
 - Buckets : Courant (avant échéance) / 1-30j retard / 31-60j / 61-90j / 90j+.
@@ -226,20 +233,20 @@ Bénéfice métier : **piloter le recouvrement** sans formule Excel parallèle. 
 
 ## 12. La Bank Reconciliation — La réconciliation bancaire
 
-Pages `BankReconciliationPage` + `ReconciliationDetailPage` : le **rapprochement** entre les écritures comptables côté banque et le relevé bancaire réel.
+Les pages de rapprochement bancaire, liste et détail : le **rapprochement** entre les écritures comptables côté banque et le relevé bancaire réel.
 
 ### 12.1 Le geste
 
-1. **Importer un relevé bancaire** (`BankStatementUpload`) au format CSV ou Excel — le service `bankStatementParser` interprète et normalise.
+1. **Importer un relevé bancaire** au format CSV ou Excel — le service `bankStatementParser` interprète et normalise.
 2. **Charger les écritures comptables** non encore rapprochées sur la période.
 3. **Matcher automatiquement** sur les correspondances triviales (même date, même montant).
-4. **Match manuel** (`ManualMatchModal`) pour les cas ambigus (différence de jour, montant légèrement différent à cause de frais).
-5. **Ajustements** (`AdjustmentForm`) pour les écarts résiduels (frais bancaires non comptabilisés, intérêts, etc.).
+4. **Match manuel** pour les cas ambigus (différence de jour, montant légèrement différent à cause de frais).
+5. **Ajustements** pour les écarts résiduels (frais bancaires non comptabilisés, intérêts, etc.).
 6. **Validation finale** : la réconciliation est figée, marque les écritures comme rapprochées.
 
 ### 12.2 Vue détail
 
-`ReconciliationDetailPage` montre, pour une réconciliation donnée :
+Le détail d'une réconciliation montre :
 
 - Solde de départ banque vs comptabilité.
 - Lignes matchées une à une.
@@ -252,7 +259,7 @@ Bénéfice métier : **les livres de The Breakery collent à la banque** au cent
 
 ## 13. La CALK — Notes annexes aux états financiers
 
-Page `CALKPage` : la **CALK** (*Catatan Atas Laporan Keuangan*) — les **notes annexes** aux états financiers exigées par la norme SAK EMKM.
+La page des notes annexes : la **CALK** (*Catatan Atas Laporan Keuangan*) — les **notes annexes** aux états financiers exigées par la norme SAK EMKM.
 
 Contenu type :
 
@@ -272,7 +279,7 @@ Bénéfice métier : **un dossier d'états financiers complet** prêt à imprime
 
 ## 14. Les périodes fiscales
 
-`useFiscalPeriods` + `FiscalPeriodModal` : la gestion des **périodes comptables**.
+La gestion des **périodes comptables** :
 
 - Une période ouverte accepte les écritures.
 - Une période clôturée les refuse — protection contre la modification rétroactive.
@@ -298,7 +305,7 @@ Toute la **valeur quotidienne** du module vient de l'**automatisation**. Les tri
 | Paiement fournisseur | Trigger paiement | DR AP / CR Cash/Bank |
 | Casse / Wastage | Trigger | DR Wastage Expense / CR Inventory |
 | Production | Trigger | DR Finished Goods / CR Raw Materials |
-| Dépense approuvée | RPC `approve_expense_with_journal` | DR Operating Expense / CR Cash/Bank or AP |
+| Dépense approuvée | RPC famille `approve_expense` | DR Operating Expense / CR Cash/Bank or AP |
 | Écart de caisse session | Trigger fermeture | DR/CR Exceptional / CR/DR Cash |
 | Refund | Trigger void/refund | Contre-passation de la vente d'origine |
 
@@ -315,7 +322,7 @@ Bénéfice métier : **le comptable n'est plus la goulot d'étranglement**. Il c
 | **Inventory** | Chaque production / casse / opname adjustment écrit en compta. |
 | **Purchasing** | Chaque réception PO et chaque paiement fournisseur écrit en compta. |
 | **Cash Register** | Chaque clôture session écrit un éventuel écart de caisse. |
-| **Expenses** | Chaque dépense approuvée passe par `approve_expense_with_journal`. |
+| **Expenses** | Chaque dépense approuvée passe par la RPC famille `approve_expense`. |
 | **Reports** | P&L Monthly Trend, VAT Report, Receivables, Expenses by Category lisent les tables compta. |
 | **Settings** | Plan comptable de référence, numérotation écritures, date de clôture exercice configurés dans Settings → Financial. |
 

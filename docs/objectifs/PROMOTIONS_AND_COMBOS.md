@@ -1,8 +1,15 @@
 # Module Promotions & Combos — Objectif métier
 
-> **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée**. Implémentation V3 = DONE (`evaluate_promotions_v1`, `usePromotionsAutoEval`, `usePromotionsRealtime`, features `promotions` BO + POS, combos avec groupes). Voir [`../V2_V3_GLOSSARY.md`](../V2_V3_GLOSSARY.md).
+> **Héritage V2** : décrit la vision business cible. **V2 jamais déployée**. Implémentation V3 = DONE (`evaluate_promotions`, `usePromotionsAutoEval`, `usePromotionsRealtime`, features `promotions` BO + POS, combos avec groupes).
 >
 > **Périmètre fonctionnel** : ce document décrit **ce que le module Promotions & Combos sert à faire au quotidien** pour The Breakery, 
+>
+> **Révision** : 2026-07-28 · **Statut** : Livré
+> **ADR applicables** : ADR-007 déc. 3 (la fenêtre horaire des combos est supprimée : les promotions sont l'unique mécanisme horaire du produit), ADR-006 déc. 10 (le happy hour est couvert ici, rien à créer côté Settings)
+>
+> **Convention** : aucune version d'objet DB (`_vN`) dans cette fiche — on cite la
+> famille (`close_shift`, `complete_order_with_payment`). La version vivante se
+> vérifie dans `supabase/migrations/` et au call-site, jamais ici.
 
 ---
 
@@ -27,8 +34,8 @@ Les deux faces partagent le même moteur d'évaluation et le même invariant : *
 
 | Famille | Quoi | Saisie | Application |
 |---|---|---|---|
-| **Promotions** | Règles de remise conditionnelles | Page `/products/promotions` (un seul écran de configuration) | Auto-évaluées à chaque changement de panier |
-| **Combos** | Produits composés vendus comme un seul SKU à prix groupé | Page `/products/combos` (création de combos + groupes) | Sélectionnés explicitement au POS via `ComboSelectorModal` |
+| **Promotions** | Règles de remise conditionnelles | Page `/promotions` (un seul écran de configuration) | Auto-évaluées à chaque changement de panier |
+| **Combos** | Produits composés vendus comme un seul SKU à prix groupé | Page `/products/combos` (création de combos + groupes) | Sélectionnés explicitement au POS via le sélecteur de composants |
 
 Les deux résident administrativement dans le module **Products** (page parente) mais constituent un domaine métier autonome avec ses propres règles.
 
@@ -135,11 +142,11 @@ Bénéfice métier : **le caissier voit la promo se déclencher en direct** dès
 
 ## 7. La création / édition d'une promo
 
-Page **Promotions list** (`/products/promotions`) :
+Page **Promotions list** (`/promotions`) :
 
 - Liste de toutes les promos (actives, planifiées, expirées).
-- Cards (`PromotionCard`) avec : nom, type, période, conditions résumées, statut, compteur d'utilisations.
-- Stats agrégées (`PromotionsStats`) en haut : nombre de promos actives, total remises appliquées sur la période, top promo en volume.
+- Cartes avec : nom, type, période, conditions résumées, statut, compteur d'utilisations.
+- Stats agrégées en haut : nombre de promos actives, total remises appliquées sur la période, top promo en volume.
 - Bouton "Nouvelle promotion" → formulaire de création.
 
 ### 7.1 Le formulaire
@@ -190,11 +197,11 @@ Chaque groupe a :
 
 ### 8.2 Création — Page `/products/combos`
 
-- Liste des combos existants avec `ComboCard`, header (`CombosHeader`), stats (`CombosStats`).
+- Liste des combos existants en cartes, avec bandeau et stats agrégées.
 - Formulaire 3 onglets :
-  - **General** (`ComboFormGeneral`) : identité du combo, prix, période.
-  - **Groups** (`ComboFormGroupEditor`) : édition des groupes de composants et règles.
-  - **Price preview** (`ComboFormPricePreview`) : aperçu du calcul de marge selon les choix possibles du client.
+  - **General** : identité du combo, prix, période.
+  - **Groups** : édition des groupes de composants et règles.
+  - **Price preview** : aperçu du calcul de marge selon les choix possibles du client.
 
 Bénéfice métier : **packager une formule** sans devoir créer un nouveau produit en stock — le combo n'est qu'un assemblage virtuel des produits existants.
 
@@ -202,7 +209,7 @@ Bénéfice métier : **packager une formule** sans devoir créer un nouveau prod
 
 ## 9. Sélection d'un combo au POS
 
-Au POS, l'ajout d'un combo déclenche le **`ComboSelectorModal`** :
+Au POS, l'ajout d'un combo déclenche le **sélecteur de composants** :
 
 - Affichage de chaque groupe avec ses composants éligibles.
 - Indication des règles ("Choisissez 1 viennoiserie", "Choisissez 2 boissons").

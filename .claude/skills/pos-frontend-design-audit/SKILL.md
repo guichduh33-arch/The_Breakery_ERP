@@ -8,8 +8,8 @@ description: >-
   du code (source de vérité — il est plus avancé que les maquettes), COMPARE chaque écran à l'état de
   l'art des leaders POS restaurant (Square for Restaurants, Toast, Lightspeed, TouchBistro, Clover,
   Revel, SumUp, Storyous), et PROPOSE des améliorations critiques, créatives et pragmatiques classées
-  par impact/effort, en distinguant CAISSE et WAITER. Produit un rapport structuré EN FRANÇAIS et
-  l'écrit dans docs/design-audits/ pour que le skill pos-frontend-design-implement le développe ensuite.
+  par impact/effort, en distinguant CAISSE et WAITER. Rend un rapport structuré EN FRANÇAIS
+  EN CONVERSATION, consommé dans la même session par pos-frontend-design-implement.
   À utiliser DÈS QUE l'utilisateur parle de design/UI/UX/ergonomie de la caisse ou de l'app serveur,
   même via un symptôme et sans dire "audit" : "audit design POS", "design POS", "UI POS", "UX caisse",
   "ergonomie caisse", "redesign POS", "compare POS Square/Toast", "le design de la caisse",
@@ -27,7 +27,6 @@ pathPatterns:
   - 'apps/pos/src/**/*.tsx'
   - 'apps/pos/src/**/*.css'
   - 'apps/pos/src/pages/**'
-  - 'docs/design-audits/**'
 promptSignals:
   phrases:
     - 'audit design POS'
@@ -63,12 +62,14 @@ Trois missions, dans cet ordre :
 2. **COMPARER à l'état de l'art** des leaders POS restaurant, écran par écran, pour situer la maturité et importer les bons patterns.
 3. **PROPOSER** des améliorations concrètes — esprit à la fois **critique, créatif et pragmatique** — classées par impact/effort, prêtes à devenir des tickets, distinguant CAISSE et WAITER.
 
-**Livrable : un rapport EN FRANÇAIS, écrit dans `docs/design-audits/`** (voir « Format du rapport ») pour que le skill **`pos-frontend-design-implement`** développe ensuite les propositions retenues.
+**Livrable : un rapport EN FRANÇAIS rendu DANS LA CONVERSATION** (voir « Format du rapport ») pour que le skill **`pos-frontend-design-implement`** développe les propositions retenues **dans la même session**. **Aucun fichier n'est créé** — règle 1 de `CLAUDE.md`.
+
+⚠️ **Un audit se scope pour tenir dans une session.** Le périmètre est une **zone ou un écran** (`caisse`, `waiter`, grille produits, écran de paiement, stock vitrine…), jamais « tout le POS ». Un audit qui déborde de sa session est **mal scopé** : réduis le périmètre, ne cherche pas à le faire survivre.
 
 ## Source de vérité & ce qu'on NE fait PAS
 
-- **Le code actuel est l'étalon.** Les maquettes `docs/Design/caissapp/*.jpg` et l'objectif archivé `docs/_archive/objectif-travail-v2/POS.md` sont du **contexte d'intention historique, potentiellement périmé**. **Ne jamais signaler « le code diverge de la maquette » comme un défaut** — le code a sciemment dépassé ces écrans. Tu peux y jeter un œil pour comprendre l'intention d'origine d'un écran, mais une maquette ne « gagne » jamais contre le code.
-- **`CLAUDE.md` est la source de vérité** des patterns globaux et du workplan. **`breakery-ui-kit`** est la source de vérité des primitifs/tokens disponibles — consulte-le, ne ré-invente pas la liste.
+- **Le code actuel est l'étalon.** L'intention du module se lit dans `docs/objectifs/POS.md` et dans les ADR applicables : elle éclaire le *pourquoi* d'un écran, elle ne le juge pas. **Ne jamais signaler « le code diverge de l'intention écrite » comme un défaut de design** — un écart d'intention est du **backlog**, pas une faute d'ergonomie, et il se remonte en Étape 6. Une fiche ne « gagne » jamais contre le code sur un **fait** ; le code ne gagne jamais contre une fiche sur une **intention**.
+- **`CLAUDE.md` est la source de vérité** des patterns globaux ; **`docs/adr/`** porte les décisions qui font loi. **`breakery-ui-kit`** est la source de vérité des primitifs/tokens disponibles — consulte-le, ne ré-invente pas la liste.
 - **On n'audite pas la plomberie.** Si la commande n'atteint pas la cuisine, si une RPC est mal versionnée, si un double-tap crée deux commandes, si un canal realtime collisionne → **c'est `pos-flow-audit`**, pas ici. Ce skill juge **l'aspect et la manipulation**, pas la correction fonctionnelle. Frontière nette : *« la capacité n'existe pas / la donnée n'arrive pas »* = pos-flow-audit ; *« la capacité existe mais est visuellement/ergonomiquement mauvaise »* = ici.
 - **Cas hybride (rendu d'un mécanisme technique).** Beaucoup d'éléments mêlent les deux : une bannière de retry, un état « déjà payé », un indicateur offline. Règle : **juge le RENDU** (bannière persistante vs toast fugace, lisibilité, hiérarchie, taille) — c'est ton domaine — et **renvoie le COMPORTEMENT** (quand/pourquoi le retry se déclenche, l'idempotence) à `pos-flow-audit`. Dans le ticket, dis explicitement ce que tu juges (l'apparence) et ce que tu délègues (la logique).
 
@@ -88,8 +89,17 @@ Applique **`references/design-rubric.md`** : cibles tactiles, hiérarchie, contr
 ### Étape 4 — Benchmarker vs les leaders
 Pour chaque écran majeur, compare aux patterns de l'état de l'art via **`references/market-leaders.md`** (Square, Toast, Lightspeed, TouchBistro, Clover, Revel, SumUp, Storyous). Le but n'est pas de copier mais de **situer la maturité** et de **repérer le pattern manquant** qui débloquerait le profil concerné. Reste honnête : ce sont des patterns de référence, pas des specs pixel.
 
-### Étape 5 — Proposer, prioriser, écrire le rapport
-Transforme les constats en propositions au **format ticket** (voir plus bas), classées par impact/effort, en séparant CAISSE et WAITER. **Écris le rapport dans `docs/design-audits/POS-<scope>-<YYYY-MM-DD>.md`** (crée le dossier si absent ; `<scope>` = `full`, `caisse`, `waiter`, ou le nom de l'écran). Annonce le chemin à l'utilisateur à la fin.
+### Étape 5 — Proposer, prioriser, rendre le rapport
+Transforme les constats en propositions au **format ticket** (voir plus bas), classées par impact/effort, en séparant CAISSE et WAITER. **Rends le rapport DANS LA CONVERSATION** : tu ne crées aucun fichier, tu n'annonces aucun chemin. Il est consommé dans la même session par `pos-frontend-design-implement`.
+
+### Étape 6 — Proposer le résidu durable
+Le rapport est un **artefact intermédiaire** : c'est l'échafaudage du raisonnement, il meurt avec la session. Ce qui doit survivre a **déjà** un domicile gouverné. Termine toujours en **proposant**, explicitement :
+
+- **les tickets non implémentés → backlog d'une fiche `docs/objectifs/`** : nomme la fiche (`POS.md`, `ORDERS.md`, `KDS.md`, `CUSTOMER_DISPLAY.md`, `TABLET_ORDERING.md`, `CASH_REGISTER.md`…) et rédige les lignes telles qu'elles doivent y figurer, avec le marqueur de priorité que ces fiches portent déjà (🔴🟠🟡🟢) ;
+- **une décision de design arbitrée → un ADR**, si l'audit en a produit une — un arbitrage de fond, pas une préférence ;
+- **une intention de design → la fiche objectif** du module concerné.
+
+Tu **proposes** la rédaction en conversation. **Mamat écrit et commite** : tu ne crées ni ne modifies aucun fichier de `docs/` (règle 1 de `CLAUDE.md`).
 
 ## Esprit des propositions — critique, créatif, pragmatique
 
@@ -100,7 +110,7 @@ Transforme les constats en propositions au **format ticket** (voir plus bas), cl
 
 ## Format du rapport (EN FRANÇAIS)
 
-Le rapport écrit dans `docs/design-audits/` suit **exactement** cette structure :
+Le rapport rendu en conversation suit **exactement** cette structure :
 
 ```markdown
 # Audit design POS — <scope> — <YYYY-MM-DD>
@@ -154,7 +164,7 @@ Liste courte des changements à fort levier réalisables vite.
 - **N'invente pas de tokens/primitifs.** Tout import doit exister dans `@breakery/ui` (cf. `breakery-ui-kit`) ou être une classe Tailwind du preset.
 - **Sépare toujours CAISSE et WAITER** : une amélioration desktop dense peut casser l'ergonomie tablette debout, et vice-versa. Un bon ticket dit pour qui il vaut.
 - **Reste dans l'aspect.** Dès qu'un constat devient « ça ne marche pas / ça double-charge / la cuisine ne reçoit rien », bascule-le explicitement vers `pos-flow-audit` au lieu de le traiter ici.
-- **Le rapport est le hand-off.** Écris-le proprement dans `docs/design-audits/` : c'est l'entrée de `pos-frontend-design-implement`.
+- **Le rapport est le hand-off.** Rends-le proprement **en conversation** : c'est l'entrée de `pos-frontend-design-implement`, **dans la même session**. Il n'y a pas de rattrapage sur disque — un audit non consommé se refait.
 
 ## Fichiers de référence (à lire selon le besoin)
 
@@ -166,6 +176,7 @@ Liste courte des changements à fort levier réalisables vite.
 
 - Chaque constat cite un `fichier:ligne` réel.
 - Chaque écran du périmètre a un score de maturité et au moins un constat ou un « RAS ».
-- Le rapport existe bien dans `docs/design-audits/` et son chemin est annoncé.
+- Le rapport est rendu **en conversation**, en entier — aucun fichier créé, aucun chemin annoncé.
+- Le **résidu durable est proposé** (Étape 6) : lignes de backlog + fiche `docs/objectifs/` cible, et le cas échéant la décision qui mérite un ADR.
 - Les propositions CAISSE et WAITER sont séparées et au format ticket.
 - Rien dans le rapport n'empiète sur `pos-flow-audit` (plomberie) ou `security-fraud-guard` (RBAC) sans renvoi explicite.

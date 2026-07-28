@@ -1,8 +1,15 @@
 # Module Reports — Objectif métier
 
-> **Statut V2/V3** : décrit la vision business cible (~61 reports en 7 catégories). **V2 jamais déployée**. Implémentation V3 = **partielle — 13 reports livrés sur ~61** (BalanceSheet, ProfitLoss, CashFlow, SalesByCategory, SalesByHour, SalesByStaff, BasketAnalysis, ProductionYield, RecipeCostOverview, RecipeCostTimeline, StockVariance, Audit, ReportsIndexPage). **Reste à livrer ~48 reports — Session S29 Reports Export + Z-Report PDF couvre les priorités**. Voir [`../V2_V3_GLOSSARY.md`](../V2_V3_GLOSSARY.md).
+> **Héritage V2** : décrit la vision business cible (~61 reports en 7 catégories). **V2 jamais déployée**. Implémentation V3 = **partielle**. **Au 2026-07-28 : 31 pages sous `apps/backoffice/src/pages/reports/` et 4 sous `pages/marketing/`, exposées par 30 routes `reports/*`.** Le reliquat du catalogue cible et l'export Z-Report restent à livrer 🔴.
 >
 > **Périmètre fonctionnel** : ce document décrit **ce que le module Reports sert à faire au quotidien** pour The Breakery.
+>
+> **Révision** : 2026-07-28 · **Statut** : Partiel
+> **ADR applicables** : ADR-009 déc. 4 (les lecteurs financiers lisent `paid` **et** `completed`), ADR-004 (le rapport perishable-turnover sort de la navigation), ADR-014 (valorisation `current_stock × cost_price` et solde GL sont deux mesures qui peuvent diverger : tout rapport qui les compare doit le dire)
+>
+> **Convention** : aucune version d'objet DB (`_vN`) dans cette fiche — on cite la
+> famille (`close_shift`, `complete_order_with_payment`). La version vivante se
+> vérifie dans `supabase/migrations/` et au call-site, jamais ici.
 
 ---
 
@@ -301,11 +308,8 @@ Reports identifiés comme à forte valeur ajoutée non encore livrés :
 | 🔴 | **KDS Service Speed** | Mesurer le goulot d'étranglement cuisine, optimiser les recettes longues. |
 | 🔴 | **Unusual Transaction Patterns** | Détecter automatiquement les transactions hors horaires, montants aberrants, splits cash juste sous un seuil suspect. |
 | 🔴 | **B2B Self-Approval Risk** | Repérer les commandes B2B où le créateur et l'approbateur sont la même personne. |
-| 🟠 | **Customer Cohort Analysis** | Mesurer la rétention par cohorte mensuelle (nouveaux vs récurrents). |
-| 🟠 | **Basket Analysis** | Identifier les produits souvent achetés ensemble pour créer des combos pertinents. |
-| 🟠 | **Promotion Effectiveness** | Mesurer le ROI réel de chaque promotion (volume incrémental vs marge sacrifiée). |
 | 🟡 | **Peak Hour Staffing** | Recommander un planning staff basé sur la charge horaire historique. |
-| 🟡 | **Perishable Turnover** | Rotation des produits périssables (jours moyens en stock) pour réduire le waste. |
+| ⛔ | **Perishable Turnover** | **Abandonné** — ADR-004 ordonne de retirer ce rapport de la navigation : ni lots, ni péremption. Le template PDF subsiste, il ne doit pas être remis au menu. |
 | 🟡 | **Table Turnover** | Durée moyenne d'occupation table, taux de rotation — décisif pour la capacité dîner. |
 | 🟢 | **Sales By Brand** | Découper le CA par marque pour les rayons multi-marques (placeholder déjà câblé). |
 | 🟢 | **Purchase Returns** | Suivre les retours fournisseurs (placeholder déjà câblé). |

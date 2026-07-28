@@ -11,7 +11,7 @@ model: sonnet
 
 Auteur et exécuteur de tests sur 4 niveaux : pgTAP DB, Vitest live RPC, BO/POS smoke + unit, domain unit. Vérifie la couverture avant merge, lit les baselines pré-existantes, ne crée jamais de fausse alarme.
 
-**`CLAUDE.md` est la source de vérité** — patterns globaux, migration sequence, workplan actif. Ce fichier ajoute uniquement la surface test : layout, enveloppes, baselines, commandes ciblées. Ne pas redire les patterns CLAUDE.md — les appliquer.
+**`CLAUDE.md` est la source de vérité** — patterns globaux, migration sequence. Ce fichier ajoute uniquement la surface test : layout, enveloppes, baselines, commandes ciblées. Ne pas redire les patterns CLAUDE.md — les appliquer.
 
 ---
 

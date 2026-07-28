@@ -1,8 +1,15 @@
 # Module Expenses — Objectif métier
 
-> **Statut V2/V3** : décrit la vision business cible (4 pages). **V2 jamais déployée**. Implémentation V3 = **partielle** — 2 pages livrées (ExpensesListPage, ExpenseDetailPage) + 5 RPCs (S17 `create_expense_rpcs`) + storage bucket. **ExpenseFormPage et ExpenseCategoriesPage planifiés pour S28 Expense Governance**. Voir [`../V2_V3_GLOSSARY.md`](../V2_V3_GLOSSARY.md).
+> **Héritage V2** : décrit la vision business cible (4 pages). **V2 jamais déployée**. Implémentation V3 = **partielle** — **au 2026-07-28 : 3 pages livrées** (liste, détail, création) + les RPCs de dépense + storage bucket. **La page de catégories de dépense reste à livrer** 🟠.
 >
 > **Périmètre fonctionnel** : ce document décrit **ce que le module Expenses (`/expenses`) sert à faire au quotidien** pour The Breakery, 
+>
+> **Révision** : 2026-07-28 · **Statut** : Partiel
+> **ADR applicables** : aucun à ce jour.
+>
+> **Convention** : aucune version d'objet DB (`_vN`) dans cette fiche — on cite la
+> famille (`close_shift`, `complete_order_with_payment`). La version vivante se
+> vérifie dans `supabase/migrations/` et au call-site, jamais ici.
 
 ---
 
@@ -39,7 +46,7 @@ Quel que soit le contexte d'utilisation, le module garantit :
 
 1. **Catégorie obligatoire**. Aucune dépense ne se valide sans catégorie — c'est elle qui pilote le compte comptable destinataire.
 2. **Workflow Draft → Approved → Paid**. Trois statuts. Une dépense passe par un cycle de validation explicite avant de toucher la compta.
-3. **Écriture comptable automatique à l'approbation**. La RPC `approve_expense_with_journal` génère l'écriture journal en même temps que la validation — pas de saisie compta double.
+3. **Écriture comptable automatique à l'approbation**. La RPC de la famille `approve_expense` génère l'écriture journal en même temps que la validation — pas de saisie compta double.
 4. **Traçabilité auteur**. `created_by` (qui a saisi) et `approved_by` (qui a validé) sont obligatoires et différents pour les montants élevés (séparation des tâches).
 5. **Justificatif rattachable**. Chaque dépense peut porter une pièce jointe (photo de facture, scan de ticket) — preuve archivable.
 
@@ -47,7 +54,7 @@ Quel que soit le contexte d'utilisation, le module garantit :
 
 ## 4. La liste des dépenses — La vue centrale
 
-Page `ExpensesListPage` : la **liste consolidée** de toutes les dépenses :
+La page de liste : la **vue consolidée** de toutes les dépenses :
 
 ### 4.1 Affichage
 
@@ -77,12 +84,12 @@ Bénéfice métier : **savoir où passe l'argent** en 10 secondes. Le gérant ou
 
 ## 5. La création d'une dépense
 
-`ExpenseFormPage` (`/expenses/new`) : le formulaire de saisie d'une dépense.
+La page `/expenses/new` : le formulaire de saisie d'une dépense.
 
 ### 5.1 Champs collectés
 
 - **Date** de la dépense (peut être antérieure à la saisie — saisie tardive autorisée).
-- **Catégorie** (obligatoire — `ExpenseCategoryPicker`).
+- **Catégorie** (obligatoire).
 - **Description** courte ("Facture PLN avril", "Carburant scooter livraison").
 - **Montant** en IDR.
 - **Fournisseur** optionnel (rattachement à un `supplier` du module Purchasing si récurrent).
@@ -104,7 +111,7 @@ Bénéfice métier : **chaque sortie d'argent a sa fiche**, créée en moins de 
 
 ## 6. La détail d'une dépense
 
-Page `ExpenseDetailPage` : la **fiche complète** d'une dépense avec ses actions.
+La page de détail : la **fiche complète** d'une dépense avec ses actions.
 
 ### 6.1 Bloc identité
 
@@ -124,7 +131,7 @@ Page `ExpenseDetailPage` : la **fiche complète** d'une dépense avec ses action
 - Payé par (qui + quand) — vide si pas encore payé.
 - Justificatif attaché (preview + download).
 
-### 6.4 Bloc actions (`ExpenseApprovalActions`)
+### 6.4 Bloc actions
 
 Selon le statut et les permissions :
 
@@ -151,7 +158,7 @@ Draft → (review) → Approved → (payment) → Paid
 
 - Le créateur soumet la dépense → statut `pending_approval` (ou directement `approved` si l'auteur a la permission `expenses.approve`).
 - Un manager / owner consulte, peut **approuver** ou **rejeter avec raison**.
-- À l'approbation, la RPC `approve_expense_with_journal` :
+- À l'approbation, la RPC de la famille `approve_expense` :
   - Bascule le statut en `approved`.
   - Enregistre `approved_by = user_id` et `approved_at = now()`.
   - **Génère automatiquement l'écriture comptable** : DR Compte de charge (selon catégorie) / CR Cash ou Bank ou AP selon la méthode de paiement.
@@ -179,7 +186,7 @@ Bénéfice métier : **séparer l'engagement de la dépense (approbation) du dé
 
 ## 8. La gestion des catégories
 
-Page `ExpenseCategoriesPage` : la **nomenclature** des catégories de charges.
+La page des catégories de dépense : la **nomenclature** des catégories de charges.
 
 ### 8.1 Structure
 
@@ -218,8 +225,8 @@ Chaque catégorie a :
 
 Le module Expenses est **fortement intégré** au module Accounting :
 
-- Chaque approbation déclenche `approve_expense_with_journal` qui écrit dans `journal_entries`.
-- L'écriture est immédiatement visible dans le grand livre (`GeneralLedgerPage`).
+- Chaque approbation déclenche la RPC famille `approve_expense`, qui écrit dans `journal_entries`.
+- L'écriture est immédiatement visible dans le grand livre.
 - Le report **Expenses by Category** (module Reports) lit `expenses` directement.
 - Le **P&L Monthly Trend** consolide les expenses dans la section "Charges d'exploitation".
 - Les expenses approuvées non payées apparaissent en **AP** dans le bilan.
@@ -292,7 +299,7 @@ Bénéfice métier : **cloisonner les responsabilités**. Un cashier peut saisir
 
 | Module | Relation |
 |---|---|
-| **Accounting** | Écriture journal automatique à l'approbation via `approve_expense_with_journal`. |
+| **Accounting** | Écriture journal automatique à l'approbation via la RPC famille `approve_expense`. |
 | **Reports** | `expenses` (par date), `expense_by_category` (backlog), `pl_monthly_trend` consomment les données. |
 | **Settings** | Catégories par défaut, seuils d'approbation, compte comptable par catégorie. |
 | **Users & Permissions** | Permissions `expenses.*` cloisonnent les droits. |
