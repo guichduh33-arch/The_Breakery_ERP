@@ -34,7 +34,7 @@ export function useRecipeBomFull(productId: string) {
         p_product_id: productId,
       });
       if (error) throw error;
-      return (data ?? []) as BomLine[];
+      return (data ?? []);
     },
   });
 }

@@ -78,7 +78,7 @@ export function useUpsertRecipe() {
       if (args.bakerPercentage !== undefined)   rpcArgs.p_baker_percentage    = args.bakerPercentage;
       const { data, error } = await supabase.rpc('upsert_recipe_v2', rpcArgs);
       if (error) throw new UpsertRecipeError(classify(error.message), error.message);
-      return data as string;
+      return data;
     },
     onSuccess: async (_id, vars) => {
       await qc.invalidateQueries({ queryKey: ['inventory-production', 'recipes', vars.productId] });
