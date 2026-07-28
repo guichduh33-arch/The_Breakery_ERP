@@ -74,7 +74,8 @@ export default function LanDevicesPage() {
         <HubPanel />
       </Card>
 
-      {/* Spec 006x lot 4 — cash différé + fenêtre offline (catégorie network). */}
+      {/* ADR-015 — activation de l'encaissement hors-ligne (catégorie network,
+          clé unique offline_payments_enabled : la fenêtre de durée est supprimée). */}
       <Card padding="md" className="space-y-3">
         <SectionLabel size="sm" as="h2">Mode hors-ligne</SectionLabel>
         <OfflineSettingsPanel />

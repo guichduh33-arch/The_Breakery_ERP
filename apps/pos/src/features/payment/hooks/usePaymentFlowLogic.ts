@@ -93,7 +93,8 @@ export function usePaymentFlowLogic() {
     }
   }, [selectedMethod, attachedCustomer]);
   const { mutation: fireToStations } = useFireToStations();
-  // Spec 006x lot 4 — gate cash offline (mode + setting + fenêtre A5).
+  // ADR-015 — gate hors-ligne : mode OFFLINE + réglage offline_payments_enabled
+  // (la fenêtre de durée A5 est supprimée).
   const offlineGate = useOfflinePaymentGate();
   const { presets } = usePOSPresets();
   const quickAmounts = presets.quickPayments;

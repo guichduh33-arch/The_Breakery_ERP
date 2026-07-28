@@ -6,16 +6,39 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
+import { toast } from 'sonner';
 import { usePaymentFlowLogic } from '../usePaymentFlowLogic';
 import { useCartStore } from '@/stores/cartStore';
 import { usePaymentStore } from '@/stores/paymentStore';
 import { useAuthStore } from '@/stores/authStore';
+import { hubBus } from '@/features/lan/hubBusClient';
+import type * as OfflineOutboxModule from '@/features/lan/offlineOutbox';
+import type { OfflineIntent, OfflinePaymentIntent } from '@/features/lan/offlineOutbox';
+import type { OfflinePaymentGate } from '@/features/lan/hooks/useOfflinePaymentGate';
 
 // vi.hoisted so the mock fn keeps a stable ref (S39 lesson) and tests can
 // program per-case resolutions/rejections.
 const checkoutMock = vi.hoisted(() => ({ mutateAsync: vi.fn() }));
+// ADR-015 — gate hors-ligne pilotable par cas. Défaut ONLINE : les suites
+// pré-existantes de ce fichier passent par dispatchCheckout (chemin cloud).
+const offlineGateMock = vi.hoisted(() => ({
+  current: { offlineMode: false, paymentsAllowed: false, blockedReason: null },
+})) as { current: OfflinePaymentGate };
+const outboxMock = vi.hoisted(() => ({
+  enqueueIntent: vi.fn<(intent: OfflineIntent) => Promise<void>>().mockResolvedValue(undefined),
+}));
 
 vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() }, Toaster: () => null }));
+vi.mock('@/features/lan/hooks/useOfflinePaymentGate', () => ({
+  useOfflinePaymentGate: () => offlineGateMock.current,
+}));
+// importOriginal : cartStore et useFireToStations consomment d'autres exports
+// du même module (removeIntentsByRoot, getPendingIntents) — les écraser
+// casserait le chargement du graphe.
+vi.mock('@/features/lan/offlineOutbox', async (importOriginal) => {
+  const actual = await importOriginal<typeof OfflineOutboxModule>();
+  return { ...actual, enqueueIntent: outboxMock.enqueueIntent };
+});
 vi.mock('../useCheckout', () => ({ useCheckout: () => ({ mutateAsync: checkoutMock.mutateAsync, isPending: false }) }));
 vi.mock('@/features/cart/hooks/useFireToStations', () => ({
   // mutateAsync must RESOLVE (the success path chains `.then()` on it).
@@ -33,7 +56,7 @@ function wrapper({ children }: { children: React.ReactNode }) {
 function seedCartOneItem(): void {
   useCartStore.setState({
     cart: {
-      items: [{ id: 'l1', product_id: 'p1', name: 'Latte', unit_price: 25_000, quantity: 1, modifiers: [] } as never],
+      items: [{ id: 'l1', product_id: 'p1', name: 'Latte', unit_price: 25_000, quantity: 1, modifiers: [] }],
       order_type: 'dine_in',
     },
     lockedItemIds: [],
@@ -43,7 +66,7 @@ function seedCartOneItem(): void {
     dismissedPromotionIds: new Set<string>(),
     isOffline: false,
   });
-  useAuthStore.setState({ user: { id: 'u1', full_name: 'T', role_code: 'CASHIER', employee_code: 'E1' } } as never);
+  useAuthStore.setState({ user: { id: 'u1', full_name: 'T', role_code: 'CASHIER', employee_code: 'E1' } });
 }
 
 describe('usePaymentFlowLogic — derived flags', () => {
@@ -155,5 +178,89 @@ describe('usePaymentFlowLogic — loyalty from server envelope (S44 D4)', () => 
     await act(async () => { await result.current.handleProcess(); });
     expect(result.current.success?.pointsEarned).toBe(73);
     expect(result.current.success?.loyaltyBalanceAfter).toBe(666);
+  });
+});
+
+// ADR-015 (spec 015x lot 4) — dispatch hors-ligne : le split est débloqué,
+// l'avoir est refusé EN AMONT (jamais mis en file : le gate D8 serveur n'est
+// pas bypassé par p_offline_replay, et un intent rejeté au replay bloquerait
+// tout le drain derrière lui).
+describe('usePaymentFlowLogic — dispatch hors-ligne (ADR-015)', () => {
+  beforeEach(() => {
+    seedCartOneItem();
+    checkoutMock.mutateAsync.mockReset();
+    outboxMock.enqueueIntent.mockClear();
+    vi.mocked(toast.error).mockClear();
+    offlineGateMock.current = { offlineMode: true, paymentsAllowed: true, blockedReason: null };
+    // Commande locale déjà sur le bus : le dispatch n'a pas à re-firer.
+    useCartStore.setState({
+      isOffline: true,
+      offlineOrder: { clientUuid: 'c0000000-0000-4000-8000-000000000001', localNumber: 'L-12' },
+    });
+    usePaymentStore.setState({
+      isOpen: true,
+      selectedMethod: null,
+      cashReceivedStr: '',
+      tenders: [],
+      idempotencyKey: 'i0000000-0000-4000-8000-000000000009',
+    });
+  });
+
+  it('met en file UN intent payment portant les 2 règlements du split cash+carte', async () => {
+    const publishSpy = vi.spyOn(hubBus, 'publish').mockReturnValue(true);
+    // Carte d'abord, cash en dernier avec surpaiement : seul le volet espèces
+    // porte un rendu monnaie (les autres canaux encaissent au centime).
+    usePaymentStore.setState({
+      tenders: [
+        { method: 'card', amount: 15_000 },
+        { method: 'cash', amount: 10_000, cash_received: 20_000, change_given: 10_000 },
+      ],
+    });
+    const { result } = renderHook(() => usePaymentFlowLogic(), { wrapper });
+    await act(async () => { await result.current.handleProcess(); });
+
+    expect(checkoutMock.mutateAsync).not.toHaveBeenCalled(); // aucun aller cloud
+    expect(outboxMock.enqueueIntent).toHaveBeenCalledTimes(1);
+    const intent = outboxMock.enqueueIntent.mock.calls[0]![0] as OfflinePaymentIntent;
+    expect(intent.kind).toBe('payment');
+    expect(intent.id).toBe('i0000000-0000-4000-8000-000000000009'); // clé d'origine
+    expect(intent.root_client_uuid).toBe('c0000000-0000-4000-8000-000000000001');
+    expect(intent.payments).toHaveLength(2);
+    expect(intent.payments.map((t) => t.method)).toEqual(['card', 'cash']);
+
+    // Rendu monnaie calculé sur le SEUL volet espèces (20 000 reçus - 10 000 dus).
+    expect(publishSpy).toHaveBeenCalledWith(
+      'order.paid_offline',
+      expect.objectContaining({ change_given: 10_000, cash_received: 20_000, amount: 25_000 }),
+    );
+    expect(result.current.success?.changeGiven).toBe(10_000);
+    publishSpy.mockRestore();
+  });
+
+  it('refuse un règlement store_credit SANS rien mettre en file', async () => {
+    usePaymentStore.setState({
+      tenders: [
+        { method: 'cash', amount: 5_000, cash_received: 5_000 },
+        { method: 'store_credit', amount: 20_000 },
+      ],
+    });
+    const { result } = renderHook(() => usePaymentFlowLogic(), { wrapper });
+    await act(async () => { await result.current.handleProcess(); });
+
+    expect(outboxMock.enqueueIntent).not.toHaveBeenCalled();
+    expect(result.current.success).toBeNull();
+    expect(toast.error).toHaveBeenCalledWith('Avoir indisponible hors-ligne — retirer ce règlement');
+  });
+
+  it('refuse tout encaissement quand le réglage est OFF (fail-closed), sans mise en file', async () => {
+    offlineGateMock.current = { offlineMode: true, paymentsAllowed: false, blockedReason: 'payments_disabled' };
+    usePaymentStore.setState({
+      tenders: [{ method: 'cash', amount: 25_000, cash_received: 25_000 }],
+    });
+    const { result } = renderHook(() => usePaymentFlowLogic(), { wrapper });
+    await act(async () => { await result.current.handleProcess(); });
+
+    expect(outboxMock.enqueueIntent).not.toHaveBeenCalled();
+    expect(result.current.success).toBeNull();
   });
 });
