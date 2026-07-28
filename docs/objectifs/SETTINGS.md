@@ -24,6 +24,9 @@
 > « toggles workflow cuisine » (déc. 9) soldé en périmètre réduit : lock des
 > items envoyés couvert par ADR-010 (PR #235), copies KOT par station par la
 >
+> **Révision** : 2026-07-28 · **Statut** : Livré
+> **ADR applicables** : ADR-006 (socle unique `business_config`, tables dédiées pour le structuré seul, traçabilité par `audit_logs` sans table `settings_history`, propagation Realtime voulue, hub LAN, `tax_inclusive` global effectif, organisation par feature), ADR-004 (pas de FIFO ni de péremption), ADR-005 (NON-PKP, taxe F&B municipale Lombok/NTB)
+>
 > **Convention** : aucune version d'objet DB (`_vN`) dans cette fiche — on cite la
 > famille (`close_shift`, `complete_order_with_payment`). La version vivante se
 > vérifie dans `supabase/migrations/` et au call-site, jamais ici.

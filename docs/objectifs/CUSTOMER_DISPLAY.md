@@ -1,8 +1,11 @@
 # Module Customer Display — Objectif métier
 
-> **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée**. Implémentation V3 = PARTIELLE (feature `apps/pos/src/features/display` existe — à vérifier en détail : table `display_promotions`, animations fidélité, ORDER_READY notification KDS).
+> **Héritage V2** : décrit la vision business cible. **V2 jamais déployée**. Implémentation V3 = PARTIELLE (feature `apps/pos/src/features/display` existe — à vérifier en détail : table `display_promotions`, animations fidélité, ORDER_READY notification KDS).
 >
 > **Périmètre fonctionnel** : ce document décrit **ce que le module Customer Display (`/display`) sert à faire au quotidien** pour The Breakery
+>
+> **Révision** : 2026-07-28 · **Statut** : Partiel
+> **ADR applicables** : ADR-006 (les réglages de l'écran client vivent dans le socle `business_config`)
 >
 > **Convention** : aucune version d'objet DB (`_vN`) dans cette fiche — on cite la
 > famille (`close_shift`, `complete_order_with_payment`). La version vivante se

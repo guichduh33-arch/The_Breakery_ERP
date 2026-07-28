@@ -1,8 +1,11 @@
 # Module Reports — Objectif métier
 
-> **Statut V2/V3** : décrit la vision business cible (~61 reports en 7 catégories). **V2 jamais déployée**. Implémentation V3 = **partielle**. **Au 2026-07-28 : 31 pages sous `apps/backoffice/src/pages/reports/` et 4 sous `pages/marketing/`, exposées par 30 routes `reports/*`.** Le reliquat du catalogue cible et l'export Z-Report restent à livrer 🔴.
+> **Héritage V2** : décrit la vision business cible (~61 reports en 7 catégories). **V2 jamais déployée**. Implémentation V3 = **partielle**. **Au 2026-07-28 : 31 pages sous `apps/backoffice/src/pages/reports/` et 4 sous `pages/marketing/`, exposées par 30 routes `reports/*`.** Le reliquat du catalogue cible et l'export Z-Report restent à livrer 🔴.
 >
 > **Périmètre fonctionnel** : ce document décrit **ce que le module Reports sert à faire au quotidien** pour The Breakery.
+>
+> **Révision** : 2026-07-28 · **Statut** : Partiel
+> **ADR applicables** : ADR-009 déc. 4 (les lecteurs financiers lisent `paid` **et** `completed`), ADR-004 (le rapport perishable-turnover sort de la navigation), ADR-014 (valorisation `current_stock × cost_price` et solde GL sont deux mesures qui peuvent diverger : tout rapport qui les compare doit le dire)
 >
 > **Convention** : aucune version d'objet DB (`_vN`) dans cette fiche — on cite la
 > famille (`close_shift`, `complete_order_with_payment`). La version vivante se

@@ -1,8 +1,11 @@
 # Module Promotions & Combos — Objectif métier
 
-> **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée**. Implémentation V3 = DONE (`evaluate_promotions`, `usePromotionsAutoEval`, `usePromotionsRealtime`, features `promotions` BO + POS, combos avec groupes).
+> **Héritage V2** : décrit la vision business cible. **V2 jamais déployée**. Implémentation V3 = DONE (`evaluate_promotions`, `usePromotionsAutoEval`, `usePromotionsRealtime`, features `promotions` BO + POS, combos avec groupes).
 >
 > **Périmètre fonctionnel** : ce document décrit **ce que le module Promotions & Combos sert à faire au quotidien** pour The Breakery, 
+>
+> **Révision** : 2026-07-28 · **Statut** : Livré
+> **ADR applicables** : ADR-007 déc. 3 (la fenêtre horaire des combos est supprimée : les promotions sont l'unique mécanisme horaire du produit), ADR-006 déc. 10 (le happy hour est couvert ici, rien à créer côté Settings)
 >
 > **Convention** : aucune version d'objet DB (`_vN`) dans cette fiche — on cite la
 > famille (`close_shift`, `complete_order_with_payment`). La version vivante se

@@ -7,9 +7,12 @@
 > **Révision** : 2026-07-28.
 
 
-> **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée**. Implémentation réelle = V3 monorepo. **Le statut V3 dépasse cette fiche sur plusieurs points** (voir §15 corrigé : sub-recipes, versioning, baker's percentages, yield tracking, margin alerts — tous livrés en V3).
+> **Héritage V2** : décrit la vision business cible. **V2 jamais déployée**. Implémentation réelle = V3 monorepo. **Le statut V3 dépasse cette fiche sur plusieurs points** (voir §15 corrigé : sub-recipes, versioning, baker's percentages, yield tracking, margin alerts — tous livrés en V3).
 >
 > **Périmètre fonctionnel** : ce document décrit **ce que le module Production & Recipes sert à faire au quotidien** pour The Breakery, sans rentrer dans la mécanique technique
+>
+> **Révision** : 2026-07-28 · **Statut** : Livré
+> **ADR applicables** : ADR-008 (D1 unités des sous-recettes, D2 waste en charge, D3 raisons catégorisées, D4 blocage stock insuffisant, D5 profondeur de recette, D6 deduct_stock, D7/D8 revert, D9 dette technique), ADR-004 (pas de lots ni de péremption : la production ne consomme pas en FIFO)
 >
 > **Convention** : aucune version d'objet DB (`_vN`) dans cette fiche — on cite la
 > famille (`close_shift`, `complete_order_with_payment`). La version vivante se

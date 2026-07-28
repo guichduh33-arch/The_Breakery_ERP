@@ -19,6 +19,9 @@
 > (résiduels post-audit 2026-07-23 : refus parent étendu aux composants de
 > combo, parité sold-out modale variantes, badge parent POS).
 >
+> **Révision** : 2026-07-28 · **Statut** : Livré
+> **ADR applicables** : ADR-007 (périmètre du domaine, refus des produits inactifs au money-path, fenêtre horaire combos supprimée, `tax_inclusive` droppée, Sections sous RPC, `is_test` posable), ADR-011 (import ADMIN+, refus des produits-parents, Realtime catalogue, bump RPC systématique), ADR-012 (refus étendu aux composants de combo, parité sold-out, badge Variantes)
+>
 > **Convention** : aucune version d'objet DB (`_vN`) dans cette fiche — on cite la
 > famille (`close_shift`, `complete_order_with_payment`). La version vivante se
 > vérifie dans `supabase/migrations/` et au call-site, jamais ici.

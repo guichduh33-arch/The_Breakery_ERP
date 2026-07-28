@@ -1,8 +1,11 @@
 # Module POS — Objectif métier
 
-> **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée en prod**. Implémentation réelle = V3 monorepo (`apps/pos`).
+> **Héritage V2** : décrit la vision business cible. **V2 jamais déployée en prod**. Implémentation réelle = V3 monorepo (`apps/pos`).
 >
 > **Périmètre fonctionnel** : ce document décrit **ce que l'App POS sert à faire au quotidien** pour The Breakery,
+>
+> **Révision** : 2026-07-28 · **Statut** : Livré
+> **ADR applicables** : ADR-009 (cycle de vie des commandes), ADR-010 (verrou cuisine + perte obligatoire), ADR-013 (avoir client, nonce PIN manager sur toute remise money-path, ordre canonique des totaux), ADR-015 (hors-ligne : tous les moyens de paiement sauf l'avoir, sans limite de durée)
 >
 > **Convention** : aucune version d'objet DB (`_vN`) dans cette fiche — on cite la
 > famille (`close_shift`, `complete_order_with_payment`). La version vivante se

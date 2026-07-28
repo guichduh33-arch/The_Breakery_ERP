@@ -1,8 +1,11 @@
 # Module Orders — Objectif métier
 
-> **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée**. Implémentation réelle = V3 monorepo (`apps/backoffice`).
+> **Héritage V2** : décrit la vision business cible. **V2 jamais déployée**. Implémentation réelle = V3 monorepo (`apps/backoffice`).
 >
 > **Périmètre fonctionnel** : ce document décrit **ce que la page Orders (`/orders`) sert à faire au quotidien** pour The Breakery, .
+>
+> **Révision** : 2026-07-28 · **Statut** : Livré
+> **ADR applicables** : ADR-009 (cycle de vie : plus d'UPDATE direct hors RPC, transition `paid → completed` par trigger, le void est la seule sortie de `completed`), ADR-010 (verrou des items envoyés), ADR-013 (void interdit après refund partiel, une seule contre-passation, idempotence contraignante)
 >
 > **Convention** : aucune version d'objet DB (`_vN`) dans cette fiche — on cite la
 > famille (`close_shift`, `complete_order_with_payment`). La version vivante se

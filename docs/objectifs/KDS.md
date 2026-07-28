@@ -1,8 +1,11 @@
 # Module KDS (Kitchen Display System) — Objectif métier
 
-> **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée**. Implémentation réelle = V3 monorepo (`apps/pos/src/features/kds`).
+> **Héritage V2** : décrit la vision business cible. **V2 jamais déployée**. Implémentation réelle = V3 monorepo (`apps/pos/src/features/kds`).
 >
 > **Périmètre fonctionnel** : ce document décrit **ce que le module KDS (`/kds`) sert à faire au quotidien** pour The Breakery,
+>
+> **Révision** : 2026-07-28 · **Statut** : Livré
+> **ADR applicables** : ADR-010 (un item envoyé en cuisine est intouchable ; tout retrait déclenche une déclaration de perte), ADR-006 déc. 9 (copies KOT par station, 0 = station paperless)
 >
 > **Convention** : aucune version d'objet DB (`_vN`) dans cette fiche — on cite la
 > famille (`close_shift`, `complete_order_with_payment`). La version vivante se

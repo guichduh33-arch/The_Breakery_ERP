@@ -1,8 +1,11 @@
 # Module Users & Permissions — Objectif métier
 
-> **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée**. Implémentation V3 = DONE (RPCs de gestion des utilisateurs, `apps/backoffice/src/features/users`, `SettingsPermissionsPage`, RBAC matrix). Améliorations V3 : `record_rate_limit` durable Postgres, GRANT hardening, `update_role_session_timeout`.
+> **Héritage V2** : décrit la vision business cible. **V2 jamais déployée**. Implémentation V3 = DONE (RPCs de gestion des utilisateurs, `apps/backoffice/src/features/users`, `SettingsPermissionsPage`, RBAC matrix). Améliorations V3 : `record_rate_limit` durable Postgres, GRANT hardening, `update_role_session_timeout`.
 >
 > **Périmètre fonctionnel** : ce document décrit **ce que le module Users & Permissions sert à faire au quotidien** pour The Breakery,
+>
+> **Révision** : 2026-07-28 · **Statut** : Partiel
+> **ADR applicables** : ADR-010 (le déblocage d'un item exige une autorisation manager vérifiée serveur), ADR-011 déc. 1 (l'import catalogue est ADMIN+ : un MANAGER ne contourne pas le périmètre des variantes par un fichier)
 >
 > **Convention** : aucune version d'objet DB (`_vN`) dans cette fiche — on cite la
 > famille (`close_shift`, `complete_order_with_payment`). La version vivante se

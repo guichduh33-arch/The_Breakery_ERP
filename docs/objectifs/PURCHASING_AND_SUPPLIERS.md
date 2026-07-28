@@ -1,8 +1,11 @@
 # Module Purchasing & Suppliers — Objectif métier
 
-> **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée**. Implémentation V3 = DONE + amélioré (RPCs des familles `create_purchase_order`, `receive_purchase_order`, `cancel_purchase_order` + landed cost shipping pro-rata + WAC famille `update_cost_price` avec replay envelope).
+> **Héritage V2** : décrit la vision business cible. **V2 jamais déployée**. Implémentation V3 = DONE + amélioré (RPCs des familles `create_purchase_order`, `receive_purchase_order`, `cancel_purchase_order` + landed cost shipping pro-rata + WAC famille `update_cost_price` avec replay envelope).
 >
 > **Périmètre fonctionnel** : ce document décrit **ce que le module sert à faire au quotidien** pour The Breakery,
+>
+> **Révision** : 2026-07-28 · **Statut** : Livré
+> **ADR applicables** : ADR-005 (le PPN des fournisseurs PKP n'est pas récupérable : il est capitalisé dans le coût d'acquisition, donc dans le WAC), ADR-014 (un changement de coût n'émet aucune écriture de réévaluation)
 >
 > **Convention** : aucune version d'objet DB (`_vN`) dans cette fiche — on cite la
 > famille (`close_shift`, `complete_order_with_payment`). La version vivante se

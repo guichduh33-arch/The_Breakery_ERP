@@ -1,8 +1,11 @@
 # Module Tablet Ordering — Objectif métier
 
-> **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée**. Implémentation V3 = DONE + amélioré (famille `create_tablet_order` + table `idempotency_keys`, `useCreateTabletOrder` + client_uuid lifecycle, `useTabletOffline`, PIN auth, ACK hub).
+> **Héritage V2** : décrit la vision business cible. **V2 jamais déployée**. Implémentation V3 = DONE + amélioré (famille `create_tablet_order` + table `idempotency_keys`, `useCreateTabletOrder` + client_uuid lifecycle, `useTabletOffline`, PIN auth, ACK hub).
 >
 > **Périmètre fonctionnel** : ce document décrit **ce que le module Tablet Ordering (`/tablet`) sert à faire au quotidien** pour The Breakery,.
+>
+> **Révision** : 2026-07-28 · **Statut** : Livré
+> **ADR applicables** : ADR-015 (file hors-ligne et rejeu : un intent rejeté bloque le drain), ADR-010 (un item envoyé en cuisine ne se modifie plus depuis la tablette)
 >
 > **Convention** : aucune version d'objet DB (`_vN`) dans cette fiche — on cite la
 > famille (`close_shift`, `complete_order_with_payment`). La version vivante se

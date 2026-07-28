@@ -1,8 +1,11 @@
 # Module Cash Register (Sessions de caisse) — Objectif métier
 
-> **Statut V2/V3** : décrit la vision business cible. **V2 jamais déployée**. Implémentation V3 = DONE (RPCs des familles `close_shift`, `record_cash_movement`, `apps/pos/src/features/shift`).
+> **Héritage V2** : décrit la vision business cible. **V2 jamais déployée**. Implémentation V3 = DONE (RPCs des familles `close_shift`, `record_cash_movement`, `apps/pos/src/features/shift`).
 >
 > **Périmètre fonctionnel** : ce document décrit **ce que le module Cash Register sert à faire au quotidien** pour The Breakery, sans rentrer dans la mécanique technique 
+>
+> **Révision** : 2026-07-28 · **Statut** : Livré
+> **ADR applicables** : ADR-015 (encaissement hors-ligne : tous les moyens de paiement sauf l'avoir)
 >
 > **Convention** : aucune version d'objet DB (`_vN`) dans cette fiche — on cite la
 > famille (`close_shift`, `complete_order_with_payment`). La version vivante se
