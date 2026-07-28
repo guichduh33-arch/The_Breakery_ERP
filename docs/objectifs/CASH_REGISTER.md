@@ -279,6 +279,8 @@ Bénéfice métier : **cloisonner les responsabilités cash**. Un cashier peut o
 
 | Priorité | Évolution | Bénéfice attendu |
 |---|---|---|
+| 🔴 | **Unicité de session : par utilisateur ou par terminal ?** | L'invariant 1 vise le couple `(user, terminal)` ; le garde-fou livré porte sur le **seul utilisateur** (`one_open_session_per_user`). Un même employé ne peut donc pas tenir deux postes en parallèle, et deux employés peuvent ouvrir sur le même terminal. Écart non arbitré. |
+| 🔴 | **Numéro de session lisible** | `SHF-YYYYMMDD-NN` est décrit au §4 mais n'existe pas : la table ne porte aucune colonne de numérotation. Une session ne se désigne aujourd'hui que par son UUID. |
 | 🔴 | **Validation à deux mains pour gros écarts** | Au-delà d'un seuil critique, exiger PIN cashier + PIN manager en double-authentification. |
 | 🟠 | **Dépôt bancaire intégré** | Saisir une remise bancaire en fin de journée avec photo du bordereau, lien automatique vers la compta. |
 | 🟠 | **Compte des coupures obligatoire** | Forcer le détail par coupure (5k, 10k, 20k, 50k, 100k) pour audit fin et détection vol partiel. |

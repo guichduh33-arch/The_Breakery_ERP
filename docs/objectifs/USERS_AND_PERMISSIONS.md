@@ -317,6 +317,7 @@ Bénéfice : **un utilisateur qui contournerait le frontend** (via un appel API 
 |---|---|---|
 | 🔴 | **Détection auto d'escalade de privilèges** | Alerte temps réel si un utilisateur modifie ses propres permissions ou celles d'un complice. |
 | 🔴 | **Approval workflow pour permissions sensibles** | Donner `accounting.manage` à un nouvel utilisateur exige une double validation (deux managers ou owner + manager). |
+| 🟠 | **Gestion des rôles : aucune interface** | Créer, cloner, renommer ou supprimer un rôle n'est possible par aucun écran. La matrice livrée est en **lecture seule** : accorder ou révoquer une permission se fait aujourd'hui **par migration**. Contrainte d'exploitation jamais décidée comme telle. |
 | 🟠 | **Permissions à seuil** | `sales.discount` jusqu'à 5% seul, 10% avec validation manager — au-delà refusé. Aujourd'hui binaire (a / a pas). |
 | 🟠 | **Sessions multiples par utilisateur** | Voir et fermer à distance les sessions actives d'un employé (utile en cas de départ). |
 | 🟠 | **Two-factor authentication (2FA)** | Pour les rôles à fort pouvoir (Owner, Manager, Accountant) — SMS ou app TOTP. |
