@@ -33,7 +33,7 @@
 //     liste de tolérance, elle est faite de ces chemins par construction.
 
 import { execFileSync } from 'node:child_process';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -141,19 +141,62 @@ for (const [key, e] of counted) {
   }
 }
 
-// Ce qui a été résorbé depuis le dernier relevé. Informatif, jamais bloquant.
-const resorbed = [...baseline]
-  .filter(([key, allowed]) => (counted.get(key)?.count ?? 0) < allowed)
-  .map(([key, allowed]) => `${key}\t(${counted.get(key)?.count ?? 0}/${allowed})`);
+// Un plafond ne se resserre pas tout seul : retirer une occurrence passe en
+// silence et la tolérance reste haute. Un cliquet qui ne se resserre jamais
+// finit par ne plus rien tenir — d'où cet avertissement, à chaque run.
+// AVERTISSEMENT, JAMAIS ÉCHEC : bloquer une réduction légitime tant que le
+// fichier n'est pas à jour est la meilleure façon de faire désactiver la garde.
+const slack = [...baseline]
+  .map(([key, allowed]) => ({ key, allowed, real: counted.get(key)?.count ?? 0 }))
+  .filter((e) => e.real < e.allowed)
+  .sort((a, b) => a.key.localeCompare(b.key));
+
+function reportSlack() {
+  if (!slack.length) return;
+  console.log('');
+  for (const { key, allowed, real } of slack) {
+    const [file, token] = key.split('\t');
+    console.log(`::warning file=${file}::la baseline peut être resserrée : ${file} tolère ${allowed} référence(s) à « ${token} », le réel est ${real}`);
+  }
+  console.log(`${slack.length} entrée(s) de baseline au-dessus du réel. Resserre le plafond :`);
+  console.log(`  node scripts/ci/quarantined-paths.mjs --update-baseline`);
+  console.log(`Le drapeau ne fait que DESCENDRE les comptes — il ne peut pas servir à faire passer une violation.`);
+}
+
+// --update-baseline — le resserrement en une commande plutôt qu'une édition à
+// la main. Il n'écrit QUE des comptes en baisse : si le réel dépasse le
+// plafond quelque part, il refuse et renvoie à la réécriture de la ligne.
+// Sans ce garde-fou, le drapeau deviendrait le bouton « faire passer la CI ».
+if (process.argv.includes('--update-baseline')) {
+  if (violations.length) {
+    console.error(`::error::--update-baseline REFUSE : ${violations.length} occurrence(s) dépassent le plafond ou sont en tolérance zéro.`);
+    console.error(`Ce drapeau ne sait que DESCENDRE un compte. Une occurrence en trop se corrige`);
+    console.error(`en réécrivant la ligne fautive, jamais en relevant la baseline.`);
+    console.error(`Relance sans le drapeau pour voir la liste et la marche à suivre.`);
+    process.exit(1);
+  }
+  const path = join(ROOT, BASELINE);
+  const header = readFileSync(path, 'utf8')
+    .split(/\r?\n/)
+    .filter((l) => l.trim().startsWith('#'))
+    .map((l) => (/^# Dernier resserrement :/.test(l) ? `# Dernier resserrement : ${new Date().toISOString().slice(0, 10)}` : l));
+  const rows = [...counted.entries()]
+    .filter(([, e]) => e.count > 0)
+    // par CHEMIN, pas par compte : la liste se relit fichier par fichier, et un
+    // resserrement produit un diff d'une ligne au lieu d'un réordonnancement.
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, e]) => `${e.count}\t${key}`);
+  writeFileSync(path, `${header.join('\n')}\n${rows.join('\n')}\n`, 'utf8');
+  const before = [...baseline.values()].reduce((a, b) => a + b, 0);
+  const after = [...counted.values()].reduce((a, e) => a + e.count, 0);
+  console.log(`Baseline resserrée : ${baseline.size} → ${rows.length} entrée(s), ${before} → ${after} occurrence(s) tolérée(s).`);
+  console.log(`Commite ${BASELINE}.`);
+  process.exit(0);
+}
 
 if (violations.length === 0) {
   console.log(`GARDE 1 — aucun chemin quarantainé hors zones exemptées. ${tracked.length} fichiers trackés balayés.`);
-  if (resorbed.length) {
-    console.log(`\n${resorbed.length} entrée(s) de baseline résorbée(s) depuis le dernier relevé.`);
-    console.log(`La baseline est un PLAFOND : abaisse-les dans ${BASELINE}`);
-    console.log(`pour qu'elles ne puissent pas revenir.`);
-    for (const k of resorbed) console.log(`  - ${k.replaceAll('\t', '  ')}`);
-  }
+  reportSlack();
   process.exit(0);
 }
 
@@ -179,5 +222,6 @@ console.error('  3. Si la référence est morte sans remplaçant, RETIRE-la. Un 
 console.error('     un fantôme ne vaut pas mieux que pas de pointeur.');
 console.error('');
 console.error(`  4. N'AJOUTE PAS l'occurrence à ${BASELINE} :`);
-console.error('     cette liste est un plafond gelé au 2026-07-28, elle ne peut que décroître.');
+console.error('     cette liste est un plafond gelé, elle ne peut que décroître.');
+reportSlack();
 process.exit(1);

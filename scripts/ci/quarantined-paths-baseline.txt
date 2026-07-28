@@ -17,8 +17,9 @@
 # une de ces lignes pour une autre raison, tu la rends vraie, et tu abaisses le
 # compte ici.
 #
-# Généré le 2026-07-28 par `node scripts/ci/quarantined-paths.mjs`, jamais écrit
-# de mémoire. Les huit entrées interdites se dérivent du tag :
+# Dernier resserrement : 2026-07-28
+# Généré par `node scripts/ci/quarantined-paths.mjs --update-baseline`, jamais
+# écrit de mémoire. Les huit entrées interdites se dérivent du tag :
 #   git ls-tree --name-only quarantine/2026-07-27 docs/_quarantine/
 #
 # Format : <compte>\t<chemin>\t<entrée>
@@ -53,8 +54,8 @@
 1	packages/ui/src/components/CustomerCategoryBadge.tsx	superpowers
 1	packages/ui/src/components/DiscountModal.tsx	superpowers
 1	packages/ui/src/components/PinVerificationModal.tsx	superpowers
-2	packages/ui/src/components/PromotionForm.tsx	superpowers
 2	packages/ui/src/components/promotion-form/types.ts	superpowers
+2	packages/ui/src/components/PromotionForm.tsx	superpowers
 1	packages/ui/src/components/PromotionTypeBadge.tsx	superpowers
 1	supabase/functions/_shared/error-redact.ts	workplan
 2	supabase/functions/_shared/permissions.ts	workplan
