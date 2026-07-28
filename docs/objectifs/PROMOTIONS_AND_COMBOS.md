@@ -35,7 +35,7 @@ Les deux faces partagent le même moteur d'évaluation et le même invariant : *
 | Famille | Quoi | Saisie | Application |
 |---|---|---|---|
 | **Promotions** | Règles de remise conditionnelles | Page `/promotions` (un seul écran de configuration) | Auto-évaluées à chaque changement de panier |
-| **Combos** | Produits composés vendus comme un seul SKU à prix groupé | Page `/products/combos` (création de combos + groupes) | Sélectionnés explicitement au POS via `ComboSelectorModal` |
+| **Combos** | Produits composés vendus comme un seul SKU à prix groupé | Page `/products/combos` (création de combos + groupes) | Sélectionnés explicitement au POS via le sélecteur de composants |
 
 Les deux résident administrativement dans le module **Products** (page parente) mais constituent un domaine métier autonome avec ses propres règles.
 
@@ -145,8 +145,8 @@ Bénéfice métier : **le caissier voit la promo se déclencher en direct** dès
 Page **Promotions list** (`/promotions`) :
 
 - Liste de toutes les promos (actives, planifiées, expirées).
-- Cards (`PromotionCard`) avec : nom, type, période, conditions résumées, statut, compteur d'utilisations.
-- Stats agrégées (`PromotionsStats`) en haut : nombre de promos actives, total remises appliquées sur la période, top promo en volume.
+- Cartes avec : nom, type, période, conditions résumées, statut, compteur d'utilisations.
+- Stats agrégées en haut : nombre de promos actives, total remises appliquées sur la période, top promo en volume.
 - Bouton "Nouvelle promotion" → formulaire de création.
 
 ### 7.1 Le formulaire
@@ -197,11 +197,11 @@ Chaque groupe a :
 
 ### 8.2 Création — Page `/products/combos`
 
-- Liste des combos existants avec `ComboCard`, header (`CombosHeader`), stats (`CombosStats`).
+- Liste des combos existants en cartes, avec bandeau et stats agrégées.
 - Formulaire 3 onglets :
-  - **General** (`ComboFormGeneral`) : identité du combo, prix, période.
-  - **Groups** (`ComboFormGroupEditor`) : édition des groupes de composants et règles.
-  - **Price preview** (`ComboFormPricePreview`) : aperçu du calcul de marge selon les choix possibles du client.
+  - **General** : identité du combo, prix, période.
+  - **Groups** : édition des groupes de composants et règles.
+  - **Price preview** : aperçu du calcul de marge selon les choix possibles du client.
 
 Bénéfice métier : **packager une formule** sans devoir créer un nouveau produit en stock — le combo n'est qu'un assemblage virtuel des produits existants.
 
@@ -209,7 +209,7 @@ Bénéfice métier : **packager une formule** sans devoir créer un nouveau prod
 
 ## 9. Sélection d'un combo au POS
 
-Au POS, l'ajout d'un combo déclenche le **`ComboSelectorModal`** :
+Au POS, l'ajout d'un combo déclenche le **sélecteur de composants** :
 
 - Affichage de chaque groupe avec ses composants éligibles.
 - Indication des règles ("Choisissez 1 viennoiserie", "Choisissez 2 boissons").

@@ -1,6 +1,6 @@
 # Module Expenses — Objectif métier
 
-> **Héritage V2** : décrit la vision business cible (4 pages). **V2 jamais déployée**. Implémentation V3 = **partielle** — **au 2026-07-28 : 3 pages livrées** (ExpensesListPage, ExpenseDetailPage, NewExpensePage) + les RPCs de dépense + storage bucket. **La page de catégories de dépense reste à livrer** 🟠.
+> **Héritage V2** : décrit la vision business cible (4 pages). **V2 jamais déployée**. Implémentation V3 = **partielle** — **au 2026-07-28 : 3 pages livrées** (liste, détail, création) + les RPCs de dépense + storage bucket. **La page de catégories de dépense reste à livrer** 🟠.
 >
 > **Périmètre fonctionnel** : ce document décrit **ce que le module Expenses (`/expenses`) sert à faire au quotidien** pour The Breakery, 
 >
@@ -54,7 +54,7 @@ Quel que soit le contexte d'utilisation, le module garantit :
 
 ## 4. La liste des dépenses — La vue centrale
 
-Page `ExpensesListPage` : la **liste consolidée** de toutes les dépenses :
+La page de liste : la **vue consolidée** de toutes les dépenses :
 
 ### 4.1 Affichage
 
@@ -84,12 +84,12 @@ Bénéfice métier : **savoir où passe l'argent** en 10 secondes. Le gérant ou
 
 ## 5. La création d'une dépense
 
-`ExpenseFormPage` (`/expenses/new`) : le formulaire de saisie d'une dépense.
+La page `/expenses/new` : le formulaire de saisie d'une dépense.
 
 ### 5.1 Champs collectés
 
 - **Date** de la dépense (peut être antérieure à la saisie — saisie tardive autorisée).
-- **Catégorie** (obligatoire — `ExpenseCategoryPicker`).
+- **Catégorie** (obligatoire).
 - **Description** courte ("Facture PLN avril", "Carburant scooter livraison").
 - **Montant** en IDR.
 - **Fournisseur** optionnel (rattachement à un `supplier` du module Purchasing si récurrent).
@@ -111,7 +111,7 @@ Bénéfice métier : **chaque sortie d'argent a sa fiche**, créée en moins de 
 
 ## 6. La détail d'une dépense
 
-Page `ExpenseDetailPage` : la **fiche complète** d'une dépense avec ses actions.
+La page de détail : la **fiche complète** d'une dépense avec ses actions.
 
 ### 6.1 Bloc identité
 
@@ -131,7 +131,7 @@ Page `ExpenseDetailPage` : la **fiche complète** d'une dépense avec ses action
 - Payé par (qui + quand) — vide si pas encore payé.
 - Justificatif attaché (preview + download).
 
-### 6.4 Bloc actions (`ExpenseApprovalActions`)
+### 6.4 Bloc actions
 
 Selon le statut et les permissions :
 
@@ -186,7 +186,7 @@ Bénéfice métier : **séparer l'engagement de la dépense (approbation) du dé
 
 ## 8. La gestion des catégories
 
-Page `ExpenseCategoriesPage` : la **nomenclature** des catégories de charges.
+La page des catégories de dépense : la **nomenclature** des catégories de charges.
 
 ### 8.1 Structure
 
@@ -226,7 +226,7 @@ Chaque catégorie a :
 Le module Expenses est **fortement intégré** au module Accounting :
 
 - Chaque approbation déclenche la RPC famille `approve_expense`, qui écrit dans `journal_entries`.
-- L'écriture est immédiatement visible dans le grand livre (`GeneralLedgerPage`).
+- L'écriture est immédiatement visible dans le grand livre.
 - Le report **Expenses by Category** (module Reports) lit `expenses` directement.
 - Le **P&L Monthly Trend** consolide les expenses dans la section "Charges d'exploitation".
 - Les expenses approuvées non payées apparaissent en **AP** dans le bilan.

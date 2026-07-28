@@ -36,10 +36,10 @@ Le serveur **saisit** ; le caissier **encaisse** ; la cuisine **prépare**. Troi
 
 | Page | Job-to-be-done |
 |---|---|
-| **TabletOrderPage** (`/tablet/order`) | Composer une commande à la table — sélection produits, table, envoi au comptoir |
-| **TabletOrdersPage** (`/tablet/orders`) | Voir l'historique des commandes envoyées par cette tablette + leur statut (envoyée, payée, annulée) |
+| **Prise de commande** (`/tablet/order`) | Composer une commande à la table — sélection produits, table, envoi au comptoir |
+| **Historique tablette** (`/tablet/orders`) | Voir l'historique des commandes envoyées par cette tablette + leur statut (envoyée, payée, annulée) |
 
-Le tout est englobé par **TabletLayout** qui gère l'authentification PIN, la connexion LAN client, et l'écoute des ACKs du hub POS.
+Le tout est englobé par une coquille applicative qui gère l'authentification PIN, la connexion LAN client, et l'écoute des ACKs du hub POS.
 
 ---
 
@@ -57,7 +57,7 @@ Quelle que soit la situation, le module garantit toujours :
 
 ## 4. Le PIN d'authentification — La porte serveur
 
-À l'ouverture de la tablette, **PinVerificationModal** s'affiche en plein écran :
+À l'ouverture de la tablette, l'écran de vérification du PIN s'affiche en plein écran :
 
 - Le serveur tape son PIN à 4 chiffres.
 - Vérification via `auth-verify-pin` (Edge Function).
@@ -93,7 +93,7 @@ Bénéfice métier : **transparence sur la liaison**. Le serveur n'envoie jamais
 
 ---
 
-## 6. La prise de commande — `TabletOrderPage`
+## 6. La prise de commande
 
 L'écran de saisie est volontairement **épuré et tactile** :
 
@@ -132,7 +132,7 @@ Bouton **"Send to POS"** → la commande quitte la tablette :
 2. Envoi via `lanClient.send(LAN_MESSAGE_TYPES.TABLET_ORDER)` au hub.
 3. Le hub POS :
    - Reçoit la commande, l'ajoute au `tabletOrderStore` côté caisse.
-   - Notifie le caissier via `TabletOrdersPanel` (modal POS).
+   - Notifie le caissier dans le panneau des commandes tablette du POS.
    - Renvoie un ACK `TABLET_ORDER_RECEIVED` avec status `'received'`.
 4. La tablette reçoit l'ACK → toast "Order sent successfully".
 5. Le cart se vide → prêt pour la prochaine table.
@@ -154,7 +154,7 @@ obligatoire), jamais par la tablette.
 
 ## 8. Du côté du POS — La réception
 
-Quand une commande tablette arrive au comptoir, le caissier en est notifié dans **`TabletOrdersPanel`** :
+Quand une commande tablette arrive au comptoir, le caissier en est notifié dans le **panneau des commandes tablette** :
 
 - Badge avec compteur d'unread.
 - Liste des commandes reçues : table, serveur, items, montant estimatif, heure de réception.
@@ -169,7 +169,7 @@ Bénéfice métier : **fluidité du flux salle-caisse**. La caisse maîtrise qua
 
 ---
 
-## 9. Suivi des commandes — `TabletOrdersPage`
+## 9. Suivi des commandes
 
 Page accessible depuis le menu tablette : la **liste des commandes envoyées** depuis cette tablette ce jour.
 
@@ -209,7 +209,7 @@ Bénéfice métier : **sécurité cohérente avec le POS**. La tablette n'ouvre 
 
 | Module | Relation |
 |---|---|
-| **POS** | Récepteur des commandes tablette via `TabletOrdersPanel` et `useTabletOrderReceiver`. |
+| **POS** | Récepteur des commandes tablette, notifiées dans un panneau dédié. |
 | **Products** | Catalogue partagé (lecture seule). |
 | **LAN** | Client LAN avec heartbeat, fallback Realtime non implémenté (cf. backlog). |
 | **Customers** | Possibilité de lier un client à la commande tablette (recherche simple). |
@@ -223,7 +223,7 @@ Bénéfice métier : **sécurité cohérente avec le POS**. La tablette n'ouvre 
 - La tablette **ne fait pas de paiement**. Choix de sécurité — l'argent reste au comptoir.
 - La tablette **ne supporte pas le modifier engine complet** du POS. Modifiers basiques uniquement.
 - La tablette **ne crée pas de client**. Pour ajouter un nouveau client, le serveur passe par le caissier.
-- La tablette **ne gère pas les combos avec sélection multi-groupes**. Un combo nécessite le `ComboSelectorModal` du POS — la tablette renvoie au comptoir.
+- La tablette **ne gère pas les combos avec sélection multi-groupes**. Un combo nécessite le sélecteur de composants du POS — la tablette renvoie au comptoir.
 - ~~La tablette **ne supporte pas l'offline complet**~~ → **une file locale existe** : la commande est mise en attente puis rejouée à la reconnexion (outbox partagée avec le POS). ⚠️ Un intent définitivement rejeté au rejeu bloque le drain — la conduite à tenir n'est pas décidée (ADR-015, registre).
 - La tablette **ne déclenche pas l'envoi cuisine elle-même**. C'est le caissier qui décide quand envoyer en cuisine (souvent à l'acceptation).
 - La tablette **ne consulte pas le KDS** ni les stocks détaillés — juste l'indicateur "rupture" sur les produits.

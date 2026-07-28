@@ -33,11 +33,11 @@ Le module est piloté par **5 modales** correspondant aux 5 moments-clés d'une 
 
 | Modal | Quand | Job-to-be-done |
 |---|---|---|
-| **OpenShiftModal** | Début de service | Ouvrir une session avec comptage du fond de caisse |
-| **CloseShiftModal** | Fin de service | Initier la clôture |
-| **ShiftReconciliationModal** | Pendant la clôture | Compter le tiroir et constater l'écart |
-| **ShiftStatsModal** | Pendant la clôture | Consulter les stats de session avant signature |
-| **ShiftHistoryModal** | À tout moment | Revoir les sessions passées avec leurs écarts |
+| **Ouverture de session** | Début de service | Ouvrir une session avec comptage du fond de caisse |
+| **Clôture de session** | Fin de service | Initier la clôture |
+| **Réconciliation du tiroir** | Pendant la clôture | Compter le tiroir et constater l'écart |
+| **Stats de session** | Pendant la clôture | Consulter les stats de session avant signature |
+| **Historique des sessions** | À tout moment | Revoir les sessions passées avec leurs écarts |
 
 Le cycle est **strictement linéaire** : on ne peut pas re-compter une session fermée, on ne peut pas ouvrir si une autre est déjà ouverte sur le même terminal, on ne peut pas vendre sans session.
 
@@ -59,7 +59,7 @@ Quelles que soient les circonstances, le module garantit :
 
 ### 4.1 Le geste
 
-Avant la première vente, le cashier qui prend son poste déclenche `OpenShiftModal` :
+Avant la première vente, le cashier qui prend son poste ouvre la session :
 
 - **Sélection du terminal** : sur quel poste physique on ouvre (Terminal 1 caisse principale, Terminal 2 comptoir café…).
 - **Comptage du fond de caisse** : saisie du montant total de l'`opening_cash`.
@@ -86,7 +86,7 @@ Tant que la session est ouverte, le POS l'utilise comme contexte transparent :
 - Chaque refund cash alimente le **total cash sorti**.
 - Les autres méthodes de paiement (carte, QRIS, e-wallet) sont également agrégées par session — pour la réconciliation par méthode.
 
-Vue rapide pendant la session : `CashierAnalyticsModal` (accessible depuis le POS) affiche en direct :
+Vue rapide pendant la session, accessible depuis le POS, qui affiche en direct :
 
 - Nombre de commandes encaissées par ce cashier sur cette session.
 - CA total, panier moyen.
@@ -101,12 +101,12 @@ Bénéfice métier : **le cashier voit où il en est** pendant la journée, sans
 
 ### 6.1 Initiation
 
-`CloseShiftModal` est déclenché par le cashier ou le manager à la fin du service. La modale propose le parcours guidé :
+La clôture est déclenchée par le cashier ou le manager à la fin du service. La modale propose le parcours guidé :
 
 1. Affichage rappel du fond d'ouverture.
-2. Bouton "Compter le tiroir" → ouvre `ShiftReconciliationModal`.
+2. Bouton "Compter le tiroir" → ouvre l'écran de réconciliation.
 
-### 6.2 La réconciliation — `ShiftReconciliationModal`
+### 6.2 La réconciliation
 
 C'est **le cœur du module**. La modale demande au cashier :
 
@@ -128,7 +128,7 @@ Si écart > seuil configuré, le système **exige une raison écrite obligatoire
 
 Bénéfice métier : **la vérité chiffrée s'impose en 5 secondes**. Pas de bricolage Excel, pas de "à peu près" — le tiroir colle ou ne colle pas, et le système le dit.
 
-### 6.3 Les stats — `ShiftStatsModal`
+### 6.3 Les stats de session
 
 Avant signature finale, le cashier ou le manager consulte le récap complet :
 
@@ -180,7 +180,7 @@ Bénéfice métier : **tolérer l'erreur humaine** sans permettre la triche. Le 
 
 ---
 
-## 8. Historique des sessions — `ShiftHistoryModal`
+## 8. Historique des sessions
 
 Une vue accessible à tout moment qui liste :
 
@@ -197,7 +197,7 @@ Bénéfice métier : **mémoire chiffrée de la performance cash** sur la durée
 
 The Breakery peut avoir **plusieurs terminaux POS** ouverts en même temps sur le même LAN (caisse principale + comptoir café + caisse mobile événement). Chaque terminal ouvre **sa propre session**, indépendante des autres.
 
-La modale `LiveSessionsModal` (côté POS) permet à un manager de voir :
+La modale des sessions actives (côté POS) permet à un manager de voir :
 
 - Toutes les sessions actuellement ouvertes.
 - Sur quel terminal, par qui, depuis quand.

@@ -29,7 +29,7 @@ Lest **bien plus que la caisse** : il intègre la gestion de session (ouverture 
 
 ## 2. Les 6 zones de l'écran principal
 
-L'écran POSMainPage est structuré en **6 zones permanentes** :
+L'écran principal est structuré en **6 zones permanentes** :
 
 | Zone | Job-to-be-done |
 |---|---|
@@ -66,7 +66,7 @@ Quel que soit le moment d'utilisation, le POS garantit toujours :
 
 ## 4. Démarrer une journée — Ouvrir la session
 
-Avant la première vente, le caissier ou le manager doit **ouvrir une session de caisse** (`OpenShiftModal`) :
+Avant la première vente, le caissier ou le manager doit **ouvrir une session de caisse** :
 
 - Comptage du fond de caisse initial en espèces.
 - Sélection du terminal POS sur lequel la session s'ouvre.
@@ -85,7 +85,7 @@ Bénéfice métier : **fond de caisse rigoureusement chiffré au départ**, cond
 
 Avant ou pendant la composition, le caissier choisit le **type** :
 
-- **Dine-in** — service en salle, déclenche la sélection d'une table (`TableSelectionModal` avec floor plan).
+- **Dine-in** — service en salle, déclenche la sélection d'une table sur le plan de salle.
 - **Takeaway** — emporter.
 - **Delivery** — livraison.
 
@@ -96,20 +96,20 @@ Le type pilote ensuite la logique de paiement (différé acceptable pour dine-in
 Trois mécanismes complémentaires :
 
 - **Clic produit dans la grille** → ajout direct au panier.
-- **Combo selector** → un combo (ex: "petit-déjeuner") déclenche un `ComboSelectorModal` qui permet de choisir les composants (croissant **ou** pain au chocolat + café **ou** thé).
+- **Combo selector** → un combo (ex: "petit-déjeuner") déclenche un sélecteur de composants qui permet de choisir (croissant **ou** pain au chocolat + café **ou** thé).
 
 ### 5.3 Modificateurs et variantes
 
 À l'ajout d'un produit, deux modales peuvent apparaître :
 
-- **`ModifierModal`** — modificateurs avec surcoût (lait d'amande +5k, sucre +2k, supplément chocolat +3k).
-- **`VariantModal`** — variantes de prix selon une caractéristique (taille S/M/L, parfum).
+- **Modificateurs** — options avec surcoût (lait d'amande +5k, sucre +2k, supplément chocolat +3k).
+- **Sélecteur de variantes** — variantes de prix selon une caractéristique (taille S/M/L, parfum).
 
 Les modificateurs sont stockés JSONB sur l'item du panier, leur surcoût est inclus dans le `total_price` de la ligne.
 
 ### 5.4 Remise
 
-Bouton **Discount** → `DiscountModal` :
+Bouton **Discount** → la modale de remise :
 
 - Remise en % ou en montant fixe.
 - Remise sur tout le panier ou sur un item ciblé.
@@ -118,11 +118,11 @@ Bouton **Discount** → `DiscountModal` :
 
 ### 5.5 Lier un client
 
-Bouton **Customer** → `CustomerSearchModal` :
+Bouton **Customer** → la recherche client :
 
 - Recherche par nom, téléphone, e-mail, numéro de membre, **scan QR** du client.
-- Affiche la fiche `CustomerCard` avec palier fidélité, points, historique.
-- Bouton "Create new" si le client n'existe pas (`CreateCustomerForm`).
+- Affiche la fiche client avec palier fidélité, points, historique.
+- Bouton "Create new" si le client n'existe pas.
 - La sélection applique automatiquement le pricing tier du client (retail / wholesale / discount % / catégorie custom).
 
 Bénéfice métier : **transformer chaque vente anonyme en vente nominative** quand c'est pertinent, sans ralentir si ça ne l'est pas.
@@ -136,7 +136,7 @@ Bouton **Send to Kitchen** → les items sont envoyés au KDS, **et le panier pa
 - Chaque item envoyé est marqué `is_locked = true` (posé par `send_items_rpc`
   à l'émission du KOT).
 - L'icône d'un cadenas apparaît sur la ligne.
-- L'annulation d'une ligne verrouillée passe par `CancelItemModal` : raison +
+- L'annulation d'une ligne verrouillée passe par la modale dédiée : raison +
   PIN manager (header, vérifié par l'EF `cancel-item`) + **quantité de perte**
   pré-remplie à la quantité de la ligne, ajustable 0..qty (0 = rien n'était
   encore produit — la déclaration reste obligatoire et tracée). La RPC
@@ -163,7 +163,7 @@ Spécificité du dine-in : un client peut commencer sa commande, manger, puis aj
 Bouton **Hold** → la commande est mise en attente (statut `held`) :
 
 - Le panier est vidé, le caissier peut servir le client suivant.
-- Plus tard, depuis `HeldOrdersModal`, le caissier reprend la commande où elle en était.
+- Plus tard, depuis la liste des commandes en attente, le caissier reprend la commande où elle en était.
 - Le `useRestoreHeldOrders` hook gère la restauration propre du state cart.
 
 Bénéfice métier : **un comptoir ne se bloque jamais sur une commande non finalisée**. Plusieurs commandes peuvent vivre en parallèle sans collision.
@@ -172,24 +172,24 @@ Bénéfice métier : **un comptoir ne se bloque jamais sur une commande non fina
 
 ## 8. Encaisser — Le moment décisif
 
-Bouton **Pay** → `PaymentModal` s'ouvre. C'est le composant le plus riche du POS, structuré en plusieurs sous-vues :
+Bouton **Pay** → la modale de paiement s'ouvre. C'est l'écran le plus riche du POS, structuré en plusieurs sous-vues :
 
 ### 8.1 Sélection méthode
 
-`PaymentMethodSelector` propose les méthodes activées dans Settings : Cash, Card, QRIS, GoPay, OVO, DANA, Bank Transfer, B2B Credit, POS Outstanding.
+Le sélecteur de méthode propose les méthodes activées dans Settings : Cash, Card, QRIS, GoPay, OVO, DANA, Bank Transfer, B2B Credit, POS Outstanding.
 
 ### 8.2 Saisie du montant
 
-- `PaymentAmountEntry` avec `PaymentNumpad` (clavier virtuel).
+- Saisie du montant au clavier virtuel.
 - Pour Cash : montant reçu → calcul automatique de la monnaie à rendre, arrondie à 100 IDR.
 - Pour digital : montant exact pré-rempli.
 
 ### 8.3 Paiement multiple (split)
 
-Le client peut payer **moitié cash + moitié carte**. La modale supporte plusieurs paiements ajoutés dans `PaymentAddedList` :
+Le client peut payer **moitié cash + moitié carte**. La modale supporte plusieurs paiements ajoutés à la liste :
 
 - Chaque paiement est ajouté un par un avec sa méthode et son montant.
-- `PaymentStatusBar` affiche : Total dû / Total payé / Reste à payer.
+- Le bandeau de statut affiche : Total dû / Total payé / Reste à payer.
 - Validation seulement quand "Reste à payer" = 0.
 
 ### 8.4 Split par item
@@ -207,7 +207,7 @@ Si la méthode "POS Outstanding" est choisie, la commande passe en statut `unpai
 
 - Pas d'encaissement immédiat.
 - Le client (lié obligatoirement) doit régler plus tard.
-- La commande apparaît dans `POSOutstandingPage` jusqu'à règlement.
+- La commande apparaît dans la vue des ardoises (`/pos/debts`) jusqu'à règlement.
 
 ### 8.6 Validation finale
 
@@ -233,7 +233,7 @@ Bénéfice métier : **un seul clic produit toute la chaîne**. Si la connexion 
 
 Bouton accessible depuis la modale détail ou l'historique transactionnel :
 
-- `VoidModal` exige : PIN manager + raison obligatoire.
+- L'annulation exige : PIN manager + raison obligatoire.
 - L'annulation passe la commande en statut `voided`.
 - Le stock est ré-crédité.
 - Les points fidélité sont retirés au client si attribués.
@@ -241,10 +241,10 @@ Bouton accessible depuis la modale détail ou l'historique transactionnel :
 
 ### 9.2 Refund partiel ou total
 
-`RefundModal` permet de rembourser :
+La modale de remboursement permet de rembourser :
 
 - Total — rembourse toute la commande.
-- Partiel — sélection d'items à rembourser via `RefundOrderSummary`.
+- Partiel — sélection des items à rembourser.
 - Méthode de remboursement (cash sortie de caisse, transfer back…).
 - PIN manager exigé.
 - Trace audit complète.
@@ -260,7 +260,7 @@ Bénéfice métier : **un client mécontent est traité en 30 secondes**, sans b
 - Liste de toutes les commandes en statut `unpaid` (ardoises).
 - Par client : combien dépend depuis quand.
 - Vieillissement (aging) visuel.
-- Bouton "Encaisser" qui ouvre la même `PaymentModal` que pour une commande nouvelle.
+- Bouton "Encaisser" qui ouvre la même modale de paiement que pour une commande nouvelle.
 - Bouton "POS Outstanding History" pour voir les ardoises soldées (avec délai de paiement).
 
 Cas d'usage typique : un habitué emporte son café à 8h sans payer ("je passe ce soir"), reviens à 18h, le caissier solde son ardoise en 10 secondes.
@@ -275,7 +275,7 @@ Spécificité ergonomique critique : le POS est conçu pour fonctionner **sans c
 
 - `VirtualKeypadProvider` enveloppe toute l'arbre `/pos`.
 - Tout input texte ou nombre dans le POS déclenche automatiquement le clavier virtuel.
-- Deux layouts : `NumpadLayout` (chiffres uniquement, pour montants) et `QwertyLayout` (texte, pour recherche client / nom commande).
+- Deux dispositions : pavé numérique (montants) et clavier texte (recherche client, nom de commande).
 - Fermeture automatique au blur ou validation.
 
 Bénéfice métier : **un seul écran tactile suffit**. Pas de bureau, pas de clavier sur le plan de travail. Hygiène + ergonomie + maintenance.
@@ -288,12 +288,12 @@ Le POS expose un grand nombre de modales et outils accessibles depuis la barre d
 
 | Modal | Job |
 |---|---|
-| **CashierAnalyticsModal** | Stats personnelles du cashier en cours de session (CA, panier moyen, méthodes) |
-| **TransactionHistoryModal** | Historique transactionnel du jour avec drill-down |
-| **TabletOrdersPanel** | Commandes envoyées depuis les tablettes serveur, à intégrer dans une commande caisse |
-| **LiveSessionsModal** | Voir toutes les sessions caisse actives sur les autres terminaux |
-| **POSSettingsModal** | Réglages locaux du terminal (volume son, taille police, layout) |
-| **PinVerificationModal** | Gardien universel — déclenchée par toute action sensible |
+| **Analytique caissier** | Stats personnelles du cashier en cours de session (CA, panier moyen, méthodes) |
+| **Historique transactionnel** | Les transactions du jour, avec drill-down |
+| **Panneau commandes tablette** | Commandes envoyées depuis les tablettes serveur, à intégrer dans une commande caisse |
+| **Sessions actives** | Voir toutes les sessions caisse actives sur les autres terminaux |
+| **Réglages du terminal** | Réglages locaux (volume son, taille police, layout) |
+| **Vérification PIN** | Gardien universel — déclenchée par toute action sensible |
 
 ---
 
@@ -302,7 +302,7 @@ Le POS expose un grand nombre de modales et outils accessibles depuis la barre d
 Le hook `useTabletOrderReceiver` écoute en continu les commandes envoyées depuis les **tablettes serveur** en salle :
 
 - Un serveur prend une commande à table avec sa tablette.
-- La commande arrive en notification dans `TabletOrdersPanel` côté caisse.
+- La commande arrive en notification côté caisse.
 - La commande s'enregistre automatiquement dans les commandes on-hold.
 - Puis elle suit le flux normal (envoi cuisine → encaissement).
 
@@ -325,15 +325,15 @@ Bénéfice métier : **un écosystème cohérent en temps réel**, sans qu'aucun
 
 ## 15. Fermer la journée — End of day
 
-À la fin du service, le manager déclenche `CloseShiftModal` :
+À la fin du service, le manager déclenche la clôture :
 
-1. **Reconciliation cash** (`ShiftReconciliationModal`) :
+1. **Réconciliation cash** :
    - Le système affiche le cash attendu (opening + ventes cash − refunds).
    - Le manager compte physiquement le tiroir.
    - Saisie du cash compté → écart calculé.
    - Si écart > seuil, raison obligatoire.
 
-2. **Statistiques session** (`ShiftStatsModal`) :
+2. **Statistiques session** :
    - CA total, nombre de transactions, panier moyen.
    - Répartition par méthode de paiement.
    - Liste des voids / refunds.
@@ -343,7 +343,7 @@ Bénéfice métier : **un écosystème cohérent en temps réel**, sans qu'aucun
    - Génération automatique d'un journal cash (mouvement comptable).
    - Impression du Z (récapitulatif clôture).
 
-L'`ShiftHistoryModal` permet de **revoir les sessions passées** (jusqu'à 30 jours) avec leurs écarts.
+L'historique des sessions permet de **revoir les sessions passées** (jusqu'à 30 jours) avec leurs écarts.
 
 Bénéfice métier : **clôture rigoureuse en 5 minutes** avec preuves chiffrées de cohérence cash. Aucune session ne se ferme sans réconciliation.
 

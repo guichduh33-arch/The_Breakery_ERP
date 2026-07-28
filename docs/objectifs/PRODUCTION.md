@@ -101,7 +101,7 @@ C'est l'**acte de production** : "j'ai fabriqué X unités de tel produit aujour
 
 ### 5.1 La saisie
 
-Page `StockProductionPage` — pensée pour le boulanger ou le chef de production qui saisit en fin de service ou en début d'après-midi :
+La page de saisie de production — pensée pour le boulanger ou le chef de production qui saisit en fin de service ou en début d'après-midi :
 
 - **Sélection de la date** (par défaut : aujourd'hui).
 - **Sélection de la section** (cuisine principale, four pâtisserie, atelier chocolat…).
@@ -152,7 +152,7 @@ Bénéfice métier : **chiffrer le coût des ratés** sans culpabiliser l'artisa
 
 ## 7. L'historique de production
 
-`ProductionHistory` (panneau dans `StockProductionPage`) affiche les **productions du jour** déjà enregistrées :
+Le panneau d'historique de la page de production affiche les **productions du jour** déjà enregistrées :
 
 - Liste des productions saisies aujourd'hui.
 - Pour chaque entrée : produit, quantité produite, quantité waste, staff, heure.
@@ -178,7 +178,7 @@ Bénéfice métier : **passer du push au pull**. Le boulanger n'attend plus qu'o
 
 ---
 
-## 9. Le `ProductionSummary` — Le récap du jour
+## 9. Le récap du jour
 
 Au-dessus de la saisie, un panneau récap synthétise :
 

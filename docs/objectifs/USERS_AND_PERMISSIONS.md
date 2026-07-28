@@ -1,6 +1,6 @@
 # Module Users & Permissions — Objectif métier
 
-> **Héritage V2** : décrit la vision business cible. **V2 jamais déployée**. Implémentation V3 = DONE (RPCs de gestion des utilisateurs, `apps/backoffice/src/features/users`, `SettingsPermissionsPage`, RBAC matrix). Améliorations V3 : `record_rate_limit` durable Postgres, GRANT hardening, `update_role_session_timeout`.
+> **Héritage V2** : décrit la vision business cible. **V2 jamais déployée**. Implémentation V3 = DONE (RPCs de gestion des utilisateurs, `apps/backoffice/src/features/users`, page de permissions, matrice RBAC). Améliorations V3 : `record_rate_limit` durable Postgres, GRANT hardening, `update_role_session_timeout`.
 >
 > **Périmètre fonctionnel** : ce document décrit **ce que le module Users & Permissions sert à faire au quotidien** pour The Breakery,
 >

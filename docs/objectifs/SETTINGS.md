@@ -81,9 +81,9 @@ par personne est un réglage mort — c'est le critère n°1 de ce document.
 | Route | Consommateur réel |
 |---|---|
 | `/settings` (hub) | Navigation en **sous-menus par feature** (PR #237, ADR-006 déc. 8), tuiles gatées par permission ; sidebar BO réorganisée en miroir |
-| `/settings/general` (partiel) | `tax_rate` + `tax_inclusive` → formule PB1 (`_pb1_split`, unique porteur — Lots 6a/6b) et surfaces HT/TTC POS (panier, checkout, reçu, customer display, tablette) ; bascule `tax_inclusive` gatée (gate porté par la RPC `set_setting` courante : refus si commandes ouvertes, dialog de confirmation BO) ; `timezone` → rapports ; identité `name`/`fiscal_address`/`npwp`/`phone`/`logo_url` → tickets POS (`SuccessModal`), PDF (`generate-pdf`, `generate-zreport-pdf`, `_shared/pdf-layout`) et emails (`_shared/email-html`) — Lot 2 ; seuils de variance shift → `close_shift` + POS |
+| `/settings/general` (partiel) | `tax_rate` + `tax_inclusive` → formule PB1 (`_pb1_split`, unique porteur — Lots 6a/6b) et surfaces HT/TTC POS (panier, checkout, reçu, customer display, tablette) ; bascule `tax_inclusive` gatée (gate porté par la RPC `set_setting` courante : refus si commandes ouvertes, dialog de confirmation BO) ; `timezone` → rapports ; identité `name`/`fiscal_address`/`npwp`/`phone`/`logo_url` → tickets POS, PDF (`generate-pdf`, `generate-zreport-pdf`, `_shared/pdf-layout`) et emails (`_shared/email-html`) — Lot 2 ; seuils de variance shift → `close_shift` + POS |
 | `/settings/inventory` | `allow_negative_stock` → `record_stock_movement`, `complete_order_with_payment`, RPCs production |
-| `/settings/templates/receipt` | `receipt_templates` → impression POS (`SuccessModal`) — Lot 3 |
+| `/settings/templates/receipt` | `receipt_templates` → impression POS — Lot 3 |
 | `/settings/templates/email` | `email_templates` → couche HTML (`_shared/email-html`) du chemin d'envoi (`notification-dispatch`) — Lot 4 |
 | `/settings/holidays` | `holidays` → bandeau dashboard (`Dashboard.tsx`) + signal du rapport de ventes (`DailySalesPage.tsx`) — Lot 5 |
 | `/settings/payment-methods` | `enabled_payment_methods` (ordre d'affichage inclus, lot A #270) + e-wallets individuels GoPay/OVO/DANA avec settlement QRIS agrégé au close shift (`close_shift`, lot B #271) + `payment_method_fees` (% informatif par méthode, lot C #272) → grille POS + rapport Payments by Method (`get_payments_by_method` : colonnes e-wallets + frais) |
@@ -91,7 +91,7 @@ par personne est un réglage mort — c'est le critère n°1 de ce document.
 | `/settings/customer-display` | footer/slogan → écran client |
 | `/settings/kds` | seuils warning/urgent/auto-archive → KDS (couleurs, alarme, archivage) |
 | `/settings/floor-plan` | CRUD tables + sections (6 RPCs), soft-delete, sections actives/inactives ; **éditeur visuel drag & drop** grille 12×8 (`set_table_position`, lot A #273) → rendu positionné consommé par le POS (sélection de table) et la tablette (`FloorCanvas`, lot B #274) |
-| `/settings/printing` | auto-print / auto-drawer → `SuccessModal` POS ; **copies KOT par station** (`kot_copies_{kitchen,barista,display}`, [0,5], 0 = station paperless — le KDS écran reçoit toujours) → `useFireToStations` imprime N copies séquentielles au fire (PR #239) ; steppers miroir dans l'onglet Printing du POS |
+| `/settings/printing` | auto-print / auto-drawer → POS ; **copies KOT par station** (`kot_copies_{kitchen,barista,display}`, [0,5], 0 = station paperless — le KDS écran reçoit toujours) → `useFireToStations` imprime N copies séquentielles au fire (PR #239) ; steppers miroir dans l'onglet Printing du POS |
 | `/settings/pos` | presets paiement / fond de caisse / remises → POS |
 | `/settings/notifications` | templates → `enqueue_notification` → outbox (toggle `is_active` effectif) |
 | `/settings/permissions` | matrice read-only (édition dans `/backoffice/users/permissions`) |
@@ -158,8 +158,8 @@ par personne est un réglage mort — c'est le critère n°1 de ce document.
   édition dans `/backoffice/users/permissions`.
 - **Pas de catalogue** — produits, catégories, types produits vivent dans `/products`.
 - **Pas de programme fidélité** — page dédiée `/backoffice/loyalty`.
-- **Pas de consultation d'audit** — l'Audit Log vit dans Reports (`AuditPage`).
-- **Pas de mapping comptable** — vit dans `/accounting` (MappingsPage).
+- **Pas de consultation d'audit** — l'Audit Log vit dans Reports (`/reports/audit`).
+- **Pas de mapping comptable** — vit dans `/accounting/mappings`.
 - **Pas d'URL d'imprimante centralisée** — le print-server est per-terminal
   (localStorage), choix assumé.
 
