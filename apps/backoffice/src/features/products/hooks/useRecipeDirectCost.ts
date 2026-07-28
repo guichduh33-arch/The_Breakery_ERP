@@ -1,10 +1,13 @@
 // apps/backoffice/src/features/products/hooks/useRecipeDirectCost.ts
 //
 // Wraps recipe_direct_cost_v1 — the DIRECT (depth-1) recipe-line costing used by
-// the product Costing tab so the breakdown matches the Recipe tab. Unlike the
-// recursive recipe_bom_full_v1, semi-finished lines are costed at their own
-// cost_price (which already rolls up their sub-ingredients) instead of being
-// exploded into leaf materials.
+// the product Costing tab so the breakdown matches the Recipe tab. Les lignes de
+// semi-finis y sont valorisées à leur propre cost_price (qui agrège déjà leurs
+// sous-ingrédients) au lieu d'être dépliées jusqu'aux matières.
+//
+// Depuis ADR-016, recipe_bom_full_v2 applique la même règle aux semi-finis
+// SUIVIS EN STOCK ; il ne déplie plus que les intermédiaires non suivis. La
+// différence entre les deux se réduit donc à ces derniers.
 //
 // Same row shape as useRecipeBomFull (BomLine) so CostingPanel renders unchanged.
 // Gate: inventory.read (SECURITY DEFINER). 0 rows = no recipe (purchase-driven WAC).

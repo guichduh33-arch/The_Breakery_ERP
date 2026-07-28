@@ -1,9 +1,13 @@
 // apps/backoffice/src/features/inventory-production/components/IngredientAggregatePreview.tsx
 //
-// Session 17 — Phase 2.A — Server-side cascade via recipe_bom_full_v1.
+// Session 17 — Phase 2.A — Server-side cascade via recipe_bom_full_v2.
 //
 // Previously did 2 static useQueries rounds capped at depth-2 (DEV-S16-2.C-02).
-// Now does one round (one RPC call per root), full depth-5 cascade server-side.
+// Now does one round (one RPC call per root), cascade résolue côté serveur.
+//
+// ADR-016 — l'aperçu liste ce qui sera réellement consommé : la cascade
+// s'arrête au premier intermédiaire suivi en stock, qui apparaît donc comme
+// ingrédient à part entière au lieu de ses matières.
 // expandRecipeCascade (in @breakery/domain) is no longer used here. It remains
 // exported as a public API for future client-side cascade needs that can't
 // round-trip to the server (e.g. unsaved-recipe live previews).
@@ -58,7 +62,7 @@ export function IngredientAggregatePreview({ items }: IngredientAggregatePreview
       enabled:  row.productId !== null,
       staleTime: 30_000,
       queryFn: async (): Promise<BomLeafRow[]> => {
-        const { data, error } = await supabase.rpc('recipe_bom_full_v1', {
+        const { data, error } = await supabase.rpc('recipe_bom_full_v2', {
           p_product_id: row.productId as string,
           p_max_depth:  5,
         });

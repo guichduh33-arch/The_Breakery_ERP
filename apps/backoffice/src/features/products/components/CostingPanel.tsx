@@ -4,7 +4,7 @@
 //
 // Shows:
 //  - 3 header KPI cards: WAC cost, retail price, gross margin %.
-//  - Recipe BOM breakdown table (from recipe_bom_full_v1, S17).
+//  - Recipe BOM breakdown table (from recipe_bom_full_v2).
 //    If no recipe → EmptyState "No recipe — cost is purchase-driven (WAC)".
 //  - "Correct cost price" button (gated inventory.cost_correction, MANAGER+).
 

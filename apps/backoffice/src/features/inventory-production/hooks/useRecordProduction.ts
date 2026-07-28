@@ -1,7 +1,11 @@
 // apps/backoffice/src/features/inventory-production/hooks/useRecordProduction.ts
 //
-// Calls `record_production_v2` atomic RPC. Server emits 1 + N stock_movements
+// Calls `record_production_v3` atomic RPC. Server emits 1 + N stock_movements
 // + N+1 journal_entries via the tr_20_je_emit trigger.
+//
+// ADR-016 — la cascade s'arrête au premier intermédiaire suivi en stock et le
+// consomme depuis son stock. Une pénurie peut donc désormais porter sur un
+// semi-fini (« pâte à croissant »), pas seulement sur une matière première.
 //
 // ADR-008 D4 — la production BLOQUE en stock insuffisant. Le réglage global
 // `allow_negative_stock` ne gouverne plus que la vente. `forceNegative` est la
@@ -132,7 +136,7 @@ export function useRecordProduction() {
       if (args.expectedYieldQty     !== undefined) rpcArgs.p_expected_yield_qty    = args.expectedYieldQty;
       if (args.actualYieldQty       !== undefined) rpcArgs.p_actual_yield_qty      = args.actualYieldQty;
       if (args.yieldVarianceReason  !== undefined) rpcArgs.p_yield_variance_reason = args.yieldVarianceReason;
-      const { data, error } = await supabase.rpc('record_production_v2', rpcArgs);
+      const { data, error } = await supabase.rpc('record_production_v3', rpcArgs);
       if (error) {
         const detail = (error as unknown as { details?: string }).details;
         let parsed: unknown;

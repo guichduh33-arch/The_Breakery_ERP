@@ -1,11 +1,15 @@
 // apps/backoffice/src/features/inventory-production/hooks/useRecordBatchProduction.ts
 //
-// Session 15 / Phase 4.A — Wraps `record_batch_production_v4` atomic RPC.
+// Session 15 / Phase 4.A — Wraps `record_batch_production_v5` atomic RPC.
 //
-// v4 is the canonical entry point: it parses the optional, backdatable
-// p_batch.production_date then delegates to the internal v3 implementation.
-// When production_date is absent the ledger/JEs stay at now() — the wrapper
-// only patches production_records.production_date.
+// v5 is the single entry point: elle absorbe l'ancien wrapper de date et
+// l'implémentation interne, fusionnés par ADR-016. Elle parse l'optionnel
+// p_batch.production_date (antidatable) ; quand il est absent le ledger et les
+// écritures restent à now() — seule production_records.production_date est
+// patchée.
+//
+// ADR-016 — la cascade s'arrête au premier intermédiaire suivi en stock et le
+// consomme depuis son stock. Une pénurie peut donc porter sur un semi-fini.
 //
 // ADR-008 D4 — le lot BLOQUE en stock insuffisant (le réglage global
 // `allow_negative_stock` ne gouverne plus que la vente). `forceNegative` est la
@@ -143,7 +147,7 @@ export function useRecordBatchProduction() {
 
       const itemsPayload = args.items.map(buildItemPayload);
 
-      const { data, error } = await supabase.rpc('record_batch_production_v4', {
+      const { data, error } = await supabase.rpc('record_batch_production_v5', {
         p_batch: batchPayload as unknown as never,
         p_items: itemsPayload as unknown as never,
       });
