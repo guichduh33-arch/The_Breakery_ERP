@@ -224,7 +224,7 @@ Bénéfice métier : **sécurité cohérente avec le POS**. La tablette n'ouvre 
 - La tablette **ne supporte pas le modifier engine complet** du POS. Modifiers basiques uniquement.
 - La tablette **ne crée pas de client**. Pour ajouter un nouveau client, le serveur passe par le caissier.
 - La tablette **ne gère pas les combos avec sélection multi-groupes**. Un combo nécessite le `ComboSelectorModal` du POS — la tablette renvoie au comptoir.
-- La tablette **ne supporte pas l'offline complet**. Si LAN down, envoi bloqué. Pas de queue locale.
+- ~~La tablette **ne supporte pas l'offline complet**~~ → **une file locale existe** : la commande est mise en attente puis rejouée à la reconnexion (outbox partagée avec le POS). ⚠️ Un intent définitivement rejeté au rejeu bloque le drain — la conduite à tenir n'est pas décidée (ADR-015, registre).
 - La tablette **ne déclenche pas l'envoi cuisine elle-même**. C'est le caissier qui décide quand envoyer en cuisine (souvent à l'acceptation).
 - La tablette **ne consulte pas le KDS** ni les stocks détaillés — juste l'indicateur "rupture" sur les produits.
 - La tablette **ne modifie jamais une commande déjà envoyée**. Son panier est
@@ -238,7 +238,6 @@ Bénéfice métier : **sécurité cohérente avec le POS**. La tablette n'ouvre 
 
 | Priorité | Évolution | Bénéfice attendu |
 |---|---|---|
-| 🔴 | **Queue offline avec sync** | Saisir la commande même sans LAN, envoyer dès la reconnexion (couvre les coupures courtes). |
 | 🔴 | **Auto-send à la cuisine optionnel** | Toggle "Envoyer directement en cuisine" pour le service rapide — bypass de l'acceptation caissier sur certains cas. |
 | 🟠 | **Modifier engine complet** | Supporter tous les modifiers du POS pour ne pas refuser certaines configurations en salle. |
 | 🟠 | **Combos sélectionnables** | Composer un combo depuis la tablette (sélection des groupes). |

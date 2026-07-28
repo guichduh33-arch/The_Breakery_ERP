@@ -63,7 +63,7 @@ Avant la première vente, le cashier qui prend son poste déclenche `OpenShiftMo
 
 - **Sélection du terminal** : sur quel poste physique on ouvre (Terminal 1 caisse principale, Terminal 2 comptoir café…).
 - **Comptage du fond de caisse** : saisie du montant total de l'`opening_cash`.
-- **Détail facultatif par coupure** (`opening_cash_details` JSONB) : combien de 100k, combien de 50k, combien de 20k, etc. — pour audit fin.
+- **Détail facultatif par coupure** (`opening_denominations` JSONB) : combien de 100k, combien de 50k, combien de 20k, etc. — pour audit fin.
 - **Validation** → la session est créée dans `pos_sessions`. Le **numéro de session lisible** (`SHF-YYYYMMDD-NN`) n'est **pas livré** : la table ne porte aucune colonne de numérotation.
 
 ### 4.2 Les contrôles automatiques
@@ -268,7 +268,7 @@ Bénéfice métier : **cloisonner les responsabilités cash**. Un cashier peut o
 ## 14. Ce que le module ne fait **pas** (par design)
 
 - Le module **ne gère pas le coffre-fort**. Le dépôt en banque du cash est une opération externe (à venir : module Cash Management).
-- Le module **ne fait pas de mouvement intermédiaire** (cash-in / cash-out pendant la session). Pour ajouter du fond en cours, il faut fermer la session puis en ouvrir une nouvelle. *Cf. backlog.*
+- ~~Le module **ne fait pas de mouvement intermédiaire**~~ → **livré** : les entrées et sorties de caisse en cours de session passent par la modale dédiée du POS et la famille `record_cash_movement`, avec trace nominative.
 - Le module **ne supporte pas les sessions multi-journée**. Une session ne devrait pas durer plus de 24 h — mais **aucune fermeture automatique n'est livrée** : il n'existe aucun script ni tâche planifiée sur les sessions, et ce qui doit se passer au-delà de 24 h n'est pas décidé.
 - Le module **ne calcule pas la TVA / PB1**. Ce calcul est fait au niveau de chaque commande (tax inclusive 10/110).
 - Le module **ne signe pas électroniquement** (KSeF, fiscal certification). Pas de certification fiscale Indonésie obligatoire en V2.
@@ -279,7 +279,6 @@ Bénéfice métier : **cloisonner les responsabilités cash**. Un cashier peut o
 
 | Priorité | Évolution | Bénéfice attendu |
 |---|---|---|
-| 🔴 | **Cash-in / Cash-out en cours de session** | Permettre au cashier d'ajouter du fond ou de sortir un excédent en milieu de service avec trace nominative. |
 | 🔴 | **Validation à deux mains pour gros écarts** | Au-delà d'un seuil critique, exiger PIN cashier + PIN manager en double-authentification. |
 | 🟠 | **Dépôt bancaire intégré** | Saisir une remise bancaire en fin de journée avec photo du bordereau, lien automatique vers la compta. |
 | 🟠 | **Compte des coupures obligatoire** | Forcer le détail par coupure (5k, 10k, 20k, 50k, 100k) pour audit fin et détection vol partiel. |

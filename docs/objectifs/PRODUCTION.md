@@ -298,7 +298,7 @@ Réciproquement, le module Inventory **utilise** Production :
 | ✅ | ~~**Sous-recettes / semi-finis**~~ | Livré V3 — pâte feuilletée comme semi-fini consommé par plusieurs produits. |
 | ✅ | ~~**Versioning explicite des recettes**~~ | Livré V3 — `recipe_versions` + snapshot avec coût. |
 | ✅ | ~~**Boulanger's percentages**~~ | Livré V3. |
-| ✅ | ~~**Allergènes structurés**~~ | Livré — propagation par recettes (`view_product_allergens_resolved`), affichés BO et POS. |
+| ⛔ | **Allergènes structurés** | **Abandonné** — la feature allergènes catalogue a été entièrement supprimée du code applicatif (ADR-011 §2, PR #251). Les notes libres s'en chargent. Ne pas re-proposer. |
 | 🔴 | **Chantiers ADR-008** : D1 unités sous-recettes, D2 waste en charge, D3 enum raisons, D4 blocage stock, D5 erreur profondeur, D6 deduct_stock, D7 garde+refactor revert, D9 dette technique | Corriger les huit écarts constatés par l'audit du 2026-07-17. |
 | 🟠 | **Plan de production hebdomadaire** | Définir un planning type "lundi: 100 baguettes, 50 viennoiseries…" et l'instancier en 1 clic chaque semaine. |
 | 🟡 | **Mode mobile saisie** | Le boulanger en cuisine saisit sur tablette / téléphone sans devoir aller au PC. |

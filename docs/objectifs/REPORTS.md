@@ -308,11 +308,8 @@ Reports identifiés comme à forte valeur ajoutée non encore livrés :
 | 🔴 | **KDS Service Speed** | Mesurer le goulot d'étranglement cuisine, optimiser les recettes longues. |
 | 🔴 | **Unusual Transaction Patterns** | Détecter automatiquement les transactions hors horaires, montants aberrants, splits cash juste sous un seuil suspect. |
 | 🔴 | **B2B Self-Approval Risk** | Repérer les commandes B2B où le créateur et l'approbateur sont la même personne. |
-| 🟠 | **Customer Cohort Analysis** | Mesurer la rétention par cohorte mensuelle (nouveaux vs récurrents). |
-| 🟠 | **Basket Analysis** | Identifier les produits souvent achetés ensemble pour créer des combos pertinents. |
-| 🟠 | **Promotion Effectiveness** | Mesurer le ROI réel de chaque promotion (volume incrémental vs marge sacrifiée). |
 | 🟡 | **Peak Hour Staffing** | Recommander un planning staff basé sur la charge horaire historique. |
-| 🟡 | **Perishable Turnover** | Rotation des produits périssables (jours moyens en stock) pour réduire le waste. |
+| ⛔ | **Perishable Turnover** | **Abandonné** — ADR-004 ordonne de retirer ce rapport de la navigation : ni lots, ni péremption. Le template PDF subsiste, il ne doit pas être remis au menu. |
 | 🟡 | **Table Turnover** | Durée moyenne d'occupation table, taux de rotation — décisif pour la capacité dîner. |
 | 🟢 | **Sales By Brand** | Découper le CA par marque pour les rayons multi-marques (placeholder déjà câblé). |
 | 🟢 | **Purchase Returns** | Suivre les retours fournisseurs (placeholder déjà câblé). |
