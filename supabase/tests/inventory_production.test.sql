@@ -596,3 +596,4 @@ SELECT ok(current_setting('breakery.t_prod_15_pass') IN ('yes','skip'),
 SELECT * FROM finish();
 
 ROLLBACK;
+-- Preuve plafond : docs/workplan/refs/2026-05-14-session-13-wave-2-deviations.md
