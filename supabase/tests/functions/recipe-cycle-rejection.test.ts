@@ -11,6 +11,11 @@
 //     excluded from the trigger's descendant walk).
 //
 // Skips gracefully when env vars are missing. Cleanup in afterAll.
+//
+// ADR-016 (20260729000002) bumped upsert_recipe_v1 -> _v2 (renamed
+// mechanically below). This suite tests the cycle trigger, not the
+// production/BOM cascade, so the "stop at stocked intermediate" rule does
+// not apply here.
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
@@ -73,12 +78,12 @@ describeLive('validate_recipe_no_cycle — live trigger integration', () => {
     allSkus.push(a.sku, b.sku);
 
     const mgr = jwtClient(managerToken);
-    const r1 = await mgr.rpc('upsert_recipe_v1', {
+    const r1 = await mgr.rpc('upsert_recipe_v2', {
       p_product_id: a.id, p_material_id: b.id, p_quantity: 1, p_unit: 'pcs', p_notes: null,
     });
     expect(r1.error).toBeNull();
 
-    const r2 = await mgr.rpc('upsert_recipe_v1', {
+    const r2 = await mgr.rpc('upsert_recipe_v2', {
       p_product_id: b.id, p_material_id: a.id, p_quantity: 1, p_unit: 'pcs', p_notes: null,
     });
     expect(r2.error).not.toBeNull();
@@ -93,14 +98,14 @@ describeLive('validate_recipe_no_cycle — live trigger integration', () => {
     allSkus.push(a.sku, b.sku, c.sku);
 
     const mgr = jwtClient(managerToken);
-    expect((await mgr.rpc('upsert_recipe_v1', {
+    expect((await mgr.rpc('upsert_recipe_v2', {
       p_product_id: a.id, p_material_id: b.id, p_quantity: 1, p_unit: 'pcs', p_notes: null,
     })).error).toBeNull();
-    expect((await mgr.rpc('upsert_recipe_v1', {
+    expect((await mgr.rpc('upsert_recipe_v2', {
       p_product_id: b.id, p_material_id: c.id, p_quantity: 1, p_unit: 'pcs', p_notes: null,
     })).error).toBeNull();
 
-    const r3 = await mgr.rpc('upsert_recipe_v1', {
+    const r3 = await mgr.rpc('upsert_recipe_v2', {
       p_product_id: c.id, p_material_id: a.id, p_quantity: 1, p_unit: 'pcs', p_notes: null,
     });
     expect(r3.error).not.toBeNull();
@@ -113,10 +118,10 @@ describeLive('validate_recipe_no_cycle — live trigger integration', () => {
     allSkus.push(a.sku);
 
     const mgr = jwtClient(managerToken);
-    // upsert_recipe_v1 has its own guard `material_must_differ_from_product`
+    // upsert_recipe_v2 has its own guard `material_must_differ_from_product`
     // that fires before reaching the table. Both surfaces (RPC guard OR
     // table CHECK) must reject.
-    const r = await mgr.rpc('upsert_recipe_v1', {
+    const r = await mgr.rpc('upsert_recipe_v2', {
       p_product_id: a.id, p_material_id: a.id, p_quantity: 1, p_unit: 'pcs', p_notes: null,
     });
     expect(r.error).not.toBeNull();
@@ -129,7 +134,7 @@ describeLive('validate_recipe_no_cycle — live trigger integration', () => {
     allSkus.push(a.sku, b.sku);
 
     const mgr = jwtClient(managerToken);
-    const r1 = await mgr.rpc('upsert_recipe_v1', {
+    const r1 = await mgr.rpc('upsert_recipe_v2', {
       p_product_id: a.id, p_material_id: b.id, p_quantity: 1, p_unit: 'pcs', p_notes: null,
     });
     expect(r1.error).toBeNull();
@@ -141,7 +146,7 @@ describeLive('validate_recipe_no_cycle — live trigger integration', () => {
 
     // Now B→A : the soft-deleted A→B is excluded from the descendant walk,
     // so no cycle is detected.
-    const r2 = await mgr.rpc('upsert_recipe_v1', {
+    const r2 = await mgr.rpc('upsert_recipe_v2', {
       p_product_id: b.id, p_material_id: a.id, p_quantity: 1, p_unit: 'pcs', p_notes: null,
     });
     expect(r2.error).toBeNull();

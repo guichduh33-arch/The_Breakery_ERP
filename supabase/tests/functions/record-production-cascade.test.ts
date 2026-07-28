@@ -1,6 +1,6 @@
 // supabase/tests/functions/record-production-cascade.test.ts
 // Session 15 / Phase 1.C — Live integration tests for
-// record_production_v2's sub-recipe cascade (p_recurse_subrecipes=TRUE).
+// record_production_v3's sub-recipe cascade (p_recurse_subrecipes=TRUE).
 //
 // Coverage :
 //   - 2-level cascade (FIN := INT + leaves) with recurse=TRUE :
@@ -14,6 +14,15 @@
 // `reference_type='admin_action'` and never sets `reference_id`. The
 // production_id is captured in stock_movements.metadata->>'production_id'.
 // See deviation pack D-S13-MVTREF-01.
+//
+// ADR-016 (20260729000001) : the cascade now stops at the first intermediate
+// with `track_inventory = true` (the products.track_inventory column
+// default) and consumes it from its own stock. The "2-level cascade" test
+// below exercises the "dive to leaves" branch, which is preserved only for
+// NON-stocked intermediates — mkProduct's new `trackInventory` argument is
+// passed `false` for `int` so this test keeps its original contract. The
+// "recurse=FALSE" test is unaffected either way (it forces depth=1
+// regardless of track_inventory).
 //
 // Skips gracefully when env missing. Cleanup in afterAll.
 
@@ -40,6 +49,10 @@ async function mkProduct(
   sku: string,
   cost: number,
   stock: number,
+  // ADR-016 : defaults to true (matches products.track_inventory's column
+  // default). Pass false for an intermediate that must remain diveable to
+  // its own leaves under the cascade "stop at stocked" rule.
+  trackInventory = true,
 ): Promise<ProdRow> {
   await admin.from('products').delete().eq('sku', sku);
   const { data: cat } = await admin.from('categories').select('id').limit(1).single();
@@ -49,6 +62,7 @@ async function mkProduct(
     category_id: (cat as { id: string }).id,
     retail_price: 1000, current_stock: stock, unit: 'pcs',
     cost_price: cost, product_type: 'finished', is_active: true,
+    track_inventory: trackInventory,
   } as any).select('id, sku').single();
   if (error || !data) throw new Error(`mkProduct(${sku}): ${error?.message}`);
   return data as ProdRow;
@@ -72,7 +86,7 @@ async function cleanupAll(admin: SupabaseClient) {
   await admin.from('products').delete().in('id', ids);
 }
 
-describeLive('record_production_v2 sub-recipe cascade — live integration', () => {
+describeLive('record_production_v3 sub-recipe cascade — live integration', () => {
   let managerToken: string;
   let admin: SupabaseClient;
   let sectionId: string;
@@ -92,25 +106,27 @@ describeLive('record_production_v2 sub-recipe cascade — live integration', () 
 
   it('2-level cascade with recurse=TRUE: 1 production_in + N leaves, breakdown flags set, version_id populated', async () => {
     const fin = await mkProduct(admin, `${SKU_PREFIX}-MAIN-FIN`, 0, 0);
-    const int = await mkProduct(admin, `${SKU_PREFIX}-MAIN-INT`, 0, 0);
+    // ADR-016 : non-stocked (trackInventory=false) so the cascade keeps
+    // diving to la/lb instead of stopping at int (which has 0 stock).
+    const int = await mkProduct(admin, `${SKU_PREFIX}-MAIN-INT`, 0, 0, false);
     const la  = await mkProduct(admin, `${SKU_PREFIX}-MAIN-LA`,  100, 1000);
     const lb  = await mkProduct(admin, `${SKU_PREFIX}-MAIN-LB`,  150, 1000);
     allSkus.push(fin.sku, int.sku, la.sku, lb.sku);
 
     const mgr = jwtClient(managerToken);
     // INT := 1 LA + 1 LB
-    expect((await mgr.rpc('upsert_recipe_v1', {
+    expect((await mgr.rpc('upsert_recipe_v2', {
       p_product_id: int.id, p_material_id: la.id, p_quantity: 1, p_unit: 'pcs', p_notes: null,
     })).error).toBeNull();
-    expect((await mgr.rpc('upsert_recipe_v1', {
+    expect((await mgr.rpc('upsert_recipe_v2', {
       p_product_id: int.id, p_material_id: lb.id, p_quantity: 1, p_unit: 'pcs', p_notes: null,
     })).error).toBeNull();
     // FIN := 1 INT
-    expect((await mgr.rpc('upsert_recipe_v1', {
+    expect((await mgr.rpc('upsert_recipe_v2', {
       p_product_id: fin.id, p_material_id: int.id, p_quantity: 1, p_unit: 'pcs', p_notes: null,
     })).error).toBeNull();
 
-    const { data, error } = await mgr.rpc('record_production_v2', {
+    const { data, error } = await mgr.rpc('record_production_v3', {
       p_product_id: fin.id,
       p_quantity_produced: 5,
       p_section_id: sectionId,
@@ -164,12 +180,12 @@ describeLive('record_production_v2 sub-recipe cascade — live integration', () 
     allSkus.push(fin.sku, m.sku);
 
     const mgr = jwtClient(managerToken);
-    expect((await mgr.rpc('upsert_recipe_v1', {
+    expect((await mgr.rpc('upsert_recipe_v2', {
       p_product_id: fin.id, p_material_id: m.id, p_quantity: 1, p_unit: 'pcs', p_notes: null,
     })).error).toBeNull();
 
     const key = crypto.randomUUID();
-    const r1 = await mgr.rpc('record_production_v2', {
+    const r1 = await mgr.rpc('record_production_v3', {
       p_product_id: fin.id, p_quantity_produced: 2, p_section_id: sectionId,
       p_batch_number: 'IDEM', p_quantity_waste: 0, p_notes: null,
       p_idempotency_key: key, p_recurse_subrecipes: true,
@@ -178,7 +194,7 @@ describeLive('record_production_v2 sub-recipe cascade — live integration', () 
     const r1d = r1.data as { production_id: string; idempotent_replay: boolean };
     expect(r1d.idempotent_replay).toBe(false);
 
-    const r2 = await mgr.rpc('record_production_v2', {
+    const r2 = await mgr.rpc('record_production_v3', {
       p_product_id: fin.id, p_quantity_produced: 2, p_section_id: sectionId,
       p_batch_number: 'IDEM', p_quantity_waste: 0, p_notes: null,
       p_idempotency_key: key, p_recurse_subrecipes: true,
@@ -203,14 +219,14 @@ describeLive('record_production_v2 sub-recipe cascade — live integration', () 
     allSkus.push(fin.sku, int.sku, leaf.sku);
 
     const mgr = jwtClient(managerToken);
-    expect((await mgr.rpc('upsert_recipe_v1', {
+    expect((await mgr.rpc('upsert_recipe_v2', {
       p_product_id: int.id, p_material_id: leaf.id, p_quantity: 2, p_unit: 'pcs', p_notes: null,
     })).error).toBeNull();
-    expect((await mgr.rpc('upsert_recipe_v1', {
+    expect((await mgr.rpc('upsert_recipe_v2', {
       p_product_id: fin.id, p_material_id: int.id, p_quantity: 1, p_unit: 'pcs', p_notes: null,
     })).error).toBeNull();
 
-    const { data, error } = await mgr.rpc('record_production_v2', {
+    const { data, error } = await mgr.rpc('record_production_v3', {
       p_product_id: fin.id, p_quantity_produced: 3, p_section_id: sectionId,
       p_batch_number: 'FLAT', p_quantity_waste: 0, p_notes: null,
       p_idempotency_key: null, p_recurse_subrecipes: false,

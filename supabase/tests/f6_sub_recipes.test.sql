@@ -3,14 +3,27 @@
 --
 -- Covers the 7 migrations 20260519000001..000010 (anti-cycle trigger,
 -- calculate_recipe_cost_v1, recipe_versions snapshot, backfill,
--- production_records.recipe_version_id, record_production_v2 cascade,
+-- production_records.recipe_version_id, record_production_v3 cascade,
 -- production_records.materials_breakdown) PLUS the Phase 2.A yield-aware
 -- extension (migrations 20260519000040..000044).
 --
 -- Runner (Docker retired) — apply the whole file via MCP execute_sql in one
 -- shot ; the BEGIN..ROLLBACK envelope guarantees no leak.
 --
--- KNOWN PHASE 1.A QUIRK : record_production_v2 issues `CREATE TEMP TABLE
+-- ADR-016 (20260729000001) — the cascade now STOPS at the first intermediate
+-- with `track_inventory = true` and consumes it from its own stock, instead
+-- of always diving to raw-material leaves. `products.track_inventory`
+-- DEFAULTS to true, so any intermediate created by `pg_temp.mkprod` without
+-- an explicit flag is now a stocked leaf as far as the cascade is concerned.
+-- T15/T16/T17/T18/T20 below exercise the "dive to raw-material leaves"
+-- branch, which ADR-016 keeps for NON-stocked intermediates only — their
+-- intermediates are therefore created with the new explicit
+-- `p_track_inventory := false` argument. The "stop at a stocked
+-- intermediate" branch is NOT re-tested here (it would just make these tests
+-- redundant with themselves) — it has dedicated coverage in
+-- supabase/tests/adr016_descente_semi_finis.test.sql.
+--
+-- KNOWN PHASE 1.A QUIRK : record_production_v3 issues `CREATE TEMP TABLE
 -- _bom_flatten ... ON COMMIT DROP` and `_leaf_consumption` internally. When
 -- the function is invoked more than once within the same SQL transaction
 -- (as happens in this pgTAP suite under its BEGIN..ROLLBACK envelope), the
@@ -18,7 +31,7 @@
 -- In production this never fires because each PostgREST RPC call is its
 -- own transaction. To make the pgTAP suite self-contained we explicitly
 -- `DROP TABLE IF EXISTS pg_temp._bom_flatten, pg_temp._leaf_consumption`
--- between successive record_production_v2 invocations. This is documented
+-- between successive record_production_v3 invocations. This is documented
 -- as a follow-up deviation pack `D-S15-1A-TEMPTBL-01` in the session 15
 -- closeout notes (consider migrating the function to TRUNCATE-on-reuse
 -- semantics or randomized table names).
@@ -28,7 +41,7 @@
 -- populates `reference_id`. Therefore production-related stock_movements
 -- are NOT findable via `WHERE reference_type='production' AND reference_id=
 -- production_id`. They ARE findable via the `metadata->>'production_id'`
--- JSONB tag injected by record_production_v2. This pgTAP suite uses the
+-- JSONB tag injected by record_production_v3. This pgTAP suite uses the
 -- metadata path. Tracked as deviation pack `D-S13-MVTREF-01`.
 --
 -- Coverage matrix :
@@ -46,12 +59,12 @@
 --   T12 recipe_versions trigger AFTER UPDATE + soft-delete (monotonic).
 --   T13 Backfill : every product with active recipes has a recipe_versions row.
 --   T14 production_records.recipe_version_id resolved to latest snapshot.
---   T15 record_production_v2 cascade : 2-level recipe → leaf-only out movements.
---   T16 record_production_v2 recurse=FALSE falls back to flat behaviour.
+--   T15 record_production_v3 cascade : 2-level recipe → leaf-only out movements.
+--   T16 record_production_v3 recurse=FALSE falls back to flat behaviour.
 --   T17 materials_breakdown captures is_intermediate flag for intermediates.
---   T18 record_production_v2 aggregates same-leaf consumption across paths.
---   T19 record_production_v2 idempotency replay returns same production_id.
---   T20 record_production_v2 depth>5 raises recipe_depth_exceeded.
+--   T18 record_production_v3 aggregates same-leaf consumption across paths.
+--   T19 record_production_v3 idempotency replay returns same production_id.
+--   T20 record_production_v3 depth>5 raises recipe_depth_exceeded.
 
 BEGIN;
 
@@ -99,15 +112,18 @@ END $bootstrap$;
 
 -- Helper : create a product. The `slug` column does not exist on products in
 -- the V3 dev schema ; sku acts as the natural key.
-CREATE OR REPLACE FUNCTION pg_temp.mkprod(p_sku TEXT, p_name TEXT, p_unit TEXT, p_cost DECIMAL, p_stock DECIMAL DEFAULT 1000)
+-- ADR-016 : p_track_inventory defaults to TRUE (matches the products.track_inventory
+-- column default) ; pass FALSE explicitly for an intermediate that must remain
+-- diveable to its own leaf materials under the cascade "stop at stocked" rule.
+CREATE OR REPLACE FUNCTION pg_temp.mkprod(p_sku TEXT, p_name TEXT, p_unit TEXT, p_cost DECIMAL, p_stock DECIMAL DEFAULT 1000, p_track_inventory BOOLEAN DEFAULT TRUE)
 RETURNS UUID
 LANGUAGE plpgsql AS $$
 DECLARE v_id UUID; v_cat UUID;
 BEGIN
   v_cat := current_setting('breakery.category_id')::uuid;
   INSERT INTO products (sku, name, category_id, retail_price, current_stock,
-                        unit, cost_price, product_type, is_active)
-  VALUES (p_sku, p_name, v_cat, 100, p_stock, p_unit, p_cost, 'finished', TRUE)
+                        unit, cost_price, product_type, is_active, track_inventory)
+  VALUES (p_sku, p_name, v_cat, 100, p_stock, p_unit, p_cost, 'finished', TRUE, p_track_inventory)
   RETURNING id INTO v_id;
   RETURN v_id;
 END $$;
@@ -472,8 +488,8 @@ SELECT ok(
 );
 
 -- ===========================================================================
--- T14 — record_production_v2 resolves recipe_version_id
---   First record_production_v2 invocation. NO prior invocation in this
+-- T14 — record_production_v3 resolves recipe_version_id
+--   First record_production_v3 invocation. NO prior invocation in this
 --   transaction → no DROP needed before.
 -- ===========================================================================
 DO $t14_seed$
@@ -494,7 +510,7 @@ BEGIN
   SELECT id INTO v_expected_version FROM recipe_versions
     WHERE product_id = v_fin ORDER BY version_number DESC LIMIT 1;
 
-  v_result := record_production_v2(
+  v_result := record_production_v3(
     p_product_id := v_fin,
     p_quantity_produced := 10,
     p_section_id := v_section,
@@ -516,14 +532,17 @@ BEGIN
 END $t14_seed$;
 
 SELECT ok(current_setting('breakery.t14_pass')::boolean,
-  'T14: record_production_v2 stores recipe_version_id = latest recipe_versions row');
+  'T14: record_production_v3 stores recipe_version_id = latest recipe_versions row');
 
--- Flush temp tables before next record_production_v2 invocation (see header note).
+-- Flush temp tables before next record_production_v3 invocation (see header note).
 DROP TABLE IF EXISTS pg_temp._bom_flatten;
 DROP TABLE IF EXISTS pg_temp._leaf_consumption;
 
 -- ===========================================================================
 -- T15 — cascade : 2-level recipe → 1 production_in + 2 production_out (leaves)
+-- ADR-016 : v_int is created with p_track_inventory := FALSE so the cascade
+-- still dives past it to raw-material leaves (the "stop at stocked
+-- intermediate" branch is covered separately, see file header).
 -- ===========================================================================
 DO $t15_seed$
 DECLARE
@@ -534,7 +553,7 @@ DECLARE
   v_mvt_in INT; v_mvt_out INT;
 BEGIN
   v_fin := pg_temp.mkprod('S15-T15-FIN', 'S15 T15 finished', 'pcs', 0, 0);
-  v_int := pg_temp.mkprod('S15-T15-INT', 'S15 T15 intermed', 'pcs', 0, 0);
+  v_int := pg_temp.mkprod('S15-T15-INT', 'S15 T15 intermed', 'pcs', 0, 0, FALSE);
   v_la  := pg_temp.mkprod('S15-T15-LA',  'S15 T15 leaf A',   'pcs', 100, 500);
   v_lb  := pg_temp.mkprod('S15-T15-LB',  'S15 T15 leaf B',   'pcs', 150, 500);
 
@@ -545,7 +564,7 @@ BEGIN
   INSERT INTO recipes (product_id, material_id, quantity, unit, is_active)
     VALUES (v_fin, v_int, 1, 'pcs', TRUE);
 
-  v_result := record_production_v2(
+  v_result := record_production_v3(
     p_product_id := v_fin, p_quantity_produced := 5,
     p_section_id := v_section, p_batch_number := 'T15',
     p_quantity_waste := 0, p_notes := NULL,
@@ -589,7 +608,7 @@ DECLARE
 BEGIN
   UPDATE products SET current_stock = 100 WHERE id = v_int;
 
-  v_result := record_production_v2(
+  v_result := record_production_v3(
     p_product_id := v_fin, p_quantity_produced := 3,
     p_section_id := v_section, p_batch_number := 'T16',
     p_quantity_waste := 0, p_notes := NULL,
@@ -655,9 +674,11 @@ DECLARE
   v_out_count INT;
   v_total_qty NUMERIC;
 BEGIN
+  -- ADR-016 : IX and IY are non-stocked intermediates (p_track_inventory :=
+  -- FALSE) so the cascade keeps diving to the shared leaf (see file header).
   v_leaf := pg_temp.mkprod('S15-T18-LEAF', 'S15 T18 shared leaf', 'pcs', 100, 1000);
-  v_ix   := pg_temp.mkprod('S15-T18-IX',   'S15 T18 IX',          'pcs', 0, 0);
-  v_iy   := pg_temp.mkprod('S15-T18-IY',   'S15 T18 IY',          'pcs', 0, 0);
+  v_ix   := pg_temp.mkprod('S15-T18-IX',   'S15 T18 IX',          'pcs', 0, 0, FALSE);
+  v_iy   := pg_temp.mkprod('S15-T18-IY',   'S15 T18 IY',          'pcs', 0, 0, FALSE);
   v_fin  := pg_temp.mkprod('S15-T18-FIN',  'S15 T18 finished',    'pcs', 0, 0);
 
   INSERT INTO recipes (product_id, material_id, quantity, unit, is_active)
@@ -669,7 +690,7 @@ BEGIN
   INSERT INTO recipes (product_id, material_id, quantity, unit, is_active)
     VALUES (v_fin, v_iy, 1, 'pcs', TRUE);
 
-  v_result := record_production_v2(
+  v_result := record_production_v3(
     p_product_id := v_fin, p_quantity_produced := 4,
     p_section_id := v_section, p_batch_number := 'T18',
     p_quantity_waste := 0, p_notes := NULL,
@@ -710,7 +731,7 @@ BEGIN
   UPDATE products SET current_stock = 1000
     WHERE sku IN ('S15-T18-LEAF', 'S15-T18-IX', 'S15-T18-IY');
 
-  v_r1 := record_production_v2(
+  v_r1 := record_production_v3(
     p_product_id := v_fin, p_quantity_produced := 2,
     p_section_id := v_section, p_batch_number := 'T19',
     p_quantity_waste := 0, p_notes := NULL,
@@ -722,7 +743,7 @@ BEGIN
 
   -- Replay : the function returns the existing row early (idempotency branch)
   -- BEFORE it tries to CREATE TEMP TABLE, so no DROP needed here.
-  v_r2 := record_production_v2(
+  v_r2 := record_production_v3(
     p_product_id := v_fin, p_quantity_produced := 2,
     p_section_id := v_section, p_batch_number := 'T19',
     p_quantity_waste := 0, p_notes := NULL,
@@ -740,16 +761,16 @@ BEGIN
 END $t19$;
 
 SELECT ok(current_setting('breakery.t19_pass')::boolean,
-  'T19: record_production_v2 idempotency replay -> same production_id, no extra movements');
+  'T19: record_production_v3 idempotency replay -> same production_id, no extra movements');
 
 DROP TABLE IF EXISTS pg_temp._bom_flatten;
 DROP TABLE IF EXISTS pg_temp._leaf_consumption;
 
 -- ===========================================================================
--- T20 — record_production_v2 cascade is bounded at depth 5.
+-- T20 — record_production_v3 cascade is bounded at depth 5.
 --   Build a 6-edge chain P1→P2→...→P7 bottom-up (evades the BEFORE INSERT
 --   trigger because each individual INSERT's descendant walk is small).
---   Then call record_production_v2 on P1 with recurse=TRUE.
+--   Then call record_production_v3 on P1 with recurse=TRUE.
 --
 --   Expected observable behaviour with the current Phase 1.A walker
 --   (`f.depth < v_max_depth_const` in the recursive step) :
@@ -762,6 +783,10 @@ DROP TABLE IF EXISTS pg_temp._leaf_consumption;
 --   is the canonical depth gate. Any deeper chain that evades the trigger
 --   results in a silently incomplete production rather than an error.
 --   Tracked as deviation pack `D-S15-1A-DEPTH-01`.
+--   ADR-016 : every P1..P6 node in the chain is an intermediate (it has its
+--   own recipe) ; all 7 are created with p_track_inventory := FALSE so the
+--   depth walker still dives all the way down instead of stopping at P2
+--   (P7 is a true leaf and is unaffected by the flag either way).
 -- ===========================================================================
 DO $t20_seed$
 DECLARE
@@ -775,7 +800,7 @@ DECLARE
   v_depth INT;
 BEGIN
   FOR i IN 1..7 LOOP
-    ids := ids || pg_temp.mkprod('S15-T20-P' || i, 'S15 T20 P' || i, 'pcs', 100, 1000);
+    ids := ids || pg_temp.mkprod('S15-T20-P' || i, 'S15 T20 P' || i, 'pcs', 100, 1000, FALSE);
   END LOOP;
 
   -- Build chain bottom-up : P6→P7, P5→P6, ..., P1→P2 (6 edges).
@@ -790,7 +815,7 @@ BEGIN
   END LOOP;
 
   BEGIN
-    v_result := record_production_v2(
+    v_result := record_production_v3(
       p_product_id := ids[1], p_quantity_produced := 1,
       p_section_id := v_section, p_batch_number := 'T20',
       p_quantity_waste := 0, p_notes := NULL,
@@ -811,7 +836,7 @@ BEGIN
   -- The cost-walk depth gate (tr_snapshot_recipe_version) now also caps at 5, so
   -- the 6th chain edge (P1->P2) can no longer be built — the INSERT itself raises
   -- recipe_depth_exceeded, captured in breakery.t20_build_err, and the subsequent
-  -- record_production_v2 on the recipe-less P1 raises recipe_not_found. A capped
+  -- record_production_v3 on the recipe-less P1 raises recipe_not_found. A capped
   -- build is exactly the contract this test asserts (depth > 5 is rejected).
   PERFORM set_config('breakery.t20_pass',
     CASE WHEN
@@ -823,7 +848,7 @@ END $t20_seed$;
 
 SELECT ok(
   current_setting('breakery.t20_pass')::boolean,
-  'T20: 6-edge chain — record_production_v2 either raises recipe_depth_exceeded OR bounds cascade at depth 5 (1 movement, no leaf consumption). See D-S15-1A-DEPTH-01.'
+  'T20: 6-edge chain — record_production_v3 either raises recipe_depth_exceeded OR bounds cascade at depth 5 (1 movement, no leaf consumption). See D-S15-1A-DEPTH-01.'
 );
 
 SELECT * FROM finish();

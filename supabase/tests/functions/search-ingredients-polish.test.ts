@@ -10,6 +10,11 @@
 // Skips gracefully when env vars are missing. Mirrors the per-file pattern
 // used by recipe-versions-snapshot.test.ts and recipe-calculate-cost.test.ts
 // (no shared sandbox helpers exist in this repo as of Session 16).
+//
+// ADR-016 (20260729000002) bumped upsert_recipe_v1 -> _v2 (renamed
+// mechanically below). This suite tests search_ingredients_v1 ranking, not
+// the production/BOM cascade, so the "stop at stocked intermediate" rule
+// does not apply here.
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
@@ -91,15 +96,15 @@ describeLive('search_ingredients_v1 polish', () => {
 
     const mgr = jwtClient(managerToken);
     // sub recipe : SUB := 500 g of LEAF.
-    const { error: e1 } = await mgr.rpc('upsert_recipe_v1', {
+    const { error: e1 } = await mgr.rpc('upsert_recipe_v2', {
       p_product_id: sub.id, p_material_id: leaf.id, p_quantity: 500, p_unit: 'g', p_notes: null,
     });
-    if (e1) throw new Error(`upsert_recipe_v1 (sub) failed: ${e1.message}`);
+    if (e1) throw new Error(`upsert_recipe_v2 (sub) failed: ${e1.message}`);
     // semi recipe : SEMI := 0.05 kg of SUB. This makes SEMI semi-finished (nesting >= 2).
-    const { error: e2 } = await mgr.rpc('upsert_recipe_v1', {
+    const { error: e2 } = await mgr.rpc('upsert_recipe_v2', {
       p_product_id: semi.id, p_material_id: sub.id, p_quantity: 0.05, p_unit: 'kg', p_notes: null,
     });
-    if (e2) throw new Error(`upsert_recipe_v1 (semi) failed: ${e2.message}`);
+    if (e2) throw new Error(`upsert_recipe_v2 (semi) failed: ${e2.message}`);
   }, 30_000);
 
   afterAll(async () => {

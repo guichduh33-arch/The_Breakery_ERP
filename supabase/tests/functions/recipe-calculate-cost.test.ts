@@ -13,6 +13,12 @@
 // Skips gracefully when env vars are missing (CI dry-run on local without
 // Supabase credentials). Mirrors the inventory-f1-lots / inventory-production
 // test patterns. Cleanup via service-role hard-delete in `afterAll`.
+//
+// ADR-016 (20260729000002) bumped upsert_recipe_v1 -> _v2 (renamed
+// mechanically below). calculate_recipe_cost_v1 itself is explicitly OUT OF
+// SCOPE for ADR-016 (the migration comment calls the cost-walk divergence
+// "hors périmètre, acté") : it still always dives to raw-material leaves
+// regardless of `track_inventory`, so no expected value changes here.
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
@@ -93,10 +99,10 @@ describeLive('calculate_recipe_cost_v1 — live integration', () => {
     allSkus.push(fin.sku, m1.sku, m2.sku);
 
     const mgr = jwtClient(managerToken);
-    await mgr.rpc('upsert_recipe_v1', {
+    await mgr.rpc('upsert_recipe_v2', {
       p_product_id: fin.id, p_material_id: m1.id, p_quantity: 3, p_unit: 'pcs', p_notes: null,
     });
-    await mgr.rpc('upsert_recipe_v1', {
+    await mgr.rpc('upsert_recipe_v2', {
       p_product_id: fin.id, p_material_id: m2.id, p_quantity: 2, p_unit: 'pcs', p_notes: null,
     });
 
@@ -127,14 +133,14 @@ describeLive('calculate_recipe_cost_v1 — live integration', () => {
 
     const mgr = jwtClient(managerToken);
     // INT := 2 LY  (so INT unit cost = 200)
-    await mgr.rpc('upsert_recipe_v1', {
+    await mgr.rpc('upsert_recipe_v2', {
       p_product_id: int.id, p_material_id: ly.id, p_quantity: 2, p_unit: 'pcs', p_notes: null,
     });
     // FIN := 1 INT + 1 LX
-    await mgr.rpc('upsert_recipe_v1', {
+    await mgr.rpc('upsert_recipe_v2', {
       p_product_id: fin.id, p_material_id: int.id, p_quantity: 1, p_unit: 'pcs', p_notes: null,
     });
-    await mgr.rpc('upsert_recipe_v1', {
+    await mgr.rpc('upsert_recipe_v2', {
       p_product_id: fin.id, p_material_id: lx.id, p_quantity: 1, p_unit: 'pcs', p_notes: null,
     });
 

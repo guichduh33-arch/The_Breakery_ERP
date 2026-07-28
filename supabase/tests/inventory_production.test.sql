@@ -4,8 +4,8 @@
 -- Covers the 7 migrations 20260517000060-066 :
 --   - recipes table + RLS
 --   - production_records table + RLS
---   - upsert_recipe_v1 / list_recipes_v1 / deactivate_recipe_v1
---   - record_production_v2 (atomic, idempotent, lot-aware)
+--   - upsert_recipe_v2 / list_recipes_v1 / deactivate_recipe_v1
+--   - record_production_v3 (atomic, idempotent, lot-aware)
 --   - revert_production_v1 (ADMIN+, 24h window, counter-JE)
 --   - get_production_suggestions_v1
 --   - view_product_recipes
@@ -18,6 +18,15 @@
 --
 -- Runner :
 --   Apply this body inside a MCP `execute_sql` BEGIN ... ROLLBACK envelope.
+--
+-- ADR-016 (20260729000001/2) bumped record_production_v2 -> _v3 and
+-- upsert_recipe_v1 -> _v2 (renamed mechanically below, same signatures). The
+-- T_PROD_BAGUETTE fixture recipe is flat (baguette <- flour/salt/yeast/water
+-- directly, no intermediate product with its own recipe), so the "stop at
+-- the first stocked intermediate" cascade rule does not change any expected
+-- value in this file. Recipe lines in 'g'/'mL' against materials stored in
+-- 'kg'/'L' remain valid under upsert_recipe_v2's new unit_not_convertible
+-- guard (g->kg and mL->L are convertible).
 
 BEGIN;
 
@@ -200,8 +209,8 @@ BEGIN
   END IF;
   PERFORM set_config('request.jwt.claim.sub', v_mgr_auth::text, true);
   PERFORM set_config('role', 'authenticated', true);
-  v_rid  := upsert_recipe_v1(v_bag, v_flo, 0.250, 'kg', 'first');
-  v_rid2 := upsert_recipe_v1(v_bag, v_flo, 0.300, 'kg', 'updated');
+  v_rid  := upsert_recipe_v2(v_bag, v_flo, 0.250, 'kg', 'first');
+  v_rid2 := upsert_recipe_v2(v_bag, v_flo, 0.300, 'kg', 'updated');
   SELECT quantity INTO v_qty FROM recipes WHERE id=v_rid;
   PERFORM set_config('role','postgres',true);
   PERFORM set_config('breakery.t_prod_05_pass',
@@ -211,7 +220,7 @@ SELECT ok(current_setting('breakery.t_prod_05_pass') IN ('yes','skip'),
   'T_PROD_05: MANAGER upserts (insert then update) recipe row in place');
 
 -- ---------------------------------------------------------------------------
--- T_PROD_06 — CASHIER → forbidden on upsert_recipe_v1
+-- T_PROD_06 — CASHIER → forbidden on upsert_recipe_v2
 -- ---------------------------------------------------------------------------
 DO $$
 DECLARE
@@ -228,7 +237,7 @@ BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_cash_auth::text, true);
   PERFORM set_config('role', 'authenticated', true);
   BEGIN
-    PERFORM upsert_recipe_v1(v_bag, v_flo, 0.250, 'kg', NULL);
+    PERFORM upsert_recipe_v2(v_bag, v_flo, 0.250, 'kg', NULL);
   EXCEPTION WHEN OTHERS THEN
     v_raised := (SQLERRM = 'forbidden');
   END;
@@ -236,7 +245,7 @@ BEGIN
   PERFORM set_config('breakery.t_prod_06_pass', CASE WHEN v_raised THEN 'yes' ELSE 'no' END, true);
 END $$;
 SELECT ok(current_setting('breakery.t_prod_06_pass') IN ('yes','skip'),
-  'T_PROD_06: CASHIER → forbidden on upsert_recipe_v1');
+  'T_PROD_06: CASHIER → forbidden on upsert_recipe_v2');
 
 -- ---------------------------------------------------------------------------
 -- T_PROD_07 — ADMIN deactivate flips is_active=false + deleted_at set
@@ -260,7 +269,7 @@ BEGIN
   SELECT id INTO v_rid FROM recipes
     WHERE product_id=v_bag AND material_id=v_flo AND is_active AND deleted_at IS NULL LIMIT 1;
   IF v_rid IS NULL THEN
-    v_rid := upsert_recipe_v1(v_bag, v_flo, 0.250, 'kg', NULL);
+    v_rid := upsert_recipe_v2(v_bag, v_flo, 0.250, 'kg', NULL);
   END IF;
   PERFORM deactivate_recipe_v1(v_rid);
   SELECT is_active, deleted_at INTO v_is_active, v_deleted_at FROM recipes WHERE id=v_rid;
@@ -271,7 +280,7 @@ END $$;
 SELECT ok(current_setting('breakery.t_prod_07_pass') IN ('yes','skip'),
   'T_PROD_07: ADMIN deactivates recipe → is_active=false + deleted_at set');
 -- ---------------------------------------------------------------------------
--- T_PROD_08 — CASHIER → forbidden on record_production_v2
+-- T_PROD_08 — CASHIER → forbidden on record_production_v3
 -- ---------------------------------------------------------------------------
 DO $$
 DECLARE v_cash_auth UUID; v_caught TEXT; v_dummy UUID := gen_random_uuid();
@@ -283,7 +292,7 @@ BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_cash_auth::text, true);
   PERFORM set_config('role', 'authenticated', true);
   BEGIN
-    PERFORM record_production_v2(v_dummy, 10, NULL, NULL, 0, NULL, NULL);
+    PERFORM record_production_v3(v_dummy, 10, NULL, NULL, 0, NULL, NULL);
     v_caught := 'no_raise';
   EXCEPTION WHEN OTHERS THEN v_caught := SQLERRM;
   END;
@@ -291,7 +300,7 @@ BEGIN
   PERFORM set_config('breakery.t_prod_08_pass', CASE WHEN v_caught='forbidden' THEN 'yes' ELSE 'no' END, true);
 END $$;
 SELECT ok(current_setting('breakery.t_prod_08_pass') IN ('yes','skip'),
-  'T_PROD_08: CASHIER → forbidden on record_production_v2');
+  'T_PROD_08: CASHIER → forbidden on record_production_v3');
 
 -- ---------------------------------------------------------------------------
 -- T_PROD_09 — qty <= 0 rejected with quantity_must_be_positive
@@ -306,10 +315,10 @@ BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
   PERFORM set_config('role','authenticated',true);
   BEGIN
-    -- record_production_v2 now requires a non-null section (raised as
+    -- record_production_v3 now requires a non-null section (raised as
     -- section_required BEFORE the qty check), so pass the seeded section to
     -- actually reach and exercise the quantity_must_be_positive guard.
-    PERFORM record_production_v2(v_bag, 0, v_section, NULL, 0, NULL, NULL);
+    PERFORM record_production_v3(v_bag, 0, v_section, NULL, 0, NULL, NULL);
     v_caught := 'no_raise';
   EXCEPTION WHEN OTHERS THEN v_caught := SQLERRM;
   END;
@@ -347,9 +356,9 @@ BEGIN
   PERFORM set_config('role','authenticated',true);
   -- Ensure single recipe for clarity (deactivate any others on this product first)
   -- Skipped to keep the test isolated.
-  PERFORM upsert_recipe_v1(v_bag, v_flo, 250, 'g', NULL);
+  PERFORM upsert_recipe_v2(v_bag, v_flo, 250, 'g', NULL);
   BEGIN
-    PERFORM record_production_v2(v_bag, 50, v_section, NULL, 0, NULL, NULL);
+    PERFORM record_production_v3(v_bag, 50, v_section, NULL, 0, NULL, NULL);
     v_caught := 'no_raise';
   EXCEPTION WHEN OTHERS THEN
     GET STACKED DIAGNOSTICS v_detail = PG_EXCEPTION_DETAIL;
@@ -363,7 +372,7 @@ END $$;
 SELECT ok(current_setting('breakery.t_prod_10_pass') IN ('yes','skip'),
   'T_PROD_10: insufficient_stock raised with missing material in DETAIL');
 
--- record_production_v2 issues `CREATE TEMP TABLE _bom_flatten / _leaf_consumption
+-- record_production_v3 issues `CREATE TEMP TABLE _bom_flatten / _leaf_consumption
 -- ON COMMIT DROP`. Under this suite's single BEGIN..ROLLBACK envelope the temp
 -- tables survive across successive invocations and the next call collides with
 -- `relation "_bom_flatten" already exists`. Flush them between invocations. In
@@ -402,12 +411,12 @@ BEGIN
 
   PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
   PERFORM set_config('role','authenticated',true);
-  PERFORM upsert_recipe_v1(v_bag, v_flo,   250, 'g',  NULL);
-  PERFORM upsert_recipe_v1(v_bag, v_salt,    5, 'g',  NULL);
-  PERFORM upsert_recipe_v1(v_bag, v_yeast,   5, 'g',  NULL);
-  PERFORM upsert_recipe_v1(v_bag, v_water, 150, 'mL', NULL);
+  PERFORM upsert_recipe_v2(v_bag, v_flo,   250, 'g',  NULL);
+  PERFORM upsert_recipe_v2(v_bag, v_salt,    5, 'g',  NULL);
+  PERFORM upsert_recipe_v2(v_bag, v_yeast,   5, 'g',  NULL);
+  PERFORM upsert_recipe_v2(v_bag, v_water, 150, 'mL', NULL);
 
-  v_result := record_production_v2(v_bag, 50, v_section, 'BATCH-T11', 0, NULL, NULL);
+  v_result := record_production_v3(v_bag, 50, v_section, 'BATCH-T11', 0, NULL, NULL);
   v_pid := (v_result->>'production_id')::uuid;
   v_movements_count := (v_result->>'movements_count')::int;
 
@@ -449,9 +458,9 @@ BEGIN
   SELECT id INTO v_section FROM sections WHERE deleted_at IS NULL ORDER BY display_order LIMIT 1;
   PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
   PERFORM set_config('role','authenticated',true);
-  PERFORM upsert_recipe_v1(v_bag, v_flo, 250, 'g', NULL);
-  v_r1 := record_production_v2(v_bag, 50, v_section, 'B12', 0, NULL, v_key);
-  v_r2 := record_production_v2(v_bag, 50, v_section, 'B12', 0, NULL, v_key);
+  PERFORM upsert_recipe_v2(v_bag, v_flo, 250, 'g', NULL);
+  v_r1 := record_production_v3(v_bag, 50, v_section, 'B12', 0, NULL, v_key);
+  v_r2 := record_production_v3(v_bag, 50, v_section, 'B12', 0, NULL, v_key);
   SELECT COUNT(*) INTO v_dup FROM production_records WHERE idempotency_key = v_key;
   PERFORM set_config('role','postgres',true);
   PERFORM set_config('breakery.t_prod_12_pass',
@@ -521,8 +530,8 @@ BEGIN
 
   PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
   PERFORM set_config('role','authenticated',true);
-  PERFORM upsert_recipe_v1(v_bag, v_flo, 250, 'g', NULL);
-  v_result := record_production_v2(v_bag, 50, v_section, NULL, 0, NULL, NULL);
+  PERFORM upsert_recipe_v2(v_bag, v_flo, 250, 'g', NULL);
+  v_result := record_production_v3(v_bag, 50, v_section, NULL, 0, NULL, NULL);
   v_pid := (v_result->>'production_id')::uuid;
 
   PERFORM set_config('request.jwt.claim.sub', v_adm::text, true);
@@ -567,7 +576,7 @@ BEGIN
   UPDATE products SET current_stock=100 WHERE id=v_flo;
   PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
   PERFORM set_config('role','authenticated',true);
-  PERFORM upsert_recipe_v1(v_bag, v_flo, 250, 'g', NULL);
+  PERFORM upsert_recipe_v2(v_bag, v_flo, 250, 'g', NULL);
   PERFORM set_config('role','postgres',true);
 
   -- POS orders now require a session_id (constraint orders_session_id_required_for_pos).
