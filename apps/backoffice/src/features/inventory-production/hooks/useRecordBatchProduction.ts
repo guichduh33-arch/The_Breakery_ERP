@@ -1,6 +1,10 @@
 // apps/backoffice/src/features/inventory-production/hooks/useRecordBatchProduction.ts
 //
-// Session 15 / Phase 4.A — Wraps `record_batch_production_v5` atomic RPC.
+// Session 15 / Phase 4.A — Wraps `record_batch_production_v6` atomic RPC.
+//
+// ADR-008 D6 — un item marqué « ne suit pas le stock » est refusé au bord, le
+// DETAIL nomme l'item fautif. ADR-008 D5 — un intermédiaire non déplié restant
+// à la profondeur maximale fait échouer le lot entier.
 //
 // v5 is the single entry point: elle absorbe l'ancien wrapper de date et
 // l'implémentation interne, fusionnés par ADR-016. Elle parse l'optionnel
@@ -40,6 +44,8 @@ export type RecordBatchProductionErrorCode =
   | 'quantity_must_be_positive'
   | 'waste_must_be_non_negative'
   | 'recipe_not_found'
+  | 'recipe_depth_exceeded'
+  | 'production_requires_deduct_stock'
   | 'insufficient_stock'
   | 'force_negative_forbidden'
   | 'invalid_force_negative'
@@ -111,6 +117,8 @@ function classify(message: string): RecordBatchProductionErrorCode {
   if (message.includes('item_missing_product_id'))         return 'item_missing_product_id';
   if (message.includes('quantity_must_be_positive'))       return 'quantity_must_be_positive';
   if (message.includes('waste_must_be_non_negative'))      return 'waste_must_be_non_negative';
+  if (message.includes('recipe_depth_exceeded'))           return 'recipe_depth_exceeded';
+  if (message.includes('production_requires_deduct_stock')) return 'production_requires_deduct_stock';
   if (message.includes('recipe_not_found'))                return 'recipe_not_found';
   if (message.includes('insufficient_stock'))              return 'insufficient_stock';
   if (message.includes('invalid_production_date'))         return 'invalid_production_date';
@@ -147,7 +155,7 @@ export function useRecordBatchProduction() {
 
       const itemsPayload = args.items.map(buildItemPayload);
 
-      const { data, error } = await supabase.rpc('record_batch_production_v5', {
+      const { data, error } = await supabase.rpc('record_batch_production_v6', {
         p_batch: batchPayload as unknown as never,
         p_items: itemsPayload as unknown as never,
       });

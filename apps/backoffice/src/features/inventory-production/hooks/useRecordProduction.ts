@@ -1,7 +1,14 @@
 // apps/backoffice/src/features/inventory-production/hooks/useRecordProduction.ts
 //
-// Calls `record_production_v3` atomic RPC. Server emits 1 + N stock_movements
+// Calls `record_production_v4` atomic RPC. Server emits 1 + N stock_movements
 // + N+1 journal_entries via the tr_20_je_emit trigger.
+//
+// ADR-008 D6 — produire un article marqué « ne suit pas le stock » est refusé
+// (`production_requires_deduct_stock`) : cela créait une entrée valorisée sans
+// contrepartie, donc une écriture comptable déséquilibrée.
+// ADR-008 D5 — un intermédiaire non déplié restant à la profondeur maximale
+// fait échouer la production (`recipe_depth_exceeded`) au lieu de la laisser
+// consommer partiellement en silence.
 //
 // ADR-016 — la cascade s'arrête au premier intermédiaire suivi en stock et le
 // consomme depuis son stock. Une pénurie peut donc désormais porter sur un
@@ -23,6 +30,8 @@ export type RecordProductionErrorCode =
   | 'section_not_found'
   | 'section_required'
   | 'recipe_not_found'
+  | 'recipe_depth_exceeded'
+  | 'production_requires_deduct_stock'
   | 'insufficient_stock'
   | 'force_negative_forbidden'
   | 'unit_conversion_failed'
@@ -93,6 +102,10 @@ function classify(message: string): RecordProductionErrorCode {
   if (message.includes('waste_must_be_non_negative'))      return 'waste_must_be_non_negative';
   if (message.includes('product_not_found'))               return 'product_not_found';
   if (message.includes('section_not_found'))               return 'section_not_found';
+  // Doit précéder le test générique : 'recipe_depth_exceeded' ne contient pas
+  // 'recipe_not_found', mais l'ordre reste explicite pour la lisibilité.
+  if (message.includes('recipe_depth_exceeded'))           return 'recipe_depth_exceeded';
+  if (message.includes('production_requires_deduct_stock')) return 'production_requires_deduct_stock';
   if (message.includes('recipe_not_found'))                return 'recipe_not_found';
   if (message.includes('insufficient_stock'))              return 'insufficient_stock';
   if (message.includes('unit_conversion_failed'))          return 'unit_conversion_failed';
@@ -136,7 +149,7 @@ export function useRecordProduction() {
       if (args.expectedYieldQty     !== undefined) rpcArgs.p_expected_yield_qty    = args.expectedYieldQty;
       if (args.actualYieldQty       !== undefined) rpcArgs.p_actual_yield_qty      = args.actualYieldQty;
       if (args.yieldVarianceReason  !== undefined) rpcArgs.p_yield_variance_reason = args.yieldVarianceReason;
-      const { data, error } = await supabase.rpc('record_production_v3', rpcArgs);
+      const { data, error } = await supabase.rpc('record_production_v4', rpcArgs);
       if (error) {
         const detail = (error as unknown as { details?: string }).details;
         let parsed: unknown;
