@@ -1,0 +1,65 @@
+# BASELINE — GARDE 1, régime 2 (code éditable)
+# =============================================================================
+# Ce fichier est un PLAFOND, jamais un plancher. Il ne peut que DÉCROÎTRE.
+#
+# Il dit : « ce fichier tolère au plus N références à cette entrée quarantainée ».
+# Toute occurrence au-delà du compte fait échouer la CI. On n'ajoute JAMAIS une
+# ligne ici pour faire passer un nouveau code : on réécrit la ligne fautive.
+#
+# Portée : apps/**, packages/**, supabase/functions/**, supabase/tests/**.
+# Hors portée, exemptés en permanence : docs/adr/** et supabase/migrations/**
+# (artefacts immuables — ils ont le droit de citer un chemin historique).
+#
+# Ces références pointent toutes vers des specs et des plans sortis du dépôt au
+# lot Q. Le contenu n'est pas perdu, il vit dans le tag :
+#   git show quarantine/2026-07-27:docs/_quarantine/<chemin>
+# Résorption par D15, au fil des éditions — pas de lot dédié : quand tu touches
+# une de ces lignes pour une autre raison, tu la rends vraie, et tu abaisses le
+# compte ici.
+#
+# Dernier resserrement : 2026-07-28
+# Généré par `node scripts/ci/quarantined-paths.mjs --update-baseline`, jamais
+# écrit de mémoire. Les huit entrées interdites se dérivent du tag :
+#   git ls-tree --name-only quarantine/2026-07-27 docs/_quarantine/
+#
+# Format : <compte>\t<chemin>\t<entrée>
+# =============================================================================
+1	apps/backoffice/src/features/inventory/components/IncomingStockForm.tsx	superpowers
+1	apps/backoffice/src/features/inventory/hooks/useStockLevels.ts	superpowers
+1	apps/backoffice/src/features/products/hooks/useDeductibleIngredientProducts.ts	superpowers
+1	apps/backoffice/src/features/promotions/components/PromotionDeleteConfirm.tsx	superpowers
+1	apps/backoffice/src/features/promotions/components/PromotionFormModal.tsx	superpowers
+1	apps/backoffice/src/features/promotions/components/PromotionListRow.tsx	superpowers
+1	apps/backoffice/src/features/promotions/hooks/promotionRowMappers.ts	superpowers
+1	apps/backoffice/src/features/promotions/hooks/useCreatePromotion.ts	superpowers
+1	apps/backoffice/src/features/promotions/hooks/useDeletePromotion.ts	superpowers
+1	apps/backoffice/src/features/promotions/hooks/usePromotionReferenceData.ts	superpowers
+1	apps/backoffice/src/features/promotions/hooks/usePromotionsList.ts	superpowers
+1	apps/backoffice/src/features/promotions/hooks/useUpdatePromotion.ts	superpowers
+1	apps/backoffice/src/pages/Promotions.tsx	superpowers
+1	apps/backoffice/src/pages/TransferDetail.tsx	reference
+1	apps/backoffice/src/pages/TransferForm.tsx	reference
+1	apps/backoffice/src/pages/TransfersList.tsx	reference
+1	apps/pos/src/pages/Kds.tsx	superpowers
+1	apps/pos/src/pages/Kds.tsx	workplan
+1	apps/pos/src/stores/kdsStore.ts	superpowers
+1	apps/pos/src/stores/kdsStore.ts	workplan
+1	packages/domain/src/customerCategories/types.ts	superpowers
+1	packages/domain/src/discounts/types.ts	superpowers
+1	packages/domain/src/kitchen/types.ts	superpowers
+1	packages/domain/src/modifiers/types.ts	superpowers
+1	packages/domain/src/promotions/types.ts	superpowers
+1	packages/domain/src/reports/toLocalDateStr.ts	reference
+1	packages/ui/src/components/ComboLineRow.tsx	superpowers
+1	packages/ui/src/components/CustomerCategoryBadge.tsx	superpowers
+1	packages/ui/src/components/DiscountModal.tsx	superpowers
+1	packages/ui/src/components/PinVerificationModal.tsx	superpowers
+2	packages/ui/src/components/promotion-form/types.ts	superpowers
+2	packages/ui/src/components/PromotionForm.tsx	superpowers
+1	packages/ui/src/components/PromotionTypeBadge.tsx	superpowers
+1	supabase/functions/_shared/error-redact.ts	workplan
+2	supabase/functions/_shared/permissions.ts	workplan
+3	supabase/functions/kiosk-issue-jwt/index.ts	workplan
+1	supabase/tests/functions/_quarantine/complete-order-v7.test.ts	superpowers
+1	supabase/tests/inventory_production.test.sql	workplan
+1	supabase/tests/seed_dev_printers.sql	reference
