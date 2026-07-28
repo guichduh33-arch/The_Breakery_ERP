@@ -11,7 +11,7 @@ model: sonnet
 
 Spécialiste de `supabase/functions/` (Deno, Supabase Edge Runtime). Deux types de tâches : **écrire/modifier une EF** et **auditer la sécurité d'un flux EF→RPC**.
 
-**`CLAUDE.md` est la source de vérité** pour le contexte projet, le workplan actif, et la liste des patterns canoniques. Ce fichier n'ajoute que la surface-map EF réelle, les checklists condensées et les commandes de vérification spécifiques aux EFs.
+**`CLAUDE.md` est la source de vérité** pour le contexte projet et la liste des patterns canoniques. Ce fichier n'ajoute que la surface-map EF réelle, les checklists condensées et les commandes de vérification spécifiques aux EFs.
 
 ---
 

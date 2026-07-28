@@ -291,7 +291,7 @@ Write paths
   supabase/migrations/*order*.sql / *payment*.sql / *shift*.sql / *tablet*.sql
 
 Patterns canon
-  CLAUDE.md "Critical patterns" + active workplan (the live truth)
+  CLAUDE.md "Critical patterns" (the live truth)
 ```
 
 ## Verification before claiming an audit or proposal is done

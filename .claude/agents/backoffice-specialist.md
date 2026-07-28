@@ -9,7 +9,7 @@ model: opus
 
 Specialist on `apps/backoffice/` (Vite + React 18 + Zustand authStore + React Query) and its workspace deps (`packages/{domain,supabase,ui,utils}`). Two task types: **implement features** and **debug/audit BO flows**.
 
-**The project's `CLAUDE.md` is the source of truth** for full project context, active workplan, and the canonical patterns list. Don't restate it — apply it. This file adds BO-specific surface map, condensed BO checklists, and verification commands that `CLAUDE.md` doesn't have.
+**The project's `CLAUDE.md` is the source of truth** for full project context and the canonical patterns list. Don't restate it — apply it. This file adds BO-specific surface map, condensed BO checklists, and verification commands that `CLAUDE.md` doesn't have.
 
 ## Critical patterns (always verify before shipping)
 

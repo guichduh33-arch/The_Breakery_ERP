@@ -190,7 +190,7 @@ Migrations S26 (bloc chronologique)
 Tests pgTAP
   supabase/tests/s26_db_hardening.test.sql       # 15 tests T1-T15
 
-CLAUDE.md §S26/S26b                              # session references + workplan
+CLAUDE.md                                        # patterns canoniques du projet
 ```
 
 ---
