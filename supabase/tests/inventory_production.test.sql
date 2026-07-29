@@ -6,14 +6,14 @@
 --   - production_records table + RLS
 --   - upsert_recipe_v2 / list_recipes_v1 / deactivate_recipe_v1
 --   - record_production_v5 (atomic, idempotent, lot-aware)
---   - revert_production_v1 (ADMIN+, 24h window, counter-JE)
+--   - revert_production_v2 (ADMIN+, 24h window, counter-JE)
 --   - get_production_suggestions_v1
 --   - view_product_recipes
 --
 -- Critical invariants :
 --   - stock_movements remains append-only (revert via INSERT counter-rows).
 --   - tr_20_je_emit skips reverse_of_production rows ; counter-JE inserted
---     by revert_production_v1.
+--     by revert_production_v2.
 --   - FIFO lot resolution UPFRONT in record_stock_movement_v1 (Phase 1.A).
 --
 -- Runner :
@@ -476,7 +476,7 @@ SELECT ok(current_setting('breakery.t_prod_12_pass') IN ('yes','skip'),
 DROP TABLE IF EXISTS pg_temp._bom_flatten;
 DROP TABLE IF EXISTS pg_temp._leaf_consumption;
 -- ---------------------------------------------------------------------------
--- T_PROD_13 — MANAGER → forbidden on revert_production_v1
+-- T_PROD_13 — MANAGER → forbidden on revert_production_v2
 -- ---------------------------------------------------------------------------
 DO $$
 DECLARE v_mgr UUID; v_caught TEXT; v_dummy UUID := gen_random_uuid();
@@ -488,7 +488,7 @@ BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_mgr::text, true);
   PERFORM set_config('role','authenticated',true);
   BEGIN
-    PERFORM revert_production_v1(v_dummy, 'test reason');
+    PERFORM revert_production_v2(v_dummy, 'test reason');
     v_caught := 'no_raise';
   EXCEPTION WHEN OTHERS THEN v_caught := SQLERRM;
   END;
@@ -497,7 +497,7 @@ BEGIN
     CASE WHEN v_caught='forbidden' THEN 'yes' ELSE 'no' END, true);
 END $$;
 SELECT ok(current_setting('breakery.t_prod_13_pass') IN ('yes','skip'),
-  'T_PROD_13: MANAGER → forbidden on revert_production_v1');
+  'T_PROD_13: MANAGER → forbidden on revert_production_v2');
 
 -- ---------------------------------------------------------------------------
 -- T_PROD_14 — ADMIN reverts → stock restored + balanced ledger
@@ -537,7 +537,7 @@ BEGIN
   v_pid := (v_result->>'production_id')::uuid;
 
   PERFORM set_config('request.jwt.claim.sub', v_adm::text, true);
-  v_revert := revert_production_v1(v_pid, 'pgTAP test reversal');
+  v_revert := revert_production_v2(v_pid, 'pgTAP test reversal');
   PERFORM set_config('role','postgres',true);
 
   SELECT current_stock INTO v_bag_after FROM products WHERE id=v_bag;

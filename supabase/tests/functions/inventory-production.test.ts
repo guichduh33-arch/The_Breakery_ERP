@@ -1,6 +1,6 @@
 // supabase/tests/functions/inventory-production.test.ts
 // Session 13 / Phase 2.A — Live integration tests for record_production_v5
-// and revert_production_v1.
+// and revert_production_v2.
 //
 // Coverage:
 //   - Happy path : 50-baguette cycle with 4 recipes (flour 250g, salt 5g,
@@ -56,7 +56,7 @@ async function ensureProduct(
   return data as ProdRow;
 }
 
-describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('record_production_v5 + revert_production_v1 — integration', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('record_production_v5 + revert_production_v2 — integration', () => {
   let managerToken: string;
   let cashierToken: string;
   let adminToken:   string;
@@ -240,7 +240,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('record_production_v5 + 
     expect(Number((bagAfterProd as { current_stock: number }).current_stock)).toBe(20);
 
     const adminSb = jwtClient(adminToken);
-    const { data: rev, error: revErr } = await adminSb.rpc('revert_production_v1', {
+    const { data: rev, error: revErr } = await adminSb.rpc('revert_production_v2', {
       p_production_id: productionId,
       p_reason:        'vitest revert',
     });
@@ -266,7 +266,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('record_production_v5 + 
       p_batch_number: null, p_quantity_waste: 0, p_notes: null, p_idempotency_key: null,
     });
     const productionId = (produced as { production_id: string }).production_id;
-    const { error } = await sb.rpc('revert_production_v1', {
+    const { error } = await sb.rpc('revert_production_v2', {
       p_production_id: productionId, p_reason: 'should not work',
     });
     expect(error?.message ?? '').toMatch(/forbidden/);
