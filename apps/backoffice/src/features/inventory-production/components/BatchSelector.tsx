@@ -59,7 +59,7 @@ async function searchProductsWithRecipeFn(
         kind:          r.kind as IngredientSearchResult['kind'],
         has_recipe:    Boolean(r.has_recipe),
       }))
-      // Only surface rows with an active recipe — record_batch_production_v6
+      // Only surface rows with an active recipe — record_batch_production_v7
       // RAISEs `recipe_not_found` otherwise.
       .filter((r) => r.has_recipe);
   } catch {

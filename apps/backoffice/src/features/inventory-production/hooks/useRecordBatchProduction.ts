@@ -1,6 +1,12 @@
 // apps/backoffice/src/features/inventory-production/hooks/useRecordBatchProduction.ts
 //
-// Session 15 / Phase 4.A — Wraps `record_batch_production_v6` atomic RPC.
+// Session 15 / Phase 4.A — Wraps `record_batch_production_v7` atomic RPC.
+//
+// ADR-008 D2 — la part ratée de chaque ligne est reclassée en charge par la RPC
+// unitaire ; le montant remonte dans `waste_expense` de chaque enregistrement.
+// ADR-008 D3 — `wasteReason` est obligatoire sur toute ligne ayant un raté. Le
+// refus se fait au bord du lot et nomme la ligne (`waste_reason_required`,
+// `invalid_waste_reason`).
 //
 // ADR-008 D6 — un item marqué « ne suit pas le stock » est refusé au bord, le
 // DETAIL nomme l'item fautif. ADR-008 D5 — un intermédiaire non déplié restant
@@ -24,7 +30,7 @@
 //               force_negative? }
 //   p_items = [{
 //     product_id, quantity_produced,
-//     quantity_waste?, expected_yield_qty?, actual_yield_qty?,
+//     quantity_waste?, waste_reason?, expected_yield_qty?, actual_yield_qty?,
 //     yield_variance_reason?, idempotency_key?
 //   }, ...]
 //
@@ -34,6 +40,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
+import type { WasteReason } from './useRecordProduction.js';
 
 export type RecordBatchProductionErrorCode =
   | 'forbidden'
@@ -43,6 +50,9 @@ export type RecordBatchProductionErrorCode =
   | 'item_missing_product_id'
   | 'quantity_must_be_positive'
   | 'waste_must_be_non_negative'
+  | 'waste_reason_required'
+  | 'invalid_waste_reason'
+  | 'unit_conversion_missing'
   | 'recipe_not_found'
   | 'recipe_depth_exceeded'
   | 'production_requires_deduct_stock'
@@ -67,6 +77,8 @@ export interface BatchItemInput {
   productId:           string;
   quantityProduced:    number;
   quantityWaste?:      number;
+  /** ADR-008 D3 — requis dès que quantityWaste > 0, refusé au bord du lot sinon. */
+  wasteReason?:        WasteReason;
   expectedYieldQty?:   number;
   actualYieldQty?:     number;
   yieldVarianceReason?: string;
@@ -90,6 +102,10 @@ export interface BatchProductionRecord {
   product_id:        string;
   quantity_produced: number;
   quantity_waste:    number;
+  /** ADR-008 D3 — cause du raté enregistrée pour cette ligne. */
+  waste_reason?:     WasteReason | null;
+  /** ADR-008 D2 — coût matière de la part ratée, passé en charge 5210. */
+  waste_expense?:    number;
   movements_count?:  number;
   lot_id?:           string | null;
 }
@@ -117,6 +133,9 @@ function classify(message: string): RecordBatchProductionErrorCode {
   if (message.includes('item_missing_product_id'))         return 'item_missing_product_id';
   if (message.includes('quantity_must_be_positive'))       return 'quantity_must_be_positive';
   if (message.includes('waste_must_be_non_negative'))      return 'waste_must_be_non_negative';
+  if (message.includes('waste_reason_required'))           return 'waste_reason_required';
+  if (message.includes('invalid_waste_reason'))            return 'invalid_waste_reason';
+  if (message.includes('unit_conversion_missing'))         return 'unit_conversion_missing';
   if (message.includes('recipe_depth_exceeded'))           return 'recipe_depth_exceeded';
   if (message.includes('production_requires_deduct_stock')) return 'production_requires_deduct_stock';
   if (message.includes('recipe_not_found'))                return 'recipe_not_found';
@@ -131,6 +150,7 @@ function buildItemPayload(item: BatchItemInput): Record<string, unknown> {
     quantity_produced: item.quantityProduced,
   };
   if (item.quantityWaste !== undefined)       out.quantity_waste       = item.quantityWaste;
+  if (item.wasteReason !== undefined)         out.waste_reason         = item.wasteReason;
   if (item.expectedYieldQty !== undefined)    out.expected_yield_qty   = item.expectedYieldQty;
   if (item.actualYieldQty !== undefined)      out.actual_yield_qty     = item.actualYieldQty;
   if (item.yieldVarianceReason !== undefined) out.yield_variance_reason = item.yieldVarianceReason;
@@ -155,7 +175,7 @@ export function useRecordBatchProduction() {
 
       const itemsPayload = args.items.map(buildItemPayload);
 
-      const { data, error } = await supabase.rpc('record_batch_production_v6', {
+      const { data, error } = await supabase.rpc('record_batch_production_v7', {
         p_batch: batchPayload as unknown as never,
         p_items: itemsPayload as unknown as never,
       });

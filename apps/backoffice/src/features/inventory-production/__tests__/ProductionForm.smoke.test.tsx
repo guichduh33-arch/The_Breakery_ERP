@@ -76,7 +76,9 @@ describe('ProductionForm smoke', () => {
     });
     expect(screen.getByText(/Expected yield/i)).toBeInTheDocument();
     expect(screen.getByText(/Actual yield/i)).toBeInTheDocument();
-    expect(screen.getByText(/Waste/i)).toBeInTheDocument();
+    expect(screen.getByText(/Waste \(optional\)/i)).toBeInTheDocument();
+    // ADR-008 D3 — the structured cause sits next to the waste quantity.
+    expect(screen.getByText(/Waste reason/i)).toBeInTheDocument();
     expect(screen.getByText(/Batch number/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Record production/i })).toBeInTheDocument();
   });

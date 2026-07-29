@@ -3,7 +3,7 @@
 // Left card of the redesigned Production page. Multi-row production entry for a
 // single station (section). Each row = a producible product (strictly filtered
 // to the station via product_sections) + quantity in a chosen unit + waste +
-// note. Submit is atomic via record_batch_production_v6 — any insufficient
+// note. Submit is atomic via record_batch_production_v7 — any insufficient
 // stock rolls the whole batch back.
 //
 // Logic kept from the legacy form: required section, idempotency key, atomic
@@ -12,6 +12,10 @@
 //
 // Per-row notes are persisted at batch level (the RPC has no per-item note
 // field): non-empty notes are combined into the batch notes as "Product: note".
+//
+// ADR-008 D3 — une ligne qui déclare un raté doit en donner la cause. Le serveur
+// refuse le lot entier sinon (`waste_reason_required`, DETAIL nommant la ligne) ;
+// la garde côté table évite l'aller-retour.
 //
 // ADR-008 D4 — un stock insuffisant BLOQUE le lot. L'échappatoire (forçage) ne
 // s'affiche qu'après un refus, et seulement pour un utilisateur porteur de
@@ -32,6 +36,8 @@ import {
   RecordBatchProductionError,
   type BatchItemInput,
 } from '../hooks/useRecordBatchProduction.js';
+import type { WasteReason } from '../hooks/useRecordProduction.js';
+import { WASTE_REASON_LABELS, WASTE_REASON_OPTIONS, isWasteReason } from '../wasteReasons.js';
 
 interface Props {
   sectionId: string;
@@ -46,6 +52,7 @@ interface EntryRow {
   unitCode: string;
   quantity: string;
   waste: string;
+  wasteReason: WasteReason | '';
   note: string;
 }
 
@@ -105,7 +112,7 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
   function addProduct(p: ProducibleProduct): void {
     setRows((prev) => [
       ...prev,
-      { rowId: crypto.randomUUID(), product: p, unitCode: p.unit, quantity: '1', waste: '0', note: '' },
+      { rowId: crypto.randomUUID(), product: p, unitCode: p.unit, quantity: '1', waste: '0', wasteReason: '', note: '' },
     ]);
     setQuery('');
     setSearchFocused(false);
@@ -139,13 +146,25 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
           productId: r.product.id,
           quantityProduced: qty * factor,
         };
-        if (Number.isFinite(wasteBase) && wasteBase > 0) out.quantityWaste = wasteBase;
+        if (Number.isFinite(wasteBase) && wasteBase > 0) {
+          out.quantityWaste = wasteBase;
+          if (r.wasteReason !== '') out.wasteReason = r.wasteReason;
+        }
         return out;
       })
       .filter((x): x is BatchItemInput => x !== null);
   }, [rows]);
 
-  const canSubmit = items.length > 0 && !recordMut.isPending;
+  /** ADR-008 D3 — au moins une ligne déclare un raté sans en donner la cause. */
+  const wasteReasonMissing = useMemo(
+    () => rows.some((r) => {
+      const w = Number.parseFloat(r.waste);
+      return Number.isFinite(w) && w > 0 && r.wasteReason === '';
+    }),
+    [rows],
+  );
+
+  const canSubmit = items.length > 0 && !wasteReasonMissing && !recordMut.isPending;
 
   function handleSubmit(): void {
     if (!canSubmit) return;
@@ -190,6 +209,10 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
             setFormError('Invalid production date/time.');
           } else if (err.code === 'recipe_not_found') {
             setFormError('A selected product has no active recipe.');
+          } else if (err.code === 'waste_reason_required' || err.code === 'invalid_waste_reason') {
+            setFormError('Every line with waste needs a valid waste reason.');
+          } else if (err.code === 'unit_conversion_missing') {
+            setFormError('A recipe line uses a unit that cannot be converted to the material stock unit. Fix the recipe first.');
           } else {
             setFormError(`Error: ${err.code}`);
           }
@@ -291,6 +314,7 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
               <th className="px-4 py-2"><SectionLabel as="span" size="xs">Product</SectionLabel></th>
               <th className="px-4 py-2"><SectionLabel as="span" size="xs">Quantity</SectionLabel></th>
               <th className="px-4 py-2"><SectionLabel as="span" size="xs">Waste</SectionLabel></th>
+              <th className="px-4 py-2"><SectionLabel as="span" size="xs">Waste reason</SectionLabel></th>
               <th className="px-4 py-2"><SectionLabel as="span" size="xs">Note</SectionLabel></th>
               <th className="px-4 py-2 w-10" />
             </tr>
@@ -298,7 +322,7 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-4 py-10 text-center text-sm italic text-text-muted">
+                <td colSpan={6} className="px-4 py-10 text-center text-sm italic text-text-muted">
                   Search and add a product to start a production batch.
                 </td>
               </tr>
@@ -347,6 +371,31 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
                       />
                       <span className="text-xs text-text-muted">{r.product.unit}</span>
                     </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    {(() => {
+                      const w = Number.parseFloat(r.waste);
+                      const needsReason = Number.isFinite(w) && w > 0;
+                      return (
+                        <select
+                          value={r.wasteReason}
+                          onChange={(e) => updateRow(r.rowId, {
+                            wasteReason: isWasteReason(e.target.value) ? e.target.value : '',
+                          })}
+                          disabled={!needsReason}
+                          aria-label={`Waste reason for ${r.product.name}`}
+                          data-testid={`waste-reason-${r.product.sku}`}
+                          className={`h-9 rounded-md border bg-bg-input px-2 text-sm text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold disabled:opacity-50 ${
+                            needsReason && r.wasteReason === '' ? 'border-red' : 'border-border-subtle'
+                          }`}
+                        >
+                          <option value="">{needsReason ? '— required —' : '—'}</option>
+                          {WASTE_REASON_OPTIONS.map((reason) => (
+                            <option key={reason} value={reason}>{WASTE_REASON_LABELS[reason]}</option>
+                          ))}
+                        </select>
+                      );
+                    })()}
                   </td>
                   <td className="px-4 py-3">
                     <input

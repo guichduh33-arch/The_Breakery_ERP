@@ -9,7 +9,7 @@
 //
 // Products are strictly filtered per station via product_sections (assign them
 // in the product editor → Stations tab). Submitting calls
-// record_batch_production_v6; the entry's date/time may be backdated.
+// record_batch_production_v7; the entry's date/time may be backdated.
 
 import { useEffect, useMemo, useState, type JSX } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';

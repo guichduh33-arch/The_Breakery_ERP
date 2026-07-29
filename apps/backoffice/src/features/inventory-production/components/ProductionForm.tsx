@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/inventory-production/components/ProductionForm.tsx
 //
-// Records a production batch via record_production_v4. Live feasibility
+// Records a production batch via record_production_v5. Live feasibility
 // preview powered by @breakery/domain's checkFeasibility() against the
 // currently-fetched recipe + per-material current_stock from useFinishedProducts.
 //
@@ -8,6 +8,10 @@
 // yield. On submit, if |actual-expected|/expected*100 > business_config
 // threshold AND no reason has been entered, open the YieldVarianceModal to
 // collect a justification before re-submitting with `p_yield_variance_reason`.
+//
+// ADR-008 D3: a non-zero waste requires a structured cause (`waste_reason`).
+// The submit button stays disabled until one is picked — the server refuses it
+// anyway (`waste_reason_required`), the gate here only avoids a round-trip.
 
 import { useEffect, useMemo, useState, type FormEvent, type JSX } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -17,7 +21,8 @@ import { supabase } from '@/lib/supabase.js';
 import { useFinishedProducts } from '../hooks/useFinishedProducts.js';
 import { useRecipes } from '../hooks/useRecipes.js';
 import { useSections } from '@/features/inventory-transfers/hooks/useSections.js';
-import { useRecordProduction, RecordProductionError } from '../hooks/useRecordProduction.js';
+import { useRecordProduction, RecordProductionError, type WasteReason } from '../hooks/useRecordProduction.js';
+import { WASTE_REASON_LABELS, WASTE_REASON_OPTIONS, isWasteReason } from '../wasteReasons.js';
 import { FeasibilityBadge } from './FeasibilityBadge.js';
 import { YieldVarianceModal } from './YieldVarianceModal.js';
 
@@ -61,6 +66,7 @@ export default function ProductionForm(): JSX.Element {
   const [expectedQty, setExpectedQty] = useState<string>('');
   const [actualQty, setActualQty] = useState<string>('');
   const [waste, setWaste] = useState<string>('0');
+  const [wasteReason, setWasteReason] = useState<WasteReason | ''>('');
   const [sectionId, setSectionId] = useState<string>('');
   const [batchNumber, setBatchNumber] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
@@ -113,11 +119,15 @@ export default function ProductionForm(): JSX.Element {
   const hasValidExpected = Number.isFinite(numericExpected) && numericExpected > 0;
   const hasValidActual   = Number.isFinite(numericActual)   && numericActual   >= 0;
 
+  // ADR-008 D3 — un raté sans cause n'est pas analysable.
+  const wasteNeedsReason = numericWaste > 0 && wasteReason === '';
+
   const canSubmit =
     productId !== '' &&
     hasValidExpected &&
     hasValidActual &&
     numericWaste >= 0 &&
+    !wasteNeedsReason &&
     sectionId !== '' &&
     !recordMut.isPending;
 
@@ -130,6 +140,7 @@ export default function ProductionForm(): JSX.Element {
         batchNumber?: string; notes?: string;
         expectedYieldQty?: number; actualYieldQty?: number;
         yieldVarianceReason?: string;
+        wasteReason?: WasteReason;
       } = {
         productId,
         // Back-compat: keep quantity_produced = actual yield (server defaults
@@ -141,6 +152,7 @@ export default function ProductionForm(): JSX.Element {
         expectedYieldQty: numericExpected,
         actualYieldQty:   numericActual,
       };
+      if (wasteReason !== '') args.wasteReason = wasteReason;
       const bt = batchNumber.trim();
       if (bt !== '') args.batchNumber = bt;
       const nt = notes.trim();
@@ -149,8 +161,12 @@ export default function ProductionForm(): JSX.Element {
         args.yieldVarianceReason = reason.trim();
       }
       const result = await recordMut.mutateAsync(args);
-      setSuccessMsg(`Recorded ${result.production_number} (${result.movements_count} movements, ${result.je_count} JEs)`);
-      setExpectedQty(''); setActualQty(''); setWaste('0'); setBatchNumber(''); setNotes('');
+      const wasteExpense = result.waste_expense ?? 0;
+      setSuccessMsg(
+        `Recorded ${result.production_number} (${result.movements_count} movements, ${result.je_count} JEs)`
+        + (wasteExpense > 0 ? ` — waste expensed: ${wasteExpense.toLocaleString()}` : ''),
+      );
+      setExpectedQty(''); setActualQty(''); setWaste('0'); setWasteReason(''); setBatchNumber(''); setNotes('');
       setPendingReason(null);
       setIdempotencyKey(crypto.randomUUID());
     } catch (err) {
@@ -165,6 +181,10 @@ export default function ProductionForm(): JSX.Element {
           setFormError('Yield variance reason must be at least 5 characters.');
         } else if (err.code === 'section_required') {
           setFormError('Section is required.');
+        } else if (err.code === 'waste_reason_required') {
+          setFormError('A waste reason is required when waste is greater than zero.');
+        } else if (err.code === 'unit_conversion_missing') {
+          setFormError('A recipe line uses a unit that cannot be converted to the material stock unit. Fix the recipe first.');
         } else if (err.code === 'unknown') {
           setFormError(`Server error: ${err.message}`);
         } else {
@@ -281,6 +301,28 @@ export default function ProductionForm(): JSX.Element {
             <label className="text-xs uppercase tracking-widest text-text-secondary">Waste (optional)</label>
             <Input type="number" inputMode="decimal" min={0} step="0.001"
               value={waste} onChange={(e) => setWaste(e.target.value)} disabled={recordMut.isPending} />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs uppercase tracking-widest text-text-secondary">
+              Waste reason{numericWaste > 0 ? '' : ' (optional)'}
+            </label>
+            <Select
+              className="w-full"
+              data-testid="waste-reason-select"
+              value={wasteReason}
+              onChange={(e) => { setWasteReason(isWasteReason(e.target.value) ? e.target.value : ''); }}
+              disabled={recordMut.isPending || numericWaste <= 0}
+              required={numericWaste > 0}
+            >
+              <option value="">— select reason —</option>
+              {WASTE_REASON_OPTIONS.map((r) => (
+                <option key={r} value={r}>{WASTE_REASON_LABELS[r]}</option>
+              ))}
+            </Select>
+            {wasteNeedsReason && (
+              <p className="text-[11px] text-danger">Required when waste is greater than zero.</p>
+            )}
           </div>
 
           <div className="space-y-1">
