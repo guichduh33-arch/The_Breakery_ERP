@@ -131,7 +131,9 @@ describe('ADR-008 D4 — force-negative escape hatch (ProductionEntryCard)', () 
       expect(mockRpc.mock.calls.length).toBeGreaterThan(1);
     });
     const lastCall = mockRpc.mock.calls[mockRpc.mock.calls.length - 1] as [string, { p_batch: Record<string, unknown> }];
-    expect(lastCall[0]).toBe('record_batch_production_v4');
+    // ADR-016 (20260729000001) fused the old _v3 impl + _v4 date wrapper
+    // into a single record_batch_production_v5 — the hook now calls _v5.
+    expect(lastCall[0]).toBe('record_batch_production_v5');
     expect(lastCall[1].p_batch.force_negative).toBe(true);
   });
 });

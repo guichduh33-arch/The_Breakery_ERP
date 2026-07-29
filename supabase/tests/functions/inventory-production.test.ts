@@ -1,5 +1,5 @@
 // supabase/tests/functions/inventory-production.test.ts
-// Session 13 / Phase 2.A — Live integration tests for record_production_v2
+// Session 13 / Phase 2.A — Live integration tests for record_production_v3
 // and revert_production_v1.
 //
 // Coverage:
@@ -12,6 +12,12 @@
 //   - Admin revert restores stock + posts counter-JEs.
 //
 // Mirrors the receive-stock / waste-stock test patterns.
+//
+// ADR-016 (20260729000001) bumped record_production_v2 -> _v3 and
+// upsert_recipe_v1 -> _v2 (renamed mechanically below). The baguette recipe
+// is flat (flour/salt/yeast/water are direct materials, no intermediate
+// with its own recipe), so the "stop at the first stocked intermediate"
+// cascade rule does not change any expected value here.
 
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
@@ -49,7 +55,7 @@ async function ensureProduct(
   return data as ProdRow;
 }
 
-describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('record_production_v2 + revert_production_v1 — integration', () => {
+describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('record_production_v3 + revert_production_v1 — integration', () => {
   let managerToken: string;
   let cashierToken: string;
   let adminToken:   string;
@@ -78,19 +84,19 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('record_production_v2 + 
 
     // Seed 4 recipes as manager.
     const mgr = jwtClient(managerToken);
-    await mgr.rpc('upsert_recipe_v1', {
+    await mgr.rpc('upsert_recipe_v2', {
       p_product_id: baguette.id, p_material_id: flour.id,
       p_quantity: 250, p_unit: 'g', p_notes: null,
     });
-    await mgr.rpc('upsert_recipe_v1', {
+    await mgr.rpc('upsert_recipe_v2', {
       p_product_id: baguette.id, p_material_id: salt.id,
       p_quantity: 5, p_unit: 'g', p_notes: null,
     });
-    await mgr.rpc('upsert_recipe_v1', {
+    await mgr.rpc('upsert_recipe_v2', {
       p_product_id: baguette.id, p_material_id: yeast.id,
       p_quantity: 5, p_unit: 'g', p_notes: null,
     });
-    await mgr.rpc('upsert_recipe_v1', {
+    await mgr.rpc('upsert_recipe_v2', {
       p_product_id: baguette.id, p_material_id: water.id,
       p_quantity: 150, p_unit: 'mL', p_notes: null,
     });
@@ -107,7 +113,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('record_production_v2 + 
 
   it('manager happy path: 50 baguettes → 5 movements + 5 balanced JEs', async () => {
     const sb = jwtClient(managerToken);
-    const { data, error } = await sb.rpc('record_production_v2', {
+    const { data, error } = await sb.rpc('record_production_v3', {
       p_product_id:        baguette.id,
       p_quantity_produced: 50,
       p_section_id:        sectionId,
@@ -158,14 +164,14 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('record_production_v2 + 
     const sb = jwtClient(managerToken);
     const key = '00000000-0000-0000-0000-cafebabe0001';
 
-    const r1 = await sb.rpc('record_production_v2', {
+    const r1 = await sb.rpc('record_production_v3', {
       p_product_id: baguette.id, p_quantity_produced: 10, p_section_id: sectionId,
       p_batch_number: 'VT-IDEM', p_quantity_waste: 0, p_notes: null, p_idempotency_key: key,
     });
     expect(r1.error).toBeNull();
     const id1 = (r1.data as { production_id: string }).production_id;
 
-    const r2 = await sb.rpc('record_production_v2', {
+    const r2 = await sb.rpc('record_production_v3', {
       p_product_id: baguette.id, p_quantity_produced: 10, p_section_id: sectionId,
       p_batch_number: 'VT-IDEM', p_quantity_waste: 0, p_notes: null, p_idempotency_key: key,
     });
@@ -196,7 +202,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('record_production_v2 + 
         .update({ allow_negative_stock: false }).eq('id', cfg!.id);
     }
     try {
-      const { error } = await sb.rpc('record_production_v2', {
+      const { error } = await sb.rpc('record_production_v3', {
         p_product_id: baguette.id, p_quantity_produced: 50, p_section_id: sectionId,
         p_batch_number: null, p_quantity_waste: 0, p_notes: null, p_idempotency_key: null,
       });
@@ -209,9 +215,9 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('record_production_v2 + 
     }
   });
 
-  it('cashier role: record_production_v2 raises forbidden', async () => {
+  it('cashier role: record_production_v3 raises forbidden', async () => {
     const sb = jwtClient(cashierToken);
-    const { error } = await sb.rpc('record_production_v2', {
+    const { error } = await sb.rpc('record_production_v3', {
       p_product_id: baguette.id, p_quantity_produced: 10, p_section_id: sectionId,
       p_batch_number: null, p_quantity_waste: 0, p_notes: null, p_idempotency_key: null,
     });
@@ -220,7 +226,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('record_production_v2 + 
 
   it('admin reverts production within 24h → stock restored', async () => {
     const sb = jwtClient(managerToken);
-    const { data: produced, error: prodErr } = await sb.rpc('record_production_v2', {
+    const { data: produced, error: prodErr } = await sb.rpc('record_production_v3', {
       p_product_id: baguette.id, p_quantity_produced: 20, p_section_id: sectionId,
       p_batch_number: 'VT-REV', p_quantity_waste: 0, p_notes: null, p_idempotency_key: null,
     });
@@ -254,7 +260,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('record_production_v2 + 
 
   it('manager cannot revert production → forbidden', async () => {
     const sb = jwtClient(managerToken);
-    const { data: produced } = await sb.rpc('record_production_v2', {
+    const { data: produced } = await sb.rpc('record_production_v3', {
       p_product_id: baguette.id, p_quantity_produced: 5, p_section_id: sectionId,
       p_batch_number: null, p_quantity_waste: 0, p_notes: null, p_idempotency_key: null,
     });

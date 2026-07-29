@@ -3,7 +3,7 @@
 // Session 15 / Phase 4.A — Batch production at /backoffice/inventory/production/batch.
 //
 // Plan multiple recipes in a single atomic transaction via
-// record_batch_production_v4. Any failure (insufficient stock on any item,
+// record_batch_production_v5. Any failure (insufficient stock on any item,
 // invalid input, permission denied) rolls back the whole batch — no partial
 // production_records. Permission-gated by `inventory.production.create` at
 // the route level.

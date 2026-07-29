@@ -1,8 +1,18 @@
--- supabase/tests/recipe_bom_full_v1.test.sql
--- Session 17 — Phase 1.D — pgTAP for recipe_bom_full_v1.
+-- supabase/tests/recipe_bom_full_v2.test.sql
+-- Session 17 — Phase 1.D — pgTAP for recipe_bom_full_v2.
 --
 -- Runner (Docker retired) — apply the whole file via MCP execute_sql in one
 -- shot ; the BEGIN..ROLLBACK envelope guarantees no leak.
+--
+-- ADR-016 (20260729000002) bumped recipe_bom_full_v1 -> _v2 : the walk now
+-- stops at the first intermediate with `track_inventory = true` and returns
+-- it as a terminal line valued at its own cost_price, instead of always
+-- diving to raw-material leaves. `products.track_inventory` DEFAULTS to
+-- true, so sub_1/sub_2/cycle_a/cycle_b below are created with the new
+-- explicit `p_track_inventory := FALSE` argument to preserve the "dive to
+-- leaves" contract this file exercises (T1-T10). The "stop at a stocked
+-- intermediate, valued at its own cost" branch has dedicated coverage in
+-- supabase/tests/adr016_descente_semi_finis.test.sql (check #5).
 --
 -- Coverage matrix :
 --   T1  RPC returns rows for a recipe-product.
@@ -61,17 +71,20 @@ BEGIN
 END $bootstrap$;
 
 -- Helper: create a product in the rolled-back transaction.
+-- ADR-016 : p_track_inventory defaults to TRUE (matches products.track_inventory's
+-- column default) ; pass FALSE explicitly for an intermediate that must stay
+-- diveable to its own leaves under the "stop at stocked" cascade rule.
 CREATE OR REPLACE FUNCTION pg_temp.mkprod(
   p_sku TEXT, p_name TEXT, p_unit TEXT,
-  p_cost NUMERIC, p_stock NUMERIC DEFAULT 500
+  p_cost NUMERIC, p_stock NUMERIC DEFAULT 500, p_track_inventory BOOLEAN DEFAULT TRUE
 ) RETURNS UUID
 LANGUAGE plpgsql AS $$
 DECLARE v_id UUID; v_cat UUID;
 BEGIN
   v_cat := current_setting('breakery.category_id')::uuid;
   INSERT INTO products (sku, name, category_id, retail_price, current_stock,
-                        unit, cost_price, product_type, is_active)
-  VALUES (p_sku, p_name, v_cat, 1000, p_stock, p_unit, p_cost, 'finished', TRUE)
+                        unit, cost_price, product_type, is_active, track_inventory)
+  VALUES (p_sku, p_name, v_cat, 1000, p_stock, p_unit, p_cost, 'finished', TRUE, p_track_inventory)
   RETURNING id INTO v_id;
   RETURN v_id;
 END $$;
@@ -87,8 +100,10 @@ DECLARE
 BEGIN
   v_leaf_a := pg_temp.mkprod('S17-BOM-LA',  'BOM Leaf A',  'pcs', 100, 500);
   v_leaf_b := pg_temp.mkprod('S17-BOM-LB',  'BOM Leaf B',  'pcs', 50,  200);
-  v_sub1   := pg_temp.mkprod('S17-BOM-S1',  'BOM Sub 1',   'pcs', 0,   0);
-  v_sub2   := pg_temp.mkprod('S17-BOM-S2',  'BOM Sub 2',   'pcs', 0,   0);
+  -- ADR-016 : sub_1/sub_2 are non-stocked intermediates (p_track_inventory :=
+  -- FALSE) so the walk keeps diving to leaf_a/leaf_b (see file header).
+  v_sub1   := pg_temp.mkprod('S17-BOM-S1',  'BOM Sub 1',   'pcs', 0,   0, FALSE);
+  v_sub2   := pg_temp.mkprod('S17-BOM-S2',  'BOM Sub 2',   'pcs', 0,   0, FALSE);
   v_top    := pg_temp.mkprod('S17-BOM-TOP', 'BOM Top',     'pcs', 0,   0);
 
   -- sub_1 := 0.5 leaf_a + 0.3 leaf_b
@@ -120,10 +135,10 @@ END $fixture$;
 -- T1 — RPC returns rows for a recipe-product.
 -- ===========================================================================
 SELECT ok(
-  (SELECT COUNT(*) > 0 FROM recipe_bom_full_v1(
+  (SELECT COUNT(*) > 0 FROM recipe_bom_full_v2(
     current_setting('breakery.top')::uuid, 5
   )),
-  'T1: recipe_bom_full_v1 returns at least one row for top product'
+  'T1: recipe_bom_full_v2 returns at least one row for top product'
 );
 
 -- ===========================================================================
@@ -134,11 +149,11 @@ DECLARE
   v_sub1_found BOOLEAN; v_sub2_found BOOLEAN;
 BEGIN
   SELECT EXISTS (
-    SELECT 1 FROM recipe_bom_full_v1(current_setting('breakery.top')::uuid, 5)
+    SELECT 1 FROM recipe_bom_full_v2(current_setting('breakery.top')::uuid, 5)
      WHERE material_id = current_setting('breakery.sub1')::uuid
   ) INTO v_sub1_found;
   SELECT EXISTS (
-    SELECT 1 FROM recipe_bom_full_v1(current_setting('breakery.top')::uuid, 5)
+    SELECT 1 FROM recipe_bom_full_v2(current_setting('breakery.top')::uuid, 5)
      WHERE material_id = current_setting('breakery.sub2')::uuid
   ) INTO v_sub2_found;
   PERFORM set_config('breakery.t2_pass',
@@ -148,7 +163,7 @@ END $t2$;
 
 SELECT ok(
   current_setting('breakery.t2_pass')::boolean,
-  'T2: leaf-only contract — sub_1 and sub_2 absent from recipe_bom_full_v1 output'
+  'T2: leaf-only contract — sub_1 and sub_2 absent from recipe_bom_full_v2 output'
 );
 
 -- ===========================================================================
@@ -156,7 +171,7 @@ SELECT ok(
 --      only ONE row for leaf_a.
 -- ===========================================================================
 SELECT is(
-  (SELECT COUNT(*)::INT FROM recipe_bom_full_v1(
+  (SELECT COUNT(*)::INT FROM recipe_bom_full_v2(
     current_setting('breakery.top')::uuid, 5
   ) WHERE material_id = current_setting('breakery.leaf_a')::uuid),
   1,
@@ -173,11 +188,11 @@ DECLARE
   v_qty_a NUMERIC; v_qty_b NUMERIC;
 BEGIN
   SELECT qty_per_unit INTO v_qty_a
-    FROM recipe_bom_full_v1(current_setting('breakery.top')::uuid, 5)
+    FROM recipe_bom_full_v2(current_setting('breakery.top')::uuid, 5)
    WHERE material_id = current_setting('breakery.leaf_a')::uuid;
 
   SELECT qty_per_unit INTO v_qty_b
-    FROM recipe_bom_full_v1(current_setting('breakery.top')::uuid, 5)
+    FROM recipe_bom_full_v2(current_setting('breakery.top')::uuid, 5)
    WHERE material_id = current_setting('breakery.leaf_b')::uuid;
 
   PERFORM set_config('breakery.t4_pass',
@@ -208,13 +223,13 @@ DECLARE
   v_sub1_found  BOOLEAN;
 BEGIN
   SELECT COUNT(*) INTO v_row_count
-    FROM recipe_bom_full_v1(current_setting('breakery.top')::uuid, 1);
+    FROM recipe_bom_full_v2(current_setting('breakery.top')::uuid, 1);
   SELECT EXISTS (
-    SELECT 1 FROM recipe_bom_full_v1(current_setting('breakery.top')::uuid, 1)
+    SELECT 1 FROM recipe_bom_full_v2(current_setting('breakery.top')::uuid, 1)
      WHERE material_id = current_setting('breakery.leaf_a')::uuid
   ) INTO v_leaf_a_found;
   SELECT EXISTS (
-    SELECT 1 FROM recipe_bom_full_v1(current_setting('breakery.top')::uuid, 1)
+    SELECT 1 FROM recipe_bom_full_v2(current_setting('breakery.top')::uuid, 1)
      WHERE material_id = current_setting('breakery.sub1')::uuid
   ) INTO v_sub1_found;
   PERFORM set_config('breakery.t5_pass',
@@ -238,8 +253,12 @@ DECLARE
   v_ca UUID; v_cb UUID;
   v_row_count INT;
 BEGIN
-  v_ca := pg_temp.mkprod('S17-BOM-CA', 'BOM Cycle A', 'pcs', 100, 0);
-  v_cb := pg_temp.mkprod('S17-BOM-CB', 'BOM Cycle B', 'pcs', 100, 0);
+  -- ADR-016 : both non-stocked (p_track_inventory := FALSE) so the walk
+  -- actually attempts to recurse past them — otherwise `is_stocked = TRUE`
+  -- (the column default) would stop the walk at depth 1 and the
+  -- NOT(material_id = ANY(path)) guard below would never be exercised.
+  v_ca := pg_temp.mkprod('S17-BOM-CA', 'BOM Cycle A', 'pcs', 100, 0, FALSE);
+  v_cb := pg_temp.mkprod('S17-BOM-CB', 'BOM Cycle B', 'pcs', 100, 0, FALSE);
 
   -- Bypass the anti-cycle trigger temporarily to seed the cyclic edge.
   SET LOCAL session_replication_role = 'replica';
@@ -254,7 +273,7 @@ BEGIN
 
   -- The cycle guard (NOT material_id = ANY(path)) must terminate the walk.
   SELECT COUNT(*) INTO v_row_count
-    FROM recipe_bom_full_v1(v_ca, 5);
+    FROM recipe_bom_full_v2(v_ca, 5);
 
   -- With a perfect cycle and no true leaves, output should be 0 rows (no leaves found).
   PERFORM set_config('breakery.t6_pass', 'true', false);
@@ -274,7 +293,7 @@ SELECT ok(
 -- T7 — invalid_max_depth raises P0001.
 -- ===========================================================================
 SELECT throws_ok(
-  format($q$SELECT * FROM recipe_bom_full_v1(%L::uuid, 0)$q$,
+  format($q$SELECT * FROM recipe_bom_full_v2(%L::uuid, 0)$q$,
          current_setting('breakery.top')),
   'P0001',
   'invalid_max_depth',
@@ -285,7 +304,7 @@ SELECT throws_ok(
 -- T8 — NULL product_id raises P0001.
 -- ===========================================================================
 SELECT throws_ok(
-  $$SELECT * FROM recipe_bom_full_v1(NULL::uuid, 5)$$,
+  $$SELECT * FROM recipe_bom_full_v2(NULL::uuid, 5)$$,
   'P0001',
   'product_id_required',
   'T8: NULL product_id raises P0001 product_id_required'
@@ -301,7 +320,7 @@ DECLARE
 BEGIN
   SELECT ARRAY_AGG(material_name ORDER BY ordinality)
     INTO v_names
-    FROM recipe_bom_full_v1(current_setting('breakery.top')::uuid, 5)
+    FROM recipe_bom_full_v2(current_setting('breakery.top')::uuid, 5)
          WITH ORDINALITY;
 
   v_sorted := ARRAY(SELECT unnest(v_names) ORDER BY 1);
@@ -323,7 +342,7 @@ DO $t10_setup$ BEGIN
 END $t10_setup$;
 
 SELECT throws_ok(
-  format($q$SELECT * FROM recipe_bom_full_v1(%L::uuid, 5)$q$,
+  format($q$SELECT * FROM recipe_bom_full_v2(%L::uuid, 5)$q$,
          current_setting('breakery.top')),
   'P0003',
   'forbidden',

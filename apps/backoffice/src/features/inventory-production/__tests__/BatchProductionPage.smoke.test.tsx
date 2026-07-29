@@ -118,7 +118,9 @@ describe('BatchProductionPage smoke', () => {
   it('renders shortage list when the server returns insufficient_stock', () => {
     // Stub: the RPC rejects with insufficient_stock + DETAIL list.
     mockRpc.mockImplementation((fn: string) => {
-      if (fn === 'record_batch_production_v4') {
+      // ADR-016 (20260729000001) fused the old _v3 impl + _v4 date wrapper
+      // into a single record_batch_production_v5 — the hook now calls _v5.
+      if (fn === 'record_batch_production_v5') {
         return {
           data: null,
           error: {

@@ -3,13 +3,18 @@
 // `tr_recipes_snapshot_version` trigger and the `recipe_versions` table.
 //
 // Coverage :
-//   - upsert_recipe_v1 (insert) → 1 recipe_versions row (version_number=1).
-//   - upsert_recipe_v1 (update) → version_number=2 (per-row firing).
+//   - upsert_recipe_v2 (insert) → 1 recipe_versions row (version_number=1).
+//   - upsert_recipe_v2 (update) → version_number=2 (per-row firing).
 //   - deactivate_recipe_v1 (soft-delete via UPDATE) → version_number=3.
 //   - 5 sequential upserts on distinct materials → version_number=5
 //     (per-row firing semantic confirmed — caveat from recipe-db-arch).
 //
 // Skips gracefully when env vars missing. Cleanup in afterAll.
+//
+// ADR-016 (20260729000002) bumped upsert_recipe_v1 -> _v2 (renamed
+// mechanically below). This suite tests the recipe_versions snapshot
+// trigger, not the production/BOM cascade, so the "stop at stocked
+// intermediate" rule does not apply here.
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
@@ -82,7 +87,7 @@ describeLive('recipe_versions snapshot trigger — live integration', () => {
     allSkus.push(p.sku, m.sku);
 
     const mgr = jwtClient(managerToken);
-    const r = await mgr.rpc('upsert_recipe_v1', {
+    const r = await mgr.rpc('upsert_recipe_v2', {
       p_product_id: p.id, p_material_id: m.id, p_quantity: 1, p_unit: 'pcs', p_notes: null,
     });
     expect(r.error).toBeNull();
@@ -105,12 +110,12 @@ describeLive('recipe_versions snapshot trigger — live integration', () => {
     allSkus.push(p.sku, m.sku);
 
     const mgr = jwtClient(managerToken);
-    expect((await mgr.rpc('upsert_recipe_v1', {
+    expect((await mgr.rpc('upsert_recipe_v2', {
       p_product_id: p.id, p_material_id: m.id, p_quantity: 1, p_unit: 'pcs', p_notes: null,
     })).error).toBeNull();
 
     // Upsert again with new qty — UPDATE path inside the RPC.
-    expect((await mgr.rpc('upsert_recipe_v1', {
+    expect((await mgr.rpc('upsert_recipe_v2', {
       p_product_id: p.id, p_material_id: m.id, p_quantity: 2, p_unit: 'pcs', p_notes: null,
     })).error).toBeNull();
 
@@ -123,13 +128,13 @@ describeLive('recipe_versions snapshot trigger — live integration', () => {
     allSkus.push(p.sku, m.sku);
 
     const mgr = jwtClient(managerToken);
-    const r1 = await mgr.rpc('upsert_recipe_v1', {
+    const r1 = await mgr.rpc('upsert_recipe_v2', {
       p_product_id: p.id, p_material_id: m.id, p_quantity: 1, p_unit: 'pcs', p_notes: null,
     });
     expect(r1.error).toBeNull();
     const recipeId = r1.data as string;
 
-    expect((await mgr.rpc('upsert_recipe_v1', {
+    expect((await mgr.rpc('upsert_recipe_v2', {
       p_product_id: p.id, p_material_id: m.id, p_quantity: 3, p_unit: 'pcs', p_notes: null,
     })).error).toBeNull();
 
@@ -149,7 +154,7 @@ describeLive('recipe_versions snapshot trigger — live integration', () => {
 
     const mgr = jwtClient(managerToken);
     for (const m of [m1, m2, m3, m4, m5]) {
-      const r = await mgr.rpc('upsert_recipe_v1', {
+      const r = await mgr.rpc('upsert_recipe_v2', {
         p_product_id: p.id, p_material_id: m.id, p_quantity: 1, p_unit: 'pcs', p_notes: null,
       });
       expect(r.error).toBeNull();

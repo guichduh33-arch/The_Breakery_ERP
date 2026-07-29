@@ -1,5 +1,5 @@
 // supabase/tests/functions/recipe-bom-full.test.ts
-// Session 17 / Phase 1.D — Live integration smoke test for recipe_bom_full_v1.
+// Session 17 / Phase 1.D — Live integration smoke test for recipe_bom_full_v2.
 //
 // Coverage:
 //   - Happy path: flat recipe (Brioche BRD-004, 7 leaf materials) returns
@@ -10,6 +10,13 @@
 // NOTE: The seed has no multi-level recipes (all are flat ingredient lists).
 // The multi-level test builds its own fixture via admin client and cleans up
 // in afterAll. This mirrors the recipe-calculate-cost.test.ts pattern.
+//
+// ADR-016 (20260729000002) bumped recipe_bom_full_v1 -> _v2 : the walk now
+// stops at the first intermediate with `track_inventory = true` (the
+// products.track_inventory column default) and returns it as a terminal
+// line valued at its own cost_price. The "2-level cascade" test below
+// creates `sub1` with `trackInventory: false` so it keeps exercising the
+// "dive to leaves" branch this file is about.
 //
 // Skips gracefully when env vars are missing (CI dry-run without credentials).
 
@@ -46,6 +53,10 @@ async function mkProduct(
   name: string,
   unit: string,
   cost: number,
+  // ADR-016 : defaults to true (matches products.track_inventory's column
+  // default). Pass false for an intermediate that must remain diveable to
+  // its own leaves under the "stop at stocked" walk rule.
+  trackInventory = true,
 ): Promise<ProdRow> {
   await admin.from('products').delete().eq('sku', sku);
   const { data: cat } = await admin.from('categories').select('id').limit(1).single();
@@ -60,6 +71,7 @@ async function mkProduct(
     cost_price: cost,
     product_type: 'finished',
     is_active: true,
+    track_inventory: trackInventory,
   } as any).select('id, sku').single();
   if (error || !data) throw new Error(`mkProduct(${sku}): ${error?.message}`);
   return data as ProdRow;
@@ -78,7 +90,7 @@ async function cleanupAll(admin: SupabaseClient) {
   await admin.from('products').delete().in('id', ids);
 }
 
-describeLive('recipe_bom_full_v1 — live integration', () => {
+describeLive('recipe_bom_full_v2 — live integration', () => {
   let managerToken: string;
   let admin: SupabaseClient;
 
@@ -93,7 +105,7 @@ describeLive('recipe_bom_full_v1 — live integration', () => {
 
   it('flat recipe (Brioche): returns leaf materials with correct shape', async () => {
     const mgr = jwtClient(managerToken);
-    const { data, error } = await mgr.rpc('recipe_bom_full_v1', {
+    const { data, error } = await mgr.rpc('recipe_bom_full_v2', {
       p_product_id: BRIOCHE_ID,
       p_max_depth: 5,
     });
@@ -120,7 +132,7 @@ describeLive('recipe_bom_full_v1 — live integration', () => {
 
   it('output is sorted alphabetically by material_name', async () => {
     const mgr = jwtClient(managerToken);
-    const { data, error } = await mgr.rpc('recipe_bom_full_v1', {
+    const { data, error } = await mgr.rpc('recipe_bom_full_v2', {
       p_product_id: BRIOCHE_ID,
       p_max_depth: 5,
     });
@@ -135,32 +147,33 @@ describeLive('recipe_bom_full_v1 — live integration', () => {
   it('2-level cascade: leaf_a appears once (multi-path aggregation)', async () => {
     const leaf_a = await mkProduct(admin, `${SKU_PREFIX}-TS-LA`, 'BOM TS Leaf A', 'pcs', 100);
     const leaf_b = await mkProduct(admin, `${SKU_PREFIX}-TS-LB`, 'BOM TS Leaf B', 'pcs', 50);
-    const sub1   = await mkProduct(admin, `${SKU_PREFIX}-TS-S1`, 'BOM TS Sub 1',  'pcs', 0);
+    // ADR-016 : non-stocked so the walk keeps diving to leaf_a/leaf_b.
+    const sub1   = await mkProduct(admin, `${SKU_PREFIX}-TS-S1`, 'BOM TS Sub 1',  'pcs', 0, false);
     const top    = await mkProduct(admin, `${SKU_PREFIX}-TS-TOP`,'BOM TS Top',    'pcs', 0);
     allSkus.push(leaf_a.sku, leaf_b.sku, sub1.sku, top.sku);
 
     const mgr = jwtClient(managerToken);
 
     // sub1 := 0.5 leaf_a + 0.3 leaf_b
-    await mgr.rpc('upsert_recipe_v1', {
+    await mgr.rpc('upsert_recipe_v2', {
       p_product_id: sub1.id, p_material_id: leaf_a.id, p_quantity: 0.5,
       p_unit: 'pcs', p_notes: null,
     });
-    await mgr.rpc('upsert_recipe_v1', {
+    await mgr.rpc('upsert_recipe_v2', {
       p_product_id: sub1.id, p_material_id: leaf_b.id, p_quantity: 0.3,
       p_unit: 'pcs', p_notes: null,
     });
     // top := 0.1 sub1 + 0.2 leaf_a (leaf_a via 2 paths)
-    await mgr.rpc('upsert_recipe_v1', {
+    await mgr.rpc('upsert_recipe_v2', {
       p_product_id: top.id, p_material_id: sub1.id, p_quantity: 0.1,
       p_unit: 'pcs', p_notes: null,
     });
-    await mgr.rpc('upsert_recipe_v1', {
+    await mgr.rpc('upsert_recipe_v2', {
       p_product_id: top.id, p_material_id: leaf_a.id, p_quantity: 0.2,
       p_unit: 'pcs', p_notes: null,
     });
 
-    const { data, error } = await mgr.rpc('recipe_bom_full_v1', {
+    const { data, error } = await mgr.rpc('recipe_bom_full_v2', {
       p_product_id: top.id,
       p_max_depth: 5,
     });
@@ -188,7 +201,7 @@ describeLive('recipe_bom_full_v1 — live integration', () => {
 
   it('invalid p_max_depth returns an error', async () => {
     const mgr = jwtClient(managerToken);
-    const { error } = await mgr.rpc('recipe_bom_full_v1', {
+    const { error } = await mgr.rpc('recipe_bom_full_v2', {
       p_product_id: BRIOCHE_ID,
       p_max_depth: 0,
     });
@@ -202,7 +215,7 @@ describeLive('recipe_bom_full_v1 — live integration', () => {
     allSkus.push(bare.sku);
 
     const mgr = jwtClient(managerToken);
-    const { data, error } = await mgr.rpc('recipe_bom_full_v1', {
+    const { data, error } = await mgr.rpc('recipe_bom_full_v2', {
       p_product_id: bare.id,
       p_max_depth: 5,
     });

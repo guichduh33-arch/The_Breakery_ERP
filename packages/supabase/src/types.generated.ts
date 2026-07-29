@@ -8060,7 +8060,7 @@ export type Database = {
         }
         Returns: Json
       }
-      recipe_bom_full_v1: {
+      recipe_bom_full_v2: {
         Args: { p_max_depth?: number; p_product_id: string }
         Returns: {
           cost_price: number
@@ -8135,11 +8135,7 @@ export type Database = {
         }
         Returns: Json
       }
-      record_batch_production_v3: {
-        Args: { p_batch: Json; p_items: Json }
-        Returns: Json
-      }
-      record_batch_production_v4: {
+      record_batch_production_v5: {
         Args: { p_batch: Json; p_items: Json }
         Returns: Json
       }
@@ -8194,7 +8190,7 @@ export type Database = {
         Args: { p_device_token: string; p_events: Json }
         Returns: Json
       }
-      record_production_v2: {
+      record_production_v3: {
         Args: {
           p_actual_yield_qty?: number
           p_batch_number?: string
@@ -8713,7 +8709,7 @@ export type Database = {
         Args: { p_groups: Json; p_product_id: string }
         Returns: Json
       }
-      upsert_recipe_v1: {
+      upsert_recipe_v2: {
         Args: {
           p_baker_percentage?: number
           p_is_baker_percentage?: boolean

@@ -4,7 +4,7 @@
 //
 // Shows:
 //  - 3 header KPI cards: WAC cost, retail price, gross margin %.
-//  - Recipe BOM breakdown table (from recipe_bom_full_v1, S17).
+//  - Recipe BOM breakdown table (from recipe_bom_full_v2).
 //    If no recipe → EmptyState "No recipe — cost is purchase-driven (WAC)".
 //  - "Correct cost price" button (gated inventory.cost_correction, MANAGER+).
 
@@ -146,7 +146,7 @@ export function CostingPanel({ product }: CostingPanelProps): JSX.Element {
 
         {!isLoading && error !== null && error !== undefined && (
           <div role="alert" className="rounded-lg border border-red bg-red-soft p-4 text-sm text-red">
-            Failed to load BOM: {(error as Error).message}
+            Failed to load BOM: {(error).message}
           </div>
         )}
 
