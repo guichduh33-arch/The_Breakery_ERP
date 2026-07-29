@@ -291,6 +291,63 @@ describe('buildOrderPayload', () => {
     expect(payload.discount_authorized_by).toBe('mgr-cart');
   });
 
+  // A combo's chosen options are carried as modifiers on the cart line (that is
+  // how two differently-configured combos stay on separate lines), but they are
+  // NOT product_modifiers rows: `group_name` is a combo group ("drink") and
+  // `option_label` a component name ("Capuccino"). The server resolves every
+  // modifier of a line against product_modifiers for that line's product and
+  // raises check_violation "Unknown or inactive modifier option" when it can't
+  // find one — so shipping them made every configured combo unpayable.
+  // combo_components alone already carries what the server needs: it re-prices
+  // the line with _resolve_combo_price_v1 (base + Σ surcharge).
+  it('does not ship a combo line’s option modifiers (they are not product_modifiers)', () => {
+    const cart: Cart = {
+      order_type: 'take_out',
+      items: [
+        {
+          id: 'l1',
+          product_id: 'p-combo',
+          name: 'test',
+          unit_price: 100000,
+          quantity: 1,
+          product_type: 'combo',
+          modifiers: [
+            { group_name: 'drink', option_label: 'Capuccino', price_adjustment: 0 },
+          ],
+          combo_components: [{ product_id: 'p-capuccino', quantity: 1 }],
+        },
+      ],
+    };
+    const payment: PaymentInput = { method: 'cash', amount: 100000, cash_received: 100000, change_given: 0 };
+    const payload = buildOrderPayload('s', cart, payment);
+    expect(payload.items[0]?.modifiers).toEqual([]);
+    // The selection itself must still reach the server — it prices and deducts from it.
+    expect(payload.items[0]?.combo_components).toEqual([{ product_id: 'p-capuccino', quantity: 1 }]);
+  });
+
+  it('still ships modifiers for a NON-combo line', () => {
+    const cart: Cart = {
+      order_type: 'take_out',
+      items: [
+        {
+          id: 'l1',
+          product_id: 'p-capuccino',
+          name: 'Capuccino',
+          unit_price: 35000,
+          quantity: 1,
+          modifiers: [
+            { group_name: 'Milk', option_label: 'Oat Milk', price_adjustment: 10000 },
+          ],
+        },
+      ],
+    };
+    const payment: PaymentInput = { method: 'cash', amount: 45000, cash_received: 45000, change_given: 0 };
+    const payload = buildOrderPayload('s', cart, payment);
+    expect(payload.items[0]?.modifiers).toEqual([
+      { group_name: 'Milk', option_label: 'Oat Milk', price_adjustment: 10000 },
+    ]);
+  });
+
   it('scans past unauthorized line discounts and hoists the FIRST authorizer (P0-1)', () => {
     const cart: Cart = {
       order_type: 'take_out',
