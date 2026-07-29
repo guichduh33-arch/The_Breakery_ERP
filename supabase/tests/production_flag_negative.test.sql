@@ -1,6 +1,7 @@
 -- production_flag_negative.test.sql
--- ADR-008 D4 — gate stock-négatif de record_production_v3 (ADR-016,
--- 20260729000001, a bumpé l'ancien record_production_v2 -> _v3, même signature) :
+-- ADR-008 D4 — gate stock-négatif de record_production_v4 (ADR-016,
+-- 20260729000001, a bumpé _v2 -> _v3 ; ADR-008 D5/D6, 20260729000003, a bumpé
+-- _v3 -> _v4 — même signature à chaque fois) :
 --   - par DÉFAUT la production BLOQUE en matière insuffisante (P0002), même si
 --     le réglage de vente `allow_negative_stock` vaut true → découplage prouvé
 --   - p_force_negative=true + permission inventory.production.force_negative →
@@ -11,7 +12,7 @@
 -- donc la règle "arrêt au premier intermédiaire stocké" d'ADR-016 ne change
 -- aucune valeur attendue ici.
 --
--- record_production_v3 exige auth.uid() + perm inventory.production.create → on
+-- record_production_v4 exige auth.uid() + perm inventory.production.create → on
 -- simule EMP000 (00000000-…-001, SUPER_ADMIN, porteur du force) puis le MANAGER
 -- (00000000-…-004, create sans force) via set_config. Lancer via MCP execute_sql
 -- (enveloppe BEGIN … ROLLBACK portée par ce fichier).
@@ -44,7 +45,7 @@ BEGIN
 
   -- 1) sans forçage + flour short (10 < 100) → bloqué malgré le réglage global
   BEGIN
-    PERFORM record_production_v3(p_product_id:=v_bread, p_quantity_produced:=1, p_section_id:=v_sec);
+    PERFORM record_production_v4(p_product_id:=v_bread, p_quantity_produced:=1, p_section_id:=v_sec);
     v_blocked := false;
   EXCEPTION WHEN OTHERS THEN v_blocked := (SQLSTATE='P0002');
   END;
@@ -54,7 +55,7 @@ BEGIN
   PERFORM set_config('request.jwt.claims',
     json_build_object('sub','00000000-0000-0000-0000-000000000004','role','authenticated')::text, true);
   BEGIN
-    PERFORM record_production_v3(p_product_id:=v_bread, p_quantity_produced:=1,
+    PERFORM record_production_v4(p_product_id:=v_bread, p_quantity_produced:=1,
                                  p_section_id:=v_sec, p_force_negative:=true);
     v_denied := false;
   EXCEPTION WHEN OTHERS THEN v_denied := (SQLSTATE='P0003');
@@ -64,7 +65,7 @@ BEGIN
   -- 3) forçage avec la permission (SUPER_ADMIN) → flour 10-100 = -90, bread 0+1 = 1
   PERFORM set_config('request.jwt.claims',
     json_build_object('sub','00000000-0000-0000-0000-000000000001','role','authenticated')::text, true);
-  PERFORM record_production_v3(p_product_id:=v_bread, p_quantity_produced:=1,
+  PERFORM record_production_v4(p_product_id:=v_bread, p_quantity_produced:=1,
                                p_section_id:=v_sec, p_force_negative:=true);
   INSERT INTO _r VALUES ('flour', (SELECT current_stock FROM products WHERE id=v_flour));
   INSERT INTO _r VALUES ('bread', (SELECT current_stock FROM products WHERE id=v_bread));

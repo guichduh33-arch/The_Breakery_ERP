@@ -3,7 +3,7 @@
 // Left card of the redesigned Production page. Multi-row production entry for a
 // single station (section). Each row = a producible product (strictly filtered
 // to the station via product_sections) + quantity in a chosen unit + waste +
-// note. Submit is atomic via record_batch_production_v5 — any insufficient
+// note. Submit is atomic via record_batch_production_v6 — any insufficient
 // stock rolls the whole batch back.
 //
 // Logic kept from the legacy form: required section, idempotency key, atomic

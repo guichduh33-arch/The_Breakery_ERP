@@ -8135,7 +8135,7 @@ export type Database = {
         }
         Returns: Json
       }
-      record_batch_production_v5: {
+      record_batch_production_v6: {
         Args: { p_batch: Json; p_items: Json }
         Returns: Json
       }
@@ -8190,7 +8190,7 @@ export type Database = {
         Args: { p_device_token: string; p_events: Json }
         Returns: Json
       }
-      record_production_v3: {
+      record_production_v4: {
         Args: {
           p_actual_yield_qty?: number
           p_batch_number?: string

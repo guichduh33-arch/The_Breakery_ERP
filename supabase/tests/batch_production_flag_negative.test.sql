@@ -1,7 +1,8 @@
 -- batch_production_flag_negative.test.sql
 -- ADR-008 D4 — gate stock-négatif du batch. ADR-016 (20260729000001) a fusionné
--- l'ancienne impl _v3 et son wrapper de date _v4 en une seule
--- record_batch_production_v5 : on teste directement contre _v5.
+-- l'ancienne impl _v3 et son wrapper de date _v4 en un seul orchestrateur, que
+-- 20260729000003 (ADR-008 D5/D6) a depuis bumpé en record_batch_production_v6 :
+-- on teste directement contre _v6.
 -- Fixture bread<-flour est un recipe à un seul niveau (pas d'intermédiaire),
 -- donc la règle "arrêt au premier intermédiaire stocké" d'ADR-016 ne change
 -- aucune valeur attendue ici.
@@ -39,7 +40,7 @@ BEGIN
 
   -- 1) sans forçage → bloqué malgré le réglage global
   BEGIN
-    PERFORM record_batch_production_v5(
+    PERFORM record_batch_production_v6(
       jsonb_build_object('section_id', v_sec::text, 'notes','t'),
       jsonb_build_array(jsonb_build_object('product_id', v_bread::text, 'quantity_produced', 1)));
     v_blocked := false;
@@ -51,7 +52,7 @@ BEGIN
   PERFORM set_config('request.jwt.claims',
     json_build_object('sub','00000000-0000-0000-0000-000000000004','role','authenticated')::text, true);
   BEGIN
-    PERFORM record_batch_production_v5(
+    PERFORM record_batch_production_v6(
       jsonb_build_object('section_id', v_sec::text, 'notes','t', 'force_negative', true),
       jsonb_build_array(jsonb_build_object('product_id', v_bread::text, 'quantity_produced', 1)));
     v_denied := false;
@@ -62,7 +63,7 @@ BEGIN
   -- 3) forçage avec la permission (SUPER_ADMIN)
   PERFORM set_config('request.jwt.claims',
     json_build_object('sub','00000000-0000-0000-0000-000000000001','role','authenticated')::text, true);
-  PERFORM record_batch_production_v5(
+  PERFORM record_batch_production_v6(
     jsonb_build_object('section_id', v_sec::text, 'notes','t', 'force_negative', true),
     jsonb_build_array(jsonb_build_object('product_id', v_bread::text, 'quantity_produced', 1)));
   INSERT INTO _r VALUES ('flour', (SELECT current_stock FROM products WHERE id=v_flour));
