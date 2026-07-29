@@ -6,10 +6,11 @@
 --
 -- Le comportement testé est introduit par 20260729000001 (alors
 -- record_production_v3 / record_batch_production_v5) et 20260729000002
--- (recipe_bom_full_v2, upsert_recipe_v2). 20260729000003 (ADR-008 D5/D6) a
--- depuis bumpé les deux RPC de production en record_production_v4 /
--- record_batch_production_v6 en reprenant la descente d'ADR-016 à
--- l'identique : cette suite s'exécute donc contre les _v4/_v6 vivantes.
+-- (recipe_bom_full_v2, upsert_recipe_v2). 20260729000003 (ADR-008 D5/D6) puis
+-- 20260729000005 (ADR-008 D2/D3/D9) ont depuis bumpé les deux RPC de production
+-- jusqu'à record_production_v5 / record_batch_production_v7, en reprenant la
+-- descente d'ADR-016 à l'identique : cette suite s'exécute donc contre les
+-- _v5/_v7 vivantes.
 --
 -- Runner (Docker retired) — apply the whole file via MCP execute_sql in one
 -- shot ; the BEGIN..ROLLBACK envelope guarantees no leak.
@@ -28,7 +29,7 @@
 --   6  upsert_recipe_v2 : refus unit_not_convertible sur g -> pcs,
 --      acceptation de gr -> kg (T20-T21).
 --   7  paire REVOKE (FROM PUBLIC + FROM anon) sur les 4 fonctions, grant
---      authenticated sur record_batch_production_v6, anciennes versions
+--      authenticated sur record_batch_production_v7, anciennes versions
 --      absentes de pg_proc (T22-T24).
 --
 -- Fixture topology (unit 'kg' for the stocked/unstocked semi-finis, 'pcs'
@@ -160,7 +161,7 @@ DECLARE
   v_out_qty NUMERIC;
   v_farine_out_count INT;
 BEGIN
-  v_result := record_production_v4(
+  v_result := record_production_v5(
     p_product_id := v_croissant, p_quantity_produced := 5,
     p_section_id := v_section, p_batch_number := 'ADR016-C1'
   );
@@ -209,7 +210,7 @@ DECLARE
   v_out_qty NUMERIC;
   v_farine_out_count INT;
 BEGIN
-  v_result := record_production_v4(
+  v_result := record_production_v5(
     p_product_id := v_baguette, p_quantity_produced := 1,
     p_section_id := v_section, p_batch_number := 'ADR016-C2'
   );
@@ -257,7 +258,7 @@ DECLARE
   v_out_qty NUMERIC;
   v_pate_c_out_count INT;
 BEGIN
-  v_result := record_production_v4(
+  v_result := record_production_v5(
     p_product_id := v_bagel, p_quantity_produced := 10,
     p_section_id := v_section, p_batch_number := 'ADR016-C3'
   );
@@ -301,7 +302,7 @@ DECLARE
   v_detail TEXT := '';
 BEGIN
   BEGIN
-    PERFORM record_production_v4(
+    PERFORM record_production_v5(
       p_product_id := v_donut, p_quantity_produced := 1,
       p_section_id := v_section, p_batch_number := 'ADR016-C4'
     );
@@ -412,18 +413,18 @@ SELECT is(current_setting('breakery.c6_accepted'), '1',
 -- ===========================================================================
 SELECT ok(
   NOT has_function_privilege('anon',
-    'public.record_production_v4(uuid, numeric, uuid, text, numeric, text, uuid, boolean, numeric, numeric, text, boolean)',
+    'public.record_production_v5(uuid, numeric, uuid, text, numeric, text, uuid, boolean, numeric, numeric, text, boolean, waste_reason)',
     'EXECUTE')
-  AND NOT has_function_privilege('anon', 'public.record_batch_production_v6(jsonb, jsonb)', 'EXECUTE')
+  AND NOT has_function_privilege('anon', 'public.record_batch_production_v7(jsonb, jsonb)', 'EXECUTE')
   AND NOT has_function_privilege('anon', 'public.recipe_bom_full_v2(uuid, integer)', 'EXECUTE')
   AND NOT has_function_privilege('anon',
     'public.upsert_recipe_v2(uuid, uuid, numeric, text, text, boolean, numeric)', 'EXECUTE'),
-  'T22: anon has EXECUTE revoked on the 4 functions carrying the ADR-016 behaviour (record_production_v4, record_batch_production_v6, recipe_bom_full_v2, upsert_recipe_v2) — REVOKE FROM PUBLIC is baked into the same migration statements (20260729000002 for the recipe pair, 20260729000003 for the production pair)'
+  'T22: anon has EXECUTE revoked on the 4 functions carrying the ADR-016 behaviour (record_production_v5, record_batch_production_v7, recipe_bom_full_v2, upsert_recipe_v2) — REVOKE FROM PUBLIC is baked into the same migration statements (20260729000002 for the recipe pair, 20260729000005 for the production pair)'
 );
 
 SELECT ok(
-  has_function_privilege('authenticated', 'public.record_batch_production_v6(jsonb, jsonb)', 'EXECUTE'),
-  'T23: authenticated retains EXECUTE on record_batch_production_v6'
+  has_function_privilege('authenticated', 'public.record_batch_production_v7(jsonb, jsonb)', 'EXECUTE'),
+  'T23: authenticated retains EXECUTE on record_batch_production_v7'
 );
 
 SELECT ok(

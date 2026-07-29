@@ -4,12 +4,12 @@
 -- Covers migrations 20260519000100..000102 :
 --   - production_batches table + RLS lockdown
 --   - production_records.batch_id FK
---   - record_batch_production_v6 RPC (atomic multi-recipe orchestrator)
+--   - record_batch_production_v7 RPC (atomic multi-recipe orchestrator)
 --
 -- ADR-016 (20260729000001) fused the former _v3 impl + _v4 date wrapper into a
 -- single batch orchestrator and bumped the single-item RPC to _v3 ; ADR-008
 -- D5/D6 (20260729000003) then bumped both again, to
--- record_batch_production_v6 / record_production_v4. Renamed mechanically
+-- record_batch_production_v7 / record_production_v5. Renamed mechanically
 -- below; the recipes fixture here has no intermediate (finished_a/b/c consume
 -- mat_x/y/z directly), so the cascade "stop-at-stocked" rule introduced by
 -- ADR-016 does not change any expected value in this file. Every product
@@ -121,7 +121,7 @@ DECLARE
   v_pr_count INT;
   v_pr_match INT;
 BEGIN
-  v_payload := record_batch_production_v6(
+  v_payload := record_batch_production_v7(
     jsonb_build_object(
       'notes',      'T1 happy path',
       'section_id', current_setting('bp.section_id')
@@ -164,7 +164,7 @@ BEGIN
   SELECT COUNT(*) INTO v_batches_before FROM production_batches;
 
   BEGIN
-    PERFORM record_batch_production_v6(
+    PERFORM record_batch_production_v7(
       jsonb_build_object('section_id', current_setting('bp.section_id')),
       jsonb_build_array(
         jsonb_build_object('product_id', current_setting('bp.fa'), 'quantity_produced', 1),
@@ -202,7 +202,7 @@ DECLARE
   v_replay JSONB;
   v_batches INT;
 BEGIN
-  v_first := record_batch_production_v6(
+  v_first := record_batch_production_v7(
     jsonb_build_object(
       'section_id',      current_setting('bp.section_id'),
       'idempotency_key', v_key::text
@@ -211,7 +211,7 @@ BEGIN
       jsonb_build_object('product_id', current_setting('bp.fc'), 'quantity_produced', 1)
     )
   );
-  v_replay := record_batch_production_v6(
+  v_replay := record_batch_production_v7(
     jsonb_build_object(
       'section_id',      current_setting('bp.section_id'),
       'idempotency_key', v_key::text
@@ -254,7 +254,7 @@ BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_cashier_uid::text, false);
   PERFORM set_config('role', 'authenticated', false);
   BEGIN
-    PERFORM record_batch_production_v6(
+    PERFORM record_batch_production_v7(
       jsonb_build_object('section_id', current_setting('bp.section_id')),
       jsonb_build_array(
         jsonb_build_object('product_id', current_setting('bp.fa'), 'quantity_produced', 1)
@@ -284,7 +284,7 @@ DECLARE
 BEGIN
   UPDATE products SET current_stock = 4 WHERE id = current_setting('bp.mx')::uuid;
   BEGIN
-    PERFORM record_batch_production_v6(
+    PERFORM record_batch_production_v7(
       jsonb_build_object('section_id', current_setting('bp.section_id')),
       jsonb_build_array(
         jsonb_build_object('product_id', current_setting('bp.fa'), 'quantity_produced', 1),
@@ -313,7 +313,7 @@ DO $t6$
 DECLARE v_err TEXT := '';
 BEGIN
   BEGIN
-    PERFORM record_batch_production_v6(
+    PERFORM record_batch_production_v7(
       jsonb_build_object('section_id', current_setting('bp.section_id')),
       '[]'::jsonb
     );
@@ -339,7 +339,7 @@ DECLARE
 BEGIN
   SELECT COUNT(*) INTO v_batches_before FROM production_batches;
   BEGIN
-    PERFORM record_batch_production_v6(
+    PERFORM record_batch_production_v7(
       jsonb_build_object('section_id', current_setting('bp.section_id')),
       jsonb_build_array(
         jsonb_build_object('product_id', current_setting('bp.fa'), 'quantity_produced', 1),
@@ -362,8 +362,8 @@ SELECT is(
 );
 
 -- ---------------------------------------------------------------------------
--- T8 — production_records.batch_id correctly populated by record_batch_production_v6
---      and NULL on standalone record_production_v4 calls.
+-- T8 — production_records.batch_id correctly populated by record_batch_production_v7
+--      and NULL on standalone record_production_v5 calls.
 -- ---------------------------------------------------------------------------
 DO $t8$
 DECLARE

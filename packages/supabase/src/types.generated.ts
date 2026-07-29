@@ -3787,6 +3787,7 @@ export type Database = {
           staff_id: string | null
           stock_updated: boolean
           updated_at: string
+          waste_reason: Database["public"]["Enums"]["waste_reason"] | null
           yield_variance_pct: number | null
           yield_variance_reason: string | null
         }
@@ -3815,6 +3816,7 @@ export type Database = {
           staff_id?: string | null
           stock_updated?: boolean
           updated_at?: string
+          waste_reason?: Database["public"]["Enums"]["waste_reason"] | null
           yield_variance_pct?: number | null
           yield_variance_reason?: string | null
         }
@@ -3843,6 +3845,7 @@ export type Database = {
           staff_id?: string | null
           stock_updated?: boolean
           updated_at?: string
+          waste_reason?: Database["public"]["Enums"]["waste_reason"] | null
           yield_variance_pct?: number | null
           yield_variance_reason?: string | null
         }
@@ -8135,7 +8138,7 @@ export type Database = {
         }
         Returns: Json
       }
-      record_batch_production_v6: {
+      record_batch_production_v7: {
         Args: { p_batch: Json; p_items: Json }
         Returns: Json
       }
@@ -8190,7 +8193,7 @@ export type Database = {
         Args: { p_device_token: string; p_events: Json }
         Returns: Json
       }
-      record_production_v4: {
+      record_production_v5: {
         Args: {
           p_actual_yield_qty?: number
           p_batch_number?: string
@@ -8203,6 +8206,7 @@ export type Database = {
           p_quantity_waste?: number
           p_recurse_subrecipes?: boolean
           p_section_id: string
+          p_waste_reason?: Database["public"]["Enums"]["waste_reason"]
           p_yield_variance_reason?: string
         }
         Returns: Json
@@ -8864,6 +8868,13 @@ export type Database = {
         | "bundle"
       shift_status: "open" | "closed"
       variant_axis_type: "flavor" | "size" | "format"
+      waste_reason:
+        | "mis_baked"
+        | "poor_proofing"
+        | "cosmetic"
+        | "demo"
+        | "recipe_test"
+        | "tasting"
       z_report_status: "draft" | "signed" | "voided"
     }
     CompositeTypes: {
@@ -9100,6 +9111,14 @@ export const Constants = {
       ],
       shift_status: ["open", "closed"],
       variant_axis_type: ["flavor", "size", "format"],
+      waste_reason: [
+        "mis_baked",
+        "poor_proofing",
+        "cosmetic",
+        "demo",
+        "recipe_test",
+        "tasting",
+      ],
       z_report_status: ["draft", "signed", "voided"],
     },
   },

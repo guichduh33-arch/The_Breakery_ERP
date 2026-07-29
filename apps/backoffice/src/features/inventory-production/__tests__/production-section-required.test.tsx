@@ -10,6 +10,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ProductionForm from '../components/ProductionForm.js';
 import BatchProductionPage from '@/pages/inventory/BatchProductionPage.js';
 
+/** ProductionForm's selects, minus the ADR-008 D3 waste-reason one: these tests
+ *  address product/section by position, and that select renders between them. */
+function selectsWithoutWasteReason(): HTMLSelectElement[] {
+  return Array.from(document.querySelectorAll('select'))
+    .filter((s) => s.getAttribute('data-testid') !== 'waste-reason-select');
+}
+
 // ---------- shared mocks ----------
 
 const mockRpc = vi.fn();
@@ -27,6 +34,18 @@ const PRODUCT_ROW = { id: 'bag-1', sku: 'BAG-1', name: 'Test Baguette', unit: 'p
 interface RpcResult { data: unknown; error: { message: string; details?: string } | null }
 interface ChainResult { data: unknown; error: unknown }
 
+/** The subset of the PostgREST builder these hooks chain onto. `order` may be a
+ *  terminal call or be chained further, hence the Promise-and-chain hybrid. */
+interface QueryChain {
+  select: () => QueryChain;
+  eq:     () => QueryChain;
+  is:     () => QueryChain;
+  in:     () => Promise<ChainResult>;
+  order:  () => QueryChain;
+  limit:  () => Promise<ChainResult>;
+}
+type Resolvable = Promise<ChainResult> & QueryChain;
+
 vi.mock('@/lib/supabase.js', () => {
   function buildChain(table: string) {
     // Queries have different terminal calls:
@@ -39,11 +58,9 @@ vi.mock('@/lib/supabase.js', () => {
     // Strategy: build a Promise-like chain where both order() and limit()
     // resolve BUT also continue to return a chain so chaining after either works.
     const result = mockFromSelect(table) as ChainResult;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const makeResolvable = (): any => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const p: any = Promise.resolve(result);
+    const makeResolvable = (): Resolvable => {
       // Attach chain methods on the Promise so callers can continue chaining
+      const p = Promise.resolve(result) as Resolvable;
       p.select = () => p;
       p.eq     = () => p;
       p.is     = () => p;
@@ -52,8 +69,7 @@ vi.mock('@/lib/supabase.js', () => {
       p.limit  = () => Promise.resolve(result);
       return p;
     };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const chain: any = {
+    const chain: QueryChain = {
       select: () => chain,
       eq:     () => chain,
       is:     () => chain,
@@ -133,8 +149,9 @@ describe('ProductionForm — section required (audit C4)', () => {
       expect(screen.getByText('Kitchen')).toBeInTheDocument();
     });
 
-    // ProductionForm has 2 <select>s: product (first) and section (second)
-    const allSelects = Array.from(document.querySelectorAll('select'));
+    // Product first, section second — the ADR-008 D3 waste-reason select sits
+    // between them in the DOM and is excluded so this stays positional.
+    const allSelects = selectsWithoutWasteReason();
     expect(allSelects.length).toBeGreaterThanOrEqual(2);
     const [productSel, sectionSel] = allSelects as [HTMLSelectElement, HTMLSelectElement];
 
@@ -142,7 +159,7 @@ describe('ProductionForm — section required (audit C4)', () => {
     fireEvent.change(productSel, { target: { value: 'bag-1' } });
 
     // Fill expected + actual yields (first two number inputs)
-    const numberInputs = Array.from(document.querySelectorAll('input[type="number"]')) as HTMLInputElement[];
+    const numberInputs = Array.from(document.querySelectorAll('input[type="number"]'));
     fireEvent.change(numberInputs[0]!, { target: { value: '5' } });
     fireEvent.change(numberInputs[1]!, { target: { value: '5' } });
 
@@ -165,12 +182,12 @@ describe('ProductionForm — section required (audit C4)', () => {
       expect(screen.getByText('Kitchen')).toBeInTheDocument();
     });
 
-    const allSelects = Array.from(document.querySelectorAll('select')) as HTMLSelectElement[];
+    const allSelects = selectsWithoutWasteReason();
     const [productSel, sectionSel] = allSelects;
 
     fireEvent.change(productSel!, { target: { value: 'bag-1' } });
 
-    const numberInputs = Array.from(document.querySelectorAll('input[type="number"]')) as HTMLInputElement[];
+    const numberInputs = Array.from(document.querySelectorAll('input[type="number"]'));
     fireEvent.change(numberInputs[0]!, { target: { value: '5' } });
     fireEvent.change(numberInputs[1]!, { target: { value: '5' } });
 
@@ -195,7 +212,7 @@ describe('BatchProductionPage — section required (audit C4)', () => {
     mockFromSelect.mockImplementation(defaultMockFrom);
   });
 
-  it('Record batch button is disabled when section is empty (baseline gate)', async () => {
+  it('Record batch button is disabled when section is empty (baseline gate)', () => {
     render(
       <QueryClientProvider client={makeQC()}>
         <BatchProductionPage />

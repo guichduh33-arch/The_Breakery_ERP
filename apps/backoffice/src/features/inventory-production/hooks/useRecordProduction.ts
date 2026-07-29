@@ -1,7 +1,14 @@
 // apps/backoffice/src/features/inventory-production/hooks/useRecordProduction.ts
 //
-// Calls `record_production_v4` atomic RPC. Server emits 1 + N stock_movements
+// Calls `record_production_v5` atomic RPC. Server emits 1 + N stock_movements
 // + N+1 journal_entries via the tr_20_je_emit trigger.
+//
+// ADR-008 D2 — le coût des ratés ne dort plus dans la valeur du stock : seule la
+// part réellement produite est capitalisée, la part ratée est reclassée en charge
+// (DR 5210 Waste Expense / CR 5110 Production COGS). Le montant reclassé revient
+// dans `waste_expense`.
+// ADR-008 D3 — la cause du raté est une catégorie structurée : dès que
+// `quantityWaste > 0`, `wasteReason` est obligatoire (`waste_reason_required`).
 //
 // ADR-008 D6 — produire un article marqué « ne suit pas le stock » est refusé
 // (`production_requires_deduct_stock`) : cela créait une entrée valorisée sans
@@ -20,12 +27,18 @@
 // `inventory.production.force_negative` (sinon `force_negative_forbidden`).
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { Database } from '@breakery/supabase';
 import { supabase } from '@/lib/supabase.js';
+
+/** Source unique de l'enum = Postgres : aucun littéral dérivé à la main. */
+export type WasteReason = Database['public']['Enums']['waste_reason'];
 
 export type RecordProductionErrorCode =
   | 'forbidden'
   | 'quantity_must_be_positive'
   | 'waste_must_be_non_negative'
+  | 'waste_reason_required'
+  | 'unit_conversion_missing'
   | 'product_not_found'
   | 'section_not_found'
   | 'section_required'
@@ -60,6 +73,8 @@ export interface RecordProductionArgs {
   sectionId:         string;
   batchNumber?:      string;
   quantityWaste?:    number;
+  /** ADR-008 D3 — requis dès que quantityWaste > 0. */
+  wasteReason?:      WasteReason;
   notes?:            string;
   idempotencyKey:    string;
   /** F5 yield variance: expected qty planned for this batch. */
@@ -88,6 +103,10 @@ export interface RecordProductionResult {
   movements_count: number;
   je_count: number;
   idempotent_replay: boolean;
+  /** ADR-008 D3 — cause du raté telle qu'enregistrée. */
+  waste_reason?: WasteReason | null;
+  /** ADR-008 D2 — part du coût matière reclassée en charge (0 s'il n'y a pas de raté). */
+  waste_expense?: number;
   /** True when the production was forced through despite shortages. */
   forced_negative?: boolean;
   /** Shortages the force bypassed (empty unless forced). */
@@ -100,6 +119,7 @@ function classify(message: string): RecordProductionErrorCode {
   if (message.includes('forbidden'))                       return 'forbidden';
   if (message.includes('quantity_must_be_positive'))       return 'quantity_must_be_positive';
   if (message.includes('waste_must_be_non_negative'))      return 'waste_must_be_non_negative';
+  if (message.includes('waste_reason_required'))           return 'waste_reason_required';
   if (message.includes('product_not_found'))               return 'product_not_found';
   if (message.includes('section_not_found'))               return 'section_not_found';
   // Doit précéder le test générique : 'recipe_depth_exceeded' ne contient pas
@@ -108,6 +128,10 @@ function classify(message: string): RecordProductionErrorCode {
   if (message.includes('production_requires_deduct_stock')) return 'production_requires_deduct_stock';
   if (message.includes('recipe_not_found'))                return 'recipe_not_found';
   if (message.includes('insufficient_stock'))              return 'insufficient_stock';
+  // ADR-008 D9.2 — code réellement levé par `convert_quantity` (P0002). Sans ce
+  // mapping, une unité non convertible retombait en 'unknown' et l'utilisateur
+  // voyait un message brut de Postgres.
+  if (message.includes('unit_conversion_missing'))         return 'unit_conversion_missing';
   if (message.includes('unit_conversion_failed'))          return 'unit_conversion_failed';
   if (message.includes('expected_yield_must_be_positive')) return 'expected_yield_must_be_positive';
   if (message.includes('actual_yield_must_be_non_negative')) return 'actual_yield_must_be_non_negative';
@@ -136,6 +160,7 @@ export function useRecordProduction() {
         p_actual_yield_qty?:      number;
         p_yield_variance_reason?: string;
         p_force_negative?:        boolean;
+        p_waste_reason?:          WasteReason;
       } = {
         p_product_id:        args.productId,
         p_quantity_produced: args.quantityProduced,
@@ -144,12 +169,13 @@ export function useRecordProduction() {
         p_idempotency_key:   args.idempotencyKey,
       };
       if (args.forceNegative === true) rpcArgs.p_force_negative = true;
+      if (args.wasteReason          !== undefined) rpcArgs.p_waste_reason         = args.wasteReason;
       if (args.batchNumber          !== undefined) rpcArgs.p_batch_number          = args.batchNumber;
       if (args.notes                !== undefined) rpcArgs.p_notes                 = args.notes;
       if (args.expectedYieldQty     !== undefined) rpcArgs.p_expected_yield_qty    = args.expectedYieldQty;
       if (args.actualYieldQty       !== undefined) rpcArgs.p_actual_yield_qty      = args.actualYieldQty;
       if (args.yieldVarianceReason  !== undefined) rpcArgs.p_yield_variance_reason = args.yieldVarianceReason;
-      const { data, error } = await supabase.rpc('record_production_v4', rpcArgs);
+      const { data, error } = await supabase.rpc('record_production_v5', rpcArgs);
       if (error) {
         const detail = (error as unknown as { details?: string }).details;
         let parsed: unknown;
