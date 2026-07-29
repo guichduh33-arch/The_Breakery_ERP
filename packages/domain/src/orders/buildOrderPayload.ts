@@ -9,26 +9,19 @@ import type {
 import type { AppliedPromotion } from '../promotions/types.js';
 
 function buildItemPayload(item: Cart['items'][number]): OrderPayloadItem {
-  // A combo line carries its chosen options as modifiers so that two
-  // differently-configured combos stay on separate cart lines. Those entries are
-  // NOT `product_modifiers` rows — `group_name` is a combo group ("drink") and
-  // `option_label` a component name ("Capuccino"). The server resolves every
-  // modifier it receives against `product_modifiers` for the line's product and
-  // raises check_violation "Unknown or inactive modifier option" otherwise, so
-  // shipping them made every configured combo impossible to pay.
-  //
-  // `combo_components` alone carries what the server needs: it re-prices the line
-  // through `_resolve_combo_price_v1` (base + Σ surcharge) and deducts each
-  // component's stock. Dropping them here is a client-side workaround; the
-  // durable fix is server-side (let the price resolver skip the lookup on combo
-  // lines and keep the labels), after which this line goes back to
-  // `modifiers: item.modifiers`.
-  const isCombo = item.product_type === 'combo';
+  // A combo line's modifiers are its chosen options, not `product_modifiers`
+  // rows: `group_name` is a combo group ("drink") and `option_label` a component
+  // name ("Capuccino"). They are shipped so the kitchen ticket and the order
+  // history keep readable labels; the server keeps those labels but prices the
+  // line from `combo_components` via `_resolve_combo_price_v1` (base + Σ
+  // surcharge) and forces their price_adjustment to 0 — counting them too would
+  // bill the surcharge twice. See migration
+  // 20260730000001_fix_resolve_line_price_skip_modifier_lookup_on_combo.
   const base: OrderPayloadItem = {
     product_id: item.product_id,
     quantity: item.quantity,
     unit_price: item.unit_price,
-    modifiers: isCombo ? [] : item.modifiers,
+    modifiers: item.modifiers,
     // Session 9 — pass through gift flags so RPC v7 can tag order_items.
     ...(item.is_promo_gift ? { is_promo_gift: true } : {}),
     ...(item.promotion_id ? { promotion_id: item.promotion_id } : {}),

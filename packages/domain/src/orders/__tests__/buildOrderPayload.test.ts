@@ -291,16 +291,14 @@ describe('buildOrderPayload', () => {
     expect(payload.discount_authorized_by).toBe('mgr-cart');
   });
 
-  // A combo's chosen options are carried as modifiers on the cart line (that is
-  // how two differently-configured combos stay on separate lines), but they are
-  // NOT product_modifiers rows: `group_name` is a combo group ("drink") and
-  // `option_label` a component name ("Capuccino"). The server resolves every
-  // modifier of a line against product_modifiers for that line's product and
-  // raises check_violation "Unknown or inactive modifier option" when it can't
-  // find one — so shipping them made every configured combo unpayable.
-  // combo_components alone already carries what the server needs: it re-prices
-  // the line with _resolve_combo_price_v1 (base + Σ surcharge).
-  it('does not ship a combo line’s option modifiers (they are not product_modifiers)', () => {
+  // A combo's chosen options ride as modifiers on the cart line (that is how two
+  // differently-configured combos stay on separate lines). They are NOT
+  // product_modifiers rows: `group_name` is a combo group ("drink") and
+  // `option_label` a component name ("Capuccino"). They are shipped anyway so the
+  // kitchen ticket and the order history keep readable labels — the server keeps
+  // the labels, skips the product_modifiers lookup on a combo line and prices it
+  // from combo_components (migration 20260730000001).
+  it('ships both a combo line’s option modifiers and its components', () => {
     const cart: Cart = {
       order_type: 'take_out',
       items: [
@@ -320,8 +318,10 @@ describe('buildOrderPayload', () => {
     };
     const payment: PaymentInput = { method: 'cash', amount: 100000, cash_received: 100000, change_given: 0 };
     const payload = buildOrderPayload('s', cart, payment);
-    expect(payload.items[0]?.modifiers).toEqual([]);
-    // The selection itself must still reach the server — it prices and deducts from it.
+    expect(payload.items[0]?.modifiers).toEqual([
+      { group_name: 'drink', option_label: 'Capuccino', price_adjustment: 0 },
+    ]);
+    // The selection itself is what the server prices and deducts from.
     expect(payload.items[0]?.combo_components).toEqual([{ product_id: 'p-capuccino', quantity: 1 }]);
   });
 
