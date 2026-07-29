@@ -17,22 +17,22 @@ Si un document contredit le code, le document a tort : **signale-le, ne corrige 
 
 ## Règles documentaires — non négociables
 
-1. **Par défaut tu ne crées pas de fichier `.md`, `.txt`, rapport, plan, spec,
-   INDEX, compte-rendu ou résumé de session** : tu proposes son contenu dans ta
-   réponse. **Exception : sur validation explicite de Mamat en séance**, tu crées
-   le fichier avec le contenu validé. Sans feu vert explicite, tu restes en mode
-   proposition.
-2. **Par défaut le commit de doc est réservé à Mamat. Exception : sur validation
-   explicite de Mamat**, tu peux commiter un fichier de doc — sur une branche
+1. **Tu ne crées pas de rapport, plan de session, INDEX, compte-rendu ou résumé** :
+   ces contenus vivent dans ta réponse, jamais en fichier. **Exception — les
+   documents que la tâche appelle** (un ADR qui grave une décision de Mamat, une
+   spec exigée par un ADR, une fiche que Mamat demande) : ceux-là, **tu les
+   rédiges toi-même dans le fichier**, puis tu les soumets à Mamat.
+2. **Tu rédiges, Mamat valide, tu commites — dans cet ordre.** Le commit d'un
+   fichier de doc se fait **après validation explicite de Mamat**, sur une branche
    dédiée (`docs/…`, `feat/…`, `fix/…`, **jamais `master`**), sans push sans
-   demander. Pas de validation explicite = pas de commit de doc.
+   demander. Pas de validation explicite = pas de commit.
 3. **Les plans de session vivent dans la conversation** (mode plan), jamais en
-   fichier. Ce qui mérite de survivre à une session devient un ADR — écrit et
-   commité par Mamat — ou disparaît avec le contexte.
+   fichier. Ce qui mérite de survivre à une session devient un ADR — que tu
+   rédiges et que Mamat valide (règles 1-2) — ou disparaît avec le contexte.
 4. **Specs d'exécution (`docs/specs/`)** : uniquement quand un ADR l'exige
-   explicitement pour un chantier lourd. Nom : `<ADR>x-<sujet>.md`. Contenu
-   proposé par l'agent en conversation, relu et validé par Mamat (création/commit
-   selon règles 1-2). Une spec meurt à la livraison du chantier : supprimée, son
+   explicitement pour un chantier lourd. Nom : `<ADR>x-<sujet>.md`. Rédigée par
+   l'agent, relue et validée par Mamat (création/commit selon règles 1-2). Une
+   spec meurt à la livraison du chantier : supprimée, son
    résiduel éventuel noté dans l'ADR. Jamais plus de 3 specs vivantes.
    Tout autre plan/spec/compte-rendu reste interdit de fichier.
 5. **Un ADR ne se modifie jamais.** Changement d'avis = nouvel ADR numéroté qui
@@ -182,7 +182,8 @@ Si un document contredit le code, le document a tort : **signale-le, ne corrige 
 - Branches : `feat/<scope>`, `fix/<scope>`, `chore/<scope>`. Une branche = un sujet.
   (Le préfixe `swarm/` est aboli avec le mode multi-session.)
 - Commits conventionnels (`feat(scope): …`). Co-author Claude si assisté.
-- **Un commit `docs(...)` par un agent = violation de la règle 2.**
+- **Un commit `docs(...)` par un agent sans validation préalable de Mamat =
+  violation de la règle 2.**
 - **Jamais de commit direct sur master.** Tout changement passe par une branche
   (`feat/`, `fix/`, `chore/`) puis une PR — même un fix d'une ligne. Si la session
   démarre sur master, créer la branche AVANT le premier commit.
