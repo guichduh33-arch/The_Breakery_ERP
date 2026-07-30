@@ -116,7 +116,7 @@ export function TabletOrderPage({
   const handleSend = useCallback(async () => {
     if (!userId || isEmpty) return;
     // S72 audit P1: a dine-in order needs a table (owner rule 2026-07-07). The
-    // counter path enforces this (useDineInTableGuard + fire_counter_order_v4
+    // counter path enforces this (useDineInTableGuard + fire_counter_order_v5
     // P0011); the tablet path did not, so a waiter could fire a dine-in order
     // with an empty table_number — no table on the KOT + a phantom occupancy.
     if (orderType === 'dine_in' && !tableNumber?.trim()) {

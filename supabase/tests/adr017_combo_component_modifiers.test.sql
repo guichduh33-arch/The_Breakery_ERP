@@ -44,7 +44,12 @@ INSERT INTO products (id, sku, name, category_id, retail_price, product_type, cu
 VALUES
   ('00000000-0000-0000-0000-00000a17c0b1','A17-CB','A17 Combo', current_setting('a17.cat')::uuid, 0,     'combo',    0,   false, 50000, false),
   ('00000000-0000-0000-0000-00000a17f001','A17-P', 'A17 Plate', current_setting('a17.cat')::uuid, 20000, 'finished', 100, true,  NULL,  false),
-  ('00000000-0000-0000-0000-00000a17f002','A17-D', 'A17 Drink', current_setting('a17.cat')::uuid, 30000, 'finished', 100, true,  NULL,  false);
+  ('00000000-0000-0000-0000-00000a17f002','A17-D', 'A17 Drink', current_setting('a17.cat')::uuid, 30000, 'finished', 100, true,  NULL,  false),
+  -- Ingrédient consommé par l'option « Oat » : c'est lui qui doit sortir du stock.
+  -- product_type n'admet que 'finished' ou 'combo' ; une matière est un
+  -- 'finished' suivi en stock, pas un type à part.
+  ('00000000-0000-0000-0000-00000a17f003','A17-M', 'A17 Milk',  current_setting('a17.cat')::uuid, 0,     'finished', 5000,true,  NULL,  false);
+UPDATE products SET unit = 'ml' WHERE id = '00000000-0000-0000-0000-00000a17f003';
 
 INSERT INTO combo_groups (id, combo_product_id, name, group_type, is_required, min_select, max_select, sort_order) VALUES
   ('00000000-0000-0000-0000-00000a17e001','00000000-0000-0000-0000-00000a17c0b1','plate','single',true,1,1,0),
@@ -60,11 +65,19 @@ INSERT INTO product_modifiers (product_id, category_id, group_name, group_requir
   ('00000000-0000-0000-0000-00000a17f002', NULL, 'Milk', true, 'single_select', 'Retire', 3000,  false),
   (NULL, current_setting('a17.cat')::uuid,       'Cup',  false,'single_select', 'Large',  2000,  true);
 
+-- D4 : « Oat » consomme 200 ml de A17 Milk. C'est cette sortie qui n'existait pas
+-- quand la boisson était vendue dans un combo.
+UPDATE product_modifiers
+   SET ingredients_to_deduct = jsonb_build_array(
+         jsonb_build_object('product_id','00000000-0000-0000-0000-00000a17f003','qty',200,'unit','ml'))
+ WHERE product_id = '00000000-0000-0000-0000-00000a17f002'
+   AND group_name = 'Milk' AND option_label = 'Oat';
+
 -- Vente réelle : Oat (+10 000) sur la boisson d'un combo à 50 000 + 5 000 d'option.
 DO $$
 DECLARE v_env JSONB;
 BEGIN
-  v_env := complete_order_with_payment_v21(
+  v_env := complete_order_with_payment_v22(
     p_session_id := current_setting('a17.sess')::uuid,
     p_order_type := 'take_out'::order_type,
     p_items := $items$[
@@ -80,7 +93,7 @@ BEGIN
   PERFORM set_config('a17.order_id', v_env->>'order_id', false);
 END $$;
 
-SELECT plan(9);
+SELECT plan(12);
 
 -- Rétro-compatibilité : sans la clé, le prix ne bouge pas d'un rupiah.
 SELECT is(
@@ -142,6 +155,23 @@ SELECT is(
   (SELECT combo_components->1->'modifiers'->0->>'option_label'
      FROM order_items WHERE order_id=current_setting('a17.order_id')::uuid),
   'Oat', 'T9 le choix est persiste sur la composition de la ligne');
+
+-- ── ADR-017 D4 : la matière sort vraiment du stock ────────────────────────────
+SELECT is(
+  (SELECT current_stock::int FROM products WHERE id='00000000-0000-0000-0000-00000a17f003'),
+  4800, 'T10 les 200 ml de l''ingredient du modificateur sont deduits (5000 -> 4800)');
+
+-- Le snapshot est ce que void_order, refund_order et pay_existing_order relisent
+-- pour restituer : s'il est vide, la matière sort sans jamais revenir.
+SELECT is(
+  (SELECT jsonb_array_length(modifier_ingredients_deducted)
+     FROM order_items WHERE order_id=current_setting('a17.order_id')::uuid),
+  1, 'T11 le snapshot de restitution est renseigne sur une ligne combo');
+
+SELECT is(
+  (SELECT modifier_ingredients_deducted->0->>'option_label'
+     FROM order_items WHERE order_id=current_setting('a17.order_id')::uuid),
+  'Oat', 'T12 le snapshot nomme l''option qui a consomme la matiere');
 
 SELECT * FROM finish();
 ROLLBACK;

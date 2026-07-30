@@ -56,7 +56,7 @@ DECLARE
   v_order JSONB; v_order_id UUID; v_caught BOOLEAN := false;
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_cashier_auth::text, true);
-  v_order := complete_order_with_payment_v21(
+  v_order := complete_order_with_payment_v22(
     p_session_id := v_sess, p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(jsonb_build_object(
       'product_id', v_prod, 'quantity', 2, 'unit_price', 25000, 'modifiers', '[]'::jsonb)),
@@ -92,7 +92,7 @@ DECLARE
   v_order JSONB; v_order_id UUID; v_res JSONB; v_full INT;
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_cashier_auth::text, true);
-  v_order := complete_order_with_payment_v21(
+  v_order := complete_order_with_payment_v22(
     p_session_id := v_sess, p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(jsonb_build_object(
       'product_id', v_prod, 'quantity', 1, 'unit_price', 25000, 'modifiers', '[]'::jsonb)),

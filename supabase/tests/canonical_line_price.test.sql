@@ -10,7 +10,7 @@
 --        resoudre levait 23514 et rendait tout combo configure inencaissable.
 --        Les libelles sont conserves, leur price_adjustment force a 0 : le prix
 --        d'un combo vient de _resolve_combo_price_v1.
---   T9 : anon EXECUTE revoque sur complete_order_with_payment_v21
+--   T9 : anon EXECUTE revoque sur complete_order_with_payment_v22
 --   T10-12 : smoke v15 — total + lines[] refletent le prix serveur (ignore unit_price client)
 --   T13 : v14 droppee
 --
@@ -70,7 +70,7 @@ END $$;
 DO $$
 DECLARE r JSONB;
 BEGIN
-  r := complete_order_with_payment_v21(
+  r := complete_order_with_payment_v22(
     p_session_id := current_setting('w1.sess')::uuid,
     p_order_type := 'take_out'::order_type,
     p_items      := jsonb_build_array(jsonb_build_object(
@@ -145,7 +145,7 @@ SELECT is(
 -- Gate anon
 SELECT ok(
   NOT has_function_privilege('anon',
-    'complete_order_with_payment_v21(uuid,order_type,jsonb,jsonb,uuid,uuid,integer,text,numeric,text,numeric,text,uuid,jsonb,jsonb,uuid)',
+    'complete_order_with_payment_v22(uuid,order_type,jsonb,jsonb,uuid,uuid,integer,text,numeric,text,numeric,text,uuid,jsonb,jsonb,uuid)',
     'EXECUTE'),
   'T9 anon EXECUTE revoque sur v17');
 
