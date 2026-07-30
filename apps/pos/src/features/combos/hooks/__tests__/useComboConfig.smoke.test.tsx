@@ -18,12 +18,25 @@ import type { ReactNode } from 'react';
 
 const singleMock = vi.fn();
 
+// ADR-017 — le hook fait un SECOND aller-retour vers product_modifiers pour
+// attacher à chaque option les groupes de modificateurs de son composant. Ce
+// mock répond aux deux formes de chaîne : `products` termine par .single(),
+// `product_modifiers` par .or().eq().is().
 vi.mock('@/lib/supabase', () => ({
   supabase: {
-    from: (_table: string) => ({
+    from: (table: string) => ({
       select: (_cols: string) => ({
         eq: (_col: string, _val: string) => ({
-          single: () => singleMock(),
+          single: (): Promise<{ data: unknown; error: unknown }> =>
+            singleMock() as Promise<{ data: unknown; error: unknown }>,
+        }),
+        // Chaîne product_modifiers : aucune ligne ici, les tests de mapping
+        // portent sur la définition du combo elle-même.
+        or: (_filter: string) => ({
+          eq: (_c: string, _v: unknown) => ({
+            is: (_c2: string, _v2: unknown): Promise<{ data: unknown[]; error: null }> =>
+              Promise.resolve({ data: table === 'product_modifiers' ? [] : [], error: null }),
+          }),
         }),
       }),
     }),

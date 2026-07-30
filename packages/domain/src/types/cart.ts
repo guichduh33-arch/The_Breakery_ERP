@@ -5,6 +5,22 @@ import type { ProductType } from './product.js';
 
 export type OrderType = 'dine_in' | 'take_out' | 'delivery';
 
+/**
+ * One component retained in a configured combo line.
+ *
+ * ADR-017 — `modifiers` carries the answers given for THIS component's own
+ * modifier groups. The server prices and deducts from them
+ * (`_resolve_combo_price_v1`, `_resolve_combo_modifier_ingredients_v1`), each
+ * resolved against the component, never against the combo product. The key is
+ * additive: a component without modifiers simply omits it, and every reader
+ * that only knows `product_id` / `quantity` keeps working.
+ */
+export interface ComboComponent {
+  product_id: string;
+  quantity: number;
+  modifiers?: SelectedModifiers;
+}
+
 export interface CartItem {
   /**
    * Stable line id, generated client-side. A single product may appear on
@@ -39,7 +55,7 @@ export interface CartItem {
    * configuration. Each component deducts its own stock server-side; the combo
    * product itself does not. Undefined for non-combo lines.
    */
-  combo_components?: { product_id: string; quantity: number }[];
+  combo_components?: ComboComponent[];
 }
 
 export interface Cart {
