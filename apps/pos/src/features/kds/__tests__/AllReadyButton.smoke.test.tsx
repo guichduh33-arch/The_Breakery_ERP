@@ -37,6 +37,7 @@ function makeItem(overrides: Partial<KdsItemRow>): KdsItemRow {
     unit_price: 10000,
     modifiers: [],
     modifiers_total: 0,
+    component_modifiers: [],
     kitchen_status: 'pending',
     dispatch_station: 'kitchen',
     dispatch_stations: null,

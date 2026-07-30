@@ -38,6 +38,10 @@ function toKdsRow(payload: OrderFiredPayload, item: OrderFiredPayload['items'][n
     unit_price: item.unit_price,
     modifiers: item.modifiers,
     modifiers_total: item.modifiers.reduce((sum, m) => sum + m.price_adjustment, 0),
+    // ADR-017 (conséquence 5) — le payload bus `order.fired` ne transporte pas
+    // (encore) les modificateurs de composants de combo ; l'écran offline ne
+    // les affiche donc pas. Extension additive du format bus à décider.
+    component_modifiers: [],
     kitchen_status: 'pending',
     // Colonne legacy — la 1ʳᵉ station résolue (le filtre board passe par
     // dispatch_stations en priorité, même dual-branch que la query SQL).

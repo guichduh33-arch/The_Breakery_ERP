@@ -286,6 +286,22 @@ export function KdsOrderCard({ items }: KdsOrderCardProps) {
                     ))}
                   </ul>
                 ) : null}
+                {/* ADR-017 (conséquence 5) — modifiers answered on the combo's
+                    components, attributed to the component so the kitchen knows
+                    which drink is iced / which one takes oat milk. Indented one
+                    level under the combo options above. */}
+                {item.component_modifiers.length > 0 ? (
+                  <ul className="mt-0.5 space-y-0.5" data-testid="kds-component-modifiers">
+                    {item.component_modifiers.map((cm, idx) => (
+                      <li
+                        key={`${item.id}-cmod-${idx}`}
+                        className={`pl-3 text-base ${cancelled ? 'text-text-muted line-through' : 'text-text-secondary'}`}
+                      >
+                        {cm.component_name} — {cm.group_name}: {cm.option_label}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
                 {cancelled && item.cancelled_reason && (
                   <div className="mt-1 text-sm uppercase tracking-widest text-red-fg">
                     Reason: {item.cancelled_reason}
