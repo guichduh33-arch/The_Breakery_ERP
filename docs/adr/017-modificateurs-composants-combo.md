@@ -1,117 +1,132 @@
-# ADR-017 — Les modificateurs des composants d'un combo : saisis, facturés, déduits
+# ADR-017 — Un composant de combo se configure comme s'il était vendu seul
 
-> **Date :** 2026-07-30 · **Statut : ACTÉ** (décision propriétaire, arbitrages du 2026-07-30)
-> Document reconstitué a posteriori le 2026-07-31 depuis les livrables du chantier
-> (migrations `20260730000002` à `20260730000004`, commits de la branche
-> `feat/adr017-pos-component-modifiers`), validé par Mamat le 2026-07-31.
+> **Date :** 2026-07-30 · **Statut : ACTÉ** (décision propriétaire)
 
 ## Décision
 
-Un composant retenu dans un combo se configure, se facture et se déduit
-**exactement comme s'il était vendu seul**. Quatre décisions :
+Lorsqu'un composant retenu dans un combo porte des groupes de modificateurs, le
+caissier les renseigne, le client les paie et le stock en tient compte —
+**exactement comme si ce composant était vendu à l'unité**. Le combo cesse d'être
+une zone où les modificateurs n'existent pas.
 
-1. **Saisie dans le combo.** Les groupes de modificateurs d'un composant retenu
-   s'ouvrent **dans la modale de configuration du combo**, sous l'option qui a
-   amené ce composant — un seul écran, une seule validation, le prix final
-   visible avant de confirmer. Pas de second parcours après coup.
-2. **Un groupe requis sans réponse bloque.** La confirmation du combo est
-   refusée tant qu'un groupe requis d'un composant retenu est sans réponse —
-   même règle que la vente à l'unité. **Rien n'est pré-coché sur un groupe
-   requis de composant** : une réponse posée d'office n'est jamais manquante,
-   et le blocage n'existerait pas (un café partirait au bar sans que chaud ou
-   glacé ait été dit). Le pré-cochage des options du combo lui-même est
-   conservé.
-3. **Le prix est résolu serveur, modificateurs compris.** Le prix d'un combo
-   devient : `combo_base_price` + Σ surcharges des options retenues + Σ
-   ajustements des modificateurs répondus sur leurs composants — les trois
-   termes résolus **serveur**, aucun montant joint par le client n'étant
-   retenu. Chaque ajustement est résolu contre les `product_modifiers` **du
-   composant** (scope produit d'abord, scope catégorie en repli, comme une
-   ligne ordinaire), jamais contre le produit combo, qui ne porte pas ces
-   options.
-4. **Le stock suit.** Les ingrédients rattachés à un modificateur de composant
-   sont **déduits à la vente** — multipliés par la quantité du composant dans
-   le combo — et **restitués** à l'annulation et au remboursement, via le
-   snapshot persisté sur la ligne de commande que les parcours void/refund
-   relisent déjà.
+Quatre points, indissociables :
+
+1. **Choix.** Les groupes de modificateurs d'une option retenue s'ouvrent
+   **dans la modale de configuration du combo**, sous cette option. Un seul
+   écran, une seule validation, le prix final visible avant de confirmer.
+2. **Obligation.** Un groupe **requis** laissé sans réponse **interdit la
+   validation** du combo. Même règle que la vente à l'unité : un café sans
+   chaud-ou-glacé n'est pas une commande.
+3. **Prix.** Le prix d'un combo devient `combo_base_price` + Σ surcharges des
+   options + Σ ajustements des modificateurs de leurs composants. Ces trois
+   termes sont **résolus par le serveur** ; aucun montant envoyé par le client
+   n'est retenu.
+4. **Stock.** Les ingrédients rattachés à un modificateur de composant sont
+   **déduits à la vente** et **restitués à l'annulation et au remboursement**.
 
 ## Contexte
 
-Au 2026-07-30, le parcours combo court-circuitait entièrement le pipeline des
-modificateurs, aux trois étages :
+État vérifié le 2026-07-30 sur les corps de fonctions en base et les données du
+projet V3 de développement.
 
-- **Saisie :** choisir un Capuccino dans un combo ne proposait ni chaud/glacé
-  ni le type de lait — les groupes du composant n'étaient jamais présentés.
-- **Prix :** « Oat Milk » sur le Capuccino d'un combo ne coûtait rien, alors
-  que le même lait est facturé quand le café est vendu seul. La résolution des
-  modificateurs opérait sur le produit **de la ligne** (le combo), or les
-  modificateurs vivent sur le **composant**.
-- **Stock :** les 200 ml de lait rattachés à « Oat Milk » sortaient sans trace
-  dès que le café était vendu dans un combo — la résolution des ingrédients
-  était explicitement désactivée sur une ligne de combo, à la vérification de
-  disponibilité comme au calcul du snapshot persisté.
+Le parcours combo du POS court-circuite le pipeline des modificateurs depuis son
+origine : un produit de type combo ouvre sa modale de configuration et n'entre
+jamais dans la résolution des modificateurs. Le choix d'une option s'arrête donc
+au composant, sans jamais descendre à ses propres options. Côté serveur, le
+chemin de paiement **désactive explicitement** la résolution des ingrédients de
+modificateurs sur une ligne de combo, et le résolveur de prix de ligne ignore
+leurs ajustements.
 
-Découverte en chemin, hors périmètre des décisions mais corrigée dans le même
-chantier : tout combo portant au moins une option était **inencaissable**
-(refus `23514`), le résolveur de prix de ligne tentant de résoudre les options
-du combo comme des `product_modifiers`. Corrigé serveur le 2026-07-30 (le
-lookup est sauté sur une ligne combo, les libellés restant conservés pour la
-cuisine et l'historique) — arbitrage de Mamat du 2026-07-30 : helper interne
-sans appel front, signature inchangée, pas de bump des appelantes.
+Trois couples combo × composant sont concernés à cette date :
+
+| Combo | Composant | Groupes requis jamais proposés |
+|---|---|---|
+| French Plater | Americano | HOT/ICED |
+| French Plater | Capuccino | HOT/ICED + Milk |
+| test | Capuccino | HOT/ICED + Milk |
+
+Trois conséquences, dont deux chiffrables sur le seul Capuccino :
+
+1. Le barista ne sait pas s'il prépare un chaud ou un glacé — l'information
+   n'est jamais saisie, donc jamais transmise.
+2. Le supplément de lait d'avoine, facturé quand le café est vendu seul, n'est
+   **pas facturé** dans un combo.
+3. Les 200 ml de lait rattachés à l'option choisie ne sont **pas déduits** :
+   la matière sort sans trace et l'écart n'apparaît qu'à l'inventaire.
+
+Le même jour, un blocage distinct a été corrigé : les options d'un combo
+voyageant parmi les modificateurs de la ligne, le résolveur de prix les cherchait
+parmi les modificateurs du produit et refusait la vente, rendant **tout combo
+configuré inencaissable**. Le lookup est désormais sauté sur une ligne de combo,
+les libellés étant conservés sans ajustement de prix. Cet ADR s'installe sur ce
+correctif : il rouvre la porte au prix, mais par un terme résolu serveur et
+identifié comme tel, jamais par le montant que le client aurait joint.
+
+Trois propriétés de l'existant rendent la décision peu coûteuse :
+
+- La composition d'un combo est stockée en JSON **sans schéma contraint** :
+  l'enrichir ne demande aucun changement de structure de table.
+- **Huit fonctions SQL** lisent cette composition, et toutes n'y lisent que
+  l'identifiant du produit et la quantité. Y ajouter les modificateurs d'un
+  composant est **additif** : ces huit lecteurs l'ignorent sans rien casser.
+- Le mécanisme de **restitution** existe déjà : les ingrédients déduits au titre
+  des modificateurs sont mémorisés sur la ligne de commande et relus par
+  l'annulation, le remboursement et le paiement différé. Y verser les ingrédients
+  des modificateurs de composants suffit à ce que le retour de stock suive, sans
+  code neuf.
 
 ## Conséquences
 
-La numérotation continue celle des décisions (1-4) — c'est sous cette forme
-que le code et les tests la citent.
+1. **La composition d'une ligne de combo porte, par composant, les modificateurs
+   retenus.** Ajout additif : les lecteurs existants restent valides sans
+   modification.
+2. **Le résolveur de prix de combo intègre un troisième terme.** Il résout les
+   ajustements des modificateurs de chaque composant contre la définition
+   serveur de ce composant — jamais contre le produit combo, qui ne porte pas
+   ces options. Un ajustement introuvable côté serveur est un refus, comme pour
+   la vente à l'unité.
+3. **La déduction des ingrédients est appelée par composant**, avec l'identifiant
+   de ce composant, et non plus désactivée sur les lignes de combo. Les résultats
+   sont agrégés sur la ligne de commande, d'où l'annulation et le remboursement
+   les relisent.
+4. **La modale de configuration devient bloquante** : la validation reste
+   indisponible tant qu'un groupe requis d'un composant retenu est sans réponse.
+   Il suit qu'un groupe requis de composant **ne se pré-coche pas** : une réponse
+   posée d'office ne serait jamais absente, et le blocage ne se déclencherait
+   jamais. Le caissier doit poser le geste. Le pré-cochage des options du combo
+   lui-même, qui existe déjà, n'est pas remis en cause.
+5. **L'écran de cuisine doit afficher les modificateurs des composants.** Il lit
+   aujourd'hui les modificateurs de la ligne et ignore sa composition ; un choix
+   rangé par composant ne l'atteindrait pas sans cette lecture. C'est la seule
+   conséquence qui ajoute du code là où il n'y en avait pas.
+6. **Les formats de file d'attente hors ligne restent compatibles.** L'ajout est
+   additif : un poste non encore mis à jour n'émet simplement pas la nouvelle
+   clé, et son intent en attente reste rejouable. Aucun format publié n'est
+   retiré ni redéfini.
+7. **Un combo devient refusable pour une raison nouvelle** — modificateur requis
+   non renseigné, ou ajustement inconnu du serveur. Ces refus doivent être
+   distingués des refus de composition existants, afin que le caissier sache
+   quoi corriger.
+8. **Le catalogue gagne une responsabilité implicite.** Placer dans un combo un
+   composant à modificateurs requis allonge la saisie au comptoir. Le constat est
+   posé ; aucune restriction n'est décidée ici.
 
-5. **Le KDS affiche les modificateurs des composants.** Le board lit la
-   composition de la ligne combo : les modificateurs répondus sur chaque
-   composant sont attribués au nom du composant et rendus en sous-lignes
-   indentées sous les options du combo — le barista voit HOT/ICED et le lait
-   d'avoine sur son écran.
-6. *(Retirée à la validation du 2026-07-31 — le numéro est conservé vacant
-   pour que les références « conséquence 7 » portées par le code et les
-   migrations restent exactes.)*
-7. **Un ajustement inconnu est un refus qui se corrige.** Un ajustement
-   introuvable ou inactif est un refus dédié
-   (`combo_component_modifier_unknown`), distinct des refus de composition
-   existants — le caissier sait quoi corriger, jamais un silence à 0.
+## Ce que cet ADR ne tranche pas
 
-Conséquences d'implémentation constatées, gravées ici comme faits :
-
-- **Format de transport additif.** Chaque élément de `combo_components` peut
-  porter une clé `modifiers` (`[{group_name, option_label}]`). Un composant
-  sans cette clé se price exactement comme avant, et les fonctions SQL qui
-  lisent la composition sans connaître la clé l'ignorent sans rien casser —
-  c'est ce qui a permis de déployer le pricing serveur avant l'émission POS.
-- **Deux combos configurés différemment ne fusionnent jamais.** La signature
-  de fusion des lignes de panier intègre la configuration des composants
-  (l'ordre des composants et de leurs modificateurs étant neutralisé) : deux
-  Capuccino, l'un chaud l'autre glacé, choisis via la même option de combo,
-  restent deux lignes — sinon la cuisine n'aurait préparé qu'une boisson.
-- **Bumps du 2026-07-30 :** l'encaissement direct et l'envoi en cuisine ont
-  été bumpés (`complete_order_with_payment` v21→v22, `fire_counter_order`
-  v4→v5, anciennes versions droppées) ; le paiement d'une commande firée n'a
-  rien eu à changer, il déduit depuis le snapshot que le fire renseigne.
-
-## Résiduel
-
-- **La validation serveur des groupes requis n'est pas activée.** Le blocage
-  de la décision 2 est aujourd'hui porté par le domaine et la modale (côté
-  client). Le serveur accepte encore un combo dont un groupe requis de
-  composant est sans réponse — refus volontairement différé tant que le POS
-  n'émettait pas les choix ; l'émission étant livrée, l'activation serveur est
-  du backlog.
-- **Le chemin KDS hors-ligne n'affiche pas les modificateurs de composants.**
-  Le payload du bus `order.fired` ne transporte pas la composition ; l'écran
-  offline rend une liste vide. L'extension du format bus est additive et se
-  décide séparément (régime append-only de l'outbox, ADR-015).
+- **Le coût de revient d'un combo.** La déduction porte sur le stock ; la
+  valorisation du combo et de sa marge n'est pas modifiée ici.
+- **La réouverture d'une commande.** Une commande de combo rouverte perd
+  aujourd'hui sa nature de combo et sa composition. Le défaut est antérieur et
+  reste entier ; il se traitera séparément.
+- **Les combos imbriqués.** Un composant ne peut pas être lui-même un combo ;
+  cet ADR ne change pas cette règle.
 
 ## Réversibilité
 
-La facturation et la déduction sont portées par la **donnée** : un composant
-sans modificateurs répondus se price et se déduit comme avant l'ADR, et
-retirer les groupes de modificateurs d'un produit suffit à sortir ce produit
-du dispositif. Revenir sur les décisions elles-mêmes (ne plus facturer ou ne
-plus déduire des réponses émises) exigerait un nouvel ADR et un bump des RPC
-de vente.
+Les trois termes du prix sont distincts et le terme ajouté est identifiable :
+cesser de facturer les modificateurs de composants revient à ne plus l'ajouter,
+sans toucher aux deux autres. La composition enrichie étant additive, un retour
+en arrière laisse des lignes de commande porteuses d'une clé que plus personne ne
+lit — inerte, pas contradictoire. En revanche, revenir sur la déduction de stock
+après des ventes exigerait un nouvel ADR : les mouvements émis sont dans un
+journal en ajout seul et ne se rétractent pas.
