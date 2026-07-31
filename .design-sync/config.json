@@ -1,0 +1,41 @@
+{
+  "projectId": "1b7aed41-1045-4f9d-9551-7e6263a77d0c",
+  "shape": "package",
+  "pkg": "@breakery/ui",
+  "globalName": "BreakeryUI",
+  "buildCmd": "node packages/ui/node_modules/tailwindcss/lib/cli.js -c .design-sync/tw-preview.config.ts -i .design-sync/tw-preview.css -o packages/ui/dist/ds-preview.css --minify",
+  "tsconfig": "tsconfig.json",
+  "cssEntry": "dist/ds-preview.css",
+  "extraFonts": [
+    "../../apps/pos/node_modules/@fontsource-variable/inter/index.css",
+    "../../apps/pos/node_modules/@fontsource-variable/fraunces/index.css",
+    "../../apps/pos/node_modules/@fontsource-variable/jetbrains-mono/index.css",
+    "../../apps/pos/node_modules/@fontsource/playfair-display/400-italic.css",
+    "../../apps/backoffice/node_modules/@fontsource-variable/ibm-plex-sans/index.css",
+    "../../apps/backoffice/node_modules/@fontsource/ibm-plex-mono/latin-400.css",
+    "../../apps/backoffice/node_modules/@fontsource/ibm-plex-mono/latin-500.css",
+    "../../apps/backoffice/node_modules/@fontsource/ibm-plex-mono/latin-600.css"
+  ],
+  "runtimeFontPrefixes": ["Inter Fallback"],
+  "readmeHeader": ".design-sync/conventions.md",
+  "overrides": {
+    "Dialog": { "cardMode": "single", "viewport": "720x480" },
+    "Sheet": { "cardMode": "single", "viewport": "720x480" },
+    "Card": { "cardMode": "column" },
+    "EmptyState": { "cardMode": "column" },
+    "Separator": { "cardMode": "column" },
+    "Tabs": { "cardMode": "column" },
+    "DataTable": { "cardMode": "column" },
+    "KpiTile": { "cardMode": "column" },
+    "QuantityStepper": { "cardMode": "column" },
+    "DiscountModal": { "cardMode": "single", "viewport": "720x900" },
+    "BrandLogo": { "cardMode": "column" },
+    "BrandMark": { "cardMode": "column" },
+    "CustomerCategoryBadge": { "cardMode": "column" },
+    "LoyaltyBadge": { "cardMode": "column" },
+    "OrderTypeTabs": { "cardMode": "column" },
+    "PromotionTypeBadge": { "cardMode": "column" },
+    "TabletOrderCard": { "cardMode": "column" },
+    "TenderRow": { "cardMode": "column" }
+  }
+}
