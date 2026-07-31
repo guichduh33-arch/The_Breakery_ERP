@@ -61,10 +61,7 @@ vi.mock('@/features/cart/hooks/useStationMap', () => ({ getStationMap: () => Pro
 
 // Table 7 servie, sa commande de salle est complétable.
 const tableOrdersMock = vi.hoisted(() => ({
-  data: { '7': { id: 'order-open-1', order_number: '#0042', appendable: true } } as Record<
-    string,
-    { id: string; order_number: string; appendable: boolean }
-  >,
+  data: { '7': { id: 'order-open-1', order_number: '#0042', appendable: true } },
 }));
 vi.mock('@/features/tables/hooks/useTableOrders', () => ({
   useTableOrders: () => ({ data: tableOrdersMock.data }),

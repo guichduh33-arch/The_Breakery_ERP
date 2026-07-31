@@ -75,7 +75,7 @@ export function usePickedUpOrderSync(): void {
         ...(store.cart.tableNumber ? { tableNumber: store.cart.tableNumber } : {}),
       });
       store.markLocked(items.map((i) => i.id));
-      store.setPickedUpOrderId(pickedUpOrderId!);
+      store.setPickedUpOrderId(pickedUpOrderId);
       knownIdsRef.current = new Set(rows.map((r) => r.id));
 
       const names = fresh.map((r) => r.name_snapshot).join(', ');
