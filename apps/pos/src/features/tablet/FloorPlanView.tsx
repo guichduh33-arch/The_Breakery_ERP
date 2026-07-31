@@ -56,6 +56,12 @@ function sectionIcon(label: string): JSX.Element {
   return <MapPin className="h-5 w-5" aria-hidden />;
 }
 
+/** Commande en cours sur une table, telle que la salle peut la compléter. */
+export interface AppendableOrderRef {
+  id: string;
+  order_number: string;
+}
+
 export interface FloorPlanViewProps {
   tables: RestaurantTable[];
   /** Map of tableName → occupied flag. */
@@ -64,6 +70,14 @@ export interface FloorPlanViewProps {
   selectedTable?: string | null;
   /** Fired when the waiter taps an available table. */
   onTableSelect: (tableName: string) => void;
+  /**
+   * tableName → commande de salle encore complétable. Une table occupée qui
+   * figure ici devient touchable pour AJOUTER une tournée ; les autres restent
+   * inertes (commande née au comptoir, ou déjà payée).
+   */
+  appendableByTable?: Record<string, AppendableOrderRef>;
+  /** Fired when the waiter taps an occupied table carrying an appendable order. */
+  onAppendSelect?: (tableName: string, order: AppendableOrderRef) => void;
   /** Optional: header subtitle override. */
   subtitle?: string;
 }
@@ -87,6 +101,8 @@ export function FloorPlanView({
   occupancy,
   selectedTable,
   onTableSelect,
+  appendableByTable,
+  onAppendSelect,
   subtitle,
 }: FloorPlanViewProps): JSX.Element {
   const sections = useMemo(() => bucketTablesBySection(tables), [tables]);
@@ -97,10 +113,19 @@ export function FloorPlanView({
   const handleTap = useCallback(
     (table: RestaurantTable): void => {
       const occupied = occupancy[table.name] === true;
-      if (occupied) return; // tablet flow: cannot start a new order on an occupied table
-      onTableSelect(table.name);
+      if (!occupied) {
+        onTableSelect(table.name);
+        return;
+      }
+      // Table occupée : une 2ᵉ tournée est possible SI la commande en cours est
+      // née en salle et n'est pas encore payée. Sinon on reste inerte — c'était
+      // le seul comportement jusqu'ici.
+      const target = appendableByTable?.[table.name];
+      if (target !== undefined && onAppendSelect !== undefined) {
+        onAppendSelect(table.name, target);
+      }
     },
-    [occupancy, onTableSelect],
+    [occupancy, onTableSelect, appendableByTable, onAppendSelect],
   );
 
   return (
@@ -120,7 +145,10 @@ export function FloorPlanView({
         <div>
           <h1 className="font-display text-2xl tracking-wide text-text-primary">FLOOR PLAN</h1>
           <p className="text-text-secondary text-sm mt-1">
-            {subtitle ?? 'Tap an available table to start a new order.'}
+            {subtitle ??
+              (onAppendSelect !== undefined
+                ? 'Tap a free table to start an order, or a served table to add a round.'
+                : 'Tap an available table to start a new order.')}
           </p>
         </div>
       </header>

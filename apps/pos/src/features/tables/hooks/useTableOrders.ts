@@ -12,6 +12,14 @@ import { supabase } from '@/lib/supabase';
 export interface TableOrderRef {
   id: string;
   order_number: string;
+  /**
+   * La serveuse peut-elle y ajouter depuis la salle ? Vrai pour une commande
+   * NÉE sur tablette et encore ouverte. Une commande du comptoir est liée à une
+   * session de caisse que la tablette n'a pas ; une commande payée ne se
+   * complète plus. Miroir exact des gardes de `create_tablet_order` — si les
+   * deux divergent, la serveuse tape un bouton qui échoue.
+   */
+  appendable: boolean;
 }
 
 interface ActiveOrderRow {
@@ -19,6 +27,8 @@ interface ActiveOrderRow {
   order_number: string;
   table_number: string;
   created_at: string;
+  created_via: string;
+  status: string;
 }
 
 export const TABLE_ORDERS_KEY = ['table_orders'];
@@ -39,7 +49,7 @@ async function fetchTableOrders(): Promise<Record<string, TableOrderRef>> {
     };
   })
     .from('orders')
-    .select('id, order_number, table_number, created_at')
+    .select('id, order_number, table_number, created_at, created_via, status')
     .not('table_number', 'is', null)
     .not('status', 'in', '(completed,voided)')
     .order('created_at', { ascending: false });
@@ -49,7 +59,13 @@ async function fetchTableOrders(): Promise<Record<string, TableOrderRef>> {
   for (const row of data ?? []) {
     // Trié décroissant → la première occurrence par table est la plus récente.
     if (!(row.table_number in map)) {
-      map[row.table_number] = { id: row.id, order_number: row.order_number };
+      map[row.table_number] = {
+        id: row.id,
+        order_number: row.order_number,
+        appendable:
+          row.created_via === 'tablet' &&
+          (row.status === 'pending_payment' || row.status === 'draft'),
+      };
     }
   }
   return map;

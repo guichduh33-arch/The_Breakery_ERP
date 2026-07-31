@@ -26,6 +26,7 @@ import {
   BrandMark,
   Button,
 } from '@breakery/ui';
+import { usePickedUpOrderSync } from '@/features/inbox/hooks/usePickedUpOrderSync';
 import { CategoryNav } from '@/features/products/CategoryNav';
 import { ProductTapHandler } from '@/features/products/ProductTapHandler';
 import { SideMenuDrawer } from '@/features/nav/SideMenuDrawer';
@@ -56,6 +57,10 @@ import type { CustomerWithCategory } from '@/stores/cartStore';
 
 export default function PosPage() {
   const navigate = useNavigate();
+  // Une serveuse peut ajouter une tournée à la commande de salle que ce panier
+  // tient déjà : sans cette resynchronisation, le caissier encaisserait un
+  // total périmé et `pay_existing_order` le refuserait sans qu'il comprenne.
+  usePickedUpOrderSync();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const isLocked = useAuthStore((s) => s.isLocked);

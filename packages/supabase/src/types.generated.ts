@@ -6962,11 +6962,12 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      create_tablet_order_v4: {
+      create_tablet_order_v5: {
         Args: {
           p_client_uuid: string
           p_items: Json
           p_notes?: string
+          p_order_id?: string
           p_order_type: Database["public"]["Enums"]["order_type"]
           p_table_number: string
           p_waiter_id: string

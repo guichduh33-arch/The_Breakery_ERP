@@ -34,7 +34,7 @@
 //     `@breakery/domain` — never raw inserts. After success, the cart
 //     is cleared and the host typically navigates to `/tablet/orders`.
 
-import { useState, useCallback, useRef, type JSX } from 'react';
+import { useState, useCallback, useMemo, useRef, type JSX } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { ArrowLeft, MapPin } from 'lucide-react';
@@ -46,6 +46,7 @@ import { useTabletCartStore } from '@/stores/tabletCartStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useRestaurantTables } from '@/features/tables/hooks/useRestaurantTables';
 import { useTableOccupancy } from '@/features/tables/hooks/useTableOccupancy';
+import { useTableOrders } from '@/features/tables/hooks/useTableOrders';
 import { TabletMenuView } from './components/TabletMenuView';
 import { TabletCartPanel } from './components/TabletCartPanel';
 import { OfflineBanner } from './components/OfflineBanner';
@@ -85,6 +86,9 @@ export function TabletOrderPage({
   const setOrderType = useTabletCartStore((s) => s.setOrderType);
   const notes = useTabletCartStore((s) => s.notes);
   const clearCart = useTabletCartStore((s) => s.clearCart);
+  const appendToOrderId = useTabletCartStore((s) => s.appendToOrderId);
+  const appendToOrderNumber = useTabletCartStore((s) => s.appendToOrderNumber);
+  const setAppendTarget = useTabletCartStore((s) => s.setAppendTarget);
   const userId = useAuthStore((s) => s.user?.id);
   const navigate = useNavigate();
 
@@ -92,6 +96,16 @@ export function TabletOrderPage({
   const liveOccupancy = useTableOccupancy();
   const tables = tablesOverride ?? tablesQuery.data ?? [];
   const occupancy = occupancyOverride ?? liveOccupancy;
+
+  // Carte table → commande de salle encore complétable (2ᵉ tournée).
+  const tableOrdersQuery = useTableOrders();
+  const appendableByTable = useMemo(() => {
+    const out: Record<string, { id: string; order_number: string }> = {};
+    for (const [name, ref] of Object.entries(tableOrdersQuery.data ?? {})) {
+      if (ref.appendable) out[name] = { id: ref.id, order_number: ref.order_number };
+    }
+    return out;
+  }, [tableOrdersQuery.data]);
 
   const { isOnline, lastSync } = useTabletOffline();
   const mutation = useCreateTabletOrder();
@@ -104,13 +118,25 @@ export function TabletOrderPage({
   const isEmpty = items.length === 0;
   const isSending = mutation.isPending;
 
+  const isAppendMode = appendToOrderId !== null;
+
   const handleTableSelect = useCallback(
     (name: string) => {
+      // Choisir une table LIBRE sort du mode ajout : c'est une commande neuve.
+      setAppendTarget(null);
       setTableNumber(name);
       setOrderType('dine_in');
       setView('menu');
     },
-    [setTableNumber, setOrderType],
+    [setAppendTarget, setTableNumber, setOrderType],
+  );
+
+  const handleAppendSelect = useCallback(
+    (name: string, order: { id: string; order_number: string }) => {
+      setAppendTarget({ id: order.id, orderNumber: order.order_number, tableNumber: name });
+      setView('menu');
+    },
+    [setAppendTarget],
   );
 
   const handleSend = useCallback(async () => {
@@ -119,7 +145,8 @@ export function TabletOrderPage({
     // counter path enforces this (useDineInTableGuard + fire_counter_order_v5
     // P0011); the tablet path did not, so a waiter could fire a dine-in order
     // with an empty table_number — no table on the KOT + a phantom occupancy.
-    if (orderType === 'dine_in' && !tableNumber?.trim()) {
+    // En ajout, la table vient de la commande visée — pas de garde ici.
+    if (!isAppendMode && orderType === 'dine_in' && !tableNumber?.trim()) {
       toast.error('Select a table for a dine-in order');
       setView('floor-plan');
       return;
@@ -134,10 +161,12 @@ export function TabletOrderPage({
           cart: { items, tableNumber, orderType, notes },
           waiterId: userId,
           clientUuid: clientUuidRef.current,
+          ...(appendToOrderId !== null ? { appendToOrderId } : {}),
         });
         justSentOrderId = result.orderId;
         offlineLocalNumber = result.localNumber;
       }
+      const appendedTo = appendToOrderNumber;
       clearCart();
       clientUuidRef.current = crypto.randomUUID();
       // Spec 006x lot 4 — envoi parti par le bus LAN : pas de commande cloud
@@ -146,21 +175,36 @@ export function TabletOrderPage({
         toast.success(`Commande ${offlineLocalNumber} envoyée en cuisine (hors-ligne)`);
         return;
       }
+      if (appendedTo !== null) {
+        // On reste sur la prise de commande : la serveuse enchaîne souvent une
+        // autre table, et la commande complétée vit déjà dans son historique.
+        toast.success(`Ajouté à la commande ${appendedTo}`);
+        return;
+      }
       toast.success('Order sent to kitchen');
       void navigate(redirectAfterSend, { state: { justSentOrderId } });
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to send order';
-      toast.error(message);
+      const raw = err instanceof Error ? err.message : 'Failed to send order';
+      toast.error(
+        raw === 'append_unavailable_offline'
+          ? 'Ajout indisponible hors ligne — prends une commande neuve'
+          : raw === 'table_required_for_dine_in'
+            ? 'Select a table for a dine-in order'
+            : raw,
+      );
     }
   }, [
     userId,
     isEmpty,
+    isAppendMode,
     onSendOverride,
     mutation,
     items,
     tableNumber,
     orderType,
     notes,
+    appendToOrderId,
+    appendToOrderNumber,
     clearCart,
     navigate,
     redirectAfterSend,
@@ -190,6 +234,8 @@ export function TabletOrderPage({
             occupancy={occupancy}
             selectedTable={tableNumber}
             onTableSelect={handleTableSelect}
+            appendableByTable={appendableByTable}
+            onAppendSelect={handleAppendSelect}
           />
         </div>
       </div>
@@ -213,7 +259,9 @@ export function TabletOrderPage({
         {tableNumber ? `Table ${tableNumber}` : 'Pick a table'}
       </Button>
 
-      <OrderTypeToggle value={orderType} onChange={setOrderType} />
+      {/* En ajout, le type est celui de la commande visée — le proposer ici
+          laisserait croire qu'on peut le changer pour la 2ᵉ tournée. */}
+      {!isAppendMode && <OrderTypeToggle value={orderType} onChange={setOrderType} />}
 
       <div className="ml-auto flex items-center gap-3" aria-label="Cart total">
         <span className="text-xs uppercase tracking-widest text-text-muted">Total</span>
@@ -225,6 +273,29 @@ export function TabletOrderPage({
   return (
     <div className="flex flex-col h-full" data-testid="tablet-order-page">
       <OfflineBanner isOnline={isOnline} lastSync={lastSync} />
+      {/* Bandeau permanent : sans lui, rien ne distingue une 2ᵉ tournée d'une
+          commande neuve, et la serveuse enverrait un doublon à la table. */}
+      {isAppendMode && (
+        <div
+          className="px-6 py-2 flex items-center justify-between gap-4 bg-gold-soft text-gold border-b border-gold/30"
+          role="status"
+          data-testid="tablet-append-banner"
+        >
+          <span className="text-sm font-semibold">
+            Ajout à la commande {appendToOrderNumber}
+            {tableNumber ? ` · Table ${tableNumber}` : ''}
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="min-h-11"
+            onClick={() => setAppendTarget(null)}
+            data-testid="tablet-append-cancel"
+          >
+            Annuler l’ajout
+          </Button>
+        </div>
+      )}
       <div className="flex flex-1 overflow-hidden">
         <TabletMenuView
           selectedSlug={selectedSlug}
@@ -246,7 +317,11 @@ export function TabletOrderPage({
               }}
               data-testid="tablet-order-send"
             >
-              {isSending ? 'Sending…' : 'Send to Kitchen'}
+              {isSending
+                ? 'Sending…'
+                : isAppendMode
+                  ? 'Ajouter à la commande'
+                  : 'Send to Kitchen'}
             </Button>
           }
         />

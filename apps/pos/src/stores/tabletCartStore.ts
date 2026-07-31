@@ -13,12 +13,22 @@ export interface TabletCartState {
   orderType: 'dine_in' | 'take_out';
   /** Session 59 (17 D1.1) — order-level free-text note (allergy, "no gluten"...). */
   notes: string | null;
+  /**
+   * Mode AJOUT (2026-08-01) — commande de salle que ce panier vient compléter.
+   * `null` = commande neuve. Quand il est posé, la table et le type viennent de
+   * la commande visée : on ne les redemande pas, et le serveur ne les relit pas.
+   */
+  appendToOrderId: string | null;
+  /** Numéro affichable de cette commande (#0042) — bandeau de mode ajout. */
+  appendToOrderNumber: string | null;
   addItem: (product: Product, modifiers?: SelectedModifiers) => void;
   updateQuantity: (itemId: string, qty: number) => void;
   removeItem: (itemId: string) => void;
   setTableNumber: (name: string | null) => void;
   setOrderType: (type: 'dine_in' | 'take_out') => void;
   setNotes: (notes: string | null) => void;
+  /** Entre en mode ajout sur une commande, ou en sort (null). */
+  setAppendTarget: (target: { id: string; orderNumber: string; tableNumber: string | null } | null) => void;
   clearCart: () => void;
 }
 
@@ -34,6 +44,8 @@ export const useTabletCartStore = create<TabletCartState>()(
       tableNumber: null,
       orderType: 'dine_in',
       notes: null,
+      appendToOrderId: null,
+      appendToOrderNumber: null,
 
       addItem: (product, modifiers = []) => {
         const fakeCart = { items: get().items, order_type: get().orderType };
@@ -59,7 +71,32 @@ export const useTabletCartStore = create<TabletCartState>()(
 
       setNotes: (notes) => set({ notes }),
 
-      clearCart: () => set({ items: [], tableNumber: null, orderType: 'dine_in', notes: null }),
+      // Entrer en mode ajout REMET le panier à zéro : on compose la 2ᵉ tournée,
+      // pas une copie de la première. La table vient de la commande visée pour
+      // que l'en-tête et le KOT restent cohérents.
+      setAppendTarget: (target) =>
+        set(
+          target === null
+            ? { appendToOrderId: null, appendToOrderNumber: null }
+            : {
+                items: [],
+                notes: null,
+                appendToOrderId: target.id,
+                appendToOrderNumber: target.orderNumber,
+                tableNumber: target.tableNumber,
+                orderType: 'dine_in',
+              },
+        ),
+
+      clearCart: () =>
+        set({
+          items: [],
+          tableNumber: null,
+          orderType: 'dine_in',
+          notes: null,
+          appendToOrderId: null,
+          appendToOrderNumber: null,
+        }),
     }),
     {
       name: 'breakery.tablet-cart.v1',
@@ -71,6 +108,11 @@ export const useTabletCartStore = create<TabletCartState>()(
         tableNumber: state.tableNumber,
         orderType: state.orderType,
         notes: state.notes,
+        // La cible d'ajout survit au rechargement comme le reste de la saisie :
+        // sans elle, un panier repris après un reload repartirait en commande
+        // NEUVE et la table recevrait deux additions.
+        appendToOrderId: state.appendToOrderId,
+        appendToOrderNumber: state.appendToOrderNumber,
       }),
     },
   ),
