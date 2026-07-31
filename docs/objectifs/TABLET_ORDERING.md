@@ -38,7 +38,7 @@ Le serveur **saisit** ; la cuisine **prépare** ; le caissier **encaisse**. Troi
 
 | Page | Job-to-be-done |
 |---|---|
-| **Prise de commande** (`/tablet/order`) | Composer une commande à la table — plan de salle, sélection produits, envoi |
+| **Prise de commande** (`/tablet/order`) | Composer une commande à la table, ou compléter celle d'une table déjà servie — plan de salle, sélection produits, envoi |
 | **Historique tablette** (`/tablet/orders`) | Voir les commandes envoyées depuis cette tablette + leur statut |
 
 Le tout est englobé par une coquille applicative qui gère l'authentification PIN, l'état de la liaison (cloud et hub boutique), et le suivi des commandes en cours.
@@ -96,10 +96,10 @@ L'écran de saisie est volontairement **épuré et tactile**.
 
 ### 6.1 Layout
 
-- **Plan de salle** accessible depuis la barre d'outils : les tables y sont positionnées comme dans la vraie salle, les occupées sont signalées.
+- **Plan de salle** accessible depuis la barre d'outils : les tables y sont positionnées comme dans la vraie salle, les occupées sont signalées. C'est aussi par là qu'on **complète** une table déjà servie (§7.2).
 - **Grille produits** par catégorie, avec recherche.
 - **Panier en rail latéral**, repliable en portrait pour rendre de la place à la grille.
-- **Bouton « Send to Kitchen »** en pied de panier, toujours visible.
+- **Bouton d'envoi** en pied de panier, toujours visible.
 
 ### 6.2 Fonctionnalités
 
@@ -109,7 +109,8 @@ L'écran de saisie est volontairement **épuré et tactile**.
 - **Note de commande** libre pour la cuisine (allergie, préparation). Elle porte sur la **commande entière**, pas sur une ligne.
 - **Type de commande** : sur place (défaut tablette) ou à emporter.
 - **Indicateur de stock faible** sur les produits concernés.
-- **Le panier survit** à une mise en veille ou à un rechargement en plein service.
+- **Le panier survit** à une mise en veille ou à un rechargement en plein service — y compris quand il complète une table (§7.2), pour qu'un rechargement ne transforme pas une 2ᵉ tournée en seconde addition.
+- **Ajout à une table déjà servie** : voir §7.2.
 
 ### 6.3 Ce qui est *absent* volontairement
 
@@ -124,7 +125,9 @@ Bénéfice métier : **simplicité radicale**. Un serveur saisit une commande co
 
 ## 7. L'envoi — Le moment de bascule
 
-Bouton **« Send to Kitchen »** → la commande quitte la tablette :
+### 7.1 Une commande neuve
+
+Bouton d'envoi → la commande quitte la tablette :
 
 1. Contrôle de recevabilité : une commande sur place sans table est refusée sur place, et le plan de salle s'ouvre.
 2. **En ligne** : création de la commande au cloud par la famille `create_tablet_order`, avec une clé d'idempotence — un double appui ne crée jamais deux commandes. La commande **part en cuisine dès sa création** ; le serveur bascule sur son historique, la commande mise en avant.
@@ -134,6 +137,30 @@ Bouton **« Send to Kitchen »** → la commande quitte la tablette :
 Si l'envoi échoue, le panier **n'est pas vidé** : le serveur corrige et retente.
 
 L'envoi est un **point de non-retour**. Les lignes partent en cuisine verrouillées : à partir de là, retirer ou réduire une ligne est un geste **manager au POS**, avec PIN et **déclaration de perte obligatoire** (ADR-010). La tablette n'a ni le droit ni les écrans pour le faire — et c'est délibéré : la marchandise a été produite, sa disparition doit être déclarée.
+
+### 7.2 Une tournée de plus sur une table servie
+
+Une table qui commande un dessert vingt minutes après ses cafés ne doit pas
+recevoir deux additions. **Le serveur complète la commande en cours plutôt que
+d'en créer une seconde**, et le geste se prend **par la table** : sur le plan de
+salle, une table servie est touchable dès lors que sa commande vient de la salle
+et n'est pas encore payée. Un bandeau nomme alors la commande complétée pendant
+toute la saisie — sans lui, rien ne distinguerait une 2ᵉ tournée d'un doublon.
+
+La règle est **une seule addition tant que ce n'est pas payé** : compléter reste
+possible même après que le caissier a repris la commande au comptoir. Son écran
+se met à jour tout seul, pour qu'il n'annonce jamais un montant périmé.
+
+Deux refus, tous deux volontaires :
+
+- Une table dont la commande a été prise **au comptoir** reste inerte. Cette
+  commande dépend d'une session de caisse que la tablette n'a pas ; l'ajout s'y
+  fait au comptoir.
+- Une commande **déjà payée** ne se complète plus. La tournée suivante est une
+  commande neuve.
+
+Ce que l'ajout ne fait pas : il n'ouvre aucun droit sur les lignes déjà parties.
+Ajouter est libre, retirer reste un geste manager (ADR-010 D1).
 
 ---
 
@@ -145,6 +172,8 @@ Les commandes de salle en attente s'affichent au comptoir dans le **panneau des 
 - **Close** → n'apparaît que pour une commande dont **toutes les lignes ont déjà été annulées** par le flux manager. Elle constate, elle n'annule rien : sans elle, une commande vidée resterait affichée indéfiniment.
 
 Une commande reprise par un caissier ne peut plus l'être par un autre : la reprise est exclusive.
+
+Une reprise n'est pas un gel : la salle peut encore compléter la commande (§7.2). Le panier du caissier **se met à jour tout seul** quand une ligne arrive, et le lui signale. Sans ça il annoncerait un montant périmé, puis se ferait refuser l'encaissement — le serveur, lui, ne facture jamais autre chose que ce que la commande porte réellement.
 
 Bénéfice métier : **la caisse maîtrise quand traiter une commande de salle**, et le serveur voit en direct quand elle est validée.
 
@@ -170,7 +199,7 @@ Limites assumées :
 - **PIN serveur obligatoire** — pas d'usage anonyme.
 - **Aucune écriture sensible depuis la salle** : annuler une ligne partie en cuisine exige un manager au POS.
 
-Manque identifié : la **création** d'une commande de salle ne laisse pas de ligne d'audit dédiée aujourd'hui (la commande porte son serveur, ce qui n'est pas la même chose qu'une trace d'événement). Voir backlog §13.
+L'**ajout** à une commande existante laisse une trace d'audit nominative (auteur, nombre de lignes ajoutées). La **création**, elle, n'en laisse pas : la commande porte son serveur, ce qui n'est pas la même chose qu'une trace d'événement. Cet écart est un manque identifié, pas une intention — voir backlog §13.
 
 Bénéfice métier : **la tablette n'ouvre pas de nouvelle surface de fraude**. Elle sait créer et consulter ; tout geste qui détruit de la valeur passe par le comptoir.
 
@@ -195,7 +224,8 @@ Bénéfice métier : **la tablette n'ouvre pas de nouvelle surface de fraude**. 
 - La tablette **ne supporte pas le modifier engine complet** du POS.
 - La tablette **ne crée pas de client** et n'en rattache pas à la commande.
 - La tablette **ne gère pas les combos avec sélection multi-groupes** — un combo se compose au comptoir.
-- La tablette **ne modifie ni n'annule une commande déjà envoyée**. Son panier est local et pré-envoi ; après l'envoi, corriger une ligne partie en cuisine est un geste manager au POS (ADR-010 : autorisation + perte).
+- La tablette **ne modifie ni n'annule une commande déjà envoyée**. Elle peut la **compléter** (§7.2) — l'ADR-010 D1 distingue les deux : ajouter est libre, retirer ou réduire exige un manager au POS avec déclaration de perte.
+- La tablette **ne complète pas une commande en coupure internet**. L'ajout est en ligne seulement : mettre en file une intention désignant une commande qui n'existe pas encore côté serveur, c'est risquer un rejeu refusé (ADR-018). Pendant une coupure, la table reçoit une commande neuve — quitte à avoir deux additions ce soir-là.
 - La tablette **ne consulte pas le KDS** ni les stocks détaillés — juste l'indicateur de stock faible.
 
 En revanche, contrairement à ce que cette fiche a longtemps affirmé, la tablette **déclenche bien l'envoi en cuisine** : la commande atteint le KDS à sa création, sans attendre le caissier. Un réglage pour rendre ce comportement optionnel a été **arbitré hors périmètre** par le propriétaire (voir `SETTINGS.md`) — ne pas le re-proposer sans nouvelle décision.
@@ -206,8 +236,8 @@ En revanche, contrairement à ce que cette fiche a longtemps affirmé, la tablet
 
 | Priorité | Évolution | Bénéfice attendu |
 |---|---|---|
-| 🔴 | **Ajouter à une commande existante** | Une seconde tournée crée aujourd'hui une commande séparée. Le verrou cuisine autorise explicitement l'ajout de lignes : il manque l'écran. |
 | 🟠 | **Notifier la salle quand un plat est prêt** | Le serveur reçoit « table 7 prête » sur sa tablette au lieu d'aller lire le KDS. |
+| 🟠 | **Compléter une commande en coupure** | Aujourd'hui l'ajout est en ligne seulement (§12) : une coupure force une seconde addition sur la table. |
 | 🟠 | **Transférer une commande de table** | Un groupe change de table en cours de service ; la bascule existe côté POS, pas depuis la salle. |
 | 🟠 | **Modifier engine complet** | Ne plus renvoyer au comptoir certaines configurations demandées en salle. |
 | 🟠 | **Combos sélectionnables** | Composer un combo depuis la tablette. |
@@ -222,4 +252,4 @@ En revanche, contrairement à ce que cette fiche a longtemps affirmé, la tablet
 
 ## 14. En une phrase
 
-Le module Tablet Ordering est **l'extension salle du POS** de The Breakery : il transforme un serveur en noyau mobile de prise de commande en lui donnant une tablette PIN-authentifiée qui envoie une commande complète en quelques secondes — directement en cuisine, avec une table obligatoire, une confirmation adossée à une écriture réelle, et une continuité en coupure internet — sans toucher au cash, sans commande perdue, sans aller-retour au comptoir, pour que le service en salle gagne le tempo qu'il perd dans les boulangeries qui prennent encore les commandes au carnet papier.
+Le module Tablet Ordering est **l'extension salle du POS** de The Breakery : il transforme un serveur en noyau mobile de prise de commande en lui donnant une tablette PIN-authentifiée qui envoie une commande complète en quelques secondes — directement en cuisine, avec une table obligatoire, une confirmation adossée à une écriture réelle, et une continuité en coupure internet — puis qui laisse compléter la table au fil du service sans jamais fabriquer une seconde addition, sans toucher au cash, sans commande perdue, sans aller-retour au comptoir, pour que le service en salle gagne le tempo qu'il perd dans les boulangeries qui prennent encore les commandes au carnet papier.
