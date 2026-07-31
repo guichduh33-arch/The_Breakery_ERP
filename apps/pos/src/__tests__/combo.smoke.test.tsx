@@ -96,12 +96,17 @@ const COMBO_CART_ITEM: CartItem = {
   name: 'Breakfast Set',
   unit_price: 75000,
   quantity: 1,
-  // Session 47 — modifiers carry the chosen options. The live ComboCartLineRow
-  // renders components from the useComboConfig definition (mocked below with the
-  // same Americano + Croissant options flagged is_default).
+  // Session 47 — modifiers carry the chosen options. Since the 2026-07-31 fix
+  // the cart renders the line's OWN combo_components (the recorded selection);
+  // the definition only resolves labels. A configured line always carries its
+  // composition — this fixture mirrors what addComboItem produces.
   modifiers: [
     { group_name: 'Choose a drink', option_label: 'Americano', price_adjustment: 0 },
     { group_name: 'Choose a pastry', option_label: 'Croissant', price_adjustment: 0 },
+  ],
+  combo_components: [
+    { product_id: 'prod-amer', quantity: 1 },
+    { product_id: 'prod-croi', quantity: 1 },
   ],
   product_type: 'combo',
 };

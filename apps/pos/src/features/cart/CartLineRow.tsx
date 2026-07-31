@@ -61,12 +61,26 @@ function ComboCartLineRow({
   onRemove,
 }: Omit<CartLineRowProps, 'onRequestCancel' | 'onApplyLineDiscount' | 'onEditQty'>): JSX.Element {
   const { data: def } = useComboConfig(item.product_id);
-  // Flatten all default options across groups for the component summary display.
-  const components = (def?.groups ?? []).flatMap((g) =>
-    g.options
-      .filter((o) => o.is_default)
-      .map((o) => ({ name: o.label, quantity: 1 })),
+  // The line's OWN composition is what the order will record — it is the only
+  // truthful source. The definition resolves component labels; its defaults
+  // are never displayed (a default is not a choice — bug 2026-07-31).
+  const labelByProductId = new Map(
+    (def?.groups ?? []).flatMap((g) =>
+      g.options.map((o) => [o.component_product_id, o.label] as const),
+    ),
   );
+  const components: { name: string; quantity: number }[] = [];
+  for (const comp of item.combo_components ?? []) {
+    const label = labelByProductId.get(comp.product_id) ?? 'Component';
+    const answers = (comp.modifiers ?? []).map((m) => m.option_label).join(' · ');
+    const name = answers ? `${label} — ${answers}` : label;
+    const existing = components.find((c) => c.name === name);
+    if (existing) {
+      existing.quantity += comp.quantity;
+    } else {
+      components.push({ name, quantity: comp.quantity });
+    }
+  }
   const lineTotal = item.unit_price * item.quantity;
 
   return (
