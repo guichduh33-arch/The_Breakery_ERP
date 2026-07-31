@@ -91,6 +91,9 @@ Chaque commande est une **carte** affichant :
 - Pour chaque item :
   - Nom du produit + quantité.
   - Modifiers / variantes (sucre +, sans lait, etc.).
+  - Pour une ligne combo : les modificateurs répondus sur chaque composant,
+    rattachés au nom du composant ("Cappuccino — ICED, Oat Milk") en
+    sous-lignes sous les options du combo (ADR-017).
   - Notes spéciales (allergie, préparation).
   - Bouton **Ready** individuel par item.
   - Badge `item_status` (pending → preparing → ready → served).
