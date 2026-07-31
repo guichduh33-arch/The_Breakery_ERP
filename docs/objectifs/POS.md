@@ -304,12 +304,12 @@ Le POS expose un grand nombre de modales et outils accessibles depuis la barre d
 
 ## 13. Réceptionner les commandes tablette
 
-Le hook `useTabletOrderReceiver` écoute en continu les commandes envoyées depuis les **tablettes serveur** en salle :
+Le panneau des commandes tablette liste en continu les commandes envoyées depuis les **tablettes serveur** en salle :
 
 - Un serveur prend une commande à table avec sa tablette.
-- La commande arrive en notification côté caisse.
-- La commande s'enregistre automatiquement dans les commandes on-hold.
-- Puis elle suit le flux normal (envoi cuisine → encaissement).
+- La commande est créée côté serveur et **part aussitôt en cuisine** ; elle apparaît au comptoir en attente de reprise.
+- Le caissier la **reprend** : elle passe dans son panier, et il l'encaisse. La reprise est exclusive — deux caissiers ne peuvent pas se disputer la même commande.
+- Une commande dont toutes les lignes ont été annulées par le flux manager se **clôt** depuis ce même panneau, sans encaissement.
 
 Bénéfice métier : **dispatcher la prise de commande entre la salle et le comptoir** sans ressaisie.
 
@@ -321,7 +321,7 @@ Le POS dialogue en direct avec **4 canaux Realtime** :
 
 1. **KDS** (`useKdsStatusListener`) — change d'état des items cuisine, son "order ready", refresh des badges.
 2. **Customer Display** (`useDisplayBroadcast`) — diffuse le cart en cours via BroadcastChannel pour affichage sur l'écran client.
-3. **Tablet servers** (`useTabletOrderReceiver`) — réception des commandes salle.
+3. **Commandes salle** — les commandes tablette en attente arrivent au comptoir, avec un rattrapage périodique pour qu'un événement perdu ne les fasse pas disparaître.
 4. **Live Sessions** (`useAllOpenSessions`) — synchro avec les autres terminaux POS sur le même LAN.
 
 Bénéfice métier : **un écosystème cohérent en temps réel**, sans qu'aucun écran nécessite de rafraîchissement manuel.
