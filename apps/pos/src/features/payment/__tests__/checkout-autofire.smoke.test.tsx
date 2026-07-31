@@ -97,7 +97,7 @@ function setupEnvironment() {
     isAuthenticated: true,
     isLoading: false,
     error: null,
-  } as never);
+  });
 
   useShiftStore.setState({ current: { id: 's1', opened_at: '', opening_cash: 0 } });
 
@@ -157,7 +157,10 @@ describe('PaymentTerminal — checkout auto-fires unprinted items', () => {
 
     // Click "Process Payment".
     const processBtn = screen.getAllByRole('button', { name: /Process Payment/i })[0]!;
-    await act(async () => { processBtn.click(); });
+    await act(async () => {
+      processBtn.click();
+      await Promise.resolve();
+    });
 
     // Wait for fireToStations to be invoked.
     await waitFor(() => {
@@ -188,7 +191,10 @@ describe('PaymentTerminal — checkout auto-fires unprinted items', () => {
     render(withQuery(<PaymentTerminal />));
 
     const processBtn = screen.getAllByRole('button', { name: /Process Payment/i })[0]!;
-    await act(async () => { processBtn.click(); });
+    await act(async () => {
+      processBtn.click();
+      await Promise.resolve();
+    });
 
     await waitFor(() => {
       expect(fireToStationsMock).toHaveBeenCalledTimes(1);

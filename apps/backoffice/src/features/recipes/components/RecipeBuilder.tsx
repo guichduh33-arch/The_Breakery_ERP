@@ -489,7 +489,7 @@ export function RecipeBuilder({
           onClose={() => setDuplicateOpen(false)}
           onSuccess={(targetId) => {
             setDuplicateOpen(false);
-            navigate(`/backoffice/products/${targetId}?tab=recipe`);
+            void navigate(`/backoffice/products/${targetId}?tab=recipe`);
           }}
         />
       )}

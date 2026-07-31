@@ -127,7 +127,7 @@ export function useTabletMenuCacheWriter(): void {
 
     const unsubscribe = qc.getQueryCache().subscribe((event) => {
       if (event.type !== 'updated') return;
-      const key = event.query.queryKey;
+      const key: unknown = event.query.queryKey;
       if (
         Array.isArray(key) &&
         (key[0] === 'products' || key[0] === 'categories' || key[0] === 'restaurant_tables')
