@@ -7,6 +7,7 @@ interface RawOrderItem {
   id: string;
   unit_price: number;
   quantity: number;
+  is_cancelled: boolean;
 }
 
 interface RawProfile {
@@ -56,7 +57,7 @@ export function usePendingTabletOrders() {
           waiter_id,
           sent_to_kitchen_at,
           notes,
-          order_items(id, unit_price, quantity),
+          order_items(id, unit_price, quantity, is_cancelled),
           user_profiles!waiter_id(full_name)
         `)
         .eq('created_via', 'tablet')
@@ -84,6 +85,7 @@ export function usePendingTabletOrders() {
           waiter_name: profile?.full_name ?? 'Waiter',
           sent_to_kitchen_at: row.sent_to_kitchen_at!,
           items_count: orderItems.length,
+          active_items_count: orderItems.filter((i) => !i.is_cancelled).length,
           items_total,
           notes: row.notes ?? null,
         } satisfies TabletOrderEntry;

@@ -30,6 +30,18 @@ export function useCreateTabletOrder() {
     mutationFn: async ({ cart, waiterId, clientUuid }: CreateTabletOrderArgs): Promise<CreateTabletOrderResult> => {
       const payload = buildSubmitPayload(cart, waiterId);
 
+      // ADR-018 D7 — on ne met JAMAIS en file ce qu'un garde serveur refusera.
+      // `create_tablet_order` exige une table pour un dine-in (P0011, règle
+      // propriétaire 2026-07-07). En ligne, ce garde ne fait qu'anticiper le
+      // refus ; HORS LIGNE il est vital : l'intent serait accepté par la file,
+      // le ticket partirait en cuisine par le bus, puis le rejeu le refuserait
+      // à chaque tentative — bloquant derrière lui des encaissements déjà
+      // perçus. Le contrôle est ici (et pas dans un composant) pour couvrir
+      // les DEUX chemins d'envoi et les deux modes.
+      if (payload.p_order_type === 'dine_in' && (payload.p_table_number ?? '').trim() === '') {
+        throw new Error('table_required_for_dine_in');
+      }
+
       // Spec 006x lot 4 — envoi tablette en mode OFFLINE : intention durable
       // (rejouée vers create_tablet_order_v4, MÊME client_uuid) PUIS publish
       // order.fired sur le bus — le KDS affiche le ticket sans cloud. Pas de

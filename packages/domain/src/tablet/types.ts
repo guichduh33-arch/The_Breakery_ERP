@@ -23,6 +23,10 @@ export interface TabletOrderEntry {
   waiter_name: string;
   sent_to_kitchen_at: string;
   items_count: number;
+  /** Lignes NON annulées. À 0, la commande a été vidée par le flux cancel-item
+   *  (manager + perte, ADR-010) et n'attend plus qu'une clôture — elle ne doit
+   *  surtout pas être encaissée. */
+  active_items_count: number;
   items_total: number;
   /** Session 59 (17 D1.1) — order-level note surfaced on the pickup/inbox row. */
   notes: string | null;

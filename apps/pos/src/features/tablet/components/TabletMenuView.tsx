@@ -20,7 +20,7 @@
 
 import { useEffect, type JSX, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import type { Category, Product } from '@breakery/domain';
+import type { Category, Product, RestaurantTable } from '@breakery/domain';
 import { TabletCategorySidebar } from './TabletCategorySidebar';
 import { TabletProductGrid } from './TabletProductGrid';
 import { useTabletMenuCacheRead, useTabletMenuCacheWriter } from '../hooks/useTabletMenuCache';
@@ -44,13 +44,19 @@ export function TabletMenuView({ selectedSlug, onSelectCategory, toolbar }: Tabl
     if (cache.cachedAt === null) return;
     const existingProducts   = qc.getQueryData<Product[]>(['products']);
     const existingCategories = qc.getQueryData<Category[]>(['categories']);
+    const existingTables     = qc.getQueryData<RestaurantTable[]>(['restaurant_tables']);
     if (existingProducts === undefined && cache.cachedProducts.length > 0) {
       qc.setQueryData<Product[]>(['products'], cache.cachedProducts);
     }
     if (existingCategories === undefined && cache.cachedCategories.length > 0) {
       qc.setQueryData<Category[]>(['categories'], cache.cachedCategories);
     }
-  }, [qc, cache.cachedAt, cache.cachedProducts, cache.cachedCategories]);
+    // La salle est semée comme le menu : sans elle, le sélecteur de table est
+    // vide hors ligne et aucune commande dine-in n'est possible.
+    if (existingTables === undefined && cache.cachedTables.length > 0) {
+      qc.setQueryData<RestaurantTable[]>(['restaurant_tables'], cache.cachedTables);
+    }
+  }, [qc, cache.cachedAt, cache.cachedProducts, cache.cachedCategories, cache.cachedTables]);
 
   return (
     <div className="flex flex-1 overflow-hidden">

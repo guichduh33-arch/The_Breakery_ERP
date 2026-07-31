@@ -207,7 +207,6 @@ export function TabletOrderPage({
         size="md"
         className="min-h-11 gap-2"
         onClick={() => setView('floor-plan')}
-        disabled={!isOnline}
         data-testid="tablet-order-pick-table"
       >
         <MapPin className="h-5 w-5 shrink-0" aria-hidden />

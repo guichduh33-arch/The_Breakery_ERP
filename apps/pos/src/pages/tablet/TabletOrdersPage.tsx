@@ -2,7 +2,6 @@ import { useMemo, type JSX } from 'react';
 import { useLocation } from 'react-router-dom';
 import { TabletOrderCard } from '@breakery/ui';
 import { useMyTabletOrders } from '@/features/tablet/hooks/useMyTabletOrders';
-import { useCancelTabletOrder } from '@/features/tablet/hooks/useCancelTabletOrder';
 import { useTabletOrderStatusListener } from '@/features/tablet/hooks/useTabletOrderStatusListener';
 import { TabletOrderConfirmation } from '@/features/tablet/components/TabletOrderConfirmation';
 import type { TabletOrderCardOrder } from '@breakery/ui';
@@ -13,7 +12,6 @@ interface TabletOrdersLocationState {
 
 export default function TabletOrdersPage(): JSX.Element {
   const { data: orders = [], isLoading } = useMyTabletOrders();
-  const cancel = useCancelTabletOrder();
   useTabletOrderStatusListener();
 
   const location = useLocation();
@@ -39,11 +37,12 @@ export default function TabletOrdersPage(): JSX.Element {
           const isJustSent = order.id === justSentOrderId;
           return (
             <div key={order.id} className={isJustSent ? 'rounded-xl ring-2 ring-success' : undefined}>
-              <TabletOrderCard
-                order={order as unknown as TabletOrderCardOrder}
-                onCancel={(id) => cancel.mutate(id)}
-                isCancelling={cancel.isPending && cancel.variables === order.id}
-              />
+              {/* ADR-010 — aucune annulation depuis la salle. Les lignes d'une
+                  commande tablette sont posées `is_locked` dès la création :
+                  les retirer exige un manager ET une déclaration de perte, ce
+                  que seul le flux cancel-item du POS sait faire. Ne pas passer
+                  `onCancel` retire le bouton (la carte le conditionne dessus). */}
+              <TabletOrderCard order={order as unknown as TabletOrderCardOrder} />
             </div>
           );
         })}

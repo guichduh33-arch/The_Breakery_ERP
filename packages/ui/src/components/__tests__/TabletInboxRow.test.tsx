@@ -11,6 +11,7 @@ const makeEntry = (overrides: Partial<TabletOrderEntry> = {}): TabletOrderEntry 
   waiter_name: 'Waiter Demo',
   sent_to_kitchen_at: new Date(Date.now() - 150_000).toISOString(),
   items_count: 3,
+  active_items_count: 3,
   items_total: 105_000,
   notes: null,
   ...overrides,
@@ -115,5 +116,30 @@ describe('TabletInboxRow', () => {
   it('renders no note element when notes is null', () => {
     render(<TabletInboxRow entry={makeEntry({ notes: null })} {...baseProps} />);
     expect(screen.queryByTestId('tablet-inbox-note')).not.toBeInTheDocument();
+  });
+
+  // ADR-010 — une commande vidée par le flux cancel-item n'a plus rien à
+  // encaisser : proposer « Pickup » enverrait le caissier encaisser du vide.
+  describe('commande entièrement annulée', () => {
+    it('remplace Pickup par Close et le signale', () => {
+      const onClose = vi.fn();
+      render(
+        <TabletInboxRow entry={makeEntry({ active_items_count: 0 })} {...baseProps} onClose={onClose} />,
+      );
+
+      expect(screen.queryByRole('button', { name: /Pickup/i })).not.toBeInTheDocument();
+      expect(screen.getByTestId('tablet-inbox-emptied')).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole('button', { name: /Close cancelled order/i }));
+      expect(onClose).toHaveBeenCalledWith('order-1');
+    });
+
+    it('garde Pickup tant qu’une ligne vit encore', () => {
+      render(
+        <TabletInboxRow entry={makeEntry({ active_items_count: 1 })} {...baseProps} onClose={vi.fn()} />,
+      );
+      expect(screen.getByRole('button', { name: /Pickup/i })).toBeInTheDocument();
+      expect(screen.queryByTestId('tablet-inbox-emptied')).not.toBeInTheDocument();
+    });
   });
 });

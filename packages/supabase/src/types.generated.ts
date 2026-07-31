@@ -6621,8 +6621,10 @@ export type Database = {
         Args: { p_po_id: string; p_reason: string }
         Returns: Json
       }
-      cancel_tablet_order: {
-        Args: { p_order_id: string }
+      cash_flow_v1: { Args: { p_from: string; p_to: string }; Returns: Json }
+      check_fiscal_period_open: { Args: { p_date: string }; Returns: undefined }
+      close_cancelled_tablet_order_v1: {
+        Args: { p_order_id: string; p_reason?: string }
         Returns: {
           created_at: string
           created_via: string
@@ -6667,8 +6669,6 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      cash_flow_v1: { Args: { p_from: string; p_to: string }; Returns: Json }
-      check_fiscal_period_open: { Args: { p_date: string }; Returns: undefined }
       close_fiscal_period_v1: {
         Args: { p_lock?: boolean; p_manager_pin: string; p_period_id: string }
         Returns: Json
@@ -8857,6 +8857,7 @@ export type Database = {
         | "login"
         | "logout"
         | "device_switch"
+        | "offline_intent_quarantined"
       price_modifier_type:
         | "retail"
         | "wholesale"
@@ -9097,6 +9098,7 @@ export const Constants = {
         "login",
         "logout",
         "device_switch",
+        "offline_intent_quarantined",
       ],
       price_modifier_type: [
         "retail",

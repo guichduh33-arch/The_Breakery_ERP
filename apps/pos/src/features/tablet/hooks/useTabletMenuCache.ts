@@ -24,16 +24,21 @@
 
 import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import type { Category, Product } from '@breakery/domain';
+import type { Category, Product, RestaurantTable } from '@breakery/domain';
 
 const STORAGE_KEY = 'tablet-menu-cache-v1';
 const MAX_AGE_MS  = 24 * 60 * 60 * 1000; // 24h
 
+// v2 (2026-07-31) — la salle rejoint le menu dans le cache. Sans elle, le
+// sélecteur de table était vide hors ligne ; combiné au défaut `dine_in`, une
+// serveuse ne pouvait plus prendre AUCUNE commande de salle pendant une
+// coupure. Lecture tolérante : un snapshot v1 reste utilisable, tables vides.
 interface MenuSnapshot {
   cachedAt:    string;
-  version:     1;
+  version:     1 | 2;
   categories:  Category[];
   products:    Product[];
+  tables?:     RestaurantTable[];
 }
 
 function readSnapshot(): MenuSnapshot | null {
@@ -42,7 +47,7 @@ function readSnapshot(): MenuSnapshot | null {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (raw === null) return null;
     const parsed = JSON.parse(raw) as MenuSnapshot;
-    if (parsed.version !== 1) return null;
+    if (parsed.version !== 1 && parsed.version !== 2) return null;
     const age = Date.now() - new Date(parsed.cachedAt).getTime();
     if (age > MAX_AGE_MS) return null;
     return parsed;
@@ -55,10 +60,11 @@ function writeSnapshot(snap: Omit<MenuSnapshot, 'version' | 'cachedAt'>): void {
   if (typeof window === 'undefined') return;
   try {
     const payload: MenuSnapshot = {
-      version:    1,
+      version:    2,
       cachedAt:   new Date().toISOString(),
       categories: snap.categories,
       products:   snap.products,
+      tables:     snap.tables ?? [],
     };
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
   } catch {
@@ -72,6 +78,8 @@ export interface TabletMenuCache {
   cachedCategories: Category[];
   /** Products from the most recent successful fetch, or `[]` if no cache. */
   cachedProducts:   Product[];
+  /** Floor plan from the most recent successful fetch, or `[]` if no cache. */
+  cachedTables:     RestaurantTable[];
   /** ISO timestamp of when the cache was last written, or null. */
   cachedAt:         string | null;
 }
@@ -85,6 +93,7 @@ export function useTabletMenuCacheRead(): TabletMenuCache {
   return {
     cachedCategories: snap?.categories ?? [],
     cachedProducts:   snap?.products   ?? [],
+    cachedTables:     snap?.tables     ?? [],
     cachedAt:         snap?.cachedAt   ?? null,
   };
 }
@@ -102,7 +111,14 @@ export function useTabletMenuCacheWriter(): void {
       const categories = qc.getQueryData<Category[]>(['categories']);
       const products   = qc.getQueryData<Product[]>(['products']);
       if (categories !== undefined && products !== undefined) {
-        writeSnapshot({ categories, products });
+        // Les tables ne bloquent pas l'écriture : elles ne sont pas encore
+        // chargées quand le menu l'est, et un snapshot sans salle vaut mieux
+        // qu'aucun snapshot. Quand la requête n'a rien, on REPORTE les tables
+        // déjà persistées — sinon un simple refetch du menu viderait la salle
+        // du cache, et le sélecteur de table redeviendrait vide hors ligne.
+        const tables =
+          qc.getQueryData<RestaurantTable[]>(['restaurant_tables']) ?? readSnapshot()?.tables ?? [];
+        writeSnapshot({ categories, products, tables });
       }
     }
 
@@ -112,7 +128,10 @@ export function useTabletMenuCacheWriter(): void {
     const unsubscribe = qc.getQueryCache().subscribe((event) => {
       if (event.type !== 'updated') return;
       const key = event.query.queryKey;
-      if (Array.isArray(key) && (key[0] === 'products' || key[0] === 'categories')) {
+      if (
+        Array.isArray(key) &&
+        (key[0] === 'products' || key[0] === 'categories' || key[0] === 'restaurant_tables')
+      ) {
         maybePersist();
       }
     });
