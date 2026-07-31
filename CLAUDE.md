@@ -134,7 +134,10 @@ Si un document contredit le code, le document a tort : **signale-le, ne corrige 
   `process-payment`, qui appelle côté serveur la RPC money-path courante. Le POS
   n'appelle jamais la RPC directement. PIN discount vérifié in-EF, transporté par
   nonce `discount_authorizations`. Combos validés ET pricés serveur
-  (`_resolve_combo_price_v1`). Plafonds promo hard-gatés sous advisory lock.
+  (`_resolve_combo_price_v1`) — y compris les modificateurs des composants :
+  ajustements résolus contre le composant, groupes requis exigés serveur,
+  ingrédients déduits/restitués (ADR-017). Plafonds promo hard-gatés sous
+  advisory lock.
   Prix B2B résolu serveur (négocié > catégorie > retail), `unit_price` client ignoré.
   Déduction stock de vente via l'unique helper `_record_sale_stock_v1`.
   **Les versions de RPC bumpent souvent — TOUJOURS vérifier la version live dans

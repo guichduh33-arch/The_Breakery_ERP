@@ -107,6 +107,11 @@ Trois mécanismes complémentaires :
 
 Les modificateurs sont stockés JSONB sur l'item du panier, leur surcoût est inclus dans le `total_price` de la ligne.
 
+Dans un combo, les modificateurs d'un composant retenu se posent **dans le
+sélecteur de combo lui-même**, sous l'option concernée — mêmes questions,
+mêmes obligations et même facturation que si le composant était vendu seul
+(ADR-017). Le caissier ne rouvre jamais une seconde modale après coup.
+
 ### 5.4 Remise
 
 Bouton **Discount** → la modale de remise :

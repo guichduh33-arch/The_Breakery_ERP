@@ -4,8 +4,8 @@
 >
 > **Périmètre fonctionnel** : ce document décrit **ce que le module Promotions & Combos sert à faire au quotidien** pour The Breakery, 
 >
-> **Révision** : 2026-07-28 · **Statut** : Livré
-> **ADR applicables** : ADR-007 déc. 3 (la fenêtre horaire des combos est supprimée : les promotions sont l'unique mécanisme horaire du produit), ADR-006 déc. 10 (le happy hour est couvert ici, rien à créer côté Settings)
+> **Révision** : 2026-07-31 · **Statut** : Livré
+> **ADR applicables** : ADR-007 déc. 3 (la fenêtre horaire des combos est supprimée : les promotions sont l'unique mécanisme horaire du produit), ADR-006 déc. 10 (le happy hour est couvert ici, rien à créer côté Settings), ADR-017 (les modificateurs des composants d'un combo sont saisis dans le sélecteur, facturés et déduits comme à la carte)
 >
 > **Convention** : aucune version d'objet DB (`_vN`) dans cette fiche — on cite la
 > famille (`close_shift`, `complete_order_with_payment`). La version vivante se
@@ -214,6 +214,13 @@ Au POS, l'ajout d'un combo déclenche le **sélecteur de composants** :
 - Affichage de chaque groupe avec ses composants éligibles.
 - Indication des règles ("Choisissez 1 viennoiserie", "Choisissez 2 boissons").
 - Surcoût visible si applicable.
+- **Les options propres du composant choisi se posent au même endroit** (ADR-017) :
+  choisir un cappuccino dans le combo ouvre ses questions habituelles — chaud ou
+  glacé, type de lait — sous l'option qui l'a amené. Un seul écran, une seule
+  validation, le prix final visible avant de confirmer. Une question obligatoire
+  sans réponse bloque la confirmation, rien n'est pré-coché d'office sur elle,
+  et un supplément (lait d'avoine) est facturé exactement comme si le composant
+  était vendu seul — le serveur refait le calcul, jamais le poste.
 - Validation bloquée tant que toutes les règles ne sont pas satisfaites.
 - Une fois confirmé : ajout au panier en une seule ligne avec décomposition technique des composants en dessous.
 
@@ -276,7 +283,7 @@ Bénéfice métier : **mesurer le ROI d'un canal** d'acquisition. Le compteur d'
 | **Reports** | `promotion_effectiveness` (backlog) — mesure de l'impact marge des promos. |
 | **Accounting** | La remise est comptabilisée en moins du chiffre d'affaires (compte 4900 ou équivalent). |
 | **Settings** | Réglage de la politique "stacking" (cumul autorisé ou pas), seuils par défaut. |
-| **Inventory** | Les composants d'un combo sont décrémentés individuellement à la vente. |
+| **Inventory** | Les composants d'un combo sont décrémentés individuellement à la vente, y compris les ingrédients attachés aux options répondues sur un composant (le lait d'avoine du cappuccino du menu sort du stock — ADR-017), restitués en cas d'annulation ou de remboursement. |
 
 ---
 
