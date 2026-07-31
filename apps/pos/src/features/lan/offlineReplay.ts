@@ -73,7 +73,7 @@ function emitPaymentFailure(intent: OfflineIntent, message: string): void {
 }
 
 type FireArgs = Database['public']['Functions']['fire_counter_order_v5']['Args'];
-type TabletArgs = Database['public']['Functions']['create_tablet_order_v4']['Args'];
+type TabletArgs = Database['public']['Functions']['create_tablet_order_v5']['Args'];
 
 interface FireEnvelope {
   order_id: string;
@@ -172,7 +172,10 @@ async function replayOne(intent: OfflineIntent, orderIdByRoot: Map<string, strin
     return;
   }
 
-  // tablet_order
+  // tablet_order — TOUJOURS une création : l'ajout à une commande existante est
+  // en ligne seulement (décision 2026-08-01), donc aucun intent de ce type ne
+  // porte de `p_order_id`. Rien à convertir ici, contrairement aux `fire` du
+  // comptoir qui, eux, peuvent être des ajouts.
   const args: Record<string, unknown> = {
     p_client_uuid: intent.id,
     p_waiter_id: intent.waiter_id,
@@ -181,7 +184,7 @@ async function replayOne(intent: OfflineIntent, orderIdByRoot: Map<string, strin
     p_items: intent.items,
   };
   if (intent.notes !== null) args.p_notes = intent.notes;
-  const { error } = await supabase.rpc('create_tablet_order_v4', args as TabletArgs);
+  const { error } = await supabase.rpc('create_tablet_order_v5', args as TabletArgs);
   if (error) throw Object.assign(new Error(error.message), { details: error });
 }
 

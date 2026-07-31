@@ -14,6 +14,11 @@ interface CreateTabletOrderArgs {
   cart: TabletCart;
   waiterId: string;
   clientUuid: string;
+  /**
+   * Commande de salle à COMPLÉTER (2ᵉ tournée sur une table déjà servie).
+   * Absent = création. La RPC porte les deux gestes, comme au comptoir.
+   */
+  appendToOrderId?: string;
 }
 
 export interface CreateTabletOrderResult {
@@ -27,8 +32,9 @@ export function useCreateTabletOrder() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ cart, waiterId, clientUuid }: CreateTabletOrderArgs): Promise<CreateTabletOrderResult> => {
+    mutationFn: async ({ cart, waiterId, clientUuid, appendToOrderId }: CreateTabletOrderArgs): Promise<CreateTabletOrderResult> => {
       const payload = buildSubmitPayload(cart, waiterId);
+      const isAppend = appendToOrderId !== undefined;
 
       // ADR-018 D7 — on ne met JAMAIS en file ce qu'un garde serveur refusera.
       // `create_tablet_order` exige une table pour un dine-in (P0011, règle
@@ -38,12 +44,25 @@ export function useCreateTabletOrder() {
       // à chaque tentative — bloquant derrière lui des encaissements déjà
       // perçus. Le contrôle est ici (et pas dans un composant) pour couvrir
       // les DEUX chemins d'envoi et les deux modes.
-      if (payload.p_order_type === 'dine_in' && (payload.p_table_number ?? '').trim() === '') {
+      //
+      // En AJOUT il ne s'applique pas : la table vient de la commande visée,
+      // et le serveur ne la redemande pas.
+      if (!isAppend && payload.p_order_type === 'dine_in' && (payload.p_table_number ?? '').trim() === '') {
         throw new Error('table_required_for_dine_in');
       }
 
+      // L'ajout est EN LIGNE SEULEMENT (décision propriétaire 2026-08-01).
+      // Hors ligne, il faudrait empiler une intention désignant une commande
+      // qui n'existe pas encore en cloud : c'est la mécanique la moins éprouvée
+      // du système, et l'ADR-018 demande de ne mettre en file que ce que le
+      // serveur ne peut pas refuser. En coupure, la serveuse prend une commande
+      // NEUVE — ce chemin-là fonctionne.
+      if (isAppend && isOfflineMode()) {
+        throw new Error('append_unavailable_offline');
+      }
+
       // Spec 006x lot 4 — envoi tablette en mode OFFLINE : intention durable
-      // (rejouée vers create_tablet_order_v4, MÊME client_uuid) PUIS publish
+      // (rejouée vers create_tablet_order_v5, MÊME client_uuid) PUIS publish
       // order.fired sur le bus — le KDS affiche le ticket sans cloud. Pas de
       // KOT papier depuis la tablette (comportement online inchangé : c'est
       // la création DB qui alimente le KDS, l'impression reste côté caisse).
@@ -89,7 +108,7 @@ export function useCreateTabletOrder() {
         return { orderId: null, localNumber };
       }
 
-      const { data, error } = await supabase.rpc('create_tablet_order_v4', {
+      const { data, error } = await supabase.rpc('create_tablet_order_v5', {
         p_client_uuid: clientUuid,
         p_waiter_id: payload.p_waiter_id,
         p_table_number: payload.p_table_number ?? '',
@@ -101,12 +120,17 @@ export function useCreateTabletOrder() {
         // the server DEFAULT NULL applies exactly as it would for an
         // explicit null.
         ...(payload.p_notes != null ? { p_notes: payload.p_notes } : {}),
+        ...(appendToOrderId !== undefined ? { p_order_id: appendToOrderId } : {}),
       });
       if (error) throw Object.assign(new Error(error.message), { details: error });
       return { orderId: data, localNumber: null };
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['tablet-orders'] });
+      // Un ajout change le montant dû sur la table : l'inbox caisse et la carte
+      // table→commande doivent le refléter sans attendre leur intervalle.
+      void queryClient.invalidateQueries({ queryKey: ['pending-tablet-orders'] });
+      void queryClient.invalidateQueries({ queryKey: ['table_orders'] });
     },
   });
 }

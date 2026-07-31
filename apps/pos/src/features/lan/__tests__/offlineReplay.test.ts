@@ -306,7 +306,7 @@ describe('replayOfflineOutbox', () => {
     const res = await replayOfflineOutbox();
 
     expect(res.replayed).toBe(1);
-    expect(rpcMock.mock.calls[0]![0]).toBe('create_tablet_order_v4');
+    expect(rpcMock.mock.calls[0]![0]).toBe('create_tablet_order_v5');
     expect(rpcMock.mock.calls[0]![1]).toMatchObject({
       p_client_uuid: 'tab-uuid-1', p_waiter_id: 'w-1', p_table_number: 'T4', p_notes: 'no gluten',
     });

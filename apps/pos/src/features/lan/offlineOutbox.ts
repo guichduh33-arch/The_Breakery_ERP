@@ -83,7 +83,7 @@ export interface OfflineCashPaymentIntent extends OfflineIntentBase {
   customer_id?: string;
 }
 
-/** Envoi tablette offline — rejoué vers create_tablet_order_v4 (même client_uuid). */
+/** Envoi tablette offline — rejoué vers create_tablet_order_v5 (même client_uuid). */
 export interface OfflineTabletOrderIntent extends OfflineIntentBase {
   kind: 'tablet_order';
   local_number: string;
