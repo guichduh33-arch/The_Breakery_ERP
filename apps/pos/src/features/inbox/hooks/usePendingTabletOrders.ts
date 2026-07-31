@@ -5,8 +5,8 @@ import type { TabletOrderEntry } from '@breakery/domain';
 
 interface RawOrderItem {
   id: string;
-  unit_price: number;
-  quantity: number;
+  /** Calculé SERVEUR : (unit_price + modificateurs) × quantité, arrondi IDR. */
+  line_total: number;
   is_cancelled: boolean;
 }
 
@@ -57,7 +57,7 @@ export function usePendingTabletOrders() {
           waiter_id,
           sent_to_kitchen_at,
           notes,
-          order_items(id, unit_price, quantity, is_cancelled),
+          order_items(id, line_total, is_cancelled),
           user_profiles!waiter_id(full_name)
         `)
         .eq('created_via', 'tablet')
@@ -72,10 +72,14 @@ export function usePendingTabletOrders() {
           : row.user_profiles;
         const profile = rawProfile as RawProfile | null | undefined;
         const orderItems = (row.order_items as unknown as RawOrderItem[]) ?? [];
-        const items_total = orderItems.reduce(
-          (sum, i) => sum + i.unit_price * i.quantity,
-          0,
-        );
+        // Le montant affiché au caissier était recalculé en `unit_price ×
+        // quantité` — il IGNORAIT les modificateurs, que le serveur inclut
+        // pourtant dans `line_total`. Une commande avec suppléments s'annonçait
+        // moins chère qu'elle ne l'est. On somme la valeur serveur, et on
+        // exclut les lignes annulées : ce qui reste dû, pas ce qui fut commandé.
+        const items_total = orderItems
+          .filter((i) => !i.is_cancelled)
+          .reduce((sum, i) => sum + i.line_total, 0);
         return {
           id: row.id,
           order_number: row.order_number,
