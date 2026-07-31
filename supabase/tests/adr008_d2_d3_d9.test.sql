@@ -207,7 +207,7 @@ SELECT is(
 
 -- Le rattachement au mouvement production_in n'est pas cosmétique : il porte
 -- l'idempotence (index journal_entries_je_idempotency_uniq) et la
--- contre-passation automatique par revert_production_v1.
+-- contre-passation automatique par revert_production_v2.
 SELECT is(
   (SELECT sm.movement_type::text
      FROM journal_entries je
@@ -387,7 +387,7 @@ SELECT ok(
 -- ===========================================================================
 -- D2 x D7 — l'annulation d'une production doit aussi défaire la charge de raté.
 -- C'est l'intérêt du rattachement au mouvement production_in : la boucle de
--- contre-passation de revert_production_v1 ramasse l'écriture sans avoir été
+-- contre-passation de revert_production_v2 ramasse l'écriture sans avoir été
 -- modifiée (ADR-008 D7 reste gelé tant que l'arbitrage D-19 n'est pas rendu).
 -- ===========================================================================
 DO $chk_revert$
@@ -395,7 +395,7 @@ DECLARE
   v_errmsg TEXT := 'none';
 BEGIN
   BEGIN
-    PERFORM revert_production_v1(
+    PERFORM revert_production_v2(
       current_setting('breakery.d2_prod_id')::uuid,
       'ADR-008 D2 test — revert must undo the waste expense'
     );
