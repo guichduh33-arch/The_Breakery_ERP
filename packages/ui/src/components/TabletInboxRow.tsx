@@ -10,6 +10,11 @@ export interface TabletInboxRowProps {
   entry: TabletOrderEntry;
   onPickup: (orderId: string) => void;
   isPicking?: boolean;
+  /** ADR-010 — clôture d'une commande dont TOUTES les lignes ont déjà été
+   *  annulées (manager + perte) par le flux cancel-item. Sans elle, la commande
+   *  vide resterait affichée ici indéfiniment. */
+  onClose?: (orderId: string) => void;
+  isClosing?: boolean;
 }
 
 function useNow(intervalMs = 1000): Date {
@@ -34,10 +39,19 @@ function formatAge(sentAt: string, now: Date): string {
   return `${m}m ${s}s`;
 }
 
-export function TabletInboxRow({ entry, onPickup, isPicking = false }: TabletInboxRowProps): JSX.Element {
+export function TabletInboxRow({
+  entry,
+  onPickup,
+  isPicking = false,
+  onClose,
+  isClosing = false,
+}: TabletInboxRowProps): JSX.Element {
   const now = useNow();
   const age = formatAge(entry.sent_to_kitchen_at, now);
   const orderTypeLabel = entry.order_type === 'dine_in' ? 'Dine in' : 'Take out';
+  // Toutes les lignes annulées : il n'y a plus rien à encaisser. Proposer
+  // « Pickup » ici enverrait le caissier encaisser une commande vide.
+  const isEmptied = entry.active_items_count === 0 && onClose !== undefined;
 
   return (
     <div className="rounded-xl border border-border-subtle bg-bg-elevated px-4 py-3 flex items-center gap-4">
@@ -53,7 +67,15 @@ export function TabletInboxRow({ entry, onPickup, isPicking = false }: TabletInb
 
       <div className="flex flex-col gap-0.5 flex-1 min-w-0">
         <span className="text-sm text-text-primary">
-          {entry.items_count} item{entry.items_count !== 1 ? 's' : ''}
+          {isEmptied ? (
+            <span className="text-text-muted" data-testid="tablet-inbox-emptied">
+              All lines cancelled
+            </span>
+          ) : (
+            <>
+              {entry.items_count} item{entry.items_count !== 1 ? 's' : ''}
+            </>
+          )}
         </span>
         <span className="text-xs text-text-secondary">{entry.waiter_name}</span>
         {/* Session 59 (17 D1.1) — order-level note, surfaced to the cashier before pickup. */}
@@ -72,15 +94,27 @@ export function TabletInboxRow({ entry, onPickup, isPicking = false }: TabletInb
         <Currency amount={entry.items_total} emphasis="normal" className="text-sm" />
       </div>
 
-      <Button
-        variant="primary"
-        size="lg"
-        disabled={isPicking}
-        onClick={() => onPickup(entry.id)}
-        aria-label={`Pickup order ${entry.order_number}`}
-      >
-        Pickup
-      </Button>
+      {isEmptied ? (
+        <Button
+          variant="secondary"
+          size="lg"
+          disabled={isClosing}
+          onClick={() => onClose?.(entry.id)}
+          aria-label={`Close cancelled order ${entry.order_number}`}
+        >
+          Close
+        </Button>
+      ) : (
+        <Button
+          variant="primary"
+          size="lg"
+          disabled={isPicking}
+          onClick={() => onPickup(entry.id)}
+          aria-label={`Pickup order ${entry.order_number}`}
+        >
+          Pickup
+        </Button>
+      )}
     </div>
   );
 }

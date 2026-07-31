@@ -6,7 +6,17 @@ import type { ComboDefinition, ComboSelection } from './types.js';
 
 /**
  * Compute the total price of a combo given a set of option selections.
- * Price = base_price + sum of surcharges of selected options.
+ *
+ * Price = base_price
+ *       + Σ surcharges of the selected options
+ *       + Σ price adjustments of the modifiers answered on those options (ADR-017 D3).
+ *
+ * Only options that are actually retained contribute: a leftover
+ * `option_modifiers` entry for an option the cashier deselected is ignored, so
+ * the displayed total never bills a choice that is no longer in the basket.
+ *
+ * This mirrors what the server computes in `_resolve_combo_price_v1`; the server
+ * remains the authority, this is the figure shown before confirming.
  */
 export function configuredPrice(def: ComboDefinition, sel: ComboSelection[]): number {
   let total = def.base_price;
@@ -15,8 +25,10 @@ export function configuredPrice(def: ComboDefinition, sel: ComboSelection[]): nu
     if (!selForGroup) continue;
     for (const optionId of selForGroup.option_ids) {
       const option = group.options.find((o) => o.id === optionId);
-      if (option) {
-        total += option.surcharge;
+      if (!option) continue;
+      total += option.surcharge;
+      for (const mod of selForGroup.option_modifiers?.[optionId] ?? []) {
+        total += mod.price_adjustment;
       }
     }
   }

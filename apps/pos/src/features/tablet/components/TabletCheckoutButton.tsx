@@ -42,7 +42,13 @@ export function TabletCheckoutButton(): JSX.Element {
           void navigate('/tablet/orders', { state: { justSentOrderId: orderId } });
         },
         onError: (err) => {
-          toast.error(err.message ?? 'Failed to send order');
+          // Le garde dine-in (useCreateTabletOrder) remonte un code, pas une
+          // phrase : la serveuse doit lire une consigne, pas un SQLSTATE.
+          toast.error(
+            err.message === 'table_required_for_dine_in'
+              ? 'Select a table for a dine-in order'
+              : (err.message ?? 'Failed to send order'),
+          );
         },
       },
     );

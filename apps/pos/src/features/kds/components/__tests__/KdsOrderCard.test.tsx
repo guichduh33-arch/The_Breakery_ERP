@@ -60,6 +60,7 @@ function makeItem(overrides: Partial<KdsItemRow> = {}): KdsItemRow {
     unit_price: 35000,
     modifiers: [],
     modifiers_total: 0,
+    component_modifiers: [],
     kitchen_status: 'pending',
     dispatch_station: 'kitchen',
     dispatch_stations: null,
@@ -217,6 +218,51 @@ describe('KdsOrderCard', () => {
     expect(bumpBtn.textContent).toBe('Bump');
     // The old direct-PATCH "Bump Ready" CTA must be gone.
     expect(screen.queryByRole('button', { name: /^bump ready$/i })).not.toBeInTheDocument();
+  });
+
+  // ADR-017 (conséquence 5) — a combo line surfaces the modifiers answered on
+  // its components, attributed to the component's name, under the line's own
+  // modifiers (the combo options).
+  it('renders component modifiers under the combo line, attributed to the component', () => {
+    const combo = makeItem({
+      product_name: 'French Plater',
+      modifiers: [
+        { group_name: 'Choose a drink', option_label: 'Capuccino', price_adjustment: 0 },
+      ],
+      component_modifiers: [
+        { component_name: 'Capuccino', group_name: 'HOT/ICED', option_label: 'Iced' },
+        { component_name: 'Capuccino', group_name: 'Milk', option_label: 'Oat Milk' },
+      ],
+    });
+
+    render(wrap(<KdsOrderCard items={[combo]} />));
+
+    // The combo option (line modifier) still renders.
+    expect(screen.getByText('Choose a drink: Capuccino')).toBeInTheDocument();
+    // Each component modifier renders as its own sub-line, component-attributed.
+    expect(screen.getByText('Capuccino — HOT/ICED: Iced')).toBeInTheDocument();
+    expect(screen.getByText('Capuccino — Milk: Oat Milk')).toBeInTheDocument();
+  });
+
+  it('renders no component-modifier block for a plain line', () => {
+    const plain = makeItem({ component_modifiers: [] });
+    render(wrap(<KdsOrderCard items={[plain]} />));
+    expect(screen.queryByTestId('kds-component-modifiers')).not.toBeInTheDocument();
+  });
+
+  it('strikes through component modifiers when the line is cancelled', () => {
+    const cancelled = makeItem({
+      is_cancelled: true,
+      cancelled_at: new Date().toISOString(),
+      cancelled_reason: 'Customer request',
+      component_modifiers: [
+        { component_name: 'Capuccino', group_name: 'HOT/ICED', option_label: 'Iced' },
+      ],
+    });
+
+    render(wrap(<KdsOrderCard items={[cancelled]} />));
+    const line = screen.getByText('Capuccino — HOT/ICED: Iced');
+    expect(line.className).toMatch(/line-through/);
   });
 
   it('renders the PrepTimer once prep_started_at is set, and omits it otherwise', () => {

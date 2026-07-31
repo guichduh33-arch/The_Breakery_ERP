@@ -4,7 +4,13 @@
 --   A2 : modificateur actif -> price_adjustment serveur (ignore client) dans total + modifiers_resolved
 --   A3 : modificateur inconnu/inactif -> check_violation (23514)
 --   A4 : ligne cadeau (is_gift=true) -> unit_price=0, modifiers_total=0
---   T9 : anon EXECUTE revoque sur complete_order_with_payment_v21
+--   A5 : ligne combo (p_combo=true) -> AUCUN lookup product_modifiers. Les options
+--        d'un combo voyagent dans `modifiers` mais ne sont pas des product_modifiers
+--        (group_name = groupe de combo, option_label = nom de composant) ; les
+--        resoudre levait 23514 et rendait tout combo configure inencaissable.
+--        Les libelles sont conserves, leur price_adjustment force a 0 : le prix
+--        d'un combo vient de _resolve_combo_price_v1.
+--   T9 : anon EXECUTE revoque sur complete_order_with_payment_v22
 --   T10-12 : smoke v15 — total + lines[] refletent le prix serveur (ignore unit_price client)
 --   T13 : v14 droppee
 --
@@ -64,7 +70,7 @@ END $$;
 DO $$
 DECLARE r JSONB;
 BEGIN
-  r := complete_order_with_payment_v21(
+  r := complete_order_with_payment_v22(
     p_session_id := current_setting('w1.sess')::uuid,
     p_order_type := 'take_out'::order_type,
     p_items      := jsonb_build_array(jsonb_build_object(
@@ -75,7 +81,7 @@ BEGIN
   PERFORM set_config('w1.smoke_lines', r->>'lines', true);
 END $$;
 
-SELECT plan(13);
+SELECT plan(15);
 
 -- A1
 SELECT is(
@@ -119,10 +125,27 @@ SELECT ok(
      FROM _resolve_line_price_v1(current_setting('w1.p3')::uuid, 1, '[]'::jsonb, NULL, true, false) lp),
   'T8 A4 - ligne cadeau -> unit_price=0, modifiers_total=0');
 
+-- A5 — meme libelle que T6 (inconnu de product_modifiers), mais sur une ligne
+-- combo : le lookup est saute, donc plus d'exception et aucun montant ajoute.
+-- Ce couple T6/T14 est le garde-fou : le lookup reste obligatoire hors combo.
+SELECT ok(
+  (SELECT (lp).modifiers_total = 0
+     FROM _resolve_line_price_v1(current_setting('w1.p1')::uuid, 1,
+       '[{"group_name":"drink","option_label":"UnknownOpt","price_adjustment":9999}]'::jsonb,
+       NULL, false, true) lp),
+  'T14 A5 - ligne combo : option inconnue de product_modifiers ne leve plus, montant 0');
+
+SELECT is(
+  (SELECT (lp).modifiers_resolved->0->>'option_label'
+     FROM _resolve_line_price_v1(current_setting('w1.p1')::uuid, 1,
+       '[{"group_name":"drink","option_label":"UnknownOpt","price_adjustment":9999}]'::jsonb,
+       NULL, false, true) lp),
+  'UnknownOpt', 'T15 A5 - le libelle choisi est conserve pour la cuisine');
+
 -- Gate anon
 SELECT ok(
   NOT has_function_privilege('anon',
-    'complete_order_with_payment_v21(uuid,order_type,jsonb,jsonb,uuid,uuid,integer,text,numeric,text,numeric,text,uuid,jsonb,jsonb,uuid)',
+    'complete_order_with_payment_v22(uuid,order_type,jsonb,jsonb,uuid,uuid,integer,text,numeric,text,numeric,text,uuid,jsonb,jsonb,uuid)',
     'EXECUTE'),
   'T9 anon EXECUTE revoque sur v17');
 

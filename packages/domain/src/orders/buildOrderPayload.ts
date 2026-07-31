@@ -9,6 +9,14 @@ import type {
 import type { AppliedPromotion } from '../promotions/types.js';
 
 function buildItemPayload(item: Cart['items'][number]): OrderPayloadItem {
+  // A combo line's modifiers are its chosen options, not `product_modifiers`
+  // rows: `group_name` is a combo group ("drink") and `option_label` a component
+  // name ("Capuccino"). They are shipped so the kitchen ticket and the order
+  // history keep readable labels; the server keeps those labels but prices the
+  // line from `combo_components` via `_resolve_combo_price_v1` (base + Σ
+  // surcharge) and forces their price_adjustment to 0 — counting them too would
+  // bill the surcharge twice. See migration
+  // 20260730000001_fix_resolve_line_price_skip_modifier_lookup_on_combo.
   const base: OrderPayloadItem = {
     product_id: item.product_id,
     quantity: item.quantity,

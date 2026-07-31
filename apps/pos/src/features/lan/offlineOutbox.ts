@@ -16,7 +16,7 @@ import { logger } from '@breakery/utils';
 import type { Tender } from '@breakery/domain';
 import type { BusModifierLine } from './busTopics';
 
-/** Ligne d'items au format attendu par fire_counter_order_v4 p_items. */
+/** Ligne d'items au format attendu par fire_counter_order_v5 p_items. */
 export interface OfflineFireItem {
   product_id: string;
   quantity: number;
@@ -36,7 +36,7 @@ interface OfflineIntentBase {
   created_at: string;
 }
 
-/** Fire caisse offline — rejoué vers fire_counter_order_v4 (même client_uuid). */
+/** Fire caisse offline — rejoué vers fire_counter_order_v5 (même client_uuid). */
 export interface OfflineFireIntent extends OfflineIntentBase {
   kind: 'fire';
   /** client_uuid RACINE de la commande locale (= id du 1ᵉʳ fire). Un append
@@ -100,9 +100,26 @@ export type OfflineIntent =
   | OfflineCashPaymentIntent
   | OfflineTabletOrderIntent;
 
+/** ADR-018 D4 — intent définitivement rejeté au rejeu, sorti de la file pour
+ *  qu'elle continue de se drainer. Registre DURABLE et APPEND-ONLY : aucune
+ *  purge automatique, aucun TTL. Un enregistrement ici est un fait en attente
+ *  de régularisation manuelle (D6), pas un déchet. */
+export interface QuarantinedIntent {
+  /** Même clé que l'intent d'origine — le registre reste adressable. */
+  id: string;
+  intent: OfflineIntent;
+  quarantined_at: string;
+  /** SQLSTATE / code PostgREST qui a motivé le classement définitif (D2). */
+  code: string | null;
+  /** Message serveur, conservé tel quel pour la régularisation. */
+  reason: string;
+}
+
 const DB_NAME = 'breakery-pos-offline';
 const STORE = 'outbox';
+const QUARANTINE_STORE = 'quarantine';
 const LS_KEY = 'pos:offline_outbox';
+const LS_QUARANTINE_KEY = 'pos:offline_quarantine';
 const SEQ_KEY = 'breakery-offline-intent-seq';
 
 const hasIDB = typeof indexedDB !== 'undefined' && indexedDB !== null;
@@ -127,11 +144,17 @@ let dbPromise: Promise<IDBDatabase> | null = null;
 function openDb(): Promise<IDBDatabase> {
   if (dbPromise) return dbPromise;
   dbPromise = new Promise<IDBDatabase>((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, 1);
+    // v2 (ADR-018) — ajoute le magasin `quarantine`. La montée de version est
+    // additive : un terminal mis à jour avec des ventes en file garde son
+    // magasin `outbox` intact (les records sont de l'argent déjà encaissé).
+    const req = indexedDB.open(DB_NAME, 2);
     req.onupgradeneeded = () => {
       const db = req.result;
       if (!db.objectStoreNames.contains(STORE)) {
         db.createObjectStore(STORE, { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains(QUARANTINE_STORE)) {
+        db.createObjectStore(QUARANTINE_STORE, { keyPath: 'id' });
       }
     };
     req.onsuccess = () => resolve(req.result);
@@ -140,12 +163,16 @@ function openDb(): Promise<IDBDatabase> {
   return dbPromise;
 }
 
-function idbTx<T>(mode: IDBTransactionMode, fn: (store: IDBObjectStore) => IDBRequest<T>): Promise<T> {
+function idbTx<T>(
+  mode: IDBTransactionMode,
+  fn: (store: IDBObjectStore) => IDBRequest<T>,
+  storeName: string = STORE,
+): Promise<T> {
   return openDb().then(
     (db) =>
       new Promise<T>((resolve, reject) => {
-        const tx = db.transaction(STORE, mode);
-        const req = fn(tx.objectStore(STORE));
+        const tx = db.transaction(storeName, mode);
+        const req = fn(tx.objectStore(storeName));
         req.onsuccess = () => resolve(req.result);
         req.onerror = () => reject(req.error ?? new Error('indexeddb_tx_failed'));
       }),
@@ -170,6 +197,25 @@ function lsWrite(records: OfflineIntent[]): void {
     localStorage.setItem(LS_KEY, JSON.stringify(records));
   } catch (err) {
     logger.warn('offline_outbox.ls_write_failed', { err: String(err) });
+  }
+}
+
+function lsReadQuarantine(): QuarantinedIntent[] {
+  try {
+    const raw = localStorage.getItem(LS_QUARANTINE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as QuarantinedIntent[];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function lsWriteQuarantine(records: QuarantinedIntent[]): void {
+  try {
+    localStorage.setItem(LS_QUARANTINE_KEY, JSON.stringify(records));
+  } catch (err) {
+    logger.warn('offline_quarantine.ls_write_failed', { err: String(err) });
   }
 }
 
@@ -220,4 +266,55 @@ export async function removeIntentsByRoot(rootClientUuid: string): Promise<void>
 export async function pendingIntentCount(): Promise<number> {
   if (hasIDB) return idbTx<number>('readonly', (s) => s.count());
   return lsRead().length;
+}
+
+// ── Quarantaine (ADR-018) ──────────────────────────────────────────────────
+
+/** Sort des intents de la file vers le registre de quarantaine (D1) : ils ont
+ *  été refusés par un garde serveur et le seraient à chaque tentative. L'écrit
+ *  précède la suppression de la file — un incident entre les deux laisse un
+ *  doublon lisible, jamais un trou. */
+export async function quarantineIntents(
+  records: { intent: OfflineIntent; code: string | null; reason: string }[],
+  now: string = new Date().toISOString(),
+): Promise<void> {
+  if (records.length === 0) return;
+  const rows: QuarantinedIntent[] = records.map(({ intent, code, reason }) => ({
+    id: intent.id,
+    intent,
+    quarantined_at: now,
+    code,
+    reason,
+  }));
+
+  if (hasIDB) {
+    await Promise.all(rows.map((r) => idbTx('readwrite', (s) => s.put(r), QUARANTINE_STORE)));
+  } else {
+    const all = lsReadQuarantine();
+    for (const row of rows) {
+      if (!all.some((r) => r.id === row.id)) all.push(row);
+    }
+    lsWriteQuarantine(all);
+  }
+
+  await removeIntents(rows.map((r) => r.id));
+}
+
+/** Registre de quarantaine, du plus ancien au plus récent. Lecture seule :
+ *  aucune API de purge n'existe, c'est volontaire (D4). */
+export async function getQuarantinedIntents(): Promise<QuarantinedIntent[]> {
+  const all = hasIDB
+    ? await idbTx<QuarantinedIntent[]>(
+        'readonly',
+        (s) => s.getAll() as IDBRequest<QuarantinedIntent[]>,
+        QUARANTINE_STORE,
+      )
+    : lsReadQuarantine();
+  return all.sort((a, b) => a.quarantined_at.localeCompare(b.quarantined_at));
+}
+
+/** Compteur pour l'alerte caisse (D5). */
+export async function quarantinedIntentCount(): Promise<number> {
+  if (hasIDB) return idbTx<number>('readonly', (s) => s.count(), QUARANTINE_STORE);
+  return lsReadQuarantine().length;
 }

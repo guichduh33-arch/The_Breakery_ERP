@@ -1,5 +1,5 @@
 -- supabase/tests/table_transfer_dinein_guard.test.sql
--- Fiche 02 D2.5 — transfer_order_table_v1 (_121) + gardes fire_counter_order_v4 (_122) :
+-- Fiche 02 D2.5 — transfer_order_table_v1 (_121) + gardes fire_counter_order_v5 (_122) :
 -- table obligatoire à la création dine-in, audit order.fire_appended sur append,
 -- audit order.table_transfer sur transfert.
 -- Run via MCP execute_sql (BEGIN..ROLLBACK envelope carried by this file).
@@ -140,7 +140,7 @@ END $$;
 
 -- T7 : fire v4 CRÉATION dine_in SANS table → P0011 table_required_for_dine_in.
 DO $$ BEGIN
-  PERFORM fire_counter_order_v4(
+  PERFORM fire_counter_order_v5(
     gen_random_uuid(), current_setting('d25.session')::uuid,
     jsonb_build_array(jsonb_build_object('product_id', current_setting('d25.prod'), 'quantity', 1, 'unit_price', 30000)),
     NULL, NULL, 'dine_in'::order_type, NULL);
@@ -153,7 +153,7 @@ END $$;
 
 -- T8 : fire v4 CRÉATION dine_in AVEC table → OK, table posée sur la commande.
 DO $$ DECLARE v_res JSONB; BEGIN
-  v_res := fire_counter_order_v4(
+  v_res := fire_counter_order_v5(
     gen_random_uuid(), current_setting('d25.session')::uuid,
     jsonb_build_array(jsonb_build_object('product_id', current_setting('d25.prod'), 'quantity', 1, 'unit_price', 30000)),
     NULL, 'TST-TRF-A', 'dine_in'::order_type, NULL);
@@ -167,7 +167,7 @@ END $$;
 
 -- T9 : fire v4 take_out sans table → toujours accepté (non-régression).
 DO $$ DECLARE v_res JSONB; BEGIN
-  v_res := fire_counter_order_v4(
+  v_res := fire_counter_order_v5(
     gen_random_uuid(), current_setting('d25.session')::uuid,
     jsonb_build_array(jsonb_build_object('product_id', current_setting('d25.prod'), 'quantity', 1, 'unit_price', 30000)),
     NULL, NULL, 'take_out'::order_type, NULL);
@@ -179,7 +179,7 @@ END $$;
 -- T10 : fire v4 APPEND (p_order_id de T8) → audit order.fire_appended écrit
 --       (le « adding order » du KOT devient un fait DB), et pas de re-garde table.
 DO $$ DECLARE v_res JSONB; BEGIN
-  v_res := fire_counter_order_v4(
+  v_res := fire_counter_order_v5(
     gen_random_uuid(), current_setting('d25.session')::uuid,
     jsonb_build_array(jsonb_build_object('product_id', current_setting('d25.prod'), 'quantity', 2, 'unit_price', 30000)),
     current_setting('d25.o8')::uuid, NULL, 'dine_in'::order_type, NULL);

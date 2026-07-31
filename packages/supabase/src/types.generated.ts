@@ -6438,6 +6438,10 @@ export type Database = {
         Args: { p_customer_id: string; p_product_id: string }
         Returns: number
       }
+      _resolve_combo_modifier_ingredients_v1: {
+        Args: { p_components: Json; p_line_qty: number }
+        Returns: Json
+      }
       _resolve_combo_price_v1: {
         Args: { p_combo_product_id: string; p_components: Json }
         Returns: number
@@ -6617,8 +6621,10 @@ export type Database = {
         Args: { p_po_id: string; p_reason: string }
         Returns: Json
       }
-      cancel_tablet_order: {
-        Args: { p_order_id: string }
+      cash_flow_v1: { Args: { p_from: string; p_to: string }; Returns: Json }
+      check_fiscal_period_open: { Args: { p_date: string }; Returns: undefined }
+      close_cancelled_tablet_order_v1: {
+        Args: { p_order_id: string; p_reason?: string }
         Returns: {
           created_at: string
           created_via: string
@@ -6663,8 +6669,6 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      cash_flow_v1: { Args: { p_from: string; p_to: string }; Returns: Json }
-      check_fiscal_period_open: { Args: { p_date: string }; Returns: undefined }
       close_fiscal_period_v1: {
         Args: { p_lock?: boolean; p_manager_pin: string; p_period_id: string }
         Returns: Json
@@ -6723,7 +6727,7 @@ export type Database = {
             }
             Returns: string
           }
-      complete_order_with_payment_v21: {
+      complete_order_with_payment_v22: {
         Args: {
           p_customer_id?: string
           p_discount_amount?: number
@@ -7086,7 +7090,7 @@ export type Database = {
       }
       findfuncs: { Args: { "": string }; Returns: string[] }
       finish: { Args: { exception_on_failure?: boolean }; Returns: string[] }
-      fire_counter_order_v4: {
+      fire_counter_order_v5: {
         Args: {
           p_client_uuid: string
           p_discount_authorized_by?: string
@@ -8853,6 +8857,7 @@ export type Database = {
         | "login"
         | "logout"
         | "device_switch"
+        | "offline_intent_quarantined"
       price_modifier_type:
         | "retail"
         | "wholesale"
@@ -9093,6 +9098,7 @@ export const Constants = {
         "login",
         "logout",
         "device_switch",
+        "offline_intent_quarantined",
       ],
       price_modifier_type: [
         "retail",

@@ -142,10 +142,10 @@ export function RecipeBuilder({
 
   const convertQry = useConvertBakerToAbsolute(productId, debouncedTarget, isBakerMode);
 
-  const totalQty = useMemo(
-    () => recipe.reduce((acc, r) => acc + Number(r.quantity), 0),
-    [recipe],
-  );
+  // No quantity total here: recipe lines are heterogeneous (gr, pcs, ml) and a
+  // sub-recipe is defined FOR 1 unit of its own output unit — never for the sum
+  // of its inputs, which loses mass to evaporation, baking and trimming. The
+  // calculation base is the callout above, read from the product's own unit.
 
   // Light cost graph for the picker's sub-recipe preview.
   const costGraph: RecipeGraph = useMemo(() => {
@@ -386,21 +386,6 @@ export function RecipeBuilder({
                       </tbody>
                     </SortableContext>
                   </DndContext>
-                  <tfoot className="bg-bg-base/40">
-                    <tr>
-                      {!readOnly && <td />}
-                      <td className="px-4 py-3">
-                        <SectionLabel as="span" size="xs">
-                          Total ({recipe.length} ingredients)
-                        </SectionLabel>
-                      </td>
-                      <td className="px-4 py-3 text-right font-mono tabular-nums text-gold">
-                        {totalQty.toLocaleString()}
-                      </td>
-                      <td className="px-4 py-3 font-mono text-text-secondary">{productUnit}</td>
-                      {!readOnly && <td />}
-                    </tr>
-                  </tfoot>
                 </table>
               </div>
             )}
@@ -504,7 +489,7 @@ export function RecipeBuilder({
           onClose={() => setDuplicateOpen(false)}
           onSuccess={(targetId) => {
             setDuplicateOpen(false);
-            navigate(`/backoffice/products/${targetId}?tab=recipe`);
+            void navigate(`/backoffice/products/${targetId}?tab=recipe`);
           }}
         />
       )}

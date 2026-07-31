@@ -34,6 +34,7 @@
 import { Lock, Tag, Trash2 } from 'lucide-react';
 import type { JSX } from 'react';
 import { toast } from 'sonner';
+import { calculatePriceAdjustment } from '@breakery/domain';
 import type { CartItem } from '@breakery/domain';
 import { Currency, ComboLineRow, cn } from '@breakery/ui';
 import { useComboConfig } from '@/features/combos/hooks/useComboConfig';
@@ -61,13 +62,38 @@ function ComboCartLineRow({
   onRemove,
 }: Omit<CartLineRowProps, 'onRequestCancel' | 'onApplyLineDiscount' | 'onEditQty'>): JSX.Element {
   const { data: def } = useComboConfig(item.product_id);
-  // Flatten all default options across groups for the component summary display.
-  const components = (def?.groups ?? []).flatMap((g) =>
-    g.options
-      .filter((o) => o.is_default)
-      .map((o) => ({ name: o.label, quantity: 1 })),
+  // The line's OWN composition is what the order will record — it is the only
+  // truthful source. The definition resolves component labels; its defaults
+  // are never displayed (a default is not a choice — bug 2026-07-31).
+  const labelByProductId = new Map(
+    (def?.groups ?? []).flatMap((g) =>
+      g.options.map((o) => [o.component_product_id, o.label] as const),
+    ),
   );
-  const lineTotal = item.unit_price * item.quantity;
+  const components: { name: string; quantity: number }[] = [];
+  for (const comp of item.combo_components ?? []) {
+    const label = labelByProductId.get(comp.product_id) ?? 'Component';
+    const answers = (comp.modifiers ?? []).map((m) => m.option_label).join(' · ');
+    const name = answers ? `${label} — ${answers}` : label;
+    const existing = components.find((c) => c.name === name);
+    if (existing) {
+      existing.quantity += comp.quantity;
+    } else {
+      components.push({ name, quantity: comp.quantity });
+    }
+  }
+  // Same formula as calculateTotals and as the server price resolver:
+  // base (unit_price) + option surcharges (line modifiers) + component-modifier
+  // adjustments (ADR-017). A line billed at base × qty understated what the
+  // cart charges (bug 2026-07-31).
+  const unitEach =
+    item.unit_price +
+    calculatePriceAdjustment(item.modifiers) +
+    (item.combo_components ?? []).reduce(
+      (sum, c) => sum + calculatePriceAdjustment(c.modifiers ?? []),
+      0,
+    );
+  const lineTotal = unitEach * item.quantity;
 
   return (
     <ComboLineRow

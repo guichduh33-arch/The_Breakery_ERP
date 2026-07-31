@@ -12,6 +12,13 @@ export default defineConfig({
     globals: true,
     passWithNoTests: true,
     setupFiles: ['./vitest.setup.ts'],
+    // Aligné sur apps/pos et packages/ui : turbo lance les suites des packages
+    // en parallèle, et la contention CPU du runner multiplie par ~8 le coût d'un
+    // test jsdom lourd — Sidebar.test « 8 renames » (667 ms en local, 9 requêtes
+    // getByRole sur tout l'arbre d'accessibilité) dépassait le défaut de 5s.
+    // Marge de timeout uniquement, aucun changement d'assertion ni de couverture.
+    testTimeout: 30000,
+    hookTimeout: 30000,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],

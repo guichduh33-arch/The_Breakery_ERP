@@ -1,9 +1,19 @@
 -- supabase/tests/combo_sale.test.sql
 -- Session 47 / Task A5 — complete_order_with_payment_v16 combo-aware stock.
 -- S57 P2.1: repointed v16 -> v17. Combo products now require combo_groups /
--- combo_group_options rows (v17 validates composition via _resolve_combo_price_v1) —
--- seeded below with surcharge=0 so the pre-existing price assertions (T3b) are
--- unaffected by the new server-side combo pricing/validation.
+-- combo_group_options rows (v17 validates composition via _resolve_combo_price_v1).
+--
+-- 2026-07-30 — fixture rebuilt on a REALISTIC combo. The previous version seeded
+-- a product_modifiers row ON THE COMBO PRODUCT ("Drinks / Affogato" at 5000) to
+-- get past the server-side modifier lookup. The backoffice never produces that
+-- shape: an option's surcharge lives in combo_group_options.surcharge, never in
+-- product_modifiers. That fixture made the suite green while every configured
+-- combo failed in production with
+--   23514 "Unknown or inactive modifier option: <group> / <component>".
+-- The surcharge now sits on the option (Comp B at 5000), the payload carries the
+-- option modifiers exactly as ComboConfigModal emits them, and T3b's 55 000
+-- finally measures a real combo surcharge instead of a stray modifier.
+--
 -- Cashier ...0002 has pos.sale.create. Fresh products + open session seeded in-tx.
 BEGIN;
 SELECT set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000002',true);
@@ -18,28 +28,29 @@ INSERT INTO products (id, sku, name, category_id, retail_price, product_type, cu
   ('00000000-0000-0000-0000-0000000fa003','S47-F3','S47 Comp0','9c751b3c-2cbf-49a9-a442-cc6a4b5ffc4a',15000,'finished',0,true,NULL),
   ('00000000-0000-0000-0000-0000000fa004','S47-F4','S47 Standalone','9c751b3c-2cbf-49a9-a442-cc6a4b5ffc4a',20000,'finished',100,true,NULL);
 -- S57 P2.1: combo_groups/combo_group_options — one required single-choice group
--- per selected component, surcharge=0 (price parity with pre-S57 fixture).
+-- per selected component. Comp B's option carries a 5 000 surcharge, which is
+-- where a real combo's extra cost lives.
 INSERT INTO combo_groups (id, combo_product_id, name, group_type, is_required, min_select, max_select, sort_order) VALUES
   ('00000000-0000-0000-0000-0000000c9001','00000000-0000-0000-0000-0000000cb001','Comp A','single',true,1,1,0),
   ('00000000-0000-0000-0000-0000000c9002','00000000-0000-0000-0000-0000000cb001','Comp B','single',true,1,1,1),
   ('00000000-0000-0000-0000-0000000c9003','00000000-0000-0000-0000-0000000cb002','Comp C','single',true,1,1,0);
 INSERT INTO combo_group_options (group_id, component_product_id, surcharge, is_default, sort_order) VALUES
   ('00000000-0000-0000-0000-0000000c9001','00000000-0000-0000-0000-0000000fa001',0,true,0),
-  ('00000000-0000-0000-0000-0000000c9002','00000000-0000-0000-0000-0000000fa002',0,true,0),
+  ('00000000-0000-0000-0000-0000000c9002','00000000-0000-0000-0000-0000000fa002',5000,true,0),
   ('00000000-0000-0000-0000-0000000c9003','00000000-0000-0000-0000-0000000fa003',0,true,0);
--- Seed modifier scope-produit pour le combo CB1 : Drinks/Affogato 5000
--- Nécessaire sous v15 : _resolve_line_price_v1 lookup SERVER-SIDE (client price_adjustment ignoré).
-INSERT INTO product_modifiers (product_id, category_id, group_name, option_label, price_adjustment, is_active)
-VALUES ('00000000-0000-0000-0000-0000000cb001', NULL, 'Drinks', 'Affogato', 5000, true);
+-- The payload mirrors ComboConfigModal: one modifier per chosen option, whose
+-- group_name is a COMBO GROUP and option_label a COMPONENT name. Neither exists
+-- in product_modifiers — this is precisely the shape that used to raise 23514.
 DO $$
 DECLARE r jsonb;
 BEGIN
-  r := complete_order_with_payment_v21(
+  r := complete_order_with_payment_v22(
     p_session_id := '00000000-0000-0000-0000-0000000ce001',
     p_order_type := 'take_out'::order_type,
     p_items := $items$[
       {"product_id":"00000000-0000-0000-0000-0000000cb001","quantity":1,"unit_price":50000,
-       "modifiers":[{"group_name":"Drinks","option_label":"Affogato","price_adjustment":5000}],
+       "modifiers":[{"group_name":"Comp A","option_label":"S47 Comp1","price_adjustment":0},
+                    {"group_name":"Comp B","option_label":"S47 Comp2","price_adjustment":5000}],
        "combo_components":[{"product_id":"00000000-0000-0000-0000-0000000fa001","quantity":1},
                            {"product_id":"00000000-0000-0000-0000-0000000fa002","quantity":1}]}
     ]$items$::jsonb,
@@ -51,27 +62,33 @@ DO $$
 DECLARE r jsonb; p numeric;
 BEGIN
   p := get_customer_product_price('00000000-0000-0000-0000-0000000fa004', NULL);
-  r := complete_order_with_payment_v21(
+  r := complete_order_with_payment_v22(
     p_session_id := '00000000-0000-0000-0000-0000000ce001',
     p_order_type := 'take_out'::order_type,
     p_items := ('[{"product_id":"00000000-0000-0000-0000-0000000fa004","quantity":2,"unit_price":'||p||',"modifiers":[]}]')::jsonb,
     p_payment := ('{"method":"cash","amount":'||(p*2)||',"cash_received":'||(p*2)||',"change_given":0}')::jsonb
   );
 END $$;
-SELECT plan(12);
+SELECT plan(15);
 SELECT is((SELECT current_stock::int FROM products WHERE id='00000000-0000-0000-0000-0000000cb001'), 0, 'T1 combo product stock unchanged');
 SELECT is((SELECT current_stock::int FROM products WHERE id='00000000-0000-0000-0000-0000000fa001'), 99, 'T2a component1 stock -1');
 SELECT is((SELECT current_stock::int FROM products WHERE id='00000000-0000-0000-0000-0000000fa002'), 99, 'T2b component2 stock -1');
 SELECT is((SELECT count(*)::int FROM order_items WHERE order_id=current_setting('combo.order_id')::uuid), 1, 'T3a one order_item for combo');
 SELECT is((SELECT line_total::int FROM order_items WHERE order_id=current_setting('combo.order_id')::uuid), 55000, 'T3b line_total = base+surcharge');
+-- The combo's option modifiers must survive as LABELS (kitchen ticket, history)
+-- while contributing NOTHING to the price: the surcharge is already inside
+-- line_total via _resolve_combo_price_v1. Counting them too would bill 60 000.
+SELECT is((SELECT modifiers_total::int FROM order_items WHERE order_id=current_setting('combo.order_id')::uuid), 0, 'T3e combo modifiers add nothing to the price');
+SELECT is((SELECT jsonb_array_length(modifiers) FROM order_items WHERE order_id=current_setting('combo.order_id')::uuid), 2, 'T3f both chosen options persisted');
+SELECT is((SELECT modifiers->1->>'option_label' FROM order_items WHERE order_id=current_setting('combo.order_id')::uuid), 'S47 Comp2', 'T3g chosen option label kept for the kitchen');
 SELECT ok((SELECT combo_components IS NOT NULL FROM order_items WHERE order_id=current_setting('combo.order_id')::uuid), 'T3c combo_components snapshot present');
 SELECT is((SELECT product_id FROM order_items WHERE order_id=current_setting('combo.order_id')::uuid), '00000000-0000-0000-0000-0000000cb001'::uuid, 'T3d order_item product_id = combo');
 SELECT is((SELECT current_stock::int FROM products WHERE id='00000000-0000-0000-0000-0000000fa004'), 98, 'T4 standalone (non-combo) still deducts itself');
-SELECT throws_ok($q$ SELECT complete_order_with_payment_v21(
+SELECT throws_ok($q$ SELECT complete_order_with_payment_v22(
     p_session_id := '00000000-0000-0000-0000-0000000ce001', p_order_type := 'take_out'::order_type,
     p_items := '[{"product_id":"00000000-0000-0000-0000-0000000cb002","quantity":1,"unit_price":30000,"modifiers":[],"combo_components":[{"product_id":"00000000-0000-0000-0000-0000000fa003","quantity":1}]}]'::jsonb,
     p_payment := '{"method":"cash","amount":30000,"cash_received":30000,"change_given":0}'::jsonb) $q$, 'P0002', NULL, 'T5 insufficient component stock rejected');
-SELECT ok(NOT has_function_privilege('anon','complete_order_with_payment_v21(uuid, order_type, jsonb, jsonb, uuid, uuid, integer, text, numeric, text, numeric, text, uuid, jsonb, jsonb, uuid)','EXECUTE'), 'T6 anon EXECUTE revoked on v17');
+SELECT ok(NOT has_function_privilege('anon','complete_order_with_payment_v22(uuid, order_type, jsonb, jsonb, uuid, uuid, integer, text, numeric, text, numeric, text, uuid, jsonb, jsonb, uuid)','EXECUTE'), 'T6 anon EXECUTE revoked on v17');
 SELECT ok(NOT EXISTS (SELECT 1 FROM pg_proc WHERE proname='complete_order_with_payment_v16'), 'T7 v16 dropped');
 SELECT ok(NOT EXISTS (SELECT 1 FROM pg_proc WHERE proname='complete_order_with_payment_v14'), 'T8 v14 dropped (regression)');
 SELECT * FROM finish();

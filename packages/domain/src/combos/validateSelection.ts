@@ -52,6 +52,44 @@ export function validateSelection(
         `"${group.name}": select at most ${group.max_select} option(s) (got ${count})`,
       );
     }
+
+    // ADR-017 D2 — a component retained here is configured as if sold alone:
+    // every REQUIRED modifier group it carries must have an answer. Only
+    // retained options are examined; a component that is not in the basket asks
+    // nothing (the group's own min_select already speaks for that case).
+    for (const optionId of chosen) {
+      const option = group.options.find((o) => o.id === optionId);
+      const modGroups = option?.component_modifier_groups ?? [];
+      if (modGroups.length === 0) continue;
+
+      const answered = selForGroup?.option_modifiers?.[optionId] ?? [];
+
+      for (const modGroup of modGroups) {
+        const picks = answered.filter((m) => m.group_name === modGroup.group_name);
+
+        const validLabels = new Set(modGroup.options.map((o) => o.option_label));
+        const unknown = picks.filter((p) => !validLabels.has(p.option_label));
+        if (unknown.length > 0) {
+          errors.push(
+            `"${option?.label ?? optionId} / ${modGroup.group_name}": unknown option(s): ${unknown
+              .map((u) => u.option_label)
+              .join(', ')}`,
+          );
+          continue;
+        }
+
+        if (modGroup.group_required && picks.length === 0) {
+          errors.push(
+            `"${option?.label ?? optionId} / ${modGroup.group_name}": answer required`,
+          );
+        }
+        if (modGroup.group_type === 'single_select' && picks.length > 1) {
+          errors.push(
+            `"${option?.label ?? optionId} / ${modGroup.group_name}": select at most 1 option (got ${picks.length})`,
+          );
+        }
+      }
+    }
   }
 
   if (errors.length > 0) {

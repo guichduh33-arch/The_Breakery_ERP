@@ -117,9 +117,44 @@ describe('useTabletMenuCache', () => {
     const parsed = JSON.parse(raw ?? '{}') as {
       version: number; products: unknown[]; categories: unknown[];
     };
-    expect(parsed.version).toBe(1);
+    expect(parsed.version).toBe(2);
     expect(parsed.products).toHaveLength(1);
     expect(parsed.categories).toHaveLength(1);
+  });
+
+  // 2026-07-31 — la salle rejoint le cache : sans elle, le sélecteur de table
+  // est vide hors ligne et, le défaut étant `dine_in`, plus aucune commande de
+  // salle n'est possible pendant une coupure.
+  it('persists the floor plan alongside the menu, and a menu refetch does NOT wipe it', () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const categories = [{ id: 'c-1', name: 'Beverage', slug: 'beverage', sort_order: 1, is_active: true }];
+    const products = [
+      { id: 'p-1', sku: 'SKU', name: 'Espresso', category_id: 'c-1',
+        retail_price: 25000, wholesale_price: 25000, product_type: 'simple',
+        image_url: null, current_stock: 10, is_active: true, is_favorite: false },
+    ];
+
+    qc.setQueryData(['categories'], categories);
+    qc.setQueryData(['products'], products);
+    qc.setQueryData(['restaurant_tables'], [
+      { id: 't-1', name: '7', seats: 4, sort_order: 1, is_active: true,
+        section_id: 's-1', grid_x: 1, grid_y: 1 },
+    ]);
+
+    renderHook(() => useTabletMenuCacheWriter(), { wrapper: ({ children }) => withQuery(<>{children}</>, qc) });
+
+    const readBack = () =>
+      JSON.parse(window.localStorage.getItem('tablet-menu-cache-v1') ?? '{}') as {
+        tables?: unknown[];
+      };
+    expect(readBack().tables).toHaveLength(1);
+
+    // Un refetch du menu SEUL (les tables sortent du cache React-Query) doit
+    // reporter la salle déjà persistée, pas l'écraser.
+    qc.removeQueries({ queryKey: ['restaurant_tables'] });
+    qc.setQueryData(['products'], [...products]);
+
+    expect(readBack().tables).toHaveLength(1);
   });
 
   it('reader returns the persisted snapshot back', () => {

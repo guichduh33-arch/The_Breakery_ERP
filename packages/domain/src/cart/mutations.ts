@@ -1,7 +1,7 @@
 // packages/domain/src/cart/mutations.ts
 // Session 47: addComboItem added — mirrors addItem but always sets product_type='combo'
 // and carries the resolved combo_components snapshot.
-import type { Cart, CartItem, Product } from '../types/index.js';
+import type { Cart, CartItem, ComboComponent, Product } from '../types/index.js';
 import type { SelectedModifiers } from '../modifiers/types.js';
 
 /**
@@ -19,6 +19,24 @@ function modifierSignature(modifiers: SelectedModifiers): string {
 
 function lineSignature(productId: string, modifiers: SelectedModifiers): string {
   return `${productId}#${modifierSignature(modifiers)}`;
+}
+
+/**
+ * Signature of a configured combo line: the line signature, plus the component
+ * configuration. Components are sorted so their order never splits a line, and
+ * each carries its own modifier signature (ADR-017) so two combos differing only
+ * by a component's answer stay on two lines.
+ */
+function comboSignature(
+  productId: string,
+  modifiers: SelectedModifiers,
+  components: ComboComponent[],
+): string {
+  const comps = components
+    .map((c) => `${c.product_id}x${c.quantity}@${modifierSignature(c.modifiers ?? [])}`)
+    .sort()
+    .join(',');
+  return `${lineSignature(productId, modifiers)}::${comps}`;
 }
 
 /**
@@ -80,16 +98,20 @@ export function addComboItem(
   cart: Cart,
   product: Product,
   modifiers: SelectedModifiers,
-  components: { product_id: string; quantity: number }[],
+  components: ComboComponent[],
   quantity = 1,
   unitPriceOverride?: number,
 ): Cart {
-  // Combos merge on the same product+modifier signature as addItem — two
-  // identically-configured combos stack (same chosen options ⇒ same components).
-  const sig = lineSignature(product.id, modifiers);
+  // Combos merge on the same product + chosen options + component configuration.
+  //
+  // ADR-017 — the component configuration is part of the signature: "Capuccino
+  // Hot" and "Capuccino Iced" pick the SAME combo option, so a signature built
+  // on the line's modifiers alone would stack them into one line of quantity 2
+  // and the kitchen would prepare a single drink.
+  const sig = comboSignature(product.id, modifiers, components);
   let merged = false;
   const nextItems = cart.items.map((i) => {
-    if (!merged && lineSignature(i.product_id, i.modifiers) === sig) {
+    if (!merged && comboSignature(i.product_id, i.modifiers, i.combo_components ?? []) === sig) {
       merged = true;
       return { ...i, quantity: i.quantity + quantity };
     }

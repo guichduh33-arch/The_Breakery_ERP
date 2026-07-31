@@ -32,6 +32,16 @@ interface SelectBuilder {
   or: (filter: string) => SelectBuilder;
   order: (col: string, opts: { ascending: boolean }) => Promise<QueryResult<unknown[]>>;
 }
+// ADR-017 (conséquence 5) — the component-name resolution query ends on
+// `.in()`, which is thenable on the real PostgREST builder (no `.order` call).
+// Cast at the call-site (`as unknown as NameSelectBuilder`) so its `.in`
+// signature never overloads the fluent SelectBuilder one.
+interface NameSelectBuilder {
+  in: (
+    col: string,
+    vals: readonly string[],
+  ) => Promise<QueryResult<{ id: string; name: string }[]>>;
+}
 interface LooseFromBuilder {
   select: (cols: string) => SelectBuilder;
 }
@@ -46,6 +56,17 @@ export interface KdsModifierLine {
   price_adjustment: number;
 }
 
+/**
+ * ADR-017 (conséquence 5) — one sub-line per modifier answered on a combo
+ * component, attributed to the component's resolved product name so the
+ * kitchen knows WHICH component the answer applies to.
+ */
+export interface KdsComponentModifierLine {
+  component_name: string;
+  group_name: string;
+  option_label: string;
+}
+
 export interface KdsItemRow {
   id: string;
   order_id: string;
@@ -55,6 +76,11 @@ export interface KdsItemRow {
   unit_price: number;
   modifiers: KdsModifierLine[];
   modifiers_total: number;
+  /** ADR-017 (conséquence 5) — modifiers answered on the combo line's
+   *  components (`order_items.combo_components`), flattened and attributed to
+   *  each component's name. Empty for non-combo lines and for combo lines
+   *  whose components carry no modifiers. */
+  component_modifiers: KdsComponentModifierLine[];
   kitchen_status: KitchenStatus;
   dispatch_station: DispatchStation;
   /** Spec B-1 Ph2 — multi-station array; NULL for legacy rows not yet re-snapshotted. */
@@ -87,6 +113,11 @@ interface RawRow {
   unit_price: number;
   modifiers: KdsModifierLine[] | null;
   modifiers_total: number | null;
+  /** ADR-017 — combo lines carry their composition; each component may carry
+   *  the modifiers answered on it. NULL for non-combo lines. */
+  combo_components:
+    | { product_id: string; quantity: number; modifiers?: KdsModifierLine[] | null }[]
+    | null;
   kitchen_status: KitchenStatus;
   dispatch_station: DispatchStation;
   /** Spec B-1 Ph2 — multi-station array; NULL for legacy rows. */
@@ -126,7 +157,8 @@ export function useKdsOrders(station: KdsStation) {
         .select(
           `
           id, order_id, product_id, quantity, unit_price,
-          modifiers, modifiers_total, kitchen_status, dispatch_station,
+          modifiers, modifiers_total, combo_components,
+          kitchen_status, dispatch_station,
           dispatch_stations,
           sent_to_kitchen_at, ready_at, prep_started_at,
           is_cancelled, cancelled_at, cancelled_reason,
@@ -148,6 +180,26 @@ export function useKdsOrders(station: KdsStation) {
       if (error) throw new Error(error.message);
 
       const rows = (data ?? []) as unknown as RawRow[];
+
+      // ADR-017 (conséquence 5) — resolve the product names of the combo
+      // components that carry modifiers (one round-trip for the whole board),
+      // so each modifier sub-line is attributed to its component on the card.
+      // `combo_components` snapshots only the id; the name lives on `products`.
+      const componentIds = new Set<string>();
+      for (const row of rows) {
+        for (const comp of row.combo_components ?? []) {
+          if ((comp.modifiers?.length ?? 0) > 0) componentIds.add(comp.product_id);
+        }
+      }
+      const componentNameById = new Map<string, string>();
+      if (componentIds.size > 0) {
+        const { data: prods, error: prodError } = await (
+          sb.from('products').select('id, name') as unknown as NameSelectBuilder
+        ).in('id', [...componentIds]);
+        if (prodError) throw new Error(prodError.message);
+        for (const p of prods ?? []) componentNameById.set(p.id, p.name);
+      }
+
       return rows.map((row) => {
         const product = pickFirst(row.products);
         const order = pickFirst(row.orders);
@@ -160,6 +212,13 @@ export function useKdsOrders(station: KdsStation) {
           unit_price: row.unit_price,
           modifiers: row.modifiers ?? [],
           modifiers_total: row.modifiers_total ?? 0,
+          component_modifiers: (row.combo_components ?? []).flatMap((comp) =>
+            (comp.modifiers ?? []).map((m) => ({
+              component_name: componentNameById.get(comp.product_id) ?? 'unknown',
+              group_name: m.group_name,
+              option_label: m.option_label,
+            })),
+          ),
           kitchen_status: row.kitchen_status,
           dispatch_station: row.dispatch_station,
           dispatch_stations: row.dispatch_stations ?? null,

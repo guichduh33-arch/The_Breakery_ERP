@@ -31,6 +31,7 @@ import type {
   AppliedPromotion,
   Cart,
   CartItem,
+  ComboComponent,
   Customer,
   CustomerCategory,
   Discount,
@@ -123,7 +124,7 @@ interface CartState {
   addCombo: (
     product: Product,
     modifiers: SelectedModifiers,
-    components: { product_id: string; quantity: number }[],
+    components: ComboComponent[],
     unitPrice: number,
   ) => void;
   update: (lineId: string, quantity: number) => void;

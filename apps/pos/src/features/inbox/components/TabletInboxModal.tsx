@@ -3,6 +3,7 @@ import { FullScreenModal } from '@breakery/ui';
 import { TabletInboxRow } from '@breakery/ui';
 import { usePendingTabletOrders } from '../hooks/usePendingTabletOrders';
 import { usePickupTabletOrder } from '../hooks/usePickupTabletOrder';
+import { useCloseCancelledTabletOrder } from '../hooks/useCloseCancelledTabletOrder';
 
 interface TabletInboxModalProps {
   open: boolean;
@@ -12,6 +13,7 @@ interface TabletInboxModalProps {
 export function TabletInboxModal({ open, onClose }: TabletInboxModalProps): JSX.Element {
   const { data: entries = [], isLoading } = usePendingTabletOrders();
   const pickup = usePickupTabletOrder(onClose);
+  const closeCancelled = useCloseCancelledTabletOrder();
 
   return (
     <FullScreenModal open={open} onOpenChange={(v) => !v && onClose()}>
@@ -30,6 +32,8 @@ export function TabletInboxModal({ open, onClose }: TabletInboxModalProps): JSX.
               entry={entry}
               onPickup={(id) => pickup.mutate(id)}
               isPicking={pickup.isPending && pickup.variables === entry.id}
+              onClose={(id) => closeCancelled.mutate(id)}
+              isClosing={closeCancelled.isPending && closeCancelled.variables === entry.id}
             />
           ))}
         </div>

@@ -1,7 +1,7 @@
 -- supabase/tests/create_tablet_order_v4_table_guard.test.sql
 -- S72 — POS audit P1: the tablet order path could fire a dine_in order with a
 -- blank table_number (the owner "table mandatory for dine-in" rule was enforced
--- only on the counter path). v4 mirrors fire_counter_order_v4's guard.
+-- only on the counter path). v4 mirrors fire_counter_order_v5's guard.
 --   T1 : dine_in + blank table  -> P0011 table_required_for_dine_in
 --   T2 : dine_in + valid table  -> creates order
 --   T3 : take_out + blank table -> creates order (no table needed)

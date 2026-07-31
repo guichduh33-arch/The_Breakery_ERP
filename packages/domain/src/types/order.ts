@@ -1,5 +1,5 @@
 // packages/domain/src/types/order.ts
-import type { OrderType } from './cart.js';
+import type { ComboComponent, OrderType } from './cart.js';
 import type { ModifierOption } from '../modifiers/types.js';
 import type { PaymentInput } from './payment.js';
 
@@ -26,10 +26,13 @@ export interface OrderPayloadItem {
   promotion_id?: string;
   /**
    * Session 47 — for combo lines, the chosen component products. The sale RPC
-   * (complete_order_with_payment_v13) deducts each component's stock instead of
-   * the virtual combo product's. Omitted for non-combo lines.
+   * deducts each component's stock instead of the virtual combo product's.
+   * Omitted for non-combo lines.
+   *
+   * ADR-017 — each component may carry the modifiers answered on it; the server
+   * prices and deducts from them.
    */
-  combo_components?: { product_id: string; quantity: number }[];
+  combo_components?: ComboComponent[];
 }
 
 /** Session 9 — promotion entry in the OrderPayload promotions array. */

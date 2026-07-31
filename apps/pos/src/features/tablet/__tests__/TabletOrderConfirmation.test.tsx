@@ -25,9 +25,6 @@ const orders = [
 vi.mock('@/features/tablet/hooks/useMyTabletOrders', () => ({
   useMyTabletOrders: () => ({ data: orders, isLoading: false }),
 }));
-vi.mock('@/features/tablet/hooks/useCancelTabletOrder', () => ({
-  useCancelTabletOrder: () => ({ mutate: vi.fn(), isPending: false, variables: undefined }),
-}));
 vi.mock('@/features/tablet/hooks/useTabletOrderStatusListener', () => ({
   useTabletOrderStatusListener: () => undefined,
 }));

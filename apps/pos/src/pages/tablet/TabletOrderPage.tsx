@@ -30,7 +30,6 @@ export default function TabletOrderPage(): JSX.Element {
         size="md"
         className="gap-2"
         onClick={() => setTableModalOpen(true)}
-        disabled={!isOnline}
       >
         <MapPin className="h-4 w-4 shrink-0" aria-hidden />
         {tableNumber ? `Table: ${tableNumber}` : 'Pick table'}
