@@ -63,7 +63,9 @@ function makeComboItem(): CartItem {
     id: 'l-combo',
     product_id: 'combo-1',
     name: 'Breakfast Combo',
-    unit_price: 68000,
+    // ComboConfigModal emits unitPrice = base_price ALONE; surcharges ride in
+    // the line modifiers, component adjustments in combo_components[].modifiers.
+    unit_price: 50000,
     quantity: 1,
     product_type: 'combo',
     // The chosen options as the line carries them (labels for the kitchen).
@@ -109,6 +111,16 @@ describe('CartLineRow — a combo line shows its OWN selection, not the defaults
     );
     expect(screen.getByText(/ICED/)).toBeInTheDocument();
     expect(screen.getByText(/Oat/)).toBeInTheDocument();
+  });
+
+  it('shows the FULL line price: base + option surcharges + component adjustments', () => {
+    // 50000 + (3000 + 5000) + (0 + 10000) = 68000 — same formula as
+    // calculateTotals and as the server price resolver. A line billed at
+    // base × qty understated what the customer pays (bug 2026-07-31).
+    render(
+      <CartLineRow item={makeComboItem()} locked={false} onChangeQty={vi.fn()} onRemove={vi.fn()} />,
+    );
+    expect(screen.getByText(/Rp\s*68,000/)).toBeInTheDocument();
   });
 
   it('keeps rendering nothing below the combo when the line has no composition (legacy line)', () => {

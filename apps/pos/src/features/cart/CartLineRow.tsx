@@ -34,6 +34,7 @@
 import { Lock, Tag, Trash2 } from 'lucide-react';
 import type { JSX } from 'react';
 import { toast } from 'sonner';
+import { calculatePriceAdjustment } from '@breakery/domain';
 import type { CartItem } from '@breakery/domain';
 import { Currency, ComboLineRow, cn } from '@breakery/ui';
 import { useComboConfig } from '@/features/combos/hooks/useComboConfig';
@@ -81,7 +82,18 @@ function ComboCartLineRow({
       components.push({ name, quantity: comp.quantity });
     }
   }
-  const lineTotal = item.unit_price * item.quantity;
+  // Same formula as calculateTotals and as the server price resolver:
+  // base (unit_price) + option surcharges (line modifiers) + component-modifier
+  // adjustments (ADR-017). A line billed at base × qty understated what the
+  // cart charges (bug 2026-07-31).
+  const unitEach =
+    item.unit_price +
+    calculatePriceAdjustment(item.modifiers) +
+    (item.combo_components ?? []).reduce(
+      (sum, c) => sum + calculatePriceAdjustment(c.modifiers ?? []),
+      0,
+    );
+  const lineTotal = unitEach * item.quantity;
 
   return (
     <ComboLineRow

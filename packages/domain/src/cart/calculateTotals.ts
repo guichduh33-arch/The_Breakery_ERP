@@ -45,7 +45,17 @@ export function calculateTotals(cart: Cart, taxRate: number, taxInclusive = true
   for (const item of cart.items) {
     // Session 10: cancelled items are excluded from totals.
     if (item.is_cancelled) continue;
-    const adjustment = calculatePriceAdjustment(item.modifiers);
+    // ADR-017 — a combo line also carries, per component, the modifier answers
+    // given on it. The server bills them (_resolve_combo_price_v1: base +
+    // surcharges + component adjustments), so the cart must too, or the posted
+    // payment understates the server total. Summed per component ELEMENT, no
+    // multiplication by the component's own quantity — the server's price
+    // resolver does the same (only the stock resolver multiplies).
+    const componentAdjustment = (item.combo_components ?? []).reduce(
+      (sum, c) => sum + calculatePriceAdjustment(c.modifiers ?? []),
+      0,
+    );
+    const adjustment = calculatePriceAdjustment(item.modifiers) + componentAdjustment;
     const line_pre_discount = roundIdr((item.unit_price + adjustment) * item.quantity);
     const line_discount = item.discount
       ? calculateDiscountAmount(item.discount, line_pre_discount)
