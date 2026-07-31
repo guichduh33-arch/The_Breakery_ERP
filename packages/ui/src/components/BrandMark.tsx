@@ -52,7 +52,8 @@ export function BrandMark({
 }: BrandMarkProps): JSX.Element {
   const px = SIZE_PX[size];
   // Glyph sized 60% of the circle — visually balanced for serif italic.
-  const fontSize = Math.round(px * 0.6);
+  // In viewBox units (0-100): constant ratio whatever the rendered size.
+  const fontSize = 60;
   return (
     <span
       role="img"

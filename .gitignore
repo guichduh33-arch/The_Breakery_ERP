@@ -63,3 +63,10 @@ ruvector.db
 *.ruvector.db
 
 outputs/
+
+# design-sync (claude.ai/design) — scripts stagés, build output, état machine
+.ds-sync/
+ds-bundle/
+.design-sync/.cache/
+.design-sync/learnings/
+.design-sync/node_modules
