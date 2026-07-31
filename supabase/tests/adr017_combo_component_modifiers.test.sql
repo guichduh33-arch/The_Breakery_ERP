@@ -1,6 +1,8 @@
 -- supabase/tests/adr017_combo_component_modifiers.test.sql
 -- ADR-017 décision 3 — le prix d'un combo intègre les ajustements des
 -- modificateurs de ses composants, résolus SERVEUR.
+-- ADR-017 décision 2 (activée le 2026-07-31, migration 20260731000001) — un
+-- groupe requis d'un composant retenu sans réponse est refusé.
 --
 -- Fixture autonome (aucune dépendance aux données de dev, qui bougent) :
 --   combo A17-CB (base 50 000)
@@ -93,14 +95,15 @@ BEGIN
   PERFORM set_config('a17.order_id', v_env->>'order_id', false);
 END $$;
 
-SELECT plan(12);
+SELECT plan(16);
 
--- Rétro-compatibilité : sans la clé, le prix ne bouge pas d'un rupiah.
-SELECT is(
-  _resolve_combo_price_v1('00000000-0000-0000-0000-00000a17c0b1',
+-- D2 active : la boisson porte un groupe requis (Milk) — sans la clé, refus.
+-- (Avant le 2026-07-31 ce même appel rendait 55000 : c'était l'état différé.)
+SELECT throws_ok(
+  $q$ SELECT _resolve_combo_price_v1('00000000-0000-0000-0000-00000a17c0b1',
     '[{"product_id":"00000000-0000-0000-0000-00000a17f001","quantity":1},
-      {"product_id":"00000000-0000-0000-0000-00000a17f002","quantity":1}]'::jsonb),
-  55000::numeric, 'T1 sans cle modifiers : base 50000 + surcharge option 5000');
+      {"product_id":"00000000-0000-0000-0000-00000a17f002","quantity":1}]'::jsonb) $q$,
+  '23514', NULL, 'T1 groupe requis sans cle modifiers -> refus (D2 active)');
 
 SELECT is(
   _resolve_combo_price_v1('00000000-0000-0000-0000-00000a17c0b1',
@@ -139,11 +142,13 @@ SELECT throws_ok(
   '23514', NULL, 'T6 modificateur inactif -> check_violation (jamais un silence a 0)');
 
 -- Le scope catégorie est résolu comme pour une ligne ordinaire.
+-- (Milk répondu en plus : depuis D2 le groupe requis exige une réponse.)
 SELECT is(
   _resolve_combo_price_v1('00000000-0000-0000-0000-00000a17c0b1',
     '[{"product_id":"00000000-0000-0000-0000-00000a17f001","quantity":1},
       {"product_id":"00000000-0000-0000-0000-00000a17f002","quantity":1,
-       "modifiers":[{"group_name":"Cup","option_label":"Large"}]}]'::jsonb),
+       "modifiers":[{"group_name":"Milk","option_label":"Fresh"},
+                    {"group_name":"Cup","option_label":"Large"}]}]'::jsonb),
   57000::numeric, 'T7 modificateur de scope categorie resolu (+2000)');
 
 -- Bout en bout : la vente facture bien le supplement.
@@ -172,6 +177,47 @@ SELECT is(
   (SELECT modifier_ingredients_deducted->0->>'option_label'
      FROM order_items WHERE order_id=current_setting('a17.order_id')::uuid),
   'Oat', 'T12 le snapshot nomme l''option qui a consomme la matiere');
+
+-- ── ADR-017 D2 (activée 2026-07-31) : groupes requis exigés serveur ──────────
+-- Une clé présente mais vide ne répond pas au groupe requis.
+SELECT throws_ok(
+  $q$ SELECT _resolve_combo_price_v1('00000000-0000-0000-0000-00000a17c0b1',
+    '[{"product_id":"00000000-0000-0000-0000-00000a17f001","quantity":1},
+      {"product_id":"00000000-0000-0000-0000-00000a17f002","quantity":1,
+       "modifiers":[]}]'::jsonb) $q$,
+  '23514', NULL, 'T13 cle modifiers vide sur groupe requis -> refus');
+
+-- Le composant SANS groupe requis (plate) passe toujours sans la clé :
+-- la rétro-compatibilité ne meurt que pour les composants à groupe requis.
+SELECT is(
+  _resolve_combo_price_v1('00000000-0000-0000-0000-00000a17c0b1',
+    '[{"product_id":"00000000-0000-0000-0000-00000a17f001","quantity":1},
+      {"product_id":"00000000-0000-0000-0000-00000a17f002","quantity":1,
+       "modifiers":[{"group_name":"Milk","option_label":"Fresh"}]}]'::jsonb),
+  55000::numeric, 'T14 composant sans groupe requis : toujours accepte sans cle');
+
+-- Scope catégorie : un groupe requis hérité de la catégorie (fallback
+-- mergeGroups) exige aussi une réponse…
+UPDATE product_modifiers SET group_required = true
+ WHERE category_id = current_setting('a17.cat')::uuid AND group_name = 'Cup';
+SELECT throws_ok(
+  $q$ SELECT _resolve_combo_price_v1('00000000-0000-0000-0000-00000a17c0b1',
+    '[{"product_id":"00000000-0000-0000-0000-00000a17f001","quantity":1},
+      {"product_id":"00000000-0000-0000-0000-00000a17f002","quantity":1,
+       "modifiers":[{"group_name":"Milk","option_label":"Fresh"}]}]'::jsonb) $q$,
+  '23514', NULL, 'T15 groupe requis de scope categorie sans reponse -> refus');
+
+-- …sauf si un groupe produit actif du même nom le recouvre (le scope produit
+-- prime, exactement comme mergeGroups côté domaine).
+INSERT INTO product_modifiers (product_id, category_id, group_name, group_required, group_type, option_label, price_adjustment, is_active) VALUES
+  ('00000000-0000-0000-0000-00000a17f001', NULL, 'Cup', false, 'single_select', 'Standard', 0, true),
+  ('00000000-0000-0000-0000-00000a17f002', NULL, 'Cup', false, 'single_select', 'Standard', 0, true);
+SELECT is(
+  _resolve_combo_price_v1('00000000-0000-0000-0000-00000a17c0b1',
+    '[{"product_id":"00000000-0000-0000-0000-00000a17f001","quantity":1},
+      {"product_id":"00000000-0000-0000-0000-00000a17f002","quantity":1,
+       "modifiers":[{"group_name":"Milk","option_label":"Fresh"}]}]'::jsonb),
+  55000::numeric, 'T16 groupe produit non requis recouvre le groupe categorie requis');
 
 SELECT * FROM finish();
 ROLLBACK;
