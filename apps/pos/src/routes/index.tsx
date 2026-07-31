@@ -7,7 +7,11 @@ import { useAuthStore } from '@/stores/authStore';
 
 const KdsPage = lazy(() => import('@/pages/Kds'));
 const TabletLayout = lazy(() => import('@/pages/tablet/TabletLayout'));
-const TabletOrderPage = lazy(() => import('@/pages/tablet/TabletOrderPage'));
+// La prise de commande vit dans `features/tablet` : c'est la version complète
+// (plan de salle avec occupation, garde dine-in qui ouvre le plan, total en
+// barre d'outils). Elle était écrite et testée mais branchée sur aucune route —
+// la route servait un doublon appauvri, désormais supprimé.
+const TabletOrderPage = lazy(() => import('@/features/tablet/TabletOrderPage'));
 const TabletOrdersPage = lazy(() => import('@/pages/tablet/TabletOrdersPage'));
 // Session 13 / Phase 4.C — D-4C-4 : `/display` route is publicly navigable.
 // No <Protected> guard — kiosk JWT (issued via kiosk-issue-jwt EF) replaces

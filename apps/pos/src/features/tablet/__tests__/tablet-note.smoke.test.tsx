@@ -13,18 +13,41 @@ import type { ReactNode } from 'react';
 import { useTabletCartStore } from '@/stores/tabletCartStore';
 import { useAuthStore } from '@/stores/authStore';
 import { TabletCartPanel } from '../components/TabletCartPanel';
+import { TabletOrderPage } from '../TabletOrderPage';
 
 vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn() },
   Toaster: () => null,
 }));
 
+// La saisie de la note reste testée sur le panneau (c'est lui qui la porte),
+// mais l'ENVOI est passé à la page lors de la consolidation des deux écrans :
+// les deux derniers cas rendent donc la page, grille produits stubbée.
+vi.mock('../components/TabletMenuView', () => ({
+  TabletMenuView: ({ toolbar }: { toolbar?: ReactNode }) => <div>{toolbar}</div>,
+}));
+
 const mocks = vi.hoisted(() => ({
   rpc: vi.fn().mockResolvedValue({ data: 'order-uuid', error: null }),
 }));
 
+// La page monte la sélection de table (tables + occupation realtime) : le mock
+// doit couvrir `from`/`channel`, pas seulement `rpc`.
 vi.mock('@/lib/supabase', () => ({
-  supabase: { rpc: mocks.rpc },
+  supabase: {
+    rpc: mocks.rpc,
+    from: vi.fn(() => ({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          order: vi.fn().mockResolvedValue({ data: [], error: null }),
+          not: vi.fn(() => ({ not: vi.fn().mockResolvedValue({ data: [], error: null }) })),
+        })),
+        not: vi.fn(() => ({ not: vi.fn().mockResolvedValue({ data: [], error: null }) })),
+      })),
+    })),
+    channel: vi.fn(() => ({ on: vi.fn().mockReturnThis(), subscribe: vi.fn().mockReturnThis() })),
+    removeChannel: vi.fn(),
+  },
   supabaseUrl: 'http://localhost:54321',
 }));
 
@@ -74,7 +97,7 @@ describe('tablet order note — textarea → store → create_tablet_order_v4', 
   });
 
   it('forwards the note as p_notes when the order is sent', async () => {
-    render(wrap(<TabletCartPanel />));
+    render(wrap(<TabletOrderPage />));
     fireEvent.change(screen.getByLabelText(/note for kitchen/i), {
       target: { value: 'No gluten — nut allergy' },
     });
@@ -90,7 +113,7 @@ describe('tablet order note — textarea → store → create_tablet_order_v4', 
   });
 
   it('omits p_notes entirely (server DEFAULT NULL applies) when no note was entered', async () => {
-    render(wrap(<TabletCartPanel />));
+    render(wrap(<TabletOrderPage />));
     fireEvent.click(screen.getByRole('button', { name: /send to kitchen/i }));
 
     await waitFor(() => {

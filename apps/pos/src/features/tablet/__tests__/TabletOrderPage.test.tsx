@@ -46,8 +46,16 @@ vi.mock('../components/TabletMenuView', () => ({
     </div>
   ),
 }));
+// Le panier accueille désormais l'action d'envoi dans son pied (slot `footer`) :
+// un stub qui ignore ses props ferait disparaître le bouton et masquerait tout
+// ce que cette suite vérifie.
 vi.mock('../components/TabletCartPanel', () => ({
-  TabletCartPanel: () => <div data-testid="mock-cart-panel">cart-stub</div>,
+  TabletCartPanel: ({ footer }: { footer?: ReactNode }) => (
+    <div data-testid="mock-cart-panel">
+      cart-stub
+      {footer}
+    </div>
+  ),
 }));
 vi.mock('../components/OfflineBanner', () => ({
   OfflineBanner: ({ isOnline }: { isOnline: boolean }) => (

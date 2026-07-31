@@ -6,6 +6,7 @@ import { MemoryRouter } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { useTabletCartStore } from '@/stores/tabletCartStore';
 import { useAuthStore } from '@/stores/authStore';
+import { TabletOrderPage } from '@/features/tablet/TabletOrderPage';
 
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
@@ -45,6 +46,14 @@ vi.mock('@/lib/supabase', () => ({
   supabaseUrl: 'http://localhost:54321',
 }));
 
+// L'envoi est porté par la PAGE depuis la consolidation des deux écrans (elle
+// seule peut ouvrir le plan de salle quand la table manque). On stubbe la
+// grille produits — lourde et sans rapport — et on garde le panier réel, dont
+// le pied accueille le bouton.
+vi.mock('@/features/tablet/components/TabletMenuView', () => ({
+  TabletMenuView: ({ toolbar }: { toolbar?: ReactNode }) => <div>{toolbar}</div>,
+}));
+
 function wrapper(children: ReactNode) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return (
@@ -70,14 +79,12 @@ describe('tablet-send smoke', () => {
     });
   });
 
-  it('send-to-kitchen button is disabled when cart is empty', async () => {
-    const { TabletCheckoutButton } = await import('@/features/tablet/components/TabletCheckoutButton');
-    render(wrapper(<TabletCheckoutButton />));
+  it('send-to-kitchen button is disabled when cart is empty', () => {
+    render(wrapper(<TabletOrderPage />));
     expect(screen.getByRole('button', { name: /send to kitchen/i })).toBeDisabled();
   });
 
   it('calls create_tablet_order_v4 RPC with correct payload and navigates to /tablet/orders on success', async () => {
-    const { TabletCheckoutButton } = await import('@/features/tablet/components/TabletCheckoutButton');
     const { toast } = await import('sonner');
     useTabletCartStore.setState({
       items: [
@@ -88,7 +95,7 @@ describe('tablet-send smoke', () => {
       orderType: 'dine_in',
     });
 
-    render(wrapper(<TabletCheckoutButton />));
+    render(wrapper(<TabletOrderPage />));
     const btn = screen.getByRole('button', { name: /send to kitchen/i });
     expect(btn).not.toBeDisabled();
 
@@ -118,15 +125,17 @@ describe('tablet-send smoke', () => {
 
   it('shows error toast when RPC fails', async () => {
     mocks.rpc.mockResolvedValueOnce({ data: null, error: { message: 'permission_denied' } });
-    const { TabletCheckoutButton } = await import('@/features/tablet/components/TabletCheckoutButton');
     const { toast } = await import('sonner');
     useTabletCartStore.setState({
       items: [{ id: 'l1', product_id: 'p1', name: 'Americano', unit_price: 35000, quantity: 1, modifiers: [] }],
-      tableNumber: null,
+      // Une table est nécessaire pour que l'envoi ATTEIGNE la RPC : sans elle,
+      // le garde dine-in refuse côté client et ce test passerait au vert sans
+      // jamais exercer l'échec serveur qu'il prétend couvrir.
+      tableNumber: 'T-03',
       orderType: 'dine_in',
     });
 
-    render(wrapper(<TabletCheckoutButton />));
+    render(wrapper(<TabletOrderPage />));
     fireEvent.click(screen.getByRole('button', { name: /send to kitchen/i }));
 
     await waitFor(() => {

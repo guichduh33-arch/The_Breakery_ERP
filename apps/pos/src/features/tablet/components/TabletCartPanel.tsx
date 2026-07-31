@@ -1,12 +1,21 @@
-import { useEffect, useMemo, useRef, useState, type JSX } from 'react';
+import { useEffect, useMemo, useRef, useState, type JSX, type ReactNode } from 'react';
 import { ChevronRight, ShoppingBag } from 'lucide-react';
 import { cn, Currency } from '@breakery/ui';
 import { calculatePreview } from '@breakery/domain';
 import { useTaxConfig } from '@/features/settings/hooks/useTaxConfig';
 import { useTabletCartStore } from '@/stores/tabletCartStore';
-import { TabletCheckoutButton } from './TabletCheckoutButton';
 
-export function TabletCartPanel(): JSX.Element {
+export interface TabletCartPanelProps {
+  /**
+   * Action rendue au pied du panier (l'envoi en cuisine). Le panneau ne
+   * déclenche PLUS l'envoi lui-même : la page le porte, parce qu'elle seule
+   * peut ouvrir le plan de salle quand il manque une table. Deux
+   * implémentations de l'envoi coexistaient — c'en est une de trop.
+   */
+  footer?: ReactNode;
+}
+
+export function TabletCartPanel({ footer }: TabletCartPanelProps = {}): JSX.Element {
   const items = useTabletCartStore((s) => s.items);
   const tableNumber = useTabletCartStore((s) => s.tableNumber);
   const orderType = useTabletCartStore((s) => s.orderType);
@@ -166,8 +175,12 @@ export function TabletCartPanel(): JSX.Element {
           )}
         </div>
 
-        {!isEmpty && (
-          <footer className="p-4 border-t border-border-subtle space-y-3">
+        {/* Le pied reste monté même panier vide : les totaux et la note n'ont
+            alors rien à dire, mais l'action d'envoi doit rester visible (et
+            désactivée) — un CTA qui disparaît laisse la serveuse chercher où
+            envoyer. */}
+        <footer className="p-4 border-t border-border-subtle space-y-3">
+          {!isEmpty && (
             <div className="space-y-1 text-sm">
               <div className="flex justify-between">
                 <span className="text-text-secondary">Items total</span>
@@ -182,7 +195,9 @@ export function TabletCartPanel(): JSX.Element {
                 <Currency amount={preview.total} emphasis="gold" className="text-lg" />
               </div>
             </div>
-            {/* Session 59 (17 D1.1) — order-level note (allergy, "no gluten"...). */}
+          )}
+          {/* Session 59 (17 D1.1) — order-level note (allergy, "no gluten"...). */}
+          {!isEmpty && (
             <div className="space-y-1">
               <label htmlFor="tablet-order-note" className="text-xs uppercase tracking-widest text-text-muted">
                 Note for kitchen
@@ -196,9 +211,9 @@ export function TabletCartPanel(): JSX.Element {
                 className="w-full resize-none rounded-md bg-bg-input border border-border-subtle p-2 text-sm text-text-primary placeholder:text-text-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold"
               />
             </div>
-            <TabletCheckoutButton />
-          </footer>
-        )}
+          )}
+          {footer}
+        </footer>
       </div>
     </aside>
   );

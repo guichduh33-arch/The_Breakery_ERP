@@ -231,11 +231,11 @@ export function TabletOrderPage({
           onSelectCategory={setSelectedSlug}
           toolbar={toolbar}
         />
-        <div className="w-[320px] border-l border-border-subtle flex flex-col bg-bg-elevated">
-          <div className="flex-1 overflow-hidden">
-            <TabletCartPanel />
-          </div>
-          <div className="p-4 border-t border-border-subtle">
+        {/* Le panneau porte sa propre largeur et son repli en portrait — pas de
+            conteneur de largeur fixe par-dessus, sinon le repli se retrouve
+            enfermé dans une colonne qui ne bouge pas. */}
+        <TabletCartPanel
+          footer={
             <Button
               variant="primary"
               size="lg"
@@ -248,8 +248,8 @@ export function TabletOrderPage({
             >
               {isSending ? 'Sending…' : 'Send to Kitchen'}
             </Button>
-          </div>
-        </div>
+          }
+        />
       </div>
     </div>
   );
