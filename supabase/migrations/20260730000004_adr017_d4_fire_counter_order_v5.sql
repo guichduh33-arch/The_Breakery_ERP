@@ -199,3 +199,19 @@ BEGIN
 
   RETURN jsonb_build_object('order_id', v_order_id, 'order_number', v_order_number, 'idempotent_replay', false);
 END $function$;
+
+-- Queue restituée le 2026-07-31. La migration APPLIQUÉE (bookkeeping cloud,
+-- version 20260730101635) exécutait après la création de v5 les cinq ordres
+-- ci-dessous — DROP de v4, REVOKE PUBLIC/anon, GRANT, COMMENT — que ce fichier
+-- avait perdus à l'écriture. Ils sont repris à l'identique de ce qui a tourné :
+-- sans eux, tout rejeu de la lignée sur une base neuve laisserait v4 vivante
+-- et v5 sans grant.
+
+DROP FUNCTION IF EXISTS public.fire_counter_order_v4(p_client_uuid uuid, p_session_id uuid, p_items jsonb, p_order_id uuid, p_table_number text, p_order_type order_type, p_discount_authorized_by uuid);
+
+REVOKE ALL ON FUNCTION public.fire_counter_order_v5(p_client_uuid uuid, p_session_id uuid, p_items jsonb, p_order_id uuid, p_table_number text, p_order_type order_type, p_discount_authorized_by uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.fire_counter_order_v5(p_client_uuid uuid, p_session_id uuid, p_items jsonb, p_order_id uuid, p_table_number text, p_order_type order_type, p_discount_authorized_by uuid) FROM anon;
+GRANT EXECUTE ON FUNCTION public.fire_counter_order_v5(p_client_uuid uuid, p_session_id uuid, p_items jsonb, p_order_id uuid, p_table_number text, p_order_type order_type, p_discount_authorized_by uuid) TO authenticated, service_role;
+
+COMMENT ON FUNCTION public.fire_counter_order_v5(p_client_uuid uuid, p_session_id uuid, p_items jsonb, p_order_id uuid, p_table_number text, p_order_type order_type, p_discount_authorized_by uuid) IS
+  'ADR-017 D4 — v5 = v4 + snapshot des ingredients des modificateurs portes par les composants d''un combo. Aucune deduction au fire : pay_existing_order deduit depuis ce snapshot, une seule fois.';
