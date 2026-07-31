@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useTabletCartStore } from '@/stores/tabletCartStore';
 import { usePosSettingsStore } from '@/stores/posSettingsStore';
 import { useTabletOffline } from '@/features/tablet/hooks/useTabletOffline';
+import { isInFlight } from '@breakery/domain';
 import { useMyTabletOrders } from '@/features/tablet/hooks/useMyTabletOrders';
 import { useLanHeartbeat } from '@/features/lan/hooks/useLanHeartbeat';
 import { useHubPresence } from '@/features/lan/hooks/useHubPresence';
@@ -33,7 +34,10 @@ export default function TabletLayout(): JSX.Element {
   const tableNumber = useTabletCartStore((s) => s.tableNumber);
   const { isOnline } = useTabletOffline();
   const { data: orders = [] } = useMyTabletOrders();
-  const orderCount = orders.length;
+  // Le badge comptait TOUTES les commandes de l'historique : au bout d'un mois
+  // il annonçait plusieurs centaines, et un compteur qui n'indique rien
+  // d'actionnable cesse d'être regardé. On ne compte que ce qui est en vol.
+  const orderCount = orders.filter((o) => isInFlight(o.status)).length;
 
   if (!isAuthenticated) return <Navigate to="/login" replace />;
 

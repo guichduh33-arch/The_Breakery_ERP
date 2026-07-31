@@ -72,10 +72,38 @@ describe('TabletLayout header (LOT 6)', () => {
   });
 
   it('badges the Orders tab with the live order count', async () => {
-    ordersMock.data = [{ id: 'o1' }, { id: 'o2' }, { id: 'o3' }];
+    ordersMock.data = [
+      { id: 'o1', status: 'pending_payment' },
+      { id: 'o2', status: 'pending_payment' },
+      { id: 'o3', status: 'draft' },
+    ];
     const { default: TabletLayout } = await import('@/pages/tablet/TabletLayout');
     render(wrap(<TabletLayout />));
     expect(screen.getByLabelText(/3 orders/i)).toHaveTextContent('3');
+  });
+
+  // Le badge comptait tout l'historique : au bout d'un mois il annonçait
+  // plusieurs centaines, et cessait d'être regardé. Seul « en vol » compte.
+  it('ne compte que les commandes encore en vol, pas l’historique encaissé', async () => {
+    ordersMock.data = [
+      { id: 'o1', status: 'pending_payment' },
+      { id: 'o2', status: 'paid' },
+      { id: 'o3', status: 'completed' },
+      { id: 'o4', status: 'voided' },
+    ];
+    const { default: TabletLayout } = await import('@/pages/tablet/TabletLayout');
+    render(wrap(<TabletLayout />));
+    expect(screen.getByLabelText(/1 order$/i)).toHaveTextContent('1');
+  });
+
+  it('n’affiche aucun badge quand tout est encaissé', async () => {
+    ordersMock.data = [
+      { id: 'o1', status: 'paid' },
+      { id: 'o2', status: 'completed' },
+    ];
+    const { default: TabletLayout } = await import('@/pages/tablet/TabletLayout');
+    render(wrap(<TabletLayout />));
+    expect(screen.queryByLabelText(/order[s]?$/i)).not.toBeInTheDocument();
   });
 
   // Session 59 (21 D1.1) — useLanHeartbeat is now mounted on this shell so BO

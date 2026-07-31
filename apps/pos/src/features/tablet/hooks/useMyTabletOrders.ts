@@ -19,6 +19,12 @@ export interface TabletOrderRow {
   items: TabletOrderItemRow[];
 }
 
+/** Profondeur d'historique servie à la tablette. La requête n'était pas bornée :
+ *  elle tirait TOUTES les commandes du serveur depuis toujours, items imbriqués
+ *  compris, sur un appareil de salle. Le service en cours est ce qui compte ;
+ *  la fiche commande complète vit au POS. */
+const MAX_TABLET_ORDERS = 50;
+
 export function useMyTabletOrders() {
   const userId = useAuthStore((s) => s.user?.id);
 
@@ -31,7 +37,8 @@ export function useMyTabletOrders() {
         .select('id, order_number, table_number, order_type, status, sent_to_kitchen_at, order_items(id, name_snapshot, quantity, kitchen_status)')
         .eq('waiter_id', userId!)
         .eq('created_via', 'tablet')
-        .order('sent_to_kitchen_at', { ascending: false });
+        .order('sent_to_kitchen_at', { ascending: false })
+        .limit(MAX_TABLET_ORDERS);
       if (error) throw new Error(error.message);
       return (data ?? []).map((row) => ({
         id: row.id,

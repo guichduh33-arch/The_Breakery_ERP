@@ -48,9 +48,23 @@ export function useTabletOrderStatusListener() {
           const item = payload.new as {
             id?:             string;
             order_id?:       string;
-            name?:           string;
+            // La colonne est `name_snapshot` (figée à la commande) — il n'y a
+            // PAS de `order_items.name`. Lire `name` renvoyait toujours
+            // undefined : le toast annonçait « Item ready: item », sans jamais
+            // dire QUOI. Voir la note de usePickupTabletOrder.
+            name_snapshot?:  string;
             kitchen_status?: string;
           };
+
+          // Le filtre realtime ne porte que sur `kitchen_status` : sans ce
+          // second tri, chaque serveuse recevait un toast pour CHAQUE item prêt
+          // du restaurant, comptoir compris. En rush, un flux qu'on apprend à
+          // ignorer — donc la vraie notification s'y perd. `order_items` ne
+          // porte pas le serveur : on recoupe avec les commandes de CETTE
+          // tablette, déjà en cache.
+          const mine = queryClient.getQueryData<{ id: string }[]>(['tablet-orders', userId]);
+          if (mine !== undefined && !mine.some((o) => o.id === item.order_id)) return;
+
           const key = `${item.id ?? 'unknown'}:${item.kitchen_status ?? 'ready'}`;
 
           // Bounded LRU-like behaviour : drop oldest when full.
@@ -62,7 +76,7 @@ export function useTabletOrderStatusListener() {
           }
           seen.add(key);
 
-          toast.success(`Item ready: ${item.name ?? 'item'}`);
+          toast.success(`Item ready: ${item.name_snapshot ?? 'item'}`);
           void queryClient.invalidateQueries({ queryKey: ['tablet-orders', userId] });
         },
       )
