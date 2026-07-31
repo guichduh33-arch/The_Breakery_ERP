@@ -79,7 +79,7 @@ describe('tablet-send smoke', () => {
     });
   });
 
-  it('send-to-kitchen button is disabled when cart is empty', async () => {
+  it('send-to-kitchen button is disabled when cart is empty', () => {
     render(wrapper(<TabletOrderPage />));
     expect(screen.getByRole('button', { name: /send to kitchen/i })).toBeDisabled();
   });
