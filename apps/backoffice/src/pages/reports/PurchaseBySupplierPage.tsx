@@ -9,7 +9,10 @@ import { DateRangePicker } from '@/features/reports/components/DateRangePicker.j
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
 import { ChartCard } from '@/features/reports/components/ChartCard.js';
 import { CostDonut } from '@/features/reports/components/CostDonut.js';
-import { COGS_BASE } from '@/features/reports/utils/chartColors.js';
+import {
+  COGS_BASE,
+  formatIdrFull,
+} from '@/features/reports/utils/chartColors.js';
 import { useUrlState } from '@/hooks/useUrlState.js';
 import {
   usePurchaseBySupplier,
@@ -26,8 +29,9 @@ const csvColumns: CsvColumn<PurchaseBySupplierRow>[] = [
   { header: 'Share (%)',      accessor: (r) => r.share_pct / 100,        format: 'percent' },
 ];
 
-const IDR = (v: number) =>
-  v.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 });
+// Audit R-15 — ce helper local etait la 10e copie du meme formatteur IDR
+// dans le module. Tout passe desormais par `formatIdrFull`.
+const IDR = formatIdrFull;
 
 function defaultStart(): string {
   return toLocalDateStr(new Date(Date.now() - 29 * 86_400_000));

@@ -7104,29 +7104,13 @@ export type Database = {
         Returns: Json
       }
       format_type_string: { Args: { "": string }; Returns: string }
-      get_audit_logs_v1: {
+      get_audit_logs_v3: {
         Args: {
           p_action?: string
           p_actor_id?: string
           p_cursor?: string
-          p_entity_type?: string
-          p_limit?: number
-        }
-        Returns: {
-          action: string
-          actor_id: string
-          created_at: string
-          entity_id: string
-          entity_type: string
-          id: number
-          metadata: Json
-        }[]
-      }
-      get_audit_logs_v2: {
-        Args: {
-          p_action?: string
-          p_actor_id?: string
-          p_cursor?: string
+          p_date_end?: string
+          p_date_start?: string
           p_entity_id?: string
           p_entity_type?: string
           p_limit?: number
@@ -7145,7 +7129,7 @@ export type Database = {
       get_b2b_settings_v1: { Args: never; Returns: Json }
       get_balance_sheet_data: { Args: { p_as_of?: string }; Returns: Json }
       get_balance_sheet_v2: { Args: { p_as_of_date: string }; Returns: Json }
-      get_basket_analysis_v2: {
+      get_basket_analysis_v3: {
         Args: { p_date_end: string; p_date_start: string; p_top_n?: number }
         Returns: {
           co_occurrence_count: number
@@ -7160,7 +7144,7 @@ export type Database = {
           support_pair: number
         }[]
       }
-      get_cash_flow_v1: {
+      get_cash_flow_v2: {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
@@ -7194,7 +7178,7 @@ export type Database = {
           supplier: string
         }[]
       }
-      get_cashier_variance_v1: {
+      get_cashier_variance_v2: {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json
       }
@@ -7518,7 +7502,7 @@ export type Database = {
           unit: string
         }[]
       }
-      get_sales_by_category_v2: {
+      get_sales_by_category_v3: {
         Args: { p_date_end: string; p_date_start: string }
         Returns: {
           category_id: string
@@ -7535,7 +7519,7 @@ export type Database = {
           total: number
         }[]
       }
-      get_sales_by_staff_v2: {
+      get_sales_by_staff_v3: {
         Args: { p_date_end: string; p_date_start: string }
         Returns: {
           avg_basket: number
@@ -7647,7 +7631,7 @@ export type Database = {
         }
         Returns: Json
       }
-      get_stock_variance_v1: {
+      get_stock_variance_v2: {
         Args: {
           p_date_end?: string
           p_date_start?: string
@@ -7670,7 +7654,7 @@ export type Database = {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
-      get_wastage_report_v1: {
+      get_wastage_report_v2: {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }

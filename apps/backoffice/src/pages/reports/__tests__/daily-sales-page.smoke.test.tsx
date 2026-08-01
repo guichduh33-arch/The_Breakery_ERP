@@ -1,7 +1,7 @@
 // apps/backoffice/src/pages/reports/__tests__/daily-sales-page.smoke.test.tsx
 // S40 Wave B1 — Smoke test: DailySalesPage renders heading, data, export button, and error state.
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
@@ -9,7 +9,7 @@ import { MemoryRouter } from 'react-router-dom';
 const mockUseDailySales = vi.fn();
 
 vi.mock('@/features/reports/hooks/useDailySales.js', () => ({
-  useDailySales: (...args: unknown[]) => mockUseDailySales(...args),
+  useDailySales: (...args: unknown[]): unknown => mockUseDailySales(...args),
 }));
 
 // Supabase is imported transitively by the page but not called directly in these tests
@@ -19,6 +19,7 @@ vi.mock('@/lib/supabase.js', () => ({
 }));
 
 import DailySalesPage from '@/pages/reports/DailySalesPage.js';
+import { useAuthStore } from '@/stores/authStore.js';
 
 function renderPage() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -28,6 +29,13 @@ function renderPage() {
     </QueryClientProvider>,
   );
 }
+
+// Audit Reports 2026-08-01, lot C / D3 — <ExportButtons> ne rend rien sans
+// `reports.export`, et les pages a export maison desactivent leur bouton. Ce
+// test verifie le CABLAGE de l'export, pas le RBAC : on seede la permission.
+beforeEach(() => {
+  useAuthStore.setState({ permissions: ['reports.export'] });
+});
 
 describe('DailySalesPage (smoke)', () => {
   it('renders heading, IDR aggregate values and CSV export button; no PDF button', () => {

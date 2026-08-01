@@ -3,7 +3,7 @@
 // Full filtered date range via get_stock_movement_ledger_v1 (no cursor); the row cap
 // surfaces a truncation banner. PDF intentionally omitted (DEV-S30-4.X-01).
 
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { selectClassName, cn } from '@breakery/ui';
 import { toLocalDateStr } from '@breakery/domain';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
@@ -30,7 +30,9 @@ const MOVEMENT_TYPES = [
 export default function StockMovementHistoryPage() {
   const [start,      setStart]      = useUrlState('start', defaultStart());
   const [end,        setEnd]        = useUrlState('end', toLocalDateStr(new Date()));
-  const [typeFilter, setTypeFilter] = useState<string>('');
+  // Audit R-17 — filtre en URL-state (convention S57) : la vue devient
+  // partageable et survit au rechargement.
+  const [typeFilter, setTypeFilter] = useUrlState('movement_type', '');
 
   const query = useStockLedger({
     start,

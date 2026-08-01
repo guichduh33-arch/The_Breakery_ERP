@@ -2,7 +2,12 @@
 //
 // Session 59 / Task 6c — filter bar for the Audit Log report (actor / action
 // / entity type). Wires onto filters already supported server-side by
-// get_audit_logs_v1/_v2 (via useAuditLogs) but never exposed in the UI.
+// get_audit_logs (via useAuditLogs) but never exposed in the UI.
+//
+// Audit Reports 2026-08-01 (R-10) — ajout de la plage de dates. Elle n'existait
+// nulle part : ni dans cette barre, ni dans la RPC. get_audit_logs_v3 l'accepte
+// désormais (migration 20260801000003). Les deux champs sont des dates métier
+// (YYYY-MM-DD), bornées serveur dans business_config.timezone.
 //
 // Actor options come from `useLoginUsers` (list_login_users_v1, S58) — a
 // minimal, already-anon-callable id/display_name/role listing reused here
@@ -15,10 +20,12 @@ export interface AuditLogFilterValues {
   actorId:    string;
   action:     string;
   entityType: string;
+  dateStart:  string;
+  dateEnd:    string;
 }
 
 export const EMPTY_AUDIT_LOG_FILTERS: AuditLogFilterValues = {
-  actorId: '', action: '', entityType: '',
+  actorId: '', action: '', entityType: '', dateStart: '', dateEnd: '',
 };
 
 export interface AuditLogFiltersProps {
@@ -38,7 +45,7 @@ const ENTITY_TYPE_HINTS = [
 
 // Review finding (S59 Task 6c) — the two free-text inputs (Action, Entity
 // type) fired `onChange` on every keystroke, which flows straight into
-// useAuditLogs' queryKey and re-fetches get_audit_logs_v1 per character.
+// useAuditLogs' queryKey and re-fetches the audit RPC per character.
 // No shared useDebounce hook exists in this repo (grepped packages/utils +
 // apps) — mirrors the inline setTimeout+ref idiom used elsewhere (e.g.
 // apps/pos/src/features/cart/CustomerAttachModal.tsx).
@@ -56,7 +63,8 @@ const DEBOUNCE_MS = 300;
 
 export function AuditLogFilters({ value, onChange }: AuditLogFiltersProps): JSX.Element {
   const users = useLoginUsers();
-  const hasFilters = value.actorId !== '' || value.action !== '' || value.entityType !== '';
+  const hasFilters = value.actorId !== '' || value.action !== '' || value.entityType !== ''
+    || value.dateStart !== '' || value.dateEnd !== '';
 
   // Local drafts so the input reflects every keystroke immediately while the
   // commit to the parent (→ RPC re-fetch) is debounced. Actor stays a plain
@@ -111,6 +119,34 @@ export function AuditLogFilters({ value, onChange }: AuditLogFiltersProps): JSX.
 
   return (
     <div className="flex flex-wrap items-end gap-3">
+      {/* Dates : choix discrets (pas un flux de frappe) → commit immédiat, comme
+          le <select> Acteur, pas de draft ni de debounce. */}
+      <label className="flex flex-col text-xs uppercase tracking-widest text-text-secondary">
+        From
+        <input
+          type="date"
+          value={value.dateStart}
+          max={value.dateEnd || undefined}
+          onChange={(e) => patchNow({ dateStart: e.target.value })}
+          className="mt-1 h-9 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
+          data-testid="audit-filter-date-start"
+          aria-label="Audit log start date"
+        />
+      </label>
+
+      <label className="flex flex-col text-xs uppercase tracking-widest text-text-secondary">
+        To
+        <input
+          type="date"
+          value={value.dateEnd}
+          min={value.dateStart || undefined}
+          onChange={(e) => patchNow({ dateEnd: e.target.value })}
+          className="mt-1 h-9 rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary"
+          data-testid="audit-filter-date-end"
+          aria-label="Audit log end date"
+        />
+      </label>
+
       <label className="flex flex-col text-xs uppercase tracking-widest text-text-secondary">
         Actor
         <select

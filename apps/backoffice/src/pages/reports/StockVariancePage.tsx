@@ -2,17 +2,31 @@
 //
 // Per-product variance table with color-coded variance column. Window
 // defaults to the last 30 days. Section filter optional.
+//
+// Audit Reports 2026-08-01 :
+//   R-01 — les bornes étaient recalculées à chaque render via `Date.now()` et
+//     `new Date().toISOString()` (précision milliseconde). Elles entraient dans
+//     la queryKey, qui changeait donc à chaque render : la page bouclait en
+//     requêtes. Les bornes sont désormais ancrées au JOUR local
+//     (`toLocalDateStr` → `toLocalDayStartUTC`) et mémoïsées.
+//   R-05 — la fenêtre était figée à 30 j sans UI (`useState(30)` sans setter) et
+//     `p_section_id` n'était jamais transmis alors que le hook et la RPC le
+//     supportent. Les deux filtres sont exposés, en URL-state (convention S57).
 
-import { useState } from 'react';
-import { cn } from '@breakery/ui';
+import { useMemo } from 'react';
+import { cn, selectClassName } from '@breakery/ui';
+import { toLocalDateStr, toLocalDayStartUTC, toLocalDayEndUTC } from '@breakery/domain';
 import type { CsvColumn } from '@breakery/domain';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
+import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
 import {
   useStockVariance,
   type StockVarianceRow,
 } from '@/features/reports/hooks/useStockVariance.js';
+import { useSections } from '@/features/inventory-transfers/hooks/useSections.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
+import { useUrlState } from '@/hooks/useUrlState.js';
 
 const csvColumns: CsvColumn<StockVarianceRow>[] = [
   { header: 'Product',      accessor: (r) => r.product_name,  format: 'text' },
@@ -33,29 +47,71 @@ function varianceTone(v: number): string {
   return 'text-warning';                     // small loss
 }
 
-export default function StockVariancePage() {
-  const [days] = useState(30);
-  const since  = new Date(Date.now() - days * 86_400_000).toISOString();
-  const until  = new Date().toISOString();
-  const { data, isLoading, error } = useStockVariance({
-    dateStart: since,
-    dateEnd:   until,
-  });
+function defaultStart(): string {
+  return toLocalDateStr(new Date(Date.now() - 29 * 86_400_000));
+}
 
-  const sinceDate = new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);
-  const untilDate = new Date().toISOString().slice(0, 10);
+export default function StockVariancePage() {
+  const [start,     setStart]     = useUrlState('start', defaultStart());
+  const [end,       setEnd]       = useUrlState('end', toLocalDateStr(new Date()));
+  const [sectionId, setSectionId] = useUrlState('section_id', '');
+
+  const { data: sections } = useSections();
+
+  // La RPC attend des TIMESTAMPTZ et compare en BETWEEN (inclusif). On convertit
+  // les dates métier locales en bornes UTC ancrées au jour : pour un même couple
+  // (start, end) la valeur est identique d'un render à l'autre, donc la queryKey
+  // est stable — c'est le cœur du correctif R-01.
+  const filters = useMemo(() => {
+    const f: { dateStart: string; dateEnd: string; sectionId?: string } = {
+      dateStart: toLocalDayStartUTC(start).toISOString(),
+      dateEnd:   toLocalDayEndUTC(end).toISOString(),
+    };
+    if (sectionId) f.sectionId = sectionId;
+    return f;
+  }, [start, end, sectionId]);
+
+  const { data, isLoading, error } = useStockVariance(filters);
 
   return (
     <ReportPage
       title="Stock Variance"
-      subtitle={`Per-product variance over the last ${days} days. Positive = surplus, negative = shrinkage.`}
+      subtitle="Expected vs current stock per product. Positive = surplus, negative = shrinkage."
+      isEmpty={!isLoading && !error && data?.length === 0}
+      emptyState={{
+        title: 'No movement',
+        description: 'No stock movement for the selected period and section.',
+      }}
       filters={
-        data != null ? (
-          <ExportButtons
-            csv={{ rows: data, columns: csvColumns, filename: `stock-variance-${sinceDate}_${untilDate}` }}
-            pdf={{ template: 'stock_variance', data, period: { start: sinceDate, end: untilDate }, filename: `stock-variance-${sinceDate}_${untilDate}` }}
+        <div className="flex flex-wrap items-center gap-3">
+          <DateRangePicker
+            start={start}
+            end={end}
+            onStartChange={setStart}
+            onEndChange={setEnd}
           />
-        ) : undefined
+          {/* Native <select> — @breakery/ui does not export a Select component */}
+          <label className="flex items-center gap-2 text-sm text-text-secondary">
+            <span>Section</span>
+            <select
+              className={cn(selectClassName, 'h-9 w-auto')}
+              value={sectionId}
+              onChange={(e) => setSectionId(e.target.value)}
+              aria-label="Filter by section"
+            >
+              <option value="">All sections</option>
+              {(sections ?? []).map((s) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+          </label>
+          {data != null && (
+            <ExportButtons
+              csv={{ rows: data, columns: csvColumns, filename: `stock-variance-${start}_${end}` }}
+              pdf={{ template: 'stock_variance', data, period: { start, end }, filename: `stock-variance-${start}_${end}` }}
+            />
+          )}
+        </div>
       }
     >
       {isLoading && <p className="text-sm text-text-secondary">Loading…</p>}
@@ -79,13 +135,6 @@ export default function StockVariancePage() {
             </tr>
           </thead>
           <tbody>
-            {data.length === 0 && (
-              <tr>
-                <td className="py-3 text-text-secondary" colSpan={8}>
-                  No products to report.
-                </td>
-              </tr>
-            )}
             {data.map((r: StockVarianceRow) => (
               <tr key={r.product_id} className="border-b border-border-subtle">
                 <td className="py-2">

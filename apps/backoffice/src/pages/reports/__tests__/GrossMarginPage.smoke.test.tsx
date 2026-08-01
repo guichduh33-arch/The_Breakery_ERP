@@ -9,6 +9,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import GrossMarginPage from '@/pages/reports/GrossMarginPage.js';
+import { useAuthStore } from '@/stores/authStore.js';
 
 const CATEGORY_ROWS = [
   { id: 'c1', name: 'Bread', slug: 'bread', sort_order: 1, is_active: true,
@@ -72,6 +73,13 @@ function renderPage() {
     </QueryClientProvider>,
   );
 }
+
+// Audit Reports 2026-08-01, lot C / D3 — <ExportButtons> ne rend rien sans
+// `reports.export`, et les pages a export maison desactivent leur bouton. Ce
+// test verifie le CABLAGE de l'export, pas le RBAC : on seede la permission.
+beforeEach(() => {
+  useAuthStore.setState({ permissions: ['reports.export'] });
+});
 
 describe('GrossMarginPage smoke', () => {
   beforeEach(() => { mockRpc.mockReset(); marginPayload = MARGIN_DATA; });

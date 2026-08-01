@@ -38,12 +38,12 @@ SELECT has_function(
   'T_RPT_FIN_02 — get_balance_sheet_v2 exists'
 );
 SELECT has_function(
-  'public', 'get_cash_flow_v1', ARRAY['date','date'],
-  'T_RPT_FIN_03 — get_cash_flow_v1 exists'
+  'public', 'get_cash_flow_v2', ARRAY['date','date'],
+  'T_RPT_FIN_03 — get_cash_flow_v2 exists'
 );
 SELECT has_function(
-  'public', 'get_basket_analysis_v2', ARRAY['date','date','integer'],
-  'T_RPT_FIN_04 — get_basket_analysis_v2 exists'
+  'public', 'get_basket_analysis_v3', ARRAY['date','date','integer'],
+  'T_RPT_FIN_04 — get_basket_analysis_v3 exists'
 );
 
 -- ============================================================
@@ -148,12 +148,12 @@ SELECT ok(
 -- T_RPT_FIN_10..11 — Cash Flow shape (investing/financing zero)
 -- ============================================================
 SELECT is(
-  ((get_cash_flow_v1(CURRENT_DATE, CURRENT_DATE))->'investing'->>'total')::NUMERIC,
+  ((get_cash_flow_v2(CURRENT_DATE, CURRENT_DATE))->'investing'->>'total')::NUMERIC,
   0::NUMERIC,
   'T_RPT_FIN_10 — Cash Flow investing = 0 (MVP placeholder)'
 );
 SELECT is(
-  ((get_cash_flow_v1(CURRENT_DATE, CURRENT_DATE))->'financing'->>'total')::NUMERIC,
+  ((get_cash_flow_v2(CURRENT_DATE, CURRENT_DATE))->'financing'->>'total')::NUMERIC,
   0::NUMERIC,
   'T_RPT_FIN_11 — Cash Flow financing = 0 (MVP placeholder)'
 );
@@ -162,8 +162,8 @@ SELECT is(
 -- T_RPT_FIN_12 — Basket analysis runs on empty window
 -- ============================================================
 SELECT lives_ok(
-  $$SELECT * FROM public.get_basket_analysis_v2(CURRENT_DATE, CURRENT_DATE, 10)$$,
-  'T_RPT_FIN_12 — get_basket_analysis_v2 runs without error on empty window'
+  $$SELECT * FROM public.get_basket_analysis_v3(CURRENT_DATE, CURRENT_DATE, 10)$$,
+  'T_RPT_FIN_12 — get_basket_analysis_v3 runs without error on empty window'
 );
 
 SELECT * FROM finish();

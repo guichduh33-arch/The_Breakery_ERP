@@ -6,7 +6,7 @@
 //   2. Table renders when RPC returns rows.
 //   3. Row click navigates to /backoffice/reports/recipe-cost/<product_id>.
 //   4. delta_pct > 20 gets text-danger class on the delta cell.
-//   5. Export CSV button is disabled when 0 rows, enabled when ≥ 1 row.
+//   5. Exports absent when 0 rows, CSV + PDF present when ≥ 1 row.
 //
 // RPC mock pattern mirrors ProductionYieldPage.smoke.test.tsx (S15).
 
@@ -16,6 +16,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import RecipeCostOverviewPage from '@/pages/reports/RecipeCostOverviewPage.js';
+import { useAuthStore } from '@/stores/authStore.js';
 
 // --- Fixtures ---
 
@@ -69,6 +70,13 @@ function renderPage() {
 }
 
 // --- Tests ---
+
+// Audit Reports 2026-08-01, lot C / D3 — <ExportButtons> ne rend rien sans
+// `reports.export`, et les pages a export maison desactivent leur bouton. Ce
+// test verifie le CABLAGE de l'export, pas le RBAC : on seede la permission.
+beforeEach(() => {
+  useAuthStore.setState({ permissions: ['reports.export'] });
+});
 
 describe('RecipeCostOverviewPage smoke', () => {
   beforeEach(() => {
@@ -125,13 +133,17 @@ describe('RecipeCostOverviewPage smoke', () => {
     expect(deltaCell!.className).toContain('text-danger');
   });
 
-  // 5. CSV button disabled when empty, enabled when rows present
-  it('disables Export CSV when 0 rows and enables it when rows are present', async () => {
+  // Audit R-13 — la page exposait un <Button> maison (testid dedie, desactive
+  // quand vide) ; elle passe par <ExportButtons>, qui n'est monte que
+  // lorsqu'il y a des lignes et qui expose les testids export-csv/export-pdf.
+  // L'assertion suit : absence quand vide, presence des DEUX exports sinon —
+  // le PDF etant precisement le template qui etait inatteignable.
+  it('hides the exports when 0 rows and offers CSV + PDF when rows are present', async () => {
     // --- empty case ---
     mockRpc.mockResolvedValue({ data: [], error: null });
     const { unmount } = renderPage();
     await waitFor(() => {
-      expect(screen.getByTestId('overview-export-csv')).toBeDisabled();
+      expect(screen.queryByTestId('export-csv')).not.toBeInTheDocument();
     });
     unmount();
 
@@ -139,8 +151,9 @@ describe('RecipeCostOverviewPage smoke', () => {
     mockRpc.mockResolvedValue({ data: OVERVIEW_ROWS, error: null });
     renderPage();
     await waitFor(() => {
-      expect(screen.getByTestId('overview-export-csv')).not.toBeDisabled();
+      expect(screen.getByTestId('export-csv')).toBeInTheDocument();
     });
+    expect(screen.getByTestId('export-pdf')).toBeInTheDocument();
   });
 
   // 6. Error state renders alert

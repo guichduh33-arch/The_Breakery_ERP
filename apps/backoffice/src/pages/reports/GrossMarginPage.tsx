@@ -20,6 +20,7 @@ import {
 } from '@/features/reports/hooks/useGrossMargin.js';
 import { useAllCategories } from '@/features/categories/hooks/useAllCategories.js';
 import { useUrlState } from '@/hooks/useUrlState.js';
+import { formatIdrFull } from '@/features/reports/utils/chartColors.js';
 
 const csvColumns: CsvColumn<GrossMarginProductRow>[] = [
   { header: 'Product',    accessor: (r) => r.name,                          format: 'text' },
@@ -35,9 +36,9 @@ function defaultStart(): string {
   return toLocalDateStr(new Date(Date.now() - 29 * 86_400_000));
 }
 
-function fmtIdr(n: number): string {
-  return Math.round(n).toLocaleString('id-ID');
-}
+/** Audit R-15 — etait `Math.round(n).toLocaleString('id-ID')` : bonne locale,
+ *  mais aucun symbole de devise. */
+const fmtIdr = formatIdrFull;
 
 function fmtPct(n: number): string {
   return `${n.toFixed(1)}%`;

@@ -18,6 +18,7 @@ import {
 } from '@/features/reports/hooks/useDailySales.js';
 import { useHolidaysList, holidayNameFor } from '@/features/settings/hooks/useHolidays.js';
 import { useUrlState } from '@/hooks/useUrlState.js';
+import { formatIdrFull } from '@/features/reports/utils/chartColors.js';
 
 type AnnotatedRow = DailySalesRow & { holiday: string | null };
 
@@ -31,8 +32,9 @@ const csvColumns: CsvColumn<AnnotatedRow>[] = [
   { header: 'AOV (IDR)',   accessor: (r) => r.aov,         format: 'idr-round100' },
 ];
 
-const IDR = (v: number) =>
-  v.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 });
+// Audit R-15 — ce helper local etait la 10e copie du meme formatteur IDR
+// dans le module. Tout passe desormais par `formatIdrFull`.
+const IDR = formatIdrFull;
 
 function defaultStart(): string {
   return toLocalDateStr(new Date(Date.now() - 29 * 86_400_000));

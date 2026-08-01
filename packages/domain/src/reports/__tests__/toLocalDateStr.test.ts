@@ -1,6 +1,8 @@
 // packages/domain/src/reports/__tests__/toLocalDateStr.test.ts
 import { describe, it, expect } from 'vitest';
-import { toLocalDateStr, toLocalDayStartUTC, DEFAULT_TIMEZONE } from '../toLocalDateStr.js';
+import {
+  toLocalDateStr, toLocalDayStartUTC, toLocalDayEndUTC, DEFAULT_TIMEZONE,
+} from '../toLocalDateStr.js';
 
 describe('toLocalDateStr', () => {
   it('defaults to Asia/Makassar (+08)', () => {
@@ -46,5 +48,37 @@ describe('toLocalDayStartUTC', () => {
 
   it('throws on bad input', () => {
     expect(() => toLocalDayStartUTC('not-a-date')).toThrow(TypeError);
+  });
+});
+
+describe('toLocalDayEndUTC', () => {
+  it('returns the last millisecond of the local day (Asia/Makassar +08)', () => {
+    // Local 2026-05-14T23:59:59.999+08 = 2026-05-14T15:59:59.999Z
+    expect(toLocalDayEndUTC('2026-05-14').toISOString()).toBe('2026-05-14T15:59:59.999Z');
+  });
+
+  it('UTC tz returns the UTC end of the same day', () => {
+    expect(toLocalDayEndUTC('2026-05-14', 'UTC').toISOString()).toBe('2026-05-14T23:59:59.999Z');
+  });
+
+  it('spans exactly one day minus 1 ms with the matching start bound', () => {
+    const start = toLocalDayStartUTC('2026-05-14');
+    const end   = toLocalDayEndUTC('2026-05-14');
+    expect(end.getTime() - start.getTime()).toBe(86_400_000 - 1);
+  });
+
+  it('is contiguous with the next day — no gap, no overlap', () => {
+    const end       = toLocalDayEndUTC('2026-05-14');
+    const nextStart = toLocalDayStartUTC('2026-05-15');
+    expect(nextStart.getTime() - end.getTime()).toBe(1);
+  });
+
+  it('brackets the early-morning slot that the UTC-bound bug used to drop', () => {
+    // 2026-05-14T00:30 local (+08) = 2026-05-13T16:30Z. The old bound
+    // `${date}T00:00:00Z` started at 08:00 local and excluded it.
+    const earlyMorning = new Date('2026-05-13T16:30:00.000Z');
+    expect(earlyMorning >= toLocalDayStartUTC('2026-05-14')).toBe(true);
+    expect(earlyMorning <= toLocalDayEndUTC('2026-05-14')).toBe(true);
+    expect(earlyMorning >= new Date('2026-05-14T00:00:00Z')).toBe(false);
   });
 });

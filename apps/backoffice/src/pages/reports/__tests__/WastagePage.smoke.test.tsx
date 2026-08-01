@@ -6,6 +6,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import WastagePage from '@/pages/reports/WastagePage.js';
+import { useAuthStore } from '@/stores/authStore.js';
 
 const mockRpc = vi.fn();
 
@@ -13,7 +14,7 @@ vi.mock('@/lib/supabase.js', () => ({
   supabase: {
     rpc: (fn: string, args: Record<string, unknown>) => {
       mockRpc(fn, args);
-      if (fn === 'get_wastage_report_v1') {
+      if (fn === 'get_wastage_report_v2') {
         // Real RPC shape: { period, summary, by_product, lines } where each line
         // carries `created_by_name` (the hook maps it to recorded_by).
         return Promise.resolve({
@@ -21,6 +22,7 @@ vi.mock('@/lib/supabase.js', () => ({
             period:  { start: '2026-04-25', end: '2026-05-25' },
             summary: { total_value: 150000, total_qty: 17, line_count: 2 },
             by_product: [],
+            truncated: false,
             lines: [
               {
                 id: 'w-1',
@@ -61,6 +63,13 @@ function renderPage() {
   );
 }
 
+// Audit Reports 2026-08-01, lot C / D3 — <ExportButtons> ne rend rien sans
+// `reports.export`, et les pages a export maison desactivent leur bouton. Ce
+// test verifie le CABLAGE de l'export, pas le RBAC : on seede la permission.
+beforeEach(() => {
+  useAuthStore.setState({ permissions: ['reports.export'] });
+});
+
 describe('WastagePage (smoke)', () => {
   beforeEach(() => { mockRpc.mockReset(); });
 
@@ -69,10 +78,10 @@ describe('WastagePage (smoke)', () => {
     expect(screen.getByRole('heading', { name: /Wastage/i, level: 1 })).toBeInTheDocument();
   });
 
-  it('calls get_wastage_report_v1 with p_date_start and p_date_end', async () => {
+  it('calls get_wastage_report_v2 with p_date_start and p_date_end', async () => {
     renderPage();
     await waitFor(() => {
-      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_wastage_report_v1');
+      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_wastage_report_v2');
       expect(call).toBeDefined();
       const args = (call as [string, { p_date_start: string; p_date_end: string }])[1];
       expect(args.p_date_start).toMatch(/^\d{4}-\d{2}-\d{2}$/);

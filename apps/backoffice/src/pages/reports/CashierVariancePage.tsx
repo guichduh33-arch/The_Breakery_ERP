@@ -12,6 +12,7 @@ import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
 import { useUrlState } from '@/hooks/useUrlState.js';
 import { useCashierVariance } from '@/features/reports/hooks/useCashierVariance.js';
 import type { CashierVarianceRow } from '@/features/reports/hooks/useCashierVariance.js';
+import { formatIdrFull } from '@/features/reports/utils/chartColors.js';
 
 const DOW_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -37,9 +38,9 @@ function varianceClass(v: number): string {
   return 'text-text-secondary';
 }
 
-function fmt(v: number): string {
-  return Math.round(v).toLocaleString();
-}
+/** Audit R-15 — etait `Math.round(v).toLocaleString()` : locale du navigateur,
+ *  aucune devise. */
+const fmt = formatIdrFull;
 
 export default function CashierVariancePage() {
   const [start, setStart] = useUrlState('start', defaultStart());

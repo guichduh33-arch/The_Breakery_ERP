@@ -5,7 +5,7 @@
 //   1. Empty state renders "No cost history" when RPC returns 0 rows.
 //   2. 3 versions render table rows + chart wrapper.
 //   3. Delta vs prev computed correctly (v1=—, v2=+20.00%, v3=+25.00%).
-//   4. CSV button disabled when empty, enabled with data.
+//   4. Exports absent when empty, CSV + PDF present with data.
 //   5. Back link href = /backoffice/reports/recipe-cost.
 //   6. Error state renders an alert.
 //
@@ -16,14 +16,17 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import React from 'react';
+import type * as RechartsModule from 'recharts';
+import type * as RouterModule from 'react-router-dom';
 import RecipeCostTimelinePage from '@/pages/reports/RecipeCostTimelinePage.js';
+import { useAuthStore } from '@/stores/authStore.js';
 
 // --- Recharts mock — JSDOM has no SVG layout engine; ResponsiveContainer
 //     requires width/height from the DOM and throws without it. Replace with
 //     a plain div that renders children at a fixed size.
 
 vi.mock('recharts', async () => {
-  const actual = await vi.importActual<typeof import('recharts')>('recharts');
+  const actual = await vi.importActual<typeof RechartsModule>('recharts');
   return {
     ...actual,
     ResponsiveContainer: ({ children }: { children: React.ReactNode }) => (
@@ -37,7 +40,7 @@ vi.mock('recharts', async () => {
 const mockRpc = vi.fn();
 
 vi.mock('@/lib/supabase.js', () => ({
-  supabase: { rpc: (...args: unknown[]) => mockRpc(...args) },
+  supabase: { rpc: (...args: unknown[]): unknown => mockRpc(...args) },
 }));
 
 // --- React Router mock ---
@@ -45,7 +48,7 @@ vi.mock('@/lib/supabase.js', () => ({
 // to keep router context available (MemoryRouter is added in renderPage()).
 
 vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
+  const actual = await vi.importActual<typeof RouterModule>('react-router-dom');
   return {
     ...actual,
     useParams: () => ({ productId: 'test-product-id' }),
@@ -92,6 +95,13 @@ function renderPage() {
 }
 
 // --- Tests ---
+
+// Audit Reports 2026-08-01, lot C / D3 — <ExportButtons> ne rend rien sans
+// `reports.export`, et les pages a export maison desactivent leur bouton. Ce
+// test verifie le CABLAGE de l'export, pas le RBAC : on seede la permission.
+beforeEach(() => {
+  useAuthStore.setState({ permissions: ['reports.export'] });
+});
 
 describe('RecipeCostTimelinePage smoke', () => {
   beforeEach(() => {
@@ -146,13 +156,17 @@ describe('RecipeCostTimelinePage smoke', () => {
     expect(cellsV3[3]?.textContent).toBe('+25.00%');
   });
 
-  // 4. CSV button disabled when empty, enabled with data
-  it('disables Export CSV when 0 rows and enables it when rows are present', async () => {
+  // Audit R-13 — la page exposait un <Button> maison (testid dedie, desactive
+  // quand vide) ; elle passe par <ExportButtons>, qui n'est monte que
+  // lorsqu'il y a des lignes et qui expose les testids export-csv/export-pdf.
+  // L'assertion suit : absence quand vide, presence des DEUX exports sinon —
+  // le PDF etant precisement le template qui etait inatteignable.
+  it('hides the exports when 0 rows and offers CSV + PDF when rows are present', async () => {
     // Empty case
     mockRpc.mockResolvedValue({ data: [], error: null });
     const { unmount } = renderPage();
     await waitFor(() => {
-      expect(screen.getByTestId('timeline-export-csv')).toBeDisabled();
+      expect(screen.queryByTestId('export-csv')).not.toBeInTheDocument();
     });
     unmount();
 
@@ -160,8 +174,9 @@ describe('RecipeCostTimelinePage smoke', () => {
     mockRpc.mockResolvedValue({ data: THREE_ROWS, error: null });
     renderPage();
     await waitFor(() => {
-      expect(screen.getByTestId('timeline-export-csv')).not.toBeDisabled();
+      expect(screen.getByTestId('export-csv')).toBeInTheDocument();
     });
+    expect(screen.getByTestId('export-pdf')).toBeInTheDocument();
   });
 
   // 5. Back link href

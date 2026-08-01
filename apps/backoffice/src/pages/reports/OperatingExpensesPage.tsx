@@ -4,8 +4,8 @@
 // expense ledger by category (donut + share table) and over time (trend), in
 // the AMBER cost-family language. Filterable by period, category and status.
 
-import { useMemo, useState } from 'react';
-import { selectClassName, cn } from '@breakery/ui';
+import { useMemo } from 'react';
+import { selectClassName, cn, Card, CardContent, EmptyState } from '@breakery/ui';
 import {
   Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
@@ -51,8 +51,10 @@ function defaultStart(): string {
 export default function OperatingExpensesPage() {
   const [start, setStart]           = useUrlState('start', defaultStart());
   const [end,   setEnd]             = useUrlState('end', toLocalDateStr(new Date()));
-  const [categoryId, setCategoryId] = useState<string>('');
-  const [status, setStatus]         = useState<string>('');
+  // Audit R-17 — filtre en URL-state (convention S57) : la vue devient
+  // partageable et survit au rechargement.
+  const [categoryId, setCategoryId] = useUrlState('category_id', '');
+  const [status,     setStatus]     = useUrlState('status', '');
 
   const { data: categories } = useExpenseCategories();
   const { data, isLoading, error } = useExpensesByCategory({
@@ -65,6 +67,7 @@ export default function OperatingExpensesPage() {
   const donut = useMemo(() => rows.map((r) => ({ name: r.name, value: r.total })), [rows]);
   const trend = data?.by_day ?? [];
   const maxShare = rows.reduce((m, r) => Math.max(m, r.share_pct), 0) || 1;
+  const isEmpty = !isLoading && !error && data !== undefined && rows.length === 0;
 
   return (
     <div className="space-y-6">
@@ -116,6 +119,20 @@ export default function OperatingExpensesPage() {
         </p>
       )}
 
+      {isEmpty && (
+        <Card>
+          <CardContent className="pt-6">
+            <EmptyState
+              size="sm"
+              title="No expenses"
+              description="No expense matches the selected period, category and status."
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      {!isEmpty && (
+      <>
       {/* KPI strip */}
       <div className="grid grid-cols-3 gap-4">
         <div className="relative overflow-hidden rounded-lg border border-border-subtle bg-surface-2 p-4">
@@ -147,7 +164,11 @@ export default function OperatingExpensesPage() {
         </ChartCard>
 
         <ChartCard title="Trend" subtitle="Daily operating expense" accent={OPEX_BASE}>
-          <div className="h-64 w-full">
+          <div
+            className="h-64 w-full"
+            role="img"
+            aria-label={`Area chart of daily operating expenses, ${start} to ${end}.`}
+          >
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={trend} margin={{ top: 8, right: 12, bottom: 0, left: 8 }}>
                 <CartesianGrid stroke={CHART_GRID_STROKE} strokeDasharray="3 3" vertical={false} />
@@ -188,13 +209,6 @@ export default function OperatingExpensesPage() {
             </tr>
           </thead>
           <tbody>
-            {rows.length === 0 && (
-              <tr>
-                <td className="py-3 text-text-secondary" colSpan={5}>
-                  No expenses for the selected filters.
-                </td>
-              </tr>
-            )}
             {rows.map((r, i) => (
               <tr key={r.category_id} className="border-b border-border-subtle">
                 <td className="py-2 font-medium text-text-primary">{r.name}</td>
@@ -217,6 +231,8 @@ export default function OperatingExpensesPage() {
           </tbody>
         </table>
       </ChartCard>
+      </>
+      )}
     </div>
   );
 }

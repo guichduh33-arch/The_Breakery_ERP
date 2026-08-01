@@ -2,6 +2,7 @@
 export {
   toLocalDateStr,
   toLocalDayStartUTC,
+  toLocalDayEndUTC,
   DEFAULT_TIMEZONE,
 } from './toLocalDateStr.js';
 

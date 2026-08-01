@@ -3,12 +3,14 @@
 // (running balance layout), filter bar, CSV export. Mocks useStockLedger +
 // useMovementAggregates + useSections.
 
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import StockMovementsPage from '@/pages/inventory/StockMovementsPage.js';
 import type { StockLedgerLine } from '@/features/inventory-movements/hooks/useStockLedger.js';
+import { useAuthStore } from '@/stores/authStore.js';
+import type * as StockLedgerModule from '@/features/inventory-movements/hooks/useStockLedger.js';
 
 const MOCK_LINES: StockLedgerLine[] = [
   {
@@ -28,7 +30,7 @@ const MOCK_LINES: StockLedgerLine[] = [
 ];
 
 vi.mock('@/features/inventory-movements/hooks/useStockLedger.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/features/inventory-movements/hooks/useStockLedger.js')>();
+  const actual = await importOriginal<typeof StockLedgerModule>();
   return {
     ...actual,
     useStockLedger: () => ({
@@ -64,6 +66,12 @@ function renderPage() {
     </QueryClientProvider>,
   );
 }
+
+// Audit Reports 2026-08-01, lot C / D3 — <ExportButtons> ne rend rien sans
+// `reports.export`. Ce test verifie le cablage de l'export, pas le RBAC.
+beforeEach(() => {
+  useAuthStore.setState({ permissions: ['reports.export'] });
+});
 
 describe('StockMovementsPage (stock-card rewrite)', () => {
   it('renders the page header and KPI tiles', () => {

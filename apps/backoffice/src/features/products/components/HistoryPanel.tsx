@@ -1,7 +1,7 @@
 // apps/backoffice/src/features/products/components/HistoryPanel.tsx
 //
 // Product detail "History" tab — the change-log for this product, read from
-// audit_logs via get_audit_logs_v2 (entity_type='product', entity_id=<id>).
+// audit_logs via get_audit_logs_v3 (entity_type='product', entity_id=<id>).
 // The RPC is SECURITY INVOKER and audit_logs is admin_read RLS-gated, so a
 // MANAGER (or any non-admin) sees an empty trail by design.
 
@@ -21,9 +21,19 @@ function fmtDateTime(iso: string): string {
 
 // Render the audit metadata as a compact, human-scannable summary. Falls back
 // to a JSON dump for shapes we don't special-case.
+/** `String(x)` sur un `unknown` peut tomber sur un symbol/objet et rendre
+ *  « [object Object] » : on borne explicitement aux primitives affichables. */
+function primitiveToString(v: unknown): string {
+  if (typeof v === 'string') return v;
+  if (typeof v === 'number' || typeof v === 'bigint' || typeof v === 'boolean') return v.toString();
+  if (typeof v === 'symbol') return v.toString();
+  if (typeof v === 'function') return '[function]';
+  return JSON.stringify(v) ?? '—';
+}
+
 function summariseMetadata(metadata: unknown): string {
   if (metadata === null || metadata === undefined) return '—';
-  if (typeof metadata !== 'object') return String(metadata);
+  if (typeof metadata !== 'object') return primitiveToString(metadata);
   const obj = metadata as Record<string, unknown>;
   const keys = Object.keys(obj);
   if (keys.length === 0) return '—';
@@ -34,7 +44,7 @@ function summariseMetadata(metadata: unknown): string {
         ? '—'
         : typeof v === 'object'
           ? JSON.stringify(v)
-          : String(v);
+          : primitiveToString(v);
       return `${k}: ${text}`;
     })
     .join(' · ');
@@ -55,7 +65,7 @@ export function HistoryPanel({ productId }: Props): JSX.Element {
   if (q.error !== null && q.error !== undefined) {
     return (
       <div className="rounded-lg border border-red bg-red-soft p-4 text-sm text-red" role="alert">
-        Failed to load history: {(q.error as Error).message}
+        Failed to load history: {q.error.message}
       </div>
     );
   }

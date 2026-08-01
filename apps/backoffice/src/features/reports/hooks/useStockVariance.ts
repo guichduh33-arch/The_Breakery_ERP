@@ -1,6 +1,12 @@
 // apps/backoffice/src/features/reports/hooks/useStockVariance.ts
 //
-// Wraps `get_stock_variance_v1(p_section_id, p_date_start, p_date_end)`.
+// Wraps `get_stock_variance_v2(p_section_id, p_date_start, p_date_end)`.
+//
+// Audit Reports 2026-08-01 lot C / D2 — bumped v1 -> v2 : la v1 etait gatee sur
+// `inventory.read` alors que sa route exige `reports.inventory.read`. L'ecart
+// etait latent (les deux codes vont aux memes roles aujourd'hui) mais serait
+// devenu un 42501 au premier override ou role plus fin. `reports.*` gouverne les
+// rapports, `inventory.*` le module operationnel.
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
@@ -45,7 +51,7 @@ export function useStockVariance(filters: StockVarianceFilters = {}) {
       if (filters.dateEnd !== undefined && filters.dateEnd !== '') {
         args.p_date_end = filters.dateEnd;
       }
-      const { data, error } = await supabase.rpc('get_stock_variance_v1', args);
+      const { data, error } = await supabase.rpc('get_stock_variance_v2', args);
       if (error) throw error;
       return (data ?? []).map((r) => ({
         product_id:   r.product_id,

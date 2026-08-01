@@ -82,3 +82,25 @@ export function toLocalDayStartUTC(
   // Fallback (should never happen for valid tz strings).
   return new Date(Date.UTC(y, m - 1, d, 0, 0, 0));
 }
+
+/**
+ * Returns the LAST millisecond of the given local date in UTC — i.e. the
+ * inclusive upper bound of that business day.
+ *  - `toLocalDayEndUTC('2026-05-14')` → Date for `2026-05-14T15:59:59.999Z` (Asia/Makassar +08).
+ *
+ * Companion to `toLocalDayStartUTC`, for the many report RPCs that compare a
+ * TIMESTAMPTZ column with `BETWEEN`. Computed by walking to the next local
+ * midnight and stepping back 1 ms, so it stays correct across a DST boundary
+ * instead of assuming a fixed 24 h day.
+ */
+export function toLocalDayEndUTC(
+  dateStr: string,
+  timeZone: string = DEFAULT_TIMEZONE,
+): Date {
+  const dayStart = toLocalDayStartUTC(dateStr, timeZone);
+  // +36 h lands inside the next local day whatever the offset shift, then we
+  // re-derive that day's midnight exactly.
+  const nextDayStr = toLocalDateStr(new Date(dayStart.getTime() + 36 * 3_600_000), timeZone);
+  const nextMidnight = toLocalDayStartUTC(nextDayStr, timeZone);
+  return new Date(nextMidnight.getTime() - 1);
+}

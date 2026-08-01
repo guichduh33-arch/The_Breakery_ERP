@@ -8,6 +8,7 @@ import { DateRangePicker } from '@/features/reports/components/DateRangePicker.j
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 import { useUrlState } from '@/hooks/useUrlState.js';
+import { formatIdrFull } from '@/features/reports/utils/chartColors.js';
 import {
   useProductionReport,
   type ProductionReportByProduct,
@@ -34,8 +35,9 @@ export default function ProductionReportPage() {
   const byProduct = data?.by_product ?? [];
   const byDay     = data?.by_day     ?? [];
 
-  const fmtIdr = (v: number) =>
-    v.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 });
+  // Audit R-15 — ce helper local etait la 10e copie du meme formatteur IDR
+// dans le module. Tout passe desormais par `formatIdrFull`.
+const fmtIdr = formatIdrFull;
 
   return (
     <ReportPage

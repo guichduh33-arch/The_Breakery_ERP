@@ -1,7 +1,7 @@
 // apps/backoffice/src/pages/reports/PurchaseItemsPage.tsx
 // S40 Wave B2 — Purchase order line items report with supplier filter + CSV export.
 
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { selectClassName, cn } from '@breakery/ui';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -20,12 +20,12 @@ import { DateRangePicker } from '@/features/reports/components/DateRangePicker.j
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
 import { ChartCard } from '@/features/reports/components/ChartCard.js';
 import {
-  COGS_BASE,
-  CHART_GRID_STROKE,
   CHART_AXIS_TICK,
+  CHART_GRID_STROKE,
   CHART_TOOLTIP_STYLE,
-  formatIdrFull,
+  COGS_BASE,
   formatIdrCompact,
+  formatIdrFull,
 } from '@/features/reports/utils/chartColors.js';
 import { supabase } from '@/lib/supabase.js';
 import {
@@ -52,8 +52,9 @@ const csvColumns: CsvColumn<PurchaseItemLine>[] = [
   { header: 'Status',        accessor: (r) => r.status,            format: 'text' },
 ];
 
-const IDR = (v: number) =>
-  v.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 });
+// Audit R-15 — ce helper local etait la 10e copie du meme formatteur IDR
+// dans le module. Tout passe desormais par `formatIdrFull`.
+const IDR = formatIdrFull;
 
 function defaultStart(): string {
   return toLocalDateStr(new Date(Date.now() - 29 * 86_400_000));
@@ -62,7 +63,9 @@ function defaultStart(): string {
 export default function PurchaseItemsPage() {
   const [start,      setStart]      = useUrlState('start', defaultStart());
   const [end,        setEnd]        = useUrlState('end', toLocalDateStr(new Date()));
-  const [supplierId, setSupplierId] = useState<string>('');
+  // Audit R-17 — filtre en URL-state (convention S57) : la vue devient
+  // partageable et survit au rechargement.
+  const [supplierId, setSupplierId] = useUrlState('supplier_id', '');
 
   // Supplier options for the native <select>
   const { data: supplierOptions } = useQuery<SupplierOption[]>({
@@ -161,12 +164,24 @@ export default function PurchaseItemsPage() {
       {data && (
         <div className="space-y-6">
           {/* Top products by purchased value */}
+          {/* Audit R-08 : `topProducts` agrège `lines`, que la RPC plafonne à
+              1000. Quand la troncature est active, le classement porte sur un
+              sous-ensemble — le sous-titre le dit au lieu de laisser croire à un
+              Top 8 de la période entière. */}
           <ChartCard
             title="Top products by value"
-            subtitle="Top 8 purchased products by total value"
+            subtitle={
+              data.truncated
+                ? 'Top 8 across the first 1000 lines only — not the whole period'
+                : 'Top 8 purchased products by total value'
+            }
             accent={COGS_BASE}
           >
-            <div className="h-72 w-full">
+            <div
+              className="h-72 w-full"
+              role="img"
+              aria-label={`Horizontal bar chart of the top ${topProducts.length} purchased products by value, ${start} to ${end}.`}
+            >
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={topProducts}

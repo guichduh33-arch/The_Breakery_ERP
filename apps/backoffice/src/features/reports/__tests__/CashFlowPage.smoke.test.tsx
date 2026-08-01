@@ -13,7 +13,7 @@ vi.mock('@/lib/supabase.js', () => ({
   supabase: {
     rpc: (fn: string, args: Record<string, unknown>) => {
       mockRpc(fn, args);
-      if (fn === 'get_cash_flow_v1') {
+      if (fn === 'get_cash_flow_v2') {
         return Promise.resolve({
           data: {
             operating: {
@@ -61,7 +61,7 @@ describe('CashFlowPage (smoke)', () => {
     expect(screen.getByText(/Investing activities/i)).toBeInTheDocument();
     expect(screen.getByText(/Financing activities/i)).toBeInTheDocument();
     await waitFor(() => {
-      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_cash_flow_v1');
+      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_cash_flow_v2');
       expect(call).toBeDefined();
     });
   });

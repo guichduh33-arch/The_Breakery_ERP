@@ -15,12 +15,15 @@
 
 import { useMemo, useState, type JSX } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { toLocalDateStr, buildCsv, downloadCsv, type CsvColumn } from '@breakery/domain';
+import {
+  toLocalDateStr, toLocalDayStartUTC, toLocalDayEndUTC, type CsvColumn,
+} from '@breakery/domain';
 import { Button, cn } from '@breakery/ui';
 import { supabase } from '@/lib/supabase.js';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
+import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
 import { useUrlState } from '@/hooks/useUrlState.js';
 
 interface YieldRow {
@@ -66,15 +69,26 @@ const YIELD_CSV_COLUMNS: CsvColumn<YieldRow>[] = [
   { header: 'yield_variance_reason', accessor: (r) => r.yield_variance_reason },
 ];
 
+/** Server-side row cap — surfaced to the user via `truncated`. */
+const YIELD_ROW_CAP = 1000;
+
+interface YieldResult {
+  rows:      YieldRow[];
+  truncated: boolean;
+}
+
 function useProductionYield(start: string, end: string) {
-  return useQuery<YieldRow[]>({
+  return useQuery<YieldResult>({
     queryKey: ['reports', 'production-yield', start, end] as const,
     staleTime: 60_000,
-    queryFn: async (): Promise<YieldRow[]> => {
-      // production_date is timestamptz ; pad start with 00:00 and end with
-      // the next-day boundary so the report is inclusive of the end date.
-      const startTs = `${start}T00:00:00Z`;
-      const endTs   = `${end}T23:59:59Z`;
+    queryFn: async (): Promise<YieldResult> => {
+      // production_date is timestamptz. Audit R-03 : les bornes étaient écrites
+      // `${start}T00:00:00Z` / `${end}T23:59:59Z`, donc en UTC, alors que
+      // `start`/`end` sont des dates MÉTIER (Asia/Makassar, UTC+8). La fenêtre
+      // était décalée de 8 h dans les deux sens. On passe par les helpers du
+      // domaine, qui résolvent le fuseau.
+      const startTs = toLocalDayStartUTC(start).toISOString();
+      const endTs   = toLocalDayEndUTC(end).toISOString();
       const { data, error } = await supabase
         .from('production_records')
         .select('id, production_number, product_id, production_date, expected_yield_qty, actual_yield_qty, yield_variance_pct, yield_variance_reason')
@@ -82,7 +96,7 @@ function useProductionYield(start: string, end: string) {
         .lte('production_date', endTs)
         .is('reverted_at', null)
         .order('production_date', { ascending: false })
-        .limit(1000);
+        .limit(YIELD_ROW_CAP);
       if (error) throw error;
       const rows = data ?? [];
 
@@ -97,17 +111,20 @@ function useProductionYield(start: string, end: string) {
         for (const p of prods ?? []) nameById[p.id] = p.name;
       }
 
-      return rows.map((r): YieldRow => ({
-        id: r.id,
-        production_number: r.production_number,
-        product_id: r.product_id,
-        product_name: nameById[r.product_id] ?? '—',
-        production_date: r.production_date,
-        expected_yield_qty: r.expected_yield_qty === null ? null : Number(r.expected_yield_qty),
-        actual_yield_qty:   r.actual_yield_qty   === null ? null : Number(r.actual_yield_qty),
-        yield_variance_pct: r.yield_variance_pct === null ? null : Number(r.yield_variance_pct),
-        yield_variance_reason: r.yield_variance_reason,
-      }));
+      return {
+        rows: rows.map((r): YieldRow => ({
+          id: r.id,
+          production_number: r.production_number,
+          product_id: r.product_id,
+          product_name: nameById[r.product_id] ?? '—',
+          production_date: r.production_date,
+          expected_yield_qty: r.expected_yield_qty === null ? null : Number(r.expected_yield_qty),
+          actual_yield_qty:   r.actual_yield_qty   === null ? null : Number(r.actual_yield_qty),
+          yield_variance_pct: r.yield_variance_pct === null ? null : Number(r.yield_variance_pct),
+          yield_variance_reason: r.yield_variance_reason,
+        })),
+        truncated: rows.length >= YIELD_ROW_CAP,
+      };
     },
   });
 }
@@ -182,8 +199,8 @@ function OutliersTable({
                 <DrilldownLink entity="product" id={r.product_id} label={r.product_name} icon={false} />
               </td>
               <td className="py-2 text-xs">{r.production_date.slice(0, 10)}</td>
-              <td className="py-2 text-right tabular-nums">{r.expected_yield_qty?.toLocaleString() ?? '—'}</td>
-              <td className="py-2 text-right tabular-nums">{r.actual_yield_qty?.toLocaleString() ?? '—'}</td>
+              <td className="py-2 text-right tabular-nums">{r.expected_yield_qty?.toLocaleString('id-ID') ?? '—'}</td>
+              <td className="py-2 text-right tabular-nums">{r.actual_yield_qty?.toLocaleString('id-ID') ?? '—'}</td>
               <td className={cn('py-2 text-right tabular-nums', varianceTone(r.yield_variance_pct))}>
                 {formatVariancePct(r.yield_variance_pct)}
               </td>
@@ -216,8 +233,8 @@ function DrillDownPanel({ rows }: { rows: YieldRow[] }): JSX.Element {
           <tr key={r.id} className="border-b border-border-subtle" data-testid="yield-drilldown-row">
             <td className="py-2 font-mono text-xs">{r.production_number}</td>
             <td className="py-2 text-xs">{r.production_date.slice(0, 10)}</td>
-            <td className="py-2 text-right tabular-nums">{r.expected_yield_qty?.toLocaleString() ?? '—'}</td>
-            <td className="py-2 text-right tabular-nums">{r.actual_yield_qty?.toLocaleString() ?? '—'}</td>
+            <td className="py-2 text-right tabular-nums">{r.expected_yield_qty?.toLocaleString('id-ID') ?? '—'}</td>
+            <td className="py-2 text-right tabular-nums">{r.actual_yield_qty?.toLocaleString('id-ID') ?? '—'}</td>
             <td className={cn('py-2 text-right tabular-nums', varianceTone(r.yield_variance_pct))}>
               {formatVariancePct(r.yield_variance_pct)}
             </td>
@@ -242,7 +259,9 @@ function TrendTable({ rows }: { rows: TrendRow[] }): JSX.Element {
           <th className="py-2 text-left">Product</th>
           <th className="py-2 text-right">Batches</th>
           <th className="py-2 text-right">Avg variance %</th>
-          <th className="py-2 text-right">Max |variance %|</th>
+          {/* Audit R-19 — distinct du « worst » de Production Efficiency, qui
+              est le minimum signe et non le maximum en valeur absolue. */}
+          <th className="py-2 text-right">Max |variance %| (largest swing)</th>
         </tr>
       </thead>
       <tbody>
@@ -271,9 +290,11 @@ export default function ProductionYieldPage(): JSX.Element {
   const [drillProductId, setDrillProductId] = useState<string | null>(null);
   const { data, isLoading, error } = useProductionYield(start, end);
 
+  const allRows = useMemo(() => data?.rows ?? [], [data]);
+
   const yieldRows = useMemo(
-    () => (data ?? []).filter((r) => r.yield_variance_pct !== null),
-    [data],
+    () => allRows.filter((r) => r.yield_variance_pct !== null),
+    [allRows],
   );
 
   const outliers = useMemo(() => {
@@ -282,7 +303,7 @@ export default function ProductionYieldPage(): JSX.Element {
     return rows.slice(0, 10);
   }, [yieldRows]);
 
-  const trend = useMemo(() => aggregateTrend(data ?? []), [data]);
+  const trend = useMemo(() => aggregateTrend(allRows), [allRows]);
 
   const drillRows = useMemo(() => {
     if (drillProductId === null) return [];
@@ -296,15 +317,28 @@ export default function ProductionYieldPage(): JSX.Element {
       ? null
       : (yieldRows.find((r) => r.product_id === drillProductId)?.product_name ?? null);
 
-  function handleExportCsv(): void {
-    const csv = buildCsv(yieldRows, YIELD_CSV_COLUMNS);
-    downloadCsv(csv, `production-yield-${start}_to_${end}.csv`);
-  }
+  // Audit R-13 — le template PDF `production_yield` existe dans le registre et
+  // dans _shared/pdf-templates depuis S30, mais la page n'offrait qu'un CSV
+  // maison : le template etait inatteignable. On passe par <ExportButtons>, qui
+  // porte aussi le verrou `reports.export` (lot C / D3).
+  const pdfRows = useMemo(() => yieldRows.map((r) => ({
+    production_number: r.production_number,
+    recipe_name:       r.product_name,
+    expected_yield:    r.expected_yield_qty ?? 0,
+    actual_yield:      r.actual_yield_qty ?? 0,
+    variance_pct:      r.yield_variance_pct ?? 0, // ratio, comme attendu par le template
+    status:            r.yield_variance_reason ?? '',
+  })), [yieldRows]);
 
   return (
     <ReportPage
       title="Production Yield"
       subtitle="Top-10 batch variance outliers and per-recipe trend over the window."
+      isEmpty={!isLoading && !error && data !== undefined && allRows.length === 0}
+      emptyState={{
+        title: 'No production batches',
+        description: 'No production batch recorded in the selected window.',
+      }}
       filters={
         <>
           <DateRangePicker
@@ -312,16 +346,17 @@ export default function ProductionYieldPage(): JSX.Element {
             onStartChange={setStart}
             onEndChange={setEnd}
           />
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={handleExportCsv}
-            disabled={yieldRows.length === 0}
-            data-testid="yield-export-csv"
-          >
-            Export CSV
-          </Button>
+          {yieldRows.length > 0 && (
+            <ExportButtons
+              csv={{ rows: yieldRows, columns: YIELD_CSV_COLUMNS, filename: `production-yield-${start}_to_${end}` }}
+              pdf={{
+                template: 'production_yield',
+                data: pdfRows,
+                period: { start, end },
+                filename: `production-yield-${start}_to_${end}`,
+              }}
+            />
+          )}
         </>
       }
     >
@@ -329,6 +364,16 @@ export default function ProductionYieldPage(): JSX.Element {
       {error && (
         <p role="alert" className="text-sm text-danger">
           {(error).message ?? 'Failed to load report.'}
+        </p>
+      )}
+      {data?.truncated === true && (
+        <p
+          className="mb-3 rounded border border-warning/30 bg-warning-soft px-3 py-2 text-sm text-warning"
+          role="status"
+          data-testid="yield-truncated-banner"
+        >
+          First {YIELD_ROW_CAP} batches shown — outliers and per-recipe trend are
+          computed on this subset only. Narrow the date range for a complete picture.
         </p>
       )}
       {data !== undefined && (

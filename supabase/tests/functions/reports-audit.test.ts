@@ -1,5 +1,5 @@
 // supabase/tests/functions/reports-audit.test.ts
-// Session 13 / Phase 2.B — Live integration tests for get_audit_logs_v1.
+// Session 13 / Phase 2.B — Live integration tests for get_audit_logs_v3.
 //
 // Coverage:
 //   - Seeds N audit rows under a unique entity_type tag, then walks cursor
@@ -62,7 +62,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('reports — audit curso
       const sb = jwtClient(adminToken);
 
       // Page 1
-      const r1 = await sb.rpc('get_audit_logs_v1', {
+      const r1 = await sb.rpc('get_audit_logs_v3', {
         p_cursor: null, p_limit: 2, p_entity_type: TEST_ENTITY,
       });
       expect(r1.error).toBeNull();
@@ -71,7 +71,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('reports — audit curso
 
       // Page 2 — cursor = last row of page 1
       const cursor1 = page1[1]?.created_at;
-      const r2 = await sb.rpc('get_audit_logs_v1', {
+      const r2 = await sb.rpc('get_audit_logs_v3', {
         p_cursor: cursor1, p_limit: 2, p_entity_type: TEST_ENTITY,
       });
       expect(r2.error).toBeNull();
@@ -85,7 +85,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('reports — audit curso
 
       // Page 3 — should have 1 row left, page 4 should be empty.
       const cursor2 = page2[1]?.created_at;
-      const r3 = await sb.rpc('get_audit_logs_v1', {
+      const r3 = await sb.rpc('get_audit_logs_v3', {
         p_cursor: cursor2, p_limit: 2, p_entity_type: TEST_ENTITY,
       });
       expect(r3.error).toBeNull();
@@ -93,7 +93,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('reports — audit curso
       expect(page3).toHaveLength(1);
 
       const cursor3 = page3[0]?.created_at;
-      const r4 = await sb.rpc('get_audit_logs_v1', {
+      const r4 = await sb.rpc('get_audit_logs_v3', {
         p_cursor: cursor3, p_limit: 2, p_entity_type: TEST_ENTITY,
       });
       expect(r4.error).toBeNull();
@@ -105,7 +105,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('reports — audit curso
     'clamps p_limit > 200 down to 200',
     async () => {
       const sb = jwtClient(adminToken);
-      const { data, error } = await sb.rpc('get_audit_logs_v1', {
+      const { data, error } = await sb.rpc('get_audit_logs_v3', {
         p_cursor: null, p_limit: 99_999,
       });
       expect(error).toBeNull();

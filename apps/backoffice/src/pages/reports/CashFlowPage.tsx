@@ -3,7 +3,7 @@
 // Cash flow statement (indirect method). MVP: Operating section filled
 // in, Investing/Financing zero placeholders (D-W6-6A-2).
 //
-// S31 : account cells terminal — get_cash_flow_v1 RPC returns `code`, not UUID.
+// S31 : account cells terminal — get_cash_flow_v2 RPC returns `code`, not UUID.
 // /accounting/general-ledger expects UUID. Pre-filled drill deferred to S32+ (RPC bump).
 
 import { useMemo } from 'react';
@@ -16,8 +16,36 @@ import { useCashFlow } from '@/features/reports/hooks/useCashFlow.js';
 import { useUrlState, useUrlBoolean } from '@/hooks/useUrlState.js';
 import type { CashFlow } from '@/features/reports/hooks/useCashFlow.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
+import { formatIdrFull } from '@/features/reports/utils/chartColors.js';
 
 interface CfRow { section: string; label: string; value: number }
+
+/**
+ * Audit R-04 — contrôle de réconciliation, affichage seul.
+ *
+ * La méthode indirecte produit `net_change_in_cash` à partir du résultat et des
+ * variations de BFR ; il doit retomber exactement sur `cash_end - cash_start`,
+ * lu sur les comptes de trésorerie. Sur les données de juillet 2026 les deux
+ * divergeaient (−515 546 contre +628 554) et la page affichait les trois
+ * nombres côte à côte sans rien signaler.
+ *
+ * Ce helper ne corrige RIEN au calcul : il rend l'écart visible, sur le modèle
+ * de l'indicateur `balanced` du bilan. La cause comptable est hors périmètre de
+ * ce module (voir skill `accounting`).
+ */
+const RECONCILIATION_EPSILON = 0.01;
+
+function reconcile(d: CashFlow): { ok: boolean; delta: number; implied: number } {
+  const implied = d.cash_end - d.cash_start;
+  const delta   = d.net_change_in_cash - implied;
+  return { ok: Math.abs(delta) < RECONCILIATION_EPSILON, delta, implied };
+}
+
+/** Aucun flux ni solde de trésorerie sur la période. */
+function isBlankCashFlow(d: CashFlow): boolean {
+  return d.operating.total === 0 && d.investing.total === 0 && d.financing.total === 0
+    && d.cash_start === 0 && d.cash_end === 0;
+}
 
 function buildCfRows(d: CashFlow): CfRow[] {
   return [
@@ -44,9 +72,9 @@ const cfCsvColumns: CsvColumn<CfRow>[] = [
 function defaultStart(): string {
   return toLocalDateStr(new Date(Date.now() - 29 * 86_400_000));
 }
-function fmt(n: number): string {
-  return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
-}
+/** Audit R-15 — formatteur monetaire unique du module (etait
+ *  `toLocaleString(undefined, ...)`, sans locale ni devise). */
+const fmt = formatIdrFull;
 
 export default function CashFlowPage() {
   const [start, setStart] = useUrlState('start', defaultStart());
@@ -63,10 +91,19 @@ export default function CashFlowPage() {
 
   const showDelta = compare && !!prevData;
 
+  // Audit R-04 — l'ancien sous-titre annonçait des totaux d'investissement et de
+  // financement « account-classified via accounts.cash_flow_section » alors que
+  // la RPC renvoie deux zéros codés en dur et ne lit jamais cette colonne. Le
+  // sous-titre décrit désormais ce que le rapport fait réellement.
   return (
     <ReportPage
       title="Cash Flow Statement"
-      subtitle="Indirect method (operating) + account-classified investing / financing totals via accounts.cash_flow_section."
+      subtitle="Indirect method. Operating section only — investing and financing are not ventilated yet."
+      isEmpty={!isLoading && !error && data !== undefined && isBlankCashFlow(data)}
+      emptyState={{
+        title: 'No cash movement',
+        description: 'No cash movement in the selected date range.',
+      }}
       filters={
         <div className="flex items-center gap-3">
           <DateRangePickerWithCompare
@@ -100,6 +137,29 @@ export default function CashFlowPage() {
       )}
       {data && (
         <div className="space-y-6">
+          {(() => {
+            const rec = reconcile(data);
+            return (
+              <div
+                className={
+                  rec.ok
+                    ? 'rounded-md bg-success-soft border border-success/30 text-success px-4 py-2 text-sm'
+                    : 'rounded-md bg-danger-soft border border-danger/30 text-danger px-4 py-2 text-sm'
+                }
+                role={rec.ok ? 'status' : 'alert'}
+                aria-label="Cash reconciliation indicator"
+                data-testid="cf-reconciliation"
+              >
+                {rec.ok
+                  ? `Reconciled: net change matches the movement on cash accounts (delta ${fmt(rec.delta)}).`
+                  : `Not reconciled — the indirect method gives ${fmt(data.net_change_in_cash)} `
+                    + `but cash accounts moved by ${fmt(rec.implied)} over the period `
+                    + `(delta ${fmt(rec.delta)}). Figures below are shown as computed; `
+                    + `the discrepancy is an accounting issue, not a display one.`}
+              </div>
+            );
+          })()}
+
           <table className="w-full text-sm" aria-label="Cash flow summary">
             <tbody>
               <tr className="border-b border-border-subtle bg-bg-overlay">

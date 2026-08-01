@@ -1,7 +1,7 @@
 // apps/backoffice/src/pages/reports/__tests__/purchase-by-supplier-page.smoke.test.tsx
 // S40 Wave B2 — Smoke test: PurchaseBySupplierPage renders heading, supplier rows, CSV button.
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
@@ -51,6 +51,7 @@ vi.mock('@/lib/supabase.js', () => ({
 }));
 
 import PurchaseBySupplierPage from '@/pages/reports/PurchaseBySupplierPage.js';
+import { useAuthStore } from '@/stores/authStore.js';
 
 // recharts' ResponsiveContainer needs ResizeObserver, absent in jsdom.
 class StubResizeObserver {
@@ -70,6 +71,13 @@ function renderPage() {
     </QueryClientProvider>,
   );
 }
+
+// Audit Reports 2026-08-01, lot C / D3 — <ExportButtons> ne rend rien sans
+// `reports.export`, et les pages a export maison desactivent leur bouton. Ce
+// test verifie le CABLAGE de l'export, pas le RBAC : on seede la permission.
+beforeEach(() => {
+  useAuthStore.setState({ permissions: ['reports.export'] });
+});
 
 describe('PurchaseBySupplierPage (smoke)', () => {
   it('renders heading, supplier rows, null avg_lead_days as em-dash, share %, and CSV button; no PDF', async () => {

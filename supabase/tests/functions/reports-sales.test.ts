@@ -3,9 +3,9 @@
 //
 // Coverage:
 //   - get_sales_by_hour_v1 returns 24 zero-filled rows for today.
-//   - get_sales_by_category_v2 runs and is non-error on a 7-day window.
-//   - get_sales_by_staff_v2 runs and is non-error on a 7-day window.
-//   - get_stock_variance_v1 emits one row per non-deleted product.
+//   - get_sales_by_category_v3 runs and is non-error on a 7-day window.
+//   - get_sales_by_staff_v3 runs and is non-error on a 7-day window.
+//   - get_stock_variance_v2 emits one row per non-deleted product.
 //
 // Pattern mirrors `adjust-stock.test.ts`: PIN-login → JWT-bearing client → rpc().
 // Requires env vars: VITE_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
@@ -45,12 +45,12 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('reports — sales RPCs 
   );
 
   it.runIf(!!process.env.SUPABASE_SERVICE_ROLE_KEY)(
-    'get_sales_by_category_v2 runs on a 7-day window without error',
+    'get_sales_by_category_v3 runs on a 7-day window without error',
     async () => {
       const sb = jwtClient(adminToken);
       const end   = new Date().toISOString().slice(0, 10);
       const start = new Date(Date.now() - 7 * 86_400_000).toISOString().slice(0, 10);
-      const { data, error } = await sb.rpc('get_sales_by_category_v2', {
+      const { data, error } = await sb.rpc('get_sales_by_category_v3', {
         p_date_start: start,
         p_date_end:   end,
       });
@@ -60,12 +60,12 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('reports — sales RPCs 
   );
 
   it.runIf(!!process.env.SUPABASE_SERVICE_ROLE_KEY)(
-    'get_sales_by_staff_v2 runs on a 7-day window without error',
+    'get_sales_by_staff_v3 runs on a 7-day window without error',
     async () => {
       const sb = jwtClient(adminToken);
       const end   = new Date().toISOString().slice(0, 10);
       const start = new Date(Date.now() - 7 * 86_400_000).toISOString().slice(0, 10);
-      const { data, error } = await sb.rpc('get_sales_by_staff_v2', {
+      const { data, error } = await sb.rpc('get_sales_by_staff_v3', {
         p_date_start: start,
         p_date_end:   end,
       });
@@ -75,10 +75,10 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('reports — sales RPCs 
   );
 
   it.runIf(!!process.env.SUPABASE_SERVICE_ROLE_KEY)(
-    'get_stock_variance_v1 returns one row per non-deleted product',
+    'get_stock_variance_v2 returns one row per non-deleted product',
     async () => {
       const sb = jwtClient(adminToken);
-      const { data, error } = await sb.rpc('get_stock_variance_v1', {});
+      const { data, error } = await sb.rpc('get_stock_variance_v2', {});
       expect(error).toBeNull();
       expect(Array.isArray(data)).toBe(true);
 

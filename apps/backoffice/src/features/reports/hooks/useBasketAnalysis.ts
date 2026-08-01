@@ -1,7 +1,11 @@
 // apps/backoffice/src/features/reports/hooks/useBasketAnalysis.ts
 //
-// Wraps `get_basket_analysis_v2(p_date_start, p_date_end, p_top_n)`.
+// Wraps `get_basket_analysis_v3(p_date_start, p_date_end, p_top_n)`.
 // ADR-009 déc. 4 — bumped v1 → v2 (status IN paid, completed).
+// Audit Reports 2026-08-01 lot C / D1 — bumped v2 -> v3 : la v2 etait SECURITY
+// INVOKER sans gate, donc lisible par tout compte authentifie (la RLS de
+// `orders` a pour predicat is_authenticated()). v3 est SECURITY DEFINER et
+// gatee sur reports.sales.read.
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
@@ -30,7 +34,7 @@ export function useBasketAnalysis(
     queryKey: [...BASKET_ANALYSIS_QK, dateStart, dateEnd, topN] as const,
     staleTime: 60_000,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_basket_analysis_v2', {
+      const { data, error } = await supabase.rpc('get_basket_analysis_v3', {
         p_date_start: dateStart,
         p_date_end:   dateEnd,
         p_top_n:      topN,

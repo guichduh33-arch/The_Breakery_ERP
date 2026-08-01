@@ -26,7 +26,13 @@ import { useSalesByHour } from '@/features/reports/hooks/useSalesByHour.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 import { useUrlState, useUrlBoolean } from '@/hooks/useUrlState.js';
-import { CHART_GRID_STROKE } from '@/features/reports/utils/chartColors.js';
+import {
+  CHART_AXIS_TICK,
+  CHART_GRID_STROKE,
+  CHART_TOOLTIP_STYLE,
+  formatIdrCompact,
+  formatIdrFull,
+} from '@/features/reports/utils/chartColors.js';
 
 import type { SalesHourRow } from '@/features/reports/hooks/useSalesByHour.js';
 
@@ -129,7 +135,11 @@ export default function SalesByHourPage() {
       )}
       {data !== undefined && data !== null && (
         <>
-          <div className="h-96 w-full">
+          <div
+            className="h-96 w-full"
+            role="img"
+            aria-label={`Bar chart of revenue per hour on ${date}, 24 hourly buckets.`}
+          >
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data} margin={{ top: 10, right: 20, bottom: 30, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_STROKE} />
@@ -137,14 +147,18 @@ export default function SalesByHourPage() {
                   dataKey="hour"
                   label={{ value: 'Hour (local)', position: 'insideBottom', offset: -10 }}
                 />
-                <YAxis />
+                <YAxis
+                  tickFormatter={formatIdrCompact}
+                  tick={{ fontSize: 11, fill: CHART_AXIS_TICK }}
+                  width={72}
+                />
+                {/* Audit R-22 — une seule serie est tracee (`total`) : la branche
+                    `else` de l'ancien formatteur, qui rendait « Orders », etait
+                    morte. Le nombre de commandes reste lisible dans la table. */}
                 <Tooltip
-                  formatter={(value: unknown, name: string) =>
-                    name === 'total'
-                      ? [Number(value).toLocaleString(), 'Total']
-                      : [Number(value), 'Orders']
-                  }
-                  labelFormatter={(label) => `Hour ${label as number}`}
+                  formatter={(value: number) => [formatIdrFull(value), 'Revenue']}
+                  labelFormatter={(label) => `Hour ${String(label).padStart(2, '0')}:00`}
+                  contentStyle={CHART_TOOLTIP_STYLE}
                 />
                 <Bar dataKey="total" fill="var(--gold-base)" name="total" />
               </BarChart>
@@ -177,7 +191,7 @@ export default function SalesByHourPage() {
                       />
                     </td>
                     <td className="py-2 text-right tabular-nums">
-                      {r.total.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })}
+                      {formatIdrFull(r.total)}
                     </td>
                     <td className="py-2 text-right tabular-nums">{r.order_count}</td>
                   </tr>

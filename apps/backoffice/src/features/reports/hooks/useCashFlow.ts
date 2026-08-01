@@ -1,6 +1,10 @@
 // apps/backoffice/src/features/reports/hooks/useCashFlow.ts
 //
-// Wraps `get_cash_flow_v1(p_date_start, p_date_end)`. MVP indirect method.
+// Wraps `get_cash_flow_v2(p_date_start, p_date_end)`. MVP indirect method.
+// Audit Reports 2026-08-01 lot C / D1 — bumped v1 -> v2 : la v1 etait SECURITY
+// INVOKER sans gate et `journal_entry_lines` a pour policy is_authenticated(),
+// donc un caissier pouvait lire la tresorerie complete en appelant la RPC en
+// direct. v2 est SECURITY DEFINER et gatee sur reports.financial.read.
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
@@ -33,12 +37,17 @@ function toNum(v: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+/** `String(x)` sur un Json peut rendre « [object Object] » : on borne au string. */
+function toStr(v: unknown, fallback: string): string {
+  return typeof v === 'string' ? v : fallback;
+}
+
 export function useCashFlow(dateStart: string, dateEnd: string) {
   return useQuery<CashFlow>({
     queryKey: [...CASH_FLOW_QK, dateStart, dateEnd] as const,
     staleTime: 60_000,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_cash_flow_v1', {
+      const { data, error } = await supabase.rpc('get_cash_flow_v2', {
         p_date_start: dateStart,
         p_date_end:   dateEnd,
       });
@@ -63,8 +72,8 @@ export function useCashFlow(dateStart: string, dateEnd: string) {
         cash_start:         toNum(r.cash_start),
         cash_end:           toNum(r.cash_end),
         period: {
-          start: String(period.start ?? dateStart),
-          end:   String(period.end   ?? dateEnd),
+          start: toStr(period.start, dateStart),
+          end:   toStr(period.end,   dateEnd),
         },
       };
     },

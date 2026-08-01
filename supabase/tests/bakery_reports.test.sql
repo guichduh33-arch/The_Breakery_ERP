@@ -2,9 +2,16 @@
 -- S30 Wave 2 — pgTAP tests for 5 bakery reports RPCs (15 assertions T1–T15).
 --
 -- Covers:
---   T1  : get_wastage_report_v1 MANAGER happy path — 4-key JSONB
---   T2  : get_wastage_report_v1 CASHIER denied (42501)
---   T3  : get_wastage_report_v1 empty period returns 0 totals
+--   T1  : get_wastage_report_v2 MANAGER happy path — 5-key JSONB
+--
+-- Audit Reports 2026-08-01 (R-02/R-08) : repointed v1 -> v2 (v1 dropped,
+-- 20260801000002 — fenetre resolue dans business_config.timezone au lieu de
+-- bornes UTC, et cle additive `truncated`). Aucune assertion ici ne depend du
+-- decalage de fuseau ; T1 verifie en plus la presence de `truncated`.
+--   T2  : get_wastage_report_v2 CASHIER denied (42501)
+--   T3  : get_wastage_report_v2 empty period returns 0 totals
+--   T3b : get_wastage_report_v2 00:30 LOCAL on the start day is inside the window
+--   T3c : get_wastage_report_v2 03:00 LOCAL on end-day+1 is outside the window
 --   T4  : get_payments_by_method_v3 MANAGER happy path — 4-key JSONB
 --   T5  : get_payments_by_method_v3 CASHIER denied (42501)
 --   T6  : get_payments_by_method_v3 by_day pivots 9 methods + other + total + day
@@ -38,7 +45,7 @@ BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-SELECT plan(15);
+SELECT plan(17);
 
 -- ============================================================
 -- B.1 Wastage & Spoilage (T1–T3)
@@ -51,17 +58,18 @@ DECLARE
   v_ok     BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_result := get_wastage_report_v1('2026-01-01', '2026-12-31');
+  v_result := get_wastage_report_v2('2026-01-01', '2026-12-31');
   v_ok := (v_result ? 'period')
       AND (v_result ? 'summary')
       AND (v_result ? 'by_product')
-      AND (v_result ? 'lines');
+      AND (v_result ? 'lines')
+      AND (v_result ? 'truncated');
   PERFORM set_config('breakery.t1_pass', v_ok::text, false);
 END
 $$;
 SELECT ok(
   current_setting('breakery.t1_pass')::boolean,
-  'T1: get_wastage_report_v1 MANAGER happy path returns 4-key JSONB'
+  'T1: get_wastage_report_v2 MANAGER happy path returns 5-key JSONB'
 );
 
 -- T2 perm denied : CASHIER → 42501
@@ -71,7 +79,7 @@ DECLARE
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000002"}';
   BEGIN
-    PERFORM get_wastage_report_v1('2026-01-01', '2026-12-31');
+    PERFORM get_wastage_report_v2('2026-01-01', '2026-12-31');
   EXCEPTION WHEN insufficient_privilege THEN
     v_caught := true;
   END;
@@ -80,7 +88,7 @@ END
 $$;
 SELECT ok(
   current_setting('breakery.t2_pass')::boolean,
-  'T2: get_wastage_report_v1 CASHIER raises 42501'
+  'T2: get_wastage_report_v2 CASHIER raises 42501'
 );
 
 -- T3 empty period returns 0 totals
@@ -90,7 +98,7 @@ DECLARE
   v_zero   BOOLEAN;
 BEGIN
   SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
-  v_result := get_wastage_report_v1('1900-01-01', '1900-12-31');
+  v_result := get_wastage_report_v2('1900-01-01', '1900-12-31');
   v_zero := (v_result->'summary'->>'total_qty')::numeric = 0
         AND (v_result->'summary'->>'line_count')::int = 0;
   PERFORM set_config('breakery.t3_pass', v_zero::text, false);
@@ -98,7 +106,51 @@ END
 $$;
 SELECT ok(
   current_setting('breakery.t3_pass')::boolean,
-  'T3: get_wastage_report_v1 empty period returns 0 totals'
+  'T3: get_wastage_report_v2 empty period returns 0 totals'
+);
+
+-- T3b / T3c : la fenetre est resolue dans business_config.timezone, pas en UTC.
+-- v1 bornait `${date}T00:00:00Z` / `${date}T23:59:59Z`, ce qui sur Asia/Makassar
+-- (UTC+8) demarrait a 08:00 LOCALE et finissait a 07:59 LOCALE le lendemain : la
+-- fenetre perdait les pertes du petit matin du jour de debut et ramassait celles
+-- du lendemain matin du jour de fin. Ces deux assertions verrouillent le
+-- comportement dans les deux sens.
+DO $$
+DECLARE
+  v_pid  UUID;
+  v_uid  UUID;
+  v_res  JSONB;
+BEGIN
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SELECT id INTO v_pid FROM products WHERE deleted_at IS NULL LIMIT 1;
+  SELECT id INTO v_uid FROM user_profiles
+   WHERE auth_user_id = '00000000-0000-0000-0000-000000000004';
+
+  INSERT INTO stock_movements
+    (product_id, movement_type, quantity, unit, unit_cost, reason, reference_type, created_by, created_at)
+  VALUES
+    (v_pid, 'waste', -3, 'pcs', 1000, 'tz-probe-early',    'admin_action', v_uid,
+     ('2026-03-10'::date + TIME '00:30') AT TIME ZONE 'Asia/Makassar'),
+    (v_pid, 'waste', -7, 'pcs', 1000, 'tz-probe-next-day', 'admin_action', v_uid,
+     ('2026-03-11'::date + TIME '03:00') AT TIME ZONE 'Asia/Makassar');
+
+  v_res := get_wastage_report_v2('2026-03-10', '2026-03-10');
+
+  PERFORM set_config('breakery.t3b_pass', EXISTS (
+    SELECT 1 FROM jsonb_array_elements(v_res->'lines') l
+     WHERE l->>'reason' = 'tz-probe-early')::text, false);
+  PERFORM set_config('breakery.t3c_pass', (NOT EXISTS (
+    SELECT 1 FROM jsonb_array_elements(v_res->'lines') l
+     WHERE l->>'reason' = 'tz-probe-next-day'))::text, false);
+END
+$$;
+SELECT ok(
+  current_setting('breakery.t3b_pass')::boolean,
+  'T3b: 00:30 local waste on the start day is INSIDE the window'
+);
+SELECT ok(
+  current_setting('breakery.t3c_pass')::boolean,
+  'T3c: 03:00 local waste on end-day+1 is OUTSIDE the window'
 );
 
 -- ============================================================

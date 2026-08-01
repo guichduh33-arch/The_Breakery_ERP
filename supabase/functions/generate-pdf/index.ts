@@ -90,6 +90,17 @@ serve(async (req) => {
   if (permErr) return jsonResponse({ error: 'permission_check_failed', detail: permErr.message }, 500);
   if (!hasPerm) return jsonResponse({ error: 'permission_denied', required: tplReg.permission }, 403);
 
+  // Audit Reports 2026-08-01, lot C / D3 — second verrou : EXTRAIRE un rapport
+  // est un geste distinct de le CONSULTER. `reports.export` existait dans le set
+  // fermé de permissions et était seedée, mais n'était lue nulle part ; elle
+  // devient la condition d'extraction, en ET de la permission du template.
+  const { data: hasExport, error: exportErr } = await userClient.rpc('has_permission', {
+    p_uid:  userData.user.id,
+    p_perm: 'reports.export',
+  });
+  if (exportErr) return jsonResponse({ error: 'permission_check_failed', detail: exportErr.message }, 500);
+  if (!hasExport) return jsonResponse({ error: 'permission_denied', required: 'reports.export' }, 403);
+
   // Business info (for header) — real business_config columns (the historical
   // select referenced phantom business_name/address columns and always fell
   // back to the hardcoded defaults; fixed with migration 20260716000168).

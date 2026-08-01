@@ -18,13 +18,13 @@ import { DateRangePicker } from '@/features/reports/components/DateRangePicker.j
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
 import { ChartCard } from '@/features/reports/components/ChartCard.js';
 import {
+  CHART_AXIS_TICK,
+  CHART_GRID_STROKE,
+  CHART_TOOLTIP_STYLE,
   COGS_BASE,
   familyColor,
-  CHART_GRID_STROKE,
-  CHART_AXIS_TICK,
-  CHART_TOOLTIP_STYLE,
-  formatIdrFull,
   formatIdrCompact,
+  formatIdrFull,
 } from '@/features/reports/utils/chartColors.js';
 import {
   usePurchaseByDate,
@@ -40,8 +40,9 @@ const csvColumns: CsvColumn<PurchaseByDayRow>[] = [
   { header: 'Pending (IDR)',  accessor: (r) => r.pending_total,  format: 'idr-round100' },
 ];
 
-const IDR = (v: number) =>
-  v.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 });
+// Audit R-15 — ce helper local etait la 10e copie du meme formatteur IDR
+// dans le module. Tout passe desormais par `formatIdrFull`.
+const IDR = formatIdrFull;
 
 function defaultStart(): string {
   return toLocalDateStr(new Date(Date.now() - 29 * 86_400_000));
@@ -109,7 +110,11 @@ export default function PurchaseByDatePage() {
             subtitle="Received vs pending PO value by day"
             accent={COGS_BASE}
           >
-            <div className="h-72 w-full">
+            <div
+              className="h-72 w-full"
+              role="img"
+              aria-label={`Stacked area chart of purchase order value by day, received vs pending, ${start} to ${end}.`}
+            >
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={rows} margin={{ top: 10, right: 16, bottom: 0, left: 8 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_STROKE} />

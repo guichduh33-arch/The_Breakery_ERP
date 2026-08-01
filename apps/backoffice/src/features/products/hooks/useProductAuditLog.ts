@@ -1,7 +1,7 @@
 // apps/backoffice/src/features/products/hooks/useProductAuditLog.ts
 //
 // Read-only change-log for ONE product — powers the product detail "History"
-// tab. Wraps get_audit_logs_v2 filtered on entity_type='product' +
+// tab. Wraps get_audit_logs_v3 filtered on entity_type='product' +
 // entity_id=<this product>. The RPC is SECURITY INVOKER so it inherits the
 // audit_logs `admin_read` RLS (ADMIN / SUPER_ADMIN) — a MANAGER sees an empty
 // trail, matching the existing reports audit page.
@@ -29,7 +29,7 @@ export function useProductAuditLog(productId: string | null) {
     staleTime: 30_000,
     queryFn: async () => {
       if (productId === null || productId === '') return [];
-      const { data, error } = await supabase.rpc('get_audit_logs_v2', {
+      const { data, error } = await supabase.rpc('get_audit_logs_v3', {
         p_limit: PAGE_LIMIT,
         p_entity_type: 'product',
         p_entity_id: productId,
