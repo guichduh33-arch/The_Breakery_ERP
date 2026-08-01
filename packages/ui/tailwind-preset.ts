@@ -160,6 +160,9 @@ const preset: Partial<Config> = {
         'inset-sm': 'var(--shadow-inset-sm)',
         'inset-md': 'var(--shadow-inset-md)',
         focus: 'var(--shadow-focus)',
+        // Audit cohérence 2026-08-01 — filet d'élévation du thème sombre.
+        // En clair le token vaut `none`, l'utilitaire est donc sans effet.
+        hairline: 'var(--elev-hairline)',
       },
       backdropBlur: { md: 'var(--backdrop-blur)' },
       spacing: {
@@ -167,6 +170,8 @@ const preset: Partial<Config> = {
         'touch-min': 'var(--touch-min)',
         'touch-comfy': 'var(--touch-comfy)',
         'touch-large': 'var(--touch-large)',
+        // Audit cohérence 2026-08-01 — palier dense pour le rush caisse.
+        'gutter-compact': 'var(--gutter-compact)',
         'gutter-card':    'var(--gutter-card)',
         'gutter-page':    'var(--gutter-page)',
         'gutter-section': 'var(--gutter-section)',

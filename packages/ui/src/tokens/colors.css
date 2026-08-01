@@ -1,56 +1,63 @@
 /*
- * colors.css — extended color tokens (Session 14 / Phase 1.A).
+ * colors.css — extended color tokens.
  *
- * Session 14 D4 — Theme strict. Two coexisting themes:
- *   .theme-pos          — dark, theatrical (POS, KDS, Customer Display, Tablet)
- *   .theme-backoffice   — light, structured (Backoffice)
+ * Deux thèmes coexistants :
+ *   .theme-pos          — sombre, théâtral (POS, KDS, Customer Display, Tablet)
+ *   .theme-backoffice   — clair, structuré (Backoffice)
  *
- * The base palette in luxe-dark.css covers the POS surfaces (it's loaded by
- * :root, .dark — which all surfaces inherit unless overridden). This file:
+ * Chargé APRÈS luxe-dark.css : il étend (ne remplace pas) la palette de base.
  *
- *   1. Adds surface-0..surface-4 aliases (luxe-dark exposes them as bg-base/
- *      elevated/overlay/input — we keep those AND add the numeric scale that
- *      matches the screenshots' visual hierarchy).
+ * ─────────────────────────────────────────────────────────────────────────────
+ * AUDIT COHÉRENCE 2026-08-01 — révision de la direction du 2026-06-22.
  *
- *   2. Adds the cream / ivoire backoffice palette under `.theme-backoffice`,
- *      overriding the dark tokens with light equivalents so every component
- *      that already references --bg-base / --text-primary / --border-subtle
- *      Just Works under .theme-backoffice without per-component branching.
+ * La direction précédente ("keep a LIGHT theme but raise contrast and DROP the
+ * gold accent") a produit deux thèmes qui ne se lisent plus comme un même
+ * produit :
  *
- *   3. Reinforces gold soft/base/strong, accent contrast pairs, and semantic
- *      muted variants discovered missing during the screenshot audit.
+ *   · --gold-base valait #c9a557 en POS et #1e55d6 en Backoffice, donc les
+ *     utilitaires text-gold / bg-gold-soft / border-gold produisaient du bleu
+ *     dans un thème et du doré dans l'autre. Le nom du token ne décrivait plus
+ *     ce qu'il produit.
+ *   · Les neutres appartenaient à deux familles distinctes : POS neutre-froid
+ *     (hue ~250°), Backoffice bleu-gris (hue ~215°). Rien de chaud, pour une
+ *     boulangerie.
+ *   · La rampe --surface-0..4 n'avait pas le même sens : en POS surface-0 était
+ *     plus CLAIR que surface-1 ; en Backoffice surface-2 == surface-3 == #fff
+ *     et surface-4 redescendait sous surface-0.
  *
- * Loaded AFTER luxe-dark.css in the cascade so it can extend (NOT replace)
- * the base palette.
+ * Nouvelle règle : les deux thèmes partagent la teinte (axe ~40°), l'accent
+ * (l'or), la typographie, l'échelle et le vocabulaire d'état. SEULE la lumière
+ * change. L'exigence de contraste de juin est conservée — l'or clair est une
+ * ENCRE (#8a6820, 5,1:1 sur le fond), pas le doré délavé d'origine.
+ *
+ * La rampe --surface-N se lit désormais comme une DISTANCE À L'ŒIL, identique
+ * dans les deux thèmes : N croissant = plus proche.
+ * ─────────────────────────────────────────────────────────────────────────────
  */
 
 /* ---------- POS theme — extends luxe-dark.css ---------- */
 :root,
 .dark,
 .theme-pos {
-  /* Surfaces — numeric scale (0 = deepest, 4 = highest elevation). */
-  --surface-0: #0c0c0e;          /* page bg */
-  --surface-1: var(--bg-base);   /* alias #0a0a0c — primary panels */
-  --surface-2: var(--bg-elevated); /* alias #131316 — cards */
-  --surface-3: var(--bg-overlay);  /* alias #1c1c20 — popovers */
-  --surface-4: #25252a;            /* hover / pressed state */
+  /* Surfaces — échelle numérique strictement monotone (0 = le plus loin de
+   * l'œil, 4 = le plus proche). */
+  --surface-0: #0b0a09;            /* page bg */
+  --surface-1: var(--bg-base);     /* alias #12100e — primary panels */
+  --surface-2: var(--bg-elevated); /* alias #1a1815 — cards */
+  --surface-3: var(--bg-overlay);  /* alias #231f1b — popovers */
+  --surface-4: #2e2924;            /* hover / pressed state */
 
   /* Gold extended scale (--gold-base/hover/pressed live in luxe-dark.css). */
-  --gold-soft:    rgba(201, 165, 87, 0.12);
-  --gold-strong:  #b8954a;     /* alias of --gold-pressed but explicit name */
+  --gold-soft:    rgba(211, 171, 92, 0.14);
+  --gold-strong:  #bf9748;
   --gold-fg:      #1a1408;     /* foreground when gold is bg (dark brown) */
 
-  /* Foreground when green is bg (mirror of --gold-fg). White on --green-base
-   * is only ~2.5:1 on the POS green — near-black reaches ~8:1. */
-  --green-fg:     #0a0a0c;
+  /* Foreground when green is bg (mirror of --gold-fg). */
+  --green-fg:     #0a1610;
 
-  /* Categorical identity hues (design audit 2026-07-07, DS I-2/chantier 4) —
-   * promotion types and other data-identity palettes
-   * that need MORE hues than the 4 semantic tokens. Stored as raw RGB
-   * triplets so the Tailwind preset can expose alpha modifiers
-   * (bg-cat-amber/15, border-cat-amber/30). Dark theme = Tailwind -300
-   * shades (light text on near-black); the Backoffice overrides with -700
-   * shades (dark text on ivory). */
+  /* Categorical identity hues — RGB triplets pour les modificateurs alpha du
+   * preset Tailwind (bg-cat-amber/15, border-cat-amber/30). Thème sombre =
+   * nuances -300 ; le Backoffice passe en -700/-800. Inchangé. */
   --cat-amber:   252 211 77;
   --cat-yellow:  253 224 71;
   --cat-orange:  253 186 116;
@@ -64,109 +71,86 @@
   --cat-rose:    253 164 175;
   --cat-red:     252 165 165;
 
-  /* Text extended (subdued for footnotes). */
-  --text-subtle:  #5a5a62;     /* between muted and disabled */
+  /* Text extended — remonté de #5a5a62 (3,1:1, sous AA) à 4,6:1 sur
+   * --bg-base (audit cohérence 2026-08-01). */
+  --text-subtle:  #7d7364;
 
   /* Border extended. */
-  --border-muted: #1c1c20;
+  --border-muted: #1f1c18;
   --border-gold:  var(--gold-base);
 }
 
-/* ---------- Backoffice theme — light, high-contrast cool neutral ----------
- * Owner direction (2026-06-22): keep a LIGHT theme (less eye fatigue) but raise
- * contrast and DROP the gold accent. The warm cream/ivoire surfaces were too
- * washed out; this palette uses a cool neutral gray scale (crisp white cards on
- * a light-gray page), near-black cool text, firmer borders, and a professional
- * royal-blue accent. The `--gold-*` tokens are remapped to blue here so every
- * `text-gold` / `bg-gold-soft` / `border-gold` utility becomes blue in the
- * Backoffice WITHOUT editing components — the POS keeps real gold (tokens
- * unchanged under .theme-pos / :root). */
+/* ---------- Backoffice theme — clair "ivoire", MÊME famille que le POS ------
+ * Exigence de contraste conservée (cf. direction 2026-06-22) : texte quasi
+ * noir, bordures fermes, cartes qui se détachent nettement du fond. Ce qui
+ * change par rapport à juin : les neutres sont chauds au lieu de bleu-gris, et
+ * l'accent redevient l'or — en version encre, contrastée. */
 .theme-backoffice {
-  /* Body font — IBM Plex Sans (professional enterprise-software workhorse,
-   * highly legible on dense ERP tables). Scoped here so the POS keeps Inter.
-   * The app must @import '@fontsource-variable/ibm-plex-sans'. */
-  --font-body: 'IBM Plex Sans Variable', 'IBM Plex Sans', 'Inter Fallback',
-    system-ui, -apple-system, sans-serif;
-  --font-sans: var(--font-body);
+  /* Typographie : plus AUCUN remap. Le Backoffice partage la pile canonique du
+   * système (Inter corps, Playfair display, JetBrains Mono data). IBM Plex Sans
+   * et IBM Plex Mono ne sont plus nécessaires — les @import correspondants
+   * peuvent être retirés des apps, ainsi que Fraunces du bundle. */
 
-  /* Display/headings — also IBM Plex Sans in the Backoffice. The default
-   * --font-display is Playfair Display (decorative serif italic, the POS
-   * "luxe" branding face); on a staff tool it reads as inconsistent. This
-   * switches product names + all `font-display` section headings to the
-   * readable sans. POS keeps Playfair (token unchanged under .theme-pos). */
-  --font-display: var(--font-body);
+  /* Surfaces — ivoire chaud, monotone (0 = fond de page … 4 = blanc pur). */
+  --surface-0: #e8e1d5;        /* page bg */
+  --surface-1: #f2ece1;        /* primary panels */
+  --surface-2: #faf6ef;        /* cards */
+  --surface-3: #fffdf9;        /* popovers */
+  --surface-4: #ffffff;        /* hover / le plus proche de l'œil */
+  --cream:     var(--surface-1);
 
-  /* Amounts & data numbers — IBM Plex Mono (tabular, very legible digits,
-   * family-matched to IBM Plex Sans). Replaces JetBrains Mono on all
-   * `font-mono` (amounts, SKU, IDs) and Fraunces on `font-data` (KPI values).
-   * The app must @import the three IBM Plex Mono weights. POS keeps its own
-   * mono/data faces (tokens unchanged under .theme-pos). */
-  --font-mono: 'IBM Plex Mono', ui-monospace, 'JetBrains Mono', monospace;
-  --font-data: var(--font-mono);
-  /* `font-serif` (page titles, CardTitle, modal titles) must NOT inherit the
-   * mono remap above — headings in the Backoffice read in the sans stack,
-   * per the --font-display direction. KPI values keep mono via `font-data`. */
-  --font-serif: var(--font-body);
-
-  /* Surfaces — cool neutral, layered for contrast (white cards pop on a
-   * light-gray page). */
-  --surface-0: #eaeef3;        /* page bg — cool light gray */
-  --surface-1: #f3f6f9;        /* primary panels */
-  --surface-2: #ffffff;        /* cards */
-  --surface-3: #ffffff;        /* popovers */
-  --surface-4: #dde4ec;        /* hover — clearly distinct from bg */
-  --cream:     #eaeef3;        /* legacy alias → now the cool page bg */
-
-  --bg-base:     var(--surface-0);
+  --bg-base:     var(--surface-1);
   --bg-elevated: var(--surface-2);
   --bg-overlay:  var(--surface-3);
-  --bg-input:    #ffffff;
+  --bg-input:    var(--surface-3);
 
-  /* Borders — cool gray, firmer for crisp separation. */
-  --border-subtle: #d3dae3;
-  --border-strong: #aeb9c6;
-  --border-muted:  #e2e7ed;
+  /* Borders — chaudes, fermes. */
+  --border-subtle: #e0d7c8;
+  --border-strong: #c3b7a3;
+  --border-muted:  #ebe4d8;
   --border-focus:  var(--gold-base);
-  --border-gold:   rgba(30, 85, 214, 0.35);   /* accent-tinted (now blue) */
+  --border-gold:   rgba(138, 104, 32, 0.35);
 
-  /* Text — cool near-black, stronger mid-tones for legibility. */
-  --text-primary:   #0e1726;   /* ~13:1 on white */
-  --text-secondary: #33404f;   /* ~9:1  */
-  --text-muted:     #58646f;   /* ~5.3:1 */
-  --text-subtle:    #79838f;
-  --text-disabled:  #a9b3be;
+  /* Text — quasi noir chaud. */
+  --text-primary:   #1c1712;   /* ~14:1 sur --surface-2 */
+  --text-secondary: #4b4238;   /* ~8,5:1 */
+  --text-muted:     #6d6355;   /* ~5,4:1 */
+  --text-subtle:    #8a7f6f;   /* ~3,8:1 — non-texte / footnotes */
+  --text-disabled:  #a89d8c;
 
-  /* Accent — royal blue, replaces gold. Tokens keep the `--gold-*` names so
-   * `text-gold` / `bg-gold-soft` / `border-gold` utilities Just Work. */
-  --gold-soft:   rgba(30, 85, 214, 0.12);   /* active-nav / icon tint */
-  --gold-base:   #1e55d6;                    /* primary action / active (~6.4:1) */
-  --gold-hover:  #1a4abf;
-  --gold-pressed:#163f9f;
-  --gold-strong: #163f9f;
-  --gold-fg:     #ffffff;                     /* white text on blue fills */
+  /* Accent — encre dorée. Les tokens gardent les noms --gold-* : text-gold /
+   * bg-gold-soft / border-gold fonctionnent sans toucher aux composants, et
+   * produisent enfin la même FAMILLE de couleur que le POS. */
+  --gold-soft:   rgba(138, 104, 32, 0.12);
+  --gold-base:   #8a6820;                    /* ~5,1:1 sur --surface-2 */
+  --gold-hover:  #745719;
+  --gold-pressed:#5e4614;
+  --gold-strong: #5e4614;
+  --gold-fg:     #fffdf9;                    /* texte sur remplissage or */
 
-  /* Semantic — darkened for AA contrast on the light surfaces. */
-  --green-base:    #0f8a5a;
-  --green-hover:   #11a06a;
-  --green-pressed: #0b6e48;
-  --green-fg:      #ffffff;    /* white holds on the darkened BO green */
-  --red-base:      #d32f2f;
-  --red-soft:      rgba(211, 47, 47, 0.10);
+  /* Semantic — assombris pour AA sur les surfaces claires. */
+  --green-base:    #187a52;
+  --green-hover:   #1a8c5e;
+  --green-pressed: #126343;
+  --green-fg:      #ffffff;
+  --red-base:      #b4342c;
+  --red-soft:      rgba(180, 52, 44, 0.12);
   --red-fg:        var(--red-base);
-  --blue-info:     #1f6fb2;     /* darkened sky-blue → ≈5.3:1 on white (was #2d8fe0 ≈3.4:1, failed AA for text/badge — design audit 2026-07-08, DS B2) */
-  --amber-warn:    #b45309;     /* deep amber so it reads on light */
+  --blue-info:     #2b6c9c;
+  --amber-warn:    #8a5a10;
 
   --success:      var(--green-base);
-  --success-soft: rgba(15, 138, 90, 0.10);
+  --success-soft: rgba(24, 122, 82, 0.12);
   --warning:      var(--amber-warn);
-  --warning-soft: rgba(180, 83, 9, 0.10);
+  --warning-soft: rgba(138, 90, 16, 0.12);
   --danger:       var(--red-base);
   --danger-soft:  var(--red-soft);
   --info:         var(--blue-info);
-  --info-soft:    rgba(45, 143, 224, 0.12);
+  /* Corrigé : --info-soft utilisait rgba(45,143,224,·), une couleur qui
+   * n'existait plus depuis l'assombrissement de --blue-info. */
+  --info-soft:    rgba(43, 108, 156, 0.12);
 
-  /* Categorical identity hues — dark -700 shades, readable on the light
-   * surfaces (the :root values are -300 shades tuned for luxe-dark). */
+  /* Categorical identity hues — nuances -700/-800, lisibles sur l'ivoire. */
   --cat-amber:   180 83 9;
   --cat-yellow:  161 98 7;
   --cat-orange:  194 65 12;
@@ -180,7 +164,7 @@
   --cat-rose:    190 18 60;
   --cat-red:     185 28 28;
 
-  /* Backdrop — cool, slightly deeper for modal focus. */
-  --backdrop:      rgba(14, 23, 38, 0.50);
+  /* Backdrop — chaud, profond. */
+  --backdrop:      rgba(28, 23, 18, 0.50);
   --backdrop-blur: 6px;
 }

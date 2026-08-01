@@ -7,24 +7,30 @@
 //
 // Carried consistently across every cost chart so a reader instantly knows
 // which P&L cost bucket a series belongs to. Tuned for the LIGHT backoffice
-// theme (white cards on cool-gray); neutrals match the design tokens.
+// theme (ivory cards on a warm neutral); neutrals mirror the design tokens.
 
 /** Headline color for each cost bucket. */
-export const COGS_BASE = '#1e55d6'; // royal blue — same as --gold-base in backoffice
-export const OPEX_BASE = '#b45309'; // burnt amber
+// Audit cohérence 2026-08-01 — les deux familles s'ancrent désormais sur les
+// teintes sémantiques du thème (--info et --amber-warn) au lieu du bleu royal
+// #1e55d6, qui n'était là que parce qu'il était l'ancien accent Backoffice.
+// L'accent, lui, est l'or encre (#8a6820) : il ne porte aucune famille de coût.
+export const COGS_BASE = '#2b6c9c'; // --info — famille COGS / achats matière
+export const OPEX_BASE = '#8a5a10'; // --amber-warn — famille OpEx
 
 /**
  * Category ramps — family-coherent but mutually distinguishable. Used for
  * donut slices / multi-category bars. Cycles if a series exceeds its length.
+ * Retendues pour l'ivoire chaud : plus de bleus saturés clairs, illisibles
+ * sur un fond clair.
  */
 const COGS_RAMP = [
-  '#1e55d6', '#3b82f6', '#0ea5e9', '#2563eb',
-  '#6366f1', '#0284c7', '#60a5fa', '#1a3a8f',
+  '#2b6c9c', '#17456b', '#4f93bf', '#0d5f8a',
+  '#6fb0d6', '#1e78a8', '#0a3d5c', '#8cc3e0',
 ] as const;
 
 const OPEX_RAMP = [
-  '#b45309', '#d97706', '#ea580c', '#f59e0b',
-  '#a16207', '#92400e', '#e0a44a', '#c2620c',
+  '#8a5a10', '#a8701c', '#c2872a', '#6b430a',
+  '#d9a44a', '#4f3106', '#b06a15', '#e0bd7d',
 ] as const;
 
 export type CostFamily = 'cogs' | 'opex';
@@ -51,12 +57,12 @@ export function familyBase(family: CostFamily): string {
 // (e.g. per-supplier price trends) draw from one shared, mutually-legible
 // hue set instead of ad-hoc per-file hex. Cycles if series exceed length.
 export const CATEGORICAL_SERIES = [
-  'var(--gold-base)', // backoffice accent
-  '#6366f1',          // indigo — familyColor('cogs', 4)
+  'var(--gold-base)', // accent du thème (or encre en Backoffice)
+  '#2b6c9c',          // bleu — COGS_BASE
   '#16a34a',          // green
-  '#dc2626',          // red
+  '#b4342c',          // red — --red-base du thème clair
   '#0891b2',          // cyan
-  '#d946ef',          // fuchsia
+  '#7c3aed',          // violet
 ] as const;
 
 /** Color for categorical series `i` (cycles). */
@@ -65,24 +71,27 @@ export function categoricalColor(i: number): string {
 }
 
 /** Neutral swatch for an "off / disabled" series (legend toggles). */
-export const CHART_SERIES_OFF = '#cbd5e1'; // slate-300
+export const CHART_SERIES_OFF = '#c3b7a3'; // --border-strong (neutre chaud)
 
 /** Gold accent stroke for a single-series backoffice trend line. */
-export const CHART_ACCENT_GOLD = '#d4a437';
+export const CHART_ACCENT_GOLD = '#8a6820'; // --gold-base du thème clair
 
 // --- Neutrals (light theme) -------------------------------------------------
-export const CHART_GRID_STROKE = '#e2e7ed'; // --border-muted
-export const CHART_AXIS_STROKE = '#aeb9c6'; // --border-strong
-export const CHART_AXIS_TICK   = '#58646f'; // --text-muted
+// Miroirs des tokens `.theme-backoffice` — mis à jour avec l'ivoire chaud de
+// l'audit cohérence 2026-08-01 (les anciennes valeurs bleu-gris n'existaient
+// plus dans le thème).
+export const CHART_GRID_STROKE = '#ebe4d8'; // --border-muted
+export const CHART_AXIS_STROKE = '#c3b7a3'; // --border-strong
+export const CHART_AXIS_TICK   = '#6d6355'; // --text-muted
 
-/** Shared recharts <Tooltip contentStyle> — white card, subtle border. */
+/** Shared recharts <Tooltip contentStyle> — ivory card, subtle border. */
 export const CHART_TOOLTIP_STYLE = {
-  background: '#ffffff',
-  border: '1px solid #d3dae3',
+  background: '#fffdf9',            // --surface-3
+  border: '1px solid #e0d7c8',      // --border-subtle
   borderRadius: 8,
   fontSize: 12,
-  color: '#0e1726',
-  boxShadow: '0 4px 12px rgba(14,23,38,0.08)',
+  color: '#1c1712',                 // --text-primary
+  boxShadow: '0 2px 8px rgba(45,34,15,0.09)', // --shadow-md
 } as const;
 
 // --- IDR formatters ---------------------------------------------------------

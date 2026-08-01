@@ -23,7 +23,10 @@ const cardVariants = cva(
     variants: {
       variant: {
         default:  'border border-border-subtle bg-bg-elevated shadow-sm',
-        elevated: 'border border-border-subtle bg-bg-elevated shadow-md hover:shadow-lg',
+        // Audit cohérence 2026-08-01 — en thème sombre --shadow-md ne porte plus
+        // qu'un filet clair : l'élévation se lit d'abord à la valeur de surface,
+        // d'où le cran supplémentaire (surface-3) par rapport à `default`.
+        elevated: 'border border-border-subtle bg-surface-3 shadow-md hover:shadow-lg',
         inset:    'border border-border-muted bg-bg-base shadow-inset-sm',
       },
       padding: {
