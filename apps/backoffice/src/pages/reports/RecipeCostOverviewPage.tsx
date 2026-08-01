@@ -18,6 +18,7 @@ import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 import { useUrlState } from '@/hooks/useUrlState.js';
+import { useAuthStore } from '@/stores/authStore.js';
 
 interface OverviewRow {
   product_id:    string;
@@ -61,6 +62,10 @@ export function RecipeCostOverviewPage(): JSX.Element {
   const navigate = useNavigate();
   const [start, setStart] = useUrlState('start', defaultStart());
   const [end,   setEnd]   = useUrlState('end', toLocalDateStr(new Date()));
+  // Audit Reports 2026-08-01 lot C / D3 — cette page construit son CSV avec un
+  // <Button> brut au lieu d'<ExportButtons> : elle doit porter le meme verrou
+  // `reports.export`, sinon elle contourne la decision.
+  const canExport = useAuthStore((s) => s.hasPermission('reports.export'));
 
   const q = useQuery<OverviewRow[]>({
     queryKey: ['reports', 'recipe-cost', 'overview', start, end] as const,
@@ -114,7 +119,7 @@ export function RecipeCostOverviewPage(): JSX.Element {
             variant="ghost"
             size="sm"
             onClick={handleExportCsv}
-            disabled={rows.length === 0}
+            disabled={!canExport || rows.length === 0}
             data-testid="overview-export-csv"
           >
             Export CSV
@@ -148,7 +153,7 @@ export function RecipeCostOverviewPage(): JSX.Element {
                 key={r.product_id}
                 className="border-t border-border-subtle cursor-pointer hover:bg-bg-elevated"
                 data-testid={`overview-row-${r.product_id}`}
-                onClick={() => navigate(`/backoffice/reports/recipe-cost/${r.product_id}`)}
+                onClick={() => { void navigate(`/backoffice/reports/recipe-cost/${r.product_id}`); }}
               >
                 <td className="py-1.5" onClick={(e) => e.stopPropagation()}>
                   <DrilldownLink entity="recipe" id={r.product_id} label={r.product_name} icon={false} />

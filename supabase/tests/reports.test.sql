@@ -6,7 +6,7 @@
 --   T_RPT_04..05  Refresh wrapper functions exist and run.
 --   T_RPT_06      get_sales_by_hour_v1 returns 24 zero-filled rows on empty data.
 --   T_RPT_07      get_sales_by_category_v3 returns 0 rows on empty data, accepts date range.
---   T_RPT_08      get_stock_variance_v1 returns one row per non-deleted product.
+--   T_RPT_08      get_stock_variance_v2 returns one row per non-deleted product.
 --   T_RPT_09      get_audit_logs_v3 cursor pagination (limit clamp at 200).
 --   T_RPT_10      4 new reports.* permission codes exist + are granted to ADMIN.
 --
@@ -18,7 +18,7 @@ BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
 SELECT plan(10);
 
--- S58 repair: get_sales_by_hour_v1 → v2 (gate reports.read) and get_stock_variance_v1
+-- S58 repair: get_sales_by_hour_v1 → v2 (gate reports.read) and get_stock_variance_v2
 -- gained an inventory.read gate. Set an auth context holding both permissions.
 DO $fixture$
 DECLARE v_auth UUID;
@@ -80,9 +80,9 @@ SELECT lives_ok(
 -- T_RPT_08 — stock-variance row per product
 -- ============================================================
 SELECT is(
-  (SELECT COUNT(*)::INT FROM public.get_stock_variance_v1()),
+  (SELECT COUNT(*)::INT FROM public.get_stock_variance_v2()),
   (SELECT COUNT(*)::INT FROM products WHERE deleted_at IS NULL),
-  'T_RPT_08 — get_stock_variance_v1 emits one row per non-deleted product'
+  'T_RPT_08 — get_stock_variance_v2 emits one row per non-deleted product'
 );
 
 -- ============================================================

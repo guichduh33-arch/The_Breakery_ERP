@@ -16,14 +16,17 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import React from 'react';
+import type * as RechartsModule from 'recharts';
+import type * as RouterModule from 'react-router-dom';
 import RecipeCostTimelinePage from '@/pages/reports/RecipeCostTimelinePage.js';
+import { useAuthStore } from '@/stores/authStore.js';
 
 // --- Recharts mock — JSDOM has no SVG layout engine; ResponsiveContainer
 //     requires width/height from the DOM and throws without it. Replace with
 //     a plain div that renders children at a fixed size.
 
 vi.mock('recharts', async () => {
-  const actual = await vi.importActual<typeof import('recharts')>('recharts');
+  const actual = await vi.importActual<typeof RechartsModule>('recharts');
   return {
     ...actual,
     ResponsiveContainer: ({ children }: { children: React.ReactNode }) => (
@@ -37,7 +40,7 @@ vi.mock('recharts', async () => {
 const mockRpc = vi.fn();
 
 vi.mock('@/lib/supabase.js', () => ({
-  supabase: { rpc: (...args: unknown[]) => mockRpc(...args) },
+  supabase: { rpc: (...args: unknown[]): unknown => mockRpc(...args) },
 }));
 
 // --- React Router mock ---
@@ -45,7 +48,7 @@ vi.mock('@/lib/supabase.js', () => ({
 // to keep router context available (MemoryRouter is added in renderPage()).
 
 vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
+  const actual = await vi.importActual<typeof RouterModule>('react-router-dom');
   return {
     ...actual,
     useParams: () => ({ productId: 'test-product-id' }),
@@ -92,6 +95,13 @@ function renderPage() {
 }
 
 // --- Tests ---
+
+// Audit Reports 2026-08-01, lot C / D3 — <ExportButtons> ne rend rien sans
+// `reports.export`, et les pages a export maison desactivent leur bouton. Ce
+// test verifie le CABLAGE de l'export, pas le RBAC : on seede la permission.
+beforeEach(() => {
+  useAuthStore.setState({ permissions: ['reports.export'] });
+});
 
 describe('RecipeCostTimelinePage smoke', () => {
   beforeEach(() => {

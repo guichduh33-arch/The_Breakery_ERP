@@ -24,6 +24,7 @@ import { supabase } from '@/lib/supabase.js';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
 import { useUrlState } from '@/hooks/useUrlState.js';
+import { useAuthStore } from '@/stores/authStore.js';
 import { CHART_GRID_STROKE, CHART_ACCENT_GOLD } from '@/features/reports/utils/chartColors.js';
 
 interface TimelineRow {
@@ -68,6 +69,10 @@ export function RecipeCostTimelinePage(): JSX.Element {
   const { productId = '' } = useParams<{ productId: string }>();
   const [from, setFrom] = useUrlState('from', defaultStart());
   const [to,   setTo]   = useUrlState('to', toLocalDateStr(new Date()));
+  // Audit Reports 2026-08-01 lot C / D3 — cette page construit son CSV avec un
+  // <Button> brut au lieu d'<ExportButtons> : elle doit porter le meme verrou
+  // `reports.export`, sinon elle contourne la decision.
+  const canExport = useAuthStore((s) => s.hasPermission('reports.export'));
 
   const q = useQuery<TimelineRow[]>({
     queryKey: ['reports', 'recipe-cost', 'timeline', productId, from, to] as const,
@@ -140,7 +145,7 @@ export function RecipeCostTimelinePage(): JSX.Element {
             variant="ghost"
             size="sm"
             onClick={handleCsv}
-            disabled={rows.length === 0}
+            disabled={!canExport || rows.length === 0}
             data-testid="timeline-export-csv"
           >
             Export CSV

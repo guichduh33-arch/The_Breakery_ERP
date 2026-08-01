@@ -7178,7 +7178,7 @@ export type Database = {
           supplier: string
         }[]
       }
-      get_cashier_variance_v1: {
+      get_cashier_variance_v2: {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json
       }
@@ -7631,7 +7631,7 @@ export type Database = {
         }
         Returns: Json
       }
-      get_stock_variance_v1: {
+      get_stock_variance_v2: {
         Args: {
           p_date_end?: string
           p_date_start?: string

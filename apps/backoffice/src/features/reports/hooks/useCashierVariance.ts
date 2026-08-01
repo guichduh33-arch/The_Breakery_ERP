@@ -1,7 +1,13 @@
 // apps/backoffice/src/features/reports/hooks/useCashierVariance.ts
 //
-// Wraps `get_cashier_variance_v1(p_start_date, p_end_date)` — read-only cashier
+// Wraps `get_cashier_variance_v2(p_start_date, p_end_date)` — read-only cashier
 // shift-variance report (fiche 12 D2.4). Returns a JSONB envelope.
+//
+// Audit Reports 2026-08-01 lot C / D2 bis — bumped v1 -> v2 : la v1 etait gatee
+// sur `reports.read`, le code le plus faible de la famille, que tout porteur de
+// rapport possede. Or ce rapport expose les ecarts de caisse par caissier
+// (manquants, pires ecarts, matrice par jour de semaine) : c'est de la donnee de
+// controle financier. Gate et route montent a reports.financial.read.
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
@@ -50,7 +56,7 @@ export function useCashierVariance(start: string, end: string) {
     queryKey: [...CASHIER_VARIANCE_QK, start, end] as const,
     staleTime: 60_000,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_cashier_variance_v1', {
+      const { data, error } = await supabase.rpc('get_cashier_variance_v2', {
         p_start_date: start,
         p_end_date:   end,
       });

@@ -25,6 +25,7 @@ import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 import { useUrlState } from '@/hooks/useUrlState.js';
+import { useAuthStore } from '@/stores/authStore.js';
 
 interface YieldRow {
   id:                 string;
@@ -286,6 +287,10 @@ export default function ProductionYieldPage(): JSX.Element {
   const [start, setStart] = useUrlState('start', defaultStart());
   const [end,   setEnd]   = useUrlState('end', toLocalDateStr(new Date()));
   const [drillProductId, setDrillProductId] = useState<string | null>(null);
+  // Audit Reports 2026-08-01 lot C / D3 — cette page construit son CSV avec un
+  // <Button> brut au lieu d'<ExportButtons> : elle doit porter le meme verrou
+  // `reports.export`, sinon elle contourne la decision.
+  const canExport = useAuthStore((s) => s.hasPermission('reports.export'));
   const { data, isLoading, error } = useProductionYield(start, end);
 
   const allRows = useMemo(() => data?.rows ?? [], [data]);
@@ -341,7 +346,7 @@ export default function ProductionYieldPage(): JSX.Element {
             variant="ghost"
             size="sm"
             onClick={handleExportCsv}
-            disabled={yieldRows.length === 0}
+            disabled={!canExport || yieldRows.length === 0}
             data-testid="yield-export-csv"
           >
             Export CSV

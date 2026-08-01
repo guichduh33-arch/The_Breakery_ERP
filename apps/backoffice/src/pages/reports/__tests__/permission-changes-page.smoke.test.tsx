@@ -6,6 +6,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import PermissionChangesPage from '@/pages/reports/PermissionChangesPage.js';
+import { useAuthStore } from '@/stores/authStore.js';
 
 // Mutable flag read by the rpc mock to switch between happy path and error path.
 let simulateError = false;
@@ -56,6 +57,13 @@ function renderPage() {
     </QueryClientProvider>,
   );
 }
+
+// Audit Reports 2026-08-01, lot C / D3 — <ExportButtons> ne rend rien sans
+// `reports.export`, et les pages a export maison desactivent leur bouton. Ce
+// test verifie le CABLAGE de l'export, pas le RBAC : on seede la permission.
+beforeEach(() => {
+  useAuthStore.setState({ permissions: ['reports.export'] });
+});
 
 describe('PermissionChangesPage (smoke)', () => {
   beforeEach(() => { simulateError = false; });

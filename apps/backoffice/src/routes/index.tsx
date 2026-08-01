@@ -135,14 +135,23 @@ function Protected({ children }: { children: React.ReactNode }) {
   return isAuth ? <>{children}</> : <Navigate to="/login" replace />;
 }
 
+// Audit Reports 2026-08-01 lot C / D2 bis — `required` accepte desormais un
+// TABLEAU de codes, exiges conjointement (ET). Cas d'usage : Cost & Spend lit a
+// la fois get_purchase_cogs_breakdown_v1 (gate reports.inventory.read) et
+// get_expenses_by_category_v1 (gate reports.financial.read) ; avec un seul code
+// la route laissait entrer un porteur d'une seule des deux familles, qui se
+// prenait un 42501 opaque a l'affichage. Un code unique reste accepte.
 function PermissionGate({
   required,
   children,
 }: {
-  required: PermissionCode;
+  required: PermissionCode | readonly PermissionCode[];
   children: React.ReactNode;
 }) {
-  const has = useAuthStore((s) => s.hasPermission(required));
+  // `PermissionCode` est une union de littéraux : le test sur `typeof` narrow
+  // proprement, là où `Array.isArray` sur un `readonly T[]` retombe sur `any[]`.
+  const codes: readonly PermissionCode[] = typeof required === 'string' ? [required] : required;
+  const has = useAuthStore((s) => codes.every((code) => s.hasPermission(code)));
   // P1 #4 — surface an explicit "access denied" toast instead of bouncing the
   // user back to the dashboard with no explanation. By the time a PermissionGate
   // renders, boot rehydration is done (see <BootGate>), so a `false` here is a
@@ -157,6 +166,10 @@ function PermissionGate({
 // permission-gated: `reports.audit.read` also covers MANAGER, but audit_logs'
 // admin_read RLS only serves ADMIN/SUPER_ADMIN, so anyone else would land on
 // a page that can never show data. Hide the surface for them instead.
+//
+// Audit Reports 2026-08-01 — le rapport Audit Log (/reports/audit) tombait dans
+// exactement le même cas et n'avait PAS ce garde : mesuré, un MANAGER porteur de
+// reports.audit.read obtient 0 ligne. Il est passé sous AdminGate.
 function AdminGate({ children }: { children: React.ReactNode }) {
   const roleCode = useAuthStore((s) => s.user?.role_code);
   const isAdmin = roleCode === 'ADMIN' || roleCode === 'SUPER_ADMIN';
@@ -688,7 +701,7 @@ export function AppRoutes() {
         <Route
           path="reports/cashier-variance"
           element={
-            <PermissionGate required="reports.read">
+            <PermissionGate required="reports.financial.read">
               <CashierVariancePage />
             </PermissionGate>
           }
@@ -704,7 +717,7 @@ export function AppRoutes() {
         <Route
           path="reports/production-yield"
           element={
-            <PermissionGate required="inventory.read">
+            <PermissionGate required="reports.inventory.read">
               <ProductionYieldPage />
             </PermissionGate>
           }
@@ -712,9 +725,9 @@ export function AppRoutes() {
         <Route
           path="reports/audit"
           element={
-            <PermissionGate required="reports.audit.read">
+            <AdminGate>
               <AuditPage />
-            </PermissionGate>
+            </AdminGate>
           }
         />
         <Route
@@ -856,7 +869,7 @@ export function AppRoutes() {
         <Route
           path="reports/cost-spend"
           element={
-            <PermissionGate required="reports.financial.read">
+            <PermissionGate required={['reports.financial.read', 'reports.inventory.read']}>
               <CostSpendAnalyticsPage />
             </PermissionGate>
           }

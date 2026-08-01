@@ -5,6 +5,7 @@
 import { Button } from '@breakery/ui';
 import { Download, FileText, Loader2 } from 'lucide-react';
 import { buildCsv, downloadCsv, type CsvColumn } from '@breakery/domain';
+import { useAuthStore } from '@/stores/authStore.js';
 import { useGeneratePdf, type GeneratePdfArgs, type PdfTemplate } from '../hooks/useGeneratePdf.js';
 
 export interface ExportButtonsProps<T> {
@@ -23,8 +24,13 @@ export interface ExportButtonsProps<T> {
   disabled?: boolean;
 }
 
-export function ExportButtons<T>({ csv, pdf, disabled }: ExportButtonsProps<T>): JSX.Element {
+export function ExportButtons<T>({ csv, pdf, disabled }: ExportButtonsProps<T>): JSX.Element | null {
   const generatePdf = useGeneratePdf();
+  // Audit Reports 2026-08-01, lot C / D3 — `reports.export` gouverne desormais
+  // l'extraction. Cote client c'est le SEUL point de controle possible pour le
+  // CSV, qui est construit localement a partir de donnees deja recues : masquer
+  // les boutons est la mesure, l'EF generate-pdf porte le verrou serveur du PDF.
+  const canExport = useAuthStore((s) => s.hasPermission('reports.export'));
 
   const handleCsv = (): void => {
     if (!csv) return;
@@ -45,6 +51,8 @@ export function ExportButtons<T>({ csv, pdf, disabled }: ExportButtonsProps<T>):
     if (result.signed_url) window.open(result.signed_url, '_blank', 'noopener,noreferrer');
   };
 
+  if (!canExport) return null;
+
   return (
     <div className="flex items-center gap-2">
       {csv && (
@@ -64,7 +72,7 @@ export function ExportButtons<T>({ csv, pdf, disabled }: ExportButtonsProps<T>):
           variant="ghost"
           size="sm"
           onClick={() => { void handlePdf(); }}
-          disabled={disabled || generatePdf.isPending}
+          disabled={(disabled ?? false) || generatePdf.isPending}
           data-testid="export-pdf"
           aria-label="Export PDF"
         >

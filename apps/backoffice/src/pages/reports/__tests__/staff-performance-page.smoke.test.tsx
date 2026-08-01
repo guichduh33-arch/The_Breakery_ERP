@@ -1,7 +1,7 @@
 // apps/backoffice/src/pages/reports/__tests__/staff-performance-page.smoke.test.tsx
 // S40 Wave B1 — Smoke test: StaffPerformancePage renders heading, data rows, export button, and error state.
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
@@ -9,7 +9,7 @@ import { MemoryRouter } from 'react-router-dom';
 const mockUseStaffPerformance = vi.fn();
 
 vi.mock('@/features/reports/hooks/useStaffPerformance.js', () => ({
-  useStaffPerformance: (...args: unknown[]) => mockUseStaffPerformance(...args),
+  useStaffPerformance: (...args: unknown[]): unknown => mockUseStaffPerformance(...args),
 }));
 
 // Supabase is imported transitively. Provide minimal stub.
@@ -18,6 +18,7 @@ vi.mock('@/lib/supabase.js', () => ({
 }));
 
 import StaffPerformancePage from '@/pages/reports/StaffPerformancePage.js';
+import { useAuthStore } from '@/stores/authStore.js';
 
 function renderPage() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -27,6 +28,13 @@ function renderPage() {
     </QueryClientProvider>,
   );
 }
+
+// Audit Reports 2026-08-01, lot C / D3 — <ExportButtons> ne rend rien sans
+// `reports.export`, et les pages a export maison desactivent leur bouton. Ce
+// test verifie le CABLAGE de l'export, pas le RBAC : on seede la permission.
+beforeEach(() => {
+  useAuthStore.setState({ permissions: ['reports.export'] });
+});
 
 describe('StaffPerformancePage (smoke)', () => {
   it('renders heading, staff rows with IDR values and CSV export button; no PDF button', () => {

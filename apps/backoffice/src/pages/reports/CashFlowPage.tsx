@@ -90,10 +90,14 @@ export default function CashFlowPage() {
 
   const showDelta = compare && !!prevData;
 
+  // Audit R-04 — l'ancien sous-titre annonçait des totaux d'investissement et de
+  // financement « account-classified via accounts.cash_flow_section » alors que
+  // la RPC renvoie deux zéros codés en dur et ne lit jamais cette colonne. Le
+  // sous-titre décrit désormais ce que le rapport fait réellement.
   return (
     <ReportPage
       title="Cash Flow Statement"
-      subtitle="Indirect method (operating) + account-classified investing / financing totals via accounts.cash_flow_section."
+      subtitle="Indirect method. Operating section only — investing and financing are not ventilated yet."
       isEmpty={!isLoading && !error && data !== undefined && isBlankCashFlow(data)}
       emptyState={{
         title: 'No cash movement',
