@@ -26,7 +26,7 @@
     "DataTable": { "cardMode": "column" },
     "KpiTile": { "cardMode": "column" },
     "QuantityStepper": { "cardMode": "column" },
-    "DiscountModal": { "cardMode": "single", "viewport": "720x900" },
+    "DiscountModal": { "cardMode": "single", "viewport": "720x1010" },
     "BrandLogo": { "cardMode": "column" },
     "BrandMark": { "cardMode": "column" },
     "CustomerCategoryBadge": { "cardMode": "column" },
