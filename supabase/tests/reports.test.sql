@@ -7,7 +7,7 @@
 --   T_RPT_06      get_sales_by_hour_v1 returns 24 zero-filled rows on empty data.
 --   T_RPT_07      get_sales_by_category_v2 returns 0 rows on empty data, accepts date range.
 --   T_RPT_08      get_stock_variance_v1 returns one row per non-deleted product.
---   T_RPT_09      get_audit_logs_v1 cursor pagination (limit clamp at 200).
+--   T_RPT_09      get_audit_logs_v3 cursor pagination (limit clamp at 200).
 --   T_RPT_10      4 new reports.* permission codes exist + are granted to ADMIN.
 --
 -- Runner:
@@ -104,10 +104,10 @@ BEGIN
 END $$;
 
 SELECT cmp_ok(
-  (SELECT COUNT(*)::INT FROM public.get_audit_logs_v1(NULL, 1000, NULL, 'phase2b_test', NULL)),
+  (SELECT COUNT(*)::INT FROM public.get_audit_logs_v3(NULL, 1000, NULL, 'phase2b_test', NULL)),
   '<=',
   200,
-  'T_RPT_09 — get_audit_logs_v1 limit is clamped to 200'
+  'T_RPT_09 — get_audit_logs_v3 limit is clamped to 200'
 );
 
 -- ============================================================

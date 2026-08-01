@@ -11,6 +11,7 @@ import { useMemo } from 'react';
 import {
   Area, AreaChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
+import { Card, CardContent, EmptyState } from '@breakery/ui';
 import { toLocalDateStr } from '@breakery/domain';
 import type { CsvColumn } from '@breakery/domain';
 import { PageHeader } from '@/components/PageHeader.js';
@@ -93,7 +94,13 @@ export default function CostSpendAnalyticsPage() {
   const opexShare = totalSpend > 0 ? (opexTotal / totalSpend) * 100 : 0;
 
   const isLoading = cogs.isLoading || opex.isLoading;
-  const error = cogs.error ?? opex.error;
+  // Audit R-12 — `pnl.error` était ignoré : si le P&L échouait, la tuile
+  // « Revenue (période) » affichait un 0 silencieux et tous les « % of sales »
+  // disparaissaient sans explication.
+  const error = cogs.error ?? opex.error ?? pnl.error;
+  const isEmpty = !isLoading && !error
+    && cogs.data !== undefined && opex.data !== undefined
+    && totalSpend === 0 && series.length === 0;
 
   return (
     <div className="space-y-6">
@@ -116,6 +123,20 @@ export default function CostSpendAnalyticsPage() {
         </p>
       )}
 
+      {isEmpty && (
+        <Card>
+          <CardContent className="pt-6">
+            <EmptyState
+              size="sm"
+              title="No spend"
+              description="No material purchase and no operating expense in the selected period."
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      {!isEmpty && (
+      <>
       {/* KPI strip */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <FamilyKpi label="Material purchases" value={formatIdrCompact(purchasesTotal)} accent={COGS_BASE}
@@ -191,11 +212,6 @@ export default function CostSpendAnalyticsPage() {
               {opexShare >= 12 ? `${opexShare.toFixed(0)}%` : ''}
             </div>
           )}
-          {totalSpend === 0 && (
-            <div className="flex w-full items-center justify-center text-xs text-text-muted">
-              No spend in this period.
-            </div>
-          )}
         </div>
         <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
           <div className="flex items-center gap-2">
@@ -210,6 +226,8 @@ export default function CostSpendAnalyticsPage() {
           </div>
         </div>
       </ChartCard>
+      </>
+      )}
     </div>
   );
 }

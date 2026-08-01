@@ -17,6 +17,7 @@ import { useAccountIdByCode } from '@/features/accounting/hooks/useAccountIdByCo
 import {
   usePb1Report,
   type Pb1ByDay,
+  type Pb1ReportData,
 } from '@/features/reports/hooks/usePb1Report.js';
 
 const MONTHS = [
@@ -29,6 +30,11 @@ const csvColumns: CsvColumn<Pb1ByDay>[] = [
   { header: 'Taxable base',    accessor: (r) => r.taxable_base,  format: 'idr-round100' },
   { header: 'PB1 collected',   accessor: (r) => r.pb1_collected, format: 'idr-round100' },
 ];
+
+/** Aucune vente taxable sur le mois. */
+function isBlankPb1(d: Pb1ReportData): boolean {
+  return d.by_day.length === 0 && d.taxable_base === 0;
+}
 
 function currentMonth(): number { return new Date().getMonth() + 1; }
 function currentYear():  number { return new Date().getFullYear(); }
@@ -46,6 +52,11 @@ export default function Pb1ReportPage() {
     <ReportPage
       title="PB1 Report"
       subtitle="Monthly restaurant tax (PB1 10%) — NON-PKP mode."
+      isEmpty={!isLoading && !error && data !== undefined && isBlankPb1(data)}
+      emptyState={{
+        title: 'No taxable sales',
+        description: 'No taxable sales recorded for this month.',
+      }}
       filters={
         <div className="flex items-center gap-3">
           {/* Month selector */}

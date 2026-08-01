@@ -10,7 +10,7 @@
 
 import { useMemo } from 'react';
 import { Input } from '@breakery/ui';
-import { toLocalDateStr, previousPeriod } from '@breakery/domain';
+import { toLocalDateStr } from '@breakery/domain';
 import type { CsvColumn } from '@breakery/domain';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { DeltaPct } from '@/features/reports/components/DeltaPct.js';
@@ -54,12 +54,37 @@ function fmt(n: number): string {
   return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
 }
 
+/** Aucun compte ne porte de solde à cette date. */
+function isBlankBalanceSheet(d: BalanceSheet): boolean {
+  return d.lines.length === 0
+    && d.assets.total === 0 && d.liabilities.total === 0 && d.equity.total === 0;
+}
+
 export default function BalanceSheetPage() {
   const [asOf, setAsOf] = useUrlState('asOf', toLocalDateStr(new Date()));
   const [compare, setCompare] = useUrlBoolean('compare');
 
-  // For a balance sheet snapshot, the previous period is the end of the prior equivalent window.
-  const prevAsOf = useMemo(() => compare ? previousPeriod(asOf, asOf).end : null, [compare, asOf]);
+  // Audit R-11 — `previousPeriod(asOf, asOf)` retournait LA VEILLE : le bilan
+  // s'affichait « Compare to previous period » en comparant à J-1, ce qui pour
+  // un instantané de bilan ne dit rien (les soldes bougent peu en 24 h). La
+  // comparaison utile sur un snapshot est la même date un mois plus tôt, et le
+  // libellé le dit maintenant explicitement.
+  const prevAsOf = useMemo(() => {
+    if (!compare) return null;
+    const d = new Date(`${asOf}T00:00:00Z`);
+    const target = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() - 1, d.getUTCDate()));
+    // Un 31 reporté sur un mois court déborde (31 mars → 31 février = 3 mars) :
+    // on retombe alors sur le dernier jour du mois visé.
+    if (target.getUTCMonth() !== (d.getUTCMonth() + 11) % 12) {
+      return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 0)).toISOString().slice(0, 10);
+    }
+    return target.toISOString().slice(0, 10);
+  }, [compare, asOf]);
+
+  // Le solde affiché est CUMULÉ jusqu'à `asOf`. Ouvrir le grand livre sur la
+  // seule journée `asOf` (ce que faisait le drill-down) ne montrait donc jamais
+  // la composition du solde cliqué. On ouvre l'exercice en cours jusqu'à `asOf`.
+  const drilldownStart = `${asOf.slice(0, 4)}-01-01`;
 
   const { data, isLoading, error } = useBalanceSheet(asOf);
   const { data: prevData } = useBalanceSheet(prevAsOf ?? asOf);
@@ -70,6 +95,11 @@ export default function BalanceSheetPage() {
     <ReportPage
       title="Balance Sheet"
       subtitle="Assets, liabilities and equity as of a chosen date. CYE computed live."
+      isEmpty={!isLoading && !error && data !== undefined && isBlankBalanceSheet(data)}
+      emptyState={{
+        title: 'No balances',
+        description: 'No account carries a balance as of this date.',
+      }}
       filters={
         <div className="flex items-center gap-3">
           <label className="flex items-center gap-1 text-sm text-text-secondary">
@@ -91,7 +121,7 @@ export default function BalanceSheetPage() {
               data-testid="compare-toggle"
               className="h-3.5 w-3.5"
             />
-            <span>Compare to previous period</span>
+            <span>Compare to 1 month earlier</span>
           </label>
           {data && (
             <ExportButtons
@@ -149,7 +179,7 @@ export default function BalanceSheetPage() {
                   </tr>
                   {showDelta && (
                     <tr>
-                      <td className="py-1 text-xs text-text-secondary">vs prev. period</td>
+                      <td className="py-1 text-xs text-text-secondary">vs 1 month earlier</td>
                       <td className="py-1 text-right"><DeltaPct current={data.assets.total} previous={prevData.assets.total} /></td>
                     </tr>
                   )}
@@ -174,7 +204,7 @@ export default function BalanceSheetPage() {
                   </tr>
                   {showDelta && (
                     <tr>
-                      <td className="py-1 text-xs text-text-secondary">vs prev. period</td>
+                      <td className="py-1 text-xs text-text-secondary">vs 1 month earlier</td>
                       <td className="py-1 text-right"><DeltaPct current={data.liabilities.total} previous={prevData.liabilities.total} /></td>
                     </tr>
                   )}
@@ -197,7 +227,7 @@ export default function BalanceSheetPage() {
                   </tr>
                   {showDelta && (
                     <tr>
-                      <td className="py-1 text-xs text-text-secondary">vs prev. period</td>
+                      <td className="py-1 text-xs text-text-secondary">vs 1 month earlier</td>
                       <td className="py-1 text-right"><DeltaPct current={data.equity.total} previous={prevData.equity.total} /></td>
                     </tr>
                   )}
@@ -230,7 +260,7 @@ export default function BalanceSheetPage() {
                           entity="account"
                           id={l.account_id}
                           label={l.code}
-                          filter={{ start: asOf, end: asOf }}
+                          filter={{ start: drilldownStart, end: asOf }}
                           icon={false}
                         />
                       </td>

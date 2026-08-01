@@ -324,6 +324,11 @@ export default function ProductionYieldPage(): JSX.Element {
     <ReportPage
       title="Production Yield"
       subtitle="Top-10 batch variance outliers and per-recipe trend over the window."
+      isEmpty={!isLoading && !error && data !== undefined && allRows.length === 0}
+      emptyState={{
+        title: 'No production batches',
+        description: 'No production batch recorded in the selected window.',
+      }}
       filters={
         <>
           <DateRangePicker

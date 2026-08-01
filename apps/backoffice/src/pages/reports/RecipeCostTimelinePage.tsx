@@ -84,7 +84,7 @@ export function RecipeCostTimelinePage(): JSX.Element {
     },
   });
 
-  const rows = q.data ?? [];
+  const rows = useMemo(() => q.data ?? [], [q.data]);
   const productName = rows[0]?.product_name ?? 'Recipe Cost Timeline';
 
   const rowsWithDelta = useMemo<TimelineRowWithDelta[]>(() => {
@@ -121,6 +121,12 @@ export function RecipeCostTimelinePage(): JSX.Element {
     <ReportPage
       title={productName}
       subtitle="Cost-per-unit history for this recipe."
+      isEmpty={!q.isLoading && !q.error && rows.length === 0}
+      emptyState={{
+        title: 'No cost history',
+        description: 'No cost history for this product in the selected window.',
+        'data-testid': 'empty-timeline',
+      }}
       filters={
         <>
           <DateRangePicker
@@ -158,11 +164,6 @@ export function RecipeCostTimelinePage(): JSX.Element {
       {q.error && (
         <p role="alert" className="text-sm text-danger">
           {(q.error).message}
-        </p>
-      )}
-      {!q.isLoading && !q.error && rows.length === 0 && (
-        <p className="text-sm text-text-secondary" data-testid="empty-timeline">
-          No cost history for this product in the selected window.
         </p>
       )}
       {rows.length > 0 && (

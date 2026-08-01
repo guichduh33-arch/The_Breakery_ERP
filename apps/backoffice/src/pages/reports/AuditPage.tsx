@@ -8,7 +8,7 @@
 // useAuditLogs already accepted but the page never exposed) + an expandable
 // per-row detail showing `metadata` (audit_logs.metadata — free-form
 // context). NOTE: `audit_logs.payload` (the before/after diff column, S19)
-// is NOT selected by get_audit_logs_v1/_v2 today, so it can't be surfaced
+// is NOT selected by get_audit_logs_v3 today, so it can't be surfaced
 // here without an additive RPC bump (out of scope — this task is UI-only,
 // no migration; flagged in the session report as a fast-follow).
 
@@ -59,6 +59,8 @@ export default function AuditPage(): JSX.Element {
   if (filters.actorId !== '') rpcFilters.actorId = filters.actorId;
   if (filters.action !== '') rpcFilters.action = filters.action;
   if (filters.entityType !== '') rpcFilters.entityType = filters.entityType;
+  if (filters.dateStart !== '') rpcFilters.dateStart = filters.dateStart;
+  if (filters.dateEnd !== '') rpcFilters.dateEnd = filters.dateEnd;
 
   const {
     data,

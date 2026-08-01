@@ -7104,29 +7104,13 @@ export type Database = {
         Returns: Json
       }
       format_type_string: { Args: { "": string }; Returns: string }
-      get_audit_logs_v1: {
+      get_audit_logs_v3: {
         Args: {
           p_action?: string
           p_actor_id?: string
           p_cursor?: string
-          p_entity_type?: string
-          p_limit?: number
-        }
-        Returns: {
-          action: string
-          actor_id: string
-          created_at: string
-          entity_id: string
-          entity_type: string
-          id: number
-          metadata: Json
-        }[]
-      }
-      get_audit_logs_v2: {
-        Args: {
-          p_action?: string
-          p_actor_id?: string
-          p_cursor?: string
+          p_date_end?: string
+          p_date_start?: string
           p_entity_id?: string
           p_entity_type?: string
           p_limit?: number

@@ -2,11 +2,11 @@
 //
 // Settings History view (ADR-006 décision 9) — merged, cursor-paginated feed
 // of `setting.update` (business_config via set_setting_vN) and
-// `b2b_settings.updated` audit entries, read through get_audit_logs_v2.
+// `b2b_settings.updated` audit entries, read through get_audit_logs_v3.
 // `audit_logs` is admin_read RLS-gated and the RPC is SECURITY INVOKER, so a
 // non-admin gets an empty feed by design (the route is also admin-gated).
 //
-// Two actions → two infinite queries merged client-side: get_audit_logs_v2
+// Two actions → two infinite queries merged client-side: get_audit_logs_v3
 // only takes a single `p_action` equality. Global ordering across the two
 // feeds is only guaranteed up to the older of the two page cursors, which is
 // acceptable at this volume (~40 rows per action after two months) — the
@@ -95,7 +95,7 @@ function useAuditFeed(action: string) {
       const cursor = pageParam as string | null;
       if (cursor !== null) args.p_cursor = cursor;
 
-      const { data, error } = await supabase.rpc('get_audit_logs_v2', args);
+      const { data, error } = await supabase.rpc('get_audit_logs_v3', args);
       if (error) throw error;
       return (data ?? []).map((r) => ({
         id:         Number(r.id),

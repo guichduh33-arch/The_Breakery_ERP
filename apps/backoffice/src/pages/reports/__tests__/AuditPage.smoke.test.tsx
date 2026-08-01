@@ -4,7 +4,7 @@
 // Audit Log page. Proves:
 //   1. Actor/action/entity filters are wired onto useAuditLogs' params.
 //   2. Clicking a row expands its metadata detail (JSON rendered).
-//   3. `audit_logs.payload` is NOT selected by get_audit_logs_v1/_v2 today
+//   3. `audit_logs.payload` is NOT selected by get_audit_logs_v3 today
 //      (verified against the RPC definitions) — only `metadata` is shown.
 //      This is the documented, in-scope deviation (brief allows "payload
 //      et/ou metadata"); adding `payload` to the RPC would need a migration,

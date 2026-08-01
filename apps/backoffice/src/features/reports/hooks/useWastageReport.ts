@@ -19,9 +19,28 @@ export interface WastageReportLine {
   recorded_by?: string | null;
 }
 
+// Audit R-09 — la RPC calcule déjà cette ventilation (manuel vs péremption, en
+// qty et en valeur), que le hook jetait : la tuile du hub promet « Manual waste
+// + auto spoilage by product & lot » alors que la page n'affichait qu'une liste
+// de lignes brutes, sans jamais répondre à « quel produit me coûte le plus ».
+export interface WastageByProductRow {
+  product_id:         string;
+  product_name:       string;
+  manual_waste_qty:   number;
+  manual_waste_value: number;
+  spoilage_qty:       number;
+  spoilage_value:     number;
+  total_qty:          number;
+  total_value:        number;
+}
+
 export interface WastageReportData {
   lines:       WastageReportLine[];
+  by_product:  WastageByProductRow[];
   total_value: number;
+  /** Ventilation du total : perte saisie manuellement vs péremption auto. */
+  manual_value:   number;
+  spoilage_value: number;
   period:      { start: string; end: string };
   /** Serveur : les lignes de détail sont plafonnées à 500. */
   truncated:   boolean;
@@ -64,8 +83,24 @@ export function useWastageReport(params: UseWastageReportParams) {
       const summary = asRecord(raw.summary);
       const period  = asRecord(raw.period);
       const rawLines = Array.isArray(raw.lines) ? (raw.lines as unknown[]) : [];
+      const rawByProduct = Array.isArray(raw.by_product) ? (raw.by_product as unknown[]) : [];
 
       return {
+        by_product: rawByProduct.map((entry): WastageByProductRow => {
+          const p = asRecord(entry);
+          return {
+            product_id:         toStr(p.product_id),
+            product_name:       toStr(p.product_name, '—'),
+            manual_waste_qty:   toNum(p.manual_waste_qty),
+            manual_waste_value: toNum(p.manual_waste_value),
+            spoilage_qty:       toNum(p.spoilage_qty),
+            spoilage_value:     toNum(p.spoilage_value),
+            total_qty:          toNum(p.total_qty),
+            total_value:        toNum(p.total_value),
+          };
+        }),
+        manual_value:   toNum(summary.total_manual_waste_value),
+        spoilage_value: toNum(summary.total_spoilage_value),
         lines: rawLines.map((line): WastageReportLine => {
           const l = asRecord(line);
           return {

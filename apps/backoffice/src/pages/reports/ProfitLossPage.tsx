@@ -17,7 +17,7 @@ import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 import { useProfitLoss } from '@/features/reports/hooks/useProfitLoss.js';
 import { useUrlState, useUrlBoolean } from '@/hooks/useUrlState.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
-import type { PnlLine } from '@/features/reports/hooks/useProfitLoss.js';
+import type { PnlLine, ProfitLoss } from '@/features/reports/hooks/useProfitLoss.js';
 
 const pnlLineColumns: CsvColumn<PnlLine>[] = [
   { header: 'Code',    accessor: (r) => r.code,    format: 'text' },
@@ -33,6 +33,12 @@ function defaultStart(): string {
 
 function fmt(n: number): string {
   return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+}
+
+/** Aucune écriture sur la période. */
+function isBlankPnl(d: ProfitLoss): boolean {
+  return d.lines.length === 0
+    && d.revenue.total === 0 && d.cogs.total === 0 && d.opex.total === 0;
 }
 
 export default function ProfitLossPage() {
@@ -54,6 +60,11 @@ export default function ProfitLossPage() {
     <ReportPage
       title="Profit & Loss"
       subtitle="Revenue, COGS and operating expenses across a date range."
+      isEmpty={!isLoading && !error && data !== undefined && isBlankPnl(data)}
+      emptyState={{
+        title: 'No activity',
+        description: 'No journal-entry activity in the selected date range.',
+      }}
       filters={
         <div className="flex items-center gap-3">
           <DateRangePickerWithCompare

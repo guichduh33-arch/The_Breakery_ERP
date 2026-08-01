@@ -4,15 +4,26 @@
 // S32 / Wave 3.I : method cells now drill into /backoffice/orders filtered by
 // payment_method + start/end (DrilldownLink entity="order_list").
 
+import { useMemo } from 'react';
+import {
+  Area, AreaChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis,
+} from 'recharts';
 import { toLocalDateStr } from '@breakery/domain';
 import type { CsvColumn } from '@breakery/domain';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
+import { ChartCard } from '@/features/reports/components/ChartCard.js';
 import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 import { useUrlState } from '@/hooks/useUrlState.js';
 import {
+  categoricalColor,
+  CHART_GRID_STROKE, CHART_AXIS_TICK, CHART_TOOLTIP_STYLE,
+  formatIdrFull, formatIdrCompact,
+} from '@/features/reports/utils/chartColors.js';
+import {
   usePaymentsByMethod,
+  PAYMENT_METHOD_KEYS,
   type PaymentByMethodLine,
 } from '@/features/reports/hooks/usePaymentsByMethod.js';
 
@@ -43,6 +54,14 @@ export default function PaymentByMethodPage() {
   const { data, isLoading, error } = usePaymentsByMethod({ start, end });
 
   const lines = data?.lines ?? [];
+  const byDay = useMemo(() => data?.byDay ?? [], [data]);
+
+  // N'empiler que les méthodes réellement utilisées sur la période : le pivot
+  // serveur renvoie les 10 colonnes systématiquement, dont 7 à zéro en général.
+  const activeMethods = useMemo(
+    () => PAYMENT_METHOD_KEYS.filter((k) => byDay.some((d) => d[k] > 0)),
+    [byDay],
+  );
 
   return (
     <ReportPage
@@ -80,6 +99,52 @@ export default function PaymentByMethodPage() {
         <p className="text-sm text-danger" role="alert">
           {error.message ?? 'Failed to load report.'}
         </p>
+      )}
+      {data && activeMethods.length > 0 && (
+        <ChartCard
+          title="Daily trend"
+          subtitle="Collected per day, stacked by payment method"
+          className="mb-6"
+        >
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={byDay} margin={{ top: 8, right: 12, bottom: 0, left: 8 }}>
+                <CartesianGrid stroke={CHART_GRID_STROKE} strokeDasharray="3 3" vertical={false} />
+                <XAxis
+                  dataKey="day"
+                  tickFormatter={(d: string) => d.slice(5)}
+                  tick={{ fontSize: 11, fill: CHART_AXIS_TICK }}
+                  tickLine={false}
+                />
+                <YAxis
+                  tickFormatter={formatIdrCompact}
+                  tick={{ fontSize: 11, fill: CHART_AXIS_TICK }}
+                  tickLine={false}
+                  width={72}
+                />
+                <Tooltip
+                  formatter={(v: number, n: string) => [formatIdrFull(v), n]}
+                  contentStyle={CHART_TOOLTIP_STYLE}
+                />
+                <Legend wrapperStyle={{ fontSize: 12 }} />
+                {activeMethods.map((m, i) => (
+                  <Area
+                    key={m}
+                    type="monotone"
+                    dataKey={m}
+                    name={m.replace('_', ' ')}
+                    // stackId partagé : les méthodes se somment au total du jour,
+                    // les empiler est la lecture juste (pas des séries rivales).
+                    stackId="pm"
+                    stroke={categoricalColor(i)}
+                    fill={categoricalColor(i)}
+                    fillOpacity={0.85}
+                  />
+                ))}
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </ChartCard>
       )}
       {data && (
         <table className="w-full text-sm">

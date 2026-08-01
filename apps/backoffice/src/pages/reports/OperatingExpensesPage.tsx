@@ -5,7 +5,7 @@
 // the AMBER cost-family language. Filterable by period, category and status.
 
 import { useMemo, useState } from 'react';
-import { selectClassName, cn } from '@breakery/ui';
+import { selectClassName, cn, Card, CardContent, EmptyState } from '@breakery/ui';
 import {
   Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
@@ -65,6 +65,7 @@ export default function OperatingExpensesPage() {
   const donut = useMemo(() => rows.map((r) => ({ name: r.name, value: r.total })), [rows]);
   const trend = data?.by_day ?? [];
   const maxShare = rows.reduce((m, r) => Math.max(m, r.share_pct), 0) || 1;
+  const isEmpty = !isLoading && !error && data !== undefined && rows.length === 0;
 
   return (
     <div className="space-y-6">
@@ -116,6 +117,20 @@ export default function OperatingExpensesPage() {
         </p>
       )}
 
+      {isEmpty && (
+        <Card>
+          <CardContent className="pt-6">
+            <EmptyState
+              size="sm"
+              title="No expenses"
+              description="No expense matches the selected period, category and status."
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      {!isEmpty && (
+      <>
       {/* KPI strip */}
       <div className="grid grid-cols-3 gap-4">
         <div className="relative overflow-hidden rounded-lg border border-border-subtle bg-surface-2 p-4">
@@ -188,13 +203,6 @@ export default function OperatingExpensesPage() {
             </tr>
           </thead>
           <tbody>
-            {rows.length === 0 && (
-              <tr>
-                <td className="py-3 text-text-secondary" colSpan={5}>
-                  No expenses for the selected filters.
-                </td>
-              </tr>
-            )}
             {rows.map((r, i) => (
               <tr key={r.category_id} className="border-b border-border-subtle">
                 <td className="py-2 font-medium text-text-primary">{r.name}</td>
@@ -217,6 +225,8 @@ export default function OperatingExpensesPage() {
           </tbody>
         </table>
       </ChartCard>
+      </>
+      )}
     </div>
   );
 }
