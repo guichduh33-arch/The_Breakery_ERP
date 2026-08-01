@@ -7670,7 +7670,7 @@ export type Database = {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
-      get_wastage_report_v1: {
+      get_wastage_report_v2: {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }

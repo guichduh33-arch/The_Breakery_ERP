@@ -161,9 +161,17 @@ export default function PurchaseItemsPage() {
       {data && (
         <div className="space-y-6">
           {/* Top products by purchased value */}
+          {/* Audit R-08 : `topProducts` agrège `lines`, que la RPC plafonne à
+              1000. Quand la troncature est active, le classement porte sur un
+              sous-ensemble — le sous-titre le dit au lieu de laisser croire à un
+              Top 8 de la période entière. */}
           <ChartCard
             title="Top products by value"
-            subtitle="Top 8 purchased products by total value"
+            subtitle={
+              data.truncated
+                ? 'Top 8 across the first 1000 lines only — not the whole period'
+                : 'Top 8 purchased products by total value'
+            }
             accent={COGS_BASE}
           >
             <div className="h-72 w-full">

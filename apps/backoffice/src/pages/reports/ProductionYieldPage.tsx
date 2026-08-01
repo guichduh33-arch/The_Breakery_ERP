@@ -15,7 +15,10 @@
 
 import { useMemo, useState, type JSX } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { toLocalDateStr, buildCsv, downloadCsv, type CsvColumn } from '@breakery/domain';
+import {
+  toLocalDateStr, toLocalDayStartUTC, toLocalDayEndUTC,
+  buildCsv, downloadCsv, type CsvColumn,
+} from '@breakery/domain';
 import { Button, cn } from '@breakery/ui';
 import { supabase } from '@/lib/supabase.js';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
@@ -66,15 +69,26 @@ const YIELD_CSV_COLUMNS: CsvColumn<YieldRow>[] = [
   { header: 'yield_variance_reason', accessor: (r) => r.yield_variance_reason },
 ];
 
+/** Server-side row cap — surfaced to the user via `truncated`. */
+const YIELD_ROW_CAP = 1000;
+
+interface YieldResult {
+  rows:      YieldRow[];
+  truncated: boolean;
+}
+
 function useProductionYield(start: string, end: string) {
-  return useQuery<YieldRow[]>({
+  return useQuery<YieldResult>({
     queryKey: ['reports', 'production-yield', start, end] as const,
     staleTime: 60_000,
-    queryFn: async (): Promise<YieldRow[]> => {
-      // production_date is timestamptz ; pad start with 00:00 and end with
-      // the next-day boundary so the report is inclusive of the end date.
-      const startTs = `${start}T00:00:00Z`;
-      const endTs   = `${end}T23:59:59Z`;
+    queryFn: async (): Promise<YieldResult> => {
+      // production_date is timestamptz. Audit R-03 : les bornes étaient écrites
+      // `${start}T00:00:00Z` / `${end}T23:59:59Z`, donc en UTC, alors que
+      // `start`/`end` sont des dates MÉTIER (Asia/Makassar, UTC+8). La fenêtre
+      // était décalée de 8 h dans les deux sens. On passe par les helpers du
+      // domaine, qui résolvent le fuseau.
+      const startTs = toLocalDayStartUTC(start).toISOString();
+      const endTs   = toLocalDayEndUTC(end).toISOString();
       const { data, error } = await supabase
         .from('production_records')
         .select('id, production_number, product_id, production_date, expected_yield_qty, actual_yield_qty, yield_variance_pct, yield_variance_reason')
@@ -82,7 +96,7 @@ function useProductionYield(start: string, end: string) {
         .lte('production_date', endTs)
         .is('reverted_at', null)
         .order('production_date', { ascending: false })
-        .limit(1000);
+        .limit(YIELD_ROW_CAP);
       if (error) throw error;
       const rows = data ?? [];
 
@@ -97,17 +111,20 @@ function useProductionYield(start: string, end: string) {
         for (const p of prods ?? []) nameById[p.id] = p.name;
       }
 
-      return rows.map((r): YieldRow => ({
-        id: r.id,
-        production_number: r.production_number,
-        product_id: r.product_id,
-        product_name: nameById[r.product_id] ?? '—',
-        production_date: r.production_date,
-        expected_yield_qty: r.expected_yield_qty === null ? null : Number(r.expected_yield_qty),
-        actual_yield_qty:   r.actual_yield_qty   === null ? null : Number(r.actual_yield_qty),
-        yield_variance_pct: r.yield_variance_pct === null ? null : Number(r.yield_variance_pct),
-        yield_variance_reason: r.yield_variance_reason,
-      }));
+      return {
+        rows: rows.map((r): YieldRow => ({
+          id: r.id,
+          production_number: r.production_number,
+          product_id: r.product_id,
+          product_name: nameById[r.product_id] ?? '—',
+          production_date: r.production_date,
+          expected_yield_qty: r.expected_yield_qty === null ? null : Number(r.expected_yield_qty),
+          actual_yield_qty:   r.actual_yield_qty   === null ? null : Number(r.actual_yield_qty),
+          yield_variance_pct: r.yield_variance_pct === null ? null : Number(r.yield_variance_pct),
+          yield_variance_reason: r.yield_variance_reason,
+        })),
+        truncated: rows.length >= YIELD_ROW_CAP,
+      };
     },
   });
 }
@@ -271,9 +288,11 @@ export default function ProductionYieldPage(): JSX.Element {
   const [drillProductId, setDrillProductId] = useState<string | null>(null);
   const { data, isLoading, error } = useProductionYield(start, end);
 
+  const allRows = useMemo(() => data?.rows ?? [], [data]);
+
   const yieldRows = useMemo(
-    () => (data ?? []).filter((r) => r.yield_variance_pct !== null),
-    [data],
+    () => allRows.filter((r) => r.yield_variance_pct !== null),
+    [allRows],
   );
 
   const outliers = useMemo(() => {
@@ -282,7 +301,7 @@ export default function ProductionYieldPage(): JSX.Element {
     return rows.slice(0, 10);
   }, [yieldRows]);
 
-  const trend = useMemo(() => aggregateTrend(data ?? []), [data]);
+  const trend = useMemo(() => aggregateTrend(allRows), [allRows]);
 
   const drillRows = useMemo(() => {
     if (drillProductId === null) return [];
@@ -329,6 +348,16 @@ export default function ProductionYieldPage(): JSX.Element {
       {error && (
         <p role="alert" className="text-sm text-danger">
           {(error).message ?? 'Failed to load report.'}
+        </p>
+      )}
+      {data?.truncated === true && (
+        <p
+          className="mb-3 rounded border border-warning/30 bg-warning-soft px-3 py-2 text-sm text-warning"
+          role="status"
+          data-testid="yield-truncated-banner"
+        >
+          First {YIELD_ROW_CAP} batches shown — outliers and per-recipe trend are
+          computed on this subset only. Narrow the date range for a complete picture.
         </p>
       )}
       {data !== undefined && (
