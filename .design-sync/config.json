@@ -8,13 +8,11 @@
   "cssEntry": "dist/ds-preview.css",
   "extraFonts": [
     "../../apps/pos/node_modules/@fontsource-variable/inter/index.css",
-    "../../apps/pos/node_modules/@fontsource-variable/fraunces/index.css",
     "../../apps/pos/node_modules/@fontsource-variable/jetbrains-mono/index.css",
     "../../apps/pos/node_modules/@fontsource/playfair-display/400-italic.css",
-    "../../apps/backoffice/node_modules/@fontsource-variable/ibm-plex-sans/index.css",
-    "../../apps/backoffice/node_modules/@fontsource/ibm-plex-mono/latin-400.css",
-    "../../apps/backoffice/node_modules/@fontsource/ibm-plex-mono/latin-500.css",
-    "../../apps/backoffice/node_modules/@fontsource/ibm-plex-mono/latin-600.css"
+    "../../apps/pos/node_modules/@fontsource/playfair-display/400.css",
+    "../../apps/pos/node_modules/@fontsource/playfair-display/600.css",
+    "../../apps/pos/node_modules/@fontsource/playfair-display/700.css"
   ],
   "runtimeFontPrefixes": ["Inter Fallback"],
   "readmeHeader": ".design-sync/conventions.md",

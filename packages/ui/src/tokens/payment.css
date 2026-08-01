@@ -5,9 +5,17 @@
  * `bg-emerald-600 / bg-violet-500 / bg-amber-500` literals scattered across
  * payment flows. Exposed as Tailwind aliases `bg-payment-cash` etc.
  */
+/*
+ * Audit cohérence 2026-08-01 — `cash` et `voucher` étaient des COPIES littérales
+ * de --green-base / --gold-base ; elles ont survécu au changement de palette et
+ * pointaient donc sur l'ancien vert et l'ancien or. Elles DÉRIVENT maintenant du
+ * token qu'elles étaient censées échoir, et suivent donc le thème.
+ * `card` et `qris` restent des teintes d'identité propres (elles n'échoient
+ * rien) — ce sont des ÉTIQUETTES de moyen de paiement, jamais des boutons.
+ */
 :root, .dark {
-  --payment-cash:    #10b981;   /* echoes --green-base; explicit alias for intent */
-  --payment-card:    #8b5cf6;   /* violet — distinct from gold (accent) */
-  --payment-qris:    #f59e0b;   /* amber — distinct from warning by context */
-  --payment-voucher: #c9a557;   /* echoes --gold-base */
+  --payment-cash:    var(--green-base);
+  --payment-card:    #8b5cf6;   /* violet — distinct de l'accent */
+  --payment-qris:    #f59e0b;   /* amber — distinct de warning par le contexte */
+  --payment-voucher: var(--gold-base);
 }

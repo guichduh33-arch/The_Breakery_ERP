@@ -1,20 +1,19 @@
 @import '@breakery/ui/tokens.css';
 
-/* Body font (Backoffice) — IBM Plex Sans, a professional enterprise-software
- * workhorse, more legible than Inter on dense ERP tables. Scoped to the
- * Backoffice only: the body token is overridden under `.theme-backoffice`
- * in @breakery/ui colors.css, so the POS stays on Inter.
- * Fraunces / JetBrains Mono are variable-axis (single file). Playfair Display
- * loads italic 400 only (branding + dashboard titles). */
-@import '@fontsource-variable/ibm-plex-sans';
-/* Amounts / numbers (Backoffice) — IBM Plex Mono, a tabular monospace with very
- * clear digit forms, family-matched to IBM Plex Sans. Overrides --font-mono and
- * --font-data under `.theme-backoffice`. No variable build exists, so we load
- * the three weights actually used (400 body, 500 medium, 600 semibold). */
-@import '@fontsource/ibm-plex-mono/latin-400.css';
-@import '@fontsource/ibm-plex-mono/latin-500.css';
-@import '@fontsource/ibm-plex-mono/latin-600.css';
+/* Audit cohérence 2026-08-01 — le Backoffice ne remappe plus les polices : il
+ * partage la pile canonique du système (Inter corps, Playfair display,
+ * JetBrains Mono data/montants). Les @import IBM Plex Sans / IBM Plex Mono ont
+ * donc été retirés — les familles n'étaient plus référencées par aucun token.
+ * Inter / JetBrains Mono sont variable-axis (fichier unique) ; Playfair Display
+ * charge l'italique 400 (marque) ET les romaines 400/600/700 — les titres de
+ * page rendent en `font-serif`/`font-display` sans `italic`, et sans face
+ * romaine chargée le navigateur retombe sur Times New Roman. */
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/jetbrains-mono';
 @import '@fontsource/playfair-display/400-italic.css';
+@import '@fontsource/playfair-display/400.css';
+@import '@fontsource/playfair-display/600.css';
+@import '@fontsource/playfair-display/700.css';
 
 @tailwind base;
 @tailwind components;

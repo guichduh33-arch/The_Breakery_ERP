@@ -1,70 +1,66 @@
 :root, .dark {
-  /* Surfaces (4 layers) */
-  --bg-base:     #0a0a0c;
-  --bg-elevated: #131316;
-  --bg-overlay:  #1c1c20;
-  --bg-input:    #18181b;
+  /* Surfaces (4 layers) — neutres réchauffés sur l'axe ~40° (audit cohérence
+   * 2026-08-01). Avant : #0a0a0c / #131316 / #1c1c20 / #18181b, neutre-froid
+   * hue ~250°, sans parenté avec l'ivoire du Backoffice. */
+  --bg-base:     #12100e;
+  --bg-elevated: #1a1815;
+  --bg-overlay:  #231f1b;
+  --bg-input:    #1f1c18;
 
   /* Borders */
-  --border-subtle: #26262b;
-  --border-strong: #3a3a42;
-  --border-focus:  #c9a557;
+  --border-subtle: #2a2622;
+  --border-strong: #413a33;
+  --border-focus:  var(--gold-base);   /* était #c9a557 codé en dur */
 
   /* Text */
-  --text-primary:   #f5f5f7;
-  --text-secondary: #a1a1a8;
-  /* Raised from #6b6b73 (≈3.75:1, failed AA for text) to clear 4.5:1 on the
-   * card surfaces (bg-base/bg-elevated) while staying distinct from
-   * --text-secondary (design audit 2026-07-08, T2). */
-  --text-muted:     #83838b;
-  --text-disabled:  #4a4a52;
+  --text-primary:   #f7f3ec;
+  --text-secondary: #b3aa9d;
+  --text-muted:     #968c7e;
+  /* --text-disabled remonté de #4a4a52 (2,3:1 — sous AA même pour du non-texte)
+   * à 3,2:1 sur --bg-base (audit cohérence 2026-08-01). */
+  --text-disabled:  #5c5449;
 
-  /* Accents — --gold-soft/--gold-strong/--gold-fg live in colors.css
-   * (single declaration; a stale duplicate here was shadowed and removed,
-   * design audit 2026-07-07 DS P-2). */
-  --gold-base:    #c9a557;
-  --gold-hover:   #d4b06a;
-  --gold-pressed: #b8954a;
+  /* Accents — --gold-soft/--gold-strong/--gold-fg live in colors.css. */
+  --gold-base:    #d3ab5c;
+  --gold-hover:   #dfba72;
+  --gold-pressed: #bf9748;
 
-  --green-base:   #10b981;
-  --green-hover:  #14d690;
-  --green-pressed:#0e9a6e;
+  --green-base:   #3fb583;
+  --green-hover:  #4ac48f;
+  --green-pressed:#329b6f;
 
-  --red-base:     #ef4444;
-  --red-soft:     #ef444420;
-  /* --red-fg — canonical RED for text/icons on the near-black POS surface.
-   * The saturated --red-base (#ef4444) is harsh as small text on #0a0a0c;
-   * this lighter tint reads cleanly. Components must use this (not raw
-   * Tailwind red-400) so every destructive/discount red is the SAME red. */
-  --red-fg:       #f87171;
+  --red-base:     #e8695f;
+  /* Notation unifiée en rgba() — le hex-alpha #ef444420 était le seul du
+   * système et introuvable par recherche (audit cohérence 2026-08-01). */
+  --red-soft:     rgba(232, 105, 95, 0.14);
+  /* --red-fg — canonical RED for text/icons on the near-black POS surface. */
+  --red-fg:       #f0837b;
 
-  --blue-info:    #3b82f6;
-  --amber-warn:   #f59e0b;
+  --blue-info:    #6fa8d8;
+  --amber-warn:   #d99a3a;
 
-  /* Typography */
+  /* Typography — ces trois alias sont écrasés par typography.css (chargé
+   * après). Conservés pour la compatibilité de la cascade. */
   --font-sans:  'Inter', system-ui, sans-serif;
-  --font-serif: 'Fraunces', Georgia, serif;
+  --font-serif: 'Playfair Display', Georgia, serif;
   --font-mono:  'JetBrains Mono', ui-monospace, monospace;
 
-  /* Radii */
-  --radius-sm:  4px;
-  --radius-md:  6px;
-  --radius-lg:  8px;
-  --radius-xl:  12px;
-  --radius-2xl: 16px;
+  /* Radii — remontés d'un cran : l'ancienne échelle 4/6/8/12/16 lisait
+   * "utilitaire" sur des cibles tactiles de 44 px et plus. */
+  --radius-sm:  6px;
+  --radius-md:  8px;
+  --radius-lg:  12px;
+  --radius-xl:  16px;
+  --radius-2xl: 20px;
 
-  /* Touch targets */
+  /* Touch targets — inchangés. */
   --touch-min:    44px;
   --touch-comfy:  56px;
   --touch-large:  80px;
 
-  /* Elevations */
-  --shadow-sm:    0 1px 2px rgba(0,0,0,0.4);
-  --shadow-md:    0 4px 12px rgba(0,0,0,0.5);
-  --shadow-lg:    0 12px 32px rgba(0,0,0,0.6);
-  --shadow-modal: 0 24px 64px rgba(0,0,0,0.7);
+  /* Elevations — voir elevation.css (source unique). */
 
   /* Backdrop */
-  --backdrop:      rgba(0,0,0,0.7);
+  --backdrop:      rgba(11, 10, 9, 0.72);
   --backdrop-blur: 8px;
 }

@@ -1,10 +1,10 @@
 @import '@breakery/ui/tokens.css';
 
-/* Session 14 D3 — 4 canonical fonts. Inter / Fraunces / JetBrains Mono are
- * variable-axis (single file). Playfair Display loads italic 400 only
- * (the only weight + style we use for branding + dashboard titles). */
+/* Pile canonique — 3 familles depuis l'audit cohérence 2026-08-01 (Fraunces
+ * retiré du système : --font-data pointe désormais sur le mono). Inter /
+ * JetBrains Mono sont variable-axis (fichier unique). Playfair Display ne
+ * charge que l'italique 400 (branding + titres de tableau de bord). */
 @import '@fontsource-variable/inter';
-@import '@fontsource-variable/fraunces';
 @import '@fontsource-variable/jetbrains-mono';
 /* Playfair Display 400-italic loaded via JS import in main.tsx — Vite's
  * JS resolver handles bare-specifier sub-path CSS imports reliably,

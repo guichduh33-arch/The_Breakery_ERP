@@ -1,17 +1,12 @@
 /*
- * spacing.css — 4-px base spacing scale (Session 14 / Phase 1.A).
+ * spacing.css — 4-px base spacing scale.
  *
- * Session 14 D2 — zero hardcoded spacing. Every gutter, gap, padding the apps
- * use must come from this scale, exposed as Tailwind utilities via the preset
- * (already there for `p-4`, `gap-6`, etc., since Tailwind defaults align with
- * a 4px scale — these tokens make the rules *explicit* and add the gap-12
- * gap-24 sizes the screenshots actually use).
- *
- * Touch-target tokens (luxe-dark.css `--touch-min/comfy/large`) are preserved
- * for back-compat; spacing tokens here cover everything else.
+ * Audit cohérence 2026-08-01 : ajout de --gutter-compact (rush caisse) et
+ * passage de --gutter-card de 24 px à 20 px — 24 px était trop lâche sur les
+ * tuiles produit d'une grille tactile.
  */
 :root, .dark {
-  /* 4-px base scale (Tailwind 1 step = 4px = 0.25rem @ 16px root). */
+  /* 4-px base scale. */
   --space-0:    0;
   --space-px:   1px;
   --space-0_5:  0.125rem;   /* 2px  */
@@ -22,6 +17,7 @@
   --space-4:    1rem;       /* 16px */
   --space-5:    1.25rem;    /* 20px */
   --space-6:    1.5rem;     /* 24px */
+  --space-7:    1.75rem;    /* 28px — NOUVEAU, palier manquant */
   --space-8:    2rem;       /* 32px */
   --space-10:   2.5rem;     /* 40px */
   --space-12:   3rem;       /* 48px */
@@ -31,7 +27,8 @@
   --space-32:   8rem;       /* 128px */
 
   /* Semantic spacing — name what it means, not the size. */
-  --gutter-card:    var(--space-6);   /* inside card */
-  --gutter-page:    var(--space-8);   /* page outer */
+  --gutter-compact: var(--space-3);   /* NOUVEAU — densité rush */
+  --gutter-card:    var(--space-5);   /* inside card — était space-6 */
+  --gutter-page:    var(--space-7);   /* page outer — était space-8 */
   --gutter-section: var(--space-12);  /* between sections */
 }

@@ -13,7 +13,9 @@
 //   - 'currency' formats with formatIdr (Rp prefix). Renders in JetBrains
 //     Mono for tabular alignment.
 //   - 'percent'  appends '%' suffix. Mono.
-//   - 'number'   raw locale-formatted. Fraunces serif (data viz).
+//   - 'number'   raw locale-formatted. Rendu en `font-data`, qui pointe sur
+//     JetBrains Mono dans les deux thèmes depuis l'audit cohérence 2026-08-01
+//     (Fraunces retiré du système).
 
 import { formatIdr } from '@breakery/utils';
 import { ArrowDown, ArrowUp, Minus, type LucideIcon } from 'lucide-react';

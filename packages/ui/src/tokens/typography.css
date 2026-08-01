@@ -1,56 +1,57 @@
 /*
- * typography.css — canonical type stack tokens (Session 14 / Phase 1.A).
+ * typography.css — canonical type stack tokens.
  *
- * Session 14 D3 — "4 polices canoniques" :
- *   --font-display  Playfair Display (serif italic, branding + dashboard titles)
+ * Audit cohérence 2026-08-01 — deux changements :
+ *
+ *   1. Fraunces est RETIRÉ du système. Il ne servait qu'à --font-data (valeurs
+ *      KPI) et entrait en concurrence avec Playfair, l'autre serif. Le
+ *      Backoffice le remplaçait déjà par IBM Plex Mono : la même tuile KPI
+ *      changeait donc de police d'un thème à l'autre. --font-data pointe
+ *      désormais sur le mono dans les DEUX thèmes.
+ *
+ *   2. Le bas de l'échelle typo est décompressé. L'ancienne échelle plaçait
+ *      quatre niveaux (11/13/15/17) dans 6 px — aucune hiérarchie perceptible,
+ *      et 11 px illisible pour une caissière debout à 60 cm de l'écran.
+ *
+ * Pile canonique restante (3 familles) :
+ *   --font-display  Playfair Display (branding + titres, LES DEUX thèmes)
  *   --font-body     Inter            (sans body, ALL chrome + body copy)
- *   --font-data     Fraunces         (serif optical, KPI / data viz)
- *   --font-mono     JetBrains Mono   (monospace tabulaire, montants / timers KDS)
- *
- * Aliases preserved for backward-compat with batch-1 (luxe-dark.css declares
- * --font-sans / --font-serif / --font-mono). The new --font-display token
- * surfaces Playfair, which session 13 did not load.
- *
- * Type-scale also declared here so callers stop hardcoding `text-xl` /
- * `text-3xl` for KPI values — they reference `--type-display-*` instead.
- *
- * Loaded AFTER luxe-dark.css so it can override --font-* if needed.
+ *   --font-mono     JetBrains Mono   (montants, SKU, timers, valeurs KPI)
  */
 :root, .dark {
-  /* Canonical 4-font stack (D3). Variable-font fallbacks first, system last. */
   --font-display: 'Playfair Display', 'Times New Roman', Georgia, serif;
-  /* Brand wordmark face (BrandLogo / BrandMark). Kept separate from
-   * --font-display so a surface can switch heading display copy to a sans
-   * (e.g. the Backoffice) WITHOUT changing the croissant brand wordmark. */
+  /* Brand wordmark face (BrandLogo / BrandMark). */
   --font-brand:   'Playfair Display', 'Times New Roman', Georgia, serif;
   --font-body:    'Inter Variable', 'Inter', 'Inter Fallback', system-ui, -apple-system, sans-serif;
-  --font-data:    'Fraunces Variable', 'Fraunces', Georgia, serif;
   --font-mono:    'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, monospace;
+  /* Valeurs KPI / data — mono tabulaire, identique dans les deux thèmes. */
+  --font-data:    var(--font-mono);
 
-  /* Back-compat aliases — keep code that references the session-13 names working. */
+  /* Back-compat aliases. --font-serif visait --font-data (Fraunces) ; il
+   * pointe maintenant sur le display, ce que les titres attendaient. */
   --font-sans:  var(--font-body);
-  --font-serif: var(--font-data);
+  --font-serif: var(--font-display);
 
-  /* Type scale (D5 — SectionLabel signature MAJUSCULES tracking-large)
-   * Sizes match Tailwind defaults rounded to nearest 0.0625rem (1px @ 16px root). */
-  --type-xs:       0.6875rem;   /* 11px — section labels minor */
-  --type-sm:       0.8125rem;   /* 13px — section labels major */
-  --type-base:     0.9375rem;   /* 15px — body */
-  --type-lg:       1.0625rem;   /* 17px — emphasised body */
-  --type-xl:       1.375rem;    /* 22px — card title */
-  --type-2xl:      1.75rem;     /* 28px — page title */
-  --type-3xl:      2.25rem;     /* 36px — KPI value */
-  --type-display:  3rem;        /* 48px — hero / login mark */
+  /* Type scale — décompressée (audit cohérence 2026-08-01).
+   * Avant : 11 / 13 / 15 / 17 / 22 / 28 / 36 / 48 px */
+  --type-xs:       0.75rem;     /* 12px — section labels minor */
+  --type-sm:       0.875rem;    /* 14px — section labels major */
+  --type-base:     1rem;        /* 16px — body */
+  --type-lg:       1.1875rem;   /* 19px — emphasised body */
+  --type-xl:       1.5rem;      /* 24px — card title */
+  --type-2xl:      1.875rem;    /* 30px — page title */
+  --type-3xl:      2.375rem;    /* 38px — KPI value */
+  --type-display:  3.5rem;      /* 56px — hero / login mark */
 
-  /* Letter-spacing — tracking-widest required for SectionLabel (D5). */
+  /* Letter-spacing — inchangé. */
   --tracking-tight:    -0.01em;
   --tracking-normal:   0;
   --tracking-wide:     0.025em;
   --tracking-wider:    0.05em;
-  --tracking-widest:   0.12em;   /* signature value — matches screenshots */
-  --tracking-ultra:    0.2em;    /* used sparingly for emphasised page headers */
+  --tracking-widest:   0.12em;   /* signature SectionLabel */
+  --tracking-ultra:    0.2em;
 
-  /* Line-heights — denser for headings/data, looser for body. */
+  /* Line-heights — inchangé. */
   --leading-tight:  1.15;
   --leading-snug:   1.3;
   --leading-base:   1.5;
