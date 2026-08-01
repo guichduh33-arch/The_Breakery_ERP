@@ -40,7 +40,11 @@
   --type-lg:       1.1875rem;   /* 19px — emphasised body */
   --type-xl:       1.5rem;      /* 24px — card title */
   --type-2xl:      1.875rem;    /* 30px — page title */
-  --type-3xl:      2.375rem;    /* 38px — KPI value */
+  /* 34px — valeur KPI. Baissé de 38px le 2026-08-01 : à 38px, une valeur
+   * monétaire complète ("Rp 4,850,000") ne tenait plus sur une ligne dans une
+   * tuile de dashboard, JetBrains Mono étant plus large que l'ancien Fraunces
+   * à corps égal. */
+  --type-3xl:      2.125rem;
   --type-display:  3.5rem;      /* 56px — hero / login mark */
 
   /* Letter-spacing — inchangé. */

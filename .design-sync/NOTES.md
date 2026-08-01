@@ -74,12 +74,13 @@
   la carte de DiscountModal coupait sa dernière ligne d'erreur et son pied. Viewport
   remonté à 720x1010. Réflexe : après tout mouvement de `--type-*`, revérifier les
   overrides `cardMode: single`, dont la hauteur est figée à la main.
-- **Point ouvert — KpiTile.** La cellule `DashboardTiles` est notée `needs-work` : la
-  valeur monétaire passe sur deux lignes. Deux causes cumulées, `--type-3xl` monté à
-  38 px et `--font-data` passé de Fraunces à JetBrains Mono (plus large à corps égal).
-  Arbitrage non tranché : baisser le corps, ou acter que la tuile réelle du dashboard
-  est plus large que celle de la preview. Tant que c'est ouvert, le composant reste en
-  `pendingGrade` à chaque re-synchro — c'est voulu, ce n'est pas un bug du dispositif.
+- **`--type-3xl` vaut 34 px, et c'est un arbitrage, pas un arrondi.** La première
+  version du jeu de tokens le posait à 38 px ; à ce corps, une valeur monétaire
+  complète (`Rp 4,850,000`) ne tenait plus sur une ligne dans une tuile de dashboard,
+  JetBrains Mono étant plus large que l'ancien Fraunces à corps égal. Mamat a tranché
+  le 2026-08-01 : on baisse le corps plutôt que d'élargir les tuiles. Le couple
+  « corps de la valeur KPI × largeur de tuile » est donc tendu — le rebumper redonne
+  le même défaut.
 - Les sous-parties de composés Radix rendues hors de leur parent (`DialogClose` sans
   `Dialog`, `TabsList` sans `Tabs`, `ScrollBar` sans `ScrollArea`…) produisent des
   erreurs de console dans leurs cartes plancher. Constaté sur une vingtaine d'entre
@@ -109,8 +110,8 @@
   (TabletOrderCard), montants et produits en dur — stables mais à rafraîchir si le
   format `formatIdr` ou les enums (TenderRowMethod, OrderStatus) évoluent ; le diff
   d'ancre les re-signalera via sourceKeys.
-- **Partiellement vérifié** : 28/81 composants ont des previews notées — au 2026-08-01,
-  27 en `good` et 1 en `needs-work` (KpiTile, voir la section audit) ; les 53 autres
+- **Partiellement vérifié** : 28/81 composants ont des previews notées — toutes en
+  `good` au 2026-08-01, relues sur planche après le lot de tokens ; les 53 autres
   sont des cartes plancher (offre permanente d'authoring incrémental). Les warns
   [FONT_MISSING] listés plus bas sont triés comme légitimes — un warn ABSENT de cette
   liste est nouveau.
