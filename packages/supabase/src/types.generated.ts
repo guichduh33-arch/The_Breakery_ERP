@@ -7129,7 +7129,7 @@ export type Database = {
       get_b2b_settings_v1: { Args: never; Returns: Json }
       get_balance_sheet_data: { Args: { p_as_of?: string }; Returns: Json }
       get_balance_sheet_v2: { Args: { p_as_of_date: string }; Returns: Json }
-      get_basket_analysis_v2: {
+      get_basket_analysis_v3: {
         Args: { p_date_end: string; p_date_start: string; p_top_n?: number }
         Returns: {
           co_occurrence_count: number
@@ -7144,7 +7144,7 @@ export type Database = {
           support_pair: number
         }[]
       }
-      get_cash_flow_v1: {
+      get_cash_flow_v2: {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
@@ -7502,7 +7502,7 @@ export type Database = {
           unit: string
         }[]
       }
-      get_sales_by_category_v2: {
+      get_sales_by_category_v3: {
         Args: { p_date_end: string; p_date_start: string }
         Returns: {
           category_id: string
@@ -7519,7 +7519,7 @@ export type Database = {
           total: number
         }[]
       }
-      get_sales_by_staff_v2: {
+      get_sales_by_staff_v3: {
         Args: { p_date_end: string; p_date_start: string }
         Returns: {
           avg_basket: number

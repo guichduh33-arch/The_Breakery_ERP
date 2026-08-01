@@ -3,7 +3,7 @@
 // Cash flow statement (indirect method). MVP: Operating section filled
 // in, Investing/Financing zero placeholders (D-W6-6A-2).
 //
-// S31 : account cells terminal — get_cash_flow_v1 RPC returns `code`, not UUID.
+// S31 : account cells terminal — get_cash_flow_v2 RPC returns `code`, not UUID.
 // /accounting/general-ledger expects UUID. Pre-filled drill deferred to S32+ (RPC bump).
 
 import { useMemo } from 'react';

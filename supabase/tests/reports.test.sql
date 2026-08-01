@@ -5,7 +5,7 @@
 --   T_RPT_01..03  Materialised views exist + are populated + have unique indexes.
 --   T_RPT_04..05  Refresh wrapper functions exist and run.
 --   T_RPT_06      get_sales_by_hour_v1 returns 24 zero-filled rows on empty data.
---   T_RPT_07      get_sales_by_category_v2 returns 0 rows on empty data, accepts date range.
+--   T_RPT_07      get_sales_by_category_v3 returns 0 rows on empty data, accepts date range.
 --   T_RPT_08      get_stock_variance_v1 returns one row per non-deleted product.
 --   T_RPT_09      get_audit_logs_v3 cursor pagination (limit clamp at 200).
 --   T_RPT_10      4 new reports.* permission codes exist + are granted to ADMIN.
@@ -72,8 +72,8 @@ SELECT is(
 -- T_RPT_07 — sales-by-category date range
 -- ============================================================
 SELECT lives_ok(
-  $$SELECT * FROM public.get_sales_by_category_v2(CURRENT_DATE - 7, CURRENT_DATE)$$,
-  'T_RPT_07 — get_sales_by_category_v2 accepts a date range'
+  $$SELECT * FROM public.get_sales_by_category_v3(CURRENT_DATE - 7, CURRENT_DATE)$$,
+  'T_RPT_07 — get_sales_by_category_v3 accepts a date range'
 );
 
 -- ============================================================
