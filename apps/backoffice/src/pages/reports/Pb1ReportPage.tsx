@@ -7,13 +7,14 @@
 // non-drillable (rate is settings, taxable_base / pb1_collected are computed
 // aggregates that don't map 1:1 to a single account).
 
-import { useState } from 'react';
 import { selectClassName, cn } from '@breakery/ui';
 import type { CsvColumn } from '@breakery/domain';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 import { useAccountIdByCode } from '@/features/accounting/hooks/useAccountIdByCode.js';
+import { useUrlState } from '@/hooks/useUrlState.js';
+import { formatIdrFull } from '@/features/reports/utils/chartColors.js';
 import {
   usePb1Report,
   type Pb1ByDay,
@@ -40,8 +41,12 @@ function currentMonth(): number { return new Date().getMonth() + 1; }
 function currentYear():  number { return new Date().getFullYear(); }
 
 export default function Pb1ReportPage() {
-  const [month, setMonth] = useState<number>(currentMonth);
-  const [year,  setYear]  = useState<number>(currentYear);
+  // Audit R-17 — filtre en URL-state (convention S57) : la vue devient
+  // partageable et survit au rechargement.
+  const [monthRaw, setMonthRaw] = useUrlState('month', String(currentMonth()));
+  const [yearRaw,  setYearRaw]  = useUrlState('year',  String(currentYear()));
+  const month = Number(monthRaw) || currentMonth();
+  const year  = Number(yearRaw)  || currentYear();
 
   const { data, isLoading, error } = usePb1Report({ month, year });
   const { data: pb1PayableAccountId } = useAccountIdByCode('2110');
@@ -65,7 +70,7 @@ export default function Pb1ReportPage() {
             <select
               className={cn(selectClassName, 'h-9 w-auto')}
               value={month}
-              onChange={(e) => setMonth(Number(e.target.value))}
+              onChange={(e) => setMonthRaw(e.target.value)}
               aria-label="Select month"
             >
               {MONTHS.slice(1).map((name, idx) => (
@@ -82,7 +87,7 @@ export default function Pb1ReportPage() {
               value={year}
               min={2020}
               max={2099}
-              onChange={(e) => setYear(Number(e.target.value) || 0)}
+              onChange={(e) => setYearRaw(e.target.value)}
               aria-label="Select year"
             />
           </label>
@@ -112,8 +117,8 @@ export default function Pb1ReportPage() {
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             {[
               { label: 'PB1 rate',        value: `${(data.pb1_rate * 100).toFixed(0)}%` },
-              { label: 'Taxable base',    value: data.taxable_base.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }) },
-              { label: 'PB1 collected',   value: data.pb1_collected.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }) },
+              { label: 'Taxable base',    value:formatIdrFull(data.taxable_base) },
+              { label: 'PB1 collected',   value:formatIdrFull(data.pb1_collected) },
             ].map(({ label, value }) => (
               <div key={label} className="rounded-lg border border-border-subtle bg-surface-raised p-4">
                 <p className="text-xs text-text-secondary uppercase tracking-wide">{label}</p>
@@ -127,7 +132,7 @@ export default function Pb1ReportPage() {
                 <DrilldownLink
                   entity="account"
                   id={pb1PayableAccountId ?? ''}
-                  label={data.pb1_payable.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })}
+                  label={formatIdrFull(data.pb1_payable)}
                   filter={{ start: data.period.start, end: data.period.end }}
                   icon={false}
                 />
@@ -160,10 +165,10 @@ export default function Pb1ReportPage() {
                   <tr key={d.day} className="border-b border-border-subtle">
                     <td className="py-2 text-text-secondary">{String(d.day).slice(0, 10)}</td>
                     <td className="py-2 text-right tabular-nums">
-                      {d.taxable_base.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })}
+                      {formatIdrFull(d.taxable_base)}
                     </td>
                     <td className="py-2 text-right tabular-nums">
-                      {d.pb1_collected.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })}
+                      {formatIdrFull(d.pb1_collected)}
                     </td>
                   </tr>
                 ))}

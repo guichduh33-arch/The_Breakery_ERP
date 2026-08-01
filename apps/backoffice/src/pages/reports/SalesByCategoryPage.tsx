@@ -22,7 +22,13 @@ import type { SalesCategoryRow } from '@/features/reports/hooks/useSalesByCatego
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 import { useUrlState, useUrlBoolean } from '@/hooks/useUrlState.js';
-import { CHART_GRID_STROKE } from '@/features/reports/utils/chartColors.js';
+import {
+  CHART_AXIS_TICK,
+  CHART_GRID_STROKE,
+  CHART_TOOLTIP_STYLE,
+  formatIdrCompact,
+  formatIdrFull,
+} from '@/features/reports/utils/chartColors.js';
 
 const csvColumns: CsvColumn<SalesCategoryRow>[] = [
   { header: 'Category', accessor: (r) => r.category_name, format: 'text' },
@@ -114,13 +120,24 @@ export default function SalesByCategoryPage() {
       )}
       {data !== undefined && data !== null && (
         <div className="space-y-6">
-          <div className="h-72 w-full">
+          <div
+            className="h-72 w-full"
+            role="img"
+            aria-label={`Bar chart of revenue per product category, ${data.length} categories, ${start} to ${end}.`}
+          >
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data} margin={{ top: 10, right: 20, bottom: 50, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_STROKE} />
                 <XAxis dataKey="category_name" angle={-25} textAnchor="end" interval={0} />
-                <YAxis />
-                <Tooltip />
+                <YAxis
+                  tickFormatter={formatIdrCompact}
+                  tick={{ fontSize: 11, fill: CHART_AXIS_TICK }}
+                  width={72}
+                />
+                <Tooltip
+                  formatter={(v: number) => [formatIdrFull(v), 'Revenue']}
+                  contentStyle={CHART_TOOLTIP_STYLE}
+                />
                 <Bar dataKey="total" fill="var(--gold-base)" />
               </BarChart>
             </ResponsiveContainer>
@@ -145,7 +162,7 @@ export default function SalesByCategoryPage() {
                       icon={false}
                     />
                   </td>
-                  <td className="py-2 text-right tabular-nums">{r.total.toLocaleString()}</td>
+                  <td className="py-2 text-right tabular-nums">{formatIdrFull(r.total)}</td>
                   <td className="py-2 text-right tabular-nums">{r.qty}</td>
                 </tr>
               ))}

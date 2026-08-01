@@ -1,7 +1,6 @@
 // apps/backoffice/src/pages/reports/PriceChangesPage.tsx
 // S40 Wave B3 — Price changes report: product filter, old→new price, delta %, truncated banner.
 
-import { useState } from 'react';
 import { selectClassName, cn } from '@breakery/ui';
 import { toLocalDateStr } from '@breakery/domain';
 import type { CsvColumn } from '@breakery/domain';
@@ -16,6 +15,7 @@ import {
   type PriceChangeLine,
 } from '@/features/reports/hooks/usePriceChanges.js';
 import { useUrlState } from '@/hooks/useUrlState.js';
+import { formatIdrFull } from '@/features/reports/utils/chartColors.js';
 
 const csvColumns: CsvColumn<PriceChangeLine>[] = [
   { header: 'Date',          accessor: (r) => r.changed_at.slice(0, 10), format: 'text' },
@@ -53,9 +53,9 @@ function useActiveProducts() {
   });
 }
 
-function fmtIdr(v: number): string {
-  return v.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 });
-}
+// Audit R-15 — ce helper local etait l'une des dix copies du meme formatteur
+// IDR dans le module. Tout passe desormais par `formatIdrFull`.
+const fmtIdr = formatIdrFull;
 
 function deltaBadge(pct: number | null): JSX.Element {
   if (pct === null) {
@@ -72,7 +72,9 @@ function deltaBadge(pct: number | null): JSX.Element {
 export default function PriceChangesPage() {
   const [start,     setStart]     = useUrlState('start', defaultStart());
   const [end,       setEnd]       = useUrlState('end', toLocalDateStr(new Date()));
-  const [productId, setProductId] = useState<string>('');
+  // Audit R-17 — filtre en URL-state (convention S57) : la vue devient
+  // partageable et survit au rechargement.
+  const [productId, setProductId] = useUrlState('product_id', '');
 
   const { data, isLoading, error } = usePriceChanges({
     start,

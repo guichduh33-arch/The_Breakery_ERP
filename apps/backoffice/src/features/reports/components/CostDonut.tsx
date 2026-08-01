@@ -55,6 +55,9 @@ export function CostDonut({
   return (
     <div>
       <div className="relative w-full" style={{ height }}>
+        {/* Audit R-16 — un donut sans equivalent textuel est invisible au
+            lecteur d ecran : on annonce le libelle central et le nombre de
+            parts. */}
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie

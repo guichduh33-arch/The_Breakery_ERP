@@ -4,7 +4,7 @@
 // expense ledger by category (donut + share table) and over time (trend), in
 // the AMBER cost-family language. Filterable by period, category and status.
 
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { selectClassName, cn, Card, CardContent, EmptyState } from '@breakery/ui';
 import {
   Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
@@ -51,8 +51,10 @@ function defaultStart(): string {
 export default function OperatingExpensesPage() {
   const [start, setStart]           = useUrlState('start', defaultStart());
   const [end,   setEnd]             = useUrlState('end', toLocalDateStr(new Date()));
-  const [categoryId, setCategoryId] = useState<string>('');
-  const [status, setStatus]         = useState<string>('');
+  // Audit R-17 — filtre en URL-state (convention S57) : la vue devient
+  // partageable et survit au rechargement.
+  const [categoryId, setCategoryId] = useUrlState('category_id', '');
+  const [status,     setStatus]     = useUrlState('status', '');
 
   const { data: categories } = useExpenseCategories();
   const { data, isLoading, error } = useExpensesByCategory({
@@ -162,7 +164,11 @@ export default function OperatingExpensesPage() {
         </ChartCard>
 
         <ChartCard title="Trend" subtitle="Daily operating expense" accent={OPEX_BASE}>
-          <div className="h-64 w-full">
+          <div
+            className="h-64 w-full"
+            role="img"
+            aria-label={`Area chart of daily operating expenses, ${start} to ${end}.`}
+          >
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={trend} margin={{ top: 8, right: 12, bottom: 0, left: 8 }}>
                 <CartesianGrid stroke={CHART_GRID_STROKE} strokeDasharray="3 3" vertical={false} />

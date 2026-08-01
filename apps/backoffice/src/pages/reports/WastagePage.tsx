@@ -9,7 +9,10 @@ import { DateRangePicker } from '@/features/reports/components/DateRangePicker.j
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 import { useUrlState } from '@/hooks/useUrlState.js';
-import { formatIdrFull, familyColor } from '@/features/reports/utils/chartColors.js';
+import {
+  familyColor,
+  formatIdrFull,
+} from '@/features/reports/utils/chartColors.js';
 import {
   useWastageReport,
   type WastageReportLine,
@@ -166,7 +169,7 @@ export default function WastagePage() {
                 <td className="py-2 text-text-secondary">{r.type}</td>
                 <td className="py-2 text-right tabular-nums">{r.qty}</td>
                 <td className="py-2 text-right tabular-nums">
-                  {r.value.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })}
+                  {formatIdrFull(r.value)}
                 </td>
                 <td className="py-2 text-text-secondary">{r.created_at.slice(0, 10)}</td>
               </tr>
@@ -177,7 +180,7 @@ export default function WastagePage() {
               <tr className="border-t border-border-subtle font-semibold">
                 <td className="py-2" colSpan={3}>Total wastage value</td>
                 <td className="py-2 text-right tabular-nums">
-                  {(data.total_value ?? 0).toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })}
+                  {formatIdrFull((data.total_value ?? 0))}
                 </td>
                 <td />
               </tr>

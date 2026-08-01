@@ -12,6 +12,7 @@ import type { SalesStaffRow } from '@/features/reports/hooks/useSalesByStaff.js'
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 import { useUrlState } from '@/hooks/useUrlState.js';
+import { formatIdrFull } from '@/features/reports/utils/chartColors.js';
 
 const csvColumns: CsvColumn<SalesStaffRow>[] = [
   { header: 'Staff',       accessor: (r) => r.staff_name,  format: 'text' },
@@ -77,10 +78,10 @@ export default function SalesByStaffPage() {
                 <td className="py-2">
                   <DrilldownLink entity="user" id={r.staff_id} label={r.staff_name} icon={false} />
                 </td>
-                <td className="py-2 text-right tabular-nums">{r.total.toLocaleString()}</td>
+                <td className="py-2 text-right tabular-nums">{formatIdrFull(r.total)}</td>
                 <td className="py-2 text-right tabular-nums">{r.order_count}</td>
                 <td className="py-2 text-right tabular-nums">
-                  {Math.round(r.avg_basket).toLocaleString()}
+                  {formatIdrFull(r.avg_basket)}
                 </td>
               </tr>
             ))}

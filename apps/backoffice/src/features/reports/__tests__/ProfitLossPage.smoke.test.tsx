@@ -66,8 +66,12 @@ describe('ProfitLossPage (smoke)', () => {
   it('renders Net profit total once data resolves', async () => {
     renderPage();
     await screen.findByText('Net profit');
-    // 40 rendered somewhere in the table
-    const tds = await screen.findAllByText('40');
+    // Audit R-15 — la page formatait ses montants via
+    // `toLocaleString(undefined, ...)` (locale du navigateur, aucune devise) et
+    // rendait donc « 40 » brut. Elle passe par `formatIdrFull`, qui produit
+    // « Rp<U+00A0>40 » en id-ID ; Testing Library normalise l'insecable en
+    // espace simple, d'ou la chaine attendue ci-dessous.
+    const tds = await screen.findAllByText('Rp 40');
     expect(tds.length).toBeGreaterThan(0);
   });
 });

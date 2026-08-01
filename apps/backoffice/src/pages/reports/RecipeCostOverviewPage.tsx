@@ -11,14 +11,14 @@
 import { useMemo, type JSX } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { toLocalDateStr, buildCsv, downloadCsv, type CsvColumn } from '@breakery/domain';
-import { Button } from '@breakery/ui';
+import { toLocalDateStr, type CsvColumn } from '@breakery/domain';
 import { supabase } from '@/lib/supabase.js';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
+import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
 import { useUrlState } from '@/hooks/useUrlState.js';
-import { useAuthStore } from '@/stores/authStore.js';
+import { formatIdrPrecise } from '@/features/reports/utils/chartColors.js';
 
 interface OverviewRow {
   product_id:    string;
@@ -62,10 +62,6 @@ export function RecipeCostOverviewPage(): JSX.Element {
   const navigate = useNavigate();
   const [start, setStart] = useUrlState('start', defaultStart());
   const [end,   setEnd]   = useUrlState('end', toLocalDateStr(new Date()));
-  // Audit Reports 2026-08-01 lot C / D3 — cette page construit son CSV avec un
-  // <Button> brut au lieu d'<ExportButtons> : elle doit porter le meme verrou
-  // `reports.export`, sinon elle contourne la decision.
-  const canExport = useAuthStore((s) => s.hasPermission('reports.export'));
 
   const q = useQuery<OverviewRow[]>({
     queryKey: ['reports', 'recipe-cost', 'overview', start, end] as const,
@@ -91,10 +87,16 @@ export function RecipeCostOverviewPage(): JSX.Element {
     });
   }, [q.data]);
 
-  function handleExportCsv(): void {
-    const csv = buildCsv(rows, OVERVIEW_CSV_COLUMNS);
-    downloadCsv(csv, `recipe-cost-overview-${start}_${end}.csv`);
-  }
+  // Audit R-13 — le template PDF `recipe_overview` etait construit mais
+  // inatteignable : la page n'exposait qu'un CSV maison.
+  const pdfRows = useMemo(() => rows.map((r) => ({
+    product_name:  r.product_name,
+    cost_per_unit: r.cost_per_unit ?? 0,
+    baseline_cost: r.baseline_cost,
+    delta_pct:     r.delta_pct,
+    change_count:  r.change_count,
+    created_at:    r.created_at,
+  })), [rows]);
 
   return (
     <ReportPage
@@ -114,16 +116,17 @@ export function RecipeCostOverviewPage(): JSX.Element {
             onStartChange={setStart}
             onEndChange={setEnd}
           />
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={handleExportCsv}
-            disabled={!canExport || rows.length === 0}
-            data-testid="overview-export-csv"
-          >
-            Export CSV
-          </Button>
+          {rows.length > 0 && (
+            <ExportButtons
+              csv={{ rows, columns: OVERVIEW_CSV_COLUMNS, filename: `recipe-cost-overview-${start}_${end}` }}
+              pdf={{
+                template: 'recipe_overview',
+                data: pdfRows,
+                period: { start, end },
+                filename: `recipe-cost-overview-${start}_${end}`,
+              }}
+            />
+          )}
         </>
       }
     >
@@ -159,17 +162,17 @@ export function RecipeCostOverviewPage(): JSX.Element {
                   <DrilldownLink entity="recipe" id={r.product_id} label={r.product_name} icon={false} />
                 </td>
                 <td className="py-1.5 text-right tabular-nums">
-                  {r.cost_per_unit?.toLocaleString('en-US', { maximumFractionDigits: 2 }) ?? '—'}
+                  {r.cost_per_unit !== null ? formatIdrPrecise(r.cost_per_unit) : '—'}
                 </td>
                 <td className="py-1.5 text-right tabular-nums">
-                  {r.baseline_cost?.toLocaleString('en-US', { maximumFractionDigits: 2 }) ?? '—'}
+                  {r.baseline_cost !== null ? formatIdrPrecise(r.baseline_cost) : '—'}
                 </td>
                 <td className={`py-1.5 text-right tabular-nums ${deltaTone(r.delta_pct)}`}>
                   {formatDelta(r.delta_pct)}
                 </td>
                 <td className="py-1.5 text-right tabular-nums">{r.change_count}</td>
                 <td className="py-1.5 text-right tabular-nums text-text-secondary">
-                  {r.created_at ? r.created_at.slice(0, 10) : '—'}
+                  {r.created_at !== null ? toLocalDateStr(r.created_at) : '—'}
                 </td>
               </tr>
             ))}

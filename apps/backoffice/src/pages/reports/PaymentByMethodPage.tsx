@@ -17,9 +17,12 @@ import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
 import { useUrlState } from '@/hooks/useUrlState.js';
 import {
+  CHART_AXIS_TICK,
+  CHART_GRID_STROKE,
+  CHART_TOOLTIP_STYLE,
   categoricalColor,
-  CHART_GRID_STROKE, CHART_AXIS_TICK, CHART_TOOLTIP_STYLE,
-  formatIdrFull, formatIdrCompact,
+  formatIdrCompact,
+  formatIdrFull,
 } from '@/features/reports/utils/chartColors.js';
 import {
   usePaymentsByMethod,
@@ -39,9 +42,9 @@ const csvColumns: CsvColumn<PaymentByMethodLine>[] = [
   { header: 'Net est. (IDR)', accessor: (r) => r.net_est,          format: 'idr-round100' },
 ];
 
-function idr(n: number): string {
-  return n.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 });
-}
+// Audit R-15 — ce helper local etait la 10e copie du meme formatteur IDR
+// dans le module. Tout passe desormais par `formatIdrFull`.
+const idr = formatIdrFull;
 
 function defaultStart(): string {
   return toLocalDateStr(new Date(Date.now() - 29 * 86_400_000));
@@ -106,7 +109,11 @@ export default function PaymentByMethodPage() {
           subtitle="Collected per day, stacked by payment method"
           className="mb-6"
         >
-          <div className="h-64 w-full">
+          <div
+            className="h-64 w-full"
+            role="img"
+            aria-label={`Stacked area chart of daily collections by payment method, ${start} to ${end}.`}
+          >
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={byDay} margin={{ top: 8, right: 12, bottom: 0, left: 8 }}>
                 <CartesianGrid stroke={CHART_GRID_STROKE} strokeDasharray="3 3" vertical={false} />

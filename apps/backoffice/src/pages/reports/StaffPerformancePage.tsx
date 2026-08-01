@@ -7,6 +7,7 @@ import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
 import { useUrlState } from '@/hooks/useUrlState.js';
+import { formatIdrFull } from '@/features/reports/utils/chartColors.js';
 import {
   useStaffPerformance,
   type StaffPerformanceRow,
@@ -27,8 +28,9 @@ const csvColumns: CsvColumn<StaffPerformanceRow>[] = [
   { header: 'Items Cancelled',     accessor: (r) => r.items_cancelled,       format: 'number' },
 ];
 
-const IDR = (v: number) =>
-  v.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 });
+// Audit R-15 — ce helper local etait la 10e copie du meme formatteur IDR
+// dans le module. Tout passe desormais par `formatIdrFull`.
+const IDR = formatIdrFull;
 
 function defaultStart(): string {
   return toLocalDateStr(new Date(Date.now() - 29 * 86_400_000));

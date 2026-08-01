@@ -19,6 +19,7 @@ import { useBalanceSheet } from '@/features/reports/hooks/useBalanceSheet.js';
 import { useUrlState, useUrlBoolean } from '@/hooks/useUrlState.js';
 import type { BalanceSheet } from '@/features/reports/hooks/useBalanceSheet.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
+import { formatIdrFull } from '@/features/reports/utils/chartColors.js';
 
 interface BsRow { section: string; account: string; value: number }
 
@@ -50,9 +51,9 @@ const bsCsvColumns: CsvColumn<BsRow>[] = [
   { header: 'Value',   accessor: (r) => r.value,   format: 'idr-round100' },
 ];
 
-function fmt(n: number): string {
-  return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
-}
+/** Audit R-15 — formatteur monetaire unique du module (etait
+ *  `toLocaleString(undefined, ...)`, sans locale ni devise). */
+const fmt = formatIdrFull;
 
 /** Aucun compte ne porte de solde à cette date. */
 function isBlankBalanceSheet(d: BalanceSheet): boolean {

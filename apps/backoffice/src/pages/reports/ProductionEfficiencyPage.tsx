@@ -17,7 +17,7 @@ const csvColumns: CsvColumn<ProductionEfficiencyByProduct>[] = [
   { header: 'Product',                    accessor: (r) => r.product_name,            format: 'text' },
   { header: 'Runs',                       accessor: (r) => r.runs,                    format: 'number' },
   { header: 'Avg Yield Variance (%)',     accessor: (r) => r.avg_yield_variance_pct ?? '', format: 'text' },
-  { header: 'Worst Variance (%)',         accessor: (r) => r.worst_variance_pct ?? '',     format: 'text' },
+  { header: 'Worst Variance, most negative (%)', accessor: (r) => r.worst_variance_pct ?? '', format: 'text' },
   { header: 'Waste Rate (%)',             accessor: (r) => r.waste_rate_pct ?? '',          format: 'text' },
   { header: 'Has Variance Reasons',       accessor: (r) => r.has_variance_reasons ? 'Yes' : 'No', format: 'text' },
 ];
@@ -93,7 +93,10 @@ export default function ProductionEfficiencyPage() {
                   <th className="py-2 text-left">Product</th>
                   <th className="py-2 text-right">Runs</th>
                   <th className="py-2 text-right">Avg Yield Var.</th>
-                  <th className="py-2 text-right">Worst Var.</th>
+                  {/* Audit R-19 — « worst » designait MIN(variance) ici et
+                      MAX(|variance|) dans Production Yield. Les deux calculs
+                      restent legitimes ; les libelles les distinguent. */}
+                  <th className="py-2 text-right">Worst (most negative)</th>
                   <th className="py-2 text-right">Waste Rate</th>
                   <th className="py-2 text-center">Reasons</th>
                 </tr>

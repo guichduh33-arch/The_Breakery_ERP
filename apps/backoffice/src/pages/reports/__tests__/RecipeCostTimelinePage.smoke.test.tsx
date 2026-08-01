@@ -5,7 +5,7 @@
 //   1. Empty state renders "No cost history" when RPC returns 0 rows.
 //   2. 3 versions render table rows + chart wrapper.
 //   3. Delta vs prev computed correctly (v1=—, v2=+20.00%, v3=+25.00%).
-//   4. CSV button disabled when empty, enabled with data.
+//   4. Exports absent when empty, CSV + PDF present with data.
 //   5. Back link href = /backoffice/reports/recipe-cost.
 //   6. Error state renders an alert.
 //
@@ -156,13 +156,17 @@ describe('RecipeCostTimelinePage smoke', () => {
     expect(cellsV3[3]?.textContent).toBe('+25.00%');
   });
 
-  // 4. CSV button disabled when empty, enabled with data
-  it('disables Export CSV when 0 rows and enables it when rows are present', async () => {
+  // Audit R-13 — la page exposait un <Button> maison (testid dedie, desactive
+  // quand vide) ; elle passe par <ExportButtons>, qui n'est monte que
+  // lorsqu'il y a des lignes et qui expose les testids export-csv/export-pdf.
+  // L'assertion suit : absence quand vide, presence des DEUX exports sinon —
+  // le PDF etant precisement le template qui etait inatteignable.
+  it('hides the exports when 0 rows and offers CSV + PDF when rows are present', async () => {
     // Empty case
     mockRpc.mockResolvedValue({ data: [], error: null });
     const { unmount } = renderPage();
     await waitFor(() => {
-      expect(screen.getByTestId('timeline-export-csv')).toBeDisabled();
+      expect(screen.queryByTestId('export-csv')).not.toBeInTheDocument();
     });
     unmount();
 
@@ -170,8 +174,9 @@ describe('RecipeCostTimelinePage smoke', () => {
     mockRpc.mockResolvedValue({ data: THREE_ROWS, error: null });
     renderPage();
     await waitFor(() => {
-      expect(screen.getByTestId('timeline-export-csv')).not.toBeDisabled();
+      expect(screen.getByTestId('export-csv')).toBeInTheDocument();
     });
+    expect(screen.getByTestId('export-pdf')).toBeInTheDocument();
   });
 
   // 5. Back link href

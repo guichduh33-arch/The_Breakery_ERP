@@ -18,6 +18,7 @@ import { useProfitLoss } from '@/features/reports/hooks/useProfitLoss.js';
 import { useUrlState, useUrlBoolean } from '@/hooks/useUrlState.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
 import type { PnlLine, ProfitLoss } from '@/features/reports/hooks/useProfitLoss.js';
+import { formatIdrFull } from '@/features/reports/utils/chartColors.js';
 
 const pnlLineColumns: CsvColumn<PnlLine>[] = [
   { header: 'Code',    accessor: (r) => r.code,    format: 'text' },
@@ -31,9 +32,9 @@ function defaultStart(): string {
   return toLocalDateStr(new Date(Date.now() - 29 * 86_400_000));
 }
 
-function fmt(n: number): string {
-  return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
-}
+/** Audit R-15 — formatteur monetaire unique du module (etait
+ *  `toLocaleString(undefined, ...)`, sans locale ni devise). */
+const fmt = formatIdrFull;
 
 /** Aucune écriture sur la période. */
 function isBlankPnl(d: ProfitLoss): boolean {
@@ -148,7 +149,9 @@ export default function ProfitLossPage() {
               <tr className="border-b border-border-subtle">
                 <td className="py-2 font-medium">Operating expenses</td>
                 <td className="py-2 text-right tabular-nums">{fmt(data.opex.total)}</td>
-                {showDelta && <td />}
+                {/* Audit R-21 — seule ligne de sous-total a ne pas porter son
+                    delta en mode comparaison. */}
+                {showDelta && <td className="py-2 text-right pl-2"><DeltaPct current={data.opex.total} previous={prevData.opex.total} /></td>}
               </tr>
               <tr><td className="pl-6 py-1 text-text-secondary text-xs">Salary &amp; wages</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.opex.salary)}</td>{showDelta && <td />}</tr>
               <tr><td className="pl-6 py-1 text-text-secondary text-xs">Rent</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.opex.rent)}</td>{showDelta && <td />}</tr>

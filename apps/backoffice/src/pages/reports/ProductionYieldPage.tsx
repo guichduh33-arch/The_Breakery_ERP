@@ -16,16 +16,15 @@
 import { useMemo, useState, type JSX } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
-  toLocalDateStr, toLocalDayStartUTC, toLocalDayEndUTC,
-  buildCsv, downloadCsv, type CsvColumn,
+  toLocalDateStr, toLocalDayStartUTC, toLocalDayEndUTC, type CsvColumn,
 } from '@breakery/domain';
 import { Button, cn } from '@breakery/ui';
 import { supabase } from '@/lib/supabase.js';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
 import { DrilldownLink } from '@/features/reports/components/DrilldownLink.js';
+import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
 import { useUrlState } from '@/hooks/useUrlState.js';
-import { useAuthStore } from '@/stores/authStore.js';
 
 interface YieldRow {
   id:                 string;
@@ -200,8 +199,8 @@ function OutliersTable({
                 <DrilldownLink entity="product" id={r.product_id} label={r.product_name} icon={false} />
               </td>
               <td className="py-2 text-xs">{r.production_date.slice(0, 10)}</td>
-              <td className="py-2 text-right tabular-nums">{r.expected_yield_qty?.toLocaleString() ?? '—'}</td>
-              <td className="py-2 text-right tabular-nums">{r.actual_yield_qty?.toLocaleString() ?? '—'}</td>
+              <td className="py-2 text-right tabular-nums">{r.expected_yield_qty?.toLocaleString('id-ID') ?? '—'}</td>
+              <td className="py-2 text-right tabular-nums">{r.actual_yield_qty?.toLocaleString('id-ID') ?? '—'}</td>
               <td className={cn('py-2 text-right tabular-nums', varianceTone(r.yield_variance_pct))}>
                 {formatVariancePct(r.yield_variance_pct)}
               </td>
@@ -234,8 +233,8 @@ function DrillDownPanel({ rows }: { rows: YieldRow[] }): JSX.Element {
           <tr key={r.id} className="border-b border-border-subtle" data-testid="yield-drilldown-row">
             <td className="py-2 font-mono text-xs">{r.production_number}</td>
             <td className="py-2 text-xs">{r.production_date.slice(0, 10)}</td>
-            <td className="py-2 text-right tabular-nums">{r.expected_yield_qty?.toLocaleString() ?? '—'}</td>
-            <td className="py-2 text-right tabular-nums">{r.actual_yield_qty?.toLocaleString() ?? '—'}</td>
+            <td className="py-2 text-right tabular-nums">{r.expected_yield_qty?.toLocaleString('id-ID') ?? '—'}</td>
+            <td className="py-2 text-right tabular-nums">{r.actual_yield_qty?.toLocaleString('id-ID') ?? '—'}</td>
             <td className={cn('py-2 text-right tabular-nums', varianceTone(r.yield_variance_pct))}>
               {formatVariancePct(r.yield_variance_pct)}
             </td>
@@ -260,7 +259,9 @@ function TrendTable({ rows }: { rows: TrendRow[] }): JSX.Element {
           <th className="py-2 text-left">Product</th>
           <th className="py-2 text-right">Batches</th>
           <th className="py-2 text-right">Avg variance %</th>
-          <th className="py-2 text-right">Max |variance %|</th>
+          {/* Audit R-19 — distinct du « worst » de Production Efficiency, qui
+              est le minimum signe et non le maximum en valeur absolue. */}
+          <th className="py-2 text-right">Max |variance %| (largest swing)</th>
         </tr>
       </thead>
       <tbody>
@@ -287,10 +288,6 @@ export default function ProductionYieldPage(): JSX.Element {
   const [start, setStart] = useUrlState('start', defaultStart());
   const [end,   setEnd]   = useUrlState('end', toLocalDateStr(new Date()));
   const [drillProductId, setDrillProductId] = useState<string | null>(null);
-  // Audit Reports 2026-08-01 lot C / D3 — cette page construit son CSV avec un
-  // <Button> brut au lieu d'<ExportButtons> : elle doit porter le meme verrou
-  // `reports.export`, sinon elle contourne la decision.
-  const canExport = useAuthStore((s) => s.hasPermission('reports.export'));
   const { data, isLoading, error } = useProductionYield(start, end);
 
   const allRows = useMemo(() => data?.rows ?? [], [data]);
@@ -320,10 +317,18 @@ export default function ProductionYieldPage(): JSX.Element {
       ? null
       : (yieldRows.find((r) => r.product_id === drillProductId)?.product_name ?? null);
 
-  function handleExportCsv(): void {
-    const csv = buildCsv(yieldRows, YIELD_CSV_COLUMNS);
-    downloadCsv(csv, `production-yield-${start}_to_${end}.csv`);
-  }
+  // Audit R-13 — le template PDF `production_yield` existe dans le registre et
+  // dans _shared/pdf-templates depuis S30, mais la page n'offrait qu'un CSV
+  // maison : le template etait inatteignable. On passe par <ExportButtons>, qui
+  // porte aussi le verrou `reports.export` (lot C / D3).
+  const pdfRows = useMemo(() => yieldRows.map((r) => ({
+    production_number: r.production_number,
+    recipe_name:       r.product_name,
+    expected_yield:    r.expected_yield_qty ?? 0,
+    actual_yield:      r.actual_yield_qty ?? 0,
+    variance_pct:      r.yield_variance_pct ?? 0, // ratio, comme attendu par le template
+    status:            r.yield_variance_reason ?? '',
+  })), [yieldRows]);
 
   return (
     <ReportPage
@@ -341,16 +346,17 @@ export default function ProductionYieldPage(): JSX.Element {
             onStartChange={setStart}
             onEndChange={setEnd}
           />
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={handleExportCsv}
-            disabled={!canExport || yieldRows.length === 0}
-            data-testid="yield-export-csv"
-          >
-            Export CSV
-          </Button>
+          {yieldRows.length > 0 && (
+            <ExportButtons
+              csv={{ rows: yieldRows, columns: YIELD_CSV_COLUMNS, filename: `production-yield-${start}_to_${end}` }}
+              pdf={{
+                template: 'production_yield',
+                data: pdfRows,
+                period: { start, end },
+                filename: `production-yield-${start}_to_${end}`,
+              }}
+            />
+          )}
         </>
       }
     >

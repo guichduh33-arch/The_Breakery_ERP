@@ -114,3 +114,21 @@ export function formatIdrCompact(v: number): string {
     maximumFractionDigits: 1,
   });
 }
+
+/**
+ * IDR with 2 decimals — "Rp1.234,56".
+ *
+ * Audit 2026-08-01 (R-15) : le module affichait la monnaie de six façons
+ * différentes. Tout est ramené sur ces formatteurs. `formatIdrFull` (0 décimale)
+ * couvre les montants ; celui-ci existe pour les COÛTS UNITAIRES, où la
+ * précision sous-roupie porte du sens (coût au gramme d'une matière première)
+ * et où arrondir à l'entier effacerait l'information.
+ */
+export function formatIdrPrecise(v: number): string {
+  return v.toLocaleString('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}

@@ -18,14 +18,21 @@ import {
   CartesianGrid,
   ResponsiveContainer,
 } from 'recharts';
-import { toLocalDateStr, buildCsv, downloadCsv, type CsvColumn } from '@breakery/domain';
-import { Button } from '@breakery/ui';
+import { toLocalDateStr, type CsvColumn } from '@breakery/domain';
+import { DEFAULT_TIMEZONE } from '@breakery/domain';
 import { supabase } from '@/lib/supabase.js';
 import { ReportPage } from '@/features/reports/components/ReportPage.js';
 import { DateRangePicker } from '@/features/reports/components/DateRangePicker.js';
+import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
 import { useUrlState } from '@/hooks/useUrlState.js';
-import { useAuthStore } from '@/stores/authStore.js';
-import { CHART_GRID_STROKE, CHART_ACCENT_GOLD } from '@/features/reports/utils/chartColors.js';
+import {
+  CHART_ACCENT_GOLD,
+  CHART_AXIS_TICK,
+  CHART_GRID_STROKE,
+  CHART_TOOLTIP_STYLE,
+  formatIdrCompact,
+  formatIdrPrecise,
+} from '@/features/reports/utils/chartColors.js';
 
 interface TimelineRow {
   product_id:     string;
@@ -69,10 +76,6 @@ export function RecipeCostTimelinePage(): JSX.Element {
   const { productId = '' } = useParams<{ productId: string }>();
   const [from, setFrom] = useUrlState('from', defaultStart());
   const [to,   setTo]   = useUrlState('to', toLocalDateStr(new Date()));
-  // Audit Reports 2026-08-01 lot C / D3 — cette page construit son CSV avec un
-  // <Button> brut au lieu d'<ExportButtons> : elle doit porter le meme verrou
-  // `reports.export`, sinon elle contourne la decision.
-  const canExport = useAuthStore((s) => s.hasPermission('reports.export'));
 
   const q = useQuery<TimelineRow[]>({
     queryKey: ['reports', 'recipe-cost', 'timeline', productId, from, to] as const,
@@ -102,17 +105,28 @@ export function RecipeCostTimelinePage(): JSX.Element {
     });
   }, [rows]);
 
+  // Audit R-20 — `created_at` est un timestamptz : le decouper en `slice(0,10)`
+  // affichait la date UTC en la presentant comme locale (une version creee a
+  // 01:00 a Makassar apparaissait la veille). On resout le fuseau metier.
   const chartData = useMemo(() => rows.map((r) => ({
-    date: r.created_at.slice(0, 10),
+    date: toLocalDateStr(r.created_at),
     cost: r.cost_per_unit,
     note: r.change_note ?? '',
   })), [rows]);
 
-  function handleCsv(): void {
-    const safeName = productName.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 40);
-    const csv = buildCsv(rowsWithDelta, TIMELINE_CSV_COLUMNS);
-    downloadCsv(csv, `recipe-cost-timeline-${safeName}-${from}_${to}.csv`);
-  }
+  const safeName = productName.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 40);
+
+  // Audit R-13 — le template PDF `recipe_timeline` etait construit mais
+  // inatteignable : la page n'exposait qu'un CSV maison.
+  const pdfData = useMemo(() => ({
+    product_name: productName,
+    rows: rowsWithDelta.map((r) => ({
+      version:       r.version_number,
+      cost_per_unit: r.cost_per_unit,
+      delta_pct:     r.delta_pct,
+      created_at:    r.created_at,
+    })),
+  }), [productName, rowsWithDelta]);
 
   if (productId === '') {
     return (
@@ -140,16 +154,17 @@ export function RecipeCostTimelinePage(): JSX.Element {
             onStartChange={setFrom}
             onEndChange={setTo}
           />
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={handleCsv}
-            disabled={!canExport || rows.length === 0}
-            data-testid="timeline-export-csv"
-          >
-            Export CSV
-          </Button>
+          {rows.length > 0 && (
+            <ExportButtons
+              csv={{ rows: rowsWithDelta, columns: TIMELINE_CSV_COLUMNS, filename: `recipe-cost-timeline-${safeName}-${from}_${to}` }}
+              pdf={{
+                template: 'recipe_timeline',
+                data: pdfData,
+                period: { start: from, end: to },
+                filename: `recipe-cost-timeline-${safeName}-${from}_${to}`,
+              }}
+            />
+          )}
         </>
       }
     >
@@ -173,13 +188,25 @@ export function RecipeCostTimelinePage(): JSX.Element {
       )}
       {rows.length > 0 && (
         <>
-          <div data-testid="timeline-chart" style={{ width: '100%', height: 300 }}>
+          <div
+            data-testid="timeline-chart"
+            style={{ width: '100%', height: 300 }}
+            role="img"
+            aria-label={`Line chart of unit cost for ${productName} across ${rows.length} recipe versions, ${from} to ${to}.`}
+          >
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData} margin={{ top: 10, right: 20, bottom: 10, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_STROKE} />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
+                <XAxis dataKey="date" tick={{ fontSize: 11, fill: CHART_AXIS_TICK }} />
+                <YAxis
+                  tickFormatter={formatIdrCompact}
+                  tick={{ fontSize: 11, fill: CHART_AXIS_TICK }}
+                  width={82}
+                />
+                <Tooltip
+                  formatter={(v: number) => [formatIdrPrecise(v), 'Cost / unit']}
+                  contentStyle={CHART_TOOLTIP_STYLE}
+                />
                 <Line
                   type="monotone"
                   dataKey="cost"
@@ -210,10 +237,14 @@ export function RecipeCostTimelinePage(): JSX.Element {
                 >
                   <td className="py-1.5 tabular-nums">v{r.version_number}</td>
                   <td className="py-1.5 tabular-nums text-text-secondary">
-                    {r.created_at.slice(0, 19).replace('T', ' ')}
+                    {new Date(r.created_at).toLocaleString('id-ID', {
+                      timeZone: DEFAULT_TIMEZONE,
+                      dateStyle: 'short',
+                      timeStyle: 'short',
+                    })}
                   </td>
                   <td className="py-1.5 text-right tabular-nums">
-                    {r.cost_per_unit.toLocaleString('en-US', { maximumFractionDigits: 2 })}
+                    {formatIdrPrecise(r.cost_per_unit)}
                   </td>
                   <td className={`py-1.5 text-right tabular-nums ${deltaTone(r.delta_pct)}`}>
                     {r.delta_pct === null

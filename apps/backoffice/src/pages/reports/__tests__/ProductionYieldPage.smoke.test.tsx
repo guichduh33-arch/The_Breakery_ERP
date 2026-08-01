@@ -144,10 +144,16 @@ describe('ProductionYieldPage smoke', () => {
     expect(drillRows.length).toBe(2);
   });
 
-  it('exposes an Export CSV trigger once data is available', async () => {
+  // Audit R-13 — la page exposait un <Button> maison (testid dedie, desactive
+  // quand vide) ; elle passe par <ExportButtons>, qui n'est monte que
+  // lorsqu'il y a des lignes et qui expose les testids export-csv/export-pdf.
+  // L'assertion suit : absence quand vide, presence des DEUX exports sinon —
+  // le PDF etant precisement le template qui etait inatteignable.
+  it('exposes CSV and PDF exports once data is available', async () => {
     renderPage();
     await waitFor(() => {
-      expect(screen.getByTestId('yield-export-csv')).not.toBeDisabled();
+      expect(screen.getByTestId('export-csv')).toBeInTheDocument();
     });
+    expect(screen.getByTestId('export-pdf')).toBeInTheDocument();
   });
 });

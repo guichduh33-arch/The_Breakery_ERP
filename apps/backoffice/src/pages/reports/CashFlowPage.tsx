@@ -16,6 +16,7 @@ import { useCashFlow } from '@/features/reports/hooks/useCashFlow.js';
 import { useUrlState, useUrlBoolean } from '@/hooks/useUrlState.js';
 import type { CashFlow } from '@/features/reports/hooks/useCashFlow.js';
 import { ExportButtons } from '@/features/reports/components/ExportButtons.js';
+import { formatIdrFull } from '@/features/reports/utils/chartColors.js';
 
 interface CfRow { section: string; label: string; value: number }
 
@@ -71,9 +72,9 @@ const cfCsvColumns: CsvColumn<CfRow>[] = [
 function defaultStart(): string {
   return toLocalDateStr(new Date(Date.now() - 29 * 86_400_000));
 }
-function fmt(n: number): string {
-  return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
-}
+/** Audit R-15 — formatteur monetaire unique du module (etait
+ *  `toLocaleString(undefined, ...)`, sans locale ni devise). */
+const fmt = formatIdrFull;
 
 export default function CashFlowPage() {
   const [start, setStart] = useUrlState('start', defaultStart());

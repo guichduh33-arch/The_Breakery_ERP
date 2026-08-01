@@ -157,7 +157,11 @@ export default function CostSpendAnalyticsPage() {
         subtitle="Daily material purchases vs operating expenses"
         accent={COGS_BASE}
       >
-        <div className="h-72 w-full">
+        <div
+          className="h-72 w-full"
+          role="img"
+          aria-label={`Stacked area chart of daily spend, purchases vs operating expenses, ${start} to ${end}.`}
+        >
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={series} margin={{ top: 8, right: 12, bottom: 0, left: 8 }}>
               <CartesianGrid stroke={CHART_GRID_STROKE} strokeDasharray="3 3" vertical={false} />

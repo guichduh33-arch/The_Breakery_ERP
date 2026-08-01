@@ -3,7 +3,6 @@
 // Market-basket analysis: top product pairs frequently bought together.
 // Sorted by lift; high-lift rows highlighted.
 
-import { useState } from 'react';
 import { toLocalDateStr } from '@breakery/domain';
 import type { CsvColumn } from '@breakery/domain';
 import { Input } from '@breakery/ui';
@@ -30,7 +29,10 @@ function defaultStart(): string {
 export default function BasketAnalysisPage() {
   const [start, setStart] = useUrlState('start', defaultStart());
   const [end,   setEnd]   = useUrlState('end', toLocalDateStr(new Date()));
-  const [topN,  setTopN]  = useState<number>(10);
+  // Audit R-17 — filtre en URL-state (convention S57) : la vue devient
+  // partageable et survit au rechargement.
+  const [topNRaw, setTopNRaw] = useUrlState('top_n', '10');
+  const topN = Math.min(100, Math.max(1, Number(topNRaw) || 10));
   const { data, isLoading, error } = useBasketAnalysis(start, end, topN);
 
   return (
@@ -57,10 +59,7 @@ export default function BasketAnalysisPage() {
               min={1}
               max={100}
               value={topN}
-              onChange={(e) => {
-                const n = Number(e.target.value);
-                if (Number.isFinite(n) && n >= 1) setTopN(Math.min(100, Math.max(1, n)));
-              }}
+              onChange={(e) => setTopNRaw(e.target.value)}
               className="h-9 w-20"
               aria-label="Top N"
             />
