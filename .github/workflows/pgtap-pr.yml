@@ -87,6 +87,7 @@ jobs:
             supabase/tests/security_leak_guard.test.sql
             supabase/tests/financial_rpc_perm_gates.test.sql
             supabase/tests/adr019_timezone_session_invariant.test.sql
+            supabase/tests/security_partition_grants.test.sql
           )
           fail_count=0
           fail_list=""

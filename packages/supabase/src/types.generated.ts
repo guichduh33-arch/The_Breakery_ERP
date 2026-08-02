@@ -6889,6 +6889,10 @@ export type Database = {
         }
         Returns: Json
       }
+      create_pos_events_partition_v1: {
+        Args: { p_month: string }
+        Returns: string
+      }
       create_product_v2: { Args: { p_payload: Json }; Returns: Json }
       create_purchase_order_v2: {
         Args: {
