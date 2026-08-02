@@ -10,7 +10,7 @@ BEGIN;
 CREATE OR REPLACE FUNCTION public.has_permission(p_uid uuid, p_perm text)
 RETURNS boolean LANGUAGE sql AS $$ SELECT true $$;
 
-SELECT plan(25);
+SELECT plan(28);
 
 -- ── Task 1: COA accounts, mappings, permissions ───────────────────────────────
 SELECT ok( (SELECT is_postable FROM accounts WHERE code='1117'), '1117 Small Money is postable');
@@ -71,24 +71,24 @@ BEGIN
                                          'aaaa2222-2222-2222-2222-222222222222',NULL);
 END $$;
 
-SELECT ok( EXISTS(SELECT 1 FROM get_cash_wallet_balances_v1() WHERE account_code='1110'), 'balances include 1110');
-SELECT ok( EXISTS(SELECT 1 FROM get_cash_wallet_balances_v1() WHERE account_code='1117'), 'balances include 1117');
+SELECT ok( EXISTS(SELECT 1 FROM get_cash_wallet_balances_v2() WHERE account_code='1110'), 'balances include 1110');
+SELECT ok( EXISTS(SELECT 1 FROM get_cash_wallet_balances_v2() WHERE account_code='1117'), 'balances include 1117');
 SELECT cmp_ok(
-  (SELECT count(*)::int FROM get_cash_wallet_ledger_v2('1111', CURRENT_DATE-1, CURRENT_DATE+1)), '>=', 1,
+  (SELECT count(*)::int FROM get_cash_wallet_ledger_v3('1111', CURRENT_DATE-1, CURRENT_DATE+1)), '>=', 1,
   'petty ledger returns at least the transfer row');
 SELECT is(
-  (SELECT in_amount FROM get_cash_wallet_ledger_v2('1111', CURRENT_DATE-1, CURRENT_DATE+1)
+  (SELECT in_amount FROM get_cash_wallet_ledger_v3('1111', CURRENT_DATE-1, CURRENT_DATE+1)
    WHERE remark LIKE '%replenish%' LIMIT 1),
   100000::numeric, 'petty In row = 100000');
 SELECT cmp_ok(
-  (SELECT count(*)::int FROM get_cash_wallet_ledger_v2('1110', CURRENT_DATE-1, CURRENT_DATE+1)), '>=', 1,
+  (SELECT count(*)::int FROM get_cash_wallet_ledger_v3('1110', CURRENT_DATE-1, CURRENT_DATE+1)), '>=', 1,
   'undeposited ledger executes and returns rows');
 
 -- ── Task 9: analysis RPC ──────────────────────────────────────────────────────
-SELECT ok( (get_cash_wallet_analysis_v1(CURRENT_DATE-31, CURRENT_DATE+1)) ? 'revenue_by_shift',
+SELECT ok( (get_cash_wallet_analysis_v2(CURRENT_DATE-31, CURRENT_DATE+1)) ? 'revenue_by_shift',
   'analysis payload has revenue_by_shift key');
-SELECT is( has_function_privilege('anon','get_cash_wallet_analysis_v1(date,date)','EXECUTE'), false,
-  'anon has no EXECUTE on get_cash_wallet_analysis_v1');
+SELECT is( has_function_privilege('anon','get_cash_wallet_analysis_v2(date,date)','EXECUTE'), false,
+  'anon has no EXECUTE on get_cash_wallet_analysis_v2');
 
 -- ── Task 22: stricter accounting.cash.adjust gate (adjustments + boss withdrawal) ──
 -- Re-stub: caller has cash.write but NOT cash.adjust.
@@ -107,6 +107,24 @@ SELECT isnt(
   record_cash_wallet_movement_v1('undepo_to_petty',5000,CURRENT_DATE,'ok',
         'b0000003-0000-0000-0000-000000000003',NULL),
   NULL, 'undepo_to_petty still allowed with only cash.write');
+
+-- ── Lot 1 : les trois RPC de lecture refusent sans accounting.cash.read ───────
+-- Avant le bump 20260802000006 elles etaient SECURITY DEFINER sans aucun gate,
+-- donc tout utilisateur connecte lisait les soldes des coffres, le detail des
+-- mouvements et les retraits du patron. Le stub renvoie false sur la seule
+-- permission de lecture pour prouver que c'est bien elle qui commande.
+CREATE OR REPLACE FUNCTION public.has_permission(p_uid uuid, p_perm text)
+RETURNS boolean LANGUAGE sql AS $$ SELECT p_perm <> 'accounting.cash.read' $$;
+
+SELECT throws_ok(
+  $q$ SELECT * FROM get_cash_wallet_balances_v2() $q$,
+  '42501', NULL, 'balances refuse sans accounting.cash.read');
+SELECT throws_ok(
+  $q$ SELECT * FROM get_cash_wallet_ledger_v3('1110', CURRENT_DATE-1, CURRENT_DATE+1) $q$,
+  '42501', NULL, 'ledger refuse sans accounting.cash.read');
+SELECT throws_ok(
+  $q$ SELECT get_cash_wallet_analysis_v2(CURRENT_DATE-31, CURRENT_DATE+1) $q$,
+  '42501', NULL, 'analysis refuse sans accounting.cash.read');
 
 SELECT * FROM finish();
 ROLLBACK;

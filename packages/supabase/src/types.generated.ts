@@ -7151,11 +7151,11 @@ export type Database = {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
-      get_cash_wallet_analysis_v1: {
+      get_cash_wallet_analysis_v2: {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
-      get_cash_wallet_balances_v1: {
+      get_cash_wallet_balances_v2: {
         Args: never
         Returns: {
           account_code: string
@@ -7163,7 +7163,7 @@ export type Database = {
           balance: number
         }[]
       }
-      get_cash_wallet_ledger_v2: {
+      get_cash_wallet_ledger_v3: {
         Args: {
           p_account_code: string
           p_date_end: string

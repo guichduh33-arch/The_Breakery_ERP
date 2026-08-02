@@ -20,7 +20,7 @@ describe('CashTreasuryPage', () => {
 
   it('renders the three wallet cards from balances', async () => {
     rpc.mockImplementation((fn: string) => {
-      if (fn === 'get_cash_wallet_balances_v1') return Promise.resolve({ data: [
+      if (fn === 'get_cash_wallet_balances_v2') return Promise.resolve({ data: [
         { account_code: '1110', account_name: 'Cash on Hand', balance: 6453000 },
         { account_code: '1111', account_name: 'Petty Cash',  balance: 47200 },
         { account_code: '1117', account_name: 'Small Money', balance: 4000000 },

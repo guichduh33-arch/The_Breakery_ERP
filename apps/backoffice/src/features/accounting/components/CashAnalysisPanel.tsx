@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/accounting/components/CashAnalysisPanel.tsx
 // Cash Wallets module — "Private Analysis" replica panel.
-// Calls get_cash_wallet_analysis_v1(p_date_start, p_date_end) and renders:
+// Calls get_cash_wallet_analysis_v2(p_date_start, p_date_end) — gate accounting.cash.read — and renders:
 //   • Top Petty Cash spend categories
 //   • Movements summary: bank deposits + boss withdrawals totals
 import { useQuery } from '@tanstack/react-query';
@@ -21,13 +21,12 @@ export function CashAnalysisPanel({ start, end }: { start: string; end: string }
     queryKey: ['accounting', 'cash-analysis', start, end],
     staleTime: 60_000,
     queryFn: async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await supabase.rpc('get_cash_wallet_analysis_v1' as any, {
+      const { data, error } = await supabase.rpc('get_cash_wallet_analysis_v2', {
         p_date_start: start,
         p_date_end:   end,
       });
       if (error !== null) throw new Error(error.message);
-      return data as Analysis;
+      return data as unknown as Analysis;
     },
   });
 

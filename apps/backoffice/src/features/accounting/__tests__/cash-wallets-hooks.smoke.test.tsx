@@ -26,6 +26,6 @@ describe('useCashWallets', () => {
     const { result } = renderHook(() => useCashWallets(), { wrapper });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toHaveLength(3);
-    expect(rpc).toHaveBeenCalledWith('get_cash_wallet_balances_v1', {});
+    expect(rpc).toHaveBeenCalledWith('get_cash_wallet_balances_v2');
   });
 });
