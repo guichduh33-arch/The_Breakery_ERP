@@ -61,6 +61,11 @@ jobs:
       #   - security                          : core security suite
       #   - security_leak_guard               : S50 view/MV PII-financial leak guard
       #   - financial_rpc_perm_gates          : S50 permission-denied on gated RPCs
+      #   - adr019_timezone_session_invariant : ADR-019 D4 — la colonne miroir
+      #       du fuseau égale le paramètre de session. Divergence = les
+      #       fonctions qui lisent la colonne et celles qui lisent la session
+      #       datent au jour métier différent, sans lever d'erreur. Bloquer la
+      #       PR, plutôt que le découvrir au run nocturne suivant.
       - name: Run pgTAP smoke subset via pooler
         id: pgtap
         env:
@@ -81,6 +86,7 @@ jobs:
             supabase/tests/security.test.sql
             supabase/tests/security_leak_guard.test.sql
             supabase/tests/financial_rpc_perm_gates.test.sql
+            supabase/tests/adr019_timezone_session_invariant.test.sql
           )
           fail_count=0
           fail_list=""
