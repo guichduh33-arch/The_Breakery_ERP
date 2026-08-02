@@ -175,7 +175,7 @@ function friendlyFatalMessage(code: string, message?: string): string {
       // vendable) ; le POS a servi un catalogue périmé.
       return 'Ce produit est un groupe de variantes — sélectionnez une variante précise.';
     case 'credit_limit_exceeded':
-      // S62 D4 — attach_tab_customer_v2 gates the retail ardoise against
+      // S62 D4 — la famille attach_tab_customer garde l ardoise retail contre
       // customers.retail_credit_limit.
       return 'Le plafond de crédit ardoise de ce client est dépassé. Réduisez l’encours ou choisissez un autre mode de paiement.';
     case 'wrong_pin':

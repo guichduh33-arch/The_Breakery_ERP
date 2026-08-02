@@ -46,7 +46,7 @@ export interface CustomerDetailRow {
   b2b_payment_terms_days: number | null;
   b2b_credit_limit: number | null;
   b2b_current_balance: number;
-  // S62 Task 6 — retail-only tab credit ceiling (attach_tab_customer_v2 P0011
+  // S62 Task 6 — retail-only tab credit ceiling (P0011 de la famille attach_tab_customer
   // gate). Not yet in types.generated.ts (closeout regen pending, mig. _112).
   retail_credit_limit: number | null;
   // ADR-013 Lot 4 — solde d'avoir (cache dénormalisé, ledger = vérité).
