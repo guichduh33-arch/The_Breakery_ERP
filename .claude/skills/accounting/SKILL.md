@@ -49,7 +49,7 @@ Expert on the accounting cockpit: chart of accounts, journal entries, PB1 fiscal
 **The Breakery est NON-PKP.** Décision irrévocable — re-read `docs/adr/005-juridiction-fiscale-lombok-pbjt.md` (supersedes ADR-003) before any fiscal change.
 
 - **Output tax** : **taxe F&B locale 10%** — **PBJT Makanan dan Minuman** (UU HKPD 1/2022), niveau **kabupaten/kota**, perçue par le **Bapenda** de la commune (The Breakery est à **Lombok, NTB** — pas Bali, cf. ADR-005). « PB1 » reste le label usuel dans le code. Pas de PPN sortant, pas d'e-Faktur, pas d'export DJP.
-- **Input tax** : PPN 11% fournisseurs PKP est **non-récupérable** → **folded dans le coût d'acquisition** (`INVENTORY_GENERAL` 1130). Le compte `1151 VAT Input` est **désactivé** (`is_active=false`, `name='VAT Input — RESERVED (NON-PKP, see ADR-003)'`). Ne jamais le réactiver sans un nouvel ADR supersedant ADR-005.
+- **Input tax** : PPN 11% fournisseurs PKP est **non-récupérable** → **folded dans le coût d'acquisition** (`INVENTORY_GENERAL` → 1141). Le compte `1151 VAT Input` est **désactivé** (`is_active=false`, `name='VAT Input — RESERVED (NON-PKP, see ADR-003)'`). Ne jamais le réactiver sans un nouvel ADR supersedant ADR-005.
 - **`current_pb1_rate()`** : helper stable lit `business_config.tax_rate` (migration `20260603000010`). Toujours utiliser ce helper — pas de hardcode `10/110`.
 - **`calculate_pb1_payable_v1(p_period_start DATE, p_period_end DATE)`** : formule simplifiée `pb1_payable = pb1_output` (pas de soustraction `vat_input`). Remplace l'ancien `calculate_vat_payable` (droppé migration `20260603000013`).
 
@@ -91,7 +91,11 @@ CR côté vente : `SALE_POS_REVENUE` + `SALE_PB1_TAX` → **2110** PB1 Payable.
 | **1112** | Bank Operating | 1 asset | Mapping `CASH_MOVEMENT_BANK` |
 | **1115** | QRIS Clearing | 1 asset | Mapping `SALE_PAYMENT_QRIS` |
 | **1116** | Card Clearing | 1 asset | Mapping `SALE_PAYMENT_DEBIT/CREDIT` |
-| **1130** | Inventory General | 1 asset | Reçoit PPN supplier (folded, NON-PKP) |
+| **1131** | Accounts Receivable | 1 asset | Créances hors B2B ; aucun mapping n'y pointe au 2026-08-02 |
+| **1132** | AR - B2B | 1 asset | Mapping `B2B_AR` |
+| **1141** | Inventory - General | 1 asset | Mapping `INVENTORY_GENERAL` ; reçoit PPN supplier (folded, NON-PKP) |
+| **1142** | Inventory - Raw Material | 1 asset | Mapping `INVENTORY_RAW_MATERIAL` |
+| **1143** | Inventory - Finished Goods | 1 asset | Mapping `INVENTORY_FINISHED_GOODS` |
 | **1151** | VAT Input | 1 asset | **DÉSACTIVÉ NON-PKP** (ADR-003/ADR-005) |
 | **2110** | PB1 Payable | 2 liability | Sortie mensuelle Bapenda kabupaten/kota (Lombok, ADR-005) |
 | **3100** | Owner Capital | 3 equity | Mapping `CASH_MOVEMENT_OWNER_CAPITAL` |
@@ -99,6 +103,11 @@ CR côté vente : `SALE_POS_REVENUE` + `SALE_PB1_TAX` → **2110** PB1 Payable.
 | **5910** | Cash Variance Loss | 6 opex | Reclassé classe 5→6 (`_020`) ; renommer to 6910 différé |
 
 > ⚠️ `5910` est code "classe 5" mais `account_class = 6` depuis S26 `_020` — ne pas s'y fier pour inférer la classe.
+
+> ⚠️ **`113x` = créances, `114x` = stocks.** Les deux préfixes se ressemblent et
+> plusieurs RPC financières filtrent dessus (`code LIKE '113%'` / `'114%'`) : les
+> confondre fait lire un rapport juste comme un rapport faux. Il n'existe **aucun**
+> compte `1130`. Relevé du COA au 2026-08-02.
 
 ---
 
