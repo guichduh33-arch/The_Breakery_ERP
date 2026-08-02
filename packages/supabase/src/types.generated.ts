@@ -324,6 +324,7 @@ export type Database = {
           pos_opening_cash_presets: Json
           pos_quick_payment_amounts: Json
           production_yield_variance_threshold_pct: number
+          retail_tab_credit_limit_default: number
           shift_denomination_count_enabled: boolean
           shift_variance_pin_threshold_abs: number
           shift_variance_pin_threshold_pct: number
@@ -366,6 +367,7 @@ export type Database = {
           pos_opening_cash_presets?: Json
           pos_quick_payment_amounts?: Json
           production_yield_variance_threshold_pct?: number
+          retail_tab_credit_limit_default?: number
           shift_denomination_count_enabled?: boolean
           shift_variance_pin_threshold_abs?: number
           shift_variance_pin_threshold_pct?: number
@@ -408,6 +410,7 @@ export type Database = {
           pos_opening_cash_presets?: Json
           pos_quick_payment_amounts?: Json
           production_yield_variance_threshold_pct?: number
+          retail_tab_credit_limit_default?: number
           shift_denomination_count_enabled?: boolean
           shift_variance_pin_threshold_abs?: number
           shift_variance_pin_threshold_pct?: number
@@ -6578,7 +6581,7 @@ export type Database = {
         Args: { p_expense_id: string; p_manager_pin: string }
         Returns: Json
       }
-      attach_tab_customer_v2: {
+      attach_tab_customer_v3: {
         Args: { p_customer_id: string; p_order_id: string }
         Returns: Json
       }
@@ -8566,6 +8569,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      update_customer_credit_terms_v1: {
+        Args: { p_customer_id: string; p_patch: Json }
+        Returns: Json
       }
       update_lan_heartbeat_v2: {
         Args: { p_device_codes: string[] }
