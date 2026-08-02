@@ -1,10 +1,19 @@
 // apps/backoffice/src/features/reports/hooks/useCashFlow.ts
 //
-// Wraps `get_cash_flow_v2(p_date_start, p_date_end)`. MVP indirect method.
-// Audit Reports 2026-08-01 lot C / D1 — bumped v1 -> v2 : la v1 etait SECURITY
-// INVOKER sans gate et `journal_entry_lines` a pour policy is_authenticated(),
-// donc un caissier pouvait lire la tresorerie complete en appelant la RPC en
-// direct. v2 est SECURITY DEFINER et gatee sur reports.financial.read.
+// Wraps `get_cash_flow_v3(p_date_start, p_date_end)`. Methode indirecte par
+// CONTREPARTIE : operating + investing + financing = cash_end - cash_start par
+// identite de la partie double, et non plus `net_change := operating_total`.
+//
+// v2 n'additionnait que trois familles de comptes (AR, stocks, fournisseurs) :
+// la PB1 collectee, encaissee en tresorerie mais creditee en dette (2110),
+// n'apparaissait nulle part. Sur juillet 2026 l'ecran annoncait -515 546 quand
+// la tresorerie montait de +628 554 — le signe lui-meme etait faux. La ligne
+// `non_cash_adjustments`, qui valait 0 en dur, porte desormais ce montant.
+//
+// Audit Reports 2026-08-01 lot C / D1 — la v1 etait SECURITY INVOKER sans gate
+// et `journal_entry_lines` a pour policy is_authenticated(), donc un caissier
+// pouvait lire la tresorerie complete. v2 puis v3 sont SECURITY DEFINER et
+// gatees sur reports.financial.read.
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
@@ -47,7 +56,7 @@ export function useCashFlow(dateStart: string, dateEnd: string) {
     queryKey: [...CASH_FLOW_QK, dateStart, dateEnd] as const,
     staleTime: 60_000,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_cash_flow_v2', {
+      const { data, error } = await supabase.rpc('get_cash_flow_v3', {
         p_date_start: dateStart,
         p_date_end:   dateEnd,
       });

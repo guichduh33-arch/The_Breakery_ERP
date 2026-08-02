@@ -112,7 +112,7 @@ Groupes principaux (non exhaustif — 62 fichiers au total) :
 | Orders | `orders_list_v1.test.sql`, `orders_list_v2.test.sql`, `order_edit_items.test.sql`, `orders_read_perm.test.sql` |
 | Products | `product_variants.test.sql`, `product_category_crud.test.sql`, `update_product_v1.test.sql`, `products_cost_price_guard.test.sql` |
 | Reports | `reports.test.sql`, `reports_pnl_bs_cf.test.sql`, `bakery_reports.test.sql`, `zreports.test.sql`, `accounting_account_id_exposed.test.sql` |
-| Accounting / S26 | `s26_db_hardening.test.sql`, `update_account_active_v1.test.sql`, `accounting.test.sql`, `cash_flow_v1.test.sql` |
+| Accounting / S26 | `s26_db_hardening.test.sql`, `update_account_active_v1.test.sql`, `accounting.test.sql` |
 | Expenses | `expenses.test.sql`, `expense_governance.test.sql` |
 | B2B | `b2b_foundation.test.sql`, `b2b_credit.test.sql` |
 | Display stock | `display_stock.test.sql`, `complete_order_v10_display.test.sql` |

@@ -6621,7 +6621,6 @@ export type Database = {
         Args: { p_po_id: string; p_reason: string }
         Returns: Json
       }
-      cash_flow_v1: { Args: { p_from: string; p_to: string }; Returns: Json }
       check_fiscal_period_open: { Args: { p_date: string }; Returns: undefined }
       close_cancelled_tablet_order_v1: {
         Args: { p_order_id: string; p_reason?: string }
@@ -7144,7 +7143,7 @@ export type Database = {
           support_pair: number
         }[]
       }
-      get_cash_flow_v2: {
+      get_cash_flow_v3: {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }

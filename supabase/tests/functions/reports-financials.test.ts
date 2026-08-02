@@ -1,7 +1,7 @@
 // supabase/tests/functions/reports-financials.test.ts
 // Session 13 / Phase 6.A — Live integration tests for the financial /
 // market-basket report RPCs (get_profit_loss_v1, get_balance_sheet_v1,
-// get_cash_flow_v2, get_basket_analysis_v3).
+// get_cash_flow_v3, get_basket_analysis_v3).
 //
 // Coverage:
 //   - All 4 RPCs callable as an authenticated admin.
@@ -9,8 +9,8 @@
 //   - get_balance_sheet_v1 returns balanced = true on staging (no posted
 //     manual JEs other than seeded ones; if the staging happens to be
 //     unbalanced from old test data, we still verify the field exists).
-//   - get_cash_flow_v2 returns investing.total = 0 and financing.total = 0
-//     (MVP placeholders, D-W6-6A-2).
+//   - get_cash_flow_v3 réconcilie : operating + investing + financing retombe
+//     exactement sur cash_end - cash_start (identité de la partie double).
 //   - get_basket_analysis_v3 returns an array on a 30-day window.
 //
 // Pattern mirrors `reports-sales.test.ts`: PIN-login → JWT-bearing client → rpc().
@@ -91,12 +91,12 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('reports — financial R
   );
 
   it.runIf(!!process.env.SUPABASE_SERVICE_ROLE_KEY)(
-    'get_cash_flow_v2 returns investing=0 and financing=0 (MVP placeholders)',
+    'get_cash_flow_v3 reconcilie sur des donnees reelles',
     async () => {
       const sb = jwtClient(adminToken);
       const end   = new Date().toISOString().slice(0, 10);
       const start = new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10);
-      const { data, error } = await sb.rpc('get_cash_flow_v2', {
+      const { data, error } = await sb.rpc('get_cash_flow_v3', {
         p_date_start: start,
         p_date_end:   end,
       });
@@ -106,8 +106,18 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('reports — financial R
       expect(d).toHaveProperty('investing');
       expect(d).toHaveProperty('financing');
       expect(d).toHaveProperty('net_change_in_cash');
-      expect(Number((d.investing as Record<string, unknown>).total)).toBe(0);
-      expect(Number((d.financing as Record<string, unknown>).total)).toBe(0);
+
+      const section = (k: string) => Number((d[k] as Record<string, unknown>).total);
+      const netChange = Number(d.net_change_in_cash);
+      const implied   = Number(d.cash_end) - Number(d.cash_start);
+
+      // Les trois sections somment au net change...
+      expect(Math.abs(section('operating') + section('investing') + section('financing') - netChange))
+        .toBeLessThan(0.01);
+      // ...et ce net change EST le mouvement des comptes de tresorerie.
+      // C'est l'invariant que la v2 ne tenait pas : elle posait
+      // net_change := operating_total sans jamais le confronter au cash.
+      expect(Math.abs(netChange - implied)).toBeLessThan(0.01);
     },
   );
 
