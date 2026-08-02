@@ -1,10 +1,14 @@
 // apps/pos/src/features/heldOrders/hooks/useAttachTabCustomer.ts
 //
 // Session 62 — Task 5 — attach a named customer to a fired counter order
-// ("ardoise nommée") via `attach_tab_customer_v2` (Task 4, migration
-// `20260710000112_retail_tab_credit_gate.sql`). Not yet in
-// `types.generated.ts` (types regen deferred to closeout) — the call goes
-// through a narrow `LooseSupabase` cast, mirroring `useKdsBumpOrder.ts`.
+// ("ardoise nommée") via la famille `attach_tab_customer`. L'appel passe par un
+// cast `LooseSupabase` étroit, comme `useKdsBumpOrder.ts`.
+//
+// ADR-020 déc. 1 (2026-08-03) — repointé sur v3. v2 avait été droppée en base
+// sans que ce call-site suive : l'attache d'un client à une ardoise comptoir
+// répondait « function does not exist ». v3 change aussi le fond — le contrôle
+// d'encours évalue TOUJOURS un plafond, un client retail sans plafond
+// individuel retombant sur celui de l'établissement au lieu d'être illimité.
 //
 // The RPC raises three business errors as Postgres exceptions:
 //   - P0002 'order_not_found' / 'customer_not_found_or_inactive'
@@ -101,7 +105,7 @@ export function useAttachTabCustomer() {
 
   return useMutation<AttachTabCustomerResult, Error, AttachTabCustomerInput>({
     mutationFn: async ({ orderId, customerId }) => {
-      const { data, error } = await sb.rpc('attach_tab_customer_v2', {
+      const { data, error } = await sb.rpc('attach_tab_customer_v3', {
         p_order_id: orderId,
         p_customer_id: customerId,
       });

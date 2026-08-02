@@ -1,5 +1,9 @@
 -- supabase/tests/retail_tab_credit_gate.test.sql
--- S62 — attach_tab_customer_v2 (customers.retail_credit_limit gate).
+-- S62 — famille attach_tab_customer, garde d'encours de l'ardoise comptoir.
+-- ADR-020 dec. 1 (2026-08-03) — repointe sur v3, et T3 CHANGE DE SENS : un
+-- client retail sans plafond individuel n'est plus illimite, il retombe sur
+-- business_config.retail_tab_credit_limit_default. C'etait le point le plus
+-- couteux du domaine — toute ardoise comptoir etait sans plafond.
 -- Run via MCP execute_sql (BEGIN..ROLLBACK envelope carried by this file).
 BEGIN;
 
@@ -38,7 +42,7 @@ BEGIN
   INSERT INTO customers (name, customer_type, retail_credit_limit)
     VALUES ('S62 Tab C2 (T2)', 'retail', 50000) RETURNING id INTO v_c2;
   INSERT INTO customers (name, customer_type, retail_credit_limit)
-    VALUES ('S62 Tab C3 (T3, unlimited)', 'retail', NULL) RETURNING id INTO v_c3;
+    VALUES ('S62 Tab C3 (T3, sans plafond individuel)', 'retail', NULL) RETURNING id INTO v_c3;
   INSERT INTO customers (name, customer_type, retail_credit_limit)
     VALUES ('S62 Tab C4 (T4)', 'retail', 100000) RETURNING id INTO v_c4;
   INSERT INTO customers (name, customer_type, retail_credit_limit)
@@ -59,7 +63,7 @@ BEGIN
     VALUES (v_o2, v_prod, 'S62 Tab Item', 50000, 2, 100000);
 
   -- ── T3: fired counter order, huge total (still within orders.total's
-  --        DECIMAL(12,2) precision), unlimited cap ────────────────────────
+  --        DECIMAL(12,2) precision), sans plafond individuel ──────────────
   INSERT INTO orders (order_number, order_type, status, subtotal, tax_amount, total, created_via, session_id)
     VALUES ('#S62T3', 'take_out', 'pending_payment', 0, 0, 0, 'pos', v_session) RETURNING id INTO v_o3;
   INSERT INTO order_items (order_id, product_id, name_snapshot, unit_price, quantity, line_total)
@@ -104,7 +108,7 @@ END $$;
 
 -- T1: attach OK under the cap -> customer_id + total posted on the order.
 DO $$ DECLARE v_res JSONB; BEGIN
-  v_res := attach_tab_customer_v2(current_setting('s62.o1')::uuid, current_setting('s62.c1')::uuid);
+  v_res := attach_tab_customer_v3(current_setting('s62.o1')::uuid, current_setting('s62.c1')::uuid);
   INSERT INTO _r VALUES ('t1_total',      (v_res->>'total')::numeric = 50000);
   INSERT INTO _r VALUES ('t1_outstanding',(v_res->>'outstanding_before')::numeric = 0);
   INSERT INTO _r VALUES ('t1_order_row',  (SELECT customer_id FROM orders WHERE id = current_setting('s62.o1')::uuid) = current_setting('s62.c1')::uuid
@@ -117,7 +121,7 @@ END $$;
 
 -- T2: attach blocked beyond the cap -> P0011 credit_limit_exceeded.
 DO $$ BEGIN
-  PERFORM attach_tab_customer_v2(current_setting('s62.o2')::uuid, current_setting('s62.c2')::uuid);
+  PERFORM attach_tab_customer_v3(current_setting('s62.o2')::uuid, current_setting('s62.c2')::uuid);
   INSERT INTO _r VALUES ('t2_blocked', false);
 EXCEPTION WHEN SQLSTATE 'P0011' THEN
   INSERT INTO _r VALUES ('t2_blocked', SQLERRM LIKE 'credit_limit_exceeded%');
@@ -125,17 +129,22 @@ WHEN OTHERS THEN
   INSERT INTO _r VALUES ('t2_blocked', false);
 END $$;
 
--- T3: NULL cap = unlimited -> attach succeeds even with a huge order.
-DO $$ DECLARE v_res JSONB; BEGIN
-  v_res := attach_tab_customer_v2(current_setting('s62.o3')::uuid, current_setting('s62.c3')::uuid);
-  INSERT INTO _r VALUES ('t3_unlimited', (v_res->>'credit_limit') IS NULL AND (v_res->>'total')::numeric = 5000000000);
-EXCEPTION WHEN OTHERS THEN
-  INSERT INTO _r VALUES ('t3_unlimited', false);
+-- T3: retail sans plafond individuel -> le plafond de l'etablissement
+-- s'applique (ADR-020 dec. 1), donc la commande enorme est REFUSEE en P0011.
+-- Sous v2 ce meme cas etait illimite : c'est le comportement que l'ADR ferme.
+DO $$ BEGIN
+  PERFORM attach_tab_customer_v3(current_setting('s62.o3')::uuid, current_setting('s62.c3')::uuid);
+  INSERT INTO _r VALUES ('t3_default_cap', false);
+EXCEPTION WHEN SQLSTATE 'P0011' THEN
+  INSERT INTO _r VALUES ('t3_default_cap',
+    SQLERRM LIKE '%credit_limit_exceeded%' AND SQLERRM LIKE '%"credit_limit_source": "default"%');
+WHEN OTHERS THEN
+  INSERT INTO _r VALUES ('t3_default_cap', false);
 END $$;
 
 -- T4: existing 60 000 tab + a new 50 000 order, cap 100 000 -> blocked.
 DO $$ BEGIN
-  PERFORM attach_tab_customer_v2(current_setting('s62.o4b')::uuid, current_setting('s62.c4')::uuid);
+  PERFORM attach_tab_customer_v3(current_setting('s62.o4b')::uuid, current_setting('s62.c4')::uuid);
   INSERT INTO _r VALUES ('t4_outstanding_counted', false);
 EXCEPTION WHEN SQLSTATE 'P0011' THEN
   INSERT INTO _r VALUES ('t4_outstanding_counted', SQLERRM LIKE '%credit_limit_exceeded%');
@@ -145,7 +154,7 @@ END $$;
 
 -- T5: order already paid -> P0001 order_not_attachable.
 DO $$ BEGIN
-  PERFORM attach_tab_customer_v2(current_setting('s62.o5')::uuid, current_setting('s62.c5')::uuid);
+  PERFORM attach_tab_customer_v3(current_setting('s62.o5')::uuid, current_setting('s62.c5')::uuid);
   INSERT INTO _r VALUES ('t5_not_attachable', false);
 EXCEPTION WHEN SQLSTATE 'P0001' THEN
   INSERT INTO _r VALUES ('t5_not_attachable', SQLERRM LIKE 'order_not_attachable%');
@@ -155,7 +164,7 @@ END $$;
 
 -- T6: soft-deleted customer -> P0002 customer_not_found_or_inactive.
 DO $$ BEGIN
-  PERFORM attach_tab_customer_v2(current_setting('s62.o6')::uuid, current_setting('s62.c6')::uuid);
+  PERFORM attach_tab_customer_v3(current_setting('s62.o6')::uuid, current_setting('s62.c6')::uuid);
   INSERT INTO _r VALUES ('t6_inactive', false);
 EXCEPTION WHEN SQLSTATE 'P0002' THEN
   INSERT INTO _r VALUES ('t6_inactive', SQLERRM = 'customer_not_found_or_inactive');
@@ -175,7 +184,7 @@ END $$;
 
 -- T8: re-attach the same customer to order 1 -> idempotent, same values, no error.
 DO $$ DECLARE v_res JSONB; BEGIN
-  v_res := attach_tab_customer_v2(current_setting('s62.o1')::uuid, current_setting('s62.c1')::uuid);
+  v_res := attach_tab_customer_v3(current_setting('s62.o1')::uuid, current_setting('s62.c1')::uuid);
   INSERT INTO _r VALUES ('t8_reattach', (v_res->>'total')::numeric = 50000
                                      AND (v_res->>'customer_id')::uuid = current_setting('s62.c1')::uuid);
 EXCEPTION WHEN OTHERS THEN
@@ -187,7 +196,7 @@ CREATE TEMP TABLE _cap(l TEXT);
 INSERT INTO _cap SELECT ok((SELECT pass FROM _r WHERE name='t1_total') AND (SELECT pass FROM _r WHERE name='t1_order_row'),
                             'T1: attach under cap posts total=50000 + customer_id on the order row');
 INSERT INTO _cap SELECT ok((SELECT pass FROM _r WHERE name='t2_blocked'),     'T2: attach beyond cap raises P0011 credit_limit_exceeded');
-INSERT INTO _cap SELECT ok((SELECT pass FROM _r WHERE name='t3_unlimited'),   'T3: NULL cap = unlimited, huge order attaches fine');
+INSERT INTO _cap SELECT ok((SELECT pass FROM _r WHERE name='t3_default_cap'), 'T3: retail sans plafond individuel -> plafond etablissement applique (source=default), grosse commande refusee');
 INSERT INTO _cap SELECT ok((SELECT pass FROM _r WHERE name='t4_outstanding_counted'), 'T4: existing outstanding counted against the cap (60k+50k>100k)');
 INSERT INTO _cap SELECT ok((SELECT pass FROM _r WHERE name='t5_not_attachable'), 'T5: paid order raises P0001 order_not_attachable');
 INSERT INTO _cap SELECT ok((SELECT pass FROM _r WHERE name='t6_inactive'),    'T6: soft-deleted customer raises P0002 customer_not_found_or_inactive');
