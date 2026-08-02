@@ -1,13 +1,19 @@
--- supabase/tests/set_setting_v4_tax_switch_gate.test.sql
+-- supabase/tests/set_setting_v3_tax_switch_gate.test.sql
 -- Lot 6b (migration 20260717000179) — la bascule du réglage `tax_inclusive`
 -- est refusée tant que des commandes ouvertes (draft/pending_payment)
 -- existent ; un write no-op reste permis ; b2b_pending n'entre pas dans le
--- gate (hors champ PBJT). Versioning : set_setting_v2 droppée, v3 ACL sans
+-- gate (hors champ PBJT). Versioning : set_setting_v2 droppée, ACL vivante sans
 -- anon/PUBLIC.
 --
 -- Toutes les écritures (bascule comprise) sont faites DANS la transaction et
 -- annulées par le ROLLBACK. Run via MCP execute_sql (BEGIN..ROLLBACK porté
 -- par ce fichier ; pattern temp-table, cf. settings_business_identity.test.sql).
+--
+-- Lot 1.B (2026-08-03) — repointe sur les versions vivantes des familles de
+-- reglages. Ce fichier etait ROUGE et INVISIBLE : il rend ses assertions
+-- agregees dans une colonne, donc jamais « not ok » en debut de ligne, et le
+-- compteur de la CI le tenait pour vert. Le gate lit desormais aussi le resume
+-- de finish().
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
@@ -30,13 +36,13 @@ END $$;
 -- Point de départ déterministe : mode inclusif.
 UPDATE business_config SET tax_inclusive = true WHERE id = 1;
 
--- T1: v2 droppée ; v3 existe avec ACL sans anon ni PUBLIC.
+-- T1: v2 droppée ; la version vivante existe avec ACL sans anon ni PUBLIC.
 DO $$ BEGIN
   INSERT INTO _r VALUES ('t1_versioning',
     (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
       WHERE n.nspname = 'public' AND p.proname = 'set_setting_v2') = 0
     AND (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
-      WHERE n.nspname = 'public' AND p.proname = 'set_setting_v4'
+      WHERE n.nspname = 'public' AND p.proname = 'set_setting_v12'
         AND p.proacl::text NOT LIKE '%anon%'
         AND p.proacl::text NOT LIKE '{=X%') = 1);
 EXCEPTION WHEN OTHERS THEN
@@ -61,7 +67,7 @@ END $$;
 --     (P0001 tax_mode_switch_blocked) et le mode reste inchangé.
 DO $$ DECLARE v_ok BOOLEAN := false; BEGIN
   BEGIN
-    PERFORM set_setting_v4('tax_inclusive', 'false'::jsonb, 'tax');
+    PERFORM set_setting_v12('tax_inclusive', 'false'::jsonb, 'tax');
   EXCEPTION WHEN SQLSTATE 'P0001' THEN
     v_ok := SQLERRM = 'tax_mode_switch_blocked';
   END;
@@ -73,7 +79,7 @@ END $$;
 
 -- T3: le write no-op (même valeur) reste permis malgré la commande ouverte.
 DO $$ BEGIN
-  PERFORM set_setting_v4('tax_inclusive', 'true'::jsonb, 'tax');
+  PERFORM set_setting_v12('tax_inclusive', 'true'::jsonb, 'tax');
   INSERT INTO _r VALUES ('t3_noop_allowed',
     (SELECT tax_inclusive FROM business_config WHERE id = 1) = true);
 EXCEPTION WHEN OTHERS THEN
@@ -92,7 +98,7 @@ BEGIN
      SET status = 'voided', voided_at = now(), voided_by = v_voider,
          void_reason = 'test — settle open orders for tax switch'
    WHERE status IN ('draft', 'pending_payment');
-  PERFORM set_setting_v4('tax_inclusive', 'false'::jsonb, 'tax');
+  PERFORM set_setting_v12('tax_inclusive', 'false'::jsonb, 'tax');
   INSERT INTO _r VALUES ('t4_flip_allowed',
     (SELECT tax_inclusive FROM business_config WHERE id = 1) = false);
 EXCEPTION WHEN OTHERS THEN
@@ -118,7 +124,7 @@ END $$;
 
 SELECT plan(5);
 CREATE TEMP TABLE _cap(l TEXT);
-INSERT INTO _cap SELECT ok((SELECT pass FROM _r WHERE name='t1_versioning'),  'T1: set_setting_v2 dropped; v3 ACL excludes anon/PUBLIC');
+INSERT INTO _cap SELECT ok((SELECT pass FROM _r WHERE name='t1_versioning'),  'T1: set_setting_v2 droppee ; l ACL de la version vivante exclut anon/PUBLIC');
 INSERT INTO _cap SELECT ok((SELECT pass FROM _r WHERE name='t2_flip_blocked'),'T2: flip refused while a draft order is open (tax_mode_switch_blocked)');
 INSERT INTO _cap SELECT ok((SELECT pass FROM _r WHERE name='t3_noop_allowed'),'T3: same-value write allowed despite open orders');
 INSERT INTO _cap SELECT ok((SELECT pass FROM _r WHERE name='t4_flip_allowed'),'T4: flip succeeds once open orders are settled');

@@ -90,9 +90,16 @@ jobs:
             out=$(psql "$PGURL" -v ON_ERROR_STOP=1 -f "$f" 2>&1) || rc=$?
             printf '%s\n' "$out"
             not_ok=$(printf '%s\n' "$out" | grep -cE '^[[:space:]]*not ok [0-9]' || true)
-            if [ "$rc" -ne 0 ] || [ "$not_ok" -gt 0 ]; then
+            # Lot 1.B — le compteur `not ok` en debut de ligne ne suffit pas.
+            # 17 suites capturent leurs assertions dans une table temporaire et
+            # les rendent AGREGEES DANS UNE COLONNE : leurs `not ok` ne sont
+            # jamais en debut de ligne, et le gate les comptait vertes. Quatre
+            # suites rouges se cachaient ainsi derriere un run « 7 echecs ».
+            # `finish()` emet ce resume quelle que soit la presentation.
+            summary=$(printf '%s\n' "$out" | grep -cE '# Looks like you failed [0-9]+ test' || true)
+            if [ "$rc" -ne 0 ] || [ "$not_ok" -gt 0 ] || [ "$summary" -gt 0 ]; then
               fail_count=$((fail_count+1))
-              fail_list="${fail_list}\n - ${f} (exit=${rc}, not_ok=${not_ok})"
+              fail_list="${fail_list}\n - ${f} (exit=${rc}, not_ok=${not_ok}, tap_summary=${summary})"
             fi
           done
           if [ "$fail_count" -gt 0 ]; then
