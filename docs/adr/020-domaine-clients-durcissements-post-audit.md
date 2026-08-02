@@ -1,4 +1,4 @@
-# ADR-019 — Domaine Clients : durcissements post-audit (plafonds de crédit, écritures hors RPC, prix négocié, périmètre fidélité)
+# ADR-020 — Domaine Clients : durcissements post-audit (plafonds de crédit, écritures hors RPC, prix négocié, périmètre fidélité)
 
 > **Date** : 2026-08-02
 > **Statut** : ✅ Accepted (2026-08-02)
