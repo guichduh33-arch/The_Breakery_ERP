@@ -14,22 +14,30 @@ name: Playwright E2E
 # run (26 passed / 2 intentional fixmes / 0 failed). 22:00 UTC daily. The
 # rate-limit-resilient login (fixtures/auth.ts) keeps the bunched-login run
 # green against the auth-verify-pin 3/min/IP limit. Still dispatchable on demand.
-# Lot 1.B (2026-08-03) — le money-path passe aussi sur PR. Jusqu'ici les 12
-# specs ne tournaient QU'en cron 2×/semaine, donc toujours après merge : une
-# régression du parcours commande→paiement se découvrait sur master.
-# Sur PR, seules les 3 specs money-path du projet `pos` sont jouées, et seul
-# le POS est buildé (E2E_SKIP_BO_SERVER) — le cron garde les 12 specs.
+# Lot 1.B (2026-08-03) — le money-path DEVAIT passer aussi sur PR : jusqu'ici
+# les 12 specs ne tournaient qu'en cron 2×/semaine, donc toujours après merge.
+# Le câblage est écrit et vérifié (3 specs du projet `pos`, POS seul buildé via
+# E2E_SKIP_BO_SERVER, sélection dans l'étape « Run Playwright tests »), mais le
+# déclencheur `pull_request` reste DÉSARMÉ.
+#
+# Pourquoi : l'Edge Function process-payment répond 500 sur la base dev, et le
+# cron est rouge depuis au moins le 2026-07-20 pour cette raison. Armer le
+# déclencheur bloquerait toute PR touchant le POS, le domaine ou les migrations
+# sur une panne qui leur est étrangère. Le rebranchement tient en un bloc :
+#
+#   pull_request:
+#     branches: [master, main]
+#     paths:
+#       - 'apps/pos/**'
+#       - 'packages/domain/**'
+#       - 'supabase/migrations/**'
+#       - 'supabase/functions/**'
+#       - 'tests/e2e/**'
+#       - 'playwright.config.ts'
+#
+# À réarmer dès que l'encaissement repasse vert — pas avant, et pas plus tard.
 on:
   workflow_dispatch:
-  pull_request:
-    branches: [master, main]
-    paths:
-      - 'apps/pos/**'
-      - 'packages/domain/**'
-      - 'supabase/migrations/**'
-      - 'supabase/functions/**'
-      - 'tests/e2e/**'
-      - 'playwright.config.ts'
   schedule:
     # Quota 2026-07 — 2×/semaine au lieu de quotidien (~-300 min/mois).
     # 22:00 UTC lun/jeu = 05:00 Asia/Jakarta mar/ven. Dispatchable à la
