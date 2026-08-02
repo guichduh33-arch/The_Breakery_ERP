@@ -88,6 +88,7 @@ jobs:
             supabase/tests/financial_rpc_perm_gates.test.sql
             supabase/tests/adr019_timezone_session_invariant.test.sql
             supabase/tests/security_partition_grants.test.sql
+            supabase/tests/security_append_only_ledgers.test.sql
           )
           fail_count=0
           fail_list=""
