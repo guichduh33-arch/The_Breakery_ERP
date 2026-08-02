@@ -91,7 +91,9 @@ Si un document contredit le code, le document a tort : **signale-le, ne corrige 
 - Validate input at system boundaries.
 - Monorepo pnpm/turbo : code dans `apps/{pos,backoffice}/src`,
   `packages/{domain,supabase,ui,utils}/src`, `supabase/{functions,migrations,tests}`.
-  Tests co-localisés dans `__tests__/`.
+  Tests co-localisés dans `__tests__/` — un même module en a souvent PLUSIEURS
+  (`pages/<x>/__tests__` ET `features/<x>/__tests__`) : chercher par glob, jamais
+  conclure « pas de test » depuis un seul répertoire.
 - **Sous-agents (Task tool) : autorisés dans une session, sous régime strict.**
   Le plan est approuvé par Mamat AVANT tout dispatch ; les sous-agents exécutent
   ce plan, toute déviation remonte à Mamat (jamais arbitrée en interne).
@@ -177,6 +179,12 @@ Si un document contredit le code, le document a tort : **signale-le, ne corrige 
   Header dédié type `x-manager-pin`, hard cutover dans le même commit.
 - **Enums : source unique = Postgres.** Aucun string littéral dérivé côté TS
   (`take_away` vs `take_out` = la classe de bug à tuer).
+- **Fuseau métier = paramètre de session PostgreSQL**, posé pour toute la base
+  (`Asia/Makassar`) par `20260503000000_init_extensions_enums.sql`. Un cast
+  `::date` sur un `timestamptz` rend donc DÉJÀ le bon jour métier : ne jamais
+  conclure à un décalage de fuseau sans l'avoir vérifié sur les données. La
+  colonne `business_config.timezone` est un miroir, pas l'autorité. Le fuseau est
+  une constante de déploiement (ADR-019), pas un réglage à chaud.
 - ⚠️ **Bookkeeping cloud `schema_migrations` abîmé** (repair historique, ~400 lignes
   supprimées) — schéma réel intact, workflow MCP non affecté. Ne pas « réparer ».
 
