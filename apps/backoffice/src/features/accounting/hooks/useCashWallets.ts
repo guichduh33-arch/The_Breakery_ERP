@@ -1,5 +1,5 @@
 // apps/backoffice/src/features/accounting/hooks/useCashWallets.ts
-// Cash Wallets module — wraps get_cash_wallet_balances_v1 RPC.
+// Cash Wallets module — wraps get_cash_wallet_balances_v2 RPC (gate accounting.cash.read).
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
 
@@ -16,10 +16,9 @@ export function useCashWallets() {
     queryKey: CASH_WALLETS_KEY,
     staleTime: 30_000,
     queryFn: async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await supabase.rpc('get_cash_wallet_balances_v1', {} as any);
+      const { data, error } = await supabase.rpc('get_cash_wallet_balances_v2');
       if (error !== null) throw new Error(error.message);
-      return (data ?? []) as WalletBalance[];
+      return data ?? [];
     },
   });
 }

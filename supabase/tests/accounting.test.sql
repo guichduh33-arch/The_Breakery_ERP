@@ -34,8 +34,8 @@
 -- T26 : tr_stock_movement_je skips transfer_in (no JE for intra-company)
 -- T27 : tr_stock_movement_je respects fiscal guard
 -- T28 : calculate_vat_payable returns correct vat_output - vat_input
--- T29 : get_balance_sheet_data balances (assets = liab + equity_with_cye)
--- T30 : get_balance_sheet_data computes CYE from revenue - cogs - expense
+-- T29 : get_balance_sheet_data est droppee (orpheline, remplacee par _v2)
+-- T30 : get_balance_sheet_v2 existe, SECURITY DEFINER, et porte son gate
 -- T31 : record_stock_movement_v1 accepts p_lot_id (B1 pattern a)
 -- T32 : record_stock_movement_v1 backward-compat — old caller without lot_id still works
 -- T33 : refund_order_rpc is dropped ; refund_order_rpc_v2 exists
@@ -525,13 +525,26 @@ SELECT ok(
 -- ---------------------------------------------------------------------------
 -- T29-T30 — balance sheet
 -- ---------------------------------------------------------------------------
+-- Lot 1 : get_balance_sheet_data etait SECURITY DEFINER sans has_permission et
+-- executable par tout `authenticated`, alors qu elle n avait plus aucun
+-- call-site applicatif — seule cette suite l appelait. Elle est supprimee au
+-- profit de get_balance_sheet_v2, qui exige reports.financial.read. On teste
+-- desormais la disparition de l une et le gate de l autre, comme T33/T34 le
+-- font deja pour refund_order_rpc.
 SELECT ok(
-  (SELECT (get_balance_sheet_data(CURRENT_DATE)) ? 'current_year_earnings'),
-  'T29: get_balance_sheet_data returns current_year_earnings key'
+  to_regprocedure('public.get_balance_sheet_data(date)') IS NULL,
+  'T29: get_balance_sheet_data est droppee (orpheline, non gatee)'
 );
 SELECT ok(
-  (SELECT (get_balance_sheet_data(CURRENT_DATE)) ? 'totals'),
-  'T30: get_balance_sheet_data returns totals envelope'
+  EXISTS (
+    SELECT 1 FROM pg_proc p
+      JOIN pg_namespace n ON n.oid = p.pronamespace
+     WHERE n.nspname = 'public'
+       AND p.proname = 'get_balance_sheet_v2'
+       AND p.prosecdef
+       AND pg_get_functiondef(p.oid) LIKE '%reports.financial.read%'
+  ),
+  'T30: get_balance_sheet_v2 existe, SECURITY DEFINER, gatee reports.financial.read'
 );
 
 -- ---------------------------------------------------------------------------

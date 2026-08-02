@@ -1,0 +1,22 @@
+-- Lot 1 — Quatrieme vue en SECURITY DEFINER, trouvee en verifiant les trois autres.
+--
+-- view_section_stock_details a le meme defaut que view_ar_aging,
+-- view_b2b_invoices et v_product_available_stock : elle s execute avec les
+-- droits de son proprietaire, donc la RLS de l appelant ne s applique pas, et
+-- elle est accordee a `authenticated`.
+--
+-- Les advisors Supabase ne la signalaient pas — leur regle security_definer_view
+-- n avait remonte que trois vues. Elle est apparue en relevant l etat de TOUTES
+-- les vues du schema apres la bascule des trois premieres : c est le relevé
+-- exhaustif qui la trouve, pas l alerte.
+--
+-- Effet mesure en transaction, par role : 70 lignes avant, 70 lignes apres, pour
+-- les cinq profils actifs. La bascule est neutre ici — les tables sous-jacentes
+-- n ont pas de RLS restrictive sur ce perimetre. On l aligne quand meme : une
+-- exception sans raison finit par en justifier d autres.
+--
+-- Restent en SECURITY DEFINER apres cette migration : pg_all_foreign_keys et
+-- tap_funky, deux vues de l extension pgTAP appartenant a supabase_admin, hors
+-- perimetre des migrations de ce depot.
+
+ALTER VIEW public.view_section_stock_details SET (security_invoker = true);

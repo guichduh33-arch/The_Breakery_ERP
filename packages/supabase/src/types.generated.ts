@@ -6889,6 +6889,10 @@ export type Database = {
         }
         Returns: Json
       }
+      create_pos_events_partition_v1: {
+        Args: { p_month: string }
+        Returns: string
+      }
       create_product_v2: { Args: { p_payload: Json }; Returns: Json }
       create_purchase_order_v2: {
         Args: {
@@ -7126,7 +7130,6 @@ export type Database = {
       }
       get_b2b_invoice_v1: { Args: { p_order_id: string }; Returns: Json }
       get_b2b_settings_v1: { Args: never; Returns: Json }
-      get_balance_sheet_data: { Args: { p_as_of?: string }; Returns: Json }
       get_balance_sheet_v2: { Args: { p_as_of_date: string }; Returns: Json }
       get_basket_analysis_v3: {
         Args: { p_date_end: string; p_date_start: string; p_top_n?: number }
@@ -7147,11 +7150,11 @@ export type Database = {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
-      get_cash_wallet_analysis_v1: {
+      get_cash_wallet_analysis_v2: {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
-      get_cash_wallet_balances_v1: {
+      get_cash_wallet_balances_v2: {
         Args: never
         Returns: {
           account_code: string
@@ -7159,7 +7162,7 @@ export type Database = {
           balance: number
         }[]
       }
-      get_cash_wallet_ledger_v2: {
+      get_cash_wallet_ledger_v3: {
         Args: {
           p_account_code: string
           p_date_end: string
