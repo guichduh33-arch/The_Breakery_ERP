@@ -1,9 +1,15 @@
 -- supabase/tests/settings_org_display_printing.test.sql
 -- S73 Lot 2 (migration 20260711000159) — org-level customer display copy +
 -- payment auto-toggles: columns, categories customer_display/printing on
--- get_settings_by_category_v1, set_setting_v1 round-trip + validation + audit.
+-- get_settings_by_category_v9, ecriture de reglage round-trip + validation + audit.
 -- Run via MCP execute_sql / API-from-file (BEGIN..ROLLBACK envelope carried by
 -- this file; temp-table capture pattern, cf. payment_methods_config.test.sql).
+--
+-- Lot 1.B (2026-08-03) — repointe sur les versions vivantes des familles de
+-- reglages. Ce fichier etait ROUGE et INVISIBLE : il rend ses assertions
+-- agregees dans une colonne, donc jamais « not ok » en debut de ligne, et le
+-- compteur de la CI le tenait pour vert. Le gate lit desormais aussi le resume
+-- de finish().
 BEGIN;
 
 CREATE TEMP TABLE _r(name TEXT PRIMARY KEY, pass BOOLEAN) ON COMMIT DROP;
@@ -37,7 +43,7 @@ END $$;
 
 -- T2: catégorie customer_display expose les 2 clés texte.
 DO $$ DECLARE v JSONB; BEGIN
-  v := get_settings_by_category_v1('customer_display')->'settings';
+  v := get_settings_by_category_v9('customer_display')->'settings';
   INSERT INTO _r VALUES ('t2_get_cd', (v ? 'display_footer_message') AND (v ? 'display_slogan'));
 EXCEPTION WHEN OTHERS THEN
   INSERT INTO _r VALUES ('t2_get_cd', false);
@@ -45,7 +51,7 @@ END $$;
 
 -- T3: catégorie printing expose les 2 toggles.
 DO $$ DECLARE v JSONB; BEGIN
-  v := get_settings_by_category_v1('printing')->'settings';
+  v := get_settings_by_category_v9('printing')->'settings';
   INSERT INTO _r VALUES ('t3_get_printing', (v ? 'pos_auto_print_receipt') AND (v ? 'pos_auto_open_drawer'));
 EXCEPTION WHEN OTHERS THEN
   INSERT INTO _r VALUES ('t3_get_printing', false);
@@ -53,9 +59,9 @@ END $$;
 
 -- T4: round-trip set display_slogan (string) → relecture identique ; '' accepté.
 DO $$ DECLARE v JSONB; BEGIN
-  PERFORM set_setting_v1('display_slogan', to_jsonb('Test slogan'::text), 'customer_display');
-  PERFORM set_setting_v1('display_footer_message', to_jsonb(''::text), 'customer_display');
-  v := get_settings_by_category_v1('customer_display')->'settings';
+  PERFORM set_setting_v12('display_slogan', to_jsonb('Test slogan'::text), 'customer_display');
+  PERFORM set_setting_v12('display_footer_message', to_jsonb(''::text), 'customer_display');
+  v := get_settings_by_category_v9('customer_display')->'settings';
   INSERT INTO _r VALUES ('t4_set_text',
     v->>'display_slogan' = 'Test slogan' AND v->>'display_footer_message' = '');
 EXCEPTION WHEN OTHERS THEN
@@ -64,8 +70,8 @@ END $$;
 
 -- T5: round-trip set pos_auto_print_receipt (boolean).
 DO $$ DECLARE v JSONB; BEGIN
-  PERFORM set_setting_v1('pos_auto_print_receipt', 'false'::jsonb, 'printing');
-  v := get_settings_by_category_v1('printing')->'settings';
+  PERFORM set_setting_v12('pos_auto_print_receipt', 'false'::jsonb, 'printing');
+  v := get_settings_by_category_v9('printing')->'settings';
   INSERT INTO _r VALUES ('t5_set_bool', (v->'pos_auto_print_receipt') = 'false'::jsonb);
 EXCEPTION WHEN OTHERS THEN
   INSERT INTO _r VALUES ('t5_set_bool', false);
@@ -74,13 +80,13 @@ END $$;
 -- T6: type invalide rejeté (nombre sur clé texte, string sur clé booléenne).
 DO $$ DECLARE v_ok BOOLEAN := true; BEGIN
   BEGIN
-    PERFORM set_setting_v1('display_slogan', '42'::jsonb, 'customer_display');
+    PERFORM set_setting_v12('display_slogan', '42'::jsonb, 'customer_display');
     v_ok := false;
   EXCEPTION WHEN SQLSTATE '22023' THEN
     v_ok := v_ok AND SQLERRM = 'setting_type_invalid';
   END;
   BEGIN
-    PERFORM set_setting_v1('pos_auto_open_drawer', '"yes"'::jsonb, 'printing');
+    PERFORM set_setting_v12('pos_auto_open_drawer', '"yes"'::jsonb, 'printing');
     v_ok := false;
   EXCEPTION WHEN SQLSTATE '22023' THEN
     v_ok := v_ok AND SQLERRM = 'setting_type_invalid';
@@ -92,7 +98,7 @@ END $$;
 
 -- T7: longueur max — slogan > 80 chars rejeté (setting_value_invalid).
 DO $$ BEGIN
-  PERFORM set_setting_v1('display_slogan', to_jsonb(repeat('x', 81)), 'customer_display');
+  PERFORM set_setting_v12('display_slogan', to_jsonb(repeat('x', 81)), 'customer_display');
   INSERT INTO _r VALUES ('t7_maxlen', false);
 EXCEPTION WHEN SQLSTATE '22023' THEN
   INSERT INTO _r VALUES ('t7_maxlen', SQLERRM = 'setting_value_invalid');

@@ -1,8 +1,11 @@
 -- supabase/tests/settings_kot_copies.test.sql
 -- Chantier KOT copies (migration 20260718000195) — business_config
--- kot_copies_{barista,kitchen,display} + branches set_setting_v4 + catégorie
--- 'printing' de get_settings_by_category_v3. Auth pattern: EMP000 (ADMIN)
--- porte settings.update + settings.read (mirror settings_kds.test.sql).
+-- kot_copies_{barista,kitchen,display} + branches d'écriture de réglage +
+-- catégorie 'printing' de la lecture par catégorie. Auth pattern: EMP000
+-- (ADMIN) porte settings.update + settings.read (mirror settings_kds.test.sql).
+--
+-- Lot 1.B (2026-08-03) — repointé sur les versions vivantes des deux familles
+-- de réglages : elles avaient été bumpées sans que cette suite suive.
 --
 -- Run via MCP execute_sql wrapped BEGIN/ROLLBACK (ou API-from-file).
 
@@ -36,7 +39,7 @@ SELECT ok(
 
 -- 3: 'printing' category exposes the 5 keys (2 legacy toggles + 3 copies).
 SELECT is(
-  (get_settings_by_category_v3('printing')->'settings') - 'pos_auto_print_receipt' - 'pos_auto_open_drawer',
+  (get_settings_by_category_v9('printing')->'settings') - 'pos_auto_print_receipt' - 'pos_auto_open_drawer',
   jsonb_build_object(
     'kot_copies_barista', 1,
     'kot_copies_kitchen', 1,
@@ -45,40 +48,40 @@ SELECT is(
 
 -- 4: happy path — 0 is a legal value (paper off for that station).
 SELECT lives_ok(
-  $$SELECT set_setting_v4('kot_copies_barista', '0'::jsonb, 'printing')$$,
+  $$SELECT set_setting_v12('kot_copies_barista', '0'::jsonb, 'printing')$$,
   'set kot_copies_barista=0 succeeds (paper off)');
 
 -- 5: happy path — upper bound 5.
 SELECT lives_ok(
-  $$SELECT set_setting_v4('kot_copies_kitchen', '5'::jsonb, 'printing')$$,
+  $$SELECT set_setting_v12('kot_copies_kitchen', '5'::jsonb, 'printing')$$,
   'set kot_copies_kitchen=5 succeeds (upper bound)');
 
 -- 6: negative -> rejected.
 SELECT throws_ok(
-  $$SELECT set_setting_v4('kot_copies_kitchen', '-1'::jsonb, 'printing')$$,
+  $$SELECT set_setting_v12('kot_copies_kitchen', '-1'::jsonb, 'printing')$$,
   '22023', NULL, 'kot_copies_kitchen=-1 rejected (out of [0,5])');
 
 -- 7: above max -> rejected.
 SELECT throws_ok(
-  $$SELECT set_setting_v4('kot_copies_display', '6'::jsonb, 'printing')$$,
+  $$SELECT set_setting_v12('kot_copies_display', '6'::jsonb, 'printing')$$,
   '22023', NULL, 'kot_copies_display=6 rejected (out of [0,5])');
 
 -- 8: non-integer -> rejected.
 SELECT throws_ok(
-  $$SELECT set_setting_v4('kot_copies_display', '1.5'::jsonb, 'printing')$$,
+  $$SELECT set_setting_v12('kot_copies_display', '1.5'::jsonb, 'printing')$$,
   '22023', NULL, 'kot_copies_display=1.5 rejected (not an integer)');
 
 -- 9: non-number -> rejected.
 SELECT throws_ok(
-  $$SELECT set_setting_v4('kot_copies_barista', '"2"'::jsonb, 'printing')$$,
+  $$SELECT set_setting_v12('kot_copies_barista', '"2"'::jsonb, 'printing')$$,
   '22023', NULL, 'kot_copies_barista="2" rejected (expects number)');
 
 -- 10: round-trip — final state reflects the writes (0 / 5 / 2).
 SELECT lives_ok(
-  $$SELECT set_setting_v4('kot_copies_display', '2'::jsonb, 'printing')$$,
+  $$SELECT set_setting_v12('kot_copies_display', '2'::jsonb, 'printing')$$,
   'set kot_copies_display=2 succeeds');
 SELECT is(
-  (get_settings_by_category_v3('printing')->'settings') - 'pos_auto_print_receipt' - 'pos_auto_open_drawer',
+  (get_settings_by_category_v9('printing')->'settings') - 'pos_auto_print_receipt' - 'pos_auto_open_drawer',
   jsonb_build_object(
     'kot_copies_barista', 0,
     'kot_copies_kitchen', 5,

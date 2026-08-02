@@ -70,7 +70,10 @@ DECLARE
   v_prod_id     UUID := gen_random_uuid();
 BEGIN
   SELECT auth_user_id INTO v_admin_uid FROM user_profiles
-   WHERE role_code = 'SUPER_ADMIN' AND deleted_at IS NULL LIMIT 1;
+   WHERE role_code = 'SUPER_ADMIN' AND deleted_at IS NULL
+     -- cf. delete_product_v1 : SYS-CRON n'a pas d'auth_user_id.
+     AND auth_user_id IS NOT NULL AND is_active
+   ORDER BY employee_code LIMIT 1;
   IF v_admin_uid IS NULL THEN
     RAISE EXCEPTION 'No SUPER_ADMIN user available for tests';
   END IF;

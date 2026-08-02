@@ -51,9 +51,14 @@ jobs:
             out=$(psql "$PGURL" -v ON_ERROR_STOP=1 -f "$f" 2>&1) || rc=$?
             printf '%s\n' "$out"
             not_ok=$(printf '%s\n' "$out" | grep -cE '^[[:space:]]*not ok [0-9]' || true)
-            if [ "$rc" -ne 0 ] || [ "$not_ok" -gt 0 ]; then
+            # Lot 1.B — miroir de pgtap-pr.yml : 17 suites rendent leurs
+            # assertions agregees dans une colonne, donc jamais `not ok` en
+            # debut de ligne. `finish()` emet ce resume quelle que soit la
+            # presentation ; sans lui, quatre suites rouges passaient vertes.
+            summary=$(printf '%s\n' "$out" | grep -cE '# Looks like you failed [0-9]+ test' || true)
+            if [ "$rc" -ne 0 ] || [ "$not_ok" -gt 0 ] || [ "$summary" -gt 0 ]; then
               fail_count=$((fail_count+1))
-              fail_list="${fail_list}\n - ${f} (exit=${rc}, not_ok=${not_ok})"
+              fail_list="${fail_list}\n - ${f} (exit=${rc}, not_ok=${not_ok}, tap_summary=${summary})"
             fi
           done
           if [ "$fail_count" -gt 0 ]; then

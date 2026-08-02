@@ -60,28 +60,31 @@ SELECT cmp_ok(
 -- --------------------------------------------------------------
 -- Functions
 -- --------------------------------------------------------------
-SELECT has_function('public', 'get_settings_by_category_v1', ARRAY['text'], 'get_settings_by_category_v1 exists');
-SELECT has_function('public', 'set_setting_v1',              ARRAY['text','jsonb','text'], 'set_setting_v1 exists');
+-- Lot 1.B (2026-08-03) — repointé v1 -> versions vivantes. Ces quatre
+-- assertions étaient rouges au run nocturne depuis les bumps de la famille
+-- settings : elles épinglaient des versions droppées, et la garde
+-- « un appelant non authentifié se fait refuser » ne portait donc plus sur
+-- rien. La version se vérifie dans supabase/migrations/ et au call-site.
+SELECT has_function('public', 'get_settings_by_category_v9', ARRAY['text'], 'get_settings_by_category_v9 exists');
+SELECT has_function('public', 'set_setting_v12',             ARRAY['text','jsonb','text'], 'set_setting_v12 exists');
 
--- get_settings_by_category_v1 should return business keys for 'business'
--- when called with service_role search_path bypassing RLS — we drive it
--- as SECURITY DEFINER so its inner has_permission check is the gate.
--- Since this is a pgTAP suite running outside an auth context,
--- auth.uid() is NULL and has_permission returns FALSE. We instead just
--- verify the function exists and exits with the expected error code.
+-- La lecture par catégorie est SECURITY DEFINER : sa garde interne est
+-- has_permission. Cette suite tourne hors contexte d'auth, donc auth.uid()
+-- est NULL et has_permission renvoie FALSE — on vérifie que le refus sort
+-- bien en 42501, pas que la lecture fonctionne.
 SELECT throws_ok(
-  $$SELECT get_settings_by_category_v1('business')$$,
+  $$SELECT get_settings_by_category_v9('business')$$,
   '42501',
   NULL,
-  'get_settings_by_category_v1 rejects unauthenticated callers'
+  'get_settings_by_category_v9 rejects unauthenticated callers'
 );
 
--- set_setting_v1 also rejects unauthenticated callers
+-- L'écriture refuse elle aussi un appelant non authentifié
 SELECT throws_ok(
-  $$SELECT set_setting_v1('name', '"Test"'::jsonb, 'business')$$,
+  $$SELECT set_setting_v12('name', '"Test"'::jsonb, 'business')$$,
   '42501',
   NULL,
-  'set_setting_v1 rejects unauthenticated callers'
+  'set_setting_v12 rejects unauthenticated callers'
 );
 
 SELECT * FROM finish();

@@ -1,10 +1,16 @@
 -- supabase/tests/settings_business_identity.test.sql
 -- Settings §6.A (migration 20260716000168) — company identity keys
 -- npwp/phone/logo_url/alert_email : columns, business category on
--- get_settings_by_category_v3, set_setting_v4 round-trip + validation + audit,
+-- get_settings_by_category_v9, set_setting_v12 round-trip + validation + audit,
 -- v1 RPCs dropped, branding bucket + policies.
 -- Run via MCP execute_sql / API-from-file (BEGIN..ROLLBACK envelope carried by
 -- this file; temp-table capture pattern, cf. settings_org_display_printing.test.sql).
+--
+-- Lot 1.B (2026-08-03) — repointe sur les versions vivantes des familles de
+-- reglages. Ce fichier etait ROUGE et INVISIBLE : il rend ses assertions
+-- agregees dans une colonne, donc jamais « not ok » en debut de ligne, et le
+-- compteur de la CI le tenait pour vert. Le gate lit desormais aussi le resume
+-- de finish().
 BEGIN;
 
 CREATE TEMP TABLE _r(name TEXT PRIMARY KEY, pass BOOLEAN) ON COMMIT DROP;
@@ -37,7 +43,7 @@ END $$;
 
 -- T2: la catégorie business expose les 6 clés.
 DO $$ DECLARE v JSONB; BEGIN
-  v := get_settings_by_category_v3('business')->'settings';
+  v := get_settings_by_category_v9('business')->'settings';
   INSERT INTO _r VALUES ('t2_get_business',
     (v ? 'name') AND (v ? 'fiscal_address') AND (v ? 'npwp')
     AND (v ? 'phone') AND (v ? 'logo_url') AND (v ? 'alert_email'));
@@ -47,14 +53,14 @@ END $$;
 
 -- T3: round-trip npwp + phone ; trim appliqué ; '' normalisé en NULL.
 DO $$ DECLARE v JSONB; BEGIN
-  PERFORM set_setting_v4('npwp', to_jsonb('  01.234.567.8-901.000  '::text), 'business');
-  PERFORM set_setting_v4('phone', to_jsonb('+62-370-000000'::text), 'business');
-  v := get_settings_by_category_v3('business')->'settings';
+  PERFORM set_setting_v12('npwp', to_jsonb('  01.234.567.8-901.000  '::text), 'business');
+  PERFORM set_setting_v12('phone', to_jsonb('+62-370-000000'::text), 'business');
+  v := get_settings_by_category_v9('business')->'settings';
   IF NOT (v->>'npwp' = '01.234.567.8-901.000' AND v->>'phone' = '+62-370-000000') THEN
     INSERT INTO _r VALUES ('t3_roundtrip', false);
   ELSE
-    PERFORM set_setting_v4('phone', to_jsonb('   '::text), 'business');
-    v := get_settings_by_category_v3('business')->'settings';
+    PERFORM set_setting_v12('phone', to_jsonb('   '::text), 'business');
+    v := get_settings_by_category_v9('business')->'settings';
     INSERT INTO _r VALUES ('t3_roundtrip', (v->'phone') = 'null'::jsonb);
   END IF;
 EXCEPTION WHEN OTHERS THEN
@@ -63,11 +69,11 @@ END $$;
 
 -- T4: logo_url — https accepté, http rejeté (setting_value_invalid).
 DO $$ DECLARE v JSONB; v_ok BOOLEAN := true; BEGIN
-  PERFORM set_setting_v4('logo_url', to_jsonb('https://example.supabase.co/storage/v1/object/public/branding/logo.png'::text), 'business');
-  v := get_settings_by_category_v3('business')->'settings';
+  PERFORM set_setting_v12('logo_url', to_jsonb('https://example.supabase.co/storage/v1/object/public/branding/logo.png'::text), 'business');
+  v := get_settings_by_category_v9('business')->'settings';
   v_ok := v->>'logo_url' LIKE 'https://%';
   BEGIN
-    PERFORM set_setting_v4('logo_url', to_jsonb('http://insecure.example/logo.png'::text), 'business');
+    PERFORM set_setting_v12('logo_url', to_jsonb('http://insecure.example/logo.png'::text), 'business');
     v_ok := false;
   EXCEPTION WHEN SQLSTATE '22023' THEN
     v_ok := v_ok AND SQLERRM = 'setting_value_invalid';
@@ -79,11 +85,11 @@ END $$;
 
 -- T5: alert_email — adresse valide acceptée, format invalide rejeté.
 DO $$ DECLARE v JSONB; v_ok BOOLEAN := true; BEGIN
-  PERFORM set_setting_v4('alert_email', to_jsonb('alerts@thebreakery.id'::text), 'business');
-  v := get_settings_by_category_v3('business')->'settings';
+  PERFORM set_setting_v12('alert_email', to_jsonb('alerts@thebreakery.id'::text), 'business');
+  v := get_settings_by_category_v9('business')->'settings';
   v_ok := v->>'alert_email' = 'alerts@thebreakery.id';
   BEGIN
-    PERFORM set_setting_v4('alert_email', to_jsonb('not-an-email'::text), 'business');
+    PERFORM set_setting_v12('alert_email', to_jsonb('not-an-email'::text), 'business');
     v_ok := false;
   EXCEPTION WHEN SQLSTATE '22023' THEN
     v_ok := v_ok AND SQLERRM = 'setting_value_invalid';
@@ -96,13 +102,13 @@ END $$;
 -- T6: type invalide rejeté (nombre sur npwp) + longueur max (npwp > 30).
 DO $$ DECLARE v_ok BOOLEAN := true; BEGIN
   BEGIN
-    PERFORM set_setting_v4('npwp', '42'::jsonb, 'business');
+    PERFORM set_setting_v12('npwp', '42'::jsonb, 'business');
     v_ok := false;
   EXCEPTION WHEN SQLSTATE '22023' THEN
     v_ok := v_ok AND SQLERRM = 'setting_type_invalid';
   END;
   BEGIN
-    PERFORM set_setting_v4('npwp', to_jsonb(repeat('9', 31)), 'business');
+    PERFORM set_setting_v12('npwp', to_jsonb(repeat('9', 31)), 'business');
     v_ok := false;
   EXCEPTION WHEN SQLSTATE '22023' THEN
     v_ok := v_ok AND SQLERRM = 'setting_value_invalid';
@@ -114,8 +120,8 @@ END $$;
 
 -- T7: null explicite efface la valeur.
 DO $$ DECLARE v JSONB; BEGIN
-  PERFORM set_setting_v4('npwp', 'null'::jsonb, 'business');
-  v := get_settings_by_category_v3('business')->'settings';
+  PERFORM set_setting_v12('npwp', 'null'::jsonb, 'business');
+  v := get_settings_by_category_v9('business')->'settings';
   INSERT INTO _r VALUES ('t7_null_clears', (v->'npwp') = 'null'::jsonb);
 EXCEPTION WHEN OTHERS THEN
   INSERT INTO _r VALUES ('t7_null_clears', false);
@@ -146,7 +152,7 @@ DO $$ BEGIN
         AND p.proname IN ('get_settings_by_category_v1','set_setting_v1')) = 0
     AND (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
       WHERE n.nspname = 'public'
-        AND p.proname IN ('get_settings_by_category_v3','set_setting_v4')
+        AND p.proname IN ('get_settings_by_category_v9','set_setting_v12')
         AND p.proacl::text NOT LIKE '%anon%'
         AND p.proacl::text NOT LIKE '{=X%') = 2);
 EXCEPTION WHEN OTHERS THEN

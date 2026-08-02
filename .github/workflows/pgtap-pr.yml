@@ -1,13 +1,16 @@
-name: pgTAP PR Smoke
+name: pgTAP PR
 
-# TEST-02 (Session 37) — PR-time pgTAP smoke gate.
+# TEST-02 (Session 37) — PR-time pgTAP gate.
 #
-# The full pgTAP suite runs nightly (pgtap-nightly.yml, cron). Before this
-# workflow, NO DB test ran at PR time, so a breaking migration could merge
-# with zero database coverage. This workflow runs a small, fast SUBSET of
-# critical guard tests (REVOKE pairs / money-flow integrity) against the
-# cloud V3 dev project (ikcyvlovptebroadgtvd) via the same pooler connection
-# and secret as the nightly.
+# Lot 1.B (2026-08-03) — le gate passe du SMOKE (12 fichiers choisis à la main)
+# à la SUITE ENTIÈRE. Avant ce lot, 186 des 198 fichiers pgTAP ne tournaient
+# jamais sur PR : chaque lot livré l'était sans filet, et la seule couverture
+# complète était un run nocturne 3×/semaine — donc après merge.
+# Coût mesuré : ~15 min de runner pour 198 fichiers en série.
+#
+# Le run nocturne (pgtap-nightly.yml) reste : il couvre master, la dérive des
+# types et la suite Vitest live-RPC. Les deux boucles psql sont volontairement
+# identiques — toute modification de l'une se reporte sur l'autre.
 #
 # Scope: only fires on PRs that touch DB surface (migrations, pgTAP tests,
 # Edge Functions) — front-only PRs skip it entirely (paths filter below).
@@ -26,13 +29,16 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  pgtap-smoke:
+  pgtap:
     # Dependabot-triggered runs read from the separate "Dependabot secrets"
     # store, so V3_DEV_PG_POOLER_URL is empty there and the secret guard below
     # hard-fails. Dependency bumps can't break the DB schema — skip instead.
     if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # Lot 1.B — 25 min : le run complet mesuré ~15 min, la marge absorbe la
+    # contention sur la base dev partagée (le nightly sérialise pgtap et
+    # live-rpc-vitest pour la même raison).
+    timeout-minutes: 25
     # S50: flipped to false — V3_DEV_PG_POOLER_URL confirmed present (same as
     # nightly). Failures now block the PR. Revert to true only if the secret
     # becomes unavailable for fork PRs (rare on this private repo).
@@ -50,55 +56,31 @@ jobs:
           fi
           psql --version
 
-      # Smoke subset — critical REVOKE / permission / money-flow guards,
-      # chosen for speed (smallest files) and blast-radius coverage:
-      #   - ci_smoke                          : pgTAP plumbing sanity
-      #   - send_items_anon_revoke            : S36 canonical REVOKE pair guard
-      #   - security_anon_grants              : S20 anon/PUBLIC grant sweep
-      #   - security_authenticated_policies   : RLS policies for authenticated
-      #   - security_refund_sequences         : refund money-flow integrity
-      #   - products_cost_price_guard         : cost_price REVOKE UPDATE guard
-      #   - security                          : core security suite
-      #   - security_leak_guard               : S50 view/MV PII-financial leak guard
-      #   - financial_rpc_perm_gates          : S50 permission-denied on gated RPCs
-      #   - adr019_timezone_session_invariant : ADR-019 D4 — la colonne miroir
-      #       du fuseau égale le paramètre de session. Divergence = les
-      #       fonctions qui lisent la colonne et celles qui lisent la session
-      #       datent au jour métier différent, sans lever d'erreur. Bloquer la
-      #       PR, plutôt que le découvrir au run nocturne suivant.
-      - name: Run pgTAP smoke subset via pooler
+      - name: Run pgTAP suite via pooler
         id: pgtap
         env:
           PGURL: ${{ secrets.V3_DEV_PG_POOLER_URL }}
+          # Plancher de fichiers attendus. Un glob cassé, un checkout partiel ou
+          # un déplacement de répertoire rendrait sinon le job VERT À VIDE — le
+          # mode de panne le plus coûteux d'un gate, puisqu'il ne se voit pas.
+          # À relever quand la suite grossit franchement.
+          PGTAP_MIN_FILES: '180'
         run: |
           set -uo pipefail
           if [ -z "${PGURL:-}" ]; then
             echo "::error::V3_DEV_PG_POOLER_URL secret is not set" >&2
             exit 1
           fi
-          smoke_files=(
-            supabase/tests/ci_smoke.test.sql
-            supabase/tests/send_items_anon_revoke.test.sql
-            supabase/tests/security_anon_grants.test.sql
-            supabase/tests/security_authenticated_policies.test.sql
-            supabase/tests/security_refund_sequences.test.sql
-            supabase/tests/products_cost_price_guard.test.sql
-            supabase/tests/security.test.sql
-            supabase/tests/security_leak_guard.test.sql
-            supabase/tests/financial_rpc_perm_gates.test.sql
-            supabase/tests/adr019_timezone_session_invariant.test.sql
-            supabase/tests/security_partition_grants.test.sql
-            supabase/tests/security_append_only_ledgers.test.sql
-          )
+          shopt -s nullglob
+          files=(supabase/tests/*.test.sql)
+          echo "Fichiers pgTAP découverts : ${#files[@]}"
+          if [ "${#files[@]}" -lt "$PGTAP_MIN_FILES" ]; then
+            echo "::error::seulement ${#files[@]} fichiers pgTAP découverts (plancher ${PGTAP_MIN_FILES}) — glob ou checkout suspect, le gate refuse de passer vert à vide" >&2
+            exit 1
+          fi
           fail_count=0
           fail_list=""
-          for f in "${smoke_files[@]}"; do
-            if [ ! -f "$f" ]; then
-              echo "::error::smoke file missing from repo: $f" >&2
-              fail_count=$((fail_count+1))
-              fail_list="${fail_list}\n - ${f} (missing)"
-              continue
-            fi
+          for f in "${files[@]}"; do
             echo "=== Running $f ==="
             # S77: fail on psql error OR any TAP 'not ok' line (assertion
             # failures never flip psql's exit code — mirror of pgtap-nightly).
@@ -108,13 +90,20 @@ jobs:
             out=$(psql "$PGURL" -v ON_ERROR_STOP=1 -f "$f" 2>&1) || rc=$?
             printf '%s\n' "$out"
             not_ok=$(printf '%s\n' "$out" | grep -cE '^[[:space:]]*not ok [0-9]' || true)
-            if [ "$rc" -ne 0 ] || [ "$not_ok" -gt 0 ]; then
+            # Lot 1.B — le compteur `not ok` en debut de ligne ne suffit pas.
+            # 17 suites capturent leurs assertions dans une table temporaire et
+            # les rendent AGREGEES DANS UNE COLONNE : leurs `not ok` ne sont
+            # jamais en debut de ligne, et le gate les comptait vertes. Quatre
+            # suites rouges se cachaient ainsi derriere un run « 7 echecs ».
+            # `finish()` emet ce resume quelle que soit la presentation.
+            summary=$(printf '%s\n' "$out" | grep -cE '# Looks like you failed [0-9]+ test' || true)
+            if [ "$rc" -ne 0 ] || [ "$not_ok" -gt 0 ] || [ "$summary" -gt 0 ]; then
               fail_count=$((fail_count+1))
-              fail_list="${fail_list}\n - ${f} (exit=${rc}, not_ok=${not_ok})"
+              fail_list="${fail_list}\n - ${f} (exit=${rc}, not_ok=${not_ok}, tap_summary=${summary})"
             fi
           done
           if [ "$fail_count" -gt 0 ]; then
-            echo "::error::${fail_count} pgTAP smoke file(s) failed:${fail_list}"
+            echo "::error::${fail_count} pgTAP file(s) failed:${fail_list}"
             exit 1
           fi
-          echo "All pgTAP smoke files passed."
+          echo "All ${#files[@]} pgTAP files passed."

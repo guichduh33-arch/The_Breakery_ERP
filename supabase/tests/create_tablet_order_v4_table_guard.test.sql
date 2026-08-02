@@ -1,11 +1,14 @@
 -- supabase/tests/create_tablet_order_v4_table_guard.test.sql
 -- S72 — POS audit P1: the tablet order path could fire a dine_in order with a
 -- blank table_number (the owner "table mandatory for dine-in" rule was enforced
--- only on the counter path). v4 mirrors fire_counter_order_v5's guard.
+-- only on the counter path). The guard mirrors fire_counter_order's.
 --   T1 : dine_in + blank table  -> P0011 table_required_for_dine_in
 --   T2 : dine_in + valid table  -> creates order
 --   T3 : take_out + blank table -> creates order (no table needed)
---   T4 : create_tablet_order_v3 dropped (monotonic versioning)
+--   T4 : les versions précédentes sont droppées (versionnage monotone)
+-- Lot 1.B (2026-08-03) — repointé v4 -> v5 : v4 était droppée depuis le bump
+-- « tournée supplémentaire » (p_order_id), et les trois gardes tombaient en
+-- « function does not exist » sans que personne ne le voie hors run nocturne.
 -- Run via MCP execute_sql (BEGIN/ROLLBACK included).
 
 BEGIN;
@@ -38,25 +41,25 @@ BEGIN
 END $fx$;
 
 SELECT throws_ok(
-  format('SELECT create_tablet_order_v4(%L::uuid, %L::uuid, %L, %L::order_type, %L::jsonb)',
+  format('SELECT create_tablet_order_v5(%L::uuid, %L::uuid, %L, %L::order_type, %L::jsonb)',
     gen_random_uuid(), current_setting('s72.prof'), '', 'dine_in', current_setting('s72.items')),
   'P0011', 'table_required_for_dine_in',
   'T1: dine_in + blank table -> P0011 table_required_for_dine_in');
 
 SELECT lives_ok(
-  format('SELECT create_tablet_order_v4(%L::uuid, %L::uuid, %L, %L::order_type, %L::jsonb)',
+  format('SELECT create_tablet_order_v5(%L::uuid, %L::uuid, %L, %L::order_type, %L::jsonb)',
     gen_random_uuid(), current_setting('s72.prof'), current_setting('s72.tbl'), 'dine_in', current_setting('s72.items')),
   'T2: dine_in + valid table -> creates order');
 
 SELECT lives_ok(
-  format('SELECT create_tablet_order_v4(%L::uuid, %L::uuid, %L, %L::order_type, %L::jsonb)',
+  format('SELECT create_tablet_order_v5(%L::uuid, %L::uuid, %L, %L::order_type, %L::jsonb)',
     gen_random_uuid(), current_setting('s72.prof'), '', 'take_out', current_setting('s72.items')),
   'T3: take_out + blank table -> creates order (no table needed)');
 
 SELECT is(
   (SELECT count(*)::int FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
-    WHERE n.nspname='public' AND p.proname='create_tablet_order_v3'),
-  0, 'T4: create_tablet_order_v3 dropped');
+    WHERE n.nspname='public' AND p.proname IN ('create_tablet_order_v3','create_tablet_order_v4')),
+  0, 'T4: les versions précédentes de create_tablet_order sont droppées');
 
 SELECT * FROM finish();
 ROLLBACK;
