@@ -2,13 +2,17 @@
 //
 // Session 13 / Phase 5.C — General settings page. Surfaces the four
 // symbolic categories of business_config (business / localization / tax / pos)
-// in a single flat form. Each "Save" calls set_setting_v11 per dirty key so the
+// in a single flat form. Each "Save" calls set_setting_v12 per dirty key so the
 // audit trail captures one row per field change.
 //
-// S73 B4 — currency/timezone become ISO-4217/IANA <select> pickers, tax_rate
-// and the two `_pct` thresholds render as percent inputs (DB stays decimal
-// [0,1] — only the display multiplies/divides by 100), and fields split into
-// an Identity/Cash section layout.
+// S73 B4 — currency becomes an ISO-4217 <select> picker, tax_rate and the two
+// `_pct` thresholds render as percent inputs (DB stays decimal [0,1] — only the
+// display multiplies/divides by 100), and fields split into an Identity/Cash
+// section layout.
+//
+// ADR-019 (D3) — le fuseau horaire n'est plus proposé ici : c'est une constante
+// de déploiement, portée par le paramètre de session PostgreSQL, et la RPC
+// d'écriture (set_setting_v12) refuse la clé. Le changer suppose une migration.
 
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -34,10 +38,6 @@ interface FieldSpec {
 }
 
 const CURRENCIES = ['IDR', 'USD', 'EUR', 'SGD', 'MYR', 'AUD', 'JPY', 'CNY', 'GBP'] as const;
-const TIMEZONES: readonly string[] =
-  typeof Intl.supportedValuesOf === 'function'
-    ? Intl.supportedValuesOf('timeZone')
-    : ['Asia/Makassar', 'Asia/Jakarta', 'UTC'];
 
 const SECTIONS = [
   ['identity', 'Identity & locale'],
@@ -53,7 +53,6 @@ const FIELDS: FieldSpec[] = [
   { key: 'phone',          label: 'Business phone', type: 'text',    category: 'business',     section: 'identity', nullable: true, helper: 'Printed on the POS receipt header when set' },
   { key: 'logo_url',       label: 'Brand logo',     type: 'logo',    category: 'business',     section: 'identity', nullable: true, helper: 'PNG or JPEG, 1 MB max — embedded in PDF headers and emails' },
   { key: 'currency',       label: 'Currency code',  type: 'select',  category: 'localization', section: 'identity', options: CURRENCIES, helper: 'ISO-4217 (e.g. IDR, USD)' },
-  { key: 'timezone',       label: 'Timezone',       type: 'select',  category: 'localization', section: 'identity', options: TIMEZONES, helper: 'IANA zone (e.g. Asia/Makassar)' },
   { key: 'tax_rate',       label: 'Tax rate',       type: 'percent', category: 'tax',          section: 'identity', helper: 'Percent — e.g. 10 for 10%' },
   { key: 'tax_inclusive',  label: 'Tax inclusive',  type: 'boolean', category: 'tax',          section: 'identity', helper: 'When true, listed prices include tax' },
   { key: 'shift_variance_threshold_pct', label: 'Shift variance % threshold', type: 'percent', category: 'pos', section: 'cash', helper: 'Percent — e.g. 0.5 for 0.5%' },
@@ -106,7 +105,7 @@ export default function SettingsGeneralPage() {
   const [savedAt, setSavedAt]         = useState<string | null>(null);
   // Lot 6b — the tax-mode switch is a money-path decision: it changes how
   // retail_price is interpreted (tax-inclusive vs tax-exclusive) WITHOUT
-  // converting any price, and the server (set_setting_v11) refuses it while
+  // converting any price, and the server (set_setting_v12) refuses it while
   // open orders exist. Saving a changed `tax_inclusive` goes through an
   // explicit confirmation dialog first.
   const [taxSwitchConfirmOpen, setTaxSwitchConfirmOpen] = useState(false);
@@ -216,7 +215,7 @@ export default function SettingsGeneralPage() {
       const msg = (typeof e === 'object' && e !== null && 'message' in e && typeof e.message === 'string')
         ? e.message
         : 'Failed to save settings';
-      // set_setting_v11 (Lot 6b) refuses the tax-mode switch while open orders
+      // set_setting_v12 (Lot 6b) refuses the tax-mode switch while open orders
       // exist — surface an actionable message instead of the raw error code.
       setServerError(msg === 'tax_mode_switch_blocked'
         ? 'Tax mode switch refused — some orders are still open (draft or pending payment). Settle or void them, then save again.'

@@ -21,7 +21,7 @@ const settingsByCategory: Record<string, Record<string, unknown>> = {
 };
 
 const rpcCalls: { fn: string; args: Record<string, unknown> }[] = [];
-// Lot 6b — set to true to make the next set_setting_v11('tax_inclusive') fail
+// Lot 6b — set to true to make the next set_setting_v12('tax_inclusive') fail
 // with the server gate error (open orders present).
 let failNextTaxSwitch = false;
 
@@ -36,7 +36,7 @@ vi.mock('@/lib/supabase.js', () => ({
           error: null,
         });
       }
-      if (fn === 'set_setting_v11') {
+      if (fn === 'set_setting_v12') {
         if (failNextTaxSwitch && args.p_key === 'tax_inclusive') {
           failNextTaxSwitch = false;
           return Promise.resolve({ data: null, error: { message: 'tax_mode_switch_blocked' } });
@@ -72,16 +72,24 @@ describe('SettingsGeneralPage', () => {
       expect(screen.getByLabelText(/Business name/i)).toHaveValue('The Breakery');
     });
     expect(screen.getByLabelText(/Currency code/i)).toHaveValue('IDR');
-    expect(screen.getByLabelText(/Timezone/i)).toHaveValue('Asia/Makassar');
     // DB decimal 0.1 renders as percent 10.
     expect(screen.getByLabelText(/^Tax rate$/i)).toHaveValue(10);
   });
 
-  it('currency and timezone are selects, tax rate is a percent input', async () => {
+  // ADR-019 (D3) — le fuseau sort de la surface de réglage. La catégorie
+  // localization le renvoie toujours (la colonne miroir reste lisible, D2) :
+  // c'est bien l'écran qui ne le propose plus, pas la donnée qui a disparu.
+  it('does not offer the timezone field even though the RPC still returns it', async () => {
+    renderPage();
+    await waitFor(() => screen.getByLabelText(/Business name/i));
+    expect(settingsByCategory.localization?.timezone).toBe('Asia/Makassar');
+    expect(screen.queryByLabelText(/Timezone/i)).not.toBeInTheDocument();
+  });
+
+  it('currency is a select, tax rate is a percent input', async () => {
     renderPage();
     await waitFor(() => screen.getByLabelText(/Business name/i));
     expect(screen.getByLabelText('Currency code').tagName).toBe('SELECT');
-    expect(screen.getByLabelText('Timezone').tagName).toBe('SELECT');
     expect(screen.getByLabelText(/tax rate/i)).toHaveAttribute('type', 'number');
     // valeur DB 0.10 rendue 10 (%)
     expect(screen.getByLabelText(/tax rate/i)).toHaveValue(10);
@@ -93,7 +101,7 @@ describe('SettingsGeneralPage', () => {
     expect(screen.getByRole('button', { name: /No changes/i })).toBeInTheDocument();
   });
 
-  it('calls set_setting_v11 once per dirty key on submit', async () => {
+  it('calls set_setting_v12 once per dirty key on submit', async () => {
     renderPage();
     await waitFor(() => screen.getByLabelText(/Business name/i));
     rpcCalls.length = 0;
@@ -102,7 +110,7 @@ describe('SettingsGeneralPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /Save 1 change/i }));
 
     await waitFor(() => {
-      const setCalls = rpcCalls.filter((c) => c.fn === 'set_setting_v11');
+      const setCalls = rpcCalls.filter((c) => c.fn === 'set_setting_v12');
       expect(setCalls).toHaveLength(1);
       expect(setCalls[0]?.args.p_key).toBe('name');
       expect(setCalls[0]?.args.p_value).toBe('New Bakery');
@@ -120,7 +128,7 @@ describe('SettingsGeneralPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /Save 1 change/i }));
 
     await waitFor(() => {
-      const setCalls = rpcCalls.filter((c) => c.fn === 'set_setting_v11');
+      const setCalls = rpcCalls.filter((c) => c.fn === 'set_setting_v12');
       expect(setCalls).toHaveLength(1);
       expect(setCalls[0]?.args.p_key).toBe('tax_rate');
       expect(setCalls[0]?.args.p_value).toBe(0.25);
@@ -140,12 +148,12 @@ describe('SettingsGeneralPage', () => {
 
     // Dialog shown, nothing written yet.
     expect(await screen.findByText(/Switch the tax mode\?/i)).toBeInTheDocument();
-    expect(rpcCalls.filter((c) => c.fn === 'set_setting_v11')).toHaveLength(0);
+    expect(rpcCalls.filter((c) => c.fn === 'set_setting_v12')).toHaveLength(0);
 
     // Confirming performs the write.
     fireEvent.click(screen.getByRole('button', { name: /Switch tax mode/i }));
     await waitFor(() => {
-      const setCalls = rpcCalls.filter((c) => c.fn === 'set_setting_v11');
+      const setCalls = rpcCalls.filter((c) => c.fn === 'set_setting_v12');
       expect(setCalls).toHaveLength(1);
       expect(setCalls[0]?.args.p_key).toBe('tax_inclusive');
       expect(setCalls[0]?.args.p_value).toBe(false);
@@ -165,7 +173,7 @@ describe('SettingsGeneralPage', () => {
     await waitFor(() => {
       expect(screen.queryByText(/Switch the tax mode\?/i)).not.toBeInTheDocument();
     });
-    expect(rpcCalls.filter((c) => c.fn === 'set_setting_v11')).toHaveLength(0);
+    expect(rpcCalls.filter((c) => c.fn === 'set_setting_v12')).toHaveLength(0);
   });
 
   it('maps tax_mode_switch_blocked to an actionable error message', async () => {

@@ -79,7 +79,7 @@ vi.mock('@/lib/supabase.js', () => {
             error: null,
           });
         }
-        return Promise.resolve({ data: null, error: null }); // set_setting_v11
+        return Promise.resolve({ data: null, error: null }); // set_setting_v12
       },
     },
   };
@@ -142,7 +142,7 @@ describe('SettingsNotificationsPage', () => {
     expect(screen.getByTestId('alert-email-card').querySelector('button')).toBeNull();
   });
 
-  it('saves alert_email via set_setting_v11 (business category) with settings.update', async () => {
+  it('saves alert_email via set_setting_v12 (business category) with settings.update', async () => {
     currentPerms.add('settings.update');
     renderPage();
     const input = await screen.findByLabelText<HTMLInputElement>('Alert email');
@@ -150,7 +150,7 @@ describe('SettingsNotificationsPage', () => {
     fireEvent.change(input, { target: { value: 'alerts@breakery.id' } });
     fireEvent.click(screen.getAllByRole('button', { name: /^save$/i })[0]!);
     await waitFor(() => {
-      const call = rpcCalls.find((c) => c.fn === 'set_setting_v11');
+      const call = rpcCalls.find((c) => c.fn === 'set_setting_v12');
       expect(call?.args).toEqual({ p_key: 'alert_email', p_value: 'alerts@breakery.id', p_category: 'business' });
     });
   });

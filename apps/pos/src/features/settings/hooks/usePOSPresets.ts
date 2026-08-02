@@ -7,7 +7,7 @@
 // CASHIER/waiter (42501 → 403) and silently forced the hardcoded fallbacks
 // for the exact audience the presets are configured for. Same pattern as
 // useEnabledPaymentMethods.
-// WRITE: still set_setting_v11 (POSSettingsPage is manager-gated).
+// WRITE: still set_setting_v12 (POSSettingsPage is manager-gated).
 //
 // Read shape :
 //   { quickPayments: number[]; openingCashPresets: number[];
@@ -112,7 +112,7 @@ export function usePOSPresets() {
 
   const mutateQuickPayments = useMutation({
     mutationFn: async (next: number[]) => {
-      const { error } = await supabase.rpc('set_setting_v11', {
+      const { error } = await supabase.rpc('set_setting_v12', {
         p_key: 'pos_quick_payment_amounts',
         p_value: next as unknown as Json,
         p_category: 'pos_presets',
@@ -126,7 +126,7 @@ export function usePOSPresets() {
 
   const mutateOpeningCash = useMutation({
     mutationFn: async (next: number[]) => {
-      const { error } = await supabase.rpc('set_setting_v11', {
+      const { error } = await supabase.rpc('set_setting_v12', {
         p_key: 'pos_opening_cash_presets',
         p_value: next as unknown as Json,
         p_category: 'pos_presets',
@@ -140,7 +140,7 @@ export function usePOSPresets() {
 
   const mutateDiscountPresets = useMutation({
     mutationFn: async (next: DiscountPreset[]) => {
-      const { error } = await supabase.rpc('set_setting_v11', {
+      const { error } = await supabase.rpc('set_setting_v12', {
         p_key: 'pos_discount_presets',
         p_value: next as unknown as Json,
         p_category: 'pos_presets',
