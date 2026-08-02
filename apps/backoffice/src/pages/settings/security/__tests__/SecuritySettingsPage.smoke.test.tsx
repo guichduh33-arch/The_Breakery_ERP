@@ -154,7 +154,7 @@ describe('SecuritySettingsPage', () => {
     expect(screen.getByTestId('pin-policy-save')).toBeDisabled();
   });
 
-  it('saving a dirty PIN field calls set_setting_v11 with the security category', async () => {
+  it('saving a dirty PIN field calls set_setting_v12 with the security category', async () => {
     // eslint-disable-next-line @typescript-eslint/unbound-method -- vi.fn() mock, no `this` to lose
     const rpcSpy = vi.mocked(supabase.rpc);
     renderPage();
@@ -163,14 +163,14 @@ describe('SecuritySettingsPage', () => {
     fireEvent.change(lockInput, { target: { value: '30' } });
     fireEvent.click(screen.getByTestId('pin-policy-save'));
     await waitFor(() => {
-      expect(rpcSpy).toHaveBeenCalledWith('set_setting_v11', {
+      expect(rpcSpy).toHaveBeenCalledWith('set_setting_v12', {
         p_key: 'pin_lockout_minutes',
         p_value: 30,
         p_category: 'security',
       });
     });
     // La clé propre (pin_max_failed) n'est pas réécrite.
-    expect(rpcSpy).not.toHaveBeenCalledWith('set_setting_v11', expect.objectContaining({
+    expect(rpcSpy).not.toHaveBeenCalledWith('set_setting_v12', expect.objectContaining({
       p_key: 'pin_max_failed',
     }));
   });

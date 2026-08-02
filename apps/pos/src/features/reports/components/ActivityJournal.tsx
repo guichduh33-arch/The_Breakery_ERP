@@ -13,6 +13,7 @@
 //   * CSV export of the loaded rows (buildCsv, WITA timestamps)
 
 import { useEffect, useMemo, useRef, useState, type JSX } from 'react';
+import { TIMEZONE } from '@breakery/utils';
 import {
   Activity,
   AlertTriangle,
@@ -144,7 +145,11 @@ export function ActivityJournal({ period }: { period: ReportsPeriod }): JSX.Elem
   const firstPage = q.data?.pages[0];
   const devices = firstPage?.devices ?? [];
   const actors = firstPage?.actors ?? [];
-  const timezone = firstPage?.timezone ?? 'Asia/Makassar';
+  // ADR-019 (D5) — le fuseau de formatage vient de la constante client unique,
+  // pas de la réponse serveur : `get_pos_events` renvoie le miroir de
+  // configuration, dont l'égalité avec le paramètre de session est un invariant
+  // testé côté base, pas une garantie que ce composant pourrait vérifier.
+  const timezone = TIMEZONE;
   const totalCount = firstPage?.total_count ?? 0;
   const events = useMemo(() => (q.data?.pages ?? []).flatMap((p) => p.events), [q.data]);
 

@@ -1,7 +1,8 @@
 // S73 Phase 3 — single typed dictionary of business_config setting keys and
-// symbolic categories (server truth: set_setting_v11 / get_settings_by_category_v9,
+// symbolic categories (server truth: set_setting_v12 / get_settings_by_category_v9,
 // migrations 20260711000159 + 20260716000168 + 20260718000195 + 20260721000197
-// + 20260724000217 + 20260724000220). Add a key here ONLY together with its RPC branch.
+// + 20260724000217 + 20260724000220 + 20260802000003). Add a key here ONLY
+// together with its RPC branch.
 export const SETTINGS_CATEGORIES = [
   'business', 'localization', 'tax', 'pos', 'pos_presets',
   'inventory', 'payments', 'customer_display', 'printing', 'kds', 'network',
@@ -16,7 +17,11 @@ export const SETTING_KEYS = {
   // semaine (mon..sun), null = fermé, clé absente = non configuré.
   business:         ['name', 'fiscal_address', 'npwp', 'phone', 'logo_url', 'alert_email',
                      'business_hours'],
-  localization:     ['currency', 'timezone'],
+  // ADR-019 (D3) : `timezone` n'est plus une clé réglable — le fuseau métier est
+  // une constante de déploiement portée par le paramètre de session PostgreSQL.
+  // La colonne business_config.timezone reste lisible (D2), elle n'est plus
+  // écrivable : set_setting_v12 refuse la clé.
+  localization:     ['currency'],
   tax:              ['tax_rate', 'tax_inclusive'],
   pos:              ['shift_variance_threshold_pct', 'shift_variance_threshold_abs',
                      'shift_variance_pin_threshold_pct', 'shift_variance_pin_threshold_abs',
