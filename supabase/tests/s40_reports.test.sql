@@ -512,12 +512,16 @@ BEGIN
   SELECT id INTO v_product_id FROM products WHERE is_active = true AND deleted_at IS NULL LIMIT 1;
 
   -- Production run: qty 10, waste 2, expected 10 / actual 9 → variance ratio -0.1
+  -- Lot 1.B (2026-08-03) : waste_reason ajouté au fixture. La contrainte
+  -- production_records_waste_reason_required (une perte non nulle exige son
+  -- motif) est arrivée après l'écriture de ce test, qui échouait donc à
+  -- l'insertion — toute la suite S40 tombait avec lui.
   INSERT INTO production_records (
     production_number, product_id, quantity_produced, quantity_waste,
-    production_date, expected_yield_qty, actual_yield_qty
+    waste_reason, production_date, expected_yield_qty, actual_yield_qty
   )
   VALUES (
-    'PROD-20200103-9940', v_product_id, 10, 2,
+    'PROD-20200103-9940', v_product_id, 10, 2, 'mis_baked',
     '2020-01-03T10:00:00+08'::timestamptz, 10, 9
   );
   -- production_number CHECK requires ^PROD-[0-9]{8}-[0-9]{4,}$ — suffix 9940 = S40 test marker.

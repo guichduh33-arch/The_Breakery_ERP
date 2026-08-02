@@ -2,9 +2,17 @@
 -- S41 -- pgTAP suite for import_catalog_v1 / export_catalog_v1 (T1-T24).
 -- Run via MCP execute_sql wrapped in BEGIN/ROLLBACK -- self-cleaning.
 --
+-- Lot 1.B (2026-08-03) — l'acteur des imports/exports passe de MANAGER à
+-- SUPER_ADMIN : ADR-011 décision 1 a retiré `catalog.import` au MANAGER (le
+-- payload d'import crée des variantes, que `products.variants.write` réserve
+-- déjà à ADMIN+). La suite épinglait l'ancien périmètre et tombait en
+-- « permission denied: catalog.import required » dès la 2ᵉ assertion.
+-- T1b ajouté : le refus opposé au MANAGER est désormais testé pour lui-même,
+-- sans quoi rien ne garderait la décision contre un re-seed distrait.
+--
 -- Covers:
 --   T1  : CASHIER import -> 42501
---   T2  : MANAGER dry-run -> valid=true
+--   T2  : ADMIN+ dry-run -> valid=true
 --   T3  : dry-run writes nothing (product count unchanged)
 --   T4  : commit -> ingredient hidden from POS
 --   T5  : commit -> variant linked to parent
@@ -17,7 +25,7 @@
 --   T12 : cycle -> recipe_cycle detected
 --   T13 : commit without key -> P0001
 --   T14 : export CASHIER -> 42501
---   T15 : export MANAGER -> shape + S41 SKUs presents
+--   T15 : export ADMIN+ -> shape + S41 SKUs presents
 --   T16 : BOM re-import -> recipe_versions +1 (trigger tr_recipes_snapshot_version)
 --   T17 : sku_is_variant_in_db (S41-CROIS-ALM en feuille products -> erreur)
 --   T18 : sku_is_standalone_in_db (S41-CROIS en feuille variants -> erreur)
@@ -29,14 +37,15 @@
 --   T24 : T15 renforce -- dry-run S41-only products.create=0
 --
 -- Seeded users:
---   MANAGER : auth_user_id = 00000000-0000-0000-0000-000000000004
+--   MANAGER : auth_user_id = 00000000-0000-0000-0000-000000000004 (refuse a l'import, ADR-011)
+--   SUPER_ADMIN : auth_user_id = 00000000-0000-0000-0000-000000000001
 --   CASHIER : auth_user_id = 00000000-0000-0000-0000-000000000002
 
 BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-SELECT plan(33);
+SELECT plan(34);
 
 -- T1 : CASHIER -> 42501 on import
 DO $t1$ BEGIN
@@ -49,6 +58,21 @@ DO $t1$ BEGIN
   END;
 END $t1$;
 SELECT is(current_setting('breakery.t1'), '42501', 'T1 import CASHIER rejected 42501');
+
+-- T1b : MANAGER -> 42501 (ADR-011 dec.1). Le payload d'import cree des
+-- variantes ; `products.variants.write` etant ADMIN+, laisser `catalog.import`
+-- au MANAGER rouvrirait le periscope par le fichier. Garde explicite.
+DO $t1b$ BEGIN
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  BEGIN
+    PERFORM import_catalog_v1('{}'::jsonb, true);
+    PERFORM set_config('breakery.t1b', 'no_error', true);
+  EXCEPTION WHEN insufficient_privilege THEN
+    PERFORM set_config('breakery.t1b', '42501', true);
+  END;
+END $t1b$;
+SELECT is(current_setting('breakery.t1b'), '42501',
+  'T1b import MANAGER rejected 42501 (ADR-011 dec.1)');
 
 -- Fixtures payload (happy path) stored in a GUC for reuse
 DO $fix$ BEGIN
@@ -76,11 +100,11 @@ DO $fix$ BEGIN
   }', true);
 END $fix$;
 
--- T2/T3 : MANAGER dry-run -> valid=true + zero write
+-- T2/T3 : ADMIN+ dry-run -> valid=true + zero write
 DO $t23$
 DECLARE v_before INT; v_rep JSONB;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   SELECT COUNT(*) INTO v_before FROM products;
   v_rep := import_catalog_v1(current_setting('breakery.payload')::jsonb, true);
   PERFORM set_config('breakery.t2_valid', (v_rep->>'valid'), true);
@@ -94,7 +118,7 @@ SELECT is(current_setting('breakery.t2_delta'), '0', 'T3 dry-run writes nothing'
 DO $t47$
 DECLARE v_rep JSONB;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   v_rep := import_catalog_v1(current_setting('breakery.payload')::jsonb, false,
                              'aaaaaaaa-0000-0000-0000-000000000001'::uuid);
   PERFORM set_config('breakery.t3_valid', (v_rep->>'valid'), true);
@@ -121,7 +145,7 @@ SELECT is(
 DO $t8$
 DECLARE v_rep JSONB;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   v_rep := import_catalog_v1(current_setting('breakery.payload')::jsonb, false,
                              'aaaaaaaa-0000-0000-0000-000000000001'::uuid);
   PERFORM set_config('breakery.t8', (v_rep->>'idempotent_replay'), true);
@@ -132,7 +156,7 @@ SELECT is(current_setting('breakery.t8'), 'true', 'T8 idempotent replay');
 DO $t910$
 DECLARE v_payload JSONB; v_rep JSONB;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   v_payload := jsonb_build_object(
     'products', jsonb_build_array(jsonb_build_object(
       'sku', 'S41-CROIS', 'name', 'S41 Croissant', 'category', 'S41 Test Cat',
@@ -154,7 +178,7 @@ SELECT is(
 DO $t11$
 DECLARE v_rep JSONB;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   v_rep := import_catalog_v1(jsonb_build_object(
     'recipes', jsonb_build_array(jsonb_build_object(
       'product_sku', 'S41-CROIS', 'material_sku', 'S41-GHOST', 'quantity', 1))),
@@ -169,7 +193,7 @@ SELECT is(current_setting('breakery.t11_code'), 'unknown_material', 'T11 error c
 DO $t12$
 DECLARE v_rep JSONB;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   v_rep := import_catalog_v1(jsonb_build_object(
     'recipes', jsonb_build_array(jsonb_build_object(
       'product_sku', 'S41-DOUGH', 'material_sku', 'S41-CROIS', 'quantity', 1))),
@@ -182,7 +206,7 @@ SELECT is(current_setting('breakery.t12'), '1', 'T12 cycle detected');
 
 -- T13 : commit sans cle -> P0001
 DO $t13$ BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   BEGIN
     PERFORM import_catalog_v1('{}'::jsonb, false, NULL);
     PERFORM set_config('breakery.t13', 'no_error', true);
@@ -204,14 +228,14 @@ DO $t14$ BEGIN
 END $t14$;
 SELECT is(current_setting('breakery.t14'), '42501', 'T14 export CASHIER rejected');
 
--- T15 : export MANAGER shape + keys presentes + S41 SKUs dans l'export
+-- T15 : export ADMIN+ shape + keys presentes + S41 SKUs dans l'export
 -- Note : le round-trip complet echoue si la DB de dev contient des recettes avec des
 -- unites incompatibles (donnees pre-existantes, ex. ING-ALMOND en g vers BEV-008 base cup).
 -- On valide donc la structure de l'export et la presence des SKUs S41 importes uniquement.
 DO $t15$
 DECLARE v_exp JSONB;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   v_exp := export_catalog_v1();
   PERFORM set_config('breakery.t15',
     CASE WHEN v_exp ? 'categories'
@@ -233,7 +257,7 @@ SELECT is(current_setting('breakery.t15'), 'ok', 'T15 export shape + S41 SKUs pr
 DO $t16$
 DECLARE v_ver_before INT; v_ver_after INT;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   SELECT COALESCE(MAX(rv.version_number), 0) INTO v_ver_before
     FROM recipe_versions rv
     JOIN products p ON p.id = rv.product_id
@@ -260,7 +284,7 @@ SELECT is(current_setting('breakery.t16'), 'ok', 'T16 BOM re-import increments r
 DO $t17$
 DECLARE v_rep JSONB;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   v_rep := import_catalog_v1(jsonb_build_object(
     'products', jsonb_build_array(jsonb_build_object(
       'sku', 'S41-CROIS-ALM', 'name', 'S41 Croissant Almond',
@@ -278,7 +302,7 @@ SELECT is(current_setting('breakery.t17'), '1', 'T17 sku_is_variant_in_db detect
 DO $t18$
 DECLARE v_rep JSONB;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   v_rep := import_catalog_v1(jsonb_build_object(
     'variants', jsonb_build_array(jsonb_build_object(
       'parent_sku', 'S41-DOUGH', 'variant_axis', 'flavor',
@@ -296,7 +320,7 @@ SELECT is(current_setting('breakery.t18'), '1', 'T18 sku_is_standalone_in_db det
 DO $t1920$
 DECLARE v_rep JSONB;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   v_rep := import_catalog_v1(jsonb_build_object(
     'units', jsonb_build_array(jsonb_build_object(
       'product_sku', 'S41-FLOUR', 'code', 'sachet',
@@ -321,7 +345,7 @@ SELECT is(
 DO $t21$
 DECLARE v_rep JSONB;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   v_rep := import_catalog_v1(jsonb_build_object(
     'ingredients', jsonb_build_array(jsonb_build_object(
       'sku', 'S41-FLOUR', 'name', 'S41 Flour', 'unit', 'kg', 'cost_price', 12000,
@@ -339,7 +363,7 @@ SELECT is(
   (SELECT COUNT(*)::INT FROM audit_logs
     WHERE action = 'catalog.imported'
       AND entity_type = 'catalog'
-      AND actor_id = '00000000-0000-0000-0000-000000000004'::uuid) > 0,
+      AND actor_id = '00000000-0000-0000-0000-000000000001'::uuid) > 0,
   TRUE,
   'T22 audit_logs row catalog.imported exists');
 
@@ -348,7 +372,7 @@ SELECT is(
 DO $t2324$
 DECLARE v_rep JSONB;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   v_rep := import_catalog_v1(jsonb_build_object(
     'categories', jsonb_build_array(jsonb_build_object(
       'name', 'S41 Test Cat', 'dispatch_station', 'kitchen')),
@@ -381,7 +405,7 @@ SELECT is(current_setting('breakery.t24_creates'), '0', 'T24 S41-only dry-run pr
 DO $t25$
 DECLARE v_rep JSONB;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   v_rep := import_catalog_v1(jsonb_build_object(
     'products', jsonb_build_array(jsonb_build_object(
       'sku', 'S41-OVF', 'name', 'S41 Overflow', 'category', 'S41 Test Cat',
@@ -397,7 +421,7 @@ SELECT is(current_setting('breakery.t25'), '1', 'T25 over-range retail_price -> 
 DO $t26$
 DECLARE v_rep JSONB;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   v_rep := import_catalog_v1(jsonb_build_object(
     'products', jsonb_build_array(jsonb_build_object(
       'sku', 'S41-OVF-OK', 'name', 'S41 At Max', 'category', 'S41 Test Cat',
@@ -413,7 +437,7 @@ SELECT is(current_setting('breakery.t26'), '0', 'T26 boundary max retail_price -
 DO $t27$
 DECLARE v_rep JSONB;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   v_rep := import_catalog_v1(jsonb_build_object(
     'recipes', jsonb_build_array(jsonb_build_object(
       'product_sku', 'S41-DOUGH', 'material_sku', 'S41-FLOUR', 'quantity', 50000000::numeric, 'unit', 'g'))
@@ -428,7 +452,7 @@ SELECT is(current_setting('breakery.t27'), '1', 'T27 over-range recipe quantity 
 DO $t28$
 DECLARE v_rep JSONB;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   v_rep := import_catalog_v1(jsonb_build_object(
     'units', jsonb_build_array(jsonb_build_object(
       'product_sku', 'S41-FLOUR', 'code', 'megabag', 'factor_to_base', 99999999999::numeric, 'tags', jsonb_build_array('purchase')))
@@ -447,7 +471,7 @@ SELECT is(current_setting('breakery.t28'), '1', 'T28 over-range factor_to_base -
 DO $t29$
 DECLARE v_rep JSONB;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   v_rep := import_catalog_v1(jsonb_build_object(
     'recipes', jsonb_build_array(jsonb_build_object(
       'product_sku', 'S41-CROIS', 'material_sku', 'S41-FLOUR', 'quantity', 1000000::numeric, 'unit', 'kg'))
@@ -466,7 +490,7 @@ SELECT is(current_setting('breakery.t29'), 'true', 'T29 large computed recipe co
 DO $t30$
 DECLARE v_rep JSONB;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   v_rep := import_catalog_v1(jsonb_build_object(
     'categories', jsonb_build_array(jsonb_build_object(
       'name', 'S61 Display Cat', 'dispatch_station', 'display'))
@@ -481,7 +505,7 @@ SELECT is(
 DO $t31$
 DECLARE v_rep JSONB;
 BEGIN
-  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000004"}';
+  SET LOCAL "request.jwt.claims" = '{"sub":"00000000-0000-0000-0000-000000000001"}';
   v_rep := import_catalog_v1(jsonb_build_object(
     'categories', jsonb_build_array(jsonb_build_object(
       'name', 'S61 Bakery Cat', 'dispatch_station', 'bakery'))
