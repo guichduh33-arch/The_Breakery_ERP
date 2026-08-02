@@ -38,8 +38,8 @@ SELECT has_function(
   'T_RPT_FIN_02 — get_balance_sheet_v2 exists'
 );
 SELECT has_function(
-  'public', 'get_cash_flow_v2', ARRAY['date','date'],
-  'T_RPT_FIN_03 — get_cash_flow_v2 exists'
+  'public', 'get_cash_flow_v3', ARRAY['date','date'],
+  'T_RPT_FIN_03 — get_cash_flow_v3 exists'
 );
 SELECT has_function(
   'public', 'get_basket_analysis_v3', ARRAY['date','date','integer'],
@@ -66,6 +66,10 @@ BEGIN
     ((get_profit_loss_v2(CURRENT_DATE, CURRENT_DATE))->'cogs'->>'total'), true);
   PERFORM set_config('breakery.pl_net_before',
     ((get_profit_loss_v2(CURRENT_DATE, CURRENT_DATE))->>'net_profit'), true);
+  -- Même raison pour le cash flow : une vente POS postée aujourd'hui déplace
+  -- déjà la trésorerie, un absolu ne tiendrait pas.
+  PERFORM set_config('breakery.cf_net_before',
+    ((get_cash_flow_v3(CURRENT_DATE, CURRENT_DATE))->>'net_change_in_cash'), true);
 END $baseline$;
 
 -- ============================================================
@@ -145,17 +149,23 @@ SELECT ok(
 );
 
 -- ============================================================
--- T_RPT_FIN_10..11 — Cash Flow shape (investing/financing zero)
+-- T_RPT_FIN_10..11 — Cash Flow : la réconciliation est une identité
 -- ============================================================
+-- Les trois JE seedées déplacent la trésorerie de +80 (JE1 +100, JE3 -20 ;
+-- JE2 n'y touche pas). En v3 le total des trois sections vaut cette variation
+-- par construction — ce n'est plus `net_change := operating_total`, qui pouvait
+-- rendre un chiffre au signe faux (juillet 2026 : -515 546 contre +628 554).
 SELECT is(
-  ((get_cash_flow_v2(CURRENT_DATE, CURRENT_DATE))->'investing'->>'total')::NUMERIC,
-  0::NUMERIC,
-  'T_RPT_FIN_10 — Cash Flow investing = 0 (MVP placeholder)'
+  ((get_cash_flow_v3(CURRENT_DATE, CURRENT_DATE))->>'net_change_in_cash')::NUMERIC
+    - current_setting('breakery.cf_net_before')::NUMERIC,
+  80::NUMERIC,
+  'T_RPT_FIN_10 — Cash Flow net change moved by the seeded entries (+100 -20 = +80)'
 );
 SELECT is(
-  ((get_cash_flow_v2(CURRENT_DATE, CURRENT_DATE))->'financing'->>'total')::NUMERIC,
-  0::NUMERIC,
-  'T_RPT_FIN_11 — Cash Flow financing = 0 (MVP placeholder)'
+  ((get_cash_flow_v3(CURRENT_DATE, CURRENT_DATE))->>'net_change_in_cash')::NUMERIC,
+  ((get_cash_flow_v3(CURRENT_DATE, CURRENT_DATE))->>'cash_end')::NUMERIC
+    - ((get_cash_flow_v3(CURRENT_DATE, CURRENT_DATE))->>'cash_start')::NUMERIC,
+  'T_RPT_FIN_11 — Cash Flow réconcilie : net change = cash_end - cash_start'
 );
 
 -- ============================================================

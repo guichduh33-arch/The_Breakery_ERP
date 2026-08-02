@@ -1,10 +1,13 @@
 // apps/backoffice/src/pages/reports/CashFlowPage.tsx
 //
-// Cash flow statement (indirect method). MVP: Operating section filled
-// in, Investing/Financing zero placeholders (D-W6-6A-2).
+// Cash flow statement (indirect method, par contrepartie). Les trois sections
+// sont alimentées depuis `accounts.cash_flow_section` : investing et financing
+// ne sont plus des zéros codés en dur, ils valent zéro quand rien ne les
+// alimente. Aucun compte d'immobilisation n'existe au plan comptable à ce jour,
+// donc investing reste vide tant qu'il n'y en a pas.
 //
-// S31 : account cells terminal — get_cash_flow_v2 RPC returns `code`, not UUID.
-// /accounting/general-ledger expects UUID. Pre-filled drill deferred to S32+ (RPC bump).
+// S31 : account cells terminal — la RPC renvoie `code`, pas un UUID, et
+// /accounting/general-ledger attend un UUID. Pre-filled drill deferred (RPC bump).
 
 import { useMemo } from 'react';
 import { toLocalDateStr, previousPeriod } from '@breakery/domain';
@@ -21,17 +24,18 @@ import { formatIdrFull } from '@/features/reports/utils/chartColors.js';
 interface CfRow { section: string; label: string; value: number }
 
 /**
- * Audit R-04 — contrôle de réconciliation, affichage seul.
+ * Audit R-04 — contrôle de réconciliation.
  *
- * La méthode indirecte produit `net_change_in_cash` à partir du résultat et des
- * variations de BFR ; il doit retomber exactement sur `cash_end - cash_start`,
- * lu sur les comptes de trésorerie. Sur les données de juillet 2026 les deux
- * divergeaient (−515 546 contre +628 554) et la page affichait les trois
- * nombres côte à côte sans rien signaler.
+ * `net_change_in_cash` doit retomber exactement sur `cash_end - cash_start`, lu
+ * sur les comptes de trésorerie. Quand cet indicateur a été posé, les deux
+ * divergeaient sur juillet 2026 (−515 546 contre +628 554) : la RPC d'alors
+ * ignorait la PB1 collectée, encaissée en trésorerie mais créditée en dette.
  *
- * Ce helper ne corrige RIEN au calcul : il rend l'écart visible, sur le modèle
- * de l'indicateur `balanced` du bilan. La cause comptable est hors périmètre de
- * ce module (voir skill `accounting`).
+ * La cause a depuis été traitée — get_cash_flow_v3 calcule par contrepartie, si
+ * bien que l'égalité est une identité de la partie double. Ce contrôle reste
+ * néanmoins affiché : il tomberait en rouge si une écriture déséquilibrée ou un
+ * compte mal classé dans `accounts.cash_flow_section` rompait cette identité.
+ * C'est désormais un détecteur de régression, plus un aveu d'écart connu.
  */
 const RECONCILIATION_EPSILON = 0.01;
 
