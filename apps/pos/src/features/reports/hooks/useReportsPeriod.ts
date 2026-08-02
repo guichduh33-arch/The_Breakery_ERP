@@ -8,6 +8,7 @@
 // Returns ISO range strings so React Query keys are stable across renders.
 
 import { useMemo, useState } from 'react';
+import { TIMEZONE } from '@breakery/utils';
 
 export type ReportsPeriodPreset =
   | 'today'
@@ -36,16 +37,16 @@ export interface ReportsPeriod {
 }
 
 /**
- * Business timezone for all report date math. WITA / UTC+8, no DST — so
- * whole-day arithmetic on a UTC-midnight anchor is exact.
+ * Today's calendar date in the business timezone, as a UTC-midnight anchor Date.
+ *
+ * ADR-019 (D5) — le fuseau vient de la constante client unique (`@breakery/utils`),
+ * jamais d'un littéral local : WITA / UTC+8, sans heure d'été, donc l'arithmétique
+ * en jours pleins sur une ancre UTC-minuit est exacte.
  */
-const WITA_TZ = 'Asia/Makassar';
-
-/** Today's calendar date in WITA, as a UTC-midnight anchor Date. */
 function witaTodayAnchor(now: Date): Date {
   // en-CA yields `YYYY-MM-DD`; format in WITA regardless of device tz.
   const ymd = new Intl.DateTimeFormat('en-CA', {
-    timeZone: WITA_TZ,
+    timeZone: TIMEZONE,
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',

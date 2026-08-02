@@ -2,8 +2,9 @@
 //
 // Timezone-aware "YYYY-MM-DD" formatter (fixes audit P2 — `toISOString()` shifts
 // across local midnight). Uses Intl.DateTimeFormat with the timeZone option, so
-// every consumer (BO filter dates, RPC arguments) is consistent with the
-// business_config.timezone column on the DB side (default `Asia/Makassar`).
+// every consumer (BO filter dates, RPC arguments) designates the same business
+// day as the server, whose authority is the PostgreSQL session parameter
+// (ADR-019 D1 — `business_config.timezone` mirrors it, it does not rule it).
 //
 // Pure TS, IO-free. No `format()` from date-fns to avoid an extra dep.
 //
@@ -14,7 +15,12 @@
 //   toLocalDateStr(new Date('2026-05-14T23:30:00Z'))      // → '2026-05-15' (Asia/Makassar +08)
 //   toLocalDateStr('2026-05-14T15:00:00Z', 'UTC')          // → '2026-05-14'
 
-export const DEFAULT_TIMEZONE = 'Asia/Makassar';
+import { TIMEZONE } from '@breakery/utils';
+
+// ADR-019 (D5) : réexport de la constante client unique, déclarée une seule
+// fois dans `@breakery/utils`. Ce nom est conservé pour ses consommateurs ;
+// ce n'est PAS une seconde déclaration.
+export const DEFAULT_TIMEZONE = TIMEZONE;
 
 export function toLocalDateStr(
   input: Date | string | number,

@@ -2,6 +2,14 @@
 import { format } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 
+// ADR-019 (D5) — CONSTANTE CLIENT UNIQUE du fuseau métier. C'est la seule
+// déclaration littérale côté client : `@breakery/domain` la réexporte sous le
+// nom DEFAULT_TIMEZONE, les applications l'importent, personne ne la redéclare.
+//
+// Le client ne lit PAS business_config pour cela (D5) : cette colonne est un
+// miroir, et l'autorité réelle est le paramètre de session PostgreSQL, que le
+// client ne voit pas. Changer le fuseau est un geste de déploiement — cette
+// ligne, la colonne miroir et le paramètre de session bougent dans le même lot.
 export const TIMEZONE = 'Asia/Makassar';
 
 export function formatDateTimeWita(d: Date | string): string {
