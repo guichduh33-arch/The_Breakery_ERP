@@ -40,7 +40,11 @@ DECLARE
   v_deact_id    UUID := gen_random_uuid();
 BEGIN
   SELECT auth_user_id INTO v_admin_uid FROM user_profiles
-   WHERE role_code = 'SUPER_ADMIN' AND deleted_at IS NULL LIMIT 1;
+   WHERE role_code = 'SUPER_ADMIN' AND deleted_at IS NULL
+     -- SYS-CRON est SUPER_ADMIN, inactif et SANS compte auth : sans ces deux
+     -- filtres le LIMIT 1 le pioche une fois sur deux et v_admin_uid sort NULL.
+     AND auth_user_id IS NOT NULL AND is_active
+   ORDER BY employee_code LIMIT 1;
   IF v_admin_uid IS NULL THEN
     RAISE EXCEPTION 'No SUPER_ADMIN user available for delete_product_v1 tests';
   END IF;

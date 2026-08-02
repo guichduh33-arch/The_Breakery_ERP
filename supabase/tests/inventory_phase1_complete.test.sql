@@ -217,7 +217,11 @@ DO $$
 DECLARE v_uid UUID;
 BEGIN
   SELECT auth_user_id INTO v_uid FROM user_profiles
-   WHERE role_code IN ('ADMIN', 'SUPER_ADMIN') AND deleted_at IS NULL LIMIT 1;
+   WHERE role_code IN ('ADMIN', 'SUPER_ADMIN') AND deleted_at IS NULL
+     -- SYS-CRON (SUPER_ADMIN, inactif, sans compte auth) ferait sortir NULL,
+     -- et has_permission(NULL, ...) repond faux : T14 rouge une fois sur deux.
+     AND auth_user_id IS NOT NULL AND is_active
+   ORDER BY employee_code LIMIT 1;
   PERFORM set_config('breakery.t14_pass',
     (
       has_permission(v_uid, 'inventory.transfer.create')  AND
