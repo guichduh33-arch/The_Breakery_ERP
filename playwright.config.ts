@@ -24,6 +24,10 @@ export default defineConfig({
     video: 'retain-on-failure',
     actionTimeout: 10_000,
   },
+  // Lot 1.B — le gate PR ne joue que les specs money-path (projet `pos`).
+  // Playwright démarre TOUS les webServers déclarés, quel que soit le projet
+  // sélectionné : sans ce drapeau, une PR money-path paierait le build complet
+  // du back-office pour rien. Non posé = comportement d'origine (les deux).
   webServer: [
     {
       command:
@@ -34,13 +38,17 @@ export default defineConfig({
       // a 2-core CI runner; 180s risked a webServer timeout → whole-suite fail.
       timeout: 300_000,
     },
-    {
-      command:
-        'pnpm --filter @breakery/app-backoffice build && pnpm --filter @breakery/app-backoffice preview --port 5174 --strictPort',
-      url: 'http://localhost:5174',
-      reuseExistingServer: !process.env.CI,
-      timeout: 300_000,
-    },
+    ...(process.env.E2E_SKIP_BO_SERVER === '1'
+      ? []
+      : [
+          {
+            command:
+              'pnpm --filter @breakery/app-backoffice build && pnpm --filter @breakery/app-backoffice preview --port 5174 --strictPort',
+            url: 'http://localhost:5174',
+            reuseExistingServer: !process.env.CI,
+            timeout: 300_000,
+          },
+        ]),
   ],
   projects: [
     {
