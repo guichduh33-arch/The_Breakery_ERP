@@ -131,16 +131,20 @@ END $$;
 -- T4: l'UPDATE direct n'existe plus pour `authenticated` (migration
 -- 20260803000006). On interroge le GRANT lui-meme : dans cette enveloppe la
 -- session est proprietaire, un UPDATE reel ne prouverait rien du GRANT.
--- `name` reste accordee — la preuve que le grant colonne n'a pas ete rase en
--- bloc, seulement ampute des quatre champs financiers.
+--
+-- 2026-08-03 — cette assertion verifiait aussi que `name` RESTAIT accordee, pour
+-- prouver que le grant colonne n'avait pas ete rase en bloc mais seulement
+-- ampute des champs financiers. C'etait vrai de la decision 1 ; la decision 2
+-- (migration 20260803000008) a depuis ferme TOUTE ecriture directe sur
+-- `customers` au profit de update_customer_v1. La clause est donc retiree — la
+-- fermeture complete est desormais assertee par adr020_ecriture_fiche_client.
 DO $$ BEGIN
   INSERT INTO _r VALUES ('t4_direct_update_revoked',
     NOT has_column_privilege('authenticated', 'public.customers', 'b2b_credit_limit',       'UPDATE')
     AND NOT has_column_privilege('authenticated', 'public.customers', 'b2b_payment_terms_days', 'UPDATE')
     AND NOT has_column_privilege('authenticated', 'public.customers', 'b2b_tax_id',         'UPDATE')
     AND NOT has_column_privilege('authenticated', 'public.customers', 'customer_type',      'UPDATE')
-    AND NOT has_column_privilege('authenticated', 'public.customers', 'retail_credit_limit','UPDATE')
-    AND has_column_privilege('authenticated', 'public.customers', 'name', 'UPDATE'));
+    AND NOT has_column_privilege('authenticated', 'public.customers', 'retail_credit_limit','UPDATE'));
 EXCEPTION WHEN OTHERS THEN
   INSERT INTO _r VALUES ('t4_direct_update_revoked', false);
 END $$;
@@ -194,7 +198,7 @@ INSERT INTO _cap SELECT ok((SELECT pass FROM _r WHERE name='t1_row'),      'T1b:
 INSERT INTO _cap SELECT ok((SELECT pass FROM _r WHERE name='t2_audit'),    'T2: audit_logs emis — metadata nomme le champ, payload porte le diff 1000000 -> 7500000');
 INSERT INTO _cap SELECT ok((SELECT pass FROM _r WHERE name='t3_b2b_denied'),   'T3: sans customers.b2b.update -> P0003');
 INSERT INTO _cap SELECT ok((SELECT pass FROM _r WHERE name='t3b_retail_denied'),'T3bis: le plafond retail exige customers.update, gate distinct du B2B');
-INSERT INTO _cap SELECT ok((SELECT pass FROM _r WHERE name='t4_direct_update_revoked'), 'T4: UPDATE direct des 5 champs financiers revoque a authenticated, name toujours accorde');
+INSERT INTO _cap SELECT ok((SELECT pass FROM _r WHERE name='t4_direct_update_revoked'), 'T4: UPDATE direct des 5 champs financiers revoque a authenticated');
 INSERT INTO _cap SELECT ok((SELECT pass FROM _r WHERE name='t5_invalid_field'), 'T5: champ hors perimetre -> P0001 invalid_field');
 INSERT INTO _cap SELECT ok((SELECT pass FROM _r WHERE name='t6_negative'),      'T6: plafond negatif -> P0001 invalid_credit_limit');
 INSERT INTO _cap SELECT ok((SELECT pass FROM _r WHERE name='t7_inactive'),      'T7: fiche desactivee -> P0002 customer_not_found_or_inactive');
