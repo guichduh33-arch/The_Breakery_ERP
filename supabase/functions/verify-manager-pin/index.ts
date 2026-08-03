@@ -25,7 +25,7 @@
 // inserts a `discount_authorizations` row (service-role only, 60 s TTL) whose
 // scope-mapped permission is enforced SERVER-SIDE (the client's
 // `required_permission` is never trusted for minting). The returned
-// `authorization_id` is consumed atomically by update_order_item_qty_v4 —
+// `authorization_id` is consumed atomically by update_order_item_qty —
 // same single-use vehicle as the S55 discount nonce.
 //
 // Headers:
@@ -54,7 +54,7 @@ interface VerifyManagerPinPayload {
 // one enforces (editing a kitchen-sent line is a partial cancel: same authority
 // as the cancel flow). Server-side mapping — the client body is never trusted.
 // ADR-013 D9 — `discount` mints the discount nonce consumed by
-// pay_existing_order_v16 (pickup path); authorizer needs 'sales.discount'. The
+// pay_existing_order (pickup path); authorizer needs 'sales.discount'. The
 // scope value 'discount' matches the discount_authorizations.scope default.
 const MINT_SCOPES: Record<string, string> = {
   order_item_edit:    'pos.sale.cancel_item',

@@ -53,7 +53,7 @@ export interface OfflineFireIntent extends OfflineIntentBase {
   discount_authorized_by?: string;
 }
 
-/** Encaissement offline — rejoué vers pay_existing_order_v16 (p_payments,
+/** Encaissement offline — rejoué vers pay_existing_order (p_payments,
  *  p_idempotency_key d'origine + p_offline_replay, arbitrage A4).
  *
  *  ADR-015 : 1 à 5 règlements, TOUTE méthode de l'enum SAUF `store_credit` —

@@ -11,7 +11,7 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('process-payment', () =>
   let sessionId: string;
   let productIds: string[] = [];
   // S78 (D-6) : le prix ligne est canonique SERVEUR depuis S50
-  // (_resolve_line_price_v1) — les unit_price client sont ignorés. Les
+  // (_resolve_line_price) — les unit_price client sont ignorés. Les
   // assertions de montants se calculent depuis les retail_price réels.
   let priceA = 0;
   let priceB = 0;

@@ -1,5 +1,5 @@
 -- supabase/tests/pay_existing_discount_gate.test.sql
--- ADR-013 Lot 2 D9 — pay_existing_order_v16 : la remise money-path exige un nonce
+-- ADR-013 Lot 2 D9 — pay_existing_order_v17 : la remise money-path exige un nonce
 -- discount_authorizations à usage unique (miroir complete_order_v19). Le gate
 -- permission-only « nu » (S37, trou E1) est clos : un autorisateur valide SANS
 -- nonce est désormais REFUSÉ (P0003). Bypass au replay offline (p_offline_replay).
@@ -72,7 +72,7 @@ END $$;
 
 -- T1 : discount > 0 sans authorizer → P0014 (ADR-013 Lot 3 : ERRCODE dédié, ex-P0001)
 SELECT throws_ok(
-  $$ SELECT pay_existing_order_v16(
+  $$ SELECT pay_existing_order_v17(
        p_order_id := current_setting('breakery.v_o1')::uuid,
        p_payment := jsonb_build_object('method','cash','amount',17000,'cash_received',17000),
        p_discount_amount := 3000) $$,
@@ -80,7 +80,7 @@ SELECT throws_ok(
 
 -- T2 : authorizer sans sales.discount → P0003
 SELECT throws_ok(
-  $$ SELECT pay_existing_order_v16(
+  $$ SELECT pay_existing_order_v17(
        p_order_id := current_setting('breakery.v_o2')::uuid,
        p_payment := jsonb_build_object('method','cash','amount',17000,'cash_received',17000),
        p_discount_amount := 3000,
@@ -89,7 +89,7 @@ SELECT throws_ok(
 
 -- T3 : authorizer VALIDE mais AUCUN nonce (E1 clos) → P0003 'Invalid manager PIN'
 SELECT throws_ok(
-  $$ SELECT pay_existing_order_v16(
+  $$ SELECT pay_existing_order_v17(
        p_order_id := current_setting('breakery.v_o3')::uuid,
        p_payment := jsonb_build_object('method','cash','amount',17000,'cash_received',17000),
        p_discount_amount := 3000,
@@ -100,7 +100,7 @@ SELECT throws_ok(
 -- T4 : nonce valide → succès + total réel + audit pin_gated=true + nonce consommé.
 DO $$ DECLARE v_res JSONB; v_audit INT; v_consumed TIMESTAMPTZ;
 BEGIN
-  v_res := pay_existing_order_v16(
+  v_res := pay_existing_order_v17(
     p_order_id := current_setting('breakery.v_o4')::uuid,
     p_payment := jsonb_build_object('method','cash','amount',17000,'cash_received',20000,'change_given',3000),
     p_discount_amount := 3000,
@@ -124,7 +124,7 @@ SELECT is(current_setting('breakery.t4_consumed'), 'true', 'T6 nonce consommé (
 -- T7 : offline_replay bypass — discount SANS nonce mais p_offline_replay=true → succès.
 DO $$ DECLARE v_res JSONB;
 BEGIN
-  v_res := pay_existing_order_v16(
+  v_res := pay_existing_order_v17(
     p_order_id := current_setting('breakery.v_o5')::uuid,
     p_payment := jsonb_build_object('method','cash','amount',17000,'cash_received',17000),
     p_discount_amount := 3000,

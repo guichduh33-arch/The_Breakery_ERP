@@ -58,7 +58,7 @@ export interface OrderPaidOfflinePayload {
   /** == OrderFiredPayload.client_uuid (racine de la commande locale). */
   order_id: string;
   order_number: string;
-  /** Clé d'idempotence du paiement — rejouée vers pay_existing_order_v16. */
+  /** Clé d'idempotence du paiement — rejouée vers pay_existing_order. */
   idempotency_key: string;
   amount: number;
   cash_received: number;

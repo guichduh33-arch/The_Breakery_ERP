@@ -5,7 +5,7 @@
 // `mint_scope: 'order_item_edit'` in the body; the EF verifies the PIN,
 // enforces the scope-mapped permission (pos.sale.cancel_item) server-side and
 // mints a `discount_authorizations` row (60 s TTL). The returned
-// authorization_id is consumed atomically by update_order_item_qty_v4 — one
+// authorization_id is consumed atomically by update_order_item_qty — one
 // nonce per RPC call.
 
 import { getAccessToken } from '@/lib/accessToken.js';

@@ -79,7 +79,7 @@ UPDATE product_modifiers
 DO $$
 DECLARE v_env JSONB;
 BEGIN
-  v_env := complete_order_with_payment_v22(
+  v_env := complete_order_with_payment_v23(
     p_session_id := current_setting('a17.sess')::uuid,
     p_order_type := 'take_out'::order_type,
     p_items := $items$[

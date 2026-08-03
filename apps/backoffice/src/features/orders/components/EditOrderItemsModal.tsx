@@ -5,7 +5,7 @@
 // 2-col layout (60/40): ProductPicker left, cart preview right.
 // Accumulates OrderEditDiff in local state; "Apply" calls useEditOrderItems
 // orchestrator (sequential removes -> updates -> adds). S33 orchestrator
-// and RPCs (add_order_item_v3 / update_order_item_qty_v1 / remove_order_item_v1)
+// and RPCs (add_order_item / update_order_item_qty_v1 / remove_order_item_v1)
 // are UNCHANGED.
 //
 // addedMeta: preview-enrichment only (name + price for pending adds).
@@ -16,7 +16,7 @@
 // peut que BAISSER. Une baisse verrouillée pendante exige le PIN manager + une
 // raison de perte (section dédiée avant Apply) — l'orchestrateur mint un nonce
 // single-use par ligne (verify-manager-pin, scope 'order_item_edit') et
-// update_order_item_qty_v4 déduit la perte sur le delta.
+// update_order_item_qty déduit la perte sur le delta.
 
 import { useState, useMemo } from 'react';
 import { CenterModal } from '@breakery/ui';

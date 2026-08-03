@@ -5,7 +5,7 @@
 // d'idempotence D'ORIGINE — un double replay est un no-op serveur, aucune RPC
 // « spéciale offline » côté money-path. Ordre strict par seq (fire avant
 // paiement d'une même commande) ; premier échec = arrêt du drain (l'ordre est
-// préservé, on retentera au prochain déclencheur). A4 : pay_existing_order_v16
+// préservé, on retentera au prochain déclencheur). A4 : pay_existing_order
 // est appelée avec p_offline_replay=true — le serveur ACCEPTE (stock forcé
 // négatif au besoin) et trace offline_replay dans audit_logs.
 
@@ -161,7 +161,10 @@ async function replayOne(intent: OfflineIntent, orderIdByRoot: Map<string, strin
         ? { p_payments: intent.payments as unknown as Json }
         : { p_payment: intent.payment as unknown as Json };
 
-    const { error } = await supabase.rpc('pay_existing_order_v16', {
+    // ADR-020 déc. 5 (2026-08-03) — v16 → v17 : l'acquisition de points est
+    // réservée aux clients retail dont la catégorie a `loyalty_enabled`. La
+    // signature ne bouge pas, le replay d'un intent en file est donc inchangé.
+    const { error } = await supabase.rpc('pay_existing_order_v17', {
       p_order_id: orderId,
       ...tenderArgs,
       p_idempotency_key: intent.id,
