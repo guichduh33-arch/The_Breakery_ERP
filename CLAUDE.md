@@ -89,12 +89,12 @@ Si un document contredit le code, le document a tort : **signale-le, ne corrige 
 - NEVER commit secrets, credentials, or .env files.
 - Keep files under 500 lines.
 - Validate input at system boundaries.
-- Monorepo pnpm/turbo : code dans `apps/{pos,backoffice}/src`,
+- Monorepo pnpm/turbo : code dans `apps/{pos,backoffice,print-bridge}/src`,
   `packages/{domain,supabase,ui,utils}/src`, `supabase/{functions,migrations,tests}`.
   Tests co-localisés dans `__tests__/` — un même module en a souvent PLUSIEURS
   (`pages/<x>/__tests__` ET `features/<x>/__tests__`) : chercher par glob, jamais
   conclure « pas de test » depuis un seul répertoire.
-- **Sous-agents (Task tool) : autorisés dans une session, sous régime strict.**
+- **Sous-agents (outil `Agent`, ex-`Task`) : autorisés dans une session, sous régime strict.**
   Le plan est approuvé par Mamat AVANT tout dispatch ; les sous-agents exécutent
   ce plan, toute déviation remonte à Mamat (jamais arbitrée en interne).
   Sous-agents lecture-seule : libres. Écrivain : UN à la fois, périmètre de
@@ -115,6 +115,16 @@ Si un document contredit le code, le document a tort : **signale-le, ne corrige 
   erreurs préexistantes des fichiers touchés par la PR.
 - pgTAP : via MCP `execute_sql` (BEGIN/ROLLBACK), pas de runner local. SQL
   >~12 KB : POST le fichier sur l'API `database/query` (troncature inline MCP).
+- E2E Playwright : specs dans `tests/e2e/`, `pnpm e2e` (config racine, apps
+  buildées et servies en local contre la base dev V3). Le workflow
+  `playwright-e2e.yml` tourne en cron, mais son déclencheur `pull_request` est
+  DÉSARMÉ tant que `process-payment` répond 500 sur dev : une PR qui touche le
+  POS ou le money-path n'est PAS couverte par l'E2E.
+- Filets CI : `ci.yml` (gardes gouvernance nues + lint-ratchet + build/tests) ;
+  `pgtap-pr.yml` ne se déclenche QUE si la PR touche
+  `supabase/{migrations,tests,functions}` — une PR front-only n'a aucun filet
+  DB ; `pgtap-nightly.yml` couvre master en cron. Les gardes gouvernance
+  (`scripts/ci/`) rendent leur verdict en secondes, avant le build.
 - Env : Vite lit `.env` à la RACINE du repo ; vitest lit `apps/<app>/.env.local`
   (copier les deux dans un worktree).
 
@@ -170,7 +180,9 @@ Si un document contredit le code, le document a tort : **signale-le, ne corrige 
 - **Migrations** : numérotation NAME-block monotone (vérifier le plus haut dans
   `supabase/migrations/` avant de choisir). **Jamais de `BEGIN;`/`COMMIT;` dans le
   corps** — MCP wrappe déjà, un COMMIT interne casse l'atomicité. Toujours régénérer
-  les types après un changement de schéma (cause n°1 de CI cassée).
+  les types après un changement de schéma (cause n°1 de CI cassée) : cible
+  `packages/supabase/src/types.generated.ts`, via MCP `generate_typescript_types`
+  (le script `pnpm db:types` existe mais exige `SUPABASE_DB_URL`).
 - **Grants anon, defense-in-depth** : `REVOKE ... FROM anon` est INSUFFISANT seul —
   anon hérite EXECUTE via PUBLIC. Toute migration REVOKE-on-functions doit aussi
   `REVOKE ... FROM PUBLIC` + `ALTER DEFAULT PRIVILEGES ... REVOKE ... FROM PUBLIC`.
