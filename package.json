@@ -26,7 +26,7 @@
     "db:types": "supabase gen types typescript --db-url \"$SUPABASE_DB_URL\" --schema public > packages/supabase/src/types.generated.ts"
   },
   "devDependencies": {
-    "@playwright/test": "^1.62.0",
+    "@playwright/test": "^1.62.1",
     "eslint": "^8.57.1",
     "eslint-import-resolver-typescript": "^3.7.0",
     "eslint-plugin-import": "^2.31.0",
