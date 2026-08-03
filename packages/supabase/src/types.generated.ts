@@ -6825,7 +6825,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      create_customer_v2: {
+      create_customer_v3: {
         Args: {
           p_customer_type?: Database["public"]["Enums"]["customer_type"]
           p_email?: string
@@ -8571,6 +8571,10 @@ export type Database = {
         }
       }
       update_customer_credit_terms_v1: {
+        Args: { p_customer_id: string; p_patch: Json }
+        Returns: Json
+      }
+      update_customer_v1: {
         Args: { p_customer_id: string; p_patch: Json }
         Returns: Json
       }

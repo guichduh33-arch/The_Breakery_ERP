@@ -133,15 +133,15 @@ export default function PosPage() {
   }
 
   async function createCustomer(input: { name: string; phone: string; email?: string }): Promise<Customer> {
-    // Default category is assigned server-side by create_customer_v2 (_019).
-    const { data, error } = await supabase.rpc('create_customer_v2', {
+    // Default category is assigned server-side by create_customer_v3 (_019).
+    const { data, error } = await supabase.rpc('create_customer_v3', {
       p_name: input.name,
       p_phone: input.phone,
       ...(input.email ? { p_email: input.email } : {}),
     });
     if (error) throw error;
     const row = (data ?? [])[0];
-    if (!row) throw new Error('create_customer_v2 returned no row');
+    if (!row) throw new Error('create_customer_v3 returned no row');
     return row as unknown as Customer;
   }
 

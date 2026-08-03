@@ -11,13 +11,21 @@ DO $$
 DECLARE
   v_auth UUID; v_catg UUID; v_cust UUID;
 BEGIN
-  -- v3 customer RPCs gate on customers.read OR pos.sale.create — pick a caller that has it.
+  -- Lecture gatee sur customers.read ; et depuis ADR-020 dec. 2, T3 exige en
+  -- plus un droit de CREATION (create_customer_v3 n'est plus sans gate). Un
+  -- profil de caisse aurait customers.pos.create mais pas customers.read : on
+  -- prend donc un acteur qui detient les deux.
+  -- ORDER BY employee_code + is_active : sans eux, un LIMIT 1 pioche au hasard
+  -- et la suite devient intermittente (lecon du 2026-08-03).
   SELECT up.auth_user_id INTO v_auth
     FROM user_profiles up
-   WHERE up.deleted_at IS NULL AND up.auth_user_id IS NOT NULL
-     AND (has_permission(up.auth_user_id, 'customers.read')
-          OR has_permission(up.auth_user_id, 'pos.sale.create'))
-   LIMIT 1;
+   WHERE up.deleted_at IS NULL AND up.is_active AND up.auth_user_id IS NOT NULL
+     AND has_permission(up.auth_user_id, 'customers.read')
+     AND has_permission(up.auth_user_id, 'customers.create')
+   ORDER BY up.employee_code LIMIT 1;
+  IF v_auth IS NULL THEN
+    RAISE EXCEPTION 'Aucun profil actif porteur de customers.read + customers.create';
+  END IF;
   PERFORM set_config('request.jwt.claim.sub', v_auth::text, true);
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_auth)::text, true);
 
@@ -50,19 +58,19 @@ BEGIN
 END $$;
 SELECT is(current_setting('breakery.t2_ok'), 'true', 'T2 get_customer_v3 embeds the category');
 
--- T3 : create_customer_v2 retourne la row créée, avec la catégorie par défaut
+-- T3 : create_customer_v3 retourne la row créée, avec la catégorie par défaut
 -- assignée server-side (_019) si une catégorie is_default existe.
 DO $$ DECLARE v_row RECORD; v_default UUID;
 BEGIN
   SELECT id INTO v_default FROM customer_categories
    WHERE is_default = true AND deleted_at IS NULL LIMIT 1;
-  SELECT * INTO v_row FROM create_customer_v2('S37 Walkin', '0899887766');
+  SELECT * INTO v_row FROM create_customer_v3('S37 Walkin', '0899887766');
   PERFORM set_config('breakery.t3_ok',
     (v_row.id IS NOT NULL AND v_row.name = 'S37 Walkin'
      AND v_row.category_id IS NOT DISTINCT FROM v_default
      AND ((v_default IS NULL) = (v_row.category IS NULL)))::text, true);
 END $$;
-SELECT is(current_setting('breakery.t3_ok'), 'true', 'T3 create_customer_v2 returns the created row with the server-side default category (_019)');
+SELECT is(current_setting('breakery.t3_ok'), 'true', 'T3 create_customer_v3 returns the created row with the server-side default category (_019)');
 
 -- T4 : v1 RPCs bien droppées (versioning monotone)
 SELECT is(
@@ -71,11 +79,11 @@ SELECT is(
       AND pronamespace = 'public'::regnamespace),
   0, 'T4 v1 customer RPCs dropped');
 
--- T5 : anon n'a pas EXECUTE sur les RPCs customer live (search bumpé v4, get v3, create resté v2)
+-- T5 : anon n'a pas EXECUTE sur les RPCs customer live (search v4, get v3, create v3)
 SELECT is(
   has_function_privilege('anon', 'public.search_customers_v4(text, int)', 'EXECUTE')
   OR has_function_privilege('anon', 'public.get_customer_v3(uuid)', 'EXECUTE')
-  OR has_function_privilege('anon', 'public.create_customer_v2(text, text, text, customer_type)', 'EXECUTE'),
+  OR has_function_privilege('anon', 'public.create_customer_v3(text, text, text, customer_type)', 'EXECUTE'),
   false, 'T5 anon cannot execute the live customer RPCs');
 
 -- T7 (DB-06, _020 → S52 v3) : get_pos_b2b_debts_v3 existe, v2 droppée, anon sans EXECUTE
