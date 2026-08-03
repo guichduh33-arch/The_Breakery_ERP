@@ -11,6 +11,7 @@ import { Plus, ArrowLeftRight, FileEdit, CheckCircle2, Truck } from 'lucide-reac
 import { Link } from 'react-router-dom';
 import { Button, KpiTile, SectionLabel } from '@breakery/ui';
 import type { TransferStatus } from '@breakery/domain';
+import { formatDateTimeShortWita } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import {
   useInternalTransfers,
@@ -185,7 +186,7 @@ export default function TransfersListPage(): JSX.Element {
                     <TransferStatusBadge status={row.status} />
                   </td>
                   <td className="px-3 py-2 text-text-secondary text-xs font-mono">
-                    {new Date(row.created_at).toLocaleString()}
+                    {formatDateTimeShortWita(row.created_at)}
                   </td>
                   <td className="px-3 py-2 text-right">
                     <Link

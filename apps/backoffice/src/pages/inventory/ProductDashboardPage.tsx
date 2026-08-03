@@ -16,6 +16,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { EmptyState, KpiTile } from '@breakery/ui';
+import { formatDateTimeShortWita } from '@breakery/utils';
 import { useProductDashboard } from '@/features/inventory-dashboard/hooks/useProductDashboard.js';
 import { SalesVelocityChart } from '@/features/inventory-dashboard/components/SalesVelocityChart.js';
 import { StockBySectionList } from '@/features/inventory-dashboard/components/StockBySectionList.js';
@@ -127,7 +128,7 @@ export default function ProductDashboardPage(): JSX.Element {
                 {d.recent_movements.map((m) => (
                   <tr key={m.id} className="border-t border-border-subtle">
                     <td className="py-1 px-3 font-mono text-text-secondary">
-                      {new Date(m.created_at).toLocaleString()}
+                      {formatDateTimeShortWita(m.created_at)}
                     </td>
                     <td className="py-1 px-3 font-mono">{m.movement_type}</td>
                     <td className={`py-1 px-3 text-right font-mono ${m.quantity > 0 ? 'text-success' : 'text-danger'}`}>
