@@ -2,23 +2,27 @@
 //
 // Session 12 — Phase 3 — colored status pill used in the list table header
 // and on the detail page. Pure presentational; no domain logic.
+//
+// Delegates to the shared Badge primitive: the semantic tonal variants
+// (success/warning/info/neutral/destructive) exist precisely so screens stop
+// re-inventing pills. The former hand-rolled <span> carried an off-scale
+// text-[10px] and its own uppercase, which rendered CANCELLED here and
+// "Cancelled" on the opname list for the same label — see OpnameStatusBadge.
 
 import type { JSX } from 'react';
 import type { TransferStatus } from '@breakery/domain';
+import { Badge, type BadgeProps } from '@breakery/ui';
 
 export interface TransferStatusBadgeProps {
   status: TransferStatus;
 }
 
-// Token-driven colour mapping per spec C-21 / Phase 3 design notes.
-// Session 13 (ui-steward batch 1): migrated from raw Tailwind palette literals
-// (gray/amber/blue/emerald/red 500) to semantic + accent design tokens.
-const STYLES: Record<TransferStatus, string> = {
-  draft:      'bg-bg-overlay text-text-secondary border-border-subtle',
-  pending:    'bg-warning-soft text-warning border-warning/30',
-  in_transit: 'bg-info-soft text-info border-info/30',
-  received:   'bg-success-soft text-success border-success/30',
-  cancelled:  'bg-danger-soft text-danger border-danger/30',
+const VARIANTS: Record<TransferStatus, BadgeProps['variant']> = {
+  draft:      'neutral',
+  pending:    'warning',
+  in_transit: 'info',
+  received:   'success',
+  cancelled:  'destructive',
 };
 
 const LABELS: Record<TransferStatus, string> = {
@@ -31,11 +35,8 @@ const LABELS: Record<TransferStatus, string> = {
 
 export function TransferStatusBadge({ status }: TransferStatusBadgeProps): JSX.Element {
   return (
-    <span
-      data-status={status}
-      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-widest ${STYLES[status]}`}
-    >
+    <Badge variant={VARIANTS[status]} data-status={status}>
       {LABELS[status]}
-    </span>
+    </Badge>
   );
 }
