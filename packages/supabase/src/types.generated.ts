@@ -6457,7 +6457,7 @@ export type Database = {
         Args: { p_product_id: string; p_quantity_needed: number }
         Returns: string
       }
-      _resolve_line_price_v1: {
+      _resolve_line_price_v2: {
         Args: {
           p_combo: boolean
           p_customer_id: string
@@ -6531,7 +6531,7 @@ export type Database = {
         }
         Returns: Json
       }
-      add_order_item_v3: {
+      add_order_item_v4: {
         Args: {
           p_idempotency_key: string
           p_modifiers: Json
@@ -6729,7 +6729,7 @@ export type Database = {
             }
             Returns: string
           }
-      complete_order_with_payment_v22: {
+      complete_order_with_payment_v23: {
         Args: {
           p_customer_id?: string
           p_discount_amount?: number
@@ -7953,7 +7953,7 @@ export type Database = {
       pass:
         | { Args: never; Returns: string }
         | { Args: { "": string }; Returns: string }
-      pay_existing_order_v16: {
+      pay_existing_order_v17: {
         Args: {
           p_customer_id?: string
           p_discount_amount?: number
@@ -8580,7 +8580,7 @@ export type Database = {
           code: string
         }[]
       }
-      update_order_item_qty_v4: {
+      update_order_item_qty_v5: {
         Args: {
           p_auth_id?: string
           p_idempotency_key: string

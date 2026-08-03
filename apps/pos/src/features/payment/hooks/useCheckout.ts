@@ -5,7 +5,7 @@ import type { Cart, PaymentInput, PaymentResult, PaymentResultLine } from '@brea
 import { buildOrderPayload } from '@breakery/domain';
 import type { Database, Json } from '@breakery/supabase';
 
-type PayExistingOrderArgs = Database['public']['Functions']['pay_existing_order_v16']['Args'];
+type PayExistingOrderArgs = Database['public']['Functions']['pay_existing_order_v17']['Args'];
 
 /** Wire-format row sent as `p_promotions` to RPC v7 / v4 (§3.6). */
 interface PromotionWirePayload {
@@ -69,7 +69,7 @@ export function useCheckout() {
       const { pickedUpOrderId, appliedPromotions } = cartState;
 
       // S44 P0-C(2) — the loyalty multiplier is resolved server-side now
-      // (complete_order_with_payment_v13 / pay_existing_order_v16). The client no
+      // (complete_order_with_payment_v13 / pay_existing_order_v17). The client no
       // longer computes or forwards it.
 
       // Session 9 — both branches forward applied promotions to the server,
@@ -121,7 +121,7 @@ export function useCheckout() {
               quantity: i.quantity,
               unit_price: i.unit_price,
               modifiers: i.modifiers,
-              // S47 — combo lines persist their components so pay_existing_order_v16
+              // S47 — combo lines persist their components so pay_existing_order_v17
               // deducts each component's stock at payment.
               ...(i.combo_components ? { combo_components: i.combo_components } : {}),
               ...(i.discount ? { discount_amount: i.discount.amount } : {}),
@@ -165,7 +165,7 @@ export function useCheckout() {
           args.p_promotions = promotionPayload;
         }
 
-        // ADR-013 D9 — remise sur commande reprise : pay_existing_order_v16 exige
+        // ADR-013 D9 — remise sur commande reprise : pay_existing_order_v17 exige
         // un nonce discount_authorizations à usage unique. Le RPC étant appelé en
         // DIRECT depuis le navigateur (contrairement à complete_order qui passe
         // par process-payment), le mint service-role ne peut se faire dans le RPC.
@@ -203,7 +203,7 @@ export function useCheckout() {
 
         // S37 — v8 returns a jsonb envelope: the POS finally shows the REAL
         // pickup total instead of the hardcoded 0 (POS-01).
-        const { error, data } = await supabase.rpc('pay_existing_order_v16', args as PayExistingOrderArgs);
+        const { error, data } = await supabase.rpc('pay_existing_order_v17', args as PayExistingOrderArgs);
         if (error) throw Object.assign(new Error(error.message), { details: error });
         const envelope = data as unknown as {
           order_id: string;

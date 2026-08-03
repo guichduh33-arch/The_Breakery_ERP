@@ -175,7 +175,7 @@ export function PaymentTerminal() {
               cartEmpty={cart.items.length === 0}
               onProcess={() => { void handleProcess(); }}
               // ADR-015 — le split est désormais disponible hors-ligne :
-              // l'outbox porte un tableau de règlements et pay_existing_order_v16
+              // l'outbox porte un tableau de règlements et pay_existing_order
               // les rejoue via p_payments (1..5).
               onSplitOpen={() => { setSplitOpen(true); }}
             />

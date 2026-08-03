@@ -5,6 +5,9 @@
 // 'order_item_edit' émis par verify-manager-pin, transporté en p_auth_id) avec
 // perte obligatoire sur le delta (p_waste_reason ; p_waste_qty défaut = delta).
 // Ligne libre : comportement v1 inchangé, les args ADR-010 sont omis.
+// ADR-020 déc. 4 (2026-08-03) — v4 → v5 : la re-tarification serveur des
+// modificateurs passe par `_resolve_line_price_v2`, qui consulte le prix négocié
+// du client avant la grille par catégorie. Aucun argument ne change.
 import { useMutation } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
 
@@ -24,7 +27,7 @@ interface Response { order_totals: { subtotal: number; tax_amount: number; total
 export function useUpdateOrderItemQty() {
   return useMutation<Response, Error, Args>({
     mutationFn: async (args) => {
-      const { data, error } = await supabase.rpc('update_order_item_qty_v4', {
+      const { data, error } = await supabase.rpc('update_order_item_qty_v5', {
         p_order_item_id:   args.orderItemId,
         p_qty:             args.qty,
         p_idempotency_key: args.idempotencyKey,

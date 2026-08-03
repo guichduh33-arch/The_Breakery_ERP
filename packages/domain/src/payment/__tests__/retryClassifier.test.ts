@@ -192,7 +192,7 @@ describe('classifyCheckoutError', () => {
       expect(result.userMessage).toMatch(/Solde d’avoir insuffisant/);
     });
 
-    // ADR-013 Lot 4 — chemin ardoise : pay_existing_order_v16 appelé en direct,
+    // ADR-013 Lot 4 — chemin ardoise : pay_existing_order appelé en direct,
     // le PostgrestError expose le SQLSTATE brut dans details.code (pas d'EF).
     it('maps raw SQLSTATE P0015 (pickup path) to the same FR copy', () => {
       const err = Object.assign(new Error('Store credit payment requires a customer'), {

@@ -1,6 +1,6 @@
 -- supabase/tests/canonical_line_price.test.sql
 -- Session 51 / W1 — tests d'acceptation A1-A4 pour la resolution canonique du prix de ligne.
---   A1 : _resolve_line_price_v1 unit_price = retail_price serveur (ignore client) + line_subtotal
+--   A1 : _resolve_line_price_v2 unit_price = retail_price serveur (ignore client) + line_subtotal
 --   A2 : modificateur actif -> price_adjustment serveur (ignore client) dans total + modifiers_resolved
 --   A3 : modificateur inconnu/inactif -> check_violation (23514)
 --   A4 : ligne cadeau (is_gift=true) -> unit_price=0, modifiers_total=0
@@ -10,7 +10,7 @@
 --        resoudre levait 23514 et rendait tout combo configure inencaissable.
 --        Les libelles sont conserves, leur price_adjustment force a 0 : le prix
 --        d'un combo vient de _resolve_combo_price_v1.
---   T9 : anon EXECUTE revoque sur complete_order_with_payment_v22
+--   T9 : anon EXECUTE revoque sur complete_order_with_payment_v23
 --   T10-12 : smoke v15 — total + lines[] refletent le prix serveur (ignore unit_price client)
 --   T13 : v14 droppee
 --
@@ -70,7 +70,7 @@ END $$;
 DO $$
 DECLARE r JSONB;
 BEGIN
-  r := complete_order_with_payment_v22(
+  r := complete_order_with_payment_v23(
     p_session_id := current_setting('w1.sess')::uuid,
     p_order_type := 'take_out'::order_type,
     p_items      := jsonb_build_array(jsonb_build_object(
@@ -85,44 +85,44 @@ SELECT plan(15);
 
 -- A1
 SELECT is(
-  (SELECT (lp).unit_price FROM _resolve_line_price_v1(current_setting('w1.p1')::uuid, 1, '[]'::jsonb, NULL, false, false) lp),
+  (SELECT (lp).unit_price FROM _resolve_line_price_v2(current_setting('w1.p1')::uuid, 1, '[]'::jsonb, NULL, false, false) lp),
   15000::numeric, 'T1 A1 - unit_price = retail_price (15000), client ignore');
 
 SELECT is(
-  (SELECT (lp).line_subtotal FROM _resolve_line_price_v1(current_setting('w1.p1')::uuid, 3, '[]'::jsonb, NULL, false, false) lp),
+  (SELECT (lp).line_subtotal FROM _resolve_line_price_v2(current_setting('w1.p1')::uuid, 3, '[]'::jsonb, NULL, false, false) lp),
   45000::numeric, 'T2 A1 - line_subtotal = 15000*3 = 45000');
 
 -- A2
 SELECT is(
-  (SELECT (lp).modifiers_total FROM _resolve_line_price_v1(current_setting('w1.p1')::uuid, 1,
+  (SELECT (lp).modifiers_total FROM _resolve_line_price_v2(current_setting('w1.p1')::uuid, 1,
     '[{"group_name":"Size","option_label":"Large","price_adjustment":9999}]'::jsonb, NULL, false, false) lp),
   5000::numeric, 'T3 A2 - modifiers_total = serveur 5000 (client 9999 ignore)');
 
 SELECT is(
-  (SELECT (lp).line_subtotal FROM _resolve_line_price_v1(current_setting('w1.p1')::uuid, 2,
+  (SELECT (lp).line_subtotal FROM _resolve_line_price_v2(current_setting('w1.p1')::uuid, 2,
     '[{"group_name":"Size","option_label":"Large","price_adjustment":0}]'::jsonb, NULL, false, false) lp),
   40000::numeric, 'T4 A2 - line_subtotal = (15000+5000)*2 = 40000');
 
 SELECT is(
-  (SELECT ((lp).modifiers_resolved->0->>'price_adjustment')::numeric FROM _resolve_line_price_v1(current_setting('w1.p1')::uuid, 1,
+  (SELECT ((lp).modifiers_resolved->0->>'price_adjustment')::numeric FROM _resolve_line_price_v2(current_setting('w1.p1')::uuid, 1,
     '[{"group_name":"Size","option_label":"Large","price_adjustment":0}]'::jsonb, NULL, false, false) lp),
   5000::numeric, 'T5 A2 - modifiers_resolved[0].price_adjustment = serveur 5000');
 
 -- A3
 SELECT throws_ok(
-  $q$ SELECT * FROM _resolve_line_price_v1((SELECT current_setting('w1.p1'))::uuid, 1,
+  $q$ SELECT * FROM _resolve_line_price_v2((SELECT current_setting('w1.p1'))::uuid, 1,
     '[{"group_name":"Size","option_label":"UnknownOpt","price_adjustment":0}]'::jsonb, NULL, false, false) $q$,
   '23514', NULL, 'T6 A3 - modificateur inconnu -> check_violation');
 
 SELECT throws_ok(
-  $q$ SELECT * FROM _resolve_line_price_v1((SELECT current_setting('w1.p1'))::uuid, 1,
+  $q$ SELECT * FROM _resolve_line_price_v2((SELECT current_setting('w1.p1'))::uuid, 1,
     '[{"group_name":"Size","option_label":"InactiveOpt","price_adjustment":0}]'::jsonb, NULL, false, false) $q$,
   '23514', NULL, 'T7 A3 - modificateur inactif -> check_violation');
 
 -- A4
 SELECT ok(
   (SELECT (lp).unit_price = 0 AND (lp).modifiers_total = 0
-     FROM _resolve_line_price_v1(current_setting('w1.p3')::uuid, 1, '[]'::jsonb, NULL, true, false) lp),
+     FROM _resolve_line_price_v2(current_setting('w1.p3')::uuid, 1, '[]'::jsonb, NULL, true, false) lp),
   'T8 A4 - ligne cadeau -> unit_price=0, modifiers_total=0');
 
 -- A5 — meme libelle que T6 (inconnu de product_modifiers), mais sur une ligne
@@ -130,14 +130,14 @@ SELECT ok(
 -- Ce couple T6/T14 est le garde-fou : le lookup reste obligatoire hors combo.
 SELECT ok(
   (SELECT (lp).modifiers_total = 0
-     FROM _resolve_line_price_v1(current_setting('w1.p1')::uuid, 1,
+     FROM _resolve_line_price_v2(current_setting('w1.p1')::uuid, 1,
        '[{"group_name":"drink","option_label":"UnknownOpt","price_adjustment":9999}]'::jsonb,
        NULL, false, true) lp),
   'T14 A5 - ligne combo : option inconnue de product_modifiers ne leve plus, montant 0');
 
 SELECT is(
   (SELECT (lp).modifiers_resolved->0->>'option_label'
-     FROM _resolve_line_price_v1(current_setting('w1.p1')::uuid, 1,
+     FROM _resolve_line_price_v2(current_setting('w1.p1')::uuid, 1,
        '[{"group_name":"drink","option_label":"UnknownOpt","price_adjustment":9999}]'::jsonb,
        NULL, false, true) lp),
   'UnknownOpt', 'T15 A5 - le libelle choisi est conserve pour la cuisine');
@@ -145,7 +145,7 @@ SELECT is(
 -- Gate anon
 SELECT ok(
   NOT has_function_privilege('anon',
-    'complete_order_with_payment_v22(uuid,order_type,jsonb,jsonb,uuid,uuid,integer,text,numeric,text,numeric,text,uuid,jsonb,jsonb,uuid)',
+    'complete_order_with_payment_v23(uuid,order_type,jsonb,jsonb,uuid,uuid,integer,text,numeric,text,numeric,text,uuid,jsonb,jsonb,uuid)',
     'EXECUTE'),
   'T9 anon EXECUTE revoque sur v17');
 
