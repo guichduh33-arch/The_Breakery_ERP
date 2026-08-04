@@ -6,6 +6,18 @@
 // buckets unpaid B2B invoices on real invoice_date (created_at) rather than
 // the previous `last_visit_at` proxy. Closes TASK-09-001 / TASK-09-006 and
 // removes deviation D-W6-B2B-aging-bug.
+//
+// Order-side KPIs read `view_b2b_invoices` — the canonical B2B order surface
+// (b2b customers, non-deleted, order_type='b2b', not voided). They used to be
+// derived from a 50-row slice of `customers` ordered by `total_spent`: since
+// that column is never maintained, the slice was arbitrary and every order
+// outside it was invisible, so "Total orders" under-reported and
+// "Active clients" was pinned at 0.
+//
+// Counts that must never under-report (`totalOrders`, `pendingOrders`) are
+// server-side exact counts (`head: true`) — they transfer no rows, so no
+// row cap can silently truncate them. Per-client rollups read one narrow
+// projection and are aggregated here.
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
@@ -46,15 +58,32 @@ export interface B2bDashboardData {
   totalOrders:      number;
   topClients:       B2bClientRow[];
   recentOrders:     B2bRecentOrder[];
-  aging:            ReadonlyArray<B2bAgingBucket>;
+  aging:            readonly B2bAgingBucket[];
 }
 
 export const B2B_DASHBOARD_QUERY_KEY = ['b2b-dashboard'] as const;
 
 const CLIENT_COLS = [
   'id', 'name', 'b2b_company_name', 'b2b_current_balance', 'b2b_credit_limit',
-  'total_spent', 'total_visits', 'last_visit_at',
 ].join(', ');
+
+/** Narrow projection over `view_b2b_invoices` — one row per B2B invoice. */
+const INVOICE_ROLLUP_COLS = 'customer_id, invoice_total, invoice_date';
+
+const RECENT_ORDER_COLS =
+  'invoice_id, order_number, invoice_total, order_status, invoice_date, customer_id';
+
+interface InvoiceRollupRow {
+  customer_id:   string | null;
+  invoice_total: number | null;
+  invoice_date:  string;
+}
+
+interface ClientRollup {
+  orders:    number;
+  spent:     number;
+  lastOrder: string | null;
+}
 
 function startOfMonth(): Date {
   const n = new Date();
@@ -81,49 +110,79 @@ export function useB2bDashboard() {
     queryKey: B2B_DASHBOARD_QUERY_KEY,
     staleTime: 60_000,
     queryFn: async () => {
+      // Every B2B client — no ranking slice, so no client can fall out of the
+      // aggregates. Ordered by name only to make the payload deterministic.
       const { data: clients, error: cErr } = await supabase
         .from('customers')
         .select(CLIENT_COLS)
         .is('deleted_at', null)
         .eq('customer_type', 'b2b')
-        .order('total_spent', { ascending: false })
-        .limit(50);
+        .order('name', { ascending: true });
       if (cErr) throw cErr;
-      const clientRows = (clients ?? []) as unknown as B2bClientRow[];
+      const clientRows = (clients ?? []) as unknown as
+        Omit<B2bClientRow, 'total_spent' | 'total_visits' | 'last_visit_at'>[];
 
-      const ids = clientRows.map((c) => c.id);
-      let recent: B2bRecentOrder[] = [];
-      let monthly = 0;
+      // Exact server-side counts — head:true transfers no rows.
+      const { count: totalOrdersCount, error: tErr } = await supabase
+        .from('view_b2b_invoices')
+        .select('*', { count: 'exact', head: true });
+      if (tErr) throw tErr;
+
+      const { count: pendingCount, error: pErr } = await supabase
+        .from('view_b2b_invoices')
+        .select('*', { count: 'exact', head: true })
+        .is('paid_at', null);
+      if (pErr) throw pErr;
+
+      const { data: rollupData, error: rErr } = await supabase
+        .from('view_b2b_invoices')
+        .select(INVOICE_ROLLUP_COLS);
+      if (rErr) throw rErr;
+      const rollupRows = (rollupData ?? []) as unknown as InvoiceRollupRow[];
+
+      const monthStart = startOfMonth();
+      const prevStart  = startOfPrevMonth();
+      const perClient  = new Map<string, ClientRollup>();
+      let monthly     = 0;
       let prevMonthly = 0;
-      let pending = 0;
-      let totalCount = 0;
 
-      if (ids.length > 0) {
-        const { data: orders, error: oErr } = await supabase
-          .from('orders')
-          .select('id, order_number, total, status, created_at, customer_id, paid_at')
-          .in('customer_id', ids)
-          .order('created_at', { ascending: false })
-          .limit(200);
-        if (oErr) throw oErr;
-        const orderRows = (orders ?? []) as Array<{
-          id: string; order_number: string; total: number; status: string;
-          created_at: string; customer_id: string | null; paid_at: string | null;
-        }>;
-        const monthStart = startOfMonth();
-        const prevStart  = startOfPrevMonth();
-        for (const o of orderRows) {
-          totalCount += 1;
-          const created = new Date(o.created_at);
-          if (created >= monthStart) monthly += Number(o.total);
-          else if (created >= prevStart && created < monthStart) prevMonthly += Number(o.total);
-          if (o.status === 'pending' || o.status === 'open' || o.paid_at === null) pending += 1;
+      for (const row of rollupRows) {
+        const total = Number(row.invoice_total ?? 0);
+        const dated = new Date(row.invoice_date);
+        if (dated >= monthStart) monthly += total;
+        else if (dated >= prevStart && dated < monthStart) prevMonthly += total;
+
+        if (row.customer_id === null) continue;
+        const acc = perClient.get(row.customer_id)
+          ?? { orders: 0, spent: 0, lastOrder: null };
+        acc.orders += 1;
+        acc.spent  += total;
+        if (acc.lastOrder === null || row.invoice_date > acc.lastOrder) {
+          acc.lastOrder = row.invoice_date;
         }
-        recent = orderRows.slice(0, 5).map((o) => ({
-          id: o.id, order_number: o.order_number, total: Number(o.total),
-          status: o.status, created_at: o.created_at, customer_id: o.customer_id,
-        }));
+        perClient.set(row.customer_id, acc);
       }
+
+      const { data: recentData, error: oErr } = await supabase
+        .from('view_b2b_invoices')
+        .select(RECENT_ORDER_COLS)
+        .order('invoice_date', { ascending: false })
+        .limit(5);
+      if (oErr) throw oErr;
+      const recent: B2bRecentOrder[] = ((recentData ?? []) as unknown as {
+        invoice_id: string; order_number: string; invoice_total: number | null;
+        order_status: string; invoice_date: string; customer_id: string | null;
+      }[]).map((o) => ({
+        id:           o.invoice_id,
+        order_number: o.order_number,
+        total:        Number(o.invoice_total ?? 0),
+        status:       o.order_status,
+        created_at:   o.invoice_date,
+        customer_id:  o.customer_id,
+      }));
+
+      const pending    = pendingCount ?? 0;
+      const totalCount = totalOrdersCount ?? 0;
 
       const monthlyDeltaPct = prevMonthly === 0
         ? (monthly === 0 ? 0 : 100)
@@ -159,7 +218,23 @@ export function useB2bDashboard() {
         { label: 'Default', range: '90+ days',    count: buckets['90+'].count,    total: buckets['90+'].total    },
       ];
 
-      const activeClients = clientRows.filter((c) => Number(c.total_spent ?? 0) > 0).length;
+      // "With at least one order" — counted on the orders themselves, not on
+      // the `total_spent` cache, which no write path maintains.
+      const activeClients = perClient.size;
+
+      const enrichedClients: B2bClientRow[] = clientRows.map((c) => {
+        const roll = perClient.get(c.id);
+        return {
+          ...c,
+          total_spent:   roll?.spent     ?? 0,
+          total_visits:  roll?.orders    ?? 0,
+          last_visit_at: roll?.lastOrder ?? null,
+        };
+      });
+      const topClients = enrichedClients
+        .filter((c) => c.total_visits > 0)
+        .sort((a, b) => b.total_spent - a.total_spent)
+        .slice(0, 5);
 
       return {
         activeClients,
@@ -168,7 +243,7 @@ export function useB2bDashboard() {
         outstandingAr,
         pendingOrders: pending,
         totalOrders: totalCount,
-        topClients: clientRows.slice(0, 5),
+        topClients,
         recentOrders: recent,
         aging,
       };

@@ -14,10 +14,28 @@ import { RecordB2bPaymentModal } from '@/features/btob/components/RecordB2bPayme
 
 const mockRpc = vi.fn();
 
+// `total_spent` is deliberately stale/zero on b2: no write path maintains it,
+// so any KPI derived from it under-reports. T4 pins that down.
 const CLIENTS = [
   { id: 'b1', name: 'Hotel Kuta',  b2b_company_name: 'PT Kuta',
     b2b_current_balance: 250000, b2b_credit_limit: 1000000,
     total_spent: 5000000, total_visits: 12, last_visit_at: '2026-04-10T00:00:00Z' },
+  { id: 'b2', name: 'Villa Sanur', b2b_company_name: 'PT Sanur',
+    b2b_current_balance: 0, b2b_credit_limit: null,
+    total_spent: 0, total_visits: 0, last_visit_at: null },
+];
+
+// Three invoices over two distinct clients — one of them unpaid.
+const B2B_INVOICES = [
+  { invoice_id: 'i1', order_number: 'B2B-0001', customer_id: 'b1',
+    invoice_total: 300000, invoice_date: '2026-04-02T00:00:00Z',
+    paid_at: '2026-04-03T00:00:00Z', order_status: 'paid' },
+  { invoice_id: 'i2', order_number: 'B2B-0002', customer_id: 'b1',
+    invoice_total: 120000, invoice_date: '2026-04-05T00:00:00Z',
+    paid_at: null, order_status: 'b2b_pending' },
+  { invoice_id: 'i3', order_number: 'B2B-0003', customer_id: 'b2',
+    invoice_total: 90000,  invoice_date: '2026-04-06T00:00:00Z',
+    paid_at: '2026-04-07T00:00:00Z', order_status: 'paid' },
 ];
 const AGING = [
   { customer_id: 'b1', bucket: '31-60', invoice_count: 2, total_outstanding: 750000, max_age_days: 45 },
@@ -30,25 +48,37 @@ const PRODUCTS = [
 interface RpcResult { data: unknown; error: { message: string } | null }
 
 vi.mock('@/lib/supabase.js', () => {
-  function tableData(table: string): RpcResult {
-    if (table === 'view_ar_aging') return { data: AGING,    error: null };
-    if (table === 'products')      return { data: PRODUCTS, error: null };
-    if (table === 'orders')        return { data: [],       error: null };
-    if (table === 'b2b_payments')  return { data: [],       error: null };
-    return { data: CLIENTS, error: null };
+  type Row = Record<string, unknown>;
+  function tableRows(table: string): Row[] {
+    if (table === 'view_ar_aging')      return AGING;
+    if (table === 'view_b2b_invoices')  return B2B_INVOICES;
+    if (table === 'products')           return PRODUCTS;
+    if (table === 'orders')             return [];
+    if (table === 'b2b_payments')       return [];
+    return CLIENTS;
   }
   function buildChain(table: string) {
-    const result = tableData(table);
-    type Resolver = (v: RpcResult) => unknown;
+    let rows: Row[] = tableRows(table);
+    let headOnly = false;
+    type Resolver = (v: RpcResult & { count: number }) => unknown;
     const chain: Record<string, unknown> = {
-      select: () => chain,
-      is:     () => chain,
+      select: (_cols?: unknown, opts?: { count?: string; head?: boolean }) => {
+        if (opts?.head === true) headOnly = true;
+        return chain;
+      },
+      // Only applied when the fixture actually carries the column, so that
+      // filters on columns the fixtures omit (deleted_at…) stay no-ops.
+      is: (col: string, val: unknown) => {
+        rows = rows.filter((r) => !(col in r) || r[col] === val);
+        return chain;
+      },
       eq:     () => chain,
       in:     () => chain,
       gte:    () => chain,
       order:  () => chain,
-      limit:  () => chain,
-      then:   (resolve: Resolver) => resolve(result),
+      limit:  (n: number) => { rows = rows.slice(0, n); return chain; },
+      then:   (resolve: Resolver) =>
+        resolve({ data: headOnly ? null : rows, error: null, count: rows.length }),
     };
     return chain;
   }
@@ -99,6 +129,13 @@ function renderDashboard(): void {
   );
 }
 
+/** Text of a KpiTile's value — the label and value share a wrapper div. */
+function kpiValue(label: string): string {
+  const labelEl = screen.getByText(label);
+  const text = labelEl.parentElement?.textContent ?? '';
+  return text.replace(label, '').trim();
+}
+
 function renderPaymentModal(): void {
   render(
     <QueryClientProvider client={newClient()}>
@@ -123,6 +160,21 @@ describe('B2B foundation (S24)', () => {
       });
       expect(candidates.length).toBeGreaterThanOrEqual(1);
     }, { timeout: 4000 });
+  });
+
+  // Regression — the order KPIs used to be derived from a 50-row slice of
+  // `customers` ordered by the never-maintained `total_spent`: "Total orders"
+  // only saw the orders of the clients that survived the slice, and
+  // "Active clients" counted clients with total_spent > 0 (here: 1 of 2).
+  // Both now read view_b2b_invoices, so they must reflect all three invoices
+  // across both clients.
+  it('T4 — order KPIs count every B2B invoice, not a total_spent slice', async () => {
+    renderDashboard();
+    await waitFor(() => {
+      expect(kpiValue('Total orders')).toBe('3');
+    }, { timeout: 4000 });
+    expect(kpiValue('Active clients')).toBe('2');
+    expect(kpiValue('Pending orders')).toBe('1');
   });
 
   it('T2 — + New B2B Order button is enabled (RPC wired)', async () => {
