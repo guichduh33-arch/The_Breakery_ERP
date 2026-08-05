@@ -15,34 +15,50 @@ vi.mock('@/lib/supabase.js', () => {
     { id: 'b2', name: 'Bali Organic', b2b_company_name: 'CV Bali', b2b_current_balance: 0,
       b2b_credit_limit: null,    total_spent: 1200000, total_visits: 4,  last_visit_at: '2026-05-01T00:00:00Z' },
   ];
-  const orders = [
-    { id: 'o1', order_number: 'B2B-0001', total: 350000, status: 'paid',
-      created_at: '2026-05-10T08:00:00Z', customer_id: 'b1', paid_at: '2026-05-10T09:00:00Z' },
-    { id: 'o2', order_number: 'B2B-0002', total: 500000, status: 'pending',
-      created_at: '2026-05-12T08:00:00Z', customer_id: 'b1', paid_at: null },
+  // Order-side KPIs read view_b2b_invoices (the canonical B2B invoice surface),
+  // so the top-clients rollup is derived from these rows — one per invoice.
+  const b2bInvoices = [
+    { invoice_id: 'o1', order_number: 'B2B-0001', customer_id: 'b1', invoice_total: 350000,
+      invoice_date: '2026-05-10T08:00:00Z', paid_at: '2026-05-10T09:00:00Z', order_status: 'paid' },
+    { invoice_id: 'o2', order_number: 'B2B-0002', customer_id: 'b1', invoice_total: 500000,
+      invoice_date: '2026-05-12T08:00:00Z', paid_at: null, order_status: 'b2b_pending' },
+    { invoice_id: 'o3', order_number: 'B2B-0003', customer_id: 'b2', invoice_total: 120000,
+      invoice_date: '2026-05-13T08:00:00Z', paid_at: '2026-05-14T00:00:00Z', order_status: 'paid' },
   ];
   // S24 — view_ar_aging now provides the real buckets.
   const aging = [
     { customer_id: 'b1', bucket: 'current', invoice_count: 1, total_outstanding: 250000, max_age_days: 7 },
   ];
   type Resolver = (v: unknown) => void;
-  const make = (rows: unknown[]) => {
+  const make = (rows: Record<string, unknown>[]) => {
+    let current = rows;
+    let headOnly = false;
     const builder: Record<string, unknown> = {
-      select:  () => builder,
-      is:      () => builder,
-      eq:      () => builder,
-      in:      () => builder,
-      order:   () => builder,
-      limit:   () => builder,
-      then:    (resolve: Resolver) => resolve({ data: rows, error: null }),
+      select: (_cols?: unknown, opts?: { count?: string; head?: boolean }) => {
+        if (opts?.head === true) headOnly = true;
+        return builder;
+      },
+      // Applied only when the fixture carries the column, so filters on
+      // columns the fixtures omit (deleted_at…) stay no-ops.
+      is: (col: string, val: unknown) => {
+        current = current.filter((r) => !(col in r) || r[col] === val);
+        return builder;
+      },
+      eq:     () => builder,
+      in:     () => builder,
+      order:  () => builder,
+      limit:  (n: number) => { current = current.slice(0, n); return builder; },
+      then:   (resolve: Resolver) =>
+        resolve({ data: headOnly ? null : current, error: null, count: current.length }),
     };
     return builder;
   };
   return {
     supabase: {
       from: (table: string) => {
-        if (table === 'orders')        return make(orders);
-        if (table === 'view_ar_aging') return make(aging);
+        if (table === 'orders')             return make([]);
+        if (table === 'view_b2b_invoices')  return make(b2bInvoices);
+        if (table === 'view_ar_aging')      return make(aging);
         return make(clients);
       },
       rpc: (fn: string) => {
