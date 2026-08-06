@@ -1,0 +1,303 @@
+// apps/backoffice/src/layouts/TopBar.tsx
+//
+// Refonte shell 2026-08-05 — la top bar encre du Backoffice.
+//
+// Remplace À ELLE SEULE l'ancien couple Sidebar (rail de 240 px, 8 groupes
+// accordéon, ~85 entrées) + Topbar (bandeau de 56 px). La navigation tient
+// désormais dans 52 px de haut : 7 onglets de domaine, chacun ouvrant un
+// drop-panel (`DomainPanel`). La largeur entière de la page revient aux données.
+//
+// Comportement de menubar standard :
+//   · clic sur un onglet → ouvre son panneau ; re-clic, Échap ou clic extérieur → ferme
+//   · la barre étant DÉJÀ ouverte, le survol d'un autre onglet bascule le panneau sans clic
+//   · ← / → déplacent le focus entre onglets, ↓ entre dans le panneau ouvert
+//
+// L'onglet ACTIF (section courante) et l'onglet OUVERT (panneau affiché) sont
+// deux états distincts qui se cumulent : le soulignement or dit « vous êtes
+// ici », le fond relevé dit « ce menu est déployé ».
+
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { Bell, ChevronDown, LogOut, Search, Settings } from 'lucide-react';
+import { cn } from '@breakery/ui';
+import { useAuthStore } from '@/stores/authStore.js';
+import { useAlertsCount } from '@/features/inventory-alerts/hooks/useAlertsCount.js';
+import { DomainPanel } from './DomainPanel.js';
+import { NAV_DOMAINS, activeDomainId, visibleDomains, type NavDomain } from './nav.js';
+
+/** Pastille de comptage sur la cloche — même source que le lien Alerts du panneau. */
+function AlertsBell() {
+  const { total, lowStock, reorder } = useAlertsCount();
+  return (
+    <Link
+      to="/backoffice/inventory/alerts"
+      className="relative inline-flex h-[30px] w-[30px] items-center justify-center rounded-[6px] text-ink-fg-muted transition-colors hover:bg-ink-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink-gold"
+      aria-label={total === 0 ? 'No inventory alerts' : `${total} active inventory alerts`}
+      title={`${lowStock} low-stock / ${reorder} reorder`}
+    >
+      <Bell className="h-[17px] w-[17px]" aria-hidden />
+      {total > 0 && (
+        <span className="absolute -right-1.5 -top-[5px] inline-flex h-[15px] min-w-[15px] items-center justify-center rounded-[8px] bg-danger px-1 text-[9px] font-bold text-white tabular-nums">
+          {total > 99 ? '99+' : total}
+        </span>
+      )}
+    </Link>
+  );
+}
+
+function UserChip() {
+  const navigate = useNavigate();
+  const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (e: MouseEvent) => {
+      if (wrapRef.current?.contains(e.target as Node) === false) setOpen(false);
+    };
+    const onKeyDown = (e: globalThis.KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [open]);
+
+  const logoutAndLeave = async () => {
+    setBusy(true);
+    try {
+      await logout();
+      await navigate('/login', { replace: true });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (user === null) return null;
+
+  return (
+    <div className="relative" ref={wrapRef}>
+      <button
+        type="button"
+        onClick={() => { setOpen((o) => !o); }}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        className="flex items-center gap-2 rounded-[6px] p-1 transition-colors hover:bg-ink-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink-gold"
+      >
+        <span
+          className="inline-flex h-[26px] w-[26px] items-center justify-center rounded-full bg-ink-raised text-[11.5px] font-semibold text-ink-fg-muted"
+          aria-hidden
+        >
+          {user.full_name.charAt(0).toUpperCase()}
+        </span>
+        <span className="text-[13px] text-ink-fg">{user.full_name}</span>
+      </button>
+
+      {open && (
+        <div
+          role="menu"
+          className="absolute right-0 top-[calc(100%+6px)] z-50 w-56 rounded-[8px] border border-border-strong bg-surface-3 py-1.5 shadow-[0_18px_40px_rgba(28,23,18,0.20)]"
+        >
+          <p className="px-3.5 pb-1.5 pt-1 font-data text-[10px] uppercase tracking-[0.12em] text-text-subtle">
+            {user.role_code}
+          </p>
+          <Link
+            to="/backoffice/settings"
+            role="menuitem"
+            onClick={() => { setOpen(false); }}
+            className="flex items-center gap-2.5 px-3.5 py-2 text-[13px] text-text-primary transition-colors hover:bg-surface-4"
+          >
+            <Settings className="h-4 w-4 text-text-muted" aria-hidden /> Settings
+          </Link>
+          <button
+            type="button"
+            role="menuitem"
+            disabled={busy}
+            onClick={() => { void logoutAndLeave(); }}
+            className="flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[13px] text-text-primary transition-colors hover:bg-surface-4 disabled:opacity-50"
+          >
+            <LogOut className="h-4 w-4 text-text-muted" aria-hidden /> Logout
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export interface TopBarProps {
+  /** Ouvre la palette de commandes (⌘K) — état propriété du layout. */
+  onOpenSearch: () => void;
+}
+
+export function TopBar({ onOpenSearch }: TopBarProps) {
+  const hasPermission = useAuthStore((s) => s.hasPermission);
+  const { pathname } = useLocation();
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [anchorLeft, setAnchorLeft] = useState(0);
+
+  const shellRef = useRef<HTMLDivElement>(null);
+  const tabRefs = useRef(new Map<string, HTMLElement | null>());
+
+  const domains = visibleDomains(NAV_DOMAINS, hasPermission);
+  const activeId = activeDomainId(domains, pathname);
+  const openDomain: NavDomain | undefined = domains.find((d) => d.id === openId);
+
+  const close = useCallback(() => { setOpenId(null); }, []);
+
+  // Le panneau se ferme quand la route change : on vient de naviguer.
+  useEffect(() => { setOpenId(null); }, [pathname]);
+
+  // Clic extérieur + Échap. Portés par le shell entier (barre + panneau) pour
+  // qu'un clic DANS le panneau ne le referme pas avant que le lien ne parte.
+  useEffect(() => {
+    if (openId === null) return;
+    const onPointerDown = (e: MouseEvent) => {
+      if (shellRef.current?.contains(e.target as Node) === false) close();
+    };
+    const onKeyDown = (e: globalThis.KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        close();
+        tabRefs.current.get(openId)?.focus();
+      }
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [openId, close]);
+
+  function openAt(domain: NavDomain, el: HTMLElement | null) {
+    setAnchorLeft(el?.getBoundingClientRect().left ?? 0);
+    setOpenId(domain.id);
+  }
+
+  function onTabKeyDown(e: ReactKeyboardEvent, index: number, domain: NavDomain) {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+      e.preventDefault();
+      const delta = e.key === 'ArrowRight' ? 1 : -1;
+      const next = domains[(index + delta + domains.length) % domains.length];
+      if (next !== undefined) tabRefs.current.get(next.id)?.focus();
+      return;
+    }
+    if (e.key === 'ArrowDown' && domain.columns !== undefined) {
+      e.preventDefault();
+      if (openId !== domain.id) openAt(domain, tabRefs.current.get(domain.id) ?? null);
+      // Le panneau vient (ou va) d'être monté — on attend le frame suivant pour
+      // donner le focus à son premier lien.
+      requestAnimationFrame(() => {
+        document
+          .getElementById(`domain-panel-${domain.id}`)
+          ?.querySelector<HTMLAnchorElement>('a[href]')
+          ?.focus();
+      });
+    }
+  }
+
+  const tabBase =
+    'relative flex h-[52px] items-center gap-1 px-[13px] text-[13.5px] transition-colors ' +
+    'focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ink-gold';
+
+  return (
+    <div ref={shellRef} className="relative shrink-0">
+      <header className="flex h-[52px] items-center gap-[22px] bg-ink px-[22px]">
+        <Link
+          to="/backoffice"
+          className="flex shrink-0 items-center gap-2.5 rounded-[6px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink-gold"
+        >
+          <span
+            className="inline-flex h-[26px] w-[26px] items-center justify-center rounded-[6px] bg-gold font-display text-[14px] leading-none text-ink-fg"
+            aria-hidden
+          >
+            B
+          </span>
+          <span className="text-[13.5px] font-semibold text-ink-fg">The Breakery</span>
+        </Link>
+
+        <nav aria-label="Primary" className="flex min-w-0 flex-1 items-center">
+          {domains.map((domain, index) => {
+            const isActive = domain.id === activeId;
+            const isOpen = domain.id === openId;
+            const stateClass = cn(
+              isOpen && 'bg-ink-hover text-ink-fg',
+              !isOpen && isActive && 'font-medium text-ink-fg',
+              !isOpen && !isActive && 'text-ink-fg-dim hover:text-ink-fg',
+              isActive && 'shadow-[inset_0_-2px_0_var(--ink-gold)]',
+            );
+
+            if (domain.columns === undefined) {
+              return (
+                <NavLink
+                  key={domain.id}
+                  to={domain.to ?? '/backoffice'}
+                  {...(domain.end === true ? { end: true } : {})}
+                  ref={(el) => { tabRefs.current.set(domain.id, el); }}
+                  onMouseEnter={() => { if (openId !== null) close(); }}
+                  onKeyDown={(e) => { onTabKeyDown(e, index, domain); }}
+                  className={cn(tabBase, stateClass)}
+                >
+                  {domain.label}
+                </NavLink>
+              );
+            }
+
+            return (
+              <button
+                key={domain.id}
+                type="button"
+                ref={(el) => { tabRefs.current.set(domain.id, el); }}
+                aria-expanded={isOpen}
+                aria-controls={isOpen ? `domain-panel-${domain.id}` : undefined}
+                aria-haspopup="true"
+                onClick={(e) => {
+                  if (isOpen) close();
+                  else openAt(domain, e.currentTarget);
+                }}
+                onMouseEnter={(e) => {
+                  // Bascule au survol seulement si la barre est DÉJÀ déployée.
+                  if (openId !== null && !isOpen) openAt(domain, e.currentTarget);
+                }}
+                onKeyDown={(e) => { onTabKeyDown(e, index, domain); }}
+                className={cn(tabBase, stateClass)}
+              >
+                {domain.label}
+                <ChevronDown className="h-[13px] w-[13px]" aria-hidden />
+              </button>
+            );
+          })}
+        </nav>
+
+        <div className="flex shrink-0 items-center gap-4">
+          <button
+            type="button"
+            onClick={onOpenSearch}
+            className="flex h-[30px] items-center gap-2 rounded-[6px] border border-ink-border px-2.5 text-ink-fg-sub transition-colors hover:text-ink-fg-dim focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink-gold"
+            aria-label="Search — open the command palette"
+            aria-keyshortcuts="Meta+K Control+K"
+          >
+            <Search className="h-[14px] w-[14px]" aria-hidden />
+            <span className="text-[12.5px]">Search</span>
+            <kbd className="font-data text-[10px] tracking-wide">⌘K</kbd>
+          </button>
+
+          {hasPermission('inventory.read') && <AlertsBell />}
+          <UserChip />
+        </div>
+      </header>
+
+      {openDomain?.columns !== undefined && (
+        <DomainPanel
+          domain={openDomain}
+          anchorLeft={anchorLeft}
+          onClose={close}
+          id={`domain-panel-${openDomain.id}`}
+        />
+      )}
+    </div>
+  );
+}

@@ -46,6 +46,7 @@
   --surface-2: var(--bg-elevated); /* alias #1a1815 — cards */
   --surface-3: var(--bg-overlay);  /* alias #231f1b — popovers */
   --surface-4: #2e2924;            /* hover / pressed state */
+  --surface-inert: #1f1c19;        /* remplissage inerte (en-tête de tableau) */
 
   /* Gold extended scale (--gold-base/hover/pressed live in luxe-dark.css). */
   --gold-soft:    rgba(211, 171, 92, 0.14);
@@ -77,26 +78,59 @@
 
   /* Border extended. */
   --border-muted: #1f1c18;
+  --border-row:   #1f1c18;
   --border-gold:  var(--gold-base);
+
+  /* Encre — définie ici pour que les utilitaires `ink-*` résolvent dans les
+   * deux thèmes. En sombre, l'encre EST le fond : elle s'aligne sur la rampe. */
+  --ink-base:     var(--surface-0);
+  --ink-hover:    var(--surface-2);
+  --ink-raised:   var(--surface-3);
+  --ink-border:   var(--surface-4);
+  --ink-fg:       var(--text-primary);
+  --ink-fg-muted: var(--text-secondary);
+  --ink-fg-dim:   var(--text-muted);
+  --ink-fg-sub:   var(--text-subtle);
+  --ink-gold:     var(--gold-base);
 }
 
-/* ---------- Backoffice theme — clair "ivoire", MÊME famille que le POS ------
+/* ---------- Backoffice theme — neutre refroidi, accent or conservé ----------
  * Exigence de contraste conservée (cf. direction 2026-06-22) : texte quasi
- * noir, bordures fermes, cartes qui se détachent nettement du fond. Ce qui
- * change par rapport à juin : les neutres sont chauds au lieu de bleu-gris, et
- * l'accent redevient l'or — en version encre, contrastée. */
+ * noir, bordures fermes, cartes qui se détachent nettement du fond.
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * REFONTE SHELL 2026-08-05 — handoff `design_handoff_backoffice_shell`.
+ *
+ * L'ivoire chaud était le signal « site de boulangerie » le plus fort dans un
+ * outil de gestion. Les neutres passent en gris chaud désaturé, les cartes en
+ * blanc pur, et l'or se retire des remplissages pour ne plus servir que
+ * d'ENCRE de sens (marqueur de nav actif, liens, prix retail).
+ *
+ * Deux conséquences assumées sur la rampe --surface-N :
+ *   · surface-0 et surface-1 valent la même valeur. C'est la consigne du
+ *     handoff (« --surface-0/1 #e8e1d5 / #f2ece1 → #f0efec ») : le fond de page
+ *     et les panneaux de premier niveau ne se distinguent plus par le
+ *     remplissage mais par la bordure des cartes qui s'y posent.
+ *   · surface-4 est plus SOMBRE que surface-2/3. Au-dessus du blanc pur, la
+ *     seule façon de marquer un pas « plus près de l'œil » est d'ajouter une
+ *     teinte : surface-4 porte donc le survol/pressé et les squelettes de
+ *     chargement, qui doivent rester visibles SUR une carte blanche.
+ * Le remplissage inerte du handoff (#fafaf8 : en-tête et pied de tableau,
+ * champ non éditable) a son propre token --surface-inert plutôt que de
+ * surcharger un cran de la rampe.
+ * ───────────────────────────────────────────────────────────────────────────── */
 .theme-backoffice {
   /* Typographie : plus AUCUN remap. Le Backoffice partage la pile canonique du
-   * système (Inter corps, Playfair display, JetBrains Mono data). IBM Plex Sans
-   * et IBM Plex Mono ne sont plus nécessaires — les @import correspondants
-   * peuvent être retirés des apps, ainsi que Fraunces du bundle. */
+   * système (Inter corps, Playfair display, JetBrains Mono data). Playfair ne
+   * sert plus qu'au monogramme de marque de la top bar. */
 
-  /* Surfaces — ivoire chaud, monotone (0 = fond de page … 4 = blanc pur). */
-  --surface-0: #e8e1d5;        /* page bg */
-  --surface-1: #f2ece1;        /* primary panels */
-  --surface-2: #faf6ef;        /* cards */
-  --surface-3: #fffdf9;        /* popovers */
-  --surface-4: #ffffff;        /* hover / le plus proche de l'œil */
+  /* Surfaces — gris chaud désaturé. */
+  --surface-0: #f0efec;        /* page bg */
+  --surface-1: #f0efec;        /* primary panels — même valeur (cf. en-tête) */
+  --surface-2: #ffffff;        /* cards */
+  --surface-3: #ffffff;        /* popovers — séparés par bordure + ombre */
+  --surface-4: #e9e7e2;        /* survol / pressé / squelette sur carte blanche */
+  --surface-inert: #fafaf8;    /* en-tête & pied de tableau, champ inerte */
   --cream:     var(--surface-1);
 
   --bg-base:     var(--surface-1);
@@ -104,19 +138,33 @@
   --bg-overlay:  var(--surface-3);
   --bg-input:    var(--surface-3);
 
-  /* Borders — chaudes, fermes. */
-  --border-subtle: #e0d7c8;
-  --border-strong: #c3b7a3;
-  --border-muted:  #ebe4d8;
+  /* Borders — neutres froides, fermes. */
+  --border-subtle: #e3e1db;    /* bordure de carte */
+  --border-strong: #cdcac2;    /* bordure de contrôle */
+  --border-muted:  #eceae5;    /* filet interne */
+  --border-row:    #f3f1ec;    /* séparateur de ligne de tableau */
   --border-focus:  var(--gold-base);
   --border-gold:   rgba(138, 104, 32, 0.35);
 
-  /* Text — quasi noir chaud. */
-  --text-primary:   #1c1712;   /* ~14:1 sur --surface-2 */
-  --text-secondary: #4b4238;   /* ~8,5:1 */
-  --text-muted:     #6d6355;   /* ~5,4:1 */
-  --text-subtle:    #8a7f6f;   /* ~3,8:1 — non-texte / footnotes */
-  --text-disabled:  #a89d8c;
+  /* Text. */
+  --text-primary:   #1a1917;   /* ~15:1 sur --surface-2 */
+  --text-secondary: #55524c;   /* ~7,8:1 */
+  --text-muted:     #7a766e;   /* ~4,9:1 */
+  --text-subtle:    #9b968d;   /* ~3,3:1 — non-texte / footnotes */
+  --text-disabled:  #b3afa7;
+
+  /* Encre — la top bar et les boutons primaires. Famille dédiée : ces valeurs
+   * sont des fonds SOMBRES dans un thème clair, elles n'appartiennent donc à
+   * aucun cran de la rampe --surface-N. */
+  --ink-base:     #201d19;     /* fond top bar + remplissage bouton primaire */
+  --ink-hover:    #2e2925;     /* onglet ouvert / survol sur encre */
+  --ink-raised:   #3a342c;     /* pastille avatar */
+  --ink-border:   #453e35;     /* bordure de contrôle sur encre */
+  --ink-fg:       #fffdf9;     /* texte le plus clair sur encre */
+  --ink-fg-muted: #e8e1d5;     /* icônes sur encre */
+  --ink-fg-dim:   #c4bcae;     /* onglet inactif */
+  --ink-fg-sub:   #a09789;     /* placeholder sur encre */
+  --ink-gold:     #d3ab5c;     /* soulignement d'onglet actif (or éclairci) */
 
   /* Accent — encre dorée. Les tokens gardent les noms --gold-* : text-gold /
    * bg-gold-soft / border-gold fonctionnent sans toucher aux composants, et
