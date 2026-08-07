@@ -105,11 +105,48 @@ describe('ZReportsListPage', () => {
     expect(screen.getByTestId('view-pdf-z1')).toBeInTheDocument();
   });
 
-  it('T2 renders status filter that triggers re-query', async () => {
+  it('T2 the counters are the status filter — selecting one narrows the rows', async () => {
+    fromSpy.mockReturnValue(makeChain([ROW_Z1, { ...ROW_Z2, status: 'signed' }]));
     render(wrap(<ZReportsListPage />));
-    const sel = screen.getByTestId('status-filter') as HTMLSelectElement;
-    fireEvent.change(sel, { target: { value: 'signed' } });
-    expect(sel.value).toBe('signed');
+
+    // Les deux lignes sont là au départ, un statut chacune.
+    await waitFor(() => expect(screen.getByTestId('view-pdf-z1')).toBeInTheDocument());
+    expect(screen.getByTestId('view-pdf-z2')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('counter-signed'));
+
+    // z1 (draft) sort, z2 (signed) reste, et le compteur cliqué est marqué actif.
+    await waitFor(() => expect(screen.queryByTestId('view-pdf-z1')).not.toBeInTheDocument());
+    expect(screen.getByTestId('view-pdf-z2')).toBeInTheDocument();
+    expect(screen.getByTestId('counter-signed')).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('T4 an unsigned report shows its cash variance before it can be signed', async () => {
+    // La session rattachée est jointe par la liste : attendu 1 000 000,
+    // compté 940 000, donc un manque de 60 000 qui doit se lire AVANT la
+    // signature — c'est la raison d'être de la colonne.
+    fromSpy.mockReturnValue(makeChain([
+      {
+        ...ROW_Z1,
+        shift: { expected_cash: 1_000_000, closing_cash: 940_000, variance_total: -60_000 },
+      },
+    ]));
+    render(wrap(<ZReportsListPage />));
+
+    await waitFor(() => expect(screen.getByTestId('sign-z1')).toBeInTheDocument());
+    expect(screen.getByText('-Rp 60,000')).toBeInTheDocument();
+    expect(screen.getByText('Rp 1,000,000')).toBeInTheDocument();
+
+    // Le compteur d'alerte le recense — un brouillon qui porte un écart.
+    const counter = screen.getByTestId('counter-unresolved');
+    expect(counter).toHaveTextContent('1');
+  });
+
+  it('T5 a report whose shift is not readable shows a dash, never a zero', async () => {
+    // RLS peut masquer la session ; un écart inconnu n'est pas un écart nul.
+    render(wrap(<ZReportsListPage />));
+    await waitFor(() => expect(screen.getByTestId('sign-z1')).toBeInTheDocument());
+    expect(screen.getByTestId('counter-unresolved')).toHaveTextContent('0');
   });
 
   it('T3 (C3/BO-05) only the active row PDF button is disabled during generation — other rows stay enabled', async () => {
