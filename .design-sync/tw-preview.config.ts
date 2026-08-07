@@ -10,9 +10,13 @@ import type { Config } from 'tailwindcss';
 import preset from '../packages/ui/tailwind-preset';
 
 const TOKEN_COLORS =
-  '(bg-base|bg-elevated|bg-overlay|bg-input|surface-[0-4]|cream|backdrop|' +
+  '(bg-base|bg-elevated|bg-overlay|bg-input|surface-([0-4]|inert)|cream|backdrop|' +
   'border-subtle|border-strong|border-focus|border-muted|border-gold|' +
   'text-primary|text-secondary|text-muted|text-subtle|text-disabled|' +
+  // Refonte shell 2026-08-05 — famille encre (fonds sombres en thème clair).
+  'ink|ink-hover|ink-raised|ink-border|' +
+  'ink-fg|ink-fg-muted|ink-fg-dim|ink-fg-sub|' +
+  'ink-gold|ink-success|ink-danger|' +
   'gold|gold-hover|gold-pressed|gold-soft|gold-strong|gold-fg|' +
   'green|green-hover|green-pressed|green-fg|red|red-soft|red-fg|' +
   'blue-info|amber-warn|success|success-soft|warning|warning-soft|' +
