@@ -25,8 +25,8 @@ colors:
   border-row: "#f3f1ec"
   text-primary: "#1a1917"
   text-secondary: "#55524c"
-  text-muted: "#7a766e"
-  text-subtle: "#9b968d"
+  text-muted: "#6b6861"
+  text-subtle: "#88847c"
   text-inert: "#c2beb5"
   text-disabled: "#b3afa7"
   success: "#187a52"
@@ -214,9 +214,17 @@ même accent, même vocabulaire d'état, même échelle.
   ne se lit pas ».
 - **Bordures** : filet de carte (`#e3e1db`), bordure de contrôle (`#cdcac2`),
   séparateur de ligne de tableau (`#f3f1ec`).
-- **Textes** : primaire (`#1a1917`, ~15:1), secondaire (`#55524c`, ~7,8:1), muet
-  (`#7a766e`, ~4,9:1), discret (`#9b968d`, ~3,3:1 — réservé au non-texte et aux
-  notes de bas de tuile).
+- **Textes** : primaire (`#1a1917`, 17,6:1), secondaire (`#55524c`, 7,8:1), muet
+  (`#6b6861`, 5,5:1). Les ratios se mesurent sur le fond le plus clair **et** le
+  plus sombre que le token peut avoir sous lui : le muet vit sur la feuille
+  blanche, sur le papier de page, sur l'en-tête de tableau et sur l'état pressé,
+  où il vaut encore 4,50:1. Un ratio annoncé contre le seul blanc surestime de
+  ~0,6 point et laisse passer un token sous AA.
+- **Discret** (`#88847c`, 3,72:1) : **non-texte uniquement** — icône, tiret de
+  cellule vide, glyphe d'un bouton d'action de ligne. Il tient le seuil des
+  objets graphiques (WCAG 1.4.11), pas celui du texte. Un libellé, un
+  placeholder, un pourcentage ou une note de bas de tuile prennent le muet : le
+  discret ne peut pas valoir 4,5:1 sans devenir indiscernable de lui.
 - **Inerte** (`#c2beb5`) : le gris des séparateurs de fil d'Ariane, des chevrons
   éteints et des icônes qui n'appellent aucune action. Il est délibérément plus
   clair que le texte discret et plus soutenu que le désactivé — un chevron de fil

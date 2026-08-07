@@ -71,7 +71,7 @@ export function DisplayStockCard({
           {rows.map((r) => (
             <li key={r.product_id} className="flex items-baseline gap-2 text-[12.5px]">
               <span className="min-w-0 flex-1 truncate text-text-primary">{r.product_name}</span>
-              <span className="shrink-0 font-data tabular-nums text-text-subtle">
+              <span className="shrink-0 font-data tabular-nums text-text-muted">
                 {r.minutes_since_sale === null ? '—' : formatMinutes(r.minutes_since_sale)}
               </span>
               <span className={cn('w-14 shrink-0 whitespace-nowrap text-right font-data tabular-nums', qtyTone(r))}>

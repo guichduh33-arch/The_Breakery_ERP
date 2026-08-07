@@ -74,7 +74,7 @@ export function ProductsCounterStrip({
             <span
               className={cn(
                 'font-data text-[20px] font-semibold tabular-nums',
-                isLoading && 'text-text-subtle',
+                isLoading && 'text-text-muted',
                 !isLoading && c.defect === true && c.value > 0 && 'text-danger',
                 !isLoading && c.muted === true && 'text-text-muted',
                 !isLoading && c.defect !== true && c.muted !== true && 'text-text-primary',

@@ -15,12 +15,12 @@ import {
 import { EmptyState } from '@breakery/ui';
 import {
   COGS_BASE, CHART_SERIES_OFF, CHART_GRID_STROKE, CHART_AXIS_STROKE,
-  CHART_AXIS_TICK_SUBTLE, CHART_TOOLTIP_STYLE, formatIdrCompact, formatIdrFull,
+  CHART_AXIS_TICK, CHART_TOOLTIP_STYLE, formatIdrCompact, formatIdrFull,
 } from '@/features/reports/utils/chartColors.js';
 import { usePrefersReducedMotion } from '../utils/usePrefersReducedMotion.js';
 import type { RevenueDay } from '../hooks/useDashboardOverview.js';
 
-const TICK = { fontSize: 10, fill: CHART_AXIS_TICK_SUBTLE, fontFamily: 'var(--font-data)' } as const;
+const TICK = { fontSize: 10, fill: CHART_AXIS_TICK, fontFamily: 'var(--font-data)' } as const;
 
 export function RevenueTrendChart({ data }: { data: RevenueDay[] }): JSX.Element {
   const reduced = usePrefersReducedMotion();

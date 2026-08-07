@@ -221,10 +221,23 @@
   --border-gold:   rgba(138, 104, 32, 0.35);
 
   /* Text. */
-  --text-primary:   #1a1917;   /* ~15:1 sur --surface-2 */
-  --text-secondary: #55524c;   /* ~7,8:1 */
-  --text-muted:     #7a766e;   /* ~4,9:1 */
-  --text-subtle:    #9b968d;   /* ~3,3:1 — non-texte / footnotes */
+  /* Les ratios sont mesurés sur le fond le PLUS CLAIR que le token peut avoir
+   * sous lui et sur le plus SOMBRE : le texte discret vit aussi bien sur la
+   * feuille blanche que sur le papier de page (#f0efec), l'en-tête de tableau
+   * (#fafaf8) et l'état pressé (#e9e7e2). Un ratio annoncé contre le seul blanc
+   * surestime de ~0,6 point — c'est ce qui avait laissé passer un --text-muted
+   * sous AA sur trois des quatre fonds (audit /impeccable 2026-08-08). */
+  --text-primary:   #1a1917;   /* 17,6:1 blanc — 14,2:1 pressé */
+  --text-secondary: #55524c;   /* 7,8:1 blanc — 6,3:1 pressé */
+  /* Remonté de #7a766e (3,93:1 sur le papier de page, 4,33:1 sur l'en-tête de
+   * tableau : sous AA) à ≥4,5:1 sur les QUATRE fonds. */
+  --text-muted:     #6b6861;   /* 5,5:1 blanc — 4,83:1 papier — 4,50:1 pressé */
+  /* NON-TEXTE UNIQUEMENT — icône, tiret de cellule vide, glyphe de contrôle.
+   * Remonté de #9b968d (2,94:1) au seuil WCAG 1.4.11 des objets graphiques.
+   * Il ne portera plus de libellé, de placeholder ni de valeur : ces rôles-là
+   * sont passés à --text-muted, faute de quoi le cran devrait valoir 4,5:1 et
+   * deviendrait indiscernable de lui. */
+  --text-subtle:    #88847c;   /* 3,72:1 blanc — 3,24:1 papier — 3,01:1 pressé */
   --text-disabled:  #b3afa7;
   /* Inerte — le cran SOUS le désactivé. En clair il est donc le plus PÂLE des
    * cinq : séparateur de fil d'Ariane, chevron éteint, icône sans action. */
