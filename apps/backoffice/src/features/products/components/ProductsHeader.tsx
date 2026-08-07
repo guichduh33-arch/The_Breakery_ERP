@@ -1,83 +1,72 @@
 // apps/backoffice/src/features/products/components/ProductsHeader.tsx
 //
-// Session 14 / Phase 4.B — Top header strip on the Products page.
-// Mirrors `product page.jpg`: page title + subtitle on the left, a horizontal
-// pill toolbar (Products / Import / Recipes / + New Product) on the right.
+// Écran 2a — bandeau de la page Products.
 //
-// Session 45 / Wave D:
-//   - Import pill wired (navigates to /backoffice/products/import-export)
-//   - Recipes pill wired (navigates to /backoffice/inventory/recipes)
-//   - Modifiers pill removed (no route/page exists)
-//   - Products pill rendered as a static active indicator (not a button)
-// Session 45 / Wave D fix:
-//   - Import pill omitted entirely when onImport is undefined (no dead button,
-//     matches ProductsPageTabs which omits the tab without catalog.import)
+// La carte d'en-tête a disparu, avec elle la pastille d'icône or, le sous-titre
+// en italique et les pilules rondes. Une carte autour d'un titre de page ne
+// contient rien : elle encadre du vide et repousse la table de 100 px vers le
+// bas. Le titre s'écrit à même la page, comme sur toutes les autres.
+//
+// Le fil d'Ariane remplace ce que le rail de 240 px disait : depuis que la
+// navigation tient dans une top bar, la page doit dire elle-même d'où elle
+// vient.
 
 import { type JSX } from 'react';
-import { Box, BookOpen, Plus, Upload } from 'lucide-react';
-import { Card, CardContent } from '@breakery/ui';
+import { Link } from 'react-router-dom';
+import { BookOpen, ChevronRight, Plus, Upload } from 'lucide-react';
+import { PageHeader } from '@/components/PageHeader.js';
+import {
+  TOOLBAR_BTN_PRIMARY, TOOLBAR_BTN_SECONDARY, TOOLBAR_ICON,
+} from '@/components/toolbarButton.js';
 
 interface Props {
+  /** Nombre d'articles au catalogue — le sous-titre le dit, la table le filtre. */
+  count: number;
+  isLoading?: boolean;
   onNew?:     (() => void) | undefined;
   onImport?:  (() => void) | undefined;
   onRecipes?: (() => void) | undefined;
 }
 
-export function ProductsHeader({ onNew, onImport, onRecipes }: Props): JSX.Element {
+export function ProductsHeader({
+  count, isLoading = false, onNew, onImport, onRecipes,
+}: Props): JSX.Element {
   return (
-    <Card variant="default">
-      <CardContent className="flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-gold-soft text-gold">
-            <Box className="h-5 w-5" aria-hidden />
-          </div>
-          <div>
-            <h1 className="font-display text-2xl text-text-primary">Product Catalog</h1>
-            <p className="text-sm text-text-secondary italic">
-              Manage your products, prices and customer category pricing
-            </p>
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Products — current page indicator, not a clickable action */}
-          <span
-            aria-current="page"
-            className="inline-flex items-center gap-2 rounded-full border border-gold bg-gold-soft px-4 py-2 text-sm font-semibold text-gold select-none"
-          >
-            <Box className="h-4 w-4" aria-hidden />
-            Products
-          </span>
-          {onImport && <PillButton icon={<Upload className="h-4 w-4" aria-hidden />} label="Import" onClick={onImport} />}
-          <PillButton icon={<BookOpen className="h-4 w-4" aria-hidden />} label="Recipes" onClick={onRecipes} />
-          <button
-            type="button"
-            onClick={onNew}
-            className="inline-flex items-center gap-2 rounded-full bg-gold px-4 py-2 text-sm font-semibold text-bg-base hover:bg-gold-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold transition-colors"
-          >
-            <Plus className="h-4 w-4" aria-hidden />
-            New Product
-          </button>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
+    <div className="space-y-2">
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs text-text-subtle">
+        <Link to="/backoffice/products" className="hover:text-text-secondary">Stock</Link>
+        <ChevronRight className="h-3 w-3 text-border-strong" aria-hidden />
+        <span className="text-text-secondary">Catalogue</span>
+      </nav>
 
-interface PillButtonProps {
-  icon:     JSX.Element;
-  label:    string;
-  onClick?: (() => void) | undefined;
-}
-
-function PillButton({ icon, label, onClick }: PillButtonProps): JSX.Element {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="inline-flex items-center gap-2 rounded-full border border-border-subtle bg-bg-overlay px-4 py-2 text-sm text-text-secondary hover:bg-bg-input hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold transition-colors"
-    >
-      {icon}
-      {label}
-    </button>
+      <PageHeader
+        title="Products"
+        subtitle={
+          isLoading
+            ? 'Loading the catalogue…'
+            : `${count.toLocaleString('id-ID')} items · prices and customer-category pricing`
+        }
+        actions={
+          <>
+            {onImport !== undefined && (
+              <button type="button" onClick={onImport} className={TOOLBAR_BTN_SECONDARY}>
+                <Upload className={TOOLBAR_ICON} aria-hidden />
+                Import
+              </button>
+            )}
+            <button type="button" onClick={onRecipes} className={TOOLBAR_BTN_SECONDARY}>
+              <BookOpen className={TOOLBAR_ICON} aria-hidden />
+              Recipes
+            </button>
+            {onNew !== undefined && (
+              <button type="button" onClick={onNew} className={TOOLBAR_BTN_PRIMARY}>
+                <Plus className="h-3.5 w-3.5" aria-hidden />
+                New product
+              </button>
+            )}
+          </>
+        }
+      />
+    </div>
   );
 }

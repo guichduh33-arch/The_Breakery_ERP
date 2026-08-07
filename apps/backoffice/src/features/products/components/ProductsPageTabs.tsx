@@ -1,7 +1,10 @@
 // apps/backoffice/src/features/products/components/ProductsPageTabs.tsx
-// S41 — route-based tab strip for the Products area (list / import-export).
-// Style mirrors ProductDetailTabs (gold underline, uppercase, tracking-widest)
-// but uses NavLink for route-based active state.
+//
+// Écran 2a — onglets de zone (liste / import-export).
+//
+// Les capitales or à `tracking-widest` tombent : à ce niveau de la page elles
+// criaient plus fort que le titre lui-même. L'onglet actif se dit par un
+// soulignement or de 2 px et un poids, pas par une couleur de texte.
 
 import type { JSX } from 'react';
 import { NavLink } from 'react-router-dom';
@@ -18,17 +21,18 @@ export function ProductsPageTabs(): JSX.Element {
   ];
   return (
     <div className="border-b border-border-subtle">
-      <nav aria-label="Products sections" className="flex flex-wrap gap-x-6">
-        {tabs.map((t) => (
+      <nav aria-label="Products sections" className="flex flex-wrap">
+        {tabs.map((t, i) => (
           <NavLink
             key={t.to}
             to={t.to}
             end={t.end}
             className={({ isActive }) =>
               cn(
-                'relative -mb-px py-3 text-xs font-semibold uppercase tracking-widest transition-colors duration-fast',
+                'relative -mb-px pb-2.5 text-[12.5px] transition-colors duration-fast',
+                i === 0 ? 'px-0.5' : 'px-3',
                 isActive
-                  ? 'text-gold border-b-2 border-gold'
+                  ? 'font-semibold text-text-primary shadow-[inset_0_-2px_0_var(--gold-base)]'
                   : 'text-text-muted hover:text-text-primary',
               )
             }

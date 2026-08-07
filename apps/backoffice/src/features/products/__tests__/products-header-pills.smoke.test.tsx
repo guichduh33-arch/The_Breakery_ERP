@@ -31,7 +31,7 @@ function renderHeader(props: {
 }) {
   return render(
     <MemoryRouter>
-      <ProductsHeader {...props} />
+      <ProductsHeader count={3} {...props} />
     </MemoryRouter>,
   );
 }
@@ -67,15 +67,20 @@ describe('ProductsHeader pills [S45 W-D]', () => {
     expect(screen.queryByRole('button', { name: /modifiers/i })).not.toBeInTheDocument();
   });
 
-  it('Products element carries aria-current="page" and is not a button or link', () => {
+  it('no longer carries its own "Products" page indicator', () => {
+    // Écran 2a — la pilule or « Products » du bandeau disparaît : dire deux fois
+    // sur quelle page on est (une pilule ICI, un onglet actif juste en dessous)
+    // n'informait personne. L'indicateur de page unique est désormais l'onglet
+    // actif de ProductsPageTabs, qui le tient de NavLink.
     renderHeader({});
-    // Must NOT be an actionable button
     expect(screen.queryByRole('button', { name: /^products$/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /^products$/i })).not.toBeInTheDocument();
-    // Must exist as a static element with aria-current=page
-    const indicator = screen.getByText('Products', { selector: '[aria-current="page"]' });
-    expect(indicator).toBeInTheDocument();
-    expect(indicator).toHaveAttribute('aria-current', 'page');
+    expect(document.querySelector('[aria-current="page"]')).toBeNull();
+  });
+
+  it('renders the page title as the single h1', () => {
+    renderHeader({});
+    expect(screen.getByRole('heading', { level: 1, name: 'Products' })).toBeInTheDocument();
   });
 });
 
@@ -114,8 +119,8 @@ vi.mock('@/features/products/hooks/useCategories.js', () => ({
 vi.mock('@/features/products/components/ProductsPageTabs.js', () => ({
   ProductsPageTabs: () => null,
 }));
-vi.mock('@/features/products/components/ProductsKpiGrid.js', () => ({
-  ProductsKpiGrid: () => null,
+vi.mock('@/features/products/components/ProductsCounterStrip.js', () => ({
+  ProductsCounterStrip: () => null,
 }));
 vi.mock('@/features/products/components/ProductsFilters.js', () => ({
   ProductsFilters: () => null,
