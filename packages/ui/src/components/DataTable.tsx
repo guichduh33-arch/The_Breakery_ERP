@@ -16,7 +16,7 @@
 // reports user intent (onSortChange) and renders the controlled state.
 
 import { ChevronDown, ChevronUp, ChevronsUpDown, Inbox } from 'lucide-react';
-import type { JSX, ReactNode } from 'react';
+import { Fragment, type JSX, type ReactNode } from 'react';
 import { cn } from '../lib/cn.js';
 import { EmptyState } from '../primitives/EmptyState.js';
 import { SectionLabel } from './SectionLabel.js';
@@ -87,6 +87,18 @@ export interface DataTableProps<TRow> {
   footer?: ReactNode;
   /** Classe additionnelle par ligne — surlignage d'une ligne sélectionnée. */
   rowClassName?: (row: TRow, rowIndex: number) => string | undefined;
+  /**
+   * Détail dépliable sous une ligne. Rendu dans une seconde `<tr>` qui couvre
+   * toute la largeur, uniquement pour les lignes dont la clé est dans
+   * `expandedKeys`.
+   *
+   * L'ouverture est possédée par l'APPELANT : la table ne décide pas ce qui est
+   * ouvert, elle le rend. C'est ce qui permet d'ouvrir une ligne depuis
+   * l'extérieur (une URL, un résultat de recherche) sans dupliquer l'état.
+   */
+  renderExpanded?: (row: TRow, rowIndex: number) => ReactNode;
+  /** Clés des lignes actuellement dépliées — même valeur que `getRowKey`. */
+  expandedKeys?: ReadonlySet<string | number>;
   /** Test ID propagated to the outer element. */
   'data-testid'?: string;
 }
@@ -123,6 +135,8 @@ export function DataTable<TRow>({
   density = 'default',
   footer,
   rowClassName,
+  renderExpanded,
+  expandedKeys,
   'data-testid': testId,
 }: DataTableProps<TRow>): JSX.Element {
   const cellPad = density === 'compact' ? 'px-3.5 py-2.5' : 'px-4 py-3';
@@ -206,33 +220,49 @@ export function DataTable<TRow>({
                   ))}
                 </tr>
               ))
-            : rows.map((row, index) => (
-                <tr
-                  key={getRowKey(row, index)}
-                  onClick={onRowClick !== undefined ? () => onRowClick(row, index) : undefined}
-                  className={cn(
-                    'border-t border-border-row',
-                    striped && index % 2 === 1 && 'bg-surface-0',
-                    onRowClick !== undefined && 'cursor-pointer hover:bg-surface-4/60 transition-colors duration-fast',
-                    rowClassName?.(row, index),
-                  )}
-                >
-                  {columns.map((col) => (
-                    <td
-                      key={col.id}
+            : rows.map((row, index) => {
+                const key = getRowKey(row, index);
+                const isExpanded = expandedKeys?.has(key) === true;
+                return (
+                  <Fragment key={key}>
+                    <tr
+                      onClick={onRowClick !== undefined ? () => onRowClick(row, index) : undefined}
+                      aria-expanded={renderExpanded === undefined ? undefined : isExpanded}
                       className={cn(
-                        cellPad,
-                        'text-sm text-text-primary',
-                        col.align === 'right' && 'text-right tabular-nums',
-                        col.align === 'center' && 'text-center',
-                        col.cellClassName,
+                        'border-t border-border-row',
+                        striped && index % 2 === 1 && 'bg-surface-0',
+                        onRowClick !== undefined && 'cursor-pointer hover:bg-surface-4/60 transition-colors duration-fast',
+                        // Une ligne dépliée et son détail forment un seul bloc :
+                        // la ligne perd donc sa zébrure, qui les couperait en deux.
+                        isExpanded && 'bg-surface-4/60',
+                        rowClassName?.(row, index),
                       )}
                     >
-                      {col.render(row, index)}
-                    </td>
-                  ))}
-                </tr>
-              ))}
+                      {columns.map((col) => (
+                        <td
+                          key={col.id}
+                          className={cn(
+                            cellPad,
+                            'text-sm text-text-primary',
+                            col.align === 'right' && 'text-right tabular-nums',
+                            col.align === 'center' && 'text-center',
+                            col.cellClassName,
+                          )}
+                        >
+                          {col.render(row, index)}
+                        </td>
+                      ))}
+                    </tr>
+                    {isExpanded && renderExpanded !== undefined && (
+                      <tr className="border-t border-border-row bg-surface-inert">
+                        <td colSpan={columns.length} className="p-0">
+                          {renderExpanded(row, index)}
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                );
+              })}
         </tbody>
       </table>
       {showEmpty && (

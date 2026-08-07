@@ -1,13 +1,21 @@
 // apps/backoffice/src/features/inventory-alerts/__tests__/alerts-status-error.test.tsx
-// Audit M4 — AlertsPage Status tile must never show 'All clear' when the
-// underlying low-stock query has errored. TDD: write → FAIL → fix → PASS.
+//
+// Audit M4 — une requête en échec ne doit JAMAIS se lire comme « tout va bien ».
+// Le compte de bas de stock tombe à zéro quand la requête échoue exactement
+// comme quand tout est en ordre : la page doit distinguer les deux.
+//
+// 2026-08-08 — l'invariant a changé de porteur, pas de nature. Il vivait dans
+// une tuile « Status » dont la valeur était une phrase (« All clear » /
+// « Action needed » / « Unavailable ») ; il vit maintenant dans le sous-titre du
+// bandeau. Les assertions suivent le nouveau texte, la garantie est la même.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, type UseQueryResult } from '@tanstack/react-query';
 import AlertsPage from '@/pages/inventory/AlertsPage.js';
 import * as lowStockMod from '../hooks/useLowStock.js';
+import type { LowStockRow } from '../hooks/useLowStock.js';
 
 // ---- minimal mocks for child components that make their own queries ----
 
@@ -39,9 +47,20 @@ vi.mock('@/stores/authStore.js', () => ({
     sel({ hasPermission: () => true }),
 }));
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function fakeQuery(overrides: Partial<{ data: unknown; error: Error | null; isLoading: boolean }>): any {
-  return { data: undefined, error: null, isLoading: false, ...overrides };
+// Le mock ne remplit que les trois champs que la page lit. Le cast est fait ICI
+// une fois, sur un type nommé, plutôt que de rendre `any` à six appelants —
+// `any` en retour propageait l'erreur de lint à chaque `mockReturnValue`.
+type LowStockQuery = UseQueryResult<LowStockRow[], Error>;
+
+function fakeQuery(
+  overrides: Partial<{ data: LowStockRow[] | undefined; error: Error | null; isLoading: boolean }>,
+): LowStockQuery {
+  return {
+    data: undefined,
+    error: null,
+    isLoading: false,
+    ...overrides,
+  } as unknown as LowStockQuery;
 }
 
 function wrap(ui: React.ReactNode) {
@@ -53,62 +72,75 @@ function wrap(ui: React.ReactNode) {
   );
 }
 
-describe('AlertsPage — Status KPI tile error handling (audit M4)', () => {
+const ALL_CLEAR = /nothing under threshold/i;
+const UNAVAILABLE = /figures unavailable/i;
+
+describe('AlertsPage — an errored query must not read as "all clear" (audit M4)', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
   });
 
-  it('shows "All clear" when data is empty and there is no error', () => {
+  it('says nothing is under threshold when data is empty and there is no error', () => {
     vi.spyOn(lowStockMod, 'useLowStock').mockReturnValue(
       fakeQuery({ data: [], error: null, isLoading: false }),
     );
     render(wrap(<AlertsPage />));
-    expect(screen.getByText('All clear')).toBeInTheDocument();
-    expect(screen.queryByText('Unavailable')).toBeNull();
+    expect(screen.getByText(ALL_CLEAR)).toBeInTheDocument();
+    expect(screen.queryByText(UNAVAILABLE)).toBeNull();
   });
 
-  it('shows "Action needed" when there are low-stock items and no error', () => {
+  it('reports the shortfall when there are low-stock items and no error', () => {
     vi.spyOn(lowStockMod, 'useLowStock').mockReturnValue(
       fakeQuery({
-        data: [{ product_id: 'p1', current_qty: 0, shortfall: 5 }],
+        data: [{ product_id: 'p1', current_qty: 0, shortfall: 5 } as LowStockRow],
         error: null,
         isLoading: false,
       }),
     );
     render(wrap(<AlertsPage />));
-    expect(screen.getByText('Action needed')).toBeInTheDocument();
-    expect(screen.queryByText('All clear')).toBeNull();
-    expect(screen.queryByText('Unavailable')).toBeNull();
+    // Le compte, les produits à zéro et le déficit total — les trois faits que
+    // le sous-titre porte, et qu'aucun onglet ne redit.
+    expect(screen.getByText(/1 under threshold · 1 at zero · 5 units short/i)).toBeInTheDocument();
+    expect(screen.queryByText(ALL_CLEAR)).toBeNull();
+    expect(screen.queryByText(UNAVAILABLE)).toBeNull();
   });
 
-  it('shows "Unavailable" (not "All clear") when the query errored with empty data', () => {
-    // This is the core M4 regression: counts.total === 0 because data is
-    // undefined/empty due to the error, NOT because everything is fine.
+  it('says the figures are unavailable (not "all clear") when the query errored with empty data', () => {
+    // Le cœur de la régression M4 : le compte vaut zéro parce que la requête a
+    // échoué, PAS parce que tout va bien.
     vi.spyOn(lowStockMod, 'useLowStock').mockReturnValue(
       fakeQuery({ data: undefined, error: new Error('boom'), isLoading: false }),
     );
     render(wrap(<AlertsPage />));
 
-    // Must NOT show the false positive.
-    expect(screen.queryByText('All clear')).toBeNull();
-    // Must show the honest error state.
-    expect(screen.getByText('Unavailable')).toBeInTheDocument();
+    expect(screen.queryByText(ALL_CLEAR)).toBeNull();
+    expect(screen.getByText(UNAVAILABLE)).toBeInTheDocument();
   });
 
-  it('shows "Unavailable" footer text when the query errored', () => {
+  it('says the rest of the page still works when the query errored', () => {
     vi.spyOn(lowStockMod, 'useLowStock').mockReturnValue(
       fakeQuery({ data: undefined, error: new Error('network error'), isLoading: false }),
     );
     render(wrap(<AlertsPage />));
-    // Footer should explain the error; check for the explanatory copy.
-    expect(screen.getByText(/Failed to load/i)).toBeInTheDocument();
+    // Un onglet en échec ne condamne pas les trois autres — la page le dit.
+    expect(screen.getByText(/the rest of the page still works/i)).toBeInTheDocument();
   });
 
-  it('does NOT show "Unavailable" when data loaded successfully (no false negatives)', () => {
+  it('does not claim unavailability when data loaded successfully (no false negatives)', () => {
     vi.spyOn(lowStockMod, 'useLowStock').mockReturnValue(
       fakeQuery({ data: [], error: null, isLoading: false }),
     );
     render(wrap(<AlertsPage />));
-    expect(screen.queryByText('Unavailable')).toBeNull();
+    expect(screen.queryByText(UNAVAILABLE)).toBeNull();
+  });
+
+  it('never shows a zero count on a tab — silence means nothing to see', () => {
+    // Quatre « 0 » fabriquent quatre signaux là où il n'y en a aucun.
+    vi.spyOn(lowStockMod, 'useLowStock').mockReturnValue(
+      fakeQuery({ data: [], error: null, isLoading: false }),
+    );
+    render(wrap(<AlertsPage />));
+    expect(screen.getByTestId('tab-low')).not.toHaveTextContent('0');
+    expect(screen.getByTestId('tab-config')).not.toHaveTextContent('0');
   });
 });

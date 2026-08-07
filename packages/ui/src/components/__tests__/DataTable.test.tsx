@@ -193,3 +193,61 @@ describe('DataTable', () => {
     expect(amountCell?.className).toMatch(/text-right/);
   });
 });
+
+// Refonte 2026-08-08 — le détail dépliable. L'ouverture appartient à
+// l'appelant : la table rend ce qu'on lui dit d'ouvrir, elle ne le décide pas.
+describe('DataTable — détail dépliable', () => {
+  const detail = (r: Row) => <div data-testid={`detail-${r.id}`}>{r.name} lines</div>;
+
+  it('renders nothing extra when no row is expanded', () => {
+    render(
+      <DataTable
+        columns={COLUMNS}
+        rows={ROWS}
+        getRowKey={(r) => r.id}
+        renderExpanded={detail}
+        expandedKeys={new Set()}
+      />,
+    );
+    expect(screen.queryByTestId('detail-1')).toBeNull();
+    expect(screen.queryByTestId('detail-2')).toBeNull();
+  });
+
+  it('renders the detail only for the expanded key', () => {
+    render(
+      <DataTable
+        columns={COLUMNS}
+        rows={ROWS}
+        getRowKey={(r) => r.id}
+        renderExpanded={detail}
+        expandedKeys={new Set(['2'])}
+      />,
+    );
+    expect(screen.getByTestId('detail-2')).toBeInTheDocument();
+    expect(screen.queryByTestId('detail-1')).toBeNull();
+    expect(screen.queryByTestId('detail-3')).toBeNull();
+  });
+
+  it('spans the detail across every column so it reads as one block', () => {
+    render(
+      <DataTable
+        columns={COLUMNS}
+        rows={ROWS}
+        getRowKey={(r) => r.id}
+        renderExpanded={detail}
+        expandedKeys={new Set(['1'])}
+      />,
+    );
+    const cell = screen.getByTestId('detail-1').closest('td');
+    expect(cell).toHaveAttribute('colspan', String(COLUMNS.length));
+  });
+
+  it('leaves rows untouched when renderExpanded is not given', () => {
+    // La garantie qui compte : toutes les tables existantes rendent comme avant.
+    const { container } = render(
+      <DataTable columns={COLUMNS} rows={ROWS} getRowKey={(r) => r.id} />,
+    );
+    expect(container.querySelectorAll('tbody tr')).toHaveLength(ROWS.length);
+    expect(container.querySelector('tbody tr[aria-expanded]')).toBeNull();
+  });
+});

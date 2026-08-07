@@ -55,6 +55,17 @@ const preset: Partial<Config> = {
           muted: 'var(--text-muted)',
           subtle: 'var(--text-subtle)',
           disabled: 'var(--text-disabled)',
+          // Le cran sous le désactivé — ponctuation structurelle (séparateur de
+          // fil d'Ariane, chevron éteint), jamais du texte à lire.
+          inert: 'var(--text-inert)',
+        },
+        // Rampe de data-viz. Les séries de graphique la prennent ; les teintes
+        // cat-* restent l'identité d'une catégorie de produit.
+        chart: {
+          1: 'var(--chart-1)',
+          2: 'var(--chart-2)',
+          3: 'var(--chart-3)',
+          4: 'var(--chart-4)',
         },
         gold: {
           DEFAULT: 'var(--gold-base)',
