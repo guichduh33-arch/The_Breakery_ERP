@@ -60,83 +60,85 @@ export function LanDevicesTable({ onEdit }: { onEdit: (device: LanDeviceRow) => 
   }
 
   return (
-    <table className="w-full text-sm">
-      <thead className="text-xs uppercase text-text-secondary border-b border-border-subtle">
-        <tr>
-          <th className="py-2 text-left">Code</th>
-          <th className="py-2 text-left">Name</th>
-          <th className="py-2 text-left">Type</th>
-          <th className="py-2 text-left">IP : Port</th>
-          <th className="py-2 text-left">Station</th>
-          <th className="py-2 text-left">Status</th>
-          <th className="py-2 text-left">Last heartbeat</th>
-          {canManage && <th className="py-2 text-right">Actions</th>}
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((d) => {
-          const isStale = d.last_heartbeat_at === null
-            ? true
-            : Date.now() - new Date(d.last_heartbeat_at).getTime() > 60_000;
-          const station = typeof d.capabilities.station === 'string' ? d.capabilities.station : null;
-          return (
-            <tr key={d.id} className="border-b border-border-subtle">
-              <td className="py-2 font-mono text-xs">{d.code}</td>
-              <td className="py-2">{d.name}</td>
-              <td className="py-2 capitalize">{d.device_type.replace('_', ' ')}</td>
-              <td className="py-2 font-mono text-xs">
-                {d.ip_address !== null ? `${d.ip_address}${d.port !== null ? `:${d.port}` : ''}` : '—'}
-              </td>
-              <td className="py-2">
-                {station !== null
-                  ? <span className="inline-block px-2 py-0.5 rounded text-xs bg-bg-overlay">{station}</span>
-                  : '—'}
-              </td>
-              <td className="py-2">
-                <span className={`inline-block px-2 py-0.5 rounded text-xs ${
-                  isStale ? 'bg-danger-soft text-danger' : 'bg-success-soft text-success'
-                }`}>
-                  {isStale ? 'stale' : 'online'}
-                </span>
-              </td>
-              <td className="py-2 font-mono text-xs">
-                {d.last_heartbeat_at !== null ? new Date(d.last_heartbeat_at).toLocaleString() : 'never'}
-              </td>
-              {canManage && (
-                <td className="py-2 text-right space-x-1 whitespace-nowrap">
-                  {d.device_type === 'printer' && (
-                    <Button variant="secondary" size="sm" aria-label={`Test ${d.code}`}
-                      disabled={testingId === d.id} onClick={() => void runTest(d)}>
-                      {testingId === d.id
-                        ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                        : <Radio className="h-4 w-4" aria-hidden />}
-                      Test
-                    </Button>
-                  )}
-                  <Button variant="secondary" size="sm" aria-label={`Edit ${d.code}`} onClick={() => onEdit(d)}>
-                    <Pencil className="h-4 w-4" aria-hidden /> Edit
-                  </Button>
-                  {confirmingId === d.id ? (
-                    <Button variant="ghostDestructive" size="sm" aria-label={`Confirm delete ${d.code}`}
-                      disabled={deleteDevice.isPending}
-                      onClick={() => deleteDevice.mutate({ id: d.id }, {
-                        onSuccess: () => { toast.success(`${d.code} removed`); setConfirmingId(null); },
-                        onError: (e) => { toast.error(e.message); setConfirmingId(null); },
-                      })}>
-                      Confirm?
-                    </Button>
-                  ) : (
-                    <Button variant="secondary" size="sm" aria-label={`Delete ${d.code}`}
-                      onClick={() => setConfirmingId(d.id)}>
-                      <Trash2 className="h-4 w-4" aria-hidden /> Delete
-                    </Button>
-                  )}
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead className="text-xs uppercase text-text-secondary border-b border-border-subtle">
+          <tr>
+            <th className="py-2 text-left">Code</th>
+            <th className="py-2 text-left">Name</th>
+            <th className="py-2 text-left">Type</th>
+            <th className="py-2 text-left">IP : Port</th>
+            <th className="py-2 text-left">Station</th>
+            <th className="py-2 text-left">Status</th>
+            <th className="py-2 text-left">Last heartbeat</th>
+            {canManage && <th className="py-2 text-right">Actions</th>}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((d) => {
+            const isStale = d.last_heartbeat_at === null
+              ? true
+              : Date.now() - new Date(d.last_heartbeat_at).getTime() > 60_000;
+            const station = typeof d.capabilities.station === 'string' ? d.capabilities.station : null;
+            return (
+              <tr key={d.id} className="border-b border-border-subtle">
+                <td className="py-2 font-mono text-xs">{d.code}</td>
+                <td className="py-2">{d.name}</td>
+                <td className="py-2 capitalize">{d.device_type.replace('_', ' ')}</td>
+                <td className="py-2 font-mono text-xs">
+                  {d.ip_address !== null ? `${d.ip_address}${d.port !== null ? `:${d.port}` : ''}` : '—'}
                 </td>
-              )}
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
+                <td className="py-2">
+                  {station !== null
+                    ? <span className="inline-block px-2 py-0.5 rounded text-xs bg-bg-overlay">{station}</span>
+                    : '—'}
+                </td>
+                <td className="py-2">
+                  <span className={`inline-block px-2 py-0.5 rounded text-xs ${
+                    isStale ? 'bg-danger-soft text-danger' : 'bg-success-soft text-success'
+                  }`}>
+                    {isStale ? 'stale' : 'online'}
+                  </span>
+                </td>
+                <td className="py-2 font-mono text-xs">
+                  {d.last_heartbeat_at !== null ? new Date(d.last_heartbeat_at).toLocaleString() : 'never'}
+                </td>
+                {canManage && (
+                  <td className="py-2 text-right space-x-1 whitespace-nowrap">
+                    {d.device_type === 'printer' && (
+                      <Button variant="secondary" size="sm" aria-label={`Test ${d.code}`}
+                        disabled={testingId === d.id} onClick={() => void runTest(d)}>
+                        {testingId === d.id
+                          ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                          : <Radio className="h-4 w-4" aria-hidden />}
+                        Test
+                      </Button>
+                    )}
+                    <Button variant="secondary" size="sm" aria-label={`Edit ${d.code}`} onClick={() => onEdit(d)}>
+                      <Pencil className="h-4 w-4" aria-hidden /> Edit
+                    </Button>
+                    {confirmingId === d.id ? (
+                      <Button variant="ghostDestructive" size="sm" aria-label={`Confirm delete ${d.code}`}
+                        disabled={deleteDevice.isPending}
+                        onClick={() => deleteDevice.mutate({ id: d.id }, {
+                          onSuccess: () => { toast.success(`${d.code} removed`); setConfirmingId(null); },
+                          onError: (e) => { toast.error(e.message); setConfirmingId(null); },
+                        })}>
+                        Confirm?
+                      </Button>
+                    ) : (
+                      <Button variant="secondary" size="sm" aria-label={`Delete ${d.code}`}
+                        onClick={() => setConfirmingId(d.id)}>
+                        <Trash2 className="h-4 w-4" aria-hidden /> Delete
+                      </Button>
+                    )}
+                  </td>
+                )}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
   );
 }

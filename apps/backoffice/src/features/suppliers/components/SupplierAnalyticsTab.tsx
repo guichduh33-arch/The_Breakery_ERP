@@ -140,26 +140,28 @@ export function SupplierAnalyticsTab({ items, spendByPo }: SupplierAnalyticsTabP
           {topProducts.length === 0 ? (
             <p className="py-8 text-center text-sm text-text-muted">No products purchased yet.</p>
           ) : (
-            <table className="w-full text-sm">
-              <thead className="border-b border-border-subtle">
-                <tr>
-                  <th className="py-2 text-left"><SectionLabel as="span" size="xs">Product</SectionLabel></th>
-                  <th className="py-2 text-right"><SectionLabel as="span" size="xs">Qty</SectionLabel></th>
-                  <th className="py-2 text-right"><SectionLabel as="span" size="xs">Total</SectionLabel></th>
-                  <th className="py-2 text-right"><SectionLabel as="span" size="xs">Avg Price</SectionLabel></th>
-                </tr>
-              </thead>
-              <tbody>
-                {topProducts.map((p) => (
-                  <tr key={p.name} className="border-t border-border-subtle">
-                    <td className="py-2.5 text-text-primary">{p.name}</td>
-                    <td className="py-2.5 text-right tabular-nums">{p.qty}</td>
-                    <td className="py-2.5 text-right font-medium tabular-nums">{formatIdr(p.total)}</td>
-                    <td className="py-2.5 text-right tabular-nums text-text-secondary">{formatIdr(p.avg)}</td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="border-b border-border-subtle">
+                  <tr>
+                    <th className="py-2 text-left"><SectionLabel as="span" size="xs">Product</SectionLabel></th>
+                    <th className="py-2 text-right"><SectionLabel as="span" size="xs">Qty</SectionLabel></th>
+                    <th className="py-2 text-right"><SectionLabel as="span" size="xs">Total</SectionLabel></th>
+                    <th className="py-2 text-right"><SectionLabel as="span" size="xs">Avg Price</SectionLabel></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {topProducts.map((p) => (
+                    <tr key={p.name} className="border-t border-border-subtle">
+                      <td className="py-2.5 text-text-primary">{p.name}</td>
+                      <td className="py-2.5 text-right tabular-nums">{p.qty}</td>
+                      <td className="py-2.5 text-right font-medium tabular-nums">{formatIdr(p.total)}</td>
+                      <td className="py-2.5 text-right tabular-nums text-text-secondary">{formatIdr(p.avg)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </Card>
 

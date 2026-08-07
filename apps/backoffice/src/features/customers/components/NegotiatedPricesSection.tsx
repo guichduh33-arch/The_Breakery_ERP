@@ -67,28 +67,30 @@ export function NegotiatedPricesSection({ customerId }: NegotiatedPricesSectionP
         </div>
       )}
       {prices && prices.length > 0 && (
-        <table className="w-full border-collapse text-sm">
-          <thead className="border-y border-border-subtle bg-bg-base/40 text-xs uppercase tracking-widest text-text-secondary">
-            <tr>
-              <th className="px-4 py-2.5 text-left font-medium">Product</th>
-              <th className="px-4 py-2.5 text-right font-medium">Retail</th>
-              <th className="px-4 py-2.5 text-right font-medium">Negotiated</th>
-              {canManage && <th className="px-4 py-2.5 text-right font-medium">&nbsp;</th>}
-            </tr>
-          </thead>
-          <tbody>
-            {prices.map((p) => (
-              <NegotiatedPriceRow
-                key={p.product_id}
-                price={p}
-                canEdit={canManage}
-                onSave={(price) => handleSave(p.product_id, price)}
-                onDelete={() => handleDelete(p.product_id)}
-                saving={upsertPrice.isPending || deletePrice.isPending}
-              />
-            ))}
-          </tbody>
-        </table>
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-sm">
+            <thead className="border-y border-border-subtle bg-bg-base/40 text-xs uppercase tracking-widest text-text-secondary">
+              <tr>
+                <th className="px-4 py-2.5 text-left font-medium">Product</th>
+                <th className="px-4 py-2.5 text-right font-medium">Retail</th>
+                <th className="px-4 py-2.5 text-right font-medium">Negotiated</th>
+                {canManage && <th className="px-4 py-2.5 text-right font-medium">&nbsp;</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {prices.map((p) => (
+                <NegotiatedPriceRow
+                  key={p.product_id}
+                  price={p}
+                  canEdit={canManage}
+                  onSave={(price) => handleSave(p.product_id, price)}
+                  onDelete={() => handleDelete(p.product_id)}
+                  saving={upsertPrice.isPending || deletePrice.isPending}
+                />
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {canManage && (

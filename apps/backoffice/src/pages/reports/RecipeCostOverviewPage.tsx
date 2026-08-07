@@ -139,45 +139,47 @@ export function RecipeCostOverviewPage(): JSX.Element {
         </p>
       )}
       {rows.length > 0 && (
-        <table className="w-full text-sm" data-testid="overview-table">
-          <thead>
-            <tr className="text-left text-xs uppercase tracking-widest text-text-secondary border-b border-border-subtle">
-              <th className="py-2">Product</th>
-              <th className="py-2 text-right">Current</th>
-              <th className="py-2 text-right">Baseline</th>
-              <th className="py-2 text-right">Δ %</th>
-              <th className="py-2 text-right">Changes</th>
-              <th className="py-2 text-right">Last change</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr
-                key={r.product_id}
-                className="border-t border-border-subtle cursor-pointer hover:bg-bg-elevated"
-                data-testid={`overview-row-${r.product_id}`}
-                onClick={() => { void navigate(`/backoffice/reports/recipe-cost/${r.product_id}`); }}
-              >
-                <td className="py-1.5" onClick={(e) => e.stopPropagation()}>
-                  <DrilldownLink entity="recipe" id={r.product_id} label={r.product_name} icon={false} />
-                </td>
-                <td className="py-1.5 text-right tabular-nums">
-                  {r.cost_per_unit !== null ? formatIdrPrecise(r.cost_per_unit) : '—'}
-                </td>
-                <td className="py-1.5 text-right tabular-nums">
-                  {r.baseline_cost !== null ? formatIdrPrecise(r.baseline_cost) : '—'}
-                </td>
-                <td className={`py-1.5 text-right tabular-nums ${deltaTone(r.delta_pct)}`}>
-                  {formatDelta(r.delta_pct)}
-                </td>
-                <td className="py-1.5 text-right tabular-nums">{r.change_count}</td>
-                <td className="py-1.5 text-right tabular-nums text-text-secondary">
-                  {r.created_at !== null ? toLocalDateStr(r.created_at) : '—'}
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm" data-testid="overview-table">
+            <thead>
+              <tr className="text-left text-xs uppercase tracking-widest text-text-secondary border-b border-border-subtle">
+                <th className="py-2">Product</th>
+                <th className="py-2 text-right">Current</th>
+                <th className="py-2 text-right">Baseline</th>
+                <th className="py-2 text-right">Δ %</th>
+                <th className="py-2 text-right">Changes</th>
+                <th className="py-2 text-right">Last change</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr
+                  key={r.product_id}
+                  className="border-t border-border-subtle cursor-pointer hover:bg-bg-elevated"
+                  data-testid={`overview-row-${r.product_id}`}
+                  onClick={() => { void navigate(`/backoffice/reports/recipe-cost/${r.product_id}`); }}
+                >
+                  <td className="py-1.5" onClick={(e) => e.stopPropagation()}>
+                    <DrilldownLink entity="recipe" id={r.product_id} label={r.product_name} icon={false} />
+                  </td>
+                  <td className="py-1.5 text-right tabular-nums">
+                    {r.cost_per_unit !== null ? formatIdrPrecise(r.cost_per_unit) : '—'}
+                  </td>
+                  <td className="py-1.5 text-right tabular-nums">
+                    {r.baseline_cost !== null ? formatIdrPrecise(r.baseline_cost) : '—'}
+                  </td>
+                  <td className={`py-1.5 text-right tabular-nums ${deltaTone(r.delta_pct)}`}>
+                    {formatDelta(r.delta_pct)}
+                  </td>
+                  <td className="py-1.5 text-right tabular-nums">{r.change_count}</td>
+                  <td className="py-1.5 text-right tabular-nums text-text-secondary">
+                    {r.created_at !== null ? toLocalDateStr(r.created_at) : '—'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </ReportPage>
   );

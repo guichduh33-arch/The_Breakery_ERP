@@ -63,30 +63,32 @@ export default function SalesByStaffPage() {
         </p>
       )}
       {data !== undefined && data !== null && (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-text-secondary border-b border-border-subtle">
-              <th className="py-2 text-left">Staff</th>
-              <th className="py-2 text-right">Total</th>
-              <th className="py-2 text-right">Orders</th>
-              <th className="py-2 text-right">Avg Basket</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.map((r) => (
-              <tr key={r.staff_id} className="border-b border-border-subtle">
-                <td className="py-2">
-                  <DrilldownLink entity="user" id={r.staff_id} label={r.staff_name} icon={false} />
-                </td>
-                <td className="py-2 text-right tabular-nums">{formatIdrFull(r.total)}</td>
-                <td className="py-2 text-right tabular-nums">{r.order_count}</td>
-                <td className="py-2 text-right tabular-nums">
-                  {formatIdrFull(r.avg_basket)}
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-text-secondary border-b border-border-subtle">
+                <th className="py-2 text-left">Staff</th>
+                <th className="py-2 text-right">Total</th>
+                <th className="py-2 text-right">Orders</th>
+                <th className="py-2 text-right">Avg Basket</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {data.map((r) => (
+                <tr key={r.staff_id} className="border-b border-border-subtle">
+                  <td className="py-2">
+                    <DrilldownLink entity="user" id={r.staff_id} label={r.staff_name} icon={false} />
+                  </td>
+                  <td className="py-2 text-right tabular-nums">{formatIdrFull(r.total)}</td>
+                  <td className="py-2 text-right tabular-nums">{r.order_count}</td>
+                  <td className="py-2 text-right tabular-nums">
+                    {formatIdrFull(r.avg_basket)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </ReportPage>
   );

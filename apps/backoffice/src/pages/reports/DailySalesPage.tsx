@@ -116,65 +116,67 @@ export default function DailySalesPage() {
       )}
 
       {data && (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border-subtle text-text-secondary">
-              <th className="py-2 text-left">Date</th>
-              <th className="py-2 text-right">Orders</th>
-              <th className="py-2 text-right">Gross</th>
-              <th className="py-2 text-right">Refunds</th>
-              <th className="py-2 text-right">Net</th>
-              <th className="py-2 text-right">AOV</th>
-            </tr>
-          </thead>
-          <tbody>
-            {byDay.map((r) => {
-              const drillUrl = buildDrilldownUrl('order_list', '', { start: r.date, end: r.date });
-              return (
-                <tr key={r.date} className="border-b border-border-subtle">
-                  <td className="py-2 font-medium tabular-nums">
-                    {drillUrl ? (
-                      <Link
-                        to={drillUrl}
-                        className="text-gold hover:underline"
-                      >
-                        {r.date}
-                      </Link>
-                    ) : (
-                      r.date
-                    )}
-                    {r.holiday !== null && (
-                      <span
-                        title={r.holiday}
-                        data-testid={`holiday-badge-${r.date}`}
-                        className="ml-2 inline-flex items-center rounded-full border border-gold/30 bg-gold-soft px-2 py-0.5 text-xs text-gold"
-                      >
-                        {r.holiday}
-                      </span>
-                    )}
-                  </td>
-                  <td className="py-2 text-right tabular-nums">{r.order_count}</td>
-                  <td className="py-2 text-right tabular-nums">{IDR(r.gross)}</td>
-                  <td className="py-2 text-right tabular-nums">{IDR(r.refunds)}</td>
-                  <td className="py-2 text-right tabular-nums">{IDR(r.net)}</td>
-                  <td className="py-2 text-right tabular-nums">{IDR(r.aov)}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-          {byDay.length > 0 && summary && (
-            <tfoot>
-              <tr className="border-t border-border-subtle font-semibold">
-                <td className="py-2">Total</td>
-                <td className="py-2 text-right tabular-nums">{summary.order_count}</td>
-                <td className="py-2 text-right tabular-nums">{IDR(summary.total)}</td>
-                <td className="py-2 text-right tabular-nums">{IDR(summary.refund_total)}</td>
-                <td className="py-2 text-right tabular-nums">{IDR(summary.net)}</td>
-                <td className="py-2 text-right tabular-nums">{IDR(summary.aov)}</td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border-subtle text-text-secondary">
+                <th className="py-2 text-left">Date</th>
+                <th className="py-2 text-right">Orders</th>
+                <th className="py-2 text-right">Gross</th>
+                <th className="py-2 text-right">Refunds</th>
+                <th className="py-2 text-right">Net</th>
+                <th className="py-2 text-right">AOV</th>
               </tr>
-            </tfoot>
-          )}
-        </table>
+            </thead>
+            <tbody>
+              {byDay.map((r) => {
+                const drillUrl = buildDrilldownUrl('order_list', '', { start: r.date, end: r.date });
+                return (
+                  <tr key={r.date} className="border-b border-border-subtle">
+                    <td className="py-2 font-medium tabular-nums">
+                      {drillUrl ? (
+                        <Link
+                          to={drillUrl}
+                          className="text-gold hover:underline"
+                        >
+                          {r.date}
+                        </Link>
+                      ) : (
+                        r.date
+                      )}
+                      {r.holiday !== null && (
+                        <span
+                          title={r.holiday}
+                          data-testid={`holiday-badge-${r.date}`}
+                          className="ml-2 inline-flex items-center rounded-full border border-gold/30 bg-gold-soft px-2 py-0.5 text-xs text-gold"
+                        >
+                          {r.holiday}
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-2 text-right tabular-nums">{r.order_count}</td>
+                    <td className="py-2 text-right tabular-nums">{IDR(r.gross)}</td>
+                    <td className="py-2 text-right tabular-nums">{IDR(r.refunds)}</td>
+                    <td className="py-2 text-right tabular-nums">{IDR(r.net)}</td>
+                    <td className="py-2 text-right tabular-nums">{IDR(r.aov)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+            {byDay.length > 0 && summary && (
+              <tfoot>
+                <tr className="border-t border-border-subtle font-semibold">
+                  <td className="py-2">Total</td>
+                  <td className="py-2 text-right tabular-nums">{summary.order_count}</td>
+                  <td className="py-2 text-right tabular-nums">{IDR(summary.total)}</td>
+                  <td className="py-2 text-right tabular-nums">{IDR(summary.refund_total)}</td>
+                  <td className="py-2 text-right tabular-nums">{IDR(summary.net)}</td>
+                  <td className="py-2 text-right tabular-nums">{IDR(summary.aov)}</td>
+                </tr>
+              </tfoot>
+            )}
+          </table>
+        </div>
       )}
     </ReportPage>
   );

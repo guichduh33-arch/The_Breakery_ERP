@@ -142,32 +142,34 @@ export default function SalesByCategoryPage() {
               </BarChart>
             </ResponsiveContainer>
           </div>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-text-secondary border-b border-border-subtle">
-                <th className="py-2 text-left">Category</th>
-                <th className="py-2 text-right">Total</th>
-                <th className="py-2 text-right">Qty</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.map((r) => (
-                <tr key={r.category_id} className="border-b border-border-subtle">
-                  <td className="py-2">
-                    <DrilldownLink
-                      entity="category"
-                      id={r.category_id}
-                      label={r.category_name}
-                      filter={{ date_from: start, date_to: end }}
-                      icon={false}
-                    />
-                  </td>
-                  <td className="py-2 text-right tabular-nums">{formatIdrFull(r.total)}</td>
-                  <td className="py-2 text-right tabular-nums">{r.qty}</td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-text-secondary border-b border-border-subtle">
+                  <th className="py-2 text-left">Category</th>
+                  <th className="py-2 text-right">Total</th>
+                  <th className="py-2 text-right">Qty</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {data.map((r) => (
+                  <tr key={r.category_id} className="border-b border-border-subtle">
+                    <td className="py-2">
+                      <DrilldownLink
+                        entity="category"
+                        id={r.category_id}
+                        label={r.category_name}
+                        filter={{ date_from: start, date_to: end }}
+                        icon={false}
+                      />
+                    </td>
+                    <td className="py-2 text-right tabular-nums">{formatIdrFull(r.total)}</td>
+                    <td className="py-2 text-right tabular-nums">{r.qty}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </ReportPage>

@@ -43,26 +43,28 @@ export function BakerPreviewPanel({
       <div className="text-xs uppercase tracking-widest text-text-secondary mb-1">
         Absolute qtys for {targetFlourQty} g flour
       </div>
-      <table className="w-full text-xs">
-        <thead className="text-text-secondary">
-          <tr>
-            <th className="text-left py-1">Material</th>
-            <th className="text-right py-1">%</th>
-            <th className="text-right py-1">Absolute</th>
-            <th className="text-left py-1 pl-2">Unit</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.rows.map((r) => (
-            <tr key={r.recipe_id} data-testid="baker-preview-row">
-              <td className="py-1">{r.material_name}</td>
-              <td className="text-right py-1">{Number(r.baker_percentage).toFixed(2)}%</td>
-              <td className="text-right py-1 font-mono">{Number(r.absolute_qty).toFixed(2)}</td>
-              <td className="pl-2 py-1">{r.unit}</td>
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs">
+          <thead className="text-text-secondary">
+            <tr>
+              <th className="text-left py-1">Material</th>
+              <th className="text-right py-1">%</th>
+              <th className="text-right py-1">Absolute</th>
+              <th className="text-left py-1 pl-2">Unit</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {data.rows.map((r) => (
+              <tr key={r.recipe_id} data-testid="baker-preview-row">
+                <td className="py-1">{r.material_name}</td>
+                <td className="text-right py-1">{Number(r.baker_percentage).toFixed(2)}%</td>
+                <td className="text-right py-1 font-mono">{Number(r.absolute_qty).toFixed(2)}</td>
+                <td className="pl-2 py-1">{r.unit}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

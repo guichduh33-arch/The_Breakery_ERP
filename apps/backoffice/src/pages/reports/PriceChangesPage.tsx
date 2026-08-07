@@ -138,34 +138,36 @@ export default function PriceChangesPage() {
         </p>
       )}
       {data && (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border-subtle text-text-secondary">
-              <th className="py-2 text-left">Date</th>
-              <th className="py-2 text-left">Product</th>
-              <th className="py-2 text-left">Actor</th>
-              <th className="py-2 text-right">Old Price</th>
-              <th className="py-2 text-right">New Price</th>
-              <th className="py-2 text-right">Change</th>
-            </tr>
-          </thead>
-          <tbody>
-            {changes.map((r, idx) => (
-              <tr key={`${r.product_id}-${r.changed_at}-${idx}`} className="border-b border-border-subtle">
-                <td className="py-2 text-text-secondary">{r.changed_at.slice(0, 10)}</td>
-                <td className="py-2 font-medium">
-                  <DrilldownLink entity="product" id={r.product_id} label={r.product_name} icon={false} />
-                </td>
-                <td className="py-2 text-text-secondary">{r.actor_name}</td>
-                <td className="py-2 text-right tabular-nums text-text-secondary">
-                  {r.old_price === null ? <span className="italic">first recorded</span> : fmtIdr(r.old_price)}
-                </td>
-                <td className="py-2 text-right tabular-nums">{fmtIdr(r.new_price)}</td>
-                <td className="py-2 text-right tabular-nums">{deltaBadge(r.delta_pct)}</td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border-subtle text-text-secondary">
+                <th className="py-2 text-left">Date</th>
+                <th className="py-2 text-left">Product</th>
+                <th className="py-2 text-left">Actor</th>
+                <th className="py-2 text-right">Old Price</th>
+                <th className="py-2 text-right">New Price</th>
+                <th className="py-2 text-right">Change</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {changes.map((r, idx) => (
+                <tr key={`${r.product_id}-${r.changed_at}-${idx}`} className="border-b border-border-subtle">
+                  <td className="py-2 text-text-secondary">{r.changed_at.slice(0, 10)}</td>
+                  <td className="py-2 font-medium">
+                    <DrilldownLink entity="product" id={r.product_id} label={r.product_name} icon={false} />
+                  </td>
+                  <td className="py-2 text-text-secondary">{r.actor_name}</td>
+                  <td className="py-2 text-right tabular-nums text-text-secondary">
+                    {r.old_price === null ? <span className="italic">first recorded</span> : fmtIdr(r.old_price)}
+                  </td>
+                  <td className="py-2 text-right tabular-nums">{fmtIdr(r.new_price)}</td>
+                  <td className="py-2 text-right tabular-nums">{deltaBadge(r.delta_pct)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </ReportPage>
   );

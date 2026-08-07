@@ -89,26 +89,28 @@ export function HubPanel(): JSX.Element {
           once their device code is set in POS Settings → Devices.
         </p>
       ) : (
-        <table className="w-full text-sm max-w-2xl">
-          <thead className="text-xs uppercase text-text-secondary border-b border-border-subtle">
-            <tr>
-              <th className="py-2 text-left">Device</th>
-              <th className="py-2 text-left">Type</th>
-              <th className="py-2 text-left">IP</th>
-              <th className="py-2 text-left">Last seen</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.devices.map((d, i) => (
-              <tr key={`${d.device_code}-${i}`} className="border-b border-border-subtle">
-                <td className="py-2 font-mono text-xs">{d.device_code}</td>
-                <td className="py-2 text-xs">{d.device_type}</td>
-                <td className="py-2 font-mono text-xs">{d.ip}</td>
-                <td className="py-2 text-xs">{new Date(d.last_seen_at).toLocaleTimeString()}</td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm max-w-2xl">
+            <thead className="text-xs uppercase text-text-secondary border-b border-border-subtle">
+              <tr>
+                <th className="py-2 text-left">Device</th>
+                <th className="py-2 text-left">Type</th>
+                <th className="py-2 text-left">IP</th>
+                <th className="py-2 text-left">Last seen</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {data.devices.map((d, i) => (
+                <tr key={`${d.device_code}-${i}`} className="border-b border-border-subtle">
+                  <td className="py-2 font-mono text-xs">{d.device_code}</td>
+                  <td className="py-2 text-xs">{d.device_type}</td>
+                  <td className="py-2 font-mono text-xs">{d.ip}</td>
+                  <td className="py-2 text-xs">{new Date(d.last_seen_at).toLocaleTimeString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

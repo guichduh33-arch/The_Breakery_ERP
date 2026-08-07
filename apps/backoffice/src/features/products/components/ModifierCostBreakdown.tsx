@@ -73,48 +73,50 @@ export function ModifierCostBreakdown({
                 {groupTypeLabel(g)}
               </span>
             </div>
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border-subtle text-xs uppercase tracking-wider text-text-secondary">
-                  <th className="py-1.5 pr-4 text-left font-medium">Option</th>
-                  <th className="py-1.5 pr-4 text-right font-medium">Ingredient cost</th>
-                  <th className="py-1.5 text-right font-medium">Total cost</th>
-                </tr>
-              </thead>
-              <tbody>
-                {g.options.map((o) => {
-                  const mat = modifierOptionMaterialCost(o.ingredients_to_deduct, materialsById);
-                  const total = baseCost + mat.total;
-                  return (
-                    <tr
-                      key={o.option_label}
-                      data-testid={`modifier-cost-row-${g.group_name}-${o.option_label}`}
-                      className="border-b border-border-subtle last:border-0"
-                    >
-                      <td className="py-1.5 pr-4 text-text-primary">
-                        {o.option_label}
-                        {o.is_default && (
-                          <span className="ml-2 text-[10px] uppercase tracking-wider text-gold">
-                            default
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-1.5 pr-4 text-right font-mono text-text-secondary tabular-nums whitespace-nowrap">
-                        {mat.total > 0 ? `+ Rp ${formatIdr(mat.total)}` : '—'}
-                        {!mat.complete && (
-                          <span className="text-text-muted" title="Some ingredients have no cost price yet">
-                            {' '}+ ?
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-1.5 text-right font-mono font-semibold text-text-primary tabular-nums whitespace-nowrap">
-                        Rp {formatIdr(total)}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border-subtle text-xs uppercase tracking-wider text-text-secondary">
+                    <th className="py-1.5 pr-4 text-left font-medium">Option</th>
+                    <th className="py-1.5 pr-4 text-right font-medium">Ingredient cost</th>
+                    <th className="py-1.5 text-right font-medium">Total cost</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {g.options.map((o) => {
+                    const mat = modifierOptionMaterialCost(o.ingredients_to_deduct, materialsById);
+                    const total = baseCost + mat.total;
+                    return (
+                      <tr
+                        key={o.option_label}
+                        data-testid={`modifier-cost-row-${g.group_name}-${o.option_label}`}
+                        className="border-b border-border-subtle last:border-0"
+                      >
+                        <td className="py-1.5 pr-4 text-text-primary">
+                          {o.option_label}
+                          {o.is_default && (
+                            <span className="ml-2 text-[10px] uppercase tracking-wider text-gold">
+                              default
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-1.5 pr-4 text-right font-mono text-text-secondary tabular-nums whitespace-nowrap">
+                          {mat.total > 0 ? `+ Rp ${formatIdr(mat.total)}` : '—'}
+                          {!mat.complete && (
+                            <span className="text-text-muted" title="Some ingredients have no cost price yet">
+                              {' '}+ ?
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-1.5 text-right font-mono font-semibold text-text-primary tabular-nums whitespace-nowrap">
+                          Rp {formatIdr(total)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         ))}
       </div>

@@ -88,44 +88,46 @@ export default function OffHoursSalesPage() {
         </p>
       )}
       {data && rows.length > 0 && (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border-subtle text-text-secondary">
-              <th className="py-2 text-left">Local time</th>
-              <th className="py-2 text-left">Day</th>
-              <th className="py-2 text-left">Window</th>
-              <th className="py-2 text-left">Order</th>
-              <th className="py-2 text-left">Method</th>
-              <th className="py-2 text-right">Amount</th>
-              <th className="py-2 text-left">Cashier</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r, i) => (
-              <tr key={`${r.order_id}-${i}`} className="border-b border-border-subtle">
-                <td className="py-2 tabular-nums">{r.local_time}</td>
-                <td className="py-2">{DAY_LABELS[r.day_key] ?? r.day_key}</td>
-                <td className="py-2 tabular-nums">{windowLabel(r)}</td>
-                <td className="py-2">
-                  <DrilldownLink entity="order" id={r.order_id} label={r.order_number} icon={false} />
-                </td>
-                <td className="py-2 capitalize">{r.method}</td>
-                <td className="py-2 text-right tabular-nums">{idr(r.amount)}</td>
-                <td className="py-2">{r.cashier ?? '—'}</td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border-subtle text-text-secondary">
+                <th className="py-2 text-left">Local time</th>
+                <th className="py-2 text-left">Day</th>
+                <th className="py-2 text-left">Window</th>
+                <th className="py-2 text-left">Order</th>
+                <th className="py-2 text-left">Method</th>
+                <th className="py-2 text-right">Amount</th>
+                <th className="py-2 text-left">Cashier</th>
               </tr>
-            ))}
-          </tbody>
-          <tfoot>
-            <tr className="border-t border-border-subtle font-semibold">
-              <td className="py-2" colSpan={4}>
-                Total — {data.paymentCount} payment{data.paymentCount === 1 ? '' : 's'} on {data.orderCount} order{data.orderCount === 1 ? '' : 's'}
-              </td>
-              <td className="py-2" />
-              <td className="py-2 text-right tabular-nums">{idr(data.totalAmount)}</td>
-              <td className="py-2" />
-            </tr>
-          </tfoot>
-        </table>
+            </thead>
+            <tbody>
+              {rows.map((r, i) => (
+                <tr key={`${r.order_id}-${i}`} className="border-b border-border-subtle">
+                  <td className="py-2 tabular-nums">{r.local_time}</td>
+                  <td className="py-2">{DAY_LABELS[r.day_key] ?? r.day_key}</td>
+                  <td className="py-2 tabular-nums">{windowLabel(r)}</td>
+                  <td className="py-2">
+                    <DrilldownLink entity="order" id={r.order_id} label={r.order_number} icon={false} />
+                  </td>
+                  <td className="py-2 capitalize">{r.method}</td>
+                  <td className="py-2 text-right tabular-nums">{idr(r.amount)}</td>
+                  <td className="py-2">{r.cashier ?? '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="border-t border-border-subtle font-semibold">
+                <td className="py-2" colSpan={4}>
+                  Total — {data.paymentCount} payment{data.paymentCount === 1 ? '' : 's'} on {data.orderCount} order{data.orderCount === 1 ? '' : 's'}
+                </td>
+                <td className="py-2" />
+                <td className="py-2 text-right tabular-nums">{idr(data.totalAmount)}</td>
+                <td className="py-2" />
+              </tr>
+            </tfoot>
+          </table>
+        </div>
       )}
     </ReportPage>
   );

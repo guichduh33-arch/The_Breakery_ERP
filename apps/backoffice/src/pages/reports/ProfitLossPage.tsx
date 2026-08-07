@@ -99,117 +99,121 @@ export default function ProfitLossPage() {
       )}
       {data && (
         <div className="space-y-6">
-          <table className="w-full text-sm" aria-label="P&L summary">
-            <tbody>
-              <tr className="border-b border-border-subtle">
-                <td className="py-2 font-medium">Revenue</td>
-                <td className="py-2 text-right tabular-nums">{fmt(data.revenue.total)}</td>
-                {showDelta && <td className="py-2 text-right pl-2"><DeltaPct current={data.revenue.total} previous={prevData.revenue.total} /></td>}
-              </tr>
-              <tr>
-                <td className="pl-6 py-1 text-text-secondary text-xs">Sales</td>
-                <td className="py-1 text-right text-xs tabular-nums">{fmt(data.revenue.sales)}</td>
-                {showDelta && <td />}
-              </tr>
-              <tr>
-                <td className="pl-6 py-1 text-text-secondary text-xs">Discounts</td>
-                <td className="py-1 text-right text-xs tabular-nums">{fmt(data.revenue.discounts)}</td>
-                {showDelta && <td />}
-              </tr>
-              <tr>
-                <td className="pl-6 py-1 text-text-secondary text-xs">Adjustments</td>
-                <td className="py-1 text-right text-xs tabular-nums">{fmt(data.revenue.adjustments)}</td>
-                {showDelta && <td />}
-              </tr>
-              <tr className="border-b border-border-subtle">
-                <td className="py-2 font-medium">COGS</td>
-                <td className="py-2 text-right tabular-nums">{fmt(data.cogs.total)}</td>
-                {showDelta && <td className="py-2 text-right pl-2"><DeltaPct current={data.cogs.total} previous={prevData.cogs.total} /></td>}
-              </tr>
-              <tr>
-                <td className="pl-6 py-1 text-text-secondary text-xs">Production</td>
-                <td className="py-1 text-right text-xs tabular-nums">{fmt(data.cogs.production)}</td>
-                {showDelta && <td />}
-              </tr>
-              <tr>
-                <td className="pl-6 py-1 text-text-secondary text-xs">Waste</td>
-                <td className="py-1 text-right text-xs tabular-nums">{fmt(data.cogs.waste)}</td>
-                {showDelta && <td />}
-              </tr>
-              <tr>
-                <td className="pl-6 py-1 text-text-secondary text-xs">Other</td>
-                <td className="py-1 text-right text-xs tabular-nums">{fmt(data.cogs.other)}</td>
-                {showDelta && <td />}
-              </tr>
-              <tr className="border-b border-border-subtle bg-bg-overlay">
-                <td className="py-2 font-semibold">Gross profit</td>
-                <td className="py-2 text-right font-semibold tabular-nums">{fmt(data.gross_profit)}</td>
-                {showDelta && <td className="py-2 text-right pl-2"><DeltaPct current={data.gross_profit} previous={prevData.gross_profit} /></td>}
-              </tr>
-              <tr className="border-b border-border-subtle">
-                <td className="py-2 font-medium">Operating expenses</td>
-                <td className="py-2 text-right tabular-nums">{fmt(data.opex.total)}</td>
-                {/* Audit R-21 — seule ligne de sous-total a ne pas porter son
-                    delta en mode comparaison. */}
-                {showDelta && <td className="py-2 text-right pl-2"><DeltaPct current={data.opex.total} previous={prevData.opex.total} /></td>}
-              </tr>
-              <tr><td className="pl-6 py-1 text-text-secondary text-xs">Salary &amp; wages</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.opex.salary)}</td>{showDelta && <td />}</tr>
-              <tr><td className="pl-6 py-1 text-text-secondary text-xs">Rent</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.opex.rent)}</td>{showDelta && <td />}</tr>
-              <tr><td className="pl-6 py-1 text-text-secondary text-xs">Utilities</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.opex.utilities)}</td>{showDelta && <td />}</tr>
-              <tr><td className="pl-6 py-1 text-text-secondary text-xs">Supplies</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.opex.supplies)}</td>{showDelta && <td />}</tr>
-              <tr><td className="pl-6 py-1 text-text-secondary text-xs">Marketing</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.opex.marketing)}</td>{showDelta && <td />}</tr>
-              <tr><td className="pl-6 py-1 text-text-secondary text-xs">Maintenance</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.opex.maintenance)}</td>{showDelta && <td />}</tr>
-              <tr><td className="pl-6 py-1 text-text-secondary text-xs">Other</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.opex.other)}</td>{showDelta && <td />}</tr>
-              <tr className="border-t-2 border-border-subtle bg-gold-soft">
-                <td className="py-3 font-semibold uppercase tracking-wider">Net profit</td>
-                <td className="py-3 text-right font-semibold tabular-nums">{fmt(data.net_profit)}</td>
-                {showDelta && <td className="py-3 text-right pl-2"><DeltaPct current={data.net_profit} previous={prevData.net_profit} /></td>}
-              </tr>
-            </tbody>
-          </table>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm" aria-label="P&L summary">
+              <tbody>
+                <tr className="border-b border-border-subtle">
+                  <td className="py-2 font-medium">Revenue</td>
+                  <td className="py-2 text-right tabular-nums">{fmt(data.revenue.total)}</td>
+                  {showDelta && <td className="py-2 text-right pl-2"><DeltaPct current={data.revenue.total} previous={prevData.revenue.total} /></td>}
+                </tr>
+                <tr>
+                  <td className="pl-6 py-1 text-text-secondary text-xs">Sales</td>
+                  <td className="py-1 text-right text-xs tabular-nums">{fmt(data.revenue.sales)}</td>
+                  {showDelta && <td />}
+                </tr>
+                <tr>
+                  <td className="pl-6 py-1 text-text-secondary text-xs">Discounts</td>
+                  <td className="py-1 text-right text-xs tabular-nums">{fmt(data.revenue.discounts)}</td>
+                  {showDelta && <td />}
+                </tr>
+                <tr>
+                  <td className="pl-6 py-1 text-text-secondary text-xs">Adjustments</td>
+                  <td className="py-1 text-right text-xs tabular-nums">{fmt(data.revenue.adjustments)}</td>
+                  {showDelta && <td />}
+                </tr>
+                <tr className="border-b border-border-subtle">
+                  <td className="py-2 font-medium">COGS</td>
+                  <td className="py-2 text-right tabular-nums">{fmt(data.cogs.total)}</td>
+                  {showDelta && <td className="py-2 text-right pl-2"><DeltaPct current={data.cogs.total} previous={prevData.cogs.total} /></td>}
+                </tr>
+                <tr>
+                  <td className="pl-6 py-1 text-text-secondary text-xs">Production</td>
+                  <td className="py-1 text-right text-xs tabular-nums">{fmt(data.cogs.production)}</td>
+                  {showDelta && <td />}
+                </tr>
+                <tr>
+                  <td className="pl-6 py-1 text-text-secondary text-xs">Waste</td>
+                  <td className="py-1 text-right text-xs tabular-nums">{fmt(data.cogs.waste)}</td>
+                  {showDelta && <td />}
+                </tr>
+                <tr>
+                  <td className="pl-6 py-1 text-text-secondary text-xs">Other</td>
+                  <td className="py-1 text-right text-xs tabular-nums">{fmt(data.cogs.other)}</td>
+                  {showDelta && <td />}
+                </tr>
+                <tr className="border-b border-border-subtle bg-bg-overlay">
+                  <td className="py-2 font-semibold">Gross profit</td>
+                  <td className="py-2 text-right font-semibold tabular-nums">{fmt(data.gross_profit)}</td>
+                  {showDelta && <td className="py-2 text-right pl-2"><DeltaPct current={data.gross_profit} previous={prevData.gross_profit} /></td>}
+                </tr>
+                <tr className="border-b border-border-subtle">
+                  <td className="py-2 font-medium">Operating expenses</td>
+                  <td className="py-2 text-right tabular-nums">{fmt(data.opex.total)}</td>
+                  {/* Audit R-21 — seule ligne de sous-total a ne pas porter son
+                      delta en mode comparaison. */}
+                  {showDelta && <td className="py-2 text-right pl-2"><DeltaPct current={data.opex.total} previous={prevData.opex.total} /></td>}
+                </tr>
+                <tr><td className="pl-6 py-1 text-text-secondary text-xs">Salary &amp; wages</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.opex.salary)}</td>{showDelta && <td />}</tr>
+                <tr><td className="pl-6 py-1 text-text-secondary text-xs">Rent</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.opex.rent)}</td>{showDelta && <td />}</tr>
+                <tr><td className="pl-6 py-1 text-text-secondary text-xs">Utilities</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.opex.utilities)}</td>{showDelta && <td />}</tr>
+                <tr><td className="pl-6 py-1 text-text-secondary text-xs">Supplies</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.opex.supplies)}</td>{showDelta && <td />}</tr>
+                <tr><td className="pl-6 py-1 text-text-secondary text-xs">Marketing</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.opex.marketing)}</td>{showDelta && <td />}</tr>
+                <tr><td className="pl-6 py-1 text-text-secondary text-xs">Maintenance</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.opex.maintenance)}</td>{showDelta && <td />}</tr>
+                <tr><td className="pl-6 py-1 text-text-secondary text-xs">Other</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.opex.other)}</td>{showDelta && <td />}</tr>
+                <tr className="border-t-2 border-border-subtle bg-gold-soft">
+                  <td className="py-3 font-semibold uppercase tracking-wider">Net profit</td>
+                  <td className="py-3 text-right font-semibold tabular-nums">{fmt(data.net_profit)}</td>
+                  {showDelta && <td className="py-3 text-right pl-2"><DeltaPct current={data.net_profit} previous={prevData.net_profit} /></td>}
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
           <section aria-label="Per-account drill-down">
             <h2 className="text-sm font-medium uppercase tracking-widest text-text-secondary mb-2">
               Lines (per account)
             </h2>
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-text-secondary border-b border-border-subtle">
-                  <th className="py-2 text-left">Code</th>
-                  <th className="py-2 text-left">Name</th>
-                  <th className="py-2 text-right">Debit</th>
-                  <th className="py-2 text-right">Credit</th>
-                  <th className="py-2 text-right">Balance</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.lines.length === 0 ? (
-                  <tr>
-                    <td className="py-3 text-text-secondary" colSpan={5}>
-                      No journal-entry activity in the selected range.
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-text-secondary border-b border-border-subtle">
+                    <th className="py-2 text-left">Code</th>
+                    <th className="py-2 text-left">Name</th>
+                    <th className="py-2 text-right">Debit</th>
+                    <th className="py-2 text-right">Credit</th>
+                    <th className="py-2 text-right">Balance</th>
                   </tr>
-                ) : (
-                  data.lines.map((l) => (
-                    <tr key={l.code} className="border-b border-border-subtle">
-                      <td className="py-2">
-                        <DrilldownLink
-                          entity="account"
-                          id={l.account_id}
-                          label={l.code}
-                          filter={{ start, end }}
-                          icon={false}
-                        />
+                </thead>
+                <tbody>
+                  {data.lines.length === 0 ? (
+                    <tr>
+                      <td className="py-3 text-text-secondary" colSpan={5}>
+                        No journal-entry activity in the selected range.
                       </td>
-                      <td className="py-2">{l.name}</td>
-                      <td className="py-2 text-right tabular-nums">{fmt(l.debit)}</td>
-                      <td className="py-2 text-right tabular-nums">{fmt(l.credit)}</td>
-                      <td className="py-2 text-right tabular-nums">{fmt(l.balance)}</td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : (
+                    data.lines.map((l) => (
+                      <tr key={l.code} className="border-b border-border-subtle">
+                        <td className="py-2">
+                          <DrilldownLink
+                            entity="account"
+                            id={l.account_id}
+                            label={l.code}
+                            filter={{ start, end }}
+                            icon={false}
+                          />
+                        </td>
+                        <td className="py-2">{l.name}</td>
+                        <td className="py-2 text-right tabular-nums">{fmt(l.debit)}</td>
+                        <td className="py-2 text-right tabular-nums">{fmt(l.credit)}</td>
+                        <td className="py-2 text-right tabular-nums">{fmt(l.balance)}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </section>
         </div>
       )}

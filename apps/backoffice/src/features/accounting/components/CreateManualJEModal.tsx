@@ -163,91 +163,93 @@ export function CreateManualJEModal({ onClose }: CreateManualJEModalProps): JSX.
 
         {step === 2 && (
           <div className="space-y-4">
-            <table className="w-full text-sm" data-testid="je-modal-lines-table">
-              <thead>
-                <tr className="text-left text-xs uppercase tracking-widest text-text-secondary border-b border-border-subtle">
-                  <th className="px-2 py-2">Account</th>
-                  <th className="px-2 py-2 text-right">Debit</th>
-                  <th className="px-2 py-2 text-right">Credit</th>
-                  <th className="px-2 py-2">Description</th>
-                  <th className="px-2 py-2 w-8"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {lines.map((line) => (
-                  <tr key={line.key} className="border-t border-border-subtle">
-                    <td className="px-2 py-2">
-                      <select
-                        value={line.account_id}
-                        onChange={(e) => updateLine(line.key, { account_id: e.target.value })}
-                        className="w-full rounded border border-border-subtle bg-bg-elevated px-2 py-1 text-sm"
-                        data-testid={`je-modal-line-account-${line.key}`}
-                      >
-                        <option value="">— select —</option>
-                        {(accounts.data ?? []).map((a) => (
-                          <option key={a.id} value={a.id}>
-                            {a.code} — {a.name}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                    <td className="px-2 py-2 text-right">
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={line.debit}
-                        onChange={(e) => updateLine(line.key, { debit: e.target.value })}
-                        className="w-28 text-right font-mono"
-                      />
-                    </td>
-                    <td className="px-2 py-2 text-right">
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={line.credit}
-                        onChange={(e) => updateLine(line.key, { credit: e.target.value })}
-                        className="w-28 text-right font-mono"
-                      />
-                    </td>
-                    <td className="px-2 py-2">
-                      <Input
-                        value={line.description}
-                        onChange={(e) => updateLine(line.key, { description: e.target.value })}
-                        placeholder="(optional)"
-                      />
-                    </td>
-                    <td className="px-2 py-2 text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeLine(line.key)}
-                        disabled={lines.length <= 2}
-                        aria-label="Remove line"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm" data-testid="je-modal-lines-table">
+                <thead>
+                  <tr className="text-left text-xs uppercase tracking-widest text-text-secondary border-b border-border-subtle">
+                    <th className="px-2 py-2">Account</th>
+                    <th className="px-2 py-2 text-right">Debit</th>
+                    <th className="px-2 py-2 text-right">Credit</th>
+                    <th className="px-2 py-2">Description</th>
+                    <th className="px-2 py-2 w-8"></th>
                   </tr>
-                ))}
-                <tr className="border-t-2 border-border-strong font-semibold">
-                  <td className="px-2 py-2 text-right">Totals</td>
-                  <td className="px-2 py-2 text-right font-mono">{fmt(totals.debit)}</td>
-                  <td className="px-2 py-2 text-right font-mono">{fmt(totals.credit)}</td>
-                  <td className="px-2 py-2 text-xs" data-testid="je-modal-balance-state">
-                    {totals.balanced ? (
-                      <span className="text-success">✓ Balanced</span>
-                    ) : (
-                      <span className="text-red">
-                        ✗ Δ {fmt(Math.abs(totals.debit - totals.credit))}
-                      </span>
-                    )}
-                  </td>
-                  <td></td>
-                </tr>
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {lines.map((line) => (
+                    <tr key={line.key} className="border-t border-border-subtle">
+                      <td className="px-2 py-2">
+                        <select
+                          value={line.account_id}
+                          onChange={(e) => updateLine(line.key, { account_id: e.target.value })}
+                          className="w-full rounded border border-border-subtle bg-bg-elevated px-2 py-1 text-sm"
+                          data-testid={`je-modal-line-account-${line.key}`}
+                        >
+                          <option value="">— select —</option>
+                          {(accounts.data ?? []).map((a) => (
+                            <option key={a.id} value={a.id}>
+                              {a.code} — {a.name}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="px-2 py-2 text-right">
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={line.debit}
+                          onChange={(e) => updateLine(line.key, { debit: e.target.value })}
+                          className="w-28 text-right font-mono"
+                        />
+                      </td>
+                      <td className="px-2 py-2 text-right">
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={line.credit}
+                          onChange={(e) => updateLine(line.key, { credit: e.target.value })}
+                          className="w-28 text-right font-mono"
+                        />
+                      </td>
+                      <td className="px-2 py-2">
+                        <Input
+                          value={line.description}
+                          onChange={(e) => updateLine(line.key, { description: e.target.value })}
+                          placeholder="(optional)"
+                        />
+                      </td>
+                      <td className="px-2 py-2 text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeLine(line.key)}
+                          disabled={lines.length <= 2}
+                          aria-label="Remove line"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                  <tr className="border-t-2 border-border-strong font-semibold">
+                    <td className="px-2 py-2 text-right">Totals</td>
+                    <td className="px-2 py-2 text-right font-mono">{fmt(totals.debit)}</td>
+                    <td className="px-2 py-2 text-right font-mono">{fmt(totals.credit)}</td>
+                    <td className="px-2 py-2 text-xs" data-testid="je-modal-balance-state">
+                      {totals.balanced ? (
+                        <span className="text-success">✓ Balanced</span>
+                      ) : (
+                        <span className="text-red">
+                          ✗ Δ {fmt(Math.abs(totals.debit - totals.credit))}
+                        </span>
+                      )}
+                    </td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
 
             <Button
               variant="ghost"
