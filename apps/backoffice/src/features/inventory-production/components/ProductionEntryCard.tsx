@@ -25,7 +25,7 @@
 import { AlertTriangle, Plus, Search, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type JSX } from 'react';
 import { toast } from 'sonner';
-import { Card, SectionLabel } from '@breakery/ui';
+import { Button, Card, SectionLabel } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
 import {
   useProducibleProductsBySection,
@@ -438,26 +438,26 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
           />
         </div>
         <div className="flex items-center gap-3">
-          <button
+          <Button
             type="button"
+            variant="secondary"
             onClick={reset}
             disabled={rows.length === 0 || recordMut.isPending}
-            className="rounded-full border border-border-subtle px-5 py-2 text-xs font-semibold uppercase tracking-widest text-text-secondary disabled:cursor-not-allowed disabled:opacity-50"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="primary"
             onClick={handleSubmit}
             disabled={!canSubmit}
             data-testid="submit-production"
-            className="inline-flex items-center gap-2 rounded-full bg-gold px-6 py-2.5 text-xs font-semibold uppercase tracking-widest text-bg-base disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Plus className="h-4 w-4" aria-hidden />
             {recordMut.isPending
               ? 'Submitting…'
               : forceNegative ? 'Force & Submit' : 'Submit Production'}
-          </button>
+          </Button>
         </div>
       </div>
     </Card>
