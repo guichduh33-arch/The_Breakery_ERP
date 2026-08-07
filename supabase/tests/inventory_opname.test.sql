@@ -139,7 +139,7 @@ SELECT is(
 SELECT is(
   (SELECT COUNT(*)::INT FROM pg_proc
     WHERE proname IN (
-      'get_stock_movements_v1','get_movement_aggregates_v1',
+      'get_stock_movements_v1','get_movement_aggregates_v2',
       'get_low_stock_v1','get_reorder_suggestions_v1','get_product_dashboard_v2'
     )),
   5,

@@ -7336,7 +7336,7 @@ export type Database = {
         Returns: number
       }
       get_loyalty_tier: { Args: { p_lifetime_points: number }; Returns: string }
-      get_movement_aggregates_v1: {
+      get_movement_aggregates_v2: {
         Args: {
           p_date_end?: string
           p_date_start?: string
