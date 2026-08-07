@@ -1,15 +1,34 @@
 // supabase/tests/functions/loyalty-adjust.test.ts
-import { describe, it, expect, beforeAll } from 'vitest';
-import { createClient } from '@supabase/supabase-js';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { loginAs, jwtClient } from './_helpers/auth';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? 'http://127.0.0.1:54321';
 const SERVICE      = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 
+// Cette suite ecrit sur la base DEV PARTAGEE : ce qu'elle laisse derriere elle
+// reste. Ses fiches sans categorie faisaient echouer l'assertion C10 de
+// l'ADR-020 en continu, et depuis 20260807000002 elles sont refusees par
+// `chk_customers_categorie_si_vivante`.
+async function defaultCategoryId(admin: SupabaseClient): Promise<string> {
+  const { data, error } = await admin.from('customer_categories')
+    .select('id').eq('is_default', true).is('deleted_at', null).limit(1).single();
+  if (error !== null) throw new Error(`no default customer category: ${error.message}`);
+  return data.id as string;
+}
+
+/** Soft-delete plutot que DELETE : loyalty_transactions reference la fiche. */
+async function retireCustomer(admin: SupabaseClient, id: string | undefined): Promise<void> {
+  if (id === undefined) return;
+  await admin.from('customers').update({ deleted_at: new Date().toISOString() }).eq('id', id);
+}
+
 describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('adjust_loyalty_points RPC', () => {
   let adminToken:   string;
   let managerToken: string;
   let customerId:   string;
+  /** Fiche creee en cours de test — retenue pour que afterAll la range aussi. */
+  let consistencyCustomerId: string | undefined;
 
   beforeAll(async () => {
     adminToken = await loginAs('EMP000', '123456');
@@ -21,13 +40,22 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('adjust_loyalty_points R
 
     const admin = createClient(SUPABASE_URL, SERVICE);
     const { data: c } = await admin.from('customers')
-      .insert({ name: 'Loyalty Test', phone: '+62810000099', customer_type: 'retail' })
+      .insert({
+        name: 'Loyalty Test', phone: '+62810000099', customer_type: 'retail',
+        category_id: await defaultCategoryId(admin),
+      })
       .select('id').single();
     if (!c) throw new Error('Failed to seed test customer');
     customerId = c.id;
     await admin.from('customers')
       .update({ loyalty_points: 1000, lifetime_points: 1000 })
       .eq('id', customerId);
+  });
+
+  afterAll(async () => {
+    const admin = createClient(SUPABASE_URL, SERVICE);
+    await retireCustomer(admin, customerId);
+    await retireCustomer(admin, consistencyCustomerId);
   });
 
   it('admin: positive delta increases balance + lifetime, inserts ledger row', async () => {
@@ -153,8 +181,12 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('adjust_loyalty_points R
     // Use a fresh customer so we control the seed values.
     const admin = createClient(SUPABASE_URL, SERVICE);
     const { data: c } = await admin.from('customers')
-      .insert({ name: 'Consistency Check', phone: '+62810000077', customer_type: 'retail' })
+      .insert({
+        name: 'Consistency Check', phone: '+62810000077', customer_type: 'retail',
+        category_id: await defaultCategoryId(admin),
+      })
       .select('id').single();
+    consistencyCustomerId = c!.id;
     await admin.from('customers').update({ loyalty_points: 500, lifetime_points: 500 }).eq('id', c!.id);
 
     const sb = jwtClient(adminToken);

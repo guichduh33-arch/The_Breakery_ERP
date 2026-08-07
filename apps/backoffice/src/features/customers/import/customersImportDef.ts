@@ -5,7 +5,10 @@ import { CUSTOMERS_LIST_QUERY_KEY } from '@/features/customers/hooks/useCustomer
 export const customersImportDef: EntityImportDef = {
   entity: 'customers',
   sheetName: 'Customers',
-  rpcName: 'import_customers_v1',
+  // v2 : une ligne sans colonne `category` reçoit la catégorie par défaut, comme
+  // au comptoir, au lieu d'importer une fiche sans catégorie. Une catégorie
+  // renseignée mais introuvable reste rejetée (`unknown_category`).
+  rpcName: 'import_customers_v2',
   columns: [
     { key: 'name',                   required: true,  type: 'text' },
     { key: 'phone',                  required: false, type: 'text' },

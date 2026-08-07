@@ -1,10 +1,29 @@
 // supabase/tests/functions/loyalty-rls.test.ts
-import { describe, it, expect, beforeAll } from 'vitest';
-import { createClient } from '@supabase/supabase-js';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { loginAs, ANON_KEY as ANON } from './_helpers/auth';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? 'http://127.0.0.1:54321';
 const SERVICE      = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
+
+// Ces suites ecrivent sur la base DEV PARTAGEE, pas sur un bac a sable : ce
+// qu'elles laissent derriere elles reste. Elles ont produit les fiches
+// orphelines qui faisaient echouer l'assertion C10 de l'ADR-020 en continu.
+// Depuis 20260807000002, une fiche vivante sans categorie est refusee par
+// `chk_customers_categorie_si_vivante` — d'ou la categorie posee a la creation,
+// et le nettoyage qui suit.
+async function defaultCategoryId(admin: SupabaseClient): Promise<string> {
+  const { data, error } = await admin.from('customer_categories')
+    .select('id').eq('is_default', true).is('deleted_at', null).limit(1).single();
+  if (error !== null) throw new Error(`no default customer category: ${error.message}`);
+  return data.id as string;
+}
+
+/** Soft-delete plutot que DELETE : les transactions de fidelite referencent la fiche. */
+async function retireCustomer(admin: SupabaseClient, id: string | undefined): Promise<void> {
+  if (id === undefined) return;
+  await admin.from('customers').update({ deleted_at: new Date().toISOString() }).eq('id', id);
+}
 
 describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('customers RLS — column GRANTs', () => {
   let token: string;
@@ -15,10 +34,17 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('customers RLS — colum
     token = await loginAs('EMP000', '123456');
     const admin = createClient(SUPABASE_URL, SERVICE);
     const { data } = await admin.from('customers')
-      .insert({ name: 'RLS Test', phone: '+62810000097', customer_type: 'retail' })
+      .insert({
+        name: 'RLS Test', phone: '+62810000097', customer_type: 'retail',
+        category_id: await defaultCategoryId(admin),
+      })
       .select('id').single();
     customerId = data!.id;
     await admin.from('customers').update({ loyalty_points: 100, lifetime_points: 100 }).eq('id', customerId);
+  });
+
+  afterAll(async () => {
+    await retireCustomer(createClient(SUPABASE_URL, SERVICE), customerId);
   });
 
   it('authenticated CAN update name/phone/email', async () => {
@@ -119,9 +145,16 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('soft_delete_customer RP
 
     const admin = createClient(SUPABASE_URL, SERVICE);
     const { data: c } = await admin.from('customers')
-      .insert({ name: 'Delete Failure Subject', phone: '+62810000087', customer_type: 'retail' })
+      .insert({
+        name: 'Delete Failure Subject', phone: '+62810000087', customer_type: 'retail',
+        category_id: await defaultCategoryId(admin),
+      })
       .select('id').single();
     customerId = c!.id;
+  });
+
+  afterAll(async () => {
+    await retireCustomer(createClient(SUPABASE_URL, SERVICE), customerId);
   });
 
   it('NULL p_customer_id -> invalid_input', async () => {
