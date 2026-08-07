@@ -102,7 +102,7 @@ export default function SettingsHolidaysPage() {
             <h2 className="text-sm uppercase tracking-widest text-text-secondary">
               Recurring ({groups.recurring.length})
             </h2>
-            <div className="bg-bg-elevated rounded-lg border border-border-subtle overflow-hidden">
+            <div className="bg-bg-elevated rounded-lg border border-border-subtle overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-bg-overlay text-xs uppercase tracking-wide text-text-secondary">
                   <tr>
@@ -127,7 +127,7 @@ export default function SettingsHolidaysPage() {
             <h2 className="text-sm uppercase tracking-widest text-text-secondary">
               Fixed-date ({groups.fixed.length})
             </h2>
-            <div className="bg-bg-elevated rounded-lg border border-border-subtle overflow-hidden">
+            <div className="bg-bg-elevated rounded-lg border border-border-subtle overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-bg-overlay text-xs uppercase tracking-wide text-text-secondary">
                   <tr>

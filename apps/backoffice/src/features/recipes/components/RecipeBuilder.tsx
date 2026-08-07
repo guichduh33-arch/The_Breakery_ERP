@@ -340,7 +340,7 @@ export function RecipeBuilder({
                 size="sm"
               />
             ) : (
-              <div className="overflow-hidden rounded-lg border border-border-subtle">
+              <div className="overflow-x-auto rounded-lg border border-border-subtle">
                 <table className="w-full text-sm">
                   <thead className="border-b border-border-subtle bg-bg-base/40">
                     <tr>

@@ -158,7 +158,7 @@ export function TransferReceiveModal({
             </div>
           )}
 
-          <div className="bg-bg-elevated rounded-lg border border-border-subtle overflow-hidden">
+          <div className="bg-bg-elevated rounded-lg border border-border-subtle overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-bg-overlay text-xs uppercase tracking-wide text-text-secondary">
                 <tr>

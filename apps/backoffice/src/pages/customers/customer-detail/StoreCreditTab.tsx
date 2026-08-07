@@ -34,7 +34,7 @@ export function StoreCreditTab({ customerId }: { customerId: string | null }): J
   }
 
   return (
-    <Card variant="default" padding="none" className="overflow-hidden">
+    <Card variant="default" padding="none" className="overflow-x-auto">
       <table className="w-full border-collapse text-sm">
         <thead className="border-b border-border-subtle bg-bg-base/40 text-xs uppercase tracking-widest text-text-secondary">
           <tr>
