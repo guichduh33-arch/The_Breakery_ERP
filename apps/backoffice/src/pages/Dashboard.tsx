@@ -14,7 +14,7 @@
 //   3. L'état du plancher et de la vitrine arrive en REALTIME, pas en poll :
 //      leur marqueur « live » est une promesse tenue (useDashboardPanels).
 //
-// Cadences et droits : l'agrégat (`get_dashboard_overview_v2`, poll 60 s) porte
+// Cadences et droits : l'agrégat (`get_dashboard_overview_v3`, poll 60 s) porte
 // la barrière `reports.read`, et son bloc trésorerie exige en plus
 // `accounting.cash.read`. Les trois panneaux ont chacun LEUR droit — d'où des
 // requêtes séparées, pour qu'un rôle sans droit rapport garde l'état du

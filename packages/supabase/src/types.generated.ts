@@ -6364,7 +6364,7 @@ export type Database = {
         Args: { p_today: string; p_tz: string }
         Returns: Json
       }
-      _dashboard_kpis_v1: {
+      _dashboard_kpis_v2: {
         Args: { p_today: string; p_tz: string }
         Returns: Json
       }
@@ -7263,7 +7263,7 @@ export type Database = {
       }
       get_dashboard_action_queue_v1: { Args: never; Returns: Json }
       get_dashboard_open_orders_v1: { Args: never; Returns: Json }
-      get_dashboard_overview_v2: { Args: never; Returns: Json }
+      get_dashboard_overview_v3: { Args: never; Returns: Json }
       get_display_stock_activity_v1: { Args: never; Returns: Json }
       get_expenses_by_category_v1: {
         Args: {

@@ -1,6 +1,6 @@
 // apps/backoffice/src/pages/__tests__/Dashboard.test.tsx
 //
-// Écran 1c — tests de la page (enveloppe get_dashboard_overview_v2).
+// Écran 1c — tests de la page (enveloppe get_dashboard_overview_v3).
 // La prop `data` désactive le hook agrégat ET les trois panneaux : aucun réseau.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -38,6 +38,7 @@ function overviewFixture(over: Partial<DashboardOverview> = {}): DashboardOvervi
     kpis: {
       net_revenue:  { value: 8_420_000, vs_yesterday: 12.4, vs_d7: 6.1 },
       orders:       { value: 247, vs_yesterday: 8.3, vs_d7: -2 },
+      customers:    { value: 189, vs_yesterday: 4.4, vs_d7: -1.2 },
       items_sold:   { value: 1_084, vs_yesterday: 5.2, vs_d7: 1.1 },
       avg_basket:   { value: 34_100, vs_yesterday: 3.8, vs_d7: 9.4 },
       gross_margin: {
@@ -117,6 +118,15 @@ describe('DashboardPage — écran 1c', () => {
     expect(tile).toHaveTextContent('D-7');
   });
 
+  // Régression : la refonte 1c a supprimé ce compteur en silence, parce que rien
+  // ne le lisait. Le test existe pour que la prochaine disparition soit bruyante.
+  it('renders the customers counter alongside orders', () => {
+    renderWith(overviewFixture());
+    const tile = screen.getByTestId('kpi-customers');
+    expect(tile).toHaveTextContent('189');
+    expect(tile).toHaveTextContent('4,4%');
+  });
+
   it('renders the gross margin in POINTS, never as a relative change', () => {
     renderWith(overviewFixture());
     // 1,4pt, pas 1,4% : comparer deux taux en relatif est le rapport faux type.
@@ -146,9 +156,11 @@ describe('DashboardPage — écran 1c', () => {
     expect(screen.getByTestId('kpi-orders')).toHaveTextContent('—');
   });
 
-  it('renders 6 skeleton tiles while loading', () => {
+  // Le squelette compte autant de tuiles que la bande en rendra : un squelette
+  // plus court fait sauter la grille au premier octet reçu.
+  it('renders 7 skeleton tiles while loading', () => {
     renderWith(null, { isLoading: true });
-    expect(screen.getAllByTestId('kpi-skeleton')).toHaveLength(6);
+    expect(screen.getAllByTestId('kpi-skeleton')).toHaveLength(7);
   });
 
   it('renders the error banner on a generic error', () => {

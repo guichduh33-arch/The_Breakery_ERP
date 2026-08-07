@@ -1,6 +1,6 @@
 // apps/backoffice/src/features/dashboard/components/DashboardKpiStrip.tsx
 //
-// Écran 1c — la bande de six KPI, chacun avec ses deux comparaisons.
+// Écran 1c — la bande de sept KPI, chacun avec ses deux comparaisons.
 //
 // La tuile n'a PAS d'icône : le `KpiTile` partagé pose une pastille d'icône or
 // devant chaque valeur, et six pastilles or côte à côte donnaient une frise
@@ -31,7 +31,7 @@ const NOTE = 'font-data text-[10px] leading-tight text-text-subtle';
 
 // Tuile HÉRO — direction « Instrument » (maquette 3a). La première tuile est
 // remplie d'encre et sa valeur monte de 23 à 26 px. Ce n'est pas un ornement :
-// six tuiles identiques donnent une frise où rien ne prime, alors que la
+// sept tuiles identiques donnent une frise où rien ne prime, alors que la
 // question qu'on pose à un dashboard de boulangerie en ouvrant la page est
 // toujours la même — combien a-t-on fait aujourd'hui. Une seule tuile est
 // traitée ainsi ; une deuxième détruirait la hiérarchie qu'elle installe.
@@ -71,12 +71,12 @@ export function DashboardKpiStrip({
   kpis: DashboardKpis | null;
   isLoading: boolean;
 }): JSX.Element {
-  const grid = 'grid grid-cols-2 gap-2.5 md:grid-cols-3 xl:grid-cols-6';
+  const grid = 'grid grid-cols-2 gap-2.5 md:grid-cols-4 xl:grid-cols-7';
 
   if (isLoading || kpis === null) {
     return (
       <div className={grid} data-testid="dashboard-kpi-row">
-        {Array.from({ length: 6 }).map((_, i) => (
+        {Array.from({ length: 7 }).map((_, i) => (
           <Card
             key={i}
             variant="default"
@@ -108,6 +108,16 @@ export function DashboardKpiStrip({
       <Tile label="Orders" value={formatCount(kpis.orders.value)} testId="kpi-orders">
         <Delta value={kpis.orders.vs_yesterday} period="yest" />
         <Delta value={kpis.orders.vs_d7} period="D-7" />
+      </Tile>
+
+      {/* Adossée à « Orders » : les deux mesurent la même journée, l'une en
+          tickets l'autre en clients, et leur écart EST l'information (20
+          commandes pour 4 clients ne raconte pas la même journée que 20 pour
+          19). Les compter loin l'un de l'autre rendrait la lecture croisée
+          impossible. Les clients anonymes sont exclus côté SQL. */}
+      <Tile label="Customers" value={formatCount(kpis.customers.value)} testId="kpi-customers">
+        <Delta value={kpis.customers.vs_yesterday} period="yest" />
+        <Delta value={kpis.customers.vs_d7} period="D-7" />
       </Tile>
 
       <Tile label="Items sold" value={formatCount(kpis.items_sold.value)} testId="kpi-items-sold">

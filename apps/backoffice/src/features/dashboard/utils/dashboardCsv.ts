@@ -43,6 +43,9 @@ export function buildDashboardCsvRows(o: DashboardOverview): DashboardCsvRow[] {
   kpi('Orders', k.orders.value, 'count');
   kpi('Orders vs yesterday', k.orders.vs_yesterday, '%');
   kpi('Orders vs D-7', k.orders.vs_d7, '%');
+  kpi('Customers', k.customers.value, 'count');
+  kpi('Customers vs yesterday', k.customers.vs_yesterday, '%');
+  kpi('Customers vs D-7', k.customers.vs_d7, '%');
   kpi('Items sold', k.items_sold.value, 'count');
   kpi('Avg basket', k.avg_basket.value, 'IDR');
   // La base de la marge voyage AVEC la marge : un chiffre exporté sans sa
