@@ -92,6 +92,10 @@
   --ink-fg-dim:   var(--text-muted);
   --ink-fg-sub:   var(--text-subtle);
   --ink-gold:     var(--gold-base);
+  /* Sémantique POSÉE SUR L'ENCRE. En sombre l'encre est déjà le fond : les
+   * couleurs sémantiques y sont accordées, on les reprend telles quelles. */
+  --ink-success:  var(--success);
+  --ink-danger:   var(--danger);
 }
 
 /* ---------- Backoffice theme — neutre refroidi, accent or conservé ----------
@@ -120,9 +124,41 @@
  * surcharger un cran de la rampe.
  * ───────────────────────────────────────────────────────────────────────────── */
 .theme-backoffice {
-  /* Typographie : plus AUCUN remap. Le Backoffice partage la pile canonique du
-   * système (Inter corps, Playfair display, JetBrains Mono data). Playfair ne
-   * sert plus qu'au monogramme de marque de la top bar. */
+  /* ───────────────────────────────────────────────────────────────────────────
+   * DIRECTION « INSTRUMENT » (maquette 3a, arbitrage Mamat 2026-08-06)
+   *
+   * Trois directions concurrentes ont été écartées (3b Press, 3c Console,
+   * 3d Calm). Celle-ci se résume à : neutre chaud, Instrument Sans, coins
+   * SERRÉS, filet or sous la top bar, première tuile de KPI remplie d'encre.
+   *
+   * Tout est posé ICI, en tokens scopés au thème, et jamais dans les
+   * composants : c'est ce qui rend la direction COMMUTABLE. Basculer sur 3d
+   * (Manrope, coins 12 px) doit rester un changement de ce bloc, pas une
+   * revue de trois cents fichiers. Le POS n'hérite d'aucune de ces valeurs —
+   * il garde sa DA luxe-dark.
+   * ─────────────────────────────────────────────────────────────────────────── */
+
+  /* Corps en Instrument Sans. Playfair reste au monogramme de marque et
+   * JetBrains Mono à toute la donnée (valeurs, SKU, horodatages, labels). */
+  --font-body: 'Instrument Sans Variable', 'Instrument Sans', 'Inter Variable',
+               'Inter', 'Inter Fallback', system-ui, -apple-system, sans-serif;
+  --font-sans: var(--font-body);
+
+  /* Labels mono : .14em au lieu de .12em. Instrument Sans a un œil plus étroit
+   * qu'Inter ; à interlettrage égal les capitales mono paraissaient tassées
+   * contre lui. */
+  --tracking-widest: 0.14em;
+
+  /* Rayons SERRÉS. La rampe entière descend d'un cran et demi : ce qui rendait
+   * 12 px rend 4 px. --radius-md et --radius-lg valent la même chose, et c'est
+   * voulu — la maquette ne distingue plus la tuile de la carte, les deux sont à
+   * 4 px ; seules les surfaces FLOTTANTES (drop-panel, palette) gardent un cran
+   * au-dessus pour se détacher du fond. */
+  --radius-sm:  3px;   /* contrôles, boutons, badges, cases à cocher */
+  --radius-md:  4px;   /* tuiles */
+  --radius-lg:  4px;   /* cartes (le primitif Card consomme ce cran) */
+  --radius-xl:  6px;   /* surfaces flottantes : drop-panel, palette, menus */
+  --radius-2xl: 8px;
 
   /* Surfaces — gris chaud désaturé. */
   --surface-0: #f0efec;        /* page bg */
@@ -165,6 +201,12 @@
   --ink-fg-dim:   #c4bcae;     /* onglet inactif */
   --ink-fg-sub:   #a09789;     /* placeholder sur encre */
   --ink-gold:     #d3ab5c;     /* soulignement d'onglet actif (or éclairci) */
+  /* Sémantique sur encre — ÉCLAIRCIE. Le vert (#187a52) et le rouge (#b4342c)
+   * du thème sont taillés pour un fond blanc ; posés sur #201d19 ils tombent
+   * sous le seuil de lecture. Ces deux valeurs sont les mêmes teintes remontées
+   * en luminosité, et ne servent QUE sur un fond encre. */
+  --ink-success:  #86efac;
+  --ink-danger:   #fca5a5;
 
   /* Accent — encre dorée. Les tokens gardent les noms --gold-* : text-gold /
    * bg-gold-soft / border-gold fonctionnent sans toucher aux composants, et

@@ -72,6 +72,21 @@ export interface DataTableProps<TRow> {
   /** Row click handler. */
   onRowClick?: (row: TRow, rowIndex: number) => void;
   className?: string;
+  /**
+   * Densité des cellules. `compact` resserre à 14/10 px — la densité des écrans
+   * de travail (catalogue, listes longues), où trois lignes de plus à l'écran
+   * valent mieux que de l'air. Défaut inchangé pour toutes les tables
+   * existantes.
+   */
+  density?: 'default' | 'compact';
+  /**
+   * Pied de table, sous un filet, sur le remplissage inerte : sélection,
+   * actions groupées, pagination. Rendu même quand la table est vide — le
+   * compteur « 0 sur 318 » est une information, pas un vide.
+   */
+  footer?: ReactNode;
+  /** Classe additionnelle par ligne — surlignage d'une ligne sélectionnée. */
+  rowClassName?: (row: TRow, rowIndex: number) => string | undefined;
   /** Test ID propagated to the outer element. */
   'data-testid'?: string;
 }
@@ -105,8 +120,12 @@ export function DataTable<TRow>({
   emptyState,
   onRowClick,
   className,
+  density = 'default',
+  footer,
+  rowClassName,
   'data-testid': testId,
 }: DataTableProps<TRow>): JSX.Element {
+  const cellPad = density === 'compact' ? 'px-3.5 py-2.5' : 'px-4 py-3';
   const handleHeaderClick = (col: DataTableColumn<TRow>): void => {
     if (col.sortable !== true || onSortChange === undefined) return;
     if (sort?.columnId !== col.id) {
@@ -127,7 +146,7 @@ export function DataTable<TRow>({
       className={cn('w-full overflow-hidden rounded-lg border border-border-subtle bg-bg-elevated', className)}
     >
       <table className="w-full border-collapse">
-        <thead className="border-b border-border-subtle bg-bg-base/40">
+        <thead className="border-b border-border-subtle bg-surface-inert">
           <tr>
             {columns.map((col) => {
               const isSorted = sort?.columnId === col.id;
@@ -147,7 +166,7 @@ export function DataTable<TRow>({
                         : undefined
                   }
                   className={cn(
-                    'px-4 py-3',
+                    cellPad,
                     col.align === 'right' && 'text-right',
                     col.align === 'center' && 'text-center',
                     col.headerClassName,
@@ -176,11 +195,11 @@ export function DataTable<TRow>({
         <tbody>
           {isLoading
             ? Array.from({ length: loadingRowCount }).map((_, i) => (
-                <tr key={`skeleton-${i}`} className="border-t border-border-subtle">
+                <tr key={`skeleton-${i}`} className="border-t border-border-row">
                   {columns.map((col) => (
                     <td
                       key={col.id}
-                      className={cn('px-4 py-3', col.cellClassName)}
+                      className={cn(cellPad, col.cellClassName)}
                     >
                       <div className="h-4 w-3/4 rounded bg-surface-4 animate-pulse motion-reduce:animate-none" />
                     </td>
@@ -192,16 +211,18 @@ export function DataTable<TRow>({
                   key={getRowKey(row, index)}
                   onClick={onRowClick !== undefined ? () => onRowClick(row, index) : undefined}
                   className={cn(
-                    'border-t border-border-subtle',
+                    'border-t border-border-row',
                     striped && index % 2 === 1 && 'bg-surface-0',
                     onRowClick !== undefined && 'cursor-pointer hover:bg-surface-4/60 transition-colors duration-fast',
+                    rowClassName?.(row, index),
                   )}
                 >
                   {columns.map((col) => (
                     <td
                       key={col.id}
                       className={cn(
-                        'px-4 py-3 text-sm text-text-primary',
+                        cellPad,
+                        'text-sm text-text-primary',
                         col.align === 'right' && 'text-right tabular-nums',
                         col.align === 'center' && 'text-center',
                         col.cellClassName,
@@ -232,6 +253,11 @@ export function DataTable<TRow>({
               />
             )
           )}
+        </div>
+      )}
+      {footer !== undefined && (
+        <div className="border-t border-border-subtle bg-surface-inert px-3.5 py-2.5">
+          {footer}
         </div>
       )}
     </div>

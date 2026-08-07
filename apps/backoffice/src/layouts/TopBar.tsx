@@ -25,15 +25,20 @@ import { useAlertsCount } from '@/features/inventory-alerts/hooks/useAlertsCount
 import { DomainPanel } from './DomainPanel.js';
 import { NAV_DOMAINS, activeDomainId, visibleDomains, type NavDomain } from './nav.js';
 
-/** Pastille de comptage sur la cloche — même source que le lien Alerts du panneau. */
+/**
+ * Pastille de comptage sur la cloche — même source que le lien Alerts du panneau.
+ *
+ * Ce compteur est STOCK, et rien d'autre. Il diverge volontairement du total de
+ * la file « Needs you » du dashboard (5 sources) : voir `useAlertsCount`.
+ */
 function AlertsBell() {
   const { total, lowStock, reorder } = useAlertsCount();
   return (
     <Link
       to="/backoffice/inventory/alerts"
-      className="relative inline-flex h-[30px] w-[30px] items-center justify-center rounded-[6px] text-ink-fg-muted transition-colors hover:bg-ink-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink-gold"
+      className="relative inline-flex h-[30px] w-[30px] items-center justify-center rounded-sm text-ink-fg-muted transition-colors hover:bg-ink-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink-gold"
       aria-label={total === 0 ? 'No inventory alerts' : `${total} active inventory alerts`}
-      title={`${lowStock} low-stock / ${reorder} reorder`}
+      title={`Stock alerts · ${lowStock} low-stock / ${reorder} reorder`}
     >
       <Bell className="h-[17px] w-[17px]" aria-hidden />
       {total > 0 && (
@@ -86,7 +91,7 @@ function UserChip() {
         onClick={() => { setOpen((o) => !o); }}
         aria-expanded={open}
         aria-haspopup="menu"
-        className="flex items-center gap-2 rounded-[6px] p-1 transition-colors hover:bg-ink-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink-gold"
+        className="flex items-center gap-2 rounded-sm p-1 transition-colors hover:bg-ink-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink-gold"
       >
         <span
           className="inline-flex h-[26px] w-[26px] items-center justify-center rounded-full bg-ink-raised text-[11.5px] font-semibold text-ink-fg-muted"
@@ -100,9 +105,9 @@ function UserChip() {
       {open && (
         <div
           role="menu"
-          className="absolute right-0 top-[calc(100%+6px)] z-50 w-56 rounded-[8px] border border-border-strong bg-surface-3 py-1.5 shadow-[0_18px_40px_rgba(28,23,18,0.20)]"
+          className="absolute right-0 top-[calc(100%+6px)] z-50 w-56 rounded-xl border border-border-strong bg-surface-3 py-1.5 shadow-[0_18px_40px_rgba(28,23,18,0.20)]"
         >
-          <p className="px-3.5 pb-1.5 pt-1 font-data text-[10px] uppercase tracking-[0.12em] text-text-subtle">
+          <p className="px-3.5 pb-1.5 pt-1 font-data text-[10px] uppercase tracking-widest text-text-subtle">
             {user.role_code}
           </p>
           <Link
@@ -205,13 +210,17 @@ export function TopBar({ onOpenSearch }: TopBarProps) {
 
   return (
     <div ref={shellRef} className="relative shrink-0">
-      <header className="flex h-[52px] items-center gap-[22px] bg-ink px-[22px]">
+      {/* Filet or sous l'encre (direction « Instrument », maquette 3a) : il ferme
+          la barre sur le fond de page clair. Sans lui, l'encre et l'ivoire se
+          touchent à cru et la barre paraît posée sur la page au lieu d'en être
+          le bord. */}
+      <header className="flex h-[52px] items-center gap-[22px] border-b border-gold bg-ink px-[22px]">
         <Link
           to="/backoffice"
-          className="flex shrink-0 items-center gap-2.5 rounded-[6px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink-gold"
+          className="flex shrink-0 items-center gap-2.5 rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink-gold"
         >
           <span
-            className="inline-flex h-[26px] w-[26px] items-center justify-center rounded-[6px] bg-gold font-display text-[14px] leading-none text-ink-fg"
+            className="inline-flex h-[26px] w-[26px] items-center justify-center rounded-sm bg-gold font-display text-[14px] leading-none text-ink-fg"
             aria-hidden
           >
             B
@@ -276,7 +285,7 @@ export function TopBar({ onOpenSearch }: TopBarProps) {
           <button
             type="button"
             onClick={onOpenSearch}
-            className="flex h-[30px] items-center gap-2 rounded-[6px] border border-ink-border px-2.5 text-ink-fg-sub transition-colors hover:text-ink-fg-dim focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink-gold"
+            className="flex h-[30px] items-center gap-2 rounded-sm border border-ink-border px-2.5 text-ink-fg-sub transition-colors hover:text-ink-fg-dim focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink-gold"
             aria-label="Search — open the command palette"
             aria-keyshortcuts="Meta+K Control+K"
           >

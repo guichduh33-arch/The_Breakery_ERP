@@ -170,7 +170,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
       onOpenChange={(next) => { if (!next) onClose(); }}
       title="Command palette"
       data-testid="command-palette"
-      className="top-[14vh] w-[560px] max-w-[calc(100vw-32px)] translate-y-0 overflow-hidden rounded-[10px] border-border-strong bg-surface-3 shadow-[0_18px_48px_rgba(28,23,18,0.22)]"
+      className="top-[14vh] w-[560px] max-w-[calc(100vw-32px)] translate-y-0 overflow-hidden rounded-xl border-border-strong bg-surface-3 shadow-[0_18px_48px_rgba(28,23,18,0.22)]"
     >
       <div onKeyDown={onKeyDown} className="flex min-h-0 flex-col">
         <div className="flex items-center gap-3 border-b border-border-muted px-4 py-3.5">
@@ -184,7 +184,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
             aria-controls="command-palette-results"
             className="min-w-0 flex-1 bg-transparent text-[15px] text-text-primary outline-none placeholder:text-text-subtle"
           />
-          <kbd className="shrink-0 rounded-[4px] border border-border-strong px-1.5 py-0.5 font-data text-[10px] text-text-muted">
+          <kbd className="shrink-0 rounded-sm border border-border-strong px-1.5 py-0.5 font-data text-[10px] text-text-muted">
             Esc
           </kbd>
         </div>
@@ -207,7 +207,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
             return (
               <li key={`${entry.group}:${entry.to}`}>
                 {groupHeader !== null && (
-                  <p className="px-4 pb-1 pt-2 font-data text-[10px] uppercase tracking-[0.12em] text-text-subtle">
+                  <p className="px-4 pb-1 pt-2 font-data text-[10px] uppercase tracking-widest text-text-subtle">
                     {groupHeader}
                   </p>
                 )}

@@ -71,27 +71,39 @@ export function categoricalColor(i: number): string {
 }
 
 /** Neutral swatch for an "off / disabled" series (legend toggles). */
-export const CHART_SERIES_OFF = '#c3b7a3'; // --border-strong (neutre chaud)
+export const CHART_SERIES_OFF = '#c2beb5'; // --border-strong (neutre refroidi)
+
+/**
+ * Série de COMPARAISON (période précédente) dans un graphe à deux séries.
+ * Bleu clair : même famille que la série courante — c'est la même mesure, à une
+ * autre date — mais assez pâle pour rester en arrière-plan.
+ */
+export const CHART_SERIES_COMPARE = '#c9dcea';
 
 /** Gold accent stroke for a single-series backoffice trend line. */
 export const CHART_ACCENT_GOLD = '#8a6820'; // --gold-base du thème clair
 
 // --- Neutrals (light theme) -------------------------------------------------
-// Miroirs des tokens `.theme-backoffice` — mis à jour avec l'ivoire chaud de
-// l'audit cohérence 2026-08-01 (les anciennes valeurs bleu-gris n'existaient
-// plus dans le thème).
-export const CHART_GRID_STROKE = '#ebe4d8'; // --border-muted
-export const CHART_AXIS_STROKE = '#c3b7a3'; // --border-strong
-export const CHART_AXIS_TICK   = '#6d6355'; // --text-muted
+// Miroirs des tokens `.theme-backoffice`. Recharts pose ses couleurs en props
+// JS, pas en classes : ce fichier est le SEUL endroit où le hex du thème est
+// recopié, et il doit suivre le thème.
+//
+// Refonte shell 2026-08-05 — l'ivoire chaud a laissé la place au neutre
+// refroidi ; ces quatre valeurs suivent (sans quoi les graphes traçaient une
+// grille beige sur des cartes blanches).
+export const CHART_GRID_STROKE      = '#eceae5'; // --border-muted
+export const CHART_AXIS_STROKE      = '#e3e1db'; // --border-subtle (ligne de base)
+export const CHART_AXIS_TICK        = '#7a766e'; // --text-muted
+export const CHART_AXIS_TICK_SUBTLE = '#9b968d'; // --text-subtle (libellés d'axe denses)
 
-/** Shared recharts <Tooltip contentStyle> — ivory card, subtle border. */
+/** Shared recharts <Tooltip contentStyle> — white card, subtle border. */
 export const CHART_TOOLTIP_STYLE = {
-  background: '#fffdf9',            // --surface-3
-  border: '1px solid #e0d7c8',      // --border-subtle
+  background: '#ffffff',            // --surface-3
+  border: '1px solid #e3e1db',      // --border-subtle
   borderRadius: 8,
   fontSize: 12,
-  color: '#1c1712',                 // --text-primary
-  boxShadow: '0 2px 8px rgba(45,34,15,0.09)', // --shadow-md
+  color: '#1a1917',                 // --text-primary
+  boxShadow: '0 8px 20px rgba(28,23,18,0.10)', // --shadow-md
 } as const;
 
 // --- IDR formatters ---------------------------------------------------------

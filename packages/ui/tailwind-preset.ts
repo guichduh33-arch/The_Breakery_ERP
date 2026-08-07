@@ -45,6 +45,9 @@ const preset: Partial<Config> = {
           'fg-dim': 'var(--ink-fg-dim)',
           'fg-sub': 'var(--ink-fg-sub)',
           gold: 'var(--ink-gold)',
+          // Sémantique éclaircie pour un fond encre — `text-ink-success`.
+          success: 'var(--ink-success)',
+          danger: 'var(--ink-danger)',
         },
         text: {
           primary: 'var(--text-primary)',

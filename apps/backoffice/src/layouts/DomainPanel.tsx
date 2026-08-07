@@ -48,7 +48,7 @@ function PanelColumn({ column, onNavigate }: { column: NavColumn; onNavigate: ()
 
   return (
     <div className="min-w-0">
-      <p className="mb-2.5 font-data text-[10px] uppercase tracking-[0.12em] text-text-subtle">
+      <p className="mb-2.5 font-data text-[10px] uppercase tracking-widest text-text-subtle">
         {column.label}
       </p>
       <ul className="flex flex-col gap-[7px]">
@@ -60,7 +60,7 @@ function PanelColumn({ column, onNavigate }: { column: NavColumn; onNavigate: ()
               onClick={onNavigate}
               className={({ isActive }) =>
                 cn(
-                  'flex items-center justify-between gap-2 rounded-[4px] text-[13px] leading-tight transition-colors',
+                  'flex items-center justify-between gap-2 rounded-sm text-[13px] leading-tight transition-colors',
                   'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
                   isActive
                     ? 'font-medium text-gold'
@@ -124,7 +124,7 @@ export function DomainPanel({ domain, anchorLeft, onClose, id }: DomainPanelProp
       id={id}
       data-testid={`domain-panel-${domain.id}`}
       className={cn(
-        'absolute top-[52px] z-40 rounded-b-[10px] border border-border-strong bg-surface-3',
+        'absolute top-[52px] z-40 rounded-b-xl border border-border-strong bg-surface-3',
         'px-5 py-[18px] shadow-[0_18px_40px_rgba(28,23,18,0.20)]',
       )}
       style={{
