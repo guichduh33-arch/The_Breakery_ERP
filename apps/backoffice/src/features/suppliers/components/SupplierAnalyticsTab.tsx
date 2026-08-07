@@ -22,6 +22,7 @@ import { Clock } from 'lucide-react';
 import { formatIdr } from '@breakery/utils';
 import { CHART_GRID_STROKE, CHART_AXIS_STROKE, familyColor } from '@/features/reports/utils/chartColors.js';
 import type { SupplierPurchaseItem } from '@/features/suppliers/hooks/useSupplierPurchaseItems.js';
+import { usePrefersReducedMotion } from '@/features/dashboard/utils/usePrefersReducedMotion.js';
 
 const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -53,6 +54,7 @@ export interface SupplierAnalyticsTabProps {
 }
 
 export function SupplierAnalyticsTab({ items, spendByPo }: SupplierAnalyticsTabProps): JSX.Element {
+  const reduced = usePrefersReducedMotion();
   const monthly = useMemo(() => {
     const buckets = buildMonths();
     const idx = new Map(buckets.map((b, i) => [b.key, i]));
@@ -99,7 +101,7 @@ export function SupplierAnalyticsTab({ items, spendByPo }: SupplierAnalyticsTabP
                   <XAxis dataKey="label" tick={{ fontSize: 10 }} stroke={CHART_AXIS_STROKE} interval={1} />
                   <YAxis tick={{ fontSize: 10 }} stroke={CHART_AXIS_STROKE} width={28} allowDecimals={false} />
                   <Tooltip formatter={(v: number) => [v, 'Qty']} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
-                  <Bar dataKey="volume" fill="var(--gold-base)" radius={[4, 4, 0, 0]} />
+                  <Bar isAnimationActive={!reduced} dataKey="volume" fill="var(--gold-base)" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -124,7 +126,7 @@ export function SupplierAnalyticsTab({ items, spendByPo }: SupplierAnalyticsTabP
                   <XAxis dataKey="label" tick={{ fontSize: 10 }} stroke={CHART_AXIS_STROKE} interval={1} />
                   <YAxis tick={{ fontSize: 10 }} stroke={CHART_AXIS_STROKE} width={42} tickFormatter={(v) => `${(Number(v) / 1_000_000).toFixed(1)}M`} />
                   <Tooltip formatter={(v: number) => [formatIdr(v), 'Spend']} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
-                  <Area type="monotone" dataKey="spend" stroke={familyColor('cogs', 4)} strokeWidth={2} fill="url(#supplierSpend)" />
+                  <Area isAnimationActive={!reduced} type="monotone" dataKey="spend" stroke={familyColor('cogs', 4)} strokeWidth={2} fill="url(#supplierSpend)" />
                 </AreaChart>
               </ResponsiveContainer>
             ) : (

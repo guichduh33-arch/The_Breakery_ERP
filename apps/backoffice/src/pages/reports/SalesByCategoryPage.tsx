@@ -29,6 +29,7 @@ import {
   formatIdrCompact,
   formatIdrFull,
 } from '@/features/reports/utils/chartColors.js';
+import { usePrefersReducedMotion } from '@/features/dashboard/utils/usePrefersReducedMotion.js';
 
 const csvColumns: CsvColumn<SalesCategoryRow>[] = [
   { header: 'Category', accessor: (r) => r.category_name, format: 'text' },
@@ -48,6 +49,7 @@ function sumRows(rows: SalesCategoryRow[]): { total: number; qty: number } {
 }
 
 export default function SalesByCategoryPage() {
+  const reduced = usePrefersReducedMotion();
   const [start, setStart] = useUrlState('start', defaultStart());
   const [end,   setEnd]   = useUrlState('end', toLocalDateStr(new Date()));
   const [compare, setCompare] = useUrlBoolean('compare');
@@ -138,7 +140,7 @@ export default function SalesByCategoryPage() {
                   formatter={(v: number) => [formatIdrFull(v), 'Revenue']}
                   contentStyle={CHART_TOOLTIP_STYLE}
                 />
-                <Bar dataKey="total" fill="var(--gold-base)" />
+                <Bar isAnimationActive={!reduced} dataKey="total" fill="var(--gold-base)" />
               </BarChart>
             </ResponsiveContainer>
           </div>

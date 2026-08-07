@@ -27,6 +27,7 @@ import {
   formatIdrFull, formatIdrCompact,
 } from '@/features/reports/utils/chartColors.js';
 import { useUrlState } from '@/hooks/useUrlState.js';
+import { usePrefersReducedMotion } from '@/features/dashboard/utils/usePrefersReducedMotion.js';
 
 const STATUS_OPTIONS: { value: string; label: string }[] = [
   { value: '',          label: 'Committed (default)' },
@@ -49,6 +50,7 @@ function defaultStart(): string {
 }
 
 export default function OperatingExpensesPage() {
+  const reduced = usePrefersReducedMotion();
   const [start, setStart]           = useUrlState('start', defaultStart());
   const [end,   setEnd]             = useUrlState('end', toLocalDateStr(new Date()));
   // Audit R-17 — filtre en URL-state (convention S57) : la vue devient
@@ -188,7 +190,7 @@ export default function OperatingExpensesPage() {
                   formatter={(v: number) => [formatIdrFull(v), 'OpEx']}
                   contentStyle={CHART_TOOLTIP_STYLE}
                 />
-                <Area type="monotone" dataKey="total" name="OpEx"
+                <Area isAnimationActive={!reduced} type="monotone" dataKey="total" name="OpEx"
                   stroke={OPEX_BASE} fill={OPEX_BASE} fillOpacity={0.8} />
               </AreaChart>
             </ResponsiveContainer>

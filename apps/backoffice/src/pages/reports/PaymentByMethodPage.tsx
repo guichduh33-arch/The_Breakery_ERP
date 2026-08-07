@@ -29,6 +29,7 @@ import {
   PAYMENT_METHOD_KEYS,
   type PaymentByMethodLine,
 } from '@/features/reports/hooks/usePaymentsByMethod.js';
+import { usePrefersReducedMotion } from '@/features/dashboard/utils/usePrefersReducedMotion.js';
 
 // Lot C (ADR-006 déc. 9) — frais informatifs par méthode : fee_pct vient de
 // business_config.payment_method_fees, fee_est/net_est sont calculés serveur.
@@ -51,6 +52,7 @@ function defaultStart(): string {
 }
 
 export default function PaymentByMethodPage() {
+  const reduced = usePrefersReducedMotion();
   const [start, setStart] = useUrlState('start', defaultStart());
   const [end,   setEnd]   = useUrlState('end', toLocalDateStr(new Date()));
 
@@ -136,6 +138,7 @@ export default function PaymentByMethodPage() {
                 <Legend wrapperStyle={{ fontSize: 12 }} />
                 {activeMethods.map((m, i) => (
                   <Area
+                    isAnimationActive={!reduced}
                     key={m}
                     type="monotone"
                     dataKey={m}

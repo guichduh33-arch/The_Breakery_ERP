@@ -35,6 +35,7 @@ import {
 } from '@/features/reports/utils/chartColors.js';
 
 import type { SalesHourRow } from '@/features/reports/hooks/useSalesByHour.js';
+import { usePrefersReducedMotion } from '@/features/dashboard/utils/usePrefersReducedMotion.js';
 
 const csvColumns: CsvColumn<SalesHourRow>[] = [
   { header: 'Hour',        accessor: (r) => r.hour,        format: 'number' },
@@ -50,6 +51,7 @@ function sumRows(rows: SalesHourRow[]): { total: number; orders: number } {
 }
 
 export default function SalesByHourPage() {
+  const reduced = usePrefersReducedMotion();
   const [date, setDate] = useUrlState('date', toLocalDateStr(new Date()));
   const [compare, setCompare] = useUrlBoolean('compare');
 
@@ -160,7 +162,7 @@ export default function SalesByHourPage() {
                   labelFormatter={(label) => `Hour ${String(label).padStart(2, '0')}:00`}
                   contentStyle={CHART_TOOLTIP_STYLE}
                 />
-                <Bar dataKey="total" fill="var(--gold-base)" name="total" />
+                <Bar isAnimationActive={!reduced} dataKey="total" fill="var(--gold-base)" name="total" />
               </BarChart>
             </ResponsiveContainer>
           </div>
