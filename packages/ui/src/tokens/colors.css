@@ -83,6 +83,22 @@
   /* Text extended — remonté de #5a5a62 (3,1:1, sous AA) à 4,6:1 sur
    * --bg-base (audit cohérence 2026-08-01). */
   --text-subtle:  #7d7364;
+  /* Inerte — le cran SOUS le désactivé : séparateur de fil d'Ariane, chevron
+   * éteint, icône qui n'appelle aucune action. Ce n'est ni un texte à lire ni un
+   * contrôle hors service, c'est de la ponctuation structurelle. */
+  --text-inert:   #4a443c;
+
+  /* Rampe de data-viz — monochrome, quatre pas, du plus lisible au plus effacé.
+   * Les douze teintes --cat-* restent l'IDENTITÉ d'une catégorie de produit et
+   * ne servent jamais de série de graphique : la même couleur dirait
+   * « Viennoiserie » sur un écran et « troisième trimestre » sur l'autre.
+   * En sombre la lisibilité monte avec la clarté, la rampe s'y inverse donc par
+   * rapport au thème clair. Aucune surface POS ne la consomme aujourd'hui —
+   * elle est définie ici pour que l'utilitaire résolve dans les deux thèmes. */
+  --chart-1: #8cc3e0;
+  --chart-2: #6fa8d8;
+  --chart-3: #558db8;
+  --chart-4: #3f7096;
 
   /* Border extended. */
   --border-muted: #1f1c18;
@@ -210,6 +226,16 @@
   --text-muted:     #7a766e;   /* ~4,9:1 */
   --text-subtle:    #9b968d;   /* ~3,3:1 — non-texte / footnotes */
   --text-disabled:  #b3afa7;
+  /* Inerte — le cran SOUS le désactivé. En clair il est donc le plus PÂLE des
+   * cinq : séparateur de fil d'Ariane, chevron éteint, icône sans action. */
+  --text-inert:     #c2beb5;
+
+  /* Rampe de data-viz — même contrat que le thème sombre, valeurs de la planche
+   * de référence : du plus soutenu au plus clair. */
+  --chart-1: #2b6c9c;
+  --chart-2: #4f93bf;
+  --chart-3: #8cc3e0;
+  --chart-4: #c9dcea;
 
   /* Encre — la top bar et les boutons primaires. Famille dédiée : ces valeurs
    * sont des fonds SOMBRES dans un thème clair, elles n'appartiennent donc à

@@ -12,7 +12,8 @@ import preset from '../packages/ui/tailwind-preset';
 const TOKEN_COLORS =
   '(bg-base|bg-elevated|bg-overlay|bg-input|surface-[0-4]|cream|backdrop|' +
   'border-subtle|border-strong|border-focus|border-muted|border-gold|' +
-  'text-primary|text-secondary|text-muted|text-subtle|text-disabled|' +
+  'text-primary|text-secondary|text-muted|text-subtle|text-disabled|text-inert|' +
+  'chart-[1-4]|' +
   'gold|gold-hover|gold-pressed|gold-soft|gold-strong|gold-fg|' +
   'green|green-hover|green-pressed|green-fg|red|red-soft|red-fg|' +
   'blue-info|amber-warn|success|success-soft|warning|warning-soft|' +
