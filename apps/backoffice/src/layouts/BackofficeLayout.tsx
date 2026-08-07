@@ -68,7 +68,7 @@ export function BackofficeLayout() {
       <main
         id="main-content"
         tabIndex={-1}
-        className="flex-1 overflow-y-auto px-[22px] py-5"
+        className="flex-1 overflow-y-auto bg-page-grid px-[22px] py-5"
       >
         <Suspense fallback={<RouteFallback />}>
           <Outlet />
