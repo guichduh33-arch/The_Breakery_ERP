@@ -40,14 +40,14 @@ const INVOICES = [
     customer_id: 'c1', b2b_company_name: 'Hotel Senggigi', customer_name: null,
     invoice_total: 1_200_000, invoice_date: '2026-08-01T08:00:00Z', paid_at: null,
     order_status: 'completed', age_days: 7, is_unpaid: true,
-    amount_paid: 0, outstanding: 1_200_000,
+    amount_paid: 0, outstanding: 1_200_000, pickup_date: '2026-08-09',
   },
   {
     invoice_id: 'o-new', order_number: 'B2B-0002', invoice_number: 'INV/2026/2',
     customer_id: 'c2', b2b_company_name: null, customer_name: 'Warung Ayu',
     invoice_total: 450_000, invoice_date: '2026-08-06T08:00:00Z', paid_at: '2026-08-07T08:00:00Z',
     order_status: 'completed', age_days: 2, is_unpaid: false,
-    amount_paid: 450_000, outstanding: 0,
+    amount_paid: 450_000, outstanding: 0, pickup_date: null,
   },
 ];
 
@@ -113,6 +113,15 @@ describe('B2BOrdersPage', () => {
     render(wrap(<B2BOrdersPage />));
     await waitFor(() => expect(screen.getByText('B2B-0001')).toBeInTheDocument());
     expect(screen.getByText('unpaid')).toBeInTheDocument();
+  });
+
+  it('shows the pickup day, and says so when none was agreed', async () => {
+    // La colonne est ouverte mais sa saisie n'est pas branchee : « not set » est
+    // l'etat NORMAL aujourd'hui, pas une erreur. Il doit se lire comme tel.
+    render(wrap(<B2BOrdersPage />));
+    await waitFor(() => expect(screen.getByText('B2B-0001')).toBeInTheDocument());
+    expect(screen.getByText('2026-08-09')).toBeInTheDocument();
+    expect(screen.getByText('not set')).toBeInTheDocument();
   });
 
   it('filters to unpaid orders from the counter strip', async () => {

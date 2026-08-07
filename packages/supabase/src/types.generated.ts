@@ -2797,6 +2797,7 @@ export type Database = {
           order_number: string
           order_type: Database["public"]["Enums"]["order_type"]
           paid_at: string | null
+          pickup_date: string | null
           promotion_total: number
           sent_to_kitchen_at: string | null
           served_by: string | null
@@ -2834,6 +2835,7 @@ export type Database = {
           order_number: string
           order_type?: Database["public"]["Enums"]["order_type"]
           paid_at?: string | null
+          pickup_date?: string | null
           promotion_total?: number
           sent_to_kitchen_at?: string | null
           served_by?: string | null
@@ -2871,6 +2873,7 @@ export type Database = {
           order_number?: string
           order_type?: Database["public"]["Enums"]["order_type"]
           paid_at?: string | null
+          pickup_date?: string | null
           promotion_total?: number
           sent_to_kitchen_at?: string | null
           served_by?: string | null
@@ -6167,6 +6170,7 @@ export type Database = {
           order_status: Database["public"]["Enums"]["order_status"] | null
           outstanding: number | null
           paid_at: string | null
+          pickup_date: string | null
         }
         Relationships: [
           {
@@ -6674,6 +6678,7 @@ export type Database = {
           order_number: string
           order_type: Database["public"]["Enums"]["order_type"]
           paid_at: string | null
+          pickup_date: string | null
           promotion_total: number
           sent_to_kitchen_at: string | null
           served_by: string | null
@@ -8046,6 +8051,7 @@ export type Database = {
           order_number: string
           order_type: Database["public"]["Enums"]["order_type"]
           paid_at: string | null
+          pickup_date: string | null
           promotion_total: number
           sent_to_kitchen_at: string | null
           served_by: string | null

@@ -132,6 +132,21 @@ export default function B2BOrdersPage(): JSX.Element {
       ),
     },
     {
+      id: 'pickup_date',
+      header: 'Pickup',
+      // Le libellé dit « Pickup » et non « Delivery » : la marchandise est
+      // retirée au magasin, il n'existe aucune tournée. Un en-tête qui en
+      // promettrait une ferait attendre un flux qui n'existe pas.
+      render: (r) =>
+        r.pickup_date === null ? (
+          <span className="font-data text-[12.5px] text-text-inert" title="No pickup day agreed on this order">
+            not set
+          </span>
+        ) : (
+          <span className="font-data text-[12.5px] tabular-nums">{r.pickup_date.slice(0, 10)}</span>
+        ),
+    },
+    {
       id: 'amount',
       header: 'Amount',
       align: 'right',
