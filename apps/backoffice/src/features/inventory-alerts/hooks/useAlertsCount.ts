@@ -1,22 +1,21 @@
 // apps/backoffice/src/features/inventory-alerts/hooks/useAlertsCount.ts
 //
-// Refonte shell 2026-08-05 — le compte d'alertes stock, partagé.
+// Refonte shell 2026-08-05 — le compte d'alertes stock du drop-panel.
 //
-// La cloche de la top bar et le compteur du lien « Alerts » du drop-panel Stock
-// doivent afficher LE MÊME nombre : deux compteurs qui divergent en font douter
-// des deux. Ce hook est l'unique source, les deux consommateurs s'y branchent.
+// PÉRIMÈTRE — ce compteur vaut low stock + reorder, deux faits de STOCK, et
+// c'est tout ce qu'il doit valoir : il chiffre le lien « Alerts » de la colonne
+// Watch du panneau Stock, dont la destination est stock-only par définition.
+// Élargir ce hook aux cinq sources de la file « Needs you » rendrait CE
+// compteur-ci faux.
 //
-// Il n'est pas gaté ici : ses deux appelants sont eux-mêmes rendus sous
+// La cloche de la top bar, elle, ne consomme PLUS ce hook (arbitrage du
+// 2026-08-07, contre la première implémentation) : elle porte le total de la
+// file, via `useActionQueue`. Les deux nombres diffèrent donc légitimement —
+// mais ils ne sont plus jamais côte à côte, et chacun est chiffré à l'endroit
+// où sa destination est celle qu'il annonce. Voir `TopBar.tsx`.
+//
+// Il n'est pas gaté ici : son appelant est lui-même rendu sous
 // `hasPermission('inventory.read')`, comme l'ancien AlertsBadge du sidebar.
-//
-// PÉRIMÈTRE — arbitré le 2026-08-07, ne pas « corriger » l'écart.
-// Ce compteur vaut low stock + reorder, deux faits de STOCK. Il ne vaut PAS le
-// total de la file « Needs you » du dashboard (`get_dashboard_action_queue_v1`,
-// 5 sources : register non clôturé, low stock, reorder, PO en attente de
-// réception, B2B en retard). Les deux nombres diffèrent parce qu'ils comptent
-// deux choses différentes, et la cloche doit rester alignée sur le compteur
-// « Alerts » du drop-panel Stock, qui est stock-only par définition. Élargir ce
-// hook aux 5 sources rendrait ce second compteur faux.
 
 import { useLowStock } from './useLowStock.js';
 import { useReorderSuggestions } from './useReorderSuggestions.js';
