@@ -1,93 +1,143 @@
 // apps/backoffice/src/features/inventory-alerts/components/ReorderTab.tsx
 // Session 13 / Phase 2.D — Reorder Suggestions tab.
+//
+// Refonte design 2026-08-08 — DataTable partagé, et les deux réglages de
+// fenêtre passent en contrôles étiquetés au-dessus de la table plutôt qu'en
+// champs nus. La formule reste affichée : une quantité suggérée dont on ne voit
+// pas le calcul est un ordre, pas une suggestion.
 
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { useReorderSuggestions } from '../hooks/useReorderSuggestions.js';
+import { useState, type JSX } from 'react';
+import { DataTable, type DataTableColumn } from '@breakery/ui';
+import { useReorderSuggestions, type ReorderSuggestion } from '../hooks/useReorderSuggestions.js';
+import { ProductCell } from './ProductCell.js';
 
-export function ReorderTab() {
+const FIELD =
+  'h-8 w-20 rounded-sm border border-border-strong bg-bg-elevated px-2 font-data text-[12.5px] text-text-primary ' +
+  'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold';
+
+/** Sous 3 jours de couverture, la ligne cesse d'être une suggestion. */
+function coverageTone(days: number | null): string {
+  if (days === null) return 'text-text-muted';
+  return days < 3 ? 'text-danger font-semibold' : 'text-text-primary';
+}
+
+const COLUMNS: DataTableColumn<ReorderSuggestion>[] = [
+  {
+    id: 'product',
+    header: 'Product',
+    render: (r) => <ProductCell productId={r.product_id} name={r.product_name} secondary={r.product_sku} />,
+  },
+  {
+    id: 'stock',
+    header: 'On hand',
+    align: 'right',
+    render: (r) => (
+      <span className="font-data text-[12.5px]">
+        {Number(r.current_stock)} <span className="text-text-muted">{r.unit}</span>
+      </span>
+    ),
+  },
+  {
+    id: 'avg_daily',
+    header: 'Daily use',
+    align: 'right',
+    render: (r) => <span className="font-data text-[12.5px]">{Number(r.avg_daily_usage).toFixed(2)}</span>,
+  },
+  {
+    id: 'coverage',
+    header: 'Coverage',
+    align: 'right',
+    render: (r) => (
+      <span className={`font-data text-[12.5px] ${coverageTone(r.days_of_stock)}`}>
+        {r.days_of_stock === null ? '—' : `${Number(r.days_of_stock).toFixed(1)} d`}
+      </span>
+    ),
+  },
+  {
+    id: 'suggested',
+    header: 'Order qty',
+    align: 'right',
+    render: (r) => (
+      <span className="font-data text-[12.5px] font-semibold">
+        {Number(r.suggested_order_qty).toFixed(2)} <span className="font-normal text-text-muted">{r.unit}</span>
+      </span>
+    ),
+  },
+  {
+    id: 'supplier',
+    header: 'Last supplier',
+    render: (r) => (
+      <div className="min-w-0">
+        <span className="text-[12.5px] text-text-secondary">{r.supplier_name ?? '—'}</span>
+        {r.last_purchase_at !== null && (
+          <div className="font-data text-[10.5px] text-text-muted tabular-nums">
+            {r.last_purchase_at.slice(0, 10)}
+          </div>
+        )}
+      </div>
+    ),
+  },
+];
+
+export function ReorderTab(): JSX.Element {
   const [lookback, setLookback] = useState<number>(30);
   const [buffer, setBuffer] = useState<number>(14);
   const q = useReorderSuggestions(lookback, buffer);
 
+  const rows = q.data ?? [];
+
   return (
-    <div className="space-y-3">
-      <div className="flex items-end gap-3 text-sm">
-        <div>
-          <label htmlFor="reorder-lookback" className="block text-xs text-text-secondary mb-1">Lookback (days)</label>
+    <div className="flex flex-col gap-2.5">
+      <div className="flex flex-wrap items-end gap-4">
+        <div className="flex flex-col gap-1">
+          <label htmlFor="reorder-lookback" className="font-data text-[10px] uppercase tracking-widest text-text-muted">
+            Lookback (days)
+          </label>
           <input
             id="reorder-lookback"
             type="number"
             min={1}
             value={lookback}
             onChange={(e) => { setLookback(Math.max(1, Number(e.target.value) || 30)); }}
-            className="w-24 px-2 py-1 bg-bg-base border border-border-subtle rounded"
+            className={FIELD}
           />
         </div>
-        <div>
-          <label htmlFor="reorder-buffer" className="block text-xs text-text-secondary mb-1">Buffer (days)</label>
+        <div className="flex flex-col gap-1">
+          <label htmlFor="reorder-buffer" className="font-data text-[10px] uppercase tracking-widest text-text-muted">
+            Buffer (days)
+          </label>
           <input
             id="reorder-buffer"
             type="number"
             min={1}
             value={buffer}
             onChange={(e) => { setBuffer(Math.max(1, Number(e.target.value) || 14)); }}
-            className="w-24 px-2 py-1 bg-bg-base border border-border-subtle rounded"
+            className={FIELD}
           />
         </div>
-        <div className="text-xs text-text-secondary self-center">
-          suggested_order_qty = MAX(0, avg_daily_usage × buffer − current_stock)
-        </div>
+        <p className="pb-1 font-data text-[10.5px] text-text-subtle">
+          order qty = max(0, daily use × buffer − on hand)
+        </p>
       </div>
 
-      {q.isLoading ? (
-        <div className="text-sm text-text-secondary">Loading…</div>
-      ) : q.error !== null ? (
-        <div className="text-sm text-danger">Failed: {String(q.error)}</div>
-      ) : (q.data ?? []).length === 0 ? (
-        <div className="text-sm text-text-secondary">No reorder suggestions in this window.</div>
+      {q.error !== null ? (
+        <p className="text-sm text-danger" role="alert">Failed to load suggestions: {q.error.message}</p>
       ) : (
-        <table className="w-full text-sm">
-          <thead className="text-xs uppercase text-text-secondary border-b border-border-subtle">
-            <tr>
-              <th className="text-left py-2 px-3">Product</th>
-              <th className="text-right py-2 px-3">Stock</th>
-              <th className="text-right py-2 px-3">Avg daily</th>
-              <th className="text-right py-2 px-3">Days left</th>
-              <th className="text-right py-2 px-3">Suggested order</th>
-              <th className="text-left py-2 px-3">Last supplier</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(q.data ?? []).map((r) => (
-              <tr key={r.product_id} className="border-b border-border-subtle">
-                <td className="py-2 px-3">
-                  <Link
-                    to={`/backoffice/products/${r.product_id}/dashboard`}
-                    className="text-gold hover:underline"
-                  >
-                    {r.product_name}
-                  </Link>
-                  <div className="text-xs text-text-secondary">{r.product_sku}</div>
-                </td>
-                <td className="py-2 px-3 text-right font-mono">{Number(r.current_stock)} {r.unit}</td>
-                <td className="py-2 px-3 text-right font-mono">{Number(r.avg_daily_usage).toFixed(2)}</td>
-                <td className={`py-2 px-3 text-right font-mono ${(r.days_of_stock ?? 999) < 3 ? 'text-danger font-bold' : 'text-text-secondary'}`}>
-                  {r.days_of_stock === null ? '—' : Number(r.days_of_stock).toFixed(1)}
-                </td>
-                <td className="py-2 px-3 text-right font-mono font-medium">
-                  {Number(r.suggested_order_qty).toFixed(2)} {r.unit}
-                </td>
-                <td className="py-2 px-3 text-xs text-text-secondary">
-                  {r.supplier_name ?? '—'}
-                  {r.last_purchase_at !== null && (
-                    <div className="text-[11px]">{new Date(r.last_purchase_at).toLocaleDateString()}</div>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <DataTable<ReorderSuggestion>
+          columns={COLUMNS}
+          rows={rows}
+          getRowKey={(r) => r.product_id}
+          isLoading={q.isLoading}
+          density="compact"
+          emptyTitle="Nothing to reorder"
+          emptyDescription="No product runs out within the buffer window."
+          data-testid="reorder-table"
+          footer={
+            <span className="font-data text-[11px] text-text-muted tabular-nums">
+              {rows.length} {rows.length === 1 ? 'suggestion' : 'suggestions'} · {lookback} d lookback · {buffer} d buffer
+            </span>
+          }
+        />
       )}
     </div>
   );

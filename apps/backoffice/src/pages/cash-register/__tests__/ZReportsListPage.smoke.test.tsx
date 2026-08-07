@@ -4,7 +4,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import type { ReactElement } from 'react';
 
-const fromSpy = vi.fn();
+// Le spy est typé : un `vi.fn()` nu rend `any`, que le lint refuse de laisser
+// remonter jusqu'au client mocké.
+const fromSpy = vi.fn<(...args: unknown[]) => unknown>();
 vi.mock('@/lib/supabase.js', () => ({
   supabase: {
     from: (...a: unknown[]) => fromSpy(...a),
