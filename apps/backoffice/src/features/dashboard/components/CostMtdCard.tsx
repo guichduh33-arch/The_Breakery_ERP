@@ -1,0 +1,130 @@
+// apps/backoffice/src/features/dashboard/components/CostMtdCard.tsx
+//
+// Écran 1c — COGS et OpEx du mois en cours, par compte.
+//
+// Le dashboard montrait le CA et rien de ce qu'il coûte. Cette carte remet les
+// deux familles de coût en face du chiffre d'affaires : un CA record avec des
+// achats matière qui montent plus vite n'est pas une bonne journée.
+//
+// Le codage couleur est celui du module Coûts (`chartColors.ts`) : BLEU =
+// matière (COGS), AMBRE = exploitation (OpEx). Il est le même partout pour
+// qu'un lecteur n'ait jamais à relire une légende.
+//
+// La variation MoM est rendue avec `invert` : sur un coût, MONTER est mauvais.
+// C'est le seul endroit du dashboard où le vert est en bas.
+
+import type { JSX } from 'react';
+import { Link } from 'react-router-dom';
+import { DashboardCard } from './DashboardCard.js';
+import { Delta } from './Delta.js';
+import { formatIdr, formatIdrShort, formatPct } from '../utils/format.js';
+import { familyColor } from '@/features/reports/utils/chartColors.js';
+import type { CostMtd } from '../hooks/useDashboardOverview.js';
+
+const MAX_LINES = 6;
+
+export function CostMtdCard({
+  cost, isLoading, error,
+}: {
+  cost: CostMtd | null;
+  isLoading: boolean;
+  error: Error | null;
+}): JSX.Element {
+  const lines = cost?.lines ?? [];
+  const shown = lines.slice(0, MAX_LINES);
+  const hidden = lines.length - shown.length;
+
+  // Part de chaque famille DANS LE COÛT TOTAL (pas dans le CA) : la barre
+  // partage 100 % du coût du mois, ses deux segments doivent donc sommer à 1.
+  const total = cost?.total ?? 0;
+  const cogsShare = total > 0 ? ((cost?.cogs_total ?? 0) / total) * 100 : 0;
+
+  // Index par famille : la rampe de couleur se compte à l'intérieur d'une
+  // famille, alors que les lignes arrivent triées par montant, familles mêlées.
+  const rank = new Map<string, number>();
+  let nCogs = 0, nOpex = 0;
+  for (const l of shown) {
+    rank.set(l.account_code, l.family === 'cogs' ? nCogs++ : nOpex++);
+  }
+
+  return (
+    <DashboardCard
+      title="COGS & expenses"
+      aside={<span className="text-[11.5px] text-text-muted">month to date</span>}
+      isLoading={isLoading}
+      error={error}
+      testId="card-cost-mtd"
+    >
+      {cost === null ? null : (
+        <>
+          <div className="flex gap-5">
+            <div>
+              <p className="text-[11px] text-text-muted">
+                COGS · {formatPct(cost.cogs_pct_of_sales)} of sales
+              </p>
+              <p className="font-data text-[17px] font-semibold tabular-nums text-text-primary">
+                {formatIdrShort(cost.cogs_total)}
+              </p>
+            </div>
+            <div>
+              <p className="text-[11px] text-text-muted">
+                OpEx · {formatPct(cost.opex_pct_of_sales)} of sales
+              </p>
+              <p className="font-data text-[17px] font-semibold tabular-nums text-text-primary">
+                {formatIdrShort(cost.opex_total)}
+              </p>
+            </div>
+          </div>
+
+          <div
+            className="mt-3 flex h-2 overflow-hidden rounded-[5px] bg-surface-4"
+            role="img"
+            aria-label={`COGS ${formatPct(cogsShare)} of month-to-date cost, OpEx the rest`}
+          >
+            <div style={{ width: `${cogsShare}%`, background: familyColor('cogs', 0) }} />
+            <div style={{ width: `${100 - cogsShare}%`, background: familyColor('opex', 0) }} />
+          </div>
+
+          <ul className="mt-3 space-y-2">
+            {shown.map((l) => (
+              <li key={l.account_code} className="flex items-baseline gap-2 text-[12.5px]">
+                <span
+                  className="h-2 w-2 shrink-0 rounded-[2px]"
+                  style={{ background: familyColor(l.family, rank.get(l.account_code) ?? 0) }}
+                  aria-hidden
+                />
+                <span className="min-w-0 flex-1 truncate text-text-primary">{l.account_name}</span>
+                <Delta value={l.mom_delta_pct} period="MoM" invert className="shrink-0" />
+                <span className="shrink-0 font-data tabular-nums text-text-primary">
+                  {formatIdrShort(l.amount)}
+                </span>
+              </li>
+            ))}
+            {hidden > 0 && (
+              <li className="text-[12px]">
+                <Link to="/backoffice/reports/operating-expenses" className="font-medium text-gold">
+                  +{hidden} more account{hidden > 1 ? 's' : ''}
+                </Link>
+              </li>
+            )}
+          </ul>
+
+          <div className="mt-3 space-y-1 border-t border-border-muted pt-2.5 text-[12.5px]">
+            <div className="flex items-baseline justify-between">
+              <span className="font-medium text-text-primary">Total cost MTD</span>
+              <span className="font-data font-semibold tabular-nums text-text-primary">
+                {formatIdrShort(cost.total)}
+              </span>
+            </div>
+            <div className="flex items-baseline justify-between">
+              <span className="text-text-muted">Cost per basket</span>
+              <span className="font-data tabular-nums text-text-primary">
+                {formatIdr(cost.cost_per_basket)}
+              </span>
+            </div>
+          </div>
+        </>
+      )}
+    </DashboardCard>
+  );
+}

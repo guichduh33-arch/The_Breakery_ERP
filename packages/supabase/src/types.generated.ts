@@ -6355,6 +6355,27 @@ export type Database = {
       _cleanup: { Args: never; Returns: boolean }
       _contract_on: { Args: { "": string }; Returns: unknown }
       _currtest: { Args: never; Returns: number }
+      _dashboard_cash_on_hand_v1: { Args: never; Returns: Json }
+      _dashboard_cost_mtd_v1: {
+        Args: { p_today: string; p_tz: string }
+        Returns: Json
+      }
+      _dashboard_hourly_v1: {
+        Args: { p_today: string; p_tz: string }
+        Returns: Json
+      }
+      _dashboard_kpis_v1: {
+        Args: { p_today: string; p_tz: string }
+        Returns: Json
+      }
+      _dashboard_revenue_series_v1: {
+        Args: { p_today: string; p_tz: string }
+        Returns: Json
+      }
+      _dashboard_share_payments_v1: {
+        Args: { p_today: string; p_tz: string }
+        Returns: Json
+      }
       _db_privs: { Args: never; Returns: unknown[] }
       _emit_expense_je: { Args: { p_expense_id: string }; Returns: string }
       _enqueue_notification_system_v1: {
@@ -6383,6 +6404,10 @@ export type Database = {
           tax_amount: number
           total: number
         }[]
+      }
+      _pct_change: {
+        Args: { p_current: number; p_previous: number }
+        Returns: number
       }
       _prokind: { Args: { p_oid: unknown }; Returns: unknown }
       _query: { Args: { "": string }; Returns: string }
@@ -7236,7 +7261,10 @@ export type Database = {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json
       }
-      get_dashboard_overview_v1: { Args: never; Returns: Json }
+      get_dashboard_action_queue_v1: { Args: never; Returns: Json }
+      get_dashboard_open_orders_v1: { Args: never; Returns: Json }
+      get_dashboard_overview_v2: { Args: never; Returns: Json }
+      get_display_stock_activity_v1: { Args: never; Returns: Json }
       get_expenses_by_category_v1: {
         Args: {
           p_category_id?: string
