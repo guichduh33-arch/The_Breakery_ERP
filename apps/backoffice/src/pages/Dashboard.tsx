@@ -1,26 +1,35 @@
 // apps/backoffice/src/pages/Dashboard.tsx
 //
-// S63 — Backoffice Dashboard, câblé sur get_dashboard_overview_v1.
+// Écran 1c — Dashboard « Today ». Page d'accueil du backoffice.
 //
-// Layout (matches docs/Design/backoffice/Dashboard.jpg):
-//   - Header: "Dashboard" serif title + greeting line
-//   - 5 KPI tiles: TODAY'S REVENUE (net of refunds), ORDERS, ITEMS SOLD,
-//     AVG BASKET, CUSTOMERS
-//   - 30-DAY REVENUE TREND + REVENUE BY ORDER TYPE
-//   - TOP PRODUCTS TODAY + HOURLY SALES + PAYMENT METHODS
+// Le principe de la refonte : la page ne raconte plus la journée d'hier, elle
+// montre l'état de la maison MAINTENANT. D'où trois changements de fond par
+// rapport à l'ancien écran S63 :
 //
-// Data: useDashboardOverview (React Query, 60 s polling). The optional
-// `data` prop overrides the hook for tests (hook disabled, no network).
-// A 42501 from the RPC renders the restricted state instead of an error.
+//   1. Chaque chiffre porte ses COMPARAISONS (J-1 et même jour la semaine
+//      passée). « Rp 8,42 jt » ne dit rien ; « ▲12,4% vs hier » dit tout.
+//   2. Une file d'ACTIONS s'intercale entre les chiffres et les graphes : ce
+//      qui reste à faire (caisse non clôturée, PO à recevoir, facture B2B en
+//      retard) vaut mieux qu'une sixième courbe.
+//   3. L'état du plancher et de la vitrine arrive en REALTIME, pas en poll :
+//      leur marqueur « live » est une promesse tenue (useDashboardPanels).
+//
+// Cadences et droits : l'agrégat (`get_dashboard_overview_v3`, poll 60 s) porte
+// la barrière `reports.read`, et son bloc trésorerie exige en plus
+// `accounting.cash.read`. Les trois panneaux ont chacun LEUR droit — d'où des
+// requêtes séparées, pour qu'un rôle sans droit rapport garde l'état du
+// plancher qu'il a le droit de voir. Chaque carte dégrade seule ; un 42501 se
+// rend « restreint », jamais en erreur rouge.
+//
+// La prop `data` (tests) désactive le hook agrégat ET les trois panneaux :
+// aucun réseau en test.
 
 import { useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import {
-  DollarSign, ShoppingBag, Box, TrendingUp, Users as UsersIcon,
-  RefreshCw, Lock, CalendarHeart,
+  BarChart3, BellRing, Building2, CalendarHeart, FileDown, Lock, RefreshCw,
 } from 'lucide-react';
-import {
-  Card, KpiTile, SectionLabel, cn,
-} from '@breakery/ui';
+import { Card, SectionLabel, cn } from '@breakery/ui';
 import { toLocalDateStr } from '@breakery/domain';
 import { PageHeader } from '@/components/PageHeader.js';
 import { useAuthStore } from '@/stores/authStore.js';
@@ -30,11 +39,24 @@ import {
   classifyDashboardError,
   type DashboardOverview,
 } from '@/features/dashboard/hooks/useDashboardOverview.js';
+import {
+  useActionQueue, useDisplayStockActivity, useOpenOrders, isRestricted,
+} from '@/features/dashboard/hooks/useDashboardPanels.js';
+import { DashboardKpiStrip } from '@/features/dashboard/components/DashboardKpiStrip.js';
+import { NeedsYouBar } from '@/features/dashboard/components/NeedsYouBar.js';
 import { RevenueTrendChart } from '@/features/dashboard/components/RevenueTrendChart.js';
-import { RevenueByTypeDonut } from '@/features/dashboard/components/RevenueByTypeDonut.js';
 import { HourlySalesChart } from '@/features/dashboard/components/HourlySalesChart.js';
-import { TopProductsList } from '@/features/dashboard/components/TopProductsList.js';
-import { PaymentMethodsList } from '@/features/dashboard/components/PaymentMethodsList.js';
+import { OpenOrdersCard } from '@/features/dashboard/components/OpenOrdersCard.js';
+import { CostMtdCard } from '@/features/dashboard/components/CostMtdCard.js';
+import { DisplayStockCard } from '@/features/dashboard/components/DisplayStockCard.js';
+import { RevenueShareCard } from '@/features/dashboard/components/RevenueShareCard.js';
+import { Delta } from '@/features/dashboard/components/Delta.js';
+import { formatClock, formatHourRange, formatIdrShort, formatPct } from '@/features/dashboard/utils/format.js';
+import { exportDashboardCsv } from '@/features/dashboard/utils/dashboardCsv.js';
+import { useTodayHours } from '@/features/dashboard/hooks/useTodayHours.js';
+import {
+  TOOLBAR_BTN_PRIMARY, TOOLBAR_BTN_SECONDARY, TOOLBAR_ICON,
+} from '@/components/toolbarButton.js';
 
 export interface DashboardData {
   data: DashboardOverview | null;
@@ -44,85 +66,109 @@ export interface DashboardData {
 }
 
 export interface DashboardPageProps {
-  /** Test-only override — when provided, the live hook is disabled. */
+  /** Test-only override — when provided, every live hook is disabled. */
   data?: DashboardData;
 }
 
-const ZERO_KPIS = {
-  revenue_today: 0,
-  orders_today: 0,
-  items_sold: 0,
-  avg_basket: 0,
-  customers_today: 0,
-} as const;
+/**
+ * Raccourcis de l'en-tête. Le handoff les veut épinglables par utilisateur ;
+ * la gestion des épingles est un chantier à part (persistance + éditeur), donc
+ * cette liste est pour l'instant le jeu par défaut, filtré par droit.
+ *
+ * Arbitré le 2026-08-07 : l'épinglage part au backlog, il ne bloque pas 1c.
+ */
+const SHORTCUTS = [
+  { to: '/backoffice/reports/daily-sales', label: 'Daily sales',  icon: BarChart3, permission: 'reports.sales.read' },
+  { to: '/backoffice/inventory/alerts',    label: 'Stock alerts', icon: BellRing,  permission: 'inventory.read' },
+  { to: '/backoffice/b2b',                 label: 'B2B orders',   icon: Building2, permission: 'b2b.read' },
+] as const;
 
-function formatGreeting(name: string | undefined): string {
-  const hour = new Date().getHours();
-  const part = hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening';
-  const who = name ?? 'there';
-  const date = new Date().toLocaleDateString(undefined, {
-    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
-  });
-  return `Good ${part}, ${who}. ${date}.`;
-}
-
-function formatTime(iso: string | undefined): string {
-  if (!iso) return '--:--';
-  try {
-    return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  } catch {
-    return '--:--';
-  }
+function todayTitle(): string {
+  return `Today · ${new Date().toLocaleDateString(undefined, {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+  })}`;
 }
 
 export default function DashboardPage({ data }: DashboardPageProps) {
-  const user = useAuthStore((s) => s.user);
-  const live = useDashboardOverview(data === undefined);
+  const hasPermission = useAuthStore((s) => s.hasPermission);
+  const isTest = data !== undefined;
+  const live = useDashboardOverview(!isTest);
 
-  const overview  = data !== undefined ? data.data : live.data ?? null;
-  const isLoading = data !== undefined ? data.isLoading : live.isLoading;
-  const error     = data !== undefined ? data.error : live.error ?? null;
-  const refetch   = data !== undefined ? data.refetch : () => { void live.refetch(); };
+  const overview  = isTest ? data.data : live.data ?? null;
+  const isLoading = isTest ? data.isLoading : live.isLoading;
+  const error     = isTest ? data.error : live.error ?? null;
+  const refetch   = isTest ? data.refetch : () => { void live.refetch(); };
+
+  const openOrders   = useOpenOrders(!isTest);
+  const actionQueue  = useActionQueue(!isTest);
+  const displayStock = useDisplayStockActivity(!isTest);
 
   const restricted =
     error !== null && classifyDashboardError(error) === 'permission_denied';
-  const kpis = overview?.kpis ?? ZERO_KPIS;
 
-  const greeting = useMemo(() => formatGreeting(user?.full_name), [user?.full_name]);
+  // Amplitude du jour : « Rp 8,42 jt » ne dit pas la même chose à 09:42 d'une
+  // journée qui ferme à 18:00 qu'à 17:50. Absente ou interdite → le sous-titre
+  // se contente de la dernière synchro.
+  const hours = useTodayHours(!isTest);
 
-  // Settings §6.A — holidays consumer: surface today's holiday so an unusual
-  // revenue day reads as explained context, not an anomaly.
+  // Settings §6.A — consommateur des jours fériés : une journée de CA inhabituel
+  // doit se lire comme un contexte expliqué, pas comme une anomalie.
   const holidays = useHolidaysList();
   const todayHoliday = holidayNameFor(holidays.data, toLocalDateStr(new Date()));
 
+  const title = useMemo(todayTitle, []);
+  const canExport = hasPermission('reports.export');
+  const shortcuts = SHORTCUTS.filter((s) => hasPermission(s.permission));
+
+  const summary = overview?.revenue_30d_summary ?? null;
+  const peak    = overview?.hourly_peak ?? null;
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-3.5">
       <PageHeader
-        title="Dashboard"
-        subtitle={greeting}
-        actions={
-          <div
-            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-bg-overlay text-xs text-text-secondary"
-            aria-live="polite"
-          >
-            <span className="h-2 w-2 rounded-full bg-success" aria-hidden />
-            <span>Last updated {formatTime(overview?.generated_at)}</span>
+        title={title}
+        subtitle={
+          <span className="inline-flex items-center gap-2" aria-live="polite">
+            {hours !== null && <>Open since {hours.open} · closes {hours.close} · </>}
+            Last sync {formatClock(overview?.generated_at)}
             <button
               type="button"
               onClick={refetch}
-              className="ml-1 text-text-secondary hover:text-text-primary"
+              className="text-text-muted hover:text-text-primary"
               aria-label="Refresh dashboard"
             >
-              <RefreshCw className={cn('h-3.5 w-3.5', isLoading && 'animate-spin')} aria-hidden />
+              <RefreshCw className={cn('h-3.5 w-3.5', isLoading && 'animate-spin motion-reduce:animate-none')} aria-hidden />
             </button>
-          </div>
+          </span>
+        }
+        actions={
+          <>
+            {shortcuts.map(({ to, label, icon: Icon }) => (
+              <Link key={to} to={to} className={TOOLBAR_BTN_SECONDARY}>
+                <Icon className={TOOLBAR_ICON} aria-hidden />
+                {label}
+              </Link>
+            ))}
+            {canExport && (
+              <button
+                type="button"
+                className={TOOLBAR_BTN_PRIMARY}
+                disabled={overview === null}
+                onClick={() => { if (overview !== null) exportDashboardCsv(overview); }}
+                data-testid="dashboard-export"
+              >
+                <FileDown className="h-3.5 w-3.5" aria-hidden />
+                Export
+              </button>
+            )}
+          </>
         }
       />
 
       {todayHoliday !== null && (
         <div
           data-testid="holiday-banner"
-          className="flex items-center gap-2 rounded-lg border border-gold/30 bg-gold-soft px-4 py-2.5 text-sm text-text-primary"
+          className="flex items-center gap-2 rounded-md border border-gold/30 bg-gold-soft px-4 py-2.5 text-sm text-text-primary"
         >
           <CalendarHeart className="h-4 w-4 text-gold" aria-hidden />
           <span>
@@ -132,12 +178,12 @@ export default function DashboardPage({ data }: DashboardPageProps) {
       )}
 
       {restricted ? (
-        <Card variant="default" padding="md" data-testid="dashboard-restricted">
+        <Card variant="default" padding="md" data-testid="dashboard-restricted" className="shadow-none">
           <div className="flex items-center gap-3">
             <Lock className="h-5 w-5 text-text-muted" aria-hidden />
             <div>
               <p className="text-sm text-text-primary">Dashboard metrics are restricted.</p>
-              <p className="text-xs text-text-muted mt-0.5">
+              <p className="mt-0.5 text-xs text-text-muted">
                 Viewing business metrics requires the reports permission. Contact an administrator.
               </p>
             </div>
@@ -146,104 +192,82 @@ export default function DashboardPage({ data }: DashboardPageProps) {
       ) : (
         <>
           {error !== null && (
-            <Card variant="default" padding="md" role="alert">
-              <p className="text-sm text-danger">
-                Failed to load dashboard: {error.message}
-              </p>
+            <Card variant="default" padding="md" role="alert" className="shadow-none">
+              <p className="text-sm text-danger">Failed to load dashboard: {error.message}</p>
             </Card>
           )}
 
-          <div
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4"
-            data-testid="dashboard-kpi-row"
-          >
-            {isLoading ? (
-              Array.from({ length: 5 }).map((_, i) => (
-                <Card
-                  key={i}
-                  variant="default"
-                  padding="md"
-                  data-testid="kpi-skeleton"
-                  className="h-32 animate-pulse motion-reduce:animate-none"
-                >
-                  {/* surface-4, not bg-overlay: the latter collapses to #fff on
-                      the ivoire card → invisible skeleton (design audit 2026-07-08, BO F1). */}
-                  <div className="h-9 w-9 rounded-md bg-surface-4 mb-3" />
-                  <div className="h-3 w-20 bg-surface-4 rounded mb-2" />
-                  <div className="h-7 w-24 bg-surface-4 rounded" />
-                </Card>
-              ))
-            ) : (
-              <>
-                <KpiTile
-                  icon={DollarSign}
-                  label="Today's revenue"
-                  value={kpis.revenue_today}
-                  valueFormat="currency"
-                />
-                <KpiTile
-                  icon={ShoppingBag}
-                  label="Orders"
-                  value={kpis.orders_today}
-                  valueFormat="number"
-                />
-                <KpiTile
-                  icon={Box}
-                  label="Items sold"
-                  value={kpis.items_sold}
-                  valueFormat="number"
-                />
-                <KpiTile
-                  icon={TrendingUp}
-                  label="Avg basket"
-                  value={kpis.avg_basket}
-                  valueFormat="currency"
-                />
-                <KpiTile
-                  icon={UsersIcon}
-                  label="Customers"
-                  value={kpis.customers_today}
-                  valueFormat="number"
-                />
-              </>
-            )}
-          </div>
+          <DashboardKpiStrip kpis={overview?.kpis ?? null} isLoading={isLoading} />
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <Card variant="default" padding="md" className="min-h-[280px]">
-              <SectionLabel as="h2" size="xs" className="mb-2">
-                30-day revenue trend
-              </SectionLabel>
-              <p className="text-xs text-text-muted mb-4">Daily revenue over the last 30 days</p>
-              <RevenueTrendChart data={overview?.revenue_30d ?? []} />
+          <NeedsYouBar
+            queue={actionQueue.data ?? null}
+            isLoading={actionQueue.isLoading}
+            isRestricted={isRestricted(actionQueue.error)}
+          />
+
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1.7fr_1fr]">
+            <Card variant="default" padding="none" className="p-4 shadow-none">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <SectionLabel as="h2" className="font-data text-[11px] font-semibold text-text-primary">
+                  Revenue · 30 days
+                </SectionLabel>
+                {summary !== null && (
+                  <span className="text-[13px] text-text-secondary">
+                    {formatIdrShort(summary.total)} total{' '}
+                    <Delta value={summary.delta_pct} period="vs previous 30 d" />
+                  </span>
+                )}
+              </div>
+              <div className="mt-3">
+                <RevenueTrendChart data={overview?.revenue_30d ?? []} />
+              </div>
             </Card>
-            <Card variant="default" padding="md" className="min-h-[280px]">
-              <SectionLabel as="h2" size="xs" className="mb-2">
-                Revenue by order type
-              </SectionLabel>
-              <RevenueByTypeDonut data={overview?.revenue_by_type ?? []} />
+
+            <Card variant="default" padding="none" className="p-4 shadow-none">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <SectionLabel as="h2" className="font-data text-[11px] font-semibold text-text-primary">
+                  Sales by hour
+                </SectionLabel>
+                <span className="text-[11.5px] text-text-muted">today vs same weekday last week</span>
+              </div>
+              <p className="mt-1 text-[12px] text-text-muted">
+                {peak === null
+                  ? 'No peak yet today'
+                  : `Peak ${formatHourRange(peak.from_hour, peak.to_hour)} · ${formatPct(peak.share_pct)} of the day`}
+              </p>
+              <div className="mt-2">
+                <HourlySalesChart data={overview?.hourly_sales ?? []} />
+              </div>
             </Card>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <Card variant="default" padding="md" className="min-h-[220px]">
-              <SectionLabel as="h2" size="xs" className="mb-3">
-                Top products today
-              </SectionLabel>
-              <TopProductsList data={overview?.top_products ?? []} />
-            </Card>
-            <Card variant="default" padding="md" className="min-h-[220px]">
-              <SectionLabel as="h2" size="xs" className="mb-3">
-                Hourly sales
-              </SectionLabel>
-              <HourlySalesChart data={overview?.hourly_sales ?? []} />
-            </Card>
-            <Card variant="default" padding="md" className="min-h-[220px]">
-              <SectionLabel as="h2" size="xs" className="mb-3">
-                Payment methods
-              </SectionLabel>
-              <PaymentMethodsList data={overview?.payment_methods ?? []} />
-            </Card>
+          {/* `items-start` : chaque carte se dimensionne à son contenu. En
+              `stretch` avec des contenus inégaux, les courtes montrent un tiers
+              inférieur blanc et mort. */}
+          <div className="grid grid-cols-1 items-start gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <OpenOrdersCard
+              panel={openOrders.data ?? null}
+              isLoading={openOrders.isLoading}
+              isRestricted={isRestricted(openOrders.error)}
+              error={isRestricted(openOrders.error) ? null : openOrders.error}
+            />
+            <CostMtdCard
+              cost={overview?.cost_mtd ?? null}
+              isLoading={isLoading}
+              error={null}
+            />
+            <DisplayStockCard
+              panel={displayStock.data ?? null}
+              isLoading={displayStock.isLoading}
+              isRestricted={isRestricted(displayStock.error)}
+              error={isRestricted(displayStock.error) ? null : displayStock.error}
+            />
+            <RevenueShareCard
+              share={overview?.revenue_share ?? []}
+              payments={overview?.payments ?? null}
+              isLoading={isLoading}
+              error={null}
+            />
           </div>
         </>
       )}

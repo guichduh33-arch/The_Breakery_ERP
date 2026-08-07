@@ -19,6 +19,10 @@ const preset: Partial<Config> = {
           2: 'var(--surface-2)',
           3: 'var(--surface-3)',
           4: 'var(--surface-4)',
+          // Refonte shell 2026-08-05 — remplissage inerte (en-tête et pied de
+          // tableau, champ non éditable). Hors rampe : ce n'est pas un cran de
+          // distance à l'œil, c'est un fond « ce bloc ne se lit pas ».
+          inert: 'var(--surface-inert)',
         },
         cream: 'var(--cream)',
         border: {
@@ -26,7 +30,24 @@ const preset: Partial<Config> = {
           strong: 'var(--border-strong)',
           focus: 'var(--border-focus)',
           muted: 'var(--border-muted)',
+          row: 'var(--border-row)',
           gold: 'var(--border-gold)',
+        },
+        // Refonte shell 2026-08-05 — famille encre : fonds sombres dans un thème
+        // clair (top bar, bouton primaire). N'appartient à aucun cran de --surface-N.
+        ink: {
+          DEFAULT: 'var(--ink-base)',
+          hover: 'var(--ink-hover)',
+          raised: 'var(--ink-raised)',
+          border: 'var(--ink-border)',
+          fg: 'var(--ink-fg)',
+          'fg-muted': 'var(--ink-fg-muted)',
+          'fg-dim': 'var(--ink-fg-dim)',
+          'fg-sub': 'var(--ink-fg-sub)',
+          gold: 'var(--ink-gold)',
+          // Sémantique éclaircie pour un fond encre — `text-ink-success`.
+          success: 'var(--ink-success)',
+          danger: 'var(--ink-danger)',
         },
         text: {
           primary: 'var(--text-primary)',

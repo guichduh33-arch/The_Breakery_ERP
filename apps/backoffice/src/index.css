@@ -8,6 +8,10 @@
  * charge l'italique 400 (marque) ET les romaines 400/600/700 — les titres de
  * page rendent en `font-serif`/`font-display` sans `italic`, et sans face
  * romaine chargée le navigateur retombe sur Times New Roman. */
+/* Direction « Instrument » (maquette 3a, 2026-08-06) — Instrument Sans devient
+ * la police de CORPS du Backoffice. Inter reste chargée : elle est la première
+ * repli de la pile `--font-body` et sert encore de secours métrique. */
+@import '@fontsource-variable/instrument-sans';
 @import '@fontsource-variable/inter';
 @import '@fontsource-variable/jetbrains-mono';
 @import '@fontsource/playfair-display/400-italic.css';

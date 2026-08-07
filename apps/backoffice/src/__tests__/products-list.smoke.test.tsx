@@ -68,8 +68,9 @@ describe('ProductsPage', () => {
     // SKU column shows the codes.
     expect(screen.getByText('COF-001')).toBeInTheDocument();
     expect(screen.getByText('SFG-012')).toBeInTheDocument();
-    // Header card title.
-    expect(screen.getByText(/Product Catalog/i)).toBeInTheDocument();
+    // Écran 2a — le titre n'est plus « Product Catalog » dans une carte
+    // d'en-tête, mais le <h1> nu de la page.
+    expect(screen.getByRole('heading', { level: 1, name: 'Products' })).toBeInTheDocument();
   });
 
   it('filters rows by search input', async () => {

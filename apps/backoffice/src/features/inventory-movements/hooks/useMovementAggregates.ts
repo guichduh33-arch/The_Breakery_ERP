@@ -1,5 +1,11 @@
 // apps/backoffice/src/features/inventory-movements/hooks/useMovementAggregates.ts
-// Session 13 / Phase 2.D — get_movement_aggregates_v1 wrapper.
+// Session 13 / Phase 2.D — get_movement_aggregates wrapper.
+//
+// 2026-08-05 — bump v1 → v2. La v1 valorisait un mouvement au `unit_cost` STOCKÉ
+// (`COALESCE(sm.unit_cost, p.cost_price)`) alors que le tableau de la même page
+// (`get_stock_movement_ledger_v1`) le valorise au coût COURANT du produit. Une
+// unique ligne historique au `unit_cost` ×1000 pesait 47 % de la tuile
+// « Value moved ». La v2 aligne l'agrégat sur le tableau.
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
@@ -41,7 +47,7 @@ export function useMovementAggregates(filters: AggregateFilters = {}) {
       // the DB session timezone = business Asia/Makassar). Matches the ledger RPC fix.
       if (filters.dateStart !== undefined && filters.dateStart !== '') args.p_date_start = `${filters.dateStart}T00:00:00`;
       if (filters.dateEnd   !== undefined && filters.dateEnd   !== '') args.p_date_end   = `${filters.dateEnd}T23:59:59.999`;
-      const { data, error } = await rpc()('get_movement_aggregates_v1', args);
+      const { data, error } = await rpc()('get_movement_aggregates_v2', args);
       if (error !== null) throw new Error(error.message);
       return data ?? [];
     },

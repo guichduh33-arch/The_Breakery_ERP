@@ -1,20 +1,26 @@
 // apps/backoffice/src/layouts/BackofficeLayout.tsx
 //
-// Session 14 / Phase 4.A — Backoffice global shell.
+// Refonte shell 2026-08-05 — le shell global du Backoffice.
 //
-// Composes the Sidebar (extracted) + Topbar (extracted) with the routed
-// <Outlet/>. The shell is desktop-first: the sidebar is fixed-left at
-// w-60 (240px) and retractable — a Topbar toggle collapses it to w-0 so the
-// content area can use the full width. The collapsed state is persisted in
-// localStorage (`bo:sidebar:collapsed`) so it survives reloads.
+// Le rail rétractable de 240 px a disparu : la navigation est entièrement
+// portée par la `TopBar` (52 px, 7 domaines, drop-panels) et par la palette de
+// commandes ⌘K. Le contenu occupe donc toute la largeur, ce qui est le point
+// de départ du dashboard 1c — dessiné sur un cadre de 1440 px sans rail.
+//
+// Les clés localStorage `bo:sidebar:collapsed` / `:groups` / `:subgroups` sont
+// devenues sans objet ; on les purge une fois au montage pour ne pas laisser
+// traîner de l'état mort dans le navigateur des postes existants.
 
 import { Suspense, useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import { cn } from '@breakery/ui';
-import { Sidebar } from './Sidebar.js';
-import { Topbar } from './Topbar.js';
+import { CommandPalette } from './CommandPalette.js';
+import { TopBar } from './TopBar.js';
 
-const SIDEBAR_COLLAPSED_KEY = 'bo:sidebar:collapsed';
+const DEAD_SIDEBAR_KEYS = [
+  'bo:sidebar:collapsed',
+  'bo:sidebar:groups',
+  'bo:sidebar:subgroups',
+];
 
 /** Shown while a route-split page chunk is being fetched (React.lazy). */
 function RouteFallback() {
@@ -32,54 +38,43 @@ function RouteFallback() {
   );
 }
 
-function readCollapsed(): boolean {
-  try {
-    return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === '1';
-  } catch {
-    return false;
-  }
-}
-
 export function BackofficeLayout() {
-  const [collapsed, setCollapsed] = useState<boolean>(readCollapsed);
+  const [paletteOpen, setPaletteOpen] = useState(false);
 
   useEffect(() => {
     try {
-      localStorage.setItem(SIDEBAR_COLLAPSED_KEY, collapsed ? '1' : '0');
+      for (const key of DEAD_SIDEBAR_KEYS) localStorage.removeItem(key);
     } catch {
       /* private mode / quota — fail silent */
     }
-  }, [collapsed]);
+  }, []);
+
+  // ⌘K / Ctrl-K depuis n'importe où dans l'app. On ne capture pas la frappe
+  // quand la palette est déjà ouverte : c'est elle qui gère alors son clavier.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() === 'k' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setPaletteOpen((o) => !o);
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => { document.removeEventListener('keydown', onKeyDown); };
+  }, []);
 
   return (
-    <div className="h-screen flex bg-bg-base text-text-primary theme-backoffice">
-      {/* Retractable rail: an overflow-hidden flex wrapper animates its width
-       * between w-60 and w-0 while the inner <aside> keeps its 240px layout and
-       * is clipped. `invisible` when collapsed drops the hidden links out of the
-       * tab order (a11y). The animation is skipped under prefers-reduced-motion. */}
-      <div
-        className={cn(
-          'flex shrink-0 overflow-hidden transition-[width] duration-300 ease-out motion-reduce:transition-none',
-          collapsed ? 'w-0 invisible' : 'w-60',
-        )}
+    <div className="theme-backoffice flex h-screen flex-col bg-bg-base text-text-primary">
+      <TopBar onOpenSearch={() => { setPaletteOpen(true); }} />
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="flex-1 overflow-y-auto px-[22px] py-5"
       >
-        <Sidebar />
-      </div>
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Topbar
-          sidebarCollapsed={collapsed}
-          onToggleSidebar={() => setCollapsed((c) => !c)}
-        />
-        <main
-          id="main-content"
-          tabIndex={-1}
-          className="flex-1 overflow-y-auto p-6"
-        >
-          <Suspense fallback={<RouteFallback />}>
-            <Outlet />
-          </Suspense>
-        </main>
-      </div>
+        <Suspense fallback={<RouteFallback />}>
+          <Outlet />
+        </Suspense>
+      </main>
+      <CommandPalette open={paletteOpen} onClose={() => { setPaletteOpen(false); }} />
     </div>
   );
 }

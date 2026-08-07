@@ -14,7 +14,7 @@
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-SELECT plan(7);
+SELECT plan(9);
 
 -- T_MOV_01
 SELECT is(
@@ -49,16 +49,31 @@ SELECT ok(
 
 -- T_MOV_05
 SELECT is(
-  (SELECT COUNT(*)::INT FROM pg_proc WHERE proname='get_movement_aggregates_v1'),
+  (SELECT COUNT(*)::INT FROM pg_proc WHERE proname='get_movement_aggregates_v2'),
   1,
-  'T_MOV_05: get_movement_aggregates_v1 exists'
+  'T_MOV_05: get_movement_aggregates_v2 exists'
 );
 
 -- T_MOV_06 — aggregates returns JSONB
 SELECT is(
-  (SELECT prorettype::regtype::TEXT FROM pg_proc WHERE proname='get_movement_aggregates_v1'),
+  (SELECT prorettype::regtype::TEXT FROM pg_proc WHERE proname='get_movement_aggregates_v2'),
   'jsonb',
-  'T_MOV_06: get_movement_aggregates_v1 returns jsonb'
+  'T_MOV_06: get_movement_aggregates_v2 returns jsonb'
+);
+
+-- T_MOV_05b — la v1 est droppee (versioning monotone, migration 20260805000001)
+SELECT is(
+  (SELECT COUNT(*)::INT FROM pg_proc WHERE proname='get_movement_aggregates_v1'),
+  0,
+  'T_MOV_05b: get_movement_aggregates_v1 dropped'
+);
+
+-- T_MOV_06b — l agregat valorise au cout COURANT du produit, pas au unit_cost
+-- stocke du mouvement : aligne sur get_stock_movement_ledger_v1, et immunise
+-- le rapport contre une valeur historique aberrante (incident du 2026-07-13).
+SELECT ok(
+  (SELECT prosrc FROM pg_proc WHERE proname='get_movement_aggregates_v2') NOT LIKE '%sm.unit_cost%',
+  'T_MOV_06b: get_movement_aggregates_v2 ne lit plus sm.unit_cost'
 );
 
 -- T_MOV_07 — ORDER BY DESC pattern

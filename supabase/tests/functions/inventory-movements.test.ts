@@ -3,7 +3,7 @@
 //
 // Covers :
 //   - get_stock_movements_v1 returns rows respecting filters + cursor pagination.
-//   - get_movement_aggregates_v1 returns one row per movement_type with totals.
+//   - get_movement_aggregates_v2 returns one row per movement_type with totals.
 //   - 200-row hard cap on get_stock_movements_v1.
 
 import { describe, it, expect, beforeAll } from 'vitest';
@@ -66,9 +66,9 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('inventory movements —
     expect(data.length).toBeLessThanOrEqual(200);
   });
 
-  it('T_MOV_LIVE_04: get_movement_aggregates_v1 returns array', async () => {
+  it('T_MOV_LIVE_04: get_movement_aggregates_v2 returns array', async () => {
     const sb = jwtClient(managerToken);
-    const { data, error } = await rpc(sb)('get_movement_aggregates_v1', {});
+    const { data, error } = await rpc(sb)('get_movement_aggregates_v2', {});
     expect(error).toBeNull();
     expect(Array.isArray(data)).toBe(true);
   });
