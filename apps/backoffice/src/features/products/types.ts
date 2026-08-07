@@ -78,6 +78,57 @@ export interface ProductsKpis {
   semi_finished:  number;
   raw_material:   number;
   combo:          number;
+  /** Écran 2a — compteurs de QUALITÉ DE DONNÉE, pas de volumétrie. */
+  inactive:       number;
+  no_cost_price:  number;
+}
+
+/**
+ * Écran 2a — la bande de compteurs est un FILTRE, pas un affichage.
+ *
+ * Quatre tuiles décoratives sont devenues sept compteurs qui répondent chacun à
+ * « quelles lignes dois-je regarder ». Les cinq premiers découpent le catalogue
+ * par nature ; les deux derniers isolent un défaut à corriger — un produit
+ * désactivé qui traîne, un produit sans prix de revient (donc sans marge, donc
+ * invisible dans toute analyse de coût). C'est ce qui rend la bande productive
+ * au lieu d'ornementale.
+ */
+export type ProductCounter =
+  | 'all' | 'finished' | 'semi-finished' | 'raw' | 'combo'
+  | 'inactive' | 'no-cost';
+
+/**
+ * Colonnes MASQUABLES de la table catalogue. Product, SKU et les actions n'en
+ * font pas partie : sans elles la ligne n'est plus identifiable ni actionnable,
+ * et une table dont on peut masquer l'identifiant est une table cassée.
+ */
+export type ProductColumnId =
+  | 'type' | 'category' | 'stock' | 'cost' | 'retail' | 'wholesale' | 'margin' | 'status';
+
+export const PRODUCT_COLUMNS: readonly { id: ProductColumnId; label: string }[] = [
+  { id: 'type',      label: 'Type' },
+  { id: 'category',  label: 'Category' },
+  { id: 'stock',     label: 'Stock' },
+  { id: 'cost',      label: 'Cost' },
+  { id: 'retail',    label: 'Retail' },
+  { id: 'wholesale', label: 'Wholesale' },
+  { id: 'margin',    label: 'Margin' },
+  { id: 'status',    label: 'Status' },
+];
+
+/**
+ * Marge unitaire d'un produit, en pourcentage du prix de vente.
+ *
+ * Rend `null` — jamais 0 — dès qu'un des deux côtés manque : une marge de 0 %
+ * et une marge INCONNUE sont deux choses différentes, et les confondre ferait
+ * passer pour « vendu à prix coûtant » un produit dont on ignore simplement le
+ * coût. C'est exactement la population que compte le compteur « No cost price ».
+ */
+export function productMarginPct(
+  p: Pick<ProductRow, 'retail_price' | 'cost_price'>,
+): number | null {
+  if (p.retail_price <= 0 || p.cost_price <= 0) return null;
+  return ((p.retail_price - p.cost_price) / p.retail_price) * 100;
 }
 
 /**

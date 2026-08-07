@@ -25,6 +25,56 @@ const ROWS: Row[] = [
   { id: '3', name: 'Latte', amount: 35000 },
 ];
 
+// Refonte shell 2026-08-06 — trois props ADDITIVES. Ces tests fixent leur
+// contrat, et surtout le fait qu'elles ne changent rien quand on ne les passe
+// pas : toutes les tables existantes rendent comme avant.
+describe('DataTable — pied, densité, classe de ligne', () => {
+  it('renders no footer element when none is given', () => {
+    const { container } = render(<DataTable columns={COLUMNS} rows={ROWS} getRowKey={(r) => r.id} />);
+    expect(container.querySelector('.bg-surface-inert:not(thead)')).toBeNull();
+  });
+
+  it('renders the footer even when the table is empty', () => {
+    // « 0 sur 318 » est une information ; un pied qui disparaît avec la
+    // dernière ligne emporte la pagination avec laquelle on revient en arrière.
+    render(
+      <DataTable
+        columns={COLUMNS}
+        rows={[]}
+        getRowKey={(r) => r.id}
+        footer={<span>0–0 of 0</span>}
+      />,
+    );
+    expect(screen.getByText('0–0 of 0')).toBeInTheDocument();
+  });
+
+  it('tightens cell padding in compact density', () => {
+    const { container } = render(
+      <DataTable columns={COLUMNS} rows={ROWS} getRowKey={(r) => r.id} density="compact" />,
+    );
+    expect(container.querySelector('td')?.className).toMatch(/px-3\.5/);
+  });
+
+  it('keeps the default padding when density is not set', () => {
+    const { container } = render(<DataTable columns={COLUMNS} rows={ROWS} getRowKey={(r) => r.id} />);
+    expect(container.querySelector('td')?.className).toMatch(/px-4/);
+  });
+
+  it('applies the caller row class to the matching row only', () => {
+    const { container } = render(
+      <DataTable
+        columns={COLUMNS}
+        rows={ROWS}
+        getRowKey={(r) => r.id}
+        rowClassName={(r) => (r.id === '2' ? 'row-picked' : undefined)}
+      />,
+    );
+    const picked = container.querySelectorAll('tr.row-picked');
+    expect(picked).toHaveLength(1);
+    expect(picked[0]?.textContent).toContain('Bagel');
+  });
+});
+
 describe('DataTable', () => {
   it('renders headers + rows', () => {
     render(

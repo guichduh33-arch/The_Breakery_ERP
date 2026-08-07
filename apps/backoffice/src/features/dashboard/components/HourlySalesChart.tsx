@@ -1,50 +1,66 @@
 // apps/backoffice/src/features/dashboard/components/HourlySalesChart.tsx
-// S63 — ventes du jour par heure locale. Le RPC omet les heures sans vente ;
-// l'axe 0-23 est complété à 0 ici (décision spec §4.3).
+//
+// Écran 1c — profil horaire du jour contre le MÊME JOUR DE SEMAINE passé.
+//
+// La RPC renvoie déjà les 12 tranches 06:00→17:00, heures creuses comprises à
+// zéro. On ne complète donc plus rien ici : un trou dans un graphe horaire se
+// lit comme une fermeture, et c'est au serveur de dire ce qui est fermé.
+//
+// Le comparatif est le même jour la semaine passée, jamais une moyenne 7 j :
+// comparer un mercredi à une moyenne lissée dirait n'importe quoi.
 
+import type { JSX } from 'react';
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
 } from 'recharts';
 import { EmptyState } from '@breakery/ui';
 import {
-  COGS_BASE, CHART_GRID_STROKE, CHART_AXIS_TICK, CHART_TOOLTIP_STYLE,
-  formatIdrCompact, formatIdrFull,
+  COGS_BASE, CHART_SERIES_COMPARE, CHART_GRID_STROKE, CHART_AXIS_STROKE,
+  CHART_AXIS_TICK_SUBTLE, CHART_TOOLTIP_STYLE, formatIdrCompact, formatIdrFull,
 } from '@/features/reports/utils/chartColors.js';
-import type { HourlySale } from '../hooks/useDashboardOverview.js';
+import { usePrefersReducedMotion } from '../utils/usePrefersReducedMotion.js';
+import type { HourlyBucket } from '../hooks/useDashboardOverview.js';
 
-export function HourlySalesChart({ data }: { data: HourlySale[] }) {
-  if (data.length === 0) {
+const TICK = { fontSize: 10, fill: CHART_AXIS_TICK_SUBTLE, fontFamily: 'var(--font-data)' } as const;
+
+export function HourlySalesChart({ data }: { data: HourlyBucket[] }): JSX.Element {
+  const reduced = usePrefersReducedMotion();
+  const hasData = data.some((d) => d.today !== 0 || d.last_week !== 0);
+
+  if (!hasData) {
     return (
-      <div className="h-40 flex items-center justify-center">
-        <EmptyState size="sm" title="No sales data yet" />
+      <div className="flex h-44 items-center justify-center">
+        <EmptyState size="sm" title="No sales today yet" />
       </div>
     );
   }
-  const filled = Array.from({ length: 24 }, (_, h) => {
-    const found = data.find((d) => d.hour === h);
-    return { hour: h, gross: found?.gross ?? 0, order_count: found?.order_count ?? 0 };
-  });
+
   return (
-    <div className="h-40">
+    <div className="h-44">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={filled} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
+        <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }} barGap={2}>
           <CartesianGrid stroke={CHART_GRID_STROKE} vertical={false} />
           <XAxis
             dataKey="hour"
-            tick={{ fontSize: 9, fill: CHART_AXIS_TICK }}
-            interval={3}
+            tick={TICK}
+            tickLine={false}
+            axisLine={{ stroke: CHART_AXIS_STROKE }}
+            tickFormatter={(h: number) => String(h).padStart(2, '0')}
           />
           <YAxis
-            tick={{ fontSize: 9, fill: CHART_AXIS_TICK }}
+            tick={TICK}
+            tickLine={false}
+            axisLine={false}
             tickFormatter={formatIdrCompact}
-            width={64}
+            width={68}
           />
           <Tooltip
             contentStyle={CHART_TOOLTIP_STYLE}
-            formatter={(v: number) => [formatIdrFull(v), 'Sales']}
+            formatter={(v: number, name: string) => [formatIdrFull(v), name]}
             labelFormatter={(h: number) => `${String(h).padStart(2, '0')}:00`}
           />
-          <Bar dataKey="gross" fill={COGS_BASE} radius={[2, 2, 0, 0]} />
+          <Bar dataKey="today" name="Today" fill={COGS_BASE} radius={[2, 2, 0, 0]} isAnimationActive={!reduced} />
+          <Bar dataKey="last_week" name="Same weekday last week" fill={CHART_SERIES_COMPARE} radius={[2, 2, 0, 0]} isAnimationActive={!reduced} />
         </BarChart>
       </ResponsiveContainer>
     </div>

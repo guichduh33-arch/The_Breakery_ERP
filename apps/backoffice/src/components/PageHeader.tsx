@@ -4,10 +4,16 @@
 // "serif title + muted subtitle + right-aligned actions" band that every
 // BO page reinvented on its own (design audit 2026-07-07, finding I3-I5).
 //
-// Canonical style: `font-serif text-2xl` title (the token-calibrated ivoire
-// heading) + `text-sm text-text-secondary` subtitle. Actions bottom-align
-// with the title band (`items-end`) so date pickers / export buttons sit on
-// the same baseline. Pure presentational — no business logic.
+// Canonical style: Inter 23 px 600, `tracking-[-0.015em]` title + `text-sm
+// text-text-secondary` subtitle. Actions bottom-align with the title band
+// (`items-end`) so date pickers / export buttons sit on the same baseline.
+// Pure presentational — no business logic.
+//
+// Refonte shell 2026-08-05 — le titre PERD le serif. Playfair Display sur des
+// titres de page était le signal « boulangerie artisanale » le plus fort dans
+// un outil de gestion ; il ne sert plus qu'au monogramme de marque de la top
+// bar. Ce composant étant l'unique source du bandeau de titre, le changement
+// porte d'un coup sur toutes les pages qui l'utilisent.
 
 import type { ReactNode } from 'react';
 import { cn } from '@breakery/ui';
@@ -40,7 +46,12 @@ export function PageHeader({
       )}
     >
       <div className="min-w-0">
-        <h1 className={cn('font-serif text-2xl text-text-primary', titleClassName)}>
+        <h1
+          className={cn(
+            'text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary',
+            titleClassName,
+          )}
+        >
           {title}
         </h1>
         {subtitle != null &&
