@@ -6372,7 +6372,7 @@ export type Database = {
         Args: { p_today: string; p_tz: string }
         Returns: Json
       }
-      _dashboard_share_payments_v1: {
+      _dashboard_share_payments_v2: {
         Args: { p_today: string; p_tz: string }
         Returns: Json
       }
