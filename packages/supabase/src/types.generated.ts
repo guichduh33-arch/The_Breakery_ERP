@@ -7731,7 +7731,7 @@ export type Database = {
         }
         Returns: Json
       }
-      import_customers_v1: {
+      import_customers_v2: {
         Args: {
           p_dry_run?: boolean
           p_idempotency_key?: string
