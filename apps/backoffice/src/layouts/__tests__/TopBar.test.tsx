@@ -20,7 +20,7 @@ vi.mock('@/features/inventory-alerts/hooks/useReorderSuggestions.js', () => ({
 }));
 
 // La cloche lit la file « Needs you » (RPC agrégée). On pilote sa réponse.
-const queue = vi.hoisted(() => ({ data: null as unknown }));
+const queue = vi.hoisted((): { data: unknown } => ({ data: null }));
 vi.mock('@/features/dashboard/hooks/useDashboardPanels.js', () => ({
   useActionQueue: () => ({ data: queue.data }),
 }));
