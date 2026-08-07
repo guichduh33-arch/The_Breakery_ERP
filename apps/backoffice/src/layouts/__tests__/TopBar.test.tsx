@@ -19,6 +19,12 @@ vi.mock('@/features/inventory-alerts/hooks/useReorderSuggestions.js', () => ({
   useReorderSuggestions: () => ({ data: [], isLoading: false }),
 }));
 
+// La cloche lit la file « Needs you » (RPC agrégée). On pilote sa réponse.
+const queue = vi.hoisted((): { data: unknown } => ({ data: null }));
+vi.mock('@/features/dashboard/hooks/useDashboardPanels.js', () => ({
+  useActionQueue: () => ({ data: queue.data }),
+}));
+
 import { TopBar } from '@/layouts/TopBar.js';
 import { useAuthStore } from '@/stores/authStore.js';
 
@@ -64,6 +70,9 @@ describe('TopBar', () => {
   beforeEach(() => {
     cleanup();
     localStorage.clear();
+    // File vide par défaut : les tests de navigation ne doivent pas dépendre de
+    // ce qu'un test de cloche a laissé derrière lui.
+    queue.data = { items: [], total: 0, generated_at: '2026-08-07T09:00:00Z' };
   });
 
   it('rend les 7 onglets de domaine pour un rôle omnipotent', () => {
@@ -160,15 +169,53 @@ describe('TopBar', () => {
     expect(within(panel).queryByRole('link', { name: 'General ledger' })).not.toBeInTheDocument();
   });
 
-  it('ne monte la cloche d’alertes que sous inventory.read', () => {
+  // Arbitrage 2026-08-07 : la cloche porte le total de la file, pas le seul
+  // compteur stock. Elle n'est donc plus gardée par `inventory.read` — la RPC
+  // filtre source par source, et ce droit-là aurait masqué la cloche à un rôle
+  // qui n'a qu'une caisse non clôturée à traiter.
+  it('monte la cloche sans inventory.read et n’affiche aucune pastille à zéro', () => {
+    queue.data = { items: [], total: 0, generated_at: '2026-08-07T09:00:00Z' };
     setAuthState(['expenses.read']);
     renderTopBar();
-    expect(screen.queryByRole('link', { name: /inventory alerts/i })).not.toBeInTheDocument();
 
-    cleanup();
+    const bell = screen.getByRole('link', { name: /nothing needs you/i });
+    expect(bell).toBeInTheDocument();
+    expect(bell).toHaveAttribute('href', '/backoffice');
+    expect(within(bell).queryByText(/\d/)).not.toBeInTheDocument();
+  });
+
+  it('la pastille porte le total de la file et ventile par source dans le title', () => {
+    queue.data = {
+      items: [
+        { key: 'register_not_closed', severity: 'blocking', count: 1,
+          label: 'Register not closed', action: 'Reconcile', to: '/x' },
+        { key: 'low_stock', severity: 'warning', count: 3,
+          label: '3 items below minimum', action: 'Review', to: '/y' },
+        { key: 'po_awaiting_receipt', severity: 'info', count: 2,
+          label: '2 POs awaiting receipt', action: 'Receive', to: '/z' },
+      ],
+      total: 6,
+      generated_at: '2026-08-07T09:00:00Z',
+    };
     setAuthState(ALL_PERMS);
     renderTopBar();
-    expect(screen.getByRole('link', { name: /No inventory alerts/i })).toBeInTheDocument();
+
+    const bell = screen.getByRole('link', { name: /6 items need you/i });
+    // Le total de la pastille est celui de la file — pas le nombre d'items.
+    expect(within(bell).getByText('6')).toBeInTheDocument();
+    expect(bell).toHaveAttribute('title', '1 register · 3 low stock · 2 PO to receive');
+  });
+
+  it('la pastille plafonne à 99+', () => {
+    queue.data = {
+      items: [{ key: 'low_stock', severity: 'warning', count: 120,
+                label: '120 items below minimum', action: 'Review', to: '/y' }],
+      total: 120,
+      generated_at: '2026-08-07T09:00:00Z',
+    };
+    setAuthState(ALL_PERMS);
+    renderTopBar();
+    expect(screen.getByText('99+')).toBeInTheDocument();
   });
 
   it('déplace le focus entre onglets avec ← et →', () => {

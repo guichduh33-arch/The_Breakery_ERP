@@ -48,6 +48,14 @@
   --surface-4: #2e2924;            /* hover / pressed state */
   --surface-inert: #1f1c19;        /* remplissage inerte (en-tête de tableau) */
 
+  /* Grille de mesure du fond de page — INERTE hors Backoffice. L'utilitaire qui
+   * la consomme est monté sur le conteneur scrollant du Backoffice uniquement,
+   * mais le token est défini ici pour que `none` soit la valeur par défaut : un
+   * thème qui ne veut pas de grille n'a rien à désactiver. */
+  --page-grid: none;
+  --page-grid-size: auto;
+  --page-grid-position: 0 0;
+
   /* Gold extended scale (--gold-base/hover/pressed live in luxe-dark.css). */
   --gold-soft:    rgba(211, 171, 92, 0.14);
   --gold-strong:  #bf9748;
@@ -168,6 +176,20 @@
   --surface-4: #e9e7e2;        /* survol / pressé / squelette sur carte blanche */
   --surface-inert: #fafaf8;    /* en-tête & pied de tableau, champ inerte */
   --cream:     var(--surface-1);
+
+  /* Grille de mesure du fond de page. Le seul relief de la direction
+   * « Instrument » : un point de 1 px tous les 22 px, décalé d'un pixel pour que
+   * la première rangée ne soit pas coupée par le bord du conteneur. Elle donne
+   * de la profondeur sans dégradé, et elle dit que la page est un plan de
+   * travail gradué plutôt qu'une surface pleine.
+   *
+   * Les trois valeurs tiennent ICI, pas dans l'utilitaire : basculer de
+   * direction (ou revenir au fond plat) reste une édition de ce bloc. Le pas de
+   * 22 px est celui de la gouttière de page — la grille et les marges tombent
+   * donc sur le même module. */
+  --page-grid: radial-gradient(#dfddd6 1px, transparent 1px);
+  --page-grid-size: 22px 22px;
+  --page-grid-position: -1px -1px;
 
   --bg-base:     var(--surface-1);
   --bg-elevated: var(--surface-2);

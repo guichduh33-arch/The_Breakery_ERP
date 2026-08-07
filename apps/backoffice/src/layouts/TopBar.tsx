@@ -21,24 +21,60 @@ import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { Bell, ChevronDown, LogOut, Search, Settings } from 'lucide-react';
 import { cn } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
-import { useAlertsCount } from '@/features/inventory-alerts/hooks/useAlertsCount.js';
+import { useActionQueue } from '@/features/dashboard/hooks/useDashboardPanels.js';
 import { DomainPanel } from './DomainPanel.js';
 import { NAV_DOMAINS, activeDomainId, visibleDomains, type NavDomain } from './nav.js';
 
 /**
- * Pastille de comptage sur la cloche — même source que le lien Alerts du panneau.
+ * Libellés courts par source, pour la ventilation du `title`.
  *
- * Ce compteur est STOCK, et rien d'autre. Il diverge volontairement du total de
- * la file « Needs you » du dashboard (5 sources) : voir `useAlertsCount`.
+ * Le libellé long de chaque item est une PHRASE fabriquée serveur (« 3 items
+ * below reorder point ») : elle est juste dans la file, mais illisible bout à
+ * bout dans une infobulle. On ne garde donc que le nom de la source et on
+ * réutilise le `count` de l'item.
  */
-function AlertsBell() {
-  const { total, lowStock, reorder } = useAlertsCount();
+const SOURCE_LABEL: Record<string, string> = {
+  register_not_closed: 'register',
+  low_stock:           'low stock',
+  reorder:             'to reorder',
+  po_awaiting_receipt: 'PO to receive',
+  b2b_overdue:         'overdue',
+};
+
+/**
+ * Pastille de comptage sur la cloche — le total de la file « Needs you ».
+ *
+ * ARBITRAGE 2026-08-07, CONTRE la première implémentation. La cloche a d'abord
+ * été branchée sur le seul compteur de stock, pour rester alignée sur le lien
+ * « Alerts » du panneau Stock. Mais un utilisateur qui lit « 3 » sur la cloche
+ * et « 11 » dans la file, sur le même écran, ne peut pas savoir lequel des deux
+ * ment — et la cloche est justement ce qu'il regarde quand le dashboard n'est
+ * PAS ouvert. Une seule règle : **ce qui demande un humain compte une fois**.
+ *
+ * La ventilation par source vit dans le `title`, pas dans un second nombre.
+ *
+ * Le filtrage par droit est fait SERVEUR, source par source, par la même RPC que
+ * la file : la cloche et la barre affichent donc le même total pour le même
+ * rôle, sans que rien ne soit filtré deux fois ici. C'est pourquoi ce composant
+ * n'est plus gardé par `inventory.read` — ce droit-là aurait masqué la cloche à
+ * un comptable qui a une caisse non clôturée à traiter.
+ */
+function NeedsYouBell() {
+  const { data } = useActionQueue();
+  const total = data?.total ?? 0;
+  const items = data?.items ?? [];
+
+  const breakdown = items
+    .map((i) => `${i.count} ${SOURCE_LABEL[i.key] ?? i.key}`)
+    .join(' · ');
+
   return (
     <Link
-      to="/backoffice/inventory/alerts"
+      to="/backoffice"
       className="relative inline-flex h-[30px] w-[30px] items-center justify-center rounded-sm text-ink-fg-muted transition-colors hover:bg-ink-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink-gold"
-      aria-label={total === 0 ? 'No inventory alerts' : `${total} active inventory alerts`}
-      title={`Stock alerts · ${lowStock} low-stock / ${reorder} reorder`}
+      aria-label={total === 0 ? 'Nothing needs you' : `${total} items need you`}
+      title={total === 0 ? 'Nothing needs you' : breakdown}
+      data-testid="needs-you-bell"
     >
       <Bell className="h-[17px] w-[17px]" aria-hidden />
       {total > 0 && (
@@ -294,7 +330,7 @@ export function TopBar({ onOpenSearch }: TopBarProps) {
             <kbd className="font-data text-[10px] tracking-wide">⌘K</kbd>
           </button>
 
-          {hasPermission('inventory.read') && <AlertsBell />}
+          <NeedsYouBell />
           <UserChip />
         </div>
       </header>

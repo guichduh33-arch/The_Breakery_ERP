@@ -22,3 +22,16 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer components {
+  /* Fond de page gradué — l'unique consommateur des tokens `--page-grid*`.
+   * Monté sur le conteneur scrollant du shell, il descend aux huit écrans d'un
+   * coup. Il ne décide de rien : les trois valeurs viennent du thème, si bien
+   * qu'un thème sans grille (`--page-grid: none`) rend cette classe inerte
+   * plutôt que de demander à la retirer des composants. */
+  .bg-page-grid {
+    background-image: var(--page-grid);
+    background-size: var(--page-grid-size);
+    background-position: var(--page-grid-position);
+  }
+}
