@@ -57,7 +57,7 @@ export function ProductsFilters({
           placeholder="Search by name or SKU…"
           value={search}
           onChange={(e) => { onSearch(e.target.value); }}
-          className={cn(CONTROL, 'w-full pl-9 pr-3 placeholder:text-text-subtle')}
+          className={cn(CONTROL, 'w-full pl-9 pr-3 placeholder:text-text-muted')}
         />
       </div>
 

@@ -98,7 +98,7 @@ export function B2bOrderItemsPanel({ orderId, orderTotal }: B2bOrderItemsPanelPr
           </tr>
           {drift !== 0 && (
             <tr>
-              <td colSpan={4} className="pt-1 text-right font-data text-[10.5px] text-text-subtle">
+              <td colSpan={4} className="pt-1 text-right font-data text-[10.5px] text-text-muted">
                 order total {formatIdr(orderTotal)} — {drift > 0 ? 'header charge' : 'header discount'}{' '}
                 {formatIdr(Math.abs(drift))}
               </td>

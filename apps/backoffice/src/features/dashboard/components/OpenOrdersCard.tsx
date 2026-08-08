@@ -23,7 +23,7 @@ import type { OpenOrdersPanel } from '../hooks/useDashboardPanels.js';
 function ageTone(minutes: number): string {
   if (minutes > 45) return 'text-danger font-semibold';
   if (minutes >= 30) return 'text-warning font-semibold';
-  return 'text-text-subtle';
+  return 'text-text-muted';
 }
 
 export function OpenOrdersCard({

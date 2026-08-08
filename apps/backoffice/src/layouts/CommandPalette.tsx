@@ -182,7 +182,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
             placeholder="Jump to a page or start an action…"
             aria-label="Search pages and actions"
             aria-controls="command-palette-results"
-            className="min-w-0 flex-1 bg-transparent text-[15px] text-text-primary outline-none placeholder:text-text-subtle"
+            className="min-w-0 flex-1 bg-transparent text-[15px] text-text-primary outline-none placeholder:text-text-muted"
           />
           <kbd className="shrink-0 rounded-sm border border-border-strong px-1.5 py-0.5 font-data text-[10px] text-text-muted">
             Esc
@@ -207,7 +207,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
             return (
               <li key={`${entry.group}:${entry.to}`}>
                 {groupHeader !== null && (
-                  <p className="px-4 pb-1 pt-2 font-data text-[10px] uppercase tracking-widest text-text-subtle">
+                  <p className="px-4 pb-1 pt-2 font-data text-[10px] uppercase tracking-widest text-text-muted">
                     {groupHeader}
                   </p>
                 )}
@@ -227,7 +227,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
                     {entry.label}
                   </span>
                   {entry.breadcrumb !== '' && (
-                    <span className="shrink-0 text-[11.5px] text-text-subtle">{entry.breadcrumb}</span>
+                    <span className="shrink-0 text-[11.5px] text-text-muted">{entry.breadcrumb}</span>
                   )}
                   {highlighted && (
                     <CornerDownLeft className="h-3.5 w-3.5 shrink-0 text-text-muted" aria-hidden />

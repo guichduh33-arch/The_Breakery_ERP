@@ -85,7 +85,7 @@ export function RevenueShareCard({
               {payments.lines.map((p) => (
                 <li key={p.method} className="flex items-baseline gap-2 text-[12.5px]">
                   <span className="min-w-0 flex-1 truncate text-text-primary">{paymentMethodLabel(p.method)}</span>
-                  <span className="shrink-0 font-data tabular-nums text-text-subtle">{formatPct(p.share_pct)}</span>
+                  <span className="shrink-0 font-data tabular-nums text-text-muted">{formatPct(p.share_pct)}</span>
                   <span className="shrink-0 font-data tabular-nums text-text-primary">{formatIdrShort(p.amount)}</span>
                 </li>
               ))}

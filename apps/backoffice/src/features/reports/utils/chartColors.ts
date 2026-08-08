@@ -91,10 +91,15 @@ export const CHART_ACCENT_GOLD = '#8a6820'; // --gold-base du thème clair
 // Refonte shell 2026-08-05 — l'ivoire chaud a laissé la place au neutre
 // refroidi ; ces quatre valeurs suivent (sans quoi les graphes traçaient une
 // grille beige sur des cartes blanches).
-export const CHART_GRID_STROKE      = '#eceae5'; // --border-muted
-export const CHART_AXIS_STROKE      = '#e3e1db'; // --border-subtle (ligne de base)
-export const CHART_AXIS_TICK        = '#7a766e'; // --text-muted
-export const CHART_AXIS_TICK_SUBTLE = '#9b968d'; // --text-subtle (libellés d'axe denses)
+//
+// Audit /impeccable 2026-08-08 — un libellé d'axe est du TEXTE. Il y avait ici
+// deux crans, dont un (`#9b968d`, 2,94:1) sous le seuil AA à 10 px. Le cran
+// discret est supprimé plutôt que remonté : le token `--text-subtle` ne porte
+// plus que du non-texte, et deux gris de libellé d'axe ne disaient rien qu'un
+// seul ne dise mieux.
+export const CHART_GRID_STROKE = '#eceae5'; // --border-muted
+export const CHART_AXIS_STROKE = '#e3e1db'; // --border-subtle (ligne de base)
+export const CHART_AXIS_TICK   = '#6b6861'; // --text-muted (5,5:1 sur carte blanche)
 
 /** Shared recharts <Tooltip contentStyle> — white card, subtle border. */
 export const CHART_TOOLTIP_STYLE = {

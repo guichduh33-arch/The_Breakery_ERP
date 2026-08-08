@@ -115,7 +115,7 @@ export function ReorderTab(): JSX.Element {
             className={FIELD}
           />
         </div>
-        <p className="pb-1 font-data text-[10.5px] text-text-subtle">
+        <p className="pb-1 font-data text-[10.5px] text-text-muted">
           order qty = max(0, daily use × buffer − on hand)
         </p>
       </div>

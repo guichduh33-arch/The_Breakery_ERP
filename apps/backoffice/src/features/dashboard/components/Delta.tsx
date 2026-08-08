@@ -41,7 +41,7 @@ export function Delta({
 }: DeltaProps): JSX.Element {
   const d = deltaView(value, unit);
 
-  const neutral  = onInk ? 'text-ink-fg-sub'  : 'text-text-subtle';
+  const neutral  = onInk ? 'text-ink-fg-sub'  : 'text-text-muted';
   const positive = onInk ? 'text-ink-success' : 'text-success';
   const negative = onInk ? 'text-ink-danger'  : 'text-danger';
 
