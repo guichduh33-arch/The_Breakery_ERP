@@ -104,7 +104,7 @@ export default function SettingsKdsConfigPage() {
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
-        <h1 className="font-serif text-3xl">KDS Configuration</h1>
+        <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">KDS Configuration</h1>
         <p className="text-text-secondary text-sm mt-1">
           Ticket-age warning/urgent color bands + ready auto-archive delay, shared by every kitchen display terminal. Audited on change.
         </p>

@@ -49,7 +49,7 @@ export default function SettingsPermissionsPage() {
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="font-serif text-3xl">Permissions</h1>
+          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Permissions</h1>
           <p className="text-text-secondary text-sm mt-1">
             Read-only role → permission matrix. Use{' '}
             <Link to="/backoffice/users/permissions" className="text-gold underline-offset-4 hover:underline">

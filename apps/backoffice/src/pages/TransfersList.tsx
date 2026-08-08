@@ -74,7 +74,7 @@ export default function TransfersListPage(): JSX.Element {
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="font-serif text-3xl">Transfers</h1>
+          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Transfers</h1>
           <p className="text-text-secondary text-sm mt-1">
             Move stock between sections. Items leave the source and land at the destination on receive.
           </p>

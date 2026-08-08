@@ -266,7 +266,7 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
           <ArrowLeft className="h-4 w-4" aria-hidden /> Back to order
         </Button>
         <header>
-          <h1 className="font-display text-3xl text-text-primary">Edit {po.po_number}</h1>
+          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Edit {po.po_number}</h1>
           <p className="mt-1 text-sm text-text-secondary">
             Editing is locked once goods are received or any payment is recorded.
           </p>
@@ -301,7 +301,7 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
             <ArrowLeft className="h-4 w-4" aria-hidden /> Back
           </Button>
           <div className="mt-2 flex items-center gap-3">
-            <h1 className="font-display text-3xl text-text-primary tabular-nums">{po.po_number}</h1>
+            <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary tabular-nums">{po.po_number}</h1>
             <POStatusBadge status={status} />
           </div>
           <p className="mt-1 text-sm text-text-secondary">{po.suppliers?.name ?? '—'}</p>

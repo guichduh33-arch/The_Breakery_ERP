@@ -28,7 +28,7 @@ export function ProductDetailHeader({ name, sku, isDirty = false, isSaving = fal
           <ArrowLeft className="h-4 w-4" aria-hidden />
         </Link>
         <div>
-          <h1 className="font-display text-3xl text-text-primary">{name}</h1>
+          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">{name}</h1>
           <div className="mt-1 flex items-center gap-2 text-xs text-text-secondary">
             <span className="uppercase tracking-widest">SKU Identity:</span>
             <span className="rounded-full bg-gold-soft px-2 py-0.5 font-mono font-semibold text-gold">{sku}</span>

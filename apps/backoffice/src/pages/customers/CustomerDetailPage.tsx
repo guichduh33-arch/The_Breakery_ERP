@@ -152,7 +152,7 @@ export function CustomerDetailPage(): JSX.Element {
           </Button>
           <CustomerAvatar name={customer.name} />
           <div className="leading-tight">
-            <h1 className="font-serif text-3xl text-text-primary">{customer.name}</h1>
+            <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">{customer.name}</h1>
             <div className="mt-1.5 flex flex-wrap items-center gap-2">
               <CustomerCategoryChip
                 name={customer.category?.name ?? null}

@@ -92,7 +92,7 @@ export default function NewExpensePage(): JSX.Element {
       </Link>
 
       <header>
-        <h1 className="font-display text-3xl text-text-primary">New expense</h1>
+        <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">New expense</h1>
         <p className="mt-1 text-sm text-text-secondary">
           Capture an operational expense. Submit it later to request approval.
         </p>

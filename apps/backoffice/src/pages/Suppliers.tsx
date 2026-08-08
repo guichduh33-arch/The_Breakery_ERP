@@ -106,7 +106,7 @@ export default function SuppliersPage(): JSX.Element {
     <div className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl text-text-primary">Supplier Management</h1>
+          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Supplier Management</h1>
           <p className="mt-1 text-sm text-text-secondary">Manage your suppliers and their contact information.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">

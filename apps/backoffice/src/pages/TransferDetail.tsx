@@ -71,7 +71,7 @@ export default function TransferDetailPage(): JSX.Element {
           <ChevronLeft className="h-3 w-3" aria-hidden /> Back to transfers
         </Link>
         <div className="flex items-center gap-3 mt-2">
-          <h1 className="font-serif text-3xl font-mono">{transfer.transfer_number}</h1>
+          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary font-mono">{transfer.transfer_number}</h1>
           <TransferStatusBadge status={transfer.status} />
         </div>
       </div>

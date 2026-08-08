@@ -33,7 +33,7 @@ export function RecipeDetailPage(): JSX.Element {
             <ArrowLeft size={16} /> Back
           </Link>
         </Button>
-        <h1 className="text-2xl font-semibold font-serif">{product.name}</h1>
+        <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">{product.name}</h1>
         {product.is_semi_finished && (
           <Badge variant="info">Semi-finished</Badge>
         )}

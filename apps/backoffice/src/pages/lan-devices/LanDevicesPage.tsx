@@ -48,7 +48,7 @@ export default function LanDevicesPage() {
     <div className="space-y-6">
       <header className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-serif">LAN Devices</h1>
+          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">LAN Devices</h1>
           <p className="text-sm text-text-secondary">
             Devices participating in the on-site LAN mesh. Status is computed
             from the last heartbeat — devices that haven&apos;t pinged in 60s

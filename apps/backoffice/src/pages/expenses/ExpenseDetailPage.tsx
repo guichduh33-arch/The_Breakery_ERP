@@ -125,7 +125,7 @@ export default function ExpenseDetailPage(): JSX.Element {
 
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl text-text-primary tabular-nums">{expense.expense_number}</h1>
+          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary tabular-nums">{expense.expense_number}</h1>
           <p className="mt-1 text-sm text-text-secondary">{expense.description}</p>
           <div className="mt-2 flex items-center gap-2 flex-wrap">
             <ExpenseStatusBadge status={expense.status} />

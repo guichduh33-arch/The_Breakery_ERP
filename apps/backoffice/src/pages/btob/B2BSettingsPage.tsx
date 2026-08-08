@@ -145,7 +145,7 @@ export default function B2BSettingsPage(): JSX.Element {
             </Link>
           </Button>
           <div>
-            <h1 className="font-serif text-3xl text-text-primary inline-flex items-center gap-2">
+            <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary inline-flex items-center gap-2">
               <FileText className="h-6 w-6 text-gold" aria-hidden /> B2B Settings
             </h1>
             <p className="mt-1 text-sm text-text-secondary">

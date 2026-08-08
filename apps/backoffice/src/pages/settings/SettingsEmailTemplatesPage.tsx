@@ -32,7 +32,7 @@ export default function SettingsEmailTemplatesPage() {
   return (
     <div className="space-y-6 max-w-6xl">
       <div>
-        <h1 className="font-serif text-3xl">Email templates</h1>
+        <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Email templates</h1>
         <p className="text-text-secondary text-sm mt-1">
           Customer-facing emails (welcome, order ready, payment, password reset). System notifications live in
           Notifications (Phase 5.B).

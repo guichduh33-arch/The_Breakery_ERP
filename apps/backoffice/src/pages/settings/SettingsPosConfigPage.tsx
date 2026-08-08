@@ -86,7 +86,7 @@ export default function SettingsPosConfigPage() {
   return (
     <div className="space-y-6 max-w-3xl">
       <div>
-        <h1 className="font-serif text-3xl">POS Configuration</h1>
+        <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">POS Configuration</h1>
         <p className="text-text-secondary text-sm mt-1">
           Org-wide presets consumed by every POS terminal. Audited on change.
         </p>

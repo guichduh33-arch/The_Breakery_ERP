@@ -80,7 +80,7 @@ export default function OpnameDetailPage(): JSX.Element {
           <ArrowLeft className="h-3 w-3" aria-hidden /> Back to counts
         </Link>
         <div className="mt-2 flex flex-wrap items-center gap-3">
-          <h1 className="font-display font-mono text-3xl text-text-primary">{d.count_number}</h1>
+          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary font-mono">{d.count_number}</h1>
           <OpnameStatusBadge status={d.status} />
         </div>
       </header>

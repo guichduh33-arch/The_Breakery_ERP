@@ -248,7 +248,7 @@ export default function SettingsNotificationsPage() {
   return (
     <div className="space-y-6 max-w-6xl">
       <div>
-        <h1 className="font-serif text-3xl">Notifications</h1>
+        <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Notifications</h1>
         <p className="text-text-secondary text-sm mt-1">
           System notification templates consumed by enqueue_notification_v2 (order complete, payment
           received, low stock…). Codes are system events — no create/delete from here. Deactivating a

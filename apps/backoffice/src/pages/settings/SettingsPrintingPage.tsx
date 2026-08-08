@@ -78,7 +78,7 @@ export default function SettingsPrintingPage() {
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
-        <h1 className="font-serif text-3xl">Printing</h1>
+        <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Printing</h1>
         <p className="text-text-secondary text-sm mt-1">
           Org-wide payment automation. The print-server URL stays per-terminal (POS Settings).
         </p>

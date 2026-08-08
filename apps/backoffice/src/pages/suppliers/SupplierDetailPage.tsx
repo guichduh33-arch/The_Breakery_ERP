@@ -236,7 +236,7 @@ export default function SupplierDetailPage(): JSX.Element {
                   <Building2 className="h-6 w-6" />
                 </span>
                 <div>
-                  <h1 className="font-display text-2xl text-text-primary">{supplier.name}</h1>
+                  <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">{supplier.name}</h1>
                   <div className="mt-1 flex items-center gap-2">
                     <span className="font-mono text-xs uppercase text-text-muted">{supplier.code}</span>
                     <StatusBadge active={supplier.is_active} />

@@ -19,7 +19,7 @@ export function CombosHeader({ onCreate }: Props): JSX.Element {
           <Box className="h-5 w-5" aria-hidden />
         </div>
         <div>
-          <h1 className="font-display text-3xl text-text-primary">Combo Management</h1>
+          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Combo Management</h1>
           <p className="text-sm italic text-text-secondary">
             Create artisan bundles and curated sets at premium value
           </p>

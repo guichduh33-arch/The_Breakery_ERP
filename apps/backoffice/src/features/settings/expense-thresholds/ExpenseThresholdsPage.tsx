@@ -58,7 +58,7 @@ export default function ExpenseThresholdsPage(): JSX.Element {
       {/* Header */}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl text-text-primary">Expense Thresholds</h1>
+          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Expense Thresholds</h1>
           <p className="text-sm text-text-secondary italic">
             Configure approval chains by amount bracket and category. Changes apply to new expenses
             only — in-flight expenses keep their original approval chain.
