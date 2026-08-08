@@ -43,7 +43,7 @@ export function ErrorState({
           <h2 className="font-serif text-xl text-text-primary">{title}</h2>
           <p className="text-text-secondary text-sm">{description}</p>
         </div>
-        {(onRetry || secondaryAction) && (
+        {(onRetry ?? secondaryAction) && (
           <div className="flex items-center justify-center gap-3 pt-2">
             {onRetry && (
               <Button onClick={onRetry} variant="primary">

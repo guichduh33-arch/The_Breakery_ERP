@@ -375,9 +375,9 @@ function PaymentsSection({
   metrics: ReturnType<typeof useSupplierMetrics>;
   isLoading: boolean;
 }): JSX.Element {
-  if (isLoading) {
-    return <div className="h-32 animate-pulse rounded-md border border-border-subtle bg-bg-elevated" />;
-  }
+  // Le hook précède le retour anticipé : appelé après, il n'existait pas au
+  // rendu de chargement et apparaissait au rendu suivant. L'ordre des hooks
+  // changeait d'un rendu à l'autre — l'invariant que React ne pardonne pas.
   const overdue = useMemo(() => {
     const today = Date.now();
     return rows.reduce((acc, r) => {
@@ -388,6 +388,10 @@ function PaymentsSection({
       return acc;
     }, 0);
   }, [rows]);
+
+  if (isLoading) {
+    return <div className="h-32 animate-pulse rounded-md border border-border-subtle bg-bg-elevated" />;
+  }
 
   return (
     <div className="space-y-4">

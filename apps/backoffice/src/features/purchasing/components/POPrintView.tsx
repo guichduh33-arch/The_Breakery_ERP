@@ -31,7 +31,7 @@ export function POPrintView({ po }: POPrintViewProps): JSX.Element {
       </header>
       <section className="mb-4 text-sm">
         <h2 className="font-semibold text-base mb-1">Supplier</h2>
-        <div>{po.suppliers?.name ?? '?'}{' '}<span className="text-gray-500">({po.suppliers?.code ?? '—'})</span></div>
+        <div>{po.suppliers?.name ?? '?'}{' '}<span className="text-text-muted">({po.suppliers?.code ?? '—'})</span></div>
       </section>
       <div className="overflow-x-auto">
         <table className="w-full text-sm border-collapse mb-4">
@@ -47,7 +47,7 @@ export function POPrintView({ po }: POPrintViewProps): JSX.Element {
           <tbody>
             {po.purchase_order_items.map((it) => (
               <tr key={it.id} className="border-b">
-                <td className="py-1">{it.products?.name ?? '?'}{' '}<span className="text-gray-500">({it.products?.sku ?? '—'})</span></td>
+                <td className="py-1">{it.products?.name ?? '?'}{' '}<span className="text-text-muted">({it.products?.sku ?? '—'})</span></td>
                 <td className="py-1 text-right tabular-nums">{fmt(it.quantity)}</td>
                 <td className="py-1">{it.unit}</td>
                 <td className="py-1 text-right tabular-nums">{fmt(it.unit_cost)}</td>

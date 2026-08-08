@@ -50,7 +50,7 @@ import {
 import { useLoyaltyStats } from '@/features/loyalty/hooks/useLoyaltyStats.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
-const TIER_OPTIONS: ReadonlyArray<{ value: TierFilter; label: string }> = [
+const TIER_OPTIONS: readonly { value: TierFilter; label: string }[] = [
   { value: 'all',      label: 'Tier: All' },
   { value: 'bronze',   label: 'Bronze' },
   { value: 'silver',   label: 'Silver' },
@@ -97,7 +97,7 @@ export default function LoyaltyPage(): JSX.Element {
     return <div className="text-text-secondary">You do not have permission to view loyalty.</div>;
   }
 
-  const columns: ReadonlyArray<DataTableColumn<Row>> = [
+  const columns: readonly DataTableColumn<Row>[] = [
     {
       id:     'customer',
       header: 'Member',

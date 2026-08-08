@@ -123,7 +123,7 @@ export function VariantsPanel({ product }: VariantsPanelProps): JSX.Element {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate(`/backoffice/products/${parent.id}`)}
+              onClick={() => { void navigate(`/backoffice/products/${parent.id}`); }}
               data-testid="variant-banner-view-parent"
             >
               <ArrowLeft className="h-3.5 w-3.5 mr-1" aria-hidden />

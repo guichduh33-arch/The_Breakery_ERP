@@ -47,7 +47,7 @@ interface SuppliersKpi {
   inactive: number;
 }
 
-function aggregate(rows: ReadonlyArray<SupplierRow>): SuppliersKpi {
+function aggregate(rows: readonly SupplierRow[]): SuppliersKpi {
   const acc: SuppliersKpi = { total: rows.length, active: 0, inactive: 0 };
   for (const r of rows) {
     if (r.is_active) acc.active += 1;

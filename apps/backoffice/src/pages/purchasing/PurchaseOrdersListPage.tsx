@@ -57,7 +57,7 @@ interface POKpi {
   cancelled: number;
 }
 
-function aggregate(rows: ReadonlyArray<PurchaseOrderListRow>): POKpi {
+function aggregate(rows: readonly PurchaseOrderListRow[]): POKpi {
   const acc: POKpi = { total: rows.length, pending: 0, partial: 0, received: 0, cancelled: 0 };
   for (const r of rows) {
     if (r.status === 'pending')   acc.pending   += 1;
@@ -118,7 +118,7 @@ export default function PurchaseOrdersListPage(): JSX.Element {
   const rows = list.data ?? [];
   const kpi  = useMemo(() => aggregate(allList.data ?? []), [allList.data]);
 
-  const columns: ReadonlyArray<DataTableColumn<PurchaseOrderListRow>> = useMemo(() => [
+  const columns: readonly DataTableColumn<PurchaseOrderListRow>[] = useMemo(() => [
     {
       id:    'po_number',
       header: 'PO Number',
@@ -289,7 +289,7 @@ export default function PurchaseOrdersListPage(): JSX.Element {
           rows={rows}
           getRowKey={(r) => r.id}
           isLoading={list.isLoading}
-          onRowClick={(row) => navigate(`/backoffice/purchasing/purchase-orders/${row.id}`)}
+          onRowClick={(row) => { void navigate(`/backoffice/purchasing/purchase-orders/${row.id}`); }}
           emptyState={
             <div className="px-6 py-12 text-center">
               <Package className="mx-auto h-10 w-10 text-text-muted" aria-hidden />

@@ -53,7 +53,7 @@ interface ExpensesKpi {
   avgAmount: number;
 }
 
-function aggregate(rows: ReadonlyArray<ExpenseRow>): ExpensesKpi {
+function aggregate(rows: readonly ExpenseRow[]): ExpensesKpi {
   const acc: ExpensesKpi = { totalAmount: 0, pendingCount: 0, monthlyCount: 0, avgAmount: 0 };
   if (rows.length === 0) return acc;
   const monthStart = new Date();
@@ -112,7 +112,7 @@ export default function ExpensesListPage(): JSX.Element {
   const rows = list.data ?? [];
   const kpi  = useMemo(() => aggregate(allList.data ?? []), [allList.data]);
 
-  const columns: ReadonlyArray<DataTableColumn<ExpenseRow>> = useMemo(() => [
+  const columns: readonly DataTableColumn<ExpenseRow>[] = useMemo(() => [
     {
       id:    'date',
       header: 'Date',

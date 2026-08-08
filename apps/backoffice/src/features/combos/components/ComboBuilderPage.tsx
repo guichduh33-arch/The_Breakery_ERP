@@ -168,7 +168,7 @@ export default function ComboBuilderPage({ mode }: Props): JSX.Element {
         })),
       });
       toast.success(mode === 'create' ? 'Combo created!' : 'Combo updated!');
-      navigate('/backoffice/products/combos');
+      void navigate('/backoffice/products/combos');
     } catch (e) {
       toast.error((e as Error).message);
     }
@@ -183,7 +183,7 @@ export default function ComboBuilderPage({ mode }: Props): JSX.Element {
     try {
       await deleteCombo.mutateAsync(comboId);
       toast.success('Combo deleted.');
-      navigate('/backoffice/products/combos');
+      void navigate('/backoffice/products/combos');
     } catch (e) {
       toast.error((e as Error).message);
     }
@@ -222,7 +222,7 @@ export default function ComboBuilderPage({ mode }: Props): JSX.Element {
       <div className="flex items-center gap-3">
         <button
           type="button"
-          onClick={() => { navigate('/backoffice/products/combos'); }}
+          onClick={() => { void navigate('/backoffice/products/combos'); }}
           className="text-text-muted hover:text-text-primary transition-colors"
           aria-label="Back to Combo Management"
         >
@@ -322,7 +322,7 @@ export default function ComboBuilderPage({ mode }: Props): JSX.Element {
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"
-            onClick={() => { navigate('/backoffice/products/combos'); }}
+            onClick={() => { void navigate('/backoffice/products/combos'); }}
             disabled={isSaving}
             data-testid="cancel-combo"
           >

@@ -17,8 +17,8 @@ export default function NewUserPage() {
       </p>
       <UserFormDialog
         roles={(roles.data ?? []).map((r) => ({ code: r.code, name: r.name }))}
-        onClose={() => { navigate('/backoffice/users'); }}
-        onCreated={(id) => { navigate(`/backoffice/users/${id}`); }}
+        onClose={() => { void navigate('/backoffice/users'); }}
+        onCreated={(id) => { void navigate(`/backoffice/users/${id}`); }}
       />
     </div>
   );

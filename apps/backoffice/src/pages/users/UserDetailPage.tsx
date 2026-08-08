@@ -215,7 +215,7 @@ export default function UserDetailPage() {
           fullName={u.full_name}
           onClose={() => {
             setShowDelete(false);
-            navigate('/backoffice/users');
+            void navigate('/backoffice/users');
           }}
         />
       )}

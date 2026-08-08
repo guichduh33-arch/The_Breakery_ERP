@@ -84,14 +84,14 @@ export default function ExpenseThresholdsPage(): JSX.Element {
       {/* Error */}
       {thresholds.isError && (
         <p className="text-sm text-red" data-testid="threshold-list-error">
-          {(thresholds.error as Error).message}
+          {(thresholds.error).message}
         </p>
       )}
 
       {/* Delete error */}
       {deleteMut.isError && (
         <p className="text-sm text-red" data-testid="delete-threshold-error">
-          {(deleteMut.error as Error).message}
+          {(deleteMut.error).message}
         </p>
       )}
 

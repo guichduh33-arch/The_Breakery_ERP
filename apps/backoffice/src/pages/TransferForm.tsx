@@ -107,7 +107,7 @@ export default function TransferFormPage(): JSX.Element {
         ...(header.notes.trim() !== '' ? { notes: header.notes.trim() } : {}),
         sendDirectly: header.sendDirectly,
       });
-      navigate(`/backoffice/inventory/transfers/${result.transfer_id}`);
+      void navigate(`/backoffice/inventory/transfers/${result.transfer_id}`);
     } catch (err) {
       if (err instanceof CreateTransferError) {
         switch (err.code) {
@@ -184,7 +184,7 @@ export default function TransferFormPage(): JSX.Element {
           <Button
             type="button"
             variant="ghost"
-            onClick={() => navigate('/backoffice/inventory/transfers')}
+            onClick={() => { void navigate('/backoffice/inventory/transfers'); }}
             disabled={createMut.isPending}
           >
             Cancel

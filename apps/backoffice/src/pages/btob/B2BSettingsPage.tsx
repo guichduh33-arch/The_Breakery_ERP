@@ -34,7 +34,7 @@ import { useUpdateB2bSettings } from '@/features/btob/hooks/useUpdateB2bSettings
 import type { AgingBucket } from '@/features/btob/hooks/useB2bSettings.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
-const DEFAULT_TERM_OPTIONS: ReadonlyArray<{ value: string; label: string }> = [
+const DEFAULT_TERM_OPTIONS: readonly { value: string; label: string }[] = [
   { value: 'cod',    label: 'Cash on delivery (COD)' },
   { value: 'net_7',  label: 'Net 7' },
   { value: 'net_14', label: 'Net 14' },

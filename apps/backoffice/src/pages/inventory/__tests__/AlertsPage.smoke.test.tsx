@@ -12,6 +12,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
+import type * as UseLowStockModule from '@/features/inventory-alerts/hooks/useLowStock.js';
 import AlertsPage from '@/pages/inventory/AlertsPage.js';
 import type { LowStockRow } from '@/features/inventory-alerts/hooks/useLowStock.js';
 
@@ -52,7 +53,7 @@ vi.mock('@/lib/supabase.js', () => ({
 }));
 
 vi.mock('@/features/inventory-alerts/hooks/useLowStock.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/features/inventory-alerts/hooks/useLowStock.js')>();
+  const actual = await importOriginal<typeof UseLowStockModule>();
   return {
     ...actual,
     useLowStock: () => ({ data: MOCK_LOW, isLoading: false, error: null }),

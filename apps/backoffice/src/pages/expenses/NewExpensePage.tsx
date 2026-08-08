@@ -70,7 +70,7 @@ export default function NewExpensePage(): JSX.Element {
       if (values.receipt_url !== '') input.receipt_url = values.receipt_url;
 
       const id = await create.mutateAsync(input);
-      navigate(`/backoffice/expenses/${id}`);
+      void navigate(`/backoffice/expenses/${id}`);
     } catch {
       // surfaced via create.error
     }
@@ -103,7 +103,7 @@ export default function NewExpensePage(): JSX.Element {
         value={values}
         onChange={setValues}
         onSubmit={() => { void handleSubmit(); }}
-        onCancel={() => navigate('/backoffice/expenses')}
+        onCancel={() => { void navigate('/backoffice/expenses'); }}
         submitting={submitDisabled}
         submitLabel="Save as draft"
       />

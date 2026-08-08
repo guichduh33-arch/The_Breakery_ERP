@@ -30,7 +30,7 @@ interface MovementBuckets {
   totalCount: number; totalValue: number;
 }
 
-function bucketize(rows: ReadonlyArray<{ movement_type: string; count: number; qty_total: number; value_total: number | null }>): MovementBuckets {
+function bucketize(rows: readonly { movement_type: string; count: number; qty_total: number; value_total: number | null }[]): MovementBuckets {
   const acc: MovementBuckets = { inCount: 0, inQty: 0, outCount: 0, outQty: 0, totalCount: 0, totalValue: 0 };
   for (const r of rows) {
     const count = Number(r.count) || 0;

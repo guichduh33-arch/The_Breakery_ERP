@@ -324,7 +324,7 @@ export default function CustomersListPage(): JSX.Element {
           rows={list.data ?? []}
           getRowKey={(r) => r.id}
           isLoading={list.isLoading}
-          onRowClick={(row) => navigate(`/backoffice/customers/${row.id}`)}
+          onRowClick={(row) => { void navigate(`/backoffice/customers/${row.id}`); }}
           emptyTitle="No customers match"
           emptyDescription="Adjust the filters above or invite your first customer."
           data-testid="customers-table"

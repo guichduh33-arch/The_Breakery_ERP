@@ -44,7 +44,7 @@ import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 type TypeFilter = 'all' | 'percentage' | 'fixed_amount' | 'bogo' | 'free_product';
 type ActiveFilter = 'all' | 'active' | 'inactive';
 
-const TYPE_OPTIONS: ReadonlyArray<{ value: TypeFilter; label: string }> = [
+const TYPE_OPTIONS: readonly { value: TypeFilter; label: string }[] = [
   { value: 'all',           label: 'Type: All' },
   { value: 'percentage',    label: 'Percentage' },
   { value: 'fixed_amount',  label: 'Fixed amount' },
@@ -52,7 +52,7 @@ const TYPE_OPTIONS: ReadonlyArray<{ value: TypeFilter; label: string }> = [
   { value: 'free_product',  label: 'Free product' },
 ];
 
-const STATUS_OPTIONS: ReadonlyArray<{ value: ActiveFilter; label: string }> = [
+const STATUS_OPTIONS: readonly { value: ActiveFilter; label: string }[] = [
   { value: 'all',      label: 'Status: All' },
   { value: 'active',   label: 'Active' },
   { value: 'inactive', label: 'Inactive' },
@@ -65,7 +65,7 @@ interface PromoStats {
   discount: number;
 }
 
-function summarise(rows: ReadonlyArray<PromotionListRow>): PromoStats {
+function summarise(rows: readonly PromotionListRow[]): PromoStats {
   let active = 0;
   let bogo = 0;
   let discount = 0;
@@ -119,7 +119,7 @@ export default function PromotionsPage(): JSX.Element {
     updateMut.mutate({ id: row.id, values: { is_active: !row.is_active } });
   }
 
-  const columns: ReadonlyArray<DataTableColumn<PromotionListRow>> = [
+  const columns: readonly DataTableColumn<PromotionListRow>[] = [
     {
       id:     'name',
       header: 'Promotion',
@@ -301,7 +301,7 @@ interface FilterFieldProps {
   id:       string;
   label:    string;
   value:    string;
-  options:  ReadonlyArray<{ value: string; label: string }>;
+  options:  readonly { value: string; label: string }[];
   onChange: (next: string) => void;
 }
 

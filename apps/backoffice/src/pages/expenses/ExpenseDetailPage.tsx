@@ -109,7 +109,7 @@ export default function ExpenseDetailPage(): JSX.Element {
       vendor_name: expense!.vendor_name ?? '',
       description: expense!.description ?? '',
     };
-    navigate('/backoffice/expenses/new', { state: { duplicateFrom: seed } });
+    void navigate('/backoffice/expenses/new', { state: { duplicateFrom: seed } });
   }
 
   return (
@@ -262,7 +262,7 @@ export default function ExpenseDetailPage(): JSX.Element {
             </ul>
           </Card>
 
-          <Button type="button" variant="ghost" onClick={() => navigate('/backoffice/expenses')} className="w-full">
+          <Button type="button" variant="ghost" onClick={() => { void navigate('/backoffice/expenses'); }} className="w-full">
             <ArrowLeft className="h-4 w-4" aria-hidden /> Back to list
           </Button>
 
