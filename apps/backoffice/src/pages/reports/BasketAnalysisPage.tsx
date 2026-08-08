@@ -80,42 +80,44 @@ export default function BasketAnalysisPage() {
         </p>
       )}
       {data && (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-text-secondary border-b border-border-subtle">
-              <th className="py-2 text-left">Product A</th>
-              <th className="py-2 text-left">Product B</th>
-              <th className="py-2 text-right">Co-occurrence</th>
-              <th className="py-2 text-right">Confidence</th>
-              <th className="py-2 text-right">Lift</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.map((row, i) => {
-              const highlight = i < 3 && row.lift > 1.0;
-              return (
-                <tr
-                  key={`${row.product_id_a}_${row.product_id_b}`}
-                  className={
-                    highlight
-                      ? 'border-b border-border-subtle bg-gold-soft'
-                      : 'border-b border-border-subtle'
-                  }
-                >
-                  <td className="py-2">
-                    <DrilldownLink entity="product" id={row.product_id_a} label={row.product_a_name} icon={false} />
-                  </td>
-                  <td className="py-2">
-                    <DrilldownLink entity="product" id={row.product_id_b} label={row.product_b_name} icon={false} />
-                  </td>
-                  <td className="py-2 text-right tabular-nums">{row.co_occurrence_count}</td>
-                  <td className="py-2 text-right tabular-nums">{(row.confidence * 100).toFixed(1)}%</td>
-                  <td className="py-2 text-right tabular-nums font-semibold">{row.lift.toFixed(2)}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-text-secondary border-b border-border-subtle">
+                <th className="py-2 text-left">Product A</th>
+                <th className="py-2 text-left">Product B</th>
+                <th className="py-2 text-right">Co-occurrence</th>
+                <th className="py-2 text-right">Confidence</th>
+                <th className="py-2 text-right">Lift</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.map((row, i) => {
+                const highlight = i < 3 && row.lift > 1.0;
+                return (
+                  <tr
+                    key={`${row.product_id_a}_${row.product_id_b}`}
+                    className={
+                      highlight
+                        ? 'border-b border-border-subtle bg-gold-soft'
+                        : 'border-b border-border-subtle'
+                    }
+                  >
+                    <td className="py-2">
+                      <DrilldownLink entity="product" id={row.product_id_a} label={row.product_a_name} icon={false} />
+                    </td>
+                    <td className="py-2">
+                      <DrilldownLink entity="product" id={row.product_id_b} label={row.product_b_name} icon={false} />
+                    </td>
+                    <td className="py-2 text-right tabular-nums">{row.co_occurrence_count}</td>
+                    <td className="py-2 text-right tabular-nums">{(row.confidence * 100).toFixed(1)}%</td>
+                    <td className="py-2 text-right tabular-nums font-semibold">{row.lift.toFixed(2)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       )}
     </ReportPage>
   );

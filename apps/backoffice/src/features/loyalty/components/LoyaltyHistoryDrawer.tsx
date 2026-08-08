@@ -41,32 +41,34 @@ export function LoyaltyHistoryDrawer({ customer, onClose }: LoyaltyHistoryDrawer
           {q.error && <div className="text-red py-12 text-center">{q.error.message}</div>}
           {q.data?.length === 0 && <div className="text-text-secondary py-12 text-center">No transactions yet.</div>}
           {q.data && q.data.length > 0 && (
-            <table className="w-full text-sm">
-              <thead className="text-xs uppercase tracking-widest text-text-secondary">
-                <tr>
-                  <th className="px-2 py-1 text-left">When</th>
-                  <th className="px-2 py-1 text-left">Type</th>
-                  <th className="px-2 py-1 text-right">Points</th>
-                  <th className="px-2 py-1 text-right">Balance after</th>
-                  <th className="px-2 py-1 text-left">Description</th>
-                  <th className="px-2 py-1 text-left">Author</th>
-                </tr>
-              </thead>
-              <tbody>
-                {q.data.map((row) => (
-                  <tr key={row.id} className="border-t border-border-subtle">
-                    <td className="px-2 py-1 text-text-secondary">{new Date(row.created_at).toLocaleString()}</td>
-                    <td className="px-2 py-1">{TYPE_LABEL[row.transaction_type]}</td>
-                    <td className={`px-2 py-1 text-right font-mono ${row.points >= 0 ? 'text-green' : 'text-red'}`}>
-                      {row.points >= 0 ? '+' : ''}{row.points}
-                    </td>
-                    <td className="px-2 py-1 text-right font-mono">{row.points_balance_after}</td>
-                    <td className="px-2 py-1">{row.description}</td>
-                    <td className="px-2 py-1 text-text-secondary">{row.author?.full_name ?? '—'}</td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="text-xs uppercase tracking-widest text-text-secondary">
+                  <tr>
+                    <th className="px-2 py-1 text-left">When</th>
+                    <th className="px-2 py-1 text-left">Type</th>
+                    <th className="px-2 py-1 text-right">Points</th>
+                    <th className="px-2 py-1 text-right">Balance after</th>
+                    <th className="px-2 py-1 text-left">Description</th>
+                    <th className="px-2 py-1 text-left">Author</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {q.data.map((row) => (
+                    <tr key={row.id} className="border-t border-border-subtle">
+                      <td className="px-2 py-1 text-text-secondary">{new Date(row.created_at).toLocaleString()}</td>
+                      <td className="px-2 py-1">{TYPE_LABEL[row.transaction_type]}</td>
+                      <td className={`px-2 py-1 text-right font-mono ${row.points >= 0 ? 'text-green' : 'text-red'}`}>
+                        {row.points >= 0 ? '+' : ''}{row.points}
+                      </td>
+                      <td className="px-2 py-1 text-right font-mono">{row.points_balance_after}</td>
+                      <td className="px-2 py-1">{row.description}</td>
+                      <td className="px-2 py-1 text-text-secondary">{row.author?.full_name ?? '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </SheetContent>

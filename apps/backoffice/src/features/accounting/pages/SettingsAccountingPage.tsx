@@ -68,7 +68,7 @@ export default function SettingsAccountingPage(): JSX.Element {
       {periods.isLoading && <p className="text-sm text-text-secondary">Loading…</p>}
 
       {rows.length > 0 && (
-        <div className="rounded-lg border border-border-subtle bg-bg-elevated overflow-hidden">
+        <div className="rounded-lg border border-border-subtle bg-bg-elevated overflow-x-auto">
           <table className="w-full text-sm" data-testid="fp-table">
             <thead>
               <tr className="text-left text-xs uppercase tracking-widest text-text-secondary">

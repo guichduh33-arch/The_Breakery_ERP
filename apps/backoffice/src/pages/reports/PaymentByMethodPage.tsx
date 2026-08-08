@@ -157,55 +157,57 @@ export default function PaymentByMethodPage() {
         </ChartCard>
       )}
       {data && (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border-subtle text-text-secondary">
-              <th className="py-2 text-left">Method</th>
-              <th className="py-2 text-right">Amount (IDR)</th>
-              <th className="py-2 text-right">Count</th>
-              <th className="py-2 text-right">Share</th>
-              <th className="py-2 text-right">Fee</th>
-              <th className="py-2 text-right">Fee est.</th>
-              <th className="py-2 text-right">Net est.</th>
-            </tr>
-          </thead>
-          <tbody>
-            {lines.map((r) => (
-              <tr key={r.method} className="border-b border-border-subtle">
-                <td className="py-2 font-medium capitalize">
-                  <DrilldownLink
-                    entity="order_list"
-                    id=""
-                    label={r.method}
-                    filter={{ payment_method: r.method, start, end }}
-                    icon={false}
-                  />
-                </td>
-                <td className="py-2 text-right tabular-nums">{idr(r.amount)}</td>
-                <td className="py-2 text-right tabular-nums">{r.count}</td>
-                <td className="py-2 text-right tabular-nums">{r.share_pct.toFixed(1)}%</td>
-                <td className="py-2 text-right tabular-nums">{r.fee_pct > 0 ? `${r.fee_pct}%` : '—'}</td>
-                <td className="py-2 text-right tabular-nums">{idr(r.fee_est)}</td>
-                <td className="py-2 text-right tabular-nums">{idr(r.net_est)}</td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border-subtle text-text-secondary">
+                <th className="py-2 text-left">Method</th>
+                <th className="py-2 text-right">Amount (IDR)</th>
+                <th className="py-2 text-right">Count</th>
+                <th className="py-2 text-right">Share</th>
+                <th className="py-2 text-right">Fee</th>
+                <th className="py-2 text-right">Fee est.</th>
+                <th className="py-2 text-right">Net est.</th>
               </tr>
-            ))}
-          </tbody>
-          {lines.length > 0 && (
-            <tfoot>
-              <tr className="border-t border-border-subtle font-semibold">
-                <td className="py-2">Total</td>
-                <td className="py-2 text-right tabular-nums">{idr(data.total ?? 0)}</td>
-                <td className="py-2 text-right tabular-nums">
-                  {lines.reduce((sum, r) => sum + r.count, 0)}
-                </td>
-                <td className="py-2 text-right tabular-nums">100%</td>
-                <td className="py-2" />
-                <td className="py-2 text-right tabular-nums">{idr(data.totalFees ?? 0)}</td>
-                <td className="py-2 text-right tabular-nums">{idr(data.totalNet ?? 0)}</td>
-              </tr>
-            </tfoot>
-          )}
-        </table>
+            </thead>
+            <tbody>
+              {lines.map((r) => (
+                <tr key={r.method} className="border-b border-border-subtle">
+                  <td className="py-2 font-medium capitalize">
+                    <DrilldownLink
+                      entity="order_list"
+                      id=""
+                      label={r.method}
+                      filter={{ payment_method: r.method, start, end }}
+                      icon={false}
+                    />
+                  </td>
+                  <td className="py-2 text-right tabular-nums">{idr(r.amount)}</td>
+                  <td className="py-2 text-right tabular-nums">{r.count}</td>
+                  <td className="py-2 text-right tabular-nums">{r.share_pct.toFixed(1)}%</td>
+                  <td className="py-2 text-right tabular-nums">{r.fee_pct > 0 ? `${r.fee_pct}%` : '—'}</td>
+                  <td className="py-2 text-right tabular-nums">{idr(r.fee_est)}</td>
+                  <td className="py-2 text-right tabular-nums">{idr(r.net_est)}</td>
+                </tr>
+              ))}
+            </tbody>
+            {lines.length > 0 && (
+              <tfoot>
+                <tr className="border-t border-border-subtle font-semibold">
+                  <td className="py-2">Total</td>
+                  <td className="py-2 text-right tabular-nums">{idr(data.total ?? 0)}</td>
+                  <td className="py-2 text-right tabular-nums">
+                    {lines.reduce((sum, r) => sum + r.count, 0)}
+                  </td>
+                  <td className="py-2 text-right tabular-nums">100%</td>
+                  <td className="py-2" />
+                  <td className="py-2 text-right tabular-nums">{idr(data.totalFees ?? 0)}</td>
+                  <td className="py-2 text-right tabular-nums">{idr(data.totalNet ?? 0)}</td>
+                </tr>
+              </tfoot>
+            )}
+          </table>
+        </div>
       )}
     </ReportPage>
   );

@@ -311,7 +311,7 @@ export default function OrdersListPage(): JSX.Element {
       {query.error && <div role="alert" className="rounded-md border border-danger/40 bg-danger/5 p-3 text-sm text-danger">Error: {query.error.message}</div>}
 
       {/* Table */}
-      <Card variant="default" padding="none" className="overflow-hidden">
+      <Card variant="default" padding="none" className="overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <thead className="border-b border-border-subtle bg-bg-base/40 text-xs uppercase tracking-widest text-text-secondary">
             <tr>

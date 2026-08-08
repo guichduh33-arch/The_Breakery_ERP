@@ -196,7 +196,7 @@ export function VariantsPanel({ product }: VariantsPanelProps): JSX.Element {
         )}
       </div>
 
-      <div className="rounded-lg border border-border-subtle bg-bg-elevated overflow-hidden">
+      <div className="rounded-lg border border-border-subtle bg-bg-elevated overflow-x-auto">
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => { void handleDragEnd(e); }}>
           <table className="w-full text-sm" data-testid="variants-table">
             <thead className="bg-bg-overlay text-left text-xs uppercase tracking-wider text-text-secondary">

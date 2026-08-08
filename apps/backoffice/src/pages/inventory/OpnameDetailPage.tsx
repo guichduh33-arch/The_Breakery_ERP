@@ -127,23 +127,25 @@ export default function OpnameDetailPage(): JSX.Element {
           />
         </div>
       ) : (
-        <table className="w-full text-sm bg-bg-elevated rounded-lg border border-border-subtle overflow-hidden">
-          <thead className="bg-bg-base/40 border-b border-border-subtle">
-            <tr>
-              <th className="text-left py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Product</th>
-              <th className="text-right py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Expected</th>
-              <th className="text-left py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Counted</th>
-              <th className="text-right py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Variance</th>
-              <th className="text-left py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Notes</th>
-              {!readOnly && <th />}
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((it) => (
-              <CountItemRow key={it.id} countId={d.id} item={it} readOnly={readOnly} />
-            ))}
-          </tbody>
-        </table>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm bg-bg-elevated rounded-lg border border-border-subtle overflow-hidden">
+            <thead className="bg-bg-base/40 border-b border-border-subtle">
+              <tr>
+                <th className="text-left py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Product</th>
+                <th className="text-right py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Expected</th>
+                <th className="text-left py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Counted</th>
+                <th className="text-right py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Variance</th>
+                <th className="text-left py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Notes</th>
+                {!readOnly && <th />}
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((it) => (
+                <CountItemRow key={it.id} countId={d.id} item={it} readOnly={readOnly} />
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
 
       <footer className="flex flex-col gap-3 md:flex-row md:items-center md:justify-end">

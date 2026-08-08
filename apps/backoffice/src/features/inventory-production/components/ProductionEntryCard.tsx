@@ -307,7 +307,7 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
       )}
 
       {/* Table */}
-      <div className="overflow-hidden rounded-lg border border-border-subtle">
+      <div className="overflow-x-auto rounded-lg border border-border-subtle">
         <table className="w-full text-sm">
           <thead className="bg-bg-elevated">
             <tr className="text-left">

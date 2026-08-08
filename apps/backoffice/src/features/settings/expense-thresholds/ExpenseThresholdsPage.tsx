@@ -104,7 +104,7 @@ export default function ExpenseThresholdsPage(): JSX.Element {
 
       {/* Table */}
       {rows.length > 0 && (
-        <div className="rounded-lg border border-border-subtle bg-bg-elevated overflow-hidden">
+        <div className="rounded-lg border border-border-subtle bg-bg-elevated overflow-x-auto">
           <table className="w-full text-sm" data-testid="threshold-table">
             <thead>
               <tr className="text-left text-xs uppercase tracking-widest text-text-secondary">

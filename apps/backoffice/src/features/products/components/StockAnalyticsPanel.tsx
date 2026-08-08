@@ -312,32 +312,34 @@ export function ProductionLossSection({ data }: { data: ProductAnalyticsData }):
             <CardEmpty icon={Utensils} text="This product is not used in any recipe." />
           ) : (
             <div className="max-h-72 overflow-y-auto">
-              <table className="w-full text-sm">
-                <thead className="sticky top-0 bg-bg-elevated text-[10px] uppercase tracking-widest text-text-muted">
-                  <tr>
-                    <th className="px-4 py-2 text-left">Product</th>
-                    <th className="px-3 py-2 text-left">Type</th>
-                    <th className="px-3 py-2 text-right">Qty/Batch</th>
-                    <th className="px-3 py-2 text-right">% Demand</th>
-                    <th className="px-4 py-2 text-right">Est. Used</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.recipe_usage.map((r) => (
-                    <tr key={r.product_id} className="border-t border-border-subtle">
-                      <td className="px-4 py-2 text-text-primary">{r.product_name}</td>
-                      <td className="px-3 py-2">
-                        <Badge variant="secondary" className="uppercase">
-                          {r.is_semi_finished ? 'Semi' : r.product_type ?? 'Finished'}
-                        </Badge>
-                      </td>
-                      <td className="px-3 py-2 text-right font-mono tabular-nums">{fmtNum(r.qty_per_batch, 3)} {r.unit}</td>
-                      <td className="px-3 py-2 text-right font-mono tabular-nums text-gold">{fmtNum(r.demand_pct, 1)}%</td>
-                      <td className="px-4 py-2 text-right font-mono tabular-nums text-text-secondary">{fmtNum(r.est_used, 3)} {r.unit}</td>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="sticky top-0 bg-bg-elevated text-[10px] uppercase tracking-widest text-text-muted">
+                    <tr>
+                      <th className="px-4 py-2 text-left">Product</th>
+                      <th className="px-3 py-2 text-left">Type</th>
+                      <th className="px-3 py-2 text-right">Qty/Batch</th>
+                      <th className="px-3 py-2 text-right">% Demand</th>
+                      <th className="px-4 py-2 text-right">Est. Used</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {data.recipe_usage.map((r) => (
+                      <tr key={r.product_id} className="border-t border-border-subtle">
+                        <td className="px-4 py-2 text-text-primary">{r.product_name}</td>
+                        <td className="px-3 py-2">
+                          <Badge variant="secondary" className="uppercase">
+                            {r.is_semi_finished ? 'Semi' : r.product_type ?? 'Finished'}
+                          </Badge>
+                        </td>
+                        <td className="px-3 py-2 text-right font-mono tabular-nums">{fmtNum(r.qty_per_batch, 3)} {r.unit}</td>
+                        <td className="px-3 py-2 text-right font-mono tabular-nums text-gold">{fmtNum(r.demand_pct, 1)}%</td>
+                        <td className="px-4 py-2 text-right font-mono tabular-nums text-text-secondary">{fmtNum(r.est_used, 3)} {r.unit}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </Panel>

@@ -98,95 +98,99 @@ export default function WastagePage() {
             </span>
           }
         >
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border-subtle text-text-secondary">
+                  <th className="py-2 text-left">Product</th>
+                  <th className="py-2 text-right">Manual</th>
+                  <th className="py-2 text-right">Spoilage</th>
+                  <th className="py-2 text-right">Total</th>
+                  <th className="py-2 pl-4 text-left">Share</th>
+                </tr>
+              </thead>
+              <tbody>
+                {byProduct.map((r) => (
+                  <tr key={r.product_id} className="border-b border-border-subtle">
+                    <td className="py-2 font-medium">
+                      <DrilldownLink entity="product" id={r.product_id} label={r.product_name} icon={false} />
+                    </td>
+                    <td className="py-2 text-right tabular-nums text-text-secondary">
+                      {r.manual_waste_value > 0 ? formatIdrFull(r.manual_waste_value) : '—'}
+                    </td>
+                    <td className="py-2 text-right tabular-nums text-text-secondary">
+                      {r.spoilage_value > 0 ? formatIdrFull(r.spoilage_value) : '—'}
+                    </td>
+                    <td className="py-2 text-right tabular-nums font-medium">
+                      {formatIdrFull(r.total_value)}
+                    </td>
+                    <td className="py-2 pl-4">
+                      {/* Barre empilée : manuel puis péremption, proportionnelles au
+                          pire produit de la période. */}
+                      <div className="flex h-2 w-full overflow-hidden rounded-sm bg-surface-4">
+                        <div
+                          className="h-full"
+                          style={{
+                            width: `${(r.manual_waste_value / maxValue) * 100}%`,
+                            backgroundColor: familyColor('opex', 0),
+                          }}
+                        />
+                        <div
+                          className="h-full"
+                          style={{
+                            width: `${(r.spoilage_value / maxValue) * 100}%`,
+                            backgroundColor: familyColor('cogs', 0),
+                          }}
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </ChartCard>
+      )}
+      {data && (
+        <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border-subtle text-text-secondary">
                 <th className="py-2 text-left">Product</th>
-                <th className="py-2 text-right">Manual</th>
-                <th className="py-2 text-right">Spoilage</th>
-                <th className="py-2 text-right">Total</th>
-                <th className="py-2 pl-4 text-left">Share</th>
+                <th className="py-2 text-left">Type</th>
+                <th className="py-2 text-right">Qty</th>
+                <th className="py-2 text-right">Value (IDR)</th>
+                <th className="py-2 text-left">Date</th>
               </tr>
             </thead>
             <tbody>
-              {byProduct.map((r) => (
-                <tr key={r.product_id} className="border-b border-border-subtle">
+              {lines.map((r) => (
+                <tr key={r.id} className="border-b border-border-subtle">
                   <td className="py-2 font-medium">
                     <DrilldownLink entity="product" id={r.product_id} label={r.product_name} icon={false} />
                   </td>
-                  <td className="py-2 text-right tabular-nums text-text-secondary">
-                    {r.manual_waste_value > 0 ? formatIdrFull(r.manual_waste_value) : '—'}
+                  <td className="py-2 text-text-secondary">{r.type}</td>
+                  <td className="py-2 text-right tabular-nums">{r.qty}</td>
+                  <td className="py-2 text-right tabular-nums">
+                    {formatIdrFull(r.value)}
                   </td>
-                  <td className="py-2 text-right tabular-nums text-text-secondary">
-                    {r.spoilage_value > 0 ? formatIdrFull(r.spoilage_value) : '—'}
-                  </td>
-                  <td className="py-2 text-right tabular-nums font-medium">
-                    {formatIdrFull(r.total_value)}
-                  </td>
-                  <td className="py-2 pl-4">
-                    {/* Barre empilée : manuel puis péremption, proportionnelles au
-                        pire produit de la période. */}
-                    <div className="flex h-2 w-full overflow-hidden rounded-sm bg-surface-4">
-                      <div
-                        className="h-full"
-                        style={{
-                          width: `${(r.manual_waste_value / maxValue) * 100}%`,
-                          backgroundColor: familyColor('opex', 0),
-                        }}
-                      />
-                      <div
-                        className="h-full"
-                        style={{
-                          width: `${(r.spoilage_value / maxValue) * 100}%`,
-                          backgroundColor: familyColor('cogs', 0),
-                        }}
-                      />
-                    </div>
-                  </td>
+                  <td className="py-2 text-text-secondary">{r.created_at.slice(0, 10)}</td>
                 </tr>
               ))}
             </tbody>
+            {lines.length > 0 && (
+              <tfoot>
+                <tr className="border-t border-border-subtle font-semibold">
+                  <td className="py-2" colSpan={3}>Total wastage value</td>
+                  <td className="py-2 text-right tabular-nums">
+                    {formatIdrFull((data.total_value ?? 0))}
+                  </td>
+                  <td />
+                </tr>
+              </tfoot>
+            )}
           </table>
-        </ChartCard>
-      )}
-      {data && (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border-subtle text-text-secondary">
-              <th className="py-2 text-left">Product</th>
-              <th className="py-2 text-left">Type</th>
-              <th className="py-2 text-right">Qty</th>
-              <th className="py-2 text-right">Value (IDR)</th>
-              <th className="py-2 text-left">Date</th>
-            </tr>
-          </thead>
-          <tbody>
-            {lines.map((r) => (
-              <tr key={r.id} className="border-b border-border-subtle">
-                <td className="py-2 font-medium">
-                  <DrilldownLink entity="product" id={r.product_id} label={r.product_name} icon={false} />
-                </td>
-                <td className="py-2 text-text-secondary">{r.type}</td>
-                <td className="py-2 text-right tabular-nums">{r.qty}</td>
-                <td className="py-2 text-right tabular-nums">
-                  {formatIdrFull(r.value)}
-                </td>
-                <td className="py-2 text-text-secondary">{r.created_at.slice(0, 10)}</td>
-              </tr>
-            ))}
-          </tbody>
-          {lines.length > 0 && (
-            <tfoot>
-              <tr className="border-t border-border-subtle font-semibold">
-                <td className="py-2" colSpan={3}>Total wastage value</td>
-                <td className="py-2 text-right tabular-nums">
-                  {formatIdrFull((data.total_value ?? 0))}
-                </td>
-                <td />
-              </tr>
-            </tfoot>
-          )}
-        </table>
+        </div>
       )}
     </ReportPage>
   );

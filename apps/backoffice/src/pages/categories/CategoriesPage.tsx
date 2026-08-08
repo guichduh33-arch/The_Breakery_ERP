@@ -107,7 +107,7 @@ export default function CategoriesPage(): JSX.Element {
       )}
 
       {order.length > 0 && (
-        <div className="rounded-lg border border-border-subtle bg-bg-elevated overflow-hidden">
+        <div className="rounded-lg border border-border-subtle bg-bg-elevated overflow-x-auto">
           <table className="w-full text-sm" data-testid="categories-table">
             <thead>
               <tr className="text-left text-xs uppercase tracking-widest text-text-secondary">

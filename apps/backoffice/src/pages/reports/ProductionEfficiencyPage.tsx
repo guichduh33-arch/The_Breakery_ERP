@@ -87,43 +87,45 @@ export default function ProductionEfficiencyPage() {
             <h2 className="mb-2 text-sm font-medium uppercase tracking-widest text-text-secondary">
               By Product
             </h2>
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border-subtle text-text-secondary">
-                  <th className="py-2 text-left">Product</th>
-                  <th className="py-2 text-right">Runs</th>
-                  <th className="py-2 text-right">Avg Yield Var.</th>
-                  {/* Audit R-19 — « worst » designait MIN(variance) ici et
-                      MAX(|variance|) dans Production Yield. Les deux calculs
-                      restent legitimes ; les libelles les distinguent. */}
-                  <th className="py-2 text-right">Worst (most negative)</th>
-                  <th className="py-2 text-right">Waste Rate</th>
-                  <th className="py-2 text-center">Reasons</th>
-                </tr>
-              </thead>
-              <tbody>
-                {byProduct.map((r) => (
-                  <tr key={r.product_id} className="border-b border-border-subtle">
-                    <td className="py-2 font-medium">
-                      <DrilldownLink entity="product" id={r.product_id} label={r.product_name} icon={false} />
-                    </td>
-                    <td className="py-2 text-right tabular-nums">{r.runs}</td>
-                    <td className={`py-2 text-right tabular-nums ${varianceClass(r.avg_yield_variance_pct)}`}>
-                      {fmtPct(r.avg_yield_variance_pct)}
-                    </td>
-                    <td className={`py-2 text-right tabular-nums ${varianceClass(r.worst_variance_pct)}`}>
-                      {fmtPct(r.worst_variance_pct)}
-                    </td>
-                    <td className="py-2 text-right tabular-nums text-text-secondary">
-                      {r.waste_rate_pct === null ? '—' : `${r.waste_rate_pct.toFixed(1)}%`}
-                    </td>
-                    <td className="py-2 text-center text-text-secondary">
-                      {r.has_variance_reasons ? 'Yes' : '—'}
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border-subtle text-text-secondary">
+                    <th className="py-2 text-left">Product</th>
+                    <th className="py-2 text-right">Runs</th>
+                    <th className="py-2 text-right">Avg Yield Var.</th>
+                    {/* Audit R-19 — « worst » designait MIN(variance) ici et
+                        MAX(|variance|) dans Production Yield. Les deux calculs
+                        restent legitimes ; les libelles les distinguent. */}
+                    <th className="py-2 text-right">Worst (most negative)</th>
+                    <th className="py-2 text-right">Waste Rate</th>
+                    <th className="py-2 text-center">Reasons</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {byProduct.map((r) => (
+                    <tr key={r.product_id} className="border-b border-border-subtle">
+                      <td className="py-2 font-medium">
+                        <DrilldownLink entity="product" id={r.product_id} label={r.product_name} icon={false} />
+                      </td>
+                      <td className="py-2 text-right tabular-nums">{r.runs}</td>
+                      <td className={`py-2 text-right tabular-nums ${varianceClass(r.avg_yield_variance_pct)}`}>
+                        {fmtPct(r.avg_yield_variance_pct)}
+                      </td>
+                      <td className={`py-2 text-right tabular-nums ${varianceClass(r.worst_variance_pct)}`}>
+                        {fmtPct(r.worst_variance_pct)}
+                      </td>
+                      <td className="py-2 text-right tabular-nums text-text-secondary">
+                        {r.waste_rate_pct === null ? '—' : `${r.waste_rate_pct.toFixed(1)}%`}
+                      </td>
+                      <td className="py-2 text-center text-text-secondary">
+                        {r.has_variance_reasons ? 'Yes' : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           {/* By-day trend table */}
@@ -131,28 +133,30 @@ export default function ProductionEfficiencyPage() {
             <h2 className="mb-2 text-sm font-medium uppercase tracking-widest text-text-secondary">
               Daily Trend
             </h2>
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border-subtle text-text-secondary">
-                  <th className="py-2 text-left">Date</th>
-                  <th className="py-2 text-right">Avg Yield Var.</th>
-                  <th className="py-2 text-right">Waste Rate</th>
-                </tr>
-              </thead>
-              <tbody>
-                {byDay.map((d) => (
-                  <tr key={d.date} className="border-b border-border-subtle">
-                    <td className="py-2 text-text-secondary">{d.date.slice(0, 10)}</td>
-                    <td className={`py-2 text-right tabular-nums ${varianceClass(d.avg_yield_variance_pct)}`}>
-                      {fmtPct(d.avg_yield_variance_pct)}
-                    </td>
-                    <td className="py-2 text-right tabular-nums text-text-secondary">
-                      {d.waste_rate_pct === null ? '—' : `${d.waste_rate_pct.toFixed(1)}%`}
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border-subtle text-text-secondary">
+                    <th className="py-2 text-left">Date</th>
+                    <th className="py-2 text-right">Avg Yield Var.</th>
+                    <th className="py-2 text-right">Waste Rate</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {byDay.map((d) => (
+                    <tr key={d.date} className="border-b border-border-subtle">
+                      <td className="py-2 text-text-secondary">{d.date.slice(0, 10)}</td>
+                      <td className={`py-2 text-right tabular-nums ${varianceClass(d.avg_yield_variance_pct)}`}>
+                        {fmtPct(d.avg_yield_variance_pct)}
+                      </td>
+                      <td className="py-2 text-right tabular-nums text-text-secondary">
+                        {d.waste_rate_pct === null ? '—' : `${d.waste_rate_pct.toFixed(1)}%`}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}

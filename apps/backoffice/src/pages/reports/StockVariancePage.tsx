@@ -121,43 +121,45 @@ export default function StockVariancePage() {
         </p>
       )}
       {data !== undefined && data !== null && (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-text-secondary border-b border-border-subtle">
-              <th className="py-2 text-left">Product</th>
-              <th className="py-2 text-right">Opened</th>
-              <th className="py-2 text-right">Sold</th>
-              <th className="py-2 text-right">Adjusted</th>
-              <th className="py-2 text-right">Current</th>
-              <th className="py-2 text-right">Expected</th>
-              <th className="py-2 text-right">Variance</th>
-              <th className="py-2 text-right">%</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.map((r: StockVarianceRow) => (
-              <tr key={r.product_id} className="border-b border-border-subtle">
-                <td className="py-2">
-                  <div className="font-medium">
-                    <DrilldownLink entity="product" id={r.product_id} label={r.product_name} icon={false} />
-                  </div>
-                  <div className="text-xs text-text-secondary">{r.sku}</div>
-                </td>
-                <td className="py-2 text-right tabular-nums">{r.opened}</td>
-                <td className="py-2 text-right tabular-nums">{r.sold}</td>
-                <td className="py-2 text-right tabular-nums">{r.adjusted}</td>
-                <td className="py-2 text-right tabular-nums">{r.current_qty}</td>
-                <td className="py-2 text-right tabular-nums">{r.expected}</td>
-                <td className={cn('py-2 text-right tabular-nums', varianceTone(r.variance))}>
-                  {r.variance > 0 ? `+${r.variance}` : r.variance}
-                </td>
-                <td className={cn('py-2 text-right tabular-nums', varianceTone(r.variance))}>
-                  {r.variance_pct.toFixed(1)}%
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-text-secondary border-b border-border-subtle">
+                <th className="py-2 text-left">Product</th>
+                <th className="py-2 text-right">Opened</th>
+                <th className="py-2 text-right">Sold</th>
+                <th className="py-2 text-right">Adjusted</th>
+                <th className="py-2 text-right">Current</th>
+                <th className="py-2 text-right">Expected</th>
+                <th className="py-2 text-right">Variance</th>
+                <th className="py-2 text-right">%</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {data.map((r: StockVarianceRow) => (
+                <tr key={r.product_id} className="border-b border-border-subtle">
+                  <td className="py-2">
+                    <div className="font-medium">
+                      <DrilldownLink entity="product" id={r.product_id} label={r.product_name} icon={false} />
+                    </div>
+                    <div className="text-xs text-text-secondary">{r.sku}</div>
+                  </td>
+                  <td className="py-2 text-right tabular-nums">{r.opened}</td>
+                  <td className="py-2 text-right tabular-nums">{r.sold}</td>
+                  <td className="py-2 text-right tabular-nums">{r.adjusted}</td>
+                  <td className="py-2 text-right tabular-nums">{r.current_qty}</td>
+                  <td className="py-2 text-right tabular-nums">{r.expected}</td>
+                  <td className={cn('py-2 text-right tabular-nums', varianceTone(r.variance))}>
+                    {r.variance > 0 ? `+${r.variance}` : r.variance}
+                  </td>
+                  <td className={cn('py-2 text-right tabular-nums', varianceTone(r.variance))}>
+                    {r.variance_pct.toFixed(1)}%
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </ReportPage>
   );

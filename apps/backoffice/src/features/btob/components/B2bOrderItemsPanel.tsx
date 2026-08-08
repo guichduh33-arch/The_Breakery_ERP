@@ -59,53 +59,55 @@ export function B2bOrderItemsPanel({ orderId, orderTotal }: B2bOrderItemsPanelPr
 
   return (
     <div className="px-6 py-3" data-testid="b2b-items-panel">
-      <table className="w-full">
-        <thead>
-          <tr>
-            <th className="pb-1.5 text-left font-data text-[10px] uppercase tracking-widest text-text-muted">Item</th>
-            <th className="pb-1.5 text-right font-data text-[10px] uppercase tracking-widest text-text-muted">Qty</th>
-            <th className="pb-1.5 text-right font-data text-[10px] uppercase tracking-widest text-text-muted">Unit price</th>
-            <th className="pb-1.5 text-right font-data text-[10px] uppercase tracking-widest text-text-muted">Line total</th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((item) => (
-            <tr key={item.id} className={item.is_cancelled ? 'text-text-muted' : 'text-text-primary'}>
-              <td className={`py-1 text-[12.5px] ${item.is_cancelled ? 'line-through' : ''}`}>
-                {item.name_snapshot}
-                {item.is_cancelled && (
-                  <span className="ml-2 font-data text-[10px] uppercase tracking-widest text-text-muted no-underline">
-                    cancelled
-                  </span>
-                )}
-              </td>
-              <td className="py-1 text-right font-data text-[12.5px] tabular-nums">{Number(item.quantity)}</td>
-              <td className="py-1 text-right font-data text-[12.5px] tabular-nums">{formatIdr(item.unit_price)}</td>
-              <td className="py-1 text-right font-data text-[12.5px] tabular-nums">
-                {item.is_cancelled ? formatIdr(0) : formatIdr(item.line_total)}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-        <tfoot>
-          <tr className="border-t border-border-muted">
-            <td colSpan={3} className="pt-1.5 text-right font-data text-[10px] uppercase tracking-widest text-text-muted">
-              {live.length} {live.length === 1 ? 'line' : 'lines'}
-            </td>
-            <td className="pt-1.5 text-right font-data text-[12.5px] font-semibold tabular-nums">
-              {formatIdr(linesTotal)}
-            </td>
-          </tr>
-          {drift !== 0 && (
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead>
             <tr>
-              <td colSpan={4} className="pt-1 text-right font-data text-[10.5px] text-text-muted">
-                order total {formatIdr(orderTotal)} — {drift > 0 ? 'header charge' : 'header discount'}{' '}
-                {formatIdr(Math.abs(drift))}
+              <th className="pb-1.5 text-left font-data text-[10px] uppercase tracking-widest text-text-muted">Item</th>
+              <th className="pb-1.5 text-right font-data text-[10px] uppercase tracking-widest text-text-muted">Qty</th>
+              <th className="pb-1.5 text-right font-data text-[10px] uppercase tracking-widest text-text-muted">Unit price</th>
+              <th className="pb-1.5 text-right font-data text-[10px] uppercase tracking-widest text-text-muted">Line total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((item) => (
+              <tr key={item.id} className={item.is_cancelled ? 'text-text-muted' : 'text-text-primary'}>
+                <td className={`py-1 text-[12.5px] ${item.is_cancelled ? 'line-through' : ''}`}>
+                  {item.name_snapshot}
+                  {item.is_cancelled && (
+                    <span className="ml-2 font-data text-[10px] uppercase tracking-widest text-text-muted no-underline">
+                      cancelled
+                    </span>
+                  )}
+                </td>
+                <td className="py-1 text-right font-data text-[12.5px] tabular-nums">{Number(item.quantity)}</td>
+                <td className="py-1 text-right font-data text-[12.5px] tabular-nums">{formatIdr(item.unit_price)}</td>
+                <td className="py-1 text-right font-data text-[12.5px] tabular-nums">
+                  {item.is_cancelled ? formatIdr(0) : formatIdr(item.line_total)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr className="border-t border-border-muted">
+              <td colSpan={3} className="pt-1.5 text-right font-data text-[10px] uppercase tracking-widest text-text-muted">
+                {live.length} {live.length === 1 ? 'line' : 'lines'}
+              </td>
+              <td className="pt-1.5 text-right font-data text-[12.5px] font-semibold tabular-nums">
+                {formatIdr(linesTotal)}
               </td>
             </tr>
-          )}
-        </tfoot>
-      </table>
+            {drift !== 0 && (
+              <tr>
+                <td colSpan={4} className="pt-1 text-right font-data text-[10.5px] text-text-subtle">
+                  order total {formatIdr(orderTotal)} — {drift > 0 ? 'header charge' : 'header discount'}{' '}
+                  {formatIdr(Math.abs(drift))}
+                </td>
+              </tr>
+            )}
+          </tfoot>
+        </table>
+      </div>
     </div>
   );
 }

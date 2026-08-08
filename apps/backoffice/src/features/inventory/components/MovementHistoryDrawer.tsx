@@ -138,43 +138,45 @@ export function MovementHistoryDrawer({ product, onClose }: MovementHistoryDrawe
           )}
           {q.data !== undefined && q.data.length > 0 && (
             <>
-              <table className="w-full text-sm">
-                <thead className="text-xs uppercase tracking-widest text-text-secondary">
-                  <tr>
-                    <th className="px-2 py-1 text-left">When</th>
-                    <th className="px-2 py-1 text-left">Type</th>
-                    <th className="px-2 py-1 text-right">Qty</th>
-                    <th className="px-2 py-1 text-left">Reason / reference</th>
-                    <th className="px-2 py-1 text-left">By</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {q.data.map((row) => {
-                    const cls = classifyMovement(toDomainMovement(row));
-                    const qtyClass =
-                      cls.direction === 'IN' ? 'text-green' :
-                      row.quantity === 0    ? 'text-text-muted' :
-                                              'text-red';
-                    return (
-                      <tr key={row.id} className="border-t border-border-subtle">
-                        <td className="px-2 py-1 text-text-secondary">
-                          {new Date(row.created_at).toLocaleString()}
-                        </td>
-                        <td className="px-2 py-1">
-                          <Badge variant={TYPE_VARIANT[row.movement_type]} className="text-[10px]">
-                            {TYPE_LABEL[row.movement_type]}
-                          </Badge>
-                        </td>
-                        <td className={`px-2 py-1 text-right font-mono ${qtyClass}`}>
-                          {row.quantity > 0 ? '+' : ''}{row.quantity}
-                        </td>
-                        <td className="px-2 py-1">{describeReference(row)}</td>
-                        <td className="px-2 py-1 text-text-secondary">{row.author?.full_name ?? '—'}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="text-xs uppercase tracking-widest text-text-secondary">
+                    <tr>
+                      <th className="px-2 py-1 text-left">When</th>
+                      <th className="px-2 py-1 text-left">Type</th>
+                      <th className="px-2 py-1 text-right">Qty</th>
+                      <th className="px-2 py-1 text-left">Reason / reference</th>
+                      <th className="px-2 py-1 text-left">By</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {q.data.map((row) => {
+                      const cls = classifyMovement(toDomainMovement(row));
+                      const qtyClass =
+                        cls.direction === 'IN' ? 'text-green' :
+                        row.quantity === 0    ? 'text-text-muted' :
+                                                'text-red';
+                      return (
+                        <tr key={row.id} className="border-t border-border-subtle">
+                          <td className="px-2 py-1 text-text-secondary">
+                            {new Date(row.created_at).toLocaleString()}
+                          </td>
+                          <td className="px-2 py-1">
+                            <Badge variant={TYPE_VARIANT[row.movement_type]} className="text-[10px]">
+                              {TYPE_LABEL[row.movement_type]}
+                            </Badge>
+                          </td>
+                          <td className={`px-2 py-1 text-right font-mono ${qtyClass}`}>
+                            {row.quantity > 0 ? '+' : ''}{row.quantity}
+                          </td>
+                          <td className="px-2 py-1">{describeReference(row)}</td>
+                          <td className="px-2 py-1 text-text-secondary">{row.author?.full_name ?? '—'}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
 
               <div className="flex items-center justify-between pt-3 text-xs">
                 <span className="text-text-secondary">

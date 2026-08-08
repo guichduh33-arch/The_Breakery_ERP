@@ -161,59 +161,61 @@ export function CostingPanel({ product }: CostingPanelProps): JSX.Element {
 
         {!isLoading && error === null && (bom ?? []).length > 0 && (
           <div data-testid="bom-table">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border-subtle text-xs uppercase tracking-wider text-text-secondary">
-                  <th className="py-2 pr-4 text-left font-medium">Ingredient</th>
-                  <th className="py-2 pr-4 text-right font-medium">Qty / unit</th>
-                  <th className="py-2 pr-4 text-left font-medium">Unit</th>
-                  <th className="py-2 pr-4 text-right font-medium">Unit cost</th>
-                  <th className="py-2 text-right font-medium">Line cost</th>
-                </tr>
-              </thead>
-              <tbody>
-                {bom!.map((row) => {
-                  // Unit cost expressed per the recipe line's own unit (e.g. per gr),
-                  // not per the material's stock unit (per kg), so qty × unit cost
-                  // reconciles with the line cost shown.
-                  const unitCostPerRecipeUnit =
-                    row.qty_per_unit > 0 ? row.line_cost / row.qty_per_unit : row.cost_price;
-                  return (
-                    <tr
-                      key={row.material_id}
-                      data-testid={`bom-row-${row.material_id}`}
-                      className="border-b border-border-subtle last:border-0"
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border-subtle text-xs uppercase tracking-wider text-text-secondary">
+                    <th className="py-2 pr-4 text-left font-medium">Ingredient</th>
+                    <th className="py-2 pr-4 text-right font-medium">Qty / unit</th>
+                    <th className="py-2 pr-4 text-left font-medium">Unit</th>
+                    <th className="py-2 pr-4 text-right font-medium">Unit cost</th>
+                    <th className="py-2 text-right font-medium">Line cost</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {bom!.map((row) => {
+                    // Unit cost expressed per the recipe line's own unit (e.g. per gr),
+                    // not per the material's stock unit (per kg), so qty × unit cost
+                    // reconciles with the line cost shown.
+                    const unitCostPerRecipeUnit =
+                      row.qty_per_unit > 0 ? row.line_cost / row.qty_per_unit : row.cost_price;
+                    return (
+                      <tr
+                        key={row.material_id}
+                        data-testid={`bom-row-${row.material_id}`}
+                        className="border-b border-border-subtle last:border-0"
+                      >
+                        <td className="py-2 pr-4 text-text-primary">{row.material_name}</td>
+                        <td className="py-2 pr-4 text-right font-mono text-text-primary">
+                          {row.qty_per_unit}
+                        </td>
+                        <td className="py-2 pr-4 text-text-secondary font-mono">{row.recipe_unit}</td>
+                        <td className="py-2 pr-4 text-right font-mono text-text-primary whitespace-nowrap">
+                          Rp {formatUnitCost(unitCostPerRecipeUnit)}
+                          <span className="text-text-secondary"> /{row.recipe_unit}</span>
+                        </td>
+                        <td className="py-2 text-right font-mono text-text-primary">
+                          Rp {formatIdr(row.line_cost)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t-2 border-border-subtle">
+                    <td colSpan={4} className="py-2 pr-4 text-xs font-semibold uppercase tracking-wider text-text-secondary">
+                      Total BOM cost
+                    </td>
+                    <td
+                      className="py-2 text-right font-mono font-semibold text-text-primary"
+                      data-testid="bom-total"
                     >
-                      <td className="py-2 pr-4 text-text-primary">{row.material_name}</td>
-                      <td className="py-2 pr-4 text-right font-mono text-text-primary">
-                        {row.qty_per_unit}
-                      </td>
-                      <td className="py-2 pr-4 text-text-secondary font-mono">{row.recipe_unit}</td>
-                      <td className="py-2 pr-4 text-right font-mono text-text-primary whitespace-nowrap">
-                        Rp {formatUnitCost(unitCostPerRecipeUnit)}
-                        <span className="text-text-secondary"> /{row.recipe_unit}</span>
-                      </td>
-                      <td className="py-2 text-right font-mono text-text-primary">
-                        Rp {formatIdr(row.line_cost)}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-              <tfoot>
-                <tr className="border-t-2 border-border-subtle">
-                  <td colSpan={4} className="py-2 pr-4 text-xs font-semibold uppercase tracking-wider text-text-secondary">
-                    Total BOM cost
-                  </td>
-                  <td
-                    className="py-2 text-right font-mono font-semibold text-text-primary"
-                    data-testid="bom-total"
-                  >
-                    Rp {formatIdr(bomTotal)}
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
+                      Rp {formatIdr(bomTotal)}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
           </div>
         )}
       </Card>

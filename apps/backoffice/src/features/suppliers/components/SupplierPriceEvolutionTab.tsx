@@ -145,7 +145,7 @@ export function SupplierPriceEvolutionTab({ items }: SupplierPriceEvolutionTabPr
         </div>
       </Card>
 
-      <div className="overflow-hidden rounded-lg border border-border-subtle bg-bg-elevated">
+      <div className="overflow-x-auto rounded-lg border border-border-subtle bg-bg-elevated">
         <table className="w-full text-sm">
           <thead className="border-b border-border-subtle bg-bg-base/40">
             <tr>

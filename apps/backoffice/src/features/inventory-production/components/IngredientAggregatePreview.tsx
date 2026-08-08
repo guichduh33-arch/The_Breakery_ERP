@@ -150,38 +150,40 @@ export function IngredientAggregatePreview({ items }: IngredientAggregatePreview
               One or more ingredients are short. The server will reject submission.
             </p>
           )}
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-xs uppercase tracking-widest text-text-secondary">
-                <th className="py-1">Material</th>
-                <th className="py-1 text-right">Required</th>
-                <th className="py-1 text-right">Available</th>
-                <th className="py-1 text-right">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.materialId} className="border-t border-border-subtle">
-                  <td className="py-1.5">{r.materialName}</td>
-                  <td className="py-1.5 text-right tabular-nums">
-                    {fmt(r.totalQty)} {r.materialUnit}
-                  </td>
-                  <td className="py-1.5 text-right tabular-nums">
-                    {fmt(r.available)} {r.materialUnit}
-                  </td>
-                  <td className="py-1.5 text-right">
-                    {r.sufficient ? (
-                      <span className="text-success" data-testid="status-ok">OK</span>
-                    ) : (
-                      <span className="text-red" data-testid="status-short">
-                        short {fmt(r.shortfall)}
-                      </span>
-                    )}
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs uppercase tracking-widest text-text-secondary">
+                  <th className="py-1">Material</th>
+                  <th className="py-1 text-right">Required</th>
+                  <th className="py-1 text-right">Available</th>
+                  <th className="py-1 text-right">Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {rows.map((r) => (
+                  <tr key={r.materialId} className="border-t border-border-subtle">
+                    <td className="py-1.5">{r.materialName}</td>
+                    <td className="py-1.5 text-right tabular-nums">
+                      {fmt(r.totalQty)} {r.materialUnit}
+                    </td>
+                    <td className="py-1.5 text-right tabular-nums">
+                      {fmt(r.available)} {r.materialUnit}
+                    </td>
+                    <td className="py-1.5 text-right">
+                      {r.sufficient ? (
+                        <span className="text-success" data-testid="status-ok">OK</span>
+                      ) : (
+                        <span className="text-red" data-testid="status-short">
+                          short {fmt(r.shortfall)}
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </>
       )}
     </div>
