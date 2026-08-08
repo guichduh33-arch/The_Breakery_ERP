@@ -259,7 +259,7 @@ export function EditOrderItemsModal({ open, onClose, orderId, orderNumber, curre
               />
               <input
                 type="text"
-                placeholder="Waste reason (e.g. plat raté, client parti…)"
+                placeholder="Waste reason (e.g. burnt dish, customer left…)"
                 value={wasteReason}
                 onChange={(e) => setWasteReason(e.target.value)}
                 className="border rounded px-2 py-1 text-sm flex-1"

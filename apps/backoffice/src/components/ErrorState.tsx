@@ -22,8 +22,8 @@ export interface ErrorStateProps {
 }
 
 export function ErrorState({
-  title = 'Une erreur est survenue',
-  description = 'Impossible de charger les données. Vérifiez votre connexion et réessayez.',
+  title = 'Something went wrong',
+  description = 'The data could not be loaded. Check your connection and try again.',
   onRetry,
   secondaryAction,
   fullScreen = false,
@@ -47,7 +47,7 @@ export function ErrorState({
           <div className="flex items-center justify-center gap-3 pt-2">
             {onRetry && (
               <Button onClick={onRetry} variant="primary">
-                Réessayer
+                Retry
               </Button>
             )}
             {secondaryAction && (

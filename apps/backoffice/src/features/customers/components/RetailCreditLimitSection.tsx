@@ -56,7 +56,7 @@ export function RetailCreditLimitSection({
             inputMode="numeric"
             readOnly={!canEdit}
             aria-invalid={!isValid}
-            placeholder="Illimité"
+            placeholder="Unlimited"
             onChange={handleChange}
           />
           {canEdit && (

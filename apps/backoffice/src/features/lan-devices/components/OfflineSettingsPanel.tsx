@@ -64,7 +64,7 @@ export function OfflineSettingsPanel() {
 
   return (
     <div className="space-y-4">
-      {network.isLoading && <div className="text-text-secondary text-sm">Chargement…</div>}
+      {network.isLoading && <div className="text-text-secondary text-sm">Loading…</div>}
       {network.error && <div className="text-red text-sm">Échec du chargement : {network.error.message}</div>}
 
       {!network.isLoading && !network.error && draft !== null && (

@@ -6,8 +6,22 @@
 //   OpEx / operating expenses   → AMBER family
 //
 // Carried consistently across every cost chart so a reader instantly knows
-// which P&L cost bucket a series belongs to. Tuned for the LIGHT backoffice
-// theme (ivory cards on a warm neutral); neutrals mirror the design tokens.
+// which P&L cost bucket a series belongs to.
+//
+// Audit /impeccable 2026-08-08 — l'en-tête disait encore « ivory cards on a
+// warm neutral ». L'ivoire chaud a été retiré le 2026-08-05 : les cartes sont
+// blanches sur un papier gris chaud. Les valeurs, elles, avaient déjà suivi ;
+// seule la phrase était restée.
+//
+// Recharts pose ses couleurs en props JS, pas en classes : ce fichier est le
+// SEUL endroit où une couleur du thème est recopiée côté Backoffice. Les
+// NEUTRES ci-dessous consomment désormais les variables CSS directement — un
+// `var()` est valide dans un attribut de présentation SVG, et CATEGORICAL_SERIES
+// l'utilise déjà. Les deux rampes de coût restent en dur : elles comptent huit
+// pas chacune et le thème n'expose qu'une rampe de data-viz à quatre pas
+// (--chart-1..4), monochrome bleue. Les mapper dessus fusionnerait les familles
+// COGS et OpEx, qui existent justement pour se distinguer — c'est un arbitrage
+// de data-viz, pas un remplacement mécanique.
 
 /** Headline color for each cost bucket. */
 // Audit cohérence 2026-08-01 — les deux familles s'ancrent désormais sur les
@@ -97,18 +111,21 @@ export const CHART_ACCENT_GOLD = '#8a6820'; // --gold-base du thème clair
 // discret est supprimé plutôt que remonté : le token `--text-subtle` ne porte
 // plus que du non-texte, et deux gris de libellé d'axe ne disaient rien qu'un
 // seul ne dise mieux.
-export const CHART_GRID_STROKE = '#eceae5'; // --border-muted
-export const CHART_AXIS_STROKE = '#e3e1db'; // --border-subtle (ligne de base)
-export const CHART_AXIS_TICK   = '#6b6861'; // --text-muted (5,5:1 sur carte blanche)
+export const CHART_GRID_STROKE = 'var(--border-muted)';
+export const CHART_AXIS_STROKE = 'var(--border-subtle)'; // ligne de base
+export const CHART_AXIS_TICK   = 'var(--text-muted)';    // du TEXTE : ≥4,5:1 partout
 
 /** Shared recharts <Tooltip contentStyle> — white card, subtle border. */
 export const CHART_TOOLTIP_STYLE = {
-  background: '#ffffff',            // --surface-3
-  border: '1px solid #e3e1db',      // --border-subtle
+  background: 'var(--surface-3)',
+  border: '1px solid var(--border-subtle)',
   borderRadius: 8,
   fontSize: 12,
-  color: '#1a1917',                 // --text-primary
-  boxShadow: '0 8px 20px rgba(28,23,18,0.10)', // --shadow-md
+  color: 'var(--text-primary)',
+  // L'infobulle FLOTTE au-dessus de la page : --shadow-lg (0 8px 24px) est le
+  // cran qui correspond au `0 8px 20px` écrit en dur ici, pas --shadow-md
+  // (0 2px 8px), qui est l'ombre d'une carte survolée.
+  boxShadow: 'var(--shadow-lg)',
 } as const;
 
 // --- IDR formatters ---------------------------------------------------------

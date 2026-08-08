@@ -53,7 +53,7 @@ export default function SettingsInventoryPage() {
         </p>
       </div>
 
-      {inventory.isLoading && <div className="text-text-secondary">Chargement…</div>}
+      {inventory.isLoading && <div className="text-text-secondary">Loading…</div>}
       {inventory.error && <div className="text-red">Échec du chargement : {inventory.error.message}</div>}
 
       {!inventory.isLoading && !inventory.error && draft !== null && (
