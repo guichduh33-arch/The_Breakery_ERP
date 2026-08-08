@@ -89,7 +89,7 @@ export function StationsPanel({ product }: Props): JSX.Element {
   if (error !== null && error !== undefined) {
     return (
       <div role="alert" className="rounded-lg border border-red bg-red-soft p-4 text-sm text-red">
-        Failed to load stations: {(error as Error).message}
+        Failed to load stations: {error.message}
       </div>
     );
   }
@@ -102,7 +102,7 @@ export function StationsPanel({ product }: Props): JSX.Element {
             <Factory className="h-5 w-5" aria-hidden />
           </div>
           <div>
-            <h2 className="font-display text-lg text-text-primary">Production Stations</h2>
+            <h2 className="text-sm font-bold uppercase tracking-widest text-text-muted">Production Stations</h2>
             <p className="text-xs italic text-text-secondary">
               The stations that produce this product. The Production page only lists a product
               under the stations selected here.
@@ -147,7 +147,7 @@ export function StationsPanel({ product }: Props): JSX.Element {
                     aria-pressed={isPrimary}
                     title={isPrimary ? 'Primary station' : 'Set as primary'}
                     className={
-                      'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-widest transition-colors disabled:cursor-not-allowed disabled:opacity-40 ' +
+                      'inline-flex items-center gap-1.5 rounded-sm px-3 py-1 text-[10px] font-semibold uppercase tracking-widest transition-colors disabled:cursor-not-allowed disabled:opacity-40 ' +
                       (isPrimary
                         ? 'bg-gold-soft text-gold'
                         : 'text-text-muted hover:enabled:text-text-primary')
@@ -170,7 +170,7 @@ export function StationsPanel({ product }: Props): JSX.Element {
             disabled={!isDirty || setSections.isPending}
             onClick={handleSave}
             data-testid="stations-save-btn"
-            className="rounded-full bg-gold px-6 py-2.5 text-xs font-semibold uppercase tracking-widest text-bg-base disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-sm bg-gold px-6 py-2.5 text-xs font-semibold uppercase tracking-widest text-bg-base disabled:cursor-not-allowed disabled:opacity-50"
           >
             {setSections.isPending ? 'Saving…' : 'Save Stations'}
           </button>

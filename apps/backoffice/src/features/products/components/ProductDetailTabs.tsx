@@ -4,6 +4,15 @@
 // detail page. Visually it sits below the page header. The selected tab gets
 // a 2px gold underline.
 //
+// Polish — la casse, l'interlettrage et la couleur d'actif s'alignent sur
+// `ProductsPageTabs`, dont l'en-tête documente la décision : « les capitales or
+// à `tracking-widest` tombent : à ce niveau de la page elles criaient plus fort
+// que le titre lui-même. L'onglet actif se dit par un soulignement or de 2 px et
+// un poids, pas par une couleur de texte. » Le soulignement passe d'un `<span>`
+// absolu à un `inset` porté par le bouton : avec dix onglets qui reviennent à la
+// ligne sous ~960 px, le trait absolu se détachait du filet du conteneur et
+// flottait au milieu de la bande.
+//
 // Harden — le motif ARIA était déclaré à moitié : `role="tablist"` et
 // `role="tab"` promettent au lecteur d'écran un widget composite (une seule
 // tabulation pour entrer, les flèches pour circuler) que le clavier ne tenait
@@ -95,17 +104,14 @@ export function ProductDetailTabs({ active, onChange }: Props): JSX.Element {
               tabIndex={selected ? 0 : -1}
               onClick={() => onChange(t.id)}
               className={cn(
-                'relative -mb-px py-3 text-xs font-semibold uppercase tracking-widest transition-colors duration-fast',
+                'relative -mb-px pb-2.5 pt-3 text-[12.5px] transition-colors duration-fast',
                 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
                 selected
-                  ? 'text-gold'
+                  ? 'font-semibold text-text-primary shadow-[inset_0_-2px_0_var(--gold-base)]'
                   : 'text-text-muted hover:text-text-primary',
               )}
             >
               {t.label}
-              {selected && (
-                <span aria-hidden className="absolute inset-x-0 -bottom-px h-0.5 bg-gold" />
-              )}
             </button>
           );
         })}

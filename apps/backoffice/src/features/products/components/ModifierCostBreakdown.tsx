@@ -58,7 +58,7 @@ export function ModifierCostBreakdown({
   return (
     <Card padding="md">
       <div className="mb-1">
-        <h2 className="font-display text-lg text-text-primary">Cost with modifiers</h2>
+        <h2 className="text-sm font-bold uppercase tracking-widest text-text-muted">Cost with modifiers</h2>
         <p className="text-xs italic text-text-secondary">
           Total cost = base cost (Rp {formatIdr(baseCost)}) + the option&apos;s ingredient cost
         </p>

@@ -1,12 +1,24 @@
 // apps/backoffice/src/features/products/components/ProductDetailHeader.tsx
 //
-// Session 14 / Phase 4.B — Top header for the product detail screens.
-// Mirrors `Product detail1.jpg`: back button + name + SKU pill on the left,
-// "Save changes" CTA on the right.
+// Bandeau de la fiche produit.
+//
+// Polish — la fiche n'avait pas suivi la refonte du 2026-08-05 : elle gardait le
+// bouton or plein en pilule, la pastille de SKU dorée, un bouton de retour
+// circulaire et un `<h1>` recopié à la main. Trois conséquences, toutes
+// réparées ici : l'or a cessé d'être un remplissage (il est encre de sens —
+// nav active, lien, prix), le bandeau de page a une source unique
+// (`PageHeader` + `TOOLBAR_BTN_*`), et la page dit d'où elle vient par un fil
+// d'Ariane au lieu d'une flèche ronde.
+//
+// Le fil d'Ariane nomme le domaine et la colonne de navigation qui mènent ici.
+// « Stock » et « Catalogue » ne sont PAS des liens : un domaine ouvre un panneau,
+// il n'a pas de route. Seul « Products » en est un.
 
-import { ArrowLeft, Save } from 'lucide-react';
+import { ChevronRight, Save } from 'lucide-react';
 import type { JSX } from 'react';
 import { Link } from 'react-router-dom';
+import { PageHeader } from '@/components/PageHeader.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 interface Props {
   name:      string;
@@ -16,36 +28,40 @@ interface Props {
   onSave?:   (() => void) | undefined;
 }
 
-export function ProductDetailHeader({ name, sku, isDirty = false, isSaving = false, onSave }: Props): JSX.Element {
+export function ProductDetailHeader({
+  name, sku, isDirty = false, isSaving = false, onSave,
+}: Props): JSX.Element {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4">
-      <div className="flex items-center gap-3">
-        <Link
-          to="/backoffice/products"
-          aria-label="Back to products"
-          className="flex h-10 w-10 items-center justify-center rounded-full border border-border-subtle bg-bg-elevated text-text-secondary hover:bg-bg-overlay hover:text-text-primary transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" aria-hidden />
-        </Link>
-        <div>
-          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">{name}</h1>
-          <div className="mt-1 flex items-center gap-2 text-xs text-text-secondary">
-            <span className="uppercase tracking-widest">SKU Identity:</span>
-            <span className="rounded-full bg-gold-soft px-2 py-0.5 font-mono font-semibold text-gold">{sku}</span>
-          </div>
-        </div>
-      </div>
+    <div className="space-y-2">
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs text-text-muted">
+        <span>Stock</span>
+        <ChevronRight className="h-3 w-3 text-border-strong" aria-hidden />
+        <span>Catalogue</span>
+        <ChevronRight className="h-3 w-3 text-border-strong" aria-hidden />
+        <Link to="/backoffice/products" className="hover:text-text-secondary">Products</Link>
+      </nav>
 
-      <button
-        type="button"
-        onClick={onSave}
-        disabled={!isDirty || isSaving || onSave === undefined}
-        data-testid="product-detail-save"
-        className="inline-flex items-center gap-2 rounded-full bg-gold px-5 py-2.5 text-sm font-semibold uppercase tracking-wide text-bg-base hover:bg-gold-hover disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold transition-colors"
-      >
-        <Save className="h-4 w-4" aria-hidden />
-        {isSaving ? 'Saving…' : 'Save Changes'}
-      </button>
+      <PageHeader
+        title={name}
+        subtitle={
+          <span className="inline-flex items-center gap-1.5">
+            SKU
+            <span className="font-mono font-semibold text-text-primary">{sku}</span>
+          </span>
+        }
+        actions={
+          <button
+            type="button"
+            onClick={onSave}
+            disabled={!isDirty || isSaving || onSave === undefined}
+            data-testid="product-detail-save"
+            className={TOOLBAR_BTN_PRIMARY}
+          >
+            <Save className="h-3.5 w-3.5" aria-hidden />
+            {isSaving ? 'Saving…' : 'Save changes'}
+          </button>
+        }
+      />
     </div>
   );
 }

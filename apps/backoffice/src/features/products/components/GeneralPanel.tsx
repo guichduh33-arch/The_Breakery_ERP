@@ -67,7 +67,7 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
       {/* ───────────── Left column (2/3) ───────────── */}
       <div className="space-y-6 lg:col-span-2">
         <Card padding="md">
-          <h2 className="mb-4 font-display text-xl text-text-primary">Product Identity</h2>
+          <h2 className="mb-4 text-sm font-bold uppercase tracking-widest text-text-muted">Product Identity</h2>
 
           <div className="space-y-4">
             <div>
@@ -121,8 +121,8 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
 
         <Card padding="md">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="font-display text-xl text-text-primary">Visual Asset</h2>
-            <span className="rounded-full border border-gold-soft px-3 py-0.5 text-[11px] font-semibold uppercase tracking-widest text-gold">
+            <h2 className="text-sm font-bold uppercase tracking-widest text-text-muted">Visual Asset</h2>
+            <span className="rounded-sm border border-gold px-3 py-0.5 text-[11px] font-semibold uppercase tracking-widest text-gold">
               High Resolution
             </span>
           </div>
@@ -142,7 +142,7 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
       {/* ───────────── Right column ───────────── */}
       <div className="space-y-6">
         <Card padding="md">
-          <h2 className="mb-4 font-display text-xl text-text-primary">Performance (30d)</h2>
+          <h2 className="mb-4 text-sm font-bold uppercase tracking-widest text-text-muted">Performance (30d)</h2>
           <div className="space-y-4">
             <SidebarMetric icon={<TrendingUp className="h-4 w-4" aria-hidden />} label="Conversion" value="0%" mono />
             <SidebarMetric icon={<ShoppingCart className="h-4 w-4" aria-hidden />} label="Units sold" value="0" mono />
@@ -151,7 +151,7 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
         </Card>
 
         <Card padding="md">
-          <h2 className="mb-4 font-display text-xl text-text-primary">Finance & POS</h2>
+          <h2 className="mb-4 text-sm font-bold uppercase tracking-widest text-text-muted">Finance & POS</h2>
           <div className="space-y-4">
             <div>
               <SectionLabel as="div" size="xs">Retail price (IDR)</SectionLabel>
@@ -241,7 +241,7 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
 
         {/* Spec B-1 Ph2 — override multi-station de dispatch par produit. */}
         <Card padding="md">
-          <h2 className="mb-1 font-display text-xl text-text-primary">Dispatch Routing</h2>
+          <h2 className="mb-1 text-sm font-bold uppercase tracking-widest text-text-muted">Dispatch Routing</h2>
           <p className="mb-3 text-[11px] italic text-text-secondary">
             Stations qui reçoivent le KOT pour ce produit. Vide = hériter de la catégorie.
           </p>
