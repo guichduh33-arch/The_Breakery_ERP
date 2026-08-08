@@ -185,7 +185,7 @@ export function UnitsPanel({ product }: Props): JSX.Element {
   if (error !== null && error !== undefined) {
     return (
       <div role="alert" className="rounded-lg border border-red bg-red-soft p-4 text-sm text-red">
-        Failed to load units: {(error as Error).message}
+        Failed to load units: {error.message}
       </div>
     );
   }
@@ -223,7 +223,7 @@ export function UnitsPanel({ product }: Props): JSX.Element {
         {baseChanged && (
           <div
             data-testid="base-unit-confirm"
-            className="mt-4 flex flex-col gap-3 rounded-lg border border-gold/40 bg-gold-soft/40 p-4 sm:flex-row sm:items-center sm:justify-between"
+            className="mt-4 flex flex-col gap-3 rounded-lg border border-gold bg-gold-soft p-4 sm:flex-row sm:items-center sm:justify-between"
           >
             <div className="flex items-start gap-2 text-xs text-text-secondary">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-gold" aria-hidden />

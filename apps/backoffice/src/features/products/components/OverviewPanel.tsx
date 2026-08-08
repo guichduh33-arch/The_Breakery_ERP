@@ -48,7 +48,7 @@ export function OverviewPanel({ product }: Props): JSX.Element {
           {untracked ? (
             <>
               <div className="font-data text-3xl tabular-nums text-text-primary">∞</div>
-              <div className="text-xs text-text-secondary">Non suivi (illimité)</div>
+              <div className="text-xs text-text-secondary">Not tracked (unlimited)</div>
             </>
           ) : (
             <>

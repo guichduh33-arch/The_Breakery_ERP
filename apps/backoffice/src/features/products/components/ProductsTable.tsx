@@ -205,11 +205,20 @@ export function ProductsTable({
       header: 'Margin',
       align: 'right' as const,
       width: '7.1%',
+      // Marge NÉGATIVE en rouge, comme le coût manquant : un produit vendu à
+      // perte rendait jusqu'ici en noir ordinaire, typographiquement identique à
+      // un produit à 87 % de marge — seul le signe moins portait l'information.
+      // Et aucun compteur ne l'attrape : « No cost price » teste `cost <= 0`,
+      // pas `cost > retail`.
       render: (r: ProductRow) => {
         const m = productMarginPct(r);
         if (m === null) return DASH;
+        const atALoss = m < 0;
         return (
-          <span className={cn(MONO, 'text-text-primary')}>
+          <span
+            className={cn(MONO, atALoss ? 'font-semibold text-danger' : 'text-text-primary')}
+            {...(atALoss ? { title: 'Sold below cost' } : {})}
+          >
             {m.toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%
           </span>
         );

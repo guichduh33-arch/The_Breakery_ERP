@@ -34,7 +34,15 @@ const DialogContent = forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        'fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 bg-bg-elevated border border-border-subtle p-6 shadow-modal rounded-xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]',
+        // Harden — le dialogue était centré SANS hauteur maximale ni défilement :
+        // dès que son contenu dépassait la fenêtre, il débordait par le haut ET
+        // par le bas, Radix verrouillait le défilement du body, et le pied —
+        // donc les boutons Annuler et Valider — devenait inatteignable. Le cas
+        // n'était pas théorique : NewProductDialog fait ~590-670 px selon les
+        // cases cochées, et un zoom à 200 % divise par deux la hauteur utile.
+        // Deux appelants (ImportEntityModal, PromotionFormModal) posaient déjà
+        // ce correctif à la main ; il appartient au primitif.
+        'fixed left-[50%] top-[50%] z-50 grid max-h-[calc(100dvh-2rem)] w-full max-w-lg translate-x-[-50%] translate-y-[-50%] overflow-y-auto gap-4 bg-bg-elevated border border-border-subtle p-6 shadow-modal rounded-xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]',
         // motion-reduce: respect prefers-reduced-motion (TASK-22-009)
         'motion-reduce:animate-none motion-reduce:transition-none motion-reduce:duration-0',
         className,

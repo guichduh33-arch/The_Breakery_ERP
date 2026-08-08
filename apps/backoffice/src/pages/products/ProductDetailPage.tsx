@@ -8,12 +8,16 @@
 // URL: /backoffice/products/:productId
 
 import { useEffect, useMemo, useState, type JSX } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { BarChart3 } from 'lucide-react';
 import { GeneralPanel } from '@/features/products/components/GeneralPanel.js';
 import { OverviewPanel } from '@/features/products/components/OverviewPanel.js';
 import { ProductDetailHeader } from '@/features/products/components/ProductDetailHeader.js';
-import { ProductDetailTabs } from '@/features/products/components/ProductDetailTabs.js';
+import {
+  ProductDetailTabs,
+  productTabId,
+  productTabPanelId,
+} from '@/features/products/components/ProductDetailTabs.js';
 import { CostingPanel } from '@/features/products/components/CostingPanel.js';
 import { PurchasePanel } from '@/features/products/components/PurchasePanel.js';
 import { HistoryPanel } from '@/features/products/components/HistoryPanel.js';
@@ -25,6 +29,7 @@ import { useCategories } from '@/features/products/hooks/useCategories.js';
 import { useProductDetail } from '@/features/products/hooks/useProductDetail.js';
 import { useProductDisplayStock } from '@/features/products/hooks/useProductDisplayStock.js';
 import { useUpdateProduct, type ProductUpdatePatch } from '@/features/products/hooks/useUpdateProduct.js';
+import { useUrlState } from '@/hooks/useUrlState.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import type { ProductDetailTab, ProductRow } from '@/features/products/types.js';
 import { RecipeBuilder } from '@/features/recipes/index.js';
@@ -38,7 +43,6 @@ const VALID_TABS: ReadonlySet<ProductDetailTab> = new Set([
 
 export default function ProductDetailPage(): JSX.Element {
   const { productId } = useParams<{ productId: string }>();
-  const [searchParams] = useSearchParams();
   const product = useProductDetail(productId ?? null);
   const displayStock = useProductDisplayStock(
     productId ?? null,
@@ -47,14 +51,17 @@ export default function ProductDetailPage(): JSX.Element {
   const categories = useCategories();
   const updateProduct = useUpdateProduct();
   const canUpdate = useAuthStore((s) => s.hasPermission('products.update'));
-  // S45 Wave C — initialize from ?tab= query param (deep-link from $ pricing action).
-  // One-time read on mount; no 2-way sync on tab clicks (out of scope).
-  const tabParam = searchParams.get('tab');
-  const initialTab: ProductDetailTab =
-    tabParam !== null && VALID_TABS.has(tabParam as ProductDetailTab)
-      ? (tabParam as ProductDetailTab)
-      : 'overview';
-  const [tab, setTab] = useState<ProductDetailTab>(initialTab);
+  // Harden — l'onglet actif vit dans l'URL, comme le compteur de la liste
+  // (`Products.tsx`). La lecture unique au montage cassait trois gestes natifs :
+  // F5 renvoyait sur Overview, Retour éjectait de la fiche, et le deep-link `$`
+  // de la liste devenait faux dès le premier clic d'onglet. `useUrlState` pose
+  // `replace: true` (pas dix entrées d'historique pour dix onglets) et efface le
+  // paramètre quand il vaut le défaut, donc Overview garde une URL propre.
+  const [tabParam, setTabParam] = useUrlState('tab', 'overview');
+  const tab: ProductDetailTab = VALID_TABS.has(tabParam as ProductDetailTab)
+    ? (tabParam as ProductDetailTab)
+    : 'overview';
+  const setTab = (next: ProductDetailTab): void => { setTabParam(next); };
   const [patch, setPatch] = useState<ProductUpdatePatch>({});
 
   useEffect(() => {
@@ -116,13 +123,19 @@ export default function ProductDetailPage(): JSX.Element {
           to={`/backoffice/inventory/${p.id}`}
           className="inline-flex items-center gap-1.5 rounded-md border border-border-subtle px-3 py-1.5 text-xs font-semibold uppercase tracking-widest text-text-secondary transition-colors hover:border-gold-soft hover:text-gold"
         >
-          <BarChart3 className="h-3.5 w-3.5" aria-hidden /> Voir le stock
+          <BarChart3 className="h-3.5 w-3.5" aria-hidden /> View stock analytics
         </Link>
       </div>
 
       <ProductDetailTabs active={tab} onChange={setTab} />
 
-      <div data-testid={`product-tab-${tab}`}>
+      <div
+        role="tabpanel"
+        id={productTabPanelId(tab)}
+        aria-labelledby={productTabId(tab)}
+        tabIndex={0}
+        data-testid={`product-tab-${tab}`}
+      >
         {tab === 'overview' && <OverviewPanel product={p} />}
         {tab === 'general'  && (
           <GeneralPanel

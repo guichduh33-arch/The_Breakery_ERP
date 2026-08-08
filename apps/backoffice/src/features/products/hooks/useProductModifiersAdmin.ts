@@ -24,6 +24,11 @@ export function productModifiersAdminKey(productId: string) {
 export function useProductModifiersAdmin(productId: string) {
   return useQuery<EditableModifierGroup[]>({
     queryKey: productModifiersAdminKey(productId),
+    // Seul hook de lecture du module sans `staleTime` : le panneau se démonte au
+    // changement d'onglet, donc chaque retour repartait en requête. Aligné sur le
+    // catalogue (30 s) ; ModifiersPanel refuse par ailleurs d'écraser un brouillon
+    // non enregistré, mais l'économie de requêtes se fait ici.
+    staleTime: 30_000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('product_modifiers')

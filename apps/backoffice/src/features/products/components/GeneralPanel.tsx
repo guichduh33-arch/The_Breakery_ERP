@@ -186,7 +186,7 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
             />
             <ToggleRow
               label="Deduct stock"
-              sub="Déduit les matières premières de la recette (à la production si suivi, à la vente sinon)"
+              sub="Deducts the recipe's raw materials — at production when tracked, at sale otherwise"
               enabled={draft.deduct_stock}
               disabled={readOnly}
               onChange={(v) => update('deduct_stock', v)}
@@ -207,14 +207,14 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
             />
             <ToggleRow
               label="Track inventory"
-              sub="Suit le stock du produit lui-même (décrémenté à la vente, monté à la production)"
+              sub="Tracks the product's own stock — decremented on sale, increased on production"
               enabled={draft.track_inventory}
               disabled={readOnly}
               onChange={(v) => update('track_inventory', v)}
             />
             <ToggleRow
-              label="Display-case item (POS vitrine)"
-              sub="Stock vitrine séparé ; la vente garde sur le compteur vitrine, pas l'inventaire global."
+              label="Display-case item (POS)"
+              sub="Separate display-case counter — sales draw on it, not on global inventory."
               enabled={draft.is_display_item ?? false}
               disabled={readOnly}
               onChange={(v) => update('is_display_item', v)}
@@ -226,7 +226,7 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
               <div
                 role="alert"
                 data-testid="display-stock-warning"
-                className="rounded-md border border-gold-soft bg-gold/5 px-3 py-2 text-xs text-text-secondary"
+                className="rounded-md border border-gold bg-gold-soft px-3 py-2 text-xs text-text-secondary"
               >
                 <span className="font-semibold text-gold">
                   Compteur vitrine à {displayStockQty ?? 0}.
@@ -353,17 +353,30 @@ function ToggleRow({ label, sub, enabled, disabled = false, onChange }: ToggleRo
       aria-label={label}
       disabled={!interactive}
       onClick={() => onChange?.(!enabled)}
-      className="flex w-full items-center justify-between rounded-md border border-border-subtle bg-bg-overlay px-3 py-2.5 text-left transition-colors hover:enabled:bg-bg-elevated disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+      className="flex w-full items-center justify-between rounded-md border border-border-subtle bg-bg-overlay px-3 py-2.5 text-left transition-colors hover:enabled:bg-surface-4 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
     >
       <div>
         <div className="text-xs font-semibold uppercase tracking-widest text-text-primary">{label}</div>
         <div className="text-[11px] italic text-text-secondary">{sub}</div>
       </div>
+      {/* Harden — l'état ÉTEINT était `bg-bg-input`, c'est-à-dire #ffffff, avec un
+          curseur #ffffff, sur une carte #ffffff : contraste 1,00:1, l'état ne se
+          lisait pas. Il se lit maintenant par un remplissage (papier pressé) ET
+          un liseré `text-subtle` (#88847c), le token que le système réserve aux
+          objets graphiques non textuels — 3,6:1 sur la feuille blanche, au-dessus
+          du seuil WCAG 1.4.11. Le survol de ligne, lui, passait de #ffffff à
+          #ffffff : il ne produisait rien. */}
       <span
         aria-hidden
-        className={`inline-flex h-5 w-9 items-center rounded-full transition-colors ${enabled ? 'bg-gold' : 'bg-bg-input'}`}
+        className={`inline-flex h-5 w-9 items-center rounded-full border transition-colors ${
+          enabled ? 'border-gold bg-gold' : 'border-text-subtle bg-surface-4'
+        }`}
       >
-        <span className={`inline-block h-4 w-4 transform rounded-full bg-bg-elevated transition-transform ${enabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
+        <span
+          className={`inline-block h-4 w-4 transform rounded-full border border-border-strong bg-bg-elevated transition-transform ${
+            enabled ? 'translate-x-4' : 'translate-x-0.5'
+          }`}
+        />
       </span>
     </button>
   );
