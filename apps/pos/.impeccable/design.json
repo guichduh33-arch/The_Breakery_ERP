@@ -1,0 +1,314 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-08T00:00:00Z",
+  "title": "Design System: The Breakery POS",
+  "extensions": {
+    "colorMeta": {
+      "gold": {
+        "role": "primary",
+        "displayName": "Or de Vitrine",
+        "canonical": "#d3ab5c",
+        "tonalRamp": ["#2a2010", "#453519", "#614b23", "#7d622e", "#9a7a3a", "#b8934a", "#d3ab5c", "#e8c98f"]
+      },
+      "green": {
+        "role": "secondary",
+        "displayName": "Vert de Rendu",
+        "canonical": "#3fb583",
+        "tonalRamp": ["#0a2419", "#103a28", "#175038", "#1f6849", "#28815b", "#339c6e", "#3fb583", "#6fcda4"]
+      },
+      "red": {
+        "role": "secondary",
+        "displayName": "Braise",
+        "canonical": "#e8695f",
+        "tonalRamp": ["#2e100d", "#4a1a15", "#66251e", "#833127", "#a13e32", "#c0503f", "#e8695f", "#f29b93"]
+      },
+      "amber-warn": {
+        "role": "tertiary",
+        "displayName": "Ambre d'Attente",
+        "canonical": "#d99a3a",
+        "tonalRamp": ["#2c1d09", "#472f10", "#634218", "#805620", "#9d6b29", "#bb8231", "#d99a3a", "#e8bb78"]
+      },
+      "blue-info": {
+        "role": "tertiary",
+        "displayName": "Bleu d'Information",
+        "canonical": "#6fa8d8",
+        "tonalRamp": ["#0e1b26", "#172c3d", "#203e55", "#29506e", "#336388", "#4479a8", "#6fa8d8", "#9cc6e6"]
+      },
+      "surface-1": {
+        "role": "neutral",
+        "displayName": "Brun Fournil",
+        "canonical": "#12100e",
+        "tonalRamp": ["#0b0a09", "#12100e", "#1a1815", "#231f1b", "#2e2924", "#413a33", "#5c5449", "#7d7364"]
+      },
+      "surface-2": {
+        "role": "neutral",
+        "displayName": "Brun Relevé",
+        "canonical": "#1a1815",
+        "tonalRamp": ["#0b0a09", "#12100e", "#1a1815", "#231f1b", "#2e2924", "#413a33", "#5c5449", "#7d7364"]
+      },
+      "text-primary": {
+        "role": "neutral",
+        "displayName": "Ivoire Chaud",
+        "canonical": "#f7f3ec",
+        "tonalRamp": ["#4a443c", "#5c5449", "#7d7364", "#968c7e", "#b3aa9d", "#d5cec3", "#f7f3ec", "#fffdf9"]
+      },
+      "payment-card": {
+        "role": "tertiary",
+        "displayName": "Violet Carte",
+        "canonical": "#8b5cf6",
+        "tonalRamp": ["#1c0f33", "#2d1854", "#3f2276", "#512c98", "#6438bb", "#7748d9", "#8b5cf6", "#b18ffa"]
+      },
+      "payment-qris": {
+        "role": "tertiary",
+        "displayName": "Ambre QRIS",
+        "canonical": "#f59e0b",
+        "tonalRamp": ["#311f02", "#4e3204", "#6b4506", "#885808", "#a66c0a", "#c9830b", "#f59e0b", "#fabf5c"]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display — Playfair",
+        "purpose": "Monogramme de marque et écran de connexion uniquement. Jamais dans le parcours d'encaissement."
+      },
+      "headline": {
+        "displayName": "Headline — Inter 30",
+        "purpose": "Titre d'écran plein : clôture de session, terminal de paiement."
+      },
+      "title": {
+        "displayName": "Title — Inter 24",
+        "purpose": "Titre de carte et de modale."
+      },
+      "body": {
+        "displayName": "Body — Inter 16",
+        "purpose": "Texte courant. Le cran au-dessus (19px) sert au corps emphatique."
+      },
+      "label": {
+        "displayName": "Label — Inter capitales espacées",
+        "purpose": "Signature du système : tout intitulé de section, de groupe et de tuile. Jamais sous 12px."
+      },
+      "data": {
+        "displayName": "Data — JetBrains Mono tabulaire",
+        "purpose": "Tout ce qui est un nombre : total, monnaie rendue, écart de caisse, minuteur, quantité."
+      },
+      "brand": {
+        "displayName": "Brand — Playfair italique",
+        "purpose": "Le monogramme circulaire « B », rendu en SVG pour rester net à toute taille."
+      }
+    },
+    "shadows": [
+      {
+        "name": "elev-hairline",
+        "value": "inset 0 1px 0 rgba(255, 255, 255, 0.06)",
+        "purpose": "L'arête éclairée de toute carte, tuile, barre ou champ au repos. C'est la valeur des crans xs / sm / md en thème sombre."
+      },
+      {
+        "name": "shadow-lg",
+        "value": "inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 16px 40px rgba(0, 0, 0, 0.55)",
+        "purpose": "Premier cran où une ombre portée devient visible : ce qui survole le plan (popover, tuile de produit au survol)."
+      },
+      {
+        "name": "shadow-xl",
+        "value": "inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 28px 72px rgba(0, 0, 0, 0.60)",
+        "purpose": "Feuille latérale et surface détachée de grande taille."
+      },
+      {
+        "name": "shadow-modal",
+        "value": "inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 28px 72px rgba(0, 0, 0, 0.65)",
+        "purpose": "Le seul cran autorisé sur une surface qui prend le focus de l'écran entier."
+      },
+      {
+        "name": "shadow-inset-sm",
+        "value": "inset 0 1px 2px rgba(0, 0, 0, 0.35)",
+        "purpose": "Surfaces en retrait : carte en creux, champ enfoncé."
+      },
+      {
+        "name": "shadow-focus",
+        "value": "0 0 0 3px rgba(211, 171, 92, 0.40)",
+        "purpose": "Halo de focus dérivé de l'accent. Le liseré et le halo sont toujours de la même couleur."
+      },
+      {
+        "name": "backdrop",
+        "value": "rgba(11, 10, 9, 0.72) + blur 8px",
+        "purpose": "Voile derrière une modale ou une feuille latérale."
+      }
+    ],
+    "motion": [
+      { "name": "motion-fast", "value": "120ms", "purpose": "Couleur, bordure et compression d'un contrôle sous le doigt." },
+      { "name": "motion-base", "value": "200ms", "purpose": "Transition d'ombre et d'état d'une carte." },
+      { "name": "motion-slow", "value": "320ms", "purpose": "Agrandissement de l'image d'une tuile de produit au survol." },
+      { "name": "motion-ease-out", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Courbe de sortie très amortie — la courbe par défaut du système." },
+      { "name": "motion-ease-in", "value": "cubic-bezier(0.7, 0, 0.84, 0)", "purpose": "Courbe d'entrée pour les sorties d'écran." },
+      { "name": "prefers-reduced-motion", "value": "toutes les durées à 0ms", "purpose": "Les trois durées s'effondrent au niveau de la variable CSS : aucun composant n'a à le gérer lui-même." }
+    ],
+    "breakpoints": [
+      { "name": "md", "value": "768px" }
+    ],
+    "touchTargets": [
+      { "name": "touch-min", "value": "44px", "purpose": "Plancher des contrôles secondaires et des champs de saisie." },
+      { "name": "touch-comfy", "value": "56px", "purpose": "Défaut de tout bouton et de toute action du parcours d'argent." },
+      { "name": "touch-large", "value": "80px", "purpose": "Touches du pavé numérique et actions pleine largeur." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "L'action qui fait avancer la transaction : payer, valider, envoyer en cuisine.",
+      "html": "<button class=\"ds-btn-primary\">SEND TO KITCHEN</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: var(--touch-comfy, 56px); padding: 0 16px; background: var(--green-base, #3fb583); color: var(--green-fg, #0a1610); font-family: var(--font-body); font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.025em; border: none; border-radius: var(--radius-md, 8px); cursor: pointer; transition: background-color 120ms cubic-bezier(0.16,1,0.3,1), transform 120ms cubic-bezier(0.16,1,0.3,1); } .ds-btn-primary:hover { background: var(--green-hover, #4ac48f); } .ds-btn-primary:active { transform: scale(0.97); } .ds-btn-primary:focus-visible { outline: 2px solid var(--gold-base, #d3ab5c); outline-offset: 2px; } .ds-btn-primary:disabled { background: var(--surface-4, #2e2924); color: var(--text-muted, #968c7e); cursor: not-allowed; }"
+    },
+    {
+      "name": "Gold Button",
+      "kind": "button",
+      "refersTo": "button-gold",
+      "description": "Action de marque et validation d'une saisie de montant. Jamais en concurrence avec le vert sur un même écran.",
+      "html": "<button class=\"ds-btn-gold\">CONFIRM AMOUNT</button>",
+      "css": ".ds-btn-gold { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: var(--touch-comfy, 56px); padding: 0 16px; background: var(--gold-base, #d3ab5c); color: var(--gold-fg, #1a1408); font-family: var(--font-body); font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.025em; border: none; border-radius: var(--radius-md, 8px); cursor: pointer; transition: background-color 120ms cubic-bezier(0.16,1,0.3,1), transform 120ms cubic-bezier(0.16,1,0.3,1); } .ds-btn-gold:hover { background: var(--gold-hover, #dfba72); } .ds-btn-gold:active { transform: scale(0.97); } .ds-btn-gold:focus-visible { outline: 2px solid var(--gold-base, #d3ab5c); outline-offset: 2px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "L'action de retrait : annuler, fermer, revenir. Casse normale, surface flottante bordée de filet.",
+      "html": "<button class=\"ds-btn-secondary\">Cancel</button>",
+      "css": ".ds-btn-secondary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: var(--touch-comfy, 56px); padding: 0 16px; background: var(--bg-overlay, #231f1b); color: var(--text-primary, #f7f3ec); font-family: var(--font-body); font-size: 14px; font-weight: 600; border: 1px solid var(--border-subtle, #2a2622); border-radius: var(--radius-md, 8px); cursor: pointer; transition: background-color 120ms cubic-bezier(0.16,1,0.3,1), transform 120ms cubic-bezier(0.16,1,0.3,1); } .ds-btn-secondary:hover { background: var(--bg-input, #1f1c18); } .ds-btn-secondary:active { transform: scale(0.97); } .ds-btn-secondary:focus-visible { outline: 2px solid var(--gold-base, #d3ab5c); outline-offset: 2px; }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Champ en creux. Dans la caisse, il ouvre le pavé virtuel plutôt que le clavier système : c'est une cible, pas un point d'insertion.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"Search customer…\" />",
+      "css": ".ds-input { display: block; width: 100%; height: var(--touch-min, 44px); padding: 8px 12px; background: var(--bg-input, #1f1c18); color: var(--text-primary, #f7f3ec); font-family: var(--font-body); font-size: 14px; border: 1px solid var(--border-subtle, #2a2622); border-radius: var(--radius-md, 8px); box-shadow: inset 0 1px 2px rgba(0,0,0,0.35); } .ds-input::placeholder { color: var(--text-muted, #968c7e); } .ds-input:focus-visible { outline: 2px solid var(--gold-base, #d3ab5c); outline-offset: 2px; box-shadow: 0 0 0 3px rgba(211,171,92,0.40); } .ds-input:disabled { opacity: 0.5; cursor: not-allowed; }"
+    },
+    {
+      "name": "Status Chip",
+      "kind": "chip",
+      "refersTo": "badge-destructive",
+      "description": "Pastille tonale : fond de la couleur à 12-14 %, texte à pleine force. Le contrat vaut pour succès, avertissement, information et destructif.",
+      "html": "<span class=\"ds-chip ds-chip-danger\">Voided</span><span class=\"ds-chip ds-chip-success\">Paid</span><span class=\"ds-chip ds-chip-neutral\">Held</span>",
+      "css": ".ds-chip { display: inline-flex; align-items: center; padding: 2px 10px; margin-right: 6px; font-family: var(--font-body); font-size: 12px; font-weight: 600; border: 1px solid transparent; border-radius: 9999px; } .ds-chip-danger { background: var(--red-soft, rgba(232,105,95,0.14)); color: var(--red-as-text, #f0837b); } .ds-chip-success { background: rgba(16,185,129,0.12); color: var(--green-base, #3fb583); } .ds-chip-neutral { background: var(--surface-4, #2e2924); color: var(--text-secondary, #b3aa9d); }"
+    },
+    {
+      "name": "Section Label",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "Le motif signature : capitales Inter grasses à 0.12em, en texte discret. Tout intitulé de section passe par là.",
+      "html": "<div class=\"ds-section-label\">Active order</div>",
+      "css": ".ds-section-label { font-family: var(--font-body); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted, #968c7e); }"
+    },
+    {
+      "name": "Product Tile",
+      "kind": "card",
+      "refersTo": "product-tile",
+      "description": "L'objet le plus manipulé du produit. Ici dans son état « déjà au panier » : bordure et anneau dorés, pastille de quantité.",
+      "html": "<button class=\"ds-tile ds-tile-in-cart\"><div class=\"ds-tile-media\"><span class=\"ds-tile-qty\">2</span></div><div class=\"ds-tile-body\"><div class=\"ds-tile-name\">Almond croissant</div><div class=\"ds-tile-price\">Rp 38,000</div></div></button>",
+      "css": ".ds-tile { display: block; width: 190px; padding: 0; text-align: left; background: var(--bg-elevated, #1a1815); border: 1px solid var(--border-subtle, #2a2622); border-radius: var(--radius-lg, 12px); overflow: hidden; cursor: pointer; box-shadow: inset 0 1px 0 rgba(255,255,255,0.06); transition: transform 120ms cubic-bezier(0.16,1,0.3,1), border-color 120ms cubic-bezier(0.16,1,0.3,1), background-color 120ms cubic-bezier(0.16,1,0.3,1); } .ds-tile:hover { transform: translateY(-2px); border-color: var(--border-strong, #413a33); background: var(--bg-overlay, #231f1b); box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 16px 40px rgba(0,0,0,0.55); } .ds-tile:active { transform: scale(0.97); } .ds-tile:focus-visible { outline: 2px solid var(--gold-base, #d3ab5c); outline-offset: 2px; } .ds-tile-in-cart { border-color: var(--gold-base, #d3ab5c); box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 0 0 1px rgba(211,171,92,0.5); } .ds-tile-media { position: relative; aspect-ratio: 4 / 3; background: var(--bg-input, #1f1c18); } .ds-tile-qty { position: absolute; top: 8px; left: 8px; display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 24px; padding: 0 6px; background: var(--gold-base, #d3ab5c); color: var(--bg-base, #12100e); font-family: var(--font-mono); font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; border-radius: 9999px; } .ds-tile-body { padding: 8px 10px; } .ds-tile-name { font-family: var(--font-body); font-size: 13px; font-weight: 500; line-height: 1.15; color: var(--text-primary, #f7f3ec); } .ds-tile-price { margin-top: 2px; font-family: var(--font-mono); font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--gold-base, #d3ab5c); }"
+    },
+    {
+      "name": "Kitchen Ticket (urgent)",
+      "kind": "card",
+      "refersTo": null,
+      "description": "Le seul objet du système dont la couleur encode le temps : bordure de 2 px et minuteur escaladent ensemble, du filet neutre à l'ambre puis au rouge pulsant.",
+      "html": "<div class=\"ds-ticket ds-ticket-urgent\"><div class=\"ds-ticket-head\"><span class=\"ds-ticket-no\">#0142</span><span class=\"ds-ticket-timer\">11:24</span></div><div class=\"ds-ticket-line\">2 × Croque-monsieur</div><div class=\"ds-ticket-mod\">no tomato</div></div>",
+      "css": ".ds-ticket { width: 240px; padding: 12px; background: var(--bg-elevated, #1a1815); border: 2px solid var(--border-subtle, #2a2622); border-radius: var(--radius-lg, 12px); box-shadow: inset 0 1px 0 rgba(255,255,255,0.06); } .ds-ticket-urgent { border-color: var(--red-base, #e8695f); animation: ds-ticket-pulse 1.6s ease-in-out infinite; } @keyframes ds-ticket-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.65; } } @media (prefers-reduced-motion: reduce) { .ds-ticket-urgent { animation: none; } } .ds-ticket-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; } .ds-ticket-no { font-family: var(--font-mono); font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--gold-base, #d3ab5c); } .ds-ticket-timer { font-family: var(--font-mono); font-size: 19px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--red-as-text, #f0837b); } .ds-ticket-line { font-family: var(--font-body); font-size: 16px; color: var(--text-primary, #f7f3ec); } .ds-ticket-mod { margin-top: 2px; font-family: var(--font-body); font-size: 14px; color: var(--text-secondary, #b3aa9d); }"
+    },
+    {
+      "name": "Numpad Key",
+      "kind": "custom",
+      "refersTo": "numpad-key",
+      "description": "Touche du pavé virtuel — 80 px, surface flottante. C'est ce composant qui rend vraie la promesse « un seul écran tactile suffit ».",
+      "html": "<button class=\"ds-key\">7</button><button class=\"ds-key\">8</button><button class=\"ds-key\">9</button>",
+      "css": ".ds-key { width: 80px; height: var(--touch-large, 80px); margin-right: 8px; background: var(--bg-overlay, #231f1b); color: var(--text-primary, #f7f3ec); font-family: var(--font-mono); font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; border: 1px solid var(--border-subtle, #2a2622); border-radius: var(--radius-md, 8px); cursor: pointer; box-shadow: inset 0 1px 0 rgba(255,255,255,0.06); transition: background-color 120ms cubic-bezier(0.16,1,0.3,1), transform 120ms cubic-bezier(0.16,1,0.3,1); } .ds-key:hover { background: var(--surface-4, #2e2924); } .ds-key:active { transform: scale(0.97); } .ds-key:focus-visible { outline: 2px solid var(--gold-base, #d3ab5c); outline-offset: 2px; }"
+    },
+    {
+      "name": "Top Bar",
+      "kind": "nav",
+      "refersTo": null,
+      "description": "Barre supérieure de 56 px : poignée de tiroir, monogramme, mention POS en capitales espacées à gauche ; caissier en service et historique à droite. Un seul point d'entrée vers le reste.",
+      "html": "<header class=\"ds-topbar\"><div class=\"ds-topbar-left\"><span class=\"ds-topbar-icon\">☰</span><span class=\"ds-brandmark\">B</span><span class=\"ds-topbar-tag\">POS</span></div><div class=\"ds-topbar-right\"><span class=\"ds-topbar-user\">Server: <b>Ayu</b></span></div></header>",
+      "css": ".ds-topbar { display: flex; align-items: center; justify-content: space-between; height: 56px; padding: 0 16px; background: var(--bg-elevated, #1a1815); border-bottom: 1px solid var(--border-subtle, #2a2622); } .ds-topbar-left, .ds-topbar-right { display: flex; align-items: center; gap: 12px; } .ds-topbar-icon { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; color: var(--text-primary, #f7f3ec); border-radius: var(--radius-md, 8px); cursor: pointer; } .ds-topbar-icon:hover { background: var(--bg-overlay, #231f1b); } .ds-brandmark { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; background: var(--gold-base, #d3ab5c); color: var(--gold-fg, #1a1408); font-family: var(--font-display); font-style: italic; font-size: 24px; border-radius: 9999px; } .ds-topbar-tag { font-family: var(--font-display); font-size: 14px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted, #968c7e); } .ds-topbar-user { font-family: var(--font-body); font-size: 14px; color: var(--text-secondary, #b3aa9d); } .ds-topbar-user b { color: var(--text-primary, #f7f3ec); font-weight: 600; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Le Plateau de Service",
+    "overview": "La caisse est un plateau laqué sombre sur lequel on pose des objets et qu'on reprend d'une seule main. Le fond n'est pas noir : c'est un brun très sombre réchauffé (#12100e), de la même famille de teinte que le papier du back-office — seule la lumière change entre les deux surfaces du produit. Les objets qui comptent — la tuile de produit, la ligne de panier, le pavé numérique, le ticket de cuisine — se détachent en montant d'un cran sur une rampe de quatre valeurs, pas en flottant sur une ombre.\n\nLe geste prime sur la finesse. Les contrôles sont grands, francs et répondants : ils s'enfoncent sous le doigt (compression à 0,97 à l'appui, remontée en 120 ms) et redeviennent immobiles dès que le système d'exploitation demande moins de mouvement. Rien n'est décoratif : chaque pixel doré, chaque bordure colorée et chaque minuteur qui change de couleur porte une information que le caissier lit en coup d'œil, debout, avec un client en face de lui.\n\nL'or est la seule couleur d'identité, et il est rationné. Il ne dit qu'une chose — ceci est la valeur, ou l'action : le prix, le montant, la sélection active, l'anneau de focus, le monogramme de marque. Partout ailleurs, du neutre chaud. Deux registres sont explicitement rejetés : le tableau de bord d'analytics (cartes empilées, graphiques, tuiles de KPI — la caisse encaisse, elle ne rapporte pas) et le noir-et-or clinquant (dorés saturés, dégradés, lueurs). L'or est une encre, jamais un vernis.",
+    "keyCharacteristics": [
+      "Brun très sombre réchauffé sur l'axe ~40°, quatre crans de surface qui se lisent comme une distance à l'œil (0 = le plus loin, 4 = le plus près).",
+      "Or unique et rationné ; le vert porte la validation, le rouge le danger, l'ambre l'attente.",
+      "Trois familles typographiques seulement : Playfair (marque), Inter (tout le chrome et le texte), JetBrains Mono (tout ce qui est un nombre).",
+      "Aucune ombre portée sous le cran modale : l'élévation se lit à la valeur de surface plus un filet clair de 1 px en haut.",
+      "Cibles tactiles à 56 px par défaut, 44 px en secondaire, 80 px pour le pavé.",
+      "Douze teintes catégorielles qui sont l'identité d'une famille de produits, et jamais une série de graphique."
+    ],
+    "rules": [
+      {
+        "name": "La Règle de l'Encre Rare",
+        "body": "L'or n'apparaît que sur la valeur (un montant), la sélection (ce qui est actif), le focus et la marque. S'il apparaît ailleurs, c'est qu'un autre token manquait : on ajoute le token, on n'étend pas l'or.",
+        "section": "colors"
+      },
+      {
+        "name": "La Règle des Deux Rouges",
+        "body": "Le rouge a deux rôles qui ne se substituent jamais. red-as-text (#f0837b) est le rouge en premier plan, à écrire sur la surface sombre. red-on-fill (#180e0c) est le premier plan à poser sur un aplat rouge. Les confondre a déjà produit un badge à 1,00:1, illisible. Même contrat pour l'or et le vert : le suffixe -fg signifie toujours « sur remplissage ».",
+        "section": "colors"
+      },
+      {
+        "name": "La Règle des Teintes de Catégorie",
+        "body": "Les douze teintes catégorielles (--cat-amber … --cat-red) sont l'identité d'une famille de produits. Elles ne servent jamais de série de graphique : la même couleur dirait « Viennoiserie » sur un écran et « troisième trimestre » sur l'autre. Les graphiques prennent la rampe monochrome chart-1..4.",
+        "section": "colors"
+      },
+      {
+        "name": "La Règle du Chiffre Immobile",
+        "body": "Tout nombre susceptible de changer sous l'œil — minuteur, total en cours, quantité — est en mono avec tabular-nums. Un chiffre qui saute d'un pixel pendant qu'on le lit est une erreur de lecture en puissance.",
+        "section": "typography"
+      },
+      {
+        "name": "La Règle de la Capitale Espacée",
+        "body": "Les libellés de section sont en capitales Inter grasses à 0.12em. C'est le motif signature du système ; il ne se remplace pas par un titre en casse normale, et il ne descend pas sous 12px — l'échelle basse a été décompressée le 2026-08-01 parce que 11px était illisible pour une caissière debout à 60 cm de l'écran.",
+        "section": "typography"
+      },
+      {
+        "name": "La Règle de la Serif Réservée",
+        "body": "Playfair ne touche jamais une donnée ni un libellé fonctionnel. Si une serif apparaît sur un montant, le token est faux.",
+        "section": "typography"
+      },
+      {
+        "name": "La Règle des 56",
+        "body": "Toute action du parcours d'argent — ajouter, envoyer, encaisser, valider un montant — fait au moins 56 px de haut. Le 44 px est le plancher des contrôles secondaires et des champs, pas celui des gestes qui engagent une transaction.",
+        "section": "layout"
+      },
+      {
+        "name": "La Règle de la Barre Unique",
+        "body": "Les actions de commande vivent toutes dans la barre inférieure pleine largeur, jamais dispersées dans le panier. Le caissier sait où se trouve l'action suivante sans la chercher.",
+        "section": "layout"
+      },
+      {
+        "name": "La Règle du Filet",
+        "body": "En thème sombre, on ne cherche pas la profondeur dans une ombre : on monte d'un cran de surface et on pose un filet. Ajouter une ombre douce sous une carte ne la fait pas ressortir, cela la salit.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do faire passer toute couleur par un token. Le KDS impose déjà zéro hex en dur et aucun style en ligne ; c'est la règle du système entier.",
+      "Do monter d'un cran de surface pour créer de la profondeur, et poser le filet d'élévation. C'est la seule technique correcte en thème sombre.",
+      "Do écrire tout nombre en mono avec tabular-nums, y compris les quantités et les minuteurs.",
+      "Do dimensionner à 56 px toute action du parcours d'argent, et à 80 px les touches de pavé.",
+      "Do utiliser le suffixe -fg uniquement pour un premier plan sur un aplat, et -as-text pour une couleur écrite sur la surface sombre.",
+      "Do doubler tout signal sonore par un signal visuel, et réciproquement.",
+      "Do neutraliser la couleur d'un contrôle désactivé plutôt que de la faner.",
+      "Do vérifier qu'un changement de primitif tient dans les deux thèmes : @breakery/ui est partagé avec le back-office, et un fond « flottant » qui devient blanc sur blanc là-bas est une régression ici."
+    ],
+    "donts": [
+      "Don't ajouter une ombre portée sous une carte, une tuile ou une barre en thème sombre. Sous le cran lg, elle ne se voit pas — elle ternit.",
+      "Don't étendre l'or au-delà de la valeur, de la sélection, du focus et de la marque. S'il en faut ailleurs, c'est qu'un token manque.",
+      "Don't transformer la caisse en tableau de bord : pas de tuiles de KPI, pas de graphiques, pas de cartes empilées dans le parcours d'encaissement.",
+      "Don't verser dans le noir-et-or clinquant : aucun dégradé doré, aucune lueur, aucun doré saturé en grand aplat.",
+      "Don't utiliser les teintes catégorielles comme série de graphique, ni la rampe de graphique comme identité de catégorie.",
+      "Don't écrire du texte dans le cran « inerte » : il est sous le désactivé et ne sert qu'à la ponctuation structurelle.",
+      "Don't descendre un libellé sous 12px, ni remplacer les capitales espacées par un titre en casse normale.",
+      "Don't poser Playfair sur une donnée, un montant ou un libellé fonctionnel.",
+      "Don't ouvrir le clavier système sur un champ de la caisse : le pavé virtuel est le seul chemin de saisie."
+    ]
+  }
+}
