@@ -219,7 +219,7 @@ export function RefundOrderModal({
               onChange={setTenderValues}
             />
             {validation && !validation.ok && draftLines.length > 0 && draftTenders.length > 0 && (
-              <div className="mt-2 text-xs text-red-fg">
+              <div className="mt-2 text-xs text-red-as-text">
                 {validation.error}{validation.detail ? ` — ${validation.detail}` : ''}
               </div>
             )}
@@ -233,11 +233,11 @@ export function RefundOrderModal({
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="e.g. spilled latte, customer return…"
-              className={cn('w-full', reason.trim().length > 0 && reason.trim().length < 3 && 'border-red-fg/30')}
+              className={cn('w-full', reason.trim().length > 0 && reason.trim().length < 3 && 'border-red-as-text/30')}
               disabled={isPending}
             />
             {reason.length > 0 && reason.trim().length < 3 && (
-              <div className="mt-1 text-xs text-red-fg">Reason must be at least 3 characters</div>
+              <div className="mt-1 text-xs text-red-as-text">Reason must be at least 3 characters</div>
             )}
           </section>
 

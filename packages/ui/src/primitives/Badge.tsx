@@ -13,9 +13,9 @@ const badgeVariants = cva(
         // an invisible white-on-white pill (design audit 2026-07-08, BO F1).
         secondary: 'border-transparent bg-surface-4 text-text-secondary',
         // Destructive is tonal like the other semantic chips — white on the
-        // saturated red-base fails AA on the POS (~3.8:1); soft bg + red-fg
+        // saturated red-base fails AA on the POS (~3.8:1); soft bg + red-as-text
         // passes under both themes (design audit 2026-07-08, DS B1/T1).
-        destructive: 'border-transparent bg-red-soft text-red-fg',
+        destructive: 'border-transparent bg-red-soft text-red-as-text',
         outline: 'text-text-primary border-border-subtle',
         // Semantic tonal variants (design audit 2026-07-07, DS I-3) — the
         // canonical status chips. Soft token bg + full-strength token text

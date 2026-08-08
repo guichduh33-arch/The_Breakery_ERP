@@ -134,7 +134,7 @@ export function ProductCard({
         {/* Out-of-stock / disabled overlay — explicit and unmistakable. */}
         {overlayLabel && (
           <div className="absolute inset-0 grid place-items-center bg-bg-base/72 z-20">
-            <span className="rotate-[-8deg] bg-bg-base px-3 py-1.5 rounded text-red-fg text-sm font-extrabold uppercase tracking-widest border-2 border-red-fg/60 shadow-lg">
+            <span className="rotate-[-8deg] bg-bg-base px-3 py-1.5 rounded text-red-as-text text-sm font-extrabold uppercase tracking-widest border-2 border-red-as-text/60 shadow-lg">
               {overlayLabel}
             </span>
           </div>

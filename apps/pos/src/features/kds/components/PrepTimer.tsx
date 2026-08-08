@@ -26,7 +26,7 @@ function format(ms: number): string {
 }
 
 function colourClass(ms: number): string {
-  if (ms >= TEN_MIN_MS) return 'text-red-fg font-semibold';
+  if (ms >= TEN_MIN_MS) return 'text-red-as-text font-semibold';
   if (ms >= FIVE_MIN_MS) return 'text-amber-warn';
   return 'text-text-secondary';
 }

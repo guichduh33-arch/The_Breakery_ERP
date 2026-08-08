@@ -141,7 +141,7 @@ export function TabletCartPanel({ footer }: TabletCartPanelProps = {}): JSX.Elem
                     </div>
                     {/* h-12/w-12 remove target — tablet-comfortable (LOT 6). */}
                     <button
-                      className="h-12 w-12 shrink-0 grid place-items-center rounded-md bg-bg-input text-text-secondary hover:text-red-fg text-lg"
+                      className="h-12 w-12 shrink-0 grid place-items-center rounded-md bg-bg-input text-text-secondary hover:text-red-as-text text-lg"
                       onClick={() => removeItem(item.id)}
                       aria-label={`Remove ${item.name}`}
                     >

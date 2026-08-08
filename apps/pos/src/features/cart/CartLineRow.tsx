@@ -291,7 +291,7 @@ export function CartLineRow({
           )}
         />
         {item.discount && !cancelled && (
-          <div className="text-[11px] text-red-fg font-mono tabular-nums">
+          <div className="text-[11px] text-red-as-text font-mono tabular-nums">
             {item.discount.type === 'percentage' ? (
               `-${item.discount.value}%`
             ) : (
@@ -323,7 +323,7 @@ export function CartLineRow({
           'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
           locked
             ? 'text-gold/70'
-            : 'text-text-muted hover:text-red-fg hover:bg-red-soft',
+            : 'text-text-muted hover:text-red-as-text hover:bg-red-soft',
           cancelled && 'opacity-50 pointer-events-none',
         )}
       >

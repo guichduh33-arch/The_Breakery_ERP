@@ -84,7 +84,11 @@ const preset: Partial<Config> = {
         red: {
           DEFAULT: 'var(--red-base)',
           soft: 'var(--red-soft)',
-          fg: 'var(--red-fg)',
+          // `-fg` signifie « premier plan SUR un aplat » partout ailleurs
+          // (--gold-fg, --green-fg). --red-fg était le seul à signifier
+          // l'inverse ; les deux rôles portent désormais leur nom.
+          'as-text': 'var(--red-as-text)',
+          'on-fill': 'var(--red-on-fill)',
         },
         blue: { info: 'var(--blue-info)' },
         amber: { warn: 'var(--amber-warn)' },
@@ -102,7 +106,10 @@ const preset: Partial<Config> = {
         danger: {
           DEFAULT: 'var(--danger)',
           soft: 'var(--danger-soft)',
-          fg: 'var(--red-fg)',
+          // `text-danger-fg` se pose sur `bg-danger` : c'est un on-fill.
+          // Il pointait vers l'ancien --red-fg, c'est-à-dire vers la même
+          // couleur que le remplissage.
+          fg: 'var(--red-on-fill)',
         },
         info: {
           DEFAULT: 'var(--info)',

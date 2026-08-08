@@ -73,7 +73,7 @@ function ageStyle(ageMs: number, cfg: KdsConfig): AgeStyle {
   if (ageMs >= cfg.urgentMs) {
     return {
       border: 'border-red animate-pulse',
-      timer: 'text-red-fg font-bold',
+      timer: 'text-red-as-text font-bold',
       bandLabel: 'urgent',
     };
   }
@@ -226,7 +226,7 @@ export function KdsOrderCard({ items }: KdsOrderCardProps) {
             <span
               className={`text-sm font-bold uppercase tracking-widest border rounded-md px-2 py-0.5 ${
                 style.bandLabel === 'urgent'
-                  ? 'border-red text-red-fg'
+                  ? 'border-red text-red-as-text'
                   : 'border-amber-warn text-amber-warn'
               }`}
             >
@@ -303,7 +303,7 @@ export function KdsOrderCard({ items }: KdsOrderCardProps) {
                   </ul>
                 ) : null}
                 {cancelled && item.cancelled_reason && (
-                  <div className="mt-1 text-sm uppercase tracking-widest text-red-fg">
+                  <div className="mt-1 text-sm uppercase tracking-widest text-red-as-text">
                     Reason: {item.cancelled_reason}
                   </div>
                 )}

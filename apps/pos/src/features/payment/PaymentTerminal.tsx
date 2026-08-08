@@ -116,7 +116,7 @@ export function PaymentTerminal() {
                 'mb-4 rounded-md border px-4 py-3 text-sm',
                 offlineGate.paymentsAllowed
                   ? 'border-gold/60 bg-gold-soft text-gold'
-                  : 'border-red-fg/60 bg-red-fg/10 text-red-fg',
+                  : 'border-red-as-text/60 bg-red-as-text/10 text-red-as-text',
               )}
             >
               {offlineGate.paymentsAllowed

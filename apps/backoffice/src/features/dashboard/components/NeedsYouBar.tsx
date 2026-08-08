@@ -66,7 +66,7 @@ export function NeedsYouBar({
           Needs you
         </span>
         {items.length > 0 && (
-          <span className="inline-flex min-w-[17px] justify-center rounded-[9px] bg-danger px-1 py-px font-data text-[10px] font-bold text-red-fg">
+          <span className="inline-flex min-w-[17px] justify-center rounded-sm bg-danger px-1 py-px font-data tabular-nums text-[10px] font-bold text-red-on-fill">
             {queue?.total ?? items.length}
           </span>
         )}

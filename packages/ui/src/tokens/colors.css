@@ -286,7 +286,8 @@
   --green-fg:      #ffffff;
   --red-base:      #b4342c;
   --red-soft:      rgba(180, 52, 44, 0.12);
-  --red-fg:        var(--red-base);
+  --red-as-text:   var(--red-base);          /* rouge EN premier plan — 6,1:1 sur la feuille blanche */
+  --red-on-fill:   #ffffff;                  /* texte SUR remplissage rouge — 6,1:1 sur --red-base */
   --blue-info:     #2b6c9c;
   --amber-warn:    #8a5a10;
 

@@ -157,7 +157,7 @@ export default function PosPage() {
       {offlineGate.offlineMode && offlineGate.blockedReason === 'payments_disabled' && (
         <div
           data-testid="offline-payments-disabled-banner"
-          className="px-4 py-2 text-sm font-semibold text-center bg-red-fg/15 text-red-fg border-b border-red-fg/40"
+          className="px-4 py-2 text-sm font-semibold text-center bg-red-as-text/15 text-red-as-text border-b border-red-as-text/40"
         >
           Mode hors-ligne — encaissement désactivé en réglages, aucune vente possible jusqu&apos;au retour du cloud
         </div>

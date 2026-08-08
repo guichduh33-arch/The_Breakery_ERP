@@ -33,8 +33,15 @@
   /* Notation unifiée en rgba() — le hex-alpha #ef444420 était le seul du
    * système et introuvable par recherche (audit cohérence 2026-08-01). */
   --red-soft:     rgba(232, 105, 95, 0.14);
-  /* --red-fg — canonical RED for text/icons on the near-black POS surface. */
-  --red-fg:       #f0837b;
+  /* Deux rôles distincts, longtemps confondus sous le nom --red-fg (qui se
+   * lisait « premier plan SUR du rouge » alors qu'il valait « du rouge EN
+   * premier plan ») — la confusion a rendu un badge illisible à 1,00:1.
+   * --red-as-text : le rouge canonique pour texte/icônes sur la surface
+   *   quasi-noire du POS. C'est l'ancien --red-fg, valeur inchangée.
+   * --red-on-fill : le premier plan à poser SUR un aplat --red-base.
+   *   5,9:1 sur #e8695f — même rôle que --green-fg et --gold-fg. */
+  --red-as-text:  #f0837b;
+  --red-on-fill:  #180e0c;
 
   --blue-info:    #6fa8d8;
   --amber-warn:   #d99a3a;

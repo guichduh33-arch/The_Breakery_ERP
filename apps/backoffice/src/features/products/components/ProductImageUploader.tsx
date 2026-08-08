@@ -164,7 +164,7 @@ export function ProductImageUploader({ productId, imageUrl, readOnly = false, on
                 onChange?.(null);
               }}
               disabled={busy}
-              className="inline-flex items-center gap-1.5 rounded-md border border-border-subtle px-3 py-1.5 text-xs font-semibold uppercase tracking-widest text-text-secondary transition-colors hover:border-red-fg hover:text-red-fg disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-md border border-border-subtle px-3 py-1.5 text-xs font-semibold uppercase tracking-widest text-text-secondary transition-colors hover:border-red-as-text hover:text-red-as-text disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Trash2 className="h-4 w-4" aria-hidden />
               Remove
@@ -173,7 +173,7 @@ export function ProductImageUploader({ productId, imageUrl, readOnly = false, on
         </div>
       )}
 
-      {error !== null && <p className="text-xs text-red-fg">{error}</p>}
+      {error !== null && <p className="text-xs text-red-as-text">{error}</p>}
     </div>
   );
 }
