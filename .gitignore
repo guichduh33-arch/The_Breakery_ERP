@@ -63,8 +63,3 @@ ruvector.db
 *.ruvector.db
 
 outputs/
-
-# design-sync (claude.ai/design) — scripts stagés, build output, état machine.
-# Les trois règles qui couvraient .design-sync/ sont tombées avec le dossier.
-.ds-sync/
-ds-bundle/
