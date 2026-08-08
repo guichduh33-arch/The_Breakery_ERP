@@ -4,7 +4,7 @@
 // La prop `data` désactive le hook agrégat ET les trois panneaux : aucun réseau.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
@@ -165,7 +165,44 @@ describe('DashboardPage — écran 1c', () => {
 
   it('renders the error banner on a generic error', () => {
     renderWith(null, { error: new Error('rpc_failed') });
-    expect(screen.getByRole('alert')).toHaveTextContent(/rpc_failed/);
+    expect(screen.getByTestId('dashboard-error')).toHaveTextContent(/rpc_failed/);
+  });
+
+  // Le défaut que ce bloc verrouille : la bande restait en squelette pulsant
+  // pendant que quatre composants affirmaient « aucune vente aujourd'hui ».
+  // Quatre assertions factuelles fausses contre une alerte — un gérant qui lit
+  // ça à 15 h ne conclut pas « le réseau a lâché », il conclut « la caisse est
+  // tombée ». Un « 0 » et un « je ne sais pas » ne sont pas la même phrase.
+  describe('on a generic error, the page never asserts a fact it does not have', () => {
+    const boom = (): { error: Error } => ({ error: new Error('rpc_failed') });
+
+    it('stops pretending to load: no skeleton survives once loading is over', () => {
+      renderWith(null, boom());
+      expect(screen.queryByTestId('kpi-skeleton')).not.toBeInTheDocument();
+      expect(screen.getAllByTestId('kpi-unavailable')).toHaveLength(7);
+    });
+
+    it('renders dashes, never zeros, in the KPI strip', () => {
+      renderWith(null, boom());
+      const strip = screen.getByTestId('dashboard-kpi-row');
+      expect(strip).toHaveTextContent('—');
+      expect(strip.textContent).not.toMatch(/\bRp\s*0\b/);
+    });
+
+    it('never claims there were no sales', () => {
+      renderWith(null, boom());
+      expect(screen.queryByText(/no sales today yet/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/no revenue data/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/no sale recorded today/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/no peak yet today/i)).not.toBeInTheDocument();
+    });
+
+    it('offers a way back: the banner carries a retry control', () => {
+      const refetch = vi.fn();
+      renderWith(null, { ...boom(), refetch });
+      fireEvent.click(within(screen.getByTestId('dashboard-error')).getByRole('button', { name: /retry/i }));
+      expect(refetch).toHaveBeenCalledTimes(1);
+    });
   });
 
   it('renders the restricted state (no KPI row, no alert) on permission denied', () => {
@@ -215,10 +252,5 @@ describe('DashboardPage — écran 1c', () => {
     expect(screen.getByText(/No sales today yet/i)).toBeInTheDocument();
     expect(screen.getByText(/No sale recorded today/i)).toBeInTheDocument();
     expect(screen.getByText(/No peak yet today/i)).toBeInTheDocument();
-  });
-
-  it('renders the action queue as a calm line when nothing needs attention', () => {
-    renderWith(overviewFixture());
-    expect(screen.getByTestId('needs-you-bar')).toHaveTextContent(/Nothing needs you right now/i);
   });
 });

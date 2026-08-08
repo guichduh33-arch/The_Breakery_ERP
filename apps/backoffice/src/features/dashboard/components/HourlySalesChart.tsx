@@ -23,9 +23,28 @@ import type { HourlyBucket } from '../hooks/useDashboardOverview.js';
 
 const TICK = { fontSize: 10, fill: CHART_AXIS_TICK, fontFamily: 'var(--font-data)' } as const;
 
-export function HourlySalesChart({ data }: { data: HourlyBucket[] }): JSX.Element {
+export function HourlySalesChart({
+  data,
+  error = null,
+}: {
+  data: HourlyBucket[];
+  /** Sans lui, un échec de la RPC arrivait ici en tableau vide et le graphe
+   *  affirmait « aucune vente aujourd'hui » — le pire faux positif possible
+   *  sur l'écran que le gérant ouvre pour détecter un incident. */
+  error?: Error | null;
+}): JSX.Element {
   const reduced = usePrefersReducedMotion();
   const hasData = data.some((d) => d.today !== 0 || d.last_week !== 0);
+
+  if (error !== null) {
+    return (
+      <div className="flex h-44 items-center justify-center px-6 text-center">
+        <p className="text-[12.5px] text-text-muted">
+          Hourly profile unavailable — today&apos;s sales could not be read.
+        </p>
+      </div>
+    );
+  }
 
   if (!hasData) {
     return (

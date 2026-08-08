@@ -321,7 +321,7 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
               <button
                 type="button"
                 role="menuitem"
-                className={cn(MENU_ITEM, 'text-red-fg hover:bg-red-soft')}
+                className={cn(MENU_ITEM, 'text-red-as-text hover:bg-red-soft')}
                 disabled={!hasItems}
                 onClick={() => {
                   setMoreOpen(false);

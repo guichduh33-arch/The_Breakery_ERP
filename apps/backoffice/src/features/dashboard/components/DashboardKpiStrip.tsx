@@ -38,6 +38,7 @@ const NOTE = 'font-data text-[10px] leading-tight text-text-muted';
 const CARD_HERO = `${CARD} border-ink bg-ink`;
 const LABEL_HERO = 'font-data text-[10px] font-semibold text-ink-fg-sub';
 const VALUE_HERO = 'font-data text-[26px] font-semibold leading-tight tracking-[-0.03em] tabular-nums text-ink-fg';
+const NOTE_HERO = 'font-data text-[10px] leading-tight text-ink-fg-sub';
 
 function Tile({
   label, value, children, testId, hero = false,
@@ -64,14 +65,51 @@ function Tile({
   );
 }
 
+const UNAVAILABLE_TILES = [
+  'Net revenue', 'Orders', 'Customers', 'Items sold', 'Avg basket', 'Gross margin', 'Cash on hand',
+] as const;
+
 export function DashboardKpiStrip({
   kpis,
   isLoading,
+  error = null,
 }: {
   kpis: DashboardKpis | null;
   isLoading: boolean;
+  /** Échec de la RPC. Sans lui, `kpis === null` restait indiscernable d'un
+   *  chargement et la bande pulsait indéfiniment en affirmant qu'elle charge. */
+  error?: Error | null;
 }): JSX.Element {
   const grid = 'grid grid-cols-2 gap-2.5 md:grid-cols-4 xl:grid-cols-7';
+
+  // Donnée absente ET plus de chargement en cours : on ne connaît pas ces
+  // valeurs. Le tiret cadratin est déjà le vocabulaire de l'inconnu dans ce
+  // module (`format.ts`) — un zéro, lui, affirmerait une journée sans vente.
+  if (!isLoading && kpis === null) {
+    return (
+      <div className={grid} data-testid="dashboard-kpi-row">
+        {UNAVAILABLE_TILES.map((label, i) => (
+          <Card
+            key={label}
+            variant="default"
+            padding="none"
+            className={cn(i === 0 ? CARD_HERO : CARD)}
+            data-testid="kpi-unavailable"
+          >
+            <SectionLabel as="h3" className={i === 0 ? LABEL_HERO : LABEL}>{label}</SectionLabel>
+            <span className={i === 0 ? VALUE_HERO : VALUE}>—</span>
+            <div className="flex min-h-[16px] items-baseline">
+              {/* Le muet est taillé pour le papier ; sur l'encre il tombe sous
+                  le seuil de lecture — d'où la famille ink-* (Ink Semantics). */}
+              <span className={i === 0 ? NOTE_HERO : NOTE}>
+                {error !== null ? 'unavailable' : 'no data'}
+              </span>
+            </div>
+          </Card>
+        ))}
+      </div>
+    );
+  }
 
   if (isLoading || kpis === null) {
     return (

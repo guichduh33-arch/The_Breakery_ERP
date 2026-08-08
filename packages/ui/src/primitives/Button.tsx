@@ -19,7 +19,7 @@ const buttonVariants = cva(
         secondary: 'bg-bg-overlay border border-border-subtle text-text-primary hover:bg-bg-input rounded-md',
         outlineGold: 'bg-transparent border border-gold text-gold hover:bg-gold-soft uppercase tracking-wide rounded-md disabled:border-border-subtle disabled:text-text-muted disabled:opacity-100',
         ghost: 'bg-transparent text-text-primary hover:bg-bg-overlay rounded-md',
-        ghostDestructive: 'bg-transparent text-red-fg hover:bg-red-soft rounded-md',
+        ghostDestructive: 'bg-transparent text-red-as-text hover:bg-red-soft rounded-md',
         link: 'text-gold underline-offset-4 hover:underline bg-transparent',
       },
       size: {

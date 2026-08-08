@@ -81,42 +81,6 @@ export function useOpenOrders(enabled = true) {
   return query;
 }
 
-// ── Needs you — la file d'actions ──────────────────────────────────────────
-
-export type ActionSeverity = 'blocking' | 'warning' | 'info';
-
-export interface ActionItem {
-  key: string;
-  severity: ActionSeverity;
-  count: number;
-  label: string;
-  action: string;
-  to: string;
-}
-
-export interface ActionQueue {
-  items: ActionItem[];
-  total: number;
-  generated_at: string;
-}
-
-export const ACTION_QUEUE_KEY = ['dashboard-action-queue'] as const;
-
-export function useActionQueue(enabled = true) {
-  return useQuery<ActionQueue, Error>({
-    queryKey: ACTION_QUEUE_KEY,
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_dashboard_action_queue_v1');
-      if (error) throw Object.assign(new Error(error.message), { code: error.code });
-      return data as unknown as ActionQueue;
-    },
-    refetchInterval: 120_000,
-    staleTime: 60_000,
-    enabled,
-    retry: (count, err) => !isRestricted(err) && count < 2,
-  });
-}
-
 // ── Vitrine — compteur + temps depuis la dernière vente ────────────────────
 
 export interface DisplayStockRow {

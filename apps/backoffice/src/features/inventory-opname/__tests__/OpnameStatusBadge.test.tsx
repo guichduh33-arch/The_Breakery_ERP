@@ -29,8 +29,8 @@ describe('OpnameStatusBadge', () => {
     expect(container.firstChild).toHaveClass('text-success');
 
     rerender(<OpnameStatusBadge status="cancelled" />);
-    // Badge destructive is now tonal (bg-red-soft/text-red-fg) for AA contrast,
+    // Badge destructive is now tonal (bg-red-soft/text-red-as-text) for AA contrast,
     // consistent with the other tonal status variants (design audit 2026-07-08, T1).
-    expect(container.firstChild).toHaveClass('text-red-fg');
+    expect(container.firstChild).toHaveClass('text-red-as-text');
   });
 });

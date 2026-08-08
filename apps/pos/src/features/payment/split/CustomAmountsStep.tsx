@@ -80,7 +80,7 @@ export function CustomAmountsStep({
             <span className="text-text-primary">Remaining</span>
             <Currency
               amount={Math.abs(remaining)}
-              className={remaining < 0 ? 'text-red-fg' : remaining > 0 ? 'text-text-primary' : 'text-success'}
+              className={remaining < 0 ? 'text-red-as-text' : remaining > 0 ? 'text-text-primary' : 'text-success'}
             />
           </div>
         </div>

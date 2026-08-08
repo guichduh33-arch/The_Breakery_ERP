@@ -83,7 +83,7 @@ export function ModifiersPanel({ product }: ModifiersPanelProps): JSX.Element {
       </div>
 
       {errors.length > 0 && (
-        <ul className="rounded border border-red-fg/40 bg-red-fg/5 p-3 text-sm text-red-fg space-y-1">
+        <ul className="rounded border border-red-as-text/40 bg-red-as-text/5 p-3 text-sm text-red-as-text space-y-1">
           {errors.map((e, i) => (
             <li key={i}>{e.message}</li>
           ))}

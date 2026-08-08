@@ -22,9 +22,27 @@ import type { RevenueDay } from '../hooks/useDashboardOverview.js';
 
 const TICK = { fontSize: 10, fill: CHART_AXIS_TICK, fontFamily: 'var(--font-data)' } as const;
 
-export function RevenueTrendChart({ data }: { data: RevenueDay[] }): JSX.Element {
+export function RevenueTrendChart({
+  data,
+  error = null,
+}: {
+  data: RevenueDay[];
+  /** Sans lui, un échec de la RPC arrivait ici en tableau vide et le graphe
+   *  affirmait « pas de revenu » — une assertion factuelle fausse. */
+  error?: Error | null;
+}): JSX.Element {
   const reduced = usePrefersReducedMotion();
   const hasData = data.some((d) => d.net !== 0 || (d.prev_net ?? 0) !== 0);
+
+  if (error !== null) {
+    return (
+      <div className="flex h-44 items-center justify-center px-6 text-center">
+        <p className="text-[12.5px] text-text-muted">
+          Trend unavailable — the last 30 days could not be read.
+        </p>
+      </div>
+    );
+  }
 
   if (!hasData) {
     return (

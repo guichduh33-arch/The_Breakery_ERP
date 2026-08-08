@@ -5,14 +5,11 @@
 // PÉRIMÈTRE — ce compteur vaut low stock + reorder, deux faits de STOCK, et
 // c'est tout ce qu'il doit valoir : il chiffre le lien « Alerts » de la colonne
 // Watch du panneau Stock, dont la destination est stock-only par définition.
-// Élargir ce hook aux cinq sources de la file « Needs you » rendrait CE
-// compteur-ci faux.
+// L'élargir à d'autres familles de faits rendrait CE compteur-ci faux.
 //
-// La cloche de la top bar, elle, ne consomme PLUS ce hook (arbitrage du
-// 2026-08-07, contre la première implémentation) : elle porte le total de la
-// file, via `useActionQueue`. Les deux nombres diffèrent donc légitimement —
-// mais ils ne sont plus jamais côte à côte, et chacun est chiffré à l'endroit
-// où sa destination est celle qu'il annonce. Voir `TopBar.tsx`.
+// Il est désormais le SEUL compteur d'attention du shell : la file « Needs you »
+// et la cloche de la top bar qui en portait le total ont été retirées de la
+// conception le 2026-08-08. Aucun autre nombre ne peut donc le contredire.
 //
 // Il n'est pas gaté ici : son appelant est lui-même rendu sous
 // `hasPermission('inventory.read')`, comme l'ancien AlertsBadge du sidebar.

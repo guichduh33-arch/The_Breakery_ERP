@@ -40,10 +40,9 @@ import {
   type DashboardOverview,
 } from '@/features/dashboard/hooks/useDashboardOverview.js';
 import {
-  useActionQueue, useDisplayStockActivity, useOpenOrders, isRestricted,
+  useDisplayStockActivity, useOpenOrders, isRestricted,
 } from '@/features/dashboard/hooks/useDashboardPanels.js';
 import { DashboardKpiStrip } from '@/features/dashboard/components/DashboardKpiStrip.js';
-import { NeedsYouBar } from '@/features/dashboard/components/NeedsYouBar.js';
 import { RevenueTrendChart } from '@/features/dashboard/components/RevenueTrendChart.js';
 import { HourlySalesChart } from '@/features/dashboard/components/HourlySalesChart.js';
 import { OpenOrdersCard } from '@/features/dashboard/components/OpenOrdersCard.js';
@@ -100,7 +99,6 @@ export default function DashboardPage({ data }: DashboardPageProps) {
   const refetch   = isTest ? data.refetch : () => { void live.refetch(); };
 
   const openOrders   = useOpenOrders(!isTest);
-  const actionQueue  = useActionQueue(!isTest);
   const displayStock = useDisplayStockActivity(!isTest);
 
   const restricted =
@@ -192,18 +190,30 @@ export default function DashboardPage({ data }: DashboardPageProps) {
       ) : (
         <>
           {error !== null && (
-            <Card variant="default" padding="md" role="alert" className="shadow-none">
-              <p className="text-sm text-danger">Failed to load dashboard: {error.message}</p>
+            <Card
+              variant="default"
+              padding="md"
+              role="alert"
+              className="flex flex-wrap items-start justify-between gap-3 shadow-none"
+              data-testid="dashboard-error"
+            >
+              <div className="min-w-0">
+                <p className="text-sm text-text-primary">Today&apos;s figures could not be loaded.</p>
+                {/* Nommer ce que l'écran fait de son ignorance : sans cette
+                    phrase, un tiret se lit comme « rien vendu » au lieu de
+                    « on ne sait pas ». Le détail technique reste en second. */}
+                <p className="mt-0.5 text-[12.5px] text-text-muted">
+                  Values below read <span className="font-data">—</span> because they are unknown, not zero.
+                  Other cards may still be up to date. ({error.message})
+                </p>
+              </div>
+              <button type="button" onClick={refetch} className={TOOLBAR_BTN_SECONDARY}>
+                Retry
+              </button>
             </Card>
           )}
 
-          <DashboardKpiStrip kpis={overview?.kpis ?? null} isLoading={isLoading} />
-
-          <NeedsYouBar
-            queue={actionQueue.data ?? null}
-            isLoading={actionQueue.isLoading}
-            isRestricted={isRestricted(actionQueue.error)}
-          />
+          <DashboardKpiStrip kpis={overview?.kpis ?? null} isLoading={isLoading} error={error} />
 
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1.7fr_1fr]">
             <Card variant="default" padding="none" className="p-4 shadow-none">
@@ -219,7 +229,7 @@ export default function DashboardPage({ data }: DashboardPageProps) {
                 )}
               </div>
               <div className="mt-3">
-                <RevenueTrendChart data={overview?.revenue_30d ?? []} />
+                <RevenueTrendChart data={overview?.revenue_30d ?? []} error={error} />
               </div>
             </Card>
 
@@ -231,12 +241,14 @@ export default function DashboardPage({ data }: DashboardPageProps) {
                 <span className="text-[11.5px] text-text-muted">today vs same weekday last week</span>
               </div>
               <p className="mt-1 text-[12px] text-text-muted">
-                {peak === null
-                  ? 'No peak yet today'
-                  : `Peak ${formatHourRange(peak.from_hour, peak.to_hour)} · ${formatPct(peak.share_pct)} of the day`}
+                {error !== null
+                  ? 'Peak unavailable'
+                  : peak === null
+                    ? 'No peak yet today'
+                    : `Peak ${formatHourRange(peak.from_hour, peak.to_hour)} · ${formatPct(peak.share_pct)} of the day`}
               </p>
               <div className="mt-2">
-                <HourlySalesChart data={overview?.hourly_sales ?? []} />
+                <HourlySalesChart data={overview?.hourly_sales ?? []} error={error} />
               </div>
             </Card>
           </div>
@@ -254,7 +266,7 @@ export default function DashboardPage({ data }: DashboardPageProps) {
             <CostMtdCard
               cost={overview?.cost_mtd ?? null}
               isLoading={isLoading}
-              error={null}
+              error={error}
             />
             <DisplayStockCard
               panel={displayStock.data ?? null}
@@ -266,7 +278,7 @@ export default function DashboardPage({ data }: DashboardPageProps) {
               share={overview?.revenue_share ?? []}
               payments={overview?.payments ?? null}
               isLoading={isLoading}
-              error={null}
+              error={error}
             />
           </div>
         </>

@@ -76,7 +76,7 @@ export function AdvancedSettingsTab({ readOnly }: { readOnly: boolean }): JSX.El
             </Button>
           ) : (
             <>
-              <Button variant="ghostDestructive" size="sm" className="border border-red-fg/30" onClick={doReset}>
+              <Button variant="ghostDestructive" size="sm" className="border border-red-as-text/30" onClick={doReset}>
                 Confirm reset
               </Button>
               <Button variant="ghost" size="sm" onClick={() => setConfirmReset(false)}>
