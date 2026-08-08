@@ -18,11 +18,11 @@
 import { useEffect, useState, type JSX } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Button } from '@breakery/ui';
 import { supabase } from '@/lib/supabase.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useSettings } from '@/features/settings/hooks/useSettings.js';
 import { useSetSetting } from '@/features/settings/hooks/useSetSetting.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 interface RoleRow {
   code: string;
@@ -226,15 +226,15 @@ function PinPolicyCard({ canEdit }: { canEdit: boolean }): JSX.Element {
             )}
           </div>
         ))}
-        <Button
-          variant="gold"
-          size="sm"
+        <button
+          type="button"
+          className={TOOLBAR_BTN_PRIMARY}
           onClick={handleSave}
           disabled={!canEdit || anyInvalid || !anyDirty || setSetting.isPending}
           data-testid="pin-policy-save"
         >
           {setSetting.isPending ? 'Saving…' : 'Save PIN policy'}
-        </Button>
+        </button>
       </div>
     </div>
   );
@@ -277,16 +277,15 @@ function SecurityRoleRow({ role, canEdit, pending, errorMessage, onSave }: Secur
         )}
       </td>
       <td className="px-4 py-2">
-        <Button
+        <button
+          className={TOOLBAR_BTN_PRIMARY}
           type="button"
-          size="sm"
-          variant="primary"
           disabled={!canEdit || !dirty || invalid || pending}
           onClick={() => onSave(draftNum)}
           data-testid={`timeout-save-${role.code}`}
         >
           {pending ? 'Saving…' : 'Save'}
-        </Button>
+        </button>
         {errorMessage && dirty && (
           <p className="mt-1 text-xs text-red">Save failed: {errorMessage}</p>
         )}

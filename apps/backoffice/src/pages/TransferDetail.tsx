@@ -17,6 +17,7 @@ import { useTransferDetail } from '@/features/inventory-transfers/hooks/useTrans
 import { TransferStatusBadge } from '@/features/inventory-transfers/components/TransferStatusBadge.js';
 import { TransferReceiveModal } from '@/features/inventory-transfers/components/TransferReceiveModal.js';
 import { TransferCancelConfirm } from '@/features/inventory-transfers/components/TransferCancelConfirm.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 type ModalKind = 'none' | 'receive' | 'cancel';
 
@@ -110,9 +111,9 @@ export default function TransferDetailPage(): JSX.Element {
       {(canReceiveNow || canCancelNow) && (
         <div className="flex gap-2">
           {canReceiveNow && (
-            <Button type="button" variant="primary" onClick={() => setModal('receive')}>
+            <button type="button" onClick={() => setModal('receive')} className={TOOLBAR_BTN_PRIMARY}>
               Receive transfer
-            </Button>
+            </button>
           )}
           {canCancelNow && (
             <Button type="button" variant="ghostDestructive" onClick={() => setModal('cancel')}>

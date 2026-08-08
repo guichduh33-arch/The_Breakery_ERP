@@ -22,6 +22,7 @@ import {
   RecordBatchProductionError,
   type BatchItemInput,
 } from '@/features/inventory-production/hooks/useRecordBatchProduction.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 function emptyRow(): BatchItem {
   return {
@@ -272,11 +273,11 @@ export default function BatchProductionPage(): JSX.Element {
         </section>
 
         <div className="flex justify-end pt-2">
-          <Button type="submit" variant="primary" disabled={!canSubmit}>
+          <button type="submit" disabled={!canSubmit} className={TOOLBAR_BTN_PRIMARY}>
             {recordMut.isPending
               ? 'Submitting…'
               : forceNegative ? 'Force & record batch' : 'Record batch'}
-          </Button>
+          </button>
         </div>
       </form>
     </div>

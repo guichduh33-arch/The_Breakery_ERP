@@ -12,10 +12,10 @@
 
 import { useEffect, useState } from 'react';
 import { ArrowDown, ArrowUp } from 'lucide-react';
-import { Button } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useSettings } from '@/features/settings/hooks/useSettings.js';
 import { useSetSetting } from '@/features/settings/hooks/useSetSetting.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 const ALL_METHODS = [
   { value: 'cash',         label: 'Cash' },
@@ -296,9 +296,9 @@ export default function SettingsPaymentMethodsPage() {
           {savedAt && !dirty && <p className="text-success text-xs" role="status">Enregistré à {savedAt}</p>}
 
           {canUpdate && (
-            <Button type="submit" variant="primary" disabled={!dirty || empty || feeInvalid || expiryInvalid || setSetting.isPending}>
+            <button type="submit" disabled={!dirty || empty || feeInvalid || expiryInvalid || setSetting.isPending} className={TOOLBAR_BTN_PRIMARY}>
               {setSetting.isPending ? 'Enregistrement…' : dirty ? 'Enregistrer' : 'Aucun changement'}
-            </Button>
+            </button>
           )}
         </form>
       )}

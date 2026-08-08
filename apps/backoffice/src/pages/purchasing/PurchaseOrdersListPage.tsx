@@ -47,6 +47,7 @@ import {
 } from '@/features/purchasing/hooks/usePurchaseOrdersList.js';
 import { POStatusBadge } from '@/features/purchasing/components/POStatusBadge.js';
 import { useSuppliersList } from '@/features/suppliers/hooks/useSuppliersList.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 interface POKpi {
   total:     number;
@@ -198,11 +199,9 @@ export default function PurchaseOrdersListPage(): JSX.Element {
             <Download className="h-4 w-4" aria-hidden /> {exportMut.isPending ? 'Exporting…' : 'Export'}
           </Button>
           {canCreate && (
-            <Button asChild variant="gold">
-              <Link to="/backoffice/purchasing/purchase-orders/new">
-                <Plus className="h-4 w-4" aria-hidden /> New purchase order
-              </Link>
-            </Button>
+            <Link to="/backoffice/purchasing/purchase-orders/new" className={TOOLBAR_BTN_PRIMARY}>
+              <Plus className="h-3.5 w-3.5" aria-hidden /> New purchase order
+            </Link>
           )}
         </div>
       </header>
@@ -302,11 +301,9 @@ export default function PurchaseOrdersListPage(): JSX.Element {
               </p>
               {canCreate && (
                 <div className="mt-4">
-                  <Button asChild variant="gold">
-                    <Link to="/backoffice/purchasing/purchase-orders/new">
-                      <Plus className="h-4 w-4" aria-hidden /> New purchase order
-                    </Link>
-                  </Button>
+                  <Link to="/backoffice/purchasing/purchase-orders/new" className={TOOLBAR_BTN_PRIMARY}>
+                    <Plus className="h-3.5 w-3.5" aria-hidden /> New purchase order
+                  </Link>
                 </div>
               )}
             </div>

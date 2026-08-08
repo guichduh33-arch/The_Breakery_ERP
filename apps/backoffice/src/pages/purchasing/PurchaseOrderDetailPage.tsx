@@ -65,6 +65,7 @@ import {
 } from '@/features/purchasing/components/POFormDraft.js';
 import { useSections } from '@/features/inventory-transfers/hooks/useSections.js';
 import type { POStatus } from '@/features/purchasing/hooks/usePurchaseOrdersList.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 function fmtIdr(amount: number | string | null): string {
   return `Rp ${formatIdr(Number(amount ?? 0))}`;
@@ -246,9 +247,9 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
           <Button type="button" variant="ghost" onClick={() => setShowPrint(false)}>
             <ArrowLeft className="h-4 w-4" aria-hidden /> Back
           </Button>
-          <Button type="button" variant="gold" onClick={() => window.print()}>
-            <Printer className="h-4 w-4" aria-hidden /> Print
-          </Button>
+          <button type="button" className={TOOLBAR_BTN_PRIMARY} onClick={() => window.print()}>
+            <Printer className="h-3.5 w-3.5" aria-hidden /> Print
+          </button>
         </div>
         <POPrintView po={po} />
       </div>
@@ -311,9 +312,9 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
             <Printer className="h-4 w-4" aria-hidden /> Print
           </Button>
           {canRcv && (
-            <Button type="button" variant="gold" onClick={() => setShowReceive(true)}>
-              <Truck className="h-4 w-4" aria-hidden /> Receive
-            </Button>
+            <button type="button" className={TOOLBAR_BTN_PRIMARY} onClick={() => setShowReceive(true)}>
+              <Truck className="h-3.5 w-3.5" aria-hidden /> Receive
+            </button>
           )}
           {canCncl && (
             <Button type="button" variant="ghostDestructive" onClick={() => setShowCancel(true)}>
@@ -495,7 +496,7 @@ export default function PurchaseOrderDetailPage(): JSX.Element {
             )}
 
             {canRecordPay && (
-              <Button type="button" variant="gold" className="w-full" onClick={() => { setPayError(undefined); setShowPay(true); }}>
+              <Button type="button" variant="primary" className="w-full" onClick={() => { setPayError(undefined); setShowPay(true); }}>
                 <Wallet className="h-4 w-4" aria-hidden /> Record payment
               </Button>
             )}

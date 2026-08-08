@@ -7,7 +7,7 @@
 // `notifications.send` (matches the RLS write policy), NOT `settings.update`
 // — read is ungated here (route-level `settings.read` only).
 import { useEffect, useMemo, useState } from 'react';
-import { Badge, Button } from '@breakery/ui';
+import { Badge } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useSettings } from '@/features/settings/hooks/useSettings.js';
 import { useSetSetting } from '@/features/settings/hooks/useSetSetting.js';
@@ -16,6 +16,7 @@ import {
   useUpdateNotificationTemplate,
   type NotificationTemplateRow,
 } from '@/features/settings/hooks/useNotificationTemplates.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 const CHANNEL_VARIANT: Record<string, 'info' | 'success' | 'warning' | 'neutral'> = {
   email: 'info',
@@ -161,14 +162,14 @@ function NotificationTemplateCard({ row, canEdit }: NotificationTemplateCardProp
       {savedAt && <p className="text-success text-xs" role="status">Saved at {savedAt}</p>}
 
       {canEdit && (
-        <Button
+        <button
+          className={TOOLBAR_BTN_PRIMARY}
           type="button"
-          variant="primary"
           disabled={!dirty || update.isPending}
           onClick={() => { void handleSave(); }}
         >
           {update.isPending ? 'Saving…' : 'Save changes'}
-        </Button>
+        </button>
       )}
     </section>
   );
@@ -225,11 +226,11 @@ function AlertEmailCard() {
             className="h-9 w-full max-w-sm rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary disabled:opacity-50"
           />
           {canUpdate && (
-            <Button type="button" variant="primary" size="sm"
+            <button type="button" className={TOOLBAR_BTN_PRIMARY}
               disabled={!dirty || setSetting.isPending}
               onClick={() => { void handleSave(); }}>
               {setSetting.isPending ? 'Saving…' : 'Save'}
-            </Button>
+            </button>
           )}
         </div>
       )}

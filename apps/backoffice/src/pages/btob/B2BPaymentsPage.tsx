@@ -126,6 +126,7 @@ export default function B2BPaymentsPage(): JSX.Element {
           </div>
         </div>
         <Button
+          type="button"
           variant="primary"
           size="md"
           disabled={!canRecord}

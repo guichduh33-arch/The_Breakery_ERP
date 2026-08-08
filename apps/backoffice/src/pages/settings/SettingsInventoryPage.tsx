@@ -4,10 +4,10 @@
 // production). Écrit business_config.allow_negative_stock via set_setting_v12.
 
 import { useEffect, useState } from 'react';
-import { Button } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useSettings } from '@/features/settings/hooks/useSettings.js';
 import { useSetSetting } from '@/features/settings/hooks/useSetSetting.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 export default function SettingsInventoryPage() {
   const hasPermission = useAuthStore((s) => s.hasPermission);
@@ -79,9 +79,9 @@ export default function SettingsInventoryPage() {
           {savedAt && !dirty && <p className="text-success text-xs" role="status">Enregistré à {savedAt}</p>}
 
           {canUpdate && (
-            <Button type="submit" variant="primary" disabled={!dirty || setSetting.isPending}>
+            <button type="submit" disabled={!dirty || setSetting.isPending} className={TOOLBAR_BTN_PRIMARY}>
               {setSetting.isPending ? 'Enregistrement…' : dirty ? 'Enregistrer' : 'Aucun changement'}
-            </Button>
+            </button>
           )}
         </form>
       )}

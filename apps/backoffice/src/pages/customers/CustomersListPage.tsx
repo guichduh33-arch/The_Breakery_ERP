@@ -57,6 +57,7 @@ import { ImportEntityModal } from '@/features/data-import/components/ImportEntit
 import { buildTemplateWorkbook, buildExportWorkbook, downloadWorkbook } from '@/features/data-import/buildEntityWorkbook.js';
 import { customersImportDef } from '@/features/customers/import/customersImportDef.js';
 import { useCustomersExport } from '@/features/customers/hooks/useCustomersExport.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 const TIER_OPTIONS: readonly { value: CustomersTier; label: string }[] = [
   { value: 'all',      label: 'Loyalty Tier: All' },
@@ -236,9 +237,9 @@ export default function CustomersListPage(): JSX.Element {
             <Download className="h-4 w-4" aria-hidden /> {exportMut.isPending ? 'Exporting…' : 'Export'}
           </Button>
           {canCreate && (
-            <Button variant="primary" size="md" onClick={() => setCreating(true)}>
-              <Plus className="h-4 w-4" aria-hidden /> New Customer
-            </Button>
+            <button type="button" onClick={() => setCreating(true)} className={TOOLBAR_BTN_PRIMARY}>
+              <Plus className="h-3.5 w-3.5" aria-hidden /> New Customer
+            </button>
           )}
           </>
         }

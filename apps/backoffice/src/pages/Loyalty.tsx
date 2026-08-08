@@ -48,6 +48,7 @@ import {
   type TierFilter,
 } from '@/features/loyalty/hooks/useLoyaltyCustomersList.js';
 import { useLoyaltyStats } from '@/features/loyalty/hooks/useLoyaltyStats.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 const TIER_OPTIONS: ReadonlyArray<{ value: TierFilter; label: string }> = [
   { value: 'all',      label: 'Tier: All' },
@@ -185,9 +186,9 @@ export default function LoyaltyPage(): JSX.Element {
           </p>
         </div>
         {canCreate && (
-          <Button variant="primary" size="md" onClick={() => setCreating(true)}>
-            <Plus className="h-4 w-4" aria-hidden /> New member
-          </Button>
+          <button type="button" onClick={() => setCreating(true)} className={TOOLBAR_BTN_PRIMARY}>
+            <Plus className="h-3.5 w-3.5" aria-hidden /> New member
+          </button>
         )}
       </header>
 

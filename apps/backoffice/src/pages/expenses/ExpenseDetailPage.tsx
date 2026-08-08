@@ -37,6 +37,7 @@ import { ApprovalTimeline } from '@/features/expenses/components/ApprovalTimelin
 import { ThresholdResolutionBadge } from '@/features/expenses/components/ThresholdResolutionBadge.js';
 import type { DuplicateExpenseSeed } from '@/features/expenses/components/ExpenseForm.js';
 import type { ApprovalStep } from '@/features/settings/expense-thresholds/hooks/useExpenseThresholds.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 function fmtIdr(amount: number | string | null): string {
   return `Rp ${formatIdr(Number(amount ?? 0))}`;
@@ -142,20 +143,20 @@ export default function ExpenseDetailPage(): JSX.Element {
             </Button>
           )}
           {expense.status === 'draft' && (
-            <Button
+            <button
               type="button"
-              variant="gold"
+              className={TOOLBAR_BTN_PRIMARY}
               onClick={() => { void handleSubmitForReview(); }}
               disabled={submit.isPending}
             >
               {submit.isPending ? 'Submitting…' : 'Submit for approval'}
-            </Button>
+            </button>
           )}
           {expense.status === 'submitted' && canApprove && (
             <>
-              <Button type="button" variant="gold" onClick={() => setApproveOpen(true)}>
-                <CheckCircle2 className="h-4 w-4" aria-hidden /> Approve
-              </Button>
+              <button type="button" className={TOOLBAR_BTN_PRIMARY} onClick={() => setApproveOpen(true)}>
+                <CheckCircle2 className="h-3.5 w-3.5" aria-hidden /> Approve
+              </button>
               <Button type="button" variant="ghostDestructive" onClick={() => setRejectOpen(true)}>
                 <XCircle className="h-4 w-4" aria-hidden /> Reject
               </Button>
@@ -172,7 +173,7 @@ export default function ExpenseDetailPage(): JSX.Element {
             </div>
           )}
           {expense.status === 'approved' && canPay && (
-            <Button type="button" variant="gold" onClick={() => setPayOpen(true)}>
+            <Button type="button" variant="primary" onClick={() => setPayOpen(true)}>
               <CreditCard className="h-4 w-4" aria-hidden /> Mark as paid
             </Button>
           )}

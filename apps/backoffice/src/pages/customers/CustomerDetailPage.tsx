@@ -54,6 +54,7 @@ import { LoyaltyTab } from './customer-detail/LoyaltyTab.js';
 import { StoreCreditTab } from './customer-detail/StoreCreditTab.js';
 import { AnalyticsTab } from './customer-detail/AnalyticsTab.js';
 import { PricingTab } from './customer-detail/PricingTab.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 type TabId = 'info' | 'orders' | 'loyalty' | 'store-credit' | 'analytics' | 'pricing';
 
@@ -170,9 +171,9 @@ export function CustomerDetailPage(): JSX.Element {
           </div>
         </div>
         {canUpdate && (
-          <Button variant="primary" size="md" onClick={() => setEditing(true)}>
-            <SquarePen className="h-4 w-4" aria-hidden /> Edit
-          </Button>
+          <button type="button" onClick={() => setEditing(true)} className={TOOLBAR_BTN_PRIMARY}>
+            <SquarePen className="h-3.5 w-3.5" aria-hidden /> Edit
+          </button>
         )}
       </header>
 

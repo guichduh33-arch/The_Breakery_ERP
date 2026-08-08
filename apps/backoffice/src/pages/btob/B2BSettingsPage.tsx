@@ -32,6 +32,7 @@ import { useAuthStore } from '@/stores/authStore.js';
 import { useB2bSettings } from '@/features/btob/hooks/useB2bSettings.js';
 import { useUpdateB2bSettings } from '@/features/btob/hooks/useUpdateB2bSettings.js';
 import type { AgingBucket } from '@/features/btob/hooks/useB2bSettings.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 const DEFAULT_TERM_OPTIONS: ReadonlyArray<{ value: string; label: string }> = [
   { value: 'cod',    label: 'Cash on delivery (COD)' },
@@ -296,14 +297,14 @@ export default function B2BSettingsPage(): JSX.Element {
             <p role="alert" className="text-xs text-danger">{saveError}</p>
           )}
           <div className="flex items-center justify-end gap-3">
-            <Button
-              variant="primary"
-              size="sm"
+            <button
+              type="button"
+              className={TOOLBAR_BTN_PRIMARY}
               disabled={!isDirty || updateMut.isPending}
               onClick={() => { void handleSave(); }}
             >
               {updateMut.isPending ? 'Saving…' : 'Save changes'}
-            </Button>
+            </button>
           </div>
         </div>
       )}

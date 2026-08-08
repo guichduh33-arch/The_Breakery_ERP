@@ -37,6 +37,7 @@ import {
 } from '@/features/btob/hooks/useB2bDashboard.js';
 import { useB2bBalanceDrift } from '@/features/btob/hooks/useB2bBalanceDrift.js';
 import { CreateB2bOrderModal } from '@/features/btob/components/CreateB2bOrderModal.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 const AGING_TONES: Record<string, string> = {
   Current:  'text-success',
@@ -73,14 +74,14 @@ export default function B2BDashboardPage(): JSX.Element {
                 <CreditCard className="h-4 w-4" aria-hidden /> Payments
               </Link>
             </Button>
-            <Button
-              variant="primary"
-              size="md"
+            <button
+              type="button"
+              className={TOOLBAR_BTN_PRIMARY}
               disabled={!canCreate}
               onClick={() => setCreateOpen(true)}
             >
-              <Plus className="h-4 w-4" aria-hidden /> New B2B Order
-            </Button>
+              <Plus className="h-3.5 w-3.5" aria-hidden /> New B2B Order
+            </button>
           </>
         }
       />

@@ -38,6 +38,7 @@ import {
 } from '../hooks/useRecordBatchProduction.js';
 import type { WasteReason } from '../hooks/useRecordProduction.js';
 import { WASTE_REASON_LABELS, WASTE_REASON_OPTIONS, isWasteReason } from '../wasteReasons.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 interface Props {
   sectionId: string;
@@ -446,18 +447,18 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
           >
             Cancel
           </Button>
-          <Button
+          <button
+            className={TOOLBAR_BTN_PRIMARY}
             type="button"
-            variant="primary"
             onClick={handleSubmit}
             disabled={!canSubmit}
             data-testid="submit-production"
           >
-            <Plus className="h-4 w-4" aria-hidden />
+            <Plus className="h-3.5 w-3.5" aria-hidden />
             {recordMut.isPending
               ? 'Submitting…'
               : forceNegative ? 'Force & Submit' : 'Submit Production'}
-          </Button>
+          </button>
         </div>
       </div>
     </Card>

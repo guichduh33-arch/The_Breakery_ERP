@@ -39,6 +39,7 @@ import {
 import { ImportEntityModal } from '@/features/data-import/components/ImportEntityModal.js';
 import { buildTemplateWorkbook, buildExportWorkbook, downloadWorkbook } from '@/features/data-import/buildEntityWorkbook.js';
 import { suppliersImportDef } from '@/features/suppliers/import/suppliersImportDef.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 interface SuppliersKpi {
   total:    number;
@@ -125,9 +126,9 @@ export default function SuppliersPage(): JSX.Element {
             <Download className="h-4 w-4" aria-hidden /> Export
           </Button>
           {canCreate && (
-            <Button type="button" variant="gold" onClick={() => setCreating(true)}>
-              <Plus className="h-4 w-4" aria-hidden /> Add new supplier
-            </Button>
+            <button type="button" className={TOOLBAR_BTN_PRIMARY} onClick={() => setCreating(true)}>
+              <Plus className="h-3.5 w-3.5" aria-hidden /> Add new supplier
+            </button>
           )}
         </div>
       </header>
