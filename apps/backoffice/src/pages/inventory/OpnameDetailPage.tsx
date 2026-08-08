@@ -175,7 +175,7 @@ export default function OpnameDetailPage(): JSX.Element {
       </footer>
 
       {d.status === 'cancelled' && d.cancel_reason !== null && (
-        <div className="border-l-4 border-danger/40 bg-bg-elevated px-3 py-2 text-sm text-text-secondary">
+        <div className="border-l border-danger bg-bg-elevated px-3 py-2 text-sm text-text-secondary">
           <span className="font-semibold text-text-primary">Cancelled:</span> {d.cancel_reason}
         </div>
       )}

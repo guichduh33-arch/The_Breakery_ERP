@@ -42,7 +42,7 @@ export function ComboCard({ combo, onEdit }: Props): JSX.Element {
           </div>
         ) : (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={combo.image_url} alt={combo.name} className="h-full w-full object-cover" />
+          <img src={combo.image_url} alt={combo.name} loading="lazy" className="h-full w-full object-cover" />
         )}
       </div>
 

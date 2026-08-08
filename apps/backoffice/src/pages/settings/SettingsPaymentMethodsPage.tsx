@@ -200,7 +200,7 @@ export default function SettingsPaymentMethodsPage() {
         </p>
       </div>
 
-      {payments.isLoading && <div className="text-text-secondary">Chargement…</div>}
+      {payments.isLoading && <div className="text-text-secondary">Loading…</div>}
       {payments.error && <div className="text-red">Échec du chargement : {payments.error.message}</div>}
 
       {!payments.isLoading && !payments.error && draft !== null && (

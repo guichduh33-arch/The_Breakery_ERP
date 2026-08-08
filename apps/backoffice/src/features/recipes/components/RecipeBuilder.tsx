@@ -246,7 +246,7 @@ export function RecipeBuilder({
   return (
     <div className="space-y-6">
       {/* Calculation-base callout — kept from the original product-tab look */}
-      <Card padding="md" className="border-l-4 border-l-gold">
+      <Card padding="md" className="border-l border-l-gold">
         <div className="flex items-start gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-md bg-gold-soft text-gold">
             <Scale className="h-4 w-4" aria-hidden />
