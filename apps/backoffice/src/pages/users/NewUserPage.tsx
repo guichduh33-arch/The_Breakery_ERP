@@ -11,7 +11,7 @@ export default function NewUserPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-serif text-text-primary">New user</h1>
+      <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">New user</h1>
       <p className="text-sm text-text-secondary">
         Pick a unique employee code, assign a role, and set the initial PIN.
       </p>

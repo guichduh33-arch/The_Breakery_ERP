@@ -63,7 +63,7 @@ export default function ProductDashboardPage(): JSX.Element {
         </Link>
         <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h1 className="font-display text-3xl text-text-primary">{d.product.name}</h1>
+            <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">{d.product.name}</h1>
             <p className="mt-0.5 font-mono text-xs text-text-muted">{d.product.sku}</p>
           </div>
           <div className="flex items-center gap-2">

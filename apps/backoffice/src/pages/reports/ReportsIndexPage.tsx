@@ -115,7 +115,7 @@ export default function ReportsIndexPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="font-serif text-3xl">Reports &amp; Analytics</h1>
+        <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Reports &amp; Analytics</h1>
         <p className="text-text-secondary text-sm mt-1">
           Pick a report. Filters and exports are per-report.
         </p>

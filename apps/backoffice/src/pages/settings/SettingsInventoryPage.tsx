@@ -47,7 +47,7 @@ export default function SettingsInventoryPage() {
   return (
     <div className="space-y-6 max-w-3xl">
       <div>
-        <h1 className="font-serif text-3xl">Réglages Inventaire</h1>
+        <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Réglages Inventaire</h1>
         <p className="text-text-secondary text-sm mt-1">
           Contrôles globaux du stock. Chaque changement écrit une entrée d&apos;audit.
         </p>

@@ -110,7 +110,7 @@ export default function DisplayStockPage(): JSX.Element {
   return (
     <div className="space-y-8">
       <header>
-        <h1 className="font-display text-3xl text-text-primary">Display Stock (Vitrine)</h1>
+        <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Display Stock (Vitrine)</h1>
         <p className="mt-1 text-sm text-text-secondary">
           Read-only view of the POS display-case counter. These quantities live on a
           separate ledger (display_stock) ; selling a display item draws from the

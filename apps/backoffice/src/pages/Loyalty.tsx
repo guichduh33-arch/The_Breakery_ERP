@@ -179,7 +179,7 @@ export default function LoyaltyPage(): JSX.Element {
     <div className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="font-serif text-3xl text-text-primary">Loyalty</h1>
+          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Loyalty</h1>
           <p className="mt-1 text-sm text-text-secondary">
             Retail members, balances and ledger.
           </p>

@@ -70,7 +70,7 @@ export default function SecuritySettingsPage(): JSX.Element {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-serif text-3xl">Security</h1>
+        <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Security</h1>
         <p className="text-text-secondary text-sm mt-1">
           Per-role idle limits and PIN lockout policy. Changes are
           audit-logged.

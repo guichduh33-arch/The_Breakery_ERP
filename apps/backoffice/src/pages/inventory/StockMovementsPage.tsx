@@ -77,7 +77,7 @@ export default function StockMovementsPage(): JSX.Element {
     <div className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="font-display text-3xl text-text-primary">Stock movements</h1>
+          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Stock movements</h1>
           <p className="mt-1 text-sm text-text-secondary">
             Per-product stock card over the selected range: opening → in/out → balance, with cost and movement value.
           </p>

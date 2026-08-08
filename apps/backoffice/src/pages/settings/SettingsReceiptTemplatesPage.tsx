@@ -22,7 +22,7 @@ export default function SettingsReceiptTemplatesPage() {
   return (
     <div className="space-y-6 max-w-6xl">
       <div>
-        <h1 className="font-serif text-3xl">Receipt templates</h1>
+        <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Receipt templates</h1>
         <p className="text-text-secondary text-sm mt-1">
           POS receipt layout for thermal printers (58mm, 80mm) and A4 invoices. Exactly one default at a time.
           The POS applies the <strong>default</strong> template's header, footer and QR toggle on every printed receipt.

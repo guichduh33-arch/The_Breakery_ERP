@@ -191,7 +191,7 @@ export default function SettingsPaymentMethodsPage() {
   return (
     <div className="space-y-6 max-w-3xl">
       <div>
-        <h1 className="font-serif text-3xl">Moyens de paiement</h1>
+        <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Moyens de paiement</h1>
         <p className="text-text-secondary text-sm mt-1">
           Les méthodes décochées disparaissent des terminaux POS (≤ 60 s, sans redémarrage) ;
           l&apos;ordre ci-dessous est l&apos;ordre d&apos;affichage sur les grilles POS.

@@ -38,7 +38,7 @@ export default function UsersListPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-serif text-text-primary">User Administration</h1>
+          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">User Administration</h1>
           <p className="text-sm text-text-secondary">
             Staff profiles + role assignments. Sign-in is via PIN — there are no passwords.
           </p>

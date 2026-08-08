@@ -45,7 +45,7 @@ export function OrderDetailPage(): JSX.Element {
             <ArrowLeft size={16} /> Back
           </Link>
         </Button>
-        <h1 className="text-2xl font-semibold font-serif">
+        <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">
           Order #{data.order_number}
         </h1>
         <StatusBadge status={data.status} />

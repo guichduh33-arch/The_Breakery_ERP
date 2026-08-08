@@ -42,7 +42,7 @@ export default function CashTreasuryPage() {
   return (
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Cash Treasury</h1>
+        <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Cash Treasury</h1>
         <Button onClick={() => setModalOpen(true)}>New movement</Button>
       </div>
 

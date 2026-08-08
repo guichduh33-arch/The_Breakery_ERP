@@ -53,7 +53,7 @@ export default function SettingsCustomerDisplayPage() {
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
-        <h1 className="font-serif text-3xl">Customer Display</h1>
+        <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Customer Display</h1>
         <p className="text-text-secondary text-sm mt-1">
           Copy shown on every customer-facing display (all terminals). Audited on change.
         </p>

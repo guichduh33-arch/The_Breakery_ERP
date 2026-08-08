@@ -40,7 +40,7 @@ export default function JournalEntriesPage(): JSX.Element {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl text-text-primary">Journal Entries</h1>
+          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Journal Entries</h1>
           <p className="text-sm text-text-secondary italic">
             {rows.length} entries — click a row for line detail
           </p>
