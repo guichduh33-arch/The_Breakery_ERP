@@ -127,7 +127,7 @@ export function RecordPaymentDialog({
           <Button type="button" variant="ghost" onClick={onCancel} disabled={submitting}>Cancel</Button>
           <Button
             type="button"
-            variant="gold"
+            variant="primary"
             onClick={() => { void handleConfirm(); }}
             disabled={!canSubmit}
           >

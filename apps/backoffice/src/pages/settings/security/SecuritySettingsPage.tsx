@@ -23,6 +23,7 @@ import { supabase } from '@/lib/supabase.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useSettings } from '@/features/settings/hooks/useSettings.js';
 import { useSetSetting } from '@/features/settings/hooks/useSetSetting.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 interface RoleRow {
   code: string;
@@ -226,15 +227,15 @@ function PinPolicyCard({ canEdit }: { canEdit: boolean }): JSX.Element {
             )}
           </div>
         ))}
-        <Button
-          variant="gold"
-          size="sm"
+        <button
+          type="button"
+          className={TOOLBAR_BTN_PRIMARY}
           onClick={handleSave}
           disabled={!canEdit || anyInvalid || !anyDirty || setSetting.isPending}
           data-testid="pin-policy-save"
         >
           {setSetting.isPending ? 'Saving…' : 'Save PIN policy'}
-        </Button>
+        </button>
       </div>
     </div>
   );

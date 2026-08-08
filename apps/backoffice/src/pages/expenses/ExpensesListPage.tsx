@@ -44,6 +44,7 @@ import {
   type ExpensesListFilters,
   type ExpenseStatus,
 } from '@/features/expenses/hooks/useExpensesList.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 interface ExpensesKpi {
   totalAmount: number;
@@ -193,11 +194,9 @@ export default function ExpensesListPage(): JSX.Element {
                 <Download className="h-4 w-4" aria-hidden /> Export
               </Button>
               {canCreate && (
-                <Button asChild variant="gold">
-                  <Link to="/backoffice/expenses/new">
-                    <Plus className="h-4 w-4" aria-hidden /> New expense
-                  </Link>
-                </Button>
+                <Link to="/backoffice/expenses/new" className={TOOLBAR_BTN_PRIMARY}>
+                  <Plus className="h-3.5 w-3.5" aria-hidden /> New expense
+                </Link>
               )}
             </div>
           </header>
@@ -331,11 +330,9 @@ export default function ExpensesListPage(): JSX.Element {
                   </p>
                   {canCreate && (
                     <div className="mt-4">
-                      <Button asChild variant="gold">
-                        <Link to="/backoffice/expenses/new">
-                          <Plus className="h-4 w-4" aria-hidden /> Add first expense
-                        </Link>
-                      </Button>
+                      <Link to="/backoffice/expenses/new" className={TOOLBAR_BTN_PRIMARY}>
+                        <Plus className="h-3.5 w-3.5" aria-hidden /> Add first expense
+                      </Link>
                     </div>
                   )}
                 </div>

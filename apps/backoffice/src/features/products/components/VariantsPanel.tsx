@@ -39,6 +39,7 @@ import { ConvertToParentDialog } from './ConvertToParentDialog.js';
 import { AddVariantDialog } from './AddVariantDialog.js';
 import { DissolveParentDialog } from './DissolveParentDialog.js';
 import { DeleteVariantDialog } from './DeleteVariantDialog.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 export interface VariantsPanelProduct {
   id:                 string;
@@ -146,14 +147,15 @@ export function VariantsPanel({ product }: VariantsPanelProps): JSX.Element {
           data-testid="variants-empty-state"
           action={
             canWrite ? (
-              <Button
-                variant="gold"
+              <button
+                type="button"
+                className={TOOLBAR_BTN_PRIMARY}
                 onClick={() => setConvertOpen(true)}
                 data-testid="convert-to-parent-cta"
               >
                 <Plus className="h-3.5 w-3.5 mr-1" aria-hidden />
                 Convert to parent + create first variant
-              </Button>
+              </button>
             ) : null
           }
         />
@@ -184,15 +186,15 @@ export function VariantsPanel({ product }: VariantsPanelProps): JSX.Element {
           </span>
         </div>
         {canWrite && (
-          <Button
-            variant="gold"
-            size="sm"
+          <button
+            type="button"
+            className={TOOLBAR_BTN_PRIMARY}
             onClick={() => setAddOpen(true)}
             data-testid="add-variant-cta"
           >
             <Plus className="h-3.5 w-3.5 mr-1" aria-hidden />
             Add variant
-          </Button>
+          </button>
         )}
       </div>
 
