@@ -9,11 +9,10 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 
-import { NeedsYouBar } from '../NeedsYouBar.js';
 import { OpenOrdersCard } from '../OpenOrdersCard.js';
 import { DisplayStockCard } from '../DisplayStockCard.js';
 import { CostMtdCard } from '../CostMtdCard.js';
-import type { ActionQueue, DisplayStockPanel, OpenOrdersPanel } from '../../hooks/useDashboardPanels.js';
+import type { DisplayStockPanel, OpenOrdersPanel } from '../../hooks/useDashboardPanels.js';
 import type { CostMtd } from '../../hooks/useDashboardOverview.js';
 
 function wrap(ui: React.ReactNode) {
@@ -21,38 +20,6 @@ function wrap(ui: React.ReactNode) {
 }
 
 afterEach(cleanup);
-
-describe('NeedsYouBar', () => {
-  const queue: ActionQueue = {
-    items: [
-      { key: 'register_not_closed', severity: 'blocking', count: 1, label: 'Register not closed — 5 Aug', action: 'Reconcile', to: '/backoffice/cash-register/zreports' },
-      { key: 'low_stock', severity: 'warning', count: 3, label: '3 items below reorder point', action: 'Review', to: '/backoffice/inventory/alerts' },
-    ],
-    total: 4,
-    generated_at: '2026-08-06T09:42:00Z',
-  };
-
-  it('links each item to the screen that resolves it', () => {
-    wrap(<NeedsYouBar queue={queue} isLoading={false} />);
-    expect(screen.getByTestId('needs-you-register_not_closed'))
-      .toHaveAttribute('href', '/backoffice/cash-register/zreports');
-    expect(screen.getByTestId('needs-you-low_stock'))
-      .toHaveAttribute('href', '/backoffice/inventory/alerts');
-  });
-
-  it('shows the total count, not the number of rows', () => {
-    // Une ligne peut agréger plusieurs faits (« 3 items ») : le compteur du
-    // bandeau doit dire le NOMBRE DE FAITS, sinon il contredit la pastille de
-    // la cloche, qui compte les faits.
-    wrap(<NeedsYouBar queue={queue} isLoading={false} />);
-    expect(screen.getByTestId('needs-you-bar')).toHaveTextContent('4');
-  });
-
-  it('renders nothing at all when the role has none of the source permissions', () => {
-    const { container } = wrap(<NeedsYouBar queue={null} isLoading={false} isRestricted />);
-    expect(container).toBeEmptyDOMElement();
-  });
-});
 
 describe('OpenOrdersCard', () => {
   const panel: OpenOrdersPanel = {

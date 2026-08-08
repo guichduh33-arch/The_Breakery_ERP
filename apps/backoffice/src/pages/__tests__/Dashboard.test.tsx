@@ -253,9 +253,4 @@ describe('DashboardPage — écran 1c', () => {
     expect(screen.getByText(/No sale recorded today/i)).toBeInTheDocument();
     expect(screen.getByText(/No peak yet today/i)).toBeInTheDocument();
   });
-
-  it('renders the action queue as a calm line when nothing needs attention', () => {
-    renderWith(overviewFixture());
-    expect(screen.getByTestId('needs-you-bar')).toHaveTextContent(/Nothing needs you right now/i);
-  });
 });

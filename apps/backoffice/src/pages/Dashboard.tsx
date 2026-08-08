@@ -40,10 +40,9 @@ import {
   type DashboardOverview,
 } from '@/features/dashboard/hooks/useDashboardOverview.js';
 import {
-  useActionQueue, useDisplayStockActivity, useOpenOrders, isRestricted,
+  useDisplayStockActivity, useOpenOrders, isRestricted,
 } from '@/features/dashboard/hooks/useDashboardPanels.js';
 import { DashboardKpiStrip } from '@/features/dashboard/components/DashboardKpiStrip.js';
-import { NeedsYouBar } from '@/features/dashboard/components/NeedsYouBar.js';
 import { RevenueTrendChart } from '@/features/dashboard/components/RevenueTrendChart.js';
 import { HourlySalesChart } from '@/features/dashboard/components/HourlySalesChart.js';
 import { OpenOrdersCard } from '@/features/dashboard/components/OpenOrdersCard.js';
@@ -100,7 +99,6 @@ export default function DashboardPage({ data }: DashboardPageProps) {
   const refetch   = isTest ? data.refetch : () => { void live.refetch(); };
 
   const openOrders   = useOpenOrders(!isTest);
-  const actionQueue  = useActionQueue(!isTest);
   const displayStock = useDisplayStockActivity(!isTest);
 
   const restricted =
@@ -216,12 +214,6 @@ export default function DashboardPage({ data }: DashboardPageProps) {
           )}
 
           <DashboardKpiStrip kpis={overview?.kpis ?? null} isLoading={isLoading} error={error} />
-
-          <NeedsYouBar
-            queue={actionQueue.data ?? null}
-            isLoading={actionQueue.isLoading}
-            isRestricted={isRestricted(actionQueue.error)}
-          />
 
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1.7fr_1fr]">
             <Card variant="default" padding="none" className="p-4 shadow-none">
