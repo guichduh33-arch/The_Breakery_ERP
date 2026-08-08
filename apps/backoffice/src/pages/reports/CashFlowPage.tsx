@@ -164,60 +164,62 @@ export default function CashFlowPage() {
             );
           })()}
 
-          <table className="w-full text-sm" aria-label="Cash flow summary">
-            <tbody>
-              <tr className="border-b border-border-subtle bg-bg-overlay">
-                <td className="py-2 font-medium uppercase tracking-wider">Operating activities</td>
-                <td className="py-2 text-right tabular-nums">{fmt(data.operating.total)}</td>
-              </tr>
-              <tr><td className="pl-6 py-1 text-text-secondary text-xs">Net profit</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.operating.net_profit)}</td></tr>
-              <tr><td className="pl-6 py-1 text-text-secondary text-xs">Δ accounts receivable</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.operating.delta_ar)}</td></tr>
-              <tr><td className="pl-6 py-1 text-text-secondary text-xs">Δ accounts payable</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.operating.delta_ap)}</td></tr>
-              <tr><td className="pl-6 py-1 text-text-secondary text-xs">Δ inventory</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.operating.delta_inventory)}</td></tr>
-              <tr><td className="pl-6 py-1 text-text-secondary text-xs">Non-cash adjustments</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.operating.non_cash_adjustments)}</td></tr>
-
-              <tr className="border-b border-border-subtle bg-bg-overlay">
-                <td className="py-2 font-medium uppercase tracking-wider">Investing activities</td>
-                <td className="py-2 text-right tabular-nums">{fmt(data.investing.total)}</td>
-              </tr>
-              <tr><td className="pl-6 py-1 text-text-secondary text-xs">Fixed assets &amp; capex (accounts classified investing)</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.investing.total)}</td></tr>
-
-              <tr className="border-b border-border-subtle bg-bg-overlay">
-                <td className="py-2 font-medium uppercase tracking-wider">Financing activities</td>
-                <td className="py-2 text-right tabular-nums">{fmt(data.financing.total)}</td>
-              </tr>
-              <tr><td className="pl-6 py-1 text-text-secondary text-xs">Loans &amp; equity (accounts classified financing)</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.financing.total)}</td></tr>
-
-              <tr className="border-t-2 border-border-subtle bg-gold-soft">
-                <td className="py-3 font-semibold uppercase tracking-wider">Net change in cash</td>
-                <td className="py-3 text-right font-semibold tabular-nums">{fmt(data.net_change_in_cash)}</td>
-              </tr>
-              {showDelta && (
-                <tr>
-                  <td className="py-1 text-xs text-text-secondary pl-2">Net change vs prev. period</td>
-                  <td className="py-1 text-right">
-                    <DeltaPct current={data.net_change_in_cash} previous={prevData.net_change_in_cash} />
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm" aria-label="Cash flow summary">
+              <tbody>
+                <tr className="border-b border-border-subtle bg-bg-overlay">
+                  <td className="py-2 font-medium uppercase tracking-wider">Operating activities</td>
+                  <td className="py-2 text-right tabular-nums">{fmt(data.operating.total)}</td>
                 </tr>
-              )}
-              <tr className="border-b border-border-subtle">
-                <td className="py-2 text-text-secondary">Cash, start of period</td>
-                <td className="py-2 text-right tabular-nums">{fmt(data.cash_start)}</td>
-              </tr>
-              <tr>
-                <td className="py-2 text-text-secondary">Cash, end of period</td>
-                <td className="py-2 text-right tabular-nums">{fmt(data.cash_end)}</td>
-              </tr>
-              {showDelta && (
-                <tr>
-                  <td className="py-1 text-xs text-text-secondary pl-2">Ending cash vs prev. period</td>
-                  <td className="py-1 text-right">
-                    <DeltaPct current={data.cash_end} previous={prevData.cash_end} />
-                  </td>
+                <tr><td className="pl-6 py-1 text-text-secondary text-xs">Net profit</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.operating.net_profit)}</td></tr>
+                <tr><td className="pl-6 py-1 text-text-secondary text-xs">Δ accounts receivable</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.operating.delta_ar)}</td></tr>
+                <tr><td className="pl-6 py-1 text-text-secondary text-xs">Δ accounts payable</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.operating.delta_ap)}</td></tr>
+                <tr><td className="pl-6 py-1 text-text-secondary text-xs">Δ inventory</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.operating.delta_inventory)}</td></tr>
+                <tr><td className="pl-6 py-1 text-text-secondary text-xs">Non-cash adjustments</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.operating.non_cash_adjustments)}</td></tr>
+
+                <tr className="border-b border-border-subtle bg-bg-overlay">
+                  <td className="py-2 font-medium uppercase tracking-wider">Investing activities</td>
+                  <td className="py-2 text-right tabular-nums">{fmt(data.investing.total)}</td>
                 </tr>
-              )}
-            </tbody>
-          </table>
+                <tr><td className="pl-6 py-1 text-text-secondary text-xs">Fixed assets &amp; capex (accounts classified investing)</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.investing.total)}</td></tr>
+
+                <tr className="border-b border-border-subtle bg-bg-overlay">
+                  <td className="py-2 font-medium uppercase tracking-wider">Financing activities</td>
+                  <td className="py-2 text-right tabular-nums">{fmt(data.financing.total)}</td>
+                </tr>
+                <tr><td className="pl-6 py-1 text-text-secondary text-xs">Loans &amp; equity (accounts classified financing)</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.financing.total)}</td></tr>
+
+                <tr className="border-t-2 border-border-subtle bg-gold-soft">
+                  <td className="py-3 font-semibold uppercase tracking-wider">Net change in cash</td>
+                  <td className="py-3 text-right font-semibold tabular-nums">{fmt(data.net_change_in_cash)}</td>
+                </tr>
+                {showDelta && (
+                  <tr>
+                    <td className="py-1 text-xs text-text-secondary pl-2">Net change vs prev. period</td>
+                    <td className="py-1 text-right">
+                      <DeltaPct current={data.net_change_in_cash} previous={prevData.net_change_in_cash} />
+                    </td>
+                  </tr>
+                )}
+                <tr className="border-b border-border-subtle">
+                  <td className="py-2 text-text-secondary">Cash, start of period</td>
+                  <td className="py-2 text-right tabular-nums">{fmt(data.cash_start)}</td>
+                </tr>
+                <tr>
+                  <td className="py-2 text-text-secondary">Cash, end of period</td>
+                  <td className="py-2 text-right tabular-nums">{fmt(data.cash_end)}</td>
+                </tr>
+                {showDelta && (
+                  <tr>
+                    <td className="py-1 text-xs text-text-secondary pl-2">Ending cash vs prev. period</td>
+                    <td className="py-1 text-right">
+                      <DeltaPct current={data.cash_end} previous={prevData.cash_end} />
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </ReportPage>

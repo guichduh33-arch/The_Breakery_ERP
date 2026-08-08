@@ -14,6 +14,7 @@ import {
   KpiTile,
   type DataTableColumn,
 } from '@breakery/ui';
+import { formatDateTimeShortWita } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import {
   useOpnameList,
@@ -23,7 +24,7 @@ import {
 import { OpnameStatusBadge } from '@/features/inventory-opname/components/OpnameStatusBadge.js';
 import { CreateOpnameModal } from '@/features/inventory-opname/components/CreateOpnameModal.js';
 
-const STATUS_OPTIONS: ReadonlyArray<{ value: '' | OpnameStatus; label: string }> = [
+const STATUS_OPTIONS: readonly { value: '' | OpnameStatus; label: string }[] = [
   { value: '',          label: 'All statuses' },
   { value: 'draft',     label: 'Draft' },
   { value: 'counting',  label: 'Counting' },
@@ -38,7 +39,7 @@ interface OpnameKpi {
   finalizedMonth: number;
 }
 
-function aggregateRows(rows: ReadonlyArray<OpnameListRow>): OpnameKpi {
+function aggregateRows(rows: readonly OpnameListRow[]): OpnameKpi {
   const monthStart = (() => {
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth(), 1).toISOString();
@@ -54,7 +55,7 @@ function aggregateRows(rows: ReadonlyArray<OpnameListRow>): OpnameKpi {
   return acc;
 }
 
-const COLUMNS: ReadonlyArray<DataTableColumn<OpnameListRow>> = [
+const COLUMNS: readonly DataTableColumn<OpnameListRow>[] = [
   {
     id: 'count_number',
     header: 'Count #',
@@ -87,7 +88,7 @@ const COLUMNS: ReadonlyArray<DataTableColumn<OpnameListRow>> = [
     width: '200px',
     render: (r) => (
       <span className="font-mono text-xs text-text-secondary">
-        {new Date(r.started_at).toLocaleString()}
+        {formatDateTimeShortWita(r.started_at)}
       </span>
     ),
   },
@@ -119,7 +120,7 @@ export default function OpnameListPage(): JSX.Element {
     <div className="space-y-6">
       <header className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl text-text-primary">Stock counts</h1>
+          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Stock counts</h1>
           <p className="mt-1 text-sm text-text-secondary">
             Periodic counts compared against the section_stock cache. Finalizing
             emits adjustment movements and balanced journal entries.
@@ -194,7 +195,7 @@ export default function OpnameListPage(): JSX.Element {
         <CreateOpnameModal
           onCreated={(id) => {
             setCreateOpen(false);
-            navigate(`/backoffice/inventory/opname/${id}`);
+            void navigate(`/backoffice/inventory/opname/${id}`);
           }}
           onClose={() => { setCreateOpen(false); }}
         />

@@ -168,36 +168,73 @@ function OutliersTable({
     return <p className="text-sm text-text-secondary py-3">No yield-tracked batches in this range.</p>;
   }
   return (
-    <table className="w-full text-sm">
-      <thead>
-        <tr className="text-text-secondary border-b border-border-subtle">
-          <th className="py-2 text-left">Production #</th>
-          <th className="py-2 text-left">Product</th>
-          <th className="py-2 text-left">Date</th>
-          <th className="py-2 text-right">Expected</th>
-          <th className="py-2 text-right">Actual</th>
-          <th className="py-2 text-right">Variance %</th>
-          <th className="py-2 text-left">Reason</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((r) => {
-          const isSelected = selectedProductId === r.product_id;
-          return (
-            <tr
-              key={r.id}
-              className={cn(
-                'border-b border-border-subtle cursor-pointer hover:bg-bg-elevated',
-                isSelected && 'bg-bg-elevated',
-              )}
-              onClick={() => onSelectProduct(isSelected ? null : r.product_id)}
-              aria-label={`Outlier ${r.production_number}, click to drill into product`}
-              data-testid="yield-outlier-row"
-            >
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="text-text-secondary border-b border-border-subtle">
+            <th className="py-2 text-left">Production #</th>
+            <th className="py-2 text-left">Product</th>
+            <th className="py-2 text-left">Date</th>
+            <th className="py-2 text-right">Expected</th>
+            <th className="py-2 text-right">Actual</th>
+            <th className="py-2 text-right">Variance %</th>
+            <th className="py-2 text-left">Reason</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => {
+            const isSelected = selectedProductId === r.product_id;
+            return (
+              <tr
+                key={r.id}
+                className={cn(
+                  'border-b border-border-subtle cursor-pointer hover:bg-bg-elevated',
+                  isSelected && 'bg-bg-elevated',
+                )}
+                onClick={() => onSelectProduct(isSelected ? null : r.product_id)}
+                aria-label={`Outlier ${r.production_number}, click to drill into product`}
+                data-testid="yield-outlier-row"
+              >
+                <td className="py-2 font-mono text-xs">{r.production_number}</td>
+                <td className="py-2" onClick={(e) => e.stopPropagation()}>
+                  <DrilldownLink entity="product" id={r.product_id} label={r.product_name} icon={false} />
+                </td>
+                <td className="py-2 text-xs">{r.production_date.slice(0, 10)}</td>
+                <td className="py-2 text-right tabular-nums">{r.expected_yield_qty?.toLocaleString('id-ID') ?? '—'}</td>
+                <td className="py-2 text-right tabular-nums">{r.actual_yield_qty?.toLocaleString('id-ID') ?? '—'}</td>
+                <td className={cn('py-2 text-right tabular-nums', varianceTone(r.yield_variance_pct))}>
+                  {formatVariancePct(r.yield_variance_pct)}
+                </td>
+                <td className="py-2 text-xs text-text-secondary truncate max-w-[18rem]">
+                  {r.yield_variance_reason ?? '—'}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function DrillDownPanel({ rows }: { rows: YieldRow[] }): JSX.Element {
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="text-text-secondary border-b border-border-subtle">
+            <th className="py-2 text-left">Production #</th>
+            <th className="py-2 text-left">Date</th>
+            <th className="py-2 text-right">Expected</th>
+            <th className="py-2 text-right">Actual</th>
+            <th className="py-2 text-right">Variance %</th>
+            <th className="py-2 text-left">Reason</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.id} className="border-b border-border-subtle" data-testid="yield-drilldown-row">
               <td className="py-2 font-mono text-xs">{r.production_number}</td>
-              <td className="py-2" onClick={(e) => e.stopPropagation()}>
-                <DrilldownLink entity="product" id={r.product_id} label={r.product_name} icon={false} />
-              </td>
               <td className="py-2 text-xs">{r.production_date.slice(0, 10)}</td>
               <td className="py-2 text-right tabular-nums">{r.expected_yield_qty?.toLocaleString('id-ID') ?? '—'}</td>
               <td className="py-2 text-right tabular-nums">{r.actual_yield_qty?.toLocaleString('id-ID') ?? '—'}</td>
@@ -208,43 +245,10 @@ function OutliersTable({
                 {r.yield_variance_reason ?? '—'}
               </td>
             </tr>
-          );
-        })}
-      </tbody>
-    </table>
-  );
-}
-
-function DrillDownPanel({ rows }: { rows: YieldRow[] }): JSX.Element {
-  return (
-    <table className="w-full text-sm">
-      <thead>
-        <tr className="text-text-secondary border-b border-border-subtle">
-          <th className="py-2 text-left">Production #</th>
-          <th className="py-2 text-left">Date</th>
-          <th className="py-2 text-right">Expected</th>
-          <th className="py-2 text-right">Actual</th>
-          <th className="py-2 text-right">Variance %</th>
-          <th className="py-2 text-left">Reason</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((r) => (
-          <tr key={r.id} className="border-b border-border-subtle" data-testid="yield-drilldown-row">
-            <td className="py-2 font-mono text-xs">{r.production_number}</td>
-            <td className="py-2 text-xs">{r.production_date.slice(0, 10)}</td>
-            <td className="py-2 text-right tabular-nums">{r.expected_yield_qty?.toLocaleString('id-ID') ?? '—'}</td>
-            <td className="py-2 text-right tabular-nums">{r.actual_yield_qty?.toLocaleString('id-ID') ?? '—'}</td>
-            <td className={cn('py-2 text-right tabular-nums', varianceTone(r.yield_variance_pct))}>
-              {formatVariancePct(r.yield_variance_pct)}
-            </td>
-            <td className="py-2 text-xs text-text-secondary truncate max-w-[18rem]">
-              {r.yield_variance_reason ?? '—'}
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
@@ -253,34 +257,36 @@ function TrendTable({ rows }: { rows: TrendRow[] }): JSX.Element {
     return <p className="text-sm text-text-secondary py-3">No recipes with yield data in this range.</p>;
   }
   return (
-    <table className="w-full text-sm">
-      <thead>
-        <tr className="text-text-secondary border-b border-border-subtle">
-          <th className="py-2 text-left">Product</th>
-          <th className="py-2 text-right">Batches</th>
-          <th className="py-2 text-right">Avg variance %</th>
-          {/* Audit R-19 — distinct du « worst » de Production Efficiency, qui
-              est le minimum signe et non le maximum en valeur absolue. */}
-          <th className="py-2 text-right">Max |variance %| (largest swing)</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((r) => (
-          <tr key={r.product_id} className="border-b border-border-subtle">
-            <td className="py-2">
-              <DrilldownLink entity="recipe" id={r.product_id} label={r.product_name} icon={false} />
-            </td>
-            <td className="py-2 text-right tabular-nums">{r.batches}</td>
-            <td className={cn('py-2 text-right tabular-nums', varianceTone(r.avg_pct))}>
-              {formatVariancePct(r.avg_pct)}
-            </td>
-            <td className={cn('py-2 text-right tabular-nums', varianceTone(r.max_abs_pct))}>
-              {formatVariancePct(r.max_abs_pct).replace('+', '')}
-            </td>
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="text-text-secondary border-b border-border-subtle">
+            <th className="py-2 text-left">Product</th>
+            <th className="py-2 text-right">Batches</th>
+            <th className="py-2 text-right">Avg variance %</th>
+            {/* Audit R-19 — distinct du « worst » de Production Efficiency, qui
+                est le minimum signe et non le maximum en valeur absolue. */}
+            <th className="py-2 text-right">Max |variance %| (largest swing)</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.product_id} className="border-b border-border-subtle">
+              <td className="py-2">
+                <DrilldownLink entity="recipe" id={r.product_id} label={r.product_name} icon={false} />
+              </td>
+              <td className="py-2 text-right tabular-nums">{r.batches}</td>
+              <td className={cn('py-2 text-right tabular-nums', varianceTone(r.avg_pct))}>
+                {formatVariancePct(r.avg_pct)}
+              </td>
+              <td className={cn('py-2 text-right tabular-nums', varianceTone(r.max_abs_pct))}>
+                {formatVariancePct(r.max_abs_pct).replace('+', '')}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 

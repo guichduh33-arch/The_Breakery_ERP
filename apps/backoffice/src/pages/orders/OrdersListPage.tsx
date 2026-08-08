@@ -216,7 +216,7 @@ export default function OrdersListPage(): JSX.Element {
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <ShoppingBag className="h-7 w-7 text-gold" aria-hidden />
-          <h1 className="font-serif text-3xl text-text-primary">Live Orders</h1>
+          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Live Orders</h1>
           <span className="flex items-center gap-1.5 text-xs text-text-secondary" data-testid="realtime-indicator">
             <span className={`inline-block h-2 w-2 rounded-full ${isConnected ? 'bg-success' : 'bg-text-muted'}`} />
             {isConnected ? 'Live' : 'Offline'}
@@ -311,7 +311,7 @@ export default function OrdersListPage(): JSX.Element {
       {query.error && <div role="alert" className="rounded-md border border-danger/40 bg-danger/5 p-3 text-sm text-danger">Error: {query.error.message}</div>}
 
       {/* Table */}
-      <Card variant="default" padding="none" className="overflow-hidden">
+      <Card variant="default" padding="none" className="overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <thead className="border-b border-border-subtle bg-bg-base/40 text-xs uppercase tracking-widest text-text-secondary">
             <tr>

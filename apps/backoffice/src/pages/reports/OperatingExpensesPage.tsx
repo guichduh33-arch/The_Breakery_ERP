@@ -27,6 +27,7 @@ import {
   formatIdrFull, formatIdrCompact,
 } from '@/features/reports/utils/chartColors.js';
 import { useUrlState } from '@/hooks/useUrlState.js';
+import { usePrefersReducedMotion } from '@/features/dashboard/utils/usePrefersReducedMotion.js';
 
 const STATUS_OPTIONS: { value: string; label: string }[] = [
   { value: '',          label: 'Committed (default)' },
@@ -49,6 +50,7 @@ function defaultStart(): string {
 }
 
 export default function OperatingExpensesPage() {
+  const reduced = usePrefersReducedMotion();
   const [start, setStart]           = useUrlState('start', defaultStart());
   const [end,   setEnd]             = useUrlState('end', toLocalDateStr(new Date()));
   // Audit R-17 — filtre en URL-state (convention S57) : la vue devient
@@ -188,7 +190,7 @@ export default function OperatingExpensesPage() {
                   formatter={(v: number) => [formatIdrFull(v), 'OpEx']}
                   contentStyle={CHART_TOOLTIP_STYLE}
                 />
-                <Area type="monotone" dataKey="total" name="OpEx"
+                <Area isAnimationActive={!reduced} type="monotone" dataKey="total" name="OpEx"
                   stroke={OPEX_BASE} fill={OPEX_BASE} fillOpacity={0.8} />
               </AreaChart>
             </ResponsiveContainer>
@@ -198,38 +200,40 @@ export default function OperatingExpensesPage() {
 
       {/* Category table with inline share bars */}
       <ChartCard title="Category breakdown" accent={OPEX_BASE}>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border-subtle text-text-secondary">
-              <th className="py-2 text-left">Category</th>
-              <th className="py-2 text-right">Total</th>
-              <th className="py-2 text-right">Count</th>
-              <th className="py-2 text-right">Share</th>
-              <th className="py-2 pl-4 text-left">Distribution</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r, i) => (
-              <tr key={r.category_id} className="border-b border-border-subtle">
-                <td className="py-2 font-medium text-text-primary">{r.name}</td>
-                <td className="py-2 text-right font-mono tabular-nums">{formatIdrFull(r.total)}</td>
-                <td className="py-2 text-right tabular-nums text-text-secondary">{r.count}</td>
-                <td className="py-2 text-right tabular-nums">{r.share_pct.toFixed(1)}%</td>
-                <td className="py-2 pl-4">
-                  <div className="h-2 w-full overflow-hidden rounded-sm bg-surface-4">
-                    <div
-                      className="h-full rounded-sm"
-                      style={{
-                        width: `${(r.share_pct / maxShare) * 100}%`,
-                        backgroundColor: familyColor('opex', i),
-                      }}
-                    />
-                  </div>
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border-subtle text-text-secondary">
+                <th className="py-2 text-left">Category</th>
+                <th className="py-2 text-right">Total</th>
+                <th className="py-2 text-right">Count</th>
+                <th className="py-2 text-right">Share</th>
+                <th className="py-2 pl-4 text-left">Distribution</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {rows.map((r, i) => (
+                <tr key={r.category_id} className="border-b border-border-subtle">
+                  <td className="py-2 font-medium text-text-primary">{r.name}</td>
+                  <td className="py-2 text-right font-mono tabular-nums">{formatIdrFull(r.total)}</td>
+                  <td className="py-2 text-right tabular-nums text-text-secondary">{r.count}</td>
+                  <td className="py-2 text-right tabular-nums">{r.share_pct.toFixed(1)}%</td>
+                  <td className="py-2 pl-4">
+                    <div className="h-2 w-full overflow-hidden rounded-sm bg-surface-4">
+                      <div
+                        className="h-full rounded-sm"
+                        style={{
+                          width: `${(r.share_pct / maxShare) * 100}%`,
+                          backgroundColor: familyColor('opex', i),
+                        }}
+                      />
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </ChartCard>
       </>
       )}

@@ -28,7 +28,7 @@ export default function IncomingStockPage(): JSX.Element {
         <ArrowLeft className="h-4 w-4" aria-hidden /> Back to Stock &amp; Inventory
       </Link>
       <header>
-        <h1 className="font-display text-3xl text-text-primary">Incoming Stock — Direct Purchase</h1>
+        <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Incoming Stock — Direct Purchase</h1>
         <p className="mt-1 text-sm text-text-secondary">
           Record a supplier purchase that posts straight to stock, weighted-average cost,
           the stock analytics and the accounting ledger (Inventory · Payable · Cash/Bank).

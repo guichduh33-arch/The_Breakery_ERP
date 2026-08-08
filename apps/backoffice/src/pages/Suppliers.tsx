@@ -39,6 +39,7 @@ import {
 import { ImportEntityModal } from '@/features/data-import/components/ImportEntityModal.js';
 import { buildTemplateWorkbook, buildExportWorkbook, downloadWorkbook } from '@/features/data-import/buildEntityWorkbook.js';
 import { suppliersImportDef } from '@/features/suppliers/import/suppliersImportDef.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 interface SuppliersKpi {
   total:    number;
@@ -46,7 +47,7 @@ interface SuppliersKpi {
   inactive: number;
 }
 
-function aggregate(rows: ReadonlyArray<SupplierRow>): SuppliersKpi {
+function aggregate(rows: readonly SupplierRow[]): SuppliersKpi {
   const acc: SuppliersKpi = { total: rows.length, active: 0, inactive: 0 };
   for (const r of rows) {
     if (r.is_active) acc.active += 1;
@@ -106,7 +107,7 @@ export default function SuppliersPage(): JSX.Element {
     <div className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl text-text-primary">Supplier Management</h1>
+          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Supplier Management</h1>
           <p className="mt-1 text-sm text-text-secondary">Manage your suppliers and their contact information.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -125,9 +126,9 @@ export default function SuppliersPage(): JSX.Element {
             <Download className="h-4 w-4" aria-hidden /> Export
           </Button>
           {canCreate && (
-            <Button type="button" variant="gold" onClick={() => setCreating(true)}>
-              <Plus className="h-4 w-4" aria-hidden /> Add new supplier
-            </Button>
+            <button type="button" className={TOOLBAR_BTN_PRIMARY} onClick={() => setCreating(true)}>
+              <Plus className="h-3.5 w-3.5" aria-hidden /> Add new supplier
+            </button>
           )}
         </div>
       </header>

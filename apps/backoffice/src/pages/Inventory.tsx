@@ -22,6 +22,7 @@ import {
   type StockLevelsFilters,
 } from '@/features/inventory/hooks/useStockLevels.js';
 import { useInventoryReferenceData } from '@/features/inventory/hooks/useInventoryReferenceData.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 const PAGE_SIZE = 50;
 
@@ -81,7 +82,7 @@ export default function InventoryPage() {
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="font-serif text-3xl">Stock &amp; Inventory</h1>
+          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Stock &amp; Inventory</h1>
           <p className="text-text-secondary text-sm mt-1">
             Manage stock, track movements, and monitor inventory.
           </p>
@@ -93,9 +94,9 @@ export default function InventoryPage() {
             </Button>
           )}
           {canReceive && (
-            <Button type="button" variant="primary" onClick={() => { void navigate('/backoffice/inventory/incoming'); }}>
-              <Truck className="h-4 w-4" aria-hidden /> Receive
-            </Button>
+            <button type="button" onClick={() => { void navigate('/backoffice/inventory/incoming'); }} className={TOOLBAR_BTN_PRIMARY}>
+              <Truck className="h-3.5 w-3.5" aria-hidden /> Receive
+            </button>
           )}
           {canWaste && (
             <Button type="button" variant="ghostDestructive" onClick={() => setModal({ kind: 'waste' })}>
@@ -172,7 +173,7 @@ export default function InventoryPage() {
         </div>
       )}
       {list.data !== undefined && list.data.length > 0 && (
-        <div className="bg-bg-elevated rounded-lg border border-border-subtle overflow-hidden">
+        <div className="bg-bg-elevated rounded-lg border border-border-subtle overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-bg-overlay text-xs uppercase tracking-wide text-text-secondary">
               <tr>

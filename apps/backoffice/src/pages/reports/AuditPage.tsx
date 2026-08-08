@@ -102,72 +102,74 @@ export default function AuditPage(): JSX.Element {
       )}
       {!isLoading && (
         <>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-text-secondary border-b border-border-subtle">
-                <th className="py-2 text-left w-8"></th>
-                <th className="py-2 text-left">Timestamp</th>
-                <th className="py-2 text-left">Action</th>
-                <th className="py-2 text-left">Entity</th>
-                <th className="py-2 text-left">Actor</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => {
-                const expanded = expandedId === r.id;
-                return (
-                  <Fragment key={r.id}>
-                    <tr
-                      className="border-b border-border-subtle cursor-pointer hover:bg-bg-base/40"
-                      onClick={() => setExpandedId(expanded ? null : r.id)}
-                      data-testid={`audit-row-${r.id}`}
-                    >
-                      <td className="py-2 text-text-secondary" data-testid={`audit-toggle-${r.id}`}>
-                        {expanded
-                          ? <ChevronDown className="h-3.5 w-3.5" aria-hidden />
-                          : <ChevronRight className="h-3.5 w-3.5" aria-hidden />}
-                      </td>
-                      <td className="py-2 tabular-nums text-text-secondary">
-                        {new Date(r.created_at).toLocaleString()}
-                      </td>
-                      <td className="py-2">{r.action}</td>
-                      <td className="py-2">
-                        {r.entity_type === 'product' && r.entity_id ? (
-                          <DrilldownLink entity="product" id={r.entity_id} label={`product ${r.entity_id.slice(0, 8)}`} icon={false} />
-                        ) : r.entity_type === 'order' && r.entity_id ? (
-                          <DrilldownLink entity="order" id={r.entity_id} label={`order ${r.entity_id.slice(0, 8)}`} icon={false} />
-                        ) : r.entity_type === 'expense' && r.entity_id ? (
-                          <DrilldownLink entity="expense" id={r.entity_id} label={`expense ${r.entity_id.slice(0, 8)}`} icon={false} />
-                        ) : r.entity_type === 'customer' && r.entity_id ? (
-                          <DrilldownLink entity="customer" id={r.entity_id} label={`customer ${r.entity_id.slice(0, 8)}`} icon={false} />
-                        ) : (
-                          r.entity_type
-                        )}
-                      </td>
-                      <td className="py-2 text-xs text-text-secondary">
-                        {r.actor_id ? (
-                          <DrilldownLink entity="user" id={r.actor_id} label={r.actor_id.slice(0, 8)} icon={false} />
-                        ) : '—'}
-                      </td>
-                    </tr>
-                    {expanded && (
-                      <tr className="border-b border-border-subtle bg-bg-base/20" data-testid={`audit-detail-${r.id}`}>
-                        <td></td>
-                        <td colSpan={4} className="py-2">
-                          <div className="text-xs uppercase tracking-widest text-text-secondary">
-                            Metadata (context)
-                          </div>
-                          <pre className="mt-1 whitespace-pre-wrap break-words text-xs text-text-secondary">
-                            {formatMetadata(r.metadata)}
-                          </pre>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-text-secondary border-b border-border-subtle">
+                  <th className="py-2 text-left w-8"></th>
+                  <th className="py-2 text-left">Timestamp</th>
+                  <th className="py-2 text-left">Action</th>
+                  <th className="py-2 text-left">Entity</th>
+                  <th className="py-2 text-left">Actor</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((r) => {
+                  const expanded = expandedId === r.id;
+                  return (
+                    <Fragment key={r.id}>
+                      <tr
+                        className="border-b border-border-subtle cursor-pointer hover:bg-bg-base/40"
+                        onClick={() => setExpandedId(expanded ? null : r.id)}
+                        data-testid={`audit-row-${r.id}`}
+                      >
+                        <td className="py-2 text-text-secondary" data-testid={`audit-toggle-${r.id}`}>
+                          {expanded
+                            ? <ChevronDown className="h-3.5 w-3.5" aria-hidden />
+                            : <ChevronRight className="h-3.5 w-3.5" aria-hidden />}
+                        </td>
+                        <td className="py-2 tabular-nums text-text-secondary">
+                          {new Date(r.created_at).toLocaleString()}
+                        </td>
+                        <td className="py-2">{r.action}</td>
+                        <td className="py-2">
+                          {r.entity_type === 'product' && r.entity_id ? (
+                            <DrilldownLink entity="product" id={r.entity_id} label={`product ${r.entity_id.slice(0, 8)}`} icon={false} />
+                          ) : r.entity_type === 'order' && r.entity_id ? (
+                            <DrilldownLink entity="order" id={r.entity_id} label={`order ${r.entity_id.slice(0, 8)}`} icon={false} />
+                          ) : r.entity_type === 'expense' && r.entity_id ? (
+                            <DrilldownLink entity="expense" id={r.entity_id} label={`expense ${r.entity_id.slice(0, 8)}`} icon={false} />
+                          ) : r.entity_type === 'customer' && r.entity_id ? (
+                            <DrilldownLink entity="customer" id={r.entity_id} label={`customer ${r.entity_id.slice(0, 8)}`} icon={false} />
+                          ) : (
+                            r.entity_type
+                          )}
+                        </td>
+                        <td className="py-2 text-xs text-text-secondary">
+                          {r.actor_id ? (
+                            <DrilldownLink entity="user" id={r.actor_id} label={r.actor_id.slice(0, 8)} icon={false} />
+                          ) : '—'}
                         </td>
                       </tr>
-                    )}
-                  </Fragment>
-                );
-              })}
-            </tbody>
-          </table>
+                      {expanded && (
+                        <tr className="border-b border-border-subtle bg-bg-base/20" data-testid={`audit-detail-${r.id}`}>
+                          <td></td>
+                          <td colSpan={4} className="py-2">
+                            <div className="text-xs uppercase tracking-widest text-text-secondary">
+                              Metadata (context)
+                            </div>
+                            <pre className="mt-1 whitespace-pre-wrap break-words text-xs text-text-secondary">
+                              {formatMetadata(r.metadata)}
+                            </pre>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
           {hasNextPage && (
             <div className="flex justify-center pt-3">
               <Button

@@ -32,8 +32,9 @@ import { useAuthStore } from '@/stores/authStore.js';
 import { useB2bSettings } from '@/features/btob/hooks/useB2bSettings.js';
 import { useUpdateB2bSettings } from '@/features/btob/hooks/useUpdateB2bSettings.js';
 import type { AgingBucket } from '@/features/btob/hooks/useB2bSettings.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
-const DEFAULT_TERM_OPTIONS: ReadonlyArray<{ value: string; label: string }> = [
+const DEFAULT_TERM_OPTIONS: readonly { value: string; label: string }[] = [
   { value: 'cod',    label: 'Cash on delivery (COD)' },
   { value: 'net_7',  label: 'Net 7' },
   { value: 'net_14', label: 'Net 14' },
@@ -145,7 +146,7 @@ export default function B2BSettingsPage(): JSX.Element {
             </Link>
           </Button>
           <div>
-            <h1 className="font-serif text-3xl text-text-primary inline-flex items-center gap-2">
+            <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary inline-flex items-center gap-2">
               <FileText className="h-6 w-6 text-gold" aria-hidden /> B2B Settings
             </h1>
             <p className="mt-1 text-sm text-text-secondary">
@@ -296,14 +297,14 @@ export default function B2BSettingsPage(): JSX.Element {
             <p role="alert" className="text-xs text-danger">{saveError}</p>
           )}
           <div className="flex items-center justify-end gap-3">
-            <Button
-              variant="primary"
-              size="sm"
+            <button
+              type="button"
+              className={TOOLBAR_BTN_PRIMARY}
               disabled={!isDirty || updateMut.isPending}
               onClick={() => { void handleSave(); }}
             >
               {updateMut.isPending ? 'Saving…' : 'Save changes'}
-            </Button>
+            </button>
           </div>
         </div>
       )}

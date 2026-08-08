@@ -39,6 +39,7 @@ import { ConvertToParentDialog } from './ConvertToParentDialog.js';
 import { AddVariantDialog } from './AddVariantDialog.js';
 import { DissolveParentDialog } from './DissolveParentDialog.js';
 import { DeleteVariantDialog } from './DeleteVariantDialog.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 export interface VariantsPanelProduct {
   id:                 string;
@@ -122,7 +123,7 @@ export function VariantsPanel({ product }: VariantsPanelProps): JSX.Element {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate(`/backoffice/products/${parent.id}`)}
+              onClick={() => { void navigate(`/backoffice/products/${parent.id}`); }}
               data-testid="variant-banner-view-parent"
             >
               <ArrowLeft className="h-3.5 w-3.5 mr-1" aria-hidden />
@@ -146,14 +147,15 @@ export function VariantsPanel({ product }: VariantsPanelProps): JSX.Element {
           data-testid="variants-empty-state"
           action={
             canWrite ? (
-              <Button
-                variant="gold"
+              <button
+                type="button"
+                className={TOOLBAR_BTN_PRIMARY}
                 onClick={() => setConvertOpen(true)}
                 data-testid="convert-to-parent-cta"
               >
                 <Plus className="h-3.5 w-3.5 mr-1" aria-hidden />
                 Convert to parent + create first variant
-              </Button>
+              </button>
             ) : null
           }
         />
@@ -184,19 +186,19 @@ export function VariantsPanel({ product }: VariantsPanelProps): JSX.Element {
           </span>
         </div>
         {canWrite && (
-          <Button
-            variant="gold"
-            size="sm"
+          <button
+            type="button"
+            className={TOOLBAR_BTN_PRIMARY}
             onClick={() => setAddOpen(true)}
             data-testid="add-variant-cta"
           >
             <Plus className="h-3.5 w-3.5 mr-1" aria-hidden />
             Add variant
-          </Button>
+          </button>
         )}
       </div>
 
-      <div className="rounded-lg border border-border-subtle bg-bg-elevated overflow-hidden">
+      <div className="rounded-lg border border-border-subtle bg-bg-elevated overflow-x-auto">
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => { void handleDragEnd(e); }}>
           <table className="w-full text-sm" data-testid="variants-table">
             <thead className="bg-bg-overlay text-left text-xs uppercase tracking-wider text-text-secondary">

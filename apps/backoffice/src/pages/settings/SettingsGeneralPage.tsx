@@ -23,6 +23,7 @@ import { useAuthStore } from '@/stores/authStore.js';
 import { BrandLogoUploader } from '@/features/settings/components/BrandLogoUploader.js';
 import { useSettings, type SettingsCategory } from '@/features/settings/hooks/useSettings.js';
 import { useSetSetting } from '@/features/settings/hooks/useSetSetting.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 type FieldType = 'text' | 'number' | 'boolean' | 'select' | 'percent' | 'logo';
 
@@ -257,21 +258,22 @@ export default function SettingsGeneralPage() {
             <Button variant="ghost" onClick={() => setTaxSwitchConfirmOpen(false)}>
               Cancel
             </Button>
-            <Button
-              variant="primary"
+            <button
+              type="button"
+              className={TOOLBAR_BTN_PRIMARY}
               onClick={() => {
                 setTaxSwitchConfirmOpen(false);
                 void performSave();
               }}
             >
               Switch tax mode
-            </Button>
+            </button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <div>
-        <h1 className="font-serif text-3xl">General settings</h1>
+        <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">General settings</h1>
         <p className="text-text-secondary text-sm mt-1">
           Business identity, localisation, tax, and shift controls. Every change writes an audit log entry.
         </p>
@@ -346,13 +348,13 @@ export default function SettingsGeneralPage() {
           )}
 
           {canUpdate && (
-            <Button type="submit" variant="primary" disabled={dirtyKeys.length === 0 || setSetting.isPending}>
+            <button type="submit" disabled={dirtyKeys.length === 0 || setSetting.isPending} className={TOOLBAR_BTN_PRIMARY}>
               {setSetting.isPending
                 ? 'Saving…'
                 : dirtyKeys.length === 0
                   ? 'No changes'
                   : `Save ${dirtyKeys.length} change${dirtyKeys.length === 1 ? '' : 's'}`}
-            </Button>
+            </button>
           )}
         </form>
       )}

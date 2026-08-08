@@ -125,7 +125,7 @@ function PurchasesTab({ rows, isLoading }: { rows: SupplierPOListRow[]; isLoadin
     );
   }
   return (
-    <div className="overflow-hidden rounded-lg border border-border-subtle bg-bg-elevated">
+    <div className="overflow-x-auto rounded-lg border border-border-subtle bg-bg-elevated">
       <table className="w-full text-sm">
         <thead className="border-b border-border-subtle bg-bg-base/40">
           <tr>
@@ -236,7 +236,7 @@ export default function SupplierDetailPage(): JSX.Element {
                   <Building2 className="h-6 w-6" />
                 </span>
                 <div>
-                  <h1 className="font-display text-2xl text-text-primary">{supplier.name}</h1>
+                  <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">{supplier.name}</h1>
                   <div className="mt-1 flex items-center gap-2">
                     <span className="font-mono text-xs uppercase text-text-muted">{supplier.code}</span>
                     <StatusBadge active={supplier.is_active} />
@@ -375,9 +375,9 @@ function PaymentsSection({
   metrics: ReturnType<typeof useSupplierMetrics>;
   isLoading: boolean;
 }): JSX.Element {
-  if (isLoading) {
-    return <div className="h-32 animate-pulse rounded-md border border-border-subtle bg-bg-elevated" />;
-  }
+  // Le hook précède le retour anticipé : appelé après, il n'existait pas au
+  // rendu de chargement et apparaissait au rendu suivant. L'ordre des hooks
+  // changeait d'un rendu à l'autre — l'invariant que React ne pardonne pas.
   const overdue = useMemo(() => {
     const today = Date.now();
     return rows.reduce((acc, r) => {
@@ -388,6 +388,10 @@ function PaymentsSection({
       return acc;
     }, 0);
   }, [rows]);
+
+  if (isLoading) {
+    return <div className="h-32 animate-pulse rounded-md border border-border-subtle bg-bg-elevated" />;
+  }
 
   return (
     <div className="space-y-4">
@@ -409,7 +413,7 @@ function PaymentsSection({
           <Card variant="default" padding="md">
             <SupplierPaymentDistribution paidAmount={metrics.paidAmount} overdueAmount={overdue} />
           </Card>
-          <div className="overflow-hidden rounded-lg border border-border-subtle bg-bg-elevated">
+          <div className="overflow-x-auto rounded-lg border border-border-subtle bg-bg-elevated">
           <table className="w-full text-sm">
             <thead className="border-b border-border-subtle bg-bg-base/40">
               <tr>

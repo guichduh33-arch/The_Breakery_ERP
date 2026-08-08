@@ -16,6 +16,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { EmptyState, KpiTile } from '@breakery/ui';
+import { formatDateTimeShortWita } from '@breakery/utils';
 import { useProductDashboard } from '@/features/inventory-dashboard/hooks/useProductDashboard.js';
 import { SalesVelocityChart } from '@/features/inventory-dashboard/components/SalesVelocityChart.js';
 import { StockBySectionList } from '@/features/inventory-dashboard/components/StockBySectionList.js';
@@ -62,7 +63,7 @@ export default function ProductDashboardPage(): JSX.Element {
         </Link>
         <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h1 className="font-display text-3xl text-text-primary">{d.product.name}</h1>
+            <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">{d.product.name}</h1>
             <p className="mt-0.5 font-mono text-xs text-text-muted">{d.product.sku}</p>
           </div>
           <div className="flex items-center gap-2">
@@ -122,21 +123,23 @@ export default function ProductDashboardPage(): JSX.Element {
           {d.recent_movements.length === 0 ? (
             <EmptyState icon={Inbox} title="No movements yet" size="sm" />
           ) : (
-            <table className="w-full text-xs">
-              <tbody>
-                {d.recent_movements.map((m) => (
-                  <tr key={m.id} className="border-t border-border-subtle">
-                    <td className="py-1 px-3 font-mono text-text-secondary">
-                      {new Date(m.created_at).toLocaleString()}
-                    </td>
-                    <td className="py-1 px-3 font-mono">{m.movement_type}</td>
-                    <td className={`py-1 px-3 text-right font-mono ${m.quantity > 0 ? 'text-success' : 'text-danger'}`}>
-                      {m.quantity > 0 ? '+' : ''}{m.quantity}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <tbody>
+                  {d.recent_movements.map((m) => (
+                    <tr key={m.id} className="border-t border-border-subtle">
+                      <td className="py-1 px-3 font-mono text-text-secondary">
+                        {formatDateTimeShortWita(m.created_at)}
+                      </td>
+                      <td className="py-1 px-3 font-mono">{m.movement_type}</td>
+                      <td className={`py-1 px-3 text-right font-mono ${m.quantity > 0 ? 'text-success' : 'text-danger'}`}>
+                        {m.quantity > 0 ? '+' : ''}{m.quantity}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </Panel>
 
@@ -144,24 +147,26 @@ export default function ProductDashboardPage(): JSX.Element {
           {d.top_customers.length === 0 ? (
             <EmptyState icon={Inbox} title="No retail sales tracked" size="sm" />
           ) : (
-            <table className="w-full text-sm">
-              <thead className="text-xs uppercase tracking-widest text-text-muted">
-                <tr>
-                  <th className="text-left py-2 px-3">Customer</th>
-                  <th className="text-right py-2 px-3">Units</th>
-                  <th className="text-right py-2 px-3">Spend</th>
-                </tr>
-              </thead>
-              <tbody>
-                {d.top_customers.map((c) => (
-                  <tr key={c.customer_id} className="border-t border-border-subtle">
-                    <td className="py-2 px-3">{c.customer_name}</td>
-                    <td className="py-2 px-3 text-right font-mono">{Number(c.units_bought)}</td>
-                    <td className="py-2 px-3 text-right font-mono">{Number(c.spend_total).toFixed(0)}</td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="text-xs uppercase tracking-widest text-text-muted">
+                  <tr>
+                    <th className="text-left py-2 px-3">Customer</th>
+                    <th className="text-right py-2 px-3">Units</th>
+                    <th className="text-right py-2 px-3">Spend</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {d.top_customers.map((c) => (
+                    <tr key={c.customer_id} className="border-t border-border-subtle">
+                      <td className="py-2 px-3">{c.customer_name}</td>
+                      <td className="py-2 px-3 text-right font-mono">{Number(c.units_bought)}</td>
+                      <td className="py-2 px-3 text-right font-mono">{Number(c.spend_total).toFixed(0)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </Panel>
       </div>

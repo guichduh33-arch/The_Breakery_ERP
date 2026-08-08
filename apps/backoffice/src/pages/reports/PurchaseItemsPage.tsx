@@ -33,6 +33,7 @@ import {
   type PurchaseItemLine,
 } from '@/features/reports/hooks/usePurchaseItems.js';
 import { useUrlState } from '@/hooks/useUrlState.js';
+import { usePrefersReducedMotion } from '@/features/dashboard/utils/usePrefersReducedMotion.js';
 
 interface SupplierOption {
   id:   string;
@@ -61,6 +62,7 @@ function defaultStart(): string {
 }
 
 export default function PurchaseItemsPage() {
+  const reduced = usePrefersReducedMotion();
   const [start,      setStart]      = useUrlState('start', defaultStart());
   const [end,        setEnd]        = useUrlState('end', toLocalDateStr(new Date()));
   // Audit R-17 — filtre en URL-state (convention S57) : la vue devient
@@ -204,55 +206,57 @@ export default function PurchaseItemsPage() {
                     formatter={(v: number) => [formatIdrFull(v), 'Value']}
                     contentStyle={CHART_TOOLTIP_STYLE}
                   />
-                  <Bar dataKey="value" fill={COGS_BASE} radius={[0, 4, 4, 0]} />
+                  <Bar isAnimationActive={!reduced} dataKey="value" fill={COGS_BASE} radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </ChartCard>
 
-          <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border-subtle text-text-secondary">
-              <th className="py-2 text-left">PO#</th>
-              <th className="py-2 text-left">Date</th>
-              <th className="py-2 text-left">Supplier</th>
-              <th className="py-2 text-left">Product</th>
-              <th className="py-2 text-left">SKU</th>
-              <th className="py-2 text-right">Qty</th>
-              <th className="py-2 text-right">Received</th>
-              <th className="py-2 text-right">Unit cost</th>
-              <th className="py-2 text-right">Subtotal</th>
-              <th className="py-2 text-left">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {lines.map((r, idx) => (
-              <tr key={`${r.po_id}-${r.product_id}-${idx}`} className="border-b border-border-subtle">
-                <td className="py-2 font-medium">{r.po_number}</td>
-                <td className="py-2 text-text-secondary">{String(r.order_date).slice(0, 10)}</td>
-                <td className="py-2 text-text-secondary">{r.supplier_name}</td>
-                <td className="py-2">{r.product_name}</td>
-                <td className="py-2 text-text-secondary font-mono text-xs">{r.sku}</td>
-                <td className="py-2 text-right tabular-nums">{r.quantity}</td>
-                <td className="py-2 text-right tabular-nums">{r.received_quantity}</td>
-                <td className="py-2 text-right tabular-nums">{IDR(r.unit_cost)}</td>
-                <td className="py-2 text-right tabular-nums">{IDR(r.subtotal)}</td>
-                <td className="py-2 capitalize text-text-secondary">{r.status}</td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border-subtle text-text-secondary">
+                <th className="py-2 text-left">PO#</th>
+                <th className="py-2 text-left">Date</th>
+                <th className="py-2 text-left">Supplier</th>
+                <th className="py-2 text-left">Product</th>
+                <th className="py-2 text-left">SKU</th>
+                <th className="py-2 text-right">Qty</th>
+                <th className="py-2 text-right">Received</th>
+                <th className="py-2 text-right">Unit cost</th>
+                <th className="py-2 text-right">Subtotal</th>
+                <th className="py-2 text-left">Status</th>
               </tr>
-            ))}
-          </tbody>
-          {lines.length > 0 && (
-            <tfoot>
-              <tr className="border-t border-border-subtle font-semibold">
-                <td className="py-2" colSpan={8}>Total ({data.summary.line_count} lines)</td>
-                <td className="py-2 text-right tabular-nums">
-                  {IDR(data.summary.total_value)}
-                </td>
-                <td />
-              </tr>
-            </tfoot>
-          )}
-          </table>
+            </thead>
+            <tbody>
+              {lines.map((r, idx) => (
+                <tr key={`${r.po_id}-${r.product_id}-${idx}`} className="border-b border-border-subtle">
+                  <td className="py-2 font-medium">{r.po_number}</td>
+                  <td className="py-2 text-text-secondary">{String(r.order_date).slice(0, 10)}</td>
+                  <td className="py-2 text-text-secondary">{r.supplier_name}</td>
+                  <td className="py-2">{r.product_name}</td>
+                  <td className="py-2 text-text-secondary font-mono text-xs">{r.sku}</td>
+                  <td className="py-2 text-right tabular-nums">{r.quantity}</td>
+                  <td className="py-2 text-right tabular-nums">{r.received_quantity}</td>
+                  <td className="py-2 text-right tabular-nums">{IDR(r.unit_cost)}</td>
+                  <td className="py-2 text-right tabular-nums">{IDR(r.subtotal)}</td>
+                  <td className="py-2 capitalize text-text-secondary">{r.status}</td>
+                </tr>
+              ))}
+            </tbody>
+            {lines.length > 0 && (
+              <tfoot>
+                <tr className="border-t border-border-subtle font-semibold">
+                  <td className="py-2" colSpan={8}>Total ({data.summary.line_count} lines)</td>
+                  <td className="py-2 text-right tabular-nums">
+                    {IDR(data.summary.total_value)}
+                  </td>
+                  <td />
+                </tr>
+              </tfoot>
+            )}
+            </table>
+          </div>
         </div>
       )}
     </ReportPage>

@@ -41,6 +41,7 @@ import {
   type CategoryInput,
 } from '@/features/customers/hooks/useCustomerCategoryMutations.js';
 import { CategoryFormModal } from '@/features/customers/components/CategoryFormModal.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 const ICON_BY_SLUG: Record<string, LucideIcon> = {
   retail:    UsersIcon,
@@ -129,20 +130,20 @@ export default function CustomerCategoriesPage(): JSX.Element {
             </Link>
           </Button>
           <div>
-            <h1 className="font-serif text-3xl text-text-primary inline-flex items-center gap-2">
+            <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary inline-flex items-center gap-2">
               <Tag className="h-6 w-6 text-gold" aria-hidden /> Customer Categories
             </h1>
             <p className="mt-1 text-sm text-text-secondary">Manage categories and their pricing</p>
           </div>
         </div>
-        <Button
-          variant="primary"
-          size="md"
+        <button
+          type="button"
+          className={TOOLBAR_BTN_PRIMARY}
           disabled={!canCreate}
           onClick={() => { setFormError(null); setEditTarget('new'); }}
         >
-          <Plus className="h-4 w-4" aria-hidden /> New Category
-        </Button>
+          <Plus className="h-3.5 w-3.5" aria-hidden /> New Category
+        </button>
       </header>
 
       {cats.isLoading ? (

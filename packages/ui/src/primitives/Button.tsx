@@ -8,10 +8,16 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        primary: 'bg-green hover:bg-green-hover text-green-fg uppercase tracking-wide rounded-md',
-        gold: 'bg-gold hover:bg-gold-hover text-gold-fg uppercase tracking-wide rounded-md',
+        // Filled and outlined variants neutralise their colour when disabled
+        // instead of only fading it: `opacity-50` over a saturated green or
+        // gold still reads as a live, tappable button (design audit 2026-08-04
+        // — three Backoffice forms whose primary action looked clickable while
+        // it was not). The flat variants below stay on the base opacity, which
+        // is legible enough on an already neutral surface.
+        primary: 'bg-green hover:bg-green-hover text-green-fg uppercase tracking-wide rounded-md disabled:bg-surface-4 disabled:text-text-muted disabled:opacity-100',
+        gold: 'bg-gold hover:bg-gold-hover text-gold-fg uppercase tracking-wide rounded-md disabled:bg-surface-4 disabled:text-text-muted disabled:opacity-100',
         secondary: 'bg-bg-overlay border border-border-subtle text-text-primary hover:bg-bg-input rounded-md',
-        outlineGold: 'bg-transparent border border-gold text-gold hover:bg-gold-soft uppercase tracking-wide rounded-md',
+        outlineGold: 'bg-transparent border border-gold text-gold hover:bg-gold-soft uppercase tracking-wide rounded-md disabled:border-border-subtle disabled:text-text-muted disabled:opacity-100',
         ghost: 'bg-transparent text-text-primary hover:bg-bg-overlay rounded-md',
         ghostDestructive: 'bg-transparent text-red-fg hover:bg-red-soft rounded-md',
         link: 'text-gold underline-offset-4 hover:underline bg-transparent',

@@ -17,6 +17,7 @@ import { useTransferDetail } from '@/features/inventory-transfers/hooks/useTrans
 import { TransferStatusBadge } from '@/features/inventory-transfers/components/TransferStatusBadge.js';
 import { TransferReceiveModal } from '@/features/inventory-transfers/components/TransferReceiveModal.js';
 import { TransferCancelConfirm } from '@/features/inventory-transfers/components/TransferCancelConfirm.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 type ModalKind = 'none' | 'receive' | 'cancel';
 
@@ -71,7 +72,7 @@ export default function TransferDetailPage(): JSX.Element {
           <ChevronLeft className="h-3 w-3" aria-hidden /> Back to transfers
         </Link>
         <div className="flex items-center gap-3 mt-2">
-          <h1 className="font-serif text-3xl font-mono">{transfer.transfer_number}</h1>
+          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary font-mono">{transfer.transfer_number}</h1>
           <TransferStatusBadge status={transfer.status} />
         </div>
       </div>
@@ -110,9 +111,9 @@ export default function TransferDetailPage(): JSX.Element {
       {(canReceiveNow || canCancelNow) && (
         <div className="flex gap-2">
           {canReceiveNow && (
-            <Button type="button" variant="primary" onClick={() => setModal('receive')}>
+            <button type="button" onClick={() => setModal('receive')} className={TOOLBAR_BTN_PRIMARY}>
               Receive transfer
-            </Button>
+            </button>
           )}
           {canCancelNow && (
             <Button type="button" variant="ghostDestructive" onClick={() => setModal('cancel')}>
@@ -123,7 +124,7 @@ export default function TransferDetailPage(): JSX.Element {
       )}
 
       {/* Items table */}
-      <div className="bg-bg-elevated rounded-lg border border-border-subtle overflow-hidden">
+      <div className="bg-bg-elevated rounded-lg border border-border-subtle overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-bg-overlay text-xs uppercase tracking-wide text-text-secondary">
             <tr>

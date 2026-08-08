@@ -21,7 +21,7 @@ export default function ProductionRecordList(): JSX.Element {
 
   return (
     <>
-      <div className="border border-border-subtle rounded-lg overflow-hidden">
+      <div className="border border-border-subtle rounded-lg overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-bg-elevated text-xs uppercase tracking-widest text-text-secondary">
             <tr>

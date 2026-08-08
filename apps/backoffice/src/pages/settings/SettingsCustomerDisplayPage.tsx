@@ -4,10 +4,10 @@
 // get_settings_by_category_v9('customer_display') / set_setting_v12).
 // The POS display reads the same keys; '' = built-in default.
 import { useEffect, useState } from 'react';
-import { Button } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useSettings } from '@/features/settings/hooks/useSettings.js';
 import { useSetSetting } from '@/features/settings/hooks/useSetSetting.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 const FIELDS = [
   { key: 'display_footer_message', label: 'Idle footer message', max: 120,
@@ -53,7 +53,7 @@ export default function SettingsCustomerDisplayPage() {
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
-        <h1 className="font-serif text-3xl">Customer Display</h1>
+        <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Customer Display</h1>
         <p className="text-text-secondary text-sm mt-1">
           Copy shown on every customer-facing display (all terminals). Audited on change.
         </p>
@@ -74,9 +74,9 @@ export default function SettingsCustomerDisplayPage() {
           ))}
           {serverError && <p className="text-red text-sm" role="alert">{serverError}</p>}
           {canUpdate && (
-            <Button type="submit" variant="primary" disabled={dirty.length === 0 || setSetting.isPending}>
+            <button type="submit" disabled={dirty.length === 0 || setSetting.isPending} className={TOOLBAR_BTN_PRIMARY}>
               {setSetting.isPending ? 'Saving…' : dirty.length === 0 ? 'No changes' : `Save ${dirty.length} change${dirty.length === 1 ? '' : 's'}`}
-            </Button>
+            </button>
           )}
         </form>
       )}

@@ -116,7 +116,7 @@ export default function MarginWatchPage(): JSX.Element {
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-serif text-3xl">Margin Watch</h1>
+          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Margin Watch</h1>
           <p className="mt-1 text-sm text-text-secondary">
             Recipe-built products whose expected gross margin has slipped
             below the per-product target. Recomputed daily at 02:00 UTC.

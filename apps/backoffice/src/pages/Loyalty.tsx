@@ -48,8 +48,9 @@ import {
   type TierFilter,
 } from '@/features/loyalty/hooks/useLoyaltyCustomersList.js';
 import { useLoyaltyStats } from '@/features/loyalty/hooks/useLoyaltyStats.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
-const TIER_OPTIONS: ReadonlyArray<{ value: TierFilter; label: string }> = [
+const TIER_OPTIONS: readonly { value: TierFilter; label: string }[] = [
   { value: 'all',      label: 'Tier: All' },
   { value: 'bronze',   label: 'Bronze' },
   { value: 'silver',   label: 'Silver' },
@@ -96,7 +97,7 @@ export default function LoyaltyPage(): JSX.Element {
     return <div className="text-text-secondary">You do not have permission to view loyalty.</div>;
   }
 
-  const columns: ReadonlyArray<DataTableColumn<Row>> = [
+  const columns: readonly DataTableColumn<Row>[] = [
     {
       id:     'customer',
       header: 'Member',
@@ -179,15 +180,15 @@ export default function LoyaltyPage(): JSX.Element {
     <div className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="font-serif text-3xl text-text-primary">Loyalty</h1>
+          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Loyalty</h1>
           <p className="mt-1 text-sm text-text-secondary">
             Retail members, balances and ledger.
           </p>
         </div>
         {canCreate && (
-          <Button variant="primary" size="md" onClick={() => setCreating(true)}>
-            <Plus className="h-4 w-4" aria-hidden /> New member
-          </Button>
+          <button type="button" onClick={() => setCreating(true)} className={TOOLBAR_BTN_PRIMARY}>
+            <Plus className="h-3.5 w-3.5" aria-hidden /> New member
+          </button>
         )}
       </header>
 

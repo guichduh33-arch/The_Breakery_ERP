@@ -166,74 +166,80 @@ export default function BalanceSheetPage() {
             {/* Assets */}
             <section aria-label="Assets">
               <h2 className="text-sm font-medium uppercase tracking-widest text-text-secondary mb-2">Assets</h2>
-              <table className="w-full text-sm">
-                <tbody>
-                  <tr className="border-b border-border-subtle"><td className="py-2 font-medium">Current assets</td><td className="py-2 text-right tabular-nums">{fmt(data.assets.current.total)}</td></tr>
-                  <tr><td className="pl-4 py-1 text-text-secondary text-xs">Cash</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.assets.current.cash)}</td></tr>
-                  <tr><td className="pl-4 py-1 text-text-secondary text-xs">Accounts receivable</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.assets.current.ar)}</td></tr>
-                  <tr><td className="pl-4 py-1 text-text-secondary text-xs">Inventory</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.assets.current.inventory)}</td></tr>
-                  <tr><td className="pl-4 py-1 text-text-secondary text-xs">Other current</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.assets.current.other)}</td></tr>
-                  <tr className="border-b border-border-subtle"><td className="py-2 font-medium">Fixed assets</td><td className="py-2 text-right tabular-nums">{fmt(data.assets.fixed.total)}</td></tr>
-                  <tr className="border-t-2 border-border-subtle bg-gold-soft">
-                    <td className="py-3 font-semibold uppercase tracking-wider">Total assets</td>
-                    <td className="py-3 text-right font-semibold tabular-nums">{fmt(data.assets.total)}</td>
-                  </tr>
-                  {showDelta && (
-                    <tr>
-                      <td className="py-1 text-xs text-text-secondary">vs 1 month earlier</td>
-                      <td className="py-1 text-right"><DeltaPct current={data.assets.total} previous={prevData.assets.total} /></td>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <tbody>
+                    <tr className="border-b border-border-subtle"><td className="py-2 font-medium">Current assets</td><td className="py-2 text-right tabular-nums">{fmt(data.assets.current.total)}</td></tr>
+                    <tr><td className="pl-4 py-1 text-text-secondary text-xs">Cash</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.assets.current.cash)}</td></tr>
+                    <tr><td className="pl-4 py-1 text-text-secondary text-xs">Accounts receivable</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.assets.current.ar)}</td></tr>
+                    <tr><td className="pl-4 py-1 text-text-secondary text-xs">Inventory</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.assets.current.inventory)}</td></tr>
+                    <tr><td className="pl-4 py-1 text-text-secondary text-xs">Other current</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.assets.current.other)}</td></tr>
+                    <tr className="border-b border-border-subtle"><td className="py-2 font-medium">Fixed assets</td><td className="py-2 text-right tabular-nums">{fmt(data.assets.fixed.total)}</td></tr>
+                    <tr className="border-t-2 border-border-subtle bg-gold-soft">
+                      <td className="py-3 font-semibold uppercase tracking-wider">Total assets</td>
+                      <td className="py-3 text-right font-semibold tabular-nums">{fmt(data.assets.total)}</td>
                     </tr>
-                  )}
-                </tbody>
-              </table>
+                    {showDelta && (
+                      <tr>
+                        <td className="py-1 text-xs text-text-secondary">vs 1 month earlier</td>
+                        <td className="py-1 text-right"><DeltaPct current={data.assets.total} previous={prevData.assets.total} /></td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </section>
 
             {/* Liabilities */}
             <section aria-label="Liabilities">
               <h2 className="text-sm font-medium uppercase tracking-widest text-text-secondary mb-2">Liabilities</h2>
-              <table className="w-full text-sm">
-                <tbody>
-                  <tr className="border-b border-border-subtle"><td className="py-2 font-medium">Current liabilities</td><td className="py-2 text-right tabular-nums">{fmt(data.liabilities.current.total)}</td></tr>
-                  <tr><td className="pl-4 py-1 text-text-secondary text-xs">Accounts payable</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.liabilities.current.ap)}</td></tr>
-                  <tr><td className="pl-4 py-1 text-text-secondary text-xs">Tax payable</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.liabilities.current.tax_payable)}</td></tr>
-                  <tr><td className="pl-4 py-1 text-text-secondary text-xs">Loyalty liability</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.liabilities.current.loyalty)}</td></tr>
-                  <tr><td className="pl-4 py-1 text-text-secondary text-xs">Other current</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.liabilities.current.other)}</td></tr>
-                  <tr className="border-b border-border-subtle"><td className="py-2 font-medium">Long-term liabilities</td><td className="py-2 text-right tabular-nums">{fmt(data.liabilities.long_term.total)}</td></tr>
-                  <tr className="border-t-2 border-border-subtle bg-gold-soft">
-                    <td className="py-3 font-semibold uppercase tracking-wider">Total liabilities</td>
-                    <td className="py-3 text-right font-semibold tabular-nums">{fmt(data.liabilities.total)}</td>
-                  </tr>
-                  {showDelta && (
-                    <tr>
-                      <td className="py-1 text-xs text-text-secondary">vs 1 month earlier</td>
-                      <td className="py-1 text-right"><DeltaPct current={data.liabilities.total} previous={prevData.liabilities.total} /></td>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <tbody>
+                    <tr className="border-b border-border-subtle"><td className="py-2 font-medium">Current liabilities</td><td className="py-2 text-right tabular-nums">{fmt(data.liabilities.current.total)}</td></tr>
+                    <tr><td className="pl-4 py-1 text-text-secondary text-xs">Accounts payable</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.liabilities.current.ap)}</td></tr>
+                    <tr><td className="pl-4 py-1 text-text-secondary text-xs">Tax payable</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.liabilities.current.tax_payable)}</td></tr>
+                    <tr><td className="pl-4 py-1 text-text-secondary text-xs">Loyalty liability</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.liabilities.current.loyalty)}</td></tr>
+                    <tr><td className="pl-4 py-1 text-text-secondary text-xs">Other current</td><td className="py-1 text-right text-xs tabular-nums">{fmt(data.liabilities.current.other)}</td></tr>
+                    <tr className="border-b border-border-subtle"><td className="py-2 font-medium">Long-term liabilities</td><td className="py-2 text-right tabular-nums">{fmt(data.liabilities.long_term.total)}</td></tr>
+                    <tr className="border-t-2 border-border-subtle bg-gold-soft">
+                      <td className="py-3 font-semibold uppercase tracking-wider">Total liabilities</td>
+                      <td className="py-3 text-right font-semibold tabular-nums">{fmt(data.liabilities.total)}</td>
                     </tr>
-                  )}
-                </tbody>
-              </table>
+                    {showDelta && (
+                      <tr>
+                        <td className="py-1 text-xs text-text-secondary">vs 1 month earlier</td>
+                        <td className="py-1 text-right"><DeltaPct current={data.liabilities.total} previous={prevData.liabilities.total} /></td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </section>
 
             {/* Equity */}
             <section aria-label="Equity">
               <h2 className="text-sm font-medium uppercase tracking-widest text-text-secondary mb-2">Equity</h2>
-              <table className="w-full text-sm">
-                <tbody>
-                  <tr className="border-b border-border-subtle"><td className="py-2">Share capital</td><td className="py-2 text-right tabular-nums">{fmt(data.equity.share_capital)}</td></tr>
-                  <tr className="border-b border-border-subtle"><td className="py-2">Retained earnings</td><td className="py-2 text-right tabular-nums">{fmt(data.equity.retained_earnings)}</td></tr>
-                  <tr className="border-b border-border-subtle"><td className="py-2">Current year earnings</td><td className="py-2 text-right tabular-nums">{fmt(data.equity.current_year_earnings)}</td></tr>
-                  <tr className="border-b border-border-subtle"><td className="py-2">Other</td><td className="py-2 text-right tabular-nums">{fmt(data.equity.other)}</td></tr>
-                  <tr className="border-t-2 border-border-subtle bg-gold-soft">
-                    <td className="py-3 font-semibold uppercase tracking-wider">Total equity</td>
-                    <td className="py-3 text-right font-semibold tabular-nums">{fmt(data.equity.total)}</td>
-                  </tr>
-                  {showDelta && (
-                    <tr>
-                      <td className="py-1 text-xs text-text-secondary">vs 1 month earlier</td>
-                      <td className="py-1 text-right"><DeltaPct current={data.equity.total} previous={prevData.equity.total} /></td>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <tbody>
+                    <tr className="border-b border-border-subtle"><td className="py-2">Share capital</td><td className="py-2 text-right tabular-nums">{fmt(data.equity.share_capital)}</td></tr>
+                    <tr className="border-b border-border-subtle"><td className="py-2">Retained earnings</td><td className="py-2 text-right tabular-nums">{fmt(data.equity.retained_earnings)}</td></tr>
+                    <tr className="border-b border-border-subtle"><td className="py-2">Current year earnings</td><td className="py-2 text-right tabular-nums">{fmt(data.equity.current_year_earnings)}</td></tr>
+                    <tr className="border-b border-border-subtle"><td className="py-2">Other</td><td className="py-2 text-right tabular-nums">{fmt(data.equity.other)}</td></tr>
+                    <tr className="border-t-2 border-border-subtle bg-gold-soft">
+                      <td className="py-3 font-semibold uppercase tracking-wider">Total equity</td>
+                      <td className="py-3 text-right font-semibold tabular-nums">{fmt(data.equity.total)}</td>
                     </tr>
-                  )}
-                </tbody>
-              </table>
+                    {showDelta && (
+                      <tr>
+                        <td className="py-1 text-xs text-text-secondary">vs 1 month earlier</td>
+                        <td className="py-1 text-right"><DeltaPct current={data.equity.total} previous={prevData.equity.total} /></td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </section>
           </div>
 
@@ -243,36 +249,38 @@ export default function BalanceSheetPage() {
               <h2 className="text-sm font-medium uppercase tracking-widest text-text-secondary mb-2">
                 Per-account detail
               </h2>
-              <table className="w-full text-sm" data-testid="bs-account-detail">
-                <thead className="text-left text-xs text-text-secondary">
-                  <tr className="border-b border-border-subtle">
-                    <th className="py-2">Code</th>
-                    <th className="py-2">Name</th>
-                    <th className="py-2 text-right">Debit</th>
-                    <th className="py-2 text-right">Credit</th>
-                    <th className="py-2 text-right">Balance</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.lines.map((l) => (
-                    <tr key={l.account_id || l.code} className="border-b border-border-subtle">
-                      <td className="py-2">
-                        <DrilldownLink
-                          entity="account"
-                          id={l.account_id}
-                          label={l.code}
-                          filter={{ start: drilldownStart, end: asOf }}
-                          icon={false}
-                        />
-                      </td>
-                      <td className="py-2">{l.name}</td>
-                      <td className="py-2 text-right tabular-nums">{fmt(l.debit)}</td>
-                      <td className="py-2 text-right tabular-nums">{fmt(l.credit)}</td>
-                      <td className="py-2 text-right tabular-nums">{fmt(l.balance)}</td>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm" data-testid="bs-account-detail">
+                  <thead className="text-left text-xs text-text-secondary">
+                    <tr className="border-b border-border-subtle">
+                      <th className="py-2">Code</th>
+                      <th className="py-2">Name</th>
+                      <th className="py-2 text-right">Debit</th>
+                      <th className="py-2 text-right">Credit</th>
+                      <th className="py-2 text-right">Balance</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {data.lines.map((l) => (
+                      <tr key={l.account_id || l.code} className="border-b border-border-subtle">
+                        <td className="py-2">
+                          <DrilldownLink
+                            entity="account"
+                            id={l.account_id}
+                            label={l.code}
+                            filter={{ start: drilldownStart, end: asOf }}
+                            icon={false}
+                          />
+                        </td>
+                        <td className="py-2">{l.name}</td>
+                        <td className="py-2 text-right tabular-nums">{fmt(l.debit)}</td>
+                        <td className="py-2 text-right tabular-nums">{fmt(l.credit)}</td>
+                        <td className="py-2 text-right tabular-nums">{fmt(l.balance)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </section>
           )}
         </div>

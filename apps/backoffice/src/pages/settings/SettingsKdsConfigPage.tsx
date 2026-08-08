@@ -13,10 +13,10 @@
 // when it's increasing, warning first otherwise. Archive is independent and
 // always saved last.
 import { useEffect, useState } from 'react';
-import { Button } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useSettings } from '@/features/settings/hooks/useSettings.js';
 import { useSetSetting } from '@/features/settings/hooks/useSetSetting.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 const WARNING_KEY = 'kds_warning_threshold_minutes';
 const URGENT_KEY = 'kds_urgent_threshold_minutes';
@@ -104,7 +104,7 @@ export default function SettingsKdsConfigPage() {
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
-        <h1 className="font-serif text-3xl">KDS Configuration</h1>
+        <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">KDS Configuration</h1>
         <p className="text-text-secondary text-sm mt-1">
           Ticket-age warning/urgent color bands + ready auto-archive delay, shared by every kitchen display terminal. Audited on change.
         </p>
@@ -132,13 +132,13 @@ export default function SettingsKdsConfigPage() {
           {clientError && <p className="text-red text-sm" role="alert">{clientError}</p>}
           {serverError && <p className="text-red text-sm" role="alert">{serverError}</p>}
           {canUpdate && (
-            <Button
+            <button
+              className={TOOLBAR_BTN_PRIMARY}
               type="submit"
-              variant="primary"
               disabled={dirty.length === 0 || Boolean(clientError) || setSetting.isPending}
             >
               {setSetting.isPending ? 'Saving…' : dirty.length === 0 ? 'No changes' : `Save ${dirty.length} change${dirty.length === 1 ? '' : 's'}`}
-            </Button>
+            </button>
           )}
         </form>
       )}

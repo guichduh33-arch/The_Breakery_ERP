@@ -31,6 +31,7 @@ import {
   type PurchaseByDayRow,
 } from '@/features/reports/hooks/usePurchaseByDate.js';
 import { useUrlState } from '@/hooks/useUrlState.js';
+import { usePrefersReducedMotion } from '@/features/dashboard/utils/usePrefersReducedMotion.js';
 
 const csvColumns: CsvColumn<PurchaseByDayRow>[] = [
   { header: 'Date',           accessor: (r) => r.date,           format: 'text' },
@@ -49,6 +50,7 @@ function defaultStart(): string {
 }
 
 export default function PurchaseByDatePage() {
+  const reduced = usePrefersReducedMotion();
   const [start, setStart] = useUrlState('start', defaultStart());
   const [end,   setEnd]   = useUrlState('end', toLocalDateStr(new Date()));
 
@@ -133,6 +135,7 @@ export default function PurchaseByDatePage() {
                   />
                   <Legend />
                   <Area
+                    isAnimationActive={!reduced}
                     type="monotone"
                     dataKey="received_total"
                     name="Received"
@@ -142,6 +145,7 @@ export default function PurchaseByDatePage() {
                     fillOpacity={0.85}
                   />
                   <Area
+                    isAnimationActive={!reduced}
                     type="monotone"
                     dataKey="pending_total"
                     name="Pending"
@@ -156,28 +160,30 @@ export default function PurchaseByDatePage() {
           </ChartCard>
 
           {/* By-day table */}
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border-subtle text-text-secondary">
-                <th className="py-2 text-left">Date</th>
-                <th className="py-2 text-right">POs</th>
-                <th className="py-2 text-right">Total</th>
-                <th className="py-2 text-right">Received total</th>
-                <th className="py-2 text-right">Pending total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.date} className="border-b border-border-subtle">
-                  <td className="py-2 text-text-secondary">{r.date}</td>
-                  <td className="py-2 text-right tabular-nums">{r.po_count}</td>
-                  <td className="py-2 text-right tabular-nums">{IDR(r.total)}</td>
-                  <td className="py-2 text-right tabular-nums">{IDR(r.received_total)}</td>
-                  <td className="py-2 text-right tabular-nums">{IDR(r.pending_total)}</td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border-subtle text-text-secondary">
+                  <th className="py-2 text-left">Date</th>
+                  <th className="py-2 text-right">POs</th>
+                  <th className="py-2 text-right">Total</th>
+                  <th className="py-2 text-right">Received total</th>
+                  <th className="py-2 text-right">Pending total</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {rows.map((r) => (
+                  <tr key={r.date} className="border-b border-border-subtle">
+                    <td className="py-2 text-text-secondary">{r.date}</td>
+                    <td className="py-2 text-right tabular-nums">{r.po_count}</td>
+                    <td className="py-2 text-right tabular-nums">{IDR(r.total)}</td>
+                    <td className="py-2 text-right tabular-nums">{IDR(r.received_total)}</td>
+                    <td className="py-2 text-right tabular-nums">{IDR(r.pending_total)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </ReportPage>

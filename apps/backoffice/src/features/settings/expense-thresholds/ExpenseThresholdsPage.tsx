@@ -58,7 +58,7 @@ export default function ExpenseThresholdsPage(): JSX.Element {
       {/* Header */}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl text-text-primary">Expense Thresholds</h1>
+          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Expense Thresholds</h1>
           <p className="text-sm text-text-secondary italic">
             Configure approval chains by amount bracket and category. Changes apply to new expenses
             only — in-flight expenses keep their original approval chain.
@@ -84,14 +84,14 @@ export default function ExpenseThresholdsPage(): JSX.Element {
       {/* Error */}
       {thresholds.isError && (
         <p className="text-sm text-red" data-testid="threshold-list-error">
-          {(thresholds.error as Error).message}
+          {(thresholds.error).message}
         </p>
       )}
 
       {/* Delete error */}
       {deleteMut.isError && (
         <p className="text-sm text-red" data-testid="delete-threshold-error">
-          {(deleteMut.error as Error).message}
+          {(deleteMut.error).message}
         </p>
       )}
 
@@ -104,7 +104,7 @@ export default function ExpenseThresholdsPage(): JSX.Element {
 
       {/* Table */}
       {rows.length > 0 && (
-        <div className="rounded-lg border border-border-subtle bg-bg-elevated overflow-hidden">
+        <div className="rounded-lg border border-border-subtle bg-bg-elevated overflow-x-auto">
           <table className="w-full text-sm" data-testid="threshold-table">
             <thead>
               <tr className="text-left text-xs uppercase tracking-widest text-text-secondary">

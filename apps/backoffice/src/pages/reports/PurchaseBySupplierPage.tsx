@@ -87,36 +87,38 @@ export default function PurchaseBySupplierPage() {
             />
           </ChartCard>
 
-          <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border-subtle text-text-secondary">
-              <th className="py-2 text-left">Supplier</th>
-              <th className="py-2 text-right">POs</th>
-              <th className="py-2 text-right">Total</th>
-              <th className="py-2 text-right">Received</th>
-              <th className="py-2 text-right">Cancelled</th>
-              <th className="py-2 text-right">Avg lead days</th>
-              <th className="py-2 text-right">Share</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.supplier_id} className="border-b border-border-subtle">
-                <td className="py-2 font-medium">{r.supplier_name}</td>
-                <td className="py-2 text-right tabular-nums">{r.po_count}</td>
-                <td className="py-2 text-right tabular-nums">{IDR(r.total)}</td>
-                <td className="py-2 text-right tabular-nums">{r.received_count}</td>
-                <td className="py-2 text-right tabular-nums">{r.cancelled_count}</td>
-                <td className="py-2 text-right tabular-nums text-text-secondary">
-                  {r.avg_lead_days ?? '—'}
-                </td>
-                <td className="py-2 text-right tabular-nums">
-                  {r.share_pct.toFixed(2)}%
-                </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border-subtle text-text-secondary">
+                <th className="py-2 text-left">Supplier</th>
+                <th className="py-2 text-right">POs</th>
+                <th className="py-2 text-right">Total</th>
+                <th className="py-2 text-right">Received</th>
+                <th className="py-2 text-right">Cancelled</th>
+                <th className="py-2 text-right">Avg lead days</th>
+                <th className="py-2 text-right">Share</th>
               </tr>
-            ))}
-          </tbody>
-          </table>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.supplier_id} className="border-b border-border-subtle">
+                  <td className="py-2 font-medium">{r.supplier_name}</td>
+                  <td className="py-2 text-right tabular-nums">{r.po_count}</td>
+                  <td className="py-2 text-right tabular-nums">{IDR(r.total)}</td>
+                  <td className="py-2 text-right tabular-nums">{r.received_count}</td>
+                  <td className="py-2 text-right tabular-nums">{r.cancelled_count}</td>
+                  <td className="py-2 text-right tabular-nums text-text-secondary">
+                    {r.avg_lead_days ?? '—'}
+                  </td>
+                  <td className="py-2 text-right tabular-nums">
+                    {r.share_pct.toFixed(2)}%
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            </table>
+          </div>
         </div>
       )}
     </ReportPage>

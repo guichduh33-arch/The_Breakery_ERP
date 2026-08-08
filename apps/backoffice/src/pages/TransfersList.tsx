@@ -11,6 +11,7 @@ import { Plus, ArrowLeftRight, FileEdit, CheckCircle2, Truck } from 'lucide-reac
 import { Link } from 'react-router-dom';
 import { Button, KpiTile, SectionLabel } from '@breakery/ui';
 import type { TransferStatus } from '@breakery/domain';
+import { formatDateTimeShortWita } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import {
   useInternalTransfers,
@@ -73,7 +74,7 @@ export default function TransfersListPage(): JSX.Element {
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="font-serif text-3xl">Transfers</h1>
+          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Transfers</h1>
           <p className="text-text-secondary text-sm mt-1">
             Move stock between sections. Items leave the source and land at the destination on receive.
           </p>
@@ -161,7 +162,7 @@ export default function TransfersListPage(): JSX.Element {
         </div>
       )}
       {list.data !== undefined && list.data.length > 0 && (
-        <div className="bg-bg-elevated rounded-lg border border-border-subtle overflow-hidden">
+        <div className="bg-bg-elevated rounded-lg border border-border-subtle overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-bg-overlay text-xs uppercase tracking-wide text-text-secondary">
               <tr>
@@ -185,7 +186,7 @@ export default function TransfersListPage(): JSX.Element {
                     <TransferStatusBadge status={row.status} />
                   </td>
                   <td className="px-3 py-2 text-text-secondary text-xs font-mono">
-                    {new Date(row.created_at).toLocaleString()}
+                    {formatDateTimeShortWita(row.created_at)}
                   </td>
                   <td className="px-3 py-2 text-right">
                     <Link

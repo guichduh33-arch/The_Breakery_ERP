@@ -83,6 +83,22 @@
   /* Text extended — remonté de #5a5a62 (3,1:1, sous AA) à 4,6:1 sur
    * --bg-base (audit cohérence 2026-08-01). */
   --text-subtle:  #7d7364;
+  /* Inerte — le cran SOUS le désactivé : séparateur de fil d'Ariane, chevron
+   * éteint, icône qui n'appelle aucune action. Ce n'est ni un texte à lire ni un
+   * contrôle hors service, c'est de la ponctuation structurelle. */
+  --text-inert:   #4a443c;
+
+  /* Rampe de data-viz — monochrome, quatre pas, du plus lisible au plus effacé.
+   * Les douze teintes --cat-* restent l'IDENTITÉ d'une catégorie de produit et
+   * ne servent jamais de série de graphique : la même couleur dirait
+   * « Viennoiserie » sur un écran et « troisième trimestre » sur l'autre.
+   * En sombre la lisibilité monte avec la clarté, la rampe s'y inverse donc par
+   * rapport au thème clair. Aucune surface POS ne la consomme aujourd'hui —
+   * elle est définie ici pour que l'utilitaire résolve dans les deux thèmes. */
+  --chart-1: #8cc3e0;
+  --chart-2: #6fa8d8;
+  --chart-3: #558db8;
+  --chart-4: #3f7096;
 
   /* Border extended. */
   --border-muted: #1f1c18;
@@ -205,11 +221,34 @@
   --border-gold:   rgba(138, 104, 32, 0.35);
 
   /* Text. */
-  --text-primary:   #1a1917;   /* ~15:1 sur --surface-2 */
-  --text-secondary: #55524c;   /* ~7,8:1 */
-  --text-muted:     #7a766e;   /* ~4,9:1 */
-  --text-subtle:    #9b968d;   /* ~3,3:1 — non-texte / footnotes */
+  /* Les ratios sont mesurés sur le fond le PLUS CLAIR que le token peut avoir
+   * sous lui et sur le plus SOMBRE : le texte discret vit aussi bien sur la
+   * feuille blanche que sur le papier de page (#f0efec), l'en-tête de tableau
+   * (#fafaf8) et l'état pressé (#e9e7e2). Un ratio annoncé contre le seul blanc
+   * surestime de ~0,6 point — c'est ce qui avait laissé passer un --text-muted
+   * sous AA sur trois des quatre fonds (audit /impeccable 2026-08-08). */
+  --text-primary:   #1a1917;   /* 17,6:1 blanc — 14,2:1 pressé */
+  --text-secondary: #55524c;   /* 7,8:1 blanc — 6,3:1 pressé */
+  /* Remonté de #7a766e (3,93:1 sur le papier de page, 4,33:1 sur l'en-tête de
+   * tableau : sous AA) à ≥4,5:1 sur les QUATRE fonds. */
+  --text-muted:     #6b6861;   /* 5,5:1 blanc — 4,83:1 papier — 4,50:1 pressé */
+  /* NON-TEXTE UNIQUEMENT — icône, tiret de cellule vide, glyphe de contrôle.
+   * Remonté de #9b968d (2,94:1) au seuil WCAG 1.4.11 des objets graphiques.
+   * Il ne portera plus de libellé, de placeholder ni de valeur : ces rôles-là
+   * sont passés à --text-muted, faute de quoi le cran devrait valoir 4,5:1 et
+   * deviendrait indiscernable de lui. */
+  --text-subtle:    #88847c;   /* 3,72:1 blanc — 3,24:1 papier — 3,01:1 pressé */
   --text-disabled:  #b3afa7;
+  /* Inerte — le cran SOUS le désactivé. En clair il est donc le plus PÂLE des
+   * cinq : séparateur de fil d'Ariane, chevron éteint, icône sans action. */
+  --text-inert:     #c2beb5;
+
+  /* Rampe de data-viz — même contrat que le thème sombre, valeurs de la planche
+   * de référence : du plus soutenu au plus clair. */
+  --chart-1: #2b6c9c;
+  --chart-2: #4f93bf;
+  --chart-3: #8cc3e0;
+  --chart-4: #c9dcea;
 
   /* Encre — la top bar et les boutons primaires. Famille dédiée : ces valeurs
    * sont des fonds SOMBRES dans un thème clair, elles n'appartiennent donc à

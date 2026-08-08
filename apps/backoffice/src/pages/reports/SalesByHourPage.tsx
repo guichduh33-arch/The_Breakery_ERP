@@ -35,6 +35,7 @@ import {
 } from '@/features/reports/utils/chartColors.js';
 
 import type { SalesHourRow } from '@/features/reports/hooks/useSalesByHour.js';
+import { usePrefersReducedMotion } from '@/features/dashboard/utils/usePrefersReducedMotion.js';
 
 const csvColumns: CsvColumn<SalesHourRow>[] = [
   { header: 'Hour',        accessor: (r) => r.hour,        format: 'number' },
@@ -50,6 +51,7 @@ function sumRows(rows: SalesHourRow[]): { total: number; orders: number } {
 }
 
 export default function SalesByHourPage() {
+  const reduced = usePrefersReducedMotion();
   const [date, setDate] = useUrlState('date', toLocalDateStr(new Date()));
   const [compare, setCompare] = useUrlBoolean('compare');
 
@@ -160,7 +162,7 @@ export default function SalesByHourPage() {
                   labelFormatter={(label) => `Hour ${String(label).padStart(2, '0')}:00`}
                   contentStyle={CHART_TOOLTIP_STYLE}
                 />
-                <Bar dataKey="total" fill="var(--gold-base)" name="total" />
+                <Bar isAnimationActive={!reduced} dataKey="total" fill="var(--gold-base)" name="total" />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -170,34 +172,36 @@ export default function SalesByHourPage() {
             <h2 className="text-sm font-medium uppercase tracking-widest text-text-secondary mb-2">
               Per-hour detail
             </h2>
-            <table className="w-full text-sm" data-testid="sbh-hour-detail">
-              <thead className="text-left text-xs text-text-secondary">
-                <tr className="border-b border-border-subtle">
-                  <th className="py-2">Hour</th>
-                  <th className="py-2 text-right">Revenue</th>
-                  <th className="py-2 text-right">Orders</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.filter((r) => r.order_count > 0).map((r) => (
-                  <tr key={r.hour} className="border-b border-border-subtle">
-                    <td className="py-2 font-medium tabular-nums">
-                      <DrilldownLink
-                        entity="order_list"
-                        id=""
-                        label={`${String(r.hour).padStart(2, '0')}:00`}
-                        filter={{ hour: r.hour, start: date, end: date }}
-                        icon={false}
-                      />
-                    </td>
-                    <td className="py-2 text-right tabular-nums">
-                      {formatIdrFull(r.total)}
-                    </td>
-                    <td className="py-2 text-right tabular-nums">{r.order_count}</td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm" data-testid="sbh-hour-detail">
+                <thead className="text-left text-xs text-text-secondary">
+                  <tr className="border-b border-border-subtle">
+                    <th className="py-2">Hour</th>
+                    <th className="py-2 text-right">Revenue</th>
+                    <th className="py-2 text-right">Orders</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {data.filter((r) => r.order_count > 0).map((r) => (
+                    <tr key={r.hour} className="border-b border-border-subtle">
+                      <td className="py-2 font-medium tabular-nums">
+                        <DrilldownLink
+                          entity="order_list"
+                          id=""
+                          label={`${String(r.hour).padStart(2, '0')}:00`}
+                          filter={{ hour: r.hour, start: date, end: date }}
+                          icon={false}
+                        />
+                      </td>
+                      <td className="py-2 text-right tabular-nums">
+                        {formatIdrFull(r.total)}
+                      </td>
+                      <td className="py-2 text-right tabular-nums">{r.order_count}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </section>
         </>
       )}

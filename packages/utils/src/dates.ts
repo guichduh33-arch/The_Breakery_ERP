@@ -17,6 +17,16 @@ export function formatDateTimeWita(d: Date | string): string {
   return formatInTimeZone(date, TIMEZONE, 'yyyy-MM-dd HH:mm:ss');
 }
 
+// Le format de lecture des tables du Backoffice : « 04 Aug 2026, 14:30 ».
+// Le mois en lettres retire l'ambiguïté jour/mois d'un `toLocaleString()`
+// laissé au navigateur (qui rendait 8/3/2026 pour le 3 août), et les secondes
+// sautent — une liste se lit, elle ne s'horodate pas. Pour un horodatage
+// exact (audit, export), c'est formatDateTimeWita qu'il faut.
+export function formatDateTimeShortWita(d: Date | string): string {
+  const date = typeof d === 'string' ? new Date(d) : d;
+  return formatInTimeZone(date, TIMEZONE, 'dd MMM yyyy, HH:mm');
+}
+
 export function formatTimeWita(d: Date | string): string {
   const date = typeof d === 'string' ? new Date(d) : d;
   return formatInTimeZone(date, TIMEZONE, 'HH:mm');

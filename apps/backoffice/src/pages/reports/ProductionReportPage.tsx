@@ -92,30 +92,32 @@ const fmtIdr = formatIdrFull;
             <h2 className="mb-2 text-sm font-medium uppercase tracking-widest text-text-secondary">
               By Product
             </h2>
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border-subtle text-text-secondary">
-                  <th className="py-2 text-left">Product</th>
-                  <th className="py-2 text-right">Runs</th>
-                  <th className="py-2 text-right">Qty Produced</th>
-                  <th className="py-2 text-right">Qty Waste</th>
-                  <th className="py-2 text-right">Value (IDR)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {byProduct.map((r) => (
-                  <tr key={r.product_id} className="border-b border-border-subtle">
-                    <td className="py-2 font-medium">
-                      <DrilldownLink entity="product" id={r.product_id} label={r.product_name} icon={false} />
-                    </td>
-                    <td className="py-2 text-right tabular-nums">{r.runs}</td>
-                    <td className="py-2 text-right tabular-nums">{r.qty_produced}</td>
-                    <td className="py-2 text-right tabular-nums">{r.qty_waste}</td>
-                    <td className="py-2 text-right tabular-nums">{fmtIdr(r.value)}</td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border-subtle text-text-secondary">
+                    <th className="py-2 text-left">Product</th>
+                    <th className="py-2 text-right">Runs</th>
+                    <th className="py-2 text-right">Qty Produced</th>
+                    <th className="py-2 text-right">Qty Waste</th>
+                    <th className="py-2 text-right">Value (IDR)</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {byProduct.map((r) => (
+                    <tr key={r.product_id} className="border-b border-border-subtle">
+                      <td className="py-2 font-medium">
+                        <DrilldownLink entity="product" id={r.product_id} label={r.product_name} icon={false} />
+                      </td>
+                      <td className="py-2 text-right tabular-nums">{r.runs}</td>
+                      <td className="py-2 text-right tabular-nums">{r.qty_produced}</td>
+                      <td className="py-2 text-right tabular-nums">{r.qty_waste}</td>
+                      <td className="py-2 text-right tabular-nums">{fmtIdr(r.value)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           {/* By-day table */}
@@ -123,26 +125,28 @@ const fmtIdr = formatIdrFull;
             <h2 className="mb-2 text-sm font-medium uppercase tracking-widest text-text-secondary">
               By Day
             </h2>
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border-subtle text-text-secondary">
-                  <th className="py-2 text-left">Date</th>
-                  <th className="py-2 text-right">Qty Produced</th>
-                  <th className="py-2 text-right">Qty Waste</th>
-                  <th className="py-2 text-right">Value (IDR)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {byDay.map((d) => (
-                  <tr key={d.date} className="border-b border-border-subtle">
-                    <td className="py-2 text-text-secondary">{d.date.slice(0, 10)}</td>
-                    <td className="py-2 text-right tabular-nums">{d.qty_produced}</td>
-                    <td className="py-2 text-right tabular-nums">{d.qty_waste}</td>
-                    <td className="py-2 text-right tabular-nums">{fmtIdr(d.value)}</td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border-subtle text-text-secondary">
+                    <th className="py-2 text-left">Date</th>
+                    <th className="py-2 text-right">Qty Produced</th>
+                    <th className="py-2 text-right">Qty Waste</th>
+                    <th className="py-2 text-right">Value (IDR)</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {byDay.map((d) => (
+                    <tr key={d.date} className="border-b border-border-subtle">
+                      <td className="py-2 text-text-secondary">{d.date.slice(0, 10)}</td>
+                      <td className="py-2 text-right tabular-nums">{d.qty_produced}</td>
+                      <td className="py-2 text-right tabular-nums">{d.qty_waste}</td>
+                      <td className="py-2 text-right tabular-nums">{fmtIdr(d.value)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}

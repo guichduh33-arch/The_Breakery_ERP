@@ -10,6 +10,7 @@
 
 import { type JSX } from 'react';
 import { DataTable, type DataTableColumn } from '@breakery/ui';
+import { formatDateTimeShortWita } from '@breakery/utils';
 import {
   useDisplayStock,
   type DisplayStockRow,
@@ -19,7 +20,7 @@ import {
   type DisplayMovementRow,
 } from '@/features/inventory/hooks/useDisplayMovements.js';
 
-const STOCK_COLUMNS: ReadonlyArray<DataTableColumn<DisplayStockRow>> = [
+const STOCK_COLUMNS: readonly DataTableColumn<DisplayStockRow>[] = [
   {
     id: 'product',
     header: 'Product',
@@ -47,20 +48,20 @@ const STOCK_COLUMNS: ReadonlyArray<DataTableColumn<DisplayStockRow>> = [
     width: '200px',
     render: (r) => (
       <span className="font-mono text-xs text-text-secondary whitespace-nowrap">
-        {new Date(r.updated_at).toLocaleString()}
+        {formatDateTimeShortWita(r.updated_at)}
       </span>
     ),
   },
 ];
 
-const MOVEMENT_COLUMNS: ReadonlyArray<DataTableColumn<DisplayMovementRow>> = [
+const MOVEMENT_COLUMNS: readonly DataTableColumn<DisplayMovementRow>[] = [
   {
     id: 'when',
     header: 'When',
     width: '180px',
     render: (r) => (
       <span className="font-mono text-xs text-text-secondary whitespace-nowrap">
-        {new Date(r.created_at).toLocaleString()}
+        {formatDateTimeShortWita(r.created_at)}
       </span>
     ),
   },
@@ -109,7 +110,7 @@ export default function DisplayStockPage(): JSX.Element {
   return (
     <div className="space-y-8">
       <header>
-        <h1 className="font-display text-3xl text-text-primary">Display Stock (Vitrine)</h1>
+        <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Display Stock (Vitrine)</h1>
         <p className="mt-1 text-sm text-text-secondary">
           Read-only view of the POS display-case counter. These quantities live on a
           separate ledger (display_stock) ; selling a display item draws from the

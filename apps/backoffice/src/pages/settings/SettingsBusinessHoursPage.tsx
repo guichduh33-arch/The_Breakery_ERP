@@ -7,11 +7,12 @@
 // écrit les 7 jours explicitement.
 
 import { useEffect, useState } from 'react';
-import { Button, Card, CardContent, CardHeader, CardTitle } from '@breakery/ui';
+import { Card, CardContent, CardHeader, CardTitle } from '@breakery/ui';
 import { PageHeader } from '@/components/PageHeader.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useSettings } from '@/features/settings/hooks/useSettings.js';
 import { useSetSetting } from '@/features/settings/hooks/useSetSetting.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 const DAYS = [
   { key: 'mon', label: 'Monday' },
@@ -183,14 +184,15 @@ export default function SettingsBusinessHoursPage() {
           )}
 
           <div className="mt-6 flex items-center gap-3">
-            <Button
-              variant="gold"
+            <button
+              type="button"
+              className={TOOLBAR_BTN_PRIMARY}
               onClick={handleSave}
               disabled={!canUpdate || !dirty || setSetting.isPending}
               data-testid="bh-save"
             >
               {setSetting.isPending ? 'Saving…' : dirty ? 'Save business hours' : 'No changes'}
-            </Button>
+            </button>
             {invalid && <span className="text-sm text-danger">Fix the invalid time windows first.</span>}
             {error !== null && <span className="text-sm text-danger" role="alert">{error}</span>}
             {savedAt !== null && <span className="text-sm text-text-secondary">Saved at {savedAt}.</span>}

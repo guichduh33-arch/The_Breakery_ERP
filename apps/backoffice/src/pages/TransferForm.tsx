@@ -107,7 +107,7 @@ export default function TransferFormPage(): JSX.Element {
         ...(header.notes.trim() !== '' ? { notes: header.notes.trim() } : {}),
         sendDirectly: header.sendDirectly,
       });
-      navigate(`/backoffice/inventory/transfers/${result.transfer_id}`);
+      void navigate(`/backoffice/inventory/transfers/${result.transfer_id}`);
     } catch (err) {
       if (err instanceof CreateTransferError) {
         switch (err.code) {
@@ -150,7 +150,7 @@ export default function TransferFormPage(): JSX.Element {
         >
           <ChevronLeft className="h-3 w-3" aria-hidden /> Back to transfers
         </Link>
-        <h1 className="font-serif text-3xl mt-2">New Transfer</h1>
+        <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary mt-2">New Transfer</h1>
         <p className="text-text-secondary text-sm mt-1">
           Move stock between two sections. Items below zero on the source after this transfer are rejected by the server.
         </p>
@@ -184,7 +184,7 @@ export default function TransferFormPage(): JSX.Element {
           <Button
             type="button"
             variant="ghost"
-            onClick={() => navigate('/backoffice/inventory/transfers')}
+            onClick={() => { void navigate('/backoffice/inventory/transfers'); }}
             disabled={createMut.isPending}
           >
             Cancel

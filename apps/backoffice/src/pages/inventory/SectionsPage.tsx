@@ -28,7 +28,7 @@ interface SectionKpi {
   sales:      number;
 }
 
-function aggregate(rows: ReadonlyArray<SectionRow>): SectionKpi {
+function aggregate(rows: readonly SectionRow[]): SectionKpi {
   const acc: SectionKpi = { total: rows.length, active: 0, warehouse: 0, production: 0, sales: 0 };
   for (const r of rows) {
     if (r.is_active) acc.active += 1;
@@ -57,7 +57,7 @@ export default function SectionsPage(): JSX.Element {
     softDelete.mutate({ id });
   }
 
-  const columns: ReadonlyArray<DataTableColumn<SectionRow>> = useMemo(() => {
+  const columns: readonly DataTableColumn<SectionRow>[] = useMemo(() => {
     const base: DataTableColumn<SectionRow>[] = [
       {
         id: 'code',
@@ -125,7 +125,7 @@ export default function SectionsPage(): JSX.Element {
     <div className="space-y-6">
       <header className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl text-text-primary">Sections</h1>
+          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Sections</h1>
           <p className="mt-1 text-sm text-text-secondary">
             Physical zones (warehouse, production kitchen, sales front) referenced
             by every section-aware stock movement.

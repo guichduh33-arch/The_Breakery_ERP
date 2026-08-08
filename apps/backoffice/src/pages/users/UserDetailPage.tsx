@@ -82,7 +82,7 @@ export default function UserDetailPage() {
 
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-serif text-text-primary">{u.full_name}</h1>
+          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">{u.full_name}</h1>
           <p className="text-sm text-text-secondary">
             <span className="font-mono mr-3">{u.employee_code}</span>
             <span className="uppercase tracking-wider text-xs">{u.role_code}</span>
@@ -215,7 +215,7 @@ export default function UserDetailPage() {
           fullName={u.full_name}
           onClose={() => {
             setShowDelete(false);
-            navigate('/backoffice/users');
+            void navigate('/backoffice/users');
           }}
         />
       )}

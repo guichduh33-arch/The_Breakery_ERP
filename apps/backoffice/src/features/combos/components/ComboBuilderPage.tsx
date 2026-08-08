@@ -21,6 +21,7 @@ import { GeneralInfoSection, type GeneralInfoDraft } from './GeneralInfoSection.
 import { ChoiceGroupCard, type GroupDraft } from './ChoiceGroupCard.js';
 import { PricePreview } from './PricePreview.js';
 import type { ComboDefinition } from '@breakery/domain';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 interface Props {
   mode: 'create' | 'edit';
@@ -167,7 +168,7 @@ export default function ComboBuilderPage({ mode }: Props): JSX.Element {
         })),
       });
       toast.success(mode === 'create' ? 'Combo created!' : 'Combo updated!');
-      navigate('/backoffice/products/combos');
+      void navigate('/backoffice/products/combos');
     } catch (e) {
       toast.error((e as Error).message);
     }
@@ -182,7 +183,7 @@ export default function ComboBuilderPage({ mode }: Props): JSX.Element {
     try {
       await deleteCombo.mutateAsync(comboId);
       toast.success('Combo deleted.');
-      navigate('/backoffice/products/combos');
+      void navigate('/backoffice/products/combos');
     } catch (e) {
       toast.error((e as Error).message);
     }
@@ -221,7 +222,7 @@ export default function ComboBuilderPage({ mode }: Props): JSX.Element {
       <div className="flex items-center gap-3">
         <button
           type="button"
-          onClick={() => { navigate('/backoffice/products/combos'); }}
+          onClick={() => { void navigate('/backoffice/products/combos'); }}
           className="text-text-muted hover:text-text-primary transition-colors"
           aria-label="Back to Combo Management"
         >
@@ -231,7 +232,7 @@ export default function ComboBuilderPage({ mode }: Props): JSX.Element {
           <Box className="h-5 w-5" aria-hidden />
         </div>
         <div>
-          <h1 className="font-display text-2xl text-text-primary">
+          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">
             {mode === 'create' ? 'New Combo' : 'Edit Combo'}
           </h1>
           <p className="text-xs italic text-text-secondary">
@@ -321,20 +322,21 @@ export default function ComboBuilderPage({ mode }: Props): JSX.Element {
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"
-            onClick={() => { navigate('/backoffice/products/combos'); }}
+            onClick={() => { void navigate('/backoffice/products/combos'); }}
             disabled={isSaving}
             data-testid="cancel-combo"
           >
             Cancel
           </Button>
-          <Button
-            variant="primary"
+          <button
+            type="button"
+            className={TOOLBAR_BTN_PRIMARY}
             onClick={() => { void handleSave(); }}
             disabled={isSaving || isLoading}
             data-testid="save-combo"
           >
             {isSaving ? 'Saving…' : mode === 'create' ? 'Create Combo' : 'Update Combo'}
-          </Button>
+          </button>
         </div>
       </div>
     </div>

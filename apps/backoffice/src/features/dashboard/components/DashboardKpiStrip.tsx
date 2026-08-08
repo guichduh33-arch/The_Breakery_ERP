@@ -27,7 +27,7 @@ import type { DashboardKpis } from '../hooks/useDashboardOverview.js';
 const CARD = 'flex flex-col gap-[5px] px-[15px] py-[13px] shadow-none';
 const LABEL = 'font-data text-[10px] font-semibold text-text-muted';
 const VALUE = 'font-data text-[23px] font-semibold leading-tight tracking-[-0.02em] tabular-nums text-text-primary';
-const NOTE = 'font-data text-[10px] leading-tight text-text-subtle';
+const NOTE = 'font-data text-[10px] leading-tight text-text-muted';
 
 // Tuile HÉRO — direction « Instrument » (maquette 3a). La première tuile est
 // remplie d'encre et sa valeur monte de 23 à 26 px. Ce n'est pas un ornement :

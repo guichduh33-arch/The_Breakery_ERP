@@ -48,7 +48,7 @@ function PanelColumn({ column, onNavigate }: { column: NavColumn; onNavigate: ()
 
   return (
     <div className="min-w-0">
-      <p className="mb-2.5 font-data text-[10px] uppercase tracking-widest text-text-subtle">
+      <p className="mb-2.5 font-data text-[10px] uppercase tracking-widest text-text-muted">
         {column.label}
       </p>
       <ul className="flex flex-col gap-[7px]">

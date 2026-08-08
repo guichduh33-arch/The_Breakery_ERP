@@ -128,39 +128,41 @@ export default function GrossMarginPage() {
             <SummaryTile label="Margin %" value={fmtPct(data.summary.margin_pct)} />
           </div>
 
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-text-secondary border-b border-border-subtle">
-                <th className="py-2 text-left">Product</th>
-                <th className="py-2 text-left">Category</th>
-                <th className="py-2 text-right">Qty</th>
-                <th className="py-2 text-right">Revenue</th>
-                <th className="py-2 text-right">COGS</th>
-                <th className="py-2 text-right">Margin</th>
-                <th className="py-2 text-right">Margin %</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.product_id} className="border-b border-border-subtle">
-                  <td className="py-2">
-                    <DrilldownLink
-                      entity="product"
-                      id={r.product_id}
-                      label={r.name}
-                      icon={false}
-                    />
-                  </td>
-                  <td className="py-2 text-text-secondary">{r.category_name ?? '—'}</td>
-                  <td className="py-2 text-right tabular-nums">{r.qty.toLocaleString('id-ID')}</td>
-                  <td className="py-2 text-right tabular-nums">{fmtIdr(r.revenue)}</td>
-                  <td className="py-2 text-right tabular-nums">{fmtIdr(r.cogs)}</td>
-                  <td className="py-2 text-right tabular-nums">{fmtIdr(r.margin)}</td>
-                  <td className="py-2 text-right tabular-nums">{fmtPct(r.margin_pct)}</td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-text-secondary border-b border-border-subtle">
+                  <th className="py-2 text-left">Product</th>
+                  <th className="py-2 text-left">Category</th>
+                  <th className="py-2 text-right">Qty</th>
+                  <th className="py-2 text-right">Revenue</th>
+                  <th className="py-2 text-right">COGS</th>
+                  <th className="py-2 text-right">Margin</th>
+                  <th className="py-2 text-right">Margin %</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {rows.map((r) => (
+                  <tr key={r.product_id} className="border-b border-border-subtle">
+                    <td className="py-2">
+                      <DrilldownLink
+                        entity="product"
+                        id={r.product_id}
+                        label={r.name}
+                        icon={false}
+                      />
+                    </td>
+                    <td className="py-2 text-text-secondary">{r.category_name ?? '—'}</td>
+                    <td className="py-2 text-right tabular-nums">{r.qty.toLocaleString('id-ID')}</td>
+                    <td className="py-2 text-right tabular-nums">{fmtIdr(r.revenue)}</td>
+                    <td className="py-2 text-right tabular-nums">{fmtIdr(r.cogs)}</td>
+                    <td className="py-2 text-right tabular-nums">{fmtIdr(r.margin)}</td>
+                    <td className="py-2 text-right tabular-nums">{fmtPct(r.margin_pct)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </ReportPage>

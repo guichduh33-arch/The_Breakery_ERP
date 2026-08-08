@@ -80,7 +80,7 @@ export default function OpnameDetailPage(): JSX.Element {
           <ArrowLeft className="h-3 w-3" aria-hidden /> Back to counts
         </Link>
         <div className="mt-2 flex flex-wrap items-center gap-3">
-          <h1 className="font-display font-mono text-3xl text-text-primary">{d.count_number}</h1>
+          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary font-mono">{d.count_number}</h1>
           <OpnameStatusBadge status={d.status} />
         </div>
       </header>
@@ -127,23 +127,25 @@ export default function OpnameDetailPage(): JSX.Element {
           />
         </div>
       ) : (
-        <table className="w-full text-sm bg-bg-elevated rounded-lg border border-border-subtle overflow-hidden">
-          <thead className="bg-bg-base/40 border-b border-border-subtle">
-            <tr>
-              <th className="text-left py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Product</th>
-              <th className="text-right py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Expected</th>
-              <th className="text-left py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Counted</th>
-              <th className="text-right py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Variance</th>
-              <th className="text-left py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Notes</th>
-              {!readOnly && <th />}
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((it) => (
-              <CountItemRow key={it.id} countId={d.id} item={it} readOnly={readOnly} />
-            ))}
-          </tbody>
-        </table>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm bg-bg-elevated rounded-lg border border-border-subtle overflow-hidden">
+            <thead className="bg-bg-base/40 border-b border-border-subtle">
+              <tr>
+                <th className="text-left py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Product</th>
+                <th className="text-right py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Expected</th>
+                <th className="text-left py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Counted</th>
+                <th className="text-right py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Variance</th>
+                <th className="text-left py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Notes</th>
+                {!readOnly && <th />}
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((it) => (
+                <CountItemRow key={it.id} countId={d.id} item={it} readOnly={readOnly} />
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
 
       <footer className="flex flex-col gap-3 md:flex-row md:items-center md:justify-end">
@@ -175,7 +177,7 @@ export default function OpnameDetailPage(): JSX.Element {
       </footer>
 
       {d.status === 'cancelled' && d.cancel_reason !== null && (
-        <div className="border-l-4 border-danger/40 bg-bg-elevated px-3 py-2 text-sm text-text-secondary">
+        <div className="border-l border-danger bg-bg-elevated px-3 py-2 text-sm text-text-secondary">
           <span className="font-semibold text-text-primary">Cancelled:</span> {d.cancel_reason}
         </div>
       )}

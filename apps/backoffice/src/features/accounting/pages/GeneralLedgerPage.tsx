@@ -99,7 +99,7 @@ export default function GeneralLedgerPage(): JSX.Element {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-2xl text-text-primary">General Ledger</h1>
+        <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">General Ledger</h1>
         <p className="text-sm text-text-secondary italic">
           Drilldown by account with running balance
         </p>
@@ -155,7 +155,7 @@ export default function GeneralLedgerPage(): JSX.Element {
       )}
 
       {accountId !== '' && gl.data && (
-        <div className="rounded-lg border border-border-subtle bg-bg-elevated overflow-hidden">
+        <div className="rounded-lg border border-border-subtle bg-bg-elevated overflow-x-auto">
           <table className="w-full text-sm" data-testid="gl-table">
             <thead>
               <tr className="text-left text-xs uppercase tracking-widest text-text-secondary">

@@ -33,7 +33,7 @@ export function ProductsHeader({
 }: Props): JSX.Element {
   return (
     <div className="space-y-2">
-      <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs text-text-subtle">
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs text-text-muted">
         <Link to="/backoffice/products" className="hover:text-text-secondary">Stock</Link>
         <ChevronRight className="h-3 w-3 text-border-strong" aria-hidden />
         <span className="text-text-secondary">Catalogue</span>

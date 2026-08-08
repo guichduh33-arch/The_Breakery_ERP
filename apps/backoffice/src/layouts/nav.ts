@@ -75,6 +75,7 @@ export const NAV_DOMAINS: NavDomain[] = [
         label: 'Wholesale',
         links: [
           { to: '/backoffice/b2b', label: 'B2B wholesale', end: true, permission: 'b2b.read' },
+          { to: '/backoffice/b2b/orders', label: 'B2B orders', permission: 'b2b.read' },
           { to: '/backoffice/b2b/payments', label: 'B2B payments', permission: 'b2b.read' },
         ],
       },

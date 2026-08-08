@@ -98,38 +98,40 @@ export function ScanPanel({ devices, onAdd }: {
       )}
 
       {hits.length > 0 && (
-        <table className="w-full text-sm max-w-2xl">
-          <thead className="text-xs uppercase text-text-secondary border-b border-border-subtle">
-            <tr>
-              <th className="py-2 text-left">Address</th>
-              <th className="py-2 text-left">Latency</th>
-              <th className="py-2 text-right">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {hits.map((h) => {
-              const existing = byIp.get(h.ip);
-              return (
-                <tr key={h.ip} className="border-b border-border-subtle">
-                  <td className="py-2 font-mono text-xs">{h.ip}:{h.port}</td>
-                  <td className="py-2 text-xs">{h.latencyMs} ms</td>
-                  <td className="py-2 text-right">
-                    {existing !== undefined ? (
-                      <span className="text-xs text-text-secondary">
-                        Already configured — {existing.code}
-                      </span>
-                    ) : (
-                      <Button variant="secondary" size="sm"
-                        onClick={() => onAdd({ ip_address: h.ip, port: h.port })}>
-                        Add
-                      </Button>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm max-w-2xl">
+            <thead className="text-xs uppercase text-text-secondary border-b border-border-subtle">
+              <tr>
+                <th className="py-2 text-left">Address</th>
+                <th className="py-2 text-left">Latency</th>
+                <th className="py-2 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {hits.map((h) => {
+                const existing = byIp.get(h.ip);
+                return (
+                  <tr key={h.ip} className="border-b border-border-subtle">
+                    <td className="py-2 font-mono text-xs">{h.ip}:{h.port}</td>
+                    <td className="py-2 text-xs">{h.latencyMs} ms</td>
+                    <td className="py-2 text-right">
+                      {existing !== undefined ? (
+                        <span className="text-xs text-text-secondary">
+                          Already configured — {existing.code}
+                        </span>
+                      ) : (
+                        <Button variant="secondary" size="sm"
+                          onClick={() => onAdd({ ip_address: h.ip, port: h.port })}>
+                          Add
+                        </Button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

@@ -1,94 +1,98 @@
 // apps/backoffice/src/features/inventory-alerts/components/ProductionAlertsTab.tsx
 // Session 13 / Phase 2.D — Production alerts tab.
 //
-// This is a thin reader of get_production_suggestions_v1 (Phase 2.A
-// migration 000065). The RPC may not exist if Phase 2.A is not yet
-// merged ; we degrade gracefully to a placeholder.
+// Lecteur mince de get_production_suggestions_v1 (migration Phase 2.A). La RPC
+// peut ne pas exister ; on dégrade proprement vers une liste vide.
+//
+// Refonte design 2026-08-08 — DataTable partagé. La priorité passe d'un texte
+// coloré à une pastille sur fond teinté : `bg-danger/15` ne produisait rien,
+// les tokens du thème étant des `var()` auxquels Tailwind ne peut pas appliquer
+// d'alpha. Les tokens `*-soft` existent précisément pour ça.
 
-import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
-import { supabase } from '@/lib/supabase.js';
+import type { JSX } from 'react';
+import { DataTable, type DataTableColumn } from '@breakery/ui';
+import {
+  useProductionSuggestions,
+  type ProductionSuggestion,
+} from '../hooks/useProductionSuggestions.js';
+import { ProductCell } from './ProductCell.js';
 
-interface ProductionSuggestion {
-  product_id:         string;
-  product_sku:        string;
-  product_name:       string;
-  current_stock:      number;
-  avg_daily_sales:    number;
-  days_of_stock:      number | null;
-  suggested_quantity: number;
-  priority:           string;
-}
+const PRIORITY_CLASS: Record<string, string> = {
+  high:   'bg-danger-soft text-danger',
+  medium: 'bg-warning-soft text-warning',
+  low:    'bg-surface-4 text-text-secondary',
+};
 
-type RpcFn = (
-  fn: string, args?: Record<string, unknown>
-) => Promise<{ data: ProductionSuggestion[] | null; error: { message: string } | null }>;
+const COLUMNS: DataTableColumn<ProductionSuggestion>[] = [
+  {
+    id: 'product',
+    header: 'Product',
+    render: (r) => <ProductCell productId={r.product_id} name={r.product_name} secondary={r.product_sku} />,
+  },
+  {
+    id: 'stock',
+    header: 'On hand',
+    align: 'right',
+    render: (r) => <span className="font-data text-[12.5px]">{Number(r.current_stock)}</span>,
+  },
+  {
+    id: 'avg_daily',
+    header: 'Daily sales',
+    align: 'right',
+    render: (r) => <span className="font-data text-[12.5px]">{Number(r.avg_daily_sales).toFixed(2)}</span>,
+  },
+  {
+    id: 'coverage',
+    header: 'Coverage',
+    align: 'right',
+    render: (r) => (
+      <span className="font-data text-[12.5px]">
+        {r.days_of_stock === null ? '—' : `${Number(r.days_of_stock).toFixed(1)} d`}
+      </span>
+    ),
+  },
+  {
+    id: 'produce',
+    header: 'Produce',
+    align: 'right',
+    render: (r) => (
+      <span className="font-data text-[12.5px] font-semibold">{Number(r.suggested_quantity).toFixed(2)}</span>
+    ),
+  },
+  {
+    id: 'priority',
+    header: 'Priority',
+    render: (r) => (
+      <span
+        className={`inline-flex rounded-sm px-2 py-0.5 font-data text-[10px] font-semibold uppercase tracking-widest ${
+          PRIORITY_CLASS[r.priority] ?? PRIORITY_CLASS.low
+        }`}
+      >
+        {r.priority}
+      </span>
+    ),
+  },
+];
 
-export function ProductionAlertsTab() {
-  const q = useQuery<ProductionSuggestion[]>({
-    queryKey: ['production-suggestions'] as const,
-    staleTime: 60_000,
-    queryFn: async () => {
-      const rpc = supabase.rpc.bind(supabase) as unknown as RpcFn;
-      const { data, error } = await rpc('get_production_suggestions_v1', {});
-      if (error !== null) {
-        // RPC may not exist yet (Phase 2.A not merged) — treat as empty.
-        if (/does not exist|undefined function/i.test(error.message)) return [];
-        throw new Error(error.message);
-      }
-      return data ?? [];
-    },
-    retry: false,
-  });
-
-  if (q.isLoading) return <div className="text-sm text-text-secondary">Loading…</div>;
-
+export function ProductionAlertsTab(): JSX.Element {
+  const q = useProductionSuggestions();
   const rows = q.data ?? [];
-  if (rows.length === 0) {
-    return (
-      <div className="text-sm text-text-secondary py-4">
-        No production suggestions. Either nothing needs production today, or
-        the production module (Phase 2.A) is not yet deployed.
-      </div>
-    );
-  }
 
   return (
-    <table className="w-full text-sm">
-      <thead className="text-xs uppercase text-text-secondary border-b border-border-subtle">
-        <tr>
-          <th className="text-left py-2 px-3">Product</th>
-          <th className="text-right py-2 px-3">Current</th>
-          <th className="text-right py-2 px-3">Avg daily sales</th>
-          <th className="text-right py-2 px-3">Days left</th>
-          <th className="text-right py-2 px-3">Produce</th>
-          <th className="text-left py-2 px-3">Priority</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((r) => (
-          <tr key={r.product_id} className="border-b border-border-subtle">
-            <td className="py-2 px-3">
-              <Link
-                to={`/backoffice/products/${r.product_id}/dashboard`}
-                className="text-gold hover:underline"
-              >
-                {r.product_name}
-              </Link>
-              <div className="text-xs text-text-secondary">{r.product_sku}</div>
-            </td>
-            <td className="py-2 px-3 text-right font-mono">{Number(r.current_stock)}</td>
-            <td className="py-2 px-3 text-right font-mono">{Number(r.avg_daily_sales).toFixed(2)}</td>
-            <td className="py-2 px-3 text-right font-mono">{r.days_of_stock === null ? '—' : Number(r.days_of_stock).toFixed(1)}</td>
-            <td className="py-2 px-3 text-right font-mono font-medium">{Number(r.suggested_quantity).toFixed(2)}</td>
-            <td className="py-2 px-3">
-              <span className={`text-xs font-medium ${r.priority === 'high' ? 'text-danger' : r.priority === 'medium' ? 'text-warning' : 'text-text-secondary'}`}>
-                {r.priority}
-              </span>
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+    <DataTable<ProductionSuggestion>
+      columns={COLUMNS}
+      rows={rows}
+      getRowKey={(r) => r.product_id}
+      isLoading={q.isLoading}
+      density="compact"
+      emptyTitle="Nothing to produce"
+      emptyDescription="Either nothing needs production today, or the production module is not deployed."
+      data-testid="production-alerts-table"
+      footer={
+        <span className="font-data text-[11px] text-text-muted tabular-nums">
+          {rows.length} {rows.length === 1 ? 'suggestion' : 'suggestions'}
+        </span>
+      }
+    />
   );
 }

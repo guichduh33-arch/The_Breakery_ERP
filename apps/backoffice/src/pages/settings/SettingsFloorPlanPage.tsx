@@ -21,6 +21,7 @@ import {
 import { TableFormDialog } from '@/features/floor-plan/components/TableFormDialog.js';
 import { SectionFormDialog } from '@/features/floor-plan/components/SectionFormDialog.js';
 import { SectionGridEditor } from '@/features/floor-plan/components/SectionGridEditor.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 const INTERIOR_FALLBACK_KEY = '__interior_fallback__';
 const INTERIOR_LABEL = 'Interior';
@@ -180,10 +181,10 @@ export default function SettingsFloorPlanPage(): JSX.Element {
               <Plus className="h-4 w-4" aria-hidden />
               Add section
             </Button>
-            <Button variant="primary" onClick={() => setTableDialog({ mode: 'create' })} disabled={!canUpdate}>
-              <Plus className="h-4 w-4" aria-hidden />
+            <button type="button" onClick={() => setTableDialog({ mode: 'create' })} disabled={!canUpdate} className={TOOLBAR_BTN_PRIMARY}>
+              <Plus className="h-3.5 w-3.5" aria-hidden />
               Add table
-            </Button>
+            </button>
           </>
         }
       />

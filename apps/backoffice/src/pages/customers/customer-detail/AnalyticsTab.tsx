@@ -17,8 +17,10 @@ import { Card } from '@breakery/ui';
 import { useCustomerAnalytics } from '@/features/customers/hooks/useCustomerAnalytics.js';
 import { CHART_GRID_STROKE, CHART_AXIS_STROKE } from '@/features/reports/utils/chartColors.js';
 import { rp } from './shared.js';
+import { usePrefersReducedMotion } from '@/features/dashboard/utils/usePrefersReducedMotion.js';
 
 export function AnalyticsTab({ customerId }: { customerId: string | null }): JSX.Element {
+  const reduced = usePrefersReducedMotion();
   const { data, isLoading } = useCustomerAnalytics(customerId);
 
   if (isLoading) return <Card variant="default" padding="lg"><p className="text-sm text-text-muted">Loading…</p></Card>;
@@ -42,7 +44,7 @@ export function AnalyticsTab({ customerId }: { customerId: string | null }): JSX
                 formatter={(v: number) => [rp(v), 'Spend']}
                 contentStyle={{ fontSize: 12, borderRadius: 8 }}
               />
-              <Bar dataKey="total" fill="var(--gold-base)" radius={[4, 4, 0, 0]} />
+              <Bar isAnimationActive={!reduced} dataKey="total" fill="var(--gold-base)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

@@ -1,102 +1,130 @@
 // apps/backoffice/src/pages/inventory/AlertsPage.tsx
-// Session 14 / Phase 4.C — alerts page (low / reorder / production), rewritten
-// against the Stock & Inventory screenshot family. Uses the shared Tabs
-// primitive plus a counts-based KPI tile row at the top so managers see the
-// shape of attention work at a glance.
+//
+// Refonte design 2026-08-08 (direction « Instrument »).
+//
+// Les QUATRE onglets sont conservés — ils restent le mécanisme de navigation de
+// l'écran. Ce qui change tient en trois points :
+//
+//   · le titre passe par PageHeader : Playfair ne rend plus que le monogramme
+//     de marque, et cet écran l'utilisait encore en 3xl ;
+//   · chaque onglet porte SON compte. La rangée de trois tuiles à icônes qui
+//     coiffait la page disparaît avec : deux de ses trois mesures répétaient
+//     déjà un onglet, et la troisième (« Status ») n'était pas une mesure mais
+//     une phrase déguisée en chiffre ;
+//   · le déficit total, seule mesure transverse qui ne redisait aucun onglet,
+//     rejoint le sous-titre.
+//
+// Le compte est chargé au niveau de la page pour tous les onglets, y compris
+// ceux qui ne sont pas montés : un onglet dont on ne voit pas le compte tant
+// qu'on ne l'a pas ouvert n'attire l'attention sur rien. React-query dédoublonne
+// par clé, l'onglet monté ne refait donc aucune requête.
 
-import { useMemo, type JSX } from 'react';
-import { AlertTriangle, PackageX, ShoppingCart, SlidersHorizontal, Wheat } from 'lucide-react';
-import {
-  KpiTile,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@breakery/ui';
+import { useMemo, useState, type JSX } from 'react';
+import { AlertTriangle, ShoppingCart, SlidersHorizontal, Wheat } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger, cn } from '@breakery/ui';
+import { PageHeader } from '@/components/PageHeader.js';
 import { useLowStock } from '@/features/inventory-alerts/hooks/useLowStock.js';
+import { useReorderSuggestions } from '@/features/inventory-alerts/hooks/useReorderSuggestions.js';
+import { useProductionSuggestions } from '@/features/inventory-alerts/hooks/useProductionSuggestions.js';
+import { useStockConfigIssues } from '@/features/inventory-alerts/hooks/useStockConfigIssues.js';
 import { LowStockTab } from '@/features/inventory-alerts/components/LowStockTab.js';
 import { ReorderTab } from '@/features/inventory-alerts/components/ReorderTab.js';
 import { ProductionAlertsTab } from '@/features/inventory-alerts/components/ProductionAlertsTab.js';
 import { ConfigIssuesTab } from '@/features/inventory-alerts/components/ConfigIssuesTab.js';
 
-export default function AlertsPage(): JSX.Element {
-  const lowStock = useLowStock(null);
+/**
+ * Le compte d'un onglet, collé à son libellé.
+ *
+ * Il se tait quand il vaut zéro : un « 0 » sur quatre onglets fabrique quatre
+ * signaux là où il n'y en a aucun. Ce qui mérite l'œil, c'est ce qui compte.
+ */
+function TabCount({ value, tone }: { value: number; tone: 'danger' | 'warning' | 'neutral' }): JSX.Element | null {
+  if (value === 0) return null;
+  return (
+    <span
+      className={cn(
+        'ml-1.5 font-data text-[10.5px] font-bold tabular-nums',
+        tone === 'danger' && 'text-danger',
+        tone === 'warning' && 'text-warning',
+        tone === 'neutral' && 'text-text-muted',
+      )}
+      aria-hidden
+    >
+      {value > 99 ? '99+' : value}
+    </span>
+  );
+}
 
-  const counts = useMemo(() => {
-    const rows = lowStock.data ?? [];
-    let critical = 0;
-    let totalShortfall = 0;
-    for (const r of rows) {
-      if (r.current_qty <= 0) critical += 1;
-      totalShortfall += Number(r.shortfall);
-    }
-    return { total: rows.length, critical, totalShortfall: Math.round(totalShortfall * 100) / 100 };
-  }, [lowStock.data]);
+export default function AlertsPage(): JSX.Element {
+  const [tab, setTab] = useState('low');
+
+  const lowStock = useLowStock(null);
+  const reorder = useReorderSuggestions(30, 14);
+  const production = useProductionSuggestions();
+  const configIssues = useStockConfigIssues();
+
+  const lowRows = useMemo(() => lowStock.data ?? [], [lowStock.data]);
+
+  const shortfall = useMemo(
+    () => Math.round(lowRows.reduce((sum, r) => sum + Number(r.shortfall), 0) * 100) / 100,
+    [lowRows],
+  );
+  const atZero = useMemo(() => lowRows.filter((r) => r.current_qty <= 0).length, [lowRows]);
+
+  const counts = {
+    low: lowRows.length,
+    reorder: reorder.data?.length ?? 0,
+    production: production.data?.length ?? 0,
+    config: configIssues.data?.length ?? 0,
+  };
+
+  // Le sous-titre porte ce qu'aucun onglet ne dit : combien manque, et combien
+  // sont à zéro — c'est-à-dire déjà invendables, pas seulement bas.
+  const subtitle =
+    lowStock.isLoading
+      ? 'Loading…'
+      : lowStock.error !== null
+        ? 'Low-stock figures unavailable — the rest of the page still works.'
+        : counts.low === 0
+          ? 'Nothing under threshold. What to reorder and produce is in the tabs below.'
+          : `${counts.low} under threshold · ${atZero} at zero · ${shortfall} units short in total`;
 
   return (
-    <div className="space-y-6">
-      <header>
-        <h1 className="font-display text-3xl text-text-primary">Inventory alerts</h1>
-        <p className="mt-1 text-sm text-text-secondary">
-          What to restock, reorder, and produce — pulled from the movements ledger,
-          section_stock cache, and active stock_lots.
-        </p>
-      </header>
+    <div className="flex flex-col gap-[13px]">
+      <PageHeader title="Stock alerts" subtitle={subtitle} />
 
-      <section
-        className="grid grid-cols-1 gap-4 md:grid-cols-3"
-        aria-label="Alert counts"
-      >
-        <KpiTile
-          label="Low stock products"
-          value={counts.total}
-          icon={AlertTriangle}
-          footer={lowStock.isLoading ? 'Loading…' : `${counts.critical} at zero`}
-        />
-        <KpiTile
-          label="Shortfall units"
-          value={counts.totalShortfall}
-          icon={PackageX}
-          footer="Sum across all low-stock SKUs"
-        />
-        <KpiTile
-          label="Status"
-          value={
-            lowStock.error !== null ? 'Unavailable'
-            : counts.total === 0    ? 'All clear'
-            :                         'Action needed'
-          }
-          icon={ShoppingCart}
-          footer={lowStock.error !== null ? 'Failed to load — check console / retry' : undefined}
-        />
-      </section>
-
-      <Tabs defaultValue="low">
+      <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
-          <TabsTrigger value="low" className="gap-2">
+          <TabsTrigger value="low" className="gap-1.5" data-testid="tab-low">
             <AlertTriangle className="h-3.5 w-3.5" aria-hidden /> Low stock
+            <TabCount value={counts.low} tone="danger" />
           </TabsTrigger>
-          <TabsTrigger value="reorder" className="gap-2">
+          <TabsTrigger value="reorder" className="gap-1.5" data-testid="tab-reorder">
             <ShoppingCart className="h-3.5 w-3.5" aria-hidden /> Reorder
+            <TabCount value={counts.reorder} tone="warning" />
           </TabsTrigger>
-          <TabsTrigger value="production" className="gap-2">
+          <TabsTrigger value="production" className="gap-1.5" data-testid="tab-production">
             <Wheat className="h-3.5 w-3.5" aria-hidden /> Production
+            <TabCount value={counts.production} tone="warning" />
           </TabsTrigger>
-          <TabsTrigger value="config" className="gap-2">
+          <TabsTrigger value="config" className="gap-1.5" data-testid="tab-config">
             <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden /> Config produit
+            <TabCount value={counts.config} tone="neutral" />
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="low" className="rounded-lg border border-border-subtle bg-bg-elevated p-4">
+        {/* Les tables portent leur propre chrome (bordure, en-tête inerte, pied) —
+            les envelopper dans une carte ajouterait une seconde bordure. */}
+        <TabsContent value="low" className="mt-2.5">
           <LowStockTab />
         </TabsContent>
-        <TabsContent value="reorder" className="rounded-lg border border-border-subtle bg-bg-elevated p-4">
+        <TabsContent value="reorder" className="mt-2.5">
           <ReorderTab />
         </TabsContent>
-        <TabsContent value="production" className="rounded-lg border border-border-subtle bg-bg-elevated p-4">
+        <TabsContent value="production" className="mt-2.5">
           <ProductionAlertsTab />
         </TabsContent>
-        <TabsContent value="config" className="rounded-lg border border-border-subtle bg-bg-elevated p-4">
+        <TabsContent value="config" className="mt-2.5">
           <ConfigIssuesTab />
         </TabsContent>
       </Tabs>

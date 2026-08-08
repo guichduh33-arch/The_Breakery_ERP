@@ -1,7 +1,0 @@
-/* Token cascade first — inlined by the Tailwind CLI (postcss-import), so the
- * compiled ds-preview.css SHIPS the token definitions the utilities reference. */
-@import '../packages/ui/src/tokens/index.css';
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;

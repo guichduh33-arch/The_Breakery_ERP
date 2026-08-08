@@ -123,7 +123,7 @@ export default function ProductionSchedulePage(): JSX.Element {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-serif text-3xl">Production Schedule</h1>
+          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Production Schedule</h1>
           <p className="mt-1 text-sm text-text-secondary">
             7-day grid with 4 fournée slots ({toIsoDate(weekStart)} → {toIsoDate(weekEnd)}).
           </p>

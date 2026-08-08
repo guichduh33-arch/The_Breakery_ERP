@@ -30,57 +30,59 @@ export function UsersTable({ rows, loading, error }: UsersTableProps): JSX.Eleme
     return <div className="text-sm text-text-secondary">No users yet.</div>;
   }
   return (
-    <table className="w-full text-sm">
-      <thead className="text-xs uppercase text-text-secondary border-b border-border-subtle">
-        <tr>
-          <th className="text-left py-2 px-3">Employee #</th>
-          <th className="text-left py-2 px-3">Full name</th>
-          <th className="text-left py-2 px-3">Role</th>
-          <th className="text-left py-2 px-3">Status</th>
-          <th className="text-left py-2 px-3">Last login</th>
-          <th />
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((u) => (
-          <tr key={u.id} className="border-b border-border-subtle" data-testid={`user-row-${u.id}`}>
-            <td className="py-2 px-3 font-mono text-xs">{u.employee_code}</td>
-            <td className="py-2 px-3">{u.full_name}</td>
-            <td className="py-2 px-3">
-              <span
-                className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${
-                  ROLE_BADGE_CLASS[u.role_code] ?? 'bg-bg-overlay text-text-secondary'
-                }`}
-              >
-                {u.role_code}
-              </span>
-            </td>
-            <td className="py-2 px-3 text-xs">
-              {u.deleted_at !== null ? (
-                <span className="text-danger">Deleted</span>
-              ) : u.is_active ? (
-                <span className="text-success">Active</span>
-              ) : (
-                <span className="text-text-secondary">Inactive</span>
-              )}
-            </td>
-            <td className="py-2 px-3 text-xs text-text-secondary">
-              {u.last_login_at !== null
-                ? new Date(u.last_login_at).toLocaleString()
-                : '—'}
-            </td>
-            <td className="py-2 px-3 text-right">
-              <Link
-                to={`/backoffice/users/${u.id}`}
-                className="text-xs text-gold hover:underline"
-                data-testid={`user-open-${u.id}`}
-              >
-                Open
-              </Link>
-            </td>
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead className="text-xs uppercase text-text-secondary border-b border-border-subtle">
+          <tr>
+            <th className="text-left py-2 px-3">Employee #</th>
+            <th className="text-left py-2 px-3">Full name</th>
+            <th className="text-left py-2 px-3">Role</th>
+            <th className="text-left py-2 px-3">Status</th>
+            <th className="text-left py-2 px-3">Last login</th>
+            <th />
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {rows.map((u) => (
+            <tr key={u.id} className="border-b border-border-subtle" data-testid={`user-row-${u.id}`}>
+              <td className="py-2 px-3 font-mono text-xs">{u.employee_code}</td>
+              <td className="py-2 px-3">{u.full_name}</td>
+              <td className="py-2 px-3">
+                <span
+                  className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${
+                    ROLE_BADGE_CLASS[u.role_code] ?? 'bg-bg-overlay text-text-secondary'
+                  }`}
+                >
+                  {u.role_code}
+                </span>
+              </td>
+              <td className="py-2 px-3 text-xs">
+                {u.deleted_at !== null ? (
+                  <span className="text-danger">Deleted</span>
+                ) : u.is_active ? (
+                  <span className="text-success">Active</span>
+                ) : (
+                  <span className="text-text-secondary">Inactive</span>
+                )}
+              </td>
+              <td className="py-2 px-3 text-xs text-text-secondary">
+                {u.last_login_at !== null
+                  ? new Date(u.last_login_at).toLocaleString()
+                  : '—'}
+              </td>
+              <td className="py-2 px-3 text-right">
+                <Link
+                  to={`/backoffice/users/${u.id}`}
+                  className="text-xs text-gold hover:underline"
+                  data-testid={`user-open-${u.id}`}
+                >
+                  Open
+                </Link>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }

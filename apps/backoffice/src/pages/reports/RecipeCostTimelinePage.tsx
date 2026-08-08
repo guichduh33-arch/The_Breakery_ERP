@@ -33,6 +33,7 @@ import {
   formatIdrCompact,
   formatIdrPrecise,
 } from '@/features/reports/utils/chartColors.js';
+import { usePrefersReducedMotion } from '@/features/dashboard/utils/usePrefersReducedMotion.js';
 
 interface TimelineRow {
   product_id:     string;
@@ -73,6 +74,7 @@ const TIMELINE_CSV_COLUMNS: CsvColumn<TimelineRowWithDelta>[] = [
 ];
 
 export function RecipeCostTimelinePage(): JSX.Element {
+  const reduced = usePrefersReducedMotion();
   const { productId = '' } = useParams<{ productId: string }>();
   const [from, setFrom] = useUrlState('from', defaultStart());
   const [to,   setTo]   = useUrlState('to', toLocalDateStr(new Date()));
@@ -208,6 +210,7 @@ export function RecipeCostTimelinePage(): JSX.Element {
                   contentStyle={CHART_TOOLTIP_STYLE}
                 />
                 <Line
+                  isAnimationActive={!reduced}
                   type="monotone"
                   dataKey="cost"
                   stroke={CHART_ACCENT_GOLD}
@@ -218,44 +221,46 @@ export function RecipeCostTimelinePage(): JSX.Element {
             </ResponsiveContainer>
           </div>
 
-          <table className="w-full text-sm mt-6" data-testid="timeline-table">
-            <thead>
-              <tr className="text-left text-xs uppercase tracking-widest text-text-secondary border-b border-border-subtle">
-                <th className="py-2">Version</th>
-                <th className="py-2">Date</th>
-                <th className="py-2 text-right">Cost</th>
-                <th className="py-2 text-right">Δ vs prev</th>
-                <th className="py-2">Change note</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rowsWithDelta.map((r) => (
-                <tr
-                  key={`${r.product_id}-${r.version_number}`}
-                  className="border-t border-border-subtle"
-                  data-testid={`timeline-row-v${r.version_number}`}
-                >
-                  <td className="py-1.5 tabular-nums">v{r.version_number}</td>
-                  <td className="py-1.5 tabular-nums text-text-secondary">
-                    {new Date(r.created_at).toLocaleString('id-ID', {
-                      timeZone: DEFAULT_TIMEZONE,
-                      dateStyle: 'short',
-                      timeStyle: 'short',
-                    })}
-                  </td>
-                  <td className="py-1.5 text-right tabular-nums">
-                    {formatIdrPrecise(r.cost_per_unit)}
-                  </td>
-                  <td className={`py-1.5 text-right tabular-nums ${deltaTone(r.delta_pct)}`}>
-                    {r.delta_pct === null
-                      ? '—'
-                      : (r.delta_pct > 0 ? '+' : '') + r.delta_pct.toFixed(2) + '%'}
-                  </td>
-                  <td className="py-1.5 text-text-secondary">{r.change_note ?? '—'}</td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm mt-6" data-testid="timeline-table">
+              <thead>
+                <tr className="text-left text-xs uppercase tracking-widest text-text-secondary border-b border-border-subtle">
+                  <th className="py-2">Version</th>
+                  <th className="py-2">Date</th>
+                  <th className="py-2 text-right">Cost</th>
+                  <th className="py-2 text-right">Δ vs prev</th>
+                  <th className="py-2">Change note</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {rowsWithDelta.map((r) => (
+                  <tr
+                    key={`${r.product_id}-${r.version_number}`}
+                    className="border-t border-border-subtle"
+                    data-testid={`timeline-row-v${r.version_number}`}
+                  >
+                    <td className="py-1.5 tabular-nums">v{r.version_number}</td>
+                    <td className="py-1.5 tabular-nums text-text-secondary">
+                      {new Date(r.created_at).toLocaleString('id-ID', {
+                        timeZone: DEFAULT_TIMEZONE,
+                        dateStyle: 'short',
+                        timeStyle: 'short',
+                      })}
+                    </td>
+                    <td className="py-1.5 text-right tabular-nums">
+                      {formatIdrPrecise(r.cost_per_unit)}
+                    </td>
+                    <td className={`py-1.5 text-right tabular-nums ${deltaTone(r.delta_pct)}`}>
+                      {r.delta_pct === null
+                        ? '—'
+                        : (r.delta_pct > 0 ? '+' : '') + r.delta_pct.toFixed(2) + '%'}
+                    </td>
+                    <td className="py-1.5 text-text-secondary">{r.change_note ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </>
       )}
     </ReportPage>

@@ -45,7 +45,7 @@ export function OrderDetailPage(): JSX.Element {
             <ArrowLeft size={16} /> Back
           </Link>
         </Button>
-        <h1 className="text-2xl font-semibold font-serif">
+        <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">
           Order #{data.order_number}
         </h1>
         <StatusBadge status={data.status} />
@@ -71,33 +71,35 @@ export function OrderDetailPage(): JSX.Element {
 
       <Card className="p-4">
         <h2 className="text-sm font-medium text-muted-foreground mb-3">Items</h2>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-xs text-muted-foreground">
-              <th className="pb-2">Product</th>
-              <th className="pb-2 text-right">Qty</th>
-              <th className="pb-2 text-right">Unit</th>
-              <th className="pb-2 text-right">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.items.map((it) => (
-              <tr key={it.id} className={`border-t ${it.is_cancelled ? 'line-through opacity-50' : ''}`}>
-                <td className="py-2">
-                  <DrilldownLink
-                    entity="product"
-                    id={it.product_id}
-                    label={it.name_snapshot}
-                    icon={false}
-                  />
-                </td>
-                <td className="text-right">{it.quantity}</td>
-                <td className="text-right">{fmtIdr(it.unit_price)}</td>
-                <td className="text-right">{fmtIdr(it.line_total)}</td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-xs text-muted-foreground">
+                <th className="pb-2">Product</th>
+                <th className="pb-2 text-right">Qty</th>
+                <th className="pb-2 text-right">Unit</th>
+                <th className="pb-2 text-right">Total</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {data.items.map((it) => (
+                <tr key={it.id} className={`border-t ${it.is_cancelled ? 'line-through opacity-50' : ''}`}>
+                  <td className="py-2">
+                    <DrilldownLink
+                      entity="product"
+                      id={it.product_id}
+                      label={it.name_snapshot}
+                      icon={false}
+                    />
+                  </td>
+                  <td className="text-right">{it.quantity}</td>
+                  <td className="text-right">{fmtIdr(it.unit_price)}</td>
+                  <td className="text-right">{fmtIdr(it.line_total)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </Card>
 
       <Card className="p-4">
@@ -105,56 +107,60 @@ export function OrderDetailPage(): JSX.Element {
         {data.payments.length === 0 ? (
           <div className="text-sm text-muted-foreground">Not paid yet.</div>
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-xs text-muted-foreground">
-                <th className="pb-2">Method</th>
-                <th className="pb-2 text-right">Amount</th>
-                <th className="pb-2 text-right">Cash received</th>
-                <th className="pb-2 text-right">Change</th>
-                <th className="pb-2">Paid at</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.payments.map((p) => (
-                <tr key={p.id} className="border-t">
-                  <td className="py-2">{p.method}</td>
-                  <td className="text-right">{fmtIdr(p.amount)}</td>
-                  <td className="text-right">{p.cash_received != null ? fmtIdr(p.cash_received) : '—'}</td>
-                  <td className="text-right">{p.change_given != null ? fmtIdr(p.change_given) : '—'}</td>
-                  <td>{new Date(p.paid_at).toLocaleString('id-ID')}</td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs text-muted-foreground">
+                  <th className="pb-2">Method</th>
+                  <th className="pb-2 text-right">Amount</th>
+                  <th className="pb-2 text-right">Cash received</th>
+                  <th className="pb-2 text-right">Change</th>
+                  <th className="pb-2">Paid at</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {data.payments.map((p) => (
+                  <tr key={p.id} className="border-t">
+                    <td className="py-2">{p.method}</td>
+                    <td className="text-right">{fmtIdr(p.amount)}</td>
+                    <td className="text-right">{p.cash_received != null ? fmtIdr(p.cash_received) : '—'}</td>
+                    <td className="text-right">{p.change_given != null ? fmtIdr(p.change_given) : '—'}</td>
+                    <td>{new Date(p.paid_at).toLocaleString('id-ID')}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </Card>
 
       {data.refunds.length > 0 && (
         <Card className="p-4">
           <h2 className="text-sm font-medium text-muted-foreground mb-3">Refunds</h2>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-xs text-muted-foreground">
-                <th className="pb-2">Number</th>
-                <th className="pb-2 text-right">Total</th>
-                <th className="pb-2">Reason</th>
-                <th className="pb-2">Full void</th>
-                <th className="pb-2">At</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.refunds.map((r) => (
-                <tr key={r.id} className="border-t">
-                  <td className="py-2">{r.refund_number}</td>
-                  <td className="text-right">{fmtIdr(r.total)}</td>
-                  <td>{r.reason}</td>
-                  <td>{r.is_full_void ? 'Yes' : 'Partial'}</td>
-                  <td>{new Date(r.created_at).toLocaleString('id-ID')}</td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs text-muted-foreground">
+                  <th className="pb-2">Number</th>
+                  <th className="pb-2 text-right">Total</th>
+                  <th className="pb-2">Reason</th>
+                  <th className="pb-2">Full void</th>
+                  <th className="pb-2">At</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {data.refunds.map((r) => (
+                  <tr key={r.id} className="border-t">
+                    <td className="py-2">{r.refund_number}</td>
+                    <td className="text-right">{fmtIdr(r.total)}</td>
+                    <td>{r.reason}</td>
+                    <td>{r.is_full_void ? 'Yes' : 'Partial'}</td>
+                    <td>{new Date(r.created_at).toLocaleString('id-ID')}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </Card>
       )}
 

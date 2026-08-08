@@ -24,7 +24,7 @@ export function ComboCard({ combo, onEdit }: Props): JSX.Element {
     if (onEdit !== undefined) {
       onEdit();
     } else {
-      navigate(`/backoffice/products/combos/${combo.id}/edit`);
+      void navigate(`/backoffice/products/combos/${combo.id}/edit`);
     }
   }
 
@@ -41,8 +41,7 @@ export function ComboCard({ combo, onEdit }: Props): JSX.Element {
             <Box className="h-10 w-10" aria-hidden />
           </div>
         ) : (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={combo.image_url} alt={combo.name} className="h-full w-full object-cover" />
+          <img src={combo.image_url} alt={combo.name} loading="lazy" className="h-full w-full object-cover" />
         )}
       </div>
 

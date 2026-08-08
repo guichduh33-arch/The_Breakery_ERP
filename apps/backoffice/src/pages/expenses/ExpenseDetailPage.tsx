@@ -37,6 +37,7 @@ import { ApprovalTimeline } from '@/features/expenses/components/ApprovalTimelin
 import { ThresholdResolutionBadge } from '@/features/expenses/components/ThresholdResolutionBadge.js';
 import type { DuplicateExpenseSeed } from '@/features/expenses/components/ExpenseForm.js';
 import type { ApprovalStep } from '@/features/settings/expense-thresholds/hooks/useExpenseThresholds.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 function fmtIdr(amount: number | string | null): string {
   return `Rp ${formatIdr(Number(amount ?? 0))}`;
@@ -108,7 +109,7 @@ export default function ExpenseDetailPage(): JSX.Element {
       vendor_name: expense!.vendor_name ?? '',
       description: expense!.description ?? '',
     };
-    navigate('/backoffice/expenses/new', { state: { duplicateFrom: seed } });
+    void navigate('/backoffice/expenses/new', { state: { duplicateFrom: seed } });
   }
 
   return (
@@ -125,7 +126,7 @@ export default function ExpenseDetailPage(): JSX.Element {
 
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl text-text-primary tabular-nums">{expense.expense_number}</h1>
+          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary tabular-nums">{expense.expense_number}</h1>
           <p className="mt-1 text-sm text-text-secondary">{expense.description}</p>
           <div className="mt-2 flex items-center gap-2 flex-wrap">
             <ExpenseStatusBadge status={expense.status} />
@@ -142,20 +143,20 @@ export default function ExpenseDetailPage(): JSX.Element {
             </Button>
           )}
           {expense.status === 'draft' && (
-            <Button
+            <button
               type="button"
-              variant="gold"
+              className={TOOLBAR_BTN_PRIMARY}
               onClick={() => { void handleSubmitForReview(); }}
               disabled={submit.isPending}
             >
               {submit.isPending ? 'Submitting…' : 'Submit for approval'}
-            </Button>
+            </button>
           )}
           {expense.status === 'submitted' && canApprove && (
             <>
-              <Button type="button" variant="gold" onClick={() => setApproveOpen(true)}>
-                <CheckCircle2 className="h-4 w-4" aria-hidden /> Approve
-              </Button>
+              <button type="button" className={TOOLBAR_BTN_PRIMARY} onClick={() => setApproveOpen(true)}>
+                <CheckCircle2 className="h-3.5 w-3.5" aria-hidden /> Approve
+              </button>
               <Button type="button" variant="ghostDestructive" onClick={() => setRejectOpen(true)}>
                 <XCircle className="h-4 w-4" aria-hidden /> Reject
               </Button>
@@ -172,7 +173,7 @@ export default function ExpenseDetailPage(): JSX.Element {
             </div>
           )}
           {expense.status === 'approved' && canPay && (
-            <Button type="button" variant="gold" onClick={() => setPayOpen(true)}>
+            <Button type="button" variant="primary" onClick={() => setPayOpen(true)}>
               <CreditCard className="h-4 w-4" aria-hidden /> Mark as paid
             </Button>
           )}
@@ -261,7 +262,7 @@ export default function ExpenseDetailPage(): JSX.Element {
             </ul>
           </Card>
 
-          <Button type="button" variant="ghost" onClick={() => navigate('/backoffice/expenses')} className="w-full">
+          <Button type="button" variant="ghost" onClick={() => { void navigate('/backoffice/expenses'); }} className="w-full">
             <ArrowLeft className="h-4 w-4" aria-hidden /> Back to list
           </Button>
 

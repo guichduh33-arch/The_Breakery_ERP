@@ -79,68 +79,72 @@ export default function CashierVariancePage() {
       )}
       {!isLoading && !error && rows.length > 0 && (
         <div className="space-y-6">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-text-secondary border-b border-border-subtle">
-                <th className="py-2 text-left">Cashier</th>
-                <th className="py-2 text-right">Sessions</th>
-                <th className="py-2 text-right">Cash Δ</th>
-                <th className="py-2 text-right">Avg</th>
-                <th className="py-2 text-right">Short</th>
-                <th className="py-2 text-right">Over</th>
-                <th className="py-2 text-right">Worst</th>
-                <th className="py-2 text-right">QRIS Δ</th>
-                <th className="py-2 text-right">Card Δ</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.cashier_id} className="border-b border-border-subtle">
-                  <td className="py-2">{r.cashier_name}</td>
-                  <td className="py-2 text-right tabular-nums">{r.sessions_count}</td>
-                  <td className={`py-2 text-right tabular-nums ${varianceClass(r.cash.total_variance)}`}>{fmt(r.cash.total_variance)}</td>
-                  <td className="py-2 text-right tabular-nums">{fmt(r.cash.avg_variance)}</td>
-                  <td className="py-2 text-right tabular-nums">{r.cash.short_count}</td>
-                  <td className="py-2 text-right tabular-nums">{r.cash.over_count}</td>
-                  <td className={`py-2 text-right tabular-nums ${varianceClass(r.cash.worst_variance)}`}>{fmt(r.cash.worst_variance)}</td>
-                  <td className="py-2 text-right tabular-nums">{r.qris.counted_sessions === 0 ? '—' : fmt(r.qris.total_variance)}</td>
-                  <td className="py-2 text-right tabular-nums">{r.card.counted_sessions === 0 ? '—' : fmt(r.card.total_variance)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          {/* Cash variance by day of week — the "recurring shortfall on Tuesdays" signal. */}
-          <div>
-            <h3 className="text-sm font-medium mb-2">Cash variance by day of week</h3>
+          <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-text-secondary border-b border-border-subtle">
                   <th className="py-2 text-left">Cashier</th>
-                  {DOW_LABELS.map((d) => (
-                    <th key={d} className="py-2 text-right">{d}</th>
-                  ))}
+                  <th className="py-2 text-right">Sessions</th>
+                  <th className="py-2 text-right">Cash Δ</th>
+                  <th className="py-2 text-right">Avg</th>
+                  <th className="py-2 text-right">Short</th>
+                  <th className="py-2 text-right">Over</th>
+                  <th className="py-2 text-right">Worst</th>
+                  <th className="py-2 text-right">QRIS Δ</th>
+                  <th className="py-2 text-right">Card Δ</th>
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r) => {
-                  const byDow = new Map(r.dow_cash.map((c) => [c.dow, c.total_variance]));
-                  return (
-                    <tr key={r.cashier_id} className="border-b border-border-subtle">
-                      <td className="py-2">{r.cashier_name}</td>
-                      {DOW_LABELS.map((_, dow) => {
-                        const v = byDow.get(dow);
-                        return (
-                          <td key={dow} className={`py-2 text-right tabular-nums ${v === undefined ? 'text-text-secondary' : varianceClass(v)}`}>
-                            {v === undefined ? '·' : fmt(v)}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  );
-                })}
+                {rows.map((r) => (
+                  <tr key={r.cashier_id} className="border-b border-border-subtle">
+                    <td className="py-2">{r.cashier_name}</td>
+                    <td className="py-2 text-right tabular-nums">{r.sessions_count}</td>
+                    <td className={`py-2 text-right tabular-nums ${varianceClass(r.cash.total_variance)}`}>{fmt(r.cash.total_variance)}</td>
+                    <td className="py-2 text-right tabular-nums">{fmt(r.cash.avg_variance)}</td>
+                    <td className="py-2 text-right tabular-nums">{r.cash.short_count}</td>
+                    <td className="py-2 text-right tabular-nums">{r.cash.over_count}</td>
+                    <td className={`py-2 text-right tabular-nums ${varianceClass(r.cash.worst_variance)}`}>{fmt(r.cash.worst_variance)}</td>
+                    <td className="py-2 text-right tabular-nums">{r.qris.counted_sessions === 0 ? '—' : fmt(r.qris.total_variance)}</td>
+                    <td className="py-2 text-right tabular-nums">{r.card.counted_sessions === 0 ? '—' : fmt(r.card.total_variance)}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
+          </div>
+
+          {/* Cash variance by day of week — the "recurring shortfall on Tuesdays" signal. */}
+          <div>
+            <h3 className="text-sm font-medium mb-2">Cash variance by day of week</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-text-secondary border-b border-border-subtle">
+                    <th className="py-2 text-left">Cashier</th>
+                    {DOW_LABELS.map((d) => (
+                      <th key={d} className="py-2 text-right">{d}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((r) => {
+                    const byDow = new Map(r.dow_cash.map((c) => [c.dow, c.total_variance]));
+                    return (
+                      <tr key={r.cashier_id} className="border-b border-border-subtle">
+                        <td className="py-2">{r.cashier_name}</td>
+                        {DOW_LABELS.map((_, dow) => {
+                          const v = byDow.get(dow);
+                          return (
+                            <td key={dow} className={`py-2 text-right tabular-nums ${v === undefined ? 'text-text-secondary' : varianceClass(v)}`}>
+                              {v === undefined ? '·' : fmt(v)}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}

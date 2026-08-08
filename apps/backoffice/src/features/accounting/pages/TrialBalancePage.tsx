@@ -33,7 +33,7 @@ export default function TrialBalancePage(): JSX.Element {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl text-text-primary">Trial Balance</h1>
+          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Trial Balance</h1>
           <p className="text-sm text-text-secondary italic">
             Asserts Σ debit = Σ credit across active accounts
           </p>
@@ -88,7 +88,7 @@ export default function TrialBalancePage(): JSX.Element {
             )}
           </div>
 
-          <div className="rounded-lg border border-border-subtle bg-bg-elevated overflow-hidden">
+          <div className="rounded-lg border border-border-subtle bg-bg-elevated overflow-x-auto">
             <table className="w-full text-sm" data-testid="tb-table">
               <thead>
                 <tr className="text-left text-xs uppercase tracking-widest text-text-secondary">

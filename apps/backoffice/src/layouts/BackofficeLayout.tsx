@@ -15,6 +15,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { CommandPalette } from './CommandPalette.js';
 import { TopBar } from './TopBar.js';
+import { RouteErrorBoundary } from '@/components/RouteErrorBoundary.js';
 
 const DEAD_SIDEBAR_KEYS = [
   'bo:sidebar:collapsed',
@@ -70,9 +71,11 @@ export function BackofficeLayout() {
         tabIndex={-1}
         className="flex-1 overflow-y-auto bg-page-grid px-[22px] py-5"
       >
-        <Suspense fallback={<RouteFallback />}>
-          <Outlet />
-        </Suspense>
+        <RouteErrorBoundary>
+          <Suspense fallback={<RouteFallback />}>
+            <Outlet />
+          </Suspense>
+        </RouteErrorBoundary>
       </main>
       <CommandPalette open={paletteOpen} onClose={() => { setPaletteOpen(false); }} />
     </div>

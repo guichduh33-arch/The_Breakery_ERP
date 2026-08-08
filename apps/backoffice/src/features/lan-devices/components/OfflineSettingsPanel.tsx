@@ -8,10 +8,10 @@
 // SettingsInventoryPage.
 
 import { useEffect, useState } from 'react';
-import { Button } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useSettings } from '@/features/settings/hooks/useSettings.js';
 import { useSetSetting } from '@/features/settings/hooks/useSetSetting.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 interface Draft {
   offlinePaymentsEnabled: boolean;
@@ -64,7 +64,7 @@ export function OfflineSettingsPanel() {
 
   return (
     <div className="space-y-4">
-      {network.isLoading && <div className="text-text-secondary text-sm">Chargement…</div>}
+      {network.isLoading && <div className="text-text-secondary text-sm">Loading…</div>}
       {network.error && <div className="text-red text-sm">Échec du chargement : {network.error.message}</div>}
 
       {!network.isLoading && !network.error && draft !== null && (
@@ -106,9 +106,9 @@ export function OfflineSettingsPanel() {
           {savedAt && !dirty && <p className="text-success text-xs" role="status">Enregistré à {savedAt}</p>}
 
           {canUpdate && (
-            <Button type="submit" variant="primary" disabled={!dirty || setSetting.isPending}>
+            <button type="submit" disabled={!dirty || setSetting.isPending} className={TOOLBAR_BTN_PRIMARY}>
               {setSetting.isPending ? 'Enregistrement…' : dirty ? 'Enregistrer' : 'Aucun changement'}
-            </Button>
+            </button>
           )}
         </form>
       )}

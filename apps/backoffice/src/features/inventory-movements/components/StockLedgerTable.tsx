@@ -27,17 +27,21 @@ function fmtTime(iso: string): string { return iso.slice(0, 19).replace('T', ' '
 
 // Slim main columns — keep the page readable. Detail goes in the expandable panel.
 // `sort` marks the columns the user can order by (date / type / product).
+// Labels are the human wording of the page subtitle (opening → in/out →
+// balance), not the ledger column names: every other table in the Backoffice
+// heads its columns in plain words, and a snake_case header reads as a leaked
+// query. The CSV export keeps the raw field names — see stockLedgerColumns.ts.
 const HEADERS: readonly { label: string; align: 'left' | 'right'; sort?: SortKey }[] = [
-  { label: 'date',            align: 'left',  sort: 'date'    },
-  { label: 'type',            align: 'left',  sort: 'type'    },
-  { label: 'product',         align: 'left',  sort: 'product' },
-  { label: 'uom',             align: 'left'  },
-  { label: 'beginning_qty',   align: 'right' },
-  { label: 'incoming_qty',    align: 'right' },
-  { label: 'outgoing_qty',    align: 'right' },
-  { label: 'balance_qty',     align: 'right' },
-  { label: 'price',           align: 'right' },
-  { label: 'movement_amount', align: 'right' },
+  { label: 'Date',    align: 'left',  sort: 'date'    },
+  { label: 'Type',    align: 'left',  sort: 'type'    },
+  { label: 'Product', align: 'left',  sort: 'product' },
+  { label: 'Unit',    align: 'left'  },
+  { label: 'Opening', align: 'right' },
+  { label: 'In',      align: 'right' },
+  { label: 'Out',     align: 'right' },
+  { label: 'Balance', align: 'right' },
+  { label: 'Price',   align: 'right' },
+  { label: 'Amount',  align: 'right' },
 ];
 
 const TOTAL_COLS = HEADERS.length + 1; // + the expand-toggle column
@@ -124,7 +128,12 @@ export function StockLedgerTable({ rows, truncated, isLoading, rowCap = 5000 }: 
                       <button
                         type="button"
                         onClick={() => { onSort(h.sort!); }}
-                        className={`inline-flex items-center gap-1 hover:text-text-primary ${active ? 'text-text-primary' : ''}`}
+                        // `uppercase` is repeated here on purpose: the UA
+                        // stylesheet sets `text-transform: none` on <button>,
+                        // so the sortable headers dropped out of the thead's
+                        // uppercase and rendered in a different case than the
+                        // plain ones.
+                        className={`inline-flex items-center gap-1 uppercase hover:text-text-primary ${active ? 'text-text-primary' : ''}`}
                       >
                         {h.label}
                         <SortIcon className="h-3 w-3 opacity-70" aria-hidden />

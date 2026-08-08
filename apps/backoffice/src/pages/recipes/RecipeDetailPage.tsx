@@ -33,7 +33,7 @@ export function RecipeDetailPage(): JSX.Element {
             <ArrowLeft size={16} /> Back
           </Link>
         </Button>
-        <h1 className="text-2xl font-semibold font-serif">{product.name}</h1>
+        <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">{product.name}</h1>
         {product.is_semi_finished && (
           <Badge variant="info">Semi-finished</Badge>
         )}
@@ -69,37 +69,39 @@ export function RecipeDetailPage(): JSX.Element {
         {bom.length === 0 ? (
           <div className="text-sm text-muted-foreground">No ingredients recorded.</div>
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-xs text-muted-foreground">
-                <th className="pb-2">Material</th>
-                <th className="pb-2 text-right">Qty / unit</th>
-                <th className="pb-2">Unit</th>
-                <th className="pb-2 text-right">Cost / material unit</th>
-                <th className="pb-2 text-right">Stock on hand</th>
-                <th className="pb-2 text-right">Line cost</th>
-              </tr>
-            </thead>
-            <tbody>
-              {bom.map((r) => (
-                <tr key={r.material_id} className="border-t">
-                  <td className="py-2">
-                    <DrilldownLink
-                      entity="product"
-                      id={r.material_id}
-                      label={r.material_name}
-                      icon={false}
-                    />
-                  </td>
-                  <td className="text-right">{r.qty_per_unit}</td>
-                  <td>{r.material_unit}</td>
-                  <td className="text-right">{fmtIdr(r.cost_price)}</td>
-                  <td className="text-right">{r.current_stock}</td>
-                  <td className="text-right">{fmtIdr(r.qty_per_unit * r.cost_price)}</td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs text-muted-foreground">
+                  <th className="pb-2">Material</th>
+                  <th className="pb-2 text-right">Qty / unit</th>
+                  <th className="pb-2">Unit</th>
+                  <th className="pb-2 text-right">Cost / material unit</th>
+                  <th className="pb-2 text-right">Stock on hand</th>
+                  <th className="pb-2 text-right">Line cost</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {bom.map((r) => (
+                  <tr key={r.material_id} className="border-t">
+                    <td className="py-2">
+                      <DrilldownLink
+                        entity="product"
+                        id={r.material_id}
+                        label={r.material_name}
+                        icon={false}
+                      />
+                    </td>
+                    <td className="text-right">{r.qty_per_unit}</td>
+                    <td>{r.material_unit}</td>
+                    <td className="text-right">{fmtIdr(r.cost_price)}</td>
+                    <td className="text-right">{r.current_stock}</td>
+                    <td className="text-right">{fmtIdr(r.qty_per_unit * r.cost_price)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </Card>
     </div>

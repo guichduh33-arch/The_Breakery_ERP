@@ -84,38 +84,40 @@ export default function PermissionChangesPage() {
         </p>
       )}
       {data && (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border-subtle text-text-secondary">
-              <th className="py-2 text-left">Date</th>
-              <th className="py-2 text-left">Actor</th>
-              <th className="py-2 text-left">Action</th>
-              <th className="py-2 text-left">Role</th>
-              <th className="py-2 text-left">Permission</th>
-              <th className="py-2 text-left">Detail</th>
-            </tr>
-          </thead>
-          <tbody>
-            {changes.map((r, idx) => (
-              <tr key={`${r.changed_at}-${idx}`} className="border-b border-border-subtle">
-                <td className="py-2 text-text-secondary whitespace-nowrap">{r.changed_at.slice(0, 10)}</td>
-                <td className="py-2">{r.actor_name}</td>
-                <td className="py-2">{actionBadge(r.action)}</td>
-                <td className="py-2 text-text-secondary">{r.role_code ?? '—'}</td>
-                <td className="py-2 text-text-secondary">{r.permission_code ?? '—'}</td>
-                <td className="py-2">
-                  {r.detail !== null && r.detail !== undefined ? (
-                    <code className="rounded bg-surface-raised px-1 py-0.5 text-xs text-text-secondary break-all">
-                      {JSON.stringify(r.detail)}
-                    </code>
-                  ) : (
-                    <span className="text-text-secondary">—</span>
-                  )}
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border-subtle text-text-secondary">
+                <th className="py-2 text-left">Date</th>
+                <th className="py-2 text-left">Actor</th>
+                <th className="py-2 text-left">Action</th>
+                <th className="py-2 text-left">Role</th>
+                <th className="py-2 text-left">Permission</th>
+                <th className="py-2 text-left">Detail</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {changes.map((r, idx) => (
+                <tr key={`${r.changed_at}-${idx}`} className="border-b border-border-subtle">
+                  <td className="py-2 text-text-secondary whitespace-nowrap">{r.changed_at.slice(0, 10)}</td>
+                  <td className="py-2">{r.actor_name}</td>
+                  <td className="py-2">{actionBadge(r.action)}</td>
+                  <td className="py-2 text-text-secondary">{r.role_code ?? '—'}</td>
+                  <td className="py-2 text-text-secondary">{r.permission_code ?? '—'}</td>
+                  <td className="py-2">
+                    {r.detail !== null && r.detail !== undefined ? (
+                      <code className="rounded bg-surface-raised px-1 py-0.5 text-xs text-text-secondary break-all">
+                        {JSON.stringify(r.detail)}
+                      </code>
+                    ) : (
+                      <span className="text-text-secondary">—</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </ReportPage>
   );

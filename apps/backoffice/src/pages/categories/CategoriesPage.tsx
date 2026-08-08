@@ -77,7 +77,7 @@ export default function CategoriesPage(): JSX.Element {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-display text-2xl text-text-primary">Product categories</h1>
+          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Product categories</h1>
           <p className="text-sm text-text-secondary italic">
             Drag rows to reorder ; rows in display order on the POS grid.
           </p>
@@ -107,7 +107,7 @@ export default function CategoriesPage(): JSX.Element {
       )}
 
       {order.length > 0 && (
-        <div className="rounded-lg border border-border-subtle bg-bg-elevated overflow-hidden">
+        <div className="rounded-lg border border-border-subtle bg-bg-elevated overflow-x-auto">
           <table className="w-full text-sm" data-testid="categories-table">
             <thead>
               <tr className="text-left text-xs uppercase tracking-widest text-text-secondary">

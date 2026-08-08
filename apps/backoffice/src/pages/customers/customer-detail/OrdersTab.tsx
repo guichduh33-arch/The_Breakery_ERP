@@ -29,7 +29,7 @@ export function OrdersTab({
   }
 
   return (
-    <Card variant="default" padding="none" className="overflow-hidden">
+    <Card variant="default" padding="none" className="overflow-x-auto">
       <div className="flex items-center justify-between px-4 py-3 text-xs text-text-secondary">
         <span>Showing {recent_orders.length} of {orders_count} orders</span>
         <span className="tabular-nums">{rp(totalShown)}</span>

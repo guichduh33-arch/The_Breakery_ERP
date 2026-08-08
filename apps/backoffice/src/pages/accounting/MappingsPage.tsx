@@ -27,7 +27,7 @@ export default function MappingsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-serif text-3xl">Accounting Mappings</h1>
+        <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Accounting Mappings</h1>
         <p className="text-text-secondary text-sm mt-1 max-w-2xl">
           Symbolic JE keys (e.g. <code>SALE_POS_REVENUE</code>) routed to chart-of-accounts codes.
           JE triggers resolve via these rows — never via hardcoded account codes.

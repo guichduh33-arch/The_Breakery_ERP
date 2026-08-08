@@ -11,6 +11,7 @@ import { useAuthStore } from '@/stores/authStore.js';
 import { useHolidaysList, type HolidayRow } from '@/features/settings/hooks/useHolidays.js';
 import { HolidayFormModal }   from '@/features/settings/components/HolidayFormModal.js';
 import { HolidayDeleteConfirm } from '@/features/settings/components/HolidayDeleteConfirm.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 function typeLabel(t: string): string {
   switch (t) {
@@ -80,16 +81,16 @@ export default function SettingsHolidaysPage() {
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="font-serif text-3xl">Holidays</h1>
+          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Holidays</h1>
           <p className="text-text-secondary text-sm mt-1">
             National, religious, and company-level non-working days. Recurring holidays are listed separately —
             verify the date for next year before rolling over.
           </p>
         </div>
         {canManage && (
-          <Button type="button" variant="primary" onClick={() => setCreating(true)}>
-            <Plus className="h-4 w-4" aria-hidden /> New holiday
-          </Button>
+          <button type="button" onClick={() => setCreating(true)} className={TOOLBAR_BTN_PRIMARY}>
+            <Plus className="h-3.5 w-3.5" aria-hidden /> New holiday
+          </button>
         )}
       </div>
 
@@ -102,7 +103,7 @@ export default function SettingsHolidaysPage() {
             <h2 className="text-sm uppercase tracking-widest text-text-secondary">
               Recurring ({groups.recurring.length})
             </h2>
-            <div className="bg-bg-elevated rounded-lg border border-border-subtle overflow-hidden">
+            <div className="bg-bg-elevated rounded-lg border border-border-subtle overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-bg-overlay text-xs uppercase tracking-wide text-text-secondary">
                   <tr>
@@ -127,7 +128,7 @@ export default function SettingsHolidaysPage() {
             <h2 className="text-sm uppercase tracking-widest text-text-secondary">
               Fixed-date ({groups.fixed.length})
             </h2>
-            <div className="bg-bg-elevated rounded-lg border border-border-subtle overflow-hidden">
+            <div className="bg-bg-elevated rounded-lg border border-border-subtle overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-bg-overlay text-xs uppercase tracking-wide text-text-secondary">
                   <tr>

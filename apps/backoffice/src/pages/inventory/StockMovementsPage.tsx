@@ -30,7 +30,7 @@ interface MovementBuckets {
   totalCount: number; totalValue: number;
 }
 
-function bucketize(rows: ReadonlyArray<{ movement_type: string; count: number; qty_total: number; value_total: number | null }>): MovementBuckets {
+function bucketize(rows: readonly { movement_type: string; count: number; qty_total: number; value_total: number | null }[]): MovementBuckets {
   const acc: MovementBuckets = { inCount: 0, inQty: 0, outCount: 0, outQty: 0, totalCount: 0, totalValue: 0 };
   for (const r of rows) {
     const count = Number(r.count) || 0;
@@ -77,7 +77,7 @@ export default function StockMovementsPage(): JSX.Element {
     <div className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="font-display text-3xl text-text-primary">Stock movements</h1>
+          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Stock movements</h1>
           <p className="mt-1 text-sm text-text-secondary">
             Per-product stock card over the selected range: opening → in/out → balance, with cost and movement value.
           </p>

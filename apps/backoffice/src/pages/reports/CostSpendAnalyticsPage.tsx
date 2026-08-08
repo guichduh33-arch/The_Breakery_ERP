@@ -28,6 +28,7 @@ import {
   formatIdrFull, formatIdrCompact,
 } from '@/features/reports/utils/chartColors.js';
 import { useUrlState } from '@/hooks/useUrlState.js';
+import { usePrefersReducedMotion } from '@/features/dashboard/utils/usePrefersReducedMotion.js';
 
 interface DailyCost { date: string; cogs: number; opex: number }
 
@@ -59,6 +60,7 @@ function FamilyKpi({
 }
 
 export default function CostSpendAnalyticsPage() {
+  const reduced = usePrefersReducedMotion();
   const [start, setStart] = useUrlState('start', defaultStart());
   const [end,   setEnd]   = useUrlState('end', toLocalDateStr(new Date()));
 
@@ -182,9 +184,9 @@ export default function CostSpendAnalyticsPage() {
                 contentStyle={CHART_TOOLTIP_STYLE}
               />
               <Legend wrapperStyle={{ fontSize: 12 }} />
-              <Area type="monotone" dataKey="cogs" name="Purchases" stackId="1"
+              <Area isAnimationActive={!reduced} type="monotone" dataKey="cogs" name="Purchases" stackId="1"
                 stroke={COGS_BASE} fill={COGS_BASE} fillOpacity={0.85} />
-              <Area type="monotone" dataKey="opex" name="OpEx" stackId="1"
+              <Area isAnimationActive={!reduced} type="monotone" dataKey="opex" name="OpEx" stackId="1"
                 stroke={OPEX_BASE} fill={OPEX_BASE} fillOpacity={0.85} />
             </AreaChart>
           </ResponsiveContainer>

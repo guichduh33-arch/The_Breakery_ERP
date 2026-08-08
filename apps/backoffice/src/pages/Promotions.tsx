@@ -39,11 +39,12 @@ import {
   type PromotionListRow,
   type PromotionsListFilters,
 } from '@/features/promotions/hooks/usePromotionsList.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 type TypeFilter = 'all' | 'percentage' | 'fixed_amount' | 'bogo' | 'free_product';
 type ActiveFilter = 'all' | 'active' | 'inactive';
 
-const TYPE_OPTIONS: ReadonlyArray<{ value: TypeFilter; label: string }> = [
+const TYPE_OPTIONS: readonly { value: TypeFilter; label: string }[] = [
   { value: 'all',           label: 'Type: All' },
   { value: 'percentage',    label: 'Percentage' },
   { value: 'fixed_amount',  label: 'Fixed amount' },
@@ -51,7 +52,7 @@ const TYPE_OPTIONS: ReadonlyArray<{ value: TypeFilter; label: string }> = [
   { value: 'free_product',  label: 'Free product' },
 ];
 
-const STATUS_OPTIONS: ReadonlyArray<{ value: ActiveFilter; label: string }> = [
+const STATUS_OPTIONS: readonly { value: ActiveFilter; label: string }[] = [
   { value: 'all',      label: 'Status: All' },
   { value: 'active',   label: 'Active' },
   { value: 'inactive', label: 'Inactive' },
@@ -64,7 +65,7 @@ interface PromoStats {
   discount: number;
 }
 
-function summarise(rows: ReadonlyArray<PromotionListRow>): PromoStats {
+function summarise(rows: readonly PromotionListRow[]): PromoStats {
   let active = 0;
   let bogo = 0;
   let discount = 0;
@@ -118,7 +119,7 @@ export default function PromotionsPage(): JSX.Element {
     updateMut.mutate({ id: row.id, values: { is_active: !row.is_active } });
   }
 
-  const columns: ReadonlyArray<DataTableColumn<PromotionListRow>> = [
+  const columns: readonly DataTableColumn<PromotionListRow>[] = [
     {
       id:     'name',
       header: 'Promotion',
@@ -214,15 +215,15 @@ export default function PromotionsPage(): JSX.Element {
     <div className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="font-serif text-3xl text-text-primary">Promotions</h1>
+          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Promotions</h1>
           <p className="mt-1 text-sm text-text-secondary">
             Manage automatic discounts (percentage / fixed amount / BOGO / free product).
           </p>
         </div>
         {canCreate && (
-          <Button variant="primary" size="md" onClick={() => setCreating(true)}>
-            <Plus className="h-4 w-4" aria-hidden /> New promotion
-          </Button>
+          <button type="button" onClick={() => setCreating(true)} className={TOOLBAR_BTN_PRIMARY}>
+            <Plus className="h-3.5 w-3.5" aria-hidden /> New promotion
+          </button>
         )}
       </header>
 
@@ -300,7 +301,7 @@ interface FilterFieldProps {
   id:       string;
   label:    string;
   value:    string;
-  options:  ReadonlyArray<{ value: string; label: string }>;
+  options:  readonly { value: string; label: string }[];
   onChange: (next: string) => void;
 }
 

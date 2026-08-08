@@ -145,35 +145,37 @@ export default function Pb1ReportPage() {
             <h2 className="mb-2 text-sm font-medium uppercase tracking-widest text-text-secondary">
               {titlePeriod} — by day
             </h2>
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border-subtle text-text-secondary">
-                  <th className="py-2 text-left">Date</th>
-                  <th className="py-2 text-right">Taxable base</th>
-                  <th className="py-2 text-right">PB1 collected</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.by_day.length === 0 && (
-                  <tr>
-                    <td className="py-3 text-text-secondary" colSpan={3}>
-                      No sales recorded for this month.
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border-subtle text-text-secondary">
+                    <th className="py-2 text-left">Date</th>
+                    <th className="py-2 text-right">Taxable base</th>
+                    <th className="py-2 text-right">PB1 collected</th>
                   </tr>
-                )}
-                {data.by_day.map((d) => (
-                  <tr key={d.day} className="border-b border-border-subtle">
-                    <td className="py-2 text-text-secondary">{String(d.day).slice(0, 10)}</td>
-                    <td className="py-2 text-right tabular-nums">
-                      {formatIdrFull(d.taxable_base)}
-                    </td>
-                    <td className="py-2 text-right tabular-nums">
-                      {formatIdrFull(d.pb1_collected)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {data.by_day.length === 0 && (
+                    <tr>
+                      <td className="py-3 text-text-secondary" colSpan={3}>
+                        No sales recorded for this month.
+                      </td>
+                    </tr>
+                  )}
+                  {data.by_day.map((d) => (
+                    <tr key={d.day} className="border-b border-border-subtle">
+                      <td className="py-2 text-text-secondary">{String(d.day).slice(0, 10)}</td>
+                      <td className="py-2 text-right tabular-nums">
+                        {formatIdrFull(d.taxable_base)}
+                      </td>
+                      <td className="py-2 text-right tabular-nums">
+                        {formatIdrFull(d.pb1_collected)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}

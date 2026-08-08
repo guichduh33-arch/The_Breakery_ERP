@@ -90,10 +90,13 @@ describe('StockMovementHistoryPage (smoke)', () => {
   it('renders the 10 slim stock-card columns', async () => {
     renderPage();
     await screen.findByText('Flour');
-    for (const h of ['date', 'type', 'product', 'uom',
-      'beginning_qty', 'incoming_qty', 'outgoing_qty', 'balance_qty', 'price', 'movement_amount']) {
+    // Human headers, not the ledger field names (design audit 2026-08-04).
+    for (const h of ['Date', 'Type', 'Product', 'Unit',
+      'Opening', 'In', 'Out', 'Balance', 'Price', 'Amount']) {
       expect(screen.getByRole('columnheader', { name: h })).toBeInTheDocument();
     }
+    // The raw field names must not leak back into the header row.
+    expect(screen.queryByRole('columnheader', { name: 'beginning_qty' })).toBeNull();
     // Detail-only fields are NOT top-level columns anymore.
     expect(screen.queryByRole('columnheader', { name: 'created_time' })).toBeNull();
     expect(screen.queryByRole('columnheader', { name: 'ref_no' })).toBeNull();

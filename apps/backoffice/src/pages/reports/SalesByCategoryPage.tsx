@@ -29,6 +29,7 @@ import {
   formatIdrCompact,
   formatIdrFull,
 } from '@/features/reports/utils/chartColors.js';
+import { usePrefersReducedMotion } from '@/features/dashboard/utils/usePrefersReducedMotion.js';
 
 const csvColumns: CsvColumn<SalesCategoryRow>[] = [
   { header: 'Category', accessor: (r) => r.category_name, format: 'text' },
@@ -48,6 +49,7 @@ function sumRows(rows: SalesCategoryRow[]): { total: number; qty: number } {
 }
 
 export default function SalesByCategoryPage() {
+  const reduced = usePrefersReducedMotion();
   const [start, setStart] = useUrlState('start', defaultStart());
   const [end,   setEnd]   = useUrlState('end', toLocalDateStr(new Date()));
   const [compare, setCompare] = useUrlBoolean('compare');
@@ -138,36 +140,38 @@ export default function SalesByCategoryPage() {
                   formatter={(v: number) => [formatIdrFull(v), 'Revenue']}
                   contentStyle={CHART_TOOLTIP_STYLE}
                 />
-                <Bar dataKey="total" fill="var(--gold-base)" />
+                <Bar isAnimationActive={!reduced} dataKey="total" fill="var(--gold-base)" />
               </BarChart>
             </ResponsiveContainer>
           </div>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-text-secondary border-b border-border-subtle">
-                <th className="py-2 text-left">Category</th>
-                <th className="py-2 text-right">Total</th>
-                <th className="py-2 text-right">Qty</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.map((r) => (
-                <tr key={r.category_id} className="border-b border-border-subtle">
-                  <td className="py-2">
-                    <DrilldownLink
-                      entity="category"
-                      id={r.category_id}
-                      label={r.category_name}
-                      filter={{ date_from: start, date_to: end }}
-                      icon={false}
-                    />
-                  </td>
-                  <td className="py-2 text-right tabular-nums">{formatIdrFull(r.total)}</td>
-                  <td className="py-2 text-right tabular-nums">{r.qty}</td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-text-secondary border-b border-border-subtle">
+                  <th className="py-2 text-left">Category</th>
+                  <th className="py-2 text-right">Total</th>
+                  <th className="py-2 text-right">Qty</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {data.map((r) => (
+                  <tr key={r.category_id} className="border-b border-border-subtle">
+                    <td className="py-2">
+                      <DrilldownLink
+                        entity="category"
+                        id={r.category_id}
+                        label={r.category_name}
+                        filter={{ date_from: start, date_to: end }}
+                        icon={false}
+                      />
+                    </td>
+                    <td className="py-2 text-right tabular-nums">{formatIdrFull(r.total)}</td>
+                    <td className="py-2 text-right tabular-nums">{r.qty}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </ReportPage>

@@ -44,6 +44,7 @@ import {
   type ExpensesListFilters,
   type ExpenseStatus,
 } from '@/features/expenses/hooks/useExpensesList.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 interface ExpensesKpi {
   totalAmount: number;
@@ -52,7 +53,7 @@ interface ExpensesKpi {
   avgAmount: number;
 }
 
-function aggregate(rows: ReadonlyArray<ExpenseRow>): ExpensesKpi {
+function aggregate(rows: readonly ExpenseRow[]): ExpensesKpi {
   const acc: ExpensesKpi = { totalAmount: 0, pendingCount: 0, monthlyCount: 0, avgAmount: 0 };
   if (rows.length === 0) return acc;
   const monthStart = new Date();
@@ -111,7 +112,7 @@ export default function ExpensesListPage(): JSX.Element {
   const rows = list.data ?? [];
   const kpi  = useMemo(() => aggregate(allList.data ?? []), [allList.data]);
 
-  const columns: ReadonlyArray<DataTableColumn<ExpenseRow>> = useMemo(() => [
+  const columns: readonly DataTableColumn<ExpenseRow>[] = useMemo(() => [
     {
       id:    'date',
       header: 'Date',
@@ -185,7 +186,7 @@ export default function ExpensesListPage(): JSX.Element {
         <TabsContent value="expenses" className="mt-4 space-y-6">
           <header className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <h1 className="font-display text-3xl text-text-primary">Expenses</h1>
+              <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Expenses</h1>
               <p className="mt-1 text-sm text-text-secondary">Manage and track your bakery&apos;s expenditure.</p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -193,11 +194,9 @@ export default function ExpensesListPage(): JSX.Element {
                 <Download className="h-4 w-4" aria-hidden /> Export
               </Button>
               {canCreate && (
-                <Button asChild variant="gold">
-                  <Link to="/backoffice/expenses/new">
-                    <Plus className="h-4 w-4" aria-hidden /> New expense
-                  </Link>
-                </Button>
+                <Link to="/backoffice/expenses/new" className={TOOLBAR_BTN_PRIMARY}>
+                  <Plus className="h-3.5 w-3.5" aria-hidden /> New expense
+                </Link>
               )}
             </div>
           </header>
@@ -331,11 +330,9 @@ export default function ExpensesListPage(): JSX.Element {
                   </p>
                   {canCreate && (
                     <div className="mt-4">
-                      <Button asChild variant="gold">
-                        <Link to="/backoffice/expenses/new">
-                          <Plus className="h-4 w-4" aria-hidden /> Add first expense
-                        </Link>
-                      </Button>
+                      <Link to="/backoffice/expenses/new" className={TOOLBAR_BTN_PRIMARY}>
+                        <Plus className="h-3.5 w-3.5" aria-hidden /> Add first expense
+                      </Link>
                     </div>
                   )}
                 </div>
@@ -369,7 +366,7 @@ function CategoriesTab(): JSX.Element {
     );
   }
   return (
-    <div className="overflow-hidden rounded-lg border border-border-subtle bg-bg-elevated">
+    <div className="overflow-x-auto rounded-lg border border-border-subtle bg-bg-elevated">
       <table className="w-full text-sm">
         <thead className="border-b border-border-subtle bg-bg-base/40">
           <tr>

@@ -47,6 +47,7 @@ import {
 } from '@/features/purchasing/hooks/usePurchaseOrdersList.js';
 import { POStatusBadge } from '@/features/purchasing/components/POStatusBadge.js';
 import { useSuppliersList } from '@/features/suppliers/hooks/useSuppliersList.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 interface POKpi {
   total:     number;
@@ -56,7 +57,7 @@ interface POKpi {
   cancelled: number;
 }
 
-function aggregate(rows: ReadonlyArray<PurchaseOrderListRow>): POKpi {
+function aggregate(rows: readonly PurchaseOrderListRow[]): POKpi {
   const acc: POKpi = { total: rows.length, pending: 0, partial: 0, received: 0, cancelled: 0 };
   for (const r of rows) {
     if (r.status === 'pending')   acc.pending   += 1;
@@ -117,7 +118,7 @@ export default function PurchaseOrdersListPage(): JSX.Element {
   const rows = list.data ?? [];
   const kpi  = useMemo(() => aggregate(allList.data ?? []), [allList.data]);
 
-  const columns: ReadonlyArray<DataTableColumn<PurchaseOrderListRow>> = useMemo(() => [
+  const columns: readonly DataTableColumn<PurchaseOrderListRow>[] = useMemo(() => [
     {
       id:    'po_number',
       header: 'PO Number',
@@ -180,7 +181,7 @@ export default function PurchaseOrdersListPage(): JSX.Element {
     <div className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl text-text-primary">Purchase Orders</h1>
+          <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Purchase Orders</h1>
           <p className="mt-1 text-sm text-text-secondary">
             Track open and historical POs ; receive goods to post inventory + accounting entries.
           </p>
@@ -198,11 +199,9 @@ export default function PurchaseOrdersListPage(): JSX.Element {
             <Download className="h-4 w-4" aria-hidden /> {exportMut.isPending ? 'Exporting…' : 'Export'}
           </Button>
           {canCreate && (
-            <Button asChild variant="gold">
-              <Link to="/backoffice/purchasing/purchase-orders/new">
-                <Plus className="h-4 w-4" aria-hidden /> New purchase order
-              </Link>
-            </Button>
+            <Link to="/backoffice/purchasing/purchase-orders/new" className={TOOLBAR_BTN_PRIMARY}>
+              <Plus className="h-3.5 w-3.5" aria-hidden /> New purchase order
+            </Link>
           )}
         </div>
       </header>
@@ -290,7 +289,7 @@ export default function PurchaseOrdersListPage(): JSX.Element {
           rows={rows}
           getRowKey={(r) => r.id}
           isLoading={list.isLoading}
-          onRowClick={(row) => navigate(`/backoffice/purchasing/purchase-orders/${row.id}`)}
+          onRowClick={(row) => { void navigate(`/backoffice/purchasing/purchase-orders/${row.id}`); }}
           emptyState={
             <div className="px-6 py-12 text-center">
               <Package className="mx-auto h-10 w-10 text-text-muted" aria-hidden />
@@ -302,11 +301,9 @@ export default function PurchaseOrdersListPage(): JSX.Element {
               </p>
               {canCreate && (
                 <div className="mt-4">
-                  <Button asChild variant="gold">
-                    <Link to="/backoffice/purchasing/purchase-orders/new">
-                      <Plus className="h-4 w-4" aria-hidden /> New purchase order
-                    </Link>
-                  </Button>
+                  <Link to="/backoffice/purchasing/purchase-orders/new" className={TOOLBAR_BTN_PRIMARY}>
+                    <Plus className="h-3.5 w-3.5" aria-hidden /> New purchase order
+                  </Link>
                 </div>
               )}
             </div>

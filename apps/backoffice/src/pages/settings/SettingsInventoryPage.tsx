@@ -4,10 +4,10 @@
 // production). Écrit business_config.allow_negative_stock via set_setting_v12.
 
 import { useEffect, useState } from 'react';
-import { Button } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useSettings } from '@/features/settings/hooks/useSettings.js';
 import { useSetSetting } from '@/features/settings/hooks/useSetSetting.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 export default function SettingsInventoryPage() {
   const hasPermission = useAuthStore((s) => s.hasPermission);
@@ -47,13 +47,13 @@ export default function SettingsInventoryPage() {
   return (
     <div className="space-y-6 max-w-3xl">
       <div>
-        <h1 className="font-serif text-3xl">Réglages Inventaire</h1>
+        <h1 className="text-[23px] font-semibold leading-tight tracking-[-0.015em] text-text-primary">Réglages Inventaire</h1>
         <p className="text-text-secondary text-sm mt-1">
           Contrôles globaux du stock. Chaque changement écrit une entrée d&apos;audit.
         </p>
       </div>
 
-      {inventory.isLoading && <div className="text-text-secondary">Chargement…</div>}
+      {inventory.isLoading && <div className="text-text-secondary">Loading…</div>}
       {inventory.error && <div className="text-red">Échec du chargement : {inventory.error.message}</div>}
 
       {!inventory.isLoading && !inventory.error && draft !== null && (
@@ -79,9 +79,9 @@ export default function SettingsInventoryPage() {
           {savedAt && !dirty && <p className="text-success text-xs" role="status">Enregistré à {savedAt}</p>}
 
           {canUpdate && (
-            <Button type="submit" variant="primary" disabled={!dirty || setSetting.isPending}>
+            <button type="submit" disabled={!dirty || setSetting.isPending} className={TOOLBAR_BTN_PRIMARY}>
               {setSetting.isPending ? 'Enregistrement…' : dirty ? 'Enregistrer' : 'Aucun changement'}
-            </Button>
+            </button>
           )}
         </form>
       )}

@@ -143,7 +143,7 @@ function UserChip() {
           role="menu"
           className="absolute right-0 top-[calc(100%+6px)] z-50 w-56 rounded-xl border border-border-strong bg-surface-3 py-1.5 shadow-[0_18px_40px_rgba(28,23,18,0.20)]"
         >
-          <p className="px-3.5 pb-1.5 pt-1 font-data text-[10px] uppercase tracking-widest text-text-subtle">
+          <p className="px-3.5 pb-1.5 pt-1 font-data text-[10px] uppercase tracking-widest text-text-muted">
             {user.role_code}
           </p>
           <Link
