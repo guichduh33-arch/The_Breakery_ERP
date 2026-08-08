@@ -33,6 +33,7 @@ import {
   type PurchaseItemLine,
 } from '@/features/reports/hooks/usePurchaseItems.js';
 import { useUrlState } from '@/hooks/useUrlState.js';
+import { usePrefersReducedMotion } from '@/features/dashboard/utils/usePrefersReducedMotion.js';
 
 interface SupplierOption {
   id:   string;
@@ -61,6 +62,7 @@ function defaultStart(): string {
 }
 
 export default function PurchaseItemsPage() {
+  const reduced = usePrefersReducedMotion();
   const [start,      setStart]      = useUrlState('start', defaultStart());
   const [end,        setEnd]        = useUrlState('end', toLocalDateStr(new Date()));
   // Audit R-17 — filtre en URL-state (convention S57) : la vue devient
@@ -204,7 +206,7 @@ export default function PurchaseItemsPage() {
                     formatter={(v: number) => [formatIdrFull(v), 'Value']}
                     contentStyle={CHART_TOOLTIP_STYLE}
                   />
-                  <Bar dataKey="value" fill={COGS_BASE} radius={[0, 4, 4, 0]} />
+                  <Bar isAnimationActive={!reduced} dataKey="value" fill={COGS_BASE} radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

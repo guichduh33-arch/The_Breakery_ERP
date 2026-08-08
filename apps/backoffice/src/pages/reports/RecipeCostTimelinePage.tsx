@@ -33,6 +33,7 @@ import {
   formatIdrCompact,
   formatIdrPrecise,
 } from '@/features/reports/utils/chartColors.js';
+import { usePrefersReducedMotion } from '@/features/dashboard/utils/usePrefersReducedMotion.js';
 
 interface TimelineRow {
   product_id:     string;
@@ -73,6 +74,7 @@ const TIMELINE_CSV_COLUMNS: CsvColumn<TimelineRowWithDelta>[] = [
 ];
 
 export function RecipeCostTimelinePage(): JSX.Element {
+  const reduced = usePrefersReducedMotion();
   const { productId = '' } = useParams<{ productId: string }>();
   const [from, setFrom] = useUrlState('from', defaultStart());
   const [to,   setTo]   = useUrlState('to', toLocalDateStr(new Date()));
@@ -208,6 +210,7 @@ export function RecipeCostTimelinePage(): JSX.Element {
                   contentStyle={CHART_TOOLTIP_STYLE}
                 />
                 <Line
+                  isAnimationActive={!reduced}
                   type="monotone"
                   dataKey="cost"
                   stroke={CHART_ACCENT_GOLD}

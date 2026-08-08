@@ -5,6 +5,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from 'recharts';
 import { CHART_GRID_STROKE } from '@/features/reports/utils/chartColors.js';
+import { usePrefersReducedMotion } from '@/features/dashboard/utils/usePrefersReducedMotion.js';
 
 export interface SalesVelocityChartProps {
   data: { day: string; units_sold: number }[];
@@ -12,6 +13,7 @@ export interface SalesVelocityChartProps {
 }
 
 export function SalesVelocityChart({ data, unit }: SalesVelocityChartProps) {
+  const reduced = usePrefersReducedMotion();
   const fmt = data.map((d) => ({
     label: new Date(d.day).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
     units: Number(d.units_sold),
@@ -28,7 +30,7 @@ export function SalesVelocityChart({ data, unit }: SalesVelocityChartProps) {
           <XAxis dataKey="label" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
           <YAxis tick={{ fontSize: 10 }} />
           <Tooltip />
-          <Bar dataKey="units" fill="var(--gold-base)" />
+          <Bar isAnimationActive={!reduced} dataKey="units" fill="var(--gold-base)" />
         </BarChart>
       </ResponsiveContainer>
     </div>

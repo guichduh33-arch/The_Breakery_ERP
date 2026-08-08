@@ -12,6 +12,7 @@ import {
   CHART_TOOLTIP_STYLE,
   type CostFamily,
 } from '../utils/chartColors.js';
+import { usePrefersReducedMotion } from '@/features/dashboard/utils/usePrefersReducedMotion.js';
 
 export interface CostDonutDatum {
   name:  string;
@@ -35,6 +36,7 @@ export function CostDonut({
   centerLabel,
   maxLegend = 6,
 }: CostDonutProps): JSX.Element {
+  const reduced = usePrefersReducedMotion();
   const rows = data.filter((d) => d.value > 0);
   const total = rows.reduce((s, d) => s + d.value, 0);
 
@@ -61,6 +63,7 @@ export function CostDonut({
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
+              isAnimationActive={!reduced}
               data={rows}
               dataKey="value"
               nameKey="name"

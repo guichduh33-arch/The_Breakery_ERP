@@ -20,6 +20,7 @@ import { TrendingUp } from 'lucide-react';
 import { formatIdr } from '@breakery/utils';
 import { CHART_GRID_STROKE, CHART_AXIS_STROKE, CATEGORICAL_SERIES, CHART_SERIES_OFF } from '@/features/reports/utils/chartColors.js';
 import type { SupplierPurchaseItem } from '@/features/suppliers/hooks/useSupplierPurchaseItems.js';
+import { usePrefersReducedMotion } from '@/features/dashboard/utils/usePrefersReducedMotion.js';
 
 // Per-product qualitative palette (distinguishing arbitrary SKUs, not a cost
 // family) — only the first two slots have a design-system equivalent (gold
@@ -36,6 +37,7 @@ export interface SupplierPriceEvolutionTabProps {
 }
 
 export function SupplierPriceEvolutionTab({ items }: SupplierPriceEvolutionTabProps): JSX.Element {
+  const reduced = usePrefersReducedMotion();
   const products = useMemo(() => {
     const seen = new Map<string, string>();
     for (const it of items) if (!seen.has(it.product_id)) seen.set(it.product_id, it.product_name);
@@ -127,6 +129,7 @@ export function SupplierPriceEvolutionTab({ items }: SupplierPriceEvolutionTabPr
               <Legend formatter={(value: string) => products.find((p) => p.id === value)?.name ?? value} />
               {products.filter((p) => selected.has(p.id)).map((p) => (
                 <Line
+                  isAnimationActive={!reduced}
                   key={p.id}
                   type="monotone"
                   dataKey={p.id}

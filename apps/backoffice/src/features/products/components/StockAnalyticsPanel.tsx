@@ -31,6 +31,7 @@ import { formatIdr } from '@breakery/utils';
 import { CHART_GRID_STROKE } from '@/features/reports/utils/chartColors.js';
 import { useProductAnalytics } from '../hooks/useProductAnalytics.js';
 import type { ProductRow } from '../types.js';
+import { usePrefersReducedMotion } from '@/features/dashboard/utils/usePrefersReducedMotion.js';
 
 export type ProductAnalyticsData = NonNullable<ReturnType<typeof useProductAnalytics>['data']>;
 
@@ -142,6 +143,7 @@ export function AnalyticsKpiRow({ data }: { data: ProductAnalyticsData }): JSX.E
 }
 
 export function MovementsSection({ data }: { data: ProductAnalyticsData }): JSX.Element {
+  const reduced = usePrefersReducedMotion();
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -160,7 +162,7 @@ export function MovementsSection({ data }: { data: ProductAnalyticsData }): JSX.
                   <XAxis dataKey="label" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
                   <YAxis tick={{ fontSize: 10 }} width={36} />
                   <Tooltip />
-                  <Area type="monotone" dataKey="balance" stroke={GOLD} strokeWidth={2} fill="url(#stockFill)" />
+                  <Area isAnimationActive={!reduced} type="monotone" dataKey="balance" stroke={GOLD} strokeWidth={2} fill="url(#stockFill)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -204,6 +206,7 @@ export function MovementsSection({ data }: { data: ProductAnalyticsData }): JSX.
 }
 
 export function PurchaseSection({ data }: { data: ProductAnalyticsData }): JSX.Element {
+  const reduced = usePrefersReducedMotion();
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -224,7 +227,7 @@ export function PurchaseSection({ data }: { data: ProductAnalyticsData }): JSX.E
                   <XAxis dataKey="label" tick={{ fontSize: 10 }} />
                   <YAxis tick={{ fontSize: 10 }} width={48} tickFormatter={(v: number) => formatIdr(v)} />
                   <Tooltip formatter={(v: number) => formatIdr(v)} />
-                  <Line type="monotone" dataKey="cost" stroke={GOLD} strokeWidth={2} dot={{ r: 3 }} />
+                  <Line isAnimationActive={!reduced} type="monotone" dataKey="cost" stroke={GOLD} strokeWidth={2} dot={{ r: 3 }} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -242,7 +245,7 @@ export function PurchaseSection({ data }: { data: ProductAnalyticsData }): JSX.E
                   <XAxis dataKey="label" tick={{ fontSize: 10 }} />
                   <YAxis tick={{ fontSize: 10 }} width={36} />
                   <Tooltip />
-                  <Bar dataKey="qty" fill={GOLD} radius={[4, 4, 0, 0]} />
+                  <Bar isAnimationActive={!reduced} dataKey="qty" fill={GOLD} radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -282,6 +285,7 @@ export function TransfersSection({ data }: { data: ProductAnalyticsData }): JSX.
 }
 
 export function ProductionLossSection({ data }: { data: ProductAnalyticsData }): JSX.Element {
+  const reduced = usePrefersReducedMotion();
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -294,7 +298,7 @@ export function ProductionLossSection({ data }: { data: ProductAnalyticsData }):
                   <XAxis dataKey="label" tick={{ fontSize: 10 }} />
                   <YAxis tick={{ fontSize: 10 }} width={36} />
                   <Tooltip />
-                  <Bar dataKey="units" fill={GOLD} radius={[4, 4, 0, 0]} />
+                  <Bar isAnimationActive={!reduced} dataKey="units" fill={GOLD} radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

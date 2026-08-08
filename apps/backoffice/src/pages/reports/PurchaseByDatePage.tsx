@@ -31,6 +31,7 @@ import {
   type PurchaseByDayRow,
 } from '@/features/reports/hooks/usePurchaseByDate.js';
 import { useUrlState } from '@/hooks/useUrlState.js';
+import { usePrefersReducedMotion } from '@/features/dashboard/utils/usePrefersReducedMotion.js';
 
 const csvColumns: CsvColumn<PurchaseByDayRow>[] = [
   { header: 'Date',           accessor: (r) => r.date,           format: 'text' },
@@ -49,6 +50,7 @@ function defaultStart(): string {
 }
 
 export default function PurchaseByDatePage() {
+  const reduced = usePrefersReducedMotion();
   const [start, setStart] = useUrlState('start', defaultStart());
   const [end,   setEnd]   = useUrlState('end', toLocalDateStr(new Date()));
 
@@ -133,6 +135,7 @@ export default function PurchaseByDatePage() {
                   />
                   <Legend />
                   <Area
+                    isAnimationActive={!reduced}
                     type="monotone"
                     dataKey="received_total"
                     name="Received"
@@ -142,6 +145,7 @@ export default function PurchaseByDatePage() {
                     fillOpacity={0.85}
                   />
                   <Area
+                    isAnimationActive={!reduced}
                     type="monotone"
                     dataKey="pending_total"
                     name="Pending"
