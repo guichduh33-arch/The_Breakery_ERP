@@ -21,6 +21,7 @@ import { GeneralInfoSection, type GeneralInfoDraft } from './GeneralInfoSection.
 import { ChoiceGroupCard, type GroupDraft } from './ChoiceGroupCard.js';
 import { PricePreview } from './PricePreview.js';
 import type { ComboDefinition } from '@breakery/domain';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 interface Props {
   mode: 'create' | 'edit';
@@ -327,14 +328,15 @@ export default function ComboBuilderPage({ mode }: Props): JSX.Element {
           >
             Cancel
           </Button>
-          <Button
-            variant="primary"
+          <button
+            type="button"
+            className={TOOLBAR_BTN_PRIMARY}
             onClick={() => { void handleSave(); }}
             disabled={isSaving || isLoading}
             data-testid="save-combo"
           >
             {isSaving ? 'Saving…' : mode === 'create' ? 'Create Combo' : 'Update Combo'}
-          </Button>
+          </button>
         </div>
       </div>
     </div>

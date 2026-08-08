@@ -22,6 +22,7 @@ import {
   type StockLevelsFilters,
 } from '@/features/inventory/hooks/useStockLevels.js';
 import { useInventoryReferenceData } from '@/features/inventory/hooks/useInventoryReferenceData.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 const PAGE_SIZE = 50;
 
@@ -93,9 +94,9 @@ export default function InventoryPage() {
             </Button>
           )}
           {canReceive && (
-            <Button type="button" variant="primary" onClick={() => { void navigate('/backoffice/inventory/incoming'); }}>
-              <Truck className="h-4 w-4" aria-hidden /> Receive
-            </Button>
+            <button type="button" onClick={() => { void navigate('/backoffice/inventory/incoming'); }} className={TOOLBAR_BTN_PRIMARY}>
+              <Truck className="h-3.5 w-3.5" aria-hidden /> Receive
+            </button>
           )}
           {canWaste && (
             <Button type="button" variant="ghostDestructive" onClick={() => setModal({ kind: 'waste' })}>

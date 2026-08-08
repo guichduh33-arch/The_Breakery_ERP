@@ -18,7 +18,6 @@
 import { useEffect, useState, type JSX } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Button } from '@breakery/ui';
 import { supabase } from '@/lib/supabase.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useSettings } from '@/features/settings/hooks/useSettings.js';
@@ -278,16 +277,15 @@ function SecurityRoleRow({ role, canEdit, pending, errorMessage, onSave }: Secur
         )}
       </td>
       <td className="px-4 py-2">
-        <Button
+        <button
+          className={TOOLBAR_BTN_PRIMARY}
           type="button"
-          size="sm"
-          variant="primary"
           disabled={!canEdit || !dirty || invalid || pending}
           onClick={() => onSave(draftNum)}
           data-testid={`timeout-save-${role.code}`}
         >
           {pending ? 'Saving…' : 'Save'}
-        </Button>
+        </button>
         {errorMessage && dirty && (
           <p className="mt-1 text-xs text-red">Save failed: {errorMessage}</p>
         )}

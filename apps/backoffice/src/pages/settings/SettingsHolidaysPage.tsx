@@ -11,6 +11,7 @@ import { useAuthStore } from '@/stores/authStore.js';
 import { useHolidaysList, type HolidayRow } from '@/features/settings/hooks/useHolidays.js';
 import { HolidayFormModal }   from '@/features/settings/components/HolidayFormModal.js';
 import { HolidayDeleteConfirm } from '@/features/settings/components/HolidayDeleteConfirm.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 function typeLabel(t: string): string {
   switch (t) {
@@ -87,9 +88,9 @@ export default function SettingsHolidaysPage() {
           </p>
         </div>
         {canManage && (
-          <Button type="button" variant="primary" onClick={() => setCreating(true)}>
-            <Plus className="h-4 w-4" aria-hidden /> New holiday
-          </Button>
+          <button type="button" onClick={() => setCreating(true)} className={TOOLBAR_BTN_PRIMARY}>
+            <Plus className="h-3.5 w-3.5" aria-hidden /> New holiday
+          </button>
         )}
       </div>
 

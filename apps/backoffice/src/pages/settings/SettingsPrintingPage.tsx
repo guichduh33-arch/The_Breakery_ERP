@@ -6,10 +6,11 @@
 // station à l'envoi (0 = pas de papier, le KDS écran reçoit toujours).
 // The print-server URL itself stays per-terminal (POS Settings, localStorage).
 import { useEffect, useState } from 'react';
-import { Button, Input } from '@breakery/ui';
+import { Input } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useSettings } from '@/features/settings/hooks/useSettings.js';
 import { useSetSetting } from '@/features/settings/hooks/useSetSetting.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 const FIELDS = [
   { key: 'pos_auto_print_receipt', label: 'Auto-print receipt on payment',
@@ -121,9 +122,9 @@ export default function SettingsPrintingPage() {
 
           {serverError && <p className="text-red text-sm" role="alert">{serverError}</p>}
           {canUpdate && (
-            <Button type="submit" variant="primary" disabled={dirty.length === 0 || setSetting.isPending}>
+            <button type="submit" disabled={dirty.length === 0 || setSetting.isPending} className={TOOLBAR_BTN_PRIMARY}>
               {setSetting.isPending ? 'Saving…' : dirty.length === 0 ? 'No changes' : `Save ${dirty.length} change${dirty.length === 1 ? '' : 's'}`}
-            </Button>
+            </button>
           )}
         </form>
       )}

@@ -13,6 +13,7 @@ import { useId, useMemo, type JSX } from 'react';
 import { Button } from '@breakery/ui';
 import type { CreatePOItemArgs } from '../hooks/useCreatePurchaseOrder.js';
 import type { PoUnitOption } from '../hooks/useAllProductsForPO.js';
+import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 const NOTES_MAX = 500;
 
@@ -400,9 +401,9 @@ export function POFormDraft({
       )}
 
       <div className="flex justify-end">
-        <Button type="submit" variant="primary" disabled={submitting}>
+        <button type="submit" disabled={submitting} className={TOOLBAR_BTN_PRIMARY}>
           {submitting ? 'Saving…' : submitLabel}
-        </Button>
+        </button>
       </div>
     </form>
   );
