@@ -70,9 +70,14 @@ export function DashboardCard({
             Restricted — your role does not have access to this data.
           </div>
         ) : error !== null ? (
-          <p className="py-2 text-[12.5px] text-danger" role="alert">
-            Could not load: {error.message}
-          </p>
+          // Nommer le problème, pas le renvoyer. Le message serveur reste
+          // lisible pour le diagnostic, mais il ne porte plus la phrase :
+          // « Could not load: permission denied for table orders » ne dit pas
+          // à un gérant ce qu'il doit en conclure.
+          <div className="py-2 text-[12.5px]" role="alert">
+            <p className="text-text-primary">This card&apos;s data is unavailable.</p>
+            <p className="mt-0.5 text-text-muted">Nothing here is a zero — it is unknown. ({error.message})</p>
+          </div>
         ) : isLoading ? (
           <div className="space-y-2" data-testid="card-skeleton">
             {Array.from({ length: 4 }).map((_, i) => (
