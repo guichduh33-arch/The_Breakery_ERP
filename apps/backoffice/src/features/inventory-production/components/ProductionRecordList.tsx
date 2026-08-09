@@ -7,6 +7,7 @@ import { useState, type JSX } from 'react';
 import { Button } from '@breakery/ui';
 import { useProductionRecords } from '../hooks/useProductionRecords.js';
 import { RevertProductionDialog } from './RevertProductionDialog.js';
+import { formatDateTimeShortWita } from '@breakery/utils';
 
 export default function ProductionRecordList(): JSX.Element {
   const { data, isLoading, isError } = useProductionRecords();
@@ -44,7 +45,7 @@ export default function ProductionRecordList(): JSX.Element {
                 <td className="px-3 py-2">{r.product_name ?? r.product_id.slice(0, 8)}</td>
                 <td className="px-3 py-2 text-right font-mono">{r.quantity_produced.toLocaleString()}</td>
                 <td className="px-3 py-2 text-right font-mono">{r.quantity_waste.toLocaleString()}</td>
-                <td className="px-3 py-2">{new Date(r.production_date).toLocaleString()}</td>
+                <td className="px-3 py-2">{formatDateTimeShortWita(r.production_date)}</td>
                 <td className="px-3 py-2">
                   {r.reverted_at !== null
                     ? <span className="text-warning">Reverted</span>

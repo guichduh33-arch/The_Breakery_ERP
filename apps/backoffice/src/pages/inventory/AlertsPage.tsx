@@ -108,7 +108,7 @@ export default function AlertsPage(): JSX.Element {
             <TabCount value={counts.production} tone="warning" />
           </TabsTrigger>
           <TabsTrigger value="config" className="gap-1.5" data-testid="tab-config">
-            <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden /> Config produit
+            <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden /> Product config
             <TabCount value={counts.config} tone="neutral" />
           </TabsTrigger>
         </TabsList>

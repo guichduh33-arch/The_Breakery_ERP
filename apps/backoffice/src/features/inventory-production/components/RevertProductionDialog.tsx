@@ -16,6 +16,7 @@ import {
   Button, Input,
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@breakery/ui';
+import { formatDateTimeShortWita } from '@breakery/utils';
 import {
   useRevertProduction, RevertProductionError, type RevertBlocker,
 } from '../hooks/useRevertProduction.js';
@@ -94,7 +95,7 @@ export function RevertProductionDialog({
                 <ul className="list-disc pl-4 text-text-secondary" data-testid="revert-blockers">
                   {blockers.map((b) => (
                     <li key={b.movement_id}>
-                      {b.movement_type} {Math.abs(b.quantity)} — {new Date(b.occurred_at).toLocaleString()}
+                      {b.movement_type} {Math.abs(b.quantity)} — {formatDateTimeShortWita(b.occurred_at)}
                     </li>
                   ))}
                 </ul>

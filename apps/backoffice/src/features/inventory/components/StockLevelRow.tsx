@@ -107,7 +107,7 @@ export function StockLevelRow({
       <td className="px-3 py-2 font-mono text-right">
         {tracked
           ? row.current_stock.toLocaleString()
-          : <span className="text-text-muted">Non suivi</span>}
+          : <span className="text-text-muted">Not tracked</span>}
       </td>
       <td className="px-3 py-2 text-text-secondary">{formatLastMovement(row.last_movement_at)}</td>
       <td className="px-3 py-2 relative text-right">

@@ -101,7 +101,7 @@ describe('AlertsPage (Phase 4.C rewrite)', () => {
     expect(screen.getByRole('tab', { name: /Low stock/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /Reorder/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /Production/i })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: /Config produit/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /Product config/i })).toBeInTheDocument();
     // Default-selected pane mounts the Low stock content stub.
     expect(screen.getByTestId('low-tab')).toBeInTheDocument();
   });

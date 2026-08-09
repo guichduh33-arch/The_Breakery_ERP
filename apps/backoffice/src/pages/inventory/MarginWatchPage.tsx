@@ -18,6 +18,7 @@ import {
   DialogTitle,
 } from '@breakery/ui';
 import type { CsvColumn } from '@breakery/domain';
+import { formatIdr, formatDateTimeShortWita, todayIsoDate } from '@breakery/utils';
 import { useAuthStore } from '@/stores/authStore.js';
 import {
   useMarginAlerts,
@@ -48,14 +49,18 @@ function fmtPct(n: number): string {
   return `${n.toFixed(2)}%`;
 }
 
-function fmtMoney(n: number): string {
-  return new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(n);
-}
+// `Intl.NumberFormat('en-US', …)` rendait « 4850000 » sans devise ni séparateur
+// de milliers cohérent avec le reste du back-office, et laissait deux décimales
+// à une monnaie qui n'en a pas. `formatIdr` est la source unique — elle rend
+// « Rp 4,850,000 ».
+const fmtMoney = formatIdr;
 
 function fmtDateTime(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
-  return d.toISOString().replace('T', ' ').slice(0, 16);
+  // `toISOString()` rendait de l'UTC : un mouvement de 07:30 à Lombok
+  // s'affichait « 23:30 » la veille. Le fuseau métier est Asia/Makassar.
+  return formatDateTimeShortWita(d);
 }
 
 function deltaToneClass(delta: number): string {
@@ -128,7 +133,9 @@ export default function MarginWatchPage(): JSX.Element {
               csv={{
                 rows,
                 columns: marginCsvColumns,
-                filename: `margin-watch-${new Date().toISOString().slice(0, 10)}`,
+                // Le jour métier, pas le jour UTC : un export lancé le soir à
+                // Lombok se nommait de la veille.
+                filename: `margin-watch-${todayIsoDate()}`,
               }}
             />
           )}
