@@ -4,8 +4,8 @@
 >
 > **Périmètre fonctionnel** : ce document décrit **ce que le module B2B sert à faire au quotidien** pour The Breakery,
 >
-> **Révision** : 2026-07-28 · **Statut** : Partiel
-> **ADR applicables** : ADR-005 (taxe de sortie 10 % détaillée sur la facture)
+> **Révision** : 2026-08-09 · **Statut** : Partiel
+> **ADR applicables** : ADR-005 (taxe de sortie 10 % détaillée sur la facture), ADR-022 déc. 6 (la garde de vendabilité durcie sur les portes de vente POS laisse la création de commande B2B hors périmètre : sujet ouvert, à décider pour lui-même)
 >
 > **Convention** : aucune version d'objet DB (`_vN`) dans cette fiche — on cite la
 > famille (`close_shift`, `complete_order_with_payment`). La version vivante se
@@ -361,6 +361,7 @@ Les valeurs par défaut (conditions de paiement, numérotation facture, plafond 
 |---|---|---|
 | 🔴 | **Auto-approval workflow** | Workflow visuel : commande > X IDR exige validation manager ; commande hors plafond crédit exige validation owner. Aujourd'hui contrôlé en code, à externaliser. |
 | 🔴 | **Détection self-approval** | Empêcher qu'un commercial crée et approuve sa propre commande (signal de fraude). Cf. report `b2b_self_approval_risk`. |
+| 🟠 | **Garde de vendabilité à la création de commande** (ADR-022 déc. 6) | La création B2B ne contrôle aujourd'hui que l'existence du produit : ni supprimé, ni désactivé, ni parent d'un groupe de variantes — quand les portes de vente POS refusent les trois. Une facture cesserait de pouvoir porter une ligne invendable. Ce qu'est « vendable » pour une facture reste à décider : l'ADR a durci la caisse et laissé ce sujet ouvert, faute de l'avoir instruit. |
 | 🟠 | **Commandes récurrentes / abonnements** | Définir une commande type qui se duplique automatiquement chaque lundi pour un hôtel. |
 | 🟠 | **Relances automatiques** | Envoi automatique d'un rappel à J-3 de l'échéance, J+0, J+7, J+15. |
 | 🟠 | **Devis (quote) avant commande** | Étape `quote` en amont de `draft` — envoyer un PDF de devis, le client confirme par retour. |
