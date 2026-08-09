@@ -1,16 +1,19 @@
 // apps/backoffice/src/features/products/components/GeneralPanel.tsx
 //
 // Session 14 / Phase 4.B — General tab on the product detail page.
-// Mirrors `product general 1.jpg`, `product general 2.jpg`, `product
-// general 3.jpg`. Three column layout collapsing to one on small screens:
-//   - Left:  Product Identity (name, sku, category, description), Visual Asset
-//   - Right: Performance(30D), Finance & POS, Inventory levels, Usage Sections
+// Trois colonnes qui retombent à une sur petit écran :
+//   - Gauche : Product Identity (name, sku, category, description), Visual Asset
+//   - Droite : Finance & POS, Dispatch Routing, Inventory levels
+//
+// Distill — l'onglet Overview a été supprimé : il ne portait aucun bloc qui lui
+// fût propre (photo, stock et prix y doublaient cette page et Costing, le reste
+// était fabriqué). Cette page est désormais l'atterrissage par défaut de la
+// fiche.
 //
 // Read-only for v1 — write paths gated on a future product CRUD RPC. Inputs
 // are kept editable visually so the form layout review is meaningful, but
 // the Save action is disabled at the page level.
 
-import { ShoppingCart, Sparkles, TrendingUp } from 'lucide-react';
 import { useEffect, useState, type JSX } from 'react';
 import { Card, Currency, Input, SectionLabel, Select } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
@@ -141,15 +144,15 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
 
       {/* ───────────── Right column ───────────── */}
       <div className="space-y-6">
-        <Card padding="md">
-          <h2 className="mb-4 text-sm font-bold uppercase tracking-widest text-text-muted">Performance (30d)</h2>
-          <div className="space-y-4">
-            <SidebarMetric icon={<TrendingUp className="h-4 w-4" aria-hidden />} label="Conversion" value="0%" mono />
-            <SidebarMetric icon={<ShoppingCart className="h-4 w-4" aria-hidden />} label="Units sold" value="0" mono />
-            <SidebarMetric icon={<Sparkles className="h-4 w-4" aria-hidden />} label="Revenue" value="—" />
-          </div>
-        </Card>
-
+        {/* Distill — la carte « Performance (30d) » affichait `0%`, `0` et `—`
+            en dur : aucune des trois valeurs n'était branchée. Un zéro codé se
+            lit comme un relevé, pas comme une absence de mesure, et sur une
+            fiche produit il se lit « ce produit ne se vend pas ». Retirée avec
+            son composant `SidebarMetric`, qui ne servait qu'elle. Elle revient
+            quand une RPC sert le chiffre : `get_product_dashboard_v2.summary`
+            ne suffit pas — son `units_sold` somme `sale` ET `production_out`,
+            il n'expose aucun revenu, et il est gaté `inventory.read` quand
+            cette fiche l'est sur `products.read`. */}
         <Card padding="md">
           <h2 className="mb-4 text-sm font-bold uppercase tracking-widest text-text-muted">Finance & POS</h2>
           <div className="space-y-4">
@@ -382,24 +385,4 @@ function ToggleRow({ label, sub, enabled, disabled = false, onChange }: ToggleRo
   );
 }
 
-interface SidebarMetricProps {
-  icon: JSX.Element;
-  label: string;
-  value: string;
-  mono?: boolean;
-}
-
-function SidebarMetric({ icon, label, value, mono = false }: SidebarMetricProps): JSX.Element {
-  return (
-    <div className="flex items-center gap-3">
-      <div className="flex h-9 w-9 items-center justify-center rounded-md bg-gold-soft text-gold">{icon}</div>
-      <div className="flex-1">
-        <div className="text-[10px] uppercase tracking-widest text-text-secondary">{label}</div>
-        <div className={mono ? 'font-mono text-2xl tabular-nums text-text-primary' : 'text-2xl text-text-primary'}>
-          {value}
-        </div>
-      </div>
-    </div>
-  );
-}
 

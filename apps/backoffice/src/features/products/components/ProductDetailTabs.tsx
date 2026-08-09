@@ -19,6 +19,9 @@
 // pas. Dix onglets restaient donc dans l'ordre de tabulation, et aucun ne
 // désignait son panneau. On tient maintenant la promesse : tabindex glissant,
 // ←/→/Home/End, et `aria-controls` vers le panneau que ProductDetailPage rend.
+//
+// Distill — l'onglet Overview est tombé : dix onglets, neuf. General ouvre la
+// fiche.
 
 import { useRef, type JSX, type KeyboardEvent } from 'react';
 import { cn } from '@breakery/ui';
@@ -30,7 +33,6 @@ interface Props {
 }
 
 const TABS: readonly { id: ProductDetailTab; label: string }[] = [
-  { id: 'overview', label: 'Overview' },
   { id: 'general',  label: 'General'  },
   { id: 'units',    label: 'Units'    },
   { id: 'recipe',   label: 'Recipe'   },

@@ -11,7 +11,6 @@ import { useEffect, useMemo, useState, type JSX } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { BarChart3 } from 'lucide-react';
 import { GeneralPanel } from '@/features/products/components/GeneralPanel.js';
-import { OverviewPanel } from '@/features/products/components/OverviewPanel.js';
 import { ProductDetailHeader } from '@/features/products/components/ProductDetailHeader.js';
 import {
   ProductDetailTabs,
@@ -35,11 +34,17 @@ import type { ProductDetailTab, ProductRow } from '@/features/products/types.js'
 import { RecipeBuilder } from '@/features/recipes/index.js';
 
 // ADR-011 §3 — 'modifiers' manquait : un deep-link ?tab=modifiers retombait
-// silencieusement sur overview. ('analytics' reste exclu : le type le déclare
-// mais la page ne rend aucun panel pour cet onglet.)
+// silencieusement sur l'onglet par défaut. ('analytics' reste exclu : le type le
+// déclare mais la page ne rend aucun panel pour cet onglet.)
+//
+// Distill — 'overview' est retiré. Un lien ?tab=overview encore en circulation
+// n'échoue pas : il ne passe pas le garde et retombe sur General, qui affichait
+// déjà tout ce que l'ancien onglet montrait de vrai.
 const VALID_TABS: ReadonlySet<ProductDetailTab> = new Set([
-  'overview', 'general', 'units', 'recipe', 'variants', 'modifiers', 'costing', 'purchase', 'stations', 'history',
+  'general', 'units', 'recipe', 'variants', 'modifiers', 'costing', 'purchase', 'stations', 'history',
 ]);
+
+const DEFAULT_TAB: ProductDetailTab = 'general';
 
 export default function ProductDetailPage(): JSX.Element {
   const { productId } = useParams<{ productId: string }>();
@@ -53,14 +58,15 @@ export default function ProductDetailPage(): JSX.Element {
   const canUpdate = useAuthStore((s) => s.hasPermission('products.update'));
   // Harden — l'onglet actif vit dans l'URL, comme le compteur de la liste
   // (`Products.tsx`). La lecture unique au montage cassait trois gestes natifs :
-  // F5 renvoyait sur Overview, Retour éjectait de la fiche, et le deep-link `$`
-  // de la liste devenait faux dès le premier clic d'onglet. `useUrlState` pose
-  // `replace: true` (pas dix entrées d'historique pour dix onglets) et efface le
-  // paramètre quand il vaut le défaut, donc Overview garde une URL propre.
-  const [tabParam, setTabParam] = useUrlState('tab', 'overview');
+  // F5 renvoyait sur le premier onglet, Retour éjectait de la fiche, et le
+  // deep-link `$` de la liste devenait faux dès le premier clic d'onglet.
+  // `useUrlState` pose `replace: true` (pas neuf entrées d'historique pour neuf
+  // onglets) et efface le paramètre quand il vaut le défaut, donc General garde
+  // une URL propre.
+  const [tabParam, setTabParam] = useUrlState('tab', DEFAULT_TAB);
   const tab: ProductDetailTab = VALID_TABS.has(tabParam as ProductDetailTab)
     ? (tabParam as ProductDetailTab)
-    : 'overview';
+    : DEFAULT_TAB;
   const setTab = (next: ProductDetailTab): void => { setTabParam(next); };
   const [patch, setPatch] = useState<ProductUpdatePatch>({});
 
@@ -136,7 +142,6 @@ export default function ProductDetailPage(): JSX.Element {
         tabIndex={0}
         data-testid={`product-tab-${tab}`}
       >
-        {tab === 'overview' && <OverviewPanel product={p} />}
         {tab === 'general'  && (
           <GeneralPanel
             product={p}
