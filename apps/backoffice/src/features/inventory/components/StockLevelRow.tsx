@@ -11,6 +11,19 @@ import { Button } from '@breakery/ui';
 import { LowStockBadge } from './LowStockBadge.js';
 import type { StockLevelRow as Row } from '../hooks/useStockLevels.js';
 
+// Anneau de focus du back-office. Remplace `focus-visible:ring-accent-primary`,
+// qui ne résolvait à AUCUNE couleur — `accent-primary` n'existe dans aucune
+// famille du preset — et laissait donc la cellule d'ouverture du détail produit
+// sans indicateur de focus utilisable (WCAG 2.4.7).
+const FOCUS_RING =
+  'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold';
+
+// `bg-surface-4` et non `bg-bg-overlay` : dans le thème clair les deux tokens de
+// surface valent #ffffff, donc survol ET focus étaient blanc sur blanc — ratio
+// 1,00, aucun retour visible sur trois entrées atteignables au clavier.
+const MENU_ITEM =
+  `block w-full text-left px-3 py-2 text-sm hover:bg-surface-4 focus:bg-surface-4 ${FOCUS_RING}`;
+
 export interface StockLevelRowProps {
   row:        Row;
   canAdjust:  boolean;
@@ -71,10 +84,12 @@ export function StockLevelRow({
   const tracked = row.track_inventory !== false;
 
   return (
-    <tr className="border-b border-border-subtle hover:bg-bg-overlay">
+    // `bg-surface-4` et non `bg-bg-overlay` : ce dernier vaut #ffffff dans le
+    // thème clair, donc le survol de ligne ne produisait aucun retour visible.
+    <tr className="border-b border-border-subtle hover:bg-surface-4">
       <td className="px-3 py-2 font-mono text-xs text-text-secondary">{row.sku}</td>
       <td
-        className="px-3 py-2 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary"
+        className={`px-3 py-2 cursor-pointer ${FOCUS_RING}`}
         role="button"
         tabIndex={0}
         onClick={() => onView(row)}
@@ -117,7 +132,7 @@ export function StockLevelRow({
             <button
               type="button"
               role="menuitem"
-              className="block w-full text-left px-3 py-2 text-sm hover:bg-bg-overlay focus:bg-bg-overlay focus:outline-none"
+              className={MENU_ITEM}
               onClick={() => { setMenuOpen(false); onView(row); }}
             >
               View stock
@@ -126,7 +141,7 @@ export function StockLevelRow({
               <button
                 type="button"
                 role="menuitem"
-                className="block w-full text-left px-3 py-2 text-sm hover:bg-bg-overlay focus:bg-bg-overlay focus:outline-none"
+                className={MENU_ITEM}
                 onClick={() => { setMenuOpen(false); onAdjust(row); }}
               >
                 Adjust stock
@@ -136,7 +151,7 @@ export function StockLevelRow({
               <button
                 type="button"
                 role="menuitem"
-                className="block w-full text-left px-3 py-2 text-sm text-red hover:bg-bg-overlay focus:bg-bg-overlay focus:outline-none"
+                className={`${MENU_ITEM} text-red`}
                 onClick={() => { setMenuOpen(false); onWaste(row); }}
               >
                 Record waste

@@ -7,6 +7,7 @@
 
 import { useState, type JSX } from 'react';
 import { Input } from '@breakery/ui';
+import { useListboxKeyboard } from '@/hooks/useListboxKeyboard.js';
 import {
   useProductsForInventory,
   type ProductTypeaheadRow,
@@ -33,6 +34,15 @@ export function ProductTypeahead({
     setOpen(false);
   }
 
+  const rows       = q.data ?? [];
+  const listOpen   = open && search.trim().length >= 2;
+  const keyboard   = useListboxKeyboard<ProductTypeaheadRow>({
+    items:    rows,
+    open:     listOpen,
+    onSelect: handleSelect,
+    onClose:  () => { setOpen(false); },
+  });
+
   function handleClear(): void {
     onChange(null);
     setSearch('');
@@ -46,16 +56,23 @@ export function ProductTypeahead({
         type="text"
         value={search}
         autoComplete="off"
+        role="combobox"
+        aria-expanded={listOpen}
+        aria-controls={keyboard.listboxId}
+        aria-autocomplete="list"
+        aria-activedescendant={keyboard.activeDescendantId}
         placeholder={placeholder ?? 'Search by name (min 2 chars)…'}
         disabled={disabled === true}
         onFocus={() => setOpen(true)}
+        onKeyDown={keyboard.handleKeyDown}
         onChange={(e) => {
           setSearch(e.target.value);
           if (value !== null && e.target.value !== value.name) onChange(null);
           setOpen(true);
         }}
         onBlur={() => {
-          // Allow click to register on a list item before closing.
+          // Allow click to register on a list item before closing. Inoffensif
+          // au clavier : le focus ne quitte jamais le champ (descendant actif).
           window.setTimeout(() => setOpen(false), 120);
         }}
       />
@@ -69,9 +86,10 @@ export function ProductTypeahead({
           Clear
         </button>
       )}
-      {open && search.trim().length >= 2 && (
+      {listOpen && (
         <div
           role="listbox"
+          id={keyboard.listboxId}
           className="absolute z-20 mt-1 max-h-60 w-full overflow-y-auto rounded-md border border-border-subtle bg-bg-elevated shadow-lg"
         >
           {q.isLoading && (
@@ -83,18 +101,26 @@ export function ProductTypeahead({
           {q.data?.length === 0 && (
             <div className="px-3 py-2 text-xs text-text-secondary">No products match.</div>
           )}
-          {q.data?.map((p) => (
-            <button
+          {rows.map((p, i) => (
+            // Non focalisable, et c'est le motif : la surbrillance est portée
+            // par `aria-activedescendant` depuis le champ. `bg-surface-4` et non
+            // `bg-bg-overlay`, qui vaut #ffffff dans le thème clair et ne
+            // produisait donc aucun retour visible.
+            <div
               key={p.id}
-              type="button"
               role="option"
-              aria-selected={value?.id === p.id}
+              id={keyboard.optionId(i)}
+              aria-selected={keyboard.activeIndex === i}
+              onMouseEnter={() => { keyboard.onOptionHover(i); }}
               onMouseDown={(e) => {
                 // Prevent the input blur from closing the list before click fires.
                 e.preventDefault();
                 handleSelect(p);
               }}
-              className="block w-full px-3 py-2 text-left text-sm hover:bg-bg-overlay focus:bg-bg-overlay focus:outline-none"
+              className={
+                'block w-full cursor-pointer px-3 py-2 text-left text-sm hover:bg-surface-4' +
+                (keyboard.activeIndex === i ? ' bg-surface-4' : '')
+              }
             >
               <div className="flex items-center justify-between gap-3">
                 <span>{p.name}</span>
@@ -102,7 +128,7 @@ export function ProductTypeahead({
                   {p.sku} · {p.current_stock.toLocaleString()}
                 </span>
               </div>
-            </button>
+            </div>
           ))}
         </div>
       )}
