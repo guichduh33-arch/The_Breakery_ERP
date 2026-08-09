@@ -59,6 +59,12 @@ apps/print-bridge/hub-buffer.jsonl
 .claude/agents/*/
 # skill-creator eval/optimize scratch dirs — never commit
 .claude/skills/*-workspace/
+
+# Impeccable — état par machine (consentement local du hook, cache de dédup).
+# La config partagée (.impeccable/config.json) et les snapshots de critique, eux,
+# sont versionnés.
+.impeccable/config.local.json
+.impeccable/hook.cache.json
 ruvector.db
 *.ruvector.db
 
