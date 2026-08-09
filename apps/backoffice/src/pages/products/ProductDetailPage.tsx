@@ -7,23 +7,15 @@
 //
 // URL: /backoffice/products/:productId
 
-import { useEffect, useMemo, useState, type JSX } from 'react';
+import { Suspense, lazy, useEffect, useMemo, useState, type JSX } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { BarChart3 } from 'lucide-react';
-import { GeneralPanel } from '@/features/products/components/GeneralPanel.js';
 import { ProductDetailHeader } from '@/features/products/components/ProductDetailHeader.js';
 import {
   ProductDetailTabs,
   productTabId,
   productTabPanelId,
 } from '@/features/products/components/ProductDetailTabs.js';
-import { CostingPanel } from '@/features/products/components/CostingPanel.js';
-import { PurchasePanel } from '@/features/products/components/PurchasePanel.js';
-import { HistoryPanel } from '@/features/products/components/HistoryPanel.js';
-import { UnitsPanel } from '@/features/products/components/UnitsPanel.js';
-import { StationsPanel } from '@/features/products/components/StationsPanel.js';
-import { VariantsPanel } from '@/features/products/components/VariantsPanel.js';
-import { ModifiersPanel } from '@/features/products/components/ModifiersPanel.js';
 import { useCategories } from '@/features/products/hooks/useCategories.js';
 import { useProductDetail } from '@/features/products/hooks/useProductDetail.js';
 import { useProductDisplayStock } from '@/features/products/hooks/useProductDisplayStock.js';
@@ -31,7 +23,25 @@ import { useUpdateProduct, type ProductUpdatePatch } from '@/features/products/h
 import { useUrlState } from '@/hooks/useUrlState.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import type { ProductDetailTab, ProductRow } from '@/features/products/types.js';
-import { RecipeBuilder } from '@/features/recipes/index.js';
+
+// Optimize — les neuf panneaux étaient importés statiquement, et le chunk de
+// cette page pesait 123 kB (30,8 kB gzip) : le plus gros chunk de page de
+// l'application, 2,6× le suivant. Ouvrir une fiche pour corriger un prix
+// téléchargeait le constructeur de recettes, le tableau des variantes, la
+// grille des modificateurs et le journal — huit panneaux qu'on n'ouvrira
+// peut-être jamais.
+//
+// Un seul onglet est monté à la fois : le découpage suit donc exactement l'usage.
+// `RecipeBuilder` passe par un barrel, d'où la projection sur `default`.
+const GeneralPanel   = lazy(() => import('@/features/products/components/GeneralPanel.js').then((m) => ({ default: m.GeneralPanel })));
+const UnitsPanel     = lazy(() => import('@/features/products/components/UnitsPanel.js').then((m) => ({ default: m.UnitsPanel })));
+const VariantsPanel  = lazy(() => import('@/features/products/components/VariantsPanel.js').then((m) => ({ default: m.VariantsPanel })));
+const ModifiersPanel = lazy(() => import('@/features/products/components/ModifiersPanel.js').then((m) => ({ default: m.ModifiersPanel })));
+const CostingPanel   = lazy(() => import('@/features/products/components/CostingPanel.js').then((m) => ({ default: m.CostingPanel })));
+const PurchasePanel  = lazy(() => import('@/features/products/components/PurchasePanel.js').then((m) => ({ default: m.PurchasePanel })));
+const StationsPanel  = lazy(() => import('@/features/products/components/StationsPanel.js').then((m) => ({ default: m.StationsPanel })));
+const HistoryPanel   = lazy(() => import('@/features/products/components/HistoryPanel.js').then((m) => ({ default: m.HistoryPanel })));
+const RecipeBuilder  = lazy(() => import('@/features/recipes/index.js').then((m) => ({ default: m.RecipeBuilder })));
 
 // ADR-011 §3 — 'modifiers' manquait : un deep-link ?tab=modifiers retombait
 // silencieusement sur l'onglet par défaut. ('analytics' reste exclu : le type le
@@ -142,6 +152,11 @@ export default function ProductDetailPage(): JSX.Element {
         tabIndex={0}
         data-testid={`product-tab-${tab}`}
       >
+        {/* Le repli tient la hauteur d'un panneau le temps du chargement du
+            chunk : sans lui, la page se replierait sur son bandeau puis se
+            redéploierait, et ce saut coûterait plus cher en confort que le
+            téléchargement ne gagne. Squelette en papier pressé, comme partout. */}
+        <Suspense fallback={<PanelFallback />}>
         {tab === 'general'  && (
           <GeneralPanel
             product={p}
@@ -178,7 +193,21 @@ export default function ProductDetailPage(): JSX.Element {
         {tab === 'purchase' && <PurchasePanel productId={p.id} />}
         {tab === 'stations' && <StationsPanel product={p} />}
         {tab === 'history' && <HistoryPanel productId={p.id} />}
+        </Suspense>
       </div>
+    </div>
+  );
+}
+
+function PanelFallback(): JSX.Element {
+  return (
+    <div className="space-y-3" data-testid="product-panel-fallback" aria-busy="true">
+      {[0, 1, 2, 3].map((i) => (
+        <div
+          key={i}
+          className="h-16 animate-pulse rounded bg-surface-4 motion-reduce:animate-none"
+        />
+      ))}
     </div>
   );
 }
