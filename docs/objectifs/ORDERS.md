@@ -4,8 +4,8 @@
 >
 > **Périmètre fonctionnel** : ce document décrit **ce que la page Orders (`/orders`) sert à faire au quotidien** pour The Breakery, .
 >
-> **Révision** : 2026-07-28 · **Statut** : Livré
-> **ADR applicables** : ADR-009 (cycle de vie : plus d'UPDATE direct hors RPC, transition `paid → completed` par trigger, le void est la seule sortie de `completed`), ADR-010 (verrou des items envoyés), ADR-013 (void interdit après refund partiel, une seule contre-passation, idempotence contraignante)
+> **Révision** : 2026-08-09 · **Statut** : Livré
+> **ADR applicables** : ADR-009 (cycle de vie : plus d'UPDATE direct hors RPC, transition `paid → completed` par trigger, le void est la seule sortie de `completed`), ADR-010 (verrou des items envoyés), ADR-013 (void interdit après refund partiel, une seule contre-passation, idempotence contraignante), ADR-022 (vendabilité opposable à toute porte d'écriture, et une commande n'existe qu'envoyée en cuisine ou payée)
 >
 > **Convention** : aucune version d'objet DB (`_vN`) dans cette fiche — on cite la
 > famille (`close_shift`, `complete_order_with_payment`). La version vivante se
@@ -40,7 +40,7 @@ Une **modale de détail** se superpose à la liste quand on clique sur une comma
 
 ---
 
-## 3. Les 6 invariants de la page
+## 3. Les 8 invariants de la page
 
 Quel que soit le contexte d'utilisation, la page garantit toujours les mêmes mécaniques :
 
@@ -57,6 +57,19 @@ Quel que soit le contexte d'utilisation, la page garantit toujours les mêmes m�
    circuit waste recette-aware et rattachée à la commande. La suppression
    renvoie vers le flux cancel du POS. Ce qui est parti en cuisine a coûté de
    la matière : ça s'annule avec une trace, jamais avec un delete.
+7. **Un produit non vendable ne rentre pas, même par cette page** (ADR-022).
+   Ajouter une ligne à une commande ouverte depuis la modale de détail refuse un
+   produit supprimé, désactivé ou parent d'un groupe de variantes — composants de
+   combo compris. C'est la même règle qu'au comptoir et en salle : il n'existe
+   qu'une définition de « vendable », et l'édition depuis le back-office n'en est
+   pas dispensée. Le stock épuisé, lui, reste accepté : une vente hors-ligne peut
+   légitimement diverger du stock connu.
+8. **La liste ne montre que des commandes réelles** (ADR-022). Une commande
+   n'existe qu'à partir du moment où elle part en cuisine ou qu'elle est payée ;
+   ce qui est saisi sans avoir franchi l'un de ces deux seuils est un brouillon
+   de caisse, qui reste au poste et ne s'écrit pas en base. Cet invariant tient
+   par ce qui s'écrit, non par un filtre d'écran : la page affiche ce qui existe,
+   sans trier par statut.
 
 ---
 
