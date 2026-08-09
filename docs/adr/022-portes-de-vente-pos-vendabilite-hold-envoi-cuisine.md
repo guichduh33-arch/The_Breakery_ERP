@@ -11,6 +11,13 @@
 > **Convention** : aucune version d'objet DB (`_vN`) dans cet ADR — on cite la
 > **famille**. La version vivante se vérifie dans `supabase/migrations/` et au
 > call-site.
+>
+> **Modifié le 2026-08-09**, par dérogation explicite du propriétaire à la règle
+> documentaire 5 (« un ADR ne se modifie jamais »). Seule la conséquence 6 est
+> touchée : elle affectait les trois invariants nouveaux à la fiche `ORDERS.md`,
+> qui décrit la page de gestion du back-office et ne peut en porter que deux.
+> **Aucune décision n'est modifiée** — la correction porte sur une consigne de
+> mise en œuvre écrite sans avoir ouvert la fiche visée.
 
 ## Contexte
 
@@ -263,11 +270,15 @@ Aucune décision n'est requise : l'exigence est satisfaite par l'existant.
 5. **La revue imposée par l'ADR-018 D2 est faite** et conclut à aucun ajout à la
    liste des échecs définitifs (décision 3). Ce point est à re-instruire au
    prochain durcissement d'une RPC rejouée — il ne se déduit pas de cet ADR.
-6. **La fiche `docs/objectifs/ORDERS.md` porte désormais trois invariants** :
-   toute écriture d'`order_items` passe la garde de vendabilité, rejeu et
-   finalisation exceptés ; une commande n'existe qu'envoyée en cuisine ou payée ;
-   et la marque d'envoi en cuisine est posée par la RPC qui crée la commande, sur
-   les trois portes. Une porte d'écriture nouvelle naît soumise à ces règles.
+6. **Trois invariants nouveaux entrent dans les fiches d'objectifs, répartis
+   selon leur registre.** La fiche `docs/objectifs/ORDERS.md` décrit la page de
+   gestion du back-office : elle reçoit les deux qui la concernent — un produit
+   non vendable n'entre pas dans une commande, même par l'édition depuis cette
+   page ; et la liste ne montre que des commandes réelles, un brouillon de caisse
+   ne s'écrivant pas en base. Le troisième — la marque d'envoi en cuisine est
+   posée par la RPC qui crée la commande, sur les trois portes — n'est pas un
+   invariant d'écran de gestion : il porte sur ce que la caisse écrit, et revient
+   à la fiche `POS.md`. Une porte d'écriture nouvelle naît soumise aux trois.
 7. **Le trou B2B / import reste ouvert** (décision 6) et doit être porté au
    backlog du module concerné pour ne pas se perdre.
 8. **Ce chantier relève de la dette d'ADR** (ADR-021 déc. 4c) : il solde un
