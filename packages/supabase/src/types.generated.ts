@@ -7458,6 +7458,10 @@ export type Database = {
         Args: { p_days?: number; p_product_id: string }
         Returns: Json
       }
+      get_product_performance_v1: {
+        Args: { p_days?: number; p_product_id: string }
+        Returns: Json
+      }
       get_production_efficiency_v1: {
         Args: { p_date_end: string; p_date_start: string }
         Returns: Json

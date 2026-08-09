@@ -3,7 +3,7 @@
 // Session 14 / Phase 4.B — General tab on the product detail page.
 // Trois colonnes qui retombent à une sur petit écran :
 //   - Gauche : Product Identity (name, sku, category, description), Visual Asset
-//   - Droite : Finance & POS, Dispatch Routing, Inventory levels
+//   - Droite : Performance, Finance & POS, Dispatch Routing, Inventory levels
 //
 // Distill — l'onglet Overview a été supprimé : il ne portait aucun bloc qui lui
 // fût propre (photo, stock et prix y doublaient cette page et Costing, le reste
@@ -19,6 +19,10 @@ import { Card, Currency, Input, SectionLabel, Select } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
 import type { CategoryOption, ProductRow } from '../types.js';
 import { ProductImageUploader } from './ProductImageUploader.js';
+import {
+  ProductPerformanceCard,
+  ProductPerformanceRestricted,
+} from './ProductPerformanceCard.js';
 import { useSetProductTestFlag } from '../hooks/useSetProductTestFlag.js';
 
 interface Props {
@@ -43,6 +47,10 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
   // Le hook de mutation vit dans TestFlagToggle, monté seulement avec la
   // permission (les smokes rendent GeneralPanel sans QueryClientProvider).
   const canSetTestFlag = useAuthStore((s) => s.hasPermission('products.test_flag.update'));
+  // Le CA d'un produit est une donnée de gestion : `products.read` ouvre la
+  // fiche à CASHIER et waiter, `reports.sales.read` ne va pas plus loin
+  // qu'ADMIN/MANAGER. Même gate que le rapport Top products, pour la même donnée.
+  const canReadSales = useAuthStore((s) => s.hasPermission('reports.sales.read'));
 
   // Re-sync draft when the saved product changes (post-mutation refetch).
   useEffect(() => {
@@ -144,15 +152,17 @@ export function GeneralPanel({ product, categories, readOnly = true, onChange, d
 
       {/* ───────────── Right column ───────────── */}
       <div className="space-y-6">
-        {/* Distill — la carte « Performance (30d) » affichait `0%`, `0` et `—`
-            en dur : aucune des trois valeurs n'était branchée. Un zéro codé se
-            lit comme un relevé, pas comme une absence de mesure, et sur une
-            fiche produit il se lit « ce produit ne se vend pas ». Retirée avec
-            son composant `SidebarMetric`, qui ne servait qu'elle. Elle revient
-            quand une RPC sert le chiffre : `get_product_dashboard_v2.summary`
-            ne suffit pas — son `units_sold` somme `sale` ET `production_out`,
-            il n'expose aucun revenu, et il est gaté `inventory.read` quand
-            cette fiche l'est sur `products.read`. */}
+        {/* La carte « Performance (30d) » affichait `0%`, `0` et `—` en dur ;
+            le distill l'a retirée, `get_product_performance_v1` la ramène sur
+            du vrai. Elle est montée dans deux variantes plutôt que gardée par
+            un booléen interne : sans `reports.sales.read` (que CASHIER et
+            waiter n'ont pas), c'est la version restreinte qui rend, et elle
+            n'appelle rien — ni requête vouée au 42501, ni hook react-query dans
+            les smokes qui rendent ce panneau sans QueryClientProvider. */}
+        {canReadSales
+          ? <ProductPerformanceCard productId={product.id} />
+          : <ProductPerformanceRestricted />}
+
         <Card padding="md">
           <h2 className="mb-4 text-sm font-bold uppercase tracking-widest text-text-muted">Finance & POS</h2>
           <div className="space-y-4">
