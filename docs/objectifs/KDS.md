@@ -4,8 +4,8 @@
 >
 > **Périmètre fonctionnel** : ce document décrit **ce que le module KDS (`/kds`) sert à faire au quotidien** pour The Breakery,
 >
-> **Révision** : 2026-07-28 · **Statut** : Livré
-> **ADR applicables** : ADR-010 (un item envoyé en cuisine est intouchable ; tout retrait déclenche une déclaration de perte), ADR-006 déc. 9 (copies KOT par station, 0 = station paperless)
+> **Révision** : 2026-08-09 · **Statut** : Livré
+> **ADR applicables** : ADR-010 (un item envoyé en cuisine est intouchable ; tout retrait déclenche une déclaration de perte), ADR-006 déc. 9 (copies KOT par station, 0 = station paperless), ADR-022 déc. 5 (la marque d'envoi en cuisine est posée par la RPC qui crée la commande, sur les trois portes)
 >
 > **Convention** : aucune version d'objet DB (`_vN`) dans cette fiche — on cite la
 > famille (`close_shift`, `complete_order_with_payment`). La version vivante se
@@ -42,7 +42,7 @@ Le **mode Waiter** est une vue spéciale : il agrège **toutes les stations** po
 
 ---
 
-## 3. Les 5 invariants du module
+## 3. Les 6 invariants du module
 
 Quelle que soit la station, le module garantit toujours :
 
@@ -51,6 +51,14 @@ Quelle que soit la station, le module garantit toujours :
 3. **Granularité item-level**. Chaque item d'une commande a son propre statut, indépendant des autres. Le cappuccino sort en 1 minute, le croque-monsieur en 8 — chacun a son tempo.
 4. **Temps réel via LAN**. Le KDS est un client `lanClient` connecté au hub POS. Une commande envoyée caisse apparaît à la KDS en <1 seconde.
 5. **Alertes sonores progressives**. Bip discret à l'arrivée, alerte sonore plus forte si l'item dépasse un seuil critique (`useKdsUrgentAlertLoop`).
+6. **Ce que la cuisine voit est décidé en base, pas par le poste**
+   (ADR-022 déc. 5). Une ligne entre sur l'écran parce que la RPC qui a créé la
+   commande l'a marquée comme envoyée — verrou, statut de préparation,
+   horodatage — et cela vaut pour les trois portes : le comptoir, la salle et la
+   vente payée directement au comptoir. La cuisine ne dépend donc ni de
+   l'impression du ticket, ni de l'état du poste qui a pris la commande : une
+   imprimante muette ou un terminal fermé ne retire rien de l'écran. Le LAN et
+   le Realtime transportent cette information, ils ne la décident pas.
 
 ---
 
