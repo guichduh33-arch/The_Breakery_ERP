@@ -37,8 +37,6 @@ const PAYLOAD: UpsertComboPayload = {
   category_id: 'cat-1',
   base_price: 45000,
   display_order: 0,
-  available_from: null,
-  available_to: null,
   is_active: true,
   visible_on_pos: true,
   groups: [
@@ -62,7 +60,7 @@ const PAYLOAD: UpsertComboPayload = {
 };
 
 describe('useUpsertCombo', () => {
-  it('calls upsert_combo_v1 with p_combo and p_idempotency_key', async () => {
+  it('calls upsert_combo_v2 with p_combo and p_idempotency_key', async () => {
     rpcMock.mockResolvedValueOnce({
       data: { combo_product_id: 'cb-new', sku: 'CMB-NEW', idempotent_replay: false },
       error: null,
@@ -75,7 +73,7 @@ describe('useUpsertCombo', () => {
     });
 
     expect(rpcMock).toHaveBeenCalledWith(
-      'upsert_combo_v1',
+      'upsert_combo_v2',
       expect.objectContaining({
         p_combo: PAYLOAD,
         p_idempotency_key: expect.stringMatching(

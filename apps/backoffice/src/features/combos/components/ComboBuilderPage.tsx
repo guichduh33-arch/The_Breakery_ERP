@@ -146,10 +146,6 @@ export default function ComboBuilderPage({ mode }: Props): JSX.Element {
         category_id: generalInfo.category_id,
         base_price: generalInfo.base_price,
         display_order: generalInfo.display_order,
-        // ADR-007 déc. 3 — fenêtre horaire dépréciée : le RPC accepte encore
-        // les clés, on envoie null (les colonnes ne sont plus jamais lues).
-        available_from: null,
-        available_to: null,
         is_active: generalInfo.is_active,
         visible_on_pos: generalInfo.visible_on_pos,
         groups: groups.map((g, gIdx) => ({

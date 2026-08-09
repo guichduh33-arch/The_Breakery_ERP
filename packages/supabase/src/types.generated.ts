@@ -4010,8 +4010,6 @@ export type Database = {
         Row: {
           available_for_sale: boolean
           category_id: string
-          combo_available_from: string | null
-          combo_available_to: string | null
           combo_base_price: number | null
           combo_display_order: number
           cost_price: number
@@ -4048,8 +4046,6 @@ export type Database = {
         Insert: {
           available_for_sale?: boolean
           category_id: string
-          combo_available_from?: string | null
-          combo_available_to?: string | null
           combo_base_price?: number | null
           combo_display_order?: number
           cost_price?: number
@@ -4086,8 +4082,6 @@ export type Database = {
         Update: {
           available_for_sale?: boolean
           category_id?: string
-          combo_available_from?: string | null
-          combo_available_to?: string | null
           combo_base_price?: number | null
           combo_display_order?: number
           cost_price?: number
@@ -6759,7 +6753,7 @@ export type Database = {
             }
             Returns: string
           }
-      complete_order_with_payment_v23: {
+      complete_order_with_payment_v24: {
         Args: {
           p_customer_id?: string
           p_discount_amount?: number
@@ -8713,7 +8707,7 @@ export type Database = {
         Args: { p_patch: Json; p_variant_id: string }
         Returns: string
       }
-      upsert_combo_v1: {
+      upsert_combo_v2: {
         Args: { p_combo: Json; p_idempotency_key?: string }
         Returns: Json
       }
