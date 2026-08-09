@@ -4,8 +4,8 @@
 >
 > **Périmètre fonctionnel** : ce document décrit **ce que l'App POS sert à faire au quotidien** pour The Breakery,
 >
-> **Révision** : 2026-07-28 · **Statut** : Livré
-> **ADR applicables** : ADR-009 (cycle de vie des commandes), ADR-010 (verrou cuisine + perte obligatoire), ADR-013 (avoir client, nonce PIN manager sur toute remise money-path, ordre canonique des totaux), ADR-015 (hors-ligne : tous les moyens de paiement sauf l'avoir, sans limite de durée)
+> **Révision** : 2026-08-09 · **Statut** : Livré
+> **ADR applicables** : ADR-009 (cycle de vie des commandes), ADR-010 (verrou cuisine + perte obligatoire), ADR-013 (avoir client, nonce PIN manager sur toute remise money-path, ordre canonique des totaux), ADR-015 (hors-ligne : tous les moyens de paiement sauf l'avoir, sans limite de durée), ADR-022 (marque d'envoi en cuisine posée par le serveur, vendabilité opposable à toute porte d'écriture, mise en attente réservée aux commandes envoyées)
 >
 > **Convention** : aucune version d'objet DB (`_vN`) dans cette fiche — on cite la
 > famille (`close_shift`, `complete_order_with_payment`). La version vivante se
@@ -44,7 +44,7 @@ Toute l'interface est conçue pour qu'un caissier puisse encaisser **sans touche
 
 ---
 
-## 3. Les 6 invariants du module
+## 3. Les 7 invariants du module
 
 Quel que soit le moment d'utilisation, le POS garantit toujours :
 
@@ -61,6 +61,17 @@ Quel que soit le moment d'utilisation, le POS garantit toujours :
 4. **Auto-évaluation des promotions** à chaque changement de panier via `useCartPromotions`. Le caissier ne calcule jamais : le système applique automatiquement les bonnes remises.
 5. **Tax PB1 10% incluse dans tous les prix**. Le client voit toujours le prix total ; le système isole la taxe (`tax = total × 10/110`) pour la comptabilité.
 6. **Une commande atomique : items + paiements en une seule transaction**. Le POS poste l'Edge Function `process-payment`, qui appelle côté serveur la RPC money-path courante (famille `complete_order_with_payment`) : celle-ci crée la commande et tous ses paiements dans une transaction Postgres unique — pas de risque de paiement orphelin si la connexion saute. Le POS n'appelle jamais la RPC directement.
+7. **L'envoi en cuisine est marqué par le serveur, pas par le poste**
+   (ADR-022). Ce qui rend une ligne visible en cuisine — le verrou, le statut de
+   préparation, l'horodatage d'envoi — est posé par la RPC qui crée la commande,
+   sur les trois portes : le comptoir, la salle et la vente payée directement.
+   Le poste imprime les tickets de préparation, mais il n'est plus le chemin par
+   lequel la cuisine apprend qu'une commande existe : une impression en échec ne
+   fait plus disparaître la commande de l'écran cuisine. Corollaire de la même
+   décision : un produit non vendable — supprimé, désactivé, ou parent d'un
+   groupe de variantes — n'entre dans aucune commande, quelle que soit la porte
+   empruntée ; seul un rejeu hors-ligne ou la finalisation d'un encaissement en
+   cours échappe à ce contrôle, parce qu'y opposer un refus arriverait trop tard.
 
 ---
 
@@ -163,15 +174,20 @@ d'un item parti en cuisine (ADR-010).
 
 ## 7. Mettre en attente — Held orders
 
-Spécificité du dine-in : un client peut commencer sa commande, manger, puis ajouter plus tard.
+Spécificité du service à table : un client peut commencer sa commande, manger, puis ajouter plus tard — et le comptoir ne doit pas rester bloqué pendant ce temps.
 
-Bouton **Hold** → la commande est mise en attente (statut `held`) :
+Bouton **Hold** → la commande est parquée et le panier libéré :
 
-- Le panier est vidé, le caissier peut servir le client suivant.
-- Plus tard, depuis la liste des commandes en attente, le caissier reprend la commande où elle en était.
-- Le `useRestoreHeldOrders` hook gère la restauration propre du state cart.
+- La mise en attente ne s'applique qu'à une **commande déjà envoyée en cuisine**
+  (ADR-022). On parque ce que la cuisine a reçu, jamais un panier que le client
+  n'a pas confirmé : le geste passe donc par l'envoi.
+- Le panier se vide, le caissier sert le client suivant.
+- Plus tard, depuis la liste des commandes en attente, le caissier reprend la
+  commande dans l'état où elle était et l'encaisse.
 
-Bénéfice métier : **un comptoir ne se bloque jamais sur une commande non finalisée**. Plusieurs commandes peuvent vivre en parallèle sans collision.
+Ce qui est saisi sans partir en cuisine ni être payé n'est pas une commande mais un **brouillon de caisse** : il reste au poste et ne s'écrit pas en base (ADR-022). La saisie n'est pas perdue pour autant — le journal opérationnel enregistre l'ouverture du panier, les ajouts, les changements de quantité et les retraits.
+
+Bénéfice métier : **un comptoir ne se bloque jamais sur une commande non finalisée**, et rien que le client n'a pas confirmé ne remonte en base. Plusieurs commandes peuvent vivre en parallèle sans collision.
 
 ---
 
