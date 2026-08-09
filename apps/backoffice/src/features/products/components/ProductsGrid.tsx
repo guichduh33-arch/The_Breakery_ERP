@@ -2,12 +2,23 @@
 //
 // Session 14 / Phase 4.B — Card grid view of the catalog.
 // Used when the user toggles to "grid" view from the filter strip.
+//
+// La grille recevait tout le résultat filtré et rendait ses 373 cartes d'un
+// coup, quand la table voisine paginait à 15 : basculer de vue faisait passer
+// le document de 911 à 8 236 nœuds. Elle prend désormais le MÊME contrat que
+// `ProductsTable` — `page`, `pageSize`, `onPage`, `onPageSize` — et le même
+// pied, pour qu'un bouton de vue ne change plus que l'apparence.
 
 import { ImageOff } from 'lucide-react';
 import type { JSX } from 'react';
 import { Badge, Card, CardContent, Currency } from '@breakery/ui';
 import { CategoryChip } from './CategoryChip.js';
 import { ProductTypeBadge } from './ProductTypeBadge.js';
+import {
+  PRODUCTS_PAGE_SIZE_DEFAULT,
+  ProductsPagination,
+  pageSlice,
+} from './ProductsPagination.js';
 import { classifyProduct, type ProductRow } from '../types.js';
 
 interface Props {
@@ -15,9 +26,24 @@ interface Props {
   /** Session 27c — set of product ids that are parents (i.e. have variants). */
   parentIds?: ReadonlySet<string>;
   onCardClick?: (row: ProductRow) => void;
+  /** Page courante, 1-based — même contrat que ProductsTable. */
+  page?: number;
+  onPage?: (next: number) => void;
+  pageSize?: number;
+  onPageSize?: (next: number) => void;
 }
 
-export function ProductsGrid({ rows, parentIds, onCardClick }: Props): JSX.Element {
+export function ProductsGrid({
+  rows,
+  parentIds,
+  onCardClick,
+  page = 1,
+  onPage,
+  pageSize = PRODUCTS_PAGE_SIZE_DEFAULT,
+  onPageSize,
+}: Props): JSX.Element {
+  const { pageRows } = pageSlice(rows, page, pageSize);
+
   if (rows.length === 0) {
     return (
       <div className="rounded-lg border border-border-subtle bg-bg-elevated py-16 text-center">
@@ -27,8 +53,9 @@ export function ProductsGrid({ rows, parentIds, onCardClick }: Props): JSX.Eleme
     );
   }
   return (
+    <div className="space-y-3.5" data-testid="products-grid">
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {rows.map((r) => (
+      {pageRows.map((r) => (
         <Card
           key={r.id}
           variant="default"
@@ -78,6 +105,14 @@ export function ProductsGrid({ rows, parentIds, onCardClick }: Props): JSX.Eleme
           </CardContent>
         </Card>
       ))}
+    </div>
+      <ProductsPagination
+        total={rows.length}
+        page={page}
+        pageSize={pageSize}
+        {...(onPage !== undefined ? { onPage } : {})}
+        {...(onPageSize !== undefined ? { onPageSize } : {})}
+      />
     </div>
   );
 }
