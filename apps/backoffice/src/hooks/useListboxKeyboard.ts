@@ -20,9 +20,19 @@
 // pilotée au descendant actif ferait tabuler l'utilisateur à travers chaque
 // option, ce que le motif existe précisément pour éviter.
 //
+// LA SURBRILLANCE EST ANCRÉE SUR L'IDENTITÉ, PAS SUR L'INDICE. Retenir un indice
+// serait un piège d'argent : ces listes se rafraîchissent sous l'utilisateur
+// (react-query, refetch au retour de fenêtre). Une liste réordonnée entre le
+// moment où l'on surligne et celui où l'on valide ferait enregistrer un
+// mouvement de stock sur un AUTRE produit que celui regardé, sans rien changer à
+// l'écran. Ancrée sur la clé, la surbrillance suit son produit, et disparaît
+// proprement si le produit sort des résultats.
+//
 // La souris n'est pas touchée : les appelants gardent leur `onMouseDown`.
 
-import { useCallback, useEffect, useId, useState, type KeyboardEvent } from 'react';
+import {
+  useCallback, useEffect, useId, useMemo, useState, type KeyboardEvent,
+} from 'react';
 
 export interface ListboxKeyboard {
   /** Index surligné, ou -1 si aucun. À refléter par `aria-selected` sur l'option. */
@@ -37,31 +47,95 @@ export interface ListboxKeyboard {
   onOptionHover:       (index: number) => void;
   /** À poser sur le `onKeyDown` du CHAMP, pas de la liste. */
   handleKeyDown:       (event: KeyboardEvent<HTMLElement>) => void;
+  /**
+   * Décompte des résultats, à rendre dans une région `sr-only` + `role="status"`.
+   * Une liste pilotée au descendant actif ne déplace pas le focus : sans cette
+   * annonce, un lecteur d'écran ne sait jamais que des résultats sont apparus.
+   * Anglais littéral — l'interface l'est par décision produit, et aucune couche
+   * i18n n'est prévue (PRODUCT.md).
+   */
+  statusText:          string;
+}
+
+/**
+ * État visuel d'une option de listbox — survol et surbrillance active. Partagé
+ * par les quatre auto-complétions : la copie divergente de ce genre de classe
+ * est exactement la dérive que l'audit du 2026-08-09 a relevée. Chaque appelant
+ * garde sa mise en page (gouttières, alignement), seul l'état est commun.
+ *
+ * `bg-surface-4` et non `bg-bg-overlay` : dans le thème clair les deux tokens de
+ * surface valent #ffffff, la surbrillance ne rendait donc rien. Et en mode
+ * contraste forcé (Windows), tout fond d'auteur est écrasé par le système —
+ * d'où le contour, qui lui survit et reste le seul repère.
+ */
+export function listboxOptionState(active: boolean): string {
+  return active
+    ? 'cursor-pointer bg-surface-4 hover:bg-surface-4 forced-colors:outline forced-colors:outline-2'
+    : 'cursor-pointer hover:bg-surface-4';
 }
 
 export function useListboxKeyboard<T>(params: {
-  items:    readonly T[];
-  open:     boolean;
-  onSelect: (item: T) => void;
-  onClose:  () => void;
+  items:      readonly T[];
+  open:       boolean;
+  /** Identité stable de l'élément (son `id`), pas son rang. */
+  getItemKey: (item: T) => string;
+  onSelect:   (item: T) => void;
+  onClose:    () => void;
 }): ListboxKeyboard {
-  const { items, open, onSelect, onClose } = params;
+  const { items, open, getItemKey, onSelect, onClose } = params;
   const baseId = useId();
-  const [rawIndex, setRawIndex] = useState<number>(-1);
+  const [activeKey, setActiveKey] = useState<string | null>(null);
 
-  // Clamp au rendu plutôt qu'en effet : une liste qui rétrécit sous l'index
-  // courant (la frappe suivante filtre plus dur) laisserait sinon
-  // `aria-activedescendant` pointer un id absent du DOM, ce que les lecteurs
-  // d'écran signalent comme une référence morte.
-  const activeIndex = open && rawIndex >= 0 && rawIndex < items.length ? rawIndex : -1;
+  // Résolu au rendu : si le produit surligné a quitté les résultats (la frappe
+  // suivante filtre plus dur, un refetch le retire), `findIndex` rend -1 et
+  // `aria-activedescendant` se retire de lui-même. Aucun id mort exposé.
+  const activeIndex = useMemo<number>(() => {
+    if (!open || activeKey === null) return -1;
+    return items.findIndex((item) => getItemKey(item) === activeKey);
+  }, [open, activeKey, items, getItemKey]);
 
   useEffect(() => {
-    if (!open) setRawIndex(-1);
+    if (!open) setActiveKey(null);
   }, [open]);
 
   const optionId = useCallback(
     (index: number): string => `${baseId}-option-${String(index)}`,
     [baseId],
+  );
+
+  const activeDescendantId = activeIndex >= 0 ? optionId(activeIndex) : undefined;
+
+  // La surbrillance virtuelle ne défile pas toute seule : contrairement au focus
+  // réel, `aria-activedescendant` ne fait rien remonter dans un conteneur
+  // `overflow-auto`. Sans ceci, la 7ᵉ option d'une liste plafonnée à 15rem est
+  // surlignée hors du champ de vision — la flèche bas semble ne plus rien faire.
+  useEffect(() => {
+    if (activeDescendantId === undefined || typeof document === 'undefined') return;
+    const el = document.getElementById(activeDescendantId);
+    // jsdom n'implémente pas scrollIntoView : on ne suppose pas sa présence.
+    if (el !== null && typeof el.scrollIntoView === 'function') {
+      el.scrollIntoView({ block: 'nearest' });
+    }
+  }, [activeDescendantId]);
+
+  const highlightAt = useCallback(
+    (index: number): void => {
+      const item = items[index];
+      if (item !== undefined) setActiveKey(getItemKey(item));
+    },
+    [items, getItemKey],
+  );
+
+  const move = useCallback(
+    (delta: number): void => {
+      if (items.length === 0) return;
+      // Rien de surligné : ↓ prend la première, ↑ prend la dernière.
+      const next = activeIndex < 0
+        ? (delta > 0 ? 0 : items.length - 1)
+        : (activeIndex + delta + items.length) % items.length;
+      highlightAt(next);
+    },
+    [items, activeIndex, highlightAt],
   );
 
   const handleKeyDown = useCallback(
@@ -70,7 +144,7 @@ export function useListboxKeyboard<T>(params: {
         // Échap ferme même une liste vide ou déjà repliée — c'est la sortie de
         // secours, elle ne doit jamais dépendre de l'état de la liste.
         event.preventDefault();
-        setRawIndex(-1);
+        setActiveKey(null);
         onClose();
         return;
       }
@@ -79,19 +153,19 @@ export function useListboxKeyboard<T>(params: {
       switch (event.key) {
         case 'ArrowDown':
           event.preventDefault();
-          setRawIndex((i) => (i + 1) % items.length);
+          move(1);
           break;
         case 'ArrowUp':
           event.preventDefault();
-          setRawIndex((i) => (i <= 0 ? items.length - 1 : i - 1));
+          move(-1);
           break;
         case 'Home':
           event.preventDefault();
-          setRawIndex(0);
+          highlightAt(0);
           break;
         case 'End':
           event.preventDefault();
-          setRawIndex(items.length - 1);
+          highlightAt(items.length - 1);
           break;
         case 'Enter': {
           const item = activeIndex >= 0 ? items[activeIndex] : undefined;
@@ -99,7 +173,7 @@ export function useListboxKeyboard<T>(params: {
           // capter ici empêcherait de soumettre une modale au clavier.
           if (item === undefined) return;
           event.preventDefault();
-          setRawIndex(-1);
+          setActiveKey(null);
           onSelect(item);
           break;
         }
@@ -107,15 +181,22 @@ export function useListboxKeyboard<T>(params: {
           break;
       }
     },
-    [open, items, activeIndex, onSelect, onClose],
+    [open, items, activeIndex, move, highlightAt, onSelect, onClose],
   );
+
+  const statusText = !open
+    ? ''
+    : items.length === 0
+      ? 'No results.'
+      : `${String(items.length)} result${items.length > 1 ? 's' : ''} available.`;
 
   return {
     activeIndex,
     listboxId: `${baseId}-listbox`,
-    activeDescendantId: activeIndex >= 0 ? optionId(activeIndex) : undefined,
+    activeDescendantId,
     optionId,
-    onOptionHover: setRawIndex,
+    onOptionHover: highlightAt,
     handleKeyDown,
+    statusText,
   };
 }

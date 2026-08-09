@@ -2,10 +2,10 @@
 // Session 13 / Phase 2.D — filter row above MovementsTable.
 // 2026-06-23 — added an Item (product typeahead) filter + period presets.
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Search, X } from 'lucide-react';
 import { toLocalDateStr } from '@breakery/domain';
-import { useListboxKeyboard } from '@/hooks/useListboxKeyboard.js';
+import { listboxOptionState, useListboxKeyboard } from '@/hooks/useListboxKeyboard.js';
 import { useSections } from '@/features/inventory-transfers/hooks/useSections.js';
 import { useProductsForInventory } from '@/features/inventory/hooks/useProductsForInventory.js';
 import type { MovementsFilters as Filters } from '../hooks/useStockMovementsFeed.js';
@@ -51,11 +51,18 @@ function ItemFilter({ productId, onSelect }: {
   const showList = open && query.trim().length >= 2 && options.length > 0;
 
   const keyboard = useListboxKeyboard<(typeof options)[number]>({
-    items:    options,
-    open:     showList,
-    onSelect: (p) => { onSelect(p.id, p.name); setQuery(p.name); setOpen(false); },
-    onClose:  () => { setOpen(false); },
+    items:      options,
+    open:       showList,
+    getItemKey: (p) => p.id,
+    onSelect:   (p) => { onSelect(p.id, p.name); setQuery(p.name); setOpen(false); },
+    onClose:    () => { setOpen(false); },
   });
+
+  // La fermeture différée survivait au démontage.
+  const blurTimer = useRef<number | null>(null);
+  useEffect(() => () => {
+    if (blurTimer.current !== null) window.clearTimeout(blurTimer.current);
+  }, []);
 
   return (
     <div className="relative">
@@ -79,7 +86,7 @@ function ItemFilter({ productId, onSelect }: {
             if (productId !== undefined && productId !== '') onSelect(undefined);
           }}
           onFocus={() => { setOpen(true); }}
-          onBlur={() => { window.setTimeout(() => { setOpen(false); }, 120); }}
+          onBlur={() => { blurTimer.current = window.setTimeout(() => { setOpen(false); }, 120); }}
           className="w-44 px-2 py-1 text-sm bg-bg-base border border-border-subtle rounded"
         />
         {(productId !== undefined && productId !== '') && (
@@ -93,6 +100,9 @@ function ItemFilter({ productId, onSelect }: {
           </button>
         )}
       </div>
+      {/* Le descendant actif ne déplace pas le focus : sans annonce, l'apparition
+          des résultats est muette pour un lecteur d'écran. */}
+      <span className="sr-only" role="status" aria-live="polite">{keyboard.statusText}</span>
       {showList && (
         <ul
           id="mvt-item-list"
@@ -114,13 +124,10 @@ function ItemFilter({ productId, onSelect }: {
                 setQuery(p.name);
                 setOpen(false);
               }}
-              className={
-                'flex w-full cursor-pointer items-baseline justify-between gap-2 px-2 py-1 text-left text-sm hover:bg-surface-4' +
-                (keyboard.activeIndex === i ? ' bg-surface-4' : '')
-              }
+              className={`flex w-full items-baseline justify-between gap-2 px-2 py-1 text-left text-sm ${listboxOptionState(keyboard.activeIndex === i)}`}
             >
-              <span className="text-text-primary">{p.name}</span>
-              <span className="text-xs text-text-secondary">{p.sku}</span>
+              <span className="min-w-0 truncate text-text-primary">{p.name}</span>
+              <span className="shrink-0 text-xs text-text-secondary">{p.sku}</span>
             </li>
           ))}
         </ul>

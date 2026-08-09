@@ -5,9 +5,9 @@
 // least 2 characters and the query has resolved. Selecting a row collapses
 // the list and forwards the chosen product to the caller.
 
-import { useState, type JSX } from 'react';
+import { useEffect, useRef, useState, type JSX } from 'react';
 import { Input } from '@breakery/ui';
-import { useListboxKeyboard } from '@/hooks/useListboxKeyboard.js';
+import { listboxOptionState, useListboxKeyboard } from '@/hooks/useListboxKeyboard.js';
 import {
   useProductsForInventory,
   type ProductTypeaheadRow,
@@ -37,11 +37,19 @@ export function ProductTypeahead({
   const rows       = q.data ?? [];
   const listOpen   = open && search.trim().length >= 2;
   const keyboard   = useListboxKeyboard<ProductTypeaheadRow>({
-    items:    rows,
-    open:     listOpen,
-    onSelect: handleSelect,
-    onClose:  () => { setOpen(false); },
+    items:      rows,
+    open:       listOpen,
+    getItemKey: (p) => p.id,
+    onSelect:   handleSelect,
+    onClose:    () => { setOpen(false); },
   });
+
+  // La fermeture différée survivait au démontage : fermer la modale pendant les
+  // 120 ms laissait une minuterie appeler `setOpen` sur un composant disparu.
+  const blurTimer = useRef<number | null>(null);
+  useEffect(() => () => {
+    if (blurTimer.current !== null) window.clearTimeout(blurTimer.current);
+  }, []);
 
   function handleClear(): void {
     onChange(null);
@@ -73,9 +81,12 @@ export function ProductTypeahead({
         onBlur={() => {
           // Allow click to register on a list item before closing. Inoffensif
           // au clavier : le focus ne quitte jamais le champ (descendant actif).
-          window.setTimeout(() => setOpen(false), 120);
+          blurTimer.current = window.setTimeout(() => { setOpen(false); }, 120);
         }}
       />
+      {/* Le descendant actif ne déplace pas le focus : sans cette annonce, un
+          lecteur d'écran n'apprend jamais que des résultats sont apparus. */}
+      <span className="sr-only" role="status" aria-live="polite">{keyboard.statusText}</span>
       {value !== null && (
         <button
           type="button"
@@ -92,14 +103,17 @@ export function ProductTypeahead({
           id={keyboard.listboxId}
           className="absolute z-20 mt-1 max-h-60 w-full overflow-y-auto rounded-md border border-border-subtle bg-bg-elevated shadow-lg"
         >
+          {/* `role="presentation"` : un `listbox` n'admet que des `option` pour
+              enfants. Sans ça, un message d'état est annoncé comme un résultat
+              sélectionnable — et « Searching… » devient un produit. */}
           {q.isLoading && (
-            <div className="px-3 py-2 text-xs text-text-secondary">Searching…</div>
+            <div role="presentation" className="px-3 py-2 text-xs text-text-secondary">Searching…</div>
           )}
           {q.error && (
-            <div className="px-3 py-2 text-xs text-red">Search failed: {q.error.message}</div>
+            <div role="presentation" className="px-3 py-2 text-xs text-red">Search failed: {q.error.message}</div>
           )}
           {q.data?.length === 0 && (
-            <div className="px-3 py-2 text-xs text-text-secondary">No products match.</div>
+            <div role="presentation" className="px-3 py-2 text-xs text-text-secondary">No products match.</div>
           )}
           {rows.map((p, i) => (
             // Non focalisable, et c'est le motif : la surbrillance est portée
@@ -117,14 +131,15 @@ export function ProductTypeahead({
                 e.preventDefault();
                 handleSelect(p);
               }}
-              className={
-                'block w-full cursor-pointer px-3 py-2 text-left text-sm hover:bg-surface-4' +
-                (keyboard.activeIndex === i ? ' bg-surface-4' : '')
-              }
+              className={`block w-full px-3 py-2 text-left text-sm ${listboxOptionState(keyboard.activeIndex === i)}`}
             >
+              {/* `min-w-0` + `truncate` : un nom de produit long poussait sinon
+                  le SKU et le stock hors de la liste. `shrink-0` garde la
+                  colonne de droite entière — c'est elle qui désambiguïse deux
+                  produits au nom proche. */}
               <div className="flex items-center justify-between gap-3">
-                <span>{p.name}</span>
-                <span className="font-mono text-xs text-text-secondary">
+                <span className="min-w-0 truncate">{p.name}</span>
+                <span className="shrink-0 font-mono text-xs text-text-secondary">
                   {p.sku} · {p.current_stock.toLocaleString()}
                 </span>
               </div>

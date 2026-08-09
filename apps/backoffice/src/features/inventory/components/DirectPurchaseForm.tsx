@@ -13,7 +13,7 @@ import { useEffect, useId, useMemo, useRef, useState, type FormEvent, type JSX }
 import { Button, Input, Select } from '@breakery/ui';
 import { formatIdr } from '@breakery/utils';
 import { toLocalDateStr } from '@breakery/domain';
-import { useListboxKeyboard } from '@/hooks/useListboxKeyboard.js';
+import { listboxOptionState, useListboxKeyboard } from '@/hooks/useListboxKeyboard.js';
 import { useAllProductsForPO, type PoProductRow } from '@/features/purchasing/hooks/useAllProductsForPO.js';
 import { useInventoryReferenceData } from '../hooks/useInventoryReferenceData.js';
 import { useSections } from '@/features/inventory-transfers/hooks/useSections.js';
@@ -161,11 +161,18 @@ export default function DirectPurchaseForm({ onSuccess }: DirectPurchaseFormProp
 
   const listOpen = pickerOpen && filtered.length > 0;
   const keyboard = useListboxKeyboard<PoProductRow>({
-    items:    filtered,
-    open:     listOpen,
-    onSelect: selectProduct,
-    onClose:  () => { setPickerOpen(false); },
+    items:      filtered,
+    open:       listOpen,
+    getItemKey: (p) => p.id,
+    onSelect:   selectProduct,
+    onClose:    () => { setPickerOpen(false); },
   });
+
+  // La fermeture différée survivait au démontage.
+  const pickerBlurTimer = useRef<number | null>(null);
+  useEffect(() => () => {
+    if (pickerBlurTimer.current !== null) window.clearTimeout(pickerBlurTimer.current);
+  }, []);
 
   return (
     <form
@@ -197,10 +204,13 @@ export default function DirectPurchaseForm({ onSuccess }: DirectPurchaseFormProp
           onKeyDown={keyboard.handleKeyDown}
           onChange={(e) => { setQuery(e.target.value); setPickerOpen(true); if (product !== null) setProduct(null); }}
           onFocus={() => setPickerOpen(true)}
-          onBlur={() => { window.setTimeout(() => setPickerOpen(false), 150); }}
+          onBlur={() => { pickerBlurTimer.current = window.setTimeout(() => { setPickerOpen(false); }, 150); }}
           className={fieldCls}
           disabled={purchase.isPending || products.isLoading}
         />
+        {/* Le descendant actif ne déplace pas le focus : sans annonce, l'apparition
+            des résultats est muette pour un lecteur d'écran. */}
+        <span className="sr-only" role="status" aria-live="polite">{keyboard.statusText}</span>
         {listOpen && (
           <ul id={keyboard.listboxId} role="listbox" className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded border border-border-subtle bg-bg-elevated shadow-lg">
             {filtered.map((p, i) => (
@@ -213,13 +223,10 @@ export default function DirectPurchaseForm({ onSuccess }: DirectPurchaseFormProp
                 aria-selected={keyboard.activeIndex === i}
                 onMouseEnter={() => { keyboard.onOptionHover(i); }}
                 onMouseDown={(e) => { e.preventDefault(); selectProduct(p); }}
-                className={
-                  'flex w-full cursor-pointer items-baseline justify-between gap-2 px-3 py-1.5 text-left text-sm hover:bg-surface-4' +
-                  (keyboard.activeIndex === i ? ' bg-surface-4' : '')
-                }
+                className={`flex w-full items-baseline justify-between gap-2 px-3 py-1.5 text-left text-sm ${listboxOptionState(keyboard.activeIndex === i)}`}
               >
-                <span className="text-text-primary">{p.name}</span>
-                <span className="font-mono text-xs text-text-muted">{p.sku}</span>
+                <span className="min-w-0 truncate text-text-primary">{p.name}</span>
+                <span className="shrink-0 font-mono text-xs text-text-muted">{p.sku}</span>
               </li>
             ))}
           </ul>

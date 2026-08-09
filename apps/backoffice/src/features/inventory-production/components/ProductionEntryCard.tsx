@@ -27,7 +27,7 @@ import { useEffect, useMemo, useRef, useState, type JSX } from 'react';
 import { toast } from 'sonner';
 import { Button, Card, SectionLabel } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
-import { useListboxKeyboard } from '@/hooks/useListboxKeyboard.js';
+import { listboxOptionState, useListboxKeyboard } from '@/hooks/useListboxKeyboard.js';
 import {
   useProducibleProductsBySection,
   type ProducibleProduct,
@@ -227,11 +227,19 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
 
   const searchOpen = searchFocused && query.trim() !== '';
   const keyboard = useListboxKeyboard<ProducibleProduct>({
-    items:    matches,
-    open:     searchOpen,
-    onSelect: addProduct,
-    onClose:  () => { setSearchFocused(false); },
+    items:      matches,
+    open:       searchOpen,
+    getItemKey: (p) => p.id,
+    onSelect:   addProduct,
+    onClose:    () => { setSearchFocused(false); },
   });
+
+  // `blurTimer` était armé au blur et nettoyé au focus, mais jamais au
+  // démontage : changer de station pendant les 150 ms laissait une minuterie
+  // écrire dans un composant disparu.
+  useEffect(() => () => {
+    if (blurTimer.current) clearTimeout(blurTimer.current);
+  }, []);
 
   return (
     <Card padding="md" className="space-y-5">
@@ -259,6 +267,9 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
             data-testid="production-search"
             className="h-9 w-72 rounded-full border border-border-subtle bg-bg-input pl-9 pr-3 text-sm text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
           />
+          {/* Le descendant actif ne déplace pas le focus : sans annonce,
+              l'apparition des résultats est muette pour un lecteur d'écran. */}
+          <span className="sr-only" role="status" aria-live="polite">{keyboard.statusText}</span>
           {searchOpen && (
             <ul
               id={keyboard.listboxId}
@@ -281,13 +292,10 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
                     aria-selected={keyboard.activeIndex === i}
                     onMouseEnter={() => { keyboard.onOptionHover(i); }}
                     onMouseDown={(e) => { e.preventDefault(); addProduct(p); }}
-                    className={
-                      'flex w-full cursor-pointer items-center justify-between gap-3 px-3 py-2 text-left text-sm hover:bg-surface-4' +
-                      (keyboard.activeIndex === i ? ' bg-surface-4' : '')
-                    }
+                    className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm ${listboxOptionState(keyboard.activeIndex === i)}`}
                   >
-                    <span className="text-text-primary">{p.name}</span>
-                    <span className="font-mono text-[10px] uppercase tracking-widest text-text-muted">{p.sku}</span>
+                    <span className="min-w-0 truncate text-text-primary">{p.name}</span>
+                    <span className="shrink-0 font-mono text-[10px] uppercase tracking-widest text-text-muted">{p.sku}</span>
                   </li>
                 ))
               )}
