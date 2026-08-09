@@ -46,7 +46,7 @@ SELECT * FROM finish();
 ROLLBACK;
 
 -- ============================================================================
--- RPC section — upsert_combo_v1 (Task A2). Run as a second transaction.
+-- RPC section — upsert_combo_v2 (Task A2). Run as a second transaction.
 -- Auth simulated via set_config('request.jwt.claim.sub', <auth_user_id>).
 -- UUIDs reference V3-dev seed: MANAGER ...0004, CASHIER ...0002,
 -- category 9c751b3c…, finished products c47193c9… / 551c75ec….
@@ -56,7 +56,7 @@ SELECT set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000004'
 DO $$
 DECLARE r jsonb;
 BEGIN
-  r := upsert_combo_v1($json$
+  r := upsert_combo_v2($json$
     {"name":"Test Platter","category_id":"9c751b3c-2cbf-49a9-a442-cc6a4b5ffc4a","base_price":100000,
      "groups":[{"name":"Drinks","group_type":"single","is_required":true,"min_select":1,"max_select":1,"sort_order":0,
        "options":[{"component_product_id":"c47193c9-0742-457c-b2bd-a6fdf65a1ad0","surcharge":0,"is_default":true,"sort_order":0},
@@ -71,24 +71,24 @@ SELECT ok(current_setting('combo.t7_id') IS NOT NULL AND current_setting('combo.
 SELECT ok(current_setting('combo.t7_sku') LIKE 'COMBO-%', 'T7 auto SKU COMBO-prefixed');
 SELECT is((SELECT count(*)::int FROM combo_groups WHERE combo_product_id = current_setting('combo.t7_id')::uuid), 1, 'T7 one group persisted');
 SELECT is((SELECT count(*)::int FROM combo_group_options o JOIN combo_groups g ON g.id=o.group_id WHERE g.combo_product_id = current_setting('combo.t7_id')::uuid), 2, 'T7 two options persisted');
-SELECT throws_ok($q$ SELECT set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000002',true); SELECT upsert_combo_v1('{"name":"X","category_id":"9c751b3c-2cbf-49a9-a442-cc6a4b5ffc4a","base_price":1,"groups":[]}'::jsonb, NULL) $q$, 'P0003', NULL, 'T8 CASHIER create denied P0003');
+SELECT throws_ok($q$ SELECT set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000002',true); SELECT upsert_combo_v2('{"name":"X","category_id":"9c751b3c-2cbf-49a9-a442-cc6a4b5ffc4a","base_price":1,"groups":[]}'::jsonb, NULL) $q$, 'P0003', NULL, 'T8 CASHIER create denied P0003');
 SELECT set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000004',true);
-SELECT throws_ok($q$ SELECT upsert_combo_v1('{"name":"Y","category_id":"9c751b3c-2cbf-49a9-a442-cc6a4b5ffc4a","base_price":1,"groups":[{"name":"G","group_type":"single","is_required":true,"options":[{"component_product_id":"c47193c9-0742-457c-b2bd-a6fdf65a1ad0","is_default":false}]}]}'::jsonb, NULL) $q$, 'P0001', NULL, 'T9 single-required 0 defaults rejected');
+SELECT throws_ok($q$ SELECT upsert_combo_v2('{"name":"Y","category_id":"9c751b3c-2cbf-49a9-a442-cc6a4b5ffc4a","base_price":1,"groups":[{"name":"G","group_type":"single","is_required":true,"options":[{"component_product_id":"c47193c9-0742-457c-b2bd-a6fdf65a1ad0","is_default":false}]}]}'::jsonb, NULL) $q$, 'P0001', NULL, 'T9 single-required 0 defaults rejected');
 DO $$
 DECLARE r jsonb;
 BEGIN
-  r := upsert_combo_v1(('{"combo_product_id":"'||current_setting('combo.t7_id')||'","name":"Test Platter v2","category_id":"9c751b3c-2cbf-49a9-a442-cc6a4b5ffc4a","base_price":120000,"groups":[]}')::jsonb, NULL);
+  r := upsert_combo_v2(('{"combo_product_id":"'||current_setting('combo.t7_id')||'","name":"Test Platter v2","category_id":"9c751b3c-2cbf-49a9-a442-cc6a4b5ffc4a","base_price":120000,"groups":[]}')::jsonb, NULL);
 END $$;
 SELECT is((SELECT count(*)::int FROM combo_groups WHERE combo_product_id = current_setting('combo.t7_id')::uuid), 0, 'T10 REPLACE removed groups');
 DO $$
 DECLARE r1 jsonb; r2 jsonb; k uuid := '11111111-2222-3333-4444-555555555555';
 BEGIN
-  r1 := upsert_combo_v1('{"name":"Idem","category_id":"9c751b3c-2cbf-49a9-a442-cc6a4b5ffc4a","base_price":5000,"groups":[]}'::jsonb, k);
-  r2 := upsert_combo_v1('{"name":"Idem AGAIN","category_id":"9c751b3c-2cbf-49a9-a442-cc6a4b5ffc4a","base_price":9999,"groups":[]}'::jsonb, k);
+  r1 := upsert_combo_v2('{"name":"Idem","category_id":"9c751b3c-2cbf-49a9-a442-cc6a4b5ffc4a","base_price":5000,"groups":[]}'::jsonb, k);
+  r2 := upsert_combo_v2('{"name":"Idem AGAIN","category_id":"9c751b3c-2cbf-49a9-a442-cc6a4b5ffc4a","base_price":9999,"groups":[]}'::jsonb, k);
   PERFORM set_config('combo.t11', (r1->>'combo_product_id' = r2->>'combo_product_id' AND r2->>'idempotent_replay'='true')::text, false);
 END $$;
 SELECT ok(current_setting('combo.t11')='true', 'T11 idempotency replay returns same id');
-SELECT ok(NOT has_function_privilege('anon','upsert_combo_v1(jsonb,uuid)','EXECUTE'), 'T12 anon EXECUTE revoked');
+SELECT ok(NOT has_function_privilege('anon','upsert_combo_v2(jsonb,uuid)','EXECUTE'), 'T12 anon EXECUTE revoked');
 SELECT * FROM finish();
 ROLLBACK;
 
@@ -100,7 +100,7 @@ SELECT set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000001'
 DO $$
 DECLARE r jsonb; d jsonb;
 BEGIN
-  r := upsert_combo_v1('{"name":"DelMe","category_id":"9c751b3c-2cbf-49a9-a442-cc6a4b5ffc4a","base_price":1000,"groups":[]}'::jsonb, NULL);
+  r := upsert_combo_v2('{"name":"DelMe","category_id":"9c751b3c-2cbf-49a9-a442-cc6a4b5ffc4a","base_price":1000,"groups":[]}'::jsonb, NULL);
   PERFORM set_config('combo.del_id', r->>'combo_product_id', false);
   d := delete_combo_v1((r->>'combo_product_id')::uuid);
   PERFORM set_config('combo.del_res', d->>'deleted', false);
