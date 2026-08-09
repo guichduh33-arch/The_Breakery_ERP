@@ -12,12 +12,18 @@
 > **famille**. La version vivante se vérifie dans `supabase/migrations/` et au
 > call-site.
 >
-> **Modifié le 2026-08-09**, par dérogation explicite du propriétaire à la règle
-> documentaire 5 (« un ADR ne se modifie jamais »). Seule la conséquence 6 est
-> touchée : elle affectait les trois invariants nouveaux à la fiche `ORDERS.md`,
-> qui décrit la page de gestion du back-office et ne peut en porter que deux.
-> **Aucune décision n'est modifiée** — la correction porte sur une consigne de
-> mise en œuvre écrite sans avoir ouvert la fiche visée.
+> **Modifié le 2026-08-09**, à deux reprises, par dérogation explicite du
+> propriétaire à la règle documentaire 5 (« un ADR ne se modifie jamais »).
+> **Seule la conséquence 6 est touchée** et **aucune décision n'est modifiée** :
+> les deux retouches portent sur une consigne de mise en œuvre, jamais sur un
+> arbitrage.
+>
+> 1. La conséquence affectait les trois invariants nouveaux à la seule fiche
+>    `ORDERS.md`, qui décrit la page de gestion du back-office et ne peut en
+>    porter que deux — consigne écrite sans avoir ouvert la fiche visée.
+> 2. Elle n'attribuait ensuite le troisième qu'à `POS.md`, alors qu'il est aussi
+>    porté par `KDS.md` : une même décision se lit des deux côtés du couplage,
+>    chacune dans son registre.
 
 ## Contexte
 
@@ -277,8 +283,9 @@ Aucune décision n'est requise : l'exigence est satisfaite par l'existant.
    page ; et la liste ne montre que des commandes réelles, un brouillon de caisse
    ne s'écrivant pas en base. Le troisième — la marque d'envoi en cuisine est
    posée par la RPC qui crée la commande, sur les trois portes — n'est pas un
-   invariant d'écran de gestion : il porte sur ce que la caisse écrit, et revient
-   à la fiche `POS.md`. Une porte d'écriture nouvelle naît soumise aux trois.
+   invariant d'écran de gestion : il revient à `POS.md`, du point de vue de ce
+   que la caisse écrit, et à `KDS.md`, du point de vue de ce que la cuisine
+   reçoit. Une porte d'écriture nouvelle naît soumise aux trois.
 7. **Le trou B2B / import reste ouvert** (décision 6) et doit être porté au
    backlog du module concerné pour ne pas se perdre.
 8. **Ce chantier relève de la dette d'ADR** (ADR-021 déc. 4c) : il solde un
