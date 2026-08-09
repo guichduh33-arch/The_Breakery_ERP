@@ -56,6 +56,9 @@ apps/print-bridge/hub-buffer.jsonl
 !.claude/skills/
 !.claude/agents/
 !.claude/settings.json
+# Serveurs de dev de l'aperçu intégré. Partagé : les ports sont déjà figés dans
+# les vite.config.ts et les scripts `dev`, un poste cloné n'a donc rien à régler.
+!.claude/launch.json
 .claude/agents/*/
 # skill-creator eval/optimize scratch dirs — never commit
 .claude/skills/*-workspace/

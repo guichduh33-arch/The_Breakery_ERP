@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "backoffice",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@breakery/app-backoffice", "dev"],
+      "port": 5174
+    },
+    {
+      "name": "pos",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@breakery/app-pos", "dev"],
+      "port": 5173
+    }
+  ]
+}
