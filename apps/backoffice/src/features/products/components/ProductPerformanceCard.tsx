@@ -22,13 +22,18 @@ import { useProductPerformance } from '../hooks/useProductPerformance.js';
 
 const TITLE_CLASS = 'mb-4 text-sm font-bold uppercase tracking-widest text-text-muted';
 
+// Un seul séparateur de milliers dans la carte, et c'est celui du produit : la
+// virgule (`Rp 4,850,000`), qu'impose déjà `Currency` sur la valeur principale.
+// Formater la note en `id-ID` rendait « Counter 50.000 » deux lignes sous
+// « Rp 300,000 » — un montant qui se lit cinquante.
+
 /** Quantités : entières le plus souvent (pcs), décimales pour un produit au poids. */
 function formatQty(n: number): string {
-  return n.toLocaleString('id-ID', { maximumFractionDigits: 2 });
+  return n.toLocaleString('en-US', { maximumFractionDigits: 2 });
 }
 
 function formatCount(n: number): string {
-  return n.toLocaleString('id-ID', { maximumFractionDigits: 0 });
+  return n.toLocaleString('en-US', { maximumFractionDigits: 0 });
 }
 
 export function ProductPerformanceCard({
@@ -90,8 +95,10 @@ export function ProductPerformanceCard({
         <Metric
           label="Revenue"
           value={total.revenue > 0 ? <Currency amount={total.revenue} /> : '—'}
+          // La note passe par `Currency` comme la valeur : un montant et son
+          // détail ne peuvent pas se lire dans deux notations.
           note={hasB2b && total.revenue > 0
-            ? `Counter ${formatCount(counter.revenue)} · B2B ${formatCount(b2b.revenue)}`
+            ? <>Counter <Currency amount={counter.revenue} /> · B2B <Currency amount={b2b.revenue} /></>
             : null}
         />
         <Metric
@@ -145,7 +152,7 @@ function Metric({
 }: {
   label: string;
   value: ReactNode;
-  note: string | null;
+  note: ReactNode;
 }): JSX.Element {
   return (
     <div className="flex items-baseline justify-between gap-4">

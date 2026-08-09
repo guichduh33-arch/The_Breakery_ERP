@@ -69,6 +69,21 @@ describe('ProductPerformanceCard', () => {
     expect(card).toHaveTextContent(/Counter 120 · B2B 22/);
   });
 
+  // Régression vue en vrai dans le navigateur, invisible pour les tests
+  // précédents : la note du revenu était formatée en `id-ID` (point) sous une
+  // valeur formatée par Currency (virgule). « Counter 50.000 » deux lignes sous
+  // « Rp 300,000 » se lit cinquante. Le détail d'un montant passe par le même
+  // rendu que le montant.
+  it('renders the revenue split through Currency, like the value above it', async () => {
+    rpcMock.mockResolvedValue({ data: envelope(), error: null });
+    renderCard();
+
+    const card = await screen.findByTestId('product-performance');
+    expect(card).toHaveTextContent(/Counter\s*Rp\s*3,000,000\s*·\s*B2B\s*Rp\s*550,000/);
+    // Aucun point en séparateur de milliers nulle part dans la carte.
+    expect(card.textContent ?? '').not.toMatch(/\d\.\d{3}(\D|$)/);
+  });
+
   it('hides the split when there is no B2B sale — a "· B2B 0" teaches nothing', async () => {
     rpcMock.mockResolvedValue({
       data: envelope({
