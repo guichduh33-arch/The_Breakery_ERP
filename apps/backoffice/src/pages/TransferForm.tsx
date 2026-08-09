@@ -162,7 +162,7 @@ export default function TransferFormPage(): JSX.Element {
         className="space-y-6 max-w-3xl bg-bg-elevated border border-border-subtle rounded-lg p-6"
       >
         {formError !== null && (
-          <div role="alert" className="rounded-md border border-red bg-red/5 p-2 text-xs text-red">
+          <div role="alert" className="rounded-md border border-red bg-red-soft p-2 text-xs text-red">
             {formError}
           </div>
         )}

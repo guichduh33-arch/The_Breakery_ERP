@@ -39,10 +39,10 @@ function marginTone(marginPct: number | null): MarginTone {
 }
 
 const MARGIN_TONE_CLASS: Record<MarginTone, string> = {
-  green: 'bg-success-soft text-success border border-success/40',
-  amber: 'bg-warning-soft text-warning border border-warning/40',
-  red:   'bg-danger-soft text-danger border border-danger/40',
-  muted: 'bg-bg-overlay text-text-secondary border border-border-subtle',
+  green: 'bg-success-soft text-success border border-success',
+  amber: 'bg-warning-soft text-warning border border-warning',
+  red:   'bg-danger-soft text-danger border border-danger',
+  muted: 'bg-surface-4 text-text-secondary border border-border-subtle',
 };
 
 export function RecipeCostPreviewCard({

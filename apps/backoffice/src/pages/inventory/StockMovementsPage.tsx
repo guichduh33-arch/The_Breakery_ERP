@@ -104,7 +104,7 @@ export default function StockMovementsPage(): JSX.Element {
       <MovementsFiltersBar value={filters} onChange={setFilters} />
 
       {ledger.error !== null ? (
-        <div role="alert" className="rounded-md border border-danger/40 bg-danger/5 p-3 text-sm text-danger">
+        <div role="alert" className="rounded-md border border-danger bg-danger-soft p-3 text-sm text-danger">
           Failed to load movements: {String(ledger.error.message)}
         </div>
       ) : (

@@ -39,7 +39,7 @@ export default function ProductDashboardPage(): JSX.Element {
   }
   if (dash.error !== null) {
     return (
-      <div role="alert" className="rounded-md border border-danger/40 bg-danger/5 p-3 text-sm text-danger">
+      <div role="alert" className="rounded-md border border-danger bg-danger-soft p-3 text-sm text-danger">
         Failed: {String(dash.error)}
       </div>
     );

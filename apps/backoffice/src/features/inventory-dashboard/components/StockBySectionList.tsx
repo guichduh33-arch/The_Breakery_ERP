@@ -39,7 +39,7 @@ export function StockBySectionList({ rows }: { rows: ProductDashboardData['stock
               </tr>
             ))}
           </tbody>
-          <tfoot className="bg-bg-overlay">
+          <tfoot className="bg-surface-inert">
             <tr>
               <td className="py-2 px-3 font-medium">Total</td>
               <td className="py-2 px-3 text-right font-mono font-medium">{total.toFixed(3)}</td>

@@ -126,7 +126,7 @@ export default function TransferDetailPage(): JSX.Element {
       {/* Items table */}
       <div className="bg-bg-elevated rounded-lg border border-border-subtle overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-bg-overlay text-xs uppercase tracking-wide text-text-secondary">
+          <thead className="bg-surface-inert text-xs uppercase tracking-wide text-text-secondary">
             <tr>
               <th className="text-left px-3 py-2 w-28">SKU</th>
               <th className="text-left px-3 py-2">Product</th>

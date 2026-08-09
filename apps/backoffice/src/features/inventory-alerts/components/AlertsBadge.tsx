@@ -22,7 +22,7 @@ export function AlertsBadge() {
     return (
       <Link
         to="/backoffice/inventory/alerts"
-        className="relative inline-flex items-center justify-center w-8 h-8 rounded text-text-secondary hover:text-text-primary hover:bg-bg-overlay"
+        className="relative inline-flex items-center justify-center w-8 h-8 rounded text-text-secondary hover:text-text-primary hover:bg-surface-4"
         aria-label="No inventory alerts"
       >
         <Bell className="h-4 w-4" aria-hidden />
@@ -33,7 +33,7 @@ export function AlertsBadge() {
   return (
     <Link
       to="/backoffice/inventory/alerts"
-      className="relative inline-flex items-center justify-center w-8 h-8 rounded text-warning hover:text-warning hover:bg-bg-overlay"
+      className="relative inline-flex items-center justify-center w-8 h-8 rounded text-warning hover:text-warning hover:bg-surface-4"
       aria-label={`${total} active inventory alerts`}
       title={`${low.data?.length ?? 0} low-stock / ${reorder.data?.length ?? 0} reorder`}
     >

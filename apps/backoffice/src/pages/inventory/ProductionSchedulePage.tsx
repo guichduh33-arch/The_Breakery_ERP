@@ -141,7 +141,7 @@ export default function ProductionSchedulePage(): JSX.Element {
       </div>
 
       {error !== null && (
-        <div role="alert" className="rounded-md border border-red bg-red/5 p-2 text-xs text-red">
+        <div role="alert" className="rounded-md border border-red bg-red-soft p-2 text-xs text-red">
           {error}
         </div>
       )}
@@ -160,7 +160,7 @@ export default function ProductionSchedulePage(): JSX.Element {
           )}
         </section>
 
-        <aside data-testid="suggestions-panel" className="space-y-3 rounded-md border border-border-subtle bg-bg-card p-3 text-xs">
+        <aside data-testid="suggestions-panel" className="space-y-3 rounded-md border border-border-subtle bg-bg-elevated p-3 text-xs">
           <header>
             <h2 className="font-serif text-lg">Suggestions</h2>
             <p className="mt-0.5 text-[11px] text-text-secondary">
@@ -210,7 +210,7 @@ export default function ProductionSchedulePage(): JSX.Element {
       {focused.length > 0 && (
         <section
           data-testid="cell-editor"
-          className="rounded-md border border-border-subtle bg-bg-card p-3 text-xs"
+          className="rounded-md border border-border-subtle bg-bg-elevated p-3 text-xs"
         >
           <h3 className="mb-2 font-serif text-base">
             {focusedDate} · {focusedSlot}

@@ -140,7 +140,7 @@ export default function MarginWatchPage(): JSX.Element {
                 role="tab"
                 aria-selected={filter === f.value}
                 onClick={() => setFilter(f.value)}
-                className={`rounded px-3 py-1 ${filter === f.value ? 'bg-bg-overlay text-text-primary' : 'text-text-secondary'}`}
+                className={`rounded px-3 py-1 ${filter === f.value ? 'bg-surface-4 text-text-primary' : 'text-text-secondary'}`}
               >
                 {f.label}
               </button>
@@ -150,15 +150,15 @@ export default function MarginWatchPage(): JSX.Element {
       </header>
 
       {error !== null && (
-        <div role="alert" className="rounded-md border border-red bg-red/5 p-2 text-xs text-red">
+        <div role="alert" className="rounded-md border border-red bg-red-soft p-2 text-xs text-red">
           {error}
         </div>
       )}
 
-      <section data-testid="margin-watch-table" className="rounded-md border border-border-subtle bg-bg-card">
+      <section data-testid="margin-watch-table" className="rounded-md border border-border-subtle bg-bg-elevated">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-bg-overlay text-[11px] uppercase tracking-widest text-text-secondary">
+            <thead className="bg-surface-inert text-[11px] uppercase tracking-widest text-text-secondary">
               <tr>
                 <th className="px-3 py-2 text-left">Product</th>
                 <th className="px-3 py-2 text-right">Target</th>

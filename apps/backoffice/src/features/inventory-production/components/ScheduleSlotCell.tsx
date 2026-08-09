@@ -27,11 +27,11 @@ const STATUS_DOT: Record<ScheduleRow['status'], string> = {
 };
 
 const STATUS_PILL: Record<ScheduleRow['status'], string> = {
-  scheduled: 'bg-bg-overlay text-text-secondary ring-border-subtle',
-  started:   'bg-info-soft text-info ring-info/30',
-  completed: 'bg-success-soft text-success ring-success/30',
-  cancelled: 'bg-danger-soft text-danger ring-danger/30',
-  skipped:   'bg-warning-soft text-warning ring-warning/30',
+  scheduled: 'bg-surface-4 text-text-secondary ring-border-subtle',
+  started:   'bg-info-soft text-info ring-info',
+  completed: 'bg-success-soft text-success ring-success',
+  cancelled: 'bg-danger-soft text-danger ring-danger',
+  skipped:   'bg-warning-soft text-warning ring-warning',
 };
 
 export function ScheduleSlotCell({
