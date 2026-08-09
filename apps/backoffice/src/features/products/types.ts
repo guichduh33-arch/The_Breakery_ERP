@@ -137,7 +137,8 @@ export function productMarginPct(
  * `product recette.jpg`, ...).
  */
 export type ProductDetailTab =
-  | 'overview'
+  // 'overview' retiré (distill) : l'onglet ne portait aucun bloc propre.
+  // 'analytics' reste déclaré sans panneau — arbitrage non tranché.
   | 'analytics'
   | 'general'
   | 'units'

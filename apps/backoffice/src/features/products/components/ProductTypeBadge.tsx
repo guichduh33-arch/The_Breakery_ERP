@@ -42,7 +42,7 @@ export function ProductTypeBadge({ type }: Props): JSX.Element | null {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium',
+        'inline-flex items-center gap-1 rounded-sm border px-2 py-0.5 text-[11px] font-medium',
         m.tone,
       )}
     >

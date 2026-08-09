@@ -63,15 +63,13 @@ describe('ProductDetailPage', () => {
     renderPage();
     expect(await screen.findByText('Aioli Sauce')).toBeInTheDocument();
     expect(screen.getByText('SFG-012')).toBeInTheDocument();
-    // Default tab is overview.
-    expect(screen.getByTestId('product-tab-overview')).toBeInTheDocument();
+    // Default tab is general (distill — l'onglet Overview a été supprimé).
+    expect(screen.getByTestId('product-tab-general')).toBeInTheDocument();
   });
 
   it('switches tabs when the user clicks them', async () => {
     renderPage();
     await screen.findByText('Aioli Sauce');
-    fireEvent.click(screen.getByRole('tab', { name: /general/i }));
-    expect(screen.getByTestId('product-tab-general')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('tab', { name: /units/i }));
     expect(screen.getByTestId('product-tab-units')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('tab', { name: /recipe/i }));

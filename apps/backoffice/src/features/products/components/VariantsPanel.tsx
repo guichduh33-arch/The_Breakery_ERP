@@ -107,7 +107,7 @@ export function VariantsPanel({ product }: VariantsPanelProps): JSX.Element {
       <div className="space-y-4">
         <div
           data-testid="variant-banner"
-          className="flex items-center gap-3 rounded-lg border border-gold/30 bg-gold-soft p-4"
+          className="flex items-center gap-3 rounded-lg border border-gold bg-gold-soft p-4"
         >
           <Layers className="h-5 w-5 text-gold" aria-hidden />
           <div className="flex-1">
@@ -131,6 +131,32 @@ export function VariantsPanel({ product }: VariantsPanelProps): JSX.Element {
             </Button>
           )}
         </div>
+      </div>
+    );
+  }
+
+  // Harden — ni `isLoading` ni `error` n'étaient lus. Pendant le chargement,
+  // `variants` valait `[]` et l'écran affichait « No variants yet » avec le
+  // bouton « Convert to parent » : on proposait une transformation de structure
+  // sur la foi d'une réponse pas encore arrivée. Et une requête en ÉCHEC rendait
+  // exactement le même écran — un produit à variantes se présentait comme un
+  // produit qui n'en a pas.
+  if (variantsQuery.isLoading) {
+    return (
+      <div className="py-12 text-center text-sm text-text-secondary">Loading variants…</div>
+    );
+  }
+  if (variantsQuery.error !== null && variantsQuery.error !== undefined) {
+    return (
+      <div
+        role="alert"
+        data-testid="variants-error"
+        className="rounded-lg border border-red bg-red-soft p-4 text-sm text-red"
+      >
+        Failed to load variants: {variantsQuery.error.message}
+        <p className="mt-1 text-xs text-text-secondary">
+          This product may still have variants — reload before converting or dissolving anything.
+        </p>
       </div>
     );
   }

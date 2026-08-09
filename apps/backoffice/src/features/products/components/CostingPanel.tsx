@@ -123,7 +123,7 @@ export function CostingPanel({ product }: CostingPanelProps): JSX.Element {
       <Card padding="md">
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <h2 className="font-display text-lg text-text-primary">Recipe BOM breakdown</h2>
+            <h2 className="text-sm font-bold uppercase tracking-widest text-text-muted">Recipe BOM breakdown</h2>
             <p className="text-xs italic text-text-secondary">
               Cost per unit based on current ingredient prices
             </p>
@@ -133,7 +133,7 @@ export function CostingPanel({ product }: CostingPanelProps): JSX.Element {
               type="button"
               data-testid="correct-cost-btn"
               onClick={() => setDialogOpen(true)}
-              className="inline-flex items-center gap-2 rounded-full bg-gold px-4 py-2 text-xs font-semibold uppercase tracking-widest text-bg-base"
+              className="inline-flex items-center gap-2 rounded-sm bg-gold px-4 py-2 text-xs font-semibold uppercase tracking-widest text-bg-base"
             >
               Correct cost price
             </button>

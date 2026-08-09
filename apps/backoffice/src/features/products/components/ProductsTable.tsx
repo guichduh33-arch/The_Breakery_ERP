@@ -21,7 +21,7 @@
 // désactivées plutôt qu'absentes, parce que la sélection multiple n'aurait
 // aucun sens sans elles.
 
-import { ChevronLeft, ChevronRight, DollarSign, Eye, Package, Trash2 } from 'lucide-react';
+import { DollarSign, Eye, Package, Trash2 } from 'lucide-react';
 import type { JSX } from 'react';
 import { Badge, DataTable, cn, type DataTableColumn } from '@breakery/ui';
 import { ProductTypeBadge } from './ProductTypeBadge.js';
@@ -29,8 +29,15 @@ import {
   classifyProduct, productMarginPct,
   type ProductColumnId, type ProductRow,
 } from '../types.js';
+import {
+  PRODUCTS_PAGE_SIZE_DEFAULT,
+  ProductsPagination,
+  pageSlice,
+} from './ProductsPagination.js';
 
-export const PRODUCTS_PAGE_SIZE = 15;
+/** @deprecated Taille par défaut seulement — la taille effective est une prop.
+ *  Conservé parce que des tests l'importent comme repère. */
+export const PRODUCTS_PAGE_SIZE = PRODUCTS_PAGE_SIZE_DEFAULT;
 
 const MONO = 'font-data tabular-nums';
 const DASH = <span className="text-text-subtle">—</span>;
@@ -48,6 +55,9 @@ interface Props {
   /** Page courante, 1-based. La pagination est possédée par la page. */
   page?: number;
   onPage?: (next: number) => void;
+  /** Lignes par page. Même contrat que `page` : la page la possède. */
+  pageSize?: number;
+  onPageSize?: (next: number) => void;
   selected?: ReadonlySet<string>;
   onToggleRow?: (id: string) => void;
   onToggleAll?: (ids: readonly string[], allSelected: boolean) => void;
@@ -64,6 +74,8 @@ export function ProductsTable({
   hiddenColumns,
   page = 1,
   onPage,
+  pageSize = PRODUCTS_PAGE_SIZE_DEFAULT,
+  onPageSize,
   selected = EMPTY_SELECTION,
   onToggleRow,
   onToggleAll,
@@ -73,10 +85,7 @@ export function ProductsTable({
   onDelete,
 }: Props): JSX.Element {
   const total = rows.length;
-  const pageCount = Math.max(1, Math.ceil(total / PRODUCTS_PAGE_SIZE));
-  const current = Math.min(page, pageCount);
-  const start = (current - 1) * PRODUCTS_PAGE_SIZE;
-  const pageRows = rows.slice(start, start + PRODUCTS_PAGE_SIZE);
+  const { pageRows } = pageSlice(rows, page, pageSize);
   const pageIds = pageRows.map((r) => r.id);
   const allOnPageSelected = pageIds.length > 0 && pageIds.every((id) => selected.has(id));
 
@@ -205,11 +214,20 @@ export function ProductsTable({
       header: 'Margin',
       align: 'right' as const,
       width: '7.1%',
+      // Marge NÉGATIVE en rouge, comme le coût manquant : un produit vendu à
+      // perte rendait jusqu'ici en noir ordinaire, typographiquement identique à
+      // un produit à 87 % de marge — seul le signe moins portait l'information.
+      // Et aucun compteur ne l'attrape : « No cost price » teste `cost <= 0`,
+      // pas `cost > retail`.
       render: (r: ProductRow) => {
         const m = productMarginPct(r);
         if (m === null) return DASH;
+        const atALoss = m < 0;
         return (
-          <span className={cn(MONO, 'text-text-primary')}>
+          <span
+            className={cn(MONO, atALoss ? 'font-semibold text-danger' : 'text-text-primary')}
+            {...(atALoss ? { title: 'Sold below cost' } : {})}
+          >
             {m.toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%
           </span>
         );
@@ -256,29 +274,24 @@ export function ProductsTable({
     },
   ];
 
-  const from = total === 0 ? 0 : start + 1;
-  const to = Math.min(start + PRODUCTS_PAGE_SIZE, total);
-
   const footer = (
-    <div className="flex flex-wrap items-center gap-3.5">
-      <span className="text-[12.5px] text-text-secondary">
-        {selected.size > 0 ? `${selected.size} selected` : 'None selected'}
-      </span>
-      <BulkAction label="Change prices" disabled={selected.size === 0} />
-      <BulkAction label="Move category" disabled={selected.size === 0} />
-      <BulkAction label="Deactivate" disabled={selected.size === 0} />
-      <span className="ml-auto font-data text-[11.5px] tabular-nums text-text-muted">
-        {from}–{to} of {total.toLocaleString('id-ID')}
-      </span>
-      <div className="flex items-center gap-1">
-        <PageButton label="Previous page" disabled={current <= 1} onClick={() => { onPage?.(current - 1); }}>
-          <ChevronLeft className="h-[15px] w-[15px]" aria-hidden />
-        </PageButton>
-        <PageButton label="Next page" disabled={current >= pageCount} onClick={() => { onPage?.(current + 1); }}>
-          <ChevronRight className="h-[15px] w-[15px]" aria-hidden />
-        </PageButton>
-      </div>
-    </div>
+    <ProductsPagination
+      total={total}
+      page={page}
+      pageSize={pageSize}
+      {...(onPage !== undefined ? { onPage } : {})}
+      {...(onPageSize !== undefined ? { onPageSize } : {})}
+      leading={
+        <>
+          <span className="text-[12.5px] text-text-secondary">
+            {selected.size > 0 ? `${selected.size} selected` : 'None selected'}
+          </span>
+          <BulkAction label="Change prices" disabled={selected.size === 0} />
+          <BulkAction label="Move category" disabled={selected.size === 0} />
+          <BulkAction label="Deactivate" disabled={selected.size === 0} />
+        </>
+      }
+    />
   );
 
   const tableProps: Parameters<typeof DataTable<ProductRow>>[0] = {
@@ -287,7 +300,7 @@ export function ProductsTable({
     rows: pageRows,
     getRowKey: (r) => r.id,
     isLoading,
-    loadingRowCount: PRODUCTS_PAGE_SIZE,
+    loadingRowCount: pageSize,
     striped: false,
     density: 'compact',
     footer,
@@ -320,27 +333,6 @@ function BulkAction({ label, disabled }: { label: string; disabled: boolean }): 
       )}
     >
       {label}
-    </button>
-  );
-}
-
-function PageButton({
-  label, disabled, onClick, children,
-}: {
-  label: string;
-  disabled: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}): JSX.Element {
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      disabled={disabled}
-      onClick={onClick}
-      className="inline-flex h-6 w-6 items-center justify-center rounded-sm text-text-muted transition-colors hover:bg-surface-4 hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-30"
-    >
-      {children}
     </button>
   );
 }

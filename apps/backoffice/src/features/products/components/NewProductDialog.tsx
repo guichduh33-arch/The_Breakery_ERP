@@ -188,18 +188,25 @@ export function NewProductDialog({ onClose, onCreated, categories }: NewProductD
               className="h-4 w-4 rounded border-border-subtle bg-bg-base"
             />
             <span>
-              Display-case item (POS vitrine) — stock vitrine séparé, indépendant de l'inventaire global
+              Display-case item (POS) — separate display-case counter, independent of global inventory
             </span>
           </label>
 
           {isDisplayItem && (
+            /* Harden — `bg-gold/5` ne produisait AUCUN fond : Tailwind ne sait pas
+               appliquer un modificateur d'opacité à une couleur déclarée comme
+               `var(--gold-base)`, donc la règle n'est pas générée du tout. L'encart
+               perdait sa surface. `gold-soft` porte son alpha dans le token lui-même.
+               La bordure passe de `gold-soft` (12 % sur blanc, imperceptible) au
+               liseré plein : c'est un contour, pas un aplat — la règle Ink-Not-Gold
+               tient. */
             <p
               data-testid="new-product-display-item-note"
-              className="rounded border border-gold-soft bg-gold/5 px-2 py-1.5 text-[11px] text-text-secondary"
+              className="rounded border border-gold bg-gold-soft px-2 py-1.5 text-[11px] text-text-secondary"
             >
-              <span className="font-semibold text-gold">Compteur vitrine à 0 à la création.</span>{' '}
-              Approvisionnez la vitrine depuis le POS («&nbsp;Mettre en vitrine&nbsp;») avant de
-              vendre, sinon l'encaissement sera bloqué «&nbsp;stock vitrine insuffisant&nbsp;».
+              <span className="font-semibold text-gold">Display-case counter starts at 0.</span>{' '}
+              Stock the display case from the POS («&nbsp;Mettre en vitrine&nbsp;») before selling,
+              or checkout will be blocked with «&nbsp;stock vitrine insuffisant&nbsp;».
             </p>
           )}
 

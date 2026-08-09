@@ -157,7 +157,14 @@ export function DataTable<TRow>({
   return (
     <div
       data-testid={testId}
-      className={cn('w-full overflow-hidden rounded-lg border border-border-subtle bg-bg-elevated', className)}
+      // Harden — `overflow-hidden` (posé pour découper les coins arrondis)
+      // AMPUTAIT la table sans le dire dès que ses colonnes dépassaient le
+      // conteneur : mesuré à 1024 px sur le catalogue produits, 1212 px de table
+      // dans 963 px utiles, soit 249 px perdus — les colonnes Actions et Status
+      // entières — sans barre de défilement et sans que la page défile
+      // horizontalement. `overflow-x-auto` révèle le dépassement au lieu de le
+      // masquer ; `overflow-y-hidden` conserve le découpage des coins.
+      className={cn('w-full overflow-x-auto overflow-y-hidden rounded-lg border border-border-subtle bg-bg-elevated', className)}
     >
       <table className="w-full border-collapse">
         <thead className="border-b border-border-subtle bg-surface-inert">

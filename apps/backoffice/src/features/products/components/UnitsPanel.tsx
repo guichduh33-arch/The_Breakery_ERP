@@ -185,7 +185,7 @@ export function UnitsPanel({ product }: Props): JSX.Element {
   if (error !== null && error !== undefined) {
     return (
       <div role="alert" className="rounded-lg border border-red bg-red-soft p-4 text-sm text-red">
-        Failed to load units: {(error as Error).message}
+        Failed to load units: {error.message}
       </div>
     );
   }
@@ -200,7 +200,7 @@ export function UnitsPanel({ product }: Props): JSX.Element {
               <Box className="h-5 w-5" aria-hidden />
             </div>
             <div>
-              <h2 className="font-display text-lg text-text-primary">Base Unit (Stock)</h2>
+              <h2 className="text-sm font-bold uppercase tracking-widest text-text-muted">Base Unit (Stock)</h2>
               <p className="text-xs italic text-text-secondary">All conversions are done relative to this unit</p>
             </div>
           </div>
@@ -223,7 +223,7 @@ export function UnitsPanel({ product }: Props): JSX.Element {
         {baseChanged && (
           <div
             data-testid="base-unit-confirm"
-            className="mt-4 flex flex-col gap-3 rounded-lg border border-gold/40 bg-gold-soft/40 p-4 sm:flex-row sm:items-center sm:justify-between"
+            className="mt-4 flex flex-col gap-3 rounded-lg border border-gold bg-gold-soft p-4 sm:flex-row sm:items-center sm:justify-between"
           >
             <div className="flex items-start gap-2 text-xs text-text-secondary">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-gold" aria-hidden />
@@ -239,7 +239,7 @@ export function UnitsPanel({ product }: Props): JSX.Element {
                 type="button"
                 onClick={() => setBaseDraft(baseUnit)}
                 disabled={setBaseUnit.isPending}
-                className="rounded-full border border-border-subtle px-4 py-2 text-xs font-semibold uppercase tracking-widest text-text-secondary disabled:opacity-50"
+                className="rounded-sm border border-border-subtle px-4 py-2 text-xs font-semibold uppercase tracking-widest text-text-secondary disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -248,7 +248,7 @@ export function UnitsPanel({ product }: Props): JSX.Element {
                 onClick={applyBaseUnit}
                 disabled={setBaseUnit.isPending}
                 data-testid="base-unit-apply"
-                className="rounded-full bg-gold px-4 py-2 text-xs font-semibold uppercase tracking-widest text-bg-base disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-sm bg-gold px-4 py-2 text-xs font-semibold uppercase tracking-widest text-bg-base disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {setBaseUnit.isPending ? 'Changing…' : 'Change base unit'}
               </button>
@@ -261,7 +261,7 @@ export function UnitsPanel({ product }: Props): JSX.Element {
       <Card padding="md">
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <h2 className="font-display text-lg text-text-primary">Alternative Units</h2>
+            <h2 className="text-sm font-bold uppercase tracking-widest text-text-muted">Alternative Units</h2>
             <p className="text-xs italic text-text-secondary">Define purchase or consumption units</p>
           </div>
           <button
@@ -269,7 +269,7 @@ export function UnitsPanel({ product }: Props): JSX.Element {
             disabled={!canWrite}
             onClick={addAlt}
             data-testid="add-alt-unit-btn"
-            className="inline-flex items-center gap-2 rounded-full bg-gold px-4 py-2 text-xs font-semibold uppercase tracking-widest text-bg-base disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-sm bg-gold px-4 py-2 text-xs font-semibold uppercase tracking-widest text-bg-base disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Plus className="h-4 w-4" aria-hidden />
             New Unit
@@ -319,7 +319,7 @@ export function UnitsPanel({ product }: Props): JSX.Element {
                   aria-label={`Remove unit ${alt.code || 'row'}`}
                   disabled={!canWrite}
                   onClick={() => removeAlt(alt._key)}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-full text-text-muted hover:enabled:bg-red-soft hover:enabled:text-red disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-sm text-text-muted hover:enabled:bg-red-soft hover:enabled:text-red disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <Trash2 className="h-4 w-4" aria-hidden />
                 </button>
@@ -332,7 +332,7 @@ export function UnitsPanel({ product }: Props): JSX.Element {
       {/* ── Units by context ── */}
       <Card padding="md">
         <div className="mb-4">
-          <h2 className="font-display text-lg text-text-primary">Units by Context</h2>
+          <h2 className="text-sm font-bold uppercase tracking-widest text-text-muted">Units by Context</h2>
           <p className="text-xs italic text-text-secondary">Choose the unit to use in each application context</p>
         </div>
 
@@ -388,7 +388,7 @@ export function UnitsPanel({ product }: Props): JSX.Element {
             disabled={!isDirty || !isValid || setUnits.isPending}
             onClick={handleSave}
             data-testid="units-save-btn"
-            className="rounded-full bg-gold px-6 py-2.5 text-xs font-semibold uppercase tracking-widest text-bg-base disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-sm bg-gold px-6 py-2.5 text-xs font-semibold uppercase tracking-widest text-bg-base disabled:cursor-not-allowed disabled:opacity-50"
           >
             {setUnits.isPending ? 'Saving…' : 'Save Units'}
           </button>

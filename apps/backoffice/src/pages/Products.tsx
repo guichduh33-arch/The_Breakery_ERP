@@ -14,8 +14,8 @@
 // GROUPÉES du pied de table restent inertes — elles réclament des RPC de masse
 // gatées et auditées qui n'existent pas.
 
-import { useEffect, useMemo, useState, type JSX } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useCallback, useMemo, useState, type JSX } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ProductsHeader } from '@/features/products/components/ProductsHeader.js';
 import { ProductsPageTabs } from '@/features/products/components/ProductsPageTabs.js';
 import { ProductsCounterStrip } from '@/features/products/components/ProductsCounterStrip.js';
@@ -24,9 +24,12 @@ import { ProductsTable } from '@/features/products/components/ProductsTable.js';
 import { ProductsGrid } from '@/features/products/components/ProductsGrid.js';
 import { NewProductDialog } from '@/features/products/components/NewProductDialog.js';
 import { DeleteProductDialog } from '@/features/products/components/DeleteProductDialog.js';
+import {
+  PRODUCTS_PAGE_SIZE_DEFAULT,
+  coercePageSize,
+} from '@/features/products/components/ProductsPagination.js';
 import { useProducts } from '@/features/products/hooks/useProducts.js';
 import { useCategories } from '@/features/products/hooks/useCategories.js';
-import { useUrlState } from '@/hooks/useUrlState.js';
 import { useAuthStore } from '@/stores/authStore.js';
 import {
   classifyProduct,
@@ -60,20 +63,60 @@ export default function ProductsPage(): JSX.Element {
   const canEditPricing = useAuthStore((s) => s.hasPermission('products.update'));
   const canImport      = useAuthStore((s) => s.hasPermission('catalog.import'));
 
-  // Le compteur actif vit dans l'URL : un lien vers « les 6 produits sans prix
-  // de revient » doit pouvoir se coller dans une conversation.
-  const [counterParam, setCounterParam] = useUrlState('counter', 'all');
-  const counter: ProductCounter = COUNTERS.has(counterParam as ProductCounter)
-    ? (counterParam as ProductCounter)
-    : 'all';
+  // TOUT l'état de liste vit dans l'URL, pas seulement le compteur.
+  //
+  // Deux raisons. La première existait déjà : un lien vers « les 6 produits sans
+  // prix de revient » doit pouvoir se coller dans une conversation. La seconde
+  // est le défaut qu'on corrige — ouvrir une fiche depuis la page 7 d'une
+  // recherche puis revenir en arrière rendait la page 1 sans filtre. La
+  // navigation vers une fiche empile une entrée d'historique ; si l'état de
+  // liste n'est pas dans l'URL, le retour ne peut rien restaurer.
+  //
+  // Les écritures passent par `patchParams` et non par plusieurs `useUrlState` :
+  // `setSearchParams` reçoit les paramètres COURANTS, donc deux appels dans le
+  // même geste s'écrasent l'un l'autre — et changer un filtre doit écrire le
+  // filtre ET remettre la page à 1 d'un seul mouvement.
+  const [params, setParams] = useSearchParams();
+  const patchParams = useCallback((patch: Record<string, string | null>): void => {
+    setParams((prev) => {
+      const p = new URLSearchParams(prev);
+      for (const [k, v] of Object.entries(patch)) {
+        if (v === null || v === '') p.delete(k);
+        else p.set(k, v);
+      }
+      return p;
+    }, { replace: true });
+  }, [setParams]);
 
-  const [search, setSearch] = useState('');
-  const [categoryId, setCategoryId] = useState<string>('all');
-  const [view, setView] = useState<ProductView>('list');
-  const [variantFilter, setVariantFilter] = useState<ProductVariantFilter>('all');
+  const counterParamRaw = params.get('counter') ?? 'all';
+  const counter: ProductCounter = COUNTERS.has(counterParamRaw as ProductCounter)
+    ? (counterParamRaw as ProductCounter)
+    : 'all';
+  const search        = params.get('q') ?? '';
+  const categoryId    = params.get('cat') ?? 'all';
+  const view: ProductView = params.get('view') === 'grid' ? 'grid' : 'list';
+  const variantFilter = (params.get('variant') ?? 'all') as ProductVariantFilter;
+  const page          = Math.max(1, Number.parseInt(params.get('page') ?? '1', 10) || 1);
+  const pageSize      = coercePageSize(params.get('rows'));
+
+  // Un changement de filtre remet en page 1 : rester en page 7 d'un résultat qui
+  // n'en compte plus que 2 afficherait une table vide qu'on croirait cassée.
+  // C'est un geste, pas un effet — le faire dans un `useEffect` le rejouerait au
+  // montage et écraserait la page que l'URL vient de restaurer.
+  const setCounterParam = (next: string): void => { patchParams({ counter: next === 'all' ? null : next, page: null }); };
+  const setSearch       = (next: string): void => { patchParams({ q: next, page: null }); };
+  const setCategoryId   = (next: string): void => { patchParams({ cat: next === 'all' ? null : next, page: null }); };
+  const setVariantFilter = (next: ProductVariantFilter): void => { patchParams({ variant: next === 'all' ? null : next, page: null }); };
+  const setView         = (next: ProductView): void => { patchParams({ view: next === 'list' ? null : next }); };
+  const setPage         = (next: number): void => { patchParams({ page: next <= 1 ? null : String(next) }); };
+  // Changer la taille de page invalide le numéro de page : la ligne du haut de
+  // la page 7 à 15 lignes n'est pas celle de la page 7 à 100.
+  const setPageSize     = (next: number): void => {
+    patchParams({ rows: next === PRODUCTS_PAGE_SIZE_DEFAULT ? null : String(next), page: null });
+  };
+
   const [hiddenColumns, setHiddenColumns] = useState<ReadonlySet<ProductColumnId>>(new Set());
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
-  const [page, setPage] = useState(1);
   const [showNew, setShowNew] = useState(false);
   const [toDelete, setToDelete] = useState<ProductRow | null>(null);
 
@@ -122,10 +165,6 @@ export default function ProductsPage(): JSX.Element {
       return r.name.toLowerCase().includes(needle) || r.sku.toLowerCase().includes(needle);
     });
   }, [rows, search, categoryId, variantFilter, counter, parentIds]);
-
-  // Un changement de filtre remet en page 1 : rester en page 7 d'un résultat
-  // qui n'en compte plus que 2 affiche une table vide qu'on croit cassée.
-  useEffect(() => { setPage(1); }, [search, categoryId, variantFilter, counter]);
 
   function toggleColumn(id: ProductColumnId): void {
     setHiddenColumns((prev) => {
@@ -219,6 +258,8 @@ export default function ProductsPage(): JSX.Element {
           hiddenColumns={hiddenColumns}
           page={page}
           onPage={setPage}
+          pageSize={pageSize}
+          onPageSize={setPageSize}
           selected={selected}
           onToggleRow={toggleRow}
           onToggleAll={toggleAll}
@@ -228,7 +269,15 @@ export default function ProductsPage(): JSX.Element {
           {...(canDelete ? { onDelete: (row: ProductRow) => { setToDelete(row); } } : {})}
         />
       ) : (
-        <ProductsGrid rows={filtered} parentIds={parentIds} onCardClick={openProduct} />
+        <ProductsGrid
+          rows={filtered}
+          parentIds={parentIds}
+          onCardClick={openProduct}
+          page={page}
+          onPage={setPage}
+          pageSize={pageSize}
+          onPageSize={setPageSize}
+        />
       )}
     </div>
   );

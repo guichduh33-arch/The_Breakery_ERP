@@ -4,9 +4,12 @@
 // ProductDetailPage.
 //
 // Asserts:
-//   1. ?tab=general      → General tab is active on mount.
-//   2. No ?tab= param    → Overview tab is active (default).
-//   3. ?tab=garbage      → Falls back to Overview tab (invalid value guard).
+//   1. ?tab=units        → Units tab is active on mount.
+//   2. No ?tab= param    → General tab is active (default).
+//   3. ?tab=garbage      → Falls back to General tab (invalid value guard).
+//   4. ?tab=overview     → Falls back to General (l'onglet a été supprimé au
+//      distill ; les liens déjà en circulation ne doivent pas rendre une page
+//      vide).
 
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
@@ -68,28 +71,39 @@ function renderPage(path: string) {
 }
 
 describe('ProductDetailPage — ?tab= query param [S45 W-C]', () => {
-  it('opens the General tab when ?tab=general is in the URL', async () => {
-    renderPage('/backoffice/products/p-tab-test?tab=general');
+  // General étant le défaut, un deep-link vers General ne prouverait rien : le
+  // paramètre doit être lu sur un onglet que le défaut ne produit pas.
+  it('opens the Units tab when ?tab=units is in the URL', async () => {
+    renderPage('/backoffice/products/p-tab-test?tab=units');
     // Wait for product name to render (data loaded)
     expect(await screen.findByText('Tab Param Product')).toBeInTheDocument();
-    // General tab panel must be active
-    expect(screen.getByTestId('product-tab-general')).toBeInTheDocument();
-    // Overview panel must NOT be active
-    expect(screen.queryByTestId('product-tab-overview')).not.toBeInTheDocument();
-  });
-
-  it('opens the Overview tab by default when no ?tab= param is present', async () => {
-    renderPage('/backoffice/products/p-tab-test');
-    expect(await screen.findByText('Tab Param Product')).toBeInTheDocument();
-    expect(screen.getByTestId('product-tab-overview')).toBeInTheDocument();
+    // Units tab panel must be active
+    expect(screen.getByTestId('product-tab-units')).toBeInTheDocument();
+    // The default panel must NOT be active
     expect(screen.queryByTestId('product-tab-general')).not.toBeInTheDocument();
   });
 
-  it('falls back to Overview when ?tab= is an invalid value', async () => {
+  it('opens the General tab by default when no ?tab= param is present', async () => {
+    renderPage('/backoffice/products/p-tab-test');
+    expect(await screen.findByText('Tab Param Product')).toBeInTheDocument();
+    expect(screen.getByTestId('product-tab-general')).toBeInTheDocument();
+    expect(screen.queryByTestId('product-tab-units')).not.toBeInTheDocument();
+  });
+
+  it('falls back to General when ?tab= is an invalid value', async () => {
     renderPage('/backoffice/products/p-tab-test?tab=garbage');
     expect(await screen.findByText('Tab Param Product')).toBeInTheDocument();
-    expect(screen.getByTestId('product-tab-overview')).toBeInTheDocument();
+    expect(screen.getByTestId('product-tab-general')).toBeInTheDocument();
     expect(screen.queryByTestId('product-tab-garbage')).not.toBeInTheDocument();
+  });
+
+  // Distill — 'overview' a été retiré des onglets. Un lien déjà partagé ne doit
+  // pas atterrir sur un panneau vide.
+  it('falls back to General when ?tab=overview points at the removed tab', async () => {
+    renderPage('/backoffice/products/p-tab-test?tab=overview');
+    expect(await screen.findByText('Tab Param Product')).toBeInTheDocument();
+    expect(screen.getByTestId('product-tab-general')).toBeInTheDocument();
+    expect(screen.queryByTestId('product-tab-overview')).not.toBeInTheDocument();
   });
 
   it('still allows internal tab switching after deep-link mount', async () => {

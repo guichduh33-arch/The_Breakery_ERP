@@ -22,7 +22,7 @@ export interface ConvertToParentDialogProps {
 
 type Axis = 'flavor' | 'size' | 'format';
 
-const AXES: ReadonlyArray<{ value: Axis; label: string }> = [
+const AXES: readonly { value: Axis; label: string }[] = [
   { value: 'flavor', label: 'Flavor' },
   { value: 'size',   label: 'Size'   },
   { value: 'format', label: 'Format' },
@@ -91,7 +91,7 @@ export function ConvertToParentDialog({
             <label className="block text-xs uppercase tracking-wider text-text-secondary mb-1">
               Axis
             </label>
-            <div role="group" aria-label="Variant axis" className="inline-flex gap-1 rounded-full border border-border-subtle bg-bg-elevated p-1">
+            <div role="group" aria-label="Variant axis" className="inline-flex gap-1 rounded-sm border border-border-subtle bg-bg-elevated p-1">
               {AXES.map((a) => (
                 <button
                   key={a.value}
@@ -101,8 +101,8 @@ export function ConvertToParentDialog({
                   aria-pressed={axis === a.value}
                   className={
                     axis === a.value
-                      ? 'px-3 py-1 text-xs font-semibold rounded-full bg-gold-soft text-gold'
-                      : 'px-3 py-1 text-xs font-semibold rounded-full text-text-muted hover:text-text-primary'
+                      ? 'px-3 py-1 text-xs font-semibold rounded-sm bg-gold-soft text-gold'
+                      : 'px-3 py-1 text-xs font-semibold rounded-sm text-text-muted hover:text-text-primary'
                   }
                 >
                   {a.label}
