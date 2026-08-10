@@ -39,6 +39,7 @@ import {
 } from '../hooks/useRecordBatchProduction.js';
 import type { WasteReason } from '../hooks/useRecordProduction.js';
 import { WASTE_REASON_LABELS, WASTE_REASON_OPTIONS, isWasteReason } from '../wasteReasons.js';
+import { IngredientAggregatePreview } from './IngredientAggregatePreview.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
 
 interface Props {
@@ -456,6 +457,12 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
           </tbody>
         </table>
       </div>
+
+      {/* Aperçu de faisabilité — juste au-dessus du bouton de soumission : c'est
+          là que la pénurie doit se lire, avant l'aller-retour serveur. Les
+          quantités passées sont celles de la RPC (unité de base), sinon
+          l'aperçu se tromperait du facteur de conversion de la ligne. */}
+      {rows.length > 0 && <IngredientAggregatePreview items={items} />}
 
       {/* Footer: production date/time + actions */}
       <div className="flex flex-wrap items-end justify-between gap-4">
