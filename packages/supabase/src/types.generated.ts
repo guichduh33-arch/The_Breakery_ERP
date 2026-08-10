@@ -7778,7 +7778,7 @@ export type Database = {
       is_authenticated: { Args: never; Returns: boolean }
       is_empty: { Args: { "": string }; Returns: string }
       isnt_empty: { Args: { "": string }; Returns: string }
-      kds_bump_item_v1: {
+      kds_bump_item_v2: {
         Args: { p_idempotency_key?: string; p_order_item_id: string }
         Returns: {
           bumped_at: string | null
@@ -7822,11 +7822,11 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      kds_bump_order_v1: {
+      kds_bump_order_v2: {
         Args: { p_idempotency_key?: string; p_order_id: string }
         Returns: number
       }
-      kds_recall_order_v1: {
+      kds_recall_order_v2: {
         Args: { p_order_id: string; p_reason?: string }
         Returns: number
       }
@@ -7874,7 +7874,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      kds_undo_bump_v1: {
+      kds_undo_bump_v2: {
         Args: { p_order_item_id: string }
         Returns: {
           bumped_at: string | null

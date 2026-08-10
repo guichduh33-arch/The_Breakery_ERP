@@ -76,7 +76,7 @@ describeLive('KDS extensions — live RPC cycle', () => {
     expect(r1.error).toBeNull();
 
     // 2. bump
-    const r2 = await c.rpc('kds_bump_item_v1', {
+    const r2 = await c.rpc('kds_bump_item_v2', {
       p_order_item_id: itemId,
       p_idempotency_key: crypto.randomUUID(),
     });
@@ -93,7 +93,7 @@ describeLive('KDS extensions — live RPC cycle', () => {
     expect((row1 as any).prep_started_at).toBeTruthy();
 
     // 3. undo (within 60s)
-    const r3 = await c.rpc('kds_undo_bump_v1', { p_order_item_id: itemId });
+    const r3 = await c.rpc('kds_undo_bump_v2', { p_order_item_id: itemId });
     expect(r3.error).toBeNull();
     const { data: row2 } = await admin.from('order_items')
       .select('kitchen_status, bumped_at')
@@ -102,7 +102,7 @@ describeLive('KDS extensions — live RPC cycle', () => {
     expect((row2 as any).bumped_at).toBeNull();
 
     // 4. bump again
-    const r4 = await c.rpc('kds_bump_item_v1', { p_order_item_id: itemId });
+    const r4 = await c.rpc('kds_bump_item_v2', { p_order_item_id: itemId });
     expect(r4.error).toBeNull();
 
     // 5. mark served (use existing RPC) so recall has something to do.
@@ -113,7 +113,7 @@ describeLive('KDS extensions — live RPC cycle', () => {
     expect((row3 as any).kitchen_status).toBe('served');
 
     // 6. recall
-    const r6 = await c.rpc('kds_recall_order_v1', {
+    const r6 = await c.rpc('kds_recall_order_v2', {
       p_order_id: orderId,
       p_reason: 'live cycle test',
     });
@@ -142,13 +142,13 @@ describeLive('KDS extensions — live RPC cycle', () => {
     const c = jwtClient(cashierToken);
 
     // Force bump → then backdate bumped_at to 2 minutes ago.
-    await c.rpc('kds_bump_item_v1', { p_order_item_id: itemId });
+    await c.rpc('kds_bump_item_v2', { p_order_item_id: itemId });
     await admin.from('order_items')
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- generated types lag
       .update({ bumped_at: new Date(Date.now() - 2 * 60_000).toISOString() } as any)
       .eq('id', itemId);
 
-    const r = await c.rpc('kds_undo_bump_v1', { p_order_item_id: itemId });
+    const r = await c.rpc('kds_undo_bump_v2', { p_order_item_id: itemId });
     expect(r.error).not.toBeNull();
     expect(r.error?.code).toBe('P0012');
   }, 15_000);

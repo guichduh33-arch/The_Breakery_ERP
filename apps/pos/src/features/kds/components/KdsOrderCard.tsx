@@ -24,7 +24,7 @@
 // Session 59 (04 D1.1 / D1.3) — Start now calls the server RPC
 // `kds_start_prep_timer_v1` (sets `prep_started_at`) instead of the raw
 // table PATCH, and "Bump Ready" is replaced by `BumpButton`, which wraps
-// `kds_bump_item_v1` and surfaces a 60s `UndoBumpToast`. The PrepTimer shows
+// `kds_bump_item_v2` and surfaces a 60s `UndoBumpToast`. The PrepTimer shows
 // once an item has actually been started (`prep_started_at` set).
 //
 // Constraints:
@@ -145,9 +145,9 @@ function ItemCta({ item }: { item: KdsItemRow }) {
 }
 
 // Session 60 (04 D1.2) — order-scope "All ready" mass bump, wrapping
-// `kds_bump_order_v1`. Only rendered when at least one live (non-cancelled)
+// `kds_bump_order_v2`. Only rendered when at least one live (non-cancelled)
 // item is still pending/preparing. No grouped undo toast — the per-item undo
-// (`kds_undo_bump_v1`, 60s via BumpButton/UndoBumpToast) stays available since
+// (`kds_undo_bump_v2`, 60s via BumpButton/UndoBumpToast) stays available since
 // mass-bumped items get `bumped_at` set exactly like a single bump.
 function AllReadyButton({ orderId, items }: { orderId: string; items: KdsItemRow[] }) {
   const bumpOrder = useKdsBumpOrder();
