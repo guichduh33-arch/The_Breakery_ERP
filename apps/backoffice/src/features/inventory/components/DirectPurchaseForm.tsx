@@ -13,6 +13,7 @@ import { useEffect, useId, useMemo, useRef, useState, type FormEvent, type JSX }
 import { Button, Input, Select } from '@breakery/ui';
 import { formatIdr } from '@breakery/utils';
 import { toLocalDateStr } from '@breakery/domain';
+import { listboxOptionState, useListboxKeyboard } from '@/hooks/useListboxKeyboard.js';
 import { useAllProductsForPO, type PoProductRow } from '@/features/purchasing/hooks/useAllProductsForPO.js';
 import { useInventoryReferenceData } from '../hooks/useInventoryReferenceData.js';
 import { useSections } from '@/features/inventory-transfers/hooks/useSections.js';
@@ -158,6 +159,21 @@ export default function DirectPurchaseForm({ onSuccess }: DirectPurchaseFormProp
   const suppliers = refData.data?.suppliers ?? [];
   const fieldCls = 'h-9 w-full rounded-md border border-border-subtle bg-bg-input px-3 text-sm text-text-primary';
 
+  const listOpen = pickerOpen && filtered.length > 0;
+  const keyboard = useListboxKeyboard<PoProductRow>({
+    items:      filtered,
+    open:       listOpen,
+    getItemKey: (p) => p.id,
+    onSelect:   selectProduct,
+    onClose:    () => { setPickerOpen(false); },
+  });
+
+  // La fermeture différée survivait au démontage.
+  const pickerBlurTimer = useRef<number | null>(null);
+  useEffect(() => () => {
+    if (pickerBlurTimer.current !== null) window.clearTimeout(pickerBlurTimer.current);
+  }, []);
+
   return (
     <form
       onSubmit={(e) => { void handleSubmit(e); }}
@@ -178,28 +194,39 @@ export default function DirectPurchaseForm({ onSuccess }: DirectPurchaseFormProp
           id={`${rid}-product`}
           type="text"
           role="combobox"
-          aria-expanded={pickerOpen}
+          aria-expanded={listOpen}
+          aria-controls={keyboard.listboxId}
+          aria-autocomplete="list"
+          aria-activedescendant={keyboard.activeDescendantId}
           autoComplete="off"
           placeholder="Search a raw material…"
           value={query}
+          onKeyDown={keyboard.handleKeyDown}
           onChange={(e) => { setQuery(e.target.value); setPickerOpen(true); if (product !== null) setProduct(null); }}
           onFocus={() => setPickerOpen(true)}
-          onBlur={() => { window.setTimeout(() => setPickerOpen(false), 150); }}
+          onBlur={() => { pickerBlurTimer.current = window.setTimeout(() => { setPickerOpen(false); }, 150); }}
           className={fieldCls}
           disabled={purchase.isPending || products.isLoading}
         />
-        {pickerOpen && filtered.length > 0 && (
-          <ul role="listbox" className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded border border-border-subtle bg-bg-elevated shadow-lg">
-            {filtered.map((p) => (
-              <li key={p.id} role="option" aria-selected={p.id === product?.id}>
-                <button
-                  type="button"
-                  onMouseDown={(e) => { e.preventDefault(); selectProduct(p); }}
-                  className="flex w-full items-baseline justify-between gap-2 px-3 py-1.5 text-left text-sm hover:bg-bg-overlay"
-                >
-                  <span className="text-text-primary">{p.name}</span>
-                  <span className="font-mono text-xs text-text-muted">{p.sku}</span>
-                </button>
+        {/* Le descendant actif ne déplace pas le focus : sans annonce, l'apparition
+            des résultats est muette pour un lecteur d'écran. */}
+        <span className="sr-only" role="status" aria-live="polite">{keyboard.statusText}</span>
+        {listOpen && (
+          <ul id={keyboard.listboxId} role="listbox" className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded border border-border-subtle bg-bg-elevated shadow-lg">
+            {filtered.map((p, i) => (
+              // Non focalisable : surbrillance portée par le champ via
+              // `aria-activedescendant` (voir useListboxKeyboard).
+              <li
+                key={p.id}
+                role="option"
+                id={keyboard.optionId(i)}
+                aria-selected={keyboard.activeIndex === i}
+                onMouseEnter={() => { keyboard.onOptionHover(i); }}
+                onMouseDown={(e) => { e.preventDefault(); selectProduct(p); }}
+                className={`flex w-full items-baseline justify-between gap-2 px-3 py-1.5 text-left text-sm ${listboxOptionState(keyboard.activeIndex === i)}`}
+              >
+                <span className="min-w-0 truncate text-text-primary">{p.name}</span>
+                <span className="shrink-0 font-mono text-xs text-text-muted">{p.sku}</span>
               </li>
             ))}
           </ul>

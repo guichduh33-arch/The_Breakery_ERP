@@ -2,9 +2,10 @@
 // Session 13 / Phase 2.D — filter row above MovementsTable.
 // 2026-06-23 — added an Item (product typeahead) filter + period presets.
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Search, X } from 'lucide-react';
 import { toLocalDateStr } from '@breakery/domain';
+import { listboxOptionState, useListboxKeyboard } from '@/hooks/useListboxKeyboard.js';
 import { useSections } from '@/features/inventory-transfers/hooks/useSections.js';
 import { useProductsForInventory } from '@/features/inventory/hooks/useProductsForInventory.js';
 import type { MovementsFilters as Filters } from '../hooks/useStockMovementsFeed.js';
@@ -49,6 +50,20 @@ function ItemFilter({ productId, onSelect }: {
   const options = results.data ?? [];
   const showList = open && query.trim().length >= 2 && options.length > 0;
 
+  const keyboard = useListboxKeyboard<(typeof options)[number]>({
+    items:      options,
+    open:       showList,
+    getItemKey: (p) => p.id,
+    onSelect:   (p) => { onSelect(p.id, p.name); setQuery(p.name); setOpen(false); },
+    onClose:    () => { setOpen(false); },
+  });
+
+  // La fermeture différée survivait au démontage.
+  const blurTimer = useRef<number | null>(null);
+  useEffect(() => () => {
+    if (blurTimer.current !== null) window.clearTimeout(blurTimer.current);
+  }, []);
+
   return (
     <div className="relative">
       <label htmlFor="mvt-item" className="block text-xs uppercase text-text-secondary mb-1">Item</label>
@@ -59,16 +74,19 @@ function ItemFilter({ productId, onSelect }: {
           role="combobox"
           aria-expanded={showList}
           aria-controls="mvt-item-list"
+          aria-autocomplete="list"
+          aria-activedescendant={keyboard.activeDescendantId}
           autoComplete="off"
           placeholder="All items"
           value={query}
+          onKeyDown={keyboard.handleKeyDown}
           onChange={(e) => {
             setQuery(e.target.value);
             setOpen(true);
             if (productId !== undefined && productId !== '') onSelect(undefined);
           }}
           onFocus={() => { setOpen(true); }}
-          onBlur={() => { window.setTimeout(() => { setOpen(false); }, 120); }}
+          onBlur={() => { blurTimer.current = window.setTimeout(() => { setOpen(false); }, 120); }}
           className="w-44 px-2 py-1 text-sm bg-bg-base border border-border-subtle rounded"
         />
         {(productId !== undefined && productId !== '') && (
@@ -82,27 +100,34 @@ function ItemFilter({ productId, onSelect }: {
           </button>
         )}
       </div>
+      {/* Le descendant actif ne déplace pas le focus : sans annonce, l'apparition
+          des résultats est muette pour un lecteur d'écran. */}
+      <span className="sr-only" role="status" aria-live="polite">{keyboard.statusText}</span>
       {showList && (
         <ul
           id="mvt-item-list"
           role="listbox"
           className="absolute z-20 mt-1 max-h-60 w-56 overflow-auto rounded border border-border-subtle bg-bg-elevated shadow-lg"
         >
-          {options.map((p) => (
-            <li key={p.id} role="option" aria-selected={p.id === productId}>
-              <button
-                type="button"
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  onSelect(p.id, p.name);
-                  setQuery(p.name);
-                  setOpen(false);
-                }}
-                className="flex w-full items-baseline justify-between gap-2 px-2 py-1 text-left text-sm hover:bg-bg-base"
-              >
-                <span className="text-text-primary">{p.name}</span>
-                <span className="text-xs text-text-secondary">{p.sku}</span>
-              </button>
+          {options.map((p, i) => (
+            // Non focalisable : la surbrillance vient du champ via
+            // `aria-activedescendant` (voir useListboxKeyboard).
+            <li
+              key={p.id}
+              role="option"
+              id={keyboard.optionId(i)}
+              aria-selected={keyboard.activeIndex === i}
+              onMouseEnter={() => { keyboard.onOptionHover(i); }}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                onSelect(p.id, p.name);
+                setQuery(p.name);
+                setOpen(false);
+              }}
+              className={`flex w-full items-baseline justify-between gap-2 px-2 py-1 text-left text-sm ${listboxOptionState(keyboard.activeIndex === i)}`}
+            >
+              <span className="min-w-0 truncate text-text-primary">{p.name}</span>
+              <span className="shrink-0 text-xs text-text-secondary">{p.sku}</span>
             </li>
           ))}
         </ul>

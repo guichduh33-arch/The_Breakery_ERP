@@ -27,6 +27,7 @@ import { useEffect, useMemo, useRef, useState, type JSX } from 'react';
 import { toast } from 'sonner';
 import { Button, Card, SectionLabel } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
+import { listboxOptionState, useListboxKeyboard } from '@/hooks/useListboxKeyboard.js';
 import {
   useProducibleProductsBySection,
   type ProducibleProduct,
@@ -224,6 +225,22 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
     });
   }
 
+  const searchOpen = searchFocused && query.trim() !== '';
+  const keyboard = useListboxKeyboard<ProducibleProduct>({
+    items:      matches,
+    open:       searchOpen,
+    getItemKey: (p) => p.id,
+    onSelect:   addProduct,
+    onClose:    () => { setSearchFocused(false); },
+  });
+
+  // `blurTimer` était armé au blur et nettoyé au focus, mais jamais au
+  // démontage : changer de station pendant les 150 ms laissait une minuterie
+  // écrire dans un composant disparu.
+  useEffect(() => () => {
+    if (blurTimer.current) clearTimeout(blurTimer.current);
+  }, []);
+
   return (
     <Card padding="md" className="space-y-5">
       {/* Header + search */}
@@ -239,31 +256,46 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => { setSearchFocused(true); if (blurTimer.current) clearTimeout(blurTimer.current); }}
             onBlur={() => { blurTimer.current = setTimeout(() => setSearchFocused(false), 150); }}
+            onKeyDown={keyboard.handleKeyDown}
             placeholder="Search for a product…"
             aria-label="Search for a product"
+            role="combobox"
+            aria-expanded={searchOpen}
+            aria-controls={keyboard.listboxId}
+            aria-autocomplete="list"
+            aria-activedescendant={keyboard.activeDescendantId}
             data-testid="production-search"
             className="h-9 w-72 rounded-full border border-border-subtle bg-bg-input pl-9 pr-3 text-sm text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
           />
-          {searchFocused && query.trim() !== '' && (
+          {/* Le descendant actif ne déplace pas le focus : sans annonce,
+              l'apparition des résultats est muette pour un lecteur d'écran. */}
+          <span className="sr-only" role="status" aria-live="polite">{keyboard.statusText}</span>
+          {searchOpen && (
             <ul
+              id={keyboard.listboxId}
+              role="listbox"
               className="absolute right-0 z-20 mt-1 max-h-72 w-80 overflow-auto rounded-lg border border-border-subtle bg-bg-elevated py-1 shadow-lg"
               data-testid="production-search-results"
             >
               {products.isLoading ? (
-                <li className="px-3 py-2 text-sm text-text-muted">Loading…</li>
+                <li role="presentation" className="px-3 py-2 text-sm text-text-muted">Loading…</li>
               ) : matches.length === 0 ? (
-                <li className="px-3 py-2 text-sm text-text-muted">No products for this station.</li>
+                <li role="presentation" className="px-3 py-2 text-sm text-text-muted">No products for this station.</li>
               ) : (
-                matches.map((p) => (
-                  <li key={p.id}>
-                    <button
-                      type="button"
-                      onMouseDown={(e) => { e.preventDefault(); addProduct(p); }}
-                      className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm hover:bg-bg-overlay"
-                    >
-                      <span className="text-text-primary">{p.name}</span>
-                      <span className="font-mono text-[10px] uppercase tracking-widest text-text-muted">{p.sku}</span>
-                    </button>
+                matches.map((p, i) => (
+                  // Non focalisable : surbrillance portée par le champ via
+                  // `aria-activedescendant` (voir useListboxKeyboard).
+                  <li
+                    key={p.id}
+                    role="option"
+                    id={keyboard.optionId(i)}
+                    aria-selected={keyboard.activeIndex === i}
+                    onMouseEnter={() => { keyboard.onOptionHover(i); }}
+                    onMouseDown={(e) => { e.preventDefault(); addProduct(p); }}
+                    className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm ${listboxOptionState(keyboard.activeIndex === i)}`}
+                  >
+                    <span className="min-w-0 truncate text-text-primary">{p.name}</span>
+                    <span className="shrink-0 font-mono text-[10px] uppercase tracking-widest text-text-muted">{p.sku}</span>
                   </li>
                 ))
               )}

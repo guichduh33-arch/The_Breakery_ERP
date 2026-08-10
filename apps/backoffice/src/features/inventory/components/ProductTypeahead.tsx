@@ -5,8 +5,9 @@
 // least 2 characters and the query has resolved. Selecting a row collapses
 // the list and forwards the chosen product to the caller.
 
-import { useState, type JSX } from 'react';
+import { useEffect, useRef, useState, type JSX } from 'react';
 import { Input } from '@breakery/ui';
+import { listboxOptionState, useListboxKeyboard } from '@/hooks/useListboxKeyboard.js';
 import {
   useProductsForInventory,
   type ProductTypeaheadRow,
@@ -33,6 +34,23 @@ export function ProductTypeahead({
     setOpen(false);
   }
 
+  const rows       = q.data ?? [];
+  const listOpen   = open && search.trim().length >= 2;
+  const keyboard   = useListboxKeyboard<ProductTypeaheadRow>({
+    items:      rows,
+    open:       listOpen,
+    getItemKey: (p) => p.id,
+    onSelect:   handleSelect,
+    onClose:    () => { setOpen(false); },
+  });
+
+  // La fermeture différée survivait au démontage : fermer la modale pendant les
+  // 120 ms laissait une minuterie appeler `setOpen` sur un composant disparu.
+  const blurTimer = useRef<number | null>(null);
+  useEffect(() => () => {
+    if (blurTimer.current !== null) window.clearTimeout(blurTimer.current);
+  }, []);
+
   function handleClear(): void {
     onChange(null);
     setSearch('');
@@ -46,19 +64,29 @@ export function ProductTypeahead({
         type="text"
         value={search}
         autoComplete="off"
+        role="combobox"
+        aria-expanded={listOpen}
+        aria-controls={keyboard.listboxId}
+        aria-autocomplete="list"
+        aria-activedescendant={keyboard.activeDescendantId}
         placeholder={placeholder ?? 'Search by name (min 2 chars)…'}
         disabled={disabled === true}
         onFocus={() => setOpen(true)}
+        onKeyDown={keyboard.handleKeyDown}
         onChange={(e) => {
           setSearch(e.target.value);
           if (value !== null && e.target.value !== value.name) onChange(null);
           setOpen(true);
         }}
         onBlur={() => {
-          // Allow click to register on a list item before closing.
-          window.setTimeout(() => setOpen(false), 120);
+          // Allow click to register on a list item before closing. Inoffensif
+          // au clavier : le focus ne quitte jamais le champ (descendant actif).
+          blurTimer.current = window.setTimeout(() => { setOpen(false); }, 120);
         }}
       />
+      {/* Le descendant actif ne déplace pas le focus : sans cette annonce, un
+          lecteur d'écran n'apprend jamais que des résultats sont apparus. */}
+      <span className="sr-only" role="status" aria-live="polite">{keyboard.statusText}</span>
       {value !== null && (
         <button
           type="button"
@@ -69,40 +97,53 @@ export function ProductTypeahead({
           Clear
         </button>
       )}
-      {open && search.trim().length >= 2 && (
+      {listOpen && (
         <div
           role="listbox"
+          id={keyboard.listboxId}
           className="absolute z-20 mt-1 max-h-60 w-full overflow-y-auto rounded-md border border-border-subtle bg-bg-elevated shadow-lg"
         >
+          {/* `role="presentation"` : un `listbox` n'admet que des `option` pour
+              enfants. Sans ça, un message d'état est annoncé comme un résultat
+              sélectionnable — et « Searching… » devient un produit. */}
           {q.isLoading && (
-            <div className="px-3 py-2 text-xs text-text-secondary">Searching…</div>
+            <div role="presentation" className="px-3 py-2 text-xs text-text-secondary">Searching…</div>
           )}
           {q.error && (
-            <div className="px-3 py-2 text-xs text-red">Search failed: {q.error.message}</div>
+            <div role="presentation" className="px-3 py-2 text-xs text-red">Search failed: {q.error.message}</div>
           )}
           {q.data?.length === 0 && (
-            <div className="px-3 py-2 text-xs text-text-secondary">No products match.</div>
+            <div role="presentation" className="px-3 py-2 text-xs text-text-secondary">No products match.</div>
           )}
-          {q.data?.map((p) => (
-            <button
+          {rows.map((p, i) => (
+            // Non focalisable, et c'est le motif : la surbrillance est portée
+            // par `aria-activedescendant` depuis le champ. `bg-surface-4` et non
+            // `bg-bg-overlay`, qui vaut #ffffff dans le thème clair et ne
+            // produisait donc aucun retour visible.
+            <div
               key={p.id}
-              type="button"
               role="option"
-              aria-selected={value?.id === p.id}
+              id={keyboard.optionId(i)}
+              aria-selected={keyboard.activeIndex === i}
+              onMouseEnter={() => { keyboard.onOptionHover(i); }}
               onMouseDown={(e) => {
                 // Prevent the input blur from closing the list before click fires.
                 e.preventDefault();
                 handleSelect(p);
               }}
-              className="block w-full px-3 py-2 text-left text-sm hover:bg-bg-overlay focus:bg-bg-overlay focus:outline-none"
+              className={`block w-full px-3 py-2 text-left text-sm ${listboxOptionState(keyboard.activeIndex === i)}`}
             >
+              {/* `min-w-0` + `truncate` : un nom de produit long poussait sinon
+                  le SKU et le stock hors de la liste. `shrink-0` garde la
+                  colonne de droite entière — c'est elle qui désambiguïse deux
+                  produits au nom proche. */}
               <div className="flex items-center justify-between gap-3">
-                <span>{p.name}</span>
-                <span className="font-mono text-xs text-text-secondary">
+                <span className="min-w-0 truncate">{p.name}</span>
+                <span className="shrink-0 font-mono text-xs text-text-secondary">
                   {p.sku} · {p.current_stock.toLocaleString()}
                 </span>
               </div>
-            </button>
+            </div>
           ))}
         </div>
       )}
