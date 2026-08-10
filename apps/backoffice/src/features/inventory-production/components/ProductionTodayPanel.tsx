@@ -53,13 +53,13 @@ export function ProductionTodayPanel({ sectionId, selectedDate }: Props): JSX.El
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
-        <Card padding="md" className="border-success/30 bg-success-soft/40 text-center">
+        <Card padding="md" className="border-success bg-success-soft text-center">
           <SectionLabel as="div" size="xs" className="text-success">Produced</SectionLabel>
           <div className="mt-2 font-data text-3xl font-semibold text-success" data-testid="kpi-produced">
             {produced.toLocaleString()}
           </div>
         </Card>
-        <Card padding="md" className="border-red/30 bg-red-soft/40 text-center">
+        <Card padding="md" className="border-red bg-red-soft text-center">
           <SectionLabel as="div" size="xs" className="text-red">Waste</SectionLabel>
           <div className="mt-2 font-data text-3xl font-semibold text-red" data-testid="kpi-waste">
             {waste.toLocaleString()}
@@ -85,7 +85,7 @@ export function ProductionTodayPanel({ sectionId, selectedDate }: Props): JSX.El
               <li
                 key={r.id}
                 className={
-                  'flex items-center justify-between gap-3 rounded-lg border border-border-subtle bg-bg-overlay px-3 py-2 text-sm ' +
+                  'flex items-center justify-between gap-3 rounded-lg border border-border-subtle bg-surface-4 px-3 py-2 text-sm ' +
                   (r.reverted_at !== null ? 'opacity-50' : '')
                 }
               >

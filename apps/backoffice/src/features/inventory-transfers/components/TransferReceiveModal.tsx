@@ -153,14 +153,14 @@ export function TransferReceiveModal({
 
         <form onSubmit={(e) => { void handleSubmit(e); }} noValidate className="space-y-4">
           {formError !== null && (
-            <div role="alert" className="rounded-md border border-red bg-red/5 p-2 text-xs text-red">
+            <div role="alert" className="rounded-md border border-red bg-red-soft p-2 text-xs text-red">
               {formError}
             </div>
           )}
 
           <div className="bg-bg-elevated rounded-lg border border-border-subtle overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-bg-overlay text-xs uppercase tracking-wide text-text-secondary">
+              <thead className="bg-surface-inert text-xs uppercase tracking-wide text-text-secondary">
                 <tr>
                   <th className="text-left px-3 py-2">Product</th>
                   <th className="text-right px-3 py-2 w-24">Requested</th>

@@ -50,7 +50,7 @@ export default function OpnameDetailPage(): JSX.Element {
   }
   if (detail.error !== null) {
     return (
-      <div role="alert" className="rounded-md border border-danger/40 bg-danger/5 p-3 text-sm text-danger">
+      <div role="alert" className="rounded-md border border-danger bg-danger-soft p-3 text-sm text-danger">
         Failed to load count: {String(detail.error)}
       </div>
     );
@@ -129,7 +129,7 @@ export default function OpnameDetailPage(): JSX.Element {
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm bg-bg-elevated rounded-lg border border-border-subtle overflow-hidden">
-            <thead className="bg-bg-base/40 border-b border-border-subtle">
+            <thead className="bg-surface-inert border-b border-border-subtle">
               <tr>
                 <th className="text-left py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Product</th>
                 <th className="text-right py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Expected</th>
@@ -150,7 +150,7 @@ export default function OpnameDetailPage(): JSX.Element {
 
       <footer className="flex flex-col gap-3 md:flex-row md:items-center md:justify-end">
         {validateErr !== null && (
-          <div role="alert" className="rounded-md border border-danger/40 bg-danger/5 px-3 py-2 text-xs text-danger md:mr-auto">
+          <div role="alert" className="rounded-md border border-danger bg-danger-soft px-3 py-2 text-xs text-danger md:mr-auto">
             {validateErr}
           </div>
         )}

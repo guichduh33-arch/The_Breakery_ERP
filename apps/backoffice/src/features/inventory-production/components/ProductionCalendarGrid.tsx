@@ -56,7 +56,7 @@ export function ProductionCalendarGrid({
               key={iso}
               data-testid="grid-header"
               data-date={iso}
-              className="rounded-md bg-bg-card px-2 py-1 text-center text-xs"
+              className="rounded-md bg-bg-elevated px-2 py-1 text-center text-xs"
             >
               <div className="font-medium">{DAY_LABELS[i]}</div>
               <div className="text-[10px] text-text-secondary">{iso.slice(5)}</div>

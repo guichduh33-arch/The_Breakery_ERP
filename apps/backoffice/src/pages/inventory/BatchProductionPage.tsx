@@ -175,7 +175,7 @@ export default function BatchProductionPage(): JSX.Element {
         className="space-y-4"
       >
         {formError !== null && (
-          <div role="alert" className="rounded-md border border-red bg-red/5 p-2 text-xs text-red">
+          <div role="alert" className="rounded-md border border-red bg-red-soft p-2 text-xs text-red">
             {formError}
             {shortages !== null && (
               <ul className="mt-1 list-disc pl-5" data-testid="shortages-list">
@@ -187,7 +187,7 @@ export default function BatchProductionPage(): JSX.Element {
               </ul>
             )}
             {shortages !== null && canForceNeg && (
-              <label className="mt-3 flex items-start gap-2 border-t border-red/30 pt-2 text-text-secondary">
+              <label className="mt-3 flex items-start gap-2 border-t border-red pt-2 text-text-secondary">
                 <input
                   type="checkbox"
                   checked={forceNegative}
@@ -209,7 +209,7 @@ export default function BatchProductionPage(): JSX.Element {
           </div>
         )}
         {successMsg !== null && (
-          <div role="status" className="rounded-md border border-success/40 bg-success-soft p-2 text-xs text-success">
+          <div role="status" className="rounded-md border border-success bg-success-soft p-2 text-xs text-success">
             {successMsg}
           </div>
         )}

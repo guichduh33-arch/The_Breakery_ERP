@@ -240,12 +240,12 @@ export default function ProductionForm(): JSX.Element {
         className="space-y-4 max-w-2xl bg-bg-elevated border border-border-subtle rounded-lg p-6"
       >
         {formError !== null && (
-          <div role="alert" className="rounded-md border border-red bg-red/5 p-2 text-xs text-red">
+          <div role="alert" className="rounded-md border border-red bg-red-soft p-2 text-xs text-red">
             {formError}
           </div>
         )}
         {successMsg !== null && (
-          <div role="status" className="rounded-md border border-success/40 bg-success-soft p-2 text-xs text-success">
+          <div role="status" className="rounded-md border border-success bg-success-soft p-2 text-xs text-success">
             {successMsg}
           </div>
         )}

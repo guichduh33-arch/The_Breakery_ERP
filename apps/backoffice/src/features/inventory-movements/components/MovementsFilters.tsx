@@ -222,7 +222,7 @@ export function MovementsFiltersBar({ value, onChange }: MovementsFiltersProps) 
               onClick={() => { onChange({ ...value, ...p.range() }); }}
               className={`rounded border px-2 py-1 text-xs ${
                 isActive
-                  ? 'border-gold bg-gold/10 text-text-primary'
+                  ? 'border-gold bg-surface-4 text-text-primary'
                   : 'border-border-subtle text-text-secondary hover:text-text-primary'
               }`}
             >

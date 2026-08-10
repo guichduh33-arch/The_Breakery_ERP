@@ -105,13 +105,13 @@ export function StockLedgerTable({ rows, truncated, isLoading, rowCap = 5000 }: 
   return (
     <div className="space-y-3">
       {truncated && (
-        <div role="alert" className="rounded-md border border-warning/40 bg-warning-soft px-3 py-2 text-sm text-warning">
+        <div role="alert" className="rounded-md border border-warning bg-warning-soft px-3 py-2 text-sm text-warning">
           Showing the first {rowCap.toLocaleString()} rows. Narrow the date range or filters to see the rest.
         </div>
       )}
       <div className="overflow-x-auto rounded-md border border-border-subtle">
         <table className="w-full text-xs" data-testid="stock-ledger-table">
-          <thead className="sticky top-0 bg-bg-elevated text-[11px] uppercase tracking-wide text-text-secondary">
+          <thead className="sticky top-0 bg-surface-inert text-[11px] uppercase tracking-wide text-text-secondary">
             <tr className="border-b border-border-subtle">
               <th className="w-8 px-2 py-2" aria-label="Expand" />
               {HEADERS.map((h) => {
@@ -158,7 +158,7 @@ export function StockLedgerTable({ rows, truncated, isLoading, rowCap = 5000 }: 
               const mainRow = (
                 <tr
                   key={r.id}
-                  className="cursor-pointer border-b border-border-subtle/60 hover:bg-bg-overlay"
+                  className="cursor-pointer border-b border-border-subtle hover:bg-surface-4"
                   onClick={() => { toggle(r.id); }}
                 >
                   <td className="px-2 py-1.5">
@@ -190,7 +190,7 @@ export function StockLedgerTable({ rows, truncated, isLoading, rowCap = 5000 }: 
               );
               if (!isOpen) return [mainRow];
               const detailRow = (
-                <tr key={`${r.id}-detail`} className="border-b border-border-subtle/60 bg-bg-base/40">
+                <tr key={`${r.id}-detail`} className="border-b border-border-subtle bg-surface-4">
                   <td className="px-2 py-2" />
                   <td colSpan={HEADERS.length} className="px-2 py-2">
                     <div className="grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-3 lg:grid-cols-5">

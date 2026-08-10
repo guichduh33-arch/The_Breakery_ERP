@@ -14,11 +14,12 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  # Lot M — les deux gardes anti-dérive de la gouvernance documentaire
-  # (audit du 2026-07-27/28, PR #306). Job SÉPARÉ et volontairement nu : pas
-  # de pnpm install, pas de cache, juste node + le dépôt. Il rend son verdict
-  # en quelques secondes au lieu d'attendre les 11-13 min de la suite, et une
-  # dérive documentaire n'a aucune raison d'être masquée par un build rouge.
+  # Les gardes anti-dérive : deux sur la gouvernance documentaire (audit du
+  # 2026-07-27/28, PR #306) et une sur les classes de couleur mortes (audit
+  # design du 2026-08-09). Job SÉPARÉ et volontairement nu : pas de pnpm
+  # install, pas de cache, juste node + le dépôt. Il rend son verdict en
+  # quelques secondes au lieu d'attendre les 11-13 min de la suite, et une
+  # dérive n'a aucune raison d'être masquée par un build rouge.
   #
   # fetch-depth: 0 — les gardes balaient `git ls-files` (l'arbre courant),
   # pas un diff ; mais le message d'erreur renvoie au tag quarantine, et un
@@ -38,12 +39,20 @@ jobs:
       - name: Garde 1 — aucun chemin quarantainé dans un fichier tracké
         run: node scripts/ci/quarantined-paths.mjs
 
-      # always() — les deux gardes rendent leur verdict dans le MÊME run.
-      # Sans ça, une violation de la garde 1 masquerait celles de la garde 2 et
-      # il faudrait deux allers-retours pour voir la liste complète.
+      # always() — les trois gardes rendent leur verdict dans le MÊME run.
+      # Sans ça, une violation de la garde 1 masquerait celles des suivantes et
+      # il faudrait plusieurs allers-retours pour voir la liste complète.
       - name: Garde 2 — tout lien relatif d'un .md tracké résout
         if: always()
         run: node scripts/ci/relative-links.mjs
+
+      # Garde 3 — même job nu, même raison : elle lit le preset Tailwind et
+      # `git ls-files`, sans build ni install. Une classe de couleur qui ne rend
+      # rien est invisible en revue et invisible au typecheck ; c'est la seule
+      # étape qui la voit.
+      - name: Garde 3 — aucune classe de couleur morte hors baseline
+        if: always()
+        run: node scripts/ci/tailwind-dead-classes.mjs
 
   lint-typecheck-test-build:
     runs-on: ubuntu-latest

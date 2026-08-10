@@ -45,7 +45,7 @@ export function BoulangerModeToggle({
             'relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-fast',
             'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold',
             'disabled:cursor-not-allowed disabled:opacity-50',
-            value ? 'bg-green' : 'bg-bg-overlay border border-border-subtle',
+            value ? 'bg-green' : 'bg-surface-4 border border-border-subtle',
           )}
         >
           <span

@@ -136,7 +136,7 @@ export function RecipeDuplicateModal({
 
           {errorCode !== null && (
             <div
-              className="rounded-md border border-red bg-red/10 px-3 py-2 text-sm text-red"
+              className="rounded-md border border-red bg-red-soft px-3 py-2 text-sm text-red"
               role="alert"
               data-testid="duplicate-error"
               data-error-code={errorCode}

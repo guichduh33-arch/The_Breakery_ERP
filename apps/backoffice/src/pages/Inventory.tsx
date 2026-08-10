@@ -175,7 +175,7 @@ export default function InventoryPage() {
       {list.data !== undefined && list.data.length > 0 && (
         <div className="bg-bg-elevated rounded-lg border border-border-subtle overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-bg-overlay text-xs uppercase tracking-wide text-text-secondary">
+            <thead className="bg-surface-inert text-xs uppercase tracking-wide text-text-secondary">
               <tr>
                 <th className="text-left px-3 py-2 w-24">SKU</th>
                 <th className="text-left px-3 py-2">Name</th>

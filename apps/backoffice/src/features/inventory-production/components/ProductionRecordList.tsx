@@ -23,7 +23,7 @@ export default function ProductionRecordList(): JSX.Element {
     <>
       <div className="border border-border-subtle rounded-lg overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-bg-elevated text-xs uppercase tracking-widest text-text-secondary">
+          <thead className="bg-surface-inert text-xs uppercase tracking-widest text-text-secondary">
             <tr>
               <th className="px-3 py-2 text-left">Number</th>
               <th className="px-3 py-2 text-left">Product</th>

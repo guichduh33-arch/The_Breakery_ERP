@@ -316,7 +316,7 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
             </ul>
           )}
           {shortages !== null && canForceNegative && (
-            <label className="mt-3 flex items-start gap-2 border-t border-red/30 pt-2 text-text-secondary">
+            <label className="mt-3 flex items-start gap-2 border-t border-red pt-2 text-text-secondary">
               <input
                 type="checkbox"
                 checked={forceNegative}
@@ -342,7 +342,7 @@ export function ProductionEntryCard({ sectionId, sectionName, selectedDate }: Pr
       {/* Table */}
       <div className="overflow-x-auto rounded-lg border border-border-subtle">
         <table className="w-full text-sm">
-          <thead className="bg-bg-elevated">
+          <thead className="bg-surface-inert">
             <tr className="text-left">
               <th className="px-4 py-2"><SectionLabel as="span" size="xs">Product</SectionLabel></th>
               <th className="px-4 py-2"><SectionLabel as="span" size="xs">Quantity</SectionLabel></th>

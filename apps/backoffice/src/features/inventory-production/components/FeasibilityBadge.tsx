@@ -10,13 +10,13 @@ export function FeasibilityBadge({ result }: { result: FeasibilityResult | null 
   if (result === null) return null;
   if (result.feasible) {
     return (
-      <div role="status" className="text-xs text-success border border-success/40 bg-success-soft rounded px-2 py-1">
+      <div role="status" className="text-xs text-success border border-success bg-success-soft rounded px-2 py-1">
         Feasible — stock covers requirements.
       </div>
     );
   }
   return (
-    <div role="alert" className="text-xs text-red border border-red bg-red/5 rounded px-2 py-1 space-y-1">
+    <div role="alert" className="text-xs text-red border border-red bg-red-soft rounded px-2 py-1 space-y-1">
       <div className="font-semibold">Insufficient stock for:</div>
       <ul className="font-mono">
         {result.missing.map((m) => (

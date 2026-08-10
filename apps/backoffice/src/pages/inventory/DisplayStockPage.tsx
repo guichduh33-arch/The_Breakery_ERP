@@ -121,7 +121,7 @@ export default function DisplayStockPage(): JSX.Element {
       <section className="space-y-3" aria-label="Display-stock counters">
         <h2 className="font-display text-xl text-text-primary">Current counters</h2>
         {stock.error !== null ? (
-          <div role="alert" className="rounded-md border border-danger/40 bg-danger/5 p-3 text-sm text-danger">
+          <div role="alert" className="rounded-md border border-danger bg-danger-soft p-3 text-sm text-danger">
             Failed to load display stock: {String(stock.error)}
           </div>
         ) : (
@@ -140,7 +140,7 @@ export default function DisplayStockPage(): JSX.Element {
       <section className="space-y-3" aria-label="Display-movements ledger">
         <h2 className="font-display text-xl text-text-primary">Recent movements</h2>
         {movements.error !== null ? (
-          <div role="alert" className="rounded-md border border-danger/40 bg-danger/5 p-3 text-sm text-danger">
+          <div role="alert" className="rounded-md border border-danger bg-danger-soft p-3 text-sm text-danger">
             Failed to load display movements: {String(movements.error)}
           </div>
         ) : (
