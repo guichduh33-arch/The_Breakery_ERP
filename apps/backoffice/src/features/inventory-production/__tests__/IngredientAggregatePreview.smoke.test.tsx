@@ -4,8 +4,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { IngredientAggregatePreview } from '../components/IngredientAggregatePreview.js';
-import type { BatchItem } from '../components/BatchSelector.js';
+import {
+  IngredientAggregatePreview,
+  type IngredientPreviewLine,
+} from '../components/IngredientAggregatePreview.js';
 
 const mockRpc = vi.fn();
 
@@ -17,19 +19,17 @@ vi.mock('@/lib/supabase.js', () => ({
   },
 }));
 
-function row(overrides: Partial<BatchItem> = {}): BatchItem {
+/** Les quantités sont dans l'unité de BASE du produit (comme la RPC). */
+function row(overrides: Partial<IngredientPreviewLine> = {}): IngredientPreviewLine {
   return {
-    rowId:            crypto.randomUUID(),
-    productId:        null,
-    productName:      null,
-    productUnit:      null,
-    quantityProduced: '',
-    quantityWaste:    '0',
+    productId:        '',
+    quantityProduced: 0,
+    quantityWaste:    0,
     ...overrides,
   };
 }
 
-function renderPreview(items: BatchItem[]) {
+function renderPreview(items: IngredientPreviewLine[]) {
   const qc = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: 0 } },
   });
@@ -73,7 +73,7 @@ describe('IngredientAggregatePreview smoke', () => {
 
   it('renders empty-state hint when no items are valid', () => {
     renderPreview([row()]);
-    expect(screen.getByText(/Pick a recipe and enter a quantity/i)).toBeInTheDocument();
+    expect(screen.getByText(/Add a product and enter a quantity/i)).toBeInTheDocument();
   });
 
   it('calls recipe_bom_full_v2 once per root and aggregates across two items sharing a material', async () => {
@@ -104,8 +104,8 @@ describe('IngredientAggregatePreview smoke', () => {
     });
 
     renderPreview([
-      row({ productId: 'prod-croissant',     productName: 'Croissant',     productUnit: 'pcs', quantityProduced: '10' }),
-      row({ productId: 'prod-pain-au-choco', productName: 'Pain au Choco', productUnit: 'pcs', quantityProduced: '20' }),
+      row({ productId: 'prod-croissant',     quantityProduced: 10 }),
+      row({ productId: 'prod-pain-au-choco', quantityProduced: 20 }),
     ]);
 
     await waitFor(() => {
@@ -145,7 +145,7 @@ describe('IngredientAggregatePreview smoke', () => {
     });
 
     renderPreview([
-      row({ productId: 'prod-croissant', productName: 'Croissant', productUnit: 'pcs', quantityProduced: '10' }),
+      row({ productId: 'prod-croissant', quantityProduced: 10 }),
     ]);
 
     await waitFor(() => {
@@ -166,7 +166,7 @@ describe('IngredientAggregatePreview smoke', () => {
     });
 
     renderPreview([
-      row({ productId: 'prod-A', productName: 'A', productUnit: 'pcs', quantityProduced: '2' }),
+      row({ productId: 'prod-A', quantityProduced: 2 }),
     ]);
 
     await waitFor(() => {
@@ -213,8 +213,8 @@ describe('IngredientAggregatePreview smoke', () => {
     });
 
     renderPreview([
-      row({ productId: 'prod-croissant',     productName: 'Croissant',     productUnit: 'pcs', quantityProduced: '10' }),
-      row({ productId: 'prod-pain-au-choco', productName: 'Pain au Choco', productUnit: 'pcs', quantityProduced: '20' }),
+      row({ productId: 'prod-croissant',     quantityProduced: 10 }),
+      row({ productId: 'prod-pain-au-choco', quantityProduced: 20 }),
     ]);
 
     await waitFor(() => {

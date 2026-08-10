@@ -8,7 +8,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ProductionForm from '../components/ProductionForm.js';
-import BatchProductionPage from '@/pages/inventory/BatchProductionPage.js';
 
 /** ProductionForm's selects, minus the ADR-008 D3 waste-reason one: these tests
  *  address product/section by position, and that select renders between them. */
@@ -200,40 +199,6 @@ describe('ProductionForm — section required (audit C4)', () => {
   });
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// BatchProductionPage — section required
-// ─────────────────────────────────────────────────────────────────────────────
-
-describe('BatchProductionPage — section required (audit C4)', () => {
-  beforeEach(() => {
-    currentPerms = new Set(['inventory.read', 'inventory.production.create']);
-    mockRpc.mockReset();
-    mockFromSelect.mockReset();
-    mockFromSelect.mockImplementation(defaultMockFrom);
-  });
-
-  it('Record batch button is disabled when section is empty (baseline gate)', () => {
-    render(
-      <QueryClientProvider client={makeQC()}>
-        <BatchProductionPage />
-      </QueryClientProvider>,
-    );
-    // Button is disabled on initial render (no items filled + no section)
-    const btn = screen.getByRole('button', { name: /Record batch/i });
-    expect(btn).toBeDisabled();
-  });
-
-  it('Section label does not contain "(optional)" in BatchProductionPage', async () => {
-    render(
-      <QueryClientProvider client={makeQC()}>
-        <BatchProductionPage />
-      </QueryClientProvider>,
-    );
-    await waitFor(() => screen.getByRole('heading', { name: /Batch production/i }));
-    const labels = Array.from(document.querySelectorAll('label'));
-    // The section label is exactly "Section" (no "(optional)")
-    const sectionLabel = labels.find((l) => /^section$/i.test(l.textContent?.trim() ?? ''));
-    expect(sectionLabel, 'Section label "Section" not found — was it removed or renamed?').toBeTruthy();
-    expect(sectionLabel!.textContent?.trim()).not.toMatch(/optional/i);
-  });
-});
+// La couverture C4 de la page batch est partie avec elle : l'écran de production
+// atteignable ne porte pas de select de section — la station vient de l'onglet
+// actif, donc la section ne peut pas être vide (voir ProductionPage.smoke).
