@@ -107,6 +107,13 @@ Si un document contredit le code, le document a tort : **signale-le, ne corrige 
 
 ## Commandes
 
+- pnpm 11 depuis le 2026-08-10 ; le champ `packageManager` fait foi, ne jamais
+  épingler une version dans un workflow en plus (« Multiple versions of pnpm
+  specified » tue le job). Premier install sur un poste resté en pnpm 9 :
+  `ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY` — pnpm veut purger le
+  `node_modules` bâti par l'ancienne version. Confirmer en interactif, ou
+  `pnpm install --config.confirmModulesPurge=false`. La CI part d'un checkout
+  neuf, elle n'est pas concernée.
 - Apps : les packages sont `@breakery/app-pos` / `@breakery/app-backoffice`
   (PAS `@breakery/pos`). Dev : `pnpm --filter @breakery/app-pos dev`.
 - Tests JS : `pnpm --filter <pkg> test` (vitest). Les filtres vitest matchent le
@@ -187,6 +194,14 @@ Si un document contredit le code, le document a tort : **signale-le, ne corrige 
   anon hérite EXECUTE via PUBLIC. Toute migration REVOKE-on-functions doit aussi
   `REVOKE ... FROM PUBLIC` + `ALTER DEFAULT PRIVILEGES ... REVOKE ... FROM PUBLIC`.
   Besoin anon légitime = grant explicite par objet + `COMMENT ... 'anon-callable: <raison>'`.
+- **Overrides de sécurité = `pnpm-workspace.yaml`, JAMAIS `package.json`.** pnpm 11
+  ne lit plus le champ `pnpm` de `package.json` : un pin dependabot ajouté là est
+  ignoré EN SILENCE — install verte, dépôt non protégé. Le bloc `overrides:` vit
+  dans `pnpm-workspace.yaml`. La seule preuve qu'il s'applique est sa recopie en
+  tête de `pnpm-lock.yaml` : le lire après l'install, ne pas se fier au fichier
+  source. Symétriquement, un `pnpm-workspace.yaml` lu par un pnpm 9 ignore ces
+  mêmes overrides sans rien dire — toute la CI doit rester sur la version du
+  `packageManager`.
 - **PIN / secrets en header HTTP, jamais en body JSON** (les bodies sont loggés).
   Header dédié type `x-manager-pin`, hard cutover dans le même commit.
 - **Enums : source unique = Postgres.** Aucun string littéral dérivé côté TS
