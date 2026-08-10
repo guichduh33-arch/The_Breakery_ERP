@@ -1,6 +1,6 @@
 // apps/pos/src/features/kds/hooks/useKdsUndoBump.ts
 //
-// Session 13 / Phase 4.B — RPC mutation wrapping `kds_undo_bump_v1`.
+// Session 13 / Phase 4.B — RPC mutation wrapping `kds_undo_bump_v2`.
 // The backend enforces the 60s window (raises P0012 if expired). The UI
 // hides the Undo affordance after 60s — both layers agree.
 
@@ -30,7 +30,7 @@ export function useKdsUndoBump() {
 
   return useMutation({
     mutationFn: async (orderItemId: string) => {
-      const { error } = await sb.rpc('kds_undo_bump_v1', {
+      const { error } = await sb.rpc('kds_undo_bump_v2', {
         p_order_item_id: orderItemId,
       });
       if (error) {

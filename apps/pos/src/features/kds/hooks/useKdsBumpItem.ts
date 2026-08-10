@@ -1,6 +1,6 @@
 // apps/pos/src/features/kds/hooks/useKdsBumpItem.ts
 //
-// Session 13 / Phase 4.B — RPC mutation wrapping `kds_bump_item_v1`.
+// Session 13 / Phase 4.B — RPC mutation wrapping `kds_bump_item_v2`.
 // Mints a per-call UUID idempotency key so retries are safe.
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -40,7 +40,7 @@ export function useKdsBumpItem() {
       if (tryLocalItemStatus(orderItemId, 'ready')) {
         return { idempotencyKey: key };
       }
-      const { error } = await sb.rpc('kds_bump_item_v1', {
+      const { error } = await sb.rpc('kds_bump_item_v2', {
         p_order_item_id:   orderItemId,
         p_idempotency_key: key,
       });

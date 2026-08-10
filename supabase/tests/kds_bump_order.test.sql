@@ -1,5 +1,5 @@
 -- supabase/tests/kds_bump_order.test.sql
--- S60 (04 D1.2) — pgTAP suite for kds_bump_order_v1 ("All ready" mass bump).
+-- S60 (04 D1.2) — pgTAP suite for kds_bump_order_v2 ("All ready" mass bump).
 -- Modeled on reversal_idempotency.test.sql (request.jwt.claim.sub simulation)
 -- and reversal_rpc_revoke.test.sql (grant trio check).
 -- Run via MCP execute_sql (BEGIN/ROLLBACK envelope). pgtap pre-installed on V3 dev.
@@ -8,7 +8,7 @@ BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-SELECT plan(11);
+SELECT plan(12);
 
 -- ===========================================================================
 -- Fixture: cashier profile w/ kds.operate ; draft order + 3 items
@@ -26,9 +26,17 @@ DECLARE
   v_item_preparing  UUID;
   v_item_cancelled  UUID;
 BEGIN
+  -- Le choix du profil est DÉTERMINISTE et privilégie le cas réel : un profil
+  -- créé par `create_user_v*` a `id <> auth_user_id` (l'id prend son défaut
+  -- gen_random_uuid()), alors que les profils de seed font coïncider les deux.
+  -- `false` triant avant `true`, l'ORDER BY place les profils du cas réel en
+  -- tête — c'est sur eux que l'écriture d'`audit_logs.actor_id` doit tenir.
+  -- Sans cet ordre, un `LIMIT 1` nu tirait au sort entre les deux formes.
   SELECT up.auth_user_id, up.id INTO v_auth, v_prof FROM user_profiles up
    WHERE up.deleted_at IS NULL AND up.auth_user_id IS NOT NULL
-     AND has_permission(up.auth_user_id, 'kds.operate') LIMIT 1;
+     AND has_permission(up.auth_user_id, 'kds.operate')
+   ORDER BY (up.id = up.auth_user_id), up.created_at, up.id
+   LIMIT 1;
   IF v_auth IS NULL THEN RAISE EXCEPTION 'fixture: no profile with kds.operate'; END IF;
 
   PERFORM set_config('request.jwt.claim.sub', v_auth::text, true);
@@ -71,6 +79,7 @@ BEGIN
   RETURNING id INTO v_item_cancelled;
 
   PERFORM set_config('s60kbo.auth',            v_auth::text,           false);
+  PERFORM set_config('s60kbo.prof',            v_prof::text,           false);
   PERFORM set_config('s60kbo.order',           v_order::text,          false);
   PERFORM set_config('s60kbo.item_pending',    v_item_pending::text,   false);
   PERFORM set_config('s60kbo.item_preparing',  v_item_preparing::text, false);
@@ -80,8 +89,8 @@ END $fixture$;
 -- ---------------------------------------------------------------------------
 -- T1: function exists with the right signature
 -- ---------------------------------------------------------------------------
-SELECT has_function('public', 'kds_bump_order_v1', ARRAY['uuid', 'uuid'],
-                    'T1 kds_bump_order_v1(uuid,uuid) exists');
+SELECT has_function('public', 'kds_bump_order_v2', ARRAY['uuid', 'uuid'],
+                    'T1 kds_bump_order_v2(uuid,uuid) exists');
 
 -- ---------------------------------------------------------------------------
 -- T2/T3: first call bumps pending+preparing to ready, leaves cancelled intact
@@ -93,7 +102,7 @@ DECLARE
   v_result INTEGER;
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('s60kbo.auth'), true);
-  v_result := kds_bump_order_v1(v_order, v_key);
+  v_result := kds_bump_order_v2(v_order, v_key);
   PERFORM set_config('s60kbo.key',        v_key::text,    false);
   PERFORM set_config('s60kbo.t2_result',  v_result::text, false);
 END $t2$;
@@ -135,7 +144,7 @@ DECLARE
   v_result INTEGER;
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('s60kbo.auth'), true);
-  v_result := kds_bump_order_v1(v_order, v_key);
+  v_result := kds_bump_order_v2(v_order, v_key);
   PERFORM set_config('s60kbo.t4_result', v_result::text, false);
 END $t4$;
 
@@ -156,7 +165,7 @@ DECLARE
   v_result INTEGER;
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('s60kbo.auth'), true);
-  v_result := kds_bump_order_v1(v_order, NULL);
+  v_result := kds_bump_order_v2(v_order, NULL);
   PERFORM set_config('s60kbo.t5_result', v_result::text, false);
 END $t5$;
 
@@ -166,12 +175,29 @@ SELECT ok(current_setting('s60kbo.t5_result')::integer = 0,
 -- ---------------------------------------------------------------------------
 -- T6: grant trio (S20) — anon/PUBLIC revoked, authenticated granted
 -- ---------------------------------------------------------------------------
-SELECT is(has_function_privilege('anon', 'public.kds_bump_order_v1(uuid,uuid)', 'EXECUTE'),
-          false, 'T6a: kds_bump_order_v1 NOT executable by anon');
-SELECT is(has_function_privilege('public', 'public.kds_bump_order_v1(uuid,uuid)', 'EXECUTE'),
-          false, 'T6b: kds_bump_order_v1 NOT executable by PUBLIC');
-SELECT is(has_function_privilege('authenticated', 'public.kds_bump_order_v1(uuid,uuid)', 'EXECUTE'),
-          true, 'T6c: kds_bump_order_v1 executable by authenticated');
+SELECT is(has_function_privilege('anon', 'public.kds_bump_order_v2(uuid,uuid)', 'EXECUTE'),
+          false, 'T6a: kds_bump_order_v2 NOT executable by anon');
+SELECT is(has_function_privilege('public', 'public.kds_bump_order_v2(uuid,uuid)', 'EXECUTE'),
+          false, 'T6b: kds_bump_order_v2 NOT executable by PUBLIC');
+SELECT is(has_function_privilege('authenticated', 'public.kds_bump_order_v2(uuid,uuid)', 'EXECUTE'),
+          true, 'T6c: kds_bump_order_v2 executable by authenticated');
+
+-- ---------------------------------------------------------------------------
+-- T7: la trace d'audit porte l'identifiant de PROFIL de l'opérateur.
+-- v1 y écrivait `auth.uid()`, qui est un `auth_user_id` : la clé étrangère
+-- `audit_logs_actor_id_fkey` (-> user_profiles.id) faisait alors échouer le
+-- bump entier pour tout compte créé par le back-office, où les deux
+-- identifiants diffèrent.
+-- ---------------------------------------------------------------------------
+SELECT is(
+  (SELECT actor_id FROM audit_logs
+    WHERE action = 'kds.bump_order'
+      AND entity_type = 'order'
+      AND entity_id = current_setting('s60kbo.order')::uuid
+    LIMIT 1),
+  current_setting('s60kbo.prof')::uuid,
+  'T7: audit_logs.actor_id = user_profiles.id de l''opérateur (pas son auth_user_id)'
+);
 
 SELECT * FROM finish();
 

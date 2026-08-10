@@ -78,7 +78,7 @@ describe('AllReadyButton (KdsOrderCard header)', () => {
     expect(screen.queryByRole('button', { name: /bump all items to ready/i })).not.toBeInTheDocument();
   });
 
-  it('calls kds_bump_order_v1 with the order id and an idempotency key on click', async () => {
+  it('calls kds_bump_order_v2 with the order id and an idempotency key on click', async () => {
     rpcMock.mockResolvedValue({ data: 2, error: null });
 
     const items = [
@@ -89,7 +89,7 @@ describe('AllReadyButton (KdsOrderCard header)', () => {
     fireEvent.click(screen.getByRole('button', { name: /bump all items to ready/i }));
 
     await waitFor(() => {
-      expect(rpcMock).toHaveBeenCalledWith('kds_bump_order_v1', expect.objectContaining({
+      expect(rpcMock).toHaveBeenCalledWith('kds_bump_order_v2', expect.objectContaining({
         p_order_id: 'ord-1',
         p_idempotency_key: expect.any(String) as unknown,
       }));

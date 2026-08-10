@@ -5,10 +5,10 @@
 // a served order drops off the board entirely and there is nowhere left to
 // mount `RecallButton`. This hook fills that gap with a narrow read: order
 // items marked `served` within the recall window, deduped to one row per
-// order (recall acts at the order level via `kds_recall_order_v1`).
+// order (recall acts at the order level via `kds_recall_order_v2`).
 //
 // The 15-minute window is a client-side display cutoff only — it does not
-// limit what `kds_recall_order_v1` itself can recall (the RPC has no time
+// limit what `kds_recall_order_v2` itself can recall (the RPC has no time
 // bound), it just keeps the strip from growing unbounded over a long shift.
 
 import { useQuery } from '@tanstack/react-query';
