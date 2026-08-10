@@ -33,9 +33,19 @@ describe.skipIf(!process.env.SUPABASE_SERVICE_ROLE_KEY)('users — RPC cycle (Ph
     for (const profileId of createdIds) {
       const { data: prof } = await admin.from('user_profiles')
         .select('auth_user_id').eq('id', profileId).maybeSingle();
-      await admin.from('user_profiles').delete().eq('id', profileId);
+      // `user_sessions.user_id` référence `user_profiles(id)` SANS `ON DELETE` :
+      // tant qu'une session subsiste — le test de changement de rôle en plante
+      // une, et « révoquer » ne supprime pas la ligne — la suppression du profil
+      // est refusée. supabase-js ne lève pas sur erreur SQL et le retour n'était
+      // pas lu : l'échec passait inaperçu, laissant un profil orphelin à CHAQUE
+      // exécution (24 accumulés entre le 2026-07-14 et le 2026-08-10).
+      await admin.from('user_sessions').delete().eq('user_id', profileId);
+      await admin.from('audit_logs').delete().eq('entity_id', profileId);
+      const { error: delErr } = await admin.from('user_profiles').delete().eq('id', profileId);
+      // Un nettoyage qui échoue doit être bruyant : c'est le silence qui a laissé
+      // la base dériver.
+      if (delErr) throw new Error(`cleanup: profil ${profileId} non supprimé — ${delErr.message}`);
       if (prof?.auth_user_id) {
-        await admin.from('audit_logs').delete().eq('entity_id', profileId);
         await admin.auth.admin.deleteUser(prof.auth_user_id).catch(() => undefined);
       }
     }
