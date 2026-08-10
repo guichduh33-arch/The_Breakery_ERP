@@ -23,7 +23,7 @@ import { KdsOrderCard } from '../KdsOrderCard';
 import type { KdsItemRow } from '../../hooks/useKdsOrders';
 
 // Mock the bump / serve / prep-timer mutations so we never touch supabase or
-// realtime. Session 59 wires BumpButton (kds_bump_item_v1) onto "preparing"
+// realtime. Session 59 wires BumpButton (kds_bump_item_v2) onto "preparing"
 // and useKdsStartPrepTimer (kds_start_prep_timer_v1) onto "Start" — both
 // mocked at hook level, same pattern as the pre-existing mocks below.
 vi.mock('../../hooks/useKdsStartPrepTimer', () => ({
@@ -209,7 +209,7 @@ describe('KdsOrderCard', () => {
   });
 
   // Session 59 (04 D1.1) — undo-bump / prep-timer real wiring.
-  it('shows the real BumpButton (kds_bump_item_v1) for a preparing item', () => {
+  it('shows the real BumpButton (kds_bump_item_v2) for a preparing item', () => {
     const preparing = makeItem({ kitchen_status: 'preparing' });
     render(wrap(<KdsOrderCard items={[preparing]} />));
 

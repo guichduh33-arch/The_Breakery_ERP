@@ -1,6 +1,6 @@
 // apps/pos/src/features/kds/hooks/useKdsRecallOrder.ts
 //
-// Session 13 / Phase 4.B — RPC mutation wrapping `kds_recall_order_v1`.
+// Session 13 / Phase 4.B — RPC mutation wrapping `kds_recall_order_v2`.
 // Returns the integer count of items recalled (served → preparing).
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -32,7 +32,7 @@ export function useKdsRecallOrder() {
 
   return useMutation({
     mutationFn: async ({ orderId, reason }: KdsRecallOrderInput) => {
-      const { data, error } = await sb.rpc<number>('kds_recall_order_v1', {
+      const { data, error } = await sb.rpc<number>('kds_recall_order_v2', {
         p_order_id: orderId,
         p_reason:   reason ?? null,
       });

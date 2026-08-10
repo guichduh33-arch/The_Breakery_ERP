@@ -175,7 +175,7 @@ export function useFireToStations(): UseFireToStationsResult {
           // fires NEUFS côté cloud : un append sur une commande CLOUD existante
           // reste online-only (il cible un order_id DB). Lot 4 : l'intention
           // est écrite dans l'outbox durable AVANT le publish (§4.3) — le
-          // replay rejouera fire_counter_order_v5 avec le MÊME client_uuid au
+          // replay rejouera fire_counter_order avec le MÊME client_uuid au
           // retour d'internet. Un re-fire sur la même commande LOCALE devient
           // un APPEND : même identité bus (root_client_uuid + numéro L-),
           // intent séparé (sa propre clé d'idempotence RPC).
@@ -239,10 +239,14 @@ export function useFireToStations(): UseFireToStationsResult {
             persistedOrderNumber = localNumber;
             fireClientUuidRef.current = null;
           } else {
-            // S44 P0-C(3) — fire_counter_order_v5 gates any line discount on an
+            // S44 P0-C(3) — fire_counter_order gates any line discount on an
             // authorizing manager. Hoist the first discounted line's authorizer.
+            //
+            // ADR-022 déc. 3 — PAS de p_tolerate_unsellable ici : c'est un envoi
+            // en cuisine nominal, le refus y arrive à temps. Le drapeau n'est
+            // posé qu'au rejeu hors-ligne et à l'appoint du checkout.
             const fireAuthorizer = toPersist.find((i) => i.discount?.authorized_by)?.discount?.authorized_by;
-            const { data, error } = await supabase.rpc('fire_counter_order_v5', {
+            const { data, error } = await supabase.rpc('fire_counter_order_v6', {
               p_client_uuid: fireClientUuidRef.current,
               p_session_id: sessionId,
               p_items: toPersist.map((i) => ({

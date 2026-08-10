@@ -68,7 +68,7 @@ BEGIN
   v_res := convert_loyalty_to_store_credit_v1(v_cust, 1000, NULL);
 
   -- 3) VENTE 1 payée intégralement en avoir (-20 000).
-  v_res := complete_order_with_payment_v24(
+  v_res := complete_order_with_payment_v25(
     p_session_id := v_sess,
     p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(jsonb_build_object(
@@ -88,7 +88,7 @@ BEGIN
   PERFORM set_config('scr.refund_bal', v_res->>'store_credit_balance_after', true);
 
   -- 5) VENTE 2 payée en avoir (-20 000) puis VOID (restitution +20 000).
-  v_res := complete_order_with_payment_v24(
+  v_res := complete_order_with_payment_v25(
     p_session_id := v_sess,
     p_order_type := 'take_out'::order_type,
     p_items := jsonb_build_array(jsonb_build_object(

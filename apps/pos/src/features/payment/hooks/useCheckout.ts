@@ -109,11 +109,11 @@ export function useCheckout() {
           if (appendUuidRef.current?.attempt !== idempotencyKey) {
             appendUuidRef.current = { attempt: idempotencyKey, uuid: crypto.randomUUID() };
           }
-          // S44 P0-C(3) — fire_counter_order_v5 gates any appended line discount
+          // S44 P0-C(3) — fire_counter_order gates any appended line discount
           // on an authorizing manager (sales.discount). Hoist the first
           // discounted line's authorizer so the gate sees the captured PIN holder.
           const appendAuthorizer = unsynced.find((i) => i.discount?.authorized_by)?.discount?.authorized_by;
-          const { error: appendErr } = await supabase.rpc('fire_counter_order_v5', {
+          const { error: appendErr } = await supabase.rpc('fire_counter_order_v6', {
             p_client_uuid: appendUuidRef.current.uuid,
             p_session_id: sessionId,
             p_items: unsynced.map((i) => ({
@@ -127,6 +127,13 @@ export function useCheckout() {
               ...(i.discount ? { discount_amount: i.discount.amount } : {}),
             })) as unknown as Json,
             p_order_id: pickedUpOrderId,
+            // ADR-022 déc. 3 — appel d'appoint du checkout : on pousse au serveur
+            // les lignes saisies depuis le dernier fire, client devant la caisse.
+            // Un refus de vendabilité arriverait ici TROP TARD : il ne protège
+            // plus rien et produirait une commande impayable, précisément le mal
+            // que la garde répare. Elle a déjà fait son travail à la saisie
+            // (déc. 3.2). Seuls ce point et le rejeu hors-ligne posent ce drapeau.
+            p_tolerate_unsellable: true,
             ...(appendAuthorizer ? { p_discount_authorized_by: appendAuthorizer } : {}),
           });
           if (appendErr) throw Object.assign(new Error(appendErr.message), { details: appendErr });

@@ -1,6 +1,6 @@
 // apps/pos/src/features/kds/hooks/useKdsBumpOrder.ts
 //
-// Session 60 (04 D1.2) — RPC mutation wrapping `kds_bump_order_v1`.
+// Session 60 (04 D1.2) — RPC mutation wrapping `kds_bump_order_v2`.
 // Mints a per-call UUID idempotency key so retries are safe. Copied from
 // useKdsBumpItem.ts, scoped to a whole order instead of a single item.
 
@@ -43,7 +43,7 @@ export function useKdsBumpOrder() {
       if (localCount !== null) {
         return { bumpedCount: localCount, idempotencyKey: key };
       }
-      const { data, error } = await sb.rpc('kds_bump_order_v1', {
+      const { data, error } = await sb.rpc('kds_bump_order_v2', {
         p_order_id:        orderId,
         p_idempotency_key: key,
       });

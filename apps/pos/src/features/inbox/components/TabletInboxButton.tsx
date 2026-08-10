@@ -1,7 +1,7 @@
 // apps/pos/src/features/inbox/components/TabletInboxButton.tsx
 //
 // Pending tablet-orders inbox. Self-contained (query + modal owned here) so
-// hosts only need to render it — same pattern as HoldOrderButton /
+// hosts only need to render it — same pattern as TableSelectorButton /
 // SendToKitchenButton. Mounted in BottomActionBar (left group); the original
 // CartActionsBar slot was retired with the POS redesign.
 import { useState, type JSX } from 'react';
