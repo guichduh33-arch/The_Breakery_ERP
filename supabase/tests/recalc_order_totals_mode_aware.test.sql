@@ -6,8 +6,9 @@
 -- ce dernier prouve la NON-RÉGRESSION (mode inclusive, comportement d'origine
 -- inchangé) — mais une formule figée en dur le passerait à l'identique. Seul un
 -- test qui bascule le mode prouve que le réglage est devenu effectif sur cette
--- voie, et donc sur add/remove/update_order_item_v1 + hold_order_v1 qui y
--- délèguent tous.
+-- voie, et donc sur add/remove/update_order_item qui y délèguent tous.
+-- (`hold_order_v1`, l'autre délégant historique, a été supprimé par l'ADR-022
+-- déc. 4 avec toute la voie brouillon.)
 --
 -- La bascule est faite DANS la transaction et annulée par le ROLLBACK.
 --

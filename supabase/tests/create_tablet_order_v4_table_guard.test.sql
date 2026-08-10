@@ -24,7 +24,13 @@ DECLARE
   v_prod UUID;
   v_tbl  TEXT;
 BEGIN
-  SELECT id INTO v_prod FROM products WHERE deleted_at IS NULL LIMIT 1;
+  -- ADR-022 dec. 1 : la garde de vendabilite est active sur cette RPC, le fixture doit choisir un produit vendable de facon deterministe.
+  SELECT p.id INTO v_prod FROM products p
+   WHERE p.deleted_at IS NULL AND p.parent_product_id IS NULL AND p.is_active = true
+     AND p.product_type <> 'combo'
+     AND NOT EXISTS (SELECT 1 FROM products c WHERE c.parent_product_id = p.id AND c.is_active AND c.deleted_at IS NULL)
+   LIMIT 1;
+  IF v_prod IS NULL THEN RAISE EXCEPTION 'fixture: aucun produit vendable'; END IF;
   SELECT name INTO v_tbl FROM restaurant_tables WHERE deleted_at IS NULL LIMIT 1;
   IF v_tbl IS NULL THEN v_tbl := 'T1'; END IF;
   INSERT INTO auth.users (id) VALUES (v_auth);
@@ -41,24 +47,24 @@ BEGIN
 END $fx$;
 
 SELECT throws_ok(
-  format('SELECT create_tablet_order_v5(%L::uuid, %L::uuid, %L, %L::order_type, %L::jsonb)',
+  format('SELECT create_tablet_order_v6(%L::uuid, %L::uuid, %L, %L::order_type, %L::jsonb)',
     gen_random_uuid(), current_setting('s72.prof'), '', 'dine_in', current_setting('s72.items')),
   'P0011', 'table_required_for_dine_in',
   'T1: dine_in + blank table -> P0011 table_required_for_dine_in');
 
 SELECT lives_ok(
-  format('SELECT create_tablet_order_v5(%L::uuid, %L::uuid, %L, %L::order_type, %L::jsonb)',
+  format('SELECT create_tablet_order_v6(%L::uuid, %L::uuid, %L, %L::order_type, %L::jsonb)',
     gen_random_uuid(), current_setting('s72.prof'), current_setting('s72.tbl'), 'dine_in', current_setting('s72.items')),
   'T2: dine_in + valid table -> creates order');
 
 SELECT lives_ok(
-  format('SELECT create_tablet_order_v5(%L::uuid, %L::uuid, %L, %L::order_type, %L::jsonb)',
+  format('SELECT create_tablet_order_v6(%L::uuid, %L::uuid, %L, %L::order_type, %L::jsonb)',
     gen_random_uuid(), current_setting('s72.prof'), '', 'take_out', current_setting('s72.items')),
   'T3: take_out + blank table -> creates order (no table needed)');
 
 SELECT is(
   (SELECT count(*)::int FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
-    WHERE n.nspname='public' AND p.proname IN ('create_tablet_order_v3','create_tablet_order_v4')),
+    WHERE n.nspname='public' AND p.proname IN ('create_tablet_order_v3','create_tablet_order_v4','create_tablet_order_v5')),
   0, 'T4: les versions précédentes de create_tablet_order sont droppées');
 
 SELECT * FROM finish();

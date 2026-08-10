@@ -16,7 +16,7 @@ import { logger } from '@breakery/utils';
 import type { Tender } from '@breakery/domain';
 import type { BusModifierLine } from './busTopics';
 
-/** Ligne d'items au format attendu par fire_counter_order_v5 p_items. */
+/** Ligne d'items au format attendu par fire_counter_order p_items. */
 export interface OfflineFireItem {
   product_id: string;
   quantity: number;
@@ -36,7 +36,7 @@ interface OfflineIntentBase {
   created_at: string;
 }
 
-/** Fire caisse offline — rejoué vers fire_counter_order_v5 (même client_uuid). */
+/** Fire caisse offline — rejoué vers fire_counter_order (même client_uuid). */
 export interface OfflineFireIntent extends OfflineIntentBase {
   kind: 'fire';
   /** client_uuid RACINE de la commande locale (= id du 1ᵉʳ fire). Un append
@@ -83,7 +83,7 @@ export interface OfflineCashPaymentIntent extends OfflineIntentBase {
   customer_id?: string;
 }
 
-/** Envoi tablette offline — rejoué vers create_tablet_order_v5 (même client_uuid). */
+/** Envoi tablette offline — rejoué vers create_tablet_order (même client_uuid). */
 export interface OfflineTabletOrderIntent extends OfflineIntentBase {
   kind: 'tablet_order';
   local_number: string;

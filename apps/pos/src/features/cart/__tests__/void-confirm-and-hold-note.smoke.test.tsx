@@ -6,21 +6,15 @@
 //          shown first. Confirm wipes; Cancel keeps the cart intact.
 //          (The post-kitchen manager-PIN flow is untouched — see
 //          void-order.smoke.test.tsx / void-post-kitchen.smoke.test.tsx.)
-//   P2-2 — Hold no longer uses `window.prompt` for the optional note: a
-//          proper modal with a textarea + Cancel/Hold buttons collects it,
-//          then the existing hold mutation fires with the note.
+//   P2-2 — retiré : ADR-022 déc. 4 supprime le parcage de panier, donc la note
+//          de hold qu'il collectait. Voir le describe en bas de fichier.
 
 /// <reference types="@testing-library/jest-dom" />
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import type { ReactNode } from 'react';
-
-const holdMutateAsync = vi.fn().mockResolvedValue('order-1');
-vi.mock('@/features/heldOrders/hooks/useHoldOrder', () => ({
-  useHoldOrder: () => ({ mutateAsync: holdMutateAsync, isPending: false }),
-}));
 
 vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() },
@@ -95,44 +89,17 @@ describe('Void — under More, always reason + manager PIN', () => {
   });
 });
 
-describe('P2-2 — hold note collected via modal, not window.prompt', () => {
-  it('never calls window.prompt and opens a note modal with a textarea', () => {
-    const promptSpy = vi.spyOn(window, 'prompt');
+// ADR-022 déc. 4 — le bloc « P2-2 : note de hold collectée par modale » est
+// retiré avec le parcage de panier : on ne met plus en attente qu'une commande
+// déjà envoyée en cuisine, et ce geste-là ne collecte pas de note. Restent
+// ci-dessus les smokes P2-1 sur la confirmation du void local, qui n'ont jamais
+// eu de rapport avec le hold. Le bouton Hold est désormais désactivé tant que
+// rien n'est parti en cuisine — voir rehold-fired-order.smoke.test.tsx.
+describe('ADR-022 déc. 4 — le hold exige une commande envoyée en cuisine', () => {
+  it('le bouton Hold est désactivé sur un panier non envoyé', () => {
     render(wrapper(<BottomActionBar />));
 
     fireEvent.click(screen.getByRole('button', { name: /more/i }));
-    fireEvent.click(screen.getByRole('button', { name: /^hold$/i }));
-
-    expect(promptSpy).not.toHaveBeenCalled();
-    expect(screen.getByRole('textbox', { name: /note/i })).toBeInTheDocument();
-    expect(screen.getByTestId('hold-note-confirm')).toBeInTheDocument();
-  });
-
-  it('submits the hold mutation with the typed note', async () => {
-    render(wrapper(<BottomActionBar />));
-
-    fireEvent.click(screen.getByRole('button', { name: /more/i }));
-    fireEvent.click(screen.getByRole('button', { name: /^hold$/i }));
-    fireEvent.change(screen.getByRole('textbox', { name: /note/i }), {
-      target: { value: 'for Mr. Tan' },
-    });
-    fireEvent.click(screen.getByTestId('hold-note-confirm'));
-
-    await waitFor(() => expect(holdMutateAsync).toHaveBeenCalled());
-    const arg = holdMutateAsync.mock.calls[0]?.[0] as { notes: string | null };
-    expect(arg.notes).toBe('for Mr. Tan');
-    await waitFor(() => expect(useCartStore.getState().cart.items).toHaveLength(0));
-  });
-
-  it('an empty note submits as null', async () => {
-    render(wrapper(<BottomActionBar />));
-
-    fireEvent.click(screen.getByRole('button', { name: /more/i }));
-    fireEvent.click(screen.getByRole('button', { name: /^hold$/i }));
-    fireEvent.click(screen.getByTestId('hold-note-confirm'));
-
-    await waitFor(() => expect(holdMutateAsync).toHaveBeenCalled());
-    const arg = holdMutateAsync.mock.calls[0]?.[0] as { notes: string | null };
-    expect(arg.notes).toBeNull();
+    expect(screen.getByRole('button', { name: /^hold$/i })).toBeDisabled();
   });
 });

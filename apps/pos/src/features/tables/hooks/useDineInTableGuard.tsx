@@ -7,7 +7,7 @@
 // ensureTable() rend true quand l'action peut continuer ; sinon il ouvre le plan
 // de salle et rend false. À la sélection, la table est posée sur le panier puis
 // onSelected(table) permet à l'appelant de reprendre l'action interrompue.
-// Le serveur porte le même filet : fire_counter_order_v5 rejette la CRÉATION
+// Le serveur porte le même filet : fire_counter_order rejette la CRÉATION
 // dine-in sans table ('table_required_for_dine_in' P0011, migration _122).
 
 import { useState, type JSX } from 'react';

@@ -38,13 +38,16 @@ DECLARE
   v_session  UUID;
   v_order    UUID;
   v_item     UUID;
-  -- ADR-013 M2 : jamais un combo (add_order_item_v4 les refuse) ni un parent.
-  v_product  UUID := (SELECT id FROM products
-                       WHERE is_active=true
-                         AND product_type IS DISTINCT FROM 'combo'
-                         AND retail_price > 0
-                       ORDER BY created_at LIMIT 1);
+  -- ADR-013 M2 : jamais un combo (add_order_item_v5 les refuse) ni un parent.
+  -- ADR-022 dec. 1 : la garde de vendabilite est active sur cette RPC, le fixture doit choisir un produit vendable de facon deterministe.
+  v_product  UUID := (SELECT p.id FROM products p
+                       WHERE p.deleted_at IS NULL AND p.parent_product_id IS NULL AND p.is_active = true
+                         AND p.product_type <> 'combo'
+                         AND NOT EXISTS (SELECT 1 FROM products c WHERE c.parent_product_id = p.id AND c.is_active AND c.deleted_at IS NULL)
+                         AND p.retail_price > 0
+                       ORDER BY p.created_at LIMIT 1);
 BEGIN
+  IF v_product IS NULL THEN RAISE EXCEPTION 'fixture: aucun produit vendable'; END IF;
   SELECT auth_user_id INTO v_manager_auth
     FROM user_profiles
    WHERE role_code='MANAGER' AND deleted_at IS NULL AND auth_user_id IS NOT NULL
@@ -80,7 +83,7 @@ DECLARE v_status TEXT := 'fail_raised';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('breakery.test_manager'), true);
   BEGIN
-    PERFORM add_order_item_v4(
+    PERFORM add_order_item_v5(
       current_setting('breakery.test_order')::uuid,
       current_setting('breakery.test_product')::uuid,
       2, '[]'::jsonb, gen_random_uuid());
@@ -97,7 +100,7 @@ DECLARE v_status TEXT := 'fail_no_raise';
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('breakery.test_cashier'), true);
   BEGIN
-    PERFORM add_order_item_v4(
+    PERFORM add_order_item_v5(
       current_setting('breakery.test_order')::uuid,
       current_setting('breakery.test_product')::uuid,
       1, '[]'::jsonb, gen_random_uuid());
@@ -115,7 +118,7 @@ BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('breakery.test_manager'), true);
   UPDATE orders SET status='completed' WHERE id = current_setting('breakery.test_order')::uuid;
   BEGIN
-    PERFORM add_order_item_v4(
+    PERFORM add_order_item_v5(
       current_setting('breakery.test_order')::uuid,
       current_setting('breakery.test_product')::uuid,
       1, '[]'::jsonb, gen_random_uuid());
@@ -138,11 +141,11 @@ DECLARE
 BEGIN
   PERFORM set_config('request.jwt.claim.sub', current_setting('breakery.test_manager'), true);
   BEGIN
-    SELECT add_order_item_v4(
+    SELECT add_order_item_v5(
       current_setting('breakery.test_order')::uuid,
       current_setting('breakery.test_product')::uuid,
       1, '[]'::jsonb, v_key) INTO v_first;
-    SELECT add_order_item_v4(
+    SELECT add_order_item_v5(
       current_setting('breakery.test_order')::uuid,
       current_setting('breakery.test_product')::uuid,
       1, '[]'::jsonb, v_key) INTO v_second;
@@ -274,7 +277,7 @@ BEGIN
   INSERT INTO product_modifiers (product_id, group_name, option_label, price_adjustment, is_active)
   VALUES (v_product, 'T13Grp', 'T13Opt', 2000, true);
   BEGIN
-    SELECT add_order_item_v4(
+    SELECT add_order_item_v5(
       current_setting('breakery.test_order')::uuid,
       v_product, 2,
       -- price_adjustment client MENTI (999999) : le resolveur doit imposer 2000.
@@ -307,7 +310,7 @@ BEGIN
   SELECT product_type INTO v_orig FROM products WHERE id = current_setting('breakery.test_product')::uuid;
   UPDATE products SET product_type='combo' WHERE id = current_setting('breakery.test_product')::uuid;
   BEGIN
-    PERFORM add_order_item_v4(
+    PERFORM add_order_item_v5(
       current_setting('breakery.test_order')::uuid,
       current_setting('breakery.test_product')::uuid,
       1, '[]'::jsonb, gen_random_uuid());

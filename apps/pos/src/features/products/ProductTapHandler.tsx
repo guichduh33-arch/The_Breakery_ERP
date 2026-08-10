@@ -20,6 +20,7 @@
 // `combo_base_price` (emitted by ComboConfigModal as `unitPrice`) and do NOT
 // go through the fetchPrice path.
 import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { ModifierModal, type ModifierModalProduct } from '@breakery/ui';
 import type { Product, SelectedModifiers } from '@breakery/domain';
 import { useCartStore } from '@/stores/cartStore';
@@ -53,7 +54,29 @@ export function ProductTapHandler({ selectedSlug }: ProductTapHandlerProps) {
     enabled: pending !== null,
   });
 
+  // ADR-022 déc. 3.2 — dernier filet AVANT l'entrée au panier, et donc avant
+  // tout enfilement hors-ligne (ADR-018 D7). Mêmes critères que la RPC, sur ce
+  // que le catalogue local sait : un produit désactivé ou parent d'un groupe de
+  // variantes ne descend pas dans le panier. La grille filtre déjà à la requête
+  // (is_active + visible_on_pos + deleted_at) ; cette assertion couvre la
+  // variante synthétisée par handleVariantPick et toute voie d'appel future.
+  // La fenêtre entre le chargement du catalogue et une désactivation au
+  // back-office reste découverte : c'est l'arbitrage assumé, et il recoupe la
+  // fenêtre que la décision 2 assume déjà entre saisie et paiement.
+  function assertSellable(product: Product): boolean {
+    if (!product.is_active) {
+      toast.error(`${product.name} est désactivé — il ne peut pas être vendu`);
+      return false;
+    }
+    if (product.has_variants) {
+      toast.error(`${product.name} est un groupe de variantes — choisissez une variante`);
+      return false;
+    }
+    return true;
+  }
+
   async function addWithPrice(product: Product, modifiers: SelectedModifiers) {
+    if (!assertSellable(product)) return;
     try {
       const price = await fetchPrice(product.id, attachedCustomer?.id ?? null);
       add(product, modifiers, price);
@@ -178,7 +201,12 @@ export function ProductTapHandler({ selectedSlug }: ProductTapHandlerProps) {
         open={comboPending !== null}
         product={comboPending ? { id: comboPending.id, name: comboPending.name } : null}
         onConfirm={({ components, modifiers, unitPrice }) => {
-          if (comboPending) addCombo(comboPending, modifiers, components, unitPrice);
+          // ADR-022 déc. 3.2 — le combo lui-même passe la garde ; ses composants
+          // sont écartés en amont par useComboConfig, qui n'offre plus une
+          // option non vendable.
+          if (comboPending && assertSellable(comboPending)) {
+            addCombo(comboPending, modifiers, components, unitPrice);
+          }
           setComboPending(null);
         }}
         onClose={() => setComboPending(null)}

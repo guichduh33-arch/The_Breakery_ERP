@@ -6,7 +6,7 @@
 // T2: click a row in the modal → diff.adds gets {product_id, qty: 1};
 //     preview shows real name + price (retail_price → line_total arithmetic).
 // T3: pick the same product twice → single add with qty 2.
-// T4: Apply after double-pick → rpcMock called with add_order_item_v4,
+// T4: Apply after double-pick → rpcMock called with add_order_item_v5,
 //     p_product_id and p_qty: 2.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -174,7 +174,7 @@ describe('ProductPicker smoke [S39-W-C1]', () => {
     expect(newBadges).toHaveLength(1);
   });
 
-  it('T4: Apply after double-pick calls add_order_item_v4 with p_qty:2 and correct p_product_id', async () => {
+  it('T4: Apply after double-pick calls add_order_item_v5 with p_qty:2 and correct p_product_id', async () => {
     render(
       <Providers qc={qc}>
         <EditOrderItemsModal
@@ -204,10 +204,10 @@ describe('ProductPicker smoke [S39-W-C1]', () => {
     // Click Apply
     fireEvent.click(screen.getByTestId('apply-changes'));
 
-    // Orchestrator calls add_order_item_v4 once with the coalesced qty
+    // Orchestrator calls add_order_item_v5 once with the coalesced qty
     await waitFor(() => {
       expect(rpcMock).toHaveBeenCalledWith(
-        'add_order_item_v4',
+        'add_order_item_v5',
         expect.objectContaining({
           p_order_id:   'ord-apply',
           p_product_id: 'prod-standalone',
@@ -217,7 +217,7 @@ describe('ProductPicker smoke [S39-W-C1]', () => {
     });
 
     // Only one add call — not two separate single-qty calls
-    const addCalls = rpcMock.mock.calls.filter(([fn]) => fn === 'add_order_item_v4');
+    const addCalls = rpcMock.mock.calls.filter(([fn]) => fn === 'add_order_item_v5');
     expect(addCalls).toHaveLength(1);
   });
 });

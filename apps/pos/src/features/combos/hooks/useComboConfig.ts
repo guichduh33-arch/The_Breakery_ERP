@@ -29,6 +29,10 @@ function one<T>(v: T | T[] | null): T | null {
 interface ComponentRef {
   name: string;
   category_id: string | null;
+  // ADR-022 déc. 3.2 — colonnes de vendabilité, lues pour écarter côté client ce
+  // que la RPC refuse côté serveur (déc. 1).
+  is_active: boolean;
+  deleted_at: string | null;
 }
 
 interface OptionRow {
@@ -132,7 +136,7 @@ export function useComboConfig(comboProductId: string): UseQueryResult<ComboDefi
           'id, name, retail_price, combo_base_price, ' +
             'combo_groups ( id, name, group_type, is_required, min_select, max_select, sort_order, ' +
             'combo_group_options ( component_product_id, surcharge, is_default, sort_order, ' +
-            'component:products!component_product_id ( name, category_id ) ) )',
+            'component:products!component_product_id ( name, category_id, is_active, deleted_at ) ) )',
         )
         .eq('id', comboProductId)
         .single();
@@ -142,10 +146,44 @@ export function useComboConfig(comboProductId: string): UseQueryResult<ComboDefi
       const groupRows = [...(row.combo_groups ?? [])].sort((a, b) => a.sort_order - b.sort_order);
       const basePrice = Number(row.combo_base_price ?? row.retail_price);
 
+      // ADR-022 déc. 3.2 — la garde de vendabilité vit AUSSI côté client, avec
+      // les MÊMES critères que la RPC, au moment où la ligne entre au panier.
+      // Le configurateur proposait jusqu'ici des composants désactivés,
+      // soft-deleted ou parents d'un groupe de variantes : la RPC les refuse
+      // désormais (déc. 1), et rien ne doit pouvoir entrer au panier que le
+      // serveur refusera — a fortiori hors-ligne, où le refus n'arriverait
+      // qu'au rejeu, trop tard (ADR-018 D7).
+      const candidateIds = [
+        ...new Set(groupRows.flatMap((g) => (g.combo_group_options ?? []).map((o) => o.component_product_id))),
+      ];
+      const parentIds = new Set<string>();
+      if (candidateIds.length > 0) {
+        // Un composant est « parent » s'il porte au moins un enfant vivant —
+        // même sonde que le EXISTS de _assert_product_sellable_v1.
+        const probe = await supabase
+          .from('products')
+          .select('parent_product_id')
+          .in('parent_product_id', candidateIds)
+          .eq('is_active', true)
+          .is('deleted_at', null);
+        if (probe.error) throw probe.error;
+        for (const r of probe.data ?? []) {
+          if (r.parent_product_id !== null) parentIds.add(r.parent_product_id);
+        }
+      }
+      const isSellableOption = (o: OptionRow): boolean => {
+        const c = one(o.component);
+        if (c === null) return false;
+        if (!c.is_active || c.deleted_at !== null) return false;
+        return !parentIds.has(o.component_product_id);
+      };
+
       // Distinct components across all groups — one round-trip for all of them.
+      // Seuls les composants retenus : inutile de résoudre les modificateurs
+      // d'une option que l'on n'affichera pas.
       const componentRefs = new Map<string, { product_id: string; category_id: string | null }>();
       for (const g of groupRows) {
-        for (const o of g.combo_group_options ?? []) {
+        for (const o of (g.combo_group_options ?? []).filter(isSellableOption)) {
           componentRefs.set(o.component_product_id, {
             product_id: o.component_product_id,
             category_id: one(o.component)?.category_id ?? null,
@@ -155,7 +193,9 @@ export function useComboConfig(comboProductId: string): UseQueryResult<ComboDefi
       const modifiersByComponent = await fetchComponentModifierGroups([...componentRefs.values()]);
 
       const groups: ComboDefinition['groups'] = groupRows.map((g) => {
-        const opts = [...(g.combo_group_options ?? [])].sort((a, b) => a.sort_order - b.sort_order);
+        const opts = [...(g.combo_group_options ?? [])]
+          .filter(isSellableOption)
+          .sort((a, b) => a.sort_order - b.sort_order);
         return {
           id: g.id,
           name: g.name,

@@ -16,7 +16,7 @@ INSERT INTO products (id, sku, name, category_id, retail_price, product_type, cu
 DO $$
 DECLARE r jsonb;
 BEGIN
-  r := fire_counter_order_v5(
+  r := fire_counter_order_v6(
     p_client_uuid := '00000000-0000-0000-0000-0000000cfbbb'::uuid,
     p_session_id := '00000000-0000-0000-0000-0000000cf002',
     p_items := '[{"product_id":"00000000-0000-0000-0000-0000000fd001","quantity":1,"unit_price":5000,"modifiers":[]}]'::jsonb,

@@ -2,10 +2,17 @@
 //
 // Session 14 / Phase 2.B — POS-specific held-orders chooser (visual).
 // Session 35 (F-003) — rewired DB-backed: the list is now multi-terminal,
-// served by `useHeldOrdersQuery` (orders flagged `is_held`), restored via
-// `restore_held_order_v1` and discarded via `discard_held_order_v1`. The old
-// localStorage `heldOrdersStore` is retired. `useHeldOrdersRealtime` keeps the
-// list live across terminals.
+// served by `useHeldOrdersQuery` (orders flagged `is_held`) and discarded via
+// `discard_held_order_v1`. The old localStorage `heldOrdersStore` is retired.
+// `useHeldOrdersRealtime` keeps the list live across terminals.
+//
+// ADR-022 déc. 4 — la liste ne présente plus QUE des commandes envoyées en
+// cuisine. La voie « brouillon » (draft `HELD-<uuid>` fabriqué par hold_order,
+// restauré par restore_held_order) est supprimée : ce qui est saisi sans avoir
+// franchi l'envoi en cuisine ni le paiement est un brouillon, pas une commande,
+// et n'a pas à exister côté serveur. Reste la réouverture d'une commande
+// envoyée (reopen_held_order_v1) et le rejet (discard_held_order_v1), qui sert
+// aussi les commandes caisse non payées.
 //
 // Ref: docs/Design/caissapp/51-held-orders-takeaway-list.jpg
 //
@@ -26,7 +33,6 @@ import {
 } from '@breakery/ui';
 import { useCartStore } from '@/stores/cartStore';
 import { useHeldOrdersQuery, type HeldOrderRow } from '@/features/heldOrders/hooks/useHeldOrdersQuery';
-import { useRestoreHeldOrder } from '@/features/heldOrders/hooks/useRestoreHeldOrder';
 import { useReopenHeldOrder } from '@/features/heldOrders/hooks/useReopenHeldOrder';
 import { useDiscardHeldOrder } from '@/features/heldOrders/hooks/useDiscardHeldOrder';
 import { useHeldOrdersRealtime } from '@/features/heldOrders/hooks/useHeldOrdersRealtime';
@@ -74,15 +80,10 @@ function HeldOrderCard({
               Table {row.table_number}
             </span>
           )}
-          <span
-            className={cn(
-              'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest',
-              row.status === 'pending_payment'
-                ? 'bg-gold/20 text-gold'
-                : 'bg-bg-overlay text-text-muted',
-            )}
-          >
-            {row.status === 'pending_payment' ? 'Sent' : 'Draft'}
+          {/* ADR-022 déc. 4 — le badge « Draft » disparaît avec la voie
+              brouillon : toute commande listée est envoyée en cuisine. */}
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest bg-gold/20 text-gold">
+            Sent
           </span>
         </div>
         <span className="inline-flex items-center gap-1 text-xs text-text-secondary font-mono">
@@ -111,7 +112,7 @@ function HeldOrderCard({
           )}
         </div>
         <div className="flex items-center gap-2">
-          {row.status === 'pending_payment' && <AttachTabCustomerButton orderId={row.id} />}
+          <AttachTabCustomerButton orderId={row.id} />
           <button
             type="button"
             onClick={onDelete}
@@ -159,18 +160,15 @@ export function HeldOrdersModal({ open, onClose }: HeldOrdersModalProps): JSX.El
   // The order currently loaded in the cart (active fired tab) is managed from the
   // cart itself — don't also list it here as restorable/discardable.
   const rows = allRows.filter((r) => r.id !== pickedUpOrderId);
-  const restore = useRestoreHeldOrder();
   const reopen = useReopenHeldOrder();
   const discard = useDiscardHeldOrder();
 
   const [confirmRow, setConfirmRow] = useState<HeldOrderRow | null>(null);
 
+  // ADR-022 déc. 4 — plus de branchement : toute ligne listée est une commande
+  // envoyée en cuisine, donc une réouverture.
   async function doRestore(row: HeldOrderRow): Promise<void> {
-    if (row.status === 'pending_payment') {
-      await reopen.mutateAsync(row.id);
-    } else {
-      await restore.mutateAsync(row.id);
-    }
+    await reopen.mutateAsync(row.id);
     onClose();
   }
 
@@ -287,8 +285,8 @@ export function HeldOrdersModal({ open, onClose }: HeldOrdersModalProps): JSX.El
                   No orders held
                 </SectionLabel>
                 <p className="text-xs text-text-muted max-w-sm">
-                  Ring up an order and tap “Hold” to park it here — useful for
-                  table-hopping or split flows.
+                  Send an order to the kitchen, then tap “Hold” to park it here —
+                  useful for table-hopping or split flows.
                 </p>
               </div>
             ) : (
