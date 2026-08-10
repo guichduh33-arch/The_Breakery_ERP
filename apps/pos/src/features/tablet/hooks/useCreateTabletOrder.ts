@@ -62,7 +62,7 @@ export function useCreateTabletOrder() {
       }
 
       // Spec 006x lot 4 — envoi tablette en mode OFFLINE : intention durable
-      // (rejouée vers create_tablet_order_v5, MÊME client_uuid) PUIS publish
+      // (rejouée vers create_tablet_order, MÊME client_uuid) PUIS publish
       // order.fired sur le bus — le KDS affiche le ticket sans cloud. Pas de
       // KOT papier depuis la tablette (comportement online inchangé : c'est
       // la création DB qui alimente le KDS, l'impression reste côté caisse).
@@ -108,7 +108,9 @@ export function useCreateTabletOrder() {
         return { orderId: null, localNumber };
       }
 
-      const { data, error } = await supabase.rpc('create_tablet_order_v5', {
+      // ADR-022 déc. 3 — pas de p_tolerate_unsellable : envoi en salle nominal,
+      // le refus y arrive à temps. Seul le rejeu hors-ligne pose le drapeau.
+      const { data, error } = await supabase.rpc('create_tablet_order_v6', {
         p_client_uuid: clientUuid,
         p_waiter_id: payload.p_waiter_id,
         p_table_number: payload.p_table_number ?? '',

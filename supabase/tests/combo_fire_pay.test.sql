@@ -1,5 +1,5 @@
 -- supabase/tests/combo_fire_pay.test.sql
--- Session 47 / fire-path extension — fire_counter_order_v5 + pay_existing_order_v17
+-- Session 47 / fire-path extension — fire_counter_order_v6 + pay_existing_order_v17
 -- combo-aware. Cashier ...0002 has pos.sale.create + payments.process.
 -- Fire a combo (persists combo_components), then pay → component stock deducted,
 -- combo product stock untouched.
@@ -18,7 +18,7 @@ INSERT INTO products (id, sku, name, category_id, retail_price, product_type, cu
 DO $$
 DECLARE r jsonb;
 BEGIN
-  r := fire_counter_order_v5(
+  r := fire_counter_order_v6(
     p_client_uuid := '00000000-0000-0000-0000-0000000cfaaa'::uuid,
     p_session_id := '00000000-0000-0000-0000-0000000cf001',
     p_items := $items$[

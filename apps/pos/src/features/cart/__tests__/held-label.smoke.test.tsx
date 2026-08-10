@@ -4,10 +4,17 @@
 // "Held {local time} · {Table N | No table}" instead of the raw
 // HELD-<uuid> order_number. The full order_number stays available in the
 // `title` attribute for support lookups.
+//
+// ADR-022 déc. 4 — plus aucun `HELD-<uuid>` n'est créé (hold_order est
+// supprimée), mais les lignes historiques restent en base : les données de
+// développement ne se réparent pas (ADR-021 déc. 2). Le label humain garde donc
+// son objet pour ces lignes-là, et ces fixtures restent représentatives.
 
 /// <reference types="@testing-library/jest-dom" />
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { ReactElement } from 'react';
 
 const ROWS = [
   {
@@ -31,9 +38,6 @@ const ROWS = [
 vi.mock('@/features/heldOrders/hooks/useHeldOrdersQuery', () => ({
   useHeldOrdersQuery: () => ({ data: ROWS, isLoading: false }),
 }));
-vi.mock('@/features/heldOrders/hooks/useRestoreHeldOrder', () => ({
-  useRestoreHeldOrder: () => ({ mutateAsync: vi.fn(), isPending: false }),
-}));
 vi.mock('@/features/heldOrders/hooks/useDiscardHeldOrder', () => ({
   useDiscardHeldOrder: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
@@ -52,6 +56,13 @@ function expectedTime(iso: string): string {
   return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
+// ADR-022 déc. 4 — le bouton Ardoise était conditionné au statut
+// `pending_payment` ; la voie brouillon ayant disparu, il est rendu sur chaque
+// ligne et réclame un QueryClient. Le harnais de ce test n'en fournissait pas.
+function wrap(node: ReactElement) {
+  return <QueryClientProvider client={new QueryClient()}>{node}</QueryClientProvider>;
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   useCartStore.setState({
@@ -61,7 +72,7 @@ beforeEach(() => {
 
 describe('P2-3 — held order label', () => {
   it('shows "Held {time} · Table N" instead of the raw HELD-<uuid> number', () => {
-    render(<HeldOrdersModal open onClose={vi.fn()} />);
+    render(wrap(<HeldOrdersModal open onClose={vi.fn()} />));
 
     const label = screen.getByText(`Held ${expectedTime(ROWS[0]!.created_at)} · Table 5`);
     expect(label).toBeInTheDocument();
@@ -72,7 +83,7 @@ describe('P2-3 — held order label', () => {
   });
 
   it('falls back to "No table" when the held order has no table', () => {
-    render(<HeldOrdersModal open onClose={vi.fn()} />);
+    render(wrap(<HeldOrdersModal open onClose={vi.fn()} />));
 
     const label = screen.getByText(`Held ${expectedTime(ROWS[1]!.created_at)} · No table`);
     expect(label).toBeInTheDocument();

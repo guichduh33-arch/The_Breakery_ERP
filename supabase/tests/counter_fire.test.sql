@@ -1,5 +1,5 @@
 -- supabase/tests/counter_fire.test.sql
--- S43 Wave C (P0-3) — fire_counter_order_v5 : create / replay / append / P0002 / anon revoke.
+-- S43 Wave C (P0-3) — fire_counter_order_v6 : create / replay / append / P0002 / anon revoke.
 -- Exécuter via MCP execute_sql (BEGIN..ROLLBACK). Pattern jwt-claims S37 (order_discount_gate) :
 -- caller = un VRAI user_profiles avec pos.sale.create, auth.uid() simulé via request.jwt.claims.
 BEGIN;
@@ -28,12 +28,21 @@ BEGIN
       VALUES (v_prof, 0, 'open') RETURNING id INTO v_sess;
   END IF;
 
-  SELECT id INTO v_prod FROM products WHERE sku = 'BEV-AMER' AND deleted_at IS NULL LIMIT 1;
+  -- ADR-022 dec. 1 : la garde de vendabilite est active sur cette RPC, le fixture doit choisir un produit vendable de facon deterministe.
+  SELECT p.id INTO v_prod FROM products p
+   WHERE p.sku = 'BEV-AMER'
+     AND p.deleted_at IS NULL AND p.parent_product_id IS NULL AND p.is_active = true
+     AND p.product_type <> 'combo'
+     AND NOT EXISTS (SELECT 1 FROM products c WHERE c.parent_product_id = p.id AND c.is_active AND c.deleted_at IS NULL)
+   LIMIT 1;
   IF v_prod IS NULL THEN
-    SELECT id INTO v_prod FROM products
-     WHERE deleted_at IS NULL AND is_active = true AND parent_product_id IS NULL
+    SELECT p.id INTO v_prod FROM products p
+     WHERE p.deleted_at IS NULL AND p.parent_product_id IS NULL AND p.is_active = true
+       AND p.product_type <> 'combo'
+       AND NOT EXISTS (SELECT 1 FROM products c WHERE c.parent_product_id = p.id AND c.is_active AND c.deleted_at IS NULL)
      LIMIT 1;
   END IF;
+  IF v_prod IS NULL THEN RAISE EXCEPTION 'fixture: aucun produit vendable'; END IF;
 
   -- S44 P0-C(3) : autorisateur valide (sales.discount) et non-autorisé (sans).
   DECLARE v_mgr UUID; v_cashier UUID;
@@ -51,7 +60,7 @@ END $$;
 
 -- T1 : create — un fire crée un ordre pending_payment created_via='pos' avec items locked.
 SELECT lives_ok($$
-  SELECT fire_counter_order_v5(
+  SELECT fire_counter_order_v6(
     '11111111-1111-1111-1111-111111111111'::uuid,
     (SELECT session_id FROM _fx),
     jsonb_build_array(jsonb_build_object(
@@ -78,7 +87,7 @@ SELECT is(
 
 -- T4 : replay même client_uuid → même ordre, flag idempotent_replay, pas de doublon.
 SELECT is(
-  ((SELECT fire_counter_order_v5(
+  ((SELECT fire_counter_order_v6(
     '11111111-1111-1111-1111-111111111111'::uuid,
     (SELECT session_id FROM _fx),
     jsonb_build_array(jsonb_build_object(
@@ -88,7 +97,7 @@ SELECT is(
 
 -- T5 : append (nouveau client_uuid, p_order_id du fire T1) ajoute un item au même ordre.
 SELECT lives_ok($$
-  SELECT fire_counter_order_v5(
+  SELECT fire_counter_order_v6(
     '22222222-2222-2222-2222-222222222222'::uuid,
     (SELECT session_id FROM _fx),
     jsonb_build_array(jsonb_build_object(
@@ -104,7 +113,7 @@ SELECT is(
 
 -- T6 : produit inconnu = erreur franche P0002 (pas de silent skip, DEV-S25-1.A-03).
 SELECT throws_ok($$
-  SELECT fire_counter_order_v5(
+  SELECT fire_counter_order_v6(
     '33333333-3333-3333-3333-333333333333'::uuid,
     (SELECT session_id FROM _fx),
     jsonb_build_array(jsonb_build_object(
@@ -113,13 +122,13 @@ $$, 'P0002', NULL, 'T6: unknown product raises P0002');
 
 -- T7 : anon n'a pas EXECUTE (REVOKE pair canonique S25).
 SELECT is(
-  has_function_privilege('anon', 'public.fire_counter_order_v5(uuid,uuid,jsonb,uuid,text,order_type,uuid)', 'EXECUTE'),
+  has_function_privilege('anon', 'public.fire_counter_order_v6(uuid,uuid,jsonb,uuid,text,order_type,uuid,boolean)', 'EXECUTE'),
   false, 'T7: anon revoked');
 
 -- T8 : clamp money-path (corrective _013) — discount > brut est clampé au brut,
 -- line_total ne devient jamais négatif (pay_existing_order_v7 encaisse SUM(line_total)).
 SELECT lives_ok($$
-  SELECT fire_counter_order_v5(
+  SELECT fire_counter_order_v6(
     '44444444-4444-4444-4444-444444444444'::uuid,
     (SELECT session_id FROM _fx),
     jsonb_build_array(jsonb_build_object(
@@ -163,7 +172,7 @@ SELECT ok(
 DO $$ DECLARE v_msg TEXT := '';
 BEGIN
   BEGIN
-    PERFORM fire_counter_order_v5(
+    PERFORM fire_counter_order_v6(
       '60000000-0000-0000-0000-000000000010'::uuid, (SELECT session_id FROM _fx),
       jsonb_build_array(jsonb_build_object('product_id', (SELECT product_id FROM _fx),
         'quantity', 1, 'unit_price', 35000, 'modifiers', '[]'::jsonb, 'discount_amount', 5000)),
@@ -180,7 +189,7 @@ BEGIN
     PERFORM set_config('breakery.t11', 'true', true);  -- pas de profil sans perm dans le seed : skip-as-pass
   ELSE
     BEGIN
-      PERFORM fire_counter_order_v5(
+      PERFORM fire_counter_order_v6(
         '60000000-0000-0000-0000-000000000011'::uuid, (SELECT session_id FROM _fx),
         jsonb_build_array(jsonb_build_object('product_id', (SELECT product_id FROM _fx),
           'quantity', 1, 'unit_price', 35000, 'modifiers', '[]'::jsonb, 'discount_amount', 5000)),
@@ -194,21 +203,23 @@ SELECT ok(current_setting('breakery.t11')::boolean, 'T11: unauthorized authorize
 -- T12 : autorisateur MANAGER ⇒ succès, discount_amount=5000 + audit order.discount_applied fire_v2.
 DO $$ DECLARE v_oid UUID; v_disc INT; v_au INT;
 BEGIN
-  PERFORM fire_counter_order_v5(
+  PERFORM fire_counter_order_v6(
     '60000000-0000-0000-0000-000000000012'::uuid, (SELECT session_id FROM _fx),
     jsonb_build_array(jsonb_build_object('product_id', (SELECT product_id FROM _fx),
       'quantity', 1, 'unit_price', 35000, 'modifiers', '[]'::jsonb, 'discount_amount', 5000)),
     NULL, 'T-12', 'take_out'::order_type, (SELECT mgr_id FROM _fx));
   SELECT order_id INTO v_oid FROM counter_fire_idempotency_keys WHERE client_uuid='60000000-0000-0000-0000-000000000012';
   SELECT oi.discount_amount::int INTO v_disc FROM order_items oi WHERE oi.order_id=v_oid;
-  SELECT count(*) INTO v_au FROM audit_logs WHERE entity_id=v_oid AND action='order.discount_applied' AND metadata->>'rpc_version'='fire_v4';
+  -- ADR-022 : v5 écrivait encore 'fire_v4' dans la métadonnée d'audit, résidu
+  -- figé d'un bump antérieur. v6 y écrit sa propre version ; l'assertion suit.
+  SELECT count(*) INTO v_au FROM audit_logs WHERE entity_id=v_oid AND action='order.discount_applied' AND metadata->>'rpc_version'='fire_v6';
   PERFORM set_config('breakery.t12', (v_disc=5000 AND v_au=1)::text, true);
 END $$;
 SELECT ok(current_setting('breakery.t12')::boolean, 'T12: authorized line discount applied + audited');
 
 -- T13 : chemin nominal sans remise, autorisateur NULL ⇒ succès.
 SELECT lives_ok($$
-  SELECT fire_counter_order_v5(
+  SELECT fire_counter_order_v6(
     '60000000-0000-0000-0000-000000000013'::uuid, (SELECT session_id FROM _fx),
     jsonb_build_array(jsonb_build_object('product_id', (SELECT product_id FROM _fx),
       'quantity', 1, 'unit_price', 35000, 'modifiers', '[]'::jsonb)),

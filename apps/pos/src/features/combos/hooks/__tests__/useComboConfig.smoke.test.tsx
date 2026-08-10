@@ -19,9 +19,12 @@ import type { ReactNode } from 'react';
 const singleMock = vi.fn();
 
 // ADR-017 — le hook fait un SECOND aller-retour vers product_modifiers pour
-// attacher à chaque option les groupes de modificateurs de son composant. Ce
-// mock répond aux deux formes de chaîne : `products` termine par .single(),
-// `product_modifiers` par .or().eq().is().
+// attacher à chaque option les groupes de modificateurs de son composant.
+// ADR-022 déc. 3.2 — et un TROISIÈME vers products, pour savoir lesquels des
+// composants sont parents d'un groupe de variantes (donc non vendables).
+// Ce mock répond aux trois formes de chaîne : `products` par id termine par
+// .single(), `product_modifiers` par .or().eq().is(), la sonde de parents par
+// .in().eq().is().
 vi.mock('@/lib/supabase', () => ({
   supabase: {
     from: (table: string) => ({
@@ -36,6 +39,14 @@ vi.mock('@/lib/supabase', () => ({
           eq: (_c: string, _v: unknown) => ({
             is: (_c2: string, _v2: unknown): Promise<{ data: unknown[]; error: null }> =>
               Promise.resolve({ data: table === 'product_modifiers' ? [] : [], error: null }),
+          }),
+        }),
+        // Sonde de parents : aucun composant du fixture n'a d'enfant vivant,
+        // donc aucun n'est un produit-parent.
+        in: (_c: string, _v: unknown) => ({
+          eq: (_c2: string, _v2: unknown) => ({
+            is: (_c3: string, _v3: unknown): Promise<{ data: unknown[]; error: null }> =>
+              Promise.resolve({ data: [], error: null }),
           }),
         }),
       }),
@@ -71,7 +82,9 @@ const RAW_COMBO_ROW = {
           surcharge: 0,
           is_default: true,
           sort_order: 0,
-          component: { name: 'Croissant' }, // scalar embed (not array)
+          // ADR-022 déc. 3.2 — le hook lit désormais is_active/deleted_at sur le
+          // composant pour écarter ce que la RPC refuserait.
+          component: { name: 'Croissant', is_active: true, deleted_at: null }, // scalar embed (not array)
         },
       ],
     },
@@ -89,14 +102,14 @@ const RAW_COMBO_ROW = {
           surcharge: 5000,
           is_default: false,
           sort_order: 1, // second option in the group
-          component: [{ name: 'Latte' }], // array embed shape
+          component: [{ name: 'Latte', is_active: true, deleted_at: null }], // array embed shape
         },
         {
           component_product_id: 'prod-amer',
           surcharge: 0,
           is_default: true,
           sort_order: 0, // first option (by sort_order)
-          component: { name: 'Americano' },
+          component: { name: 'Americano', is_active: true, deleted_at: null },
         },
       ],
     },

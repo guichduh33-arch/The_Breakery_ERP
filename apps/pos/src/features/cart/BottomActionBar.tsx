@@ -11,7 +11,7 @@
 //
 // It is a *connected* component — it reuses the existing hooks / self-contained
 // button components (no business logic is rewritten here):
-//   - SendToKitchenButton / PrintBillButton / TableSelectorButton / HoldOrderButton
+//   - SendToKitchenButton / PrintBillButton / TableSelectorButton
 //     are rendered restyled (className/variant overrides).
 //   - useApplyCartDiscount drives the cart-discount modal (+ manager PIN).
 //   - RedeemPointsModal / HeldOrdersModal are owned here.
@@ -46,7 +46,6 @@ import { usePaymentStore } from '@/stores/paymentStore';
 import { useTaxConfig } from '@/features/settings/hooks/useTaxConfig';
 import { usePOSPresets } from '@/features/settings/hooks/usePOSPresets';
 import { useHeldOrdersQuery } from '@/features/heldOrders/hooks/useHeldOrdersQuery';
-import { HoldOrderButton } from '@/features/heldOrders/components/HoldOrderButton';
 import { useHoldFiredOrder } from './hooks/useHoldFiredOrder';
 import { useApplyCartDiscount } from '@/features/discounts/hooks/useApplyCartDiscount';
 import { useVerifyManagerPin } from '@/features/discounts/hooks/useVerifyManagerPin';
@@ -149,6 +148,16 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
     (i) => !i.is_cancelled && !lockedItemIds.includes(i.id),
   );
 
+  // ADR-022 déc. 4 — « mettre en attente » n'existe plus que pour une commande
+  // ENVOYÉE en cuisine. Le bouton reste visible quand rien n'est envoyé, mais
+  // désactivé et explicite : il enseigne le nouveau parcours au lieu de
+  // disparaître sans raison.
+  const holdTitle = !hasFiredOrderOpen
+    ? 'Send the order to the kitchen first, then hold it'
+    : hasUnfiredItems
+      ? 'Send the new items to the kitchen first'
+      : '';
+
   async function handleReholdFired(): Promise<void> {
     if (!pickedUpOrderId) return;
     try {
@@ -229,22 +238,23 @@ export function BottomActionBar({ onOpenCustomerSearch }: BottomActionBarProps):
 
         {/* HOLD — first-class (owner decision 2026-07-10: a cashier who reopens
             an order to check it must be able to re-park it without hunting a
-            submenu). Reopened FIRED order → hold_fired_order_v1; fresh cart →
-            draft hold via HoldOrderButton. */}
-        {hasFiredOrderOpen ? (
-          <button
-            type="button"
-            className={GHOST_BTN}
-            disabled={hasUnfiredItems || holdFired.isPending}
-            {...(hasUnfiredItems ? { title: 'Send the new items to the kitchen first' } : {})}
-            onClick={() => { void handleReholdFired(); }}
-          >
-            <PauseCircle className="h-4 w-4 text-gold" aria-hidden />
-            <span>Hold</span>
-          </button>
-        ) : (
-          <HoldOrderButton variant="ghost" className={GHOST_BTN} />
-        )}
+            submenu).
+            ADR-022 déc. 4 — la branche « panier neuf → draft HELD-<uuid> » est
+            supprimée avec la famille hold_order : un objet qui porte un numéro
+            de commande sans en être une polluait rapports, journal, listes et
+            rapprochement de caisse. Une commande n'existe qu'à partir du moment
+            où elle part en cuisine ou qu'elle est payée ; le geste passe donc
+            par l'envoi en cuisine, puis hold_fired_order_v1. */}
+        <button
+          type="button"
+          className={GHOST_BTN}
+          disabled={!hasFiredOrderOpen || hasUnfiredItems || holdFired.isPending}
+          {...(holdTitle ? { title: holdTitle } : {})}
+          onClick={() => { void handleReholdFired(); }}
+        >
+          <PauseCircle className="h-4 w-4 text-gold" aria-hidden />
+          <span>Hold</span>
+        </button>
 
         <button type="button" className={GHOST_BTN} onClick={() => onOpenCustomerSearch?.()}>
           {attachedCustomer ? (

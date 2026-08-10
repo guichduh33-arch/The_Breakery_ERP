@@ -166,7 +166,7 @@ BEGIN
      WHERE up.auth_user_id = current_setting('adr020d.actor')::uuid
     RETURNING id INTO v_session;
 
-  v_env := fire_counter_order_v5(
+  v_env := fire_counter_order_v6(
     p_client_uuid  := gen_random_uuid(),
     p_session_id   := v_session,
     p_items        := jsonb_build_array(jsonb_build_object(

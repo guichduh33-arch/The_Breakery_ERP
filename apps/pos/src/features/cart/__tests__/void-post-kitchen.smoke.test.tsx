@@ -4,7 +4,7 @@
 // Session 37 — B4: void routing after kitchen send.
 //
 // S43 P0-3 update: "send to kitchen" now PERSISTS counter orders via
-// fire_counter_order_v5 and sets cartStore.pickedUpOrderId — a fired counter
+// fire_counter_order_v6 and sets cartStore.pickedUpOrderId — a fired counter
 // order therefore has a server orders row, exactly like a tablet pickup
 // (create_tablet_order_v2). Void routing keys solely on pickedUpOrderId.
 //
@@ -195,9 +195,16 @@ describe('BottomActionBar — Hold gating on fired orders (Spec A re-hold)', () 
     expect(hold).toHaveAttribute('title', 'Send the new items to the kitchen first');
   });
 
-  it('(c) never-fired cart: Hold stays enabled (draft hold)', () => {
+  // ADR-022 déc. 4 — inversion assumée de cette assertion. Le « draft hold »
+  // qu'elle protégeait a disparu : une commande n'existe qu'à partir du moment
+  // où elle part en cuisine ou qu'elle est payée, et on ne met en attente
+  // qu'une commande envoyée. Le bouton reste visible mais désactivé, avec un
+  // titre qui enseigne le nouveau parcours plutôt que de disparaître.
+  it('(c) never-fired cart: Hold est désactivé — le hold passe par l’envoi en cuisine', () => {
     render(wrapper(<BottomActionBar />));
 
-    expect(screen.getByRole('button', { name: /^hold$/i })).toBeEnabled();
+    const hold = screen.getByRole('button', { name: /^hold$/i });
+    expect(hold).toBeDisabled();
+    expect(hold).toHaveAttribute('title', 'Send the order to the kitchen first, then hold it');
   });
 });
