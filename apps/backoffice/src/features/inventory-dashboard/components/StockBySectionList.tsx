@@ -2,6 +2,7 @@
 // Session 13 / Phase 2.D — per-section stock breakdown card.
 
 import type { ProductDashboardData } from '../hooks/useProductDashboard.js';
+import { formatIdr } from '@breakery/utils';
 
 export function StockBySectionList({ rows }: { rows: ProductDashboardData['stock_by_section'] }) {
   const total = rows.reduce((s, r) => s + Number(r.quantity), 0);
@@ -35,7 +36,7 @@ export function StockBySectionList({ rows }: { rows: ProductDashboardData['stock
               <tr key={r.section_id} className="border-t border-border-subtle">
                 <td className="py-2 px-3">{r.section_name}</td>
                 <td className="py-2 px-3 text-right font-mono">{Number(r.quantity)} {r.unit}</td>
-                <td className="py-2 px-3 text-right font-mono">{Number(r.value_at_cost).toFixed(0)}</td>
+                <td className="py-2 px-3 text-right font-mono">{formatIdr(Number(r.value_at_cost))}</td>
               </tr>
             ))}
           </tbody>
@@ -43,7 +44,7 @@ export function StockBySectionList({ rows }: { rows: ProductDashboardData['stock
             <tr>
               <td className="py-2 px-3 font-medium">Total</td>
               <td className="py-2 px-3 text-right font-mono font-medium">{total.toFixed(3)}</td>
-              <td className="py-2 px-3 text-right font-mono font-medium">{totalValue.toFixed(0)}</td>
+              <td className="py-2 px-3 text-right font-mono font-medium">{formatIdr(totalValue)}</td>
             </tr>
           </tfoot>
         </table>

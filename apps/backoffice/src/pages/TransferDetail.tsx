@@ -18,6 +18,7 @@ import { TransferStatusBadge } from '@/features/inventory-transfers/components/T
 import { TransferReceiveModal } from '@/features/inventory-transfers/components/TransferReceiveModal.js';
 import { TransferCancelConfirm } from '@/features/inventory-transfers/components/TransferCancelConfirm.js';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
+import { formatDateTimeShortWita } from '@breakery/utils';
 
 type ModalKind = 'none' | 'receive' | 'cancel';
 
@@ -89,13 +90,13 @@ export default function TransferDetailPage(): JSX.Element {
         </div>
         <div className="space-y-1">
           <dt className="text-xs font-bold uppercase tracking-widest text-text-muted">Created</dt>
-          <dd className="text-sm font-mono">{new Date(transfer.created_at).toLocaleString()}</dd>
+          <dd className="text-sm font-mono">{formatDateTimeShortWita(transfer.created_at)}</dd>
         </div>
         <div className="space-y-1">
           <dt className="text-xs font-bold uppercase tracking-widest text-text-muted">Received</dt>
           <dd className="text-sm font-mono">
             {transfer.received_at !== null
-              ? new Date(transfer.received_at).toLocaleString()
+              ? formatDateTimeShortWita(transfer.received_at)
               : '—'}
           </dd>
         </div>

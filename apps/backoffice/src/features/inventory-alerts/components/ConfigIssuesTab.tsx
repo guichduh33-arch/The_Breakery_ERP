@@ -1,5 +1,5 @@
 // apps/backoffice/src/features/inventory-alerts/components/ConfigIssuesTab.tsx
-// Audit 2026-07-08 — onglet « Config produit » de AlertsPage.
+// Audit 2026-07-08 — onglet « Product config » de AlertsPage.
 // Liste les produits dont track_inventory/deduct_stock + recette ne déduisent
 // pas le stock attendu à la vente.
 //
@@ -19,26 +19,30 @@ import { ProductCell } from './ProductCell.js';
 
 const ISSUE_LABEL: Record<StockConfigIssueType, { title: string; hint: string }> = {
   negative_stock: {
-    title: 'Stock négatif',
-    hint: 'Produit suivi vendu sans stock — à recevoir (achat) ou produire.',
+    title: 'Negative stock',
+    hint: 'Tracked product sold with no stock — receive it (purchase) or produce it.',
   },
   sale_deduct_no_recipe: {
-    title: 'Sans recette',
-    hint: 'Fait-à-la-commande (non suivi) mais aucune recette → ne déduit rien à la vente.',
+    title: 'No recipe',
+    hint: 'Made to order (untracked) but has no recipe → deducts nothing on sale.',
   },
   orphan_recipe: {
-    title: 'Recette orpheline',
-    hint: 'Recette définie mais « Deduct stock » désactivé → jamais consommée.',
+    title: 'Orphan recipe',
+    hint: 'Recipe defined but “Deduct stock” is off → never consumed.',
   },
   tracked_recipe_at_prod: {
-    title: 'Recette à la production',
-    hint: 'Produit suivi : la recette ne déduit qu’à la production (record_production), pas à la vente.',
+    title: 'Recipe at production',
+    hint: 'Tracked product: the recipe only deducts at production (record_production), not on sale.',
   },
 };
 
 function severityClass(sev: StockConfigIssueRow['severity']): string {
   if (sev === 'critical') return 'bg-danger-soft text-danger';
-  if (sev === 'warning') return 'bg-gold-soft text-gold';
+  // `warning` prenait l'or (`bg-gold-soft text-gold`) là où ses deux voisines
+  // prennent leur token sémantique. L'or est une encre de sens dans le
+  // back-office, il ne remplit pas une pastille de sévérité (DESIGN.md,
+  // Ink-Not-Gold) — et `warning-soft` existe pour ce rôle exact.
+  if (sev === 'warning') return 'bg-warning-soft text-warning';
   return 'bg-surface-4 text-text-secondary';
 }
 
@@ -52,12 +56,12 @@ function flag(label: string, on: boolean): JSX.Element {
 const COLUMNS: DataTableColumn<StockConfigIssueRow>[] = [
   {
     id: 'product',
-    header: 'Produit',
+    header: 'Product',
     render: (r) => <ProductCell productId={r.product_id} name={r.name} secondary={r.category_name ?? r.sku} />,
   },
   {
     id: 'issue',
-    header: 'Problème',
+    header: 'Issue',
     render: (r) => {
       const label = ISSUE_LABEL[r.issue_type];
       return (
@@ -85,7 +89,7 @@ const COLUMNS: DataTableColumn<StockConfigIssueRow>[] = [
   },
   {
     id: 'recipe_lines',
-    header: 'Recette',
+    header: 'Recipe',
     align: 'right',
     render: (r) => <span className="font-data text-[12.5px]">{r.recipe_lines}</span>,
   },
@@ -117,12 +121,12 @@ export function ConfigIssuesTab(): JSX.Element {
       getRowKey={(r) => `${r.product_id}-${r.issue_type}`}
       isLoading={q.isLoading}
       density="compact"
-      emptyTitle="Aucun produit mal configuré"
-      emptyDescription="Suivi de stock, déduction et recettes concordent partout."
+      emptyTitle="No misconfigured product"
+      emptyDescription="Stock tracking, deduction and recipes agree everywhere."
       data-testid="config-issues-table"
       footer={
         <span className="font-data text-[11px] text-text-muted tabular-nums">
-          {rows.length} {rows.length === 1 ? 'produit' : 'produits'}
+          {rows.length} {rows.length === 1 ? 'product' : 'products'}
         </span>
       }
     />

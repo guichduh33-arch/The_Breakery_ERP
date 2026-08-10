@@ -6,6 +6,7 @@
 
 import { useMemo, useState, type JSX } from 'react';
 import { ChevronRight, ChevronsUpDown, ChevronDown, ChevronUp } from 'lucide-react';
+import { formatIdr, formatDateTimeShortWita } from '@breakery/utils';
 import type { StockLedgerRow } from '../stockLedgerColumns.js';
 
 type SortKey = 'date' | 'type' | 'product';
@@ -18,12 +19,19 @@ export interface StockLedgerTableProps {
   rowCap?:    number;
 }
 
-const qtyFmt = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 3 });
-const amtFmt = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 2 });
+// Ce tableau était le seul du back-office à formater en `id-ID` : il rendait
+// « 1.234,56 » là où tout le reste rend « 1,234.56 ». Comparer un montant du
+// grand livre à celui d'un autre écran demandait de changer de convention de
+// lecture en cours de route.
+const qtyFmt = new Intl.NumberFormat('en-US', { maximumFractionDigits: 3 });
 
 function fmtQty(n: number): string    { return qtyFmt.format(n); }
-function fmtAmt(n: number): string    { return amtFmt.format(n); }
-function fmtTime(iso: string): string { return iso.slice(0, 19).replace('T', ' '); }
+// `price` et `movement_amount` sont de l'argent : ils prennent la source unique,
+// qui porte la devise et refuse les décimales — le rupiah n'en a pas.
+function fmtAmt(n: number): string    { return formatIdr(n); }
+// L'ISO était tronquée à la main, donc rendue en UTC. Le jour et l'heure métier
+// sont ceux d'Asia/Makassar.
+function fmtTime(iso: string): string { return formatDateTimeShortWita(iso); }
 
 // Slim main columns — keep the page readable. Detail goes in the expandable panel.
 // `sort` marks the columns the user can order by (date / type / product).
@@ -194,11 +202,14 @@ export function StockLedgerTable({ rows, truncated, isLoading, rowCap = 5000 }: 
                   <td className="px-2 py-2" />
                   <td colSpan={HEADERS.length} className="px-2 py-2">
                     <div className="grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-3 lg:grid-cols-5">
-                      <DetailField label="created_time" value={fmtTime(r.created_time)} />
-                      <DetailField label="user"         value={r.created_by_name ?? ''} />
-                      <DetailField label="origin"       value={r.origin} />
-                      <DetailField label="ref_no"       value={r.ref_no} />
-                      <DetailField label="product_group" value={r.product_group ?? ''} />
+                      {/* Ces libellés étaient les noms des colonnes SQL. Le
+                          fichier explique plus haut pourquoi les EN-TÊTES ont été
+                          humanisés ; le panneau de détail était resté en arrière. */}
+                      <DetailField label="Recorded at"   value={fmtTime(r.created_time)} />
+                      <DetailField label="User"          value={r.created_by_name ?? ''} />
+                      <DetailField label="Origin"        value={r.origin} />
+                      <DetailField label="Reference"     value={r.ref_no} />
+                      <DetailField label="Product group" value={r.product_group ?? ''} />
                     </div>
                   </td>
                 </tr>

@@ -23,6 +23,7 @@ import {
   type StockMovementRow,
 } from '../hooks/useStockMovements.js';
 import type { StockLevelRow } from '../hooks/useStockLevels.js';
+import { formatDateTimeShortWita } from '@breakery/utils';
 
 export interface MovementHistoryDrawerProps {
   product: StockLevelRow | undefined;
@@ -159,7 +160,7 @@ export function MovementHistoryDrawer({ product, onClose }: MovementHistoryDrawe
                       return (
                         <tr key={row.id} className="border-t border-border-subtle">
                           <td className="px-2 py-1 text-text-secondary">
-                            {new Date(row.created_at).toLocaleString()}
+                            {formatDateTimeShortWita(row.created_at)}
                           </td>
                           <td className="px-2 py-1">
                             <Badge variant={TYPE_VARIANT[row.movement_type]} className="text-[10px]">
