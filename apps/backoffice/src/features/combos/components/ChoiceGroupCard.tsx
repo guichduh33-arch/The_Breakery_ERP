@@ -4,7 +4,7 @@
 // Contains group metadata + list of ComboOptionRows + "Add Product" picker.
 // Note: @breakery/ui has no RadioGroup — uses native <select> (kept for form uniformity).
 
-import { useState, type JSX } from 'react';
+import { useEffect, useRef, useState, type JSX } from 'react';
 import { ChevronDown, Plus, Trash2 } from 'lucide-react';
 import { ComboOptionRow, type OptionDraft } from './ComboOptionRow.js';
 import { ComboProductPicker } from './ComboProductPicker.js';
@@ -30,6 +30,25 @@ interface Props {
 export function ChoiceGroupCard({ group, onChange, onRemove }: Props): JSX.Element {
   const [showPicker, setShowPicker] = useState(false);
 
+  // The picker replaces the "Add Product" button rather than layering over it,
+  // so closing it unmounts whatever held focus. Hand focus back to the button
+  // once it remounts, otherwise a keyboard user is dropped at the top of the
+  // document.
+  const addButtonRef = useRef<HTMLButtonElement>(null);
+  const shouldRestoreFocus = useRef(false);
+
+  function closePicker() {
+    shouldRestoreFocus.current = true;
+    setShowPicker(false);
+  }
+
+  useEffect(() => {
+    if (!showPicker && shouldRestoreFocus.current) {
+      shouldRestoreFocus.current = false;
+      addButtonRef.current?.focus();
+    }
+  }, [showPicker]);
+
   function updateField<K extends keyof GroupDraft>(key: K, value: GroupDraft[K]) {
     onChange({ ...group, [key]: value });
   }
@@ -39,7 +58,7 @@ export function ChoiceGroupCard({ group, onChange, onRemove }: Props): JSX.Eleme
       (o) => o.component_product_id === product.id,
     );
     if (alreadyExists) {
-      setShowPicker(false);
+      closePicker();
       return;
     }
     const isFirstOption = group.options.length === 0;
@@ -51,7 +70,7 @@ export function ChoiceGroupCard({ group, onChange, onRemove }: Props): JSX.Eleme
       sort_order: group.options.length,
     };
     onChange({ ...group, options: [...group.options, newOption] });
-    setShowPicker(false);
+    closePicker();
   }
 
   function handleSetDefault(idx: number) {
@@ -168,8 +187,11 @@ export function ChoiceGroupCard({ group, onChange, onRemove }: Props): JSX.Eleme
         {group.group_type === 'multi' && (
           <>
             <div className="flex items-center gap-1.5">
-              <span className="text-xs text-text-secondary">Min</span>
+              <label htmlFor={`group-min-${group.id}`} className="text-xs text-text-secondary">
+                Min
+              </label>
               <input
+                id={`group-min-${group.id}`}
                 type="number"
                 min={0}
                 max={group.max_select}
@@ -180,8 +202,11 @@ export function ChoiceGroupCard({ group, onChange, onRemove }: Props): JSX.Eleme
               />
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="text-xs text-text-secondary">Max</span>
+              <label htmlFor={`group-max-${group.id}`} className="text-xs text-text-secondary">
+                Max
+              </label>
               <input
+                id={`group-max-${group.id}`}
                 type="number"
                 min={1}
                 value={group.max_select}
@@ -217,10 +242,11 @@ export function ChoiceGroupCard({ group, onChange, onRemove }: Props): JSX.Eleme
         <ComboProductPicker
           excludeIds={existingIds}
           onPick={handlePickProduct}
-          onClose={() => { setShowPicker(false); }}
+          onClose={closePicker}
         />
       ) : (
         <button
+          ref={addButtonRef}
           type="button"
           onClick={() => { setShowPicker(true); }}
           className="flex items-center gap-1.5 text-xs text-gold hover:text-gold-hover transition-colors"

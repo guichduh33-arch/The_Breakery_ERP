@@ -1,7 +1,7 @@
 // apps/backoffice/src/pages/categories/CategoriesPage.tsx
 // Session 27b — Categories management page with DnD reorder + create/edit.
 
-import { useEffect, useState, type JSX } from 'react';
+import { useEffect, useRef, useState, type JSX } from 'react';
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor,
   useSensor, useSensors, type DragEndEvent,
@@ -39,6 +39,26 @@ export default function CategoriesPage(): JSX.Element {
   useEffect(() => {
     if (cats.data) setOrder(cats.data);
   }, [cats.data]);
+
+  // The three dialogs are mounted conditionally, so the whole subtree — Radix
+  // focus scope included — is torn down in one commit and its focus return
+  // never runs. Remember the trigger ourselves and restore it once the dialog
+  // is gone, or Escape drops a keyboard user at the top of the document.
+  const triggerRef = useRef<HTMLElement | null>(null);
+  const dialogOpen = showCreate || editing !== null || deleting !== null;
+
+  function rememberTrigger() {
+    triggerRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  }
+
+  useEffect(() => {
+    if (dialogOpen) return;
+    const trigger = triggerRef.current;
+    if (trigger === null) return;
+    triggerRef.current = null;
+    trigger.focus();
+  }, [dialogOpen]);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -84,7 +104,7 @@ export default function CategoriesPage(): JSX.Element {
         </div>
         {canCreate && (
           <Button
-            onClick={() => setShowCreate(true)}
+            onClick={() => { rememberTrigger(); setShowCreate(true); }}
             data-testid="categories-new-btn"
             className="inline-flex items-center gap-2"
           >
@@ -130,8 +150,8 @@ export default function CategoriesPage(): JSX.Element {
                       category={c}
                       canEdit={canEdit}
                       canDelete={canDelete}
-                      onEdit={(cat) => setEditing(cat)}
-                      onDelete={(cat) => setDeleting(cat)}
+                      onEdit={(cat) => { rememberTrigger(); setEditing(cat); }}
+                      onDelete={(cat) => { rememberTrigger(); setDeleting(cat); }}
                       onToggleActive={handleToggleActive}
                       togglePending={updateCat.isPending}
                     />

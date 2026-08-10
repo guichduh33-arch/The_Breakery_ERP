@@ -29,6 +29,12 @@ export function ComboProductPicker({ excludeIds = [], onPick, onClose }: Props):
     <div
       className="rounded-lg border border-border-subtle bg-bg-elevated shadow-lg p-3 flex flex-col gap-2"
       data-testid="combo-product-picker"
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') {
+          e.stopPropagation();
+          onClose();
+        }
+      }}
     >
       <div className="flex items-center justify-between gap-2">
         <span className="text-xs font-semibold uppercase tracking-wider text-text-secondary">

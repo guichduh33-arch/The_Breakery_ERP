@@ -5,7 +5,7 @@
 // min→max bundle range, Save% badge (from domain savingsPct).
 
 import { Box } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import type { JSX } from 'react';
 import { Card, CardContent, Currency } from '@breakery/ui';
 import { savingsPct } from '@breakery/domain';
@@ -16,23 +16,30 @@ interface Props {
   onEdit?: () => void;
 }
 
-export function ComboCard({ combo, onEdit }: Props): JSX.Element {
-  const navigate = useNavigate();
-  const savings = savingsPct(combo.value_price, combo.retail_price);
+// The whole card is a mouse target, but the *keyboard* target is the title
+// alone: a <button> wrapping the card would put flow content (h3, img) inside
+// phrasing-only content. The stretched pseudo-element keeps the click surface
+// without lying about the DOM, and the combo name becomes the accessible name.
+const TITLE_LINK =
+  "text-left after:absolute after:inset-0 after:content-[''] hover:text-gold focus-visible:outline-none";
 
-  function handleClick() {
-    if (onEdit !== undefined) {
-      onEdit();
-    } else {
-      void navigate(`/backoffice/products/combos/${combo.id}/edit`);
-    }
-  }
+// The focus ring lives on the card, not on the title text, so the whole object
+// is shown as the target. `focus-within:outline` would be the idiomatic
+// spelling for the style, but tailwind-merge reads it as Tailwind v4 — where a
+// bare `outline` is a *width* — and drops it as a duplicate of `outline-2`,
+// leaving a ring with a width and a colour but no style. The arbitrary property
+// sits in its own merge group and survives.
+const CARD =
+  'relative overflow-hidden transition-colors hover:border-gold ' +
+  'focus-within:[outline-style:solid] focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-gold';
+
+export function ComboCard({ combo, onEdit }: Props): JSX.Element {
+  const savings = savingsPct(combo.value_price, combo.retail_price);
 
   return (
     <Card
       variant="default"
-      className="overflow-hidden cursor-pointer hover:border-gold/60 transition-colors"
-      onClick={handleClick}
+      className={CARD}
       data-testid={`combo-card-${combo.id}`}
     >
       <div className="relative aspect-[16/9] w-full overflow-hidden bg-bg-overlay">
@@ -47,7 +54,17 @@ export function ComboCard({ combo, onEdit }: Props): JSX.Element {
 
       <CardContent className="space-y-4 p-5">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="font-display text-xl text-text-primary">{combo.name}</h3>
+          <h3 className="text-xl font-semibold text-text-primary">
+            {onEdit === undefined ? (
+              <Link to={`/backoffice/products/combos/${combo.id}/edit`} className={TITLE_LINK}>
+                {combo.name}
+              </Link>
+            ) : (
+              <button type="button" onClick={onEdit} className={TITLE_LINK}>
+                {combo.name}
+              </button>
+            )}
+          </h3>
           <span
             className={
               combo.is_active
