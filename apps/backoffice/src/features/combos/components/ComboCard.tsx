@@ -24,14 +24,10 @@ const TITLE_LINK =
   "text-left after:absolute after:inset-0 after:content-[''] hover:text-gold focus-visible:outline-none";
 
 // The focus ring lives on the card, not on the title text, so the whole object
-// is shown as the target. `focus-within:outline` would be the idiomatic
-// spelling for the style, but tailwind-merge reads it as Tailwind v4 — where a
-// bare `outline` is a *width* — and drops it as a duplicate of `outline-2`,
-// leaving a ring with a width and a colour but no style. The arbitrary property
-// sits in its own merge group and survives.
+// is shown as the target.
 const CARD =
   'relative overflow-hidden transition-colors hover:border-gold ' +
-  'focus-within:[outline-style:solid] focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-gold';
+  'focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-gold';
 
 export function ComboCard({ combo, onEdit }: Props): JSX.Element {
   const savings = savingsPct(combo.value_price, combo.retail_price);

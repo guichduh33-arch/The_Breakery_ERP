@@ -70,6 +70,16 @@ describe('ComboCard — keyboard access', () => {
     expect(card.onclick).toBeNull();
   });
 
+  it('keeps a styled focus ring on the card once the title is focused', () => {
+    renderCard();
+    // The style half of the ring used to be stripped by tailwind-merge on its
+    // way through cn(); without it the browser draws its own ring instead.
+    const card = screen.getByTestId('combo-card-cb-1');
+    expect(card.className).toContain('focus-within:outline ');
+    expect(card.className).toContain('focus-within:outline-2');
+    expect(card.className).toContain('focus-within:outline-gold');
+  });
+
   it('falls back to a real button when an onEdit handler is supplied', () => {
     const onEdit = vi.fn();
     renderCard({ onEdit });
