@@ -155,11 +155,44 @@ générique ne pourrait pas copier sans refaire le même travail :
   en quarantaine plutôt que de bloquer la file (ADR-018).
 - **La langue de l'interface est l'anglais**, aligné sur le back-office et
   confirmé le 2026-08-08. Pas de couche i18n à prévoir. Constat factuel : des
-  chaînes françaises subsistent dans le code (écran de démarrage, panneau de
-  paiement) — ce sont des défauts, pas une intention.
+  chaînes françaises subsistent dans le code — écran de démarrage, panneau de
+  paiement et **écran cuisine** (bandeau de perte de connexion, attente des
+  tickets) — ce sont des défauts, pas une intention.
 - **Périmètre volontairement exclu** : la caisse ne gère pas le catalogue, ne
   crée pas de commande B2B, ne pilote pas l'avancement cuisine, ne compose pas de
   promotion, et n'encaisse jamais à la table.
+- **Les portes de vente sont tranchées mais non livrées (ADR-022, acté le
+  2026-08-09).** À la date de cette fiche, **rien n'en est livré** : ce qui suit
+  décrit un engagement pris, pas l'état du produit. Une seule définition de
+  « vendable » vaut pour **toutes** les portes de la caisse — comptoir, salle,
+  édition d'une commande : un produit supprimé, désactivé ou parent d'un groupe
+  de variantes est refusé, sur la ligne comme sur chaque composant de combo ; le
+  stock épuisé, lui, reste toléré. Le refus vit **à l'entrée de la ligne**,
+  jamais pendant un encaissement en cours ni au rejeu de la file hors-ligne : ce
+  qui a été vendu hors ligne l'a été sous le catalogue d'alors, et un
+  durcissement postérieur n'a pas à empêcher cet argent de remonter. Deux
+  conséquences produit qui changent des parcours existants : **une commande
+  n'existe qu'à partir du moment où elle part en cuisine ou qu'elle est payée** —
+  parquer au serveur un panier non confirmé disparaît, mettre en attente passe
+  désormais par l'envoi en cuisine, et le brouillon reste en caisse ; et
+  **l'envoi en cuisine appartient au serveur, pas au poste** — aujourd'hui une
+  vente payée au comptoir n'atteint jamais l'écran de cuisine et n'existe pour la
+  production que par son ticket papier (constat daté du 2026-08-09). Les
+  commandes B2B et l'import de ventes sont explicitement hors de ce périmètre et
+  demandent chacun leur propre décision.
+- **Régime de fin de projet (ADR-021), qui gouverne l'ordre de tout travail
+  futur.** Trois chantiers passent **avant toute fonctionnalité nouvelle**, dans
+  cet ordre : le filet d'intégration continue, la vérité documentaire, puis la
+  dette d'ADR — une décision actée et non livrée est un engagement déjà pris, et
+  elle prime sur la nouveauté la plus attirante. Le bloc ci-dessus en est le cas
+  le plus lourd sur cette surface. Le gros œuvre fonctionnel vient après, par
+  paliers que le propriétaire arrête où il veut, chacun laissant le produit dans
+  un état cohérent. Trois conséquences opposables ici : la base de développement
+  ne se répare pas — on corrige le code fautif et on pose un test
+  anti-régression (déc. 2, bornée par le fait que la V3 n'a jamais encaissé en
+  réel) ; les artefacts de travail se convertissent en ADR, en fiche d'objectifs
+  ou en runbook, jamais versionnés bruts (déc. 3) ; un chantier ne se termine que
+  par des preuves **exécutées et montrées**, sur une branche dédiée (déc. 6).
 - **Décisions produit ouvertes**, à ne pas trancher par défaut d'implémentation :
   pré-autorisation carte pour le service en salle ; réservation ou pré-commande
   avec acompte ; vue dédiée des tables ouvertes ; reprise d'une commande passée

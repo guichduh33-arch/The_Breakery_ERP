@@ -25,8 +25,9 @@ Aucun n'est marginal, et une décision qui sert l'un dessert souvent l'autre.
 - **Le comptable** — n'utilise qu'un coin de l'application, mais en profondeur :
   écritures, grand livre, balance, clôture, PB1. Exige traçabilité et export.
 - **Le responsable stock / production** — réceptions, transferts, fournées,
-  opname, déclarations de perte. Travaille depuis le fournil ou la réserve,
-  potentiellement sur tablette, les mains occupées.
+  opname, déclarations de perte. Travaille depuis le fournil ou la réserve, les
+  mains occupées, mais **sur ordinateur** : le back-office n'a pas de cible
+  tablette (confirmé le 2026-08-09).
 
 Ces quatre profils passent par le même RBAC : ce que chacun voit est filtré par
 ses permissions, en cascade jusqu'à faire disparaître un domaine entier de la
@@ -78,8 +79,9 @@ pas copier sans refaire le même travail :
 
 - **Navigation à 7 domaines** (Today, Sales, Stock, Purchase, Finance, Reports,
   Admin), chacun ouvrant un panneau de colonnes, plus une palette de commandes.
-  Environ 85 destinations. Le filtrage par permission est en cascade : un lien
-  sans droit disparaît, une colonne vidée disparaît, un domaine vidé disparaît.
+  Le nombre de destinations se lit dans la configuration de navigation, il ne se
+  fige pas ici. Le filtrage par permission est en cascade : un lien sans droit
+  disparaît, une colonne vidée disparaît, un domaine vidé disparaît.
 - **Le design system est partagé et non négociable** : `@breakery/ui` fournit les
   primitifs, les tokens et les deux thèmes. Le back-office ne peut pas diverger
   seul — toute évolution de primitif se répercute sur la caisse.
@@ -94,10 +96,24 @@ pas copier sans refaire le même travail :
   péremption (le stock est suivi en quantité globale, la péremption se déclare en
   perte — décision actée, pas une limite temporaire), pas de livraison motorisée
   B2B (retrait sur place).
-- **Décision produit ouverte** : il n'existe aucun écran de gestion des rôles.
-  Accorder ou révoquer une permission passe aujourd'hui par une migration. La
-  matrice affichée est en lecture seule. Cette contrainte d'exploitation n'a
-  jamais été décidée comme telle.
+- **Régime de fin de projet (ADR-021), qui gouverne l'ordre de tout travail
+  futur.** Trois chantiers passent **avant toute fonctionnalité nouvelle**, dans
+  cet ordre : le filet d'intégration continue, la vérité documentaire, puis la
+  dette d'ADR — une décision actée et non livrée est un engagement déjà pris, et
+  elle prime sur la nouveauté la plus attirante. Le gros œuvre fonctionnel vient
+  après, par paliers que le propriétaire arrête où il veut, chacun laissant le
+  produit dans un état cohérent ; un palier ne dépend jamais du suivant. Trois
+  conséquences opposables ici : la base de développement ne se répare pas — on
+  corrige le code fautif et on pose un test anti-régression (déc. 2, bornée par
+  le fait que la V3 n'a jamais encaissé en réel) ; les artefacts de travail se
+  convertissent en ADR, en fiche d'objectifs ou en runbook, jamais versionnés
+  bruts (déc. 3) ; un chantier ne se termine que par des preuves **exécutées et
+  montrées**, sur une branche dédiée (déc. 6).
+- **Décision produit ouverte** : **attribuer un rôle à un employé** se fait bien
+  depuis l'application ; **éditer les permissions d'un rôle** ne se fait nulle
+  part. Accorder ou révoquer une permission passe aujourd'hui par une migration,
+  et la matrice affichée est en lecture seule. Cette contrainte d'exploitation
+  n'a jamais été décidée comme telle.
 
 ## Brand Commitments
 
@@ -109,18 +125,22 @@ pas copier sans refaire le même travail :
 
 ## Evidence on Hand
 
-- `docs/product/DESCRIPTION.md` — la référence produit, 25 modules, distingue
-  explicitement le livré du « à venir ».
-- `docs/objectifs/` — 20 fiches métier par module, écrites côté intention.
+- `docs/objectifs/` — les fiches métier par module, écrites côté intention.
+  **Elles font foi sur ce qui est voulu** : leur couverture fonctionnelle est la
+  cible de fin de projet (ADR-021 déc. 1).
+- `docs/product/DESCRIPTION.md` — description module par module, qui distingue
+  explicitement le livré du « à venir ». **Second backlog produit, jamais
+  réconcilié avec les fiches d'objectifs : il ne fait pas foi** (ADR-021 déc. 1).
+  À lire comme un gisement, pas comme la référence.
 - `docs/adr/` — les décisions gravées, immuables.
 - `docs/design_handoff_backoffice_shell/` — le dossier de handoff du redesign du
   shell : un prototype de référence en HTML monofichier (`Backoffice Landing.dc.html`,
   cadres 1440 px, styles en ligne, non-code de production), son README de
   spécification écran par écran, et le logo de marque. C'est la surface de
-  référence visuelle du back-office. Deux réserves qui en conditionnent la
-  lecture : le dossier n'est **pas suivi par git**, et son README fige un état au
-  2026-08-07 que la direction a depuis dépassé — DESIGN.md fait foi sur le
-  nombre d'archétypes et l'état de propagation.
+  référence visuelle du back-office, et il est versionné. Une réserve en
+  conditionne la lecture : son README fige un état au 2026-08-07 que la direction
+  a depuis dépassé — DESIGN.md fait foi sur le nombre d'archétypes et l'état de
+  propagation.
 
 **Absences que le travail futur ne doit pas combler par de l'invention :** le
 produit n'est **pas encore en boutique**. Il n'existe donc aucun client réel,
@@ -147,8 +167,16 @@ une donnée de démonstration et doit être reconnaissable comme telle.
 
 ## Accessibility & Inclusion
 
-Aucune norme n'a été contractuellement fixée. Sont établis comme acquis à ne pas
+Aucune norme n'a été contractuellement fixée. Est établi comme acquis à ne pas
 régresser : les fenêtres et dialogues sont utilisables au clavier (Échap,
-navigation), un contrôle automatique en intégration continue bloque toute
-évolution qui dégraderait ces standards, et le contraste des textes discrets est
-un chantier ouvert reconnu.
+navigation). Le contraste des textes discrets est un chantier ouvert reconnu.
+
+Ce que la mécanique garantit réellement, à ne pas surestimer : une règle de lint
+(`breakery-local/no-raw-modal-overlay`) interdit les surcouches plein écran
+écrites à la main hors du paquet d'interface, ce qui force le passage par les
+primitives qui apportent le piège de focus et la sortie par Échap. Cette règle ne
+s'applique qu'aux **fichiers touchés par la demande de fusion**, via le
+lint-ratchet. Il n'existe **aucune garde d'accessibilité générale** — ni audit de
+contraste, ni vérification de rôles ou de libellés, ni test automatisé de
+navigation au clavier. Un défaut d'accessibilité hors des surcouches modales
+passe sans obstacle.
