@@ -32,6 +32,8 @@ vi.mock('@/features/settings/hooks/useOrgDisplaySettings', () => ({
   useOrgDisplaySettings: vi.fn(() => ({
     displayFooterMessage: '',
     displaySlogan: '',
+    showcaseProductIds: [],
+    showReadyOrders: false,
     autoPrint: true,
     autoOpenDrawer: false,
     isLoading: false,
@@ -68,6 +70,8 @@ beforeEach(() => {
   vi.mocked(useOrgDisplaySettings).mockReturnValue({
     displayFooterMessage: '',
     displaySlogan: '',
+    showcaseProductIds: [],
+    showReadyOrders: false,
     autoPrint: true,
     autoOpenDrawer: false,
     isLoading: false,

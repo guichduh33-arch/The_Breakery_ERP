@@ -21,6 +21,8 @@ vi.mock('@/features/settings/hooks/useOrgDisplaySettings', () => ({
   useOrgDisplaySettings: vi.fn(() => ({
     displayFooterMessage: '',
     displaySlogan: '',
+    showcaseProductIds: [],
+    showReadyOrders: false,
     autoPrint: true,
     autoOpenDrawer: true,
     isLoading: false,
@@ -43,6 +45,8 @@ beforeEach(() => {
   useOrgDisplaySettingsMock.mockReturnValue({
     displayFooterMessage: '',
     displaySlogan: '',
+    showcaseProductIds: [],
+    showReadyOrders: false,
     autoPrint: true,
     autoOpenDrawer: true,
     isLoading: false,
@@ -54,6 +58,8 @@ describe('SuccessModal auto toggles', () => {
     useOrgDisplaySettingsMock.mockReturnValue({
       displayFooterMessage: '',
       displaySlogan: '',
+      showcaseProductIds: [],
+      showReadyOrders: false,
       autoPrint: false,
       autoOpenDrawer: true,
       isLoading: false,
@@ -67,6 +73,8 @@ describe('SuccessModal auto toggles', () => {
     useOrgDisplaySettingsMock.mockReturnValue({
       displayFooterMessage: '',
       displaySlogan: '',
+      showcaseProductIds: [],
+      showReadyOrders: false,
       autoPrint: true,
       autoOpenDrawer: false,
       isLoading: false,
@@ -83,6 +91,8 @@ describe('SuccessModal auto toggles', () => {
     useOrgDisplaySettingsMock.mockReturnValue({
       displayFooterMessage: '',
       displaySlogan: '',
+      showcaseProductIds: [],
+      showReadyOrders: false,
       autoPrint: true,
       autoOpenDrawer: false,
       isLoading: true,
@@ -99,6 +109,8 @@ describe('SuccessModal auto toggles', () => {
     useOrgDisplaySettingsMock.mockReturnValue({
       displayFooterMessage: '',
       displaySlogan: '',
+      showcaseProductIds: [],
+      showReadyOrders: false,
       autoPrint: true,
       autoOpenDrawer: false,
       isLoading: false,

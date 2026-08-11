@@ -24,7 +24,7 @@ END $$;
 
 -- T1: la clé est refusée avec le motif explicite, même par un porteur du droit.
 DO $$ BEGIN
-  PERFORM set_setting_v12('timezone', '"Asia/Jakarta"'::jsonb, 'localization');
+  PERFORM set_setting_v13('timezone', '"Asia/Jakarta"'::jsonb, 'localization');
   INSERT INTO _r VALUES ('t1_refused', false);
 EXCEPTION WHEN SQLSTATE '22023' THEN
   INSERT INTO _r VALUES ('t1_refused', SQLERRM = 'setting_not_configurable');
@@ -37,7 +37,7 @@ END $$;
 DO $$ DECLARE v_before TEXT; v_after TEXT; BEGIN
   SELECT timezone INTO v_before FROM business_config WHERE id = 1;
   BEGIN
-    PERFORM set_setting_v12('timezone', to_jsonb(v_before), 'localization');
+    PERFORM set_setting_v13('timezone', to_jsonb(v_before), 'localization');
   EXCEPTION WHEN SQLSTATE '22023' THEN NULL;
   END;
   SELECT timezone INTO v_after FROM business_config WHERE id = 1;
@@ -49,7 +49,7 @@ END $$;
 -- T3: la colonne miroir reste LISIBLE via la catégorie localization (D2) —
 -- le verrou ferme l'écriture, il ne retire pas la donnée.
 DO $$ DECLARE v JSONB; BEGIN
-  v := get_settings_by_category_v9('localization')->'settings';
+  v := get_settings_by_category_v10('localization')->'settings';
   INSERT INTO _r VALUES ('t3_still_readable',
     (v->>'timezone') IS NOT NULL
     AND (v->>'timezone') = (SELECT timezone FROM business_config WHERE id = 1));
@@ -59,8 +59,8 @@ END $$;
 
 -- T4: non-régression du bump — l'autre clé de localization reste écrivable.
 DO $$ DECLARE v JSONB; BEGIN
-  PERFORM set_setting_v12('currency', '"SGD"'::jsonb, 'localization');
-  v := get_settings_by_category_v9('localization')->'settings';
+  PERFORM set_setting_v13('currency', '"SGD"'::jsonb, 'localization');
+  v := get_settings_by_category_v10('localization')->'settings';
   INSERT INTO _r VALUES ('t4_currency_still_writable', (v->>'currency') = 'SGD');
 EXCEPTION WHEN OTHERS THEN
   INSERT INTO _r VALUES ('t4_currency_still_writable', false);
@@ -71,7 +71,7 @@ DO $$ DECLARE v_before BIGINT; v_after BIGINT; BEGIN
   SELECT count(*) INTO v_before FROM audit_logs
    WHERE action = 'setting.update' AND metadata->>'key' = 'timezone';
   BEGIN
-    PERFORM set_setting_v12('timezone', '"UTC"'::jsonb, 'localization');
+    PERFORM set_setting_v13('timezone', '"UTC"'::jsonb, 'localization');
   EXCEPTION WHEN SQLSTATE '22023' THEN NULL;
   END;
   SELECT count(*) INTO v_after FROM audit_logs
@@ -93,8 +93,8 @@ END $$;
 -- T7: ACL — anon n'a pas EXECUTE sur la nouvelle version (defense-in-depth).
 DO $$ BEGIN
   INSERT INTO _r VALUES ('t7_acl_anon',
-    NOT has_function_privilege('anon', 'public.set_setting_v12(text,jsonb,text)', 'EXECUTE')
-    AND has_function_privilege('authenticated', 'public.set_setting_v12(text,jsonb,text)', 'EXECUTE'));
+    NOT has_function_privilege('anon', 'public.set_setting_v13(text,jsonb,text)', 'EXECUTE')
+    AND has_function_privilege('authenticated', 'public.set_setting_v13(text,jsonb,text)', 'EXECUTE'));
 EXCEPTION WHEN OTHERS THEN
   INSERT INTO _r VALUES ('t7_acl_anon', false);
 END $$;

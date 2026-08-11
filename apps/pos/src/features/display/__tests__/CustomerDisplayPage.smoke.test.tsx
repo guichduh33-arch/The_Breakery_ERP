@@ -2,10 +2,13 @@
 //
 // Session 13 / Phase 4.C — smoke tests for the customer-display root.
 // Mocks `useKioskAuth`, `readKioskPairing`, and the supabase client to
-// assert the 3 main render branches :
-//   1. authenticated + paired + orders → branded layout + queue ticker.
-//   2. unpaired → PairDevicePrompt.
-//   3. pin_fallback → PairDevicePrompt with error hint.
+// assert the main render branches :
+//   1. au repos, interrupteur ÉTEINT (défaut ADR-023 déc. 3) → vitrine, et
+//      aucune file de retrait.
+//   2. au repos, sélection vide → la marque occupe les deux moitiés.
+//   3. interrupteur ALLUMÉ → l'écran d'avant : current card + queue ticker.
+//   4. unpaired → PairDevicePrompt.
+//   5. pin_fallback → PairDevicePrompt with error hint.
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor } from '@testing-library/react';
@@ -63,12 +66,27 @@ function readyOrdersBuilder(rows: unknown[]) {
 // `useOrgDisplaySettings` : .select().limit().maybeSingle(). The hook is a
 // top-level unconditional call in CustomerDisplayPage/CDBrandPanel, so every
 // render branch of this test needs a working builder for it.
-function businessConfigBuilder() {
-  const maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+// ADR-023 — la ligne porte aussi l'interrupteur de la file et la sélection de
+// vitrine ; `null` (défaut ci-dessous) vaut interrupteur ÉTEINT, sélection vide.
+function businessConfigBuilder(row: Record<string, unknown> | null = null) {
+  const maybeSingle = vi.fn().mockResolvedValue({ data: row, error: null });
   const limit = vi.fn(() => ({ maybeSingle }));
   const select = vi.fn(() => ({ limit }));
   return { select };
 }
+
+// ADR-023 — mimics the `products` chain used by `useShowcaseProducts` :
+// .select().in().eq().eq().
+function showcaseProductsBuilder(rows: unknown[]) {
+  const eq2 = vi.fn().mockResolvedValue({ data: rows, error: null });
+  const eq1 = vi.fn(() => ({ eq: eq2 }));
+  const inFn = vi.fn(() => ({ eq: eq1 }));
+  const select = vi.fn(() => ({ in: inFn }));
+  return { select };
+}
+
+const CROISSANT_ID = '11111111-1111-4111-8111-111111111111';
+const ECLAIR_ID = '22222222-2222-4222-8222-222222222222';
 
 function withProviders() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -88,7 +106,90 @@ describe('CustomerDisplayPage — smoke', () => {
     fromMock.mockImplementation(() => businessConfigBuilder());
   });
 
-  it('renders branded layout + current card + queue when authenticated', async () => {
+  it('au repos, montre la vitrine et AUCUNE file de retrait (interrupteur éteint)', async () => {
+    useKioskAuthMock.mockReturnValue({
+      status: 'authenticated',
+      expiresAt: Date.now() / 1000 + 3600,
+      error: null,
+      retry: vi.fn(),
+    });
+    readKioskPairingMock.mockResolvedValue({ kiosk_id: 'screen-front-1' });
+    fromMock.mockImplementation((table: string) => {
+      if (table === 'business_config') {
+        return businessConfigBuilder({
+          display_show_ready_orders: false,
+          display_showcase_product_ids: [CROISSANT_ID, ECLAIR_ID],
+        });
+      }
+      if (table === 'products') {
+        return showcaseProductsBuilder([
+          {
+            id: ECLAIR_ID,
+            name: 'Éclair au chocolat',
+            image_url: null,
+            retail_price: 38000,
+          },
+          {
+            id: CROISSANT_ID,
+            name: 'Croissant au beurre',
+            image_url: null,
+            retail_price: 25000,
+          },
+        ]);
+      }
+      return businessConfigBuilder();
+    });
+
+    const Wrapper = withProviders();
+    render(
+      <Wrapper>
+        <CustomerDisplayPage />
+      </Wrapper>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('cd-showcase-panel')).toBeInTheDocument();
+    });
+
+    // L'ordre de la SÉLECTION fait foi, pas celui rendu par la requête.
+    const names = screen.getAllByTestId('cd-showcase-name').map((n) => n.textContent);
+    expect(names).toEqual(['Croissant au beurre', 'Éclair au chocolat']);
+
+    // Le prix vient du catalogue (ADR-023 déc. 2), jamais d'une saisie.
+    expect(screen.getByText(/25[.,\s]000/)).toBeInTheDocument();
+
+    // La file de retrait ne s'affiche pas — ni la carte « now serving », ni le
+    // ticker, ni la section « Ready for pickup ».
+    expect(screen.queryByTestId('display-current-card')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('display-queue-ticker')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('display-ready-section')).not.toBeInTheDocument();
+  });
+
+  it('au repos, sélection vide → la marque occupe les deux moitiés', async () => {
+    useKioskAuthMock.mockReturnValue({
+      status: 'authenticated',
+      expiresAt: Date.now() / 1000 + 3600,
+      error: null,
+      retry: vi.fn(),
+    });
+    readKioskPairingMock.mockResolvedValue({ kiosk_id: 'screen-front-1' });
+
+    const Wrapper = withProviders();
+    render(
+      <Wrapper>
+        <CustomerDisplayPage />
+      </Wrapper>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('display-authenticated')).toBeInTheDocument();
+    });
+    expect(screen.getByTestId('cd-brand-panel')).toBeInTheDocument();
+    expect(screen.queryByTestId('cd-showcase-panel')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('display-queue-ticker')).not.toBeInTheDocument();
+  });
+
+  it('interrupteur allumé : current card + queue ticker (comportement d’avant)', async () => {
     useKioskAuthMock.mockReturnValue({
       status: 'authenticated',
       expiresAt: Date.now() / 1000 + 3600,
@@ -107,7 +208,7 @@ describe('CustomerDisplayPage — smoke', () => {
         ]);
       }
       if (table === 'business_config') {
-        return businessConfigBuilder();
+        return businessConfigBuilder({ display_show_ready_orders: true });
       }
       return ordersBuilder([
         {

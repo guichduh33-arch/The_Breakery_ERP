@@ -300,6 +300,8 @@ export type Database = {
           created_at: string
           currency: string
           display_footer_message: string
+          display_show_ready_orders: boolean
+          display_showcase_product_ids: Json
           display_slogan: string
           enabled_payment_methods: Json
           fiscal_address: string | null
@@ -343,6 +345,8 @@ export type Database = {
           created_at?: string
           currency?: string
           display_footer_message?: string
+          display_show_ready_orders?: boolean
+          display_showcase_product_ids?: Json
           display_slogan?: string
           enabled_payment_methods?: Json
           fiscal_address?: string | null
@@ -386,6 +390,8 @@ export type Database = {
           created_at?: string
           currency?: string
           display_footer_message?: string
+          display_show_ready_orders?: boolean
+          display_showcase_product_ids?: Json
           display_slogan?: string
           enabled_payment_methods?: Json
           fiscal_address?: string | null
@@ -7571,7 +7577,7 @@ export type Database = {
           total: number
         }[]
       }
-      get_settings_by_category_v9: {
+      get_settings_by_category_v10: {
         Args: { p_category: string }
         Returns: Json
       }
@@ -8473,7 +8479,7 @@ export type Database = {
         Args: { p_alts: Json; p_contexts: Json; p_product_id: string }
         Returns: Json
       }
-      set_setting_v12: {
+      set_setting_v13: {
         Args: { p_category: string; p_key: string; p_value: Json }
         Returns: undefined
       }
