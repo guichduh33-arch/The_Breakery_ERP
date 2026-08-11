@@ -103,11 +103,11 @@ vi.mock('@/stores/authStore.js', () => ({
     }),
 }));
 
-function renderPage() {
+function renderPage(initialUrl = '/backoffice/inventory') {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter><InventoryPage /></MemoryRouter>
+      <MemoryRouter initialEntries={[initialUrl]}><InventoryPage /></MemoryRouter>
     </QueryClientProvider>,
   );
 }
@@ -248,12 +248,61 @@ describe('InventoryPage', () => {
     });
   });
 
-  it('category filter forwards p_category_id', async () => {
-    renderPage();
+  // L'état de liste vivait en `useState` : ouvrir une fiche produit puis
+  // revenir en arrière rendait la page 1 non filtrée.
+  it('restores the whole list state from the URL', async () => {
+    renderPage('/backoffice/inventory?bucket=negative&q=amer&category=c-1&page=2');
+    await waitFor(() => {
+      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_stock_levels_v3');
+      expect(call).toBeDefined();
+      expect((call as [string, Record<string, unknown>])[1]).toMatchObject({
+        p_bucket: 'negative', p_search: 'amer', p_category_id: 'c-1', p_offset: 100,
+      });
+    });
+    expect(screen.getByTestId('counter-negative')).toHaveAttribute('aria-pressed', 'true');
+    // Le champ reflète la recherche restaurée, pas un champ vide.
+    expect(screen.getByPlaceholderText(/Search by SKU or product name/i)).toHaveValue('amer');
+  });
+
+  // Un paramètre d'URL se tape à la main. Une valeur inconnue ne doit pas
+  // produire une liste vide en silence — ni un 500 sur l'enum Postgres.
+  it('falls back to "all" on an unknown bucket in the URL', async () => {
+    renderPage('/backoffice/inventory?bucket=lol');
+    await waitFor(() => {
+      const call = mockRpc.mock.calls.find(([fn]) => fn === 'get_stock_levels_v3');
+      expect(call).toBeDefined();
+      expect((call as [string, { p_bucket?: string }])[1].p_bucket).toBe('all');
+    });
+    expect(screen.getByTestId('counter-all')).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  // Deux paramètres doivent partir dans le MÊME patch : écrits séparément, le
+  // second repart des paramètres d'avant et efface le premier.
+  it('writes the bucket and resets the page in one move', async () => {
+    renderPage('/backoffice/inventory?page=3');
     await waitFor(() => screen.getByText('Americano'));
     mockRpc.mockClear();
 
-    fireEvent.change(screen.getByLabelText(/Category/i), { target: { value: 'c-1' } });
+    fireEvent.click(screen.getByTestId('counter-zero'));
+    await waitFor(() => {
+      const call = mockRpc.mock.calls.find(([fn, args]) =>
+        fn === 'get_stock_levels_v3' && (args as { p_bucket?: string }).p_bucket === 'zero');
+      expect(call).toBeDefined();
+      expect((call as [string, { p_offset: number }])[1].p_offset).toBe(0);
+    });
+  });
+
+  it('category filter forwards p_category_id', async () => {
+    renderPage();
+    await waitFor(() => screen.getByText('Americano'));
+    // Le select reste DÉSACTIVÉ tant que les catégories chargent, et un
+    // `change` sur un contrôle désactivé ne fait rien. Attendre la liste de
+    // stock ne suffit pas : ce sont deux requêtes distinctes.
+    const select = await screen.findByLabelText(/Category/i);
+    await waitFor(() => { expect(select).not.toBeDisabled(); });
+    mockRpc.mockClear();
+
+    fireEvent.change(select, { target: { value: 'c-1' } });
     await waitFor(() => {
       const call = mockRpc.mock.calls.find(([fn, args]) =>
         fn === 'get_stock_levels_v3' && (args as { p_category_id?: string }).p_category_id === 'c-1');

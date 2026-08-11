@@ -21,10 +21,10 @@
 //     différentes dans la même rangée.
 
 import { Plus, Truck, Trash2 } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Input, Select } from '@breakery/ui';
-import { formatIdr } from '@breakery/utils';
+import { formatIdr, businessDateIso, todayIsoDate } from '@breakery/utils';
 import { DataTable, type DataTableColumn } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
 import { PageHeader } from '@/components/PageHeader.js';
@@ -40,7 +40,7 @@ import {
   type StockLevelRow as Row,
   type StockLevelsFilters,
 } from '@/features/inventory/hooks/useStockLevels.js';
-import { useStockCounters } from '@/features/inventory/hooks/useStockCounters.js';
+import { useStockCounters, type StockCounters } from '@/features/inventory/hooks/useStockCounters.js';
 import { useInventoryReferenceData } from '@/features/inventory/hooks/useInventoryReferenceData.js';
 
 const PAGE_SIZE = 50;
@@ -57,10 +57,64 @@ type ModalState =
   | { kind: 'adjust';  product?: Row }
   | { kind: 'waste';   product?: Row };
 
-/** Jour métier : le fuseau est posé pour toute la base (Asia/Makassar). */
+interface BucketSpec {
+  label:  string;
+  tone?:  'warning' | 'danger';
+  title?: string;
+  count:  (c: StockCounters) => number;
+}
+
+// `Record<StockBucket, …>` et non un tableau de littéraux : le type vient de
+// l'enum Postgres via la régénération de types, donc ajouter un panier en base
+// CASSE LE BUILD ici tant que l'interface ne le traite pas. Un tableau écrit à
+// la main aurait laissé passer l'oubli en silence — c'est exactement la classe
+// de dérive que la règle d'énumération du projet vise.
+const BUCKETS: Record<StockBucket, BucketSpec> = {
+  all: {
+    label: 'All products',
+    count: (c) => c.total_count,
+  },
+  low: {
+    label: 'Low stock',
+    tone:  'warning',
+    title: 'Below the configured minimum. Includes products at zero or negative — this is the full reorder list, so the counters do not add up to the total.',
+    count: (c) => c.low_count,
+  },
+  zero: {
+    label: 'At zero',
+    tone:  'danger',
+    title: 'Out of stock right now. A product with no minimum configured never shows under Low stock, so this is the only place it surfaces.',
+    count: (c) => c.zero_count,
+  },
+  negative: {
+    label: 'Negative',
+    tone:  'danger',
+    title: 'Stock below zero — a sale was recorded before its receipt. Investigate rather than adjust blindly.',
+    count: (c) => c.negative_count,
+  },
+  untracked: {
+    label: 'Not tracked',
+    title: 'Products sold without stock deduction. They have no stock level and never appear in the other buckets.',
+    count: (c) => c.untracked_count,
+  },
+};
+
+/** Ordre d'affichage — celui de la déclaration ci-dessus, jamais recopié. */
+const BUCKET_ORDER = Object.keys(BUCKETS) as StockBucket[];
+
+// Comparaison en JOURS DE CALENDRIER métier, pas en tranches glissantes de
+// 24 h. L'ancien calcul dérivait « today » d'un delta de millisecondes : un
+// mouvement d'hier 23 h s'affichait « today » tant qu'on regardait avant 23 h
+// le lendemain. Ce n'était pas un défaut de fuseau — c'était une confusion
+// entre 24 heures écoulées et un changement de journée de travail, sur un ERP
+// dont le jour métier est une constante de déploiement (ADR-019).
 function formatLastMovement(iso: string | null): string {
   if (iso === null) return '—';
-  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
+  // Deux dates de calendrier lues à minuit UTC : la différence est exacte, sans
+  // heure d'été ni arrondi.
+  const movedMs = Date.parse(`${businessDateIso(iso)}T00:00:00Z`);
+  const todayMs = Date.parse(`${todayIsoDate()}T00:00:00Z`);
+  const days = Math.round((todayMs - movedMs) / 86_400_000);
   if (days <= 0) return 'today';
   if (days === 1) return 'yesterday';
   return `${days} days ago`;
@@ -76,26 +130,67 @@ export default function InventoryPage() {
   const canReceive = hasPermission('purchasing.po.create');
   const canWaste   = hasPermission('inventory.waste');
 
-  // `search` est ce que l'utilisateur voit dans le champ, à la frappe près.
-  // `appliedSearch` est ce qui part au serveur — un seul champ ici, donc pas
-  // de piège de fermeture obsolète comme sur les filtres d'audit.
-  const [search,        setSearch       ] = useState<string>('');
-  const [appliedSearch, setAppliedSearch] = useState<string>('');
-  const [categoryId,    setCategoryId   ] = useState<string>('');
-  const [bucket,        setBucket       ] = useState<StockBucket>('all');
-  const [page,          setPage         ] = useState<number>(0);
-  const [modal,         setModal        ] = useState<ModalState>({ kind: 'none' });
+  // TOUT l'état de liste vit dans l'URL : un filtre se partage par lien, survit
+  // à un rechargement, et le retour arrière depuis une fiche produit ramène la
+  // liste telle qu'on l'avait laissée. Il vivait en `useState`, donc revenir en
+  // arrière rendait la page 1 non filtrée.
+  //
+  // Les écritures passent par `patchParams` et non par plusieurs `useUrlState` :
+  // `setSearchParams` reçoit les paramètres COURANTS, donc deux appels dans le
+  // même geste s'écrasent l'un l'autre — et changer un filtre doit écrire le
+  // filtre ET remettre la page à zéro d'un seul mouvement. Même motif que
+  // `Products.tsx`, qui documente le défaut.
+  const [params, setParams] = useSearchParams();
+  const patchParams = useCallback((patch: Record<string, string | null>): void => {
+    setParams((prev) => {
+      const p = new URLSearchParams(prev);
+      for (const [k, v] of Object.entries(patch)) {
+        if (v === null || v === '') p.delete(k);
+        else p.set(k, v);
+      }
+      return p;
+    }, { replace: true });
+  }, [setParams]);
 
+  const [modal, setModal] = useState<ModalState>({ kind: 'none' });
+
+  // Un paramètre d'URL est saisi par n'importe qui. `?bucket=lol` ne doit pas
+  // produire une liste vide en silence — même défaut que le panier NULL gardé
+  // côté SQL. On retombe sur le défaut, sans rien casser.
+  const bucketParam   = params.get('bucket') ?? 'all';
+  const bucket: StockBucket = Object.hasOwn(BUCKETS, bucketParam)
+    ? (bucketParam as StockBucket)
+    : 'all';
+  const appliedSearch = params.get('q') ?? '';
+  const categoryId    = params.get('category') ?? '';
+  const parsedPage    = Number.parseInt(params.get('page') ?? '0', 10);
+  const page = Number.isInteger(parsedPage) && parsedPage > 0 ? parsedPage : 0;
+
+  function setCategoryId(next: string): void { patchParams({ category: next, page: null }); }
+
+  // `search` est ce que l'utilisateur voit dans le champ, à la frappe près ;
+  // `appliedSearch` est ce qui part au serveur et dans l'URL.
+  const [search, setSearch] = useState<string>(appliedSearch);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => {
     if (searchTimer.current !== null) clearTimeout(searchTimer.current);
   }, []);
 
+  // Suit l'URL quand elle change SANS passer par le champ : retour arrière,
+  // lien collé, rechargement. Quand c'est la frappe qui a poussé la valeur,
+  // les deux sont déjà égales et l'effet ne fait rien.
+  useEffect(() => { setSearch(appliedSearch); }, [appliedSearch]);
+
+  function setPage(next: number): void {
+    patchParams({ page: next <= 0 ? null : String(next) });
+  }
+
   function onSearchChange(next: string): void {
     setSearch(next);
-    setPage(0);
     if (searchTimer.current !== null) clearTimeout(searchTimer.current);
-    searchTimer.current = setTimeout(() => { setAppliedSearch(next); }, SEARCH_DEBOUNCE_MS);
+    // La recherche et la remise à zéro de la page partent ENSEMBLE, au bout du
+    // debounce : les écrire séparément les ferait s'écraser.
+    searchTimer.current = setTimeout(() => { patchParams({ q: next, page: null }); }, SEARCH_DEBOUNCE_MS);
   }
 
   const filters = useMemo<StockLevelsFilters>(
@@ -128,51 +223,30 @@ export default function InventoryPage() {
   const pageRows = useMemo(() => list.data ?? [], [list.data]);
 
   /** Total du panier affiché — c'est lui que le pied et la pagination comptent. */
-  const activeTotal = useMemo(() => {
-    if (c === undefined) return 0;
-    switch (bucket) {
-      case 'low':       return c.low_count;
-      case 'zero':      return c.zero_count;
-      case 'negative':  return c.negative_count;
-      case 'untracked': return c.untracked_count;
-      default:          return c.total_count;
-    }
-  }, [c, bucket]);
+  const activeTotal = c === undefined ? 0 : BUCKETS[bucket].count(c);
 
   function pick(next: StockBucket): void {
-    setBucket(next);
-    setPage(0);
+    patchParams({ bucket: next === 'all' ? null : next, page: null });
   }
 
-  const counterItems = useMemo<ListCounter[]>(() => [
-    {
-      id: 'all', label: 'All products', value: c?.total_count ?? 0,
-      onSelect: () => { pick('all'); },
-    },
-    {
-      id: 'low', label: 'Low stock', value: c?.low_count ?? 0,
-      tone: (c?.low_count ?? 0) > 0 ? 'warning' : 'neutral',
-      title: 'Below the configured minimum. Includes products at zero or negative — this is the full reorder list, so the counters do not add up to the total.',
-      onSelect: () => { pick('low'); },
-    },
-    {
-      id: 'zero', label: 'At zero', value: c?.zero_count ?? 0,
-      tone: (c?.zero_count ?? 0) > 0 ? 'danger' : 'neutral',
-      title: 'Out of stock right now. A product with no minimum configured never shows under Low stock, so this is the only place it surfaces.',
-      onSelect: () => { pick('zero'); },
-    },
-    {
-      id: 'negative', label: 'Negative', value: c?.negative_count ?? 0,
-      tone: (c?.negative_count ?? 0) > 0 ? 'danger' : 'neutral',
-      title: 'Stock below zero — a sale was recorded before its receipt. Investigate rather than adjust blindly.',
-      onSelect: () => { pick('negative'); },
-    },
-    {
-      id: 'untracked', label: 'Not tracked', value: c?.untracked_count ?? 0,
-      title: 'Products sold without stock deduction. They have no stock level and never appear in the other buckets.',
-      onSelect: () => { pick('untracked'); },
-    },
-  ], [c]);
+  const counterItems = useMemo<ListCounter[]>(
+    () => BUCKET_ORDER.map((id) => {
+      const spec = BUCKETS[id];
+      const value = c === undefined ? 0 : spec.count(c);
+      return {
+        id,
+        label: spec.label,
+        value,
+        ...(spec.tone !== undefined && value > 0 ? { tone: spec.tone } : {}),
+        ...(spec.title !== undefined ? { title: spec.title } : {}),
+        onSelect: () => { pick(id); },
+      };
+    }),
+    // `pick` est stable en pratique (setters d'URL mémoïsés) ; la bande ne
+    // dépend que des compteurs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [c],
+  );
 
   const columns = useMemo<readonly DataTableColumn<Row>[]>(() => [
     {
@@ -258,7 +332,6 @@ export default function InventoryPage() {
   const hasMore = (page + 1) * PAGE_SIZE < activeTotal;
   const hasPrev = page > 0;
 
-  function resetPage(): void { setPage(0); }
   function closeModal(): void { setModal({ kind: 'none' }); }
 
   return (
@@ -312,7 +385,11 @@ export default function InventoryPage() {
         <Select
           id="inv-category"
           value={categoryId}
-          onChange={(e) => { setCategoryId(e.target.value); resetPage(); }}
+          // `setCategoryId` remet DÉJÀ la page à zéro dans le même patch.
+          // Rappeler `resetPage()` ici émettait un second patch construit sur
+          // les paramètres d'AVANT, qui effaçait la catégorie qu'on venait
+          // d'écrire — le défaut exact que `patchParams` existe pour éviter.
+          onChange={(e) => { setCategoryId(e.target.value); }}
           disabled={refData.isLoading}
           className="w-48"
         >
@@ -365,7 +442,7 @@ export default function InventoryPage() {
                 <button
                   type="button"
                   className={TOOLBAR_BTN_SECONDARY}
-                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  onClick={() => { setPage(page - 1); }}
                   disabled={!hasPrev}
                 >
                   Previous
@@ -373,7 +450,7 @@ export default function InventoryPage() {
                 <button
                   type="button"
                   className={TOOLBAR_BTN_SECONDARY}
-                  onClick={() => setPage((p) => p + 1)}
+                  onClick={() => { setPage(page + 1); }}
                   disabled={!hasMore}
                 >
                   Next

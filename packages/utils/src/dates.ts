@@ -40,3 +40,13 @@ export function formatDateLong(d: Date | string): string {
 export function todayIsoDate(): string {
   return formatInTimeZone(new Date(), TIMEZONE, 'yyyy-MM-dd');
 }
+
+// Le JOUR MÉTIER d'un instant quelconque — pendant de `todayIsoDate` pour une
+// date qui n'est pas maintenant. Sert à comparer deux dates en jours de
+// calendrier plutôt qu'en tranches de 24 h : un mouvement d'hier 23 h et un
+// d'aujourd'hui 1 h sont à deux heures l'un de l'autre mais appartiennent à
+// deux journées de travail différentes, et c'est la journée qui se lit.
+export function businessDateIso(d: Date | string): string {
+  const date = typeof d === 'string' ? new Date(d) : d;
+  return formatInTimeZone(date, TIMEZONE, 'yyyy-MM-dd');
+}
