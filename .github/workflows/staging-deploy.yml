@@ -77,10 +77,12 @@ jobs:
         with:
           ref: ${{ github.event.inputs.ref || github.ref }}
 
-      - name: Setup pnpm 9.15
+      # Pas de `version:` — l'action lit le `packageManager` de package.json
+      # (pnpm@11.17.0). Épingler ici en plus déclenche « Multiple versions of
+      # pnpm specified » et tue le job (cf. le même piège dans playwright-e2e.yml).
+      - name: Setup pnpm
         uses: pnpm/action-setup@v6
         with:
-          version: 9.15.0
           run_install: false
 
       - name: Setup Node 22

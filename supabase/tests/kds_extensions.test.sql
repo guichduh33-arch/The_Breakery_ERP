@@ -7,9 +7,9 @@
 --   T_KDS_03 : kds.operate permission seeded + roles granted
 --   T_KDS_04 : all four RPCs exist with correct return types
 --   T_KDS_05 : kds_start_prep_timer_v1 happy path (pending → preparing, sets prep_started_at)
---   T_KDS_06 : kds_bump_item_v1 happy path (preparing → ready, sets ready_at + bumped_at)
---   T_KDS_07 : kds_undo_bump_v1 within window (ready → preparing) + expired window raises P0012
---   T_KDS_08 : kds_recall_order_v1 (served → preparing) + audit_logs row inserted
+--   T_KDS_06 : kds_bump_item_v2 happy path (preparing → ready, sets ready_at + bumped_at)
+--   T_KDS_07 : kds_undo_bump_v2 within window (ready → preparing) + expired window raises P0012
+--   T_KDS_08 : kds_recall_order_v2 (served → preparing) + audit_logs row inserted
 --
 -- Runner :
 --   Run via Supabase MCP execute_sql wrapped BEGIN ... ROLLBACK.
@@ -125,12 +125,12 @@ SELECT ok(
 
 SELECT has_function('public', 'kds_start_prep_timer_v1', ARRAY['uuid'],
                     'T_KDS_04a kds_start_prep_timer_v1(uuid) exists');
-SELECT has_function('public', 'kds_bump_item_v1', ARRAY['uuid','uuid'],
-                    'T_KDS_04b kds_bump_item_v1(uuid,uuid) exists');
-SELECT has_function('public', 'kds_undo_bump_v1', ARRAY['uuid'],
-                    'T_KDS_04c kds_undo_bump_v1(uuid) exists');
-SELECT has_function('public', 'kds_recall_order_v1', ARRAY['uuid','text'],
-                    'T_KDS_04d kds_recall_order_v1(uuid,text) exists');
+SELECT has_function('public', 'kds_bump_item_v2', ARRAY['uuid','uuid'],
+                    'T_KDS_04b kds_bump_item_v2(uuid,uuid) exists');
+SELECT has_function('public', 'kds_undo_bump_v2', ARRAY['uuid'],
+                    'T_KDS_04c kds_undo_bump_v2(uuid) exists');
+SELECT has_function('public', 'kds_recall_order_v2', ARRAY['uuid','text'],
+                    'T_KDS_04d kds_recall_order_v2(uuid,text) exists');
 
 -- ---------------------------------------------------------------------------
 -- T_KDS_05 : kds_start_prep_timer_v1 happy path
@@ -219,7 +219,7 @@ SELECT ok(true, 'T_KDS_07a undo window logic exercised by Vitest live (column wr
 -- T_KDS_08 : recall — verify audit_logs path mechanically
 -- ---------------------------------------------------------------------------
 
--- Insert a synthetic audit row mimicking what kds_recall_order_v1 writes.
+-- Insert a synthetic audit row mimicking what kds_recall_order_v2 writes.
 DO $$
 DECLARE
   v_order UUID := NULLIF(current_setting('test.order_id', true), '')::UUID;

@@ -7,7 +7,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { BumpButton } from '../components/BumpButton';
 
-const rpcMock = vi.fn();
+const rpcMock = vi.fn<(...args: unknown[]) => Promise<{ data: unknown; error: unknown }>>();
 
 vi.mock('@/lib/supabase', () => ({
   supabase: {
@@ -35,22 +35,22 @@ describe('BumpButton', () => {
     expect(screen.getByRole('button', { name: /bump item to ready/i })).toBeInTheDocument();
   });
 
-  it('calls kds_bump_item_v1 with the item id and an idempotency key on click', async () => {
+  it('calls kds_bump_item_v2 with the item id and an idempotency key on click', async () => {
     rpcMock.mockResolvedValue({ data: null, error: null });
 
     render(withQuery(<BumpButton orderItemId="oi-1" />));
     fireEvent.click(screen.getByRole('button', { name: /bump/i }));
 
     await waitFor(() => {
-      expect(rpcMock).toHaveBeenCalledWith('kds_bump_item_v1', expect.objectContaining({
+      expect(rpcMock).toHaveBeenCalledWith('kds_bump_item_v2', expect.objectContaining({
         p_order_item_id: 'oi-1',
-        p_idempotency_key: expect.any(String),
+        p_idempotency_key: expect.any(String) as unknown,
       }));
     });
   });
 
   it('disables the button while pending', async () => {
-    rpcMock.mockImplementation(() => new Promise(() => {})); // never resolves
+    rpcMock.mockImplementation(() => new Promise(() => undefined)); // never resolves
 
     render(withQuery(<BumpButton orderItemId="oi-1" />));
     const btn = screen.getByRole('button', { name: /bump item to ready/i });

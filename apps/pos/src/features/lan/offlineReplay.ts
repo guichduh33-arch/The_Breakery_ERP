@@ -72,8 +72,8 @@ function emitPaymentFailure(intent: OfflineIntent, message: string): void {
   });
 }
 
-type FireArgs = Database['public']['Functions']['fire_counter_order_v5']['Args'];
-type TabletArgs = Database['public']['Functions']['create_tablet_order_v5']['Args'];
+type FireArgs = Database['public']['Functions']['fire_counter_order_v6']['Args'];
+type TabletArgs = Database['public']['Functions']['create_tablet_order_v6']['Args'];
 
 interface FireEnvelope {
   order_id: string;
@@ -101,10 +101,11 @@ async function replayOne(intent: OfflineIntent, orderIdByRoot: Map<string, strin
       // La racine a été rejouée dans un run précédent (record déjà supprimé) :
       // son replay idempotent renvoie la commande sans revalider les items —
       // le lookup client_uuid court-circuite AVANT toute validation.
-      const { data, error } = await supabase.rpc('fire_counter_order_v5', {
+      const { data, error } = await supabase.rpc('fire_counter_order_v6', {
         p_client_uuid: intent.root_client_uuid,
         p_session_id: intent.session_id,
         p_items: [],
+        p_tolerate_unsellable: true,
       });
       if (error) throw Object.assign(new Error(error.message), { details: error });
       orderIdByRoot.set(intent.root_client_uuid, (data as unknown as FireEnvelope).order_id);
@@ -115,12 +116,19 @@ async function replayOne(intent: OfflineIntent, orderIdByRoot: Map<string, strin
       p_session_id: intent.session_id,
       p_items: intent.items,
       p_order_type: intent.order_type,
+      // ADR-022 déc. 3 — rejeu hors-ligne : la vente a été faite sous le
+      // catalogue d'alors et l'argent est perçu. Un durcissement postérieur ne
+      // peut pas la rendre rétroactivement irrecevable ; refuser ici
+      // n'empêcherait que l'encaissement de remonter. Le défaut protège
+      // l'argent (ADR-018 D2). Corollaire : la garde ne se déclenchant jamais
+      // au rejeu, la liste des échecs définitifs n'est pas étendue.
+      p_tolerate_unsellable: true,
     };
     if (isAppend) args.p_order_id = orderIdByRoot.get(intent.root_client_uuid);
     if (intent.table_number !== null) args.p_table_number = intent.table_number;
     if (intent.discount_authorized_by !== undefined) args.p_discount_authorized_by = intent.discount_authorized_by;
 
-    const { data, error } = await supabase.rpc('fire_counter_order_v5', args as FireArgs);
+    const { data, error } = await supabase.rpc('fire_counter_order_v6', args as FireArgs);
     if (error) throw Object.assign(new Error(error.message), { details: error });
     const env = data as unknown as FireEnvelope;
     orderIdByRoot.set(intent.root_client_uuid, env.order_id);
@@ -141,13 +149,14 @@ async function replayOne(intent: OfflineIntent, orderIdByRoot: Map<string, strin
     if (orderId === undefined) {
       // Fire rejoué dans un run précédent — replay idempotent pour retrouver
       // l'order_id (voir note ci-dessus : court-circuit avant validation).
-      const { data, error } = await supabase.rpc('fire_counter_order_v5', {
+      const { data, error } = await supabase.rpc('fire_counter_order_v6', {
         p_client_uuid: intent.root_client_uuid,
         // La branche idempotente n'atteint jamais ces args ; s'ils sont
         // atteints, la racine n'a JAMAIS été rejouée (anomalie) → l'échec de
         // validation garde l'intent en file et remonte l'erreur.
         p_session_id: intent.root_client_uuid,
         p_items: [],
+        p_tolerate_unsellable: true,
       });
       if (error) throw Object.assign(new Error(error.message), { details: error });
       orderId = (data as unknown as FireEnvelope).order_id;
@@ -187,7 +196,9 @@ async function replayOne(intent: OfflineIntent, orderIdByRoot: Map<string, strin
     p_items: intent.items,
   };
   if (intent.notes !== null) args.p_notes = intent.notes;
-  const { error } = await supabase.rpc('create_tablet_order_v5', args as TabletArgs);
+  // ADR-022 déc. 3 — rejeu hors-ligne, même raison que pour le fire comptoir.
+  args.p_tolerate_unsellable = true;
+  const { error } = await supabase.rpc('create_tablet_order_v6', args as TabletArgs);
   if (error) throw Object.assign(new Error(error.message), { details: error });
 }
 

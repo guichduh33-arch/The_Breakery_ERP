@@ -1,0 +1,46 @@
+-- 20260810000004_adr022_d4_drop_cart_hold_path.sql
+--
+-- ADR-022 décision 4 — on ne met en attente qu'une commande envoyée en cuisine.
+--
+-- LA DÉCISION. Une commande n'existe qu'à partir du moment où elle part en
+-- cuisine ou qu'elle est payée. Ce qui est saisi sans avoir franchi l'un de ces
+-- deux seuils est un brouillon, pas une commande : il ne porte pas de numéro et
+-- ne s'écrit pas dans `orders`.
+--
+-- CE QUI DISPARAÎT. `hold_order_v1` prenait le panier local et en fabriquait une
+-- commande `draft` (`is_held = true`, numérotée `HELD-<uuid>`), dont les lignes
+-- s'écrivaient sans verrou et sans envoi en cuisine. Elle créait donc un objet
+-- portant un numéro de commande sans en être une, qui polluait tout ce qui
+-- compte des commandes — rapports, journal, listes, rapprochement de caisse — et
+-- ouvrait une septième porte d'écriture d'`order_items` sans contrepartie
+-- métier. Son parcours de restauration, `restore_held_order_v1`, part avec elle.
+--
+-- LE TROU QUE CE DROP REFERME, en prime. `restore_held_order_v1` sélectionnait
+-- sur `is_held = true` SANS contrainte de statut ni de `created_via`, puis
+-- `DELETE FROM orders`. Or `hold_fired_order_v1` pose `is_held = true` sur une
+-- commande `pending_payment` DÉJÀ partie en cuisine. Seul le client
+-- discriminait, par le statut de la ligne : un appel direct à la RPC détruisait
+-- une commande envoyée et ses lignes. Le retrait supprime la possibilité.
+--
+-- CE QUI RESTE EN PLACE, et pourquoi :
+--   * `hold_fired_order_v1`   — la seule mise en attente désormais : elle marque
+--                               une commande déjà envoyée en cuisine ;
+--   * `reopen_held_order_v1`  — sa réouverture ;
+--   * `discard_held_order_v1` — le rejet, qui sert AUSSI les commandes caisse
+--                               non payées (`created_via = 'pos'`), donc son
+--                               rôle est inchangé (ADR-022 conséquence 2) ;
+--   * `orders.is_held`        — toujours écrite par `hold_fired_order_v1` ;
+--   * `held_order_idempotency_keys` — conservée. Elle n'a plus d'écrivain, mais
+--     l'ADR ne se prononce pas sur son sort et ses lignes historiques ne se
+--     réparent pas (ADR-021 déc. 2). Résidu assumé, à instruire séparément.
+--
+-- Le geste « mettre en attente » depuis la caisse passe désormais par l'envoi en
+-- cuisine. On ne peut plus parquer au serveur un panier que le client n'a pas
+-- confirmé : c'est le sens de la décision, ce panier-là n'a pas à exister côté
+-- serveur. Sa traçabilité reste acquise par le journal opérationnel du POS
+-- (famille `get_pos_events`), qui enregistre déjà les mutations du brouillon
+-- (ADR-022 §2).
+
+DROP FUNCTION IF EXISTS public.hold_order_v1(p_client_uuid uuid, p_cart_payload jsonb, p_table_number text, p_notes text);
+
+DROP FUNCTION IF EXISTS public.restore_held_order_v1(p_order_id uuid);

@@ -2,7 +2,7 @@
 //
 // Session 13 / Phase 4.B — Recall button for a served order. Opens a Radix
 // Dialog (Phase 1.D primitive) with a reason textarea and confirms by
-// calling `kds_recall_order_v1`. Surfaces a toast with the recalled count.
+// calling `kds_recall_order_v2`. Surfaces a toast with the recalled count.
 
 import { useState } from 'react';
 import {

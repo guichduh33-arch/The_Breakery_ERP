@@ -2,6 +2,10 @@
 //
 // Session 17 — Phase 2.A — Server-side cascade via recipe_bom_full_v2.
 //
+// Monté par ProductionEntryCard (l'écran de production atteignable). Il vivait
+// auparavant sur la page batch, inatteignable sans taper son URL : l'écran
+// réellement utilisé n'apprenait la pénurie qu'après le refus serveur.
+//
 // Previously did 2 static useQueries rounds capped at depth-2 (DEV-S16-2.C-02).
 // Now does one round (one RPC call per root), cascade résolue côté serveur.
 //
@@ -15,9 +19,22 @@
 import { useMemo, type JSX } from 'react';
 import { useQueries } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase.js';
-import type { BatchItem } from './BatchSelector.js';
 
-export interface IngredientAggregatePreviewProps { items: BatchItem[]; }
+/**
+ * Une ligne de production à prévisualiser. Les quantités sont dans l'unité de
+ * BASE du produit — la même que celle envoyée à la RPC : le BOM est résolu par
+ * unité de base, une quantité saisie dans une autre unité fausserait l'aperçu
+ * du facteur de conversion. `BatchItemInput` (hook useRecordBatchProduction)
+ * satisfait cette forme, ce qui garantit que l'aperçu porte sur ce qui sera
+ * réellement soumis.
+ */
+export interface IngredientPreviewLine {
+  productId:        string;
+  quantityProduced: number;
+  quantityWaste?:   number;
+}
+
+export interface IngredientAggregatePreviewProps { items: IngredientPreviewLine[]; }
 
 interface BomLeafRow {
   material_id:   string;
@@ -48,22 +65,17 @@ function fmt(n: number): string {
 
 export function IngredientAggregatePreview({ items }: IngredientAggregatePreviewProps): JSX.Element {
   const validRows = useMemo(
-    () => items.filter((it) => {
-      if (it.productId === null) return false;
-      const q = Number.parseFloat(it.quantityProduced);
-      return Number.isFinite(q) && q > 0;
-    }),
+    () => items.filter((it) => Number.isFinite(it.quantityProduced) && it.quantityProduced > 0),
     [items],
   );
 
   const bomQueries = useQueries({
     queries: validRows.map((row) => ({
       queryKey: ['inv-prod', 'bom-full', row.productId] as const,
-      enabled:  row.productId !== null,
       staleTime: 30_000,
       queryFn: async (): Promise<BomLeafRow[]> => {
         const { data, error } = await supabase.rpc('recipe_bom_full_v2', {
-          p_product_id: row.productId!,
+          p_product_id: row.productId,
           p_max_depth:  5,
         });
         if (error) throw new Error(error.message);
@@ -83,9 +95,8 @@ export function IngredientAggregatePreview({ items }: IngredientAggregatePreview
     validRows.forEach((row, i) => {
       const bom = bomQueries[i]?.data;
       if (!bom) return;
-      const qty = Number.parseFloat(row.quantityProduced) || 0;
-      const waste = Number.parseFloat(row.quantityWaste) || 0;
-      const mult = qty + waste;
+      const waste = row.quantityWaste ?? 0;
+      const mult = row.quantityProduced + (Number.isFinite(waste) ? waste : 0);
       if (mult <= 0) return;
       for (const leaf of bom) {
         // qty_in_base is in the material's stock unit (kg/lt/pcs), matching
@@ -125,10 +136,11 @@ export function IngredientAggregatePreview({ items }: IngredientAggregatePreview
          className="rounded-md border border-border-subtle bg-bg-elevated p-4 space-y-2">
       <div className="flex items-baseline justify-between">
         <h3 className="font-serif text-lg">Aggregate ingredient preview</h3>
+        {/* Le point médian et le compteur qui le suit tiennent sur une seule
+            ligne : JSX avale le saut de ligne, et « ·6 » s'affichait collé. */}
         {validRows.length > 0 && (
           <span className="text-xs text-text-secondary">
-            {validRows.length} item{validRows.length === 1 ? '' : 's'} ·
-            {rows.length} ingredient{rows.length === 1 ? '' : 's'}
+            {validRows.length} item{validRows.length === 1 ? '' : 's'} · {rows.length} ingredient{rows.length === 1 ? '' : 's'}
           </span>
         )}
       </div>
@@ -137,7 +149,7 @@ export function IngredientAggregatePreview({ items }: IngredientAggregatePreview
 
       {validRows.length === 0 ? (
         <p className="text-sm text-text-secondary">
-          Pick a recipe and enter a quantity to see the aggregate ingredient totals.
+          Add a product and enter a quantity to see the aggregate ingredient totals.
         </p>
       ) : loading ? (
         <p className="text-sm text-text-secondary">Computing requirements…</p>

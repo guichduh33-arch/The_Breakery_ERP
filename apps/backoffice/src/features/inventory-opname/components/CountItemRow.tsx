@@ -1,5 +1,19 @@
 // apps/backoffice/src/features/inventory-opname/components/CountItemRow.tsx
 // Session 13 / Phase 2.D — one row in the OpnameDetail item table.
+//
+// Comptage à l'aveugle : la ligne rend deux visages selon la phase de
+// l'inventaire, pilotés par deux drapeaux distincts.
+//
+//   `revealed` — l'attendu et l'écart sont-ils affichés ? Pendant le comptage,
+//     NON : voir « attendu 12 » à côté de la case de saisie invite à écrire 12
+//     au lieu du 9 qu'on a compté.
+//   `locked`   — la saisie est-elle figée ? À partir de la revue, OUI : les
+//     écarts sont révélés, on ne retouche plus un chiffre après l'avoir
+//     comparé.
+//
+// Les deux drapeaux couvrent aujourd'hui le même ensemble de statuts, mais ils
+// ne disent pas la même chose : les séparer évite qu'un futur statut hérite du
+// mauvais comportement par accident.
 
 import { useState } from 'react';
 import { Button } from '@breakery/ui';
@@ -9,10 +23,13 @@ import type { OpnameItemRow } from '../hooks/useOpnameDetail.js';
 export interface CountItemRowProps {
   countId:  string;
   item:     OpnameItemRow;
-  readOnly: boolean;
+  /** Afficher l'attendu et l'écart (phase revue et au-delà). */
+  revealed: boolean;
+  /** Figer la saisie (phase revue et au-delà). */
+  locked:   boolean;
 }
 
-export function CountItemRow({ countId, item, readOnly }: CountItemRowProps) {
+export function CountItemRow({ countId, item, revealed, locked }: CountItemRowProps) {
   const [count, setCount] = useState<string>(
     item.counted_qty === null ? '' : String(item.counted_qty),
   );
@@ -44,11 +61,13 @@ export function CountItemRow({ countId, item, readOnly }: CountItemRowProps) {
         <div className="font-medium text-text-primary">{item.product?.name ?? '—'}</div>
         <div className="text-xs text-text-secondary">{item.product?.sku ?? ''}</div>
       </td>
-      <td className="py-2 px-3 text-sm font-mono text-right">
-        {item.expected_qty} {item.unit}
-      </td>
+      {revealed && (
+        <td className="py-2 px-3 text-sm font-mono text-right" data-testid="cell-expected">
+          {item.expected_qty} {item.unit}
+        </td>
+      )}
       <td className="py-2 px-3">
-        {readOnly ? (
+        {locked ? (
           <span className="font-mono text-sm">
             {item.counted_qty ?? '—'} {item.unit}
           </span>
@@ -65,19 +84,21 @@ export function CountItemRow({ countId, item, readOnly }: CountItemRowProps) {
           />
         )}
       </td>
-      <td className="py-2 px-3 text-sm font-mono text-right">
-        {variance === null ? (
-          <span className="text-text-secondary">—</span>
-        ) : variance === 0 ? (
-          <span className="text-success">0</span>
-        ) : variance > 0 ? (
-          <span className="text-success">+{variance}</span>
-        ) : (
-          <span className="text-danger">{variance}</span>
-        )}
-      </td>
+      {revealed && (
+        <td className="py-2 px-3 text-sm font-mono text-right" data-testid="cell-variance">
+          {variance === null ? (
+            <span className="text-text-secondary">—</span>
+          ) : variance === 0 ? (
+            <span className="text-success">0</span>
+          ) : variance > 0 ? (
+            <span className="text-success">+{variance}</span>
+          ) : (
+            <span className="text-danger">{variance}</span>
+          )}
+        </td>
+      )}
       <td className="py-2 px-3 text-sm">
-        {readOnly ? (
+        {locked ? (
           <span className="text-text-secondary">{item.notes ?? ''}</span>
         ) : (
           <input
@@ -87,10 +108,11 @@ export function CountItemRow({ countId, item, readOnly }: CountItemRowProps) {
             onBlur={handleSubmit}
             className="w-full px-2 py-1 text-sm bg-bg-base border border-border-subtle rounded"
             placeholder="Optional notes"
+            aria-label={`Notes for ${item.product?.name}`}
           />
         )}
       </td>
-      {!readOnly && (
+      {!locked && (
         <td className="py-2 px-2">
           <Button
             variant="ghost"

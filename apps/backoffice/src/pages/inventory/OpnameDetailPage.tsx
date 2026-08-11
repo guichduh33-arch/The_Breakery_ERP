@@ -5,35 +5,52 @@
 // Header (back link + count number + status) → KPI tile row (section, items
 // counted vs pending, total |variance|) → optional add-item form → items
 // DataTable → action footer (Validate / Finalize / Cancel + error banner).
+//
+// Comptage à l'aveugle — l'inventaire se fait en deux temps :
+//   1. COMPTAGE (draft, counting) — l'écran ne montre QUE ce qu'on saisit.
+//      L'attendu, l'écart par ligne et le total des écarts sont masqués : les
+//      afficher pendant qu'on compte invite à recopier l'attendu au lieu de
+//      déclarer ce qu'on a vu sur l'étagère.
+//   2. REVUE (review) — « Valider » révèle tout et FIGE la saisie.
+// Le retour en arrière n'existe pas côté serveur : le seul recours après la
+// révélation est d'annuler l'inventaire, d'où la confirmation sur Valider et le
+// bouton Annuler qui reste offert en revue.
 
 import { useMemo, useState, type JSX } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, ClipboardList, Layers, Sigma, X } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, ClipboardList, EyeOff, Layers, Sigma, X } from 'lucide-react';
 import { Button, EmptyState, KpiTile } from '@breakery/ui';
 import { useAuthStore } from '@/stores/authStore.js';
 import { useOpnameDetail } from '@/features/inventory-opname/hooks/useOpnameDetail.js';
-import { useValidateOpname } from '@/features/inventory-opname/hooks/useOpnameMutations.js';
 import { OpnameStatusBadge } from '@/features/inventory-opname/components/OpnameStatusBadge.js';
 import { CountItemRow } from '@/features/inventory-opname/components/CountItemRow.js';
 import { AddItemForm } from '@/features/inventory-opname/components/AddItemForm.js';
+import { ValidateOpnameDialog } from '@/features/inventory-opname/components/ValidateOpnameDialog.js';
 import { FinalizeOpnameDialog } from '@/features/inventory-opname/components/FinalizeOpnameDialog.js';
 import { CancelOpnameDialog } from '@/features/inventory-opname/components/CancelOpnameDialog.js';
 
 export default function OpnameDetailPage(): JSX.Element {
   const { id } = useParams<{ id: string }>();
   const detail = useOpnameDetail(id ?? null);
-  const validate = useValidateOpname();
   const hasPermission = useAuthStore((s) => s.hasPermission);
   const canFinalize = hasPermission('inventory.opname.finalize');
   const canCreate   = hasPermission('inventory.opname.create');
 
+  const [showValidate, setShowValidate] = useState<boolean>(false);
   const [showFinalize, setShowFinalize] = useState<boolean>(false);
   const [showCancel,   setShowCancel  ] = useState<boolean>(false);
-  const [validateErr,  setValidateErr ] = useState<string | null>(null);
 
   // Compute even when data is undefined so hook order stays stable.
-  const items     = detail.data?.items ?? [];
-  const readOnly  = detail.data?.status === 'finalized' || detail.data?.status === 'cancelled';
+  const items    = detail.data?.items ?? [];
+  const status   = detail.data?.status;
+  /** Phase comptage : rien de l'attendu ne doit filtrer à l'écran. */
+  const counting = status === 'draft' || status === 'counting';
+  /** L'attendu et les écarts sont visibles (revue, finalisé, annulé). */
+  const revealed = status !== undefined && !counting;
+  /** Plus aucune saisie : la revue fige les chiffres comptés. */
+  const locked   = revealed;
+  /** Inventaire clos — plus rien à annuler. */
+  const terminal = status === 'finalized' || status === 'cancelled';
   const stats     = useMemo(() => {
     let counted = 0;
     let pending = 0;
@@ -60,15 +77,6 @@ export default function OpnameDetailPage(): JSX.Element {
   }
 
   const d = detail.data;
-
-  function handleValidate(): void {
-    if (id === undefined) return;
-    setValidateErr(null);
-    validate.mutate(
-      { countId: id },
-      { onError: (e) => { setValidateErr(e.message); } },
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -101,15 +109,33 @@ export default function OpnameDetailPage(): JSX.Element {
           icon={CheckCircle2}
           footer={`${stats.pending} pending of ${items.length}`}
         />
-        <KpiTile
-          label="Total |variance|"
-          value={Number(stats.varianceTotal.toFixed(3))}
-          icon={Sigma}
-          footer="Sum of absolute deltas"
-        />
+        {revealed ? (
+          <KpiTile
+            label="Total |variance|"
+            value={Number(stats.varianceTotal.toFixed(3))}
+            icon={Sigma}
+            footer="Sum of absolute deltas"
+          />
+        ) : (
+          // Le total des écarts révélerait l'attendu par soustraction. La tuile
+          // n'est pas retirée : sa place dit qu'il y a bien quelque chose à
+          // voir, plus tard.
+          <div
+            className="rounded-lg border border-border-subtle bg-bg-elevated p-4"
+            data-testid="blind-count-notice"
+          >
+            <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-text-muted">
+              <EyeOff className="h-3.5 w-3.5" aria-hidden /> Blind count
+            </div>
+            <p className="mt-2 text-sm text-text-secondary">
+              Expected quantities and variances stay hidden until you validate.
+              Record what you actually see on the shelf.
+            </p>
+          </div>
+        )}
       </section>
 
-      {!readOnly && canCreate && (
+      {!locked && canCreate && (
         <AddItemForm countId={d.id} />
       )}
 
@@ -119,7 +145,7 @@ export default function OpnameDetailPage(): JSX.Element {
             icon={ClipboardList}
             title="No items in this count"
             description={
-              !readOnly && canCreate
+              !locked && canCreate
                 ? 'Add items above to begin recording counts.'
                 : 'This count has no items recorded.'
             }
@@ -132,16 +158,20 @@ export default function OpnameDetailPage(): JSX.Element {
             <thead className="bg-surface-inert border-b border-border-subtle">
               <tr>
                 <th className="text-left py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Product</th>
-                <th className="text-right py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Expected</th>
+                {revealed && (
+                  <th className="text-right py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Expected</th>
+                )}
                 <th className="text-left py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Counted</th>
-                <th className="text-right py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Variance</th>
+                {revealed && (
+                  <th className="text-right py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Variance</th>
+                )}
                 <th className="text-left py-3 px-4 text-xs uppercase tracking-widest text-text-muted">Notes</th>
-                {!readOnly && <th />}
+                {!locked && <th />}
               </tr>
             </thead>
             <tbody>
               {items.map((it) => (
-                <CountItemRow key={it.id} countId={d.id} item={it} readOnly={readOnly} />
+                <CountItemRow key={it.id} countId={d.id} item={it} revealed={revealed} locked={locked} />
               ))}
             </tbody>
           </table>
@@ -149,19 +179,14 @@ export default function OpnameDetailPage(): JSX.Element {
       )}
 
       <footer className="flex flex-col gap-3 md:flex-row md:items-center md:justify-end">
-        {validateErr !== null && (
-          <div role="alert" className="rounded-md border border-danger bg-danger-soft px-3 py-2 text-xs text-danger md:mr-auto">
-            {validateErr}
-          </div>
-        )}
-        {(d.status === 'draft' || d.status === 'counting') && canCreate && (
+        {counting && canCreate && (
           <Button
             variant="ghost"
-            onClick={handleValidate}
-            disabled={validate.isPending || stats.pending > 0}
+            onClick={() => { setShowValidate(true); }}
+            disabled={stats.pending > 0 || items.length === 0}
           >
             <CheckCircle2 className="h-4 w-4" aria-hidden />
-            {validate.isPending ? 'Validating…' : 'Validate (→ review)'}
+            Validate &amp; reveal variances
           </Button>
         )}
         {(d.status === 'review' || d.status === 'counting') && canFinalize && (
@@ -169,7 +194,9 @@ export default function OpnameDetailPage(): JSX.Element {
             Finalize and post JE
           </Button>
         )}
-        {!readOnly && canCreate && (
+        {/* Annuler reste offert en revue : c'est le SEUL recours si la
+            révélation découvre une faute de frappe. */}
+        {!terminal && canCreate && (
           <Button variant="ghost" onClick={() => { setShowCancel(true); }}>
             <X className="h-4 w-4" aria-hidden /> Cancel
           </Button>
@@ -182,6 +209,13 @@ export default function OpnameDetailPage(): JSX.Element {
         </div>
       )}
 
+      {showValidate && (
+        <ValidateOpnameDialog
+          countId={d.id}
+          countedItems={stats.counted}
+          onClose={() => { setShowValidate(false); }}
+        />
+      )}
       {showFinalize && (
         <FinalizeOpnameDialog
           countId={d.id}

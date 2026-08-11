@@ -27,8 +27,6 @@ const TransferDetailPage = lazy(() => import('@/pages/TransferDetail.js'));
 const SuppliersPage = lazy(() => import('@/pages/Suppliers.js'));
 const SupplierDetailPage = lazy(() => import('@/pages/suppliers/SupplierDetailPage.js'));
 const ProductionPage = lazy(() => import('@/pages/inventory/ProductionPage.js'));
-const BatchProductionPage = lazy(() => import('@/pages/inventory/BatchProductionPage.js'));
-const ProductionSchedulePage = lazy(() => import('@/pages/inventory/ProductionSchedulePage.js'));
 const MarginWatchPage = lazy(() => import('@/pages/inventory/MarginWatchPage.js'));
 const OpnameListPage = lazy(() => import('@/pages/inventory/OpnameListPage.js'));
 const OpnameDetailPage = lazy(() => import('@/pages/inventory/OpnameDetailPage.js'));
@@ -311,22 +309,6 @@ export function AppRoutes() {
           element={
             <PermissionGate required="inventory.read">
               <ProductionPage />
-            </PermissionGate>
-          }
-        />
-        <Route
-          path="inventory/production/batch"
-          element={
-            <PermissionGate required="inventory.production.create">
-              <BatchProductionPage />
-            </PermissionGate>
-          }
-        />
-        <Route
-          path="inventory/production/schedule"
-          element={
-            <PermissionGate required="inventory.production.schedule">
-              <ProductionSchedulePage />
             </PermissionGate>
           }
         />

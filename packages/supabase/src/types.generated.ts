@@ -6340,6 +6340,10 @@ export type Database = {
           ledger_id: string
         }[]
       }
+      _assert_product_sellable_v1: {
+        Args: { p_is_combo_component?: boolean; p_product_id: string }
+        Returns: undefined
+      }
       _build_zreport_snapshot: { Args: { p_shift_id: string }; Returns: Json }
       _calculate_recipe_cost_walk: {
         Args: {
@@ -6554,7 +6558,7 @@ export type Database = {
         }
         Returns: Json
       }
-      add_order_item_v4: {
+      add_order_item_v5: {
         Args: {
           p_idempotency_key: string
           p_modifiers: Json
@@ -6753,7 +6757,7 @@ export type Database = {
             }
             Returns: string
           }
-      complete_order_with_payment_v24: {
+      complete_order_with_payment_v25: {
         Args: {
           p_customer_id?: string
           p_discount_amount?: number
@@ -6992,7 +6996,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      create_tablet_order_v5: {
+      create_tablet_order_v6: {
         Args: {
           p_client_uuid: string
           p_items: Json
@@ -7000,6 +7004,7 @@ export type Database = {
           p_order_id?: string
           p_order_type: Database["public"]["Enums"]["order_type"]
           p_table_number: string
+          p_tolerate_unsellable?: boolean
           p_waiter_id: string
         }
         Returns: string
@@ -7121,7 +7126,7 @@ export type Database = {
       }
       findfuncs: { Args: { "": string }; Returns: string[] }
       finish: { Args: { exception_on_failure?: boolean }; Returns: string[] }
-      fire_counter_order_v5: {
+      fire_counter_order_v6: {
         Args: {
           p_client_uuid: string
           p_discount_authorized_by?: string
@@ -7130,6 +7135,7 @@ export type Database = {
           p_order_type?: Database["public"]["Enums"]["order_type"]
           p_session_id: string
           p_table_number?: string
+          p_tolerate_unsellable?: boolean
         }
         Returns: Json
       }
@@ -7717,15 +7723,6 @@ export type Database = {
       has_unique: { Args: { "": string }; Returns: string }
       hash_pin: { Args: { p_pin: string }; Returns: string }
       hold_fired_order_v1: { Args: { p_order_id: string }; Returns: undefined }
-      hold_order_v1: {
-        Args: {
-          p_cart_payload: Json
-          p_client_uuid: string
-          p_notes?: string
-          p_table_number?: string
-        }
-        Returns: string
-      }
       import_catalog_v1: {
         Args: {
           p_dry_run?: boolean
@@ -7778,7 +7775,7 @@ export type Database = {
       is_authenticated: { Args: never; Returns: boolean }
       is_empty: { Args: { "": string }; Returns: string }
       isnt_empty: { Args: { "": string }; Returns: string }
-      kds_bump_item_v1: {
+      kds_bump_item_v2: {
         Args: { p_idempotency_key?: string; p_order_item_id: string }
         Returns: {
           bumped_at: string | null
@@ -7822,11 +7819,11 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      kds_bump_order_v1: {
+      kds_bump_order_v2: {
         Args: { p_idempotency_key?: string; p_order_id: string }
         Returns: number
       }
-      kds_recall_order_v1: {
+      kds_recall_order_v2: {
         Args: { p_order_id: string; p_reason?: string }
         Returns: number
       }
@@ -7874,7 +7871,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      kds_undo_bump_v1: {
+      kds_undo_bump_v2: {
         Args: { p_order_item_id: string }
         Returns: {
           bumped_at: string | null
@@ -8339,7 +8336,6 @@ export type Database = {
         Args: { p_mapping_key: string }
         Returns: string
       }
-      restore_held_order_v1: { Args: { p_order_id: string }; Returns: Json }
       retry_sale_journal_entry_v4: {
         Args: { p_order_id: string }
         Returns: Json

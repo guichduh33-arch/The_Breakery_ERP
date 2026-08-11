@@ -1,6 +1,6 @@
 // apps/pos/src/features/kds/components/BumpButton.tsx
 //
-// Session 13 / Phase 4.B — bump button that wraps the `kds_bump_item_v1`
+// Session 13 / Phase 4.B — bump button that wraps the `kds_bump_item_v2`
 // RPC. On success, surfaces an `UndoBumpToast` for 60 seconds.
 
 import { useState } from 'react';

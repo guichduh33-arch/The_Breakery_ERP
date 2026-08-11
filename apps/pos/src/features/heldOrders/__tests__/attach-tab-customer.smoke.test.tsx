@@ -2,8 +2,9 @@
 // apps/pos/src/features/heldOrders/__tests__/attach-tab-customer.smoke.test.tsx
 //
 // Session 62 — Task 5 — "Ardoise" action on a fired counter order in
-// HeldOrdersModal. Verifies: the button only renders for pending_payment
-// rows, selecting a customer calls attach_tab_customer_v3 with the right
+// HeldOrdersModal. Verifies: the button renders on every held row (ADR-022
+// déc. 4 : la voie brouillon a disparu, toute ligne listée est une commande
+// envoyée), selecting a customer calls attach_tab_customer_v3 with the right
 // args, success shows the named-total toast, and a P0011
 // credit_limit_exceeded reply surfaces the plafond breakdown in French
 // (mock rpc — no live DB).
@@ -59,13 +60,13 @@ vi.mock('@/features/heldOrders/hooks/useHeldOrdersQuery', () => ({
       },
       {
         id: 'order-9',
-        order_number: 'HELD-x',
+        order_number: '#0009',
         table_number: null,
         notes: null,
         total: 50000,
         created_at: '2026-07-06T10:01:00Z',
-        status: 'draft',
-        sent_to_kitchen_at: null,
+        status: 'pending_payment',
+        sent_to_kitchen_at: '2026-07-06T10:00:30Z',
       },
     ],
     isLoading: false,
@@ -73,9 +74,6 @@ vi.mock('@/features/heldOrders/hooks/useHeldOrdersQuery', () => ({
 }));
 vi.mock('@/features/heldOrders/hooks/useReopenHeldOrder', () => ({
   useReopenHeldOrder: () => ({ mutateAsync: vi.fn() }),
-}));
-vi.mock('@/features/heldOrders/hooks/useRestoreHeldOrder', () => ({
-  useRestoreHeldOrder: () => ({ mutateAsync: vi.fn() }),
 }));
 vi.mock('@/features/heldOrders/hooks/useDiscardHeldOrder', () => ({
   useDiscardHeldOrder: () => ({ mutateAsync: vi.fn() }),
@@ -108,9 +106,12 @@ beforeEach(() => {
 });
 
 describe('AttachTabCustomerButton (via HeldOrdersModal)', () => {
-  it('only renders the Ardoise button on the pending_payment row', () => {
+  // ADR-022 déc. 4 — la voie brouillon a disparu : toute ligne listée est une
+  // commande envoyée, donc chacune porte le bouton Ardoise. Le contre-exemple
+  // `draft` d'origine n'a plus d'objet, les deux lignes sont `pending_payment`.
+  it('rend le bouton Ardoise sur chaque commande en attente', () => {
     render(wrap(<HeldOrdersModal open onClose={noop} />));
-    expect(screen.getAllByLabelText(/attach a named customer to this tab/i)).toHaveLength(1);
+    expect(screen.getAllByLabelText(/attach a named customer to this tab/i)).toHaveLength(2);
   });
 
   it('calls attach_tab_customer_v3 with the selected customer and shows the named-total toast', async () => {
@@ -127,7 +128,8 @@ describe('AttachTabCustomerButton (via HeldOrdersModal)', () => {
     });
 
     render(wrap(<HeldOrdersModal open onClose={noop} />));
-    fireEvent.click(screen.getByLabelText(/attach a named customer to this tab/i));
+    // ADR-022 dec. 4 : les deux lignes portent desormais le bouton — on cible la premiere.
+    fireEvent.click(screen.getAllByLabelText(/attach a named customer to this tab/i)[0]!);
     fireEvent.click(screen.getByText('pick-jean-test'));
 
     await waitFor(() =>
@@ -159,7 +161,8 @@ describe('AttachTabCustomerButton (via HeldOrdersModal)', () => {
     });
 
     render(wrap(<HeldOrdersModal open onClose={noop} />));
-    fireEvent.click(screen.getByLabelText(/attach a named customer to this tab/i));
+    // ADR-022 dec. 4 : les deux lignes portent desormais le bouton — on cible la premiere.
+    fireEvent.click(screen.getAllByLabelText(/attach a named customer to this tab/i)[0]!);
     fireEvent.click(screen.getByText('pick-jean-test'));
 
     await waitFor(() => expect(toastError).toHaveBeenCalled());

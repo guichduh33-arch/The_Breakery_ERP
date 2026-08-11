@@ -1,7 +1,7 @@
 -- supabase/tests/tablet_append_to_order.test.sql
 --
 -- Ajout de lignes à une commande de salle déjà envoyée (décision propriétaire
--- 2026-08-01, ADR-010 D1). `create_tablet_order_v5` porte les deux gestes :
+-- 2026-08-01, ADR-010 D1). `create_tablet_order_v6` porte les deux gestes :
 -- création (p_order_id NULL) et ajout (p_order_id renseigné).
 --
 -- Ce qui se joue ici :
@@ -27,7 +27,13 @@ BEGIN
   PERFORM set_config('request.jwt.claim.sub', v_auth::text, true);
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_auth)::text, true);
 
-  SELECT id INTO v_p1 FROM products WHERE is_active LIMIT 1;
+  -- ADR-022 dec. 1 : la garde de vendabilite est active sur cette RPC, le fixture doit choisir un produit vendable de facon deterministe.
+  SELECT p.id INTO v_p1 FROM products p
+   WHERE p.deleted_at IS NULL AND p.parent_product_id IS NULL AND p.is_active = true
+     AND p.product_type <> 'combo'
+     AND NOT EXISTS (SELECT 1 FROM products c WHERE c.parent_product_id = p.id AND c.is_active AND c.deleted_at IS NULL)
+   LIMIT 1;
+  IF v_p1 IS NULL THEN RAISE EXCEPTION 'fixture: aucun produit vendable'; END IF;
   SELECT id INTO v_sess FROM pos_sessions WHERE status = 'open' LIMIT 1;
 
   INSERT INTO orders (order_number, order_type, status, created_via, table_number,
@@ -57,7 +63,7 @@ END $$;
 
 -- T1/T2 — le geste nominal.
 SELECT lives_ok(format(
-  $q$ SELECT create_tablet_order_v5('11111111-1111-1111-1111-111111111111'::uuid, %L::uuid, '7', 'dine_in',
+  $q$ SELECT create_tablet_order_v6('11111111-1111-1111-1111-111111111111'::uuid, %L::uuid, '7', 'dine_in',
       jsonb_build_array(jsonb_build_object('product_id', %L, 'quantity', 1, 'unit_price', 30000, 'modifiers', '[]'::jsonb)),
       NULL, %L::uuid) $q$,
   current_setting('a.waiter'), current_setting('a.prod'), current_setting('a.tab')),
@@ -69,7 +75,7 @@ SELECT is(
 
 -- T3/T4 — double appui en salle : le rejeu est un no-op.
 SELECT lives_ok(format(
-  $q$ SELECT create_tablet_order_v5('11111111-1111-1111-1111-111111111111'::uuid, %L::uuid, '7', 'dine_in',
+  $q$ SELECT create_tablet_order_v6('11111111-1111-1111-1111-111111111111'::uuid, %L::uuid, '7', 'dine_in',
       jsonb_build_array(jsonb_build_object('product_id', %L, 'quantity', 1, 'unit_price', 30000, 'modifiers', '[]'::jsonb)),
       NULL, %L::uuid) $q$,
   current_setting('a.waiter'), current_setting('a.prod'), current_setting('a.tab')),
@@ -86,14 +92,14 @@ SELECT isnt_empty(format(
 
 -- T6/T7 — les deux refus qui protegent l argent.
 SELECT throws_ok(format(
-  $q$ SELECT create_tablet_order_v5('22222222-2222-2222-2222-222222222222'::uuid, %L::uuid, '9', 'dine_in',
+  $q$ SELECT create_tablet_order_v6('22222222-2222-2222-2222-222222222222'::uuid, %L::uuid, '9', 'dine_in',
       jsonb_build_array(jsonb_build_object('product_id', %L, 'quantity', 1, 'unit_price', 30000, 'modifiers', '[]'::jsonb)),
       NULL, %L::uuid) $q$,
   current_setting('a.waiter'), current_setting('a.prod'), current_setting('a.paid')),
   'P0002', NULL, 'refus d ajout sur une commande deja payee');
 
 SELECT throws_ok(format(
-  $q$ SELECT create_tablet_order_v5('33333333-3333-3333-3333-333333333333'::uuid, %L::uuid, '8', 'dine_in',
+  $q$ SELECT create_tablet_order_v6('33333333-3333-3333-3333-333333333333'::uuid, %L::uuid, '8', 'dine_in',
       jsonb_build_array(jsonb_build_object('product_id', %L, 'quantity', 1, 'unit_price', 30000, 'modifiers', '[]'::jsonb)),
       NULL, %L::uuid) $q$,
   current_setting('a.waiter'), current_setting('a.prod'), current_setting('a.pos')),
@@ -101,7 +107,7 @@ SELECT throws_ok(format(
 
 -- T8 — fin du skip silencieux herite de la v4.
 SELECT throws_ok(format(
-  $q$ SELECT create_tablet_order_v5('44444444-4444-4444-4444-444444444444'::uuid, %L::uuid, '7', 'dine_in',
+  $q$ SELECT create_tablet_order_v6('44444444-4444-4444-4444-444444444444'::uuid, %L::uuid, '7', 'dine_in',
       jsonb_build_array(jsonb_build_object('product_id', '00000000-0000-0000-0000-000000000000', 'quantity', 1, 'unit_price', 30000, 'modifiers', '[]'::jsonb)),
       NULL, %L::uuid) $q$,
   current_setting('a.waiter'), current_setting('a.tab')),
@@ -109,8 +115,8 @@ SELECT throws_ok(format(
 
 -- T9 — defense in depth.
 SELECT ok(
-  NOT has_function_privilege('anon', 'public.create_tablet_order_v5(uuid,uuid,text,order_type,jsonb,text,uuid)', 'EXECUTE'),
-  'anon ne peut pas executer create_tablet_order_v5');
+  NOT has_function_privilege('anon', 'public.create_tablet_order_v6(uuid,uuid,text,order_type,jsonb,text,uuid,boolean)', 'EXECUTE'),
+  'anon ne peut pas executer create_tablet_order_v6');
 
 SELECT * FROM finish();
 ROLLBACK;
