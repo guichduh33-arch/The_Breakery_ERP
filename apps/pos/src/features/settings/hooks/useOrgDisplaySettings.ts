@@ -16,6 +16,10 @@ export interface OrgDisplaySettings {
   displaySlogan: string;
   autoPrint: boolean;
   autoOpenDrawer: boolean;
+  /** ADR-023 déc. 2 — sélection ORDONNÉE des produits mis en vitrine au repos. */
+  showcaseProductIds: string[];
+  /** ADR-023 déc. 3 — file de retrait sur l'écran client. Éteinte par défaut. */
+  showReadyOrders: boolean;
 }
 
 const DEFAULTS: OrgDisplaySettings = {
@@ -23,7 +27,31 @@ const DEFAULTS: OrgDisplaySettings = {
   displaySlogan: '',
   autoPrint: true,
   autoOpenDrawer: true,
+  showcaseProductIds: [],
+  showReadyOrders: false,
 };
+
+/** Plafond de la sélection, miroir du CHECK porté par business_config. */
+export const SHOWCASE_MAX_PRODUCTS = 12;
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * La colonne est typée `Json` : rien ne garantit sa forme au type-check. On la
+ * valide ici plutôt que de la caster — un id malformé partirait sinon dans un
+ * `.in('id', …)` et ferait échouer la requête produits, donc disparaître toute
+ * la vitrine pour une seule entrée abîmée. Doublons écartés, ordre conservé.
+ */
+export function parseShowcaseProductIds(raw: Json | null | undefined): string[] {
+  if (!Array.isArray(raw)) return [];
+  const seen = new Set<string>();
+  for (const entry of raw) {
+    if (typeof entry !== 'string' || !UUID_RE.test(entry)) continue;
+    seen.add(entry.toLowerCase());
+    if (seen.size >= SHOWCASE_MAX_PRODUCTS) break;
+  }
+  return [...seen];
+}
 
 export function useOrgDisplaySettings(): OrgDisplaySettings & { isLoading: boolean } {
   const { data, isLoading } = useQuery({
@@ -37,7 +65,9 @@ export function useOrgDisplaySettings(): OrgDisplaySettings & { isLoading: boole
     queryFn: async () => {
       const { data, error } = await supabase
         .from('business_config')
-        .select('display_footer_message, display_slogan, pos_auto_print_receipt, pos_auto_open_drawer')
+        .select(
+          'display_footer_message, display_slogan, pos_auto_print_receipt, pos_auto_open_drawer, display_showcase_product_ids, display_show_ready_orders',
+        )
         .limit(1)
         .maybeSingle();
       if (error) throw new Error(error.message);
@@ -49,6 +79,10 @@ export function useOrgDisplaySettings(): OrgDisplaySettings & { isLoading: boole
     displaySlogan: data?.display_slogan ?? DEFAULTS.displaySlogan,
     autoPrint: data?.pos_auto_print_receipt ?? DEFAULTS.autoPrint,
     autoOpenDrawer: data?.pos_auto_open_drawer ?? DEFAULTS.autoOpenDrawer,
+    showcaseProductIds: parseShowcaseProductIds(data?.display_showcase_product_ids),
+    // Éteint tant que la config n'a pas répondu : c'est le défaut qui porte la
+    // décision 1 d'ADR-023, un repli allumé ferait clignoter la file au montage.
+    showReadyOrders: data?.display_show_ready_orders ?? DEFAULTS.showReadyOrders,
     isLoading,
   };
 }

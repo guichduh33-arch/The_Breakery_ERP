@@ -300,6 +300,8 @@ export type Database = {
           created_at: string
           currency: string
           display_footer_message: string
+          display_show_ready_orders: boolean
+          display_showcase_product_ids: Json
           display_slogan: string
           enabled_payment_methods: Json
           fiscal_address: string | null
@@ -343,6 +345,8 @@ export type Database = {
           created_at?: string
           currency?: string
           display_footer_message?: string
+          display_show_ready_orders?: boolean
+          display_showcase_product_ids?: Json
           display_slogan?: string
           enabled_payment_methods?: Json
           fiscal_address?: string | null
@@ -386,6 +390,8 @@ export type Database = {
           created_at?: string
           currency?: string
           display_footer_message?: string
+          display_show_ready_orders?: boolean
+          display_showcase_product_ids?: Json
           display_slogan?: string
           enabled_payment_methods?: Json
           fiscal_address?: string | null
