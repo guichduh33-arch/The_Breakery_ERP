@@ -4,9 +4,10 @@
 import { useState, type JSX } from 'react';
 import {
   Button,
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
   selectClassName, cn,
 } from '@breakery/ui';
+import { FOCUS_RING } from '@/components/focusRing.js';
 import { useCreateCategory, useUpdateCategory } from '../hooks/useCategoryMutations.js';
 import type { CategoryRow, CategoryType } from '../hooks/useAllCategories.js';
 
@@ -103,18 +104,27 @@ export function CategoryFormDialog({ mode, category, onClose }: CategoryFormDial
       <DialogContent className="max-w-md" data-testid="category-form-dialog">
         <DialogHeader>
           <DialogTitle>{mode === 'create' ? 'New category' : 'Edit category'}</DialogTitle>
+          <DialogDescription>
+            Categories group products for the POS grid and for inventory reporting.
+          </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3">
+        {/* Une vraie balise <form> : sans elle, la touche Entrée ne validait
+            rien et l'attribut `required` d'un champ ne se déclenchait jamais. */}
+        <form
+          onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}
+          className="space-y-3"
+          data-testid="category-form"
+        >
           <div>
             <label htmlFor="cat-name" className="block text-xs uppercase tracking-wider text-text-secondary mb-1">
-              Name
+              Name <span className="text-red" aria-hidden>*</span>
             </label>
             <input
               id="cat-name"
               value={name}
               onChange={(e) => { setName(e.target.value); }}
-              className="w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded"
+              className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded ${FOCUS_RING}`}
               maxLength={120}
             />
           </div>
@@ -127,7 +137,7 @@ export function CategoryFormDialog({ mode, category, onClose }: CategoryFormDial
               id="cat-slug"
               value={slug}
               onChange={(e) => { setSlug(e.target.value); }}
-              className="w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded font-mono"
+              className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded font-mono placeholder:text-text-muted ${FOCUS_RING}`}
               placeholder="coffee"
               maxLength={120}
             />
@@ -163,10 +173,13 @@ export function CategoryFormDialog({ mode, category, onClose }: CategoryFormDial
           </div>
 
           <div>
-            <label className="block text-xs uppercase tracking-wider text-text-secondary mb-1">
+            {/* Choix mutuellement exclusif : `aria-pressed` annonce une
+                bascule, pas « un parmi trois » — ni le nombre d'options ni la
+                position n'étaient lisibles au lecteur d'écran. */}
+            <span id="cat-type-label" className="block text-xs uppercase tracking-wider text-text-secondary mb-1">
               Type
-            </label>
-            <div className="grid grid-cols-3 gap-2">
+            </span>
+            <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-labelledby="cat-type-label">
               {CATEGORY_TYPES.map((t) => {
                 const on = catType === t.value;
                 return (
@@ -174,12 +187,13 @@ export function CategoryFormDialog({ mode, category, onClose }: CategoryFormDial
                     key={t.value}
                     type="button"
                     onClick={() => setCatType(t.value)}
-                    aria-pressed={on}
+                    role="radio"
+                    aria-checked={on}
                     className={`rounded-md border px-2 py-2 text-xs font-medium transition-colors ${
                       on
-                        ? 'border-gold bg-gold/10 text-text-primary'
-                        : 'border-border-subtle text-text-secondary hover:bg-bg-overlay'
-                    }`}
+                        ? 'border-gold bg-gold-soft text-text-primary'
+                        : 'border-border-subtle text-text-secondary hover:bg-surface-4'
+                    } ${FOCUS_RING}`}
                   >
                     {t.label}
                   </button>
@@ -207,18 +221,18 @@ export function CategoryFormDialog({ mode, category, onClose }: CategoryFormDial
           </div>
 
           {error !== null && (
-            <div className="text-xs text-danger bg-danger-soft px-2 py-1.5 rounded">{error}</div>
+            <div role="alert" className="text-xs text-danger bg-danger-soft px-2 py-1.5 rounded">{error}</div>
           )}
-        </div>
 
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose} disabled={isPending}>Cancel</Button>
-          <Button onClick={handleSubmit} disabled={isPending} data-testid="category-form-submit">
+          <Button type="button" variant="ghost" onClick={onClose} disabled={isPending}>Cancel</Button>
+          <Button type="submit" disabled={isPending} data-testid="category-form-submit">
             {isPending
               ? (mode === 'create' ? 'Creating…' : 'Saving…')
               : (mode === 'create' ? 'Create' : 'Save')}
           </Button>
         </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );
@@ -240,12 +254,12 @@ function ToggleRow({ checked, onChange, label, description }: ToggleRowProps): J
         aria-checked={checked}
         aria-label={label}
         onClick={() => onChange(!checked)}
-        className={`mt-0.5 inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
-          checked ? 'bg-gold' : 'bg-border-subtle'
+        className={`mt-0.5 inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${FOCUS_RING} ${
+          checked ? 'bg-gold' : 'bg-border-strong'
         }`}
       >
         <span
-          className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+          className={`inline-block h-5 w-5 transform rounded-full bg-bg-elevated shadow-sm transition-transform ${
             checked ? 'translate-x-5' : 'translate-x-0.5'
           }`}
         />
