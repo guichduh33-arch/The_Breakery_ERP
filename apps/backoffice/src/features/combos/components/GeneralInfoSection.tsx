@@ -5,6 +5,7 @@
 // (converting a lone field to the @breakery/ui Select primitive would break its internal rhythm).
 
 import type { JSX } from 'react';
+import { FOCUS_RING } from '@/components/focusRing.js';
 import type { CategoryRow } from '@/features/categories/hooks/useAllCategories.js';
 
 export interface GeneralInfoDraft {
@@ -25,8 +26,12 @@ interface Props {
 }
 
 export function GeneralInfoSection({ draft, categories, onChange }: Props): JSX.Element {
+  // Le placeholder n'était pas tokenisé : il retombait sur le `gray-400` du
+  // Preflight Tailwind, à 2,21:1 sur le papier de page. `text-text-muted` vaut
+  // 4,83:1 sur ce même fond. L'anneau de focus fait maison, de 1 px, laissait
+  // par ailleurs six champs sous le contrat de 2 px de la direction.
   const inputCls =
-    'w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded focus:outline-none focus:ring-1 focus:ring-gold';
+    `w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded placeholder:text-text-muted ${FOCUS_RING}`;
   const labelCls = 'block text-[10px] uppercase tracking-wider text-text-secondary mb-1';
 
   return (
@@ -146,7 +151,7 @@ export function GeneralInfoSection({ draft, categories, onChange }: Props): JSX.
               type="checkbox"
               checked={draft.is_active}
               onChange={(e) => { onChange({ is_active: e.target.checked }); }}
-              className="accent-gold"
+              className={`accent-gold ${FOCUS_RING}`}
               data-testid="combo-is-active"
             />
             <span className="text-sm text-text-secondary">Active</span>
@@ -156,7 +161,7 @@ export function GeneralInfoSection({ draft, categories, onChange }: Props): JSX.
               type="checkbox"
               checked={draft.visible_on_pos}
               onChange={(e) => { onChange({ visible_on_pos: e.target.checked }); }}
-              className="accent-gold"
+              className={`accent-gold ${FOCUS_RING}`}
               data-testid="combo-visible-on-pos"
             />
             <span className="text-sm text-text-secondary">Show in POS</span>

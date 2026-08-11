@@ -7,6 +7,7 @@ import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
   selectClassName, cn,
 } from '@breakery/ui';
+import { FOCUS_RING } from '@/components/focusRing.js';
 import { useCreateCategory, useUpdateCategory } from '../hooks/useCategoryMutations.js';
 import type { CategoryRow, CategoryType } from '../hooks/useAllCategories.js';
 
@@ -114,7 +115,7 @@ export function CategoryFormDialog({ mode, category, onClose }: CategoryFormDial
               id="cat-name"
               value={name}
               onChange={(e) => { setName(e.target.value); }}
-              className="w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded"
+              className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded ${FOCUS_RING}`}
               maxLength={120}
             />
           </div>
@@ -127,7 +128,7 @@ export function CategoryFormDialog({ mode, category, onClose }: CategoryFormDial
               id="cat-slug"
               value={slug}
               onChange={(e) => { setSlug(e.target.value); }}
-              className="w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded font-mono"
+              className={`w-full px-2 py-2 text-sm bg-bg-base border border-border-subtle rounded font-mono placeholder:text-text-muted ${FOCUS_RING}`}
               placeholder="coffee"
               maxLength={120}
             />
@@ -177,9 +178,9 @@ export function CategoryFormDialog({ mode, category, onClose }: CategoryFormDial
                     aria-pressed={on}
                     className={`rounded-md border px-2 py-2 text-xs font-medium transition-colors ${
                       on
-                        ? 'border-gold bg-gold/10 text-text-primary'
-                        : 'border-border-subtle text-text-secondary hover:bg-bg-overlay'
-                    }`}
+                        ? 'border-gold bg-gold-soft text-text-primary'
+                        : 'border-border-subtle text-text-secondary hover:bg-surface-4'
+                    } ${FOCUS_RING}`}
                   >
                     {t.label}
                   </button>
@@ -240,12 +241,12 @@ function ToggleRow({ checked, onChange, label, description }: ToggleRowProps): J
         aria-checked={checked}
         aria-label={label}
         onClick={() => onChange(!checked)}
-        className={`mt-0.5 inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
-          checked ? 'bg-gold' : 'bg-border-subtle'
+        className={`mt-0.5 inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${FOCUS_RING} ${
+          checked ? 'bg-gold' : 'bg-border-strong'
         }`}
       >
         <span
-          className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+          className={`inline-block h-5 w-5 transform rounded-full bg-bg-elevated shadow-sm transition-transform ${
             checked ? 'translate-x-5' : 'translate-x-0.5'
           }`}
         />

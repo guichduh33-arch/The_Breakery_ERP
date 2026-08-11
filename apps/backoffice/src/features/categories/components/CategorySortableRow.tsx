@@ -5,12 +5,18 @@ import type { JSX } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Button } from '@breakery/ui';
+import { FOCUS_RING } from '@/components/focusRing.js';
 import type { CategoryRow, CategoryType } from '../hooks/useAllCategories.js';
 
+// La teinte catégorielle porte l'identité ; le libellé prend l'encre primaire.
+// En texte plein sur son propre fond à 15 %, l'ambre tombait à 4,08:1 et
+// l'émeraude à 4,43:1 — sous le seuil AA de 4,5:1 pour du 10 px (audit du
+// 2026-08-11). Sur la même teinte, l'encre primaire donne 13,8 à 14,3:1 et la
+// pastille garde sa couleur de catégorie à pleine force.
 const TYPE_META: Record<CategoryType, { label: string; cls: string }> = {
-  raw_material:  { label: 'Raw material',  cls: 'bg-cat-amber/15 text-cat-amber' },
-  semi_finished: { label: 'Semi-finished', cls: 'bg-cat-blue/15 text-cat-blue' },
-  finished:      { label: 'Finished',      cls: 'bg-cat-emerald/15 text-cat-emerald' },
+  raw_material:  { label: 'Raw material',  cls: 'bg-cat-amber/15 text-text-primary' },
+  semi_finished: { label: 'Semi-finished', cls: 'bg-cat-blue/15 text-text-primary' },
+  finished:      { label: 'Finished',      cls: 'bg-cat-emerald/15 text-text-primary' },
 };
 
 export interface CategorySortableRowProps {
@@ -49,7 +55,7 @@ export function CategorySortableRow({
           type="button"
           aria-label={`Drag ${category.name}`}
           disabled={!canEdit}
-          className="cursor-grab text-text-secondary hover:text-text-primary touch-none select-none px-1 disabled:cursor-not-allowed disabled:opacity-30"
+          className={`cursor-grab text-text-secondary hover:text-text-primary touch-none select-none px-1 disabled:cursor-not-allowed disabled:opacity-30 ${FOCUS_RING}`}
           {...attributes}
           {...listeners}
         >
@@ -80,7 +86,7 @@ export function CategorySortableRow({
       <td className="px-3 py-2 text-center">
         <span
           className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-xs ${
-            category.is_active ? 'bg-success-soft text-success' : 'bg-bg-overlay text-text-muted'
+            category.is_active ? 'bg-success-soft text-success' : 'bg-surface-4 text-text-muted'
           }`}
           aria-label={category.is_active ? 'Active' : 'Inactive'}
         >

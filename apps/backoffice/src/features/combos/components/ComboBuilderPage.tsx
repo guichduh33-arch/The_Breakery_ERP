@@ -22,6 +22,7 @@ import { ChoiceGroupCard, type GroupDraft } from './ChoiceGroupCard.js';
 import { PricePreview } from './PricePreview.js';
 import type { ComboDefinition } from '@breakery/domain';
 import { TOOLBAR_BTN_PRIMARY } from '@/components/toolbarButton.js';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 interface Props {
   mode: 'create' | 'edit';
@@ -219,7 +220,7 @@ export default function ComboBuilderPage({ mode }: Props): JSX.Element {
         <button
           type="button"
           onClick={() => { void navigate('/backoffice/products/combos'); }}
-          className="text-text-muted hover:text-text-primary transition-colors"
+          className={`text-text-muted hover:text-text-primary transition-colors ${FOCUS_RING}`}
           aria-label="Back to Combo Management"
         >
           <ArrowLeft className="h-5 w-5" aria-hidden />
@@ -240,7 +241,7 @@ export default function ComboBuilderPage({ mode }: Props): JSX.Element {
       </div>
 
       {isLoading ? (
-        <div className="animate-pulse rounded-lg border border-border-subtle bg-bg-overlay h-40" />
+        <div className="animate-pulse rounded-lg border border-border-subtle bg-surface-4 h-40 motion-reduce:animate-none" />
       ) : (
         <>
           {/* General Info */}
@@ -264,7 +265,7 @@ export default function ComboBuilderPage({ mode }: Props): JSX.Element {
               <button
                 type="button"
                 onClick={handleAddGroup}
-                className="flex items-center gap-1.5 text-xs text-gold hover:text-gold-hover transition-colors"
+                className={`flex items-center gap-1.5 text-xs text-gold hover:text-gold-hover transition-colors ${FOCUS_RING}`}
                 data-testid="add-group"
               >
                 <Plus className="h-3.5 w-3.5" aria-hidden />

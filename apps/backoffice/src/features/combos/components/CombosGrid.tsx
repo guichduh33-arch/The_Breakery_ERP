@@ -10,7 +10,7 @@ import { ComboCard } from './ComboCard.js';
 import type { Combo } from '../types.js';
 
 interface Props {
-  combos: ReadonlyArray<Combo>;
+  combos: readonly Combo[];
   isLoading?: boolean;
 }
 
@@ -40,7 +40,7 @@ export function CombosGrid({ combos, isLoading = false }: Props): JSX.Element {
           {Array.from({ length: 3 }).map((_, i) => (
             <div
               key={i}
-              className="aspect-[4/5] animate-pulse rounded-lg border border-border-subtle bg-bg-overlay"
+              className="aspect-[4/5] animate-pulse rounded-lg border border-border-subtle bg-surface-4 motion-reduce:animate-none"
             />
           ))}
         </div>

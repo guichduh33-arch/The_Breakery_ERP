@@ -5,6 +5,7 @@
 // Searches finished products by name/SKU; excludes variant parents + combos.
 
 import { useState, type JSX } from 'react';
+import { FOCUS_RING } from '@/components/focusRing.js';
 import { useFinishedProductsForCombo, type ComboOptionProduct } from '../hooks/useFinishedProductsForCombo.js';
 
 interface Props {
@@ -43,7 +44,7 @@ export function ComboProductPicker({ excludeIds = [], onPick, onClose }: Props):
         <button
           type="button"
           onClick={onClose}
-          className="text-text-muted hover:text-text-primary text-lg leading-none"
+          className={`text-text-muted hover:text-text-primary text-lg leading-none ${FOCUS_RING}`}
           aria-label="Close picker"
         >
           ×
@@ -54,7 +55,7 @@ export function ComboProductPicker({ excludeIds = [], onPick, onClose }: Props):
         placeholder="Search by name or SKU…"
         value={search}
         onChange={(e) => { setSearch(e.target.value); }}
-        className="w-full px-2 py-1.5 text-sm bg-bg-base border border-border-subtle rounded"
+        className={`w-full px-2 py-1.5 text-sm bg-bg-base border border-border-subtle rounded placeholder:text-text-muted ${FOCUS_RING}`}
         data-testid="combo-picker-search"
         autoFocus
       />
@@ -75,7 +76,7 @@ export function ComboProductPicker({ excludeIds = [], onPick, onClose }: Props):
               <button
                 type="button"
                 onClick={() => { onPick(p); }}
-                className="w-full text-left px-3 py-2 hover:bg-bg-overlay flex items-center justify-between gap-2"
+                className={`w-full text-left px-3 py-2 hover:bg-surface-4 flex items-center justify-between gap-2 ${FOCUS_RING}`}
                 data-testid={`combo-picker-row-${p.id}`}
               >
                 <span className="flex-1 min-w-0 truncate text-text-primary">

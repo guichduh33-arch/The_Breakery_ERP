@@ -5,6 +5,7 @@
 
 import { Trash2 } from 'lucide-react';
 import type { JSX } from 'react';
+import { FOCUS_RING } from '@/components/focusRing.js';
 
 export interface OptionDraft {
   component_product_id: string;
@@ -46,7 +47,7 @@ export function ComboOptionRow({
           step={1000}
           value={option.surcharge}
           onChange={(e) => { onSurchargeChange(Math.max(0, Number(e.target.value))); }}
-          className="w-20 px-1.5 py-1 text-xs bg-bg-elevated border border-border-subtle rounded text-right"
+          className={`w-20 px-1.5 py-1 text-xs bg-bg-elevated border border-border-subtle rounded text-right ${FOCUS_RING}`}
           aria-label={`Surcharge for ${option.label}`}
           data-testid={`surcharge-input-${option.component_product_id}`}
         />
@@ -56,11 +57,14 @@ export function ComboOptionRow({
         <button
           type="button"
           onClick={onSetDefault}
-          className={
+          className={`${FOCUS_RING} ${
             isDefault
-              ? 'shrink-0 text-[10px] font-bold uppercase tracking-widest rounded-full px-2 py-0.5 bg-gold text-bg-base'
+              // `text-bg-base` est le papier de page (#f0efec) : sur l'or il ne
+              // vaut que 4,47:1. `text-gold-fg` est le premier plan prévu pour
+              // un remplissage or et donne 5,06:1.
+              ? 'shrink-0 text-[10px] font-bold uppercase tracking-widest rounded-full px-2 py-0.5 bg-gold text-gold-fg'
               : 'shrink-0 text-[10px] uppercase tracking-widest rounded-full px-2 py-0.5 border border-border-subtle text-text-secondary hover:border-gold hover:text-gold transition-colors'
-          }
+          }`}
           aria-label={isDefault ? 'Default option' : `Set ${option.label} as default`}
           data-testid={`set-default-${option.component_product_id}`}
         >
@@ -81,7 +85,7 @@ export function ComboOptionRow({
       <button
         type="button"
         onClick={onRemove}
-        className="shrink-0 text-text-muted hover:text-red transition-colors"
+        className={`shrink-0 text-text-muted hover:text-red transition-colors ${FOCUS_RING}`}
         aria-label={`Remove ${option.label}`}
         data-testid={`remove-option-${option.component_product_id}`}
       >

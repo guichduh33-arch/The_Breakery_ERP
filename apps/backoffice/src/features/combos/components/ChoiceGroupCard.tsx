@@ -6,6 +6,7 @@
 
 import { useEffect, useRef, useState, type JSX } from 'react';
 import { ChevronDown, Plus, Trash2 } from 'lucide-react';
+import { FOCUS_RING } from '@/components/focusRing.js';
 import { ComboOptionRow, type OptionDraft } from './ComboOptionRow.js';
 import { ComboProductPicker } from './ComboProductPicker.js';
 import type { ComboOptionProduct } from '../hooks/useFinishedProductsForCombo.js';
@@ -118,7 +119,7 @@ export function ChoiceGroupCard({ group, onChange, onRemove }: Props): JSX.Eleme
               value={group.name}
               onChange={(e) => { updateField('name', e.target.value); }}
               placeholder="e.g. Choose a drink"
-              className="w-full px-2 py-1.5 text-sm bg-bg-base border border-border-subtle rounded"
+              className={`w-full px-2 py-1.5 text-sm bg-bg-base border border-border-subtle rounded placeholder:text-text-muted ${FOCUS_RING}`}
               data-testid={`group-name-${group.id}`}
             />
           </div>
@@ -151,7 +152,7 @@ export function ChoiceGroupCard({ group, onChange, onRemove }: Props): JSX.Eleme
                 }
                 onChange(next);
               }}
-              className="w-full px-2 py-1.5 text-sm bg-bg-base border border-border-subtle rounded"
+              className={`w-full px-2 py-1.5 text-sm bg-bg-base border border-border-subtle rounded ${FOCUS_RING}`}
               data-testid={`group-type-${group.id}`}
             >
               <option value="single">Single choice</option>
@@ -163,7 +164,7 @@ export function ChoiceGroupCard({ group, onChange, onRemove }: Props): JSX.Eleme
         <button
           type="button"
           onClick={onRemove}
-          className="shrink-0 mt-5 text-text-muted hover:text-red transition-colors"
+          className={`shrink-0 mt-5 text-text-muted hover:text-red transition-colors ${FOCUS_RING}`}
           aria-label={`Remove group ${group.name}`}
           data-testid={`remove-group-${group.id}`}
         >
@@ -178,7 +179,7 @@ export function ChoiceGroupCard({ group, onChange, onRemove }: Props): JSX.Eleme
             type="checkbox"
             checked={group.is_required}
             onChange={(e) => { updateField('is_required', e.target.checked); }}
-            className="accent-gold"
+            className={`accent-gold ${FOCUS_RING}`}
             data-testid={`group-required-${group.id}`}
           />
           <span className="text-xs text-text-secondary">Required</span>
@@ -197,7 +198,7 @@ export function ChoiceGroupCard({ group, onChange, onRemove }: Props): JSX.Eleme
                 max={group.max_select}
                 value={group.min_select}
                 onChange={(e) => { updateField('min_select', Math.max(0, Number(e.target.value))); }}
-                className="w-14 px-1.5 py-0.5 text-xs bg-bg-base border border-border-subtle rounded text-center"
+                className={`w-14 px-1.5 py-0.5 text-xs bg-bg-base border border-border-subtle rounded text-center ${FOCUS_RING}`}
                 data-testid={`group-min-${group.id}`}
               />
             </div>
@@ -211,7 +212,7 @@ export function ChoiceGroupCard({ group, onChange, onRemove }: Props): JSX.Eleme
                 min={1}
                 value={group.max_select}
                 onChange={(e) => { updateField('max_select', Math.max(1, Number(e.target.value))); }}
-                className="w-14 px-1.5 py-0.5 text-xs bg-bg-base border border-border-subtle rounded text-center"
+                className={`w-14 px-1.5 py-0.5 text-xs bg-bg-base border border-border-subtle rounded text-center ${FOCUS_RING}`}
                 data-testid={`group-max-${group.id}`}
               />
             </div>
@@ -249,7 +250,7 @@ export function ChoiceGroupCard({ group, onChange, onRemove }: Props): JSX.Eleme
           ref={addButtonRef}
           type="button"
           onClick={() => { setShowPicker(true); }}
-          className="flex items-center gap-1.5 text-xs text-gold hover:text-gold-hover transition-colors"
+          className={`flex items-center gap-1.5 text-xs text-gold hover:text-gold-hover transition-colors ${FOCUS_RING}`}
           data-testid={`add-option-${group.id}`}
         >
           <Plus className="h-3.5 w-3.5" aria-hidden />

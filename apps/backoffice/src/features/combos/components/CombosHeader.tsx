@@ -29,7 +29,7 @@ export function CombosHeader({ onCreate }: Props): JSX.Element {
         <button
           type="button"
           onClick={onCreate}
-          className="inline-flex items-center gap-2 rounded-full bg-gold px-5 py-2.5 text-sm font-semibold uppercase tracking-wide text-bg-base hover:bg-gold-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold transition-colors"
+          className="inline-flex items-center gap-2 rounded-full bg-gold px-5 py-2.5 text-sm font-semibold uppercase tracking-wide text-gold-fg hover:bg-gold-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold transition-colors"
           data-testid="create-combo-btn"
         >
           <Plus className="h-4 w-4" aria-hidden />

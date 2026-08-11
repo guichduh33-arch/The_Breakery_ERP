@@ -23,7 +23,7 @@ export function PricePreview({ definition }: Props): JSX.Element {
 
   return (
     <div
-      className="rounded-lg border border-gold-soft bg-gold-soft/30 px-4 py-3 flex items-center justify-between gap-4"
+      className="rounded-lg border border-border-gold bg-gold-soft px-4 py-3 flex items-center justify-between gap-4"
       data-testid="price-preview"
     >
       <div className="text-xs uppercase tracking-widest text-text-secondary font-semibold">
